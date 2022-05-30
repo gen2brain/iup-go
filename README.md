@@ -2,7 +2,7 @@
 [![Build Status](https://github.com/gen2brain/iup-go/actions/workflows/build.yml/badge.svg)](https://github.com/gen2brain/iup-go/actions)
 [![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/iup-go.svg)](https://pkg.go.dev/github.com/gen2brain/iup-go/iup)
 
-Go bindings for [IUP](http://webserver2.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
+Go bindings for [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
 The toolkit provides system native UI controls for Windows, Linux (GTK+), and macOS.
 
 IUP C source code is included and compiled together with bindings.
@@ -72,7 +72,7 @@ though not all controls and attributes are possible, check the documentation for
 
 ### Documentation
 
-[IUP](http://webserver2.tecgraf.puc-rio.br/iup/) documentation is nice, every Go function in doc reference there.
+[IUP](https://www.tecgraf.puc-rio.br/iup/) documentation is nice, every Go function in doc reference there.
 Also check [Go Reference](https://pkg.go.dev/github.com/gen2brain/iup-go/iup) and [Examples](https://github.com/gen2brain/iup-go/tree/master/examples).
 
 ### Thread-Safety

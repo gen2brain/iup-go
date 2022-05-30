@@ -13,7 +13,7 @@ import "C"
 // Open initializes the IUP toolkit.
 // Must be called before any other IUP function.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupopen.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupopen.html
 func Open() int {
 	return int(C.IupOpen(nil, nil))
 }
@@ -21,28 +21,28 @@ func Open() int {
 // Close ends the IUP toolkit and releases internal memory.
 // It will also automatically destroy all dialogs and all elements that have names.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupclose.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupclose.html
 func Close() {
 	C.IupClose()
 }
 
 // Version returns a string with the IUP version number.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupversion.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupversion.html
 func Version() string {
 	return C.GoString(C.IupVersion())
 }
 
 // VersionDate returns a string with the IUP version date.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupversion.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupversion.html
 func VersionDate() string {
 	return C.GoString(C.IupVersionDate())
 }
 
 // VersionNumber returns a string with the IUP version number.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupversion.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupversion.html
 func VersionNumber() int {
 	return int(C.IupVersionNumber())
 }

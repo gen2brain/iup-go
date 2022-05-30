@@ -15,7 +15,7 @@ import "C"
 
 // SetAttribute sets an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetAttribute(ih Ihandle, name string, value interface{}) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -47,7 +47,7 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 
 // SetAttributes sets several attributes of an interface element.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetattributes.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributes.html
 func SetAttributes(ih Ihandle, str string) Ihandle {
 	cStr := C.CString(str)
 	defer C.free(unsafe.Pointer(cStr))
@@ -58,7 +58,7 @@ func SetAttributes(ih Ihandle, str string) Ihandle {
 // ResetAttribute removes an attribute from the hash table of the element, and its children if the attribute is inheritable.
 // It is useful to reset the state of inheritable attributes in a tree of elements.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupresetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupresetattribute.html
 func ResetAttribute(ih Ihandle, name string) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -68,7 +68,7 @@ func ResetAttribute(ih Ihandle, name string) {
 
 // SetAtt sets several attributes of an interface element and optionally sets its name.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupresetatt.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupresetatt.html
 func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
 	attrs := bytes.NewBufferString("")
 	for i := 0; i < len(args); i += 2 {
@@ -98,7 +98,7 @@ func SetAttrs(ih Ihandle, args ...string) Ihandle {
 //
 // It is very useful for associating images and menus.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetattributehandle.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributehandle.html
 func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -108,7 +108,7 @@ func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
 
 // GetAttribute returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetAttribute(ih Ihandle, name string) string {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -118,7 +118,7 @@ func GetAttribute(ih Ihandle, name string) string {
 
 // GetAllAttributes returns the names of all attributes of an element that are set in its internal hash table only.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetallattributes.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetallattributes.html
 func GetAllAttributes(ih Ihandle) (ret []string) {
 	n := int(C.IupGetAllAttributes(ih.ptr(), nil, 0))
 	if n > 0 {
@@ -142,14 +142,14 @@ func GetAllAttributes(ih Ihandle) (ret []string) {
 //
 // This function should be avoided. Use iup.GetAllAttributes instead.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattributes.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributes.html
 func GetAttributes(ih Ihandle) string {
 	return C.GoString(C.IupGetAttributes(ih.ptr()))
 }
 
 // GetAttributeHandle instead of using GetAttribute and GetHandle, this function directly returns the associated handle.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattributehandle.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributehandle.html
 func GetAttributeHandle(ih Ihandle, name string) Ihandle {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -159,7 +159,7 @@ func GetAttributeHandle(ih Ihandle, name string) Ihandle {
 
 // SetAttributeId sets an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -191,7 +191,7 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 
 // GetAttributeId returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetAttributeId(ih Ihandle, name string, id int) string {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -201,7 +201,7 @@ func GetAttributeId(ih Ihandle, name string, id int) string {
 
 // SetAttributeId2 sets an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -233,7 +233,7 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 
 // SetRGBId2 sets an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -243,7 +243,7 @@ func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
 
 // GetAttributeId2 returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -254,7 +254,7 @@ func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
 // SetGlobal sets an attribute in the global environment.
 // If the driver process the attribute then it will not be stored internally.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetglobal.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetglobal.html
 func SetGlobal(name string, value interface{}) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -277,7 +277,7 @@ func SetGlobal(name string, value interface{}) {
 // GetGlobal returns an attribute value from the global environment.
 // The value can be returned from the driver or from the internal storage.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
 func GetGlobal(name string) string {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -287,7 +287,7 @@ func GetGlobal(name string) string {
 
 // GetGlobalPtr returns an attribute value from the global environment.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
 func GetGlobalPtr(name string) uintptr {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -297,7 +297,7 @@ func GetGlobalPtr(name string) uintptr {
 
 // GetGlobalIh returns an attribute value from the global environment.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
 func GetGlobalIh(name string) Ihandle {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -313,7 +313,7 @@ func GetGlobalIh(name string) Ihandle {
 // Also natural alphabetic order is used: 123...aAáÁ...bBcC...
 // The comparison will work only for Latin-1 characters, even if UTF8MODE is Yes.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupstringcompare.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupstringcompare.html
 func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 	cStr1, cStr2 := C.CString(str1), C.CString(str2)
 	defer C.free(unsafe.Pointer(cStr1))
@@ -324,7 +324,7 @@ func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 
 // SetRGB sets an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetRGB(ih Ihandle, name string, r, g, b uint8) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -334,7 +334,7 @@ func SetRGB(ih Ihandle, name string, r, g, b uint8) {
 
 // SetRGBA sets an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -344,7 +344,7 @@ func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
 
 // SetRGBId sets an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -354,7 +354,7 @@ func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
 
 // GetInt returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetInt(ih Ihandle, name string) int {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -364,7 +364,7 @@ func GetInt(ih Ihandle, name string) int {
 
 // GetInt2 returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -375,7 +375,7 @@ func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
 
 // GetFloat returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetFloat(ih Ihandle, name string) float32 {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -385,7 +385,7 @@ func GetFloat(ih Ihandle, name string) float32 {
 
 // GetDouble returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetDouble(ih Ihandle, name string) float64 {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -395,7 +395,7 @@ func GetDouble(ih Ihandle, name string) float64 {
 
 // GetRGB returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -406,7 +406,7 @@ func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
 
 // GetRGBA returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -417,7 +417,7 @@ func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
 
 // GetIntId returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetIntId(ih Ihandle, name string, id int) int {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -427,7 +427,7 @@ func GetIntId(ih Ihandle, name string, id int) int {
 
 // GetFloatId returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetFloatId(ih Ihandle, name string, id int) float32 {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -437,7 +437,7 @@ func GetFloatId(ih Ihandle, name string, id int) float32 {
 
 // GetDoubleId returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetDoubleId(ih Ihandle, name string, id int) float64 {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -447,7 +447,7 @@ func GetDoubleId(ih Ihandle, name string, id int) float64 {
 
 // GetRGBId returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -458,7 +458,7 @@ func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
 
 // GetIntId2 returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetIntId2(ih Ihandle, name string, lin, col int) int {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -468,7 +468,7 @@ func GetIntId2(ih Ihandle, name string, lin, col int) int {
 
 // GetFloatId2 returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -478,7 +478,7 @@ func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
 
 // GetDoubleId2 returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -488,7 +488,7 @@ func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
 
 // GetRGBId2 returns the name of an interface element attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
