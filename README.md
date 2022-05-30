@@ -35,7 +35,7 @@ so it should just work in [Wayland](https://en.wikipedia.org/wiki/Wayland_(displ
 
 Note that you can also build and link against the GTK2 version, see build tags below.
 
-![linux](examples/sample/sample_windows.png)
+![linux](examples/sample/sample_linux.png)
 
 ##### macOS
 
@@ -45,7 +45,7 @@ Note that support for `Cocoa` is a **work in progress**. Not everything is imple
 Also note that you must use and distribute binary in the `.app` directory, together with `.nib` compiled resources, see [example.app](https://github.com/gen2brain/iup-go/tree/master/dist/darwin/example.app).
 
 You can also build for GTK+ in macOS, with `gtk` build tag. It will use [Quartz](https://en.wikipedia.org/wiki/Quartz_(graphics_layer)) native rendering. 
-See ![screenshot](examples/sample/sample_darwin_gtk.png), `.app` is not required with GTK+.
+See [screenshot](examples/sample/sample_darwin_gtk.png), `.app` is not required with GTK+.
 
 Install GTK+ development packages with brew.
 
