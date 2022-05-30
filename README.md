@@ -21,7 +21,7 @@ If not using the manifest, it will always look like Windows XP Classic. See belo
 * To remove console window, i.e., compile GUI app, build with `-ldflags "-H=windowsgui`.
 * You can add icon resource to `.exe` file with the [rsrc](https://github.com/akavel/rsrc) tool.
 
-![windows](https://github.com/gen2brain/iup-go/tree/master/examples/sample/sample_windows.png)
+![windows](examples/sample/sample_windows.png)
 
 ##### Linux
 
@@ -35,7 +35,7 @@ so it should just work in [Wayland](https://en.wikipedia.org/wiki/Wayland_(displ
 
 Note that you can also build and link against the GTK2 version, see build tags below.
 
-![linux](https://github.com/gen2brain/iup-go/tree/master/examples/sample/sample_linux.png)
+![linux](examples/sample/sample_windows.png)
 
 ##### macOS
 
@@ -45,13 +45,13 @@ Note that support for `Cocoa` is a **work in progress**. Not everything is imple
 Also note that you must use and distribute binary in the `.app` directory, together with `.nib` compiled resources, see [example.app](https://github.com/gen2brain/iup-go/tree/master/dist/darwin/example.app).
 
 You can also build for GTK+ in macOS, with `gtk` build tag. It will use [Quartz](https://en.wikipedia.org/wiki/Quartz_(graphics_layer)) native rendering. 
-See ![screenshot](https://github.com/gen2brain/iup-go/tree/master/examples/sample/sample_darwin_gtk.png), `.app` is not required with GTK+.
+See ![screenshot](examples/sample/sample_darwin_gtk.png), `.app` is not required with GTK+.
 
 Install GTK+ development packages with brew.
 
 * `brew install gtk+3`
 
-![darwin](https://github.com/gen2brain/iup-go/tree/master/examples/sample/sample_darwin.png)
+![darwin](examples/sample/sample_darwin.png)
 
 ##### Other
 
@@ -60,7 +60,7 @@ Although not tested, the library should work on other Unix-like systems, FreeBSD
 You can also compile for time-tested [Motif](https://en.wikipedia.org/wiki/Motif_(software)) library if GTK+ is not available,
 though not all controls and attributes are possible, check the documentation for details.
 
-![motif](https://github.com/gen2brain/iup-go/tree/master/examples/sample/sample_motif.png)
+![motif](examples/sample/sample_motif.png)
 
 ### Build tags
 
