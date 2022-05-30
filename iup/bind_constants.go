@@ -1,7 +1,7 @@
 package iup
 
 /*
-#include <iup.h>
+#include "iup.h"
 */
 import "C"
 
