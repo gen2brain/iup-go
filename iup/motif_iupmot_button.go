@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/mot/iupmot_button.c"
+#include "external/src/mot/iupmot_button.c"
 */
 import "C"

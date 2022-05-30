@@ -1,6 +1,6 @@
 package iup
 
 /*
-#include "../external/src/iup_ledparse.c"
+#include "external/src/iup_ledparse.c"
 */
 import "C"

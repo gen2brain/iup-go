@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/cocoa/iupcocoa_dragdrop.m"
+#include "external/src/cocoa/iupcocoa_dragdrop.m"
 */
 import "C"

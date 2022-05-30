@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/cocoa/iupcocoa_canvas.m"
+#include "external/src/cocoa/iupcocoa_canvas.m"
 */
 import "C"

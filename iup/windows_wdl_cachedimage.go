@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/wdl/cachedimage.c"
+#include "external/src/win/wdl/cachedimage.c"
 */
 import "C"

@@ -1,6 +1,6 @@
 package iup
 
 /*
-#include "../external/src/iup_callback.c"
+#include "external/src/iup_callback.c"
 */
 import "C"

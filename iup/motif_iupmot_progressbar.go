@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/mot/iupmot_progressbar.c"
+#include "external/src/mot/iupmot_progressbar.c"
 */
 import "C"

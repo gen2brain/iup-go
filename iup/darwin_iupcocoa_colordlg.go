@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/cocoa/iupcocoa_colordlg.m"
+#include "external/src/cocoa/iupcocoa_colordlg.m"
 */
 import "C"

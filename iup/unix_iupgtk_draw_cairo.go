@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/gtk/iupgtk_draw_cairo.c"
+#include "external/src/gtk/iupgtk_draw_cairo.c"
 */
 import "C"

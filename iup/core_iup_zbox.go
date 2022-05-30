@@ -1,6 +1,6 @@
 package iup
 
 /*
-#include "../external/src/iup_zbox.c"
+#include "external/src/iup_zbox.c"
 */
 import "C"

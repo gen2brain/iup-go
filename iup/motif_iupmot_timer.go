@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/mot/iupmot_timer.c"
+#include "external/src/mot/iupmot_timer.c"
 */
 import "C"

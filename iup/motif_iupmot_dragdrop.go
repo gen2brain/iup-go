@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/mot/iupmot_dragdrop.c"
+#include "external/src/mot/iupmot_dragdrop.c"
 */
 import "C"

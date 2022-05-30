@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/wdl/fill.c"
+#include "external/src/win/wdl/fill.c"
 */
 import "C"

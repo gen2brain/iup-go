@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/cocoa/iupcocoa_toggle.m"
+#include "external/src/cocoa/iupcocoa_toggle.m"
 */
 import "C"

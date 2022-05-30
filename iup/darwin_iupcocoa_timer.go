@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/cocoa/iupcocoa_timer.m"
+#include "external/src/cocoa/iupcocoa_timer.m"
 */
 import "C"

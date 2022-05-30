@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/wdl/backend-wic.c"
+#include "external/src/win/wdl/backend-wic.c"
 */
 import "C"

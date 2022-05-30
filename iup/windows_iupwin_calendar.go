@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/iupwin_calendar.c"
+#include "external/src/win/iupwin_calendar.c"
 */
 import "C"
