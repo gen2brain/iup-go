@@ -1,6 +1,6 @@
 package iup
 
 /*
-#include "../external/src/iup_radio.c"
+#include "external/src/iup_radio.c"
 */
 import "C"

@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/cocoa/iupcocoa_font.m"
+#include "external/src/cocoa/iupcocoa_font.m"
 */
 import "C"

@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/cocoa/iupmac_key.m"
+#include "external/src/cocoa/iupmac_key.m"
 */
 import "C"

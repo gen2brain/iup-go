@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/wdl/bitblt.c"
+#include "external/src/win/wdl/bitblt.c"
 */
 import "C"

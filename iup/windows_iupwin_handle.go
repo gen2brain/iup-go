@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/iupwin_handle.c"
+#include "external/src/win/iupwin_handle.c"
 */
 import "C"

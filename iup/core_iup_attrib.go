@@ -1,6 +1,6 @@
 package iup
 
 /*
-#include "../external/src/iup_attrib.c"
+#include "external/src/iup_attrib.c"
 */
 import "C"

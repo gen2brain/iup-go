@@ -1,6 +1,6 @@
 package iup
 
 /*
-#include "../external/src/iup_flatframe.c"
+#include "external/src/iup_flatframe.c"
 */
 import "C"

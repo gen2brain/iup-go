@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/srcgl/iup_glcanvas_x.c"
+#include "external/srcgl/iup_glcanvas_x.c"
 */
 import "C"

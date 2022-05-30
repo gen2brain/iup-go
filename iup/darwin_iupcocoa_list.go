@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/cocoa/iupcocoa_list.m"
+#include "external/src/cocoa/iupcocoa_list.m"
 */
 import "C"

@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/wdl/strokestyle.c"
+#include "external/src/win/wdl/strokestyle.c"
 */
 import "C"

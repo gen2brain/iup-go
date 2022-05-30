@@ -1,6 +1,6 @@
 package iup
 
 /*
-#include "../external/src/iup_colorhsi.c"
+#include "external/src/iup_colorhsi.c"
 */
 import "C"

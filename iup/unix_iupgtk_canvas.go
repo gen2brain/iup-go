@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/gtk/iupgtk_canvas.c"
+#include "external/src/gtk/iupgtk_canvas.c"
 */
 import "C"

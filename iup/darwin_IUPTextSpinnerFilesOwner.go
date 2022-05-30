@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/cocoa/IUPTextSpinnerFilesOwner.m"
+#include "external/src/cocoa/IUPTextSpinnerFilesOwner.m"
 */
 import "C"

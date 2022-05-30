@@ -1,6 +1,6 @@
 package iup
 
 /*
-#include "../external/src/iup_font.c"
+#include "external/src/iup_font.c"
 */
 import "C"

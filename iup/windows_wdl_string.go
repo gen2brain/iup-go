@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/wdl/string.c"
+#include "external/src/win/wdl/string.c"
 */
 import "C"

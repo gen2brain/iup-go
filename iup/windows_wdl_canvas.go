@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/wdl/canvas.c"
+#include "external/src/win/wdl/canvas.c"
 */
 import "C"

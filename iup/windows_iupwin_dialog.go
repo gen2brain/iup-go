@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/iupwin_dialog.c"
+#include "external/src/win/iupwin_dialog.c"
 */
 import "C"

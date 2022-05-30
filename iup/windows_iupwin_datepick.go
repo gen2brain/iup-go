@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/iupwin_datepick.c"
+#include "external/src/win/iupwin_datepick.c"
 */
 import "C"

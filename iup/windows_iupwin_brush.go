@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/iupwin_brush.c"
+#include "external/src/win/iupwin_brush.c"
 */
 import "C"

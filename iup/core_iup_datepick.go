@@ -1,6 +1,6 @@
 package iup
 
 /*
-#include "../external/src/iup_datepick.c"
+#include "external/src/iup_datepick.c"
 */
 import "C"

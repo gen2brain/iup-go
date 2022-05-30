@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/gtk/iupgtk_image.c"
+#include "external/src/gtk/iupgtk_image.c"
 */
 import "C"

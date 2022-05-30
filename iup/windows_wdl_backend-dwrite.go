@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "../external/src/win/wdl/backend-dwrite.c"
+#include "external/src/win/wdl/backend-dwrite.c"
 */
 import "C"

@@ -1,6 +1,6 @@
 package iup
 
 /*
-#include "../external/src/iup_dialog.c"
+#include "external/src/iup_dialog.c"
 */
 import "C"
