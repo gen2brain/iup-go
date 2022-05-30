@@ -18,7 +18,7 @@ import "C"
 // Dialog creates a dialog element. It manages user interaction with the interface elements.
 // For any interface element to be shown, it must be encapsulated in a dialog.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupdialog.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupdialog.html
 func Dialog(child Ihandle) Ihandle {
 	h := mkih(C.IupDialog(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -38,21 +38,21 @@ func Dialog(child Ihandle) Ihandle {
 // For a menu it returns automatically after a menu item is selected.
 // IMPORTANT: If a menu item callback returns CLOSE, it will also ends the current popup level dialog.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iuppopup.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iuppopup.html
 func Popup(ih Ihandle, x, y int) int {
 	return int(C.IupPopup(ih.ptr(), C.int(x), C.int(y)))
 }
 
 // Show displays a dialog in the current position, or changes a control VISIBLE attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupshow.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupshow.html
 func Show(ih Ihandle) int {
 	return int(C.IupShow(ih.ptr()))
 }
 
 // ShowXY displays a dialog in a given position on the screen.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupshowxy.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupshowxy.html
 func ShowXY(ih Ihandle, x, y int) int {
 	return int(C.IupShowXY(ih.ptr(), C.int(x), C.int(y)))
 }
@@ -60,7 +60,7 @@ func ShowXY(ih Ihandle, x, y int) int {
 // Hide hides an interface element.
 // This function has the same effect as attributing value "NO" to the interface element’s VISIBLE attribute.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iuphide.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iuphide.html
 func Hide(ih Ihandle) int {
 	return int(C.IupHide(ih.ptr()))
 }
@@ -68,7 +68,7 @@ func Hide(ih Ihandle) int {
 // FileDlg creates the File Dialog element. It is a predefined dialog for selecting files or a directory.
 // The dialog can be shown with the Popup function only.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupfiledlg.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupfiledlg.html
 func FileDlg() Ihandle {
 	h := mkih(C.IupFileDlg())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -78,7 +78,7 @@ func FileDlg() Ihandle {
 // MessageDlg creates the Message Dialog element. It is a predefined dialog for displaying a message.
 // The dialog can be shown with the Popup function only.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupmessagedlg.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupmessagedlg.html
 func MessageDlg() Ihandle {
 	h := mkih(C.IupMessageDlg())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -89,7 +89,7 @@ func MessageDlg() Ihandle {
 // The Windows and GTK dialogs can be shown only with the Popup function.
 // The ColorBrowser based dialog is a Dialog that can be shown as any regular Dialog.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupcolordlg.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupcolordlg.html
 func ColorDlg() Ihandle {
 	h := mkih(C.IupColorDlg())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -99,7 +99,7 @@ func ColorDlg() Ihandle {
 // FontDlg creates the Font Dialog element. It is a predefined dialog for selecting a font.
 // The dialog can be shown with the Popup function only.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupfontdlg.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupfontdlg.html
 func FontDlg() Ihandle {
 	h := mkih(C.IupFontDlg())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -109,7 +109,7 @@ func FontDlg() Ihandle {
 // ProgressDlg creates a progress dialog element. It is a predefined dialog for displaying the progress of an operation.
 // The dialog is meant to be shown with the show functions Show or ShowXY.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupprogressdlg.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupprogressdlg.html
 func ProgressDlg() Ihandle {
 	h := mkih(C.IupProgressDlg())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -118,7 +118,7 @@ func ProgressDlg() Ihandle {
 
 // Alarm shows a modal dialog containing a message and up to three buttons.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupalarm.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupalarm.html
 func Alarm(title, msg, b1, b2, b3 string) int {
 	cTitle, cMsg, cB1, cB2, cB3 := C.CString(title), C.CString(msg), C.CString(b1), cStrOrNull(b2), cStrOrNull(b3)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -132,7 +132,7 @@ func Alarm(title, msg, b1, b2, b3 string) int {
 
 // GetFile shows a modal dialog of the native interface system to select a filename. Uses the FileDlg element.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupgetfile.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgetfile.html
 func GetFile(path string) (sel string, ret int) {
 	if len(path) > 4095 {
 		panic("path is too long (maximum is 4095)")
@@ -149,7 +149,7 @@ func GetFile(path string) (sel string, ret int) {
 
 // GetColor shows a modal dialog which allows the user to select a color. Based on ColorDlg.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupgetcolor.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgetcolor.html
 func GetColor(x, y int) (ret int, col color.RGBA) {
 	var r, g, b uint8
 	ret = int(C.IupGetColor(C.int(x), C.int(y), (*C.uchar)(unsafe.Pointer(&r)), (*C.uchar)(unsafe.Pointer(&g)), (*C.uchar)(unsafe.Pointer(&b))))
@@ -162,7 +162,7 @@ func GetColor(x, y int) (ret int, col color.RGBA) {
 
 // GetText shows a modal dialog to edit a multiline text.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupgettext.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgettext.html
 func GetText(title, text string) string {
 	multiText := MultiLine().SetAttributes(map[string]string{
 		"EXPAND":         "YES",
@@ -213,7 +213,7 @@ func GetText(title, text string) string {
 
 // ListDialog shows a modal dialog to select items from a simple or multiple selection list.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iuplistdialog.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iuplistdialog.html
 func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, marks *[]bool) (ret int) {
 	if len(list) != len(*marks) {
 		panic("bad parameter passed to ListDialog")
@@ -253,7 +253,7 @@ func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, 
 // Message shows a modal dialog containing a message.
 // It simply creates and popup a MessageDlg.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupmessage.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupmessage.html
 func Message(title, msg string) {
 	cTitle, cMsg := C.CString(title), C.CString(msg)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -265,7 +265,7 @@ func Message(title, msg string) {
 // MessageError shows a modal dialog containing an error message.
 // It simply creates and popup a MessageDlg with DIALOGTYPE=ERROR.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupmessageerror.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupmessageerror.html
 func MessageError(parent Ihandle, msg string) {
 	cMsg := C.CString(msg)
 	defer C.free(unsafe.Pointer(cMsg))
@@ -276,7 +276,7 @@ func MessageError(parent Ihandle, msg string) {
 // MessageAlarm shows a modal dialog containing a question message, similar to Alarm.
 // It simply creates and popup a MessageDlg with DIALOGTYPE=QUESTION.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupmessagealarm.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupmessagealarm.html
 func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 	cTitle, cMsg, cButtons := C.CString(title), C.CString(msg), C.CString(buttons)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -292,7 +292,7 @@ func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 //
 // This is a dialog intended for developers, so they can see and inspect their dialogs in other ways.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iuplayoutdialog.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iuplayoutdialog.html
 func LayoutDialog(dialog Ihandle) Ihandle {
 	h := mkih(C.IupLayoutDialog(dialog.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -306,7 +306,7 @@ func LayoutDialog(dialog Ihandle) Ihandle {
 //
 // This is a dialog intended for developers, so they can see and inspect their elements in other ways.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupelementpropdialog.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupelementpropdialog.html
 func ElementPropertiesDialog(parent, elem Ihandle) Ihandle {
 	h := mkih(C.IupElementPropertiesDialog(parent.ptr(), elem.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -320,7 +320,7 @@ func ElementPropertiesDialog(parent, elem Ihandle) Ihandle {
 //
 // This is a dialog intended for developers, so they can see and inspect their globals in other ways.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupglobalsdialog.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupglobalsdialog.html
 func GlobalsDialog() Ihandle {
 	h := mkih(C.IupGlobalsDialog())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -334,7 +334,7 @@ func GlobalsDialog() Ihandle {
 //
 // This is a dialog intended for developers, so they can see attributes and callbacks information of a class.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/dlg/iupclassinfodialog.html
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupclassinfodialog.html
 func ClassInfoDialog(dialog Ihandle) Ihandle {
 	h := mkih(C.IupClassInfoDialog(dialog.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())

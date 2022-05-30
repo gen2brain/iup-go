@@ -15,7 +15,7 @@ import "C"
 
 // Config creates a new configuration database. To destroy it use the Destroy function.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func Config() Ihandle {
 	h := mkih(C.IupConfig())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -24,21 +24,21 @@ func Config() Ihandle {
 
 // ConfigLoad loads the configuration file.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigLoad(ih Ihandle) int {
 	return int(C.IupConfigLoad(ih.ptr()))
 }
 
 // ConfigSave saves the configuration file.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigSave(ih Ihandle) int {
 	return int(C.IupConfigSave(ih.ptr()))
 }
 
 // ConfigSetVariableStr .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigSetVariableStr(ih Ihandle, group, key string, value string) {
 	cGroup, cKey, cValue := C.CString(group), C.CString(key), C.CString(value)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -50,7 +50,7 @@ func ConfigSetVariableStr(ih Ihandle, group, key string, value string) {
 
 // ConfigSetVariableStrId .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigSetVariableStrId(ih Ihandle, group, key string, id int, value string) {
 	cGroup, cKey, cValue := C.CString(group), C.CString(key), C.CString(value)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -62,7 +62,7 @@ func ConfigSetVariableStrId(ih Ihandle, group, key string, id int, value string)
 
 // ConfigSetVariableInt .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigSetVariableInt(ih Ihandle, group, key string, value int) {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -73,7 +73,7 @@ func ConfigSetVariableInt(ih Ihandle, group, key string, value int) {
 
 // ConfigSetVariableIntId .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigSetVariableIntId(ih Ihandle, group, key string, id int, value int) {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -84,7 +84,7 @@ func ConfigSetVariableIntId(ih Ihandle, group, key string, id int, value int) {
 
 // ConfigSetVariableDouble .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigSetVariableDouble(ih Ihandle, group, key string, value float64) {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -95,7 +95,7 @@ func ConfigSetVariableDouble(ih Ihandle, group, key string, value float64) {
 
 // ConfigSetVariableDoubleId .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigSetVariableDoubleId(ih Ihandle, group, key string, id int, value float64) {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -106,7 +106,7 @@ func ConfigSetVariableDoubleId(ih Ihandle, group, key string, id int, value floa
 
 // ConfigGetVariableStr .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableStr(ih Ihandle, group, key string) string {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -117,7 +117,7 @@ func ConfigGetVariableStr(ih Ihandle, group, key string) string {
 
 // ConfigGetVariableStrId .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableStrId(ih Ihandle, group, key string, id int) string {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -128,7 +128,7 @@ func ConfigGetVariableStrId(ih Ihandle, group, key string, id int) string {
 
 // ConfigGetVariableInt .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableInt(ih Ihandle, group, key string) int {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -139,7 +139,7 @@ func ConfigGetVariableInt(ih Ihandle, group, key string) int {
 
 // ConfigGetVariableIntId .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableIntId(ih Ihandle, group, key string, id int) int {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -150,7 +150,7 @@ func ConfigGetVariableIntId(ih Ihandle, group, key string, id int) int {
 
 // ConfigGetVariableDouble .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableDouble(ih Ihandle, group, key string) float64 {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -161,7 +161,7 @@ func ConfigGetVariableDouble(ih Ihandle, group, key string) float64 {
 
 // ConfigGetVariableDoubleId .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableDoubleId(ih Ihandle, group, key string, id int) float64 {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -172,7 +172,7 @@ func ConfigGetVariableDoubleId(ih Ihandle, group, key string, id int) float64 {
 
 // ConfigGetVariableStrDef .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableStrDef(ih Ihandle, group, key string, def string) string {
 	cGroup, cKey, cDef := C.CString(group), C.CString(key), C.CString(def)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -184,7 +184,7 @@ func ConfigGetVariableStrDef(ih Ihandle, group, key string, def string) string {
 
 // ConfigGetVariableStrIdDef .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableStrIdDef(ih Ihandle, group, key string, id int, def string) string {
 	cGroup, cKey, cDef := C.CString(group), C.CString(key), C.CString(def)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -196,7 +196,7 @@ func ConfigGetVariableStrIdDef(ih Ihandle, group, key string, id int, def string
 
 // ConfigGetVariableIntDef .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableIntDef(ih Ihandle, group, key string, def int) int {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -207,7 +207,7 @@ func ConfigGetVariableIntDef(ih Ihandle, group, key string, def int) int {
 
 // ConfigGetVariableIntIdDef .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableIntIdDef(ih Ihandle, group, key string, id int, def int) int {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -218,7 +218,7 @@ func ConfigGetVariableIntIdDef(ih Ihandle, group, key string, id int, def int) i
 
 // ConfigGetVariableDoubleDef .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableDoubleDef(ih Ihandle, group, key string, def float64) float64 {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -229,7 +229,7 @@ func ConfigGetVariableDoubleDef(ih Ihandle, group, key string, def float64) floa
 
 // ConfigGetVariableDoubleIdDef .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigGetVariableDoubleIdDef(ih Ihandle, group, key string, id int, def float64) float64 {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -240,7 +240,7 @@ func ConfigGetVariableDoubleIdDef(ih Ihandle, group, key string, id int, def flo
 
 // ConfigSetListVariable .
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigSetListVariable(ih Ihandle, group, key, value string, add int) {
 	cGroup, cKey, cValue := C.CString(group), C.CString(key), C.CString(value)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -252,7 +252,7 @@ func ConfigSetListVariable(ih Ihandle, group, key, value string, add int) {
 
 // ConfigDialogShow show the dialog adjusting its size and position..
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigDialogShow(ih, dialog Ihandle, name string) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -263,7 +263,7 @@ func ConfigDialogShow(ih, dialog Ihandle, name string) {
 // ConfigDialogClosed save the last dialog position and size when the dialog is about to be closed,
 // usually inside the dialog CLOSE_CB callback..
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
 func ConfigDialogClosed(ih, dialog Ihandle, name string) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))

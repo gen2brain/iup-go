@@ -396,7 +396,7 @@ var (
 // IdleFunc for IDLE_ACTION callback.
 // generated when there are no events or messages to be processed. Often used to perform background operations.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_idle_action.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_idle_action.html
 type IdleFunc func() int
 
 //export goIupIdleCB
@@ -425,7 +425,7 @@ func setIdleFunc(f IdleFunc) {
 // EntryPointFunc for ENTRY_POINT callback.
 // generated when there are no events or messages to be processed. Often used to perform background operations.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_entry_point.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_entry_point.html
 type EntryPointFunc func()
 
 //export goIupEntryPointCB
@@ -454,7 +454,7 @@ func setEntryPointFunc(f EntryPointFunc) {
 // ExitFunc for EXIT_CB callback.
 // Global callback for an exit. Used when main is not possible, such as in iOS and Android systems.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_exit_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_exit_cb.html
 type ExitFunc func()
 
 //export goIupExitCB
@@ -484,7 +484,7 @@ func setExitFunc(f ExitFunc) {
 // Called right after an element is mapped and its attributes updated in Map.
 // When the element is a dialog, it is called after the layout is updated. For all other elements is called before the layout is updated.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_map_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_map_cb.html
 type MapFunc func(Ihandle) int
 
 //export goIupMapCB
@@ -515,7 +515,7 @@ func setMapFunc(ih Ihandle, f MapFunc) {
 // UnmapFunc for UNMAP_CB callback.
 // Called right before an element is unmapped.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_unmap_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_unmap_cb.html
 type UnmapFunc func(Ihandle) int
 
 //export goIupUnmapCB
@@ -545,7 +545,7 @@ func setUnmapFunc(ih Ihandle, f UnmapFunc) {
 // DestroyFunc for DESTROY_CB callback.
 // Called right before an element is destroyed.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_destroy_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_destroy_cb.html
 type DestroyFunc func(Ihandle) int
 
 //export goIupDestroyCB
@@ -575,7 +575,7 @@ func setDestroyFunc(ih Ihandle, f DestroyFunc) {
 // GetFocusFunc for GETFOCUS_CB callback.
 // Action generated when an element is given keyboard focus.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_getfocus_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_getfocus_cb.html
 type GetFocusFunc func(Ihandle) int
 
 //export goIupGetFocusCB
@@ -605,7 +605,7 @@ func setGetFocusFunc(ih Ihandle, f GetFocusFunc) {
 // KillFocusFunc for KILLFOCUS_CB callback.
 // Action generated when an element loses keyboard focus.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_killfocus_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_killfocus_cb.html
 type KillFocusFunc func(Ihandle) int
 
 //export goIupKillFocusCB
@@ -635,7 +635,7 @@ func setKillFocusFunc(ih Ihandle, f KillFocusFunc) {
 // EnterWindowFunc for ENTERWINDOW_CB callback.
 // Action generated when the mouse enters the native element.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_enterwindow_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_enterwindow_cb.html
 type EnterWindowFunc func(Ihandle) int
 
 //export goIupEnterWindowCB
@@ -665,7 +665,7 @@ func setEnterWindowFunc(ih Ihandle, f EnterWindowFunc) {
 // LeaveWindowFunc for LEAVEWINDOW_CB callback.
 // Action generated when the mouse leaves the native element.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_leavewindow_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_leavewindow_cb.html
 type LeaveWindowFunc func(Ihandle) int
 
 //export goIupLeaveWindowCB
@@ -695,7 +695,7 @@ func setLeaveWindowFunc(ih Ihandle, f LeaveWindowFunc) {
 // KAnyFunc for K_ANY callback.
 // Action generated when a keyboard event occurs.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_k_any.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_k_any.html
 type KAnyFunc func(Ihandle, int) int
 
 //export goIupKAnyCB
@@ -725,7 +725,7 @@ func setKAnyFunc(ih Ihandle, f KAnyFunc) {
 // HelpFunc for HELP_CB callback.
 // Action generated when the user press F1 at a control.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_help_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_help_cb.html
 type HelpFunc func(Ihandle) int
 
 //export goIupHelpCB
@@ -755,7 +755,7 @@ func setHelpFunc(ih Ihandle, f HelpFunc) {
 // ActionFunc for ACTION callback.
 // Action generated when the element is activated. Affects each element differently.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_action.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_action.html
 type ActionFunc func(Ihandle) int
 
 //export goIupActionCB
@@ -785,7 +785,7 @@ func setActionFunc(ih Ihandle, f ActionFunc) {
 // ButtonFunc for BUTTON_CB callback.
 // Action generated when a mouse button is pressed or released.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 type ButtonFunc func(Ihandle, int, int, int, int, string) int
 
 //export goIupButtonCB
@@ -816,7 +816,7 @@ func setButtonFunc(ih Ihandle, f ButtonFunc) {
 // DropFilesFunc for DROPFILES_CB callback.
 // Action called when a file is "dropped" into the control.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_dropfiles_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_dropfiles_cb.html
 type DropFilesFunc func(Ihandle, string, int, int, int) int
 
 //export goIupDropFilesCB

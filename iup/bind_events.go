@@ -15,7 +15,7 @@ import "C"
 // If MainLoop is called without any visible dialogs and no active timers, the application will hang and will not be possible to close the main loop.
 // The process will have to be interrupted by the system.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupmainloop.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupmainloop.html
 func MainLoop() (ret int) {
 	return int(C.IupMainLoop())
 }
@@ -24,7 +24,7 @@ func MainLoop() (ret int) {
 //
 // You can use this function to check if MainLoop was already called and avoid calling it again.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupmainlooplevel.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupmainlooplevel.html
 func MainLoopLevel() (ret int) {
 	return int(C.IupMainLoopLevel())
 }
@@ -35,7 +35,7 @@ func MainLoopLevel() (ret int) {
 // This function is useful for allowing a second message loop to be managed by the application itself.
 // This means that messages can be intercepted and callbacks can be processed inside an application loop.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iuploopstep.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iuploopstep.html
 func LoopStep() (ret int) {
 	return int(C.IupLoopStep())
 }
@@ -44,14 +44,14 @@ func LoopStep() (ret int) {
 //
 // It puts the system in idle until a message is processed.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iuploopstep.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iuploopstep.html
 func LoopStepWait() (ret int) {
 	return int(C.IupLoopStepWait())
 }
 
 // ExitLoop terminates the current message loop. It has the same effect of a callback returning CLOSE.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupexitloop.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupexitloop.html
 func ExitLoop() {
 	C.IupExitLoop()
 }
@@ -59,7 +59,7 @@ func ExitLoop() {
 // PostMessage sends data to an element, that will be received by a callback when the main loop regain control.
 // It is expected to be thread safe.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iuppostmessage.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iuppostmessage.html
 func PostMessage(ih Ihandle, s string, i int, d float64, p unsafe.Pointer) {
 	cS := C.CString(s)
 	defer C.free(unsafe.Pointer(cS))
@@ -72,14 +72,14 @@ func PostMessage(ih Ihandle, s string, i int, d float64, p unsafe.Pointer) {
 // When you change an attribute of a certain element, the change may not take place immediately.
 // For this update to occur faster than usual, call Flush after the attribute is changed.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupflush.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupflush.html
 func Flush() {
 	C.IupFlush()
 }
 
 // GetCallback returns the callback associated to an event.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetcallback.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetcallback.html
 func GetCallback(ih Ihandle, name string) uintptr {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -89,7 +89,7 @@ func GetCallback(ih Ihandle, name string) uintptr {
 
 // SetCallback associates a callback to an event.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetcallback.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetcallback.html
 func SetCallback(ih Ihandle, name string, fn interface{}) {
 	if fn == nil {
 		cName := C.CString(name)
@@ -256,7 +256,7 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 // GetFunction returns the function associated to an action only when they were set by SetFunction.
 // It will not work if SetCallback were used.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupgetfunction.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetfunction.html
 func GetFunction(name string) uintptr {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -272,7 +272,7 @@ func GetFunction(name string) uintptr {
 // Notice that the application or libraries may set the same name for two different functions by mistake.
 // SetCallback does not depends on global names.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupsetfunction.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetfunction.html
 func SetFunction(name string, fn interface{}) {
 	if fn == nil {
 		cName := C.CString(name)
@@ -302,7 +302,7 @@ func SetFunction(name string, fn interface{}) {
 // Any existing file will be replaced. Must stop recording before exiting the application.
 // If fileName is nil it will stop recording.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iuprecordinput.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iuprecordinput.html
 func RecordInput(fileName string, mode int) int {
 	cFileName := C.CString(fileName)
 	defer C.free(unsafe.Pointer(cFileName))
@@ -314,7 +314,7 @@ func RecordInput(fileName string, mode int) int {
 //
 // The file must had been saved using the RecordInput function. Record mode will be automatically detected.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/func/iupplayinput.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupplayinput.html
 func PlayInput(fileName string) int {
 	cFileName := C.CString(fileName)
 	defer C.free(unsafe.Pointer(cFileName))

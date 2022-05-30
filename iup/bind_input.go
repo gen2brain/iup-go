@@ -174,147 +174,147 @@ const (
 
 // IsPrint informs if a key can be directly used as a printable character.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func IsPrint(c int) bool {
 	return c > 31 && c < 127
 }
 
 // IsXKey informs if a given key is an extended code.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func IsXKey(c int) bool {
 	return (c >= 128)
 }
 
 // IsShiftXKey informs if a given key is an extended code using the Shift modifier.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func IsShiftXKey(c int) bool {
 	return (uint(c) & 0x10000000) != 0
 }
 
 // IsCtrlXKey informs if a given key is an extended code using the Ctrl modifier.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func IsCtrlXKey(c int) bool {
 	return (uint(c) & 0x20000000) != 0
 }
 
 // IsAltXKey informs if a given key is an extended code using the Alt modifier.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func IsAltXKey(c int) bool {
 	return (uint(c) & 0x40000000) != 0
 }
 
 // IsSysXKey informs if a given key is an extended code using the Sys modifier.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func IsSysXKey(c int) bool {
 	return (uint(c) & 0x80000000) != 0
 }
 
 // XKeyBase obtains a key code for a generic combination.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func XKeyBase(c int) int {
 	return int(uint(c) & 0x0FFFFFFF)
 }
 
 // XKeyShift obtains a key code for a generic combination.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func XKeyShift(c int) int {
 	return int(uint(c) | 0x10000000)
 }
 
 // XKeyCtrl obtains a key code for a generic combination.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func XKeyCtrl(c int) int {
 	return int(uint(c) | 0x20000000)
 }
 
 // XKeyAlt obtains a key code for a generic combination.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func XKeyAlt(c int) int {
 	return int(uint(c) | 0x40000000)
 }
 
 // XKeySys obtains a key code for a generic combination.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
 func XKeySys(c int) int {
 	return int(uint(c) | 0x80000000)
 }
 
 // IsShift mouse button macro.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 func IsShift(s unsafe.Pointer) bool {
 	return cStrToString(s)[0] == 'S'
 }
 
 // IsControl mouse button macro.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 func IsControl(s unsafe.Pointer) bool {
 	return cStrToString(s)[1] == 'C'
 }
 
 // IsButton1 mouse button macro.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 func IsButton1(s unsafe.Pointer) bool {
 	return cStrToString(s)[2] == '1'
 }
 
 // IsButton2 mouse button macro.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 func IsButton2(s unsafe.Pointer) bool {
 	return cStrToString(s)[3] == '2'
 }
 
 // IsButton3 mouse button macro.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 func IsButton3(s unsafe.Pointer) bool {
 	return cStrToString(s)[4] == '3'
 }
 
 // IsDouble mouse button macro.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 func IsDouble(s unsafe.Pointer) bool {
 	return cStrToString(s)[5] == 'D'
 }
 
 // IsAlt mouse button macro.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 func IsAlt(s unsafe.Pointer) bool {
 	return cStrToString(s)[6] == 'A'
 }
 
 // IsSys mouse button macro.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 func IsSys(s unsafe.Pointer) bool {
 	return cStrToString(s)[7] == 'Y'
 }
 
 // IsButton4 mouse button macro.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 func IsButton4(s unsafe.Pointer) bool {
 	return cStrToString(s)[8] == '4'
 }
 
 // IsButton5 mouse button macro.
 //
-// http://webserver2.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
 func IsButton5(s unsafe.Pointer) bool {
 	return cStrToString(s)[9] == '5'
 }
