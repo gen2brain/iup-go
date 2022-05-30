@@ -8,7 +8,7 @@ import (
 /*
 #include <stdint.h>
 #include <stdlib.h>
-#include <iup.h>
+#include "iup.h"
 
 static Ihandle* pih(uintptr_t p) {
 	return (Ihandle*)(p);

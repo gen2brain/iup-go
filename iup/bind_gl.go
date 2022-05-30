@@ -4,8 +4,8 @@ package iup
 
 /*
 #include <stdlib.h>
-#include <iup.h>
-#include <iupgl.h>
+#include "iup.h"
+#include "iupgl.h"
 */
 import "C"
 

@@ -10,7 +10,7 @@ import (
 
 /*
 #include <stdlib.h>
-#include <iup.h>
+#include "iup.h"
 
 static void Log(const char* type, const char* str) {
 	IupLog(type, "%s", str);

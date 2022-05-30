@@ -8,7 +8,7 @@ import (
 
 /*
 #include <stdlib.h>
-#include <iup.h>
+#include "iup.h"
 
 extern int goIupIdleCB();
 static void goIupSetIdleFunc() {

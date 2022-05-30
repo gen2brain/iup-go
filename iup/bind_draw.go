@@ -6,8 +6,8 @@ import (
 
 /*
 #include <stdlib.h>
-#include <iup.h>
-#include <iupdraw.h>
+#include "iup.h"
+#include "iupdraw.h"
 */
 import "C"
 

@@ -11,7 +11,7 @@ import (
 /*
 #include <stdlib.h>
 #include <string.h>
-#include <iup.h>
+#include "iup.h"
 */
 import "C"
 

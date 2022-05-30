@@ -8,8 +8,8 @@ import (
 
 /*
 #include <stdlib.h>
-#include <iup.h>
-#include <iup_config.h>
+#include "iup.h"
+#include "iup_config.h"
 */
 import "C"
 
