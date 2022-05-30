@@ -1,3 +1,3 @@
-module github.com/gen2brain/iup-go/iup/dist/windows/manifest
+module github.com/gen2brain/iup-go/dist/windows/manifest
 
-go 1.18
+go 1.17
