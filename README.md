@@ -10,7 +10,7 @@ Note that the first build can take a few minutes.
 
 ### Requirements
 
-##### Windows
+#### Windows
 
 On Windows, you need a C compiler, like [Mingw-w64](https://mingw-w64.org) or [TDM-GCC](http://tdm-gcc.tdragon.net/).
 You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
@@ -23,7 +23,7 @@ If not using the manifest, it will always look like Windows XP Classic. See belo
 
 ![windows](examples/sample/sample_windows.png)
 
-##### Linux
+#### Linux
 
 On Linux, you need a C compiler and GTK+ development packages.
 
@@ -37,7 +37,7 @@ Note that you can also build and link against the GTK2 version, see build tags b
 
 ![linux](examples/sample/sample_linux.png)
 
-##### macOS
+#### macOS
 
 On macOS, you need Xcode or Command Line Tools for Xcode.
 
@@ -53,7 +53,7 @@ Install GTK+ development packages with brew.
 
 ![darwin](examples/sample/sample_darwin.png)
 
-##### Other
+#### Other
 
 Although not tested, the library should work on other Unix-like systems, FreeBSD, NetBSD, OpenBSD, DragonFly, Solaris, Illumos, and AIX.
 
