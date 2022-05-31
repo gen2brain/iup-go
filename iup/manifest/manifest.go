@@ -4,7 +4,7 @@
 //
 // You import it for its side effects only, as
 //
-// 	import _ "github.com/gen2brain/iup-go/dist/windows/manifest"
+// 	import _ "github.com/gen2brain/iup-go/iup/manifest"
 //
 // On non-Windows platforms this package does nothing.
 //
