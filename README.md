@@ -10,6 +10,8 @@ Note that the first build can take a few minutes.
 
 ### Requirements
 
+Go 1.17 is minimum required version (cgo.Handle, new style build tags).
+
 #### Windows
 
 On Windows, you need a C compiler, like [Mingw-w64](https://mingw-w64.org) or [TDM-GCC](http://tdm-gcc.tdragon.net/).
@@ -18,7 +20,7 @@ You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
 Note that Windows manifest is included in the build by default. IUP controls appearance will follow the system appearance only if the manifest is used.
 If not using the manifest, it will always look like Windows XP Classic. See below how to disable manifest if you want to include your own.
 
-* To remove console window, i.e., compile GUI app, build with `-ldflags "-H=windowsgui`.
+* To remove console window, i.e., compile GUI app, build with `-ldflags "-H=windowsgui"`.
 * You can add icon resource to `.exe` file with the [rsrc](https://github.com/akavel/rsrc) tool.
 
 ![windows](examples/sample/sample_windows.png)
