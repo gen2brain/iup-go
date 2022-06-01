@@ -62,6 +62,9 @@ Although not tested, the library should work on other Unix-like systems, FreeBSD
 You can also compile for time-tested [Motif](https://en.wikipedia.org/wiki/Motif_(software)) library if GTK+ is not available,
 though not all controls and attributes are possible, check the documentation for details.
 
+* Debian/Ubuntu: `apt-get install libmotif-dev`
+* RedHat/Fedora: `dnf install motif-devel`
+
 ![motif](examples/sample/sample_motif.png)
 
 ### Build tags
