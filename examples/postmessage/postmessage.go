@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"unsafe"
+	"runtime/cgo"
 
 	"github.com/gen2brain/iup-go/iup"
 )
@@ -42,8 +42,10 @@ func main() {
 	iup.MainLoop()
 }
 
-func messageCb(ih iup.Ihandle, s string, i int, f float64, p unsafe.Pointer) int {
-	b := unsafe.Slice((*byte)(p), i)
+func messageCb(ih iup.Ihandle, s string, i int, f float64, p *cgo.Handle) int {
+	b := p.Value().([]byte)
+	defer p.Delete()
+
 	img, _, err := image.Decode(bytes.NewReader(b))
 	if err != nil {
 		log.Fatalln(err)
@@ -90,7 +92,8 @@ func buttonCb(ih iup.Ihandle) int {
 			log.Println(err)
 		}
 
-		iup.PostMessage(iup.GetHandle("label"), ret["title"], len(b), 1.0, unsafe.Pointer(&b[0]))
+		h := cgo.NewHandle(b)
+		iup.PostMessage(iup.GetHandle("label"), ret["title"], len(b), 1.0, h)
 	}()
 
 	return iup.DEFAULT

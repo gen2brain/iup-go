@@ -1,6 +1,7 @@
 package iup
 
 import (
+	"runtime/cgo"
 	"unsafe"
 )
 
@@ -60,11 +61,11 @@ func ExitLoop() {
 // It is expected to be thread safe.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iuppostmessage.html
-func PostMessage(ih Ihandle, s string, i int, d float64, p unsafe.Pointer) {
+func PostMessage(ih Ihandle, s string, i int, d float64, p cgo.Handle) {
 	cS := C.CString(s)
 	defer C.free(unsafe.Pointer(cS))
 
-	C.IupPostMessage(ih.ptr(), cS, C.int(i), C.double(d), p)
+	C.IupPostMessage(ih.ptr(), cS, C.int(i), C.double(d), unsafe.Pointer(&p))
 }
 
 // Flush processes all pending messages in the message queue.

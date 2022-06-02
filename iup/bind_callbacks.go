@@ -1184,7 +1184,7 @@ func setSpinFunc(ih Ihandle, f SpinFunc) {
 //--------------------
 
 // PostMessageFunc for POSTMESSAGE_CB callback.
-type PostMessageFunc func(Ihandle, string, int, float64, unsafe.Pointer) int
+type PostMessageFunc func(Ihandle, string, int, float64, *cgo.Handle) int
 
 //export goIupPostMessageCB
 func goIupPostMessageCB(ih unsafe.Pointer, s unsafe.Pointer, i C.int, d C.double, p unsafe.Pointer) C.int {
@@ -1198,7 +1198,9 @@ func goIupPostMessageCB(ih unsafe.Pointer, s unsafe.Pointer, i C.int, d C.double
 	f := ch.Value().(PostMessageFunc)
 
 	goS := C.GoString((*C.char)(s))
-	return C.int(f((Ihandle)(ih), goS, int(i), float64(d), p))
+	goP := (*cgo.Handle)(p)
+
+	return C.int(f((Ihandle)(ih), goS, int(i), float64(d), goP))
 }
 
 // setPostMessageFunc for POSTMESSAGE_CB.
