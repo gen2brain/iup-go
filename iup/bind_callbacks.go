@@ -2422,7 +2422,7 @@ func setToggleValueFunc(ih Ihandle, f ToggleValueFunc) {
 
 // NodeRemovedFunc for NODEREMOVED_CB callback.
 //
-type NodeRemovedFunc func(ih Ihandle, userData unsafe.Pointer) int
+type NodeRemovedFunc func(ih Ihandle) int
 
 //export goIupNodeRemovedCB
 func goIupNodeRemovedCB(ih, userData unsafe.Pointer) C.int {
@@ -2435,7 +2435,7 @@ func goIupNodeRemovedCB(ih, userData unsafe.Pointer) C.int {
 	ch := h.(cgo.Handle)
 	f := ch.Value().(NodeRemovedFunc)
 
-	return C.int(f((Ihandle)(ih), userData))
+	return C.int(f((Ihandle)(ih)))
 }
 
 // setNodeRemovedFunc for NODEREMOVED_CB callback.
