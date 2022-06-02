@@ -64,15 +64,15 @@ func (ih Ihandle) GetAllAttributes() []string {
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributes.html
 func (ih Ihandle) SetAttributes(params ...interface{}) Ihandle {
 	for _, param := range params {
-		switch param.(type) {
+		switch param := param.(type) {
 		case string:
-			SetAttributes(ih, param.(string))
+			SetAttributes(ih, param)
 		case map[string]string:
-			for key, val := range param.(map[string]string) {
+			for key, val := range param {
 				SetAttribute(ih, key, val)
 			}
 		case map[string]interface{}:
-			for key, val := range param.(map[string]interface{}) {
+			for key, val := range param {
 				SetAttribute(ih, key, val)
 			}
 		}
