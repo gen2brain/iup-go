@@ -35,28 +35,28 @@ func GLCanvas() Ihandle {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupglcanvas.html
 func GLMakeCurrent(ih Ihandle) {
-	C.IupGLMakeCurrent(pih(ih))
+	C.IupGLMakeCurrent(ih.ptr())
 }
 
 // GLIsCurrent returns a non zero value if the given canvas is the current OpenGL context.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupglcanvas.html
 func GLIsCurrent(ih Ihandle) bool {
-	return int(C.IupGLIsCurrent(pih(ih))) != 0
+	return int(C.IupGLIsCurrent(ih.ptr())) != 0
 }
 
 // GLSwapBuffers makes the BACK buffer visible. This function is necessary when a double buffer is used.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupglcanvas.html
 func GLSwapBuffers(ih Ihandle) {
-	C.IupGLSwapBuffers(pih(ih))
+	C.IupGLSwapBuffers(ih.ptr())
 }
 
 // GLPalette defines a color in the color palette. This function is necessary when INDEX color is used.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupglcanvas.html
 func GLPalette(ih Ihandle, index int, r, g, b float32) {
-	C.IupGLPalette(pih(ih), C.int(index), C.float(r), C.float(g), C.float(b))
+	C.IupGLPalette(ih.ptr(), C.int(index), C.float(r), C.float(g), C.float(b))
 }
 
 // GLUseFont creates a bitmap display list from the current FONT attribute.
@@ -64,7 +64,7 @@ func GLPalette(ih Ihandle, index int, r, g, b float32) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupglcanvas.html
 func GLUseFont(ih Ihandle, first, count, listBase int) {
-	C.IupGLUseFont(pih(ih), C.int(first), C.int(count), C.int(listBase))
+	C.IupGLUseFont(ih.ptr(), C.int(first), C.int(count), C.int(listBase))
 }
 
 // GLWait if gl is non zero it will call glFinish or glXWaitGL, else will call GdiFlush or glXWaitX.
@@ -80,7 +80,7 @@ func GLWait(gl int) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupglbackgroundbox.html
 func GLBackgroundBox(child Ihandle) Ihandle {
-	h := mkih(C.IupGLBackgroundBox(pih(child)))
+	h := mkih(C.IupGLBackgroundBox(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
