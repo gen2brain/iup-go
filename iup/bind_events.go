@@ -202,6 +202,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setExtraButtonFunc(ih, fn.(ExtraButtonFunc))
 	case "OPENCLOSE_CB":
 		setOpenCloseFunc(ih, fn.(OpenCloseFunc))
+	case "VALUECHANGING_CB":
+		setValueChangingFunc(ih, fn.(ValueChangingFunc))
 	case "FLAT_ACTION":
 		setFlatActionFunc(ih, fn.(FlatActionFunc))
 	case "DROPDOWN_CB":
