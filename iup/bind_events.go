@@ -181,8 +181,6 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setDetachedFunc(ih, fn.(DetachedFunc))
 	case "RESTORED_CB":
 		setRestoredFunc(ih, fn.(RestoredFunc))
-	case "PARAM_CB":
-		setParamFunc(ih, fn.(ParamFunc))
 	case "SWAPBUFFERS_CB":
 		setSwapBuffersFunc(ih, fn.(SwapBuffersFunc))
 	case "CANCEL_CB":

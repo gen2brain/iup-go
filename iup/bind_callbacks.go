@@ -195,11 +195,6 @@ static void goIupSetRestoredFunc(Ihandle *ih) {
 	IupSetCallback(ih, "RESTORED_CB", (Icallback) goIupRestoredCB);
 }
 
-extern int goIupParamCB(void *ih, int paramIndex, void *userData);
-static void goIupSetParamFunc(Ihandle *ih) {
-	IupSetCallback(ih, "PARAM_CB", (Icallback) goIupParamCB);
-}
-
 extern int goIupCanvasActionCB(void *, float posx, float posy);
 static void goIupSetCanvasActionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "ACTION", (Icallback) goIupCanvasActionCB);
@@ -1463,33 +1458,6 @@ func setRestoredFunc(ih Ihandle, f RestoredFunc) {
 	callbacks.Store("RESTORED_CB_"+ih.GetAttribute("UUID"), ch)
 
 	C.goIupSetRestoredFunc(ih.ptr())
-}
-
-//--------------------
-
-// ParamFunc for PARAM_CB callback.
-type ParamFunc func(Ihandle, int, unsafe.Pointer) int
-
-//export goIupParamCB
-func goIupParamCB(ih unsafe.Pointer, paramIndex C.int, userData unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("PARAM_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "PARAM_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ParamFunc)
-
-	return C.int(f((Ihandle)(ih), int(paramIndex), userData))
-}
-
-// setParamFunc for PARAM_CB.
-func setParamFunc(ih Ihandle, f ParamFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("PARAM_CB_"+ih.GetAttribute("UUID"), ch)
-
-	C.goIupSetParamFunc(ih.ptr())
 }
 
 //--------------------
