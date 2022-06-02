@@ -1,9 +1,5 @@
 package iup
 
-import (
-	"unsafe"
-)
-
 // From 32 to 126, all character sets are equal,
 // the key code is the same as the ASCII character code.
 const (
@@ -252,69 +248,69 @@ func XKeySys(c int) int {
 // IsShift mouse button macro.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
-func IsShift(s unsafe.Pointer) bool {
-	return cStrToString(s)[0] == 'S'
+func IsShift(s string) bool {
+	return s[0] == 'S'
 }
 
 // IsControl mouse button macro.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
-func IsControl(s unsafe.Pointer) bool {
-	return cStrToString(s)[1] == 'C'
+func IsControl(s string) bool {
+	return s[1] == 'C'
 }
 
 // IsButton1 mouse button macro.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
-func IsButton1(s unsafe.Pointer) bool {
-	return cStrToString(s)[2] == '1'
+func IsButton1(s string) bool {
+	return s[2] == '1'
 }
 
 // IsButton2 mouse button macro.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
-func IsButton2(s unsafe.Pointer) bool {
-	return cStrToString(s)[3] == '2'
+func IsButton2(s string) bool {
+	return s[3] == '2'
 }
 
 // IsButton3 mouse button macro.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
-func IsButton3(s unsafe.Pointer) bool {
-	return cStrToString(s)[4] == '3'
+func IsButton3(s string) bool {
+	return s[4] == '3'
 }
 
 // IsDouble mouse button macro.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
-func IsDouble(s unsafe.Pointer) bool {
-	return cStrToString(s)[5] == 'D'
+func IsDouble(s string) bool {
+	return s[5] == 'D'
 }
 
 // IsAlt mouse button macro.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
-func IsAlt(s unsafe.Pointer) bool {
-	return cStrToString(s)[6] == 'A'
+func IsAlt(s string) bool {
+	return s[6] == 'A'
 }
 
 // IsSys mouse button macro.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
-func IsSys(s unsafe.Pointer) bool {
-	return cStrToString(s)[7] == 'Y'
+func IsSys(s string) bool {
+	return s[7] == 'Y'
 }
 
 // IsButton4 mouse button macro.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
-func IsButton4(s unsafe.Pointer) bool {
-	return cStrToString(s)[8] == '4'
+func IsButton4(s string) bool {
+	return s[8] == '4'
 }
 
 // IsButton5 mouse button macro.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
-func IsButton5(s unsafe.Pointer) bool {
-	return cStrToString(s)[9] == '5'
+func IsButton5(s string) bool {
+	return s[9] == '5'
 }
