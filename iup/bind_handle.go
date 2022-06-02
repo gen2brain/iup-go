@@ -27,10 +27,6 @@ func mkih(p *C.Ihandle) Ihandle {
 	return Ihandle(unsafe.Pointer(p))
 }
 
-func pih(ih Ihandle) *C.Ihandle {
-	return C.pih(C.uintptr_t(ih))
-}
-
 func cih(ih Ihandle) *C.char {
 	return C.cih(C.uintptr_t(ih))
 }
