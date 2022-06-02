@@ -20,24 +20,24 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
-	switch value.(type) {
+	switch val := value.(type) {
 	case nil:
 		C.IupSetAttribute(ih.ptr(), cName, nil)
 	case Ihandle:
-		C.IupSetAttribute(ih.ptr(), cName, cih(value.(Ihandle)))
+		C.IupSetAttribute(ih.ptr(), cName, cih(val))
 	case uintptr:
 		C.IupSetAttribute(ih.ptr(), cName, cih(value.(Ihandle)))
 	case string:
-		cValue := C.CString(value.(string))
+		cValue := C.CString(val)
 		defer C.free(unsafe.Pointer(cValue))
 
 		C.IupSetStrAttribute(ih.ptr(), cName, cValue)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		C.IupSetInt(ih.ptr(), cName, C.int(reflect.ValueOf(value).Int()))
 	case float32:
-		C.IupSetFloat(ih.ptr(), cName, C.float(value.(float32)))
+		C.IupSetFloat(ih.ptr(), cName, C.float(val))
 	case float64:
-		C.IupSetDouble(ih.ptr(), cName, C.double(value.(float64)))
+		C.IupSetDouble(ih.ptr(), cName, C.double(val))
 	case [3]uint8:
 		C.IupSetRGB(ih.ptr(), cName, C.uchar(value.([3]uint8)[0]), C.uchar(value.([3]uint8)[1]), C.uchar(value.([3]uint8)[2]))
 	default:
@@ -164,7 +164,7 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
-	switch value.(type) {
+	switch val := value.(type) {
 	case nil:
 		C.IupSetAttributeId(ih.ptr(), cName, C.int(id), nil)
 	case Ihandle:
@@ -172,16 +172,16 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 	case uintptr:
 		C.IupSetAttributeId(ih.ptr(), cName, C.int(id), cih(value.(Ihandle)))
 	case string:
-		cValue := C.CString(value.(string))
+		cValue := C.CString(val)
 		defer C.free(unsafe.Pointer(cValue))
 
 		C.IupSetStrAttributeId(ih.ptr(), cName, C.int(id), cValue)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		C.IupSetIntId(ih.ptr(), cName, C.int(id), C.int(reflect.ValueOf(value).Int()))
 	case float32:
-		C.IupSetFloatId(ih.ptr(), cName, C.int(id), C.float(value.(float32)))
+		C.IupSetFloatId(ih.ptr(), cName, C.int(id), C.float(val))
 	case float64:
-		C.IupSetDoubleId(ih.ptr(), cName, C.int(id), C.double(value.(float64)))
+		C.IupSetDoubleId(ih.ptr(), cName, C.int(id), C.double(val))
 	case [3]uint8:
 		C.IupSetRGBId(ih.ptr(), cName, C.int(id), C.uchar(value.([3]uint8)[0]), C.uchar(value.([3]uint8)[1]), C.uchar(value.([3]uint8)[2]))
 	default:
@@ -206,7 +206,7 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
-	switch value.(type) {
+	switch val := value.(type) {
 	case nil:
 		C.IupSetAttributeId2(ih.ptr(), cName, C.int(lin), C.int(col), nil)
 	case Ihandle:
@@ -214,16 +214,16 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	case uintptr:
 		C.IupSetAttributeId2(ih.ptr(), cName, C.int(lin), C.int(col), cih(value.(Ihandle)))
 	case string:
-		cValue := C.CString(value.(string))
+		cValue := C.CString(val)
 		defer C.free(unsafe.Pointer(cValue))
 
 		C.IupSetStrAttributeId2(ih.ptr(), cName, C.int(lin), C.int(col), cValue)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		C.IupSetIntId2(ih.ptr(), cName, C.int(lin), C.int(col), C.int(reflect.ValueOf(value).Int()))
 	case float32:
-		C.IupSetFloatId2(ih.ptr(), cName, C.int(lin), C.int(col), C.float(value.(float32)))
+		C.IupSetFloatId2(ih.ptr(), cName, C.int(lin), C.int(col), C.float(val))
 	case float64:
-		C.IupSetDoubleId2(ih.ptr(), cName, C.int(lin), C.int(col), C.double(value.(float64)))
+		C.IupSetDoubleId2(ih.ptr(), cName, C.int(lin), C.int(col), C.double(val))
 	case [3]uint8:
 		C.IupSetRGBId2(ih.ptr(), cName, C.int(lin), C.int(col), C.uchar(value.([3]uint8)[0]), C.uchar(value.([3]uint8)[1]), C.uchar(value.([3]uint8)[2]))
 	default:
@@ -259,9 +259,9 @@ func SetGlobal(name string, value interface{}) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
-	switch value.(type) { //TODO handle number values?
+	switch val := value.(type) { //TODO handle number values?
 	case string:
-		cValue := C.CString(value.(string))
+		cValue := C.CString(val)
 		defer C.free(unsafe.Pointer(cValue))
 
 		C.IupSetStrGlobal(cName, cValue) // always copy value
