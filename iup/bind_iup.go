@@ -66,7 +66,3 @@ func cStrFree(p *C.char) {
 		C.free(unsafe.Pointer(p))
 	}
 }
-
-func cStrToString(pstr unsafe.Pointer) string {
-	return C.GoString((*C.char)(pstr))
-}
