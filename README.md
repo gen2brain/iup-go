@@ -62,8 +62,8 @@ Although not tested, the library should work on other Unix-like systems, FreeBSD
 You can also compile for time-tested [Motif](https://en.wikipedia.org/wiki/Motif_(software)) library if GTK+ is not available,
 though not all controls and attributes are possible, check the documentation for details.
 
-* Debian/Ubuntu: `apt-get install libmotif-dev`
-* RedHat/Fedora: `dnf install motif-devel`
+* Debian/Ubuntu: `apt-get install libmotif-dev libxmu-dev libxpm-dev`
+* RedHat/Fedora: `dnf install motif-devel libXpm-devel`
 
 ![motif](examples/sample/sample_motif.png)
 
@@ -85,11 +85,9 @@ Also check [Go Reference](https://pkg.go.dev/github.com/gen2brain/iup-go/iup) an
 User interface (and OpenGL) is usually not thread-safe and IUP is not thread-safe. Some platforms enforce running UI on the main thread.
 Note that a goroutine can arbitrarily and randomly be scheduled or rescheduled on different running threads.
 
-The secondary threads should not directly update the interface, instead, use `PostMessage` that is expected to be thread-safe.
+The secondary threads (goroutine) should not directly update the UI, instead, use `PostMessage` that is expected to be thread-safe.
 See [example](https://github.com/gen2brain/iup-go/tree/master/examples/postmessage) that sends data to an element,
-that will be received by a callback when the main loop regains control.
-
-You can also use the [mainthread](https://github.com/golang-design/mainthread) package to schedule functions on the main thread.
+that will be received by a callback when the main loop regains control. You can also use the `IdleFunc` and `Timer`.
 
 ### Cross-compile (Linux)
 
