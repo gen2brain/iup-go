@@ -28,10 +28,10 @@ package iup
 #cgo windows,gl LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32 -lopengl32
 #cgo windows,!gl LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 
-#cgo darwin,!gtk CFLAGS: -Iexternal/src/cocoa -x objective-c
+#cgo darwin,!gtk CFLAGS: -Iexternal/src/cocoa -x objective-c -mmacosx-version-min=10.14
 #cgo darwin,!gtk LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework Cocoa -mmacosx-version-min=10.14
 
-#cgo darwin,gtk CFLAGS: -Iexternal/src/gtk -x objective-c -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGDK_NULL -DGTK_MAC
+#cgo darwin,gtk CFLAGS: -Iexternal/src/gtk -x objective-c -mmacosx-version-min=10.14 -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGDK_NULL -DGTK_MAC
 #cgo darwin,gtk pkg-config: gtk+-3.0 gdk-3.0
 #cgo darwin,gtk LDFLAGS: -framework SystemConfiguration -framework QuartzCore -mmacosx-version-min=10.14
 */
