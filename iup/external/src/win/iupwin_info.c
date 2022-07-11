@@ -19,7 +19,7 @@
 #include "iupwin_str.h"
 
 #include <windows.h>
-#include <ShlObj.h> /* for SHGetFolderPath */
+#include <shlobj.h> /* for SHGetFolderPath */
 
 
 #ifdef _MSC_VER
