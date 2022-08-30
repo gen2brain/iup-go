@@ -124,10 +124,12 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setKAnyFunc(ih, fn.(KAnyFunc))
 	case "HELP_CB":
 		setHelpFunc(ih, fn.(HelpFunc))
-	case "ACTION":
+	case "ACTION", "FLAT_ACTION":
 		switch v := fn.(type) {
 		case ActionFunc:
 			setActionFunc(ih, v)
+		case FlatActionFunc:
+			setFlatActionFunc(ih, v)
 		case ListActionFunc:
 			setListActionFunc(ih, v)
 		case TextActionFunc:
@@ -203,8 +205,6 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setOpenCloseFunc(ih, fn.(OpenCloseFunc))
 	case "VALUECHANGING_CB":
 		setValueChangingFunc(ih, fn.(ValueChangingFunc))
-	case "FLAT_ACTION":
-		setFlatActionFunc(ih, fn.(FlatActionFunc))
 	case "DROPDOWN_CB":
 		setDropDownFunc(ih, fn.(DropDownFunc))
 	case "DROPSHOW_CB":
