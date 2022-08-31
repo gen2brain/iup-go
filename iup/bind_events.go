@@ -124,12 +124,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setKAnyFunc(ih, fn.(KAnyFunc))
 	case "HELP_CB":
 		setHelpFunc(ih, fn.(HelpFunc))
-	case "ACTION", "FLAT_ACTION":
+	case "ACTION":
 		switch v := fn.(type) {
 		case ActionFunc:
 			setActionFunc(ih, v)
-		case FlatActionFunc:
-			setFlatActionFunc(ih, v)
 		case ListActionFunc:
 			setListActionFunc(ih, v)
 		case TextActionFunc:
@@ -140,6 +138,15 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 			setCanvasActionFunc(ih, v)
 		case LinkActionFunc:
 			setLinkActionFunc(ih, v)
+		}
+	case "FLAT_ACTION":
+		switch v := fn.(type) {
+		case FlatActionFunc:
+			setFlatActionFunc(ih, v)
+		case FlatListActionFunc:
+			setFlatListActionFunc(ih, v)
+		case FlatToggleActionFunc:
+			setFlatToggleActionFunc(ih, v)
 		}
 	case "BUTTON_CB":
 		setButtonFunc(ih, fn.(ButtonFunc))

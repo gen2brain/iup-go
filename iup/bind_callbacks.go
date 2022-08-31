@@ -75,6 +75,11 @@ static void goIupSetActionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "ACTION", (Icallback) goIupActionCB);
 }
 
+extern int goIupFlatActionCB(void *);
+static void goIupSetFlatActionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_ACTION", (Icallback) goIupFlatActionCB);
+}
+
 extern int goIupButtonCB(void *, int button, int pressed, int x, int y, void *status);
 static void goIupSetButtonFunc(Ihandle *ih) {
 	IupSetCallback(ih, "BUTTON_CB", (Icallback) goIupButtonCB);
@@ -88,6 +93,11 @@ static void goIupSetDropFilesFunc(Ihandle *ih) {
 extern int goIupListActionCB(void *, void *text, int item, int state);
 static void goIupSetListActionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "ACTION", (Icallback) goIupListActionCB);
+}
+
+extern int goIupFlatListActionCB(void *, void *text, int item, int state);
+static void goIupSetFlatListActionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_ACTION", (Icallback) goIupFlatListActionCB);
 }
 
 extern int goIupCaretCB(void *, int lin, int col, int pos);
@@ -128,6 +138,11 @@ static void goIupSetTextActionFunc(Ihandle *ih) {
 extern int goIupToggleActionCB(void *, int state);
 static void goIupSetToggleActionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "ACTION", (Icallback) goIupToggleActionCB);
+}
+
+extern int goIupFlatToggleActionCB(void *, int state);
+static void goIupSetFlatToggleActionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FLAT_ACTION", (Icallback) goIupFlatToggleActionCB);
 }
 
 extern int goIupTabChangeCB(void *ih, void *new_tab, void *old_tab);
@@ -253,11 +268,6 @@ static void goIupSetOpenCloseFunc(Ihandle *ih) {
 extern int goIupValueChangingCB(void *, int start);
 static void goIupSetValueChangingFunc(Ihandle *ih) {
 	IupSetCallback(ih, "VALUECHANGING_CB", (Icallback) goIupValueChangingCB);
-}
-
-extern int goIupFlatActionCB(void *);
-static void goIupSetFlatActionFunc(Ihandle *ih) {
-	IupSetCallback(ih, "FLAT_ACTION", (Icallback) goIupFlatActionCB);
 }
 
 extern int goIupDropDownCB(void *, int state);
@@ -777,6 +787,34 @@ func setActionFunc(ih Ihandle, f ActionFunc) {
 
 //--------------------
 
+// FlatActionFunc for FLAT_ACTION callback.
+// Action generated when the button 1 (usually left) is selected.
+type FlatActionFunc func(ih Ihandle) int
+
+//export goIupFlatActionCB
+func goIupFlatActionCB(ih unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("FLAT_ACTION_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "FLAT_ACTION_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(FlatActionFunc)
+
+	return C.int(f((Ihandle)(ih)))
+}
+
+// setFlatActionFunc for FLAT_ACTION callback.
+func setFlatActionFunc(ih Ihandle, f FlatActionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("FLAT_ACTION_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetFlatActionFunc(ih.ptr())
+}
+
+//--------------------
+
 // ButtonFunc for BUTTON_CB callback.
 // Action generated when a mouse button is pressed or released.
 //
@@ -864,6 +902,35 @@ func setListActionFunc(ih Ihandle, f ListActionFunc) {
 	callbacks.Store("LIST_ACTION_"+ih.GetAttribute("UUID"), ch)
 
 	C.goIupSetListActionFunc(ih.ptr())
+}
+
+//--------------------
+
+// FlatListActionFunc for FlatList FLAT_ACTION callback.
+// Action generated when the state of an item in the list is interactively changed.
+type FlatListActionFunc func(ih Ihandle, text string, item, state int) int
+
+//export goIupFlatListActionCB
+func goIupFlatListActionCB(ih, text unsafe.Pointer, item, state C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("FLAT_LIST_ACTION_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "FLAT_LIST_ACTION_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(FlatListActionFunc)
+
+	goText := C.GoString((*C.char)(text))
+	return C.int(f((Ihandle)(ih), goText, int(item), int(state)))
+}
+
+// setFlatListActionFunc for FlatList FLAT_ACTION callback.
+func setFlatListActionFunc(ih Ihandle, f FlatListActionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("FLAT_LIST_ACTION_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetFlatListActionFunc(ih.ptr())
 }
 
 //--------------------
@@ -1093,6 +1160,34 @@ func setToggleActionFunc(ih Ihandle, f ToggleActionFunc) {
 	callbacks.Store("TOGGLE_ACTION_"+ih.GetAttribute("UUID"), ch)
 
 	C.goIupSetToggleActionFunc(ih.ptr())
+}
+
+//--------------------
+
+// FlatToggleActionFunc for FlatToggle FLAT_ACTION callback.
+// Action generated when the toggle's state (on/off) was changed.
+type FlatToggleActionFunc func(ih Ihandle, state int) int
+
+//export goIupFlatToggleActionCB
+func goIupFlatToggleActionCB(ih unsafe.Pointer, state C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("FLAT_TOGGLE_ACTION_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "FLAT_TOGGLE_ACTION_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(FlatToggleActionFunc)
+
+	return C.int(f((Ihandle)(ih), int(state)))
+}
+
+// setFlatToggleActionFunc for FlatToggle FLAT_ACTION.
+func setFlatToggleActionFunc(ih Ihandle, f FlatToggleActionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("FLAT_TOGGLE_ACTION_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetFlatToggleActionFunc(ih.ptr())
 }
 
 //--------------------
@@ -1407,7 +1502,6 @@ func setDragFunc(ih Ihandle, f DragFunc) {
 //--------------------
 
 // DetachedFunc for DETACHED_CB callback.
-//
 type DetachedFunc func(Ihandle, Ihandle, int, int) int
 
 //export goIupDetachedCB
@@ -1800,34 +1894,6 @@ func setValueChangingFunc(ih Ihandle, f ValueChangingFunc) {
 
 //--------------------
 
-// FlatActionFunc for FLAT_ACTION callback.
-// Action generated when the button 1 (usually left) is selected.
-type FlatActionFunc func(ih Ihandle) int
-
-//export goIupFlatActionCB
-func goIupFlatActionCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("FLAT_ACTION_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "FLAT_ACTION_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(FlatActionFunc)
-
-	return C.int(f((Ihandle)(ih)))
-}
-
-// setFlatActionFunc for FLAT_ACTION callback.
-func setFlatActionFunc(ih Ihandle, f FlatActionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("FLAT_ACTION_"+ih.GetAttribute("UUID"), ch)
-
-	C.goIupSetFlatActionFunc(ih.ptr())
-}
-
-//--------------------
-
 // DropDownFunc for DROPDOWN_CB callback.
 // Action generated right before the drop child is shown or hidden.
 type DropDownFunc func(ih Ihandle, state int) int
@@ -1941,7 +2007,6 @@ func setButtonReleaseFunc(ih Ihandle, f ButtonReleaseFunc) {
 //--------------------
 
 // MouseMoveFunc for MOUSEMOVE_CB callback.
-//
 type MouseMoveFunc func(ih Ihandle, angle float64) int
 
 //export goIupMouseMoveCB
@@ -2110,7 +2175,6 @@ func setSwitchFunc(ih Ihandle, f SwitchFunc) {
 //--------------------
 
 // LinkActionFunc for Link ACTION callback.
-//
 type LinkActionFunc func(ih Ihandle, url string) int
 
 //export goIupLinkActionCB
@@ -2421,7 +2485,6 @@ func setToggleValueFunc(ih Ihandle, f ToggleValueFunc) {
 //--------------------
 
 // NodeRemovedFunc for NODEREMOVED_CB callback.
-//
 type NodeRemovedFunc func(ih Ihandle) int
 
 //export goIupNodeRemovedCB
