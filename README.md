@@ -35,6 +35,12 @@ On Linux, you need a C compiler and GTK+ development packages.
 When you are not using `gl` tag, the library is built with `GDK_NULL` to completely remove the [X11](https://en.wikipedia.org/wiki/X_Window_System) usage,
 so it should just work in [Wayland](https://en.wikipedia.org/wiki/Wayland_(display_server_protocol)).
 
+You may provide explicit compiler and linker flags instead of using the defaults provided by pkg-config, if `gtk3` and other dependencies are in a non-standard location:
+
+```
+CGO_CFLAGS="-I<include path> ..." CGO_LDFLAGS="-L<dir> -llib ..." go build -tags nopkconfig
+```  
+
 Note that you can also build and link against the GTK2 version, see build tags below.
 
 ![linux](examples/sample/sample_linux.png)
@@ -74,6 +80,7 @@ though not all controls and attributes are possible, check the documentation for
 * `gtk2` - link with GTK2 version, default is GTK3 (Linux)
 * `motif` - build for X11/Motif 2.x environment
 * `nomanifest` - do not include manifest in Windows build
+* `nopkgconfig` - do not use pkg-config for compile and link flags. User specifies CGO_CFLAGS and CGO_LDFLAGS env vars
 
 ### Documentation
 
