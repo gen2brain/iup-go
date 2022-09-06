@@ -7,10 +7,10 @@ package iup
 #cgo !windows,!darwin,!motif,!gl CFLAGS: -Iexternal/src/gtk -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGDK_NULL
 #cgo !windows,!darwin,motif CFLAGS: -Iexternal/src/mot
 
-#cgo !windows,!darwin,!motif,!gtk2,gl pkg-config: gtk+-3.0 gdk-3.0 gl
-#cgo !windows,!darwin,!motif,gtk2,gl pkg-config: gtk+-2.0 gdk-2.0 gl
-#cgo !windows,!darwin,!motif,!gtk2,!gl pkg-config: gtk+-3.0 gdk-3.0
-#cgo !windows,!darwin,!motif,gtk2,!gl pkg-config: gtk+-2.0 gdk-2.0
+#cgo !windows,!darwin,!motif,!gtk2,gl,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gl
+#cgo !windows,!darwin,!motif,gtk2,gl,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 gl
+#cgo !windows,!darwin,!motif,!gtk2,!gl,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
+#cgo !windows,!darwin,!motif,gtk2,!gl,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0
 
 #cgo !windows,!darwin,!motif,gl LDFLAGS: -lX11
 #cgo !windows,!darwin,!motif LDFLAGS: -lm
@@ -24,15 +24,15 @@ package iup
 #cgo windows CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
 
 #cgo windows,gtk CFLAGS: -Iexternal/src/gtk -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGDK_NULL
-#cgo windows,gtk pkg-config: gtk+-3.0 gdk-3.0
+#cgo windows,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
 #cgo windows,gl LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32 -lopengl32
 #cgo windows,!gl LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 
-#cgo darwin,!gtk CFLAGS: -Iexternal/src/cocoa -x objective-c -mmacosx-version-min=10.14
+#cgo darwin,!gtk CFLAGS: -Iexternal/src/cocoa -x objective-c
 #cgo darwin,!gtk LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework Cocoa -mmacosx-version-min=10.14
 
-#cgo darwin,gtk CFLAGS: -Iexternal/src/gtk -x objective-c -mmacosx-version-min=10.14 -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGDK_NULL -DGTK_MAC
-#cgo darwin,gtk pkg-config: gtk+-3.0 gdk-3.0
+#cgo darwin,gtk CFLAGS: -Iexternal/src/gtk -x objective-c -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGDK_NULL -DGTK_MAC
+#cgo darwin,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
 #cgo darwin,gtk LDFLAGS: -framework SystemConfiguration -framework QuartzCore -mmacosx-version-min=10.14
 */
 import "C"
