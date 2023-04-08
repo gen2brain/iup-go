@@ -389,6 +389,11 @@ extern int goIupMultiUnselectionCB(void *ih, int* ids, int n);
 static void goIupSetMultiUnselectionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "MULTIUNSELECTION_CB", (Icallback) goIupMultiUnselectionCB);
 }
+
+extern int goIupMenuOpenCB(void *);
+static void goIupSetMenuOpenFunc(Ihandle *ih) {
+	IupSetCallback(ih, "OPEN_CB", (Icallback) goIupMenuOpenCB);
+}
 */
 import "C"
 
@@ -2567,6 +2572,36 @@ func setMultiUnselectionFunc(ih Ihandle, f MultiUnselectionFunc) {
 	callbacks.Store("MULTIUNSELECTION_CB_"+ih.GetAttribute("UUID"), ch)
 
 	C.goIupSetMultiUnselectionFunc(ih.ptr())
+}
+
+//--------------------
+
+// MenuOpenFunc for OPEN_CB callback.
+// Called just before the menu is opened.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/call/iup_open_cb.html
+type MenuOpenFunc func(ih Ihandle) int
+
+//export goIupMenuOpenCB
+func goIupMenuOpenCB(ih unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("OPEN_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "OPEN_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ActionFunc)
+
+	return C.int(f((Ihandle)(ih)))
+}
+
+// setMenuOpenFunc for OPEN_CB.
+func setMenuOpenFunc(ih Ihandle, f MenuOpenFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("OPEN_CB_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetMenuOpenFunc(ih.ptr())
 }
 
 //--------------------
