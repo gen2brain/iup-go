@@ -2591,7 +2591,7 @@ func goIupMenuOpenCB(ih unsafe.Pointer) C.int {
 	}
 
 	ch := h.(cgo.Handle)
-	f := ch.Value().(ActionFunc)
+	f := ch.Value().(MenuOpenFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
