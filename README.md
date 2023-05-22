@@ -50,7 +50,7 @@ Note that you can also build and link against the GTK2 version, see build tags b
 On macOS, you need Xcode or Command Line Tools for Xcode.
 
 Note that support for `Cocoa` is a **work in progress**. Not everything is implemented. If you can help with Cocoa or GLCanvas, please join the IUP mailing list.
-Also note that you must use and distribute binary in the `.app` directory, together with `.nib` compiled resources, see [example.app](https://github.com/gen2brain/iup-go/tree/master/dist/darwin/example.app).
+Also note that you must use and distribute binary in the `.app` directory, together with `.nib` compiled resources, see [example.app](https://github.com/gen2brain/iup-go/tree/main/dist/darwin/example.app).
 
 You can also build for GTK+ in macOS, with `gtk` build tag. It will use [Quartz](https://en.wikipedia.org/wiki/Quartz_(graphics_layer)) native rendering. 
 See [screenshot](examples/sample/sample_darwin_gtk.png), `.app` is not required with GTK+.
@@ -85,7 +85,7 @@ though not all controls and attributes are possible, check the documentation for
 ### Documentation
 
 [IUP](https://www.tecgraf.puc-rio.br/iup/) documentation is nice, every Go function in doc reference there.
-Also check [Go Reference](https://pkg.go.dev/github.com/gen2brain/iup-go/iup) and [Examples](https://github.com/gen2brain/iup-go/tree/master/examples).
+Also check [Go Reference](https://pkg.go.dev/github.com/gen2brain/iup-go/iup) and [Examples](https://github.com/gen2brain/iup-go/tree/main/examples).
 
 ### Thread-Safety
 
@@ -93,7 +93,7 @@ User interface (and OpenGL) is usually not thread-safe and IUP is not thread-saf
 Note that a goroutine can arbitrarily and randomly be scheduled or rescheduled on different running threads.
 
 The secondary threads (goroutine) should not directly update the UI, instead, use `PostMessage` that is expected to be thread-safe.
-See [example](https://github.com/gen2brain/iup-go/tree/master/examples/postmessage) that sends data to an element,
+See [example](https://github.com/gen2brain/iup-go/tree/main/examples/postmessage) that sends data to an element,
 that will be received by a callback when the main loop regains control. You can also use the `IdleFunc` and `Timer`.
 
 ### Cross-compile (Linux)
@@ -129,4 +129,4 @@ alarm: Mach-O 64-bit arm64 executable, flags:<NOUNDEFS|DYLDLINK|TWOLEVEL|WEAK_DE
 
 ### License
 
-iup-go is MIT licensed, same as IUP. View [LICENSE](https://github.com/gen2brain/iup-go/blob/master/LICENSE).
+iup-go is MIT licensed, same as IUP. View [LICENSE](https://github.com/gen2brain/iup-go/blob/main/LICENSE).
