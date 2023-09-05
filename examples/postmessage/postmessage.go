@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
-	"runtime/cgo"
 
 	"github.com/gen2brain/iup-go/iup"
 )
@@ -42,10 +43,8 @@ func main() {
 	iup.MainLoop()
 }
 
-func messageCb(ih iup.Ihandle, s string, i int, f float64, p *cgo.Handle) int {
-	b := p.Value().([]byte)
-	defer p.Delete()
-
+func messageCb(ih iup.Ihandle, s string, i int, p any) int {
+	b := p.([]byte)
 	img, _, err := image.Decode(bytes.NewReader(b))
 	if err != nil {
 		log.Fatalln(err)
@@ -68,32 +67,44 @@ func messageCb(ih iup.Ihandle, s string, i int, f float64, p *cgo.Handle) int {
 func buttonCb(ih iup.Ihandle) int {
 	ih.SetAttribute("ACTIVE", "NO")
 
+	type xkcd struct {
+		Id    int64  `json:"num,omitempty"`
+		Title string `json:"title,omitempty"`
+		Alt   string `json:"alt,omitempty"`
+		Img   string `json:"img,omitempty"`
+	}
+
 	go func() {
-		res, err := http.Get("https://random-xkcd-img.herokuapp.com/")
+		random := rand.Intn(2800-1) + 1
+
+		res, err := http.Get(fmt.Sprintf("https://xkcd.com/%d/info.0.json", random))
 		if err != nil {
 			log.Println(err)
+			return
 		}
 		defer res.Body.Close()
 
-		var ret map[string]string
+		var ret xkcd
 		err = json.NewDecoder(res.Body).Decode(&ret)
 		if err != nil {
 			log.Println(err)
+			return
 		}
 
-		img, err := http.Get(ret["url"])
+		img, err := http.Get(ret.Img)
 		if err != nil {
 			log.Println(err)
+			return
 		}
 		defer img.Body.Close()
 
 		b, err := ioutil.ReadAll(img.Body)
 		if err != nil {
 			log.Println(err)
+			return
 		}
 
-		h := cgo.NewHandle(b)
-		iup.PostMessage(iup.GetHandle("label"), ret["title"], len(b), 1.0, h)
+		iup.PostMessage(iup.GetHandle("label"), ret.Alt, 0, b)
 	}()
 
 	return iup.DEFAULT
