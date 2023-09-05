@@ -1,8 +1,10 @@
 package iup
 
 import (
+	"fmt"
 	"runtime/cgo"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -399,6 +401,7 @@ import "C"
 
 var (
 	callbacks sync.Map
+	messages  atomic.Int64
 )
 
 //--------------------
@@ -1279,7 +1282,7 @@ func setSpinFunc(ih Ihandle, f SpinFunc) {
 //--------------------
 
 // PostMessageFunc for POSTMESSAGE_CB callback.
-type PostMessageFunc func(Ihandle, string, int, float64, *cgo.Handle) int
+type PostMessageFunc func(Ihandle, string, int, any) int
 
 //export goIupPostMessageCB
 func goIupPostMessageCB(ih unsafe.Pointer, s unsafe.Pointer, i C.int, d C.double, p unsafe.Pointer) C.int {
@@ -1292,10 +1295,12 @@ func goIupPostMessageCB(ih unsafe.Pointer, s unsafe.Pointer, i C.int, d C.double
 	ch := h.(cgo.Handle)
 	f := ch.Value().(PostMessageFunc)
 
-	goS := C.GoString((*C.char)(s))
-	goP := (*cgo.Handle)(p)
+	m, ok := callbacks.LoadAndDelete(fmt.Sprintf("POSTMESSAGE_MSG_%s_%d", uuid, int(d)))
+	if !ok {
+		panic("cannot load and delete message " + fmt.Sprintf("POSTMESSAGE_MSG_%s_%d", uuid, int(d)))
+	}
 
-	return C.int(f((Ihandle)(ih), goS, int(i), float64(d), goP))
+	return C.int(f((Ihandle)(ih), C.GoString((*C.char)(s)), int(i), m))
 }
 
 // setPostMessageFunc for POSTMESSAGE_CB.

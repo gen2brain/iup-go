@@ -10,6 +10,10 @@ import (
 #include <stdlib.h>
 #include "iup.h"
 
+static uintptr_t ih(Ihandle* i) {
+        return (uintptr_t)(i);
+}
+
 static Ihandle* pih(uintptr_t p) {
 	return (Ihandle*)(p);
 }
@@ -24,7 +28,7 @@ import "C"
 type Ihandle uintptr
 
 func mkih(p *C.Ihandle) Ihandle {
-	return Ihandle(unsafe.Pointer(p))
+	return Ihandle(C.ih(p))
 }
 
 func cih(ih Ihandle) *C.char {

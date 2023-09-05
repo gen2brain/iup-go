@@ -1,6 +1,7 @@
 package iup
 
 import (
+	"fmt"
 	"runtime/cgo"
 	"unsafe"
 )
@@ -65,7 +66,10 @@ func PostMessage(ih Ihandle, s string, i int, d float64, p cgo.Handle) {
 	cS := C.CString(s)
 	defer C.free(unsafe.Pointer(cS))
 
-	C.IupPostMessage(ih.ptr(), cS, C.int(i), C.double(d), unsafe.Pointer(&p))
+	count := messages.Add(1)
+	callbacks.Store(fmt.Sprintf("POSTMESSAGE_MSG_%s_%d", ih.GetAttribute("UUID"), count), p)
+
+	C.IupPostMessage(ih.ptr(), cS, C.int(i), C.double(count), nil)
 }
 
 // Flush processes all pending messages in the message queue.
