@@ -10,7 +10,7 @@ Note that the first build can take a few minutes.
 
 ### Requirements
 
-Go 1.17 is minimum required version (cgo.Handle, new style build tags).
+Go 1.18 is minimum required version (cgo.Handle, any, new style build tags).
 
 #### Windows
 
