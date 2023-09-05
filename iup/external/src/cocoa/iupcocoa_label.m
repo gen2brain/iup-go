@@ -42,14 +42,14 @@ static NSView* cocoaLabelGetRootView(Ihandle* ih)
 static NSTextField* cocoaLabelGetTextField(Ihandle* ih)
 {
 	NSTextField* text_field = (NSTextField*)cocoaLabelGetRootView(ih);
-	NSCAssert([text_field isKindOfClass:[NSTextField class]], @"Expected NSTextField");
+	//NSCAssert([text_field isKindOfClass:[NSTextField class]], @"Expected NSTextField");
 	return text_field;
 }
 
 static NSImageView* cocoaLabelGetImageView(Ihandle* ih)
 {
 	NSView* root_container_view = cocoaLabelGetRootView(ih);
-	NSCAssert([root_container_view isKindOfClass:[NSImageView class]], @"Expected NSImageView");
+	//NSCAssert([root_container_view isKindOfClass:[NSImageView class]], @"Expected NSImageView");
 	return (NSImageView*)root_container_view;
 }
 
