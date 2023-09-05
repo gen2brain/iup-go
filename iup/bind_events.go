@@ -62,7 +62,7 @@ func ExitLoop() {
 // It is expected to be thread safe.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iuppostmessage.html
-func PostMessage(ih Ihandle, s string, i int, d float64, p cgo.Handle) {
+func PostMessage(ih Ihandle, s string, i int, p cgo.Handle) {
 	cS := C.CString(s)
 	defer C.free(unsafe.Pointer(cS))
 
