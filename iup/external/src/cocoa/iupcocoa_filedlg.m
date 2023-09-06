@@ -102,7 +102,7 @@ static void macFileDlgGetFolder(Ihandle *ih)
 	char* value = iupAttribGet(ih, "FILTER");
     if(NULL == value)
     {
-		NSLog(@"Matched NULL == value");
+		//NSLog(@"Matched NULL == value");
 		return YES;
 	}
 	
