@@ -88,7 +88,7 @@ CANFOCUS seems to mostly be about getting the focus ring and being able to get k
 	Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_sender, IHANDLE_ASSOCIATED_OBJ_KEY);
 
 	NSSlider* the_slider = (NSSlider*)the_sender;
-	double new_value = [the_slider doubleValue];;
+	double new_value = [the_slider doubleValue];
 	if(ih->data->val == new_value)
 	{
 		// no change
@@ -180,7 +180,7 @@ static int cocoaValSetMaxAttrib(Ihandle* ih, const char* value)
 		
 		// Not going to bounds check in case the user is trying to change both max and min which could cross into an invalid state
 		
-		ih->data->val = new_value;
+		ih->data->vmax = new_value;
 		
 		[the_slider setMaxValue:new_value];
 	}
@@ -201,7 +201,7 @@ static int cocoaValSetMinAttrib(Ihandle* ih, const char* value)
 		
 		// Not going to bounds check in case the user is trying to change both max and min which could cross into an invalid state
 		
-		ih->data->val = new_value;
+		ih->data->vmin = new_value;
 		
 		[the_slider setMinValue:new_value];
 	}
@@ -359,7 +359,7 @@ void iupdrvValInitClass(Iclass* ic)
   /* Special */
 
   /* IupVal only */
-  iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, cocoaValSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, cocoaValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "MAX", cocoaValGetMaxAttrib, cocoaValSetMaxAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "MIN", cocoaValGetMinAttrib, cocoaValSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
