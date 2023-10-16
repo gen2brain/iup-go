@@ -137,6 +137,12 @@ void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
   COLORREF color, tip_color;
   char* value;
 
+  if (!IsWindow(ih->handle))
+    return;
+
+  if (!IsWindow(tips_hwnd))
+    return;
+
   {
     HFONT hfont;
     value = iupAttribGetStr(ih, "TIPFONT");

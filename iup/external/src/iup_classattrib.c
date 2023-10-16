@@ -538,6 +538,21 @@ int iupClassAttribIsRegistered(Iclass* ic, const char* name)
   return 0;
 }
 
+static void iClassCheckAttrib(Iclass* ic, const char* name, IattribGetFunc get, IattribSetFunc set, int flags)
+{
+  if (flags & IUPAF_NOT_MAPPED && !get && !set)
+    fprintf(stderr, "iupClassRegisterAttribute(%s, [%s]) - NOT_MAPPED used but no get or set!\n", ic->name, name);
+
+  if (flags & IUPAF_READONLY && set)
+    fprintf(stderr, "iupClassRegisterAttribute(%s, [%s]) - READONLY used and set defined, set will never be called!\n", ic->name, name);
+
+  if (flags & IUPAF_WRITEONLY && !set)
+    fprintf(stderr, "iupClassRegisterAttribute(%s, [%s]) - WRITEONLY used but set not defined!\n", ic->name, name);
+
+  if (flags & IUPAF_WRITEONLY && get)
+    fprintf(stderr, "iupClassRegisterAttribute(%s, [%s]) - WRITEONLY used and get defined, get will never be called!\n", ic->name, name);
+}
+
 IUP_SDK_API void iupClassRegisterAttribute(Iclass* ic, const char* name,
                                IattribGetFunc _get, IattribSetFunc _set, 
                                const char* _default_value, const char* _system_default, int _flags)
@@ -545,6 +560,10 @@ IUP_SDK_API void iupClassRegisterAttribute(Iclass* ic, const char* name,
   IattribFunc* afunc = (IattribFunc*)iupTableGet(ic->attrib_func, name);
   if (afunc)
     free(afunc);  /* overwrite a previous registration */
+
+#ifdef IUP_ASSERT
+  iClassCheckAttrib(ic, name, _get, _set, _flags);
+#endif
 
   afunc = (IattribFunc*)malloc(sizeof(IattribFunc));
   afunc->get = _get;
@@ -572,6 +591,10 @@ IUP_SDK_API void iupClassRegisterAttributeId(Iclass* ic, const char* name,
   if (afunc)
     free(afunc);  /* overwrite a previous registration */
 
+#ifdef IUP_ASSERT
+  iClassCheckAttrib(ic, name, (IattribGetFunc)_get, (IattribSetFunc)_set, _flags);
+#endif
+
   afunc = (IattribFunc*)malloc(sizeof(IattribFunc));
   afunc->get = (IattribGetFunc)_get;
   afunc->set = (IattribSetFunc)_set;
@@ -590,6 +613,10 @@ IUP_SDK_API void iupClassRegisterAttributeId2(Iclass* ic, const char* name,
   IattribFunc* afunc = (IattribFunc*)iupTableGet(ic->attrib_func, name);
   if (afunc)
     free(afunc);  /* overwrite a previous registration */
+
+#ifdef IUP_ASSERT
+  iClassCheckAttrib(ic, name, (IattribGetFunc)_get, (IattribSetFunc)_set, _flags);
+#endif
 
   afunc = (IattribFunc*)malloc(sizeof(IattribFunc));
   afunc->get = (IattribGetFunc)_get;
@@ -754,7 +781,7 @@ IUP_API void IupSetClassDefaultAttribute(const char* classname, const char *name
   if (!name)
     return;
 
-  ic = iupRegisterFindClass(name);
+  ic = iupRegisterFindClass(classname);
   if (!ic)
     return;
 

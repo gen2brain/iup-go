@@ -184,9 +184,6 @@ IUP_API void IupDestroy(Ihandle *ih)
   cb = IupGetCallback(ih, "DESTROY_CB");
   if (cb) cb(ih);
 
-  cb = IupGetCallback(ih, "LDESTROY_CB");  /* for language bindings */
-  if (cb) cb(ih);
-
   /* Destroy all its children.
      Just need to remove the first child,
      IupDetach will update firstchild. */
@@ -195,6 +192,9 @@ IUP_API void IupDestroy(Ihandle *ih)
 
   /* unmap if mapped and remove from its parent child list */
   IupDetach(ih);
+
+  cb = IupGetCallback(ih, "LDESTROY_CB");  /* for language bindings */
+  if (cb) cb(ih);
 
   /* check if the element had the focus */
   iupResetCurrentFocus(ih);

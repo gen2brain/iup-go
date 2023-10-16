@@ -58,28 +58,6 @@ static int winCanvasSetBgColorAttrib(Ihandle *ih, const char *value)
   return 1;
 }
               
-static int winCanvasIsScrollbarVisible(Ihandle* ih, int flag)
-{
-  SCROLLBARINFO si;
-  LONG idObject;
-  ZeroMemory(&si, sizeof(SCROLLBARINFO));
-  si.cbSize = sizeof(SCROLLBARINFO);
-
-  if (flag == SB_HORZ)
-    idObject = OBJID_HSCROLL;
-  else
-    idObject = OBJID_VSCROLL;
-
-  if (!GetScrollBarInfo(ih->handle, idObject, &si))
-    return 0;
-
-  if (si.rgstate[0] & STATE_SYSTEM_INVISIBLE || 
-      si.rgstate[0] & STATE_SYSTEM_OFFSCREEN)
-    return 0;
-
-  return 1;
-}
-
 static int winCanvasSetDXAttrib(Ihandle* ih, const char *value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
@@ -106,7 +84,7 @@ static int winCanvasSetDXAttrib(Ihandle* ih, const char *value)
     {
       if (iupAttribGetBoolean(ih, "XAUTOHIDE"))
       {
-        if (winCanvasIsScrollbarVisible(ih, SB_HORZ) && iupdrvIsVisible(ih))
+        if (iupwinIsScrollbarVisible(ih, SB_HORZ) && iupdrvIsVisible(ih))
           iupAttribSet(ih, "SB_RESIZE", "YES");
         iupAttribSet(ih, "XHIDDEN", "YES");
         ShowScrollBar(ih->handle, SB_HORZ, FALSE);
@@ -124,7 +102,7 @@ static int winCanvasSetDXAttrib(Ihandle* ih, const char *value)
     {
       if (iupAttribGetBoolean(ih, "XAUTOHIDE"))
       {
-        if (!winCanvasIsScrollbarVisible(ih, SB_HORZ) && iupdrvIsVisible(ih))
+        if (!iupwinIsScrollbarVisible(ih, SB_HORZ) && iupdrvIsVisible(ih))
           iupAttribSet(ih, "SB_RESIZE", "YES");
         iupAttribSet(ih, "XHIDDEN", "NO");
         ShowScrollBar(ih->handle, SB_HORZ, TRUE);
@@ -168,7 +146,7 @@ static int winCanvasSetDYAttrib(Ihandle* ih, const char *value)
     {
       if (iupAttribGetBoolean(ih, "YAUTOHIDE"))
       {
-        if (winCanvasIsScrollbarVisible(ih, SB_VERT) && iupdrvIsVisible(ih))
+        if (iupwinIsScrollbarVisible(ih, SB_VERT) && iupdrvIsVisible(ih))
           iupAttribSet(ih, "SB_RESIZE", "YES");
         iupAttribSet(ih, "YHIDDEN", "YES");
         ShowScrollBar(ih->handle, SB_VERT, FALSE);
@@ -187,7 +165,7 @@ static int winCanvasSetDYAttrib(Ihandle* ih, const char *value)
     {
       if (iupAttribGetBoolean(ih, "YAUTOHIDE"))
       {
-        if (!winCanvasIsScrollbarVisible(ih, SB_VERT) && iupdrvIsVisible(ih))
+        if (!iupwinIsScrollbarVisible(ih, SB_VERT) && iupdrvIsVisible(ih))
           iupAttribSet(ih, "SB_RESIZE", "YES");
         iupAttribSet(ih, "YHIDDEN", "NO");
         ShowScrollBar(ih->handle, SB_VERT, TRUE);
@@ -852,8 +830,8 @@ void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DY", NULL, winCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);  /* force new default value */
   iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, winCanvasSetPosXAttrib, "0", NULL, IUPAF_NO_INHERIT);  /* force new default value */
   iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, winCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);  /* force new default value */
-  iupClassRegisterAttribute(ic, "XAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* force new default value */
-  iupClassRegisterAttribute(ic, "YAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* force new default value */
+  iupClassRegisterAttribute(ic, "XAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);  /* force new default value */
+  iupClassRegisterAttribute(ic, "YAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);  /* force new default value */
 
   /* IupCanvas Windows only */
   iupClassRegisterAttribute(ic, "HWND", iupBaseGetWidAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
@@ -861,6 +839,8 @@ void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HTTRANSPARENT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWUSEDIRECT2D", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWANTIALIAS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", iupwinGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   /* Not Supported */
   iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

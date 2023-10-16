@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-/** \defgroup linefile Line Base Text File Load API
+/** \defgroup linefile Line Based Text File
 * \par
 * See \ref iup_linefile.h
 * \ingroup util */

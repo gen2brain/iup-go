@@ -444,6 +444,11 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     GetCPInfoEx(CP_ACP, 0, &info);
     return iupStrReturnInt(info.CodePage);
   }
+  if (iupStrEqual(name, "TOUCHREADY"))
+  {
+    int value = GetSystemMetrics(SM_DIGITIZER);
+    return iupStrReturnBoolean(value & NID_READY);
+  }
   if (iupStrEqual(name, "LASTERROR"))
   {
     DWORD error = GetLastError();

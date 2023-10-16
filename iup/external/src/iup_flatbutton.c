@@ -39,6 +39,7 @@ struct _IcontrolData
   int spacing, img_position;        /* used when both text and image are displayed */
   int horiz_alignment, vert_alignment;  
   int border_width;
+  int value;
 
   /* aux */
   int has_focus,
@@ -56,7 +57,7 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   char *image = iupAttribGet(ih, "IMAGE");
   char* title = iupAttribGet(ih, "TITLE");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
-  int selected = iupAttribGetInt(ih, "VALUE");
+  int selected = ih->data->value;
   char* fgcolor = iupAttribGetStr(ih, "FGCOLOR");
   char* bgcolor = iupAttribGet(ih, "BGCOLOR");  /* don't get with default value, if NULL will use from parent */
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
@@ -219,6 +220,30 @@ static void iFlatButtonNotify(Ihandle* ih, int is_toggle)
   }
 }
 
+static int iFlatButtonUpdateHighlighted(Ihandle* ih, int x, int y)
+{
+  /* handle when mouse is pressed and moved to/from inside the canvas */
+  if (x < 0 || x > ih->currentwidth - 1 ||
+      y < 0 || y > ih->currentheight - 1)
+  {
+    if (ih->data->highlighted)
+    {
+      ih->data->highlighted = 0;
+      return 1;
+    }
+  }
+  else
+  {
+    if (!ih->data->highlighted)
+    {
+      ih->data->highlighted = 1;
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 static int iFlatButtonButton_CB(Ihandle* ih, int button, int pressed, int x, int y, char* status)
 {
   IFniiiis cb = (IFniiiis)IupGetCallback(ih, "FLAT_BUTTON_CB");
@@ -230,6 +255,8 @@ static int iFlatButtonButton_CB(Ihandle* ih, int button, int pressed, int x, int
 
   if (button == IUP_BUTTON1)
   {
+    iFlatButtonUpdateHighlighted(ih, x, y);
+
     if (iupAttribGetBoolean(ih, "TOGGLE"))
     {
       Ihandle* radio = iupRadioFindToggleParent(ih);
@@ -237,11 +264,11 @@ static int iFlatButtonButton_CB(Ihandle* ih, int button, int pressed, int x, int
 
       if (!pressed && ih->data->highlighted)  /* released inside the button area */
       {
-        int selected = iupAttribGetInt(ih, "VALUE");
+        int selected = ih->data->value;
         if (selected)  /* was ON */
         {
           if (!radio)
-            iupAttribSet(ih, "VALUE", "OFF");
+            ih->data->value = 0;
           else
             last_tg = ih;  /* to avoid the callback call */
         }
@@ -249,19 +276,20 @@ static int iFlatButtonButton_CB(Ihandle* ih, int button, int pressed, int x, int
         {
           if (radio)
           {
-            last_tg = (Ihandle*)iupAttribGet(radio, "_IUP_FLATBUTTON_LASTRADIO");
+            last_tg = (Ihandle*)iupAttribGet(radio, "_IUP_FLATBUTTON_LASTTOGGLE");
             if (iupObjectCheck(last_tg) && last_tg != ih)
             {
-              iupAttribSet(last_tg, "VALUE", "OFF");
-              iupdrvRedrawNow(last_tg);
+              last_tg->data->value = 0;
+              if (last_tg)
+                iupdrvRedrawNow(last_tg);
             }
             else
               last_tg = NULL;
 
-            iupAttribSet(radio, "_IUP_FLATBUTTON_LASTRADIO", (char*)ih);
+            iupAttribSet(radio, "_IUP_FLATBUTTON_LASTTOGGLE", (char*)ih);
           }
 
-          iupAttribSet(ih, "VALUE", "ON");
+          ih->data->value = 1;
         }
       }
 
@@ -329,26 +357,7 @@ static int iFlatButtonMotion_CB(Ihandle* ih, int x, int y, char* status)
   }
 
   if (iup_isbutton1(status))
-  {
-    /* handle when mouse is pressed and moved to/from inside the canvas */
-    if (x < 0 || x > ih->currentwidth - 1 ||
-        y < 0 || y > ih->currentheight - 1)
-    {
-      if (ih->data->highlighted)
-      {
-        redraw = 1;
-        ih->data->highlighted = 0;
-      }
-    }
-    else
-    {
-      if (!ih->data->highlighted)
-      {
-        redraw = 1;
-        ih->data->highlighted = 1;
-      }
-    }
-  }
+    redraw = iFlatButtonUpdateHighlighted(ih, x, y);
 
   if (redraw)
     iupdrvRedrawNow(ih);
@@ -495,17 +504,18 @@ static int iFlatButtonSetValueAttrib(Ihandle* ih, const char* value)
     if (radio)
     {
       /* can only set Radio to ON */
-      if (iupStrEqualNoCase(value, "TOGGLE") || iupStrBoolean(value))
+      if (iupStrBoolean(value))
       {
-        Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUP_FLATBUTTON_LASTRADIO");
+        Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUP_FLATBUTTON_LASTTOGGLE");
         if (iupObjectCheck(last_tg) && last_tg != ih)
         {
-          iupAttribSet(last_tg, "VALUE", "OFF");
+          last_tg->data->value = 0;
           if (last_tg->handle)
             iupdrvRedrawNow(last_tg);
         }
 
-        iupAttribSet(radio, "_IUP_FLATBUTTON_LASTRADIO", (char*)ih);
+        iupAttribSet(radio, "_IUP_FLATBUTTON_LASTTOGGLE", (char*)ih);
+        ih->data->value = 1;
       }
       else
         return 0;
@@ -514,26 +524,61 @@ static int iFlatButtonSetValueAttrib(Ihandle* ih, const char* value)
     {
       if (iupStrEqualNoCase(value, "TOGGLE"))
       {
-        int oldcheck = iupAttribGetBoolean(ih, "VALUE");
-        if (oldcheck)
-          iupAttribSet(ih, "VALUE", "OFF");
+        if (ih->data->value)
+          ih->data->value = 0;
         else
-          iupAttribSet(ih, "VALUE", "ON");
-
-        if (ih->handle)
-          iupdrvRedrawNow(ih);
-
-        return 0;
+          ih->data->value = 1;
+      }
+      else
+      {
+        if (iupStrBoolean(value))
+          ih->data->value = 1;
+        else
+          ih->data->value = 0;
       }
     }
 
     if (ih->handle)
       iupdrvPostRedraw(ih);
+  }
 
-    return 1;
+  return 0;
+}
+
+static char* iFlatButtonGetValueAttrib(Ihandle* ih)
+{
+  if (iupAttribGetBoolean(ih, "TOGGLE"))
+    return iupStrReturnChecked(ih->data->value);
+  else
+    return NULL;
+}
+
+static int iFlatButtonSetSelectedAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrEqualNoCase(value, "TOGGLE"))
+  {
+    if (ih->data->value)
+      ih->data->value = 0;
+    else
+      ih->data->value = 1;
   }
   else
-    return 0;
+  {
+    if (iupStrBoolean(value))
+      ih->data->value = 1;
+    else
+      ih->data->value = 0;
+  }
+
+  if (ih->handle)
+    iupdrvPostRedraw(ih);
+
+  return 0;
+}
+
+static char* iFlatButtonGetSelectedAttrib(Ihandle* ih)
+{
+  return iupStrReturnChecked(ih->data->value);
 }
 
 static char* iFlatButtonGetRadioAttrib(Ihandle* ih)
@@ -611,10 +656,11 @@ static int iFlatButtonMapMethod(Ihandle* ih)
     Ihandle* radio = iupRadioFindToggleParent(ih);
     if (radio)
     {
-      if (!iupAttribGet(radio, "_IUP_FLATBUTTON_LASTRADIO"))
+      if (!iupAttribGet(radio, "_IUP_FLATBUTTON_LASTTOGGLE"))
       {
         /* this is the first toggle in the radio, and then set it with VALUE=ON */
-        iupAttribSet(ih, "VALUE", "ON");
+        ih->data->value = 1;
+        iupAttribSet(radio, "_IUP_FLATBUTTON_LASTTOGGLE", (char*)ih);
       }
 
       /* make sure it has at least one name */
@@ -684,8 +730,9 @@ Iclass* iupFlatButtonNewClass(void)
   iupClassRegisterAttribute(ic, "TITLE", NULL, iFlatButtonSetAttribPostRedraw, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   /* IupFlatButton */
-  iupClassRegisterAttribute(ic, "VALUE", NULL, iFlatButtonSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RADIO", iFlatButtonGetRadioAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", iFlatButtonGetValueAttrib, iFlatButtonSetValueAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTED", iFlatButtonGetSelectedAttrib, iFlatButtonSetSelectedAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RADIO", iFlatButtonGetRadioAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOGGLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALIGNMENT", iFlatButtonGetAlignmentAttrib, iFlatButtonSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iFlatButtonGetPaddingAttrib, iFlatButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
@@ -693,18 +740,18 @@ Iclass* iupFlatButtonNewClass(void)
   iupClassRegisterAttribute(ic, "SPACING", iFlatButtonGetSpacingAttrib, iFlatButtonSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "2", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CSPACING", iupBaseGetCSpacingAttrib, iupBaseSetCSpacingAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "IGNORERADIO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIGHLIGHTED", iFlatButtonGetHighlightedAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PRESSED", iFlatButtonGetPressedAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HASFOCUS", iFlatButtonGetHasFocusAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIGHLIGHTED", iFlatButtonGetHighlightedAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PRESSED", iFlatButtonGetPressedAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HASFOCUS", iFlatButtonGetHasFocusAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWBORDER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FOCUSFEEDBACK", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FOCUSFEEDBACK", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BORDERCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, IUP_FLAT_BORDERCOLOR, IUPAF_DEFAULT);  /* inheritable */
   iupClassRegisterAttribute(ic, "BORDERPSCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
   iupClassRegisterAttribute(ic, "BORDERHLCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
-  iupClassRegisterAttribute(ic, "BORDERWIDTH", iFlatButtonGetBorderWidthAttrib, iFlatButtonSetBorderWidthAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_DEFAULT);  /* inheritable */
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);  /* force the new default value */
-  iupClassRegisterAttribute(ic, "BGCOLOR", iFlatButtonGetBgColorAttrib, iFlatButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE | IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BORDERWIDTH", iFlatButtonGetBorderWidthAttrib, iFlatButtonSetBorderWidthAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_DEFAULT);  /* inheritable */
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, "DLGFGCOLOR", NULL, IUPAF_DEFAULT);  /* force the new default value */
+  iupClassRegisterAttribute(ic, "BGCOLOR", iFlatButtonGetBgColorAttrib, iFlatButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
   iupClassRegisterAttribute(ic, "HLCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
   iupClassRegisterAttribute(ic, "PSCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
   iupClassRegisterAttribute(ic, "TEXTHLCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
@@ -716,7 +763,7 @@ Iclass* iupFlatButtonNewClass(void)
   iupClassRegisterAttribute(ic, "IMAGEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iFlatButtonGetImagePositionAttrib, iFlatButtonSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTELLIPSIS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTCLIP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

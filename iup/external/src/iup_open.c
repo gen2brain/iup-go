@@ -39,7 +39,6 @@ IUP_API int IupOpen(int *argc, char ***argv)
 {
   if (iup_opened)
     return IUP_OPENED;
-  iup_opened = 1;
 
   if (!argc || !(*argc) || !argv)
   {
@@ -84,6 +83,7 @@ IUP_API int IupOpen(int *argc, char ***argv)
     if (iupStrBoolean(value))
       IupVersionShow();
 
+    iup_opened = 1;
     return IUP_NOERROR;
   }
   else

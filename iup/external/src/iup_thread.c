@@ -17,7 +17,7 @@
 #elif defined(WIN32)
 #include <windows.h>
 #else
-//#warning "FIXME: IupThread platform not identified/supported"
+#warning "FIXME: IupThread platform not identified/supported"
 #endif
 
 #include <stdio.h>              

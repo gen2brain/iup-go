@@ -1,5 +1,5 @@
 /** \file
- * \brief Auxiliary Draw API.
+ * \brief Auxiliary Draw
  *
  * See Copyright Notice in "iup.h"
  */
@@ -12,7 +12,7 @@ extern "C"
 {
 #endif
 
-/** \defgroup auxdraw Auxiliary Draw API
+/** \defgroup auxdraw Auxiliary Draw
  * \par
  * See \ref iup_draw.h
  * \ingroup util */
@@ -26,8 +26,7 @@ extern "C"
 #define IUP_FLAT_BACKCOLOR   "255 255 255"
 #define IUP_FLAT_FORECOLOR   "0 0 0" 
 
-/** Swap integer coordinates if c1 > c2.
-* \ingroup auxdraw */
+/* Swap integer coordinates if c1 > c2. */
 #define iupDrawCheckSwapCoord(_c1, _c2) { if (_c1 > _c2) { int t = _c2; _c2 = _c1; _c1 = t; } }   /* make sure _c1 is smaller than _c2 */
 
 IUP_SDK_API long iupDrawStrToColor(const char* str, long c_def);

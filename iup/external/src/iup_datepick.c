@@ -447,7 +447,6 @@ static void iDatePickUnMapMethod(Ihandle* ih)
   }
 }
 
-__attribute__((weak))
 Iclass* iupDatePickNewClass(void)
 {
   Iclass* ic = iupClassNew(iupRegisterFindClass("frame"));
@@ -472,7 +471,7 @@ Iclass* iupDatePickNewClass(void)
 
   iupClassRegisterAttribute(ic, "SEPARATOR", NULL, iDatePickSetSeparatorAttrib, IUPAF_SAMEASSYSTEM, "/", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORDER", NULL, iDatePickSetOrderAttrib, IUPAF_SAMEASSYSTEM, "DMY", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ZEROPRECED", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ZEROPRECED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CALENDARWEEKNUMBERS", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, iDatePickSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
@@ -480,7 +479,6 @@ Iclass* iupDatePickNewClass(void)
   return ic;
 }
 
-__attribute__((weak))
 IUP_API Ihandle* IupDatePick(void)
 {
   return IupCreate("datepick");
