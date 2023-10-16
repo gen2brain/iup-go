@@ -25,8 +25,8 @@ IupRefresh
 
 IUP_SDK_API Ihandle* iupLayoutFindElementDialog(Ihandle *tree, Ihandle* elem);
 IUP_SDK_API void iupLayoutPropertiesUpdate(Ihandle* properties, Ihandle* elem);
-char* iupLayoutGetElementTitle(Ihandle* elem);
-int iupLayoutAttributeHasChanged(Ihandle* elem, const char* name, const char* value, const char* def_value, int flags);
+IUP_SDK_API char* iupLayoutGetElementTitle(Ihandle* elem);
+IUP_SDK_API int iupLayoutAttributeHasChanged(Ihandle* elem, const char* name, const char* value, const char* def_value, int flags);
 
 enum { IUP_LAYOUT_EXPORT_LUA, IUP_LAYOUT_EXPORT_C, IUP_LAYOUT_EXPORT_LED };
 /* at iup_export */

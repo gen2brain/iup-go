@@ -359,7 +359,7 @@ void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, winValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);  /* force new default value */
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, winValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);   /* force new default value */
 
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, "NORMAL", NULL, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, "NORMAL", NULL, IUPAF_DEFAULT);
 
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winValSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);

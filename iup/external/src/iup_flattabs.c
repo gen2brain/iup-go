@@ -395,15 +395,15 @@ static void iFlatTabsSetExtraFont(Ihandle* ih, int id)
   }
 }
 
-static int iFlatTabsGetExtraWidthId(Ihandle* ih, int i, int img_position, int horiz_padding, int vert_padding, int *extra_height)
+static int iFlatTabsGetExtraWidthId(Ihandle* ih, int id, int img_position, int horiz_padding, int vert_padding, int *extra_height)
 {
-  char* imagename = iupAttribGetId(ih, "EXTRAIMAGE", i);
-  char* title = iupAttribGetId(ih, "EXTRATITLE", i);
+  char* imagename = iupAttribGetId(ih, "EXTRAIMAGE", id);
+  char* title = iupAttribGetId(ih, "EXTRATITLE", id);
   int spacing = iupAttribGetInt(ih, "TABSIMAGESPACING");
   double text_orientation = iupAttribGetDouble(ih, "TABSTEXTORIENTATION");
   int w, h;
 
-  iFlatTabsSetExtraFont(ih, i);
+  iFlatTabsSetExtraFont(ih, id);
 
   iupFlatDrawGetIconSize(ih, img_position, spacing, horiz_padding, vert_padding, imagename, title, &w, &h, text_orientation);
 
@@ -435,15 +435,15 @@ static int iFlatTabsGetExtraWidth(Ihandle* ih, int extra_buttons, int img_positi
   return extra_width;
 }
 
-static int iFlatTabsGetExtraHeightId(Ihandle* ih, int i, int img_position, int horiz_padding, int vert_padding, int *extra_width)
+static int iFlatTabsGetExtraHeightId(Ihandle* ih, int id, int img_position, int horiz_padding, int vert_padding, int *extra_width)
 {
-  char* imagename = iupAttribGetId(ih, "EXTRAIMAGE", i);
-  char* title = iupAttribGetId(ih, "EXTRATITLE", i);
+  char* imagename = iupAttribGetId(ih, "EXTRAIMAGE", id);
+  char* title = iupAttribGetId(ih, "EXTRATITLE", id);
   int spacing = iupAttribGetInt(ih, "TABSIMAGESPACING");
   double text_orientation = iupAttribGetDouble(ih, "TABSTEXTORIENTATION");
   int w, h;
 
-  iFlatTabsSetExtraFont(ih, i);
+  iFlatTabsSetExtraFont(ih, id);
 
   iupFlatDrawGetIconSize(ih, img_position, spacing, horiz_padding, vert_padding, imagename, title, &w, &h, text_orientation);
 
@@ -1287,6 +1287,53 @@ static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, i
   return ITABS_NONE;
 }
 
+static void iFlatTabsGetExtraButtonBox(Ihandle* ih, int tabType, int extra_buttons, int img_position, int horiz_padding, int vert_padding,
+                                       int title_x_pos, int title_y_pos, int title_height, int title_width,
+                                       int id, int *xmin, int *ymin, int *xmax, int *ymax)
+{
+  int i, total_extra_size = 0;
+  int extra_x, extra_y, extra_w, extra_h;
+
+  for (i = 1; i <= extra_buttons; i++)
+  {
+    if (tabType == ITABS_TOP || tabType == ITABS_BOTTOM)
+    {
+      extra_w = iFlatTabsGetExtraWidthId(ih, i, img_position, horiz_padding, vert_padding, NULL);  /* this will also set any id based font */
+      extra_h = title_height;
+
+      if (i == id)
+      {
+        extra_x = ih->currentwidth - total_extra_size - extra_w;
+        extra_y = title_y_pos;
+        *xmin = extra_x + horiz_padding / 2;
+        *xmax = extra_x + extra_w - horiz_padding / 2;
+        *ymin = title_y_pos + vert_padding / 2;
+        *ymax = title_y_pos + title_height - 1 - vert_padding / 2;
+        return;
+      }
+    }
+    else
+    {
+      extra_h = iFlatTabsGetExtraHeightId(ih, i, img_position, horiz_padding, vert_padding, NULL);  /* this will also set any id based font */
+      extra_w = title_width;
+
+      if (i == id)
+      {
+        extra_y = ih->currentheight - total_extra_size - extra_h;
+        extra_x = title_x_pos;
+        *xmin = title_x_pos + horiz_padding / 2;
+        *xmax = title_x_pos + title_width - 1 - horiz_padding / 2;
+        *ymin = extra_y + vert_padding / 2;
+        *ymax = extra_y + extra_h - vert_padding / 2;
+        return;
+      }
+    }
+
+    total_extra_size += (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? extra_w : extra_h;
+  }
+}
+
+
 /*****************************************************************************************/
 
 static void iFlatTabsToggleExpand(Ihandle* ih)
@@ -2098,6 +2145,33 @@ static int iFlatTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static char* iFlatTabsGetExtraBoxAttrib(Ihandle* ih, int id)
+{
+  int extra_buttons = iupAttribGetInt(ih, "EXTRABUTTONS");
+  if (extra_buttons && id >= 1 && id <= extra_buttons)
+  {
+    int xmin, ymin, xmax, ymax;
+    int tabType = iupAttribGetInt(ih, "_IUPTAB_TYPE");
+    int img_position = iupFlatGetImagePosition(iupAttribGetStr(ih, "TABSIMAGEPOSITION"));
+    int horiz_padding, vert_padding;
+    int title_x_pos, title_y_pos, title_width, title_height;
+
+    iupAttribGetIntInt(ih, "TABSPADDING", &horiz_padding, &vert_padding, 'x');
+    iFlatTabsGetTitleSize(ih, &title_width, &title_height, 1);
+
+    title_x_pos = (tabType == ITABS_RIGHT) ? ih->currentwidth - title_width : 0;
+    title_y_pos = (tabType == ITABS_BOTTOM) ? ih->currentheight - title_height : 0;
+
+    iFlatTabsGetExtraButtonBox(ih, tabType, extra_buttons, img_position, horiz_padding, vert_padding,
+                               title_x_pos, title_y_pos, title_height, title_width,
+                               id, &xmin, &ymin, &xmax, &ymax);
+
+    return iupStrReturnStrf("%d %d %d %d", xmin, ymin, xmax, ymax);
+  }
+
+  return NULL;
+}
+
 
 /*********************************************************************************/
 
@@ -2404,7 +2478,7 @@ Iclass* iupFlatTabsNewClass(void)
   iupClassRegisterAttribute(ic, "CLIENTSIZE", iFlatTabsGetClientSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   /* Native Container */
-  iupClassRegisterAttribute(ic, "CHILDOFFSET", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CHILDOFFSET", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* replace IupCanvas behavior */
   iupClassRegisterReplaceAttribDef(ic, "BORDER", "NO", NULL);
@@ -2424,7 +2498,7 @@ Iclass* iupFlatTabsNewClass(void)
   iupClassRegisterAttribute(ic, "HASFOCUS", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABTYPE", NULL, iFlatTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CHILDSIZEALL", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FOCUSFEEDBACK", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FOCUSFEEDBACK", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   /* IupFlatTabs Child only */
   iupClassRegisterAttributeId(ic, "TABTITLE", NULL, (IattribSetIdFunc)iFlatTabsSetAttribPostRedraw, IUPAF_NO_INHERIT);
@@ -2495,6 +2569,7 @@ Iclass* iupFlatTabsNewClass(void)
   iupClassRegisterAttributeId(ic, "EXTRABORDERWIDTH", NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "EXTRAVALUE", NULL, (IattribSetIdFunc)iFlatTabsSetAttribPostRedraw, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "EXTRATOGGLE", NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "EXTRABOX", iFlatTabsGetExtraBoxAttrib, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "EXPANDBUTTON", NULL, iFlatTabsSetExpandButtonAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EXPANDBUTTONPOS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

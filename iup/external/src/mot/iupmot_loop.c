@@ -163,6 +163,5 @@ IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p
   user_data->i = i;
   user_data->d = d;
   user_data->p = p;
-  //XtAppAddWorkProc(iupmot_appcontext, motPostMessagebWorkProc, NULL);
   XtAppAddWorkProc(iupmot_appcontext, motPostMessagebWorkProc, user_data);
 }

@@ -11,6 +11,7 @@
 #include "iup_dlglist.h"
 #include "iup_object.h"
 #include "iup_assert.h"
+#include "iup_attrib.h"
 
 
 typedef struct Idiallst_
@@ -127,7 +128,30 @@ void iupDlgListDestroyAll(void)
   for (i = 0; i < count; i++)
   {
     if (iupObjectCheck(ih_array[i]))
-      IupDestroy(ih_array[i]);   /* this will also destroy the list */
+      IupDestroy(ih_array[i]);   /* this will also destroy the list eventually */
+  }
+
+  free(ih_array);
+}
+
+IUP_SDK_API void iupDlgListDestroySelected(const char* name, void* value)
+{
+  int i, count = 0;
+  Ihandle** ih_array = (Ihandle**)malloc(idlg_count * sizeof(Ihandle*));
+  Idiallst *list;
+  for (list = idlglist; list; list = list->next)
+  {
+    if (iupObjectCheck(list->ih) && ((value && iupAttribGet(list->ih, name) == value) || (!value && iupAttribGet(list->ih, name))))
+    {
+      ih_array[count] = list->ih;
+      count++;
+    }
+  }
+
+  for (i = 0; i < count; i++)
+  {
+    if (iupObjectCheck(ih_array[i]))
+      IupDestroy(ih_array[i]);
   }
 
   free(ih_array);

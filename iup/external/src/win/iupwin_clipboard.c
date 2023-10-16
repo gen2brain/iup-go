@@ -403,7 +403,7 @@ static char* winClipboardGetFormatDataAttrib(Ihandle *ih)
     CloseClipboard();
     return NULL;
   }
-  data = iupStrGetMemory(size+1); /* reserve room for terminator */
+  data = iupStrGetMemory(size+1); /* reserve room for terminator if get FORMATDATASTRING is used */
 
   CopyMemory(data, (char*)GlobalLock(hHandle), size);
   GlobalUnlock(hHandle);
@@ -419,7 +419,7 @@ static char* winClipboardGetFormatDataStringAttrib(Ihandle *ih)
 {
   TCHAR* data = (TCHAR*)winClipboardGetFormatDataAttrib(ih);
   int size = iupAttribGetInt(ih, "FORMATDATASIZE");
-  data[size] = 0;  /* add terminator */
+  data[size] = 0;  /* add terminator, even if there is one already */
   return iupStrReturnStr(iupwinStrFromSystem(data));
 }
 
@@ -429,7 +429,7 @@ static int winClipboardSetFormatDataStringAttrib(Ihandle *ih, const char *value)
   {
     int len = (int)strlen(value);
     TCHAR* wstr = iupwinStrToSystemLen(value, &len);
-    iupAttribSetInt(ih, "FORMATDATASIZE", len + 1);  /* include terminator */
+    iupAttribSetInt(ih, "FORMATDATASIZE", sizeof(TCHAR) * (len + 1)); /* include the terminator, because the other side may not be an IUP application */
     return winClipboardSetFormatDataAttrib(ih, (char*)wstr);
   }
   else
@@ -524,11 +524,11 @@ Iclass* iupClipboardNewClass(void)
   iupClassRegisterAttribute(ic, "SAVEWMF", NULL, winClipboardSetSaveWMFAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ADDFORMAT", NULL, winClipboardSetAddFormatAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMAT", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMAT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATAVAILABLE", winClipboardGetFormatAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATA", winClipboardGetFormatDataAttrib, winClipboardSetFormatDataAttrib, NULL, NULL, IUPAF_NO_STRING|IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATASTRING", winClipboardGetFormatDataStringAttrib, winClipboardSetFormatDataStringAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATDATASIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATDATASIZE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   return ic;
 }

@@ -68,21 +68,28 @@ IUP_API void IupExitLoop(void)
 
 static void winProcessPostMessage(LPARAM lParam);
 
+IUP_DRV_API int iupwinPostMessageFilter(MSG* msg)
+{
+#ifndef USE_WINHOOKPOST
+  if (msg->message == WM_APP && msg->wParam == IWIN_POSTMESSAGE_ID)
+  {
+    winProcessPostMessage(msg->lParam);
+    return 1;
+  }
+#else
+  if (CallMsgFilter(msg, IWIN_POSTMESSAGE_ID))
+    return 1;
+#endif
+  return 0;
+}
+
 static int winLoopProcessMessage(MSG* msg)
 {
   if (msg->message == win_quit_message)  /* IUP_CLOSE returned in a callback or IupHide in a popup dialog or all dialogs closed */
     return IUP_CLOSE;
   else
   {
-#ifndef USE_WINHOOKPOST
-    if (msg->message == WM_APP && msg->wParam == IWIN_POSTMESSAGE_ID)
-    {
-      winProcessPostMessage(msg->lParam);
-      return IUP_DEFAULT;
-    }
-#else
-    if (!CallMsgFilter(msg, IWIN_POSTMESSAGE_ID))
-#endif
+    if (!iupwinPostMessageFilter(msg))
     {
       TranslateMessage(msg);
       DispatchMessage(msg);
@@ -139,7 +146,7 @@ IUP_API int IupMainLoop(void)
       if (ret == -1) /* error */
       {
         return_code = IUP_ERROR;
-        break;
+        /* break; */ /* Very unlikely to occur and rarely, depending on the system, is aborting the application */
       }
       if (ret == 0 || /* WM_QUIT */
           winLoopProcessMessage(&msg) == IUP_CLOSE)  /* ret != 0 */

@@ -76,12 +76,29 @@ static char* winGetTouchAttrib(Ihandle* ih)
   return iupStrReturnBoolean (win_touch_loaded && winIsTouchWindow(ih->handle, &pulFlags)); 
 }
 
+static int winSetGestureAttrib(Ihandle *ih, const char *value)
+{
+  if (win_touch_loaded)
+  {
+    if (!iupStrBoolean(value))
+    {
+      GESTURECONFIG config;
+      config.dwID = 0;
+      config.dwWant = 0;
+      config.dwBlock = GC_ALLGESTURES;
+      SetGestureConfig(ih->handle, 0, 1, &config, sizeof(config));
+    }
+  }
+  return 0;
+}
+
 void iupwinTouchRegisterAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
   iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
 
   iupClassRegisterAttribute(ic, "TOUCH", winGetTouchAttrib, winSetTouchAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GESTURE", NULL, winSetGestureAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
 
 void iupwinTouchProcessInput(Ihandle* ih, int count, void* lp)

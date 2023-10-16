@@ -139,7 +139,9 @@ int iupwinClassExist(const TCHAR* name);
 /*      Utilities    */
 /*********************/
 
-
+int iupwinIsScrollbarVisible(Ihandle* ih, int flag);
+char* iupwinGetScrollVisibleAttrib(Ihandle* ih);
+                                                
 int iupwinSetTitleAttrib(Ihandle* ih, const char* value);
 TCHAR* iupwinGetWindowText(HWND hWnd);
 

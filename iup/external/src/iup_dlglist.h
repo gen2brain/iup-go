@@ -50,9 +50,15 @@ IUP_SDK_API void iupDlgListVisibleDec(void);
  * \ingroup dlglist */
 IUP_SDK_API int iupDlgListVisibleCount(void);
 
+
 /* Destroy all dialogs and the list.
    Called only from IupClose. */
 void iupDlgListDestroyAll(void);
+
+
+/* Destroy all dialogs that have the attribute defined with the given value.
+   Called from language binding close. */
+IUP_SDK_API void iupDlgListDestroySelected(const char* name, void* value);
 
 
 #ifdef __cplusplus

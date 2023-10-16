@@ -264,14 +264,14 @@ typedef int (*IattribSetId2Func)(Ihandle* ih, int id1, int id2, const char* valu
  * Used by \ref iupClassRegisterAttribute.
  * \ingroup iclass */
 typedef enum _IattribFlags{
-  IUPAF_DEFAULT=0,     /**< inheritable, can has a default value, is a string, can call the set/get functions only if mapped, no ID */
+  IUPAF_DEFAULT=0,     /**< inheritable, can has a default value, is a string, can call the set/get functions only if mapped, no ID (to be used alone when there are no other flags) */
   IUPAF_NO_INHERIT=1,  /**< is not inheritable */
   IUPAF_NO_DEFAULTVALUE=2,  /**< can not has a default value */
   IUPAF_NO_STRING=4,   /**< is not a string */
   IUPAF_NOT_MAPPED=8,  /**< will call the set/get functions also when not mapped */
   IUPAF_HAS_ID=16,     /**< can has an ID at the end of the name, automatically set by \ref iupClassRegisterAttributeId */
-  IUPAF_READONLY=32,   /**< is read-only, can not be changed */
-  IUPAF_WRITEONLY=64,  /**< is write-only, usually an action */
+  IUPAF_READONLY=32,   /**< is read-only, can not be changed (except when using internal functions), get is optional, set will never be used */
+  IUPAF_WRITEONLY=64,  /**< is write-only, usually an action, set must exist, get will never be used */
   IUPAF_HAS_ID2=128,   /**< can has two IDs at the end of the name, automatically set by \ref iupClassRegisterAttributeId2 */
   IUPAF_CALLBACK=256,  /**< is a callback, not an attribute */
   IUPAF_NO_SAVE=512,   /**< can NOT be directly saved, should have at least manual processing */
