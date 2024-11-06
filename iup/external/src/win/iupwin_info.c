@@ -496,7 +496,7 @@ IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
   {
     TCHAR* wstr[1];
     wstr[0] = iupwinStrToSystem(value);
-    ReportEvent(EventSource, wtype, 0, 0, NULL, 1, 0, wstr, NULL);
+    ReportEvent(EventSource, wtype, 0, 0, NULL, 1, 0, (const WCHAR **)wstr, NULL);
     DeregisterEventSource(EventSource);
   }
 }

@@ -538,7 +538,7 @@ static void* winImageCreateBitmap(Ihandle *ih, const char* bgcolor, int make_ina
     }
 
     hDC = GetDC(NULL);
-    hBitmap = CreateDIBSection(hDC, (BITMAPINFO*)bmih, DIB_RGB_COLORS, &bits, NULL, 0x0);
+    hBitmap = CreateDIBSection(hDC, (BITMAPINFO*)bmih, DIB_RGB_COLORS, (void **)&bits, NULL, 0x0);
     ReleaseDC(NULL, hDC);
     free(bmih);
   }
