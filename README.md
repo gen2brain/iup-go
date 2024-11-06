@@ -10,8 +10,6 @@ Note that the first build can take a few minutes.
 
 ### Requirements
 
-Go 1.18 is minimum required version (cgo.Handle, any, new style build tags).
-
 #### Windows
 
 On Windows, you need a C compiler, like [Mingw-w64](https://mingw-w64.org) or [TDM-GCC](http://tdm-gcc.tdragon.net/).
