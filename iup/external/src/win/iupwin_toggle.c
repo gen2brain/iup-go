@@ -363,6 +363,7 @@ static int winToggleSetValueAttrib(Ihandle* ih, const char* value)
     if (check == -1)
       check = BST_CHECKED;
 
+    /* After map the first toggle in radio will set value=ON, but last_tg will be NULL */
     last_tg = (Ihandle*)iupAttribGet(radio, "_IUPWIN_LASTTOGGLE");
     if (check)
     {
@@ -709,8 +710,8 @@ static int winToggleMapMethod(Ihandle* ih)
     if (!iupAttribGet(radio, "_IUPWIN_LASTTOGGLE"))
     {
       /* this is the first toggle in the radio, and then set it with VALUE=ON */
+      /* After map the attribute value will be processed and _IUPWIN_LASTTOGGLE will be set */
       iupAttribSet(ih, "VALUE","ON");
-      iupAttribSet(radio, "_IUPWIN_LASTTOGGLE", (char*)ih);
     }
 
     /* make sure it has at least one name */

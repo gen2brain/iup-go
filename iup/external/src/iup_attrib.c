@@ -304,7 +304,7 @@ void iupAttribUpdate(Ihandle* ih)
   {
     if (!iupATTRIB_ISINTERNAL(name))
     {
-      name_array[i] = name;
+      name_array[i] = iupStrDup(name);
       i++;
     }
 
@@ -328,6 +328,8 @@ void iupAttribUpdate(Ihandle* ih)
 
     if (store == 0)
       iupTableRemove(ih->attrib, name); /* remove from the table according to the class SetAttribute */
+
+    free(name_array[i]);
   }
 
   free(name_array);
