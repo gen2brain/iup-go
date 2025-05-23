@@ -1317,7 +1317,7 @@ static char iStrUTF8toLatin1(const char* *s)
     (*s)++;
     c = **s;
     u |= (c & 0x3F);         /* second part (10XXXXXX) */
-    if (u >= -128 && u < 128)
+    if (u >= 0 && u < 256)
       return (char)u;
     else
       return 0;
@@ -1594,23 +1594,30 @@ IUP_SDK_API void iupStrChangeCase(char* dstr, const char* sstr, int case_flag, i
       dst = iStrToLowerLatin1(src);
       break;
     case IUP_CASE_TOGGLE:
-    {
-      char c = iStrToUpperLatin1(src);
-      if (c != src) /* was lower */
-        dst = c;
-      else
-        dst = iStrToLowerLatin1(src);
-      break;
-    }
+      {
+        char c = iStrToUpperLatin1(src);
+        if (c != src) /* was lower */
+          dst = c;
+        else
+          dst = iStrToLowerLatin1(src);
+        break;
+      }
     case IUP_CASE_TITLE:
-      if (first || (dstr[-1] == ' ' && 
-                    dstr[+1] != 0 && dstr[+1] != ' ' &&
-                    dstr[+2] != 0 && dstr[+2] != ' ' &&
-                    dstr[+3] != 0 && dstr[+3] != ' ')) /* the first letter of the string or the first letter of a word separated by spaces, but with more than 3 characters */
-        dst = iStrToUpperLatin1(src);
-      else
-        dst = iStrToLowerLatin1(src);
-      break;
+      {
+        int first_of_small_word = !first && (dstr[-1] == ' ' && /* first letter of a word */
+                                             ((dstr[+1] != 0 && dstr[+1] == ' ') ||   /* word of 1 */
+                                              (dstr[+2] != 0 && dstr[+2] == ' ') ||   /* word of 2 */
+                                              (dstr[+3] != 0 && dstr[+3] == ' ')));   /* word of 3 */
+        if (first_of_small_word) /* don't change the first of small words with less than 3 characters */
+          break;
+
+        /* the first letter of the whole string or the first letter of a word */
+        if (first || (dstr[-1] == ' '))
+          dst = iStrToUpperLatin1(src);
+        else
+          dst = iStrToLowerLatin1(src);
+        break;
+      }
     }
 
     if (utf8)
@@ -1619,6 +1626,26 @@ IUP_SDK_API void iupStrChangeCase(char* dstr, const char* sstr, int case_flag, i
       *dstr = dst;
 
     first = 0;
+  }
+  *dstr = 0;
+}
+
+IUP_SDK_API void iupStrAnsiToUtf8(char* dstr, const char* sstr)
+{
+  if (!sstr || sstr[0] == 0) return;
+  for (; *sstr; sstr++, dstr++)
+  {
+    dstr = iStrLatin1toUTF8(dstr, *sstr);
+  }
+  *dstr = 0;
+}
+
+IUP_SDK_API void iupStrUtf8ToAnsi(char* dstr, const char* sstr)
+{
+  if (!sstr || sstr[0] == 0) return;
+  for (; *sstr; sstr++, dstr++)
+  {
+    *dstr = iStrUTF8toLatin1(&sstr);
   }
   *dstr = 0;
 }

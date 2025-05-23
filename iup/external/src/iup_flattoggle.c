@@ -227,9 +227,12 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
     if (check_image)
     {
       if (selected == -1)
-        draw_image = iupFlatGetImageName(ih, "CHECKIMAGENOTDEF", check_image, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
+        draw_image = iupFlatGetImageName(ih, "CHECKIMAGENOTDEF", NULL, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
       else if (selected)
-        draw_image = iupFlatGetImageName(ih, "CHECKIMAGEON", check_image, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
+        draw_image = iupFlatGetImageName(ih, "CHECKIMAGEON", NULL, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
+      
+      if (!draw_image)
+        draw_image = iupFlatGetImageName(ih, "CHECKIMAGE", check_image, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
 
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, check_xmin, check_ymin, -1, -1);
     }
@@ -781,6 +784,7 @@ static int iFlatToggleMapMethod(Ihandle* ih)
     {
       /* this is the first toggle in the radio, and then set it with VALUE=ON */
       ih->data->value = 1;
+      /* value is already set, attribute will not be updated after map, must set last toggle here */
       iupAttribSet(radio, "_IUP_FLATTOGGLE_LASTTOGGLE", (char*)ih);
     }
 

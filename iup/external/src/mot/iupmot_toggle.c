@@ -248,6 +248,7 @@ static int motToggleSetValueAttrib(Ihandle* ih, const char* value)
 
     XtVaGetValues(ih->handle, XmNset, &oldcheck, NULL);
 
+    /* After map the first toggle in radio will set value=ON, but last_tg will be NULL */
     last_tg = (Ihandle*)iupAttribGet(radio, "_IUPMOT_LASTTOGGLE");
     if (check)
     {
@@ -458,8 +459,8 @@ static int motToggleMapMethod(Ihandle* ih)
     if (!iupAttribGet(radio, "_IUPMOT_LASTTOGGLE"))
     {
       /* this is the first toggle in the radio, and the last toggle with VALUE=ON */
+      /* After map the attribute value will be processed and _IUPMOT_LASTTOGGLE will be set */
       iupAttribSet(ih, "VALUE","ON");
-      iupAttribSet(radio, "_IUPMOT_LASTTOGGLE", (char*)ih);
     }
 
     /* make sure it has at least one name */
