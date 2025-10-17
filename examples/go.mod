@@ -1,12 +1,12 @@
 module examples
 
-go 1.19
+go 1.22
 
 replace github.com/gen2brain/iup-go/iup => ../iup
 
 require (
-	github.com/gen2brain/iup-go/iup v0.0.0-20230905053800-45429ebe100d
-	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
+	github.com/gen2brain/iup-go/iup v0.0.0-00010101000000-000000000000
+	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71
 )
 
-require github.com/google/uuid v1.3.1 // indirect
+require github.com/google/uuid v1.6.0 // indirect
