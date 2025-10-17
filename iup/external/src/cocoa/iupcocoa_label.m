@@ -5,6 +5,7 @@
  */
 
 #include <Cocoa/Cocoa.h>
+#import <objc/runtime.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,914 +30,1116 @@
 
 #include "iupcocoa_drv.h"
 
-#import "IUPCocoaVerticalAlignmentTextFieldCell.h"
+#import "IupCocoaVerticalAlignmentTextFieldCell.h"
 
 
-
-static NSView* cocoaLabelGetRootView(Ihandle* ih)
+@interface IUPCocoaLabelEventView : NSView
 {
-	NSView* root_container_view = (NSView*)ih->handle;
-	return root_container_view;
+	NSTrackingArea* _mouseTrackingArea;
 }
+@end
+
+@implementation IUPCocoaLabelEventView
+
+- (void)dealloc
+{
+	if (_mouseTrackingArea)
+	{
+		[self removeTrackingArea:_mouseTrackingArea];
+		[_mouseTrackingArea release];
+	}
+	[super dealloc];
+}
+
+- (void)mouseDown:(NSEvent *)theEvent
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
+    [super mouseDown:theEvent];
+}
+
+- (void)mouseUp:(NSEvent *)theEvent
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
+    [super mouseUp:theEvent];
+}
+
+- (void)rightMouseDown:(NSEvent *)theEvent
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
+    [super rightMouseDown:theEvent];
+}
+
+- (void)rightMouseUp:(NSEvent *)theEvent
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
+    [super rightMouseUp:theEvent];
+}
+
+- (void)otherMouseDown:(NSEvent *)theEvent
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
+    [super otherMouseDown:theEvent];
+}
+
+- (void)otherMouseUp:(NSEvent *)theEvent
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
+    [super otherMouseUp:theEvent];
+}
+
+- (void)mouseMoved:(NSEvent *)theEvent
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupCocoaCommonBaseHandleMouseMotionCallback(ih, theEvent, self))
+    [super mouseMoved:theEvent];
+}
+
+- (void)mouseDragged:(NSEvent *)theEvent
+{
+  [self mouseMoved:theEvent];
+}
+
+- (void)rightMouseDragged:(NSEvent *)theEvent
+{
+  [self mouseMoved:theEvent];
+}
+
+- (void)otherMouseDragged:(NSEvent *)theEvent
+{
+  [self mouseMoved:theEvent];
+}
+
+- (void)updateTrackingAreas
+{
+	[super updateTrackingAreas];
+
+	if (_mouseTrackingArea)
+	{
+		[self removeTrackingArea:_mouseTrackingArea];
+		[_mouseTrackingArea release];
+		_mouseTrackingArea = nil;
+	}
+
+	NSTrackingAreaOptions options = NSTrackingMouseEnteredAndExited |
+                                   NSTrackingMouseMoved |
+                                   NSTrackingActiveInKeyWindow |
+                                   NSTrackingInVisibleRect;
+	_mouseTrackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds]
+	                                                  options:options
+	                                                    owner:self
+	                                                 userInfo:nil];
+	[self addTrackingArea:_mouseTrackingArea];
+}
+
+- (void)mouseEntered:(NSEvent *)theEvent
+{
+  [super mouseEntered:theEvent];
+
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih) return;
+
+  IFn cb = (IFn)IupGetCallback(ih, "ENTERWINDOW_CB");
+  if (cb)
+  {
+    if (cb(ih) == IUP_CLOSE)
+      IupExitLoop();
+  }
+}
+
+- (void)mouseExited:(NSEvent *)theEvent
+{
+  [super mouseExited:theEvent];
+
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih) return;
+
+  IFn cb = (IFn)IupGetCallback(ih, "LEAVEWINDOW_CB");
+  if (cb)
+  {
+    if (cb(ih) == IUP_CLOSE)
+      IupExitLoop();
+  }
+}
+
+@end
+
 
 static NSTextField* cocoaLabelGetTextField(Ihandle* ih)
 {
-	NSTextField* text_field = (NSTextField*)cocoaLabelGetRootView(ih);
-	//NSCAssert([text_field isKindOfClass:[NSTextField class]], @"Expected NSTextField");
-	return text_field;
+  return (NSTextField*)iupCocoaGetMainView(ih);
 }
 
 static NSImageView* cocoaLabelGetImageView(Ihandle* ih)
 {
-	NSView* root_container_view = cocoaLabelGetRootView(ih);
-	//NSCAssert([root_container_view isKindOfClass:[NSImageView class]], @"Expected NSImageView");
-	return (NSImageView*)root_container_view;
+  return (NSImageView*)iupCocoaGetMainView(ih);
 }
-
 
 void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
 {
-	*x += 4;
+  (void)ih;
+  (void)x;
+  (void)y;
 }
-
 
 static int cocoaLabelSetPaddingAttrib(Ihandle* ih, const char* value)
 {
-	// Our Cocoa iupdrvbaseUpdateLayout contains a special case to handle padding. We just need to make sure the padding values get set here.
-	// Other platforms seem to be skipping separators. We could theoretically support this since we are just manually computing offsets in iupdrvbaseUpdateLayout.
-	if(ih->handle && ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
-	{
-		// I believe this sets the internal data structure values.
-		iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
-		// HACK: I need to force a redraw. iupdrvbaseUpdateLayout queries the PADDING attribute, but it is not immediately set yet. So I'll force it to set now.
-		iupAttribSetStr(ih, "PADDING", value);
-		
-		// Windows always calls iupdrvRedrawNow, and we need to too because the change won't update without it.
-		// But this can require a new layout, so we need IupRefresh.
-		IupRefresh(ih);
-	}
-	return 0;
-}
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
 
+  if (ih->handle && ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
+  {
+    IupRefresh(ih);
+    return 0;
+  }
+
+  return 1;
+}
 
 static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
 {
-	NSTextField* the_label = cocoaLabelGetTextField(ih);
-	if(the_label)
-	{
-		// NSImageCells don't accept a stringValue, so bail out if we have a cell
-		if([the_label respondsToSelector:@selector(cell)])
-		{
-			id cell = [the_label cell];
-			if((nil != cell) && [cell isKindOfClass:[NSImageCell class]])
-			{
-				return 0;
-			}
-		}
-	
-	
-		NSString* ns_string = nil;
-		if(value)
-		{
-			char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);   /* remove & */
-			
-			// This will return nil if the string can't be converted.
-			ns_string = [NSString stringWithUTF8String:stripped_str];
-			
-			if(stripped_str && stripped_str != value)
-			{
-				free(stripped_str);
-			}
-		}
-		else
-		{
-			ns_string = @"";
-		}
-		
-	
-		// If the user set font attributes, we should try to use them
-		IupCocoaFont* iup_font = iupCocoaGetFont(ih);
-		if([iup_font usesAttributes]
-			&& [the_label respondsToSelector:@selector(setAttributedStringValue:)]
-		)
-		{
-			NSAttributedString* attr_str = [[NSAttributedString alloc] initWithString:ns_string attributes:[iup_font attributeDictionary]];
-			[the_label setAttributedStringValue:attr_str];
-			[attr_str release];
-			// I think I need to call this. I noticed in another program, when I suddenly set a long string, it seems to use the prior layout. This forces a relayout.
-			IupRefresh(ih);
-		}
-		else if([the_label respondsToSelector:@selector(setStringValue:)])
-		{
-			[the_label setStringValue:ns_string];
-			// I think I need to call this. I noticed in another program, when I suddenly set a long string, it seems to use the prior layout. This forces a relayout.
-			IupRefresh(ih);
-		}
-	}
-	return 1;
+  NSTextField* the_label = cocoaLabelGetTextField(ih);
+  if (!the_label)
+    return 0;
 
+  if ([the_label respondsToSelector:@selector(cell)])
+  {
+    id cell = [the_label cell];
+    if ((nil != cell) && [cell isKindOfClass:[NSImageCell class]])
+      return 0;
+  }
+
+  NSString* ns_string = nil;
+  if (value)
+  {
+    char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
+    ns_string = [NSString stringWithUTF8String:stripped_str];
+
+    if (stripped_str && stripped_str != value)
+      free(stripped_str);
+  }
+  else
+  {
+    ns_string = @"";
+  }
+
+  IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+  char* fgcolor = iupAttribGet(ih, "FGCOLOR");
+  unsigned char r, g, b;
+  BOOL need_attributed = [iup_font usesAttributes] || (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b));
+
+  if (need_attributed)
+  {
+    NSMutableAttributedString* attr_str;
+
+    if ([iup_font usesAttributes])
+    {
+      attr_str = [[NSMutableAttributedString alloc] initWithString:ns_string
+                                                        attributes:[iup_font attributeDictionary]];
+    }
+    else
+    {
+      NSMutableDictionary* attrs = [NSMutableDictionary dictionary];
+      NSFont* native_font = [iup_font nativeFont];
+      if (native_font)
+        [attrs setObject:native_font forKey:NSFontAttributeName];
+
+      attr_str = [[NSMutableAttributedString alloc] initWithString:ns_string attributes:attrs];
+    }
+
+    if (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b))
+    {
+      NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+      NSRange range = NSMakeRange(0, [attr_str length]);
+      [attr_str addAttribute:NSForegroundColorAttributeName value:color range:range];
+    }
+
+    [the_label setAttributedStringValue:attr_str];
+    [attr_str release];
+  }
+  else
+  {
+    [the_label setStringValue:ns_string];
+  }
+
+  /* Calculate proper size with buffer for text metrics */
+  [the_label sizeToFit];
+  NSRect label_frame = [the_label frame];
+
+  /* Add small buffer to width to ensure all characters are visible */
+  label_frame.size.width += 4.0;
+  [the_label setFrame:label_frame];
+
+  /* Update the wrapper view frame to match */
+  NSView* wrapper = iupCocoaGetRootView(ih);
+  if (wrapper && wrapper != the_label)
+  {
+    [wrapper setFrame:label_frame];
+  }
+
+  if (ih->handle)
+    IupRefresh(ih);
+
+  return 1;
 }
-
-
-
 
 static int cocoaLabelSetActiveAttrib(Ihandle* ih, const char* value)
 {
-	NSView* the_view = cocoaLabelGetRootView(ih);
-	BOOL is_active = (BOOL)iupStrBoolean(value);
+  NSView* the_view = iupCocoaGetMainView(ih);
+  if (!the_view)
+    return iupBaseSetActiveAttrib(ih, value);
 
-	if([the_view isKindOfClass:[NSTextField class]])
-	{
-		NSTextField* the_label = (NSTextField*)the_view;
-		[the_label setEnabled:is_active];
-		
-		// For whatever reason, Cocoa doesn't automatically gray out labels when disabled.
-		// But it's a pretty common thing to do, so everybody explicitly sets the color using the Cocoa predefined color constants.
-		if(is_active)
-		{
-			// FIXME: If the user has requested a different text color, we need to use that color instead
-			[the_label setTextColor:[NSColor controlTextColor]];
-		}
-		else
-		{
-			[the_label setTextColor:[NSColor disabledControlTextColor]];
-		}
-	}
-	else if([the_view isKindOfClass:[NSImageView class]])
-	{
-		NSImageView* image_view = (NSImageView*)the_view;
-		[image_view setEnabled:is_active];
-	}
-	else
-	{
-		NSLog(@"Unexpected type in cocoaLabelSetActiveAttrib");
-	}
+  BOOL is_active = (BOOL)iupStrBoolean(value);
 
-	return 1;
+  if ([the_view isKindOfClass:[NSTextField class]])
+  {
+    NSTextField* the_label = (NSTextField*)the_view;
+    [the_label setEnabled:is_active];
 
+    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    BOOL uses_attributed_string = ([iup_font usesAttributes] || [[the_label attributedStringValue] length] > 0);
+
+    NSColor* color;
+    if (is_active)
+    {
+      char* user_color = iupAttribGet(ih, "_IUPCOCOA_USER_FGCOLOR");
+      if (user_color)
+      {
+        unsigned char r, g, b;
+        if (iupStrToRGB(user_color, &r, &g, &b))
+          color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+        else
+          color = [NSColor controlTextColor];
+      }
+      else
+      {
+        color = [NSColor controlTextColor];
+      }
+    }
+    else
+    {
+      color = [NSColor disabledControlTextColor];
+    }
+
+    if (uses_attributed_string)
+    {
+      NSMutableAttributedString* attr_str = [[the_label attributedStringValue] mutableCopy];
+      if (attr_str && [attr_str length] > 0)
+      {
+        NSRange range = NSMakeRange(0, [attr_str length]);
+        [attr_str addAttribute:NSForegroundColorAttributeName value:color range:range];
+        [the_label setAttributedStringValue:attr_str];
+        [attr_str release];
+      }
+    }
+    else
+    {
+      [the_label setTextColor:color];
+    }
+  }
+  else if ([the_view isKindOfClass:[NSImageView class]])
+  {
+    NSImageView* image_view = (NSImageView*)the_view;
+
+    char* image_name;
+    int make_inactive = 0;
+
+    if (is_active)
+    {
+      image_name = iupAttribGet(ih, "IMAGE");
+    }
+    else
+    {
+      image_name = iupAttribGet(ih, "IMINACTIVE");
+      if (!image_name)
+      {
+        image_name = iupAttribGet(ih, "IMAGE");
+        make_inactive = 1;
+      }
+    }
+
+    if (image_name)
+    {
+      id the_bitmap = iupImageGetImage(image_name, ih, make_inactive, NULL);
+      [image_view setImage:the_bitmap];
+    }
+  }
+
+  return iupBaseSetActiveAttrib(ih, value);
 }
-
 
 static char* cocoaLabelGetTitleAttrib(Ihandle* ih)
 {
-	NSTextField* the_label = cocoaLabelGetTextField(ih);
-	if(the_label)
-	{
-		// This could be a NSTextField, some kind of image, or something else.
-		
-		if([the_label respondsToSelector:@selector(setStringValue:)])
-		{
-			NSString* ns_string = [the_label stringValue];
-			if(ns_string)
-			{
-				return iupStrReturnStr([ns_string UTF8String]);
-			}
-		}
-	}
-	return NULL;
-	
+  NSTextField* the_label = cocoaLabelGetTextField(ih);
+  if (the_label)
+  {
+    if ([the_label respondsToSelector:@selector(stringValue)])
+    {
+      NSString* ns_string = [the_label stringValue];
+      if (ns_string)
+      {
+        return iupStrReturnStr([ns_string UTF8String]);
+      }
+    }
+  }
+  return NULL;
 }
+
+static char* cocoaLabelGetAlignmentAttrib(Ihandle* ih)
+{
+  if (ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
+  {
+    char* horiz_align2str[3] = {"ALEFT", "ACENTER", "ARIGHT"};
+    char* vert_align2str[3] = {"ATOP", "ACENTER", "ABOTTOM"};
+
+    int horiz = ih->data->horiz_alignment;
+    int vert = ih->data->vert_alignment;
+
+    if (horiz < IUP_ALIGN_ALEFT || horiz > IUP_ALIGN_ARIGHT)
+      horiz = IUP_ALIGN_ACENTER;
+    if (vert < IUP_ALIGN_ATOP || vert > IUP_ALIGN_ABOTTOM)
+      vert = IUP_ALIGN_ACENTER;
+
+    return iupStrReturnStrf("%s:%s", horiz_align2str[horiz], vert_align2str[vert]);
+  }
+
+  return NULL;
+}
+
 static int cocoaLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
-	if(ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
-	{
-		if(ih->data->type == IUP_LABEL_TEXT)
-		{
-			NSTextField* the_label = cocoaLabelGetTextField(ih);
+  if (ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
+  {
+    char value1[30], value2[30];
+    iupStrToStrStr(value, value1, value2, ':');
 
-			// Note: We might be able to get away with any kind of NSControl
-			NSCAssert([the_label isKindOfClass:[NSTextField class]], @"Expected NSTextField");
+    if (ih->data->type == IUP_LABEL_TEXT)
+    {
+      NSTextField* the_label = cocoaLabelGetTextField(ih);
+      NSCAssert([the_label isKindOfClass:[NSTextField class]], @"Expected NSTextField");
 
-			char value1[30], value2[30];
-			
-			iupStrToStrStr(value, value1, value2, ':');
+      if (iupStrEqualNoCase(value1, "ARIGHT"))
+      {
+        [the_label setAlignment:NSTextAlignmentRight];
+        ih->data->horiz_alignment = IUP_ALIGN_ARIGHT;
+      }
+      else if (iupStrEqualNoCase(value1, "ACENTER"))
+      {
+        [the_label setAlignment:NSTextAlignmentCenter];
+        ih->data->horiz_alignment = IUP_ALIGN_ACENTER;
+      }
+      else
+      {
+        [the_label setAlignment:NSTextAlignmentLeft];
+        ih->data->horiz_alignment = IUP_ALIGN_ALEFT;
+      }
 
-			
-			if (iupStrEqualNoCase(value1, "ARIGHT"))
-			{
-				[the_label setAlignment:NSTextAlignmentRight];
-			}
-			else if (iupStrEqualNoCase(value1, "ACENTER"))
-			{
-				[the_label setAlignment:NSTextAlignmentCenter];
-			}
-			else /* "ALEFT" */
-			{
-				[the_label setAlignment:NSTextAlignmentLeft];
+      if (iupStrEqualNoCase(value2, "ABOTTOM"))
+      {
+        NSCAssert([[the_label cell] isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+        IUPCocoaVerticalAlignmentTextFieldCell* vertical_alignment_cell = (IUPCocoaVerticalAlignmentTextFieldCell*)[the_label cell];
+        [vertical_alignment_cell setAlignmentMode:IUPTextVerticalAlignmentBottom];
+        ih->data->vert_alignment = IUP_ALIGN_ABOTTOM;
+      }
+      else if (iupStrEqualNoCase(value2, "ATOP"))
+      {
+        NSCAssert([[the_label cell] isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+        IUPCocoaVerticalAlignmentTextFieldCell* vertical_alignment_cell = (IUPCocoaVerticalAlignmentTextFieldCell*)[the_label cell];
+        [vertical_alignment_cell setAlignmentMode:IUPTextVerticalAlignmentTop];
+        ih->data->vert_alignment = IUP_ALIGN_ATOP;
+      }
+      else
+      {
+        NSCAssert([[the_label cell] isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+        IUPCocoaVerticalAlignmentTextFieldCell* vertical_alignment_cell = (IUPCocoaVerticalAlignmentTextFieldCell*)[the_label cell];
+        [vertical_alignment_cell setAlignmentMode:IUPTextVerticalAlignmentCenter];
+        ih->data->vert_alignment = IUP_ALIGN_ACENTER;
+      }
 
-			}
-			
-			
-			// Vertical alignment is not built into NSTextField.
-			// We implemented our own custom NSTextFieldCell subclass to handle this case.
-			
-			if (iupStrEqualNoCase(value2, "ABOTTOM"))
-			{
-				NSCAssert([[the_label cell] isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-				IUPCocoaVerticalAlignmentTextFieldCell* vertical_alignment_cell = (IUPCocoaVerticalAlignmentTextFieldCell*)[the_label cell];
-				[vertical_alignment_cell setAlignmentMode:IUPTextVerticalAlignmentBottom];
-			}
-			else if (iupStrEqualNoCase(value2, "ATOP"))
-			{
-				NSCAssert([[the_label cell] isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-				IUPCocoaVerticalAlignmentTextFieldCell* vertical_alignment_cell = (IUPCocoaVerticalAlignmentTextFieldCell*)[the_label cell];
-				[vertical_alignment_cell setAlignmentMode:IUPTextVerticalAlignmentTop];
-			}
-			else  /* ACENTER (default) */
-			{
-				NSCAssert([[the_label cell] isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-				IUPCocoaVerticalAlignmentTextFieldCell* vertical_alignment_cell = (IUPCocoaVerticalAlignmentTextFieldCell*)[the_label cell];
-				[vertical_alignment_cell setAlignmentMode:IUPTextVerticalAlignmentCenter];
+      return 1;
+    }
+    else if (ih->data->type == IUP_LABEL_IMAGE)
+    {
+      NSImageView* the_label = cocoaLabelGetImageView(ih);
+      NSCAssert([the_label isKindOfClass:[NSImageView class]], @"Expected NSImageView");
 
-			}
+      if (iupStrEqualNoCase(value1, "ARIGHT"))
+      {
+        ih->data->horiz_alignment = IUP_ALIGN_ARIGHT;
 
-			return 1;
-		}
-		else if(ih->data->type == IUP_LABEL_IMAGE)
-		{
-			NSImageView* the_label = cocoaLabelGetImageView(ih);
-			// Note: We might be able to get away with any kind of NSControl
-			NSCAssert([the_label isKindOfClass:[NSImageView class]], @"Expected NSImageView");
-			
-			char value1[30], value2[30];
-			
-			iupStrToStrStr(value, value1, value2, ':');
-			
-			
-			if(iupStrEqualNoCase(value1, "ARIGHT"))
-			{
-				if(iupStrEqualNoCase(value2, "ABOTTOM"))
-				{
-					[the_label setImageAlignment:NSImageAlignBottomRight];
-				}
-				else if (iupStrEqualNoCase(value2, "ATOP"))
-				{
-					[the_label setImageAlignment:NSImageAlignTopRight];
-				}
-				else  /* ACENTER */
-				{
-					[the_label setImageAlignment:NSImageAlignRight];
-				}
-			}
-			else if (iupStrEqualNoCase(value1, "ACENTER"))
-			{
-				if(iupStrEqualNoCase(value2, "ABOTTOM"))
-				{
-					[the_label setImageAlignment:NSImageAlignBottom];
-				}
-				else if (iupStrEqualNoCase(value2, "ATOP"))
-				{
-					[the_label setImageAlignment:NSImageAlignTop];
-				}
-				else  /* ACENTER */
-				{
-					[the_label setImageAlignment:NSImageAlignCenter];
-				}
-			}
-			else /* "ALEFT" */
-			{
-				if(iupStrEqualNoCase(value2, "ABOTTOM"))
-				{
-					[the_label setImageAlignment:NSImageAlignBottomLeft];
-				}
-				else if (iupStrEqualNoCase(value2, "ATOP"))
-				{
-					[the_label setImageAlignment:NSImageAlignTopLeft];
-				}
-				else  /* ACENTER */
-				{
-					[the_label setImageAlignment:NSImageAlignLeft];
-				}
-			}
-			
-			
-			return 1;
-		}
-	}
-	
-	return 0;
+        if (iupStrEqualNoCase(value2, "ABOTTOM"))
+        {
+          [the_label setImageAlignment:NSImageAlignBottomRight];
+          ih->data->vert_alignment = IUP_ALIGN_ABOTTOM;
+        }
+        else if (iupStrEqualNoCase(value2, "ATOP"))
+        {
+          [the_label setImageAlignment:NSImageAlignTopRight];
+          ih->data->vert_alignment = IUP_ALIGN_ATOP;
+        }
+        else
+        {
+          [the_label setImageAlignment:NSImageAlignRight];
+          ih->data->vert_alignment = IUP_ALIGN_ACENTER;
+        }
+      }
+      else if (iupStrEqualNoCase(value1, "ACENTER"))
+      {
+        ih->data->horiz_alignment = IUP_ALIGN_ACENTER;
+
+        if (iupStrEqualNoCase(value2, "ABOTTOM"))
+        {
+          [the_label setImageAlignment:NSImageAlignBottom];
+          ih->data->vert_alignment = IUP_ALIGN_ABOTTOM;
+        }
+        else if (iupStrEqualNoCase(value2, "ATOP"))
+        {
+          [the_label setImageAlignment:NSImageAlignTop];
+          ih->data->vert_alignment = IUP_ALIGN_ATOP;
+        }
+        else
+        {
+          [the_label setImageAlignment:NSImageAlignCenter];
+          ih->data->vert_alignment = IUP_ALIGN_ACENTER;
+        }
+      }
+      else
+      {
+        ih->data->horiz_alignment = IUP_ALIGN_ALEFT;
+
+        if (iupStrEqualNoCase(value2, "ABOTTOM"))
+        {
+          [the_label setImageAlignment:NSImageAlignBottomLeft];
+          ih->data->vert_alignment = IUP_ALIGN_ABOTTOM;
+        }
+        else if (iupStrEqualNoCase(value2, "ATOP"))
+        {
+          [the_label setImageAlignment:NSImageAlignTopLeft];
+          ih->data->vert_alignment = IUP_ALIGN_ATOP;
+        }
+        else
+        {
+          [the_label setImageAlignment:NSImageAlignLeft];
+          ih->data->vert_alignment = IUP_ALIGN_ACENTER;
+        }
+      }
+
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
-// Warning: The pre-10.10 behavior never behaved well. Maybe it should be removed.
 static int cocoaLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
 {
-	if (ih->data->type == IUP_LABEL_TEXT)
-	{
-		NSTextField* the_label = cocoaLabelGetTextField(ih);
-		// Note: We might be able to get away with any kind of NSControl
-		NSCAssert([the_label isKindOfClass:[NSTextField class]], @"Expected NSTextField");
-		if(iupStrBoolean(value))
-		{
-			// setLineBreakMode Requires 10.10+. Allows for both word wrapping and different ellipsis behaviors.
-			if([the_label respondsToSelector:@selector(setLineBreakMode:)])
-			{
-				[the_label setLineBreakMode:NSLineBreakByWordWrapping];
-				IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-				NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-				[vertical_cell setUseWordWrap:YES];
-				[vertical_cell setUseEllipsis:NO];
-			}
-			else
-			{
+  if (ih->data->type == IUP_LABEL_TEXT)
+  {
+    NSTextField* the_label = cocoaLabelGetTextField(ih);
+    NSCAssert([the_label isKindOfClass:[NSTextField class]], @"Expected NSTextField");
 
-				char* ellipsis_state = iupAttribGet(ih, "ELLIPSIS");
-				if(iupStrBoolean(ellipsis_state))
-				{
-					// Ellipsis only seem to appear when multiline is enabled
-					[the_label setUsesSingleLineMode:NO];
-					[[the_label cell] setScrollable:NO];
-					
-					[[the_label cell] setWraps:YES];
-					[[the_label cell] setLineBreakMode:NSLineBreakByTruncatingTail];
-					[[the_label cell] setTruncatesLastVisibleLine:YES];
-					
-					IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-					NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-					[vertical_cell setUseWordWrap:YES];
-					[vertical_cell setUseEllipsis:YES];
+    if (iupStrBoolean(value))
+    {
+      if ([the_label respondsToSelector:@selector(setLineBreakMode:)])
+      {
+        [the_label setLineBreakMode:NSLineBreakByWordWrapping];
+        IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+        NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+        [vertical_cell setUseWordWrap:YES];
+        [vertical_cell setUseEllipsis:NO];
+      }
+      else
+      {
+        char* ellipsis_state = iupAttribGet(ih, "ELLIPSIS");
+        if (iupStrBoolean(ellipsis_state))
+        {
+          [the_label setUsesSingleLineMode:NO];
+          [[the_label cell] setScrollable:NO];
+          [[the_label cell] setWraps:YES];
+          [[the_label cell] setLineBreakMode:NSLineBreakByTruncatingTail];
+          [[the_label cell] setTruncatesLastVisibleLine:YES];
 
-					
-				}
-				else
-				{
-					[the_label setUsesSingleLineMode:NO];
-					[[the_label cell] setScrollable:NO];
-					
-					[[the_label cell] setWraps:YES];
-					[[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
-					[[the_label cell] setTruncatesLastVisibleLine:NO];
-					
-					IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-					NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-					[vertical_cell setUseWordWrap:YES];
-					[vertical_cell setUseEllipsis:NO];
-				}
-				
-			}
-			
-		}
-		else
-		{
-			// setLineBreakMode Requires 10.10+. Allows for both word wrapping and different ellipsis behaviors.
-			if([the_label respondsToSelector:@selector(setLineBreakMode:)])
-			{
-				// Wrapping and ellipsis are mutually exclusive
-				char* ellipsis_state = iupAttribGet(ih, "ELLIPSIS");
-				if(iupStrBoolean(ellipsis_state))
-				{
-					[the_label setLineBreakMode:NSLineBreakByTruncatingTail];
-					
-					IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-					NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-					[vertical_cell setUseWordWrap:NO];
-					[vertical_cell setUseEllipsis:YES];
-				}
-				else
-				{
-					[the_label setLineBreakMode:NSLineBreakByClipping];
-					
-					IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-					NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-					[vertical_cell setUseWordWrap:NO];
-					[vertical_cell setUseEllipsis:NO];
-				}
-			}
-			else
-			{
-				
-				char* ellipsis_state = iupAttribGet(ih, "ELLIPSIS");
-				if(iupStrBoolean(ellipsis_state))
-				{
-					// Ellipsis only seem to appear when multiline is enabled
-					[the_label setUsesSingleLineMode:NO];
-					[[the_label cell] setScrollable:NO];
-					
-					[[the_label cell] setWraps:YES];
-					[[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
-					[[the_label cell] setTruncatesLastVisibleLine:YES];
-					
-					IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-					NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-					[vertical_cell setUseWordWrap:NO];
-					[vertical_cell setUseEllipsis:YES];
-				}
-				else
-				{
-					[the_label setUsesSingleLineMode:YES];
-					[[the_label cell] setScrollable:YES];
-					
-					[[the_label cell] setWraps:NO];
-					[[the_label cell] setLineBreakMode:NSLineBreakByClipping];
-					[[the_label cell] setTruncatesLastVisibleLine:NO];
+          IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+          NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+          [vertical_cell setUseWordWrap:YES];
+          [vertical_cell setUseEllipsis:YES];
+        }
+        else
+        {
+          [the_label setUsesSingleLineMode:NO];
+          [[the_label cell] setScrollable:NO];
+          [[the_label cell] setWraps:YES];
+          [[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
+          [[the_label cell] setTruncatesLastVisibleLine:NO];
 
-					IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-					NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-					[vertical_cell setUseWordWrap:NO];
-					[vertical_cell setUseEllipsis:NO];
+          IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+          NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+          [vertical_cell setUseWordWrap:YES];
+          [vertical_cell setUseEllipsis:NO];
+        }
+      }
+    }
+    else
+    {
+      if ([the_label respondsToSelector:@selector(setLineBreakMode:)])
+      {
+        char* ellipsis_state = iupAttribGet(ih, "ELLIPSIS");
+        if (iupStrBoolean(ellipsis_state))
+        {
+          [the_label setLineBreakMode:NSLineBreakByTruncatingTail];
 
-				}
-				
-			}
-		}
-		return 1;
-	}
-	return 0;
+          IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+          NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+          [vertical_cell setUseWordWrap:NO];
+          [vertical_cell setUseEllipsis:YES];
+        }
+        else
+        {
+          [the_label setLineBreakMode:NSLineBreakByClipping];
+
+          IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+          NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+          [vertical_cell setUseWordWrap:NO];
+          [vertical_cell setUseEllipsis:NO];
+        }
+      }
+      else
+      {
+        char* ellipsis_state = iupAttribGet(ih, "ELLIPSIS");
+        if (iupStrBoolean(ellipsis_state))
+        {
+          [the_label setUsesSingleLineMode:NO];
+          [[the_label cell] setScrollable:NO];
+          [[the_label cell] setWraps:YES];
+          [[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
+          [[the_label cell] setTruncatesLastVisibleLine:YES];
+
+          IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+          NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+          [vertical_cell setUseWordWrap:NO];
+          [vertical_cell setUseEllipsis:YES];
+        }
+        else
+        {
+          [the_label setUsesSingleLineMode:YES];
+          [[the_label cell] setScrollable:YES];
+          [[the_label cell] setWraps:NO];
+          [[the_label cell] setLineBreakMode:NSLineBreakByClipping];
+          [[the_label cell] setTruncatesLastVisibleLine:NO];
+
+          IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+          NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+          [vertical_cell setUseWordWrap:NO];
+          [vertical_cell setUseEllipsis:NO];
+        }
+      }
+    }
+
+    if (ih->handle)
+      IupRefresh(ih);
+
+    return 1;
+  }
+  return 0;
 }
 
-
-// Warning: The pre-10.10 behavior never behaved well. Maybe it should be removed.
 static int cocoaLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
 {
-	if (ih->data->type == IUP_LABEL_TEXT)
-	{
-		NSTextField* the_label = cocoaLabelGetTextField(ih);
-		// Note: We might be able to get away with any kind of NSControl
-		NSCAssert([the_label isKindOfClass:[NSTextField class]], @"Expected NSTextField");
+  if (ih->data->type == IUP_LABEL_TEXT)
+  {
+    NSTextField* the_label = cocoaLabelGetTextField(ih);
+    NSCAssert([the_label isKindOfClass:[NSTextField class]], @"Expected NSTextField");
 
+    if (iupStrBoolean(value))
+    {
+      if ([the_label respondsToSelector:@selector(setLineBreakMode:)])
+      {
+        [the_label setUsesSingleLineMode:YES];
+        [the_label setLineBreakMode:NSLineBreakByTruncatingTail];
 
-		if(iupStrBoolean(value))
-		{
-			// setLineBreakMode Requires 10.10+. Allows for both word wrapping and different ellipsis behaviors.
-			if([the_label respondsToSelector:@selector(setLineBreakMode:)])
-			{
-				// Wrapping and ellipsis are mutually exclusive
-				// TODO: Expose different ellipsis modes to public API
-				[the_label setUsesSingleLineMode:YES];
-				[the_label setLineBreakMode:NSLineBreakByTruncatingTail];
+        IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+        NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+        [vertical_cell setUseWordWrap:NO];
+        [vertical_cell setUseEllipsis:YES];
+      }
+      else
+      {
+        [[the_label cell] setScrollable:NO];
+        [[the_label cell] setWraps:YES];
+        [[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
+        [[the_label cell] setTruncatesLastVisibleLine:YES];
 
-				IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-				NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-				[vertical_cell setUseWordWrap:NO];
-				[vertical_cell setUseEllipsis:YES];
+        IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+        NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+        [vertical_cell setUseWordWrap:YES];
+        [vertical_cell setUseEllipsis:YES];
+      }
+    }
+    else
+    {
+      if ([the_label respondsToSelector:@selector(setLineBreakMode:)])
+      {
+        char* wordwrap_state = iupAttribGet(ih, "WORDWRAP");
+        if (iupStrBoolean(wordwrap_state))
+        {
+          [the_label setUsesSingleLineMode:NO];
+          [the_label setLineBreakMode:NSLineBreakByWordWrapping];
 
-			}
-			else
-			{
-				// Ellipsis only seem to appear when multiline is enabled
-				[[the_label cell] setScrollable:NO];
-				
-				[[the_label cell] setWraps:YES];
-				[[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
-				[[the_label cell] setTruncatesLastVisibleLine:YES];
-				
-				IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-				NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-				[vertical_cell setUseWordWrap:YES];
-				[vertical_cell setUseEllipsis:YES];
-				
-			}
-		}
-		else
-		{
-			// setLineBreakMode Requires 10.10+. Allows for both word wrapping and different ellipsis behaviors.
-			if([the_label respondsToSelector:@selector(setLineBreakMode:)])
-			{
-				// Wrapping and ellipsis are mutually exclusive
+          IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+          NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+          [vertical_cell setUseWordWrap:YES];
+          [vertical_cell setUseEllipsis:NO];
+        }
+        else
+        {
+          [the_label setLineBreakMode:NSLineBreakByClipping];
 
-				char* wordwrap_state = iupAttribGet(ih, "WORDWRAP");
-				if(iupStrBoolean(wordwrap_state))
-				{
-					[the_label setUsesSingleLineMode:NO];
-					[the_label setLineBreakMode:NSLineBreakByWordWrapping];
-					
-					IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-					NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-					[vertical_cell setUseWordWrap:YES];
-					[vertical_cell setUseEllipsis:NO];
-				}
-				else
-				{
-					[the_label setLineBreakMode:NSLineBreakByClipping];
-					
-					IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-					NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-					[vertical_cell setUseWordWrap:NO];
-					[vertical_cell setUseEllipsis:NO];
-				}
-				
-			}
-			else
-			{
-				
-				char* wordwrap_state = iupAttribGet(ih, "WORDWRAP");
-				if(iupStrBoolean(wordwrap_state))
-				{
-					[[the_label cell] setScrollable:NO];
-					
-					[[the_label cell] setWraps:YES];
-					[[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
-					[[the_label cell] setTruncatesLastVisibleLine:YES];
-					
-					IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-					NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-					[vertical_cell setUseWordWrap:YES];
-					[vertical_cell setUseEllipsis:NO];
-				}
-				else
-				{
-					[[the_label cell] setScrollable:YES];
-					
-					[[the_label cell] setWraps:NO];
-					[[the_label cell] setLineBreakMode:NSLineBreakByClipping];
-					[[the_label cell] setTruncatesLastVisibleLine:NO];
-					
-					IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
-					NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
-					[vertical_cell setUseWordWrap:NO];
-					[vertical_cell setUseEllipsis:NO];
-				}
-								
-			}
+          IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+          NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+          [vertical_cell setUseWordWrap:NO];
+          [vertical_cell setUseEllipsis:NO];
+        }
+      }
+      else
+      {
+        char* wordwrap_state = iupAttribGet(ih, "WORDWRAP");
+        if (iupStrBoolean(wordwrap_state))
+        {
+          [[the_label cell] setScrollable:NO];
+          [[the_label cell] setWraps:YES];
+          [[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
+          [[the_label cell] setTruncatesLastVisibleLine:YES];
 
-		
-		}
-		return 1;
-	}
-	return 0;
+          IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+          NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+          [vertical_cell setUseWordWrap:YES];
+          [vertical_cell setUseEllipsis:NO];
+        }
+        else
+        {
+          [[the_label cell] setScrollable:YES];
+          [[the_label cell] setWraps:NO];
+          [[the_label cell] setLineBreakMode:NSLineBreakByClipping];
+          [[the_label cell] setTruncatesLastVisibleLine:NO];
+
+          IUPCocoaVerticalAlignmentTextFieldCell* vertical_cell = [the_label cell];
+          NSCAssert([vertical_cell isKindOfClass:[IUPCocoaVerticalAlignmentTextFieldCell class]], @"Expected IUPCocoaVerticalAlignmentTextFieldCell");
+          [vertical_cell setUseWordWrap:NO];
+          [vertical_cell setUseEllipsis:NO];
+        }
+      }
+    }
+
+    if (ih->handle)
+      IupRefresh(ih);
+
+    return 1;
+  }
+  return 0;
 }
-
 
 static int cocoaLabelSetImageAttrib(Ihandle* ih, const char* value)
 {
-	
-	if(ih->data->type == IUP_LABEL_IMAGE)
-	{
-		NSImageView* image_view = cocoaLabelGetImageView(ih);
-		if(nil == image_view)
-		{
-			return 0;
-		}
-		
-		char* name;
-		int make_inactive = 0;
-		
-		if (iupdrvIsActive(ih))
-		{
-			make_inactive = 0;
-		}
-		else
-		{
-			name = iupAttribGet(ih, "IMINACTIVE");
-			if (!name)
-			{
-				make_inactive = 1;
-			}
-		}
-		
-		
-		id the_bitmap;
-		the_bitmap = iupImageGetImage(value, ih, make_inactive, NULL);
-		int width;
-		int height;
-		int bpp;
-		
-		iupdrvImageGetInfo(the_bitmap, &width, &height, &bpp);
-		
-		// FIXME: What if the width and height change? Do we change it or leave it alone?
-		NSSize new_size = NSMakeSize(width, height);
-		NSRect the_frame = [image_view frame];
-		the_frame.size = new_size;
-		[image_view setFrame:the_frame];
+  if (ih->data->type != IUP_LABEL_IMAGE)
+    return 0;
 
-		[image_view setImage:the_bitmap];
-		
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
+  NSImageView* image_view = cocoaLabelGetImageView(ih);
+  if (!image_view)
+    return 0;
+
+  char* name;
+  int make_inactive = 0;
+
+  if (iupdrvIsActive(ih))
+  {
+    name = (char*)value;
+  }
+  else
+  {
+    name = iupAttribGet(ih, "IMINACTIVE");
+    if (!name)
+    {
+      name = (char*)value;
+      make_inactive = 1;
+    }
+  }
+
+  if (name)
+  {
+    id the_bitmap = iupImageGetImage(name, ih, make_inactive, NULL);
+    [image_view setImage:the_bitmap];
+
+    if (ih->handle)
+      IupRefresh(ih);
+  }
+
+  return 1;
 }
 
+static int cocoaLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type != IUP_LABEL_IMAGE)
+    return 0;
+
+  if (iupdrvIsActive(ih))
+    return 1;
+
+  NSImageView* image_view = cocoaLabelGetImageView(ih);
+  if (!image_view)
+    return 0;
+
+  if (value)
+  {
+    id the_bitmap = iupImageGetImage(value, ih, 0, NULL);
+    [image_view setImage:the_bitmap];
+  }
+  else
+  {
+    char* name = iupAttribGet(ih, "IMAGE");
+    if (name)
+    {
+      id the_bitmap = iupImageGetImage(name, ih, 1, NULL);
+      [image_view setImage:the_bitmap];
+    }
+  }
+
+  return 1;
+}
+
+static int cocoaLabelSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  NSView* the_view = iupCocoaGetMainView(ih);
+  NSView* root_view = iupCocoaGetRootView(ih);
+  unsigned char r, g, b;
+
+  /* Ignore given value, must use only from parent */
+  char* parent_value = iupBaseNativeParentGetBgColor(ih);
+
+  if (iupStrToRGB(parent_value, &r, &g, &b))
+  {
+    NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+
+    if ([the_view isKindOfClass:[NSTextField class]])
+    {
+      NSTextField* text_field = (NSTextField*)the_view;
+      [text_field setBackgroundColor:color];
+      [text_field setDrawsBackground:YES];
+    }
+
+    if (root_view && @available(macOS 10.12, *))
+    {
+      [root_view setWantsLayer:YES];
+      [[root_view layer] setBackgroundColor:[color CGColor]];
+    }
+  }
+
+  (void)value;
+  return iupdrvBaseSetBgColorAttrib(ih, parent_value);
+}
+
+static int cocoaLabelSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  int type = iupLabelGetTypeBeforeMap(ih);
+  if (type != IUP_LABEL_SEP_HORIZ && type != IUP_LABEL_SEP_VERT)
+  {
+    unsigned char r, g, b;
+    if (iupStrToRGB(value, &r, &g, &b))
+    {
+      iupAttribSetStr(ih, "_IUPCOCOA_USER_FGCOLOR", value);
+
+      if (ih->handle)
+      {
+        NSView* the_view = iupCocoaGetMainView(ih);
+        if ([the_view isKindOfClass:[NSTextField class]])
+        {
+          NSTextField* text_field = (NSTextField*)the_view;
+          if (iupdrvIsActive(ih))
+          {
+            NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+
+            NSAttributedString* current_attr_string = [text_field attributedStringValue];
+            if (current_attr_string && [current_attr_string length] > 0)
+            {
+              NSMutableAttributedString* attr_str = [current_attr_string mutableCopy];
+              NSRange range = NSMakeRange(0, [attr_str length]);
+              [attr_str addAttribute:NSForegroundColorAttributeName value:color range:range];
+              [text_field setAttributedStringValue:attr_str];
+              [attr_str release];
+            }
+            else
+            {
+              [text_field setTextColor:color];
+            }
+          }
+        }
+      }
+    }
+  }
+  return 1;
+}
+
+static int cocoaLabelSetFontAttrib(Ihandle* ih, const char* value)
+{
+  if (!value)
+    return 0;
+
+  if (!ih->handle || ih->data->type != IUP_LABEL_TEXT)
+    return 1;
+
+  IupCocoaFont* font = iupCocoaFindFont(value);
+  if (!font || !font.nativeFont)
+    return 0;
+
+  NSTextField* the_label = cocoaLabelGetTextField(ih);
+  if (the_label)
+  {
+    NSAttributedString* current_attr_string = [the_label attributedStringValue];
+
+    if (current_attr_string && [current_attr_string length] > 0)
+    {
+      NSMutableAttributedString* new_attr_string = [current_attr_string mutableCopy];
+      NSRange full_range = NSMakeRange(0, [new_attr_string length]);
+
+      [new_attr_string addAttribute:NSFontAttributeName value:font.nativeFont range:full_range];
+
+      if ([font usesAttributes])
+      {
+        NSDictionary* font_attrs = [font attributeDictionary];
+        for (NSString* attr_key in font_attrs)
+        {
+          if (![attr_key isEqualToString:NSForegroundColorAttributeName])
+          {
+            [new_attr_string addAttribute:attr_key value:[font_attrs objectForKey:attr_key] range:full_range];
+          }
+        }
+      }
+
+      [the_label setAttributedStringValue:new_attr_string];
+      [new_attr_string release];
+    }
+    else
+    {
+      [the_label setFont:font.nativeFont];
+    }
+
+    IupRefresh(ih);
+  }
+
+  return 1;
+}
 
 static int cocoaLabelSetSelectable(Ihandle* ih, const char* value)
 {
-	NSView* the_view = cocoaLabelGetRootView(ih);
-	BOOL is_active = (BOOL)iupStrBoolean(value);
+  NSView* the_view = iupCocoaGetMainView(ih);
+  BOOL is_active = (BOOL)iupStrBoolean(value);
 
-	if([the_view isKindOfClass:[NSTextField class]])
-	{
-		NSTextField* the_label = (NSTextField*)the_view;
+  if ([the_view isKindOfClass:[NSTextField class]])
+  {
+    NSTextField* the_label = (NSTextField*)the_view;
 
-		// FIXME: APPLE BUG: setSelectable:YES completely breaks using our vertical alignment cell subclass.
-		// When clicking the text, the text will snap to a wrong position and stay there.
-		// UPDATE: Apple seems to have fixed the bug in later macOS releases.
-		// However, the default should probably be off since older macOS will have bugs.
-		[the_label setSelectable:is_active];
+    /* Note: In older macOS versions, setSelectable:YES may cause visual glitches with vertical alignment. */
+    [the_label setSelectable:is_active];
+  }
+  else if ([the_view isKindOfClass:[NSImageView class]])
+  {
+    /* Not supported for image views */
+  }
 
-	}
-	else if([the_view isKindOfClass:[NSImageView class]])
-	{
-		// not supported
-	}
-	else
-	{
-		NSLog(@"Unexpected type in cocoaLabelSetSelectable");
-	}
-
-	return 1;
-
+  return 1;
 }
 
 static char* cocoaLabelGetSelectable(Ihandle* ih)
 {
-	NSView* the_view = cocoaLabelGetRootView(ih);
-	BOOL is_active = NO;
-	if([the_view isKindOfClass:[NSTextField class]])
-	{
-		NSTextField* the_label = (NSTextField*)the_view;
+  NSView* the_view = iupCocoaGetMainView(ih);
+  BOOL is_active = NO;
 
-		// FIXME: APPLE BUG: setSelectable:YES completely breaks using our vertical alignment cell subclass.
-		// When clicking the text, the text will snap to a wrong position and stay there.
-		// UPDATE: Apple seems to have fixed the bug in later macOS releases.
-		// However, the default should probably be off since older macOS will have bugs.
-		is_active =[the_label isSelectable];
-	}
-	else if([the_view isKindOfClass:[NSImageView class]])
-	{
-		// not supported
-	}
-	else
-	{
-		NSLog(@"Unexpected type in cocoaLabelSetSelectable");
-	}
-	
-	return iupStrReturnBoolean(is_active);
+  if ([the_view isKindOfClass:[NSTextField class]])
+  {
+    NSTextField* the_label = (NSTextField*)the_view;
+    is_active = [the_label isSelectable];
+  }
+  else if ([the_view isKindOfClass:[NSImageView class]])
+  {
+    /* Not supported for image views */
+  }
+
+  return iupStrReturnBoolean(is_active);
 }
 
 static int cocoaLabelMapMethod(Ihandle* ih)
 {
-	char* value;
-	// using id because we may be using different types depending on the case
-	id the_label = nil;
-	
-	value = iupAttribGet(ih, "SEPARATOR");
-	if (value)
-	{
-		if (iupStrEqualNoCase(value, "HORIZONTAL"))
-		{
-			ih->data->type = IUP_LABEL_SEP_HORIZ;
+  char* value;
+  id the_actual_label = nil;
 
-//			NSBox* horizontal_separator= [[NSBox alloc] initWithFrame:NSMakeRect(20.0, 20.0, 250.0, 1.0)];
-			NSBox* horizontal_separator= [[NSBox alloc] initWithFrame:NSMakeRect(0.0, 0.0, 250.0, 1.0)];
-			[horizontal_separator setBoxType:NSBoxSeparator];
-			the_label = horizontal_separator;
-			
-		}
-		else /* "VERTICAL" */
-		{
-			ih->data->type = IUP_LABEL_SEP_VERT;
+  value = iupAttribGet(ih, "SEPARATOR");
+  if (value)
+  {
+    if (iupStrEqualNoCase(value, "HORIZONTAL"))
+    {
+      ih->data->type = IUP_LABEL_SEP_HORIZ;
+      NSBox* horizontal_separator = [[NSBox alloc] initWithFrame:NSMakeRect(0.0, 0.0, 250.0, 1.0)];
+      [horizontal_separator setBoxType:NSBoxSeparator];
+      the_actual_label = horizontal_separator;
+    }
+    else
+    {
+      ih->data->type = IUP_LABEL_SEP_VERT;
+      NSBox* vertical_separator = [[NSBox alloc] initWithFrame:NSMakeRect(0.0, 0.0, 1.0, 250.0)];
+      [vertical_separator setBoxType:NSBoxSeparator];
+      the_actual_label = vertical_separator;
+    }
+  }
+  else
+  {
+    value = iupAttribGet(ih, "IMAGE");
+    if (value)
+    {
+      ih->data->type = IUP_LABEL_IMAGE;
 
-//			NSBox* vertical_separator=[[NSBox alloc] initWithFrame:NSMakeRect(20.0, 20.0, 1.0, 250.0)];
-			NSBox* vertical_separator=[[NSBox alloc] initWithFrame:NSMakeRect(0.0, 0.0, 1.0, 250.0)];
-			[vertical_separator setBoxType:NSBoxSeparator];
-			the_label = vertical_separator;
+      iupAttribSet(ih, "_IUPCOCOA_ACTIVE", "YES");
 
-		}
-	}
-	else
-	{
-		value = iupAttribGet(ih, "IMAGE");
-		if (value)
-		{
-			ih->data->type = IUP_LABEL_IMAGE;
-			
-			char *name;
-			int make_inactive = 0;
-			
-			if (iupdrvIsActive(ih))
-    name = iupAttribGet(ih, "IMAGE");
-			else
-			{
-    name = iupAttribGet(ih, "IMINACTIVE");
-    if (name)
-	{
-		name = iupAttribGet(ih, "IMAGE");
-		make_inactive = 1;
-	}
-			}
-			
-			
-			id the_bitmap;
-			the_bitmap = iupImageGetImage(name, ih, make_inactive, NULL);
-			int width;
-			int height;
-			int bpp;
-			
-			iupdrvImageGetInfo(the_bitmap, &width, &height, &bpp);
+      char *name;
+      int make_inactive = 0;
 
-//			static int woffset = 0;
-//			static int hoffset = 0;
-			
-			NSImageView* image_view = [[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
-//			NSImageView* image_view = [[NSImageView alloc] initWithFrame:NSMakeRect(woffset, hoffset, width, height)];
-			[image_view setImage:the_bitmap];
-			
-//			woffset += 30;
-//			hoffset += 30;
-			
-			the_label = image_view;
-			
-#if 0
-			if (!the_bitmap)
-					return;
-			
-			/* must use this info, since image can be a driver image loaded from resources */
-			iupdrvImageGetInfo(hBitmap, &width, &height, &bpp);
+      if (iupdrvIsActive(ih))
+      {
+        name = iupAttribGet(ih, "IMAGE");
+      }
+      else
+      {
+        name = iupAttribGet(ih, "IMINACTIVE");
+        if (!name)
+        {
+          name = iupAttribGet(ih, "IMAGE");
+          make_inactive = 1;
+        }
+      }
 
-			
-			NSBitmapImageRep* bitmap_image = [[NSBitmapImageRep alloc]
-									 initWithBitmapDataPlanes:NULL
-									 pixelsWide: width
-									 pixelsHigh: height
-									 bitsPerSample: 8
-									 samplesPerPixel: 4
-									 hasAlpha: YES
-									 isPlanar: NO
-									 colorSpaceName: NSCalibratedRGBColorSpace
-									 bytesPerRow: width * 4
-									 bitsPerPixel: 32]
-#endif
+      id the_bitmap = iupImageGetImage(name, ih, make_inactive, NULL);
+      int width;
+      int height;
+      int bpp;
 
-		}
-		else
-		{
-			ih->data->type = IUP_LABEL_TEXT;
+      iupdrvImageGetInfo(the_bitmap, &width, &height, &bpp);
 
-			the_label = [[NSTextField alloc] initWithFrame:NSZeroRect];
-//			the_label = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)];
+      NSImageView* image_view = [[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
+      [image_view setImage:the_bitmap];
 
-#if 1
-			IUPCocoaVerticalAlignmentTextFieldCell* textfield_cell = [[IUPCocoaVerticalAlignmentTextFieldCell alloc] initTextCell:@""];
-			[the_label setCell:textfield_cell];
-			[textfield_cell release];
-			//[textfield_cell setScrollable:NO];
-			
-//			[textfield_cell performClick:nil];
-			
-//			[textfield_cell setAlignmentMode:IUPTextVerticalAlignmentTop];
-			
-#endif
-			
-			
-			[the_label setBezeled:NO];
-			[the_label setDrawsBackground:NO];
-//			[the_label setDrawsBackground:YES]; // sometimes helpful for debugging layout issues
-			[the_label setEditable:NO];
-//			[the_label setSelectable:NO];
-			// TODO: FEATURE: I think this is really convenient for users so it should be the default
-			// FIXME: APPLE BUG: setSelectable:YES completely breaks using our vertical alignment cell subclass.
-			// When clicking the text, the text will snap to a wrong position and stay there.
-			// UPDATE: Apple seems to have fixed the bug in later macOS releases.
-			// However, the default should probably be off since older macOS will have bugs.
-//			[the_label setSelectable:YES];
-			
-//			NSFont* the_font = [the_label font];
-//			NSLog(@"font %@", the_font);
-			[the_label setFont:[NSFont systemFontOfSize:0.0]];
+      the_actual_label = image_view;
+    }
+    else
+    {
+      ih->data->type = IUP_LABEL_TEXT;
 
-			
-			
-#if 1
-			if([the_label respondsToSelector:@selector(setLineBreakMode:)])
-			{
-				[the_label setLineBreakMode:NSLineBreakByClipping];
-				
-			}
-			else
-			{
-				
-				[[the_label cell] setTruncatesLastVisibleLine:NO];
+      iupAttribSet(ih, "_IUPCOCOA_ACTIVE", "YES");
 
+      the_actual_label = [[NSTextField alloc] initWithFrame:NSZeroRect];
 
-				
-				
-				[the_label setUsesSingleLineMode:YES];
-				[[the_label cell] setScrollable:YES];
-				
-				[[the_label cell] setWraps:NO];
-				[[the_label cell] setLineBreakMode:NSLineBreakByClipping];
-				[[the_label cell] setTruncatesLastVisibleLine:NO];
-				
-			}
-			
-			
-	
-#else
-			
-			
-			[the_label setUsesSingleLineMode:NO];
-			[[the_label cell] setWraps:YES];
-			[[the_label cell] setScrollable:NO];
-			
-//			[[the_label cell] setTruncatesLastVisibleLine:YES];
+      IUPCocoaVerticalAlignmentTextFieldCell* textfield_cell = [[IUPCocoaVerticalAlignmentTextFieldCell alloc] initTextCell:@""];
+      [the_actual_label setCell:textfield_cell];
+      [textfield_cell release];
 
-			// setLineBreakMode Requires 10.10+. Allows for both word wrapping and different ellipsis behaviors.
-//			[the_label setLineBreakMode:NSLineBreakByWordWrapping];
-#endif
-			
+      [the_actual_label setBezeled:NO];
+      [the_actual_label setDrawsBackground:NO];
+      [the_actual_label setEditable:NO];
+      [the_actual_label setSelectable:NO];
+      [the_actual_label setFont:[NSFont systemFontOfSize:[NSFont systemFontSize]]];
 
-		}
-	}
-	
-	if (!the_label)
-	{
-		return IUP_ERROR;
-	}
-	
-	
-	ih->handle = the_label;
-	iupCocoaSetAssociatedViews(ih, the_label, the_label);
+      if ([the_actual_label respondsToSelector:@selector(setLineBreakMode:)])
+      {
+        [the_actual_label setLineBreakMode:NSLineBreakByClipping];
+      }
+      else
+      {
+        [[the_actual_label cell] setTruncatesLastVisibleLine:NO];
+        [the_actual_label setUsesSingleLineMode:YES];
+        [[the_actual_label cell] setScrollable:YES];
+        [[the_actual_label cell] setWraps:NO];
+        [[the_actual_label cell] setLineBreakMode:NSLineBreakByClipping];
+        [[the_actual_label cell] setTruncatesLastVisibleLine:NO];
+      }
 
-	
-	
-	/* add to the parent, all GTK controls must call this. */
-//	iupgtkAddToParent(ih);
-	
-	
-//	Ihandle* ih_parent = ih->parent;
-//	id parent_native_handle = ih_parent->handle;
-	
-	iupCocoaAddToParent(ih);
-	
-	
-	/* configure for DRAG&DROP of files */
-	if (IupGetCallback(ih, "DROPFILES_CB"))
-	{
-		iupAttribSet(ih, "DROPFILESTARGET", "YES");
-	}
-	
-	return IUP_NOERROR;
+      char* title = iupAttribGet(ih, "TITLE");
+      if (title)
+      {
+        NSString* ns_string = [NSString stringWithUTF8String:title];
+        [(NSTextField*)the_actual_label setStringValue:ns_string];
+        [(NSTextField*)the_actual_label sizeToFit];
+      }
+    }
+  }
+
+  if (!the_actual_label)
+  {
+    return IUP_ERROR;
+  }
+
+  /* Get the frame after any sizing operations */
+  NSRect label_frame = [the_actual_label frame];
+
+  IUPCocoaLabelEventView* event_view_wrapper = [[IUPCocoaLabelEventView alloc] initWithFrame:label_frame];
+  [event_view_wrapper addSubview:the_actual_label];
+
+  [the_actual_label setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
+  [the_actual_label setFrame:[event_view_wrapper bounds]];
+  [the_actual_label release];
+
+  ih->handle = event_view_wrapper;
+  objc_setAssociatedObject(event_view_wrapper, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
+
+  iupCocoaSetAssociatedViews(ih, the_actual_label, event_view_wrapper);
+
+  iupCocoaAddToParent(ih);
+
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+  {
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+  }
+
+  return IUP_NOERROR;
 }
-
 
 static void cocoaLabelUnMapMethod(Ihandle* ih)
 {
-	id the_label = ih->handle;
-	// Destroy the context menu ih it exists
-	{
-		Ihandle* context_menu_ih = (Ihandle*)iupCocoaCommonBaseGetContextMenuAttrib(ih);
-		if(NULL != context_menu_ih)
-		{
-			IupDestroy(context_menu_ih);
-		}
-		iupCocoaCommonBaseSetContextMenuAttrib(ih, NULL);
-	}
-
-	iupCocoaRemoveFromParent(ih);
-	iupCocoaSetAssociatedViews(ih, nil, nil);
-	[the_label release];
-	ih->handle = nil;
-
+  iupdrvBaseUnMapMethod(ih);
 }
-
 
 void iupdrvLabelInitClass(Iclass* ic)
 {
-  /* Driver Dependent Class functions */
   ic->Map = cocoaLabelMapMethod;
-	ic->UnMap = cocoaLabelUnMapMethod;
-	
-
-
-  /* Driver Dependent Attribute functions */
+  ic->UnMap = cocoaLabelUnMapMethod;
 
   /* Overwrite Visual */
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, cocoaLabelSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-#if 0
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, gtkLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, cocoaLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* Special */
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-	
-#endif
-	
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaLabelSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FONT", NULL, cocoaLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+
   iupClassRegisterAttribute(ic, "TITLE", cocoaLabelGetTitleAttrib, cocoaLabelSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+
   /* IupLabel only */
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, cocoaLabelSetAlignmentAttrib, "ALEFT:ACENTER", NULL, IUPAF_NO_INHERIT);  /* force new default value */
+  iupClassRegisterAttribute(ic, "ALIGNMENT", cocoaLabelGetAlignmentAttrib, cocoaLabelSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT:ACENTER", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, cocoaLabelSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-#if 0
+
   /* IupLabel GTK and Motif only */
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, gtkLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-#endif
-	
+  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, cocoaLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+
   /* IupLabel Windows and GTK only */
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, cocoaLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, cocoaLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
+
   /* Mac only */
   iupClassRegisterAttribute(ic, "SELECTABLE", cocoaLabelGetSelectable, cocoaLabelSetSelectable, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT|IUPAF_NO_INHERIT);
 
-#if 0
-  /* IupLabel GTK only */
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
-#endif
-	
-
-	/* New API for view specific contextual menus (Mac only) */
-	iupClassRegisterAttribute(ic, "CONTEXTMENU", iupCocoaCommonBaseGetContextMenuAttrib, iupCocoaCommonBaseSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-
-
+  /* Not supported */
+  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

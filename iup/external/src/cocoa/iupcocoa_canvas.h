@@ -1,4 +1,10 @@
-#ifndef __IUPCOCOA_CANVASVIEW_H 
+/** \file
+ * \brief Canvas Control Custom View for Cocoa
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
+#ifndef __IUPCOCOA_CANVASVIEW_H
 #define __IUPCOCOA_CANVASVIEW_H
 
 #import <Cocoa/Cocoa.h>
@@ -6,42 +12,55 @@
 #include <stdbool.h>
 #include "iup.h"
 
-struct _IdrawCanvas;
-
-// I'm undecided if we should subclass NSView or NSControl.
-// IUP wants to use Canvas for fake controls and the enabled property is useful.
-// However the other properties (so far) don't seem that useful.
-// I have been worried about subtle behaviors like key loops and input that I may not be aware of that NSControl may handle,
-// but so far tracking down key loop problems, I've found that NSControl did nothing to help.
-// So far NSView seems to be sufficient, as long as I implement the enabled property and make sure none of the other code checks for [NSControl class].
-// (I had to replace some instances of that with respondsToSelector() on isEnabled/setEnabled: in Common.)
-// UPDATE: I found one edge-case where NSControl is better than NSView.
-// In the flatbutton test, if you tab over to make one of the canvas buttons focus. Then click the disable all widgets button.
-// In the NSView case, the focus ring gets stuck around the disabled widget (both native focus ring and IUP focus ring).
-// But in the NSControl case, the focus ring goes away.
+/**
+ * @brief Custom NSControl subclass for IupCanvas.
+ *
+ * This view serves as the core drawing and event-handling surface for the IupCanvas element.
+ * It is responsible for:
+ * - Handling the ACTION callback for custom drawing, correctly flipping Cocoa's coordinate system to match IUP's top-left origin.
+ * - Processing mouse, keyboard, and focus events and forwarding them to the appropriate IUP callbacks.
+ * - Acting as a source and destination for drag-and-drop operations.
+ * - Managing a native focus ring for accessibility.
+ *
+ * This view is designed to be used either standalone or as the `documentView` within an NSScrollView to support scrolling.
+ * When used with an NSScrollView, it relies on NSViewBoundsDidChangeNotification from the parent NSClipView
+ * to update IUP's scroll position attributes and trigger the SCROLL_CB callback.
+ */
 @interface IupCocoaCanvasView : NSControl
-{
-	Ihandle* _ih;
-	struct _IdrawCanvas* _dc;
-	bool _isCurrentKeyWindow;
-	bool _isCurrentFirstResponder;
-	bool _startedDrag;
-}
-@property(nonatomic, assign) Ihandle* ih;
-@property(nonatomic, assign) struct _IdrawCanvas* dc;
-@property(nonatomic, assign, getter=isCurrentKeyWindow, setter=setCurrentKeyWindow:) bool currentKeyWindow;
-@property(nonatomic, assign, getter=isCurrentFirstResponder, setter=setCurrentFirstResponder:) bool currentFirstResponder;
-@property(nonatomic, assign) bool startedDrag;
-//@property(nonatomic, assign, getter=isEnabled, setter=setEnabled:) BOOL enabled; // provided by NSControl, must define if we are NSView
-@property(nonatomic, assign) bool useNativeFocusRing;
-@property(nonatomic, assign) struct CGSize previousSize;
-- (void) updateFocus;
-- (NSGraphicsContext*) graphicsContext;
-- (CGContextRef) CGContext;
 
+// The IUP handle (`Ihandle*`) associated with this view.
+@property(nonatomic, assign) Ihandle* ih;
+
+// State tracking for focus management.
+@property(nonatomic, assign, getter=isCurrentKeyWindow) bool currentKeyWindow;
+@property(nonatomic, assign, getter=isCurrentFirstResponder) bool currentFirstResponder;
+
+// Flag to track drag-and-drop initiation.
+@property(nonatomic, assign) bool startedDrag;
+
+// Stores the previous size to detect resize events vs. move events.
+@property(nonatomic, assign) CGSize previousSize;
+
+// The background color to use when no ACTION callback is provided.
 @property(nonatomic, copy) NSColor* backgroundColor;
+
+// Determines whether to draw the native macOS focus ring.
+@property(nonatomic, assign) bool useNativeFocusRing;
+
+
+/**
+ * @brief Initializes the canvas view.
+ * @param frame_rect The initial frame for the view.
+ * @param ih The associated IUP handle.
+ * @return An initialized IupCocoaCanvasView object.
+ */
+- (instancetype) initWithFrame:(NSRect)frame_rect ih:(Ihandle*)ih;
+
+/**
+ * @brief Triggers the GETFOCUS_CB or KILLFOCUS_CB callback based on the view's focus state.
+ */
+- (void) updateFocus;
 
 @end
 
 #endif /* __IUPCOCOA_CANVASVIEW_H */
-

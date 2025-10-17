@@ -4,7 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <Cocoa/Cocoa.h>
+#import <Cocoa/Cocoa.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -27,222 +27,327 @@
 #include "iupcocoa_drv.h"
 
 
-
 void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
 {
-	// Drat: The padding will differ depending if there is a title or not (and where the title goes).
-	*x = 0;
-	*y = 0;
+  /* NSBox automatically positions its contentView to accommodate border and title.
+     Children are laid out relative to contentView, so offset is (0,0). */
+  (void)ih;
+  *x = 0;
+  *y = 0;
 }
 
 int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
-	// If I don't set this to true, the y-padding in iupdrvFrameGetDecorOffset does nothing.
-	// And without the padding, the first widget gets placed too high in the box and gets clipped.
-	// Unless...I set the GetInnerNativeContainerHandle callback. Then it seems I can avoid needing iupdrvFrameGetDecorOffset
-	return 0;
+  (void)ih;
+  return 0;
 }
 
 int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
 {
-	// The title height uses a smaller font size than the normal system font,
-	// so don't use iupdrvFontGetCharSize() since I don't think that font is stored in the ih. (Maybe that should be fixed.)
-	// Also, it is offset differently depending on mode.
-	// Also, the NSBox size gets bigger if there is no text. This is different than what IUP expects.
-	// FIXME: Need to figure out different sizes. I'm pretty sure 0 is not correct.
-
-/*
-	if (iupAttribGet(ih, "_IUPFRAME_HAS_TITLE") || iupAttribGet(ih, "TITLE"))
-	{
-	
-	}
-	else
-	{
-		
-	}
-*/
-	*h = 0;
+  if (iupAttribGet(ih, "_IUPFRAME_HAS_TITLE") || iupAttribGet(ih, "TITLE"))
+  {
+    if (ih->handle)
+    {
+      NSBox* the_frame = (NSBox*)ih->handle;
+      NSFont* title_font = [the_frame titleFont];
+      if (title_font)
+      {
+        CGFloat font_height = [title_font boundingRectForFont].size.height;
+        *h = (int)(font_height + 4);  /* Add some padding */
+      }
+      else
+      {
+        *h = 16;  /* Default title height */
+      }
+    }
+    else
+    {
+      *h = 16; /* Default/estimate if handle not created yet */
+    }
+  }
+  else
+  {
+    *h = 0;
+  }
   return 1;
 }
 
 int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
 {
-	// HACK: Need to make customizable based on whether title is shown or not.
-/*
-	if (iupAttribGet(ih, "_IUPFRAME_HAS_TITLE") || iupAttribGet(ih, "TITLE"))
-	{
-	
-	}
-	else
-	{
-		
-	}
-*/
-	// FIXME: I put 14 as a first guess without measuring. It looked pretty good, but should be measured.
-	*w = 14;
-	// 22 seems to be okay. Testing with a multilist on the bottom of frame...19 clips the scrollbar at the bottom.
-	// 20 doesn't have enough padding pixels under the scrollbar compared to other scrollbars I look at.
-	*h = 22;
+  NSBox* tempBox = [[[NSBox alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)] autorelease];
+
+  [tempBox setBoxType:NSBoxPrimary];
+
+  const char* title = iupAttribGet(ih, "TITLE");
+  if (title && *title)
+  {
+    [tempBox setTitle:[NSString stringWithUTF8String:title]];
+    [tempBox setTitlePosition:NSAtTop];
+    [tempBox setBorderType:NSLineBorder];
+
+    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    if (iup_font)
+    {
+      NSFont* font = [iup_font nativeFont];
+      if (font)
+        [tempBox setTitleFont:font];
+    }
+  }
+  else
+  {
+    [tempBox setTitle:@""];
+    [tempBox setTitlePosition:NSNoTitle];
+
+    if (iupAttribGetBoolean(ih, "SUNKEN"))
+      [tempBox setBorderType:NSGrooveBorder];
+    else
+      [tempBox setBorderType:NSLineBorder];
+  }
+
+  NSRect boxFrame = [tempBox frame];
+  NSView* contentView = [tempBox contentView];
+  NSRect contentFrame = [contentView frame];
+
+  *w = (int)lroundf(boxFrame.size.width - contentFrame.size.width);
+  *h = (int)lroundf(boxFrame.size.height - contentFrame.size.height);
+
   return 1;
 }
 
-
 static void* cocoaFrameGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
 {
-	(void)child;
-	
-	NSBox* the_frame = ih->handle;
-	
-	return [the_frame contentView];
-//	return (void*)gtk_bin_get_child((GtkBin*)ih->handle);
+  (void)child;
+  NSBox* the_frame = ih->handle;
+  return [the_frame contentView];
 }
 
-static int cocoaFrameSetTitleAttrib(Ihandle* ih, const char* title)
+static int cocoaFrameSetTitleAttrib(Ihandle* ih, const char* value)
 {
-	NSBox* the_frame = (NSBox*)ih->handle;
+  if (!ih->handle)
+    return 0;
 
-	if(title && *title!=0)
-	{
-		NSString* ns_string = [NSString stringWithUTF8String:title];
-		[the_frame setTitle:ns_string];
-		[the_frame setTitlePosition:NSAtTop];
+  if (!iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
+    return 0;
 
-	}
-	else
-	{
-		[the_frame setTitle:@""];
-		[the_frame setTitlePosition:NSNoTitle];
-		
-	}
-	
-	
-	iupdrvPostRedraw(ih);
-	return 1;
+  NSBox* the_frame = (NSBox*)ih->handle;
+
+  if (value && *value)
+  {
+    NSString* ns_string = [NSString stringWithUTF8String:value];
+    [the_frame setTitle:ns_string];
+    [the_frame setTitlePosition:NSAtTop];
+  }
+  else
+  {
+    [the_frame setTitle:@""];
+    [the_frame setTitlePosition:NSNoTitle];
+  }
+
+  iupdrvPostRedraw(ih);
+  return 1;
+}
+
+static int cocoaFrameSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+
+  NSBox* the_frame = (NSBox*)ih->handle;
+  NSView* content_view = [the_frame contentView];
+  unsigned char r, g, b;
+
+  if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
+  {
+    value = iupBaseNativeParentGetBgColor(ih);
+  }
+
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+
+  NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+
+  if (iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
+  {
+    [the_frame setBoxType:NSBoxCustom];
+    [the_frame setFillColor:color];
+  }
+
+  if (content_view)
+  {
+    if (![content_view wantsLayer])
+    {
+      [content_view setWantsLayer:YES];
+    }
+
+    if ([content_view layer])
+    {
+      [[content_view layer] setBackgroundColor:[color CGColor]];
+    }
+  }
+
+  if (iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
+    return 1;
+  else
+    return 0;
+}
+
+static int cocoaFrameSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+
+  NSBox* the_frame = (NSBox*)ih->handle;
+  NSString* title = [the_frame title];
+
+  if (!title || [title length] == 0)
+    return 0;
+
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+
+  NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+
+  NSTextFieldCell* title_cell = [the_frame titleCell];
+  if (title_cell)
+  {
+    [title_cell setTextColor:color];
+    iupdrvPostRedraw(ih);
+    return 1;
+  }
+
+  return 0;
+}
+
+static int cocoaFrameSetFontAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupdrvSetFontAttrib(ih, value))
+  {
+    return 0;
+  }
+
+  if (ih->handle)
+  {
+    NSBox* the_frame = (NSBox*)ih->handle;
+    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    if(iup_font)
+    {
+      NSFont* font = [iup_font nativeFont];
+      if (font)
+      {
+        [the_frame setTitleFont:font];
+        iupdrvPostRedraw(ih);
+      }
+    }
+  }
+  return 1;
+}
+
+static int cocoaFrameSetSunkenAttrib(Ihandle* ih, const char* value)
+{
+  /* SUNKEN only applies to frames without titles */
+  if (iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
+    return 0;
+
+  if (!ih->handle)
+    return 1;
+
+  NSBox* the_frame = (NSBox*)ih->handle;
+
+  if (iupStrBoolean(value))
+    [the_frame setBorderType:NSGrooveBorder];  /* Sunken appearance */
+  else
+    [the_frame setBorderType:NSLineBorder];    /* Flat line border */
+
+  return 1;
 }
 
 static int cocoaFrameMapMethod(Ihandle* ih)
 {
+  char* title;
 
-//	NSBox* the_frame = [[NSBox alloc] initWithFrame:NSZeroRect];
-	NSBox* the_frame = [[NSBox alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)];
+  if (!ih->parent)
+  {
+    return IUP_ERROR;
+  }
 
-	{
-		char* title;
-		title = iupAttribGet(ih, "TITLE");
-		if(title && *title!=0)
-		{
-			NSString* ns_string = [NSString stringWithUTF8String:title];
-			[the_frame setTitle:ns_string];
-		}
-		else
-		{
-			[the_frame setTitle:@""];
-			[the_frame setTitlePosition:NSNoTitle];
+  NSBox* the_frame = [[NSBox alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)];
+  ih->handle = the_frame;
 
-		}
-	}
-	
-	
-	
-	
-	ih->handle = the_frame;
-	
-	iupCocoaSetAssociatedViews(ih, the_frame, the_frame);
+  [the_frame setBoxType:NSBoxPrimary];
 
-	iupCocoaAddToParent(ih);
-	
+  title = iupAttribGet(ih, "TITLE");
+  if (title)
+  {
+    iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");
+  }
+  else
+  {
+    if (iupAttribGet(ih, "BGCOLOR") || iupAttribGet(ih, "BACKCOLOR"))
+    {
+      iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
+    }
+  }
 
-	
-	return IUP_NOERROR;
+  if (iupAttribGet(ih, "_IUPFRAME_HAS_TITLE"))
+  {
+    /* Show title at top with line border */
+    if (title && *title)
+    {
+      [the_frame setTitle:[NSString stringWithUTF8String:title]];
+    }
+    else
+    {
+      [the_frame setTitle:@""];
+    }
+    [the_frame setTitlePosition:NSAtTop];
+    [the_frame setBorderType:NSLineBorder];
+
+    /* Apply font to title if specified */
+    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    if (iup_font)
+    {
+      NSFont* font = [iup_font nativeFont];
+      if (font)
+      {
+        [the_frame setTitleFont:font];
+      }
+    }
+  }
+  else
+  {
+    /* Box frame: no title, border depends on SUNKEN attribute */
+    [the_frame setTitle:@""];
+    [the_frame setTitlePosition:NSNoTitle];
+
+    if (iupAttribGetBoolean(ih, "SUNKEN"))
+      [the_frame setBorderType:NSGrooveBorder];
+    else
+      [the_frame setBorderType:NSLineBorder];
+  }
+
+  iupCocoaSetAssociatedViews(ih, [the_frame contentView], the_frame);
+  iupCocoaAddToParent(ih);
+
+  if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
+  {
+    cocoaFrameSetBgColorAttrib(ih, NULL);
+  }
+
+  return IUP_NOERROR;
 }
-
-
-static void cocoaFrameUnMapMethod(Ihandle* ih)
-{
-	id the_frame = ih->handle;
-	iupCocoaRemoveFromParent(ih);
-	iupCocoaSetAssociatedViews(ih, nil, nil);
-	[the_frame release];
-	ih->handle = nil;
-}
-
-#if 0
-/*
-static void cocoaFrameComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
-{
-	(void)children_expand;
-	
-	*children_expand = 1;
-	
-	NSLog(@"cocoaFrameComputeNaturalSizeMethod: %d, %d, %d, %d", ih->currentwidth, ih->currentheight, *w, *h);
-	
-	NSBox* box_view = (NSBox*)ih->handle;
-	NSView* box_content_view = [box_view contentView];
-	
-	CGFloat diff_width = NSWidth([box_view frame]) - NSWidth([box_content_view frame]);
-	CGFloat diff_height = NSHeight([box_view frame]) - NSHeight([box_content_view frame]);
-	
-//	*w = *w - diff_width;
-//	*h = *h - diff_height;
-
-	*w = NSWidth([box_content_view frame]);
-	*h = NSHeight([box_content_view frame]);
-
-	
-	//NSBox* the_box = ih->handle;
-	//NSRect content_rect = [[the_box contentView] frame];
-}
-
-
-static void cocoaFrameLayoutUpdate(Ihandle* ih)
-{
-
-	NSLog(@"cocoaFrameLayoutUpdate: %d, %d", ih->currentwidth, ih->currentheight);
-	
-	NSBox* box_view = (NSBox*)ih->handle;
-	NSView* box_content_view = [box_view contentView];
-	
-	CGFloat diff_width = NSWidth([box_view frame]) - NSWidth([box_content_view frame]);
-	CGFloat diff_height = NSHeight([box_view frame]) - NSHeight([box_content_view frame]);
-	
-	//	*w = *w - diff_width;
-	//	*h = *h - diff_height;
-
-	
-//	ih->currentwidth = ih->currentwidth - diff_width;
-//	ih->currentheight = ih->currentheight - diff_height;
-	iupdrvBaseLayoutUpdateMethod(ih);
-
-}
-*/
-#endif
-
 
 void iupdrvFrameInitClass(Iclass* ic)
 {
-	/* Driver Dependent Class functions */
-	ic->Map = cocoaFrameMapMethod;
-	ic->UnMap = cocoaFrameUnMapMethod;
-	
-	ic->GetInnerNativeContainerHandle = cocoaFrameGetInnerNativeContainerHandleMethod;
+  ic->Map = cocoaFrameMapMethod;
+  ic->GetInnerNativeContainerHandle = cocoaFrameGetInnerNativeContainerHandleMethod;
 
-//	ic->ComputeNaturalSize = cocoaFrameComputeNaturalSizeMethod;
-//	ic->LayoutUpdate = cocoaFrameLayoutUpdate;
+  iupClassRegisterAttribute(ic, "FONT", NULL, cocoaFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
-#if 0
-	
-	/* Driver Dependent Attribute functions */
-	
-	/* Overwrite Common */
-	iupClassRegisterAttribute(ic, "STANDARDFONT", NULL, gtkFrameSetStandardFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE|IUPAF_NOT_MAPPED);
-	
-	/* Visual */
-	iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, gtkFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-	iupClassRegisterAttribute(ic, "SUNKEN", NULL, gtkFrameSetSunkenAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-	
-	/* Special */
-	iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtkFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-#endif
-	iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	
+  iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, cocoaFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, cocoaFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SUNKEN", NULL, cocoaFrameSetSunkenAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
