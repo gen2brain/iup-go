@@ -16,13 +16,15 @@
 /* #include <gthread.h> */
 #elif defined(WIN32)
 #include <windows.h>
-#else
-#warning "FIXME: IupThread platform not identified/supported"
+#elif defined(__APPLE__) || defined(__unix__)
+#include <pthread.h>
+#include <sched.h>
+#include <stdint.h>
 #endif
 
-#include <stdio.h>              
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>             
+#include <string.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -42,6 +44,12 @@ static int iThreadSetJoinAttrib(Ihandle* ih, const char* value)
 #elif defined(WIN32)
   HANDLE thread = (HANDLE)iupAttribGet(ih, "THREAD");
   WaitForSingleObject(thread, INFINITE);
+#elif defined(__APPLE__) || defined(__unix__)
+  pthread_t* thread = (pthread_t*)iupAttribGet(ih, "THREAD");
+  if (thread)
+  {
+    pthread_join(*thread, NULL);
+  }
 #endif
 
   (void)value;
@@ -57,6 +65,8 @@ static int iThreadSetYieldAttrib(Ihandle* ih, const char* value)
   g_thread_yield();
 #elif defined(WIN32)
   SwitchToThread();
+#elif defined(__APPLE__) || defined(__unix__)
+  sched_yield();
 #endif
   return 0;
 }
@@ -69,8 +79,15 @@ static char* iThreadGetIsCurrentAttrib(Ihandle* ih)
 #elif defined(WIN32)
   HANDLE thread = (HANDLE)iupAttribGet(ih, "THREAD");
   return iupStrReturnBoolean(thread == GetCurrentThread());
+#elif defined(__APPLE__) || defined(__unix__)
+  pthread_t* thread = (pthread_t*)iupAttribGet(ih, "THREAD");
+  if (thread)
+  {
+    return iupStrReturnBoolean(pthread_equal(*thread, pthread_self()));
+  }
+  return iupStrReturnBoolean(0);
 #else
-	return NULL;
+  return NULL;
 #endif
 }
 
@@ -83,7 +100,9 @@ static int iThreadSetExitAttrib(Ihandle* ih, const char* value)
   g_thread_exit((gpointer)exit_code);
 #elif defined(WIN32)
   ExitThread(exit_code);
-#endif	
+#elif defined(__APPLE__) || defined(__unix__)
+  pthread_exit((void*)(intptr_t)exit_code);
+#endif
 
   (void)ih;
   return 0;
@@ -99,7 +118,13 @@ static int iThreadSetLockAttrib(Ihandle* ih, const char* value)
 #elif defined(WIN32)
     HANDLE mutex = (HANDLE)iupAttribGet(ih, "MUTEX");
     WaitForSingleObject(mutex, INFINITE);
-#endif	
+#elif defined(__APPLE__) || defined(__unix__)
+    pthread_mutex_t* mutex = (pthread_mutex_t*)iupAttribGet(ih, "MUTEX");
+    if (mutex)
+    {
+      pthread_mutex_lock(mutex);
+    }
+#endif
   }
   else
   {
@@ -109,6 +134,12 @@ static int iThreadSetLockAttrib(Ihandle* ih, const char* value)
 #elif defined(WIN32)
     HANDLE mutex = (HANDLE)iupAttribGet(ih, "MUTEX");
     ReleaseMutex(mutex);
+#elif defined(__APPLE__) || defined(__unix__)
+    pthread_mutex_t* mutex = (pthread_mutex_t*)iupAttribGet(ih, "MUTEX");
+    if (mutex)
+    {
+      pthread_mutex_unlock(mutex);
+    }
 #endif
   }
 
@@ -128,7 +159,7 @@ static void* ClientThreadFunc(void* obj)
   if (cb)
     cb(ih);
   return 0;
-};
+}
 
 static int iThreadSetStartAttrib(Ihandle* ih, const char* value)
 {
@@ -154,6 +185,25 @@ static int iThreadSetStartAttrib(Ihandle* ih, const char* value)
     HANDLE old_thread = (HANDLE)iupAttribGet(ih, "THREAD");
     if (old_thread) CloseHandle(old_thread);
     iupAttribSet(ih, "THREAD", (char*)thread);
+#elif defined(__APPLE__) || defined(__unix__)
+    pthread_t* thread = (pthread_t*)malloc(sizeof(pthread_t));
+    pthread_t* old_thread = (pthread_t*)iupAttribGet(ih, "THREAD");
+    if (thread)
+    {
+      if (pthread_create(thread, NULL, ClientThreadFunc, ih) == 0)
+      {
+        pthread_detach(*thread);
+        if (old_thread)
+        {
+          free(old_thread);
+        }
+        iupAttribSet(ih, "THREAD", (char*)thread);
+      }
+      else
+      {
+        free(thread);
+      }
+    }
 #endif
   }
 
@@ -170,6 +220,8 @@ static int iThreadCreateMethod(Ihandle* ih, void **params)
 #endif
 #elif defined(WIN32)
   HANDLE mutex;
+#elif defined(__APPLE__) || defined(__unix__)
+  pthread_mutex_t* mutex;
 #else
   void* mutex = NULL;
 #endif
@@ -181,6 +233,12 @@ static int iThreadCreateMethod(Ihandle* ih, void **params)
 #endif
 #elif defined(WIN32)
   mutex = CreateMutexA(NULL, FALSE, "mutex");
+#elif defined(__APPLE__) || defined(__unix__)
+  mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+  if (mutex)
+  {
+    pthread_mutex_init(mutex, NULL);
+  }
 #endif
 
   iupAttribSet(ih, "MUTEX", (char*)mutex);
@@ -207,6 +265,18 @@ static void iThreadDestroyMethod(Ihandle* ih)
   HANDLE thread = (HANDLE)iupAttribGet(ih, "THREAD");
   CloseHandle(mutex);
   if (thread) CloseHandle(thread);
+#elif defined(__APPLE__) || defined(__unix__)
+  pthread_mutex_t* mutex = (pthread_mutex_t*)iupAttribGet(ih, "MUTEX");
+  pthread_t* thread = (pthread_t*)iupAttribGet(ih, "THREAD");
+  if (mutex)
+  {
+    pthread_mutex_destroy(mutex);
+    free(mutex);
+  }
+  if (thread)
+  {
+    free(thread);
+  }
 #endif
 }
 
