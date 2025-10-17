@@ -1,5 +1,5 @@
 /** \file
- * \brief Canvas Control
+ * \brief Canvas Control for Cocoa
  *
  * See Copyright Notice in "iup.h"
  */
@@ -12,7 +12,7 @@
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
-#include <limits.h>
+#include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -27,1396 +27,1199 @@
 #include "iup_drvfont.h"
 #include "iup_canvas.h"
 #include "iup_key.h"
-#include "iup_class.h" // needed for iup_classbase.h
-#include "iup_classbase.h" // iupROUND
+#include "iup_class.h"
 #include "iup_focus.h"
 
-#include "iupcocoa_draw.h" // struct _IdrawCanvas
+#include "iupcocoa_draw.h"
 #import "iupcocoa_canvas.h"
 #include "iupcocoa_drv.h"
 #import "iupcocoa_dragdrop.h"
 
 
+static int cocoaCanvasSetBeginDragAttrib(Ihandle* ih, const char* value);
+static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih);
+static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value);
+static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value);
+static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *expand);
+
 @implementation IupCocoaCanvasView
-@synthesize ih = _ih;
-@synthesize dc = _dc;
-@synthesize currentKeyWindow = _isCurrentKeyWindow;
-@synthesize currentFirstResponder = _isCurrentFirstResponder;
-@synthesize startedDrag = _startedDrag;
 
 - (instancetype) initWithFrame:(NSRect)frame_rect ih:(Ihandle*)ih
 {
-	self = [super initWithFrame:frame_rect];
-	if(self)
-	{
-		_ih = ih;
-		_dc = NULL;
-
-//		iupAttribSetDouble(ih, "_IUPAPPLE_CGWIDTH", frame_rect.size.width);
-//		iupAttribSetDouble(ih, "_IUPAPPLE_CGHEIGHT", frame_rect.size.height);
-		// Enabling layer backed views works around drawing corruption caused by native focus rings, but has all the consequences of using layer-backed views.
-		// Apple Bug ID: 44545497
-//		[self setWantsLayer:YES];
-#if 1
-		[self setPostsBoundsChangedNotifications:YES];
-
-		// Surprisingly, NSView doesn't have a built in method for resize events, but instead we muse use NSNotificationCenter
-		NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];
-		[notification_center addObserver:self
-			selector:@selector(frameDidChangeNotification:)
-			name:NSViewFrameDidChangeNotification
-			object:self
-		];
-		[notification_center addObserver:self
-			selector:@selector(windowDidBecomeKeyNotification:)
-			name:NSWindowDidBecomeKeyNotification
-			object:[self window]
-		];
-		[notification_center addObserver:self
-			selector:@selector(windowDidResignKeyNotification:)
-			name:NSWindowDidResignKeyNotification
-			object:[self window]
-		];
-
-		[self setEnabled:YES];
-#endif
-		
-		[self setBackgroundColor:[NSColor whiteColor]];
-
-	}
-	return self;
+  self = [super initWithFrame:frame_rect];
+  if(self)
+  {
+    _ih = ih;
+    [self setEnabled:YES];
+  }
+  return self;
 }
 
 - (void) dealloc
 {
-	NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];
-	[notification_center removeObserver:self];
-	[self setBackgroundColor:nil];
-	[super dealloc];
+  NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];
+  [notification_center removeObserver:self];
+  [self setBackgroundColor:nil]; // Releases the color object
+  [super dealloc];
 }
 
-- (NSGraphicsContext*) graphicsContext
+- (BOOL) isFlipped
 {
-	return [NSGraphicsContext currentContext];
+  return YES;
 }
 
-- (CGContextRef) CGContext
+- (void) viewWillMoveToWindow:(NSWindow*)newWindow
 {
-	return [[NSGraphicsContext currentContext] CGContext];
+  [super viewWillMoveToWindow:newWindow];
+
+  // Remove observers from the old window before moving to a new one (or to nil).
+  NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];
+  if([self window])
+  {
+    [notification_center removeObserver:self name:NSWindowDidBecomeKeyNotification object:[self window]];
+    [notification_center removeObserver:self name:NSWindowDidResignKeyNotification object:[self window]];
+  }
 }
 
-- (void) drawRect:(NSRect)the_rect
+- (void) viewDidMoveToWindow
 {
-	Ihandle* ih = _ih;
+  [super viewDidMoveToWindow];
 
-	[self lockFocus];
-
-	// Obtain the Quartz context from the current NSGraphicsContext at the time the view's
-	// drawRect method is called. This context is only appropriate for drawing in this invocation
-	// of the drawRect method.
-	// Interesting: graphicsPort is deprecated in 10.10
-	// CGContextRef cg_context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
-	// Use [[NSGraphicsContext currentContext] CGContext] in 10.10+
-	CGContextRef cg_context = [[NSGraphicsContext currentContext] CGContext];
-	
-	
-	CGContextSaveGState(cg_context);
-
-	// IUP has inverted y-coordinates compared to Cocoa (which uses Cartesian like OpenGL and your math books)
-	// If we are clever, we can invert the transform matrix so that the rest of the drawing code doesn't need to care.
-	{
-		// just inverting the y-scale causes the rendered area to flip off-screen. So we need to shift the canvas so it is centered before inverting it.
-		CGFloat translate_y = the_rect.size.height * 0.5;
-		CGContextTranslateCTM(cg_context, 0.0, +translate_y);
-		CGContextScaleCTM(cg_context, 1.0,  -1.0);
-		CGContextTranslateCTM(cg_context, 0.0, -translate_y);
-	}
-	
-	[[self backgroundColor] set];
-    NSRectFill(the_rect);
-	
-	IFnff call_back = (IFnff)IupGetCallback(ih, "ACTION");
-	if(call_back)
-	{
-		call_back(ih, ih->data->posx, ih->data->posy);
-	}
-	CGContextRestoreGState(cg_context);
-
-	[self unlockFocus];
+  // Add observers to the new window.
+  NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];
+  if([self window])
+  {
+    [notification_center addObserver:self
+                            selector:@selector(windowDidBecomeKeyNotification:)
+                                name:NSWindowDidBecomeKeyNotification
+                              object:[self window]
+    ];
+    [notification_center addObserver:self
+                            selector:@selector(windowDidResignKeyNotification:)
+                                name:NSWindowDidResignKeyNotification
+                              object:[self window]
+    ];
+  }
 }
 
+- (void) drawRect:(NSRect)dirty_rect
+{
+  IFnff call_back = (IFnff)IupGetCallback(_ih, "ACTION");
 
+  if (call_back)
+  {
+    // To ensure cross-platform compatibility with IUP's standard behavior,
+    // the drawing context provided to the ACTION callback must be configured such that
+    // (0,0) corresponds to the top-left corner of the VISIBLE area.
+    // The coordinate system must be Top-Down (which it is, as the view is flipped).
 
-// Note: This also triggers when the view is moved, not just resize.
+    NSGraphicsContext* context = [NSGraphicsContext currentContext];
+    [context saveGraphicsState];
+
+    // Get the scroll offset (top-left visible coordinate in virtual space).
+    // We use the stored IUP POSX/POSY, which are synchronized with the visible rect.
+    double xmin = iupAttribGetDouble(_ih, "XMIN");
+    double ymin = iupAttribGetDouble(_ih, "YMIN");
+    double offsetX = _ih->data->posx - xmin;
+    double offsetY = _ih->data->posy - ymin;
+
+    // Apply the translation: T(x_app) = x_virt = x_app + OffsetX.
+    // This ensures that when the application draws at (V - POS), it appears correctly on screen.
+    CGContextRef cgContext = [context CGContext];
+    CGContextTranslateCTM(cgContext, offsetX, offsetY);
+
+    // Set the CLIPRECT attribute, relative to the visible area (0,0).
+    // The dirty_rect is in virtual coordinates, so we translate it back.
+    NSRect clip_rect = dirty_rect;
+    clip_rect.origin.x -= offsetX;
+    clip_rect.origin.y -= offsetY;
+
+    // IUP CLIPRECT definition: If the rectangle is empty, the attribute returns NULL.
+    if (clip_rect.size.width <= 0 || clip_rect.size.height <= 0)
+    {
+      iupAttribSet(_ih, "CLIPRECT", NULL);
+    }
+    else
+    {
+      // IUP uses inclusive integer coordinates for the end point (x2, y2).
+      // We use floor/ceil to ensure we cover the pixel area correctly and subtract 1 for inclusive end coordinate.
+      double x1 = floor(clip_rect.origin.x);
+      double y1 = floor(clip_rect.origin.y);
+      double x2 = ceil(clip_rect.origin.x + clip_rect.size.width) - 1;
+      double y2 = ceil(clip_rect.origin.y + clip_rect.size.height) - 1;
+
+      // Ensure x2>=x1 and y2>=y1 due to floating point precision or edge cases.
+      if (x2 < x1) x2 = x1;
+      if (y2 < y1) y2 = y1;
+
+      iupAttribSetStrf(_ih, "CLIPRECT", "%.0f %.0f %.0f %.0f", x1, y1, x2, y2);
+    }
+
+    // The view is flipped, so the graphics context's coordinate system is
+    // already top-down, matching IUP. The ACTION callback receives posx/posy
+    // to handle scrolling offsets.
+    call_back(_ih, (float)_ih->data->posx, (float)_ih->data->posy);
+
+    iupAttribSet(_ih, "CLIPRECT", NULL);
+    [context restoreGraphicsState];
+  }
+  else
+  {
+    // If there is no ACTION callback, we are responsible for drawing the background.
+    // This drawing happens in virtual coordinates (no translation needed).
+    if ([self backgroundColor])
+    {
+      [[self backgroundColor] set];
+      NSRectFill(dirty_rect);
+    }
+  }
+}
+
 - (void) frameDidChangeNotification:(NSNotification*)the_notification
 {
-// This Notification does not provide a userInfo dictionary according to the docs
-	NSRect view_frame = [self frame];
-	Ihandle* ih = _ih;
+  NSRect view_rect = NSZeroRect; // Use view_rect to hold the size
+  id notification_object = [the_notification object];
 
-//	struct _IdrawCanvas* dc = [self dc];
-	CGSize previous_size = [self previousSize];
-	
-	CGFloat old_width = previous_size.width;
-	CGFloat old_height = previous_size.height;
+  // The RESIZE_CB should report the size of the visible area.
+  // The notification object is either the IupCocoaCanvasView itself (standalone)
+  // or the NSClipView (when inside an NSScrollView), as configured in cocoaCanvasMapMethod.
 
-	if((old_width == view_frame.size.width) && (old_height == view_frame.size.height))
-	{
-		// Means we were moved, but not resized.
-		return;
-	}
+  if ([notification_object isKindOfClass:[NSView class]])
+  {
+    // When inside a scroll view (observing NSClipView), we must use its bounds size,
+    // as it correctly represents the visible area regardless of scrollbar presence (tiling).
+    if ([notification_object isKindOfClass:[NSClipView class]])
+    {
+      view_rect.size = [(NSClipView*)notification_object bounds].size;
+    }
+    else
+    {
+      // Standalone canvas, use the frame size.
+      view_rect = [(NSView*)notification_object frame];
+    }
+  }
+  else
+  {
+    // Should not happen based on how observers are registered.
+    NSLog(@"frameDidChangeNotification: unexpected notification object.");
+    return;
+  }
 
-	[self setPreviousSize:view_frame.size];
-	
-	IFnii call_back = (IFnii)IupGetCallback(ih, "RESIZE_CB");
-	if(call_back)
-	{
-		call_back(ih, view_frame.size.width, view_frame.size.height);
-	}
-	
+  CGSize previous_size = [self previousSize];
 
+  if(CGSizeEqualToSize(previous_size, view_rect.size))
+  {
+    // The view was moved, but not resized, OR the resize was already handled synchronously by cocoaCanvasLayoutUpdateMethod.
+    return;
+  }
+
+  [self setPreviousSize:view_rect.size];
+
+  IFnii call_back = (IFnii)IupGetCallback(_ih, "RESIZE_CB");
+  if(call_back && !_ih->data->inside_resize)
+  {
+    // Set inside_resize flag to prevent recursion.
+    _ih->data->inside_resize = 1;
+
+    // Use iupROUND instead of casting to (int) to avoid truncation issues with fractional sizes (e.g. HiDPI).
+    call_back(_ih, iupROUND(view_rect.size.width), iupROUND(view_rect.size.height));
+
+    _ih->data->inside_resize = 0;
+  }
 }
-
 
 - (void) windowDidBecomeKeyNotification:(NSNotification*)the_notification
 {
-//		NSLog(@"Window became key: %@", [[self window] title]);
-//	NSLog(@"window became key");
-	[self setCurrentKeyWindow:true];
-	[self updateFocus];
-
+  [self setCurrentKeyWindow:true];
+  [self updateFocus];
 }
+
 - (void) windowDidResignKeyNotification:(NSNotification*)the_notification
 {
-//		NSLog(@"Window resign key: %@", [[self window] title]);
-//	NSLog(@"window resigned");
-	[self setCurrentKeyWindow:false];
-	[self updateFocus];
+  [self setCurrentKeyWindow:false];
+  [self updateFocus];
 }
-
-
-//////// Keyboard stuff
 
 - (BOOL) acceptsFirstResponder
 {
-//	BOOL ret_flag = [super acceptsFirstResponder];
-#if 1
-	if([self isEnabled])
-	{
-//NSLog(@"acceptsFirstResponder:YES");
-		return YES;
-	}
-	else
-	{
-//NSLog(@"acceptsFirstResponder:NO");
-		return NO;
-	}
-#else
-	return YES;
-#endif
+  return [self isEnabled];
 }
 
-/*
-Apple doc:
-The default value of this property is NO.
-Subclasses can override this property and use their implementation to determine if the view requires its panel
-to become the key window so that it can handle keyboard input and navigation.
-Such a subclass should also override acceptsFirstResponder to return YES.
-This property is also used in keyboard navigation.
-It determines if a mouse click should give focus to a view—that is, make it the first responder).
-Some views (for example, text fields) want to receive the keyboard focus when you click in them.
-Other views (for example, buttons) receive focus only when you tab to them.
-You wouldn't want focus to shift from a textfield that has editing in progress simply because you clicked on a check box.
-
-Sooo... since IUP uses this mostly for buttons and not text entry, it seems like we should return NO.
-But this means that the widgets will never get the focus ring.
-*/
 - (BOOL) needsPanelToBecomeKey
 {
-	// Should we also test [[NSApplication sharedApplication] isFullKeyboardAccessEnabled]?
-//	BOOL ret_flag = [super needsPanelToBecomeKey];
-//	return YES;
-
-	// TODO: We should create a new ATTRIBUTE to distinguish different behavior modes, e.g.
-	// FOCUSMODE=
-	// BUTTON - returns no here so if the user is typing in another field and clicks this "button", the focus won't change
-	// TEXTFIELD - text entry things are handled, but things like TAB to switch focus are passed up the responder chain
-	// ALL - all entry is handled by the user
-
-	Ihandle* ih = _ih;
-
-	// FOR NOW: Hardcode/hack until I sort this out
-/*
-	if(IupClassMatch(ih, "flatbutton")
-		|| IupClassMatch(ih, "flatseparator")
-		|| IupClassMatch(ih, "dropbutton")
-		|| IupClassMatch(ih, "flattoggle")
-		|| IupClassMatch(ih, "flatlabel")
-		|| IupClassMatch(ih, "colorbar")
-		|| IupClassMatch(ih, "colorbrowser")
-		|| IupClassMatch(ih, "dial")
-		|| IupClassMatch(ih, "flatseparator")
-		|| IupClassMatch(ih, "flatscrollbox")
-		|| IupClassMatch(ih, "gauge")
-		|| IupClassMatch(ih, "flatseparator")
-		|| IupClassMatch(ih, "flatframe")
-		|| IupClassMatch(ih, "flattabs")
-	)
-	{
-		return NO;
-	}
-	else
-	{
-		return YES;
-	}
-*/
-	if(IupClassMatch(ih, "canvas"))
-	{
-		return YES;
-	}
-	else
-	{
-		return NO;
-	}
-
+  return YES;
 }
 
 - (BOOL) canBecomeKeyView
 {
-//	BOOL ret_flag = [super canBecomeKeyView];
-#if 1
-	// Should we also test [[NSApplication sharedApplication] isFullKeyboardAccessEnabled]?
-	//
-	if([self isEnabled] && [[NSApplication sharedApplication] isFullKeyboardAccessEnabled])
-	{
-//NSLog(@"canBecomeKeyView:YES");
-		return YES;
-	}
-	else
-	{
-//NSLog(@"canBecomeKeyView:NO");
-		return NO;
-	}
-#else
-	return YES;
-#endif
+  return [self isEnabled];
 }
 
 - (BOOL) becomeFirstResponder
 {
-//NSLog(@"becomeFirstResponder");
-#if 0
+  if (![self isEnabled])
+  {
+    [self setCurrentFirstResponder:false];
+    [self updateFocus];
+    return NO;
+  }
 
-	BOOL ret_val = [super becomeFirstResponder];
-	[self setCurrentFirstResponder:ret_val];
-	[self updateFocus];
-	return ret_val;
-#else
-	if([self isEnabled] && [[NSApplication sharedApplication] isFullKeyboardAccessEnabled])
-	{
-//NSLog(@"canBecomeKeyView:YES");
-		[self setCurrentFirstResponder:true];
-		[self updateFocus];
-		return YES;
-	}
-	else
-	{
-		[self setCurrentFirstResponder:false];
-		[self updateFocus];
-		return NO;
-	}
-#endif
+  BOOL accepted = [super becomeFirstResponder];
+  if(accepted)
+  {
+    [self setCurrentFirstResponder:true];
+    [self updateFocus];
+  }
+  return accepted;
 }
 
 - (BOOL) resignFirstResponder
 {
-//NSLog(@"resignFirstResponder");
-#if 1
-	BOOL ret_val = [super resignFirstResponder];
-	[self setCurrentFirstResponder:!ret_val];
-	[self updateFocus];
-	return ret_val;
-
-#else
-	[self setCurrentFirstResponder:false];
-
-	[self updateFocus];
-	return YES;
-#endif
-
-
-
+  BOOL ret_val = [super resignFirstResponder];
+  if(ret_val)
+  {
+    [self setCurrentFirstResponder:false];
+    [self updateFocus];
+  }
+  return ret_val;
 }
 
-// 10.7 API for native focus ring
 - (void) drawFocusRingMask
 {
-	bool should_use_native = [self useNativeFocusRing];
-	if(!should_use_native)
-	{
-//		NSRectFill([self bounds]);
-		NSRectFill(NSZeroRect);
-		return;
-	}
-//	[self lockFocus];
-//	[NSGraphicsContext currentContext];
-	
+  if([self useNativeFocusRing])
+  {
     NSRectFill([self bounds]);
-//	[self unlockFocus];
-//	[[self window] setViewsNeedDisplay:YES];
+  }
+  else
+  {
+    NSRectFill(NSZeroRect);
+  }
 }
 
-// 10.7 API for native focus ring
 - (NSRect) focusRingMaskBounds
 {
-	bool should_use_native = [self useNativeFocusRing];
-	if(!should_use_native)
-	{
-	    //return [self bounds];
-	    return NSZeroRect;
-	}
-
+  if([self useNativeFocusRing])
+  {
     return [self bounds];
+  }
+  return NSZeroRect;
 }
 
-// helper API to notify IUP of focus state change
 - (void) updateFocus
 {
-	Ihandle* ih = _ih;
-	// BUG: I used to set my own variable in the key window notification callback.
-	// But Apple was giving me multiple becomeKey callbacks or multiple resignKey callbacks, and I wasn't getting the counterparts.
-	// So it appeared that I had multiple key windows and IUP focus rings were drawn in multiple windows.
-	// I also tried the Main window callback, but got the same thing.
-	// So instead, I query the keyWindow directly and that seems to solve the problem.
-	
-	
-//	if([self isCurrentKeyWindow] && [self isCurrentFirstResponder])
-//	if([self isCurrentKeyWindow] && [self isCurrentFirstResponder] && [self isCurrentMainWindowStatus])
-	if([self isCurrentFirstResponder] && [[self window] isKeyWindow])
-	{
-//		NSLog(@"GetFocus ih:0x%p for View: %@ in Window: %@", ih, self, [self window]);
-//		NSLog(@"GrabFocus ih:0x%p for View: %@ in Window: %@", ih, self, [[self window] title]);
-
-		iupCallGetFocusCb(ih);
-	}
-	else
-	{
-//		NSLog(@"KillFocus ih:0x%p for View: %@ in Window: %@", ih, self, [[self window] title]);
-		iupCallKillFocusCb(ih);
-
-	}
-	// Because IUP draws fake widgets, they may need to redraw to change focus rings or active-state theming
-	[self setNeedsDisplay:YES]; // Cocoa seems to redraw without this. But it probably doesn't hurt.
+  if([self isCurrentFirstResponder] && [[self window] isKeyWindow])
+  {
+    iupCallGetFocusCb(_ih);
+  }
+  else
+  {
+    iupCallKillFocusCb(_ih);
+  }
+  [self setNeedsDisplay:YES];
 }
 
 - (BOOL) acceptsFirstMouse:(NSEvent *)theEvent
 {
-	return YES;
+  return YES;
 }
-#if 1
+
 - (void) flagsChanged:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
+  if(![self isEnabled]) return;
 
-//	NSLog(@"flagsChanged: %@", the_event);
-//	NSLog(@"modifierFlags: 0x%X", [the_event modifierFlags]);
-/*
-    NSEventModifierFlagCapsLock           = 1 << 16, // Set if Caps Lock key is pressed.
-    NSEventModifierFlagShift              = 1 << 17, // Set if Shift key is pressed.
-    NSEventModifierFlagControl            = 1 << 18, // Set if Control key is pressed.
-    NSEventModifierFlagOption             = 1 << 19, // Set if Option or Alternate key is pressed.
-    NSEventModifierFlagCommand            = 1 << 20, // Set if Command key is pressed.
-    NSEventModifierFlagNumericPad         = 1 << 21, // Set if any key in the numeric keypad is pressed.
-    NSEventModifierFlagHelp               = 1 << 22, // Set if the Help key is pressed.
-    NSEventModifierFlagFunction           = 1 << 23, // Set if any function key is pressed.
-*/
-	Ihandle* ih = [self ih];
-    unsigned short mac_key_code = [the_event keyCode];
-//    NSLog(@"mac_key_code : %d", mac_key_code);
-	bool should_not_propagate = iupCocoaModifierEvent(ih, the_event, (int)mac_key_code);
-	if(!should_not_propagate)
-	{
-		[super flagsChanged:the_event];
-	}
+  unsigned short mac_key_code = [the_event keyCode];
+  if(!iupCocoaModifierEvent(_ih, the_event, (int)mac_key_code))
+  {
+    [super flagsChanged:the_event];
+  }
 }
 
-
-//  Should we call this,
-// [self setNeedsDisplay:YES];
-// or force the user to call something if they need it?
 - (void) keyDown:(NSEvent*)the_event
 {
- 	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	   // gets ihandle
-    Ihandle* ih = [self ih];
-//	NSLog(@"keyDown: %@", the_event);
-    unsigned short mac_key_code = [the_event keyCode];
-//    NSLog(@"keydown string: %d", mac_key_code);
+  if(![self isEnabled]) return;
 
-	bool should_not_propagate = iupCocoaKeyEvent(ih, the_event, (int)mac_key_code, true);
-	if(!should_not_propagate)
-	{
-		[super keyDown:the_event];
-	}
+  unsigned short mac_key_code = [the_event keyCode];
+  if(!iupCocoaKeyEvent(_ih, the_event, (int)mac_key_code, true))
+  {
+    [super keyDown:the_event];
+  }
 }
 
 - (void) keyUp:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = [self ih];
-    unsigned short mac_key_code = [the_event keyCode];
-	bool should_not_propagate = iupCocoaKeyEvent(ih, the_event, (int)mac_key_code, false);
-	if(!should_not_propagate)
-	{
-		[super keyUp:the_event];
-	}
-}
-#endif
+  if(![self isEnabled]) return;
 
-//////// Mouse stuff
+  unsigned short mac_key_code = [the_event keyCode];
+  if(!iupCocoaKeyEvent(_ih, the_event, (int)mac_key_code, false))
+  {
+    [super keyUp:the_event];
+  }
+}
 
 - (void) mouseDown:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = _ih;
-	bool should_not_propagate = iupCocoaCommonBaseHandleMouseButtonCallback(ih, the_event, self, true);
-	if(!should_not_propagate)
-	{
-		[super mouseDown:the_event];
-	}
-}
+  if(![self isEnabled]) return;
 
-// WARNING: This may be unsupportable.
-// The currentEvent may not be the right kind ad will throw an exception when our code tries to call invalid methods for the wrong type.
-// The one reason I think this may work is If-and-only-if the user calls this in the mouseDragged: callback (mouseDown: might also work),
-// then the currentEvent should (I hope) be the event passed to mouseDragged:.
-// If that is true, this should work.
-// But calling anywhere else will probably not work.
-static int cocoaCanvasSetBeginDragAttrib(Ihandle* ih, const char* value)
-{
-	IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(ih);
-
-	if([drag_source_data isDragSourceEnabled])
-	{
-		NSDraggingItem* dragging_item = [drag_source_data defaultDraggingItem];
-
-		NSView* main_view = [drag_source_data mainView];
-		
-		
-		// Special case for Canvas. We want the default file promise action to write a png file of the snapshot.
-		if([drag_source_data usesFilePromise] && ![drag_source_data hasFilePromiseCallback])
-		{
-			NSFilePromiseProvider* file_promise = (NSFilePromiseProvider*)[dragging_item item];
-			// If the auto-generate drag setting was enabled, we already created an NSImage. So try reusing that.
-			// This may also capture the manual drag image if the user set it.
-			NSArray* images_array = [dragging_item imageComponents];
-			if(images_array && ([images_array count] > 0))
-			{
-				NSDraggingImageComponent* image_component = [images_array objectAtIndex:0];
-				id image_data = [image_component contents];
-				[file_promise setUserInfo:image_data];
-			}
-			else
-			{
-				NSRect bounds_rect = [main_view bounds];
-				NSData* pdf_data = [main_view dataWithPDFInsideRect:bounds_rect];
-				NSImage* image_data = [[NSImage alloc] initWithData:pdf_data];
-				[image_data autorelease];
-				[file_promise setUserInfo:image_data];
-			}
-		} // end special case
-		
-		
-		NSEvent* the_event = [[NSApplication sharedApplication] currentEvent];
-		[main_view beginDraggingSessionWithItems:@[dragging_item] event:the_event source:drag_source_data];
-	}
-
-	return 0;
+  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
+  {
+    [super mouseDown:the_event];
+  }
 }
 
 - (void) mouseDragged:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = _ih;
-	bool should_not_propagate = iupCocoaCommonBaseHandleMouseMotionCallback(ih, the_event, self);
-	if(!should_not_propagate)
-	{
-		[super mouseDragged:the_event];
-	}
-	
-	// Should this be before or after the user callback? Or should this only fire if super is allowed?
-	// (The super reasoning is that other more complex widgets will invoke the drag in their super implementation.)
-	// And if after, should we consider their return value?
-	// Maybe the better thing to do is let the user directly invoke the drag?
-	if(([the_event associatedEventsMask] & NSLeftMouseDragged) && ![self startedDrag])
-	{
-	
-		IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(ih);
-		
-		if([drag_source_data isDragSourceEnabled] && [drag_source_data useAutoBeginDrag])
-		{
-#if 0
-			NSDraggingItem* dragging_item = [drag_source_data defaultDraggingItem];
-			if(nil != dragging_item)
-			{
-				// Special case for Canvas. We want the default file promise action to write a png file of the snapshot.
-				if([drag_source_data usesFilePromise] && ![drag_source_data hasFilePromiseCallback])
-				{
-					NSFilePromiseProvider* file_promise = (NSFilePromiseProvider*)[dragging_item item];
-					// If the auto-generate drag setting was enabled, we already created an NSImage. So try reusing that.
-					// This may also capture the manual drag image if the user set it.
-					NSArray* images_array = [dragging_item imageComponents];
-					if(images_array && ([images_array count] > 0))
-					{
-						NSDraggingImageComponent* image_component = [images_array objectAtIndex:0];
-						id image_data = [image_component contents];
-						[file_promise setUserInfo:image_data];
-					}
-					else
-					{
-						NSRect bounds_rect = [self bounds];
-						NSData* pdf_data = [self dataWithPDFInsideRect:bounds_rect];
-						NSImage* image_data = [[NSImage alloc] initWithData:pdf_data];
-						[image_data autorelease];
-						[file_promise setUserInfo:image_data];
-					}
-				} // end special case
+  if(![self isEnabled]) return;
 
+  if(!iupCocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
+  {
+    [super mouseDragged:the_event];
+  }
 
-				[self beginDraggingSessionWithItems:@[dragging_item] event:the_event source:drag_source_data];
-				[self setStartedDrag:true];
-			}
-#else
-			cocoaCanvasSetBeginDragAttrib(ih, NULL);
-#endif
-		}
-
-	}
-	
+  // Handle automatic drag initiation if enabled
+  if(([the_event associatedEventsMask] & NSLeftMouseDragged) && ![self startedDrag])
+  {
+    IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(_ih);
+    if([drag_source_data isDragSourceEnabled] && iupAttribGetBoolean(_ih, "AUTOBEGINDRAG"))
+    {
+      cocoaCanvasSetBeginDragAttrib(_ih, NULL);
+    }
+  }
 }
 
 - (void) mouseUp:(NSEvent*)the_event
 {
-	[self setStartedDrag:false];
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = _ih;
-	bool should_not_propagate = iupCocoaCommonBaseHandleMouseButtonCallback(ih, the_event, self, false);
-	if(!should_not_propagate)
-	{
-		[super mouseUp:the_event];
-	}
+  [self setStartedDrag:false];
+  if(![self isEnabled]) return;
+
+  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, false))
+  {
+    [super mouseUp:the_event];
+  }
 }
 
-// I learned that if I don't call super, the context menu doesn't activate.
 - (void) rightMouseDown:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = _ih;
-	bool should_not_propagate = iupCocoaCommonBaseHandleMouseButtonCallback(ih, the_event, self, true);
-	if(!should_not_propagate)
-	{
-		[super rightMouseDown:the_event];
-	}
+  if(![self isEnabled]) return;
+
+  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
+  {
+    [super rightMouseDown:the_event];
+  }
 }
 
 - (void) rightMouseDragged:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = _ih;
-	bool should_not_propagate = iupCocoaCommonBaseHandleMouseMotionCallback(ih, the_event, self);
-	if(!should_not_propagate)
-	{
-		[super rightMouseDragged:the_event];
-	}
+  if(![self isEnabled]) return;
+
+  if(!iupCocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
+  {
+    [super rightMouseDragged:the_event];
+  }
 }
 
 - (void) rightMouseUp:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = _ih;
-	bool should_not_propagate = iupCocoaCommonBaseHandleMouseButtonCallback(ih, the_event, self, false);
-	if(!should_not_propagate)
-	{
-		[super rightMouseUp:the_event];
-	}
+  if(![self isEnabled]) return;
+
+  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, false))
+  {
+    [super rightMouseUp:the_event];
+  }
 }
 
 - (void) otherMouseDown:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = _ih;
-	bool should_not_propagate = iupCocoaCommonBaseHandleMouseButtonCallback(ih, the_event, self, true);
-	if(!should_not_propagate)
-	{
-		[super otherMouseDown:the_event];
-	}
+  if(![self isEnabled]) return;
+
+  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
+  {
+    [super otherMouseDown:the_event];
+  }
 }
 
 - (void) otherMouseDragged:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = _ih;
-	bool should_not_propagate = iupCocoaCommonBaseHandleMouseMotionCallback(ih, the_event, self);
-	if(!should_not_propagate)
-	{
-		[super otherMouseDragged:the_event];
-	}
+  if(![self isEnabled]) return;
+
+  if(!iupCocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
+  {
+    [super otherMouseDragged:the_event];
+  }
 }
 
 - (void) otherMouseUp:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = _ih;
-	bool should_not_propagate = iupCocoaCommonBaseHandleMouseButtonCallback(ih, the_event, self, false);
-	if(!should_not_propagate)
-	{
-		[super otherMouseUp:the_event];
-	}
+  if(![self isEnabled]) return;
+
+  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, false))
+  {
+    [super otherMouseUp:the_event];
+  }
 }
 
-// WARNING: IUP WHEEL_CB does not support delta y-axis
+- (void) _updateIupScrollState
+{
+  if (!_ih) return;
+
+  NSClipView* clip_view = [[self enclosingScrollView] contentView];
+  if (![clip_view isKindOfClass:[NSClipView class]]) return;
+
+  NSRect visible_rect = [clip_view documentVisibleRect];
+
+  double old_posx = _ih->data->posx;
+  double old_posy = _ih->data->posy;
+
+  double ymin = iupAttribGetDouble(_ih, "YMIN");
+  double xmin = iupAttribGetDouble(_ih, "XMIN");
+
+  double new_posx = xmin + visible_rect.origin.x;
+  double new_posy = ymin + visible_rect.origin.y;
+
+  double xmax = iupAttribGetDouble(_ih, "XMAX");
+  double dx = iupAttribGetDouble(_ih, "DX");
+  double max_posx = xmax - dx;
+
+  double ymax = iupAttribGetDouble(_ih, "YMAX");
+  double dy = iupAttribGetDouble(_ih, "DY");
+  double max_posy = ymax - dy;
+
+  if (max_posx < xmin) max_posx = xmin;
+  if (max_posy < ymin) max_posy = ymin;
+
+  if (new_posx < xmin) new_posx = xmin;
+  if (new_posx > max_posx) new_posx = max_posx;
+  if (new_posy < ymin) new_posy = ymin;
+  if (new_posy > max_posy) new_posy = max_posy;
+
+  double delta_x = new_posx - old_posx;
+  double delta_y = new_posy - old_posy;
+
+  if (fabs(delta_x) < 1e-6 && fabs(delta_y) < 1e-6)
+  {
+    return;
+  }
+
+  _ih->data->posx = new_posx;
+  _ih->data->posy = new_posy;
+
+  if (iupAttribGet(_ih, "_IUPCOCOA_UPDATING_SCROLL_POS"))
+  {
+    return;
+  }
+
+  IFniff scroll_cb = (IFniff)IupGetCallback(_ih, "SCROLL_CB");
+  if (scroll_cb)
+  {
+    int op = (fabs(delta_y) >= fabs(delta_x)) ? IUP_SBPOSV : IUP_SBPOSH;
+    scroll_cb(_ih, op, (float)_ih->data->posx, (float)_ih->data->posy);
+  }
+  else
+  {
+    IFnff action_cb = (IFnff)IupGetCallback(_ih, "ACTION");
+    if (action_cb)
+    {
+      iupdrvRedrawNow(_ih);
+    }
+  }
+}
+
 - (void) scrollWheel:(NSEvent*)the_event
 {
-	// Don't respond if the control is inactive
-	if(![self isEnabled])
-	{
-		return;
-	}
-	
-	Ihandle* ih = _ih;
-	bool should_not_propagate = iupCocoaCommonBaseScrollWheelCallback(ih, the_event, self);
-	if(!should_not_propagate)
-	{
-		[super scrollWheel:the_event];
-	}
+  if (![self isEnabled])
+  {
+    [super scrollWheel:the_event];
+    return;
+  }
+
+  if (iupAttribGetBoolean(_ih, "WHEELDROPFOCUS"))
+  {
+    Ihandle* ih_focus = IupGetFocus();
+    if (iupObjectCheck(ih_focus))
+      iupAttribSetClassObject(ih_focus, "SHOWDROPDOWN", "NO");
+  }
+
+  IFnfiis wheel_cb = (IFnfiis)IupGetCallback(_ih, "WHEEL_CB");
+  if (wheel_cb)
+  {
+    iupCocoaCommonBaseScrollWheelCallback(_ih, the_event, self);
+    return;
+  }
+
+  CGFloat deltaY = [the_event deltaY];
+  CGFloat deltaX = [the_event deltaX];
+  IFniff scroll_cb = (IFniff)IupGetCallback(_ih, "SCROLL_CB");
+
+  if (fabs(deltaY) > 0.0)
+  {
+    double dy = iupAttribGetDouble(_ih, "DY");
+    if (dy > 0.0)
+    {
+      double posy = _ih->data->posy;
+      posy -= deltaY * dy / 10.0;
+      IupSetDouble(_ih, "POSY", posy);
+
+      if (scroll_cb)
+      {
+        int op = (deltaY > 0) ? IUP_SBUP : IUP_SBDN;
+        scroll_cb(_ih, op, (float)_ih->data->posx, (float)_ih->data->posy);
+      }
+      else
+      {
+        IFnff action_cb = (IFnff)IupGetCallback(_ih, "ACTION");
+        if (action_cb)
+          iupdrvRedrawNow(_ih);
+      }
+    }
+    else
+    {
+      [super scrollWheel:the_event];
+    }
+  }
+  else if (fabs(deltaX) > 0.0)
+  {
+    double dx = iupAttribGetDouble(_ih, "DX");
+    if (dx > 0.0)
+    {
+      double posx = _ih->data->posx;
+      posx += deltaX * dx / 10.0;
+      IupSetDouble(_ih, "POSX", posx);
+
+      if (scroll_cb)
+      {
+        int op = (deltaX > 0) ? IUP_SBRIGHT : IUP_SBLEFT;
+        scroll_cb(_ih, op, (float)_ih->data->posx, (float)_ih->data->posy);
+      }
+      else
+      {
+        IFnff action_cb = (IFnff)IupGetCallback(_ih, "ACTION");
+        if (action_cb)
+          iupdrvRedrawNow(_ih);
+      }
+    }
+    else
+    {
+      [super scrollWheel:the_event];
+    }
+  }
+  else
+  {
+    [super scrollWheel:the_event];
+  }
 }
-
-
-
-/******* Begin Drag & Drop ************/
-
-/*
-- (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender;
-- (NSDragOperation)draggingUpdated:(id <NSDraggingInfo>)sender; // if the destination responded to draggingEntered: but not to draggingUpdated: the return value from draggingEntered: is used
-- (void)draggingExited:(nullable id <NSDraggingInfo>)sender;
-- (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender;
-- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender;
-- (void)concludeDragOperation:(nullable id <NSDraggingInfo>)sender;
-// draggingEnded: is implemented as of Mac OS 10.5
-- (void)draggingEnded:(id<NSDraggingInfo>)sender;
-*/
-
 
 - (NSDragOperation) draggingEntered:(id<NSDraggingInfo>)the_sender
 {
-//	NSLog(@"%@, %@", NSStringFromSelector(_cmd), the_sender);
-	
-	Ihandle* ih = [self ih];
-	IupTargetDropAssociatedData* target_drop_data = cocoaTargetDropGetAssociatedData(ih);
-	NSArray* supported_types = [target_drop_data dropRegisteredTypes];
+  IupTargetDropAssociatedData* target_drop_data = cocoaTargetDropGetAssociatedData(_ih);
+  NSArray* supported_types = [target_drop_data dropRegisteredTypes];
+  NSPasteboard* paste_board = [the_sender draggingPasteboard];
 
-	NSPasteboard* paste_board = [the_sender draggingPasteboard];
-//	NSString* available_type = [paste_board availableTypeFromArray:@[NSPasteboardTypeTIFF, NSPasteboardTypePNG, NSFilenamesPboardType]];
-	NSString* available_type = [paste_board availableTypeFromArray:supported_types];
-	if(available_type)
-	{
-	
-		IFniis call_back = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
-		if(NULL != call_back)
-		{
-			NSPoint window_point = [the_sender draggingLocation];
-			NSPoint view_point = [self convertPoint:window_point fromView:nil];
-			NSRect view_frame = [self frame];
-			CGFloat inverted_y = view_frame.size.height - view_point.y;
-			view_point.y = inverted_y;
-	
-			char mod_status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-			// We can't support this. The currentEvent may not be the right kind and will throw an exception when our code tries to call invalid methods for the wrong type.
-//			NSEvent* the_event = [[NSApplication sharedApplication] currentEvent];
-//			iupcocoaButtonKeySetStatus(the_event, mod_status);
-			call_back(ih, view_point.x, view_point.y, mod_status);
-		}
-	
-//		[self setNeedDisplay:YES];
+  if([paste_board availableTypeFromArray:supported_types])
+  {
+    IFniis call_back = (IFniis)IupGetCallback(_ih, "DROPMOTION_CB");
+    if(call_back)
+    {
+      NSPoint window_point = [the_sender draggingLocation];
+      NSPoint view_point = [self convertPoint:window_point fromView:nil];
 
+      char mod_status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      call_back(_ih, (int)view_point.x, (int)view_point.y, mod_status);
+    }
 
-		bool is_move = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE");
-		if(is_move)
-		{
-			return NSDragOperationMove;
-		}
-		else
-		{
-			return NSDragOperationCopy;
-		}
-	}
-	return NSDragOperationNone;
+    return iupAttribGetBoolean(_ih, "DRAGSOURCEMOVE") ? NSDragOperationMove : NSDragOperationCopy;
+  }
+  return NSDragOperationNone;
 }
-
-/*
-- (NSDragOperation) draggingUpdated:(id<NSDraggingInfo>)the_sender
-{
-//	NSLog(@"%@, %@", NSStringFromSelector(_cmd), the_sender);
-	Ihandle* ih = [self ih];
-	IupTargetDropAssociatedData* target_drop_data = cocoaTargetDropGetAssociatedData(ih);
-	NSArray* supported_types = [target_drop_data dropRegisteredTypes];
-	
-	NSPasteboard* paste_board = [the_sender draggingPasteboard];
-//	NSString* available_type = [paste_board availableTypeFromArray:@[NSPasteboardTypeTIFF, NSPasteboardTypePNG, NSFilenamesPboardType]];
-	NSString* available_type = [paste_board availableTypeFromArray:supported_types];
-	if(available_type)
-	{
-//		[self setNeedDisplay:YES];
-		return NSDragOperationCopy;
-	}
-	return NSDragOperationNone;
-}
-*/
 
 - (BOOL) performDragOperation:(id<NSDraggingInfo>)the_sender
 {
-//	NSLog(@"%@, %@", NSStringFromSelector(_cmd), the_sender);
-	
-	NSPasteboard* paste_board = [the_sender draggingPasteboard];
-	NSPoint drop_point = [the_sender draggingLocation];
-	NSPoint converted_point = [self convertPoint:drop_point fromView:nil];
-	NSRect view_frame = [self frame];
-	CGFloat inverted_y = view_frame.size.height - converted_point.y;
-	converted_point.y = inverted_y;
+  NSPasteboard* paste_board = [the_sender draggingPasteboard];
+  NSPoint drop_point = [self convertPoint:[the_sender draggingLocation] fromView:nil];
 
-	Ihandle* ih = [self ih];
-	cocoaTargetDropBasePerformDropCallback(ih, the_sender, paste_board, converted_point);
-
-	return YES;
+  cocoaTargetDropBasePerformDropCallback(_ih, the_sender, paste_board, drop_point);
+  return YES;
 }
 
-/*
-- (BOOL) prepareForDragOperation:(id<NSDraggingInfo>)the_sender
+- (void) boundsDidChangeNotification:(NSNotification*)notification
 {
-	NSLog(@"%@, %@", NSStringFromSelector(_cmd), the_sender);
-	[the_sender setAnimatesToDestination:YES];
-	return YES;
+  [self _updateIupScrollState];
 }
-*/
-/*
-- (void) concludeDragOperation:(id<NSDraggingInfo>)the_sender
-{
-	NSLog(@"%@, %@", NSStringFromSelector(_cmd), the_sender);
-}
-
-- (void) draggingEnded:(id<NSDraggingInfo>)the_sender
-{
-	NSLog(@"%@, %@", NSStringFromSelector(_cmd), the_sender);
-}
-*/
-//- (void)updateDraggingItemsForDrag:(nullable id <NSDraggingInfo>)sender NS_AVAILABLE_MAC(10_7);
-
-/*
-- (NSDragOperation)draggingSession:(NSDraggingSession *)session sourceOperationMaskForDraggingContext:(NSDraggingContext)context
-{
-    if (context == NSDraggingContextOutsideApplication) {
-        return NSDragOperationCopy;
-    }
-	
-    return NSDragOperationNone;
-}
-*/
-/*
-- (NSDraggingSession*) beginDraggingSessionWithItems:(NSArray<NSDraggingItem*>*)items_array event:(NSEvent*)the_event source:(id<NSDraggingSource>)dragging_source
-{
-	NSLog(@"beginDraggingSessionWithItems:%@, event:%@, source:%@", items_array, the_event, dragging_source);
-	NSDraggingSession* dragging_session = [super beginDraggingSessionWithItems:items_array event:the_event source:dragging_source];
-	NSLog(@"dragging_session:%@", dragging_session);
-	return dragging_session;
-}
-*/
-//@protocol NSDraggingSource <NSObject>
-/* Methods implemented by an object that initiates a drag session. The source application is sent these messages during dragging.  The first must be implemented, the others are sent if the source responds to them.
-*/
-
-//@required
-/* Declares what types of operations the source allows to be performed. Apple may provide more specific "within" values in the future. To account for this, for unrecongized localities, return the operation mask for the most specific context that you are concerned with. For example:
-    switch(context) {
-        case NSDraggingContextOutsideApplication:
-            return ...
-            break;
-
-        case NSDraggingContextWithinApplication:
-        default:
-            return ...
-            break;
-    }
-*/
-
-
-/******* End Drag & Drop ************/
-
-/*
-TODO: Menu Items / Responder Chain for Undo, Redo, Cut, Copy, Paste (and any other menu items)
-
-I would like to allow our custom (Canvas) Views to respond to the standard menu items.
-This means graying/not graying out, and being able to respond to the actions.
-
-While I think it would be cool to provide direct integration with NSUndoManager for undo/redo,
-I worry the semantics won't fit well with a cross-platform program in that the user will have to
-write a lot more code to keep the undo manager aprised of the application state.
-And this code will not be easily reusable with the other platforms, so nobody will want to write it.
-(TODO: Re-evaluate other platforms and see if the modern APIs look closer to NSUndoManager.)
-
-So instead of direct NSUndoManager integration, let's presume the user wrote their own
-cross-platform manual undo system, with typical custom functions like myundo() and myredo().
-(See 7GUI #6)
-
-So instead, let's just override this View's responder to forward the menu events to the user's cross-platform
-custom undo/redo system.
-
-This will allow the user to reuse all their own code, and only require a little bit of additional code
-to hook into it for Cocoa.
-
-
-We can extend this idea to cut, copy, paste as well.
-
-*/
-
-/*
-static BOOL iupCocoaValidateMenuItemFromActionCallback(Ihandle* ih, const char* callback_name, bool default_for_continue)
-{
-	Icallback action_callback = (Icallback)IupGetCallback(ih, callback_name);
-	if(NULL != action_callback)
-	{
-		return YES;
-	}
-	return default_for_continue;
-}
-*/
-
-static bool iupCocoaHelperHasCallback(Ihandle* ih, const char* callback_name)
-{
-	Icallback action_callback = (Icallback)IupGetCallback(ih, callback_name);
-	if(NULL != action_callback)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-- (BOOL) validateMenuItem:(NSMenuItem*)menu_item
-{
-	// Instead of this, check for user callback, e.g. VALIDATEMENU_CB.
-	// User should return YES/NO (I can't seem to call super.)
-	// They should implement for all titles they need to support (Undo, Redo, Cut Copy Paste)
-	// Not sure how to handle localized strings
-	Ihandle* ih = _ih;
-	NSString* menu_item_title = [menu_item title];
-	const char* c_menu_item_title = [menu_item_title UTF8String];
-	
-	IFns validate_menu_callback = (IFns)IupGetCallback(ih, "VALIDATEMENU_CB");
-	int ret_val = IUP_CONTINUE;
-	if(NULL != validate_menu_callback)
-	{
-		ret_val = validate_menu_callback(ih, (char*)c_menu_item_title);
-	}
-	if(1 == ret_val)
-	{
-		return YES;
-	}
-	else if(0 == ret_val)
-	{
-		return NO;
-	}
-	else if(IUP_CONTINUE == ret_val)
-	{
-		if([menu_item_title isEqualTo:NSLocalizedString(@"Undo", @"Undo")])
-		{
-			return iupCocoaHelperHasCallback(ih, "UNDO_CB");
-		}
-		else if([menu_item_title isEqualTo:NSLocalizedString(@"Redo", @"Redo")])
-		{
-			return iupCocoaHelperHasCallback(ih, "REDO_CB");
-		}
-		else if([menu_item_title isEqualTo:NSLocalizedString(@"Cut", @"Cut")])
-		{
-		   	bool is_move = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE");
-			if(is_move)
-			{
-				IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(ih);
-				NSArray* registered_types = [drag_source_data dragRegisteredTypes];
-				if((registered_types != nil) && ([registered_types count] > 0))
-				{
-					return YES;
-				}
-			}
-			return iupCocoaHelperHasCallback(ih, "CUT_CB");
-		}
-		else if([menu_item_title isEqualTo:NSLocalizedString(@"Copy", @"Copy")])
-		{
-		   	bool is_move = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE");
-			if(!is_move)
-			{
-				IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(ih);
-				NSArray* registered_types = [drag_source_data dragRegisteredTypes];
-				if((registered_types != nil) && ([registered_types count] > 0))
-				{
-					return YES;
-				}
-			}
-			return iupCocoaHelperHasCallback(ih, "COPY_CB");
-		}
-		else if([menu_item_title isEqualTo:NSLocalizedString(@"Paste", @"Paste")])
-		{
-			IupTargetDropAssociatedData* target_drop_data = cocoaTargetDropGetAssociatedData(ih);
-			NSArray* registered_types = [target_drop_data dropRegisteredTypes];
-			if((registered_types != nil) && ([registered_types count] > 0))
-			{
-				return YES;
-			}
-			return iupCocoaHelperHasCallback(ih, "PASTE_CB");
-		}
-		else if([menu_item_title isEqualTo:NSLocalizedString(@"Paste and Match Style", @"Paste and Match Style")])
-		{
-			/*
-			IupTargetDropAssociatedData* target_drop_data = cocoaTargetDropGetAssociatedData(ih);
-			NSArray* registered_types = [target_drop_data dropRegisteredTypes];
-			if((registered_types != nil) && ([registered_types count] > 0))
-			{
-				return YES;
-			}
-			*/
-			return iupCocoaHelperHasCallback(ih, "PASTESTYLE_CB");
-		}
-		else
-		{
-			return NO;
-		}
-	}
-	else
-	{
-		return NO;
-	}
-	
-
-	return NO;
-}
-
-static int iupCocoaRunMenuItemActionFromCallback(Ihandle* ih, const char* callback_name)
-{
-	Icallback action_callback = (Icallback)IupGetCallback(ih, callback_name);
-	int ret_val = IUP_CONTINUE;
-	if(NULL != action_callback)
-	{
-		ret_val = action_callback(ih);
-	}
-	return ret_val;
-}
-
-- (void) undo:(id)the_sender
-{
-//	NSLog(@"Undo");
- 	// Provide a new callback, e.g. MENU_CB or MENUACTION_CB or MENUITEM_CB
- 	// We can provide pre-canned strings like "UNDO", "REDO", "CUT", "COPY", "PASTE"
- 	// telling them which action they need to handle.
-	Ihandle* ih = _ih;
-	int ret_val = iupCocoaRunMenuItemActionFromCallback(ih, "UNDO_CB");
-	if(IUP_CONTINUE == ret_val)
-	{
-	}
-}
-- (void) redo:(id)the_sender
-{
-	Ihandle* ih = _ih;
-	int ret_val = iupCocoaRunMenuItemActionFromCallback(ih, "REDO_CB");
-	if(IUP_CONTINUE == ret_val)
-	{
-	}
-}
-- (void) cut:(id)the_sender
-{
-	Ihandle* ih = _ih;
-	int ret_val = iupCocoaRunMenuItemActionFromCallback(ih, "CUT_CB");
-	if(IUP_CONTINUE == ret_val)
-	{
-	}
-}
-- (void) copy:(id)the_sender
-{
-	Ihandle* ih = _ih;
-	int ret_val = iupCocoaRunMenuItemActionFromCallback(ih, "COPY_CB");
-	if(IUP_CONTINUE == ret_val)
-	{
-		IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(ih);
-		
-		NSPasteboardItem* pasteboard_item = [drag_source_data defaultPasteboardItem];
-		NSPasteboard* paste_board = [NSPasteboard generalPasteboard];
-
-		[paste_board clearContents];
-		[paste_board writeObjects:@[pasteboard_item]];
-	}
-}
-- (void) paste:(id)the_sender
-{
-	Ihandle* ih = _ih;
-	int ret_val = iupCocoaRunMenuItemActionFromCallback(ih, "PASTE_CB");
-	if(IUP_CONTINUE == ret_val)
-	{
-		NSPasteboard* paste_board = [NSPasteboard generalPasteboard];
-		// TODO: Provide user a way to change the drop point value for paste (so they can differentiate from a drop if needed)
-		NSPoint drop_point = {0, 0};
-		cocoaTargetDropBasePerformDropCallback(ih, the_sender, paste_board, drop_point);
-	}
-}
-
-- (void) pasteAsPlainText:(id)the_sender
-{
-	Ihandle* ih = _ih;
-	int ret_val = iupCocoaRunMenuItemActionFromCallback(ih, "PASTESTYLE_CB");
-	if(IUP_CONTINUE == ret_val)
-	{
-
-	}
-}
-
-
 
 @end
 
 
-static NSView* cocoaCanvasGetRootView(Ihandle* ih)
-{
-	NSView* root_container_view = (NSView*)ih->handle;
-	NSCAssert([root_container_view isKindOfClass:[NSView class]], @"Expected NSView");
-	return root_container_view;
-}
-
 static NSScrollView* cocoaCanvasGetScrollView(Ihandle* ih)
 {
-	if(iupAttribGetBoolean(ih, "_IUPCOCOA_CANVAS_HAS_SCROLLBAR"))
-	{
-		NSScrollView* scroll_view = (NSScrollView*)ih->handle;
-		NSCAssert([scroll_view isKindOfClass:[NSScrollView class]], @"Expected NSScrollView");
-		return scroll_view;
-	}
-	else
-	{
-		return nil;
-	}
+  if(iupAttribGetBoolean(ih, "_IUPCOCOA_CANVAS_HAS_SCROLLBAR"))
+  {
+    NSScrollView* scroll_view = (NSScrollView*)ih->handle;
+    NSCAssert([scroll_view isKindOfClass:[NSScrollView class]], @"Expected NSScrollView");
+    return scroll_view;
+  }
+  return nil;
 }
 
 static IupCocoaCanvasView* cocoaCanvasGetCanvasView(Ihandle* ih)
 {
-	if(iupAttribGetBoolean(ih, "_IUPCOCOA_CANVAS_HAS_SCROLLBAR"))
-	{
-		NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
-		IupCocoaCanvasView* canvas_view = (IupCocoaCanvasView*)[scroll_view documentView];
-		NSCAssert([canvas_view isKindOfClass:[IupCocoaCanvasView class]], @"Expected IupCocoaCanvasView");
-		return canvas_view;
-	}
-	else
-	{
-		IupCocoaCanvasView* canvas_view = (IupCocoaCanvasView*)ih->handle;
-		return canvas_view;
-	}
+  IupCocoaCanvasView* canvas_view = (IupCocoaCanvasView*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_VIEW");
+  NSCAssert([canvas_view isKindOfClass:[IupCocoaCanvasView class]], @"Expected IupCocoaCanvasView");
+  return canvas_view;
+}
+
+static int cocoaCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+  unsigned char r, g, b;
+  if (iupStrToRGB(value, &r, &g, &b))
+  {
+    NSColor* the_color = [NSColor colorWithCalibratedRed:(CGFloat)r/255.0 green:(CGFloat)g/255.0 blue:(CGFloat)b/255.0 alpha:1.0];
+    [canvas_view setBackgroundColor:the_color];
+    [canvas_view setNeedsDisplay:YES];
+  }
+  return 1;
+}
+
+static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->sb & IUP_SB_HORIZ)
+  {
+    NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
+    if (!scroll_view) return 0;
+
+    iupAttribSet(ih, "SB_RESIZE", NULL);
+
+    double dx;
+    if (value) iupStrToDouble(value, &dx);
+    else dx = iupAttribGetDouble(ih, "DX");
+
+    double xmin = iupAttribGetDouble(ih, "XMIN");
+    double xmax = iupAttribGetDouble(ih, "XMAX");
+    double content_width = xmax - xmin;
+
+    if (dx >= content_width)
+    {
+      if (iupAttribGetBoolean(ih, "XAUTOHIDE"))
+      {
+        if ([scroll_view hasHorizontalScroller])
+        {
+          [scroll_view setHasHorizontalScroller:NO];
+          iupAttribSet(ih, "SB_RESIZE", "YES");
+        }
+      }
+      else
+      {
+        if(![scroll_view hasHorizontalScroller])
+        {
+          [scroll_view setHasHorizontalScroller:YES];
+          iupAttribSet(ih, "SB_RESIZE", "YES");
+        }
+        [[scroll_view horizontalScroller] setEnabled:NO];
+      }
+      iupAttribSet(ih, "XHIDDEN", "YES");
+      if (ih->data->posx != xmin) IupSetDouble(ih, "POSX", xmin);
+    }
+    else
+    {
+      if (![scroll_view hasHorizontalScroller])
+      {
+        [scroll_view setHasHorizontalScroller:YES];
+        iupAttribSet(ih, "SB_RESIZE", "YES");
+      }
+      [[scroll_view horizontalScroller] setEnabled:YES];
+      iupAttribSet(ih, "XHIDDEN", "NO");
+    }
+
+    if (iupAttribGet(ih, "SB_RESIZE"))
+    {
+      [scroll_view tile];
+      [scroll_view setNeedsDisplay:YES];
+    }
+  }
+  return 1;
+}
+
+static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->sb & IUP_SB_VERT)
+  {
+    NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
+    if (!scroll_view) return 0;
+
+    iupAttribSet(ih, "SB_RESIZE", NULL);
+
+    double dy;
+    if (value) iupStrToDouble(value, &dy);
+    else dy = iupAttribGetDouble(ih, "DY");
+
+    double ymin = iupAttribGetDouble(ih, "YMIN");
+    double ymax = iupAttribGetDouble(ih, "YMAX");
+    double content_height = ymax - ymin;
+
+    if (dy >= content_height)
+    {
+      if (iupAttribGetBoolean(ih, "YAUTOHIDE"))
+      {
+        if ([scroll_view hasVerticalScroller])
+        {
+          [scroll_view setHasVerticalScroller:NO];
+          iupAttribSet(ih, "SB_RESIZE", "YES");
+        }
+      }
+      else
+      {
+        if(![scroll_view hasVerticalScroller])
+        {
+          [scroll_view setHasVerticalScroller:YES];
+          iupAttribSet(ih, "SB_RESIZE", "YES");
+        }
+        [[scroll_view verticalScroller] setEnabled:NO];
+      }
+      iupAttribSet(ih, "YHIDDEN", "YES");
+      if (ih->data->posy != ymin) IupSetDouble(ih, "POSY", ymin);
+    }
+    else
+    {
+      if (![scroll_view hasVerticalScroller])
+      {
+        [scroll_view setHasVerticalScroller:YES];
+        iupAttribSet(ih, "SB_RESIZE", "YES");
+      }
+      [[scroll_view verticalScroller] setEnabled:YES];
+      iupAttribSet(ih, "YHIDDEN", "NO");
+    }
+
+    if (iupAttribGet(ih, "SB_RESIZE"))
+    {
+      [scroll_view tile];
+      [scroll_view setNeedsDisplay:YES];
+    }
+  }
+  return 1;
+}
+
+static int cocoaCanvasSetPosXAttrib(Ihandle* ih, const char* value)
+{
+  if (!(ih->data->sb & IUP_SB_HORIZ)) return 1;
+
+  NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
+  if (!scroll_view) return 0;
+
+  double posx;
+  if (!iupStrToDouble(value, &posx)) return 1;
+
+  double xmin = iupAttribGetDouble(ih, "XMIN");
+  double xmax = iupAttribGetDouble(ih, "XMAX");
+  double dx = iupAttribGetDouble(ih, "DX");
+
+  double content_width = xmax - xmin;
+  double max_posx = xmax - dx;
+
+  if (dx >= content_width)
+  {
+    posx = xmin;
+  }
+
+  if (posx < xmin) posx = xmin;
+  if (posx > max_posx)
+  {
+    // Ensure max_posx is valid (>= xmin) before clamping.
+    if (max_posx < xmin) max_posx = xmin;
+    posx = max_posx;
+  }
+
+  ih->data->posx = posx;
+
+  // Calculate Cocoa origin.x. Since the view is flipped (Top-Down), Offset = POSX - XMIN.
+  double cocoa_origin_x = posx - xmin;
+  NSClipView* clip_view = [scroll_view contentView];
+  NSPoint current_origin = [clip_view bounds].origin;
+
+  if (fabs(current_origin.x - cocoa_origin_x) > 1e-9)
+  {
+    iupAttribSet(ih, "_IUPCOCOA_UPDATING_SCROLL_POS", "1");
+
+    current_origin.x = cocoa_origin_x;
+    [clip_view setBoundsOrigin:current_origin];
+    [scroll_view reflectScrolledClipView:clip_view];
+
+    iupAttribSet(ih, "_IUPCOCOA_UPDATING_SCROLL_POS", NULL);
+  }
+
+  return 1;
+}
+
+static int cocoaCanvasSetPosYAttrib(Ihandle* ih, const char* value)
+{
+  if (!(ih->data->sb & IUP_SB_VERT)) return 1;
+
+  NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
+  if (!scroll_view) return 0;
+
+  double posy;
+  if (!iupStrToDouble(value, &posy)) return 1;
+
+  double ymin = iupAttribGetDouble(ih, "YMIN");
+  double ymax = iupAttribGetDouble(ih, "YMAX");
+  double dy = iupAttribGetDouble(ih, "DY");
+
+  double content_height = ymax - ymin;
+  double max_posy = ymax - dy;
+
+  if (dy >= content_height)
+  {
+    posy = ymin;
+  }
+
+  if (posy < ymin) posy = ymin;
+  if (posy > max_posy)
+  {
+    // Ensure max_posy is valid (>= ymin) before clamping.
+    if (max_posy < ymin) max_posy = ymin;
+    posy = max_posy;
+  }
+
+  ih->data->posy = posy;
+
+  // Convert IUP's top-down posy into Cocoa's origin.y.
+  // Since the view is flipped (isFlipped=YES), the coordinate system is Top-Down.
+  // Offset = POSY - YMIN.
+  double cocoa_origin_y = posy - ymin;
+
+  NSClipView* clip_view = [scroll_view contentView];
+  NSPoint current_origin = [clip_view bounds].origin;
+
+  if (fabs(current_origin.y - cocoa_origin_y) > 1e-9)
+  {
+    iupAttribSet(ih, "_IUPCOCOA_UPDATING_SCROLL_POS", "1");
+
+    current_origin.y = cocoa_origin_y;
+    [clip_view setBoundsOrigin:current_origin];
+    [scroll_view reflectScrolledClipView:clip_view];
+
+    iupAttribSet(ih, "_IUPCOCOA_UPDATING_SCROLL_POS", NULL);
+  }
+
+  return 1;
+}
+
+static int cocoaCanvasSetBeginDragAttrib(Ihandle* ih, const char* value)
+{
+  IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(ih);
+  if(![drag_source_data isDragSourceEnabled]) return 1;
+
+  NSDraggingItem* dragging_item = [drag_source_data defaultDraggingItem];
+  NSView* main_view = [drag_source_data mainView];
+
+  // For file promises, ensure the user info (image representation) is set.
+  if([drag_source_data usesFilePromise] && ![drag_source_data hasFilePromiseCallback])
+  {
+    NSFilePromiseProvider* file_promise = (NSFilePromiseProvider*)[dragging_item item];
+    NSDraggingImageComponent* image_component = [[dragging_item imageComponents] firstObject];
+    if(image_component)
+    {
+      [file_promise setUserInfo:[image_component contents]];
+    }
+    else // Fallback to a PDF representation of the view
+    {
+      NSData* pdf_data = [main_view dataWithPDFInsideRect:[main_view bounds]];
+      NSImage* image_data = [[NSImage alloc] initWithData:pdf_data];
+      [file_promise setUserInfo:image_data];
+      [image_data release];
+    }
+  }
+
+  NSEvent* the_event = [[NSApplication sharedApplication] currentEvent];
+  [main_view beginDraggingSessionWithItems:@[dragging_item] event:the_event source:drag_source_data];
+
+  (void)value;
+  return 1;
 }
 
 static char* cocoaCanvasGetCGContextAttrib(Ihandle* ih)
 {
-	IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
-	CGContextRef cg_context = NULL;
-//	[canvas_view lockFocus];
-	// Interesting: graphicsPort is deprecated in 10.10
-	// cg_context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
-	// Use [[NSGraphicsContext currentContext] CGContext] in 10.10+
-	cg_context = [[NSGraphicsContext currentContext] CGContext];
-//	[canvas_view unlockFocus];
-	
-	return (char*)cg_context;
+  (void)ih;
+  CGContextRef cg_context = [[NSGraphicsContext currentContext] CGContext];
+  return (char*)cg_context;
 }
 
 static char* cocoaCanvasGetDrawableAttrib(Ihandle* ih)
 {
-	return (char*)cocoaCanvasGetCGContextAttrib(ih);
+  return (char*)cocoaCanvasGetCGContextAttrib(ih);
 }
 
 static char* cocoaCanvasGetDrawSizeAttrib(Ihandle *ih)
 {
-	int w, h;
-
-	// scrollview or canvas view?
-	IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
-
-	NSRect the_frame = [canvas_view frame];
-	w = iupROUND(the_frame.size.width);
-	h = iupROUND(the_frame.size.height);
-	
-	return iupStrReturnIntInt(w, h, 'x');
+  IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+  NSRect the_frame = [canvas_view bounds];
+  int w = iupROUND(the_frame.size.width);
+  int h = iupROUND(the_frame.size.height);
+  return iupStrReturnIntInt(w, h, 'x');
 }
 
 static char* cocoaCanvasGetNativeFocusRingAttrib(Ihandle* ih)
 {
-	IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
-	bool should_use_native = [canvas_view useNativeFocusRing];
-/*
-	struct _IdrawCanvas* dc = [canvas_view dc];
-	if(dc)
-	{
-		should_use_native = dc->useNativeFocusRing;
-	}
-*/
-	return iupStrReturnBoolean(should_use_native);
+  IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+  return iupStrReturnBoolean([canvas_view useNativeFocusRing]);
 }
 
 static int cocoaCanvasSetNativeFocusRingAttrib(Ihandle* ih, const char* value)
 {
-	IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
-	bool should_use_native = (bool)iupStrBoolean(value);
-
-	[canvas_view setUseNativeFocusRing:should_use_native];
-/*
-	struct _IdrawCanvas* dc = [canvas_view dc];
-	if(dc)
-	{
-		dc->useNativeFocusRing = should_use_native;
-	}
-*/
-	return 1;
+  IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+  [canvas_view setUseNativeFocusRing:(bool)iupStrBoolean(value)];
+  return 1;
 }
 
 static int cocoaCanvasSetContextMenuAttrib(Ihandle* ih, const char* value)
 {
-	Ihandle* menu_ih = (Ihandle*)value;
- 	IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
-	iupCocoaCommonBaseSetContextMenuForWidget(ih, canvas_view, menu_ih);
-
-	return 1;
+  Ihandle* menu_ih = (Ihandle*)value;
+  IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+  iupCocoaCommonBaseSetContextMenuForWidget(ih, canvas_view, menu_ih);
+  return 1;
 }
-
-
 
 static int cocoaCanvasMapMethod(Ihandle* ih)
 {
-	NSView* root_view = nil;
-	IupCocoaCanvasView* canvas_view = [[IupCocoaCanvasView alloc] initWithFrame:NSZeroRect ih:ih];
-	
-	if(iupAttribGetBoolean(ih, "SCROLLBAR"))
-	{
-		NSScrollView* scroll_view = [[NSScrollView alloc] initWithFrame:NSZeroRect];
-		[scroll_view setDocumentView:canvas_view];
-		[canvas_view release];
-		[scroll_view setHasVerticalScroller:YES];
-	
-		[scroll_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-		[canvas_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-		
-		root_view = scroll_view;
-		iupAttribSet(ih, "_IUPCOCOA_CANVAS_HAS_SCROLLBAR", "1");
-	}
-	else
-	{
-		root_view = canvas_view;
-	}
-	
-	
-	ih->handle = root_view;
+  NSView* root_view = nil;
+  IupCocoaCanvasView* canvas_view = [[IupCocoaCanvasView alloc] initWithFrame:NSZeroRect ih:ih];
+  iupAttribSet(ih, "_IUPCOCOA_CANVAS_VIEW", (char*)canvas_view);
 
-	
-	iupCocoaSetAssociatedViews(ih, canvas_view, root_view);
+  ih->data->sb = iupBaseGetScrollbar(ih);
 
-	// All Cocoa views shoud call this to add the new view to the parent view.
-	iupCocoaAddToParent(ih);
-	
-	
-	IupSourceDragAssociatedData* source_drag_associated_data = cocoaSourceDragCreateAssociatedData(ih, canvas_view, root_view);
-	IupTargetDropAssociatedData* target_drop_associated_data = cocoaTargetDropCreateAssociatedData(ih,  canvas_view, root_view);
+  NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];
 
-	[source_drag_associated_data setDefaultFilePromiseName:@"IupCanvas.png"];
-//	[source_drag_associated_data setUseAutoBeginDrag:true];
-	
-	
-	// Ideally, we want IUP to automatically do the thing that gives users the best experience because devs may not know enough to turn on the right features.
-	// Native Focus Rings are one of those things that seem to provide the best user experience.
-	// But due to an Apple bug, the native focus ring causes draw corruption unless layerbacked is enabled.
-	// Historically, enabling layer backed views has been known to cause various problems.
-	// And even today, layer backed views are still off by default.
-	// So I'm hesitent to turn them on by default.
-	// Additionally, the Canvas drawing is classic CoreGrpahics, CPU based, so this is not necessarily the greatest performance path to take.
-	// But layer backed seems to be getting better over time, and this is a case where we need it on in order to work correctly.
-	// So for the fake widget case, I think we should turn on native focus rings.
-	// For regular, I'm less certain.
-	// But maybe we should only activate if needsPanelToBecomeKey (FOCUSMODE) is true, because that is the only time we care about the focus ring.
-/*
-	if(IupClassMatch(ih, "canvas"))
-	{
-		IupSetAttribute(ih, "LAYERBACKED", "YES");
-		IupSetAttribute(ih, "NATIVEFOCUSRING", "YES");
-	}
-	else
-	{
-		IupSetAttribute(ih, "LAYERBACKED", "YES");
-		IupSetAttribute(ih, "NATIVEFOCUSRING", "YES");
-	}
-*/
+  if (ih->data->sb)
+  {
+    NSScrollView* scroll_view = [[NSScrollView alloc] initWithFrame:NSZeroRect];
+    NSClipView* clip_view = [scroll_view contentView];
 
-	
-	return IUP_NOERROR;
+    /* Explicitly prevent the document view from resizing automatically with the scroll view.
+       Its size is managed manually in cocoaCanvasLayoutUpdateMethod based on XMAX/YMAX.
+       If the document view resizes to fit the content area, scrolling will not occur. */
+    [canvas_view setAutoresizingMask:NSViewNotSizable];
+
+    [scroll_view setDocumentView:canvas_view];
+    [canvas_view release]; // scroll_view now owns canvas_view
+
+    // For a canvas with custom drawing via SCROLL_CB,
+    // we must disable bit-blit scrolling (copiesOnScroll=NO) to force a full redraw on each scroll step.
+    if (IupGetCallback(ih, "SCROLL_CB"))
+    {
+      [clip_view setCopiesOnScroll:NO];
+    }
+
+    // Disable automatic scrollbar hiding and let IUP manage it explicitly
+    // based on DX/DY and AUTOHIDE attributes.
+    [scroll_view setAutohidesScrollers:NO];
+
+    [scroll_view setHasHorizontalScroller:(ih->data->sb & IUP_SB_HORIZ)];
+    [scroll_view setHorizontalScrollElasticity:NSScrollElasticityNone];
+    [scroll_view setHasVerticalScroller:(ih->data->sb & IUP_SB_VERT)];
+    [scroll_view setVerticalScrollElasticity:NSScrollElasticityNone];
+    [scroll_view setBorderType:iupAttribGetBoolean(ih, "BORDER") ? NSBezelBorder : NSNoBorder];
+    [scroll_view setDrawsBackground:NO];
+
+    // Register for resize notifications (RESIZE_CB).
+    [clip_view setPostsFrameChangedNotifications:YES];
+    [notification_center addObserver:canvas_view
+                            selector:@selector(frameDidChangeNotification:)
+                                name:NSViewFrameDidChangeNotification
+                              object:clip_view];
+
+    // Register for scroll notifications to trigger SCROLL_CB.
+    [clip_view setPostsBoundsChangedNotifications:YES];
+    [notification_center addObserver:canvas_view
+                            selector:@selector(boundsDidChangeNotification:)
+                                name:NSViewBoundsDidChangeNotification
+                              object:clip_view];
+
+    root_view = scroll_view;
+    iupAttribSet(ih, "_IUPCOCOA_CANVAS_HAS_SCROLLBAR", "1");
+
+    // The actual sizing of the document view is deferred to cocoaCanvasLayoutUpdateMethod,
+    // which runs after the parent scroll view has its final size from the layout engine.
+  }
+  else
+  {
+    // Standalone canvas setup.
+    // Observe frame changes on the canvas_view itself (RESIZE_CB).
+    [canvas_view setPostsFrameChangedNotifications:YES];
+    [notification_center addObserver:canvas_view
+                            selector:@selector(frameDidChangeNotification:)
+                                name:NSViewFrameDidChangeNotification
+                              object:canvas_view];
+
+    [canvas_view setPostsBoundsChangedNotifications:YES];
+    root_view = canvas_view;
+  }
+
+  ih->handle = root_view;
+  iupCocoaSetAssociatedViews(ih, canvas_view, root_view);
+  iupCocoaAddToParent(ih);
+
+  // Setup Drag and Drop
+  IupSourceDragAssociatedData* source_drag = cocoaSourceDragCreateAssociatedData(ih, canvas_view, root_view);
+  cocoaTargetDropCreateAssociatedData(ih, canvas_view, root_view);
+  [source_drag setDefaultFilePromiseName:@"IupCanvas.png"];
+
+  // Set initial BGCOLOR
+  cocoaCanvasSetBgColorAttrib(ih, iupAttribGet(ih, "BGCOLOR"));
+
+  // Set initial Scrollbar state
+  cocoaCanvasSetDXAttrib(ih, NULL);
+  cocoaCanvasSetDYAttrib(ih, NULL);
+
+  return IUP_NOERROR;
 }
 
 static void cocoaCanvasUnMapMethod(Ihandle* ih)
 {
-	id root_view = ih->handle;
-	
-	
-	cocoaTargetDropDestroyAssociatedData(ih);
-	cocoaSourceDragDestroyAssociatedData(ih);
-	
-	// Destroy the context menu ih it exists
-	{
-		Ihandle* context_menu_ih = (Ihandle*)iupCocoaCommonBaseGetContextMenuAttrib(ih);
-		if(NULL != context_menu_ih)
-		{
-			IupDestroy(context_menu_ih);
-		}
-		iupCocoaCommonBaseSetContextMenuAttrib(ih, NULL);
-	}
-	
-	iupCocoaRemoveFromParent(ih);
-	iupCocoaSetAssociatedViews(ih, nil, nil);
-	[root_view release];
-	ih->handle = NULL;
+  id root_view = ih->handle;
+  IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+
+  if (canvas_view)
+  {
+    [[NSNotificationCenter defaultCenter] removeObserver:canvas_view];
+  }
+
+  cocoaTargetDropDestroyAssociatedData(ih);
+  cocoaSourceDragDestroyAssociatedData(ih);
+
+  Ihandle* context_menu_ih = (Ihandle*)iupCocoaCommonBaseGetContextMenuAttrib(ih);
+  if(context_menu_ih)
+  {
+    IupDestroy(context_menu_ih);
+  }
+  iupCocoaCommonBaseSetContextMenuAttrib(ih, NULL);
+
+  iupCocoaRemoveFromParent(ih);
+  iupCocoaSetAssociatedViews(ih, nil, nil);
+  [root_view release];
+  ih->handle = NULL;
+  iupAttribSet(ih, "_IUPCOCOA_CANVAS_VIEW", NULL);
 }
 
+static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
+{
+  // This triggers synchronous layout and frame change notifications,
+  // ensuring RESIZE_CB is called and DX/DY are updated before we proceed.
+  iupdrvBaseLayoutUpdateMethod(ih);
 
+  if (ih->data->sb)
+  {
+    IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+    NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
 
+    double xmin = iupAttribGetDouble(ih, "XMIN");
+    double xmax = iupAttribGetDouble(ih, "XMAX");
+    double ymin = iupAttribGetDouble(ih, "YMIN");
+    double ymax = iupAttribGetDouble(ih, "YMAX");
+
+    double virtual_width = xmax - xmin;
+    double virtual_height = ymax - ymin;
+
+    // Set document size to virtual size.
+    // The visible area (DX/DY) determines how much of the document is shown at once.
+    double content_width = virtual_width;
+    double content_height = virtual_height;
+
+    // Handle default virtual space
+    if (virtual_width <= 1.0)
+    {
+      NSRect contentViewBounds = [[scroll_view contentView] bounds];
+      content_width = contentViewBounds.size.width;
+    }
+    if (virtual_height <= 1.0)
+    {
+      NSRect contentViewBounds = [[scroll_view contentView] bounds];
+      content_height = contentViewBounds.size.height;
+    }
+
+    // Ensure minimum size
+    if (content_width < 1) content_width = 1;
+    if (content_height < 1) content_height = 1;
+
+    NSSize new_size = NSMakeSize(content_width, content_height);
+    NSSize currentCanvasSize = [canvas_view frame].size;
+
+    if (!NSEqualSizes([canvas_view frame].size, new_size))
+    {
+      [canvas_view setFrameSize:new_size];
+
+      // After changing the document size, update scroll position to ensure it stays within valid range
+      cocoaCanvasSetPosXAttrib(ih, iupAttribGet(ih, "POSX"));
+      cocoaCanvasSetPosYAttrib(ih, iupAttribGet(ih, "POSY"));
+    }
+
+    // Update scrollbar visibility/enabled state based on new layout.
+    cocoaCanvasSetDXAttrib(ih, NULL);
+    cocoaCanvasSetDYAttrib(ih, NULL);
+  }
+}
+
+static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *expand)
+{
+  /*
+     IUP core layout computes natural size from SIZE and RASTERSIZE
+     and stores it in ih->naturalwidth, ih->naturalheight.
+     */
+  int natural_w = ih->naturalwidth;
+  int natural_h = ih->naturalheight;
+
+  /* If no size is specified, use a default minimum size */
+  if (natural_w == 0) natural_w = 1;
+  if (natural_h == 0) natural_h = 1;
+
+  *w = natural_w;
+  *h = natural_h;
+  *expand = iupAttribGetBoolean(ih, "EXPAND");
+
+  /* Add space for scrollbars if they are visible */
+  if (ih->data->sb)
+  {
+    int sb_size = iupdrvGetScrollbarSize();
+    if ((ih->data->sb & IUP_SB_VERT) && !iupAttribGetBoolean(ih, "YHIDDEN"))
+      *w += sb_size;
+    if ((ih->data->sb & IUP_SB_HORIZ) && !iupAttribGetBoolean(ih, "XHIDDEN"))
+      *h += sb_size;
+  }
+}
 
 void iupdrvCanvasInitClass(Iclass* ic)
 {
-	/* Driver Dependent Class functions */
-	ic->Map = cocoaCanvasMapMethod;
-	ic->UnMap = cocoaCanvasUnMapMethod;
-#if 0
-	ic->LayoutUpdate = gtkCanvasLayoutUpdateMethod;
-	
-	/* Driver Dependent Attribute functions */
-#endif
-	/* Visual */
-	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, "255 255 255", NULL, IUPAF_DEFAULT);  /* force new default value */
+  // Driver Dependent Class functions
+  ic->Map = cocoaCanvasMapMethod;
+  ic->UnMap = cocoaCanvasUnMapMethod;
+  ic->LayoutUpdate = cocoaCanvasLayoutUpdateMethod;
+  ic->ComputeNaturalSize = cocoaCanvasComputeNaturalSizeMethod;
 
-#if 0
-	/* IupCanvas only */
-#endif
-	iupClassRegisterAttribute(ic, "DRAWSIZE", cocoaCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-	
-#if 0
-	iupClassRegisterAttribute(ic, "DX", NULL, gtkCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);  /* force new default value */
-	iupClassRegisterAttribute(ic, "DY", NULL, gtkCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);  /* force new default value */
-	iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, gtkCanvasSetPosXAttrib, "0", NULL, IUPAF_NO_INHERIT);  /* force new default value */
-	iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, gtkCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);  /* force new default value */
-#endif
-	
-	// TODO: Returns the CGContext. Is this the right thing, or should it be the NSGraphicsContext? Or should it be the NSView?
-	iupClassRegisterAttribute(ic, "DRAWABLE", cocoaCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING);
+  // Visual
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaCanvasSetBgColorAttrib, "232 232 232", NULL, IUPAF_DEFAULT);
 
-	// Private helper, used by iupdrvDrawCreateCanvas and currently cocoaCanvasGetDrawableAttrib calls this.
-	// Do not start with an underscore, because I need this to trigger the function
-	iupClassRegisterAttribute(ic, "CGCONTEXT", cocoaCanvasGetCGContextAttrib, NULL, NULL, NULL, IUPAF_NO_STRING);
+  // IupCanvas only
+  iupClassRegisterAttribute(ic, "DRAWSIZE", cocoaCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
-#if 0
-	/* IupCanvas Windows or X only */
-#ifndef GTK_MAC
-#ifdef WIN32
-	iupClassRegisterAttribute(ic, "HWND", iupgtkGetNativeWindowHandle, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
-#else
-	iupClassRegisterAttribute(ic, "XWINDOW", iupgtkGetNativeWindowHandle, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_NO_STRING);
-	iupClassRegisterAttribute(ic, "XDISPLAY", (IattribGetFunc)iupdrvGetDisplay, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT|IUPAF_NO_STRING);
-#endif
-#endif
-	
-	/* Not Supported */
-	iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-#endif
+  // Scrollbar attributes
+  iupClassRegisterAttribute(ic, "DX", NULL, cocoaCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DY", NULL, cocoaCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, cocoaCanvasSetPosXAttrib, "0", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, cocoaCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "XAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "YAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
 
-//	TODO:
-//	iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  // Platform specific
+  iupClassRegisterAttribute(ic, "DRAWABLE", cocoaCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CGCONTEXT", cocoaCanvasGetCGContextAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
 
-	/* New API for view specific contextual menus (Mac only) */
-	iupClassRegisterAttribute(ic, "CONTEXTMENU", iupCocoaCommonBaseGetContextMenuAttrib, cocoaCanvasSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
+  // Focus ring support
+  iupClassRegisterAttribute(ic, "NATIVEFOCUSRING", cocoaCanvasGetNativeFocusRingAttrib, cocoaCanvasSetNativeFocusRingAttrib, "NO", NULL, IUPAF_NO_INHERIT);
 
-	iupClassRegisterAttribute(ic, "NATIVEFOCUSRING", cocoaCanvasGetNativeFocusRingAttrib, cocoaCanvasSetNativeFocusRingAttrib, NULL, "NO", IUPAF_DEFAULT);
+  // Drag and drop
+  iupClassRegisterAttribute(ic, "DRAGINITIATE", NULL, cocoaCanvasSetBeginDragAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOBEGINDRAG", NULL, NULL, "NO", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SENDACTION", NULL, iupCocoaCommonBaseSetSendActionAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-	// TODO: We need a layer backed API for everything. But especially for here to workaround the native focus ring rendering corruption.
-	iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL,  NULL, IUPAF_NO_DEFAULTVALUE);
+  // Not Supported
+  iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-
-	iupClassRegisterCallback(ic, "VALIDATEMENU_CB", "s");
-	iupClassRegisterCallback(ic, "UNDO_CB", "");
-	iupClassRegisterCallback(ic, "REDO_CB", "");
-	iupClassRegisterCallback(ic, "CUT_CB", "");
-	iupClassRegisterCallback(ic, "COPY_CB", "");
-	iupClassRegisterCallback(ic, "PASTE_CB", "");
-	iupClassRegisterCallback(ic, "PASTESTYLE_CB", "");
-	
-	iupClassRegisterAttribute(ic, "SENDACTION", NULL, iupCocoaCommonBaseSetSendActionAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
-
-	// EXPERIMENTAL: May not work because it uses currentEvent. This is an override of cocoaSourceDragSetBeginDragAttrib
-  iupClassRegisterAttribute(ic, "DRAGINITIATE", NULL, cocoaCanvasSetBeginDragAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
-
+  // Layer backing
+  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }

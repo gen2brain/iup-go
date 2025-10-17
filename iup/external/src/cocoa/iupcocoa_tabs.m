@@ -1,130 +1,324 @@
-/** \file
-* \brief Tabs Control
-*
-* See Copyright Notice in "iup.h"
-*/
-
 /*
-Uses NSTabViewController which requires 10.10.
-*/
+ * This implementation uses NSTabViewController, a modern high-level API for managing
+ * tabs in macOS. While this simplifies integration with the view controller architecture,
+ * it imposes limitations on customizability.
+ *
+ * Supported features:
+ * - TABTYPE: TOP, BOTTOM, LEFT, RIGHT (vertical tabs use classic NSTabView bezel style)
+ * - TABIMAGE, TABTITLE, TABVISIBLE
+ * - RIGHTCLICK_CB callback
+ *
+ * Attributes NOT SUPPORTED due to NSTabViewController API limitations:
+ * - FONT, FGCOLOR, BGCOLOR: No public APIs to style individual tabs
+ * - TABPADDING: Cannot customize spacing in segmented control style
+ * - SHOWCLOSE: No built-in support for close buttons on tabs
+ * - MULTILINE: Horizontal tabs become scrollable instead of wrapping. Vertical tabs are always stacked.
+ *
+ * Note: LEFT/RIGHT orientations use NSTabView's bezel border style which has a
+ * different appearance than the modern segmented controls used for TOP/BOTTOM.
+ */
 
 #import <Cocoa/Cocoa.h>
 #import <objc/runtime.h>
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_dialog.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
-#include "iup_image.h"
 #include "iup_tabs.h"
+#include "iup_array.h"
+#include "iup_image.h"
 
-#include "iup_drvfont.h"
 #include "iupcocoa_drv.h"
 
-// Need to subclass to get at delegate callbacks for NSTabView.
+
+static int cocoaTabsPosFixFromNative(Ihandle* ih, int native_pos);
+static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos);
+
+@interface IupTabView : NSTabView
+@end
+
+@implementation IupTabView
+
+- (BOOL)isFlipped
+{
+  return YES;
+}
+
+- (Ihandle*)ihandle
+{
+  return (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+}
+
+- (BOOL)becomeFirstResponder
+{
+  BOOL result = [super becomeFirstResponder];
+  if (result)
+  {
+    Ihandle* ih = [self ihandle];
+    if (ih)
+      iupCocoaFocusIn(ih);
+  }
+  return result;
+}
+
+- (BOOL)resignFirstResponder
+{
+  BOOL result = [super resignFirstResponder];
+  if (result)
+  {
+    Ihandle* ih = [self ihandle];
+    if (ih)
+      iupCocoaFocusOut(ih);
+  }
+  return result;
+}
+
+- (BOOL)acceptsFirstResponder
+{
+  Ihandle* ih = [self ihandle];
+  if (ih)
+  {
+    if (iupAttribGet(ih, "_IUPCOCOA_CANFOCUS"))
+      return iupAttribGetBoolean(ih, "_IUPCOCOA_CANFOCUS");
+    return iupAttribGetBoolean(ih, "CANFOCUS");
+  }
+  return [super acceptsFirstResponder];
+}
+
+- (BOOL) needsPanelToBecomeKey
+{
+  return YES;
+}
+
+- (void)keyDown:(NSEvent *)event
+{
+  Ihandle* ih = [self ihandle];
+  if (ih)
+  {
+    int mac_key_code = [event keyCode];
+    if (!iupCocoaKeyEvent(ih, event, mac_key_code, true))
+      [super keyDown:event];
+  }
+  else
+    [super keyDown:event];
+}
+
+- (void)keyUp:(NSEvent *)event
+{
+  Ihandle* ih = [self ihandle];
+  if (ih)
+  {
+    int mac_key_code = [event keyCode];
+    if (!iupCocoaKeyEvent(ih, event, mac_key_code, false))
+      [super keyUp:event];
+  }
+  else
+    [super keyUp:event];
+}
+
+- (void)flagsChanged:(NSEvent *)event
+{
+  Ihandle* ih = [self ihandle];
+  if (ih)
+  {
+    int mac_key_code = [event keyCode];
+    if (!iupCocoaModifierEvent(ih, event, mac_key_code))
+      [super flagsChanged:event];
+  }
+  else
+    [super flagsChanged:event];
+}
+
+- (void)rightMouseDown:(NSEvent*)event
+{
+  Ihandle* ih = [self ihandle];
+  if (!ih)
+  {
+    [super rightMouseDown:event];
+    return;
+  }
+
+  IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
+  if (!cb)
+  {
+    [super rightMouseDown:event];
+    return;
+  }
+
+  NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+  NSTabViewItem* item = [self tabViewItemAtPoint:point];
+  if (item)
+  {
+    NSInteger native_pos = [self indexOfTabViewItem:item];
+    if (native_pos != NSNotFound)
+    {
+      int iup_pos = cocoaTabsPosFixFromNative(ih, (int)native_pos);
+      if (iup_pos != -1)
+      {
+        cb(ih, iup_pos);
+      }
+    }
+  }
+  else
+  {
+    [super rightMouseDown:event];
+  }
+}
+
+@end
+
+
 @interface IupTabViewController : NSTabViewController
 @property(nonatomic, assign) NSUInteger previousSelectedIndex;
 @end
 
 @implementation IupTabViewController
 
-- (Ihandle*) ihandle
+- (Ihandle*)ihandle
 {
-	Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-	return ih;
+  return (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
 }
 
-- (void) tabView:(NSTabView*)tab_view didSelectTabViewItem:(nullable NSTabViewItem*)tab_view_item
+- (void)tabView:(NSTabView*)tab_view didSelectTabViewItem:(nullable NSTabViewItem*)tab_view_item
 {
-	[super tabView:tab_view didSelectTabViewItem:tab_view_item];
-	Ihandle* ih = [self ihandle];
-	
-	
-	IFnnn cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
-	// Watch out: We must not be didSelectTabViewItem or we get the current instead of previous
-	// willSelectTabViewItem did not work any better, even if I queried before calling super
-//	int prev_pos = iupdrvTabsGetCurrentTab(ih);
-	NSUInteger prev_pos = [self previousSelectedIndex];
-	
-	NSArray<NSTabViewItem*>* array_of_items = [self tabViewItems];
-	int pos = (int)[array_of_items indexOfObject:tab_view_item];
-	
-	Ihandle* child = IupGetChild(ih, pos);
-	Ihandle* prev_child = IupGetChild(ih, (int)prev_pos);
-	
+  [super tabView:tab_view didSelectTabViewItem:tab_view_item];
 
-/*
-	if (iupAttribGet(ih, "_IUPCOCOA_IGNORE_SWITCHPAGE"))
-		return;
- 
-	NSView* tab_content_view = (NSView*)iupAttribGet(child, "_IUPTAB_CONTAINER");
-	NSView* prev_tab_content_view = (NSView*)iupAttribGet(prev_child, "_IUPTAB_CONTAINER");
- 
-	if (tab_content_view) gtk_widget_show(tab_content_view);   // show new page, if any
-	if (prev_tab_container) gtk_widget_hide(prev_tab_container);  // hide previous page, if any
-*/
+  Ihandle* ih = [self ihandle];
+  if (!ih)
+  {
+    return;
+  }
 
-	if(iupAttribGet(ih, "_IUPCOCOA_IGNORE_CHANGE"))
-	{
-		[self setPreviousSelectedIndex:(NSUInteger)pos];
-		return;
-	}
-	
-	if(cb)
-	{
-		cb(ih, child, prev_child);
-	}
-	else
-	{
-		IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
-		if(cb2)
-		{
-			cb2(ih, pos, (int)prev_pos);
-		}
-	}
+  NSUInteger prev_pos_native = self.previousSelectedIndex;
+  NSInteger current_pos_native = [[self tabViewItems] indexOfObject:tab_view_item];
 
-	[self setPreviousSelectedIndex:(NSUInteger)pos];
+  if (iupAttribGet(ih, "_IUPCOCOA_IGNORE_CHANGE"))
+  {
+    self.previousSelectedIndex = current_pos_native;
+    return;
+  }
+
+  // The delegate provides native indices (visible tabs only).
+  // Convert them back to IUP indices (all children) for the callbacks.
+  int pos = cocoaTabsPosFixFromNative(ih, (int)current_pos_native);
+  int prev_pos = cocoaTabsPosFixFromNative(ih, (int)prev_pos_native);
+
+  if (pos != -1 && prev_pos != -1)
+  {
+    Ihandle* child = IupGetChild(ih, pos);
+    Ihandle* prev_child = IupGetChild(ih, prev_pos);
+
+    IFnnn cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
+    if (cb)
+    {
+      cb(ih, child, prev_child);
+    }
+    else
+    {
+      IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
+      if (cb2)
+      {
+        cb2(ih, pos, prev_pos);
+      }
+    }
+  }
+
+  self.previousSelectedIndex = current_pos_native;
 }
-
 
 @end
 
+
 static IupTabViewController* cocoaGetTabViewController(Ihandle* ih)
 {
-	if(ih && ih->handle)
-	{
-		IupTabViewController* tab_view_controller = (IupTabViewController*)ih->handle;
-		NSCAssert([tab_view_controller isKindOfClass:[IupTabViewController class]], @"Expected IupTabViewController");
-		return tab_view_controller;
-	}
-	else
-	{
-		NSCAssert(1, @"Expected ih->handle");
-	}
-	return nil;
+  if (ih && ih->handle)
+  {
+    IupTabViewController* tab_view_controller = (IupTabViewController*)ih->handle;
+    NSCAssert([tab_view_controller isKindOfClass:[IupTabViewController class]], @"Expected IupTabViewController");
+    return tab_view_controller;
+  }
+  return nil;
 }
 
-// IUP seems to use this value as a boolean, not a width or height.
-// Additionally, Iup's compute natural size is completely useless for us and this API conveys no useful information for us.
-// So this is never called.
+// Manages an array tracking the visibility of each IUP child tab.
+// This is necessary because Cocoa's API removes invisible tabs, not just hides them.
+static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih)
+{
+  Iarray* visible_array = (Iarray*)iupAttribGet(ih, "_IUPCOCOA_VISIBLEARRAY");
+  if (!visible_array)
+  {
+    int i, count = IupGetChildCount(ih);
+    visible_array = iupArrayCreate(count > 0 ? count : 1, sizeof(int));
+    iupAttribSet(ih, "_IUPCOCOA_VISIBLEARRAY", (char*)visible_array);
+    if (count > 0)
+    {
+      int* visible_data = (int*)iupArrayGetData(visible_array);
+      for (i = 0; i < count; i++)
+      {
+        visible_data[i] = 1; // All visible by default
+      }
+    }
+  }
+  return visible_array;
+}
+
+static int cocoaTabsPosFixToNative(Ihandle* ih, int iup_pos)
+{
+  Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
+  int* visible_data = (int*)iupArrayGetData(visible_array);
+  if (iup_pos < 0 || iup_pos >= iupArrayCount(visible_array) || !visible_data[iup_pos])
+  {
+    return -1;
+  }
+
+  int native_pos = 0;
+  for (int i = 0; i < iup_pos; i++)
+  {
+    if (visible_data[i])
+    {
+      native_pos++;
+    }
+  }
+
+  return native_pos;
+}
+
+static int cocoaTabsPosFixFromNative(Ihandle* ih, int native_pos)
+{
+  if (native_pos < 0)
+  {
+    return -1;
+  }
+
+  Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
+  int* visible_data = (int*)iupArrayGetData(visible_array);
+  int count = iupArrayCount(visible_array);
+  int current_native_pos = -1;
+
+  for (int iup_pos = 0; iup_pos < count; iup_pos++)
+  {
+    if (visible_data[iup_pos])
+    {
+      current_native_pos++;
+    }
+    if (current_native_pos == native_pos)
+    {
+      return iup_pos;
+    }
+  }
+  return -1;
+}
+
 int iupdrvTabsExtraDecor(Ihandle* ih)
 {
-	(void)ih;
-	return 1; // FIXME: Total guess
+  (void)ih;
+  return 0;
 }
 
 int iupdrvTabsExtraMargin(void)
@@ -134,679 +328,438 @@ int iupdrvTabsExtraMargin(void)
 
 int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
 {
-	(void)ih;
-	return 1;
+  return 1;
 }
 
 void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
-	IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
-	NSArray<NSTabViewItem*>* array_of_items = [tab_view_controller tabViewItems];
-	if(pos >= [array_of_items count])
-	{
-		return;
-	}
-	
-	// Doc: "It is not called when the current tab is programmatically changed or removed"
-	iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
-	[tab_view_controller setSelectedTabViewItemIndex:pos];
-	iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
+  IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
+  if (!tab_view_controller)
+  {
+    return;
+  }
+
+  int native_pos = cocoaTabsPosFixToNative(ih, pos);
+  if (native_pos < 0)
+  {
+    return;
+  }
+
+  iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
+  [tab_view_controller setSelectedTabViewItemIndex:native_pos];
+  tab_view_controller.previousSelectedIndex = native_pos;
+  iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
 }
 
 int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
-	IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
-	return (int)[tab_view_controller selectedTabViewItemIndex];
+  IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
+  if (!tab_view_controller)
+  {
+    return -1;
+  }
+
+  int native_pos = (int)[tab_view_controller selectedTabViewItemIndex];
+  return cocoaTabsPosFixFromNative(ih, native_pos);
 }
 
-// Hidden tabs are not supported
 int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
-	return 1;
+  Ihandle* ih = IupGetParent(child);
+  if (!ih) return 0;
+
+  Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
+  if (pos < 0 || pos >= iupArrayCount(visible_array))
+  {
+    return 0;
+  }
+
+  return ((int*)iupArrayGetData(visible_array))[pos];
+}
+
+static int cocoaTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
+{
+  Ihandle* child = IupGetChild(ih, pos);
+  if (!child) return 0;
+
+  int is_visible = iupdrvTabsIsTabVisible(child, pos);
+  int new_visible = iupStrBoolean(value);
+
+  if (is_visible == new_visible) return 0;
+
+  Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
+  int* visible_data = (int*)iupArrayGetData(visible_array);
+  IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
+
+  if (new_visible)
+  {
+    visible_data[pos] = 1;
+    cocoaTabsCreateAndInsertItem(ih, child, pos);
+  }
+  else
+  {
+    int native_pos = cocoaTabsPosFixToNative(ih, pos);
+    iupTabsCheckCurrentTab(ih, pos, 0);
+    visible_data[pos] = 0;
+
+    if (native_pos >= 0 && (NSUInteger)native_pos < [[tab_view_controller tabViewItems] count])
+    {
+      NSTabViewItem* tab_view_item = [[tab_view_controller tabViewItems] objectAtIndex:native_pos];
+      iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
+      [tab_view_controller removeTabViewItem:tab_view_item];
+      iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
+      tab_view_controller.previousSelectedIndex = [tab_view_controller selectedTabViewItemIndex];
+    }
+  }
+  IupRefresh(ih);
+  return 0;
+}
+
+static char* cocoaTabsGetMultilineAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(ih->data->is_multiline);
+}
+
+static int cocoaTabsSetMultilineAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  /* The MULTILINE attribute behavior is dictated by TABTYPE/TABORIENTATION on Cocoa.
+     Horizontal tabs are strictly single line (they scroll).
+     Vertical tabs must report as multiline for the IUP core to calculate the natural size correctly (stacked height).
+  */
+  if (ih->data->orientation == ITABS_VERTICAL)
+  {
+    ih->data->is_multiline = 1;
+  }
+  else
+  {
+    ih->data->is_multiline = 0;
+  }
+
+  return 0;
 }
 
 static int cocoaTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
 {
-	NSTabViewControllerTabStyle new_style = NSTabViewControllerTabStyleSegmentedControlOnTop;
-	
-	if(iupStrEqualNoCase(value, "BOTTOM"))
-	{
-		ih->data->type = ITABS_BOTTOM;
-		new_style = NSTabViewControllerTabStyleSegmentedControlOnBottom;
-	}
-	else if(iupStrEqualNoCase(value, "LEFT"))
-	{
-		
-	}
-	else if(iupStrEqualNoCase(value, "RIGHT"))
-	{
-	}
-	else if(iupStrEqualNoCase(value, "TOP"))
-	{
-		ih->data->type = ITABS_TOP;
-		new_style = NSTabViewControllerTabStyleSegmentedControlOnTop;
-	}
-	else /* "TOP" */
-	{
-		ih->data->type = ITABS_TOP;
-		new_style = NSTabViewControllerTabStyleSegmentedControlOnTop;
-	}
-	
-	
-	if(ih->handle)
-	{
-		IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
-		[tab_view_controller setTabStyle:new_style];
-		
-		// FIXME:
-		// I'm having problems where BOTTOM gets clipped.
-		// Refresh isn't helping.
-		//IupRefresh(ih);
-	}
-	
-	return 0;
+  NSTabViewControllerTabStyle new_style;
+  NSTabViewType new_bezel_type = NSTopTabsBezelBorder;
+
+  if (iupStrEqualNoCase(value, "BOTTOM"))
+  {
+    ih->data->type = ITABS_BOTTOM;
+    ih->data->orientation = ITABS_HORIZONTAL;
+    ih->data->is_multiline = 0;
+    new_style = NSTabViewControllerTabStyleSegmentedControlOnBottom;
+  }
+  else if (iupStrEqualNoCase(value, "LEFT"))
+  {
+    ih->data->type = ITABS_LEFT;
+    ih->data->orientation = ITABS_VERTICAL;
+    ih->data->is_multiline = 1;
+    new_style = NSTabViewControllerTabStyleUnspecified;
+    new_bezel_type = NSLeftTabsBezelBorder;
+  }
+  else if (iupStrEqualNoCase(value, "RIGHT"))
+  {
+    ih->data->type = ITABS_RIGHT;
+    ih->data->orientation = ITABS_VERTICAL;
+    ih->data->is_multiline = 1;
+    new_style = NSTabViewControllerTabStyleUnspecified;
+    new_bezel_type = NSRightTabsBezelBorder;
+  }
+  else
+  {
+    ih->data->type = ITABS_TOP;
+    ih->data->orientation = ITABS_HORIZONTAL;
+    ih->data->is_multiline = 0;
+    new_style = NSTabViewControllerTabStyleSegmentedControlOnTop;
+  }
+
+  if (ih->handle)
+  {
+    IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
+    NSTabView* tab_view = [tab_view_controller tabView];
+
+    [tab_view_controller setTabStyle:new_style];
+
+    if (new_style == NSTabViewControllerTabStyleUnspecified)
+    {
+      [tab_view setTabViewType:new_bezel_type];
+    }
+
+    [tab_view invalidateIntrinsicContentSize];
+    [tab_view setNeedsLayout:YES];
+    [tab_view setNeedsDisplay:YES];
+
+    [[tab_view_controller view] invalidateIntrinsicContentSize];
+    [[tab_view_controller view] setNeedsLayout:YES];
+    [[tab_view_controller view] setNeedsDisplay:YES];
+
+    NSView* parent_view = iupCocoaCommonBaseLayoutGetParentView(ih);
+    if (parent_view)
+    {
+      [parent_view setNeedsLayout:YES];
+    }
+  }
+  return 0;
 }
 
 static int cocoaTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
 {
-	// Setting this to make the default getter iupTabsGetTitleAttrib() work
-	Ihandle* child = IupGetChild(ih, pos);
-	if(child)
-	{
-		iupAttribSetStr(child, "TABTITLE", value);
-	}
-	IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
-	
-	NSArray<NSTabViewItem*>* array_of_items = [tab_view_controller tabViewItems];
-	if(pos >= [array_of_items count])
-	{
-		return 0;
-	}
-	
-	NSTabViewItem* tab_view_item = [array_of_items objectAtIndex:pos];
-	
-	NSString* tab_title = nil;
-	if(value)
-	{
-		char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);   /* remove & */
-		tab_title = [NSString stringWithUTF8String:stripped_str];
-	}
-	else
-	{
-		tab_title = @"";
-	}
-	
-	[tab_view_item setLabel:tab_title];
-	
-	
+  Ihandle* child = IupGetChild(ih, pos);
+  if (child) iupAttribSetStr(child, "TABTITLE", value);
 
+  int native_pos = cocoaTabsPosFixToNative(ih, pos);
+  if (native_pos < 0) return 0;
 
-	return 0;
+  IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
+  if ((NSUInteger)native_pos >= [[tab_view_controller tabViewItems] count]) return 0;
+
+  NSTabViewItem* tab_view_item = [[tab_view_controller tabViewItems] objectAtIndex:native_pos];
+  NSString* tab_title = @"";
+  if (value)
+  {
+    char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
+    tab_title = [NSString stringWithUTF8String:stripped_str];
+    if (stripped_str && stripped_str != value) free(stripped_str);
+  }
+  [tab_view_item setLabel:tab_title];
+
+  IupRefresh(ih);
+  return 0;
 }
 
 static int cocoaTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 {
-	Ihandle* child = IupGetChild(ih, pos);
-	if(child)
-	{
-		iupAttribSetStr(child, "TABIMAGE", value);
-	}
-	
-	IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
-	NSArray* array_of_items = [tab_view_controller tabViewItems];
-	NSTabViewItem* tab_view_item = [array_of_items objectAtIndex:pos];
-	
-	NSImage* bitmap_image = nil;
-	if(value)
-	{
-		bitmap_image = iupImageGetImage(value, ih, 0, NULL);
-	}
-	else
-	{
-		
-	}
-	[tab_view_item setImage:bitmap_image];
-	
-	return 1;
+  Ihandle* child = IupGetChild(ih, pos);
+  if (child) iupAttribSetStr(child, "TABIMAGE", value);
+
+  int native_pos = cocoaTabsPosFixToNative(ih, pos);
+  if (native_pos < 0) return 1;
+
+  IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
+  if ((NSUInteger)native_pos >= [[tab_view_controller tabViewItems] count]) return 1;
+
+  NSTabViewItem* tab_view_item = [[tab_view_controller tabViewItems] objectAtIndex:native_pos];
+  NSImage* bitmap_image = value ? iupImageGetImage(value, ih, 0, NULL) : nil;
+  [tab_view_item setImage:bitmap_image];
+
+  IupRefresh(ih);
+  return 1;
 }
 
-/* This doesn't seem to work even though there is a font property.
-Even though the property is not marked read-only, the comments describe it as a "getter"
-My attempts to set this property seem to be a no-op
-*/
-/*
-static int cocoaTabsSetStandardFontAttrib(Ihandle* ih, const char* value)
+static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos)
 {
-	if(!iupdrvSetFontAttrib(ih, value))
-	{
-		return 0;
-	}
-	
-	if(ih->handle)
-	{
-		IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+  IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
+  int native_pos = cocoaTabsPosFixToNative(ih, iup_pos);
+  if (native_pos < 0) return -1;
 
-		IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
-		NSTabView* tab_view = [tab_view_controller tabView];
+  NSViewController* view_controller = [[[NSViewController alloc] initWithNibName:nil bundle:nil] autorelease];
+  NSView* content_view = [[[NSView alloc] initWithFrame:NSZeroRect] autorelease];
 
-		[tab_view setFont:[iup_font nativeFont]];
-	}
-	
-	return 1;
+  [view_controller setView:content_view];
+  NSTabViewItem* tab_item = [NSTabViewItem tabViewItemWithViewController:view_controller];
+
+  iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
+  [tab_view_controller insertTabViewItem:tab_item atIndex:native_pos];
+  iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
+
+  iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)content_view);
+
+  char* attr_val = iupAttribGet(child, "TABTITLE");
+  if (!attr_val) attr_val = iupAttribGetId(ih, "TABTITLE", iup_pos);
+  cocoaTabsSetTabTitleAttrib(ih, iup_pos, attr_val);
+
+  attr_val = iupAttribGet(child, "TABIMAGE");
+  if (!attr_val) attr_val = iupAttribGetId(ih, "TABIMAGE", iup_pos);
+  cocoaTabsSetTabImageAttrib(ih, iup_pos, attr_val);
+
+  return 0;
 }
-*/
-
-// I think this should work, but I don't see any results. Apple bug?
-#define IUPCOCOA_ENABLE_TABTIP 0
-#if IUPCOCOA_ENABLE_TABTIP
-static int cocoaTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
-{
-		// Setting this to make the default getter iupTabsGetTitleAttrib() work
-	Ihandle* child = IupGetChild(ih, pos);
-	if(child)
-	{
-		iupAttribSetStr(child, "TABTIP", value);
-	}
-	IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
-	
-	NSArray<NSTabViewItem*>* array_of_items = [tab_view_controller tabViewItems];
-	if(pos >= [array_of_items count])
-	{
-		return 0;
-	}
-	
-	NSTabViewItem* tab_view_item = [array_of_items objectAtIndex:pos];
-	
-	NSString* tab_tip = nil;
-	if(value)
-	{
-		tab_tip = [NSString stringWithUTF8String:value];
-	}
-	else
-	{
-		tab_tip = nil;
-	}
-	
-	[tab_view_item setToolTip:tab_tip];
-
-	
-	return 0;
-}
-
-static char* cocoaTabsGetTabTipAttrib(Ihandle* ih, int pos)
-{
-	Ihandle* child = IupGetChild(ih, pos);
-	if (child)
-	{
-		return iupAttribGet(child, "TABTIP");
-	}
-	else
-	{
-		return NULL;
-	}
-}
-#endif
-
-
-static int cocoaTabsSetContextMenuAttrib(Ihandle* ih, const char* value)
-{
-	IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
-	NSView* tab_view = [tab_view_controller tabView];
-	
-	Ihandle* menu_ih = (Ihandle*)value;
-	id ih_widget_to_attach_menu_to = tab_view;
-	iupCocoaCommonBaseSetContextMenuForWidget(ih, ih_widget_to_attach_menu_to, menu_ih);
-	
-	return 1;
-}
-
-
 
 static void cocoaTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
-  /* make sure it has at least one name */
-	if (!iupAttribGetHandleName(child))
-	{
-		iupAttribSetHandleName(child);
-	}
-	
-	if(ih->handle)
-	{
-		IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
-		
-		int pos = IupGetChildPos(ih, child);
-		
-		// It appears I am required to setup a NSViewController for each tab.
-		// Since I do not have a nib, I am also required to alloc a NSView for it.
-		NSViewController* view_controller = [[[NSViewController alloc] initWithNibName:nil bundle:nil] autorelease];
-#if 1
-		NSView* content_view = [[[NSView alloc] initWithFrame:NSZeroRect] autorelease];
-#else
-		// For Debugging: Paints the content view red to help debug layout regions.
-		NSView* content_view = [[[NSBox alloc] initWithFrame:NSZeroRect] autorelease];
-		[content_view setBoxType:NSBoxCustom];
-		[content_view setFillColor:[NSColor redColor]];
-		[content_view setTitlePosition:NSNoTitle];
-#endif
+  if (!iupAttribGetHandleName(child)) iupAttribSetHandleName(child);
 
-		[view_controller setView:content_view];
-		NSTabViewItem* tab_item = [NSTabViewItem tabViewItemWithViewController:view_controller];
+  if (ih->handle)
+  {
+    Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
+    int pos = IupGetChildPos(ih, child);
+    iupArrayInsert(visible_array, pos, 1);
+    ((int*)iupArrayGetData(visible_array))[pos] = 1;
 
-		// adding the tab view on the active tab will trigger a change callback that I don't think we are supposed to fire:
-		// Doc: "It is not called when the current tab is programmatically changed or removed"
-		iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
-		[tab_view_controller insertTabViewItem:tab_item atIndex:pos];
-		//	[tab_view_controller addTabViewItem:tab_item];
-		//	NSView* content_view = [tab_item view];
-		iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
-
-		// IMPORTANT: We are putting the content_view in here and not the ViewController or TabViewItem
-		// This is because the rest of IUP "just works" when there is a regular view for the map key.
-		// And the system will correctly add, layout, and remove this view.
-		iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)content_view);
-		
-		
-		// Apply attributes that have been set before map
-		char* tab_attribute = NULL;
-		tab_attribute = iupAttribGet(child, "TABTITLE");
-		cocoaTabsSetTabTitleAttrib(ih, pos, tab_attribute);
-
-		tab_attribute = iupAttribGet(child, "TABIMAGE");
-		cocoaTabsSetTabImageAttrib(ih, pos, tab_attribute);
-
-#if IUPCOCOA_ENABLE_TABTIP
-		tab_attribute = iupAttribGet(child, "TABTIP");
-		cocoaTabsSetTabTipAttrib(ih, pos, tab_attribute);
-#endif
-
-		// Need to force a re-layout to fit the new tab
-		//IupRefresh(ih);
-
-	}
+    cocoaTabsCreateAndInsertItem(ih, child, pos);
+    IupRefresh(ih);
+  }
 }
 
 static void cocoaTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 {
-	// NSLog(@"cocoaTabsChildRemovedMethod: %p, %p, %d", ih, child, pos);
-	if(ih->handle)
-	{
-		// Strange: This function gets called back multiple times under some circumstances.
-		// If this is added as one of the tabs:
-		//   vboxB = IupVbox(IupLabel("Label BBB"), IupButton("Button BBB", "cbChildButton"), NULL);
-		// this triggers multiple callbacks.
-		// But if this is instead added as the tab,
-		//   vboxB = IupFrame(IupVbox(IupLabel("Label BBB"), IupButton("Button BBB", "cbChildButton"), NULL));
-		// I only get one callback.
-		// The multiple callbacks screw me up because I end up deleting other tabs.
-		// The other implementations have this check for "_IUPTAB_CONTAINER" which seems to avoid the multiple deletion issue.
-		// I don't really understand why things work this way, but it seems to solve the problem.
-		NSView* content_view = (NSView*)iupAttribGet(child, "_IUPTAB_CONTAINER");
-		if(content_view)
-		{
-		
-			IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
-			
-			// I think this will make Iup switch the current tab to something else so when we remove the tab, both the native & IUP will agree which tab number they are on
-	//		iupTabsCheckCurrentTab(ih, pos, 1);
-			iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
-			
-			NSArray* array_of_items = [tab_view_controller tabViewItems];
-			NSTabViewItem* tab_view_item = [array_of_items objectAtIndex:pos];
-	
-			// removing the tab view on the active tab will trigger a change callback that I don't think we are supposed to fire:
-			// Doc: "It is not called when the current tab is programmatically changed or removed"
-			iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
-			[tab_view_controller removeTabViewItem:tab_view_item];
-			iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
+  if (!ih->handle) return;
 
-			[tab_view_controller setPreviousSelectedIndex:[tab_view_controller selectedTabViewItemIndex]];
+  NSView* content_view = (NSView*)iupAttribGet(child, "_IUPTAB_CONTAINER");
+  if (!content_view) return;
 
-			// Need to force a re-layout to refit the tabs
-			//IupRefresh(ih);
-		}
-	}
+  IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
+  Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
+
+  int native_pos = -1;
+  int is_visible = ((int*)iupArrayGetData(visible_array))[pos];
+  if (is_visible)
+  {
+    native_pos = cocoaTabsPosFixToNative(ih, pos);
+  }
+
+  iupArrayRemove(visible_array, pos, 1);
+
+  if (native_pos >= 0)
+  {
+    iupTabsCheckCurrentTab(ih, pos, 1);
+
+    NSArray* array_of_items = [tab_view_controller tabViewItems];
+    if ((NSUInteger)native_pos < [array_of_items count])
+    {
+      NSTabViewItem* tab_view_item = [array_of_items objectAtIndex:native_pos];
+
+      iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
+      [tab_view_controller removeTabViewItem:tab_view_item];
+      iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
+
+      tab_view_controller.previousSelectedIndex = [tab_view_controller selectedTabViewItemIndex];
+    }
+  }
+
+  iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
+  IupRefresh(ih);
 }
 
 static int cocoaTabsMapMethod(Ihandle* ih)
 {
-//	NSTabView* tab_control = [[NSTabView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
-	IupTabViewController* tab_view_controller = [[IupTabViewController alloc] init];
-	// We don't want to see "NSViewController" in the tab by default
-	[tab_view_controller setCanPropagateSelectedChildViewControllerTitle:NO];
+  IupTabViewController* tab_view_controller = [[IupTabViewController alloc] init];
+  [tab_view_controller setCanPropagateSelectedChildViewControllerTitle:NO];
 
-	// I'm using objc_setAssociatedObject/objc_getAssociatedObject because it allows me to avoid making subclasses just to hold ivars.
-	objc_setAssociatedObject(tab_view_controller, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
+  objc_setAssociatedObject(tab_view_controller, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
+  ih->handle = tab_view_controller;
 
+  [tab_view_controller view];
 
-	
+  object_setClass([tab_view_controller tabView], [IupTabView class]);
+  objc_setAssociatedObject([tab_view_controller tabView], IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 
-//	ih->handle = tab_control;
-	ih->handle = tab_view_controller;
-	
-	// This is one of those cases where this may not make any sense and nil might be an acceptable value.
-//	iupCocoaSetAssociatedViews(ih, nil, nil);
-	iupCocoaSetAssociatedViews(ih, [tab_view_controller view], [tab_view_controller view]);
+  iupCocoaSetAssociatedViews(ih, [tab_view_controller view], [tab_view_controller view]);
+  cocoaTabsGetVisibleArray(ih);
 
-	
-	// sanity checks
-/*
-	ih->data->is_multiline = 0;
-	ih->data->show_close = 0;
-	ih->data->vert_padding = 0;
-	ih->data->horiz_padding = 0;
-*/
+  cocoaTabsSetTabTypeAttrib(ih, iupTabsGetTabTypeAttrib(ih));
+  iupCocoaAddToParent(ih);
 
-	// Need to apply the style if the user has set it already
-	cocoaTabsSetTabTypeAttrib(ih, iupTabsGetTabTypeAttrib(ih));
-	
-	// All Cocoa views shoud call this to add the new view to the parent view.
-	iupCocoaAddToParent(ih);
-	
+  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+  {
+    [[tab_view_controller tabView] setRefusesFirstResponder:YES];
+    iupCocoaSetCanFocus(ih, 0);
+  }
+  else
+  {
+    iupCocoaSetCanFocus(ih, 1);
+  }
 
-//	cocoaTabsSetStandardFontAttrib(ih, iupGetFontValue(ih));
+  if (ih->firstchild)
+  {
+    Ihandle* child;
+    Ihandle* current_child = (Ihandle*)iupAttribGet(ih, "_IUPTABS_VALUE_HANDLE");
 
-	
-	/* Create pages and tabs */
-	if(ih->firstchild)
-	{
-		Ihandle* child;
-		Ihandle* current_child = (Ihandle*)iupAttribGet(ih, "_IUPTABS_VALUE_HANDLE");
-		
-		for(child = ih->firstchild; child; child = child->brother)
-		{
-			cocoaTabsChildAddedMethod(ih, child);
-		}
-		
-		if(current_child)
-		{
-			IupSetAttribute(ih, "VALUE_HANDLE", (char*)current_child);
-			
-			/* current value is now given by the native system */
-			iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", NULL);
-		}
-	}
-	
-	
-	
-	return IUP_NOERROR;
+    for (child = ih->firstchild; child; child = child->brother)
+    {
+      cocoaTabsChildAddedMethod(ih, child);
+    }
+
+    if (current_child)
+    {
+      IupSetAttribute(ih, "VALUE_HANDLE", (char*)current_child);
+      iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", NULL);
+    }
+
+    IupRefresh(ih);
+  }
+
+  return IUP_NOERROR;
 }
 
 static void cocoaTabsUnMapMethod(Ihandle* ih)
 {
-	id tab_control = ih->handle;
+  id tab_control = ih->handle;
+  if (!tab_control) return;
 
-	// Destroy the context menu ih it exists
-	{
-		Ihandle* context_menu_ih = (Ihandle*)iupCocoaCommonBaseGetContextMenuAttrib(ih);
-		if(NULL != context_menu_ih)
-		{
-			IupDestroy(context_menu_ih);
-		}
-		cocoaTabsSetContextMenuAttrib(ih, NULL);
-	}
-
-	iupCocoaRemoveFromParent(ih);
-	iupCocoaSetAssociatedViews(ih, nil, nil);
-	[tab_control release];
-	ih->handle = NULL;
-	
-}
-
-
-
-
-
-static int cocoaTabsComputeFullTabBarWidth(Ihandle* ih)
-{
-	int running_width = 0;
-	int pos;
-	char *tabtitle, *tabimage;
-	Ihandle* child;
-
-	// For the standard font, our result comes out at 25,16, which overshoots too much for this.
-	/*
-		int char_width;
-		int char_height;
-		iupdrvFontGetCharSize(ih, &char_width, &char_height);
-	 NSLog(@"cocoaTabsGetCombinedWidth char_width:%d, char_height:%d", char_width, char_height);
-	 */
-	for(pos = 0, child = ih->firstchild; child; child = child->brother, pos++)
-	{
-		tabtitle = iupAttribGetId(ih, "TABTITLE", pos);
-		if (!tabtitle) tabtitle = iupAttribGet(child, "TABTITLE");
-		tabimage = iupAttribGetId(ih, "TABIMAGE", pos);
-		if (!tabimage) tabimage = iupAttribGet(child, "TABIMAGE");
-
-		
-
-		bool has_image = true;
-		
-		int current_tab_width = 0;
-		if(tabtitle)
-		{
-			char* stripped_str = iupStrProcessMnemonic(tabtitle, NULL, 0);   /* remove & */
-
-			// Apple doesn't let us change the font, so we know exactly
-			/*
-			NSString* ns_string = [NSString stringWithUTF8String:stripped_str];
-			NSFont* tab_font = [NSFont messageFontOfSize:0];
-			NSSize string_size = [ns_string sizeWithFont:myFont
-                           constrainedToSize:maximumSize
-                               lineBreakMode:self.myLabel.lineBreakMode];
-			*/
-			
-
-			int current_text_width = iupdrvFontGetStringWidth(ih, stripped_str);
-			current_tab_width += current_text_width;
-//			NSLog(@"%s current_text_width:%d, current_tab_width:%d", tabtitle, current_text_width, current_tab_width);
-			
-			
-		}
-		
-		if(tabimage)
-		{
-			void* img = iupImageGetImage(tabimage, ih, 0, NULL);
-			if(img)
-			{
-				has_image = true;
-				int image_w = 16;
-				int image_h = 16;
-				
-				// Getting the real image dimensions won't work. Apple seems to be resizing the image to fit in the tab bar.
-				// It seems to be about 16x16
-				iupdrvImageGetInfo(img, &image_w, &image_h, NULL);
-				current_tab_width += image_w;
-
-//				NSLog(@"%s, image_w:%d, current_tab_width:%d", tabimage, image_w, current_tab_width);
-				// There is some padding to account for between the image and text
-//				current_tab_width += char_width;
-				
-			}
-		}
-
-		if(has_image && tabtitle)
-		{
-			// There is about 1 character space bewtween the image and text.
-			// I measured about 10 pixels. Our character width over-estimates too much.
-			// Update: I was coming in over, so I dropped by 1
-			current_tab_width += 9;
-		
-			// There is also about a 7-8 pixel lead-in, and a 10 pixel trail around the whole thing
-			// Update: I was coming in over, so I dropped by 1
-			current_tab_width += 7 + 9;
-		}
-		else if(has_image)
-		{
-			// There is an about 10 pixel lead-in and 10 pixel trail.
-			// Update: I was coming in over, so I dropped by 1
-			current_tab_width += 9 + 9;
-
-		}
-		else if(tabtitle)
-		{
-			// There is an about 14 pixel lead-in and 14 pixel trail.
-			// Update: I was coming in over, so I dropped by 1
-			current_tab_width += 13 + 13;
-		}
-		else
-		{
-			// I'm seeing about 18 pixels in the empty NULL title
-			current_tab_width += 9 + 9;
-		}
-		
-	
-		running_width += current_tab_width;
-//		NSLog(@"bottom-loop running_width:%d, current_tab_width:%d", running_width, current_tab_width);
-
+  Iarray* visible_array = (Iarray*)iupAttribGet(ih, "_IUPCOCOA_VISIBLEARRAY");
+  if (visible_array)
+  {
+    iupArrayDestroy(visible_array);
+    iupAttribSet(ih, "_IUPCOCOA_VISIBLEARRAY", NULL);
   }
 
-	// With my current numbers, I'm coming in about perfect, but the window edge is exactly on the tab bar end.
-	// So let's add a pixel or two to give it a little breathing room.
-	
-	running_width += 2;
-
-  return running_width;
+  iupCocoaRemoveFromParent(ih);
+  iupCocoaSetAssociatedViews(ih, nil, nil);
+  [tab_control release];
+  ih->handle = NULL;
 }
 
-static void cocoaTabsComputeNaturalSize(Ihandle* ih, int *w, int *h, int *children_expand)
+static void cocoaTabsLayoutUpdateMethod(Ihandle* ih)
 {
-	Ihandle* child;
-	int children_naturalwidth, children_naturalheight;
-//  int decorwidth, decorheight;
-	
-	/* calculate total children natural size (even for hidden children) */
-	children_naturalwidth = 0;
-	children_naturalheight = 0;
-	
-	for(child = ih->firstchild; child; child = child->brother)
-	{
-		/* update child natural size first */
-		iupBaseComputeNaturalSize(child);
-		
-		*children_expand |= child->expand;
-		children_naturalwidth = iupMAX(children_naturalwidth, child->naturalwidth);
-		children_naturalheight = iupMAX(children_naturalheight, child->naturalheight);
-	}
+  NSView* parent_view = iupCocoaCommonBaseLayoutGetParentView(ih);
+  if (!parent_view) return;
 
-	// IUP's common core implementation for iTabsGetDecorSize is completely useless for us.
-	// It focuses on the wrong things for us, has the wrong assumptions,
-	// and doesn't seem to understand that the tab bar itself needs a minimum width.
-	// (Maybe it assumes the tabs wrap, which is not the case for Cocoa.)
-	// So this
-//  iTabsGetDecorSize(ih, &decorwidth, &decorheight);
-//  *w = children_naturalwidth + decorwidth;
-//  *h = children_naturalheight + decorheight;
-//	NSLog(@"iupClassObjectComputeNaturalSize children_naturalwidth:%d, children_naturalheight:%d", children_naturalwidth, children_naturalheight);
+  NSView* child_view = iupCocoaCommonBaseLayoutGetChildView(ih);
+  if (!child_view) return;
 
-	IupTabViewController* tab_view_controller = cocoaGetTabViewController(ih);
+  NSRect parent_bounds = [parent_view bounds];
+  NSRect child_rect;
 
-	NSTabView* tab_view = [tab_view_controller tabView];
-	
-	// It seems that this might give us the correct height. But the width doesn't seem helpful.
-	// Apple allows truncating the strings into the tabs with ellipses.
-	// So trying to compute the natural size with that value isn't working out.
-	NSRect the_rect = [tab_view frame];
-	//NSLog(@"cocoaTabsComputeNaturalSize the_rect: %@", NSStringFromRect(the_rect));
+  if ([parent_view isFlipped])
+  {
+    child_rect = NSMakeRect(
+        ih->x,
+        ih->y,
+        ih->currentwidth,
+        ih->currentheight
+    );
+  }
+  else
+  {
+    child_rect = NSMakeRect(
+        ih->x,
+        parent_bounds.size.height - ih->y - ih->currentheight,
+        ih->currentwidth,
+        ih->currentheight
+    );
+  }
 
-/*
-	// this is 0,0
-	NSSize minimum_size = [tab_view minimumSize];
-	NSLog(@"cocoaTabsComputeNaturalSize minimum_size: %@", NSStringFromSize(minimum_size));
-	// this is 0,0
-	NSSize preferredContentSize = [tab_view_controller preferredContentSize];
-	NSLog(@"cocoaTabsComputeNaturalSize preferredContentSize: %@", NSStringFromSize(preferredContentSize));
-	// This is 20,20
-	NSSize preferredMinimumSize = [tab_view_controller preferredMinimumSize];
-	NSLog(@"cocoaTabsComputeNaturalSize v: %@", NSStringFromSize(preferredMinimumSize));
-*/
+  [child_view setFrame:child_rect];
 
-	// The above built-in values does't seem to include the segmented-bar space as part of the size.
-	// I don't know an official way to compute the size.
-	// So we have to do it the hard way and brute force an estimate.
-	int max_tab_bar_width = cocoaTabsComputeFullTabBarWidth(ih);
-	//NSLog(@"cocoaTabsComputeNaturalSize max_tab_width: %d", max_tab_bar_width);
-
-	// We also need to account for the tab bar height and padding.
-	// The bar height seems to be about 21 pixels
-	// There also seems to be about 4 pixels of space above, and 6 pixels below.
-	// UPDATE: The frame on tabView seems to get us the height we need. My values seem to be bigger than what frame says.
-//	int add_tab_height = 21 + 4 + 6;
-
-	int final_w;
-	int final_h;
-	
-	final_w = iupMAX(children_naturalwidth, max_tab_bar_width);
-	
-//	final_h = children_naturalwidth + add_tab_height;
-	final_h = iupMAX(children_naturalheight, the_rect.size.height);
-
-//	NSLog(@"cocoaTabsComputeNaturalSize final w:%d h:%d", final_w, final_h);
-
-	*w = final_w;
-	*h = final_h;
+  iupdrvUpdateTip(ih);
 }
-
 
 void iupdrvTabsInitClass(Iclass* ic)
 {
+  ic->Map = cocoaTabsMapMethod;
+  ic->UnMap = cocoaTabsUnMapMethod;
+  ic->LayoutUpdate = cocoaTabsLayoutUpdateMethod;
+  ic->ChildAdded = cocoaTabsChildAddedMethod;
+  ic->ChildRemoved = cocoaTabsChildRemovedMethod;
 
-  /* Driver Dependent Class functions */
-	ic->Map = cocoaTabsMapMethod;
-	ic->UnMap = cocoaTabsUnMapMethod;
-	ic->ChildAdded     = cocoaTabsChildAddedMethod;
-	ic->ChildRemoved   = cocoaTabsChildRemovedMethod;
-	//	ic->LayoutUpdate = cocoaTabsLayoutUpdateMethod;
-	ic->ComputeNaturalSize = cocoaTabsComputeNaturalSize;
+  iupClassRegisterCallback(ic, "RIGHTCLICK_CB", "i");
+  iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
 
-  /* IupTabs only */
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, cocoaTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, cocoaTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, cocoaTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, cocoaTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 
-  /* Common */
-	/* This doesn't seem to work even though there is a font property.
-	 Even though the property is not marked read-only, the comments describe it as a "getter"
-	 My attempts to set this property seem to be a no-op
-	 */
-//  iupClassRegisterAttribute(ic, "STANDARDFONT", NULL, cocoaTabsSetStandardFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE|IUPAF_NOT_MAPPED);
-
-#if 0
-
-  /* Driver Dependent Attribute functions */
-
-	// Not supported (there is no close button for tabs)
-  iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
-
-
-  /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtkTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtkTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-
-  /* IupTabs only */
-  iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, gtkTabsSetTabOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, gtkTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PADDING", iupTabsGetPaddingAttrib, gtkTabsSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-#endif
-
-  /* NOT supported */
-  iupClassRegisterAttribute(ic, "STANDARDFONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "TABORIENTATION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "TABVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "PADDING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-
-	// New API:
-	//I think this should work, but I am not getting results. Apple bug?
-#if IUPCOCOA_ENABLE_TABTIP
-  iupClassRegisterAttributeId(ic, "TABTIP", cocoaTabsGetTabTipAttrib, cocoaTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
-#endif
-
-	/* New API for view specific contextual menus (Mac only) */
-	iupClassRegisterAttribute(ic, "CONTEXTMENU", iupCocoaCommonBaseGetContextMenuAttrib, cocoaTabsSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
-
-	
+  iupClassRegisterAttribute(ic, "FONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABPADDING", NULL, NULL, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MULTILINE", cocoaTabsGetMultilineAttrib, cocoaTabsSetMultilineAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWCLOSE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
-

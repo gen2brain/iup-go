@@ -3,11 +3,9 @@
 
 #import <Cocoa/Cocoa.h>
 
+
 @interface IupCocoaTreeToggleTableCellView : NSTableCellView
-
-@property(assign, nonatomic) IBOutlet NSButton* checkBox;
-
+@property(retain, nonatomic) IBOutlet NSButton* checkBox;
 @end
 
 #endif
-

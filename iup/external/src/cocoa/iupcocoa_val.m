@@ -10,382 +10,509 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_val.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_key.h"
 
 #include "iupcocoa_drv.h"
+#include "iupcocoa_keycodes.h"
 
-// the point of this is we have a unique memory address for an identifier
+
 static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY";
 
-@interface IupCocoaSlider : NSSlider
-@end
-
-@implementation IupCocoaSlider
-
-/*
-I was mistaken about what acceptsFirstMouse does and what CANFOCUS is supposed to do.
-This controls whether the widget will immediately respond to a click when the app/window is in the background.
-The default is NO.
-
-So for example, Xcode is in the foreground, and my slider app is in the background.
-I click on my slider app to bring it forward. I happen to click on the slider in my app.
-acceptsFirstMouse==YES would cause both my application to come forward and also move the slider position.
-acceptsFirstMouse==NO would cause just the application to come forward, but the slider position will be ignored. This is a safety/focus behavior by default to avoid accidentally changing things.
-
-I suppose a reason to make it YES is if you have a multiple window app, and you want to manipulate the slider in a second window, without losing focus on the main window.
-
-However, this is not what the CANFOCUS feature is about.
-CANFOCUS seems to mostly be about getting the focus ring and being able to get keyboard control of it.
-
-*/
-/*
-- (BOOL) acceptsFirstMouse:(NSEvent*)the_event
-{
-	Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  	if(iupAttribGetBoolean(ih, "CANFOCUS"))
-  	{
-  		return YES;
-	}
-	else
-	{
-		return NO;
-	}
-}
-*/
-
+@interface IupCocoaValSlider : NSSlider
 @end
 
 @interface IupCocoaSliderReceiver : NSObject
-- (IBAction) mySliderDidMove:(id)the_sender;
+- (IBAction)sliderAction:(id)sender;
 @end
+
+@implementation IupCocoaValSlider
+
+- (BOOL)acceptsFirstResponder
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih)
+    return [super acceptsFirstResponder];
+
+  const char* canfocus = iupAttribGet(ih, "_IUPCOCOA_CANFOCUS");
+  if (canfocus && iupStrEqualNoCase(canfocus, "NO"))
+    return NO;
+
+  return [super acceptsFirstResponder];
+}
+
+- (BOOL)becomeFirstResponder
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih)
+  {
+    iupCocoaFocusIn(ih);
+  }
+  return [super becomeFirstResponder];
+}
+
+- (BOOL)resignFirstResponder
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih)
+  {
+    iupCocoaFocusOut(ih);
+  }
+  return [super resignFirstResponder];
+}
+
+- (BOOL) needsPanelToBecomeKey
+{
+  return YES;
+}
+
+- (void)mouseDown:(NSEvent *)event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih)
+  {
+    iupAttribSet(ih, "_IUPCOCOA_VAL_DRAGGING", "1");
+    iupAttribSet(ih, "_IUPCOCOA_VAL_BUTTONRELEASE", NULL);
+  }
+  [super mouseDown:event];
+}
+
+- (void)mouseUp:(NSEvent *)event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih)
+  {
+    iupAttribSet(ih, "_IUPCOCOA_VAL_BUTTONRELEASE", "1");
+    iupAttribSet(ih, "_IUPCOCOA_VAL_DRAGGING", NULL);
+  }
+  [super mouseUp:event];
+}
+
+- (void)keyDown:(NSEvent *)event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih)
+  {
+    [super keyDown:event];
+    return;
+  }
+
+  int keyCode = [event keyCode];
+  if (iupCocoaKeyEvent(ih, event, keyCode, true))
+    return;
+
+  BOOL handled = NO;
+
+  if (keyCode == kVK_Home)
+  {
+    if (ih->data->inverted)
+      [self setDoubleValue:ih->data->vmax];
+    else
+      [self setDoubleValue:ih->data->vmin];
+
+    IupCocoaSliderReceiver* receiver = (IupCocoaSliderReceiver*)objc_getAssociatedObject(self, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY);
+    if (receiver)
+    {
+      iupAttribSet(ih, "_IUPCOCOA_VAL_KEYPRESS", "1");
+      [receiver sliderAction:self];
+      iupAttribSet(ih, "_IUPCOCOA_VAL_KEYPRESS", NULL);
+    }
+    handled = YES;
+  }
+  else if (keyCode == kVK_End)
+  {
+    if (ih->data->inverted)
+      [self setDoubleValue:ih->data->vmin];
+    else
+      [self setDoubleValue:ih->data->vmax];
+
+    IupCocoaSliderReceiver* receiver = (IupCocoaSliderReceiver*)objc_getAssociatedObject(self, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY);
+    if (receiver)
+    {
+      iupAttribSet(ih, "_IUPCOCOA_VAL_KEYPRESS", "1");
+      [receiver sliderAction:self];
+      iupAttribSet(ih, "_IUPCOCOA_VAL_KEYPRESS", NULL);
+    }
+    handled = YES;
+  }
+
+  if (!handled)
+  {
+    [super keyDown:event];
+  }
+}
+
+@end
+
 
 @implementation IupCocoaSliderReceiver
 
-/*
-- (void) dealloc
+- (IBAction)sliderAction:(id)sender
 {
-	[super dealloc];
-}
-*/
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(sender, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih)
+  {
+    return;
+  }
 
+  NSSlider* slider = (NSSlider*)sender;
+  double slider_val = [slider doubleValue];
+  double old_iup_val = ih->data->val;
 
-- (IBAction) mySliderDidMove:(id)the_sender;
-{
-	Icallback callback_function;
-	Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_sender, IHANDLE_ASSOCIATED_OBJ_KEY);
+  ih->data->val = ih->data->inverted ? (ih->data->vmax - slider_val) + ih->data->vmin : slider_val;
+  iupValCropValue(ih);
 
-	NSSlider* the_slider = (NSSlider*)the_sender;
-	double new_value = [the_slider doubleValue];
-	if(ih->data->val == new_value)
-	{
-		// no change
-		return;
-	}
-	ih->data->val = new_value;
-	
-	callback_function = IupGetCallback(ih, "VALUECHANGED_CB");
-	if(callback_function)
-	{
-		int ret_val = callback_function(ih);
-		// don't need to do anything with return value
-		(void)(ret_val);
-	}
+  IFn valuechanged_cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  if (valuechanged_cb)
+  {
+    if (ih->data->val == old_iup_val)
+    {
+      return;
+    }
+    valuechanged_cb(ih);
+  }
+  else
+  {
+    IFnd cb_old = NULL;
+
+    if (iupAttribGet(ih, "_IUPCOCOA_VAL_BUTTONRELEASE"))
+    {
+      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_RELEASE_CB");
+      iupAttribSet(ih, "_IUPCOCOA_VAL_BUTTONRELEASE", NULL);
+    }
+    else if (iupAttribGet(ih, "_IUPCOCOA_VAL_DRAGGING"))
+    {
+      cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
+    }
+    else if (iupAttribGet(ih, "_IUPCOCOA_VAL_KEYPRESS"))
+    {
+      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
+    }
+    else
+    {
+      NSEvent* event = [NSApp currentEvent];
+      NSEventType event_type = [event type];
+
+      if (event_type == NSEventTypeKeyDown)
+      {
+        cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
+      }
+    }
+
+    if (cb_old)
+    {
+      cb_old(ih, ih->data->val);
+    }
+  }
 }
 
 @end
 
-
-
-
 void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 {
-	if(ih->handle)
-	{
-//		NSLog(@"iupdrvValGetMinSize with handle");
-		NSSlider* the_slider = (NSSlider*)ih->handle;
-		CGFloat knob_thickness = [the_slider knobThickness];
-//		NSLog(@"iupdrvValGetMinSize knob_thickness:%lf", knob_thickness);
-		
-		const int PADDING = 4;
-		
-		*w = knob_thickness + PADDING;
-		*h = knob_thickness + PADDING;
-		return;
-	}
-	else
-	{
-//		NSLog(@"iupdrvValGetMinSize no handle");
-		
-	}
-	// 10.13 knobThickness is 20.0 for pointy, 21.0 for round
-	
-	const int KNOBTHICKNESS = 21;
-	const int PADDING = 4;
-	
-	if(ih->data->orientation == IVAL_HORIZONTAL)
-	{
-		*w = KNOBTHICKNESS + PADDING;
-		*h = KNOBTHICKNESS + PADDING;
-	}
-	else
-	{
-		*w = KNOBTHICKNESS + PADDING;
-		*h = KNOBTHICKNESS + PADDING;
-	}
+  int ticks_size = 0;
+  if (iupAttribGetInt(ih, "SHOWTICKS") > 0)
+  {
+    char* tickspos = iupAttribGetStr(ih, "TICKSPOS");
+    if (iupStrEqualNoCase(tickspos, "BOTH"))
+    {
+      /* NSSlider doesn't support both sides, but account for the user's expectation */
+      ticks_size = 2 * 8;
+    }
+    else
+    {
+      ticks_size = 8;
+    }
+  }
+
+  if (ih->data->orientation == IVAL_HORIZONTAL)
+  {
+    *w = 35;
+    *h = 30 + ticks_size;
+  }
+  else
+  {
+    *w = 30 + ticks_size;
+    *h = 35;
+  }
 }
 
 static int cocoaValSetValueAttrib(Ihandle* ih, const char* value)
 {
-	double new_value = 0;
-	if(iupStrToDouble(value, &new_value))
-	{
-		NSSlider* the_slider = ih->handle;
-		// Not sure if I should bounds check in case the user is trying to reset max, min and this, but out of order.
-		if(new_value < ih->data->vmin)
-		{
-			new_value = ih->data->vmin;
-		}
-		if(new_value > ih->data->vmax)
-		{
-			new_value = ih->data->vmax;
-		}
-		
-		ih->data->val = new_value;
-		
-		[the_slider setDoubleValue:new_value];
-	}
-	return 0; /* do not store value in hash table */
-}
+  double new_iup_val;
 
+  if (!value)
+  {
+    /* If value is NULL, use current value (e.g., when MIN/MAX changed) */
+    new_iup_val = ih->data->val;
+  }
+  else if (!iupStrToDouble(value, &new_iup_val))
+  {
+    return 0;
+  }
+
+  NSSlider* slider = ih->handle;
+
+  if (new_iup_val < ih->data->vmin) new_iup_val = ih->data->vmin;
+  if (new_iup_val > ih->data->vmax) new_iup_val = ih->data->vmax;
+
+  ih->data->val = new_iup_val;
+
+  // If inverted, transform the IUP value to the native slider's coordinate space.
+  double native_val = ih->data->inverted ? (ih->data->vmax - new_iup_val) + ih->data->vmin : new_iup_val;
+  [slider setDoubleValue:native_val];
+
+  return 0;
+}
 
 static int cocoaValSetMaxAttrib(Ihandle* ih, const char* value)
 {
-	double new_value = 0;
-	if(iupStrToDouble(value, &new_value))
-	{
-		NSSlider* the_slider = ih->handle;
-		
-		// Not going to bounds check in case the user is trying to change both max and min which could cross into an invalid state
-		
-		ih->data->vmax = new_value;
-		
-		[the_slider setMaxValue:new_value];
-	}
-	return 0; /* do not store value in hash table */
+  double new_value;
+  if (iupStrToDouble(value, &new_value))
+  {
+    NSSlider* slider = ih->handle;
+    ih->data->vmax = new_value;
+    [slider setMaxValue:new_value];
+
+    double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
+    [slider setIncrementValue:inc_size];
+
+    double page_inc_size = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
+    [slider setAltIncrementValue:page_inc_size];
+
+    cocoaValSetValueAttrib(ih, NULL);
+  }
+  return 0;
 }
 
 static char* cocoaValGetMaxAttrib(Ihandle* ih)
 {
-	return iupStrReturnDouble(ih->data->vmax);
+  return iupStrReturnDouble(ih->data->vmax);
 }
 
 static int cocoaValSetMinAttrib(Ihandle* ih, const char* value)
 {
-	double new_value = 0;
-	if(iupStrToDouble(value, &new_value))
-	{
-		NSSlider* the_slider = ih->handle;
-		
-		// Not going to bounds check in case the user is trying to change both max and min which could cross into an invalid state
-		
-		ih->data->vmin = new_value;
-		
-		[the_slider setMinValue:new_value];
-	}
-	return 0; /* do not store value in hash table */
+  double new_value;
+  if (iupStrToDouble(value, &new_value))
+  {
+    NSSlider* slider = ih->handle;
+    ih->data->vmin = new_value;
+    [slider setMinValue:new_value];
+
+    double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
+    [slider setIncrementValue:inc_size];
+
+    double page_inc_size = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
+    [slider setAltIncrementValue:page_inc_size];
+
+    cocoaValSetValueAttrib(ih, NULL);
+  }
+  return 0;
 }
 
 static char* cocoaValGetMinAttrib(Ihandle* ih)
 {
-	return iupStrReturnDouble(ih->data->vmin);
+  return iupStrReturnDouble(ih->data->vmin);
 }
 
-
-// STEP: Controls the increment for keyboard control and the mouse wheel.
-// It is not the size of the increment.
-// The increment size is "step*(max-min)", so it must be 0<step<1. Default is "0.01".
 static int cocoaValSetStepAttrib(Ihandle* ih, const char* value)
 {
-	if(iupStrToDoubleDef(value, &(ih->data->step), 0.01))
-	{
-		double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
-		NSSlider* the_slider = ih->handle;
-		[the_slider setAltIncrementValue:inc_size];
-	}
-	return 0; /* do not store value in hash table */
+  if (iupStrToDoubleDef(value, &(ih->data->step), 0.01))
+  {
+    /* STEP is a fraction of the total range. Convert to an absolute value for Cocoa. */
+    double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
+    NSSlider* slider = ih->handle;
+    /* incrementValue is used for arrow key presses. */
+    [slider setIncrementValue:inc_size];
+  }
+  return 0;
 }
 
-
+static int cocoaValSetPageStepAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
+  {
+    /* PAGESTEP is a fraction of the total range. Convert to an absolute value. */
+    double page_inc_size = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
+    NSSlider* slider = ih->handle;
+    /* altIncrementValue is used when holding Option key, which is the closest available behavior to PAGESTEP on macOS. */
+    [slider setAltIncrementValue:page_inc_size];
+  }
+  return 0;
+}
 
 static int cocoaValSetShowTicksAttrib(Ihandle* ih, const char* value)
 {
-	int show_ticks = 0;
-	if(value != NULL)
-	{
-		show_ticks = atoi(value);
-	}
+  int show_ticks = 0;
+  if (value)
+  {
+    show_ticks = atoi(value);
+  }
+  if (show_ticks < 0) show_ticks = 0;
 
-	//  if (show_ticks<2) show_ticks=2;
+  ih->data->show_ticks = show_ticks;
 
-	ih->data->show_ticks = show_ticks;
-	
-	NSSlider* the_slider = ih->handle;
-	[the_slider setNumberOfTickMarks:show_ticks];
-	
-	return 0;
+  NSSlider* slider = ih->handle;
+  [slider setNumberOfTickMarks:show_ticks];
+
+  return 0;
 }
 
 static int cocoaValSetStepOnTicksAttrib(Ihandle* ih, const char* value)
 {
-	BOOL should_step_on_ticks = (BOOL)iupStrBoolean(value);
-	NSSlider* the_slider = ih->handle;
-	[the_slider setAllowsTickMarkValuesOnly:should_step_on_ticks];
-	return 0;
+  NSSlider* slider = ih->handle;
+  [slider setAllowsTickMarkValuesOnly:(BOOL)iupStrBoolean(value)];
+  return 1; // Store value
 }
 
 static char* cocoaValGetStepOnTicksAttrib(Ihandle* ih)
 {
-	NSSlider* the_slider = ih->handle;
-	BOOL should_step_on_ticks = [the_slider allowsTickMarkValuesOnly];
-	return iupStrReturnBoolean(should_step_on_ticks);
+  NSSlider* slider = ih->handle;
+  return iupStrReturnBoolean([slider allowsTickMarkValuesOnly]);
 }
 
+static int cocoaValSetTicksPosAttrib(Ihandle* ih, const char* value)
+{
+  NSSlider* slider = ih->handle;
+  BOOL is_vertical = (ih->data->orientation == IVAL_VERTICAL);
 
+  if (iupStrEqualNoCase(value, "BOTH"))
+  {
+    /* NSSlider doesn't support ticks on both sides, default to NORMAL */
+    [slider setTickMarkPosition: is_vertical ? NSTickMarkPositionLeading : NSTickMarkPositionBelow];
+  }
+  else if (iupStrEqualNoCase(value, "REVERSE"))
+  {
+    [slider setTickMarkPosition: is_vertical ? NSTickMarkPositionTrailing : NSTickMarkPositionAbove];
+  }
+  else /* "NORMAL" */
+  {
+    [slider setTickMarkPosition: is_vertical ? NSTickMarkPositionLeading : NSTickMarkPositionBelow];
+  }
+  return 1;
+}
+
+static char* cocoaValGetInvertedAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(ih->data->inverted);
+}
+
+static int cocoaValSetInvertedAttrib(Ihandle* ih, const char* value)
+{
+  ih->data->inverted = iupStrBoolean(value);
+  /* Re-apply the current value to reflect the inversion */
+  cocoaValSetValueAttrib(ih, iupValGetValueAttrib(ih));
+  return 0;
+}
 
 static int cocoaValMapMethod(Ihandle* ih)
 {
-	IupCocoaSlider* the_slider = [[IupCocoaSlider alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+  IupCocoaValSlider* slider = [[IupCocoaValSlider alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+  ih->handle = slider;
 
-	[the_slider setMinValue:0.0];
-	[the_slider setMaxValue:1.0];
-	// PAGESTEP cannot be supported. Only STEP.
-	[the_slider setAltIncrementValue:0.01];
-	[the_slider setNumberOfTickMarks:0];
+  if (ih->data->orientation == IVAL_VERTICAL)
+  {
+    [slider setVertical:YES];
+  }
 
-	if(ih->data->orientation == IVAL_VERTICAL)
-	{
-		[the_slider setVertical:YES];
-	}
-	else
-	{
-		[the_slider setVertical:NO];
-	}
+  [slider setContinuous:YES];
 
+  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+  {
+    [slider setRefusesFirstResponder:YES];
+    iupCocoaSetCanFocus(ih, 0);
+  }
+  else
+  {
+    iupCocoaSetCanFocus(ih, 1);
+  }
 
-	// I'm using objc_setAssociatedObject/objc_getAssociatedObject because it allows me to avoid making subclasses just to hold ivars.
-	objc_setAssociatedObject(the_slider, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
-	// I also need to track the memory of the buttion action receiver.
-	// I prefer to keep the Ihandle the actual NSView instead of the receiver because it makes the rest of the implementation easier if the handle is always an NSView (or very small set of things, e.g. NSWindow, NSView, CALayer).
-	// So with only one pointer to deal with, this means we need our button to hold a reference to the receiver object.
-	// This is generally not good Cocoa as buttons don't retain their receivers, but this seems like the best option.
-	// Be careful of retain cycles.
-	IupCocoaSliderReceiver* slider_receiver = [[IupCocoaSliderReceiver alloc] init];
-	[the_slider setTarget:slider_receiver];
-	[the_slider setAction:@selector(mySliderDidMove:)];
+  objc_setAssociatedObject(slider, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 
-	// We're going to use OBJC_ASSOCIATION_RETAIN because I do believe it will do the right thing for us.
-	// Just be very careful to not have anything in the delegate retain main widget, or we get a retain cycle.
-	objc_setAssociatedObject(the_slider, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY, (id)slider_receiver, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-	[slider_receiver release];
-	
-	
+  IupCocoaSliderReceiver* slider_receiver = [[IupCocoaSliderReceiver alloc] init];
+  [slider setTarget:slider_receiver];
+  [slider setAction:@selector(sliderAction:)];
 
-	
+  objc_setAssociatedObject(slider, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY, slider_receiver, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  [slider_receiver release];
 
-	ih->handle = the_slider;
+  iupCocoaSetAssociatedViews(ih, slider, slider);
+  iupCocoaAddToParent(ih);
 
-	iupCocoaSetAssociatedViews(ih, the_slider, the_slider);
+  cocoaValSetMinAttrib(ih, iupAttribGetStr(ih, "MIN"));
+  cocoaValSetMaxAttrib(ih, iupAttribGetStr(ih, "MAX"));
+  cocoaValSetStepAttrib(ih, NULL);
+  cocoaValSetPageStepAttrib(ih, NULL);
 
-	
-	// All Cocoa views shoud call this to add the new view to the parent view.
-	iupCocoaAddToParent(ih);
-	
+  const char* inverted_str = iupAttribGetStr(ih, "INVERTED");
+  if (inverted_str)
+  {
+    ih->data->inverted = iupStrBoolean(inverted_str);
+  }
 
-	
-	
-	
-	
-	
-	return IUP_NOERROR;
+  const char* value_str = iupAttribGetStr(ih, "VALUE");
+  if (value_str)
+  {
+    cocoaValSetValueAttrib(ih, value_str);
+  }
+  else
+  {
+    cocoaValSetValueAttrib(ih, "0");
+  }
+
+  return IUP_NOERROR;
 }
 
 static void cocoaValUnMapMethod(Ihandle* ih)
 {
-	id the_slider = ih->handle;
+  if (ih->handle)
+  {
+    NSSlider* slider = ih->handle;
 
-	// Destroy the context menu ih it exists
-	{
-		Ihandle* context_menu_ih = (Ihandle*)iupCocoaCommonBaseGetContextMenuAttrib(ih);
-		if(NULL != context_menu_ih)
-		{
-			IupDestroy(context_menu_ih);
-		}
-		iupCocoaCommonBaseSetContextMenuAttrib(ih, NULL);
-	}
+    iupCocoaTipsDestroy(ih);
 
-	iupCocoaRemoveFromParent(ih);
-	iupCocoaSetAssociatedViews(ih, nil, nil);
-	[the_slider release];
-	ih->handle = NULL;
-	
+    [slider setTarget:nil];
+    objc_setAssociatedObject(slider, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(slider, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+
+    iupCocoaRemoveFromParent(ih);
+    iupCocoaSetAssociatedViews(ih, nil, nil);
+    [slider release];
+    ih->handle = NULL;
+  }
 }
-
 
 void iupdrvValInitClass(Iclass* ic)
 {
-  /* Driver Dependent Class functions */
   ic->Map = cocoaValMapMethod;
   ic->UnMap = cocoaValUnMapMethod;
 
-
-  /* Driver Dependent Attribute functions */
-
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT); 
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  /* Special */
+  /* Common */
+  iupClassRegisterAttribute(ic, "TIP", NULL, iupdrvBaseSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  /* IupVal only */
+  /* IupVal */
   iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, cocoaValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAX", cocoaValGetMaxAttrib, cocoaValSetMaxAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MIN", cocoaValGetMinAttrib, cocoaValSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, cocoaValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, cocoaValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INVERTED", cocoaValGetInvertedAttrib, cocoaValSetInvertedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MAX", cocoaValGetMaxAttrib, cocoaValSetMaxAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "MIN", cocoaValGetMinAttrib, cocoaValSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
-
-
-
-  iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, cocoaValSetStepAttrib, IUPAF_SAMEASSYSTEM, "0.01", IUPAF_NO_INHERIT);
+  /* Ticks */
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, cocoaValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
-
-
-
-	// Not supported
-	  iupClassRegisterAttribute(ic, "PAGESTEP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "INVERTED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-
-
-
-	// New API
-	// For setting and retrieving whether values on the slider can be anything
-	//   the slider normally allows, or only values that correspond to a tick mark.
-	//   This has no effect if numberOfTickMarks is 0.
+  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, cocoaValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "STEPONTICKS", cocoaValGetStepOnTicksAttrib, cocoaValSetStepOnTicksAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT);
 
-	/* New API for view specific contextual menus (Mac only) */
-	iupClassRegisterAttribute(ic, "CONTEXTMENU", iupCocoaCommonBaseGetContextMenuAttrib, iupCocoaCommonBaseSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
-
+  /* macOS Specific */
+  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 }

@@ -1,5 +1,5 @@
 /** \file
- * \brief Draw Functions
+ * \brief Cocoa Draw Functions
  *
  * See Copyright Notice in "iup.h"
  */
@@ -8,11 +8,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
+#include <math.h>
 
-#include <Cocoa/Cocoa.h>
+#import <Cocoa/Cocoa.h>
 
 #include "iup.h"
-
 #include "iup_attrib.h"
 #include "iup_class.h"
 #include "iup_str.h"
@@ -20,420 +20,167 @@
 #include "iup_image.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
+
+#include "iupcocoa_drv.h"
 #include "iupcocoa_draw.h"
-#include "iupcocoa_canvas.h"
 
 
-
-
-static CGColorRef coregraphicsCreateAutoreleasedColor(unsigned char r, unsigned char g, unsigned char b, unsigned a)
+static CGColorRef iupCocoaDrawCreateColor(long color)
 {
-	// What color space should I be using?
-	//	CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
-	
-	CGFloat inv_byte = 1.0/255.0;
-	CGColorRef the_color = CGColorCreateGenericRGB(r*inv_byte, g*inv_byte, b*inv_byte, a*inv_byte);
-	// Requires 10.9, 7.0
-	CFAutorelease(the_color);
-	return the_color;
+  unsigned char r = iupDrawRed(color);
+  unsigned char g = iupDrawGreen(color);
+  unsigned char b = iupDrawBlue(color);
+  unsigned char a = iupDrawAlpha(color);
+
+  CGFloat inv_byte = 1.0/255.0;
+  CGColorRef the_color = CGColorCreateGenericRGB(r*inv_byte, g*inv_byte, b*inv_byte, a*inv_byte);
+  CFAutorelease(the_color);
+  return the_color;
 }
 
-static void coregraphicsSetLineStyle(IdrawCanvas* dc, int style)
+static void iupCocoaSetLineStyle(CGContextRef cg_context, int style)
 {
-	CGContextRef cg_context = dc->cgContext;
-
-	if((IUP_DRAW_STROKE == style) || (IUP_DRAW_FILL==style))
-	{
-		CGContextSetLineDash(cg_context, 0, NULL, 0);
-	}
-	else
-	{
-		if(IUP_DRAW_STROKE_DASH == style)
-		{
-			CGFloat dashes[2] = { 6.0, 2.0 };
-			CGContextSetLineDash(cg_context, 0, dashes, 2);
-		}
-		else // DOTS
-		{
-			CGFloat dots[2] = { 2.0, 2.0 };
-			CGContextSetLineDash(cg_context, 0, dots, 2);
-		}
-	}
+  if (style == IUP_DRAW_STROKE || style == IUP_DRAW_FILL)
+  {
+    CGContextSetLineDash(cg_context, 0, NULL, 0);
+  }
+  else if (style == IUP_DRAW_STROKE_DASH)
+  {
+    CGFloat dashes[2] = { 9.0, 3.0 };
+    CGContextSetLineDash(cg_context, 0, dashes, 2);
+  }
+  else if (style == IUP_DRAW_STROKE_DOT)
+  {
+    CGFloat dashes[2] = { 1.0, 2.0 };
+    CGContextSetLineDash(cg_context, 0, dashes, 2);
+  }
+  else if (style == IUP_DRAW_STROKE_DASH_DOT)
+  {
+    CGFloat dashes[4] = { 7.0, 3.0, 1.0, 3.0 };
+    CGContextSetLineDash(cg_context, 0, dashes, 4);
+  }
+  else if (style == IUP_DRAW_STROKE_DASH_DOT_DOT)
+  {
+    CGFloat dashes[6] = { 7.0, 3.0, 1.0, 3.0, 1.0, 3.0 };
+    CGContextSetLineDash(cg_context, 0, dashes, 6);
+  }
 }
 
-/*
-I had a bunch of misunderstandings about the relationship between the IupCanvasView and the IdrawCanvas.
-The two are intertwined to some degree.
-The DC needs the CGContext, the width & height, and info about which focus ring to use.
-But the View can get all sorts of notifications like view size changes, user configuration changes, or there could even possibly be OS level events which change the context.
-So I've tried several different ways to keep the objects in-sync with each other.
-I knew that the DC was created later than the View, which caused some syncing issues.
-However, I just discovered that the DC actually gets created and destroyed on every user callback.
-So this means I need to change my approach. The view should never keep a reference to the DC, and everything in the DC should pull on demand from the View.
-Minor optimizations might allow for caching the variables in the DC if it does indeed just go through one frame without any possibility of system interruption (e.g. a singular call inside drawRect:)
-If this is not true, then we will need to always pull from the NSView.
-*/
 IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
-	IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
+  IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
+  dc->ih = ih;
+  dc->canvasView = iupCocoaGetMainView(ih);
+  dc->release_context = 0;
+  dc->draw_focus = 0;
 
+  NSGraphicsContext* graphicsContext = [NSGraphicsContext currentContext];
 
-	dc->ih = ih;
+  if (graphicsContext && [graphicsContext isDrawingToScreen])
+  {
+    dc->cgContext = [graphicsContext CGContext];
+  }
+  else
+  {
+    [dc->canvasView lockFocus];
+    dc->release_context = 1;
+    graphicsContext = [NSGraphicsContext currentContext];
+    dc->cgContext = [graphicsContext CGContext];
+  }
 
-	// We'll set the dc directly from here this time, but all other places will set the dc in the IupCanvasView
-	IupCocoaCanvasView* canvas_view =(IupCocoaCanvasView*)ih->handle;
-	CGRect frame_rect = [canvas_view frame];
+  if (!dc->cgContext)
+  {
+    if (dc->release_context) [dc->canvasView unlockFocus];
+    free(dc);
+    iupAppleLogError("Failed to get CGContextRef for drawing.");
+    return NULL;
+  }
 
-	// Should we retain? It is implied these will outlive our dc, so we shouldn't need to.
-	dc->canvasView = canvas_view;
-	dc->graphicsContext = [canvas_view graphicsContext];
-	dc->cgContext = [canvas_view CGContext];
+  CGRect bounds_rect = [dc->canvasView bounds];
+  dc->w = bounds_rect.size.width;
+  dc->h = bounds_rect.size.height;
 
-	// [dc->canvasView retain];
-	// [dc->graphicsContext retain];
-	//	CGContextRetain(dc->cgContext);
-	
-	dc->w = frame_rect.size.width;
-	dc->h = frame_rect.size.height;
+  dc->cgLayer = CGLayerCreateWithContext(dc->cgContext, bounds_rect.size, NULL);
+  dc->image_cgContext = CGLayerGetContext(dc->cgLayer);
 
-//	dc->cgContext = (CGContextRef)IupGetAttribute(ih, "CGCONTEXT");
-//	dc->cgContext = (CGContextRef)IupGetAttribute(ih, "DRAWABLE");
+  CGContextTranslateCTM(dc->image_cgContext, 0.0, dc->h);
+  CGContextScaleCTM(dc->image_cgContext, 1.0, -1.0);
 
+  CGContextSetLineCap(dc->image_cgContext, kCGLineCapButt);
+  CGContextSetLineJoin(dc->image_cgContext, kCGLineJoinMiter);
 
+  dc->clip_state = 0;
 
-	NSCAssert(dc->cgContext != NULL, @"CGContextRef should not be NULL");
-
-	
-	return dc;
+  iupAttribSet(ih, "DRAWDRIVER", "COCOA");
+  return dc;
 }
 
 void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
-	// We are no longer retaining the context
-	//	CGContextRelease(dc->cgContext);
-	// [dc->graphicsContext release];
-	// [dc->canvasView release];
+  if (!dc) return;
 
-	// Set to NULL defensively in case something breaks my assumptions. I hope to generate an obvious crash.
-	dc->canvasView = NULL;
-	dc->graphicsContext = NULL;
-	dc->cgContext = NULL;
-	dc->w = 0;
-	dc->h = 0;
-	free(dc);
-	dc = NULL;
+  CGLayerRelease(dc->cgLayer);
+
+  if (dc->release_context)
+  {
+    [dc->canvasView unlockFocus];
+  }
+
+  free(dc);
 }
 
-
-
-
-void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
+void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 {
-	unsigned char r = iupDrawRed(color), g = iupDrawGreen(color), b = iupDrawBlue(color), a = iupDrawAlpha(color);
-	CGContextRef cg_context = dc->cgContext;
-	
-	CGColorRef the_color = coregraphicsCreateAutoreleasedColor(r, g, b, a);
+  CGRect bounds_rect = [dc->canvasView bounds];
+  CGFloat w = bounds_rect.size.width;
+  CGFloat h = bounds_rect.size.height;
 
-	if(IUP_DRAW_FILL == style)
-	{
-		CGContextSetFillColorWithColor(cg_context, the_color);
-	}
-	else
-	{
-		CGContextSetStrokeColorWithColor(cg_context, the_color);
-		coregraphicsSetLineStyle(dc, style);
-	}
-	CGContextSetLineWidth(cg_context, (CGFloat)line_width);
+  if (w != dc->w || h != dc->h)
+  {
+    dc->w = w;
+    dc->h = h;
 
-	CGFloat w = x2-x1+1;
-	CGFloat h = y2-y1+1;
-	CGFloat xc = x1 + w/2;
-	CGFloat yc = y1 + h/2;
+    iupdrvDrawResetClip(dc);
 
-	// Must convert degrees to radians
-	CGFloat rad1 = a1/180.0*M_PI;
-	CGFloat rad2 = a2/180.0*M_PI;
+    CGLayerRelease(dc->cgLayer);
+    dc->cgLayer = CGLayerCreateWithContext(dc->cgContext, bounds_rect.size, NULL);
+    dc->image_cgContext = CGLayerGetContext(dc->cgLayer);
 
-	if (w == h)
-	{
-		CGContextAddArc(cg_context, xc, yc, w, rad1, rad2, 1);
-		if(IUP_DRAW_FILL == style)
-		{
-			CGContextFillPath(cg_context);
-		}
-		else
-		{
-			CGContextStrokePath(cg_context);
-		}
-	}
-	else  /* Ellipse: change the scale to create from the circle */
-	{
-		/* save to use the local transform */
-		CGContextSaveGState(cg_context);
-		
-		CGContextTranslateCTM(cg_context, xc, yc);
-		CGContextScaleCTM(cg_context, w/h, 1.0);
-		CGContextTranslateCTM(cg_context, -xc, -yc);
-	
-		CGContextAddArc(cg_context, xc, yc, 0.5*h, rad1, rad2, 1);
-		
-		if(IUP_DRAW_FILL == style)
-		{
-			CGContextFillPath(cg_context);
-		}
-		else
-		{
-			CGContextStrokePath(cg_context);
-		}
-		
-		/* restore from local */
-		CGContextRestoreGState(cg_context);
-	}
+    CGContextTranslateCTM(dc->image_cgContext, 0.0, dc->h);
+    CGContextScaleCTM(dc->image_cgContext, 1.0, -1.0);
+
+    CGContextSetLineCap(dc->image_cgContext, kCGLineCapButt);
+    CGContextSetLineJoin(dc->image_cgContext, kCGLineJoinMiter);
+  }
 }
 
-void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
+void iupdrvDrawFlush(IdrawCanvas* dc)
 {
-	unsigned char r = iupDrawRed(color), g = iupDrawGreen(color), b = iupDrawBlue(color), a = iupDrawAlpha(color);
-	CGContextRef cg_context = dc->cgContext;
-	
-	CGColorRef the_color = coregraphicsCreateAutoreleasedColor(r, g, b, a);
-	CGContextSetLineWidth(cg_context, (CGFloat)line_width);
+  CGContextSaveGState(dc->cgContext);
 
-	if(IUP_DRAW_FILL == style)
-	{
-		CGContextSetFillColorWithColor(cg_context, the_color);
-	}
-	else
-	{
-		CGContextSetStrokeColorWithColor(cg_context, the_color);
-		coregraphicsSetLineStyle(dc, style);
-	}
-	
-	CGContextMoveToPoint(cg_context, (CGFloat)points[0], (CGFloat)points[1]);
-	
-	for(int i=0; i<count; i++)
-	{
-		CGContextAddLineToPoint(cg_context, (CGFloat)points[2*i], (CGFloat)points[2*i+1]);
-	}
-	
-	if(IUP_DRAW_FILL == style)
-	{
-		CGContextFillPath(cg_context);
-	}
-	else
-	{
-		CGContextStrokePath(cg_context);
-	}
-}
+  CGContextTranslateCTM(dc->cgContext, 0.0, dc->h);
+  CGContextScaleCTM(dc->cgContext, 1.0, -1.0);
 
+  CGContextDrawLayerAtPoint(dc->cgContext, CGPointZero, dc->cgLayer);
 
+  CGContextRestoreGState(dc->cgContext);
 
-void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
-{
+  if (dc->draw_focus)
+  {
+    CGRect cocoa_rect = CGRectMake(dc->focus_x1, dc->h - dc->focus_y2 - 1,
+                                   dc->focus_x2 - dc->focus_x1 + 1,
+                                   dc->focus_y2 - dc->focus_y1 + 1);
+    NSGraphicsContext* nsContext = [NSGraphicsContext graphicsContextWithCGContext:dc->cgContext flipped:NO];
+    [NSGraphicsContext saveGraphicsState];
+    [NSGraphicsContext setCurrentContext:nsContext];
+    NSSetFocusRingStyle(NSFocusRingOnly);
+    [[NSBezierPath bezierPathWithRect:cocoa_rect] fill];
+    [NSGraphicsContext restoreGraphicsState];
 
-//	IupCocoaCanvasView* canvas_view =(IupCocoaCanvasView*)dc->ih->handle;
-	IupCocoaCanvasView* canvas_view = dc->canvasView;
-	if([canvas_view useNativeFocusRing])
-	{
-		return;
-	}
-#if 1
+    dc->draw_focus = 0;
+  }
 
-
-//	NSLog(@"iupdrvDrawFocusRect");
-//		NSLog(@"DrawFocus ih:0x%p for View: %@", dc->ih, dc->canvasView);
-
-	CGContextRef cg_context = dc->cgContext;
-
-//	NSLog(@"draw rect: %d %d %d %d", x1, y1, x2, y2);
-	CGRect the_rect = CGRectMake(x1, y1, x2-x1, y2-y1);
-	// Do I need an inset?
-//	the_rect = CGRectInset(the_rect, 4, 4);
-//	NSLog(@"draw rect: %@", NSStringFromRect(the_rect));
-
-	NSColor* focus_ring_color = [NSColor keyboardFocusIndicatorColor];
-//	NSColor* focus_ring_color = [NSColor greenColor];
-	CGColorRef cg_focus_ring_color = [focus_ring_color CGColor];
-	CGContextSetStrokeColorWithColor(cg_context, cg_focus_ring_color);
-	CGContextSetLineWidth(cg_context, (CGFloat)4.0);
-
-	// Requires 10.9
-	CGPathRef path_ref = CGPathCreateWithRoundedRect(the_rect, 4.0, 4.0, NULL);
-	CGContextAddPath(cg_context, path_ref);
-	CGContextStrokePath(cg_context);
-
-	CGPathRelease(path_ref);
-#endif
-
-	
-}
-
-IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
-{
-  if (x1) *x1 = (int)dc->clip_x1;
-  if (y1) *y1 = (int)dc->clip_y1;
-  if (x2) *x2 = (int)dc->clip_x2;
-  if (y2) *y2 = (int)dc->clip_y2;
-}
-
-
-void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
-{
-	// This gets called a lot, so print only once.
-	static bool gave_warning = false;
-	if(!gave_warning)
-	{
-		NSLog(@"iupdrvDrawSetClipRect not tested");
-		gave_warning = true;
-	}
-#if 1
-	CGContextRef cg_context = dc->cgContext;
-
-	CGContextSaveGState(cg_context);
-
-	CGRect clip_rect = CGRectMake(x1, y1, x2-x1, y2-y1);
-	
-	CGContextClipToRect(cg_context, clip_rect);
-#endif
-	dc->clip_x1 = (CGFloat)x1;
-	dc->clip_y1 = (CGFloat)y1;
-	dc->clip_x2 = (CGFloat)x2;
-	dc->clip_y2 = (CGFloat)y2;
-}
-
-// This is supposed to remove the clipping.
-void iupdrvDrawResetClip(IdrawCanvas* dc)
-{
-	CGContextRef cg_context = dc->cgContext;
-
-	// Assumption1: The user activated clip and we saved (pushed) the GState.
-	// Assumption2: No other API can save a GState without (popping) Restoring (balancing) it before returning.
-	// QED: When we pop here, we are popping the activated clip, thus removing it.
-	CGContextRestoreGState(cg_context);
-
-}
-
-void iupdrvDrawParentBackground(IdrawCanvas* dc)
-{
-	NSLog(@"iupdrvDrawParentBackground needs to be verified");
-	// I don't know if this is correct
-	
-	CGContextRef cg_context = dc->cgContext;
-	CGFloat context_width = dc->w;
-	CGFloat context_height = dc->h;
-
-	NSColor* the_color = [NSColor controlBackgroundColor];
-//	NSColor* the_color = [NSColor greenColor];
-	CGColorRef cg_color = [the_color CGColor];
-//	CGContextSetStrokeColorWithColor(cg_context, cg_color);
-	CGContextSetFillColorWithColor(cg_context, cg_color);
-	
-	CGRect the_rectangle = CGRectMake(0, 0, context_width, context_height);
-	CGContextAddRect(cg_context, the_rectangle);
-	
-	CGContextFillRect(cg_context, the_rectangle);
-}
-// TODO: text_orientation was added after this implementation was done but before the merge. We need to implement it.
-void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
-{
-	// FIXME: We need to properly implement the font system in order for us to implement this.
-	// FIXME: Need to figure out how to size up the rendered string, and then align it within the specified draw box.
-	// FIXME: I think text may have IUP attributes like bold, underline, etc. Need to properly render.
-//	NSLog(@"iupdrvDrawText not fully implemented");
-	unsigned char r = iupDrawRed(color), g = iupDrawGreen(color), b = iupDrawBlue(color), a = iupDrawAlpha(color);
-	CGContextRef cg_context = dc->cgContext;
-	CGColorRef the_color = coregraphicsCreateAutoreleasedColor(r, g, b, a);
-	CGContextSetStrokeColorWithColor(cg_context, the_color);
-	CGContextSetFillColorWithColor(cg_context, the_color);
-//	NSLog(@"iupdrvDrawText text: %s, len:%d", text, len);
-//	NSLog(@"iupdrvDrawText font: %s", font);
-
-	// Ugh. The CGContext text functions are deprecated. Need to use CoreText or Cocoa.
-//	CGContextSelectFont(cg_context, "Helvetica", 12.0, kCGEncodingMacRoman);
-//    CGContextSetTextDrawingMode(cg_context, kCGTextFill);
-//	CGContextShowTextAtPoint(cg_context, x, y, text, len);
-NSGraphicsContext* nsgc = [NSGraphicsContext graphicsContextWithCGContext:cg_context flipped:YES];
- [NSGraphicsContext saveGraphicsState];
- [NSGraphicsContext setCurrentContext:nsgc];
-	
-
-    NSPoint start_point = { x, y };
- //   startPoint.x = bounds.origin.x + bounds.size.width / 2 - size.width / 2;
- //   startPoint.y = bounds.origin.y + bounds.size.height / 2 - size.height / 2;
-	NSString* ns_string = [NSString stringWithUTF8String:text];
-    [ns_string drawAtPoint:start_point withAttributes: nil];
-	 [NSGraphicsContext restoreGraphicsState];
-}
-void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
-{
-	NSLog(@"iupdrvDrawSelectRect not implemented");
-	
-	// I don't know what this function does. I'm guessing at the color
-	
-	CGContextRef cg_context = dc->cgContext;
-
-//	NSLog(@"draw rect: %d %d %d %d", x1, y1, x2, y2);
-	CGRect the_rect = CGRectMake(x1, y1, x2-x1, y2-y1);
-	// Do I need an inset?
-//	the_rect = CGRectInset(the_rect, 4, 4);
-//	NSLog(@"draw rect: %@", NSStringFromRect(the_rect));
-
-	NSColor* the_color = [NSColor selectedControlColor];
-//	NSColor* the_color = [NSColor greenColor];
-	CGColorRef cg_color = [the_color CGColor];
-//	CGContextSetStrokeColorWithColor(cg_context, cg_color);
-	CGContextSetFillColorWithColor(cg_context, cg_color);
-
-	// Requires 10.9
-	CGPathRef path_ref = CGPathCreateWithRoundedRect(the_rect, 4.0, 4.0, NULL);
-	CGContextAddPath(cg_context, path_ref);
-	CGContextFillPath(cg_context);
-
-	CGPathRelease(path_ref);
-}
-
-void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
-{
-	unsigned char r = iupDrawRed(color), g = iupDrawGreen(color), b = iupDrawBlue(color), a = iupDrawAlpha(color);
-	CGContextRef cg_context = dc->cgContext;
-	
-	CGColorRef the_color = coregraphicsCreateAutoreleasedColor(r, g, b, a);
-	CGContextSetStrokeColorWithColor(cg_context, the_color);
-	coregraphicsSetLineStyle(dc, style);
-	CGContextSetLineWidth(cg_context, (CGFloat)line_width);
-
-	CGContextMoveToPoint(cg_context, (CGFloat)x1, (CGFloat)y1);
-	CGContextAddLineToPoint(cg_context, (CGFloat)x2, (CGFloat)y2);
-	CGContextStrokePath(cg_context);
-}
-
-
-void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
-{
-	unsigned char r = iupDrawRed(color), g = iupDrawGreen(color), b = iupDrawBlue(color), a = iupDrawAlpha(color);
-	CGContextRef cg_context = dc->cgContext;
-	
-	CGColorRef the_color = coregraphicsCreateAutoreleasedColor(r, g, b, a);
-	CGContextSetLineWidth(cg_context, (CGFloat)line_width);
-
-	if(IUP_DRAW_FILL == style)
-	{
-		CGRect the_rectangle = CGRectMake(x1, y1, x2-x1, y2-y1);
-		CGContextAddRect(cg_context, the_rectangle);
-		
-		CGContextSetFillColorWithColor(cg_context, the_color);
-		CGContextFillRect(cg_context, the_rectangle);
-	}
-	else
-	{
-		// The other implementations make the line rect +1
-		CGRect the_rectangle = CGRectMake(x1, y1, x2-x1+1, y2-y1+1);
-		CGContextAddRect(cg_context, the_rectangle);
-		
-		CGContextSetStrokeColorWithColor(cg_context, the_color);
-		coregraphicsSetLineStyle(dc, style);
-		CGContextStrokePath(cg_context);
-	}
+  CGContextFlush(dc->cgContext);
 }
 
 void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
@@ -442,39 +189,414 @@ void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
   if (h) *h = iupROUND(dc->h);
 }
 
-// NOTE: Searching through the code base, this never seems to get called by anything.
-// So I don't know what this is supposed to do.
-void iupdrvDrawUpdateSize(IdrawCanvas* dc)
+void iupdrvDrawParentBackground(IdrawCanvas* dc)
 {
-//	NSLog(@"iupdrvDrawUpdateSize not implemented");
+  char* color_str = iupBaseNativeParentGetBgColor(dc->ih);
+  if (!color_str)
+    color_str = "255 255 255";
 
+  long color = iupDrawStrToColor(color_str, 0);
+
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorRef the_color = iupCocoaDrawCreateColor(color);
+
+  CGContextSetFillColorWithColor(cg_context, the_color);
+  CGContextFillRect(cg_context, CGRectMake(0, 0, dc->w, dc->h));
 }
 
-void iupdrvDrawFlush(IdrawCanvas* dc)
+void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-//	NSLog(@"iupdrvDrawFlush");
-	// I don't think Apple gives us anything do anything here.
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorRef the_color = iupCocoaDrawCreateColor(color);
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  CGRect iup_rect = CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+
+  if (style == IUP_DRAW_FILL)
+  {
+    CGContextSetFillColorWithColor(cg_context, the_color);
+    CGContextFillRect(cg_context, iup_rect);
+  }
+  else
+  {
+    CGContextSetStrokeColorWithColor(cg_context, the_color);
+    CGContextSetLineWidth(cg_context, (CGFloat)line_width);
+    iupCocoaSetLineStyle(cg_context, style);
+
+    if (line_width == 1)
+    {
+      CGContextStrokeRect(cg_context, CGRectInset(iup_rect, 0.5, 0.5));
+    }
+    else
+    {
+      CGContextBeginPath(cg_context);
+      CGContextMoveToPoint(cg_context, x1, y1);
+      CGContextAddLineToPoint(cg_context, x2, y1);
+      CGContextAddLineToPoint(cg_context, x2, y2);
+      CGContextAddLineToPoint(cg_context, x1, y2);
+      CGContextClosePath(cg_context);
+      CGContextStrokePath(cg_context);
+    }
+  }
 }
 
-// TODO: w,h are new parameters added after this implementation, but before the merge. Need to test w,h implementation.
+void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+{
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorRef the_color = iupCocoaDrawCreateColor(color);
+
+  CGContextSetStrokeColorWithColor(cg_context, the_color);
+  CGContextSetLineWidth(cg_context, (CGFloat)line_width);
+  iupCocoaSetLineStyle(cg_context, style);
+
+  CGContextBeginPath(cg_context);
+
+  if (line_width == 1)
+  {
+    if (x1 == x2)
+    {
+      iupDrawCheckSwapCoord(y1, y2);
+      CGContextMoveToPoint(cg_context, x1 + 0.5, y1);
+      CGContextAddLineToPoint(cg_context, x1 + 0.5, y2 + 1);
+    }
+    else if (y1 == y2)
+    {
+      iupDrawCheckSwapCoord(x1, x2);
+      CGContextMoveToPoint(cg_context, x1, y1 + 0.5);
+      CGContextAddLineToPoint(cg_context, x2 + 1, y1 + 0.5);
+    }
+    else
+    {
+      CGContextMoveToPoint(cg_context, x1, y1);
+      CGContextAddLineToPoint(cg_context, x2, y2);
+    }
+  }
+  else
+  {
+    CGContextMoveToPoint(cg_context, x1, y1);
+    CGContextAddLineToPoint(cg_context, x2, y2);
+  }
+
+  CGContextStrokePath(cg_context);
+}
+
+void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
+{
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorRef the_color = iupCocoaDrawCreateColor(color);
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  CGFloat w = x2 - x1 + 1;
+  CGFloat h = y2 - y1 + 1;
+  if (w <= 0 || h <= 0) return;
+
+  CGFloat xc = x1 + w/2.0;
+  CGFloat yc = y1 + h/2.0;
+
+  if (a2 < a1) a2 += 360.0;
+
+  CGFloat rad1 = -a1 * M_PI / 180.0;
+  CGFloat rad2 = -a2 * M_PI / 180.0;
+  int is_clockwise = 1;
+
+  if (w == h)
+  {
+    CGContextBeginPath(cg_context);
+
+    if (style == IUP_DRAW_FILL)
+    {
+      CGContextSetFillColorWithColor(cg_context, the_color);
+      CGContextMoveToPoint(cg_context, xc, yc);
+      CGContextAddArc(cg_context, xc, yc, 0.5*w, rad1, rad2, is_clockwise);
+      CGContextClosePath(cg_context);
+      CGContextFillPath(cg_context);
+    }
+    else
+    {
+      CGContextSetStrokeColorWithColor(cg_context, the_color);
+      CGContextSetLineWidth(cg_context, (CGFloat)line_width);
+      iupCocoaSetLineStyle(cg_context, style);
+      CGContextAddArc(cg_context, xc, yc, 0.5*w, rad1, rad2, is_clockwise);
+      CGContextStrokePath(cg_context);
+    }
+  }
+  else
+  {
+    if (style == IUP_DRAW_FILL)
+    {
+      CGContextSetFillColorWithColor(cg_context, the_color);
+
+      CGContextSaveGState(cg_context);
+      CGContextTranslateCTM(cg_context, xc, yc);
+      CGContextScaleCTM(cg_context, w/2.0, h/2.0);
+
+      CGContextBeginPath(cg_context);
+      CGContextMoveToPoint(cg_context, 0, 0);
+      CGContextAddArc(cg_context, 0, 0, 1.0, rad1, rad2, is_clockwise);
+      CGContextClosePath(cg_context);
+      CGContextFillPath(cg_context);
+
+      CGContextRestoreGState(cg_context);
+    }
+    else
+    {
+      CGContextSetStrokeColorWithColor(cg_context, the_color);
+      CGContextSetLineWidth(cg_context, (CGFloat)line_width);
+      iupCocoaSetLineStyle(cg_context, style);
+
+      CGMutablePathRef path = CGPathCreateMutable();
+      CGAffineTransform transform = CGAffineTransformMakeTranslation(xc, yc);
+      transform = CGAffineTransformScale(transform, w/2.0, h/2.0);
+
+      CGPathAddArc(path, &transform, 0, 0, 1.0, rad1, rad2, is_clockwise);
+
+      CGContextBeginPath(cg_context);
+      CGContextAddPath(cg_context, path);
+      CGPathRelease(path);
+
+      CGContextStrokePath(cg_context);
+    }
+  }
+}
+
+void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
+{
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorRef the_color = iupCocoaDrawCreateColor(color);
+
+  if (style == IUP_DRAW_FILL)
+    CGContextSetFillColorWithColor(cg_context, the_color);
+  else
+  {
+    CGContextSetStrokeColorWithColor(cg_context, the_color);
+    CGContextSetLineWidth(cg_context, (CGFloat)line_width);
+    iupCocoaSetLineStyle(cg_context, style);
+  }
+
+  CGContextBeginPath(cg_context);
+  CGContextMoveToPoint(cg_context, (CGFloat)points[0], (CGFloat)points[1]);
+
+  for (int i = 1; i < count; i++)
+    CGContextAddLineToPoint(cg_context, (CGFloat)points[2*i], (CGFloat)points[2*i+1]);
+
+  if (style == IUP_DRAW_FILL)
+    CGContextFillPath(cg_context);
+  else
+    CGContextStrokePath(cg_context);
+}
+
+void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+{
+  if (x1) *x1 = (int)dc->clip_x1;
+  if (y1) *y1 = (int)dc->clip_y1;
+  if (x2) *x2 = (int)dc->clip_x2;
+  if (y2) *y2 = (int)dc->clip_y2;
+}
+
+void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+{
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    iupdrvDrawResetClip(dc);
+    return;
+  }
+
+  if (x1 >= x2) x1 = x2;
+  if (y1 >= y2) y1 = y2;
+
+  iupdrvDrawResetClip(dc);
+
+  CGContextSaveGState(dc->image_cgContext);
+  dc->clip_state = 1;
+
+  CGRect clip_rect = CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+  CGContextClipToRect(dc->image_cgContext, clip_rect);
+
+  dc->clip_x1 = (CGFloat)x1;
+  dc->clip_y1 = (CGFloat)y1;
+  dc->clip_x2 = (CGFloat)x2;
+  dc->clip_y2 = (CGFloat)y2;
+}
+
+void iupdrvDrawResetClip(IdrawCanvas* dc)
+{
+  if (dc->clip_state == 1)
+  {
+    CGContextRestoreGState(dc->image_cgContext);
+    dc->clip_state = 0;
+  }
+
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+}
+
+void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
+{
+  if (!text || (len == 0 && text[0] == '\0'))
+    return;
+
+  @autoreleasepool {
+    CGContextRef cg_context = dc->image_cgContext;
+    CGContextSaveGState(cg_context);
+
+    NSGraphicsContext* temp_ns_context = [NSGraphicsContext graphicsContextWithCGContext:cg_context flipped:YES];
+    [NSGraphicsContext saveGraphicsState];
+    [NSGraphicsContext setCurrentContext:temp_ns_context];
+
+    IupCocoaFont* iupFont = (font && *font != '\0') ? iupCocoaFindFont(font) : iupCocoaGetFont(dc->ih);
+    if (!iupFont)
+    {
+      [NSGraphicsContext restoreGraphicsState];
+      CGContextRestoreGState(cg_context);
+      return;
+    }
+
+    NSMutableDictionary* attributes = [[iupFont.attributeDictionary mutableCopy] autorelease];
+
+    unsigned char r = iupDrawRed(color);
+    unsigned char g = iupDrawGreen(color);
+    unsigned char b = iupDrawBlue(color);
+    unsigned char a = iupDrawAlpha(color);
+    NSColor* ns_color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:a/255.0];
+    [attributes setObject:ns_color forKey:NSForegroundColorAttributeName];
+
+    NSMutableParagraphStyle* pStyle = [[[NSMutableParagraphStyle alloc] init] autorelease];
+    if (flags & IUP_DRAW_RIGHT)
+      pStyle.alignment = NSTextAlignmentRight;
+    else if (flags & IUP_DRAW_CENTER)
+      pStyle.alignment = NSTextAlignmentCenter;
+    else
+      pStyle.alignment = NSTextAlignmentLeft;
+
+    if (flags & IUP_DRAW_WRAP)
+      pStyle.lineBreakMode = NSLineBreakByWordWrapping;
+    else if (flags & IUP_DRAW_ELLIPSIS)
+      pStyle.lineBreakMode = NSLineBreakByTruncatingTail;
+    else
+      pStyle.lineBreakMode = NSLineBreakByClipping;
+
+    [attributes setObject:pStyle forKey:NSParagraphStyleAttributeName];
+
+    NSString* ns_string = len > 0 ?
+      [[[NSString alloc] initWithBytes:text length:len encoding:NSUTF8StringEncoding] autorelease] :
+      [NSString stringWithUTF8String:text];
+
+    int layout_w = w;
+    int layout_h = h;
+    int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
+
+    if (text_orientation && layout_center)
+      iupDrawGetTextSize(dc->ih, text, len, &layout_w, &layout_h, 0);
+
+    NSRect text_rect = NSMakeRect(x, y, layout_w, layout_h);
+
+    if (text_orientation != 0.0)
+    {
+      NSAffineTransform* transform = [NSAffineTransform transform];
+
+      if (layout_center)
+      {
+        NSPoint center = NSMakePoint(x + layout_w / 2.0, y + layout_h / 2.0);
+        [transform translateXBy:center.x yBy:center.y];
+        [transform rotateByDegrees:-text_orientation];
+        [transform translateXBy:-center.x yBy:-center.y];
+        [transform translateXBy:(w - layout_w) / 2.0 yBy:(h - layout_h) / 2.0];
+      }
+      else
+      {
+        [transform translateXBy:x yBy:y];
+        [transform rotateByDegrees:-text_orientation];
+        [transform translateXBy:-x yBy:-y];
+      }
+
+      [transform concat];
+    }
+
+    if (flags & IUP_DRAW_CLIP)
+    {
+      [NSBezierPath clipRect:NSMakeRect(x, y, w, h)];
+    }
+
+    [ns_string drawInRect:text_rect withAttributes:attributes];
+
+    [NSGraphicsContext restoreGraphicsState];
+    CGContextRestoreGState(cg_context);
+  }
+}
+
 void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
 {
-//	NSLog(@"iupdrvDrawImage not implemented");
-	CGContextRef cg_context = dc->cgContext;
-	NSImage* user_image = (NSImage*)iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
-//	[user_image autorelease]; // BAD: Iup is caching the value and returns the same pointer if cached. This results in a double autorelease.
-//	NSImageRep* user_image_rep = nil;
+  NSImage* user_image = (NSImage*)iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
+  if (!user_image)
+    return;
 
-//	NSSize image_size = [user_image size];
-//	NSRect target_rect = NSMakeRect(x, y, image_size.width, image_size.height);
-	NSRect target_rect = NSMakeRect(x, y, w, h);
-	NSGraphicsContext* nsgc = [NSGraphicsContext graphicsContextWithCGContext:cg_context flipped:YES];
-	[NSGraphicsContext saveGraphicsState];
-	[NSGraphicsContext setCurrentContext:nsgc];
-	
-	[user_image drawInRect:target_rect];
-	[NSGraphicsContext restoreGraphicsState];
-	
+  @autoreleasepool {
+    NSSize image_size = [user_image size];
+    if (w == -1 || w == 0) w = image_size.width;
+    if (h == -1 || h == 0) h = image_size.height;
+
+    CGContextRef cg_context = dc->image_cgContext;
+    CGContextSaveGState(cg_context);
+
+    /* Use flipped NSGraphicsContext to correctly draw image in y-down coordinate system */
+    NSGraphicsContext* temp_ns_context = [NSGraphicsContext graphicsContextWithCGContext:cg_context flipped:YES];
+    [NSGraphicsContext saveGraphicsState];
+    [NSGraphicsContext setCurrentContext:temp_ns_context];
+
+    CGRect target_rect = CGRectMake(x, y, w, h);
+    [user_image drawInRect:target_rect];
+
+    [NSGraphicsContext restoreGraphicsState];
+    CGContextRestoreGState(cg_context);
+  }
 }
 
+void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+{
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
 
+  CGRect iup_rect = CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+
+  CGColorRef select_color = iupCocoaDrawCreateColor(iupDrawColor(0, 0, 255, 153));
+  CGContextSetFillColorWithColor(dc->image_cgContext, select_color);
+  CGContextFillRect(dc->image_cgContext, iup_rect);
+}
+
+void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+{
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  if (iupAttribGetBoolean(dc->ih, "NATIVEFOCUSRING"))
+  {
+    dc->draw_focus = 1;
+    dc->focus_x1 = x1;
+    dc->focus_y1 = y1;
+    dc->focus_x2 = x2;
+    dc->focus_y2 = y2;
+  }
+  else
+  {
+    /* Draw a simple dotted rectangle for focus indication */
+    CGContextRef cg_context = dc->image_cgContext;
+    CGContextSaveGState(cg_context);
+
+    CGRect iup_rect = CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+    CGFloat dashes[2] = { 1.0, 1.0 };
+    CGColorRef focus_color = iupCocoaDrawCreateColor(iupDrawColor(0, 0, 0, 224));
+
+    CGContextSetStrokeColorWithColor(cg_context, focus_color);
+    CGContextSetLineWidth(cg_context, 1.0);
+    CGContextSetLineDash(cg_context, 0, dashes, 2);
+    CGContextStrokeRect(cg_context, CGRectInset(iup_rect, 0.5, 0.5));
+
+    CGContextRestoreGState(cg_context);
+  }
+}

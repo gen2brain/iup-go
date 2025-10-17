@@ -1,16 +1,17 @@
 /** \file
- * \brief Menu Resources
+ * \brief Menu Resources for Cocoa
  *
  * See Copyright Notice in "iup.h"
  */
 
 #import <Cocoa/Cocoa.h>
+#import <objc/runtime.h>
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
+#include <ctype.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -24,1240 +25,1235 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
+#include "iup_key.h"
 #include "iup_menu.h"
 
 #include "iupcocoa_drv.h"
 
-/*
-For a menu bar:
 
-AppleIcon File Edit Window
-               ----
-			   Copy
- 
- In Cocoa:
- NSMenu (menubar)
- -> addItem: NSMenuItem (for Edit, but not named)
-    -> setSubmenu: NSMenu ("Edit", this is the thing that sets the name)
-       -> addItem: NSMenuItem (for "Paste")
- 
- In IUP:
- IupMenu (menubar)
- -> IupSubmenu (this is the part that gets named "Edit")
-    -> IupMenu  (for Edit, but this is not named)
-       -> IupItem (for "Paste")
- 
- Notice that Submenu is an NSMenuItem. And the naming must be done on the NSMenu attached below it, not on the NSMenuItem itself.
- 
-*/
+/* Global application menu reference (IUP managed) */
+static Ihandle* s_currentIupApplicationMenu = NULL;
+/* Global default application menu (Native, created if no IUP menu is provided) */
+static NSMenu* s_defaultApplicationMenu = NULL;
 
+static const void* MENUITEM_TARGET_ASSOCIATED_OBJ_KEY = &MENUITEM_TARGET_ASSOCIATED_OBJ_KEY;
+static const void* MENU_DELEGATE_ASSOCIATED_OBJ_KEY = &MENU_DELEGATE_ASSOCIATED_OBJ_KEY;
+/* Used when an IupItem is placed directly on the menu bar, which requires wrapping it in a submenu on macOS. */
+static const void* MENUBAR_ITEM_WRAPPER_KEY = &MENUBAR_ITEM_WRAPPER_KEY;
 
-// This is for keeping a pointer to the Ihandle to the current set IupMenu for the application menu.
-static Ihandle* s_currentIupMainMenu = NULL;
+static void cocoaMenuUpdateImage(Ihandle* ih);
+static void cocoaItemUpdateRadioGroup(Ihandle* ih);
+static char* cocoaItemGetActiveAttrib(Ihandle* ih);
 
+/*******************************************************************************************/
+/* Helper Objects                                                                          */
+/*******************************************************************************************/
 
-static void cocoaCreateDefaultApplicationMenu()
+@interface IupCocoaMenuDelegate : NSObject<NSMenuDelegate>
 {
-		id app_name = [[NSProcessInfo processInfo] processName];
-#if 0
-	
-	NSBundle* framework_bundle = [NSBundle bundleWithIdentifier:@"br.puc-rio.tecgraf.iup"];
-
-	/* Note: I discovered that some menus use private/magic capabilites which are not accessible through public API.
-	 The Services menu and Window are two major examples. They have a extra field in the XIB data as systemMenu="services" and systemMenu="window"
-	 The Help and App menu also have systemMenu entries.
-	 So the only solution is to use Interface Builder files to provide these.
-	 The debate is whether to just target the individual pieces or provide a single monolithic XIB with everything.
-	 */
-	
-	id app_menu = [[[NSMenu alloc] init] autorelease];
-	
-	id about_menu_item = [[[NSMenuItem alloc] initWithTitle:[[NSLocalizedString(@"About", @"About") stringByAppendingString:@" "] stringByAppendingString:app_name] action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""] autorelease];
-	id preferences_menu_item = [[[NSMenuItem alloc] initWithTitle:[NSLocalizedString(@"Preferences", @"Preferences") stringByAppendingString:@"…"] action:nil keyEquivalent:@","] autorelease];
-//	id services_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Services", @"Services") action:nil keyEquivalent:@""] autorelease];
-	//	id services_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Services", @"Services") action:nil keyEquivalent:@""] autorelease];
-	NSNib* services_menu_item_nib = [[[NSNib alloc] initWithNibNamed:@"CanonicalServiceMenu" bundle:framework_bundle] autorelease];
-	NSArray* top_level_objects = nil;
-	id services_menu_item = nil;
-	if([services_menu_item_nib instantiateWithOwner:nil topLevelObjects:&top_level_objects])
-	{
-		for(id current_object in top_level_objects)
-		{
-			if([current_object isKindOfClass:[NSMenuItem class]])
-			{
-				services_menu_item = current_object;
-				break;
-			}
-		}
-	}
-	
-	id hide_menu_item = [[[NSMenuItem alloc] initWithTitle:[[NSLocalizedString(@"Hide", @"Hide") stringByAppendingString:@" "] stringByAppendingString:app_name] action:@selector(hide:) keyEquivalent:@"h"] autorelease];
-	id hideothers_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Hide Others", @"Hide Others") action:@selector(hideOtherApplications:) keyEquivalent:@"h"] autorelease];
-	[hideothers_menu_item setKeyEquivalentModifierMask:NSEventModifierFlagOption|NSEventModifierFlagCommand];
-	id showall_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Show All", @"Show All") action:@selector(unhideAllApplications:) keyEquivalent:@""] autorelease];
-	id quit_title = [[NSLocalizedString(@"Quit", @"Quit") stringByAppendingString:@" "] stringByAppendingString:app_name];
-	id quit_menu_item = [[[NSMenuItem alloc] initWithTitle:quit_title action:@selector(terminate:) keyEquivalent:@"q"] autorelease];
-
-
-	[app_menu addItem:about_menu_item];
-	[app_menu addItem:[NSMenuItem separatorItem]];
-	[app_menu addItem:preferences_menu_item];
-	[app_menu addItem:[NSMenuItem separatorItem]];
-	[app_menu addItem:services_menu_item];
-	[app_menu addItem:[NSMenuItem separatorItem]];
-	[app_menu addItem:hide_menu_item];
-	[app_menu addItem:hideothers_menu_item];
-	[app_menu addItem:showall_menu_item];
-	[app_menu addItem:[NSMenuItem separatorItem]];
-	[app_menu addItem:quit_menu_item];
-	
-//	id services_sub_menu = [[[NSMenu alloc] init] autorelease];
-//	[services_menu_item setSubmenu:services_sub_menu];
-
-
-	id app_menu_category = [[[NSMenuItem alloc] init] autorelease];
-	[app_menu_category setSubmenu:app_menu];
-	// This is supposed to do nothing. This is a cheat so I can look up this menu item later and try to reuse it.
-	[app_menu_category setTitle:@"ApplicationMenu"];
-	
-	
-	
-	
-	
-//	id print_title = [NSLocalizedString(@"Print", @"Print") stringByAppendingString:@"…"];
-//	id print_menu_item = [[[NSMenuItem alloc] initWithTitle:print_title action:@selector(print:) keyEquivalent:@"p"] autorelease];
-	
-	id file_menu = [[[NSMenu alloc] init] autorelease];
-	[file_menu setTitle:NSLocalizedString(@"File", @"File")];
-	
-//	[file_menu addItem:print_menu_item];
-
-	
-	
-	id file_menu_category = [[[NSMenuItem alloc] init] autorelease];
-	[file_menu_category setSubmenu:file_menu];
-	// This is supposed to do nothing. This is a cheat so I can look up this menu item later and try to reuse it.
-	[file_menu_category setTitle:NSLocalizedString(@"File", @"File")];
-
-	
-	
-	
-	id cut_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Cut", @"Cut") action:@selector(cut:) keyEquivalent:@"x"] autorelease];
-	id copy_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Copy", @"Copy") action:@selector(copy:) keyEquivalent:@"c"] autorelease];
-	id paste_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Paste", @"Paste") action:@selector(paste:) keyEquivalent:@"v"] autorelease];
-	id selectall_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Select All", @"Select All") action:@selector(selectAll:) keyEquivalent:@"a"] autorelease];
-	id findroot_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Find", @"Find") action:nil keyEquivalent:@""] autorelease];
-
-	
-	id edit_menu = [[[NSMenu alloc] init] autorelease];
-	[edit_menu setTitle:NSLocalizedString(@"Edit", @"Edit")];
-
-	[edit_menu addItem:cut_menu_item];
-	[edit_menu addItem:copy_menu_item];
-	[edit_menu addItem:paste_menu_item];
-	[edit_menu addItem:selectall_menu_item];
-	[edit_menu addItem:[NSMenuItem separatorItem]];
-	[edit_menu addItem:findroot_menu_item];
-
-	
-
-	id find_sub_menu = [[[NSMenu alloc] init] autorelease];
-	[find_sub_menu setTitle:NSLocalizedString(@"Find", @"Find")];
-	[findroot_menu_item setSubmenu:find_sub_menu];
-	
-	id find_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Find", @"Find") action:@selector(performFindPanelAction:) keyEquivalent:@"f"] autorelease];
-	id findreplace_menu_item = [[[NSMenuItem alloc] initWithTitle:[NSLocalizedString(@"Find and Replace", @"Find and Replace") stringByAppendingString:@"…"] action:@selector(performFindPanelAction:) keyEquivalent:@"f"] autorelease];
-	[findreplace_menu_item setKeyEquivalentModifierMask:NSEventModifierFlagOption|NSEventModifierFlagCommand];
-	id findnext_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Find Next", @"Find Next") action:@selector(performFindPanelAction:) keyEquivalent:@"g"] autorelease];
-	id findprevious_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Find Previous", @"Find Previous") action:@selector(performFindPanelAction:) keyEquivalent:@"G"] autorelease];
-	id useselection_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Use Selection for Find", @"Use Selection for Find") action:@selector(performFindPanelAction:) keyEquivalent:@"e"] autorelease];
-	id jumpselection_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Jump to Selection", @"Jump to Selection") action:@selector(centerSelectionInVisibleArea:) keyEquivalent:@"j"] autorelease];
-
-	
-	
-	[find_sub_menu addItem:find_menu_item];
-	[find_sub_menu addItem:findreplace_menu_item];
-	[find_sub_menu addItem:findnext_menu_item];
-	[find_sub_menu addItem:findprevious_menu_item];
-	[find_sub_menu addItem:useselection_menu_item];
-	[find_sub_menu addItem:jumpselection_menu_item];
-
-
-	id edit_menu_category = [[[NSMenuItem alloc] init] autorelease];
-	[edit_menu_category setSubmenu:edit_menu];
-	// This is supposed to do nothing. This is a cheat so I can look up this menu item later and try to reuse it.
-	[edit_menu_category setTitle:NSLocalizedString(@"Edit", @"Edit")];
-
-	
-/*
-	id minimize_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Minimize", @"Minimize") action:@selector(performMiniaturize:) keyEquivalent:@"m"] autorelease];
-	id zoom_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Zoom", @"Zoom") action:@selector(performZoom:) keyEquivalent:@""] autorelease];
-	id bringallfront_menu_item = [[[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Bring All to Front", @"Bring All to Front") action:@selector(arrangeInFront:) keyEquivalent:@""] autorelease];
-
-
-	id window_menu = [[[NSMenu alloc] init] autorelease];
-	[window_menu setTitle:NSLocalizedString(@"Window", @"Window")];
-	
-	[window_menu addItem:minimize_menu_item];
-	[window_menu addItem:zoom_menu_item];
-	[window_menu addItem:[NSMenuItem separatorItem]];
-	[window_menu addItem:bringallfront_menu_item];
-
-	id window_menu_category = [[[NSMenuItem alloc] init] autorelease];
-	[window_menu_category setSubmenu:window_menu];
-	// This is supposed to do nothing. This is a cheat so I can look up this menu item later and try to reuse it.
-	[window_menu_category setTitle:NSLocalizedString(@"Window", @"Window")];
-*/
-	NSNib* window_menu_category_nib = [[[NSNib alloc] initWithNibNamed:@"CanonicalWindowMenu" bundle:framework_bundle] autorelease];
-	top_level_objects = nil;
-	id window_menu_category = nil;
-	if([window_menu_category_nib instantiateWithOwner:nil topLevelObjects:&top_level_objects])
-	{
-		for(id current_object in top_level_objects)
-		{
-			if([current_object isKindOfClass:[NSMenuItem class]])
-			{
-				window_menu_category = current_object;
-				break;
-			}
-		}
-	}
-	// This is supposed to do nothing. This is a cheat so I can look up this menu item later and try to reuse it.
-	[window_menu_category setTitle:NSLocalizedString(@"Window", @"Window")];
-	
-	
-	id help_menu_item = [[[NSMenuItem alloc] initWithTitle:[[app_name stringByAppendingString:@" "] stringByAppendingString:NSLocalizedString(@"Help", @"Help")] action:@selector(showHelp:) keyEquivalent:@"?"] autorelease];
-	id help_menu = [[[NSMenu alloc] init] autorelease];
-	[help_menu setTitle:NSLocalizedString(@"Help", @"Help")];
-	
-	[help_menu addItem:help_menu_item];
-
-	id help_menu_category = [[[NSMenuItem alloc] init] autorelease];
-	[help_menu_category setSubmenu:help_menu];
-	// This is supposed to do nothing. This is a cheat so I can look up this menu item later and try to reuse it.
-	[help_menu_category setTitle:NSLocalizedString(@"Window", @"Window")];
-	
-	
-	id menu_bar = [[[NSMenu alloc] init] autorelease];
-	[NSApp setMainMenu:menu_bar];
-	
-	[menu_bar addItem:app_menu_category];
-	[menu_bar addItem:file_menu_category];
-	[menu_bar addItem:edit_menu_category];
-	[menu_bar addItem:window_menu_category];
-	[menu_bar addItem:help_menu_category];
-#else
-	
-	NSNib* main_menu_nib = nil;
-
-	// If the user supplies a MainMenu.xib in their own application bundle, allow the user to override our default one.
-
-	// initWithNibNamed will throw an exception if not found. I could catch the exception, but I would rather avoid the whole exception mechanism if possible.
-	// I've read claims we only need to check for nib (and not also xib) since these are always supposed to be compiled to nib.
-	if([[NSBundle mainBundle] pathForResource:@"MainMenu" ofType:@"nib"] != nil)
-	{
-		main_menu_nib = [[[NSNib alloc] initWithNibNamed:@"MainMenu" bundle:nil] autorelease];
-	}
-	else
-	{
-		NSBundle* framework_bundle = [NSBundle bundleWithIdentifier:@"br.puc-rio.tecgraf.iup"];
-		main_menu_nib = [[[NSNib alloc] initWithNibNamed:@"IupMainMenu" bundle:framework_bundle] autorelease];
-	}
-
-	NSMenu* menu_bar = nil;
-
-	NSArray* top_level_objects = nil;
-	if([main_menu_nib instantiateWithOwner:nil topLevelObjects:&top_level_objects])
-	{
-		for(id current_object in top_level_objects)
-		{
-			if([current_object isKindOfClass:[NSMenu class]])
-			{
-				menu_bar = current_object;
-				[NSApp setMainMenu:current_object];
-				break;
-			}
-		}
-	}
-	// Go through the items and replace the hardcoded MacCocoaAppTemplate with the real app name.
-	for(NSMenuItem* current_top_item in [menu_bar itemArray])
-	{
-
-		{
-			NSString* title_string = [current_top_item title];
-			NSString* fixed_string = [title_string stringByReplacingOccurrencesOfString:@"MacCocoaAppTemplate" withString:app_name];
-			if(![title_string isEqualToString:fixed_string])
-			{
-				[current_top_item setTitle:fixed_string];
-			}
-		}
-		
-		NSMenu* current_menu = [current_top_item submenu];
-		// Note: This does not recurse down submenus of the primary submenu
-		for(NSMenuItem* current_menu_item in [current_menu itemArray])
-		{
-			NSString* title_string = [current_menu_item title];
-			NSString* fixed_string = [title_string stringByReplacingOccurrencesOfString:@"MacCocoaAppTemplate" withString:app_name];
-			if(![title_string isEqualToString:fixed_string])
-			{
-				[current_menu_item setTitle:fixed_string];
-			}
-		}
-	}
-
-#endif
+  Ihandle* _ih;
 }
-@interface IupCocoaMenuItemRepresentedObject : NSObject
-{
-	Ihandle* _ih;
-}
+@property (nonatomic, assign) Ihandle* ih;
 - (instancetype) initWithIhandle:(Ihandle*)ih;
-- (Ihandle*) ih;
 @end
 
-@implementation IupCocoaMenuItemRepresentedObject
+@implementation IupCocoaMenuDelegate
+@synthesize ih = _ih;
 
 - (instancetype) initWithIhandle:(Ihandle*)ih
 {
-	self = [super init];
-	if(nil == self)
-	{
-		return nil;
-	}
-	_ih = ih;
-	return self;
+  self = [super init];
+  if (self)
+  {
+    _ih = ih;
+  }
+  return self;
 }
 
-- (Ihandle*) ih
+- (void) dealloc
 {
-	return _ih;
+  _ih = NULL;
+  [super dealloc];
 }
 
-- (IBAction) onMenuItemAction:(id)the_sender
+- (void) menuWillOpen:(NSMenu*)menu
 {
-	Ihandle* ih = [self ih];
-	Icallback call_back;
-	
-	call_back = IupGetCallback(ih, "ACTION");
-	if(call_back)
-	{
-		int ret_val = call_back(ih);
-		if(IUP_CLOSE == ret_val)
-		{
-			IupExitLoop();
-			
-		}
-	}
-	
+  if (!_ih) return;
+
+  Icallback cb = IupGetCallback(_ih, "OPEN_CB");
+  if (!cb && _ih->parent)
+    cb = (Icallback)IupGetCallback(_ih->parent, "OPEN_CB");
+
+  if (cb) cb(_ih);
 }
 
-// setEnabled: won't work unless we disable autoenablesItems, which I don't want to do because it disables a lot of useful automatic behavior for default menu items.
-// So we must use validateMenuItem.
-// The trick we can use is that our custom (non-default) menu items use this IupCocoMenuItemRepresentedObject.
-// So we can just query the attribute for ACTIVE on the ih, to see if the user turned it on or off and use that for the result for validateMenuItem
-- (BOOL) validateMenuItem:(NSMenuItem*)menu_item
+- (void) menuDidClose:(NSMenu*)menu
 {
-	Ihandle* ih = [self ih];
+  if (!_ih) return;
 
-	//	NSLog(@"param menu_item: %@", menu_item);
-	//	NSMenuItem* ih_menu_item = (NSMenuItem*)ih->handle;
-	//	NSLog(@"ih_menu_item: %@", ih_menu_item);
+  Icallback cb = IupGetCallback(_ih, "MENUCLOSE_CB");
+  /* Check also in the Submenu parent */
+  if (!cb && _ih->parent)
+    cb = (Icallback)IupGetCallback(_ih->parent, "MENUCLOSE_CB");
 
-	// It appears that the initial default value is NULL, and not explicit YES or NO.
-	// We must use IupGetAttribute instead of IupGetInt to detect the NULL value.
-	// If NULL, we treat as ACTIVE.
-	char* active_value = IupGetAttribute(ih, "ACTIVE");
-//	NSLog(@"active_value: %s", active_value);
-	if(NULL == active_value)
-	{
-		return YES;
-	}
-	else
-	{
-		int is_enabled = IupGetInt(ih, "ACTIVE");
-		return is_enabled;
-	}
-	
+  if (cb) cb(_ih);
+}
 
+- (void) menuWillHighlightItem:(NSMenuItem*)item
+{
+  if (!item) return;
+
+  Ihandle* item_ih = (Ihandle*)objc_getAssociatedObject(item, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!item_ih) return;
+
+  Icallback cb = IupGetCallback(item_ih, "HIGHLIGHT_CB");
+  if (cb) cb(item_ih);
 }
 
 @end
 
-@interface IupCocoaMenuDelegate : NSObject<NSMenuDelegate>
 
-// Use for HIGHLIGHT_CB?
-//- (void) menu:(NSMenu*)the_menu willHighlightItem:(NSMenuItem*)menu_item;
-@end
-
-
-@implementation IupCocoaMenuDelegate
-
-
-
-// Use for HIGHLIGHT_CB?
-/*
-- (void) menu:(NSMenu*)the_menu willHighlightItem:(NSMenuItem*)menu_item
+@interface IupCocoaMenuItemTarget : NSObject<NSMenuItemValidation>
 {
+  Ihandle* _ih;
 }
-*/
+@property (nonatomic, assign) Ihandle* ih;
+- (instancetype) initWithIhandle:(Ihandle*)ih;
+- (void) onMenuItemAction:(id)sender;
+- (BOOL) validateMenuItem:(NSMenuItem*)menuItem;
+@end
 
+@implementation IupCocoaMenuItemTarget
+@synthesize ih = _ih;
+
+- (instancetype) initWithIhandle:(Ihandle*)ih
+{
+  self = [super init];
+  if (self)
+  {
+    _ih = ih;
+  }
+  return self;
+}
+
+- (void) dealloc
+{
+  _ih = NULL;
+  [super dealloc];
+}
+
+- (void) onMenuItemAction:(id)sender
+{
+  if (!_ih) return;
+
+  if (iupStrEqual(_ih->iclass->name, "submenu"))
+    return;
+
+  NSMenuItem* menu_item = (NSMenuItem*)sender;
+
+  if (iupAttribGetBoolean(_ih->parent, "RADIO"))
+  {
+    cocoaItemUpdateRadioGroup(_ih);
+  }
+  else if (iupAttribGetBoolean(_ih, "AUTOTOGGLE"))
+  {
+    NSInteger current_state = [menu_item state];
+    BOOL new_state = (current_state != NSControlStateValueOn);
+
+    iupAttribSet(_ih, "VALUE", new_state ? "ON" : "OFF");
+    [menu_item setState:new_state ? NSControlStateValueOn : NSControlStateValueOff];
+
+    cocoaMenuUpdateImage(_ih);
+  }
+
+  Icallback cb = IupGetCallback(_ih, "ACTION");
+  if (cb && cb(_ih) == IUP_CLOSE)
+    IupExitLoop();
+}
+
+- (BOOL) validateMenuItem:(NSMenuItem*)menuItem
+{
+  if (!_ih) return YES;
+
+  char* active = cocoaItemGetActiveAttrib(_ih);
+  return (BOOL)iupStrBoolean(active);
+}
 
 @end
 
+
+/*******************************************************************************************/
+/* Helper Functions                                                                        */
+/*******************************************************************************************/
+
+static void cocoaItemUpdateRadioGroup(Ihandle* ih)
+{
+  if (!ih || !ih->parent) return;
+  if (!iupAttribGetBoolean(ih->parent, "RADIO")) return;
+
+  Ihandle* child;
+
+  /* Set the selected item to ON and all others to OFF */
+  for (child = ih->parent->firstchild; child; child = child->brother)
+  {
+    if (iupStrEqual(child->iclass->name, "item") && child->handle)
+    {
+      BOOL shouldBeOn = (child == ih);
+      NSInteger desiredState = shouldBeOn ? NSControlStateValueOn : NSControlStateValueOff;
+      [(NSMenuItem*)child->handle setState:desiredState];
+      iupAttribSet(child, "VALUE", shouldBeOn ? "ON" : "OFF");
+    }
+  }
+
+  /* Update images for all items to reflect the new state */
+  for (child = ih->parent->firstchild; child; child = child->brother)
+  {
+    if (iupStrEqual(child->iclass->name, "item") && child->handle)
+    {
+      cocoaMenuUpdateImage(child);
+    }
+  }
+}
+
+static int cocoaMenuSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  /* NSMenu does not support custom background colors on macOS.
+     Menu appearance is controlled by the system. */
+  (void)ih;
+  (void)value;
+  return 0;
+}
+
+/* Checks if a given menu contains the standard "Quit" application item. */
+static BOOL cocoaMenuContainsQuitItem(NSMenu* menu)
+{
+  if (!menu) return NO;
+  for (NSMenuItem* item in [menu itemArray])
+  {
+    if ([item action] == @selector(terminate:))
+    {
+      return YES;
+    }
+  }
+  return NO;
+}
+
+/* Finds an NSMenuItem with a specific title (case-insensitive) within a menu. */
+static NSMenuItem* cocoaMenuFindTitledItem(NSMenu* menu, NSString* title)
+{
+  if (!menu || !title) return nil;
+  for (NSMenuItem* item in [menu itemArray])
+  {
+    NSString* itemTitle = [item title];
+
+    // If the item title is empty (common for the App Menu wrapper at index 0, or IupItem wrappers), check the submenu title.
+    if ((!itemTitle || [itemTitle length] == 0) && [item submenu]) {
+      itemTitle = [[item submenu] title];
+    }
+
+    if (itemTitle && [itemTitle caseInsensitiveCompare:title] == NSOrderedSame)
+    {
+      return item;
+    }
+  }
+  return nil;
+}
+
+static void cocoaMenuUpdateImage(Ihandle* ih)
+{
+  NSMenuItem* menu_item = (NSMenuItem*)ih->handle;
+  if (!menu_item) return;
+
+  int active = iupAttribGetBoolean(ih, "ACTIVE");
+  const char* inactive_suffix = active ? NULL : "IMINACTIVE";
+
+  char* icon_name = iupAttribGet(ih, "TITLEIMAGE");
+  if (icon_name)
+  {
+    NSImage* image = (NSImage*)iupImageGetImage(icon_name, ih, 0, inactive_suffix);
+    [menu_item setImage:image];
+  }
+  else
+  {
+    if (iupStrEqual(ih->iclass->name, "submenu"))
+    {
+      char* image_name = iupAttribGet(ih, "IMAGE");
+      if (image_name)
+      {
+        NSImage* image = (NSImage*)iupImageGetImage(image_name, ih, 0, inactive_suffix);
+        [menu_item setImage:image];
+      }
+      else
+      {
+        [menu_item setImage:nil];
+      }
+    }
+    else
+    {
+      [menu_item setImage:nil];
+    }
+  }
+
+  if (iupStrEqual(ih->iclass->name, "item"))
+  {
+    char* image_off = iupAttribGet(ih, "IMAGE");
+    char* image_on = iupAttribGet(ih, "IMPRESS");
+
+    if (iupAttribGetBoolean(ih, "HIDEMARK") && !iupAttribGetBoolean(ih->parent, "RADIO"))
+    {
+      [menu_item setOnStateImage:nil];
+      [menu_item setOffStateImage:nil];
+      [menu_item setMixedStateImage:nil];
+    }
+    else if (image_off || image_on)
+    {
+      NSImage* ns_image_off = nil;
+      if (image_off)
+      {
+        ns_image_off = (NSImage*)iupImageGetImage(image_off, ih, 0, inactive_suffix);
+      }
+
+      NSImage* ns_image_on = nil;
+      if (image_on)
+      {
+        ns_image_on = (NSImage*)iupImageGetImage(image_on, ih, 0, inactive_suffix);
+      }
+      else if (image_off)
+      {
+        ns_image_on = ns_image_off;
+      }
+
+      [menu_item setOffStateImage:ns_image_off];
+      [menu_item setOnStateImage:ns_image_on];
+    }
+    else
+    {
+      NSImage* checkmark = [NSImage imageNamed:NSImageNameMenuOnStateTemplate];
+      if (checkmark)
+      {
+        [menu_item setOnStateImage:checkmark];
+      }
+      [menu_item setOffStateImage:nil];
+
+      NSImage* mixedmark = [NSImage imageNamed:NSImageNameMenuMixedStateTemplate];
+      if (mixedmark)
+      {
+        [menu_item setMixedStateImage:mixedmark];
+      }
+    }
+  }
+}
+
+static void cocoaMenuSetTitle(Ihandle* ih, id handle, const char* value)
+{
+  if (!handle) return;
+
+  if (!value || value[0] == 0)
+  {
+    value = "     ";
+  }
+
+  char* title_str = iupStrProcessMnemonic(value, NULL, 0);
+
+  NSString* ns_title = nil;
+  if (title_str)
+  {
+    ns_title = [NSString stringWithUTF8String:title_str];
+  }
+
+  if (!ns_title)
+  {
+    ns_title = @"";
+  }
+
+  if ([handle isKindOfClass:[NSMenuItem class]])
+  {
+    NSMenuItem* item = (NSMenuItem*)handle;
+
+    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    NSDictionary* attributes = nil;
+    if (iup_font)
+    {
+      attributes = [iup_font attributeDictionary];
+    }
+
+    void (^applyTitle)(NSMenuItem*) = ^(NSMenuItem* targetItem) {
+      if (attributes && [attributes count] > 0)
+      {
+        NSAttributedString* newAttributedTitle = [[NSAttributedString alloc] initWithString:ns_title attributes:attributes];
+        [targetItem setAttributedTitle:newAttributedTitle];
+        [newAttributedTitle release];
+      }
+      else
+      {
+        [targetItem setAttributedTitle:nil];
+        [targetItem setTitle:ns_title];
+      }
+    };
+
+    applyTitle(item);
+
+    NSMenuItem* wrapperItem = (NSMenuItem*)objc_getAssociatedObject(item, MENUBAR_ITEM_WRAPPER_KEY);
+    if (wrapperItem)
+    {
+      applyTitle(wrapperItem);
+
+      NSMenu* submenu = [wrapperItem submenu];
+      if (submenu)
+      {
+        [submenu setTitle:ns_title];
+      }
+    }
+  }
+  else if ([handle respondsToSelector:@selector(setTitle:)])
+  {
+    [handle setTitle:ns_title];
+  }
+
+  if (title_str && title_str != value)
+    free(title_str);
+}
+
+static int cocoaMenuItemSetFontAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupdrvSetFontAttrib(ih, value))
+    return 0;
+
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+
+  if (!item) return 1;
+
+  char* title = iupAttribGet(ih, "TITLE");
+  if (!title) title = "";
+
+  cocoaMenuSetTitle(ih, item, title);
+
+  return 1;
+}
+
+/*******************************************************************************************/
+/* Driver Functions                                                                        */
+/*******************************************************************************************/
 
 int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
-	NSWindow* key_window = [[NSApplication sharedApplication] keyWindow];
-	NSInteger window_number = [key_window windowNumber];
-	NSView* content_view = [key_window contentView];
+  NSMenu* menu = (NSMenu*)ih->handle;
+  if (!menu) {
+    return IUP_ERROR;
+  }
 
-	// The y passed in is inverted (IUP coordinate system). We need to flip back to cartesian.
-	NSRect screen_rect = [[NSScreen mainScreen] frame];
-	CGFloat cartesian_y = screen_rect.size.height - y;
-	
-	NSRect absolute_menu_rect = { x, cartesian_y, 0, 0 };
-	NSRect converted_window_rect = [key_window convertRectFromScreen:absolute_menu_rect];
+  NSPoint location = NSMakePoint(x, iupCocoaComputeCartesianScreenHeightFromIup(y));
 
+  char* align_value = iupAttribGet(ih, "POPUPALIGN");
+  if (align_value)
+  {
+    char value1[30], value2[30];
+    iupStrToStrStr(align_value, value1, value2, ':');
 
-	NSPoint converted_point = converted_window_rect.origin;
-	
-//		NSPoint converted_point = [self convertPoint:the_point fromView:nil];
-	
-    NSEvent* the_event = [NSEvent otherEventWithType:NSEventTypeApplicationDefined
-		location:converted_point
-		modifierFlags:(NSEventModifierFlags)0
-		timestamp:(NSTimeInterval)0
-		windowNumber:window_number
-		context:[NSGraphicsContext currentContext]
-		subtype:0
-		data1:0
-		data2:0
-	];
+    NSSize menu_size = [menu size];
 
-	// IMPORTANT: popUpContentMenu blocks until the menu is dismissed.
-	// This actually works to our advantage because IUP's API design seems to implicitly assume this and the example in menu.c
-	// immediately calls IupDestroy(menu) right after
-	// IupPopup(menu, IUP_MOUSEPOS, IUP_MOUSEPOS);
-	// Destroying the menu before we are done would be very bad news
-	// because we need a valid ih to look up the user's callback functions for the menu items they created.
-    [NSMenu popUpContextMenu:ih->handle withEvent:the_event forView:content_view];
-	return IUP_NOERROR;
+    if (iupStrEqualNoCase(value1, "ARIGHT"))
+      location.x -= menu_size.width;
+    else if (iupStrEqualNoCase(value1, "ACENTER"))
+      location.x -= menu_size.width / 2;
+
+    if (iupStrEqualNoCase(value2, "ABOTTOM"))
+      location.y += menu_size.height;
+    else if (iupStrEqualNoCase(value2, "ACENTER"))
+      location.y += menu_size.height / 2;
+  }
+
+  [menu popUpMenuPositioningItem:nil atLocation:location inView:nil];
+
+  return IUP_NOERROR;
 }
 
 int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
-	CGFloat menu_bar_height = [[[NSApplication sharedApplication] mainMenu] menuBarHeight];
-	return iupROUND(menu_bar_height);
+  (void)ih;
+  /* Standard macOS menu bar height approximation. */
+  return 24;
 }
 
-/*
-static void cocoaReleaseMenuClass(Iclass* ic)
+
+/*******************************************************************************************/
+/* Application Menu Functions                                                              */
+/*******************************************************************************************/
+
+/* Creates the standard macOS "Application" menu (About, Services, Hide, Quit) */
+static void cocoaMenuCreateAppMenu(NSMenu* main_menu)
 {
-	// Not sure if I should tear this down. Typically apps just quit and leave all this stuff.
-	[NSApp setMainMenu:nil];
+  NSString* app_name = [[NSProcessInfo processInfo] processName];
+  if (!app_name || [app_name length] == 0) app_name = @"Application";
 
+  NSMenuItem* app_item = [[NSMenuItem alloc] initWithTitle:@"" action:nil keyEquivalent:@""];
+  NSMenu* app_menu = [[NSMenu alloc] initWithTitle:app_name];
+
+  [app_menu addItemWithTitle:[NSString stringWithFormat:@"About %@", app_name] action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""];
+
+  [app_menu addItem:[NSMenuItem separatorItem]];
+
+  NSMenuItem* services_item = [app_menu addItemWithTitle:@"Services" action:nil keyEquivalent:@""];
+  NSMenu* services_menu = [[NSMenu alloc] initWithTitle:@"Services"];
+  [services_item setSubmenu:services_menu];
+  [[NSApplication sharedApplication] setServicesMenu:services_menu];
+  [services_menu release];
+
+  [app_menu addItem:[NSMenuItem separatorItem]];
+
+  [app_menu addItemWithTitle:[NSString stringWithFormat:@"Hide %@", app_name] action:@selector(hide:) keyEquivalent:@"h"];
+
+  NSMenuItem* hide_others = [app_menu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"];
+  [hide_others setKeyEquivalentModifierMask: NSEventModifierFlagCommand | NSEventModifierFlagOption];
+
+  [app_menu addItemWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""];
+
+  [app_menu addItem:[NSMenuItem separatorItem]];
+
+  [app_menu addItemWithTitle:[NSString stringWithFormat:@"Quit %@", app_name] action:@selector(terminate:) keyEquivalent:@"q"];
+
+
+  /* Attach the submenu and insert into the main menu at the beginning */
+  [app_item setSubmenu:app_menu];
+  [main_menu insertItem:app_item atIndex:0];
+
+  [app_menu release];
+  [app_item release];
 }
-*/
+
+/* Creates a placeholder "File" menu. */
+static void cocoaMenuCreateFileMenu(NSMenu* main_menu)
+{
+  NSMenuItem* file_item = [[NSMenuItem alloc] initWithTitle:@"File" action:nil keyEquivalent:@""];
+  NSMenu* file_menu = [[NSMenu alloc] initWithTitle:@"File"];
+
+  [file_menu addItemWithTitle:@"New" action:@selector(newDocument:) keyEquivalent:@"n"];
+  [file_menu addItemWithTitle:@"Open..." action:@selector(openDocument:) keyEquivalent:@"o"];
+  [file_menu addItem:[NSMenuItem separatorItem]];
+  [file_menu addItemWithTitle:@"Close" action:@selector(performClose:) keyEquivalent:@"w"];
+  [file_menu addItemWithTitle:@"Save..." action:@selector(saveDocument:) keyEquivalent:@"s"];
+
+  [file_item setSubmenu:file_menu];
+  [main_menu addItem:file_item];
+
+  [file_menu release];
+  [file_item release];
+}
+
+/* Creates a standard macOS "Edit" menu (Undo, Redo, Cut, Copy, Paste). */
+static void cocoaMenuCreateEditMenu(NSMenu* main_menu)
+{
+  NSMenuItem* edit_item = [[NSMenuItem alloc] initWithTitle:@"Edit" action:nil keyEquivalent:@""];
+  NSMenu* edit_menu = [[NSMenu alloc] initWithTitle:@"Edit"];
+
+  [edit_menu addItemWithTitle:@"Undo" action:@selector(undo:) keyEquivalent:@"z"];
+  [edit_menu addItemWithTitle:@"Redo" action:@selector(redo:) keyEquivalent:@"Z"];
+  [edit_menu addItem:[NSMenuItem separatorItem]];
+  [edit_menu addItemWithTitle:@"Cut" action:@selector(cut:) keyEquivalent:@"x"];
+  [edit_menu addItemWithTitle:@"Copy" action:@selector(copy:) keyEquivalent:@"c"];
+  [edit_menu addItemWithTitle:@"Paste" action:@selector(paste:) keyEquivalent:@"v"];
+  [edit_menu addItemWithTitle:@"Select All" action:@selector(selectAll:) keyEquivalent:@"a"];
+
+  [edit_item setSubmenu:edit_menu];
+  [main_menu addItem:edit_item];
+
+  [edit_menu release];
+  [edit_item release];
+}
+
+/* Creates the standard macOS "Window" menu (Minimize, Zoom, etc.) */
+static void cocoaMenuCreateWindowMenu(NSMenu* main_menu)
+{
+  NSMenuItem* window_item = [[NSMenuItem alloc] initWithTitle:@"Window" action:nil keyEquivalent:@""];
+  NSMenu* window_menu = [[NSMenu alloc] initWithTitle:@"Window"];
+
+  [window_menu addItemWithTitle:@"Minimize" action:@selector(performMiniaturize:) keyEquivalent:@"m"];
+  [window_menu addItemWithTitle:@"Zoom" action:@selector(performZoom:) keyEquivalent:@""];
+  [window_menu addItem:[NSMenuItem separatorItem]];
+  [window_menu addItemWithTitle:@"Bring All to Front" action:@selector(arrangeInFront:) keyEquivalent:@""];
+
+  [window_item setSubmenu:window_menu];
+  [main_menu addItem:window_item];
+
+  [window_menu release];
+  [window_item release];
+}
+
+/* Creates a standard macOS "Help" menu. */
+static void cocoaMenuCreateHelpMenu(NSMenu* main_menu)
+{
+  NSMenuItem* help_item = [[NSMenuItem alloc] initWithTitle:@"Help" action:nil keyEquivalent:@""];
+  NSMenu* help_menu = [[NSMenu alloc] initWithTitle:@"Help"];
+
+  NSString* app_name = [[NSProcessInfo processInfo] processName];
+  if (!app_name || [app_name length] == 0) app_name = @"Application";
+  [help_menu addItemWithTitle:[NSString stringWithFormat:@"%@ Help", app_name] action:@selector(showHelp:) keyEquivalent:@"?"];
+
+  [help_item setSubmenu:help_menu];
+  [main_menu addItem:help_item];
+
+  [help_menu release];
+  [help_item release];
+}
+
+/* Synchronizes the NSApplication's standard Window and Help menus with the provided menu bar. */
+static void cocoaMenuSynchronizeStandardMenus(NSMenu* menuBar)
+{
+  if (!menuBar) {
+    [[NSApplication sharedApplication] setWindowsMenu:nil];
+    [[NSApplication sharedApplication] setHelpMenu:nil];
+    return;
+  }
+
+  NSMenuItem* windowItem = cocoaMenuFindTitledItem(menuBar, @"Window");
+  if (windowItem && [windowItem hasSubmenu]) {
+    [[NSApplication sharedApplication] setWindowsMenu:[windowItem submenu]];
+  } else {
+    [[NSApplication sharedApplication] setWindowsMenu:nil];
+  }
+
+  NSMenuItem* helpItem = cocoaMenuFindTitledItem(menuBar, @"Help");
+  if (helpItem && [helpItem hasSubmenu]) {
+    [[NSApplication sharedApplication] setHelpMenu:[helpItem submenu]];
+  } else {
+    [[NSApplication sharedApplication] setHelpMenu:nil];
+  }
+}
 
 
+/* Ensures that a default application menu exists and is set if no other menu is active. */
+void iupCocoaEnsureDefaultApplicationMenu(void)
+{
+  if (s_defaultApplicationMenu == nil)
+  {
+    s_defaultApplicationMenu = [[NSMenu alloc] initWithTitle:@"DefaultMainMenu"];
+    [s_defaultApplicationMenu setAutoenablesItems:NO];
+
+    if (s_defaultApplicationMenu)
+    {
+      cocoaMenuCreateAppMenu(s_defaultApplicationMenu);
+      cocoaMenuCreateFileMenu(s_defaultApplicationMenu);
+      cocoaMenuCreateEditMenu(s_defaultApplicationMenu);
+      cocoaMenuCreateWindowMenu(s_defaultApplicationMenu);
+      cocoaMenuCreateHelpMenu(s_defaultApplicationMenu);
+    }
+  }
+
+  if ([[NSApplication sharedApplication] mainMenu] == nil)
+  {
+    if (s_defaultApplicationMenu)
+    {
+      cocoaMenuSynchronizeStandardMenus(s_defaultApplicationMenu);
+      [[NSApplication sharedApplication] setMainMenu:s_defaultApplicationMenu];
+    }
+  }
+}
+
+Ihandle* iupCocoaMenuGetApplicationMenu(void)
+{
+  return s_currentIupApplicationMenu;
+}
+
+/* Checks if the given Ihandle is the currently active application menu bar. */
 int iupCocoaMenuIsApplicationBar(Ihandle* ih)
 {
-	if (ih->iclass->nativetype == IUP_TYPEMENU)
-	{
-		int is_app_menu = IupGetInt(ih, "_IUPMAC_APPMENU");
-		if(is_app_menu)
-		{
-			return 1;
-		}
-	}
-
-	return 0;
+  int result = (ih != NULL && ih == s_currentIupApplicationMenu);
+  return result;
 }
 
-// Note: This only gets the user's Ihandle to the application menu. If the user doesn't set it, the default application will not be returned in its place. NULL will be returned instead.
-Ihandle* iupCocoaMenuGetApplicationMenu()
+/* Called during iupdrvClose to clean up resources. */
+void iupCocoaMenuCleanupApplicationMenu(void)
 {
-	return s_currentIupMainMenu;
+  s_currentIupApplicationMenu = NULL;
+
+  if (s_defaultApplicationMenu)
+  {
+    if ([[NSApplication sharedApplication] mainMenu] == s_defaultApplicationMenu)
+    {
+      [[NSApplication sharedApplication] setMainMenu:nil];
+    }
+    [s_defaultApplicationMenu release];
+    s_defaultApplicationMenu = nil;
+  }
 }
 
-// My current understanding is that IUP will not clean up our application menu Ihandles. So we need to do it ourselves.
-void iupCocoaMenuCleanupApplicationMenu()
-{
-	// I believe (hope) this goes through all submenus and items and cleans up everything the user may have created for the main menu.
-	// (Remember, the app menu merges default items. So this only cleans up things users explicitly create.
-	IupDestroy(s_currentIupMainMenu);
-
-	// remember to reset the pointer in case the user keeps going and calls IupOpen again.
-	s_currentIupMainMenu = NULL;
-	
-
-	// Let's try not to leave anything behind to avoid accidental leaks in the NSAutoreleasePool drain.
-	[NSApp setMainMenu:nil];
-
-}
-
-
-// Helper to set the menu.
+/* Sets the given Ihandle (IupMenu) as the application's main menu bar.
+   This is the central function for switching the application menu. */
 void iupCocoaMenuSetApplicationMenu(Ihandle* ih)
 {
-	
+  if (ih && s_currentIupApplicationMenu == ih) {
+    return;
+  }
 
-	
-	if(NULL == ih)
-	{
-		// remove the existing menu?
+  /* Restore the default menu. */
+  if (!ih)
+  {
+    iupCocoaEnsureDefaultApplicationMenu(); /* Ensure it exists */
+    if ([[NSApplication sharedApplication] mainMenu] != s_defaultApplicationMenu)
+    {
+      cocoaMenuSynchronizeStandardMenus(s_defaultApplicationMenu);
+      [[NSApplication sharedApplication] setMainMenu:s_defaultApplicationMenu];
+    }
+    s_currentIupApplicationMenu = NULL; /* Update IUP tracking */
+    return;
+  }
 
-		// We need a way to know if there was a previous MainMenu set. If so, we need to UnMap that object.
-		if(NULL != s_currentIupMainMenu)
-		{
-			IupUnmap(s_currentIupMainMenu);
-			s_currentIupMainMenu = NULL;
-		}
-		
-		[NSApp setMainMenu:nil];
-		
-		// We just removed everything in the menu. We want to restore the default menu.
-		cocoaCreateDefaultApplicationMenu();
+  /* Set a new IUP menu. */
+  if (!ih->handle) {
+    IupMap(ih);
+  }
 
-	}
-	else
-	{
-		// add the menu
-		
-		// identify this is a app menu
-		IupSetInt(ih, "_IUPMAC_APPMENU", 1);
-		
-		// User error?
-		if(ih->iclass->nativetype != IUP_TYPEMENU)
-		{
-			// call IUPASSERT?
-			return;
-		}
-		
-		// We need a way to know if there was a previous MainMenu set. If so, we need to UnMap that object.
-		if(NULL != s_currentIupMainMenu)
-		{
-			// check if the user has already set this menu before and is the current menu
-			if(ih->handle == s_currentIupMainMenu)
-			{
-				// we don't need to do anything since this is the same menu
-				return;
-			}
-			else
-			{
-				// this is a different menu so we want to remove the old one
-				IupUnmap(s_currentIupMainMenu);
-				s_currentIupMainMenu = NULL;
-			}
-		}
-		
-		
-		// I don't think it is possible to have an already Mapped menu, but just in case, I'll check. (Maybe this should be an assert)
-		if(ih->handle)
-		{
-			// don't call Map since it already is created
-		}
-		else
-		{
-			IupMap(ih);
-		}
-		[NSApp setMainMenu:(NSMenu*)ih->handle];
-		s_currentIupMainMenu = ih;
-	}
-	
-	
+  if (ih->handle && [(id)ih->handle isKindOfClass:[NSMenu class]])
+  {
+    NSMenu* menu = (NSMenu*)ih->handle;
 
-	
-#if 0
-	if (!ih->handle)
-	{
-		Ihandle* menu = IupGetHandle(value);
-		ih->data->menu = menu;
-		return 1;
-	}
-	
-	if (!value)
-	{
-		if (ih->data->menu && ih->data->menu->handle)
-		{
-			ih->data->ignore_resize = 1;
-			IupUnmap(ih->data->menu);  /* this will remove the menu from the dialog */
-			ih->data->ignore_resize = 0;
-			
-			ih->data->menu = NULL;
-		}
-	}
-	else
-	{
-		Ihandle* menu = IupGetHandle(value);
-		if (!menu || menu->iclass->nativetype != IUP_TYPEMENU || menu->parent)
-			return 0;
-		
-		/* already the current menu and it is mapped */
-		if (ih->data->menu && ih->data->menu==menu && menu->handle)
-			return 1;
-		
-		/* the current menu is mapped, so unmap it */
-		if (ih->data->menu && ih->data->menu->handle && ih->data->menu!=menu)
-		{
-			ih->data->ignore_resize = 1;
-			IupUnmap(ih->data->menu);   /* this will remove the menu from the dialog */
-			ih->data->ignore_resize = 0;
-		}
-		
-		ih->data->menu = menu;
-		
-		menu->parent = ih;    /* use this to create a menu bar instead of a popup menu */
-		
-		ih->data->ignore_resize = 1;
-		IupMap(menu);     /* this will automatically add the menu to the dialog */
-		ih->data->ignore_resize = 0;
-	}
-	return 1;
-	
-#endif
-	
+    NSMenuItem* appMenuItem = ([menu numberOfItems] > 0) ? [menu itemAtIndex:0] : nil;
+    if (!appMenuItem || ![appMenuItem hasSubmenu] || !cocoaMenuContainsQuitItem([appMenuItem submenu]))
+    {
+      cocoaMenuCreateAppMenu(menu);
+    }
+
+    if (!cocoaMenuFindTitledItem(menu, @"Window"))
+    {
+      cocoaMenuCreateWindowMenu(menu);
+    }
+
+    if (!cocoaMenuFindTitledItem(menu, @"Help"))
+    {
+      cocoaMenuCreateHelpMenu(menu);
+    }
+
+    cocoaMenuSynchronizeStandardMenus(menu);
+
+    [[NSApplication sharedApplication] setMainMenu:menu];
+    s_currentIupApplicationMenu = ih;
+  }
+  else {
+    iupCocoaMenuSetApplicationMenu(NULL);
+  }
 }
 
-
+/*******************************************************************************************/
+/* MENU (IupMenu)                                                                          */
+/*******************************************************************************************/
 
 static int cocoaMenuMapMethod(Ihandle* ih)
 {
-	if(iupMenuIsMenuBar(ih))
-	{
-		return IUP_ERROR;
-#if 0
-		/* top level menu used for MENU attribute in IupDialog (a menu bar) */
-		NSLog(@"cocoaMenuMapMethod iupMenuIsMenuBar %@", ih->parent->handle);
+  NSMenu* menu = nil;
 
-		NSMenu* main_menu = [NSApp mainMenu];
-		
-		ih->handle = main_menu;
-		
-		// not sure if I should retain it because I don't know if this is going to ever get released, but probably should to obey normal patterns.
-		[main_menu retain];
-#endif
-	}
-	else if(iupCocoaMenuIsApplicationBar(ih))
-	{
-		/* top level menu used for MENU attribute in IupDialog (a menu bar) */
+  if (iupMenuIsMenuBar(ih))
+  {
+    menu = [[NSMenu alloc] initWithTitle:@"MainMenu"];
+    if (!menu) return IUP_ERROR;
+    [menu setAutoenablesItems:NO];
+    ih->handle = menu;
 
-		NSMenu* main_menu = [NSApp mainMenu];
-		
-		ih->handle = main_menu;
+    if ([menu numberOfItems] == 0 || ![[menu itemAtIndex:0] hasSubmenu] || !cocoaMenuContainsQuitItem([[menu itemAtIndex:0] submenu]))
+    {
+      cocoaMenuCreateAppMenu(menu);
+    }
+  }
+  else
+  {
+    menu = [[NSMenu alloc] initWithTitle:@""];
+    if (!menu) return IUP_ERROR;
+    ih->handle = menu;
 
-		// not sure if I should retain it because I don't know if this is going to ever get released, but probably should to obey normal patterns.
-		[main_menu retain];
-		
+    if (ih->parent)
+    {
+      if (!ih->parent->handle)
+      {
+        [menu release];
+        ih->handle = NULL;
+        return IUP_ERROR;
+      }
 
+      NSMenuItem* parent_item = (NSMenuItem*)ih->parent->handle;
+      if ([parent_item isKindOfClass:[NSMenuItem class]])
+      {
+        [parent_item setSubmenu:menu];
+        [menu setTitle:[parent_item title]];
+      }
+      else
+      {
+        [menu release];
+        ih->handle = NULL;
+        return IUP_ERROR;
+      }
+    }
+  }
 
-	}
-	else
-	{
-		if(ih->parent)
-		{
+  IupCocoaMenuDelegate* delegate = [[IupCocoaMenuDelegate alloc] initWithIhandle:ih];
+  [menu setDelegate:delegate];
 
-//			NSLog(@"cocoaMenuMapMethod ih->parent %@", ih->parent->handle);
-		/* parent is a submenu, it is created here */
+  objc_setAssociatedObject(menu, MENU_DELEGATE_ASSOCIATED_OBJ_KEY, delegate, OBJC_ASSOCIATION_RETAIN);
+  [delegate release];
 
+  objc_setAssociatedObject(menu, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 
-			NSMenuItem* parent_menu = (NSMenuItem*)(ih->parent->handle);
-			NSString* parent_menu_title = [parent_menu title];
-			
-			NSMenu* the_menu = [parent_menu submenu];
-
-			// Try searching for an existing menu by this name and only create is not there.
-			if(nil == [parent_menu submenu])
-			{
-				the_menu = [[NSMenu alloc] init];
-				ih->handle = the_menu;
-				
-				[parent_menu setSubmenu:the_menu];
-				// In Cocoa, the name (e.g. "Edit") goes on the NSMenu, not the above NSMenuItem.
-				// I earlier set the name on the parent (which isn't visible), and now set it on the correct widget.
-				// Not sure if I should unset the title on the NSMenuItem afterwards.
-				[the_menu setTitle:parent_menu_title];
-//				NSLog(@"cocoaMenuMapMethod created NSMenu %@", the_menu);
-			}
-			else
-			{
-				// Already exists. Let's try reusing the existing one.
-				[the_menu retain];
-				ih->handle = the_menu;
-				
-//				NSLog(@"cocoaMenuMapMethod reused NSMenu %@", the_menu);
-
-			}
-			
-			
-
-//			NSLog(@"cocoaMenuMapMethod [parent_menu setSubmenu:the_menu]");
-		}
-		else
-		{
-			/* top level menu used for IupPopup */
-
-			NSMenu* the_menu = [[NSMenu alloc] init];
-			ih->handle = the_menu;
-
-//			NSLog(@"else cocoaMenuMapMethod created NSMenu %@", the_menu);
-
-			
-			//iupAttribSet(ih, "_IUPWIN_POPUP_MENU", "1");
-		}
-	}
-
-	
-	
-
-	
-	return IUP_NOERROR;
+  return IUP_NOERROR;
 }
 
 static void cocoaMenuUnMapMethod(Ihandle* ih)
 {
-	NSMenu* the_menu = (NSMenu*)ih->handle;
-	// do I need to remove it from the parent???
-	ih->handle = NULL;
-	[the_menu release];
+  if (iupCocoaMenuIsApplicationBar(ih))
+  {
+    iupCocoaMenuSetApplicationMenu(NULL);
+  }
+
+  NSMenu* menu = (NSMenu*)ih->handle;
+  if (!menu) return;
+
+  if (iupMenuIsMenuBar(ih))
+  {
+    ih->parent = NULL;
+  }
+
+  [menu setDelegate:nil];
+  objc_setAssociatedObject(menu, MENU_DELEGATE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+  objc_setAssociatedObject(menu, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+
+  if (!iupMenuIsMenuBar(ih) && ih->parent && ih->parent->handle)
+  {
+    NSMenuItem* parent_item = (NSMenuItem*)ih->parent->handle;
+    if ([parent_item isKindOfClass:[NSMenuItem class]] && [parent_item submenu] == menu)
+    {
+      [parent_item setSubmenu:nil];
+    }
+  }
+
+  [menu release];
+  ih->handle = NULL;
 }
 
 void iupdrvMenuInitClass(Iclass* ic)
 {
-	cocoaCreateDefaultApplicationMenu();
-	
-//	ic->Release = cocoaReleaseMenuClass;
-
-	/* Driver Dependent Class functions */
-	ic->Map = cocoaMenuMapMethod;
-	ic->UnMap = cocoaMenuUnMapMethod;
-#if 0
-
-	/* Used by iupdrvMenuGetMenuBarSize */
-	iupClassRegisterAttribute(ic, "FONT", NULL, NULL, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);  /* inherited */
-	
-	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
-
-#endif
+  ic->Map = cocoaMenuMapMethod;
+  ic->UnMap = cocoaMenuUnMapMethod;
+  iupClassRegisterAttribute(ic, "FONT", NULL, NULL, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaMenuSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 }
 
-
-
-
-static int cocoaItemSetTitleAttrib(Ihandle* ih, const char* value)
-{
-//	char *str;
-	
-	/* check if the submenu handle was created in winSubmenuAddToParent */
-/*
-	if (ih->handle == (InativeHandle*)-1)
-		return 1;
-*/
-	NSMenuItem* menu_item = (NSMenuItem*)ih->handle;
-
-	NSString* ns_string = nil;
-	if(!value)
-	{
-		ns_string = @"";
-	}
-	else
-	{
-		ns_string = [NSString stringWithUTF8String:value];
-
-	}
-	
-	// Mnemonic is not actually supported on Mac. Maybe it does something on GNUStep?
-	// However it does seem to strip the & from being displayed in the menu, so it is useful.
-	[menu_item setTitleWithMnemonic:ns_string];
-	//[menu_item setTitle:ns_string];
-
-	
-	// Try to extract the Mnemonic
-	
-	
-	NSRange search_result_range = [ns_string rangeOfString:@"&"];
-	if(NSNotFound != search_result_range.location)
-	{
-		NSRange character_range = NSMakeRange(search_result_range.location+1, 1);
-		
-		// Make sure the & isn't at the end of the string
-		if(character_range.location + character_range.length <= [ns_string length])
-		{
-			NSString* mnemonic_char = [ns_string substringWithRange:character_range];
-			// Drat. If the user is doing something like "&Print", uppercase P makes you press CMD-SHIFT-p. Most likely they just wanted CMD-p
-			// Make lowercase to avoid this, but we need a better system to allow specifying command characters in case they did want SHIFT
-			mnemonic_char = [mnemonic_char lowercaseString];
-			[menu_item setKeyEquivalent:mnemonic_char];
-		}
-
-
-	}
-	
-	
-	
-	
-	return 1;
-}
-
-/*
- // Drat: These don't work because I have to also disable autoenablesItems in the NSMenu's.
- // But that will also disable a lot of items we might like automatic behavior for.
-
- [menu_item setAutoenablesItems:NO];	}
-char* cocoaItemGetActiveAttrib(Ihandle *ih)
-{
-	NSMenuItem* menu_item = (NSMenuItem*)ih->handle;
-	BOOL is_enabled = [menu_item isEnabled];
-	return iupStrReturnBoolean(is_enabled);
-}
-
-static int cocoaItemSetActiveAttrib(Ihandle* ih, const char* value)
-{
-	BOOL is_enabled = (BOOL)iupStrBoolean(value);
-	NSMenuItem* menu_item = (NSMenuItem*)ih->handle;
-	[menu_item setEnabled:is_enabled];
-	return 1;
-}
-*/
-
-static int cocoaItemMapMethod(Ihandle* ih)
-{
-
-	if(!ih->parent)
-	{
-		NSLog(@"IUP_ERROR cocoaItemMapMethod !ih->parent");
-		return IUP_ERROR;
-	}
-	
-	
-	
-
-	
-	if (iupMenuIsMenuBar(ih))
-	{
-		/* top level menu used for MENU attribute in IupDialog (a menu bar) */
-		
-//		NSLog(@"cocoaItemMapMethod iupMenuIsMenuBar %@", ih->parent->handle);
-		
-	}
-	else
-	{
-		if(ih->parent)
-		{
-			/* parent is a submenu, it is created here */
-//			NSLog(@"cocoaItemMapMethod ih->parent %@", ih->parent->handle);
-			
-		}
-		else
-		{
-//			NSLog(@"cocoaItemMapMethod else");
-		}
-	}
-	
-	
-	
-	NSMenu* parent_menu = (NSMenu*)(ih->parent->handle);
-	const char* c_title = IupGetAttribute(ih, "TITLE");
-	NSString* ns_string = nil;
-	NSMenuItem* menu_item = nil;
-	if(!c_title)
-	{
-		ns_string = @"";
-	}
-	else
-	{
-		ns_string = [NSString stringWithUTF8String:c_title];
-		
-	}
-	// search through parent to see if this item already exists
-	for(NSMenuItem* current_menu_item in [parent_menu itemArray])
-	{
-		if([[current_menu_item title] isEqualToString:ns_string])
-		{
-			menu_item = current_menu_item;
-			break;
-		}
-	}
-	
-	if(nil == menu_item)
-	{
-		// create new item
-		menu_item = [[NSMenuItem alloc] init];
-		ih->handle = menu_item;
-		[parent_menu addItem:menu_item];
-		
-		// RepresentedObject is to handle the callbacks
-		IupCocoaMenuItemRepresentedObject* represented_object = [[IupCocoaMenuItemRepresentedObject alloc] initWithIhandle:ih];
-		[menu_item setRepresentedObject:represented_object];
-		[represented_object release];
-		[menu_item setTarget:represented_object];
-		[menu_item setAction:@selector(onMenuItemAction:)];
-	}
-	else
-	{
-		ih->handle = menu_item;
-		[menu_item retain];
-
-		// For built-in XIB menu items, we may not have setup the represented object stuff, so do that now.
-		if([menu_item representedObject] == nil)
-		{
-			// RepresentedObject is to handle the callbacks
-			IupCocoaMenuItemRepresentedObject* represented_object = [[IupCocoaMenuItemRepresentedObject alloc] initWithIhandle:ih];
-			[menu_item setRepresentedObject:represented_object];
-			[represented_object release];
-			[menu_item setTarget:represented_object];
-			[menu_item setAction:@selector(onMenuItemAction:)];
-		}
-		
-	}
-	
-	
-
-	return IUP_NOERROR;
-}
-
-static void cocoaItemUnMapMethod(Ihandle* ih)
-{
-	NSMenuItem* menu_item = (NSMenuItem*)ih->handle;
-	// do I need to remove it from the parent???
-	ih->handle = NULL;
-	[menu_item release];
-}
-
-
-void iupdrvItemInitClass(Iclass* ic)
-{
-  /* Driver Dependent Class functions */
-  ic->Map = cocoaItemMapMethod;
-  ic->UnMap = cocoaItemUnMapMethod;
-#if 0
-
-	/* Common */
-	iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);  /* inherited */
-	
-	/* Visual */
-#endif
-	// Drat: These don't work because I have to also disable autoenablesItems in the NSMenu's.
-//	iupClassRegisterAttribute(ic, "ACTIVE", cocoaItemGetActiveAttrib, cocoaItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-#if 0
-	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-	
-	/* IupItem only */
-	iupClassRegisterAttribute(ic, "VALUE", gtkItemGetValueAttrib, gtkItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-#endif
-	iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-#if 0
-	iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, gtkItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "IMAGE", NULL, gtkItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "IMPRESS", NULL, gtkItemSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	
-
-
-
-  /* IupItem GTK and Motif only */
-  iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED);
-#endif
-}
-
-
-static int cocoaSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
-{
-	//	char *str;
-	
-	/* check if the submenu handle was created in winSubmenuAddToParent */
-	/*
-	 if (ih->handle == (InativeHandle*)-1)
-		return 1;
-	 */
-	
-#if 0
-	NSMenu* the_menu = (NSMenu*)ih->handle;
-	
-	NSString* ns_string = nil;
-	if(!value)
-	{
-		ns_string = @"";
-	}
-	else
-	{
-		ns_string = [NSString stringWithUTF8String:value];
-		
-	}
-	
-	[the_menu setTitle:ns_string];
-#else
-
-	
-	
-	NSMenuItem* menu_item = (NSMenuItem*)ih->handle;
-	
-	
-	NSString* ns_string = nil;
-	if(!value)
-	{
-		ns_string = @"";
-	}
-	else
-	{
-		ns_string = [NSString stringWithUTF8String:value];
-		
-	}
-	
-	[menu_item setTitle:ns_string];
-#endif
-	
-	return 1;
-}
-
-
-static int cocoaSubmenuMapMethod(Ihandle* ih)
-{
-	if(!ih->parent)
-	{
-		NSLog(@"IUP_ERROR cocoaSubmenuMapMethod !ih->parent");
-		return IUP_ERROR;
-	}
-	
-	
-	if (iupMenuIsMenuBar(ih->parent))
-	{
-		/* top level menu used for MENU attribute in IupDialog (a menu bar) */
-		
-//		NSLog(@"cocoaSubmenuMapMethod iupMenuIsMenuBar %@", ih->parent->handle);
-		
-	}
-	else
-	{
-		if(ih->parent)
-		{
-			/* parent is a submenu, it is created here */
-//			NSLog(@"cocoaSubmenuMapMethod ih->parent %@", ih->parent->handle);
-			
-		}
-		else
-		{
-//			NSLog(@"cocoaSubmenuMapMethod else");
-		}
-	}
-	
-	
-	
-	
-	NSObject* parent_object = (NSObject*)ih->parent->handle;
-	if([parent_object isKindOfClass:[NSMenuItem class]])
-	{
-		/* parent is a submenu, it is created here */
-		NSMenu* the_menu = [[NSMenu alloc] init];
-		ih->handle = the_menu;
-		
-		NSMenuItem* parent_menu = (NSMenuItem*)(ih->parent->handle);
-		[parent_menu setSubmenu:the_menu];
-		
-/*
-		NSLog(@"cocoaSubmenuMapMethod iupMenuIsMenuBar %@", ih->parent->handle);
-		NSLog(@"cocoaSubmenuMapMethod created NSMenu %@", the_menu);
-		NSLog(@"[parent_menu setSubmenu:the_menu]");
-*/
-		
-		
-	}
-	else if([parent_object isKindOfClass:[NSMenu class]])
-	{
-		
-
-		
-#if 0
-		NSMenu* the_menu = [[NSMenu alloc] init];
-		ih->handle = the_menu;
-		
-			NSMenu* parent_menu = (NSMenu*)(ih->parent->handle);
-			NSMenuItem* replacement_parent_menu_item = [[NSMenuItem alloc] initWithTitle:[parent_menu title] action:nil keyEquivalent:@""];
-			[parent_menu release];
-			ih->parent->handle = replacement_parent_menu_item;
-#else
-		
-		NSMenu* parent_menu = (NSMenu*)(ih->parent->handle);
-		NSArray* list_of_menu_items = [parent_menu itemArray];
-//		NSInteger number_of_items = [parent_menu numberOfItems];
-		NSMenuItem* found_menu_item = nil;
-		
-		const char* c_title = IupGetAttribute(ih, "TITLE");
-		NSString* ns_string = nil;
-		if(!c_title)
-		{
-			ns_string = @"";
-		}
-		else
-		{
-			ns_string = [NSString stringWithUTF8String:c_title];
-			
-		}
-		
-		for(NSMenuItem* menu_item in list_of_menu_items)
-		{
-			NSString* menu_item_title = [menu_item title];
-			if([menu_item_title isEqualToString:ns_string])
-			{
-				found_menu_item = menu_item;
-				break;
-			}
-		}
-		
-		if(found_menu_item)
-		{
-//			NSLog(@"found menu item for Submenu");
-			ih->handle = found_menu_item;
-			[found_menu_item retain];
-			
-		}
-		else
-		{
-			//		NSMenuItem* menu_item_for_submenu = [[NSMenuItem alloc] initWithTitle:[parent_menu title] action:nil keyEquivalent:@""];
-//			NSMenuItem* menu_item_for_submenu = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(onMenuItemAction:) keyEquivalent:@""];
-			NSMenuItem* menu_item_for_submenu = [[NSMenuItem alloc] init];
-			
-			
-			/* 
-			Okay, now we're going to get tricky.
-			Cocoa has strong conventions about what should be in the menu and where.
-			Currently I'm operating on the assumption that we are going to pre-populate a default menu for IUP and the user is going to add (and maybe remove) items.
-			So we need to search through the existing menu and determine where things go.
-			Current assumption: All normal menu categories are already in the menu. So if the user adds a new one, we must put it in the right place.
-			The Apple Human User Interface Guidelines (HIG) state that new menu entries appear between the View and Window items.
-			View is also sometimes optional, so for robustness, we should scan for Window and insert right before Window. 
-			(This also handles the case where user entries have already been added since we will add after those entries which is expected behavior.)
-			*/
-			NSInteger index_to_insert_at = -1; // start at -1 because we are 1 slot before our stopping marker
-			BOOL found_window_slot = NO;
-			for(NSMenuItem* current_menu_item in [parent_menu itemArray])
-			{
-//				NSLog(@"current_menu_item.title %@", [current_menu_item title]);
-				index_to_insert_at = index_to_insert_at + 1;
-				if(([[current_menu_item title] isEqualToString:NSLocalizedString(@"Window", @"Window")]) || ([[current_menu_item title] isEqualToString:@"Window"]))
-				{
-					found_window_slot = YES;
-					break;
-				}
-			}
-			
-			if(found_window_slot)
-			{
-				[parent_menu insertItem:menu_item_for_submenu atIndex:index_to_insert_at];
-			}
-			else
-			{
-				NSLog(@"Warning: Did not find Window menu to insert category in");
-				[parent_menu addItem:menu_item_for_submenu];
-			}
-			
-			ih->handle = menu_item_for_submenu;
-//			[menu_item_for_submenu setTitle:ns_string];
-			[menu_item_for_submenu setTitleWithMnemonic:ns_string];
-
-			/*
-			// RepresentedObject is to handle the callbacks
-			IupCocoaMenuItemRepresentedObject* represented_object = [[IupCocoaMenuItemRepresentedObject alloc] initWithIhandle:ih];
-			[menu_item_for_submenu setRepresentedObject:represented_object];
-			[represented_object release];
-			[menu_item_for_submenu setTarget:represented_object];
-			[menu_item setAction:@selector(onMenuItemAction:)];
-*/
-
-/*
-			NSLog(@"cocoaSubmenuMapMethod parent_menu %@", parent_menu);
-			NSLog(@"cocoaSubmenuMapMethod replacement_parent_menu_item %@", menu_item_for_submenu);
-			NSLog(@"[parent_menu setSubmenu:the_menu]");
-*/
-		
-		}
-		//[replacement_parent_menu_item setSubmenu:the_menu];
-		
-		
-#endif
-		
-		
-		
-//		NSLog(@"NSMenu swap");
-		//NSCAssert(0==1, @"NSMenu");
-		
-		
-//		return iupBaseTypeVoidMapMethod(ih);
-
-		
-		return IUP_NOERROR;
-	}
-	else
-	{
-		NSLog(@"What menu thing is this?");
-		NSCAssert(0==1, @"What is this?");
-		return IUP_ERROR;
-
-	}
-
-	
-	return IUP_NOERROR;
-}
-
-static void cocoaSubmenuUnMapMethod(Ihandle* ih)
-{
-	NSMenuItem* menu_item = (NSMenuItem*)ih->handle;
-	// do I need to remove it from the parent???
-	ih->handle = NULL;
-	[menu_item release];
-}
-
-
-
-void iupdrvSubmenuInitClass(Iclass* ic)
-{
-  /* Driver Dependent Class functions */
-  ic->Map = cocoaSubmenuMapMethod;
-  ic->UnMap = cocoaSubmenuUnMapMethod;
-#if 0
-
-	/* Common */
-	iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);  /* inherited */
-	
-	/* Visual */
-	iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-	
-	/* IupSubmenu only */
-#endif
-	iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaSubmenuSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-#if 0
-	iupClassRegisterAttribute(ic, "IMAGE", NULL, gtkSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-#endif
-}
-
+/*******************************************************************************************/
+/* SEPARATOR (IupSeparator)                                                                */
+/*******************************************************************************************/
 
 static int cocoaSeparatorMapMethod(Ihandle* ih)
 {
-	NSMenu* parent_menu = (NSMenu*)(ih->parent->handle);
+  if (!ih->parent || !ih->parent->handle)
+    return IUP_ERROR;
 
-	// create new item
-	NSMenuItem* menu_item = [NSMenuItem separatorItem];
-	[menu_item retain];
-	ih->handle = menu_item;
-	[parent_menu addItem:menu_item];
-	
-	return IUP_NOERROR;
+  NSMenu* parent_menu = (NSMenu*)ih->parent->handle;
+  if (![parent_menu isKindOfClass:[NSMenu class]])
+    return IUP_ERROR;
+
+  NSMenuItem* item = [NSMenuItem separatorItem];
+  [item retain]; /* Retain it because ih->handle owns it. */
+  ih->handle = item;
+  ih->serial = iupMenuGetChildId(ih);
+  [item setTag:ih->serial];
+
+  int pos = IupGetChildPos(ih->parent, ih);
+  if (iupMenuIsMenuBar(ih->parent))
+  {
+    pos++;
+  }
+
+  [parent_menu insertItem:item atIndex:pos];
+  objc_setAssociatedObject(item, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
+  return IUP_NOERROR;
 }
 
 static void cocoaSeparatorUnMapMethod(Ihandle* ih)
 {
-	NSMenuItem* menu_item = (NSMenuItem*)ih->handle;
-	// do I need to remove it from the parent???
-	ih->handle = NULL;
-	[menu_item release];
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item) return;
+  NSMenu* parent_menu = [item menu];
+  if (parent_menu)
+    [parent_menu removeItem:item];
+  objc_setAssociatedObject(item, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+  [item release];
+  ih->handle = NULL;
 }
 
 void iupdrvSeparatorInitClass(Iclass* ic)
 {
-#if 1
-  /* Driver Dependent Class functions */
   ic->Map = cocoaSeparatorMapMethod;
   ic->UnMap = cocoaSeparatorUnMapMethod;
-#endif
-	
+}
+
+
+/*******************************************************************************************/
+/* ITEM (IupItem)                                                                          */
+/*******************************************************************************************/
+
+static void cocoaItemSetShortcutFromString(NSMenuItem* item, const char* shortcut_string)
+{
+    if (!item) return;
+
+    if (!shortcut_string || shortcut_string[0] == '\0')
+    {
+        [item setKeyEquivalent:@""];
+        [item setKeyEquivalentModifierMask:0];
+        return;
+    }
+
+    NSUInteger mask = 0;
+    char key_char = 0;
+    char* current_part = iupStrDup(shortcut_string);
+    char* next_token = current_part;
+
+    while(next_token)
+    {
+        char* plus_pos = strchr(next_token, '+');
+        if (plus_pos) {
+            *plus_pos = '\0';
+        }
+
+        if (iupStrEqualNoCase(next_token, "Ctrl"))
+            mask |= NSEventModifierFlagCommand;
+        else if (iupStrEqualNoCase(next_token, "Shift"))
+            mask |= NSEventModifierFlagShift;
+        else if (iupStrEqualNoCase(next_token, "Alt"))
+            mask |= NSEventModifierFlagOption;
+        else if (iupStrEqualNoCase(next_token, "Sys"))
+            mask |= NSEventModifierFlagCommand;
+        else if (strlen(next_token) == 1) {
+            key_char = next_token[0];
+        }
+
+        if (plus_pos) {
+            next_token = plus_pos + 1;
+        } else {
+            next_token = NULL;
+        }
+    }
+    free(current_part);
+
+    if (key_char)
+    {
+        NSString* key_str = [[NSString stringWithFormat:@"%c", key_char] lowercaseString];
+        [item setKeyEquivalent:key_str];
+        [item setKeyEquivalentModifierMask:mask];
+    }
+    else
+    {
+        [item setKeyEquivalent:@""];
+        [item setKeyEquivalentModifierMask:0];
+    }
+}
+
+static int cocoaItemSetTitleAttrib(Ihandle* ih, const char* value)
+{
+    NSMenuItem* item = (NSMenuItem*)ih->handle;
+    if (!item) return 0;
+
+    if (!value) value = "";
+
+    const char* tab_pos = strchr(value, '\t');
+    char* title_part;
+    const char* shortcut_part = NULL;
+
+    if (tab_pos)
+    {
+        int len = tab_pos - value;
+        title_part = (char*)malloc(len + 1);
+        strncpy(title_part, value, len);
+        title_part[len] = '\0';
+        shortcut_part = tab_pos + 1;
+    }
+    else
+    {
+        title_part = iupStrDup(value);
+    }
+
+    cocoaMenuSetTitle(ih, item, title_part);
+    free(title_part);
+
+    if (tab_pos)
+    {
+        cocoaItemSetShortcutFromString(item, shortcut_part);
+    }
+
+    return 1;
+}
+
+static int cocoaItemSetValueAttrib(Ihandle* ih, const char* value)
+{
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item) return 0;
+
+  if (iupAttribGetBoolean(ih->parent, "RADIO"))
+  {
+    cocoaItemUpdateRadioGroup(ih);
+  }
+  else
+  {
+    BOOL desired_checked = iupStrBoolean(value);
+    NSInteger desiredState = desired_checked ? NSControlStateValueOn : NSControlStateValueOff;
+    [item setState:desiredState];
+    iupAttribSet(ih, "VALUE", desired_checked ? "ON" : "OFF");
+    cocoaMenuUpdateImage(ih);
+  }
+
+  return 1;
+}
+
+static char* cocoaItemGetValueAttrib(Ihandle* ih)
+{
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item) return "OFF";
+  return iupStrReturnBoolean([item state] == NSControlStateValueOn);
+}
+
+static int cocoaItemSetActiveAttrib(Ihandle* ih, const char* value)
+{
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item) return 0;
+
+  iupBaseSetActiveAttrib(ih, value);
+
+  BOOL enabled = (BOOL)iupStrBoolean(value);
+  [item setEnabled:enabled];
+
+  cocoaMenuUpdateImage(ih);
+  return 1;
+}
+
+static char* cocoaItemGetActiveAttrib(Ihandle* ih)
+{
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item)
+    return iupBaseGetActiveAttrib(ih);
+
+  return iupStrReturnBoolean([item isEnabled]);
+}
+
+static int cocoaItemSetImageAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  cocoaMenuUpdateImage(ih);
+  return 1;
+}
+
+static int cocoaItemSetHideMarkAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  cocoaMenuUpdateImage(ih);
+  return 1;
+}
+
+static int cocoaItemSetKeyAttrib(Ihandle* ih, const char* value)
+{
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item) return 0;
+
+  cocoaItemSetShortcutFromString(item, value);
+
+  return 1;
+}
+
+static int cocoaItemMapMethod(Ihandle* ih)
+{
+  if (!ih->parent || !ih->parent->handle) return IUP_ERROR;
+  NSMenu* parent_menu = (NSMenu*)ih->parent->handle;
+  if (![parent_menu isKindOfClass:[NSMenu class]]) return IUP_ERROR;
+
+  BOOL isMenuBar = iupMenuIsMenuBar(ih->parent);
+  NSMenu* insertionMenu = parent_menu;
+  NSMenuItem* menuBarWrapperItem = nil;
+
+  if (isMenuBar)
+  {
+    menuBarWrapperItem = [[NSMenuItem alloc] initWithTitle:@"" action:nil keyEquivalent:@""];
+    NSMenu* submenu = [[NSMenu alloc] initWithTitle:@""];
+    [menuBarWrapperItem setSubmenu:submenu];
+    [submenu release];
+    insertionMenu = submenu;
+  }
+
+  NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(onMenuItemAction:) keyEquivalent:@""];
+  ih->handle = item;
+  ih->serial = iupMenuGetChildId(ih);
+
+  IupCocoaMenuItemTarget* target = [[IupCocoaMenuItemTarget alloc] initWithIhandle:ih];
+  [item setTarget:target];
+  [item setTag:ih->serial];
+  objc_setAssociatedObject(item, MENUITEM_TARGET_ASSOCIATED_OBJ_KEY, target, OBJC_ASSOCIATION_RETAIN);
+  objc_setAssociatedObject(item, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
+  [target release];
+
+  if (isMenuBar)
+  {
+    objc_setAssociatedObject(item, MENUBAR_ITEM_WRAPPER_KEY, menuBarWrapperItem, OBJC_ASSOCIATION_RETAIN);
+    int pos = IupGetChildPos(ih->parent, ih) + 1;
+    [parent_menu insertItem:menuBarWrapperItem atIndex:pos];
+    [menuBarWrapperItem release];
+    [insertionMenu insertItem:item atIndex:0];
+  }
+  else
+  {
+    int pos = IupGetChildPos(ih->parent, ih);
+    [insertionMenu insertItem:item atIndex:pos];
+  }
+  return IUP_NOERROR;
+}
+
+static void cocoaItemUnMapMethod(Ihandle* ih)
+{
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item) return;
+
+  NSMenuItem* menuBarWrapperItem = (NSMenuItem*)objc_getAssociatedObject(item, MENUBAR_ITEM_WRAPPER_KEY);
+  if (menuBarWrapperItem)
+  {
+    [[menuBarWrapperItem menu] removeItem:menuBarWrapperItem];
+    [[item menu] removeItem:item];
+    objc_setAssociatedObject(item, MENUBAR_ITEM_WRAPPER_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+  }
+  else
+  {
+    [[item menu] removeItem:item];
+  }
+
+  objc_setAssociatedObject(item, MENUITEM_TARGET_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+  objc_setAssociatedObject(item, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+  [item setTarget:nil];
+  [item release];
+  ih->handle = NULL;
+}
+
+void iupdrvItemInitClass(Iclass* ic)
+{
+  ic->Map = cocoaItemMapMethod;
+  ic->UnMap = cocoaItemUnMapMethod;
+  iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", cocoaItemGetValueAttrib, cocoaItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FONT", NULL, cocoaMenuItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "ACTIVE", cocoaItemGetActiveAttrib, cocoaItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "KEY", NULL, cocoaItemSetKeyAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", NULL, cocoaItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDEMARK", NULL, cocoaItemSetHideMarkAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+}
+
+/*******************************************************************************************/
+/* SUBMENU (IupSubmenu)                                                                    */
+/*******************************************************************************************/
+
+static int cocoaSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
+{
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item) return 0;
+
+  if (!value) value = "";
+
+  const char* tab_pos = strchr(value, '\t');
+  char* title_part;
+
+  if (tab_pos)
+  {
+      int len = tab_pos - value;
+      title_part = (char*)malloc(len + 1);
+      strncpy(title_part, value, len);
+      title_part[len] = '\0';
+  }
+  else
+  {
+      title_part = iupStrDup(value);
+  }
+
+  cocoaMenuSetTitle(ih, item, title_part);
+
+  if ([item hasSubmenu])
+  {
+    NSString* ns_title = [item title];
+    if (!ns_title) ns_title = @"";
+    [[item submenu] setTitle:ns_title];
+  }
+
+  free(title_part);
+  return 1;
+}
+
+static int cocoaSubmenuSetActiveAttrib(Ihandle* ih, const char* value)
+{
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item) return 0;
+
+  iupBaseSetActiveAttrib(ih, value);
+
+  BOOL enabled = (BOOL)iupStrBoolean(value);
+  [item setEnabled:enabled];
+
+  cocoaMenuUpdateImage(ih);
+  return 1;
+}
+
+static char* cocoaSubmenuGetActiveAttrib(Ihandle* ih)
+{
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item)
+    return iupBaseGetActiveAttrib(ih);
+
+  return iupStrReturnBoolean([item isEnabled]);
+}
+
+static int cocoaSubmenuSetImageAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  cocoaMenuUpdateImage(ih);
+  return 1;
+}
+
+static int cocoaSubmenuMapMethod(Ihandle* ih)
+{
+  if (!ih->parent || !ih->parent->handle) return IUP_ERROR;
+  NSMenu* parent_menu = (NSMenu*)ih->parent->handle;
+  if (![parent_menu isKindOfClass:[NSMenu class]]) return IUP_ERROR;
+
+  NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:@"" action:nil keyEquivalent:@""];
+  ih->handle = item;
+  ih->serial = iupMenuGetChildId(ih);
+
+  IupCocoaMenuItemTarget* target = [[IupCocoaMenuItemTarget alloc] initWithIhandle:ih];
+  [item setTarget:target];
+  [item setTag:ih->serial];
+  objc_setAssociatedObject(item, MENUITEM_TARGET_ASSOCIATED_OBJ_KEY, target, OBJC_ASSOCIATION_RETAIN);
+  objc_setAssociatedObject(item, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
+  [target release];
+
+  int pos = IupGetChildPos(ih->parent, ih);
+  if (iupMenuIsMenuBar(ih->parent)) pos++;
+
+  [parent_menu insertItem:item atIndex:pos];
+  return IUP_NOERROR;
+}
+
+static void cocoaSubmenuUnMapMethod(Ihandle* ih)
+{
+  NSMenuItem* item = (NSMenuItem*)ih->handle;
+  if (!item) return;
+  [[item menu] removeItem:item];
+  objc_setAssociatedObject(item, MENUITEM_TARGET_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+  objc_setAssociatedObject(item, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+  [item setTarget:nil];
+  [item setSubmenu:nil];
+  [item release];
+  ih->handle = NULL;
+}
+
+void iupdrvSubmenuInitClass(Iclass* ic)
+{
+  ic->Map = cocoaSubmenuMapMethod;
+  ic->UnMap = cocoaSubmenuUnMapMethod;
+  iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaSubmenuSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FONT", NULL, cocoaMenuItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "ACTIVE", cocoaSubmenuGetActiveAttrib, cocoaSubmenuSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }

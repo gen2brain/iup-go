@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="14313.18" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14313.18"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="IUPTextSpinnerFilesOwner">
+            <connections>
+                <outlet property="stackView" destination="t4z-1C-4FD" id="xq0-qS-Yam"/>
+                <outlet property="stepperObject" destination="PoY-0k-mr2" id="dSS-y0-mwY"/>
+                <outlet property="stepperObjectController" destination="r5d-eX-EXq" id="Ht0-t4-I6b"/>
+                <outlet property="stepperView" destination="jV3-wx-kAT" id="4gc-kY-ESK"/>
+                <outlet property="textField" destination="XTo-28-TNk" id="Wbj-9D-z55"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <stackView orientation="horizontal" alignment="centerY" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" misplaced="YES" id="t4z-1C-4FD">
+            <rect key="frame" x="0.0" y="0.0" width="67" height="22"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <beginningViews>
+                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="XTo-28-TNk" customClass="IupCocoaTextField">
+                    <rect key="frame" x="0.0" y="0.0" width="50" height="22"/>
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="ZKX-Vp-R5j">
+                        <numberFormatter key="formatter" formatterBehavior="default10_4" numberStyle="decimal" minimumIntegerDigits="1" maximumIntegerDigits="2000000000" maximumFractionDigits="3" id="Mm2-Ly-xBV"/>
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <stepper horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jV3-wx-kAT">
+                    <rect key="frame" x="51" y="-2" width="19" height="26"/>
+                    <stepperCell key="cell" continuous="YES" alignment="left" maxValue="100" id="sWN-r3-ndR"/>
+                </stepper>
+            </beginningViews>
+            <visibilityPriorities>
+                <integer value="1000"/>
+                <integer value="1000"/>
+            </visibilityPriorities>
+            <customSpacing>
+                <real value="3.4028234663852886e+38"/>
+                <real value="3.4028234663852886e+38"/>
+            </customSpacing>
+            <point key="canvasLocation" x="10.5" y="307"/>
+        </stackView>
+        <customObject id="PoY-0k-mr2" customClass="IUPStepperObject">
+            <userDefinedRuntimeAttributes>
+                <userDefinedRuntimeAttribute type="number" keyPath="stepperValue">
+                    <integer key="value" value="0"/>
+                </userDefinedRuntimeAttribute>
+            </userDefinedRuntimeAttributes>
+        </customObject>
+        <objectController id="r5d-eX-EXq" customClass="IUPStepperObjectController"/>
+    </objects>
+</document>

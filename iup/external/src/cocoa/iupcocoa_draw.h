@@ -1,32 +1,34 @@
-#ifndef __IUPCOCOA_DRAWCANVAS_H 
-#define __IUPCOCOA_DRAWCANVAS_H
+/** \file
+ * \brief Cocoa Draw Functions
+ *
+ * See Copyright Notice in "iup.h"
+ */
 
-#include <stdbool.h>
+#ifndef __IUPCOCOA_DRAW_H
+#define __IUPCOCOA_DRAW_H
 
-@class IupCocoaCanvasView;
-@class NSGraphicsContext;
+#include "iup_export.h"
+
+typedef struct _IdrawCanvas IdrawCanvas;
 
 struct _IdrawCanvas
 {
-	CGContextRef cgContext;
-	IupCocoaCanvasView* canvasView;
-	NSGraphicsContext* graphicsContext;
-	Ihandle* ih;
-	
-	CGFloat w, h;
-	bool useNativeFocusRing;
-/*
-	int draw_focus;
-	int focus_x1;
-	int focus_y1;
-	int focus_x2;
-	int focus_y2;
-*/
-	CGFloat clip_x1;
-	CGFloat clip_y1;
-	CGFloat clip_x2;
-	CGFloat clip_y2;
+  Ihandle* ih;
+  NSView* canvasView;
+
+  CGContextRef cgContext;         /* on-screen view context */
+  CGContextRef image_cgContext;   /* off-screen buffer context for drawing */
+  CGLayerRef cgLayer;             /* off-screen buffer layer */
+  int release_context;            /* tracks if we called lockFocus */
+  CGFloat w, h;                   /* canvas size */
+
+  /* clip region */
+  CGFloat clip_x1, clip_y1, clip_x2, clip_y2;
+  int clip_state;                 /* 0=no clip, 1=clip active */
+
+  /* deferred focus rect drawing */
+  int draw_focus;
+  CGFloat focus_x1, focus_y1, focus_x2, focus_y2;
 };
 
-#endif /* __IUPCOCOA_DRAWCANVAS_H */
-
+#endif /* __IUPCOCOA_DRAW_H */
