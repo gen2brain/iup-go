@@ -17,7 +17,7 @@ func main() {
 	case 1:
 		iup.Message("New file", filedlg.GetAttribute("VALUE"))
 	case 0:
-		iup.Message("File already exists", filedlg.GetAttribute("VALUE"))
+		iup.Message("File exists", filedlg.GetAttribute("VALUE"))
 	case -1:
 		iup.Message("IupFileDlg", "Operation Canceled")
 	}

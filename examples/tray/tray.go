@@ -30,39 +30,53 @@ func main() {
 			iup.Canvas(),
 			iup.Fill(),
 		),
-	).SetAttributes(map[string]string{
+	).SetHandle("dlg").SetAttributes(map[string]string{
 		"TITLE":     "Tray",
 		"TRAY":      "YES",
 		"TRAYTIP":   "This is a tip at tray",
 		"TRAYIMAGE": "myicon",
 		"ICON":      "myicon",
-		"SIZE":      "200x200",
-	}).SetCallback("TRAYCLICK_CB", iup.TrayClickFunc(trayClickCb)).SetHandle("dlg")
+		"SIZE":      "100x100",
+	})
+
+	dlg.SetCallback("TRAYCLICK_CB", iup.TrayClickFunc(trayClickCb))
+	dlg.SetCallback("CLOSE_CB", iup.CloseFunc(func(ih iup.Ihandle) int {
+		dlg.SetAttribute("HIDETASKBAR", "YES")
+		return iup.IGNORE
+	}))
 
 	iup.Show(dlg)
 	iup.MainLoop()
 }
 
 func trayClickCb(ih iup.Ihandle, but, pressed, dclick int) int {
-	if but == 3 && pressed > 0 {
+	dlg := iup.GetHandle("dlg")
+
+	if but == 3 && pressed == 1 {
 		itemShow := iup.Item("Show").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			iup.Show(iup.GetHandle("dlg"))
+			dlg.SetAttribute("HIDETASKBAR", "NO")
 			return iup.DEFAULT
 		}))
 
 		itemHide := iup.Item("Hide").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			iup.Hide(iup.GetHandle("dlg"))
+			dlg.SetAttribute("HIDETASKBAR", "YES")
 			return iup.DEFAULT
 		}))
 
 		itemExit := iup.Item("Exit").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			iup.GetHandle("dlg").SetAttribute("TRAY", "NO")
-			iup.Hide(iup.GetHandle("dlg"))
-			return iup.CLOSE
+			dlg.SetAttribute("TRAY", "NO")
+			dlg.Destroy()
+			return iup.DEFAULT
 		}))
 
 		menu := iup.Menu(itemShow, itemHide, iup.Separator(), itemExit)
 		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
+		iup.Destroy(menu)
+		return iup.DEFAULT
+	} else if but == 1 && pressed == 1 {
+		dlg.SetAttribute("HIDETASKBAR", "NO")
+		return iup.DEFAULT
 	}
+
 	return iup.DEFAULT
 }

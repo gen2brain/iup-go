@@ -18,7 +18,7 @@ func main() {
 
 	iup.Menu(
 		iup.Submenu("Submenu 1", iup.Menu(
-			iup.Item("Item 1 Checked").SetAttributes("VALUE=ON"),
+			iup.Item("Item 1 Checked").SetAttributes("VALUE=ON, AUTOTOGGLE=YES"),
 			iup.Item("Item 2 Disabled").SetAttributes("ACTIVE=NO"),
 		)),
 		iup.Item("Item 3"),
@@ -37,8 +37,8 @@ func main() {
 	fr2 := iup.Frame(
 		iup.Vbox(
 			iup.Label("Label text"),
-			iup.Label("").SetAttributes("SEPARATOR=HORIZONTAL, MAXSIZE=150, NAME=SAMP_SEP"),
-			iup.Label("").SetAttributes("IMAGE=img1"),
+			iup.Label("").SetAttributes("SEPARATOR=HORIZONTAL, MAXSIZE=150"),
+			iup.Label("").SetAttributes(`IMAGE=img1, TIP="Label with image"`),
 		),
 	).SetAttribute("TITLE", "Label")
 
@@ -55,13 +55,22 @@ func main() {
 		),
 	).SetAttribute("TITLE", "Toggle")
 
-	text1 := iup.Text().SetAttributes(`VALUE="Single Line Text", SIZE=80x`)
-	ml1 := iup.MultiLine().SetAttributes("VALUE=\"Multiline Text\nSecond Line\nThird Line\", EXPAND=YES, SIZE=80x40")
-
 	fr4 := iup.Frame(
 		iup.Vbox(
-			text1,
-			ml1,
+			iup.Text().SetAttributes(`VALUE="Single Line Text", EXPAND=HORIZONTAL`),
+			iup.Fill().SetAttributes("SIZE=1"),
+			iup.MultiLine().SetAttributes(map[string]string{
+				"EXPAND":       "HORIZONTAL",
+				"AUTOHIDE":     "NO",
+				"SCROLLBAR":    "VERTICAL",
+				"VALUE":        "Multiline Text\nSecond Line\nThird Line\nFourth Line\nFifth Line",
+				"VISIBLELINES": "3",
+			}),
+			iup.Frame(
+				iup.Vbox(
+					iup.Text().SetAttributes(`SPIN=YES, SPINVALUE=32`),
+				),
+			).SetAttribute("TITLE", "Spinner"),
 		),
 	).SetAttribute("TITLE", "Text")
 
@@ -80,19 +89,19 @@ func main() {
 	iup.SetAttribute(list2, "3", "Item 3 Text")
 	iup.SetAttribute(list2, "TIP", "List 2")
 
-	//list3 := iup.List()
-	//iup.SetAttribute(list3, "EDITBOX", "YES")
-	//iup.SetAttribute(list3, "VALUE", "3")
-	//iup.SetAttribute(list3, "1", "Item 1 Text")
-	//iup.SetAttribute(list3, "2", "Item 2 Text")
-	//iup.SetAttribute(list3, "3", "Item 3 Text")
-	//iup.SetAttribute(list3, "TIP", "List 3")
+	list3 := iup.List()
+	iup.SetAttribute(list3, "EDITBOX", "YES")
+	iup.SetAttribute(list3, "VALUE", "Item 3 Text")
+	iup.SetAttribute(list3, "1", "Item 1 Text")
+	iup.SetAttribute(list3, "2", "Item 2 Text")
+	iup.SetAttribute(list3, "3", "Item 3 Text")
+	iup.SetAttribute(list3, "TIP", "List 3")
 
 	fr5 := iup.Frame(
 		iup.Vbox(
 			list1,
 			list2,
-			//list3,
+			list3,
 		),
 	).SetAttribute("TITLE", "List")
 
@@ -104,21 +113,71 @@ func main() {
 		fr5,
 	)
 
-	val := iup.Val("")
-	pbar := iup.ProgressBar().SetAttribute("VALUE", "0.5")
+	val := iup.Val("").SetAttribute("VALUE", "0.3")
+
+	pbar := iup.ProgressBar().SetAttribute("VALUE", "0.7")
 
 	tabs := iup.Tabs(
 		iup.Vbox(iup.Label("")),
-		iup.Vbox(iup.Fill()),
-		iup.Vbox(iup.Fill()),
-	).SetAttribute("TABIMAGE1", "img3")
-	iup.SetAttribute(tabs, "TABTITLE0", "Tab Title 0")
-	iup.SetAttribute(tabs, "TABTITLE1", "Tab Title 1")
-	iup.SetAttribute(tabs, "TABTITLE2", "Tab Title 2")
-	iup.SetAttribute(tabs, "RASTERSIZE", "300x50")
+		iup.Vbox(iup.Label("")),
+		iup.Vbox(iup.Label("")),
+	).SetAttributes(map[string]interface{}{
+		"TABIMAGE1": "img3",
+		"TABTITLE0": "Tab Title 0",
+		"TABTITLE1": "Tab Title 1",
+		"TABTITLE2": "Tab Title 2",
+		"SIZE":      "220x20",
+	})
 
-	tree := iup.Tree().SetAttributes("SHOWRENAME=YES, RASTERSIZE=x150")
-	canvas := iup.Canvas().SetAttributes(`BGCOLOR="255 255 255", SCROLLBAR=YES, EXPAND=HORIZONTAL, RASTERSIZE=x100`)
+	canvas := iup.Canvas().SetAttributes(`BGCOLOR="255 255 255", XMIN=0, XMAX=99, POSX=0, DX=10`)
+	canvas.SetCallback("ACTION", iup.CanvasActionFunc(func(ih iup.Ihandle, posx, posy float64) int {
+		iup.DrawBegin(ih)
+		defer iup.DrawEnd(ih)
+
+		w, h := iup.DrawGetSize(ih)
+		cx, cy := w/2, h/2
+
+		ih.SetAttributes(`DRAWCOLOR="204 229 255", DRAWSTYLE=FILL`)
+		iup.DrawRectangle(ih, 0, 0, w, h)
+
+		const (
+			gopherBlue = "125 211 253"
+			colorWhite = "255 255 255"
+			colorBlack = "0 0 0"
+			textColor  = "0 0 50"
+		)
+
+		ih.SetAttributes(`DRAWCOLOR="` + gopherBlue + `", DRAWSTYLE=FILL`)
+		iup.DrawArc(ih, cx-60, cy-80, cx-20, cy-40, 0, 360)
+		iup.DrawArc(ih, cx+20, cy-80, cx+60, cy-40, 0, 360)
+
+		ih.SetAttributes(`DRAWCOLOR="` + gopherBlue + `", DRAWSTYLE=FILL`)
+		iup.DrawArc(ih, cx-80, cy-50, cx+80, cy+70, 0, 360)
+
+		ih.SetAttributes(`DRAWCOLOR="` + colorWhite + `", DRAWSTYLE=FILL`)
+		iup.DrawArc(ih, cx-45, cy-30, cx-15, cy+10, 0, 360)
+		iup.DrawArc(ih, cx+15, cy-30, cx+45, cy+10, 0, 360)
+
+		ih.SetAttributes(`DRAWCOLOR="` + colorBlack + `", DRAWSTYLE=FILL`)
+		iup.DrawArc(ih, cx-33, cy-15, cx-23, cy-5, 0, 360)
+		iup.DrawArc(ih, cx+23, cy-15, cx+33, cy-5, 0, 360)
+
+		ih.SetAttributes(`DRAWCOLOR="` + colorBlack + `", DRAWSTYLE=FILL`)
+		iup.DrawArc(ih, cx-10, cy+15, cx+10, cy+25, 0, 360)
+
+		ih.SetAttributes(`DRAWCOLOR="` + colorWhite + `", DRAWSTYLE=FILL`)
+		iup.DrawRectangle(ih, cx-15, cy+25, cx-1, cy+40)
+		iup.DrawRectangle(ih, cx+1, cy+25, cx+15, cy+40)
+
+		ih.SetAttributes(`DRAWCOLOR="` + textColor + `", DRAWFONT="Helvetica, Bold 16"`)
+		iup.DrawText(ih, "Hello from IUP-Go!", w/2-80, h/2+40, -1, -1)
+
+		return iup.DEFAULT
+	}))
+
+	initTree()
+
+	tree := iup.GetHandle("tree")
 
 	vbox1 := iup.Vbox(
 		hbox1,
@@ -131,23 +190,35 @@ func main() {
 			iup.Frame(iup.Hbox(canvas)).SetAttributes(`TITLE=Canvas`),
 			iup.Frame(iup.Hbox(tree)).SetAttributes(`TITLE=Tree`),
 		),
-	).SetAttributes("MARGIN=5x5, GAP=5")
+	).SetAttributes("MARGIN=5x5, GAP=5").SetHandle("vbox1")
 
 	dlg := iup.Dialog(vbox1).SetAttributes(`TITLE="Sample", MENU=menu, ICON=img1`)
 	dlg.SetHandle("dlg")
 
-	iup.Map(dlg)
-
-	iup.SetAttribute(tree, "TITLE0", "Figures")
-	iup.SetAttribute(tree, "ADDLEAF0", "Other")
-	iup.SetAttribute(tree, "ADDBRANCH1", "triangle")
-	iup.SetAttribute(tree, "ADDLEAF2", "equilateral")
-	iup.SetAttribute(tree, "ADDLEAF3", "isoceles")
-	iup.SetAttribute(tree, "ADDLEAF4", "scalenus")
-
 	iup.Show(dlg)
 
+	initTreeAttributes()
+
 	iup.MainLoop()
+}
+
+func initTree() {
+	tree := iup.Tree().SetHandle("tree")
+	iup.SetAttribute(tree, "RASTERSIZE", "x150")
+	iup.SetAttribute(tree, "SHOWRENAME", "YES")
+}
+
+func initTreeAttributes() {
+	tree := iup.GetHandle("tree")
+
+	tree.SetAttributes(map[string]string{
+		"TITLE0":     "Figures",
+		"ADDLEAF0":   "Other",
+		"ADDBRANCH1": "triangle",
+		"ADDLEAF2":   "equilateral",
+		"ADDLEAF3":   "isoceles",
+		"ADDLEAF4":   "scalenus",
+	})
 }
 
 var imgLogoTecgraf = []byte{

@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
-	"runtime/cgo"
 
 	"github.com/gen2brain/iup-go/iup"
 )
@@ -36,10 +36,13 @@ func kAnyCb(ih iup.Ihandle, c int) int {
 	list := iup.GetHandle("list")
 	text := iup.GetHandle("text")
 
-	if c == iup.K_DOWN || c == iup.K_UP {
+	if iup.GetFocus() != list && (c == iup.K_DOWN || c == iup.K_UP) {
 		iup.SetFocus(list)
 		list.SetAttribute("VALUE", 1)
-	} else if c == iup.K_ESC || c == iup.K_CR {
+		return iup.IGNORE
+	}
+
+	if c == iup.K_ESC || c == iup.K_CR {
 		iup.Hide(list)
 		iup.SetFocus(text)
 		text.SetAttribute("SELECTION", "NONE")
@@ -55,35 +58,66 @@ func listValueChangedCb(ih iup.Ihandle) int {
 }
 
 func textValueChangedCb(ih iup.Ihandle) int {
+	list := iup.GetHandle("list")
 	text := iup.GetHandle("text")
+
 	if len(text.GetAttribute("VALUE")) < 3 {
 		iup.Hide(iup.GetHandle("list"))
 		return iup.DEFAULT
 	}
 
-	go func() {
-		resp, err := http.Get("https://en.wikipedia.org/w/api.php?action=opensearch&search=" + url.QueryEscape(text.GetAttribute("VALUE")))
+	query := url.QueryEscape(text.GetAttribute("VALUE"))
+
+	go func(h iup.Ihandle, q string) {
+		client := &http.Client{}
+
+		req, err := http.NewRequest("GET", "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search="+q, nil)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		var results [][]string
-		json.NewDecoder(resp.Body).Decode(&results)
+		req.Header.Set("User-Agent", "Golang_Example/1.0")
 
-		h := cgo.NewHandle(results[1])
-		iup.PostMessage(iup.GetHandle("list"), "", 0, 1.0, h)
-	}()
+		res, err := client.Do(req)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		defer res.Body.Close()
+
+		var ret []any
+		err = json.NewDecoder(res.Body).Decode(&ret)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		items := make([]string, 0)
+		for n, item := range ret {
+			if n != 1 {
+				continue
+			}
+			switch it := item.(type) {
+			case []interface{}:
+				for _, val := range it {
+					items = append(items, val.(string))
+				}
+			}
+		}
+
+		iup.PostMessage(h, "", 0, items)
+	}(list, query)
 
 	return iup.DEFAULT
 }
 
-func messageCb(ih iup.Ihandle, s string, i int, f float64, p *cgo.Handle) int {
+func messageCb(ih iup.Ihandle, s string, i int, p any) int {
 	text := iup.GetHandle("text")
 	list := iup.GetHandle("list")
 
-	results := p.Value().([]string)
-	defer p.Delete()
+	results := p.([]string)
 
 	if len(results) == 0 {
 		iup.Hide(list)

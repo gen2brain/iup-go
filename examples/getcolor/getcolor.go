@@ -11,6 +11,6 @@ func main() {
 	defer iup.Close()
 
 	if ret, color := iup.GetColor(100, 100); ret != 0 {
-		iup.Message("Color", fmt.Sprintf("RGB = %v %v %v", color.R, color.G, color.B))
+		iup.Message("Color", fmt.Sprintf("RGBA = %v %v %v %v", color.R, color.G, color.B, color.A))
 	}
 }
