@@ -16,10 +16,10 @@ func main() {
 	case 0:
 		iup.Message("File already exists", file)
 	case -1:
-		iup.Message("IupFileDlg", "Operation canceled")
+		iup.Message("FileDlg", "Operation canceled")
 	case -2:
-		iup.Message("IupFileDlg", "Allocation error")
+		iup.Message("FileDlg", "Allocation error")
 	case -3:
-		iup.Message("IupFileDlg", "Invalid parameter")
+		iup.Message("FileDlg", "Invalid parameter")
 	}
 }

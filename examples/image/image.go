@@ -28,9 +28,13 @@ func main() {
 	lbl.SetAttribute("IMAGE", "myimage")
 
 	dlg := iup.Dialog(
-		iup.Hbox(
+		iup.Vbox(
 			iup.Fill(),
-			lbl,
+			iup.Hbox(
+				iup.Fill(),
+				lbl,
+				iup.Fill(),
+			),
 			iup.Fill(),
 		),
 	).SetAttribute("TITLE", "Image")

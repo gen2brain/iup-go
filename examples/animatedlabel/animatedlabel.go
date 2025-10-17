@@ -35,13 +35,9 @@ func main() {
 	lbl := iup.AnimatedLabel(animation)
 	lbl.SetAttribute("START", "YES")
 
-	dlg := iup.Dialog(
-		iup.Vbox(
-			lbl,
-		),
-	)
+	dlg := iup.Dialog(lbl)
 
-	dlg.SetAttribute("TITLE", "AnimatedLabel")
+	dlg.SetAttribute("TITLE", "Animated Label")
 
 	iup.Show(dlg)
 	iup.MainLoop()

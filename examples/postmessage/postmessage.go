@@ -8,7 +8,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -23,49 +23,55 @@ func main() {
 	labelImage := iup.Label("").SetHandle("label").SetAttribute("IMAGE", "xkcd")
 	button := iup.Button("Random XKCD").SetHandle("button")
 
-	vbox := iup.Vbox(labelImage, button).SetAttributes(map[string]string{
+	vbox := iup.Vbox(iup.Fill(), labelImage, button, iup.Fill()).SetAttributes(map[string]string{
 		"ALIGNMENT": "ACENTER",
 		"GAP":       "10",
 		"MARGIN":    "10x10",
 	})
 
-	dlg := iup.Dialog(vbox).SetAttribute("TITLE", "PostMessage")
-	dlg.SetAttribute("RESIZE", "NO")
-	dlg.SetHandle("dlg")
+	hbox := iup.Hbox(iup.Fill(), vbox, iup.Fill()).SetAttribute("ALIGNMENT", "ACENTER")
 
-	labelImage.SetCallback("POSTMESSAGE_CB", iup.PostMessageFunc(messageCb))
+	dlg := iup.Dialog(hbox).SetAttribute("TITLE", "PostMessage").SetHandle("dlg")
+	dlg.SetCallback("MAP_CB", iup.MapFunc(func(ih iup.Ihandle) int {
+		buttonCb(button)
+		return iup.DEFAULT
+	}))
+
 	button.SetCallback("ACTION", iup.ActionFunc(buttonCb))
+	labelImage.SetCallback("POSTMESSAGE_CB", iup.PostMessageFunc(messageCb))
 
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
-
-	buttonCb(button)
 
 	iup.MainLoop()
 }
 
 func messageCb(ih iup.Ihandle, s string, i int, p any) int {
+	defer iup.GetHandle("button").SetAttribute("ACTIVE", "YES")
+
 	b := p.([]byte)
 	img, _, err := image.Decode(bytes.NewReader(b))
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return iup.DEFAULT
 	}
 
-	iup.ImageFromImage(img).SetHandle("xkcd")
+	dlg := iup.GetHandle("dlg")
+	dlg.SetAttribute("RASTERSIZE", fmt.Sprintf("%dx%d", img.Bounds().Dx()+100, img.Bounds().Dy()+200))
+
+	iup.Destroy(iup.GetHandle("xkcd"))
+	iup.ImageFromImage(img).SetHandle("xkcd").SetAttribute("IMAGE", "xkcd")
 
 	iup.GetHandle("label").SetAttribute("TIP", s)
 	iup.GetHandle("label").SetAttribute("IMAGE", "xkcd")
-	iup.GetHandle("dlg").SetAttribute("RASTERSIZE", fmt.Sprintf("%dx%d", img.Bounds().Dx()+20, img.Bounds().Dy()+80))
 
-	iup.GetHandle("button").SetAttribute("ACTIVE", "YES")
-
-	iup.Refresh(iup.GetHandle("dlg"))
-	iup.ShowXY(iup.GetHandle("dlg"), iup.CENTER, iup.CENTER)
+	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
 
 	return iup.DEFAULT
 }
 
 func buttonCb(ih iup.Ihandle) int {
 	ih.SetAttribute("ACTIVE", "NO")
+	label := iup.GetHandle("label")
 
 	type xkcd struct {
 		Id    int64  `json:"num,omitempty"`
@@ -75,7 +81,7 @@ func buttonCb(ih iup.Ihandle) int {
 	}
 
 	go func() {
-		random := rand.Intn(2800-1) + 1
+		random := rand.Intn(3150-1) + 1
 
 		res, err := http.Get(fmt.Sprintf("https://xkcd.com/%d/info.0.json", random))
 		if err != nil {
@@ -98,13 +104,13 @@ func buttonCb(ih iup.Ihandle) int {
 		}
 		defer img.Body.Close()
 
-		b, err := ioutil.ReadAll(img.Body)
+		b, err := io.ReadAll(img.Body)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		iup.PostMessage(iup.GetHandle("label"), ret.Alt, 0, b)
+		iup.PostMessage(label, ret.Alt, 0, b)
 	}()
 
 	return iup.DEFAULT
