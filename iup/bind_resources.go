@@ -62,6 +62,17 @@ func ImageFromImage(i image.Image) Ihandle {
 	return h
 }
 
+// ImageGetHandle returns an IupImage handle from a name.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupimagegethandle.html
+func ImageGetHandle(name string) Ihandle {
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	h := mkih(C.IupImageGetHandle(cName))
+	return h
+}
+
 // NextField shifts the focus to the next element that can have the focus.
 // It is relative to the given element and does not depend on the element currently with the focus.
 //
@@ -163,7 +174,7 @@ func GetHandle(name string) Ihandle {
 	return mkih(C.IupGetHandle(cName))
 }
 
-// GetName Returns a name of an interface element, if the element has an associated name using SetHandle.
+// GetName returns a name of an interface element, if the element has an associated name using SetHandle.
 // Notice that a handle can have many names. GetName will return the last name set.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetname.html

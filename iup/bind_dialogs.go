@@ -157,6 +157,7 @@ func GetColor(x, y int) (ret int, col color.RGBA) {
 	col.R = r
 	col.G = g
 	col.B = b
+	col.A = 255
 	return
 }
 
