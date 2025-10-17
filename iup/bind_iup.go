@@ -1,6 +1,7 @@
 package iup
 
 import (
+	"runtime"
 	"unsafe"
 )
 
@@ -9,6 +10,10 @@ import (
 #include "iup.h"
 */
 import "C"
+
+func init() {
+	runtime.LockOSThread()
+}
 
 // Open initializes the IUP toolkit.
 // Must be called before any other IUP function.

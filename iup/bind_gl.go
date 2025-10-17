@@ -1,4 +1,4 @@
-//go:build !darwin && gl
+//go:build gl
 
 package iup
 

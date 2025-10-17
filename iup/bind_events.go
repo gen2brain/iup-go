@@ -57,7 +57,7 @@ func ExitLoop() {
 	C.IupExitLoop()
 }
 
-// PostMessage sends data to an element, that will be received by a callback when the main loop regain control.
+// PostMessage sends data to an element, that will be received by a callback when the main loop regains control.
 // It is expected to be thread safe.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iuppostmessage.html
