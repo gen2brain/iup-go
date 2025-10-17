@@ -132,7 +132,18 @@ void iupdrvGetFullSize(int *width, int *height)
 
 int iupdrvGetScreenDepth(void)
 {
-  return (int)[[NSScreen mainScreen] bitsPerPixel];
+  NSScreen* screen = [NSScreen mainScreen];
+  if (screen)
+  {
+    NSDictionary* deviceDescription = [screen deviceDescription];
+    NSNumber* bitsPerSample = [deviceDescription objectForKey:@"NSDeviceBitsPerSample"];
+    if (bitsPerSample)
+    {
+      int bits = [bitsPerSample intValue];
+      return bits * 4;
+    }
+  }
+  return 32;
 }
 
 double iupdrvGetScreenDpi(void)
