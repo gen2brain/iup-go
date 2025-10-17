@@ -197,8 +197,8 @@ static void iThreadDestroyMethod(Ihandle* ih)
   g_mutex_free(mutex);
 #else
   g_mutex_clear(mutex);
-#endif
   free(mutex);
+#endif
 #ifndef OLD_GLIB
   if (thread) g_thread_unref(thread);
 #endif
