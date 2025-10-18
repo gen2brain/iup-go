@@ -1102,6 +1102,43 @@ static int gtkTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
   return 0;
 }
 
+static GdkPixbuf* gtkTreeGetThemeIcon(Ihandle* ih, const char* icon_name, int size)
+{
+  GdkPixbuf* pixbuf = NULL;
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+  /* GTK 3: Use icon theme */
+  GtkIconTheme* icon_theme = gtk_icon_theme_get_default();
+  GError* error = NULL;
+
+  pixbuf = gtk_icon_theme_load_icon(icon_theme, icon_name, size,
+                                    GTK_ICON_LOOKUP_USE_BUILTIN, &error);
+  if (error)
+  {
+    g_error_free(error);
+    pixbuf = NULL;
+  }
+  (void)ih;
+#else
+  /* GTK 2: Use stock icons - convert icon name to stock id */
+  const char* stock_id = NULL;
+
+  if (strcmp(icon_name, "text-x-generic") == 0)
+    stock_id = GTK_STOCK_FILE;
+  else if (strcmp(icon_name, "folder") == 0 || strcmp(icon_name, "folder-open") == 0)
+    stock_id = GTK_STOCK_DIRECTORY;
+
+  if (stock_id && ih->handle)
+  {
+    pixbuf = gtk_widget_render_icon(ih->handle, stock_id,
+                                   GTK_ICON_SIZE_MENU, NULL);
+  }
+  (void)size;
+#endif
+
+  return pixbuf;
+}
+
 static char* gtkTreeGetParentAttrib(Ihandle* ih, int id)
 {
   GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle));
@@ -2843,7 +2880,7 @@ static int gtkTreeMapMethod(Ihandle* ih)
   GtkTreeSelection* selection;
   GtkTreeViewColumn *column;
 
-  store = gtk_tree_store_new(IUPGTK_NODE_LAST_DATA, 
+  store = gtk_tree_store_new(IUPGTK_NODE_LAST_DATA,
     GDK_TYPE_PIXBUF,                 /* IUPGTK_NODE_IMAGE */
     G_TYPE_BOOLEAN,                  /* IUPGTK_NODE_HAS_IMAGE */
     GDK_TYPE_PIXBUF,                 /* IUPGTK_NODE_IMAGE_EXPANDED */
@@ -2878,9 +2915,9 @@ static int gtkTreeMapMethod(Ihandle* ih)
 
     if(ih->data->show_toggle==2)
     {
-      gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_chk, "active", IUPGTK_NODE_CHECK, 
-                                                                            "inconsistent", IUPGTK_NODE_3STATE, 
-                                                                            "visible", IUPGTK_NODE_TOGGLEVISIBLE, 
+      gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_chk, "active", IUPGTK_NODE_CHECK,
+                                                                            "inconsistent", IUPGTK_NODE_3STATE,
+                                                                            "visible", IUPGTK_NODE_TOGGLEVISIBLE,
                                                                             NULL);
       g_signal_connect(G_OBJECT(ih->handle), "button-press-event",  G_CALLBACK(gtkTreeToggle3StateButtonEvent), ih);
       g_signal_connect(G_OBJECT(ih->handle), "button-release-event",G_CALLBACK(gtkTreeToggle3StateButtonEvent), ih);
@@ -2889,8 +2926,8 @@ static int gtkTreeMapMethod(Ihandle* ih)
     }
     else
     {
-      gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_chk, "active", IUPGTK_NODE_CHECK, 
-                                                                            "visible", IUPGTK_NODE_TOGGLEVISIBLE, 
+      gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_chk, "active", IUPGTK_NODE_CHECK,
+                                                                            "visible", IUPGTK_NODE_TOGGLEVISIBLE,
                                                                             NULL);
       g_signal_connect(G_OBJECT(renderer_chk), "toggled", G_CALLBACK(gtkTreeToggled), ih);
    }
@@ -2902,7 +2939,7 @@ static int gtkTreeMapMethod(Ihandle* ih)
   gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(column), renderer_img, FALSE);
   gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_img, "pixbuf", IUPGTK_NODE_IMAGE,
                                                           "pixbuf-expander-open", IUPGTK_NODE_IMAGE_EXPANDED,
-                                                        "pixbuf-expander-closed", IUPGTK_NODE_IMAGE, 
+                                                        "pixbuf-expander-closed", IUPGTK_NODE_IMAGE,
                                                             NULL);
   iupAttribSet(ih, "_IUPGTK_RENDERER_IMG", (char*)renderer_img);
 
@@ -2911,7 +2948,7 @@ static int gtkTreeMapMethod(Ihandle* ih)
   gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_txt, "text", IUPGTK_NODE_TITLE,
                                                                  "is-expander", IUPGTK_NODE_KIND,
                                                                    "font-desc", IUPGTK_NODE_FONT,
-                                                              "foreground-gdk", IUPGTK_NODE_COLOR, 
+                                                              "foreground-gdk", IUPGTK_NODE_COLOR,
                                                                   NULL);
   iupAttribSet(ih, "_IUPGTK_RENDERER_TEXT", (char*)renderer_txt);
 
@@ -2941,7 +2978,7 @@ static int gtkTreeMapMethod(Ihandle* ih)
 
   gtk_container_add((GtkContainer*)scrolled_window, ih->handle);
   gtk_widget_show((GtkWidget*)scrolled_window);
-  gtk_scrolled_window_set_shadow_type(scrolled_window, GTK_SHADOW_IN); 
+  gtk_scrolled_window_set_shadow_type(scrolled_window, GTK_SHADOW_IN);
 
   gtk_scrolled_window_set_policy(scrolled_window, GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
@@ -2956,7 +2993,7 @@ static int gtkTreeMapMethod(Ihandle* ih)
 
   /* callbacks */
   g_signal_connect(selection,            "changed", G_CALLBACK(gtkTreeSelectionChanged), ih);
-  
+
   g_signal_connect(renderer_txt, "editing-started", G_CALLBACK(gtkTreeCellTextEditingStarted), ih);
   g_signal_connect(renderer_txt,          "edited", G_CALLBACK(gtkTreeCellTextEdited), ih);
 
@@ -2986,14 +3023,48 @@ static int gtkTreeMapMethod(Ihandle* ih)
   gtk_widget_realize(ih->handle);
 
   /* Initialize the default images */
-  ih->data->def_image_leaf = iupImageGetImage(iupAttribGetStr(ih, "IMAGELEAF"), ih, 0, NULL);
-  ih->data->def_image_collapsed = iupImageGetImage(iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED"), ih, 0, NULL);
-  ih->data->def_image_expanded = iupImageGetImage(iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED"), ih, 0, NULL);
+  {
+    char* img_name = iupAttribGetStr(ih, "IMAGELEAF");
+    if (img_name && !iupStrEqualNoCase(img_name, "IMGLEAF"))
+      ih->data->def_image_leaf = iupImageGetImage(img_name, ih, 0, NULL);
+    else
+    {
+      ih->data->def_image_leaf = gtkTreeGetThemeIcon(ih, "text-x-generic", 16);
+      if (ih->data->def_image_leaf)
+        iupAttribSet(ih, "_IUPGTK_THEMED_LEAF", (char*)ih->data->def_image_leaf);
+    }
+  }
+
+  {
+    char* img_name = iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED");
+    if (img_name && !iupStrEqualNoCase(img_name, "IMGCOLLAPSED"))
+      ih->data->def_image_collapsed = iupImageGetImage(img_name, ih, 0, NULL);
+    else
+    {
+      ih->data->def_image_collapsed = gtkTreeGetThemeIcon(ih, "folder", 16);
+      if (ih->data->def_image_collapsed)
+        iupAttribSet(ih, "_IUPGTK_THEMED_COLLAPSED", (char*)ih->data->def_image_collapsed);
+    }
+  }
+
+  {
+    char* img_name = iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED");
+    if (img_name && !iupStrEqualNoCase(img_name, "IMGEXPANDED"))
+      ih->data->def_image_expanded = iupImageGetImage(img_name, ih, 0, NULL);
+    else
+    {
+      ih->data->def_image_expanded = gtkTreeGetThemeIcon(ih, "folder-open", 16);
+      if (!ih->data->def_image_expanded)
+        ih->data->def_image_expanded = gtkTreeGetThemeIcon(ih, "folder", 16);
+      if (ih->data->def_image_expanded)
+        iupAttribSet(ih, "_IUPGTK_THEMED_EXPANDED", (char*)ih->data->def_image_expanded);
+    }
+  }
 
   if (iupAttribGetInt(ih, "ADDROOT"))
     iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
 
-  /* configure for DRAG&DROP of files */
+  /* configure for DROP of files */
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
@@ -3009,7 +3080,22 @@ static int gtkTreeMapMethod(Ihandle* ih)
 
 static void gtkTreeUnMapMethod(Ihandle* ih)
 {
+  GdkPixbuf* pixbuf;
+
   ih->data->node_count = 0;
+
+  /* Free themed icons if they were created */
+  pixbuf = (GdkPixbuf*)iupAttribGet(ih, "_IUPGTK_THEMED_LEAF");
+  if (pixbuf)
+    g_object_unref(pixbuf);
+
+  pixbuf = (GdkPixbuf*)iupAttribGet(ih, "_IUPGTK_THEMED_COLLAPSED");
+  if (pixbuf)
+    g_object_unref(pixbuf);
+
+  pixbuf = (GdkPixbuf*)iupAttribGet(ih, "_IUPGTK_THEMED_EXPANDED");
+  if (pixbuf)
+    g_object_unref(pixbuf);
 
   iupdrvBaseUnMapMethod(ih);
 }
