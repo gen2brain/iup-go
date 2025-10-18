@@ -49,22 +49,9 @@ func main() {
 			return iup.DEFAULT
 		}
 
-		// Log OpenGL information
-		version := gl.GoStr(gl.GetString(gl.VERSION))
-		vendor := gl.GoStr(gl.GetString(gl.VENDOR))
-		renderer := gl.GoStr(gl.GetString(gl.RENDERER))
-		glslVersion := gl.GoStr(gl.GetString(gl.SHADING_LANGUAGE_VERSION))
-
-		log.Printf("OpenGL Version: %s\n", version)
-		log.Printf("OpenGL Vendor: %s\n", vendor)
-		log.Printf("OpenGL Renderer: %s\n", renderer)
-		log.Printf("GLSL Version: %s\n", glslVersion)
-
-		// Check if we got valid OpenGL context
-		if version == "" {
-			log.Println("ERROR: Invalid OpenGL context - no version string")
-			return iup.DEFAULT
-		}
+		log.Printf("OpenGL Version: %s\n", iup.GetGlobal("GL_VERSION"))
+		log.Printf("OpenGL Vendor: %s\n", iup.GetGlobal("GL_VENDOR"))
+		log.Printf("OpenGL Renderer: %s\n", iup.GetGlobal("GL_RENDERER"))
 
 		// Initialize OpenGL resources
 		var initSuccess bool

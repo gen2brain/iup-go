@@ -42,10 +42,6 @@ func main() {
 func mapCb(ih iup.Ihandle) int {
 	iup.GLMakeCurrent(ih)
 
-	if errStr := iup.GetAttribute(ih, "WARNING"); errStr != "" {
-		log.Printf("GL Canvas Warning: %s\n", errStr)
-	}
-
 	if errStr := iup.GetAttribute(ih, "ERROR"); errStr != "" {
 		log.Printf("GL Canvas Error: %s\n", errStr)
 		return iup.DEFAULT
@@ -55,6 +51,10 @@ func mapCb(ih iup.Ihandle) int {
 		log.Printf("Failed to initialize OpenGL: %v\n", err)
 		return iup.DEFAULT
 	}
+
+	log.Printf("OpenGL Version: %s\n", iup.GetGlobal("GL_VERSION"))
+	log.Printf("OpenGL Vendor: %s\n", iup.GetGlobal("GL_VENDOR"))
+	log.Printf("OpenGL Renderer: %s\n", iup.GetGlobal("GL_RENDERER"))
 
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 
