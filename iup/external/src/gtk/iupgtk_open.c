@@ -4,12 +4,29 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>          
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>          
+#include <string.h>
 #include <locale.h>
 
 #include <gtk/gtk.h>
+#include <gdk/gdk.h>
+
+#ifdef GDK_WINDOWING_X11
+#include <gdk/gdkx.h>
+#endif
+
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#endif
+
+#ifdef GDK_WINDOWING_WIN32
+#include <gdk/gdkwin32.h>
+#endif
+
+#ifdef GDK_WINDOWING_QUARTZ
+#include <gdk/gdkquartz.h>
+#endif
 
 #include "iup.h"
 
@@ -21,206 +38,330 @@
 
 #include "iupgtk_drv.h"
 
-
-#if defined(GDK_NULL)   /******************************** Dummy definitions ************************************/
-
-char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
-{
-  return NULL;
-}
-
-const char* iupgtkGetNativeWindowHandleName(void)
-{
-  return "????";
-}
-
-const char* iupgtkGetNativeFontIdName(void)
-{
-  return "????";
-}
-
-void* iupgtkGetNativeGraphicsContext(GtkWidget* widget)
-{
-  return NULL;
-}
-
-void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
-{
-}
-
-IUP_SDK_API void* iupdrvGetDisplay(void)
-{
-  return NULL;
-}
-
-void iupgtkPushVisualAndColormap(void* visual, void* colormap)
-{
-}
-
-static void gtkSetGlobalAttrib(void)
-{
-}
-
-#elif defined(GDK_WINDOWING_QUARTZ)   /******************************** MacOSX ************************************/
-#include <gdk/gdk.h>
-
-char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
-{
-  GdkWindow* window = iupgtkGetWindow(widget);
-  if (window)
-    return (char*)window;
-  else
-    return NULL;
-}
-
-const char* iupgtkGetNativeWindowHandleName(void)
-{
-  return "????";
-}
-
-const char* iupgtkGetNativeFontIdName(void)
-{
-  return "????";
-}
-
-void* iupgtkGetNativeGraphicsContext(GtkWidget* widget)
-{
-  return (void*)gdk_gc_new((GdkDrawable*)iupgtkGetWindow(widget));
-}
-
-void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
-{
-  g_object_unref(gc);
-  (void)widget;
-}
-
-IUP_SDK_API void* iupdrvGetDisplay(void)
-{
-  GdkDisplay* display = gdk_display_get_default();
-  return display;
-}
-
-void iupgtkPushVisualAndColormap(void* visual, void* colormap)
-{
+#if defined(GDK_WINDOWING_WIN32)
 #if GTK_CHECK_VERSION(3, 0, 0)
-  (void)visual;
-  (void)colormap;
+#define IUPGTK_GDK_WINDOW_HWND(w) gdk_win32_window_get_handle(w)
 #else
-  GdkColormap* gdk_colormap;
-  GdkVisual *gdk_visual = gdk_visual_get_best();
-
-  gdk_colormap = gdk_colormap_new(gdk_visual, FALSE);
-
-  gtk_widget_push_colormap(gdk_colormap);
-
-  /* gtk_widget_push_visual is now deprecated */
+#define IUPGTK_GDK_WINDOW_HWND(w) GDK_WINDOW_HWND(w)
 #endif
-}
+#endif
 
-static void gtkSetGlobalAttrib(void)
-{
-}
+#if defined(GDK_WINDOWING_X11)
+#if GTK_CHECK_VERSION(3, 0, 0)
+#define IUPGTK_GDK_WINDOW_XID(w) gdk_x11_window_get_xid(w)
+#define IUPGTK_GDK_DISPLAY_XDISPLAY(d) gdk_x11_display_get_xdisplay(d)
+#else
+#define IUPGTK_GDK_WINDOW_XID(w) GDK_WINDOW_XID(w)
+#define IUPGTK_GDK_DISPLAY_XDISPLAY(d) GDK_DISPLAY_XDISPLAY(d)
+#endif
+#endif
 
-#elif defined(GDK_WINDOWING_WIN32)   /******************************** Windows ************************************/
-#include <gdk/gdkwin32.h>
 
 char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
 {
   GdkWindow* window = iupgtkGetWindow(widget);
-  if (window)
-    return (char*)GDK_WINDOW_HWND(window);
-  else
+  if (!window)
     return NULL;
-}
 
-const char* iupgtkGetNativeWindowHandleName(void)
-{
-  return "HWND";
-}
+#if GTK_CHECK_VERSION(3, 0, 0)
+  /* GTK3+: Use runtime checks for backend detection */
 
-const char* iupgtkGetNativeFontIdName(void)
-{
-  return "HFONT";
-}
+#ifdef GDK_WINDOWING_X11
+  if (GDK_IS_X11_WINDOW(window))
+  {
+    return (char*)IUPGTK_GDK_WINDOW_XID(window);
+  }
+#endif
 
-void* iupgtkGetNativeGraphicsContext(GtkWidget* widget)
-{
-  return GetDC(GDK_WINDOW_HWND(iupgtkGetWindow(widget)));
-}
+#ifdef GDK_WINDOWING_WAYLAND
+  if (GDK_IS_WAYLAND_WINDOW(window))
+  {
+    /* Return wl_surface. */
+    return (char*)gdk_wayland_window_get_wl_surface(window);
+  }
+#endif
 
-void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
-{
-  ReleaseDC(GDK_WINDOW_HWND(iupgtkGetWindow(widget)), (HDC)gc);
-}
+#ifdef GDK_WINDOWING_WIN32
+  if (GDK_IS_WIN32_WINDOW(window))
+  {
+    return (char*)IUPGTK_GDK_WINDOW_HWND(window);
+  }
+#endif
 
-IUP_SDK_API void* iupdrvGetDisplay(void)
-{
+#ifdef GDK_WINDOWING_QUARTZ
+  if (GDK_IS_QUARTZ_WINDOW(window))
+  {
+    return (char*)window;
+  }
+#endif
+
+#else
+  /* GTK2: Use compile-time detection since runtime checks are not available */
+
+#ifdef GDK_WINDOWING_X11
+  return (char*)IUPGTK_GDK_WINDOW_XID(window);
+#elif defined(GDK_WINDOWING_WIN32)
+  return (char*)IUPGTK_GDK_WINDOW_HWND(window);
+#elif defined(GDK_WINDOWING_QUARTZ)
+  return (char*)window;
+#endif
+
+#endif /* GTK_CHECK_VERSION(3, 0, 0) */
+
+  /* Fallback or unsupported backend */
   return NULL;
 }
 
-void iupgtkPushVisualAndColormap(void* visual, void* colormap)
-{
-  (void)visual;
-  (void)colormap;
-}
-
-static void gtkSetGlobalAttrib(void)
-{
-}
-
-#elif defined(GDK_WINDOWING_X11)          /******************************** X11 ************************************/
-#include <gdk/gdkx.h>
-
-char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
-{
-  GdkWindow* window = iupgtkGetWindow(widget);
-  if (window)
-    return (char*)GDK_WINDOW_XID(window);
-  else
-    return NULL;
-}
-
 const char* iupgtkGetNativeWindowHandleName(void)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
+  GdkDisplay* display = gdk_display_get_default();
+  if (!display) return "NULL";
+
+#ifdef GDK_WINDOWING_X11
+  if (GDK_IS_X11_DISPLAY(display))
+  {
+    return "XWINDOW";
+  }
+#endif
+
+#ifdef GDK_WINDOWING_WAYLAND
+  if (GDK_IS_WAYLAND_DISPLAY(display))
+  {
+    return "WL_SURFACE";
+  }
+#endif
+
+#ifdef GDK_WINDOWING_WIN32
+  if (GDK_IS_WIN32_DISPLAY(display))
+  {
+    return "HWND";
+  }
+#endif
+
+#ifdef GDK_WINDOWING_QUARTZ
+  if (GDK_IS_QUARTZ_DISPLAY(display))
+  {
+    return "GDKWINDOW";
+  }
+#endif
+
+#else
+  /* GTK2: Use compile-time detection */
+
+#ifdef GDK_WINDOWING_X11
   return "XWINDOW";
+#elif defined(GDK_WINDOWING_WIN32)
+  return "HWND";
+#elif defined(GDK_WINDOWING_QUARTZ)
+  return "GDKWINDOW";
+#endif
+
+#endif /* GTK_CHECK_VERSION(3, 0, 0) */
+
+  return "UNKNOWN";
 }
 
 const char* iupgtkGetNativeFontIdName(void)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
+  GdkDisplay* display = gdk_display_get_default();
+  if (!display) return NULL;
+
+#ifdef GDK_WINDOWING_X11
+  if (GDK_IS_X11_DISPLAY(display))
+  {
+    return "XFONTID";
+  }
+#endif
+
+#ifdef GDK_WINDOWING_WIN32
+  if (GDK_IS_WIN32_DISPLAY(display))
+  {
+    return "HFONT";
+  }
+#endif
+
+#else
+  /* GTK2: Use compile-time detection */
+
+#ifdef GDK_WINDOWING_X11
   return "XFONTID";
+#elif defined(GDK_WINDOWING_WIN32)
+  return "HFONT";
+#endif
+
+#endif /* GTK_CHECK_VERSION(3, 0, 0) */
+
+  /* Wayland, Quartz, and others use Pango/Fontconfig/CoreText. */
+  return NULL;
 }
 
 void* iupgtkGetNativeGraphicsContext(GtkWidget* widget)
 {
-  GdkDisplay* display = gdk_display_get_default();
-  return (void*)XCreateGC(GDK_DISPLAY_XDISPLAY(display), GDK_WINDOW_XID(iupgtkGetWindow(widget)), 0, NULL);
+  GdkWindow* window = iupgtkGetWindow(widget);
+  if (!window) return NULL;
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+  GdkDisplay* display = gdk_window_get_display(window);
+
+#ifdef GDK_WINDOWING_X11
+  if (GDK_IS_X11_DISPLAY(display))
+  {
+    return (void*)XCreateGC(IUPGTK_GDK_DISPLAY_XDISPLAY(display), IUPGTK_GDK_WINDOW_XID(window), 0, NULL);
+  }
+#endif
+
+#ifdef GDK_WINDOWING_WIN32
+  if (GDK_IS_WIN32_DISPLAY(display))
+  {
+    return GetDC(IUPGTK_GDK_WINDOW_HWND(window));
+  }
+#endif
+
+#ifdef GDK_WINDOWING_QUARTZ
+  if (GDK_IS_QUARTZ_DISPLAY(display))
+  {
+    /* In GTK3/Quartz/Wayland, drawing is done via Cairo. */
+    return NULL;
+  }
+#endif
+
+#else
+  /* GTK2: Use compile-time backend detection */
+
+#ifdef GDK_WINDOWING_X11
+  Display* xdisplay = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
+  return (void*)XCreateGC(xdisplay, IUPGTK_GDK_WINDOW_XID(window), 0, NULL);
+#elif defined(GDK_WINDOWING_WIN32)
+  return GetDC(IUPGTK_GDK_WINDOW_HWND(window));
+#elif defined(GDK_WINDOWING_QUARTZ)
+  if (window)
+    return (void*)gdk_gc_new((GdkDrawable*)window);
+#endif
+
+#endif /* GTK_CHECK_VERSION(3, 0, 0) */
+
+  /* Wayland and GTK3 use Cairo contexts for drawing. */
+  return NULL;
 }
 
 void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
 {
+  if (!gc) return;
+
+  GdkWindow* window = iupgtkGetWindow(widget);
+
+#if GTK_CHECK_VERSION(3, 0, 0)
   GdkDisplay* display = gdk_display_get_default();
-  XFreeGC(GDK_DISPLAY_XDISPLAY(display), (GC)gc);
+  if (!display) return;
+
+#ifdef GDK_WINDOWING_X11
+  if (GDK_IS_X11_DISPLAY(display))
+  {
+    XFreeGC(IUPGTK_GDK_DISPLAY_XDISPLAY(display), (GC)gc);
+    return;
+  }
+#endif
+
+#ifdef GDK_WINDOWING_WIN32
+  if (GDK_IS_WIN32_DISPLAY(display))
+  {
+    if (window)
+      ReleaseDC(IUPGTK_GDK_WINDOW_HWND(window), (HDC)gc);
+    return;
+  }
+#endif
+
+#ifdef GDK_WINDOWING_QUARTZ
+  if (GDK_IS_QUARTZ_DISPLAY(display))
+  {
+    /* Nothing to do for GTK3/Quartz */
+    return;
+  }
+#endif
+
+#else
+  /* GTK2: Use compile-time backend detection */
+
+#ifdef GDK_WINDOWING_X11
+  Display* xdisplay = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
+  XFreeGC(xdisplay, (GC)gc);
+#elif defined(GDK_WINDOWING_WIN32)
+  if (window)
+    ReleaseDC(IUPGTK_GDK_WINDOW_HWND(window), (HDC)gc);
+#elif defined(GDK_WINDOWING_QUARTZ)
+  g_object_unref(gc);
+#endif
+
+#endif /* GTK_CHECK_VERSION(3, 0, 0) */
+
   (void)widget;
 }
 
 IUP_SDK_API void* iupdrvGetDisplay(void)
 {
   GdkDisplay* display = gdk_display_get_default();
-  return GDK_DISPLAY_XDISPLAY(display);
+  if (!display) return NULL;
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+
+#ifdef GDK_WINDOWING_X11
+  if (GDK_IS_X11_DISPLAY(display))
+  {
+    return IUPGTK_GDK_DISPLAY_XDISPLAY(display);
+  }
+#endif
+
+#ifdef GDK_WINDOWING_WAYLAND
+  if (GDK_IS_WAYLAND_DISPLAY(display))
+  {
+    return gdk_wayland_display_get_wl_display(display);
+  }
+#endif
+
+#ifdef GDK_WINDOWING_QUARTZ
+  if (GDK_IS_QUARTZ_DISPLAY(display))
+  {
+    return (void*)display;
+  }
+#endif
+
+#else
+  /* GTK2: Use compile-time detection */
+
+#ifdef GDK_WINDOWING_X11
+  return IUPGTK_GDK_DISPLAY_XDISPLAY(display);
+#elif defined(GDK_WINDOWING_QUARTZ)
+  return (void*)display;
+#endif
+
+#endif /* GTK_CHECK_VERSION(3, 0, 0) */
+
+  return NULL;
 }
 
 void iupgtkPushVisualAndColormap(void* visual, void* colormap)
 {
+  /* This function is for X11 compatibility in GTK2.
+     It is deprecated in GTK3 and irrelevant for Wayland/Win32/Quartz.
+  */
+
 #if GTK_CHECK_VERSION(3, 0, 0)
   (void)visual;
   (void)colormap;
-#else
+
+#else /* GTK2 */
+
+#ifdef GDK_WINDOWING_X11
   GdkColormap* gdk_colormap;
+  GdkVisual* gdk_visual;
+
 #if GTK_CHECK_VERSION(2, 24, 0)
   GdkScreen* screen = gdk_screen_get_default();
-  GdkVisual* gdk_visual = gdk_x11_screen_lookup_visual(screen, XVisualIDFromVisual((Visual*)visual));
+  gdk_visual = gdk_x11_screen_lookup_visual(screen, XVisualIDFromVisual((Visual*)visual));
 #else
-  GdkVisual* gdk_visual = gdkx_visual_get(XVisualIDFromVisual((Visual*)visual));
+  gdk_visual = gdkx_visual_get(XVisualIDFromVisual((Visual*)visual));
 #endif
   if (colormap)
     gdk_colormap = gdk_x11_colormap_foreign_new(gdk_visual, (Colormap)colormap);
@@ -228,22 +369,79 @@ void iupgtkPushVisualAndColormap(void* visual, void* colormap)
     gdk_colormap = gdk_colormap_new(gdk_visual, FALSE);
 
   gtk_widget_push_colormap(gdk_colormap);
+  /* gtk_widget_push_visual is deprecated */
 
-  /* gtk_widget_push_visual is now deprecated */
+#elif defined(GDK_WINDOWING_QUARTZ)
+  GdkColormap* gdk_colormap;
+  GdkVisual *gdk_visual = gdk_visual_get_best();
+
+  gdk_colormap = gdk_colormap_new(gdk_visual, FALSE);
+
+  gtk_widget_push_colormap(gdk_colormap);
+#else
+  (void)visual;
+  (void)colormap;
 #endif
+
+#endif /* GTK version check */
 }
 
 static void gtkSetGlobalAttrib(void)
 {
   GdkDisplay* display = gdk_display_get_default();
-  Display* xdisplay = GDK_DISPLAY_XDISPLAY(display);
+  if (!display) return;
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+
+#ifdef GDK_WINDOWING_X11
+  if (GDK_IS_X11_DISPLAY(display))
+  {
+    Display* xdisplay = IUPGTK_GDK_DISPLAY_XDISPLAY(display);
+    IupSetGlobal("XDISPLAY", (char*)xdisplay);
+    IupSetGlobal("XSCREEN", (char*)XDefaultScreen(xdisplay));
+    IupSetGlobal("XSERVERVENDOR", ServerVendor(xdisplay));
+    IupSetInt(NULL, "XVENDORRELEASE", VendorRelease(xdisplay));
+    IupSetGlobal("GDK_WINDOWING", "X11");
+  }
+#endif
+
+#ifdef GDK_WINDOWING_WAYLAND
+  if (GDK_IS_WAYLAND_DISPLAY(display))
+  {
+    struct wl_display* wl_display = gdk_wayland_display_get_wl_display(display);
+    IupSetGlobal("WL_DISPLAY", (char*)wl_display);
+    IupSetGlobal("GDK_WINDOWING", "WAYLAND");
+  }
+#endif
+
+#ifdef GDK_WINDOWING_QUARTZ
+  if (GDK_IS_QUARTZ_DISPLAY(display))
+  {
+    IupSetGlobal("GDK_WINDOWING", "QUARTZ");
+  }
+#endif
+
+#ifdef GDK_WINDOWING_WIN32
+  if (GDK_IS_WIN32_DISPLAY(display))
+  {
+    IupSetGlobal("GDK_WINDOWING", "WIN32");
+  }
+#endif
+
+#else
+  /* GTK2: Set X11 attributes if on X11 */
+
+#ifdef GDK_WINDOWING_X11
+  Display* xdisplay = IUPGTK_GDK_DISPLAY_XDISPLAY(display);
   IupSetGlobal("XDISPLAY", (char*)xdisplay);
   IupSetGlobal("XSCREEN", (char*)XDefaultScreen(xdisplay));
   IupSetGlobal("XSERVERVENDOR", ServerVendor(xdisplay));
   IupSetInt(NULL, "XVENDORRELEASE", VendorRelease(xdisplay));
-}
-
+  IupSetGlobal("GDK_WINDOWING", "X11");
 #endif
+
+#endif /* GTK_CHECK_VERSION(3, 0, 0) */
+}
 
 char* iupgtkGetNativeWindowHandleAttrib(Ihandle* ih)
 {
@@ -254,15 +452,15 @@ char* iupgtkGetNativeWindowHandleAttrib(Ihandle* ih)
 #if GTK_CHECK_VERSION(3, 0, 0)
 static void gtkSetGlobalColorAttrib(const char* name, GdkRGBA *color)
 {
-  iupGlobalSetDefaultColorAttrib(name, (int)iupgtkColorFromDouble(color->red), 
-                                       (int)iupgtkColorFromDouble(color->green), 
+  iupGlobalSetDefaultColorAttrib(name, (int)iupgtkColorFromDouble(color->red),
+                                       (int)iupgtkColorFromDouble(color->green),
                                        (int)iupgtkColorFromDouble(color->blue));
 }
 #else
 static void gtkSetGlobalColorAttrib(const char* name, GdkColor *color)
 {
-  iupGlobalSetDefaultColorAttrib(name, (int)iupCOLOR16TO8(color->red), 
-                                       (int)iupCOLOR16TO8(color->green), 
+  iupGlobalSetDefaultColorAttrib(name, (int)iupCOLOR16TO8(color->red),
+                                       (int)iupCOLOR16TO8(color->green),
                                        (int)iupCOLOR16TO8(color->blue));
 }
 #endif
@@ -412,11 +610,11 @@ int iupdrvOpen(int *argc, char ***argv)
   IupStoreGlobal("SYSTEMLANGUAGE", pango_language_to_string(gtk_get_default_language()));
 
   /* driver system version */
-  IupSetfAttribute(NULL, "GTKVERSION", "%d.%d.%d", gtk_major_version, 
-                                                   gtk_minor_version, 
+  IupSetfAttribute(NULL, "GTKVERSION", "%d.%d.%d", gtk_major_version,
+                                                   gtk_minor_version,
                                                    gtk_micro_version);
-  IupSetfAttribute(NULL, "GTKDEVVERSION", "%d.%d.%d", GTK_MAJOR_VERSION, 
-                                                      GTK_MINOR_VERSION, 
+  IupSetfAttribute(NULL, "GTKDEVVERSION", "%d.%d.%d", GTK_MAJOR_VERSION,
+                                                      GTK_MINOR_VERSION,
                                                       GTK_MICRO_VERSION);
 
   if (argv && *argv && (*argv)[0] && (*argv)[0][0] != 0)
@@ -431,7 +629,7 @@ int iupdrvOpen(int *argc, char ***argv)
   value = getenv("UBUNTU_MENUPROXY");  /* for now only in Ubuntu */
   if (value && (iupStrEqualNoCase(value, "libappmenu.so") || iupStrEqualNoCase(value, "1")))
     IupSetGlobal("GLOBALMENU", "Yes");
-  
+
   return IUP_NOERROR;
 }
 
@@ -439,12 +637,3 @@ void iupdrvClose(void)
 {
   iupgtkStrRelease();
 }
-
-/* TODO:  (deprecated)
-
-foreground-gdk => -rgba
-background-gdk
-
-gtk_widget_reparent has been deprecated since version 3.14 and should not be used in newly-written code.
-Use gtk_container_remove() and gtk_container_add().
-*/
