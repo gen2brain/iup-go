@@ -55,6 +55,7 @@ static iRegisteredGlobal global_attribs[] = {
   { "EXITLOOP", 1, 1, 1, 1, 0 },
   { "FREETYPEFONTS_DIR", 1, 1, 1, 1, 0 },
   { "FULLSIZE", 1, 1, 1, 1, 1 },
+  { "GDK_WINDOWING", 0, 0, 1, 0, 1 },
   { "GLOBALLAYOUTDLGKEY", 1, 1, 1, 1, 0 },
   { "GLOBALLAYOUTRESIZEKEY", 1, 1, 1, 1, 0 },
   { "GLOBALMENU", 0, 0, 1, 0, 0 },
@@ -121,6 +122,7 @@ static iRegisteredGlobal global_attribs[] = {
   { "XSCREEN", 0, 1, 1, 0, 1 },
   { "XSERVERVENDOR", 0, 1, 1, 0, 1 },
   { "XVENDORRELEASE", 0, 1, 1, 0, 1 },
+  { "WL_DISPLAY", 0, 0, 1, 0, 1 },
   { NULL, 0, 0, 0, 0, 0 }
 };
 
