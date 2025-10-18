@@ -72,9 +72,9 @@ IUP_API int IupHelp(const char* url)
     char* system = IupGetGlobal("SYSTEM");
     if (iupStrEqualNoCase(system, "Linux") ||
         iupStrEqualNoCase(system, "FreeBSD"))
-        browser = "firefox";
+        browser = "xdg-open";
     else if (iupStrEqualNoCase(system, "MacOS"))
-      browser = "safari";
+      browser = "open";
     else if (iupStrEqualPartial(system, "CYGWIN"))
       browser = "iexplore";
     else
