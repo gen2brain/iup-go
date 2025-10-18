@@ -815,7 +815,6 @@ void iupdrvGlCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VISUAL", eGLCanvasGetVisualAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_STRING|IUPAF_NOT_MAPPED);
 }
 
-
 int IupGLIsCurrent(Ihandle* ih)
 {
   IGlControlData* gldata;
@@ -829,7 +828,7 @@ int IupGLIsCurrent(Ihandle* ih)
     return 0;
 
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
-  if (!gldata || gldata->context == EGL_NO_CONTEXT)
+  if (!gldata || gldata->display == EGL_NO_DISPLAY || gldata->context == EGL_NO_CONTEXT)
     return 0;
 
   if (gldata->context == eglGetCurrentContext())
@@ -853,20 +852,22 @@ void IupGLMakeCurrent(Ihandle* ih)
     return;
 
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
-  if (!gldata || gldata->context == EGL_NO_CONTEXT || gldata->surface == EGL_NO_SURFACE)
+  if (!gldata || gldata->display == EGL_NO_DISPLAY ||
+      gldata->context == EGL_NO_CONTEXT || gldata->surface == EGL_NO_SURFACE)
     return;
 
 #ifdef GDK_WINDOWING_WAYLAND
   if (gldata->egl_window) {
-      eGLCanvasGetActualSize(ih, gldata, &physical_width, &physical_height);
+    eGLCanvasGetActualSize(ih, gldata, &physical_width, &physical_height);
 
-      if (physical_width != gldata->egl_window_physical_width || physical_height != gldata->egl_window_physical_height)
-      {
-          wl_egl_window_resize(gldata->egl_window, physical_width, physical_height, 0, 0);
-          gldata->egl_window_physical_width = physical_width;
-          gldata->egl_window_physical_height = physical_height;
-          performed_resize = 1;
-      }
+    if (physical_width != gldata->egl_window_physical_width ||
+        physical_height != gldata->egl_window_physical_height)
+    {
+      wl_egl_window_resize(gldata->egl_window, physical_width, physical_height, 0, 0);
+      gldata->egl_window_physical_width = physical_width;
+      gldata->egl_window_physical_height = physical_height;
+      performed_resize = 1;
+    }
   }
 #endif
 
@@ -879,7 +880,7 @@ void IupGLMakeCurrent(Ihandle* ih)
 #ifdef GDK_WINDOWING_WAYLAND
     if (performed_resize)
     {
-        glViewport(0, 0, physical_width, physical_height);
+      glViewport(0, 0, physical_width, physical_height);
     }
 #endif
 
@@ -908,7 +909,7 @@ void IupGLSwapBuffers(Ihandle* ih)
     return;
 
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
-  if (!gldata || gldata->surface == EGL_NO_SURFACE)
+  if (!gldata || gldata->display == EGL_NO_DISPLAY || gldata->surface == EGL_NO_SURFACE)
     return;
 
   cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
