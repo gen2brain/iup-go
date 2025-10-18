@@ -73,8 +73,6 @@ typedef struct _IGlControlData
 - (void)triggerResizeCB
 {
   if (self.contextReady && self.ih) {
-    [[self openGLContext] makeCurrentContext];
-
     NSRect bounds = [self bounds];
     /* Use backing scale factor for high-DPI support. RESIZE_CB expects pixels. */
     NSRect backingBounds = [self convertRectToBacking:bounds];
@@ -94,8 +92,16 @@ typedef struct _IGlControlData
 
   [[self openGLContext] makeCurrentContext];
 
-  /* Enable vsync by default */
+  /* Set vsync based on attribute, default to ON */
   GLint swapInt = 1;
+  if (self.ih)
+  {
+    char* vsync = iupAttribGetStr(self.ih, "VSYNC");
+    if (vsync)
+    {
+      swapInt = iupStrBoolean(vsync) ? 1 : 0;
+    }
+  }
   [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
 
   self.contextReady = YES;
@@ -108,13 +114,11 @@ typedef struct _IGlControlData
 {
   [super reshape];
 
-  /* We rely on contextReady to ensure initialization happened, but allow calls even if not ready yet during startup phase */
   if (self.ih) {
     [[self openGLContext] makeCurrentContext];
-    [[self openGLContext] update];
+    [[self openGLContext] update]; /* Important for view resizes */
 
-    /* Notify IUP about the resize */
-    /* We only trigger the callback if contextReady is true to maintain consistency with triggerResizeCB logic */
+    /* Notify IUP about the resize. triggerResizeCB will check if context is ready. */
     [self triggerResizeCB];
   }
 }
@@ -129,8 +133,7 @@ typedef struct _IGlControlData
 
   [[self openGLContext] makeCurrentContext];
 
-  /* Trigger the IUP ACTION callback for rendering.
-     IupGLCanvas inherits from IupCanvas, ACTION signature is IFnff (Ihandle*, float, float). */
+  /* Trigger the IUP ACTION callback for rendering. */
   IFnff cb = (IFnff)IupGetCallback(self.ih, "ACTION");
   if (cb)
   {
@@ -177,7 +180,6 @@ typedef struct _IGlControlData
     return NO;
 }
 
-/* lockFocus/unlockFocus overrides ensure the context is current if Cocoa tries to draw the view outside drawRect (e.g. manual lockFocus). */
 - (void)lockFocus
 {
   NSOpenGLContext* context = [self openGLContext];
@@ -227,9 +229,11 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
 {
   int n = 0;
 
-  /* When using software rendering (forced or as fallback), adding NSOpenGLPFANoRecovery is crucial.
-     It improves stability by preventing the OS from automatically switching renderers if the initial renderer encounters issues. */
+  /* When using software rendering, NSOpenGLPFANoRecovery prevents automatic renderer switching */
   attrs[n++] = NSOpenGLPFANoRecovery;
+
+  /* Allow offline renderers */
+  attrs[n++] = NSOpenGLPFAAllowOfflineRenderers;
 
   /* Renderer ID if specified */
   if (rendererID != 0)
@@ -238,31 +242,48 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
     attrs[n++] = rendererID;
   }
 
-  /* Allow offline renderers is generally good practice for compatibility. */
-  attrs[n++] = NSOpenGLPFAAllowOfflineRenderers;
-
+  /* Profile selection */
   attrs[n++] = NSOpenGLPFAOpenGLProfile;
   if (request_core)
   {
-    /* Request Core profile. */
-    if (@available(macOS 10.10, *)) {
-      attrs[n++] = NSOpenGLProfileVersion4_1Core;
-    } else if (@available(macOS 10.7, *)) {
-      attrs[n++] = NSOpenGLProfileVersion3_2Core;
-    } else {
-        /* Core requested but macOS < 10.7. */
-#ifdef NSOpenGLProfileVersion3_2Core
-        /* Try 3.2 Core if SDK supports it. */
-        attrs[n++] = NSOpenGLProfileVersion3_2Core;
-#else
-        /* SDK too old for Core, must use Legacy. */
-        attrs[n++] = NSOpenGLProfileVersionLegacy;
-#endif
+    NSOpenGLPixelFormatAttribute core_profile = 0;
+    char* version_attr = iupAttribGetStr(ih, "CONTEXTVERSION");
+
+    if (version_attr)
+    {
+      if (strcmp(version_attr, "4.1") == 0)
+      {
+        if (@available(macOS 10.10, *))
+          core_profile = NSOpenGLProfileVersion4_1Core;
+      }
+      else if (strcmp(version_attr, "3.2") == 0)
+      {
+        if (@available(macOS 10.7, *))
+          core_profile = NSOpenGLProfileVersion3_2Core;
+      }
+    }
+
+    if (core_profile == 0 && !version_attr) /* No version, or unsupported, default to best available */
+    {
+      /* Default Core: Prefer 4.1 if available, otherwise 3.2 */
+      if (@available(macOS 10.10, *))
+        core_profile = NSOpenGLProfileVersion4_1Core;
+      else if (@available(macOS 10.7, *))
+        core_profile = NSOpenGLProfileVersion3_2Core;
+    }
+
+    if (core_profile != 0)
+    {
+      attrs[n++] = core_profile;
+    }
+    else
+    {
+      /* Core profile requested but not available. Force failure by using an invalid profile ID. */
+      attrs[n++] = 0x9999;
     }
   }
   else
   {
-    /* Request Legacy profile. */
     attrs[n++] = NSOpenGLProfileVersionLegacy;
   }
 
@@ -281,85 +302,101 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
   attrs[n++] = (depth_size > 0) ? depth_size : 16;
 
   int stencil_size = iupAttribGetInt(ih, "STENCIL_SIZE");
-  if (stencil_size > 0) {
+  if (stencil_size > 0)
+  {
     attrs[n++] = NSOpenGLPFAStencilSize;
     attrs[n++] = stencil_size;
   }
 
-  if (iupStrEqualNoCase(iupAttribGetStr(ih, "BUFFER"), "DOUBLE")) {
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "BUFFER"), "DOUBLE"))
+  {
     attrs[n++] = NSOpenGLPFADoubleBuffer;
   }
 
-  /* Terminator */
   attrs[n] = 0;
   *n_ptr = n;
 }
 
-/* Implementation of software pixel format creation */
 static NSOpenGLPixelFormat* cocoaGLCreatePixelFormatSoftware(Ihandle* ih)
 {
   NSOpenGLPixelFormatAttribute attrs[32];
   int n = 0;
-  NSOpenGLPixelFormat* pixelFormat = NULL;
+  NSOpenGLPixelFormat* pixelFormat = nil;
 
   char* profile_attr = iupAttribGetStr(ih, "CONTEXTPROFILE");
-  BOOL initial_core_requested = (profile_attr && iupStrEqualNoCase(profile_attr, "CORE"));
+  char* version_attr = iupAttribGetStr(ih, "CONTEXTVERSION");
+  int arbcontext = iupAttribGetBoolean(ih, "ARBCONTEXT");
+  int major = 0, minor = 0;
+  BOOL core_requested = NO;
 
-  /* Default to Legacy (try_core = NO) unless Core is explicitly requested. */
-  BOOL try_core = initial_core_requested;
-
-  /* kCGLRendererGenericFloatID is the recommended modern software renderer. */
-  buildSoftwareAttributes(ih, attrs, &n, try_core, (NSOpenGLPixelFormatAttribute)kCGLRendererGenericFloatID);
-  pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-  if (pixelFormat) return pixelFormat;
-
-  /* If Core was tried and failed, try Legacy with Generic Float. */
-  if (try_core && !pixelFormat)
+  if (version_attr)
   {
-    if (!iupAttribGet(ih, "WARNING")) {
-        iupAttribSet(ih, "WARNING", "Software Core profile (GenericFloat) failed, attempting Legacy profile (GenericFloat).");
+    iupStrToIntInt(version_attr, &major, &minor, '.');
+  }
+
+  if (profile_attr)
+  {
+    if (iupStrEqualNoCase(profile_attr, "CORE"))
+      core_requested = YES;
+    else if (iupStrEqualNoCase(profile_attr, "COMPATIBILITY"))
+      core_requested = NO;
+  }
+  else if (arbcontext)
+  {
+    core_requested = YES;
+  }
+  else if (major > 3 || (major == 3 && minor >= 2))
+  {
+    core_requested = YES;
+  }
+  /* else: core_requested remains NO (default) */
+
+  if (core_requested)
+  {
+    /* Try modern software renderer (kCGLRendererGenericFloatID) */
+    buildSoftwareAttributes(ih, attrs, &n, YES, (NSOpenGLPixelFormatAttribute)kCGLRendererGenericFloatID);
+    pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+    if (pixelFormat) return pixelFormat;
+
+    /* If Core was requested and failed, try any software renderer (rendererID=0) that supports Core. */
+    buildSoftwareAttributes(ih, attrs, &n, YES, 0);
+    pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+    if (pixelFormat) return pixelFormat;
+
+    /* All Core software fallbacks failed */
+    if (!iupAttribGet(ih, "ERROR"))
+    {
+      iupAttribSet(ih, "ERROR", "Failed to create Core software OpenGL context.");
     }
-    buildSoftwareAttributes(ih, attrs, &n, NO /* Legacy */, (NSOpenGLPixelFormatAttribute)kCGLRendererGenericFloatID);
+    return nil;
+  }
+  else
+  {
+    /* Legacy profile: Try older renderer first. */
+#ifdef kCGLRendererAppleSWID
+    buildSoftwareAttributes(ih, attrs, &n, NO, (NSOpenGLPixelFormatAttribute)kCGLRendererAppleSWID);
+    pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+    if (pixelFormat) return pixelFormat;
+#endif
+
+    /* If old one fails or isn't defined, try modern one (kCGLRendererGenericFloatID) */
+    buildSoftwareAttributes(ih, attrs, &n, NO, (NSOpenGLPixelFormatAttribute)kCGLRendererGenericFloatID);
+    pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+    if (pixelFormat) return pixelFormat;
+
+    /* Last resort: any available software renderer without specific ID */
+    buildSoftwareAttributes(ih, attrs, &n, NO, 0);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
   }
 
-  /* Check if kCGLRendererAppleSWID is available (deprecated in newer SDKs) */
-#ifdef kCGLRendererAppleSWID
-  if (!pixelFormat)
+  /* All software fallbacks failed */
+  if (!iupAttribGet(ih, "ERROR"))
   {
-      if (!iupAttribGet(ih, "WARNING")) {
-          iupAttribSet(ih, "WARNING", "Modern software renderer (GenericFloat) failed, attempting older software renderer (AppleSW).");
-      }
-      buildSoftwareAttributes(ih, attrs, &n, NO /* Legacy */, (NSOpenGLPixelFormatAttribute)kCGLRendererAppleSWID);
-      pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+    iupAttribSet(ih, "ERROR", "Failed to create Legacy software OpenGL context.");
   }
-#endif
-
-  if (pixelFormat) return pixelFormat;
-
-  /* No specific RendererID (system choice), Legacy profile. */
-  /* This allows the system to choose any available unaccelerated renderer if specific IDs failed. */
-  if (!pixelFormat)
-  {
-      if (!iupAttribGet(ih, "WARNING")) {
-          iupAttribSet(ih, "WARNING", "Specific software renderers failed, attempting any available unaccelerated renderer (Legacy).");
-      }
-      /* Pass 0 for RendererID. buildSoftwareAttributes handles adding NSOpenGLPFANoRecovery. */
-      buildSoftwareAttributes(ih, attrs, &n, NO /* Legacy */, 0);
-      pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-  }
-
-  if (initial_core_requested && !pixelFormat)
-  {
-      if (!iupAttribGet(ih, "ERROR")) {
-        iupAttribSet(ih, "ERROR", "Failed to create requested software Core profile context, and all fallbacks failed.");
-      }
-  }
-
-  return pixelFormat;
+  return nil;
 }
-
 
 static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
 {
@@ -369,58 +406,82 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
   BOOL force_software = NO;
 
   char* profile_attr = iupAttribGetStr(ih, "CONTEXTPROFILE");
+  char* version_attr = iupAttribGetStr(ih, "CONTEXTVERSION");
+  int arbcontext = iupAttribGetBoolean(ih, "ARBCONTEXT");
 
-  /* Check for environment variables to force specific rendering modes */
+  BOOL request_core = NO;
+  int major = 0, minor = 0;
+
+  if (version_attr)
+  {
+    iupStrToIntInt(version_attr, &major, &minor, '.');
+  }
+
+  if (profile_attr)
+  {
+    if (iupStrEqualNoCase(profile_attr, "CORE"))
+    {
+      request_core = YES;
+    }
+    else if (iupStrEqualNoCase(profile_attr, "COMPATIBILITY"))
+    {
+      request_core = NO;
+    }
+  }
+  else if (arbcontext)
+  {
+    request_core = YES;
+  }
+  else if (major > 3 || (major == 3 && minor >= 2))
+  {
+    request_core = YES;
+  }
+  /* else: request_core remains NO (default) */
+
+
   const char* env_force_software = getenv("IUP_GL_FORCE_SOFTWARE");
   if (env_force_software && (env_force_software[0] == '1' || iupStrEqualNoCase(env_force_software, "YES") || iupStrEqualNoCase(env_force_software, "TRUE"))) {
     force_software = YES;
   }
 
-  /* If software rendering is forced, use software path */
   if (force_software) {
     return cocoaGLCreatePixelFormatSoftware(ih);
   }
 
-  /* Hardware accelerated path (default) */
-
   attrs[n++] = NSOpenGLPFAOpenGLProfile;
-
-  /* Check for context profile requests. macOS supports Core (3.2+) and Legacy (2.1). */
-  /* We use profile_attr determined earlier. */
-
-  if (profile_attr && iupStrEqualNoCase(profile_attr, "CORE"))
+  if (request_core)
   {
-    /* Request Core profile. Prefer 4.1 if available, otherwise 3.2. */
-    if (@available(macOS 10.10, *))
-      attrs[n++] = NSOpenGLProfileVersion4_1Core;
-    else if (@available(macOS 10.7, *))
-      attrs[n++] = NSOpenGLProfileVersion3_2Core;
-    else
+    NSOpenGLPixelFormatAttribute core_profile = 0;
+
+    if (major == 4 && minor == 1)
     {
-        /* Core profile requested but not supported on macOS < 10.7.
-           We set 3.2 Core anyway (if defined in SDK), and the creation will fail later if unsupported. */
-#ifdef NSOpenGLProfileVersion3_2Core
-        attrs[n++] = NSOpenGLProfileVersion3_2Core;
-#else
-        /* If SDK is too old, we must use Legacy. If Core was explicitly requested, this will fail later. */
-        attrs[n++] = NSOpenGLProfileVersionLegacy;
-#endif
+      if (@available(macOS 10.10, *))
+        core_profile = NSOpenGLProfileVersion4_1Core;
     }
-  }
-  else if (profile_attr && (iupStrEqualNoCase(profile_attr, "LEGACY") || iupStrEqualNoCase(profile_attr, "COMPATIBILITY")))
-  {
-    attrs[n++] = NSOpenGLProfileVersionLegacy;
+    else if (major == 3 && minor == 2)
+    {
+      if (@available(macOS 10.7, *))
+        core_profile = NSOpenGLProfileVersion3_2Core;
+    }
+
+    if (core_profile == 0) /* No version, or unsupported, default to best available */
+    {
+      if (@available(macOS 10.10, *))
+        core_profile = NSOpenGLProfileVersion4_1Core;
+      else if (@available(macOS 10.7, *))
+        core_profile = NSOpenGLProfileVersion3_2Core;
+      else
+        core_profile = 0x9999; /* Force failure if no core profile is available */
+    }
+
+    attrs[n++] = core_profile;
   }
   else
   {
-    /* Default behavior: Use Legacy for better compatibility */
     attrs[n++] = NSOpenGLProfileVersionLegacy;
   }
 
-  /* Request hardware acceleration */
   attrs[n++] = NSOpenGLPFAAccelerated;
-
-  /* Allow offline renderers (e.g. switchable graphics) */
   attrs[n++] = NSOpenGLPFAAllowOfflineRenderers;
 
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "BUFFER"), "DOUBLE"))
@@ -430,7 +491,7 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
     attrs[n++] = NSOpenGLPFAStereo;
 
   attrs[n++] = NSOpenGLPFAColorSize;
-  number = 24; /* default RGB888 */
+  number = 24;
 
   int red_size = iupAttribGetInt(ih, "RED_SIZE");
   int green_size = iupAttribGetInt(ih, "GREEN_SIZE");
@@ -456,16 +517,8 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
   }
 
   number = iupAttribGetInt(ih, "DEPTH_SIZE");
-  if (number > 0)
-  {
-    attrs[n++] = NSOpenGLPFADepthSize;
-    attrs[n++] = number;
-  }
-  else
-  {
-    attrs[n++] = NSOpenGLPFADepthSize;
-    attrs[n++] = 16; /* A reasonable default */
-  }
+  attrs[n++] = NSOpenGLPFADepthSize;
+  attrs[n++] = (number > 0) ? number : 16;
 
   number = iupAttribGetInt(ih, "STENCIL_SIZE");
   if (number > 0)
@@ -474,7 +527,6 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
     attrs[n++] = number;
   }
 
-  /* accumulation buffer (deprecated in Core profile, but allowed in Legacy) */
   number = iupAttribGetInt(ih, "ACCUM_RED_SIZE");
   if (number > 0)
   {
@@ -507,26 +559,24 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
     }
   }
 
-  /* Terminator */
   attrs[n] = 0;
 
   NSOpenGLPixelFormat* pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
 
   if (!pixelFormat && iupAttribGetBoolean(ih, "STEREO"))
   {
-    /* Try again without stereo */
+    /* try removing stereo */
     int i;
     BOOL found = NO;
     for (i = 0; i < n; i++)
     {
       if (attrs[i] == NSOpenGLPFAStereo)
       {
-        /* Remove stereo attribute by shifting array */
         int j;
         for (j = i; j < n - 1; j++)
           attrs[j] = attrs[j + 1];
         n--;
-        attrs[n] = 0; /* Update terminator */
+        attrs[n] = 0;
         found = YES;
         break;
       }
@@ -542,39 +592,16 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
 
   if (!pixelFormat)
   {
-    /* Remove NSOpenGLPFAAccelerated and try again */
-    int i;
-    BOOL found = NO;
-    for (i = 0; i < n; i++)
-    {
-      if (attrs[i] == NSOpenGLPFAAccelerated)
-      {
-        /* Remove accelerated attribute by shifting array */
-        int j;
-        for (j = i; j < n - 1; j++)
-          attrs[j] = attrs[j + 1];
-        n--;
-        attrs[n] = 0; /* Update terminator */
-        found = YES;
-        break;
-      }
-    }
-
-    if (found)
-    {
-        pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-        if (pixelFormat)
-          iupAttribSet(ih, "WARNING", "Hardware acceleration not available, using unaccelerated context");
-    }
+    /* try software rendering as a fallback */
+    pixelFormat = cocoaGLCreatePixelFormatSoftware(ih);
   }
 
-  if (!pixelFormat)
+  if (!pixelFormat && !iupAttribGet(ih, "ERROR"))
   {
-    if (!iupAttribGet(ih, "WARNING")) {
-        iupAttribSet(ih, "WARNING", "Hardware context creation failed, attempting software rendering");
-    }
-
-    pixelFormat = cocoaGLCreatePixelFormatSoftware(ih);
+    if (request_core)
+      iupAttribSet(ih, "ERROR", "Failed to create OpenGL Core profile context.");
+    else
+      iupAttribSet(ih, "ERROR", "Failed to create OpenGL Legacy profile context.");
   }
 
   return pixelFormat;
@@ -583,13 +610,10 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
 static int cocoaGLCanvasMapMethod(Ihandle* ih)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
-  /* MRC requires Autorelease Pool for Cocoa operations */
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
   iupAttribSet(ih, "ERROR", NULL);
-  iupAttribSet(ih, "WARNING", NULL);
 
-  /* the IupCanvas is already mapped, get the native view */
   gldata->parent_view = (NSView*)iupAttribGet(ih, "NSVIEW");
   if (!gldata->parent_view)
     gldata->parent_view = (NSView*)IupGetAttribute(ih, "NSVIEW");
@@ -604,20 +628,12 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
   gldata->pixel_format = cocoaGLCreatePixelFormat(ih);
   if (!gldata->pixel_format)
   {
-    if (!iupAttribGet(ih, "ERROR")) {
-        iupAttribSet(ih, "ERROR", "No appropriate pixel format found (check WARNING attribute for details).");
+    if (!iupAttribGet(ih, "ERROR"))
+    {
+      iupAttribSet(ih, "ERROR", "No appropriate pixel format found.");
     }
     [pool drain];
     return IUP_NOERROR;
-  }
-
-  NSOpenGLContext* sharedContext = nil;
-  Ihandle* ih_shared = IupGetAttributeHandle(ih, "SHAREDCONTEXT");
-  if (ih_shared && IupClassMatch(ih_shared, "glcanvas"))
-  {
-    IGlControlData* shared_gldata = (IGlControlData*)iupAttribGet(ih_shared, "_IUP_GLCONTROLDATA");
-    if (shared_gldata && shared_gldata->context)
-      sharedContext = shared_gldata->context;
   }
 
   NSRect frame = [gldata->parent_view bounds];
@@ -635,11 +651,16 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
   [gldata->gl_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   gldata->gl_view.ih = ih;
 
-  /* Get context from the view. NSOpenGLView creates it automatically. */
-  gldata->context = [gldata->gl_view openGLContext]; /* Weak reference */
+  NSOpenGLContext* sharedContext = nil;
+  Ihandle* ih_shared = IupGetAttributeHandle(ih, "SHAREDCONTEXT");
+  if (ih_shared && IupClassMatch(ih_shared, "glcanvas"))
+  {
+    IGlControlData* shared_gldata = (IGlControlData*)iupAttribGet(ih_shared, "_IUP_GLCONTROLDATA");
+    if (shared_gldata && shared_gldata->context)
+      sharedContext = shared_gldata->context;
+  }
 
-  /* Handle shared context. If specified, we must replace the context created by NSOpenGLView. */
-  if (sharedContext && gldata->context && sharedContext != gldata->context)
+  if (sharedContext)
   {
     NSOpenGLContext* newContext = [[NSOpenGLContext alloc]
                                     initWithFormat:gldata->pixel_format
@@ -647,97 +668,41 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
 
     if (newContext)
     {
-      if ([NSOpenGLContext currentContext] == gldata->context) {
-          [NSOpenGLContext clearCurrentContext];
-      }
-
       [gldata->gl_view setOpenGLContext:newContext];
       [newContext setView:gldata->gl_view];
-
-      /* Update our weak reference */
       gldata->context = newContext;
-
-      /* Release ownership from this scope (balancing alloc/init) - Crucial for MRC */
       [newContext release];
     }
     else
     {
-        iupAttribSet(ih, "WARNING", "Could not create shared OpenGL context. Continuing with non-shared context.");
-    }
-  }
-
-  if (!gldata->context)
-  {
-    iupAttribSet(ih, "ERROR", "Could not get or create OpenGL context.");
-    [gldata->gl_view release];
-    gldata->gl_view = nil;
-    [gldata->pixel_format release];
-    gldata->pixel_format = nil;
-    [pool drain];
-    return IUP_NOERROR;
-  }
-
-  [gldata->context makeCurrentContext];
-
-  if ([NSOpenGLContext currentContext] != gldata->context)
-  {
-    iupAttribSet(ih, "ERROR", "Could not make newly created OpenGL context current.");
-    /* Cleanup context (it might be partially initialized) */
-    gldata->context = nil; /* Weak reference cleared */
-    [gldata->gl_view clearGLContext];
-
-    [gldata->gl_view release];
-    gldata->gl_view = nil;
-    [gldata->pixel_format release];
-    gldata->pixel_format = nil;
-    [pool drain];
-    return IUP_NOERROR;
-  }
-
-
-  const GLubyte* renderer = glGetString(GL_RENDERER);
-  const GLubyte* version = glGetString(GL_VERSION);
-
-  if (renderer && version) {
-    /* Additional info if using software rendering */
-    if (strstr((const char*)renderer, "Software") ||
-        strstr((const char*)renderer, "Generic") ||
-        strstr((const char*)renderer, "llvmpipe") ||
-        strstr((const char*)renderer, "Apple Software")) {
-      if (!iupAttribGet(ih, "WARNING")) {
-        iupAttribSet(ih, "WARNING", "Using software renderer - performance may be limited");
-      }
-    }
-  } else {
-      iupAttribSet(ih, "ERROR", "OpenGL context created but unstable (failed to retrieve renderer info).");
-
-      [NSOpenGLContext clearCurrentContext];
-      gldata->context = nil; /* Weak reference cleared */
-      [gldata->gl_view clearGLContext];
-
+      iupAttribSet(ih, "ERROR", "Failed to create shared OpenGL context.");
       [gldata->gl_view release];
       gldata->gl_view = nil;
       [gldata->pixel_format release];
       gldata->pixel_format = nil;
       [pool drain];
       return IUP_NOERROR;
+    }
   }
-
-  /* Add as subview - this will trigger prepareOpenGL when added to window hierarchy */
-  [gldata->parent_view addSubview:gldata->gl_view];
-  /* parent_view retains gl_view. */
-
-  /* Store context pointer for IUP (as opaque pointer) */
-  iupAttribSet(ih, "CONTEXT", (char*)gldata->context);
-
-  char* vsync = iupAttribGetStr(ih, "VSYNC");
-  if (vsync)
+  else
   {
-    GLint swapInt = iupStrBoolean(vsync) ? 1 : 0;
-    [gldata->context setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+    gldata->context = [gldata->gl_view openGLContext];
   }
 
-  iupAttribSet(ih, "ERROR", NULL);
+  if (!gldata->context)
+  {
+    iupAttribSet(ih, "ERROR", "Could not create or retrieve OpenGL context.");
+    [gldata->gl_view release];
+    gldata->gl_view = nil;
+    [gldata->pixel_format release];
+    gldata->pixel_format = nil;
+    [pool drain];
+    return IUP_NOERROR;
+  }
+
+  [gldata->parent_view addSubview:gldata->gl_view];
+
+  iupAttribSet(ih, "CONTEXT", (char*)gldata->context);
 
   [pool drain];
   return IUP_NOERROR;
@@ -757,16 +722,15 @@ static void cocoaGLCanvasUnMapMethod(Ihandle* ih)
     if ([NSOpenGLContext currentContext] == gldata->context)
       [NSOpenGLContext clearCurrentContext];
 
-    gldata->context = nil; /* Clear weak reference */
+    gldata->context = nil;
   }
 
   if (gldata->gl_view)
   {
-    /* Mark context as not ready to prevent callbacks during destruction */
     gldata->gl_view.contextReady = NO;
-
+    gldata->gl_view.ih = NULL;
     [gldata->gl_view removeFromSuperview];
-    [gldata->gl_view clearGLContext]; /* Explicitly clear context association */
+    [gldata->gl_view clearGLContext];
     [gldata->gl_view release];
     gldata->gl_view = nil;
   }
@@ -805,12 +769,8 @@ void iupdrvGlCanvasInitClass(Iclass* ic)
   ic->Map = cocoaGLCanvasMapMethod;
   ic->UnMap = cocoaGLCanvasUnMapMethod;
 
-  /* Register WARNING attribute to report non-fatal issues */
-  iupClassRegisterAttribute(ic, "WARNING", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  /* VSYNC attribute */
   iupClassRegisterAttribute(ic, "VSYNC", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
-
 
 int IupGLIsCurrent(Ihandle* ih)
 {
@@ -845,15 +805,16 @@ void IupGLMakeCurrent(Ihandle* ih)
   if (!iupObjectCheck(ih))
     return;
 
-  /* must be an IupGLCanvas */
   if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return;
 
-  /* must be mapped */
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
   if (!gldata || !gldata->context || !gldata->gl_view)
+  {
+    iupAttribSet(ih, "ERROR", "Context not available: canvas not mapped or context creation failed.");
     return;
+  }
 
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
@@ -882,7 +843,7 @@ void IupGLMakeCurrent(Ihandle* ih)
   }
   else
   {
-    iupAttribSet(ih, "ERROR", "Failed to make OpenGL context current.");
+    iupAttribSet(ih, "ERROR", "Failed to make context current.");
   }
 
   [pool drain];
@@ -897,14 +858,12 @@ void IupGLSwapBuffers(Ihandle* ih)
   if (!iupObjectCheck(ih))
     return;
 
-  /* must be an IupGLCanvas */
   if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return;
 
-  /* must be mapped */
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
-  if (!gldata || !gldata->context)
+  if (!gldata || !gldata->context || !gldata->gl_view)
     return;
 
   cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
@@ -912,7 +871,11 @@ void IupGLSwapBuffers(Ihandle* ih)
     cb(ih);
 
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-  /* flushBuffer swaps buffers if double buffered, or flushes if single buffered */
+
+  if ([gldata->context view] != gldata->gl_view) {
+    [gldata->context setView:gldata->gl_view];
+  }
+
   [gldata->context flushBuffer];
   [pool drain];
 }
@@ -941,5 +904,7 @@ void IupGLWait(int gl)
   if (gl)
     glFinish(); /* Wait for GL commands to complete */
   else
-    glFlush(); /* Flush GL commands */
+  {
+    /* No-op: Cocoa has no direct equivalent to GdiFlush() or glXWaitX() for non-GL window system synchronization. */
+  }
 }
