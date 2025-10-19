@@ -5,18 +5,18 @@ package iup
 
 #cgo !windows,!darwin,!motif,!gtk2 CFLAGS: -Iexternal/src/gtk -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 #cgo !windows,!darwin,!motif,gtk2 CFLAGS: -Iexternal/src/gtk
-#cgo !windows,!darwin,motif CFLAGS: -Iexternal/src/mot
-#cgo !windows,!darwin,!motif LDFLAGS: -lm
+#cgo !windows,!darwin,motif CFLAGS: -Iexternal/src/mot -DIUPDBUS_USE_DLOPEN
+#cgo !windows,!darwin LDFLAGS: -lm
 
 #cgo !windows,!darwin,!motif,!gtk2,gl,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 wayland-egl egl gdk-x11-3.0 x11 gl
 #cgo !windows,!darwin,!motif,gtk2,gl,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11 gl
 #cgo !windows,!darwin,!motif,!gtk2,!gl,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0 x11
 #cgo !windows,!darwin,!motif,gtk2,!gl,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
 
-#cgo !windows,!darwin,!linux,motif,gl LDFLAGS: -lXm -lXmu -lXt -lXext -lX11 -lGL -lm
-#cgo !windows,!darwin,linux,motif,gl LDFLAGS: -lXm -lXmu -lXt -lXpm -lXext -lX11 -lGL -lm
-#cgo !windows,!darwin,!linux,motif,!gl LDFLAGS: -lXm -lXmu -lXt -lXext -lX11 -lm
-#cgo !windows,!darwin,linux,motif,!gl LDFLAGS: -lXm -lXmu -lXt -lXpm -lXext -lX11 -lm
+#cgo !windows,!darwin,!linux,motif,gl LDFLAGS: -lXm -lXmu -lXt -lXext -lX11 -lGL
+#cgo !windows,!darwin,linux,motif,gl LDFLAGS: -lXm -lXmu -lXt -lXpm -lXext -lX11 -lGL
+#cgo !windows,!darwin,!linux,motif,!gl LDFLAGS: -lXm -lXmu -lXt -lXext -lX11
+#cgo !windows,!darwin,linux,motif,!gl LDFLAGS: -lXm -lXmu -lXt -lXpm -lXext -lX11
 
 #cgo windows CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl -DUSE_NEW_DRAW
 #cgo windows CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE

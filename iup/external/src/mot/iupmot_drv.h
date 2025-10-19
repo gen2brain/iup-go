@@ -85,6 +85,12 @@ int iupUnixIsFile(const char* name);
 int iupUnixIsDirectory(const char* name);
 int iupUnixMakeDirectory(const char* name);
 
+/* tray */
+int iupmotSetTrayAttrib(Ihandle* ih, const char* value);
+int iupmotSetTrayTipAttrib(Ihandle* ih, const char* value);
+int iupmotSetTrayImageAttrib(Ihandle* ih, const char* value);
+void iupmotTrayCleanup(Ihandle* ih);
+
 
 #ifdef __cplusplus
 }
