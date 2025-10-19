@@ -93,7 +93,7 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
     alist[n++] = GLX_DOUBLEBUFFER;
   }
 
-  /* rgba or index */ 
+  /* rgba or index */
   if (iupStrEqualNoCase(iupAttribGetStr(ih,"COLOR"), "INDEX"))
   {
     /* buffer size (for index mode) */
@@ -111,28 +111,28 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
 
   /* red, green, blue bits */
   number = iupAttribGetInt(ih,"RED_SIZE");
-  if (number > 0) 
+  if (number > 0)
   {
     alist[n++] = GLX_RED_SIZE;
     alist[n++] = number;
   }
 
   number = iupAttribGetInt(ih,"GREEN_SIZE");
-  if (number > 0) 
+  if (number > 0)
   {
     alist[n++] = GLX_GREEN_SIZE;
     alist[n++] = number;
   }
 
   number = iupAttribGetInt(ih,"BLUE_SIZE");
-  if (number > 0) 
+  if (number > 0)
   {
     alist[n++] = GLX_BLUE_SIZE;
     alist[n++] = number;
   }
 
   number = iupAttribGetInt(ih,"ALPHA_SIZE");
-  if (number > 0) 
+  if (number > 0)
   {
     alist[n++] = GLX_ALPHA_SIZE;
     alist[n++] = number;
@@ -140,14 +140,11 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
 
   /* depth and stencil size */
   number = iupAttribGetInt(ih,"DEPTH_SIZE");
-  if (number > 0) 
-  {
-    alist[n++] = GLX_DEPTH_SIZE;
-    alist[n++] = number;
-  }
+  alist[n++] = GLX_DEPTH_SIZE;
+  alist[n++] = (number > 0) ? number : 16; /* Default to 16-bit depth */
 
   number = iupAttribGetInt(ih,"STENCIL_SIZE");
-  if (number > 0) 
+  if (number > 0)
   {
     alist[n++] = GLX_STENCIL_SIZE;
     alist[n++] = number;
@@ -155,28 +152,28 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
 
   /* red, green, blue accumulation bits */
   number = iupAttribGetInt(ih,"ACCUM_RED_SIZE");
-  if (number > 0) 
+  if (number > 0)
   {
     alist[n++] = GLX_ACCUM_RED_SIZE;
     alist[n++] = number;
   }
 
   number = iupAttribGetInt(ih,"ACCUM_GREEN_SIZE");
-  if (number > 0) 
+  if (number > 0)
   {
     alist[n++] = GLX_ACCUM_GREEN_SIZE;
     alist[n++] = number;
   }
 
   number = iupAttribGetInt(ih,"ACCUM_BLUE_SIZE");
-  if (number > 0) 
+  if (number > 0)
   {
     alist[n++] = GLX_ACCUM_BLUE_SIZE;
     alist[n++] = number;
   }
 
   number = iupAttribGetInt(ih,"ACCUM_ALPHA_SIZE");
-  if (number > 0) 
+  if (number > 0)
   {
     alist[n++] = GLX_ACCUM_ALPHA_SIZE;
     alist[n++] = number;
@@ -204,11 +201,21 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
   {
     if (iupAttribGetBoolean(ih,"STEREO"))
     {
+      int i;
       /* remove the stereo flag and try again */
-      n--;
-      alist[n] = None;
-      iupAttribSet(ih, "STEREO", "NO");
+      for (i = 0; i < n; i++)
+      {
+        if (alist[i] == GLX_STEREO)
+        {
+          int j;
+          for (j = i; j < n - 1; j++) /* n-1 is the index of None */
+            alist[j] = alist[j + 1];
+          n--;
+          break;
+        }
+      }
 
+      iupAttribSet(ih, "STEREO", "NO");
       gldata->vinfo = glXChooseVisual(gldata->display, DefaultScreen(gldata->display), alist);
     }
   }
@@ -278,9 +285,33 @@ static int xGLCanvasMapMethod(Ihandle* ih)
     {
       int attribs[9], a = 0;
       char* value;
+      GLXFBConfig matching_config = NULL;
+      int nelements = 0, i;
+      GLXFBConfig *configs = glXGetFBConfigs(gldata->display, DefaultScreen(gldata->display), &nelements);
 
-	    int nelements;
-	    GLXFBConfig *config = glXChooseFBConfig(gldata->display, DefaultScreen(gldata->display), 0, &nelements);
+      if (configs && nelements > 0)
+      {
+        for (i = 0; i < nelements; i++)
+        {
+          int visual_id = 0;
+          /* Find the FBConfig that matches the VisualID of our chosen XVisualInfo */
+          glXGetFBConfigAttrib(gldata->display, configs[i], GLX_VISUAL_ID, &visual_id);
+          if (visual_id == gldata->vinfo->visualid)
+          {
+            matching_config = configs[i];
+            break;
+          }
+        }
+        XFree(configs);
+      }
+
+      if (!matching_config)
+      {
+        iupAttribSet(ih, "ERROR", "Could not find a GLXFBConfig matching the chosen XVisualInfo.");
+        glXMakeCurrent(oldDisplay, oldDrawable, oldContext);
+        glXDestroyContext(gldata->display, tempContext);
+        return IUP_NOERROR;
+      }
 
       value = iupAttribGetStr(ih, "CONTEXTVERSION");
       if (value)
@@ -330,8 +361,8 @@ static int xGLCanvasMapMethod(Ihandle* ih)
       }
 
       attribs[a] = 0; /* terminator */
-      
-      gldata->context = CreateContextAttribsARB(gldata->display, *config, shared_context, GL_TRUE, attribs);
+
+      gldata->context = CreateContextAttribsARB(gldata->display, matching_config, shared_context, GL_TRUE, attribs);
     }
 
     glXMakeCurrent(oldDisplay, oldDrawable, oldContext);
@@ -355,7 +386,7 @@ static int xGLCanvasMapMethod(Ihandle* ih)
   iupAttribSet(ih, "CONTEXT", (char*)gldata->context);
 
   /* create colormap for index mode */
-  if (iupStrEqualNoCase(iupAttribGetStr(ih,"COLOR"), "INDEX") && 
+  if (iupStrEqualNoCase(iupAttribGetStr(ih,"COLOR"), "INDEX") &&
       gldata->vinfo->class != StaticColor && gldata->vinfo->class != StaticGray)
   {
     gldata->colormap = XCreateColormap(gldata->display, RootWindow(gldata->display, DefaultScreen(gldata->display)), gldata->vinfo->visual, AllocAll);
