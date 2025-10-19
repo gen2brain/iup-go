@@ -93,6 +93,13 @@ void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc); /* Used in
 /* dialog */
 gboolean iupgtkDialogDeleteEvent(GtkWidget *widget, GdkEvent *evt, Ihandle *ih);
 
+/* tray */
+#if GTK_CHECK_VERSION(2, 10, 0)
+int iupgtkSetTrayAttrib(Ihandle *ih, const char *value);
+int iupgtkSetTrayTipAttrib(Ihandle *ih, const char *value);
+int iupgtkSetTrayImageAttrib(Ihandle *ih, const char *value);
+void iupgtkTrayCleanup(Ihandle *ih);
+#endif
 
 #ifdef __cplusplus
 }
