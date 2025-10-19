@@ -172,7 +172,7 @@ static void motCanvasExposeCallback(Widget w, Ihandle *ih, XtPointer call_data)
   IFnff cb;
   (void)call_data;
 
-  if (!XtWindow(w) || !ih) 
+  if (!XtWindow(w) || !ih)
     return;
 
   cb = (IFnff)IupGetCallback(ih,"ACTION");
@@ -181,6 +181,7 @@ static void motCanvasExposeCallback(Widget w, Ihandle *ih, XtPointer call_data)
     if (!iupAttribGet(ih, "_IUPMOT_NO_BGCOLOR"))
       motCanvasSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));  /* reset to update window attributes */
 
+    iupAttribSet(ih, "DRAWABLE", (char*)XtWindow(w));
     cb(ih, (float)ih->data->posx, (float)ih->data->posy);
   }
 }
