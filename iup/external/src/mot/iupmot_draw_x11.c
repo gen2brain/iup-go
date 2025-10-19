@@ -37,31 +37,74 @@ struct _IdrawCanvas{
   int clip_x1, clip_y1, clip_x2, clip_y2;
 };
 
-static void motDrawGetGeometry(Display *dpy, Drawable wnd, int *_w, int *_h, int *_d)
+static int motDrawGetGeometry(Display *dpy, Drawable wnd, int *_w, int *_h, int *_d)
 {
   Window root;
   int x, y;
-  unsigned int w, h, b, d;
-  XGetGeometry(dpy, wnd, &root, &x, &y, &w, &h, &b, &d);
-  *_w = w;
-  *_h = h;
-  *_d = d;
+  unsigned int w = 0, h = 0, b = 0, d = 0;
+  Status status = XGetGeometry(dpy, wnd, &root, &x, &y, &w, &h, &b, &d);
+  if (status == 0)
+  {
+    *_w = 0;
+    *_h = 0;
+    *_d = 0;
+    return 0;
+  }
+  *_w = (int)w;
+  *_h = (int)h;
+  *_d = (int)d;
+  return 1;
 }
 
 IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
-  IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
+  IdrawCanvas* dc;
   int depth;
+
+  dc = calloc(1, sizeof(IdrawCanvas));
+  if (!dc)
+    return NULL;
 
   dc->ih = ih;
   dc->wnd = (Window)IupGetAttribute(ih, "DRAWABLE");
+  if (!dc->wnd)
+  {
+    free(dc);
+    return NULL;
+  }
 
-  dc->gc = XCreateGC(iupmot_display, dc->wnd, 0, NULL);
+  if (!motDrawGetGeometry(iupmot_display, dc->wnd, &dc->w, &dc->h, &depth))
+  {
+    free(dc);
+    return NULL;
+  }
 
-  motDrawGetGeometry(iupmot_display, dc->wnd, &dc->w, &dc->h, &depth);
+  if (dc->w <= 0) dc->w = 1;
+  if (dc->h <= 0) dc->h = 1;
 
   dc->pixmap = XCreatePixmap(iupmot_display, dc->wnd, dc->w, dc->h, depth);
+  if (!dc->pixmap)
+  {
+    free(dc);
+    return NULL;
+  }
+
   dc->pixmap_gc = XCreateGC(iupmot_display, dc->pixmap, 0, NULL);
+  if (!dc->pixmap_gc)
+  {
+    XFreePixmap(iupmot_display, dc->pixmap);
+    free(dc);
+    return NULL;
+  }
+
+  dc->gc = XCreateGC(iupmot_display, dc->wnd, 0, NULL);
+  if (!dc->gc)
+  {
+    XFreeGC(iupmot_display, dc->pixmap_gc);
+    XFreePixmap(iupmot_display, dc->pixmap);
+    free(dc);
+    return NULL;
+  }
 
   iupAttribSet(ih, "DRAWDRIVER", "X11");
 
@@ -70,39 +113,80 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
-  XFreeGC(iupmot_display, dc->pixmap_gc);
-  XFreePixmap(iupmot_display, dc->pixmap);
-  XFreeGC(iupmot_display, dc->gc);
+  if (!dc)
+    return;
+
+  if (dc->pixmap_gc)
+    XFreeGC(iupmot_display, dc->pixmap_gc);
+  if (dc->pixmap)
+    XFreePixmap(iupmot_display, dc->pixmap);
+  if (dc->gc)
+    XFreeGC(iupmot_display, dc->gc);
 
   free(dc);
 }
 
 IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 {
-  int w, h, depth;
+  int w = 0, h = 0, depth = 0;
 
-  motDrawGetGeometry(iupmot_display, dc->wnd, &w, &h, &depth);
+  if (!dc || !dc->wnd)
+    return;
+
+  if (!motDrawGetGeometry(iupmot_display, dc->wnd, &w, &h, &depth))
+    return;
+
+  if (w <= 0 || h <= 0)
+    return;
 
   if (w != dc->w || h != dc->h)
   {
     dc->w = w;
     dc->h = h;
 
-    XFreeGC(iupmot_display, dc->pixmap_gc);
-    XFreePixmap(iupmot_display, dc->pixmap);
+    if (dc->pixmap_gc)
+      XFreeGC(iupmot_display, dc->pixmap_gc);
+    if (dc->pixmap)
+      XFreePixmap(iupmot_display, dc->pixmap);
 
     dc->pixmap = XCreatePixmap(iupmot_display, dc->wnd, dc->w, dc->h, depth);
+    if (!dc->pixmap)
+    {
+      dc->pixmap_gc = NULL;
+      dc->w = 0;
+      dc->h = 0;
+      return;
+    }
+
     dc->pixmap_gc = XCreateGC(iupmot_display, dc->pixmap, 0, NULL);
+    if (!dc->pixmap_gc)
+    {
+      XFreePixmap(iupmot_display, dc->pixmap);
+      dc->pixmap = None;
+      dc->w = 0;
+      dc->h = 0;
+      return;
+    }
   }
 }
 
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
+  if (!dc || !dc->wnd || !dc->pixmap || !dc->gc)
+    return;
+
   XCopyArea(iupmot_display, dc->pixmap, dc->wnd, dc->gc, 0, 0, dc->w, dc->h, 0, 0);
 }
 
 IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
 {
+  if (!dc)
+  {
+    if (w) *w = 0;
+    if (h) *h = 0;
+    return;
+  }
+
   if (w) *w = dc->w;
   if (h) *h = dc->h;
 }
