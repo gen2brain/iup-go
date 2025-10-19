@@ -650,10 +650,6 @@ static void gtkDialogUnMapMethod(Ihandle* ih)
 {
   GtkWidget* inner_parent, *parent;
 
-#if GTK_CHECK_VERSION(2, 10, 0) && !GTK_CHECK_VERSION(3, 14, 0)
-  GtkStatusIcon* status_icon;
-#endif
-
   if (ih->data->menu) 
   {
     ih->data->menu->handle = NULL; /* the dialog will destroy the native menu */
@@ -661,13 +657,8 @@ static void gtkDialogUnMapMethod(Ihandle* ih)
     ih->data->menu = NULL;
   }
 
-#if GTK_CHECK_VERSION(2, 10, 0) && !GTK_CHECK_VERSION(3, 14, 0)
-  status_icon = (GtkStatusIcon*)iupAttribGet(ih, "_IUPDLG_STATUSICON");
-  if (status_icon)
-  {
-    g_object_unref(status_icon);
-    iupAttribSet(ih, "_IUPDLG_STATUSICON", NULL);
-  }
+#if GTK_CHECK_VERSION(2, 10, 0)
+  iupgtkTrayCleanup(ih);
 #endif
 
   /* disconnect signal handlers */
@@ -1028,121 +1019,6 @@ static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-/* gtk_status_icon - deprecated in 3.14, but still available in 3.22 */
-#if GTK_CHECK_VERSION(2, 10, 0)
-static int gtkDialogTaskDoubleClick(int button)
-{
-  static int last_button = -1;
-  static GTimer* timer = NULL;
-  if (last_button == -1 || last_button != button)
-  {
-    last_button = button;
-    if (timer)
-      g_timer_destroy(timer);
-    timer = g_timer_new();
-    return 0;
-  }
-  else
-  {
-    double seconds;
-
-    if (!timer)  /* just in case */
-      return 0;
-
-    seconds = g_timer_elapsed(timer, NULL);
-    if (seconds < 0.4)
-    {
-      /* reset state */
-      g_timer_destroy(timer);
-      timer = NULL;
-      last_button = -1;  
-      return 1;
-    }
-    else
-    {
-      g_timer_reset(timer);
-      return 0;
-    }
-  }
-}
-
-static void gtkDialogTaskAction(GtkStatusIcon *status_icon, Ihandle *ih)
-{
-  /* from GTK source code it is called only when button==1 and pressed==1 */
-  int button = 1;
-  int pressed = 1;
-  int dclick = gtkDialogTaskDoubleClick(button);
-  IFniii cb = (IFniii)IupGetCallback(ih, "TRAYCLICK_CB");
-  if (cb && cb(ih, button, pressed, dclick) == IUP_CLOSE)
-    IupExitLoop();
-  (void)status_icon;
-}
-
-static void gtkDialogTaskPopupMenu(GtkStatusIcon *status_icon, guint gbutton, guint activate_time, Ihandle *ih)
-{
-  /* from GTK source code it is called only when button==3 and pressed==1 */
-  int button = 3;
-  int pressed = 1;
-  int dclick = gtkDialogTaskDoubleClick(button);
-  IFniii cb = (IFniii)IupGetCallback(ih, "TRAYCLICK_CB");
-  if (cb && cb(ih, button, pressed, dclick) == IUP_CLOSE)
-    IupExitLoop();
-  (void)activate_time;
-  (void)gbutton;
-  (void)status_icon;
-}
-
-static GtkStatusIcon* gtkDialogGetStatusIcon(Ihandle *ih)
-{
-  GtkStatusIcon* status_icon = (GtkStatusIcon*)iupAttribGet(ih, "_IUPDLG_STATUSICON");
-  if (!status_icon)
-  {
-    status_icon = gtk_status_icon_new();
-
-    g_signal_connect(G_OBJECT(status_icon), "activate", G_CALLBACK(gtkDialogTaskAction), ih);
-    g_signal_connect(G_OBJECT(status_icon), "popup-menu", G_CALLBACK(gtkDialogTaskPopupMenu), ih);
-
-    iupAttribSet(ih, "_IUPDLG_STATUSICON", (char*)status_icon);
-  }
-  return status_icon;
-}
-
-static int gtkDialogSetTrayAttrib(Ihandle *ih, const char *value)
-{
-  GtkStatusIcon* status_icon = gtkDialogGetStatusIcon(ih);
-  gtk_status_icon_set_visible(status_icon, iupStrBoolean(value));
-  return 1;
-}
-
-static int gtkDialogSetTrayTipAttrib(Ihandle *ih, const char *value)
-{
-  GtkStatusIcon* status_icon = gtkDialogGetStatusIcon(ih);
-#if GTK_CHECK_VERSION(2, 16, 0)
-  if (value)
-  {
-    gtk_status_icon_set_has_tooltip(status_icon, TRUE);
-    if (iupAttribGetBoolean(ih, "TIPMARKUP"))
-      gtk_status_icon_set_tooltip_markup(status_icon, value);
-    else
-      gtk_status_icon_set_tooltip_text(status_icon, value);
-  }
-  else
-    gtk_status_icon_set_has_tooltip(status_icon, FALSE);
-#else
-  gtk_status_icon_set_tooltip(status_icon, value);
-#endif
-  return 1;
-}
-
-static int gtkDialogSetTrayImageAttrib(Ihandle *ih, const char *value)
-{
-  GtkStatusIcon* status_icon = gtkDialogGetStatusIcon(ih);
-  GdkPixbuf* icon = (GdkPixbuf*)iupImageGetIcon(value);
-  gtk_status_icon_set_from_pixbuf(status_icon, icon);
-  return 1;
-}
-#endif  /* gtk_status_icon */
-
 #if GTK_CHECK_VERSION(3, 4, 0)
 static int gtkDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
 {
@@ -1199,9 +1075,9 @@ void iupdrvDialogInitClass(Iclass* ic)
 #endif
 /* gtk_status_icon - deprecated in 3.14, but still available in 3.22 */
 #if GTK_CHECK_VERSION(2, 10, 0)
-  iupClassRegisterAttribute(ic, "TRAY", NULL, gtkDialogSetTrayAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, gtkDialogSetTrayImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIP", NULL, gtkDialogSetTrayTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TRAY", NULL, iupgtkSetTrayAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, iupgtkSetTrayImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TRAYTIP", NULL, iupgtkSetTrayTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TRAYTIPMARKUP", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
 #endif
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
