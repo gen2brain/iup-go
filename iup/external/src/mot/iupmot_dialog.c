@@ -743,7 +743,7 @@ static int motDialogSetIconAttrib(Ihandle* ih, const char *value)
     if (icon)
       XtVaSetValues(ih->handle, XmNiconPixmap, icon, NULL);
     if (icon_mask)
-      XtVaSetValues(ih->handle, XmNiconMask, icon, NULL);
+      XtVaSetValues(ih->handle, XmNiconMask, icon_mask, NULL);
   }
   return 1;
 }
@@ -1030,10 +1030,13 @@ static int motDialogMapMethod(Ihandle* ih)
 static void motDialogUnMapMethod(Ihandle* ih)
 {
   Widget dialog_manager;
-  if (ih->data->menu) 
+
+  iupmotTrayCleanup(ih);
+
+  if (ih->data->menu)
   {
     ih->data->menu->handle = NULL; /* the dialog will destroy the native menu */
-    IupDestroy(ih->data->menu);  
+    IupDestroy(ih->data->menu);
     ih->data->menu = NULL;
   }
 
@@ -1047,7 +1050,7 @@ static void motDialogUnMapMethod(Ihandle* ih)
 
   XtRemoveEventHandler(dialog_manager, KeyPressMask, False, (XtEventHandler)iupmotKeyPressEvent, (XtPointer)ih);
   XtRemoveCallback(dialog_manager, XmNhelpCallback, (XtCallbackProc)iupmotHelpCallback, (XtPointer)ih);
-  
+
   iupdrvBaseUnMapMethod(ih);
 }
 
@@ -1110,6 +1113,8 @@ void iupdrvDialogInitClass(Iclass* ic)
     iupmot_wm_deletewindow = XmInternAtom(iupmot_display, "WM_DELETE_WINDOW", False);
   }
 
+  iupClassRegisterCallback(ic, "TRAYCLICK_CB", "iii");
+
   /* Driver Dependent Attribute functions */
 
   /* Visual */
@@ -1130,15 +1135,16 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, motDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "TRAY", NULL, iupmotSetTrayAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, iupmotSetTrayImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TRAYTIP", NULL, iupmotSetTrayTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
   /* IupDialog X Only */
   iupClassRegisterAttribute(ic, "XWINDOW", iupmotGetXWindowAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_NO_STRING);
 
   /* Not Supported */
   iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
