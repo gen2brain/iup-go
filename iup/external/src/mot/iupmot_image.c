@@ -162,7 +162,8 @@ void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive
 
   bpp = iupAttribGetInt(ih, "BPP");
 
-  iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
+  if (bgcolor)
+    iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
 
   if (bpp == 8)
   {
@@ -175,11 +176,21 @@ void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive
     {
       if (colors[i].a == 0)
       {
-        colors[i].r = bg_r;
-        colors[i].g = bg_g;
-        colors[i].b = bg_b;
-        colors[i].a = 255;
-        bgcolor_depend = 1;
+        if (bgcolor)
+        {
+          colors[i].r = bg_r;
+          colors[i].g = bg_g;
+          colors[i].b = bg_b;
+          colors[i].a = 255;
+          bgcolor_depend = 1;
+        }
+        else
+        {
+          colors[i].r = 0;
+          colors[i].g = 0;
+          colors[i].b = 0;
+          colors[i].a = 0;
+        }
       }
 
       if (make_inactive)
@@ -214,9 +225,8 @@ void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive
         if (bpp == 32)
         {
           unsigned char a = *(pixel_data+3);
-          if (a != 255)
+          if (bgcolor && a != 255)
           {
-            /* flat alpha */
             r = iupALPHABLEND(r, bg_r, a);
             g = iupALPHABLEND(g, bg_g, a);
             b = iupALPHABLEND(b, bg_b, a);
@@ -322,7 +332,7 @@ void* iupdrvImageCreateCursor(Ihandle *ih)
 
 static Pixmap motImageCreateMask(Ihandle *ih)
 {
-  int bpp,y,x,
+  int bpp, y, x,
       width = ih->currentwidth,
       height = ih->currentheight,
       line_size = (width+7)/8,
@@ -330,34 +340,56 @@ static Pixmap motImageCreateMask(Ihandle *ih)
   unsigned char *imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
   char *bits, *sb;
   Pixmap mask;
-  unsigned char colors[256];
 
   bpp = iupAttribGetInt(ih, "BPP");
-  if (bpp > 8)
-    return 0;
 
   bits = (char*)malloc(size_bytes);
   if (!bits) return 0;
   memset(bits, 0, size_bytes);
 
-  iupImageInitNonBgColors(ih, colors);
-
   sb = bits;
-  for (y=0; y<height; y++)
-  {
-    for (x=0; x<width; x++)
-    {
-      int byte = x/8;
-      int bit = x%8;
-      int index = (int)imgdata[y*width+x];
-      if (colors[index])
-        sb[byte] = (char)(sb[byte] | (1<<bit));
-    }
 
-    sb += line_size;
+  if (bpp == 8)
+  {
+    unsigned char colors[256];
+    iupImageInitNonBgColors(ih, colors);
+
+    for (y=0; y<height; y++)
+    {
+      for (x=0; x<width; x++)
+      {
+        int byte = x/8;
+        int bit = x%8;
+        int index = (int)imgdata[y*width+x];
+        if (colors[index])
+          sb[byte] = (char)(sb[byte] | (1<<bit));
+      }
+      sb += line_size;
+    }
+  }
+  else if (bpp == 32)
+  {
+    for (y=0; y<height; y++)
+    {
+      for (x=0; x<width; x++)
+      {
+        int byte = x/8;
+        int bit = x%8;
+        unsigned char *pixel_data = imgdata + (y*width + x)*4;
+        unsigned char a = *(pixel_data+3);
+        if (a > 127)
+          sb[byte] = (char)(sb[byte] | (1<<bit));
+      }
+      sb += line_size;
+    }
+  }
+  else
+  {
+    free(bits);
+    return 0;
   }
 
-  mask = XCreateBitmapFromData(iupmot_display, 
+  mask = XCreateBitmapFromData(iupmot_display,
                                RootWindow(iupmot_display,iupmot_screen),
                                bits, width, height);
 
