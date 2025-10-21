@@ -134,6 +134,9 @@ IUP_DRV_API void iupCocoaSetCanFocus(Ihandle* ih, int can);
 IUP_DRV_API void iupCocoaFocusIn(Ihandle* ih);
 IUP_DRV_API void iupCocoaFocusOut(Ihandle* ih);
 
+/* System information */
+IUP_DRV_API int iupCocoaIsSystemDarkMode(void);
+
 #ifdef __cplusplus
 }
 #endif

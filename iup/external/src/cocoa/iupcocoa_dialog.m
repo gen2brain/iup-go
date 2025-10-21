@@ -37,6 +37,8 @@ static const void* DOCKPROGRESS_ASSOCIATED_OBJ_KEY = @"DOCKPROGRESS_ASSOCIATED_O
 static const void* TRAYCLICK_DELEGATE_ASSOCIATED_OBJ_KEY = @"TRAYCLICK_DELEGATE_ASSOCIATED_OBJ_KEY";
 static const char IUPCocoaZoomRestoreFrameKey = 0;
 
+static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
+
 @interface ModalInfo : NSObject
 {
   Ihandle* _ih;
@@ -623,6 +625,34 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
 - (void)cocoaDialogChildDestroyNotification:(NSNotification*)notification
 {
   cocoaDialogChildDestroyNotification(notification);
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+  if (context == IupCocoaAppearanceContext)
+  {
+    if (@available(macOS 10.14, *))
+    {
+      NSWindow* the_window = (NSWindow*)object;
+      Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_window, IHANDLE_ASSOCIATED_OBJ_KEY);
+
+      if (!iupObjectCheck(ih))
+        return;
+
+      int dark_mode = iupCocoaIsSystemDarkMode();
+
+      IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
+      if (cb)
+        cb(ih, dark_mode);
+    }
+  }
+  else
+  {
+    [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+  }
 }
 
 @end
@@ -1490,6 +1520,14 @@ static int cocoaDialogMapMethod(Ihandle* ih)
   [nc addObserver:window_delegate selector:@selector(windowDidBecomeKey:) name:NSWindowDidBecomeKeyNotification object:the_window];
   [nc addObserver:window_delegate selector:@selector(windowDidResignKey:) name:NSWindowDidResignKeyNotification object:the_window];
 
+  if (@available(macOS 10.14, *))
+  {
+    [the_window addObserver:window_delegate
+                 forKeyPath:@"effectiveAppearance"
+                    options:NSKeyValueObservingOptionNew
+                    context:IupCocoaAppearanceContext];
+  }
+
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
@@ -1550,6 +1588,20 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
     }
   }
   [child_windows release];
+
+  if (@available(macOS 10.14, *))
+  {
+    @try
+    {
+      [the_window removeObserver:[the_window delegate]
+                      forKeyPath:@"effectiveAppearance"
+                         context:IupCocoaAppearanceContext];
+    }
+    @catch (NSException *exception)
+    {
+      /* Observer might not have been added, ignore */
+    }
+  }
 
   [[NSNotificationCenter defaultCenter] removeObserver:[the_window delegate] name:nil object:the_window];
 
@@ -1849,6 +1901,7 @@ void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterCallback(ic, "TRAYCLICK_CB", "iii");
   iupClassRegisterCallback(ic, "MOVE_CB", "ii");
+  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
   iupClassRegisterAttribute(ic, "CLIENTSIZE", cocoaDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", cocoaDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);

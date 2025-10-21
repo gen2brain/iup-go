@@ -425,6 +425,10 @@ char *iupdrvGetGlobal(const char *name)
         return NULL;
     }
   }
+  if (iupStrEqual(name, "DARKMODE"))
+  {
+    return iupStrReturnBoolean(iupCocoaIsSystemDarkMode());
+  }
 
   return NULL;
 }
