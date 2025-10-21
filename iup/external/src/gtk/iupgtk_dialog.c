@@ -456,6 +456,24 @@ static gboolean gtkDialogWindowStateEvent(GtkWidget *widget, GdkEventWindowState
   return FALSE;
 }
 
+static void gtkDialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Ihandle* ih)
+{
+  int dark_mode;
+  IFni cb;
+
+  (void)settings;
+  (void)pspec;
+
+  if (!iupObjectCheck(ih))
+    return;
+
+  dark_mode = iupgtkIsSystemDarkMode();
+
+  cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
+  if (cb)
+    cb(ih, dark_mode);
+}
+
 
 /****************************************************************
                      Idialog Methods
@@ -643,6 +661,18 @@ static int gtkDialogMapMethod(Ihandle* ih)
   if (iupStrBoolean(IupGetGlobal("INPUTCALLBACKS")))
     gtk_widget_add_events(ih->handle, GDK_POINTER_MOTION_MASK|GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_BUTTON_MOTION_MASK);
 
+  /* Monitor theme changes */
+  {
+    GtkSettings* settings = gtk_settings_get_default();
+    gulong handler_id;
+
+    handler_id = g_signal_connect(G_OBJECT(settings), "notify::gtk-theme-name", G_CALLBACK(gtkDialogThemeChanged), ih);
+    iupAttribSet(ih, "_IUPGTK_THEME_HANDLER1", (char*)(uintptr_t)handler_id);
+
+    handler_id = g_signal_connect(G_OBJECT(settings), "notify::gtk-application-prefer-dark-theme", G_CALLBACK(gtkDialogThemeChanged), ih);
+    iupAttribSet(ih, "_IUPGTK_THEME_HANDLER2", (char*)(uintptr_t)handler_id);
+  }
+
   return IUP_NOERROR;
 }
 
@@ -660,6 +690,20 @@ static void gtkDialogUnMapMethod(Ihandle* ih)
 #if GTK_CHECK_VERSION(2, 10, 0)
   iupgtkTrayCleanup(ih);
 #endif
+
+  /* Disconnect theme change monitoring */
+  {
+    gulong handler_id;
+    GtkSettings* settings = gtk_settings_get_default();
+
+    handler_id = (gulong)(uintptr_t)iupAttribGet(ih, "_IUPGTK_THEME_HANDLER1");
+    if (handler_id != 0)
+      g_signal_handler_disconnect(G_OBJECT(settings), handler_id);
+
+    handler_id = (gulong)(uintptr_t)iupAttribGet(ih, "_IUPGTK_THEME_HANDLER2");
+    if (handler_id != 0)
+      g_signal_handler_disconnect(G_OBJECT(settings), handler_id);
+  }
 
   /* disconnect signal handlers */
 #if GLIB_CHECK_VERSION(2, 32, 0)
@@ -1041,6 +1085,9 @@ void iupdrvDialogInitClass(Iclass* ic)
 
   /* Callback Windows and GTK Only */
   iupClassRegisterCallback(ic, "TRAYCLICK_CB", "iii");
+
+  /* Callback for theme changes */
+  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
   /* Driver Dependent Attribute functions */
   iupClassRegisterAttribute(ic, iupgtkGetNativeWindowHandleName(), iupgtkGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_NO_STRING);
