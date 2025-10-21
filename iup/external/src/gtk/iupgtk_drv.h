@@ -101,6 +101,8 @@ int iupgtkSetTrayImageAttrib(Ihandle *ih, const char *value);
 void iupgtkTrayCleanup(Ihandle *ih);
 #endif
 
+int iupgtkIsSystemDarkMode(void);
+
 #ifdef __cplusplus
 }
 #endif

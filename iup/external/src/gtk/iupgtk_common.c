@@ -1087,6 +1087,36 @@ void iupgtkClearSizeStyleCSS(GtkWidget* widget)
 #endif
 }
 
+int iupgtkIsSystemDarkMode(void)
+{
+#if GTK_CHECK_VERSION(3, 0, 0)
+  GtkWidget* temp_window;
+  GtkStyleContext* style;
+  GdkRGBA bg, fg;
+  double bg_lum, fg_lum;
+  int is_dark;
+
+  temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  style = gtk_widget_get_style_context(temp_window);
+
+  gtk_style_context_get_background_color(style, GTK_STATE_FLAG_NORMAL, &bg);
+  gtk_style_context_get_color(style, GTK_STATE_FLAG_NORMAL, &fg);
+
+  /* Calculate relative luminance using standard formula (ITU-R BT.709) */
+  bg_lum = 0.2126 * bg.red + 0.7152 * bg.green + 0.0722 * bg.blue;
+  fg_lum = 0.2126 * fg.red + 0.7152 * fg.green + 0.0722 * fg.blue;
+
+  /* Dark theme has lower background luminance than foreground */
+  is_dark = (bg_lum < fg_lum) ? 1 : 0;
+
+  gtk_widget_destroy(temp_window);
+
+  return is_dark;
+#else
+  return 0;
+#endif
+}
+
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
 {
   /* AtkText Interface? */
