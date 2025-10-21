@@ -263,6 +263,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setMultiUnselectionFunc(ih, fn.(MultiUnselectionFunc))
 	case "OPEN_CB":
 		setMenuOpenFunc(ih, fn.(MenuOpenFunc))
+	case "THEMECHANGED_CB":
+		setThemeChangedFunc(ih, fn.(ThemeChangedFunc))
 	}
 }
 

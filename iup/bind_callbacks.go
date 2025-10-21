@@ -396,6 +396,11 @@ extern int goIupMenuOpenCB(void *);
 static void goIupSetMenuOpenFunc(Ihandle *ih) {
 	IupSetCallback(ih, "OPEN_CB", (Icallback) goIupMenuOpenCB);
 }
+
+extern int goIupThemeChangedCB(void *, int darkMode);
+static void goIupSetThemeChangedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "THEMECHANGED_CB", (Icallback) goIupThemeChangedCB);
+}
 */
 import "C"
 
@@ -2607,6 +2612,34 @@ func setMenuOpenFunc(ih Ihandle, f MenuOpenFunc) {
 	callbacks.Store("OPEN_CB_"+ih.GetAttribute("UUID"), ch)
 
 	C.goIupSetMenuOpenFunc(ih.ptr())
+}
+
+//--------------------
+
+// ThemeChangedFunc for THEMECHANGED_CB callback.
+// Action generated when the user changes the UI theme.
+type ThemeChangedFunc func(ih Ihandle, darkMode int) int
+
+//export goIupThemeChangedCB
+func goIupThemeChangedCB(ih unsafe.Pointer, darkMode C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("THEMECHANGED_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "THEMECHANGED_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ThemeChangedFunc)
+
+	return C.int(f((Ihandle)(ih), int(darkMode)))
+}
+
+// setThemeChangedFunc for THEMECHANGED_CB callback.
+func setThemeChangedFunc(ih Ihandle, f ThemeChangedFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("THEMECHANGED_CB_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetThemeChangedFunc(ih.ptr())
 }
 
 //--------------------
