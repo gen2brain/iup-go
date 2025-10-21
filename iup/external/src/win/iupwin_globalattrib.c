@@ -54,7 +54,7 @@ static int winGlobalSetMutex(const char* name)
     return 1;
   }
 
-  /* wasn’t found, new one created therefore return FALSE */
+  /* wasn't found, new one created therefore return FALSE */
   return (win_singleintance == NULL);
 }
 
@@ -497,6 +497,9 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     else
       return NULL;
   }
+  if (iupStrEqual(name, "DARKMODE"))
+  {
+    return iupStrReturnBoolean(iupwinIsSystemDarkMode());
+  }
   return NULL;
 }
-
