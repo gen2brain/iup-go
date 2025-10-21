@@ -37,6 +37,7 @@ static iRegisteredGlobal global_attribs[] = {
   { "CONTROLKEY", 1, 1, 1, 1, 1 },
   { "COPYRIGHT", 1, 1, 1, 1, 1 },
   { "CURSORPOS", 1, 1, 1, 1, 0 },
+  { "DARKMODE", 1, 0, 1, 1, 1 },
   { "DEFAULTBUTTONPADDING", 1, 1, 1, 1, 0 },
   { "DEFAULTDECIMALSYMBOL", 1, 1, 1, 1, 0 },
   { "DEFAULTFONT", 1, 1, 1, 1, 0 },
