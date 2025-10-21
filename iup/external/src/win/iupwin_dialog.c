@@ -982,6 +982,22 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
       IupRefresh(ih);
       break;
     }
+  case WM_SETTINGCHANGE:
+    {
+      if (wp == 0 && lp != 0)
+      {
+        LPCTSTR area = (LPCTSTR)lp;
+        if (lstrcmp(area, TEXT("ImmersiveColorSet")) == 0)
+        {
+          int dark_mode = iupwinIsSystemDarkMode();
+
+          IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
+          if (cb)
+            cb(ih, dark_mode);
+        }
+      }
+      break;
+    }
   }
 
   if (msg == (UINT)WM_HELPMSG)

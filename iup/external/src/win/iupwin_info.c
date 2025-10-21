@@ -306,6 +306,43 @@ int iupwinIsAppThemed(void)
     return 0;
 }
 
+int iupwinIsSystemDarkMode(void)
+{
+  typedef HRESULT(STDAPICALLTYPE *PtrDwmGetWindowAttribute)(HWND, DWORD, PVOID, DWORD);
+  static PtrDwmGetWindowAttribute dwmGetWindowAttribute = NULL;
+  static int initialized = 0;
+  static int dark_mode = 0;
+
+  if (!iupwinIsWin10OrNew())
+    return 0;
+
+  if (!initialized)
+  {
+    HMODULE dwmLibrary = LoadLibrary(TEXT("dwmapi.dll"));
+    if (dwmLibrary)
+      dwmGetWindowAttribute = (PtrDwmGetWindowAttribute)GetProcAddress(dwmLibrary, "DwmGetWindowAttribute");
+    initialized = 1;
+  }
+
+  if (dwmGetWindowAttribute)
+  {
+    HKEY hKey;
+    DWORD value = 0;
+    DWORD size = sizeof(DWORD);
+
+    if (RegOpenKeyExA(HKEY_CURRENT_USER,
+                      "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                      0, KEY_READ, &hKey) == ERROR_SUCCESS)
+    {
+      if (RegQueryValueExA(hKey, "AppsUseLightTheme", NULL, NULL, (LPBYTE)&value, &size) == ERROR_SUCCESS)
+        dark_mode = (value == 0) ? 1 : 0;
+      RegCloseKey(hKey);
+    }
+  }
+
+  return dark_mode;
+}
+
 IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
 {
   RECT area;
