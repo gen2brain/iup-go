@@ -989,6 +989,8 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
         LPCTSTR area = (LPCTSTR)lp;
         if (lstrcmp(area, TEXT("ImmersiveColorSet")) == 0)
         {
+          iupwinTitleBarThemeColor(ih->handle);
+
           int dark_mode = iupwinIsSystemDarkMode();
 
           IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
@@ -1402,6 +1404,8 @@ static int winDialogMapMethod(Ihandle* ih)
 
   if (!ih->handle)
     return IUP_ERROR;
+
+  iupwinTitleBarThemeColor(ih->handle);
 
   /* associate HWND with Ihandle*, all Win32 controls must call this. */
   iupwinHandleAdd(ih, ih->handle);

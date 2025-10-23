@@ -1297,6 +1297,45 @@ void iupwinDrawFocusRect(HDC hDC, int x, int y, int w, int h)
   DrawFocusRect(hDC, &rect);
 }
 
+void iupwinTitleBarThemeColor(HWND hwnd)
+{
+  typedef HRESULT(STDAPICALLTYPE *PtrDwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD);
+  static PtrDwmSetWindowAttribute dwmSetWindowAttribute = NULL;
+  static int initialized = 0;
+
+  if (!iupwinIsWin10OrNew())
+    return;
+
+  if (!initialized)
+  {
+    HMODULE dwmLibrary = LoadLibrary(TEXT("dwmapi.dll"));
+    if (dwmLibrary)
+      dwmSetWindowAttribute = (PtrDwmSetWindowAttribute)GetProcAddress(dwmLibrary, "DwmSetWindowAttribute");
+    initialized = 1;
+  }
+
+  if (dwmSetWindowAttribute)
+  {
+    int dark_mode = iupwinIsSystemDarkMode();
+    BOOL value = dark_mode ? TRUE : FALSE;
+    DWORD attribute = 20;
+
+    if (iupwinCheckWindowsVersion(10, 0))
+    {
+      DWORD build = 0;
+      OSVERSIONINFOEX osvi;
+      osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+      if (GetVersionEx((OSVERSIONINFO*)&osvi))
+        build = osvi.dwBuildNumber;
+
+      if (build >= 18985)
+        attribute = 19;
+    }
+
+    dwmSetWindowAttribute(hwnd, attribute, &value, sizeof(value));
+  }
+}
+
 /* Unused in Windows */
 IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
 {
