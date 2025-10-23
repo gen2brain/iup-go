@@ -132,6 +132,8 @@ void iupwinGetNativeParentStyle(Ihandle* ih, DWORD *dwExStyle, DWORD *dwStyle);
 void iupwinMergeStyle(Ihandle* ih, DWORD old_mask, DWORD value);
 void iupwinSetStyle(Ihandle* ih, DWORD value, int set);
 
+void iupwinTitleBarThemeColor(HWND hwnd);
+
 int iupwinClassExist(const TCHAR* name);
 
 
