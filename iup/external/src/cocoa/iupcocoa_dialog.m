@@ -647,6 +647,26 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
       IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
       if (cb)
         cb(ih, dark_mode);
+
+      NSView* content_view = [the_window contentView];
+      if (content_view)
+      {
+        /* Recursively mark the content view and all subviews for redraw */
+        NSMutableArray* view_stack = [NSMutableArray arrayWithObject:content_view];
+        while ([view_stack count] > 0)
+        {
+          NSView* current_view = [view_stack lastObject];
+          [view_stack removeLastObject];
+
+          [current_view setNeedsDisplay:YES];
+
+          [view_stack addObjectsFromArray:[current_view subviews]];
+        }
+      }
+
+      ih->data->ignore_resize = 1;
+      IupRefresh(ih);
+      ih->data->ignore_resize = 0;
     }
   }
   else
