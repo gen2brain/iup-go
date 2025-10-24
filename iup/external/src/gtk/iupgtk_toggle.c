@@ -60,21 +60,46 @@ void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 
 void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
-  /* LAYOUT_DECORATION_ESTIMATE */
-  int check_box = IUP_TOGGLE_BOX;
-  (void)ih;
+#if GTK_CHECK_VERSION(3, 0, 0)
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    /* GtkSwitch dimensions estimate */
+    int switch_w = 40;
+    int switch_h = 24;
 
-  /* has margins too */
-  (*x) += 2 + check_box + 2;
-  if ((*y) < 2 + check_box + 2) (*y) = 2 + check_box + 2; /* minimum height */
-  else (*y) += 2+2;
+    (*x) += 2 + switch_w + 2;
+    if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
+    else (*y) += 2+2;
 
-  if (str && str[0]) /* add spacing between check box and text */
-    (*x) += 8;
+    if (str && str[0]) /* add spacing between switch and text */
+      (*x) += 8;
+  }
+  else
+#endif
+  {
+    /* LAYOUT_DECORATION_ESTIMATE */
+    int check_box = IUP_TOGGLE_BOX;
+    (void)ih;
+
+    /* has margins too */
+    (*x) += 2 + check_box + 2;
+    if ((*y) < 2 + check_box + 2) (*y) = 2 + check_box + 2; /* minimum height */
+    else (*y) += 2+2;
+
+    if (str && str[0]) /* add spacing between check box and text */
+      (*x) += 8;
+  }
 }
 
 static int gtkToggleGetCheck(Ihandle* ih)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    if (GTK_IS_SWITCH(ih->handle))
+        return gtk_switch_get_active(GTK_SWITCH(ih->handle))? 1: 0;
+  }
+#endif
   if (gtk_toggle_button_get_inconsistent((GtkToggleButton*)ih->handle))
     return -1;
   if (gtk_toggle_button_get_active((GtkToggleButton*)ih->handle))
@@ -149,9 +174,30 @@ static void gtkToggleUpdateImage(Ihandle* ih, int active, int check)
 
 static int gtkToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    if (GTK_IS_SWITCH(ih->handle))
+    {
+      int check;
+      iupAttribSet(ih, "_IUPGTK_IGNORE_TOGGLE", "1");
+
+      if (iupStrEqualNoCase(value,"TOGGLE"))
+        check = !gtk_switch_get_active(GTK_SWITCH(ih->handle));
+      else
+        check = iupStrBoolean(value);
+
+      gtk_switch_set_active(GTK_SWITCH(ih->handle), check);
+
+      iupAttribSet(ih, "_IUPGTK_IGNORE_TOGGLE", NULL);
+    }
+    return 0;
+  }
+#endif
+
   if (iupStrEqualNoCase(value,"NOTDEF"))
     gtk_toggle_button_set_inconsistent((GtkToggleButton*)ih->handle, TRUE);
-  else 
+  else
   {
     int check;
     Ihandle* last_ih = NULL;
@@ -205,6 +251,13 @@ static char* gtkToggleGetValueAttrib(Ihandle* ih)
 
 static int gtkToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    if (GTK_IS_SWITCH(ih->handle))
+      return 0; /* GtkSwitch does not have a title */
+  }
+#endif
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
     GtkButton* button = (GtkButton*)ih->handle;
@@ -271,7 +324,17 @@ static int gtkToggleSetPaddingAttrib(Ihandle* ih, const char* value)
 static int gtkToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  GtkWidget* label = (GtkWidget*)gtk_button_get_image((GtkButton*)ih->handle);
+  GtkWidget* label;
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    if (GTK_IS_SWITCH(ih->handle))
+      return 0; /* GtkSwitch does not have an internal label */
+  }
+#endif
+
+  label = (GtkWidget*)gtk_button_get_image((GtkButton*)ih->handle);
   if (!label) return 0;
 
   if (!iupStrToRGB(value, &r, &g, &b))
@@ -289,7 +352,15 @@ static int gtkToggleSetFontAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    GtkWidget* label = gtk_button_get_image((GtkButton*)ih->handle);
+    GtkWidget* label = NULL;
+#if GTK_CHECK_VERSION(3, 0, 0)
+    if (iupAttribGetBoolean(ih, "SWITCH"))
+    {
+      if (GTK_IS_SWITCH(ih->handle))
+        return 1; /* GtkSwitch does not have an internal label, but font attribute must be stored */
+    }
+#endif
+    label = gtk_button_get_image((GtkButton*)ih->handle);
     if (label)
       iupgtkUpdateWidgetFont(ih, label);
   }
@@ -345,6 +416,28 @@ static int gtkToggleSetActiveAttrib(Ihandle* ih, const char* value)
 }
 
 /****************************************************************************************************/
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+static void gtkSwitchToggled(GtkSwitch *widget, GParamSpec *pspec, Ihandle* ih)
+{
+  IFni cb;
+  int check;
+  (void)widget;
+  (void)pspec;
+
+  if (iupAttribGet(ih, "_IUPGTK_IGNORE_TOGGLE"))
+    return;
+
+  check = gtk_switch_get_active(GTK_SWITCH(ih->handle))? 1: 0;
+
+  cb = (IFni)IupGetCallback(ih, "ACTION");
+  if (cb && cb(ih, check) == IUP_CLOSE)
+    IupExitLoop();
+
+  if (iupObjectCheck(ih))
+    iupBaseCallValueChangedCb(ih);
+}
+#endif
 
 static void gtkToggleToggled(GtkToggleButton *widget, Ihandle* ih)
 {
@@ -424,7 +517,7 @@ static gboolean gtkToggleButtonEvent(GtkWidget *widget, GdkEventButton *evt, Iha
         return TRUE; /* ignore message to avoid change toggle state */
     }
   }
-    
+
   (void)widget;
   return FALSE;
 }
@@ -462,7 +555,7 @@ static gboolean gtkToggleEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing *ev
   {
     if (evt->type == GDK_ENTER_NOTIFY)
       gtk_button_set_relief((GtkButton*)ih->handle, GTK_RELIEF_NORMAL);
-    else  if (evt->type == GDK_LEAVE_NOTIFY)               
+    else  if (evt->type == GDK_LEAVE_NOTIFY)
       gtk_button_set_relief((GtkButton*)ih->handle, GTK_RELIEF_NONE);
   }
 
@@ -503,10 +596,18 @@ static int gtkToggleMapMethod(Ihandle* ih)
   {
     if (ih->data->type == IUP_TOGGLE_TEXT)
     {
-      ih->handle = gtk_check_button_new();
-
-      if (iupAttribGetBoolean(ih, "3STATE"))
-        is3state = 1;
+#if GTK_CHECK_VERSION(3, 0, 0)
+      if (iupAttribGetBoolean(ih, "SWITCH"))
+      {
+        ih->handle = gtk_switch_new();
+      }
+      else
+#endif
+      {
+        ih->handle = gtk_check_button_new();
+        if (iupAttribGetBoolean(ih, "3STATE"))
+          is3state = 1;
+      }
     }
     else
       ih->handle = gtk_toggle_button_new();
@@ -517,8 +618,17 @@ static int gtkToggleMapMethod(Ihandle* ih)
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
-    gtk_button_set_image((GtkButton*)ih->handle, gtk_label_new(NULL));
-    gtk_toggle_button_set_mode((GtkToggleButton*)ih->handle, TRUE);
+#if GTK_CHECK_VERSION(3, 0, 0)
+    if (iupAttribGetBoolean(ih, "SWITCH"))
+    {
+      /* GtkSwitch does not have an internal label */
+    }
+    else
+#endif
+    {
+      gtk_button_set_image((GtkButton*)ih->handle, gtk_label_new(NULL));
+      gtk_toggle_button_set_mode((GtkToggleButton*)ih->handle, TRUE);
+    }
   }
   else
   {
@@ -552,7 +662,16 @@ static int gtkToggleMapMethod(Ihandle* ih)
   g_signal_connect(G_OBJECT(ih->handle), "key-press-event",    G_CALLBACK(iupgtkKeyPressEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "show-help",          G_CALLBACK(iupgtkShowHelp), ih);
 
-  g_signal_connect(G_OBJECT(ih->handle), "toggled",            G_CALLBACK(gtkToggleToggled), ih);
+#if GTK_CHECK_VERSION(3, 0, 0)
+  if (iupAttribGetBoolean(ih, "SWITCH") && ih->data->type == IUP_TOGGLE_TEXT)
+  {
+    g_signal_connect(G_OBJECT(ih->handle), "notify::active", G_CALLBACK(gtkSwitchToggled), ih);
+  }
+  else
+#endif
+  {
+    g_signal_connect(G_OBJECT(ih->handle), "toggled",            G_CALLBACK(gtkToggleToggled), ih);
+  }
 
   if (ih->data->type == IUP_TOGGLE_IMAGE || is3state)
   {
@@ -603,6 +722,7 @@ void iupdrvToggleInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, gtkToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SWITCH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* NOT supported */
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
