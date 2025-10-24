@@ -154,12 +154,40 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
     GdkScreen *screen = gdk_screen_get_default();
-    GdkWindow *root = gdk_screen_get_root_window(gdk_screen_get_default());
     int x = 0;
     int y = 0;
     int w = gdk_screen_get_width(screen);
     int h = gdk_screen_get_height(screen);
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+    /* gdk_window_get_root_origin is deprecated and fails on Wayland. */
+    /* Get the origin from the primary monitor instead. */
+#if GTK_CHECK_VERSION(3, 22, 0)
+    GdkDisplay *display = gdk_display_get_default();
+    GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
+    if (!monitor)
+       monitor = gdk_display_get_monitor(display, 0);
+    GdkRectangle rect;
+    gdk_monitor_get_geometry(monitor, &rect);
+    x = rect.x;
+    y = rect.y;
+#else
+    GdkRectangle rect;
+#if GTK_CHECK_VERSION(2, 20, 0)
+    gint monitor_num = gdk_screen_get_primary_monitor(screen);
+#else
+    gint monitor_num = gdk_screen_get_monitor_at_point(screen, 0, 0);
+#endif
+    gdk_screen_get_monitor_geometry(screen, monitor_num, &rect);
+    x = rect.x;
+    y = rect.y;
+#endif
+#else
+    /* GTK2, Wayland not supported. */
+    GdkWindow *root = gdk_screen_get_root_window(gdk_screen_get_default());
     gdk_window_get_root_origin(root, &x, &y);
+#endif
+
     return iupStrReturnStrf("%d %d %d %d", x, y, w, h);
   }
   if (iupStrEqual(name, "MONITORSINFO"))
