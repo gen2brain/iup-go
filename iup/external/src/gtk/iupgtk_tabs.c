@@ -273,6 +273,23 @@ static int gtkTabsSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int gtkTabsSetTabDraggableAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle)
+  {
+    Ihandle* child;
+    gboolean reorderable = iupStrBoolean(value);
+
+    for (child = ih->firstchild; child; child = child->brother)
+    {
+      GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+      if (tab_page)
+        gtk_notebook_set_tab_reorderable((GtkNotebook*)ih->handle, tab_page, reorderable);
+    }
+  }
+  return 1;
+}
+
 
 /* ------------------------------------------------------------------------- */
 /* gtkTabs - Callbacks                                                       */
@@ -372,7 +389,7 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     pos = IupGetChildPos(ih, child);
 
-    /* Can not hide the tab_page, 
+    /* Can not hide the tab_page,
        or the tab will be automatically hidden.
        So create a secondary container to hide its child instead. */
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -444,7 +461,7 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     iupAttribSet(ih, "_IUPGTK_IGNORE_CHANGE", "1");
 
     if ((tabimage && tabtitle) || ih->data->show_close)
-    { 
+    {
 #if GTK_CHECK_VERSION(3, 0, 0)
       if (ih->data->orientation == ITABS_VERTICAL)
         box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
@@ -468,7 +485,7 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     {
       gtk_container_add((GtkContainer*)box, tab_image);
       gtk_container_add((GtkContainer*)box, tab_label);
-      
+
       if(ih->data->show_close)
         gtk_container_add((GtkContainer*)box, tab_close);
 
@@ -509,6 +526,12 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     iupAttribSet(child, "_IUPGTK_TABLABEL", (char*)tab_label);
     iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)tab_container);
     iupAttribSet(child, "_IUPTAB_PAGE", (char*)tab_page);
+
+    /* check if tab is draggable */
+    char* draggable = iupAttribGet(ih, "TABDRAGGABLE");
+    if (iupStrBoolean(draggable))
+      gtk_notebook_set_tab_reorderable((GtkNotebook*)ih->handle, tab_page, TRUE);
+
     iupStrToRGB(IupGetAttribute(ih, "BGCOLOR"), &r, &g, &b);
     iupgtkSetBgColor(tab_container, r, g, b);
 
@@ -546,29 +569,37 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
 static void gtkTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 {
-  if (ih->handle)
+  if (ih->handle && GTK_IS_WIDGET(ih->handle))
   {
     GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
-    if (tab_page)
+
+    if (tab_page && GTK_IS_WIDGET(tab_page))
     {
-      if (iupdrvTabsGetCurrentTab(ih) == pos)
-        iupAttribSet(ih, "_IUPGTK_IGNORE_SWITCHPAGE", "1");
+      int page_num = gtk_notebook_page_num((GtkNotebook*)ih->handle, tab_page);
 
-      iupTabsCheckCurrentTab(ih, pos, 1);
+      if (page_num != -1)
+      {
+        if (iupdrvTabsGetCurrentTab(ih) == page_num)
+          iupAttribSet(ih, "_IUPGTK_IGNORE_SWITCHPAGE", "1");
 
-      iupAttribSet(ih, "_IUPGTK_IGNORE_CHANGE", "1");
-      gtk_notebook_remove_page((GtkNotebook*)ih->handle, pos);
-      iupAttribSet(ih, "_IUPGTK_IGNORE_CHANGE", NULL);
+        iupTabsCheckCurrentTab(ih, pos, 1);
 
-      iupAttribSet(child, "_IUPGTK_TABCLOSE", NULL);
-      iupAttribSet(child, "_IUPGTK_TABIMAGE", NULL);
-      iupAttribSet(child, "_IUPGTK_TABLABEL", NULL);
-      iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
-      iupAttribSet(child, "_IUPTAB_PAGE", NULL);
-
-      iupAttribSet(ih, "_IUPGTK_IGNORE_SWITCHPAGE", NULL);
+        iupAttribSet(ih, "_IUPGTK_IGNORE_CHANGE", "1");
+        gtk_notebook_remove_page((GtkNotebook*)ih->handle, page_num);
+        iupAttribSet(ih, "_IUPGTK_IGNORE_CHANGE", NULL);
+      }
     }
   }
+
+  child->handle = NULL;
+
+  iupAttribSet(child, "_IUPGTK_TABCLOSE", NULL);
+  iupAttribSet(child, "_IUPGTK_TABIMAGE", NULL);
+  iupAttribSet(child, "_IUPGTK_TABLABEL", NULL);
+  iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
+  iupAttribSet(child, "_IUPTAB_PAGE", NULL);
+
+  iupAttribSet(ih, "_IUPGTK_IGNORE_SWITCHPAGE", NULL);
 }
 
 static int gtkTabsMapMethod(Ihandle* ih)
@@ -639,6 +670,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   /* IupTabs only */
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, gtkTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, gtkTabsSetTabOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABDRAGGABLE", NULL, gtkTabsSetTabDraggableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, gtkTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, gtkTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, gtkTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
@@ -647,4 +679,3 @@ void iupdrvTabsInitClass(Iclass* ic)
   /* NOT supported */
   iupClassRegisterAttribute(ic, "MULTILINE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
 }
-
