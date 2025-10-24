@@ -175,13 +175,16 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
     }
   }
 
-  if (!radio && ih->data->type == IUP_TOGGLE_TEXT && [the_sender allowsMixedState])
+  if ([the_sender isKindOfClass:[NSSwitch class]])
+  {
+    /* NSSwitch is simple, no 3-state, no radio, no image */
+  }
+  else if (!radio && ih->data->type == IUP_TOGGLE_TEXT && [the_sender allowsMixedState])
   {
     int state_val = (new_state == NSOnState) ? 1 : (new_state == NSMixedState) ? -1 : 0;
     iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", state_val);
   }
-
-  if (radio)
+  else if (radio)
   {
     if (new_state == NSOnState)
     {
@@ -301,15 +304,31 @@ void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 
 void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
-  *x += 20;
-  *y = (*y < 20) ? 20 : *y;
-
-  *x += 4;
-  *y += 4;
-
-  if (str && *str != 0)
+  if (iupAttribGetBoolean(ih, "SWITCH"))
   {
-    *x += 8;
+    /* NSSwitch dimensions estimate (macOS 11+) */
+    int switch_w = 38;
+    int switch_h = 20;
+
+    *x += 2 + switch_w + 2;
+    if ((*y) < 2 + switch_h + 2) *y = 2 + switch_h + 2;
+    else *y += 2+2;
+
+    if (str && str[0]) /* add spacing between switch and text */
+      *x += 8;
+  }
+  else
+  {
+    *x += 20; /* checkbox width estimate */
+    *y = (*y < 20) ? 20 : *y; /* checkbox height estimate */
+
+    *x += 4; /* margins */
+    *y += 4;
+
+    if (str && *str != 0) /* add spacing between check box and text */
+    {
+      *x += 8;
+    }
   }
 }
 
@@ -397,7 +416,13 @@ static void cocoaToggleUpdateImage(Ihandle* ih, int active, int check)
 
 static int cocoaToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  NSButton* the_toggle = ih->handle;
+  id the_toggle = ih->handle;
+
+  if ([the_toggle isKindOfClass:[NSSwitch class]])
+  {
+    /* NSSwitch does not have a title */
+    return 0;
+  }
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
@@ -426,114 +451,137 @@ static int cocoaToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
-  NSButton* the_toggle = ih->handle;
+  id the_toggle = ih->handle;
   Ihandle* radio = iupRadioFindToggleParent(ih);
 
-  if (iupStrEqualNoCase(value, "NOTDEF"))
+  if ([the_toggle isKindOfClass:[NSSwitch class]])
   {
-    [the_toggle setAllowsMixedState:YES];
-    [the_toggle setState:NSMixedState];
-    if (!radio && ih->data->type == IUP_TOGGLE_TEXT)
-      iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
-  }
-  else if (iupStrEqualNoCase(value, "TOGGLE"))
-  {
-    if (!radio && ih->data->type == IUP_TOGGLE_TEXT && [the_toggle allowsMixedState])
+    if (iupStrEqualNoCase(value, "NOTDEF"))
     {
-      int current = iupAttribGetInt(ih, "_IUPCOCOA_3STATE_CURRENT");
-
-      if (current == 1)
-      {
-        [the_toggle setState:NSMixedState];
-        iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
-      }
-      else if (current == -1)
-      {
-        [the_toggle setState:NSOffState];
-        iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 0);
-      }
-      else
-      {
-        [the_toggle setState:NSOnState];
-        iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 1);
-      }
+      /* NSSwitch does not support mixed state */
+      return 0;
     }
-    else
+    else if (iupStrEqualNoCase(value, "TOGGLE"))
     {
       NSControlStateValue current_state = [the_toggle state];
       NSControlStateValue new_state = (current_state == NSOffState) ? NSOnState : NSOffState;
-
-      if (radio && new_state == NSOnState)
-      {
-        Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE");
-        if (iupObjectCheck(last_tg) && last_tg != ih)
-        {
-          NSButton* last_button = (NSButton*)last_tg->handle;
-          [last_button setState:NSOffState];
-
-          if (last_tg->data->type == IUP_TOGGLE_IMAGE)
-          {
-            cocoaToggleUpdateImage(last_tg, iupdrvIsActive(last_tg), 0);
-          }
-        }
-        iupAttribSet(radio, "_IUPCOCOA_LASTTOGGLE", (char*)ih);
-      }
-
       [the_toggle setState:new_state];
-
-      if (ih->data->type == IUP_TOGGLE_IMAGE)
-      {
-        cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), new_state == NSOnState);
-      }
-
-      if (!radio && ih->data->type == IUP_TOGGLE_TEXT && [the_toggle allowsMixedState])
-      {
-        int state_val = (new_state == NSOnState) ? 1 : 0;
-        iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", state_val);
-      }
+    }
+    else
+    {
+      int new_state = iupStrBoolean(value);
+      [the_toggle setState:new_state ? NSOnState : NSOffState];
     }
   }
   else
   {
-    int new_state = iupStrBoolean(value);
-
-    if (radio)
+    /* Existing NSButton logic */
+    if (iupStrEqualNoCase(value, "NOTDEF"))
     {
-      if (new_state)
+      [the_toggle setAllowsMixedState:YES];
+      [the_toggle setState:NSMixedState];
+      if (!radio && ih->data->type == IUP_TOGGLE_TEXT)
+        iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
+    }
+    else if (iupStrEqualNoCase(value, "TOGGLE"))
+    {
+      if (!radio && ih->data->type == IUP_TOGGLE_TEXT && [the_toggle allowsMixedState])
       {
-        Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE");
-        if (iupObjectCheck(last_tg) && last_tg != ih)
-        {
-          NSButton* last_button = (NSButton*)last_tg->handle;
-          [last_button setState:NSOffState];
+        int current = iupAttribGetInt(ih, "_IUPCOCOA_3STATE_CURRENT");
 
-          if (last_tg->data->type == IUP_TOGGLE_IMAGE)
-          {
-            cocoaToggleUpdateImage(last_tg, iupdrvIsActive(last_tg), 0);
-          }
+        if (current == 1)
+        {
+          [the_toggle setState:NSMixedState];
+          iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
         }
-        iupAttribSet(radio, "_IUPCOCOA_LASTTOGGLE", (char*)ih);
-        [the_toggle setState:NSOnState];
+        else if (current == -1)
+        {
+          [the_toggle setState:NSOffState];
+          iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 0);
+        }
+        else
+        {
+          [the_toggle setState:NSOnState];
+          iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 1);
+        }
       }
       else
       {
-        if (ih == (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE"))
-          return 0;
+        NSControlStateValue current_state = [the_toggle state];
+        NSControlStateValue new_state = (current_state == NSOffState) ? NSOnState : NSOffState;
+
+        if (radio && new_state == NSOnState)
+        {
+          Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE");
+          if (iupObjectCheck(last_tg) && last_tg != ih)
+          {
+            NSButton* last_button = (NSButton*)last_tg->handle;
+            [last_button setState:NSOffState];
+
+            if (last_tg->data->type == IUP_TOGGLE_IMAGE)
+            {
+              cocoaToggleUpdateImage(last_tg, iupdrvIsActive(last_tg), 0);
+            }
+          }
+          iupAttribSet(radio, "_IUPCOCOA_LASTTOGGLE", (char*)ih);
+        }
+
+        [the_toggle setState:new_state];
+
+        if (ih->data->type == IUP_TOGGLE_IMAGE)
+        {
+          cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), new_state == NSOnState);
+        }
+
+        if (!radio && ih->data->type == IUP_TOGGLE_TEXT && [the_toggle allowsMixedState])
+        {
+          int state_val = (new_state == NSOnState) ? 1 : 0;
+          iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", state_val);
+        }
       }
     }
     else
     {
-      [the_toggle setState:new_state ? NSOnState : NSOffState];
+      int new_state = iupStrBoolean(value);
 
-      if (ih->data->type == IUP_TOGGLE_TEXT && [the_toggle allowsMixedState])
+      if (radio)
       {
-        iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", new_state ? 1 : 0);
-      }
-    }
+        if (new_state)
+        {
+          Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE");
+          if (iupObjectCheck(last_tg) && last_tg != ih)
+          {
+            NSButton* last_button = (NSButton*)last_tg->handle;
+            [last_button setState:NSOffState];
 
-    if (ih->data->type == IUP_TOGGLE_IMAGE)
-    {
-      cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), new_state);
+            if (last_tg->data->type == IUP_TOGGLE_IMAGE)
+            {
+              cocoaToggleUpdateImage(last_tg, iupdrvIsActive(last_tg), 0);
+            }
+          }
+          iupAttribSet(radio, "_IUPCOCOA_LASTTOGGLE", (char*)ih);
+          [the_toggle setState:NSOnState];
+        }
+        else
+        {
+          if (ih == (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE"))
+            return 0;
+        }
+      }
+      else
+      {
+        [the_toggle setState:new_state ? NSOnState : NSOffState];
+
+        if (ih->data->type == IUP_TOGGLE_TEXT && [the_toggle allowsMixedState])
+        {
+          iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", new_state ? 1 : 0);
+        }
+      }
+
+      if (ih->data->type == IUP_TOGGLE_IMAGE)
+      {
+        cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), new_state);
+      }
     }
   }
 
@@ -542,15 +590,25 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* cocoaToggleGetValueAttrib(Ihandle* ih)
 {
-  NSButton* the_toggle = ih->handle;
+  id the_toggle = ih->handle;
   NSControlStateValue current_state = [the_toggle state];
 
-  if (current_state == NSMixedState)
-    return iupStrReturnChecked(-1);
-  else if (current_state == NSOnState)
-    return iupStrReturnChecked(1);
+  if ([the_toggle isKindOfClass:[NSSwitch class]])
+  {
+    if (current_state == NSOnState)
+      return iupStrReturnChecked(1);
+    else
+      return iupStrReturnChecked(0);
+  }
   else
-    return iupStrReturnChecked(0);
+  {
+    if (current_state == NSMixedState)
+      return iupStrReturnChecked(-1);
+    else if (current_state == NSOnState)
+      return iupStrReturnChecked(1);
+    else
+      return iupStrReturnChecked(0);
+  }
 }
 
 static int cocoaToggleSetImageAttrib(Ihandle* ih, const char* value)
@@ -653,12 +711,18 @@ static int cocoaToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
 
+  id the_toggle = ih->handle;
+  if ([the_toggle isKindOfClass:[NSSwitch class]])
+  {
+    /* NSSwitch does not have text */
+    return 0;
+  }
+
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
-    NSButton* the_toggle = ih->handle;
     NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
 
     NSMutableAttributedString* attrTitle = [[NSMutableAttributedString alloc]
@@ -708,11 +772,10 @@ static int cocoaToggleMapMethod(Ihandle* ih)
 {
   Ihandle* radio = iupRadioFindToggleParent(ih);
   char* value;
-  NSButton* the_toggle;
+  id the_toggle; /* Use id to hold either NSButton or NSSwitch */
   NSRect initialFrame = NSMakeRect(0, 0, 0, 0);
   int initial_checked = 0;
-
-  the_toggle = [[IupCocoaToggleButton alloc] initWithFrame:initialFrame];
+  int is_switch = 0;
 
   iupAttribSet(ih, "_IUPCOCOA_ACTIVE", "YES");
 
@@ -720,67 +783,86 @@ static int cocoaToggleMapMethod(Ihandle* ih)
   if (value && *value != 0)
   {
     ih->data->type = IUP_TOGGLE_IMAGE;
-
-    [the_toggle setButtonType:NSPushOnPushOffButton];
-
-    if (ih->data->flat)
-    {
-      [the_toggle setBordered:NO];
-      [[the_toggle cell] setImageScaling:NSImageScaleProportionallyDown];
-    }
-    else
-    {
-      if (@available(macOS 10.14, *))
-      {
-        [the_toggle setBezelStyle:NSBezelStyleRegularSquare];
-      }
-      else
-      {
-        [the_toggle setBezelStyle:NSShadowlessSquareBezelStyle];
-      }
-    }
-
-    [[the_toggle cell] setImagePosition:NSImageOnly];
-    [the_toggle setTitle:@""];
   }
   else
   {
     ih->data->type = IUP_TOGGLE_TEXT;
-
-    if (radio)
+    if (iupAttribGetBoolean(ih, "SWITCH"))
     {
-      [the_toggle setButtonType:NSRadioButton];
-      ih->data->is_radio = 1;
+      is_switch = 1;
+    }
+  }
 
-      if (!iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE"))
+  if (is_switch)
+  {
+    the_toggle = [[NSSwitch alloc] initWithFrame:initialFrame];
+    /* NSSwitch is only available on 10.10+ but that should be fine */
+  }
+  else
+  {
+    the_toggle = [[IupCocoaToggleButton alloc] initWithFrame:initialFrame];
+
+    if (ih->data->type == IUP_TOGGLE_IMAGE)
+    {
+      [the_toggle setButtonType:NSPushOnPushOffButton];
+
+      if (ih->data->flat)
       {
-        iupAttribSet(ih, "VALUE", "ON");
-        initial_checked = 1;
+        [the_toggle setBordered:NO];
+        [[the_toggle cell] setImageScaling:NSImageScaleProportionallyDown];
+      }
+      else
+      {
+        if (@available(macOS 10.14, *))
+        {
+          [the_toggle setBezelStyle:NSBezelStyleRegularSquare];
+        }
+        else
+        {
+          [the_toggle setBezelStyle:NSShadowlessSquareBezelStyle];
+        }
       }
 
-      if (!iupAttribGetHandleName(ih))
-        iupAttribSetHandleName(ih);
+      [[the_toggle cell] setImagePosition:NSImageOnly];
+      [the_toggle setTitle:@""];
     }
-    else
+    else /* IUP_TOGGLE_TEXT and not a switch */
     {
-      [the_toggle setButtonType:NSSwitchButton];
-
-      if (iupAttribGetBoolean(ih, "3STATE"))
+      if (radio)
       {
-        [the_toggle setAllowsMixedState:YES];
+        [the_toggle setButtonType:NSRadioButton];
+        ih->data->is_radio = 1;
+
+        if (!iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE"))
+        {
+          iupAttribSet(ih, "VALUE", "ON");
+          initial_checked = 1;
+        }
+
+        if (!iupAttribGetHandleName(ih))
+          iupAttribSetHandleName(ih);
       }
-    }
+      else
+      {
+        [the_toggle setButtonType:NSSwitchButton]; /* This is the checkbox style */
 
-    value = iupAttribGet(ih, "TITLE");
-    if (value && *value != 0)
-    {
-      char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
-      NSString* ns_string = [NSString stringWithUTF8String:stripped_str];
+        if (iupAttribGetBoolean(ih, "3STATE"))
+        {
+          [the_toggle setAllowsMixedState:YES];
+        }
+      }
 
-      if (stripped_str && stripped_str != value)
-        free(stripped_str);
+      value = iupAttribGet(ih, "TITLE");
+      if (value && *value != 0)
+      {
+        char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
+        NSString* ns_string = [NSString stringWithUTF8String:stripped_str];
 
-      [the_toggle setTitle:ns_string];
+        if (stripped_str && stripped_str != value)
+          free(stripped_str);
+
+        [the_toggle setTitle:ns_string];
+      }
     }
   }
 
@@ -791,7 +873,8 @@ static int cocoaToggleMapMethod(Ihandle* ih)
   IupCocoaToggleReceiver* toggle_receiver = [[IupCocoaToggleReceiver alloc] init];
   [the_toggle setTarget:toggle_receiver];
   [the_toggle setAction:@selector(myToggleClickAction:)];
-  objc_setAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY, (id)toggle_receiver, OBJC_ASSOCIATION_ASSIGN);
+  objc_setAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY, (id)toggle_receiver, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  [toggle_receiver release];
 
   iupCocoaSetAssociatedViews(ih, the_toggle, the_toggle);
 
@@ -816,7 +899,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
     {
       cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), 0);
     }
-    else if (ih->data->type == IUP_TOGGLE_TEXT && [the_toggle allowsMixedState])
+    else if (ih->data->type == IUP_TOGGLE_TEXT && !is_switch && [the_toggle allowsMixedState])
     {
       iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 0);
     }
@@ -837,8 +920,7 @@ static void cocoaToggleUnMapMethod(Ihandle* ih)
   }
 
   id button_receiver = objc_getAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY);
-  objc_setAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
-  [button_receiver release];
+  objc_setAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   Ihandle* radio = iupRadioFindToggleParent(ih);
   if (radio)
@@ -875,6 +957,8 @@ void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, cocoaToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "FLAT", NULL, cocoaToggleSetFlatAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+
+  iupClassRegisterAttribute(ic, "SWITCH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
 
