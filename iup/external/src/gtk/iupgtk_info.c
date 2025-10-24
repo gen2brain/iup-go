@@ -36,9 +36,19 @@ GdkScreen* screen = gdk_screen_get_default();
 
 IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
 {
-#if GTK_CHECK_VERSION(3, 4, 0)
+  /* This function should return the primary monitor's work area */
+#if GTK_CHECK_VERSION(3, 22, 0)
+  GdkDisplay *display = gdk_display_get_default();
+  GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
+  if (!monitor)
+    monitor = gdk_display_get_monitor(display, 0);
   GdkRectangle rect;
+  gdk_monitor_get_workarea(monitor, &rect);
+  *width = rect.width;
+  *height = rect.height;
+#else
   GdkScreen* screen = gdk_screen_get_default();
+  GdkRectangle rect;
 #if GTK_CHECK_VERSION(2, 20, 0)
   gint monitor = gdk_screen_get_primary_monitor(screen);
 #else
@@ -47,13 +57,6 @@ IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
   gdk_screen_get_monitor_workarea(screen, monitor, &rect);
   *width = rect.width;
   *height = rect.height;
-#else  /* TODO: this is NOT working, couldn't find a way */
-  GdkWindow *root = gdk_screen_get_root_window(gdk_screen_get_default());
-#if GTK_CHECK_VERSION(3, 0, 0)
-  gdk_window_get_geometry(root, NULL, NULL, width, height);
-#else
-  gdk_window_get_geometry(root, NULL, NULL, width, height, NULL);
-#endif
 #endif
 }
 
@@ -99,8 +102,17 @@ IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
 
 IUP_SDK_API void iupdrvGetKeyState(char* key)
 {
-  GdkModifierType aModifierType;
-  gdk_display_get_pointer(gdk_display_get_default(), NULL, NULL, NULL, &aModifierType); /* TODO: deprecated in GTK 3, but couldn't find a simpler way */
+  GdkModifierType aModifierType = 0;
+
+#if GTK_CHECK_VERSION(3, 4, 0)
+  GdkKeymap* keymap = gdk_keymap_get_default();
+  if (keymap)
+    aModifierType = gdk_keymap_get_modifier_state(keymap);
+#else
+  /* Fallback for GTK2 and GTK < 3.4 */
+  /* gdk_display_get_pointer is deprecated in GTK3 but is the only option here */
+  gdk_display_get_pointer(gdk_display_get_default(), NULL, NULL, NULL, &aModifierType);
+#endif
 
   if (aModifierType & GDK_SHIFT_MASK)
     key[0] = 'S';
