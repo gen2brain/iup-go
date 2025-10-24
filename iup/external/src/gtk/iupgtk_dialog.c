@@ -4,13 +4,16 @@
  * See Copyright Notice in "iup.h"
  */
 
-#undef GTK_DISABLE_DEPRECATED  /* Since GTK 3.14 gtk_status_icon is deprecated. */
 #include <gtk/gtk.h>
+
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#endif
 
 #ifdef HILDON
 #include <hildon/hildon-program.h>
 #endif
-                                         
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -41,7 +44,6 @@
 
 
 static void gtkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h);
-
 
 
 /****************************************************************
@@ -81,16 +83,17 @@ void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
 {
   int width, height;
   int border = 0, caption = 0, menu;
+
   if (!handle)
     handle = ih->handle;
 
-  gtk_window_get_size((GtkWindow*)handle, &width, &height);  /* client size */
+  gtk_window_get_size((GtkWindow*)handle, &width, &height);
 
   if (ih)
     iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
   if (w) *w = width + 2*border;
-  if (h) *h = height + 2*border + caption;  /* menu is inside the dialog_manager */
+  if (h) *h = height + 2*border + caption;
 }
 
 void iupdrvDialogSetVisible(Ihandle* ih, int visible)
@@ -130,7 +133,7 @@ static int gtkDialogGetMenuSize(Ihandle* ih)
 {
 #ifdef HILDON
   return 0;
-#else                    
+#else
   if (ih->data->menu && !iupStrBoolean(IupGetGlobal("GLOBALMENU")))
     return iupdrvMenuGetMenuBarSize(ih->data->menu);
   else
@@ -143,9 +146,49 @@ static int gtkDialogGetMenuSize(Ihandle* ih)
 static void gtkDialogGetWindowDecor(Ihandle* ih, int *win_border, int *win_caption)
 {
   int x, y, frame_x, frame_y;
-  gdk_window_get_origin(iupgtkGetWindow(ih->handle), &x, &y);
-  gdk_window_get_root_origin(iupgtkGetWindow(ih->handle), &frame_x, &frame_y);
-  *win_border = iupABS(x - frame_x);   /* For unknown reason GTK sometimes give negative results */
+  GdkWindow* window = iupgtkGetWindow(ih->handle);
+
+  *win_border = 0;
+  *win_caption = 0;
+
+  if (!window)
+    return;
+
+#if GTK_CHECK_VERSION(3, 0, 0) && defined(GDK_WINDOWING_WAYLAND)
+  if (GDK_IS_WAYLAND_WINDOW(window))
+  {
+    /* Use the allocation fallback for Wayland CSD (Client-Side Decorations) */
+    GtkAllocation window_alloc, child_alloc;
+    /* The child is the GtkFixed container holding all IUP controls */
+    GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
+
+    gtk_widget_get_allocation(ih->handle, &window_alloc);
+    if (child && gtk_widget_get_allocated_width(child) > 0 && gtk_widget_get_allocated_height(child) > 0)
+      gtk_widget_get_allocation(child, &child_alloc);
+    else
+    {
+      /* Child might not be allocated yet, return 0,0 and wait for next event */
+      return;
+    }
+
+    /* Vertical decoration is the caption */
+    *win_caption = window_alloc.height - child_alloc.height;
+    if (*win_caption < 0) *win_caption = 0;
+
+    /* Horizontal decoration (border) is assumed to be symmetrical */
+    /* We store *half* the horizontal decoration in win_border */
+    *win_border = (window_alloc.width - child_alloc.width) / 2;
+    if (*win_border < 0) *win_border = 0;
+
+    return; /* Return with CSD calculated values */
+  }
+#endif
+
+  gdk_window_get_origin(window, &x, &y);
+  gdk_window_get_root_origin(window, &frame_x, &frame_y);
+
+  /* On X11, border is the frame, caption is (total_decor - border) */
+  *win_border = iupABS(x - frame_x);
   *win_caption = iupABS(y - frame_y) - *win_border;
 }
 
@@ -161,13 +204,16 @@ void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu
   if (menu)
     *menu = 0;
 #else
-  static int native_border = 0;
-  static int native_caption = 0;
+  static int native_border = 0;       /* X11 border */
+  static int native_caption = 0;      /* X11 caption */
+  static int native_csd_caption = 0;  /* Wayland-specific caption */
+  static int native_csd_border = 0;   /* Wayland-specific border (half-width) */
+  int is_wayland = 0;
 
-  int has_titlebar = iupAttribGetBoolean(ih, "RESIZE")  || /* GTK and Motif only */
+  int has_titlebar = iupAttribGetBoolean(ih, "RESIZE")  ||
                      iupAttribGetBoolean(ih, "MAXBOX")  ||
                      iupAttribGetBoolean(ih, "MINBOX")  ||
-                     iupAttribGetBoolean(ih, "MENUBOX") || 
+                     iupAttribGetBoolean(ih, "MENUBOX") ||
                      iupAttribGet(ih, "TITLE");
 
   int has_border = has_titlebar ||
@@ -176,50 +222,84 @@ void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu
 
   *menu = gtkDialogGetMenuSize(ih);
 
-  if (ih->handle && iupdrvIsVisible(ih))
-  {
-    int win_border, win_caption;
-    gtkDialogGetWindowDecor(ih, &win_border, &win_caption);
-
-#ifdef WIN32
-    if (*menu)
-      win_caption -= *menu;
+#if GTK_CHECK_VERSION(3, 0, 0) && defined(GDK_WINDOWING_WAYLAND)
+  GdkDisplay* display = gdk_display_get_default();
+  if (display && GDK_IS_WAYLAND_DISPLAY(display))
+    is_wayland = 1;
 #endif
 
-    *border = 0;
-    if (has_border)
-      *border = win_border;
+  if (ih->handle && iupdrvIsVisible(ih))
+  {
+    int win_border = 0, win_caption = 0;
+    int is_bogus = 0;
 
-    *caption = 0;
-    if (has_titlebar)
-      *caption = win_caption;
+    gtkDialogGetWindowDecor(ih, &win_border, &win_caption);
 
-    if (!native_border && *border)
-      native_border = win_border;
+    if (!is_wayland)
+    {
+      /* Bogus values are often very large or negative.
+         A border < 0 or > 100, or a caption < 0 or > 200, is likely a WM glitch. */
+      if (win_border < 0 || win_border > 100 || win_caption < 0 || win_caption > 200)
+        is_bogus = 1;
+    }
 
-    if (!native_caption && *caption)
-      native_caption = win_caption;
+    if (!is_bogus)
+    {
+#ifdef WIN32
+      if (*menu)
+        win_caption -= *menu;
+#endif
+
+      *border = 0;
+      if (has_border)
+        *border = win_border;
+
+      *caption = 0;
+      if (has_titlebar)
+        *caption = win_caption;
+
+      /* Update caches */
+      if (is_wayland)
+      {
+        if (win_border >= 0)
+          native_csd_border = win_border;
+        if (win_caption >= 0)
+          native_csd_caption = win_caption;
+      }
+      else
+      {
+        /* Only update cache with sane, non-zero values */
+        if (win_border > 0 && win_border < 100)
+          native_border = win_border;
+        if (win_caption > 0 && win_caption < 200)
+          native_caption = win_caption;
+      }
+
+      if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+        *caption = 0;
+
+      return; /* Exit with valid, visible values */
+    }
+    /* if is_bogus, fall through to estimate logic below */
   }
 
-  /* I could not set the size of the window including the decorations when the dialog is hidden */
-  /* So we have to estimate the size of borders and caption when the dialog is hidden           */
-
+  /* Estimate when not visible (or if decor was bogus) */
   *border = 0;
   if (has_border)
   {
-    if (native_border)
-      *border = native_border;
+    if (is_wayland)
+      *border = native_csd_border; /* Use 0 if not cached */
     else
-      *border = 5;
+      *border = (native_border)? native_border: 5; /* X11 default */
   }
 
   *caption = 0;
   if (has_titlebar)
   {
-    if (native_caption)
-      *caption = native_caption;
+    if (is_wayland)
+      *caption = (native_csd_caption)? native_csd_caption: 20;
     else
-      *caption = 20;
+      *caption = (native_caption)? native_caption: 20;
   }
 
   if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
@@ -238,7 +318,7 @@ int iupdrvDialogSetPlacement(Ihandle* ih)
     gtk_window_fullscreen((GtkWindow*)ih->handle);
     return 1;
   }
-  
+
   placement = iupAttribGet(ih, "PLACEMENT");
   if (!placement)
   {
@@ -293,7 +373,7 @@ int iupdrvDialogSetPlacement(Ihandle* ih)
     /* set the new size and position */
     /* The resize evt will update the layout */
     iupdrvDialogSetPosition(ih, x, y);
-    gtk_window_resize((GtkWindow*)ih->handle, width, height); 
+    gtk_window_resize((GtkWindow*)ih->handle, width, height);
 
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
@@ -349,34 +429,62 @@ static gboolean gtkDialogConfigureEvent(GtkWidget *widget, GdkEventConfigure *ev
   }
 #endif
 
-  if (ih->data->ignore_resize) 
-    return FALSE; 
+  if (ih->data->ignore_resize)
+    return FALSE;
 
   old_width = iupAttribGetInt(ih, "_IUPGTK_OLD_WIDTH");
   old_height = iupAttribGetInt(ih, "_IUPGTK_OLD_HEIGHT");
 
-  /* Check the size change, because configure is called also for position changes */
   if (evt->width != old_width || evt->height != old_height)
   {
     IFnii cb;
     int border, caption, menu;
+    int is_wayland = 0;
+    int client_width, client_height;
+
     iupAttribSetInt(ih, "_IUPGTK_OLD_WIDTH", evt->width);
     iupAttribSetInt(ih, "_IUPGTK_OLD_HEIGHT", evt->height);
 
     iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
-  /* update dialog size */
+#if GTK_CHECK_VERSION(3, 0, 0) && defined(GDK_WINDOWING_WAYLAND)
+    GdkDisplay* display = gdk_display_get_default();
+    if (display && GDK_IS_WAYLAND_DISPLAY(display))
+      is_wayland = 1;
+#endif
+
 #ifdef HILDON
-    /* In Hildon, the configure event contains the window size, not the client area size */
     ih->currentwidth = evt->width;
     ih->currentheight = evt->height;
+    client_width = evt->width;
+    client_height = evt->height;
 #else
-    ih->currentwidth = evt->width + 2*border;
-    ih->currentheight = evt->height + 2*border + caption;  /* menu is inside the window client area */
+    if (is_wayland)
+    {
+      /* On Wayland, event size is the total window size */
+      ih->currentwidth = evt->width;
+      ih->currentheight = evt->height;
+
+      /* Calculate client area size from total size */
+      /* 'border' is half the horizontal decoration (applied left/right) */
+      /* 'caption' is the *total* vertical decoration (CSD title bar) */
+      client_width = ih->currentwidth - 2*border;
+      client_height = ih->currentheight - caption;
+    }
+    else
+    {
+      /* On X11, event size is the client area size */
+      client_width = evt->width;
+      client_height = evt->height;
+
+      /* 'border' is applied to all 4 sides, 'caption' is extra vertical */
+      ih->currentwidth = client_width + 2*border;
+      ih->currentheight = client_height + 2*border + caption;
+    }
 #endif
 
     cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
-    if (!cb || cb(ih, evt->width, evt->height - menu)!=IUP_IGNORE)  /* width and height here are for the client area */
+    if (!cb || cb(ih, client_width, client_height - menu)!=IUP_IGNORE)
     {
       ih->data->ignore_resize = 1;
       IupRefresh(ih);
@@ -386,9 +494,8 @@ static gboolean gtkDialogConfigureEvent(GtkWidget *widget, GdkEventConfigure *ev
 
   old_x = iupAttribGetInt(ih, "_IUPGTK_OLD_X");
   old_y = iupAttribGetInt(ih, "_IUPGTK_OLD_Y");
-  iupdrvDialogGetPosition(ih, NULL, &x, &y);  /* ignore evt->x and evt->y because they are the clientpos and not X/Y */
+  iupdrvDialogGetPosition(ih, NULL, &x, &y);
 
-  /* Check the position change, because configure is called also for size changes */
   if (x != old_x || y != old_y)
   {
     IFnii cb;
@@ -449,7 +556,7 @@ static gboolean gtkDialogWindowStateEvent(GtkWidget *widget, GdkEventWindowState
     ih->data->show_state = state;
 
     cb = (IFni)IupGetCallback(ih, "SHOW_CB");
-    if (cb && cb(ih, state) == IUP_CLOSE) 
+    if (cb && cb(ih, state) == IUP_CLOSE)
       IupExitLoop();
   }
 
@@ -480,7 +587,7 @@ static void gtkDialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Ihan
 ****************************************************************/
 
 
-/* replace the common dialog SetChildrenPosition method because of 
+/* replace the common dialog SetChildrenPosition method because of
    the menu that it is inside the dialog. */
 static void gtkDialogSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 {
@@ -517,16 +624,16 @@ static int gtkDialogMapMethod(Ihandle* ih)
   int has_titlebar = 0;
 
 #ifdef HILDON
-  if (iupAttribGetBoolean(ih, "HILDONWINDOW")) 
+  if (iupAttribGetBoolean(ih, "HILDONWINDOW"))
   {
     HildonProgram *program = HILDON_PROGRAM(hildon_program_get_instance());
     ih->handle = hildon_window_new();
     if (ih->handle)
-      hildon_program_add_window(program, HILDON_WINDOW(ih->handle)); 
-  } 
-  else 
+      hildon_program_add_window(program, HILDON_WINDOW(ih->handle));
+  }
+  else
   {
-    iupAttribSet(ih, "DIALOGHINT", "YES");  /* otherwise not displayed correctly */ 
+    iupAttribSet(ih, "DIALOGHINT", "YES");  /* otherwise not displayed correctly */
     ih->handle = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   }
 #else
@@ -557,10 +664,10 @@ static int gtkDialogMapMethod(Ihandle* ih)
   g_signal_connect(G_OBJECT(ih->handle), "configure-event",    G_CALLBACK(gtkDialogConfigureEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "window-state-event", G_CALLBACK(gtkDialogWindowStateEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "delete-event",       G_CALLBACK(iupgtkDialogDeleteEvent), ih);
-                                    
+
   gtk_window_set_default_size((GtkWindow*)ih->handle, 100, 100); /* set this to avoid size calculation problems  */
 
-  if (iupAttribGetBoolean(ih, "DIALOGHINT")) 
+  if (iupAttribGetBoolean(ih, "DIALOGHINT"))
     gtk_window_set_type_hint(GTK_WINDOW(ih->handle), GDK_WINDOW_TYPE_HINT_DIALOG);
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
@@ -571,7 +678,7 @@ static int gtkDialogMapMethod(Ihandle* ih)
 #else
     IupSetAttribute(ih, "CUSTOMFRAMESIMULATE", "Yes");
 #endif
-  } 
+  }
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE"))
   {
@@ -600,7 +707,7 @@ static int gtkDialogMapMethod(Ihandle* ih)
 
   if (iupAttribGet(ih, "TITLE"))
     has_titlebar = 1;
-  if (iupAttribGetBoolean(ih, "RESIZE")) 
+  if (iupAttribGetBoolean(ih, "RESIZE"))
   {
     functions   |= GDK_FUNC_RESIZE;
     decorations |= GDK_DECOR_RESIZEH;
@@ -609,19 +716,19 @@ static int gtkDialogMapMethod(Ihandle* ih)
   }
   else
     iupAttribSet(ih, "MAXBOX", "NO");
-  if (iupAttribGetBoolean(ih, "MENUBOX")) 
+  if (iupAttribGetBoolean(ih, "MENUBOX"))
   {
     functions   |= GDK_FUNC_CLOSE;
     decorations |= GDK_DECOR_MENU;
     has_titlebar = 1;
   }
-  if (iupAttribGetBoolean(ih, "MAXBOX")) 
+  if (iupAttribGetBoolean(ih, "MAXBOX"))
   {
     functions   |= GDK_FUNC_MAXIMIZE;
     decorations |= GDK_DECOR_MAXIMIZE;
     has_titlebar = 1;
   }
-  if (iupAttribGetBoolean(ih, "MINBOX")) 
+  if (iupAttribGetBoolean(ih, "MINBOX"))
   {
     functions   |= GDK_FUNC_MINIMIZE;
     decorations |= GDK_DECOR_MINIMIZE;
@@ -643,8 +750,16 @@ static int gtkDialogMapMethod(Ihandle* ih)
     GdkWindow* window = iupgtkGetWindow(ih->handle);
     if (window)
     {
-      gdk_window_set_decorations(window, (GdkWMDecoration)decorations);
-      gdk_window_set_functions(window, (GdkWMFunction)functions);
+#if GTK_CHECK_VERSION(3, 0, 0) && defined(GDK_WINDOWING_WAYLAND)
+      /* On Wayland, gdk_window_set_decorations and gdk_window_set_functions
+         don't work because GTK on Wayland uses Client-Side Decorations.
+         We still call them for X11 compatibility. */
+      if (!GDK_IS_WAYLAND_WINDOW(window))
+#endif
+      {
+        gdk_window_set_decorations(window, (GdkWMDecoration)decorations);
+        gdk_window_set_functions(window, (GdkWMFunction)functions);
+      }
     }
   }
 
@@ -680,10 +795,10 @@ static void gtkDialogUnMapMethod(Ihandle* ih)
 {
   GtkWidget* inner_parent, *parent;
 
-  if (ih->data->menu) 
+  if (ih->data->menu)
   {
     ih->data->menu->handle = NULL; /* the dialog will destroy the native menu */
-    IupDestroy(ih->data->menu);  
+    IupDestroy(ih->data->menu);
     ih->data->menu = NULL;
   }
 
@@ -715,7 +830,7 @@ static void gtkDialogUnMapMethod(Ihandle* ih)
 
   inner_parent = gtk_bin_get_child((GtkBin*)ih->handle);
   gtk_widget_unrealize(inner_parent);
-  gtk_widget_destroy(inner_parent);  
+  gtk_widget_destroy(inner_parent);
 
   gtk_widget_unrealize(ih->handle); /* To match the call to gtk_widget_realize */
   gtk_widget_destroy(ih->handle);   /* To match the call to gtk_window_new     */
@@ -730,25 +845,39 @@ static void gtkDialogLayoutUpdateMethod(Ihandle *ih)
       iupAttribGet(ih, "_IUPGTK_FS_STYLE"))
     return;
 
-  /* for dialogs the position is not updated here */
   ih->data->ignore_resize = 1;
 
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
-  /* set size excluding the border */
+  /*
+   * ih->currentwidth/height is the total window size calculated by IUP's layout.
+   * We must subtract the estimated decorations to get the client size, which is what gtk_window_resize expects.
+   * This logic is the same for both X11 and Wayland.
+   */
   width = ih->currentwidth - 2*border;
-  height = ih->currentheight - 2*border - caption;   /* menu is inside the client area. */
+  height = ih->currentheight - 2*border - caption;
+
   if(width <= 0) width = 1;
   if(height <= 0) height = 1;
+
   gtk_window_resize((GtkWindow*)ih->handle, width, height);
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
     GdkGeometry geometry;
-    geometry.min_width = width;
-    geometry.min_height = height;
-    geometry.max_width = width;
-    geometry.max_height = height;
+    int client_width, client_height;
+
+    client_width = ih->currentwidth - 2*border;
+    client_height = ih->currentheight - 2*border - caption;
+
+    if (client_width <= 0) client_width = 1;
+    if (client_height <= 0) client_height = 1;
+
+    geometry.min_width = client_width;
+    geometry.min_height = client_height;
+    geometry.max_width = client_width;
+    geometry.max_height = client_height;
+
     gtk_window_set_geometry_hints((GtkWindow*)ih->handle, ih->handle,
                                   &geometry, (GdkWindowHints)(GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE));
   }
@@ -756,33 +885,53 @@ static void gtkDialogLayoutUpdateMethod(Ihandle *ih)
   ih->data->ignore_resize = 0;
 }
 
-
 /****************************************************************************
                                    Attributes
 ****************************************************************************/
 
 static void gtkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
 {
-  /* The minmax size restricts the client area */
   GdkGeometry geometry;
+  int border = 0, caption = 0, menu = 0; /* menu is not used here */
   int decorwidth = 0, decorheight = 0;
-  iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
+  int is_wayland = 0;
+
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+
+#if GTK_CHECK_VERSION(3, 0, 0) && defined(GDK_WINDOWING_WAYLAND)
+  GdkDisplay* display = gdk_display_get_default();
+  if (display && GDK_IS_WAYLAND_DISPLAY(display))
+    is_wayland = 1;
+#endif
+
+  if (is_wayland)
+  {
+    /* Wayland: 'border' is horizontal-only (half-width), 'caption' is vertical-only */
+    decorwidth = 2*border;
+    decorheight = caption;
+  }
+  else
+  {
+    /* X11: 'border' is on all sides, 'caption' is extra vertical */
+    decorwidth = 2*border;
+    decorheight = 2*border + caption;
+  }
 
   geometry.min_width = 1;
   if (min_w > decorwidth)
-    geometry.min_width = min_w-decorwidth;
+    geometry.min_width = min_w - decorwidth;
 
   geometry.min_height = 1;
   if (min_h > decorheight)
-    geometry.min_height = min_h-decorheight;
+    geometry.min_height = min_h - decorheight;
 
   geometry.max_width = 65535;
   if (max_w > decorwidth && max_w > geometry.min_width)
-    geometry.max_width = max_w-decorwidth;
+    geometry.max_width = max_w - decorwidth;
 
   geometry.max_height = 65535;
   if (max_h > decorheight && max_h > geometry.min_height)
-    geometry.max_height = max_h-decorheight;
+    geometry.max_height = max_h - decorheight;
 
   /* must set both at the same time, or GTK will assume its default */
   gtk_window_set_geometry_hints((GtkWindow*)ih->handle, ih->handle,
@@ -831,18 +980,19 @@ static int gtkDialogSetTitleAttrib(Ihandle* ih, const char* value)
 
 static char* gtkDialogGetActiveWindowAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (gtk_window_is_active((GtkWindow*)ih->handle)); 
-}    
+  return iupStrReturnBoolean (gtk_window_is_active((GtkWindow*)ih->handle));
+}
 
 static char* gtkDialogGetClientSizeAttrib(Ihandle *ih)
 {
   if (ih->handle)
   {
     int width, height;
+
     gtk_window_get_size((GtkWindow*)ih->handle, &width, &height);
 
-    /* remove the menu because it is placed inside the client area */
-    height -= gtkDialogGetMenuSize(ih);
+    int menu = gtkDialogGetMenuSize(ih);
+    height -= menu;
 
     return iupStrReturnIntInt(width, height, 'x');
   }
@@ -857,7 +1007,7 @@ static char* gtkDialogGetClientOffsetAttrib(Ihandle *ih)
 }
 
 static int gtkDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
-{                       
+{
   if (iupStrBoolean(value))
   {
     if (!iupAttribGet(ih, "_IUPGTK_FS_STYLE"))
@@ -972,7 +1122,7 @@ static int gtkDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
 #else
     GdkBitmap* mask = NULL;
     gdk_pixbuf_render_pixmap_and_mask(pixbuf, NULL, &mask, 255);
-    if (mask) 
+    if (mask)
     {
       gtk_widget_shape_combine_mask(ih->handle, mask, 0, 0);
       g_object_unref(mask);
