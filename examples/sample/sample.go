@@ -52,6 +52,7 @@ func main() {
 					iup.Toggle("Toggle Text"),
 				),
 			)).SetAttribute("TITLE", "Radio"),
+			iup.Toggle("").SetAttributes("VALUE=ON,SWITCH=YES"),
 		),
 	).SetAttribute("TITLE", "Toggle")
 
@@ -129,7 +130,7 @@ func main() {
 		"SIZE":      "220x20",
 	})
 
-	canvas := iup.Canvas().SetAttributes(`BGCOLOR="255 255 255", XMIN=0, XMAX=99, POSX=0, DX=10`)
+	canvas := iup.Canvas().SetAttributes(`BGCOLOR="255 255 255", BORDER=NO, XMIN=0, XMAX=99, POSX=0, DX=10`)
 	canvas.SetCallback("ACTION", iup.CanvasActionFunc(func(ih iup.Ihandle, posx, posy float64) int {
 		iup.DrawBegin(ih)
 		defer iup.DrawEnd(ih)
