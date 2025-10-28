@@ -107,14 +107,14 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
-    iupCocoaCommonBaseHandleMouseMotionCallback(ih, event, self);
+    iupcocoaCommonBaseHandleMouseMotionCallback(ih, event, self);
 }
 
 - (void)mouseDown:(NSEvent *)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
-    iupCocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
+    iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
 
   [self highlight:YES];
 
@@ -141,7 +141,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
         [self highlight:NO];
 
         if (ih)
-          iupCocoaCommonBaseHandleMouseButtonCallback(ih, nextEvent, self, false);
+          iupcocoaCommonBaseHandleMouseButtonCallback(ih, nextEvent, self, false);
 
         if (mouseIsInside)
           [self performClick:self];
@@ -162,7 +162,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
-    iupCocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
+    iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
 }
 
 - (void)rightMouseDown:(NSEvent *)event
@@ -171,7 +171,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
-    iupCocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
+    iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
 }
 
 - (void)rightMouseUp:(NSEvent *)event
@@ -180,7 +180,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
-    iupCocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
+    iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
 }
 
 - (void)otherMouseDown:(NSEvent *)event
@@ -189,7 +189,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
-    iupCocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
+    iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
 }
 
 - (void)otherMouseUp:(NSEvent *)event
@@ -198,7 +198,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
-    iupCocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
+    iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
 }
 
 - (void)scrollWheel:(NSEvent *)event
@@ -208,7 +208,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
   {
-    if (!iupCocoaCommonBaseScrollWheelCallback(ih, event, self))
+    if (!iupcocoaCommonBaseScrollWheelCallback(ih, event, self))
       [super scrollWheel:event];
   }
 }
@@ -227,7 +227,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
       return;
     }
 
-    if (!iupCocoaKeyEvent(ih, event, mac_key_code, true))
+    if (!iupcocoaKeyEvent(ih, event, mac_key_code, true))
       [super keyDown:event];
   }
   else
@@ -240,7 +240,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    if (!iupCocoaKeyEvent(ih, event, mac_key_code, false))
+    if (!iupcocoaKeyEvent(ih, event, mac_key_code, false))
       [super keyUp:event];
   }
   else
@@ -253,7 +253,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    if (!iupCocoaModifierEvent(ih, event, mac_key_code))
+    if (!iupcocoaModifierEvent(ih, event, mac_key_code))
       [super flagsChanged:event];
   }
   else
@@ -267,7 +267,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   {
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (ih)
-      iupCocoaFocusIn(ih);
+      iupcocoaFocusIn(ih);
   }
   return result;
 }
@@ -279,7 +279,7 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   {
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (ih)
-      iupCocoaFocusOut(ih);
+      iupcocoaFocusOut(ih);
   }
   return result;
 }
@@ -513,7 +513,7 @@ static int cocoaButtonSetFontAttrib(Ihandle* ih, const char* value)
     return 0;
 
   NSButton* the_button = ih->handle;
-  IupCocoaFont* font = iupCocoaFindFont(value);
+  IupCocoaFont* font = iupcocoaFindFont(value);
 
   if (font && font.nativeFont)
   {
@@ -765,8 +765,8 @@ static int cocoaButtonSetActiveAttrib(Ihandle* ih, const char* value)
 
 void cocoaButtonLayoutUpdateMethod(Ihandle *ih)
 {
-  NSView* parent_view = iupCocoaCommonBaseLayoutGetParentView(ih);
-  NSView* child_view = iupCocoaCommonBaseLayoutGetChildView(ih);
+  NSView* parent_view = iupcocoaCommonBaseLayoutGetParentView(ih);
+  NSView* child_view = iupcocoaCommonBaseLayoutGetChildView(ih);
 
   if (!parent_view || !child_view)
   {
@@ -899,7 +899,7 @@ static int cocoaButtonMapMethod(Ihandle* ih)
   }
 
   ih->handle = the_button;
-  iupCocoaSetAssociatedViews(ih, the_button, the_button);
+  iupcocoaSetAssociatedViews(ih, the_button, the_button);
 
   objc_setAssociatedObject(the_button, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 
@@ -908,16 +908,16 @@ static int cocoaButtonMapMethod(Ihandle* ih)
   [the_button setAction:@selector(myButtonClickAction:)];
   objc_setAssociatedObject(the_button, IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY, (id)button_receiver, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-  iupCocoaAddToParent(ih);
+  iupcocoaAddToParent(ih);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
   {
     [the_button setRefusesFirstResponder:YES];
-    iupCocoaSetCanFocus(ih, 0);
+    iupcocoaSetCanFocus(ih, 0);
   }
   else
   {
-    iupCocoaSetCanFocus(ih, 1);
+    iupcocoaSetCanFocus(ih, 1);
   }
 
   if (is_flat && has_border)
@@ -936,19 +936,19 @@ static void cocoaButtonUnMapMethod(Ihandle* ih)
 {
   id the_button = ih->handle;
 
-  Ihandle* context_menu_ih = (Ihandle*)iupCocoaCommonBaseGetContextMenuAttrib(ih);
+  Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
   if(context_menu_ih)
   {
     IupDestroy(context_menu_ih);
-    iupCocoaCommonBaseSetContextMenuAttrib(ih, NULL);
+    iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
   }
 
   id button_receiver = objc_getAssociatedObject(the_button, IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY);
   objc_setAssociatedObject(the_button, IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
   [button_receiver release];
 
-  iupCocoaRemoveFromParent(ih);
-  iupCocoaSetAssociatedViews(ih, nil, nil);
+  iupcocoaRemoveFromParent(ih);
+  iupcocoaSetAssociatedViews(ih, nil, nil);
 
   [the_button release];
   ih->handle = NULL;
@@ -975,5 +975,5 @@ void iupdrvButtonInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
 
-  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
+  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 }

@@ -54,49 +54,49 @@
 - (void)mouseDown:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
+  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
     [super mouseDown:theEvent];
 }
 
 - (void)mouseUp:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
+  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
     [super mouseUp:theEvent];
 }
 
 - (void)rightMouseDown:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
+  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
     [super rightMouseDown:theEvent];
 }
 
 - (void)rightMouseUp:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
+  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
     [super rightMouseUp:theEvent];
 }
 
 - (void)otherMouseDown:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
+  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
     [super otherMouseDown:theEvent];
 }
 
 - (void)otherMouseUp:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupCocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
+  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
     [super otherMouseUp:theEvent];
 }
 
 - (void)mouseMoved:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupCocoaCommonBaseHandleMouseMotionCallback(ih, theEvent, self))
+  if (!iupcocoaCommonBaseHandleMouseMotionCallback(ih, theEvent, self))
     [super mouseMoved:theEvent];
 }
 
@@ -172,12 +172,12 @@
 
 static NSTextField* cocoaLabelGetTextField(Ihandle* ih)
 {
-  return (NSTextField*)iupCocoaGetMainView(ih);
+  return (NSTextField*)iupcocoaGetMainView(ih);
 }
 
 static NSImageView* cocoaLabelGetImageView(Ihandle* ih)
 {
-  return (NSImageView*)iupCocoaGetMainView(ih);
+  return (NSImageView*)iupcocoaGetMainView(ih);
 }
 
 void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
@@ -227,7 +227,7 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
     ns_string = @"";
   }
 
-  IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+  IupCocoaFont* iup_font = iupcocoaGetFont(ih);
   char* fgcolor = iupAttribGet(ih, "FGCOLOR");
   unsigned char r, g, b;
   BOOL need_attributed = [iup_font usesAttributes] || (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b));
@@ -275,7 +275,7 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
   [the_label setFrame:label_frame];
 
   /* Update the wrapper view frame to match */
-  NSView* wrapper = iupCocoaGetRootView(ih);
+  NSView* wrapper = iupcocoaGetRootView(ih);
   if (wrapper && wrapper != the_label)
   {
     [wrapper setFrame:label_frame];
@@ -289,7 +289,7 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int cocoaLabelSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  NSView* the_view = iupCocoaGetMainView(ih);
+  NSView* the_view = iupcocoaGetMainView(ih);
   if (!the_view)
     return iupBaseSetActiveAttrib(ih, value);
 
@@ -300,7 +300,7 @@ static int cocoaLabelSetActiveAttrib(Ihandle* ih, const char* value)
     NSTextField* the_label = (NSTextField*)the_view;
     [the_label setEnabled:is_active];
 
-    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     BOOL uses_attributed_string = ([iup_font usesAttributes] || [[the_label attributedStringValue] length] > 0);
 
     NSColor* color;
@@ -812,8 +812,8 @@ static int cocoaLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
 
 static int cocoaLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  NSView* the_view = iupCocoaGetMainView(ih);
-  NSView* root_view = iupCocoaGetRootView(ih);
+  NSView* the_view = iupcocoaGetMainView(ih);
+  NSView* root_view = iupcocoaGetRootView(ih);
   unsigned char r, g, b;
 
   /* Ignore given value, must use only from parent */
@@ -853,7 +853,7 @@ static int cocoaLabelSetFgColorAttrib(Ihandle* ih, const char* value)
 
       if (ih->handle)
       {
-        NSView* the_view = iupCocoaGetMainView(ih);
+        NSView* the_view = iupcocoaGetMainView(ih);
         if ([the_view isKindOfClass:[NSTextField class]])
         {
           NSTextField* text_field = (NSTextField*)the_view;
@@ -890,7 +890,7 @@ static int cocoaLabelSetFontAttrib(Ihandle* ih, const char* value)
   if (!ih->handle || ih->data->type != IUP_LABEL_TEXT)
     return 1;
 
-  IupCocoaFont* font = iupCocoaFindFont(value);
+  IupCocoaFont* font = iupcocoaFindFont(value);
   if (!font || !font.nativeFont)
     return 0;
 
@@ -934,7 +934,7 @@ static int cocoaLabelSetFontAttrib(Ihandle* ih, const char* value)
 
 static int cocoaLabelSetSelectable(Ihandle* ih, const char* value)
 {
-  NSView* the_view = iupCocoaGetMainView(ih);
+  NSView* the_view = iupcocoaGetMainView(ih);
   BOOL is_active = (BOOL)iupStrBoolean(value);
 
   if ([the_view isKindOfClass:[NSTextField class]])
@@ -954,7 +954,7 @@ static int cocoaLabelSetSelectable(Ihandle* ih, const char* value)
 
 static char* cocoaLabelGetSelectable(Ihandle* ih)
 {
-  NSView* the_view = iupCocoaGetMainView(ih);
+  NSView* the_view = iupcocoaGetMainView(ih);
   BOOL is_active = NO;
 
   if ([the_view isKindOfClass:[NSTextField class]])
@@ -1091,9 +1091,9 @@ static int cocoaLabelMapMethod(Ihandle* ih)
   ih->handle = event_view_wrapper;
   objc_setAssociatedObject(event_view_wrapper, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 
-  iupCocoaSetAssociatedViews(ih, the_actual_label, event_view_wrapper);
+  iupcocoaSetAssociatedViews(ih, the_actual_label, event_view_wrapper);
 
-  iupCocoaAddToParent(ih);
+  iupcocoaAddToParent(ih);
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
   {

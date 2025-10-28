@@ -328,7 +328,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   if(![self isEnabled]) return;
 
   unsigned short mac_key_code = [the_event keyCode];
-  if(!iupCocoaModifierEvent(_ih, the_event, (int)mac_key_code))
+  if(!iupcocoaModifierEvent(_ih, the_event, (int)mac_key_code))
   {
     [super flagsChanged:the_event];
   }
@@ -339,7 +339,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   if(![self isEnabled]) return;
 
   unsigned short mac_key_code = [the_event keyCode];
-  if(!iupCocoaKeyEvent(_ih, the_event, (int)mac_key_code, true))
+  if(!iupcocoaKeyEvent(_ih, the_event, (int)mac_key_code, true))
   {
     [super keyDown:the_event];
   }
@@ -350,7 +350,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   if(![self isEnabled]) return;
 
   unsigned short mac_key_code = [the_event keyCode];
-  if(!iupCocoaKeyEvent(_ih, the_event, (int)mac_key_code, false))
+  if(!iupcocoaKeyEvent(_ih, the_event, (int)mac_key_code, false))
   {
     [super keyUp:the_event];
   }
@@ -360,7 +360,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 {
   if(![self isEnabled]) return;
 
-  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
+  if(!iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
   {
     [super mouseDown:the_event];
   }
@@ -370,7 +370,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 {
   if(![self isEnabled]) return;
 
-  if(!iupCocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
+  if(!iupcocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
   {
     [super mouseDragged:the_event];
   }
@@ -391,7 +391,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   [self setStartedDrag:false];
   if(![self isEnabled]) return;
 
-  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, false))
+  if(!iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, false))
   {
     [super mouseUp:the_event];
   }
@@ -401,7 +401,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 {
   if(![self isEnabled]) return;
 
-  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
+  if(!iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
   {
     [super rightMouseDown:the_event];
   }
@@ -411,7 +411,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 {
   if(![self isEnabled]) return;
 
-  if(!iupCocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
+  if(!iupcocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
   {
     [super rightMouseDragged:the_event];
   }
@@ -421,7 +421,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 {
   if(![self isEnabled]) return;
 
-  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, false))
+  if(!iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, false))
   {
     [super rightMouseUp:the_event];
   }
@@ -431,7 +431,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 {
   if(![self isEnabled]) return;
 
-  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
+  if(!iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, true))
   {
     [super otherMouseDown:the_event];
   }
@@ -441,7 +441,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 {
   if(![self isEnabled]) return;
 
-  if(!iupCocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
+  if(!iupcocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
   {
     [super otherMouseDragged:the_event];
   }
@@ -451,7 +451,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 {
   if(![self isEnabled]) return;
 
-  if(!iupCocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, false))
+  if(!iupcocoaCommonBaseHandleMouseButtonCallback(_ih, the_event, self, false))
   {
     [super otherMouseUp:the_event];
   }
@@ -541,7 +541,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   IFnfiis wheel_cb = (IFnfiis)IupGetCallback(_ih, "WHEEL_CB");
   if (wheel_cb)
   {
-    iupCocoaCommonBaseScrollWheelCallback(_ih, the_event, self);
+    iupcocoaCommonBaseScrollWheelCallback(_ih, the_event, self);
     return;
   }
 
@@ -972,7 +972,7 @@ static int cocoaCanvasSetContextMenuAttrib(Ihandle* ih, const char* value)
 {
   Ihandle* menu_ih = (Ihandle*)value;
   IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
-  iupCocoaCommonBaseSetContextMenuForWidget(ih, canvas_view, menu_ih);
+  iupcocoaCommonBaseSetContextMenuForWidget(ih, canvas_view, menu_ih);
   return 1;
 }
 
@@ -1052,8 +1052,8 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
   }
 
   ih->handle = root_view;
-  iupCocoaSetAssociatedViews(ih, canvas_view, root_view);
-  iupCocoaAddToParent(ih);
+  iupcocoaSetAssociatedViews(ih, canvas_view, root_view);
+  iupcocoaAddToParent(ih);
 
   // Setup Drag and Drop
   IupSourceDragAssociatedData* source_drag = cocoaSourceDragCreateAssociatedData(ih, canvas_view, root_view);
@@ -1083,15 +1083,15 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
   cocoaTargetDropDestroyAssociatedData(ih);
   cocoaSourceDragDestroyAssociatedData(ih);
 
-  Ihandle* context_menu_ih = (Ihandle*)iupCocoaCommonBaseGetContextMenuAttrib(ih);
+  Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
   if(context_menu_ih)
   {
     IupDestroy(context_menu_ih);
   }
-  iupCocoaCommonBaseSetContextMenuAttrib(ih, NULL);
+  iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
 
-  iupCocoaRemoveFromParent(ih);
-  iupCocoaSetAssociatedViews(ih, nil, nil);
+  iupcocoaRemoveFromParent(ih);
+  iupcocoaSetAssociatedViews(ih, nil, nil);
   [root_view release];
   ih->handle = NULL;
   iupAttribSet(ih, "_IUPCOCOA_CANVAS_VIEW", NULL);
@@ -1215,11 +1215,11 @@ void iupdrvCanvasInitClass(Iclass* ic)
   // Drag and drop
   iupClassRegisterAttribute(ic, "DRAGINITIATE", NULL, cocoaCanvasSetBeginDragAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOBEGINDRAG", NULL, NULL, "NO", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SENDACTION", NULL, iupCocoaCommonBaseSetSendActionAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SENDACTION", NULL, iupcocoaCommonBaseSetSendActionAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   // Not Supported
   iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   // Layer backing
-  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }

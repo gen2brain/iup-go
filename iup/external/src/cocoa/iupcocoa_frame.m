@@ -85,7 +85,7 @@ int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
     [tempBox setTitlePosition:NSAtTop];
     [tempBox setBorderType:NSLineBorder];
 
-    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     if (iup_font)
     {
       NSFont* font = [iup_font nativeFont];
@@ -245,7 +245,7 @@ static int cocoaFrameSetFontAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
   {
     NSBox* the_frame = (NSBox*)ih->handle;
-    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     if(iup_font)
     {
       NSFont* font = [iup_font nativeFont];
@@ -320,7 +320,7 @@ static int cocoaFrameMapMethod(Ihandle* ih)
     [the_frame setBorderType:NSLineBorder];
 
     /* Apply font to title if specified */
-    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     if (iup_font)
     {
       NSFont* font = [iup_font nativeFont];
@@ -342,8 +342,8 @@ static int cocoaFrameMapMethod(Ihandle* ih)
       [the_frame setBorderType:NSLineBorder];
   }
 
-  iupCocoaSetAssociatedViews(ih, [the_frame contentView], the_frame);
-  iupCocoaAddToParent(ih);
+  iupcocoaSetAssociatedViews(ih, [the_frame contentView], the_frame);
+  iupcocoaAddToParent(ih);
 
   if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
   {

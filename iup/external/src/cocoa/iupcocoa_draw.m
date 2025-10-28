@@ -70,7 +70,7 @@ IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
   dc->ih = ih;
-  dc->canvasView = iupCocoaGetMainView(ih);
+  dc->canvasView = iupcocoaGetMainView(ih);
   dc->release_context = 0;
   dc->draw_focus = 0;
 
@@ -92,7 +92,7 @@ IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   {
     if (dc->release_context) [dc->canvasView unlockFocus];
     free(dc);
-    iupAppleLogError("Failed to get CGContextRef for drawing.");
+    iupcocoaLogError("Failed to get CGContextRef for drawing.");
     return NULL;
   }
 
@@ -449,7 +449,7 @@ void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, in
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:temp_ns_context];
 
-    IupCocoaFont* iupFont = (font && *font != '\0') ? iupCocoaFindFont(font) : iupCocoaGetFont(dc->ih);
+    IupCocoaFont* iupFont = (font && *font != '\0') ? iupcocoaFindFont(font) : iupcocoaGetFont(dc->ih);
     if (!iupFont)
     {
       [NSGraphicsContext restoreGraphicsState];

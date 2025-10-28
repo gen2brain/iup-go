@@ -139,7 +139,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   [self.tabBarView setFrame:tab_bar_frame];
   [self.contentAreaView setFrame:content_frame];
 
-  iupCocoaCommonBaseLayoutGetChildView(ih);
+  iupcocoaCommonBaseLayoutGetChildView(ih);
   iupdrvBaseLayoutUpdateMethod(ih);
 }
 
@@ -150,7 +150,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   {
     Ihandle* ih = [self ihandle];
     if (ih)
-      iupCocoaFocusIn(ih);
+      iupcocoaFocusIn(ih);
   }
   return result;
 }
@@ -162,7 +162,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   {
     Ihandle* ih = [self ihandle];
     if (ih)
-      iupCocoaFocusOut(ih);
+      iupcocoaFocusOut(ih);
   }
   return result;
 }
@@ -185,7 +185,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    if (!iupCocoaKeyEvent(ih, event, mac_key_code, true))
+    if (!iupcocoaKeyEvent(ih, event, mac_key_code, true))
       [super keyDown:event];
   }
   else
@@ -198,7 +198,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    if (!iupCocoaKeyEvent(ih, event, mac_key_code, false))
+    if (!iupcocoaKeyEvent(ih, event, mac_key_code, false))
       [super keyUp:event];
   }
   else
@@ -211,7 +211,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    if (!iupCocoaModifierEvent(ih, event, mac_key_code))
+    if (!iupcocoaModifierEvent(ih, event, mac_key_code))
       [super flagsChanged:event];
   }
   else
@@ -816,7 +816,7 @@ static int cocoaTabsSetFontAttrib(Ihandle* ih, const char* value)
   IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
   if (tab_bar_view)
   {
-    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     if (iup_font)
     {
       [tab_bar_view setTabFont:iup_font.nativeFont];
@@ -1092,7 +1092,7 @@ static int cocoaTabsMapMethod(Ihandle* ih)
   objc_setAssociatedObject(root_view, @"IUP_TABS_DELEGATE", delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   [delegate release];
 
-  iupCocoaSetAssociatedViews(ih, root_view, root_view);
+  iupcocoaSetAssociatedViews(ih, root_view, root_view);
   cocoaTabsGetVisibleArray(ih);
 
   // Set attributes that must be set before children are added
@@ -1111,15 +1111,15 @@ static int cocoaTabsMapMethod(Ihandle* ih)
   if (iupAttribGet(ih, "CLOSEBUTTONONHOVER"))
     cocoaTabsSetCloseButtonOnHoverAttrib(ih, iupAttribGet(ih, "CLOSEBUTTONONHOVER"));
 
-  iupCocoaAddToParent(ih);
+  iupcocoaAddToParent(ih);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
   {
-    iupCocoaSetCanFocus(ih, 0);
+    iupcocoaSetCanFocus(ih, 0);
   }
   else
   {
-    iupCocoaSetCanFocus(ih, 1);
+    iupcocoaSetCanFocus(ih, 1);
   }
 
   if (ih->firstchild)
@@ -1180,8 +1180,8 @@ static void cocoaTabsUnMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPCOCOA_VISIBLEARRAY", NULL);
   }
 
-  iupCocoaRemoveFromParent(ih);
-  iupCocoaSetAssociatedViews(ih, nil, nil);
+  iupcocoaRemoveFromParent(ih);
+  iupcocoaSetAssociatedViews(ih, nil, nil);
   [root_view release];
   ih->handle = NULL;
 }
@@ -1228,7 +1228,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, cocoaTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
+  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 
   iupClassRegisterAttribute(ic, "FONT", NULL, cocoaTabsSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);

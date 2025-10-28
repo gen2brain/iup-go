@@ -197,8 +197,8 @@ static int cocoaProgressBarMapMethod(Ihandle* ih)
   }
 
   ih->handle = container_view;
-  iupCocoaSetAssociatedViews(ih, progress_indicator, container_view);
-  iupCocoaAddToParent(ih);
+  iupcocoaSetAssociatedViews(ih, progress_indicator, container_view);
+  iupcocoaAddToParent(ih);
 
   return IUP_NOERROR;
 }

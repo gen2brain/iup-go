@@ -98,7 +98,7 @@ NSDragOperation cocoaTargetDropBaseDraggingUpdated(Ihandle* ih, id<NSDraggingInf
 }
 
 // Helper to convert NSFont to an IUP font string, preserving style.
-static NSString* iupCocoaGetFontStringFromFont(NSFont* ns_font)
+static NSString* iupcocoaGetFontStringFromFont(NSFont* ns_font)
 {
   if (!ns_font)
   {
@@ -230,7 +230,7 @@ int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_s
       NSImage* ns_image = (NSImage*)drop_item;
       int w, h, bpp;
       iupdrvImageGetInfo(ns_image, &w, &h, &bpp);
-      int bytes_per_row = iupCocoaImageCalculateBytesPerRow(w, bpp/8);
+      int bytes_per_row = iupcocoaImageCalculateBytesPerRow(w, bpp/8);
       size_t buffer_size = bytes_per_row * h;
       unsigned char* img_data = malloc(buffer_size);
       iupdrvImageGetData(ns_image, img_data);
@@ -284,7 +284,7 @@ int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_s
     else if([drop_item isKindOfClass:[NSFont class]])
     {
       NSFont* ns_font = (NSFont*)drop_item;
-      NSString* ns_string = iupCocoaGetFontStringFromFont(ns_font);
+      NSString* ns_string = iupcocoaGetFontStringFromFont(ns_font);
       const char* c_str = [ns_string UTF8String];
       size_t buffer_size = strlen(c_str) + 1;
       ret_val = drop_data_callback(ih, "FONT", (void*)c_str, (int)buffer_size, (int)drop_point_iup.x, (int)drop_point_iup.y);
@@ -309,7 +309,7 @@ int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_s
         NSImage* ns_image = [[[NSImage alloc] initWithData:ns_data] autorelease];
         int w, h, bpp;
         iupdrvImageGetInfo(ns_image,&w, &h, &bpp);
-        int bytes_per_row = iupCocoaImageCalculateBytesPerRow(w, bpp/8);
+        int bytes_per_row = iupcocoaImageCalculateBytesPerRow(w, bpp/8);
         size_t buffer_size = bytes_per_row*h;
         unsigned char* img_data = malloc(buffer_size);
         iupdrvImageGetData(ns_image, img_data);
@@ -362,7 +362,7 @@ int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_s
       else if([best_type isEqualToString:NSPasteboardTypeFont])
       {
         NSFont* ns_font = (NSFont*)[NSUnarchiver unarchiveObjectWithData:ns_data];
-        NSString* ns_string = iupCocoaGetFontStringFromFont(ns_font);
+        NSString* ns_string = iupcocoaGetFontStringFromFont(ns_font);
         const char* c_str = [ns_string UTF8String];
         size_t buffer_size = strlen(c_str) + 1;
         ret_val = drop_data_callback(ih, "FONT", (void*)c_str, (int)buffer_size, (int)drop_point_iup.x, (int)drop_point_iup.y);
@@ -603,7 +603,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
       memcpy(&int_ptr_for_iupfont, data_buffer, sizeof(intptr_t));
       Ihandle* iup_font = (Ihandle*)int_ptr_for_iupfont;
 
-      IupCocoaFont* iup_cocoa_font = iupCocoaGetFont(iup_font);
+      IupCocoaFont* iup_cocoa_font = iupcocoaGetFont(iup_font);
       NSFont* cocoa_font = [iup_cocoa_font nativeFont];
       NSData* ns_data = [NSKeyedArchiver archivedDataWithRootObject:cocoa_font];
       [pasteboard_item setData:ns_data forType:type_name];
@@ -865,7 +865,7 @@ static bool cocoaSourceDragDoDefaultFileCreate(NSFilePromiseProvider* file_promi
     else if([the_object isKindOfClass:[NSFont class]])
     {
       NSFont* ns_font = (NSFont*)the_object;
-      NSString* ns_string = iupCocoaGetFontStringFromFont(ns_font);
+      NSString* ns_string = iupcocoaGetFontStringFromFont(ns_font);
       [ns_string writeToURL:write_url atomically:NO encoding:NSUTF8StringEncoding error:nil];
     }
     else if([the_object isKindOfClass:[NSColor class]])

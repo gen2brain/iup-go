@@ -366,7 +366,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
 {
   Ihandle* ih = [self ih];
   unsigned short mac_key_code = [the_event keyCode];
-  bool should_not_propagate = iupCocoaModifierEvent(ih, the_event, (int)mac_key_code);
+  bool should_not_propagate = iupcocoaModifierEvent(ih, the_event, (int)mac_key_code);
   if(!should_not_propagate)
   {
     [super flagsChanged:the_event];
@@ -394,7 +394,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
   }
 
   int mac_key_code = [the_event keyCode];
-  bool should_not_propagate = iupCocoaKeyEvent(ih, the_event, mac_key_code, true);
+  bool should_not_propagate = iupcocoaKeyEvent(ih, the_event, mac_key_code, true);
   if(!should_not_propagate)
   {
     [super keyDown:the_event];
@@ -405,7 +405,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
 {
   Ihandle* ih = [self ih];
   int mac_key_code = [the_event keyCode];
-  bool should_not_propagate = iupCocoaKeyEvent(ih, the_event, mac_key_code, false);
+  bool should_not_propagate = iupcocoaKeyEvent(ih, the_event, mac_key_code, false);
   if(!should_not_propagate)
   {
     [super keyUp:the_event];
@@ -461,7 +461,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
   {
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (ih)
-      iupCocoaFocusIn(ih);
+      iupcocoaFocusIn(ih);
   }
   return result;
 }
@@ -473,7 +473,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
   {
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (ih)
-      iupCocoaFocusOut(ih);
+      iupcocoaFocusOut(ih);
   }
   return result;
 }
@@ -3316,7 +3316,7 @@ static int cocoaTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
 
   if (value)
   {
-    IupCocoaFont* iup_font = iupCocoaFindFont(value);
+    IupCocoaFont* iup_font = iupcocoaFindFont(value);
     if (nil != iup_font)
     {
       [tree_item setFont:[iup_font nativeFont]];
@@ -4280,7 +4280,7 @@ static int cocoaTreeSetContextMenuAttrib(Ihandle* ih, const char* value)
 {
   Ihandle* menu_ih = (Ihandle*)value;
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
-  iupCocoaCommonBaseSetContextMenuForWidget(ih, outline_view, menu_ih);
+  iupcocoaCommonBaseSetContextMenuForWidget(ih, outline_view, menu_ih);
 
   // Record that the user explicitly set this attribute, even if to NULL.
   iupAttribSet(ih, "_IUPCOCOA_CONTEXTMENU_SET", "1");
@@ -4430,9 +4430,9 @@ static int cocoaTreeMapMethod(Ihandle* ih)
   [tree_delegate release];
 
   ih->handle = scroll_view;
-  iupCocoaSetAssociatedViews(ih, outline_view, scroll_view);
+  iupcocoaSetAssociatedViews(ih, outline_view, scroll_view);
 
-  iupCocoaAddToParent(ih);
+  iupcocoaAddToParent(ih);
 
   [outline_view setHeaderView:nil];
 
@@ -4464,11 +4464,11 @@ static int cocoaTreeMapMethod(Ihandle* ih)
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
   {
     [outline_view setRefusesFirstResponder:YES];
-    iupCocoaSetCanFocus(ih, 0);
+    iupcocoaSetCanFocus(ih, 0);
   }
   else
   {
-    iupCocoaSetCanFocus(ih, 1);
+    iupcocoaSetCanFocus(ih, 1);
   }
 
   return IUP_NOERROR;
@@ -4479,19 +4479,19 @@ static void cocoaTreeUnMapMethod(Ihandle* ih)
   id root_view = ih->handle;
 
   {
-    Ihandle* context_menu_ih = (Ihandle*)iupCocoaCommonBaseGetContextMenuAttrib(ih);
+    Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
     if (NULL != context_menu_ih)
     {
       IupDestroy(context_menu_ih);
     }
-    iupCocoaCommonBaseSetContextMenuAttrib(ih, NULL);
+    iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
   }
 
   IupCocoaOutlineView* outline_view = (IupCocoaOutlineView*)cocoaTreeGetOutlineView(ih);
   [outline_view setMarkStartNode:nil];
 
-  iupCocoaSetAssociatedViews(ih, nil, nil);
-  iupCocoaRemoveFromParent(ih);
+  iupcocoaSetAssociatedViews(ih, nil, nil);
+  iupcocoaRemoveFromParent(ih);
   [root_view release];
   ih->handle = NULL;
 }
@@ -4569,7 +4569,7 @@ void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TIP", cocoaTreeGetTipAttrib, cocoaTreeSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* New API for view specific contextual menus */
-  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupCocoaCommonBaseGetContextMenuAttrib, cocoaTreeSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaTreeSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LAYERBACKED", cocoaTreeGetLayerBackedAttrib, cocoaTreeSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 
   iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", cocoaTreeGetActiveAttrib, cocoaTreeSetActiveAttrib);

@@ -211,7 +211,7 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
       if (cb)
       {
         int pressed = (type == kCGEventKeyDown) ? 1 : 0;
-        int code = iupCocoaKeyDecode(event);
+        int code = iupcocoaKeyDecode(event);
         if (code != 0)
           cb(code, pressed);
       }
@@ -309,11 +309,11 @@ int iupdrvSetGlobal(const char *name, const char *value)
       if (!ih->handle)
         IupMap(ih);
 
-      iupCocoaMenuSetApplicationMenu(ih);
+      iupcocoaMenuSetApplicationMenu(ih);
     }
     else
     {
-      iupCocoaMenuSetApplicationMenu(NULL);
+      iupcocoaMenuSetApplicationMenu(NULL);
     }
     return 1;
   }
@@ -408,7 +408,7 @@ char *iupdrvGetGlobal(const char *name)
   }
   if (iupStrEqual(name, "MENU"))
   {
-    return (char*)iupCocoaMenuGetApplicationMenu();
+    return (char*)iupcocoaMenuGetApplicationMenu();
   }
   if (iupStrEqual(name, "ACTIVATIONPOLICY"))
   {
@@ -427,7 +427,7 @@ char *iupdrvGetGlobal(const char *name)
   }
   if (iupStrEqual(name, "DARKMODE"))
   {
-    return iupStrReturnBoolean(iupCocoaIsSystemDarkMode());
+    return iupStrReturnBoolean(iupcocoaIsSystemDarkMode());
   }
 
   return NULL;

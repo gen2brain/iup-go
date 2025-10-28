@@ -247,7 +247,7 @@ static NSFont* cocoaGetNativeFont(Ihandle* ih)
   if (!ih)
     return [NSFont systemFontOfSize:[NSFont systemFontSize]];
 
-  IupCocoaFont *iup_font = iupCocoaGetFont(ih);
+  IupCocoaFont *iup_font = iupcocoaGetFont(ih);
   if (iup_font)
     return [iup_font nativeFont];
 
@@ -416,7 +416,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   {
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (ih)
-      iupCocoaFocusIn(ih);
+      iupcocoaFocusIn(ih);
   }
   return result;
 }
@@ -428,7 +428,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   {
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (ih)
-      iupCocoaFocusOut(ih);
+      iupcocoaFocusOut(ih);
   }
   return result;
 }
@@ -439,8 +439,8 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    // iupCocoaKeyEvent will internally bubble the event up to the dialog if needed.
-    BOOL handled = iupCocoaKeyEvent(ih, event, mac_key_code, true);
+    // iupcocoaKeyEvent will internally bubble the event up to the dialog if needed.
+    BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, true);
 
     if (!handled)
     {
@@ -459,7 +459,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    BOOL handled = iupCocoaKeyEvent(ih, event, mac_key_code, false);
+    BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, false);
 
     if (!handled)
       [super keyUp:event];
@@ -474,7 +474,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    BOOL handled = iupCocoaModifierEvent(ih, event, mac_key_code);
+    BOOL handled = iupcocoaModifierEvent(ih, event, mac_key_code);
 
     if (!handled)
       [super flagsChanged:event];
@@ -535,7 +535,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 
     if (ih)
     {
-      iupCocoaFocusIn(ih);
+      iupcocoaFocusIn(ih);
     }
   }
   return result;
@@ -549,7 +549,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (ih)
     {
-      iupCocoaFocusOut(ih);
+      iupcocoaFocusOut(ih);
     }
   }
   return result;
@@ -561,7 +561,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    BOOL handled = iupCocoaKeyEvent(ih, event, mac_key_code, true);
+    BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, true);
     if (!handled)
     {
       [super keyDown:event];
@@ -579,7 +579,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    BOOL handled = iupCocoaKeyEvent(ih, event, mac_key_code, false);
+    BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, false);
     if (!handled)
       [super keyUp:event];
   }
@@ -593,7 +593,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    BOOL handled = iupCocoaModifierEvent(ih, event, mac_key_code);
+    BOOL handled = iupcocoaModifierEvent(ih, event, mac_key_code);
     if (!handled)
       [super flagsChanged:event];
   }
@@ -641,7 +641,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   {
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (ih)
-      iupCocoaFocusIn(ih);
+      iupcocoaFocusIn(ih);
   }
   return result;
 }
@@ -653,7 +653,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   {
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (ih)
-      iupCocoaFocusOut(ih);
+      iupcocoaFocusOut(ih);
   }
   return result;
 }
@@ -676,8 +676,8 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    // iupCocoaKeyEvent will internally bubble the event up to the dialog if needed.
-    BOOL handled = iupCocoaKeyEvent(ih, event, mac_key_code, true);
+    // iupcocoaKeyEvent will internally bubble the event up to the dialog if needed.
+    BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, true);
 
     if (!handled)
       [super keyDown:event];
@@ -692,7 +692,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    if (!iupCocoaKeyEvent(ih, event, mac_key_code, false))
+    if (!iupcocoaKeyEvent(ih, event, mac_key_code, false))
       [super keyUp:event];
   }
   else
@@ -705,7 +705,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    if (!iupCocoaModifierEvent(ih, event, mac_key_code))
+    if (!iupcocoaModifierEvent(ih, event, mac_key_code))
       [super flagsChanged:event];
   }
   else
@@ -900,7 +900,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
     int mac_key_code = [current_event keyCode];
 
     // First, let the control itself try to handle the key event.
-    BOOL handled = iupCocoaKeyEvent(ih, current_event, mac_key_code, true);
+    BOOL handled = iupcocoaKeyEvent(ih, current_event, mac_key_code, true);
     if (handled)
       return YES; // Returning YES prevents the default command.
 
@@ -911,7 +911,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
     Ihandle* dialog_ih = IupGetDialog(ih);
     if (dialog_ih && dialog_ih != ih)
     {
-      if (iupCocoaKeyEvent(dialog_ih, current_event, mac_key_code, true))
+      if (iupcocoaKeyEvent(dialog_ih, current_event, mac_key_code, true))
         return YES; // Handled by dialog's K_ANY. Prevents default command.
     }
   }
@@ -3400,7 +3400,7 @@ static int cocoaListSetContextMenuAttrib(Ihandle* ih, const char* value)
         NSTableView* table_view = (NSTableView*)cocoaListGetBaseWidget(ih);
         if (table_view)
         {
-          iupCocoaCommonBaseSetContextMenuForWidget(ih, table_view, menu_ih);
+          iupcocoaCommonBaseSetContextMenuForWidget(ih, table_view, menu_ih);
         }
         break;
       }
@@ -3410,7 +3410,7 @@ static int cocoaListSetContextMenuAttrib(Ihandle* ih, const char* value)
 
   if (widget_to_attach)
   {
-    iupCocoaCommonBaseSetContextMenuForWidget(ih, widget_to_attach, menu_ih);
+    iupcocoaCommonBaseSetContextMenuForWidget(ih, widget_to_attach, menu_ih);
   }
 
   return 1;
@@ -3670,11 +3670,11 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         if (!iupAttribGetBoolean(ih, "CANFOCUS"))
         {
-          iupCocoaSetCanFocus(ih, 0);
+          iupcocoaSetCanFocus(ih, 0);
         }
         else
         {
-          iupCocoaSetCanFocus(ih, 1);
+          iupcocoaSetCanFocus(ih, 1);
         }
 
         break;
@@ -3703,11 +3703,11 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         if (!iupAttribGetBoolean(ih, "CANFOCUS"))
         {
-          iupCocoaSetCanFocus(ih, 0);
+          iupcocoaSetCanFocus(ih, 0);
         }
         else
         {
-          iupCocoaSetCanFocus(ih, 1);
+          iupcocoaSetCanFocus(ih, 1);
         }
 
         break;
@@ -3790,11 +3790,11 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         if (!iupAttribGetBoolean(ih, "CANFOCUS"))
         {
-          iupCocoaSetCanFocus(ih, 0);
+          iupcocoaSetCanFocus(ih, 0);
         }
         else
         {
-          iupCocoaSetCanFocus(ih, 1);
+          iupcocoaSetCanFocus(ih, 1);
         }
 
         break;
@@ -3860,11 +3860,11 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         if (!iupAttribGetBoolean(ih, "CANFOCUS"))
         {
-          iupCocoaSetCanFocus(ih, 0);
+          iupcocoaSetCanFocus(ih, 0);
         }
         else
         {
-          iupCocoaSetCanFocus(ih, 1);
+          iupcocoaSetCanFocus(ih, 1);
         }
 
         break;
@@ -3874,8 +3874,8 @@ static int cocoaListMapMethod(Ihandle* ih)
   }
 
   ih->handle = root_view;
-  iupCocoaSetAssociatedViews(ih, main_view, root_view);
-  iupCocoaAddToParent(ih);
+  iupcocoaSetAssociatedViews(ih, main_view, root_view);
+  iupcocoaAddToParent(ih);
 
   if (iupAttribGetBoolean(ih, "SORT"))
   {
@@ -3967,8 +3967,8 @@ static void cocoaListUnMapMethod(Ihandle* ih)
 
   objc_setAssociatedObject(base_view, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
 
-  iupCocoaRemoveFromParent(ih);
-  iupCocoaSetAssociatedViews(ih, nil, nil);
+  iupcocoaRemoveFromParent(ih);
+  iupcocoaSetAssociatedViews(ih, nil, nil);
   [root_view release];
   ih->handle = NULL;
 }
@@ -4007,7 +4007,7 @@ void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, cocoaListSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTO", NULL, cocoaListSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, cocoaListSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupCocoaCommonBaseGetContextMenuAttrib, cocoaListSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaListSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, cocoaListSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", NULL, cocoaListSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);

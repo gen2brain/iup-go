@@ -57,7 +57,7 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
   {
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (ih)
-      iupCocoaFocusIn(ih);
+      iupcocoaFocusIn(ih);
   }
   return result;
 }
@@ -66,7 +66,7 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
-    iupCocoaFocusOut(ih);
+    iupcocoaFocusOut(ih);
 
   return [super resignFirstResponder];
 }
@@ -117,7 +117,7 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
   }
 
   int keyCode = [event keyCode];
-  if (iupCocoaKeyEvent(ih, event, keyCode, true))
+  if (iupcocoaKeyEvent(ih, event, keyCode, true))
     return;
 
   if (!ih->data->is_radio && ih->data->type == IUP_TOGGLE_TEXT && [self allowsMixedState])
@@ -876,14 +876,14 @@ static int cocoaToggleMapMethod(Ihandle* ih)
   objc_setAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY, (id)toggle_receiver, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   [toggle_receiver release];
 
-  iupCocoaSetAssociatedViews(ih, the_toggle, the_toggle);
+  iupcocoaSetAssociatedViews(ih, the_toggle, the_toggle);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
-    iupCocoaSetCanFocus(ih, 0);
+    iupcocoaSetCanFocus(ih, 0);
   else
-    iupCocoaSetCanFocus(ih, 1);
+    iupcocoaSetCanFocus(ih, 1);
 
-  iupCocoaAddToParent(ih);
+  iupcocoaAddToParent(ih);
 
   value = iupAttribGet(ih, "VALUE");
   if (!value && initial_checked)
@@ -912,11 +912,11 @@ static void cocoaToggleUnMapMethod(Ihandle* ih)
 {
   id the_toggle = ih->handle;
 
-  Ihandle* context_menu_ih = (Ihandle*)iupCocoaCommonBaseGetContextMenuAttrib(ih);
+  Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
   if (context_menu_ih != NULL)
   {
     IupDestroy(context_menu_ih);
-    iupCocoaCommonBaseSetContextMenuAttrib(ih, NULL);
+    iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
   }
 
   id button_receiver = objc_getAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY);
@@ -930,8 +930,8 @@ static void cocoaToggleUnMapMethod(Ihandle* ih)
       iupAttribSet(radio, "_IUPCOCOA_LASTTOGGLE", NULL);
   }
 
-  iupCocoaRemoveFromParent(ih);
-  iupCocoaSetAssociatedViews(ih, nil, nil);
+  iupcocoaRemoveFromParent(ih);
+  iupcocoaSetAssociatedViews(ih, nil, nil);
   [the_toggle release];
   ih->handle = NULL;
 }
@@ -962,5 +962,5 @@ void iupdrvToggleInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
 
-  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
+  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 }
