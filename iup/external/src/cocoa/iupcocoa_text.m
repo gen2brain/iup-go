@@ -1197,7 +1197,7 @@ static int cocoaTextSetTabSizeAttrib(Ihandle* ih, const char* value)
     case IUPCOCOATEXTSUBTYPE_VIEW:
       {
         NSTextView* text_view = cocoaTextGetTextView(ih);
-        IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+        IupCocoaFont* iup_font = iupcocoaGetFont(ih);
 
         int tab_size = 8;
         if(value) iupStrToInt(value, &tab_size);
@@ -1258,7 +1258,7 @@ static int cocoaTextSetValueAttrib(Ihandle* ih, const char* value)
     case IUPCOCOATEXTSUBTYPE_VIEW:
       {
         NSTextView* text_view = cocoaTextGetTextView(ih);
-        IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+        IupCocoaFont* iup_font = iupcocoaGetFont(ih);
         NSTextStorage* text_storage = [text_view textStorage];
 
         NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
@@ -1303,7 +1303,7 @@ static int cocoaTextSetValueAttrib(Ihandle* ih, const char* value)
       {
         NSTextField* text_field = cocoaTextGetTextField(ih);
         NSCAssert([text_field isKindOfClass:[NSTextField class]], @"Expected NSTextField");
-        IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+        IupCocoaFont* iup_font = iupcocoaGetFont(ih);
         if([iup_font usesAttributes])
         {
           NSAttributedString* attributed_string = [[NSAttributedString alloc] initWithString:ns_string attributes:[iup_font attributeDictionary]];
@@ -2956,7 +2956,7 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
   if(did_change_attribute)
   {
     NSFontManager* font_manager = [NSFontManager sharedFontManager];
-    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
 
     NSTextStorage* text_storage = [text_view textStorage];
 
@@ -3197,7 +3197,7 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
     }
   }
 
-  IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+  IupCocoaFont* iup_font = iupcocoaGetFont(ih);
 
   NSMutableDictionary* attribute_dict = [[iup_font attributeDictionary] mutableCopy];
   [attribute_dict autorelease];
@@ -3277,7 +3277,7 @@ static int cocoaTextSetFormattingAttrib(Ihandle* ih, const char* value)
 
           [text_storage endEditing];
 
-          IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+          IupCocoaFont* iup_font = iupcocoaGetFont(ih);
 
           [text_view setTypingAttributes:[iup_font attributeDictionary]];
           [text_view setRichText:enable_formatting];
@@ -3472,7 +3472,7 @@ static int cocoaTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
         }
 
         NSTextStorage* text_storage = [text_view textStorage];
-        IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+        IupCocoaFont* iup_font = iupcocoaGetFont(ih);
 
         NSMutableDictionary* attribute_dict = [[iup_font attributeDictionary] mutableCopy];
         [attribute_dict autorelease];
@@ -4499,7 +4499,7 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
     NSTextStorage* text_storage = [text_view textStorage];
 
     NSString* ns_append_string = nil;
-    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
 
     if(ih->data->append_newline && ([text_storage length] > 0))
     {
@@ -4552,7 +4552,7 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
       case IUPCOCOATEXTSUBTYPE_FIELD:
         {
           NSTextField* text_field = cocoaTextGetTextField(ih);
-          IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+          IupCocoaFont* iup_font = iupcocoaGetFont(ih);
           NSMutableAttributedString* old_string_value = [[[text_field attributedStringValue] mutableCopy] autorelease];
 
           NSString* ns_append_string = [NSString stringWithUTF8String:value];
@@ -4616,7 +4616,7 @@ static int cocoaTextSetInsertAttrib(Ihandle* ih, const char* value)
           return cocoaTextSetSelectedTextAttrib(ih, value);
         }
 
-        IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+        IupCocoaFont* iup_font = iupcocoaGetFont(ih);
 
         NSMutableDictionary* attribute_dict = [[iup_font attributeDictionary] mutableCopy];
         [attribute_dict autorelease];
@@ -5111,7 +5111,7 @@ static int cocoaTextSetContextMenuAttrib(Ihandle* ih, const char* value)
       return 0;
   }
 
-  iupCocoaCommonBaseSetContextMenuForWidget(ih, widget_to_attach, menu_ih);
+  iupcocoaCommonBaseSetContextMenuForWidget(ih, widget_to_attach, menu_ih);
 
   return 1;
 }
@@ -5184,7 +5184,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
     if (!(ih->data->sb & IUP_SB_VERT))
       [scroll_view setHasVerticalScroller:NO];
 
-    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     if (iup_font)
     {
       [text_view setFont:[iup_font nativeFont]];
@@ -5304,7 +5304,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
   }
 
   ih->handle = root_view;
-  iupCocoaSetAssociatedViews(ih, main_view, root_view);
+  iupcocoaSetAssociatedViews(ih, main_view, root_view);
 
   if (iupAttribGet(ih, "BGCOLOR"))
     cocoaTextSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));
@@ -5313,7 +5313,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
   if (iupAttribGet(ih, "ALIGNMENT"))
     cocoaTextSetAlignmentAttrib(ih, iupAttribGetStr(ih, "ALIGNMENT"));
 
-  iupCocoaAddToParent(ih);
+  iupcocoaAddToParent(ih);
 
   if(ih->data->formattags)
   {
@@ -5335,16 +5335,16 @@ static void cocoaTextUnMapMethod(Ihandle* ih)
   id the_view = ih->handle;
 
   {
-    Ihandle* context_menu_ih = (Ihandle*)iupCocoaCommonBaseGetContextMenuAttrib(ih);
+    Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
     if(NULL != context_menu_ih)
     {
       IupDestroy(context_menu_ih);
     }
-    iupCocoaCommonBaseSetContextMenuAttrib(ih, NULL);
+    iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
   }
 
-  iupCocoaRemoveFromParent(ih);
-  iupCocoaSetAssociatedViews(ih, nil, nil);
+  iupcocoaRemoveFromParent(ih);
+  iupcocoaSetAssociatedViews(ih, nil, nil);
   [the_view release];
   ih->handle = NULL;
 }
@@ -5458,5 +5458,5 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", cocoaTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", cocoaTextGetOverwriteAttrib, cocoaTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupCocoaCommonBaseGetContextMenuAttrib, cocoaTextSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaTextSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }

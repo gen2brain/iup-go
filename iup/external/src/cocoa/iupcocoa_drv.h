@@ -1,5 +1,5 @@
 /** \file
- * \brief MAC Driver
+ * \brief macOS Cocoa Driver
  *
  * See Copyright Notice in "iup.h"
  */
@@ -28,71 +28,71 @@ IUP_DRV_API extern const void* MAINVIEW_ASSOCIATED_OBJ_KEY;
 /* The root view, in case the root object is not a view. */
 IUP_DRV_API extern const void* ROOTVIEW_ASSOCIATED_OBJ_KEY;
 
-#define iupAppleLog(...) os_log(OS_LOG_DEFAULT, __VA_ARGS__)
-#define iupAppleLogDebug(...) os_log_debug(OS_LOG_DEFAULT, __VA_ARGS__)
-#define iupAppleLogInfo(...) os_log_info(OS_LOG_DEFAULT, __VA_ARGS__)
-#define iupAppleLogNotice(...) os_log(OS_LOG_DEFAULT, __VA_ARGS__)
-#define iupAppleLogWarning(...) os_log_error(OS_LOG_DEFAULT, __VA_ARGS__)
-#define iupAppleLogError(...) os_log_error(OS_LOG_DEFAULT, __VA_ARGS__)
-#define iupAppleLogCritical(...) os_log_fault(OS_LOG_DEFAULT, __VA_ARGS__)
+#define iupcocoaLog(...) os_log(OS_LOG_DEFAULT, __VA_ARGS__)
+#define iupcocoaLogDebug(...) os_log_debug(OS_LOG_DEFAULT, __VA_ARGS__)
+#define iupcocoaLogInfo(...) os_log_info(OS_LOG_DEFAULT, __VA_ARGS__)
+#define iupcocoaLogNotice(...) os_log(OS_LOG_DEFAULT, __VA_ARGS__)
+#define iupcocoaLogWarning(...) os_log_error(OS_LOG_DEFAULT, __VA_ARGS__)
+#define iupcocoaLogError(...) os_log_error(OS_LOG_DEFAULT, __VA_ARGS__)
+#define iupcocoaLogCritical(...) os_log_fault(OS_LOG_DEFAULT, __VA_ARGS__)
 
-#define iupAppleNSLog(FORMAT, ...) os_log_info(OS_LOG_DEFAULT, "%{public}@", [NSString stringWithFormat:FORMAT, ##__VA_ARGS__])
+#define iupcocoaNSLog(FORMAT, ...) os_log_info(OS_LOG_DEFAULT, "%{public}@", [NSString stringWithFormat:FORMAT, ##__VA_ARGS__])
 
-IUP_DRV_API NSObject* iupCocoaGetRootObject(Ihandle* ih);
-IUP_DRV_API NSView* iupCocoaGetRootView(Ihandle* ih);
-IUP_DRV_API NSView* iupCocoaGetMainView(Ihandle* ih);
-IUP_DRV_API void iupCocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSView* root_view);
+IUP_DRV_API NSObject* iupcocoaGetRootObject(Ihandle* ih);
+IUP_DRV_API NSView* iupcocoaGetRootView(Ihandle* ih);
+IUP_DRV_API NSView* iupcocoaGetMainView(Ihandle* ih);
+IUP_DRV_API void iupcocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSView* root_view);
 
-IUP_DRV_API void iupCocoaAddToParent(Ihandle* ih);
-IUP_DRV_API void iupCocoaRemoveFromParent(Ihandle* ih);
+IUP_DRV_API void iupcocoaAddToParent(Ihandle* ih);
+IUP_DRV_API void iupcocoaRemoveFromParent(Ihandle* ih);
 
-NSView* iupCocoaCommonBaseLayoutGetParentView(Ihandle* ih);
-NSView* iupCocoaCommonBaseLayoutGetChildView(Ihandle* ih);
+NSView* iupcocoaCommonBaseLayoutGetParentView(Ihandle* ih);
+NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih);
 
-void iupCocoaCommonLoopCallExitCb(void);
+void iupcocoaCommonLoopCallExitCb(void);
 
 /* Coordinate conversion helpers: Cocoa uses Cartesian (y-up), IUP uses (y-down). */
-int iupCocoaComputeCartesianScreenHeightFromIup(int iup_height);
-int iupCocoaComputeIupScreenHeightFromCartesian(int cartesian_height);
+int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);
+int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height);
 
 /* Tooltip Functions */
 IUP_DRV_API void iupdrvUpdateTip(Ihandle* ih);
-IUP_DRV_API void iupCocoaTipsDestroy(Ihandle* ih);
+IUP_DRV_API void iupcocoaTipsDestroy(Ihandle* ih);
 
 /* Menu Functions */
-int iupCocoaMenuIsApplicationBar(Ihandle* ih);
-void iupCocoaMenuSetApplicationMenu(Ihandle* ih);
-Ihandle* iupCocoaMenuGetApplicationMenu(void);
-void iupCocoaMenuCleanupApplicationMenu(void);
-void iupCocoaEnsureDefaultApplicationMenu(void);
+int iupcocoaMenuIsApplicationBar(Ihandle* ih);
+void iupcocoaMenuSetApplicationMenu(Ihandle* ih);
+Ihandle* iupcocoaMenuGetApplicationMenu(void);
+void iupcocoaMenuCleanupApplicationMenu(void);
+void iupcocoaEnsureDefaultApplicationMenu(void);
 
 /* Helpers for mouse button and motion events. */
-IUP_DRV_API int iupCocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_button);
-IUP_DRV_API bool iupCocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed);
-IUP_DRV_API bool iupCocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view);
+IUP_DRV_API int iupcocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_button);
+IUP_DRV_API bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed);
+IUP_DRV_API bool iupcocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view);
 
 /* WHEEL_CB: WARNING: IUP does not support delta-y axis. */
-IUP_DRV_API bool iupCocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view);
+IUP_DRV_API bool iupcocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view);
 
 /* For Layer Backed Views. */
-IUP_DRV_API int iupCocoaCommonBaseSetLayerBackedAttrib(Ihandle* ih, const char* value);
+IUP_DRV_API int iupcocoaCommonBaseSetLayerBackedAttrib(Ihandle* ih, const char* value);
 IUP_DRV_API char* iupCocoaCommonBaseGetLayerBackedAttrib(Ihandle* ih);
 
 /* Helpers for NSResponder context menus. */
-IUP_DRV_API void iupCocoaCommonBaseAppendMenuItems(NSMenu* dst_menu, NSMenu* src_menu);
-IUP_DRV_API void iupCocoaCommonBaseAppendDefaultMenuItemsForClassType(NSMenu* dst_menu, Class class_of_widget);
-IUP_DRV_API void iupCocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id ih_widget_to_attach_menu_to, Ihandle* menu_ih);
-IUP_DRV_API int iupCocoaCommonBaseSetContextMenuAttrib(Ihandle* ih, const char* value);
-IUP_DRV_API char* iupCocoaCommonBaseGetContextMenuAttrib(Ihandle* ih);
+IUP_DRV_API void iupcocoaCommonBaseAppendMenuItems(NSMenu* dst_menu, NSMenu* src_menu);
+IUP_DRV_API void iupcocoaCommonBaseAppendDefaultMenuItemsForClassType(NSMenu* dst_menu, Class class_of_widget);
+IUP_DRV_API void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id ih_widget_to_attach_menu_to, Ihandle* menu_ih);
+IUP_DRV_API int iupcocoaCommonBaseSetContextMenuAttrib(Ihandle* ih, const char* value);
+IUP_DRV_API char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih);
 
 /* Send an action through the responder chain (e.g., "undo:", "copy:"). */
-IUP_DRV_API int iupCocoaCommonBaseSetSendActionAttrib(Ihandle* ih, const char* value);
+IUP_DRV_API int iupcocoaCommonBaseSetSendActionAttrib(Ihandle* ih, const char* value);
 
 /* Helpers for keyboard events. */
-IUP_DRV_API bool iupCocoaKeyEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code, bool is_pressed);
-IUP_DRV_API bool iupCocoaModifierEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code);
-IUP_DRV_API int iupCocoaKeyDecode(CGEventRef event);
-IUP_DRV_API void iupCocoaButtonKeySetStatus(NSEvent* ns_event, char* out_status);
+IUP_DRV_API bool iupcocoaKeyEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code, bool is_pressed);
+IUP_DRV_API bool iupcocoaModifierEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code);
+IUP_DRV_API int iupcocoaKeyDecode(CGEventRef event);
+IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent* ns_event, char* out_status);
 
 @interface IupCocoaFont : NSObject
 
@@ -110,15 +110,15 @@ IUP_DRV_API void iupCocoaButtonKeySetStatus(NSEvent* ns_event, char* out_status)
 
 @end
 
-IUP_DRV_API IupCocoaFont* iupCocoaGetFont(Ihandle* ih);
-IUP_DRV_API IupCocoaFont* iupCocoaFindFont(const char *iup_font_name);
+IUP_DRV_API IupCocoaFont* iupcocoaGetFont(Ihandle* ih);
+IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char *iup_font_name);
 
 IUP_DRV_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y);
 
 /* Image conversion helpers. */
-int iupCocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel);
-NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
-NSImage* iupCocoaImageNSImageFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
+int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel);
+NSBitmapImageRep* iupcocoaImageNSBitmapImageRepFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
+NSImage* iupcocoaImageNSImageFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
 
 /* Handles IUP_CLOSE for modal dialogs. */
 bool cocoaDialogExitModal(Ihandle* ih);
@@ -130,12 +130,12 @@ IUP_DRV_API void iupdrvDialogSetVisible(Ihandle* ih, int visible);
 IUP_DRV_API int iupdrvDialogIsVisible(Ihandle* ih);
 
 /* Focus control. */
-IUP_DRV_API void iupCocoaSetCanFocus(Ihandle* ih, int can);
-IUP_DRV_API void iupCocoaFocusIn(Ihandle* ih);
-IUP_DRV_API void iupCocoaFocusOut(Ihandle* ih);
+IUP_DRV_API void iupcocoaSetCanFocus(Ihandle* ih, int can);
+IUP_DRV_API void iupcocoaFocusIn(Ihandle* ih);
+IUP_DRV_API void iupcocoaFocusOut(Ihandle* ih);
 
 /* System information */
-IUP_DRV_API int iupCocoaIsSystemDarkMode(void);
+IUP_DRV_API int iupcocoaIsSystemDarkMode(void);
 
 #ifdef __cplusplus
 }

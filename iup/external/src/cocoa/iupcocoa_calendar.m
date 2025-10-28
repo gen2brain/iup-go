@@ -164,18 +164,18 @@ static int cocoaCalendarMapMethod(Ihandle* ih)
   [date_picker sizeToFit];
 
   ih->handle = date_picker;
-  iupCocoaSetAssociatedViews(ih, date_picker, date_picker);
+  iupcocoaSetAssociatedViews(ih, date_picker, date_picker);
 
-  iupCocoaAddToParent(ih);
+  iupcocoaAddToParent(ih);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
   {
     [date_picker setRefusesFirstResponder:YES];
-    iupCocoaSetCanFocus(ih, 0);
+    iupcocoaSetCanFocus(ih, 0);
   }
   else
   {
-    iupCocoaSetCanFocus(ih, 1);
+    iupcocoaSetCanFocus(ih, 1);
   }
 
   return IUP_NOERROR;
@@ -219,7 +219,7 @@ Iclass* iupCalendarNewClass(void)
   iupClassRegisterAttribute(ic, "VALUE", cocoaCalendarGetValueAttrib, cocoaCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, cocoaCalendarSetWeekNumbersAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", cocoaCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
+  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 
   return ic;
 }

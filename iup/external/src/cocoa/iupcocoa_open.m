@@ -111,7 +111,7 @@ int iupdrvOpen(int* argc, char*** argv)
   [NSApp finishLaunching];
 
   /* This sets a default menu at startup. It will be replaced later if an IUP dialog with a menu is shown. */
-  iupCocoaEnsureDefaultApplicationMenu();
+  iupcocoaEnsureDefaultApplicationMenu();
 
   /* Disable automatic window tabbing */
   if ([NSWindow respondsToSelector:@selector(setAllowsAutomaticWindowTabbing:)])
@@ -134,7 +134,7 @@ int iupdrvOpen(int* argc, char*** argv)
 void iupdrvClose(void)
 {
   /* This cleans up the default menu instance and the IUP menu tracking. */
-  iupCocoaMenuCleanupApplicationMenu();
+  iupcocoaMenuCleanupApplicationMenu();
 
   /*
    * Draining the autorelease pool here can cause a crash, especially when the app

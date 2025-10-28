@@ -57,9 +57,9 @@ static const void* IUP_COCOA_TOOLTIP_OWNER_KEY = @"IUP_COCOA_TOOLTIP_OWNER_KEY";
 
 @end
 
-void iupCocoaTipsDestroy(Ihandle* ih)
+void iupcocoaTipsDestroy(Ihandle* ih)
 {
-  NSView* the_view = iupCocoaGetRootView(ih);
+  NSView* the_view = iupcocoaGetRootView(ih);
   if (!the_view) return;
 
   IupCocoaToolTipOwner* owner = objc_getAssociatedObject(the_view, IUP_COCOA_TOOLTIP_OWNER_KEY);
@@ -116,7 +116,7 @@ void iupdrvUpdateTip(Ihandle* ih)
 {
   if (!ih) return;
 
-  NSView* the_view = iupCocoaGetRootView(ih);
+  NSView* the_view = iupcocoaGetRootView(ih);
   if (!the_view) return;
 
   IupCocoaToolTipOwner* owner = objc_getAssociatedObject(the_view, IUP_COCOA_TOOLTIP_OWNER_KEY);
@@ -128,7 +128,7 @@ void iupdrvUpdateTip(Ihandle* ih)
 
 int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
-  NSView* the_view = iupCocoaGetRootView(ih);
+  NSView* the_view = iupcocoaGetRootView(ih);
   if (!the_view)
   {
     return 1;
@@ -150,7 +150,7 @@ int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    iupCocoaTipsDestroy(ih);
+    iupcocoaTipsDestroy(ih);
   }
 
   return 1;

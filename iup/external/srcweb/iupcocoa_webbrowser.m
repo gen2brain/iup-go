@@ -33,8 +33,8 @@ static const void* IUP_APPLEWKWEBVIEW_WEBVIEW_DELEGATE_OBJ_KEY = @"IUP_APPLEWKWE
 
 #import <AppKit/AppKit.h>
 #include "iupcocoa_drv.h"
-#define iupAppleWKAddToParent iupCocoaAddToParent
-#define iupAppleWKRemoveFromParent iupCocoaRemoveFromParent
+#define iupAppleWKAddToParent iupcocoaAddToParent
+#define iupAppleWKRemoveFromParent iupcocoaRemoveFromParent
 #define iupAppleWKBaseView NSView
 
 static NSString* const IupUpdateCbMessageHandlerName = @"iupUpdateCb";
@@ -1070,7 +1070,7 @@ static int cocoaWKWebBrowserMapMethod(Ihandle* ih)
 	[web_view setUIDelegate:webview_delegate];
 
 	ih->handle = web_view;
-	iupCocoaSetAssociatedViews(ih, web_view, web_view);
+	iupcocoaSetAssociatedViews(ih, web_view, web_view);
 
 	iupAppleWKAddToParent(ih);
 

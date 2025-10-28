@@ -18,7 +18,7 @@
 #include "iupcocoa_drv.h"
 
 
-void iupCocoaSetCanFocus(Ihandle* ih, int can)
+void iupcocoaSetCanFocus(Ihandle* ih, int can)
 {
   if (!ih)
     return;
@@ -48,7 +48,7 @@ void iupdrvSetFocus(Ihandle *ih)
   }
   else
   {
-    view_to_focus = iupCocoaGetMainView(ih);
+    view_to_focus = iupcocoaGetMainView(ih);
     if (view_to_focus)
     {
       target_window = [view_to_focus window];
@@ -69,13 +69,13 @@ void iupdrvSetFocus(Ihandle *ih)
       BOOL result = [target_window makeFirstResponder:view_to_focus];
       if (result)
       {
-        iupCocoaFocusIn(ih);
+        iupcocoaFocusIn(ih);
       }
     }
   }
 }
 
-void iupCocoaFocusIn(Ihandle* ih)
+void iupcocoaFocusIn(Ihandle* ih)
 {
   if (IupGetFocus() == ih)
   {
@@ -112,7 +112,7 @@ void iupCocoaFocusIn(Ihandle* ih)
   iupCallGetFocusCb(ih);
 }
 
-void iupCocoaFocusOut(Ihandle* ih)
+void iupcocoaFocusOut(Ihandle* ih)
 {
   if (!iupObjectCheck(ih))
   {

@@ -370,7 +370,7 @@ static void cocoaMenuSetTitle(Ihandle* ih, id handle, const char* value)
   {
     NSMenuItem* item = (NSMenuItem*)handle;
 
-    IupCocoaFont* iup_font = iupCocoaGetFont(ih);
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     NSDictionary* attributes = nil;
     if (iup_font)
     {
@@ -442,7 +442,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     return IUP_ERROR;
   }
 
-  NSPoint location = NSMakePoint(x, iupCocoaComputeCartesianScreenHeightFromIup(y));
+  NSPoint location = NSMakePoint(x, iupcocoaComputeCartesianScreenHeightFromIup(y));
 
   char* align_value = iupAttribGet(ih, "POPUPALIGN");
   if (align_value)
@@ -622,7 +622,7 @@ static void cocoaMenuSynchronizeStandardMenus(NSMenu* menuBar)
 
 
 /* Ensures that a default application menu exists and is set if no other menu is active. */
-void iupCocoaEnsureDefaultApplicationMenu(void)
+void iupcocoaEnsureDefaultApplicationMenu(void)
 {
   if (s_defaultApplicationMenu == nil)
   {
@@ -649,20 +649,20 @@ void iupCocoaEnsureDefaultApplicationMenu(void)
   }
 }
 
-Ihandle* iupCocoaMenuGetApplicationMenu(void)
+Ihandle* iupcocoaMenuGetApplicationMenu(void)
 {
   return s_currentIupApplicationMenu;
 }
 
 /* Checks if the given Ihandle is the currently active application menu bar. */
-int iupCocoaMenuIsApplicationBar(Ihandle* ih)
+int iupcocoaMenuIsApplicationBar(Ihandle* ih)
 {
   int result = (ih != NULL && ih == s_currentIupApplicationMenu);
   return result;
 }
 
 /* Called during iupdrvClose to clean up resources. */
-void iupCocoaMenuCleanupApplicationMenu(void)
+void iupcocoaMenuCleanupApplicationMenu(void)
 {
   s_currentIupApplicationMenu = NULL;
 
@@ -679,7 +679,7 @@ void iupCocoaMenuCleanupApplicationMenu(void)
 
 /* Sets the given Ihandle (IupMenu) as the application's main menu bar.
    This is the central function for switching the application menu. */
-void iupCocoaMenuSetApplicationMenu(Ihandle* ih)
+void iupcocoaMenuSetApplicationMenu(Ihandle* ih)
 {
   if (ih && s_currentIupApplicationMenu == ih) {
     return;
@@ -688,7 +688,7 @@ void iupCocoaMenuSetApplicationMenu(Ihandle* ih)
   /* Restore the default menu. */
   if (!ih)
   {
-    iupCocoaEnsureDefaultApplicationMenu(); /* Ensure it exists */
+    iupcocoaEnsureDefaultApplicationMenu(); /* Ensure it exists */
     if ([[NSApplication sharedApplication] mainMenu] != s_defaultApplicationMenu)
     {
       cocoaMenuSynchronizeStandardMenus(s_defaultApplicationMenu);
@@ -729,7 +729,7 @@ void iupCocoaMenuSetApplicationMenu(Ihandle* ih)
     s_currentIupApplicationMenu = ih;
   }
   else {
-    iupCocoaMenuSetApplicationMenu(NULL);
+    iupcocoaMenuSetApplicationMenu(NULL);
   }
 }
 
@@ -796,9 +796,9 @@ static int cocoaMenuMapMethod(Ihandle* ih)
 
 static void cocoaMenuUnMapMethod(Ihandle* ih)
 {
-  if (iupCocoaMenuIsApplicationBar(ih))
+  if (iupcocoaMenuIsApplicationBar(ih))
   {
-    iupCocoaMenuSetApplicationMenu(NULL);
+    iupcocoaMenuSetApplicationMenu(NULL);
   }
 
   NSMenu* menu = (NSMenu*)ih->handle;

@@ -86,7 +86,7 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
   {
     NSPoint p = [self convertPoint:[theEvent locationInWindow] fromView:nil];
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iupCocoaButtonKeySetStatus(theEvent, status);
+    iupcocoaButtonKeySetStatus(theEvent, status);
 
     NSUInteger buttons = [NSEvent pressedMouseButtons];
     if (buttons & (1 << 0)) iupKEY_SETBUTTON1(status);
@@ -116,7 +116,7 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
       default: button = (int)[theEvent buttonNumber] + 1; break;
     }
 
-    iupCocoaButtonKeySetStatus(theEvent, status);
+    iupcocoaButtonKeySetStatus(theEvent, status);
     if(doubleclick) iupKEY_SETDOUBLE(status);
 
     switch(button)
@@ -154,7 +154,7 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
       default: button = (int)[theEvent buttonNumber] + 1; break;
     }
 
-    iupCocoaButtonKeySetStatus(theEvent, status);
+    iupcocoaButtonKeySetStatus(theEvent, status);
 
     switch(button)
     {
@@ -181,7 +181,7 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
   {
     NSPoint p = [self convertPoint:[theEvent locationInWindow] fromView:nil];
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iupCocoaButtonKeySetStatus(theEvent, status);
+    iupcocoaButtonKeySetStatus(theEvent, status);
 
     NSUInteger buttons = [NSEvent pressedMouseButtons];
     if (buttons & (1 << 0)) iupKEY_SETBUTTON1(status);

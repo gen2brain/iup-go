@@ -40,7 +40,7 @@ static int CalculateBytesPerRow(int width, int bytes_per_pixel)
   return pitch;
 }
 
-int iupCocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel)
+int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel)
 {
   return CalculateBytesPerRow(width, bytes_per_pixel);
 }
@@ -268,7 +268,7 @@ static NSImage* iupCocoaImageNSImageFromRawData(int width, int height, int bpp, 
   return ns_image;
 }
 
-NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
+NSBitmapImageRep* iupcocoaImageNSBitmapImageRepFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
 {
   NSBitmapImageRep* bitmap_image = nil;
 
@@ -345,9 +345,9 @@ NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromPixels(int width, int height,
   return bitmap_image;
 }
 
-NSImage* iupCocoaImageNSImageFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
+NSImage* iupcocoaImageNSImageFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
 {
-  NSBitmapImageRep* bitmap_image = iupCocoaImageNSBitmapImageRepFromPixels(width, height, bpp, colors, colors_count, imgdata);
+  NSBitmapImageRep* bitmap_image = iupcocoaImageNSBitmapImageRepFromPixels(width, height, bpp, colors, colors_count, imgdata);
   if (nil == bitmap_image)
   {
     return nil;

@@ -408,7 +408,7 @@ bool iupCocoaKeyUpEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
   return false;
 }
 
-bool iupCocoaKeyEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code, bool is_pressed)
+bool iupcocoaKeyEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code, bool is_pressed)
 {
   if (is_pressed)
   {
@@ -420,7 +420,7 @@ bool iupCocoaKeyEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code, bool is_
   }
 }
 
-bool iupCocoaModifierEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
+bool iupcocoaModifierEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
 {
   bool is_pressed = false;
   NSEventModifierFlags flags = [ns_event modifierFlags];
@@ -454,10 +454,10 @@ bool iupCocoaModifierEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
       return false;
   }
 
-  return iupCocoaKeyEvent(ih, ns_event, mac_key_code, is_pressed);
+  return iupcocoaKeyEvent(ih, ns_event, mac_key_code, is_pressed);
 }
 
-void iupCocoaButtonKeySetStatus(NSEvent *ns_event, char *out_status)
+void iupcocoaButtonKeySetStatus(NSEvent *ns_event, char *out_status)
 {
   NSEventModifierFlags flags = [ns_event modifierFlags];
 
@@ -496,7 +496,7 @@ void iupCocoaButtonKeySetStatus(NSEvent *ns_event, char *out_status)
     iupKEY_SETBUTTON5(out_status);
 }
 
-int iupCocoaKeyDecode(CGEventRef event)
+int iupcocoaKeyDecode(CGEventRef event)
 {
   CGKeyCode mac_key_code = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
   CGEventFlags flags = CGEventGetFlags(event);

@@ -86,7 +86,7 @@ static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
       }
 
       int mac_key_code = [event keyCode];
-      if (iupCocoaKeyEvent(focused_ih, event, mac_key_code, true))
+      if (iupcocoaKeyEvent(focused_ih, event, mac_key_code, true))
       {
         return YES;
       }
@@ -125,7 +125,7 @@ static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    BOOL handled = iupCocoaKeyEvent(ih, event, mac_key_code, true);
+    BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, true);
     if (!handled)
     {
       [super keyDown:event];
@@ -143,7 +143,7 @@ static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    if (!iupCocoaKeyEvent(ih, event, mac_key_code, false))
+    if (!iupcocoaKeyEvent(ih, event, mac_key_code, false))
       [super keyUp:event];
   }
   else
@@ -156,7 +156,7 @@ static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    if (!iupCocoaModifierEvent(ih, event, mac_key_code))
+    if (!iupcocoaModifierEvent(ih, event, mac_key_code))
       [super flagsChanged:event];
   }
   else
@@ -266,7 +266,7 @@ static void cocoaDialogUpdateStyleMask(Ihandle* ih)
       IupMap(ih->data->menu);
 
     if (ih->data->menu->handle)
-      iupCocoaMenuSetApplicationMenu(ih->data->menu);
+      iupcocoaMenuSetApplicationMenu(ih->data->menu);
   }
   else
   {
@@ -277,11 +277,11 @@ static void cocoaDialogUpdateStyleMask(Ihandle* ih)
         IupMap(global_menu);
 
       if (global_menu->handle)
-        iupCocoaMenuSetApplicationMenu(global_menu);
+        iupcocoaMenuSetApplicationMenu(global_menu);
     }
     else
     {
-      iupCocoaEnsureDefaultApplicationMenu();
+      iupcocoaEnsureDefaultApplicationMenu();
     }
   }
 }
@@ -341,7 +341,7 @@ bool cocoaDialogExitModal(Ihandle* modal_ih)
   {
     [NSApp activateIgnoringOtherApps:YES];
     [parent_window makeKeyAndOrderFront:nil];
-    iupCocoaFocusIn(parent_ih);
+    iupcocoaFocusIn(parent_ih);
     return true;
   }
 
@@ -437,16 +437,16 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
 
   if (!iupObjectCheck(ih)) return;
 
-  iupCocoaFocusIn(ih);
+  iupcocoaFocusIn(ih);
 
   if (ih->data->menu)
   {
-    iupCocoaMenuSetApplicationMenu(ih->data->menu);
+    iupcocoaMenuSetApplicationMenu(ih->data->menu);
   }
   else
   {
     Ihandle* global_menu = (Ihandle*)IupGetGlobal("MENU");
-    iupCocoaMenuSetApplicationMenu(global_menu);
+    iupcocoaMenuSetApplicationMenu(global_menu);
   }
 }
 
@@ -642,7 +642,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
       if (!iupObjectCheck(ih))
         return;
 
-      int dark_mode = iupCocoaIsSystemDarkMode();
+      int dark_mode = iupcocoaIsSystemDarkMode();
 
       IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
       if (cb)
@@ -826,7 +826,7 @@ void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
   NSRect the_rect = [the_window frame];
 
   if (x) *x = the_rect.origin.x;
-  if (y) *y = iupCocoaComputeIupScreenHeightFromCartesian(the_rect.origin.y + the_rect.size.height);
+  if (y) *y = iupcocoaComputeIupScreenHeightFromCartesian(the_rect.origin.y + the_rect.size.height);
 }
 
 void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
@@ -834,7 +834,7 @@ void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
   NSWindow* the_window = cocoaDialogGetWindow(ih);
   if (!the_window) return;
 
-  int inverted_y = iupCocoaComputeCartesianScreenHeightFromIup(y);
+  int inverted_y = iupcocoaComputeCartesianScreenHeightFromIup(y);
   [the_window setFrameTopLeftPoint:NSMakePoint(x, inverted_y)];
 }
 
@@ -1010,7 +1010,7 @@ static int cocoaDialogSetMenuAttrib(Ihandle* ih, const char* value)
   if (ih->handle && [(NSWindow*)ih->handle isKeyWindow])
   {
     Ihandle* menu_ih = IupGetHandle(value);
-    iupCocoaMenuSetApplicationMenu(menu_ih);
+    iupcocoaMenuSetApplicationMenu(menu_ih);
   }
 
   return 1;
@@ -1511,7 +1511,7 @@ static int cocoaDialogMapMethod(Ihandle* ih)
   [[the_window contentView] setAutoresizesSubviews:NO];
 
   ih->handle = (__bridge void*)the_window;
-  iupCocoaSetAssociatedViews(ih, [the_window contentView], [the_window contentView]);
+  iupcocoaSetAssociatedViews(ih, [the_window contentView], [the_window contentView]);
 
   IupCocoaWindowDelegate* window_delegate = [[IupCocoaWindowDelegate alloc] init];
   [the_window setDelegate:window_delegate];
@@ -1633,7 +1633,7 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
   [the_window setDelegate:nil];
   [window_delegate release];
 
-  iupCocoaSetAssociatedViews(ih, nil, nil);
+  iupcocoaSetAssociatedViews(ih, nil, nil);
   [the_window release];
   ih->handle = NULL;
 }
@@ -1964,7 +1964,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TASKBARPROGRESSSTATE", NULL, cocoaDialogSetTaskBarProgressStateAttrib, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARPROGRESSVALUE", NULL, cocoaDialogSetTaskBarProgressValueAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, "NO", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, "NO", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_READONLY|IUPAF_NO_INHERIT);
 

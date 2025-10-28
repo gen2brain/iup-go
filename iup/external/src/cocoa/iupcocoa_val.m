@@ -53,7 +53,7 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
   {
-    iupCocoaFocusIn(ih);
+    iupcocoaFocusIn(ih);
   }
   return [super becomeFirstResponder];
 }
@@ -63,7 +63,7 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
   {
-    iupCocoaFocusOut(ih);
+    iupcocoaFocusOut(ih);
   }
   return [super resignFirstResponder];
 }
@@ -105,7 +105,7 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
   }
 
   int keyCode = [event keyCode];
-  if (iupCocoaKeyEvent(ih, event, keyCode, true))
+  if (iupcocoaKeyEvent(ih, event, keyCode, true))
     return;
 
   BOOL handled = NO;
@@ -427,11 +427,11 @@ static int cocoaValMapMethod(Ihandle* ih)
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
   {
     [slider setRefusesFirstResponder:YES];
-    iupCocoaSetCanFocus(ih, 0);
+    iupcocoaSetCanFocus(ih, 0);
   }
   else
   {
-    iupCocoaSetCanFocus(ih, 1);
+    iupcocoaSetCanFocus(ih, 1);
   }
 
   objc_setAssociatedObject(slider, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
@@ -443,8 +443,8 @@ static int cocoaValMapMethod(Ihandle* ih)
   objc_setAssociatedObject(slider, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY, slider_receiver, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   [slider_receiver release];
 
-  iupCocoaSetAssociatedViews(ih, slider, slider);
-  iupCocoaAddToParent(ih);
+  iupcocoaSetAssociatedViews(ih, slider, slider);
+  iupcocoaAddToParent(ih);
 
   cocoaValSetMinAttrib(ih, iupAttribGetStr(ih, "MIN"));
   cocoaValSetMaxAttrib(ih, iupAttribGetStr(ih, "MAX"));
@@ -476,14 +476,14 @@ static void cocoaValUnMapMethod(Ihandle* ih)
   {
     NSSlider* slider = ih->handle;
 
-    iupCocoaTipsDestroy(ih);
+    iupcocoaTipsDestroy(ih);
 
     [slider setTarget:nil];
     objc_setAssociatedObject(slider, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(slider, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
 
-    iupCocoaRemoveFromParent(ih);
-    iupCocoaSetAssociatedViews(ih, nil, nil);
+    iupcocoaRemoveFromParent(ih);
+    iupcocoaSetAssociatedViews(ih, nil, nil);
     [slider release];
     ih->handle = NULL;
   }
@@ -514,5 +514,5 @@ void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "STEPONTICKS", cocoaValGetStepOnTicksAttrib, cocoaValSetStepOnTicksAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT);
 
   /* macOS Specific */
-  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupCocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
+  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 }
