@@ -21,6 +21,7 @@
 
 #include "iupwin_drv.h"
 #include "iupwin_str.h"
+#include "iupwin_info.h"
 
 
 /* old cygwin related hack */

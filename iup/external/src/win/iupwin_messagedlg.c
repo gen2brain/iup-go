@@ -17,6 +17,7 @@
 #include "iup_drv.h"
 #include "iupwin_drv.h"
 #include "iupwin_str.h"
+#include "iupwin_info.h"
 
 
 static void CALLBACK winMessageDlgHelpCallback(HELPINFO* HelpInfo)
