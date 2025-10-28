@@ -5,8 +5,8 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h> 
-#include <string.h> 
+#include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 #include <sys/stat.h>
 
@@ -26,17 +26,8 @@ IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
   (void)add;
 }
 
-/* From GDK docs: nowadays it is more common to have a single GdkScreen which combines several physical monitors */
-
-#if 0 /* this is the entire screen area */
-GdkScreen* screen = gdk_screen_get_default();
-*width = gdk_screen_get_width(screen);
-*height = gdk_screen_get_height(screen);
-#endif
-
 IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
 {
-  /* This function should return the primary monitor's work area */
 #if GTK_CHECK_VERSION(3, 22, 0)
   GdkDisplay *display = gdk_display_get_default();
   GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
@@ -44,6 +35,13 @@ IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
     monitor = gdk_display_get_monitor(display, 0);
   GdkRectangle rect;
   gdk_monitor_get_workarea(monitor, &rect);
+  *width = rect.width;
+  *height = rect.height;
+#elif GTK_CHECK_VERSION(3, 4, 0)
+  GdkScreen* screen = gdk_screen_get_default();
+  GdkRectangle rect;
+  gint monitor = gdk_screen_get_primary_monitor(screen);
+  gdk_screen_get_monitor_workarea(screen, monitor, &rect);
   *width = rect.width;
   *height = rect.height;
 #else
@@ -54,7 +52,7 @@ IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
 #else
   gint monitor = gdk_screen_get_monitor_at_point(screen, 0, 0);
 #endif
-  gdk_screen_get_monitor_workarea(screen, monitor, &rect);
+  gdk_screen_get_monitor_geometry(screen, monitor, &rect);
   *width = rect.width;
   *height = rect.height;
 #endif
