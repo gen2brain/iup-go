@@ -60,16 +60,8 @@ static void iupCocoaUpdateGlobalColors(void)
   if (cocoaGetByteRGBAFromNSColor([NSColor selectedTextBackgroundColor], &r, &g, &b, &a))
     iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", r, g, b);
 
-  if (@available(macOS 10.14, *))
-  {
-    if (cocoaGetByteRGBAFromNSColor([NSColor linkColor], &r, &g, &b, &a))
-      iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", r, g, b);
-  }
-  else
-  {
-    if (cocoaGetByteRGBAFromNSColor([NSColor blueColor], &r, &g, &b, &a)) /* Fallback for older macOS */
-      iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", r, g, b);
-  }
+  if (cocoaGetByteRGBAFromNSColor([NSColor linkColor], &r, &g, &b, &a))
+    iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", r, g, b);
 
   if (cocoaGetByteRGBAFromNSColor([NSColor windowBackgroundColor], &r, &g, &b, &a))
     iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", r, g, b);

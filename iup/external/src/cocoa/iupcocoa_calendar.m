@@ -142,11 +142,7 @@ static int cocoaCalendarMapMethod(Ihandle* ih)
 {
   NSDatePicker* date_picker = [[NSDatePicker alloc] initWithFrame:NSZeroRect];
 
-  if (@available(macOS 10.15.4, *)) {
-    [date_picker setDatePickerStyle:NSDatePickerStyleClockAndCalendar];
-  } else {
-    [date_picker setDatePickerStyle:NSClockAndCalendarDatePickerStyle];
-  }
+  [date_picker setDatePickerStyle:NSDatePickerStyleClockAndCalendar];
 
   [date_picker setDatePickerElements:NSDatePickerElementFlagYearMonthDay];
   [date_picker setDateValue:[NSDate date]];

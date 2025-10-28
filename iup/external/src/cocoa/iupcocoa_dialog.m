@@ -634,40 +634,37 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
 {
   if (context == IupCocoaAppearanceContext)
   {
-    if (@available(macOS 10.14, *))
+    NSWindow* the_window = (NSWindow*)object;
+    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_window, IHANDLE_ASSOCIATED_OBJ_KEY);
+
+    if (!iupObjectCheck(ih))
+    return;
+
+    int dark_mode = iupcocoaIsSystemDarkMode();
+
+    IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
+    if (cb)
+    cb(ih, dark_mode);
+
+    NSView* content_view = [the_window contentView];
+    if (content_view)
     {
-      NSWindow* the_window = (NSWindow*)object;
-      Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_window, IHANDLE_ASSOCIATED_OBJ_KEY);
+    /* Recursively mark the content view and all subviews for redraw */
+    NSMutableArray* view_stack = [NSMutableArray arrayWithObject:content_view];
+    while ([view_stack count] > 0)
+    {
+      NSView* current_view = [view_stack lastObject];
+      [view_stack removeLastObject];
 
-      if (!iupObjectCheck(ih))
-        return;
+      [current_view setNeedsDisplay:YES];
 
-      int dark_mode = iupcocoaIsSystemDarkMode();
-
-      IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
-      if (cb)
-        cb(ih, dark_mode);
-
-      NSView* content_view = [the_window contentView];
-      if (content_view)
-      {
-        /* Recursively mark the content view and all subviews for redraw */
-        NSMutableArray* view_stack = [NSMutableArray arrayWithObject:content_view];
-        while ([view_stack count] > 0)
-        {
-          NSView* current_view = [view_stack lastObject];
-          [view_stack removeLastObject];
-
-          [current_view setNeedsDisplay:YES];
-
-          [view_stack addObjectsFromArray:[current_view subviews]];
-        }
-      }
-
-      ih->data->ignore_resize = 1;
-      IupRefresh(ih);
-      ih->data->ignore_resize = 0;
+      [view_stack addObjectsFromArray:[current_view subviews]];
     }
+    }
+
+    ih->data->ignore_resize = 1;
+    IupRefresh(ih);
+    ih->data->ignore_resize = 0;
   }
   else
   {
@@ -1291,21 +1288,18 @@ static int cocoaDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
   NSWindow* window = cocoaDialogGetWindow(ih);
   if (!window) return 0;
 
-  if (@available(macOS 10.10, *))
+  BOOL hide = (BOOL)iupStrBoolean(value);
+  if (hide)
   {
-    BOOL hide = (BOOL)iupStrBoolean(value);
-    if (hide)
-    {
-      window.styleMask |= NSWindowStyleMaskFullSizeContentView;
-      window.titlebarAppearsTransparent = YES;
-      window.titleVisibility = NSWindowTitleHidden;
-    }
-    else
-    {
-      window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
-      window.titlebarAppearsTransparent = NO;
-      window.titleVisibility = NSWindowTitleVisible;
-    }
+    window.styleMask |= NSWindowStyleMaskFullSizeContentView;
+    window.titlebarAppearsTransparent = YES;
+    window.titleVisibility = NSWindowTitleHidden;
+  }
+  else
+  {
+    window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+    window.titlebarAppearsTransparent = NO;
+    window.titleVisibility = NSWindowTitleVisible;
   }
   return 1;
 }
@@ -1540,13 +1534,10 @@ static int cocoaDialogMapMethod(Ihandle* ih)
   [nc addObserver:window_delegate selector:@selector(windowDidBecomeKey:) name:NSWindowDidBecomeKeyNotification object:the_window];
   [nc addObserver:window_delegate selector:@selector(windowDidResignKey:) name:NSWindowDidResignKeyNotification object:the_window];
 
-  if (@available(macOS 10.14, *))
-  {
-    [the_window addObserver:window_delegate
-                 forKeyPath:@"effectiveAppearance"
-                    options:NSKeyValueObservingOptionNew
-                    context:IupCocoaAppearanceContext];
-  }
+  [the_window addObserver:window_delegate
+               forKeyPath:@"effectiveAppearance"
+                  options:NSKeyValueObservingOptionNew
+                  context:IupCocoaAppearanceContext];
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
@@ -1609,18 +1600,15 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
   }
   [child_windows release];
 
-  if (@available(macOS 10.14, *))
+  @try
   {
-    @try
-    {
-      [the_window removeObserver:[the_window delegate]
-                      forKeyPath:@"effectiveAppearance"
-                         context:IupCocoaAppearanceContext];
-    }
-    @catch (NSException *exception)
-    {
-      /* Observer might not have been added, ignore */
-    }
+    [the_window removeObserver:[the_window delegate]
+                    forKeyPath:@"effectiveAppearance"
+                       context:IupCocoaAppearanceContext];
+  }
+  @catch (NSException *exception)
+  {
+    /* Observer might not have been added, ignore */
   }
 
   [[NSNotificationCenter defaultCenter] removeObserver:[the_window delegate] name:nil object:the_window];
