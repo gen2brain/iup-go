@@ -751,14 +751,7 @@ static int cocoaToggleSetFlatAttrib(Ihandle* ih, const char* value)
     else
     {
       [the_toggle setBordered:YES];
-      if (@available(macOS 10.14, *))
-      {
-        [the_toggle setBezelStyle:NSBezelStyleRegularSquare];
-      }
-      else
-      {
-        [the_toggle setBezelStyle:NSShadowlessSquareBezelStyle];
-      }
+      [the_toggle setBezelStyle:NSBezelStyleRegularSquare];
     }
 
     cocoaToggleUpdateImageSize(ih);
@@ -813,14 +806,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
       }
       else
       {
-        if (@available(macOS 10.14, *))
-        {
-          [the_toggle setBezelStyle:NSBezelStyleRegularSquare];
-        }
-        else
-        {
-          [the_toggle setBezelStyle:NSShadowlessSquareBezelStyle];
-        }
+        [the_toggle setBezelStyle:NSBezelStyleRegularSquare];
       }
 
       [[the_toggle cell] setImagePosition:NSImageOnly];

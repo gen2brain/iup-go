@@ -1182,11 +1182,7 @@ NSWindow* cocoaDialogGetWindow(Ihandle* ih)
 
 int iupcocoaIsSystemDarkMode(void)
 {
-  if (@available(macOS 10.14, *))
-  {
-    NSAppearance *appearance = [NSApp effectiveAppearance];
-    NSString *appearanceName = [appearance bestMatchFromAppearancesWithNames:@[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
-    return [appearanceName isEqualToString:NSAppearanceNameDarkAqua] ? 1 : 0;
-  }
-  return 0;
+  NSAppearance *appearance = [NSApp effectiveAppearance];
+  NSString *appearanceName = [appearance bestMatchFromAppearancesWithNames:@[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
+  return [appearanceName isEqualToString:NSAppearanceNameDarkAqua] ? 1 : 0;
 }

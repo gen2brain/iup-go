@@ -830,11 +830,8 @@ static int cocoaLabelSetBgColorAttrib(Ihandle* ih, const char* value)
       [text_field setDrawsBackground:YES];
     }
 
-    if (root_view && @available(macOS 10.12, *))
-    {
-      [root_view setWantsLayer:YES];
-      [[root_view layer] setBackgroundColor:[color CGColor]];
-    }
+    [root_view setWantsLayer:YES];
+    [[root_view layer] setBackgroundColor:[color CGColor]];
   }
 
   (void)value;

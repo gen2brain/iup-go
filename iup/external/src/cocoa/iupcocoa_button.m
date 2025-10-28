@@ -624,15 +624,11 @@ static int cocoaButtonSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  /* NSButton background color requires layer-backed view */
-  if (@available(macOS 10.12, *))
-  {
-    [the_button setWantsLayer:YES];
-    [[the_button layer] setBackgroundColor:[[NSColor colorWithCalibratedRed:r/255.0
-                                     green:g/255.0
-                                      blue:b/255.0
-                                     alpha:1.0] CGColor]];
-  }
+  [the_button setWantsLayer:YES];
+  [[the_button layer] setBackgroundColor:[[NSColor colorWithCalibratedRed:r/255.0
+                                   green:g/255.0
+                                    blue:b/255.0
+                                   alpha:1.0] CGColor]];
 
   return 1;
 }
