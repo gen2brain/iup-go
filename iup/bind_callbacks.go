@@ -401,6 +401,31 @@ extern int goIupThemeChangedCB(void *, int darkMode);
 static void goIupSetThemeChangedFunc(Ihandle *ih) {
 	IupSetCallback(ih, "THEMECHANGED_CB", (Icallback) goIupThemeChangedCB);
 }
+
+extern int goIupCompletedCB(void *, void *url);
+static void goIupSetCompletedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "COMPLETED_CB", (Icallback) goIupCompletedCB);
+}
+
+extern int goIupErrorCB(void *, void *url);
+static void goIupSetErrorFunc(Ihandle *ih) {
+	IupSetCallback(ih, "ERROR_CB", (Icallback) goIupErrorCB);
+}
+
+extern int goIupNavigateCB(void *, void *url);
+static void goIupSetNavigateFunc(Ihandle *ih) {
+	IupSetCallback(ih, "NAVIGATE_CB", (Icallback) goIupNavigateCB);
+}
+
+extern int goIupNewWindowCB(void *, void *url);
+static void goIupSetNewWindowFunc(Ihandle *ih) {
+	IupSetCallback(ih, "NEWWINDOW_CB", (Icallback) goIupNewWindowCB);
+}
+
+extern int goIupUpdateCB(void *);
+static void goIupSetUpdateFunc(Ihandle *ih) {
+	IupSetCallback(ih, "UPDATE_CB", (Icallback) goIupUpdateCB);
+}
 */
 import "C"
 
@@ -2640,6 +2665,150 @@ func setThemeChangedFunc(ih Ihandle, f ThemeChangedFunc) {
 	callbacks.Store("THEMECHANGED_CB_"+ih.GetAttribute("UUID"), ch)
 
 	C.goIupSetThemeChangedFunc(ih.ptr())
+}
+
+//--------------------
+
+// CompletedFunc for COMPLETED_CB callback.
+// Action generated when a page is successfully completed.
+type CompletedFunc func(ih Ihandle, url string) int
+
+//export goIupCompletedCB
+func goIupCompletedCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("COMPLETED_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "COMPLETED_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(CompletedFunc)
+
+	goUrl := C.GoString((*C.char)(url))
+	return C.int(f((Ihandle)(ih), goUrl))
+}
+
+// setCompletedFunc for COMPLETED_CB.
+func setCompletedFunc(ih Ihandle, f CompletedFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("COMPLETED_CB_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetCompletedFunc(ih.ptr())
+}
+
+//--------------------
+
+// ErrorFunc for ERROR_CB callback.
+// Action generated when a page load fails.
+type ErrorFunc func(ih Ihandle, url string) int
+
+//export goIupErrorCB
+func goIupErrorCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("ERROR_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "ERROR_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ErrorFunc)
+
+	goUrl := C.GoString((*C.char)(url))
+	return C.int(f((Ihandle)(ih), goUrl))
+}
+
+// setErrorFunc for ERROR_CB.
+func setErrorFunc(ih Ihandle, f ErrorFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("ERROR_CB_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetErrorFunc(ih.ptr())
+}
+
+//--------------------
+
+// NavigateFunc for NAVIGATE_CB callback.
+// Action generated when the browser requests a navigation to another page.
+type NavigateFunc func(ih Ihandle, url string) int
+
+//export goIupNavigateCB
+func goIupNavigateCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("NAVIGATE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "NAVIGATE_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(NavigateFunc)
+
+	goUrl := C.GoString((*C.char)(url))
+	return C.int(f((Ihandle)(ih), goUrl))
+}
+
+// setNavigateFunc for NAVIGATE_CB.
+func setNavigateFunc(ih Ihandle, f NavigateFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("NAVIGATE_CB_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetNavigateFunc(ih.ptr())
+}
+
+//--------------------
+
+// NewWindowFunc for NEWWINDOW_CB callback.
+// Action generated when the browser requests a new window.
+type NewWindowFunc func(ih Ihandle, url string) int
+
+//export goIupNewWindowCB
+func goIupNewWindowCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("NEWWINDOW_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "NEWWINDOW_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(NewWindowFunc)
+
+	goUrl := C.GoString((*C.char)(url))
+	return C.int(f((Ihandle)(ih), goUrl))
+}
+
+// setNewWindowFunc for NEWWINDOW_CB.
+func setNewWindowFunc(ih Ihandle, f NewWindowFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("NEWWINDOW_CB_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetNewWindowFunc(ih.ptr())
+}
+
+//--------------------
+
+// UpdateFunc for UPDATE_CB callback.
+// Action generated when the selection was changed and the editor interface needs an update.
+type UpdateFunc func(ih Ihandle) int
+
+//export goIupUpdateCB
+func goIupUpdateCB(ih unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("UPDATE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "UPDATE_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(UpdateFunc)
+
+	return C.int(f((Ihandle)(ih)))
+}
+
+// setUpdateFunc for UPDATE_CB.
+func setUpdateFunc(ih Ihandle, f UpdateFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("UPDATE_CB_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetUpdateFunc(ih.ptr())
 }
 
 //--------------------

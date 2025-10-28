@@ -265,6 +265,16 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setMenuOpenFunc(ih, fn.(MenuOpenFunc))
 	case "THEMECHANGED_CB":
 		setThemeChangedFunc(ih, fn.(ThemeChangedFunc))
+	case "COMPLETED_CB":
+		setCompletedFunc(ih, fn.(CompletedFunc))
+	case "ERROR_CB":
+		setErrorFunc(ih, fn.(ErrorFunc))
+	case "NAVIGATE_CB":
+		setNavigateFunc(ih, fn.(NavigateFunc))
+	case "NEWWINDOW_CB":
+		setNewWindowFunc(ih, fn.(NewWindowFunc))
+	case "UPDATE_CB":
+		setUpdateFunc(ih, fn.(UpdateFunc))
 	}
 }
 
