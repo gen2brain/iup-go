@@ -33,8 +33,8 @@ func Dialog(child Ihandle) Ihandle {
 // (even if they were disabled by the Popup, calling Show will re-enable the dialog because it will change its popup level).
 // IMPORTANT: The popup levels must be closed in the reverse order they were created or unpredictable results will occur.
 //
-// For a dialog this function will only return the control to the application
-// after a callback returns CLOSE, ExitLoop is called, or when the popup dialog is hidden, for example using Hide.
+// For a dialog, this function will only return the control to the application
+// after a callback returns CLOSE, ExitLoop is called, or when the popup dialog is hidden, for example, using Hide.
 // For a menu it returns automatically after a menu item is selected.
 // IMPORTANT: If a menu item callback returns CLOSE, it will also ends the current popup level dialog.
 //
@@ -150,7 +150,7 @@ func GetFile(path string) (sel string, ret int) {
 // GetColor shows a modal dialog which allows the user to select a color. Based on ColorDlg.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgetcolor.html
-func GetColor(x, y int) (ret int, col color.RGBA) {
+func GetColor(x, y int) (col color.RGBA, ret int) {
 	var r, g, b uint8
 	ret = int(C.IupGetColor(C.int(x), C.int(y), (*C.uchar)(unsafe.Pointer(&r)), (*C.uchar)(unsafe.Pointer(&g)), (*C.uchar)(unsafe.Pointer(&b))))
 
@@ -164,52 +164,27 @@ func GetColor(x, y int) (ret int, col color.RGBA) {
 // GetText shows a modal dialog to edit a multiline text.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgettext.html
-func GetText(title, text string) string {
-	multiText := MultiLine().SetAttributes(map[string]string{
-		"EXPAND":         "YES",
-		"VALUE":          text,
-		"FONT":           "Courier, 12",
-		"VISIBLELINES":   "10",
-		"VISIBLECOLUMNS": "50",
-	})
+func GetText(title, text string, maxSize int) (string, int) {
+	cTitle := C.CString(title)
+	defer C.free(unsafe.Pointer(cTitle))
 
-	ok := Button("_@IUP_OK").SetAttribute("PADDING", GetGlobal("DEFAULTBUTTONPADDING"))
-	ok.SetCallback("ACTION", func(ih Ihandle) int {
-		GetDialog(ih).SetAttribute("STATUS", 1)
-		return CLOSE
-	})
-
-	cancel := Button("_@IUP_CANCEL").SetAttribute("PADDING", GetGlobal("DEFAULTBUTTONPADDING"))
-	cancel.SetCallback("ACTION", func(ih Ihandle) int {
-		GetDialog(ih).SetAttribute("STATUS", -1)
-		return CLOSE
-	})
-
-	button_box := Hbox(Fill(), ok, cancel).SetAttributes(`MARGIN=0x0,NORMALIZESIZE=HORIZONTAL`)
-	dlg_box := Vbox(multiText, button_box).SetAttributes(`MARGIN=10x10,GAP=10`)
-
-	dlg := Dialog(dlg_box).SetAttributes(map[string]interface{}{
-		"TITLE":        title,
-		"MINBOX":       "NO",
-		"MAXBOX":       "NO",
-		"DEFAULTENTER": ok,
-		"DEFAULTESC":   cancel,
-		"PARENTDIALOG": GetGlobal("PARENTDIALOG"),
-		"ICON":         GetGlobal("ICON"),
-	})
-	defer dlg.Destroy()
-
-	Map(dlg)
-
-	multiText.SetAttribute("VISIBLELINES", nil).SetAttribute("VISIBLECOLUMNS", nil)
-
-	Popup(dlg, CENTERPARENT, CENTERPARENT)
-
-	if GetInt(dlg, "STATUS") == 1 {
-		return GetAttribute(multiText, "VALUE")
-	} else {
-		return ""
+	bufSize := maxSize
+	if maxSize == 0 {
+		bufSize = len(text)
+	} else if maxSize < 0 {
+		bufSize = len(text)
 	}
+	if bufSize < 1 {
+		bufSize = 1
+	}
+
+	buf := make([]byte, bufSize+1)
+	copy(buf, text)
+
+	ret := int(C.IupGetText(cTitle, (*C.char)(unsafe.Pointer(&buf[0])), C.int(maxSize)))
+
+	resultLen := int(C.strlen((*C.char)(unsafe.Pointer(&buf[0]))))
+	return string(buf[:resultLen]), ret
 }
 
 // ListDialog shows a modal dialog to select items from a simple or multiple selection list.
@@ -247,7 +222,8 @@ func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, 
 		}
 	}()
 
-	ret = int(C.IupListDialog(C.int(_type), cTitle, C.int(len(list)), (**C.char)(unsafe.Pointer(&(pList[0]))), C.int(op), C.int(maxCol), C.int(maxLin), (*C.int)(unsafe.Pointer(&pMark[0]))))
+	ret = int(C.IupListDialog(C.int(_type), cTitle, C.int(len(list)), (**C.char)(unsafe.Pointer(&(pList[0]))),
+		C.int(op), C.int(maxCol), C.int(maxLin), (*C.int)(unsafe.Pointer(&pMark[0]))))
 	return
 }
 
