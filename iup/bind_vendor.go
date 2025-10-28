@@ -13,4 +13,5 @@ import (
 	_ "github.com/gen2brain/iup-go/iup/external/src/win/wdl"
 	_ "github.com/gen2brain/iup-go/iup/external/src/win/wdl/dummy"
 	_ "github.com/gen2brain/iup-go/iup/external/srcgl"
+	_ "github.com/gen2brain/iup-go/iup/external/srcweb"
 )
