@@ -11,5 +11,6 @@
 // To use `go generate`, install `rsrc` tool with `go install github.com/akavel/rsrc@latest`
 package manifest
 
-//go:generate rsrc --manifest iup.manifest --arch 386 -o manifest_windows_386.syso
-//go:generate rsrc --manifest iup64.manifest --arch amd64 -o manifest_windows_amd64.syso
+//go:generate rsrc --manifest iup_386.manifest --arch 386 -o manifest_windows_386.syso
+//go:generate rsrc --manifest iup_amd64.manifest --arch amd64 -o manifest_windows_amd64.syso
+//go:generate rsrc --manifest iup_arm64.manifest --arch arm64 -o manifest_windows_arm64.syso
