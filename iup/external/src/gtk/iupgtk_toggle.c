@@ -63,9 +63,18 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 #if GTK_CHECK_VERSION(3, 0, 0)
   if (iupAttribGetBoolean(ih, "SWITCH"))
   {
-    /* GtkSwitch dimensions estimate */
-    int switch_w = 40;
-    int switch_h = 24;
+    GtkWidget* temp_switch = gtk_switch_new();
+    GtkRequisition minimum, natural;
+    int switch_w, switch_h;
+
+    gtk_widget_get_preferred_size(temp_switch, &minimum, &natural);
+
+    switch_w = natural.width;
+    switch_h = natural.height;
+
+    g_object_ref_sink(temp_switch);
+    gtk_widget_destroy(temp_switch);
+    g_object_unref(temp_switch);
 
     (*x) += 2 + switch_w + 2;
     if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
@@ -77,7 +86,6 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
   else
 #endif
   {
-    /* LAYOUT_DECORATION_ESTIMATE */
     int check_box = IUP_TOGGLE_BOX;
     (void)ih;
 
@@ -636,7 +644,10 @@ static int gtkToggleMapMethod(Ihandle* ih)
     gtk_toggle_button_set_mode((GtkToggleButton*)ih->handle, FALSE);
   }
 
-  iupgtkClearSizeStyleCSS(ih->handle);
+#if GTK_CHECK_VERSION(3, 0, 0)
+  if (!iupAttribGetBoolean(ih, "SWITCH"))
+#endif
+    iupgtkClearSizeStyleCSS(ih->handle);
 
   /* add to the parent, all GTK controls must call this. */
   iupgtkAddToParent(ih);
