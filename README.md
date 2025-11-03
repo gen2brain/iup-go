@@ -3,7 +3,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/iup-go.svg)](https://pkg.go.dev/github.com/gen2brain/iup-go/iup)
 
 Go bindings for [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
-The toolkit provides system native UI controls for Windows (win32), Linux (GTK+) and macOS (Cocoa).
+The toolkit provides system native UI controls for Windows (Win32), macOS (Cocoa) and Linux (GTK and Qt).
 
 IUP C source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
@@ -15,37 +15,53 @@ Note that the first build can take a few minutes.
 On Windows, you need a C compiler, like [Mingw-w64](https://mingw-w64.org) or [TDM-GCC](http://tdm-gcc.tdragon.net/).
 You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
 
-* To remove a console window, i.e., compile GUI app, build with `-ldflags "-H=windowsgui"`.
+* To remove a console window, i.e., compile GUI app with WinMain entry-point, build with `-ldflags "-H=windowsgui"`.
 * You can add icon resource to `.exe` file with the [rsrc](https://github.com/akavel/rsrc) tool.
 * Windows manifest is included in the build by default. See below how to disable manifest if you want to include your own.
 
 [<img src="examples/sample/sample_win32.png" width="700"/>](examples/sample/sample_win32.png)
 
+#### macOS
+
+On macOS, you need Command Line Tools for Xcode (if you have `brew`, you already have this).
+
+* To create an `.app` bundle or `.dmg` image check this gist https://gist.github.com/mholt/11008646c95d787c30806d3f24b2c844.
+* You can build for Qt in macOS, with `qt` build tag. Install deps with `brew install qt`.
+* You can build for GTK in macOS, with `gtk` build tag. Install deps with `brew install gtk+3`.
+
+[<img src="examples/sample/sample_cocoa.png" width="700"/>](examples/sample/sample_cocoa.png)
+
 #### Linux
 
-On Linux, you need a C compiler and GTK+ development packages.
+On Linux, you need a C compiler and development packages for GTK or Qt.
+
+##### GTK
 
 * Debian/Ubuntu: `apt-get install libgtk-3-dev`
 * RedHat/Fedora: `dnf install gtk3-devel`
 
-Note that you can also build and link against the GTK2 version (or Motif), see build tags below.
+Note that you can also build for GTK2.
+
+You do not need to install `WebKitGTK` development packages for `WebBrowser` control, libraries are loaded on runtime.
 
 [<img src="examples/sample/sample_gtk3.png" width="700"/>](examples/sample/sample_gtk3.png)
 
-#### macOS
+##### Qt
 
-On macOS, you need Xcode or Command Line Tools for Xcode (if you have `brew` you already have this).
+* Debian/Ubuntu: `apt-get install qt6-base-dev`
+* RedHat/Fedora: `dnf install qt6-qtbase-devel`
 
-* To create an `.app` bundle or `.dmg` image check this gist https://gist.github.com/mholt/11008646c95d787c30806d3f24b2c844.
-* You can also build for GTK+ in macOS, with `gtk` build tag. Install deps with `brew install gtk+3 pkgconf`.
+Note that you can also build for Qt5.
 
-[<img src="examples/sample/sample_cocoa.png" width="700"/>](examples/sample/sample_cocoa.png)
+For `WebBrowser` control, install `qt6-webengine-dev` or `qt6-qtwebengine-devel`.
+
+[<img src="examples/sample/sample_qt6.png" width="700"/>](examples/sample/sample_qt6.png)
 
 #### Other
 
 The library should work on other Unix-like systems, FreeBSD, NetBSD, OpenBSD, DragonFly, Solaris, Illumos, and AIX.
 
-You can also compile for a time-tested [Motif](https://en.wikipedia.org/wiki/Motif_(software)) library if GTK+ is not available.
+You can also compile for a time-tested [Motif](https://en.wikipedia.org/wiki/Motif_(software)) library if GTK or Qt are not available.
 
 * Debian/Ubuntu: `apt-get install libmotif-dev libxmu-dev libxpm-dev`
 * RedHat/Fedora: `dnf install motif-devel libXpm-devel`
@@ -56,17 +72,19 @@ You can also compile for a time-tested [Motif](https://en.wikipedia.org/wiki/Mot
 
 * `gl` - build with support for `GLCanvas` control
 * `web` - build with support for `WebBrowser` control
-* `gtk` - use GTK+ in macOS or Windows
-* `gtk2` - link with a GTK2 version, default is GTK3
+* `gtk` - use GTK in macOS or Windows
+* `gtk2` - build for GTK2 version, default is GTK3
+* `qt` - build for Qt framework
+* `qt5` - build for Qt5 version, default is Qt6 (used with `qt`)
 * `motif` - build for X11/Motif 2.x environment
-* `xembed` - build for XEmbed tray protocol instead of SNI
+* `xembed` - use XEmbed tray protocol instead of SNI
 * `nomanifest` - do not include manifest in Windows build
 * `nopkgconfig` - do not use pkg-config for compile and link flags
 
 ### Compiler flags
 
 You can provide explicit compiler and linker flags instead of using the defaults provided by pkg-config.
-For example, if `gtk3` and other dependencies are in a non-standard location:
+For example, if dependencies are in a non-standard location:
 
 ```
 CGO_CFLAGS="-I<include path> ..." CGO_LDFLAGS="-L<dir> -llib ..." go build -tags nopkconfig
