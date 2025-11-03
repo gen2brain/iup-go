@@ -54,8 +54,54 @@
 #define IUPGTK_GDK_WINDOW_XID(w) GDK_WINDOW_XID(w)
 #define IUPGTK_GDK_DISPLAY_XDISPLAY(d) GDK_DISPLAY_XDISPLAY(d)
 #endif
-#endif
 
+/* X11 function pointers - loaded dynamically to avoid hard linking */
+typedef struct _XDisplay Display;
+typedef struct _XGC* GC;
+typedef unsigned long XID;
+
+#include <dlfcn.h>
+
+static void* x11_lib = NULL;
+static GC (*_XCreateGC)(Display*, XID, unsigned long, void*) = NULL;
+static int (*_XFreeGC)(Display*, GC) = NULL;
+static int (*_XDefaultScreen)(Display*) = NULL;
+static char* (*_XServerVendor)(Display*) = NULL;
+static int (*_XVendorRelease)(Display*) = NULL;
+
+static int x11_load_functions(void)
+{
+  if (x11_lib)
+    return 1;
+
+  x11_lib = dlopen("libX11.so.6", RTLD_LAZY);
+  if (!x11_lib)
+    x11_lib = dlopen("libX11.so", RTLD_LAZY);
+
+  if (!x11_lib)
+    return 0;
+
+  _XCreateGC = (GC (*)(Display*, XID, unsigned long, void*))dlsym(x11_lib, "XCreateGC");
+  _XFreeGC = (int (*)(Display*, GC))dlsym(x11_lib, "XFreeGC");
+  _XDefaultScreen = (int (*)(Display*))dlsym(x11_lib, "XDefaultScreen");
+  _XServerVendor = (char* (*)(Display*))dlsym(x11_lib, "XServerVendor");
+  _XVendorRelease = (int (*)(Display*))dlsym(x11_lib, "XVendorRelease");
+
+  if (!_XCreateGC || !_XFreeGC || !_XDefaultScreen || !_XServerVendor || !_XVendorRelease)
+  {
+    dlclose(x11_lib);
+    x11_lib = NULL;
+    return 0;
+  }
+
+  return 1;
+}
+
+/* XVisualIDFromVisual is a macro in X11, define it as inline function */
+static inline XID x11_visual_id_from_visual(Visual* v) {
+    return v ? v->visualid : 0;
+}
+#endif
 
 char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
 {
@@ -208,7 +254,9 @@ void* iupgtkGetNativeGraphicsContext(GtkWidget* widget)
 #ifdef GDK_WINDOWING_X11
   if (GDK_IS_X11_DISPLAY(display))
   {
-    return (void*)XCreateGC(IUPGTK_GDK_DISPLAY_XDISPLAY(display), IUPGTK_GDK_WINDOW_XID(window), 0, NULL);
+    if (!x11_load_functions())
+      return NULL;
+    return (void*)_XCreateGC(IUPGTK_GDK_DISPLAY_XDISPLAY(display), IUPGTK_GDK_WINDOW_XID(window), 0, NULL);
   }
 #endif
 
@@ -232,7 +280,9 @@ void* iupgtkGetNativeGraphicsContext(GtkWidget* widget)
 
 #ifdef GDK_WINDOWING_X11
   Display* xdisplay = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
-  return (void*)XCreateGC(xdisplay, IUPGTK_GDK_WINDOW_XID(window), 0, NULL);
+  if (!x11_load_functions())
+    return NULL;
+  return (void*)_XCreateGC(xdisplay, IUPGTK_GDK_WINDOW_XID(window), 0, NULL);
 #elif defined(GDK_WINDOWING_WIN32)
   return GetDC(IUPGTK_GDK_WINDOW_HWND(window));
 #elif defined(GDK_WINDOWING_QUARTZ)
@@ -259,7 +309,8 @@ void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
 #ifdef GDK_WINDOWING_X11
   if (GDK_IS_X11_DISPLAY(display))
   {
-    XFreeGC(IUPGTK_GDK_DISPLAY_XDISPLAY(display), (GC)gc);
+    if (x11_load_functions())
+      _XFreeGC(IUPGTK_GDK_DISPLAY_XDISPLAY(display), (GC)gc);
     return;
   }
 #endif
@@ -286,7 +337,8 @@ void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
 
 #ifdef GDK_WINDOWING_X11
   Display* xdisplay = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
-  XFreeGC(xdisplay, (GC)gc);
+  if (x11_load_functions())
+    _XFreeGC(xdisplay, (GC)gc);
 #elif defined(GDK_WINDOWING_WIN32)
   if (window)
     ReleaseDC(IUPGTK_GDK_WINDOW_HWND(window), (HDC)gc);
@@ -359,9 +411,9 @@ void iupgtkPushVisualAndColormap(void* visual, void* colormap)
 
 #if GTK_CHECK_VERSION(2, 24, 0)
   GdkScreen* screen = gdk_screen_get_default();
-  gdk_visual = gdk_x11_screen_lookup_visual(screen, XVisualIDFromVisual((Visual*)visual));
+  gdk_visual = gdk_x11_screen_lookup_visual(screen, x11_visual_id_from_visual((Visual*)visual));
 #else
-  gdk_visual = gdkx_visual_get(XVisualIDFromVisual((Visual*)visual));
+  gdk_visual = gdkx_visual_get(x11_visual_id_from_visual((Visual*)visual));
 #endif
   if (colormap)
     gdk_colormap = gdk_x11_colormap_foreign_new(gdk_visual, (Colormap)colormap);
@@ -398,9 +450,12 @@ static void gtkSetGlobalAttrib(void)
   {
     Display* xdisplay = IUPGTK_GDK_DISPLAY_XDISPLAY(display);
     IupSetGlobal("XDISPLAY", (char*)xdisplay);
-    IupSetGlobal("XSCREEN", (char*)XDefaultScreen(xdisplay));
-    IupSetGlobal("XSERVERVENDOR", ServerVendor(xdisplay));
-    IupSetInt(NULL, "XVENDORRELEASE", VendorRelease(xdisplay));
+    if (x11_load_functions())
+    {
+      IupSetGlobal("XSCREEN", (char*)(long)_XDefaultScreen(xdisplay));
+      IupSetGlobal("XSERVERVENDOR", _XServerVendor(xdisplay));
+      IupSetInt(NULL, "XVENDORRELEASE", _XVendorRelease(xdisplay));
+    }
     IupSetGlobal("GDK_WINDOWING", "X11");
   }
 #endif
@@ -434,9 +489,12 @@ static void gtkSetGlobalAttrib(void)
 #ifdef GDK_WINDOWING_X11
   Display* xdisplay = IUPGTK_GDK_DISPLAY_XDISPLAY(display);
   IupSetGlobal("XDISPLAY", (char*)xdisplay);
-  IupSetGlobal("XSCREEN", (char*)XDefaultScreen(xdisplay));
-  IupSetGlobal("XSERVERVENDOR", ServerVendor(xdisplay));
-  IupSetInt(NULL, "XVENDORRELEASE", VendorRelease(xdisplay));
+  if (x11_load_functions())
+  {
+    IupSetGlobal("XSCREEN", (char*)(long)_XDefaultScreen(xdisplay));
+    IupSetGlobal("XSERVERVENDOR", _XServerVendor(xdisplay));
+    IupSetInt(NULL, "XVENDORRELEASE", _XVendorRelease(xdisplay));
+  }
   IupSetGlobal("GDK_WINDOWING", "X11");
 #endif
 
