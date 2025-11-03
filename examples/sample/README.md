@@ -1,5 +1,8 @@
 ## Screenshots
 
+### Windows Win32
+[<img src="sample_win32.png" width="700" title="Windows Win32" alt="Windows Win32" />](sample_win32.png)
+
 ### macOS Cocoa
 [<img src="sample_cocoa.png" width="700" title="macOS Cocoa" alt="macOS Cocoa" />](sample_cocoa.png)
 
@@ -17,6 +20,21 @@
 
 ### macOS GTK3
 [<img src="sample_gtk3_macos.png" width="700" title="macOS GTK3" alt="macOS GTK3" />](sample_gtk3_macos.png)
+
+### Linux Qt5
+[<img src="sample_qt5.png" width="700" title="Linux Qt5" alt="Linux Qt5" />](sample_qt5.png)
+
+### Linux Qt6
+[<img src="sample_qt6.png" width="700" title="Linux Qt6" alt="Linux Qt6" />](sample_qt6.png)
+
+### Linux Qt6 Dark
+[<img src="sample_qt6_dark.png" width="700" title="Linux Qt6 Dark" alt="Linux Qt6 Dark" />](sample_qt6_dark.png)
+
+### macOS Qt6
+[<img src="sample_qt6_macos.png" width="700" title="macOS Qt6" alt="macOS Qt6" />](sample_qt6_macos.png)
+
+### macOS Qt6 Dark
+[<img src="sample_qt6_macos_dark.png" width="700" title="macOS Qt6 Dark" alt="macOS Qt6 Dark" />](sample_qt6_macos_dark.png)
 
 ### Motif
 [<img src="sample_motif.png" width="700" title="Motif" alt="Motif" />](sample_motif.png)
