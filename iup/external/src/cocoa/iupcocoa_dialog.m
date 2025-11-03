@@ -1779,24 +1779,41 @@ static int cocoaDialogSetTrayMenuAttrib(Ihandle* ih, const char* value)
   NSStatusItem* status_item = cocoaDialogGetStatusItem(ih);
   if (!status_item) return 0;
 
-  Ihandle* menu_ih = (Ihandle*)value;
   Ihandle* old_menu_ih = (Ihandle*)objc_getAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY);
+
+  Ihandle* menu_ih = NULL;
+  if (value && value[0])
+  {
+    menu_ih = IupGetHandle(value);
+    if (!menu_ih || !iupObjectCheck(menu_ih))
+    {
+      /* Invalid menu handle - clear the menu */
+      [status_item setMenu:nil];
+      objc_setAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+      return 0;
+    }
+  }
 
   if (old_menu_ih != menu_ih)
   {
-    IupDestroy(old_menu_ih);
+    if (old_menu_ih)
+    {
+      /* Just remove the association, don't destroy */
+      objc_setAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+    }
   }
 
-  if(NULL == menu_ih)
+  if (NULL == menu_ih)
   {
     [status_item setMenu:nil];
     objc_setAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
     return 1;
   }
 
-  if(NULL == menu_ih->handle) IupMap(menu_ih);
+  if (NULL == menu_ih->handle)
+    IupMap(menu_ih);
 
-  if(menu_ih->iclass->nativetype == IUP_TYPEMENU && [(id)menu_ih->handle isKindOfClass:[NSMenu class]])
+  if (menu_ih->iclass->nativetype == IUP_TYPEMENU && [(id)menu_ih->handle isKindOfClass:[NSMenu class]])
   {
     NSMenu* the_menu = (NSMenu*)menu_ih->handle;
     [status_item setMenu:the_menu];
