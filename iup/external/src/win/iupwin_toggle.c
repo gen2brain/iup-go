@@ -28,6 +28,181 @@
 #include "iupwin_draw.h"
 #include "iupwin_str.h"
 
+#include "wdl.h"
+
+
+/* Windows 11 ToggleSwitch dimensions (matching ModernWpf/WinUI 3 specs) */
+#define SWITCH_TRACK_WIDTH  40
+#define SWITCH_TRACK_HEIGHT 20
+#define SWITCH_THUMB_SIZE   12  /* Normal state: 12x12, scales to 14x14 on hover */
+#define SWITCH_THUMB_MARGIN 4   /* (20 - 12) / 2 = 4px margin on each side */
+
+/* Animation parameters (matching Windows 11 ModernWpf specs) */
+#define SWITCH_ANIMATION_DURATION 367  /* milliseconds (0.367s reposition duration) */
+#define SWITCH_ANIMATION_FPS      60   /* frames per second */
+#define SWITCH_ANIMATION_INTERVAL (1000 / SWITCH_ANIMATION_FPS)  /* ~16ms */
+
+typedef struct _IupWinSwitchData
+{
+  double thumb_position;      /* 0.0 = left (off), 1.0 = right (on) */
+  double animation_start;     /* Animation start position */
+  double animation_end;       /* Animation end position */
+  DWORD animation_start_time; /* GetTickCount() when animation started */
+  UINT_PTR timer_id;          /* Timer ID for animation */
+  int is_animating;           /* 1 if animation in progress */
+  int checked_state;          /* Current checked state (BST_CHECKED or BST_UNCHECKED) */
+} IupWinSwitchData;
+
+static double winSwitchEaseInOutQuad(double t)
+{
+  if (t < 0.5)
+    return 2.0 * t * t;
+  else
+    return 1.0 - 2.0 * (1.0 - t) * (1.0 - t);
+}
+
+static void winSwitchAnimationStep(Ihandle* ih, IupWinSwitchData* switch_data)
+{
+  DWORD current_time = GetTickCount();
+  DWORD elapsed = current_time - switch_data->animation_start_time;
+
+  if (elapsed >= SWITCH_ANIMATION_DURATION)
+  {
+    /* Animation complete */
+    switch_data->thumb_position = switch_data->animation_end;
+    switch_data->is_animating = 0;
+
+    if (switch_data->timer_id != 0)
+    {
+      KillTimer(ih->handle, switch_data->timer_id);
+      switch_data->timer_id = 0;
+    }
+  }
+  else
+  {
+    /* Interpolate with easing */
+    double t = (double)elapsed / (double)SWITCH_ANIMATION_DURATION;
+    double eased_t = winSwitchEaseInOutQuad(t);
+    switch_data->thumb_position = switch_data->animation_start +
+                                   (switch_data->animation_end - switch_data->animation_start) * eased_t;
+  }
+
+  /* Trigger repaint */
+  InvalidateRect(ih->handle, NULL, FALSE);
+}
+
+static VOID CALLBACK winSwitchTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+  Ihandle* ih;
+  IupWinSwitchData* switch_data;
+
+  (void)uMsg;
+  (void)dwTime;
+
+  ih = iupwinHandleGet(hwnd);
+  if (!ih)
+    return;
+
+  switch_data = (IupWinSwitchData*)iupAttribGet(ih, "_IUPWIN_SWITCHDATA");
+  if (!switch_data || switch_data->timer_id != idEvent)
+    return;
+
+  winSwitchAnimationStep(ih, switch_data);
+}
+
+static void winSwitchStartAnimation(Ihandle* ih, IupWinSwitchData* switch_data, int checked)
+{
+  switch_data->animation_start = switch_data->thumb_position;
+  switch_data->animation_end = checked ? 1.0 : 0.0;
+  switch_data->animation_start_time = GetTickCount();
+  switch_data->is_animating = 1;
+
+  if (switch_data->timer_id == 0)
+  {
+    /* Use a unique timer ID and callback function */
+    UINT_PTR timer_id = SetTimer(ih->handle, (UINT_PTR)ih->handle, SWITCH_ANIMATION_INTERVAL, winSwitchTimerProc);
+    switch_data->timer_id = timer_id;
+  }
+  else
+  {
+    /* Update animation parameters for new click */
+    switch_data->animation_start = switch_data->thumb_position;
+    switch_data->animation_end = checked ? 1.0 : 0.0;
+    switch_data->animation_start_time = GetTickCount();
+  }
+
+  /* Trigger immediate repaint for first frame */
+  InvalidateRect(ih->handle, NULL, FALSE);
+}
+
+static void winSwitchCustomDraw(Ihandle* ih, HDC hDC, RECT* rect, UINT itemState)
+{
+  IupWinSwitchData* switch_data = (IupWinSwitchData*)iupAttribGet(ih, "_IUPWIN_SWITCHDATA");
+  if (!switch_data)
+    return;
+
+  WD_HCANVAS canvas = wdCreateCanvasWithHDC(hDC, rect, WD_CANVAS_NOGDICOMPAT);
+  if (!canvas)
+  {
+    return;
+  }
+
+  wdBeginPaint(canvas);
+
+  int is_checked = (switch_data->checked_state == BST_CHECKED);
+  int is_disabled = (itemState & ODS_DISABLED) != 0;
+
+  /* Get theme colors - interpolate during animation for smooth transition */
+  COLORREF track_color_ref, thumb_color_ref;
+  COLORREF track_off_color = GetSysColor(COLOR_BTNSHADOW);
+  COLORREF track_on_color = GetSysColor(COLOR_HIGHLIGHT);
+
+  if (is_disabled)
+  {
+    /* Disabled: use consistent gray regardless of checked state */
+    track_color_ref = GetSysColor(COLOR_BTNSHADOW);
+    thumb_color_ref = GetSysColor(COLOR_BTNFACE);
+  }
+  else
+  {
+    /* Interpolate track color based on thumb position for smooth transition */
+    float pos = (float)switch_data->thumb_position;
+    track_color_ref = RGB(
+      (int)(GetRValue(track_off_color) * (1.0f - pos) + GetRValue(track_on_color) * pos),
+      (int)(GetGValue(track_off_color) * (1.0f - pos) + GetGValue(track_on_color) * pos),
+      (int)(GetBValue(track_off_color) * (1.0f - pos) + GetBValue(track_on_color) * pos)
+    );
+    thumb_color_ref = GetSysColor(COLOR_WINDOW);
+  }
+
+  WD_COLOR track_color = WD_COLOR_FROM_GDI(track_color_ref);
+  WD_COLOR thumb_color = WD_COLOR_FROM_GDI(thumb_color_ref);
+
+  WD_HBRUSH track_brush = wdCreateSolidBrush(canvas, track_color);
+  WD_HBRUSH thumb_brush = wdCreateSolidBrush(canvas, thumb_color);
+
+  /* Use integer coordinates and slightly reduced radius for better anti-aliasing */
+  WD_RECT track_rect = { 1.0f, 1.0f, SWITCH_TRACK_WIDTH - 1.0f, SWITCH_TRACK_HEIGHT - 1.0f };
+  float radius = (SWITCH_TRACK_HEIGHT - 2.0f) / 2.0f;
+  WD_HPATH track_path = wdCreateRoundedRectPath(canvas, &track_rect, radius);
+
+  wdFillPath(canvas, track_brush, track_path);
+  wdDestroyPath(track_path);
+
+  float thumb_x_min = (float)SWITCH_THUMB_MARGIN;
+  float thumb_x_max = (float)(SWITCH_TRACK_WIDTH - SWITCH_THUMB_SIZE - SWITCH_THUMB_MARGIN);
+  float thumb_x = thumb_x_min + (thumb_x_max - thumb_x_min) * (float)switch_data->thumb_position;
+  float thumb_y = (SWITCH_TRACK_HEIGHT - SWITCH_THUMB_SIZE) / 2.0f;
+  float thumb_radius = SWITCH_THUMB_SIZE / 2.0f;
+
+  wdFillCircle(canvas, thumb_brush, thumb_x + thumb_radius, thumb_y + thumb_radius, thumb_radius);
+
+  wdDestroyBrush(thumb_brush);
+  wdDestroyBrush(track_brush);
+
+  wdEndPaint(canvas);
+  wdDestroyCanvas(canvas);
+}
 
 void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
@@ -37,20 +212,38 @@ void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
-  int check_box = 16;
-  (void)ih;
-  if (iupwinGetScreenRes() > 120)
-    check_box = 26;
-
-  (*x) += check_box;
-  if ((*y) < check_box) (*y) = check_box; /* minimum height */
-
-  if (str && str[0]) /* add spacing between check box and text */
+  if (iupAttribGetBoolean(ih, "SWITCH"))
   {
-    (*x) += 8;
+    /* Custom switch dimensions */
+    int switch_w = SWITCH_TRACK_WIDTH;
+    int switch_h = SWITCH_TRACK_HEIGHT;
 
-    if (!iupwin_comctl32ver6)
-      (*x) += 4;
+    (*x) += 2 + switch_w + 2;  /* margins + width + margins */
+    if ((*y) < 2 + switch_h + 8)
+      (*y) = 2 + switch_h + 8;  /* margins + height + extra vertical space */
+    else
+      (*y) += 2 + 8;
+
+    if (str && str[0])  /* add spacing between switch and text */
+      (*x) += 8;
+  }
+  else
+  {
+    /* Standard checkbox */
+    int check_box = 16;
+    if (iupwinGetScreenRes() > 120)
+      check_box = 26;
+
+    (*x) += check_box;
+    if ((*y) < check_box) (*y) = check_box; /* minimum height */
+
+    if (str && str[0]) /* add spacing between check box and text */
+    {
+      (*x) += 8;
+
+      if (!iupwin_comctl32ver6)
+        (*x) += 4;
+    }
   }
 }
 
@@ -352,7 +545,29 @@ static int winToggleSetValueAttrib(Ihandle* ih, const char* value)
   else
     check = BST_UNCHECKED;
 
-  /* This is necessary because Windows does not handle the radio state 
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    IupWinSwitchData* switch_data = (IupWinSwitchData*)iupAttribGet(ih, "_IUPWIN_SWITCHDATA");
+    int oldcheck = winToggleGetCheck(ih);
+
+    if (check == -1)
+    {
+      if (oldcheck)
+        check = BST_UNCHECKED;
+      else
+        check = BST_CHECKED;
+    }
+
+    winToggleSetCheck(ih, check);
+
+    /* Start animation if value changed */
+    if (switch_data && oldcheck != check)
+      winSwitchStartAnimation(ih, switch_data, check);
+
+    return 0;
+  }
+
+  /* This is necessary because Windows does not handle the radio state
      when a toggle is programmatically changed. */
   radio = iupRadioFindToggleParent(ih);
   if (radio)
@@ -578,6 +793,65 @@ static int winToggleImageClassicMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM
   return iupwinBaseMsgProc(ih, msg, wp, lp, result);
 }
 
+static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+{
+  IupWinSwitchData* switch_data = (IupWinSwitchData*)iupAttribGet(ih, "_IUPWIN_SWITCHDATA");
+
+  switch (msg)
+  {
+  case WM_LBUTTONDOWN:
+    /* Capture mouse to ensure we get WM_LBUTTONUP */
+    SetCapture(ih->handle);
+    *result = 0;
+    return 0;
+  case WM_LBUTTONUP:
+    /* Release mouse capture */
+    ReleaseCapture();
+
+    {
+      IFni cb;
+      int check = switch_data->checked_state;
+      int new_check = (check == BST_CHECKED) ? BST_UNCHECKED : BST_CHECKED;
+
+      /* Store the new checked state */
+      switch_data->checked_state = new_check;
+      winToggleSetCheck(ih, new_check);
+
+      /* Start animation */
+      if (switch_data)
+        winSwitchStartAnimation(ih, switch_data, new_check);
+
+      cb = (IFni)IupGetCallback(ih, "ACTION");
+      if (cb && cb(ih, new_check) == IUP_CLOSE)
+        IupExitLoop();
+
+      if (iupObjectCheck(ih))
+        iupBaseCallValueChangedCb(ih);
+
+      /* Redraw immediately */
+      InvalidateRect(ih->handle, NULL, FALSE);
+    }
+    *result = 0;
+    return 1;
+  case WM_THEMECHANGED:
+  case WM_SYSCOLORCHANGE:
+    /* Redraw on theme change */
+    InvalidateRect(ih->handle, NULL, TRUE);
+    break;
+  }
+
+  return iupwinBaseMsgProc(ih, msg, wp, lp, result);
+}
+
+static void winToggleSwitchDrawItem(Ihandle* ih, DRAWITEMSTRUCT* dis)
+{
+  /* Clear background first */
+  iupwinDrawParentBackground(ih, dis->hDC, &dis->rcItem);
+
+  /* Draw the switch control */
+  winSwitchCustomDraw(ih, dis->hDC, &dis->rcItem, dis->itemState);
+}
+
 static int winToggleWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
 {
   (void)lp;
@@ -594,6 +868,31 @@ static int winToggleWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
       IFni cb;
       int check = winToggleGetCheck(ih);
 
+      if (iupAttribGetBoolean(ih, "SWITCH"))
+      {
+        IupWinSwitchData* switch_data = (IupWinSwitchData*)iupAttribGet(ih, "_IUPWIN_SWITCHDATA");
+
+        /* Manually toggle the state (BS_OWNERDRAW doesn't auto-toggle) */
+        int new_check = (check == BST_CHECKED) ? BST_UNCHECKED : BST_CHECKED;
+        winToggleSetCheck(ih, new_check);
+
+        /* Start animation */
+        if (switch_data)
+          winSwitchStartAnimation(ih, switch_data, new_check);
+
+        cb = (IFni)IupGetCallback(ih, "ACTION");
+        if (cb && cb(ih, new_check) == IUP_CLOSE)
+          IupExitLoop();
+
+        if (iupObjectCheck(ih))
+          iupBaseCallValueChangedCb(ih);
+
+        /* Redraw immediately */
+        InvalidateRect(ih->handle, NULL, FALSE);
+
+        return 0;
+      }
+
       if (ih->data->type==IUP_TOGGLE_IMAGE && !iupwin_comctl32ver6 && !ih->data->flat)
       {
         int active = winToggleIsActive(ih);
@@ -605,11 +904,6 @@ static int winToggleWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
       radio = iupRadioFindToggleParent(ih);
       if (radio)
       {
-        /* This is necessary because Windows does not send a message
-           when a toggle is unchecked in a Radio. 
-           Also if the toggle is already checked in a radio, 
-           a click will call the callback again. */
-
         Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUPWIN_LASTTOGGLE");
         if (iupObjectCheck(last_tg) && last_tg != ih)
         {
@@ -664,6 +958,24 @@ static int winToggleWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
   return 0; /* not used */
 }
 
+static void winToggleUnMapMethod(Ihandle* ih)
+{
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    IupWinSwitchData* switch_data = (IupWinSwitchData*)iupAttribGet(ih, "_IUPWIN_SWITCHDATA");
+    if (switch_data)
+    {
+      if (switch_data->timer_id)
+        KillTimer(ih->handle, switch_data->timer_id);
+
+      free(switch_data);
+      iupAttribSet(ih, "_IUPWIN_SWITCHDATA", NULL);
+    }
+  }
+
+  iupdrvBaseUnMapMethod(ih);
+}
+
 static int winToggleMapMethod(Ihandle* ih)
 {
   Ihandle* radio = iupRadioFindToggleParent(ih);
@@ -678,6 +990,65 @@ static int winToggleMapMethod(Ihandle* ih)
   if (radio)
     ih->data->is_radio = 1;
 
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    IupWinSwitchData* switch_data;
+
+    /* SWITCH must be a checkbox (not radio) */
+    if (ih->data->is_radio)
+    {
+      iupAttribSet(ih, "SWITCH", "NO");
+      goto regular_toggle;
+    }
+
+    ih->data->type = IUP_TOGGLE_TEXT;
+    dwStyle |= BS_OWNERDRAW | BS_CHECKBOX;
+    ownerdraw = 1;
+
+    /* Add tabstop if can focus */
+    if (iupAttribGetBoolean(ih, "CANFOCUS"))
+      dwStyle |= WS_TABSTOP;
+
+    /* Allocate switch data */
+    switch_data = (IupWinSwitchData*)malloc(sizeof(IupWinSwitchData));
+    memset(switch_data, 0, sizeof(IupWinSwitchData));
+    iupAttribSet(ih, "_IUPWIN_SWITCHDATA", (char*)switch_data);
+
+    /* Create the window */
+    if (!iupwinCreateWindow(ih, WC_BUTTON, 0, dwStyle, NULL))
+    {
+      free(switch_data);
+      return IUP_ERROR;
+    }
+
+    /* Set up switch-specific callbacks */
+    IupSetCallback(ih, "_IUPWIN_COMMAND_CB", (Icallback)winToggleWmCommand);
+    IupSetCallback(ih, "_IUPWIN_CTLCOLOR_CB", (Icallback)winToggleCtlColor);
+    IupSetCallback(ih, "_IUPWIN_DRAWITEM_CB", (Icallback)winToggleSwitchDrawItem);
+    IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winToggleSwitchMsgProc);
+
+    /* Initialize thumb position and checked state based on initial value */
+    value = iupAttribGet(ih, "VALUE");
+    if (value && (iupStrEqualNoCase(value, "ON") || iupStrEqualNoCase(value, "YES") || iupStrEqual(value, "1")))
+    {
+      switch_data->thumb_position = 1.0;
+      switch_data->checked_state = BST_CHECKED;
+      winToggleSetCheck(ih, BST_CHECKED);
+    }
+    else
+    {
+      switch_data->thumb_position = 0.0;
+      switch_data->checked_state = BST_UNCHECKED;
+      winToggleSetCheck(ih, BST_UNCHECKED);
+    }
+
+    /* Force initial paint */
+    InvalidateRect(ih->handle, NULL, TRUE);
+
+    return IUP_NOERROR;
+  }
+
+regular_toggle:
   value = iupAttribGet(ih, "IMAGE");
   if (value)
   {
@@ -766,6 +1137,7 @@ void iupdrvToggleInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winToggleMapMethod;
+  ic->UnMap = winToggleUnMapMethod;
 
   /* Driver Dependent Attribute functions */
 
@@ -786,6 +1158,7 @@ void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, winToggleSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", winToggleGetValueAttrib, winToggleSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, winToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "SWITCH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* IupToggle Windows only */
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
@@ -796,7 +1169,6 @@ void iupdrvToggleInitClass(Iclass* ic)
 
   /* NOT supported */
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "SWITCH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CONTROLID", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
