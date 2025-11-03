@@ -284,8 +284,8 @@ static void qtSetGlobalAttrib(void)
   {
     IupSetGlobal("QT_PLATFORM", "X11");
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
-    /* Qt 6.2+: Use QX11Application native interface */
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && defined(Q_OS_LINUX)
+    /* Qt 6.2+: Use QX11Application native interface (Linux only) */
     if (auto *x11App = qApp->nativeInterface<QNativeInterface::QX11Application>())
     {
       /* Get X Display for use with Xlib */
@@ -303,8 +303,8 @@ static void qtSetGlobalAttrib(void)
   {
     IupSetGlobal("QT_PLATFORM", "WAYLAND");
 
-#ifdef IUP_QT_HAS_WAYLAND_APP
-    /* Qt 6.5+: Use QWaylandApplication native interface */
+#if defined(IUP_QT_HAS_WAYLAND_APP) && defined(Q_OS_LINUX)
+    /* Qt 6.5+: Use QWaylandApplication native interface (Linux only) */
     if (auto *waylandApp = qApp->nativeInterface<QNativeInterface::QWaylandApplication>())
     {
       /* Get Wayland display (wl_display*) */

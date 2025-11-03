@@ -27,6 +27,9 @@
 extern "C" {
 #endif
 
+#ifndef __IUP_OBJECT_H
+#include "iup_object.h"  /* Defines InativeHandle and Ihandle */
+#endif
 
 /****************************************************************************
  * Macros and Type Definitions
@@ -35,10 +38,6 @@ extern "C" {
 /* Color conversion macros */
 #define iupqtColorFromDouble(_x) ((int)((_x)*255.0))
 #define iupqtColorToDouble(_x) ((double)(_x)/255.0)
-
-/* Forward declaration for native handle type */
-struct _InativeHandle;
-typedef struct _InativeHandle InativeHandle;
 
 /* Forward declarations for Qt types */
 #ifdef __cplusplus
