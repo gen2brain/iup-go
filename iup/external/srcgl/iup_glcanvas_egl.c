@@ -1,5 +1,5 @@
 /** \file
- * \brief iupgl control for EGL (GTK3+/Wayland and X11)
+ * \brief iupgl control for EGL
  *
  * See Copyright Notice in "iup.h"
  */
@@ -13,17 +13,50 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#include <gtk/gtk.h>
-#include <gdk/gdk.h>
-
-#ifdef GDK_WINDOWING_WAYLAND
-#include <gdk/gdkwayland.h>
-#include <wayland-egl.h>
-#include <wayland-client.h>
+/* Differentiate between GTK and Qt backends */
+#ifdef GTK_DISABLE_DEPRECATED
+  #define IUP_EGL_USE_GTK
+#else
+  #define IUP_EGL_USE_QT
 #endif
 
-#ifdef GDK_WINDOWING_X11
-#include <gdk/gdkx.h>
+#ifdef IUP_EGL_USE_GTK
+  #include <gtk/gtk.h>
+  #include <gdk/gdk.h>
+
+  #ifdef GDK_WINDOWING_WAYLAND
+  #include <gdk/gdkwayland.h>
+  #include <wayland-egl.h>
+  #include <wayland-client.h>
+  #endif
+
+  #ifdef GDK_WINDOWING_X11
+  #include <gdk/gdkx.h>
+  #endif
+#endif
+
+#ifdef IUP_EGL_USE_QT
+  #ifdef __cplusplus
+  extern "C" {
+  #endif
+
+  /* Forward declarations */
+  typedef struct _QWindow QWindow;
+  typedef struct _QWidget QWidget;
+
+  /* Qt helper functions (implemented in iup_glcanvas_qt.cpp) */
+  extern void* iupQtGetNativeDisplay(void);
+  extern unsigned long iupQtGetNativeWindow(void* qwindow_ptr);
+  extern void* iupQtGetWindowFromWidget(void* qwidget_ptr);
+  extern double iupQtGetDevicePixelRatio(void* qwindow_ptr);
+  extern void iupQtGetWindowSize(void* qwindow_ptr, int* width, int* height);
+  extern void iupQtGetWidgetSize(void* qwidget_ptr, int* width, int* height);
+  extern void iupQtForceWidgetUpdate(void* qwidget_ptr);
+  extern const char* iupQtGetPlatformName(void);
+
+  #ifdef __cplusplus
+  }
+  #endif
 #endif
 
 #include "iup.h"
@@ -37,6 +70,19 @@
 #include "iup_assert.h"
 #include "iup_register.h"
 #include "iup_layout.h"
+#include "iup_canvas.h"
+
+#ifdef IUP_EGL_USE_QT
+  /* Qt canvas functions from iupqt_canvas.cpp - declared after iup.h for Ihandle type */
+  #ifdef __cplusplus
+  extern "C" {
+  #endif
+  extern void* iupdrvCanvasGetContext(Ihandle* ih);
+  extern void iupdrvCanvasUpdate(Ihandle* ih);
+  #ifdef __cplusplus
+  }
+  #endif
+#endif
 
 
 /* Definitions for platform specific EGL display acquisition (EGL 1.5 or extensions) */
@@ -119,16 +165,23 @@ typedef struct _IGlControlData
   EGLContext context;
   EGLConfig config;
 
+#ifdef IUP_EGL_USE_GTK
   GdkWindow* window;
+#endif
+#ifdef IUP_EGL_USE_QT
+  QWindow* qwindow;
+#endif
+
   int last_logical_width;
   int last_logical_height;
 
 #ifdef GDK_WINDOWING_WAYLAND
+  /* Wayland EGL window support for GTK Wayland and Qt6 Wayland */
   struct wl_egl_window* egl_window;
   int egl_window_physical_width;
   int egl_window_physical_height;
 #endif
-  /* For X11, the GdkWindow encapsulates the XID, which is used directly with EGL. */
+  /* For X11, the GdkWindow or QWindow encapsulates the XID, which is used directly with EGL. */
 } IGlControlData;
 
 
@@ -139,6 +192,7 @@ static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* phy
   int requested_w = 0, requested_h = 0;
   int scale = 1;
 
+#ifdef IUP_EGL_USE_GTK
   /* Determine the scale factor (HiDPI support). GTK 3.10+ required. */
 #if GTK_CHECK_VERSION(3, 10, 0)
   if (gldata->window && GDK_IS_WINDOW(gldata->window))
@@ -172,6 +226,24 @@ static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* phy
       }
     }
   }
+#endif /* IUP_EGL_USE_GTK */
+
+#ifdef IUP_EGL_USE_QT
+  /* For Qt: get HiDPI scale and window size */
+  if (gldata->qwindow)
+  {
+    double dpr = iupQtGetDevicePixelRatio(gldata->qwindow);
+    scale = (int)dpr;
+    if (scale < 1) scale = 1;
+
+    iupQtGetWindowSize(gldata->qwindow, &realized_w, &realized_h);
+  }
+  else if (ih->handle)
+  {
+    /* Fallback: try to get size from QWidget */
+    iupQtGetWidgetSize(ih->handle, &realized_w, &realized_h);
+  }
+#endif /* IUP_EGL_USE_QT */
 
   if (ih->currentwidth > 0 && ih->currentheight > 0)
   {
@@ -243,6 +315,7 @@ static int eGLCanvasDefaultResize(Ihandle *ih, int width, int height)
   gldata->last_logical_width = width;
   gldata->last_logical_height = height;
 
+#ifdef IUP_EGL_USE_GTK
   /* Determine the scale factor for HiDPI support (GTK 3.10+) */
 #if GTK_CHECK_VERSION(3, 10, 0)
   if (gldata->window && GDK_IS_WINDOW(gldata->window))
@@ -256,6 +329,17 @@ static int eGLCanvasDefaultResize(Ihandle *ih, int width, int height)
   }
 #endif
   if (scale < 1) scale = 1;
+#endif /* IUP_EGL_USE_GTK */
+
+#ifdef IUP_EGL_USE_QT
+  /* For Qt: get HiDPI scale factor */
+  if (gldata->qwindow)
+  {
+    double dpr = iupQtGetDevicePixelRatio(gldata->qwindow);
+    scale = (int)dpr;
+    if (scale < 1) scale = 1;
+  }
+#endif /* IUP_EGL_USE_QT */
 
   physical_width = width * scale;
   physical_height = height * scale;
@@ -296,6 +380,7 @@ static int eGLCanvasCreateMethod(Ihandle* ih, void** params)
   gldata->last_logical_height = 480;
 
 #ifdef GDK_WINDOWING_WAYLAND
+  gldata->egl_window = NULL;
   gldata->egl_window_physical_width = 0;
   gldata->egl_window_physical_height = 0;
 #endif
@@ -411,6 +496,7 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata)
 static char* eGLCanvasGetVisualAttrib(Ihandle *ih)
 {
   (void)ih;
+#ifdef IUP_EGL_USE_GTK
   GdkScreen* screen = gdk_screen_get_default();
   if (screen) {
       GdkVisual* visual = gdk_screen_get_rgba_visual(screen);
@@ -418,6 +504,10 @@ static char* eGLCanvasGetVisualAttrib(Ihandle *ih)
           visual = gdk_screen_get_system_visual(screen);
       return (char*)visual;
   }
+#endif
+#ifdef IUP_EGL_USE_QT
+  /* Qt doesn't expose visuals the same way - return NULL */
+#endif
   return NULL;
 }
 
@@ -427,10 +517,12 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   EGLContext shared_context = EGL_NO_CONTEXT;
   Ihandle* ih_shared;
   EGLNativeWindowType native_window = (EGLNativeWindowType)NULL;
-  GdkDisplay* gdk_display;
   PFN_eglGetPlatformDisplay eglGetPlatformDisplay_func = NULL;
   int requested_major = 0, requested_minor = 0;
   char* requested_profile = NULL;
+
+#ifdef IUP_EGL_USE_GTK
+  GdkDisplay* gdk_display;
 
   /* Try to get the GdkWindow from IUP's attributes first */
   gldata->window = (GdkWindow*)iupAttribGet(ih, "GDKWINDOW");
@@ -473,13 +565,43 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   }
 
   gdk_display = gdk_window_get_display(gldata->window);
+#endif /* IUP_EGL_USE_GTK */
+
+#ifdef IUP_EGL_USE_QT
+  void* canvas_widget = iupdrvCanvasGetContext(ih);
+
+  if (!canvas_widget)
+  {
+    iupAttribSet(ih, "ERROR", "Could not obtain canvas widget context.");
+    return IUP_NOERROR;
+  }
+
+  gldata->qwindow = (QWindow*)iupAttribGet(ih, "QWINDOW");
+
+  if (!gldata->qwindow)
+  {
+    gldata->qwindow = (QWindow*)iupQtGetWindowFromWidget(canvas_widget);
+
+    if (gldata->qwindow)
+    {
+      iupAttribSet(ih, "QWINDOW", (char*)gldata->qwindow);
+    }
+  }
+
+  if (!gldata->qwindow)
+  {
+    iupAttribSet(ih, "ERROR", "Could not obtain valid QWindow handle from QWidget.");
+    return IUP_NOERROR;
+  }
+
+#endif /* IUP_EGL_USE_QT */
 
   /* Try to load eglGetPlatformDisplay (EGL 1.5 core) or eglGetPlatformDisplayEXT (extension) */
   eglGetPlatformDisplay_func = (PFN_eglGetPlatformDisplay)eglGetProcAddress("eglGetPlatformDisplay");
   if (!eglGetPlatformDisplay_func)
       eglGetPlatformDisplay_func = (PFN_eglGetPlatformDisplay)eglGetProcAddress("eglGetPlatformDisplayEXT");
 
-
+#ifdef IUP_EGL_USE_GTK
 #ifdef GDK_WINDOWING_WAYLAND
   if (GDK_IS_WAYLAND_DISPLAY(gdk_display)) {
       struct wl_display* wl_display = gdk_wayland_display_get_wl_display(gdk_display);
@@ -511,6 +633,37 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   {
       /* Unsupported GDK backend for this EGL implementation (e.g. macOS Quartz, Windows GDK) */
   }
+#endif /* IUP_EGL_USE_GTK */
+
+#ifdef IUP_EGL_USE_QT
+  /* For Qt: Get native Display (X11 or Wayland) */
+  const char* qt_platform = iupQtGetPlatformName();
+  void* native_display = iupQtGetNativeDisplay();
+
+  if (native_display) {
+      if (strcmp(qt_platform, "wayland") == 0) {
+          /* Qt6 on Wayland */
+          /* TODO: Implement proper Wayland support */
+          if (eglGetPlatformDisplay_func) {
+              gldata->display = eglGetPlatformDisplay_func(EGL_PLATFORM_WAYLAND_KHR, native_display, NULL);
+          }
+
+          if (gldata->display == EGL_NO_DISPLAY) {
+              gldata->display = eglGetDisplay((EGLNativeDisplayType)native_display);
+          }
+      }
+      else if (strcmp(qt_platform, "xcb") == 0) {
+          /* X11 (including XWayland) */
+          if (eglGetPlatformDisplay_func) {
+              gldata->display = eglGetPlatformDisplay_func(EGL_PLATFORM_X11_KHR, native_display, NULL);
+          }
+
+          if (gldata->display == EGL_NO_DISPLAY) {
+              gldata->display = eglGetDisplay((EGLNativeDisplayType)native_display);
+          }
+      }
+  }
+#endif /* IUP_EGL_USE_QT */
 
   if (gldata->display == EGL_NO_DISPLAY) {
       gldata->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -540,6 +693,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   if (!eGLCanvasChooseConfig(ih, gldata))
     return IUP_NOERROR;
 
+#ifdef IUP_EGL_USE_GTK
 #ifdef GDK_WINDOWING_WAYLAND
   if (GDK_IS_WAYLAND_WINDOW(gldata->window)) {
       struct wl_surface* surface = gdk_wayland_window_get_wl_surface(gldata->window);
@@ -566,10 +720,21 @@ static int eGLCanvasMapMethod(Ihandle* ih)
       native_window = (EGLNativeWindowType)gdk_x11_window_get_xid(gldata->window);
   }
 #endif
+#endif /* IUP_EGL_USE_GTK */
+
+#ifdef IUP_EGL_USE_QT
+  if (gldata->qwindow) {
+      /* Get X Window ID - works for X11 and XWayland */
+      unsigned long xid = iupQtGetNativeWindow(gldata->qwindow);
+      if (xid != 0) {
+          native_window = (EGLNativeWindowType)xid;
+      }
+  }
+#endif /* IUP_EGL_USE_QT */
 
   if (native_window == (EGLNativeWindowType)NULL) {
       /* This might happen if the backend is neither Wayland nor X11, or if getting the native handle failed. */
-      iupAttribSet(ih, "ERROR", "Could not create/obtain native window handle (Wayland EGL window or X11 Window ID). Check GDK backend.");
+      iupAttribSet(ih, "ERROR", "Could not create/obtain native window handle (Wayland EGL window or X11 Window ID). Check backend.");
       return IUP_NOERROR;
   }
 
@@ -760,6 +925,19 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
   if (!gldata || gldata->display == EGL_NO_DISPLAY)
     return;
 
+#ifdef IUP_EGL_USE_QT
+  /* If using Qt's EGL context, DON'T destroy it - Qt owns it */
+  if (iupAttribGet(ih, "_IUP_GLCANVAS_QT_CONTEXT"))
+  {
+    /* Just clear our pointers, but don't destroy Qt's resources */
+    gldata->context = EGL_NO_CONTEXT;
+    gldata->surface = EGL_NO_SURFACE;
+    gldata->display = EGL_NO_DISPLAY;
+    gldata->qwindow = NULL;
+    return;
+  }
+#endif
+
   if (gldata->context != EGL_NO_CONTEXT)
   {
     if (eglGetCurrentContext() == gldata->context)
@@ -782,15 +960,20 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
     gldata->egl_window = NULL;
   }
 #endif
-  /* On X11, the native window is managed by GTK/GDK, so we don't destroy it. */
+  /* On X11, the native window is managed by GTK/GDK/Qt, so we don't destroy it. */
 
   /* We do NOT call eglTerminate(gldata->display).
      eglInitialize increments a reference count. Since the display connection
-     might be shared by other components (like GTK itself if using EGL),
+     might be shared by other components (like GTK/Qt itself if using EGL),
      we rely on the application or environment to manage the EGL connection lifetime.
   */
 
+#ifdef IUP_EGL_USE_GTK
   gldata->window = NULL;
+#endif
+#ifdef IUP_EGL_USE_QT
+  gldata->qwindow = NULL;
+#endif
   gldata->display = EGL_NO_DISPLAY;
 }
 
@@ -805,12 +988,33 @@ static void eGLCanvasDestroy(Ihandle* ih)
   iupAttribSet(ih, "_IUP_GLCONTROLDATA", NULL);
 }
 
+static void eGLCanvasLayoutUpdateMethod(Ihandle* ih)
+{
+  IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  if (!gldata)
+    return;
+
+#ifdef IUP_EGL_USE_GTK
+  GtkWidget* widget = (GtkWidget*)ih->handle;
+  if (widget && gtk_widget_get_realized(widget))
+  {
+    gtk_widget_queue_draw(widget);
+  }
+#endif
+
+#ifdef IUP_EGL_USE_QT
+  /* Asynchronously queue a repaint, which will trigger paintEvent, which calls ACTION */
+  iupdrvCanvasUpdate(ih);
+#endif
+}
+
 void iupdrvGlCanvasInitClass(Iclass* ic)
 {
   ic->Create = eGLCanvasCreateMethod;
   ic->Destroy = eGLCanvasDestroy;
   ic->Map = eGLCanvasMapMethod;
   ic->UnMap = eGLCanvasUnMapMethod;
+  ic->LayoutUpdate = eGLCanvasLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "VISUAL", eGLCanvasGetVisualAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_STRING|IUPAF_NOT_MAPPED);
 }
@@ -852,8 +1056,14 @@ void IupGLMakeCurrent(Ihandle* ih)
     return;
 
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
-  if (!gldata || gldata->display == EGL_NO_DISPLAY ||
-      gldata->context == EGL_NO_CONTEXT || gldata->surface == EGL_NO_SURFACE)
+  if (!gldata)
+    return;
+
+
+  if (!gldata || gldata->display == EGL_NO_DISPLAY)
+    return;
+
+  if (gldata->context == EGL_NO_CONTEXT || gldata->surface == EGL_NO_SURFACE)
     return;
 
 #ifdef GDK_WINDOWING_WAYLAND
@@ -917,6 +1127,17 @@ void IupGLSwapBuffers(Ihandle* ih)
     cb(ih);
 
   eglSwapBuffers(gldata->display, gldata->surface);
+
+#ifdef IUP_EGL_USE_QT
+  {
+    extern void iupQtForceWidgetUpdate(void* qwidget_ptr);
+    void* canvas_widget = iupdrvCanvasGetContext(ih);
+    if (canvas_widget)
+    {
+      iupQtForceWidgetUpdate(canvas_widget);
+    }
+  }
+#endif
 }
 
 void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
