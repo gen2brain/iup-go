@@ -77,8 +77,9 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
     g_object_unref(temp_switch);
 
     (*x) += 2 + switch_w + 2;
-    if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
-    else (*y) += 2+2;
+    /* Add extra vertical padding for GtkSwitch to prevent bottom clipping */
+    if ((*y) < 2 + switch_h + 8) (*y) = 2 + switch_h + 8;
+    else (*y) += 2+8;
 
     if (str && str[0]) /* add spacing between switch and text */
       (*x) += 8;

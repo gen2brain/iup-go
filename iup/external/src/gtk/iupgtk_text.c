@@ -62,7 +62,10 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   int border_size = 2 * 5;
   (*x) += border_size;
   (*y) += border_size;
-  (void)ih;
+
+  /* GtkSpinButton needs extra vertical space to prevent bottom clipping */
+  if (iupAttribGetBoolean(ih, "SPIN"))
+    (*y) += 8;
 }
 
 static void gtkTextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
