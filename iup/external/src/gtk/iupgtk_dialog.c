@@ -6,6 +6,10 @@
 
 #include <gtk/gtk.h>
 
+#ifdef GDK_WINDOWING_X11
+#include <gdk/gdkx.h>
+#endif
+
 #ifdef GDK_WINDOWING_WAYLAND
 #include <gdk/gdkwayland.h>
 #endif
@@ -702,8 +706,30 @@ static int gtkDialogMapMethod(Ihandle* ih)
   gtk_container_add((GtkContainer*)ih->handle, inner_parent);
   gtk_widget_show(inner_parent);
 
+  /* Apply APPID if set (must be before realize) */
+  {
+    const char* appid = IupGetGlobal("_IUP_APPID_INTERNAL");
+    if (appid)
+      gtk_window_set_wmclass(GTK_WINDOW(ih->handle), appid, appid);
+  }
+
   /* initialize the widget */
   gtk_widget_realize(ih->handle);
+
+  /* Apply X11 WM_CLASS property if APPID is set */
+#ifdef GDK_WINDOWING_X11
+  {
+    const char* appid = IupGetGlobal("_IUP_APPID_INTERNAL");
+    if (appid)
+    {
+      GdkWindow* window = iupgtkGetWindow(ih->handle);
+      if (window && GDK_IS_X11_WINDOW(window))
+      {
+        gdk_x11_window_set_utf8_property(GDK_X11_WINDOW(window), "WM_CLASS", appid);
+      }
+    }
+  }
+#endif
 
   if (iupAttribGet(ih, "TITLE"))
     has_titlebar = 1;
