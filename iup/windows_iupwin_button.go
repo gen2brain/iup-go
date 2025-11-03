@@ -1,4 +1,4 @@
-//go:build windows && !gtk
+//go:build windows && !gtk && !qt
 
 package iup
 
