@@ -8,6 +8,9 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
+	iup.SetGlobal("APPID", "com.example.Sample") // For Wayland/XDG desktop file
+	iup.SetGlobal("APPNAME", "Sample")           // For taskbar/dock/WM
+
 	iup.ImageRGBA(32, 32, imgTecgraf).SetHandle("img1")
 	img := iup.Image(32, 32, imgBits).SetHandle("img2")
 	iup.SetAttribute(img, "0", "0 0 0")
