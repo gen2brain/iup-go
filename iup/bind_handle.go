@@ -2,6 +2,8 @@ package iup
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 	"unsafe"
 )
 
@@ -72,16 +74,87 @@ func (ih Ihandle) SetAttributes(params ...interface{}) Ihandle {
 		case string:
 			SetAttributes(ih, param)
 		case map[string]string:
-			for key, val := range param {
-				SetAttribute(ih, key, val)
+			keys := make([]string, 0, len(param))
+			for key := range param {
+				keys = append(keys, key)
+			}
+			sort.Slice(keys, func(i, j int) bool {
+				return compareAttributeKeys(keys[i], keys[j])
+			})
+			for _, key := range keys {
+				SetAttribute(ih, key, param[key])
 			}
 		case map[string]interface{}:
-			for key, val := range param {
-				SetAttribute(ih, key, val)
+			keys := make([]string, 0, len(param))
+			for key := range param {
+				keys = append(keys, key)
+			}
+			sort.Slice(keys, func(i, j int) bool {
+				return compareAttributeKeys(keys[i], keys[j])
+			})
+			for _, key := range keys {
+				SetAttribute(ih, key, param[key])
 			}
 		}
 	}
 	return ih
+}
+
+// compareAttributeKeys compares attribute keys for sorting.
+// Tree attributes (TITLE, ADDLEAF, ADDBRANCH, etc.) are sorted numerically by their ID suffix.
+// Other attributes are sorted alphabetically.
+func compareAttributeKeys(a, b string) bool {
+	// Extract prefix and numeric suffix for both keys
+	aPrefix, aNum := splitAttributeKey(a)
+	bPrefix, bNum := splitAttributeKey(b)
+
+	// If both are tree-related attributes with numeric suffixes
+	if aNum >= 0 && bNum >= 0 {
+		// First sort by priority: TITLE < ADDLEAF/ADDBRANCH
+		aPrio := getAttributePriority(aPrefix)
+		bPrio := getAttributePriority(bPrefix)
+		if aPrio != bPrio {
+			return aPrio < bPrio
+		}
+		// Then sort by numeric ID
+		if aNum != bNum {
+			return aNum < bNum
+		}
+	}
+
+	// Default: alphabetical sort
+	return a < b
+}
+
+// splitAttributeKey splits an attribute key into prefix and numeric suffix.
+// Returns (prefix, -1) if no numeric suffix is found.
+func splitAttributeKey(key string) (string, int) {
+	i := len(key) - 1
+	for i >= 0 && key[i] >= '0' && key[i] <= '9' {
+		i--
+	}
+	if i < len(key)-1 {
+		prefix := key[:i+1]
+		var num int
+		fmt.Sscanf(key[i+1:], "%d", &num)
+		return prefix, num
+	}
+	return key, -1
+}
+
+// getAttributePriority returns priority for tree attribute ordering.
+// Lower numbers are processed first.
+func getAttributePriority(prefix string) int {
+	switch strings.ToUpper(prefix) {
+	case "NAME":
+		return 0 // NAME attributes first
+	case "TITLE":
+		return 1 // TITLE attributes second
+	case "ADDBRANCH", "ADDLEAF", "INSERTBRANCH", "INSERTLEAF":
+		return 2 // ADD/INSERT attributes third
+	default:
+		return 3 // Everything else last
+	}
 }
 
 // SetAttribute sets an interface element attribute.
