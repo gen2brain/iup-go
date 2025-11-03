@@ -6,10 +6,11 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <ole2.h>
+#include <shobjidl.h>
 
-#include <stdio.h>              
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>             
+#include <string.h>
 
 #include "iup.h"
 
@@ -154,6 +155,30 @@ int iupdrvOpen(int *argc, char ***argv)
   return IUP_NOERROR;
 }
 
+int iupdrvSetGlobalAppIDAttrib(const char* value)
+{
+  (void)value;
+  return 0;
+}
+
+int iupdrvSetGlobalAppNameAttrib(const char* value)
+{
+  static int appname_set = 0;
+  if (appname_set || !value || !value[0])
+    return 0;
+
+  WCHAR wappname[129];
+  MultiByteToWideChar(CP_UTF8, 0, value, -1, wappname, 129);
+
+  HRESULT hr = SetCurrentProcessExplicitAppUserModelID(wappname);
+  if (SUCCEEDED(hr))
+  {
+    appname_set = 1;
+    return 1;
+  }
+  return 0;
+}
+
 void iupdrvClose(void)
 {
   iupwinHandleFinish();
@@ -162,7 +187,7 @@ void iupdrvClose(void)
   iupwinDrawFinish();
 
   if (IupGetGlobal("_IUPWIN_OLEINITIALIZE"))
-	  OleUninitialize();
+    OleUninitialize();
 
   CoUninitialize();
 }
