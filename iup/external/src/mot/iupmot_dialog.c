@@ -1004,6 +1004,29 @@ static int motDialogMapMethod(Ihandle* ih)
   /* initialize the widget */
   XtRealizeWidget(ih->handle);
 
+  /* Apply APPID and APPNAME if set */
+  {
+    const char* appid = IupGetGlobal("_IUP_APPID_INTERNAL");
+    const char* appname = IupGetGlobal("_IUP_APPNAME_INTERNAL");
+    Window window = XtWindow(ih->handle);
+
+    if (appid || appname)
+    {
+      XClassHint class_hint;
+      class_hint.res_name = (char*)(appid ? appid : "iup");
+      class_hint.res_class = (char*)(appname ? appname : "Iup");
+      XSetClassHint(iupmot_display, window, &class_hint);
+    }
+
+    if (appname)
+    {
+      XStoreName(iupmot_display, window, appname);
+      XChangeProperty(iupmot_display, window, XInternAtom(iupmot_display, "_NET_WM_NAME", False),
+                      XInternAtom(iupmot_display, "UTF8_STRING", False), 8, PropModeReplace,
+                      (unsigned char*)appname, strlen(appname));
+    }
+  }
+
   /* child dialogs must be always on top of the parent */
   if (parent)
     XSetTransientForHint(iupmot_display, XtWindow(ih->handle), XtWindow(parent));
