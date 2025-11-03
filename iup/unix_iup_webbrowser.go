@@ -1,4 +1,4 @@
-//go:build (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && web && !motif && !qt
+//go:build ((aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) || gtk) && web && !motif && !qt
 
 package iup
 
