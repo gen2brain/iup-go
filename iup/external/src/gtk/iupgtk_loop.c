@@ -58,10 +58,15 @@ IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 IUP_API void IupExitLoop(void)
 {
   char* exit_loop = IupGetGlobal("EXITLOOP");
-  if (gtk_main_level() > 1 || !exit_loop || iupStrBoolean(exit_loop))
+  int level = gtk_main_level();
+  /* Only call gtk_main_quit() if there's actually a main loop running.
+   * Check level > 0 first to avoid warning when no loop is active. */
+  if (level > 0 && (level > 1 || !exit_loop || iupStrBoolean(exit_loop)))
   {
-    if (gtk_main_iteration_do(FALSE) == FALSE)
-      gtk_main_quit();
+    /* Call gtk_main_quit() once - it will quit the current (innermost) level.
+     * The level doesn't change until the event loop actually processes this.
+     * For nested loops, each level will need its own quit call when appropriate. */
+    gtk_main_quit();
   }
 }
 

@@ -803,7 +803,11 @@ static void gtkDialogUnMapMethod(Ihandle* ih)
   }
 
 #if GTK_CHECK_VERSION(2, 10, 0)
-  iupgtkTrayCleanup(ih);
+  /* When dialog with tray is destroyed, exit the main loop.
+   * Use g_idle_add to defer the exit until after any nested loops (like menu popups) have finished.
+   * Only do this if a tray icon was actually cleaned up. */
+  if (iupgtkTrayCleanup(ih))
+    g_idle_add((GSourceFunc)IupExitLoop, NULL);
 #endif
 
   /* Disconnect theme change monitoring */
@@ -1276,6 +1280,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, iupgtkSetTrayImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TRAYTIP", NULL, iupgtkSetTrayTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TRAYTIPMARKUP", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TRAYMENU", NULL, iupgtkSetTrayMenuAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
 #endif
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
 

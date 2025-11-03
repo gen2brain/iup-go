@@ -228,8 +228,12 @@ static void gtkItemActivate(GtkWidget *widget, Ihandle* ih)
   }
 
   cb = IupGetCallback(ih, "ACTION");
-  if (cb && cb(ih)==IUP_CLOSE)
-    IupExitLoop();
+  if (cb)
+  {
+    int result = cb(ih);
+    if (result == IUP_CLOSE)
+      IupExitLoop();
+  }
 
   (void)widget;
 }

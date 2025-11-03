@@ -143,7 +143,17 @@ int iupgtkSetTrayImageAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-void iupgtkTrayCleanup(Ihandle *ih)
+int iupgtkSetTrayMenuAttrib(Ihandle *ih, const char *value)
+{
+  /* XEmbed tray doesn't support automatic menu popup via TRAYMENU.
+   * Applications should use TRAYCLICK_CB callback to show menu manually.
+   */
+  (void)ih;
+  (void)value;
+  return 0;
+}
+
+int iupgtkTrayCleanup(Ihandle *ih)
 {
   GtkStatusIcon* status_icon = (GtkStatusIcon*)iupAttribGet(ih, "_IUPGTK_STATUSICON");
 
@@ -151,7 +161,9 @@ void iupgtkTrayCleanup(Ihandle *ih)
   {
     g_object_unref(status_icon);
     iupAttribSet(ih, "_IUPGTK_STATUSICON", NULL);
+    return 1; /* Tray was cleaned up */
   }
+  return 0; /* No tray to clean up */
 }
 
 #endif
