@@ -170,6 +170,9 @@ static int gtkFrameMapMethod(Ihandle* ih)
   gtk_container_add((GtkContainer*)ih->handle, inner_parent);
   gtk_widget_show(inner_parent);
 
+  /* Set uniform border width for symmetric spacing */
+  gtk_container_set_border_width(GTK_CONTAINER(ih->handle), 2);
+
   /* Add to the parent, all GTK controls must call this. */
   iupgtkAddToParent(ih);
 
