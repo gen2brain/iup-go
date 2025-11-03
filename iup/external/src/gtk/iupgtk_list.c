@@ -917,7 +917,33 @@ static int gtkListSetImageAttrib(Ihandle* ih, int id, const char* value)
   if (!ih->data->show_image || !gtk_tree_model_iter_nth_child(model, &iter, NULL, pos))
     return 0;
 
-  gtk_list_store_set(GTK_LIST_STORE(model), &iter, IUPGTK_LIST_IMAGE, pixImage, -1);
+  /* Scale image down if needed to fit font height */
+  if (pixImage)
+  {
+    int charheight;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    int available_height = charheight + 2 * ih->data->spacing;
+    int img_height = gdk_pixbuf_get_height(pixImage);
+    int img_width = gdk_pixbuf_get_width(pixImage);
+
+    if (img_height > available_height)
+    {
+      /* Scale down proportionally to fit available height */
+      int scaled_width = (img_width * available_height) / img_height;
+      GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixImage, scaled_width, available_height, GDK_INTERP_BILINEAR);
+      gtk_list_store_set(GTK_LIST_STORE(model), &iter, IUPGTK_LIST_IMAGE, scaled, -1);
+      g_object_unref(scaled);
+    }
+    else
+    {
+      gtk_list_store_set(GTK_LIST_STORE(model), &iter, IUPGTK_LIST_IMAGE, pixImage, -1);
+    }
+  }
+  else
+  {
+    gtk_list_store_set(GTK_LIST_STORE(model), &iter, IUPGTK_LIST_IMAGE, NULL, -1);
+  }
+
   return 0;
 }
 
