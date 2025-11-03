@@ -89,6 +89,7 @@ int iupUnixMakeDirectory(const char* name);
 int iupmotSetTrayAttrib(Ihandle* ih, const char* value);
 int iupmotSetTrayTipAttrib(Ihandle* ih, const char* value);
 int iupmotSetTrayImageAttrib(Ihandle* ih, const char* value);
+int iupmotSetTrayMenuAttrib(Ihandle* ih, const char* value);
 void iupmotTrayCleanup(Ihandle* ih);
 
 

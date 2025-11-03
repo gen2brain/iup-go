@@ -556,6 +556,16 @@ int iupmotSetTrayImageAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+int iupmotSetTrayMenuAttrib(Ihandle* ih, const char* value)
+{
+  /* XEmbed tray doesn't support automatic menu popup via TRAYMENU.
+   * Applications should use TRAYCLICK_CB callback to show menu manually.
+   */
+  (void)ih;
+  (void)value;
+  return 0;
+}
+
 void iupmotTrayCleanup(Ihandle* ih)
 {
   IupmotTray* tray = (IupmotTray*)iupAttribGet(ih, "_IUPMOT_TRAY");

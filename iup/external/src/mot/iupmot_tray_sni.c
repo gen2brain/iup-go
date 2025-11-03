@@ -5,6 +5,7 @@
  */
 
 #include <Xm/Xm.h>
+#include <Xm/RowColumn.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
@@ -104,6 +105,7 @@ typedef struct _IupmotSNI {
   int last_button;
   int cleanup_in_progress;
   int ref_count;
+  Ihandle* menu_ih;
 } IupmotSNI;
 
 static int motSNIDoubleClick(IupmotSNI* sni, int button)
@@ -260,7 +262,25 @@ static DBusHandlerResult motSNIMessageHandler(DBusConnection* connection, DBusMe
     dbus_connection_send(connection, reply, NULL);
     dbus_message_unref(reply);
 
-    motSNIInvokeCallback(sni, 3, 1, x, y);
+    /* If TRAYMENU is set, popup the menu automatically */
+    if (sni->menu_ih && sni->menu_ih->handle)
+    {
+      Widget menu = (Widget)sni->menu_ih->handle;
+      /* Create a synthetic button event for menu positioning */
+      XButtonEvent ev;
+      memset(&ev, 0, sizeof(XButtonEvent));
+      ev.type = ButtonPress;
+      ev.x_root = x;
+      ev.y_root = y;
+
+      XmMenuPosition(menu, &ev);
+      XtManageChild(menu);
+    }
+    else
+    {
+      /* Otherwise call TRAYCLICK_CB for backward compatibility */
+      motSNIInvokeCallback(sni, 3, 1, x, y);
+    }
     return DBUS_HANDLER_RESULT_HANDLED;
   }
 
@@ -717,6 +737,7 @@ static IupmotSNI* motGetSNI(Ihandle* ih)
     sni->ih = ih;
     sni->visible = 0;
     sni->last_button = -1;
+    sni->menu_ih = NULL;
 
     sni->connection = dbus_bus_get(DBUS_BUS_SESSION, &error);
     if (dbus_error_is_set(&error))
@@ -872,6 +893,33 @@ int iupmotSetTrayImageAttrib(Ihandle* ih, const char* value)
   }
 
   motSNIEmitSignal(sni, "NewIcon");
+
+  return 1;
+}
+
+int iupmotSetTrayMenuAttrib(Ihandle* ih, const char* value)
+{
+  IupmotSNI* sni = motGetSNI(ih);
+  if (!sni)
+    return 0;
+
+  if (!value || !value[0])
+  {
+    sni->menu_ih = NULL;
+    return 1;
+  }
+
+  Ihandle* menu_ih = IupGetHandle(value);
+
+  if (menu_ih && iupObjectCheck(menu_ih))
+  {
+    sni->menu_ih = menu_ih;
+    return 1;
+  }
+  else
+  {
+    sni->menu_ih = NULL;
+  }
 
   return 1;
 }
