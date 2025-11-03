@@ -98,7 +98,8 @@ gboolean iupgtkDialogDeleteEvent(GtkWidget *widget, GdkEvent *evt, Ihandle *ih);
 int iupgtkSetTrayAttrib(Ihandle *ih, const char *value);
 int iupgtkSetTrayTipAttrib(Ihandle *ih, const char *value);
 int iupgtkSetTrayImageAttrib(Ihandle *ih, const char *value);
-void iupgtkTrayCleanup(Ihandle *ih);
+int iupgtkSetTrayMenuAttrib(Ihandle *ih, const char *value);
+int iupgtkTrayCleanup(Ihandle *ih);
 #endif
 
 int iupgtkIsSystemDarkMode(void);

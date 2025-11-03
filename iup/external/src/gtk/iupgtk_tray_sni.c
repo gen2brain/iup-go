@@ -85,6 +85,7 @@ typedef struct _IupGtkSNI {
   gboolean visible;
   gint last_x;
   gint last_y;
+  Ihandle* menu_ih;
 } IupGtkSNI;
 
 static int gtkSNIDoubleClick(int button)
@@ -272,8 +273,15 @@ static void gtkSNIHandleMethodCall(GDBusConnection* connection,
 
     g_dbus_method_invocation_return_value(invocation, NULL);
 
-    if (cb)
+    /* If TRAYMENU is set, popup the menu automatically */
+    if (sni->menu_ih && sni->menu_ih->handle)
     {
+      /* IupPopup will call iupdrvMenuPopup which enters a recursive gtk_main() loop. */
+      IupPopup(sni->menu_ih, IUP_MOUSEPOS, IUP_MOUSEPOS);
+    }
+    else if (cb)
+    {
+      /* Otherwise call TRAYCLICK_CB for backward compatibility */
       IupGtkSNICallbackData* data = g_new(IupGtkSNICallbackData, 1);
       data->ih = sni->ih;
       data->button = button;
@@ -453,6 +461,7 @@ static IupGtkSNI* gtkGetSNI(Ihandle* ih)
     sni->visible = FALSE;
     sni->last_x = -1;
     sni->last_y = -1;
+    sni->menu_ih = NULL;
 
     sni->connection = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
     if (!sni->connection)
@@ -558,7 +567,34 @@ int iupgtkSetTrayImageAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupgtkTrayCleanup(Ihandle* ih)
+int iupgtkSetTrayMenuAttrib(Ihandle* ih, const char* value)
+{
+  IupGtkSNI* sni = gtkGetSNI(ih);
+  if (!sni)
+    return 0;
+
+  if (!value || !value[0])
+  {
+    sni->menu_ih = NULL;
+    return 1;
+  }
+
+  Ihandle* menu_ih = IupGetHandle(value);
+
+  if (menu_ih && iupObjectCheck(menu_ih))
+  {
+    sni->menu_ih = menu_ih;
+    return 1;
+  }
+  else
+  {
+    sni->menu_ih = NULL;
+  }
+
+  return 1;
+}
+
+int iupgtkTrayCleanup(Ihandle* ih)
 {
   IupGtkSNI* sni = (IupGtkSNI*)iupAttribGet(ih, "_IUPGTK_SNI");
 
@@ -584,7 +620,9 @@ void iupgtkTrayCleanup(Ihandle* ih)
     g_free(sni);
 
     iupAttribSet(ih, "_IUPGTK_SNI", NULL);
+    return 1; /* Tray was cleaned up */
   }
+  return 0; /* No tray to clean up */
 }
 
 #else /* GTK 2 */
