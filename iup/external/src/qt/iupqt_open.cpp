@@ -486,14 +486,6 @@ extern "C" int iupdrvOpen(int *argc, char ***argv)
   if (argv && *argv && (*argv)[0] && (*argv)[0][0] != 0)
   {
     IupStoreGlobal("ARGV0", (*argv)[0]);
-
-    QString app_path = QString::fromUtf8((*argv)[0]);
-    QString app_name = QFileInfo(app_path).baseName();
-    if (!app_name.isEmpty())
-    {
-      qt_application->setApplicationName(app_name);
-      IupStoreGlobal("APPNAME", app_name.toUtf8().constData());
-    }
   }
 
   QString locale = QLocale::system().name();
@@ -516,6 +508,41 @@ extern "C" int iupdrvOpen(int *argc, char ***argv)
   IupStoreGlobal("QTSTYLE", style_name.toUtf8().constData());
 
   return IUP_NOERROR;
+}
+
+extern "C" int iupdrvSetGlobalAppIDAttrib(const char* value)
+{
+  static int appid_set = 0;
+  if (appid_set || !value || !value[0])
+    return 0;
+
+  QApplication* app = iupqtGetApplication();
+  if (!app)
+    return 0;
+
+  QString appid = QString::fromUtf8(value);
+
+  if (!appid.endsWith(".desktop"))
+    appid += ".desktop";
+
+  app->setDesktopFileName(appid);
+  appid_set = 1;
+  return 1;
+}
+
+extern "C" int iupdrvSetGlobalAppNameAttrib(const char* value)
+{
+  static int appname_set = 0;
+  if (appname_set || !value || !value[0])
+    return 0;
+
+  QApplication* app = iupqtGetApplication();
+  if (!app)
+    return 0;
+
+  app->setApplicationName(QString::fromUtf8(value));
+  appname_set = 1;
+  return 1;
 }
 
 extern "C" void iupdrvClose(void)
