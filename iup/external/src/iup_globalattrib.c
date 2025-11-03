@@ -136,13 +136,25 @@ static void iGlobalSet(const char *name, const char *value, int store)
   if (iupStrEqual(name, "MOUSEBUTTON"))
   {
     int x, y, status;
-    char bt; 
+    char bt;
     if (value && sscanf(value, "%dx%d %c %d", &x, &y, &bt, &status) == 4)
       iupdrvSendMouse(x, y, bt, status);
     return;
   }
+  if (iupStrEqual(name, "APPID"))
+  {
+    if (iupdrvSetGlobalAppIDAttrib(value))
+      iGlobalTableSet(name, value, store);
+    return;
+  }
+  if (iupStrEqual(name, "APPNAME"))
+  {
+    if (iupdrvSetGlobalAppNameAttrib(value))
+      iGlobalTableSet(name, value, store);
+    return;
+  }
 
-  if (iGlobalChangingDefaultColor(name) || 
+  if (iGlobalChangingDefaultColor(name) ||
       iupdrvSetGlobal(name, value))
     iGlobalTableSet(name, value, store);
 }

@@ -111,6 +111,14 @@ IUP_SDK_API void iupdrvSleep(int time);
  * \ingroup drv */
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title);
 
+/** Sets the application identifier (for Wayland/XDG desktop file name).
+ * \ingroup drv */
+IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value);
+
+/** Sets the application name (for taskbar, dock, window manager).
+ * \ingroup drv */
+IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value);
+
 
 /* Called only from IupOpen/IupClose. */
 int iupdrvOpen(int *argc, char ***argv);
