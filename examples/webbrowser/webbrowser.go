@@ -113,6 +113,10 @@ func loadCallback(ih iup.Ihandle) int {
 func webBrowserTest() {
 	iup.WebBrowserOpen()
 
+	if iup.GetGlobal("IUP_WEBBROWSER_MISSING_LIB") != "" {
+		fmt.Println("cannot find", iup.GetGlobal("IUP_WEBBROWSER_MISSING_LIB"))
+	}
+
 	// Create web browser control
 	web := iup.WebBrowser()
 
