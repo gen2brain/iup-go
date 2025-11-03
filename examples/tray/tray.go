@@ -30,51 +30,63 @@ func main() {
 			iup.Canvas(),
 			iup.Fill(),
 		),
-	).SetHandle("dlg").SetAttributes(map[string]string{
+	).SetHandle("dlg")
+
+	itemShow := iup.Item("Show").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		dlg.SetAttribute("HIDETASKBAR", "NO")
+		return iup.DEFAULT
+	}))
+
+	itemHide := iup.Item("Hide").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		dlg.SetAttribute("HIDETASKBAR", "YES")
+		return iup.DEFAULT
+	}))
+
+	itemExit := iup.Item("Exit").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		dlg.SetAttribute("TRAY", "NO")
+		dlg.Destroy()
+		return iup.DEFAULT
+	}))
+
+	trayMenu := iup.Menu(itemShow, itemHide, iup.Separator(), itemExit)
+	trayMenu.SetHandle("traymenu")
+
+	// This example covers both the menu set via TRAYMENU for SNI and iup.Popup menu for other implementations.
+	dlg.SetAttributes(map[string]string{
 		"TITLE":     "Tray",
 		"TRAY":      "YES",
-		"TRAYTIP":   "This is a tip at tray",
+		"TRAYMENU":  "traymenu",
 		"TRAYIMAGE": "myicon",
+		"TRAYTIP":   "This is a tip at tray",
 		"ICON":      "myicon",
 		"SIZE":      "100x100",
 	})
 
 	dlg.SetCallback("TRAYCLICK_CB", iup.TrayClickFunc(trayClickCb))
+
 	dlg.SetCallback("CLOSE_CB", iup.CloseFunc(func(ih iup.Ihandle) int {
 		dlg.SetAttribute("HIDETASKBAR", "YES")
 		return iup.IGNORE
 	}))
 
+	iup.Map(trayMenu)
+
 	iup.Show(dlg)
+
 	iup.MainLoop()
 }
 
 func trayClickCb(ih iup.Ihandle, but, pressed, dclick int) int {
 	dlg := iup.GetHandle("dlg")
 
-	if but == 3 && pressed == 1 {
-		itemShow := iup.Item("Show").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			dlg.SetAttribute("HIDETASKBAR", "NO")
-			return iup.DEFAULT
-		}))
-
-		itemHide := iup.Item("Hide").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			dlg.SetAttribute("HIDETASKBAR", "YES")
-			return iup.DEFAULT
-		}))
-
-		itemExit := iup.Item("Exit").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			dlg.SetAttribute("TRAY", "NO")
-			dlg.Destroy()
-			return iup.DEFAULT
-		}))
-
-		menu := iup.Menu(itemShow, itemHide, iup.Separator(), itemExit)
-		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
-		iup.Destroy(menu)
-		return iup.DEFAULT
-	} else if but == 1 && pressed == 1 {
+	if but == 1 && pressed == 1 {
 		dlg.SetAttribute("HIDETASKBAR", "NO")
+		return iup.DEFAULT
+	}
+
+	if but == 3 && pressed == 1 {
+		menu := iup.GetHandle("traymenu")
+		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
 		return iup.DEFAULT
 	}
 
