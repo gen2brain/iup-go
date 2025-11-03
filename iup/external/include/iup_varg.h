@@ -48,5 +48,8 @@ IUP_API int       IupGetParamV(const char* title, Iparamcb action, void* user_da
 IUP_GLCONTROLS_API Ihandle*  IupGLCanvasBoxV(Ihandle* child, va_list arglist);
 #endif
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
