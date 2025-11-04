@@ -282,7 +282,7 @@ static void qtSetGlobalAttrib(void)
 
   if (platform == "xcb")
   {
-    IupSetGlobal("QT_PLATFORM", "X11");
+    IupSetGlobal("QTPLATFORM", "X11");
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && defined(Q_OS_LINUX)
     /* Qt 6.2+: Use QX11Application native interface (Linux only) */
@@ -301,7 +301,7 @@ static void qtSetGlobalAttrib(void)
   }
   else if (platform == "wayland")
   {
-    IupSetGlobal("QT_PLATFORM", "WAYLAND");
+    IupSetGlobal("QTPLATFORM", "WAYLAND");
 
 #if defined(IUP_QT_HAS_WAYLAND_APP) && defined(Q_OS_LINUX)
     /* Qt 6.5+: Use QWaylandApplication native interface (Linux only) */
@@ -318,16 +318,16 @@ static void qtSetGlobalAttrib(void)
   }
   else if (platform == "windows")
   {
-    IupSetGlobal("QT_PLATFORM", "WIN32");
+    IupSetGlobal("QTPLATFORM", "WIN32");
   }
   else if (platform == "cocoa")
   {
-    IupSetGlobal("QT_PLATFORM", "COCOA");
+    IupSetGlobal("QTPLATFORM", "COCOA");
   }
   else
   {
     /* Unknown platform - set platform name as-is */
-    IupStoreGlobal("QT_PLATFORM", platform.toUtf8().constData());
+    IupStoreGlobal("QTPLATFORM", platform.toUtf8().constData());
   }
 
 #else
@@ -339,27 +339,27 @@ static void qtSetGlobalAttrib(void)
 
   if (platform == "xcb")
   {
-    IupSetGlobal("QT_PLATFORM", "X11");
+    IupSetGlobal("QTPLATFORM", "X11");
     /* Note: XDISPLAY not set in Qt5 - QPlatformNativeInterface requires private headers.
      * Applications can manually set XDISPLAY if needed using platform-specific code. */
   }
   else if (platform == "wayland")
   {
-    IupSetGlobal("QT_PLATFORM", "WAYLAND");
+    IupSetGlobal("QTPLATFORM", "WAYLAND");
     /* Note: WL_DISPLAY not set in Qt5 (would require private headers) */
   }
   else if (platform == "windows")
   {
-    IupSetGlobal("QT_PLATFORM", "WIN32");
+    IupSetGlobal("QTPLATFORM", "WIN32");
   }
   else if (platform == "cocoa")
   {
-    IupSetGlobal("QT_PLATFORM", "COCOA");
+    IupSetGlobal("QTPLATFORM", "COCOA");
   }
   else
   {
     /* Unknown platform - set platform name as-is */
-    IupStoreGlobal("QT_PLATFORM", platform.toUtf8().constData());
+    IupStoreGlobal("QTPLATFORM", platform.toUtf8().constData());
   }
 
 #endif  /* Qt version check */
