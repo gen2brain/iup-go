@@ -46,20 +46,44 @@
 void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
-  int spin_size = 2*22;
+  static int spin_min_width = -1;
+
+  (void)h;
+  (void)ih;
+
+  /* Measure the minimum width required by GtkSpinButton */
+  if (spin_min_width < 0)
+  {
+    GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
+    int min_w, nat_w;
+
+    gtk_widget_get_preferred_width(temp_spin, &min_w, &nat_w);
+    spin_min_width = min_w;
+
+    g_object_ref_sink(temp_spin);
+    g_object_unref(temp_spin);
+  }
+
+  /* Only enforce minimum width, don't force expansion */
+  if (*w < spin_min_width)
+    *w = spin_min_width;
 #else
   int spin_size = 16;
-#endif
   *w += spin_size;
   (void)h;
   (void)ih;
+#endif
 }
 
 void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
   /* Used also by IupCalendar in GTK */
   /* LAYOUT_DECORATION_ESTIMATE */
+#if GTK_CHECK_VERSION(3, 0, 0)
+  int border_size = 2 * 9;
+#else
   int border_size = 2 * 5;
+#endif
   (*x) += border_size;
   (*y) += border_size;
 
@@ -1690,6 +1714,14 @@ static int gtkTextMapMethod(Ihandle* ih)
 
     /* formatting is never supported when MULTILINE=NO */
     ih->data->has_formatting = 0;
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+    /* Set natural alignment */
+    gtk_widget_set_hexpand(ih->handle, FALSE);
+    gtk_widget_set_vexpand(ih->handle, FALSE);
+    gtk_widget_set_halign(ih->handle, GTK_ALIGN_FILL);
+    gtk_widget_set_valign(ih->handle, GTK_ALIGN_CENTER);
+#endif
 
     gtk_entry_set_has_frame((GtkEntry*)ih->handle, iupAttribGetBoolean(ih, "BORDER"));
     gtk_entry_set_width_chars((GtkEntry*)ih->handle, 1);  /* minimum size */
