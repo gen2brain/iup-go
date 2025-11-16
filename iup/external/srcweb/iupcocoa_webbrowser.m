@@ -332,12 +332,119 @@ static int write_file(const char* filename, const char* str, int count)
   return 1;
 }
 
+static char* cocoaWKWebBrowserGetMimeType(const char* filename)
+{
+  const char* ext = strrchr(filename, '.');
+  if (!ext)
+    return iupStrDup("image/png");
+
+  ext++;
+  if (iupStrEqualNoCase(ext, "png"))
+    return iupStrDup("image/png");
+  else if (iupStrEqualNoCase(ext, "jpg") || iupStrEqualNoCase(ext, "jpeg"))
+    return iupStrDup("image/jpeg");
+  else if (iupStrEqualNoCase(ext, "gif"))
+    return iupStrDup("image/gif");
+  else if (iupStrEqualNoCase(ext, "svg"))
+    return iupStrDup("image/svg+xml");
+  else if (iupStrEqualNoCase(ext, "webp"))
+    return iupStrDup("image/webp");
+  else if (iupStrEqualNoCase(ext, "bmp"))
+    return iupStrDup("image/bmp");
+
+  return iupStrDup("image/png");
+}
+
+static char* cocoaWKWebBrowserBase64Encode(const unsigned char* data, size_t len)
+{
+  static const char base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  size_t encoded_len = 4 * ((len + 2) / 3);
+  char* encoded = (char*)malloc(encoded_len + 1);
+  if (!encoded)
+    return NULL;
+
+  size_t i = 0, j = 0;
+  while (i < len)
+  {
+    unsigned char a = i < len ? data[i++] : 0;
+    unsigned char b = i < len ? data[i++] : 0;
+    unsigned char c = i < len ? data[i++] : 0;
+
+    encoded[j++] = base64_chars[a >> 2];
+    encoded[j++] = base64_chars[((a & 0x03) << 4) | (b >> 4)];
+    encoded[j++] = (i > len + 1) ? '=' : base64_chars[((b & 0x0F) << 2) | (c >> 6)];
+    encoded[j++] = (i > len) ? '=' : base64_chars[c & 0x3F];
+  }
+
+  encoded[j] = '\0';
+  return encoded;
+}
+
+static char* cocoaWKWebBrowserFileToDataURI(const char* filename)
+{
+  FILE* file = fopen(filename, "rb");
+  if (!file)
+    return NULL;
+
+  fseek(file, 0, SEEK_END);
+  long file_size = ftell(file);
+  fseek(file, 0, SEEK_SET);
+
+  if (file_size <= 0 || file_size > 10 * 1024 * 1024)
+  {
+    fclose(file);
+    return NULL;
+  }
+
+  unsigned char* buffer = (unsigned char*)malloc(file_size);
+  if (!buffer)
+  {
+    fclose(file);
+    return NULL;
+  }
+
+  size_t bytes_read = fread(buffer, 1, file_size, file);
+  fclose(file);
+
+  if (bytes_read != (size_t)file_size)
+  {
+    free(buffer);
+    return NULL;
+  }
+
+  char* mime_type = cocoaWKWebBrowserGetMimeType(filename);
+  char* base64_data = cocoaWKWebBrowserBase64Encode(buffer, file_size);
+  free(buffer);
+
+  if (!base64_data)
+  {
+    free(mime_type);
+    return NULL;
+  }
+
+  size_t data_uri_len = strlen(mime_type) + strlen(base64_data) + 50;
+  char* data_uri = (char*)malloc(data_uri_len);
+  if (!data_uri)
+  {
+    free(mime_type);
+    free(base64_data);
+    return NULL;
+  }
+
+  snprintf(data_uri, data_uri_len, "data:%s;base64,%s", mime_type, base64_data);
+
+  free(mime_type);
+  free(base64_data);
+
+  return data_uri;
+}
+
 static void cocoaWKWebBrowserExecCommand(Ihandle* ih, const char* cmd)
 {
 	WKWebView* web_view = (WKWebView*)ih->handle;
 
 	NSString* cmd_js = cocoaWKWebBrowserEscapeJavaScript(cmd);
-	NSString* js_cmd = [NSString stringWithFormat:@"window.iupRestoreSelection(); document.execCommand(%@, false, null);", cmd_js];
+	NSString* js_cmd = [NSString stringWithFormat:@"document.body.focus(); if (window.iupRestoreSelection) window.iupRestoreSelection(); document.execCommand(%@, false, null);", cmd_js];
 
 	if ([NSThread isMainThread])
 	{
@@ -358,7 +465,7 @@ static void cocoaWKWebBrowserExecCommandParam(Ihandle* ih, const char* cmd, cons
 	WKWebView* web_view = (WKWebView*)ih->handle;
 	NSString* cmd_js = cocoaWKWebBrowserEscapeJavaScript(cmd);
 	NSString* param_js = cocoaWKWebBrowserEscapeJavaScript(param);
-	NSString* js_cmd = [NSString stringWithFormat:@"window.iupRestoreSelection(); document.execCommand(%@, false, %@);", cmd_js, param_js];
+	NSString* js_cmd = [NSString stringWithFormat:@"document.body.focus(); if (window.iupRestoreSelection) window.iupRestoreSelection(); document.execCommand(%@, false, %@);", cmd_js, param_js];
 
 	if ([NSThread isMainThread])
 	{
@@ -706,15 +813,16 @@ static int cocoaWKWebBrowserSetInsertImageAttrib(Ihandle* ih, const char* value)
 
 static int cocoaWKWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* value)
 {
-	if (value)
+	if (!value)
+		return 0;
+
+	char* data_uri = cocoaWKWebBrowserFileToDataURI(value);
+	if (data_uri)
 	{
-		char* url = iupStrFileMakeURL(value);
-		if (url)
-		{
-			cocoaWKWebBrowserExecCommandParam(ih, "insertImage", url);
-			free(url);
-		}
+		cocoaWKWebBrowserSetInsertImageAttrib(ih, data_uri);
+		free(data_uri);
 	}
+
 	return 0;
 }
 
@@ -778,7 +886,15 @@ static char* cocoaWKWebBrowserGetFormatBlockAttrib(Ihandle* ih)
 static int cocoaWKWebBrowserSetForeColorAttrib(Ihandle* ih, const char* value)
 {
 	if (value)
-		cocoaWKWebBrowserExecCommandParam(ih, "foreColor", value);
+	{
+		unsigned char r, g, b;
+		if (iupStrToRGB(value, &r, &g, &b))
+		{
+			char rgb_color[32];
+			sprintf(rgb_color, "rgb(%d,%d,%d)", r, g, b);
+			cocoaWKWebBrowserExecCommandParam(ih, "foreColor", rgb_color);
+		}
+	}
 	return 0;
 }
 
@@ -790,7 +906,15 @@ static char* cocoaWKWebBrowserGetForeColorAttrib(Ihandle* ih)
 static int cocoaWKWebBrowserSetBackColorAttrib(Ihandle* ih, const char* value)
 {
 	if (value)
-		cocoaWKWebBrowserExecCommandParam(ih, "backColor", value);
+	{
+		unsigned char r, g, b;
+		if (iupStrToRGB(value, &r, &g, &b))
+		{
+			char rgb_color[32];
+			sprintf(rgb_color, "rgb(%d,%d,%d)", r, g, b);
+			cocoaWKWebBrowserExecCommandParam(ih, "backColor", rgb_color);
+		}
+	}
 	return 0;
 }
 
