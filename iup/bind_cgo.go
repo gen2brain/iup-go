@@ -29,7 +29,6 @@ package iup
 #cgo qt,qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets
 #cgo qt,!qt5,web,!nopkgconfig pkg-config: Qt6WebEngineCore Qt6WebEngineWidgets
 #cgo qt,qt5,web,!nopkgconfig pkg-config: Qt5WebEngineCore  Qt5WebEngineWidgets
-#cgo qt,!qt5,gl,!nopkgconfig CXXFLAGS: -I/usr/include/qt6/QtCore/6.9.3 -I/usr/include/qt6/QtGui/6.9.3
 
 #cgo !windows,!darwin,motif LDFLAGS: -lXm -lXmu -lXt -lXext -lX11
 #cgo !windows,!darwin,linux,motif LDFLAGS: -lXpm
