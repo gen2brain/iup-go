@@ -52,7 +52,7 @@ static void motSaveAttributesRec(Ihandle* ih)
 
 IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 {
-  /* Intrinsics and Motif do NOT support reparent. 
+  /* Intrinsics and Motif do NOT support reparent.
      XReparentWindow can NOT be used because will reparent only the X-Windows windows.
      So must unmap and map again to obtain the same effect. */
   Widget new_parent = iupChildTreeGetNativeParentHandle(ih);
@@ -64,9 +64,11 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
     int old_visible = IupGetInt(ih, "VISIBLE");
     if (old_visible)
       IupSetAttribute(ih, "VISIBLE", "NO");
+
     motSaveAttributesRec(ih); /* this does not save everything... */
     IupUnmap(ih);
     IupMap(ih);
+
     if (old_visible)
       IupSetAttribute(ih, "VISIBLE", "Yes");
   }

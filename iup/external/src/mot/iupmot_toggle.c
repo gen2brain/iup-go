@@ -42,8 +42,8 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 
   /* has margins too */
   (*x) += 3 + check_box + 3;
-  if ((*y) < 3 + check_box + 3) (*y) = 3 + check_box + 3; /* minimum height */
-  else (*y) += 3+3;
+  if ((*y) < 3 + check_box + 5) (*y) = 3 + check_box + 5; /* minimum height - extra space for descenders */
+  else (*y) += 3+5;
 
   if (str && str[0]) /* add spacing between check box and text */
     (*x) += 4;

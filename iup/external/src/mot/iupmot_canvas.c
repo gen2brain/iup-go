@@ -70,7 +70,7 @@ static void motCanvasScrollbarCallback(Widget w, XtPointer client_data, XtPointe
     cb(ih, op, (float)posx, (float)posy);
   else
   {
-    IFnff action_cb = (IFnff)IupGetCallback(ih,"ACTION");
+    IFn action_cb = (IFn)IupGetCallback(ih,"ACTION");
     if (action_cb)
     {
       /* REDRAW Now (since 3.24) - to allow a full native redraw process */
@@ -169,20 +169,20 @@ static int motCanvasSetBgColorAttrib(Ihandle* ih, const char* value);
 
 static void motCanvasExposeCallback(Widget w, Ihandle *ih, XtPointer call_data)
 {
-  IFnff cb;
+  IFn cb;
   (void)call_data;
 
   if (!XtWindow(w) || !ih)
     return;
 
-  cb = (IFnff)IupGetCallback(ih,"ACTION");
+  cb = (IFn)IupGetCallback(ih,"ACTION");
   if (cb && !(ih->data->inside_resize))
   {
     if (!iupAttribGet(ih, "_IUPMOT_NO_BGCOLOR"))
       motCanvasSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));  /* reset to update window attributes */
 
     iupAttribSet(ih, "DRAWABLE", (char*)XtWindow(w));
-    cb(ih, (float)ih->data->posx, (float)ih->data->posy);
+    cb(ih);
   }
 }
 
