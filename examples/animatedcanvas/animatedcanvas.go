@@ -14,7 +14,7 @@ func main() {
 	defer iup.Close()
 
 	cv := iup.Canvas().SetAttributes("SIZE=500x200")
-	cv.SetCallback("ACTION", iup.CanvasActionFunc(actionCb))
+	cv.SetCallback("ACTION", iup.ActionFunc(actionCb))
 
 	// Set up a timer to periodically redraw the canvas, creating the animation.
 	timer := iup.Timer().SetAttribute("TIME", "40") // Update roughly 25 times per second.
@@ -38,7 +38,7 @@ func main() {
 	iup.MainLoop()
 }
 
-func actionCb(ih iup.Ihandle, posx, posy float64) int {
+func actionCb(ih iup.Ihandle) int {
 	iup.DrawBegin(ih)
 	defer iup.DrawEnd(ih)
 

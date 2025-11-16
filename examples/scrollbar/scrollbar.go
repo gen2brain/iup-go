@@ -17,19 +17,23 @@ func main() {
 
 	canvas.SetCallback("SCROLL_CB", iup.ScrollFunc(scrollCb))
 	canvas.SetCallback("RESIZE_CB", iup.ResizeFunc(resizeCb))
-	canvas.SetCallback("ACTION", iup.CanvasActionFunc(action))
+	canvas.SetCallback("ACTION", iup.ActionFunc(action))
 
 	dlg := iup.Dialog(canvas).SetAttribute("TITLE", "Scrollbar")
-
-	iup.Map(dlg)
-	iup.SetAttribute(canvas, "RASTERSIZE", nil) // release the minimum limitation
 
 	iup.Show(dlg)
 	iup.MainLoop()
 }
 
 func scrollCb(ih iup.Ihandle, op int, posx, posy float64) int {
-	action(ih, posx, posy)
+	iposx := int(posx)
+	iposy := 399 - iup.GetInt(ih, "DY") - int(posy)
+
+	iup.DrawBegin(ih)
+	iup.DrawParentBackground(ih)
+	iup.DrawLine(ih, 0-iposx, 0-iposy, 599-iposx, 399-iposy)
+	iup.DrawLine(ih, 0-iposx, 399-iposy, 599-iposx, 0-iposy)
+	iup.DrawEnd(ih)
 	return iup.DEFAULT
 }
 
@@ -39,15 +43,7 @@ func resizeCb(ih iup.Ihandle, width, height int) int {
 	return iup.DEFAULT
 }
 
-func action(ih iup.Ihandle, posx, posy float64) int {
-	iposx := int(posx)
-	iposy := 399 - iup.GetInt(ih, "DY") - int(posy)
-
-	iup.DrawBegin(ih)
-	iup.DrawParentBackground(ih)
-	iup.DrawLine(ih, 0-iposx, 0-iposy, 599-iposx, 399-iposy)
-	iup.DrawLine(ih, 0-iposx, 399-iposy, 599-iposx, 0-iposy)
-	iup.DrawEnd(ih)
-
+func action(ih iup.Ihandle) int {
+	scrollCb(ih, 0, 0, 0)
 	return iup.DEFAULT
 }

@@ -12,10 +12,10 @@ func main() {
 	defer iup.Close()
 
 	cv := iup.Canvas().SetAttributes("RASTERSIZE=500x300")
-	cv.SetCallback("ACTION", iup.CanvasActionFunc(actionCb))
+	cv.SetCallback("ACTION", iup.ActionFunc(actionCb))
 
 	dlg := iup.Dialog(
-		iup.Frame(cv),
+		iup.Vbox(cv),
 	).SetAttribute("TITLE", "Canvas")
 
 	iup.Show(dlg)
@@ -23,7 +23,7 @@ func main() {
 }
 
 // actionCb is the callback function that handles the drawing on the canvas.
-func actionCb(ih iup.Ihandle, posx, posy float64) int {
+func actionCb(ih iup.Ihandle) int {
 	iup.DrawBegin(ih)
 	defer iup.DrawEnd(ih) // Ensure DrawEnd is always called.
 
