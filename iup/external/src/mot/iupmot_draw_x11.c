@@ -333,13 +333,17 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   XPoint stack_pnt[256]; /* Stack buffer for small polygons - avoid malloc overhead */
   XPoint* pnt;
   int use_heap = 0;
+  int pnt_count;
 
   /* Use stack buffer for small polygons, heap for large ones */
-  if (count <= 256)
+  /* For stroked polygons, we need count+1 points to close the path */
+  pnt_count = (style == IUP_DRAW_FILL) ? count : count + 1;
+
+  if (pnt_count <= 256)
     pnt = stack_pnt;
   else
   {
-    pnt = (XPoint*)malloc(count * sizeof(XPoint)); /* XPoint uses short for coordinates */
+    pnt = (XPoint*)malloc(pnt_count * sizeof(XPoint)); /* XPoint uses short for coordinates */
     use_heap = 1;
   }
 
@@ -347,6 +351,13 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   {
     pnt[i].x = (short)points[2*i];
     pnt[i].y = (short)points[2*i+1];
+  }
+
+  /* For stroked polygons, close the path by adding first point at the end */
+  if (style != IUP_DRAW_FILL)
+  {
+    pnt[count].x = pnt[0].x;
+    pnt[count].y = pnt[0].y;
   }
 
   XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
@@ -357,7 +368,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   {
     iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
 
-    XDrawLines(iupmot_display, dc->pixmap, dc->pixmap_gc, pnt, count, CoordModeOrigin);
+    XDrawLines(iupmot_display, dc->pixmap, dc->pixmap_gc, pnt, pnt_count, CoordModeOrigin);
   }
 
   if (use_heap)
@@ -524,11 +535,13 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   /* must use this info, since image can be a driver image loaded from resources */
   iupdrvImageGetInfo((void*)pixmap, &img_w, &img_h, &bpp);
 
-  XCopyArea(iupmot_display, pixmap, dc->pixmap, dc->pixmap_gc, 0, 0, img_w, img_h, x, y);
-
-  /* zoom not supported */
+  /* Image scaling not supported in X11 driver */
+  if (w == -1 || w == 0) w = img_w;
+  if (h == -1 || h == 0) h = img_h;
   (void)w;
   (void)h;
+
+  XCopyArea(iupmot_display, pixmap, dc->pixmap, dc->pixmap_gc, 0, 0, img_w, img_h, x, y);
 }
 
 IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
