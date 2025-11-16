@@ -717,7 +717,8 @@ static int gtkDialogMapMethod(Ihandle* ih)
   gtk_widget_realize(ih->handle);
 
   /* Apply X11 WM_CLASS property if APPID is set */
-#ifdef GDK_WINDOWING_X11
+#if GTK_CHECK_VERSION(3, 0, 0) && defined(GDK_WINDOWING_X11)
+  /* Set WM_CLASS for X11 windows */
   {
     const char* appid = IupGetGlobal("_IUP_APPID_INTERNAL");
     if (appid)

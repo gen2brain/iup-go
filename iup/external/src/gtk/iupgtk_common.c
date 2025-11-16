@@ -11,6 +11,10 @@
 
 #include <gtk/gtk.h>
 
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#endif
+
 #include "iup.h"
 #include "iupcbs.h"
 #include "iupkey.h"
@@ -28,6 +32,9 @@
 #include "iup_assert.h"
 
 #include "iupgtk_drv.h"
+
+/* Global state variables for GTK Fixed container */
+static int iupGtkFixedIsGLCanvas = 0;
 
 #if GTK_CHECK_VERSION(3, 0, 0)
 typedef struct _iupGtkFixed
@@ -58,6 +65,15 @@ static int iupGtkFixedWindow = 0;
 
 static void iup_gtk_fixed_init (iupGtkFixed *fixed)
 {
+#ifdef GDK_WINDOWING_WAYLAND
+  GdkDisplay* display = gdk_display_get_default();
+  if (display && GDK_IS_WAYLAND_DISPLAY(display) && iupGtkFixedWindow && iupGtkFixedIsGLCanvas)
+  {
+    /* For GL canvas on Wayland, use has_window=FALSE and create subsurface manually */
+    return;
+  }
+#endif
+
   if (iupGtkFixedWindow)
     gtk_widget_set_has_window(GTK_WIDGET(fixed), TRUE);
 }
@@ -93,12 +109,28 @@ GtkWidget* iupgtkNativeContainerNew(int has_window)
 #endif
 
 #if GTK_CHECK_VERSION(2, 18, 0)
+  /* On Wayland, GL canvas containers should NOT have their own GdkWindow.
+   * We create a manual subsurface instead. */
+#ifdef GDK_WINDOWING_WAYLAND
+  {
+    GdkDisplay* display = gdk_display_get_default();
+    if (display && GDK_IS_WAYLAND_DISPLAY(display) && has_window && iupGtkFixedIsGLCanvas)
+    {
+      has_window = 0;
+    }
+  }
+#endif
   gtk_widget_set_has_window(widget, has_window);
 #else
   gtk_fixed_set_has_window(GTK_FIXED(widget), has_window);
 #endif
 
   return widget;
+}
+
+void iupgtkNativeContainerSetGLCanvas(int is_gl)
+{
+  iupGtkFixedIsGLCanvas = is_gl;
 }
 
 void iupgtkNativeContainerAdd(GtkWidget* container, GtkWidget* widget)

@@ -6,6 +6,10 @@
 
 #include <gtk/gtk.h>
 
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -142,7 +146,7 @@ static void gtkCanvasAdjustHorizValueChanged(GtkAdjustment *adjustment, Ihandle 
   }
   else
   {
-    IFnff cb = (IFnff)IupGetCallback(ih,"ACTION");
+    IFn cb = (IFn)IupGetCallback(ih,"ACTION");
     if (cb)
     {
       /* REDRAW Now (since 3.24) - to allow a full native redraw process */
@@ -198,7 +202,7 @@ static void gtkCanvasAdjustVertValueChanged(GtkAdjustment *adjustment, Ihandle *
   }
   else
   {
-    IFnff cb = (IFnff)IupGetCallback(ih,"ACTION");
+    IFn cb = (IFn)IupGetCallback(ih,"ACTION");
     if (cb)
     {
       /* REDRAW Now (since 3.24) - to allow a full native redraw process */
@@ -303,10 +307,37 @@ static gboolean gtkCanvasDraw(GtkWidget *widget, cairo_t* cr, Ihandle *ih)
 static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Ihandle *ih)
 #endif
 {
-  IFnff cb = (IFnff)IupGetCallback(ih,"ACTION");
+  IFn cb = (IFn)IupGetCallback(ih,"ACTION");
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+  /* Check if there's a persistent buffer from SCROLL_CB or other drawing outside ACTION */
+  if (iupAttribGet(ih, "_IUPGTK3_BUFFER_DIRTY"))
+  {
+    cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK3_CANVAS_BUFFER");
+
+    if (buffer)
+    {
+      GdkRectangle rect;
+      gdk_cairo_get_clip_rectangle(cr, &rect);
+
+      int buf_w = cairo_image_surface_get_width(buffer);
+      int buf_h = cairo_image_surface_get_height(buffer);
+
+      /* If buffer exists and matches size, use it instead of calling ACTION */
+      if (buf_w == rect.width && buf_h == rect.height)
+      {
+        cairo_set_source_surface(cr, buffer, 0, 0);
+        cairo_paint(cr);
+        /* Keep dirty flag set - continue using buffer until ACTION is called */
+        return TRUE;  /* Don't call ACTION callback */
+      }
+    }
+  }
+#endif
+
   if (cb && !(ih->data->inside_resize))
   {
-    /* IMPORTANT: this will not fully work at the first time because the GTK internal double buffer already started. 
+    /* IMPORTANT: this will not fully work at the first time because the GTK internal double buffer already started.
                   On the first time, the canvas will be configured correctly but after calling the application callback,
                   GTK will overwrite its contents with the BGCOLOR. */
     if (!iupAttribGet(ih, "_IUPGTK_NO_BGCOLOR"))
@@ -318,12 +349,14 @@ static gboolean gtkCanvasExposeEvent(GtkWidget *widget, GdkEventExpose *evt, Iha
       gdk_cairo_get_clip_rectangle(cr, &rect);
       iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", rect.x, rect.y, rect.x+rect.width-1, rect.y+rect.height-1);
       iupAttribSet(ih, "CAIRO_CR", (char*)cr);
+      /* Clear dirty flag since ACTION is being called */
+      iupAttribSet(ih, "_IUPGTK3_BUFFER_DIRTY", NULL);
     }
 #else
     iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", evt->area.x, evt->area.y, evt->area.x+evt->area.width-1, evt->area.y+evt->area.height-1);
 #endif
 
-    cb(ih, (float)ih->data->posx, (float)ih->data->posy);
+    cb(ih);
 
     iupAttribSet(ih, "CLIPRECT", NULL);
     iupAttribSet(ih, "CAIRO_CR", NULL);
@@ -745,7 +778,13 @@ static int gtkCanvasMapMethod(Ihandle* ih)
 
   /* canvas is also a container */
   /* use a window to be a full native container */
-  ih->handle = iupgtkNativeContainerNew(1);  
+  /* Check if this is a GL canvas to determine Wayland window handling */
+  if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
+    iupgtkNativeContainerSetGLCanvas(1);
+
+  ih->handle = iupgtkNativeContainerNew(1);
+
+  iupgtkNativeContainerSetGLCanvas(0);
 
 #if !GTK_CHECK_VERSION(3, 0, 0)
   if (visual)

@@ -38,6 +38,7 @@ void iupgtkClearSizeStyleCSS(GtkWidget* widget);
 void iupgtkSetMargin(GtkWidget* widget, int horiz_padding, int vert_padding, int mandatory_gtk3);
 
 GtkWidget* iupgtkNativeContainerNew(int has_window);
+void iupgtkNativeContainerSetGLCanvas(int is_gl);
 void iupgtkNativeContainerAdd(GtkWidget* container, GtkWidget* widget);
 void iupgtkNativeContainerMove(GtkWidget* container, GtkWidget* widget, int x, int y);
 
