@@ -51,6 +51,7 @@ typedef struct _IupWinSwitchData
   UINT_PTR timer_id;          /* Timer ID for animation */
   int is_animating;           /* 1 if animation in progress */
   int checked_state;          /* Current checked state (BST_CHECKED or BST_UNCHECKED) */
+  int is_hovering;            /* 1 if mouse is over the control */
 } IupWinSwitchData;
 
 static double winSwitchEaseInOutQuad(double t)
@@ -189,11 +190,13 @@ static void winSwitchCustomDraw(Ihandle* ih, HDC hDC, RECT* rect, UINT itemState
   wdFillPath(canvas, track_brush, track_path);
   wdDestroyPath(track_path);
 
+  /* WinUI 3: Thumb expands from 12x12 to 14x14 on hover */
+  int thumb_size = switch_data->is_hovering ? 14 : SWITCH_THUMB_SIZE;
   float thumb_x_min = (float)SWITCH_THUMB_MARGIN;
-  float thumb_x_max = (float)(SWITCH_TRACK_WIDTH - SWITCH_THUMB_SIZE - SWITCH_THUMB_MARGIN);
+  float thumb_x_max = (float)(SWITCH_TRACK_WIDTH - thumb_size - SWITCH_THUMB_MARGIN);
   float thumb_x = thumb_x_min + (thumb_x_max - thumb_x_min) * (float)switch_data->thumb_position;
-  float thumb_y = (SWITCH_TRACK_HEIGHT - SWITCH_THUMB_SIZE) / 2.0f;
-  float thumb_radius = SWITCH_THUMB_SIZE / 2.0f;
+  float thumb_y = (SWITCH_TRACK_HEIGHT - thumb_size) / 2.0f;
+  float thumb_radius = thumb_size / 2.0f;
 
   wdFillCircle(canvas, thumb_brush, thumb_x + thumb_radius, thumb_y + thumb_radius, thumb_radius);
 
@@ -799,6 +802,25 @@ static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
 
   switch (msg)
   {
+  case WM_MOUSEMOVE:
+    /* Track mouse hover for thumb expansion */
+    if (switch_data && !switch_data->is_hovering)
+    {
+      /* Enable mouse leave tracking */
+      iupwinTrackMouseLeave(ih);
+
+      switch_data->is_hovering = 1;
+      InvalidateRect(ih->handle, NULL, FALSE);
+    }
+    break;
+  case WM_MOUSELEAVE:
+    /* Remove hover state */
+    if (switch_data && switch_data->is_hovering)
+    {
+      switch_data->is_hovering = 0;
+      InvalidateRect(ih->handle, NULL, FALSE);
+    }
+    break;
   case WM_LBUTTONDOWN:
     /* Capture mouse to ensure we get WM_LBUTTONUP */
     SetCapture(ih->handle);
