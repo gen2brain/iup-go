@@ -411,7 +411,7 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 }
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-static void iupgdkRGBASet(GdkRGBA* rgba, unsigned char r, unsigned char g, unsigned char b)
+void iupgdkRGBASet(GdkRGBA* rgba, unsigned char r, unsigned char g, unsigned char b)
 {
   rgba->red = iupgtkColorToDouble(r);
   rgba->green = iupgtkColorToDouble(g);
