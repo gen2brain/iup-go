@@ -56,7 +56,7 @@ int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);
 int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height);
 
 /* Tooltip Functions */
-IUP_DRV_API void iupdrvUpdateTip(Ihandle* ih);
+IUP_DRV_API void cocoaUpdateTip(Ihandle* ih);
 IUP_DRV_API void iupcocoaTipsDestroy(Ihandle* ih);
 
 /* Menu Functions */

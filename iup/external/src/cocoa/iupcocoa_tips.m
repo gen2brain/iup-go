@@ -112,7 +112,7 @@ static void iupCocoaTipsUpdateForView(NSView* the_view, IupCocoaToolTipOwner* ow
                                      userData:NULL];
 }
 
-void iupdrvUpdateTip(Ihandle* ih)
+void cocoaUpdateTip(Ihandle* ih)
 {
   if (!ih) return;
 
@@ -169,28 +169,28 @@ char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
   return NULL;
 }
 
-int iupdrvBaseSetTipRectAttrib(Ihandle* ih, const char* value)
+int cocoaBaseSetTipRectAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  iupdrvUpdateTip(ih);
+  cocoaUpdateTip(ih);
   return 0;
 }
 
-int iupdrvBaseSetTipBgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 0;
-}
-
-int iupdrvBaseSetTipFgColorAttrib(Ihandle* ih, const char* value)
+int cocoaBaseSetTipBgColorAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
   return 0;
 }
 
-int iupdrvBaseSetTipFontAttrib(Ihandle* ih, const char* value)
+int cocoaBaseSetTipFgColorAttrib(Ihandle* ih, const char* value)
+{
+  (void)ih;
+  (void)value;
+  return 0;
+}
+
+int cocoaBaseSetTipFontAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;

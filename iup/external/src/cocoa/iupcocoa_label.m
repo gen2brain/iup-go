@@ -183,7 +183,9 @@ static NSImageView* cocoaLabelGetImageView(Ihandle* ih)
 void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
 {
   (void)ih;
-  (void)x;
+  // NSTextField adds internal padding for text rendering
+  // Without this, multi-line text wraps to extra lines and gets clipped
+  if (x) *x += 8;
   (void)y;
 }
 
@@ -214,10 +216,14 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
   }
 
   NSString* ns_string = nil;
+  BOOL has_newlines = NO;
   if (value)
   {
     char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
     ns_string = [NSString stringWithUTF8String:stripped_str];
+
+    // Check if value contains newlines for multi-line support
+    has_newlines = (strchr(value, '\n') != NULL);
 
     if (stripped_str && stripped_str != value)
       free(stripped_str);
@@ -227,10 +233,29 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
     ns_string = @"";
   }
 
+  // Configure multi-line mode if needed
+  if (has_newlines)
+  {
+    [the_label setUsesSingleLineMode:NO];
+    [[the_label cell] setScrollable:NO];
+    [[the_label cell] setWraps:YES];
+    [[the_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
+  }
+  else
+  {
+    [the_label setUsesSingleLineMode:YES];
+    [[the_label cell] setScrollable:YES];
+    [[the_label cell] setWraps:NO];
+    [[the_label cell] setLineBreakMode:NSLineBreakByClipping];
+  }
+
   IupCocoaFont* iup_font = iupcocoaGetFont(ih);
   char* fgcolor = iupAttribGet(ih, "FGCOLOR");
   unsigned char r, g, b;
   BOOL need_attributed = [iup_font usesAttributes] || (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b));
+
+  // Get alignment setting to apply to paragraph style
+  NSTextAlignment text_alignment = [the_label alignment];
 
   if (need_attributed)
   {
@@ -258,27 +283,18 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
       [attr_str addAttribute:NSForegroundColorAttributeName value:color range:range];
     }
 
+    // Apply paragraph style for text alignment (required for attributed strings)
+    NSMutableParagraphStyle* paragraph_style = [[NSMutableParagraphStyle alloc] init];
+    [paragraph_style setAlignment:text_alignment];
+    [attr_str addAttribute:NSParagraphStyleAttributeName value:paragraph_style range:NSMakeRange(0, [ns_string length])];
+    [paragraph_style release];
+
     [the_label setAttributedStringValue:attr_str];
     [attr_str release];
   }
   else
   {
     [the_label setStringValue:ns_string];
-  }
-
-  /* Calculate proper size with buffer for text metrics */
-  [the_label sizeToFit];
-  NSRect label_frame = [the_label frame];
-
-  /* Add small buffer to width to ensure all characters are visible */
-  label_frame.size.width += 4.0;
-  [the_label setFrame:label_frame];
-
-  /* Update the wrapper view frame to match */
-  NSView* wrapper = iupcocoaGetRootView(ih);
-  if (wrapper && wrapper != the_label)
-  {
-    [wrapper setFrame:label_frame];
   }
 
   if (ih->handle)
@@ -816,26 +832,30 @@ static int cocoaLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   NSView* root_view = iupcocoaGetRootView(ih);
   unsigned char r, g, b;
 
-  /* Ignore given value, must use only from parent */
-  char* parent_value = iupBaseNativeParentGetBgColor(ih);
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
 
-  if (iupStrToRGB(parent_value, &r, &g, &b))
+  NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+
+  // Set background on the inner widget (text field or image view)
+  if ([the_view isKindOfClass:[NSTextField class]])
   {
-    NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
-
-    if ([the_view isKindOfClass:[NSTextField class]])
-    {
-      NSTextField* text_field = (NSTextField*)the_view;
-      [text_field setBackgroundColor:color];
-      [text_field setDrawsBackground:YES];
-    }
-
+    NSTextField* text_field = (NSTextField*)the_view;
+    [text_field setBackgroundColor:color];
+    [text_field setDrawsBackground:YES];
+  }
+  else if ([the_view isKindOfClass:[NSImageView class]])
+  {
+    // For image labels, set background on the wrapper
     [root_view setWantsLayer:YES];
     [[root_view layer] setBackgroundColor:[color CGColor]];
   }
 
-  (void)value;
-  return iupdrvBaseSetBgColorAttrib(ih, parent_value);
+  // Set background on the wrapper view (event view)
+  [root_view setWantsLayer:YES];
+  [[root_view layer] setBackgroundColor:[color CGColor]];
+
+  return 1;
 }
 
 static int cocoaLabelSetFgColorAttrib(Ihandle* ih, const char* value)
@@ -1046,6 +1066,21 @@ static int cocoaLabelMapMethod(Ihandle* ih)
       [the_actual_label setSelectable:NO];
       [the_actual_label setFont:[NSFont systemFontOfSize:[NSFont systemFontSize]]];
 
+      // Set initial alignment based on ALIGNMENT attribute if already set
+      char* alignment = iupAttribGet(ih, "ALIGNMENT");
+      if (alignment)
+      {
+        char value1[30], value2[30];
+        iupStrToStrStr(alignment, value1, value2, ':');
+
+        if (iupStrEqualNoCase(value1, "ARIGHT"))
+          [the_actual_label setAlignment:NSTextAlignmentRight];
+        else if (iupStrEqualNoCase(value1, "ACENTER"))
+          [the_actual_label setAlignment:NSTextAlignmentCenter];
+        else
+          [the_actual_label setAlignment:NSTextAlignmentLeft];
+      }
+
       if ([the_actual_label respondsToSelector:@selector(setLineBreakMode:)])
       {
         [the_actual_label setLineBreakMode:NSLineBreakByClipping];
@@ -1064,8 +1099,20 @@ static int cocoaLabelMapMethod(Ihandle* ih)
       if (title)
       {
         NSString* ns_string = [NSString stringWithUTF8String:title];
+
+        // Check if title contains newlines for multi-line support
+        BOOL has_newlines = (strchr(title, '\n') != NULL);
+
+        if (has_newlines)
+        {
+          // Configure for multi-line display
+          [(NSTextField*)the_actual_label setUsesSingleLineMode:NO];
+          [[(NSTextField*)the_actual_label cell] setScrollable:NO];
+          [[(NSTextField*)the_actual_label cell] setWraps:YES];
+          [[(NSTextField*)the_actual_label cell] setLineBreakMode:NSLineBreakByWordWrapping];
+        }
+
         [(NSTextField*)the_actual_label setStringValue:ns_string];
-        [(NSTextField*)the_actual_label sizeToFit];
       }
     }
   }
@@ -1075,10 +1122,7 @@ static int cocoaLabelMapMethod(Ihandle* ih)
     return IUP_ERROR;
   }
 
-  /* Get the frame after any sizing operations */
-  NSRect label_frame = [the_actual_label frame];
-
-  IUPCocoaLabelEventView* event_view_wrapper = [[IUPCocoaLabelEventView alloc] initWithFrame:label_frame];
+  IUPCocoaLabelEventView* event_view_wrapper = [[IUPCocoaLabelEventView alloc] initWithFrame:NSZeroRect];
   [event_view_wrapper addSubview:the_actual_label];
 
   [the_actual_label setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];

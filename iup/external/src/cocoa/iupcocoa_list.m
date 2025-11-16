@@ -1887,6 +1887,9 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
         *x += 16;
 
+        if (ih->data->has_editbox)
+          *y += 2*3;
+
         break;
       }
     default:
@@ -3776,7 +3779,6 @@ static int cocoaListMapMethod(Ihandle* ih)
         [[text_field.widthAnchor constraintEqualToAnchor:stack_view.widthAnchor] setActive:YES];
         [[scroll_view.widthAnchor constraintEqualToAnchor:stack_view.widthAnchor] setActive:YES];
 
-        [[text_field.heightAnchor constraintEqualToConstant:22.0] setActive:YES];
         [scroll_view setContentHuggingPriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationVertical];
         [text_field setContentHuggingPriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationVertical];
         [scroll_view setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationVertical];
