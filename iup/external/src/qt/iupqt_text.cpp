@@ -319,10 +319,27 @@ protected:
 
 extern "C" void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
-  int spin_size = 50; /* Approximate width for spin buttons */
-  *w += spin_size;
+  static int spin_min_width = -1;
+
   (void)h;
   (void)ih;
+
+  /* Measure the minimum width required by QSpinBox */
+  if (spin_min_width < 0)
+  {
+    QSpinBox* temp_spin = new QSpinBox();
+    temp_spin->setRange(0, 100);
+    temp_spin->setSingleStep(1);
+
+    QSize sizeHint = temp_spin->minimumSizeHint();
+    spin_min_width = sizeHint.width();
+
+    delete temp_spin;
+  }
+
+  /* Only enforce minimum width, don't force expansion */
+  if (*w < spin_min_width)
+    *w = spin_min_width;
 }
 
 extern "C" void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
