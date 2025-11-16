@@ -138,8 +138,12 @@ static int gtkButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
   else  /* ACENTER (default) */
     yalign = 0.5f;
 
+#if GTK_CHECK_VERSION(3, 14, 0)
+  /* gtk_button_set_alignment() deprecated in 3.14 */
+  g_object_set(G_OBJECT(button), "xalign", xalign, "yalign", yalign, NULL);
+#else
   gtk_button_set_alignment(button, xalign, yalign);
-  /* TODO:   g_object_set(widget, "xalign", xalign, "yalign", yalign, NULL); */
+#endif
 
   if (ih->data->type == IUP_BUTTON_TEXT)   /* text only */
   {
