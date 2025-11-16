@@ -23,7 +23,7 @@ func main() {
 func idleFunction() int {
 	gauge := iup.GetHandle("gauge")
 	value := gauge.GetFloat("VALUE")
-	value = value + 0.0001
+	value = value + 0.00001
 	if value > 1.0 {
 		value = 0
 	}

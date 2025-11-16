@@ -19,6 +19,9 @@ var (
 	program                   uint32
 	vao, vbo                  uint32
 	timeUniform, transUniform int32
+	animationTimer            iup.Ihandle
+	resizing                  bool
+	firstResize               bool = true
 )
 
 func main() {
@@ -75,101 +78,23 @@ func main() {
 		return iup.DEFAULT
 	}))
 
-	canvas.SetCallback("RESIZE_CB", iup.ResizeFunc(func(ih iup.Ihandle, width, height int) int {
+	canvas.SetCallback("ACTION", iup.ActionFunc(redraw))
+
+	canvas.SetCallback("POSTMESSAGE_CB", iup.PostMessageFunc(func(ih iup.Ihandle, s string, i int, d any) int {
+		if s == "RESUME_ANIMATION" {
+			resizing = false
+			animationTimer.SetAttribute("RUN", "YES")
+		}
+		return iup.DEFAULT
+	}))
+
+	// Set up a timer for continuous redraw (60 FPS)
+	animationTimer = iup.Timer()
+	animationTimer.SetAttribute("TIME", "16") // ~60 FPS
+	animationTimer.SetCallback("ACTION_CB", iup.TimerActionFunc(func(ih iup.Ihandle) int {
 		if initialized {
-			iup.GLMakeCurrent(ih)
-			gl.Viewport(0, 0, int32(width), int32(height))
+			redraw(canvas)
 		}
-
-		return iup.DEFAULT
-	}))
-
-	canvas.SetCallback("ACTION", iup.CanvasActionFunc(func(ih iup.Ihandle, x, y float64) int {
-		if !initialized {
-			return iup.DEFAULT
-		}
-
-		iup.GLMakeCurrent(ih)
-
-		// Get canvas dimensions
-		size := iup.GetAttribute(ih, "RASTERSIZE")
-		var w, h int32
-		fmt.Sscanf(size, "%dx%d", &w, &h)
-
-		// Ensure viewport matches canvas size
-		gl.Viewport(0, 0, w, h)
-
-		// Create an animated gradient background
-		elapsed := float32(time.Since(startTime).Seconds())
-		r := (float32(math.Sin(float64(elapsed)*0.5)) + 1.0) * 0.1
-		g := (float32(math.Cos(float64(elapsed)*0.3)) + 1.0) * 0.1
-		b := 0.2 + (float32(math.Sin(float64(elapsed)*0.7))+1.0)*0.1
-		gl.ClearColor(r, g, b, 1.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-		// Use our shader program
-		gl.UseProgram(program)
-
-		// Pass time uniform for animation
-		if timeUniform != -1 {
-			gl.Uniform1f(timeUniform, elapsed)
-		}
-
-		// Create rotation matrix
-		angle := elapsed * 0.5
-		cos := float32(math.Cos(float64(angle)))
-		sin := float32(math.Sin(float64(angle)))
-
-		// Scale pulsing
-		scale := float32(0.6 + 0.1*math.Sin(float64(elapsed)*2))
-
-		// Combined transformation matrix (rotation + scale)
-		transform := []float32{
-			cos * scale, sin * scale, 0, 0,
-			-sin * scale, cos * scale, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1,
-		}
-
-		if transUniform != -1 {
-			gl.UniformMatrix4fv(transUniform, 1, false, &transform[0])
-		}
-
-		// Draw the star
-		gl.BindVertexArray(vao)
-		gl.DrawArrays(gl.TRIANGLE_FAN, 0, 25) // center + 24 points + 1 to close
-
-		// Draw a second star rotating the opposite direction
-		angle2 := -elapsed * 0.3
-		cos2 := float32(math.Cos(float64(angle2)))
-		sin2 := float32(math.Sin(float64(angle2)))
-		scale2 := float32(0.4 + 0.05*math.Cos(float64(elapsed)*3))
-
-		transform2 := []float32{
-			cos2 * scale2, sin2 * scale2, 0, 0,
-			-sin2 * scale2, cos2 * scale2, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1,
-		}
-
-		if transUniform != -1 {
-			gl.UniformMatrix4fv(transUniform, 1, false, &transform2[0])
-		}
-		gl.DrawArrays(gl.TRIANGLE_FAN, 0, 25)
-
-		gl.BindVertexArray(0)
-
-		// Check for OpenGL errors
-		if err := gl.GetError(); err != gl.NO_ERROR {
-			log.Printf("OpenGL error during draw: 0x%x\n", err)
-		}
-
-		iup.GLSwapBuffers(ih)
-
-		return iup.DEFAULT
-	}))
-
-	canvas.SetCallback("SWAPBUFFERS_CB", iup.SwapBuffersFunc(func(ih iup.Ihandle) int {
 		return iup.DEFAULT
 	}))
 
@@ -182,21 +107,139 @@ func main() {
 	dlg := iup.Dialog(hbox)
 	dlg.SetAttribute("TITLE", "Modern OpenGL Canvas")
 
-	iup.Map(dlg)
-
-	// Set up a timer for continuous redraw (60 FPS)
-	timer := iup.Timer()
-	timer.SetAttribute("TIME", "16") // ~60 FPS
-	timer.SetCallback("ACTION_CB", iup.TimerActionFunc(func(ih iup.Ihandle) int {
+	dlg.SetCallback("RESIZE_CB", iup.ResizeFunc(func(ih iup.Ihandle, width, height int) int {
 		if initialized {
-			iup.Update(canvas)
+			iup.GLMakeCurrent(ih)
+			gl.Viewport(0, 0, int32(width), int32(height))
+		}
+
+		// Skip pause logic on the initial resize (happens right after SHOW_CB)
+		if firstResize {
+			firstResize = false
+			return iup.DEFAULT
+		}
+
+		// Pause animation during resize to allow geometry synchronization.
+		// Resume after a short delay to let Qt/GTK commit the parent surface.
+		if !resizing {
+			animationTimer.SetAttribute("RUN", "NO")
+			resizing = true
+
+			// Resume animation after 100ms
+			go func() {
+				time.Sleep(100 * time.Millisecond)
+				iup.PostMessage(canvas, "RESUME_ANIMATION", 0, 0)
+			}()
+		}
+
+		return iup.DEFAULT
+	}))
+
+	dlg.SetCallback("SHOW_CB", iup.ShowFunc(func(ih iup.Ihandle, state int) int {
+		if state == iup.SHOW {
+			animationTimer.SetAttribute("RUN", "YES")
+		} else if state == iup.MINIMIZE {
+			animationTimer.SetAttribute("RUN", "NO")
+		} else if state == iup.RESTORE {
+			if !resizing {
+				animationTimer.SetAttribute("RUN", "YES")
+			}
 		}
 		return iup.DEFAULT
 	}))
-	timer.SetAttribute("RUN", "YES")
+
+	dlg.SetCallback("CLOSE_CB", iup.CloseFunc(func(ih iup.Ihandle) int {
+		animationTimer.SetAttribute("RUN", "NO")
+		return iup.DEFAULT
+	}))
 
 	iup.Show(dlg)
 	iup.MainLoop()
+}
+
+func redraw(ih iup.Ihandle) int {
+	if !initialized {
+		return iup.DEFAULT
+	}
+
+	iup.GLMakeCurrent(ih)
+
+	// Get canvas dimensions
+	size := iup.GetAttribute(ih, "RASTERSIZE")
+	var w, h int32
+	fmt.Sscanf(size, "%dx%d", &w, &h)
+
+	// Ensure viewport matches canvas size
+	gl.Viewport(0, 0, w, h)
+
+	// Create an animated gradient background
+	elapsed := float32(time.Since(startTime).Seconds())
+	r := (float32(math.Sin(float64(elapsed)*0.5)) + 1.0) * 0.1
+	g := (float32(math.Cos(float64(elapsed)*0.3)) + 1.0) * 0.1
+	b := 0.2 + (float32(math.Sin(float64(elapsed)*0.7))+1.0)*0.1
+	gl.ClearColor(r, g, b, 1.0)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+	// Use our shader program
+	gl.UseProgram(program)
+
+	// Pass time uniform for animation
+	if timeUniform != -1 {
+		gl.Uniform1f(timeUniform, elapsed)
+	}
+
+	// Create rotation matrix
+	angle := elapsed * 0.5
+	cos := float32(math.Cos(float64(angle)))
+	sin := float32(math.Sin(float64(angle)))
+
+	// Scale pulsing
+	scale := float32(0.6 + 0.1*math.Sin(float64(elapsed)*2))
+
+	// Combined transformation matrix (rotation + scale)
+	transform := []float32{
+		cos * scale, sin * scale, 0, 0,
+		-sin * scale, cos * scale, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1,
+	}
+
+	if transUniform != -1 {
+		gl.UniformMatrix4fv(transUniform, 1, false, &transform[0])
+	}
+
+	// Draw the star
+	gl.BindVertexArray(vao)
+	gl.DrawArrays(gl.TRIANGLE_FAN, 0, 25) // center + 24 points + 1 to close
+
+	// Draw a second star rotating the opposite direction
+	angle2 := -elapsed * 0.3
+	cos2 := float32(math.Cos(float64(angle2)))
+	sin2 := float32(math.Sin(float64(angle2)))
+	scale2 := float32(0.4 + 0.05*math.Cos(float64(elapsed)*3))
+
+	transform2 := []float32{
+		cos2 * scale2, sin2 * scale2, 0, 0,
+		-sin2 * scale2, cos2 * scale2, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1,
+	}
+
+	if transUniform != -1 {
+		gl.UniformMatrix4fv(transUniform, 1, false, &transform2[0])
+	}
+	gl.DrawArrays(gl.TRIANGLE_FAN, 0, 25)
+
+	gl.BindVertexArray(0)
+
+	// Check for OpenGL errors
+	if err := gl.GetError(); err != gl.NO_ERROR {
+		log.Printf("OpenGL error during draw: 0x%x\n", err)
+	}
+
+	iup.GLSwapBuffers(ih)
+
+	return iup.DEFAULT
 }
 
 func initGL() (program uint32, vao uint32, vbo uint32, timeUniform int32, transUniform int32, success bool) {

@@ -32,6 +32,7 @@ func main() {
 	hbox := iup.Hbox(iup.Fill(), vbox, iup.Fill()).SetAttribute("ALIGNMENT", "ACENTER")
 
 	dlg := iup.Dialog(hbox).SetAttribute("TITLE", "PostMessage").SetHandle("dlg")
+	dlg.SetAttribute("DEFAULTENTER", "button")
 	dlg.SetCallback("MAP_CB", iup.MapFunc(func(ih iup.Ihandle) int {
 		buttonCb(button)
 		return iup.DEFAULT

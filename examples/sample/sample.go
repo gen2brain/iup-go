@@ -31,11 +31,26 @@ func main() {
 	fr1 := iup.Frame(
 		iup.Vbox(
 			iup.Button("Button Text").SetAttributes("PADDING=5x5"),
-			iup.Button("Text").SetAttributes("IMAGE=img1, PADDING=5x5"),
+			iup.Button("Text").SetAttributes("IMAGE=img1, PADDING=5x5").SetHandle("button"),
 			iup.Button("").SetAttributes("IMAGE=img1"),
 			iup.Button("").SetAttributes("IMAGE=img1,IMPRESS=img2"),
 		),
 	).SetAttribute("TITLE", "Button")
+
+	iup.GetHandle("button").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		dlg := iup.ColorDlg().SetAttributes(map[string]interface{}{
+			"TITLE":          "ColorDlg",
+			"VALUE":          "128 0 255",
+			"ALPHA":          "142",
+			"SHOWHEX":        "YES",
+			"SHOWCOLORTABLE": "YES",
+		})
+		defer dlg.Destroy()
+
+		iup.Popup(dlg, iup.CENTER, iup.CENTER)
+
+		return iup.DEFAULT
+	}))
 
 	fr2 := iup.Frame(
 		iup.Vbox(
@@ -134,7 +149,7 @@ func main() {
 	})
 
 	canvas := iup.Canvas().SetAttributes(`BGCOLOR="255 255 255", BORDER=NO, XMIN=0, XMAX=99, POSX=0, DX=10`)
-	canvas.SetCallback("ACTION", iup.CanvasActionFunc(func(ih iup.Ihandle, posx, posy float64) int {
+	canvas.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		iup.DrawBegin(ih)
 		defer iup.DrawEnd(ih)
 

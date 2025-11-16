@@ -196,7 +196,8 @@ func htmlCB(ih iup.Ihandle) int {
 	if html == "" {
 		return iup.DEFAULT
 	}
-	if newHTML, ret := iup.GetText("HTML Text", html, 1024); ret != 0 {
+	// Use 512KB buffer to handle HTML with embedded base64 images
+	if newHTML, ret := iup.GetText("HTML Text", html, 512*1024); ret != 0 {
 		web.SetAttribute("HTML", newHTML)
 	}
 	return iup.DEFAULT
