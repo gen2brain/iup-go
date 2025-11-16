@@ -1094,21 +1094,29 @@ static void motDialogLayoutUpdateMethod(Ihandle *ih)
   {
     int width = ih->currentwidth - 2*border;
     int height = ih->currentheight - 2*border - caption;
-    XtVaSetValues(ih->handle,
-      XmNwidth, width,  /* client size */
-      XmNheight, height,
-      XmNminWidth, width, 
-      XmNminHeight, height, 
-      XmNmaxWidth, width, 
-      XmNmaxHeight, height, 
-      NULL);
+    if (width > 0 && height > 0)
+    {
+      XtVaSetValues(ih->handle,
+        XmNwidth, width,  /* client size */
+        XmNheight, height,
+        XmNminWidth, width,
+        XmNminHeight, height,
+        XmNmaxWidth, width,
+        XmNmaxHeight, height,
+        NULL);
+    }
   }
   else
   {
-    XtVaSetValues(ih->handle,
-      XmNwidth, (XtArgVal)(ih->currentwidth - 2*border),     /* excluding the border */
-      XmNheight, (XtArgVal)(ih->currentheight - 2*border - caption),
-      NULL);
+    int width = ih->currentwidth - 2*border;
+    int height = ih->currentheight - 2*border - caption;
+    if (width > 0 && height > 0)
+    {
+      XtVaSetValues(ih->handle,
+        XmNwidth, (XtArgVal)width,     /* excluding the border */
+        XmNheight, (XtArgVal)height,
+        NULL);
+    }
   }
 
   ih->data->ignore_resize = 0;
