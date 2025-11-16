@@ -526,68 +526,65 @@ static void gtkSetGlobalColorAttrib(const char* name, GdkColor *color)
 static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
-#ifdef XWIN32  /* TODO: Workaround for GTK3 on Win32, should remove this code in the future */
-#define gtkColorToRGBA(color, color3) {color3.red = color.red/65535.0; color3.green = color.green/65535.0; color3.blue = color.blue/65535.0; color3.alpha = 1.0;}
-
-  GdkRGBA color3;
-  GtkStyle* style = gtk_widget_get_style(dialog);
-
-  GdkColor color = style->bg[GTK_STATE_NORMAL];
-  gtkColorToRGBA(color, color3);
-  gtkSetGlobalColorAttrib("DLGBGCOLOR", &color3);
-
-  color = style->fg[GTK_STATE_NORMAL];
-  gtkColorToRGBA(color, color3);
-  gtkSetGlobalColorAttrib("DLGFGCOLOR", &color3);
-
-  style = gtk_widget_get_style(text);
-
-  color = style->base[GTK_STATE_NORMAL];
-  gtkColorToRGBA(color, color3);
-  gtkSetGlobalColorAttrib("TXTBGCOLOR", &color3);
-
-  color = style->text[GTK_STATE_NORMAL];
-  gtkColorToRGBA(color, color3);
-  gtkSetGlobalColorAttrib("TXTFGCOLOR", &color3);
-
-  color = style->base[GTK_STATE_SELECTED];
-  gtkColorToRGBA(color, color3);
-  gtkSetGlobalColorAttrib("TXTHLCOLOR", &color3);
-
-  gtkSetGlobalColorAttrib("MENUFGCOLOR", &color3);
-  color = style->bg[GTK_STATE_NORMAL];
-  gtkColorToRGBA(color, color3);
-  gtkSetGlobalColorAttrib("MENUBGCOLOR", &color3);
-#else /* Not Windows */
   GdkRGBA color;
   GtkStyleContext* context = gtk_widget_get_style_context(dialog);
 
-  gtk_style_context_get_background_color(context, GTK_STATE_FLAG_NORMAL, &color);
-  gtkSetGlobalColorAttrib("DLGBGCOLOR", &color);
-
   gtk_style_context_get_color(context, GTK_STATE_FLAG_NORMAL, &color);
   gtkSetGlobalColorAttrib("DLGFGCOLOR", &color);
+
+  if (gtk_style_context_lookup_color(context, "theme_bg_color", &color))
+  {
+    gtkSetGlobalColorAttrib("DLGBGCOLOR", &color);
+  }
+  else
+  {
+    /* Light gray background for dialogs */
+    color.red = 0.94; color.green = 0.94; color.blue = 0.94; color.alpha = 1.0;
+    gtkSetGlobalColorAttrib("DLGBGCOLOR", &color);
+  }
 
   context = gtk_widget_get_style_context(text);
 
   gtk_style_context_get_color(context, GTK_STATE_FLAG_NORMAL, &color);
   gtkSetGlobalColorAttrib("TXTFGCOLOR", &color);
 
-  gtk_style_context_get_background_color(context, GTK_STATE_FLAG_NORMAL, &color);
-  if (color.alpha == 0) { color.red = 1; color.green = 1; color.blue = 1; }  /* TODO: workaround for GTK > 3.14 */
-  gtkSetGlobalColorAttrib("TXTBGCOLOR", &color);
+  if (gtk_style_context_lookup_color(context, "theme_base_color", &color))
+  {
+    gtkSetGlobalColorAttrib("TXTBGCOLOR", &color);
+  }
+  else
+  {
+    /* White background for text entries */
+    color.red = 1.0; color.green = 1.0; color.blue = 1.0; color.alpha = 1.0;
+    gtkSetGlobalColorAttrib("TXTBGCOLOR", &color);
+  }
 
-  gtk_style_context_get_background_color(context, GTK_STATE_FLAG_SELECTED, &color);
-  gtkSetGlobalColorAttrib("TXTHLCOLOR", &color);
+  if (gtk_style_context_lookup_color(context, "theme_selected_bg_color", &color))
+  {
+    gtkSetGlobalColorAttrib("TXTHLCOLOR", &color);
+  }
+  else
+  {
+    /* Blue highlight color */
+    color.red = 0.2; color.green = 0.4; color.blue = 0.8; color.alpha = 1.0;
+    gtkSetGlobalColorAttrib("TXTHLCOLOR", &color);
+  }
 
   context = gtk_widget_get_style_context(dialog);
 
   gtk_style_context_get_color(context, GTK_STATE_FLAG_NORMAL, &color);
   gtkSetGlobalColorAttrib("MENUFGCOLOR", &color);
 
-  gtk_style_context_get_background_color(context, GTK_STATE_FLAG_NORMAL, &color);
-  gtkSetGlobalColorAttrib("MENUBGCOLOR", &color);
-#endif
+  if (gtk_style_context_lookup_color(context, "theme_bg_color", &color))
+  {
+    gtkSetGlobalColorAttrib("MENUBGCOLOR", &color);
+  }
+  else
+  {
+    /* Light gray background */
+    color.red = 0.94; color.green = 0.94; color.blue = 0.94; color.alpha = 1.0;
+    gtkSetGlobalColorAttrib("MENUBGCOLOR", &color);
+  }
 #else /* GTK 2.xx */
   GtkStyle* style = gtk_widget_get_style(dialog);
 
