@@ -34,15 +34,6 @@
 #include "iupgtk_drv.h"
 
 
-/* TODO:
-  Replace:
-    cell-background-gdk
-    foreground-gdk
-  By:
-    cell-background-rgba
-    foreground-rgba
-*/
-
 enum
 {
   IUPGTK_LIST_IMAGE,  /* "pixbuf" */
@@ -326,9 +317,15 @@ static int gtkListSetBgColorAttrib(Ihandle* ih, const char* value)
     GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER");
     if (renderer)
     {
+#if GTK_CHECK_VERSION(3, 4, 0)
+      GdkRGBA rgba;
+      iupgdkRGBASet(&rgba, r, g, b);
+      g_object_set(G_OBJECT(renderer), "cell-background-rgba", &rgba, NULL);
+#else
       GdkColor color;
       iupgdkColorSetRGB(&color, r, g, b);
       g_object_set(G_OBJECT(renderer), "cell-background-gdk", &color, NULL);
+#endif
     }
   }
 
@@ -355,9 +352,15 @@ static int gtkListSetFgColorAttrib(Ihandle* ih, const char* value)
     GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER");
     if (renderer)
     {
+#if GTK_CHECK_VERSION(3, 4, 0)
+      GdkRGBA rgba;
+      iupgdkRGBASet(&rgba, r, g, b);
+      g_object_set(G_OBJECT(renderer), "foreground-rgba", &rgba, NULL);
+#else
       GdkColor color;
       iupgdkColorSetRGB(&color, r, g, b);
       g_object_set(G_OBJECT(renderer), "foreground-gdk", &color, NULL);
+#endif
     }
   }
 

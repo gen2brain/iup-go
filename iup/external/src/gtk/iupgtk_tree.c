@@ -35,16 +35,7 @@
 #include "iupgtk_drv.h"
 
 
-/* TODO:
-  Replace:
-    cell-background-gdk
-    foreground-gdk
-  By:
-    cell-background-rgba
-    foreground-rgba
-*/
-
-/* IMPORTANT: 
+/* IMPORTANT:
 
   GtkTreeStore uses the "user_data" field of the GtkTreeIter 
   to store the node pointer that is position independent.
@@ -66,7 +57,7 @@ enum                   /* comments show cell renderer associations */
   IUPGTK_NODE_HAS_IMAGE_EXPANDED,
   IUPGTK_NODE_TITLE,   /* "text" */
   IUPGTK_NODE_KIND,    /* "is-expander" */
-  IUPGTK_NODE_COLOR,   /* "foreground-gdk" */
+  IUPGTK_NODE_COLOR,   /* "foreground-rgba" (GTK 3.4+) or "foreground-gdk" (GTK < 3.4) */
   IUPGTK_NODE_FONT,    /* "font-desc" */
   IUPGTK_NODE_SELECTED,
   IUPGTK_NODE_CHECK,   /* "active" */
@@ -121,7 +112,11 @@ static void gtkTreeCopyItem(Ihandle* ih, GtkTreeModel* model, GtkTreeIter* iterI
   char* title;
   gboolean has_image, has_image_expanded;
   PangoFontDescription* font;
+#if GTK_CHECK_VERSION(3, 4, 0)
+  GdkRGBA *rgba;
+#else
   GdkColor *color;
+#endif
   GdkPixbuf* image, *image_expanded;
 
   gtk_tree_model_get(GTK_TREE_MODEL(store), iterItem, IUPGTK_NODE_IMAGE,      &image,
@@ -130,8 +125,12 @@ static void gtkTreeCopyItem(Ihandle* ih, GtkTreeModel* model, GtkTreeIter* iterI
                                                       IUPGTK_NODE_HAS_IMAGE_EXPANDED,  &has_image_expanded,
                                                       IUPGTK_NODE_TITLE,  &title,
                                                       IUPGTK_NODE_KIND,  &kind,
-                                                      IUPGTK_NODE_COLOR, &color, 
-                                                      IUPGTK_NODE_FONT, &font, 
+#if GTK_CHECK_VERSION(3, 4, 0)
+                                                      IUPGTK_NODE_COLOR, &rgba,
+#else
+                                                      IUPGTK_NODE_COLOR, &color,
+#endif
+                                                      IUPGTK_NODE_FONT, &font,
                                                       -1);
 
   /* Add the new node */
@@ -149,7 +148,11 @@ static void gtkTreeCopyItem(Ihandle* ih, GtkTreeModel* model, GtkTreeIter* iterI
                                           IUPGTK_NODE_HAS_IMAGE_EXPANDED, has_image_expanded,
                                           IUPGTK_NODE_TITLE,  title,
                                           IUPGTK_NODE_KIND,  kind,
-                                          IUPGTK_NODE_COLOR, color, 
+#if GTK_CHECK_VERSION(3, 4, 0)
+                                          IUPGTK_NODE_COLOR, rgba,
+#else
+                                          IUPGTK_NODE_COLOR, color,
+#endif
                                           IUPGTK_NODE_FONT, font,
                                           IUPGTK_NODE_SELECTED, 0,
                                           IUPGTK_NODE_CHECK, 0,
@@ -619,6 +622,18 @@ static void gtkTreeExpandItem(Ihandle* ih, GtkTreePath* path, int expand)
     gtk_tree_view_collapse_row(GTK_TREE_VIEW(ih->handle), path);
 }
 
+#if GTK_CHECK_VERSION(3, 4, 0)
+int iupgtkGetColor(const char* value, GdkRGBA *rgba)
+{
+  unsigned char r, g, b;
+  if (iupStrToRGB(value, &r, &g, &b))
+  {
+    iupgdkRGBASet(rgba, r, g, b);
+    return 1;
+  }
+  return 0;
+}
+#else
 int iupgtkGetColor(const char* value, GdkColor *color)
 {
   unsigned char r, g, b;
@@ -629,6 +644,7 @@ int iupgtkGetColor(const char* value, GdkColor *color)
   }
   return 0;
 }
+#endif
 
 /*****************************************************************************/
 /* ADDING ITEMS                                                              */
@@ -638,7 +654,11 @@ void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add
   GtkTreeStore* store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle)));
   GtkTreeIter iterPrev, iterNewItem, iterParent;
   GtkTreePath* path;
+#if GTK_CHECK_VERSION(3, 4, 0)
+  GdkRGBA rgba = {0.0, 0.0, 0.0, 1.0};
+#else
   GdkColor color = {0L,0,0,0};
+#endif
   int kindPrev = -1;
 
   /* the previous node is not necessary only
@@ -670,7 +690,11 @@ void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add
     ih->data->stamp = iterNewItem.stamp;
   }
 
+#if GTK_CHECK_VERSION(3, 4, 0)
+  iupgtkGetColor(iupAttribGetStr(ih, "FGCOLOR"), &rgba);
+#else
   iupgtkGetColor(iupAttribGetStr(ih, "FGCOLOR"), &color);
+#endif
 
   if (!title)
     title = "";
@@ -680,7 +704,11 @@ void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add
                                           IUPGTK_NODE_HAS_IMAGE_EXPANDED, FALSE,
                                           IUPGTK_NODE_TITLE, iupgtkStrConvertToSystem(title),
                                           IUPGTK_NODE_KIND, kind,
-                                          IUPGTK_NODE_COLOR, &color, 
+#if GTK_CHECK_VERSION(3, 4, 0)
+                                          IUPGTK_NODE_COLOR, &rgba,
+#else
+                                          IUPGTK_NODE_COLOR, &color,
+#endif
                                           IUPGTK_NODE_SELECTED, 0,
                                           IUPGTK_NODE_CHECK, 0,
                                           IUPGTK_NODE_3STATE, 0,
@@ -1087,7 +1115,6 @@ static int gtkTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
 {
   GtkTreeStore* store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle)));
   GtkTreeIter iterItem;
-  GdkColor color;
   unsigned char r, g, b;
 
   if (!gtkTreeFindNode(ih, id, &iterItem))
@@ -1096,8 +1123,15 @@ static int gtkTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
+#if GTK_CHECK_VERSION(3, 4, 0)
+  GdkRGBA rgba;
+  iupgdkRGBASet(&rgba, r, g, b);
+  gtk_tree_store_set(store, &iterItem, IUPGTK_NODE_COLOR, &rgba, -1);
+#else
+  GdkColor color;
   iupgdkColorSetRGB(&color, r, g, b);
   gtk_tree_store_set(store, &iterItem, IUPGTK_NODE_COLOR, &color, -1);
+#endif
 
   return 0;
 }
@@ -1933,11 +1967,19 @@ static int gtkTreeSetBgColorAttrib(Ihandle* ih, const char* value)
     GtkCellRenderer *renderer_chk = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER_CHECK");
     GtkCellRenderer* renderer_txt = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER_TEXT");
     GtkCellRenderer* renderer_img = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER_IMG");
+#if GTK_CHECK_VERSION(3, 4, 0)
+    GdkRGBA rgba;
+    iupgdkRGBASet(&rgba, r, g, b);
+    if (renderer_chk) g_object_set(G_OBJECT(renderer_chk), "cell-background-rgba", &rgba, NULL);
+    g_object_set(G_OBJECT(renderer_txt), "cell-background-rgba", &rgba, NULL);
+    g_object_set(G_OBJECT(renderer_img), "cell-background-rgba", &rgba, NULL);
+#else
     GdkColor color;
     iupgdkColorSetRGB(&color, r, g, b);
     if (renderer_chk) g_object_set(G_OBJECT(renderer_chk), "cell-background-gdk", &color, NULL);
     g_object_set(G_OBJECT(renderer_txt), "cell-background-gdk", &color, NULL);
     g_object_set(G_OBJECT(renderer_img), "cell-background-gdk", &color, NULL);
+#endif
   }
 
   iupdrvBaseSetBgColorAttrib(ih, value);   /* use given value for contents */
@@ -1957,11 +1999,17 @@ static int gtkTreeSetFgColorAttrib(Ihandle* ih, const char* value)
 
   {
     GtkCellRenderer* renderer_txt = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER_TEXT");
+#if GTK_CHECK_VERSION(3, 4, 0)
+    GdkRGBA rgba;
+    iupgdkRGBASet(&rgba, r, g, b);
+    g_object_set(G_OBJECT(renderer_txt), "foreground-rgba", &rgba, NULL);
+#else
     GdkColor color;
     iupgdkColorSetRGB(&color, r, g, b);
     g_object_set(G_OBJECT(renderer_txt), "foreground-gdk", &color, NULL);
     g_object_get(G_OBJECT(renderer_txt), "foreground-gdk", &color, NULL);
     color.blue = 0;
+#endif
   }
 
   return 1;
@@ -2887,7 +2935,11 @@ static int gtkTreeMapMethod(Ihandle* ih)
     G_TYPE_BOOLEAN,                  /* IUPGTK_NODE_HAS_IMAGE_EXPANDED */
     G_TYPE_STRING,                   /* IUPGTK_NODE_TITLE */
     G_TYPE_INT,                      /* IUPGTK_NODE_KIND */
+#if GTK_CHECK_VERSION(3, 4, 0)
+    GDK_TYPE_RGBA,                   /* IUPGTK_NODE_COLOR */
+#else
     GDK_TYPE_COLOR,                  /* IUPGTK_NODE_COLOR */
+#endif
     PANGO_TYPE_FONT_DESCRIPTION,     /* IUPGTK_NODE_FONT */
     G_TYPE_BOOLEAN,                  /* IUPGTK_NODE_SELECTED */
     G_TYPE_BOOLEAN,                  /* IUPGTK_NODE_CHECK */
@@ -2945,11 +2997,19 @@ static int gtkTreeMapMethod(Ihandle* ih)
 
   renderer_txt = gtk_cell_renderer_text_new();
   gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(column), renderer_txt, TRUE);
+#if GTK_CHECK_VERSION(3, 4, 0)
+  gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_txt, "text", IUPGTK_NODE_TITLE,
+                                                                 "is-expander", IUPGTK_NODE_KIND,
+                                                                   "font-desc", IUPGTK_NODE_FONT,
+                                                              "foreground-rgba", IUPGTK_NODE_COLOR,
+                                                                  NULL);
+#else
   gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_txt, "text", IUPGTK_NODE_TITLE,
                                                                  "is-expander", IUPGTK_NODE_KIND,
                                                                    "font-desc", IUPGTK_NODE_FONT,
                                                               "foreground-gdk", IUPGTK_NODE_COLOR,
                                                                   NULL);
+#endif
   iupAttribSet(ih, "_IUPGTK_RENDERER_TEXT", (char*)renderer_txt);
 
   if (ih->data->show_rename)

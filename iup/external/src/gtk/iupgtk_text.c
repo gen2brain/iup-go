@@ -34,14 +34,6 @@
 #define PANGO_WEIGHT_SEMIBOLD 600
 #endif
 
-/* TODO:
-  Replace:
-    background-gdk
-    foreground-gdk
-  By:
-    background-rgba
-    foreground-rgba
-*/
 
 void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
@@ -308,9 +300,15 @@ static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
     unsigned char r, g, b;
     if (iupStrToRGB(format, &r, &g, &b))
     {
+#if GTK_CHECK_VERSION(3, 4, 0)
+      GdkRGBA rgba;
+      iupgdkRGBASet(&rgba, r, g, b);
+      g_object_set(G_OBJECT(tag), "foreground-rgba", &rgba, NULL);
+#else
       GdkColor color;
       iupgdkColorSetRGB(&color, r, g, b);
       g_object_set(G_OBJECT(tag), "foreground-gdk", &color, NULL);
+#endif
     }
   }
 
@@ -320,9 +318,15 @@ static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
     unsigned char r, g, b;
     if (iupStrToRGB(format, &r, &g, &b))
     {
+#if GTK_CHECK_VERSION(3, 4, 0)
+      GdkRGBA rgba;
+      iupgdkRGBASet(&rgba, r, g, b);
+      g_object_set(G_OBJECT(tag), "background-rgba", &rgba, NULL);
+#else
       GdkColor color;
       iupgdkColorSetRGB(&color, r, g, b);
       g_object_set(G_OBJECT(tag), "background-gdk", &color, NULL);
+#endif
     }
   }
 
@@ -1151,13 +1155,6 @@ static char* gtkTextGetReadOnlyAttrib(Ihandle* ih)
 }
 
 #if GTK_CHECK_VERSION(3, 20, 0)
-static void iupgdkRGBASet(GdkRGBA* rgba, unsigned char r, unsigned char g, unsigned char b)
-{
-  rgba->red = iupgtkColorToDouble(r);
-  rgba->green = iupgtkColorToDouble(g);
-  rgba->blue = iupgtkColorToDouble(b);
-  rgba->alpha = 1.0;
-}
 #endif
 
 static int gtkTextSetFgColorAttrib(Ihandle* ih, const char* value)

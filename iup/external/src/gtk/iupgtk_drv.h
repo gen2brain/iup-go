@@ -25,6 +25,9 @@ int iupgtkSetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value);
 void iupgtkUpdateMnemonic(Ihandle* ih);
 
 void iupgdkColorSetRGB(GdkColor* color, unsigned char r, unsigned char g, unsigned char b);
+#if GTK_CHECK_VERSION(3, 0, 0)
+void iupgdkRGBASet(GdkRGBA* rgba, unsigned char r, unsigned char g, unsigned char b);
+#endif
 void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b);
 void iupgtkSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b);
 
