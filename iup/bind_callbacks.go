@@ -212,11 +212,6 @@ static void goIupSetRestoredFunc(Ihandle *ih) {
 	IupSetCallback(ih, "RESTORED_CB", (Icallback) goIupRestoredCB);
 }
 
-extern int goIupCanvasActionCB(void *, float posx, float posy);
-static void goIupSetCanvasActionFunc(Ihandle *ih) {
-	IupSetCallback(ih, "ACTION", (Icallback) goIupCanvasActionCB);
-}
-
 extern int goIupSwapBuffersCB(void *);
 static void goIupSetSwapBuffersFunc(Ihandle *ih) {
 	IupSetCallback(ih, "SWAPBUFFERS_CB", (Icallback) goIupSwapBuffersCB);
@@ -1592,34 +1587,6 @@ func setRestoredFunc(ih Ihandle, f RestoredFunc) {
 	callbacks.Store("RESTORED_CB_"+ih.GetAttribute("UUID"), ch)
 
 	C.goIupSetRestoredFunc(ih.ptr())
-}
-
-//--------------------
-
-// CanvasActionFunc for Canvas ACTION callback.
-// Action generated when the canvas needs to be redrawn.
-type CanvasActionFunc func(ih Ihandle, posx, posy float64) int
-
-//export goIupCanvasActionCB
-func goIupCanvasActionCB(ih unsafe.Pointer, posx, posy C.float) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("CANVAS_ACTION_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "CANVAS_ACTION_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(CanvasActionFunc)
-
-	return C.int(f((Ihandle)(ih), float64(posx), float64(posy)))
-}
-
-// setCanvasActionFunc for Canvas ACTION callback.
-func setCanvasActionFunc(ih Ihandle, f CanvasActionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("CANVAS_ACTION_"+ih.GetAttribute("UUID"), ch)
-
-	C.goIupSetCanvasActionFunc(ih.ptr())
 }
 
 //--------------------
