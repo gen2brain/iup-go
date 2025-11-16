@@ -689,7 +689,28 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
 
 void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
-  *w += h;
+  static int spin_min_width = -1;
+
+  (void)h;
+  (void)ih;
+
+  /* Measure the minimum width required by NSStepper */
+  if (spin_min_width < 0)
+  {
+    NSStepper* temp_stepper = [[NSStepper alloc] initWithFrame:NSZeroRect];
+    [temp_stepper setMinValue:0];
+    [temp_stepper setMaxValue:100];
+    [temp_stepper setIncrement:1];
+
+    NSSize fittingSize = [temp_stepper fittingSize];
+    spin_min_width = (int)fittingSize.width;
+
+    [temp_stepper release];
+  }
+
+  /* Only enforce minimum width, don't force expansion */
+  if (*w < spin_min_width)
+    *w = spin_min_width;
 }
 
 void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
