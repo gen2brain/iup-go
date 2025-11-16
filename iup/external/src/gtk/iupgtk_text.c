@@ -45,7 +45,6 @@
 
 void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
-#if GTK_CHECK_VERSION(3, 0, 0)
   static int spin_min_width = -1;
 
   (void)h;
@@ -55,10 +54,16 @@ void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
   if (spin_min_width < 0)
   {
     GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
-    int min_w, nat_w;
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+    int min_w, nat_w;
     gtk_widget_get_preferred_width(temp_spin, &min_w, &nat_w);
     spin_min_width = min_w;
+#else
+    GtkRequisition requisition;
+    gtk_widget_size_request(temp_spin, &requisition);
+    spin_min_width = requisition.width;
+#endif
 
     g_object_ref_sink(temp_spin);
     g_object_unref(temp_spin);
@@ -67,12 +72,6 @@ void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
   /* Only enforce minimum width, don't force expansion */
   if (*w < spin_min_width)
     *w = spin_min_width;
-#else
-  int spin_size = 16;
-  *w += spin_size;
-  (void)h;
-  (void)ih;
-#endif
 }
 
 void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
@@ -89,7 +88,9 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 
   /* GtkSpinButton needs extra vertical space to prevent bottom clipping */
   if (iupAttribGetBoolean(ih, "SPIN"))
-    (*y) += 8;
+  {
+    (*y) += 7;
+  }
 }
 
 static void gtkTextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
