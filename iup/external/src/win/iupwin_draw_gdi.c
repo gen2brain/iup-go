@@ -62,6 +62,9 @@ struct _IdrawCanvas{
   int sim_aa;
 
   IdrawCanvas* wdl_gc;
+
+  /* GDI+ antialiasing cache */
+  dummy_GpGraphics* cached_graphics;
 };
 
 void iupwinDrawInit(void)
@@ -129,6 +132,10 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
     return;
   }
 
+  /* Cleanup GDI+ graphics cache */
+  if (dc->cached_graphics)
+    gdix_vtable->fn_DeleteGraphics(dc->cached_graphics);
+
   SelectObject(dc->hBitmapDC, dc->hOldBitmap);
   DeleteObject(dc->hBitmap);
   DeleteDC(dc->hBitmapDC);  /* to match CreateCompatibleDC */
@@ -157,6 +164,13 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   {
     dc->w = w;
     dc->h = h;
+
+    /* Invalidate GDI+ graphics cache (HDC changed) */
+    if (dc->cached_graphics)
+    {
+      gdix_vtable->fn_DeleteGraphics(dc->cached_graphics);
+      dc->cached_graphics = NULL;
+    }
 
     SelectObject(dc->hBitmapDC, dc->hOldBitmap);
     DeleteObject(dc->hBitmap);
@@ -272,12 +286,21 @@ static int colorHasAlpha(long color)
   return iupDrawAlpha(color) != 255;
 }
 
+/* Cached GDI+ graphics getter - reuses graphics object for antialiasing */
+static dummy_GpGraphics* iGetCachedGraphicsSimAA(IdrawCanvas* dc)
+{
+  if (!dc->cached_graphics)
+  {
+    gdix_vtable->fn_CreateFromHDC(dc->hBitmapDC, &dc->cached_graphics);
+    gdix_vtable->fn_SetSmoothingMode(dc->cached_graphics, dummy_SmoothingModeAntiAlias);
+  }
+
+  return dc->cached_graphics;
+}
+
 static void iwinDrawRectangleSimAA(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-  dummy_GpGraphics* graphics;
-
-  gdix_vtable->fn_CreateFromHDC(dc->hBitmapDC, &graphics);
-  gdix_vtable->fn_SetSmoothingMode(graphics, dummy_SmoothingModeAntiAlias);
+  dummy_GpGraphics* graphics = iGetCachedGraphicsSimAA(dc);
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -301,8 +324,6 @@ static void iwinDrawRectangleSimAA(IdrawCanvas* dc, int x1, int y1, int x2, int 
 
     gdix_vtable->fn_DeletePen(pen);
   }
-
-  gdix_vtable->fn_DeleteGraphics(graphics);
 }
 
 IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
@@ -359,11 +380,8 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
 
 static void iwinDrawLineSimAA(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-  dummy_GpGraphics* graphics;
+  dummy_GpGraphics* graphics = iGetCachedGraphicsSimAA(dc);
   dummy_GpPen* pen;
-
-  gdix_vtable->fn_CreateFromHDC(dc->hBitmapDC, &graphics);
-  gdix_vtable->fn_SetSmoothingMode(graphics, dummy_SmoothingModeAntiAlias);
 
   gdix_vtable->fn_CreatePen1(iupColor2ARGB(color), (float)line_width, dummy_UnitPixel, &pen);
   iwinDrawSetLineStyleSimAA(style, pen);
@@ -371,8 +389,6 @@ static void iwinDrawLineSimAA(IdrawCanvas* dc, int x1, int y1, int x2, int y2, l
   gdix_vtable->fn_DrawLine(graphics, pen, (float)x1, (float)y1, (float)x2, (float)y2);
 
   gdix_vtable->fn_DeletePen(pen);
-
-  gdix_vtable->fn_DeleteGraphics(graphics);
 }
 
 IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
@@ -419,10 +435,7 @@ static void iwinDrawArcSimAA(IdrawCanvas* dc, int x1, int y1, int x2, int y2, do
 {
   float xc, yc, rx, ry, dx, dy;
   float baseAngle, sweepAngle;
-  dummy_GpGraphics* graphics;
-
-  gdix_vtable->fn_CreateFromHDC(dc->hBitmapDC, &graphics);
-  gdix_vtable->fn_SetSmoothingMode(graphics, dummy_SmoothingModeAntiAlias);
+  dummy_GpGraphics* graphics = iGetCachedGraphicsSimAA(dc);
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -464,8 +477,6 @@ static void iwinDrawArcSimAA(IdrawCanvas* dc, int x1, int y1, int x2, int y2, do
 
     gdix_vtable->fn_DeletePen(pen);
   }
-
-  gdix_vtable->fn_DeleteGraphics(graphics);
 }
 
 IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
@@ -516,12 +527,10 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
 static void iwinDrawPolygonSimAA(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   int i;
-  dummy_GpGraphics* graphics;
+  dummy_GpGraphics* graphics = iGetCachedGraphicsSimAA(dc);
   dummy_GpPath* path;
 
-  gdix_vtable->fn_CreateFromHDC(dc->hBitmapDC, &graphics);
   gdix_vtable->fn_CreatePath(dummy_FillModeAlternate, &path);
-  gdix_vtable->fn_SetSmoothingMode(graphics, dummy_SmoothingModeAntiAlias);
 
   for (i = 0; i < count - 1; i++)
   {
@@ -551,7 +560,6 @@ static void iwinDrawPolygonSimAA(IdrawCanvas* dc, int* points, int count, long c
   }
 
   gdix_vtable->fn_DeletePath(path);
-  gdix_vtable->fn_DeleteGraphics(graphics);
 }
 
 IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)

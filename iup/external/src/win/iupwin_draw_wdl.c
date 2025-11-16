@@ -41,10 +41,20 @@ struct _IdrawCanvas{
   HDC hDC;
 
   int clip_x1, clip_y1, clip_x2, clip_y2;
+
+  /* Performance caches */
+  WD_HBRUSH cached_brush;
+  WD_COLOR cached_brush_color;
+  int backend_type;  /* WD_BACKEND_D2D or WD_BACKEND_GDIPLUS */
+  HFONT cached_hfont;
+  WD_HFONT cached_wdfont;
 };
 
 /* must be the same in wdInitialize and wdTerminate */
 const DWORD wdl_flags = WD_INIT_COREAPI | WD_INIT_IMAGEAPI | WD_INIT_STRINGAPI;
+
+/* Global stroke style cache */
+static WD_HSTROKESTYLE g_cached_stroke_styles[4] = {NULL, NULL, NULL, NULL};
 
 int iupwinDrawInitWDL(void)
 {
@@ -65,6 +75,18 @@ int iupwinDrawInitWDL(void)
 int iupwinDrawFinishWDL(void)
 {
   int ret = 0;
+  int i;
+
+  /* Destroy cached stroke styles */
+  for (i = 0; i < 4; i++)
+  {
+    if (g_cached_stroke_styles[i])
+    {
+      wdDestroyStrokeStyle(g_cached_stroke_styles[i]);
+      g_cached_stroke_styles[i] = NULL;
+    }
+  }
+
   if (wdBackend() == WD_BACKEND_D2D)
     ret = 1;
 
@@ -81,6 +103,7 @@ IdrawCanvas* iupdrvDrawCreateCanvasWDL(Ihandle* ih)
   char *rcPaint;
 
   dc->ih = ih;
+  dc->backend_type = wdBackend();  /* Cache backend type */
 
   dc->hWnd = (HWND)IupGetAttribute(ih, "HWND");  /* Use the attribute, so it can work with FileDlg preview area */
 
@@ -124,6 +147,12 @@ IdrawCanvas* iupdrvDrawCreateCanvasWDL(Ihandle* ih)
 
 void iupdrvDrawKillCanvasWDL(IdrawCanvas* dc)
 {
+  /* Destroy cached resources */
+  if (dc->cached_brush)
+    wdDestroyBrush(dc->cached_brush);
+  if (dc->cached_wdfont)
+    wdDestroyFont(dc->cached_wdfont);
+
   wdSetClip(dc->hCanvas, NULL, NULL); /* must reset clip before destroy */
   wdDestroyCanvas(dc->hCanvas);
 
@@ -163,45 +192,94 @@ void iupdrvDrawGetSizeWDL(IdrawCanvas* dc, int *w, int *h)
   if (h) *h = dc->h;
 }
 
-static WD_HSTROKESTYLE iDrawSetLineStyle(int style)
-{
-  if (style == IUP_DRAW_STROKE_DASH)
-  {
-    float dashes[2] = { 9.0f, 3.0f };
-    return wdCreateStrokeStyleCustom(dashes, 2, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
-  }
-  else if (style == IUP_DRAW_STROKE_DOT)
-  {
-    float dashes[2] = { 1.0f, 2.0f };
-    return wdCreateStrokeStyleCustom(dashes, 2, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
-  }
-  else if (style == IUP_DRAW_STROKE_DASH_DOT)
-  {
-    float dashes[4] = { 7.0f, 3.0f, 1.0f, 3.0f };
-    return wdCreateStrokeStyleCustom(dashes, 4, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
-  }
-  else if (style == IUP_DRAW_STROKE_DASH_DOT_DOT)
-  {
-    float dashes[6] = { 7.0f, 3.0f, 1.0f, 3.0f, 1.0f, 3.0f };
-    return wdCreateStrokeStyleCustom(dashes, 6, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
-  }
-  else
-    return NULL;
-}
-
-static void iDrawRelaseStyle(WD_HSTROKESTYLE stroke_style)
-{
-  if (stroke_style)
-    wdDestroyStrokeStyle(stroke_style);
-}
-
+/* Helper macros */
 #define iupInt2Float(_x) ((float)_x)
 #define iupInt2FloatW(_x) ((float)_x)
 #define iupColor2ARGB(_c) WD_ARGB(iupDrawAlpha(_c), iupDrawRed(_c), iupDrawGreen(_c), iupDrawBlue(_c))
 
+/* Cached brush getter - reuses brush if color matches */
+static WD_HBRUSH iGetCachedBrush(IdrawCanvas* dc, long color)
+{
+  WD_COLOR wdcolor = iupColor2ARGB(color);
+
+  if (dc->cached_brush && dc->cached_brush_color == wdcolor)
+    return dc->cached_brush;  /* Cache hit */
+
+  /* Cache miss - destroy old and create new */
+  if (dc->cached_brush)
+    wdDestroyBrush(dc->cached_brush);
+
+  dc->cached_brush = wdCreateSolidBrush(dc->hCanvas, wdcolor);
+  dc->cached_brush_color = wdcolor;
+
+  return dc->cached_brush;
+}
+
+/* Cached font getter - reuses WD_HFONT if GDI HFONT matches */
+static WD_HFONT iGetCachedFont(IdrawCanvas* dc, HFONT hFont)
+{
+  if (dc->cached_wdfont && dc->cached_hfont == hFont)
+    return dc->cached_wdfont;
+
+  if (dc->cached_wdfont)
+    wdDestroyFont(dc->cached_wdfont);
+
+  dc->cached_hfont = hFont;
+  dc->cached_wdfont = wdCreateFontWithGdiHandle(hFont);
+
+  return dc->cached_wdfont;
+}
+
+/* Cached stroke style getter - uses global cache */
+static WD_HSTROKESTYLE iGetCachedStrokeStyle(int style)
+{
+  int index;
+  float dashes[6];
+  int dash_count;
+
+  if (style == IUP_DRAW_STROKE || style == IUP_DRAW_FILL)
+    return NULL;
+
+  switch(style)
+  {
+    case IUP_DRAW_STROKE_DASH:
+      index = 0;
+      dashes[0] = 9.0f; dashes[1] = 3.0f;
+      dash_count = 2;
+      break;
+    case IUP_DRAW_STROKE_DOT:
+      index = 1;
+      dashes[0] = 1.0f; dashes[1] = 2.0f;
+      dash_count = 2;
+      break;
+    case IUP_DRAW_STROKE_DASH_DOT:
+      index = 2;
+      dashes[0] = 7.0f; dashes[1] = 3.0f; dashes[2] = 1.0f; dashes[3] = 3.0f;
+      dash_count = 4;
+      break;
+    case IUP_DRAW_STROKE_DASH_DOT_DOT:
+      index = 3;
+      dashes[0] = 7.0f; dashes[1] = 3.0f; dashes[2] = 1.0f;
+      dashes[3] = 3.0f; dashes[4] = 1.0f; dashes[5] = 3.0f;
+      dash_count = 6;
+      break;
+    default:
+      return NULL;
+  }
+
+  /* Lazy initialization */
+  if (!g_cached_stroke_styles[index])
+  {
+    g_cached_stroke_styles[index] = wdCreateStrokeStyleCustom(
+      dashes, dash_count, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
+  }
+
+  return g_cached_stroke_styles[index];
+}
+
 void iupdrvDrawRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-  WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
+  WD_HBRUSH brush = iGetCachedBrush(dc, color);
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -210,22 +288,17 @@ void iupdrvDrawRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, lon
     wdFillRect(dc->hCanvas, brush, iupInt2Float(x1 - 0.5f), iupInt2Float(y1 - 0.5f), iupInt2Float(x2 + 0.5f), iupInt2Float(y2 + 0.5f));
   else
   {
-    WD_HSTROKESTYLE stroke_style = iDrawSetLineStyle(style);
+    WD_HSTROKESTYLE stroke_style = iGetCachedStrokeStyle(style);
     wdDrawRectStyled(dc->hCanvas, brush, iupInt2Float(x1), iupInt2Float(y1), iupInt2Float(x2), iupInt2Float(y2), iupInt2FloatW(line_width), stroke_style);
-    iDrawRelaseStyle(stroke_style);
   }
-
-  wdDestroyBrush(brush);
 }
 
 void iupdrvDrawLineWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-  WD_HBRUSH brush;
-  WD_HSTROKESTYLE stroke_style;
+  WD_HBRUSH brush = iGetCachedBrush(dc, color);
+  WD_HSTROKESTYLE stroke_style = iGetCachedStrokeStyle(style);
 
-  brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
-  stroke_style = iDrawSetLineStyle(style);
-  if (wdBackend() == WD_BACKEND_D2D && line_width == 1)
+  if (dc->backend_type == WD_BACKEND_D2D && line_width == 1)
   {
     /* compensate Direct2D horizontal and vertical lines when line_width == 1 */
     if (x1 == x2)
@@ -237,18 +310,13 @@ void iupdrvDrawLineWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long col
   }
   else
     wdDrawLineStyled(dc->hCanvas, brush, iupInt2Float(x1), iupInt2Float(y1), iupInt2Float(x2), iupInt2Float(y2), iupInt2FloatW(line_width), stroke_style);
-  iDrawRelaseStyle(stroke_style);
-  wdDestroyBrush(brush);
 }
 
 void iupdrvDrawArcWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
   float xc, yc, rx, ry;
   float baseAngle, sweepAngle;
-  WD_HBRUSH brush;
-
-  brush = wdCreateSolidBrush(dc->hCanvas, 0);
-  wdSetSolidBrushColor(brush, iupColor2ARGB(color));
+  WD_HBRUSH brush = iGetCachedBrush(dc, color);
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -271,25 +339,20 @@ void iupdrvDrawArcWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1
   }
   else
   {
-    WD_HSTROKESTYLE stroke_style = iDrawSetLineStyle(style);
+    WD_HSTROKESTYLE stroke_style = iGetCachedStrokeStyle(style);
     if (sweepAngle == 360.0f)
       wdDrawEllipseStyled(dc->hCanvas, brush, xc, yc, rx, ry, iupInt2FloatW(line_width), stroke_style);
     else
       wdDrawEllipseArcStyled(dc->hCanvas, brush, xc, yc, rx, ry, baseAngle, sweepAngle, iupInt2FloatW(line_width), stroke_style);
-    iDrawRelaseStyle(stroke_style);
   }
-
-  wdDestroyBrush(brush);
 }
 
 void iupdrvDrawPolygonWDL(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
-  WD_HBRUSH brush;
+  WD_HBRUSH brush = iGetCachedBrush(dc, color);
   WD_HPATH path;
   WD_PATHSINK sink;
   int i;
-
-  brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
 
   path = wdCreatePath(dc->hCanvas);
   wdOpenPathSink(&sink, path);
@@ -305,13 +368,11 @@ void iupdrvDrawPolygonWDL(IdrawCanvas* dc, int* points, int count, long color, i
     wdFillPath(dc->hCanvas, brush, path);
   else
   {
-    WD_HSTROKESTYLE stroke_style = iDrawSetLineStyle(style);
+    WD_HSTROKESTYLE stroke_style = iGetCachedStrokeStyle(style);
     wdDrawPathStyled(dc->hCanvas, brush, path, iupInt2FloatW(line_width), stroke_style);
-    iDrawRelaseStyle(stroke_style);
   }
 
   wdDestroyPath(path);
-  wdDestroyBrush(brush);
 }
 
 void iupdrvDrawGetClipRectWDL(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
@@ -379,11 +440,11 @@ void iupdrvDrawTextWDL(IdrawCanvas* dc, const char* text, int len, int x, int y,
   WD_RECT rect;
   DWORD dwFlags = WD_STR_TOPALIGN;
   WCHAR *wtext = iupwinStrToSystemLen(text, &len);
-  WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
+  WD_HBRUSH brush = iGetCachedBrush(dc, color);
   int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
 
   HFONT hFont = (HFONT)iupwinGetHFont(font);
-  WD_HFONT wdFont = wdCreateFontWithGdiHandle(hFont);
+  WD_HFONT wdFont = iGetCachedFont(dc, hFont);
   int layout_w = w, layout_h = h;
 
   if (text_orientation && layout_center)
@@ -408,7 +469,7 @@ void iupdrvDrawTextWDL(IdrawCanvas* dc, const char* text, int len, int x, int y,
       dwFlags |= WD_STR_ENDELLIPSIS;
   }
 
-  if (wdBackend() == WD_BACKEND_GDIPLUS)
+  if (dc->backend_type == WD_BACKEND_GDIPLUS)
   {
     /* compensate GDI+ internal padding */
     WD_FONTMETRICS metrics;
@@ -431,9 +492,6 @@ void iupdrvDrawTextWDL(IdrawCanvas* dc, const char* text, int len, int x, int y,
     dwFlags |= WD_STR_NOCLIP;
 
   wdDrawString(dc->hCanvas, wdFont, &rect, wtext, len, brush, dwFlags);
-
-  wdDestroyBrush(brush);
-  wdDestroyFont(wdFont);
 
   /* restore settings */
   if (text_orientation)
@@ -464,14 +522,12 @@ void iupdrvDrawImageWDL(IdrawCanvas* dc, const char* name, int make_inactive, co
 
 void iupdrvDrawSelectRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
-  WD_HBRUSH brush;
+  WD_HBRUSH brush = iGetCachedBrush(dc, iupDrawColor(0, 0, 255, 153));  /* R=0, G=0, B=255, A=153 (blue semi-transparent) */
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  brush = wdCreateSolidBrush(dc->hCanvas, WD_ARGB(153, 0, 0, 255));  /* R=0, G=0, B=255, A=153 (blue semi-transparent) */
   wdFillRect(dc->hCanvas, brush, iupInt2Float(x1 - 0.5f), iupInt2Float(y1 - 0.5f), iupInt2Float(x2 + 0.5f), iupInt2Float(y2 + 0.5f));
-  wdDestroyBrush(brush);
 }
 
 void iupdrvDrawFocusRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
