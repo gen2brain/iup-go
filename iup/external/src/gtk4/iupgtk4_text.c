@@ -1,0 +1,1890 @@
+/** \file
+ * \brief Text Control for GTK4
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
+#include <gtk/gtk.h>
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <memory.h>
+#include <stdarg.h>
+
+#include "iup.h"
+#include "iupcbs.h"
+
+#include "iup_object.h"
+#include "iup_layout.h"
+#include "iup_attrib.h"
+#include "iup_str.h"
+#include "iup_image.h"
+#include "iup_mask.h"
+#include "iup_drv.h"
+#include "iup_drvfont.h"
+#include "iup_image.h"
+#include "iup_key.h"
+#include "iup_array.h"
+#include "iup_text.h"
+
+#include "iupgtk4_drv.h"
+
+
+void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+{
+  static int spin_min_width = -1;
+
+  (void)h;
+  (void)ih;
+
+  /* Measure the minimum width required by GtkSpinButton */
+  if (spin_min_width < 0)
+  {
+    GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
+    int min_w, nat_w;
+
+    gtk_widget_measure(temp_spin, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
+    spin_min_width = min_w;
+
+    g_object_ref_sink(temp_spin);
+    g_object_unref(temp_spin);
+  }
+
+  if (*w < spin_min_width)
+    *w = spin_min_width;
+}
+
+void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
+{
+  /* GtkEntry has larger internal padding than GTK3 */
+  int border_size = 2 * 9;
+  int orig_x = *x, orig_y = *y;
+  (*x) += border_size;
+  (*y) += border_size;
+
+  /* NOTE: This function is also called by calendar widget, which doesn't have ih->data */
+  if (ih->data && ih->data->is_multiline)
+  {
+    (*x) += 2;
+    (*y) += 2;
+  }
+
+  /* GtkSpinButton needs extra vertical space to prevent bottom clipping (same as GTK3) */
+  if (iupAttribGetBoolean(ih, "SPIN"))
+    (*y) += 8;
+
+  (void)orig_x;
+  (void)orig_y;
+}
+
+static void gtkTextMoveIterToLinCol(GtkTextBuffer* buffer, GtkTextIter* iter, int lin, int col)
+{
+  int line_count = gtk_text_buffer_get_line_count(buffer);
+  if (lin < 1) lin = 1;
+  if (lin > line_count) lin = line_count;
+  lin--;
+  col--;
+
+  gtk_text_buffer_get_iter_at_line(buffer, iter, lin);
+
+  if (col != 0)
+  {
+    int line_length = gtk_text_iter_get_chars_in_line(iter);
+    if (line_length > 0)
+    {
+      if (col > line_length)
+        col = line_length;
+      gtk_text_iter_set_line_offset(iter, col);
+    }
+  }
+}
+
+static void gtkTextGetLinColFromPosition(const GtkTextIter *iter, int *lin, int *col)
+{
+  *lin = gtk_text_iter_get_line(iter);
+  *col = gtk_text_iter_get_line_offset(iter);
+  (*lin)++;
+  (*col)++;
+}
+
+void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+{
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtkTextMoveIterToLinCol(buffer, &iter, lin, col);
+    *pos = gtk_text_iter_get_offset(&iter);
+  }
+  else
+  {
+    *pos = col - 1;
+  }
+}
+
+void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+{
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_get_iter_at_offset(buffer, &iter, pos);
+    gtkTextGetLinColFromPosition(&iter, lin, col);
+  }
+  else
+  {
+    *col = pos + 1;
+    *lin = 1;
+  }
+}
+
+static int gtkTextConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter iter;
+    int mx = x, my = y;
+    gtk_text_view_window_to_buffer_coords(GTK_TEXT_VIEW(ih->handle), GTK_TEXT_WINDOW_WIDGET, x, y, &mx, &my);
+    gtk_text_view_get_iter_at_location(GTK_TEXT_VIEW(ih->handle), &iter, mx, my);
+    return gtk_text_iter_get_offset(&iter);
+  }
+  else
+  {
+    int pos = 0;
+    int trailing;
+    const char* text = gtk_editable_get_text(GTK_EDITABLE(ih->handle));
+    PangoLayout* layout = gtk_widget_create_pango_layout(ih->handle, text);
+    pango_layout_xy_to_index(layout, x * PANGO_SCALE, y * PANGO_SCALE, &pos, &trailing);
+    g_object_unref(layout);
+    return pos + trailing;
+  }
+}
+
+static void gtkTextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
+{
+  int val;
+  char* format;
+
+  format = iupAttribGetStr(formattag, "INDENT");
+  if (format)
+  {
+    if (iupStrToInt(format, &val))
+      g_object_set(G_OBJECT(tag), "indent", val, NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "ALIGNMENT");
+  if (format)
+  {
+    GtkJustification justify;
+
+    if (iupStrEqualNoCase(format, "JUSTIFY"))
+      justify = GTK_JUSTIFY_FILL;
+    else if (iupStrEqualNoCase(format, "ACENTER"))
+      justify = GTK_JUSTIFY_CENTER;
+    else if (iupStrEqualNoCase(format, "ARIGHT"))
+      justify = GTK_JUSTIFY_RIGHT;
+    else
+      justify = GTK_JUSTIFY_LEFT;
+
+    g_object_set(G_OBJECT(tag), "justification", justify, NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "SPACEBEFORE");
+  if (format)
+  {
+    if (iupStrToInt(format, &val))
+      g_object_set(G_OBJECT(tag), "pixels-above-lines", val, NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "SPACEAFTER");
+  if (format)
+  {
+    if (iupStrToInt(format, &val))
+      g_object_set(G_OBJECT(tag), "pixels-below-lines", val, NULL);
+  }
+}
+
+static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
+{
+  int val;
+  char* format;
+
+  format = iupAttribGetStr(formattag, "DISABLED");
+  if (format)
+  {
+    if (iupStrBoolean(format))
+      g_object_set(G_OBJECT(tag), "foreground", "gray", NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "RISE");
+  if (format)
+  {
+    if (iupStrToInt(format, &val))
+      g_object_set(G_OBJECT(tag), "rise", val * PANGO_SCALE, NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "UNDERLINE");
+  if (format)
+  {
+    if (iupStrBoolean(format))
+      g_object_set(G_OBJECT(tag), "underline", PANGO_UNDERLINE_SINGLE, NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "STRIKEOUT");
+  if (format)
+  {
+    if (iupStrBoolean(format))
+      g_object_set(G_OBJECT(tag), "strikethrough", TRUE, NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "ITALIC");
+  if (format)
+  {
+    if (iupStrBoolean(format))
+      g_object_set(G_OBJECT(tag), "style", PANGO_STYLE_ITALIC, NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "WEIGHT");
+  if (format)
+  {
+    if (iupStrEqualNoCase(format, "BOLD"))
+      g_object_set(G_OBJECT(tag), "weight", PANGO_WEIGHT_BOLD, NULL);
+    else if (iupStrEqualNoCase(format, "NORMAL"))
+      g_object_set(G_OBJECT(tag), "weight", PANGO_WEIGHT_NORMAL, NULL);
+    else if (iupStrEqualNoCase(format, "LIGHT"))
+      g_object_set(G_OBJECT(tag), "weight", PANGO_WEIGHT_LIGHT, NULL);
+    else if (iupStrToInt(format, &val))
+      g_object_set(G_OBJECT(tag), "weight", val, NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "FONTSIZE");
+  if (format)
+  {
+    if (iupStrToInt(format, &val))
+      g_object_set(G_OBJECT(tag), "size", val * PANGO_SCALE, NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "FONTFACE");
+  if (format)
+  {
+    g_object_set(G_OBJECT(tag), "family", format, NULL);
+  }
+
+  format = iupAttribGetStr(formattag, "BGCOLOR");
+  if (format)
+  {
+    unsigned char r, g, b, a;
+    if (iupStrToRGBA(format, &r, &g, &b, &a))
+    {
+      GdkRGBA rgba;
+      rgba.red = r / 255.0;
+      rgba.green = g / 255.0;
+      rgba.blue = b / 255.0;
+      rgba.alpha = a / 255.0;
+      g_object_set(G_OBJECT(tag), "background-rgba", &rgba, NULL);
+    }
+  }
+
+  format = iupAttribGetStr(formattag, "FGCOLOR");
+  if (format)
+  {
+    unsigned char r, g, b, a;
+    if (iupStrToRGBA(format, &r, &g, &b, &a))
+    {
+      GdkRGBA rgba;
+      rgba.red = r / 255.0;
+      rgba.green = g / 255.0;
+      rgba.blue = b / 255.0;
+      rgba.alpha = a / 255.0;
+      g_object_set(G_OBJECT(tag), "foreground-rgba", &rgba, NULL);
+    }
+  }
+}
+
+static void gtkTextScrollToVisible(Ihandle* ih)
+{
+  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+  GtkTextMark* mark = gtk_text_buffer_get_insert(buffer);
+  gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(ih->handle), mark);
+}
+
+static gboolean gtk4TextMoveCursor(GtkWidget *widget, GtkMovementStep step, gint count, gboolean extend_selection, Ihandle* ih)
+{
+  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  if (cb)
+  {
+    int pos, lin, col;
+    if (ih->data->is_multiline)
+    {
+      GtkTextIter iter;
+      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
+      pos = gtk_text_iter_get_offset(&iter);
+      gtkTextGetLinColFromPosition(&iter, &lin, &col);
+    }
+    else
+    {
+      pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+      lin = 1;
+      col = pos + 1;
+    }
+    cb(ih, lin, col, pos);
+  }
+
+  (void)widget;
+  (void)step;
+  (void)count;
+  (void)extend_selection;
+  return FALSE;
+}
+
+static gboolean gtk4TextKeyReleaseEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
+{
+  (void)controller;
+  (void)keyval;
+  (void)keycode;
+  (void)state;
+
+  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  if (cb)
+  {
+    int pos, lin, col;
+    if (ih->data->is_multiline)
+    {
+      GtkTextIter iter;
+      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
+      pos = gtk_text_iter_get_offset(&iter);
+      gtkTextGetLinColFromPosition(&iter, &lin, &col);
+    }
+    else
+    {
+      pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+      lin = 1;
+      col = pos + 1;
+    }
+    cb(ih, lin, col, pos);
+  }
+
+  return FALSE;
+}
+
+static gboolean gtk4TextButtonEvent(GtkGestureClick *gesture, int n_press, double x, double y, Ihandle *ih)
+{
+  (void)gesture;
+  (void)n_press;
+  (void)x;
+  (void)y;
+
+  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  if (cb)
+  {
+    int pos, lin, col;
+    if (ih->data->is_multiline)
+    {
+      GtkTextIter iter;
+      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
+      pos = gtk_text_iter_get_offset(&iter);
+      gtkTextGetLinColFromPosition(&iter, &lin, &col);
+    }
+    else
+    {
+      pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+      lin = 1;
+      col = pos + 1;
+    }
+    cb(ih, lin, col, pos);
+  }
+
+  return FALSE;
+}
+
+static void gtk4TextBufferDeleteRange(GtkTextBuffer *buffer, GtkTextIter *start, GtkTextIter *end, Ihandle* ih)
+{
+  if (!ih->data->disable_callbacks)
+  {
+    int start_pos, end_pos;
+    IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+    if (cb)
+    {
+      int ret;
+      char *text, *suffix;
+
+      start_pos = gtk_text_iter_get_offset(start);
+      end_pos = gtk_text_iter_get_offset(end);
+
+      text = gtk_text_buffer_get_text(buffer, start, end, FALSE);
+
+      suffix = &text[end_pos - start_pos];
+      ret = cb(ih, start_pos + 1, (char*)iupgtk4StrConvertFromSystem(text));
+      if (ret == IUP_IGNORE)
+      {
+        g_signal_stop_emission_by_name(buffer, "delete_range");
+        return;
+      }
+    }
+  }
+
+  (void)buffer;
+}
+
+static void gtk4TextBufferInsertText(GtkTextBuffer *buffer, GtkTextIter *pos, gchar *text, gint len, Ihandle* ih)
+{
+  IFnis cb;
+  int ret;
+  char* insert_value;
+  int start_pos;
+
+  if (ih->data->disable_callbacks)
+    return;
+
+  cb = (IFnis)IupGetCallback(ih, "ACTION");
+
+  start_pos = gtk_text_iter_get_offset(pos);
+
+  if (len < 0)
+    insert_value = iupStrDup((char*)iupgtk4StrConvertFromSystem(text));
+  else
+  {
+    insert_value = malloc(len + 1);
+    memcpy(insert_value, text, len);
+    insert_value[len] = 0;
+    insert_value = (char*)iupgtk4StrConvertFromSystem(insert_value);
+  }
+
+  ret = iupEditCallActionCb(ih, cb, insert_value, start_pos, start_pos, ih->data->mask, ih->data->nc, 0, 1);  /* GTK4 is always UTF-8 */
+  if (ret == 0)
+  {
+    g_signal_stop_emission_by_name(buffer, "insert_text");
+    free(insert_value);
+    return;
+  }
+  else if (ret != -1)
+  {
+    char new_insert[2];
+    new_insert[0] = (char)ret;  /* replace key */
+    new_insert[1] = 0;
+
+    ih->data->disable_callbacks = 1;
+    gtk_text_buffer_insert(buffer, pos, new_insert, 1);
+    ih->data->disable_callbacks = 0;
+
+    g_signal_stop_emission_by_name(buffer, "insert_text");
+    free(insert_value);
+    return;
+  }
+
+  free(insert_value);
+  (void)buffer;
+  (void)len;
+}
+
+static void gtk4TextEntryDeleteText(GtkEditable *editable, gint start_pos, gint end_pos, Ihandle* ih)
+{
+  if (!ih->data->disable_callbacks)
+  {
+    IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
+    if (cb)
+    {
+      int ret;
+      char *text, *suffix;
+      const char* entry_text = gtk_editable_get_text(editable);
+
+      text = iupStrDup((char*)iupgtk4StrConvertFromSystem(entry_text));
+
+      suffix = &text[end_pos];
+      text[end_pos] = 0;
+
+      ret = cb(ih, start_pos + 1, &text[start_pos]);
+
+      text[end_pos] = *suffix;
+      free(text);
+
+      if (ret == IUP_IGNORE)
+      {
+        g_signal_stop_emission_by_name(editable, "delete_text");
+        return;
+      }
+    }
+  }
+
+  (void)editable;
+}
+
+static void gtk4TextEntryInsertText(GtkEditable *editable, const gchar *text, gint len, gint *pos, Ihandle* ih)
+{
+  IFnis cb;
+  int ret;
+  char* insert_value;
+
+  if (ih->data->disable_callbacks)
+    return;
+
+  cb = (IFnis)IupGetCallback(ih, "ACTION");
+
+  if (len < 0)
+    insert_value = iupStrDup((char*)iupgtk4StrConvertFromSystem(text));
+  else
+  {
+    insert_value = malloc(len + 1);
+    memcpy(insert_value, text, len);
+    insert_value[len] = 0;
+    insert_value = (char*)iupgtk4StrConvertFromSystem(insert_value);
+  }
+
+  ret = iupEditCallActionCb(ih, cb, insert_value, *pos, *pos, ih->data->mask, ih->data->nc, 0, 1);  /* GTK4 is always UTF-8 */
+  if (ret == 0)
+  {
+    g_signal_stop_emission_by_name(editable, "insert_text");
+    free(insert_value);
+    return;
+  }
+  else if (ret != -1)
+  {
+    char new_insert[2];
+    new_insert[0] = (char)ret;  /* replace key */
+    new_insert[1] = 0;
+
+    ih->data->disable_callbacks = 1;
+    gtk_editable_insert_text(editable, new_insert, 1, pos);
+    ih->data->disable_callbacks = 0;
+
+    g_signal_stop_emission_by_name(editable, "insert_text");
+    free(insert_value);
+    return;
+  }
+
+  free(insert_value);
+  (void)editable;
+  (void)len;
+}
+
+static void gtk4TextChanged(GtkWidget *widget, Ihandle* ih)
+{
+  if (!ih->data->disable_callbacks)
+  {
+    IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+    if (cb)
+      cb(ih);
+  }
+
+  (void)widget;
+}
+
+static void gtk4TextSpinValueChanged(GtkSpinButton *spinbutton, Ihandle* ih)
+{
+  if (!ih->data->disable_callbacks)
+  {
+    IFni cb = (IFni)IupGetCallback(ih, "SPIN_CB");
+    if (cb)
+    {
+      int pos = gtk_spin_button_get_value_as_int(spinbutton);
+      cb(ih, pos);
+    }
+  }
+
+  (void)spinbutton;
+}
+
+static gboolean gtk4TextSpinOutput(GtkSpinButton *spinbutton, Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUPGTK4_SPIN_NOAUTO"))
+  {
+    return TRUE;
+  }
+  (void)spinbutton;
+  (void)ih;
+  return FALSE;
+}
+
+static gint gtk4TextSpinInput(GtkSpinButton *spinbutton, gdouble *new_val, Ihandle* ih)
+{
+  int pos;
+  const char* value = gtk_editable_get_text(GTK_EDITABLE(spinbutton));
+
+  if (!value || value[0] == 0)
+    return GTK_INPUT_ERROR;
+
+  if (iupStrToInt(value, &pos))
+  {
+    *new_val = (double)pos;
+    return TRUE;
+  }
+
+  (void)ih;
+  return GTK_INPUT_ERROR;
+}
+
+static char* gtk4TextGetValueAttrib(Ihandle* ih)
+{
+  char* value;
+
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter start_iter;
+    GtkTextIter end_iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_get_start_iter(buffer, &start_iter);
+    gtk_text_buffer_get_end_iter(buffer, &end_iter);
+    value = iupStrReturnStr(iupgtk4StrConvertFromSystem(gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE)));
+  }
+  else
+    value = iupStrReturnStr(iupgtk4StrConvertFromSystem(gtk_editable_get_text(GTK_EDITABLE(ih->handle))));
+
+  if (!value) value = "";
+
+  return value;
+}
+
+static char* gtk4TextGetLineValueAttrib(Ihandle* ih)
+{
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter start_iter, end_iter, iter;
+    int lin;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
+    lin = gtk_text_iter_get_line(&iter);
+    gtk_text_buffer_get_iter_at_line(buffer, &start_iter, lin);
+    gtk_text_buffer_get_iter_at_line(buffer, &end_iter, lin);
+    gtk_text_iter_forward_to_line_end(&end_iter);
+    return iupStrReturnStr(iupgtk4StrConvertFromSystem(gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE)));
+  }
+  else
+    return gtk4TextGetValueAttrib(ih);
+}
+
+static int gtk4TextSetValueAttrib(Ihandle* ih, const char* value)
+{
+  if (!value) value = "";
+  ih->data->disable_callbacks = 1;
+  if (ih->data->is_multiline)
+  {
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_set_text(buffer, iupgtk4StrConvertToSystem(value), -1);
+  }
+  else
+    gtk_editable_set_text(GTK_EDITABLE(ih->handle), iupgtk4StrConvertToSystem(value));
+  ih->data->disable_callbacks = 0;
+  return 0;
+}
+
+static int gtk4TextSetInsertAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 0;
+  if (!value)
+    return 0;
+
+  ih->data->disable_callbacks = 1;
+  if (ih->data->is_multiline)
+  {
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_insert_at_cursor(buffer, iupgtk4StrConvertToSystem(value), -1);
+  }
+  else
+  {
+    int pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+    gtk_editable_insert_text(GTK_EDITABLE(ih->handle), iupgtk4StrConvertToSystem(value), -1, &pos);
+  }
+  ih->data->disable_callbacks = 0;
+
+  return 0;
+}
+
+static int gtk4TextSetAppendAttrib(Ihandle* ih, const char* value)
+{
+  int pos;
+  if (!ih->handle)
+    return 0;
+  ih->data->disable_callbacks = 1;
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_get_end_iter(buffer, &iter);
+    pos = gtk_text_buffer_get_char_count(buffer);
+    if (ih->data->append_newline && pos != 0)
+      gtk_text_buffer_insert(buffer, &iter, "\n", 1);
+    gtk_text_buffer_insert(buffer, &iter, iupgtk4StrConvertToSystem(value), -1);
+  }
+  else
+  {
+    pos = strlen(gtk_editable_get_text(GTK_EDITABLE(ih->handle))) + 1;
+    gtk_editable_insert_text(GTK_EDITABLE(ih->handle), iupgtk4StrConvertToSystem(value), -1, &pos);
+  }
+  ih->data->disable_callbacks = 0;
+  return 0;
+}
+
+static char* gtk4TextGetSelectionAttrib(Ihandle* ih)
+{
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter start_iter, end_iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+
+    if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
+    {
+      int start_lin, start_col, end_lin, end_col;
+      gtkTextGetLinColFromPosition(&start_iter, &start_lin, &start_col);
+      gtkTextGetLinColFromPosition(&end_iter, &end_lin, &end_col);
+      return iupStrReturnStrf("%d,%d:%d,%d", start_lin, start_col, end_lin, end_col);
+    }
+  }
+  else
+  {
+    int start = 0, end = 0;
+    if (gtk_editable_get_selection_bounds(GTK_EDITABLE(ih->handle), &start, &end))
+      return iupStrReturnIntInt(start + 1, end + 1, ':');
+  }
+
+  return NULL;
+}
+
+static int gtk4TextSelectionGetIter(Ihandle* ih, const char* value, GtkTextIter* start_iter, GtkTextIter* end_iter)
+{
+  int lin_start=1, col_start=1, lin_end=1, col_end=1;
+  GtkTextBuffer *buffer;
+
+  /* Used only when MULTILINE=YES */
+
+  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+  if (!value || iupStrEqualNoCase(value, "NONE"))
+  {
+    gtk_text_buffer_get_start_iter(buffer, start_iter);
+    *end_iter = *start_iter;
+    return 1;
+  }
+
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    gtk_text_buffer_get_start_iter(buffer, start_iter);
+    gtk_text_buffer_get_end_iter(buffer, end_iter);
+    return 1;
+  }
+
+  if (sscanf(value, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end)!=4)
+    return 0;
+
+  if (lin_start<1 || col_start<1 || lin_end<1 || col_end<1)
+    return 0;
+
+  gtkTextMoveIterToLinCol(buffer, start_iter, lin_start, col_start);
+  gtkTextMoveIterToLinCol(buffer, end_iter, lin_end, col_end);
+
+  return 1;
+}
+
+static int gtk4TextSelectionPosGetIter(Ihandle* ih, const char* value, GtkTextIter* start_iter, GtkTextIter* end_iter)
+{
+  int start=0, end=0;
+  GtkTextBuffer *buffer;
+
+  /* Used only when MULTILINE=YES */
+
+  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+  if (!value || iupStrEqualNoCase(value, "NONE"))
+  {
+    gtk_text_buffer_get_start_iter(buffer, start_iter);
+    *end_iter = *start_iter;
+    return 1;
+  }
+
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    gtk_text_buffer_get_start_iter(buffer, start_iter);
+    gtk_text_buffer_get_end_iter(buffer, end_iter);
+    return 1;
+  }
+
+  if (iupStrToIntInt(value, &start, &end, ':')!=2)
+    return 0;
+
+  if(start<0 || end<0)
+    return 0;
+
+  gtk_text_buffer_get_iter_at_offset(buffer, start_iter, start);
+  gtk_text_buffer_get_iter_at_offset(buffer, end_iter, end);
+
+  return 1;
+}
+
+static int gtk4TextSetSelectionAttrib(Ihandle* ih, const char* value)
+{
+  if (!value)
+    return 0;
+
+  if (ih->data->is_multiline)
+  {
+    int lin_start = 1, col_start = 1, lin_end = 1, col_end = 1;
+    GtkTextIter start_iter, end_iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+
+    if (iupStrEqualNoCase(value, "ALL"))
+    {
+      gtk_text_buffer_get_start_iter(buffer, &start_iter);
+      gtk_text_buffer_get_end_iter(buffer, &end_iter);
+      gtk_text_buffer_select_range(buffer, &start_iter, &end_iter);
+      return 0;
+    }
+
+    if (sscanf(value, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end) != 4)
+      return 0;
+
+    gtkTextMoveIterToLinCol(buffer, &start_iter, lin_start, col_start);
+    gtkTextMoveIterToLinCol(buffer, &end_iter, lin_end, col_end);
+
+    gtk_text_buffer_select_range(buffer, &start_iter, &end_iter);
+  }
+  else
+  {
+    int start = 1, end = 1;
+
+    if (iupStrEqualNoCase(value, "ALL"))
+    {
+      gtk_editable_select_region(GTK_EDITABLE(ih->handle), 0, -1);
+      return 0;
+    }
+
+    if (iupStrToIntInt(value, &start, &end, ':') != 2)
+      return 0;
+
+    if (start < 1) start = 1;
+    if (end < 1) end = 1;
+
+    gtk_editable_select_region(GTK_EDITABLE(ih->handle), start - 1, end - 1);
+  }
+
+  return 0;
+}
+
+static char* gtk4TextGetSelectionPosAttrib(Ihandle* ih)
+{
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter start_iter, end_iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+
+    if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
+    {
+      int start = gtk_text_iter_get_offset(&start_iter);
+      int end = gtk_text_iter_get_offset(&end_iter);
+      return iupStrReturnIntInt(start, end, ':');
+    }
+  }
+  else
+  {
+    int start = 0, end = 0;
+    if (gtk_editable_get_selection_bounds(GTK_EDITABLE(ih->handle), &start, &end))
+      return iupStrReturnIntInt(start, end, ':');
+  }
+
+  return NULL;
+}
+
+static int gtk4TextSetSelectionPosAttrib(Ihandle* ih, const char* value)
+{
+  int start = 0, end = 0;
+
+  if (!value)
+    return 0;
+
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    if (ih->data->is_multiline)
+    {
+      GtkTextIter start_iter, end_iter;
+      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      gtk_text_buffer_get_start_iter(buffer, &start_iter);
+      gtk_text_buffer_get_end_iter(buffer, &end_iter);
+      gtk_text_buffer_select_range(buffer, &start_iter, &end_iter);
+    }
+    else
+      gtk_editable_select_region(GTK_EDITABLE(ih->handle), 0, -1);
+    return 0;
+  }
+
+  if (iupStrToIntInt(value, &start, &end, ':') != 2)
+    return 0;
+
+  if (start < 0) start = 0;
+  if (end < 0) end = 0;
+
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter start_iter, end_iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_get_iter_at_offset(buffer, &start_iter, start);
+    gtk_text_buffer_get_iter_at_offset(buffer, &end_iter, end);
+    gtk_text_buffer_select_range(buffer, &start_iter, &end_iter);
+  }
+  else
+    gtk_editable_select_region(GTK_EDITABLE(ih->handle), start, end);
+
+  return 0;
+}
+
+static char* gtk4TextGetSelectedTextAttrib(Ihandle* ih)
+{
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter start_iter, end_iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+
+    if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
+      return iupStrReturnStr(iupgtk4StrConvertFromSystem(gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE)));
+  }
+  else
+  {
+    int start, end;
+    if (gtk_editable_get_selection_bounds(GTK_EDITABLE(ih->handle), &start, &end))
+    {
+      char* selectedtext = iupStrDup(gtk_editable_get_text(GTK_EDITABLE(ih->handle)));
+      selectedtext[end] = 0;
+      return iupStrReturnStr(iupgtk4StrConvertFromSystem(selectedtext + start));
+    }
+  }
+  return NULL;
+}
+
+static int gtk4TextSetSelectedTextAttrib(Ihandle* ih, const char* value)
+{
+  if (!value)
+    return 0;
+
+  ih->data->disable_callbacks = 1;
+  if (ih->data->is_multiline)
+  {
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_delete_selection(buffer, TRUE, TRUE);
+    gtk_text_buffer_insert_at_cursor(buffer, iupgtk4StrConvertToSystem(value), -1);
+  }
+  else
+    gtk_editable_delete_selection(GTK_EDITABLE(ih->handle));
+
+  ih->data->disable_callbacks = 0;
+
+  return 0;
+}
+
+static char* gtk4TextGetCaretAttrib(Ihandle* ih)
+{
+  if (ih->data->is_multiline)
+  {
+    int lin, col;
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
+    gtkTextGetLinColFromPosition(&iter, &lin, &col);
+    return iupStrReturnIntInt(lin, col, ',');
+  }
+  else
+  {
+    int pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+    return iupStrReturnIntInt(1, pos + 1, ',');
+  }
+}
+
+static int gtk4TextSetCaretAttrib(Ihandle* ih, const char* value)
+{
+  int lin = 1, col = 1;
+  iupStrToIntInt(value, &lin, &col, ',');
+  if (lin < 1) lin = 1;
+  if (col < 1) col = 1;
+
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtkTextMoveIterToLinCol(buffer, &iter, lin, col);
+    gtk_text_buffer_place_cursor(buffer, &iter);
+    gtkTextScrollToVisible(ih);
+  }
+  else
+  {
+    col--;
+    gtk_editable_set_position(GTK_EDITABLE(ih->handle), col);
+  }
+
+  return 0;
+}
+
+static char* gtk4TextGetCaretPosAttrib(Ihandle* ih)
+{
+  int pos;
+
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
+    pos = gtk_text_iter_get_offset(&iter);
+  }
+  else
+    pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+
+  return iupStrReturnInt(pos);
+}
+
+static int gtk4TextSetCaretPosAttrib(Ihandle* ih, const char* value)
+{
+  int pos = 0;
+
+  if (!value)
+    return 0;
+
+  iupStrToInt(value, &pos);
+  if (pos < 0) pos = 0;
+
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_get_iter_at_offset(buffer, &iter, pos);
+    gtk_text_buffer_place_cursor(buffer, &iter);
+    gtkTextScrollToVisible(ih);
+  }
+  else
+    gtk_editable_set_position(GTK_EDITABLE(ih->handle), pos);
+
+  return 0;
+}
+
+static int gtk4TextSetScrollToAttrib(Ihandle* ih, const char* value)
+{
+  if (!value)
+    return 0;
+
+  if (ih->data->is_multiline)
+  {
+    int lin = 1, col = 1;
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+
+    iupStrToIntInt(value, &lin, &col, ',');
+    if (lin < 1) lin = 1;
+    if (col < 1) col = 1;
+
+    gtkTextMoveIterToLinCol(buffer, &iter, lin, col);
+    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(ih->handle), &iter, 0, FALSE, 0, 0);
+  }
+  else
+  {
+    int pos = 1;
+    iupStrToInt(value, &pos);
+    if (pos < 1) pos = 1;
+    pos--;
+    gtk_editable_set_position(GTK_EDITABLE(ih->handle), pos);
+  }
+
+  return 0;
+}
+
+static int gtk4TextSetScrollToPosAttrib(Ihandle* ih, const char* value)
+{
+  int pos = 0;
+
+  if (!value)
+    return 0;
+
+  iupStrToInt(value, &pos);
+  if (pos < 0) pos = 0;
+
+  if (ih->data->is_multiline)
+  {
+    GtkTextIter iter;
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_get_iter_at_offset(buffer, &iter, pos);
+    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(ih->handle), &iter, 0, FALSE, 0, 0);
+  }
+  else
+    gtk_editable_set_position(GTK_EDITABLE(ih->handle), pos);
+
+  return 0;
+}
+
+static int gtk4TextSetNCAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 0;
+
+  if (!ih->data->is_multiline)
+  {
+    int nc = 0;
+    iupStrToInt(value, &nc);
+    if (nc > 0)
+      gtk_entry_set_max_length(GTK_ENTRY(ih->handle), nc);
+    else
+      gtk_entry_set_max_length(GTK_ENTRY(ih->handle), 0);
+  }
+
+  return 0;
+}
+
+static int gtk4TextSetClipboardAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrEqualNoCase(value, "COPY"))
+  {
+    if (ih->data->is_multiline)
+    {
+      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      GdkClipboard *clipboard = gtk_widget_get_clipboard(ih->handle);
+      gtk_text_buffer_copy_clipboard(buffer, clipboard);
+    }
+    else
+    {
+      GdkClipboard* clipboard = gtk_widget_get_clipboard(ih->handle);
+      const char* text = gtk_editable_get_text(GTK_EDITABLE(ih->handle));
+      gdk_clipboard_set_text(clipboard, text);
+    }
+  }
+  else if (iupStrEqualNoCase(value, "CUT"))
+  {
+    if (ih->data->is_multiline)
+    {
+      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      GdkClipboard *clipboard = gtk_widget_get_clipboard(ih->handle);
+      gtk_text_buffer_cut_clipboard(buffer, clipboard, TRUE);
+    }
+    else
+    {
+      GdkClipboard* clipboard = gtk_widget_get_clipboard(ih->handle);
+      const char* text = gtk_editable_get_text(GTK_EDITABLE(ih->handle));
+      gdk_clipboard_set_text(clipboard, text);
+      gtk_editable_delete_selection(GTK_EDITABLE(ih->handle));
+    }
+  }
+  else if (iupStrEqualNoCase(value, "PASTE"))
+  {
+    if (ih->data->is_multiline)
+    {
+      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      GdkClipboard *clipboard = gtk_widget_get_clipboard(ih->handle);
+      gtk_text_buffer_paste_clipboard(buffer, clipboard, NULL, TRUE);
+    }
+    else
+    {
+      /* Paste is async in GTK4, just trigger async read */
+      GdkClipboard* clipboard = gtk_widget_get_clipboard(ih->handle);
+      gdk_clipboard_read_text_async(clipboard, NULL, NULL, NULL);
+    }
+  }
+  else if (iupStrEqualNoCase(value, "CLEAR"))
+  {
+    if (ih->data->is_multiline)
+    {
+      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      gtk_text_buffer_delete_selection(buffer, TRUE, TRUE);
+    }
+    else
+      gtk_editable_delete_selection(GTK_EDITABLE(ih->handle));
+  }
+  return 0;
+}
+
+static char* gtk4TextGetReadOnlyAttrib(Ihandle* ih)
+{
+  if (ih->data->is_multiline)
+    return iupStrReturnBoolean(!gtk_text_view_get_editable(GTK_TEXT_VIEW(ih->handle)));
+  else
+    return iupStrReturnBoolean(!gtk_editable_get_editable(GTK_EDITABLE(ih->handle)));
+}
+
+static int gtk4TextSetReadOnlyAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->is_multiline)
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(ih->handle), !iupStrBoolean(value));
+  else
+    gtk_editable_set_editable(GTK_EDITABLE(ih->handle), !iupStrBoolean(value));
+  return 0;
+}
+
+static int gtk4TextSetAlignmentAttrib(Ihandle* ih, const char* value)
+{
+  gfloat xalign;
+  GtkJustification justification;
+
+  if (iupStrEqualNoCase(value, "ARIGHT"))
+  {
+    xalign = 1.0f;
+    justification = GTK_JUSTIFY_RIGHT;
+  }
+  else if (iupStrEqualNoCase(value, "ACENTER"))
+  {
+    xalign = 0.5f;
+    justification = GTK_JUSTIFY_CENTER;
+  }
+  else
+  {
+    xalign = 0.0f;
+    justification = GTK_JUSTIFY_LEFT;
+  }
+
+  if (!ih->data->is_multiline)
+  {
+    gtk_entry_set_alignment(GTK_ENTRY(ih->handle), xalign);
+  }
+  else
+  {
+    gtk_text_view_set_justification(GTK_TEXT_VIEW(ih->handle), justification);
+  }
+
+  return 1;
+}
+
+static int gtk4TextSetPaddingAttrib(Ihandle* ih, const char* value)
+{
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
+
+  if (ih->handle && !ih->data->is_multiline)
+  {
+    iupgtk4SetMargin(ih->handle, ih->data->horiz_padding, ih->data->vert_padding);
+    return 0;
+  }
+  else
+    return 1;
+}
+
+static int gtk4TextSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+
+  iupgtk4SetBgColor(ih->handle, r, g, b);
+
+  return 1;
+}
+
+static int gtk4TextSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+
+  iupgtk4SetFgColor(ih->handle, r, g, b);
+
+  return 1;
+}
+
+static char* gtk4TextGetCountAttrib(Ihandle* ih)
+{
+  int count;
+  if (ih->data->is_multiline)
+  {
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    count = gtk_text_buffer_get_char_count(buffer);
+  }
+  else
+  {
+    const char* value = gtk_editable_get_text(GTK_EDITABLE(ih->handle));
+    count = (int)strlen(value);
+  }
+  return iupStrReturnInt(count);
+}
+
+static char* gtk4TextGetLineCountAttrib(Ihandle* ih)
+{
+  int count;
+  if (ih->data->is_multiline)
+  {
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    count = gtk_text_buffer_get_line_count(buffer);
+  }
+  else
+    count = 1;
+
+  return iupStrReturnInt(count);
+}
+
+static int gtk4TextSetSpinMinAttrib(Ihandle* ih, const char* value)
+{
+  if (GTK_IS_SPIN_BUTTON(ih->handle))
+  {
+    int min;
+    if (iupStrToInt(value, &min))
+    {
+      int max = iupAttribGetInt(ih, "SPINMAX");
+      gtk_spin_button_set_range((GtkSpinButton*)ih->handle, (double)min, (double)max);
+    }
+  }
+  return 1;
+}
+
+static int gtk4TextSetSpinMaxAttrib(Ihandle* ih, const char* value)
+{
+  if (GTK_IS_SPIN_BUTTON(ih->handle))
+  {
+    int max;
+    if (iupStrToInt(value, &max))
+    {
+      int min = iupAttribGetInt(ih, "SPINMIN");
+      gtk_spin_button_set_range((GtkSpinButton*)ih->handle, (double)min, (double)max);
+    }
+  }
+  return 1;
+}
+
+static int gtk4TextSetSpinIncAttrib(Ihandle* ih, const char* value)
+{
+  if (GTK_IS_SPIN_BUTTON(ih->handle))
+  {
+    int inc;
+    if (iupStrToInt(value, &inc))
+      gtk_spin_button_set_increments((GtkSpinButton*)ih->handle, (double)inc, 0);
+  }
+  return 1;
+}
+
+static char* gtk4TextGetSpinValueAttrib(Ihandle* ih)
+{
+  if (GTK_IS_SPIN_BUTTON(ih->handle))
+  {
+    int pos = gtk_spin_button_get_value_as_int((GtkSpinButton*)ih->handle);
+    return iupStrReturnInt(pos);
+  }
+  return NULL;
+}
+
+static int gtk4TextSetSpinValueAttrib(Ihandle* ih, const char* value)
+{
+  if (GTK_IS_SPIN_BUTTON(ih->handle))
+  {
+    int pos;
+    if (iupStrToInt(value, &pos))
+      gtk_spin_button_set_value((GtkSpinButton*)ih->handle, (double)pos);
+  }
+  return 0;
+}
+
+static int gtk4TextMapMethod(Ihandle* ih)
+{
+  GtkScrolledWindow* scrolled_window = NULL;
+
+  if (ih->data->is_multiline)
+  {
+    GtkPolicyType hscrollbar_policy, vscrollbar_policy;
+    int wordwrap = 0;
+
+    ih->handle = gtk_text_view_new();
+    if (!ih->handle)
+      return IUP_ERROR;
+
+    /* Add natural padding to multiline text view to match single-line entry appearance */
+    gtk_text_view_set_left_margin((GtkTextView*)ih->handle, 2);
+    gtk_text_view_set_right_margin((GtkTextView*)ih->handle, 2);
+    gtk_text_view_set_top_margin((GtkTextView*)ih->handle, 2);
+    gtk_text_view_set_bottom_margin((GtkTextView*)ih->handle, 2);
+
+    scrolled_window = (GtkScrolledWindow*)gtk_scrolled_window_new();
+    if (!scrolled_window)
+      return IUP_ERROR;
+
+    gtk_scrolled_window_set_child(scrolled_window, ih->handle);
+
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)scrolled_window);
+
+    ih->data->has_formatting = 1;
+
+    if (iupAttribGetBoolean(ih, "WORDWRAP"))
+    {
+      wordwrap = 1;
+      ih->data->sb &= ~IUP_SB_HORIZ;
+    }
+
+    if (iupAttribGetBoolean(ih, "BORDER"))
+      gtk_scrolled_window_set_has_frame(scrolled_window, TRUE);
+    else
+      gtk_scrolled_window_set_has_frame(scrolled_window, FALSE);
+
+    if (ih->data->sb & IUP_SB_HORIZ)
+    {
+      if (iupAttribGetBoolean(ih, "AUTOHIDE"))
+        hscrollbar_policy = GTK_POLICY_AUTOMATIC;
+      else
+        hscrollbar_policy = GTK_POLICY_ALWAYS;
+    }
+    else
+      hscrollbar_policy = GTK_POLICY_NEVER;
+
+    if (ih->data->sb & IUP_SB_VERT)
+    {
+      if (iupAttribGetBoolean(ih, "AUTOHIDE"))
+        vscrollbar_policy = GTK_POLICY_AUTOMATIC;
+      else
+        vscrollbar_policy = GTK_POLICY_ALWAYS;
+    }
+    else
+      vscrollbar_policy = GTK_POLICY_NEVER;
+
+    gtk_scrolled_window_set_policy(scrolled_window, hscrollbar_policy, vscrollbar_policy);
+
+    if (wordwrap)
+      gtk_text_view_set_wrap_mode((GtkTextView*)ih->handle, GTK_WRAP_WORD);
+  }
+  else
+  {
+    if (iupAttribGetBoolean(ih, "SPIN"))
+      ih->handle = gtk_spin_button_new_with_range((double)iupAttribGetInt(ih, "SPINMIN"), (double)iupAttribGetInt(ih, "SPINMAX"), (double)iupAttribGetInt(ih, "SPININC"));
+    else
+      ih->handle = gtk_entry_new();
+
+    if (!ih->handle)
+      return IUP_ERROR;
+
+    ih->data->has_formatting = 0;
+
+    /* Set natural alignment - prevent entry from expanding vertically beyond its natural height */
+    gtk_widget_set_vexpand(ih->handle, FALSE);
+    gtk_widget_set_valign(ih->handle, GTK_ALIGN_CENTER);
+
+    if (GTK_IS_ENTRY(ih->handle))
+      gtk_entry_set_has_frame((GtkEntry*)ih->handle, iupAttribGetBoolean(ih, "BORDER"));
+
+    if (!iupAttribGetBoolean(ih, "BORDER"))
+    {
+      GtkStyleContext *context = gtk_widget_get_style_context(ih->handle);
+      GtkCssProvider *provider = gtk_css_provider_new();
+      gtk_css_provider_load_from_string(GTK_CSS_PROVIDER(provider), "*{ border: none; }");
+      gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+      g_object_unref(provider);
+    }
+
+    if (iupAttribGetBoolean(ih, "PASSWORD"))
+      gtk_entry_set_visibility((GtkEntry*)ih->handle, FALSE);
+
+    if (GTK_IS_SPIN_BUTTON(ih->handle))
+    {
+      gtk_spin_button_set_numeric((GtkSpinButton*)ih->handle, FALSE);
+      gtk_spin_button_set_digits((GtkSpinButton*)ih->handle, 0);
+
+      gtk_spin_button_set_wrap((GtkSpinButton*)ih->handle, iupAttribGetBoolean(ih, "SPINWRAP"));
+
+      g_signal_connect(G_OBJECT(ih->handle), "value-changed", G_CALLBACK(gtk4TextSpinValueChanged), ih);
+      g_signal_connect(G_OBJECT(ih->handle), "output", G_CALLBACK(gtk4TextSpinOutput), ih);
+
+      if (!iupAttribGetBoolean(ih, "SPINAUTO"))
+      {
+        g_signal_connect(G_OBJECT(ih->handle), "input", G_CALLBACK(gtk4TextSpinInput), ih);
+        iupAttribSet(ih, "_IUPGTK4_SPIN_NOAUTO", "1");
+      }
+    }
+  }
+
+  iupgtk4AddToParent(ih);
+
+  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+    iupgtk4SetCanFocus(ih->handle, 0);
+
+  iupgtk4SetupEnterLeaveEvents(ih->handle, ih);
+  iupgtk4SetupFocusEvents(ih->handle, ih);
+  iupgtk4SetupKeyEvents(ih->handle, ih);
+
+  GtkEventController* key_controller = gtk_event_controller_key_new();
+  gtk_widget_add_controller(ih->handle, key_controller);
+  g_signal_connect(key_controller, "key-released", G_CALLBACK(gtk4TextKeyReleaseEvent), ih);
+
+  GtkGesture* click_gesture = gtk_gesture_click_new();
+  gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(click_gesture));
+  g_signal_connect(click_gesture, "released", G_CALLBACK(gtk4TextButtonEvent), ih);
+
+  iupgtk4SetupMotionEvents(ih->handle, ih);
+
+  if (ih->data->is_multiline)
+  {
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    g_signal_connect(G_OBJECT(buffer), "delete-range", G_CALLBACK(gtk4TextBufferDeleteRange), ih);
+    g_signal_connect(G_OBJECT(buffer), "insert-text", G_CALLBACK(gtk4TextBufferInsertText), ih);
+    g_signal_connect(G_OBJECT(buffer), "changed", G_CALLBACK(gtk4TextChanged), ih);
+  }
+  else
+  {
+    /* GtkEntry uses a delegate for text editing. We need to connect signals to the delegate, not the entry itself */
+    GtkEditable *editable_delegate = gtk_editable_get_delegate(GTK_EDITABLE(ih->handle));
+    g_signal_connect(G_OBJECT(editable_delegate), "delete-text", G_CALLBACK(gtk4TextEntryDeleteText), ih);
+    g_signal_connect(G_OBJECT(editable_delegate), "insert-text", G_CALLBACK(gtk4TextEntryInsertText), ih);
+    g_signal_connect(G_OBJECT(ih->handle), "changed", G_CALLBACK(gtk4TextChanged), ih);
+  }
+
+  if (scrolled_window)
+    gtk_widget_realize((GtkWidget*)scrolled_window);
+  gtk_widget_realize(ih->handle);
+
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
+  iupgtk4UpdateMnemonic(ih);
+
+  if (ih->data->formattags)
+    iupTextUpdateFormatTags(ih);
+
+  IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)gtkTextConvertXYToPos);
+
+  return IUP_NOERROR;
+}
+
+static void gtk4TextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
+{
+  int val;
+  char* format;
+
+  format = iupAttribGet(formattag, "INDENT");
+  if (format && iupStrToInt(format, &val))
+    g_object_set(G_OBJECT(tag), "indent", val, NULL);
+
+  format = iupAttribGet(formattag, "ALIGNMENT");
+  if (format)
+  {
+    if (iupStrEqualNoCase(format, "JUSTIFY"))
+      val = GTK_JUSTIFY_FILL;
+    else if (iupStrEqualNoCase(format, "RIGHT"))
+      val = GTK_JUSTIFY_RIGHT;
+    else if (iupStrEqualNoCase(format, "CENTER"))
+      val = GTK_JUSTIFY_CENTER;
+    else
+      val = GTK_JUSTIFY_LEFT;
+
+    g_object_set(G_OBJECT(tag), "justification", val, NULL);
+  }
+
+  format = iupAttribGet(formattag, "TABSARRAY");
+  {
+    PangoTabArray *tabs;
+    int pos, i = 0;
+    PangoTabAlign align;
+    char* str;
+
+    tabs = pango_tab_array_new(32, TRUE);
+    while (format && *format && i < 32)
+    {
+      str = iupStrDupUntil((const char**)&format, ' ');
+      if (!str) break;
+      pos = atoi(str);
+      free(str);
+
+      str = iupStrDupUntil((const char**)&format, ' ');
+      if (!str) break;
+
+      align = PANGO_TAB_LEFT;
+      free(str);
+
+      pango_tab_array_set_tab(tabs, i, align, iupGTK4_PIXELS2PANGOUNITS(pos));
+      i++;
+      if (i == 32) break;
+    }
+
+    g_object_set(G_OBJECT(tag), "tabs", tabs, NULL);
+    pango_tab_array_free(tabs);
+  }
+
+  format = iupAttribGet(formattag, "SPACEBEFORE");
+  if (format && iupStrToInt(format, &val))
+    g_object_set(G_OBJECT(tag), "pixels-above-lines", val, NULL);
+
+  format = iupAttribGet(formattag, "SPACEAFTER");
+  if (format && iupStrToInt(format, &val))
+    g_object_set(G_OBJECT(tag), "pixels-below-lines", val, NULL);
+
+  format = iupAttribGet(formattag, "LINESPACING");
+  if (format && iupStrToInt(format, &val))
+    g_object_set(G_OBJECT(tag), "pixels-inside-wrap", val, NULL);
+}
+
+static void gtk4TextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
+{
+  int val;
+  char* format;
+
+  format = iupAttribGet(formattag, "LANGUAGE");
+  if (format)
+    g_object_set(G_OBJECT(tag), "language", format, NULL);
+
+  format = iupAttribGet(formattag, "STRETCH");
+  if (format)
+  {
+    if (iupStrEqualNoCase(format, "EXTRA_CONDENSED"))
+      val = PANGO_STRETCH_EXTRA_CONDENSED;
+    else if (iupStrEqualNoCase(format, "CONDENSED"))
+      val = PANGO_STRETCH_CONDENSED;
+    else if (iupStrEqualNoCase(format, "SEMI_CONDENSED"))
+      val = PANGO_STRETCH_SEMI_CONDENSED;
+    else if (iupStrEqualNoCase(format, "SEMI_EXPANDED"))
+      val = PANGO_STRETCH_SEMI_EXPANDED;
+    else if (iupStrEqualNoCase(format, "EXPANDED"))
+      val = PANGO_STRETCH_EXPANDED;
+    else if (iupStrEqualNoCase(format, "EXTRA_EXPANDED"))
+      val = PANGO_STRETCH_EXTRA_EXPANDED;
+    else
+      val = PANGO_STRETCH_NORMAL;
+
+    g_object_set(G_OBJECT(tag), "stretch", val, NULL);
+  }
+
+  format = iupAttribGet(formattag, "RISE");
+  if (format)
+  {
+    val = 0;
+
+    if (iupStrEqualNoCase(format, "SUPERSCRIPT"))
+    {
+      g_object_set(G_OBJECT(tag), "scale", PANGO_SCALE_X_SMALL, NULL);
+      val = 10;  /* 10 pixels up */
+    }
+    else if (iupStrEqualNoCase(format, "SUBSCRIPT"))
+    {
+      g_object_set(G_OBJECT(tag), "scale", PANGO_SCALE_X_SMALL, NULL);
+      val = -10;  /* 10 pixels down */
+    }
+    else
+      iupStrToInt(format, &val);
+
+    val = iupGTK4_PIXELS2PANGOUNITS(val);
+    g_object_set(G_OBJECT(tag), "rise", val, NULL);
+  }
+
+  format = iupAttribGet(formattag, "SMALLCAPS");
+  if (format)
+  {
+    if (iupStrBoolean(format))
+      val = PANGO_VARIANT_SMALL_CAPS;
+    else
+      val = PANGO_VARIANT_NORMAL;
+    g_object_set(G_OBJECT(tag), "variant", val, NULL);
+  }
+
+  format = iupAttribGet(formattag, "ITALIC");
+  if (format)
+  {
+    if (iupStrBoolean(format))
+      val = PANGO_STYLE_ITALIC;
+    else
+      val = PANGO_STYLE_NORMAL;
+    g_object_set(G_OBJECT(tag), "style", val, NULL);
+  }
+
+  format = iupAttribGet(formattag, "STRIKEOUT");
+  if (format)
+  {
+    val = iupStrBoolean(format);
+    g_object_set(G_OBJECT(tag), "strikethrough", val, NULL);
+  }
+
+  format = iupAttribGet(formattag, "PROTECTED");
+  if (format)
+  {
+    val = iupStrBoolean(format);
+    g_object_set(G_OBJECT(tag), "editable", val, NULL);
+  }
+
+  format = iupAttribGet(formattag, "FONTSIZE");
+  if (format && iupStrToInt(format, &val))
+  {
+    if (val < 0)  /* in pixels */
+    {
+      val = iupGTK4_PIXELS2PANGOUNITS(-val);
+      g_object_set(G_OBJECT(tag), "size", val, NULL);
+    }
+    else  /* in points */
+      g_object_set(G_OBJECT(tag), "size-points", (double)val, NULL);
+  }
+
+  format = iupAttribGet(formattag, "FONTSCALE");
+  if (format)
+  {
+    double fval = 0;
+    if (iupStrEqualNoCase(format, "XX-SMALL"))
+      fval = PANGO_SCALE_XX_SMALL;
+    else if (iupStrEqualNoCase(format, "X-SMALL"))
+      fval = PANGO_SCALE_X_SMALL;
+    else if (iupStrEqualNoCase(format, "SMALL"))
+      fval = PANGO_SCALE_SMALL;
+    else if (iupStrEqualNoCase(format, "MEDIUM"))
+      fval = PANGO_SCALE_MEDIUM;
+    else if (iupStrEqualNoCase(format, "LARGE"))
+      fval = PANGO_SCALE_LARGE;
+    else if (iupStrEqualNoCase(format, "X-LARGE"))
+      fval = PANGO_SCALE_X_LARGE;
+    else if (iupStrEqualNoCase(format, "XX-LARGE"))
+      fval = PANGO_SCALE_XX_LARGE;
+    else
+      iupStrToDouble(format, &fval);
+
+    if (fval > 0)
+      g_object_set(G_OBJECT(tag), "scale", fval, NULL);
+  }
+
+  format = iupAttribGet(formattag, "FONTFACE");
+  if (format)
+  {
+    /* Map standard names to native names */
+    const char* mapped_name = iupFontGetPangoName(format);
+    if (mapped_name)
+      g_object_set(G_OBJECT(tag), "family", mapped_name, NULL);
+    else
+      g_object_set(G_OBJECT(tag), "family", format, NULL);
+  }
+
+  format = iupAttribGet(formattag, "FGCOLOR");
+  if (format)
+  {
+    unsigned char r, g, b;
+    if (iupStrToRGB(format, &r, &g, &b))
+    {
+      GdkRGBA color;
+      iupgtk4ColorSetRGB(&color, r, g, b);
+      g_object_set(G_OBJECT(tag), "foreground-rgba", &color, NULL);
+    }
+  }
+
+  format = iupAttribGet(formattag, "BGCOLOR");
+  if (format)
+  {
+    unsigned char r, g, b;
+    if (iupStrToRGB(format, &r, &g, &b))
+    {
+      GdkRGBA color;
+      iupgtk4ColorSetRGB(&color, r, g, b);
+      g_object_set(G_OBJECT(tag), "background-rgba", &color, NULL);
+    }
+  }
+
+  format = iupAttribGet(formattag, "UNDERLINE");
+  if (format)
+  {
+    if (iupStrEqualNoCase(format, "SINGLE"))
+      val = PANGO_UNDERLINE_SINGLE;
+    else if (iupStrEqualNoCase(format, "DOUBLE"))
+      val = PANGO_UNDERLINE_DOUBLE;
+    else
+      val = PANGO_UNDERLINE_NONE;
+
+    g_object_set(G_OBJECT(tag), "underline", val, NULL);
+  }
+
+  format = iupAttribGet(formattag, "WEIGHT");
+  if (format)
+  {
+    if (iupStrEqualNoCase(format, "EXTRALIGHT"))
+      val = PANGO_WEIGHT_ULTRALIGHT;
+    else if (iupStrEqualNoCase(format, "LIGHT"))
+      val = PANGO_WEIGHT_LIGHT;
+    else if (iupStrEqualNoCase(format, "SEMIBOLD"))
+      val = PANGO_WEIGHT_SEMIBOLD;
+    else if (iupStrEqualNoCase(format, "BOLD"))
+      val = PANGO_WEIGHT_BOLD;
+    else if (iupStrEqualNoCase(format, "EXTRABOLD"))
+      val = PANGO_WEIGHT_ULTRABOLD;
+    else if (iupStrEqualNoCase(format, "HEAVY"))
+      val = PANGO_WEIGHT_HEAVY;
+    else
+      val = PANGO_WEIGHT_NORMAL;
+
+    g_object_set(G_OBJECT(tag), "weight", val, NULL);
+  }
+}
+
+void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+{
+  GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+  gtk_text_buffer_begin_user_action(buffer);
+  return NULL;
+}
+
+void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
+{
+  GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+  gtk_text_buffer_end_user_action(buffer);
+  (void)state;
+}
+
+void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
+{
+  GtkTextBuffer *buffer;
+  GtkTextIter start_iter, end_iter;
+  GtkTextTag* tag;
+  char *selection;
+  (void)bulk;
+
+  if (!ih->data->is_multiline)
+    return;
+
+  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+
+  selection = iupAttribGet(formattag, "SELECTION");
+  if (selection)
+  {
+    if (!gtk4TextSelectionGetIter(ih, selection, &start_iter, &end_iter))
+      return;
+  }
+  else
+  {
+    char* selectionpos = iupAttribGet(formattag, "SELECTIONPOS");
+    if (selectionpos)
+    {
+      if (!gtk4TextSelectionPosGetIter(ih, selectionpos, &start_iter, &end_iter))
+        return;
+    }
+    else
+    {
+      GtkTextMark* mark = gtk_text_buffer_get_insert(buffer);
+      gtk_text_buffer_get_iter_at_mark(buffer, &start_iter, mark);
+      gtk_text_buffer_get_iter_at_mark(buffer, &end_iter, mark);
+    }
+  }
+
+  tag = gtk_text_buffer_create_tag(buffer, NULL, NULL);
+  gtk4TextParseParagraphFormat(formattag, tag);
+  gtk4TextParseCharacterFormat(formattag, tag);
+  gtk_text_buffer_apply_tag(buffer, tag, &start_iter, &end_iter);
+}
+
+void iupdrvTextInitClass(Iclass* ic)
+{
+  ic->Map = gtk4TextMapMethod;
+
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtk4TextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtk4TextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+
+  iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, gtk4TextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "VALUE", gtk4TextGetValueAttrib, gtk4TextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINEVALUE", gtk4TextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", gtk4TextGetSelectedTextAttrib, gtk4TextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", gtk4TextGetSelectionAttrib, gtk4TextSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", gtk4TextGetSelectionPosAttrib, gtk4TextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", gtk4TextGetCaretAttrib, gtk4TextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", gtk4TextGetCaretPosAttrib, gtk4TextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, gtk4TextSetInsertAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, gtk4TextSetAppendAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "READONLY", gtk4TextGetReadOnlyAttrib, gtk4TextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, gtk4TextSetNCAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, gtk4TextSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, gtk4TextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, gtk4TextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINMIN", NULL, gtk4TextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINMAX", NULL, gtk4TextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPININC", NULL, gtk4TextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINVALUE", gtk4TextGetSpinValueAttrib, gtk4TextSetSpinValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COUNT", gtk4TextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINECOUNT", gtk4TextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "SCROLLBAR", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, gtk4TextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPENDNEWLINE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VISIBLECOLUMNS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VISIBLELINES", NULL, NULL, IUPAF_SAMEASSYSTEM, "3", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "CANFOCUS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+}
