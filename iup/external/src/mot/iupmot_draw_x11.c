@@ -237,6 +237,50 @@ static void iDrawSetLineWidth(IdrawCanvas* dc, int line_width)
   XChangeGC(iupmot_display, dc->pixmap_gc, GCLineWidth, &gcval);
 }
 
+/* Combined function to set both line style and width in one XChangeGC call */
+static void iDrawSetLineStyleAndWidth(IdrawCanvas* dc, int style, int line_width)
+{
+  XGCValues gcval;
+
+  /* Set line width */
+  if (line_width == 1)
+    gcval.line_width = 0;
+  else
+    gcval.line_width = line_width;
+
+  /* Set line style */
+  if (style == IUP_DRAW_STROKE || style == IUP_DRAW_FILL)
+    gcval.line_style = LineSolid;
+  else
+  {
+    if (style == IUP_DRAW_STROKE_DASH)
+    {
+      char dashes[2] = { 9, 3 };
+      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 2);
+    }
+    else if (style == IUP_DRAW_STROKE_DOT)
+    {
+      char dashes[2] = { 1, 2 };
+      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 2);
+    }
+    else if (style == IUP_DRAW_STROKE_DASH_DOT)
+    {
+      char dashes[4] = { 7, 3, 1, 3 };
+      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 4);
+    }
+    else if (style == IUP_DRAW_STROKE_DASH_DOT_DOT)
+    {
+      char dashes[6] = { 7, 3, 1, 3, 1, 3 };
+      XSetDashes(iupmot_display, dc->pixmap_gc, 0, dashes, 6);
+    }
+
+    gcval.line_style = LineOnOffDash;
+  }
+
+  /* Batch update both line width and style in one call */
+  XChangeGC(iupmot_display, dc->pixmap_gc, GCLineWidth | GCLineStyle, &gcval);
+}
+
 IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
@@ -248,8 +292,7 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
     XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   else
   {
-    iDrawSetLineWidth(dc, line_width);
-    iDrawSetLineStyle(dc, style);
+    iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
 
     XDrawRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1, y2 - y1);
   }
@@ -259,8 +302,7 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
 {
   XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
 
-  iDrawSetLineWidth(dc, line_width);
-  iDrawSetLineStyle(dc, style);
+  iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
 
   XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2, y2);
 }
@@ -279,8 +321,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   }
   else
   {
-    iDrawSetLineWidth(dc, line_width);
-    iDrawSetLineStyle(dc, style);
+    iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
 
     XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, iupRound(a1 * 64), iupRound((a2 - a1) * 64));   /* angle = 1/64ths of a degree */
   }
@@ -289,7 +330,18 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
 IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   int i;
-  XPoint* pnt = (XPoint*)malloc(count*sizeof(XPoint)); /* XPoint uses short for coordinates */
+  XPoint stack_pnt[256]; /* Stack buffer for small polygons - avoid malloc overhead */
+  XPoint* pnt;
+  int use_heap = 0;
+
+  /* Use stack buffer for small polygons, heap for large ones */
+  if (count <= 256)
+    pnt = stack_pnt;
+  else
+  {
+    pnt = (XPoint*)malloc(count * sizeof(XPoint)); /* XPoint uses short for coordinates */
+    use_heap = 1;
+  }
 
   for (i = 0; i < count; i++)
   {
@@ -303,13 +355,13 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
     XFillPolygon(iupmot_display, dc->pixmap, dc->pixmap_gc, pnt, count, Complex, CoordModeOrigin);
   else
   {
-    iDrawSetLineWidth(dc, line_width);
-    iDrawSetLineStyle(dc, style);
+    iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
 
     XDrawLines(iupmot_display, dc->pixmap, dc->pixmap_gc, pnt, count, CoordModeOrigin);
   }
 
-  free(pnt);
+  if (use_heap)
+    free(pnt);
 }
 
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
@@ -383,17 +435,20 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   if (num_line == 1)
   {
     off_x = 0;
-    if (flags & IUP_DRAW_RIGHT)
+    if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
     {
+      /* Calculate width once for both center and right alignment */
       width = XTextWidth(xfont, text, len);
-      off_x = w - width;
-      if (off_x < 0) off_x = 0;
-    }
-    else if (flags & IUP_DRAW_CENTER)
-    {
-      width = XTextWidth(xfont, text, len);
-      off_x = (w - width) / 2;
-      if (off_x < 0) off_x = 0;
+      if (flags & IUP_DRAW_RIGHT)
+      {
+        off_x = w - width;
+        if (off_x < 0) off_x = 0;
+      }
+      else /* IUP_DRAW_CENTER */
+      {
+        off_x = (w - width) / 2;
+        if (off_x < 0) off_x = 0;
+      }
     }
 
     XDrawString(iupmot_display, dc->pixmap, dc->pixmap_gc, x + off_x, y + xfont->ascent, text, len);
@@ -420,17 +475,20 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
       if (l_len)
       {
         off_x = 0;
-        if (flags & IUP_DRAW_RIGHT)
+        if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
         {
+          /* Calculate width once for both center and right alignment */
           width = XTextWidth(xfont, p, l_len);
-          off_x = w - width;
-          if (off_x < 0) off_x = 0;
-        }
-        else if (flags & IUP_DRAW_CENTER)
-        {
-          width = XTextWidth(xfont, p, l_len);
-          off_x = (w - width) / 2;
-          if (off_x < 0) off_x = 0;
+          if (flags & IUP_DRAW_RIGHT)
+          {
+            off_x = w - width;
+            if (off_x < 0) off_x = 0;
+          }
+          else /* IUP_DRAW_CENTER */
+          {
+            off_x = (w - width) / 2;
+            if (off_x < 0) off_x = 0;
+          }
         }
 
         /* Draw the line */
