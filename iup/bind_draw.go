@@ -85,7 +85,11 @@ func DrawArc(ih Ihandle, x1, y1, x2, y2 int, a1, a2 float64) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
 func DrawPolygon(ih Ihandle, points []int, count int) {
-	C.IupDrawPolygon(ih.ptr(), (*C.int)(unsafe.Pointer(&points[0])), C.int(count))
+	cPoints := make([]C.int, len(points))
+	for i, v := range points {
+		cPoints[i] = C.int(v)
+	}
+	C.IupDrawPolygon(ih.ptr(), &cPoints[0], C.int(count))
 }
 
 // DrawText draws a text in the given position using the font defined by DRAWFONT, if not defined then use FONT.
