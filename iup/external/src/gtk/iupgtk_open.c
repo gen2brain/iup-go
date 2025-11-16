@@ -553,6 +553,11 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
   color = style->base[GTK_STATE_SELECTED];
   gtkColorToRGBA(color, color3);
   gtkSetGlobalColorAttrib("TXTHLCOLOR", &color3);
+
+  gtkSetGlobalColorAttrib("MENUFGCOLOR", &color3);
+  color = style->bg[GTK_STATE_NORMAL];
+  gtkColorToRGBA(color, color3);
+  gtkSetGlobalColorAttrib("MENUBGCOLOR", &color3);
 #else /* Not Windows */
   GdkRGBA color;
   GtkStyleContext* context = gtk_widget_get_style_context(dialog);
@@ -574,6 +579,14 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
 
   gtk_style_context_get_background_color(context, GTK_STATE_FLAG_SELECTED, &color);
   gtkSetGlobalColorAttrib("TXTHLCOLOR", &color);
+
+  context = gtk_widget_get_style_context(dialog);
+
+  gtk_style_context_get_color(context, GTK_STATE_FLAG_NORMAL, &color);
+  gtkSetGlobalColorAttrib("MENUFGCOLOR", &color);
+
+  gtk_style_context_get_background_color(context, GTK_STATE_FLAG_NORMAL, &color);
+  gtkSetGlobalColorAttrib("MENUBGCOLOR", &color);
 #endif
 #else /* GTK 2.xx */
   GtkStyle* style = gtk_widget_get_style(dialog);
@@ -594,6 +607,12 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
 
   color = style->base[GTK_STATE_SELECTED];
   gtkSetGlobalColorAttrib("TXTHLCOLOR", &color);
+
+  color = style->fg[GTK_STATE_NORMAL];
+  gtkSetGlobalColorAttrib("MENUFGCOLOR", &color);
+
+  color = style->bg[GTK_STATE_NORMAL];
+  gtkSetGlobalColorAttrib("MENUBGCOLOR", &color);
 #endif
 
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
