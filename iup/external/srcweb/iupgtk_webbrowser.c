@@ -34,10 +34,40 @@
 #include "iup_key.h"
 #include "iup_register.h"
 
-#include "iupgtk_drv.h"
+/* Include correct GTK driver header based on version */
+#if GTK_CHECK_VERSION(4, 0, 0)
+  #include "iupgtk4_drv.h"
+  /* Create aliases for GTK4 functions to match GTK3 names used below */
+  #define iupgtkStrConvertToSystem    iupgtk4StrConvertToSystem
+  #define iupgtkStrConvertToFilename  iupgtk4StrConvertToFilename
+  #define iupgtkAddToParent           iupgtk4AddToParent
+  #define iupgtkShowHelp              iupgtk4ShowHelp
+#else
+  #include "iupgtk_drv.h"
+#endif
 
 #ifndef IUPWEB_USE_DLOPEN
-#if GTK_CHECK_VERSION(3, 0, 0)
+#if GTK_CHECK_VERSION(4, 0, 0)
+  /* GTK4 uses WebKit6 */
+  #if defined(IUPWEB_USE_WEBKIT6)
+    #include <webkit/webkit.h>
+    #include <jsc/jsc.h>
+    #if !defined(IUPWEB_USE_WEBKIT2)
+      #define IUPWEB_USE_WEBKIT2
+    #endif
+  #else
+    /* Default to WebKit6 for GTK4 */
+    #include <webkit/webkit.h>
+    #include <jsc/jsc.h>
+    #if !defined(IUPWEB_USE_WEBKIT2)
+      #define IUPWEB_USE_WEBKIT2
+    #endif
+    #if !defined(IUPWEB_USE_WEBKIT6)
+      #define IUPWEB_USE_WEBKIT6
+    #endif
+  #endif
+#elif GTK_CHECK_VERSION(3, 0, 0)
+  /* GTK3 uses WebKit2 or WebKit1 */
   #if defined(IUPWEB_USE_WEBKIT2)
     #include <webkit2/webkit2.h>
     #include <JavaScriptCore/JavaScript.h>
@@ -52,6 +82,7 @@
     #endif
   #endif
 #else
+  /* GTK2 uses WebKit1 */
   #include <webkit/webkit.h>
   #if !defined(IUPWEB_USE_WEBKIT1)
     #define IUPWEB_USE_WEBKIT1
@@ -67,13 +98,20 @@
 
 #ifdef IUPWEB_USE_DLOPEN
 static int s_use_webkit2 = -1;
+static int s_use_webkit6 = -1;
 #else
-  #if defined(IUPWEB_USE_WEBKIT2)
+  #if defined(IUPWEB_USE_WEBKIT6)
+    static int s_use_webkit2 = 1;   /* WebKit6 is similar to WebKit2 API */
+    static int s_use_webkit6 = 1;
+  #elif defined(IUPWEB_USE_WEBKIT2)
     static int s_use_webkit2 = 1;
+    static int s_use_webkit6 = 0;
   #elif defined(IUPWEB_USE_WEBKIT1)
     static int s_use_webkit2 = 0;
+    static int s_use_webkit6 = 0;
   #else
     static int s_use_webkit2 = 1;
+    static int s_use_webkit6 = 0;
   #endif
 #endif
 
@@ -89,10 +127,12 @@ int IupGtkWebBrowserDLOpen()
 
   static const char* listOfWebKit2Names[] =
   {
-    "libwebkit2gtk-4.1.so",
-    "libwebkit2gtk-4.1.so.0",
-    "libwebkit2gtk-4.0.so",
-    "libwebkit2gtk-4.0.so.37"
+    "libwebkitgtk-6.0.so",        /* WebKitGTK 6.0 for GTK4 */
+    "libwebkitgtk-6.0.so.4",      /* WebKitGTK 6.0 for GTK4 (versioned) */
+    "libwebkit2gtk-4.1.so",       /* WebKit2GTK 4.1 for GTK3 + libsoup3 */
+    "libwebkit2gtk-4.1.so.0",     /* WebKit2GTK 4.1 for GTK3 + libsoup3 (versioned) */
+    "libwebkit2gtk-4.0.so",       /* WebKit2GTK 4.0 for GTK3 + libsoup2 */
+    "libwebkit2gtk-4.0.so.37"     /* WebKit2GTK 4.0 for GTK3 + libsoup2 (versioned) */
   };
 #define WEBKIT2_NAMES_ARRAY_LENGTH (sizeof(listOfWebKit2Names)/sizeof(*listOfWebKit2Names))
 
@@ -116,10 +156,29 @@ int IupGtkWebBrowserDLOpen()
   }
 
   s_use_webkit2 = -1;
+  s_use_webkit6 = -1;
   iupgtkWebBrowser_ClearDLSymbols();
 
-#if GTK_CHECK_VERSION(3, 0, 0)
-  for(i=0; i<WEBKIT2_NAMES_ARRAY_LENGTH; i++)
+#if GTK_CHECK_VERSION(4, 0, 0)
+  /* GTK4: Only try WebKit6 (libwebkitgtk-6.0) */
+  for(i=0; i<2; i++)  /* First two entries are WebKit6 */
+  {
+    s_webKitLibrary = dlopen(listOfWebKit2Names[i], mode_flags);
+    if(NULL != s_webKitLibrary)
+    {
+      if(iupgtkWebBrowser_SetDLSymbolsWK6(s_webKitLibrary))
+      {
+        s_use_webkit2 = 1;  /* WebKit6 uses WebKit2-like API */
+        s_use_webkit6 = 1;
+        break;
+      }
+      dlclose(s_webKitLibrary);
+      s_webKitLibrary = NULL;
+    }
+  }
+#elif GTK_CHECK_VERSION(3, 0, 0)
+  /* GTK3: Try WebKit2 (libwebkit2gtk-4.x), skip WebKit6 */
+  for(i=2; i<WEBKIT2_NAMES_ARRAY_LENGTH; i++)  /* Start at index 2 to skip WebKit6 entries */
   {
     s_webKitLibrary = dlopen(listOfWebKit2Names[i], mode_flags);
     if(NULL != s_webKitLibrary)
@@ -127,6 +186,7 @@ int IupGtkWebBrowserDLOpen()
       if(iupgtkWebBrowser_SetDLSymbolsWK2(s_webKitLibrary))
       {
         s_use_webkit2 = 1;
+        s_use_webkit6 = 0;
         break;
       }
       else
@@ -137,6 +197,7 @@ int IupGtkWebBrowserDLOpen()
     }
   }
 
+  /* GTK3: Fallback to WebKit1 if WebKit2 not found */
   if(NULL == s_webKitLibrary)
   {
     for(i=0; i<WEBKIT1_GTK3_NAMES_ARRAY_LENGTH; i++)
@@ -147,6 +208,7 @@ int IupGtkWebBrowserDLOpen()
         if(iupgtkWebBrowser_SetDLSymbolsWK1(s_webKitLibrary))
         {
           s_use_webkit2 = 0;
+          s_use_webkit6 = 0;
           break;
         }
         else
@@ -158,6 +220,7 @@ int IupGtkWebBrowserDLOpen()
     }
   }
 #else
+  /* GTK2: Only WebKit1 */
   for(i=0; i<WEBKIT1_GTK2_NAMES_ARRAY_LENGTH; i++)
   {
     s_webKitLibrary = dlopen(listOfWebKit1Gtk2Names[i], mode_flags);
@@ -166,6 +229,7 @@ int IupGtkWebBrowserDLOpen()
       if(iupgtkWebBrowser_SetDLSymbolsWK1(s_webKitLibrary))
       {
         s_use_webkit2 = 0;
+        s_use_webkit6 = 0;
         break;
       }
       else
@@ -179,13 +243,16 @@ int IupGtkWebBrowserDLOpen()
 
   if(NULL == s_webKitLibrary)
   {
-#if GTK_CHECK_VERSION(3, 0, 0)
+#if GTK_CHECK_VERSION(4, 0, 0)
+    IupSetGlobal("IUP_WEBBROWSER_MISSING_LIB", "libwebkitgtk-6.0.so");
+#elif GTK_CHECK_VERSION(3, 0, 0)
     IupSetGlobal("IUP_WEBBROWSER_MISSING_LIB", "libwebkit2gtk-4.1.so, libwebkit2gtk-4.0.so or libwebkitgtk-3.0.so");
 #else
     IupSetGlobal("IUP_WEBBROWSER_MISSING_LIB", "libwebkitgtk-1.0.so");
 #endif
     iupgtkWebBrowser_ClearDLSymbols();
     s_use_webkit2 = -1;
+    s_use_webkit6 = -1;
     return IUP_ERROR;
   }
   else
@@ -329,6 +396,7 @@ static int gtkWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
   {
     iupAttribSet(ih, "_IUPWEB_DIRTY", NULL);
     iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
+
 #ifdef IUPWEB_USE_DLOPEN
     if (s_use_webkit2)
       webkit_web_view_load_html((WebKitWebView*)ih->handle, iupgtkStrConvertToSystem(value), NULL);
@@ -339,6 +407,7 @@ static int gtkWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
 #elif defined(IUPWEB_USE_WEBKIT1)
     webkit_web_view_load_string((WebKitWebView*)ih->handle, iupgtkStrConvertToSystem(value), "text/html", "UTF-8", NULL);
 #endif
+
     iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", NULL);
   }
   return 0;
@@ -379,8 +448,8 @@ static char* gtkWebBrowserGetHTMLAttrib(Ihandle* ih)
 {
   if (iupAttribGet(ih, "_IUPWEB_EDITABLE"))
   {
-    return gtkWebBrowserRunJavaScriptSync(ih,
-      "'<html><head>' + document.head.innerHTML + '</head><body>' + document.body.innerHTML + '</body></html>';");
+    /* Use outerHTML to get the complete HTML document, preserving data: URIs and other attributes */
+    return gtkWebBrowserRunJavaScriptSync(ih, "document.documentElement.outerHTML;");
   }
 
 #ifdef IUPWEB_USE_DLOPEN
@@ -800,7 +869,10 @@ static void gtkWebBrowserInitSelectionTracking(Ihandle* ih)
       "    iupDirtyFlag = false;"
       "  };"
       "})();";
-    webkit_web_view_run_javascript((WebKitWebView*)ih->handle, init_script, NULL, NULL, NULL);
+    if (s_use_webkit6)
+      webkit_web_view_evaluate_javascript((WebKitWebView*)ih->handle, init_script, -1, NULL, NULL, NULL, NULL, NULL);
+    else
+      webkit_web_view_run_javascript((WebKitWebView*)ih->handle, init_script, NULL, NULL, NULL);
   }
   else
   {
@@ -879,7 +951,11 @@ static void gtkWebBrowserInitSelectionTracking(Ihandle* ih)
     "    iupDirtyFlag = false;"
     "  };"
     "})();";
-  webkit_web_view_run_javascript((WebKitWebView*)ih->handle, init_script, NULL, NULL, NULL);
+  #if defined(IUPWEB_USE_WEBKIT6)
+    webkit_web_view_evaluate_javascript((WebKitWebView*)ih->handle, init_script, -1, NULL, NULL, NULL, NULL, NULL);
+  #else
+    webkit_web_view_run_javascript((WebKitWebView*)ih->handle, init_script, NULL, NULL, NULL);
+  #endif
 #elif defined(IUPWEB_USE_WEBKIT1)
   const char* init_script =
     "(function() {"
@@ -929,10 +1005,14 @@ static void gtkWebBrowserRunJavascript(Ihandle* ih, const char* format, ...)
   va_end(arglist);
 
 #ifdef IUPWEB_USE_DLOPEN
-  if (s_use_webkit2)
+  if (s_use_webkit6)
+    webkit_web_view_evaluate_javascript((WebKitWebView*)ih->handle, js, -1, NULL, NULL, NULL, NULL, NULL);
+  else if (s_use_webkit2)
     webkit_web_view_run_javascript((WebKitWebView*)ih->handle, js, NULL, NULL, NULL);
   else
     webkit_web_view_execute_script((WebKitWebView*)ih->handle, js);
+#elif defined(IUPWEB_USE_WEBKIT6)
+  webkit_web_view_evaluate_javascript((WebKitWebView*)ih->handle, js, -1, NULL, NULL, NULL, NULL, NULL);
 #elif defined(IUPWEB_USE_WEBKIT2)
   webkit_web_view_run_javascript((WebKitWebView*)ih->handle, js, NULL, NULL, NULL);
 #elif defined(IUPWEB_USE_WEBKIT1)
@@ -949,38 +1029,102 @@ static void gtkWebBrowserUpdateHistory(Ihandle* ih)
   iupAttribSet(ih, "CANGOFORWARD", can_go_forward ? "YES" : "NO");
 }
 
-#if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
+#if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN))
 static void gtkWebBrowserJavaScriptFinished(GObject* object, GAsyncResult* result, gpointer user_data)
 {
   JavaScriptResult* js_result = (JavaScriptResult*)user_data;
-  WebKitJavascriptResult* js_value;
   GError* error = NULL;
 
-  js_value = webkit_web_view_run_javascript_finish((WebKitWebView*)object, result, &error);
-
-  if (js_value)
+  #if defined(IUPWEB_USE_DLOPEN)
+  if (s_use_webkit6)
   {
-    JSGlobalContextRef context = webkit_javascript_result_get_global_context(js_value);
-    JSValueRef value = webkit_javascript_result_get_value(js_value);
+    /* WebKit6: Use JSCore GObject API */
+    JSCValue* js_value = webkit_web_view_evaluate_javascript_finish((WebKitWebView*)object, result, &error);
 
-    if (value && !JSValueIsNull(context, value) && !JSValueIsUndefined(context, value))
+    if (js_value && !jsc_value_is_null(js_value) && !jsc_value_is_undefined(js_value))
     {
-      JSStringRef js_str = JSValueToStringCopy(context, value, NULL);
-      if (js_str)
+      char* str = jsc_value_to_string(js_value);
+      if (str)
       {
-        size_t max_size = JSStringGetMaximumUTF8CStringSize(js_str);
-        char* buffer = malloc(max_size);
-        if (buffer)
-        {
-          JSStringGetUTF8CString(js_str, buffer, max_size);
-          js_result->result = iupStrDup(buffer);
-          free(buffer);
-        }
-        JSStringRelease(js_str);
+        js_result->result = iupStrDup(str);
+        g_free(str);
       }
     }
-    webkit_javascript_result_unref(js_value);
+
+    /* Check for JavaScript exceptions */
+    if (js_value)
+    {
+      JSCContext* context = jsc_value_get_context(js_value);
+      JSCException* exception = jsc_context_get_exception(context);
+      if (exception)
+      {
+        char* msg = jsc_exception_get_message(exception);
+        if (msg)
+          g_free(msg);
+      }
+    }
   }
+  else
+  #elif defined(IUPWEB_USE_WEBKIT6)
+  {
+    /* WebKit6: Use JSCore GObject API */
+    JSCValue* js_value = webkit_web_view_evaluate_javascript_finish((WebKitWebView*)object, result, &error);
+
+    if (js_value && !jsc_value_is_null(js_value) && !jsc_value_is_undefined(js_value))
+    {
+      char* str = jsc_value_to_string(js_value);
+      if (str)
+      {
+        js_result->result = iupStrDup(str);
+        g_free(str);
+      }
+    }
+
+    /* Check for JavaScript exceptions */
+    if (js_value)
+    {
+      JSCContext* context = jsc_value_get_context(js_value);
+      JSCException* exception = jsc_context_get_exception(context);
+      if (exception)
+      {
+        char* msg = jsc_exception_get_message(exception);
+        if (msg)
+          g_free(msg);
+      }
+    }
+  }
+  #else
+  #endif
+  #if !defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN)
+  {
+    /* WebKit2: Use JSCore C API */
+    WebKitJavascriptResult* js_value = webkit_web_view_run_javascript_finish((WebKitWebView*)object, result, &error);
+
+    if (js_value)
+    {
+      JSGlobalContextRef context = webkit_javascript_result_get_global_context(js_value);
+      JSValueRef value = webkit_javascript_result_get_value(js_value);
+
+      if (value && !JSValueIsNull(context, value) && !JSValueIsUndefined(context, value))
+      {
+        JSStringRef js_str = JSValueToStringCopy(context, value, NULL);
+        if (js_str)
+        {
+          size_t max_size = JSStringGetMaximumUTF8CStringSize(js_str);
+          char* buffer = malloc(max_size);
+          if (buffer)
+          {
+            JSStringGetUTF8CString(js_str, buffer, max_size);
+            js_result->result = iupStrDup(buffer);
+            free(buffer);
+          }
+          JSStringRelease(js_str);
+        }
+      }
+      webkit_javascript_result_unref(js_value);
+    }
+  }
+  #endif
 
   if (error)
     g_error_free(error);
@@ -1005,8 +1149,20 @@ static char* gtkWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...
     JavaScriptResult js_result = {NULL, NULL, 0};
     js_result.loop = g_main_loop_new(NULL, FALSE);
 
+    #if defined(IUPWEB_USE_DLOPEN)
+    if (s_use_webkit6)
+      webkit_web_view_evaluate_javascript((WebKitWebView*)ih->handle, js, -1, NULL, NULL, NULL,
+                                          gtkWebBrowserJavaScriptFinished, &js_result);
+    else
+      webkit_web_view_run_javascript((WebKitWebView*)ih->handle, js, NULL,
+                                      gtkWebBrowserJavaScriptFinished, &js_result);
+    #elif defined(IUPWEB_USE_WEBKIT6)
+    webkit_web_view_evaluate_javascript((WebKitWebView*)ih->handle, js, -1, NULL, NULL, NULL,
+                                        gtkWebBrowserJavaScriptFinished, &js_result);
+    #else
     webkit_web_view_run_javascript((WebKitWebView*)ih->handle, js, NULL,
                                     gtkWebBrowserJavaScriptFinished, &js_result);
+    #endif
 
     if (!js_result.completed)
     {
@@ -1151,10 +1307,14 @@ static void gtkWebBrowserExecCommandParam(Ihandle* ih, const char* cmd, const ch
            "document.execCommand('%s', false, %s);", cmd, escaped_param);
 
 #ifdef IUPWEB_USE_DLOPEN
-  if (s_use_webkit2)
+  if (s_use_webkit6)
+    webkit_web_view_evaluate_javascript((WebKitWebView*)ih->handle, js_cmd, -1, NULL, NULL, NULL, NULL, NULL);
+  else if (s_use_webkit2)
     webkit_web_view_run_javascript((WebKitWebView*)ih->handle, js_cmd, NULL, NULL, NULL);
   else
     webkit_web_view_execute_script((WebKitWebView*)ih->handle, js_cmd);
+#elif defined(IUPWEB_USE_WEBKIT6)
+  webkit_web_view_evaluate_javascript((WebKitWebView*)ih->handle, js_cmd, -1, NULL, NULL, NULL, NULL, NULL);
 #elif defined(IUPWEB_USE_WEBKIT2)
   webkit_web_view_run_javascript((WebKitWebView*)ih->handle, js_cmd, NULL, NULL, NULL);
 #elif defined(IUPWEB_USE_WEBKIT1)
@@ -1218,10 +1378,14 @@ static int gtkWebBrowserSetFontNameAttrib(Ihandle* ih, const char* value)
            "})();", escaped_font);
 
 #ifdef IUPWEB_USE_DLOPEN
-  if (s_use_webkit2)
+  if (s_use_webkit6)
+    webkit_web_view_evaluate_javascript((WebKitWebView*)ih->handle, js_cmd, -1, NULL, NULL, NULL, NULL, NULL);
+  else if (s_use_webkit2)
     webkit_web_view_run_javascript((WebKitWebView*)ih->handle, js_cmd, NULL, NULL, NULL);
   else
     webkit_web_view_execute_script((WebKitWebView*)ih->handle, js_cmd);
+#elif defined(IUPWEB_USE_WEBKIT6)
+  webkit_web_view_evaluate_javascript((WebKitWebView*)ih->handle, js_cmd, -1, NULL, NULL, NULL, NULL, NULL);
 #elif defined(IUPWEB_USE_WEBKIT2)
   webkit_web_view_run_javascript((WebKitWebView*)ih->handle, js_cmd, NULL, NULL, NULL);
 #elif defined(IUPWEB_USE_WEBKIT1)
@@ -2002,7 +2166,28 @@ static WebKitWebView* gtkWebBrowserNewWindow_WK1(WebKitWebView *web_view, WebKit
 }
 #endif
 
-#if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
+#if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN))
+#if defined(IUPWEB_USE_WEBKIT6) && !defined(IUPWEB_USE_DLOPEN)
+/* WebKit6 uses JSCValue instead of WebKitJavascriptResult */
+static void gtkWebBrowserScriptMessageReceived_Update(WebKitUserContentManager *manager, JSCValue *js_value, Ihandle *ih)
+{
+  IFn cb_update = (IFn)IupGetCallback(ih, "UPDATE_CB");
+  if (cb_update)
+    cb_update(ih);
+
+  (void)manager;
+  (void)js_value;
+}
+
+static void gtkWebBrowserScriptMessageReceived_Dirty(WebKitUserContentManager *manager, JSCValue *js_value, Ihandle *ih)
+{
+  iupAttribSet(ih, "_IUPWEB_DIRTY", "1");
+
+  (void)manager;
+  (void)js_value;
+}
+#else
+/* WebKit2 uses WebKitJavascriptResult */
 static void gtkWebBrowserScriptMessageReceived_Update(WebKitUserContentManager *manager, WebKitJavascriptResult *js_result, Ihandle *ih)
 {
   IFn cb_update = (IFn)IupGetCallback(ih, "UPDATE_CB");
@@ -2020,6 +2205,7 @@ static void gtkWebBrowserScriptMessageReceived_Dirty(WebKitUserContentManager *m
   (void)manager;
   (void)js_result;
 }
+#endif
 #endif
 
 static void gtkWebBrowserDummyLogFunc(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
@@ -2042,14 +2228,45 @@ static int gtkWebBrowserMapMethod(Ihandle* ih)
   if (s_use_webkit2)
   #endif
   {
-    WebKitUserContentManager* manager = webkit_user_content_manager_new();
-    webkit_user_content_manager_register_script_message_handler(manager, "iupUpdateCb");
-    webkit_user_content_manager_register_script_message_handler(manager, "iupDirtyFlag");
-    g_signal_connect(G_OBJECT(manager), "script-message-received::iupUpdateCb", G_CALLBACK(gtkWebBrowserScriptMessageReceived_Update), ih);
-    g_signal_connect(G_OBJECT(manager), "script-message-received::iupDirtyFlag", G_CALLBACK(gtkWebBrowserScriptMessageReceived_Dirty), ih);
+    #if defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN)
+    #ifdef IUPWEB_USE_DLOPEN
+    if (s_use_webkit6)
+    #endif
+    {
+      /* WebKit6: Create WebView first, then get manager */
+      ih->handle = (GtkWidget*)webkit_web_view_new();
+      if (ih->handle)
+      {
+        WebKitUserContentManager* manager = webkit_web_view_get_user_content_manager((WebKitWebView*)ih->handle);
+        /* WebKit6: Basic function takes world_name parameter (use NULL for default world) */
+        #ifdef IUPWEB_USE_DLOPEN
+        webkit_user_content_manager_register_script_message_handler_wk6(manager, "iupUpdateCb", NULL);
+        webkit_user_content_manager_register_script_message_handler_wk6(manager, "iupDirtyFlag", NULL);
+        #else
+        webkit_user_content_manager_register_script_message_handler(manager, "iupUpdateCb", NULL);
+        webkit_user_content_manager_register_script_message_handler(manager, "iupDirtyFlag", NULL);
+        #endif
+        g_signal_connect(G_OBJECT(manager), "script-message-received::iupUpdateCb", G_CALLBACK(gtkWebBrowserScriptMessageReceived_Update), ih);
+        g_signal_connect(G_OBJECT(manager), "script-message-received::iupDirtyFlag", G_CALLBACK(gtkWebBrowserScriptMessageReceived_Dirty), ih);
+      }
+    }
+    #ifdef IUPWEB_USE_DLOPEN
+    else
+    #endif
+    #endif
+    #if !defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN)
+    {
+      /* WebKit2: Create manager first, then WebView */
+      WebKitUserContentManager* manager = webkit_user_content_manager_new();
+      webkit_user_content_manager_register_script_message_handler(manager, "iupUpdateCb");
+      webkit_user_content_manager_register_script_message_handler(manager, "iupDirtyFlag");
+      g_signal_connect(G_OBJECT(manager), "script-message-received::iupUpdateCb", G_CALLBACK(gtkWebBrowserScriptMessageReceived_Update), ih);
+      g_signal_connect(G_OBJECT(manager), "script-message-received::iupDirtyFlag", G_CALLBACK(gtkWebBrowserScriptMessageReceived_Dirty), ih);
 
-    ih->handle = (GtkWidget*)webkit_web_view_new_with_user_content_manager(manager);
-    g_object_unref(manager);
+      ih->handle = (GtkWidget*)webkit_web_view_new_with_user_content_manager(manager);
+      g_object_unref(manager);
+    }
+    #endif
   }
   #ifdef IUPWEB_USE_DLOPEN
   else
@@ -2067,16 +2284,24 @@ static int gtkWebBrowserMapMethod(Ihandle* ih)
 
   if (s_use_webkit2 == 0)
   {
+#if GTK_CHECK_VERSION(4, 0, 0)
+    scrolled_window = (GtkScrolledWindow*)gtk_scrolled_window_new();
+#else
     scrolled_window = (GtkScrolledWindow*)gtk_scrolled_window_new(NULL, NULL);
+#endif
     if (!scrolled_window)
       return IUP_ERROR;
 
     {
-#if GTK_CHECK_VERSION(2, 6, 0)
+#if GTK_CHECK_VERSION(2, 6, 0) && !GTK_CHECK_VERSION(4, 0, 0)
       GLogFunc def_func = g_log_set_default_handler(gtkWebBrowserDummyLogFunc, NULL);
 #endif
+#if GTK_CHECK_VERSION(4, 0, 0)
+      gtk_scrolled_window_set_child(scrolled_window, ih->handle);
+#else
       gtk_container_add((GtkContainer*)scrolled_window, ih->handle);
-#if GTK_CHECK_VERSION(2, 6, 0)
+#endif
+#if GTK_CHECK_VERSION(2, 6, 0) && !GTK_CHECK_VERSION(4, 0, 0)
       g_log_set_default_handler(def_func, NULL);
 #endif
     }
@@ -2100,11 +2325,19 @@ static int gtkWebBrowserMapMethod(Ihandle* ih)
 
   iupgtkAddToParent(ih);
 
+#if GTK_CHECK_VERSION(4, 0, 0)
+  /* GTK4 uses event controllers instead of signals for these events */
+  iupgtk4SetupEnterLeaveEvents(ih->handle, ih);
+  iupgtk4SetupFocusEvents(ih->handle, ih);
+  /* Note: GTK4 doesn't have "show-help" signal, and query-tooltip has incompatible signature */
+#else
+  /* GTK3 uses signals for events */
   g_signal_connect(G_OBJECT(ih->handle), "enter-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "leave-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "focus-in-event",     G_CALLBACK(iupgtkFocusInOutEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "focus-out-event",    G_CALLBACK(iupgtkFocusInOutEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "show-help",          G_CALLBACK(iupgtkShowHelp),        ih);
+#endif
 
 #if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
   #ifdef IUPWEB_USE_DLOPEN
@@ -2148,6 +2381,47 @@ static void gtkWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, i
   *h = natural_h;
 }
 
+static void gtkWebBrowserUnMapMethod(Ihandle* ih)
+{
+#if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN))
+  #ifdef IUPWEB_USE_DLOPEN
+  if (s_use_webkit2 && ih->handle)
+  #else
+  if (ih->handle)
+  #endif
+  {
+    WebKitUserContentManager* manager = webkit_web_view_get_user_content_manager((WebKitWebView*)ih->handle);
+    if (manager)
+    {
+      /* Unregister script message handlers to release references */
+      #if defined(IUPWEB_USE_DLOPEN)
+      if (s_use_webkit6)
+      {
+        webkit_user_content_manager_unregister_script_message_handler_wk6(manager, "iupUpdateCb", NULL);
+        webkit_user_content_manager_unregister_script_message_handler_wk6(manager, "iupDirtyFlag", NULL);
+      }
+      else
+      #elif defined(IUPWEB_USE_WEBKIT6)
+      {
+        webkit_user_content_manager_unregister_script_message_handler(manager, "iupUpdateCb", NULL);
+        webkit_user_content_manager_unregister_script_message_handler(manager, "iupDirtyFlag", NULL);
+      }
+      #else
+      #endif
+      #if !defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN)
+      {
+        webkit_user_content_manager_unregister_script_message_handler(manager, "iupUpdateCb");
+        webkit_user_content_manager_unregister_script_message_handler(manager, "iupDirtyFlag");
+      }
+      #endif
+    }
+  }
+#endif
+
+  /* Call base unmap to destroy the widget */
+  iupdrvBaseUnMapMethod(ih);
+}
+
 static int gtkWebBrowserCreateMethod(Ihandle* ih, void **params)
 {
   (void)params;
@@ -2175,7 +2449,7 @@ Iclass* iupWebBrowserNewClass(void)
   ic->New = NULL;
   ic->Create = gtkWebBrowserCreateMethod;
   ic->Map = gtkWebBrowserMapMethod;
-  ic->UnMap = iupdrvBaseUnMapMethod;
+  ic->UnMap = gtkWebBrowserUnMapMethod;
   ic->ComputeNaturalSize = gtkWebBrowserComputeNaturalSizeMethod;
   ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
 

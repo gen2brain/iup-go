@@ -33,10 +33,15 @@ typedef struct _WebKitJavascriptResult WebKitJavascriptResult;
 typedef struct _WebKitUserContentManager WebKitUserContentManager;
 typedef struct _WebKitUserScript WebKitUserScript;
 
-/* --- JSCore Types (used for JavaScript results) --- */
+/* --- JSCore Types (used for JavaScript results in WebKit2) --- */
 typedef const struct OpaqueJSContext* JSGlobalContextRef;
 typedef const struct OpaqueJSValue* JSValueRef;
 typedef struct OpaqueJSString* JSStringRef;
+
+/* --- JSCore GObject Types (used in WebKit6) --- */
+typedef struct _JSCContext JSCContext;
+typedef struct _JSCValue JSCValue;
+typedef struct _JSCException JSCException;
 
 /* --- WebKit1 Types --- */
 typedef struct _WebKitWebBackForwardList WebKitWebBackForwardList;
@@ -158,13 +163,32 @@ static void (*webkit_user_script_unref)(WebKitUserScript *user_script);
 static WebKitWebView* (*webkit_web_view_new_with_user_content_manager)(WebKitUserContentManager *user_content_manager);
 static WebKitUserContentManager* (*webkit_web_view_get_user_content_manager)(WebKitWebView *web_view);
 
-/* --- JSCore Function Pointers (for JavaScript result handling) --- */
+/* --- JSCore Function Pointers (for JavaScript result handling in WebKit2) --- */
 static JSStringRef (*JSValueToStringCopy)(JSGlobalContextRef ctx, JSValueRef value, JSValueRef* exception);
 static size_t (*JSStringGetMaximumUTF8CStringSize)(JSStringRef string);
 static size_t (*JSStringGetUTF8CString)(JSStringRef string, char* buffer, size_t bufferSize);
 static void (*JSStringRelease)(JSStringRef string);
 static int (*JSValueIsNull)(JSGlobalContextRef ctx, JSValueRef value);
 static int (*JSValueIsUndefined)(JSGlobalContextRef ctx, JSValueRef value);
+
+/* --- WebKit6 Function Pointers (GTK4) --- */
+/* Note: webkit_web_view_evaluate_javascript replaces webkit_web_view_run_javascript */
+static void (*webkit_web_view_evaluate_javascript)(WebKitWebView *web_view, const char *script, gssize length, const char *world_name, const char *source_uri, GCancellable *cancellable, GAsyncReadyCallback callback, gpointer user_data);
+static JSCValue* (*webkit_web_view_evaluate_javascript_finish)(WebKitWebView *web_view, GAsyncResult *result, GError **error);
+/* Note: WebKit6 changed signature - basic function now takes world_name (3 params vs 2 in WK2) */
+static gboolean (*webkit_user_content_manager_register_script_message_handler_wk6)(WebKitUserContentManager *manager, const char *name, const char *world_name);
+static void (*webkit_user_content_manager_unregister_script_message_handler_wk6)(WebKitUserContentManager *manager, const char *name, const char *world_name);
+
+/* --- JSCore GObject Function Pointers (for JavaScript in WebKit6) --- */
+static char* (*jsc_value_to_string)(JSCValue *value);
+static gboolean (*jsc_value_is_null)(JSCValue *value);
+static gboolean (*jsc_value_is_undefined)(JSCValue *value);
+static gboolean (*jsc_value_is_number)(JSCValue *value);
+static gboolean (*jsc_value_is_string)(JSCValue *value);
+static gboolean (*jsc_value_is_boolean)(JSCValue *value);
+static JSCContext* (*jsc_value_get_context)(JSCValue *value);
+static JSCException* (*jsc_context_get_exception)(JSCContext *context);
+static char* (*jsc_exception_get_message)(JSCException *exception);
 
 /* --- WebKit1 Function Pointers --- */
 static WebKitWebHistoryItem* (*webkit_web_back_forward_list_get_nth_item)(WebKitWebBackForwardList *back_forward_list, gint index);
@@ -236,13 +260,30 @@ static void iupgtkWebBrowser_ClearDLSymbols()
   webkit_navigation_action_get_request = NULL;
   webkit_uri_request_get_uri = NULL;
 
-  /* Clear JSCore */
+  /* Clear JSCore (WebKit2) */
   JSValueToStringCopy = NULL;
   JSStringGetMaximumUTF8CStringSize = NULL;
   JSStringGetUTF8CString = NULL;
   JSStringRelease = NULL;
   JSValueIsNull = NULL;
   JSValueIsUndefined = NULL;
+
+  /* Clear WK6 */
+  webkit_web_view_evaluate_javascript = NULL;
+  webkit_web_view_evaluate_javascript_finish = NULL;
+  webkit_user_content_manager_register_script_message_handler_wk6 = NULL;
+  webkit_user_content_manager_unregister_script_message_handler_wk6 = NULL;
+
+  /* Clear JSCore GObject (WebKit6) */
+  jsc_value_to_string = NULL;
+  jsc_value_is_null = NULL;
+  jsc_value_is_undefined = NULL;
+  jsc_value_is_number = NULL;
+  jsc_value_is_string = NULL;
+  jsc_value_is_boolean = NULL;
+  jsc_value_get_context = NULL;
+  jsc_context_get_exception = NULL;
+  jsc_exception_get_message = NULL;
 
   /* Clear WK1 */
   webkit_web_back_forward_list_get_nth_item = NULL;
@@ -382,6 +423,76 @@ static int iupgtkWebBrowser_SetDLSymbolsWK1(void* webkit_library)
 
   /* Check for a few critical symbols */
   if (!webkit_web_view_new || !webkit_web_view_load_string || !webkit_web_view_get_main_frame)
+    return 0;
+
+  return 1;
+}
+
+static int iupgtkWebBrowser_SetDLSymbolsWK6(void* webkit_library)
+{
+  /* Load Common Symbols */
+  webkit_web_view_new = (GtkWidget* (*)(void))dlsym(webkit_library, "webkit_web_view_new");
+  webkit_web_view_get_uri = (const gchar* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_uri");
+  webkit_web_view_load_uri = (void (*)(WebKitWebView*, const gchar*))dlsym(webkit_library, "webkit_web_view_load_uri");
+  webkit_web_view_go_back = (void (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_go_back");
+  webkit_web_view_go_forward = (void (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_go_forward");
+  webkit_web_view_can_go_back = (gboolean (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_can_go_back");
+  webkit_web_view_can_go_forward = (gboolean (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_can_go_forward");
+  webkit_web_view_reload = (void (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_reload");
+  webkit_web_view_stop_loading = (void (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_stop_loading");
+  webkit_web_view_set_editable = (void (*)(WebKitWebView*, gboolean))dlsym(webkit_library, "webkit_web_view_set_editable");
+  webkit_web_view_get_zoom_level = (gdouble (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_zoom_level");
+  webkit_web_view_set_zoom_level = (void (*)(WebKitWebView*, gdouble))dlsym(webkit_library, "webkit_web_view_set_zoom_level");
+  webkit_web_view_get_back_forward_list = (WebKitBackForwardList* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_back_forward_list");
+
+  /* Load WK2 Specific Symbols (many are shared with WK6) */
+  webkit_back_forward_list_get_nth_item = (WebKitBackForwardListItem* (*)(WebKitBackForwardList*, gint))dlsym(webkit_library, "webkit_back_forward_list_get_nth_item");
+  webkit_back_forward_list_item_get_uri = (const gchar* (*)(WebKitBackForwardListItem*))dlsym(webkit_library, "webkit_back_forward_list_item_get_uri");
+  webkit_back_forward_list_get_forward_list = (GList* (*)(WebKitBackForwardList*))dlsym(webkit_library, "webkit_back_forward_list_get_forward_list");
+  webkit_back_forward_list_get_back_list = (GList* (*)(WebKitBackForwardList*))dlsym(webkit_library, "webkit_back_forward_list_get_back_list");
+  webkit_web_view_load_html = (void (*)(WebKitWebView*, const gchar*, const gchar*))dlsym(webkit_library, "webkit_web_view_load_html");
+  webkit_web_view_get_main_resource = (WebKitWebResource* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_main_resource");
+  webkit_web_resource_get_data = (void (*)(WebKitWebResource*, GCancellable*, GAsyncReadyCallback, gpointer))dlsym(webkit_library, "webkit_web_resource_get_data");
+  webkit_web_resource_get_data_finish = (guchar* (*)(WebKitWebResource*, GAsyncResult*, gsize*, GError**))dlsym(webkit_library, "webkit_web_resource_get_data_finish");
+  webkit_web_view_save_to_file = (void (*)(WebKitWebView*, GFile*, WebKitSaveMode, GCancellable*, GAsyncReadyCallback, gpointer))dlsym(webkit_library, "webkit_web_view_save_to_file");
+  webkit_web_view_execute_editing_command = (void (*)(WebKitWebView*, const gchar*))dlsym(webkit_library, "webkit_web_view_execute_editing_command");
+  webkit_web_view_execute_editing_command_with_argument = (void (*)(WebKitWebView*, const gchar*, const gchar*))dlsym(webkit_library, "webkit_web_view_execute_editing_command_with_argument");
+  webkit_web_view_is_editable = (gboolean (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_is_editable");
+  webkit_print_operation_new = (WebKitPrintOperation* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_print_operation_new");
+  webkit_print_operation_run_dialog = (void (*)(WebKitPrintOperation*, GtkWindow*))dlsym(webkit_library, "webkit_print_operation_run_dialog");
+  webkit_print_operation_print = (void (*)(WebKitPrintOperation*))dlsym(webkit_library, "webkit_print_operation_print");
+  webkit_web_view_is_loading = (gboolean (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_is_loading");
+  webkit_navigation_policy_decision_get_navigation_action = (WebKitNavigationAction* (*)(WebKitNavigationPolicyDecision*))dlsym(webkit_library, "webkit_navigation_policy_decision_get_navigation_action");
+  webkit_navigation_action_get_request = (WebKitURIRequest* (*)(WebKitNavigationAction*))dlsym(webkit_library, "webkit_navigation_action_get_request");
+  webkit_uri_request_get_uri = (const gchar* (*)(WebKitURIRequest*))dlsym(webkit_library, "webkit_uri_request_get_uri");
+  webkit_user_content_manager_new = (WebKitUserContentManager* (*)(void))dlsym(webkit_library, "webkit_user_content_manager_new");
+  webkit_user_content_manager_add_script = (void (*)(WebKitUserContentManager*, WebKitUserScript*))dlsym(webkit_library, "webkit_user_content_manager_add_script");
+  webkit_user_script_new = (WebKitUserScript* (*)(const gchar*, WebKitUserContentInjectedFrames, WebKitUserScriptInjectionTime, const gchar* const*, const gchar* const*))dlsym(webkit_library, "webkit_user_script_new");
+  webkit_user_script_unref = (void (*)(WebKitUserScript*))dlsym(webkit_library, "webkit_user_script_unref");
+  webkit_web_view_get_user_content_manager = (WebKitUserContentManager* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_user_content_manager");
+
+  /* Load WK6 Specific Symbols */
+  webkit_web_view_evaluate_javascript = (void (*)(WebKitWebView*, const char*, gssize, const char*, const char*, GCancellable*, GAsyncReadyCallback, gpointer))dlsym(webkit_library, "webkit_web_view_evaluate_javascript");
+  webkit_web_view_evaluate_javascript_finish = (JSCValue* (*)(WebKitWebView*, GAsyncResult*, GError**))dlsym(webkit_library, "webkit_web_view_evaluate_javascript_finish");
+  /* WebKit6 uses 3-parameter version (with world_name) */
+  webkit_user_content_manager_register_script_message_handler_wk6 = (gboolean (*)(WebKitUserContentManager*, const char*, const char*))dlsym(webkit_library, "webkit_user_content_manager_register_script_message_handler");
+  webkit_user_content_manager_unregister_script_message_handler_wk6 = (void (*)(WebKitUserContentManager*, const char*, const char*))dlsym(webkit_library, "webkit_user_content_manager_unregister_script_message_handler");
+
+  /* Load JSCore GObject Symbols */
+  jsc_value_to_string = (char* (*)(JSCValue*))dlsym(webkit_library, "jsc_value_to_string");
+  jsc_value_is_null = (gboolean (*)(JSCValue*))dlsym(webkit_library, "jsc_value_is_null");
+  jsc_value_is_undefined = (gboolean (*)(JSCValue*))dlsym(webkit_library, "jsc_value_is_undefined");
+  jsc_value_is_number = (gboolean (*)(JSCValue*))dlsym(webkit_library, "jsc_value_is_number");
+  jsc_value_is_string = (gboolean (*)(JSCValue*))dlsym(webkit_library, "jsc_value_is_string");
+  jsc_value_is_boolean = (gboolean (*)(JSCValue*))dlsym(webkit_library, "jsc_value_is_boolean");
+  jsc_value_get_context = (JSCContext* (*)(JSCValue*))dlsym(webkit_library, "jsc_value_get_context");
+  jsc_context_get_exception = (JSCException* (*)(JSCContext*))dlsym(webkit_library, "jsc_context_get_exception");
+  jsc_exception_get_message = (char* (*)(JSCException*))dlsym(webkit_library, "jsc_exception_get_message");
+
+  /* Check for a few critical WK6 symbols */
+  if (!webkit_web_view_new || !webkit_web_view_load_html ||
+      !webkit_web_view_evaluate_javascript || !jsc_value_to_string ||
+      !webkit_navigation_policy_decision_get_navigation_action || !webkit_navigation_action_get_request || !webkit_uri_request_get_uri)
     return 0;
 
   return 1;
