@@ -409,6 +409,8 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   for (i=1; i<count; i++)  /* Start at 1 to avoid redundant line to first point */
     cairo_line_to(dc->image_cr, points[2*i], points[2*i+1]);
 
+  cairo_close_path(dc->image_cr);  /* Close polygon by connecting last point to first */
+
   if (style==IUP_DRAW_FILL)
     cairo_fill(dc->image_cr);
   else
