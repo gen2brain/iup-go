@@ -34,6 +34,7 @@
 #include <QMouseEvent>
 #include <QMenuBar>
 #include <QMainWindow>
+#include <QPixmap>
 
 extern "C" {
 #include "iup.h"
@@ -259,18 +260,64 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   ih->handle = nullptr;
 }
 
+/* Forward declaration for Canvas container structure */
+struct IupQtCanvasContainer
+{
+  QWidget* container;
+  QWidget* canvas;  /* Actually IupQtCanvas*, but we only need QWidget* here */
+  void* sb_horiz;
+  void* sb_vert;
+};
+
 extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  /* For Canvas, we need to call update() on the actual canvas widget, not the container */
+  void* canvas_data = iupAttribGet(ih, "_IUPQT_CANVAS_CONTAINER");
+  if (canvas_data)
+  {
+    /* This is a Canvas - invalidate buffer so paintEvent will call ACTION callback. */
+    QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+    if (buffer)
+    {
+      delete buffer;
+      iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", NULL);
+    }
 
+    /* Call update() on the actual canvas widget from container_data */
+    IupQtCanvasContainer* container = (IupQtCanvasContainer*)canvas_data;
+    if (container->canvas)
+      container->canvas->update();
+    return;
+  }
+
+  /* For other widgets, call update() on ih->handle */
+  QWidget* widget = (QWidget*)ih->handle;
   if (widget)
     widget->update();  /* Schedule repaint */
 }
 
 extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
 {
-  QWidget* widget = (QWidget*)ih->handle;
+  /* For Canvas, we need to call repaint() on the actual canvas widget, not the container */
+  void* canvas_data = iupAttribGet(ih, "_IUPQT_CANVAS_CONTAINER");
+  if (canvas_data)
+  {
+    /* Invalidate buffer so paintEvent will call ACTION callback */
+    QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+    if (buffer)
+    {
+      delete buffer;
+      iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", NULL);
+    }
 
+    IupQtCanvasContainer* container = (IupQtCanvasContainer*)canvas_data;
+    if (container->canvas)
+      container->canvas->repaint();
+    return;
+  }
+
+  /* For other widgets, call repaint() on ih->handle */
+  QWidget* widget = (QWidget*)ih->handle;
   if (widget)
     widget->repaint();  /* Immediate repaint */
 }
