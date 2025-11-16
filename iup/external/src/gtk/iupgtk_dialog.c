@@ -1179,15 +1179,12 @@ static int gtkDialogSetIconAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
+
 static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
   if (iupdrvBaseSetBgColorAttrib(ih, value))
   {
-#if GTK_CHECK_VERSION(3, 0, 0)
-    GdkWindow* window = iupgtkGetWindow(ih->handle);
-    if (window)
-      gdk_window_set_background_pattern(window, NULL);
-#else
+#if !GTK_CHECK_VERSION(3, 0, 0)
     GtkStyle *style = gtk_widget_get_style(ih->handle);
     if (style->bg_pixmap[GTK_STATE_NORMAL])
     {
@@ -1204,29 +1201,11 @@ static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     if (pixbuf)
     {
 #if GTK_CHECK_VERSION(3, 0, 0)
-    GdkWindow* window = iupgtkGetWindow(ih->handle);
-    if (window)
-    {
-      /* TODO: this is NOT working!!!! */
-      cairo_pattern_t* pattern;
-      int width = gdk_pixbuf_get_width(pixbuf);
-      int height = gdk_pixbuf_get_height(pixbuf);
-
-      cairo_surface_t* surface = gdk_window_create_similar_surface(window, CAIRO_CONTENT_COLOR_ALPHA, width, height);
-      cairo_t* cr = cairo_create(surface);
-      gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
-      cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-      cairo_paint(cr);
-      cairo_destroy(cr);
-
-      pattern = cairo_pattern_create_for_surface(surface);
-      cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
-
-      gdk_window_set_background_pattern(window, pattern);
-      cairo_pattern_destroy (pattern);
-
-      cairo_surface_destroy(surface);
-    }
+      /* Background images not supported.
+         GTK3 CSS url() uses g_file_read() which doesn't support data: URIs.
+         Using file:// URLs requires saving to temporary files which is inefficient. */
+      (void)pixbuf;
+      return 0;
 #else
       GdkPixmap* pixmap;
       GtkStyle *style = gtk_style_copy(gtk_widget_get_style(ih->handle));
@@ -1235,9 +1214,9 @@ static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 
       style->bg_pixmap[GTK_STATE_NORMAL] = pixmap;
       gtk_widget_set_style(ih->handle, style);
-#endif
 
       return 1;
+#endif
     }
   }
 
