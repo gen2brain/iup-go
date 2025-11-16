@@ -44,7 +44,7 @@ IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
   return (r ? 1 : 0);
 }
 
-int iupdrvMakeDirectory(const char* name)
+int cocoaMakeDirectory(const char* name)
 {
   NSString *path = [NSString stringWithUTF8String:name];
   NSDictionary *dic = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithUnsignedInt:0775], NSFilePosixPermissions, nil];
@@ -52,7 +52,7 @@ int iupdrvMakeDirectory(const char* name)
   return (r ? 1 : 0);
 }
 
-int iupdrvIsFile(const char* name)
+int cocoaIsFile(const char* name)
 {
   NSString *path = [NSString stringWithUTF8String:name];
   BOOL isDir;
@@ -60,7 +60,7 @@ int iupdrvIsFile(const char* name)
   return (r && !isDir ? 1 : 0);
 }
 
-int iupdrvIsDirectory(const char* name)
+int cocoaIsDirectory(const char* name)
 {
   NSString *path = [NSString stringWithUTF8String:name];
   BOOL isDir;
@@ -68,7 +68,7 @@ int iupdrvIsDirectory(const char* name)
   return (r && isDir ? 1 : 0);
 }
 
-int iupdrvGetWindowDecor(void* wnd, int *border, int *caption)
+int cocoaGetWindowDecor(void* wnd, int *border, int *caption)
 {
   (void)wnd;
 

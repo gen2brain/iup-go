@@ -114,6 +114,44 @@ static int cocoaCalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
+{
+  NSDatePicker* date_picker = (NSDatePicker*)ih->handle;
+  if (!date_picker) return;
+
+  NSView* parent_view = [date_picker superview];
+  if (!parent_view) return;
+
+  NSRect parent_bounds = [parent_view bounds];
+  NSRect child_rect;
+
+  if ([parent_view isFlipped])
+  {
+    child_rect = NSMakeRect(ih->x, ih->y, ih->currentwidth, ih->currentheight);
+  }
+  else
+  {
+    child_rect = NSMakeRect(ih->x, parent_bounds.size.height - ih->y - ih->currentheight, ih->currentwidth, ih->currentheight);
+  }
+
+  NSSize intrinsic_size = [date_picker intrinsicContentSize];
+
+  [date_picker setFrame:child_rect];
+
+  /* If frame is larger than intrinsic size, scale content by setting bounds to intrinsic size
+     If frame matches or is smaller than intrinsic size, reset bounds to match frame (no scaling) */
+  if (child_rect.size.width > intrinsic_size.width || child_rect.size.height > intrinsic_size.height)
+  {
+    /* Scale content: bounds stays at intrinsic size, frame is larger */
+    [date_picker setBoundsSize:intrinsic_size];
+  }
+  else
+  {
+    /* No scaling: bounds matches frame */
+    [date_picker setBoundsSize:child_rect.size];
+  }
+}
+
 static void cocoaCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
   (void)children_expand;
@@ -121,9 +159,10 @@ static void cocoaCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, i
   if (ih->handle)
   {
     NSDatePicker* date_picker = (NSDatePicker*)ih->handle;
-    NSRect frame_rect = [date_picker frame];
-    *w = iupROUND(frame_rect.size.width);
-    *h = iupROUND(frame_rect.size.height);
+    /* Always return intrinsic content size, not the scaled frame size */
+    NSSize intrinsic_size = [date_picker intrinsicContentSize];
+    *w = iupROUND(intrinsic_size.width);
+    *h = iupROUND(intrinsic_size.height);
   }
   else
   {
@@ -204,7 +243,7 @@ Iclass* iupCalendarNewClass(void)
   ic->Map = cocoaCalendarMapMethod;
   ic->UnMap = cocoaCalendarUnMapMethod;
   ic->ComputeNaturalSize = cocoaCalendarComputeNaturalSizeMethod;
-  ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
+  ic->LayoutUpdate = cocoaCalendarLayoutUpdateMethod;
 
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "");
 

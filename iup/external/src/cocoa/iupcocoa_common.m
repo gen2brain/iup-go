@@ -363,7 +363,9 @@ void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
 
   [child_view setFrame:child_rect];
 
-  iupdrvUpdateTip(ih);
+  NSRect actual_bounds = [child_view bounds];
+
+  cocoaUpdateTip(ih);
 }
 
 void iupdrvBaseUnMapMethod(Ihandle* ih)

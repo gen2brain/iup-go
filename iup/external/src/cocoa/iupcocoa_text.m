@@ -5371,10 +5371,6 @@ static void cocoaTextComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *
   {
     natural_h = visiblelines*natural_h;
   }
-  else
-  {
-    natural_h = 22;
-  }
 
   if (iupAttribGetBoolean(ih, "BORDER"))
     iupdrvTextAddBorders(ih, &natural_w, &natural_h);

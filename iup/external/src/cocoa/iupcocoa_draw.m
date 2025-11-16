@@ -74,37 +74,110 @@ IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->release_context = 0;
   dc->draw_focus = 0;
 
+  CGRect bounds_rect = [dc->canvasView bounds];
+  dc->w = bounds_rect.size.width;
+  dc->h = bounds_rect.size.height;
+
   NSGraphicsContext* graphicsContext = [NSGraphicsContext currentContext];
 
+  /* Check if we're inside drawRect (ACTION callback) */
   if (graphicsContext && [graphicsContext isDrawingToScreen])
   {
+    /* Inside drawRect - use current graphics context */
     dc->cgContext = [graphicsContext CGContext];
+    dc->release_context = 0;
   }
   else
   {
-    [dc->canvasView lockFocus];
+    /* OpenGL canvases don't use IUP's draw buffer - OpenGL manages its own buffers */
+    if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
+    {
+      free(dc);
+      return NULL;
+    }
+
+    /* Outside drawRect (e.g., SCROLL_CB) - use persistent buffer */
+    NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_BUFFER");
+
+    if (buffer)
+    {
+      /* Check if size changed - recreate buffer if needed */
+      if ([buffer pixelsWide] != (NSInteger)dc->w || [buffer pixelsHigh] != (NSInteger)dc->h)
+      {
+        [buffer release];
+        buffer = nil;
+      }
+    }
+
+    /* Create new buffer if needed */
+    if (!buffer)
+    {
+      buffer = [[NSBitmapImageRep alloc]
+        initWithBitmapDataPlanes:NULL
+        pixelsWide:(NSInteger)dc->w
+        pixelsHigh:(NSInteger)dc->h
+        bitsPerSample:8
+        samplesPerPixel:4
+        hasAlpha:YES
+        isPlanar:NO
+        colorSpaceName:NSCalibratedRGBColorSpace
+        bytesPerRow:0
+        bitsPerPixel:0];
+
+      iupAttribSet(ih, "_IUPCOCOA_CANVAS_BUFFER", (char*)buffer);
+    }
+
+    /* Create graphics context from bitmap with FLIPPED coordinate system
+     * to match the flipped view coordinate system */
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+
+    /* Use proper CGBitmapInfo for RGBA with premultiplied alpha */
+    CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big;
+
+    CGContextRef cgContext = CGBitmapContextCreate(
+      [buffer bitmapData],
+      [buffer pixelsWide],
+      [buffer pixelsHigh],
+      [buffer bitsPerSample],
+      [buffer bytesPerRow],
+      colorSpace,
+      bitmapInfo
+    );
+    CGColorSpaceRelease(colorSpace);
+
+    if (!cgContext)
+    {
+      free(dc);
+      return NULL;
+    }
+
+    graphicsContext = [NSGraphicsContext graphicsContextWithGraphicsPort:cgContext flipped:YES];
+
+    [NSGraphicsContext saveGraphicsState];
+    [NSGraphicsContext setCurrentContext:graphicsContext];
+    dc->cgContext = cgContext;
     dc->release_context = 1;
-    graphicsContext = [NSGraphicsContext currentContext];
-    dc->cgContext = [graphicsContext CGContext];
   }
 
   if (!dc->cgContext)
   {
-    if (dc->release_context) [dc->canvasView unlockFocus];
     free(dc);
     iupcocoaLogError("Failed to get CGContextRef for drawing.");
     return NULL;
   }
 
-  CGRect bounds_rect = [dc->canvasView bounds];
-  dc->w = bounds_rect.size.width;
-  dc->h = bounds_rect.size.height;
-
   dc->cgLayer = CGLayerCreateWithContext(dc->cgContext, bounds_rect.size, NULL);
   dc->image_cgContext = CGLayerGetContext(dc->cgLayer);
 
-  CGContextTranslateCTM(dc->image_cgContext, 0.0, dc->h);
-  CGContextScaleCTM(dc->image_cgContext, 1.0, -1.0);
+  /* Coordinate system handling:
+   * - DIRECT PATH: View is flipped, context is already top-down - no transform needed
+   * - BUFFER PATH: Manually created CGContext is bottom-up - NEEDS Y-flip transform */
+  if (dc->release_context)
+  {
+    /* Buffer path: Apply Y-flip to convert bottom-up CGContext to top-down */
+    CGContextTranslateCTM(dc->image_cgContext, 0.0, dc->h);
+    CGContextScaleCTM(dc->image_cgContext, 1.0, -1.0);
+  }
 
   CGContextSetLineCap(dc->image_cgContext, kCGLineCapButt);
   CGContextSetLineJoin(dc->image_cgContext, kCGLineJoinMiter);
@@ -123,7 +196,12 @@ void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 
   if (dc->release_context)
   {
-    [dc->canvasView unlockFocus];
+    [NSGraphicsContext restoreGraphicsState];
+    /* Release manually created CGContext for buffer path */
+    if (dc->cgContext)
+    {
+      CGContextRelease(dc->cgContext);
+    }
   }
 
   free(dc);
@@ -146,9 +224,6 @@ void iupdrvDrawUpdateSize(IdrawCanvas* dc)
     dc->cgLayer = CGLayerCreateWithContext(dc->cgContext, bounds_rect.size, NULL);
     dc->image_cgContext = CGLayerGetContext(dc->cgLayer);
 
-    CGContextTranslateCTM(dc->image_cgContext, 0.0, dc->h);
-    CGContextScaleCTM(dc->image_cgContext, 1.0, -1.0);
-
     CGContextSetLineCap(dc->image_cgContext, kCGLineCapButt);
     CGContextSetLineJoin(dc->image_cgContext, kCGLineJoinMiter);
   }
@@ -156,17 +231,12 @@ void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
 void iupdrvDrawFlush(IdrawCanvas* dc)
 {
-  CGContextSaveGState(dc->cgContext);
-
-  CGContextTranslateCTM(dc->cgContext, 0.0, dc->h);
-  CGContextScaleCTM(dc->cgContext, 1.0, -1.0);
-
+  /* NO transformation needed - view is already flipped, draw layer directly */
   CGContextDrawLayerAtPoint(dc->cgContext, CGPointZero, dc->cgLayer);
-
-  CGContextRestoreGState(dc->cgContext);
 
   if (dc->draw_focus)
   {
+    /* Only create NSGraphicsContext when focus ring is actually needed */
     CGRect cocoa_rect = CGRectMake(dc->focus_x1, dc->h - dc->focus_y2 - 1,
                                    dc->focus_x2 - dc->focus_x1 + 1,
                                    dc->focus_y2 - dc->focus_y1 + 1);
@@ -181,6 +251,20 @@ void iupdrvDrawFlush(IdrawCanvas* dc)
   }
 
   CGContextFlush(dc->cgContext);
+
+  /* If drawing to persistent buffer (outside drawRect), trigger widget repaint */
+  if (dc->release_context)
+  {
+    NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(dc->ih, "_IUPCOCOA_CANVAS_BUFFER");
+    if (buffer)
+    {
+      /* Mark buffer as updated so drawRect knows to use it */
+      iupAttribSet(dc->ih, "_IUPCOCOA_BUFFER_DIRTY", "1");
+    }
+
+    /* Trigger widget repaint to copy buffer to screen (in drawRect) */
+    [dc->canvasView setNeedsDisplay:YES];
+  }
 }
 
 void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
@@ -189,7 +273,7 @@ void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
   if (h) *h = iupROUND(dc->h);
 }
 
-void iupdrvDrawParentBackground(IdrawCanvas* dc)
+void cocoaDrawParentBackground(IdrawCanvas* dc)
 {
   char* color_str = iupBaseNativeParentGetBgColor(dc->ih);
   if (!color_str)
@@ -227,17 +311,13 @@ void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long c
 
     if (line_width == 1)
     {
+      /* Use CGRectInset for pixel-perfect 1px lines */
       CGContextStrokeRect(cg_context, CGRectInset(iup_rect, 0.5, 0.5));
     }
     else
     {
-      CGContextBeginPath(cg_context);
-      CGContextMoveToPoint(cg_context, x1, y1);
-      CGContextAddLineToPoint(cg_context, x2, y1);
-      CGContextAddLineToPoint(cg_context, x2, y2);
-      CGContextAddLineToPoint(cg_context, x1, y2);
-      CGContextClosePath(cg_context);
-      CGContextStrokePath(cg_context);
+      /* Use direct CGContextStrokeRect for wider lines - simpler and faster */
+      CGContextStrokeRect(cg_context, iup_rect);
     }
   }
 }
@@ -380,6 +460,7 @@ void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int 
   CGContextBeginPath(cg_context);
   CGContextMoveToPoint(cg_context, (CGFloat)points[0], (CGFloat)points[1]);
 
+  /* Start at i=1 to avoid redundant line to first point */
   for (int i = 1; i < count; i++)
     CGContextAddLineToPoint(cg_context, (CGFloat)points[2*i], (CGFloat)points[2*i+1]);
 
@@ -576,6 +657,7 @@ void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 
   if (iupAttribGetBoolean(dc->ih, "NATIVEFOCUSRING"))
   {
+    /* Defer focus ring drawing to flush for native macOS appearance */
     dc->draw_focus = 1;
     dc->focus_x1 = x1;
     dc->focus_y1 = y1;

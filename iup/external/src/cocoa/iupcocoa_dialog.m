@@ -739,16 +739,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
 
 int iupdrvDialogIsVisible(Ihandle* ih)
 {
-  if (!ih->data->first_show)
-  {
-    return 0;
-  }
-
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
-  if (the_window)
-    return (int)[the_window isVisible];
-
-  return 0;
+  return iupdrvIsVisible(ih);
 }
 
 void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
