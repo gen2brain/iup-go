@@ -125,14 +125,20 @@ protected:
   {
     QMainWindow::resizeEvent(event);
 
-    if (!iup_handle || iup_handle->data->ignore_resize)
+    if (!iup_handle) {
       return;
+    }
+
+    if (iup_handle->data->ignore_resize) {
+      return;
+    }
 
     /* Don't update size tracking until after first show is complete.
      * Skip if first_show has not been set yet (0), or if it's currently being shown (1).
      * Only allow updates after first_show completes and gets cleared. */
-    if (iup_handle->data->first_show || !iupdrvDialogIsVisible(iup_handle))
+    if (iup_handle->data->first_show || !iupdrvDialogIsVisible(iup_handle)) {
       return;
+    }
 
     /* Update IUP size tracking */
     int border = 0, caption = 0, menu = 0;
@@ -141,8 +147,9 @@ protected:
     int new_width = event->size().width() + 2*border;
     int new_height = event->size().height() + 2*border + caption;
 
-    if (iup_handle->currentwidth == new_width && iup_handle->currentheight == new_height)
+    if (iup_handle->currentwidth == new_width && iup_handle->currentheight == new_height) {
       return;
+    }
 
     iup_handle->currentwidth = new_width;
     iup_handle->currentheight = new_height;
@@ -329,14 +336,7 @@ extern "C" void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 
 extern "C" int iupdrvDialogIsVisible(Ihandle* ih)
 {
-  /* Must check first_show to prevent premature visibility detection
-   * during initial dialog setup. This matches Cocoa/GTK behavior. */
-  int widget_visible = iupdrvIsVisible(ih);
-  /* If first_show is still active (1 or 2), not yet fully visible.
-   * If first_show is complete (0), return actual widget visibility. */
-  int result = (ih->data->first_show) ? 0 : widget_visible;
-
-  return result;
+  return iupdrvIsVisible(ih);
 }
 
 extern "C" void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
@@ -516,7 +516,7 @@ extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption
     *caption = 0;
 }
 
-extern "C" void iupdrvDialogUpdateSize(Ihandle* ih)
+extern "C" void qtDialogUpdateSize(Ihandle* ih)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -539,7 +539,7 @@ extern "C" void iupdrvDialogUpdateSize(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvDialogGetClientSize(Ihandle* ih, int *width, int *height)
+extern "C" void qtDialogGetClientSize(Ihandle* ih, int *width, int *height)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -702,7 +702,7 @@ static char* qtDialogGetClientSizeAttrib(Ihandle *ih)
   if (ih->handle)
   {
     int width, height;
-    iupdrvDialogGetClientSize(ih, &width, &height);
+    qtDialogGetClientSize(ih, &width, &height);
     return iupStrReturnIntInt(width, height, 'x');
   }
 
@@ -1057,16 +1057,16 @@ static void* qtDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* c
 }
 
 /* Forward declarations */
-extern "C" int iupdrvDialogMapMethod(Ihandle* ih);
-extern "C" void iupdrvDialogUnMapMethod(Ihandle* ih);
-extern "C" void iupdrvDialogLayoutUpdateMethod(Ihandle *ih);
+extern "C" int qtDialogMapMethod(Ihandle* ih);
+extern "C" void qtDialogUnMapMethod(Ihandle* ih);
+extern "C" void qtDialogLayoutUpdateMethod(Ihandle *ih);
 
 extern "C" void iupdrvDialogInitClass(Iclass* ic)
 {
   /* Driver Dependent Class methods */
-  ic->Map = iupdrvDialogMapMethod;
-  ic->UnMap = iupdrvDialogUnMapMethod;
-  ic->LayoutUpdate = iupdrvDialogLayoutUpdateMethod;
+  ic->Map = qtDialogMapMethod;
+  ic->UnMap = qtDialogUnMapMethod;
+  ic->LayoutUpdate = qtDialogLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = qtDialogGetInnerNativeContainerHandleMethod;
   ic->SetChildrenPosition = qtDialogSetChildrenPositionMethod;
 
@@ -1138,7 +1138,7 @@ extern "C" void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MDICHILD", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
 
-extern "C" int iupdrvDialogMapMethod(Ihandle* ih)
+extern "C" int qtDialogMapMethod(Ihandle* ih)
 {
   /* Create Qt dialog widget */
   IupQtDialog* dialog = new IupQtDialog(ih);
@@ -1147,11 +1147,6 @@ extern "C" int iupdrvDialogMapMethod(Ihandle* ih)
     return IUP_ERROR;
 
   ih->handle = (InativeHandle*)dialog;
-
-  /* Set default size to avoid size calculation problems.
-   * This matches GTK's approach (gtk_window_set_default_size).
-   * Only set widget size, not IUP's internal tracking - let layout compute that. */
-  dialog->resize(100, 100);
 
   /* Create central widget for content */
   QWidget* central = iupqtNativeContainerNew(0);
@@ -1188,7 +1183,7 @@ extern "C" int iupdrvDialogMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-extern "C" void iupdrvDialogUnMapMethod(Ihandle* ih)
+extern "C" void qtDialogUnMapMethod(Ihandle* ih)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -1211,14 +1206,16 @@ extern "C" void iupdrvDialogUnMapMethod(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvDialogLayoutUpdateMethod(Ihandle *ih)
+extern "C" void qtDialogLayoutUpdateMethod(Ihandle *ih)
 {
   int border, caption, menu;
   int width, height;
 
   if (ih->data->ignore_resize ||
       iupAttribGet(ih, "_IUPQT_FS_STYLE"))
+  {
     return;
+  }
 
   ih->data->ignore_resize = 1;
 
@@ -1232,7 +1229,10 @@ extern "C" void iupdrvDialogLayoutUpdateMethod(Ihandle *ih)
 
   QWidget* widget = (QWidget*)ih->handle;
   if (widget)
+  {
+    QMainWindow* window = qobject_cast<QMainWindow*>(widget);
     widget->resize(width, height);
+  }
 
   /* Update min/max constraints for non-resizable dialogs */
   if (!iupAttribGetBoolean(ih, "RESIZE"))

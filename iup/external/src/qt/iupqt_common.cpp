@@ -147,6 +147,7 @@ extern "C" IUP_SDK_API void iupdrvReparent(Ihandle* ih)
     if (old_parent != new_parent)
     {
       widget->setParent(new_parent);
+      widget->show();
     }
   }
 }
@@ -228,9 +229,7 @@ extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
     widget = (QWidget*)ih->handle;
 
   if (widget)
-  {
     iupqtSetPosSize(parent, widget, ih->x, ih->y, ih->currentwidth, ih->currentheight);
-  }
 }
 
 extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)

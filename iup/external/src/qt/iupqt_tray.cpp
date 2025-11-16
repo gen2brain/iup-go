@@ -326,7 +326,7 @@ extern "C" int iupqtSetTrayBalloonAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" int iupdrvIsSystemTrayAvailable(void)
+extern "C" int qtIsSystemTrayAvailable(void)
 {
   return QSystemTrayIcon::isSystemTrayAvailable() ? 1 : 0;
 }

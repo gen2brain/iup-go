@@ -178,6 +178,7 @@ private:
   qreal animation_start;
   qreal animation_end;
   int animation_duration;  /* milliseconds */
+  bool is_hovered;
 
   /* Switch dimensions */
   static constexpr int TRACK_WIDTH = 48;
@@ -197,7 +198,7 @@ private:
 public:
   explicit IupQtSwitch(Ihandle* ih) : IupQtToggleBase<QAbstractButton>(ih),
     thumb_position(0.0), animation_timer(nullptr), animation_start(0.0),
-    animation_end(0.0), animation_duration(120)
+    animation_end(0.0), animation_duration(120), is_hovered(false)
   {
     setCheckable(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -274,6 +275,24 @@ public:
   }
 
 protected:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  void enterEvent(QEnterEvent* event) override
+#else
+  void enterEvent(QEvent* event) override
+#endif
+  {
+    IupQtToggleBase<QAbstractButton>::enterEvent(event);
+    is_hovered = true;
+    update();  /* Trigger repaint to show hover effect */
+  }
+
+  void leaveEvent(QEvent* event) override
+  {
+    IupQtToggleBase<QAbstractButton>::leaveEvent(event);
+    is_hovered = false;
+    update();  /* Trigger repaint to remove hover effect */
+  }
+
   void paintEvent(QPaintEvent* event) override
   {
     Q_UNUSED(event);
@@ -332,7 +351,13 @@ protected:
     }
 
     /* Draw thumb (circle) with border */
-    painter.setBrush(thumb_color);
+    QColor thumb_draw_color = thumb_color;
+    if (is_hovered && isEnabled())
+    {
+      /* Use system Light color for hover indication */
+      thumb_draw_color = pal.color(QPalette::Active, QPalette::Light);
+    }
+    painter.setBrush(thumb_draw_color);
     painter.setPen(QPen(border_color.lighter(110), 1));
     painter.drawEllipse(thumb_x, thumb_y, THUMB_SIZE, THUMB_SIZE);
   }

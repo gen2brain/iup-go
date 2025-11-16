@@ -460,6 +460,12 @@ extern "C" int iupdrvOpen(int *argc, char ***argv)
 
     if (!qt_application)
       return IUP_ERROR;
+
+    /* Disable automatic quit on last window close
+     * IUP manually controls quit via IupExitLoop() in processEvents loop
+     * NOTE: lastWindowClosed signal is NOT emitted when using processEvents(),
+     * only when using exec(), so signal-based approaches won't work */
+    qt_application->setQuitOnLastWindowClosed(false);
   }
   else
   {
@@ -468,6 +474,8 @@ extern "C" int iupdrvOpen(int *argc, char ***argv)
 
     if (!qt_application)
       return IUP_ERROR;
+
+    qt_application->setQuitOnLastWindowClosed(false);
   }
 
   setlocale(LC_NUMERIC, "C");

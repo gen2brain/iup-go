@@ -44,7 +44,7 @@ extern "C" {
  ****************************************************************************/
 
 /* Forward declare canvas functions needed for draw canvas creation */
-extern "C" void* iupdrvCanvasGetContext(Ihandle* ih);
+extern "C" void* iupqtCanvasGetContext(Ihandle* ih);
 
 /****************************************************************************
  * Draw Context Structure
@@ -96,9 +96,9 @@ extern "C" IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   dc->ih = ih;
 
-  /* Get the actual canvas widget from iupdrvCanvasGetContext */
+  /* Get the actual canvas widget from qtCanvasGetContext */
   /* ih->handle is the container, not the canvas widget */
-  dc->widget = (QWidget*)iupdrvCanvasGetContext(ih);
+  dc->widget = (QWidget*)iupqtCanvasGetContext(ih);
   dc->painter = nullptr;
   dc->release_gc = 0;
 
@@ -301,7 +301,7 @@ extern "C" void iupdrvDrawResetClip(IdrawCanvas* dc)
  * Parent Background
  ****************************************************************************/
 
-extern "C" void iupdrvDrawParentBackground(IdrawCanvas* dc)
+extern "C" void qtDrawParentBackground(IdrawCanvas* dc)
 {
   if (!dc || !dc->painter || !dc->widget)
     return;
@@ -450,7 +450,7 @@ extern "C" void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
  * Ellipse Draw
  ****************************************************************************/
 
-extern "C" void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
+extern "C" void qtDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
                                   long color, int style, int line_width)
 {
   if (!dc || !dc->painter)
@@ -500,6 +500,7 @@ extern "C" void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count,
 
   /* Convert points array to QPolygon */
   QPolygon polygon;
+  polygon.reserve(count);  /* Reserve capacity to avoid reallocations */
   for (int i = 0; i < count; i++)
   {
     polygon << QPoint(points[i * 2], points[i * 2 + 1]);
@@ -535,7 +536,7 @@ extern "C" void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count,
  * Polyline Draw (not closed)
  ****************************************************************************/
 
-extern "C" void iupdrvDrawPolyline(IdrawCanvas* dc, int* points, int count,
+extern "C" void qtDrawPolyline(IdrawCanvas* dc, int* points, int count,
                                    long color, int style, int line_width)
 {
   if (!dc || !dc->painter || count < 2)
@@ -572,6 +573,7 @@ extern "C" void iupdrvDrawPolyline(IdrawCanvas* dc, int* points, int count,
 
   /* Convert points array to QPolygon and draw as polyline */
   QPolygon polyline;
+  polyline.reserve(count);  /* Reserve capacity to avoid reallocations */
   for (int i = 0; i < count; i++)
   {
     polyline << QPoint(points[i * 2], points[i * 2 + 1]);
@@ -584,7 +586,7 @@ extern "C" void iupdrvDrawPolyline(IdrawCanvas* dc, int* points, int count,
  * Rounded Rectangle Draw
  ****************************************************************************/
 
-extern "C" void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
+extern "C" void qtDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
                                            int radius_x, int radius_y, long color, int style, int line_width)
 {
   if (!dc || !dc->painter)
@@ -767,9 +769,13 @@ extern "C" void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inac
   /* Draw image */
   if (w > 0 && h > 0 && (w != pixmap->width() || h != pixmap->height()))
   {
-    /* Scale to fit */
-    QPixmap scaled = pixmap->scaled(w, h, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    dc->painter->drawPixmap(x, y, scaled);
+    /* Scale to fit - use painter transformation instead of creating scaled pixmap */
+    /* This is faster as Qt can use hardware acceleration for the transform */
+    dc->painter->save();
+    dc->painter->translate(x, y);
+    dc->painter->scale((double)w / pixmap->width(), (double)h / pixmap->height());
+    dc->painter->drawPixmap(0, 0, *pixmap);
+    dc->painter->restore();
   }
   else
   {
@@ -833,7 +839,7 @@ extern "C" void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int
  * Get Text Size
  ****************************************************************************/
 
-extern "C" void iupdrvDrawGetTextSize(IdrawCanvas* dc, const char* text, int len,
+extern "C" void qtDrawGetTextSize(IdrawCanvas* dc, const char* text, int len,
                                       int *w, int *h, const char* font)
 {
   if (!text)
@@ -868,7 +874,7 @@ extern "C" void iupdrvDrawGetTextSize(IdrawCanvas* dc, const char* text, int len
  * Get Image Info
  ****************************************************************************/
 
-extern "C" void iupdrvDrawGetImageInfo(const char* name, int *w, int *h, int *bpp)
+extern "C" void qtDrawGetImageInfo(const char* name, int *w, int *h, int *bpp)
 {
   if (!name)
   {
@@ -911,7 +917,7 @@ extern "C" void iupdrvDrawGetImageInfo(const char* name, int *w, int *h, int *bp
  * Winding Rule
  ****************************************************************************/
 
-extern "C" void iupdrvDrawSetWindingRule(IdrawCanvas* dc, int winding_rule)
+extern "C" void qtDrawSetWindingRule(IdrawCanvas* dc, int winding_rule)
 {
   if (!dc)
     return;
@@ -928,7 +934,7 @@ extern "C" void iupdrvDrawSetWindingRule(IdrawCanvas* dc, int winding_rule)
  * Anti-aliasing Control
  ****************************************************************************/
 
-extern "C" void iupdrvDrawSetTextAntiAlias(IdrawCanvas* dc, int antialias)
+extern "C" void qtDrawSetTextAntiAlias(IdrawCanvas* dc, int antialias)
 {
   if (dc)
   {
@@ -940,7 +946,7 @@ extern "C" void iupdrvDrawSetTextAntiAlias(IdrawCanvas* dc, int antialias)
   }
 }
 
-extern "C" void iupdrvDrawSetShapeAntiAlias(IdrawCanvas* dc, int antialias)
+extern "C" void qtDrawSetShapeAntiAlias(IdrawCanvas* dc, int antialias)
 {
   if (dc)
   {
@@ -995,7 +1001,7 @@ extern "C" void iupdrvDrawUpdateSize(IdrawCanvas* dc)
  * Begin/End Drawing
  ****************************************************************************/
 
-extern "C" void iupdrvDrawBegin(IdrawCanvas* dc)
+extern "C" void qtDrawBegin(IdrawCanvas* dc)
 {
   if (!dc || !dc->widget)
     return;
@@ -1015,7 +1021,7 @@ extern "C" void iupdrvDrawBegin(IdrawCanvas* dc)
   }
 }
 
-extern "C" void iupdrvDrawEnd(IdrawCanvas* dc)
+extern "C" void qtDrawEnd(IdrawCanvas* dc)
 {
   if (!dc)
     return;

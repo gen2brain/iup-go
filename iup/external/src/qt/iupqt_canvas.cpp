@@ -5,6 +5,8 @@
  */
 
 #include <QWidget>
+#include <QWindow>
+#include <QSurface>
 #include <QPainter>
 #include <QScrollBar>
 #include <QFrame>
@@ -54,19 +56,19 @@ public:
     /* Accept focus */
     setFocusPolicy(Qt::StrongFocus);
 
+    /* Set size policy */
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-    /* Use opaque painting - we handle all drawing */
-    setAttribute(Qt::WA_OpaquePaintEvent, true);
 
     /* Accept drops for DROPFILES_CB */
     setAcceptDrops(true);
+
+    /* Use opaque painting - we handle all drawing */
+    setAttribute(Qt::WA_OpaquePaintEvent, true);
 
     /* Enable touch events */
     setAttribute(Qt::WA_AcceptTouchEvents, true);
   }
 
-protected:
   /* Override paintEngine() to return nullptr for OpenGL canvases */
   QPaintEngine* paintEngine() const override
   {
@@ -79,41 +81,59 @@ protected:
     return QWidget::paintEngine();
   }
 
+protected:
   void paintEvent(QPaintEvent* event) override
   {
     if (!ih)
       return;
 
-    /* For both EGL and regular canvases, the ACTION callback is the primary drawing mechanism. */
-    IFnff cb = (IFnff)IupGetCallback(ih, "ACTION");
-    if (cb && !(ih->data->inside_resize))
-    {
-      /* Set clip rect for regular canvases, EGL/GL will ignore */
-      iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d",
-                       event->rect().left(), event->rect().top(),
-                       event->rect().right(), event->rect().bottom());
-
-      float posx = (float)ih->data->posx;
-      float posy = (float)ih->data->posy;
-
-      cb(ih, posx, posy);
-
-      iupAttribSet(ih, "CLIPRECT", NULL);
-    }
-
-    /* For EGL/OpenGL canvases, rendering is done. */
+    /* For EGL/OpenGL canvases, ACTION callback handles everything */
     if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
     {
+      IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+      if (cb && !(ih->data->inside_resize))
+      {
+        iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d",
+                         event->rect().left(), event->rect().top(),
+                         event->rect().right(), event->rect().bottom());
+        cb(ih);
+        iupAttribSet(ih, "CLIPRECT", NULL);
+      }
       event->accept();
       return;
     }
 
-    /* For regular canvases, draw the QPixmap buffer (if it exists) */
+    /* Qt: First, copy persistent buffer to screen if it exists (for SCROLL_CB drawings) */
     QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
     if (buffer && !buffer->isNull())
     {
       QPainter painter(this);
       painter.drawPixmap(0, 0, *buffer);
+      /* Qt: Buffer already contains drawing from SCROLL_CB, don't call ACTION callback
+       * because it would redraw at position 0,0 and overwrite the scrolled content */
+      event->accept();
+      return;
+    }
+
+    /* No buffer - call ACTION callback to draw */
+    IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+    if (cb && !(ih->data->inside_resize))
+    {
+      iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d",
+                       event->rect().left(), event->rect().top(),
+                       event->rect().right(), event->rect().bottom());
+
+      cb(ih);
+
+      iupAttribSet(ih, "CLIPRECT", NULL);
+
+      /* After ACTION draws to buffer, display it */
+      buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+      if (buffer && !buffer->isNull())
+      {
+        QPainter painter(this);
+        painter.drawPixmap(0, 0, *buffer);
+      }
     }
     else
     {
@@ -130,7 +150,25 @@ protected:
     QWidget::resizeEvent(event);
 
     if (!ih)
+    {
       return;
+    }
+
+    /* Qt6: Ignore spurious resize events with invalid (0x0) size that occur during window initialization.
+     * These cause the EGL window to collapse to 1x1 minimum size.
+     * Only process resize events with valid dimensions. */
+    if (event->size().width() <= 0 || event->size().height() <= 0)
+    {
+      return;
+    }
+
+    /* Invalidate the buffer when canvas size changes - forces ACTION callback to redraw at new size */
+    QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+    if (buffer)
+    {
+      delete buffer;
+      iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", NULL);
+    }
 
     IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
     if (cb && !ih->data->inside_resize)
@@ -139,6 +177,9 @@ protected:
       cb(ih, event->size().width(), event->size().height());
       ih->data->inside_resize = 0;
     }
+
+    /* Trigger repaint after resize */
+    update();
   }
 
   void mousePressEvent(QMouseEvent* event) override
@@ -406,9 +447,10 @@ static void qtCanvasScrollCallback(Ihandle* ih, QScrollBar* scrollbar, int orien
   else
   {
     /* If no SCROLL_CB, trigger ACTION callback with full redraw */
-    IFnff action_cb = (IFnff)IupGetCallback(ih, "ACTION");
+    IFn action_cb = (IFn)IupGetCallback(ih, "ACTION");
     if (action_cb)
     {
+      action_cb(ih);
       iupdrvRedrawNow(ih);
     }
   }
@@ -480,10 +522,16 @@ static int qtCanvasMapMethod(Ihandle* ih)
   QWidget* container = new QWidget();
   container_data->container = container;
 
-  /* Create canvas widget */
+  /* IupQtCanvas handles ACTION callback and paintEvent correctly for both */
   IupQtCanvas* canvas = new IupQtCanvas();
   canvas->ih = ih;
   container_data->canvas = canvas;
+  QWidget* canvas_widget = canvas;
+
+  if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
+  {
+    canvas->setAttribute(Qt::WA_NoSystemBackground, true);
+  }
 
   /* Create scrollbars if needed */
   char* scrollbar = iupAttribGetStr(ih, "SCROLLBAR");
@@ -502,7 +550,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
     hbox->setContentsMargins(0, 0, 0, 0);
     hbox->setSpacing(0);
 
-    hbox->addWidget(canvas);
+    hbox->addWidget(canvas_widget);
 
     /* Vertical scrollbar */
     if (!scrollbar || iupStrEqualNoCase(scrollbar, "YES") ||
@@ -545,7 +593,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
     /* No scrollbars - simple layout */
     QHBoxLayout* layout = new QHBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(canvas);
+    layout->addWidget(canvas_widget);
 
     container_data->sb_horiz = nullptr;
     container_data->sb_vert = nullptr;
@@ -602,40 +650,27 @@ static void qtCanvasUnMapMethod(Ihandle* ih)
  * Update Canvas
  ****************************************************************************/
 
-extern "C" void iupdrvCanvasUpdate(Ihandle* ih)
+void qtCanvasUpdate(Ihandle* ih)
 {
   IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);
 
   if (!container_data || !container_data->canvas)
     return;
 
-  /* Check if this is an EGL/OpenGL canvas */
-  if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
-  {
-    /*
-     * For EGL canvases (which use WA_PaintOnScreen), we MUST call repaint() for a synchronous update.
-     * repaint() will immediately trigger the IupQtCanvas::paintEvent, which in turn calls the ACTION callback.
-     */
-    container_data->canvas->repaint();
-  }
-  else
-  {
-    /* For regular canvases, Qt's asynchronous update() is correct. */
-    container_data->canvas->update();
-  }
+  container_data->canvas->update();
 }
 
 /****************************************************************************
  * Get Canvas Native Graphics Context
  ****************************************************************************/
 
-extern "C" void* iupdrvCanvasGetContext(Ihandle* ih)
+extern "C" void* iupqtCanvasGetContext(Ihandle* ih)
 {
+  /* Return the IupQtCanvas widget for both normal canvas and GLCanvas */
   IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);
 
   if (container_data && container_data->canvas)
   {
-    /* Return the canvas widget - draw system uses this */
     return (void*)container_data->canvas;
   }
 
@@ -643,24 +678,10 @@ extern "C" void* iupdrvCanvasGetContext(Ihandle* ih)
 }
 
 /****************************************************************************
- * Release Canvas Graphics Context
- ****************************************************************************/
-
-extern "C" void iupdrvCanvasReleaseContext(Ihandle* ih, void* gc)
-{
-  IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);
-
-  if (container_data && container_data->canvas)
-  {
-    iupqtReleaseNativeGraphicsContext(container_data->canvas, gc);
-  }
-}
-
-/****************************************************************************
  * Scrollbar Management
  ****************************************************************************/
 
-extern "C" void iupdrvCanvasUpdateScrollPos(Ihandle* ih, float posx, float posy)
+void qtCanvasUpdateScrollPos(Ihandle* ih, float posx, float posy)
 {
   IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);
 
@@ -701,7 +722,7 @@ extern "C" void iupdrvCanvasUpdateScrollPos(Ihandle* ih, float posx, float posy)
   }
 }
 
-extern "C" void iupdrvCanvasUpdateScrollMax(Ihandle* ih, float dx, float dy)
+void qtCanvasUpdateScrollMax(Ihandle* ih, float dx, float dy)
 {
   IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);
 
@@ -771,26 +792,6 @@ extern "C" void iupdrvCanvasUpdateScrollMax(Ihandle* ih, float dx, float dy)
 }
 
 /****************************************************************************
- * Get Canvas Size for Drawing
- ****************************************************************************/
-
-extern "C" void iupdrvCanvasGetSize(Ihandle* ih, int *w, int *h)
-{
-  IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);
-
-  if (container_data && container_data->canvas)
-  {
-    *w = container_data->canvas->width();
-    *h = container_data->canvas->height();
-  }
-  else
-  {
-    *w = 0;
-    *h = 0;
-  }
-}
-
-/****************************************************************************
  * Attributes
  ****************************************************************************/
 
@@ -839,7 +840,7 @@ static int qtCanvasSetPosXAttrib(Ihandle* ih, const char* value)
     if (posx > (xmax - dx)) posx = xmax - dx;
     ih->data->posx = posx;
 
-    iupdrvCanvasUpdateScrollPos(ih, (float)posx, (float)ih->data->posy);
+    qtCanvasUpdateScrollPos(ih, (float)posx, (float)ih->data->posy);
   }
   return 1;
 }
@@ -863,7 +864,7 @@ static int qtCanvasSetPosYAttrib(Ihandle* ih, const char* value)
     if (posy > (ymax - dy)) posy = ymax - dy;
     ih->data->posy = posy;
 
-    iupdrvCanvasUpdateScrollPos(ih, (float)ih->data->posx, (float)posy);
+    qtCanvasUpdateScrollPos(ih, (float)ih->data->posx, (float)posy);
   }
   return 1;
 }
@@ -874,15 +875,6 @@ static int qtCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
 
   if (container_data && container_data->canvas)
   {
-    /* For OpenGL canvases using EGL, skip setting autoFillBackground */
-    /* Similar to GTK which disables double buffering for GLCanvas */
-    if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
-    {
-      container_data->canvas->setAutoFillBackground(false);
-      container_data->canvas->setAttribute(Qt::WA_NoSystemBackground, true);
-      return 1;
-    }
-
     unsigned char r, g, b;
     if (iupStrToRGB(value, &r, &g, &b))
     {
@@ -909,7 +901,7 @@ static int qtCanvasSetBorderAttrib(Ihandle* ih, const char* value)
 
     if (iupStrBoolean(value))
     {
-      frame->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+      frame->setFrameStyle(QFrame::StyledPanel | QFrame::Plain);
       frame->setLineWidth(1);
     }
     else
@@ -939,7 +931,7 @@ static char* qtCanvasGetDrawSizeAttrib(Ihandle* ih)
 static char* qtCanvasGetDrawableAttrib(Ihandle* ih)
 {
   /* Return the native graphics context */
-  return (char*)iupdrvCanvasGetContext(ih);
+  return (char*)iupqtCanvasGetContext(ih);
 }
 
 static char* qtCanvasGetScrollVisibleAttrib(Ihandle* ih)
