@@ -39,14 +39,18 @@ static int gtkLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   GtkWidget* eventbox = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   unsigned char r, g, b;
 
-  /* ignore given value, must use only from parent */
-  char* parent_value = iupBaseNativeParentGetBgColor(ih);
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
 
-  if (iupStrToRGB(parent_value, &r, &g, &b))
+  /* Set background on the eventbox wrapper */
+  if (eventbox)
     iupgtkSetBgColor(eventbox, r, g, b);
 
-  (void)value;
-  return iupdrvBaseSetBgColorAttrib(ih, parent_value);
+  /* Also set on the inner label widget */
+  if (ih->handle)
+    iupgtkSetBgColor(ih->handle, r, g, b);
+
+  return 1;
 }
 
 static int gtkLabelSetTitleAttrib(Ihandle* ih, const char* value)
@@ -105,7 +109,6 @@ static int gtkLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
   {
-    GtkMisc* misc = (GtkMisc*)ih->handle;
     PangoAlignment alignment;
     float xalign, yalign;
     char value1[30], value2[30];
@@ -135,11 +138,41 @@ static int gtkLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
     else  /* ACENTER (default) */
       yalign = 0.5f;
 
+#if GTK_CHECK_VERSION(3, 16, 0)
+    /* Use gtk_label_set_xalign/yalign */
+    if (ih->data->type == IUP_LABEL_TEXT)
+    {
+      GtkLabel* label = (GtkLabel*)ih->handle;
+      GtkJustification justify;
+
+      gtk_label_set_xalign(label, xalign);
+      gtk_label_set_yalign(label, yalign);
+
+      /* Convert PangoAlignment to GtkJustification */
+      if (alignment == PANGO_ALIGN_RIGHT)
+        justify = GTK_JUSTIFY_RIGHT;
+      else if (alignment == PANGO_ALIGN_CENTER)
+        justify = GTK_JUSTIFY_CENTER;
+      else
+        justify = GTK_JUSTIFY_LEFT;
+
+      /* gtk_label_set_justify() is required for multiline text alignment */
+      gtk_label_set_justify(label, justify);
+      pango_layout_set_alignment(gtk_label_get_layout(label), alignment);
+    }
+    else if (ih->data->type == IUP_LABEL_IMAGE)
+    {
+      gtk_widget_set_halign(ih->handle, xalign == 0 ? GTK_ALIGN_START : (xalign == 1.0f ? GTK_ALIGN_END : GTK_ALIGN_CENTER));
+      gtk_widget_set_valign(ih->handle, yalign == 0 ? GTK_ALIGN_START : (yalign == 1.0f ? GTK_ALIGN_END : GTK_ALIGN_CENTER));
+    }
+#else
+    /* Use deprecated GtkMisc */
+    GtkMisc* misc = (GtkMisc*)ih->handle;
     gtk_misc_set_alignment(misc, xalign, yalign);
-/* TODO:   g_object_set(widget, "xalign", xalign, "yalign", yalign, NULL); */
 
     if (ih->data->type == IUP_LABEL_TEXT)
       pango_layout_set_alignment(gtk_label_get_layout((GtkLabel*)ih->handle), alignment);
+#endif
 
     return 1;
   }
