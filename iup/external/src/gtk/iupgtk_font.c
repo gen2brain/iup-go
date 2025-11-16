@@ -228,9 +228,17 @@ static void gtkFontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescrip
 
   if (GTK_IS_ENTRY(widget))
   {
-    /* TODO: This is NOT working. */
-    PangoLayout* layout = gtk_entry_get_layout(GTK_ENTRY(widget));
-    gtkFontUpdateLayout(gtkfont, layout);  /* for strikeout and underline */
+#if GTK_CHECK_VERSION(3, 6, 0)
+    PangoAttrList *attrs = pango_attr_list_new();
+    pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->strikethrough));
+    pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->underline));
+    gtk_entry_set_attributes(GTK_ENTRY(widget), attrs);
+    pango_attr_list_unref(attrs);
+#else
+    /* gtk_entry_set_attributes() not available in GTK < 3.6.
+       Modifying the internal layout doesn't work as GTK recreates it. */
+    (void)gtkfont;
+#endif
   }
 }
 
@@ -251,18 +259,19 @@ void iupgtkUpdateObjectFont(Ihandle* ih, gpointer object)
   g_object_set(object, "font-desc", gtkfont->fontdesc, NULL);
 
   g_object_get(object, "attributes", &attrs, NULL);
-  if (!attrs) 
+  if (!attrs)
   {
     attrs = pango_attr_list_new();
     pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->strikethrough));
     pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->underline));
-    g_object_set(object, "attributes", attrs, NULL);  /* TODO: does this reference attrs? */
-    /* pango_attr_list_unref(attrs); */
+    g_object_set(object, "attributes", attrs, NULL);
+    pango_attr_list_unref(attrs);  /* g_object_set takes its own reference */
   }
   else
   {
     pango_attr_list_change(attrs, pango_attribute_copy(gtkfont->strikethrough));
     pango_attr_list_change(attrs, pango_attribute_copy(gtkfont->underline));
+    pango_attr_list_unref(attrs);  /* g_object_get returns a reference we must unref */
   }
 }
 
@@ -349,11 +358,13 @@ char* iupgtkGetFontIdAttrib(Ihandle *ih)
   else
   {
 #if GTK_CHECK_VERSION(3, 0, 0)
-    return NULL;  /* TODO: not available yet. */
+    /* Not available in GTK3+: Pango/Cairo fonts do not expose X11 Font IDs needed for glXUseXFont().
+       Display list fonts (glXUseXFont/wglUseFontBitmaps) are deprecated in modern OpenGL. */
+    return NULL;
 #else
     /* both functions are marked as deprecated in GDK (since 2.22) */
     GdkFont* gdk_font = gdk_font_from_description(gtkfont->fontdesc);
-    return (char*)gdk_font_id(gdk_font);  /* In UNIX will return an X Font ID, 
+    return (char*)gdk_font_id(gdk_font);  /* In UNIX will return an X Font ID,
                                              in Win32 will return an HFONT */
 #endif
   }
