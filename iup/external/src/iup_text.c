@@ -159,8 +159,14 @@ static void iTextAddFormatTag(Ihandle* ih, Ihandle* formattag)
 void iupTextUpdateFormatTags(Ihandle* ih)
 {
   /* called when the element is mapped */
-  int i, count = iupArrayCount(ih->data->formattags);
-  Ihandle** tag_array = (Ihandle**)iupArrayGetData(ih->data->formattags);
+  int i, count;
+  Ihandle** tag_array;
+
+  if (!ih->data->formattags)
+    return;
+
+  count = iupArrayCount(ih->data->formattags);
+  tag_array = (Ihandle**)iupArrayGetData(ih->data->formattags);
 
   /* must update VALUE before updating the format */
   iTextUpdateValueAttrib(ih);
