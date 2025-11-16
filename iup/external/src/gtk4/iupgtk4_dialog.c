@@ -842,6 +842,25 @@ static int gtk4DialogSetOpacityAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+/* Helper function to convert GdkTexture to base64-encoded PNG data URI for CSS */
+static char* gtk4DialogTextureToDataURI(GdkTexture* texture)
+{
+  GBytes* bytes = gdk_texture_save_to_png_bytes(texture);
+  if (!bytes)
+    return NULL;
+
+  gsize buffer_size;
+  gconstpointer buffer = g_bytes_get_data(bytes, &buffer_size);
+
+  gchar* base64_data = g_base64_encode((const guchar*)buffer, buffer_size);
+  g_bytes_unref(bytes);
+
+  char* data_uri = iupStrReturnStrf("data:image/png;base64,%s", base64_data);
+  g_free(base64_data);
+
+  return data_uri;
+}
+
 static int gtk4DialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqualNoCase(value, "DLGBGCOLOR"))
@@ -850,7 +869,18 @@ static int gtk4DialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))
   {
+    /* Clear background image CSS if setting a color */
+    GtkCssProvider* provider = (GtkCssProvider*)iupAttribGet(ih, "_IUPGTK4_BACKGROUND_CSS_PROVIDER");
+    if (provider)
+    {
+      GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
+      gtk_style_context_remove_provider(context, GTK_STYLE_PROVIDER(provider));
+      g_object_unref(provider);
+      iupAttribSet(ih, "_IUPGTK4_BACKGROUND_CSS_PROVIDER", NULL);
+    }
+
     iupgtk4SetBgColor(ih->handle, r, g, b);
+    gtk_widget_queue_draw(ih->handle);
     return 1;
   }
   else
@@ -858,7 +888,37 @@ static int gtk4DialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     GdkTexture* texture = (GdkTexture*)iupImageGetImage(value, ih, 0, NULL);
     if (texture)
     {
-      return 1;
+      /* Use CSS with data: URI for background image */
+      char* data_uri = gtk4DialogTextureToDataURI(texture);
+      if (data_uri)
+      {
+        /* Generate unique widget name for this window */
+        char* widget_name = iupStrReturnStrf("iup-window-%p", ih);
+        gtk_widget_set_name(ih->handle, widget_name);
+
+        /* Create CSS with background-image using data URI */
+        char* css = iupStrReturnStrf("#%s { background-image: url(\"%s\"); background-repeat: repeat; }",
+                                     widget_name, data_uri);
+
+        GtkCssProvider* provider = (GtkCssProvider*)iupAttribGet(ih, "_IUPGTK4_BACKGROUND_CSS_PROVIDER");
+        if (!provider)
+        {
+          provider = gtk_css_provider_new();
+          iupAttribSet(ih, "_IUPGTK4_BACKGROUND_CSS_PROVIDER", (char*)provider);
+
+          /* Apply to window's style context */
+          GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
+          gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+        }
+
+        /* Load the CSS */
+        gtk_css_provider_load_from_string(provider, css);
+
+        /* Force window to redraw */
+        gtk_widget_queue_draw(ih->handle);
+
+        return 1;
+      }
     }
   }
 
