@@ -216,20 +216,8 @@ static void qtButtonUpdateLayout(Ihandle* ih)
 
 extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
-  int border_size = 2 * 6;  /* Typical button padding */
-  int has_border = 1;
-
-  /* Check if button should have no border (FLAT + IMPRESS with IMPRESSBORDER=NO) */
-  if (ih->data->type & IUP_BUTTON_IMAGE &&
-      iupAttribGet(ih, "IMPRESS") &&
-      !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
-  {
-    has_border = 0;
-  }
-
-  if (iupAttribGetBoolean(ih, "FLAT") && !has_border)
-    border_size = 0;
-
+  int border_size = 2 * 6;  /* Typical Qt button padding */
+  (void)ih;
   (*x) += border_size;
   (*y) += border_size;
 }
@@ -588,6 +576,12 @@ static void qtButtonClicked(Ihandle* ih)
 
 static void qtButtonLayoutUpdateMethod(Ihandle *ih)
 {
+  IupQtButton* button = (IupQtButton*)ih->handle;
+  if (!button)
+    return;
+
+  QSize size_hint = button->sizeHint();
+
   iupdrvBaseLayoutUpdateMethod(ih);
   qtButtonUpdateLayout(ih);
 }

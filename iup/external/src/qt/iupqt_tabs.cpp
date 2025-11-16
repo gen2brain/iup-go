@@ -19,6 +19,10 @@
 #include <QMouseEvent>
 #include <QEvent>
 #include <QStyle>
+#include <QProxyStyle>
+#include <QStyleOption>
+#include <QPainter>
+#include <QFontMetrics>
 
 #include <cstdlib>
 #include <cstdio>
@@ -42,6 +46,83 @@ extern "C" {
 
 #include "iupqt_drv.h"
 
+
+/****************************************************************************
+ * Custom Tab Style for Horizontal Text in Vertical Tabs
+ ****************************************************************************/
+
+class IupQtTabStyle : public QProxyStyle
+{
+public:
+  IupQtTabStyle() : QProxyStyle() {}
+
+  void drawControl(ControlElement element, const QStyleOption *option,
+                   QPainter *painter, const QWidget *widget) const override
+  {
+    if (element == CE_TabBarTabLabel)
+    {
+      if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab*>(option))
+      {
+        /* Check if this is a vertical tab (West or East position) */
+        bool isVertical = (tab->shape == QTabBar::RoundedWest ||
+                          tab->shape == QTabBar::RoundedEast ||
+                          tab->shape == QTabBar::TriangularWest ||
+                          tab->shape == QTabBar::TriangularEast);
+
+        if (isVertical)
+        {
+          QStyleOptionTab opt(*tab);
+          painter->save();
+
+          /* Get text and icon */
+          QString text = opt.text;
+          QIcon icon = opt.icon;
+          QRect rect = opt.rect;
+
+          /* Calculate text size */
+          QFontMetrics fm(painter->font());
+          QSize textSize = fm.size(Qt::TextSingleLine, text);
+
+          /* Icon size (if present) */
+          int iconSize = 16;
+          QRect iconRect, textRect;
+
+          if (!icon.isNull())
+          {
+            /* Position icon above text */
+            int totalHeight = iconSize + 4 + textSize.height();
+            int startY = rect.center().y() - totalHeight / 2;
+
+            iconRect = QRect(rect.center().x() - iconSize / 2, startY, iconSize, iconSize);
+            textRect = QRect(rect.left(), startY + iconSize + 4, rect.width(), textSize.height());
+          }
+          else
+          {
+            /* Center text */
+            textRect = QRect(rect.left(), rect.center().y() - textSize.height() / 2,
+                           rect.width(), textSize.height());
+          }
+
+          /* Draw icon if present */
+          if (!icon.isNull())
+          {
+            icon.paint(painter, iconRect);
+          }
+
+          /* Draw text horizontally */
+          Qt::Alignment alignment = Qt::AlignCenter;
+          painter->drawText(textRect, alignment, text);
+
+          painter->restore();
+          return; /* Skip default drawing */
+        }
+      }
+    }
+
+    /* For all other cases (horizontal tabs), use default drawing */
+    QProxyStyle::drawControl(element, option, painter, widget);
+  }
+};
 
 /****************************************************************************
  * Custom Tab Bar with Enhanced Features
@@ -114,8 +195,29 @@ protected:
     }
   }
 
+  QSize tabSizeHint(int index) const override
+  {
+    QSize size = QTabBar::tabSizeHint(index);
+
+    /* For vertical tabs (West/East), Qt calculates size assuming rotated text */
+    /* Since we draw text horizontally, we need wider tabs */
+    QTabBar::Shape tabShape = shape();
+    if (tabShape == RoundedWest || tabShape == RoundedEast ||
+        tabShape == TriangularWest || tabShape == TriangularEast)
+    {
+      /* Swap width and height to account for horizontal text */
+      /* This gives us wider tabs that can fit horizontal text */
+      return QSize(size.height(), size.width());
+    }
+
+    return size;
+  }
+
 public:
-  IupQtTabBar(Ihandle* ih_param) : QTabBar(), ih(ih_param), closeCallback(nullptr) {}
+  IupQtTabBar(Ihandle* ih_param) : QTabBar(), ih(ih_param), closeCallback(nullptr)
+  {
+    setStyle(new IupQtTabStyle());
+  }
 
   void setIhandle(Ihandle* ih_param) { ih = ih_param; }
 

@@ -50,7 +50,7 @@ static int qtProgressBarTimeCb(Ihandle* timer)
  * Min Size Calculation
  ****************************************************************************/
 
-extern "C" void iupdrvProgressBarGetMinSize(Ihandle* ih, int *w, int *h)
+extern "C" void qtProgressBarGetMinSize(Ihandle* ih, int *w, int *h)
 {
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {

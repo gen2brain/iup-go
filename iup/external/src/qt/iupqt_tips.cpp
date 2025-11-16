@@ -216,7 +216,7 @@ extern "C" char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
  * Additional Tip Attribute Functions
  ****************************************************************************/
 
-extern "C" int iupdrvBaseSetTipBgColorAttrib(Ihandle* ih, const char* value)
+extern "C" int qtBaseSetTipBgColorAttrib(Ihandle* ih, const char* value)
 {
   /* Qt tooltips use the system palette - we can set a custom palette
    * but it affects all tooltips globally via QPalette */
@@ -235,7 +235,7 @@ extern "C" int iupdrvBaseSetTipBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" int iupdrvBaseSetTipFgColorAttrib(Ihandle* ih, const char* value)
+extern "C" int qtBaseSetTipFgColorAttrib(Ihandle* ih, const char* value)
 {
   /* Qt tooltips use the system palette */
   if (value)
@@ -253,7 +253,7 @@ extern "C" int iupdrvBaseSetTipFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" int iupdrvBaseSetTipFontAttrib(Ihandle* ih, const char* value)
+extern "C" int qtBaseSetTipFontAttrib(Ihandle* ih, const char* value)
 {
   /* Qt tooltips can have a custom font set globally */
   if (value)
@@ -267,7 +267,7 @@ extern "C" int iupdrvBaseSetTipFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" int iupdrvBaseSetTipDelayAttrib(Ihandle* ih, const char* value)
+extern "C" int qtBaseSetTipDelayAttrib(Ihandle* ih, const char* value)
 {
   /* Qt doesn't provide a direct API for tooltip delay per widget */
   (void)ih;
@@ -276,7 +276,7 @@ extern "C" int iupdrvBaseSetTipDelayAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-extern "C" int iupdrvBaseSetTipRectAttrib(Ihandle* ih, const char* value)
+extern "C" int qtBaseSetTipRectAttrib(Ihandle* ih, const char* value)
 {
   /* Store for use in tooltip event handler */
   (void)value;
@@ -286,7 +286,7 @@ extern "C" int iupdrvBaseSetTipRectAttrib(Ihandle* ih, const char* value)
 }
 
 
-extern "C" int iupdrvBaseSetTipIconAttrib(Ihandle* ih, const char* value)
+extern "C" int qtBaseSetTipIconAttrib(Ihandle* ih, const char* value)
 {
   /* Store icon name for later use in tooltip display
    * Qt supports rich text in tooltips, so we can embed images */
@@ -301,7 +301,7 @@ extern "C" int iupdrvBaseSetTipIconAttrib(Ihandle* ih, const char* value)
  * Tooltip Update and Destroy
  ****************************************************************************/
 
-extern "C" void iupdrvUpdateTip(Ihandle* ih)
+extern "C" void qtUpdateTip(Ihandle* ih)
 {
   if (!ih)
     return;

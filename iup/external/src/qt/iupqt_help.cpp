@@ -117,7 +117,7 @@ extern "C" IUP_API int IupHelp(const char* url)
     return -1;
 }
 
-extern "C" int iupdrvHelp(const char* url)
+extern "C" int qtHelp(const char* url)
 {
   return IupHelp(url);
 }
