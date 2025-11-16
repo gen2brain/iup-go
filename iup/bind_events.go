@@ -137,8 +137,6 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 			setTextActionFunc(ih, v)
 		case ToggleActionFunc:
 			setToggleActionFunc(ih, v)
-		case CanvasActionFunc:
-			setCanvasActionFunc(ih, v)
 		case LinkActionFunc:
 			setLinkActionFunc(ih, v)
 		}
