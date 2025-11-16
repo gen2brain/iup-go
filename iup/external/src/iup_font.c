@@ -445,8 +445,9 @@ static int iFontFindStyleName(const char *name, int len, int *style)
   int i;
   for (i = 0; i < STYLE_NUM_NAMES; i++)
   {
-    /* iupStrEqualPartial(style_names[i].name, name) */
-    if (strncmp(style_names[i].name, name, len)==0)
+    /* Case-insensitive comparison to handle formats like "COURIER_NORMAL_14" */
+    if (strlen(style_names[i].name) == (size_t)len &&
+        strncasecmp(style_names[i].name, name, len) == 0)
     {
       *style = style_names[i].style;
       return 1;
@@ -456,7 +457,7 @@ static int iFontFindStyleName(const char *name, int len, int *style)
   return 0;
 }
 
-#define is_style_sep(_x) (_x == ' ' || _x == ',')
+#define is_style_sep(_x) (_x == ' ' || _x == ',' || _x == '_')
 
 /* this code is shared between CD and IUP, must be updated on both libraries */
 static const char * iFontGetStyleWord(const char *str, const char *last, int *wordlen)

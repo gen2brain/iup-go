@@ -4,7 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
-#ifdef GTK_DISABLE_DEPRECATED
+/* Define IUP_USE_GTK for any GTK version (GTK2, GTK3, or GTK4) */
+#if defined(IUP_USE_GTK2) || defined(IUP_USE_GTK3) || defined(IUP_USE_GTK4)
 #define IUP_USE_GTK
 #ifndef GLIB_CHECK_VERSION
 #define OLD_GLIB
@@ -13,7 +14,6 @@
 
 #ifdef IUP_USE_GTK
 #include <glib.h>
-/* #include <gthread.h> */
 #elif defined(WIN32)
 #include <windows.h>
 #elif defined(__APPLE__) || defined(__unix__)
