@@ -24,189 +24,87 @@
 #include "iup_stdcontrols.h"
 #include "iup_assert.h"
 #include "iup_register.h"
+#include "iup_canvas.h"
 
-
-@class IupGLView;
-
-typedef struct _IGlControlData
+@interface IupGLContext : NSOpenGLContext
 {
-  NSView* parent_view;
-  IupGLView* gl_view;
-  NSOpenGLContext* context; /* Weak reference, owned by gl_view */
-  NSOpenGLPixelFormat* pixel_format;
-} IGlControlData;
-
-@interface IupGLView : NSOpenGLView
-{
-  Ihandle* ih;
-  BOOL contextReady;
+  int32_t dirty;
 }
-@property (nonatomic, assign) Ihandle* ih;
-@property (nonatomic, assign) BOOL contextReady;
+- (void)scheduleUpdate;
+- (void)updateIfNeeded;
+- (void)explicitUpdate;
 @end
 
-@implementation IupGLView
-@synthesize ih;
-@synthesize contextReady;
+@implementation IupGLContext
 
-- (id)initWithFrame:(NSRect)frameRect pixelFormat:(NSOpenGLPixelFormat*)format
+- (id)initWithFormat:(NSOpenGLPixelFormat *)format shareContext:(NSOpenGLContext *)share
 {
-  self = [super initWithFrame:frameRect pixelFormat:format];
+  self = [super initWithFormat:format shareContext:share];
   if (self) {
-    self.contextReady = NO;
-    self.ih = NULL;
-
-    /* Opt-in for high resolution backing store (Retina) (macOS 10.7+) */
-    if ([self respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)]) {
-      [self setWantsBestResolutionOpenGLSurface:YES];
-    }
+    dirty = 0;
   }
   return self;
 }
 
-- (void)dealloc
+- (void)scheduleUpdate
 {
-    self.ih = NULL;
-    [super dealloc];
+  OSAtomicIncrement32Barrier(&dirty);
 }
 
-- (void)triggerResizeCB
+- (void)updateIfNeeded
 {
-  if (self.contextReady && self.ih) {
-    NSRect bounds = [self bounds];
-    /* Use backing scale factor for high-DPI support. RESIZE_CB expects pixels. */
-    NSRect backingBounds = [self convertRectToBacking:bounds];
-    int width = (int)backingBounds.size.width;
-    int height = (int)backingBounds.size.height;
-
-    IFnii cb = (IFnii)IupGetCallback(self.ih, "RESIZE_CB");
-    if (cb) {
-      cb(self.ih, width, height);
-    }
+  int32_t value = OSAtomicCompareAndSwap32Barrier(dirty, 0, &dirty) ? dirty : 0;
+  if (value > 0) {
+    [self explicitUpdate];
   }
 }
 
-- (void)prepareOpenGL
+- (void)update
 {
-  [super prepareOpenGL];
+  [self scheduleUpdate];
+  [self updateIfNeeded];
+}
 
-  [[self openGLContext] makeCurrentContext];
-
-  /* Set vsync based on attribute, default to ON */
-  GLint swapInt = 1;
-  if (self.ih)
-  {
-    char* vsync = iupAttribGetStr(self.ih, "VSYNC");
-    if (vsync)
-    {
-      swapInt = iupStrBoolean(vsync) ? 1 : 0;
-    }
+- (void)explicitUpdate
+{
+  if ([NSThread isMainThread]) {
+    [super update];
+  } else {
+    dispatch_sync(dispatch_get_main_queue(), ^{
+      [super update];
+    });
   }
-  [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
-
-  self.contextReady = YES;
-
-  /* Trigger initial resize callback after context is ready. */
-  [self triggerResizeCB];
-}
-
-- (void)reshape
-{
-  [super reshape];
-
-  if (self.ih) {
-    [[self openGLContext] makeCurrentContext];
-    [[self openGLContext] update]; /* Important for view resizes */
-
-    /* Notify IUP about the resize. triggerResizeCB will check if context is ready. */
-    [self triggerResizeCB];
-  }
-}
-
-- (void)drawRect:(NSRect)dirtyRect
-{
-  (void)dirtyRect;
-
-  if (!self.contextReady || !self.ih) {
-    return;
-  }
-
-  [[self openGLContext] makeCurrentContext];
-
-  /* Trigger the IUP ACTION callback for rendering. */
-  IFnff cb = (IFnff)IupGetCallback(self.ih, "ACTION");
-  if (cb)
-  {
-    /* For GLCanvas, posx and posy (related to scrolling) are typically 0. */
-    if (cb(self.ih, 0.0f, 0.0f) == IUP_CLOSE)
-    {
-        IupExitLoop();
-    }
-  }
-  /* Application is responsible for calling IupGLSwapBuffers() if double buffered. */
-}
-
-- (BOOL)isOpaque
-{
-  return YES;
-}
-
-- (BOOL)acceptsFirstResponder
-{
-    return YES;
-}
-
-- (BOOL)becomeFirstResponder
-{
-    if ([super becomeFirstResponder]) {
-        if (self.ih) {
-            IFni cb = (IFni)IupGetCallback(self.ih, "FOCUS_CB");
-            if (cb) cb(self.ih, 1);
-        }
-        return YES;
-    }
-    return NO;
-}
-
-- (BOOL)resignFirstResponder
-{
-    if ([super resignFirstResponder]) {
-        if (self.ih) {
-            IFni cb = (IFni)IupGetCallback(self.ih, "FOCUS_CB");
-            if (cb) cb(self.ih, 0);
-        }
-        return YES;
-    }
-    return NO;
-}
-
-- (void)lockFocus
-{
-  NSOpenGLContext* context = [self openGLContext];
-  [super lockFocus];
-  if (context)
-  {
-    if ([context view] != self) {
-      [context setView:self];
-    }
-    [context makeCurrentContext];
-  }
-}
-
-- (void)unlockFocus
-{
-  [super unlockFocus];
 }
 
 @end
+
+typedef struct _IGlControlData
+{
+  NSView* canvas_view;
+  IupGLContext* context;
+  NSOpenGLPixelFormat* pixel_format;
+} IGlControlData;
 
 static int cocoaGLCanvasDefaultResize_CB(Ihandle *ih, int width, int height)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
 
-  if (gldata && gldata->context && gldata->gl_view && gldata->gl_view.contextReady) {
-    IupGLMakeCurrent(ih);
+  if (gldata && gldata->context) {
+
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+
+    /* Make sure context is current before calling GL functions */
+    if ([NSOpenGLContext currentContext] != gldata->context)
+    {
+      [gldata->context makeCurrentContext];
+    }
+
+    [gldata->context update];
+
+    /* Set viewport to match view size */
     glViewport(0, 0, width, height);
+
+    [pool drain];
   }
   return IUP_DEFAULT;
 }
@@ -285,6 +183,13 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
   else
   {
     attrs[n++] = NSOpenGLProfileVersionLegacy;
+  }
+
+  /* Check for indexed color mode */
+  /* NOTE: Software renderer also doesn't support indexed color on macOS */
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "COLOR"), "INDEX"))
+  {
+    iupAttribSet(ih, "ERROR", "WARNING: Indexed color mode not supported on macOS. Using RGBA instead.");
   }
 
   attrs[n++] = NSOpenGLPFAColorSize;
@@ -490,6 +395,18 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "STEREO"))
     attrs[n++] = NSOpenGLPFAStereo;
 
+  /* Check for indexed color mode (rare, mostly for legacy compatibility) */
+  /* NOTE: Modern macOS/NSOpenGL doesn't support indexed color mode.
+   * We'll accept the attribute but force RGBA mode. */
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "COLOR"), "INDEX"))
+  {
+    /* Indexed color not supported on modern macOS OpenGL.
+     * Fall back to RGBA with warning in ERROR attribute. */
+    iupAttribSet(ih, "ERROR", "WARNING: Indexed color mode not supported on macOS. Using RGBA instead.");
+    /* BUFFER_SIZE attribute is ignored in RGBA mode */
+  }
+
+  /* RGBA color setup (default and only supported mode on macOS) */
   attrs[n++] = NSOpenGLPFAColorSize;
   number = 24;
 
@@ -614,18 +531,26 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
 
   iupAttribSet(ih, "ERROR", NULL);
 
-  gldata->parent_view = (NSView*)iupAttribGet(ih, "NSVIEW");
-  if (!gldata->parent_view)
-    gldata->parent_view = (NSView*)IupGetAttribute(ih, "NSVIEW");
+  /* Get the canvas view that was already created by Canvas map */
+  gldata->canvas_view = (NSView*)iupAttribGet(ih, "NSVIEW");
+  if (!gldata->canvas_view)
+    gldata->canvas_view = (NSView*)IupGetAttribute(ih, "NSVIEW");
 
-  if (!gldata->parent_view)
+  if (!gldata->canvas_view)
   {
     iupAttribSet(ih, "ERROR", "Could not get native view handle.");
     [pool drain];
     return IUP_NOERROR;
   }
 
+  /* For Retina/HiDPI displays: ensure GL surface matches backing store resolution */
+  if ([gldata->canvas_view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+  {
+    [gldata->canvas_view setWantsBestResolutionOpenGLSurface:YES];
+  }
+
   gldata->pixel_format = cocoaGLCreatePixelFormat(ih);
+
   if (!gldata->pixel_format)
   {
     if (!iupAttribGet(ih, "ERROR"))
@@ -636,71 +561,29 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
     return IUP_NOERROR;
   }
 
-  NSRect frame = [gldata->parent_view bounds];
-  gldata->gl_view = [[IupGLView alloc] initWithFrame:frame pixelFormat:gldata->pixel_format];
-
-  if (!gldata->gl_view)
-  {
-    iupAttribSet(ih, "ERROR", "Could not create OpenGL view.");
-    [gldata->pixel_format release];
-    gldata->pixel_format = nil;
-    [pool drain];
-    return IUP_NOERROR;
-  }
-
-  [gldata->gl_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  gldata->gl_view.ih = ih;
-
-  NSOpenGLContext* sharedContext = nil;
-  Ihandle* ih_shared = IupGetAttributeHandle(ih, "SHAREDCONTEXT");
-  if (ih_shared && IupClassMatch(ih_shared, "glcanvas"))
-  {
-    IGlControlData* shared_gldata = (IGlControlData*)iupAttribGet(ih_shared, "_IUP_GLCONTROLDATA");
-    if (shared_gldata && shared_gldata->context)
-      sharedContext = shared_gldata->context;
-  }
-
-  if (sharedContext)
-  {
-    NSOpenGLContext* newContext = [[NSOpenGLContext alloc]
-                                    initWithFormat:gldata->pixel_format
-                                    shareContext:sharedContext];
-
-    if (newContext)
-    {
-      [gldata->gl_view setOpenGLContext:newContext];
-      [newContext setView:gldata->gl_view];
-      gldata->context = newContext;
-      [newContext release];
-    }
-    else
-    {
-      iupAttribSet(ih, "ERROR", "Failed to create shared OpenGL context.");
-      [gldata->gl_view release];
-      gldata->gl_view = nil;
-      [gldata->pixel_format release];
-      gldata->pixel_format = nil;
-      [pool drain];
-      return IUP_NOERROR;
-    }
-  }
-  else
-  {
-    gldata->context = [gldata->gl_view openGLContext];
-  }
-
+  /* Create OpenGL context and attach to canvas view */
+  gldata->context = [[IupGLContext alloc] initWithFormat:gldata->pixel_format shareContext:nil];
   if (!gldata->context)
   {
-    iupAttribSet(ih, "ERROR", "Could not create or retrieve OpenGL context.");
-    [gldata->gl_view release];
-    gldata->gl_view = nil;
+    iupAttribSet(ih, "ERROR", "Could not create OpenGL context.");
     [gldata->pixel_format release];
     gldata->pixel_format = nil;
     [pool drain];
     return IUP_NOERROR;
   }
 
-  [gldata->parent_view addSubview:gldata->gl_view];
+  /* Make context current for GL queries, but no drawable attached yet */
+  [gldata->context makeCurrentContext];
+
+  /* Set vsync based on attribute, default to ON */
+  GLint swapInt = 1;
+  char* vsync = iupAttribGetStr(ih, "VSYNC");
+  if (vsync)
+    swapInt = iupStrBoolean(vsync) ? 1 : 0;
+
+  [gldata->context setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+
+  /* TODO: Handle SHAREDCONTEXT attribute if needed in the future */
 
   iupAttribSet(ih, "CONTEXT", (char*)gldata->context);
 
@@ -722,17 +605,9 @@ static void cocoaGLCanvasUnMapMethod(Ihandle* ih)
     if ([NSOpenGLContext currentContext] == gldata->context)
       [NSOpenGLContext clearCurrentContext];
 
+    [gldata->context clearDrawable];
+    [gldata->context release];
     gldata->context = nil;
-  }
-
-  if (gldata->gl_view)
-  {
-    gldata->gl_view.contextReady = NO;
-    gldata->gl_view.ih = NULL;
-    [gldata->gl_view removeFromSuperview];
-    [gldata->gl_view clearGLContext];
-    [gldata->gl_view release];
-    gldata->gl_view = nil;
   }
 
   if (gldata->pixel_format)
@@ -740,6 +615,8 @@ static void cocoaGLCanvasUnMapMethod(Ihandle* ih)
     [gldata->pixel_format release];
     gldata->pixel_format = nil;
   }
+
+  gldata->canvas_view = nil;  /* Don't release - owned by Canvas */
 
   [pool drain];
 
@@ -750,7 +627,7 @@ static void cocoaGLCanvasDestroy(Ihandle* ih)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
 
-  if (gldata && gldata->gl_view)
+  if (gldata && gldata->canvas_view)
   {
       cocoaGLCanvasUnMapMethod(ih);
   }
@@ -805,12 +682,11 @@ void IupGLMakeCurrent(Ihandle* ih)
   if (!iupObjectCheck(ih))
     return;
 
-  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
-      !IupClassMatch(ih, "glcanvas"))
+  if (ih->iclass->nativetype != IUP_TYPECANVAS || !IupClassMatch(ih, "glcanvas"))
     return;
 
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
-  if (!gldata || !gldata->context || !gldata->gl_view)
+  if (!gldata || !gldata->context || !gldata->canvas_view)
   {
     iupAttribSet(ih, "ERROR", "Context not available: canvas not mapped or context creation failed.");
     return;
@@ -818,11 +694,9 @@ void IupGLMakeCurrent(Ihandle* ih)
 
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
-  if ([gldata->context view] != gldata->gl_view) {
-    [gldata->context setView:gldata->gl_view];
-  }
-
   [gldata->context makeCurrentContext];
+
+  NSOpenGLContext* verifyCtx = [NSOpenGLContext currentContext];
 
   if ([NSOpenGLContext currentContext] == gldata->context)
   {
@@ -858,12 +732,11 @@ void IupGLSwapBuffers(Ihandle* ih)
   if (!iupObjectCheck(ih))
     return;
 
-  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
-      !IupClassMatch(ih, "glcanvas"))
+  if (ih->iclass->nativetype != IUP_TYPECANVAS || !IupClassMatch(ih, "glcanvas"))
     return;
 
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
-  if (!gldata || !gldata->context || !gldata->gl_view)
+  if (!gldata || !gldata->context || !gldata->canvas_view)
     return;
 
   cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
@@ -872,11 +745,8 @@ void IupGLSwapBuffers(Ihandle* ih)
 
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
-  if ([gldata->context view] != gldata->gl_view) {
-    [gldata->context setView:gldata->gl_view];
-  }
-
   [gldata->context flushBuffer];
+
   [pool drain];
 }
 
