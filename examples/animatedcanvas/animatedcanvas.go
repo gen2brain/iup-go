@@ -28,11 +28,26 @@ func main() {
 		iup.Update(cv) // Tell the canvas it needs to be redrawn.
 		return iup.DEFAULT
 	}))
-	timer.SetAttribute("RUN", "YES")
 
 	dlg := iup.Dialog(
 		iup.Frame(cv),
 	).SetAttribute("TITLE", "Animated Canvas")
+
+	dlg.SetCallback("SHOW_CB", iup.ShowFunc(func(ih iup.Ihandle, state int) int {
+		if state == iup.SHOW {
+			timer.SetAttribute("RUN", "YES")
+		} else if state == iup.MINIMIZE {
+			timer.SetAttribute("RUN", "NO")
+		} else if state == iup.RESTORE {
+			timer.SetAttribute("RUN", "YES")
+		}
+		return iup.DEFAULT
+	}))
+
+	dlg.SetCallback("CLOSE_CB", iup.CloseFunc(func(ih iup.Ihandle) int {
+		timer.SetAttribute("RUN", "NO")
+		return iup.DEFAULT
+	}))
 
 	iup.Show(dlg)
 	iup.MainLoop()
