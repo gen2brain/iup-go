@@ -14,9 +14,7 @@ func main() {
 	cv := iup.Canvas().SetAttributes("RASTERSIZE=500x300")
 	cv.SetCallback("ACTION", iup.ActionFunc(actionCb))
 
-	dlg := iup.Dialog(
-		iup.Vbox(cv),
-	).SetAttribute("TITLE", "Canvas")
+	dlg := iup.Dialog(cv).SetAttribute("TITLE", "Canvas")
 
 	iup.Show(dlg)
 	iup.MainLoop()
