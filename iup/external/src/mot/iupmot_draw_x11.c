@@ -327,6 +327,27 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   }
 }
 
+IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+{
+  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Draw full ellipse using X11 arc with 360 degree span */
+  /* angle in X11 is 1/64ths of a degree, so 360*64 = 23040 */
+  if (style == IUP_DRAW_FILL)
+  {
+    XSetArcMode(iupmot_display, dc->pixmap_gc, ArcPieSlice);
+    XFillArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, 0, 23040);
+  }
+  else
+  {
+    iDrawSetLineStyleAndWidth(dc, style, line_width);  /* Batch GC update */
+    XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, 0, 23040);
+  }
+}
+
 IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   int i;
@@ -631,4 +652,53 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   iupDrawCheckSwapCoord(y1, y2);
 
   XmeDrawHighlight(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, x2 - x1 + 1, y2 - y1 + 1, 1);
+}
+
+IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
+{
+  /* X11/Motif does not have native Bezier support - use line approximation */
+  XPoint points[21]; /* 20 segments should give smooth curve */
+  int i, num_segments = 20;
+
+  /* Set color and line properties */
+  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+  XSetLineAttributes(iupmot_display, dc->pixmap_gc, line_width, LineSolid, CapRound, JoinRound);
+
+  /* Generate points along Bezier curve using parametric equation */
+  for (i = 0; i <= num_segments; i++)
+  {
+    double t = (double)i / num_segments;
+    double t1 = 1.0 - t;
+    double t1_3 = t1 * t1 * t1;
+    double t1_2_t = 3.0 * t1 * t1 * t;
+    double t1_t_2 = 3.0 * t1 * t * t;
+    double t_3 = t * t * t;
+
+    points[i].x = (short)(t1_3 * x1 + t1_2_t * x2 + t1_t_2 * x3 + t_3 * x4);
+    points[i].y = (short)(t1_3 * y1 + t1_2_t * y2 + t1_t_2 * y3 + t_3 * y4);
+  }
+
+  if (style == IUP_DRAW_FILL)
+  {
+    /* Fill as polygon */
+    XFillPolygon(iupmot_display, dc->pixmap, dc->pixmap_gc, points, num_segments + 1, Nonconvex, CoordModeOrigin);
+  }
+  else
+  {
+    /* Draw as polyline */
+    XDrawLines(iupmot_display, dc->pixmap, dc->pixmap_gc, points, num_segments + 1, CoordModeOrigin);
+  }
+}
+
+IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
+{
+  /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula */
+  int cx1, cy1, cx2, cy2;
+
+  cx1 = x1 + ((2 * (x2 - x1)) / 3);
+  cy1 = y1 + ((2 * (y2 - y1)) / 3);
+  cx2 = x3 + ((2 * (x2 - x3)) / 3);
+  cy2 = y3 + ((2 * (y2 - y3)) / 3);
+
+  iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }

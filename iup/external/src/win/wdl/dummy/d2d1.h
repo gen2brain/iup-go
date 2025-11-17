@@ -203,6 +203,13 @@ struct dummy_D2D1_ARC_SEGMENT_tag {
     dummy_D2D1_ARC_SIZE arcSize;
 };
 
+typedef struct dummy_D2D1_BEZIER_SEGMENT_tag dummy_D2D1_BEZIER_SEGMENT;
+struct dummy_D2D1_BEZIER_SEGMENT_tag {
+    dummy_D2D1_POINT_2F point1;  /* First control point */
+    dummy_D2D1_POINT_2F point2;  /* Second control point */
+    dummy_D2D1_POINT_2F point3;  /* End point */
+};
+
 typedef struct dummy_D2D1_ELLIPSE_tag dummy_D2D1_ELLIPSE;
 struct dummy_D2D1_ELLIPSE_tag {
     dummy_D2D1_POINT_2F point;
@@ -747,7 +754,7 @@ struct dummy_ID2D1GeometrySinkVtbl_tag {
 
     /* ID2D1GeometrySink methods */
     STDMETHOD_(void, AddLine)(dummy_ID2D1GeometrySink*, dummy_D2D1_POINT_2F point);
-    STDMETHOD(dummy_AddBezier)(void);
+    STDMETHOD_(void, AddBezier)(dummy_ID2D1GeometrySink*, const dummy_D2D1_BEZIER_SEGMENT*);
     STDMETHOD(dummy_AddQuadraticBezier)(void);
     STDMETHOD(dummy_AddQuadraticBeziers)(void);
     STDMETHOD_(void, AddArc)(dummy_ID2D1GeometrySink*, const dummy_D2D1_ARC_SEGMENT*);
@@ -764,6 +771,7 @@ struct dummy_ID2D1GeometrySink_tag {
 #define dummy_ID2D1GeometrySink_EndFigure(self,a)           (self)->vtbl->EndFigure(self,a)
 #define dummy_ID2D1GeometrySink_Close(self)                 (self)->vtbl->Close(self)
 #define dummy_ID2D1GeometrySink_AddLine(self,a)             (self)->vtbl->AddLine(self,a)
+#define dummy_ID2D1GeometrySink_AddBezier(self,a)           (self)->vtbl->AddBezier(self,a)
 #define dummy_ID2D1GeometrySink_AddArc(self,a)              (self)->vtbl->AddArc(self,a)
 
 

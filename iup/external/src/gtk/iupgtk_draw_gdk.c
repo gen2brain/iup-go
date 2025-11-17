@@ -217,6 +217,26 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   gdk_draw_arc(dc->pixmap, dc->pixmap_gc, style == IUP_DRAW_FILL, x1, y1, x2 - x1, y2 - y1, iupRound(a1 * 64), iupRound((a2 - a1) * 64));    /* angle = 1/64ths of a degree */
 }
 
+IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+{
+  GdkColor c;
+  iupgdkColorSet(&c, color);
+  gdk_gc_set_rgb_fg_color(dc->pixmap_gc, &c);
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  if (style != IUP_DRAW_FILL)
+  {
+    iDrawSetLineWidth(dc, line_width);
+    iDrawSetLineStyle(dc, style);
+  }
+
+  /* Draw full ellipse using gdk_draw_arc with 360 degree span */
+  /* angle in GDK is 1/64ths of a degree, so 360*64 = 23040 */
+  gdk_draw_arc(dc->pixmap, dc->pixmap_gc, style == IUP_DRAW_FILL, x1, y1, x2 - x1, y2 - y1, 0, 23040);
+}
+
 IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   GdkColor c;
@@ -528,5 +548,55 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   dc->focus_y1 = y1;
   dc->focus_x2 = x2;
   dc->focus_y2 = y2;
+}
+
+IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
+{
+  /* GTK2 GDK does not have native Bezier support - use line approximation */
+  GdkPoint points[21]; /* 20 segments should give smooth curve */
+  int i, num_segments = 20;
+  GdkColor c;
+
+  iupgdkColorSet(&c, color);
+  gdk_gc_set_rgb_fg_color(dc->pixmap_gc, &c);
+  gdk_gc_set_line_attributes(dc->pixmap_gc, line_width, GDK_LINE_SOLID, GDK_CAP_ROUND, GDK_JOIN_ROUND);
+
+  /* Generate points along Bezier curve using parametric equation */
+  for (i = 0; i <= num_segments; i++)
+  {
+    double t = (double)i / num_segments;
+    double t1 = 1.0 - t;
+    double t1_3 = t1 * t1 * t1;
+    double t1_2_t = 3.0 * t1 * t1 * t;
+    double t1_t_2 = 3.0 * t1 * t * t;
+    double t_3 = t * t * t;
+
+    points[i].x = (gint)(t1_3 * x1 + t1_2_t * x2 + t1_t_2 * x3 + t_3 * x4);
+    points[i].y = (gint)(t1_3 * y1 + t1_2_t * y2 + t1_t_2 * y3 + t_3 * y4);
+  }
+
+  if (style == IUP_DRAW_FILL)
+  {
+    /* Fill as polygon */
+    gdk_draw_polygon(dc->pixmap, dc->pixmap_gc, TRUE, points, num_segments + 1);
+  }
+  else
+  {
+    /* Draw as polyline */
+    gdk_draw_lines(dc->pixmap, dc->pixmap_gc, points, num_segments + 1);
+  }
+}
+
+IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
+{
+  /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula */
+  int cx1, cy1, cx2, cy2;
+
+  cx1 = x1 + ((2 * (x2 - x1)) / 3);
+  cy1 = y1 + ((2 * (y2 - y1)) / 3);
+  cx2 = x3 + ((2 * (x2 - x3)) / 3);
+  cy2 = y3 + ((2 * (y2 - y3)) / 3);
+
+  iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 

@@ -310,6 +310,35 @@ void iupdrvDrawArcWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1
   wdDestroyBrush(brush);
 }
 
+void iupdrvDrawEllipseWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+{
+  float xc, yc, rx, ry;
+  WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  rx = (x2 - x1) / 2.0f;
+  ry = (y2 - y1) / 2.0f;
+
+  xc = iupInt2Float(x1) + rx;
+  yc = iupInt2Float(y1) + ry;
+
+  if (style == IUP_DRAW_FILL)
+  {
+    wdFillEllipse(dc->hCanvas, brush, xc, yc, rx, ry);
+  }
+  else
+  {
+    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
+    wdDrawEllipseStyled(dc->hCanvas, brush, xc, yc, rx, ry, iupInt2FloatW(line_width), stroke_style);
+    if (stroke_style)
+      wdDestroyStrokeStyle(stroke_style);
+  }
+
+  wdDestroyBrush(brush);
+}
+
 void iupdrvDrawPolygonWDL(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
@@ -394,6 +423,71 @@ void iupdrvDrawRoundedRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int 
   }
 
   wdDestroyBrush(brush);
+}
+
+void iupdrvDrawBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
+{
+  WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
+  WD_HPATH path;
+  WD_PATHSINK sink;
+
+  if (!brush)
+    return;
+
+  /* Create path for Bezier curve */
+  path = wdCreatePath(dc->hCanvas);
+  wdOpenPathSink(&sink, path);
+
+  /* Start at first point */
+  wdBeginFigure(&sink, iupInt2Float(x1), iupInt2Float(y1));
+
+  /* Add cubic Bezier curve using native Direct2D/GDI+ */
+  wdAddBezier(&sink, iupInt2Float(x2), iupInt2Float(y2),
+              iupInt2Float(x3), iupInt2Float(y3),
+              iupInt2Float(x4), iupInt2Float(y4));
+
+  /* End figure without closing (open curve) */
+  wdEndFigure(&sink, FALSE);
+  wdClosePathSink(&sink);
+
+  /* Draw or fill the path */
+  if (style == IUP_DRAW_FILL)
+  {
+    wdFillPath(dc->hCanvas, brush, path);
+  }
+  else
+  {
+    WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
+    wdDrawPathStyled(dc->hCanvas, brush, path, iupInt2FloatW(line_width), stroke_style);
+    if (stroke_style)
+      wdDestroyStrokeStyle(stroke_style);
+  }
+
+  wdDestroyPath(path);
+  wdDestroyBrush(brush);
+}
+
+void iupdrvDrawQuadraticBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
+{
+  /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula:
+   * Given quadratic: Q(t) with control points q0, q1, q2
+   * Convert to cubic: C(t) with control points c0, c1, c2, c3
+   *
+   * c0 = q0                        (start point)
+   * c1 = q0 + (2/3) * (q1 - q0)   (first control point)
+   * c2 = q2 + (2/3) * (q1 - q2)   (second control point)
+   * c3 = q2                        (end point)
+   */
+  int cx1, cy1, cx2, cy2;
+
+  /* Calculate cubic control points from quadratic */
+  cx1 = x1 + ((2 * (x2 - x1)) / 3);
+  cy1 = y1 + ((2 * (y2 - y1)) / 3);
+  cx2 = x3 + ((2 * (x2 - x3)) / 3);
+  cy2 = y3 + ((2 * (y2 - y3)) / 3);
+
+  /* Draw as cubic Bezier */
+  iupdrvDrawBezierWDL(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
 void iupdrvDrawGetClipRectWDL(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)

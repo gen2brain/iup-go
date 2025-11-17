@@ -58,6 +58,10 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width);
 
+/** Draws a filled/hollow ellipse inscribed in rectangle (x1,y1)-(x2,y2).
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width);
+
 /** Draws a filled/hollow polygon.
  * points are arranged xyxyxy...
  * \ingroup drvdraw */
@@ -70,6 +74,16 @@ IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color);
 /** Draws a filled/hollow rounded rectangle.
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width);
+
+/** Draws a cubic Bezier curve.
+ * (x1,y1) = start point, (x2,y2) = first control point, (x3,y3) = second control point, (x4,y4) = end point
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width);
+
+/** Draws a quadratic Bezier curve.
+ * (x1,y1) = start point, (x2,y2) = control point, (x3,y3) = end point
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width);
 
 #define IUP_DRAW_LEFT     0x0000
 #define IUP_DRAW_CENTER   0x0001

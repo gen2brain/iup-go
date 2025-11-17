@@ -139,6 +139,7 @@ gdix_init(void)
     GPA(GetPathLastPoint, (dummy_GpPath*, dummy_GpPointF*));
     GPA(AddPathArc, (dummy_GpPath*, float, float, float, float, float, float));
     GPA(AddPathLine, (dummy_GpPath*, float, float, float, float));
+    GPA(AddPathBezier, (dummy_GpPath*, float, float, float, float, float, float, float, float));
     GPA(SetPenDashOffset, (dummy_GpPen*, float));
 
     /* Font functions */

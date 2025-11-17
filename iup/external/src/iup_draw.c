@@ -175,6 +175,28 @@ IUP_API void IupDrawArc(Ihandle* ih, int x1, int y1, int x2, int y2, double a1, 
   iupdrvDrawArc(dc, x1, y1, x2, y2, a1, a2, color, style, line_width);
 }
 
+IUP_API void IupDrawEllipse(Ihandle* ih, int x1, int y1, int x2, int y2)
+{
+  IdrawCanvas* dc;
+  long color = 0;
+  int style, line_width;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+  if (!dc)
+    return;
+
+  color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
+
+  line_width = iDrawGetLineWidth(ih);
+  style = iDrawGetStyle(ih);
+
+  iupdrvDrawEllipse(dc, x1, y1, x2, y2, color, style, line_width);
+}
+
 IUP_API void IupDrawPolygon(Ihandle* ih, int* points, int count)
 {
   IdrawCanvas* dc;
@@ -235,6 +257,50 @@ IUP_API void IupDrawRoundedRectangle(Ihandle* ih, int x1, int y1, int x2, int y2
   style = iDrawGetStyle(ih);
 
   iupdrvDrawRoundedRectangle(dc, x1, y1, x2, y2, corner_radius, color, style, line_width);
+}
+
+IUP_API void IupDrawBezier(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4)
+{
+  IdrawCanvas* dc;
+  long color = 0;
+  int style, line_width;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+  if (!dc)
+    return;
+
+  color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
+
+  line_width = iDrawGetLineWidth(ih);
+  style = iDrawGetStyle(ih);
+
+  iupdrvDrawBezier(dc, x1, y1, x2, y2, x3, y3, x4, y4, color, style, line_width);
+}
+
+IUP_API void IupDrawQuadraticBezier(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3)
+{
+  IdrawCanvas* dc;
+  long color = 0;
+  int style, line_width;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+  if (!dc)
+    return;
+
+  color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
+
+  line_width = iDrawGetLineWidth(ih);
+  style = iDrawGetStyle(ih);
+
+  iupdrvDrawQuadraticBezier(dc, x1, y1, x2, y2, x3, y3, color, style, line_width);
 }
 
 static void iDrawRotatePoint(int x, int y, int *rx, int *ry, double sin_theta, double cos_theta)

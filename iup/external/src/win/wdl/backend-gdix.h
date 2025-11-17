@@ -101,6 +101,7 @@ struct gdix_vtable_tag {
     int (WINAPI* fn_GetPathLastPoint)(dummy_GpPath*, dummy_GpPointF*);
     int (WINAPI* fn_AddPathArc)(dummy_GpPath*, float, float, float, float, float, float);
     int (WINAPI* fn_AddPathLine)(dummy_GpPath*, float, float, float, float);
+    int (WINAPI* fn_AddPathBezier)(dummy_GpPath*, float, float, float, float, float, float, float, float);
 
     /* Font functions */
     int (WINAPI* fn_CreateFontFromLogfontW)(HDC, const LOGFONTW*, dummy_GpFont**);

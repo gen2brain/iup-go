@@ -443,6 +443,37 @@ void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, d
   }
 }
 
+void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+{
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorRef the_color = iupCocoaDrawCreateColor(color);
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  CGFloat w = x2 - x1 + 1;
+  CGFloat h = y2 - y1 + 1;
+  if (w <= 0 || h <= 0) return;
+
+  CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, w, h);
+
+  CGContextBeginPath(cg_context);
+  CGContextAddEllipseInRect(cg_context, rect);
+
+  if (style == IUP_DRAW_FILL)
+  {
+    CGContextSetFillColorWithColor(cg_context, the_color);
+    CGContextFillPath(cg_context);
+  }
+  else
+  {
+    CGContextSetStrokeColorWithColor(cg_context, the_color);
+    CGContextSetLineWidth(cg_context, (CGFloat)line_width);
+    iupCocoaSetLineStyle(cg_context, style);
+    CGContextStrokePath(cg_context);
+  }
+}
+
 void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   CGContextRef cg_context = dc->image_cgContext;
@@ -519,6 +550,59 @@ void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
     CGContextStrokePath(cg_context);
 
   CGPathRelease(path);
+}
+
+void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
+{
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorRef the_color = iupCocoaDrawCreateColor(color);
+
+  /* Set color and line properties */
+  if (style == IUP_DRAW_FILL)
+    CGContextSetFillColorWithColor(cg_context, the_color);
+  else
+  {
+    CGContextSetStrokeColorWithColor(cg_context, the_color);
+    CGContextSetLineWidth(cg_context, (CGFloat)line_width);
+    iupCocoaSetLineStyle(cg_context, style);
+  }
+
+  /* Create cubic Bezier path */
+  CGContextBeginPath(cg_context);
+  CGContextMoveToPoint(cg_context, (CGFloat)x1, (CGFloat)y1);
+  CGContextAddCurveToPoint(cg_context,
+                           (CGFloat)x2, (CGFloat)y2,  /* First control point */
+                           (CGFloat)x3, (CGFloat)y3,  /* Second control point */
+                           (CGFloat)x4, (CGFloat)y4); /* End point */
+
+  /* Draw the path */
+  if (style == IUP_DRAW_FILL)
+    CGContextFillPath(cg_context);
+  else
+    CGContextStrokePath(cg_context);
+}
+
+void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
+{
+  /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula:
+   * Given quadratic: Q(t) with control points q0, q1, q2
+   * Convert to cubic: C(t) with control points c0, c1, c2, c3
+   *
+   * c0 = q0                        (start point)
+   * c1 = q0 + (2/3) * (q1 - q0)   (first control point)
+   * c2 = q2 + (2/3) * (q1 - q2)   (second control point)
+   * c3 = q2                        (end point)
+   */
+  int cx1, cy1, cx2, cy2;
+
+  /* Calculate cubic control points from quadratic */
+  cx1 = x1 + ((2 * (x2 - x1)) / 3);
+  cy1 = y1 + ((2 * (y2 - y1)) / 3);
+  cx2 = x3 + ((2 * (x2 - x3)) / 3);
+  cy2 = y3 + ((2 * (y2 - y3)) / 3);
+
+  /* Draw as cubic Bezier */
+  iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
 void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)

@@ -80,6 +80,14 @@ func DrawArc(ih Ihandle, x1, y1, x2, y2 int, a1, a2 float64) {
 	C.IupDrawArc(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.double(a1), C.double(a2))
 }
 
+// DrawEllipse draws an ellipse inscribed in the rectangle (x1,y1)-(x2,y2).
+// The ellipse is controlled by DRAWCOLOR, DRAWSTYLE, and DRAWLINEWIDTH attributes.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+func DrawEllipse(ih Ihandle, x1, y1, x2, y2 int) {
+	C.IupDrawEllipse(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
+}
+
 // DrawPolygon draws a polygon.
 // Coordinates are stored in the array in the sequence: x1, y1, x2, y2, ...
 //
@@ -140,6 +148,29 @@ func DrawSelectRect(ih Ihandle, x1, y1, x2, y2 int) {
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
 func DrawFocusRect(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawFocusRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
+}
+
+// DrawBezier draws a cubic Bezier curve.
+// (x1,y1) = start point, (x2,y2) = first control point,
+// (x3,y3) = second control point, (x4,y4) = end point.
+//
+// The curve is controlled by DRAWCOLOR, DRAWSTYLE, and DRAWLINEWIDTH attributes.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+func DrawBezier(ih Ihandle, x1, y1, x2, y2, x3, y3, x4, y4 int) {
+	C.IupDrawBezier(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2),
+		C.int(x3), C.int(y3), C.int(x4), C.int(y4))
+}
+
+// DrawQuadraticBezier draws a quadratic Bezier curve.
+// (x1,y1) = start point, (x2,y2) = control point, (x3,y3) = end point.
+//
+// The curve is controlled by DRAWCOLOR, DRAWSTYLE, and DRAWLINEWIDTH attributes.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+func DrawQuadraticBezier(ih Ihandle, x1, y1, x2, y2, x3, y3 int) {
+	C.IupDrawQuadraticBezier(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2),
+		C.int(x3), C.int(y3))
 }
 
 // DrawGetSize returns the drawing area size.
