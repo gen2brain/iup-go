@@ -391,6 +391,59 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   }
 }
 
+IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+{
+  double xc, yc, w, h;
+
+  cairo_set_source_rgba(dc->image_cr, iupgtkColorToDouble(iupDrawRed(color)), iupgtkColorToDouble(iupDrawGreen(color)), iupgtkColorToDouble(iupDrawBlue(color)), iupgtkColorToDouble(iupDrawAlpha(color)));
+
+  if (style != IUP_DRAW_FILL)
+  {
+    iDrawSetLineWidth(dc, line_width);
+    iDrawSetLineStyle(dc, style);
+  }
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  w = x2 - x1;
+  h = y2 - y1;
+  xc = x1 + w/2.0;
+  yc = y1 + h/2.0;
+
+  if (w == h)
+  {
+    /* Circle: simple arc */
+    cairo_new_path(dc->image_cr);
+    cairo_arc(dc->image_cr, xc, yc, 0.5*w, 0, 2*G_PI);
+
+    if (style == IUP_DRAW_FILL)
+      cairo_fill(dc->image_cr);
+    else
+      cairo_stroke(dc->image_cr);
+  }
+  else
+  {
+    /* Ellipse: use scale transform to create from circle */
+    cairo_save(dc->image_cr);
+
+    cairo_new_path(dc->image_cr);
+
+    cairo_translate(dc->image_cr, xc, yc);
+    cairo_scale(dc->image_cr, w/h, 1.0);
+    cairo_translate(dc->image_cr, -xc, -yc);
+
+    cairo_arc(dc->image_cr, xc, yc, 0.5*h, 0, 2*G_PI);
+
+    if (style == IUP_DRAW_FILL)
+      cairo_fill(dc->image_cr);
+    else
+      cairo_stroke(dc->image_cr);
+
+    cairo_restore(dc->image_cr);
+  }
+}
+
 IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   int i;
@@ -471,6 +524,55 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
     cairo_fill(dc->image_cr);
   else
     cairo_stroke(dc->image_cr);
+}
+
+IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
+{
+  /* Set color */
+  cairo_set_source_rgba(dc->image_cr,
+                        iupgtkColorToDouble(iupDrawRed(color)),
+                        iupgtkColorToDouble(iupDrawGreen(color)),
+                        iupgtkColorToDouble(iupDrawBlue(color)),
+                        iupgtkColorToDouble(iupDrawAlpha(color)));
+
+  /* Set line style for stroked curves */
+  if (style != IUP_DRAW_FILL)
+  {
+    iDrawSetLineWidth(dc, line_width);
+    iDrawSetLineStyle(dc, style);
+  }
+
+  /* Draw cubic Bezier curve */
+  cairo_move_to(dc->image_cr, x1, y1);
+  cairo_curve_to(dc->image_cr, x2, y2, x3, y3, x4, y4);
+
+  if (style == IUP_DRAW_FILL)
+    cairo_fill(dc->image_cr);
+  else
+    cairo_stroke(dc->image_cr);
+}
+
+IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
+{
+  /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula:
+   * Given quadratic: Q(t) with control points q0, q1, q2
+   * Convert to cubic: C(t) with control points c0, c1, c2, c3
+   *
+   * c0 = q0                        (start point)
+   * c1 = q0 + (2/3) * (q1 - q0)   (first control point)
+   * c2 = q2 + (2/3) * (q1 - q2)   (second control point)
+   * c3 = q2                        (end point)
+   */
+  int cx1, cy1, cx2, cy2;
+
+  /* Calculate cubic control points from quadratic */
+  cx1 = x1 + ((2 * (x2 - x1)) / 3);
+  cy1 = y1 + ((2 * (y2 - y1)) / 3);
+  cx2 = x3 + ((2 * (x2 - x3)) / 3);
+  cy2 = y3 + ((2 * (y2 - y3)) / 3);
+
+  /* Draw as cubic Bezier */
+  iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)

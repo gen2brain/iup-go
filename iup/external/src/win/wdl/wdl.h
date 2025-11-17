@@ -374,6 +374,7 @@ void wdEndFigure(WD_PATHSINK* pSink, BOOL bCloseFigure);
 
 void wdAddLine(WD_PATHSINK* pSink, float x, float y);
 void wdAddArc(WD_PATHSINK* pSink, float cx, float cy, float fSweepAngle);
+void wdAddBezier(WD_PATHSINK* pSink, float x2, float y2, float x3, float y3, float x4, float y4);
 
 
 /*************************

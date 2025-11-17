@@ -39,6 +39,7 @@ void iupdrvDrawGetSizeWDL(IdrawCanvas* dc, int *w, int *h);
 void iupdrvDrawLineWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width);
 void iupdrvDrawRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width);
 void iupdrvDrawArcWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width);
+void iupdrvDrawEllipseWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width);
 void iupdrvDrawPolygonWDL(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width);
 void iupdrvDrawPixelWDL(IdrawCanvas* dc, int x, int y, long color);
 void iupdrvDrawRoundedRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width);
@@ -526,6 +527,42 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   }
 }
 
+IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+{
+  if (dc->wdl_gc)
+  {
+    iupdrvDrawEllipseWDL(dc->wdl_gc, x1, y1, x2, y2, color, style, line_width);
+    return;
+  }
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  if (style == IUP_DRAW_FILL)
+  {
+    HBRUSH hBrush = CreateSolidBrush(RGB(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+    HBRUSH hBrushOld = SelectObject(dc->hBitmapDC, hBrush);
+    HPEN hPen = CreatePen(PS_NULL, 0, 0);
+    HPEN hPenOld = SelectObject(dc->hBitmapDC, hPen);
+    Ellipse(dc->hBitmapDC, x1, y1, x2 + 1, y2 + 1);
+    SelectObject(dc->hBitmapDC, hPenOld);
+    SelectObject(dc->hBitmapDC, hBrushOld);
+    DeleteObject(hPen);
+    DeleteObject(hBrush);
+  }
+  else
+  {
+    HPEN hPen = iDrawCreatePen(color, style, line_width);
+    HPEN hPenOld = SelectObject(dc->hBitmapDC, hPen);
+    HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    HBRUSH hBrushOld = SelectObject(dc->hBitmapDC, hBrush);
+    Ellipse(dc->hBitmapDC, x1, y1, x2 + 1, y2 + 1);
+    SelectObject(dc->hBitmapDC, hBrushOld);
+    SelectObject(dc->hBitmapDC, hPenOld);
+    DeleteObject(hPen);
+  }
+}
+
 static void iwinDrawPolygonSimAA(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   int i;
@@ -667,6 +704,91 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
     SelectObject(dc->hBitmapDC, hPenOld);
     DeleteObject(hPen);
   }
+}
+
+IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
+{
+  if (dc->wdl_gc)
+  {
+    iupdrvDrawBezierWDL(dc->wdl_gc, x1, y1, x2, y2, x3, y3, x4, y4, color, style, line_width);
+    return;
+  }
+
+  /* GDI fallback using PolyBezier */
+  if (style == IUP_DRAW_FILL)
+  {
+    /* GDI PolyBezier doesn't support fill - use polygon approximation for filled Bezier */
+    POINT points[21]; /* 20 segments should give smooth curve */
+    int i, num_segments = 20;
+    HBRUSH hBrush = CreateSolidBrush(RGB(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+    HBRUSH hBrushOld = SelectObject(dc->hBitmapDC, hBrush);
+    HPEN hPen = CreatePen(PS_NULL, 0, 0);
+    HPEN hPenOld = SelectObject(dc->hBitmapDC, hPen);
+
+    /* Generate points along Bezier curve using parametric equation */
+    for (i = 0; i <= num_segments; i++)
+    {
+      double t = (double)i / num_segments;
+      double t1 = 1.0 - t;
+      double t1_3 = t1 * t1 * t1;
+      double t1_2_t = 3.0 * t1 * t1 * t;
+      double t1_t_2 = 3.0 * t1 * t * t;
+      double t_3 = t * t * t;
+
+      points[i].x = (LONG)(t1_3 * x1 + t1_2_t * x2 + t1_t_2 * x3 + t_3 * x4);
+      points[i].y = (LONG)(t1_3 * y1 + t1_2_t * y2 + t1_t_2 * y3 + t_3 * y4);
+    }
+
+    Polygon(dc->hBitmapDC, points, num_segments + 1);
+    SelectObject(dc->hBitmapDC, hPenOld);
+    SelectObject(dc->hBitmapDC, hBrushOld);
+    DeleteObject(hPen);
+    DeleteObject(hBrush);
+  }
+  else
+  {
+    /* Use native GDI PolyBezier for stroke */
+    POINT points[4];
+    HPEN hPen = iDrawCreatePen(color, style, line_width);
+    HPEN hPenOld = SelectObject(dc->hBitmapDC, hPen);
+
+    points[0].x = x1;
+    points[0].y = y1;
+    points[1].x = x2;
+    points[1].y = y2;
+    points[2].x = x3;
+    points[2].y = y3;
+    points[3].x = x4;
+    points[3].y = y4;
+
+    PolyBezier(dc->hBitmapDC, points, 4);
+
+    SelectObject(dc->hBitmapDC, hPenOld);
+    DeleteObject(hPen);
+  }
+}
+
+IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
+{
+  /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula:
+   * Given quadratic: Q(t) with control points q0, q1, q2
+   * Convert to cubic: C(t) with control points c0, c1, c2, c3
+   *
+   * c0 = q0                        (start point)
+   * c1 = q0 + (2/3) * (q1 - q0)   (first control point)
+   * c2 = q2 + (2/3) * (q1 - q2)   (second control point)
+   * c3 = q2                        (end point)
+   */
+  int cx1, cy1, cx2, cy2;
+
+  /* Calculate cubic control points from quadratic */
+  cx1 = x1 + ((2 * (x2 - x1)) / 3);
+  cy1 = y1 + ((2 * (y2 - y1)) / 3);
+  cx2 = x3 + ((2 * (x2 - x3)) / 3);
+  cy2 = y3 + ((2 * (y2 - y3)) / 3);
+
+  /* Draw as cubic Bezier */
+  iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)

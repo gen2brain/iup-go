@@ -262,3 +262,31 @@ wdAddArc(WD_PATHSINK* pSink, float cx, float cy, float fSweepAngle)
     }
 }
 
+void
+wdAddBezier(WD_PATHSINK* pSink, float x2, float y2, float x3, float y3, float x4, float y4)
+{
+    if(d2d_enabled()) {
+        dummy_ID2D1GeometrySink* s = (dummy_ID2D1GeometrySink*) pSink->pData;
+        dummy_D2D1_BEZIER_SEGMENT bezier_seg;
+
+        /* Set up Bezier segment with control points and end point */
+        bezier_seg.point1.x = x2;
+        bezier_seg.point1.y = y2;
+        bezier_seg.point2.x = x3;
+        bezier_seg.point2.y = y3;
+        bezier_seg.point3.x = x4;
+        bezier_seg.point3.y = y4;
+
+        dummy_ID2D1GeometrySink_AddBezier(s, &bezier_seg);
+    } else {
+        /* GDI+ requires all 8 coordinates (start + 3 points) */
+        gdix_vtable->fn_AddPathBezier(pSink->pData,
+                        pSink->ptEnd.x, pSink->ptEnd.y,  /* Current point as start */
+                        x2, y2, x3, y3, x4, y4);          /* Control points and end */
+    }
+
+    /* Update end point to the Bezier curve's end point */
+    pSink->ptEnd.x = x4;
+    pSink->ptEnd.y = y4;
+}
+

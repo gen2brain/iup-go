@@ -485,6 +485,12 @@ extern "C" void qtDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
   }
 }
 
+extern "C" void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
+                                   long color, int style, int line_width)
+{
+  qtDrawEllipse(dc, x1, y1, x2, y2, color, style, line_width);
+}
+
 /****************************************************************************
  * Polygon Draw
  ****************************************************************************/
@@ -592,6 +598,84 @@ extern "C" void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1,
     dc->painter->setPen(pen);
     dc->painter->setBrush(Qt::NoBrush);
     dc->painter->drawRoundedRect(x1, y1, width, height, corner_radius, corner_radius);
+  }
+}
+
+/****************************************************************************
+ * Bezier Curve Draw (Cubic)
+ ****************************************************************************/
+
+extern "C" void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
+                                   int x3, int y3, int x4, int y4,
+                                   long color, int style, int line_width)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  QColor qcolor;
+  qtDrawGetColor(color, qcolor);
+
+  /* Create path for cubic Bezier curve */
+  QPainterPath path;
+  path.moveTo(x1, y1);
+  path.cubicTo(x2, y2, x3, y3, x4, y4);
+
+  if (style == IUP_DRAW_FILL)
+  {
+    /* Filled Bezier curve */
+    dc->painter->setPen(Qt::NoPen);
+    dc->painter->setBrush(qcolor);
+    dc->painter->drawPath(path);
+  }
+  else
+  {
+    /* Stroke Bezier curve */
+    QPen pen(qcolor);
+    pen.setWidth(line_width);
+    pen.setStyle(Qt::SolidLine);
+
+    dc->painter->setPen(pen);
+    dc->painter->setBrush(Qt::NoBrush);
+    dc->painter->drawPath(path);
+  }
+}
+
+/****************************************************************************
+ * Bezier Curve Draw (Quadratic)
+ ****************************************************************************/
+
+extern "C" void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1,
+                                           int x2, int y2, int x3, int y3,
+                                           long color, int style, int line_width)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  QColor qcolor;
+  qtDrawGetColor(color, qcolor);
+
+  /* Qt has native support for quadratic Bezier curves! */
+  QPainterPath path;
+  path.moveTo(x1, y1);
+  path.quadTo(x2, y2, x3, y3);
+
+  if (style == IUP_DRAW_FILL)
+  {
+    /* Filled quadratic Bezier curve */
+    dc->painter->setPen(Qt::NoPen);
+    dc->painter->setBrush(qcolor);
+    dc->painter->drawPath(path);
+  }
+  else
+  {
+    /* Stroke quadratic Bezier curve */
+    QPen pen(qcolor);
+    pen.setWidth(line_width);
+    pen.setStyle(Qt::SolidLine);
+
+    dc->painter->setPen(pen);
+    dc->painter->setBrush(Qt::NoBrush);
+    dc->painter->drawPath(path);
   }
 }
 
