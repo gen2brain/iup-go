@@ -282,6 +282,54 @@ extern "C" void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, i
 }
 
 /****************************************************************************
+ * Set Clip Rounded Rectangle
+ ****************************************************************************/
+
+extern "C" void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    /* Reset clipping */
+    dc->painter->setClipping(false);
+    dc->clip_x1 = 0;
+    dc->clip_y1 = 0;
+    dc->clip_x2 = 0;
+    dc->clip_y2 = 0;
+  }
+  else
+  {
+    /* Ensure coordinates are properly ordered */
+    iupDrawCheckSwapCoord(x1, x2);
+    iupDrawCheckSwapCoord(y1, y2);
+
+    /* Clamp radius to prevent oversized corners */
+    int max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2 : (y2 - y1) / 2;
+    if (corner_radius > max_radius)
+      corner_radius = max_radius;
+
+    /* Calculate dimensions - use exact coordinates for clipping path */
+    int width = x2 - x1;
+    int height = y2 - y1;
+
+    /* Create rounded rectangle path for clipping */
+    QPainterPath path;
+    path.addRoundedRect(x1, y1, width, height, corner_radius, corner_radius);
+
+    /* Set clip path */
+    dc->painter->setClipPath(path);
+    dc->painter->setClipping(true);
+
+    dc->clip_x1 = x1;
+    dc->clip_y1 = y1;
+    dc->clip_x2 = x2;
+    dc->clip_y2 = y2;
+  }
+}
+
+/****************************************************************************
  * Reset Clip Area
  ****************************************************************************/
 
@@ -980,6 +1028,54 @@ extern "C" void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int
   dc->painter->setPen(pen);
   dc->painter->setBrush(Qt::NoBrush);
   dc->painter->drawRect(x1, y1, x2 - x1, y2 - y1);
+}
+
+/****************************************************************************
+ * Linear Gradient
+ ****************************************************************************/
+
+extern "C" void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Calculate gradient endpoints based on angle */
+  /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
+  qreal rad = angle * M_PI / 180.0;
+  qreal w = x2 - x1;
+  qreal h = y2 - y1;
+  qreal cx = x1 + w / 2.0;
+  qreal cy = y1 + h / 2.0;
+
+  QPointF start(cx - (w * cos(rad)) / 2.0, cy - (h * sin(rad)) / 2.0);
+  QPointF end(cx + (w * cos(rad)) / 2.0, cy + (h * sin(rad)) / 2.0);
+
+  QLinearGradient gradient(start, end);
+  gradient.setColorAt(0, QColor(iupDrawRed(color1), iupDrawGreen(color1), iupDrawBlue(color1), iupDrawAlpha(color1)));
+  gradient.setColorAt(1, QColor(iupDrawRed(color2), iupDrawGreen(color2), iupDrawBlue(color2), iupDrawAlpha(color2)));
+
+  dc->painter->fillRect(x1, y1, x2 - x1, y2 - y1, gradient);
+}
+
+/****************************************************************************
+ * Radial Gradient
+ ****************************************************************************/
+
+extern "C" void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  QRadialGradient gradient(cx, cy, radius, cx, cy);
+  gradient.setColorAt(0, QColor(iupDrawRed(colorCenter), iupDrawGreen(colorCenter), iupDrawBlue(colorCenter), iupDrawAlpha(colorCenter)));
+  gradient.setColorAt(1, QColor(iupDrawRed(colorEdge), iupDrawGreen(colorEdge), iupDrawBlue(colorEdge), iupDrawAlpha(colorEdge)));
+
+  dc->painter->setPen(Qt::NoPen);
+  dc->painter->setBrush(gradient);
+  dc->painter->drawEllipse(QPoint(cx, cy), radius, radius);
 }
 
 /****************************************************************************

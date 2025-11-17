@@ -85,6 +85,15 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width);
 
+/** Draws a linear gradient between two colors.
+ * angle: 0=horizontal right, 90=vertical down, 180=horizontal left, 270=vertical up
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2);
+
+/** Draws a radial gradient from center to edge.
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge);
+
 #define IUP_DRAW_LEFT     0x0000
 #define IUP_DRAW_CENTER   0x0001
 #define IUP_DRAW_RIGHT    0x0002
@@ -106,6 +115,10 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 /** Sets a rectangle clipping area.
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2);
+
+/** Sets a rounded rectangle clipping area.
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius);
 
 /** Removes clipping.
  * \ingroup drvdraw */

@@ -62,6 +62,9 @@ typedef struct dummy_ID2D1Layer_tag                     dummy_ID2D1Layer;
 typedef struct dummy_ID2D1PathGeometry_tag              dummy_ID2D1PathGeometry;
 typedef struct dummy_ID2D1RenderTarget_tag              dummy_ID2D1RenderTarget;
 typedef struct dummy_ID2D1SolidColorBrush_tag           dummy_ID2D1SolidColorBrush;
+typedef struct dummy_ID2D1GradientStopCollection_tag    dummy_ID2D1GradientStopCollection;
+typedef struct dummy_ID2D1LinearGradientBrush_tag       dummy_ID2D1LinearGradientBrush;
+typedef struct dummy_ID2D1RadialGradientBrush_tag       dummy_ID2D1RadialGradientBrush;
 
 
 /*****************************
@@ -220,6 +223,26 @@ struct dummy_D2D1_ELLIPSE_tag {
 typedef struct dummy_D2D1_ROUNDED_RECT_tag dummy_D2D1_ROUNDED_RECT;
 struct dummy_D2D1_ROUNDED_RECT_tag {
     dummy_D2D1_RECT_F rect;
+    FLOAT radiusX;
+    FLOAT radiusY;
+};
+
+typedef struct dummy_D2D1_GRADIENT_STOP_tag dummy_D2D1_GRADIENT_STOP;
+struct dummy_D2D1_GRADIENT_STOP_tag {
+    FLOAT position;
+    dummy_D2D1_COLOR_F color;
+};
+
+typedef struct dummy_D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES_tag dummy_D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES;
+struct dummy_D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES_tag {
+    dummy_D2D1_POINT_2F startPoint;
+    dummy_D2D1_POINT_2F endPoint;
+};
+
+typedef struct dummy_D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES_tag dummy_D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES;
+struct dummy_D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES_tag {
+    dummy_D2D1_POINT_2F center;
+    dummy_D2D1_POINT_2F gradientOriginOffset;
     FLOAT radiusX;
     FLOAT radiusY;
 };
@@ -953,9 +976,9 @@ struct dummy_ID2D1RenderTargetVtbl_tag {
     STDMETHOD(dummy_CreateSharedBitmap)(void);
     STDMETHOD(dummy_CreateBitmapBrush)(void);
     STDMETHOD(CreateSolidColorBrush)(dummy_ID2D1RenderTarget*, const dummy_D2D1_COLOR_F*, const void*, dummy_ID2D1SolidColorBrush**);
-    STDMETHOD(dummy_CreateGradientStopCollection)(void);
-    STDMETHOD(dummy_CreateLinearGradientBrush)(void);
-    STDMETHOD(dummy_CreateRadialGradientBrush)(void);
+    STDMETHOD(CreateGradientStopCollection)(dummy_ID2D1RenderTarget*, const dummy_D2D1_GRADIENT_STOP*, UINT, unsigned, unsigned, dummy_ID2D1GradientStopCollection**);
+    STDMETHOD(CreateLinearGradientBrush)(dummy_ID2D1RenderTarget*, const dummy_D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES*, const void*, dummy_ID2D1GradientStopCollection*, dummy_ID2D1LinearGradientBrush**);
+    STDMETHOD(CreateRadialGradientBrush)(dummy_ID2D1RenderTarget*, const dummy_D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES*, const void*, dummy_ID2D1GradientStopCollection*, dummy_ID2D1RadialGradientBrush**);
     STDMETHOD(dummy_CreateCompatibleRenderTarget)(void);
     STDMETHOD(CreateLayer)(dummy_ID2D1RenderTarget*, const dummy_D2D1_SIZE_F*, dummy_ID2D1Layer**);
     STDMETHOD(dummy_CreateMesh)(void);
@@ -1013,6 +1036,9 @@ struct dummy_ID2D1RenderTarget_tag {
 #define dummy_ID2D1RenderTarget_Release(self)                           (self)->vtbl->Release(self)
 #define dummy_ID2D1RenderTarget_CreateBitmapFromWicBitmap(self,a,b,c)   (self)->vtbl->CreateBitmapFromWicBitmap(self,a,b,c)
 #define dummy_ID2D1RenderTarget_CreateSolidColorBrush(self,a,b,c)       (self)->vtbl->CreateSolidColorBrush(self,a,b,c)
+#define dummy_ID2D1RenderTarget_CreateGradientStopCollection(self,a,b,c,d,e)  (self)->vtbl->CreateGradientStopCollection(self,a,b,c,d,e)
+#define dummy_ID2D1RenderTarget_CreateLinearGradientBrush(self,a,b,c,d)  (self)->vtbl->CreateLinearGradientBrush(self,a,b,c,d)
+#define dummy_ID2D1RenderTarget_CreateRadialGradientBrush(self,a,b,c,d)  (self)->vtbl->CreateRadialGradientBrush(self,a,b,c,d)
 #define dummy_ID2D1RenderTarget_CreateLayer(self,a,b)                   (self)->vtbl->CreateLayer(self,a,b)
 #define dummy_ID2D1RenderTarget_DrawLine(self,a,b,c,d,e)                (self)->vtbl->DrawLine(self,a,b,c,d,e)
 #define dummy_ID2D1RenderTarget_DrawRectangle(self,a,b,c,d)             (self)->vtbl->DrawRectangle(self,a,b,c,d)
@@ -1071,6 +1097,120 @@ struct dummy_ID2D1SolidColorBrush_tag {
 #define dummy_ID2D1SolidColorBrush_AddRef(self)                 (self)->vtbl->AddRef(self)
 #define dummy_ID2D1SolidColorBrush_Release(self)                (self)->vtbl->Release(self)
 #define dummy_ID2D1SolidColorBrush_SetColor(self,a)             (self)->vtbl->SetColor(self,a)
+
+
+/******************************************************
+ ***  Interface ID2D1GradientStopCollection  ***
+ ******************************************************/
+
+typedef struct dummy_ID2D1GradientStopCollectionVtbl_tag dummy_ID2D1GradientStopCollectionVtbl;
+struct dummy_ID2D1GradientStopCollectionVtbl_tag {
+    /* IUnknown methods */
+    STDMETHOD(QueryInterface)(dummy_ID2D1GradientStopCollection*, REFIID, void**);
+    STDMETHOD_(ULONG, AddRef)(dummy_ID2D1GradientStopCollection*);
+    STDMETHOD_(ULONG, Release)(dummy_ID2D1GradientStopCollection*);
+
+    /* ID2D1Resource methods */
+    STDMETHOD(dummy_GetFactory)(void);
+
+    /* ID2D1GradientStopCollection methods */
+    STDMETHOD(dummy_GetGradientStopCount)(void);
+    STDMETHOD(dummy_GetGradientStops)(void);
+    STDMETHOD(dummy_GetColorInterpolationGamma)(void);
+    STDMETHOD(dummy_GetExtendMode)(void);
+};
+
+struct dummy_ID2D1GradientStopCollection_tag {
+    dummy_ID2D1GradientStopCollectionVtbl* vtbl;
+};
+
+#define dummy_ID2D1GradientStopCollection_QueryInterface(self,a,b)  (self)->vtbl->QueryInterface(self,a,b)
+#define dummy_ID2D1GradientStopCollection_AddRef(self)              (self)->vtbl->AddRef(self)
+#define dummy_ID2D1GradientStopCollection_Release(self)             (self)->vtbl->Release(self)
+
+
+/**********************************************
+ ***  Interface ID2D1LinearGradientBrush  ***
+ **********************************************/
+
+typedef struct dummy_ID2D1LinearGradientBrushVtbl_tag dummy_ID2D1LinearGradientBrushVtbl;
+struct dummy_ID2D1LinearGradientBrushVtbl_tag {
+    /* IUnknown methods */
+    STDMETHOD(QueryInterface)(dummy_ID2D1LinearGradientBrush*, REFIID, void**);
+    STDMETHOD_(ULONG, AddRef)(dummy_ID2D1LinearGradientBrush*);
+    STDMETHOD_(ULONG, Release)(dummy_ID2D1LinearGradientBrush*);
+
+    /* ID2D1Resource methods */
+    STDMETHOD(dummy_GetFactory)(void);
+
+    /* ID2D1Brush methods */
+    STDMETHOD(dummy_SetOpacity)(void);
+    STDMETHOD(dummy_SetTransform)(void);
+    STDMETHOD(dummy_GetOpacity)(void);
+    STDMETHOD(dummy_GetTransform)(void);
+
+    /* ID2D1LinearGradientBrush methods */
+    STDMETHOD_(void, SetStartPoint)(dummy_ID2D1LinearGradientBrush*, dummy_D2D1_POINT_2F);
+    STDMETHOD_(void, SetEndPoint)(dummy_ID2D1LinearGradientBrush*, dummy_D2D1_POINT_2F);
+    STDMETHOD(dummy_GetStartPoint)(void);
+    STDMETHOD(dummy_GetEndPoint)(void);
+    STDMETHOD(dummy_GetGradientStopCollection)(void);
+};
+
+struct dummy_ID2D1LinearGradientBrush_tag {
+    dummy_ID2D1LinearGradientBrushVtbl* vtbl;
+};
+
+#define dummy_ID2D1LinearGradientBrush_QueryInterface(self,a,b)    (self)->vtbl->QueryInterface(self,a,b)
+#define dummy_ID2D1LinearGradientBrush_AddRef(self)                (self)->vtbl->AddRef(self)
+#define dummy_ID2D1LinearGradientBrush_Release(self)               (self)->vtbl->Release(self)
+#define dummy_ID2D1LinearGradientBrush_SetStartPoint(self,a)       (self)->vtbl->SetStartPoint(self,a)
+#define dummy_ID2D1LinearGradientBrush_SetEndPoint(self,a)         (self)->vtbl->SetEndPoint(self,a)
+
+
+/**********************************************
+ ***  Interface ID2D1RadialGradientBrush  ***
+ **********************************************/
+
+typedef struct dummy_ID2D1RadialGradientBrushVtbl_tag dummy_ID2D1RadialGradientBrushVtbl;
+struct dummy_ID2D1RadialGradientBrushVtbl_tag {
+    /* IUnknown methods */
+    STDMETHOD(QueryInterface)(dummy_ID2D1RadialGradientBrush*, REFIID, void**);
+    STDMETHOD_(ULONG, AddRef)(dummy_ID2D1RadialGradientBrush*);
+    STDMETHOD_(ULONG, Release)(dummy_ID2D1RadialGradientBrush*);
+
+    /* ID2D1Resource methods */
+    STDMETHOD(dummy_GetFactory)(void);
+
+    /* ID2D1Brush methods */
+    STDMETHOD(dummy_SetOpacity)(void);
+    STDMETHOD(dummy_SetTransform)(void);
+    STDMETHOD(dummy_GetOpacity)(void);
+    STDMETHOD(dummy_GetTransform)(void);
+
+    /* ID2D1RadialGradientBrush methods */
+    STDMETHOD_(void, SetCenter)(dummy_ID2D1RadialGradientBrush*, dummy_D2D1_POINT_2F);
+    STDMETHOD_(void, SetGradientOriginOffset)(dummy_ID2D1RadialGradientBrush*, dummy_D2D1_POINT_2F);
+    STDMETHOD_(void, SetRadiusX)(dummy_ID2D1RadialGradientBrush*, FLOAT);
+    STDMETHOD_(void, SetRadiusY)(dummy_ID2D1RadialGradientBrush*, FLOAT);
+    STDMETHOD(dummy_GetCenter)(void);
+    STDMETHOD(dummy_GetGradientOriginOffset)(void);
+    STDMETHOD(dummy_GetRadiusX)(void);
+    STDMETHOD(dummy_GetRadiusY)(void);
+    STDMETHOD(dummy_GetGradientStopCollection)(void);
+};
+
+struct dummy_ID2D1RadialGradientBrush_tag {
+    dummy_ID2D1RadialGradientBrushVtbl* vtbl;
+};
+
+#define dummy_ID2D1RadialGradientBrush_QueryInterface(self,a,b)            (self)->vtbl->QueryInterface(self,a,b)
+#define dummy_ID2D1RadialGradientBrush_AddRef(self)                        (self)->vtbl->AddRef(self)
+#define dummy_ID2D1RadialGradientBrush_Release(self)                       (self)->vtbl->Release(self)
+#define dummy_ID2D1RadialGradientBrush_SetCenter(self,a)                   (self)->vtbl->SetCenter(self,a)
+#define dummy_ID2D1RadialGradientBrush_SetGradientOriginOffset(self,a)     (self)->vtbl->SetGradientOriginOffset(self,a)
+#define dummy_ID2D1RadialGradientBrush_SetRadiusX(self,a)                  (self)->vtbl->SetRadiusX(self,a)
+#define dummy_ID2D1RadialGradientBrush_SetRadiusY(self,a)                  (self)->vtbl->SetRadiusY(self,a)
 
 
 #endif  /* DUMMY_D2D1_H */

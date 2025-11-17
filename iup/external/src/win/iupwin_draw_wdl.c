@@ -535,6 +535,51 @@ void iupdrvDrawSetClipRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   dc->clip_y2 = y2;
 }
 
+void iupdrvDrawSetClipRoundedRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
+{
+  WD_RECT rect;
+  WD_HPATH path;
+  int width, height;
+  float max_radius, radius;
+
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    iupdrvDrawResetClip(dc);
+    return;
+  }
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  width = x2 - x1;
+  height = y2 - y1;
+
+  /* Calculate radius - clamp to half of smaller dimension */
+  max_radius = (width < height) ? (float)width / 2.0f : (float)height / 2.0f;
+  radius = (float)corner_radius;
+  if (radius > max_radius)
+    radius = max_radius;
+
+  /* Set up rectangle for path */
+  rect.x0 = iupInt2Float(x1);
+  rect.y0 = iupInt2Float(y1);
+  rect.x1 = iupInt2Float(x2);
+  rect.y1 = iupInt2Float(y2);
+
+  /* Create rounded rectangle path and set as clip */
+  path = wdCreateRoundedRectPath(dc->hCanvas, &rect, radius);
+  if (path)
+  {
+    wdSetClip(dc->hCanvas, NULL, path);
+    wdDestroyPath(path);
+  }
+
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
+}
+
 void iupdrvDrawResetClipWDL(IdrawCanvas* dc)
 {
   wdSetClip(dc->hCanvas, NULL, NULL);
@@ -670,4 +715,130 @@ void iupdrvDrawFocusRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 #else
   iupdrvDrawRectangleWDL(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
 #endif
+}
+
+static long iWdlInterpolateColor(long color1, long color2, float t)
+{
+  unsigned char r1 = iupDrawRed(color1), g1 = iupDrawGreen(color1), b1 = iupDrawBlue(color1), a1 = iupDrawAlpha(color1);
+  unsigned char r2 = iupDrawRed(color2), g2 = iupDrawGreen(color2), b2 = iupDrawBlue(color2), a2 = iupDrawAlpha(color2);
+  unsigned char r = (unsigned char)(r1 + t * (r2 - r1));
+  unsigned char g = (unsigned char)(g1 + t * (g2 - g1));
+  unsigned char b = (unsigned char)(b1 + t * (b2 - b1));
+  unsigned char a = (unsigned char)(a1 + t * (a2 - a1));
+  return iupDrawColor(r, g, b, a);
+}
+
+void iupdrvDrawLinearGradientWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+{
+  WD_HBRUSH brush;
+  float rad, dx, dy, cx, cy, w, h;
+  float x0, y0, x3, y3;
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Calculate gradient direction based on angle */
+  /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
+  rad = angle * 3.14159265359f / 180.0f;
+  dx = (float)cos(rad);
+  dy = (float)sin(rad);
+
+  /* Calculate gradient start and end points */
+  w = (float)(x2 - x1);
+  h = (float)(y2 - y1);
+  cx = (float)x1 + w / 2.0f;
+  cy = (float)y1 + h / 2.0f;
+
+  /* Calculate start point */
+  x0 = cx - (w * dx) / 2.0f;
+  y0 = cy - (h * dy) / 2.0f;
+
+  /* Calculate end point */
+  x3 = cx + (w * dx) / 2.0f;
+  y3 = cy + (h * dy) / 2.0f;
+
+  /* Try to create native gradient brush (only works with Direct2D backend) */
+  brush = wdCreateLinearGradientBrush(dc->hCanvas, x0, y0, x3, y3, iupColor2ARGB(color1), iupColor2ARGB(color2));
+  if (brush)
+  {
+    /* Native gradient - single fill operation */
+    wdFillRect(dc->hCanvas, brush, iupInt2Float(x1), iupInt2Float(y1), iupInt2Float(x2), iupInt2Float(y2));
+    wdDestroyBrush(brush);
+  }
+  else
+  {
+    /* Fallback for GDI+ backend - manual color interpolation */
+    int i, steps;
+    float t, length;
+    int px1, py1, px2, py2;
+
+    length = (float)sqrt(w * w + h * h);
+    steps = (int)length;
+    if (steps < 2) steps = 2;
+    if (steps > 256) steps = 256;
+
+    for (i = 0; i < steps; i++)
+    {
+      t = (float)i / (float)(steps - 1);
+      long color = iWdlInterpolateColor(color1, color2, t);
+      brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
+
+      if (fabs(dx) > fabs(dy))
+      {
+        px1 = x1 + (int)(t * w);
+        px2 = x1 + (int)((t + 1.0f / steps) * w);
+        py1 = y1;
+        py2 = y2;
+      }
+      else
+      {
+        px1 = x1;
+        px2 = x2;
+        py1 = y1 + (int)(t * h);
+        py2 = y1 + (int)((t + 1.0f / steps) * h);
+      }
+
+      wdFillRect(dc->hCanvas, brush, iupInt2Float(px1), iupInt2Float(py1), iupInt2Float(px2), iupInt2Float(py2));
+      wdDestroyBrush(brush);
+    }
+  }
+}
+
+void iupdrvDrawRadialGradientWDL(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+{
+  WD_HBRUSH brush;
+
+  /* Try to create native gradient brush (only works with Direct2D backend) */
+  brush = wdCreateRadialGradientBrush(dc->hCanvas, iupInt2Float(cx), iupInt2Float(cy),
+                                       iupInt2Float(radius), iupInt2Float(radius),
+                                       iupColor2ARGB(colorCenter), iupColor2ARGB(colorEdge));
+  if (brush)
+  {
+    /* Native gradient - single fill operation */
+    wdFillEllipse(dc->hCanvas, brush, iupInt2Float(cx), iupInt2Float(cy),
+                   iupInt2Float(radius), iupInt2Float(radius));
+    wdDestroyBrush(brush);
+  }
+  else
+  {
+    /* Fallback for GDI+ backend - manual color interpolation */
+    int i, steps;
+    float t, r;
+
+    steps = radius;
+    if (steps < 2) steps = 2;
+    if (steps > 256) steps = 256;
+
+    /* Draw concentric circles from outside to inside */
+    for (i = steps - 1; i >= 0; i--)
+    {
+      t = (float)i / (float)(steps - 1);
+      long color = iWdlInterpolateColor(colorCenter, colorEdge, t);
+      brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
+
+      r = (float)radius * t;
+      wdFillEllipse(dc->hCanvas, brush, iupInt2Float(cx), iupInt2Float(cy), r, r);
+      wdDestroyBrush(brush);
+    }
+  }
 }

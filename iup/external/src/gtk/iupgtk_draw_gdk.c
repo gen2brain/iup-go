@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
+#include <math.h>
 
 #include <gtk/gtk.h>
 
@@ -391,6 +392,81 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
   dc->clip_y2 = y2;
 }
 
+IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
+{
+  GdkRegion *region;
+  GdkPoint points[100];
+  int num_points = 0;
+  int i;
+  double angle, step;
+  int max_radius;
+  double pi = 3.14159265359;
+
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    iupdrvDrawResetClip(dc);
+    return;
+  }
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Clamp radius to prevent oversized corners */
+  max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2 : (y2 - y1) / 2;
+  if (corner_radius > max_radius)
+    corner_radius = max_radius;
+
+  /* Create a polygon approximation going clockwise from top-left */
+  /* 8 points per corner arc */
+  step = 90.0 / 8.0;
+
+  /* Top-left corner arc: from top edge (270) to left edge (180) going clockwise */
+  for (i = 0; i <= 8; i++)
+  {
+    angle = (270.0 - i * step) * pi / 180.0;
+    points[num_points].x = x1 + corner_radius + (int)(corner_radius * cos(angle));
+    points[num_points].y = y1 + corner_radius + (int)(corner_radius * sin(angle));
+    num_points++;
+  }
+
+  /* Bottom-left corner arc: from left edge (180) to bottom edge (90) going clockwise */
+  for (i = 1; i <= 8; i++)
+  {
+    angle = (180.0 - i * step) * pi / 180.0;
+    points[num_points].x = x1 + corner_radius + (int)(corner_radius * cos(angle));
+    points[num_points].y = y2 - corner_radius + (int)(corner_radius * sin(angle));
+    num_points++;
+  }
+
+  /* Bottom-right corner arc: from bottom edge (90) to right edge (0) going clockwise */
+  for (i = 1; i <= 8; i++)
+  {
+    angle = (90.0 - i * step) * pi / 180.0;
+    points[num_points].x = x2 - corner_radius + (int)(corner_radius * cos(angle));
+    points[num_points].y = y2 - corner_radius + (int)(corner_radius * sin(angle));
+    num_points++;
+  }
+
+  /* Top-right corner arc: from right edge (0) to top edge (270 = -90) going clockwise */
+  for (i = 1; i <= 8; i++)
+  {
+    angle = (0.0 - i * step) * pi / 180.0;
+    points[num_points].x = x2 - corner_radius + (int)(corner_radius * cos(angle));
+    points[num_points].y = y1 + corner_radius + (int)(corner_radius * sin(angle));
+    num_points++;
+  }
+
+  /* Create region from polygon */
+  region = gdk_region_polygon(points, num_points, GDK_WINDING_RULE);
+  gdk_gc_set_clip_region(dc->pixmap_gc, region);
+  gdk_region_destroy(region);
+
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
+}
+
 IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   gdk_gc_set_clip_region(dc->pixmap_gc, NULL);
@@ -598,5 +674,95 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
   cy2 = y3 + ((2 * (y2 - y3)) / 3);
 
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
+}
+
+static long gdkInterpolateColor(long color1, long color2, float t)
+{
+  unsigned char r1 = iupDrawRed(color1), g1 = iupDrawGreen(color1), b1 = iupDrawBlue(color1), a1 = iupDrawAlpha(color1);
+  unsigned char r2 = iupDrawRed(color2), g2 = iupDrawGreen(color2), b2 = iupDrawBlue(color2), a2 = iupDrawAlpha(color2);
+  unsigned char r = (unsigned char)(r1 + t * (r2 - r1));
+  unsigned char g = (unsigned char)(g1 + t * (g2 - g1));
+  unsigned char b = (unsigned char)(b1 + t * (b2 - b1));
+  unsigned char a = (unsigned char)(a1 + t * (a2 - a1));
+  return iupDrawColor(r, g, b, a);
+}
+
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+{
+  int i, steps;
+  float t, dx, dy, length;
+  int px1, py1, px2, py2;
+  GdkColor gdk_color;
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Calculate gradient direction */
+  float rad = angle * 3.14159265359f / 180.0f;
+  dx = (float)cos(rad);
+  dy = (float)sin(rad);
+
+  /* Number of steps for smooth gradient */
+  length = (float)sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+  steps = (int)length;
+  if (steps < 2) steps = 2;
+  if (steps > 256) steps = 256;
+
+  /* Draw gradient strips */
+  for (i = 0; i < steps; i++)
+  {
+    t = (float)i / (float)(steps - 1);
+    long color = gdkInterpolateColor(color1, color2, t);
+
+    gdk_color.red = iupDrawRed(color) * 257;
+    gdk_color.green = iupDrawGreen(color) * 257;
+    gdk_color.blue = iupDrawBlue(color) * 257;
+    gdk_gc_set_rgb_fg_color(dc->pixmap_gc, &gdk_color);
+
+    /* Calculate strip position */
+    if (fabs(dx) > fabs(dy))  /* More horizontal */
+    {
+      px1 = x1 + (int)(t * (x2 - x1));
+      px2 = x1 + (int)((t + 1.0f / steps) * (x2 - x1));
+      py1 = y1;
+      py2 = y2;
+    }
+    else  /* More vertical */
+    {
+      px1 = x1;
+      px2 = x2;
+      py1 = y1 + (int)(t * (y2 - y1));
+      py2 = y1 + (int)((t + 1.0f / steps) * (y2 - y1));
+    }
+
+    gdk_draw_rectangle(dc->pixmap, dc->pixmap_gc, TRUE, px1, py1, px2 - px1 + 1, py2 - py1 + 1);
+  }
+}
+
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+{
+  int i, steps;
+  float t, r;
+  GdkColor gdk_color;
+
+  /* Number of steps for smooth gradient */
+  steps = radius;
+  if (steps < 2) steps = 2;
+  if (steps > 256) steps = 256;
+
+  /* Draw from outside to inside */
+  for (i = steps - 1; i >= 0; i--)
+  {
+    t = (float)i / (float)(steps - 1);
+    long color = gdkInterpolateColor(colorCenter, colorEdge, t);
+    r = (float)radius * t;
+
+    gdk_color.red = iupDrawRed(color) * 257;
+    gdk_color.green = iupDrawGreen(color) * 257;
+    gdk_color.blue = iupDrawBlue(color) * 257;
+    gdk_gc_set_rgb_fg_color(dc->pixmap_gc, &gdk_color);
+
+    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, TRUE, (int)(cx - r), (int)(cy - r), (int)(2 * r), (int)(2 * r), 0, 23040);
+  }
 }
 

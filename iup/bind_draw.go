@@ -32,6 +32,14 @@ func DrawSetClipRect(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawSetClipRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
 
+// DrawSetClipRoundedRect defines a rounded rectangular clipping region.
+// This is useful for drawing gradients or other content with rounded corners.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+func DrawSetClipRoundedRect(ih Ihandle, x1, y1, x2, y2, cornerRadius int) {
+	C.IupDrawSetClipRoundedRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(cornerRadius))
+}
+
 // DrawResetClip resets the clipping area to none.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
@@ -208,4 +216,31 @@ func DrawGetImageInfo(name string) (w, h, bpp int) {
 	C.IupDrawGetImageInfo(cName, &cW, &cH, &cBpp)
 	w, h, bpp = int(cW), int(cH), int(cBpp)
 	return
+}
+
+// DrawLinearGradient draws a linear gradient between two colors.
+// angle: 0=horizontal right, 90=vertical down, 180=horizontal left, 270=vertical up.
+// color1 and color2 are color strings (e.g., "255 0 0" for red).
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, color2 string) {
+	cColor1 := C.CString(color1)
+	defer C.free(unsafe.Pointer(cColor1))
+	cColor2 := C.CString(color2)
+	defer C.free(unsafe.Pointer(cColor2))
+
+	C.IupDrawLinearGradient(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.float(angle), cColor1, cColor2)
+}
+
+// DrawRadialGradient draws a radial gradient from center to edge.
+// colorCenter and colorEdge are color strings (e.g., "255 0 0" for red).
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+func DrawRadialGradient(ih Ihandle, cx, cy, radius int, colorCenter, colorEdge string) {
+	cColorCenter := C.CString(colorCenter)
+	defer C.free(unsafe.Pointer(cColorCenter))
+	cColorEdge := C.CString(colorEdge)
+	defer C.free(unsafe.Pointer(cColorEdge))
+
+	C.IupDrawRadialGradient(ih.ptr(), C.int(cx), C.int(cy), C.int(radius), cColorCenter, cColorEdge)
 }

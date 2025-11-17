@@ -303,6 +303,44 @@ IUP_API void IupDrawQuadraticBezier(Ihandle* ih, int x1, int y1, int x2, int y2,
   iupdrvDrawQuadraticBezier(dc, x1, y1, x2, y2, x3, y3, color, style, line_width);
 }
 
+IUP_API void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2)
+{
+  IdrawCanvas* dc;
+  long c1, c2;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+  if (!dc)
+    return;
+
+  c1 = iupDrawStrToColor(color1, 0);
+  c2 = iupDrawStrToColor(color2, 0);
+
+  iupdrvDrawLinearGradient(dc, x1, y1, x2, y2, angle, c1, c2);
+}
+
+IUP_API void IupDrawRadialGradient(Ihandle* ih, int cx, int cy, int radius, const char* colorCenter, const char* colorEdge)
+{
+  IdrawCanvas* dc;
+  long c1, c2;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+  if (!dc)
+    return;
+
+  c1 = iupDrawStrToColor(colorCenter, 0);
+  c2 = iupDrawStrToColor(colorEdge, 0);
+
+  iupdrvDrawRadialGradient(dc, cx, cy, radius, c1, c2);
+}
+
 static void iDrawRotatePoint(int x, int y, int *rx, int *ry, double sin_theta, double cos_theta)
 {
   double t;
@@ -480,6 +518,21 @@ IUP_API void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2)
     return;
 
   iupdrvDrawSetClipRect(dc, x1, y1, x2, y2);
+}
+
+IUP_API void IupDrawSetClipRoundedRect(Ihandle* ih, int x1, int y1, int x2, int y2, int corner_radius)
+{
+  IdrawCanvas* dc;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+  if (!dc)
+    return;
+
+  iupdrvDrawSetClipRoundedRect(dc, x1, y1, x2, y2, corner_radius);
 }
 
 IUP_API void IupDrawGetClipRect(Ihandle* ih, int *x1, int *y1, int *x2, int *y2)

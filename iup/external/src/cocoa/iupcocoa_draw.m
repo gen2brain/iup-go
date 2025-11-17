@@ -638,6 +638,45 @@ void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   dc->clip_y2 = (CGFloat)y2;
 }
 
+void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
+{
+  CGFloat radius = (CGFloat)corner_radius;
+
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    iupdrvDrawResetClip(dc);
+    return;
+  }
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Clamp radius to prevent oversized corners */
+  CGFloat max_radius = ((x2 - x1) < (y2 - y1)) ? (CGFloat)(x2 - x1) / 2.0f : (CGFloat)(y2 - y1) / 2.0f;
+  if (radius > max_radius)
+    radius = max_radius;
+
+  iupdrvDrawResetClip(dc);
+
+  CGContextSaveGState(dc->image_cgContext);
+  dc->clip_state = 1;
+
+  /* Create rounded rectangle path and use as clip */
+  CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, (CGFloat)(x2 - x1), (CGFloat)(y2 - y1));
+  CGPathRef path = CGPathCreateWithRoundedRect(rect, radius, radius, NULL);
+
+  CGContextBeginPath(dc->image_cgContext);
+  CGContextAddPath(dc->image_cgContext, path);
+  CGContextClip(dc->image_cgContext);
+
+  CGPathRelease(path);
+
+  dc->clip_x1 = (CGFloat)x1;
+  dc->clip_y1 = (CGFloat)y1;
+  dc->clip_x2 = (CGFloat)x2;
+  dc->clip_y2 = (CGFloat)y2;
+}
+
 void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   if (dc->clip_state == 1)
@@ -816,4 +855,84 @@ void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 
     CGContextRestoreGState(cg_context);
   }
+}
+
+void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+{
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Create gradient colors */
+  CGFloat components[8] = {
+    iupDrawRed(color1) / 255.0f, iupDrawGreen(color1) / 255.0f, iupDrawBlue(color1) / 255.0f, iupDrawAlpha(color1) / 255.0f,
+    iupDrawRed(color2) / 255.0f, iupDrawGreen(color2) / 255.0f, iupDrawBlue(color2) / 255.0f, iupDrawAlpha(color2) / 255.0f
+  };
+  CGFloat locations[2] = { 0.0, 1.0 };
+
+  CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, components, locations, 2);
+
+  /* Calculate gradient endpoints based on angle */
+  /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
+  CGFloat rad = angle * M_PI / 180.0f;
+  CGFloat w = x2 - x1;
+  CGFloat h = y2 - y1;
+  CGFloat cx = x1 + w / 2.0f;
+  CGFloat cy = y1 + h / 2.0f;
+
+  CGPoint start = CGPointMake(cx - (w * cos(rad)) / 2.0f, cy - (h * sin(rad)) / 2.0f);
+  CGPoint end = CGPointMake(cx + (w * cos(rad)) / 2.0f, cy + (h * sin(rad)) / 2.0f);
+
+  /* Clip to rectangle */
+  CGContextSaveGState(cg_context);
+  CGContextClipToRect(cg_context, CGRectMake(x1, y1, w, h));
+
+  /* Draw gradient */
+  CGContextDrawLinearGradient(cg_context, gradient, start, end, 0);
+
+  CGContextRestoreGState(cg_context);
+  CGGradientRelease(gradient);
+  CGColorSpaceRelease(colorSpace);
+}
+
+void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+{
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+
+  /* Create gradient colors */
+  CGFloat components[8] = {
+    iupDrawRed(colorCenter) / 255.0f, iupDrawGreen(colorCenter) / 255.0f, iupDrawBlue(colorCenter) / 255.0f, iupDrawAlpha(colorCenter) / 255.0f,
+    iupDrawRed(colorEdge) / 255.0f, iupDrawGreen(colorEdge) / 255.0f, iupDrawBlue(colorEdge) / 255.0f, iupDrawAlpha(colorEdge) / 255.0f
+  };
+  CGFloat locations[2] = { 0.0, 1.0 };
+
+  CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, components, locations, 2);
+
+  CGPoint center = CGPointMake(cx, cy);
+  CGRect circleRect = CGRectMake(cx - radius, cy - radius, 2 * radius, 2 * radius);
+
+  CGContextSaveGState(cg_context);
+
+  /* First draw the circle with solid fill to get anti-aliased edges
+   * Gradients don't anti-alias their edges, but filled paths do.
+   * Use the edge color as the fill color for the circle boundary. */
+  CGContextBeginPath(cg_context);
+  CGContextAddEllipseInRect(cg_context, circleRect);
+  CGContextSetRGBFillColor(cg_context,
+                           iupDrawRed(colorEdge) / 255.0f,
+                           iupDrawGreen(colorEdge) / 255.0f,
+                           iupDrawBlue(colorEdge) / 255.0f,
+                           iupDrawAlpha(colorEdge) / 255.0f);
+  CGContextFillPath(cg_context);
+
+  /* Now draw the gradient on top - it will have smooth edges from the solid fill underneath */
+  CGContextDrawRadialGradient(cg_context, gradient, center, 0, center, radius, 0);
+
+  CGContextRestoreGState(cg_context);
+
+  CGGradientRelease(gradient);
+  CGColorSpaceRelease(colorSpace);
 }
