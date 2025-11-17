@@ -345,6 +345,10 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
     iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", (int)x1, (int)y1, (int)x2-1, (int)y2-1);
     iupAttribSet(ih, "CAIRO_CR", (char*)cr);
 
+    /* Store width/height so IupDraw can use them without triggering CSS recalculation */
+    iupAttribSetInt(ih, "_IUPGTK4_DRAW_WIDTH", width);
+    iupAttribSetInt(ih, "_IUPGTK4_DRAW_HEIGHT", height);
+
     cb(ih);
 
     iupAttribSet(ih, "CLIPRECT", NULL);

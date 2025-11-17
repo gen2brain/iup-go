@@ -837,7 +837,6 @@ void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HWND", iupBaseGetWidAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HDC_WMPAINT", NULL, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HTTRANSPARENT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWUSEDIRECT2D", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWANTIALIAS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", iupwinGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);

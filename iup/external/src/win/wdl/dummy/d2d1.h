@@ -210,6 +210,13 @@ struct dummy_D2D1_ELLIPSE_tag {
     FLOAT radiusY;
 };
 
+typedef struct dummy_D2D1_ROUNDED_RECT_tag dummy_D2D1_ROUNDED_RECT;
+struct dummy_D2D1_ROUNDED_RECT_tag {
+    dummy_D2D1_RECT_F rect;
+    FLOAT radiusX;
+    FLOAT radiusY;
+};
+
 typedef struct dummy_D2D1_FACTORY_OPTIONS_tag dummy_D2D1_FACTORY_OPTIONS;
 struct dummy_D2D1_FACTORY_OPTIONS_tag {
     dummy_D2D1_DEBUG_LEVEL debugLevel;
@@ -947,8 +954,8 @@ struct dummy_ID2D1RenderTargetVtbl_tag {
     STDMETHOD_(void, DrawLine)(dummy_ID2D1RenderTarget*, dummy_D2D1_POINT_2F, dummy_D2D1_POINT_2F, dummy_ID2D1Brush*, FLOAT, dummy_ID2D1StrokeStyle*);
     STDMETHOD_(void, DrawRectangle)(dummy_ID2D1RenderTarget*, const dummy_D2D1_RECT_F*, dummy_ID2D1Brush*, FLOAT, dummy_ID2D1StrokeStyle*);
     STDMETHOD_(void, FillRectangle)(dummy_ID2D1RenderTarget*, const dummy_D2D1_RECT_F*, dummy_ID2D1Brush*);
-    STDMETHOD(dummy_DrawRoundedRectangle)(void);
-    STDMETHOD(dummy_FillRoundedRectangle)(void);
+    STDMETHOD_(void, DrawRoundedRectangle)(dummy_ID2D1RenderTarget*, const dummy_D2D1_ROUNDED_RECT*, dummy_ID2D1Brush*, FLOAT, dummy_ID2D1StrokeStyle*);
+    STDMETHOD_(void, FillRoundedRectangle)(dummy_ID2D1RenderTarget*, const dummy_D2D1_ROUNDED_RECT*, dummy_ID2D1Brush*);
     STDMETHOD_(void, DrawEllipse)(dummy_ID2D1RenderTarget*, const dummy_D2D1_ELLIPSE*, dummy_ID2D1Brush*, FLOAT, dummy_ID2D1StrokeStyle*);
     STDMETHOD_(void, FillEllipse)(dummy_ID2D1RenderTarget*, const dummy_D2D1_ELLIPSE*, dummy_ID2D1Brush*);
     STDMETHOD_(void, DrawGeometry)(dummy_ID2D1RenderTarget*, dummy_ID2D1Geometry*, dummy_ID2D1Brush*, FLOAT, dummy_ID2D1StrokeStyle*);
@@ -1002,6 +1009,8 @@ struct dummy_ID2D1RenderTarget_tag {
 #define dummy_ID2D1RenderTarget_DrawLine(self,a,b,c,d,e)                (self)->vtbl->DrawLine(self,a,b,c,d,e)
 #define dummy_ID2D1RenderTarget_DrawRectangle(self,a,b,c,d)             (self)->vtbl->DrawRectangle(self,a,b,c,d)
 #define dummy_ID2D1RenderTarget_FillRectangle(self,a,b)                 (self)->vtbl->FillRectangle(self,a,b)
+#define dummy_ID2D1RenderTarget_DrawRoundedRectangle(self,a,b,c,d)     (self)->vtbl->DrawRoundedRectangle(self,a,b,c,d)
+#define dummy_ID2D1RenderTarget_FillRoundedRectangle(self,a,b)         (self)->vtbl->FillRoundedRectangle(self,a,b)
 #define dummy_ID2D1RenderTarget_DrawEllipse(self,a,b,c,d)               (self)->vtbl->DrawEllipse(self,a,b,c,d)
 #define dummy_ID2D1RenderTarget_FillEllipse(self,a,b)                   (self)->vtbl->FillEllipse(self,a,b)
 #define dummy_ID2D1RenderTarget_DrawGeometry(self,a,b,c,d)              (self)->vtbl->DrawGeometry(self,a,b,c,d)

@@ -533,6 +533,69 @@ extern "C" void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count,
 }
 
 /****************************************************************************
+ * Pixel Draw
+ ****************************************************************************/
+
+extern "C" void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  QColor qcolor;
+  qtDrawGetColor(color, qcolor);
+
+  dc->painter->setPen(qcolor);
+  dc->painter->drawPoint(x, y);
+}
+
+/****************************************************************************
+ * Rounded Rectangle Draw
+ ****************************************************************************/
+
+extern "C" void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1,
+                                            int x2, int y2, int corner_radius,
+                                            long color, int style, int line_width)
+{
+  if (!dc || !dc->painter)
+    return;
+
+  QColor qcolor;
+  qtDrawGetColor(color, qcolor);
+
+  /* Ensure coordinates are properly ordered */
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Clamp radius to prevent oversized corners */
+  int max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2 : (y2 - y1) / 2;
+  if (corner_radius > max_radius)
+    corner_radius = max_radius;
+
+  /* Calculate dimensions */
+  int width = x2 - x1 + 1;
+  int height = y2 - y1 + 1;
+
+  if (style == IUP_DRAW_FILL)
+  {
+    /* Filled rounded rectangle */
+    dc->painter->setPen(Qt::NoPen);
+    dc->painter->setBrush(qcolor);
+    dc->painter->drawRoundedRect(x1, y1, width, height, corner_radius, corner_radius);
+  }
+  else
+  {
+    /* Stroke rounded rectangle */
+    QPen pen(qcolor);
+    pen.setWidth(line_width);
+    pen.setStyle(Qt::SolidLine);
+
+    dc->painter->setPen(pen);
+    dc->painter->setBrush(Qt::NoBrush);
+    dc->painter->drawRoundedRect(x1, y1, width, height, corner_radius, corner_radius);
+  }
+}
+
+/****************************************************************************
  * Polyline Draw (not closed)
  ****************************************************************************/
 

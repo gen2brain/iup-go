@@ -187,3 +187,38 @@ wdDrawRectStyled(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
         gdix_vtable->fn_DrawRectangle(c->graphics, c->pen, x0, y0, x1 - x0, y1 - y0);
     }
 }
+
+void
+wdDrawRoundedRectStyled(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
+                        float x0, float y0, float x1, float y1, float r, float fStrokeWidth, WD_HSTROKESTYLE hStrokeStyle)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
+        dummy_ID2D1Brush* b = (dummy_ID2D1Brush*) hBrush;
+        dummy_ID2D1StrokeStyle* s = (dummy_ID2D1StrokeStyle*)hStrokeStyle;
+        dummy_D2D1_ROUNDED_RECT rr;
+
+        rr.rect.left = x0;
+        rr.rect.top = y0;
+        rr.rect.right = x1;
+        rr.rect.bottom = y1;
+        rr.radiusX = r;
+        rr.radiusY = r;
+
+        dummy_ID2D1RenderTarget_DrawRoundedRectangle(c->target, &rr, b, fStrokeWidth, s);
+    } else {
+        /* GDI+ doesn't have native rounded rectangle, use path */
+        gdix_canvas_t* c = (gdix_canvas_t*) hCanvas;
+        gdix_strokestyle_t* s = (gdix_strokestyle_t*)hStrokeStyle;
+        dummy_GpBrush* b = (dummy_GpBrush*)hBrush;
+        WD_RECT rect = { x0, y0, x1, y1 };
+        WD_HPATH path;
+
+        path = wdCreateRoundedRectPath(hCanvas, &rect, r);
+        if(path != NULL) {
+            gdix_setpen(c->pen, b, fStrokeWidth, s);
+            gdix_vtable->fn_DrawPath(c->graphics, (void*)c->pen, (void*)path);
+            wdDestroyPath(path);
+        }
+    }
+}

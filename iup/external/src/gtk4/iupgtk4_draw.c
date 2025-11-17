@@ -39,16 +39,22 @@ struct _IdrawCanvas
 IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
-  cairo_surface_t* surface;
   cairo_surface_t* buffer;
 
   dc->ih = ih;
 
-  dc->widget = (GtkWidget*)IupGetAttribute(ih, "WID");
+  /* Use ih->handle directly instead of WID attribute to avoid dangling pointers */
+  dc->widget = (GtkWidget*)ih->handle;
 
-  dc->w = gtk_widget_get_allocated_width(dc->widget);
-  dc->h = gtk_widget_get_allocated_height(dc->widget);
+  /* Use stored width/height from gtk4CanvasDraw instead of calling
+   * gtk_widget_get_allocated_width() which triggers CSS recalculation and
+   * frees the style object that GTK is currently using for rendering. */
+  dc->w = iupAttribGetInt(ih, "_IUPGTK4_DRAW_WIDTH");
+  dc->h = iupAttribGetInt(ih, "_IUPGTK4_DRAW_HEIGHT");
 
+  /* Fallback for calls outside ACTION callback */
+  if (dc->w == 0) dc->w = gtk_widget_get_allocated_width(dc->widget);
+  if (dc->h == 0) dc->h = gtk_widget_get_allocated_height(dc->widget);
 
   /* Check if we have persistent offscreen buffer */
   buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
@@ -71,19 +77,11 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     iupAttribSet(ih, "_IUPGTK4_CANVAS_BUFFER", (char*)buffer);
   }
 
-  /* Valid only inside the ACTION callback of an IupCanvas */
-  dc->cr = (cairo_t*)IupGetAttribute(ih, "CAIRO_CR");
-  if (!dc->cr)
-  {
-    /* Outside ACTION callback - draw to persistent buffer */
-    dc->cr = cairo_create(buffer);
-    dc->release_cr = 1;
-  }
-
-  /* Create image surface for double-buffering the current operation */
-  surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-  dc->image_cr = cairo_create(surface);
-  cairo_surface_destroy(surface);
+  /* Always draw to our persistent image buffer first.
+   * We copy the buffer to GTK's recording surface in DrawFlush. */
+  dc->cr = cairo_create(buffer);
+  dc->image_cr = dc->cr;
+  dc->release_cr = 1;
 
   iupAttribSet(ih, "DRAWDRIVER", "CAIRO");
 
@@ -92,7 +90,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
-  cairo_destroy(dc->image_cr);
+  /* We always create our own cairo context from the image buffer */
   if (dc->release_cr)
     cairo_destroy(dc->cr);
 
@@ -108,39 +106,39 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
   if (w != dc->w || h != dc->h)
   {
-    cairo_surface_t* surface;
-
     dc->w = w;
     dc->h = h;
-
-    cairo_destroy(dc->image_cr);
-
-    surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-    dc->image_cr = cairo_create(surface);
-    cairo_surface_destroy(surface);
   }
 }
 
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   cairo_surface_t* buffer;
+  cairo_t* gtk_cr;
 
-  /* Reset clip on image buffer to ensure clean state for next frame */
+  /* Reset clip to ensure clean state */
   iupdrvDrawResetClip(dc);
 
-  /* Copy the image buffer to the target surface */
-  cairo_set_source_surface(dc->cr, cairo_get_target(dc->image_cr), 0, 0);
-  cairo_set_operator(dc->cr, CAIRO_OPERATOR_SOURCE);
-  cairo_paint(dc->cr);  /* paints the entire source surface */
+  /* Flush our image buffer */
+  buffer = (cairo_surface_t*)iupAttribGet(dc->ih, "_IUPGTK4_CANVAS_BUFFER");
+  if (buffer)
+    cairo_surface_flush(buffer);
 
-  /* If drawing to persistent buffer (outside ACTION), trigger widget repaint */
-  if (dc->release_cr)
+  /* If we're inside ACTION callback, copy our buffer to GTK's recording surface */
+  gtk_cr = (cairo_t*)IupGetAttribute(dc->ih, "CAIRO_CR");
+  if (gtk_cr && buffer)
   {
-    buffer = (cairo_surface_t*)iupAttribGet(dc->ih, "_IUPGTK4_CANVAS_BUFFER");
-    if (buffer)
-      cairo_surface_flush(buffer);
+    /* Copy our image surface to GTK's recording surface */
+    cairo_set_source_surface(gtk_cr, buffer, 0, 0);
+    cairo_paint(gtk_cr);
 
-    /* Trigger widget repaint to copy buffer to screen (in ACTION callback) */
+    /* Clear the source pattern to release the surface reference.
+     * cairo_set_source_surface() creates a pattern that holds a reference to the buffer. */
+    cairo_set_source_rgb(gtk_cr, 0, 0, 0);
+  }
+  else
+  {
+    /* Outside ACTION callback - trigger widget repaint */
     gtk_widget_queue_draw(dc->widget);
   }
 }
@@ -372,6 +370,70 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
     cairo_stroke(dc->image_cr);
 }
 
+IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
+{
+  cairo_set_source_rgba(dc->image_cr,
+    iupgtk4ColorToDouble(iupDrawRed(color)),
+    iupgtk4ColorToDouble(iupDrawGreen(color)),
+    iupgtk4ColorToDouble(iupDrawBlue(color)),
+    iupgtk4ColorToDouble(iupDrawAlpha(color)));
+
+  cairo_new_path(dc->image_cr);
+  cairo_rectangle(dc->image_cr, x, y, 1, 1);
+  cairo_fill(dc->image_cr);
+}
+
+IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
+                                             int corner_radius, long color, int style, int line_width)
+{
+  double radius = (double)corner_radius;
+  double degrees = IUP_DEG2RAD;
+
+  cairo_set_source_rgba(dc->image_cr,
+    iupgtk4ColorToDouble(iupDrawRed(color)),
+    iupgtk4ColorToDouble(iupDrawGreen(color)),
+    iupgtk4ColorToDouble(iupDrawBlue(color)),
+    iupgtk4ColorToDouble(iupDrawAlpha(color)));
+
+  if (style != IUP_DRAW_FILL)
+  {
+    iDrawSetLineWidth(dc, line_width);
+    iDrawSetLineStyle(dc, style);
+  }
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Clamp radius to half of smallest dimension */
+  double max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2.0 : (y2 - y1) / 2.0;
+  if (radius > max_radius)
+    radius = max_radius;
+
+  cairo_new_path(dc->image_cr);
+
+  /* Top-right corner */
+  cairo_arc(dc->image_cr, x2 - radius, y1 + radius, radius, -90 * degrees, 0);
+
+  /* Right side + bottom-right corner */
+  cairo_line_to(dc->image_cr, x2, y2 - radius);
+  cairo_arc(dc->image_cr, x2 - radius, y2 - radius, radius, 0, 90 * degrees);
+
+  /* Bottom side + bottom-left corner */
+  cairo_line_to(dc->image_cr, x1 + radius, y2);
+  cairo_arc(dc->image_cr, x1 + radius, y2 - radius, radius, 90 * degrees, 180 * degrees);
+
+  /* Left side + top-left corner */
+  cairo_line_to(dc->image_cr, x1, y1 + radius);
+  cairo_arc(dc->image_cr, x1 + radius, y1 + radius, radius, 180 * degrees, 270 * degrees);
+
+  cairo_close_path(dc->image_cr);
+
+  if (style == IUP_DRAW_FILL)
+    cairo_fill(dc->image_cr);
+  else
+    cairo_stroke(dc->image_cr);
+}
+
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
 {
   if (x1) *x1 = dc->clip_x1;
@@ -394,6 +456,7 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
 
   iupdrvDrawResetClip(dc);
 
+  cairo_new_path(dc->image_cr);
   cairo_rectangle(dc->image_cr, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   cairo_clip(dc->image_cr);  /* intersect with the current clipping */
 
@@ -450,6 +513,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   if (flags & IUP_DRAW_CLIP)
   {
     cairo_save(dc->image_cr);
+    cairo_new_path(dc->image_cr);
     cairo_rectangle(dc->image_cr, x, y, w, h);
     cairo_clip(dc->image_cr); /* intersect with the current clipping */
   }
@@ -519,6 +583,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
   cairo_save (dc->image_cr);
 
+  cairo_new_path(dc->image_cr);
   cairo_rectangle(dc->image_cr, x, y, w, h);
   cairo_clip(dc->image_cr); /* intersect with the current clipping */
 

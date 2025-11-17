@@ -430,6 +430,9 @@ void wdDrawPathStyled(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
 void wdDrawRectStyled(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
                 float x0, float y0, float x1, float y1, float fStrokeWidth,
                 WD_HSTROKESTYLE hStrokeStyle);
+void wdDrawRoundedRectStyled(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
+                float x0, float y0, float x1, float y1, float r, float fStrokeWidth,
+                WD_HSTROKESTYLE hStrokeStyle);
 
 WD_INLINE void wdDrawArcStyled(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
                 float cx, float cy, float r,
@@ -532,6 +535,8 @@ void wdFillEllipsePie(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
 void wdFillPath(WD_HCANVAS hCanvas, WD_HBRUSH hBrush, const WD_HPATH hPath);
 void wdFillRect(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
                 float x0, float y0, float x1, float y1);
+void wdFillRoundedRect(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
+                float x0, float y0, float x1, float y1, float r);
 
 WD_INLINE void wdFillCircle(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
                 float cx, float cy, float r)

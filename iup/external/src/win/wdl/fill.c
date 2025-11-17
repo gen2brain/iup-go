@@ -111,3 +111,34 @@ wdFillRect(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
     }
 }
 
+void
+wdFillRoundedRect(WD_HCANVAS hCanvas, WD_HBRUSH hBrush,
+                  float x0, float y0, float x1, float y1, float r)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
+        dummy_ID2D1Brush* b = (dummy_ID2D1Brush*) hBrush;
+        dummy_D2D1_ROUNDED_RECT rr;
+
+        rr.rect.left = x0;
+        rr.rect.top = y0;
+        rr.rect.right = x1;
+        rr.rect.bottom = y1;
+        rr.radiusX = r;
+        rr.radiusY = r;
+
+        dummy_ID2D1RenderTarget_FillRoundedRectangle(c->target, &rr, b);
+    } else {
+        /* GDI+ doesn't have native rounded rectangle, use path */
+        gdix_canvas_t* c = (gdix_canvas_t*) hCanvas;
+        WD_RECT rect = { x0, y0, x1, y1 };
+        WD_HPATH path;
+
+        path = wdCreateRoundedRectPath(hCanvas, &rect, r);
+        if(path != NULL) {
+            gdix_vtable->fn_FillPath(c->graphics, (void*) hBrush, (void*) path);
+            wdDestroyPath(path);
+        }
+    }
+}
+

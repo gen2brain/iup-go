@@ -464,10 +464,61 @@ void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int 
   for (int i = 1; i < count; i++)
     CGContextAddLineToPoint(cg_context, (CGFloat)points[2*i], (CGFloat)points[2*i+1]);
 
+  CGContextClosePath(cg_context);  /* Close polygon by connecting last point to first */
+
   if (style == IUP_DRAW_FILL)
     CGContextFillPath(cg_context);
   else
     CGContextStrokePath(cg_context);
+}
+
+void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
+{
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorRef the_color = iupCocoaDrawCreateColor(color);
+
+  CGContextSetFillColorWithColor(cg_context, the_color);
+  CGContextFillRect(cg_context, CGRectMake((CGFloat)x, (CGFloat)y, 1.0, 1.0));
+}
+
+void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
+{
+  CGContextRef cg_context = dc->image_cgContext;
+  CGColorRef the_color = iupCocoaDrawCreateColor(color);
+  CGFloat radius = (CGFloat)corner_radius;
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Clamp radius to prevent oversized corners */
+  CGFloat max_radius = ((x2 - x1) < (y2 - y1)) ? (CGFloat)(x2 - x1) / 2.0f : (CGFloat)(y2 - y1) / 2.0f;
+  if (radius > max_radius)
+    radius = max_radius;
+
+  /* Set color and line properties */
+  if (style == IUP_DRAW_FILL)
+    CGContextSetFillColorWithColor(cg_context, the_color);
+  else
+  {
+    CGContextSetStrokeColorWithColor(cg_context, the_color);
+    CGContextSetLineWidth(cg_context, (CGFloat)line_width);
+    iupCocoaSetLineStyle(cg_context, style);
+  }
+
+  /* Create rounded rectangle path */
+  CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, (CGFloat)(x2 - x1 + 1), (CGFloat)(y2 - y1 + 1));
+  CGPathRef path = CGPathCreateWithRoundedRect(rect, radius, radius, NULL);
+
+  /* Draw the path */
+  CGContextBeginPath(cg_context);
+  CGContextAddPath(cg_context, path);
+
+  if (style == IUP_DRAW_FILL)
+    CGContextFillPath(cg_context);
+  else
+    CGContextStrokePath(cg_context);
+
+  CGPathRelease(path);
 }
 
 void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)

@@ -230,9 +230,110 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   }
 
   if (style == IUP_DRAW_FILL)
+  {
     gdk_draw_polygon(dc->pixmap, dc->pixmap_gc, TRUE, (GdkPoint*)points, count);
+  }
   else
-    gdk_draw_lines(dc->pixmap, dc->pixmap_gc, (GdkPoint*)points, count);
+  {
+    /* For stroked polygons, need to close the path by adding first point at the end */
+    GdkPoint* closed_points;
+    int use_heap = 0;
+    GdkPoint stack_points[256];
+
+    if (count + 1 <= 256)
+      closed_points = stack_points;
+    else
+    {
+      closed_points = (GdkPoint*)malloc((count + 1) * sizeof(GdkPoint));
+      use_heap = 1;
+    }
+
+    /* Copy all points */
+    memcpy(closed_points, points, count * sizeof(GdkPoint));
+    /* Add first point at the end to close the polygon */
+    closed_points[count] = closed_points[0];
+
+    gdk_draw_lines(dc->pixmap, dc->pixmap_gc, closed_points, count + 1);
+
+    if (use_heap)
+      free(closed_points);
+  }
+}
+
+IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
+{
+  GdkColor c;
+  iupgdkColorSet(&c, color);
+  gdk_gc_set_rgb_fg_color(dc->pixmap_gc, &c);
+
+  gdk_draw_point(dc->pixmap, dc->pixmap_gc, x, y);
+}
+
+IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
+{
+  GdkColor c;
+  int diameter;
+
+  iupgdkColorSet(&c, color);
+  gdk_gc_set_rgb_fg_color(dc->pixmap_gc, &c);
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Clamp radius to prevent oversized corners */
+  int max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2 : (y2 - y1) / 2;
+  if (corner_radius > max_radius)
+    corner_radius = max_radius;
+
+  diameter = corner_radius * 2;
+
+  if (style != IUP_DRAW_FILL)
+  {
+    iDrawSetLineWidth(dc, line_width);
+    iDrawSetLineStyle(dc, style);
+  }
+
+  if (style == IUP_DRAW_FILL)
+  {
+    /* Fill rounded rectangle by drawing filled arcs and rectangles */
+    /* Top-right arc */
+    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, TRUE, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
+    /* Bottom-right arc */
+    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, TRUE, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
+    /* Bottom-left arc */
+    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, TRUE, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
+    /* Top-left arc */
+    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, TRUE, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
+
+    /* Fill center rectangle */
+    gdk_draw_rectangle(dc->pixmap, dc->pixmap_gc, TRUE, x1 + corner_radius, y1, x2 - x1 - diameter + 1, y2 - y1 + 1);
+    /* Fill left rectangle */
+    gdk_draw_rectangle(dc->pixmap, dc->pixmap_gc, TRUE, x1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
+    /* Fill right rectangle */
+    gdk_draw_rectangle(dc->pixmap, dc->pixmap_gc, TRUE, x2 - corner_radius + 1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
+  }
+  else
+  {
+    /* Draw rounded rectangle by drawing arcs and lines */
+    /* Top-right arc */
+    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, FALSE, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
+    /* Bottom-right arc */
+    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, FALSE, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
+    /* Bottom-left arc */
+    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, FALSE, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
+    /* Top-left arc */
+    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, FALSE, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
+
+    /* Draw connecting lines */
+    /* Top line */
+    gdk_draw_line(dc->pixmap, dc->pixmap_gc, x1 + corner_radius, y1, x2 - corner_radius, y1);
+    /* Right line */
+    gdk_draw_line(dc->pixmap, dc->pixmap_gc, x2, y1 + corner_radius, x2, y2 - corner_radius);
+    /* Bottom line */
+    gdk_draw_line(dc->pixmap, dc->pixmap_gc, x2 - corner_radius, y2, x1 + corner_radius, y2);
+    /* Left line */
+    gdk_draw_line(dc->pixmap, dc->pixmap_gc, x1, y2 - corner_radius, x1, y1 + corner_radius);
+  }
 }
 
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
