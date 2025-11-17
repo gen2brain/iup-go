@@ -63,6 +63,14 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width);
 
+/** Draws a single pixel.
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color);
+
+/** Draws a filled/hollow rounded rectangle.
+ * \ingroup drvdraw */
+IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width);
+
 #define IUP_DRAW_LEFT     0x0000
 #define IUP_DRAW_CENTER   0x0001
 #define IUP_DRAW_RIGHT    0x0002

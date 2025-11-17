@@ -375,6 +375,73 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
     free(pnt);
 }
 
+IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
+{
+  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+  XDrawPoint(iupmot_display, dc->pixmap, dc->pixmap_gc, x, y);
+}
+
+IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
+{
+  int diameter;
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Clamp radius to prevent oversized corners */
+  int max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2 : (y2 - y1) / 2;
+  if (corner_radius > max_radius)
+    corner_radius = max_radius;
+
+  diameter = corner_radius * 2;
+
+  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+
+  if (style == IUP_DRAW_FILL)
+  {
+    /* Fill rounded rectangle by drawing filled arcs and rectangles */
+    /* Top-right arc */
+    XFillArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
+    /* Bottom-right arc */
+    XFillArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
+    /* Bottom-left arc */
+    XFillArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
+    /* Top-left arc */
+    XFillArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
+
+    /* Fill center rectangle */
+    XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x1 + corner_radius, y1, x2 - x1 - diameter + 1, y2 - y1 + 1);
+    /* Fill left rectangle */
+    XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
+    /* Fill right rectangle */
+    XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - corner_radius + 1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
+  }
+  else
+  {
+    iDrawSetLineStyleAndWidth(dc, style, line_width);
+
+    /* Draw rounded rectangle by drawing arcs and lines */
+    /* Top-right arc */
+    XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
+    /* Bottom-right arc */
+    XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
+    /* Bottom-left arc */
+    XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
+    /* Top-left arc */
+    XDrawArc(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
+
+    /* Draw connecting lines */
+    /* Top line */
+    XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x1 + corner_radius, y1, x2 - corner_radius, y1);
+    /* Right line */
+    XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x2, y1 + corner_radius, x2, y2 - corner_radius);
+    /* Bottom line */
+    XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x2 - corner_radius, y2, x1 + corner_radius, y2);
+    /* Left line */
+    XDrawLine(iupmot_display, dc->pixmap, dc->pixmap_gc, x1, y2 - corner_radius, x1, y1 + corner_radius);
+  }
+}
+
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
 {
   if (x1) *x1 = dc->clip_x1;

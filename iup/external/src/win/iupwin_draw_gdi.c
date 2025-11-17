@@ -40,6 +40,8 @@ void iupdrvDrawLineWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long col
 void iupdrvDrawRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width);
 void iupdrvDrawArcWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width);
 void iupdrvDrawPolygonWDL(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width);
+void iupdrvDrawPixelWDL(IdrawCanvas* dc, int x, int y, long color);
+void iupdrvDrawRoundedRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width);
 void iupdrvDrawTextWDL(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation);
 void iupdrvDrawImageWDL(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h);
 void iupdrvDrawSetClipRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2);
@@ -88,12 +90,12 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   dc->ih = ih;
 
-  if (iupAttribGetBoolean(ih, "DRAWUSEDIRECT2D") || IupGetInt(NULL, "DRAWUSEDIRECT2D"))
-  {
-    dc->wdl_gc = iupdrvDrawCreateCanvasWDL(ih);
+  /* Try WDL first (Direct2D with automatic GDI+ fallback), if that fails use GDI */
+  dc->wdl_gc = iupdrvDrawCreateCanvasWDL(ih);
+  if (dc->wdl_gc)
     return dc;
-  }
 
+  /* WDL not available, fallback to GDI */
   dc->hWnd = (HWND)IupGetAttribute(ih, "HWND");  /* Use the attribute, so it can work with FileDlg preview area */
 
   /* valid only inside the ACTION callback of an IupCanvas */
@@ -580,7 +582,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   {
     HBRUSH hBrush = CreateSolidBrush(RGB(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
     HBRUSH hBrushOld = SelectObject(dc->hBitmapDC, hBrush);
-    BeginPath(dc->hBitmapDC); 
+    BeginPath(dc->hBitmapDC);
     Polygon(dc->hBitmapDC, (POINT*)points, count);
     EndPath(dc->hBitmapDC);
     FillPath(dc->hBitmapDC);
@@ -589,9 +591,79 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   }
   else
   {
+    /* For stroked polygons, need to close the path by adding first point at the end */
+    POINT* closed_points;
+    int use_heap = 0;
+    POINT stack_points[256];
+
+    if (count + 1 <= 256)
+      closed_points = stack_points;
+    else
+    {
+      closed_points = (POINT*)malloc((count + 1) * sizeof(POINT));
+      use_heap = 1;
+    }
+
+    /* Copy all points */
+    memcpy(closed_points, points, count * sizeof(POINT));
+    /* Add first point at the end to close the polygon */
+    closed_points[count] = closed_points[0];
+
     HPEN hPen = iDrawCreatePen(color, style, line_width);
     HPEN hPenOld = SelectObject(dc->hBitmapDC, hPen);
-    Polyline(dc->hBitmapDC, (POINT*)points, count);
+    Polyline(dc->hBitmapDC, closed_points, count + 1);
+    SelectObject(dc->hBitmapDC, hPenOld);
+    DeleteObject(hPen);
+
+    if (use_heap)
+      free(closed_points);
+  }
+}
+
+IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
+{
+  if (dc->wdl_gc)
+  {
+    iupdrvDrawPixelWDL(dc->wdl_gc, x, y, color);
+    return;
+  }
+
+  /* Basic GDI fallback - just set pixel */
+  SetPixel(dc->hBitmapDC, x, y, RGB(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+}
+
+IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
+{
+  if (dc->wdl_gc)
+  {
+    iupdrvDrawRoundedRectangleWDL(dc->wdl_gc, x1, y1, x2, y2, corner_radius, color, style, line_width);
+    return;
+  }
+
+  /* Basic GDI fallback - use RoundRect */
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  if (style == IUP_DRAW_FILL)
+  {
+    HBRUSH hBrush = CreateSolidBrush(RGB(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+    HBRUSH hBrushOld = SelectObject(dc->hBitmapDC, hBrush);
+    HPEN hPen = CreatePen(PS_NULL, 0, 0);
+    HPEN hPenOld = SelectObject(dc->hBitmapDC, hPen);
+    RoundRect(dc->hBitmapDC, x1, y1, x2 + 1, y2 + 1, corner_radius * 2, corner_radius * 2);
+    SelectObject(dc->hBitmapDC, hPenOld);
+    SelectObject(dc->hBitmapDC, hBrushOld);
+    DeleteObject(hPen);
+    DeleteObject(hBrush);
+  }
+  else
+  {
+    HPEN hPen = iDrawCreatePen(color, style, line_width);
+    HPEN hPenOld = SelectObject(dc->hBitmapDC, hPen);
+    HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    HBRUSH hBrushOld = SelectObject(dc->hBitmapDC, hBrush);
+    RoundRect(dc->hBitmapDC, x1, y1, x2 + 1, y2 + 1, corner_radius * 2, corner_radius * 2);
+    SelectObject(dc->hBitmapDC, hBrushOld);
     SelectObject(dc->hBitmapDC, hPenOld);
     DeleteObject(hPen);
   }

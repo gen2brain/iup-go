@@ -417,6 +417,62 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
     cairo_stroke(dc->image_cr);
 }
 
+IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
+{
+  cairo_set_source_rgba(dc->image_cr,
+                        iupgtkColorToDouble(iupDrawRed(color)),
+                        iupgtkColorToDouble(iupDrawGreen(color)),
+                        iupgtkColorToDouble(iupDrawBlue(color)),
+                        iupgtkColorToDouble(iupDrawAlpha(color)));
+
+  cairo_new_path(dc->image_cr);
+  cairo_rectangle(dc->image_cr, x, y, 1, 1);
+  cairo_fill(dc->image_cr);
+}
+
+IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
+{
+  double radius = (double)corner_radius;
+  double degrees = IUP_DEG2RAD;
+
+  /* Set color */
+  cairo_set_source_rgba(dc->image_cr,
+                        iupgtkColorToDouble(iupDrawRed(color)),
+                        iupgtkColorToDouble(iupDrawGreen(color)),
+                        iupgtkColorToDouble(iupDrawBlue(color)),
+                        iupgtkColorToDouble(iupDrawAlpha(color)));
+
+  /* Set line style for stroked rectangles */
+  if (style != IUP_DRAW_FILL)
+  {
+    iDrawSetLineWidth(dc, line_width);
+    iDrawSetLineStyle(dc, style);
+  }
+
+  /* Clamp radius to prevent oversized corners */
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+  double max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2.0 : (y2 - y1) / 2.0;
+  if (radius > max_radius)
+    radius = max_radius;
+
+  /* Draw path with rounded corners */
+  cairo_new_path(dc->image_cr);
+  cairo_arc(dc->image_cr, x2 - radius, y1 + radius, radius, -90 * degrees, 0 * degrees);
+  cairo_line_to(dc->image_cr, x2, y2 - radius);
+  cairo_arc(dc->image_cr, x2 - radius, y2 - radius, radius, 0 * degrees, 90 * degrees);
+  cairo_line_to(dc->image_cr, x1 + radius, y2);
+  cairo_arc(dc->image_cr, x1 + radius, y2 - radius, radius, 90 * degrees, 180 * degrees);
+  cairo_line_to(dc->image_cr, x1, y1 + radius);
+  cairo_arc(dc->image_cr, x1 + radius, y1 + radius, radius, 180 * degrees, 270 * degrees);
+  cairo_close_path(dc->image_cr);
+
+  if (style == IUP_DRAW_FILL)
+    cairo_fill(dc->image_cr);
+  else
+    cairo_stroke(dc->image_cr);
+}
+
 IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
 {
   if (x1) *x1 = dc->clip_x1;
@@ -439,6 +495,7 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
 
   iupdrvDrawResetClip(dc);
 
+  cairo_new_path(dc->image_cr);
   cairo_rectangle(dc->image_cr, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   cairo_clip(dc->image_cr);  /* intersect with the current clipping */
 
@@ -503,6 +560,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   if (flags & IUP_DRAW_CLIP)
   {
     cairo_save(dc->image_cr);
+    cairo_new_path(dc->image_cr);
     cairo_rectangle(dc->image_cr, x, y, w, h);
     cairo_clip(dc->image_cr); /* intersect with the current clipping */
   }

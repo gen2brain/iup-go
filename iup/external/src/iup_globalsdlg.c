@@ -52,7 +52,6 @@ static iRegisteredGlobal global_attribs[] = {
   { "DLGBGCOLOR", 1, 1, 1, 1, 1, 0 },
   { "DLGFGCOLOR", 1, 1, 1, 1, 1, 0 },
   { "DLL_HINSTANCE", 1, 0, 0, 0, 0, 1 },
-  { "DRAWUSEDIRECT2D", 1, 0, 0, 0, 0, 0 },
   { "DRIVER", 1, 1, 1, 1, 1, 1 },
   { "DWM_COMPOSITION", 1, 0, 0, 0, 0, 1 },
   { "EXEFILENAME", 1, 1, 1, 1, 1, 1 },

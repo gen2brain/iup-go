@@ -197,6 +197,46 @@ IUP_API void IupDrawPolygon(Ihandle* ih, int* points, int count)
   iupdrvDrawPolygon(dc, points, count, color, style, line_width);
 }
 
+IUP_API void IupDrawPixel(Ihandle* ih, int x, int y)
+{
+  IdrawCanvas* dc;
+  long color = 0;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+  if (!dc)
+    return;
+
+  color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
+
+  iupdrvDrawPixel(dc, x, y, color);
+}
+
+IUP_API void IupDrawRoundedRectangle(Ihandle* ih, int x1, int y1, int x2, int y2, int corner_radius)
+{
+  IdrawCanvas* dc;
+  long color = 0;
+  int style, line_width;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return;
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+  if (!dc)
+    return;
+
+  color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
+
+  line_width = iDrawGetLineWidth(ih);
+  style = iDrawGetStyle(ih);
+
+  iupdrvDrawRoundedRectangle(dc, x1, y1, x2, y2, corner_radius, color, style, line_width);
+}
+
 static void iDrawRotatePoint(int x, int y, int *rx, int *ry, double sin_theta, double cos_theta)
 {
   double t;

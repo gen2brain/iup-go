@@ -92,6 +92,21 @@ func DrawPolygon(ih Ihandle, points []int, count int) {
 	C.IupDrawPolygon(ih.ptr(), &cPoints[0], C.int(count))
 }
 
+// DrawPixel draws a single pixel at the given position.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+func DrawPixel(ih Ihandle, x, y int) {
+	C.IupDrawPixel(ih.ptr(), C.int(x), C.int(y))
+}
+
+// DrawRoundedRectangle draws a rectangle with rounded corners.
+// The corner_radius parameter defines the radius of the corner arcs.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+func DrawRoundedRectangle(ih Ihandle, x1, y1, x2, y2, corner_radius int) {
+	C.IupDrawRoundedRectangle(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(corner_radius))
+}
+
 // DrawText draws a text in the given position using the font defined by DRAWFONT, if not defined then use FONT.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
