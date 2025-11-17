@@ -182,13 +182,9 @@ static void winSwitchCustomDraw(Ihandle* ih, HDC hDC, RECT* rect, UINT itemState
   WD_HBRUSH track_brush = wdCreateSolidBrush(canvas, track_color);
   WD_HBRUSH thumb_brush = wdCreateSolidBrush(canvas, thumb_color);
 
-  /* Use integer coordinates and slightly reduced radius for better anti-aliasing */
-  WD_RECT track_rect = { 1.0f, 1.0f, SWITCH_TRACK_WIDTH - 1.0f, SWITCH_TRACK_HEIGHT - 1.0f };
-  float radius = (SWITCH_TRACK_HEIGHT - 2.0f) / 2.0f;
-  WD_HPATH track_path = wdCreateRoundedRectPath(canvas, &track_rect, radius);
-
-  wdFillPath(canvas, track_brush, track_path);
-  wdDestroyPath(track_path);
+  /* Draw track using native Direct2D rounded rectangle (optimized, no path allocation) */
+  float radius = SWITCH_TRACK_HEIGHT / 2.0f;
+  wdFillRoundedRect(canvas, track_brush, 0.0f, 0.0f, (float)SWITCH_TRACK_WIDTH, (float)SWITCH_TRACK_HEIGHT, radius);
 
   /* WinUI 3: Thumb expands from 12x12 to 14x14 on hover */
   int thumb_size = switch_data->is_hovering ? 14 : SWITCH_THUMB_SIZE;
@@ -837,9 +833,11 @@ static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
 
       /* Store the new checked state */
       switch_data->checked_state = new_check;
-      winToggleSetCheck(ih, new_check);
 
-      /* Start animation */
+      /* Update the underlying button state (but this doesn't affect custom drawing) */
+      SendMessage(ih->handle, BM_SETCHECK, new_check, 0L);
+
+      /* Start animation (this triggers InvalidateRect internally) */
       if (switch_data)
         winSwitchStartAnimation(ih, switch_data, new_check);
 
@@ -849,9 +847,6 @@ static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
 
       if (iupObjectCheck(ih))
         iupBaseCallValueChangedCb(ih);
-
-      /* Redraw immediately */
-      InvalidateRect(ih->handle, NULL, FALSE);
     }
     *result = 0;
     return 1;
@@ -867,8 +862,12 @@ static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
 
 static void winToggleSwitchDrawItem(Ihandle* ih, DRAWITEMSTRUCT* dis)
 {
-  /* Clear background first */
-  iupwinDrawParentBackground(ih, dis->hDC, &dis->rcItem);
+  IupWinSwitchData* switch_data = (IupWinSwitchData*)iupAttribGet(ih, "_IUPWIN_SWITCHDATA");
+
+  /* Only clear background when not animating to prevent flashing */
+  /* During animation or rapid state changes, the opaque switch rendering handles everything */
+  if (!switch_data || !switch_data->is_animating)
+    iupwinDrawParentBackground(ih, dis->hDC, &dis->rcItem);
 
   /* Draw the switch control */
   winSwitchCustomDraw(ih, dis->hDC, &dis->rcItem, dis->itemState);
