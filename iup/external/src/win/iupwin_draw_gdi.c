@@ -46,10 +46,15 @@ void iupdrvDrawRoundedRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int 
 void iupdrvDrawTextWDL(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation);
 void iupdrvDrawImageWDL(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h);
 void iupdrvDrawSetClipRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2);
+void iupdrvDrawSetClipRoundedRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius);
 void iupdrvDrawResetClipWDL(IdrawCanvas* dc);
 void iupdrvDrawGetClipRectWDL(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2);
 void iupdrvDrawSelectRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2);
 void iupdrvDrawFocusRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2);
+void iupdrvDrawBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width);
+void iupdrvDrawQuadraticBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width);
+void iupdrvDrawLinearGradientWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2);
+void iupdrvDrawRadialGradientWDL(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge);
 
 struct _IdrawCanvas{
   Ihandle* ih;
@@ -851,6 +856,42 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
   dc->clip_y2 = y2;
 }
 
+IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
+{
+  HRGN clip_hrgn;
+
+  if (dc->wdl_gc)
+  {
+    iupdrvDrawSetClipRoundedRectWDL(dc->wdl_gc, x1, y1, x2, y2, corner_radius);
+    return;
+  }
+
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    iupdrvDrawResetClip(dc);
+    return;
+  }
+
+  /* make it an empty region */
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  /* Clamp radius to prevent oversized corners */
+  int max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2 : (y2 - y1) / 2;
+  if (corner_radius > max_radius)
+    corner_radius = max_radius;
+
+  /* Create rounded rectangle region for clipping */
+  clip_hrgn = CreateRoundRectRgn(x1, y1, x2 + 1, y2 + 1, corner_radius * 2, corner_radius * 2);
+  SelectClipRgn(dc->hBitmapDC, clip_hrgn);
+  DeleteObject(clip_hrgn);
+
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
+}
+
 static void gdiRotateWorld(HDC hDC, int xc, int yc, double angle)
 {
   XFORM xForm;
@@ -1013,4 +1054,118 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   SetTextColor(dc->hBitmapDC, RGB(0, 0, 0));
 
   DrawFocusRect(dc->hBitmapDC, &rect);
+}
+
+static long gdiInterpolateColor(long color1, long color2, float t)
+{
+  unsigned char r1 = iupDrawRed(color1), g1 = iupDrawGreen(color1), b1 = iupDrawBlue(color1), a1 = iupDrawAlpha(color1);
+  unsigned char r2 = iupDrawRed(color2), g2 = iupDrawGreen(color2), b2 = iupDrawBlue(color2), a2 = iupDrawAlpha(color2);
+  unsigned char r = (unsigned char)(r1 + t * (r2 - r1));
+  unsigned char g = (unsigned char)(g1 + t * (g2 - g1));
+  unsigned char b = (unsigned char)(b1 + t * (b2 - b1));
+  unsigned char a = (unsigned char)(a1 + t * (a2 - a1));
+  return iupDrawColor(r, g, b, a);
+}
+
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+{
+  if (dc->wdl_gc)
+  {
+    iupdrvDrawLinearGradientWDL(dc->wdl_gc, x1, y1, x2, y2, angle, color1, color2);
+    return;
+  }
+
+  /* GDI fallback - draw as series of filled rectangles */
+  {
+    int i, steps;
+    float t, dx, dy, length;
+    int px1, py1, px2, py2;
+    HBRUSH hBrush;
+    RECT rect;
+
+    iupDrawCheckSwapCoord(x1, x2);
+    iupDrawCheckSwapCoord(y1, y2);
+
+    /* Calculate gradient direction */
+    float rad = angle * 3.14159265359f / 180.0f;
+    dx = (float)cos(rad);
+    dy = (float)sin(rad);
+
+    /* Number of steps for smooth gradient */
+    length = (float)sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+    steps = (int)length;
+    if (steps < 2) steps = 2;
+    if (steps > 256) steps = 256;
+
+    /* Draw gradient strips */
+    for (i = 0; i < steps; i++)
+    {
+      t = (float)i / (float)(steps - 1);
+      long color = gdiInterpolateColor(color1, color2, t);
+      hBrush = CreateSolidBrush(RGB(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+
+      /* Calculate strip position */
+      if (fabs(dx) > fabs(dy))  /* More horizontal */
+      {
+        px1 = x1 + (int)(t * (x2 - x1));
+        px2 = x1 + (int)((t + 1.0f / steps) * (x2 - x1));
+        py1 = y1;
+        py2 = y2;
+      }
+      else  /* More vertical */
+      {
+        px1 = x1;
+        px2 = x2;
+        py1 = y1 + (int)(t * (y2 - y1));
+        py2 = y1 + (int)((t + 1.0f / steps) * (y2 - y1));
+      }
+
+      rect.left = px1;
+      rect.top = py1;
+      rect.right = px2 + 1;
+      rect.bottom = py2 + 1;
+      FillRect(dc->hBitmapDC, &rect, hBrush);
+      DeleteObject(hBrush);
+    }
+  }
+}
+
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+{
+  if (dc->wdl_gc)
+  {
+    iupdrvDrawRadialGradientWDL(dc->wdl_gc, cx, cy, radius, colorCenter, colorEdge);
+    return;
+  }
+
+  /* GDI fallback - draw as series of concentric circles */
+  {
+    int i, steps;
+    float t, r;
+    HBRUSH hBrush;
+    HPEN hPen;
+
+    /* Number of steps for smooth gradient */
+    steps = radius;
+    if (steps < 2) steps = 2;
+    if (steps > 256) steps = 256;
+
+    /* Draw from outside to inside */
+    for (i = steps - 1; i >= 0; i--)
+    {
+      t = (float)i / (float)(steps - 1);
+      long color = gdiInterpolateColor(colorCenter, colorEdge, t);
+      r = (float)radius * t;
+
+      hBrush = CreateSolidBrush(RGB(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+      hPen = CreatePen(PS_SOLID, 1, RGB(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+      SelectObject(dc->hBitmapDC, hBrush);
+      SelectObject(dc->hBitmapDC, hPen);
+
+      Ellipse(dc->hBitmapDC, (int)(cx - r), (int)(cy - r), (int)(cx + r + 1), (int)(cy + r + 1));
+
+      DeleteObject(hBrush);
+      DeleteObject(hPen);
+    }
+  }
 }

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
+#include <math.h>
 
 #include <gtk/gtk.h>
 
@@ -607,6 +608,45 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
   dc->clip_y2 = y2;
 }
 
+IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
+{
+  double radius = (double)corner_radius;
+  double degrees = IUP_DEG2RAD;
+  double max_radius;
+
+  if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
+  {
+    iupdrvDrawResetClip(dc);
+    return;
+  }
+
+  /* Clamp radius to prevent oversized corners */
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+  max_radius = ((x2 - x1) < (y2 - y1)) ? (x2 - x1) / 2.0 : (y2 - y1) / 2.0;
+  if (radius > max_radius)
+    radius = max_radius;
+
+  iupdrvDrawResetClip(dc);
+
+  /* Draw rounded rectangle path with arcs at corners */
+  cairo_new_path(dc->image_cr);
+  cairo_arc(dc->image_cr, x2 - radius, y1 + radius, radius, -90 * degrees, 0 * degrees);
+  cairo_line_to(dc->image_cr, x2, y2 - radius);
+  cairo_arc(dc->image_cr, x2 - radius, y2 - radius, radius, 0 * degrees, 90 * degrees);
+  cairo_line_to(dc->image_cr, x1 + radius, y2);
+  cairo_arc(dc->image_cr, x1 + radius, y2 - radius, radius, 90 * degrees, 180 * degrees);
+  cairo_line_to(dc->image_cr, x1, y1 + radius);
+  cairo_arc(dc->image_cr, x1 + radius, y1 + radius, radius, 180 * degrees, 270 * degrees);
+  cairo_close_path(dc->image_cr);
+  cairo_clip(dc->image_cr);  /* intersect with the current clipping */
+
+  dc->clip_x1 = x1;
+  dc->clip_y1 = y1;
+  dc->clip_x2 = x2;
+  dc->clip_y2 = y2;
+}
+
 IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   cairo_reset_clip(dc->image_cr);
@@ -775,6 +815,56 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
 #else
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
 #endif
+}
+
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+{
+  cairo_pattern_t *pattern;
+  float rad, x0, y0, x3, y3;
+  float w, h;
+
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
+
+  w = (float)(x2 - x1);
+  h = (float)(y2 - y1);
+
+  /* Calculate gradient endpoints based on angle */
+  /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
+  rad = angle * G_PI / 180.0f;
+
+  /* Start point (x0, y0) and end point (x3, y3) */
+  x0 = x1 + w / 2.0f - (w * cos(rad)) / 2.0f;
+  y0 = y1 + h / 2.0f - (h * sin(rad)) / 2.0f;
+  x3 = x1 + w / 2.0f + (w * cos(rad)) / 2.0f;
+  y3 = y1 + h / 2.0f + (h * sin(rad)) / 2.0f;
+
+  pattern = cairo_pattern_create_linear(x0, y0, x3, y3);
+  cairo_pattern_add_color_stop_rgba(pattern, 0.0,
+    iupDrawRed(color1) / 255.0, iupDrawGreen(color1) / 255.0, iupDrawBlue(color1) / 255.0, iupDrawAlpha(color1) / 255.0);
+  cairo_pattern_add_color_stop_rgba(pattern, 1.0,
+    iupDrawRed(color2) / 255.0, iupDrawGreen(color2) / 255.0, iupDrawBlue(color2) / 255.0, iupDrawAlpha(color2) / 255.0);
+
+  cairo_set_source(dc->image_cr, pattern);
+  cairo_rectangle(dc->image_cr, x1, y1, w, h);
+  cairo_fill(dc->image_cr);
+  cairo_pattern_destroy(pattern);
+}
+
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+{
+  cairo_pattern_t *pattern;
+
+  pattern = cairo_pattern_create_radial(cx, cy, 0, cx, cy, radius);
+  cairo_pattern_add_color_stop_rgba(pattern, 0.0,
+    iupDrawRed(colorCenter) / 255.0, iupDrawGreen(colorCenter) / 255.0, iupDrawBlue(colorCenter) / 255.0, iupDrawAlpha(colorCenter) / 255.0);
+  cairo_pattern_add_color_stop_rgba(pattern, 1.0,
+    iupDrawRed(colorEdge) / 255.0, iupDrawGreen(colorEdge) / 255.0, iupDrawBlue(colorEdge) / 255.0, iupDrawAlpha(colorEdge) / 255.0);
+
+  cairo_set_source(dc->image_cr, pattern);
+  cairo_arc(dc->image_cr, cx, cy, radius, 0, 2 * G_PI);
+  cairo_fill(dc->image_cr);
+  cairo_pattern_destroy(pattern);
 }
 
 

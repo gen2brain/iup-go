@@ -2,18 +2,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/gen2brain/iup-go/iup"
 	"math"
+
+	"github.com/gen2brain/iup-go/iup"
 )
 
 func main() {
 	iup.Open()
 	defer iup.Close()
 
+	iup.SetGlobal("UTF8MODE", "YES")
+
 	createTestImage()
 
 	canvas := iup.Canvas()
-	canvas.SetAttribute("RASTERSIZE", "750x750")
+	canvas.SetAttribute("RASTERSIZE", "750x800")
 	canvas.SetAttribute("BORDER", "NO")
 	canvas.SetAttribute("BGCOLOR", "255 255 255")
 
@@ -63,27 +66,32 @@ func redraw(ih iup.Ihandle) int {
 	iup.DrawText(ih, "IUP Drawing Functions Showcase", w/2, 10, -1, -1)
 
 	margin := 15
-	yPos := 40
+	yPos := 30
 
 	// Lines with different styles
 	drawLinesSection(ih, margin, yPos, w)
-	yPos += 105
+	yPos += 100
 
 	// Rectangles (filled and stroked)
 	drawRectanglesSection(ih, margin, yPos, w)
 	yPos += 120
 
+	// Gradients (linear and radial)
+	drawGradientsSection(ih, margin, yPos, w)
+	yPos += 90
+
 	// Arcs and Circles
 	drawArcsSection(ih, margin, yPos, w)
 	yPos += 160
 
-	// Polygons
+	// Polygons and Bezier Curves (side by side)
 	drawPolygonsSection(ih, margin, yPos, w)
-	yPos += 115
+	drawBezierSection(ih, margin+370, yPos, w)
+	yPos += 120
 
 	// Text rendering
 	drawTextSection(ih, margin, yPos, w)
-	yPos += 130
+	yPos += 100
 
 	// Images, Clipped Circle, and Special effects (bottom row)
 	drawImagesSection(ih, margin, yPos)
@@ -202,15 +210,27 @@ func drawRectanglesSection(ih iup.Ihandle, x, y, maxW int) {
 	for i := 0; i < 3; i++ {
 		rectX := x + 340 + i*100
 		radius := (i + 1) * 5
-		// Filled rounded rectangle
-		ih.SetAttribute("DRAWCOLOR", fmt.Sprintf("%d %d %d", 255-i*50, 150, 100+i*50))
-		ih.SetAttribute("DRAWSTYLE", "FILL")
-		iup.DrawRoundedRectangle(ih, rectX, roundedY, rectX+70, roundedY+40, radius)
-		// Label
-		ih.SetAttribute("DRAWCOLOR", "80 80 80")
-		ih.SetAttribute("DRAWTEXTALIGNMENT", "ALEFT")
-		label := fmt.Sprintf("R=%d", radius)
-		iup.DrawText(ih, label, rectX+5, roundedY+45, -1, -1)
+
+		if i == 1 {
+			// Second one: Demonstrate rounded rectangle with gradient using clipping
+			iup.DrawSetClipRoundedRect(ih, rectX, roundedY, rectX+70, roundedY+40, radius)
+			iup.DrawLinearGradient(ih, rectX, roundedY, rectX+70, roundedY+40, 45, "255 100 150", "100 150 255")
+			iup.DrawResetClip(ih)
+			// Label
+			ih.SetAttribute("DRAWCOLOR", "80 80 80")
+			ih.SetAttribute("DRAWTEXTALIGNMENT", "ALEFT")
+			iup.DrawText(ih, "Gradient", rectX+2, roundedY+45, -1, -1)
+		} else {
+			// Filled rounded rectangle
+			ih.SetAttribute("DRAWCOLOR", fmt.Sprintf("%d %d %d", 255-i*50, 150, 100+i*50))
+			ih.SetAttribute("DRAWSTYLE", "FILL")
+			iup.DrawRoundedRectangle(ih, rectX, roundedY, rectX+70, roundedY+40, radius)
+			// Label
+			ih.SetAttribute("DRAWCOLOR", "80 80 80")
+			ih.SetAttribute("DRAWTEXTALIGNMENT", "ALEFT")
+			label := fmt.Sprintf("R=%d", radius)
+			iup.DrawText(ih, label, rectX+5, roundedY+45, -1, -1)
+		}
 	}
 
 	// Stroked rectangles with different line widths
@@ -244,6 +264,62 @@ func drawRectanglesSection(ih iup.Ihandle, x, y, maxW int) {
 	}
 }
 
+func drawGradientsSection(ih iup.Ihandle, x, y, maxW int) {
+	// Section title
+	ih.SetAttribute("DRAWCOLOR", "50 50 50")
+	ih.SetAttribute("DRAWFONT", "Helvetica, 12")
+	ih.SetAttribute("DRAWTEXTALIGNMENT", "ALEFT")
+	iup.DrawText(ih, "Gradients", x, y, -1, -1)
+	y += 25
+
+	// Linear gradients with different angles
+	gradients := []struct {
+		angle float32
+		name  string
+		c1    string
+		c2    string
+	}{
+		{0, "0°", "255 100 100", "100 100 255"},
+		{90, "90°", "255 200 100", "100 200 255"},
+		{45, "45°", "255 100 200", "100 255 100"},
+	}
+
+	for i, g := range gradients {
+		rectX := x + i*95
+		// Linear gradient
+		iup.DrawLinearGradient(ih, rectX, y, rectX+80, y+40, g.angle, g.c1, g.c2)
+		// Label
+		ih.SetAttribute("DRAWCOLOR", "80 80 80")
+		ih.SetAttribute("DRAWTEXTALIGNMENT", "ACENTER")
+		iup.DrawText(ih, g.name, rectX+40, y+45, -1, -1)
+	}
+
+	// Radial gradients with different colors
+	radialStartX := x + 300
+	radialGradients := []struct {
+		centerColor string
+		edgeColor   string
+		name        string
+	}{
+		{"255 255 100", "255 100 100", "Y→R"},
+		{"100 255 255", "100 100 255", "C→B"},
+		{"255 100 255", "100 255 100", "M→G"},
+	}
+
+	for i, g := range radialGradients {
+		cx := radialStartX + i*110 + 40
+		cy := y + 20 // Center the radial gradient vertically
+		radius := 30
+		// Radial gradient
+		iup.DrawRadialGradient(ih, cx, cy, radius, g.centerColor, g.edgeColor)
+		// Label
+		ih.SetAttribute("DRAWCOLOR", "80 80 80")
+		ih.SetAttribute("DRAWTEXTALIGNMENT", "ACENTER")
+		iup.DrawText(ih, g.name, cx, cy+40, -1, -1)
+	}
+	// Total section height: 25 (title) + 85 (gradients + labels) = 110px
+}
+
 func drawArcsSection(ih iup.Ihandle, x, y, maxW int) {
 	// Section title
 	ih.SetAttribute("DRAWCOLOR", "50 50 50")
@@ -259,7 +335,7 @@ func drawArcsSection(ih iup.Ihandle, x, y, maxW int) {
 		cx := x + 50 + i*120
 		cy := y + 40
 		ih.SetAttribute("DRAWCOLOR", fmt.Sprintf("%d %d 150", 255-i*60, 100+i*40))
-		iup.DrawArc(ih, cx-radius, cy-radius, cx+radius, cy+radius, 0, 360)
+		iup.DrawEllipse(ih, cx-radius, cy-radius, cx+radius, cy+radius)
 	}
 
 	// Ellipses (horizontal)
@@ -269,7 +345,7 @@ func drawArcsSection(ih iup.Ihandle, x, y, maxW int) {
 		ex := x + 400 + i*120
 		ey := y + 40
 		ih.SetAttribute("DRAWCOLOR", fmt.Sprintf("150 %d %d", 100+i*50, 200-i*30))
-		iup.DrawArc(ih, ex-50, ey-25, ex+50, ey+25, 0, 360)
+		iup.DrawEllipse(ih, ex-50, ey-25, ex+50, ey+25)
 	}
 
 	// Stroked circles
@@ -280,7 +356,7 @@ func drawArcsSection(ih iup.Ihandle, x, y, maxW int) {
 		cy := y + 20
 		ih.SetAttribute("DRAWCOLOR", fmt.Sprintf("100 %d 200", 100+i*50))
 		ih.SetAttribute("DRAWLINEWIDTH", fmt.Sprintf("%d", (i+1)*2))
-		iup.DrawArc(ih, cx-25, cy-25, cx+25, cy+25, 0, 360)
+		iup.DrawEllipse(ih, cx-25, cy-25, cx+25, cy+25)
 	}
 }
 
@@ -332,6 +408,81 @@ func drawPolygonsSection(ih iup.Ihandle, x, y, maxW int) {
 	iup.DrawPolygon(ih, star, len(star)/2)
 }
 
+func drawBezierSection(ih iup.Ihandle, x, y, maxW int) {
+	// Section title
+	ih.SetAttribute("DRAWCOLOR", "50 50 50")
+	ih.SetAttribute("DRAWFONT", "Helvetica, 12")
+	ih.SetAttribute("DRAWTEXTALIGNMENT", "ALEFT")
+	iup.DrawText(ih, "Bezier Curves", x, y, -1, -1)
+	y += 25
+
+	// Cubic Bezier curve (stroked with control points shown)
+	ih.SetAttribute("DRAWCOLOR", "255 50 150")
+	ih.SetAttribute("DRAWSTYLE", "STROKE")
+	ih.SetAttribute("DRAWLINEWIDTH", "3")
+	iup.DrawBezier(ih, x+10, y+60, x+30, y+10, x+80, y+10, x+100, y+60)
+
+	// Draw control points and lines
+	ih.SetAttribute("DRAWCOLOR", "200 200 200")
+	ih.SetAttribute("DRAWLINEWIDTH", "1")
+	iup.DrawLine(ih, x+10, y+60, x+30, y+10)  // Start to CP1
+	iup.DrawLine(ih, x+80, y+10, x+100, y+60) // CP2 to end
+	ih.SetAttribute("DRAWCOLOR", "100 100 100")
+	ih.SetAttribute("DRAWSTYLE", "FILL")
+	iup.DrawArc(ih, x+7, y+57, x+13, y+63, 0, 360)   // Start point
+	iup.DrawArc(ih, x+27, y+7, x+33, y+13, 0, 360)   // CP1
+	iup.DrawArc(ih, x+77, y+7, x+83, y+13, 0, 360)   // CP2
+	iup.DrawArc(ih, x+97, y+57, x+103, y+63, 0, 360) // End point
+
+	// Label
+	ih.SetAttribute("DRAWCOLOR", "80 80 80")
+	ih.SetAttribute("DRAWFONT", "Helvetica, 9")
+	ih.SetAttribute("DRAWTEXTALIGNMENT", "ACENTER")
+	iup.DrawText(ih, "Cubic", x+55, y+70, -1, -1)
+
+	// Quadratic Bezier curve
+	qx := x + 130
+	ih.SetAttribute("DRAWCOLOR", "50 200 100")
+	ih.SetAttribute("DRAWSTYLE", "STROKE")
+	ih.SetAttribute("DRAWLINEWIDTH", "3")
+	iup.DrawQuadraticBezier(ih, qx+10, y+60, qx+55, y+5, qx+100, y+60)
+
+	// Draw control point and lines
+	ih.SetAttribute("DRAWCOLOR", "200 200 200")
+	ih.SetAttribute("DRAWLINEWIDTH", "1")
+	iup.DrawLine(ih, qx+10, y+60, qx+55, y+5)  // Start to CP
+	iup.DrawLine(ih, qx+55, y+5, qx+100, y+60) // CP to end
+	ih.SetAttribute("DRAWCOLOR", "100 100 100")
+	ih.SetAttribute("DRAWSTYLE", "FILL")
+	iup.DrawArc(ih, qx+7, y+57, qx+13, y+63, 0, 360)   // Start point
+	iup.DrawArc(ih, qx+52, y+2, qx+58, y+8, 0, 360)    // CP
+	iup.DrawArc(ih, qx+97, y+57, qx+103, y+63, 0, 360) // End point
+
+	// Label
+	ih.SetAttribute("DRAWCOLOR", "80 80 80")
+	ih.SetAttribute("DRAWFONT", "Helvetica, 9")
+	ih.SetAttribute("DRAWTEXTALIGNMENT", "ACENTER")
+	iup.DrawText(ih, "Quadratic", qx+55, y+70, -1, -1)
+
+	// Filled Bezier curve (creating a shape)
+	fx := x + 260
+	ih.SetAttribute("DRAWCOLOR", "100 150 255")
+	ih.SetAttribute("DRAWSTYLE", "FILL")
+	iup.DrawBezier(ih, fx+10, y+60, fx+20, y+10, fx+70, y+10, fx+80, y+60)
+
+	// Add outline
+	ih.SetAttribute("DRAWCOLOR", "50 100 200")
+	ih.SetAttribute("DRAWSTYLE", "STROKE")
+	ih.SetAttribute("DRAWLINEWIDTH", "2")
+	iup.DrawBezier(ih, fx+10, y+60, fx+20, y+10, fx+70, y+10, fx+80, y+60)
+
+	// Label
+	ih.SetAttribute("DRAWCOLOR", "80 80 80")
+	ih.SetAttribute("DRAWFONT", "Helvetica, 9")
+	ih.SetAttribute("DRAWTEXTALIGNMENT", "ACENTER")
+	iup.DrawText(ih, "Filled", fx+45, y+70, -1, -1)
+}
+
 func drawTextSection(ih iup.Ihandle, x, y, maxW int) {
 	// Section title
 	ih.SetAttribute("DRAWCOLOR", "50 50 50")
@@ -360,19 +511,17 @@ func drawTextSection(ih iup.Ihandle, x, y, maxW int) {
 	// Multi-line text with wrapping (manual demonstration)
 	ih.SetAttribute("DRAWCOLOR", "255 255 200")
 	ih.SetAttribute("DRAWSTYLE", "FILL")
-	iup.DrawRectangle(ih, x, y, x+300, y+70)
+	iup.DrawRectangle(ih, x, y, x+400, y+40)
 	ih.SetAttribute("DRAWCOLOR", "200 200 150")
 	ih.SetAttribute("DRAWSTYLE", "STROKE")
 	ih.SetAttribute("DRAWLINEWIDTH", "1")
-	iup.DrawRectangle(ih, x, y, x+300, y+70)
+	iup.DrawRectangle(ih, x, y, x+400, y+40)
 
 	ih.SetAttribute("DRAWCOLOR", "50 50 50")
 	ih.SetAttribute("DRAWTEXTALIGNMENT", "ALEFT")
 	ih.SetAttribute("DRAWFONT", "Helvetica, 10")
-	iup.DrawText(ih, "This is a long text that demonstrates", x+5, y+5, -1, -1)
-	iup.DrawText(ih, "text rendering. Multiple lines can be", x+5, y+20, -1, -1)
-	iup.DrawText(ih, "drawn by calling DrawText multiple", x+5, y+35, -1, -1)
-	iup.DrawText(ih, "times at different Y positions.", x+5, y+50, -1, -1)
+	iup.DrawText(ih, "This is a long text that demonstrates text rendering.", x+5, y+5, -1, -1)
+	iup.DrawText(ih, "Multiple lines can be drawn by calling DrawText multiple times.", x+5, y+20, -1, -1)
 }
 
 func drawImagesSection(ih iup.Ihandle, x, y int) {
@@ -452,10 +601,9 @@ func drawSpecialEffects(ih iup.Ihandle, x, y int) {
 	ih.SetAttribute("DRAWSTYLE", "FILL")
 	iup.DrawRectangle(ih, x+240, y+15, x+340, y+45)
 
-	// Overlapping rectangles with real alpha transparency
+	// Overlapping rectangles with alpha transparency
 	ih.SetAttribute("DRAWSTYLE", "FILL")
 	for i := 0; i < 4; i++ {
-		// Real alpha transparency - all modern drivers support this!
 		r := 255 - i*30
 		g := 100 + i*40
 		b := 100 + i*20

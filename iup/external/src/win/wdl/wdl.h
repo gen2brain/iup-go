@@ -313,6 +313,8 @@ void wdDestroyCachedImage(WD_HCACHEDIMAGE hCachedImage);
  * be used for the canvas it has been created for. */
 
 WD_HBRUSH wdCreateSolidBrush(WD_HCANVAS hCanvas, WD_COLOR color);
+WD_HBRUSH wdCreateLinearGradientBrush(WD_HCANVAS hCanvas, float x0, float y0, float x1, float y1, WD_COLOR color0, WD_COLOR color1);
+WD_HBRUSH wdCreateRadialGradientBrush(WD_HCANVAS hCanvas, float cx, float cy, float rx, float ry, WD_COLOR colorCenter, WD_COLOR colorEdge);
 void wdDestroyBrush(WD_HBRUSH hBrush);
 
 /* Can be only called for brushes created with wdCreateSolidBrush(). */

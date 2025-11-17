@@ -82,3 +82,103 @@ wdSetSolidBrushColor(WD_HBRUSH hBrush, WD_COLOR color)
         gdix_vtable->fn_SetSolidFillColor(b, (dummy_ARGB) color);
     }
 }
+
+WD_HBRUSH
+wdCreateLinearGradientBrush(WD_HCANVAS hCanvas, float x0, float y0, float x1, float y1, WD_COLOR color0, WD_COLOR color1)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
+        dummy_ID2D1LinearGradientBrush* b;
+        dummy_ID2D1GradientStopCollection* stopCollection;
+        dummy_D2D1_GRADIENT_STOP stops[2];
+        dummy_D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES props;
+        HRESULT hr;
+
+        /* Create gradient stops */
+        stops[0].position = 0.0f;
+        d2d_init_color(&stops[0].color, color0);
+        stops[1].position = 1.0f;
+        d2d_init_color(&stops[1].color, color1);
+
+        /* Create gradient stop collection */
+        hr = dummy_ID2D1RenderTarget_CreateGradientStopCollection(c->target, stops, 2,
+                    0 /* D2D1_GAMMA_2_2 */, 0 /* D2D1_EXTEND_MODE_CLAMP */, &stopCollection);
+        if(FAILED(hr)) {
+            WD_TRACE_HR("wdCreateLinearGradientBrush: "
+                        "ID2D1RenderTarget::CreateGradientStopCollection() failed.");
+            return NULL;
+        }
+
+        /* Create linear gradient brush */
+        props.startPoint.x = x0;
+        props.startPoint.y = y0;
+        props.endPoint.x = x1;
+        props.endPoint.y = y1;
+
+        hr = dummy_ID2D1RenderTarget_CreateLinearGradientBrush(c->target, &props, NULL, stopCollection, &b);
+        dummy_ID2D1GradientStopCollection_Release(stopCollection);
+
+        if(FAILED(hr)) {
+            WD_TRACE_HR("wdCreateLinearGradientBrush: "
+                        "ID2D1RenderTarget::CreateLinearGradientBrush() failed.");
+            return NULL;
+        }
+
+        return (WD_HBRUSH) b;
+    } else {
+        /* GDI+ backend doesn't support gradient brushes in WDL vtable */
+        /* Return NULL - caller will fall back to manual gradient */
+        return NULL;
+    }
+}
+
+WD_HBRUSH
+wdCreateRadialGradientBrush(WD_HCANVAS hCanvas, float cx, float cy, float rx, float ry, WD_COLOR colorCenter, WD_COLOR colorEdge)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
+        dummy_ID2D1RadialGradientBrush* b;
+        dummy_ID2D1GradientStopCollection* stopCollection;
+        dummy_D2D1_GRADIENT_STOP stops[2];
+        dummy_D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES props;
+        HRESULT hr;
+
+        /* Create gradient stops */
+        stops[0].position = 0.0f;
+        d2d_init_color(&stops[0].color, colorCenter);
+        stops[1].position = 1.0f;
+        d2d_init_color(&stops[1].color, colorEdge);
+
+        /* Create gradient stop collection */
+        hr = dummy_ID2D1RenderTarget_CreateGradientStopCollection(c->target, stops, 2,
+                    0 /* D2D1_GAMMA_2_2 */, 0 /* D2D1_EXTEND_MODE_CLAMP */, &stopCollection);
+        if(FAILED(hr)) {
+            WD_TRACE_HR("wdCreateRadialGradientBrush: "
+                        "ID2D1RenderTarget::CreateGradientStopCollection() failed.");
+            return NULL;
+        }
+
+        /* Create radial gradient brush */
+        props.center.x = cx;
+        props.center.y = cy;
+        props.gradientOriginOffset.x = 0.0f;
+        props.gradientOriginOffset.y = 0.0f;
+        props.radiusX = rx;
+        props.radiusY = ry;
+
+        hr = dummy_ID2D1RenderTarget_CreateRadialGradientBrush(c->target, &props, NULL, stopCollection, &b);
+        dummy_ID2D1GradientStopCollection_Release(stopCollection);
+
+        if(FAILED(hr)) {
+            WD_TRACE_HR("wdCreateRadialGradientBrush: "
+                        "ID2D1RenderTarget::CreateRadialGradientBrush() failed.");
+            return NULL;
+        }
+
+        return (WD_HBRUSH) b;
+    } else {
+        /* GDI+ backend doesn't support gradient brushes in WDL vtable */
+        /* Return NULL - caller will fall back to manual gradient */
+        return NULL;
+    }
+}

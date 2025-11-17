@@ -19,6 +19,7 @@ IUP_API void IupDrawEnd(Ihandle* ih);
 /* all functions can be called only between calls to Begin and End */
 
 IUP_API void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2);
+IUP_API void IupDrawSetClipRoundedRect(Ihandle* ih, int x1, int y1, int x2, int y2, int corner_radius);
 IUP_API void IupDrawGetClipRect(Ihandle* ih, int *x1, int *y1, int *x2, int *y2);
 IUP_API void IupDrawResetClip(Ihandle* ih);
 
@@ -35,6 +36,11 @@ IUP_API void IupDrawPolygon(Ihandle* ih, int* points, int count);
 IUP_API void IupDrawPixel(Ihandle* ih, int x, int y);
 IUP_API void IupDrawBezier(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4);
 IUP_API void IupDrawQuadraticBezier(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3);
+
+/* gradient colors are passed as parameters (not controlled by DRAWCOLOR) */
+IUP_API void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2);
+IUP_API void IupDrawRadialGradient(Ihandle* ih, int cx, int cy, int radius, const char* colorCenter, const char* colorEdge);
+
 IUP_API void IupDrawText(Ihandle* ih, const char* text, int len, int x, int y, int w, int h);
 IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, int h);
 IUP_API void IupDrawSelectRect(Ihandle* ih, int x1, int y1, int x2, int y2);
