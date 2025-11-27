@@ -21,6 +21,9 @@
 ### macOS GTK3
 [<img src="sample_gtk3_macos.png" width="700" title="macOS GTK3" alt="macOS GTK3" />](sample_gtk3_macos.png)
 
+### Linux GTK4
+[<img src="sample_gtk4.png" width="700" title="Linux GTK4" alt="Linux GTK4" />](sample_gtk4.png)
+
 ### Linux Qt5
 [<img src="sample_qt5.png" width="700" title="Linux Qt5" alt="Linux Qt5" />](sample_qt5.png)
 
