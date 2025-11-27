@@ -50,6 +50,7 @@
 
   #ifdef GDK_WINDOWING_X11
   #include <gdk/x11/gdkx.h>
+  #include <dlfcn.h>
   #endif
 #endif
 
@@ -241,6 +242,49 @@ typedef struct _IGlControlData
   /* For X11, the GdkWindow or QWindow encapsulates the XID, which is used directly with EGL. */
 } IGlControlData;
 
+/* -------------------------------------------------------------------------- */
+/* Helper: Dynamic Loading of XLib (GTK4 X11 ONLY)                 */
+/* -------------------------------------------------------------------------- */
+#if defined(IUP_EGL_USE_GTK4) && defined(GDK_WINDOWING_X11)
+
+/* Function pointer typedefs for XLib functions */
+typedef int (*PFN_XGetWindowAttributes)(Display*, Window, XWindowAttributes*);
+typedef VisualID (*PFN_XVisualIDFromVisual)(Visual*);
+
+/**
+ * \brief Dynamically loads XLib and retrieves the Visual ID for a window.
+ * This avoids adding a link-time dependency on libX11.
+ */
+static int iupEGLGetX11VisualID(Display* x_display, unsigned long window_handle)
+{
+    int visual_id = 0;
+    void* libx11 = NULL;
+    PFN_XGetWindowAttributes ptr_XGetWindowAttributes = NULL;
+    PFN_XVisualIDFromVisual ptr_XVisualIDFromVisual = NULL;
+
+    /* Try to load libX11.so.6, or fallback to libX11.so */
+    libx11 = dlopen("libX11.so.6", RTLD_LAZY);
+    if (!libx11) {
+        libx11 = dlopen("libX11.so", RTLD_LAZY);
+    }
+
+    if (libx11) {
+        ptr_XGetWindowAttributes = (PFN_XGetWindowAttributes)dlsym(libx11, "XGetWindowAttributes");
+        ptr_XVisualIDFromVisual = (PFN_XVisualIDFromVisual)dlsym(libx11, "XVisualIDFromVisual");
+
+        if (ptr_XGetWindowAttributes && ptr_XVisualIDFromVisual) {
+            XWindowAttributes attrs;
+            /* XWindowAttributes struct is defined above to match X11 binary layout */
+            if (ptr_XGetWindowAttributes(x_display, (Window)window_handle, &attrs) != 0) {
+                visual_id = (int)ptr_XVisualIDFromVisual(attrs.visual);
+            }
+        }
+        dlclose(libx11);
+    }
+    return visual_id;
+}
+#endif
+/* -------------------------------------------------------------------------- */
 
 static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* physical_width, int* physical_height)
 {
@@ -658,7 +702,11 @@ static int eGLCanvasCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata)
+/*
+ * Accept an optional visual_id (from X11) to filter configs.
+ * visual_id should be 0 if not relevant (e.g. GTK3, Wayland, Qt).
+ */
+static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual_id)
 {
   int n = 0;
   EGLint alist[40];
@@ -751,6 +799,43 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata)
         iupAttribSetStrf(ih, "ERROR", "No appropriate EGL config found (including fallback). Error: 0x%X", eglGetError());
         return 0;
     }
+  }
+
+  /*
+   * Special handling for GTK4 on X11:
+   * If we detected a specific X11 Visual ID (32-bit ARGB), we must find an EGL config
+   * that matches this visual exactly. Otherwise, the background may be transparent.
+   */
+  if (visual_id != 0)
+  {
+      EGLConfig* configs = NULL;
+      EGLint total_configs = 0;
+
+      /* Get ALL configs that match the base criteria */
+      if (eglChooseConfig(gldata->display, alist, NULL, 0, &total_configs) && total_configs > 0)
+      {
+          configs = (EGLConfig*)malloc(total_configs * sizeof(EGLConfig));
+          if (eglChooseConfig(gldata->display, alist, configs, total_configs, &num_config))
+          {
+              int found = 0;
+              for (int i = 0; i < num_config; i++)
+              {
+                  EGLint native_vid = 0;
+                  /* Check if this EGL config is compatible with our X11 Window's visual */
+                  if (eglGetConfigAttrib(gldata->display, configs[i], EGL_NATIVE_VISUAL_ID, &native_vid))
+                  {
+                      if (native_vid == visual_id)
+                      {
+                          gldata->config = configs[i];
+                          found = 1;
+                          break;
+                      }
+                  }
+              }
+              /* If no exact visual match found, we stick with the default config selected above. */
+          }
+          free(configs);
+      }
   }
 
   iupAttribSet(ih, "ERROR", NULL);
@@ -1236,6 +1321,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   PFN_eglGetPlatformDisplay eglGetPlatformDisplay_func = NULL;
   int requested_major = 0, requested_minor = 0;
   char* requested_profile = NULL;
+  int target_visual_id = 0;
 
 #if defined(IUP_EGL_USE_GTK3)
   GdkDisplay* gdk_display;
@@ -1433,6 +1519,15 @@ static int eGLCanvasMapMethod(Ihandle* ih)
       if (gldata->display == EGL_NO_DISPLAY) {
          gldata->display = eglGetDisplay((EGLNativeDisplayType)x_display);
       }
+
+      /*
+       * FOR GTK4 X11 ONLY:
+       * Retrieve the native Visual ID to force EGL to pick a compatible config.
+       */
+      if (GDK_IS_X11_SURFACE(gldata->gdk_surface)) {
+          native_window = (EGLNativeWindowType)gdk_x11_surface_get_xid(gldata->gdk_surface);
+          target_visual_id = iupEGLGetX11VisualID(x_display, (unsigned long)native_window);
+      }
   }
 #endif
 #endif /* IUP_EGL_USE_GTK4 */
@@ -1462,6 +1557,14 @@ static int eGLCanvasMapMethod(Ihandle* ih)
           /* Passing NULL as native_display lets EGL open its own X connection */
           gldata->display = eglGetPlatformDisplay_func(EGL_PLATFORM_X11_KHR, EGL_DEFAULT_DISPLAY, NULL);
       }
+
+      /* For Qt X11, try to get XID early */
+      if (gldata->qwindow) {
+          unsigned long xid = iupQtGetNativeWindow(gldata->qwindow);
+          if (xid != 0) {
+              native_window = (EGLNativeWindowType)xid;
+          }
+      }
   }
 #endif /* IUP_EGL_USE_QT */
 
@@ -1490,7 +1593,9 @@ static int eGLCanvasMapMethod(Ihandle* ih)
       return IUP_NOERROR;
   }
 
-  if (!eGLCanvasChooseConfig(ih, gldata))
+  /* Pass the detected target_visual_id to the config chooser.
+     It will be 0 for GTK3, Qt, and Wayland, maintaining existing behavior. */
+  if (!eGLCanvasChooseConfig(ih, gldata, target_visual_id))
     return IUP_NOERROR;
 
 #if defined(IUP_EGL_USE_GTK3)
@@ -1519,13 +1624,13 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   else
 #endif
 #ifdef GDK_WINDOWING_X11
+  if (GDK_IS_X11_SURFACE(gldata->gdk_surface))
   {
-      if (GDK_IS_X11_SURFACE(gldata->gdk_surface))
-      {
-          /* For X11, the native window is the X Window ID (XID). Use the GDK wrapper function. */
-          /* HiDPI scaling for the surface itself is handled by GDK/X11, EGL surface tracks it. Viewport is handled later. */
-          native_window = (EGLNativeWindowType)gdk_x11_surface_get_xid(gldata->gdk_surface);
-      }
+      /* GTK4 X11: Defer EGL surface creation until first GLMakeCurrent call.
+       * At MAP time, the GdkSurface is often 1x1 (not properly sized yet).
+       * Creating the EGL surface before the X11 window is properly sized causes the
+       * GL content not to appear until after a resize. */
+      iupAttribSet(ih, "_IUP_GTK4_X11_LAZY_INIT", "1");
   }
 #endif
 #endif /* IUP_EGL_USE_GTK4 */
@@ -1551,7 +1656,13 @@ static int eGLCanvasMapMethod(Ihandle* ih)
           native_window = (EGLNativeWindowType)xid;
   }
 #endif /* IUP_EGL_USE_QT */
-  if (native_window == (EGLNativeWindowType)NULL) {
+
+  /* If we are not in lazy-init mode and still have no window, it's an error */
+  if (native_window == (EGLNativeWindowType)NULL &&
+      !iupAttribGet(ih, "_IUP_GTK3_WAYLAND_LAZY_INIT") &&
+      !iupAttribGet(ih, "_IUP_GTK4_WAYLAND_LAZY_INIT") &&
+      !iupAttribGet(ih, "_IUP_GTK4_X11_LAZY_INIT") &&
+      !iupAttribGet(ih, "_IUP_QT6_WAYLAND_LAZY_INIT")) {
       /* This might happen if the backend is neither Wayland nor X11, or if getting the native handle failed. */
       iupAttribSet(ih, "ERROR", "Could not create/obtain native window handle (Wayland EGL window or X11 Window ID). Check backend.");
       return IUP_NOERROR;
@@ -1564,19 +1675,26 @@ static int eGLCanvasMapMethod(Ihandle* ih)
       surface_attribs[1] = EGL_SINGLE_BUFFER;
   }
 
-  gldata->surface = eglCreateWindowSurface(gldata->display, gldata->config, native_window, surface_attribs);
-  if (gldata->surface == EGL_NO_SURFACE)
-  {
-      EGLint egl_error = eglGetError();
-      iupAttribSetStrf(ih, "ERROR", "Could not create EGL surface. Error: 0x%X", egl_error);
-#if defined(GDK_WINDOWING_WAYLAND) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES))
-      if (gldata->egl_window)
+  /* Only create surface immediately if not in lazy init mode */
+  if (native_window != (EGLNativeWindowType)NULL &&
+      !iupAttribGet(ih, "_IUP_GTK3_WAYLAND_LAZY_INIT") &&
+      !iupAttribGet(ih, "_IUP_GTK4_WAYLAND_LAZY_INIT") &&
+      !iupAttribGet(ih, "_IUP_GTK4_X11_LAZY_INIT") &&
+      !iupAttribGet(ih, "_IUP_QT6_WAYLAND_LAZY_INIT")) {
+      gldata->surface = eglCreateWindowSurface(gldata->display, gldata->config, native_window, surface_attribs);
+      if (gldata->surface == EGL_NO_SURFACE)
       {
-          wl_egl_window_destroy(gldata->egl_window);
-          gldata->egl_window = NULL;
-      }
+          EGLint egl_error = eglGetError();
+          iupAttribSetStrf(ih, "ERROR", "Could not create EGL surface. Error: 0x%X", egl_error);
+#if defined(GDK_WINDOWING_WAYLAND) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES))
+          if (gldata->egl_window)
+          {
+              wl_egl_window_destroy(gldata->egl_window);
+              gldata->egl_window = NULL;
+          }
 #endif
-      return IUP_NOERROR;
+          return IUP_NOERROR;
+      }
   }
 
   EGLint context_attribs[15];
@@ -1708,8 +1826,10 @@ static int eGLCanvasMapMethod(Ihandle* ih)
 
   if (gldata->context == EGL_NO_CONTEXT)
   {
-    eglDestroySurface(gldata->display, gldata->surface);
-    gldata->surface = EGL_NO_SURFACE;
+    if (gldata->surface != EGL_NO_SURFACE) {
+        eglDestroySurface(gldata->display, gldata->surface);
+        gldata->surface = EGL_NO_SURFACE;
+    }
 #if defined(GDK_WINDOWING_WAYLAND) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES))
     if (gldata->egl_window) {
         wl_egl_window_destroy(gldata->egl_window);
@@ -2094,6 +2214,145 @@ void IupGLMakeCurrent(Ihandle* ih)
     /* Clear the lazy init flag */
     iupAttribSet(ih, "_IUP_GTK4_WAYLAND_LAZY_INIT", NULL);
   }
+#endif
+
+  /* GTK4 X11 lazy initialization: Create EGL surface+context on first GLMakeCurrent */
+#if defined(IUP_EGL_USE_GTK4) && defined(GDK_WINDOWING_X11)
+  if (gldata->surface == EGL_NO_SURFACE && iupAttribGet(ih, "_IUP_GTK4_X11_LAZY_INIT"))
+  {
+    /* Get the native X11 window */
+    EGLNativeWindowType native_window = (EGLNativeWindowType)NULL;
+    int surf_w = 0, surf_h = 0;
+
+    if (GDK_IS_X11_SURFACE(gldata->gdk_surface)) {
+        native_window = (EGLNativeWindowType)gdk_x11_surface_get_xid(gldata->gdk_surface);
+        surf_w = gdk_surface_get_width(gldata->gdk_surface);
+        surf_h = gdk_surface_get_height(gldata->gdk_surface);
+    }
+
+    if (native_window == (EGLNativeWindowType)NULL) {
+      iupAttribSet(ih, "ERROR", "Failed to get X11 window XID during lazy initialization");
+      return;
+    }
+
+    /* Create the EGL surface (even at 1x1, for gl.Init() to work) */
+    EGLint surface_attribs[3] = { EGL_NONE, EGL_NONE, EGL_NONE };
+    if (iupStrEqualNoCase(iupAttribGetStr(ih,"BUFFER"), "SINGLE"))
+    {
+        surface_attribs[0] = EGL_RENDER_BUFFER;
+        surface_attribs[1] = EGL_SINGLE_BUFFER;
+    }
+
+    gldata->surface = eglCreateWindowSurface(gldata->display, gldata->config, native_window, surface_attribs);
+    if (gldata->surface == EGL_NO_SURFACE)
+    {
+      EGLint egl_error = eglGetError();
+      iupAttribSetStrf(ih, "ERROR", "Could not create EGL surface during lazy init. Error: 0x%X", egl_error);
+      return;
+    }
+
+    /* If created at 1x1, mark for recreation when properly sized */
+    if (surf_w <= 1 || surf_h <= 1) {
+        iupAttribSet(ih, "_IUP_GTK4_X11_SURFACE_1x1", "1");
+    }
+
+    /* Create the EGL context (same code as in MapMethod) */
+    Ihandle* ih_shared = (Ihandle*)iupAttribGet(ih, "SHAREDCONTEXT");
+    EGLContext shared_context = EGL_NO_CONTEXT;
+    if (ih_shared && iupStrEqualNoCase(IupGetClassName(ih_shared), "glcanvas"))
+    {
+      IGlControlData* shared_gldata = (IGlControlData*)iupAttribGet(ih_shared, "_IUP_GLCONTROLDATA");
+      if (shared_gldata)
+        shared_context = shared_gldata->context;
+    }
+
+    int requested_major = 0, requested_minor = 0;
+    char* version_str = iupAttribGet(ih, "CONTEXTVERSION");
+    if (version_str)
+      iupStrToIntInt(version_str, &requested_major, &requested_minor, '.');
+
+    char* requested_profile = iupAttribGet(ih, "CONTEXTPROFILE");
+
+    EGLint ctx_attribs[20];
+    int ctx_idx = 0;
+
+    if (requested_major > 0)
+    {
+      ctx_attribs[ctx_idx++] = EGL_CONTEXT_MAJOR_VERSION;
+      ctx_attribs[ctx_idx++] = requested_major;
+      if (requested_minor > 0)
+      {
+        ctx_attribs[ctx_idx++] = EGL_CONTEXT_MINOR_VERSION;
+        ctx_attribs[ctx_idx++] = requested_minor;
+      }
+    }
+
+    if (requested_profile)
+    {
+      if (iupStrEqualNoCase(requested_profile, "CORE"))
+      {
+        ctx_attribs[ctx_idx++] = EGL_CONTEXT_OPENGL_PROFILE_MASK;
+        ctx_attribs[ctx_idx++] = EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT;
+      }
+      else if (iupStrEqualNoCase(requested_profile, "COMPATIBILITY"))
+      {
+        ctx_attribs[ctx_idx++] = EGL_CONTEXT_OPENGL_PROFILE_MASK;
+        ctx_attribs[ctx_idx++] = EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT;
+      }
+    }
+
+    ctx_attribs[ctx_idx] = EGL_NONE;
+
+    gldata->context = eglCreateContext(gldata->display, gldata->config, shared_context, ctx_attribs);
+    if (gldata->context == EGL_NO_CONTEXT)
+    {
+      EGLint egl_error = eglGetError();
+      iupAttribSetStrf(ih, "ERROR", "Could not create EGL context during lazy init. Error: 0x%X", egl_error);
+      return;
+    }
+
+    /* Clear the lazy init flag */
+    iupAttribSet(ih, "_IUP_GTK4_X11_LAZY_INIT", NULL);
+  }
+
+  /* GTK4 X11: Check if surface needs recreation (was created at 1x1, now properly sized) */
+#if defined(IUP_EGL_USE_GTK4) && defined(GDK_WINDOWING_X11)
+  if (gldata->surface != EGL_NO_SURFACE && iupAttribGet(ih, "_IUP_GTK4_X11_SURFACE_1x1"))
+  {
+    int surf_w = 0, surf_h = 0;
+    if (GDK_IS_X11_SURFACE(gldata->gdk_surface)) {
+        surf_w = gdk_surface_get_width(gldata->gdk_surface);
+        surf_h = gdk_surface_get_height(gldata->gdk_surface);
+    }
+
+    /* If window is now properly sized, recreate the surface */
+    if (surf_w > 1 && surf_h > 1) {
+        EGLNativeWindowType native_window = (EGLNativeWindowType)gdk_x11_surface_get_xid(gldata->gdk_surface);
+
+        /* Destroy old 1x1 surface */
+        eglDestroySurface(gldata->display, gldata->surface);
+
+        /* Create new surface at proper size */
+        EGLint surface_attribs[3] = { EGL_NONE, EGL_NONE, EGL_NONE };
+        if (iupStrEqualNoCase(iupAttribGetStr(ih,"BUFFER"), "SINGLE"))
+        {
+            surface_attribs[0] = EGL_RENDER_BUFFER;
+            surface_attribs[1] = EGL_SINGLE_BUFFER;
+        }
+
+        gldata->surface = eglCreateWindowSurface(gldata->display, gldata->config, native_window, surface_attribs);
+        if (gldata->surface == EGL_NO_SURFACE)
+        {
+          EGLint egl_error = eglGetError();
+          iupAttribSetStrf(ih, "ERROR", "Could not recreate EGL surface. Error: 0x%X", egl_error);
+          return;
+        }
+
+        /* Clear the 1x1 flag */
+        iupAttribSet(ih, "_IUP_GTK4_X11_SURFACE_1x1", NULL);
+    }
+  }
+#endif
 #endif
 
   if (gldata->context == EGL_NO_CONTEXT || gldata->surface == EGL_NO_SURFACE)
