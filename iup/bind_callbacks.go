@@ -421,6 +421,206 @@ extern int goIupUpdateCB(void *);
 static void goIupSetUpdateFunc(Ihandle *ih) {
 	IupSetCallback(ih, "UPDATE_CB", (Icallback) goIupUpdateCB);
 }
+
+// ============================================================================
+// CELLS AND MATRIX CONTROL CALLBACKS
+// ============================================================================
+
+extern int goIupCellsDrawCB(void *, int i, int j, int xmin, int xmax, int ymin, int ymax);
+static void goIupSetCellsDrawFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DRAW_CB", (Icallback) goIupCellsDrawCB);
+}
+
+extern int goIupMouseClickCB(void *, int button, int pressed, int i, int j, int x, int y, void *status);
+static void goIupSetMouseClickFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MOUSECLICK_CB", (Icallback) goIupMouseClickCB);
+}
+
+extern int goIupMouseMotionCB(void *, int i, int j, int x, int y, void *status);
+static void goIupSetMouseMotionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MOUSEMOTION_CB", (Icallback) goIupMouseMotionCB);
+}
+
+extern int goIupScrollingCB(void *, int i, int j);
+static void goIupSetScrollingFunc(Ihandle *ih) {
+	IupSetCallback(ih, "SCROLLING_CB", (Icallback) goIupScrollingCB);
+}
+
+extern int goIupNColsCB(void *);
+static void goIupSetNColsFunc(Ihandle *ih) {
+	IupSetCallback(ih, "NCOLS_CB", (Icallback) goIupNColsCB);
+}
+
+extern int goIupNLinesCB(void *);
+static void goIupSetNLinesFunc(Ihandle *ih) {
+	IupSetCallback(ih, "NLINES_CB", (Icallback) goIupNLinesCB);
+}
+
+extern int goIupHSpanCB(void *, int i, int j);
+static void goIupSetHSpanFunc(Ihandle *ih) {
+	IupSetCallback(ih, "HSPAN_CB", (Icallback) goIupHSpanCB);
+}
+
+extern int goIupVSpanCB(void *, int i, int j);
+static void goIupSetVSpanFunc(Ihandle *ih) {
+	IupSetCallback(ih, "VSPAN_CB", (Icallback) goIupVSpanCB);
+}
+
+extern int goIupHeightCB(void *, int i);
+static void goIupSetHeightFunc(Ihandle *ih) {
+	IupSetCallback(ih, "HEIGHT_CB", (Icallback) goIupHeightCB);
+}
+
+extern int goIupWidthCB(void *, int j);
+static void goIupSetWidthFunc(Ihandle *ih) {
+	IupSetCallback(ih, "WIDTH_CB", (Icallback) goIupWidthCB);
+}
+
+extern int goIupMatrixDrawCB(void *, int lin, int col, int x1, int x2, int y1, int y2);
+static void goIupSetMatrixDrawFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DRAW_CB", (Icallback) goIupMatrixDrawCB);
+}
+
+extern int goIupEnterItemCB(void *, int lin, int col);
+static void goIupSetEnterItemFunc(Ihandle *ih) {
+	IupSetCallback(ih, "ENTERITEM_CB", (Icallback) goIupEnterItemCB);
+}
+
+extern int goIupLeaveItemCB(void *, int lin, int col);
+static void goIupSetLeaveItemFunc(Ihandle *ih) {
+	IupSetCallback(ih, "LEAVEITEM_CB", (Icallback) goIupLeaveItemCB);
+}
+
+extern int goIupClickCB(void *, int lin, int col, void *status);
+static void goIupSetClickFunc(Ihandle *ih) {
+	IupSetCallback(ih, "CLICK_CB", (Icallback) goIupClickCB);
+}
+
+extern int goIupReleaseCB(void *, int lin, int col, void *status);
+static void goIupSetReleaseFunc(Ihandle *ih) {
+	IupSetCallback(ih, "RELEASE_CB", (Icallback) goIupReleaseCB);
+}
+
+extern int goIupMatrixMouseMoveCB(void *, int lin, int col);
+static void goIupSetMatrixMouseMoveFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MOUSEMOVE_CB", (Icallback) goIupMatrixMouseMoveCB);
+}
+
+extern int goIupEditionCB(void *, int lin, int col, int mode, int update);
+static void goIupSetEditionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITION_CB", (Icallback) goIupEditionCB);
+}
+
+extern int goIupDropCheckCB(void *, int lin, int col);
+static void goIupSetDropCheckFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DROPCHECK_CB", (Icallback) goIupDropCheckCB);
+}
+
+extern int goIupMarkCB(void *, int lin, int col);
+static void goIupSetMarkFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MARK_CB", (Icallback) goIupMarkCB);
+}
+
+extern int goIupMarkEditCB(void *, int lin, int col, int marked);
+static void goIupSetMarkEditFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MARKEDIT_CB", (Icallback) goIupMarkEditCB);
+}
+
+extern int goIupValueEditCB(void *, int lin, int col, void *newval);
+static void goIupSetValueEditFunc(Ihandle *ih) {
+	IupSetCallback(ih, "VALUE_EDIT_CB", (Icallback) goIupValueEditCB);
+}
+
+extern int goIupColResizeCB(void *, int col);
+static void goIupSetColResizeFunc(Ihandle *ih) {
+	IupSetCallback(ih, "COLRESIZE_CB", (Icallback) goIupColResizeCB);
+}
+
+extern int goIupResizeMatrixCB(void *, int width, int height);
+static void goIupSetResizeMatrixFunc(Ihandle *ih) {
+	IupSetCallback(ih, "RESIZEMATRIX_CB", (Icallback) goIupResizeMatrixCB);
+}
+
+extern int goIupScrollTopCB(void *, int lin, int col);
+static void goIupSetScrollTopFunc(Ihandle *ih) {
+	IupSetCallback(ih, "SCROLLTOP_CB", (Icallback) goIupScrollTopCB);
+}
+
+extern int goIupBgColorCB(void *, int lin, int col, int *r, int *g, int *b);
+static void goIupSetBgColorFunc(Ihandle *ih) {
+	IupSetCallback(ih, "BGCOLOR_CB", (Icallback) goIupBgColorCB);
+}
+
+extern int goIupFgColorCB(void *, int lin, int col, int *r, int *g, int *b);
+static void goIupSetFgColorFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FGCOLOR_CB", (Icallback) goIupFgColorCB);
+}
+
+extern int goIupMatrixDropCB(void *, void *drop, int lin, int col);
+static void goIupSetMatrixDropFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DROP_CB", (Icallback) goIupMatrixDropCB);
+}
+
+extern int goIupMatrixActionCB(void *, int key, int lin, int col, int edition, char *status);
+static void goIupSetMatrixActionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "ACTION_CB", (Icallback) goIupMatrixActionCB);
+}
+
+extern int goIupEditClickCB(void *, int lin, int col, char *status);
+static void goIupSetEditClickFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITCLICK_CB", (Icallback) goIupEditClickCB);
+}
+
+extern int goIupEditReleaseCB(void *, int lin, int col, char *status);
+static void goIupSetEditReleaseFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITRELEASE_CB", (Icallback) goIupEditReleaseCB);
+}
+
+extern int goIupEditMouseMoveCB(void *, int lin, int col);
+static void goIupSetEditMouseMoveFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITMOUSEMOVE_CB", (Icallback) goIupEditMouseMoveCB);
+}
+
+extern char* goIupMatrixFontCB(void *, int lin, int col);
+static void goIupSetMatrixFontFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FONT_CB", (Icallback) goIupMatrixFontCB);
+}
+
+extern char* goIupMatrixTypeCB(void *, int lin, int col);
+static void goIupSetMatrixTypeFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TYPE_CB", (Icallback) goIupMatrixTypeCB);
+}
+
+extern char* goIupTranslateValueCB(void *, int lin, int col, char *value);
+static void goIupSetTranslateValueFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TRANSLATEVALUE_CB", (Icallback) goIupTranslateValueCB);
+}
+
+extern int goIupMenuDropCB(void *, void *menu, int lin, int col);
+static void goIupSetMenuDropFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MENUDROP_CB", (Icallback) goIupMenuDropCB);
+}
+
+extern int goIupDropSelectCB(void *, int lin, int col, void *drop, char *text, int item, int col2);
+static void goIupSetDropSelectFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DROPSELECT_CB", (Icallback) goIupDropSelectCB);
+}
+
+extern char* goIupMatrixValueCB(void *, int lin, int col);
+static void goIupSetMatrixValueFunc(Ihandle *ih) {
+	IupSetCallback(ih, "VALUE_CB", (Icallback) goIupMatrixValueCB);
+}
+
+extern int goIupMatrixToggleValueCB(void *, int lin, int col, int value);
+static void goIupSetMatrixToggleValueFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TOGGLEVALUE_CB", (Icallback) goIupMatrixToggleValueCB);
+}
+
+extern int goIupMatrixListActionCB(void *, int item, int state);
+static void goIupSetMatrixListActionFunc(Ihandle *ih, char *name) {
+	IupSetCallback(ih, name, (Icallback) goIupMatrixListActionCB);
+}
+
 */
 import "C"
 
@@ -2779,3 +2979,1072 @@ func setUpdateFunc(ih Ihandle, f UpdateFunc) {
 }
 
 //--------------------
+
+// ============================================================================
+// CELLS AND MATRIX CONTROL CALLBACKS
+// ============================================================================
+
+// CellsDrawFunc for DRAW_CB callback in Cells control.
+// Called when a cell needs to be redrawn.
+type CellsDrawFunc func(ih Ihandle, i, j, xmin, xmax, ymin, ymax int) int
+
+//export goIupCellsDrawCB
+func goIupCellsDrawCB(ih unsafe.Pointer, i, j, xmin, xmax, ymin, ymax C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("CELLS_DRAW_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "CELLS_DRAW_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(CellsDrawFunc)
+
+	return C.int(f((Ihandle)(ih), int(i), int(j), int(xmin), int(xmax), int(ymin), int(ymax)))
+}
+
+// MouseClickFunc for MOUSECLICK_CB callback.
+// Action generated when any mouse button is pressed or released.
+type MouseClickFunc func(ih Ihandle, button, pressed, i, j, x, y int, status string) int
+
+//export goIupMouseClickCB
+func goIupMouseClickCB(ih unsafe.Pointer, button, pressed, i, j, x, y C.int, status unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("MOUSECLICK_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "MOUSECLICK_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MouseClickFunc)
+
+	goStatus := C.GoString((*C.char)(status))
+	return C.int(f((Ihandle)(ih), int(button), int(pressed), int(i), int(j), int(x), int(y), goStatus))
+}
+
+// MouseMotionFunc for MOUSEMOTION_CB callback in Cells.
+// Action generated when the mouse moves over the control.
+type MouseMotionFunc func(ih Ihandle, i, j, x, y int, status string) int
+
+//export goIupMouseMotionCB
+func goIupMouseMotionCB(ih unsafe.Pointer, i, j, x, y C.int, status unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("MOUSEMOTION_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "MOUSEMOTION_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MouseMotionFunc)
+
+	goStatus := C.GoString((*C.char)(status))
+	return C.int(f((Ihandle)(ih), int(i), int(j), int(x), int(y), goStatus))
+}
+
+// ScrollingFunc for SCROLLING_CB callback.
+// Called when the user scrolls the view.
+type ScrollingFunc func(ih Ihandle, i, j int) int
+
+//export goIupScrollingCB
+func goIupScrollingCB(ih unsafe.Pointer, i, j C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("SCROLLING_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "SCROLLING_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ScrollingFunc)
+
+	return C.int(f((Ihandle)(ih), int(i), int(j)))
+}
+
+// NColsFunc for NCOLS_CB callback.
+// Returns the number of columns.
+type NColsFunc func(ih Ihandle) int
+
+//export goIupNColsCB
+func goIupNColsCB(ih unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("NCOLS_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "NCOLS_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(NColsFunc)
+
+	return C.int(f((Ihandle)(ih)))
+}
+
+// NLinesFunc for NLINES_CB callback.
+// Returns the number of lines.
+type NLinesFunc func(ih Ihandle) int
+
+//export goIupNLinesCB
+func goIupNLinesCB(ih unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("NLINES_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "NLINES_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(NLinesFunc)
+
+	return C.int(f((Ihandle)(ih)))
+}
+
+// HSpanFunc for HSPAN_CB callback.
+// Returns the horizontal span of a cell.
+type HSpanFunc func(ih Ihandle, i, j int) int
+
+//export goIupHSpanCB
+func goIupHSpanCB(ih unsafe.Pointer, i, j C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("HSPAN_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "HSPAN_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(HSpanFunc)
+
+	return C.int(f((Ihandle)(ih), int(i), int(j)))
+}
+
+// VSpanFunc for VSPAN_CB callback.
+// Returns the vertical span of a cell.
+type VSpanFunc func(ih Ihandle, i, j int) int
+
+//export goIupVSpanCB
+func goIupVSpanCB(ih unsafe.Pointer, i, j C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("VSPAN_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "VSPAN_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(VSpanFunc)
+
+	return C.int(f((Ihandle)(ih), int(i), int(j)))
+}
+
+// HeightFunc for HEIGHT_CB callback.
+// Returns the height of a line.
+type HeightFunc func(ih Ihandle, i int) int
+
+//export goIupHeightCB
+func goIupHeightCB(ih unsafe.Pointer, i C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("HEIGHT_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "HEIGHT_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(HeightFunc)
+
+	return C.int(f((Ihandle)(ih), int(i)))
+}
+
+// WidthFunc for WIDTH_CB callback.
+// Returns the width of a column.
+type WidthFunc func(ih Ihandle, j int) int
+
+//export goIupWidthCB
+func goIupWidthCB(ih unsafe.Pointer, j C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("WIDTH_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "WIDTH_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(WidthFunc)
+
+	return C.int(f((Ihandle)(ih), int(j)))
+}
+
+// MatrixDrawFunc for DRAW_CB callback in Matrix control.
+// Called when a cell needs to be redrawn.
+type MatrixDrawFunc func(ih Ihandle, lin, col, x1, x2, y1, y2 int) int
+
+//export goIupMatrixDrawCB
+func goIupMatrixDrawCB(ih unsafe.Pointer, lin, col, x1, x2, y1, y2 C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("MATRIX_DRAW_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "MATRIX_DRAW_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MatrixDrawFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col), int(x1), int(x2), int(y1), int(y2)))
+}
+
+// EnterItemFunc for ENTERITEM_CB callback.
+// Called when a matrix cell is selected, becoming the current cell.
+type EnterItemFunc func(ih Ihandle, lin, col int) int
+
+//export goIupEnterItemCB
+func goIupEnterItemCB(ih unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("ENTERITEM_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "ENTERITEM_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(EnterItemFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col)))
+}
+
+// LeaveItemFunc for LEAVEITEM_CB callback.
+// Called when a cell is no longer the current cell.
+type LeaveItemFunc func(ih Ihandle, lin, col int) int
+
+//export goIupLeaveItemCB
+func goIupLeaveItemCB(ih unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("LEAVEITEM_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "LEAVEITEM_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(LeaveItemFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col)))
+}
+
+// ClickFunc for CLICK_CB callback in Matrix.
+// Called when a cell is clicked.
+type ClickFunc func(ih Ihandle, lin, col int, status string) int
+
+//export goIupClickCB
+func goIupClickCB(ih unsafe.Pointer, lin, col C.int, status unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("CLICK_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "CLICK_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ClickFunc)
+
+	goStatus := C.GoString((*C.char)(status))
+	return C.int(f((Ihandle)(ih), int(lin), int(col), goStatus))
+}
+
+// ReleaseFunc for RELEASE_CB callback in Matrix.
+// Called when a mouse button is released over a cell.
+type ReleaseFunc func(ih Ihandle, lin, col int, status string) int
+
+//export goIupReleaseCB
+func goIupReleaseCB(ih unsafe.Pointer, lin, col C.int, status unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("RELEASE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "RELEASE_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ReleaseFunc)
+
+	goStatus := C.GoString((*C.char)(status))
+	return C.int(f((Ihandle)(ih), int(lin), int(col), goStatus))
+}
+
+// MatrixMouseMoveFunc for MOUSEMOVE_CB callback in Matrix.
+// Called when the mouse moves over a cell.
+type MatrixMouseMoveFunc func(ih Ihandle, lin, col int) int
+
+//export goIupMatrixMouseMoveCB
+func goIupMatrixMouseMoveCB(ih unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("MATRIX_MOUSEMOVE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "MATRIX_MOUSEMOVE_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MatrixMouseMoveFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col)))
+}
+
+// EditionFunc for EDITION_CB callback.
+// Called when a cell enters/leaves edition mode.
+type EditionFunc func(ih Ihandle, lin, col, mode, update int) int
+
+//export goIupEditionCB
+func goIupEditionCB(ih unsafe.Pointer, lin, col, mode, update C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("EDITION_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "EDITION_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(EditionFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col), int(mode), int(update)))
+}
+
+// DropCheckFunc for DROPCHECK_CB callback.
+// Called to determine if a cell can be a dropdown.
+type DropCheckFunc func(ih Ihandle, lin, col int) int
+
+//export goIupDropCheckCB
+func goIupDropCheckCB(ih unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("DROPCHECK_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "DROPCHECK_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(DropCheckFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col)))
+}
+
+// MarkFunc for MARK_CB callback.
+// Called when a cell is marked.
+type MarkFunc func(ih Ihandle, lin, col int) int
+
+//export goIupMarkCB
+func goIupMarkCB(ih unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("MARK_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "MARK_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MarkFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col)))
+}
+
+// MarkEditFunc for MARKEDIT_CB callback.
+// Called when a marked cell is edited.
+type MarkEditFunc func(ih Ihandle, lin, col, marked int) int
+
+//export goIupMarkEditCB
+func goIupMarkEditCB(ih unsafe.Pointer, lin, col, marked C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("MARKEDIT_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "MARKEDIT_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MarkEditFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col), int(marked)))
+}
+
+// ValueEditFunc for VALUE_EDIT_CB callback.
+// Called when the value of a cell is edited.
+type ValueEditFunc func(ih Ihandle, lin, col int, newval string) int
+
+//export goIupValueEditCB
+func goIupValueEditCB(ih unsafe.Pointer, lin, col C.int, newval unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("VALUE_EDIT_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "VALUE_EDIT_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ValueEditFunc)
+
+	goNewval := C.GoString((*C.char)(newval))
+	return C.int(f((Ihandle)(ih), int(lin), int(col), goNewval))
+}
+
+// ColResizeFunc for COLRESIZE_CB callback.
+// Called after a column is resized.
+type ColResizeFunc func(ih Ihandle, col int) int
+
+//export goIupColResizeCB
+func goIupColResizeCB(ih unsafe.Pointer, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("COLRESIZE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "COLRESIZE_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ColResizeFunc)
+
+	return C.int(f((Ihandle)(ih), int(col)))
+}
+
+// ResizeMatrixFunc for RESIZEMATRIX_CB callback.
+// Called after the matrix size changes.
+type ResizeMatrixFunc func(ih Ihandle, width, height int) int
+
+//export goIupResizeMatrixCB
+func goIupResizeMatrixCB(ih unsafe.Pointer, width, height C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("RESIZEMATRIX_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "RESIZEMATRIX_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ResizeMatrixFunc)
+
+	return C.int(f((Ihandle)(ih), int(width), int(height)))
+}
+
+// ScrollTopFunc for SCROLLTOP_CB callback.
+// Called when the matrix is scrolled.
+type ScrollTopFunc func(ih Ihandle, lin, col int) int
+
+//export goIupScrollTopCB
+func goIupScrollTopCB(ih unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("SCROLLTOP_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "SCROLLTOP_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ScrollTopFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col)))
+}
+
+// BgColorFunc for BGCOLOR_CB callback.
+// Called to determine the background color of a cell.
+type BgColorFunc func(ih Ihandle, lin, col int) (r, g, b int, ret int)
+
+//export goIupBgColorCB
+func goIupBgColorCB(ih unsafe.Pointer, lin, col C.int, r, g, b *C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("BGCOLOR_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "BGCOLOR_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(BgColorFunc)
+
+	rr, gg, bb, ret := f((Ihandle)(ih), int(lin), int(col))
+	*r = C.int(rr)
+	*g = C.int(gg)
+	*b = C.int(bb)
+	return C.int(ret)
+}
+
+// FgColorFunc for FGCOLOR_CB callback.
+// Called to determine the foreground color of a cell.
+type FgColorFunc func(ih Ihandle, lin, col int) (r, g, b int, ret int)
+
+//export goIupFgColorCB
+func goIupFgColorCB(ih unsafe.Pointer, lin, col C.int, r, g, b *C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("FGCOLOR_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "FGCOLOR_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(FgColorFunc)
+
+	rr, gg, bb, ret := f((Ihandle)(ih), int(lin), int(col))
+	*r = C.int(rr)
+	*g = C.int(gg)
+	*b = C.int(bb)
+	return C.int(ret)
+}
+
+
+// setCellsDrawFunc for DRAW_CB in Cells.
+func setCellsDrawFunc(ih Ihandle, f CellsDrawFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("CELLS_DRAW_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetCellsDrawFunc(ih.ptr())
+}
+
+// setMouseClickFunc for MOUSECLICK_CB.
+func setMouseClickFunc(ih Ihandle, f MouseClickFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("MOUSECLICK_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMouseClickFunc(ih.ptr())
+}
+
+// setMouseMotionFunc for MOUSEMOTION_CB in Cells.
+func setMouseMotionFunc(ih Ihandle, f MouseMotionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("MOUSEMOTION_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMouseMotionFunc(ih.ptr())
+}
+
+// setScrollingFunc for SCROLLING_CB.
+func setScrollingFunc(ih Ihandle, f ScrollingFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("SCROLLING_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetScrollingFunc(ih.ptr())
+}
+
+// setNColsFunc for NCOLS_CB.
+func setNColsFunc(ih Ihandle, f NColsFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("NCOLS_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetNColsFunc(ih.ptr())
+}
+
+// setNLinesFunc for NLINES_CB.
+func setNLinesFunc(ih Ihandle, f NLinesFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("NLINES_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetNLinesFunc(ih.ptr())
+}
+
+// setHSpanFunc for HSPAN_CB.
+func setHSpanFunc(ih Ihandle, f HSpanFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("HSPAN_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetHSpanFunc(ih.ptr())
+}
+
+// setVSpanFunc for VSPAN_CB.
+func setVSpanFunc(ih Ihandle, f VSpanFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("VSPAN_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetVSpanFunc(ih.ptr())
+}
+
+// setHeightFunc for HEIGHT_CB.
+func setHeightFunc(ih Ihandle, f HeightFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("HEIGHT_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetHeightFunc(ih.ptr())
+}
+
+// setWidthFunc for WIDTH_CB.
+func setWidthFunc(ih Ihandle, f WidthFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("WIDTH_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetWidthFunc(ih.ptr())
+}
+
+// setMatrixDrawFunc for DRAW_CB in Matrix.
+func setMatrixDrawFunc(ih Ihandle, f MatrixDrawFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("MATRIX_DRAW_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMatrixDrawFunc(ih.ptr())
+}
+
+// setEnterItemFunc for ENTERITEM_CB.
+func setEnterItemFunc(ih Ihandle, f EnterItemFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("ENTERITEM_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetEnterItemFunc(ih.ptr())
+}
+
+// setLeaveItemFunc for LEAVEITEM_CB.
+func setLeaveItemFunc(ih Ihandle, f LeaveItemFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("LEAVEITEM_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetLeaveItemFunc(ih.ptr())
+}
+
+// setClickFunc for CLICK_CB in Matrix.
+func setClickFunc(ih Ihandle, f ClickFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("CLICK_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetClickFunc(ih.ptr())
+}
+
+// setReleaseFunc for RELEASE_CB in Matrix.
+func setReleaseFunc(ih Ihandle, f ReleaseFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("RELEASE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetReleaseFunc(ih.ptr())
+}
+
+// setMatrixMouseMoveFunc for MOUSEMOVE_CB in Matrix.
+func setMatrixMouseMoveFunc(ih Ihandle, f MatrixMouseMoveFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("MATRIX_MOUSEMOVE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMatrixMouseMoveFunc(ih.ptr())
+}
+
+// setEditionFunc for EDITION_CB.
+func setEditionFunc(ih Ihandle, f EditionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("EDITION_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetEditionFunc(ih.ptr())
+}
+
+// setDropCheckFunc for DROPCHECK_CB.
+func setDropCheckFunc(ih Ihandle, f DropCheckFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("DROPCHECK_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetDropCheckFunc(ih.ptr())
+}
+
+// setMarkFunc for MARK_CB.
+func setMarkFunc(ih Ihandle, f MarkFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("MARK_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMarkFunc(ih.ptr())
+}
+
+// setMarkEditFunc for MARKEDIT_CB.
+func setMarkEditFunc(ih Ihandle, f MarkEditFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("MARKEDIT_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMarkEditFunc(ih.ptr())
+}
+
+// setValueEditFunc for VALUE_EDIT_CB.
+func setValueEditFunc(ih Ihandle, f ValueEditFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("VALUE_EDIT_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetValueEditFunc(ih.ptr())
+}
+
+// setColResizeFunc for COLRESIZE_CB.
+func setColResizeFunc(ih Ihandle, f ColResizeFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("COLRESIZE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetColResizeFunc(ih.ptr())
+}
+
+// setResizeMatrixFunc for RESIZEMATRIX_CB.
+func setResizeMatrixFunc(ih Ihandle, f ResizeMatrixFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("RESIZEMATRIX_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetResizeMatrixFunc(ih.ptr())
+}
+
+// setScrollTopFunc for SCROLLTOP_CB.
+func setScrollTopFunc(ih Ihandle, f ScrollTopFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("SCROLLTOP_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetScrollTopFunc(ih.ptr())
+}
+
+// setBgColorFunc for BGCOLOR_CB.
+func setBgColorFunc(ih Ihandle, f BgColorFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("BGCOLOR_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetBgColorFunc(ih.ptr())
+}
+
+// setFgColorFunc for FGCOLOR_CB.
+func setFgColorFunc(ih Ihandle, f FgColorFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("FGCOLOR_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetFgColorFunc(ih.ptr())
+}
+
+//--------------------
+
+// MatrixDropFunc for DROP_CB callback in Matrix control.
+// Called when a dropdown is created for a cell.
+//
+// f: func(ih, drop Ihandle, lin, col int) int
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type MatrixDropFunc func(ih, drop Ihandle, lin, col int) int
+
+//export goIupMatrixDropCB
+func goIupMatrixDropCB(ih, drop unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("DROP_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "DROP_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MatrixDropFunc)
+	return C.int(f((Ihandle)(ih), (Ihandle)(drop), int(lin), int(col)))
+}
+
+// setMatrixDropFunc for DROP_CB.
+func setMatrixDropFunc(ih Ihandle, f MatrixDropFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("DROP_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMatrixDropFunc(ih.ptr())
+}
+
+//--------------------
+
+// MatrixActionFunc for ACTION_CB callback in Matrix control.
+// Called when a key is pressed in the matrix.
+//
+// f: func(ih Ihandle, key, lin, col, edition int, status string) int
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type MatrixActionFunc func(ih Ihandle, key, lin, col, edition int, status string) int
+
+//export goIupMatrixActionCB
+func goIupMatrixActionCB(ih unsafe.Pointer, key, lin, col, edition C.int, status *C.char) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("MATRIX_ACTION_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "MATRIX_ACTION_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MatrixActionFunc)
+	goStatus := C.GoString(status)
+	return C.int(f((Ihandle)(ih), int(key), int(lin), int(col), int(edition), goStatus))
+}
+
+// setMatrixActionFunc for ACTION_CB.
+func setMatrixActionFunc(ih Ihandle, f MatrixActionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("MATRIX_ACTION_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMatrixActionFunc(ih.ptr())
+}
+
+//--------------------
+
+// EditClickFunc for EDITCLICK_CB callback.
+// Called when a cell is clicked in edit mode.
+//
+// f: func(ih Ihandle, lin, col int, status string) int
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type EditClickFunc func(ih Ihandle, lin, col int, status string) int
+
+//export goIupEditClickCB
+func goIupEditClickCB(ih unsafe.Pointer, lin, col C.int, status *C.char) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("EDITCLICK_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "EDITCLICK_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(EditClickFunc)
+	goStatus := C.GoString(status)
+	return C.int(f((Ihandle)(ih), int(lin), int(col), goStatus))
+}
+
+// setEditClickFunc for EDITCLICK_CB.
+func setEditClickFunc(ih Ihandle, f EditClickFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("EDITCLICK_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetEditClickFunc(ih.ptr())
+}
+
+//--------------------
+
+// EditReleaseFunc for EDITRELEASE_CB callback.
+// Called when mouse button is released in edit mode.
+//
+// f: func(ih Ihandle, lin, col int, status string) int
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type EditReleaseFunc func(ih Ihandle, lin, col int, status string) int
+
+//export goIupEditReleaseCB
+func goIupEditReleaseCB(ih unsafe.Pointer, lin, col C.int, status *C.char) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("EDITRELEASE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "EDITRELEASE_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(EditReleaseFunc)
+	goStatus := C.GoString(status)
+	return C.int(f((Ihandle)(ih), int(lin), int(col), goStatus))
+}
+
+// setEditReleaseFunc for EDITRELEASE_CB.
+func setEditReleaseFunc(ih Ihandle, f EditReleaseFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("EDITRELEASE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetEditReleaseFunc(ih.ptr())
+}
+
+//--------------------
+
+// EditMouseMoveFunc for EDITMOUSEMOVE_CB callback.
+// Called when mouse moves in edit mode.
+//
+// f: func(ih Ihandle, lin, col int) int
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type EditMouseMoveFunc func(ih Ihandle, lin, col int) int
+
+//export goIupEditMouseMoveCB
+func goIupEditMouseMoveCB(ih unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("EDITMOUSEMOVE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "EDITMOUSEMOVE_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(EditMouseMoveFunc)
+	return C.int(f((Ihandle)(ih), int(lin), int(col)))
+}
+
+// setEditMouseMoveFunc for EDITMOUSEMOVE_CB.
+func setEditMouseMoveFunc(ih Ihandle, f EditMouseMoveFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("EDITMOUSEMOVE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetEditMouseMoveFunc(ih.ptr())
+}
+
+//--------------------
+
+// MatrixFontFunc for FONT_CB callback.
+// Returns the font to be used for a cell.
+//
+// f: func(ih Ihandle, lin, col int) string
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type MatrixFontFunc func(ih Ihandle, lin, col int) string
+
+//export goIupMatrixFontCB
+func goIupMatrixFontCB(ih unsafe.Pointer, lin, col C.int) *C.char {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("FONT_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "FONT_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MatrixFontFunc)
+	result := f((Ihandle)(ih), int(lin), int(col))
+	if result == "" {
+		return nil
+	}
+	return C.CString(result)
+}
+
+// setMatrixFontFunc for FONT_CB.
+func setMatrixFontFunc(ih Ihandle, f MatrixFontFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("FONT_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMatrixFontFunc(ih.ptr())
+}
+
+//--------------------
+
+// MatrixTypeFunc for TYPE_CB callback.
+// Returns the type to be used for a cell.
+//
+// f: func(ih Ihandle, lin, col int) string
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type MatrixTypeFunc func(ih Ihandle, lin, col int) string
+
+//export goIupMatrixTypeCB
+func goIupMatrixTypeCB(ih unsafe.Pointer, lin, col C.int) *C.char {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("TYPE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "TYPE_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MatrixTypeFunc)
+	result := f((Ihandle)(ih), int(lin), int(col))
+	if result == "" {
+		return nil
+	}
+	return C.CString(result)
+}
+
+// setMatrixTypeFunc for TYPE_CB.
+func setMatrixTypeFunc(ih Ihandle, f MatrixTypeFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("TYPE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMatrixTypeFunc(ih.ptr())
+}
+
+//--------------------
+
+// TranslateValueFunc for TRANSLATEVALUE_CB callback.
+// Translates a cell value for display.
+//
+// f: func(ih Ihandle, lin, col int, value string) string
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type TranslateValueFunc func(ih Ihandle, lin, col int, value string) string
+
+//export goIupTranslateValueCB
+func goIupTranslateValueCB(ih unsafe.Pointer, lin, col C.int, value *C.char) *C.char {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("TRANSLATEVALUE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "TRANSLATEVALUE_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(TranslateValueFunc)
+	goValue := C.GoString(value)
+	result := f((Ihandle)(ih), int(lin), int(col), goValue)
+	if result == "" {
+		return nil
+	}
+	return C.CString(result)
+}
+
+// setTranslateValueFunc for TRANSLATEVALUE_CB.
+func setTranslateValueFunc(ih Ihandle, f TranslateValueFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("TRANSLATEVALUE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetTranslateValueFunc(ih.ptr())
+}
+
+//--------------------
+
+// MenuDropFunc for MENUDROP_CB callback.
+// Called when a menu dropdown is created for a cell.
+//
+// f: func(ih, menu Ihandle, lin, col int) int
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type MenuDropFunc func(ih, menu Ihandle, lin, col int) int
+
+//export goIupMenuDropCB
+func goIupMenuDropCB(ih, menu unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("MENUDROP_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "MENUDROP_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MenuDropFunc)
+	return C.int(f((Ihandle)(ih), (Ihandle)(menu), int(lin), int(col)))
+}
+
+// setMenuDropFunc for MENUDROP_CB.
+func setMenuDropFunc(ih Ihandle, f MenuDropFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("MENUDROP_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMenuDropFunc(ih.ptr())
+}
+
+//--------------------
+
+// DropSelectFunc for DROPSELECT_CB callback.
+// Called when an item is selected from dropdown.
+//
+// f: func(ih Ihandle, lin, col int, drop Ihandle, text string, item, col2 int) int
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type DropSelectFunc func(ih Ihandle, lin, col int, drop Ihandle, text string, item, col2 int) int
+
+//export goIupDropSelectCB
+func goIupDropSelectCB(ih unsafe.Pointer, lin, col C.int, drop unsafe.Pointer, text *C.char, item, col2 C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("DROPSELECT_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "DROPSELECT_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(DropSelectFunc)
+	goText := C.GoString(text)
+	return C.int(f((Ihandle)(ih), int(lin), int(col), (Ihandle)(drop), goText, int(item), int(col2)))
+}
+
+// setDropSelectFunc for DROPSELECT_CB.
+func setDropSelectFunc(ih Ihandle, f DropSelectFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("DROPSELECT_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetDropSelectFunc(ih.ptr())
+}
+
+//--------------------
+
+// MatrixValueFunc for VALUE_CB callback.
+// Returns the value to be displayed in a cell (callback mode).
+//
+// f: func(ih Ihandle, lin, col int) string
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type MatrixValueFunc func(ih Ihandle, lin, col int) string
+
+//export goIupMatrixValueCB
+func goIupMatrixValueCB(ih unsafe.Pointer, lin, col C.int) *C.char {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("VALUE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "VALUE_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MatrixValueFunc)
+	result := f((Ihandle)(ih), int(lin), int(col))
+	if result == "" {
+		return nil
+	}
+	return C.CString(result)
+}
+
+// setMatrixValueFunc for VALUE_CB.
+func setMatrixValueFunc(ih Ihandle, f MatrixValueFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("VALUE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMatrixValueFunc(ih.ptr())
+}
+
+//--------------------
+
+// MatrixToggleValueFunc for TOGGLEVALUE_CB callback in Matrix control.
+// Called when a toggle cell value changes.
+//
+// f: func(ih Ihandle, lin, col, value int) int
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+type MatrixToggleValueFunc func(ih Ihandle, lin, col, value int) int
+
+//export goIupMatrixToggleValueCB
+func goIupMatrixToggleValueCB(ih unsafe.Pointer, lin, col, value C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("MATRIX_TOGGLEVALUE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "MATRIX_TOGGLEVALUE_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MatrixToggleValueFunc)
+	return C.int(f((Ihandle)(ih), int(lin), int(col), int(value)))
+}
+
+// setMatrixToggleValueFunc for TOGGLEVALUE_CB.
+func setMatrixToggleValueFunc(ih Ihandle, f MatrixToggleValueFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("MATRIX_TOGGLEVALUE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetMatrixToggleValueFunc(ih.ptr())
+}
+
+//--------------------
+
+// MatrixListActionFunc for LISTACTION_CB and IMAGEVALUECHANGED_CB callbacks in MatrixList.
+// Called when item selection or image value changes.
+//
+// f: func(ih Ihandle, item, state int) int
+//
+// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrixlist.html
+type MatrixListActionFunc func(ih Ihandle, item, state int) int
+
+//export goIupMatrixListActionCB
+func goIupMatrixListActionCB(ih unsafe.Pointer, item, state C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("MATRIXLIST_ACTION_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "MATRIXLIST_ACTION_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(MatrixListActionFunc)
+	return C.int(f((Ihandle)(ih), int(item), int(state)))
+}
+
+// setMatrixListActionFunc for LISTACTION_CB and IMAGEVALUECHANGED_CB.
+func setMatrixListActionFunc(ih Ihandle, name string, f MatrixListActionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("MATRIXLIST_ACTION_CB_"+ih.GetAttribute("UUID"), ch)
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+	C.goIupSetMatrixListActionFunc(ih.ptr(), cName)
+}
+
