@@ -595,10 +595,10 @@ IUP_SDK_API int iupStrToRGB(const char *str, unsigned char *r, unsigned char *g,
   {
     if (sscanf(str, "%u %u %u", &ri, &gi, &bi) != 3) return 0;
   }
-  if (ri > 255 || gi > 255 || bi > 255) return 0;
-  *r = (unsigned char)ri;
-  *g = (unsigned char)gi;
-  *b = (unsigned char)bi;
+  /* Wrap values >255 */
+  *r = (unsigned char)(ri % 256);
+  *g = (unsigned char)(gi % 256);
+  *b = (unsigned char)(bi % 256);
   return 1;
 }
 
@@ -615,11 +615,11 @@ IUP_SDK_API int iupStrToRGBA(const char *str, unsigned char *r, unsigned char *g
   {
     if (sscanf(str, "%u %u %u %u", &ri, &gi, &bi, &ai) < 3) return 0;
   }
-  if (ri > 255 || gi > 255 || bi > 255 || ai > 255) return 0;
-  *r = (unsigned char)ri;
-  *g = (unsigned char)gi;
-  *b = (unsigned char)bi;
-  *a = (unsigned char)ai;
+  /* Wrap values >255 */
+  *r = (unsigned char)(ri % 256);
+  *g = (unsigned char)(gi % 256);
+  *b = (unsigned char)(bi % 256);
+  *a = (unsigned char)(ai % 256);
   return 1;
 }
 
