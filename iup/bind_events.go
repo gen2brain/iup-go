@@ -196,7 +196,12 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "CANCEL_CB":
 		setCancelFunc(ih, fn.(CancelFunc))
 	case "ACTION_CB":
-		setTimerActionFunc(ih, fn.(TimerActionFunc))
+		switch v := fn.(type) {
+		case TimerActionFunc:
+			setTimerActionFunc(ih, v)
+		case MatrixActionFunc:
+			setMatrixActionFunc(ih, v)
+		}
 	case "THREAD_CB":
 		setThreadFunc(ih, fn.(ThreadFunc))
 	case "SCROLL_CB":
@@ -222,7 +227,12 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "BUTTON_RELEASE_CB":
 		setButtonReleaseFunc(ih, fn.(ButtonReleaseFunc))
 	case "MOUSEMOVE_CB":
-		setMouseMoveFunc(ih, fn.(MouseMoveFunc))
+		switch v := fn.(type) {
+		case MouseMoveFunc:
+			setMouseMoveFunc(ih, v)
+		case MatrixMouseMoveFunc:
+			setMatrixMouseMoveFunc(ih, v)
+		}
 	case "KEYPRESS_CB":
 		setKeyPressFunc(ih, fn.(KeyPressFunc))
 	case "CELL_CB":
@@ -252,7 +262,12 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "RENAME_CB":
 		setRenameFunc(ih, fn.(RenameFunc))
 	case "TOGGLEVALUE_CB":
-		setToggleValueFunc(ih, fn.(ToggleValueFunc))
+		switch v := fn.(type) {
+		case ToggleValueFunc:
+			setToggleValueFunc(ih, v)
+		case MatrixToggleValueFunc:
+			setMatrixToggleValueFunc(ih, v)
+		}
 	case "NODEREMOVED_CB":
 		setNodeRemovedFunc(ih, fn.(NodeRemovedFunc))
 	case "MULTISELECTION_CB":
@@ -273,6 +288,85 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setNewWindowFunc(ih, fn.(NewWindowFunc))
 	case "UPDATE_CB":
 		setUpdateFunc(ih, fn.(UpdateFunc))
+	case "DRAW_CB":
+		switch v := fn.(type) {
+		case CellsDrawFunc:
+			setCellsDrawFunc(ih, v)
+		case MatrixDrawFunc:
+			setMatrixDrawFunc(ih, v)
+		}
+	case "MOUSECLICK_CB":
+		setMouseClickFunc(ih, fn.(MouseClickFunc))
+	case "MOUSEMOTION_CB":
+		setMouseMotionFunc(ih, fn.(MouseMotionFunc))
+	case "SCROLLING_CB":
+		setScrollingFunc(ih, fn.(ScrollingFunc))
+	case "NCOLS_CB":
+		setNColsFunc(ih, fn.(NColsFunc))
+	case "NLINES_CB":
+		setNLinesFunc(ih, fn.(NLinesFunc))
+	case "HSPAN_CB":
+		setHSpanFunc(ih, fn.(HSpanFunc))
+	case "VSPAN_CB":
+		setVSpanFunc(ih, fn.(VSpanFunc))
+	case "HEIGHT_CB":
+		setHeightFunc(ih, fn.(HeightFunc))
+	case "WIDTH_CB":
+		setWidthFunc(ih, fn.(WidthFunc))
+	case "ENTERITEM_CB":
+		setEnterItemFunc(ih, fn.(EnterItemFunc))
+	case "LEAVEITEM_CB":
+		setLeaveItemFunc(ih, fn.(LeaveItemFunc))
+	case "CLICK_CB":
+		setClickFunc(ih, fn.(ClickFunc))
+	case "RELEASE_CB":
+		setReleaseFunc(ih, fn.(ReleaseFunc))
+	case "EDITION_CB":
+		setEditionFunc(ih, fn.(EditionFunc))
+	case "DROPCHECK_CB":
+		setDropCheckFunc(ih, fn.(DropCheckFunc))
+	case "MARK_CB":
+		setMarkFunc(ih, fn.(MarkFunc))
+	case "MARKEDIT_CB":
+		setMarkEditFunc(ih, fn.(MarkEditFunc))
+	case "VALUE_EDIT_CB":
+		setValueEditFunc(ih, fn.(ValueEditFunc))
+	case "COLRESIZE_CB":
+		setColResizeFunc(ih, fn.(ColResizeFunc))
+	case "RESIZEMATRIX_CB":
+		setResizeMatrixFunc(ih, fn.(ResizeMatrixFunc))
+	case "SCROLLTOP_CB":
+		setScrollTopFunc(ih, fn.(ScrollTopFunc))
+	case "BGCOLOR_CB":
+		setBgColorFunc(ih, fn.(BgColorFunc))
+	case "FGCOLOR_CB":
+		setFgColorFunc(ih, fn.(FgColorFunc))
+	case "DROP_CB":
+		setMatrixDropFunc(ih, fn.(MatrixDropFunc))
+	case "EDITCLICK_CB":
+		setEditClickFunc(ih, fn.(EditClickFunc))
+	case "EDITRELEASE_CB":
+		setEditReleaseFunc(ih, fn.(EditReleaseFunc))
+	case "EDITMOUSEMOVE_CB":
+		setEditMouseMoveFunc(ih, fn.(EditMouseMoveFunc))
+	case "FONT_CB":
+		setMatrixFontFunc(ih, fn.(MatrixFontFunc))
+	case "TYPE_CB":
+		setMatrixTypeFunc(ih, fn.(MatrixTypeFunc))
+	case "TRANSLATEVALUE_CB":
+		setTranslateValueFunc(ih, fn.(TranslateValueFunc))
+	case "MENUDROP_CB":
+		setMenuDropFunc(ih, fn.(MenuDropFunc))
+	case "DROPSELECT_CB":
+		setDropSelectFunc(ih, fn.(DropSelectFunc))
+	case "VALUE_CB":
+		setMatrixValueFunc(ih, fn.(MatrixValueFunc))
+	case "LISTACTION_CB":
+		setMatrixListActionFunc(ih, "LISTACTION_CB", fn.(MatrixListActionFunc))
+	case "IMAGEVALUECHANGED_CB":
+		setMatrixListActionFunc(ih, "IMAGEVALUECHANGED_CB", fn.(MatrixListActionFunc))
+	case "LISTCLICK_CB":
+		setClickFunc(ih, fn.(ClickFunc))
 	}
 }
 

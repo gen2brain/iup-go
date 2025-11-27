@@ -4,6 +4,7 @@ package iup
 #cgo CFLAGS: -Iexternal/include -Iexternal/src -w
 #cgo CXXFLAGS: -Iexternal/include -Iexternal/src -w
 
+#cgo ctl CFLAGS: -Iexternal/srcctl
 #cgo gl CFLAGS: -Iexternal/srcgl
 #cgo web CFLAGS: -Iexternal/srcweb
 #cgo web CXXFLAGS: -Iexternal/srcweb
