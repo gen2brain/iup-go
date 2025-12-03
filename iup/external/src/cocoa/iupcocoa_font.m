@@ -58,10 +58,9 @@ static IupCocoaFont *cocoaCreateIupCocoaFontFromNSFont(NSFont *ns_font)
   [the_font setFontSize:font_size];
   [the_font setTypeFace:ns_font_name];
 
-  NSLayoutManager *lm = [[NSLayoutManager alloc] init];
-  int char_height = iupROUND([lm defaultLineHeightForFont:ns_font]);
+  // (defaultLineHeightForFont includes line spacing which makes text appear larger)
+  int char_height = iupROUND([ns_font ascender] + (-[ns_font descender]));
   [the_font setCharHeight:char_height];
-  [lm release];
 
   // For average char width, use the advancement of a common character like 'x'.
   // This is a better approximation than using the font's bounding box.
@@ -323,7 +322,8 @@ static void cocoaFontGetTextSize(IupCocoaFont *iup_font, const char *str, int le
       {
         NSString *line_str = [[NSString alloc] initWithBytes:curstr length:l_len encoding:NSUTF8StringEncoding];
         NSSize line_size = [line_str sizeWithAttributes:[iup_font attributeDictionary]];
-        max_w = iupMAX(max_w, (int)ceil(line_size.width));
+        int line_w = (int)ceil(line_size.width);
+        max_w = iupMAX(max_w, line_w);
         [line_str release];
       }
 

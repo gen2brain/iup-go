@@ -4564,6 +4564,10 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
     [text_storage endEditing];
     [text_view didChangeText];
     [undo_manager endUndoGrouping];
+
+    /* Scroll to end to show the appended text */
+    NSRange end_range = NSMakeRange([[text_view string] length], 0);
+    [text_view scrollRangeToVisible:end_range];
   }
   else
   {

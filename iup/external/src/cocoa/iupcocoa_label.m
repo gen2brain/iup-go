@@ -183,9 +183,7 @@ static NSImageView* cocoaLabelGetImageView(Ihandle* ih)
 void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
 {
   (void)ih;
-  // NSTextField adds internal padding for text rendering
-  // Without this, multi-line text wraps to extra lines and gets clipped
-  if (x) *x += 8;
+  (void)x;
   (void)y;
 }
 
