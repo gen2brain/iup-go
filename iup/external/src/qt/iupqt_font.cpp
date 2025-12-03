@@ -381,13 +381,11 @@ static void qtFontGetTextSize(Ihandle* ih, IqtFont* qtfont, const char* str, int
 
         curstr = nextstr;
       } while (*nextstr);
-
-      if (h)
-        *h = qtfont->charheight * line_count;
     }
   }
 
   if (w) *w = max_w;
+  if (h) *h = qtfont->charheight * line_count;
 }
 
 extern "C" void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)

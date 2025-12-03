@@ -331,8 +331,8 @@ extern "C" void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
     temp_spin->setRange(0, 100);
     temp_spin->setSingleStep(1);
 
-    QSize sizeHint = temp_spin->minimumSizeHint();
-    spin_min_width = sizeHint.width();
+    QSize minHint = temp_spin->minimumSizeHint();
+    spin_min_width = minHint.width();
 
     delete temp_spin;
   }
@@ -983,6 +983,10 @@ static int qtTextSetAppendAttrib(Ihandle* ih, const char* value)
       text->append("\n" + QString::fromUtf8(value));
     else
       text->append(QString::fromUtf8(value));
+
+    /* Scroll to the end to make the appended text visible */
+    text->moveCursor(QTextCursor::End);
+    text->ensureCursorVisible();
   }
   else
   {
