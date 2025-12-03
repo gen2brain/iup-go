@@ -31,10 +31,10 @@ package iup
 #cgo qt,!qt5,web,!nopkgconfig pkg-config: Qt6WebEngineCore Qt6WebEngineWidgets
 #cgo qt,qt5,web,!nopkgconfig pkg-config: Qt5WebEngineCore  Qt5WebEngineWidgets
 
-#cgo !windows,!darwin,motif LDFLAGS: -lXm -lXmu -lXt -lXext -lX11
-#cgo !windows,!darwin,linux,motif LDFLAGS: -lXpm
-#cgo !windows,!darwin,motif,gl LDFLAGS: -lGL
-#cgo !windows,!darwin,motif CFLAGS: -Iexternal/src/mot -DIUPDBUS_USE_DLOPEN
+#cgo motif LDFLAGS: -lXm -lXmu -lXt -lXext -lX11
+#cgo linux,motif LDFLAGS: -lXpm
+#cgo motif,gl LDFLAGS: -lGL
+#cgo motif CFLAGS: -Iexternal/src/mot -DIUPDBUS_USE_DLOPEN
 
 #cgo windows CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
 #cgo windows CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
