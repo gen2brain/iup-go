@@ -651,8 +651,12 @@ void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
+  /* IUP coordinates: use width + 1 and height + 1 */
+  CGFloat w = (CGFloat)(x2 - x1 + 1);
+  CGFloat h = (CGFloat)(y2 - y1 + 1);
+
   /* Clamp radius to prevent oversized corners */
-  CGFloat max_radius = ((x2 - x1) < (y2 - y1)) ? (CGFloat)(x2 - x1) / 2.0f : (CGFloat)(y2 - y1) / 2.0f;
+  CGFloat max_radius = (w < h) ? w / 2.0f : h / 2.0f;
   if (radius > max_radius)
     radius = max_radius;
 
@@ -662,7 +666,7 @@ void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y
   dc->clip_state = 1;
 
   /* Create rounded rectangle path and use as clip */
-  CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, (CGFloat)(x2 - x1), (CGFloat)(y2 - y1));
+  CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, w, h);
   CGPathRef path = CGPathCreateWithRoundedRect(rect, radius, radius, NULL);
 
   CGContextBeginPath(dc->image_cgContext);
@@ -877,8 +881,10 @@ void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, f
   /* Calculate gradient endpoints based on angle */
   /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
   CGFloat rad = angle * M_PI / 180.0f;
-  CGFloat w = x2 - x1;
-  CGFloat h = y2 - y1;
+
+  /* IUP coordinates: use width + 1 and height + 1 */
+  CGFloat w = (CGFloat)(x2 - x1 + 1);
+  CGFloat h = (CGFloat)(y2 - y1 + 1);
   CGFloat cx = x1 + w / 2.0f;
   CGFloat cy = y1 + h / 2.0f;
 
@@ -890,7 +896,10 @@ void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, f
   CGContextClipToRect(cg_context, CGRectMake(x1, y1, w, h));
 
   /* Draw gradient */
-  CGContextDrawLinearGradient(cg_context, gradient, start, end, 0);
+  /* Use kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation
+     to ensure the gradient fills the entire clipped area, otherwise corners that fall
+     outside the projected start/end planes (common in diagonal gradients) will be cut off. */
+  CGContextDrawLinearGradient(cg_context, gradient, start, end, kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
 
   CGContextRestoreGState(cg_context);
   CGGradientRelease(gradient);
