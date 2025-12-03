@@ -266,6 +266,7 @@ IUP_API Ihandle*  IupTabsv      (Ihandle* *children);
 IUP_API Ihandle*  IupFlatTabs   (Ihandle* first, ...);
 IUP_API Ihandle*  IupFlatTabsv  (Ihandle* *children);
 IUP_API Ihandle*  IupTree       (void);
+IUP_API Ihandle*  IupTable      (void);
 IUP_API Ihandle*  IupLink       (const char* url, const char* title);
 IUP_API Ihandle*  IupAnimatedLabel(Ihandle* animation);
 IUP_API Ihandle*  IupDatePick   (void);

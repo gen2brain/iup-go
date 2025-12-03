@@ -77,6 +77,7 @@ Iclass* iupMultiBoxNewClass(void);
 Iclass* iupFlatListNewClass(void);
 Iclass* iupFlatValNewClass(void);
 Iclass* iupFlatTreeNewClass(void);
+Iclass* iupTableNewClass(void);
 
 Iclass* iupTimerNewClass(void);
 Iclass* iupImageNewClass(void);
