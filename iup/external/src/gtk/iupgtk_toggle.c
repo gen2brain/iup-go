@@ -63,25 +63,41 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 #if GTK_CHECK_VERSION(3, 0, 0)
   if (iupAttribGetBoolean(ih, "SWITCH"))
   {
-    GtkWidget* temp_switch = gtk_switch_new();
-    GtkRequisition minimum, natural;
-    int switch_w, switch_h;
+    static int switch_w = -1;
+    static int switch_h = -1;
 
-    gtk_widget_get_preferred_size(temp_switch, &minimum, &natural);
+    if (switch_w < 0)
+    {
+      GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+      GtkWidget* temp_switch = gtk_switch_new();
+      GtkAllocation allocation;
+      int min_w, nat_w, min_h, nat_h;
 
-    switch_w = natural.width;
-    switch_h = natural.height;
+      /* Add to window, show, and realize to get actual allocated size */
+      gtk_container_add(GTK_CONTAINER(temp_window), temp_switch);
+      gtk_widget_show_all(temp_window);
+      gtk_widget_realize(temp_window);
+      gtk_widget_realize(temp_switch);
 
-    g_object_ref_sink(temp_switch);
-    gtk_widget_destroy(temp_switch);
-    g_object_unref(temp_switch);
+      /* Force size allocation */
+      gtk_widget_get_preferred_width(temp_switch, &min_w, &nat_w);
+      gtk_widget_get_preferred_height(temp_switch, &min_h, &nat_h);
+
+      /* Get the actual allocated size after realization */
+      gtk_widget_get_allocation(temp_switch, &allocation);
+
+      /* Use allocated size with fallback */
+      switch_w = (allocation.width > 0) ? allocation.width : 48;
+      switch_h = (allocation.height > 0) ? allocation.height : 24;
+
+      gtk_widget_destroy(temp_window);
+    }
 
     (*x) += 2 + switch_w + 2;
-    /* Add extra vertical padding for GtkSwitch to prevent bottom clipping */
-    if ((*y) < 2 + switch_h + 8) (*y) = 2 + switch_h + 8;
-    else (*y) += 2+8;
+    if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
+    else (*y) += 2+2;
 
-    if (str && str[0]) /* add spacing between switch and text */
+    if (str && str[0])
       (*x) += 8;
   }
   else

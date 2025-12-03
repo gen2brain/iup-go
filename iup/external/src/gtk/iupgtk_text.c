@@ -45,20 +45,34 @@ void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
   /* Measure the minimum width required by GtkSpinButton */
   if (spin_min_width < 0)
   {
+    GtkWidget *temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
+    GtkAllocation allocation;
+
+    /* Add to window, show, and realize to get actual allocated size */
+    gtk_container_add(GTK_CONTAINER(temp_window), temp_spin);
+    gtk_widget_show_all(temp_window);
+    gtk_widget_realize(temp_window);
+    gtk_widget_realize(temp_spin);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
     int min_w, nat_w;
     gtk_widget_get_preferred_width(temp_spin, &min_w, &nat_w);
-    spin_min_width = min_w;
+
+    /* Get the actual allocated size after realization */
+    gtk_widget_get_allocation(temp_spin, &allocation);
+
+    /* Use allocated width with fallback */
+    spin_min_width = (allocation.width > 0) ? allocation.width : 130;
 #else
     GtkRequisition requisition;
     gtk_widget_size_request(temp_spin, &requisition);
-    spin_min_width = requisition.width;
+    gtk_widget_get_allocation(temp_spin, &allocation);
+
+    spin_min_width = (allocation.width > 0) ? allocation.width : 130;
 #endif
 
-    g_object_ref_sink(temp_spin);
-    g_object_unref(temp_spin);
+    gtk_widget_destroy(temp_window);
   }
 
   /* Only enforce minimum width, don't force expansion */
@@ -997,6 +1011,11 @@ static int gtkTextSetAppendAttrib(Ihandle* ih, const char* value)
     if (ih->data->append_newline && pos!=0)
       gtk_text_buffer_insert(buffer, &iter, "\n", 1);
     gtk_text_buffer_insert(buffer, &iter, iupgtkStrConvertToSystem(value), -1);
+
+    /* Move cursor to end and scroll to show it */
+    gtk_text_buffer_get_end_iter(buffer, &iter);
+    gtk_text_buffer_place_cursor(buffer, &iter);
+    gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(ih->handle), gtk_text_buffer_get_insert(buffer));
   }
   else
   {
