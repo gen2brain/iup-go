@@ -1237,7 +1237,7 @@ static int iMatrixListRelease_CB(Ihandle *ih, int lin, int col, char *status)
 
 static int iMatrixListEnterItem_CB(Ihandle *ih, int lin, int col)
 {
-  IFnii cb = (IFnii)IupGetCallback(ih, "LISTACTION_CB");
+  IFnii cb = (IFnii)IupGetCallback(ih, "ACTION_CB");
   int itemactive;
 
   /* Don't update attributes during widget destruction */
@@ -1254,7 +1254,7 @@ static int iMatrixListEnterItem_CB(Ihandle *ih, int lin, int col)
 
 static int iMatrixListLeaveItem_CB(Ihandle *ih, int lin, int col)
 {
-  IFnii cb = (IFnii)IupGetCallback(ih, "LISTACTION_CB");
+  IFnii cb = (IFnii)IupGetCallback(ih, "ACTION_CB");
   int itemactive;
 
   /* Don't update attributes during widget destruction */
@@ -1439,7 +1439,7 @@ Iclass* iupMatrixListNewClass(void)
   iupClassRegisterCallback(ic, "LISTREMOVE_CB", "i");
   iupClassRegisterCallback(ic, "LISTEDITION_CB", "iiii");
   iupClassRegisterCallback(ic, "LISTDRAW_CB", "iiiiiiC");
-  iupClassRegisterCallback(ic, "LISTACTION_CB", "ii");
+  iupClassRegisterCallback(ic, "ACTION_CB", "ii");
 
   iupClassRegisterReplaceAttribDef(ic, "CURSOR", IUPAF_SAMEASSYSTEM, "ARROW");
 
