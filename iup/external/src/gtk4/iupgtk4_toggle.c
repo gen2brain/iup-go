@@ -40,20 +40,30 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   if (iupAttribGetBoolean(ih, "SWITCH"))
   {
-    GtkWidget* temp_switch = gtk_switch_new();
-    int switch_w, switch_h;
+    static int switch_w = -1;
+    static int switch_h = -1;
 
-    /* Get natural size (3rd parameter) */
-    gtk_widget_measure(temp_switch, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &switch_w, NULL, NULL);
-    gtk_widget_measure(temp_switch, GTK_ORIENTATION_VERTICAL, -1, NULL, &switch_h, NULL, NULL);
+    if (switch_w < 0)
+    {
+      GtkWidget* temp_switch = gtk_switch_new();
+      int min_w, nat_w, min_h, nat_h;
 
-    g_object_ref_sink(temp_switch);
-    g_object_unref(temp_switch);
+      g_object_ref_sink(temp_switch);
 
-    /* GtkSwitch needs extra vertical padding to prevent bottom clipping (same as GTK3) */
+      /* Get natural and minimum sizes using gtk_widget_measure */
+      gtk_widget_measure(temp_switch, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
+      gtk_widget_measure(temp_switch, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
+
+      /* Use natural size with fallback */
+      switch_w = (nat_w > 0) ? nat_w : 48;
+      switch_h = (nat_h > 0) ? nat_h : 24;
+
+      g_object_unref(temp_switch);
+    }
+
     (*x) += 2 + switch_w + 2;
-    if ((*y) < 2 + switch_h + 8) (*y) = 2 + switch_h + 8;
-    else (*y) += 2 + 8;
+    if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
+    else (*y) += 2 + 2;
 
     if (str && str[0])
       (*x) += 8;
