@@ -779,7 +779,7 @@ static int qtTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
   }
 }
 
-static int qtTabsSetTabDraggableAttrib(Ihandle* ih, const char* value)
+static int qtTabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
   {
@@ -1009,7 +1009,7 @@ static int qtTabsMapMethod(Ihandle* ih)
 
   /* Set tab bar properties */
   tabs->setTabsClosable(false); /* We handle close buttons manually for per-tab control */
-  tabs->setMovable(false); /* Will be set by TABDRAGGABLE attribute */
+  tabs->setMovable(false); /* Will be set by ALLOWREORDER attribute */
 
   /* Set tab position */
   qtTabsUpdateTabType(ih);
@@ -1092,7 +1092,7 @@ extern "C" void iupdrvTabsInitClass(Iclass* ic)
   /* IupTabs only */
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, qtTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, qtTabsSetTabOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABDRAGGABLE", nullptr, qtTabsSetTabDraggableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALLOWREORDER", nullptr, qtTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MULTILINE", qtTabsGetMultilineAttrib, qtTabsSetMultilineAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", qtTabsGetTabPaddingAttrib, qtTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
