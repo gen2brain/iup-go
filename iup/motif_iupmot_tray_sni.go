@@ -1,4 +1,4 @@
-//go:build ((aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && motif) && !xembed
+//go:build motif && !xembed
 
 package iup
 
