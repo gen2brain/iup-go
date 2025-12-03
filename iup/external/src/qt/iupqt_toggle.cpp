@@ -181,9 +181,9 @@ private:
   bool is_hovered;
 
   /* Switch dimensions */
-  static constexpr int TRACK_WIDTH = 48;
-  static constexpr int TRACK_HEIGHT = 24;
-  static constexpr int THUMB_SIZE = 20;
+  static constexpr int TRACK_WIDTH = 50;
+  static constexpr int TRACK_HEIGHT = 26;
+  static constexpr int THUMB_SIZE = 22;
   static constexpr int THUMB_MARGIN = 2;
 
   /* Easing function: Quad in-out */
@@ -379,16 +379,24 @@ extern "C" void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char*
 {
   if (iupAttribGetBoolean(ih, "SWITCH"))
   {
-    /* Switch dimensions (must match IupQtSwitch constants) */
-    int switch_w = 48;
-    int switch_h = 24;
+    static int switch_w = -1;
+    static int switch_h = -1;
+
+    if (switch_w < 0)
+    {
+      /* Query the switch widget's size hint */
+      IupQtSwitch temp_switch(NULL);
+      QSize hint = temp_switch.sizeHint();
+
+      switch_w = hint.width();
+      switch_h = hint.height();
+    }
 
     (*x) += 2 + switch_w + 2;
-    /* Add extra vertical padding for switch to prevent bottom clipping */
-    if ((*y) < 2 + switch_h + 8) (*y) = 2 + switch_h + 8;
-    else (*y) += 2 + 8;
+    if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
+    else (*y) += 2 + 2;
 
-    if (str && str[0]) /* Add spacing between switch and text */
+    if (str && str[0])
       (*x) += 8;
   }
   else
@@ -412,6 +420,8 @@ extern "C" void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char*
         (*x) += 8;
     }
   }
+
+  (void)ih;
 }
 
 static int qtToggleGetCheck(Ihandle* ih)
@@ -913,7 +923,7 @@ static int qtToggleMapMethod(Ihandle* ih)
       }
       else
       {
-        /* This is the first radio button in the group - check it by default to match GTK behavior */
+        /* This is the first radio button in the group */
         radio_btn->setChecked(true);
       }
       iupAttribSet(radio, "_IUPQT_LASTRADIOBUTTON", (char*)ih);
