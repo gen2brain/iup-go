@@ -45,12 +45,15 @@ void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
     int min_w, nat_w;
 
     gtk_widget_measure(temp_spin, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
-    spin_min_width = min_w;
+
+    /* Use minimum width with fallback */
+    spin_min_width = (min_w > 0) ? min_w : 130;
 
     g_object_ref_sink(temp_spin);
     g_object_unref(temp_spin);
   }
 
+  /* Only enforce minimum width, don't force expansion */
   if (*w < spin_min_width)
     *w = spin_min_width;
 }
@@ -709,6 +712,10 @@ static int gtk4TextSetAppendAttrib(Ihandle* ih, const char* value)
     if (ih->data->append_newline && pos != 0)
       gtk_text_buffer_insert(buffer, &iter, "\n", 1);
     gtk_text_buffer_insert(buffer, &iter, iupgtk4StrConvertToSystem(value), -1);
+
+    gtk_text_buffer_get_end_iter(buffer, &iter);
+    gtk_text_buffer_place_cursor(buffer, &iter);
+    gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(ih->handle), gtk_text_buffer_get_insert(buffer));
   }
   else
   {
