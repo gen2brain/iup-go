@@ -51,7 +51,7 @@ func main() {
 	mlist.SetAttribute("EDITABLE", "Yes")
 
 	mlist.SetCallback("LISTCLICK_CB", iup.ClickFunc(listClickCb))
-	mlist.SetCallback("LISTACTION_CB", iup.MatrixListActionFunc(listActionCb))
+	mlist.SetCallback("ACTION_CB", iup.MatrixListActionFunc(listActionCb))
 	mlist.SetCallback("IMAGEVALUECHANGED_CB", iup.MatrixListActionFunc(imageValueChangedCb))
 	// mlist.SetCallback("LISTEDITION_CB", iup.MatrixListEditionFunc(listEditionCb)) // Prevents editing COLOR column
 

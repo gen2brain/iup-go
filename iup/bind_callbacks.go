@@ -4204,7 +4204,7 @@ func setMatrixToggleValueFunc(ih Ihandle, f MatrixToggleValueFunc) {
 
 //--------------------
 
-// MatrixListActionFunc for LISTACTION_CB and IMAGEVALUECHANGED_CB callbacks in MatrixList.
+// MatrixListActionFunc for ACTION_CB and IMAGEVALUECHANGED_CB callbacks in MatrixList.
 // Called when item selection or image value changes.
 //
 // f: func(ih Ihandle, item, state int) int
@@ -4224,7 +4224,7 @@ func goIupMatrixListActionCB(ih unsafe.Pointer, item, state C.int) C.int {
 	return C.int(f((Ihandle)(ih), int(item), int(state)))
 }
 
-// setMatrixListActionFunc for LISTACTION_CB and IMAGEVALUECHANGED_CB.
+// setMatrixListActionFunc for ACTION_CB and IMAGEVALUECHANGED_CB.
 func setMatrixListActionFunc(ih Ihandle, name string, f MatrixListActionFunc) {
 	ch := cgo.NewHandle(f)
 	callbacks.Store("MATRIXLIST_ACTION_CB_"+ih.GetAttribute("UUID"), ch)

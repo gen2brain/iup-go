@@ -206,6 +206,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 			setTimerActionFunc(ih, v)
 		case MatrixActionFunc:
 			setMatrixActionFunc(ih, v)
+		case MatrixListActionFunc:
+			setMatrixListActionFunc(ih, "ACTION_CB", v)
 		}
 	case "THREAD_CB":
 		setThreadFunc(ih, fn.(ThreadFunc))
@@ -382,8 +384,6 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setMenuDropFunc(ih, fn.(MenuDropFunc))
 	case "DROPSELECT_CB":
 		setDropSelectFunc(ih, fn.(DropSelectFunc))
-	case "LISTACTION_CB":
-		setMatrixListActionFunc(ih, "LISTACTION_CB", fn.(MatrixListActionFunc))
 	case "IMAGEVALUECHANGED_CB":
 		setMatrixListActionFunc(ih, "IMAGEVALUECHANGED_CB", fn.(MatrixListActionFunc))
 	case "LISTCLICK_CB":
