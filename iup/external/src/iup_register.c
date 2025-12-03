@@ -158,6 +158,7 @@ void iupRegisterInternalClasses(void)
   iupRegisterClassInternal(iupSpinNewClass());
   iupRegisterClassInternal(iupSpinboxNewClass());
   iupRegisterClassInternal(iupTreeNewClass());
+  iupRegisterClassInternal(iupTableNewClass());
   iupRegisterClassInternal(iupScrollBoxNewClass());
   iupRegisterClassInternal(iupBackgroundBoxNewClass());
   iupRegisterClassInternal(iupLinkNewClass());

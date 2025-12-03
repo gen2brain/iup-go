@@ -108,6 +108,9 @@ int iupgtkTrayCleanup(Ihandle *ih);
 
 int iupgtkIsSystemDarkMode(void);
 
+/* table */
+void iupgtkTableDetachVirtualModels(Ihandle* dialog);
+
 #ifdef __cplusplus
 }
 #endif

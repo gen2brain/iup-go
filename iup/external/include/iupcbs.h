@@ -47,6 +47,7 @@ typedef int (*IFnsi)(Ihandle*, char *, int);  /* copydata_cb */
 typedef int (*IFnis)(Ihandle*, int, char *);  /* text_action, multiline_action, edit_cb, rename_cb */
 typedef int (*IFnsii)(Ihandle*, char*, int, int);  /* list_action */
 typedef int (*IFniis)(Ihandle*, int, int, char*);  /* motion_cb, click_cb, value_edit_cb */
+typedef int (*IFniisi)(Ihandle*, int, int, char*, int);  /* editend_cb */
 typedef int (*IFniiis)(Ihandle*, int, int, int, char*);  /* touch_cb, dblclick_cb */
 typedef int (*IFniiiis)(Ihandle*, int, int, int, int, char*);  /* button_cb, matrix_action, mousemotion_cb */
 typedef int (*IFniiiiiis)(Ihandle*, int, int, int, int, int, int, char*);  /* mouseclick_cb */

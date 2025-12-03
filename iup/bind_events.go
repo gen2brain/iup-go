@@ -164,7 +164,12 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "MULTISELECT_CB":
 		setMultiselectFunc(ih, fn.(MultiselectFunc))
 	case "VALUECHANGED_CB":
-		setValueChangedFunc(ih, fn.(ValueChangedFunc))
+		switch v := fn.(type) {
+		case ValueChangedFunc:
+			setValueChangedFunc(ih, v)
+		case TableValueChangedFunc:
+			setTableValueChangedFunc(ih, v)
+		}
 	case "TABCHANGE_CB":
 		setTabChangeFunc(ih, fn.(TabChangeFunc))
 	case "TABCHANGEPOS_CB":
@@ -322,7 +327,16 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "RELEASE_CB":
 		setReleaseFunc(ih, fn.(ReleaseFunc))
 	case "EDITION_CB":
-		setEditionFunc(ih, fn.(EditionFunc))
+		switch v := fn.(type) {
+		case EditionFunc:
+			setEditionFunc(ih, v)
+		case TableEditionFunc:
+			setTableEditionFunc(ih, v)
+		}
+	case "EDITBEGIN_CB":
+		setEditBeginFunc(ih, fn.(EditBeginFunc))
+	case "EDITEND_CB":
+		setEditEndFunc(ih, fn.(EditEndFunc))
 	case "DROPCHECK_CB":
 		setDropCheckFunc(ih, fn.(DropCheckFunc))
 	case "MARK_CB":
@@ -355,12 +369,19 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setMatrixTypeFunc(ih, fn.(MatrixTypeFunc))
 	case "TRANSLATEVALUE_CB":
 		setTranslateValueFunc(ih, fn.(TranslateValueFunc))
+	case "VALUE_CB":
+		switch v := fn.(type) {
+		case TableValueFunc:
+			setTableValueFunc(ih, v)
+		case MatrixValueFunc:
+			setMatrixValueFunc(ih, v)
+		}
+	case "SORT_CB":
+		setTableSortFunc(ih, fn.(TableSortFunc))
 	case "MENUDROP_CB":
 		setMenuDropFunc(ih, fn.(MenuDropFunc))
 	case "DROPSELECT_CB":
 		setDropSelectFunc(ih, fn.(DropSelectFunc))
-	case "VALUE_CB":
-		setMatrixValueFunc(ih, fn.(MatrixValueFunc))
 	case "LISTACTION_CB":
 		setMatrixListActionFunc(ih, "LISTACTION_CB", fn.(MatrixListActionFunc))
 	case "IMAGEVALUECHANGED_CB":

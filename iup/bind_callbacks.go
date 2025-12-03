@@ -511,6 +511,36 @@ static void goIupSetEditionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "EDITION_CB", (Icallback) goIupEditionCB);
 }
 
+extern int goIupTableEditionCB(void *, int lin, int col, char* update);
+static void goIupSetTableEditionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITION_CB", (Icallback) goIupTableEditionCB);
+}
+
+extern int goIupEditBeginCB(void *, int lin, int col);
+static void goIupSetEditBeginFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITBEGIN_CB", (Icallback) goIupEditBeginCB);
+}
+
+extern int goIupEditEndCB(void *, int lin, int col, char* newValue, int apply);
+static void goIupSetEditEndFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITEND_CB", (Icallback) goIupEditEndCB);
+}
+
+extern int goIupTableValueChangedCB(void *, int lin, int col);
+static void goIupSetTableValueChangedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "VALUECHANGED_CB", (Icallback) goIupTableValueChangedCB);
+}
+
+extern char* goIupTableValueCB(void *, int lin, int col);
+static void goIupSetTableValueFunc(Ihandle *ih) {
+	IupSetCallback(ih, "VALUE_CB", (Icallback) goIupTableValueCB);
+}
+
+extern int goIupTableSortCB(void *, int col);
+static void goIupSetTableSortFunc(Ihandle *ih) {
+	IupSetCallback(ih, "SORT_CB", (Icallback) goIupTableSortCB);
+}
+
 extern int goIupDropCheckCB(void *, int lin, int col);
 static void goIupSetDropCheckFunc(Ihandle *ih) {
 	IupSetCallback(ih, "DROPCHECK_CB", (Icallback) goIupDropCheckCB);
@@ -3276,7 +3306,7 @@ func goIupMatrixMouseMoveCB(ih unsafe.Pointer, lin, col C.int) C.int {
 	return C.int(f((Ihandle)(ih), int(lin), int(col)))
 }
 
-// EditionFunc for EDITION_CB callback.
+// EditionFunc for EDITION_CB callback (Matrix version).
 // Called when a cell enters/leaves edition mode.
 type EditionFunc func(ih Ihandle, lin, col, mode, update int) int
 
@@ -3292,6 +3322,119 @@ func goIupEditionCB(ih unsafe.Pointer, lin, col, mode, update C.int) C.int {
 	f := ch.Value().(EditionFunc)
 
 	return C.int(f((Ihandle)(ih), int(lin), int(col), int(mode), int(update)))
+}
+
+// TableEditionFunc for EDITION_CB callback (Table version with string update).
+// Called when a table cell is edited.
+type TableEditionFunc func(ih Ihandle, lin, col int, update string) int
+
+//export goIupTableEditionCB
+func goIupTableEditionCB(ih unsafe.Pointer, lin, col C.int, update *C.char) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("EDITION_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "EDITION_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(TableEditionFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col), C.GoString(update)))
+}
+
+// EditBeginFunc for EDITBEGIN_CB callback.
+// Called when table cell editing starts.
+// Return IUP_DEFAULT to allow edit, IUP_IGNORE to block.
+type EditBeginFunc func(ih Ihandle, lin, col int) int
+
+//export goIupEditBeginCB
+func goIupEditBeginCB(ih unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("EDITBEGIN_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "EDITBEGIN_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(EditBeginFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col)))
+}
+
+// EditEndFunc for EDITEND_CB callback.
+// Called when table cell editing ends. Apply parameter: 1=accepted (Enter), 0=cancelled (ESC).
+// Return IUP_DEFAULT to accept edit, IUP_IGNORE to reject.
+type EditEndFunc func(ih Ihandle, lin, col int, newValue string, apply int) int
+
+//export goIupEditEndCB
+func goIupEditEndCB(ih unsafe.Pointer, lin, col C.int, newValue *C.char, apply C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("EDITEND_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "EDITEND_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(EditEndFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col), C.GoString(newValue), int(apply)))
+}
+
+// TableValueChangedFunc for VALUECHANGED_CB callback (Table version).
+// Called when a table cell value is changed.
+type TableValueChangedFunc func(ih Ihandle, lin, col int) int
+
+//export goIupTableValueChangedCB
+func goIupTableValueChangedCB(ih unsafe.Pointer, lin, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("TABLEVALUECHANGED_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "TABLEVALUECHANGED_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(TableValueChangedFunc)
+
+	return C.int(f((Ihandle)(ih), int(lin), int(col)))
+}
+
+// TableValueFunc for VALUE_CB callback.
+// Called to get the value of a cell in virtual mode.
+// Returns the string value to display in the cell.
+type TableValueFunc func(ih Ihandle, lin, col int) string
+
+//export goIupTableValueCB
+func goIupTableValueCB(ih unsafe.Pointer, lin, col C.int) *C.char {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("VALUE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "VALUE_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(TableValueFunc)
+	result := f((Ihandle)(ih), int(lin), int(col))
+	if result == "" {
+		return nil
+	}
+	return C.CString(result)
+}
+
+// TableSortFunc for SORT_CB callback.
+// Called when user clicks a column header to sort.
+// Returns DEFAULT to proceed with sorting or IGNORE to cancel.
+type TableSortFunc func(ih Ihandle, col int) int
+
+//export goIupTableSortCB
+func goIupTableSortCB(ih unsafe.Pointer, col C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("SORT_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "SORT_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(TableSortFunc)
+
+	return C.int(f((Ihandle)(ih), int(col)))
 }
 
 // DropCheckFunc for DROPCHECK_CB callback.
@@ -3583,6 +3726,48 @@ func setEditionFunc(ih Ihandle, f EditionFunc) {
 	ch := cgo.NewHandle(f)
 	callbacks.Store("EDITION_CB_"+ih.GetAttribute("UUID"), ch)
 	C.goIupSetEditionFunc(ih.ptr())
+}
+
+// setTableEditionFunc for EDITION_CB (Table version).
+func setTableEditionFunc(ih Ihandle, f TableEditionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("EDITION_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetTableEditionFunc(ih.ptr())
+}
+
+// setEditBeginFunc for EDITBEGIN_CB.
+func setEditBeginFunc(ih Ihandle, f EditBeginFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("EDITBEGIN_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetEditBeginFunc(ih.ptr())
+}
+
+// setEditEndFunc for EDITEND_CB.
+func setEditEndFunc(ih Ihandle, f EditEndFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("EDITEND_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetEditEndFunc(ih.ptr())
+}
+
+// setTableValueChangedFunc for VALUECHANGED_CB (Table version).
+func setTableValueChangedFunc(ih Ihandle, f TableValueChangedFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("TABLEVALUECHANGED_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetTableValueChangedFunc(ih.ptr())
+}
+
+// setTableValueFunc for VALUE_CB (Table version).
+func setTableValueFunc(ih Ihandle, f TableValueFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("VALUE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetTableValueFunc(ih.ptr())
+}
+
+// setTableSortFunc for SORT_CB (Table version).
+func setTableSortFunc(ih Ihandle, f TableSortFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("SORT_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetTableSortFunc(ih.ptr())
 }
 
 // setDropCheckFunc for DROPCHECK_CB.

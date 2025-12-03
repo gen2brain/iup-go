@@ -413,6 +413,9 @@ gboolean iupgtkDialogDeleteEvent(GtkWidget *widget, GdkEvent *evt, Ihandle *ih)
       IupExitLoop();
   }
 
+  /* Detach virtual table models BEFORE hiding dialog to prevent expensive GTK operations */
+  iupgtkTableDetachVirtualModels(ih);
+
   IupHide(ih); /* default: close the window */
 
   return TRUE; /* do not propagate */

@@ -323,6 +323,16 @@ func FlatTree() Ihandle {
 	return h
 }
 
+// Table creates a table with multiple columns and rows for displaying tabular data.
+// Uses native table widgets on each platform for best performance.
+//
+// See IUPTABLE_DESIGN.md for complete API documentation.
+func Table() Ihandle {
+	h := mkih(C.IupTable())
+	h.SetAttribute("UUID", uuid.NewString())
+	return h
+}
+
 // TreeSetAttributeHandle .
 //
 // https://www.tecgraf.puc-rio.br/iup/en/elem/iuptree.html
