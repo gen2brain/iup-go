@@ -261,7 +261,7 @@ static int gtk4TabsSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int gtk4TabsSetTabDraggableAttrib(Ihandle* ih, const char* value)
+static int gtk4TabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
   {
@@ -499,8 +499,8 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)tab_container);
     iupAttribSet(child, "_IUPTAB_PAGE", (char*)tab_page);
 
-    char* draggable = iupAttribGet(ih, "TABDRAGGABLE");
-    if (iupStrBoolean(draggable))
+    char* allow_reorder = iupAttribGet(ih, "ALLOWREORDER");
+    if (iupStrBoolean(allow_reorder))
       gtk_notebook_set_tab_reorderable((GtkNotebook*)ih->handle, tab_page, TRUE);
 
     iupStrToRGB(IupGetAttribute(ih, "BGCOLOR"), &r, &g, &b);
@@ -631,7 +631,7 @@ void iupdrvTabsInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, gtk4TabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, gtk4TabsSetTabOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABDRAGGABLE", NULL, gtk4TabsSetTabDraggableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, gtk4TabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, gtk4TabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, gtk4TabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, gtk4TabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);

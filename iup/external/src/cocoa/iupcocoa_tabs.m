@@ -2,19 +2,6 @@
  * This implementation uses the custom IupCocoaTabBarView library to provide the tab bar UI,
  * and a custom NSView (IupTabsRootView) to manage the content area.
  * This approach allows for customization of fonts, colors, images and close button.
- *
- * Supported features:
- * - TABTYPE: TOP, BOTTOM, LEFT, RIGHT
- * - TABIMAGE, TABTITLE, TABVISIBLE
- * - FONT, FGCOLOR, BGCOLOR
- * - RIGHTCLICK_CB, TABCHANGE_CB, TABCLOSE_CB callbacks
- * - SHOWCLOSE
- * - TABDRAGGABLE
- * - TABLIST
- *
- * Attributes NOT SUPPORTED:
- * - TABPADDING: IupCocoaTabBarView does not expose padding properties.
- * - MULTILINE: Tabs become scrollable instead of wrapping.
  */
 
 #import <Cocoa/Cocoa.h>
@@ -847,7 +834,7 @@ static int cocoaTabsSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaTabsSetTabDraggableAttrib(Ihandle* ih, const char* value)
+static int cocoaTabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
 {
   IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
   if (tab_bar_view)
@@ -1104,8 +1091,8 @@ static int cocoaTabsMapMethod(Ihandle* ih)
     cocoaTabsSetFgColorAttrib(ih, iupAttribGet(ih, "FGCOLOR"));
   if (iupAttribGet(ih, "BGCOLOR"))
     cocoaTabsSetBgColorAttrib(ih, iupAttribGet(ih, "BGCOLOR"));
-  if (iupAttribGet(ih, "TABDRAGGABLE"))
-    cocoaTabsSetTabDraggableAttrib(ih, iupAttribGet(ih, "TABDRAGGABLE"));
+  if (iupAttribGet(ih, "ALLOWREORDER"))
+    cocoaTabsSetAllowReorderAttrib(ih, iupAttribGet(ih, "ALLOWREORDER"));
   if (iupAttribGet(ih, "TABLIST"))
     cocoaTabsSetTabListAttrib(ih, iupAttribGet(ih, "TABLIST"));
   if (iupAttribGet(ih, "CLOSEBUTTONONHOVER"))
@@ -1233,7 +1220,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FONT", NULL, cocoaTabsSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TABDRAGGABLE", NULL, cocoaTabsSetTabDraggableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, cocoaTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABLIST", NULL, cocoaTabsSetTabListAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, cocoaTabsSetShowCloseAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLOSEBUTTONONHOVER", NULL, cocoaTabsSetCloseButtonOnHoverAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
