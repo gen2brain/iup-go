@@ -599,38 +599,6 @@ static int iGlobalsTabChangePos_CB(Ihandle* ih, int new_pos, int old_pos)
       break;
   }
 
-  /* In GTK the TIP appears for all children */
-  /* TODO: move this code to iupgtk_tabs.c */
-  if (iupStrEqualNoCase(IupGetGlobal("DRIVER"), "GTK"))
-  {
-    char* tabtype = IupGetAttribute(ih, "TABTYPE");
-    int x = 0;
-    int y = 0;
-    int w = ih->currentwidth;
-    int h = ih->currentheight;
-    int cw = 0, ch = 0;
-
-    IupGetIntInt(ih, "CLIENTSIZE", &cw, &ch);
-
-    /* TABORIENTATION is ignored */
-    if (iupStrEqualNoCase(tabtype, "BOTTOM"))
-    {
-      y += ch;  /* position after the client area */
-      h -= ch;
-    }
-    else if (iupStrEqualNoCase(tabtype, "RIGHT"))
-    {
-      x += cw;  /* position after the client area */
-      w -= cw;
-    }
-    else if (iupStrEqualNoCase(tabtype, "LEFT"))
-      w -= cw;
-    else  /* TOP */
-      h -= ch;
-
-    IupSetfAttribute(ih, "TIPRECT", "%d %d %d %d", x, y, x + w, y + h);
-  }
-
   IupSetAttribute(ih, "TIPVISIBLE", "YES");
   return IUP_DEFAULT;
 }

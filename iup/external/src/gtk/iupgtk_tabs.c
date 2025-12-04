@@ -29,6 +29,10 @@
 
 #include "iupgtk_drv.h"
 
+#if GTK_CHECK_VERSION(2, 12, 0)
+#else
+static GtkTooltips* gtk_tips = NULL;
+#endif
 
 int iupdrvTabsExtraDecor(Ihandle* ih)
 {
@@ -649,6 +653,39 @@ static int gtkTabsMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int gtkTabsSetTipAttrib(Ihandle* ih, const char* value)
+{
+  Ihandle* child;
+
+  for (child = ih->firstchild; child; child = child->brother)
+  {
+    GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABLABEL");
+    if (tab_label)
+    {
+#if GTK_CHECK_VERSION(2, 12, 0)
+      if (value)
+      {
+        if (iupAttribGetBoolean(ih, "TIPMARKUP"))
+          gtk_widget_set_tooltip_markup(tab_label, iupgtkStrConvertToSystem(value));
+        else
+          gtk_widget_set_tooltip_text(tab_label, iupgtkStrConvertToSystem(value));
+      }
+      else
+      {
+        gtk_widget_set_tooltip_text(tab_label, NULL);
+      }
+#else
+      if (gtk_tips == NULL)
+        gtk_tips = gtk_tooltips_new();
+      if (value)
+        gtk_tooltips_set_tip(gtk_tips, tab_label, iupgtkStrConvertToSystem(value), NULL);
+#endif
+    }
+  }
+
+  return 1;
+}
+
 void iupdrvTabsInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -666,6 +703,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtkTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtkTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIP", NULL, gtkTabsSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupTabs only */
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, gtkTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
