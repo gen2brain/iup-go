@@ -41,17 +41,105 @@ int iupdrvFrameHasClientOffset(Ihandle* ih)
 
 int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
-  (void)ih;
-  (void)h;
-  return 0;
+  const char* title = iupAttribGet(ih, "TITLE");
+  if (!title || !*title)
+  {
+    *h = 0;
+    return 1;
+  }
+
+  /* If frame is mapped, measure the actual label widget */
+  if (ih->handle)
+  {
+    GtkFrame* frame = (GtkFrame*)ih->handle;
+    GtkWidget* label_widget = gtk_frame_get_label_widget(frame);
+    if (label_widget)
+    {
+      int min_height, nat_height;
+      gtk_widget_measure(label_widget, GTK_ORIENTATION_VERTICAL, -1, &min_height, &nat_height, NULL, NULL);
+      *h = nat_height;
+      return 1;
+    }
+  }
+
+  /* Fallback: Create a temporary GtkLabel to measure title height */
+  GtkWidget* temp_label = gtk_label_new(title);
+
+  int min_height, nat_height;
+  gtk_widget_measure(temp_label, GTK_ORIENTATION_VERTICAL, -1, &min_height, &nat_height, NULL, NULL);
+
+  *h = nat_height;
+
+  /* Cleanup */
+  g_object_ref_sink(temp_label);
+  g_object_unref(temp_label);
+
+  return 1;
 }
 
 int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
-  (void)ih;
-  (void)w;
-  (void)h;
-  return 0;
+  static int titled_w = 0, titled_h = 0;
+  static int untitled_w = 0, untitled_h = 0;
+  const char* title = iupAttribGet(ih, "TITLE");
+  int has_title = (title && *title) ? 1 : 0;
+
+  /* Check if we already measured this type */
+  if (has_title && titled_w > 0)
+  {
+    *w = titled_w;
+    *h = titled_h;
+    return 1;
+  }
+  else if (!has_title && untitled_w > 0)
+  {
+    *w = untitled_w;
+    *h = untitled_h;
+    return 1;
+  }
+
+  /* Measure decoration size by creating temporary frame */
+  GtkWidget* temp_frame = gtk_frame_new(NULL);
+  GtkWidget* temp_child = gtk_fixed_new();
+
+  if (has_title)
+    gtk_frame_set_label(GTK_FRAME(temp_frame), "Sample Title");
+
+  gtk_frame_set_child(GTK_FRAME(temp_frame), temp_child);
+  gtk_widget_set_size_request(temp_child, 100, 100);
+
+  int frame_min_w, frame_nat_w, frame_min_h, frame_nat_h;
+  gtk_widget_measure(temp_frame, GTK_ORIENTATION_HORIZONTAL, -1, &frame_min_w, &frame_nat_w, NULL, NULL);
+  gtk_widget_measure(temp_frame, GTK_ORIENTATION_VERTICAL, -1, &frame_min_h, &frame_nat_h, NULL, NULL);
+
+  int child_min_w, child_nat_w, child_min_h, child_nat_h;
+  gtk_widget_measure(temp_child, GTK_ORIENTATION_HORIZONTAL, -1, &child_min_w, &child_nat_w, NULL, NULL);
+  gtk_widget_measure(temp_child, GTK_ORIENTATION_VERTICAL, -1, &child_min_h, &child_nat_h, NULL, NULL);
+
+  *w = frame_nat_w - child_nat_w;
+  *h = frame_nat_h - child_nat_h;
+
+  /* Cleanup */
+  g_object_ref_sink(temp_frame);
+  g_object_unref(temp_frame);
+
+  /* Ensure minimum decoration size */
+  if (*w < 0) *w = 4;
+  if (*h < 0) *h = 4;
+
+  /* Cache the result */
+  if (has_title)
+  {
+    titled_w = *w;
+    titled_h = *h;
+  }
+  else
+  {
+    untitled_w = *w;
+    untitled_h = *h;
+  }
+
+  return 1;
 }
 
 static int gtk4FrameSetTitleAttrib(Ihandle* ih, const char* value)
