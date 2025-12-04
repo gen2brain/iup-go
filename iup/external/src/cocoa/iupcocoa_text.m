@@ -4524,7 +4524,8 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
 
     if(ih->data->append_newline && ([text_storage length] > 0))
     {
-      ns_append_string = [NSString stringWithFormat:@"\n%s", value];
+      NSString* temp = [NSString stringWithUTF8String:value];
+      ns_append_string = [@"\n" stringByAppendingString:temp];
     }
     else
     {
