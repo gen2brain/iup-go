@@ -254,6 +254,18 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setWheelFunc(ih, fn.(WheelFunc))
 	case "DRAGDROP_CB":
 		setDragDropFunc(ih, fn.(DragDropFunc))
+	case "DRAGBEGIN_CB":
+		setDragBeginFunc(ih, fn.(DragBeginFunc))
+	case "DRAGDATASIZE_CB":
+		setDragDataSizeFunc(ih, fn.(DragDataSizeFunc))
+	case "DRAGDATA_CB":
+		setDragDataFunc(ih, fn.(DragDataFunc))
+	case "DRAGEND_CB":
+		setDragEndFunc(ih, fn.(DragEndFunc))
+	case "DROPDATA_CB":
+		setDropDataFunc(ih, fn.(DropDataFunc))
+	case "DROPMOTION_CB":
+		setDropMotionFunc(ih, fn.(DropMotionFunc))
 	case "SELECTION_CB":
 		setSelectionFunc(ih, fn.(SelectionFunc))
 	case "BRANCHOPEN_CB":
@@ -388,6 +400,40 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setMatrixListActionFunc(ih, "IMAGEVALUECHANGED_CB", fn.(MatrixListActionFunc))
 	case "LISTCLICK_CB":
 		setClickFunc(ih, fn.(ClickFunc))
+	case "FILE_CB":
+		setFileFunc(ih, fn.(FileFunc))
+	case "LAYOUTUPDATE_CB":
+		setLayoutUpdateFunc(ih, fn.(LayoutUpdateFunc))
+	case "HIGHLIGHT_CB":
+		setHighlightFunc(ih, fn.(HighlightFunc))
+	case "MENUCLOSE_CB":
+		setMenuCloseFunc(ih, fn.(MenuCloseFunc))
+	case "COLORUPDATE_CB":
+		setColorUpdateFunc(ih, fn.(ColorUpdateFunc))
+	case "LISTRELEASE_CB":
+		setListReleaseFunc(ih, fn.(ListReleaseFunc))
+	case "LISTINSERT_CB":
+		setListInsertFunc(ih, fn.(ListInsertFunc))
+	case "LISTREMOVE_CB":
+		setListRemoveFunc(ih, fn.(ListRemoveFunc))
+	case "LISTEDITION_CB":
+		setListEditionFunc(ih, fn.(ListEditionFunc))
+	case "LISTDRAW_CB":
+		setListDrawFunc(ih, fn.(ListDrawFunc))
+	case "BUSY_CB":
+		setBusyFunc(ih, fn.(BusyFunc))
+	case "MENUCONTEXT_CB":
+		setMenuContextFunc(ih, fn.(MenuContextFunc))
+	case "MENUCONTEXTCLOSE_CB":
+		setMenuContextCloseFunc(ih, fn.(MenuContextCloseFunc))
+	case "PASTESIZE_CB":
+		setPasteSizeFunc(ih, fn.(PasteSizeFunc))
+	case "NUMERICGETVALUE_CB":
+		setNumericGetValueFunc(ih, fn.(NumericGetValueFunc))
+	case "NUMERICSETVALUE_CB":
+		setNumericSetValueFunc(ih, fn.(NumericSetValueFunc))
+	case "SORTCOLUMNCOMPARE_CB":
+		setSortColumnCompareFunc(ih, fn.(SortColumnCompareFunc))
 	}
 }
 
