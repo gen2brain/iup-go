@@ -1081,7 +1081,4 @@ extern "C" void iupdrvToggleInitClass(Iclass* ic)
 
   /* Only for QCheckBox with 3STATE */
   iupClassRegisterAttribute(ic, "3STATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-
-  /* Custom switch widget (iOS/Android-style toggle) */
-  iupClassRegisterAttribute(ic, "SWITCH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
