@@ -60,17 +60,37 @@ void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
+  static int dropdown_button_width = -1;
   int border_size = 2 * 5;
   (*x) += border_size;
   (*y) += border_size;
 
   if (ih->data->is_dropdown)
   {
-#ifdef HILDON
-    (*x) += 9; /* extra space for the dropdown button */
-#else
-    (*x) += 5; /* extra space for the dropdown button */
-#endif
+    if (dropdown_button_width == -1)
+    {
+      /* Create a minimal combobox to measure the button/arrow width. */
+      GtkListStore *temp_store = gtk_list_store_new(1, G_TYPE_STRING);
+      GtkTreeIter iter;
+      gtk_list_store_append(temp_store, &iter);
+      gtk_list_store_set(temp_store, &iter, 0, "X", -1);
+
+      GtkWidget* temp_combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(temp_store));
+      g_object_unref(temp_store);
+
+      GtkRequisition req;
+      gtk_widget_get_preferred_size(temp_combo, NULL, &req);
+
+      /* single char width ~ button width + borders */
+      int char_width = 10;  /* Approximate single char width */
+      dropdown_button_width = req.width - char_width;
+      if (dropdown_button_width < 15) dropdown_button_width = 15;  /* Minimum arrow size */
+
+      g_object_ref_sink(temp_combo);
+      g_object_unref(temp_combo);
+    }
+
+    (*x) += dropdown_button_width; /* measured dropdown button width */
 
     if (ih->data->has_editbox)
       (*x) += 5; /* another extra space for the dropdown button */
