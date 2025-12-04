@@ -144,16 +144,50 @@ typedef struct _IcocoaTableData {
   /* Draw dashed focus rectangle if this is the focused cell and FOCUSRECT=YES */
   if (isFocusedCell && ih && iupAttribGetBoolean(ih, "FOCUSRECT"))
   {
-    NSBezierPath* path = [NSBezierPath bezierPathWithRect:NSInsetRect(self.bounds, 1.5, 1.5)];
+    /* Get the table view - in view-based table: cell -> row view -> table view */
+    NSView* rowView = [self superview];  /* NSTableRowView */
+    NSTableView* tableView = nil;
+    if (rowView)
+      tableView = (NSTableView*)[rowView superview];  /* NSTableView */
 
-    /* Set dash pattern */
-    CGFloat dashPattern[] = {2.0, 2.0};
-    [path setLineDash:dashPattern count:2 phase:0.0];
-    [path setLineWidth:1.0];
+    if (tableView && [tableView isKindOfClass:[NSTableView class]])
+    {
+      /* Only draw if the table control (or one of its subviews) has focus */
+      NSWindow* window = [self window];
+      NSResponder* firstResp = [window firstResponder];
 
-    /* Use labelColor, adapts to light/dark mode automatically */
-    [[NSColor labelColor] setStroke];
-    [path stroke];
+      /* Check if first responder is the table or a descendant of it */
+      BOOL tableHasFocus = NO;
+      if ([firstResp isEqual:tableView])
+        tableHasFocus = YES;
+      else if ([firstResp isKindOfClass:[NSView class]] && [(NSView*)firstResp isDescendantOf:tableView])
+        tableHasFocus = YES;
+      else if ([firstResp isKindOfClass:[NSText class]])
+      {
+        /* Check if first responder is a field editor (NSText) with delegate inside table */
+        NSText* text = (NSText*)firstResp;
+        id<NSTextDelegate> textDelegate = [text delegate];
+        if (textDelegate && [textDelegate isKindOfClass:[NSView class]])
+        {
+          if ([(NSView*)textDelegate isDescendantOf:tableView])
+            tableHasFocus = YES;
+        }
+      }
+
+      if (tableHasFocus)
+      {
+        NSBezierPath* path = [NSBezierPath bezierPathWithRect:NSInsetRect(self.bounds, 1.5, 1.5)];
+
+        /* Set dash pattern */
+        CGFloat dashPattern[] = {2.0, 2.0};
+        [path setLineDash:dashPattern count:2 phase:0.0];
+        [path setLineWidth:1.0];
+
+        /* Use labelColor, adapts to light/dark mode automatically */
+        [[NSColor labelColor] setStroke];
+        [path stroke];
+      }
+    }
   }
 }
 
@@ -912,6 +946,50 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
   /* Let NSTableView handle Up/Down arrow keys */
   [super keyDown:event];
+}
+
+- (BOOL)becomeFirstResponder
+{
+  BOOL result = [super becomeFirstResponder];
+  if (result)
+  {
+    /* Redraw focused cell to show FOCUSRECT */
+    IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
+    if (table_data && table_data->current_row > 0 && table_data->current_col > 0)
+    {
+      NSInteger row_0based = table_data->current_row - 1;
+      NSInteger col_0based = table_data->current_col - 1;
+
+      if (row_0based >= 0 && row_0based < [self numberOfRows] &&
+          col_0based >= 0 && col_0based < [self numberOfColumns])
+      {
+        NSIndexSet* rowIndexes = [NSIndexSet indexSetWithIndex:row_0based];
+        NSIndexSet* colIndexes = [NSIndexSet indexSetWithIndex:col_0based];
+        [self reloadDataForRowIndexes:rowIndexes columnIndexes:colIndexes];
+      }
+    }
+  }
+  return result;
+}
+
+- (BOOL)resignFirstResponder
+{
+  /* Redraw focused cell to remove FOCUSRECT */
+  IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
+  if (table_data && table_data->current_row > 0 && table_data->current_col > 0)
+  {
+    NSInteger row_0based = table_data->current_row - 1;
+    NSInteger col_0based = table_data->current_col - 1;
+
+    if (row_0based >= 0 && row_0based < [self numberOfRows] &&
+        col_0based >= 0 && col_0based < [self numberOfColumns])
+    {
+      NSIndexSet* rowIndexes = [NSIndexSet indexSetWithIndex:row_0based];
+      NSIndexSet* colIndexes = [NSIndexSet indexSetWithIndex:col_0based];
+      [self reloadDataForRowIndexes:rowIndexes columnIndexes:colIndexes];
+    }
+  }
+  return [super resignFirstResponder];
 }
 
 @end
