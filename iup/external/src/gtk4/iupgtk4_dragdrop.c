@@ -28,6 +28,9 @@
 /* Note: GTK4 uses event controllers (GtkDragSource/GtkDropTarget) which work better than GTK3's signal-based approach.
    Each widget can have multiple controllers for different drag-drop scenarios. */
 
+static int gtk4SetDragSourceAttrib(Ihandle* ih, const char* value);
+static int gtk4SetDropTargetAttrib(Ihandle* ih, const char* value);
+
 static gboolean gtk4DropTargetDrop(GtkDropTarget *target, const GValue *value, double x, double y, Ihandle *ih)
 {
   IFnsViii cbDropData = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
@@ -99,7 +102,8 @@ static GdkContentProvider* gtk4DragSourcePrepare(GtkDragSource *source, double x
 
   if (cbDragBegin)
   {
-    if (cbDragBegin(ih, (int)x, (int)y) == IUP_IGNORE)
+    int ret = cbDragBegin(ih, (int)x, (int)y);
+    if (ret == IUP_IGNORE)
       return NULL;
   }
 
@@ -115,7 +119,10 @@ static GdkContentProvider* gtk4DragSourcePrepare(GtkDragSource *source, double x
   if (size <= 0)
     return NULL;
 
-  sourceData = malloc(size);
+  sourceData = g_malloc(size);
+  if (!sourceData)
+    return NULL;
+
   cbDragData(ih, type, sourceData, size);
 
   bytes = g_bytes_new_take(sourceData, size);
@@ -176,9 +183,7 @@ static GdkContentFormats* gtk4CreateContentFormats(const char* value)
   return gdk_content_formats_builder_free_to_formats(builder);
 }
 
-
 /******************************************************************************************/
-
 
 static int gtk4SetDropTypesAttrib(Ihandle* ih, const char* value)
 {
@@ -201,6 +206,9 @@ static int gtk4SetDropTypesAttrib(Ihandle* ih, const char* value)
   strcpy(valueCopy, value);
   if (iupStrToStrStr(valueCopy, valueTemp1, valueTemp2, ',') > 0)
     iupAttribSetStr(ih, "_IUPGTK4_DROP_TYPE", valueTemp1);
+
+  if (ih->handle && iupAttribGetBoolean(ih, "DROPTARGET"))
+    gtk4SetDropTargetAttrib(ih, "YES");
 
   return 1;
 }
@@ -274,7 +282,7 @@ static int gtk4SetDropTargetAttrib(Ihandle* ih, const char* value)
 {
   GtkDropTarget *drop_target = (GtkDropTarget*)iupAttribGet(ih, "_IUPGTK4_DROP_TARGET");
 
-  if (drop_target)
+  if (drop_target && ih->handle)
   {
     gtk_widget_remove_controller(ih->handle, GTK_EVENT_CONTROLLER(drop_target));
     iupAttribSet(ih, "_IUPGTK4_DROP_TARGET", NULL);
@@ -285,7 +293,7 @@ static int gtk4SetDropTargetAttrib(Ihandle* ih, const char* value)
     GdkContentFormats *formats = (GdkContentFormats*)iupAttribGet(ih, "_IUPGTK4_DROP_FORMATS");
     char *type;
 
-    if (!formats)
+    if (!formats || !ih->handle)
       return 0;
 
     /* Register custom deserializer for our MIME type to G_TYPE_BYTES */
@@ -330,6 +338,9 @@ static int gtk4SetDragTypesAttrib(Ihandle* ih, const char* value)
   if (iupStrToStrStr(valueCopy, valueTemp1, valueTemp2, ',') > 0)
     iupAttribSetStr(ih, "_IUPGTK4_DRAG_TYPE", valueTemp1);
 
+  if (ih->handle && iupAttribGetBoolean(ih, "DRAGSOURCE"))
+    gtk4SetDragSourceAttrib(ih, "YES");
+
   return 1;
 }
 
@@ -337,7 +348,7 @@ static int gtk4SetDragSourceAttrib(Ihandle* ih, const char* value)
 {
   GtkDragSource *drag_source = (GtkDragSource*)iupAttribGet(ih, "_IUPGTK4_DRAG_SOURCE");
 
-  if (drag_source)
+  if (drag_source && ih->handle)
   {
     gtk_widget_remove_controller(ih->handle, GTK_EVENT_CONTROLLER(drag_source));
     iupAttribSet(ih, "_IUPGTK4_DRAG_SOURCE", NULL);
@@ -348,7 +359,7 @@ static int gtk4SetDragSourceAttrib(Ihandle* ih, const char* value)
     GdkContentFormats *formats = (GdkContentFormats*)iupAttribGet(ih, "_IUPGTK4_DRAG_FORMATS");
     GdkDragAction actions;
 
-    if (!formats)
+    if (!formats || !ih->handle)
       return 0;
 
     drag_source = gtk_drag_source_new();
