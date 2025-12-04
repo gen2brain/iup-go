@@ -788,6 +788,66 @@ static int winTabsSetBgColorAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
+static int winTabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  return 1;
+}
+
+static void winTabsReorderTab(Ihandle* ih, int source_index, int target_index)
+{
+  TCITEM source_item;
+  TCHAR text_buffer[256];
+  int insert_index, current_sel;
+  Ihandle* source_child;
+  Ihandle* target_child;
+
+  int source_p = winTabsPosFixToWin(ih, source_index);
+  int target_p = winTabsPosFixToWin(ih, target_index);
+
+  if (source_p < 0 || target_p < 0)
+    return;
+
+  source_item.mask = TCIF_TEXT | TCIF_PARAM | TCIF_IMAGE;
+  source_item.pszText = text_buffer;
+  source_item.cchTextMax = 256;
+  SendMessage(ih->handle, TCM_GETITEM, source_p, (LPARAM)&source_item);
+
+  SendMessage(ih->handle, TCM_DELETEITEM, source_p, 0);
+
+  insert_index = target_p;
+
+  SendMessage(ih->handle, TCM_INSERTITEM, insert_index, (LPARAM)&source_item);
+
+  source_child = IupGetChild(ih, source_index);
+
+  if (source_child)
+  {
+    Ihandle* ref_child;
+
+    if (source_index < target_index)
+    {
+      ref_child = IupGetChild(ih, target_index + 1);
+      IupReparent(source_child, ih, ref_child);
+    }
+    else
+    {
+      ref_child = IupGetChild(ih, target_index);
+      IupReparent(source_child, ih, ref_child);
+    }
+  }
+
+  current_sel = (int)SendMessage(ih->handle, TCM_GETCURSEL, 0, 0);
+  if (current_sel == source_p)
+    SendMessage(ih->handle, TCM_SETCURSEL, insert_index, 0);
+  else if (source_p < target_p && current_sel > source_p && current_sel <= target_p)
+    SendMessage(ih->handle, TCM_SETCURSEL, current_sel - 1, 0);
+  else if (source_p > target_p && current_sel >= target_p && current_sel < source_p)
+    SendMessage(ih->handle, TCM_SETCURSEL, current_sel + 1, 0);
+
+  IupRefresh(ih);
+}
+
 static int winTabsIsInsideCloseButton(Ihandle* ih, int p)
 {
   RECT rect;
@@ -946,6 +1006,49 @@ static int winTabsMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
     *result = 0;
     return 1;
   }
+  case WM_PAINT:
+    if (iupAttribGetInt(ih, "_IUPTABS_DRAGGING"))
+    {
+      WNDPROC oldProc = (WNDPROC)IupGetCallback(ih, "_IUPWIN_OLDWNDPROC_CB");
+      CallWindowProc(oldProc, ih->handle, msg, wp, lp);
+
+      {
+        HDC hdc = GetDC(ih->handle);
+        int target = iupAttribGetInt(ih, "_IUPTABS_DRAG_TARGET");
+        int target_p = winTabsPosFixToWin(ih, target);
+        int source = iupAttribGetInt(ih, "_IUPTABS_DRAG_SOURCE");
+        int source_p = winTabsPosFixToWin(ih, source);
+
+        if (target_p >= 0 && source_p >= 0 && target != source)
+        {
+          RECT rc;
+          HPEN pen, old_pen;
+          int x;
+
+          SendMessage(ih->handle, TCM_GETITEMRECT, target_p, (LPARAM)&rc);
+
+          pen = CreatePen(PS_SOLID, 2, RGB(0, 120, 215));
+          old_pen = (HPEN)SelectObject(hdc, pen);
+
+          if (source < target)
+            x = rc.right;
+          else
+            x = rc.left;
+
+          MoveToEx(hdc, x, rc.top, NULL);
+          LineTo(hdc, x, rc.bottom);
+
+          SelectObject(hdc, old_pen);
+          DeleteObject(pen);
+        }
+
+        ReleaseDC(ih->handle, hdc);
+      }
+
+      *result = 0;
+      return 1;
+    }
+    break;
   case WM_MOUSELEAVE:
     if (ih->data->show_close)
     {
@@ -958,7 +1061,6 @@ static int winTabsMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
     }
     break;
   case WM_MOUSEMOVE:
-    if (ih->data->show_close)
     {
       TCHITTESTINFO ht;
       int p, high_p, press_p;
@@ -967,37 +1069,51 @@ static int winTabsMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
       ht.pt.y = GET_Y_LPARAM(lp);
       p = (int)SendMessage(ih->handle, TCM_HITTEST, 0, (LPARAM)&ht);
 
-      high_p = iupAttribGetInt(ih, "_IUPTABS_CLOSEHIGH");
-      if (winTabsIsInsideCloseButton(ih, p))
+      if (ih->data->show_close)
       {
-        if (high_p != p)
+        high_p = iupAttribGetInt(ih, "_IUPTABS_CLOSEHIGH");
+        if (winTabsIsInsideCloseButton(ih, p))
         {
-          /* must be called so WM_MOUSELEAVE will be called */
-          iupwinTrackMouseLeave(ih);
+          if (high_p != p)
+          {
+            iupwinTrackMouseLeave(ih);
+            iupAttribSetInt(ih, "_IUPTABS_CLOSEHIGH", p);
+            iupdrvRedrawNow(ih);
+          }
+        }
+        else
+        {
+          if (high_p != -1)
+          {
+            iupAttribSetInt(ih, "_IUPTABS_CLOSEHIGH", -1);
+            iupdrvRedrawNow(ih);
+          }
+        }
 
-          iupAttribSetInt(ih, "_IUPTABS_CLOSEHIGH", p);
+        press_p = iupAttribGetInt(ih, "_IUPTABS_CLOSEPRESS");
+        if (press_p != -1 && !winTabsIsInsideCloseButton(ih, press_p))
+        {
+          iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", -1);
           iupdrvRedrawNow(ih);
         }
       }
-      else
-      {
-        if (high_p != -1)
-        {
-          iupAttribSetInt(ih, "_IUPTABS_CLOSEHIGH", -1);
-          iupdrvRedrawNow(ih);
-        }
-      }
 
-      press_p = iupAttribGetInt(ih, "_IUPTABS_CLOSEPRESS");
-      if (press_p != -1 && !winTabsIsInsideCloseButton(ih, press_p))
+      if (iupAttribGetInt(ih, "_IUPTABS_DRAGGING"))
       {
-        iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", -1);
-        iupdrvRedrawNow(ih);
+        if (p >= 0)
+        {
+          int pos = winTabsPosFixFromWin(ih, p);
+          int old_target = iupAttribGetInt(ih, "_IUPTABS_DRAG_TARGET");
+          if (pos != old_target)
+          {
+            iupAttribSetInt(ih, "_IUPTABS_DRAG_TARGET", pos);
+            InvalidateRect(ih->handle, NULL, FALSE);
+          }
+        }
       }
     }
     break;
   case WM_LBUTTONDOWN:
-    if (ih->data->show_close)
     {
       TCHITTESTINFO ht;
       int p;
@@ -1006,59 +1122,94 @@ static int winTabsMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
       ht.pt.y = GET_Y_LPARAM(lp);
       p = (int)SendMessage(ih->handle, TCM_HITTEST, 0, (LPARAM)&ht);
 
-      if (p >= 0 && winTabsIsInsideCloseButton(ih, p))
+      if (ih->data->show_close)
       {
-        iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", p);  /* used for press feedback */
-        iupdrvRedrawNow(ih);
+        if (p >= 0 && winTabsIsInsideCloseButton(ih, p))
+        {
+          iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", p);
+          iupdrvRedrawNow(ih);
+
+          *result = 0;
+          return 1;
+        }
+        else
+          iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", -1);
+      }
+
+      if (iupAttribGetBoolean(ih, "ALLOWREORDER") && p >= 0 && !winTabsIsInsideCloseButton(ih, p))
+      {
+        int pos = winTabsPosFixFromWin(ih, p);
+        iupAttribSetInt(ih, "_IUPTABS_DRAGGING", 1);
+        iupAttribSetInt(ih, "_IUPTABS_DRAG_SOURCE", pos);
+        iupAttribSetInt(ih, "_IUPTABS_DRAG_TARGET", pos);
+        iupAttribSetInt(ih, "_IUPTABS_DRAG_START_X", ht.pt.x);
+        iupAttribSetInt(ih, "_IUPTABS_DRAG_START_Y", ht.pt.y);
+        SetCapture(ih->handle);
+      }
+    }
+    break;
+  case WM_LBUTTONUP:
+    {
+      int is_dragging = iupAttribGetInt(ih, "_IUPTABS_DRAGGING");
+
+      if (is_dragging)
+      {
+        int source = iupAttribGetInt(ih, "_IUPTABS_DRAG_SOURCE");
+        int target = iupAttribGetInt(ih, "_IUPTABS_DRAG_TARGET");
+
+        ReleaseCapture();
+        iupAttribSet(ih, "_IUPTABS_DRAGGING", NULL);
+
+        if (source != target)
+          winTabsReorderTab(ih, source, target);
+
+        InvalidateRect(ih->handle, NULL, TRUE);
 
         *result = 0;
         return 1;
       }
-      else
-        iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", -1);
-    }
-    break;
-  case WM_LBUTTONUP:
-    if (ih->data->show_close)
-    {
-      int press_p = iupAttribGetInt(ih, "_IUPTABS_CLOSEPRESS");
-      if (press_p != -1)
+
+      if (ih->data->show_close)
       {
-        if (winTabsIsInsideCloseButton(ih, press_p))
+        int press_p = iupAttribGetInt(ih, "_IUPTABS_CLOSEPRESS");
+        if (press_p != -1)
         {
-          int pos = winTabsPosFixFromWin(ih, press_p);
-          Ihandle *child = IupGetChild(ih, pos);
-          HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_CONTAINER");
-
-          iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", -1);
-
-          if (tab_container)
+          if (winTabsIsInsideCloseButton(ih, press_p))
           {
-            int ret = IUP_DEFAULT;
-            IFni cb = (IFni)IupGetCallback(ih, "TABCLOSE_CB");
-            if (cb)
-              ret = cb(ih, pos);
+            int pos = winTabsPosFixFromWin(ih, press_p);
+            Ihandle *child = IupGetChild(ih, pos);
+            HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_CONTAINER");
 
-            if (ret == IUP_CONTINUE) /* destroy tab and children */
+            iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", -1);
+
+            if (tab_container)
             {
-              IupDestroy(child);
-              IupRefreshChildren(ih);
-            }
-            else if (ret == IUP_DEFAULT) /* hide tab and children */
-            {
-              iupTabsCheckCurrentTab(ih, pos, 0);
-              winTabsSetVisibleArrayItem(ih, pos, 0);  /* to invisible */
-              winTabsDeleteItem(ih, press_p, tab_container);
-            }
-            else if (ret == IUP_IGNORE)
-            {
-              *result = 0;
-              return 1;
+              int ret = IUP_DEFAULT;
+              IFni cb = (IFni)IupGetCallback(ih, "TABCLOSE_CB");
+              if (cb)
+                ret = cb(ih, pos);
+
+              if (ret == IUP_CONTINUE)
+              {
+                IupDestroy(child);
+                IupRefreshChildren(ih);
+              }
+              else if (ret == IUP_DEFAULT)
+              {
+                iupTabsCheckCurrentTab(ih, pos, 0);
+                winTabsSetVisibleArrayItem(ih, pos, 0);
+                winTabsDeleteItem(ih, press_p, tab_container);
+              }
+              else if (ret == IUP_IGNORE)
+              {
+                *result = 0;
+                return 1;
+              }
             }
           }
-        }
 
-        iupdrvRedrawNow(ih);
+          iupdrvRedrawNow(ih);
+        }
       }
     }
     break;
@@ -1493,6 +1644,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, winTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, winTabsSetTabVisibleAttrib, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, winTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, winTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* necessary because transparent background does not work when not using visual styles */
   if (!iupwin_comctl32ver6)  /* Used by iupdrvImageCreateImage */
