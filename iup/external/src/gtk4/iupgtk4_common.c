@@ -801,10 +801,10 @@ IUP_SDK_API int iupdrvGetScrollbarSize(void)
   if (size == 0)
   {
     GtkWidget* sb = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, NULL);
-    GtkRequisition req;
+    int min_width, nat_width;
 
-    gtk_widget_get_preferred_size(sb, &req, NULL);
-    size = req.width;
+    gtk_widget_measure(sb, GTK_ORIENTATION_HORIZONTAL, -1, &min_width, &nat_width, NULL, NULL);
+    size = nat_width;
 
     g_object_ref_sink(sb);
     g_object_unref(sb);
