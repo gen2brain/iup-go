@@ -29,10 +29,6 @@
 
 #include "iupgtk_drv.h"
 
-#if GTK_CHECK_VERSION(2, 12, 0)
-#else
-static GtkTooltips* gtk_tips = NULL;
-#endif
 
 int iupdrvTabsExtraDecor(Ihandle* ih)
 {
@@ -662,7 +658,6 @@ static int gtkTabsSetTipAttrib(Ihandle* ih, const char* value)
     GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABLABEL");
     if (tab_label)
     {
-#if GTK_CHECK_VERSION(2, 12, 0)
       if (value)
       {
         if (iupAttribGetBoolean(ih, "TIPMARKUP"))
@@ -674,12 +669,6 @@ static int gtkTabsSetTipAttrib(Ihandle* ih, const char* value)
       {
         gtk_widget_set_tooltip_text(tab_label, NULL);
       }
-#else
-      if (gtk_tips == NULL)
-        gtk_tips = gtk_tooltips_new();
-      if (value)
-        gtk_tooltips_set_tip(gtk_tips, tab_label, iupgtkStrConvertToSystem(value), NULL);
-#endif
     }
   }
 

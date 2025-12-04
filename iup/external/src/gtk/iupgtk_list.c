@@ -79,7 +79,11 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       g_object_unref(temp_store);
 
       GtkRequisition req;
+#if GTK_CHECK_VERSION(3, 0, 0)
       gtk_widget_get_preferred_size(temp_combo, NULL, &req);
+#else
+      gtk_widget_size_request(temp_combo, &req);
+#endif
 
       /* single char width ~ button width + borders */
       int char_width = 10;  /* Approximate single char width */
