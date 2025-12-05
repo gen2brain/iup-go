@@ -838,12 +838,25 @@ static void winTabsReorderTab(Ihandle* ih, int source_index, int target_index)
   }
 
   current_sel = (int)SendMessage(ih->handle, TCM_GETCURSEL, 0, 0);
-  if (current_sel == source_p)
-    SendMessage(ih->handle, TCM_SETCURSEL, insert_index, 0);
-  else if (source_p < target_p && current_sel > source_p && current_sel <= target_p)
-    SendMessage(ih->handle, TCM_SETCURSEL, current_sel - 1, 0);
-  else if (source_p > target_p && current_sel >= target_p && current_sel < source_p)
-    SendMessage(ih->handle, TCM_SETCURSEL, current_sel + 1, 0);
+
+  /* Hide the previously active tab's container */
+  if (current_sel >= 0 && current_sel < (int)SendMessage(ih->handle, TCM_GETITEMCOUNT, 0, 0))
+  {
+    int prev_active_pos = winTabsPosFixFromWin(ih, current_sel);
+    HWND prev_tab_container = winTabsGetPageWindow(ih, prev_active_pos);
+    if (prev_tab_container)
+      ShowWindow(prev_tab_container, SW_HIDE);
+  }
+
+  /* Always activate the moved tab after reordering */
+  SendMessage(ih->handle, TCM_SETCURSEL, insert_index, 0);
+
+  /* Show the newly active (moved) tab's container */
+  {
+    HWND new_tab_container = winTabsGetPageWindow(ih, target_index);
+    if (new_tab_container)
+      ShowWindow(new_tab_container, SW_SHOW);
+  }
 
   IupRefresh(ih);
 }
