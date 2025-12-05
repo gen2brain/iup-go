@@ -6,6 +6,7 @@
 
 #include <Xm/Xm.h>
 #include <Xm/ToggleB.h>
+#include <Xm/DrawingA.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,9 +26,23 @@
 #include "iup_drv.h"
 #include "iup_image.h"
 #include "iup_key.h"
+#include "iup_drvdraw.h"
+#include "iup_draw.h"
 
 #include "iupmot_drv.h"
 #include "iupmot_color.h"
+
+#define SWITCH_TRACK_WIDTH  40
+#define SWITCH_TRACK_HEIGHT 20
+#define SWITCH_THUMB_SIZE   14
+#define SWITCH_THUMB_MARGIN 3
+
+typedef struct _IupMotSwitchData
+{
+  Ihandle* ih;
+  int checked_state;
+  Widget drawing_area;
+} IupMotSwitchData;
 
 
 void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
@@ -37,21 +52,149 @@ void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 
 void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
-  int check_box = 15;  /* See XmNindicatorSize */
-  (void)ih;
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    (*x) += 2 + SWITCH_TRACK_WIDTH + 2;
+    if ((*y) < 2 + SWITCH_TRACK_HEIGHT + 2)
+      (*y) = 2 + SWITCH_TRACK_HEIGHT + 2;
+    else
+      (*y) += 2 + 2;
 
-  /* has margins too */
-  (*x) += 3 + check_box + 3;
-  if ((*y) < 3 + check_box + 5) (*y) = 3 + check_box + 5; /* minimum height - extra space for descenders */
-  else (*y) += 3+5;
+    if (str && str[0])
+      (*x) += 8;
 
-  if (str && str[0]) /* add spacing between check box and text */
-    (*x) += 4;
+    return;
+  }
+
+  {
+    int check_box = 15;
+    (void)ih;
+
+    (*x) += 3 + check_box + 3;
+    if ((*y) < 3 + check_box + 5) (*y) = 3 + check_box + 5;
+    else (*y) += 3+5;
+
+    if (str && str[0])
+      (*x) += 4;
+  }
 }
 
-
+/*********************************************************************************/
+/* SWITCH Control                                                               */
 /*********************************************************************************/
 
+static void motSwitchDraw(Ihandle* ih, IupMotSwitchData* switch_data, IdrawCanvas* dc)
+{
+  int width, height;
+  long track_color, thumb_color, shadow_dark, shadow_light;
+  int is_checked = switch_data->checked_state;
+  int is_active = iupdrvIsActive(ih);
+  int thumb_x, thumb_y;
+
+  iupdrvDrawGetSize(dc, &width, &height);
+
+  if (!is_active)
+  {
+    track_color = iupDrawColor(200, 200, 200, 255);
+    thumb_color = iupDrawColor(220, 220, 220, 255);
+  }
+  else if (is_checked)
+  {
+    track_color = iupDrawColor(180, 180, 180, 255);
+    thumb_color = iupDrawColor(240, 240, 240, 255);
+  }
+  else
+  {
+    track_color = iupDrawColor(220, 220, 220, 255);
+    thumb_color = iupDrawColor(240, 240, 240, 255);
+  }
+
+  iupdrvDrawRectangle(dc, 0, 0, SWITCH_TRACK_WIDTH - 1, SWITCH_TRACK_HEIGHT - 1, track_color, IUP_DRAW_FILL, 1);
+
+  shadow_dark = iupDrawColor(100, 100, 100, 255);
+  shadow_light = iupDrawColor(250, 250, 250, 255);
+
+  iupdrvDrawLine(dc, 0, 0, SWITCH_TRACK_WIDTH - 1, 0, shadow_dark, IUP_DRAW_STROKE, 1);
+  iupdrvDrawLine(dc, 0, 0, 0, SWITCH_TRACK_HEIGHT - 1, shadow_dark, IUP_DRAW_STROKE, 1);
+
+  iupdrvDrawLine(dc, SWITCH_TRACK_WIDTH - 1, 1, SWITCH_TRACK_WIDTH - 1, SWITCH_TRACK_HEIGHT - 1, shadow_light, IUP_DRAW_STROKE, 1);
+  iupdrvDrawLine(dc, 1, SWITCH_TRACK_HEIGHT - 1, SWITCH_TRACK_WIDTH - 1, SWITCH_TRACK_HEIGHT - 1, shadow_light, IUP_DRAW_STROKE, 1);
+
+  if (is_checked)
+    thumb_x = SWITCH_TRACK_WIDTH - SWITCH_THUMB_SIZE - SWITCH_THUMB_MARGIN;
+  else
+    thumb_x = SWITCH_THUMB_MARGIN;
+
+  thumb_y = (SWITCH_TRACK_HEIGHT - SWITCH_THUMB_SIZE) / 2;
+
+  iupdrvDrawRectangle(dc, thumb_x, thumb_y, thumb_x + SWITCH_THUMB_SIZE - 1, thumb_y + SWITCH_THUMB_SIZE - 1, thumb_color, IUP_DRAW_FILL, 1);
+
+  iupdrvDrawLine(dc, thumb_x, thumb_y, thumb_x + SWITCH_THUMB_SIZE - 1, thumb_y, shadow_light, IUP_DRAW_STROKE, 1);
+  iupdrvDrawLine(dc, thumb_x, thumb_y, thumb_x, thumb_y + SWITCH_THUMB_SIZE - 1, shadow_light, IUP_DRAW_STROKE, 1);
+
+  iupdrvDrawLine(dc, thumb_x + SWITCH_THUMB_SIZE - 1, thumb_y + 1, thumb_x + SWITCH_THUMB_SIZE - 1, thumb_y + SWITCH_THUMB_SIZE - 1, shadow_dark, IUP_DRAW_STROKE, 1);
+  iupdrvDrawLine(dc, thumb_x + 1, thumb_y + SWITCH_THUMB_SIZE - 1, thumb_x + SWITCH_THUMB_SIZE - 1, thumb_y + SWITCH_THUMB_SIZE - 1, shadow_dark, IUP_DRAW_STROKE, 1);
+}
+
+static void motSwitchExposeCallback(Widget w, IupMotSwitchData* switch_data, XEvent* evt, Boolean* cont)
+{
+  Ihandle* ih = switch_data->ih;
+  IdrawCanvas* dc;
+  Window win;
+
+  (void)w;
+  (void)evt;
+  (void)cont;
+
+  win = XtWindow(switch_data->drawing_area);
+  if (!win)
+    return;
+
+  if (!iupAttribGet(ih, "DRAWABLE"))
+    iupAttribSet(ih, "DRAWABLE", (char*)win);
+
+  dc = iupdrvDrawCreateCanvas(ih);
+  if (!dc)
+    return;
+
+  iupDrawParentBackground(dc, ih);
+
+  motSwitchDraw(ih, switch_data, dc);
+
+  iupdrvDrawFlush(dc);
+
+  iupdrvDrawKillCanvas(dc);
+}
+
+static void motSwitchButtonPressCallback(Widget w, Ihandle* ih, XButtonPressedEvent* evt, Boolean* cont)
+{
+  IupMotSwitchData* switch_data = (IupMotSwitchData*)iupAttribGet(ih, "_IUPMOT_SWITCHDATA");
+  IFni cb;
+  int new_check;
+
+  (void)w;
+  (void)evt;
+  (void)cont;
+
+  if (!switch_data)
+    return;
+
+  iupmotTipLeaveNotify();
+
+  new_check = switch_data->checked_state ? 0 : 1;
+  switch_data->checked_state = new_check;
+
+  XClearArea(iupmot_display, XtWindow(switch_data->drawing_area), 0, 0, 0, 0, True);
+
+  cb = (IFni)IupGetCallback(ih, "ACTION");
+  if (cb && cb(ih, new_check) == IUP_CLOSE)
+    IupExitLoop();
+
+  if (iupObjectCheck(ih))
+    iupBaseCallValueChangedCb(ih);
+}
+
+/*********************************************************************************/
 
 static int motToggleSetBgColorAttrib(Ihandle* ih, const char* value)
 {
@@ -151,6 +294,9 @@ static int motToggleSetBackgroundAttrib(Ihandle* ih, const char* value)
 
 static int motToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+    return 0;
+
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
     iupmotSetMnemonicTitle(ih, NULL, 0, value);
@@ -226,6 +372,27 @@ static int motToggleSetValueAttrib(Ihandle* ih, const char* value)
   Ihandle *radio;
   unsigned char check;
 
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    IupMotSwitchData* switch_data = (IupMotSwitchData*)iupAttribGet(ih, "_IUPMOT_SWITCHDATA");
+    int new_check;
+
+    if (!switch_data)
+      return 0;
+
+    if (iupStrEqualNoCase(value, "TOGGLE"))
+      new_check = !switch_data->checked_state;
+    else
+      new_check = iupStrBoolean(value);
+
+    switch_data->checked_state = new_check;
+
+    if (ih->handle)
+      XClearArea(iupmot_display, XtWindow(switch_data->drawing_area), 0, 0, 0, 0, True);
+
+    return 0;
+  }
+
   if (iupStrEqualNoCase(value,"TOGGLE"))
     check = (unsigned char)-1;
   else if (iupStrEqualNoCase(value,"NOTDEF"))
@@ -281,12 +448,22 @@ static int motToggleSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* motToggleGetValueAttrib(Ihandle* ih)
 {
-  int check;
-  unsigned char set = 0;
-  XtVaGetValues (ih->handle, XmNset, &set, NULL);
-  check = set;
-  if (check == XmINDETERMINATE) check = -1;
-  return iupStrReturnChecked(check);
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    IupMotSwitchData* switch_data = (IupMotSwitchData*)iupAttribGet(ih, "_IUPMOT_SWITCHDATA");
+    if (switch_data)
+      return iupStrReturnChecked(switch_data->checked_state);
+    return iupStrReturnChecked(0);
+  }
+
+  {
+    int check;
+    unsigned char set = 0;
+    XtVaGetValues (ih->handle, XmNset, &set, NULL);
+    check = set;
+    if (check == XmINDETERMINATE) check = -1;
+    return iupStrReturnChecked(check);
+  }
 }
 
 static int motToggleSetPaddingAttrib(Ihandle* ih, const char* value)
@@ -417,6 +594,76 @@ static int motToggleMapMethod(Ihandle* ih)
   if (radio)
     ih->data->is_radio = 1;
 
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    IupMotSwitchData* switch_data;
+
+    if (ih->data->is_radio)
+    {
+      iupAttribSet(ih, "SWITCH", "NO");
+      goto regular_toggle;
+    }
+
+    ih->data->type = IUP_TOGGLE_TEXT;
+
+    switch_data = (IupMotSwitchData*)calloc(1, sizeof(IupMotSwitchData));
+    switch_data->ih = ih;
+    iupAttribSet(ih, "_IUPMOT_SWITCHDATA", (char*)switch_data);
+
+    iupMOT_SETARG(args, num_args, XmNmappedWhenManaged, False);
+    iupMOT_SETARG(args, num_args, XmNx, 0);
+    iupMOT_SETARG(args, num_args, XmNy, 0);
+    iupMOT_SETARG(args, num_args, XmNwidth, SWITCH_TRACK_WIDTH);
+    iupMOT_SETARG(args, num_args, XmNheight, SWITCH_TRACK_HEIGHT);
+    iupMOT_SETARG(args, num_args, XmNmarginHeight, 0);
+    iupMOT_SETARG(args, num_args, XmNmarginWidth, 0);
+    iupMOT_SETARG(args, num_args, XmNshadowThickness, 0);
+
+    if (iupAttribGetBoolean(ih, "CANFOCUS"))
+      iupMOT_SETARG(args, num_args, XmNtraversalOn, True);
+    else
+      iupMOT_SETARG(args, num_args, XmNtraversalOn, False);
+
+    switch_data->drawing_area = XtCreateManagedWidget(
+      iupDialogGetChildIdStr(ih),
+      xmDrawingAreaWidgetClass,
+      iupChildTreeGetNativeParentHandle(ih),
+      args, num_args);
+
+    if (!switch_data->drawing_area)
+    {
+      free(switch_data);
+      return IUP_ERROR;
+    }
+
+    ih->handle = switch_data->drawing_area;
+    ih->serial = iupDialogGetChildId(ih);
+
+    XtAddCallback(ih->handle, XmNexposeCallback, (XtCallbackProc)motSwitchExposeCallback, (XtPointer)switch_data);
+    XtAddEventHandler(ih->handle, ButtonPressMask, False, (XtEventHandler)motSwitchButtonPressCallback, (XtPointer)ih);
+    XtAddEventHandler(ih->handle, EnterWindowMask, False, (XtEventHandler)iupmotEnterLeaveWindowEvent, (XtPointer)ih);
+    XtAddEventHandler(ih->handle, LeaveWindowMask, False, (XtEventHandler)iupmotEnterLeaveWindowEvent, (XtPointer)ih);
+    XtAddEventHandler(ih->handle, FocusChangeMask, False, (XtEventHandler)iupmotFocusChangeEvent, (XtPointer)ih);
+    XtAddEventHandler(ih->handle, KeyPressMask, False, (XtEventHandler)iupmotKeyPressEvent, (XtPointer)ih);
+    XtAddCallback(ih->handle, XmNhelpCallback, (XtCallbackProc)iupmotHelpCallback, (XtPointer)ih);
+
+    value = iupAttribGet(ih, "VALUE");
+    if (value && iupStrBoolean(value))
+      switch_data->checked_state = 1;
+    else
+      switch_data->checked_state = 0;
+
+    XtVaSetValues(ih->handle, XmNbackground, iupmotColorGetPixelStr(iupBaseNativeParentGetBgColor(ih)), NULL);
+
+    XtRealizeWidget(ih->handle);
+
+    iupAttribSet(ih, "DRAWABLE", (char*)XtWindow(ih->handle));
+
+    return IUP_NOERROR;
+  }
+
+regular_toggle:
+
   value = iupAttribGet(ih, "IMAGE");
   if (value)
   {
@@ -545,10 +792,26 @@ static int motToggleMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void motToggleUnMapMethod(Ihandle* ih)
+{
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    IupMotSwitchData* switch_data = (IupMotSwitchData*)iupAttribGet(ih, "_IUPMOT_SWITCHDATA");
+    if (switch_data)
+    {
+      free(switch_data);
+      iupAttribSet(ih, "_IUPMOT_SWITCHDATA", NULL);
+    }
+  }
+
+  iupdrvBaseUnMapMethod(ih);
+}
+
 void iupdrvToggleInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motToggleMapMethod;
+  ic->UnMap = motToggleUnMapMethod;
 
   /* Driver Dependent Attribute functions */
 
@@ -573,5 +836,4 @@ void iupdrvToggleInitClass(Iclass* ic)
   /* NOT supported */
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "SWITCH", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
 }
