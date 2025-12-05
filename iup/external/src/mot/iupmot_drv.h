@@ -42,6 +42,9 @@ XFontStruct* iupmotGetFontStruct(const char* value);
 char* iupmotFindFontList(XmFontList fontlist);
 char* iupmotGetFontStructAttrib(Ihandle *ih);
 char* iupmotGetFontIdAttrib(Ihandle *ih);
+#ifdef IUP_USE_XFT
+void* iupmotGetXftFontAttrib(Ihandle *ih);
+#endif
 
 /* tips */
 /* called from Enter/Leave events to check if a TIP is present. */
@@ -57,6 +60,15 @@ void iupmotSetMnemonicTitle(Ihandle *ih, Widget w, int pos, const char* value);
 void iupmotTextSetString(Widget w, const char *value);
 XmString iupmotStringCreate(const char *value);
 void iupmotSetTitle(Widget w, const char *value);
+void iupmotStrSetUTF8Mode(int utf8mode);
+void iupmotStrSetUTF8ModeFile(int utf8mode);
+int iupmotStrGetUTF8Mode(void);
+int iupmotStrGetUTF8ModeFile(void);
+char* iupmotStrConvertToSystem(const char* str);
+char* iupmotStrConvertFromSystem(const char* str);
+char* iupmotStrConvertToFilename(const char* str);
+char* iupmotStrConvertFromFilename(const char* str);
+void iupmotStrRelease(void);
 
 /* common */
 void iupmotPointerMotionEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont);

@@ -10,6 +10,10 @@
 #include <Xm/Xm.h>
 #include <Xm/XmP.h>
 
+#ifdef IUP_USE_XFT
+#include <X11/Xft/Xft.h>
+#endif
+
 #include "iup.h"
 
 #include "iup_str.h"
@@ -23,12 +27,17 @@
 #include "iupmot_drv.h"
 
 
-typedef struct _ImotFont 
+typedef struct _ImotFont
 {
   char font[1024];
   char xlfd[1024];  /* X-Windows Font Description */
   XmFontList fontlist;  /* same as XmRenderTable */
   XFontStruct *fontstruct;
+#ifdef IUP_USE_XFT
+  XftFont *xftfont;
+  char xft_pattern[1024];
+  int is_xft;
+#endif
   int charwidth, charheight;
 } ImotFont;
 
@@ -135,6 +144,45 @@ static XFontStruct* motLoadFont(const char* foundry, const char *typeface, int s
   return fontstruct;
 }
 
+#ifdef IUP_USE_XFT
+static XftFont* motLoadXftFont(const char* typeface, int size, int bold, int italic, char* pattern_out)
+{
+  XftFont* xftfont;
+  char font_name[1024];
+  int xft_size;
+
+  if (iupStrEqualNoCase(typeface, "System"))
+    typeface = "Sans";
+
+  if (iupStrEqualNoCase(typeface, "fixed"))
+    typeface = "Monospace";
+
+  if (size < 0)
+  {
+    double res = ((double)DisplayWidth(iupmot_display, iupmot_screen) / (double)DisplayWidthMM(iupmot_display, iupmot_screen));
+    xft_size = iupRound((-size / res)*2.83464567);
+  }
+  else
+    xft_size = size;
+
+  if (bold && italic)
+    sprintf(font_name, "%s:size=%d:weight=bold:slant=italic", typeface, xft_size);
+  else if (bold)
+    sprintf(font_name, "%s:size=%d:weight=bold", typeface, xft_size);
+  else if (italic)
+    sprintf(font_name, "%s:size=%d:slant=italic", typeface, xft_size);
+  else
+    sprintf(font_name, "%s:size=%d", typeface, xft_size);
+
+  xftfont = XftFontOpenName(iupmot_display, iupmot_screen, font_name);
+
+  if (xftfont && pattern_out)
+    strcpy(pattern_out, font_name);
+
+  return xftfont;
+}
+#endif
+
 static XmFontList motFontCreateRenderTable(XFontStruct* fontstruct, int is_underline, int is_strikeout)
 {
   XmFontList fontlist;
@@ -165,6 +213,103 @@ static XmFontList motFontCreateRenderTable(XFontStruct* fontstruct, int is_under
   return fontlist;
 }
 
+#ifdef IUP_USE_XFT
+static XmFontList motFontCreateXftRenderTable(const char* xft_pattern, int is_underline, int is_strikeout, XftFont* xftfont)
+{
+  XmFontList fontlist;
+  XmRendition rendition;
+  Arg args[20];
+  int num_args = 0;
+  char family[256];
+  int size = 0;
+  int weight = 0;  /* 0=normal, 1=bold */
+  int slant = 0;   /* 0=normal, 1=italic */
+
+  /* Parse the XFT pattern to extract family, size, weight, slant */
+  {
+    const char* p = xft_pattern;
+    char* f = family;
+
+    /* Extract family name (everything before first ':') */
+    while (*p && *p != ':' && (f - family) < 255)
+      *f++ = *p++;
+    *f = '\0';
+
+    /* Parse properties after ':' */
+    while (*p)
+    {
+      if (*p == ':')
+      {
+        p++;
+        if (strncmp(p, "size=", 5) == 0)
+        {
+          size = atoi(p + 5);
+          while (*p && *p != ':') p++;
+        }
+        else if (strncmp(p, "weight=bold", 11) == 0)
+        {
+          weight = 1;
+          while (*p && *p != ':') p++;
+        }
+        else if (strncmp(p, "slant=italic", 12) == 0)
+        {
+          slant = 1;
+          while (*p && *p != ':') p++;
+        }
+        else
+        {
+          /* Skip unknown property */
+          while (*p && *p != ':') p++;
+        }
+      }
+      else
+        p++;
+    }
+  }
+
+  /* Set Motif XFT rendition resources separately */
+  iupMOT_SETARG(args, num_args, XmNfontName, family);
+  iupMOT_SETARG(args, num_args, XmNfontType, XmFONT_IS_XFT);
+  if (size > 0)
+    iupMOT_SETARG(args, num_args, XmNfontSize, size);
+
+  /* Build style string for XmNfontStyle (e.g., "Bold Italic") */
+  if (weight || slant)
+  {
+    static char style[64];
+    style[0] = '\0';
+    if (weight)
+      strcat(style, "Bold");
+    if (slant)
+    {
+      if (weight) strcat(style, " ");
+      strcat(style, "Italic");
+    }
+    iupMOT_SETARG(args, num_args, XmNfontStyle, style);
+  }
+
+  iupMOT_SETARG(args, num_args, XmNloadModel, XmLOAD_IMMEDIATE);
+
+  if (is_underline)
+    iupMOT_SETARG(args, num_args, XmNunderlineType, XmSINGLE_LINE);
+  else
+    iupMOT_SETARG(args, num_args, XmNunderlineType, XmNO_LINE);
+
+  if (is_strikeout)
+    iupMOT_SETARG(args, num_args, XmNstrikethruType, XmSINGLE_LINE);
+  else
+    iupMOT_SETARG(args, num_args, XmNstrikethruType, XmNO_LINE);
+
+  rendition = XmRenditionCreate(iupmot_appshell, "", args, num_args);
+
+  fontlist = XmRenderTableAddRenditions(NULL, &rendition, 1, XmDUPLICATE);
+
+  XmRenditionFree(rendition);
+
+  return fontlist;
+}
+#endif
+
 static int motFontCalcCharWidth(XFontStruct *fontstruct)
 {
   if (fontstruct->per_char)
@@ -182,10 +327,30 @@ static int motFontCalcCharWidth(XFontStruct *fontstruct)
     return fontstruct->max_bounds.width;
 }
 
+#ifdef IUP_USE_XFT
+static int motFontCalcXftCharWidth(XftFont *xftfont)
+{
+  int i, all = 0;
+  XGlyphInfo extents;
+
+  for (i = 32; i <= 126; i++)
+  {
+    XftTextExtents8(iupmot_display, xftfont, (FcChar8*)&i, 1, &extents);
+    all += extents.xOff;
+  }
+  return all / (126 - 32 + 1);
+}
+#endif
+
 static ImotFont* motFindFont(const char* foundry, const char *font)
 {
   char xlfd[1024];
-  XFontStruct* fontstruct;
+  XFontStruct* fontstruct = NULL;
+  int try_xft = 0;
+#ifdef IUP_USE_XFT
+  XftFont* xftfont = NULL;
+  char xft_pattern[1024];
+#endif
   int i, count = iupArrayCount(mot_fonts);
   int is_underline = 0, is_strikeout = 0;
 
@@ -222,8 +387,14 @@ static ImotFont* motFindFont(const char* foundry, const char *font)
     if (mapped_name)
       strcpy(typeface, mapped_name);
 
+#ifdef IUP_USE_XFT
+    xftfont = motLoadXftFont(typeface, size, is_bold, is_italic, xft_pattern);
+    if (xftfont)
+      try_xft = 1;
+#endif
+
     fontstruct = motLoadFont(foundry, typeface, size, is_bold, is_italic, xlfd);
-    if (!fontstruct) 
+    if (!fontstruct && !try_xft)
       return NULL;
   }
 
@@ -231,11 +402,43 @@ static ImotFont* motFindFont(const char* foundry, const char *font)
   fonts = (ImotFont*)iupArrayInc(mot_fonts);
 
   strcpy(fonts[i].font, font);
-  strcpy(fonts[i].xlfd, xlfd);
-  fonts[i].fontstruct = fontstruct;
-  fonts[i].fontlist = motFontCreateRenderTable(fontstruct, is_underline, is_strikeout);
-  fonts[i].charwidth = motFontCalcCharWidth(fontstruct);
-  fonts[i].charheight = fontstruct->ascent + fontstruct->descent;
+#ifdef IUP_USE_XFT
+  if (try_xft && xftfont)
+  {
+    strcpy(fonts[i].xft_pattern, xft_pattern);
+    fonts[i].xftfont = xftfont;
+    fonts[i].is_xft = 1;
+    fonts[i].fontlist = motFontCreateXftRenderTable(xft_pattern, is_underline, is_strikeout, xftfont);
+
+    if (fontstruct)
+    {
+      strcpy(fonts[i].xlfd, xlfd);
+      fonts[i].fontstruct = fontstruct;
+      fonts[i].charwidth = motFontCalcCharWidth(fontstruct);
+      fonts[i].charheight = fontstruct->ascent + fontstruct->descent;
+    }
+    else
+    {
+      strcpy(fonts[i].xlfd, "");
+      fonts[i].fontstruct = NULL;
+      fonts[i].charwidth = motFontCalcXftCharWidth(xftfont);
+      fonts[i].charheight = xftfont->ascent + xftfont->descent;
+    }
+  }
+  else
+#endif
+  {
+    strcpy(fonts[i].xlfd, xlfd);
+    fonts[i].fontstruct = fontstruct;
+#ifdef IUP_USE_XFT
+    fonts[i].xftfont = NULL;
+    strcpy(fonts[i].xft_pattern, "");
+    fonts[i].is_xft = 0;
+#endif
+    fonts[i].fontlist = motFontCreateRenderTable(fontstruct, is_underline, is_strikeout);
+    fonts[i].charwidth = motFontCalcCharWidth(fontstruct);
+    fonts[i].charheight = fontstruct->ascent + fontstruct->descent;
+  }
 
   return &fonts[i];
 }
@@ -250,7 +453,11 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
 
   if (!motfont)
   {
+#ifdef IUP_USE_XFT
+    font = "Sans, 12";
+#else
     font = "Fixed, 11";
+#endif
     motFindFont("misc", font);
   }
 
@@ -340,38 +547,58 @@ char* iupmotGetFontIdAttrib(Ihandle *ih)
   ImotFont* motfont = motGetFont(ih);
   if (!motfont)
     return NULL;
-  else
-    return (char*)motfont->fontstruct->fid;
+#ifdef IUP_USE_XFT
+  if (motfont->is_xft)
+    return NULL;
+#endif
+  if (!motfont->fontstruct)
+    return NULL;
+  return (char*)motfont->fontstruct->fid;
 }
+
+#ifdef IUP_USE_XFT
+void* iupmotGetXftFontAttrib(Ihandle *ih)
+{
+  ImotFont* motfont = motGetFont(ih);
+  if (!motfont)
+    return NULL;
+  if (motfont->is_xft)
+    return (void*)motfont->xftfont;
+  return NULL;
+}
+#endif
 
 IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 {
   ImotFont *motfont = motFontCreateNativeFont(ih, value);
-  if (!motfont) 
+  if (!motfont)
     return 0;
 
   /* If FONT is changed, must update the SIZE attribute */
   iupBaseUpdateAttribFromFont(ih);
 
-  /* FONT attribute must be able to be set before mapping, 
+  /* FONT attribute must be able to be set before mapping,
     so the font is enable for size calculation. */
   if (ih->handle && (ih->iclass->nativetype != IUP_TYPEVOID))
+  {
     XtVaSetValues(ih->handle, XmNrenderTable, motfont->fontlist, NULL);
+    XtVaSetValues(ih->handle, XmNfontList, motfont->fontlist, NULL);
+  }
 
   return 1;
 }
 
 IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 {
-  XFontStruct* fontstruct;
+  ImotFont* motfont;
   int len;
   char* line_end;
 
   if (!str || str[0]==0)
     return 0;
 
-  fontstruct = (XFontStruct*)iupmotGetFontStructAttrib(ih);
-  if (!fontstruct)
+  motfont = motGetFont(ih);
+  if (!motfont)
     return 0;
 
   line_end = strchr(str, '\n');
@@ -380,7 +607,20 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
   else
     len = (int)strlen(str);
 
-  return XTextWidth(fontstruct, str, len);
+#ifdef IUP_USE_XFT
+  if (motfont->is_xft && motfont->xftfont)
+  {
+    XGlyphInfo extents;
+    XftTextExtentsUtf8(iupmot_display, motfont->xftfont, (FcChar8*)str, len, &extents);
+    return extents.xOff;
+  }
+  else
+#endif
+  {
+    if (!motfont->fontstruct)
+      return 0;
+    return XTextWidth(motfont->fontstruct, str, len);
+  }
 }
 
 static void motFontGetTextSize(ImotFont* motfont, const char* str, int len, int *w, int *h)
@@ -400,7 +640,7 @@ static void motFontGetTextSize(ImotFont* motfont, const char* str, int len, int 
     if (h) *h = motfont->charheight * 1;
     return;
   }
-  
+
   if (str[0])
   {
     int l_len, lw, sum_len = 0;
@@ -415,7 +655,21 @@ static void motFontGetTextSize(ImotFont* motfont, const char* str, int len, int 
 
       if (l_len)
       {
-        lw = XTextWidth(motfont->fontstruct, curstr, l_len);
+#ifdef IUP_USE_XFT
+        if (motfont->is_xft && motfont->xftfont)
+        {
+          XGlyphInfo extents;
+          XftTextExtentsUtf8(iupmot_display, motfont->xftfont, (FcChar8*)curstr, l_len, &extents);
+          lw = extents.xOff;
+        }
+        else
+#endif
+        {
+          if (motfont->fontstruct)
+            lw = XTextWidth(motfont->fontstruct, curstr, l_len);
+          else
+            lw = 0;
+        }
         max_w = iupMAX(max_w, lw);
       }
 
@@ -453,10 +707,25 @@ IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int *max_width, int *lin
   ImotFont *motfont = motFindFont(NULL, font);
   if (motfont)
   {
-    if (max_width) *max_width = motfont->fontstruct->max_bounds.width;
-    if (line_height) *line_height = motfont->fontstruct->ascent + motfont->fontstruct->descent;
-    if (ascent)    *ascent = motfont->fontstruct->ascent;
-    if (descent)   *descent = motfont->fontstruct->descent;
+#ifdef IUP_USE_XFT
+    if (motfont->is_xft && motfont->xftfont)
+    {
+      if (max_width) *max_width = motfont->xftfont->max_advance_width;
+      if (line_height) *line_height = motfont->xftfont->ascent + motfont->xftfont->descent;
+      if (ascent)    *ascent = motfont->xftfont->ascent;
+      if (descent)   *descent = motfont->xftfont->descent;
+    }
+    else
+#endif
+    {
+      if (motfont->fontstruct)
+      {
+        if (max_width) *max_width = motfont->fontstruct->max_bounds.width;
+        if (line_height) *line_height = motfont->fontstruct->ascent + motfont->fontstruct->descent;
+        if (ascent)    *ascent = motfont->fontstruct->ascent;
+        if (descent)   *descent = motfont->fontstruct->descent;
+      }
+    }
   }
 }
 
@@ -490,8 +759,21 @@ void iupdrvFontFinish(void)
   {
     XmFontListFree(fonts[i].fontlist);
     fonts[i].fontlist = NULL;
-    XFreeFont(iupmot_display, fonts[i].fontstruct);
-    fonts[i].fontstruct = NULL;
+#ifdef IUP_USE_XFT
+    if (fonts[i].is_xft && fonts[i].xftfont)
+    {
+      XftFontClose(iupmot_display, fonts[i].xftfont);
+      fonts[i].xftfont = NULL;
+    }
+    else
+#endif
+    {
+      if (fonts[i].fontstruct)
+      {
+        XFreeFont(iupmot_display, fonts[i].fontstruct);
+        fonts[i].fontstruct = NULL;
+      }
+    }
   }
   iupArrayDestroy(mot_fonts);
 }

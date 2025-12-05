@@ -153,11 +153,24 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
     XChangeKeyboardControl(iupmot_display, KBAutoRepeatMode, &values);
     return 0;
   }
+  if (iupStrEqual(name, "UTF8MODE"))
+  {
+    iupmotStrSetUTF8Mode(iupStrBoolean(value));
+    return 1;
+  }
+  if (iupStrEqual(name, "UTF8MODE_FILE"))
+  {
+    iupmotStrSetUTF8ModeFile(iupStrBoolean(value));
+    return 1;
+  }
   return 1;
 }
 
 IUP_SDK_API char* iupdrvGetGlobal(const char *name)
 {
-  (void)name;
+  if (iupStrEqual(name, "UTF8MODE"))
+    return iupStrReturnBoolean(iupmotStrGetUTF8Mode());
+  if (iupStrEqual(name, "UTF8MODE_FILE"))
+    return iupStrReturnBoolean(iupmotStrGetUTF8ModeFile());
   return NULL;
 }

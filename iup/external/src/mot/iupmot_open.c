@@ -49,7 +49,9 @@ int iupdrvOpen(int *argc, char ***argv)
 {
   IupSetGlobal("DRIVER", "Motif");
 
-  /* XtSetLanguageProc(NULL, NULL, NULL); 
+  setlocale(LC_ALL, "");
+
+  /* XtSetLanguageProc(NULL, NULL, NULL);
      Removed to avoid invalid locale in modern Linux that set LANG=en_US.UTF-8 */
 
   /* We do NOT use XtVaOpenApplication because it crashes when using internal dummy argc and argv.
@@ -160,6 +162,7 @@ void iupdrvClose(void)
 {
   iupmotColorFinish();
   iupmotTipsFinish();
+  iupmotStrRelease();
 
   if (iupmot_appshell)
     XtDestroyWidget(iupmot_appshell);
