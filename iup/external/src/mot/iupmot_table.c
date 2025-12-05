@@ -1645,7 +1645,12 @@ void iupdrvTableAddLin(Ihandle* ih, int pos)
   if (!mot_data)
     return;
 
-  /* pos is 0-based, insert after pos (so pos=0 inserts at beginning) */
+  if (!mot_data->cell_values)
+    return;
+
+  /* pos is 1-based from core, convert to 0-based */
+  pos = pos - 1;
+
   new_num_lin = ih->data->num_lin + 1;
 
   /* Reallocate cell_values array */
@@ -1672,7 +1677,16 @@ void iupdrvTableDelLin(Ihandle* ih, int pos)
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int lin, col, new_num_lin;
 
-  if (!mot_data || pos < 0 || pos >= ih->data->num_lin)
+  if (!mot_data)
+    return;
+
+  if (!mot_data->cell_values)
+    return;
+
+  /* pos is 1-based from core, convert to 0-based */
+  pos = pos - 1;
+
+  if (pos < 0 || pos >= ih->data->num_lin)
     return;
 
   /* Free cell values in the row being deleted */
@@ -1714,7 +1728,12 @@ void iupdrvTableAddCol(Ihandle* ih, int pos)
   if (!mot_data)
     return;
 
-  /* pos is 0-based, insert after pos */
+  if (!mot_data->cell_values)
+    return;
+
+  /* pos is 1-based from core, convert to 0-based */
+  pos = pos - 1;
+
   new_num_col = ih->data->num_col + 1;
 
   /* Reallocate column widths */
@@ -1762,7 +1781,16 @@ void iupdrvTableDelCol(Ihandle* ih, int pos)
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int lin, col, new_num_col;
 
-  if (!mot_data || pos < 0 || pos >= ih->data->num_col)
+  if (!mot_data)
+    return;
+
+  if (!mot_data->cell_values)
+    return;
+
+  /* pos is 1-based from core, convert to 0-based */
+  pos = pos - 1;
+
+  if (pos < 0 || pos >= ih->data->num_col)
     return;
 
   new_num_col = ih->data->num_col - 1;
