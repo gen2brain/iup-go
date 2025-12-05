@@ -90,29 +90,35 @@ static void motSwitchDraw(Ihandle* ih, IupMotSwitchData* switch_data, IdrawCanva
   int is_checked = switch_data->checked_state;
   int is_active = iupdrvIsActive(ih);
   int thumb_x, thumb_y;
+  Pixel bg_pixel, fg_pixel;
+  unsigned char bg_r, bg_g, bg_b, fg_r, fg_g, fg_b;
 
   iupdrvDrawGetSize(dc, &width, &height);
 
+  XtVaGetValues(ih->handle, XmNbackground, &bg_pixel, XmNforeground, &fg_pixel, NULL);
+  iupmotColorGetRGB(bg_pixel, &bg_r, &bg_g, &bg_b);
+  iupmotColorGetRGB(fg_pixel, &fg_r, &fg_g, &fg_b);
+
   if (!is_active)
   {
-    track_color = iupDrawColor(200, 200, 200, 255);
-    thumb_color = iupDrawColor(220, 220, 220, 255);
+    track_color = iupDrawColor(bg_r * 0.85, bg_g * 0.85, bg_b * 0.85, 255);
+    thumb_color = iupDrawColor(bg_r * 0.95, bg_g * 0.95, bg_b * 0.95, 255);
   }
   else if (is_checked)
   {
-    track_color = iupDrawColor(180, 180, 180, 255);
-    thumb_color = iupDrawColor(240, 240, 240, 255);
+    track_color = iupDrawColor(bg_r * 0.75, bg_g * 0.75, bg_b * 0.75, 255);
+    thumb_color = iupDrawColor(bg_r * 1.05, bg_g * 1.05, bg_b * 1.05, 255);
   }
   else
   {
-    track_color = iupDrawColor(220, 220, 220, 255);
-    thumb_color = iupDrawColor(240, 240, 240, 255);
+    track_color = iupDrawColor(bg_r * 0.90, bg_g * 0.90, bg_b * 0.90, 255);
+    thumb_color = iupDrawColor(bg_r * 1.05, bg_g * 1.05, bg_b * 1.05, 255);
   }
 
   iupdrvDrawRectangle(dc, 0, 0, SWITCH_TRACK_WIDTH - 1, SWITCH_TRACK_HEIGHT - 1, track_color, IUP_DRAW_FILL, 1);
 
-  shadow_dark = iupDrawColor(100, 100, 100, 255);
-  shadow_light = iupDrawColor(250, 250, 250, 255);
+  shadow_dark = iupDrawColor(fg_r * 0.4, fg_g * 0.4, fg_b * 0.4, 255);
+  shadow_light = iupDrawColor(bg_r * 1.1, bg_g * 1.1, bg_b * 1.1, 255);
 
   iupdrvDrawLine(dc, 0, 0, SWITCH_TRACK_WIDTH - 1, 0, shadow_dark, IUP_DRAW_STROKE, 1);
   iupdrvDrawLine(dc, 0, 0, 0, SWITCH_TRACK_HEIGHT - 1, shadow_dark, IUP_DRAW_STROKE, 1);
