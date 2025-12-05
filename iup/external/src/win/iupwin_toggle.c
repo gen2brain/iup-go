@@ -862,15 +862,18 @@ static int winToggleSwitchMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
 
 static void winToggleSwitchDrawItem(Ihandle* ih, DRAWITEMSTRUCT* dis)
 {
-  IupWinSwitchData* switch_data = (IupWinSwitchData*)iupAttribGet(ih, "_IUPWIN_SWITCHDATA");
+  int width = dis->rcItem.right - dis->rcItem.left;
+  int height = dis->rcItem.bottom - dis->rcItem.top;
+  HDC hDC;
+  iupwinBitmapDC bmpDC;
 
-  /* Only clear background when not animating to prevent flashing */
-  /* During animation or rapid state changes, the opaque switch rendering handles everything */
-  if (!switch_data || !switch_data->is_animating)
-    iupwinDrawParentBackground(ih, dis->hDC, &dis->rcItem);
+  hDC = iupwinDrawCreateBitmapDC(&bmpDC, dis->hDC, 0, 0, width, height);
 
-  /* Draw the switch control */
-  winSwitchCustomDraw(ih, dis->hDC, &dis->rcItem, dis->itemState);
+  iupwinDrawParentBackground(ih, hDC, &dis->rcItem);
+
+  winSwitchCustomDraw(ih, hDC, &dis->rcItem, dis->itemState);
+
+  iupwinDrawDestroyBitmapDC(&bmpDC);
 }
 
 static int winToggleWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
