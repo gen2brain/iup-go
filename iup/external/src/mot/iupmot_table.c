@@ -12,6 +12,10 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 
+#ifdef IUP_USE_XFT
+#include <X11/Xft/Xft.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -56,7 +60,13 @@ typedef struct _ImotTableData
 
   /* X11 graphics */
   GC gc;                     /* Graphics context */
-  XFontStruct* font_struct;  /* Current font */
+  XFontStruct* font_struct;  /* Current font (old X11) */
+  int font_struct_owned;     /* 1 if we loaded font_struct ourselves, 0 if from cache */
+
+#ifdef IUP_USE_XFT
+  XftDraw* xft_draw;         /* XFT drawing context */
+  XftFont* xft_font;         /* XFT font */
+#endif
 
   /* Table geometry */
   int row_height;            /* Height of each row */
@@ -406,6 +416,17 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
       XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr("0 0 0"));
 
     text_len = strlen(text);
+
+    /* Calculate text width */
+#ifdef IUP_USE_XFT
+    if (mot_data->xft_font)
+    {
+      XGlyphInfo extents;
+      XftTextExtents8(display, mot_data->xft_font, (XftChar8*)text, text_len, &extents);
+      text_width = extents.width;
+    }
+    else
+#endif
     if (mot_data->font_struct)
       text_width = XTextWidth(mot_data->font_struct, text, text_len);
     else
@@ -434,9 +455,44 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
       text_x = x + MOT_TABLE_CELL_PADDING;
     }
 
-    text_y = y + h / 2 + (mot_data->font_struct ? mot_data->font_struct->ascent / 2 : 6);
+    /* Calculate text Y position */
+#ifdef IUP_USE_XFT
+    if (mot_data->xft_font)
+      text_y = y + h / 2 + mot_data->xft_font->ascent / 2;
+    else
+#endif
+      text_y = y + h / 2 + (mot_data->font_struct ? mot_data->font_struct->ascent / 2 : 6);
 
-    XDrawString(display, window, mot_data->gc, text_x, text_y, text, text_len);
+    /* Draw text */
+#ifdef IUP_USE_XFT
+    if (mot_data->xft_draw && mot_data->xft_font)
+    {
+      XftColor xft_color;
+      XRenderColor render_color;
+      unsigned long pixel;
+      XColor xcolor;
+
+      /* Get pixel value from fgcolor */
+      if (fgcolor && *fgcolor)
+        pixel = iupmotColorGetPixelStr(fgcolor);
+      else
+        pixel = iupmotColorGetPixelStr("0 0 0");
+
+      /* Convert pixel to XRenderColor */
+      xcolor.pixel = pixel;
+      XQueryColor(display, DefaultColormap(display, iupmot_screen), &xcolor);
+      render_color.red = xcolor.red;
+      render_color.green = xcolor.green;
+      render_color.blue = xcolor.blue;
+      render_color.alpha = 0xffff;
+
+      XftColorAllocValue(display, DefaultVisual(display, iupmot_screen), DefaultColormap(display, iupmot_screen), &render_color, &xft_color);
+      XftDrawString8(mot_data->xft_draw, &xft_color, mot_data->xft_font, text_x, text_y, (XftChar8*)text, text_len);
+      XftColorFree(display, DefaultVisual(display, iupmot_screen), DefaultColormap(display, iupmot_screen), &xft_color);
+    }
+    else
+#endif
+      XDrawString(display, window, mot_data->gc, text_x, text_y, text, text_len);
 
     /* Draw sort arrow for sorted column headers (only if sorting is enabled) */
     if (is_header && ih->data->sortable && mot_data->sort_column == col && mot_data->sort_signs)
@@ -514,7 +570,16 @@ static void motTableDrawTable(Ihandle* ih)
       /* Measure column title */
       if (mot_data->col_titles[c])
       {
-        title_width = XTextWidth(mot_data->font_struct, mot_data->col_titles[c], strlen(mot_data->col_titles[c]));
+#ifdef IUP_USE_XFT
+        if (mot_data->xft_font)
+        {
+          XGlyphInfo extents;
+          XftTextExtents8(iupmot_display, mot_data->xft_font, (XftChar8*)mot_data->col_titles[c], strlen(mot_data->col_titles[c]), &extents);
+          title_width = extents.width;
+        }
+        else
+#endif
+          title_width = XTextWidth(mot_data->font_struct, mot_data->col_titles[c], strlen(mot_data->col_titles[c]));
         title_width += 20;  /* Add padding for sort indicator space */
         if (title_width > max_width)
           max_width = title_width;
@@ -527,7 +592,16 @@ static void motTableDrawTable(Ihandle* ih)
         const char* cell_value = IupGetAttributeId2(ih, "", lin + 1, c + 1);
         if (cell_value && cell_value[0])
         {
-          cell_width = XTextWidth(mot_data->font_struct, cell_value, strlen(cell_value));
+#ifdef IUP_USE_XFT
+          if (mot_data->xft_font)
+          {
+            XGlyphInfo extents;
+            XftTextExtents8(iupmot_display, mot_data->xft_font, (XftChar8*)cell_value, strlen(cell_value), &extents);
+            cell_width = extents.width;
+          }
+          else
+#endif
+            cell_width = XTextWidth(mot_data->font_struct, cell_value, strlen(cell_value));
           cell_width += 16;  /* Add padding (8px left + 8px right) */
           if (cell_width > max_width)
             max_width = cell_width;
@@ -619,7 +693,8 @@ static void motTableStartCellEdit(Ihandle* ih, int lin, int col)
   if (!mot_data->edit_text)
   {
     int num_args = 0;
-    Arg args[10];
+    Arg args[15];
+    XmFontList fontlist_for_edit;
 
     iupMOT_SETARG(args, num_args, XmNx, 0);
     iupMOT_SETARG(args, num_args, XmNy, 0);
@@ -628,6 +703,14 @@ static void motTableStartCellEdit(Ihandle* ih, int lin, int col)
     iupMOT_SETARG(args, num_args, XmNmarginHeight, 0);
     iupMOT_SETARG(args, num_args, XmNmarginWidth, 2);
     iupMOT_SETARG(args, num_args, XmNhighlightThickness, 0);
+
+    /* Set font on edit widget to match the table's drawing font */
+    fontlist_for_edit = (XmFontList)iupmotGetFontListAttrib(ih);
+    if (fontlist_for_edit)
+    {
+      iupMOT_SETARG(args, num_args, XmNrenderTable, fontlist_for_edit);
+      iupMOT_SETARG(args, num_args, XmNfontList, fontlist_for_edit);
+    }
 
     mot_data->edit_text = XmCreateText(mot_data->container, "edit_text", args, num_args);
 
@@ -1338,9 +1421,32 @@ static int motTableMapMethod(Ihandle* ih)
   mot_data->gc = XCreateGC(iupmot_display, XtWindow(mot_data->drawing_area), GCForeground | GCBackground, &gcvalues);
 
   /* Load font */
-  mot_data->font_struct = XLoadQueryFont(iupmot_display, "fixed");
-  if (mot_data->font_struct)
-    XSetFont(iupmot_display, mot_data->gc, mot_data->font_struct->fid);
+#ifdef IUP_USE_XFT
+  mot_data->xft_font = (XftFont*)iupmotGetXftFontAttrib(ih);
+  if (mot_data->xft_font)
+  {
+    /* Create XFT drawing context */
+    mot_data->xft_draw = XftDrawCreate(iupmot_display, XtWindow(mot_data->drawing_area),
+                                       DefaultVisual(iupmot_display, iupmot_screen),
+                                       DefaultColormap(iupmot_display, iupmot_screen));
+    mot_data->font_struct_owned = 0;
+  }
+  else
+#endif
+  {
+    mot_data->font_struct = (XFontStruct*)iupmotGetFontStructAttrib(ih);
+    if (!mot_data->font_struct)
+    {
+      mot_data->font_struct = XLoadQueryFont(iupmot_display, "fixed");
+      mot_data->font_struct_owned = 1;  /* We loaded it, we own it */
+    }
+    else
+    {
+      mot_data->font_struct_owned = 0;  /* From cache, don't free */
+    }
+    if (mot_data->font_struct)
+      XSetFont(iupmot_display, mot_data->gc, mot_data->font_struct->fid);
+  }
 
   /* Set initial focus - no row/col selected on start (0 = none) */
   mot_data->current_row = 0;
@@ -1416,8 +1522,14 @@ static void motTableUnMapMethod(Ihandle* ih)
   if (mot_data->gc)
     XFreeGC(iupmot_display, mot_data->gc);
 
-  /* Free font */
-  if (mot_data->font_struct)
+  /* Free XFT resources */
+#ifdef IUP_USE_XFT
+  if (mot_data->xft_draw)
+    XftDrawDestroy(mot_data->xft_draw);
+#endif
+
+  /* Free font only if we loaded it ourselves (not from cache) */
+  if (mot_data->font_struct && mot_data->font_struct_owned)
     XFreeFont(iupmot_display, mot_data->font_struct);
 
   /* Free cell storage */
@@ -1876,6 +1988,9 @@ void iupdrvTableInitClass(Iclass* ic)
   ic->Map = motTableMapMethod;
   ic->UnMap = motTableUnMapMethod;
   ic->LayoutUpdate = motTableLayoutUpdateMethod;
+
+  /* Register FONT attribute */
+  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
   /* Mark unsupported features */
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

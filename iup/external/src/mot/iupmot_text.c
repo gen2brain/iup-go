@@ -736,8 +736,20 @@ static int motTextSetValueAttrib(Ihandle* ih, const char* value)
 static char* motTextGetValueAttrib(Ihandle* ih)
 {
   char* value = XmTextGetString(ih->handle);
-  char* str = iupStrReturnStr(value);
-  XtFree(value);
+  char* converted = iupmotStrConvertFromSystem(value);
+  char* str;
+
+  if (converted != value)
+  {
+    str = iupStrReturnStr(converted);
+    XtFree(value);
+  }
+  else
+  {
+    str = iupStrReturnStr(value);
+    XtFree(value);
+  }
+
   return str;
 }
                        

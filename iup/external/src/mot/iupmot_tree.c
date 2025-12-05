@@ -633,6 +633,7 @@ void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add
   XmString itemTitle;
   motTreeItemData *itemData;
   Pixel bgcolor, fgcolor;
+  XmFontList fontlist;
   int kindPrev = 0, num_args = 0;
   Arg args[30];
 
@@ -653,9 +654,10 @@ void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add
 
   itemTitle = iupmotStringCreate(title);
 
-  /* Get default colors */
+  /* Get default colors and font */
   XtVaGetValues(ih->handle, XmNforeground, &fgcolor, NULL);
   XtVaGetValues(ih->handle, XmNbackground, &bgcolor, NULL);
+  fontlist = (XmFontList)iupmotGetFontListAttrib(ih);
 
   if (wItemPrev)
   {
@@ -694,6 +696,12 @@ void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add
   iupMOT_SETARG(args, num_args, XmNtraversalOn, True);
   iupMOT_SETARG(args, num_args, XmNshadowThickness, 0);
   iupMOT_SETARG(args, num_args, XmNlabelString, itemTitle);
+
+  if (fontlist)
+  {
+    iupMOT_SETARG(args, num_args, XmNrenderTable, fontlist);
+    iupMOT_SETARG(args, num_args, XmNfontList, fontlist);
+  }
 
   iupMOT_SETARG(args, num_args, XmNviewType, XmSMALL_ICON);
 
@@ -1486,7 +1494,7 @@ static int motTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
   if (value)
     fontlist = iupmotGetFontList(iupAttribGetId(ih, "TITLEFOUNDRY", id), value);
 
-  XtVaSetValues(wItem, XmNrenderTable, fontlist, NULL);
+  XtVaSetValues(wItem, XmNrenderTable, fontlist, XmNfontList, fontlist, NULL);
 
   return 0;
 }
@@ -2079,6 +2087,7 @@ static void motTreeShowEditField(Ihandle* ih, Widget wItem)
   iupMOT_SETARG(args, num_args, XmNmarginWidth, 0);
   iupMOT_SETARG(args, num_args, XmNforeground, color);
   iupMOT_SETARG(args, num_args, XmNrenderTable, fontlist);
+  iupMOT_SETARG(args, num_args, XmNfontList, fontlist);
   iupMOT_SETARG(args, num_args, XmNvalue, value);
   iupMOT_SETARG(args, num_args, XmNtraversalOn, True);
 
@@ -2823,6 +2832,16 @@ static int motTreeMapMethod(Ihandle* ih)
   iupMOT_SETARG(args, num_args, XmNselectionPolicy, XmSINGLE_SELECT);
   iupMOT_SETARG(args, num_args, XmNoutlineIndentation, 20);
 
+  /* Set the font for the tree widget */
+  {
+    XmFontList fontlist = (XmFontList)iupmotGetFontListAttrib(ih);
+    if (fontlist)
+    {
+      iupMOT_SETARG(args, num_args, XmNrenderTable, fontlist);
+      iupMOT_SETARG(args, num_args, XmNfontList, fontlist);
+    }
+  }
+
   if (iupAttribGetBoolean(ih, "HIDELINES"))
     iupMOT_SETARG(args, num_args, XmNoutlineLineStyle,  XmNO_LINE);
   else
@@ -2841,6 +2860,15 @@ static int motTreeMapMethod(Ihandle* ih)
 
   if (!ih->handle)
     return IUP_ERROR;
+
+  /* Force font to be applied AFTER widget creation */
+  {
+    char* font_value = iupAttribGetStr(ih, "FONT");
+    if (!font_value)
+      font_value = IupGetGlobal("DEFAULTFONT");
+    if (font_value)
+      iupdrvSetFontAttrib(ih, font_value);
+  }
 
   ih->serial = iupDialogGetChildId(ih); /* must be after using the string */
 
