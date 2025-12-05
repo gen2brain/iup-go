@@ -18,9 +18,15 @@ func init() {
 // Open initializes the IUP toolkit.
 // Must be called before any other IUP function.
 //
+// UTF8MODE is automatically enabled.
+// To disable UTF8MODE, call SetGlobal("UTF8MODE", "NO") after Open().
+//
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupopen.html
 func Open() int {
-	return int(C.IupOpen(nil, nil))
+	ret := int(C.IupOpen(nil, nil))
+	SetGlobal("UTF8MODE", "YES")
+	SetGlobal("UTF8MODE_FILE", "YES")
+	return ret
 }
 
 // Close ends the IUP toolkit and releases internal memory.
