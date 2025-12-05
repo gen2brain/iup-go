@@ -34,7 +34,9 @@ package iup
 #cgo motif LDFLAGS: -lXm -lXmu -lXt -lXext -lX11
 #cgo linux,motif LDFLAGS: -lXpm
 #cgo motif,gl LDFLAGS: -lGL
-#cgo motif CFLAGS: -Iexternal/src/mot -DIUPDBUS_USE_DLOPEN
+#cgo motif,xft CFLAGS: -DIUP_USE_XFT
+#cgo motif,xft,!nopkgconfig pkg-config: xft freetype2
+#cgo motif CFLAGS: -Iexternal/src/mot -DIUPDBUS_USE_DLOPEN -DIUP_USE_ICONV
 
 #cgo windows CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
 #cgo windows CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
