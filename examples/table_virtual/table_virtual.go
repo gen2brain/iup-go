@@ -161,7 +161,7 @@ func main() {
 	// Create dialog
 	dlg := iup.Dialog(
 		iup.Vbox(
-			iup.Label("IupTable: Virtual Mode Demo").SetAttributes(`FONT="Sans, Bold 12"`),
+			iup.Label("IupTable Virtual Mode").SetAttributes(`FONT="Sans, Bold 12"`),
 			lblInfo,
 			table,
 			lblStatus,

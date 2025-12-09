@@ -31,13 +31,16 @@ func main() {
 	fr1 := iup.Frame(
 		iup.Vbox(
 			iup.Button("Button Text").SetAttributes("PADDING=5x5"),
-			iup.Button("Text").SetAttributes("IMAGE=img1, PADDING=5x5").SetHandle("button"),
-			iup.Button("").SetAttributes("IMAGE=img1"),
-			iup.Button("").SetAttributes("IMAGE=img1,IMPRESS=img2"),
-		),
+			iup.Button("Text").SetAttributes("IMAGE=img1, PADDING=5x5").SetHandle("button2"),
+			iup.Hbox(
+				iup.Button("").SetAttributes("IMAGE=img1,IMPRESS=img2"),
+				iup.Fill(),
+				iup.Button("").SetAttributes("IMAGE=img1"),
+			).SetAttribute("ALIGNMENT", "ACENTER"),
+		).SetAttribute("ALIGNMENT", "ACENTER"),
 	).SetAttribute("TITLE", "Button")
 
-	iup.GetHandle("button").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+	iup.GetHandle("button2").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		dlg := iup.ColorDlg().SetAttributes(map[string]interface{}{
 			"TITLE":          "ColorDlg",
 			"VALUE":          "128 0 255",
@@ -55,22 +58,29 @@ func main() {
 	fr2 := iup.Frame(
 		iup.Vbox(
 			iup.Label("Label text"),
-			iup.Label("").SetAttributes("SEPARATOR=HORIZONTAL, MAXSIZE=150"),
+			iup.Label("Bold Label").SetAttributes(`FONT="Sans, Bold 10"`),
+			iup.Label("Colored Label").SetAttributes(`FGCOLOR="0 0 255"`),
+			iup.Label("Monospace Font").SetAttributes(`FONT="Monospace, 10"`),
+			iup.Label("Highlighted").SetAttributes(`FGCOLOR="50 50 50", BGCOLOR="255 235 200"`),
+			iup.Label("").SetAttributes("SEPARATOR=HORIZONTAL"),
 			iup.Label("").SetAttributes(`IMAGE=img1, TIP="Label with image"`),
-		),
+		).SetAttribute("GAP", "5"),
 	).SetAttribute("TITLE", "Label")
 
 	fr3 := iup.Frame(
 		iup.Vbox(
 			iup.Toggle("Toggle Text").SetAttributes("VALUE=ON"),
-			iup.Toggle("").SetAttributes("VALUE=ON,IMAGE=img1"),
-			iup.Frame(iup.Radio(
+			iup.Hbox(
+				iup.Toggle("").SetAttributes("VALUE=ON,SWITCH=YES"),
+				iup.Fill(),
+				iup.Toggle("").SetAttributes("VALUE=ON,IMAGE=img1"),
+			).SetAttribute("ALIGNMENT", "ACENTER"),
+			iup.Radio(
 				iup.Vbox(
 					iup.Toggle("Toggle Text"),
 					iup.Toggle("Toggle Text"),
 				),
-			)).SetAttribute("TITLE", "Radio"),
-			iup.Toggle("").SetAttributes("VALUE=ON,SWITCH=YES"),
+			),
 		),
 	).SetAttribute("TITLE", "Toggle")
 
@@ -83,13 +93,11 @@ func main() {
 				"AUTOHIDE":     "NO",
 				"SCROLLBAR":    "VERTICAL",
 				"VALUE":        "Multiline Text\nSecond Line\nThird Line\nFourth Line\nFifth Line",
-				"VISIBLELINES": "3",
+				"VISIBLELINES": "4",
 			}),
-			iup.Frame(
-				iup.Vbox(
-					iup.Text().SetAttributes(`SPIN=YES, SPINVALUE=32`),
-				),
-			).SetAttribute("TITLE", "Spinner"),
+			iup.Vbox(
+				iup.Text().SetAttributes(`SPIN=YES, SPINVALUE=32`),
+			),
 		),
 	).SetAttribute("TITLE", "Text")
 
@@ -98,23 +106,28 @@ func main() {
 	iup.SetAttribute(list1, "1", "Item 1 Text")
 	iup.SetAttribute(list1, "2", "Item 2 Text")
 	iup.SetAttribute(list1, "3", "Item 3 Text")
+	iup.SetAttribute(list1, "4", "Item 4 Text")
 	iup.SetAttribute(list1, "TIP", "List 1")
+	iup.SetAttribute(list1, "VISIBLELINES", "3")
 
 	list2 := iup.List()
 	iup.SetAttribute(list2, "DROPDOWN", "YES")
-	iup.SetAttribute(list2, "VALUE", "2")
+	iup.SetAttribute(list2, "VALUE", "3")
 	iup.SetAttribute(list2, "1", "Item 1 Text")
 	iup.SetAttribute(list2, "2", "Item 2 Text")
 	iup.SetAttribute(list2, "3", "Item 3 Text")
+	iup.SetAttribute(list2, "4", "Item 4 Text")
 	iup.SetAttribute(list2, "TIP", "List 2")
 
 	list3 := iup.List()
 	iup.SetAttribute(list3, "EDITBOX", "YES")
-	iup.SetAttribute(list3, "VALUE", "Item 3 Text")
+	iup.SetAttribute(list3, "VALUE", "Item 2 Text")
 	iup.SetAttribute(list3, "1", "Item 1 Text")
 	iup.SetAttribute(list3, "2", "Item 2 Text")
 	iup.SetAttribute(list3, "3", "Item 3 Text")
+	iup.SetAttribute(list3, "4", "Item 4 Text")
 	iup.SetAttribute(list3, "TIP", "List 3")
+	iup.SetAttribute(list3, "VISIBLELINES", "3")
 
 	fr5 := iup.Frame(
 		iup.Vbox(
@@ -141,12 +154,45 @@ func main() {
 		iup.Vbox(iup.Label("")),
 		iup.Vbox(iup.Label("")),
 	).SetAttributes(map[string]interface{}{
-		"TABIMAGE1": "img3",
-		"TABTITLE0": "Tab Title 0",
-		"TABTITLE1": "Tab Title 1",
-		"TABTITLE2": "Tab Title 2",
-		"SIZE":      "220x20",
+		"TABIMAGE1":    "img3",
+		"TABTITLE0":    "Tab Title 0",
+		"TABTITLE1":    "Tab Title 1",
+		"TABTITLE2":    "Tab Title 2",
+		"ALLOWREORDER": "YES",
 	})
+
+	table := iup.Table()
+	table.SetAttribute("NUMCOL", "4")
+	table.SetAttribute("NUMLIN", "5")
+	table.SetAttribute("FOCUSCELL", "4:2")
+	table.SetAttribute("TITLE1", "ID")
+	table.SetAttribute("TITLE2", "Name")
+	table.SetAttribute("TITLE3", "Age")
+	table.SetAttribute("TITLE4", "City")
+	table.SetAttribute("ALIGNMENT1", "ACENTER")
+	table.SetAttribute("ALIGNMENT2", "ALEFT")
+	table.SetAttribute("ALIGNMENT3", "ACENTER")
+	table.SetAttribute("ALIGNMENT4", "ALEFT")
+	table.SetAttribute("RASTERWIDTH1", "40")
+	table.SetAttribute("RASTERWIDTH2", "80")
+	table.SetAttribute("RASTERWIDTH3", "50")
+	table.SetAttribute("ALTERNATECOLOR", "YES")
+	table.SetAttribute("EVENROWCOLOR", "#F0F0F0")
+	table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
+
+	sampleData := [][]string{
+		{"1", "Alice", "25", "NYC"},
+		{"2", "Bob", "30", "LA"},
+		{"3", "Charlie", "35", "Chicago"},
+		{"4", "Diana", "28", "Boston"},
+		{"5", "Eve", "32", "Seattle"},
+	}
+
+	for lin, row := range sampleData {
+		for col, value := range row {
+			iup.SetAttributeId2(table, "", lin+1, col+1, value)
+		}
+	}
 
 	canvas := iup.Canvas().SetAttributes(`BGCOLOR="255 255 255", BORDER=NO, XMIN=0, XMAX=99, POSX=0, DX=10`)
 	canvas.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
@@ -201,14 +247,20 @@ func main() {
 	vbox1 := iup.Vbox(
 		hbox1,
 		iup.Hbox(
-			iup.Frame(iup.Hbox(val)).SetAttributes(`TITLE=Val`),
-			iup.Frame(iup.Hbox(pbar)).SetAttributes(`TITLE=ProgressBar`),
-			iup.Frame(iup.Hbox(tabs)).SetAttributes(`TITLE=Tabs`),
-		),
+			iup.Frame(iup.Hbox(table)).SetAttributes(`TITLE=Table`),
+			iup.Vbox(
+				iup.Frame(iup.Hbox(tabs)).SetAttributes(`TITLE=Tabs`),
+				iup.Hbox(
+					iup.Frame(iup.Hbox(val)).SetAttributes(`TITLE=Val`),
+					iup.Fill(),
+					iup.Frame(iup.Hbox(pbar)).SetAttributes(`TITLE=ProgressBar`),
+				).SetAttribute("GAP", "5"),
+			).SetAttribute("GAP", "5"),
+		).SetAttribute("GAP", "5"),
 		iup.Hbox(
 			iup.Frame(iup.Hbox(canvas)).SetAttributes(`TITLE=Canvas`),
 			iup.Frame(iup.Hbox(tree)).SetAttributes(`TITLE=Tree`),
-		),
+		).SetAttribute("GAP", "5"),
 	).SetAttributes("MARGIN=5x5, GAP=5").SetHandle("vbox1")
 
 	dlg := iup.Dialog(vbox1).SetAttributes(`TITLE="Sample", MENU=menu, ICON=img1`)
