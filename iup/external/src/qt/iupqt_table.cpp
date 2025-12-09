@@ -845,6 +845,13 @@ static int qtTableMapMethod(Ihandle* ih)
   /* This must be set AFTER setStretchLastSection so non-stretched last column uses ResizeToContents */
   hHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
 
+  /* Set header row height to match IUP's natural size calculation */
+  {
+    QFontMetrics fm(table->font());
+    int header_height = fm.height() + 8;
+    hHeader->setFixedHeight(header_height);
+  }
+
   /* Apply any pre-set column widths (RASTERWIDTH/WIDTH set before mapping) */
   /* This is especially important for virtual mode where empty cells would shrink columns */
   for (int col = 1; col <= num_col; col++)
@@ -899,7 +906,13 @@ static int qtTableMapMethod(Ihandle* ih)
   }
 
   /* Hide row numbers (vertical header) */
-  table->verticalHeader()->setVisible(false);
+  QHeaderView* vHeader = table->verticalHeader();
+  vHeader->setVisible(false);
+
+  /* Set default row height to match IUP's natural size calculation */
+  QFontMetrics fm(table->font());
+  int row_height = fm.height() + 8;
+  vHeader->setDefaultSectionSize(row_height);
 
   /* Clear any default selection - no cell should be selected on start */
   table->clearSelection();
