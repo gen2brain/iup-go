@@ -27,6 +27,7 @@ int iupdrvTabsGetLineCountAttrib(Ihandle* ih);
 void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos);
 int iupdrvTabsGetCurrentTab(Ihandle* ih);
 void iupdrvTabsInitClass(Iclass* ic);
+void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height);
 
 typedef enum
 {

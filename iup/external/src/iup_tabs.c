@@ -30,11 +30,13 @@ char* iupTabsGetTabPaddingAttrib(Ihandle* ih)
   return iupStrReturnIntInt(ih->data->horiz_padding, ih->data->vert_padding, 'x');
 }
 
-static int iTabsGetMaxWidth(Ihandle* ih)
+static void iTabsGetMaxTabSize(Ihandle* ih, int* max_width, int* max_height)
 {
-  int max_width = 0, width, pos;
+  int width, height, pos;
   char *tabtitle, *tabimage;
   Ihandle* child;
+  int max_w = 0;
+  int max_h = 0;
 
   for (pos = 0, child = ih->firstchild; child; child = child->brother, pos++)
   {
@@ -45,53 +47,14 @@ static int iTabsGetMaxWidth(Ihandle* ih)
     if (!tabtitle && !tabimage)
       tabtitle = "     ";
 
-    width = 0;
-    if (tabtitle)
-      width += iupdrvFontGetStringWidth(ih, tabtitle);
+    iupdrvTabsGetTabSize(ih, tabtitle, tabimage, &width, &height);
 
-    if (tabimage)
-    {
-      void* img = iupImageGetImage(tabimage, ih, 0, NULL);
-      if (img)
-      {
-        int w;
-        iupdrvImageGetInfo(img, &w, NULL, NULL);
-        width += w;
-      }
-    }
-
-    if (width > max_width) max_width = width;
+    if (width > max_w) max_w = width;
+    if (height > max_h) max_h = height;
   }
 
-  return max_width;
-}
-
-static int iTabsGetMaxHeight(Ihandle* ih)
-{
-  int max_height = 0, h, pos;
-  char *tabimage;
-  Ihandle* child;
-
-  for (pos = 0, child = ih->firstchild; child; child = child->brother, pos++)
-  {
-    tabimage = iupAttribGetId(ih, "TABIMAGE", pos);
-    if (!tabimage) tabimage = iupAttribGet(child, "TABIMAGE");
-
-    if (tabimage)
-    {
-      void* img = iupImageGetImage(tabimage, ih, 0, NULL);
-      if (img)
-      {
-        iupdrvImageGetInfo(img, NULL, &h, NULL);
-        if (h > max_height) max_height = h;
-      }
-    }
-  }
-
-  iupdrvFontGetCharSize(ih, NULL, &h);
-  if (h > max_height) max_height = h;
-
-  return max_height;
+  if (max_width) *max_width = max_w;
+  if (max_height) *max_height = max_h;
 }
 
 static void iTabsGetDecorMargin(int *m, int *s)
@@ -104,15 +67,57 @@ static void iTabsGetDecorMargin(int *m, int *s)
 static void iTabsGetDecorSize(Ihandle* ih, int *width, int *height)
 {
   int m, s;
+  int num_tabs = 0;
+  Ihandle* child;
+
   iTabsGetDecorMargin(&m, &s);
+
+  for (child = ih->firstchild; child; child = child->brother)
+    num_tabs++;
 
   if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
   {
     if (ih->data->orientation == ITABS_HORIZONTAL)
     {
-      int max_width = iTabsGetMaxWidth(ih);
-      *width  = m + (3 + max_width + 3) + s + m;
+      int max_width;
+      int total_height = 0;
+      int pos;
+      char *tabtitle, *tabimage;
+      Ihandle* child;
+      int max_w = 0;
+
+      /* Sum individual tab heights for total (handles non-uniform sizing like GTK) */
+      for (pos = 0, child = ih->firstchild; child; child = child->brother, pos++)
+      {
+        int width, height;
+
+        tabtitle = iupAttribGetId(ih, "TABTITLE", pos);
+        if (!tabtitle) tabtitle = iupAttribGet(child, "TABTITLE");
+        tabimage = iupAttribGetId(ih, "TABIMAGE", pos);
+        if (!tabimage) tabimage = iupAttribGet(child, "TABIMAGE");
+        if (!tabtitle && !tabimage)
+          tabtitle = "     ";
+
+        iupdrvTabsGetTabSize(ih, tabtitle, tabimage, &width, &height);
+
+        /* For unmapped tabs, add extra padding */
+        if (!ih->handle)
+        {
+          width = 3 + width + 3;
+          height = 3 + height + 3;
+        }
+
+        total_height += height;
+        if (width > max_w) max_w = width;
+      }
+      max_width = max_w;
+
+      *width  = m + max_width + s + m;
+
+      /* Calculate height for all tabs stacked vertically */
       *height = m + m;
+      if (num_tabs > 0)
+        *height += total_height;
 
       if (iupdrvTabsExtraDecor(ih))
       {
@@ -123,14 +128,50 @@ static void iTabsGetDecorSize(Ihandle* ih, int *width, int *height)
     }
     else
     {
-      int max_height = iTabsGetMaxHeight(ih);
-      *width  = m + (3 + max_height + 3) + s + m;
+      int max_width;
+      int total_height = 0;
+      int pos;
+      char *tabtitle, *tabimage;
+      Ihandle* child;
+      int max_w = 0;
+
+      /* Sum individual tab heights total (handles non-uniform sizing like GTK) */
+      for (pos = 0, child = ih->firstchild; child; child = child->brother, pos++)
+      {
+        int width, height;
+
+        tabtitle = iupAttribGetId(ih, "TABTITLE", pos);
+        if (!tabtitle) tabtitle = iupAttribGet(child, "TABTITLE");
+        tabimage = iupAttribGetId(ih, "TABIMAGE", pos);
+        if (!tabimage) tabimage = iupAttribGet(child, "TABIMAGE");
+        if (!tabtitle && !tabimage)
+          tabtitle = "     ";
+
+        iupdrvTabsGetTabSize(ih, tabtitle, tabimage, &width, &height);
+
+        /* For unmapped tabs, add extra padding */
+        if (!ih->handle)
+        {
+          width = 3 + width + 3;
+          height = 3 + height + 3;
+        }
+
+        total_height += height;
+        if (width > max_w) max_w = width;
+      }
+      max_width = max_w;
+
+      *width  = m + max_width + s + m;
+
+      /* Calculate height for all tabs stacked vertically */
       *height = m + m;
+      if (num_tabs > 0)
+        *height += total_height;
 
       if (ih->handle && ih->data->is_multiline)
       {
         int num_lin = iupdrvTabsGetLineCountAttrib(ih);
-        *width += (num_lin-1)*(3 + max_height + 3 + 1);
+        *width += (num_lin-1)*(max_width + 1);
       }
     }
   }
@@ -138,8 +179,46 @@ static void iTabsGetDecorSize(Ihandle* ih, int *width, int *height)
   {
     if (ih->data->orientation == ITABS_HORIZONTAL)
     {
-      int max_height = iTabsGetMaxHeight(ih);
+      int max_height;
+      int total_width = 0;
+      int pos;
+      char *tabtitle, *tabimage;
+      Ihandle* child;
+      int max_h = 0;
+
+      /* Sum individual tab widths for total (handles non-uniform sizing like GTK) */
+      for (pos = 0, child = ih->firstchild; child; child = child->brother, pos++)
+      {
+        int width, height;
+
+        tabtitle = iupAttribGetId(ih, "TABTITLE", pos);
+        if (!tabtitle) tabtitle = iupAttribGet(child, "TABTITLE");
+        tabimage = iupAttribGetId(ih, "TABIMAGE", pos);
+        if (!tabimage) tabimage = iupAttribGet(child, "TABIMAGE");
+        if (!tabtitle && !tabimage)
+          tabtitle = "     ";
+
+        iupdrvTabsGetTabSize(ih, tabtitle, tabimage, &width, &height);
+
+        /* For unmapped tabs, add extra padding */
+        if (!ih->handle)
+          width = 3 + width + 3;
+
+        total_width += width;
+        if (height > max_h) max_h = height;
+      }
+      max_height = max_h;
+
+      /* Calculate width for all tabs side-by-side */
       *width  = m + m;
+      if (num_tabs > 0)
+      {
+        *width += total_width;
+        /* Add spacing between tabs */
+        if (num_tabs > 1)
+          *width += (num_tabs - 1) * s;
+      }
+
       *height = m + (3 + max_height + 3) + s + m;
 
       if (ih->handle && ih->data->is_multiline)
@@ -157,7 +236,8 @@ static void iTabsGetDecorSize(Ihandle* ih, int *width, int *height)
     }
     else
     {
-      int max_width = iTabsGetMaxWidth(ih);
+      int max_width, max_height;
+      iTabsGetMaxTabSize(ih, &max_width, &max_height);
       *width  = m + m;
       *height = m + (3 + max_width + 3) + s + m;
     }
@@ -178,12 +258,14 @@ static void iTabsGetDecorOffset(Ihandle* ih, int *dx, int *dy)
     {
       if (ih->data->orientation == ITABS_HORIZONTAL)
       {
-        int max_width = iTabsGetMaxWidth(ih);
+        int max_width, max_height;
+        iTabsGetMaxTabSize(ih, &max_width, &max_height);
         *dx = m + (3 + max_width + 3) + s;
       }
       else
       {
-        int max_height = iTabsGetMaxHeight(ih);
+        int max_width, max_height;
+        iTabsGetMaxTabSize(ih, &max_width, &max_height);
         *dx = m + (3 + max_height + 3) + s;
 
         if (ih->handle && ih->data->is_multiline)
@@ -204,7 +286,8 @@ static void iTabsGetDecorOffset(Ihandle* ih, int *dx, int *dy)
     {
       if (ih->data->orientation == ITABS_HORIZONTAL)
       {
-        int max_height = iTabsGetMaxHeight(ih);
+        int max_width, max_height;
+        iTabsGetMaxTabSize(ih, &max_width, &max_height);
         *dy = m + (3 + max_height + 3) + s;
 
         if (ih->handle && ih->data->is_multiline)
@@ -215,7 +298,8 @@ static void iTabsGetDecorOffset(Ihandle* ih, int *dx, int *dy)
       }
       else
       {
-        int max_width = iTabsGetMaxWidth(ih);
+        int max_width, max_height;
+        iTabsGetMaxTabSize(ih, &max_width, &max_height);
         *dy = m + (3 + max_width + 3) + s;
       }
     }
@@ -487,8 +571,18 @@ static void iTabsComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
 
   iTabsGetDecorSize(ih, &decorwidth, &decorheight);
 
-  *w = children_naturalwidth + decorwidth;
-  *h = children_naturalheight + decorheight;
+  /* For TOP/BOTTOM tabs: decoration is height
+     For LEFT/RIGHT tabs: decoration is width */
+  if (ih->data->type == ITABS_TOP || ih->data->type == ITABS_BOTTOM)
+  {
+    *w = iupMAX(children_naturalwidth, decorwidth);
+    *h = children_naturalheight + decorheight;
+  }
+  else /* LEFT or RIGHT */
+  {
+    *w = children_naturalwidth + decorwidth;
+    *h = iupMAX(children_naturalheight, decorheight);
+  }
 }
 
 static void iTabsSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
