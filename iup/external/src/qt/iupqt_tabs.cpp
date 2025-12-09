@@ -23,6 +23,7 @@
 #include <QStyleOption>
 #include <QPainter>
 #include <QFontMetrics>
+#include <QApplication>
 
 #include <cstdlib>
 #include <cstdio>
@@ -436,32 +437,40 @@ extern "C" void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const c
   int width = 0;
   int height = 0;
 
+  /* When mapped, find the matching tab and return its actual size from Qt */
   if (ih->handle)
   {
     QTabWidget* tabWidget = (QTabWidget*)ih->handle;
     QTabBar* tabBar = tabWidget->tabBar();
-
-    /* Get the tab bar's size hint which includes all tabs */
     if (tabBar && tabBar->count() > 0)
     {
-      /* For horizontal tabs (TOP/BOTTOM), divide total width by number of tabs */
-      /* For vertical tabs (LEFT/RIGHT), divide total height by number of tabs */
-      QSize barSize = tabBar->sizeHint();
-      int numTabs = tabBar->count();
+      /* Find the tab that matches this title/image combination */
+      QString searchTitle = QString::fromUtf8(tab_title ? tab_title : "");
 
-      QTabWidget::TabPosition pos = tabWidget->tabPosition();
-      if (pos == QTabWidget::West || pos == QTabWidget::East)
+      for (int i = 0; i < tabBar->count(); i++)
       {
-        /* Vertical tabs - height divided among tabs */
-        width = barSize.width();
-        height = barSize.height() / numTabs;
+        QString tabText = tabBar->tabText(i);
+        QIcon tabIcon = tabBar->tabIcon(i);
+
+        bool titleMatch = (tabText == searchTitle);
+        bool imageMatch = (tab_image != nullptr) == (!tabIcon.isNull());
+
+        if (titleMatch && imageMatch)
+        {
+          QRect rect = tabBar->tabRect(i);
+          width = rect.width();
+          height = rect.height();
+
+          if (tab_width) *tab_width = width;
+          if (tab_height) *tab_height = height;
+          return;
+        }
       }
-      else
-      {
-        /* Horizontal tabs - width divided among tabs */
-        width = barSize.width() / numTabs;
-        height = barSize.height();
-      }
+
+      /* Fallback: use tabBar sizeHint divided by count (shouldn't happen normally) */
+      QSize barSize = tabBar->sizeHint();
+      width = barSize.width() / tabBar->count();
+      height = barSize.height();
 
       if (tab_width) *tab_width = width;
       if (tab_height) *tab_height = height;
@@ -469,7 +478,7 @@ extern "C" void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const c
     }
   }
 
-  /* If not mapped, measure text + image + Qt padding */
+  /* Not mapped: calculate based on text + image + Qt style metrics */
   int text_width = 0;
   int text_height = 0;
 
@@ -489,17 +498,36 @@ extern "C" void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const c
       int img_w, img_h;
       iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
       width += img_w;
-      if (tab_title)
-        width += 4;  /* spacing between icon and text */
+      width += 4;  /* Qt adds 4px padding when icon is present */
       if (img_h > height)
         height = img_h;
     }
   }
 
-  /* Qt adds padding around tab content */
-  /* Default style adds approximately 12px horizontal, 6px vertical padding */
-  width += 24;
-  height += 12;
+  /* Query Qt application style for tab metrics */
+  QStyle* style = QApplication::style();
+  if (style)
+  {
+    int hspace = style->pixelMetric(QStyle::PM_TabBarTabHSpace, nullptr, nullptr);
+    int vspace = style->pixelMetric(QStyle::PM_TabBarTabVSpace, nullptr, nullptr);
+
+    /* Use sizeFromContents to get the full tab size including all style padding */
+    QStyleOptionTab opt;
+    opt.text = QString::fromUtf8(tab_title ? tab_title : "");
+    opt.shape = QTabBar::RoundedNorth;
+
+    QSize contentSize(width, height);
+    QSize fullSize = style->sizeFromContents(QStyle::CT_TabBarTab, &opt, contentSize, nullptr);
+
+    width = fullSize.width() + hspace;
+    height = fullSize.height() + vspace;
+  }
+  else
+  {
+    /* Fallback if no style available */
+    width += 24;
+    height += 8;
+  }
 
   if (tab_width) *tab_width = width;
   if (tab_height) *tab_height = height;
@@ -987,13 +1015,15 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     pos = IupGetChildPos(ih, child);
 
-    /* Create page widget */
+    /* Create page widget with layout to auto-resize container */
     tab_page = new QWidget();
-    /* Don't set layout - IUP manages positioning manually */
+    QVBoxLayout* pageLayout = new QVBoxLayout(tab_page);
+    pageLayout->setContentsMargins(0, 0, 0, 0);
+    pageLayout->setSpacing(0);
 
-    /* Create container for child widgets */
-    tab_container = new QWidget(tab_page);
-    tab_container->setGeometry(0, 0, tab_page->width(), tab_page->height());
+    /* Create container for child widgets, layout will expand it to fill tab_page */
+    tab_container = new QWidget();
+    pageLayout->addWidget(tab_container);
     tab_container->show();
 
     /* Get tab title */
