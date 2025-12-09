@@ -697,6 +697,12 @@ static int iListDropData_CB(Ihandle *ih, char* type, void* data, int len, int x,
   if (!IupClassMatch(ih_source, "list") && !IupClassMatch(ih_source, "flatlist"))
     return IUP_DEFAULT;
 
+  if (pos < 1)
+    return IUP_DEFAULT;
+
+  /* Convert from 1-based IUP index to 0-based driver index */
+  pos--;
+
   /* A copy operation is enabled with the CTRL key pressed, or else a move operation will occur.
      A move operation will be possible only if the attribute DRAGSOURCEMOVE is Yes.
      When no key is pressed the default operation is copy when DRAGSOURCEMOVE=No and move when DRAGSOURCEMOVE=Yes. */
@@ -783,7 +789,7 @@ static int iListDragData_CB(Ihandle *ih, char* type, void *data, int len)
 
   /* Copy source handle */
   memcpy(data, (void*)&ih, len);
- 
+
   (void)type;
   return IUP_DEFAULT;
 }
@@ -805,6 +811,10 @@ static int iListDragEnd_CB(Ihandle *ih, int del)
 static int iListDragBegin_CB(Ihandle* ih, int x, int y)
 {
   int pos = IupConvertXYToPos(ih, x, y);
+
+  if (pos < 1)
+    return IUP_IGNORE;
+
   iupAttribSetInt(ih, "_IUP_LIST_SOURCEPOS", pos);
   return IUP_DEFAULT;
 }
@@ -902,7 +912,7 @@ static void iListGetItemImageInfo(Ihandle *ih, int id, int *img_w, int *img_h)
 
 static void iListGetNaturalItemsSize(Ihandle *ih, int *w, int *h)
 {
-  int visiblecolumns, i, 
+  int visiblecolumns, i,
       max_h = 0,
       count = iListGetCount(ih);
 
@@ -977,11 +987,13 @@ static void iListGetNaturalItemsSize(Ihandle *ih, int *w, int *h)
 
     visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
     if (visiblelines)
-      num_lines = visiblelines;   
+      num_lines = visiblelines;
 
     *h = *h * num_lines;
 
-    if (ih->data->has_editbox) 
+    /* For dropdown editbox: entry is embedded in native control, add a line for it.
+       For plain editbox: entry is separate widget (GTK VBox, etc), driver manages it. */
+    if (ih->data->has_editbox && ih->data->is_dropdown)
       *h += edit_line_size;
   }
   else
@@ -1017,10 +1029,7 @@ static void iListComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
   {
     /* add room for scrollbar */
     if (ih->data->sb)
-    {
-      natural_h += sb_size;
-      natural_w += sb_size;
-    }
+      natural_w += sb_size;  /* vertical scrollbar affects horizontal size only */
   }
 
   if (ih->data->has_editbox)
