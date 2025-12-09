@@ -3022,4 +3022,5 @@ void iupdrvTreeInitClass(Iclass* ic)
   /* not supported in Motif */
   iupClassRegisterAttributeId(ic, "TOGGLEVALUE", NULL, NULL, IUPAF_NOT_SUPPORTED);
   iupClassRegisterAttributeId(ic, "SHOWTOGGLE", NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

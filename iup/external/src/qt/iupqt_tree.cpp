@@ -1445,6 +1445,30 @@ static char* qtTreeGetToggleVisibleAttrib(Ihandle* ih, int id)
   return iupStrReturnBoolean(item->data(0, Qt::CheckStateRole).isValid());
 }
 
+static char* qtTreeGetScrollVisibleAttrib(Ihandle* ih)
+{
+  IupQtTree* tree = (IupQtTree*)ih->handle;
+
+  int horiz_visible = 0, vert_visible = 0;
+
+  QScrollBar* hsb = tree->horizontalScrollBar();
+  QScrollBar* vsb = tree->verticalScrollBar();
+
+  if (hsb && hsb->isVisible())
+    horiz_visible = 1;
+  if (vsb && vsb->isVisible())
+    vert_visible = 1;
+
+  if (horiz_visible && vert_visible)
+    return (char*)"YES";
+  else if (horiz_visible)
+    return (char*)"HORIZONTAL";
+  else if (vert_visible)
+    return (char*)"VERTICAL";
+  else
+    return (char*)"NO";
+}
+
 static int qtTreeSetShowRenameAttrib(Ihandle* ih, const char* value)
 {
   ih->data->show_rename = iupStrBoolean(value);
@@ -2060,6 +2084,7 @@ extern "C" void iupdrvTreeInitClass(Iclass* ic)
 
   /* Selection/Drag */
   iupClassRegisterAttribute(ic, "RUBBERBAND", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtTreeGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }
 
 extern "C" InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)

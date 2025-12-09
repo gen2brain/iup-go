@@ -467,7 +467,7 @@ extern "C" void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const c
         }
       }
 
-      /* Fallback: use tabBar sizeHint divided by count (shouldn't happen normally) */
+      /* Fallback: use tabBar sizeHint divided by count */
       QSize barSize = tabBar->sizeHint();
       width = barSize.width() / tabBar->count();
       height = barSize.height();

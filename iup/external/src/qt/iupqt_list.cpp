@@ -1216,6 +1216,33 @@ static char* qtListGetReadOnlyAttrib(Ihandle* ih)
   return NULL;
 }
 
+static char* qtListGetScrollVisibleAttrib(Ihandle* ih)
+{
+  if (ih->data->is_dropdown)
+    return nullptr;
+
+  IupQtListWidget* list = (IupQtListWidget*)ih->handle;
+
+  int horiz_visible = 0, vert_visible = 0;
+
+  QScrollBar* hsb = list->horizontalScrollBar();
+  QScrollBar* vsb = list->verticalScrollBar();
+
+  if (hsb && hsb->isVisible())
+    horiz_visible = 1;
+  if (vsb && vsb->isVisible())
+    vert_visible = 1;
+
+  if (horiz_visible && vert_visible)
+    return (char*)"YES";
+  else if (horiz_visible)
+    return (char*)"HORIZONTAL";
+  else if (vert_visible)
+    return (char*)"VERTICAL";
+  else
+    return (char*)"NO";
+}
+
 static int qtListSetReadOnlyAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->has_editbox && ih->data->is_dropdown)
@@ -1830,6 +1857,7 @@ extern "C" void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SCROLLTO", NULL, qtListSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, qtListSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", NULL, qtListSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtListGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
   /* Image support */
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, qtListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);

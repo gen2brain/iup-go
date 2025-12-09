@@ -2491,4 +2491,8 @@ void iupdrvListInitClass(Iclass* ic)
 
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, gtk4ListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", gtk4ListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING | IUPAF_READONLY | IUPAF_NO_INHERIT);
+
+  /* Not Supported */
+  iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
