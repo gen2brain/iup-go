@@ -340,6 +340,77 @@ int iupdrvTabsGetCurrentTab(Ihandle* ih)
   return winTabsPosFixFromWin(ih, (int)SendMessage(ih->handle, TCM_GETCURSEL, 0, 0));
 }
 
+void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+{
+  int width = 0;
+  int height = 0;
+  int text_width = 0;
+  int text_height = 0;
+  int is_vertical = (ih->data->orientation == ITABS_VERTICAL);
+
+  /* Measure text dimensions */
+  if (tab_title)
+  {
+    text_width = iupdrvFontGetStringWidth(ih, tab_title);
+    iupdrvFontGetCharSize(ih, NULL, &text_height);
+
+    /* LEFT/RIGHT tabs have vertical text (rotated 90 degrees) */
+    if (is_vertical)
+    {
+      width = text_height;   /* text rotated: tab width = text height */
+      height = text_width;   /* text rotated: tab height = text width */
+    }
+    else
+    {
+      width = text_width;    /* horizontal text */
+      height = text_height;
+    }
+  }
+
+  if (tab_image)
+  {
+    void* img = iupImageGetImage(tab_image, ih, 0, NULL);
+    if (img)
+    {
+      int img_w, img_h;
+      iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+
+      if (is_vertical)
+      {
+        /* For vertical tabs, image is above/below the vertical text */
+        height += img_h;
+        if (tab_title)
+          height += 3;  /* spacing between icon and text */
+        if (img_w > width)
+          width = img_w;
+      }
+      else
+      {
+        /* For horizontal tabs, image is left/right of the text */
+        width += img_w;
+        if (tab_title)
+          width += 3;  /* spacing between icon and text */
+        if (img_h > height)
+          height = img_h;
+      }
+    }
+  }
+
+  if (is_vertical)
+  {
+    width += 12;   /* padding around rotated text width */
+    height += 30;  /* padding around rotated text height (which is text width) */
+  }
+  else
+  {
+    width += 30;   /* padding around text width */
+    height += 12;  /* padding around text height */
+  }
+
+  if (tab_width) *tab_width = width;
+  if (tab_height) *tab_height = height;
+}
+
 static int winTabsGetImageIndex(Ihandle* ih, const char* name)
 {
   HIMAGELIST image_list;
@@ -390,30 +461,75 @@ static int winTabsGetImageIndex(Ihandle* ih, const char* name)
 
 static void winTabGetPageWindowRect(Ihandle* ih, RECT *rect)
 {
-  /* Calculate the display rectangle, assuming the
-     tab control is the size of the client area. */
-#if 0
   GetClientRect(ih->handle, rect);
-  SendMessage(ih->handle, TCM_ADJUSTRECT, FALSE, (LPARAM)rect);
-#else
+
+  if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
   {
-    int x, y, w, h;
-    IupGetIntInt(ih, "CLIENTOFFSET", &x, &y);
-    IupGetIntInt(ih, "CLIENTSIZE", &w, &h);
-    rect->left = x;
-    rect->right = x + w;
-    rect->top = y;
-    rect->bottom = y + h;
+    /* For vertical tabs, measure the actual tab strip width */
+    int tab_count = (int)SendMessage(ih->handle, TCM_GETITEMCOUNT, 0, 0);
+    int tab_width = 0;
+
+    if (tab_count > 0)
+    {
+      RECT tab_rect;
+      /* Get the rectangle of the first tab to measure tab strip width */
+      SendMessage(ih->handle, TCM_GETITEMRECT, 0, (LPARAM)&tab_rect);
+
+      if (ih->data->type == ITABS_LEFT)
+      {
+        /* Tabs on left: content starts after tab strip width */
+        tab_width = tab_rect.right - tab_rect.left;
+        rect->left = tab_width + 4;  /* 4px border */
+        rect->top = 4;
+        rect->right -= 4;
+        rect->bottom -= 4;
+      }
+      else  /* ITABS_RIGHT */
+      {
+        /* Content ends before tab strip */
+        tab_width = tab_rect.right - tab_rect.left;
+        rect->left = 4;
+        rect->top = 4;
+        rect->right -= (tab_width + 4);
+        rect->bottom -= 4;
+      }
+
+      if (rect->left >= rect->right || rect->top >= rect->bottom)
+      {
+        rect->left = 0;
+        rect->top = 0;
+        rect->right = 0;
+        rect->bottom = 0;
+      }
+    }
   }
-#endif
+  else
+  {
+    /* Horizontal tabs */
+    SendMessage(ih->handle, TCM_ADJUSTRECT, FALSE, (LPARAM)rect);
+  }
 }
 
 static void winTabSetPageWindowPos(HWND tab_container, RECT *rect)
-{ 
+{
+  if (rect->right <= 0 || rect->bottom <= 0 ||
+      rect->left >= rect->right || rect->top >= rect->bottom)
+    return;
+
+  /* Only position visible pages. Hidden pages should not be positioned at all. */
+  LONG style = GetWindowLong(tab_container, GWL_STYLE);
+  BOOL has_visible_style = (style & WS_VISIBLE) != 0;
+
+  if (!has_visible_style)
+  {
+    return;
+  }
+
+  /* Position the IupTabsPage window */
   SetWindowPos(tab_container, NULL,
-                rect->left, rect->top,  
-                rect->right - rect->left, rect->bottom - rect->top, 
-                SWP_NOACTIVATE|SWP_NOZORDER);
+                rect->left, rect->top,
+                rect->right - rect->left, rect->bottom - rect->top,
+                SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
 static void winTabsPlacePageWindows(Ihandle* ih, RECT* rect)
@@ -422,7 +538,7 @@ static void winTabsPlacePageWindows(Ihandle* ih, RECT* rect)
 
   for (child = ih->firstchild; child; child = child->brother)
   {
-    HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_CONTAINER");
+    HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_PAGE");
     winTabSetPageWindowPos(tab_container, rect);
   }
 }
@@ -445,9 +561,11 @@ static void winTabsDrawPageBackground(Ihandle* ih, HDC hDC, RECT* rect)
 }
 
 static LRESULT CALLBACK winTabsPageWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
-{   
+{
   switch (msg)
   {
+  case WM_PARENTNOTIFY:
+    break;
   case WM_ERASEBKGND:
     {
       Ihandle* ih = iupwinHandleGet(hWnd);
@@ -480,10 +598,10 @@ static LRESULT CALLBACK winTabsPageWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARA
   return DefWindowProc(hWnd, msg, wp, lp);
 }
 
-static HWND winTabsCreatePageWindow(Ihandle* ih) 
-{ 
+static HWND winTabsCreatePageWindow(Ihandle* ih)
+{
   HWND hWnd;
-  DWORD dwStyle = WS_CHILD|WS_CLIPSIBLINGS, 
+  DWORD dwStyle = WS_CHILD|WS_CLIPSIBLINGS,
       dwExStyle = 0;
 
   iupwinGetNativeParentStyle(ih, &dwExStyle, &dwStyle);
@@ -547,6 +665,18 @@ static void winTabsInsertItem(Ihandle* ih, Ihandle* child, int pos, HWND tab_con
   tie.lParam = (LPARAM)tab_container;
   SendMessage(ih->handle, TCM_INSERTITEM, p, (LPARAM)&tie);
 
+  if (old_num_tabs == 0)
+  {
+    /* First page - show it */
+    ShowWindow(tab_container, SW_SHOWNOACTIVATE);
+    SendMessage(ih->handle, TCM_SETCURSEL, 0, 0);
+  }
+  else
+  {
+    /* All other pages - hide */
+    ShowWindow(tab_container, SW_HIDE);
+  }
+
   winTabGetPageWindowRect(ih, &rect);
   winTabSetPageWindowPos(tab_container, &rect);
 
@@ -561,13 +691,6 @@ static void winTabsInsertItem(Ihandle* ih, Ihandle* child, int pos, HWND tab_con
     }
 
     iupdrvRedrawNow(ih);
-  }
-
-  /* the first page of an empty tabs must be shown (set as current) */
-  if (old_num_tabs == 0)
-  {
-    ShowWindow(tab_container, SW_SHOW);
-    SendMessage(ih->handle, TCM_SETCURSEL, 0, 0);
   }
 
 #if PRINT_VISIBLE_ARRAY
@@ -738,7 +861,7 @@ static int winTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
     {
       if (p < 0)  /* is invisible */
       {
-        HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_CONTAINER");
+        HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_PAGE");
 
         winTabsSetVisibleArrayItem(ih, pos, 1);  /* to visible */
 
@@ -749,7 +872,7 @@ static int winTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
     {
       if (p >= 0)  /* is visible */
       {
-        HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_CONTAINER");
+        HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_PAGE");
 
         iupTabsCheckCurrentTab(ih, pos, 0);
         winTabsSetVisibleArrayItem(ih, pos, 0);  /* to invisible */
@@ -955,9 +1078,7 @@ static int winTabsWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
     HWND tab_container = winTabsGetPageWindow(ih, pos);
     HWND prev_tab_container = winTabsGetPageWindow(ih, prev_pos);
 
-    if (tab_container) ShowWindow(tab_container, SW_SHOW);   /* show new page, if any */
-    if (prev_tab_container) ShowWindow(prev_tab_container, SW_HIDE); /* hide previous page, if any */
-
+    /* Call the callback first, before showing/hiding windows */
     if (cb)
     {
       Ihandle* child = IupGetChild(ih, pos);
@@ -973,6 +1094,34 @@ static int winTabsWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
       IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
       if (cb2)
         cb2(ih, pos, prev_pos);
+    }
+
+    /* Show the new page and position it, hide all others. */
+    RECT rect;
+    winTabGetPageWindowRect(ih, &rect);
+
+    Ihandle* child;
+    int i = 0;
+    for (child = ih->firstchild; child; child = child->brother, i++)
+    {
+      HWND page = (HWND)iupAttribGet(child, "_IUPTAB_PAGE");
+      if (page) {
+        if (i == pos) {
+          /* Position the page FIRST */
+          SetWindowPos(page, NULL,
+                        rect.left, rect.top,
+                        rect.right - rect.left, rect.bottom - rect.top,
+                        SWP_NOACTIVATE | SWP_NOZORDER);
+
+          /* Then show it */
+          ShowWindow(page, SW_SHOWNA);
+
+          /* Bring to front */
+          SetWindowPos(page, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        } else {
+          ShowWindow(page, SW_HIDE);
+        }
+      }
     }
 
     return 0;
@@ -1191,7 +1340,7 @@ static int winTabsMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
           {
             int pos = winTabsPosFixFromWin(ih, press_p);
             Ihandle *child = IupGetChild(ih, pos);
-            HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_CONTAINER");
+            HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_PAGE");
 
             iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", -1);
 
@@ -1455,8 +1604,9 @@ static void winTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     HWND tab_container = winTabsCreatePageWindow(ih);
 
     iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)tab_container);
+    iupAttribSet(child, "_IUPTAB_PAGE", (char*)tab_container);
 
-    winTabsInsertVisibleArrayItem(ih, pos);  /* add to the array and set to visible */
+    winTabsInsertVisibleArrayItem(ih, pos);
 
     winTabsInsertItem(ih, child, pos, tab_container);
   }
@@ -1466,7 +1616,7 @@ static void winTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 {
   if (ih->handle)
   {
-    HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_CONTAINER");
+    HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_PAGE");
     if (tab_container)
     {
       int p = winTabsGetPageWindowPos(ih, tab_container);
@@ -1479,6 +1629,7 @@ static void winTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
       iupwinHandleRemove(tab_container);
       DestroyWindow(tab_container);
       iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
+      iupAttribSet(child, "_IUPTAB_PAGE", NULL);
     }
   }
 }
@@ -1574,6 +1725,23 @@ static int winTabsMapMethod(Ihandle* ih)
       /* current value is now given by the native system */
       iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", NULL);
     }
+
+    /* Hide all pages except the currently active one. */
+    int current_tab = iupdrvTabsGetCurrentTab(ih);
+
+    int pos = 0;
+    for (child = ih->firstchild; child; child = child->brother, pos++)
+    {
+      HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_PAGE");
+      if (tab_container)
+      {
+        if (pos == current_tab) {
+          ShowWindow(tab_container, SW_SHOWNA);
+        } else {
+          ShowWindow(tab_container, SW_HIDE);
+        }
+      }
+    }
   }
 
   return IUP_NOERROR;
@@ -1607,15 +1775,16 @@ static void winTabsUnMapMethod(Ihandle* ih)
 static void winTabsRegisterClass(void)
 {
   WNDCLASS wndclass;
+
   ZeroMemory(&wndclass, sizeof(WNDCLASS));
-  
+
   wndclass.hInstance      = iupwin_hinstance;
   wndclass.lpszClassName  = TEXT("IupTabsPage");
   wndclass.lpfnWndProc    = (WNDPROC)winTabsPageWndProc;
   wndclass.hCursor        = LoadCursor(NULL, IDC_ARROW);
   wndclass.style          = CS_PARENTDC;
+
   wndclass.hbrBackground  = NULL;  /* remove the background to optimize redraw */
-   
   RegisterClass(&wndclass);
 }
 

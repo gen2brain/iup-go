@@ -153,7 +153,25 @@ static void winLabelDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
 
   hDC = iupwinDrawCreateBitmapDC(&bmpDC, drawitem->hDC, 0, 0, width, height);
 
-  iupwinDrawParentBackground(ih, hDC, &drawitem->rcItem);
+  char* bgcolor = iupAttribGet(ih, "BGCOLOR");
+  if (bgcolor)
+  {
+    unsigned char r, g, b;
+    if (iupStrToRGB(bgcolor, &r, &g, &b))
+    {
+      HBRUSH hBrush = CreateSolidBrush(RGB(r, g, b));
+      FillRect(hDC, &drawitem->rcItem, hBrush);
+      DeleteObject(hBrush);
+    }
+    else
+    {
+      iupwinDrawParentBackground(ih, hDC, &drawitem->rcItem);
+    }
+  }
+  else
+  {
+    iupwinDrawParentBackground(ih, hDC, &drawitem->rcItem);
+  }
 
   if (ih->data->type == IUP_LABEL_IMAGE)
     winLabelDrawImage(ih, hDC, width, height);
@@ -249,6 +267,17 @@ static int winLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
     iupdrvRedrawNow(ih);
   }
 
+  return 1;
+}
+
+static int winLabelSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  int type = iupLabelGetTypeBeforeMap(ih);
+  if (type != IUP_LABEL_SEP_HORIZ && type != IUP_LABEL_SEP_VERT)
+  {
+    if (ih->handle)
+      iupdrvRedrawNow(ih);
+  }
   return 1;
 }
 
@@ -406,8 +435,7 @@ void iupdrvLabelInitClass(Iclass* ic)
   /* Driver Dependent Attribute functions */
 
   /* Visual */
-  /* the most important use of this is to provide the correct background for images */
-  iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);  
+  iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, winLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);  
 
   /* Special */
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winLabelSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);    /* force new default value */

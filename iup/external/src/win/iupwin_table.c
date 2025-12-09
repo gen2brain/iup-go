@@ -1412,47 +1412,52 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             }
           }
 
-          /* Apply background color (but not when row is selected - selection takes priority) */
-          if (bgcolor && *bgcolor && !is_row_selected)
+          /* Apply background color (but not when row is selected) */
+          if (!is_row_selected)
           {
-            unsigned char r, g, b;
-            if (iupStrToRGB(bgcolor, &r, &g, &b))
+            if (bgcolor && *bgcolor)
             {
-              lplvcd->clrTextBk = RGB(r, g, b);
+              unsigned char r, g, b;
+              if (iupStrToRGB(bgcolor, &r, &g, &b))
+              {
+                lplvcd->clrTextBk = RGB(r, g, b);
+              }
+              else
+              {
+                lplvcd->clrTextBk = CLR_DEFAULT;
+              }
             }
             else
             {
               lplvcd->clrTextBk = CLR_DEFAULT;
             }
           }
-          else
-          {
-            lplvcd->clrTextBk = CLR_DEFAULT;
-          }
 
           /* Foreground color: per-cell > per-column > per-row */
-          char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
-          if (!fgcolor)
-            fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
-          if (!fgcolor)
-            fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
-
-          /* Apply foreground color */
-          if (fgcolor && *fgcolor)
+          if (!is_row_selected)
           {
-            unsigned char r, g, b;
-            if (iupStrToRGB(fgcolor, &r, &g, &b))
+            char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
+            if (!fgcolor)
+              fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
+            if (!fgcolor)
+              fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+
+            if (fgcolor && *fgcolor)
             {
-              lplvcd->clrText = RGB(r, g, b);
+              unsigned char r, g, b;
+              if (iupStrToRGB(fgcolor, &r, &g, &b))
+              {
+                lplvcd->clrText = RGB(r, g, b);
+              }
+              else
+              {
+                lplvcd->clrText = CLR_DEFAULT;
+              }
             }
             else
             {
               lplvcd->clrText = CLR_DEFAULT;
             }
-          }
-          else
-          {
-            lplvcd->clrText = CLR_DEFAULT;
           }
 
           /* Font: per-cell > per-column > per-row */
@@ -1476,11 +1481,10 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             }
           }
 
-          /* Need postpaint for grid lines, focus rect, or font restoration */
+          /* Need postpaint for grid lines, focused cell, or font restoration */
           if (data->show_grid)
             needs_postpaint = 1;
-          else if (lin == data->current_row && col == data->current_col &&
-                   iupAttribGetBoolean(ih, "FOCUSRECT"))
+          else if (lin == data->current_row && col == data->current_col)
             needs_postpaint = 1;
           else if (font_changed)
             needs_postpaint = 1;  /* Need postpaint to restore font */
@@ -2227,9 +2231,12 @@ static int winTableMapMethod(Ihandle* ih)
 static void winTableLayoutUpdateMethod(Ihandle* ih)
 {
   HWND list_view = winTableGetListView(ih);
+  BOOL was_visible = list_view ? IsWindowVisible(list_view) : FALSE;
 
-  /* Only adjust columns if ListView has reasonable size */
-  /* Skip premature calls before window is properly laid out */
+  /* Call base implementation first to position and size the control */
+  iupdrvBaseLayoutUpdateMethod(ih);
+
+  /* Now adjust column widths based on the new size */
   if (list_view)
   {
     RECT rect;
@@ -2239,10 +2246,7 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
     /* Only adjust if width is reasonable (> 100px) */
     if (width > 100)
     {
-      /* Check if this is first proper layout */
-      BOOL was_visible = IsWindowVisible(list_view);
-
-      /* Adjust column widths */
+      /* Adjust column widths based on actual ListView size */
       winTableAdjustColumnWidths(ih);
 
       /* Show ListView after first proper layout to avoid resize flicker */
@@ -2252,9 +2256,6 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
       }
     }
   }
-
-  /* Call base implementation */
-  iupdrvBaseLayoutUpdateMethod(ih);
 }
 
 static void winTableUnMapMethod(Ihandle* ih)
