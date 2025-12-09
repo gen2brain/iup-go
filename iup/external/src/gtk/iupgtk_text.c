@@ -90,12 +90,68 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   int border_size = 2 * 5;
 #endif
   (*x) += border_size;
-  (*y) += border_size;
 
-  /* GtkSpinButton needs extra vertical space to prevent bottom clipping */
-  if (iupAttribGetBoolean(ih, "SPIN"))
+  /* For spinbox, measure actual natural height dynamically */
+  static int spin_natural_height = -1;
+  if (iupAttribGetBoolean(ih, "SPIN") && spin_natural_height == -1)
   {
-    (*y) += 7;
+    GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+    int spin_h;
+    gtk_widget_get_preferred_height(temp_spin, NULL, &spin_h);
+    spin_natural_height = spin_h;
+#else
+    GtkRequisition requisition;
+    gtk_widget_size_request(temp_spin, &requisition);
+    spin_natural_height = requisition.height;
+#endif
+
+    if (spin_natural_height < 16) spin_natural_height = 34;  /* Fallback to safe default */
+
+    g_object_ref_sink(temp_spin);
+    g_object_unref(temp_spin);
+  }
+
+  /* For multiline text in scrolled window, reduce border */
+  if (ih->data && ih->data->is_multiline)
+  {
+    (*y) += 2;
+  }
+  else
+  {
+    /* GtkSpinButton: Calculate how much to add based on measured natural height */
+    if (iupAttribGetBoolean(ih, "SPIN"))
+    {
+      int before = *y;
+#if GTK_CHECK_VERSION(3, 0, 0)
+      int add = spin_natural_height - before;
+      if (add < 0) add = 0;
+      (*y) += add;
+#else
+      int add = spin_natural_height - before + 9;
+      if (add < 0) add = 0;
+      (*y) += add;
+#endif
+    }
+    else
+    {
+#if GTK_CHECK_VERSION(3, 0, 0)
+      /* GTK3: Natural size needs vertical borders */
+      (*y) += border_size;
+#else
+      /* GTK2: Match spinbox height, add same amount to get to spin_natural_height */
+      if (spin_natural_height > 0)
+      {
+        int add = spin_natural_height - (*y);
+        if (add > 0) (*y) += add;
+      }
+      else
+      {
+        (*y) += 8;
+      }
+#endif
+    }
   }
 }
 
@@ -1655,6 +1711,34 @@ static void gtkTextChanged(void* dummy, Ihandle* ih)
 
 /**********************************************************************************************************/
 
+/* Callback to track scrolled window size allocation and clamp if needed */
+static void gtkTextScrolledWindowSizeAllocate(GtkWidget* widget, GdkRectangle* allocation, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  int sw_req_w, sw_req_h;
+
+  gtk_widget_get_size_request(widget, &sw_req_w, &sw_req_h);
+
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+  if (visiblelines > 0 && sw_req_h > 0 && allocation->height > sw_req_h)
+  {
+    /* Create a new clamped allocation and apply it */
+    GtkAllocation clamped = *allocation;
+    clamped.height = sw_req_h;
+
+    /* Block this signal handler to prevent recursion */
+    g_signal_handlers_block_by_func(widget, gtkTextScrolledWindowSizeAllocate, user_data);
+
+    /* Apply the clamped allocation - this will allocate children correctly */
+    gtk_widget_size_allocate(widget, &clamped);
+
+    /* Unblock the signal handler */
+    g_signal_handlers_unblock_by_func(widget, gtkTextScrolledWindowSizeAllocate, user_data);
+
+    /* Update the allocation parameter to reflect what we actually did */
+    *allocation = clamped;
+  }
+}
 
 static int gtkTextMapMethod(Ihandle* ih)
 {
@@ -1668,6 +1752,10 @@ static int gtkTextMapMethod(Ihandle* ih)
     ih->handle = gtk_text_view_new();
     if (!ih->handle)
       return IUP_ERROR;
+
+    /* Set default left/right margins to match list item padding */
+    gtk_text_view_set_left_margin(GTK_TEXT_VIEW(ih->handle), 5);
+    gtk_text_view_set_right_margin(GTK_TEXT_VIEW(ih->handle), 5);
 
     scrolled_window = (GtkScrolledWindow*)gtk_scrolled_window_new(NULL, NULL);
     if (!scrolled_window)
@@ -1713,6 +1801,19 @@ static int gtkTextMapMethod(Ihandle* ih)
       vscrollbar_policy = GTK_POLICY_NEVER;
 
     gtk_scrolled_window_set_policy(scrolled_window, hscrollbar_policy, vscrollbar_policy);
+
+    /* Track scrolled window size allocation for VISIBLELINES clamping */
+    g_signal_connect(G_OBJECT(scrolled_window), "size-allocate", G_CALLBACK(gtkTextScrolledWindowSizeAllocate), ih);
+
+    /* Mark scrolled_window with VISIBLELINES flag so iupgtkSetPosSize can set size correctly */
+    {
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+      if (visiblelines > 0)
+      {
+        /* Mark scrolled_window so iupgtkSetPosSize will use IUP's calculated height directly */
+        g_object_set_data(G_OBJECT(scrolled_window), "iup-visiblelines-set", (gpointer)"1");
+      }
+    }
 
     if (wordwrap)
       gtk_text_view_set_wrap_mode((GtkTextView*)ih->handle, GTK_WRAP_WORD);

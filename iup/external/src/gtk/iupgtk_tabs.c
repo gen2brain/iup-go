@@ -79,9 +79,6 @@ static void gtkTabsUpdatePageBgColor(Ihandle* ih, unsigned char r, unsigned char
     GtkWidget* tab_container = (GtkWidget*)iupAttribGet(child, "_IUPTAB_CONTAINER");
     if (tab_container)
     {
-      GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABLABEL");
-      if (tab_label)
-        iupgtkSetBgColor(tab_label, r, g, b);
       iupgtkSetBgColor(tab_container, r, g, b);
     }
   }
@@ -401,6 +398,7 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     tab_container = gtk_fixed_new(); /* can not use iupgtkNativeContainerNew here in GTK3 */
     gtk_widget_show(tab_container);
+
     gtk_container_add((GtkContainer*)tab_page, tab_container);
 
     tabtitle = iupAttribGet(child, "TABTITLE");
@@ -478,6 +476,9 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     /* RIGHTCLICK_CB will not work without the eventbox */
     evtBox = gtk_event_box_new();
+#if GTK_CHECK_VERSION(2, 2, 0) && !GTK_CHECK_VERSION(3, 0, 0)
+    gtk_event_box_set_visible_window((GtkEventBox*)evtBox, FALSE);
+#endif
     gtk_widget_add_events(evtBox, GDK_BUTTON_PRESS_MASK);
     g_signal_connect(G_OBJECT(evtBox), "button-press-event", G_CALLBACK(gtkTabsButtonPressEvent), child);
 
@@ -538,8 +539,6 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     if (tabtitle)
     {
       iupgtkUpdateWidgetFont(ih, tab_label);
-
-      iupgtkSetBgColor(tab_label, r, g, b);
 
       iupStrToRGB(IupGetAttribute(ih, "FGCOLOR"), &r, &g, &b);
       iupgtkSetFgColor(tab_label, r, g, b);
@@ -602,13 +601,209 @@ static void gtkTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   iupAttribSet(ih, "_IUPGTK_IGNORE_SWITCHPAGE", NULL);
 }
 
+static int gtkTabsGetTabOverlap(Ihandle* ih)
+{
+  if (!ih->handle)
+    return 0;
+
+  GtkNotebook* notebook = (GtkNotebook*)ih->handle;
+  gint tab_overlap = 0;
+
+  /* Query GTK style property for tab overlap (negative values mean spacing between tabs) */
+  gtk_widget_style_get(GTK_WIDGET(notebook), "tab-overlap", &tab_overlap, NULL);
+
+  return tab_overlap;
+}
+
+void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+{
+  int width = 0;
+  int height = 0;
+  int text_width = 0;
+  int text_height = 0;
+
+  /* Measure text dimensions */
+  if (tab_title)
+  {
+    text_width = iupdrvFontGetStringWidth(ih, tab_title);
+    iupdrvFontGetCharSize(ih, NULL, &text_height);
+    width = text_width;
+    height = text_height;
+  }
+
+  /* Add image dimensions */
+  if (tab_image)
+  {
+    void* img = iupImageGetImage(tab_image, ih, 0, NULL);
+    if (img)
+    {
+      int img_w, img_h;
+      iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+
+      /* Width: add image width + spacing */
+      width += img_w;
+      if (tab_title)
+        width += 2;
+
+      /* Height: use MAX of text and image */
+      if (img_h > height)
+        height = img_h;
+    }
+  }
+
+  /* Add GTK tab padding and margin */
+#if GTK_CHECK_VERSION(3, 0, 0)
+  width += 56;  /* GTK3 CSS: 24px padding + 8px margin + ~24px label padding */
+  height += 14;  /* GTK3 vertical padding for tabs */
+#else
+  /* GTK2 padding includes borders, shadows, and internal spacing */
+  width += 44;  /* Accounts for GTK2's border/shadow overhead and internal spacing */
+  height += 18;  /* GTK2 vertical padding for tabs */
+#endif
+
+  /* Add scroll arrows size if scrollable mode is enabled */
+  if (ih->handle && gtk_notebook_get_scrollable((GtkNotebook*)ih->handle))
+  {
+#if GTK_CHECK_VERSION(3, 0, 0)
+    GtkNotebook* notebook = (GtkNotebook*)ih->handle;
+    gint arrow_length = 16;  /* default */
+    const char* style_prop;
+
+    /* Different property names for horizontal vs vertical tabs */
+    if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
+      style_prop = "scroll-arrow-vlength";
+    else
+      style_prop = "scroll-arrow-hlength";
+
+    gtk_widget_style_get(GTK_WIDGET(notebook), style_prop, &arrow_length, NULL);
+
+    /* GTK has 4 possible arrows (2 on each side), but typically only 2 are active
+       Add size for both arrows (left + right for TOP/BOTTOM, or top + bottom for LEFT/RIGHT) */
+    width += arrow_length * 2;
+#else
+    /* GTK2: Use fixed arrow size */
+    width += 32;
+#endif
+  }
+
+  /* For LEFT/RIGHT tabs, swap width/height because tabs are arranged vertically */
+  if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
+  {
+    if (tab_width) *tab_width = height;   /* Use text height as tab width */
+    if (tab_height) *tab_height = width;  /* Use text width as tab height */
+  }
+  else
+  {
+    if (tab_width) *tab_width = width;
+    if (tab_height) *tab_height = height;
+  }
+}
+
+static void gtkTabsSizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, Ihandle* ih)
+{
+  GtkNotebook* notebook = (GtkNotebook*)widget;
+  int n_pages = gtk_notebook_get_n_pages(notebook);
+  gboolean scrollable = gtk_notebook_get_scrollable(notebook);
+  int i;
+
+  /* Calculate total width needed for all tabs */
+  if (n_pages > 0 && (ih->data->type == ITABS_TOP || ih->data->type == ITABS_BOTTOM))
+  {
+    int total_tabs_width = 0;
+    int total_allocated_width = 0;
+    int i;
+    int m, s;
+
+    /* Get decoration margins and spacing */
+    m = 4;
+    s = 2;
+
+    /* Sum up all tab widths and show actual allocations */
+    for (i = 0; i < n_pages; i++)
+    {
+      GtkWidget* page = gtk_notebook_get_nth_page(notebook, i);
+      GtkWidget* tab_label = gtk_notebook_get_tab_label(notebook, page);
+      if (tab_label)
+      {
+        GtkAllocation tab_alloc;
+        gtk_widget_get_allocation(tab_label, &tab_alloc);
+        total_allocated_width += tab_alloc.width;
+#if GTK_CHECK_VERSION(3, 0, 0)
+        GtkRequisition tab_min, tab_nat;
+        gtk_widget_get_preferred_size(tab_label, &tab_min, &tab_nat);
+        total_tabs_width += tab_nat.width;
+#else
+        GtkRequisition tab_req;
+        gtk_widget_size_request(tab_label, &tab_req);
+        total_tabs_width += tab_req.width;
+#endif
+      }
+    }
+
+    total_tabs_width += 2 * m;  /* left and right margins */
+    if (n_pages > 1)
+      total_tabs_width += (n_pages - 1) * s;  /* spacing between tabs */
+
+    gboolean need_scrollable = (total_tabs_width > allocation->width);
+
+    if (need_scrollable != scrollable)
+    {
+      gtk_notebook_set_scrollable(notebook, need_scrollable);
+    }
+  }
+  else if (n_pages > 0 && (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT))
+  {
+    /* Similar logic for LEFT/RIGHT tabs but checking height instead */
+    int total_tabs_height = 0;
+    int total_allocated_height = 0;
+    int total_tabs_width = 0;
+    int total_allocated_width = 0;
+    int i;
+    int m = 4;
+
+    for (i = 0; i < n_pages; i++)
+    {
+      GtkWidget* page = gtk_notebook_get_nth_page(notebook, i);
+      GtkWidget* tab_label = gtk_notebook_get_tab_label(notebook, page);
+      if (tab_label)
+      {
+        GtkAllocation tab_alloc;
+        gtk_widget_get_allocation(tab_label, &tab_alloc);
+        total_allocated_height += tab_alloc.height;
+        total_allocated_width += tab_alloc.width;
+#if GTK_CHECK_VERSION(3, 0, 0)
+        GtkRequisition tab_min, tab_nat;
+        gtk_widget_get_preferred_size(tab_label, &tab_min, &tab_nat);
+        total_tabs_height += tab_nat.height;
+        total_tabs_width += tab_nat.width;
+#else
+        GtkRequisition tab_req;
+        gtk_widget_size_request(tab_label, &tab_req);
+        total_tabs_height += tab_req.height;
+        total_tabs_width += tab_req.width;
+#endif
+      }
+    }
+
+    total_tabs_height += 2 * m;
+
+    gboolean need_scrollable = (total_tabs_height > allocation->height);
+
+    if (need_scrollable != scrollable)
+    {
+      gtk_notebook_set_scrollable(notebook, need_scrollable);
+    }
+  }
+}
+
 static int gtkTabsMapMethod(Ihandle* ih)
 {
   ih->handle = gtk_notebook_new();
   if (!ih->handle)
     return IUP_ERROR;
 
-  gtk_notebook_set_scrollable((GtkNotebook*)ih->handle, TRUE);
+  /* Start with scrollable=FALSE, will be enabled dynamically if needed in size-allocate */
+  gtk_notebook_set_scrollable((GtkNotebook*)ih->handle, FALSE);
 
   gtkTabsUpdateTabType(ih);
 
@@ -625,6 +820,7 @@ static int gtkTabsMapMethod(Ihandle* ih)
   g_signal_connect(G_OBJECT(ih->handle), "show-help",           G_CALLBACK(iupgtkShowHelp),        ih);
 
   g_signal_connect(G_OBJECT(ih->handle), "switch-page",         G_CALLBACK(gtkTabsSwitchPage), ih);
+  g_signal_connect(G_OBJECT(ih->handle), "size-allocate",       G_CALLBACK(gtkTabsSizeAllocateCallback), ih);
 
   gtk_widget_realize(ih->handle);
 
@@ -644,6 +840,7 @@ static int gtkTabsMapMethod(Ihandle* ih)
       /* current value is now given by the native system */
       iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", NULL);
     }
+
   }
 
   return IUP_NOERROR;

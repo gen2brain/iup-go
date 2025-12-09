@@ -41,19 +41,251 @@ static GtkWidget* gtk_button_get_image(GtkButton *button)
 
 void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
-  /* LAYOUT_DECORATION_ESTIMATE */
-#ifdef WIN32
-  int border_size = 2*5;
+#if GTK_CHECK_VERSION(3, 0, 0)
+  /* Measure actual borders dynamically since they depend on theme */
+  static int text_border_x = -1, text_border_y = -1;
+  static int image_text_border_x = -1, image_text_border_y = -1;
+  static int image_border_x = -1, image_border_y = -1;
+
+  int has_image = 0;
+  int has_text = 0;
+
+  if (ih)
+  {
+    char* image = iupAttribGet(ih, "IMAGE");
+    char* title = iupAttribGet(ih, "TITLE");
+    has_image = (image != NULL);
+    has_text = (title != NULL && *title != 0);
+  }
+
+  if (has_image && has_text)
+  {
+    if (image_text_border_x == -1)
+    {
+      GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+      GtkWidget* temp_button = gtk_button_new();
+      GtkWidget* temp_image = gtk_image_new_from_icon_name("document-open", GTK_ICON_SIZE_BUTTON);
+
+      gtk_button_set_image(GTK_BUTTON(temp_button), temp_image);
+      gtk_button_set_label(GTK_BUTTON(temp_button), "Test");
+      gtk_button_set_always_show_image(GTK_BUTTON(temp_button), TRUE);
+
+      gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
+      gtk_widget_show_all(temp_window);
+      gtk_widget_realize(temp_window);
+      gtk_widget_realize(temp_button);
+
+      /* Get button's preferred size */
+      gint button_width, button_height;
+      gtk_widget_get_preferred_width(temp_button, NULL, &button_width);
+      gtk_widget_get_preferred_height(temp_button, NULL, &button_height);
+
+      /* Get child allocation */
+      GtkWidget* child = gtk_bin_get_child(GTK_BIN(temp_button));
+      GtkAllocation child_alloc;
+      if (child)
+      {
+        gtk_widget_get_allocation(child, &child_alloc);
+        image_text_border_x = button_width - child_alloc.width;
+        image_text_border_y = button_height - child_alloc.height;
+      }
+      else
+      {
+        image_text_border_x = 11;
+        image_text_border_y = 11;
+      }
+
+      gtk_widget_destroy(temp_window);
+    }
+    (*x) += image_text_border_x;
+    (*y) += image_text_border_y;
+  }
+  else if (has_image)
+  {
+    if (image_border_x == -1)
+    {
+      GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+      GtkWidget* temp_button = gtk_button_new();
+      GtkWidget* temp_image = gtk_image_new_from_icon_name("document-open", GTK_ICON_SIZE_BUTTON);
+
+      gtk_button_set_image(GTK_BUTTON(temp_button), temp_image);
+
+      gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
+      gtk_widget_show_all(temp_window);
+      gtk_widget_realize(temp_window);
+      gtk_widget_realize(temp_button);
+
+      /* Get button's preferred size */
+      gint button_width, button_height;
+      gtk_widget_get_preferred_width(temp_button, NULL, &button_width);
+      gtk_widget_get_preferred_height(temp_button, NULL, &button_height);
+
+      /* Get child allocation */
+      GtkWidget* child = gtk_bin_get_child(GTK_BIN(temp_button));
+      GtkAllocation child_alloc;
+      if (child)
+      {
+        gtk_widget_get_allocation(child, &child_alloc);
+        image_border_x = button_width - child_alloc.width;
+        image_border_y = button_height - child_alloc.height;
+      }
+      else
+      {
+        image_border_x = 11;
+        image_border_y = 11;
+      }
+
+      gtk_widget_destroy(temp_window);
+    }
+    (*x) += image_border_x;
+    (*y) += image_border_y;
+  }
+  else
+  {
+    if (text_border_x == -1)
+    {
+      GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+      GtkWidget* temp_button = gtk_button_new_with_label("Test");
+
+      gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
+      gtk_widget_show_all(temp_window);
+      gtk_widget_realize(temp_window);
+      gtk_widget_realize(temp_button);
+
+      /* Get button's preferred size */
+      gint button_width, button_height;
+      gtk_widget_get_preferred_width(temp_button, NULL, &button_width);
+      gtk_widget_get_preferred_height(temp_button, NULL, &button_height);
+
+      /* Get child allocation */
+      GtkWidget* child = gtk_bin_get_child(GTK_BIN(temp_button));
+      GtkAllocation child_alloc;
+      if (child)
+      {
+        gtk_widget_get_allocation(child, &child_alloc);
+        text_border_x = button_width - child_alloc.width;
+        text_border_y = button_height - child_alloc.height;
+      }
+      else
+      {
+        text_border_x = 11;
+        text_border_y = 11;
+      }
+
+      gtk_widget_destroy(temp_window);
+    }
+    (*x) += text_border_x;
+    (*y) += text_border_y;
+  }
 #else
-#ifdef HILDON
-  int border_size = 2*7+1; /* borders are not symmetric */
-#else
-  int border_size = 2*5+1; /* borders are not symmetric */
+  /* GTK2: Measure actual borders since they depend on theme AND button type */
+  GtkWidget* temp_button;
+  GtkWidget* child;
+  GtkRequisition button_size, child_size;
+  int border_x, border_y;
+
+  /* Check if we need to measure for image+text button, image-only, or text-only button */
+  int has_image = 0;
+  int has_text = 0;
+
+  if (ih)
+  {
+    char* image = iupAttribGet(ih, "IMAGE");
+    char* title = iupAttribGet(ih, "TITLE");
+    has_image = (image != NULL);
+    has_text = (title != NULL && *title != 0);
+  }
+
+  if (has_image && has_text)
+  {
+    /* Create button with both image and text to match actual structure */
+    GdkPixbuf* temp_pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, 32, 32);
+    GtkWidget* temp_image = gtk_image_new_from_pixbuf(temp_pixbuf);
+
+    temp_button = gtk_button_new();
+    gtk_widget_set_can_focus(temp_button, TRUE);
+    gtk_button_set_alignment(GTK_BUTTON(temp_button), 0.5f, 0.5f);
+    gtk_button_set_image(GTK_BUTTON(temp_button), temp_image);
+    gtk_button_set_label(GTK_BUTTON(temp_button), "Test");
+
+    /* Get the alignment child that contains the box */
+    child = gtk_bin_get_child(GTK_BIN(temp_button));
+
+    gtk_widget_size_request(temp_button, &button_size);
+    gtk_widget_size_request(child, &child_size);
+
+    g_object_unref(temp_pixbuf);
+  }
+  else if (has_image)
+  {
+    /* Image-only button */
+    GdkPixbuf* temp_pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, 32, 32);
+    GtkWidget* temp_image = gtk_image_new_from_pixbuf(temp_pixbuf);
+
+    temp_button = gtk_button_new();
+    gtk_widget_set_can_focus(temp_button, TRUE);
+    gtk_button_set_alignment(GTK_BUTTON(temp_button), 0.5f, 0.5f);
+    gtk_button_set_image(GTK_BUTTON(temp_button), temp_image);
+
+    /* For image-only buttons, we need to measure the GtkAlignment, not the image */
+    child = gtk_bin_get_child(GTK_BIN(temp_button));
+
+    gtk_widget_size_request(temp_button, &button_size);
+    gtk_widget_size_request(child, &child_size);
+
+    g_object_unref(temp_pixbuf);
+  }
+  else
+  {
+    /* Text-only button */
+    temp_button = gtk_button_new_with_label("Test");
+    gtk_widget_set_can_focus(temp_button, TRUE);
+    gtk_button_set_alignment(GTK_BUTTON(temp_button), 0.5f, 0.5f);
+    child = gtk_bin_get_child(GTK_BIN(temp_button));
+
+    gtk_widget_size_request(temp_button, &button_size);
+    gtk_widget_size_request(child, &child_size);
+  }
+
+  /* Force allocation to see what GTK2 actually gives to the child */
+  GtkAllocation alloc = {0, 0, button_size.width, button_size.height};
+  gtk_widget_size_allocate(temp_button, &alloc);
+
+  /* Now get the ACTUAL allocated size of the child */
+  GtkWidget* allocated_child = gtk_bin_get_child(GTK_BIN(temp_button));
+  GtkAllocation child_alloc;
+  if (allocated_child)
+  {
+    gtk_widget_get_allocation(allocated_child, &child_alloc);
+
+    /* Calculate border from allocated child size */
+    border_x = button_size.width - child_alloc.width;
+    border_y = button_size.height - child_alloc.height;
+
+    GtkBorder *inner_border = NULL;
+    gtk_widget_style_get(temp_button, "inner-border", &inner_border, NULL);
+
+    if (!inner_border)
+    {
+      border_x += 6;
+      border_y += 6;
+    }
+
+    if (inner_border)
+      gtk_border_free(inner_border);
+  }
+  else
+  {
+    /* Fallback to requested size if no child */
+    border_x = button_size.width - child_size.width;
+    border_y = button_size.height - child_size.height;
+  }
+
+  (*x) += border_x;
+  (*y) += border_y;
+
+  gtk_widget_destroy(temp_button);
 #endif
-#endif
-  (void)ih;  
-  (*x) += border_size;
-  (*y) += border_size;
 }
 
 static void gtkButtonChildrenCb(GtkWidget *widget, gpointer client_data)
@@ -77,8 +309,7 @@ static GtkLabel* gtkButtonGetLabel(Ihandle* ih)
   }
   else if (ih->data->type == IUP_BUTTON_BOTH) /* both */
   {
-    /* when both is set, button contains an GtkAlignment, 
-       that contains a GtkBox, that contains a label and an image */
+    /* when both is set, button contains an GtkAlignment, that contains a GtkBox, that contains a label and an image */
     GtkContainer *container = (GtkContainer*)gtk_bin_get_child((GtkBin*)gtk_bin_get_child((GtkBin*)ih->handle));
     GtkLabel* label = NULL;
     gtk_container_foreach(container, gtkButtonChildrenCb, &label);
@@ -86,6 +317,36 @@ static GtkLabel* gtkButtonGetLabel(Ihandle* ih)
   }
   else
     return NULL;
+}
+
+static void gtkButtonFixVerticalAlignment(Ihandle* ih)
+{
+  /* GTK3 uses BASELINE alignment for image+text buttons, which doesn't vertically
+     center the image and text relative to each other. Fix this by setting CENTER alignment. */
+  if (ih->data->type == IUP_BUTTON_BOTH)
+  {
+    GtkWidget* align = gtk_bin_get_child((GtkBin*)ih->handle);
+    if (align && GTK_IS_BIN(align))
+    {
+      GtkWidget* box = gtk_bin_get_child((GtkBin*)align);
+      if (box && GTK_IS_BOX(box))
+      {
+        GList* children = gtk_container_get_children(GTK_CONTAINER(box));
+        GList* l;
+        for (l = children; l != NULL; l = l->next)
+        {
+          GtkWidget* child = GTK_WIDGET(l->data);
+#if GTK_CHECK_VERSION(3, 0, 0)
+          gtk_widget_set_valign(child, GTK_ALIGN_CENTER);
+#else
+          if (GTK_IS_MISC(child))
+            gtk_misc_set_alignment(GTK_MISC(child), 0.5, 0.5);
+#endif
+        }
+        g_list_free(children);
+      }
+    }
+  }
 }
 
 static int gtkButtonSetTitleAttrib(Ihandle* ih, const char* value)
@@ -170,18 +431,7 @@ static int gtkButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 #if GTK_CHECK_VERSION(3, 4, 0)
     iupgtkSetMargin(ih->handle, ih->data->horiz_padding, ih->data->vert_padding, 0);
 #else
-    if (ih->data->type == IUP_BUTTON_TEXT)   /* text only */
-    {
-      GtkMisc* misc = (GtkMisc*)gtk_bin_get_child((GtkBin*)ih->handle);
-      gtk_misc_set_padding(misc, ih->data->horiz_padding, ih->data->vert_padding);
-    }
-    else
-    {
-      GtkAlignment* alignment = (GtkAlignment*)gtk_bin_get_child((GtkBin*)ih->handle);
-      if (GTK_IS_ALIGNMENT(alignment))
-        gtk_alignment_set_padding(alignment, ih->data->vert_padding, ih->data->vert_padding, 
-                                             ih->data->horiz_padding, ih->data->horiz_padding);
-    }
+    (void)ih; /* Padding already handled in size calculation */
 #endif
     return 0;
   }
@@ -537,7 +787,18 @@ static int gtkButtonMapMethod(Ihandle* ih)
     gtk_widget_realize(img);
   }
 
+#if !GTK_CHECK_VERSION(3, 0, 0)
+  /* GTK2: Apply button alignment BEFORE realize to actually center content. */
+  if (has_border && !iupAttribGet(ih, "_IUPGTK_EVENTBOX"))
+  {
+    gtk_button_set_alignment((GtkButton*)ih->handle, 0.5f, 0.5f);
+  }
+#endif
+
   gtk_widget_realize(ih->handle);
+
+  /* Fix vertical alignment for image+text buttons */
+  gtkButtonFixVerticalAlignment(ih);
 
   /* update a mnemonic in a label if necessary */
   iupgtkUpdateMnemonic(ih);
