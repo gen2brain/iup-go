@@ -102,6 +102,13 @@ typedef struct _ImotTableData
   int sort_column;           /* Currently sorted column (1-based, 0=none) */
   char* sort_signs;          /* Array of sort signs for each column [num_col] ("UP", "DOWN", or NULL) */
 
+  /* Motif theme colors */
+  Pixel bg_pixel;            /* Widget background color */
+  Pixel fg_pixel;            /* Widget foreground color */
+  Pixel header_bg_pixel;     /* Header background (derived from bg) */
+  Pixel grid_pixel;          /* Grid line color (derived from bg) */
+  Pixel select_bg_pixel;     /* Selection background color */
+
 } ImotTableData;
 
 #define IMOT_TABLE_DATA(ih) ((ImotTableData*)(ih->data->native_data))
@@ -366,12 +373,12 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   if (is_focused_row)
   {
     /* Focused row, highlight entire row with selection color */
-    XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr("200 220 255"));
+    XSetForeground(display, mot_data->gc, mot_data->select_bg_pixel);
   }
   else if (is_header)
   {
     /* Header background */
-    XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr("240 240 240"));
+    XSetForeground(display, mot_data->gc, mot_data->header_bg_pixel);
   }
   else if (bgcolor && *bgcolor)
   {
@@ -381,7 +388,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   else
   {
     /* Default cell background */
-    XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr("255 255 255"));
+    XSetForeground(display, mot_data->gc, mot_data->bg_pixel);
   }
 
   XFillRectangle(display, window, mot_data->gc, x, y, w, h);
@@ -389,7 +396,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   /* Draw grid lines */
   if (mot_data->show_grid)
   {
-    XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr("192 192 192"));
+    XSetForeground(display, mot_data->gc, mot_data->grid_pixel);
     XDrawLine(display, window, mot_data->gc, x, y + h - 1, x + w, y + h - 1); /* Bottom */
     XDrawLine(display, window, mot_data->gc, x + w - 1, y, x + w - 1, y + h); /* Right */
   }
@@ -624,7 +631,7 @@ static void motTableDrawTable(Ihandle* ih)
   XtVaGetValues(mot_data->drawing_area, XmNwidth, &width, XmNheight, &height, NULL);
 
   /* Clear background */
-  XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr("255 255 255"));
+  XSetForeground(display, mot_data->gc, mot_data->bg_pixel);
   XFillRectangle(display, window, mot_data->gc, 0, 0, width, height);
 
   /* Draw header row */
@@ -1414,6 +1421,40 @@ static int motTableMapMethod(Ihandle* ih)
 
   /* Realize widgets */
   XtRealizeWidget(mot_data->container);
+
+  /* Query Motif widget colors */
+  {
+    unsigned char bg_r, bg_g, bg_b;
+
+    XtVaGetValues(mot_data->container, XmNbackground, &mot_data->bg_pixel, XmNforeground, &mot_data->fg_pixel, NULL);
+
+    /* Get RGB components of background color */
+    iupmotColorGetRGB(mot_data->bg_pixel, &bg_r, &bg_g, &bg_b);
+
+    /* Derive header color (slightly darker than background) */
+    {
+      unsigned char header_r = (bg_r > 20) ? bg_r - 20 : 0;
+      unsigned char header_g = (bg_g > 20) ? bg_g - 20 : 0;
+      unsigned char header_b = (bg_b > 20) ? bg_b - 20 : 0;
+      mot_data->header_bg_pixel = iupmotColorGetPixel(header_r, header_g, header_b);
+    }
+
+    /* Derive grid color (darker than background) */
+    {
+      unsigned char grid_r = (bg_r > 40) ? bg_r - 40 : 0;
+      unsigned char grid_g = (bg_g > 40) ? bg_g - 40 : 0;
+      unsigned char grid_b = (bg_b > 40) ? bg_b - 40 : 0;
+      mot_data->grid_pixel = iupmotColorGetPixel(grid_r, grid_g, grid_b);
+    }
+
+    /* Derive selection color (tinted blue version of background) */
+    {
+      unsigned char select_r = (unsigned char)((bg_r * 3 + 200) / 4);
+      unsigned char select_g = (unsigned char)((bg_g * 3 + 220) / 4);
+      unsigned char select_b = (unsigned char)((bg_b * 1 + 255 * 3) / 4);
+      mot_data->select_bg_pixel = iupmotColorGetPixel(select_r, select_g, select_b);
+    }
+  }
 
   /* Create graphics context */
   gcvalues.foreground = BlackPixel(iupmot_display, iupmot_screen);
