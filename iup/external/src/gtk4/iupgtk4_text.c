@@ -62,23 +62,60 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
   /* GtkEntry has larger internal padding than GTK3 */
   int border_size = 2 * 9;
-  int orig_x = *x, orig_y = *y;
   (*x) += border_size;
-  (*y) += border_size;
 
-  /* NOTE: This function is also called by calendar widget, which doesn't have ih->data */
-  if (ih->data && ih->data->is_multiline)
+  static int spin_natural_height = -1;
+  if (iupAttribGetBoolean(ih, "SPIN") && spin_natural_height == -1)
   {
-    (*x) += 2;
-    (*y) += 2;
+    /* Measure the actual spinbutton natural height */
+    GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
+
+    int spin_h;
+    gtk_widget_measure(temp_spin, GTK_ORIENTATION_VERTICAL, -1, NULL, &spin_h, NULL, NULL);
+
+    spin_natural_height = spin_h;
+    if (spin_natural_height < 16) spin_natural_height = 34;  /* Fallback to safe default */
+
+    g_object_ref_sink(temp_spin);
+    g_object_unref(temp_spin);
   }
 
-  /* GtkSpinButton needs extra vertical space to prevent bottom clipping (same as GTK3) */
-  if (iupAttribGetBoolean(ih, "SPIN"))
-    (*y) += 8;
+  if (ih->data && ih->data->is_multiline)
+  {
+    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
-  (void)orig_x;
-  (void)orig_y;
+    if (visiblelines > 0)
+    {
+      /* When VISIBLELINES is set, add line spacing + CSS border compensation */
+      int line_spacing = 2 * visiblelines;
+      (*y) += line_spacing;  /* Text view line spacing */
+      (*y) += 2;   /* Compensation for CSS .frame border (1px top + 1px bottom) */
+    }
+    else
+    {
+      /* Without VISIBLELINES, use minimal border */
+      (*y) += 2;
+    }
+    (*x) += 2;
+  }
+  else
+  {
+    /* Single-line text */
+
+    if (iupAttribGetBoolean(ih, "SPIN"))
+    {
+      int before = *y;
+      /* Add the difference: measured natural height - what IUP calculated so far */
+      int add = spin_natural_height - before;
+      if (add < 0) add = 0;  /* Don't subtract if already too large */
+      (*y) += add;
+    }
+    else
+    {
+      /* Natural size needs vertical borders */
+      (*y) += border_size;
+    }
+  }
 }
 
 static void gtkTextMoveIterToLinCol(GtkTextBuffer* buffer, GtkTextIter* iter, int lin, int col)
@@ -1394,6 +1431,36 @@ static int gtk4TextMapMethod(Ihandle* ih)
 
     gtk_scrolled_window_set_child(scrolled_window, ih->handle);
 
+    {
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+      if (visiblelines > 0)
+      {
+        int char_width, char_height;
+        iupdrvFontGetCharSize(ih, &char_width, &char_height);
+        int line_height = char_height + 2;
+        int content_h = line_height * visiblelines;
+
+        /* Total height: content + CSS border compensation (2px) */
+        /* GTK4 scrolled_window has NO internal overhead, only external CSS border */
+        int total_h = content_h + 2;
+
+        /* Set size_request on scrolled_window, CSS will take 2px, leaving exact content size for child */
+        gtk_widget_set_size_request(GTK_WIDGET(scrolled_window), -1, total_h);
+        gtk_widget_set_vexpand(GTK_WIDGET(scrolled_window), FALSE);
+        gtk_widget_set_valign(GTK_WIDGET(scrolled_window), GTK_ALIGN_START);
+
+        /* Mark scrolled_window so layout manager doesn't enforce GTK's scrollbar minimum */
+        g_object_set_data(G_OBJECT(scrolled_window), "iup-visiblelines-set", (gpointer)"1");
+      }
+    }
+
+    /* Prevent scrolled window from expanding beyond natural size */
+    if (!iupAttribGetInt(ih, "VISIBLELINES"))
+    {
+      gtk_widget_set_vexpand(GTK_WIDGET(scrolled_window), FALSE);
+      gtk_widget_set_valign(GTK_WIDGET(scrolled_window), GTK_ALIGN_FILL);
+    }
+
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)scrolled_window);
 
     ih->data->has_formatting = 1;
@@ -1427,9 +1494,30 @@ static int gtk4TextMapMethod(Ihandle* ih)
         vscrollbar_policy = GTK_POLICY_ALWAYS;
     }
     else
-      vscrollbar_policy = GTK_POLICY_NEVER;
+    {
+      /* max_content_height only works when scrollbar policy != NEVER
+         So when VISIBLELINES is set, use AUTOMATIC to enable max_content_height clamping */
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+      if (visiblelines > 0)
+        vscrollbar_policy = GTK_POLICY_AUTOMATIC;
+      else
+        vscrollbar_policy = GTK_POLICY_NEVER;
+    }
 
     gtk_scrolled_window_set_policy(scrolled_window, hscrollbar_policy, vscrollbar_policy);
+
+    {
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+      if (visiblelines > 0)
+      {
+        int char_width, char_height;
+        iupdrvFontGetCharSize(ih, &char_width, &char_height);
+
+        /* Text views have line spacing */
+        int line_height = char_height + 2;
+        int content_h = line_height * visiblelines;
+      }
+    }
 
     if (wordwrap)
       gtk_text_view_set_wrap_mode((GtkTextView*)ih->handle, GTK_WRAP_WORD);
@@ -1446,7 +1534,7 @@ static int gtk4TextMapMethod(Ihandle* ih)
 
     ih->data->has_formatting = 0;
 
-    /* Set natural alignment - prevent entry from expanding vertically beyond its natural height */
+    /* Set natural alignment, prevent entry from expanding vertically beyond its natural height */
     gtk_widget_set_vexpand(ih->handle, FALSE);
     gtk_widget_set_valign(ih->handle, GTK_ALIGN_CENTER);
 
@@ -1879,8 +1967,6 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SPINVALUE", gtk4TextGetSpinValueAttrib, gtk4TextSetSpinValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COUNT", gtk4TextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINECOUNT", gtk4TextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-
-  iupClassRegisterAttribute(ic, "SCROLLBAR", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, gtk4TextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
 
