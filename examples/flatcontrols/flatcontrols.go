@@ -10,8 +10,6 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	iup.SetGlobal("UTF8MODE", "YES")
-
 	statusText := iup.Text()
 	statusText.SetAttributes("READONLY=YES, EXPAND=HORIZONTAL, VALUE=Flat Controls")
 	iup.SetHandle("statusText", statusText)

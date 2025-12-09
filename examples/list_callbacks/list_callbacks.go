@@ -17,8 +17,6 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	iup.SetGlobal("UTF8MODE", "YES")
-
 	// Create three different list types
 	listSimple := iup.List()
 	listMulti := iup.List()

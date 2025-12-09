@@ -47,8 +47,6 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	iup.SetGlobal("UTF8MODE", "YES")
-
 	clipboard = iup.Clipboard()
 	defer clipboard.Destroy()
 
