@@ -154,5 +154,11 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   {
     return iupStrReturnBoolean(iupgtk4IsSystemDarkMode());
   }
+  if (iupStrEqual(name, "OVERLAYSCROLLBAR"))
+  {
+    gboolean overlay_scrolling;
+    g_object_get(gtk_settings_get_default(), "gtk-overlay-scrolling", &overlay_scrolling, NULL);
+    return iupStrReturnBoolean(overlay_scrolling);
+  }
   return NULL;
 }

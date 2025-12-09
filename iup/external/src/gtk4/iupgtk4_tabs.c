@@ -59,6 +59,56 @@ int iupdrvTabsGetCurrentTab(Ihandle* ih)
   return gtk_notebook_get_current_page((GtkNotebook*)ih->handle);
 }
 
+void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+{
+  int width = 0;
+  int height = 0;
+  int text_width = 0;
+  int text_height = 0;
+
+  /* Measure text dimensions */
+  if (tab_title)
+  {
+    text_width = iupdrvFontGetStringWidth(ih, tab_title);
+    iupdrvFontGetCharSize(ih, NULL, &text_height);
+    width = text_width;
+    height = text_height;
+  }
+
+  /* Add image dimensions */
+  if (tab_image)
+  {
+    void* img = iupImageGetImage(tab_image, ih, 0, NULL);
+    if (img)
+    {
+      int img_w, img_h;
+      iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      width += img_w;
+      if (tab_title)
+        width += 2;  /* spacing between icon and text */
+      if (img_h > height)
+        height = img_h;
+    }
+  }
+
+  /* Add GTK4 tab padding and margin */
+  width += 56;   /* Match GTK CSS */
+  height += 14;  /* 7px top + 7px bottom */
+  (void)ih;
+
+  /* For LEFT/RIGHT tabs, swap width/height because tabs are arranged vertically */
+  if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
+  {
+    if (tab_width) *tab_width = height;   /* Use text height as tab width */
+    if (tab_height) *tab_height = width;  /* Use text width as tab height */
+  }
+  else
+  {
+    if (tab_width) *tab_width = width;
+    if (tab_height) *tab_height = height;
+  }
+}
+
 static void gtk4TabsUpdatePageFont(Ihandle* ih)
 {
   Ihandle* child;
@@ -578,6 +628,13 @@ static int gtk4TabsMapMethod(Ihandle* ih)
   ih->handle = gtk_notebook_new();
   if (!ih->handle)
     return IUP_ERROR;
+
+  /* Prevent GTK4 from expanding notebook beyond its natural size.
+   * Content inside can still expand, this only prevents unnecessary expansion. */
+  gtk_widget_set_hexpand(ih->handle, FALSE);
+  gtk_widget_set_vexpand(ih->handle, FALSE);
+  gtk_widget_set_halign(ih->handle, GTK_ALIGN_FILL);
+  gtk_widget_set_valign(ih->handle, GTK_ALIGN_FILL);
 
   gtk_notebook_set_scrollable((GtkNotebook*)ih->handle, TRUE);
 

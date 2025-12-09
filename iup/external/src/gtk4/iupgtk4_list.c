@@ -298,13 +298,38 @@ void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 
 void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
-  static int editbox_border_x = -1, editbox_border_y = -1;
-  static int dropdown_border_x = -1, dropdown_border_y = -1;
+  static int editbox_border_x = -1, editbox_border_y = -1, editbox_entry_natural_height = -1;
+  static int dropdown_border_x = -1, dropdown_border_y = -1, dropdown_natural_height = -1;
   static int dropdown_editbox_border_x = -1;
+  static int scrolled_window_frame_border = -1;
+  static int css_frame_border_compensation = -1;
 
-  int border_size = 2 * 5;
+  int border_size = 2 * 5;  /* Base border: 2 * 5px */
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+
+  /* Initialize constants once */
+  if (scrolled_window_frame_border == -1)
+  {
+    /* GTK4 scrolled_window has no internal overhead, only external CSS border */
+    scrolled_window_frame_border = 2;  /* CSS border, same for all scrolled_window types */
+  }
+  if (css_frame_border_compensation == -1)
+  {
+    /* CSS .frame border compensation for plain lists */
+    css_frame_border_compensation = 2;  /* 1px top + 1px bottom */
+  }
+
   (*x) += border_size;
-  (*y) += border_size;
+
+  /* For plain lists with VISIBLELINES, add CSS border compensation */
+  if (!ih->data->is_dropdown && !ih->data->has_editbox && visiblelines > 0)
+  {
+    (*y) += css_frame_border_compensation;
+  }
+  else
+  {
+    (*y) += border_size;
+  }
 
   /* GtkBox with 4px spacing between image and text */
   if (ih->data->show_image)
@@ -321,9 +346,22 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       gtk_widget_measure(temp_combo, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
       gtk_widget_measure(temp_combo, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
 
+      /* Store natural height for future reference */
+      dropdown_natural_height = nat_h;
+
       /* Dropdown borders are the widget size minus content area */
       dropdown_border_x = (nat_w > 50) ? 22 : 20;  /* Approximate dropdown arrow + spacing */
-      dropdown_border_y = (nat_h > 30) ? 4 : 0;
+
+      /* Calculate border needed to reach widget's natural height */
+      /* Get typical single-item content height */
+      int char_width, char_height;
+      iupdrvFontGetCharSize(ih, &char_width, &char_height);
+      int typical_item_height = char_height;
+      iupdrvListAddItemSpace(ih, &typical_item_height);
+
+      /* dropdown_border_y should add enough to reach natural height */
+      /* Final height = typical_item_height + base_border + dropdown_border_y = dropdown_natural_height */
+      dropdown_border_y = dropdown_natural_height - typical_item_height - border_size;
 
       g_object_ref_sink(temp_combo);
       g_object_unref(temp_combo);
@@ -345,16 +383,70 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   }
   else
   {
+    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+
     if (ih->data->has_editbox)
     {
-      if (editbox_border_x == -1)
+      if (editbox_border_x == -1 || editbox_border_y == -1)
       {
+        /* Measure actual GtkEntry widget with CSS applied */
+        GtkWidget *temp_entry = gtk_entry_new();
+
+        {
+          GtkStyleContext *context = gtk_widget_get_style_context(temp_entry);
+          GtkCssProvider *provider = gtk_css_provider_new();
+          gtk_css_provider_load_from_string(GTK_CSS_PROVIDER(provider),
+            "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }");
+          gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+          g_object_unref(provider);
+        }
+
+        int min_w, nat_w, min_h, nat_h;
+
+        gtk_widget_measure(temp_entry, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
+        gtk_widget_measure(temp_entry, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
+
+        editbox_entry_natural_height = nat_h;
         editbox_border_x = 0;  /* No extra X needed */
-        editbox_border_y = 2*3; /* Internal border between editbox and list */
+        /* Entry height + small gap for VBox spacing between entry and list */
+        int entry_gap = 3;
+        editbox_border_y = editbox_entry_natural_height + entry_gap;
+
+        g_object_ref_sink(temp_entry);
+        g_object_unref(temp_entry);
       }
 
       (*x) += editbox_border_x;
-      (*y) += editbox_border_y;
+
+      /* For VISIBLELINES, use different border logic */
+      if (visiblelines > 0)
+      {
+        /* For EDITBOX, VISIBLELINES includes the entry line.
+         * We need to remove one item's height from the calculation to show (VISIBLELINES - 1) items in the list part. */
+        int char_width, char_height;
+        iupdrvFontGetCharSize(ih, &char_width, &char_height);
+        int item_height = char_height;
+        iupdrvListAddItemSpace(ih, &item_height);
+        (*y) -= item_height;
+
+        /* Only add entry height + scrolled_window frame borders */
+        (*y) -= border_size; /* Remove the base border that was added earlier */
+        (*y) += editbox_entry_natural_height; /* Add entry height (no gap for GtkFixed) */
+        (*y) += (scrolled_window_frame_border - css_frame_border_compensation); /* Add frame borders, minus CSS already in content */
+      }
+      else
+      {
+        (*y) += editbox_border_y;
+      }
+
+      if (ih->data->sb && !visiblelines)
+      {
+        (*y) += iupdrvGetScrollbarSize();
+      }
+    }
+    else if (ih->data->sb && !visiblelines)
+    {
+      (*y) += iupdrvGetScrollbarSize();
     }
   }
 }
@@ -1672,11 +1764,19 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
     if (ih->data->sb)
     {
       int sb_size = iupdrvGetScrollbarSize();
-      natural_w += sb_size;
-      natural_h += sb_size;
+      natural_w += sb_size;  /* vertical scrollbar affects horizontal size only */
     }
 
-    if (!ih->data->has_editbox)
+    if (visiblelines > 0)
+    {
+      /* Calculate content height (item height * visible lines) without borders */
+      int content_h = char_height;
+      iupdrvListAddItemSpace(ih, &content_h);
+      content_h += 2 * ih->data->spacing;
+      content_h = content_h * visiblelines;
+    }
+
+    if (!ih->data->has_editbox && visiblelines == 0)
     {
       /* Subtract frame border because min_content is for content area INSIDE the frame
          iupdrvListAddBorders added 2 pixels for the frame, but min_content should not include it */
@@ -1799,6 +1899,25 @@ static void gtk4DropDownSelectionChanged(GObject* object, GParamSpec* pspec, gpo
   (void)pspec;
 }
 
+static gboolean gtk4ListDebugAllocation(gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  GtkScrolledWindow* sw = (GtkScrolledWindow*)iupAttribGet(ih, "_IUPGTK4_DEBUG_LIST_SW");
+  if (sw && ih->handle)
+  {
+    int sw_w = gtk_widget_get_width(GTK_WIDGET(sw));
+    int sw_h = gtk_widget_get_height(GTK_WIDGET(sw));
+    int lv_w = gtk_widget_get_width(ih->handle);
+    int lv_h = gtk_widget_get_height(ih->handle);
+
+    int char_width, char_height;
+    iupdrvFontGetCharSize(ih, &char_width, &char_height);
+    int item_height = char_height;
+    iupdrvListAddItemSpace(ih, &item_height);
+
+  }
+  return G_SOURCE_REMOVE;
+}
 
 static int gtk4ListMapMethod(Ihandle* ih)
 {
@@ -1892,6 +2011,16 @@ static int gtk4ListMapMethod(Ihandle* ih)
       GtkWidget *entry = gtk_entry_new();
       iupAttribSet(ih, "_IUPGTK4_ENTRY", (char*)entry);
 
+      /* Apply same CSS as IupText single-line to reduce padding */
+      {
+        GtkStyleContext *context = gtk_widget_get_style_context(entry);
+        GtkCssProvider *provider = gtk_css_provider_new();
+        gtk_css_provider_load_from_string(GTK_CSS_PROVIDER(provider),
+          "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }");
+        gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+        g_object_unref(provider);
+      }
+
       /* Measure GtkEntry's natural width with the same text width as dropdown */
       int entry_width = iupAttribGetInt(ih, "_IUP_DROPDOWN_NATURAL_W");
       if (entry_width > 0)
@@ -1901,8 +2030,19 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
         if (entry_extra_space == -1)
         {
-          /* Measure GtkEntry borders by creating a temp entry */
+          /* Measure GtkEntry borders by creating a temp entry with CSS */
           GtkWidget* temp_entry = gtk_entry_new();
+
+          /* Apply same CSS to get accurate measurements */
+          {
+            GtkStyleContext *context = gtk_widget_get_style_context(temp_entry);
+            GtkCssProvider *provider = gtk_css_provider_new();
+            gtk_css_provider_load_from_string(GTK_CSS_PROVIDER(provider),
+              "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }");
+            gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+            g_object_unref(provider);
+          }
+
           gtk_editable_set_text(GTK_EDITABLE(temp_entry), "WWWWWWWWWW");
 
           int min_w, nat_w;
@@ -2000,12 +2140,55 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
     scrolled_window = (GtkScrolledWindow*)gtk_scrolled_window_new();
 
+    /* Force scrolled_window to request correct height for VISIBLELINES */
+    {
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+      if (visiblelines > 0 && !ih->data->has_editbox)
+      {
+        int char_width, char_height;
+        iupdrvFontGetCharSize(ih, &char_width, &char_height);
+
+        int content_h = char_height;
+        iupdrvListAddItemSpace(ih, &content_h);
+        content_h += 2 * ih->data->spacing;
+        content_h = content_h * visiblelines;
+
+        /* Total height: content + CSS border compensation (2px) */
+        /* GTK4 scrolled_window has NO internal overhead - only external CSS border */
+        int total_h = content_h + 2;
+
+        /* Set size_request on scrolled_window - CSS will take 2px, leaving exact content size for child */
+        gtk_widget_set_size_request(GTK_WIDGET(scrolled_window), -1, total_h);
+        gtk_widget_set_vexpand(GTK_WIDGET(scrolled_window), FALSE);
+        gtk_widget_set_valign(GTK_WIDGET(scrolled_window), GTK_ALIGN_START);
+
+        /* Mark scrolled_window so layout manager doesn't enforce GTK's scrollbar minimum */
+        g_object_set_data(G_OBJECT(scrolled_window), "iup-visiblelines-set", (gpointer)"1");
+
+        /* Store pointers for idle callback */
+        iupAttribSet(ih, "_IUPGTK4_DEBUG_LIST_SW", (char*)scrolled_window);
+        g_idle_add(gtk4ListDebugAllocation, ih);
+      }
+    }
+
     if (ih->data->has_editbox)
     {
-      GtkBox* vbox = (GtkBox*)gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-      gtk_box_set_homogeneous(vbox, FALSE);
-      gtk_widget_set_vexpand((GtkWidget*)vbox, FALSE);
-      gtk_widget_set_hexpand((GtkWidget*)vbox, FALSE);
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+      GtkWidget* container;
+
+      /* For VISIBLELINES, use GtkFixed to avoid GtkBox enforcing scrolled_window's 46px minimum */
+      if (visiblelines > 0)
+      {
+        container = gtk_fixed_new();
+      }
+      else
+      {
+        container = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+        gtk_box_set_homogeneous(GTK_BOX(container), FALSE);
+      }
+
+      gtk_widget_set_vexpand(container, FALSE);
+      gtk_widget_set_hexpand(container, FALSE);
 
       GtkWidget *entry = gtk_entry_new();
       gtk_widget_set_vexpand(entry, FALSE);
@@ -2013,13 +2196,72 @@ static int gtk4ListMapMethod(Ihandle* ih)
       gtk_widget_set_valign(entry, GTK_ALIGN_CENTER);
       iupgtk4ClearSizeStyleCSS(entry);
 
-      gtk_box_append(vbox, entry);
+      /* Apply same CSS as IupText single-line to reduce padding */
+      {
+        GtkStyleContext *context = gtk_widget_get_style_context(entry);
+        GtkCssProvider *provider = gtk_css_provider_new();
+        gtk_css_provider_load_from_string(GTK_CSS_PROVIDER(provider),
+          "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }");
+        gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+        g_object_unref(provider);
+      }
+
       iupAttribSet(ih, "_IUPGTK4_ENTRY", (char*)entry);
 
-      gtk_widget_set_vexpand((GtkWidget*)scrolled_window, TRUE);
-      gtk_box_append(vbox, (GtkWidget*)scrolled_window);
+      if (visiblelines > 0)
+      {
+        /* VISIBLELINES: Use GtkFixed for exact positioning */
 
-      iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)vbox);
+        /* Set size_request for scrolled_window */
+        int char_width, char_height;
+        iupdrvFontGetCharSize(ih, &char_width, &char_height);
+
+        int content_h = char_height;
+        iupdrvListAddItemSpace(ih, &content_h);
+        content_h += 2 * ih->data->spacing;
+        content_h = content_h * visiblelines;
+
+        /* Total height: content + CSS border compensation (2px) */
+        /* GTK4 scrolled_window has NO internal overhead - only external CSS border */
+        int scrolled_window_frame = 2;  /* CSS border, same as plain list and multiline text */
+        int total_h = content_h + scrolled_window_frame;
+
+        /* Set height with size_request - width will be set later in LayoutUpdate when ih->currentwidth is known */
+        gtk_widget_set_size_request(GTK_WIDGET(scrolled_window), -1, total_h);
+        gtk_widget_set_vexpand(GTK_WIDGET(scrolled_window), FALSE);
+        gtk_widget_set_valign(GTK_WIDGET(scrolled_window), GTK_ALIGN_START);
+
+        /* Measure entry height for positioning */
+        int entry_min_h, entry_nat_h;
+        gtk_widget_measure(entry, GTK_ORIENTATION_VERTICAL, -1, &entry_min_h, &entry_nat_h, NULL, NULL);
+
+        /* Position widgets in GtkFixed */
+        /* Entry at top (0, 0) */
+        gtk_fixed_put(GTK_FIXED(container), entry, 0, 0);
+
+        /* Scrolled_window below entry */
+        gtk_fixed_put(GTK_FIXED(container), GTK_WIDGET(scrolled_window), 0, entry_nat_h);
+
+        /* Store entry natural height for LayoutUpdate */
+        iupAttribSetInt(ih, "_IUPGTK4_ENTRY_HEIGHT", entry_nat_h);
+
+        /* Mark container and scrolled_window so layout manager doesn't enforce GTK's minimums */
+        g_object_set_data(G_OBJECT(container), "iup-visiblelines-set", (gpointer)"1");
+        g_object_set_data(G_OBJECT(scrolled_window), "iup-visiblelines-set", (gpointer)"1");
+
+        /* Store pointers for idle callback */
+        iupAttribSet(ih, "_IUPGTK4_DEBUG_LIST_SW", (char*)scrolled_window);
+        g_idle_add(gtk4ListDebugAllocation, ih);
+      }
+      else
+      {
+        /* Normal EDITBOX: Use GtkBox */
+        gtk_box_append(GTK_BOX(container), entry);
+        gtk_widget_set_vexpand((GtkWidget*)scrolled_window, TRUE);
+        gtk_box_append(GTK_BOX(container), (GtkWidget*)scrolled_window);
+      }
+
+      iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)container);
       iupAttribSet(ih, "_IUPGTK4_SCROLLED_WINDOW", (char*)scrolled_window);
 
       iupgtk4SetCanFocus(ih->handle, 0);
@@ -2069,7 +2311,15 @@ static int gtk4ListMapMethod(Ihandle* ih)
         scrollbar_policy = GTK_POLICY_ALWAYS;
     }
     else
-      scrollbar_policy = GTK_POLICY_NEVER;
+    {
+      /* GTK4's max_content_height only works when scrollbar policy != NEVER
+         So when VISIBLELINES is set, use AUTOMATIC to enable max_content_height clamping */
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+      if (visiblelines > 0)
+        scrollbar_policy = GTK_POLICY_AUTOMATIC;
+      else
+        scrollbar_policy = GTK_POLICY_NEVER;
+    }
 
     gtk_scrolled_window_set_policy(scrolled_window, scrollbar_policy, scrollbar_policy);
 

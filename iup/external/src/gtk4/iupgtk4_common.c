@@ -118,12 +118,18 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
     }
 
     /* Enforce minimum widget size requirements */
+    /* Except for widgets with VISIBLELINES, they need to be smaller than GTK's scrollbar minimum */
     {
-      int min_w, min_h;
-      gtk_widget_measure(child, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, NULL, NULL, NULL);
-      gtk_widget_measure(child, GTK_ORIENTATION_VERTICAL, -1, &min_h, NULL, NULL, NULL);
-      if (child_width < min_w) child_width = min_w;
-      if (child_height < min_h) child_height = min_h;
+      const char* visiblelines_set = (const char*)g_object_get_data(G_OBJECT(child), "iup-visiblelines-set");
+      if (!visiblelines_set)
+      {
+        int min_w, min_h;
+        gtk_widget_measure(child, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, NULL, NULL, NULL);
+        gtk_widget_measure(child, GTK_ORIENTATION_VERTICAL, -1, &min_h, NULL, NULL, NULL);
+
+        if (child_width < min_w) child_width = min_w;
+        if (child_height < min_h) child_height = min_h;
+      }
     }
 
     /* Allocate child */
@@ -136,12 +142,68 @@ static void iup_gtk4_fixed_layout_measure(GtkWidget* widget, GtkOrientation orie
                                            int* minimum, int* natural,
                                            int* minimum_baseline, int* natural_baseline)
 {
-  (void)widget;
-  (void)orientation;
+  GtkWidget* child;
+  int max_size = 0;
+  iupGtk4Fixed* fixed = (iupGtk4Fixed*)widget;
+
   (void)for_size;
 
-  *minimum = 1;
-  *natural = 1;
+  /* If this Fixed is associated with a dialog, return minimal size. */
+  if (fixed->ih && iupStrEqual(fixed->ih->iclass->name, "dialog"))
+  {
+    *minimum = 1;
+    *natural = 1;
+    if (minimum_baseline) *minimum_baseline = -1;
+    if (natural_baseline) *natural_baseline = -1;
+    return;
+  }
+
+  /* Measure all children and return the maximum extent in the requested orientation.
+   * This ensures the container gets allocated enough space to display its children. */
+  for (child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child))
+  {
+    if (!gtk_widget_get_visible(child))
+      continue;
+
+    /* Skip nested iupGtk4Fixed wrappers (canvas sb_win, frame inner_parent). */
+    if (G_TYPE_CHECK_INSTANCE_TYPE(child, iup_gtk4_fixed_get_type()))
+      continue;
+
+    int child_pos, child_size;
+    int child_min, child_nat;
+
+    /* Get child's requested size in this orientation */
+    gtk_widget_measure(child, orientation, -1, &child_min, &child_nat, NULL, NULL);
+
+    /* Get child's position in this orientation */
+    if (orientation == GTK_ORIENTATION_HORIZONTAL)
+    {
+      child_pos = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_x"));
+      child_size = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_width"));
+    }
+    else
+    {
+      child_pos = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_y"));
+      child_size = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(child), "_iup_height"));
+    }
+
+    /* Use IUP size if set, but cap at reasonable size relative to natural. */
+    if (child_size <= 0 || child_size > child_nat * 3)
+      child_size = child_nat;
+
+    /* Enforce minimum size just like allocate does, unless VISIBLELINES is set */
+    const char* visiblelines_set = (const char*)g_object_get_data(G_OBJECT(child), "iup-visiblelines-set");
+    if (!visiblelines_set && child_size < child_min)
+      child_size = child_min;
+
+    /* Calculate total extent needed (position + size) */
+    int extent = child_pos + child_size;
+    if (extent > max_size)
+      max_size = extent;
+  }
+
+  *minimum = max_size;
+  *natural = max_size;
   if (minimum_baseline) *minimum_baseline = -1;
   if (natural_baseline) *natural_baseline = -1;
 }
@@ -354,6 +416,29 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
   GtkWidget* parent = gtk4GetNativeParent(ih);
   GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (!widget) widget = ih->handle;
+
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+  if (visiblelines > 0)
+  {
+    /* For EDITBOX with VISIBLELINES using GtkFixed, set widget widths now that currentwidth is known */
+    if (GTK_IS_FIXED(widget))
+    {
+      GtkWidget* entry = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
+      GtkWidget* scrolled_window = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_SCROLLED_WINDOW");
+
+      if (entry && scrolled_window)
+      {
+        int entry_height = iupAttribGetInt(ih, "_IUPGTK4_ENTRY_HEIGHT");
+
+        gtk_widget_set_size_request(entry, ih->currentwidth, entry_height);
+
+        /* Get scrolled_window current height from size_request */
+        int sw_width, sw_height;
+        gtk_widget_get_size_request(scrolled_window, &sw_width, &sw_height);
+        gtk_widget_set_size_request(scrolled_window, ih->currentwidth, sw_height);
+      }
+    }
+  }
 
   iupgtk4SetPosSize(parent, widget, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
@@ -794,9 +879,6 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
 IUP_SDK_API int iupdrvGetScrollbarSize(void)
 {
   static int size = 0;
-
-  if (iupStrBoolean(IupGetGlobal("OVERLAYSCROLLBAR")))
-    return 1;
 
   if (size == 0)
   {
