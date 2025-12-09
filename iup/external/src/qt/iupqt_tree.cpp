@@ -428,13 +428,13 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
       kindPrev = qtTreeGetNodeKind(ref_item);
   }
 
-  // Create the new item
+  /* Create the new item */
   new_item = new QTreeWidgetItem();
   if (title)
     new_item->setText(0, QString::fromUtf8(title));
   qtTreeSetNodeKind(new_item, kind);
 
-  // Set default image
+  /* Set default image */
   QPixmap* def_image = nullptr;
   if (kind == ITREE_BRANCH)
     def_image = (QPixmap*)ih->data->def_image_collapsed;
@@ -444,7 +444,7 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
   if (def_image)
     new_item->setIcon(0, QIcon(*def_image));
 
-  // Add checkbox if enabled
+  /* Add checkbox if enabled */
   if (ih->data->show_toggle)
   {
     if (ih->data->show_toggle == 2)
@@ -453,17 +453,17 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
       new_item->setCheckState(0, Qt::Unchecked);
   }
 
-  // Insert the item into the Qt tree widget
+  /* Insert the item into the Qt tree widget */
   if (ref_item)
   {
     if (kindPrev == ITREE_BRANCH && add)
     {
-      // Add as first child of ref_item
+      /* Add as first child of ref_item */
       ref_item->insertChild(0, new_item);
     }
     else
     {
-      // Add as sibling after ref_item
+      /* Add as sibling after ref_item */
       QTreeWidgetItem* parent = ref_item->parent();
       if (parent)
       {
@@ -476,22 +476,22 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
         tree->insertTopLevelItem(index + 1, new_item);
       }
     }
-    // Update the IUP cache
+    /* Update the IUP cache */
     iupTreeAddToCache(ih, add, kindPrev, (InodeHandle*)ref_item, (InodeHandle*)new_item);
   }
   else
   {
-    // Add as root node (prepend or append)
-    if (id == -1) // Prepend
+    /* Add as root node (prepend or append) */
+    if (id == -1) /* Prepend */
       tree->insertTopLevelItem(0, new_item);
-    else // Append (first node in empty tree)
+    else /* Append (first node in empty tree) */
       tree->addTopLevelItem(new_item);
 
-    // Update the IUP cache
+    /* Update the IUP cache */
     iupTreeAddToCache(ih, 0, 0, NULL, (InodeHandle*)new_item);
   }
 
-  // Handle ADDEXPANDED attribute for the parent
+  /* Handle ADDEXPANDED attribute for the parent */
   QTreeWidgetItem* parent = new_item->parent();
   if (parent && parent->childCount() == 1)
   {
@@ -501,7 +501,7 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
       parent->setExpanded(false);
   }
 
-  // Handle setting focus on the first node
+  /* Handle setting focus on the first node */
   if (ih->data->node_count == 1)
   {
     tree->setMarkStartNode(new_item);
@@ -512,7 +512,7 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
   }
 
-  // After adding, we must sync the cache with the tree's visual order
+  /* After adding, we must sync the cache with the tree's visual order */
   qtTreeRebuildEntireCache(ih);
 }
 
@@ -664,7 +664,7 @@ static int qtTreeSetCopyNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
 
     /* Update cache */
     int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)src);
-    ih->data->node_count = old_count + count; // Update count based on old_count + added
+    ih->data->node_count = old_count + count; /* Update count based on old_count + added */
 
     int id_new = id_dst + 1;
     if (qtTreeGetNodeKind(dst) == ITREE_BRANCH && !dst->isExpanded())
@@ -1420,7 +1420,7 @@ static int qtTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* value)
   if (iupStrBoolean(value))
   {
     /* Show checkbox */
-    if (item->checkState(0) == Qt::Unchecked)  // Might be hidden
+    if (item->checkState(0) == Qt::Unchecked)  /* Might be hidden */
       item->setCheckState(0, Qt::Unchecked);
   }
   else
@@ -1523,7 +1523,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
     if (cb)
     {
-      // Call for all descendants + self
+      /* Call for all descendants + self */
       std::function<void(QTreeWidgetItem*)> call_rec = [&](QTreeWidgetItem* it) {
         int it_id = qtTreeFindNodeId(ih, it);
         if (it_id != -1)
@@ -1551,7 +1551,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     delete item;
     iupTreeDelFromCache(ih, id, count);
 
-    // After deletion, the cache is shifted. We must rebuild it.
+    /* After deletion, the cache is shifted. We must rebuild it. */
     qtTreeRebuildEntireCache(ih);
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
@@ -1592,7 +1592,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       iupTreeDelFromCache(ih, child_id, count);
     }
 
-    // After deletion, the cache is shifted. We must rebuild it.
+    /* After deletion, the cache is shifted. We must rebuild it. */
     qtTreeRebuildEntireCache(ih);
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
@@ -1642,7 +1642,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         i++;
     }
 
-    // After all deletions are done, rebuild the cache once.
+    /* After all deletions are done, rebuild the cache once. */
     qtTreeRebuildEntireCache(ih);
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
@@ -1685,7 +1685,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     delete item;
     iupTreeDelFromCache(ih, id, count);
 
-    // After deletion, the cache is shifted. We must rebuild it.
+    /* After deletion, the cache is shifted. We must rebuild it. */
     qtTreeRebuildEntireCache(ih);
   }
 

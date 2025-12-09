@@ -324,8 +324,37 @@ public:
 
 extern "C" void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 {
-  (void)ih;
-  *h += 2;
+  static int spacing = -1;
+
+  if (spacing == -1)
+  {
+    /* Qt adds internal padding/spacing to each item beyond the text height.
+     * We measure a single item's actual rendered height and compare with text height. */
+    IupQtListWidget* temp_list = new IupQtListWidget(NULL);
+    temp_list->setMinimumSize(0, 0);
+    temp_list->addItem("X");  /* Single character */
+    temp_list->show();
+
+    /* Get text height */
+    int char_height;
+    iupdrvFontGetCharSize(ih, NULL, &char_height);
+
+    /* Measure actual item height */
+    int qt_item_height = 0;
+    QListWidgetItem* item = temp_list->item(0);
+    if (item)
+    {
+      QRect item_rect = temp_list->visualItemRect(item);
+      qt_item_height = item_rect.height();
+    }
+
+    /* Calculate spacing: item height - text height */
+    spacing = (qt_item_height > char_height) ? (qt_item_height - char_height) : 2;
+
+    delete temp_list;
+  }
+
+  *h += spacing;
 }
 
 extern "C" void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
@@ -348,11 +377,108 @@ extern "C" void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   }
   else
   {
-    (*x) += 2 * 9;  /* base borders: 18 pixels (measured: widget_width - viewport_width) */
-    (*y) += 2 * 9;  /* base borders: 18 pixels (measured: widget_height - viewport_height) */
+    /* Measure list widget borders dynamically */
+    static int qt_list_border_x = -1;
+    static int qt_list_border_y = -1;
+    static int qt_editbox_height = -1;
 
+    /* One-time measurement of list borders */
+    if (qt_list_border_x == -1)
+    {
+      /* Create temporary list to measure frame borders */
+      IupQtListWidget* temp_list = new IupQtListWidget(NULL);
+      temp_list->setMinimumSize(0, 0);
+      temp_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+      temp_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+      temp_list->show();
+
+      QSize widget_size = temp_list->size();
+      QSize viewport_size = temp_list->viewport()->size();
+
+      qt_list_border_x = widget_size.width() - viewport_size.width();
+      qt_list_border_y = widget_size.height() - viewport_size.height();
+
+      delete temp_list;
+    }
+
+    /* One-time measurement of edit box height */
+    if (qt_editbox_height == -1)
+    {
+      QLineEdit* temp_edit = new QLineEdit();
+      temp_edit->show();
+      QSize edit_size = temp_edit->size();
+      qt_editbox_height = edit_size.height();
+
+      delete temp_edit;
+    }
+
+    /* Capture IUP's calculated width before adding borders */
+    int x_before = *x;
+
+    /* Add base list borders */
+    (*x) += qt_list_border_x;
+    (*y) += qt_list_border_y;
+
+    /* Qt's QListWidget uses actual font metrics for text width, which differs from
+       IUP's char_width * num_chars calculation. We need to measure the compensation. */
+    static int qt_list_width_per_char = -1;
+    if (qt_list_width_per_char == -1)
+    {
+      /* Measure width per character using Qt's actual font metrics */
+      int actual_width = iupdrvFontGetStringWidth(ih, "XXXXXXXXX");  /* 9 chars */
+      int iup_calculated_width = x_before;  /* IUP calculated this based on char_width */
+
+      /* Calculate compensation per character */
+      qt_list_width_per_char = (actual_width - iup_calculated_width + 8) / 9;  /* +8 for rounding */
+    }
+
+    /* Add Qt's width compensation based on the number of characters */
+    int char_width, char_height;
+    iupdrvFontGetCharSize(ih, &char_width, &char_height);
+    int num_chars = x_before / char_width;  /* Calculate number of characters from IUP width */
+    int compensation = qt_list_width_per_char * num_chars;
+
+    (*x) += compensation;
+
+    /* Handle EDITBOX composite widget */
     if (ih->data->has_editbox)
-      (*y) += 2*3;  /* internal border between editbox and list */
+    {
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+
+      if (visiblelines > 0)
+      {
+        /* VISIBLELINES includes the entry line. */
+        int char_width, char_height;
+        iupdrvFontGetCharSize(ih, &char_width, &char_height);
+        int item_height = char_height;
+        iupdrvListAddItemSpace(ih, &item_height);
+
+        (*y) -= item_height;
+      }
+
+      /* Add entry widget height */
+      (*y) += qt_editbox_height;
+
+      /* Add scrollbar height for list part if scrollbars enabled */
+      if (ih->data->sb && !visiblelines)
+      {
+        int sb_size = iupdrvGetScrollbarSize();
+        (*y) += sb_size;
+      }
+    }
+    else
+    {
+      /* Plain list with scrollbars */
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+
+      /* With ScrollBarAsNeeded policy, the horizontal scrollbar appears
+       * inside the viewport, taking space from content height. */
+      if (ih->data->sb && !visiblelines)
+      {
+        int sb_size = iupdrvGetScrollbarSize();
+        (*y) += sb_size;
+      }
+    }
   }
 }
 
@@ -506,6 +632,61 @@ extern "C" void iupdrvListRemoveAllItems(Ihandle* ih)
   }
 
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+}
+
+extern "C" int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
+{
+  /* Qt list doesn't support setting image handles directly in this way.
+   * Images are managed through the IMAGE attribute with qtListSetImageAttrib.
+   * This function is called during drag-drop but Qt handles this differently. */
+  (void)ih;
+  (void)id;
+  (void)hImage;
+  return 0;
+}
+
+extern "C" void* iupdrvListGetImageHandle(Ihandle* ih, int id)
+{
+  if (ih->data->is_dropdown)
+  {
+    QComboBox* combo = (QComboBox*)ih->handle;
+
+    if (!combo || id < 1 || id > combo->count())
+    {
+      return NULL;
+    }
+
+    QVariant img_var = combo->itemData(id - 1, Qt::UserRole + 1);
+
+    if (img_var.canConvert<QPixmap*>())
+    {
+      QPixmap* pixmap = img_var.value<QPixmap*>();
+      return (void*)pixmap;
+    }
+  }
+  else
+  {
+    QListWidget* list = (QListWidget*)ih->handle;
+
+    if (ih->data->has_editbox)
+      list = (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST");
+
+    if (!list || id < 1 || id > list->count())
+      return NULL;
+
+    QListWidgetItem* item = list->item(id - 1);
+    if (!item)
+      return NULL;
+
+    QVariant img_var = item->data(Qt::UserRole + 1);
+    if (img_var.canConvert<QPixmap*>())
+    {
+      QPixmap* pixmap = img_var.value<QPixmap*>();
+      return (void*)pixmap;
+    }
+  }
+
+  return NULL;
 }
 
 /****************************************************************************
@@ -1465,6 +1646,25 @@ static int qtListMapMethod(Ihandle* ih)
     /* Set size policy to allow the list to expand naturally */
     list->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
+    /* For EDITBOX with VISIBLELINES, constrain the list height to show exactly (VISIBLELINES-1) items */
+    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+    if (visiblelines > 0)
+    {
+      /* Calculate list height: items + borders */
+      int char_width, char_height;
+      iupdrvFontGetCharSize(ih, &char_width, &char_height);
+      int item_height = char_height;
+      iupdrvListAddItemSpace(ih, &item_height);
+
+      int num_items_in_list = visiblelines - 1;  /* Subtract 1 for the entry */
+      int list_content_height = num_items_in_list * item_height;
+
+      /* Add list borders */
+      int list_total_height = list_content_height + 4;
+
+      list->setMaximumHeight(list_total_height);
+    }
+
     /* Connect edit box signals */
     QObject::connect(edit, &QLineEdit::textChanged, [edit, ih]() {
       qtListEditTextChanged(edit, ih);
@@ -1633,62 +1833,4 @@ extern "C" void iupdrvListInitClass(Iclass* ic)
 
   /* Image support */
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, qtListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-}
-
-/* Image handle functions for drag-drop operations */
-extern "C" int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
-{
-  /* Qt list doesn't support setting image handles directly in this way.
-   * Images are managed through the IMAGE attribute with qtListSetImageAttrib.
-   * This function is called during drag-drop but Qt handles this differently. */
-  (void)ih;
-  (void)id;
-  (void)hImage;
-  return 0;
-}
-
-extern "C" void* iupdrvListGetImageHandle(Ihandle* ih, int id)
-{
-  /* Retrieve the QPixmap stored in the list item at position id */
-  if (ih->data->is_dropdown)
-  {
-    QComboBox* combo = (QComboBox*)ih->handle;
-
-    if (!combo || id < 1 || id > combo->count())
-    {
-      return NULL;
-    }
-
-    QVariant img_var = combo->itemData(id - 1, Qt::UserRole + 1);
-
-    if (img_var.canConvert<QPixmap*>())
-    {
-      QPixmap* pixmap = img_var.value<QPixmap*>();
-      return (void*)pixmap;
-    }
-  }
-  else
-  {
-    QListWidget* list = (QListWidget*)ih->handle;
-
-    /* Check if composite widget (EDITBOX without dropdown) */
-    if (ih->data->has_editbox)
-      list = (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST");
-
-    if (!list || id < 1 || id > list->count())
-      return NULL;
-
-    QListWidgetItem* item = list->item(id - 1);
-    if (!item)
-      return NULL;
-
-    QVariant img_var = item->data(Qt::UserRole + 1);
-    if (img_var.canConvert<QPixmap*>())
-    {
-      QPixmap* pixmap = img_var.value<QPixmap*>();
-      return (void*)pixmap;
-    }
-  }
-
-  return NULL;
 }

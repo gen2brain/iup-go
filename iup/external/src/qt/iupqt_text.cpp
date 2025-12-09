@@ -1502,8 +1502,8 @@ static int qtTextMapMethod(Ihandle* ih)
   {
     IupQtLineEdit* edit = new IupQtLineEdit(ih);
 
-    /* The sizeHint() override in IupQtLineEdit returns minimal size (1 character width)
-     * to match GTK's gtk_entry_set_width_chars(1) behavior. */
+    /* Set explicit text margins */
+    edit->setTextMargins(2, 2, 2, 2);
 
     /* Connect signals */
     QObject::connect(edit, &QLineEdit::textChanged, [ih]() {
