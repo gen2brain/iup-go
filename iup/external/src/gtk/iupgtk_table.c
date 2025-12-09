@@ -1289,7 +1289,7 @@ static int gtkTableMapMethod(Ihandle* ih)
       {
         g_object_set(G_OBJECT(renderer), "editable", TRUE, NULL);
 
-        // Verify it was set
+        /* Verify it was set */
         gboolean is_editable = FALSE;
         g_object_get(G_OBJECT(renderer), "editable", &is_editable, NULL);
       }

@@ -199,7 +199,54 @@ void iupgtkSetPosSize(GtkContainer* parent, GtkWidget* widget, int x, int y, int
   iupgtkNativeContainerMove((GtkWidget*)parent, widget, x, y);
 
   if (width > 0 && height > 0)
-    gtk_widget_set_size_request(widget, width, height);
+  {
+    /* Check if VISIBLELINES is set, if so, use IUP's calculated height directly */
+    const char* visiblelines_set = (const char*)g_object_get_data(G_OBJECT(widget), "iup-visiblelines-set");
+    if (visiblelines_set)
+    {
+      /* IUP's calculated height includes proper borders */
+      gtk_widget_set_size_request(widget, width, height);
+
+      /* For editbox lists (VBox container), also find and set size_request on scrolled_window child */
+      if (GTK_IS_BOX(widget))
+      {
+        GList* children = gtk_container_get_children(GTK_CONTAINER(widget));
+        for (GList* l = children; l != NULL; l = l->next)
+        {
+          GtkWidget* child = GTK_WIDGET(l->data);
+          const char* sw_flag = (const char*)g_object_get_data(G_OBJECT(child), "iup-visiblelines-scrolled");
+          if (sw_flag)
+          {
+            /* Calculate scrolled_window height (total - entry height) */
+            int entry_h = 0;
+            for (GList* le = children; le != NULL; le = le->next)
+            {
+              GtkWidget* w = GTK_WIDGET(le->data);
+              if (GTK_IS_ENTRY(w))
+              {
+                GtkRequisition req;
+#if GTK_CHECK_VERSION(3, 0, 0)
+                gtk_widget_get_preferred_size(w, &req, NULL);
+#else
+                gtk_widget_size_request(w, &req);
+#endif
+                entry_h = req.height;
+                break;
+              }
+            }
+            int sw_h = (entry_h > 0) ? (height - entry_h) : height;
+            gtk_widget_set_size_request(child, -1, sw_h);
+            break;
+          }
+        }
+        g_list_free(children);
+      }
+    }
+    else
+    {
+      gtk_widget_set_size_request(widget, width, height);
+    }
+  }
 }
 
 IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
@@ -766,9 +813,6 @@ void iupgdkColorSetRGB(GdkColor* color, unsigned char r, unsigned char g, unsign
 IUP_SDK_API int iupdrvGetScrollbarSize(void)
 {
   static int size = 0;
-
-  if (iupStrBoolean(IupGetGlobal("OVERLAYSCROLLBAR")))
-    return 1;
 
   if (size == 0)
   {

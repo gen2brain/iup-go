@@ -266,5 +266,15 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
   {
     return iupStrReturnBoolean(iupgtkIsSystemDarkMode());
   }
+  if (iupStrEqual(name, "OVERLAYSCROLLBAR"))
+  {
+#if GTK_CHECK_VERSION(3, 16, 0)
+    gboolean overlay_scrolling;
+    g_object_get(gtk_settings_get_default(), "gtk-overlay-scrolling", &overlay_scrolling, NULL);
+    return iupStrReturnBoolean(overlay_scrolling);
+#else
+    return "NO";  /* GTK < 3.16 doesn't have overlay scrollbars */
+#endif
+  }
   return NULL;
 }
