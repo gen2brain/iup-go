@@ -115,6 +115,52 @@ int iupdrvTabsGetCurrentTab(Ihandle* ih)
   return pos;
 }
 
+void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+{
+  int width = 0;
+  int height = 0;
+  int text_width = 0;
+  int text_height = 0;
+
+  /* Measure text dimensions */
+  if (tab_title)
+  {
+    text_width = iupdrvFontGetStringWidth(ih, tab_title);
+    iupdrvFontGetCharSize(ih, NULL, &text_height);
+    width = text_width;
+    height = text_height;
+  }
+
+  /* Add image dimensions */
+  if (tab_image)
+  {
+    void* img = iupImageGetImage(tab_image, ih, 0, NULL);
+    if (img)
+    {
+      int img_w, img_h;
+      iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      width += img_w;
+      if (tab_title)
+        width += 3;  /* spacing between icon and text */
+      if (img_h > height)
+        height = img_h;
+    }
+  }
+
+  if (ih->data->horiz_padding > 0)
+    width += 2 * ih->data->horiz_padding;
+  else
+    width += 30;  /* Matches XmNotebook's actual tab rendering */
+
+  if (ih->data->vert_padding > 0)
+    height += 2 * ih->data->vert_padding;
+  else
+    height += 12;  /* Matches XmNotebook's actual tab rendering */
+
+  if (tab_width) *tab_width = width;
+  if (tab_height) *tab_height = height;
+}
+
 static void motTabsUpdatePageNumber(Ihandle* ih)
 {
   int pos, old_pos;

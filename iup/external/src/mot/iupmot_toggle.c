@@ -71,8 +71,13 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
     (void)ih;
 
     (*x) += 3 + check_box + 3;
+#ifdef IUP_USE_XFT
+    if ((*y) < 3 + check_box + 7) (*y) = 3 + check_box + 7;
+    else (*y) += 3+7;
+#else
     if ((*y) < 3 + check_box + 5) (*y) = 3 + check_box + 5;
     else (*y) += 3+5;
+#endif
 
     if (str && str[0])
       (*x) += 4;
