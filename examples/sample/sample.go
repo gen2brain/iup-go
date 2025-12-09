@@ -118,6 +118,7 @@ func main() {
 	iup.SetAttribute(list2, "3", "Item 3 Text")
 	iup.SetAttribute(list2, "4", "Item 4 Text")
 	iup.SetAttribute(list2, "TIP", "List 2")
+	iup.SetAttribute(list2, "VISIBLEITEMS", "3")
 
 	list3 := iup.List()
 	iup.SetAttribute(list3, "EDITBOX", "YES")

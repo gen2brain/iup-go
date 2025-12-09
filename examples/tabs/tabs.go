@@ -20,8 +20,6 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	iup.SetGlobal("UTF8MODE", "YES")
-
 	driver := iup.GetGlobal("DRIVER")
 
 	// Log widget

@@ -58,8 +58,6 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	iup.SetGlobal("UTF8MODE", "Yes")
-
 	tree1 := iup.Tree()
 	iup.SetHandle("tree1", tree1)
 

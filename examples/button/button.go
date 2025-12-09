@@ -10,8 +10,6 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	iup.SetGlobal("UTF8MODE", "YES")
-
 	text := iup.Text()
 
 	text.SetAttribute("READONLY", "YES")

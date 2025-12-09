@@ -20,8 +20,6 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	iup.SetGlobal("UTF8MODE", "Yes")
-
 	list := iup.List()
 	iup.SetAttributes(list, "1=Gold, 2=Silver, 3=Bronze, 4=Tecgraf, 5=None,"+
 		"SHOWIMAGE=YES, SHOWDRAGDROP=YES, XXX_SPACING=4, VALUE=4")

@@ -19,8 +19,6 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	iup.SetGlobal("UTF8MODE", "YES")
-
 	// Simulate a large dataset
 	dataset = make([][]string, 100000)
 	for i := 0; i < 100000; i++ {
