@@ -437,9 +437,6 @@ IUP_API Ihandle* IupClassInfoDialog(Ihandle* parent)
 	IupSetAttributes(box,"MARGIN=8x8, GAP=4");
 
   dialog = IupDialog(box);
-  IupSetAttribute(dialog, "RESIZE", "NO");
-  IupSetAttribute(dialog, "MAXBOX", "NO");
-  IupSetAttribute(dialog, "MINBOX", "NO");
   IupSetAttributeHandle(dialog, "DEFAULTENTER", ok_bt);
   IupSetAttributeHandle(dialog, "DEFAULTESC", ok_bt);
   if (parent) IupSetAttributeHandle(dialog, "PARENTDIALOG", parent);

@@ -791,9 +791,6 @@ static Ihandle* iGlobalsCreateDialog(void)
   iupAttribSet(dlg, "_IUP_PROPLIST2", (char*)list2);
   iupAttribSet(dlg, "_IUP_FUNCLIST", (char*)list3);
   iupAttribSet(dlg, "_IUP_NAMESLIST", (char*)list4);
-  IupSetAttribute(dlg, "SIZE", "250x");
-  IupSetAttribute(dlg, "MINBOX", "NO");
-  IupSetAttribute(dlg, "MAXBOX", "NO");
 
   return dlg;
 }
