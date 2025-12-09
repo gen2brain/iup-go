@@ -28,8 +28,8 @@
   if (self.orientation == IupCocoaTabBarHorizontal)
   {
     NSUInteger tabListWidth = self.allowsTabListMenu ? kWidthOfTabList : 0;
-    CGFloat leftPadding = 4; // Add a small padding to disconnect the first tab
-    CGFloat rightPadding = 12; // This was the existing implicit padding
+    CGFloat leftPadding = 4; /* Add a small padding to disconnect the first tab */
+    CGFloat rightPadding = 12; /* This was the existing implicit padding */
     NSUInteger totalWidthOfTabBarView = [self frame].size.width - tabListWidth - leftPadding - rightPadding;
     NSUInteger averageWidth = 0;
 
@@ -41,8 +41,8 @@
     }
 
     CGFloat x = tabListWidth + leftPadding + (index * averageWidth);
-    CGFloat y = 0; // Default for IupCocoaTabPositionTop
-    // If position is bottom, tabs are aligned to the top of the bar
+    CGFloat y = 0; /* Default for IupCocoaTabPositionTop */
+    /* If position is bottom, tabs are aligned to the top of the bar */
     if (self.tabPosition == IupCocoaTabPositionBottom)
     {
       y = [self frame].size.height - kTabCellHeight;
@@ -53,24 +53,24 @@
     NSRect rect = NSMakeRect(x, y, width, height);
     return rect;
   }
-  else // IupCocoaTabBarVertical
+  else /* IupCocoaTabBarVertical */
   {
     NSUInteger tabListHeight = self.allowsTabListMenu ? kHeightOfTabList : 0;
     CGFloat viewHeight = [self frame].size.height;
 
     CGFloat x = 0;
-    // Since the view is NOT flipped, y=0 is at the bottom.
-    // We must calculate the y-origin (bottom-left) from the top.
+    /* Since the view is NOT flipped, y=0 is at the bottom. */
+    /* We must calculate the y-origin (bottom-left) from the top. */
     CGFloat y = viewHeight - tabListHeight - ((index + 1) * kTabCellHeight);
-    CGFloat width = [self frame].size.width; // Use the full width of the tab bar
-    CGFloat height = kTabCellHeight; // Use fixed kTabCellHeight
+    CGFloat width = [self frame].size.width; /* Use the full width of the tab bar */
+    CGFloat height = kTabCellHeight; /* Use fixed kTabCellHeight */
 
     NSRect rect = NSMakeRect(x, y, width, height);
     return rect;
   }
 }
 
-// Rect for left most (horizontal) or top (vertical) tab list control
+/* Rect for left most (horizontal) or top (vertical) tab list control */
 - (NSRect)rectForTabListControl
 {
   if (!self.allowsTabListMenu)
@@ -96,7 +96,7 @@
 {
   if (self.allowsTabListMenu)
   {
-    // Check tab list control
+    /* Check tab list control */
     NSRect rect = [self rectForTabListControl];
     if (NSPointInRect(p, rect))
     {
@@ -104,7 +104,7 @@
     }
   }
 
-  // Check all tabs path
+  /* Check all tabs path */
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; ++index)
   {
@@ -129,7 +129,7 @@
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
     [menu insertItemWithTitle:[tab title] action:@selector(popupMenuDidChoosed:) keyEquivalent:@"" atIndex:index];
   }
-  return menu; // Return the retained ivar
+  return menu; /* Return the retained ivar */
 }
 
 - (void)popupMenuDidChoosed:(NSMenuItem*)item
@@ -140,8 +140,8 @@
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
     NSRect tabRect = [tab frame];
     NSRect tabBarViewRect = [self bounds];
-    // If the selected tab is not fully shown in the tabbar view, we
-    // then exchange it with first(0 index) tab, and then active it.
+    /* If the selected tab is not fully shown in the tabbar view, we */
+    /* then exchange it with first(0 index) tab, and then active it. */
     if (!CGRectContainsRect(tabBarViewRect, tabRect))
     {
       NSUInteger tabIndex = [[self tabs] indexOfObject:tab];
@@ -193,7 +193,7 @@
       NSRect secondeRect = NSMakeRect(midX, minY, w/2, h);
       if (NSPointInRect(p, firstRect))
       {
-        ret = index; // Use current index, not index-1, to ensure correct insertion point
+        ret = index; /* Use current index, not index-1, to ensure correct insertion point */
         ret = ret >= 0 ? ret : 0;
         if (destinationIndex != -1 && index == destinationIndex)
         {
@@ -227,7 +227,7 @@
         }
       }
     }
-    else // Vertical
+    else /* Vertical */
     {
       CGFloat midY = NSMidY(rect);
       CGFloat minY = NSMinY(rect);
@@ -312,31 +312,31 @@
   self = [super initWithFrame:frame];
   if (self)
   {
-    tabs = [[NSMutableArray alloc] init]; // Alloc and retain
+    tabs = [[NSMutableArray alloc] init]; /* Alloc and retain */
 
-    // Give all colors a default value if none given
-    // Use system-adaptive colors for dark/light mode
+    /* Give all colors a default value if none given */
+    /* Use system-adaptive colors for dark/light mode */
     bgColor = [[NSColor controlBackgroundColor] retain];
-    tabBGColor = [[NSColor underPageBackgroundColor] retain]; // Use for inactive tabs
+    tabBGColor = [[NSColor underPageBackgroundColor] retain]; /* Use for inactive tabs */
     tabActivedBGColor = [[NSColor windowBackgroundColor] retain];
     tabBorderColor = [[NSColor separatorColor] retain];
     tabTitleColor = [[NSColor secondaryLabelColor] retain];
     tabActivedTitleColor = [[NSColor labelColor] retain];
     smallControlColor = [[NSColor secondaryLabelColor] retain];
 
-    // Font
+    /* Font */
     tabFont = [[NSFont fontWithName:@"Lucida Grande" size:11] retain];
 
     destinationIndex = -1;
     sourceIndex = -1;
     isDragging = NO;
 
-    orientation = IupCocoaTabBarHorizontal; // Default orientation
-    tabPosition = IupCocoaTabPositionTop; // Default position
-    allowsDragging = NO; // Disabled by default
-    allowsTabListMenu = NO; // Disabled by default
-    showsCloseButtonOnHover = NO; // Default to persistent close buttons
-    allowsAddingTabsByDoubleClick = NO; // Disabled by default
+    orientation = IupCocoaTabBarHorizontal; /* Default orientation */
+    tabPosition = IupCocoaTabPositionTop; /* Default position */
+    allowsDragging = NO; /* Disabled by default */
+    allowsTabListMenu = NO; /* Disabled by default */
+    showsCloseButtonOnHover = NO; /* Default to persistent close buttons */
+    allowsAddingTabsByDoubleClick = NO; /* Disabled by default */
   }
   return self;
 }
@@ -374,9 +374,9 @@
 
 - (void)resizeWithOldSuperviewSize:(NSSize)oldSize
 {
-  // The frame is now managed by the IupTabsRootView's layout method,
-  // which correctly positions the bar based on TABTYPE.
-  // We just need to mark for display and layout.
+  /* The frame is now managed by the IupTabsRootView's layout method, */
+  /* which correctly positions the bar based on TABTYPE. */
+  /* We just need to mark for display and layout. */
   [self setNeedsDisplay:YES];
   [self setNeedsLayout:YES];
 }
@@ -405,7 +405,7 @@
 
 - (void)mouseUp:(NSEvent*)event
 {
-  if (self.allowsAddingTabsByDoubleClick && event.clickCount == 2) // We capture user double click on tabbar view
+  if (self.allowsAddingTabsByDoubleClick && event.clickCount == 2) /* We capture user double click on tabbar view */
   {
     NSPoint p =[event locationInWindow];
     p = [self convertPoint:p fromView:[[self window] contentView]];
@@ -422,14 +422,14 @@
 {
   [super drawRect:dirtyRect];
 
-  // Drawing background color of Tab bar view.
+  /* Drawing background color of Tab bar view. */
   [bgColor set];
   NSRect rect = [self frame];
   rect.origin = NSZeroPoint;
   NSRectFill(rect);
 
 
-  // Draw tab list control
+  /* Draw tab list control */
   if (self.allowsTabListMenu)
   {
     [tabListControlPath release];
@@ -451,12 +451,12 @@
     [tabListControlPath lineToPoint:p3];
     [tabListControlPath lineToPoint:p1];
 
-    // Use tab active background color to set tab list triangle
+    /* Use tab active background color to set tab list triangle */
     [[self tabActivedBGColor] set];
     [tabListControlPath fill];
   }
 
-  // Drawing border line
+  /* Drawing border line */
   NSPoint start;
   NSPoint end;
   [NSBezierPath setDefaultLineWidth:1.0];
@@ -465,29 +465,29 @@
   switch(self.tabPosition)
   {
     case IupCocoaTabPositionTop:
-      // Border at bottom of view
+      /* Border at bottom of view */
       start = NSMakePoint(0, 1);
       end = NSMakePoint(NSMaxX(rect), 1);
       break;
     case IupCocoaTabPositionBottom:
-      // Border at top of view
+      /* Border at top of view */
       start = NSMakePoint(0, NSMaxY(rect) - 1);
       end = NSMakePoint(NSMaxX(rect), NSMaxY(rect) - 1);
       break;
     case IupCocoaTabPositionLeft:
-      // Border at right of view
+      /* Border at right of view */
       start = NSMakePoint(NSMaxX(rect) - 1, 0);
       end = NSMakePoint(NSMaxX(rect) - 1, NSMaxY(rect));
       break;
     case IupCocoaTabPositionRight:
-      // Border at left of view
+      /* Border at left of view */
       start = NSMakePoint(1, 0);
       end = NSMakePoint(1, NSMaxY(rect));
       break;
   }
   [NSBezierPath strokeLineFromPoint:start toPoint:end];
 
-  // Reset all tool tips
+  /* Reset all tool tips */
   [self removeAllToolTips];
   NSInteger index = 0;
   for (index = 0; index < [tabs count]; ++index)
@@ -517,8 +517,8 @@
 
   [tabs addObject:tab];
 
-  // If the new tab(add it to last) is not fully shown in the tabbar view, we
-  // then exchange it with first(0 index) tab, and then set it as active.
+  /* If the new tab(add it to last) is not fully shown in the tabbar view, we */
+  /* then exchange it with first(0 index) tab, and then set it as active. */
   NSUInteger tabIndex = [[self tabs] indexOfObject:tab];
   NSRect tabBarViewRect = [self bounds];
   NSRect tabRect = [self tabRectFromIndex:tabIndex];
@@ -568,12 +568,12 @@
   for (index = 0; index < [tabs count]; ++ index)
   {
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
-    if (NSPointInRect(p, [tab frame])) // Use frame, not path
+    if (NSPointInRect(p, [tab frame])) /* Use frame, not path */
     {
       [tab setAsActiveTab];
     }
 
-    // forward mouse down to tab cell
+    /* forward mouse down to tab cell */
     [tab mouseDown:theEvent];
   };
 
@@ -592,7 +592,7 @@
   for (index = 0; index < [tabs count]; ++ index)
   {
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
-    // forward mouse moved to tab cell
+    /* forward mouse moved to tab cell */
     [tab mouseMoved:theEvent];
   };
 
@@ -606,7 +606,7 @@
   [trackingArea release];
 
   NSTrackingAreaOptions options = (NSTrackingActiveAlways | NSTrackingInVisibleRect | NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved);
-  trackingArea = [[NSTrackingArea alloc] initWithRect:[self frame] options:options owner:self userInfo:nil]; // Create and retain new one
+  trackingArea = [[NSTrackingArea alloc] initWithRect:[self frame] options:options owner:self userInfo:nil]; /* Create and retain new one */
   [self addTrackingArea:trackingArea];
 }
 
@@ -617,7 +617,7 @@
   [trackingArea release];
 
   NSTrackingAreaOptions options = (NSTrackingActiveAlways | NSTrackingInVisibleRect | NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved);
-  trackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds] options:options owner:self userInfo:nil]; // Create and retain new one
+  trackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds] options:options owner:self userInfo:nil]; /* Create and retain new one */
   [self addTrackingArea:trackingArea];
 }
 
@@ -646,14 +646,14 @@
       [draggingImage release];
       draggingImage = [[IupCocoaTabImage imageWithIupCocoaTabCell:draggingTab] retain];
       [draggingTab setIsDraggingTab:YES];
-      // Save source index
+      /* Save source index */
       sourceIndex = [tabs indexOfObject:draggingTab];
       [tabs removeObject:draggingTab];
       [self redraw];
 
-      // Modern drag-and-drop requires a pasteboard item.
+      /* Modern drag-and-drop requires a pasteboard item. */
       NSPasteboardItem *pbItem = [[[NSPasteboardItem alloc] init] autorelease];
-      // Set dummy data to satisfy the API.
+      /* Set dummy data to satisfy the API. */
       [pbItem setData:[NSData data] forType:NSPasteboardTypeString];
 
       NSPasteboard *pasteboard = [NSPasteboard pasteboardWithName:NSPasteboardNameDrag];
@@ -672,7 +672,7 @@
   p.x -= (draggingTab.frame.size.width / 2);
   p.y -= (draggingTab.frame.size.height / 2);
 
-  // Get the pasteboard we prepared at the start of the drag.
+  /* Get the pasteboard we prepared at the start of the drag. */
   NSPasteboard *pasteboard = [NSPasteboard pasteboardWithName:NSPasteboardNameDrag];
 
   [self dragImage:draggingImage at:p offset:offset event:theEvent pasteboard:pasteboard source:self slideBack:NO];
@@ -732,7 +732,7 @@
   destinationIndex = [self destinationCellIndexFromPoint:viewPoint];
   if (destinationIndex == -1)
   {
-    // Dropped in blank area, restore to source index
+    /* Dropped in blank area, restore to source index */
     [tabs removeObject:draggingTab];
     [tabs insertObject:draggingTab atIndex:sourceIndex];
   }
@@ -894,7 +894,7 @@
     CGFloat minY = NSMinY(tabRect);
     rect = NSMakeRect(maxX - tabRect.size.height, minY, tabRect.size.height, tabRect.size.height);
   }
-  else // Vertical
+  else /* Vertical */
   {
     CGFloat maxX = NSMaxX(tabRect);
     CGFloat minY = NSMinY(tabRect);
@@ -932,13 +932,13 @@
   [closeButtonPath stroke];
 }
 
-// tab cell draw itself in this method, called in TabBarView's drawRect method
+/* tab cell draw itself in this method, called in TabBarView's drawRect method */
 - (void)draw
 {
   NSRect rect = [self frame];
   [path release];
-  path = [[NSBezierPath bezierPathWithRect:rect] retain]; // Use simple rectangle
-  [path setLineWidth:1.0]; // Use 1px for separators
+  path = [[NSBezierPath bezierPathWithRect:rect] retain]; /* Use simple rectangle */
+  [path setLineWidth:1.0]; /* Use 1px for separators */
 
   if ([self isActived])
   {
@@ -950,24 +950,24 @@
   }
   [path fill];
 
-  // Draw separators instead of full borders
+  /* Draw separators instead of full borders */
   [[[self tabBarView] tabBorderColor] set];
   NSUInteger myIndex = [[[self tabBarView] tabs] indexOfObject:self];
   NSUInteger tabCount = [[[self tabBarView] tabs] count];
 
   if ([[self tabBarView] orientation] == IupCocoaTabBarHorizontal)
   {
-    // Draw vertical separator on the right, if not the last tab
+    /* Draw vertical separator on the right, if not the last tab */
     if (myIndex < tabCount - 1)
     {
       [NSBezierPath strokeLineFromPoint:NSMakePoint(NSMaxX(rect), NSMinY(rect))
                               toPoint:NSMakePoint(NSMaxX(rect), NSMaxY(rect))];
     }
   }
-  else // Vertical
+  else /* Vertical */
   {
-    // Draw horizontal separator at the bottom, if not the last tab
-    // (Last tab is index count-1, which is visually at the bottom)
+    /* Draw horizontal separator at the bottom, if not the last tab */
+    /* (Last tab is index count-1, which is visually at the bottom) */
     if (myIndex < tabCount - 1)
     {
       [NSBezierPath strokeLineFromPoint:NSMakePoint(NSMinX(rect), NSMinY(rect))
@@ -980,7 +980,7 @@
   NSColor *fontColor = [self isActived] ? [[self tabBarView] tabActivedTitleColor] : [[self tabBarView] tabTitleColor];
   NSMutableParagraphStyle* p = [[[NSMutableParagraphStyle alloc] init] autorelease];
 
-  // Both horizontal and vertical tabs use centered text
+  /* Both horizontal and vertical tabs use centered text */
   p.alignment = kCTTextAlignmentCenter;
   p.lineBreakMode = NSLineBreakByTruncatingTail;
 
@@ -1008,11 +1008,11 @@
     NSRect imageRect;
     imageRect.size = NSMakeSize(imageSize, imageSize);
 
-    // The layout *within* a tab is always horizontal (Image | Text | Close)
-    // regardless of the tab bar's orientation.
-    imageRect.origin.x = tabFrame.origin.x + 8.0;
+    /* The layout *within* a tab is always horizontal (Image | Text | Close) */
+    /* regardless of the tab bar's orientation. */
+    imageRect.origin.x = tabFrame.origin.x + 6.0;
     imageRect.origin.y = tabFrame.origin.y + (tabFrame.size.height - imageSize) / 2.0;
-    leftOffset = 8.0 + imageSize + imagePadding;
+    leftOffset = 6.0 + imageSize + imagePadding;
 
     [self.image drawInRect:imageRect
                   fromRect:NSZeroRect
@@ -1023,19 +1023,19 @@
   NSRect titleRect = [self frame];
   CGFloat fontHeight = self.titleAttributedString.size.height;
 
-  // The text drawing logic is also identical for both orientations.
-  // The text is vertically centered and positioned between the image and the close button.
+  /* The text drawing logic is also identical for both orientations. */
+  /* The text is vertically centered and positioned between the image and the close button. */
   int yOffset = (titleRect.size.height - fontHeight) / 2.0;
   titleRect.size.height = fontHeight;
   titleRect.origin.y += yOffset;
 
-  CGFloat leftInset = (leftOffset > 0.0) ? leftOffset : 10.0;
+  CGFloat leftInset = (leftOffset > 0.0) ? leftOffset : 8.0;
   CGFloat rightInset;
 
   if ([self hasCloseButton])
   {
-    // Reserve a square on the right for the close button.
-    // The button rect is (width - height, y, height, height).
+    /* Reserve a square on the right for the close button. */
+    /* The button rect is (width - height, y, height, height). */
     rightInset = [self frame].size.height;
   }
   else
@@ -1079,7 +1079,7 @@
     [tab setIsActived:NO];
   }
 
-  // Call delegate protocol methods
+  /* Call delegate protocol methods */
   if ([[[self tabBarView] delegate] respondsToSelector:@selector(tabWillActive:)])
   {
     [[[self tabBarView] delegate] tabWillActive:self];
@@ -1106,16 +1106,21 @@
 
   if (NSPointInRect(p ,[self closeButtonRect]))
   {
-    // Delete this tab cell
+    /* Delete this tab cell */
     id delegate = [[self tabBarView] delegate];
+    BOOL shouldClose = YES;
     if ([delegate respondsToSelector:@selector(tabWillClose:)])
     {
-      [delegate tabWillClose:self];
+      shouldClose = [delegate tabWillClose:self];
     }
-    [[self tabBarView] removeTabCell:self];
-    if ([delegate respondsToSelector:@selector(tabDidClosed:)])
+
+    if (shouldClose)
     {
-      [delegate tabDidClosed:self];
+      [[self tabBarView] removeTabCell:self];
+      if ([delegate respondsToSelector:@selector(tabDidClosed:)])
+      {
+        [delegate tabDidClosed:self];
+      }
     }
   }
 
@@ -1125,7 +1130,7 @@
 {
   if (![self hasCloseButton] || ![[self tabBarView] showsCloseButtonOnHover])
   {
-    if (canDrawCloseButton) // Ensure it's turned off if mode changed
+    if (canDrawCloseButton) /* Ensure it's turned off if mode changed */
     {
       canDrawCloseButton = NO;
     }
@@ -1190,12 +1195,12 @@
   IupCocoaTabImage *image = [[[IupCocoaTabImage alloc] initWithSize:rect.size] autorelease];
   [image setTab:tabCell];
 
-  // Reset tab cell's frame
+  /* Reset tab cell's frame */
   [[image tab] setFrame:rect];
 
   [image lockFocus];
 
-  // Transparent
+  /* Transparent */
   [[NSColor clearColor] set];
   NSRectFill(rect);
 

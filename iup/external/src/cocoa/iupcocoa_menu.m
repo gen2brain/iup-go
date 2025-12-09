@@ -246,7 +246,7 @@ static NSMenuItem* cocoaMenuFindTitledItem(NSMenu* menu, NSString* title)
   {
     NSString* itemTitle = [item title];
 
-    // If the item title is empty (common for the App Menu wrapper at index 0, or IupItem wrappers), check the submenu title.
+    /* If the item title is empty (common for the App Menu wrapper at index 0, or IupItem wrappers), check the submenu title. */
     if ((!itemTitle || [itemTitle length] == 0) && [item submenu]) {
       itemTitle = [[item submenu] title];
     }

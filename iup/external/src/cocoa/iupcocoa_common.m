@@ -812,7 +812,7 @@ void iupdrvSendKey(int key, int press)
 
   CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState);
 
-  if (press & 0x01) // Press
+  if (press & 0x01) /* Press */
   {
     CGEventRef event = CGEventCreateKeyboardEvent(source, (CGKeyCode)maccode, true);
     if (state != 0) CGEventSetFlags(event, (CGEventFlags)state);
@@ -820,7 +820,7 @@ void iupdrvSendKey(int key, int press)
     CFRelease(event);
   }
 
-  if (press & 0x02) // Release
+  if (press & 0x02) /* Release */
   {
     CGEventRef event = CGEventCreateKeyboardEvent(source, (CGKeyCode)maccode, false);
     if (state != 0) CGEventSetFlags(event, (CGEventFlags)state);
@@ -851,23 +851,23 @@ void iupdrvSendMouse(int x, int y, int bt, int status)
 
     /* IUP Spec: status: 1 (press), 0 (release), -1 (move), 2 (double-click). */
 
-    if (status == 1) // Press
+    if (status == 1) /* Press */
     {
       CGEventRef event = CGEventCreateMouseEvent(NULL, press_type, point, button);
       CGEventSetIntegerValueField(event, kCGMouseEventClickState, 1);
       CGEventPost(kCGHIDEventTap, event);
       CFRelease(event);
     }
-    else if (status == 0) // Release
+    else if (status == 0) /* Release */
     {
       CGEventRef event = CGEventCreateMouseEvent(NULL, release_type, point, button);
       CGEventSetIntegerValueField(event, kCGMouseEventClickState, 1);
       CGEventPost(kCGHIDEventTap, event);
       CFRelease(event);
     }
-    else if (status == 2) // Double-click (Generate full sequence)
+    else if (status == 2) /* Double-click (Generate full sequence) */
     {
-      // Click 1 (Count 1)
+      /* Click 1 (Count 1) */
       CGEventRef event_down1 = CGEventCreateMouseEvent(NULL, press_type, point, button);
       CGEventSetIntegerValueField(event_down1, kCGMouseEventClickState, 1);
       CGEventPost(kCGHIDEventTap, event_down1);
@@ -876,7 +876,7 @@ void iupdrvSendMouse(int x, int y, int bt, int status)
       CGEventSetIntegerValueField(event_up1, kCGMouseEventClickState, 1);
       CGEventPost(kCGHIDEventTap, event_up1);
 
-      // Click 2 (Count 2)
+      /* Click 2 (Count 2) */
       CGEventRef event_down2 = CGEventCreateMouseEvent(NULL, press_type, point, button);
       CGEventSetIntegerValueField(event_down2, kCGMouseEventClickState, 2);
       CGEventPost(kCGHIDEventTap, event_down2);
@@ -971,7 +971,7 @@ int iupcocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_button)
   if(2 == which_cocoa_button) return IUP_BUTTON2;
   if(3 == which_cocoa_button) return IUP_BUTTON4;
   if(4 == which_cocoa_button) return IUP_BUTTON5;
-  return (int)(which_cocoa_button + '0'); // Other buttons
+  return (int)(which_cocoa_button + '0'); /* Other buttons */
 }
 
 bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed)
@@ -1000,7 +1000,7 @@ bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEvent* the_event
 
     if([the_event modifierFlags] & NSEventModifierFlagControl && 0 == which_cocoa_button)
     {
-      which_cocoa_button = 1; // Ctrl-Left-click becomes a right-click
+      which_cocoa_button = 1; /* Ctrl-Left-click becomes a right-click */
     }
 
     int which_iup_button = iupcocoaCommonBaseIupButtonForCocoaButton(which_cocoa_button);

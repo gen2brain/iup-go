@@ -220,7 +220,7 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
     char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
     ns_string = [NSString stringWithUTF8String:stripped_str];
 
-    // Check if value contains newlines for multi-line support
+    /* Check if value contains newlines for multi-line support */
     has_newlines = (strchr(value, '\n') != NULL);
 
     if (stripped_str && stripped_str != value)
@@ -231,7 +231,7 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
     ns_string = @"";
   }
 
-  // Configure multi-line mode if needed
+  /* Configure multi-line mode if needed */
   if (has_newlines)
   {
     [the_label setUsesSingleLineMode:NO];
@@ -252,7 +252,7 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   BOOL need_attributed = [iup_font usesAttributes] || (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b));
 
-  // Get alignment setting to apply to paragraph style
+  /* Get alignment setting to apply to paragraph style */
   NSTextAlignment text_alignment = [the_label alignment];
 
   if (need_attributed)
@@ -281,7 +281,7 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
       [attr_str addAttribute:NSForegroundColorAttributeName value:color range:range];
     }
 
-    // Apply paragraph style for text alignment (required for attributed strings)
+    /* Apply paragraph style for text alignment (required for attributed strings) */
     NSMutableParagraphStyle* paragraph_style = [[NSMutableParagraphStyle alloc] init];
     [paragraph_style setAlignment:text_alignment];
     [attr_str addAttribute:NSParagraphStyleAttributeName value:paragraph_style range:NSMakeRange(0, [ns_string length])];
@@ -835,7 +835,7 @@ static int cocoaLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 
   NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
 
-  // Set background on the inner widget (text field or image view)
+  /* Set background on the inner widget (text field or image view) */
   if ([the_view isKindOfClass:[NSTextField class]])
   {
     NSTextField* text_field = (NSTextField*)the_view;
@@ -844,12 +844,12 @@ static int cocoaLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   }
   else if ([the_view isKindOfClass:[NSImageView class]])
   {
-    // For image labels, set background on the wrapper
+    /* For image labels, set background on the wrapper */
     [root_view setWantsLayer:YES];
     [[root_view layer] setBackgroundColor:[color CGColor]];
   }
 
-  // Set background on the wrapper view (event view)
+  /* Set background on the wrapper view (event view) */
   [root_view setWantsLayer:YES];
   [[root_view layer] setBackgroundColor:[color CGColor]];
 
@@ -1064,7 +1064,7 @@ static int cocoaLabelMapMethod(Ihandle* ih)
       [the_actual_label setSelectable:NO];
       [the_actual_label setFont:[NSFont systemFontOfSize:[NSFont systemFontSize]]];
 
-      // Set initial alignment based on ALIGNMENT attribute if already set
+      /* Set initial alignment based on ALIGNMENT attribute if already set */
       char* alignment = iupAttribGet(ih, "ALIGNMENT");
       if (alignment)
       {
@@ -1098,12 +1098,12 @@ static int cocoaLabelMapMethod(Ihandle* ih)
       {
         NSString* ns_string = [NSString stringWithUTF8String:title];
 
-        // Check if title contains newlines for multi-line support
+        /* Check if title contains newlines for multi-line support */
         BOOL has_newlines = (strchr(title, '\n') != NULL);
 
         if (has_newlines)
         {
-          // Configure for multi-line display
+          /* Configure for multi-line display */
           [(NSTextField*)the_actual_label setUsesSingleLineMode:NO];
           [[(NSTextField*)the_actual_label cell] setScrollable:NO];
           [[(NSTextField*)the_actual_label cell] setWraps:YES];

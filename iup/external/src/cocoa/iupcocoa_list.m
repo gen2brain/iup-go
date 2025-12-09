@@ -30,11 +30,11 @@
 #include "iupcocoa_drv.h"
 
 
-// Pasteboard type for internal list reordering (SHOWDRAGDROP=YES).
-// It must be a valid UTI string, preferably in reverse-DNS format.
+/* Pasteboard type for internal list reordering (SHOWDRAGDROP=YES). */
+/* It must be a valid UTI string, preferably in reverse-DNS format. */
 static NSPasteboardType const IupListPasteboardType = @"br.puc-rio.tecgraf.iup.list";
 
-// Pasteboard type for cross-list DND (DRAGDROPLIST=YES), carrying Ihandle pointer.
+/* Pasteboard type for cross-list DND (DRAGDROPLIST=YES), carrying Ihandle pointer. */
 static NSPasteboardType const IupInternalDndType = @"br.puc-rio.tecgraf.iup.dnd.internal.handle";
 
 static const CGFloat kIupCocoaDefaultWidthNSPopUpButton = 100.0;
@@ -48,7 +48,10 @@ static const void* IUP_COCOA_LIST_POPUPBUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_LIS
 static const void* IUP_COCOA_LIST_DELEGATE_OBJ_KEY = @"IUP_COCOA_LIST_DELEGATE_OBJ_KEY";
 static const void* IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY = @"IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY";
 
-// Forward declarations
+/* Shared row height for lists */
+static CGFloat s_cocoa_measured_row_height = -1.0;
+
+/* Forward declarations */
 static char* cocoaListGetValueAttrib(Ihandle* ih);
 static int cocoaListSetValueAttrib(Ihandle* ih, const char* value);
 static void cocoaListUpdateDragDrop(Ihandle* ih);
@@ -244,14 +247,21 @@ static int cocoaListGetMaxWidth(Ihandle* ih)
 
 static NSFont* cocoaGetNativeFont(Ihandle* ih)
 {
-  if (!ih)
-    return [NSFont systemFontOfSize:[NSFont systemFontSize]];
+  IupCocoaFont *iup_font = NULL;
 
-  IupCocoaFont *iup_font = iupcocoaGetFont(ih);
-  if (iup_font)
-    return [iup_font nativeFont];
+  if (ih)
+  {
+    iup_font = iupcocoaGetFont(ih);
+  }
 
-  return [NSFont systemFontOfSize:[NSFont systemFontSize]];
+  if (!iup_font)
+  {
+    /* Fallback to DEFAULTFONT */
+    const char* default_font = IupGetGlobal("DEFAULTFONT");
+    iup_font = iupcocoaFindFont(default_font);
+  }
+
+  return iup_font ? [iup_font nativeFont] : nil;
 }
 
 static void cocoaListCaretNotification(NSNotification* notification, Ihandle* ih)
@@ -439,7 +449,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    // iupcocoaKeyEvent will internally bubble the event up to the dialog if needed.
+    /* iupcocoaKeyEvent will internally bubble the event up to the dialog if needed. */
     BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, true);
 
     if (!handled)
@@ -612,24 +622,24 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
 
-  // Check if the user has ever configured the CONTEXTMENU attribute.
+  /* Check if the user has ever configured the CONTEXTMENU attribute. */
   if (!iupAttribGet(ih, "_IUPCOCOA_CONTEXTMENU_SET"))
   {
-    // If not, allow the default system menu to appear.
+    /* If not, allow the default system menu to appear. */
     return the_menu;
   }
 
-  // The attribute has been configured. Check its value.
+  /* The attribute has been configured. Check its value. */
   Ihandle* menu_ih = (Ihandle*)iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
 
   if(menu_ih && menu_ih->handle)
   {
-    // A valid custom menu is set; return it.
+    /* A valid custom menu is set; return it. */
     return (NSMenu*)menu_ih->handle;
   }
   else
   {
-    // The attribute was set to NULL; disable the context menu.
+    /* The attribute was set to NULL; disable the context menu. */
     return nil;
   }
 }
@@ -676,7 +686,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
   {
     int mac_key_code = [event keyCode];
-    // iupcocoaKeyEvent will internally bubble the event up to the dialog if needed.
+    /* iupcocoaKeyEvent will internally bubble the event up to the dialog if needed. */
     BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, true);
 
     if (!handled)
@@ -892,31 +902,31 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(control, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return NO;
 
-  // Give IUP key handler first chance at any command key (arrows, page up/down, delete, etc.)
-  // This allows K_ANY callbacks to intercept any key, not just text input keys
+  /* Give IUP key handler first chance at any command key (arrows, page up/down, delete, etc.) */
+  /* This allows K_ANY callbacks to intercept any key, not just text input keys */
   NSEvent* current_event = [NSApp currentEvent];
   if (current_event && [current_event type] == NSEventTypeKeyDown)
   {
     int mac_key_code = [current_event keyCode];
 
-    // First, let the control itself try to handle the key event.
+    /* First, let the control itself try to handle the key event. */
     BOOL handled = iupcocoaKeyEvent(ih, current_event, mac_key_code, true);
     if (handled)
-      return YES; // Returning YES prevents the default command.
+      return YES; /* Returning YES prevents the default command. */
 
-    // If not handled, allow the parent dialog's K_ANY to intercept it.
-    // This is needed because some controls (like NSTextView) consume navigation
-    // keys and do not propagate them up the responder chain, preventing the
-    // dialog's window-level handler from ever seeing the event.
+    /* If not handled, allow the parent dialog's K_ANY to intercept it. */
+    /* This is needed because some controls (like NSTextView) consume navigation */
+    /* keys and do not propagate them up the responder chain, preventing the */
+    /* dialog's window-level handler from ever seeing the event. */
     Ihandle* dialog_ih = IupGetDialog(ih);
     if (dialog_ih && dialog_ih != ih)
     {
       if (iupcocoaKeyEvent(dialog_ih, current_event, mac_key_code, true))
-        return YES; // Handled by dialog's K_ANY. Prevents default command.
+        return YES; /* Handled by dialog's K_ANY. Prevents default command. */
     }
   }
 
-  // If not handled by IUP, apply NC (max length) constraint for non-deletion commands
+  /* If not handled by IUP, apply NC (max length) constraint for non-deletion commands */
   if (ih->data->nc > 0)
   {
     NSString* current_text = [textView string];
@@ -1036,7 +1046,8 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   {
     [self setWantsLayer:YES];
 
-    /* Use standard NSImageView. It must be set as non-editable so it does not interfere with dragging. */
+    /* Use standard NSImageView.
+       It must be set as non-editable so it does not interfere with dragging. */
     imageView = [[NSImageView alloc] initWithFrame:NSZeroRect];
     [imageView setImageFrameStyle:NSImageFrameNone];
     [imageView setImageAlignment:NSImageAlignCenter];
@@ -1044,8 +1055,9 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
     [imageView setEditable:NO];
     [self addSubview:imageView];
 
-    /* Use standard NSTextField. It must be non-editable and non-selectable so it does not interfere with dragging. */
-    NSTextField* textField = [[NSTextField alloc] initWithFrame:NSZeroRect];
+    /* Use custom NSTextField with controlled text insets.
+       It must be non-editable and non-selectable so it does not interfere with dragging. */
+    NSTextField* textField = [[IupCocoaListTextField alloc] initWithFrame:NSZeroRect];
     [textField setBezeled:NO];
     [textField setDrawsBackground:NO];
     [textField setEditable:NO];
@@ -1095,7 +1107,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   }
   else
   {
-    self.layer.backgroundColor = [[NSColor clearColor] CGColor]; // Use system selection color
+    self.layer.backgroundColor = [[NSColor clearColor] CGColor]; /* Use system selection color */
     [self.textField setTextColor:[NSColor selectedControlTextColor]];
   }
 }
@@ -1114,11 +1126,11 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   [self removeConstraints:constraintsToRemove];
 
   NSDictionary* views = @{@"imageView": imageView, @"textField": [self textField]};
-  NSDictionary* metrics = @{@"padding": @(padding), @"imageSize": @(16)};
+  NSDictionary* metrics = @{@"padding": @(padding)};
 
   if (showImage && ![imageView isHidden])
   {
-    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-padding-[imageView(imageSize)]-4-[textField]-padding-|"
+    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-padding-[imageView(16)]-4-[textField]-padding-|"
                  options:NSLayoutFormatAlignAllCenterY
                  metrics:metrics
                    views:views]];
@@ -1247,9 +1259,14 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   }
   if (!font)
   {
-    font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
+    const char* default_font = IupGetGlobal("DEFAULTFONT");
+    IupCocoaFont* iup_font = iupcocoaFindFont(default_font);
+    font = iup_font ? [iup_font nativeFont] : nil;
   }
-  [[cell_view textField] setFont:font];
+  if (font)
+  {
+    [[cell_view textField] setFont:font];
+  }
 
   [[cell_view textField] setStringValue:string_item];
 
@@ -1284,11 +1301,17 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (ih)
     font = cocoaGetNativeFont(ih);
   if (!font)
-    font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
+  {
+    const char* default_font = IupGetGlobal("DEFAULTFONT");
+    IupCocoaFont* iup_font = iupcocoaFindFont(default_font);
+    font = iup_font ? [iup_font nativeFont] : [NSFont systemFontOfSize:13];
+  }
 
   NSLayoutManager* layoutManager = [[NSLayoutManager alloc] init];
-  row_height = [layoutManager defaultLineHeightForFont:font];
+  CGFloat line_height = [layoutManager defaultLineHeightForFont:font];
   [layoutManager release];
+
+  row_height = line_height;
 
   CGFloat padding = kIupCocoaListDefaultPadding * 2;
   if (ih && ih->data && ih->data->spacing > 0)
@@ -1311,8 +1334,8 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
     }
   }
 
-  if (row_height < 20.0)
-    row_height = 20.0;
+  if (s_cocoa_measured_row_height > 0.0 && row_height < s_cocoa_measured_row_height)
+    row_height = s_cocoa_measured_row_height;
 
   return row_height;
 }
@@ -1415,7 +1438,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   return YES;
 }
 
-// Drag Source
+/* Drag Source */
 - (nullable id<NSPasteboardWriting>)tableView:(NSTableView *)tableView pasteboardWriterForRow:(NSInteger)row
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -1488,7 +1511,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   return pboardItem;
 }
 
-// Drop Target - VALIDATION
+/* Drop Target - VALIDATION */
 - (NSDragOperation)tableView:(NSTableView *)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation
 {
   if (dropOperation != NSTableViewDropAbove)
@@ -1554,7 +1577,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   return NSDragOperationNone;
 }
 
-// Drop Target - ACCEPTANCE
+/* Drop Target - ACCEPTANCE */
 - (BOOL)tableView:(NSTableView *)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation
 {
   NSPasteboard *pboard = [info draggingPasteboard];
@@ -1801,7 +1824,7 @@ static void cocoaListSortItems(Ihandle* ih)
 void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   (void)ih;
-  (void)h;
+  *h += 2;
 }
 
 void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
@@ -1812,53 +1835,67 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   {
     case IUPCOCOALISTSUBTYPE_DROPDOWN:
       {
-        NSPopUpButton* tempButton = [[[NSPopUpButton alloc] initWithFrame:NSZeroRect pullsDown:NO] autorelease];
-        NSFont* font = cocoaGetNativeFont(ih);
-        if (font)
+        static int popup_decor_w = -1;
+        static int popup_decor_h = -1;
+
+        if (popup_decor_w == -1)
         {
-          [tempButton setFont:font];
+          /* Measure NSPopUpButton decorations dynamically */
+          NSPopUpButton* tempButton = [[NSPopUpButton alloc] initWithFrame:NSZeroRect pullsDown:NO];
+          NSFont* font = cocoaGetNativeFont(ih);
+          if (font)
+            [tempButton setFont:font];
+
+          /* Add a test item to measure with content */
+          [tempButton addItemWithTitle:@"WWWWWWWWWW"];
+
+          NSSize intrinsic_size = [tempButton intrinsicContentSize];
+          popup_decor_h = (int)lroundf(intrinsic_size.height);
+
+          /* Measure the width decoration: intrinsic width for "WWWWWWWWWW" minus text width */
+          int text_width = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
+          popup_decor_w = (int)lroundf(intrinsic_size.width) - text_width;
+
+          [tempButton release];
         }
 
-        // Use intrinsicContentSize to get the natural height of the control, which accounts for its decorations.
-        NSSize intrinsic_size = [tempButton intrinsicContentSize];
-        int decor_h = (int)lroundf(intrinsic_size.height);
+        if (*y < popup_decor_h)
+          *y = popup_decor_h;
 
-        // The decoration width for a popup button consists of padding and the dropdown arrow.
-        int decor_w = 24;
-
-        if (*y < decor_h)
-        {
-          *y = decor_h;
-        }
-
-        *x += decor_w;
-        *x += 8;
+        *x += popup_decor_w;
 
         break;
       }
     case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
       {
-        NSComboBox* tempComboBox = [[[NSComboBox alloc] initWithFrame:NSZeroRect] autorelease];
-        NSFont* font = cocoaGetNativeFont(ih);
-        if (font)
+        static int combo_decor_w = -1;
+        static int combo_decor_h = -1;
+
+        if (combo_decor_w == -1)
         {
-          [tempComboBox setFont:font];
+          /* Measure NSComboBox decorations dynamically */
+          NSComboBox* tempComboBox = [[NSComboBox alloc] initWithFrame:NSZeroRect];
+          NSFont* font = cocoaGetNativeFont(ih);
+          if (font)
+            [tempComboBox setFont:font];
+
+          /* Set test string value to measure with content */
+          [tempComboBox setStringValue:@"WWWWWWWWWW"];
+
+          NSSize intrinsic_size = [tempComboBox intrinsicContentSize];
+          combo_decor_h = (int)lroundf(intrinsic_size.height);
+
+          /* Measure the width decoration: intrinsic width minus text width */
+          int text_width = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
+          combo_decor_w = (int)lroundf(intrinsic_size.width) - text_width;
+
+          [tempComboBox release];
         }
 
-        // Use intrinsicContentSize for a reliable height calculation.
-        NSSize intrinsic_size = [tempComboBox intrinsicContentSize];
-        int decor_h = (int)lroundf(intrinsic_size.height);
+        if (*y < combo_decor_h)
+          *y = combo_decor_h;
 
-        // Decoration for a combo box is mainly the dropdown button on the right.
-        // A fixed estimate is more reliable than the previous calculation.
-        int decor_w = 24;
-
-        if (*y < decor_h)
-        {
-          *y = decor_h;
-        }
-
-        *x += decor_w;
+        *x += combo_decor_w;
 
         break;
       }
@@ -1866,29 +1903,67 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
     case IUPCOCOALISTSUBTYPE_MULTIPLELIST:
     case IUPCOCOALISTSUBTYPE_SINGLELIST:
       {
-        // For list types, the decoration is the border and scrollbars of an NSScrollView.
-        NSScrollView* tempScrollView = [[[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)] autorelease];
-        [tempScrollView setBorderType:NSBezelBorder];
+        /* Measure NSScrollView borders dynamically.
+         * We measure the actual border by comparing widget size with content size. */
+        static int cocoa_scroll_border_x = -1;
+        static int cocoa_scroll_border_y = -1;
 
-        // A document view larger than the frame is needed to make scrollbars appear for measurement.
-        NSView* dummyDocView = [[[NSView alloc] initWithFrame:NSMakeRect(0, 0, 300, 300)] autorelease];
-        [tempScrollView setDocumentView:dummyDocView];
-        [tempScrollView tile];
+        if (cocoa_scroll_border_x == -1)
+        {
+          /* Create temporary scroll view to measure borders */
+          NSScrollView* temp_scroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 200, 100)];
+          [temp_scroll setBorderType:NSBezelBorder];
+          [temp_scroll setHasVerticalScroller:NO];
+          [temp_scroll setHasHorizontalScroller:NO];
 
-        NSRect frameRect = [tempScrollView frame];
-        NSSize contentSize = [tempScrollView contentSize];
+          NSRect frame_rect = [temp_scroll frame];
+          NSSize content_size = [temp_scroll contentSize];
 
-        int decor_w = (int)lroundf(frameRect.size.width - contentSize.width);
-        int decor_h = (int)lroundf(frameRect.size.height - contentSize.height);
+          cocoa_scroll_border_x = (int)lroundf(frame_rect.size.width - content_size.width);
+          cocoa_scroll_border_y = (int)lroundf(frame_rect.size.height - content_size.height);
 
-        // Add the scroll view decorations to the provided content size.
-        *x += decor_w + 16;
-        *y += decor_h + 16;
+          [temp_scroll release];
+        }
 
-        *x += 16;
+        /* Add measured borders */
+        *x += cocoa_scroll_border_x;
+        *y += cocoa_scroll_border_y;
+
+        /* In Cocoa, scrollbars overlay the content (unlike GTK/Windows where they add to width). */
+        if (ih->data->sb)
+        {
+          int sb_size = iupdrvGetScrollbarSize();
+          *x += sb_size;
+        }
 
         if (ih->data->has_editbox)
+        {
+          int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+
+          if (visiblelines > 0)
+          {
+            /* For EDITBOX with VISIBLELINES: VISIBLELINES includes the entry line.
+             * We need to subtract the content of (visiblelines-1) items and add back the text entry height instead. */
+            int char_width, char_height;
+            iupdrvFontGetCharSize(ih, &char_width, &char_height);
+            int item_height = char_height;
+            iupdrvListAddItemSpace(ih, &item_height);
+
+            /* Subtract one item height (since visiblelines includes the entry) */
+            *y -= item_height;
+
+            /* Add text entry natural height (measured from NSTextField) */
+            NSTextField* temp_text = [[NSTextField alloc] initWithFrame:NSZeroRect];
+            NSSize text_intrinsic = [temp_text intrinsicContentSize];
+            int text_height = (int)lroundf(text_intrinsic.height);
+            [temp_text release];
+
+            *y += text_height;
+          }
+
+          /* Add NSStackView spacing (3px between text and list) */
           *y += 2*3;
+        }
 
         break;
       }
@@ -1926,8 +2001,8 @@ int iupdrvListGetCount(Ihandle* ih)
             return 0;
           }
 
-          // Query the data model directly to ensure the count is always accurate,
-          // avoiding potential timing issues with NSTableView's numberOfRows property after a reload.
+          /* Query the data model directly to ensure the count is always accurate, */
+          /* avoiding potential timing issues with NSTableView's numberOfRows property after a reload. */
           IupCocoaListTableViewReceiver* list_receiver = objc_getAssociatedObject(table_view, IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY);
           if (list_receiver)
           {
@@ -3478,15 +3553,11 @@ static int cocoaListSetPaddingAttrib(Ihandle* ih, const char* value)
 
     if (text_field)
     {
-      /* NSTextField doesn't have direct padding like Windows EM_SETMARGINS,
-         but we can use constraints or adjust the frame. For basic compatibility,
-         we'll use a simple frame adjustment approach. */
       NSRect currentFrame = [text_field frame];
       NSRect superBounds = [[text_field superview] bounds];
 
       if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOX)
       {
-        /* For the edit field in EDITBOX mode, adjust width to account for padding */
         CGFloat newWidth = superBounds.size.width - (ih->data->horiz_padding * 2);
         if (newWidth > 0)
         {
@@ -3495,11 +3566,6 @@ static int cocoaListSetPaddingAttrib(Ihandle* ih, const char* value)
           [text_field setFrame:currentFrame];
         }
       }
-
-      /* For vertical padding, we can adjust the text field's baseline offset
-         or use the text container's line fragment padding (for NSTextView-backed fields).
-         However, NSTextField's text container is not directly accessible in all cases.
-         For now, we store the values for layout calculations. */
     }
     return 0;
   }
@@ -3612,26 +3678,6 @@ static int cocoaListSetDragDropListAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaListSetDragSourceAttrib(Ihandle* ih, const char* value)
-{
-  (void)value;
-  if (ih->handle)
-  {
-    cocoaListUpdateDragDrop(ih);
-  }
-  return 1;
-}
-
-static int cocoaListSetDragTargetAttrib(Ihandle* ih, const char* value)
-{
-  (void)value;
-  if (ih->handle)
-  {
-    cocoaListUpdateDragDrop(ih);
-  }
-  return 1;
-}
-
 static char* cocoaListGetImageNativeHandleAttribId(Ihandle* ih, int id)
 {
   if (!ih->data->show_image)
@@ -3685,7 +3731,6 @@ static int cocoaListMapMethod(Ihandle* ih)
     case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
       {
         NSComboBox* combo_box = [[IupCocoaComboBox alloc] initWithFrame:NSMakeRect(0, 0, kIupCocoaDefaultWidthNSComboBox, kIupCocoaDefaultHeightNSComboBox)];
-        [combo_box setFont:[NSFont systemFontOfSize:[NSFont systemFontSize]]];
 
         root_view = combo_box;
         main_view = root_view;
@@ -3779,9 +3824,32 @@ static int cocoaListMapMethod(Ihandle* ih)
         [[text_field.widthAnchor constraintEqualToAnchor:stack_view.widthAnchor] setActive:YES];
         [[scroll_view.widthAnchor constraintEqualToAnchor:stack_view.widthAnchor] setActive:YES];
 
-        [scroll_view setContentHuggingPriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationVertical];
+        /* Set height constraint for scroll_view based on VISIBLELINES */
+        int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+        if (visiblelines > 0)
+        {
+          /* Calculate scroll view height: (visiblelines-1) items worth of space.
+           * VISIBLELINES includes the text entry, so subtract 1 for list items. */
+          int char_width, char_height;
+          iupdrvFontGetCharSize(ih, &char_width, &char_height);
+          int item_height = char_height;
+          iupdrvListAddItemSpace(ih, &item_height);
+
+          int num_items_in_list = visiblelines - 1;
+          int list_content_height = num_items_in_list * item_height;
+
+          /* Add borders (NSBezelBorder is 2px total: 1px top + 1px bottom) */
+          int list_total_height = list_content_height + 2;
+
+          [[scroll_view.heightAnchor constraintEqualToConstant:list_total_height] setActive:YES];
+        }
+        else
+        {
+          [scroll_view setContentHuggingPriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationVertical];
+          [scroll_view setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationVertical];
+        }
+
         [text_field setContentHuggingPriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationVertical];
-        [scroll_view setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationVertical];
 
         root_view = stack_view;
         main_view = text_field;
@@ -3877,6 +3945,13 @@ static int cocoaListMapMethod(Ihandle* ih)
 
   ih->handle = root_view;
   iupcocoaSetAssociatedViews(ih, main_view, root_view);
+
+  IupCocoaFont* iup_font = iupcocoaGetFont(ih);
+  if (iup_font && [main_view respondsToSelector:@selector(setFont:)])
+  {
+    [(id)main_view setFont:[iup_font nativeFont]];
+  }
+
   iupcocoaAddToParent(ih);
 
   if (iupAttribGetBoolean(ih, "SORT"))
@@ -3948,7 +4023,7 @@ static void cocoaListUnMapMethod(Ihandle* ih)
         {
           objc_setAssociatedObject(text_field, IUP_COCOA_LIST_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
         }
-        // fall through to clean up table view
+        /* fall through to clean up table view */
       }
     case IUPCOCOALISTSUBTYPE_MULTIPLELIST:
       case IUPCOCOALISTSUBTYPE_SINGLELIST:
@@ -3989,9 +4064,6 @@ void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", cocoaListGetValueAttrib, cocoaListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDRAGDROP", NULL, cocoaListSetShowDragDropAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGDROPLIST", NULL, cocoaListSetDragDropListAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, cocoaListSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTARGET", NULL, cocoaListSetDragTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, cocoaListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, cocoaListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, cocoaListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
@@ -4015,6 +4087,7 @@ void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", cocoaListGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, cocoaListSetAutoRedrawAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, cocoaListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", cocoaListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
 

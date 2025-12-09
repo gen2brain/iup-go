@@ -45,7 +45,7 @@ int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel)
   return CalculateBytesPerRow(width, bytes_per_pixel);
 }
 
-// The output format is packed RGB(A), top-down, matching the IUP image data format.
+/* The output format is packed RGB(A), top-down, matching the IUP image data format. */
 void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
 {
   if (!handle)
@@ -98,7 +98,7 @@ void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
   }
 }
 
-// The output format is separated RGB(A) planes, bottom-up, matching the IM image data format.
+/* The output format is separated RGB(A) planes, bottom-up, matching the IM image data format. */
 IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
 {
   if (!handle)
@@ -165,7 +165,7 @@ static NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromRawData(int width, int
 {
   NSBitmapImageRep* bitmap_image = nil;
 
-  if (bpp == 32 || bpp == 8) // For 8bpp, we create a 32bpp image
+  if (bpp == 32 || bpp == 8) /* For 8bpp, we create a 32bpp image */
   {
     bitmap_image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
                                                            pixelsWide:width pixelsHigh:height bitsPerSample:8
@@ -204,9 +204,9 @@ static NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromRawData(int width, int
 
     for (int y = 0; y < height; y++)
     {
-      // Source imgdata is bottom-up
+      /* Source imgdata is bottom-up */
       int src_line_offset = (height - 1 - y) * width;
-      // Destination NSBitmapImageRep is top-down
+      /* Destination NSBitmapImageRep is top-down */
       unsigned char* dest_pixel_line = pixels + y * bytesPerRow;
 
       for (int x = 0; x < width; x++)
@@ -226,9 +226,9 @@ static NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromRawData(int width, int
   {
     for (int y = 0; y < height; y++)
     {
-      // Source imgdata is bottom-up
+      /* Source imgdata is bottom-up */
       int src_line_offset = (height - 1 - y) * width;
-      // Destination NSBitmapImageRep is top-down
+      /* Destination NSBitmapImageRep is top-down */
       unsigned char* dest_pixel_line = pixels + y * bytesPerRow;
 
       for (int x = 0; x < width; x++)
@@ -239,7 +239,7 @@ static NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromRawData(int width, int
         dest_pixel[0] = c->r;
         dest_pixel[1] = c->g;
         dest_pixel[2] = c->b;
-        dest_pixel[3] = 255; // IM palettes do not have alpha
+        dest_pixel[3] = 255; /* IM palettes do not have alpha */
       }
     }
   }
@@ -402,7 +402,7 @@ static NSImage* iupCocoaCreateNSImage(Ihandle *ih, const char* bgcolor, int make
 
   NSBitmapImageRep* bitmap_image = nil;
 
-  // For 8bpp, we create a 32bpp image for simplicity and to handle alpha.
+  /* For 8bpp, we create a 32bpp image for simplicity and to handle alpha. */
   if (bpp == 32 || bpp == 8)
   {
     bitmap_image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL

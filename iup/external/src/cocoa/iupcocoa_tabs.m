@@ -26,10 +26,11 @@
 #include "IupCocoaTabBarView.h"
 
 
-// Forward declarations
+/* Forward declarations */
 static int cocoaTabsPosFixFromNative(Ihandle* ih, int native_pos);
 static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos);
 static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_native);
+static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
 
 
 /*
@@ -50,7 +51,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
 - (void)layout;
 @end
 
-// Private methods
+/* Private methods */
 @interface IupTabsRootView ()
   - (void)_handleRightMouseDownOnTabCell:(IupCocoaTabCell *)tab_cell cb:(IFni)cb ih:(Ihandle *)ih event:(NSEvent *)event;
   @end
@@ -82,8 +83,8 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   [self layout];
 }
 
-// The layout method is the core of the composite control.
-// It positions the tab bar and content area based on ih->data->type.
+/* The layout method is the core of the composite control.
+   It positions the tab bar and content area based on ih->data->type. */
 - (void)layout
 {
   [super layout];
@@ -95,8 +96,8 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   NSRect tab_bar_frame = NSZeroRect;
   NSRect content_frame = NSZeroRect;
 
-  // We use kTabBarViewHeight from IupCocoaTabBarView.h as the thickness for horizontal tab bars.
-  // For vertical, we use kMinTabCellWidth as the thickness.
+  /* We use kTabBarViewHeight from IupCocoaTabBarView.h as the thickness for horizontal tab bars.
+     For vertical, we use kMinTabCellWidth as the thickness. */
   const CGFloat kVerticalTabBarWidth = kMinTabCellWidth;
 
   switch (ih->data->type) {
@@ -221,7 +222,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
     return;
   }
 
-  // Check if the click is inside the tab bar
+  /* Check if the click is inside the tab bar */
   NSPoint pointInWindow = [event locationInWindow];
   NSPoint pointInTabBar = [self.tabBarView convertPoint:pointInWindow fromView:nil];
 
@@ -230,7 +231,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
     IupCocoaTabCell* tab_cell = [self.tabBarView tabCellInPoint:pointInTabBar];
     if (tab_cell)
     {
-      // Call the helper method using Objective-C syntax
+      /* Call the helper method using Objective-C syntax */
       [self _handleRightMouseDownOnTabCell:tab_cell cb:cb ih:ih event:event];
     }
     else
@@ -242,10 +243,10 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   }
 }
 
-// Handles the logic for a right-click on a specific tab
+/* Handles the logic for a right-click on a specific tab */
 - (void)_handleRightMouseDownOnTabCell:(IupCocoaTabCell *)tab_cell cb:(IFni)cb ih:(Ihandle *)ih event:(NSEvent *)event
 {
-  // 'self' here now correctly refers to the IupTabsRootView instance
+  /* 'self' here now correctly refers to the IupTabsRootView instance */
   NSInteger native_pos = [[self.tabBarView tabs] indexOfObject:tab_cell];
   if (native_pos != NSNotFound)
   {
@@ -257,7 +258,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   }
   else
   {
-    // This case should be unlikely if tab_cell was found, but forward just in case.
+    /* This case should be unlikely if tab_cell was found, but forward just in case. */
     [super rightMouseDown:event];
   }
 }
@@ -278,7 +279,7 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
 
 @implementation IupTabsDelegate
 
-// A tab was just selected
+/* A tab was just selected */
 - (void)tabDidActived:(IupCocoaTabCell*)tab
 {
   Ihandle* ih = self.ihandle;
@@ -296,10 +297,10 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   int prev_pos = self.previousIupPos;
   if (pos == prev_pos) return;
 
-  // Show/Hide the respective content views
+  /* Show/Hide the respective content views */
   cocoaTabsHideShowPage(ih, prev_pos, pos, 0);
 
-  // Fire IUP callbacks
+  /* Fire IUP callbacks */
   if (pos != -1 && prev_pos != -1)
   {
     Ihandle* child = IupGetChild(ih, pos);
@@ -323,19 +324,19 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
   self.previousIupPos = pos;
 }
 
-// User clicked the close button
-- (void)tabWillClose:(IupCocoaTabCell*)tab
+/* User clicked the close button */
+- (BOOL)tabWillClose:(IupCocoaTabCell*)tab
 {
   Ihandle* ih = self.ihandle;
-  if (!ih || !tab) return;
+  if (!ih || !tab) return NO;
 
   IupCocoaTabBarView* tab_bar_view = [(IupTabsRootView*)(ih->handle) tabBarView];
   int native_pos = (int)[[tab_bar_view tabs] indexOfObject:tab];
   int iup_pos = cocoaTabsPosFixFromNative(ih, native_pos);
-  if (iup_pos == -1) return;
+  if (iup_pos == -1) return NO;
 
   Ihandle* child = IupGetChild(ih, iup_pos);
-  if (!child) return;
+  if (!child) return NO;
 
   IFni cb = (IFni)IupGetCallback(ih, "TABCLOSE_CB");
   int ret = IUP_DEFAULT;
@@ -344,32 +345,58 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
     ret = cb(ih, iup_pos);
   }
 
-  if (ret == IUP_CONTINUE) // destroy tab and children
+  if (ret == IUP_IGNORE)
+  {
+    return NO;
+  }
+  else
+  {
+    objc_setAssociatedObject(tab, @"IUP_CLOSE_ACTION", [NSNumber numberWithInt:ret], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(tab, @"IUP_CLOSE_POS", [NSNumber numberWithInt:iup_pos], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    return YES;
+  }
+}
+
+- (void)tabDidClosed:(IupCocoaTabCell*)tab
+{
+  Ihandle* ih = self.ihandle;
+  if (!ih || !tab) return;
+
+  NSNumber* actionNum = objc_getAssociatedObject(tab, @"IUP_CLOSE_ACTION");
+  NSNumber* posNum = objc_getAssociatedObject(tab, @"IUP_CLOSE_POS");
+
+  if (!actionNum || !posNum) return;
+
+  int ret = [actionNum intValue];
+  int iup_pos = [posNum intValue];
+
+  Ihandle* child = IupGetChild(ih, iup_pos);
+  if (!child) return;
+
+  if (ret == IUP_CONTINUE)
   {
     IupDestroy(child);
     IupRefreshChildren(ih);
   }
-  else if (ret == IUP_DEFAULT) // hide tab and children
+  else if (ret == IUP_DEFAULT)
   {
-    iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
-    IupSetAttributeId(ih, "TABVISIBLE", iup_pos, "NO");
-    iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
-  }
-  else if (ret == IUP_IGNORE)
-  {
-    // Do nothing, but we must manually tell the tab bar not to close
-    // by *not* calling [tabBarView removeTabCell:tab];
-  }
-}
+    Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
+    int* visible_data = (int*)iupArrayGetData(visible_array);
 
-// IupCocoaTabBarView's default is to close *after* tabWillClose.
-// We override tabDidClosed to prevent this default,
-// as our tabWillClose already handled all logic.
-- (void)tabDidClosed:(IupCocoaTabCell*)tab
-{
-  // Do nothing. This prevents IupCocoaTabBarView from removing the cell
-  // automatically. We handled removal inside tabWillClose based
-  // on the IUP_CONTINUE/IUP_DEFAULT/IUP_IGNORE logic.
+    iupTabsCheckCurrentTab(ih, iup_pos, 0);
+    visible_data[iup_pos] = 0;
+
+    IupTabsDelegate* delegate = (IupTabsDelegate*)self;
+    IupCocoaTabBarView* tab_bar_view = [(IupTabsRootView*)(ih->handle) tabBarView];
+    if (delegate)
+    {
+      int new_native_pos = (int)[[tab_bar_view tabs] indexOfObject:[tab_bar_view selectedTab]];
+      delegate.previousIupPos = cocoaTabsPosFixFromNative(ih, new_native_pos);
+    }
+  }
+
+  objc_setAssociatedObject(tab, @"IUP_CLOSE_ACTION", nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  objc_setAssociatedObject(tab, @"IUP_CLOSE_POS", nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
 @end
@@ -412,8 +439,8 @@ static NSView* cocoaGetContentAreaView(Ihandle* ih)
   return nil;
 }
 
-// Manages an array tracking the visibility of each IUP child tab.
-// This is necessary because Cocoa's API removes invisible tabs, not just hides them.
+/* Manages an array tracking the visibility of each IUP child tab.
+   This is necessary because Cocoa's API removes invisible tabs, not just hides them. */
 static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih)
 {
   Iarray* visible_array = (Iarray*)iupAttribGet(ih, "_IUPCOCOA_VISIBLEARRAY");
@@ -427,7 +454,7 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih)
       int* visible_data = (int*)iupArrayGetData(visible_array);
       for (i = 0; i < count; i++)
       {
-        visible_data[i] = 1; // All visible by default
+        visible_data[i] = 1; /* All visible by default */
       }
     }
   }
@@ -481,7 +508,7 @@ static int cocoaTabsPosFixFromNative(Ihandle* ih, int native_pos)
   return -1;
 }
 
-// Hides the old page and shows the new one
+/* Hides the old page and shows the new one */
 static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_native)
 {
   int iup_old_pos = old_pos;
@@ -555,9 +582,9 @@ void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
   iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
   [tab_cell setAsActiveTab];
 
-  // setAsActiveTab calls the delegate, but we need to manually
-  // update the previous position and show/hide the page
-  // because the "IGNORE_CHANGE" flag is set.
+  /* setAsActiveTab calls the delegate, but we need to manually
+     update the previous position and show/hide the page
+     because the "IGNORE_CHANGE" flag is set. */
   IupTabsDelegate* delegate = (IupTabsDelegate*)[tab_bar_view delegate];
   int old_pos = delegate.previousIupPos;
   delegate.previousIupPos = pos;
@@ -582,6 +609,71 @@ int iupdrvTabsGetCurrentTab(Ihandle* ih)
 
   int native_pos = (int)[[tab_bar_view tabs] indexOfObject:selected_tab];
   return cocoaTabsPosFixFromNative(ih, native_pos);
+}
+
+void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+{
+  int width = 0;
+  int height = kTabCellHeight;  /* Fixed height = 28 */
+  int text_width = 0;
+  int text_height = 0;
+
+  /* Measure text dimensions */
+  if (tab_title)
+  {
+    text_width = iupdrvFontGetStringWidth(ih, tab_title);
+    iupdrvFontGetCharSize(ih, NULL, &text_height);
+    width = text_width;
+
+    /* Height: use MAX of text and kTabCellHeight */
+    if (text_height > height)
+      height = text_height;
+  }
+
+  /* Add image width */
+  if (tab_image)
+  {
+    void* img = iupImageGetImage(tab_image, ih, 0, NULL);
+    if (img)
+    {
+      int img_w, img_h;
+      iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+
+      width += 16;
+      if (tab_title)
+        width += 4;  /* Spacing between image and text */
+
+      /* Height: use MAX */
+      if (img_h > height)
+        height = img_h;
+    }
+  }
+
+  /* Add horizontal padding based on tab content
+   *
+   * We add maximum expected padding (close button case) to ensure text is never clipped.
+   * The actual close button visibility is controlled by SHOWCLOSE attribute.
+   */
+  if (tab_image)
+  {
+    width += 10;
+  }
+  else
+  {
+    width += 8;
+  }
+
+  /* Add right padding: assume close button may be present */
+  width += 28;
+
+  /* Clamp width between kMinTabCellWidth and kMaxTabCellWidth */
+  if (width < kMinTabCellWidth)
+    width = kMinTabCellWidth;
+  if (width > kMaxTabCellWidth)
+    width = kMaxTabCellWidth;
+
+  if (tab_width) *tab_width = width;
+  if (tab_height) *tab_height = height;
 }
 
 int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
@@ -633,17 +725,13 @@ static int cocoaTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
     {
       IupCocoaTabCell* tab_cell = [[tab_bar_view tabs] objectAtIndex:native_pos];
 
-      // We must use the delegate to properly update the selected tab
+      iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
+      [tab_bar_view removeTabCell:tab_cell];
+      iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
+
       IupTabsDelegate* delegate = (IupTabsDelegate*)[tab_bar_view delegate];
       if (delegate)
       {
-        iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
-        [delegate tabWillClose:tab_cell]; // This will call IUP_DEFAULT logic
-        iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
-
-        // tabWillClose (with IUP_DEFAULT) calls removeTabCell,
-        // which updates the selection and fires tabDidActived.
-        // We need to update our delegate's internal state.
         int new_native_pos = (int)[[tab_bar_view tabs] indexOfObject:[tab_bar_view selectedTab]];
         delegate.previousIupPos = cocoaTabsPosFixFromNative(ih, new_native_pos);
       }
@@ -661,9 +749,9 @@ static char* cocoaTabsGetMultilineAttrib(Ihandle* ih)
 static int cocoaTabsSetMultilineAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  // MULTILINE is not supported by IupCocoaTabBarView.
-  // We set the internal flag based on orientation, as this is used
-  // by the IUP core for layout calculations.
+  /* MULTILINE is not supported by IupCocoaTabBarView.
+     We set the internal flag based on orientation, as this is used
+     by the IUP core for layout calculations. */
   if (ih->data->orientation == ITABS_VERTICAL)
   {
     ih->data->is_multiline = 1;
@@ -757,24 +845,24 @@ static int cocoaTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 
 static int cocoaTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 {
-  if (pos == -1) // Global attribute
+  if (pos == -1) /* Global attribute */
   {
     int i, count = IupGetChildCount(ih);
     for (i = 0; i < count; i++)
     {
-      // Call self recursively for each child
+      /* Call self recursively for each child */
       cocoaTabsSetShowCloseAttrib(ih, i, value);
     }
-    // Also set the default for future children
+    /* Also set the default for future children */
     iupAttribSetStr(ih, "SHOWCLOSE", value);
-    return 1; // Mark as processed
+    return 1; /* Mark as processed */
   }
 
   Ihandle* child = IupGetChild(ih, pos);
   if (child) iupAttribSetStr(child, "SHOWCLOSE", value);
 
   int native_pos = cocoaTabsPosFixToNative(ih, pos);
-  if (native_pos < 0) return 0; // Not visible, nothing to do
+  if (native_pos < 0) return 0; /* Not visible, nothing to do */
 
   IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
   if (!tab_bar_view || (NSUInteger)native_pos >= [[tab_bar_view tabs] count]) return 0;
@@ -901,7 +989,7 @@ static int cocoaTabsSetBgColorAttrib(Ihandle* ih, const char* value)
     CGFloat blue = b/255.0;
     NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
 
-    // Set all three color properties for a consistent look
+    /* Set all three color properties for a consistent look */
     [tab_bar_view setBgColor:the_color];
     [tab_bar_view setTabBGColor:the_color];
     [tab_bar_view setTabActivedBGColor:the_color];
@@ -985,24 +1073,22 @@ static void cocoaTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   if (ih->handle)
   {
-    // Add to visibility array
+    /* Add to visibility array */
     Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
     int pos = IupGetChildPos(ih, child);
     iupArrayInsert(visible_array, pos, 1);
     ((int*)iupArrayGetData(visible_array))[pos] = 1;
 
-    // Create the native tab cell
+    /* Create the native tab cell */
     cocoaTabsCreateAndInsertItem(ih, child, pos);
 
-    // Create the content container view
+    /* Create the content container view */
     NSView* content_area = cocoaGetContentAreaView(ih);
     NSView* content_container = [[[NSView alloc] initWithFrame:[content_area bounds]] autorelease];
-    [content_container setHidden:YES]; // Hide by default
+    [content_container setHidden:YES]; /* Hide by default */
 
     [content_area addSubview:content_container];
     iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)content_container);
-
-    IupRefresh(ih);
   }
 }
 
@@ -1026,11 +1112,11 @@ static void cocoaTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
       IupCocoaTabCell* tab_cell = [[tab_bar_view tabs] objectAtIndex:native_pos];
 
       iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
-      // removeTabCell handles re-activating another tab
+      /* removeTabCell handles re-activating another tab */
       [tab_bar_view removeTabCell:tab_cell];
       iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
 
-      // Update the delegate's internal state
+      /* Update the delegate's internal state */
       IupTabsDelegate* delegate = (IupTabsDelegate*)[tab_bar_view delegate];
       if (delegate)
       {
@@ -1049,40 +1135,39 @@ static void cocoaTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
 
   [tab_bar_view redraw];
-  IupRefresh(ih);
 }
 
 static int cocoaTabsMapMethod(Ihandle* ih)
 {
-  // Create the root view
+  /* Create the root view */
   IupTabsRootView* root_view = [[IupTabsRootView alloc] initWithFrame:NSZeroRect];
-  ih->handle = root_view; // DO NOT release root_view, ih->handle owns it
+  ih->handle = root_view; /* DO NOT release root_view, ih->handle owns it */
   objc_setAssociatedObject(root_view, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 
-  // Create the Tab Bar
+  /* Create the Tab Bar */
   IupCocoaTabBarView* tab_bar_view = [[IupCocoaTabBarView alloc] initWithFrame:NSZeroRect];
   [root_view setTabBarView:tab_bar_view];
   [root_view addSubview:tab_bar_view];
   [tab_bar_view release];
 
-  // Create the Content Area
+  /* Create the Content Area */
   NSView* content_area_view = [[NSView alloc] initWithFrame:NSZeroRect];
   [root_view setContentAreaView:content_area_view];
   [root_view addSubview:content_area_view];
   [content_area_view release];
 
-  // Create the Delegate
+  /* Create the Delegate */
   IupTabsDelegate* delegate = [[IupTabsDelegate alloc] init];
   [delegate setIhandle:ih];
   [tab_bar_view setDelegate:delegate];
-  // Store the delegate so we can release it on Unmap
+  /* Store the delegate so we can release it on Unmap */
   objc_setAssociatedObject(root_view, @"IUP_TABS_DELEGATE", delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   [delegate release];
 
   iupcocoaSetAssociatedViews(ih, root_view, root_view);
   cocoaTabsGetVisibleArray(ih);
 
-  // Set attributes that must be set before children are added
+  /* Set attributes that must be set before children are added */
   cocoaTabsSetTabTypeAttrib(ih, iupTabsGetTabTypeAttrib(ih));
 
   if (iupAttribGet(ih, "FONT"))
@@ -1142,7 +1227,7 @@ static int cocoaTabsMapMethod(Ihandle* ih)
     }
     else
     {
-      // Activate the first tab by default
+      /* Activate the first tab by default */
       iupdrvTabsSetCurrentTab(ih, 0);
     }
 
@@ -1157,7 +1242,7 @@ static void cocoaTabsUnMapMethod(Ihandle* ih)
   id root_view = ih->handle;
   if (!root_view) return;
 
-  // Release the delegate
+  /* Release the delegate */
   objc_setAssociatedObject(root_view, @"IUP_TABS_DELEGATE", nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   Iarray* visible_array = (Iarray*)iupAttribGet(ih, "_IUPCOCOA_VISIBLEARRAY");
