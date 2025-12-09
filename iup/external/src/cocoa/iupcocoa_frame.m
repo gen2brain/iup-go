@@ -104,6 +104,9 @@ int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
       [tempBox setBorderType:NSLineBorder];
   }
 
+  /* Reduce content view margins to minimize padding */
+  [tempBox setContentViewMargins:NSMakeSize(2.0, 2.0)];
+
   NSRect boxFrame = [tempBox frame];
   NSView* contentView = [tempBox contentView];
   NSRect contentFrame = [contentView frame];
@@ -341,6 +344,9 @@ static int cocoaFrameMapMethod(Ihandle* ih)
     else
       [the_frame setBorderType:NSLineBorder];
   }
+
+  /* Reduce content view margins to minimize padding */
+  [the_frame setContentViewMargins:NSMakeSize(2.0, 2.0)];
 
   iupcocoaSetAssociatedViews(ih, [the_frame contentView], the_frame);
   iupcocoaAddToParent(ih);

@@ -69,7 +69,7 @@ static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
 {
   if ([event type] == NSEventTypeKeyDown)
   {
-    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY); // this is the dialog handle
+    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY); /* this is the dialog handle */
     if (iupObjectCheck(ih))
     {
       NSResponder* first_responder = [self firstResponder];
@@ -828,9 +828,9 @@ void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
 
 void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
-  *menu = 0; // In Cocoa, the menu bar is not part of the window's decoration height.
+  *menu = 0; /* In Cocoa, the menu bar is not part of the window's decoration height. */
 
-  // Determine the window's style mask, which defines its decorations.
+  /* Determine the window's style mask, which defines its decorations. */
   NSWindowStyleMask style_mask = 0;
   NSWindow* the_window = cocoaDialogGetWindow(ih);
 
@@ -840,8 +840,8 @@ void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu
   }
   else
   {
-    // If the window is not yet mapped, we must infer the style mask from IUP attributes.
-    // This logic is derived from what cocoaDialogMapMethod would do.
+    /* If the window is not yet mapped, we must infer the style mask from IUP attributes. */
+    /* This logic is derived from what cocoaDialogMapMethod would do. */
     int has_titlebar = iupAttribGet(ih, "TITLE") ||
                        iupAttribGetBoolean(ih, "MAXBOX") ||
                        iupAttribGetBoolean(ih, "MINBOX") ||
@@ -867,19 +867,19 @@ void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu
     style_mask = NSWindowStyleMaskBorderless;
   }
 
-  // Using a sample content rectangle, we ask Cocoa for the corresponding frame rectangle.
-  // The difference between them gives us the total size of the decorations.
+  /* Using a sample content rectangle, we ask Cocoa for the corresponding frame rectangle. */
+  /* The difference between them gives us the total size of the decorations. */
   NSRect sample_content_rect = NSMakeRect(0, 0, 100, 100);
   NSRect sample_frame_rect = [NSWindow frameRectForContentRect:sample_content_rect styleMask:style_mask];
 
   int total_decor_width = (int)round(sample_frame_rect.size.width - sample_content_rect.size.width);
   int total_decor_height = (int)round(sample_frame_rect.size.height - sample_content_rect.size.height);
 
-  // Translate these total decoration sizes into IUP's `border` and `caption` model.
-  // The IUP layout engine formulas assume:
-  // total_decor_width = 2 * border
-  // total_decor_height = caption + 2 * border
-  // We derive our values to satisfy these formulas.
+  /* Translate these total decoration sizes into IUP's `border` and `caption` model. */
+  /* The IUP layout engine formulas assume: */
+  /* total_decor_width = 2 * border */
+  /* total_decor_height = caption + 2 * border */
+  /* We derive our values to satisfy these formulas. */
 
   *border = total_decor_width / 2;
   *caption = total_decor_height - (2 * (*border));

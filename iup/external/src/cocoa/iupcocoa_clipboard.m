@@ -210,9 +210,9 @@ static int cocoaClipboardSetAddFormatAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  // Custom pasteboard types on macOS don't require explicit registration.
-  // They are identified by strings, typically Uniform Type Identifiers (UTIs).
-  // Validation occurs when the format is used in FORMATDATA operations.
+  /* Custom pasteboard types on macOS don't require explicit registration. */
+  /* They are identified by strings, typically Uniform Type Identifiers (UTIs). */
+  /* Validation occurs when the format is used in FORMATDATA operations. */
 
   return 0;
 }
@@ -329,7 +329,7 @@ static int cocoaClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* valu
   if (value)
   {
     int len = (int)strlen(value);
-    iupAttribSetInt(ih, "FORMATDATASIZE", len + 1); // include the terminator
+    iupAttribSetInt(ih, "FORMATDATASIZE", len + 1); /* include the terminator */
     return cocoaClipboardSetFormatDataAttrib(ih, value);
   }
   else

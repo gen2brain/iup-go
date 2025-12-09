@@ -265,7 +265,7 @@ static int cocoaValSetValueAttrib(Ihandle* ih, const char* value)
 
   ih->data->val = new_iup_val;
 
-  // If inverted, transform the IUP value to the native slider's coordinate space.
+  /* If inverted, transform the IUP value to the native slider's coordinate space. */
   double native_val = ih->data->inverted ? (ih->data->vmax - new_iup_val) + ih->data->vmin : new_iup_val;
   [slider setDoubleValue:native_val];
 
@@ -369,7 +369,7 @@ static int cocoaValSetStepOnTicksAttrib(Ihandle* ih, const char* value)
 {
   NSSlider* slider = ih->handle;
   [slider setAllowsTickMarkValuesOnly:(BOOL)iupStrBoolean(value)];
-  return 1; // Store value
+  return 1; /* Store value */
 }
 
 static char* cocoaValGetStepOnTicksAttrib(Ihandle* ih)

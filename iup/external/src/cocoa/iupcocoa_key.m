@@ -310,9 +310,9 @@ bool iupCocoaKeyDownEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
         Ihandle* focused_ih = (Ihandle*)objc_getAssociatedObject(first_responder, IHANDLE_ASSOCIATED_OBJ_KEY);
         if (iupObjectCheck(focused_ih) && focused_ih != ih)
         {
-          // This event is for the container (ih), but a child control has focus.
-          // If the child has its own K_ANY handler, let it process the event first.
-          // The container should not process it to avoid duplication.
+          /* This event is for the container (ih), but a child control has focus. */
+          /* If the child has its own K_ANY handler, let it process the event first. */
+          /* The container should not process it to avoid duplication. */
           if (IupGetCallback(focused_ih, "K_ANY") != NULL)
           {
             return false;

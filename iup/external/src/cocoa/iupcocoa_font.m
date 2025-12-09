@@ -15,6 +15,7 @@
 #include "iup_attrib.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
+#include "iup_drvinfo.h"
 #include "iup_object.h"
 #include "iup_str.h"
 
@@ -33,9 +34,9 @@
 
 @end
 
-// We keep all the fonts in a data structure so we can release them on shutdown.
+/* We keep all the fonts in a data structure so we can release them on shutdown. */
 static NSMutableDictionary<NSString *, IupCocoaFont *> *s_mapOfFonts = nil;
-// This is for easy access to our system font since it is used so often.
+/* This is for easy access to our system font since it is used so often. */
 static IupCocoaFont *s_systemFont = nil;
 
 static IupCocoaFont *cocoaCreateIupCocoaFontFromNSFont(NSFont *ns_font)
@@ -58,25 +59,25 @@ static IupCocoaFont *cocoaCreateIupCocoaFontFromNSFont(NSFont *ns_font)
   [the_font setFontSize:font_size];
   [the_font setTypeFace:ns_font_name];
 
-  // (defaultLineHeightForFont includes line spacing which makes text appear larger)
+  /* (defaultLineHeightForFont includes line spacing which makes text appear larger) */
   int char_height = iupROUND([ns_font ascender] + (-[ns_font descender]));
   [the_font setCharHeight:char_height];
 
-  // For average char width, use the advancement of a common character like 'x'.
-  // This is a better approximation than using the font's bounding box.
+  /* For average char width, use the advancement of a common character like 'x'.
+     This is a better approximation than using the font's bounding box. */
   NSGlyph x_glyph = [ns_font glyphWithName:@"x"];
   NSSize x_size = [ns_font advancementForGlyph:x_glyph];
   int char_width = iupROUND(x_size.width);
   [the_font setCharWidth:char_width];
 
-  // Get dimensions for iupdrvFontGetFontDim
+  /* Get dimensions for iupdrvFontGetFontDim */
   int max_width = iupROUND([ns_font maximumAdvancement].width);
   [the_font setMaxWidth:max_width];
 
   int ascent = iupROUND([ns_font ascender]);
   [the_font setAscent:ascent];
 
-  // descender is a negative value
+  /* descender is a negative value */
   int descent = iupROUND(-[ns_font descender]);
   [the_font setDescent:descent];
 
@@ -87,12 +88,24 @@ static IupCocoaFont *cocoaGetSystemFont()
 {
   if (nil == s_systemFont)
   {
-    // Use the standard font for interface elements like labels and buttons.
-    NSFont *ns_font = [NSFont messageFontOfSize:0]; // 0 means use the default size.
+    NSFont *ns_font;
+
+    /* Use modern API on macOS 11+ */
+    NSOperatingSystemVersion version = {11, 0, 0};
+    if ([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version])
+    {
+      ns_font = [NSFont preferredFontForTextStyle:NSFontTextStyleBody options:@{}];
+    }
+    else
+    {
+      /* Fall back to legacy API */
+      ns_font = [NSFont messageFontOfSize:0];
+    }
+
     IupCocoaFont *iup_font = cocoaCreateIupCocoaFontFromNSFont(ns_font);
     s_systemFont = [iup_font retain];
 
-    // Add to global map
+    /* Add to global map */
     NSCAssert(s_mapOfFonts, @"s_mapOfFonts must be initialized");
     [s_mapOfFonts setObject:s_systemFont forKey:[iup_font iupFontName]];
   }
@@ -106,7 +119,7 @@ IUP_SDK_API char *iupdrvGetSystemFont(void)
   {
     if (nil == s_systemFont)
     {
-      // make sure font system was initialized
+      /* make sure font system was initialized */
       iupdrvFontInit();
       cocoaGetSystemFont();
     }
@@ -132,7 +145,7 @@ IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
 
   NSString *ns_iup_font_name = [NSString stringWithUTF8String:iup_font_name];
 
-  // Check our cache first
+  /* Check our cache first */
   IupCocoaFont *the_font = [s_mapOfFonts objectForKey:ns_iup_font_name];
   if (nil != the_font)
   {
@@ -144,19 +157,22 @@ IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
     return NULL;
   }
 
-  // In IUP, a negative size indicates a value in pixels.
-  // NSFont works with points, which are resolution-independent.
-  // We use the absolute value, letting Cocoa handle the point-to-pixel scaling.
+  /* In IUP, a negative size indicates a value in pixels.
+     NSFont works with points, which are resolution-independent.
+     Positive sizes are already in points, so we use them directly.
+     Negative sizes (pixels) need conversion to points based on DPI. */
   if (font_size < 0)
   {
-    final_font_size = (CGFloat)-font_size;
+    /* Convert pixels to points: (pixels × 72) / DPI */
+    double dpi = iupdrvGetScreenDpi();
+    final_font_size = (CGFloat)((-font_size * 72.0) / dpi);
   }
   else
   {
     final_font_size = (CGFloat)font_size;
   }
 
-  // A size of 0 is invalid for creating a new font.
+  /* A size of 0 is invalid for creating a new font. */
   if (final_font_size == 0)
   {
     return NULL;
@@ -172,12 +188,12 @@ IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
   NSString *ns_type_face = [NSString stringWithUTF8String:type_face];
   NSFont *ns_font = [NSFont fontWithName:ns_type_face size:final_font_size];
 
-  // If the font is not found by name, fall back to the system font with the specified size.
-  // This increases robustness, similar to font substitution on Windows and GTK/Pango.
+  /* If the font is not found by name, fall back to the system font with the specified size.
+     This increases robustness, similar to font substitution on Windows and GTK/Pango. */
   if (nil == ns_font)
   {
     ns_font = [NSFont systemFontOfSize:final_font_size];
-    if (nil == ns_font) // Should not happen with a valid size, but check just in case.
+    if (nil == ns_font) /* Should not happen with a valid size, but check just in case. */
     {
       return NULL;
     }
@@ -195,7 +211,7 @@ IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
 
   if (trait_mask)
   {
-    // Apply bold/italic traits. The font manager will find the correct variant or synthesize one.
+    /* Apply bold/italic traits. The font manager will find the correct variant or synthesize one. */
     ns_font = [[NSFontManager sharedFontManager] convertFont:ns_font toHaveTrait:trait_mask];
   }
 
@@ -204,9 +220,9 @@ IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
     return NULL;
   }
 
-  // Create the IupCocoaFont wrapper and compute its properties
+  /* Create the IupCocoaFont wrapper and compute its properties */
   the_font = cocoaCreateIupCocoaFontFromNSFont(ns_font);
-  [the_font setIupFontName:ns_iup_font_name]; // Use original IUP name for the key
+  [the_font setIupFontName:ns_iup_font_name]; /* Use original IUP name for the key */
 
   BOOL uses_attributes = NO;
   NSMutableDictionary *attribute_dict = [the_font attributeDictionary];
@@ -223,7 +239,7 @@ IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
   }
   [the_font setUsesAttributes:uses_attributes];
 
-  // Add to cache
+  /* Add to cache */
   [s_mapOfFonts setObject:the_font forKey:ns_iup_font_name];
 
   return the_font;
@@ -322,7 +338,8 @@ static void cocoaFontGetTextSize(IupCocoaFont *iup_font, const char *str, int le
       {
         NSString *line_str = [[NSString alloc] initWithBytes:curstr length:l_len encoding:NSUTF8StringEncoding];
         NSSize line_size = [line_str sizeWithAttributes:[iup_font attributeDictionary]];
-        int line_w = (int)ceil(line_size.width);
+        /* Add 2 pixels to prevent text clipping at the end. */
+        int line_w = (int)ceil(line_size.width) + 2;
         max_w = iupMAX(max_w, line_w);
         [line_str release];
       }
@@ -390,7 +407,7 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle *ih, const char *str)
     return 0;
   }
 
-  // Measure only the first line
+  /* Measure only the first line */
   const char *line_end = strchr(str, '\n');
   int len = (line_end) ? (int)(line_end - str) : (int)strlen(str);
 
@@ -426,7 +443,7 @@ void iupdrvFontInit(void)
 
 void iupdrvFontFinish(void)
 {
-  // This will release all the fonts we've allocated.
+  /* This will release all the fonts we've allocated. */
   [s_mapOfFonts release];
   s_mapOfFonts = nil;
 

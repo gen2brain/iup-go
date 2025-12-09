@@ -13,7 +13,7 @@
 #define kWidthOfTabList 24
 #define kHeightOfTabList 28
 #define kMaxTabCellWidth 180
-#define kMinTabCellWidth 100
+#define kMinTabCellWidth 80
 #define kTabCellHeight 28
 #define kBorderWidth 2
 #define kCloseButtonWidth 8
@@ -28,7 +28,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabBarOrientation) {
   IupCocoaTabBarVertical
 };
 
-// New enum for border position
+/* New enum for border position */
 typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
   IupCocoaTabPositionTop,
   IupCocoaTabPositionBottom,
@@ -61,9 +61,9 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
   id<IupCocoaTabBarViewDelegate> delegate;
 
   IupCocoaTabBarOrientation orientation;
-  IupCocoaTabPosition tabPosition; // New ivar
+  IupCocoaTabPosition tabPosition; /* New ivar */
   BOOL allowsDragging;
-  BOOL allowsTabListMenu; // New property
+  BOOL allowsTabListMenu; /* New property */
   BOOL showsCloseButtonOnHover;
   BOOL allowsAddingTabsByDoubleClick;
 }
@@ -80,7 +80,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
 @property(nonatomic, retain) NSColor* smallControlColor;
 @property(nonatomic, assign) id<IupCocoaTabBarViewDelegate> delegate;
 @property(nonatomic, assign) IupCocoaTabBarOrientation orientation;
-@property(nonatomic, assign) IupCocoaTabPosition tabPosition; // New property
+@property(nonatomic, assign) IupCocoaTabPosition tabPosition; /* New property */
 @property(nonatomic, assign) BOOL allowsDragging;
 @property(nonatomic, assign) BOOL allowsTabListMenu;
 @property(nonatomic, assign) BOOL showsCloseButtonOnHover;
@@ -92,9 +92,9 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
 - (void)removeTabCell:(IupCocoaTabCell*)tabCell;
 @end
 
-// IupCocoaTabBarView Delegates methods
-// Implement these methods to intercept your code
-//
+/* IupCocoaTabBarView Delegates methods */
+/* Implement these methods to intercept your code */
+/*  */
 @protocol IupCocoaTabBarViewDelegate <NSObject>
 
 @optional
@@ -112,7 +112,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
 - (void)tabWillActive:(IupCocoaTabCell*)tab;
 - (void)tabDidActived:(IupCocoaTabCell*)tab;
 
-- (void)tabWillClose:(IupCocoaTabCell*)tab;
+- (BOOL)tabWillClose:(IupCocoaTabCell*)tab;
 - (void)tabDidClosed:(IupCocoaTabCell*)tab;
 
 - (void)tabWillBeCreated:(IupCocoaTabCell*)tab;

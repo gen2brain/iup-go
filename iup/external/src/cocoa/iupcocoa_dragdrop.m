@@ -97,7 +97,7 @@ NSDragOperation cocoaTargetDropBaseDraggingUpdated(Ihandle* ih, id<NSDraggingInf
   return [the_sender draggingSourceOperationMask];
 }
 
-// Helper to convert NSFont to an IUP font string, preserving style.
+/* Helper to convert NSFont to an IUP font string, preserving style. */
 static NSString* iupcocoaGetFontStringFromFont(NSFont* ns_font)
 {
   if (!ns_font)
@@ -118,7 +118,7 @@ static NSString* iupcocoaGetFontStringFromFont(NSFont* ns_font)
     [style_string appendString:@"Italic "];
   }
 
-  // Trim trailing space
+  /* Trim trailing space */
   NSString* final_style = [style_string stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
 
   NSString* family_name = [ns_font familyName];
@@ -472,7 +472,7 @@ static void cocoaSourceDragProvideDataForTypeDefault(Ihandle* ih, NSPasteboard* 
   }
   else if([type_name isEqualToString:NSPasteboardTypeFileURL] || [type_name isEqualToString:NSPasteboardTypeURL])
   {
-    // Providing a file or URL requires a string value from the view, which is then converted to a URL.
+    /* Providing a file or URL requires a string value from the view, which is then converted to a URL. */
     if([main_view respondsToSelector:@selector(stringValue)])
     {
       NSString* ns_str = [main_view stringValue];
@@ -523,12 +523,12 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
 {
   if([type_name isEqualToString:NSPasteboardTypeTIFF] || [type_name isEqualToString:NSPasteboardTypePNG])
   {
-    // For images, the user can provide either an IUP image name or raw image data.
+    /* For images, the user can provide either an IUP image name or raw image data. */
     bool found_image = false;
     NSString* ns_string = [[[NSString alloc] initWithBytes:data_buffer length:data_size encoding:NSUTF8StringEncoding] autorelease];
     if(nil != ns_string)
     {
-      // Attempt to resolve as an IUP image name first.
+      /* Attempt to resolve as an IUP image name first. */
       const char* c_string = [ns_string UTF8String];
       NSImage* ns_image = (NSImage*)iupImageGetImage(c_string, ih, 0, NULL);
       NSBitmapImageRep* bitmap_image = nil;
@@ -555,7 +555,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
 
     if(!found_image)
     {
-      // If not a known image name, assume the buffer contains raw TIFF or PNG data.
+      /* If not a known image name, assume the buffer contains raw TIFF or PNG data. */
       NSData* ns_data = [NSData dataWithBytes:data_buffer length:data_size];
       [pasteboard_item setData:ns_data forType:type_name];
     }
@@ -573,16 +573,16 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
   }
   else if([type_name isEqualToString:NSPasteboardTypeFileURL])
   {
-    // User provides a file path string.
+    /* User provides a file path string. */
     NSString* ns_string = [[NSString alloc] initWithBytes:data_buffer length:data_size encoding:NSUTF8StringEncoding];
     [ns_string autorelease];
     NSURL* ns_url = [NSURL fileURLWithPath:ns_string];
-    NSData* ns_data = [NSData dataWithContentsOfURL:ns_url]; // This is inefficient but necessary for some contexts.
+    NSData* ns_data = [NSData dataWithContentsOfURL:ns_url]; /* This is inefficient but necessary for some contexts. */
     [pasteboard_item setData:ns_data forType:type_name];
   }
   else if([type_name isEqualToString:NSPasteboardTypeURL])
   {
-    // User provides a URL string.
+    /* User provides a URL string. */
     NSString* ns_string = [[NSString alloc] initWithBytes:data_buffer length:data_size encoding:NSUTF8StringEncoding];
     [ns_string autorelease];
     NSURL* ns_url = [NSURL URLWithString:ns_string];
@@ -596,7 +596,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
   }
   else if([type_name isEqualToString:NSPasteboardTypeFont])
   {
-    // WARNING: This relies on passing an Ihandle* as a pointer in the data buffer.
+    /* WARNING: This relies on passing an Ihandle* as a pointer in the data buffer. */
     if(data_size >= sizeof(intptr_t))
     {
       intptr_t int_ptr_for_iupfont = 0;
@@ -625,7 +625,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
       [pasteboard_item setData:ns_data forType:type_name];
     }
   }
-  else // Handle as custom binary data.
+  else /* Handle as custom binary data. */
   {
     NSData* ns_data = [NSData dataWithBytes:data_buffer length:data_size];
     [pasteboard_item setData:ns_data forType:type_name];
@@ -726,8 +726,8 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
 
   if([registered_types count] > 0)
   {
-    // NSFilePromiseProvider is used to generate file data on-demand, for example,
-    // when dragging an in-memory image to the Finder to create a new file.
+    /* NSFilePromiseProvider is used to generate file data on-demand, for example, */
+    /* when dragging an in-memory image to the Finder to create a new file. */
     bool wants_file_promise = [drag_source_data usesFilePromise];
     id return_item = nil;
     if(wants_file_promise)
@@ -824,7 +824,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
 
 static bool cocoaSourceDragDoDefaultFileCreate(NSFilePromiseProvider* file_promise_provider, NSURL* write_url)
 {
-  // Convention: If userInfo contains data, we can use it to write the file.
+  /* Convention: If userInfo contains data, we can use it to write the file. */
   id the_object = [file_promise_provider userInfo];
   bool did_handle = false;
   if(the_object != nil)
@@ -913,10 +913,10 @@ static bool cocoaSourceDragDoDefaultFileCreate(NSFilePromiseProvider* file_promi
 
 - (void) draggingSession:(NSDraggingSession*)dragging_session willBeginAtPoint:(NSPoint)screen_point
 {
-  // This method is part of the NSDraggingSource protocol and is called when a drag session begins.
-  // At this point, the drag has already been initiated and any pre-drag callbacks
-  // (like DRAGBEGIN_CB) should have been called before beginDraggingSessionWithItems.
-  // No additional setup is needed here.
+  /* This method is part of the NSDraggingSource protocol and is called when a drag session begins. */
+  /* At this point, the drag has already been initiated and any pre-drag callbacks */
+  /* (like DRAGBEGIN_CB) should have been called before beginDraggingSessionWithItems. */
+  /* No additional setup is needed here. */
 
   (void)dragging_session;
   (void)screen_point;
@@ -928,8 +928,8 @@ static bool cocoaSourceDragDoDefaultFileCreate(NSFilePromiseProvider* file_promi
   IFni call_back = (IFni)IupGetCallback(ih, "DRAGEND_CB");
   if(NULL != call_back)
   {
-    // The action parameter signifies the result of the drag operation.
-    // 1 = move, 0 = copy, -1 = drag failed or was aborted.
+    /* The action parameter signifies the result of the drag operation. */
+    /* 1 = move, 0 = copy, -1 = drag failed or was aborted. */
     int action_val = 0;
     if(NSDragOperationNone == drag_operation)
     {
@@ -945,7 +945,7 @@ static bool cocoaSourceDragDoDefaultFileCreate(NSFilePromiseProvider* file_promi
     }
     else
     {
-      // Unknown or combined operation, report as is.
+      /* Unknown or combined operation, report as is. */
       action_val = (int)drag_operation;
     }
     call_back(ih, action_val);
@@ -1074,9 +1074,9 @@ static int cocoaSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
-    // Set DROPTYPES to handle files.
+    /* Set DROPTYPES to handle files. */
     cocoaTargetDropSetDropTypesAttrib(ih, (const char*)NSPasteboardTypeFileURL.UTF8String);
-    // Enable DROPTARGET.
+    /* Enable DROPTARGET. */
     cocoaTargetDropSetDropTargetAttrib(ih, "YES");
   }
   else
@@ -1094,7 +1094,7 @@ static int cocoaSourceDropSetPasteFromPasteboardAttrib(Ihandle* ih, const char* 
   }
 
   NSPasteboard* paste_board = [NSPasteboard generalPasteboard];
-  NSPoint drop_point = {0, 0}; // Paste operations have no specific drop point.
+  NSPoint drop_point = {0, 0}; /* Paste operations have no specific drop point. */
 
   IupTargetDropAssociatedData* drag_drop_data = cocoaTargetDropGetAssociatedData(ih);
   id sender_object = [drag_drop_data mainView];

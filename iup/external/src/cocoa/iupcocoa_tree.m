@@ -56,7 +56,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
   return outline_view;
 }
 
-// Custom row view to handle HLCOLOR attribute for selection
+/* Custom row view to handle HLCOLOR attribute for selection */
 @interface IupCocoaTreeRowView : NSTableRowView
 @property(nonatomic, assign) Ihandle* ih;
 @end
@@ -81,24 +81,24 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
       }
     }
   }
-  // Fallback to default selection drawing if HLCOLOR is not set or ih is nil
+  /* Fallback to default selection drawing if HLCOLOR is not set or ih is nil */
   [super drawSelectionInRect:dirtyRect];
 }
 @end
 
 @class IupCocoaTreeItem;
 
-// Be very careful about retain cycles. Nothing in this class retains anything at the moment.
-// IupCocoaTreeItem retains this.
+/* Be very careful about retain cycles. Nothing in this class retains anything at the moment. */
+/* IupCocoaTreeItem retains this. */
 @interface IupCocoaTreeToggleReceiver : NSObject
 @property(nonatomic, assign) Ihandle* ihandle;
-@property(nonatomic, assign) IupCocoaTreeItem* treeItem; // back pointer to tree item (weak)
+@property(nonatomic, assign) IupCocoaTreeItem* treeItem; /* back pointer to tree item (weak) */
 - (IBAction) myToggleClickAction:(id)the_sender;
 @end
 
 @implementation IupCocoaTreeToggleReceiver
 
-// all properties are assign, so we don't need to override dealloc
+/* all properties are assign, so we don't need to override dealloc */
 - (IBAction) myToggleClickAction:(id)the_sender;
 {
   Ihandle* ih = [self ihandle];
@@ -126,7 +126,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
   IupCocoaTreeItem* parentItem;
   NSMutableArray* childrenArray;
   NSString* title;
-  int kind; // ITREE_BRANCH ITREE_LEAF
+  int kind; /* ITREE_BRANCH ITREE_LEAF */
   NSControlStateValue checkBoxState;
   bool checkBoxHidden;
   BOOL isDeleted;
@@ -134,7 +134,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
   NSImage* collapsedImage;
   NSColor* textColor;
   NSFont* font;
-  IupCocoaTreeToggleReceiver* toggleReceiver; // For TOGGLE_CB callbacks.
+  IupCocoaTreeToggleReceiver* toggleReceiver; /* For TOGGLE_CB callbacks. */
 }
 
 @property(nonatomic, assign) int kind;
@@ -154,7 +154,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
 
 @end
 
-// Forward declaration needed
+/* Forward declaration needed */
 static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outline_view);
 
 @implementation IupCocoaTreeItem
@@ -165,14 +165,14 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
 @synthesize title;
 @synthesize parentItem;
 @synthesize isDeleted;
-@synthesize bitmapImage; // is the expandedImage for branches
+@synthesize bitmapImage; /* is the expandedImage for branches */
 @synthesize collapsedImage;
 @synthesize textColor;
 @synthesize font;
 @synthesize toggleReceiver;
 
-// Creates, caches, and returns the array of children
-// Loads children incrementally
+/* Creates, caches, and returns the array of children */
+/* Loads children incrementally */
 - (NSMutableArray*) childrenArray
 {
   return childrenArray;
@@ -219,7 +219,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
 
   [childrenArray release];
   [title release];
-  parentItem = nil; // weak ref
+  parentItem = nil; /* weak ref */
   [super dealloc];
 }
 
@@ -234,7 +234,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
   [new_copy setTextColor:[self textColor]];
   [new_copy setFont:[self font]];
 
-  [new_copy setTitle:[self title]]; // this is a copy property
+  [new_copy setTitle:[self title]]; /* this is a copy property */
   [new_copy setKind:[self kind]];
   [new_copy setCheckBoxState:[self checkBoxState]];
   [new_copy setCheckBoxHidden:[self isCheckBoxHidden]];
@@ -261,7 +261,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
 
 @end
 
-// We need to override NSOutlineView in order to implement things like keyDown for k_any
+/* We need to override NSOutlineView in order to implement things like keyDown for k_any */
 @interface IupCocoaOutlineView : NSOutlineView
 @property(nonatomic, assign) Ihandle* ih;
 @property(nonatomic, retain) NSImage* leafImage;
@@ -304,7 +304,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
   return nil;
 }
 
-// Intercept right-click to handle RIGHTCLICK_CB
+/* Intercept right-click to handle RIGHTCLICK_CB */
 - (void) rightMouseDown:(NSEvent *)event
 {
   NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
@@ -318,7 +318,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
       IupCocoaTreeItem *item = [self itemAtRow:row];
       int item_id = iupTreeFindNodeId(self.ih, (InodeHandle*)item);
       cb(self.ih, item_id);
-      return; // Don't call super to prevent context menu
+      return; /* Don't call super to prevent context menu */
     }
   }
 
@@ -377,7 +377,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
 {
   Ihandle* ih = [self ih];
 
-  // Handle Enter key for EXECUTELEAF/BRANCH callbacks
+  /* Handle Enter key for EXECUTELEAF/BRANCH callbacks */
   NSString *chars = [the_event characters];
   if ([chars length] > 0)
   {
@@ -388,7 +388,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
       if ([delegate respondsToSelector:@selector(iupCocoaTreeDoubleClickAction:)])
       {
         [delegate performSelector:@selector(iupCocoaTreeDoubleClickAction:) withObject:self];
-        return; // Consume event
+        return; /* Consume event */
       }
     }
   }
@@ -724,7 +724,7 @@ static NSInteger Helper_RecursivelyFindFlatIndexofTreeItemInOutlineView(IupCocoa
   return is_found;
 }
 
-// This is a helper function that traverses through a NSOutlineView data source delegate looking for a certain item, and returns the array index this would be in for the ordering of the Iup node_cache
+/* This is a helper function that traverses through a NSOutlineView data source delegate looking for a certain item, and returns the array index this would be in for the ordering of the Iup node_cache */
 static NSInteger Helper_FindFlatIndexofTreeItemInOutlineView(IupCocoaTreeDelegate* tree_delegate, IupCocoaTreeItem* tree_item, NSInteger* out_flat_index)
 {
   bool is_found = false;
@@ -771,7 +771,7 @@ static NSInteger Helper_FindFlatIndexofTreeItemInOutlineView(IupCocoaTreeDelegat
 - (NSUInteger) insertChild:(IupCocoaTreeItem*)tree_item_child withParent:(IupCocoaTreeItem*)tree_item_parent
 {
   [self insertChild:tree_item_child withParent:tree_item_parent targetChildIndex:0];
-  return 0; // always index 0 since we always insert in the first position
+  return 0; /* always index 0 since we always insert in the first position */
 }
 
 - (NSUInteger) insertChild:(IupCocoaTreeItem*)tree_item_child withParent:(IupCocoaTreeItem*)tree_item_parent targetChildIndex:(NSInteger)target_child_index
@@ -947,8 +947,8 @@ static NSInteger Helper_FindFlatIndexofTreeItemInOutlineView(IupCocoaTreeDelegat
   IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)the_item;
   NSCAssert([tree_item isKindOfClass:[IupCocoaTreeItem class]], @"Expected IupCocoaTreeItem");
 
-  // IUP requires explicitly defining nodes as branches, so we can assume all branches
-  // are expandable, even if they currently have no children. This allows dropping items into an empty branch.
+  /* IUP requires explicitly defining nodes as branches, so we can assume all branches */
+  /* are expandable, even if they currently have no children. This allows dropping items into an empty branch. */
   if([tree_item kind] == ITREE_BRANCH)
   {
     return YES;
@@ -1010,22 +1010,22 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   return active_image;
 }
 
-// WARNING: This method needs to be fast for performance.
+/* WARNING: This method needs to be fast for performance. */
 - (CGFloat) outlineView:(NSOutlineView*)outline_view heightOfRowByItem:(id)the_item
 {
   Ihandle* ih = [(IupCocoaOutlineView*)outline_view ih];
   IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)the_item;
-  CGFloat text_height = 17.0; // Default height
+  CGFloat text_height = 17.0; /* Default height */
 
   CGFloat image_width = 0.0;
   CGFloat image_height = 0.0;
   helperGetActiveImageForTreeItem(tree_item, (IupCocoaOutlineView*)outline_view, &image_width, &image_height);
 
-  // Use item's custom font if available to calculate text height
+  /* Use item's custom font if available to calculate text height */
   NSFont *font = [tree_item font];
   if (font)
   {
-    text_height = [font capHeight] + 2; // Approximate height from font
+    text_height = [font capHeight] + 2; /* Approximate height from font */
   }
 
   CGFloat final_height;
@@ -1041,7 +1041,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   return final_height + ih->data->spacing;
 }
 
-// WARNING: This is another method that should be fast for performance.
+/* WARNING: This is another method that should be fast for performance. */
 - (nullable NSView *)outlineView:(NSOutlineView*)outline_view viewForTableColumn:(nullable NSTableColumn*)table_column item:(id)the_item
 {
   Ihandle* ih = [(IupCocoaOutlineView*)outline_view ih];
@@ -1084,39 +1084,38 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       table_cell_view = [[[NSTableCellView alloc] initWithFrame:NSZeroRect] autorelease];
       [table_cell_view setIdentifier:@"IupCocoaTreeTableCellView"];
 
-      // Initialize ImageView
+      /* Initialize ImageView */
       NSImageView* image_view = [[NSImageView alloc] initWithFrame:NSZeroRect];
       [image_view setImageScaling:NSImageScaleProportionallyUpOrDown];
       [image_view setTranslatesAutoresizingMaskIntoConstraints:NO];
       [table_cell_view addSubview:image_view];
       [table_cell_view setImageView:image_view];
-      [image_view release]; // Retained by superview and property
+      [image_view release]; /* Retained by superview and property */
 
-      // Initialize TextField
+      /* Initialize TextField */
       IupCocoaTreeTextField* text_field = [[IupCocoaTreeTextField alloc] initWithFrame:NSZeroRect];
       [text_field setBezeled:NO];
       [text_field setDrawsBackground:NO];
       [text_field setEditable:NO];
-      [text_field setSelectable:YES]; // Good practice for standard cells
+      [text_field setSelectable:YES]; /* Good practice for standard cells */
       [text_field setTranslatesAutoresizingMaskIntoConstraints:NO];
-      [text_field setFont:[NSFont controlContentFontOfSize:0]]; // Default font
 
-      // Increase compression resistance to prevent the text field from collapsing when space is tight.
+      /* Increase compression resistance to prevent the text field from collapsing when space is tight. */
       [text_field setContentCompressionResistancePriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationHorizontal];
 
       [table_cell_view addSubview:text_field];
       [table_cell_view setTextField:text_field];
-      [text_field release]; // Retained by superview and property
+      [text_field release]; /* Retained by superview and property */
 
-      // Center vertically
+      /* Center vertically */
       [NSLayoutConstraint constraintWithItem:image_view attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
       [NSLayoutConstraint constraintWithItem:text_field attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
 
-      // Set a standard size constraint for the image view (e.g., 16x16).
+      /* Set a standard size constraint for the image view (e.g., 16x16). */
       [NSLayoutConstraint constraintWithItem:image_view attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:16.0].active = YES;
       [NSLayoutConstraint constraintWithItem:image_view attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:16.0].active = YES;
 
-      // Horizontal layout: |-[Image]-[Text]-|
+      /* Horizontal layout: |-[Image]-[Text]-| */
       [NSLayoutConstraint constraintWithItem:image_view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeLeading multiplier:1.0 constant:2.0].active = YES;
       [NSLayoutConstraint constraintWithItem:text_field attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:image_view attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:5.0].active = YES;
       [NSLayoutConstraint constraintWithItem:text_field attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:-2.0].active = YES;
@@ -1136,17 +1135,28 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
     [text_field setEditable:(BOOL)ih->data->show_rename];
     if (ih->data->show_rename)
     {
-      // The text field handles its own editing callbacks.
+      /* The text field handles its own editing callbacks. */
       [text_field setDelegate:text_field];
     }
     else
     {
-      // Clear delegate when recycling a view if rename is off.
+      /* Clear delegate when recycling a view if rename is off. */
       [text_field setDelegate:nil];
     }
 
-    // Apply custom font and color
-    [text_field setFont:([tree_item font] ?: [NSFont controlContentFontOfSize:0])];
+    /* Apply custom font and color */
+    NSFont* item_font = [tree_item font];
+    if (!item_font)
+    {
+      IupCocoaFont* iup_font = iupcocoaGetFont(ih);
+      if (!iup_font)
+      {
+        const char* default_font = IupGetGlobal("DEFAULTFONT");
+        iup_font = iupcocoaFindFont(default_font);
+      }
+      item_font = iup_font ? [iup_font nativeFont] : [NSFont systemFontOfSize:13];
+    }
+    [text_field setFont:item_font];
     [text_field setTextColor:([tree_item textColor] ?: [NSColor controlTextColor])];
     [text_field setEnabled:is_enabled];
   }
@@ -1154,7 +1164,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   if (image_view)
   {
     NSImage* active_image = helperGetActiveImageForTreeItem(tree_item, (IupCocoaOutlineView*)outline_view, NULL, NULL);
-    // Hide the image view if the new item doesn't have an image.
+    /* Hide the image view if the new item doesn't have an image. */
     [image_view setHidden:(nil == active_image)];
     [image_view setImage:active_image];
     [image_view setEnabled:is_enabled];
@@ -1177,7 +1187,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   NSImage* expanded_image = [tree_item bitmapImage] ?: [outline_view expandedImage];
   NSImage* collapsed_image = [tree_item collapsedImage] ?: [outline_view collapsedImage];
 
-  // Only reload if the images are different to avoid flicker.
+  /* Only reload if the images are different to avoid flicker. */
   if(![expanded_image isEqual:collapsed_image])
   {
     cocoaTreeReloadItem(tree_item, outline_view);
@@ -1573,7 +1583,7 @@ static NSData* helperDataWithValue(NSValue* the_value)
 {
   [self setItemBeingDragged:nil];
 
-  // If only one item is being dragged, mark it so we can reorder it with a special pboard indicator
+  /* If only one item is being dragged, mark it so we can reorder it with a special pboard indicator */
   if([dragged_items count] == 1)
   {
     [self setItemBeingDragged:[dragged_items lastObject]];
@@ -1583,13 +1593,13 @@ static NSData* helperDataWithValue(NSValue* the_value)
 static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, IupCocoaTreeItem* tree_item_drop, NSInteger child_index, bool is_copy)
 {
   IFniiii drag_drop_cb = (IFniiii)IupGetCallback(ih, "DRAGDROP_CB");
-  int is_shift = 0; // Shift key doesn't have a standard D&D meaning on macOS
+  int is_shift = 0; /* Shift key doesn't have a standard D&D meaning on macOS */
 
   if(drag_drop_cb)
   {
     int drag_id = iupTreeFindNodeId(ih, (InodeHandle*)tree_item_drag);
-    // The drop_id is the identifier of the node where the item was dropped.
-    // The actual position (as child or sibling) is determined later.
+    /* The drop_id is the identifier of the node where the item was dropped. */
+    /* The actual position (as child or sibling) is determined later. */
     int drop_id = iupTreeFindNodeId(ih, (InodeHandle*)tree_item_drop);
     return drag_drop_cb(ih, drag_id, drop_id, is_shift, (int)is_copy);
   }
@@ -1604,10 +1614,10 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
 
   if([drag_types containsObject:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE])
   {
-    // If the sender is ourselves, then we accept it as a move or copy, depending on the modifier key
+    /* If the sender is ourselves, then we accept it as a move or copy, depending on the modifier key */
     if([drag_info draggingSource] == outline_view)
     {
-      // Since this is callback shared with DRAGDROPTREE, do an extra check to make sure this feature is on.
+      /* Since this is callback shared with DRAGDROPTREE, do an extra check to make sure this feature is on. */
       if(!ih->data->show_dragdrop)
       {
         return NSDragOperationNone;
@@ -1640,8 +1650,8 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
         {
           if([self itemBeingDragged])
           {
-            // We have a single item being dragged to move; validate if we can move it or not
-            // A move is only valid if the target isn't a child of the thing being dragged. We validate that now
+            /* We have a single item being dragged to move; validate if we can move it or not */
+            /* A move is only valid if the target isn't a child of the thing being dragged. We validate that now */
             id item_walker = target_item;
             while(item_walker)
             {
@@ -1663,7 +1673,7 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
           }
           else
           {
-            // For multiple items, what do we do?
+            /* For multiple items, what do we do? */
             return NSDragOperationNone;
           }
         }
@@ -1673,7 +1683,7 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
         }
       }
     }
-    // Dragging an item from one NSOutlineView to another NSOutlineView
+    /* Dragging an item from one NSOutlineView to another NSOutlineView */
     else
     {
       if(0 == IupGetInt(ih, "DRAGDROPTREE"))
@@ -1691,7 +1701,7 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
         }
         else if((-1 == child_index) && (nil == target_item))
         {
-          // special check for dragging onto an empty outlineview
+          /* special check for dragging onto an empty outlineview */
           IupCocoaTreeDelegate* data_source_delegate = (IupCocoaTreeDelegate*)[outline_view dataSource];
           if([[data_source_delegate treeRootTopLevelObjects] count] == 0)
           {
@@ -1717,7 +1727,7 @@ static int helperCallDragDropCb(Ihandle* ih, IupCocoaTreeItem* tree_item_drag, I
         }
         else if((-1 == child_index) && (nil == target_item))
         {
-          // special check for dragging onto an empty outlineview
+          /* special check for dragging onto an empty outlineview */
           IupCocoaTreeDelegate* data_source_delegate = (IupCocoaTreeDelegate*)[outline_view dataSource];
           if([[data_source_delegate treeRootTopLevelObjects] count] == 0)
           {
@@ -1885,22 +1895,22 @@ static NSArray<IupCocoaTreeItem*>* iupCocoaTreeCreateFlatItemArray(IupCocoaTreeI
   return flattened_array_of_items;
 }
 
-// iupTreeCopyMoveCache doesn't work for Cocoa.
-// The main problem is NSOutlineView allows the user to insert into positions that IUP does not support.
-// There are ambiguities about whether something is added as a sibling or child.
-// IUP overspecifies the UI interaction rules which don't apply to NSOutlineView.
-// And NSOutlineView provides UI that does distinguish between sibling or child and the user has fine control over where it is dropped.
-// So I think the problem is that we cannot express this in terms of IUP.
-// Additionally, iupTreeCopyMoveCache seems to imply I copied the nodes, and then will delete.
-// But Cocoa directly moved, so there is another impedience mismatch.
-//
-// (The bigger problem I think is we shouldn't have a node_cache.
-// "The two biggest problems in computer science are naming things and cache invalidation."
-// Because Cocoa already has two representations (the NSOutlineView and the data source delegate),
-// with a different internal layout than the third IUP node_cache, it is really hard to keep these in sync.
-// But for now, we are stuck with the node_cache.
-// So I need to create my own variants of iupTreeCopyMoveCache to properly update the node_cache so it stays in sync with
-// how Cocoa allows the user to manipulate the NSOutlineView.)
+/* iupTreeCopyMoveCache doesn't work for Cocoa. */
+/* The main problem is NSOutlineView allows the user to insert into positions that IUP does not support. */
+/* There are ambiguities about whether something is added as a sibling or child. */
+/* IUP overspecifies the UI interaction rules which don't apply to NSOutlineView. */
+/* And NSOutlineView provides UI that does distinguish between sibling or child and the user has fine control over where it is dropped. */
+/* So I think the problem is that we cannot express this in terms of IUP. */
+/* Additionally, iupTreeCopyMoveCache seems to imply I copied the nodes, and then will delete. */
+/* But Cocoa directly moved, so there is another impedience mismatch. */
+/*  */
+/* (The bigger problem I think is we shouldn't have a node_cache. */
+/* "The two biggest problems in computer science are naming things and cache invalidation." */
+/* Because Cocoa already has two representations (the NSOutlineView and the data source delegate), */
+/* with a different internal layout than the third IUP node_cache, it is really hard to keep these in sync. */
+/* But for now, we are stuck with the node_cache. */
+/* So I need to create my own variants of iupTreeCopyMoveCache to properly update the node_cache so it stays in sync with */
+/* how Cocoa allows the user to manipulate the NSOutlineView.) */
 static void iupCocoaTreeMoveCache(Ihandle* ih, int flat_index_before, int flat_index_after, int count_of_nodes_to_move)
 {
   /* I need to rearrange the internal IUP node_cache array.
@@ -1952,8 +1962,8 @@ static void iupCocoaTreeMoveCache(Ihandle* ih, int flat_index_before, int flat_i
   iupAttribSet(ih, "LASTADDNODE", NULL);
 }
 
-// iupTreeCopyMoveCache doesn't work for Cocoa.
-// (See comments in iupCocoaTreeMoveCache for rationale.)
+/* iupTreeCopyMoveCache doesn't work for Cocoa. */
+/* (See comments in iupCocoaTreeMoveCache for rationale.) */
 static void iupCocoaTreeCopyCache(Ihandle* ih, int flat_index_source, int flat_index_target, int count_of_nodes_to_copy, IupCocoaTreeItem* new_copy_tree_item)
 {
   /*
@@ -1970,26 +1980,26 @@ Algorithm:
 - memmove from the range (insert_position), to the insert_position
 */
   int original_node_count = ih->data->node_count;
-  // We must change the node_count and let IUP resize its array as needed.
+  /* We must change the node_count and let IUP resize its array as needed. */
   ih->data->node_count += count_of_nodes_to_copy;
-  // iupTreeIncCacheMem expects that the node_count contains the new size
+  /* iupTreeIncCacheMem expects that the node_count contains the new size */
   iupTreeIncCacheMem(ih);
 
-  if(flat_index_source > flat_index_target) // copying from a higher address to a lower
+  if(flat_index_source > flat_index_target) /* copying from a higher address to a lower */
   {
-    int number_of_nodes_to_move_over = (original_node_count-1) - flat_index_target + 1; // we add +1 because we are inserting before the target
+    int number_of_nodes_to_move_over = (original_node_count-1) - flat_index_target + 1; /* we add +1 because we are inserting before the target */
     memmove(ih->data->node_cache+flat_index_target+count_of_nodes_to_copy, ih->data->node_cache+flat_index_target, number_of_nodes_to_move_over*sizeof(InodeData));
     memmove(ih->data->node_cache+flat_index_target, ih->data->node_cache+flat_index_source+count_of_nodes_to_copy, count_of_nodes_to_copy*sizeof(InodeData));
   }
-  else // copying from a lower address to a higher
+  else /* copying from a lower address to a higher */
   {
     int number_of_nodes_to_move_over = (original_node_count-1) - flat_index_source;
     memmove(ih->data->node_cache+flat_index_target+count_of_nodes_to_copy, ih->data->node_cache+flat_index_target, number_of_nodes_to_move_over*sizeof(InodeData));
     memmove(ih->data->node_cache+flat_index_target, ih->data->node_cache+flat_index_source, count_of_nodes_to_copy*sizeof(InodeData));
   }
 
-  // The mem-copies above created new nodes in the node_cache for our insertion, but their pointers to the node_handle point to the original objects instead of the new copies of the objects.
-  // So we need to go through those items, and change their node_handle pointers to point to the new copies of each object.
+  /* The mem-copies above created new nodes in the node_cache for our insertion, but their pointers to the node_handle point to the original objects instead of the new copies of the objects. */
+  /* So we need to go through those items, and change their node_handle pointers to point to the new copies of each object. */
   NSArray<IupCocoaTreeItem*>* flattened_array_of_new_items = iupCocoaTreeCreateFlatItemArray(new_copy_tree_item);
   int k=flat_index_target;
   for(IupCocoaTreeItem* a_item in flattened_array_of_new_items)
@@ -2001,23 +2011,23 @@ Algorithm:
   iupAttribSet(ih, "LASTADDNODE", NULL);
 }
 
-// iupTreeCopyMoveCache doesn't work for Cocoa.
-// (See comments in iupCocoaTreeMoveCache for rationale.)
+/* iupTreeCopyMoveCache doesn't work for Cocoa. */
+/* (See comments in iupCocoaTreeMoveCache for rationale.) */
 static void iupCocoaTreeCrossInsertCache(Ihandle* source_ih, Ihandle* target_ih, int flat_index_source, int flat_index_target, int count_of_nodes_to_copy, IupCocoaTreeItem* new_copy_tree_item)
 {
   int original_node_count = target_ih->data->node_count;
-  // We must change the node_count and let IUP resize its array as needed.
+  /* We must change the node_count and let IUP resize its array as needed. */
   target_ih->data->node_count += count_of_nodes_to_copy;
-  // iupTreeIncCacheMem expects that the node_count contains the new size
+  /* iupTreeIncCacheMem expects that the node_count contains the new size */
   iupTreeIncCacheMem(target_ih);
 
-  int number_of_nodes_to_move_over = (original_node_count-1) - flat_index_target + 1; // we add +1 because we are inserting before the target
+  int number_of_nodes_to_move_over = (original_node_count-1) - flat_index_target + 1; /* we add +1 because we are inserting before the target */
 
   memmove(target_ih->data->node_cache+flat_index_target+count_of_nodes_to_copy, target_ih->data->node_cache+flat_index_target, number_of_nodes_to_move_over*sizeof(InodeData));
   memcpy(target_ih->data->node_cache+flat_index_target, source_ih->data->node_cache+flat_index_source, count_of_nodes_to_copy*sizeof(InodeData));
 
-  // The mem-copies above created new nodes in the node_cache for our insertion, but their pointers to the node_handle point to the original objects instead of the new copies of the objects.
-  // So we need to go through those items, and change their node_handle pointers to point to the new copies of each object.
+  /* The mem-copies above created new nodes in the node_cache for our insertion, but their pointers to the node_handle point to the original objects instead of the new copies of the objects. */
+  /* So we need to go through those items, and change their node_handle pointers to point to the new copies of each object. */
   NSArray<IupCocoaTreeItem*>* flattened_array_of_new_items = iupCocoaTreeCreateFlatItemArray(new_copy_tree_item);
   int k=flat_index_target;
   for(IupCocoaTreeItem* a_item in flattened_array_of_new_items)
@@ -2055,9 +2065,9 @@ static void helperMoveNode(IupCocoaOutlineView* outline_view, IupCocoaTreeItem* 
 
   NSInteger adjusted_index = target_child_index;
 
-  // If the node is being moved under the same immediate parent,
-  // we need to subtract 1 if the current placement of the node is earlier than the target.
-  // because the node's current placement counts against us and target_child_index is +1 too much.
+  /* If the node is being moved under the same immediate parent, */
+  /* we need to subtract 1 if the current placement of the node is earlier than the target. */
+  /* because the node's current placement counts against us and target_child_index is +1 too much. */
   if([parent_tree_item isEqual:parent_target_tree_item])
   {
     if(object_index < target_child_index)
@@ -2070,7 +2080,7 @@ static void helperMoveNode(IupCocoaOutlineView* outline_view, IupCocoaTreeItem* 
     adjusted_index = 0;
   }
 
-  // Quick exit if the user didn't actually change the location
+  /* Quick exit if the user didn't actually change the location */
   if( (object_index == adjusted_index)
       && [parent_target_tree_item isEqual:parent_tree_item]
     )
@@ -2079,16 +2089,16 @@ static void helperMoveNode(IupCocoaOutlineView* outline_view, IupCocoaTreeItem* 
   }
 
   NSInteger flat_index_before = 0;
-  // This will get an index that is compatible with the node_cache
+  /* This will get an index that is compatible with the node_cache */
   bool is_found = Helper_FindFlatIndexofTreeItemInOutlineView(data_source_delegate, tree_item, &flat_index_before);
   NSCAssert(is_found, @"Internal error: Could not find moved node in outline view");
 
-  // update the data source
+  /* update the data source */
   [data_source_delegate moveItem:tree_item targetParent:parent_target_tree_item targetChildIndex:adjusted_index];
   [outline_view moveItemAtIndex:object_index inParent:parent_tree_item toIndex:adjusted_index inParent:parent_target_tree_item];
 
   NSInteger flat_index_after = 0;
-  // This will get an index that is compatible with the node_cache
+  /* This will get an index that is compatible with the node_cache */
   is_found = Helper_FindFlatIndexofTreeItemInOutlineView(data_source_delegate, tree_item, &flat_index_after);
   NSCAssert(is_found, @"Internal error: Could not find moved node in outline view");
 
@@ -2166,30 +2176,30 @@ static void helperCopyAndInsertNode(IupCocoaOutlineView* outline_view, IupCocoaT
     adjusted_index = 0;
   }
 
-  // Save the expanded information for the tree_item so we can later apply it to the copies.
-  // We need to do this now because if we insert a copy into the tree_item as a child, they will be out-of-sync.
+  /* Save the expanded information for the tree_item so we can later apply it to the copies. */
+  /* We need to do this now because if we insert a copy into the tree_item as a child, they will be out-of-sync. */
   NSArray<NSNumber*>* array_of_expanded_info = helperExpandedItemArray(tree_item, outline_view);
 
   NSInteger flat_index_source = 0;
-  // This will get an index that is compatible with the node_cache
+  /* This will get an index that is compatible with the node_cache */
   bool is_found = Helper_FindFlatIndexofTreeItemInOutlineView(data_source_delegate, tree_item, &flat_index_source);
   NSCAssert(is_found, @"Internal error: Could not find moved node in outline view");
 
-  // update the data source
+  /* update the data source */
   [data_source_delegate insertChild:new_copy_tree_item withParent:parent_target_tree_item targetChildIndex:adjusted_index];
 
-  // directly update the outlineview so we don't have to reloadData
+  /* directly update the outlineview so we don't have to reloadData */
   NSIndexSet* index_set = [NSIndexSet indexSetWithIndex:adjusted_index];
   [outline_view insertItemsAtIndexes:index_set inParent:parent_target_tree_item withAnimation:copy_insert_animation];
 
-  // Make the new copy match the expanded structure of the original since the Cocoa NSOutlineView is so visual and live-drags.
-  // Anything else just looks wrong.
-  // I think IUP has slightly different rules, but I think this is the right thing to do for Cocoa.
+  /* Make the new copy match the expanded structure of the original since the Cocoa NSOutlineView is so visual and live-drags. */
+  /* Anything else just looks wrong. */
+  /* I think IUP has slightly different rules, but I think this is the right thing to do for Cocoa. */
   helperSyncExpandedItems(array_of_expanded_info, new_copy_tree_item, outline_view);
 
 
   NSInteger flat_index_target = 0;
-  // This will get an index that is compatible with the node_cache
+  /* This will get an index that is compatible with the node_cache */
   is_found = Helper_FindFlatIndexofTreeItemInOutlineView(data_source_delegate, new_copy_tree_item, &flat_index_target);
   NSCAssert(is_found, @"Internal error: Could not find moved node in outline view");
 
@@ -2279,7 +2289,7 @@ static IupCocoaTreeItem* helperIsPointerValid(intptr_t look_for_pointer, IupCoco
   return NULL;
 }
 
-// Need forward declaration
+/* Need forward declaration */
 static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, int call_cb);
 
 - (BOOL) outlineView:(NSOutlineView *)outline_view acceptDrop:(id <NSDraggingInfo>)drag_info item:(id)parent_target_tree_item childIndex:(NSInteger)target_child_index
@@ -2458,41 +2468,41 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
   }
 }
 
-@end // IupCocoaTreeDragDropDelegate
+@end /* IupCocoaTreeDragDropDelegate */
 
 /*****************************************************************************/
 /* ADDING ITEMS                                                              */
 /*****************************************************************************/
 
-// This replicates the functionality of the internal static iTreeAddToCache from iup_tree.c,
-// but allows specifying the exact insertion ID.
+/* This replicates the functionality of the internal static iTreeAddToCache from iup_tree.c, */
+/* but allows specifying the exact insertion ID. */
 static void cocoaTreeInsertInCache(Ihandle* ih, int id, InodeHandle* node_handle)
 {
-  // iupTreeIncCacheMem must have been called before, and node_count incremented.
+  /* iupTreeIncCacheMem must have been called before, and node_count incremented. */
 
-  // Ensure id is valid within the new count.
+  /* Ensure id is valid within the new count. */
   if (id < 0 || id >= ih->data->node_count)
   {
-    // Should not happen if called correctly.
+    /* Should not happen if called correctly. */
     return;
   }
 
-  if (id < ih->data->node_count - 1) // If not adding at the very end
+  if (id < ih->data->node_count - 1) /* If not adding at the very end */
   {
     /* open space for the new id */
-    // Calculate the number of existing elements that need to be moved.
-    // Old count was ih->data->node_count - 1.
-    // We move elements from index 'id' up to 'old_count - 1'.
+    /* Calculate the number of existing elements that need to be moved. */
+    /* Old count was ih->data->node_count - 1. */
+    /* We move elements from index 'id' up to 'old_count - 1'. */
     int remain_count = (ih->data->node_count - 1) - id;
 
     if (remain_count > 0)
     {
-      // Shift existing elements to the right by one position.
+      /* Shift existing elements to the right by one position. */
       memmove(ih->data->node_cache+id+1, ih->data->node_cache+id, remain_count*sizeof(InodeData));
     }
   }
 
-  // Insert the new node handle and clear userdata.
+  /* Insert the new node handle and clear userdata. */
   ih->data->node_cache[id].node_handle = node_handle;
   ih->data->node_cache[id].userdata = NULL;
 }
@@ -2740,21 +2750,21 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
     return;
   }
 
-  // Find the row index for the given item.
-  // If the item is not visible (e.g., its parent is collapsed), this will be a negative number.
+  /* Find the row index for the given item. */
+  /* If the item is not visible (e.g., its parent is collapsed), this will be a negative number. */
   NSInteger row = [outline_view rowForItem:tree_item];
 
-  // Only proceed if the row is valid and visible.
+  /* Only proceed if the row is valid and visible. */
   if (row >= 0)
   {
-    // Create an index set for the specific row we want to reload.
+    /* Create an index set for the specific row we want to reload. */
     NSIndexSet* row_index_set = [NSIndexSet indexSetWithIndex:row];
 
-    // Create an index set for the column. Our tree only has one column at index 0.
+    /* Create an index set for the column. Our tree only has one column at index 0. */
     NSIndexSet* column_index_set = [NSIndexSet indexSetWithIndex:0];
 
-    // Tell the outline view to reload the data for the specific cell,
-    // which will cause it to be redrawn with any updated properties.
+    /* Tell the outline view to reload the data for the specific cell, */
+    /* which will cause it to be redrawn with any updated properties. */
     [outline_view reloadDataForRowIndexes:row_index_set columnIndexes:column_index_set];
   }
 }
@@ -3325,7 +3335,7 @@ static int cocoaTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
   }
   else
   {
-    // Setting to nil reverts to the default font handled by viewForTableColumn.
+    /* Setting to nil reverts to the default font handled by viewForTableColumn. */
     [tree_item setFont:nil];
     cocoaTreeReloadItem(tree_item, outline_view);
   }
@@ -3871,7 +3881,7 @@ static void helperReplaceDefaultImages(Ihandle* ih, IupCocoaOutlineView* outline
     expanded_image = (NSImage*)iupImageGetImage(expanded_img_name, ih, 0, NULL);
   else
   {
-    expanded_image = [NSImage imageNamed:NSImageNameFolder]; // No public "Open Folder" icon, use the same for consistency
+    expanded_image = [NSImage imageNamed:NSImageNameFolder]; /* No public "Open Folder" icon, use the same for consistency */
     [expanded_image setSize:NSMakeSize(16, 16)];
   }
   [outline_view setExpandedImage:expanded_image];
@@ -3969,7 +3979,7 @@ static int cocoaTreeSetToggleVisibleAttrib(Ihandle* ih, int item_id, const char*
 
   [tree_item setCheckBoxHidden:check_box_hidden];
 
-  // Reload the item to reflect the change in visibility.
+  /* Reload the item to reflect the change in visibility. */
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
   cocoaTreeReloadItem(tree_item, outline_view);
 
@@ -4206,12 +4216,12 @@ static int cocoaTreeSetHlColorAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
   {
-    // Redraw rows to apply the new highlight color
+    /* Redraw rows to apply the new highlight color */
     NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
     [outline_view setNeedsDisplay:YES];
   }
   (void)value;
-  return 1; // Mark as stored
+  return 1; /* Mark as stored */
 }
 
 static int cocoaTreeSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -4245,7 +4255,7 @@ static int cocoaTreeSetExpandAllAttrib(Ihandle* ih, const char* value)
 
 static int cocoaTreeSetRenameAttrib(Ihandle* ih, const char* value)
 {
-  // This is an ACTION attribute to start editing
+  /* This is an ACTION attribute to start editing */
   if (ih->handle && ih->data->show_rename)
   {
     NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
@@ -4253,12 +4263,12 @@ static int cocoaTreeSetRenameAttrib(Ihandle* ih, const char* value)
 
     if (selected_row >= 0)
     {
-      // The view needs to be the first responder to begin editing
+      /* The view needs to be the first responder to begin editing */
       [[outline_view window] makeFirstResponder:outline_view];
       [outline_view editColumn:0 row:selected_row withEvent:nil select:YES];
     }
   }
-  (void)value; // value is not used for this action
+  (void)value; /* value is not used for this action */
   return 0;
 }
 
@@ -4282,7 +4292,7 @@ static int cocoaTreeSetContextMenuAttrib(Ihandle* ih, const char* value)
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
   iupcocoaCommonBaseSetContextMenuForWidget(ih, outline_view, menu_ih);
 
-  // Record that the user explicitly set this attribute, even if to NULL.
+  /* Record that the user explicitly set this attribute, even if to NULL. */
   iupAttribSet(ih, "_IUPCOCOA_CONTEXTMENU_SET", "1");
 
   return 1;

@@ -7,21 +7,21 @@
 #import <Cocoa/Cocoa.h>
 
 
-// For Cocoa Bindings
+/* For Cocoa Bindings */
 @interface IUPStepperObject : NSObject
 {
-// NSInteger stepperValue;
+/* NSInteger stepperValue; */
   NSNumber* stepperValue;
 }
-//@property(nonatomic, assign) NSInteger stepperValue;
+/* @property(nonatomic, assign) NSInteger stepperValue; */
 @property(nonatomic, retain) NSNumber* stepperValue;
 @end
 
-// For Cocoa Bindings
+/* For Cocoa Bindings */
 @interface IUPStepperObjectController : NSObjectController
 @end
 
-// For Interface Builder
+/* For Interface Builder */
 @interface IUPTextSpinnerFilesOwner : NSObject
 {
   IBOutlet NSStackView* stackView;
@@ -37,7 +37,7 @@
 @property(nonatomic, readonly, weak) IUPStepperObjectController* stepperObjectController;
 @end
 
-// For us to hold all the widgets
+/* For us to hold all the widgets */
 @interface IUPTextSpinnerContainer : NSObject
 
 @property(nonatomic, retain) NSStepper* stepperView;

@@ -1208,7 +1208,7 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
   {
     NSScrollView* scroll_view = [[NSScrollView alloc] initWithFrame:NSZeroRect];
 
-    // Replace default NSClipView with our custom one that prevents physical scrolling
+    /* Replace default NSClipView with our custom one that prevents physical scrolling */
     IupLogicalScrollClipView* clip_view = [[IupLogicalScrollClipView alloc] initWithFrame:NSZeroRect];
     [clip_view setDocumentView:nil];
     [scroll_view setContentView:clip_view];
@@ -1416,19 +1416,19 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
 void iupdrvCanvasInitClass(Iclass* ic)
 {
-  // Driver Dependent Class functions
+  /* Driver Dependent Class functions */
   ic->Map = cocoaCanvasMapMethod;
   ic->UnMap = cocoaCanvasUnMapMethod;
   ic->LayoutUpdate = cocoaCanvasLayoutUpdateMethod;
   ic->ComputeNaturalSize = cocoaCanvasComputeNaturalSizeMethod;
 
-  // Visual
+  /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaCanvasSetBgColorAttrib, "232 232 232", NULL, IUPAF_DEFAULT);
 
-  // IupCanvas only
+  /* IupCanvas only */
   iupClassRegisterAttribute(ic, "DRAWSIZE", cocoaCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
-  // Scrollbar attributes
+  /* Scrollbar attributes */
   iupClassRegisterAttribute(ic, "DX", NULL, cocoaCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DY", NULL, cocoaCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, cocoaCanvasSetPosXAttrib, "0", NULL, IUPAF_NO_INHERIT);
@@ -1436,22 +1436,22 @@ void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "XAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "YAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
 
-  // Platform specific
+  /* Platform specific */
   iupClassRegisterAttribute(ic, "DRAWABLE", cocoaCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CGCONTEXT", cocoaCanvasGetCGContextAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NSVIEW", cocoaCanvasGetNSViewAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT|IUPAF_READONLY);
 
-  // Focus ring support
+  /* Focus ring support */
   iupClassRegisterAttribute(ic, "NATIVEFOCUSRING", cocoaCanvasGetNativeFocusRingAttrib, cocoaCanvasSetNativeFocusRingAttrib, "NO", NULL, IUPAF_NO_INHERIT);
 
-  // Drag and drop
+  /* Drag and drop */
   iupClassRegisterAttribute(ic, "DRAGINITIATE", NULL, cocoaCanvasSetBeginDragAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOBEGINDRAG", NULL, NULL, "NO", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SENDACTION", NULL, iupcocoaCommonBaseSetSendActionAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  // Not Supported
+  /* Not Supported */
   iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-  // Layer backing
+  /* Layer backing */
   iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }

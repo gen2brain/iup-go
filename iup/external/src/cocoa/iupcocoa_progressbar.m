@@ -33,7 +33,7 @@
    The transform view is offset to compensate for coordinate system changes after rotation.
 */
 
-// The offset needed to position the rotated progress bar correctly within its container
+/* The offset needed to position the rotated progress bar correctly within its container */
 #define VERTICAL_PROGRESSBAR_OFFSET 6.0
 
 static NSView* cocoaProgressBarGetRootView(Ihandle* ih)
