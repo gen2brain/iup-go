@@ -1179,6 +1179,32 @@ static char* cocoaCanvasGetNativeFocusRingAttrib(Ihandle* ih)
   return iupStrReturnBoolean([canvas_view useNativeFocusRing]);
 }
 
+static char* cocoaCanvasGetScrollVisibleAttrib(Ihandle* ih)
+{
+  NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
+  if (!scroll_view)
+    return "NO";
+
+  int scroll_visible = 0;
+
+  NSScroller* horiz_scroller = [scroll_view horizontalScroller];
+  NSScroller* vert_scroller = [scroll_view verticalScroller];
+
+  if (horiz_scroller && ![horiz_scroller isHidden])
+    scroll_visible |= 1;
+  if (vert_scroller && ![vert_scroller isHidden])
+    scroll_visible |= 2;
+
+  if (scroll_visible == 3)
+    return "YES";
+  else if (scroll_visible == 1)
+    return "HORIZONTAL";
+  else if (scroll_visible == 2)
+    return "VERTICAL";
+  else
+    return "NO";
+}
+
 static int cocoaCanvasSetNativeFocusRingAttrib(Ihandle* ih, const char* value)
 {
   IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
@@ -1435,6 +1461,7 @@ void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, cocoaCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "XAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "YAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", cocoaCanvasGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
   /* Platform specific */
   iupClassRegisterAttribute(ic, "DRAWABLE", cocoaCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
