@@ -303,10 +303,24 @@ static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle*
   if (index < 0)
     return;
 
-  /* Show/hide page containers */
-  Ihandle* child = IupGetChild(ih, index);
-  Ihandle* prev_child = *prev_index >= 0 ? IupGetChild(ih, *prev_index) : nullptr;
+  /* Get page widgets at visual positions (handles tab reordering) */
+  QWidget* current_page = tabs->widget(index);
+  QWidget* prev_page = *prev_index >= 0 ? tabs->widget(*prev_index) : nullptr;
 
+  /* Find which children correspond to these page widgets */
+  Ihandle* child = nullptr;
+  Ihandle* prev_child = nullptr;
+
+  for (Ihandle* c = ih->firstchild; c; c = c->brother)
+  {
+    QWidget* page = (QWidget*)iupAttribGet(c, "_IUPTAB_PAGE");
+    if (page == current_page)
+      child = c;
+    if (page == prev_page)
+      prev_child = c;
+  }
+
+  /* Show/hide page containers */
   if (prev_child)
   {
     QWidget* prev_container = (QWidget*)iupAttribGet(prev_child, "_IUPTAB_CONTAINER");
@@ -415,6 +429,80 @@ extern "C" int iupdrvTabsGetCurrentTab(Ihandle* ih)
     return -1;
 
   return tabs->currentIndex();
+}
+
+extern "C" void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+{
+  int width = 0;
+  int height = 0;
+
+  if (ih->handle)
+  {
+    QTabWidget* tabWidget = (QTabWidget*)ih->handle;
+    QTabBar* tabBar = tabWidget->tabBar();
+
+    /* Get the tab bar's size hint which includes all tabs */
+    if (tabBar && tabBar->count() > 0)
+    {
+      /* For horizontal tabs (TOP/BOTTOM), divide total width by number of tabs */
+      /* For vertical tabs (LEFT/RIGHT), divide total height by number of tabs */
+      QSize barSize = tabBar->sizeHint();
+      int numTabs = tabBar->count();
+
+      QTabWidget::TabPosition pos = tabWidget->tabPosition();
+      if (pos == QTabWidget::West || pos == QTabWidget::East)
+      {
+        /* Vertical tabs - height divided among tabs */
+        width = barSize.width();
+        height = barSize.height() / numTabs;
+      }
+      else
+      {
+        /* Horizontal tabs - width divided among tabs */
+        width = barSize.width() / numTabs;
+        height = barSize.height();
+      }
+
+      if (tab_width) *tab_width = width;
+      if (tab_height) *tab_height = height;
+      return;
+    }
+  }
+
+  /* If not mapped, measure text + image + Qt padding */
+  int text_width = 0;
+  int text_height = 0;
+
+  if (tab_title)
+  {
+    text_width = iupdrvFontGetStringWidth(ih, tab_title);
+    iupdrvFontGetCharSize(ih, NULL, &text_height);
+    width = text_width;
+    height = text_height;
+  }
+
+  if (tab_image)
+  {
+    void* img = iupImageGetImage(tab_image, ih, 0, NULL);
+    if (img)
+    {
+      int img_w, img_h;
+      iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      width += img_w;
+      if (tab_title)
+        width += 4;  /* spacing between icon and text */
+      if (img_h > height)
+        height = img_h;
+    }
+  }
+
+  /* Qt adds padding around tab content */
+  /* Default style adds approximately 12px horizontal, 6px vertical padding */
+  width += 24;
+  height += 12;
+
+  if (tab_width) *tab_width = width;
+  if (tab_height) *tab_height = height;
 }
 
 extern "C" int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
