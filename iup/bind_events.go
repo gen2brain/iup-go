@@ -389,6 +389,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 			setTableValueFunc(ih, v)
 		case MatrixValueFunc:
 			setMatrixValueFunc(ih, v)
+		case ListValueFunc:
+			setListValueFunc(ih, v)
 		}
 	case "SORT_CB":
 		setTableSortFunc(ih, fn.(TableSortFunc))

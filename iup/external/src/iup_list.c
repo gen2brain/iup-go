@@ -314,6 +314,11 @@ static int iListSetRemoveItemAttrib(Ihandle* ih, const char* value)
 static int iListGetCount(Ihandle* ih)
 {
   int count;
+
+  /* Virtual mode: return item_count */
+  if (ih->data->is_virtual)
+    return ih->data->item_count;
+
   if (ih->handle)
     count = iupdrvListGetCount(ih);
   else
@@ -323,6 +328,28 @@ static int iListGetCount(Ihandle* ih)
       count++;
   }
   return count;
+}
+
+/* Virtual mode helper functions */
+
+int iupListIsVirtual(Ihandle* ih)
+{
+  return ih->data->is_virtual;
+}
+
+int iupListGetItemCount(Ihandle* ih)
+{
+  if (ih->data->is_virtual)
+    return ih->data->item_count;
+  return iListGetCount(ih);
+}
+
+char* iupListGetItemValueCb(Ihandle* ih, int pos)
+{
+  sIFni value_cb = (sIFni)IupGetCallback(ih, "VALUE_CB");
+  if (value_cb)
+    return value_cb(ih, pos);
+  return NULL;
 }
 
 static char* iListGetCountAttrib(Ihandle* ih)
@@ -413,7 +440,60 @@ static int iListSetScrollbarAttrib(Ihandle* ih, const char* value)
 
 static char* iListGetScrollbarAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->sb); 
+  return iupStrReturnBoolean (ih->data->sb);
+}
+
+static int iListSetVirtualModeAttrib(Ihandle* ih, const char* value)
+{
+  /* valid only before map */
+  if (ih->handle)
+    return 0;
+
+  /* virtual mode only valid for plain list (not dropdown, not editbox) */
+  if (iupStrBoolean(value))
+  {
+    if (!ih->data->is_dropdown && !ih->data->has_editbox)
+      ih->data->is_virtual = 1;
+  }
+  else
+    ih->data->is_virtual = 0;
+
+  return 0;
+}
+
+static char* iListGetVirtualModeAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(ih->data->is_virtual);
+}
+
+static int iListSetItemCountAttrib(Ihandle* ih, const char* value)
+{
+  int count;
+
+  /* Only valid in virtual mode */
+  if (!ih->data->is_virtual)
+    return 0;
+
+  if (iupStrToInt(value, &count))
+  {
+    if (count < 0)
+      count = 0;
+
+    ih->data->item_count = count;
+
+    /* Update driver if mapped */
+    if (ih->handle)
+      iupdrvListSetItemCount(ih, count);
+  }
+
+  return 0;
+}
+
+static char* iListGetItemCountAttrib(Ihandle* ih)
+{
+  if (ih->data->is_virtual)
+    return iupStrReturnInt(ih->data->item_count);
+  return iupStrReturnInt(iListGetCount(ih));
 }
 
 static char* iListGetMaskAttrib(Ihandle* ih)
@@ -927,6 +1007,11 @@ static void iListGetNaturalItemsSize(Ihandle *ih, int *w, int *h)
     *w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
     *w = (visiblecolumns*(*w))/10;
   }
+  else if (ih->data->is_virtual)
+  {
+    /* Virtual mode: don't iterate items, use default width */
+    *w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWWWWWWWWWWWW");  /* 20 chars default */
+  }
   else
   {
     char *value;
@@ -948,7 +1033,7 @@ static void iListGetNaturalItemsSize(Ihandle *ih, int *w, int *h)
       *w = iupdrvFontGetStringWidth(ih, "WWWWW");
   }
 
-  if (ih->data->show_image)
+  if (ih->data->show_image && !ih->data->is_virtual)
   {
     int max_w = 0;
     for (i=1; i<=count; i++)
@@ -1092,6 +1177,7 @@ Iclass* iupListNewClass(void)
 
   iupClassRegisterCallback(ic, "EDIT_CB", "is");
   iupClassRegisterCallback(ic, "CARET_CB", "iii");
+  iupClassRegisterCallback(ic, "VALUE_CB", "i=s");  /* Virtual mode callback: (int pos) -> string */
 
   /* Common Callbacks */
   iupBaseRegisterCommonCallbacks(ic);
@@ -1136,6 +1222,10 @@ Iclass* iupListNewClass(void)
   iupClassRegisterAttribute(ic, "SHOWIMAGE", iListGetShowImageAttrib, iListSetShowImageAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDRAGDROP", iListGetShowDragDropAttrib, iListSetShowDragDropAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGDROPLIST", NULL, iListSetDragDropListAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+
+  /* Virtual mode attributes */
+  iupClassRegisterAttribute(ic, "VIRTUALMODE", iListGetVirtualModeAttrib, iListSetVirtualModeAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ITEMCOUNT", iListGetItemCountAttrib, iListSetItemCountAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupdrvListInitClass(ic);
 

@@ -48,12 +48,9 @@ extern "C" {
 
 #include "iupqt_drv.h"
 
+
 /* Declare QPixmap* as a Qt metatype for Qt5 compatibility */
 Q_DECLARE_METATYPE(QPixmap*)
-
-/****************************************************************************
- * Custom ComboBox and ListWidget with Minimal Size Hints
- ****************************************************************************/
 
 /* Custom QComboBox that returns minimal sizeHint to let IUP control sizing */
 class IupQtComboBox : public QComboBox
@@ -105,14 +102,6 @@ protected:
 
   void keyPressEvent(QKeyEvent* event) override
   {
-    /* Follow the Cocoa/GTK pattern:
-     * - Call IUP key handler first for ALL keys
-     * - If IUP returns 0 (not handled), let Qt handle it normally
-     * - If IUP returns 1 (handled), accept the event and don't pass to Qt
-     *
-     * This allows K_ANY callbacks on either the dialog OR the list to intercept keys,
-     * while still allowing navigation keys to work normally if the callback doesn't handle them. */
-
     extern int iupqtKeyPressEvent(QWidget*, QKeyEvent*, Ihandle*);
     int result = iupqtKeyPressEvent(this, event, ih);
 
@@ -311,15 +300,103 @@ public:
        * Images should be scaled down to fit the font-based row height.
        * Only add horizontal space for the image width. */
       size.setWidth(size.width() + ih->data->maximg_w + 2 * ih->data->spacing);
-      /* Do NOT expand height - let images scale down to fit font height */
     }
 
     return size;
   }
 };
 
+/* Virtual List Model for VIRTUALMODE */
+class IupQtVirtualListModel : public QAbstractListModel
+{
+public:
+  Ihandle* ih;
+  int count;  /* Model's own count for change notifications */
+
+  explicit IupQtVirtualListModel(Ihandle* ih_param, QObject* parent = nullptr)
+    : QAbstractListModel(parent), ih(ih_param), count(ih_param ? ih_param->data->item_count : 0) {}
+
+  int rowCount(const QModelIndex& parent = QModelIndex()) const override
+  {
+    if (parent.isValid())
+      return 0;
+    return count;
+  }
+
+  QVariant data(const QModelIndex& index, int role) const override
+  {
+    if (!index.isValid() || !ih)
+      return QVariant();
+
+    int row = index.row();
+    if (row < 0 || row >= count)
+      return QVariant();
+
+    if (role == Qt::DisplayRole)
+    {
+      char* text = iupListGetItemValueCb(ih, row + 1);  /* 1-based */
+      return QString::fromUtf8(text ? text : "");
+    }
+
+    return QVariant();
+  }
+
+  void setItemCount(int new_count)
+  {
+    if (new_count < count)
+    {
+      beginRemoveRows(QModelIndex(), new_count, count - 1);
+      count = new_count;
+      endRemoveRows();
+    }
+    else if (new_count > count)
+    {
+      beginInsertRows(QModelIndex(), count, new_count - 1);
+      count = new_count;
+      endInsertRows();
+    }
+  }
+
+  void refreshAll()
+  {
+    beginResetModel();
+    endResetModel();
+  }
+};
+
+/* Custom QListView for virtual mode */
+class IupQtVirtualListView : public QListView
+{
+private:
+  Ihandle* ih;
+
+public:
+  explicit IupQtVirtualListView(Ihandle* ih_param, QWidget* parent = nullptr)
+    : QListView(parent), ih(ih_param) {}
+
+  QSize sizeHint() const override
+  {
+    QFontMetrics fm(font());
+    int h = fm.height() * 3;
+    int w = fm.horizontalAdvance('X') * 10;
+    return QSize(w, h);
+  }
+
+protected:
+  void keyPressEvent(QKeyEvent* event) override
+  {
+    extern int iupqtKeyPressEvent(QWidget*, QKeyEvent*, Ihandle*);
+    int result = iupqtKeyPressEvent(this, event, ih);
+
+    if (result == 0)
+      QListView::keyPressEvent(event);
+    else
+      event->accept();
+  }
+};
+
 /****************************************************************************
- * Helper Functions
+ * Driver Functions
  ****************************************************************************/
 
 extern "C" void iupdrvListAddItemSpace(Ihandle* ih, int *h)
@@ -687,6 +764,16 @@ extern "C" void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   }
 
   return NULL;
+}
+
+extern "C" void iupdrvListSetItemCount(Ihandle* ih, int count)
+{
+  if (!ih->data->is_virtual)
+    return;
+
+  IupQtVirtualListModel* model = (IupQtVirtualListModel*)iupAttribGet(ih, "_IUPQT_VIRTUAL_MODEL");
+  if (model)
+    model->setItemCount(count);
 }
 
 /****************************************************************************
@@ -1727,6 +1814,77 @@ static int qtListMapMethod(Ihandle* ih)
 
     /* Set initial items */
     iupListSetInitialItems(ih);
+  }
+  else if (ih->data->is_virtual)
+  {
+    /* Virtual mode: Create QListView with custom model */
+    IupQtVirtualListView* view = new IupQtVirtualListView(ih);
+
+    if (!view)
+      return IUP_ERROR;
+
+    ih->handle = (InativeHandle*)view;
+
+    /* Create and set the virtual model */
+    IupQtVirtualListModel* model = new IupQtVirtualListModel(ih, view);
+    view->setModel(model);
+    iupAttribSet(ih, "_IUPQT_VIRTUAL_MODEL", (char*)model);
+
+    /* Enable uniform item sizes. This tells Qt all items have the same size, avoiding per-item measurement. */
+    view->setUniformItemSizes(true);
+
+    /* Remove minimum size constraints */
+    view->setMinimumSize(0, 0);
+
+    /* Set selection mode */
+    if (ih->data->is_multiple)
+      view->setSelectionMode(QAbstractItemView::MultiSelection);
+    else
+      view->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    /* Set scrollbar policy based on AUTOHIDE attribute */
+    int autohide = iupAttribGetBoolean(ih, "AUTOHIDE");
+
+    if (ih->data->sb)
+    {
+      if (autohide)
+      {
+        view->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        view->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+      }
+      else
+      {
+        view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+      }
+    }
+    else
+    {
+      view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+      view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    }
+
+    /* Connect selection signals */
+    QObject::connect(view->selectionModel(), &QItemSelectionModel::selectionChanged,
+      [view, ih](const QItemSelection& selected, const QItemSelection& deselected) {
+        (void)selected;
+        (void)deselected;
+        if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
+          return;
+
+        QModelIndexList indexes = view->selectionModel()->selectedIndexes();
+        if (!indexes.isEmpty())
+        {
+          int pos = indexes.first().row() + 1;  /* 1-based */
+          IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
+          if (cb)
+          {
+            char* text = iupListGetItemValueCb(ih, pos);
+            cb(ih, text ? text : (char*)"", pos, 1);
+          }
+          iupBaseCallValueChangedCb(ih);
+        }
+      });
   }
   else
   {

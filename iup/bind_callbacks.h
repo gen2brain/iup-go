@@ -97,6 +97,11 @@ static void goIupSetListActionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "ACTION", (Icallback) goIupListActionCB);
 }
 
+extern char* goIupListValueCB(void *, int pos);
+static void goIupSetListValueFunc(Ihandle *ih) {
+	IupSetCallback(ih, "VALUE_CB", (Icallback) goIupListValueCB);
+}
+
 extern int goIupFlatListActionCB(void *, void *text, int item, int state);
 static void goIupSetFlatListActionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "FLAT_ACTION", (Icallback) goIupFlatListActionCB);

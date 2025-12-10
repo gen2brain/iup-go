@@ -218,6 +218,105 @@ static gpointer iup_list_item_get_user_data(IupListItem* item)
   return item ? item->user_data : NULL;
 }
 
+/* Virtual GListModel for VIRTUALMODE */
+typedef struct _IupGtk4VirtualListModel IupGtk4VirtualListModel;
+typedef struct _IupGtk4VirtualListModelClass IupGtk4VirtualListModelClass;
+
+struct _IupGtk4VirtualListModel
+{
+  GObject parent;
+  Ihandle* ih;
+  guint count;  /* Model's own count for change notifications */
+};
+
+struct _IupGtk4VirtualListModelClass
+{
+  GObjectClass parent_class;
+};
+
+GType iup_gtk4_virtual_list_model_get_type(void);
+#define IUP_TYPE_GTK4_VIRTUAL_LIST_MODEL (iup_gtk4_virtual_list_model_get_type())
+#define IUP_GTK4_VIRTUAL_LIST_MODEL(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), IUP_TYPE_GTK4_VIRTUAL_LIST_MODEL, IupGtk4VirtualListModel))
+
+static void iup_gtk4_virtual_list_model_iface_init(GListModelInterface *iface);
+
+G_DEFINE_TYPE_WITH_CODE(IupGtk4VirtualListModel, iup_gtk4_virtual_list_model, G_TYPE_OBJECT,
+                        G_IMPLEMENT_INTERFACE(G_TYPE_LIST_MODEL, iup_gtk4_virtual_list_model_iface_init))
+
+static void iup_gtk4_virtual_list_model_init(IupGtk4VirtualListModel *model)
+{
+  model->ih = NULL;
+  model->count = 0;
+}
+
+static void iup_gtk4_virtual_list_model_class_init(IupGtk4VirtualListModelClass *klass)
+{
+  (void)klass;
+}
+
+static GType iup_gtk4_virtual_list_model_get_item_type(GListModel *list)
+{
+  (void)list;
+  return IUP_TYPE_LIST_ITEM;
+}
+
+static guint iup_gtk4_virtual_list_model_get_n_items(GListModel *list)
+{
+  IupGtk4VirtualListModel *model;
+
+  if (!IUP_GTK4_VIRTUAL_LIST_MODEL(list))
+    return 0;
+
+  model = IUP_GTK4_VIRTUAL_LIST_MODEL(list);
+  return model->count;
+}
+
+static gpointer iup_gtk4_virtual_list_model_get_item(GListModel *list, guint position)
+{
+  IupGtk4VirtualListModel *model;
+  char *text;
+  IupListItem *item;
+
+  if (!IUP_GTK4_VIRTUAL_LIST_MODEL(list))
+    return NULL;
+
+  model = IUP_GTK4_VIRTUAL_LIST_MODEL(list);
+
+  if (!model->ih || position >= model->count)
+    return NULL;
+
+  /* Create a new IupListItem with data from VALUE_CB */
+  text = iupListGetItemValueCb(model->ih, position + 1);  /* 1-based */
+  item = iup_list_item_new(text ? text : "");
+
+  return item;
+}
+
+static void iup_gtk4_virtual_list_model_iface_init(GListModelInterface *iface)
+{
+  iface->get_item_type = iup_gtk4_virtual_list_model_get_item_type;
+  iface->get_n_items = iup_gtk4_virtual_list_model_get_n_items;
+  iface->get_item = iup_gtk4_virtual_list_model_get_item;
+}
+
+static IupGtk4VirtualListModel *iup_gtk4_virtual_list_model_new(Ihandle *ih)
+{
+  IupGtk4VirtualListModel *model = g_object_new(IUP_TYPE_GTK4_VIRTUAL_LIST_MODEL, NULL);
+  model->ih = ih;
+  model->count = ih->data->item_count;  /* Use count set before mapping */
+  return model;
+}
+
+static void iup_gtk4_virtual_list_model_set_count(IupGtk4VirtualListModel *model, int new_count)
+{
+  guint old_count = model->count;
+  if (old_count != (guint)new_count)
+  {
+    model->count = new_count;
+    g_list_model_items_changed(G_LIST_MODEL(model), 0, old_count, new_count);
+  }
+}
+
 /* ========================================================================= */
 
 enum
@@ -235,6 +334,15 @@ static GListStore* gtk4ListGetGListStore(Ihandle* ih)
 static void gtk4ListSetGListStore(Ihandle* ih, GListStore* store)
 {
   iupAttribSet(ih, "_IUPGTK4_GLISTSTORE", (char*)store);
+}
+
+/* Get the GListModel - works for both normal and virtual mode */
+static GListModel* gtk4ListGetListModel(Ihandle* ih)
+{
+  if (ih->data->is_virtual)
+    return G_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_VIRTUAL_MODEL"));
+  else
+    return G_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_GLISTSTORE"));
 }
 
 static GtkSelectionModel* gtk4ListGetSelectionModel(Ihandle* ih)
@@ -515,8 +623,10 @@ static int gtk4ListConvertXYToPos(Ihandle* ih, int x, int y)
 
 int iupdrvListGetCount(Ihandle* ih)
 {
-  GListStore* store = gtk4ListGetGListStore(ih);
-  return g_list_model_get_n_items(G_LIST_MODEL(store));
+  GListModel* model = gtk4ListGetListModel(ih);
+  if (!model)
+    return 0;
+  return (int)g_list_model_get_n_items(model);
 }
 
 void iupdrvListAppendItem(Ihandle* ih, const char* value)
@@ -623,6 +733,18 @@ void iupdrvListRemoveAllItems(Ihandle* ih)
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 }
 
+void iupdrvListSetItemCount(Ihandle* ih, int count)
+{
+  IupGtk4VirtualListModel* model;
+
+  if (!ih->data->is_virtual)
+    return;
+
+  model = (IupGtk4VirtualListModel*)iupAttribGet(ih, "_IUPGTK4_VIRTUAL_MODEL");
+  if (model)
+    iup_gtk4_virtual_list_model_set_count(model, count);
+}
+
 static int gtk4ListSetFontAttrib(Ihandle* ih, const char* value)
 {
   if (!iupdrvSetFontAttrib(ih, value))
@@ -652,17 +774,26 @@ static char* gtk4ListGetIdValueAttrib(Ihandle* ih, int id)
   int pos = iupListGetPosAttrib(ih, id);
   if (pos >= 0)
   {
-    GListStore* store = gtk4ListGetGListStore(ih);
-
-    if (store)
+    if (ih->data->is_virtual)
     {
-      IupListItem* item = g_list_model_get_item(G_LIST_MODEL(store), pos);
-      if (item)
+      /* Virtual mode: get text from VALUE_CB */
+      char* text = iupListGetItemValueCb(ih, pos + 1);  /* 1-based */
+      return text;
+    }
+    else
+    {
+      GListStore* store = gtk4ListGetGListStore(ih);
+
+      if (store)
       {
-        const char* text = iup_list_item_get_text(item);
-        char* ret_str = iupStrReturnStr(iupgtk4StrConvertFromSystem(text));
-        g_object_unref(item);
-        return ret_str;
+        IupListItem* item = g_list_model_get_item(G_LIST_MODEL(store), pos);
+        if (item)
+        {
+          const char* text = iup_list_item_get_text(item);
+          char* ret_str = iupStrReturnStr(iupgtk4StrConvertFromSystem(text));
+          g_object_unref(item);
+          return ret_str;
+        }
       }
     }
   }
@@ -1647,8 +1778,9 @@ static void gtk4ListViewSelectionChanged(GtkSelectionModel* selection, guint pos
     if (multi_cb && ih->data->is_multiple)
     {
       GtkBitset* bitset = gtk_selection_model_get_selection(selection);
-      guint64 size = g_list_model_get_n_items(G_LIST_MODEL(gtk4ListGetGListStore(ih)));
-      int* pos = malloc(size * sizeof(int));
+      GListModel* model = gtk4ListGetListModel(ih);
+      guint64 size = model ? g_list_model_get_n_items(model) : 0;
+      int* pos = malloc((size > 0 ? size : 1) * sizeof(int));
       int sel_count = 0;
 
       for (guint64 i = 0; i < size; i++)
@@ -1689,7 +1821,8 @@ static void gtk4ListViewItemActivated(GtkListView* list_view, guint position, gp
 
   if (cb)
   {
-    IupListItem* item = g_list_model_get_item(G_LIST_MODEL(gtk4ListGetGListStore(ih)), position);
+    GListModel* model = gtk4ListGetListModel(ih);
+    IupListItem* item = model ? g_list_model_get_item(model, position) : NULL;
 
     if (item)
     {
@@ -1706,98 +1839,83 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
 {
   if (!ih->data->is_dropdown)
   {
-    GtkScrolledWindow* scrolled_window = (GtkScrolledWindow*)iupAttribGet(ih, "_IUPGTK4_SCROLLED_WINDOW");
-    if (!scrolled_window)
+    /* For plain lists, size calculation is handled by core's ComputeNaturalSize.
+       Only set min_content for non-virtual lists without VISIBLELINES. */
+    if (!ih->data->has_editbox && !ih->data->is_virtual)
     {
-      scrolled_window = (GtkScrolledWindow*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-      if (!scrolled_window || !GTK_IS_SCROLLED_WINDOW(scrolled_window))
-        return;
-    }
-
-    int natural_w = 0, natural_h = 0;
-    int char_width, char_height;
-    int visiblelines, item_count;
-    int visiblecolumns;
-
-    iupdrvFontGetCharSize(ih, &char_width, &char_height);
-
-    visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    if (visiblecolumns)
-    {
-      natural_w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
-      natural_w = (visiblecolumns * natural_w) / 10;
-    }
-    else
-    {
-      item_count = iupdrvListGetCount(ih);
-      for (int i = 1; i <= item_count; i++)
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+      if (visiblelines == 0)
       {
-        char* value = IupGetAttributeId(ih, "", i);
-        if (value)
+        GtkScrolledWindow* scrolled_window = (GtkScrolledWindow*)iupAttribGet(ih, "_IUPGTK4_SCROLLED_WINDOW");
+        if (!scrolled_window)
         {
-          int item_w = iupdrvFontGetStringWidth(ih, value);
-          if (item_w > natural_w)
-            natural_w = item_w;
+          scrolled_window = (GtkScrolledWindow*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+          if (!scrolled_window || !GTK_IS_SCROLLED_WINDOW(scrolled_window))
+            return;
         }
+
+        int natural_w = 0, natural_h = 0;
+        int char_height;
+        int item_count;
+
+        iupdrvFontGetCharSize(ih, NULL, &char_height);
+
+        int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+        if (visiblecolumns)
+        {
+          natural_w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
+          natural_w = (visiblecolumns * natural_w) / 10;
+        }
+        else
+        {
+          item_count = iupdrvListGetCount(ih);
+          for (int i = 1; i <= item_count; i++)
+          {
+            char* value = IupGetAttributeId(ih, "", i);
+            if (value)
+            {
+              int item_w = iupdrvFontGetStringWidth(ih, value);
+              if (item_w > natural_w)
+                natural_w = item_w;
+            }
+          }
+
+          if (natural_w == 0)
+            natural_w = iupdrvFontGetStringWidth(ih, "WWWWW");
+        }
+
+        natural_w += 2 * ih->data->spacing;
+
+        item_count = iupdrvListGetCount(ih);
+        if (item_count == 0) item_count = 1;
+
+        natural_h = char_height;
+        iupdrvListAddItemSpace(ih, &natural_h);
+        natural_h += 2 * ih->data->spacing;
+        natural_h = natural_h * item_count;
+
+        iupdrvListAddBorders(ih, &natural_w, &natural_h);
+
+        if (ih->data->sb)
+        {
+          int sb_size = iupdrvGetScrollbarSize();
+          natural_w += sb_size;
+        }
+
+        gtk_scrolled_window_set_min_content_height(scrolled_window, natural_h - 2);
+        gtk_scrolled_window_set_min_content_width(scrolled_window, natural_w - 2);
       }
-
-      if (natural_w == 0)
-        natural_w = iupdrvFontGetStringWidth(ih, "WWWWW");
-    }
-
-    natural_w += 2 * ih->data->spacing;
-
-    item_count = iupdrvListGetCount(ih);
-    if (item_count == 0) item_count = 1;
-
-    visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-    if (visiblelines)
-      item_count = visiblelines;
-
-    natural_h = char_height;
-    iupdrvListAddItemSpace(ih, &natural_h);
-    natural_h += 2 * ih->data->spacing;
-    natural_h = natural_h * item_count;
-
-    iupdrvListAddBorders(ih, &natural_w, &natural_h);
-
-    if (ih->data->sb)
-    {
-      int sb_size = iupdrvGetScrollbarSize();
-      natural_w += sb_size;  /* vertical scrollbar affects horizontal size only */
-    }
-
-    if (visiblelines > 0)
-    {
-      /* Calculate content height (item height * visible lines) without borders */
-      int content_h = char_height;
-      iupdrvListAddItemSpace(ih, &content_h);
-      content_h += 2 * ih->data->spacing;
-      content_h = content_h * visiblelines;
-    }
-
-    if (!ih->data->has_editbox && visiblelines == 0)
-    {
-      /* Subtract frame border because min_content is for content area INSIDE the frame
-         iupdrvListAddBorders added 2 pixels for the frame, but min_content should not include it */
-      gtk_scrolled_window_set_min_content_height(scrolled_window, natural_h - 2);
-      gtk_scrolled_window_set_min_content_width(scrolled_window, natural_w - 2);
-    }
-
-    {
-      int actual_min_w, actual_nat_w, actual_min_h, actual_nat_h;
-      gtk_widget_measure(GTK_WIDGET(scrolled_window), GTK_ORIENTATION_HORIZONTAL, -1, &actual_min_w, &actual_nat_w, NULL, NULL);
-      gtk_widget_measure(GTK_WIDGET(scrolled_window), GTK_ORIENTATION_VERTICAL, -1, &actual_min_h, &actual_nat_h, NULL, NULL);
     }
   }
   else
   {
+    /* Dropdown: set size_request for the widget */
     int natural_w = 0, natural_h = 0;
-    int char_width, char_height;
+    int char_height;
     int visiblecolumns, item_count;
     int sb_size = iupdrvGetScrollbarSize();
 
-    iupdrvFontGetCharSize(ih, &char_width, &char_height);
+    iupdrvFontGetCharSize(ih, NULL, &char_height);
 
     visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
     if (visiblecolumns)
@@ -1838,12 +1956,6 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
     }
 
     gtk_widget_set_size_request(ih->handle, natural_w, natural_h);
-
-    {
-      int actual_min_w, actual_nat_w, actual_min_h, actual_nat_h;
-      gtk_widget_measure(ih->handle, GTK_ORIENTATION_HORIZONTAL, -1, &actual_min_w, &actual_nat_w, NULL, NULL);
-      gtk_widget_measure(ih->handle, GTK_ORIENTATION_VERTICAL, -1, &actual_min_h, &actual_nat_h, NULL, NULL);
-    }
   }
 }
 
@@ -1899,42 +2011,38 @@ static void gtk4DropDownSelectionChanged(GObject* object, GParamSpec* pspec, gpo
   (void)pspec;
 }
 
-static gboolean gtk4ListDebugAllocation(gpointer user_data)
-{
-  Ihandle* ih = (Ihandle*)user_data;
-  GtkScrolledWindow* sw = (GtkScrolledWindow*)iupAttribGet(ih, "_IUPGTK4_DEBUG_LIST_SW");
-  if (sw && ih->handle)
-  {
-    int sw_w = gtk_widget_get_width(GTK_WIDGET(sw));
-    int sw_h = gtk_widget_get_height(GTK_WIDGET(sw));
-    int lv_w = gtk_widget_get_width(ih->handle);
-    int lv_h = gtk_widget_get_height(ih->handle);
-
-    int char_width, char_height;
-    iupdrvFontGetCharSize(ih, &char_width, &char_height);
-    int item_height = char_height;
-    iupdrvListAddItemSpace(ih, &item_height);
-
-  }
-  return G_SOURCE_REMOVE;
-}
-
 static int gtk4ListMapMethod(Ihandle* ih)
 {
   GtkScrolledWindow* scrolled_window = NULL;
-  GListStore* glist_store;
+  GListStore* glist_store = NULL;
+  GListModel* list_model = NULL;
   GtkListItemFactory* factory;
   GtkSelectionModel* selection_model;
 
-  glist_store = g_list_store_new(IUP_TYPE_LIST_ITEM);
-  gtk4ListSetGListStore(ih, glist_store);
+  /* Virtual mode: create virtual model for plain lists only */
+  if (ih->data->is_virtual && !ih->data->is_dropdown && !ih->data->has_editbox)
+  {
+    IupGtk4VirtualListModel* virtual_model = iup_gtk4_virtual_list_model_new(ih);
+    list_model = G_LIST_MODEL(virtual_model);
+    /* Keep a reference so the model survives even when selection model takes ownership */
+    g_object_ref(virtual_model);
+    iupAttribSet(ih, "_IUPGTK4_VIRTUAL_MODEL", (char*)virtual_model);
+    /* Initialize old count tracker for item count changes */
+    iupAttribSetInt(ih, "_IUPGTK4_VIRTUAL_OLD_COUNT", ih->data->item_count);
+  }
+  else
+  {
+    glist_store = g_list_store_new(IUP_TYPE_LIST_ITEM);
+    list_model = G_LIST_MODEL(glist_store);
+    gtk4ListSetGListStore(ih, glist_store);
+  }
 
   factory = gtk4ListCreateFactory(ih);
   gtk4ListSetFactory(ih, factory);
 
   if (ih->data->is_dropdown)
   {
-    selection_model = GTK_SELECTION_MODEL(gtk_single_selection_new(G_LIST_MODEL(glist_store)));
+    selection_model = GTK_SELECTION_MODEL(gtk_single_selection_new(list_model));
 
     if (ih->data->has_editbox)
     {
@@ -1943,7 +2051,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
     gtk4ListSetSelectionModel(ih, selection_model);
 
-    ih->handle = (GtkWidget*)gtk_drop_down_new(G_LIST_MODEL(glist_store), NULL);
+    ih->handle = (GtkWidget*)gtk_drop_down_new(list_model, NULL);
 
     if (!ih->handle)
       return IUP_ERROR;
@@ -2117,10 +2225,10 @@ static int gtk4ListMapMethod(Ihandle* ih)
     GtkPolicyType scrollbar_policy;
 
     if (!ih->data->has_editbox && ih->data->is_multiple)
-      selection_model = GTK_SELECTION_MODEL(gtk_multi_selection_new(G_LIST_MODEL(glist_store)));
+      selection_model = GTK_SELECTION_MODEL(gtk_multi_selection_new(list_model));
     else
     {
-      selection_model = GTK_SELECTION_MODEL(gtk_single_selection_new(G_LIST_MODEL(glist_store)));
+      selection_model = GTK_SELECTION_MODEL(gtk_single_selection_new(list_model));
 
       if (ih->data->has_editbox)
       {
@@ -2140,34 +2248,20 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
     scrolled_window = (GtkScrolledWindow*)gtk_scrolled_window_new();
 
-    /* Force scrolled_window to request correct height for VISIBLELINES */
+    /* Set minimum height based on VISIBLELINES */
     {
       int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
       if (visiblelines > 0 && !ih->data->has_editbox)
       {
-        int char_width, char_height;
-        iupdrvFontGetCharSize(ih, &char_width, &char_height);
+        int char_height;
+        iupdrvFontGetCharSize(ih, NULL, &char_height);
 
         int content_h = char_height;
         iupdrvListAddItemSpace(ih, &content_h);
         content_h += 2 * ih->data->spacing;
         content_h = content_h * visiblelines;
 
-        /* Total height: content + CSS border compensation (2px) */
-        /* GTK4 scrolled_window has NO internal overhead - only external CSS border */
-        int total_h = content_h + 2;
-
-        /* Set size_request on scrolled_window - CSS will take 2px, leaving exact content size for child */
-        gtk_widget_set_size_request(GTK_WIDGET(scrolled_window), -1, total_h);
-        gtk_widget_set_vexpand(GTK_WIDGET(scrolled_window), FALSE);
-        gtk_widget_set_valign(GTK_WIDGET(scrolled_window), GTK_ALIGN_START);
-
-        /* Mark scrolled_window so layout manager doesn't enforce GTK's scrollbar minimum */
-        g_object_set_data(G_OBJECT(scrolled_window), "iup-visiblelines-set", (gpointer)"1");
-
-        /* Store pointers for idle callback */
-        iupAttribSet(ih, "_IUPGTK4_DEBUG_LIST_SW", (char*)scrolled_window);
-        g_idle_add(gtk4ListDebugAllocation, ih);
+        gtk_scrolled_window_set_min_content_height(scrolled_window, content_h);
       }
     }
 
@@ -2248,10 +2342,6 @@ static int gtk4ListMapMethod(Ihandle* ih)
         /* Mark container and scrolled_window so layout manager doesn't enforce GTK's minimums */
         g_object_set_data(G_OBJECT(container), "iup-visiblelines-set", (gpointer)"1");
         g_object_set_data(G_OBJECT(scrolled_window), "iup-visiblelines-set", (gpointer)"1");
-
-        /* Store pointers for idle callback */
-        iupAttribSet(ih, "_IUPGTK4_DEBUG_LIST_SW", (char*)scrolled_window);
-        g_idle_add(gtk4ListDebugAllocation, ih);
       }
       else
       {
@@ -2323,63 +2413,6 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
     gtk_scrolled_window_set_policy(scrolled_window, scrollbar_policy, scrollbar_policy);
 
-    {
-      int natural_w = 0, natural_h = 0;
-      int char_width, char_height;
-      int visiblelines, item_count;
-      int visiblecolumns;
-
-      iupdrvFontGetCharSize(ih, &char_width, &char_height);
-
-      visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-      if (visiblecolumns)
-      {
-        natural_w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
-        natural_w = (visiblecolumns * natural_w) / 10;
-      }
-      else
-      {
-        item_count = iupdrvListGetCount(ih);
-        for (int i = 1; i <= item_count; i++)
-        {
-          char* value = IupGetAttributeId(ih, "", i);
-          if (value)
-          {
-            int item_w = iupdrvFontGetStringWidth(ih, value);
-            if (item_w > natural_w)
-              natural_w = item_w;
-          }
-        }
-
-        if (natural_w == 0)
-          natural_w = iupdrvFontGetStringWidth(ih, "WWWWW");
-      }
-
-      natural_w += 2 * ih->data->spacing;
-
-      item_count = iupdrvListGetCount(ih);
-      if (item_count == 0) item_count = 1;
-
-      visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-      if (visiblelines)
-        item_count = visiblelines;
-
-      natural_h = char_height;
-      iupdrvListAddItemSpace(ih, &natural_h);
-      natural_h += 2 * ih->data->spacing;
-      natural_h = natural_h * item_count;
-
-      iupdrvListAddBorders(ih, &natural_w, &natural_h);
-
-      if (ih->data->sb)
-      {
-        int sb_size = iupdrvGetScrollbarSize();
-        natural_w += sb_size;
-        natural_h += sb_size;
-      }
-
-    }
-
     g_signal_connect(selection_model, "selection-changed", G_CALLBACK(gtk4ListViewSelectionChanged), ih);
     g_signal_connect(ih->handle, "activate", G_CALLBACK(gtk4ListViewItemActivated), ih);
 
@@ -2400,9 +2433,11 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)gtk4ListConvertXYToPos);
 
-  iupListSetInitialItems(ih);
+  /* Don't populate items in virtual mode */
+  if (!ih->data->is_virtual)
+    iupListSetInitialItems(ih);
 
-  /* Tell GTK widgets the computed size since GtkListView doesn't naturally report sizes */
+  /* Tell GTK widgets the computed size */
   gtk4ListUpdateMinSize(ih);
 
   iupgtk4UpdateMnemonic(ih);

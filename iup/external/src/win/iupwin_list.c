@@ -187,6 +187,8 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
 int iupdrvListGetCount(Ihandle* ih)
 {
+  if (ih->data->is_virtual)
+    return (int)SendMessage(ih->handle, LVM_GETITEMCOUNT, 0, 0);
   return (int)SendMessage(ih->handle, WIN_GETCOUNT(ih), 0, 0);
 }
 
@@ -361,9 +363,15 @@ static char* winListGetText(Ihandle* ih, int pos)
   return iupwinStrFromSystem(str);
 }
 
+void iupdrvListSetItemCount(Ihandle* ih, int count)
+{
+  if (!ih->data->is_virtual)
+    return;
+
+  ListView_SetItemCountEx(ih->handle, count, LVSICF_NOINVALIDATEALL);
+}
 
 /*********************************************************************************/
-
 
 static void winListUpdateItemWidth(Ihandle* ih)
 {
@@ -401,7 +409,14 @@ static char* winListGetIdValueAttrib(Ihandle* ih, int id)
 {
   int pos = iupListGetPosAttrib(ih, id);
   if (pos >= 0)
+  {
+    if (ih->data->is_virtual)
+    {
+      char* text = iupListGetItemValueCb(ih, pos + 1);  /* 1-based */
+      return text;
+    }
     return iupStrReturnStr(winListGetText(ih, pos));
+  }
   return NULL;
 }
 
@@ -423,7 +438,14 @@ static char* winListGetValueAttrib(Ihandle* ih)
         return "";
     }
   }
-  else 
+  else if (ih->data->is_virtual)
+  {
+    int pos = (int)SendMessage(ih->handle, LVM_GETNEXTITEM, (WPARAM)-1, LVNI_SELECTED);
+    if (pos >= 0)
+      return iupStrReturnInt(pos + 1);  /* IUP starts at 1 */
+    return NULL;
+  }
+  else
   {
     if (ih->data->is_dropdown || !ih->data->is_multiple)
     {
@@ -441,6 +463,7 @@ static char* winListGetValueAttrib(Ihandle* ih)
       for (i=0; i<sel_count; i++)
         str[pos[i]] = '+';
       str[count]=0;
+      free(pos);
       return str;
     }
   }
@@ -450,7 +473,24 @@ static int winListSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->has_editbox)
     iupwinSetTitleAttrib(ih, value);
-  else 
+  else if (ih->data->is_virtual)
+  {
+    int pos;
+    /* Clear current selection */
+    int old_pos = (int)SendMessage(ih->handle, LVM_GETNEXTITEM, (WPARAM)-1, LVNI_SELECTED);
+    if (old_pos >= 0)
+      ListView_SetItemState(ih->handle, old_pos, 0, LVIS_SELECTED | LVIS_FOCUSED);
+
+    if (iupStrToInt(value, &pos) == 1)
+    {
+      ListView_SetItemState(ih->handle, pos - 1, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+      ListView_EnsureVisible(ih->handle, pos - 1, FALSE);
+      iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
+    }
+    else
+      iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
+  }
+  else
   {
     if (ih->data->is_dropdown || !ih->data->is_multiple)
     {
@@ -482,7 +522,7 @@ static int winListSetValueAttrib(Ihandle* ih, const char* value)
 
       count = (int)SendMessage(ih->handle, LB_GETCOUNT, 0, 0L);
       len = (int)strlen(value);
-      if (len < count) 
+      if (len < count)
         count = len;
 
       /* update selection list */
@@ -512,7 +552,12 @@ static int winListSetTopItemAttrib(Ihandle* ih, const char* value)
   {
     int pos = 1;
     if (iupStrToInt(value, &pos))
-      SendMessage(ih->handle, WIN_SETTOPINDEX(ih), pos-1, 0);  /* IUP starts at 1 */
+    {
+      if (ih->data->is_virtual)
+        ListView_EnsureVisible(ih->handle, pos - 1, FALSE);  /* IUP starts at 1 */
+      else
+        SendMessage(ih->handle, WIN_SETTOPINDEX(ih), pos-1, 0);  /* IUP starts at 1 */
+    }
   }
   return 0;
 }
@@ -1673,6 +1718,123 @@ static int winListMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
   return iupwinBaseMsgProc(ih, msg, wp, lp, result);
 }
 
+static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int *result)
+{
+  NMHDR* nmhdr = (NMHDR*)msg_info;
+
+  switch (nmhdr->code)
+  {
+    case LVN_GETDISPINFO:
+    {
+      NMLVDISPINFO* plvdi = (NMLVDISPINFO*)msg_info;
+
+      if (plvdi->item.mask & LVIF_TEXT)
+      {
+        int pos = plvdi->item.iItem + 1;  /* Convert to 1-based */
+        char* text = iupListGetItemValueCb(ih, pos);
+
+        if (text && *text)
+        {
+          TCHAR* ttext = iupwinStrToSystem(text);
+          lstrcpyn(plvdi->item.pszText, ttext, plvdi->item.cchTextMax);
+        }
+        else
+        {
+          plvdi->item.pszText[0] = 0;
+        }
+      }
+      break;
+    }
+
+    case LVN_ITEMCHANGED:
+    {
+      LPNMLISTVIEW pnmv = (LPNMLISTVIEW)msg_info;
+
+      if ((pnmv->uChanged & LVIF_STATE) &&
+          (pnmv->uNewState & LVIS_SELECTED) &&
+          !(pnmv->uOldState & LVIS_SELECTED))
+      {
+        IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
+        if (cb)
+        {
+          int pos = pnmv->iItem + 1;  /* 1-based */
+          char* text = iupListGetItemValueCb(ih, pos);
+          iupListSingleCallActionCb(ih, cb, pos);
+        }
+        iupBaseCallValueChangedCb(ih);
+      }
+      break;
+    }
+
+    case NM_DBLCLK:
+    {
+      IFnis cb = (IFnis)IupGetCallback(ih, "DBLCLICK_CB");
+      if (cb)
+      {
+        int pos = (int)SendMessage(ih->handle, LVM_GETNEXTITEM, (WPARAM)-1, LVNI_SELECTED);
+        if (pos >= 0)
+        {
+          pos++;  /* 1-based */
+          iupListSingleCallDblClickCb(ih, cb, pos);
+        }
+      }
+      break;
+    }
+
+    case NM_SETFOCUS:
+      iupwinWmSetFocus(ih);
+      break;
+
+    case NM_KILLFOCUS:
+      iupCallKillFocusCb(ih);
+      break;
+  }
+
+  (void)result;
+  return 0;
+}
+
+static LRESULT CALLBACK winListVirtualWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+  LRESULT result = 0;
+  WNDPROC oldProc;
+  Ihandle *ih;
+
+  ih = iupwinHandleGet(hwnd);
+  if (!iupObjectCheck(ih))
+    return DefWindowProc(hwnd, msg, wp, lp);
+
+  oldProc = (WNDPROC)IupGetCallback(ih, "_IUPWIN_LISTVIEWOLDPROC_CB");
+
+  switch (msg)
+  {
+    case WM_CHAR:
+      if (GetKeyState(VK_CONTROL) & 0x8000)
+      {
+        return 0;
+      }
+      break;
+  }
+
+  if (iupwinBaseMsgProc(ih, msg, wp, lp, &result))
+    return result;
+
+  return CallWindowProc(oldProc, hwnd, msg, wp, lp);
+}
+
+static int winListVirtualConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  LVHITTESTINFO ht;
+  ht.pt.x = x;
+  ht.pt.y = y;
+  int index = (int)SendMessage(ih->handle, LVM_HITTEST, 0, (LPARAM)&ht);
+  if (index >= 0)
+    return index + 1;  /* 1-based */
+  return -1;
+}
+
+/*********************************************************************************/
+
 static void winListDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
 {
   char* text;
@@ -1768,12 +1930,20 @@ static void winListLayoutUpdateMethod(Ihandle *ih)
     win_w = rect.right-rect.left;
 
     if (ih->currentwidth != win_w || calc_h != win_h)
-      SetWindowPos(ih->handle, HWND_TOP, ih->x, ih->y, ih->currentwidth, calc_h, 
+      SetWindowPos(ih->handle, HWND_TOP, ih->x, ih->y, ih->currentwidth, calc_h,
                    SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOOWNERZORDER);
     else
-      SetWindowPos(ih->handle, HWND_TOP, ih->x, ih->y, 0, 0, 
+      SetWindowPos(ih->handle, HWND_TOP, ih->x, ih->y, 0, 0,
                    SWP_NOSIZE|SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOOWNERZORDER);
-  }                
+  }
+  else if (ih->data->is_virtual)
+  {
+    iupdrvBaseLayoutUpdateMethod(ih);
+
+    RECT rect;
+    GetClientRect(ih->handle, &rect);
+    ListView_SetColumnWidth(ih->handle, 0, rect.right - rect.left);
+  }
   else
     iupdrvBaseLayoutUpdateMethod(ih);
 }
@@ -1803,17 +1973,58 @@ static void winListUnMapMethod(Ihandle* ih)
 
 static int winListMapMethod(Ihandle* ih)
 {
-  TCHAR* class_name;
   DWORD dwStyle = WS_CHILD|WS_CLIPSIBLINGS,
       dwExStyle = WS_EX_CLIENTEDGE;
 
   if (!ih->parent)
     return IUP_ERROR;
 
+  if (ih->data->is_virtual && !ih->data->is_dropdown && !ih->data->has_editbox)
+  {
+    LVCOLUMN lvc;
+
+    dwStyle |= LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_NOCOLUMNHEADER | LVS_OWNERDATA;
+
+    if (ih->data->is_multiple)
+      dwStyle &= ~LVS_SINGLESEL;
+
+    if (iupAttribGetBoolean(ih, "CANFOCUS"))
+      dwStyle |= WS_TABSTOP;
+
+    if (!iupwinCreateWindow(ih, WC_LISTVIEW, dwExStyle, dwStyle, NULL))
+      return IUP_ERROR;
+
+    /* Set extended styles */
+    ListView_SetExtendedListViewStyle(ih->handle, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+
+    /* Add single column to fill width */
+    ZeroMemory(&lvc, sizeof(LVCOLUMN));
+    lvc.mask = LVCF_WIDTH;
+    lvc.cx = 1000;
+    ListView_InsertColumn(ih->handle, 0, &lvc);
+
+    /* Register notify callback for WM_NOTIFY */
+    IupSetCallback(ih, "_IUPWIN_NOTIFY_CB", (Icallback)winListVirtualNotifyCallback);
+
+    /* Subclass for keyboard handling */
+    IupSetCallback(ih, "_IUPWIN_LISTVIEWOLDPROC_CB", (Icallback)GetWindowLongPtr(ih->handle, GWLP_WNDPROC));
+    SetWindowLongPtr(ih->handle, GWLP_WNDPROC, (LONG_PTR)winListVirtualWndProc);
+
+    IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)winListVirtualConvertXYToPos);
+
+    /* Set item count */
+    if (ih->data->item_count > 0)
+      ListView_SetItemCountEx(ih->handle, ih->data->item_count, LVSICF_NOINVALIDATEALL);
+
+    /* configure for DROP of files */
+    if (IupGetCallback(ih, "DROPFILES_CB"))
+      iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
+    return IUP_NOERROR;
+  }
+
   if (ih->data->is_dropdown || ih->data->has_editbox)
   {
-    class_name = TEXT("COMBOBOX");
-
     dwStyle |= CBS_NOINTEGRALHEIGHT;
 
     if (ih->data->show_image)
@@ -1843,11 +2054,15 @@ static int winListMapMethod(Ihandle* ih)
 
     if (iupAttribGetBoolean(ih, "SORT"))
       dwStyle |= CBS_SORT;
+
+    if (iupAttribGetBoolean(ih, "CANFOCUS"))
+      dwStyle |= WS_TABSTOP;
+
+    if (!iupwinCreateWindow(ih, TEXT("COMBOBOX"), dwExStyle, dwStyle, NULL))
+      return IUP_ERROR;
   }
   else
   {
-    class_name = TEXT("LISTBOX");
-
     dwStyle |= LBS_NOINTEGRALHEIGHT|LBS_NOTIFY;
 
     if (ih->data->is_multiple)
@@ -1866,13 +2081,13 @@ static int winListMapMethod(Ihandle* ih)
 
     if (iupAttribGetBoolean(ih, "SORT"))
       dwStyle |= LBS_SORT;
+
+    if (iupAttribGetBoolean(ih, "CANFOCUS"))
+      dwStyle |= WS_TABSTOP;
+
+    if (!iupwinCreateWindow(ih, TEXT("LISTBOX"), dwExStyle, dwStyle, NULL))
+      return IUP_ERROR;
   }
-
-  if (iupAttribGetBoolean(ih, "CANFOCUS"))
-    dwStyle |= WS_TABSTOP;
-
-  if (!iupwinCreateWindow(ih, class_name, dwExStyle, dwStyle, NULL))
-    return IUP_ERROR;
 
   /* Custom Procedure */
   IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winListMsgProc);
@@ -1917,7 +2132,7 @@ static int winListMapMethod(Ihandle* ih)
   if(ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple)
     winListEnableDragDrop(ih);
 
-  if(ih->data->show_image)
+  if (ih->data->show_image)
     IupSetCallback(ih, "_IUPWIN_DRAWITEM_CB", (Icallback)winListDrawItem);  /* Process WM_DRAWITEM */
 
   /* configure for DROP of files */
