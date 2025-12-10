@@ -528,6 +528,37 @@ func setListActionFunc(ih Ihandle, f ListActionFunc) {
 
 //--------------------
 
+// ListValueFunc for List VALUE_CB callback in virtual mode.
+// Called to get the text value of an item when VIRTUALMODE=YES.
+// pos is 1-based item index.
+// Returns the string to display for the item.
+type ListValueFunc func(ih Ihandle, pos int) string
+
+//export goIupListValueCB
+func goIupListValueCB(ih unsafe.Pointer, pos C.int) *C.char {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("LIST_VALUE_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "LIST_VALUE_CB_" + uuid)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ListValueFunc)
+	result := f((Ihandle)(ih), int(pos))
+	if result == "" {
+		return nil
+	}
+	return C.CString(result)
+}
+
+// setListValueFunc for List VALUE_CB callback.
+func setListValueFunc(ih Ihandle, f ListValueFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("LIST_VALUE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetListValueFunc(ih.ptr())
+}
+
+//--------------------
+
 // FlatListActionFunc for FlatList FLAT_ACTION callback.
 // Action generated when the state of an item in the list is interactively changed.
 type FlatListActionFunc func(ih Ihandle, text string, item, state int) int

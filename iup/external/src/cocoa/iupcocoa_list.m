@@ -1207,6 +1207,12 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 
 - (NSInteger) numberOfRowsInTableView:(NSTableView*)table_view
 {
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(table_view, IHANDLE_ASSOCIATED_OBJ_KEY);
+
+  /* Virtual mode: return item_count from ih->data */
+  if (ih && ih->data && ih->data->is_virtual)
+    return ih->data->item_count;
+
   return [dataArray count];
 }
 
@@ -1214,17 +1220,29 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(table_view, IHANDLE_ASSOCIATED_OBJ_KEY);
 
-  if (the_row < 0 || the_row >= [dataArray count])
-  {
-    return nil;
-  }
+  NSString* string_item = nil;
+  NSImage* image_item = nil;
 
-  NSDictionary* item_data = [dataArray objectAtIndex:the_row];
-  NSString* string_item = [item_data objectForKey:@"text"];
-  NSImage* image_item = [item_data objectForKey:@"image"];
-  if (image_item == (id)[NSNull null])
+  /* Virtual mode: fetch from VALUE_CB */
+  if (ih && ih->data && ih->data->is_virtual)
   {
+    if (the_row < 0 || the_row >= ih->data->item_count)
+      return nil;
+
+    char* text = iupListGetItemValueCb(ih, (int)the_row + 1);  /* 1-based */
+    string_item = [NSString stringWithUTF8String:(text ? text : "")];
     image_item = nil;
+  }
+  else
+  {
+    if (the_row < 0 || the_row >= [dataArray count])
+      return nil;
+
+    NSDictionary* item_data = [dataArray objectAtIndex:the_row];
+    string_item = [item_data objectForKey:@"text"];
+    image_item = [item_data objectForKey:@"image"];
+    if (image_item == (id)[NSNull null])
+      image_item = nil;
   }
 
   IupCocoaListTableCellView* cell_view = [table_view makeViewWithIdentifier:@"IupCocoaListTableCellView" owner:self];
@@ -1995,6 +2013,9 @@ int iupdrvListGetCount(Ihandle* ih)
       case IUPCOCOALISTSUBTYPE_MULTIPLELIST:
       case IUPCOCOALISTSUBTYPE_SINGLELIST:
         {
+          if (ih->data->is_virtual)
+            return ih->data->item_count;
+
           NSTableView* table_view = (NSTableView*)cocoaListGetBaseWidget(ih);
           if (!table_view)
           {
@@ -2342,6 +2363,23 @@ int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   return 0;
 }
 
+void iupdrvListSetItemCount(Ihandle* ih, int count)
+{
+  if (!ih->data->is_virtual)
+    return;
+
+  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
+  if (sub_type == IUPCOCOALISTSUBTYPE_MULTIPLELIST ||
+      sub_type == IUPCOCOALISTSUBTYPE_SINGLELIST)
+  {
+    NSTableView* table_view = (NSTableView*)cocoaListGetBaseWidget(ih);
+    if (table_view)
+    {
+      [table_view reloadData];
+    }
+  }
+}
+
 static char* cocoaListGetIdValueAttrib(Ihandle* ih, int id_value)
 {
   int pos = iupListGetPosAttrib(ih, id_value);
@@ -2374,18 +2412,26 @@ static char* cocoaListGetIdValueAttrib(Ihandle* ih, int id_value)
           return iup_str;
         }
       case IUPCOCOALISTSUBTYPE_EDITBOX:
- case IUPCOCOALISTSUBTYPE_MULTIPLELIST:
-   case IUPCOCOALISTSUBTYPE_SINGLELIST:
+      case IUPCOCOALISTSUBTYPE_MULTIPLELIST:
+      case IUPCOCOALISTSUBTYPE_SINGLELIST:
         {
-          NSTableView* table_view = (NSTableView*)cocoaListGetBaseWidget(ih);
-          IupCocoaListTableViewReceiver* list_receiver = objc_getAssociatedObject(table_view, IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY);
-          NSMutableArray* data_array = [list_receiver dataArray];
-          NSDictionary* item_data = [data_array objectAtIndex:pos];
-          NSString* ns_string = [item_data objectForKey:@"text"];
+          if (ih->data->is_virtual)
+          {
+            char* text = iupListGetItemValueCb(ih, pos + 1);
+            return text;
+          }
+          else
+          {
+            NSTableView* table_view = (NSTableView*)cocoaListGetBaseWidget(ih);
+            IupCocoaListTableViewReceiver* list_receiver = objc_getAssociatedObject(table_view, IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY);
+            NSMutableArray* data_array = [list_receiver dataArray];
+            NSDictionary* item_data = [data_array objectAtIndex:pos];
+            NSString* ns_string = [item_data objectForKey:@"text"];
 
-          const char* c_str = [ns_string UTF8String];
-          char* iup_str = iupStrReturnStr(c_str);
-          return iup_str;
+            const char* c_str = [ns_string UTF8String];
+            char* iup_str = iupStrReturnStr(c_str);
+            return iup_str;
+          }
         }
    default:
         break;
@@ -3901,6 +3947,15 @@ static int cocoaListMapMethod(Ihandle* ih)
         else
           [table_view setAllowsMultipleSelection:NO];
 
+        /* Virtual mode: set fixed row height for better performance */
+        if (ih->data->is_virtual)
+        {
+          int char_height;
+          iupdrvFontGetCharSize(ih, NULL, &char_height);
+          int row_height = char_height + 4;
+          [table_view setRowHeight:row_height];
+        }
+
         NSScrollView* scroll_view = [[NSScrollView alloc] initWithFrame:NSZeroRect];
         [scroll_view setDocumentView:table_view];
         [table_view release];
@@ -3976,7 +4031,9 @@ static int cocoaListMapMethod(Ihandle* ih)
     }
   }
 
-  iupListSetInitialItems(ih);
+  /* Don't populate items in virtual mode */
+  if (!ih->data->is_virtual)
+    iupListSetInitialItems(ih);
   cocoaListUpdateDropExpand(ih);
 
   if (sub_type == IUPCOCOALISTSUBTYPE_MULTIPLELIST ||
@@ -3984,7 +4041,10 @@ static int cocoaListMapMethod(Ihandle* ih)
       sub_type == IUPCOCOALISTSUBTYPE_EDITBOX)
   {
     cocoaListUpdateColumnWidth(ih);
-    cocoaListUpdateDragDrop(ih);
+
+    /* Disable drag-drop in virtual mode */
+    if (!ih->data->is_virtual)
+      cocoaListUpdateDragDrop(ih);
 
     NSTableView* table_view = (NSTableView*)cocoaListGetBaseWidget(ih);
     if (table_view)

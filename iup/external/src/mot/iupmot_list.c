@@ -216,9 +216,50 @@ void iupdrvListRemoveAllItems(Ihandle* ih)
     XmListDeleteAllItems(ih->handle);
 }
 
+void iupdrvListSetItemCount(Ihandle* ih, int count)
+{
+  Widget list_widget;
+  int i;
+  XmString* items;
+
+  if (!ih->data->is_virtual)
+    return;
+
+  /* Get the list widget */
+  if (ih->data->is_dropdown || ih->data->has_editbox)
+    XtVaGetValues(ih->handle, XmNlist, &list_widget, NULL);
+  else
+    list_widget = ih->handle;
+
+  /* Delete all existing items */
+  XmListDeleteAllItems(list_widget);
+
+  if (count <= 0)
+    return;
+
+  /* Allocate array for all items */
+  items = (XmString*)malloc(count * sizeof(XmString));
+  if (!items)
+    return;
+
+  /* Build all XmStrings from VALUE_CB */
+  for (i = 0; i < count; i++)
+  {
+    char* text = iupListGetItemValueCb(ih, i + 1);
+    items[i] = XmStringCreateLocalized(text ? (char*)text : "");
+  }
+
+  /* Add all items in a single batch operation */
+  XmListAddItems(list_widget, items, count, 0);
+
+  /* Free all XmStrings */
+  for (i = 0; i < count; i++)
+    XmStringFree(items[i]);
+
+  free(items);
+}
 
 /*********************************************************************************/
-
 
 static char* motListGetIdValueAttrib(Ihandle* ih, int id)
 {
@@ -1594,7 +1635,14 @@ static int motListMapMethod(Ihandle* ih)
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)motListConvertXYToPos);
 
-  iupListSetInitialItems(ih);
+  if (ih->data->is_virtual)
+  {
+    /* Motif doesn't support true virtual mode, populate all items from VALUE_CB */
+    if (ih->data->item_count > 0)
+      iupdrvListSetItemCount(ih, ih->data->item_count);
+  }
+  else
+    iupListSetInitialItems(ih);
 
   return IUP_NOERROR;
 }

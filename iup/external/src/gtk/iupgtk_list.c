@@ -44,6 +44,272 @@ enum
 static void gtkListSelectionChanged(GtkTreeSelection* selection, Ihandle* ih);
 static void gtkListComboBoxChanged(GtkComboBox* widget, Ihandle* ih);
 
+/* Custom Virtual List Model for VIRTUALMODE */
+typedef struct _IupGtkVirtualListModel IupGtkVirtualListModel;
+typedef struct _IupGtkVirtualListModelClass IupGtkVirtualListModelClass;
+
+struct _IupGtkVirtualListModel
+{
+  GObject parent;
+  Ihandle* ih;
+  gint stamp;
+  gint count;  /* Model's own count, used during detach/reattach */
+};
+
+struct _IupGtkVirtualListModelClass
+{
+  GObjectClass parent_class;
+};
+
+GType iup_gtk_virtual_list_model_get_type(void);
+#define IUP_TYPE_GTK_VIRTUAL_LIST_MODEL (iup_gtk_virtual_list_model_get_type())
+#define IUP_GTK_VIRTUAL_LIST_MODEL(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), IUP_TYPE_GTK_VIRTUAL_LIST_MODEL, IupGtkVirtualListModel))
+
+static void iup_gtk_virtual_list_model_tree_model_init(GtkTreeModelIface *iface);
+
+G_DEFINE_TYPE_WITH_CODE(IupGtkVirtualListModel, iup_gtk_virtual_list_model, G_TYPE_OBJECT,
+                        G_IMPLEMENT_INTERFACE(GTK_TYPE_TREE_MODEL, iup_gtk_virtual_list_model_tree_model_init))
+
+static void iup_gtk_virtual_list_model_init(IupGtkVirtualListModel *model)
+{
+  model->stamp = g_random_int();
+}
+
+static void iup_gtk_virtual_list_model_class_init(IupGtkVirtualListModelClass *klass)
+{
+  (void)klass;
+}
+
+static GtkTreeModelFlags iup_gtk_virtual_list_model_get_flags(GtkTreeModel *tree_model)
+{
+  (void)tree_model;
+  return GTK_TREE_MODEL_LIST_ONLY;
+}
+
+static gint iup_gtk_virtual_list_model_get_n_columns(GtkTreeModel *tree_model)
+{
+  (void)tree_model;
+  return IUPGTK_LIST_LAST_DATA;  /* IMAGE + TEXT columns */
+}
+
+static GType iup_gtk_virtual_list_model_get_column_type(GtkTreeModel *tree_model, gint index)
+{
+  (void)tree_model;
+  if (index == IUPGTK_LIST_IMAGE)
+    return GDK_TYPE_PIXBUF;
+  return G_TYPE_STRING;
+}
+
+static gboolean iup_gtk_virtual_list_model_get_iter(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreePath *path)
+{
+  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+  gint *indices;
+  gint depth, row;
+
+  indices = gtk_tree_path_get_indices(path);
+  depth = gtk_tree_path_get_depth(path);
+
+  if (depth != 1)
+    return FALSE;
+
+  row = indices[0];
+  if (row < 0 || row >= model->count)
+    return FALSE;
+
+  iter->stamp = model->stamp;
+  iter->user_data = GINT_TO_POINTER(row);
+  iter->user_data2 = NULL;
+  iter->user_data3 = NULL;
+
+  return TRUE;
+}
+
+static GtkTreePath *iup_gtk_virtual_list_model_get_path(GtkTreeModel *tree_model, GtkTreeIter *iter)
+{
+  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+
+  if (iter->stamp != model->stamp)
+    return NULL;
+
+  gint row = GPOINTER_TO_INT(iter->user_data);
+  return gtk_tree_path_new_from_indices(row, -1);
+}
+
+static void iup_gtk_virtual_list_model_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter, gint column, GValue *value)
+{
+  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+  gint row;
+  char *item_value;
+
+  if (column == IUPGTK_LIST_IMAGE)
+  {
+    g_value_init(value, GDK_TYPE_PIXBUF);
+    g_value_set_object(value, NULL);
+    return;
+  }
+
+  g_value_init(value, G_TYPE_STRING);
+
+  if (iter->stamp != model->stamp)
+  {
+    g_value_set_string(value, "");
+    return;
+  }
+
+  row = GPOINTER_TO_INT(iter->user_data);
+  if (row < 0 || row >= model->count)
+  {
+    g_value_set_string(value, "");
+    return;
+  }
+
+  /* Query data via VALUE_CB (pos is 1-based for IUP) */
+  item_value = iupListGetItemValueCb(model->ih, row + 1);
+  g_value_set_string(value, item_value ? item_value : "");
+}
+
+static gboolean iup_gtk_virtual_list_model_iter_next(GtkTreeModel *tree_model, GtkTreeIter *iter)
+{
+  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+  gint row;
+
+  if (iter->stamp != model->stamp)
+    return FALSE;
+
+  row = GPOINTER_TO_INT(iter->user_data);
+  row++;
+
+  if (row >= model->count)
+    return FALSE;
+
+  iter->user_data = GINT_TO_POINTER(row);
+  return TRUE;
+}
+
+static gboolean iup_gtk_virtual_list_model_iter_children(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent)
+{
+  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+
+  if (parent != NULL)
+    return FALSE;
+
+  if (model->count == 0)
+    return FALSE;
+
+  iter->stamp = model->stamp;
+  iter->user_data = GINT_TO_POINTER(0);
+  iter->user_data2 = NULL;
+  iter->user_data3 = NULL;
+  return TRUE;
+}
+
+static gboolean iup_gtk_virtual_list_model_iter_has_child(GtkTreeModel *tree_model, GtkTreeIter *iter)
+{
+  (void)tree_model;
+  (void)iter;
+  return FALSE;
+}
+
+static gint iup_gtk_virtual_list_model_iter_n_children(GtkTreeModel *tree_model, GtkTreeIter *iter)
+{
+  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+
+  if (iter == NULL)
+    return model->count;
+
+  return 0;
+}
+
+static gboolean iup_gtk_virtual_list_model_iter_nth_child(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent, gint n)
+{
+  IupGtkVirtualListModel *model = IUP_GTK_VIRTUAL_LIST_MODEL(tree_model);
+
+  if (parent != NULL)
+    return FALSE;
+
+  if (n < 0 || n >= model->count)
+    return FALSE;
+
+  iter->stamp = model->stamp;
+  iter->user_data = GINT_TO_POINTER(n);
+  iter->user_data2 = NULL;
+  iter->user_data3 = NULL;
+  return TRUE;
+}
+
+static gboolean iup_gtk_virtual_list_model_iter_parent(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *child)
+{
+  (void)tree_model;
+  (void)iter;
+  (void)child;
+  return FALSE;
+}
+
+static void iup_gtk_virtual_list_model_tree_model_init(GtkTreeModelIface *iface)
+{
+  iface->get_flags = iup_gtk_virtual_list_model_get_flags;
+  iface->get_n_columns = iup_gtk_virtual_list_model_get_n_columns;
+  iface->get_column_type = iup_gtk_virtual_list_model_get_column_type;
+  iface->get_iter = iup_gtk_virtual_list_model_get_iter;
+  iface->get_path = iup_gtk_virtual_list_model_get_path;
+  iface->get_value = iup_gtk_virtual_list_model_get_value;
+  iface->iter_next = iup_gtk_virtual_list_model_iter_next;
+  iface->iter_children = iup_gtk_virtual_list_model_iter_children;
+  iface->iter_has_child = iup_gtk_virtual_list_model_iter_has_child;
+  iface->iter_n_children = iup_gtk_virtual_list_model_iter_n_children;
+  iface->iter_nth_child = iup_gtk_virtual_list_model_iter_nth_child;
+  iface->iter_parent = iup_gtk_virtual_list_model_iter_parent;
+}
+
+static IupGtkVirtualListModel *iup_gtk_virtual_list_model_new(Ihandle *ih)
+{
+  IupGtkVirtualListModel *model = g_object_new(IUP_TYPE_GTK_VIRTUAL_LIST_MODEL, NULL);
+  model->ih = ih;
+  model->count = ih->data->item_count;  /* Use count set before mapping */
+  return model;
+}
+
+/* Notify the view that model item count has changed. */
+static void iup_gtk_virtual_list_model_notify_count_changed(IupGtkVirtualListModel *model, Ihandle* ih, int new_count)
+{
+  GtkTreeView* tree_view;
+
+  if (!ih->handle || !GTK_IS_TREE_VIEW(ih->handle))
+  {
+    /* Not mapped yet, just update count and stamp */
+    model->count = new_count;
+    model->stamp = g_random_int();
+    return;
+  }
+
+  tree_view = GTK_TREE_VIEW(ih->handle);
+
+  /* Detach model, model->count still has old value so GTK can unref correctly */
+  gtk_tree_view_set_model(tree_view, NULL);
+
+  /* Now set new count and invalidate iterators */
+  model->count = new_count;
+  model->stamp = g_random_int();
+
+  /* Reattach model, GTK will build tree with new count */
+  gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(model));
+}
+
+/* Cell data function for virtual mode, called only for visible rows */
+static void gtkListVirtualCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* renderer,
+                                       GtkTreeModel* tree_model, GtkTreeIter* iter, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  gint row;
+  char* text;
+
+  (void)column;
+  (void)tree_model;
+
+  row = GPOINTER_TO_INT(iter->user_data);
+  text = iupListGetItemValueCb(ih, row + 1);  /* 1-based for IUP */
+  g_object_set(renderer, "text", text ? text : "", NULL);
+}
 
 void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 {
@@ -1180,6 +1446,18 @@ int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   return 0;
 }
 
+void iupdrvListSetItemCount(Ihandle* ih, int count)
+{
+  IupGtkVirtualListModel* model;
+
+  if (!ih->data->is_virtual)
+    return;
+
+  model = (IupGtkVirtualListModel*)iupAttribGet(ih, "_IUPGTK_VIRTUAL_MODEL");
+  if (model)
+    iup_gtk_virtual_list_model_notify_count_changed(model, ih, count);
+}
+
 /*********************************************************************************/
 
 static void gtkListDragDataReceived(GtkWidget *widget, GdkDragContext *context, gint x, gint y, 
@@ -1819,9 +2097,24 @@ static int gtkListMapMethod(Ihandle* ih)
     GtkTreeSelection* selection;
     GtkTreeViewColumn *column;
     GtkPolicyType scrollbar_policy;
+    GtkTreeModel* model;
 
-    ih->handle = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
-    g_object_unref(store);
+    /* Virtual mode: use custom virtual model instead of GtkListStore */
+    if (ih->data->is_virtual)
+    {
+      IupGtkVirtualListModel* virtual_model = iup_gtk_virtual_list_model_new(ih);
+      model = GTK_TREE_MODEL(virtual_model);
+      iupAttribSet(ih, "_IUPGTK_VIRTUAL_MODEL", (char*)virtual_model);
+      g_object_unref(store);  /* Don't need the regular store */
+    }
+    else
+    {
+      model = GTK_TREE_MODEL(store);
+    }
+
+    ih->handle = gtk_tree_view_new_with_model(model);
+    if (!ih->data->is_virtual)
+      g_object_unref(store);
 
     if (!ih->handle)
       return IUP_ERROR;
@@ -1921,7 +2214,22 @@ static int gtkListMapMethod(Ihandle* ih)
 
     renderer = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(column), renderer, TRUE);
-    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer, "text", IUPGTK_LIST_TEXT, NULL);
+    if (ih->data->is_virtual)
+    {
+      /* Virtual mode: use cell data func instead of attributes to avoid GTK querying all rows */
+      gtk_tree_view_column_set_cell_data_func(column, renderer, gtkListVirtualCellDataFunc, ih, NULL);
+
+      /* Use FIXED sizing to prevent GTK from measuring all rows for column width */
+      gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
+
+      /* Enable fixed height mode, requires all columns to be FIXED type.
+         This prevents GTK from iterating all rows during validation. */
+      gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(ih->handle), TRUE);
+    }
+    else
+    {
+      gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer, "text", IUPGTK_LIST_TEXT, NULL);
+    }
     iupAttribSet(ih, "_IUPGTK_RENDERER", (char*)renderer);
     g_object_set(G_OBJECT(renderer), "xpad", 0, NULL);
     g_object_set(G_OBJECT(renderer), "ypad", 0, NULL);
@@ -2005,8 +2313,12 @@ static int gtkListMapMethod(Ihandle* ih)
   if(ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple)
     gtkListEnableDragDrop(ih);
 
-  if (iupAttribGetBoolean(ih, "SORT"))
-    gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), IUPGTK_LIST_TEXT, GTK_SORT_ASCENDING);
+  if (iupAttribGetBoolean(ih, "SORT") && !ih->data->is_virtual)
+  {
+    GtkTreeModel* tree_model = gtkListGetModel(ih);
+    if (GTK_IS_LIST_STORE(tree_model))
+      gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(tree_model), IUPGTK_LIST_TEXT, GTK_SORT_ASCENDING);
+  }
 
   /* add to the parent, all GTK controls must call this. */
   iupgtkAddToParent(ih);
@@ -2021,7 +2333,9 @@ static int gtkListMapMethod(Ihandle* ih)
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)gtkListConvertXYToPos);
 
-  iupListSetInitialItems(ih);
+  /* Don't populate items in virtual mode */
+  if (!ih->data->is_virtual)
+    iupListSetInitialItems(ih);
 
   /* update a mnemonic in a label if necessary */
   iupgtkUpdateMnemonic(ih);
@@ -2029,10 +2343,25 @@ static int gtkListMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void gtkListUnMapMethod(Ihandle* ih)
+{
+  /* For virtual mode, detach model before destruction to avoid expensive iteration */
+  if (ih->data->is_virtual && ih->handle && GTK_IS_TREE_VIEW(ih->handle))
+  {
+    IupGtkVirtualListModel* model = (IupGtkVirtualListModel*)iupAttribGet(ih, "_IUPGTK_VIRTUAL_MODEL");
+    if (model)
+      model->count = 0;  /* Set to 0 so GTK sees empty model during detach */
+    gtk_tree_view_set_model(GTK_TREE_VIEW(ih->handle), NULL);
+  }
+
+  iupdrvBaseUnMapMethod(ih);
+}
+
 void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkListMapMethod;
+  ic->UnMap = gtkListUnMapMethod;
 
   /* Driver Dependent Attribute functions */
 

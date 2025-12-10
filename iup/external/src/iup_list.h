@@ -40,12 +40,12 @@ void iupListUpdateOldValue(Ihandle* ih, int pos, int removed);
 void* iupdrvListGetImageHandle(Ihandle* ih, int id);
 int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage);
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   int sb,  /* scrollbar configuration, can be changed only before map */
       nc,
       spacing,
-      horiz_padding, 
+      horiz_padding,
       vert_padding,
       last_caret_pos,
       is_multiple,
@@ -53,9 +53,17 @@ struct _IcontrolData
       has_editbox,
       maximg_w, maximg_h, /* used only in Windows */
       show_image,
-      show_dragdrop;
+      show_dragdrop,
+      is_virtual,  /* virtual mode flag, can be changed only before map */
+      item_count;  /* number of items in virtual mode */
   Imask* mask;
 };
+
+/* Virtual mode support */
+int iupListIsVirtual(Ihandle* ih);
+int iupListGetItemCount(Ihandle* ih);
+char* iupListGetItemValueCb(Ihandle* ih, int pos);
+void iupdrvListSetItemCount(Ihandle* ih, int count);
 
 
 #ifdef __cplusplus
