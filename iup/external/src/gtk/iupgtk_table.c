@@ -1247,6 +1247,10 @@ static int gtkTableMapMethod(Ihandle* ih)
   gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(gtk_data->tree_view), TRUE);
   gtk_tree_view_set_enable_search(GTK_TREE_VIEW(gtk_data->tree_view), FALSE);
 
+  /* Enable fixed height mode for virtual mode, prevents GTK from iterating all rows */
+  if (gtk_data->is_virtual)
+    gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(gtk_data->tree_view), TRUE);
+
   /* Ensure tree view can receive focus and events */
   gtk_widget_set_can_focus(gtk_data->tree_view, TRUE);
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -1350,15 +1354,15 @@ static int gtkTableMapMethod(Ihandle* ih)
           gtk_tree_view_column_set_fixed_width(column, col_width);
           gtk_tree_view_column_set_expand(column, FALSE);
         }
-        else if (ih->data->stretch_last)
+        else if (ih->data->stretch_last && !gtk_data->is_virtual)
         {
-          /* No explicit width and stretching enabled, expand to fill */
+          /* No explicit width and stretching enabled, expand to fill (not in virtual mode) */
           gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
           gtk_tree_view_column_set_expand(column, TRUE);
         }
         else
         {
-          /* No explicit width and stretching disabled, use FIXED mode to prevent expansion */
+          /* No explicit width and stretching disabled (or virtual mode), use FIXED mode */
           const char* title = gtk_tree_view_column_get_title(column);
           int fixed_width = 80;  /* Default minimum */
 
@@ -1372,16 +1376,21 @@ static int gtkTableMapMethod(Ihandle* ih)
 
           gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
           gtk_tree_view_column_set_fixed_width(column, fixed_width);
-          gtk_tree_view_column_set_expand(column, FALSE);
+          gtk_tree_view_column_set_expand(column, gtk_data->is_virtual ? FALSE : ih->data->stretch_last);
         }
       }
       else
       {
-        /* Non-last columns, fit to content */
+        /* Non-last columns */
         if (has_explicit_width)
         {
           gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
           gtk_tree_view_column_set_fixed_width(column, col_width);
+        }
+        else if (gtk_data->is_virtual)
+        {
+          /* Virtual mode requires FIXED sizing for fixed_height_mode */
+          gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
         }
         else
         {
