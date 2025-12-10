@@ -39,7 +39,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
 static int motButtonSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->type == IUP_BUTTON_TEXT)
+  if (ih->data->type & IUP_BUTTON_TEXT)
   {
     iupmotSetMnemonicTitle(ih, NULL, 0, value);
     return 1;
@@ -68,13 +68,13 @@ static int motButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
 
 static int motButtonSetImageAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->type == IUP_BUTTON_IMAGE)
+  if (ih->data->type & IUP_BUTTON_IMAGE)
   {
     iupmotSetPixmap(ih, value, XmNlabelPixmap, 0);
 
     if (!iupAttribGet(ih, "IMINACTIVE"))
     {
-      /* if not active and IMINACTIVE is not defined 
+      /* if not active and IMINACTIVE is not defined
          then automatically create one based on IMAGE */
       iupmotSetPixmap(ih, value, XmNlabelInsensitivePixmap, 1); /* make_inactive */
     }
@@ -86,7 +86,7 @@ static int motButtonSetImageAttrib(Ihandle* ih, const char* value)
 
 static int motButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->type == IUP_BUTTON_IMAGE)
+  if (ih->data->type & IUP_BUTTON_IMAGE)
   {
     iupmotSetPixmap(ih, value, XmNlabelInsensitivePixmap, 0);
     return 1;
@@ -97,7 +97,7 @@ static int motButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
 
 static int motButtonSetImPressAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->type == IUP_BUTTON_IMAGE)
+  if (ih->data->type & IUP_BUTTON_IMAGE)
   {
     iupmotSetPixmap(ih, value, XmNarmPixmap, 0);
     return 1;
@@ -191,14 +191,27 @@ static int motButtonMapMethod(Ihandle* ih)
 {
   int has_border = 1;
   char* value;
+  char* title;
   int num_args = 0;
   Arg args[30];
 
   value = iupAttribGet(ih, "IMAGE");
+  title = iupAttribGet(ih, "TITLE");
+
   if (value)
   {
     ih->data->type = IUP_BUTTON_IMAGE;
-    iupMOT_SETARG(args, num_args, XmNlabelType, XmPIXMAP);
+
+    /* Check if we have both image and text */
+    if (title && *title != 0)
+    {
+      ih->data->type |= IUP_BUTTON_TEXT;  /* IUP_BUTTON_BOTH */
+      iupMOT_SETARG(args, num_args, XmNlabelType, XmPIXMAP_AND_STRING);
+    }
+    else
+    {
+      iupMOT_SETARG(args, num_args, XmNlabelType, XmPIXMAP);
+    }
   }
   else
   {
@@ -286,7 +299,7 @@ static int motButtonMapMethod(Ihandle* ih)
   /* initialize the widget */
   XtRealizeWidget(ih->handle);
 
-  if (ih->data->type == IUP_BUTTON_TEXT)
+  if (ih->data->type & IUP_BUTTON_TEXT)
     iupmotSetXmString(ih->handle, XmNlabelString, "");
 
   return IUP_NOERROR;
