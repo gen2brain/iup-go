@@ -71,7 +71,8 @@ typedef struct _ImotTableData
   /* Table geometry */
   int row_height;            /* Height of each row */
   int header_height;         /* Height of header row */
-  int* col_widths;           /* Array of column widths [num_col] */
+  int* col_widths;           /* Array of column widths [num_col] - displayed width (includes stretch) */
+  int* col_natural_widths;   /* Array of natural column widths [num_col] - from auto-sizing, before stretch */
   int* col_width_set;        /* Array of flags: 1 if width explicitly set, 0 if auto [num_col] */
 
   /* Scroll state */
@@ -538,7 +539,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     XSetLineAttributes(display, mot_data->gc, 1, LineOnOffDash, CapButt, JoinMiter);
     XSetDashes(display, mot_data->gc, 0, dash_list, 2);
 
-    XDrawRectangle(display, window, mot_data->gc, x + 1, y + 1, w - 2, h - 2);
+    XDrawRectangle(display, window, mot_data->gc, x + 1, y + 1, w - 3, h - 3);
 
     /* Reset to solid line for subsequent drawing */
     XSetLineAttributes(display, mot_data->gc, 1, LineSolid, CapButt, JoinMiter);
@@ -617,7 +618,10 @@ static void motTableDrawTable(Ihandle* ih)
 
       /* Update column width if it needs to be wider */
       if (max_width > mot_data->col_widths[c])
+      {
         mot_data->col_widths[c] = max_width;
+        mot_data->col_natural_widths[c] = max_width;
+      }
     }
 
     /* Mark as done */
@@ -1178,6 +1182,7 @@ static void motTableUpdateScrollbars(Ihandle* ih)
   Dimension width, height;
   int total_width = 0, total_height, c;
   int page_width, page_height, max_scroll_x, max_scroll_y;
+  int natural_total_width = 0;
 
   if (!mot_data->sb_horiz || !mot_data->sb_vert)
     return;
@@ -1185,18 +1190,32 @@ static void motTableUpdateScrollbars(Ihandle* ih)
   /* Get drawable area size */
   XtVaGetValues(mot_data->drawing_area, XmNwidth, &width, XmNheight, &height, NULL);
 
-  /* Calculate total content size */
+  /* Calculate natural total content size (before stretch) */
   for (c = 0; c < ih->data->num_col; c++)
   {
-    total_width += mot_data->col_widths[c];
+    natural_total_width += mot_data->col_natural_widths[c];
   }
 
-  /* Stretch last column to fill available space ONLY if no explicit width was set AND STRETCHLAST=YES */
-  if (ih->data->num_col > 0 && total_width < width && !mot_data->col_width_set[ih->data->num_col - 1] && ih->data->stretch_last)
+  /* Handle STRETCHLAST: adjust last column to fill available space */
+  if (ih->data->num_col > 0 && !mot_data->col_width_set[ih->data->num_col - 1] && ih->data->stretch_last)
   {
-    int extra_space = width - total_width;
-    mot_data->col_widths[ih->data->num_col - 1] += extra_space;
-    total_width = width;  /* Update total_width to match */
+    int last_col = ih->data->num_col - 1;
+    int other_cols_width = natural_total_width - mot_data->col_natural_widths[last_col];
+    int available_for_last = width - other_cols_width;
+
+    /* Use natural width as minimum */
+    if (available_for_last < mot_data->col_natural_widths[last_col])
+      available_for_last = mot_data->col_natural_widths[last_col];
+
+    mot_data->col_widths[last_col] = available_for_last;
+    total_width = other_cols_width + available_for_last;
+  }
+  else
+  {
+    /* No stretch, use natural widths */
+    total_width = natural_total_width;
+    for (c = 0; c < ih->data->num_col; c++)
+      mot_data->col_widths[c] = mot_data->col_natural_widths[c];
   }
 
   total_height = mot_data->header_height + ih->data->num_lin * mot_data->row_height;
@@ -1297,6 +1316,7 @@ static int motTableMapMethod(Ihandle* ih)
 
   /* Allocate column widths */
   mot_data->col_widths = (int*)calloc(ih->data->num_col, sizeof(int));
+  mot_data->col_natural_widths = (int*)calloc(ih->data->num_col, sizeof(int));
   mot_data->col_width_set = (int*)calloc(ih->data->num_col, sizeof(int));
 
   /* Initialize column widths, checking for explicit RASTERWIDTH/WIDTH */
@@ -1315,11 +1335,13 @@ static int motTableMapMethod(Ihandle* ih)
     if (width_str && iupStrToInt(width_str, &col_width) && col_width > 0)
     {
       mot_data->col_widths[c] = col_width;
+      mot_data->col_natural_widths[c] = col_width;
       mot_data->col_width_set[c] = 1;
     }
     else
     {
       mot_data->col_widths[c] = MOT_TABLE_DEF_COL_WIDTH;
+      mot_data->col_natural_widths[c] = MOT_TABLE_DEF_COL_WIDTH;
       mot_data->col_width_set[c] = 0;
     }
   }
@@ -1606,6 +1628,9 @@ static void motTableUnMapMethod(Ihandle* ih)
   if (mot_data->col_widths)
     free(mot_data->col_widths);
 
+  if (mot_data->col_natural_widths)
+    free(mot_data->col_natural_widths);
+
   if (mot_data->col_width_set)
     free(mot_data->col_width_set);
 
@@ -1649,10 +1674,12 @@ void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 
   /* Reallocate column widths */
   mot_data->col_widths = (int*)realloc(mot_data->col_widths, num_col * sizeof(int));
+  mot_data->col_natural_widths = (int*)realloc(mot_data->col_natural_widths, num_col * sizeof(int));
   mot_data->col_width_set = (int*)realloc(mot_data->col_width_set, num_col * sizeof(int));
   for (i = old_num_col; i < num_col; i++)
   {
     mot_data->col_widths[i] = MOT_TABLE_DEF_COL_WIDTH;
+    mot_data->col_natural_widths[i] = MOT_TABLE_DEF_COL_WIDTH;
     mot_data->col_width_set[i] = 0;
   }
 
@@ -1779,14 +1806,17 @@ void iupdrvTableAddCol(Ihandle* ih, int pos)
 
   /* Reallocate column widths */
   mot_data->col_widths = (int*)realloc(mot_data->col_widths, new_num_col * sizeof(int));
+  mot_data->col_natural_widths = (int*)realloc(mot_data->col_natural_widths, new_num_col * sizeof(int));
   mot_data->col_width_set = (int*)realloc(mot_data->col_width_set, new_num_col * sizeof(int));
   /* Shift widths to make room */
   for (col = new_num_col - 1; col > pos; col--)
   {
     mot_data->col_widths[col] = mot_data->col_widths[col - 1];
+    mot_data->col_natural_widths[col] = mot_data->col_natural_widths[col - 1];
     mot_data->col_width_set[col] = mot_data->col_width_set[col - 1];
   }
   mot_data->col_widths[pos] = MOT_TABLE_DEF_COL_WIDTH;
+  mot_data->col_natural_widths[pos] = MOT_TABLE_DEF_COL_WIDTH;
   mot_data->col_width_set[pos] = 0;
 
   /* Reallocate column titles */
@@ -1866,17 +1896,21 @@ void iupdrvTableDelCol(Ihandle* ih, int pos)
   for (col = pos; col < new_num_col; col++)
   {
     mot_data->col_widths[col] = mot_data->col_widths[col + 1];
+    mot_data->col_natural_widths[col] = mot_data->col_natural_widths[col + 1];
     mot_data->col_width_set[col] = mot_data->col_width_set[col + 1];
   }
   if (new_num_col > 0)
   {
     mot_data->col_widths = (int*)realloc(mot_data->col_widths, new_num_col * sizeof(int));
+    mot_data->col_natural_widths = (int*)realloc(mot_data->col_natural_widths, new_num_col * sizeof(int));
     mot_data->col_width_set = (int*)realloc(mot_data->col_width_set, new_num_col * sizeof(int));
   }
   else
   {
     free(mot_data->col_widths);
     mot_data->col_widths = NULL;
+    free(mot_data->col_natural_widths);
+    mot_data->col_natural_widths = NULL;
     free(mot_data->col_width_set);
     mot_data->col_width_set = NULL;
   }
@@ -1944,6 +1978,7 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
     return;
 
   mot_data->col_widths[col-1] = width;
+  mot_data->col_natural_widths[col-1] = width;
   mot_data->col_width_set[col-1] = 1;
   motTableUpdateScrollbars(ih);
   motTableRedraw(ih);
