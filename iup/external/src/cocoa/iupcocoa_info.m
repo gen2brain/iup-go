@@ -288,46 +288,59 @@ char *iupdrvGetUserName(void)
   return iup_str;
 }
 
-int iupdrvGetPreferencePath(char *filename, int use_system)
+int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
 {
-  (void)use_system;
-
-  NSArray* support_paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-  if([support_paths count] > 0)
+  if (!app_name || !app_name[0])
   {
-    NSString* bundle_name = [[NSBundle mainBundle] bundleIdentifier];
-    if (!bundle_name)
-    {
-      bundle_name = [[NSProcessInfo processInfo] processName];
-    }
+    filename[0] = '\0';
+    return 0;
+  }
 
-    NSString* ns_path = [[support_paths objectAtIndex:0] stringByAppendingPathComponent:bundle_name];
-
-    BOOL is_dir = NO;
-    if (![[NSFileManager defaultManager] fileExistsAtPath:ns_path isDirectory:&is_dir])
+  if (use_system)
+  {
+    /* macOS Application Support: ~/Library/Application Support/appname/config */
+    NSArray* support_paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+    if ([support_paths count] > 0)
     {
-      NSError* the_error = nil;
-      if (![[NSFileManager defaultManager] createDirectoryAtPath:ns_path withIntermediateDirectories:YES attributes:nil error:&the_error])
+      NSString* ns_app_name = [NSString stringWithUTF8String:app_name];
+      NSString* ns_path = [[support_paths objectAtIndex:0] stringByAppendingPathComponent:ns_app_name];
+
+      /* Create app directory if needed */
+      BOOL is_dir = NO;
+      if (![[NSFileManager defaultManager] fileExistsAtPath:ns_path isDirectory:&is_dir])
       {
-        os_log_error(OS_LOG_DEFAULT, "Failed to create preference directory: %{public}@", the_error);
-        filename[0] = '\0';
-        return 0;
+        [[NSFileManager defaultManager] createDirectoryAtPath:ns_path withIntermediateDirectories:YES attributes:nil error:nil];
+      }
+
+      NSString* ns_config_path = [ns_path stringByAppendingPathComponent:@"config"];
+      const char* c_path = [ns_config_path fileSystemRepresentation];
+      if (c_path != NULL)
+      {
+        strcpy(filename, c_path);
+        return 1;
       }
     }
-
-    const char* c_path = [ns_path fileSystemRepresentation];
-    if(NULL != c_path)
+  }
+  else
+  {
+    /* Legacy: ~/.appname */
+    NSString* home_path = NSHomeDirectory();
+    if (home_path)
     {
-      strcpy(filename, c_path);
-      strcat(filename, "/");
-      return 1;
+      NSString* hidden_name = [NSString stringWithFormat:@".%s", app_name];
+      NSString* ns_path = [home_path stringByAppendingPathComponent:hidden_name];
+      const char* c_path = [ns_path fileSystemRepresentation];
+      if (c_path != NULL)
+      {
+        strcpy(filename, c_path);
+        return 1;
+      }
     }
   }
 
   filename[0] = '\0';
   return 0;
 }
-
 
 char* iupdrvLocaleInfo(void)
 {
