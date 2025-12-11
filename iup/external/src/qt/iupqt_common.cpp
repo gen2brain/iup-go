@@ -96,12 +96,10 @@ extern "C" void iupqtNativeContainerMove(QWidget* container, QWidget* widget, in
 
 static QWidget* qtGetNativeParent(Ihandle* ih)
 {
-  QWidget* widget = (QWidget*)iupChildTreeGetNativeParentHandle(ih);
-
-  while (widget && widget->layout())
-    widget = widget->parentWidget();
-
-  return widget;
+  /* iupChildTreeGetNativeParentHandle returns the appropriate container for absolute positioning.
+     For canvas-based controls, this returns the _IUP_EXTRAPARENT (a QWidget without layout).
+     For other controls, it returns the appropriate native container. */
+  return (QWidget*)iupChildTreeGetNativeParentHandle(ih);
 }
 
 extern "C" const char* iupqtGetWidgetClassName(QWidget* widget)

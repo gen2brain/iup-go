@@ -211,6 +211,19 @@ protected:
       return QSize(size.height(), size.width());
     }
 
+#ifdef Q_OS_MAC
+    /* QMacStyle::tabLayout() reserves icon space on BOTH sides of the text rect
+       for centering, but tabSizeHint() only accounts for icon width once.
+       We compensate by adding extra width for the icon. */
+    QIcon icon = tabIcon(index);
+    if (!icon.isNull())
+    {
+      int iconExtent = style()->pixelMetric(QStyle::PM_TabBarIconSize, nullptr, this);
+      int stylePadding = style()->pixelMetric(QStyle::PM_TabBarTabHSpace, nullptr, this) / 2;
+      size.setWidth(size.width() + iconExtent + stylePadding + 4);
+    }
+#endif
+
     return size;
   }
 
