@@ -81,26 +81,7 @@ IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
   return NULL;
 }
 
-IUP_SDK_API int iupdrvGetPreferencePath(char *filename, int use_system)
-{
-  char* home = getenv("HOME");
-  if (home)
-  {
-    (void)use_system; /* unused */
-    /* UNIX format */
-    strcpy(filename, home);
-    strcat(filename, "/");
-    return 1;
-  }
-  else
-  {
-    filename[0] = '\0';
-    return 0;
-  }
-}
-
 /**************************************************************************/
-
 
 int iupUnixIsFile(const char* name)
 {
@@ -122,20 +103,87 @@ int iupUnixIsDirectory(const char* name)
   return 0;
 }            
 
-int iupUnixMakeDirectory(const char* name) 
+int iupUnixMakeDirectory(const char* name)
 {
   mode_t oldmask = umask((mode_t)0);
-  int fail =  mkdir(name, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP |
-                          S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);
+  int fail =  mkdir(name, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);
   umask (oldmask);
   if (fail)
     return 0;
   return 1;
 }
 
+static int iupUnixMakeDirectoryIfNeeded(const char* path)
+{
+  struct stat st;
+  if (stat(path, &st) == 0)
+  {
+    if (S_ISDIR(st.st_mode))
+      return 1;
+    return 0;
+  }
+  return iupUnixMakeDirectory(path);
+}
+
+IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+{
+  char* home;
+
+  if (!app_name || !app_name[0])
+  {
+    filename[0] = '\0';
+    return 0;
+  }
+
+  if (use_system)
+  {
+    /* XDG Base Directory Specification: ~/.config/appname/config */
+    char* xdg_config = getenv("XDG_CONFIG_HOME");
+    if (xdg_config && xdg_config[0])
+    {
+      strcpy(filename, xdg_config);
+    }
+    else
+    {
+      home = getenv("HOME");
+      if (!home)
+      {
+        filename[0] = '\0';
+        return 0;
+      }
+      strcpy(filename, home);
+      strcat(filename, "/.config");
+    }
+
+    /* Ensure base config directory exists */
+    iupUnixMakeDirectoryIfNeeded(filename);
+
+    /* Add app directory */
+    strcat(filename, "/");
+    strcat(filename, app_name);
+    iupUnixMakeDirectoryIfNeeded(filename);
+
+    /* Add config filename */
+    strcat(filename, "/config");
+    return 1;
+  }
+  else
+  {
+    /* Legacy format: ~/.appname */
+    home = getenv("HOME");
+    if (!home)
+    {
+      filename[0] = '\0';
+      return 0;
+    }
+    strcpy(filename, home);
+    strcat(filename, "/.");
+    strcat(filename, app_name);
+    return 1;
+  }
+}
 
 /**************************************************************************/
-
 
 IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
 {
