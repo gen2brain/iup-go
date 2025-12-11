@@ -43,6 +43,44 @@
 #include "iupgtk4_drv.h"
 
 
+void iupgtk4DialogSetTransientFor(GtkWindow* dialog, Ihandle* ih)
+{
+  InativeHandle* parent = iupDialogGetNativeParent(ih);
+  if (parent)
+  {
+    gtk_window_set_transient_for(dialog, (GtkWindow*)parent);
+    return;
+  }
+
+  /* Try to find parent from focused element */
+  Ihandle* ih_focus = IupGetFocus();
+  if (ih_focus)
+  {
+    Ihandle* dlg = IupGetDialog(ih_focus);
+    if (dlg && dlg->handle)
+    {
+      gtk_window_set_transient_for(dialog, (GtkWindow*)dlg->handle);
+      return;
+    }
+  }
+
+  /* Fallback: find first visible IUP dialog.
+     This handles cases like IupMessage called from a callback where
+     IupGetFocus might not return the expected dialog. */
+  {
+    Ihandle* dlg_iter = iupDlgListFirst();
+    while (dlg_iter)
+    {
+      if (dlg_iter->handle && dlg_iter != ih && iupdrvIsVisible(dlg_iter))
+      {
+        gtk_window_set_transient_for(dialog, (GtkWindow*)dlg_iter->handle);
+        return;
+      }
+      dlg_iter = iupDlgListNext();
+    }
+  }
+}
+
 static void gtk4DialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h);
 
 static void gtk4DialogChildDestroyEvent(GtkWindow* window, Ihandle* ih)

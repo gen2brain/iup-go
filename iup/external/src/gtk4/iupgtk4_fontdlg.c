@@ -21,7 +21,6 @@
 
 static int gtk4FontDlgPopup(Ihandle* ih, int x, int y)
 {
-  InativeHandle* parent = iupDialogGetNativeParent(ih);
   GtkWidget* dialog;
   char* preview_text, *font;
 
@@ -29,9 +28,11 @@ static int gtk4FontDlgPopup(Ihandle* ih, int x, int y)
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
 
   /* GTK4 uses GtkFontChooserDialog (same as GTK3.2+) */
-  dialog = gtk_font_chooser_dialog_new(iupgtk4StrConvertToSystem(iupAttribGet(ih, "TITLE")), GTK_WINDOW(parent));
+  dialog = gtk_font_chooser_dialog_new(iupgtk4StrConvertToSystem(iupAttribGet(ih, "TITLE")), NULL);
   if (!dialog)
     return IUP_ERROR;
+
+  iupgtk4DialogSetTransientFor(GTK_WINDOW(dialog), ih);
 
   font = iupAttribGet(ih, "VALUE");
   if (!font)

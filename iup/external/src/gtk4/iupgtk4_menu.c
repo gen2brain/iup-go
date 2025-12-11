@@ -317,9 +317,17 @@ int iupdrvMenuGetMenuBarSize(Ihandle* ih_menu)
 
 static void gtk4PopoverClosedCb(GtkPopover *popover, gpointer user_data)
 {
+  GMainLoop* loop = (GMainLoop*)user_data;
+  if (loop && g_main_loop_is_running(loop))
+    g_main_loop_quit(loop);
+}
+
+static void gtk4AnchorPopoverClosedCb(GtkPopover *popover, gpointer user_data)
+{
   Ihandle *ih = (Ihandle*)user_data;
   GtkWidget *anchor_window;
 
+  /* Hide anchor window when popover closes (for tray popups) */
   anchor_window = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ANCHOR_WINDOW");
   if (anchor_window)
     gtk_widget_set_visible(anchor_window, FALSE);
@@ -330,37 +338,121 @@ static void gtk4PopoverClosedCb(GtkPopover *popover, gpointer user_data)
 int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   GtkWidget* popover;
-  GtkWidget* anchor_window;
+  GtkWidget* parent_widget = NULL;
+  GMenu* menu_model;
+  GSimpleActionGroup* action_group;
+  GMainLoop* loop;
+  int local_x = 0, local_y = 0;
+  Ihandle* popup_dialog;
+  int use_anchor_window = 0;
 
-  popover = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_POPOVER");
-  if (!popover)
+  /* Get stored menu model and action group from MapMethod */
+  menu_model = (GMenu*)iupAttribGet(ih, "_IUPGTK4_MENU_MODEL");
+  action_group = (GSimpleActionGroup*)iupAttribGet(ih, "_IUPGTK4_ACTION_GROUP");
+
+  if (!menu_model || !action_group)
     return IUP_ERROR;
 
-  /* Unparent popover if it already has a parent from previous popup */
-  if (gtk_widget_get_parent(popover))
-    gtk_widget_unparent(popover);
+  /* Get the dialog that triggered the popup (stored by controls like tree) */
+  popup_dialog = (Ihandle*)IupGetGlobal("_IUPGTK4_POPUP_DIALOG");
+  IupSetGlobal("_IUPGTK4_POPUP_DIALOG", NULL);
 
-  /* Use positioned anchor window for free positioning at (x,y) */
-  anchor_window = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ANCHOR_WINDOW");
-
-  if (!anchor_window)
+  if (popup_dialog)
   {
-    /* Create a new invisible anchor window for the popover */
-    anchor_window = gtk_window_new();
-    gtk_window_set_decorated(GTK_WINDOW(anchor_window), FALSE);
-    gtk_window_set_default_size(GTK_WINDOW(anchor_window), 1, 1);
-    gtk_widget_set_opacity(anchor_window, 0.0);
-    gtk_window_set_deletable(GTK_WINDOW(anchor_window), FALSE);
+    parent_widget = (GtkWidget*)iupAttribGet(popup_dialog, "_IUPGTK4_INNER_PARENT");
+    if (!parent_widget)
+      parent_widget = (GtkWidget*)popup_dialog->handle;
+  }
 
-    iupAttribSet(ih, "_IUPGTK4_ANCHOR_WINDOW", (char*)anchor_window);
+  /* If no popup_dialog was set, try to find a visible dialog */
+  if (!parent_widget)
+  {
+    /* Try to get the active/focused window from GTK */
+    GList* toplevels = gtk_window_list_toplevels();
+    GList* l;
+    for (l = toplevels; l != NULL; l = l->next)
+    {
+      GtkWindow* win = GTK_WINDOW(l->data);
+      if (gtk_window_is_active(win) && gtk_widget_get_visible(GTK_WIDGET(win)))
+      {
+        /* Found an active visible window, get its inner_parent if it's an IUP dialog */
+        Ihandle* dlg = (Ihandle*)g_object_get_data(G_OBJECT(win), "IUP");
+        if (dlg)
+        {
+          parent_widget = (GtkWidget*)iupAttribGet(dlg, "_IUPGTK4_INNER_PARENT");
+          if (!parent_widget)
+            parent_widget = GTK_WIDGET(win);
+        }
+        else
+          parent_widget = GTK_WIDGET(win);
+        break;
+      }
+    }
+    g_list_free(toplevels);
+  }
 
-    gtk_window_present(GTK_WINDOW(anchor_window));
+  /* If still no parent_widget (e.g., tray popup with no visible window), use anchor window */
+  if (!parent_widget)
+  {
+    use_anchor_window = 1;
+  }
 
-    /* Wait for window to be fully mapped */
-    while (!gtk_widget_get_mapped(anchor_window))
-      g_main_context_iteration(NULL, FALSE);
+  if (use_anchor_window)
+  {
+    /* Tray popup: Use positioned anchor window for free positioning at (x,y) */
+    GtkWidget* anchor_window = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ANCHOR_WINDOW");
+    GtkWidget* old_popover = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_POPOVER");
+
+    /* Clean up previous popover if exists */
+    if (old_popover && GTK_IS_WIDGET(old_popover))
+    {
+      GtkWidget* parent = gtk_widget_get_parent(old_popover);
+      if (parent)
+        gtk_widget_unparent(old_popover);
+      iupAttribSet(ih, "_IUPGTK4_POPOVER", NULL);
+    }
+
+    if (!anchor_window)
+    {
+      /* Create a new invisible anchor window for the popover */
+      anchor_window = gtk_window_new();
+      gtk_window_set_decorated(GTK_WINDOW(anchor_window), FALSE);
+      gtk_window_set_default_size(GTK_WINDOW(anchor_window), 1, 1);
+      gtk_widget_set_opacity(anchor_window, 0.0);
+      gtk_window_set_deletable(GTK_WINDOW(anchor_window), FALSE);
+
+      iupAttribSet(ih, "_IUPGTK4_ANCHOR_WINDOW", (char*)anchor_window);
+
+      gtk_window_present(GTK_WINDOW(anchor_window));
+
+      /* Wait for window to be fully mapped */
+      while (!gtk_widget_get_mapped(anchor_window))
+        g_main_context_iteration(NULL, FALSE);
 
 #ifdef GDK_WINDOWING_X11
+      if (gtk4IsX11Backend())
+      {
+        GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(anchor_window));
+        if (surface && GDK_IS_X11_SURFACE(surface))
+        {
+          GdkDisplay *gdk_display = gdk_display_get_default();
+          Display *xdisplay = gdk_x11_display_get_xdisplay(gdk_display);
+          Window xwindow = gdk_x11_surface_get_xid(surface);
+
+          if (xdisplay && xwindow)
+            iupgtk4X11HideFromTaskbar(xdisplay, xwindow);
+        }
+      }
+#endif
+    }
+    else
+    {
+      gtk_widget_set_visible(anchor_window, TRUE);
+      gtk_window_present(GTK_WINDOW(anchor_window));
+    }
+
+#ifdef GDK_WINDOWING_X11
+    /* On X11: Position the anchor window at (x,y) */
     if (gtk4IsX11Backend())
     {
       GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(anchor_window));
@@ -371,53 +463,126 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
         Window xwindow = gdk_x11_surface_get_xid(surface);
 
         if (xdisplay && xwindow)
-          iupgtk4X11HideFromTaskbar(xdisplay, xwindow);
+          iupgtk4X11MoveWindow(xdisplay, xwindow, x, y);
       }
     }
 #endif
-  }
-  else
-  {
-    gtk_widget_set_visible(anchor_window, TRUE);
-    gtk_window_present(GTK_WINDOW(anchor_window));
-  }
 
-#ifdef GDK_WINDOWING_X11
-  /* On X11: Position the anchor window at (x,y) */
-  if (gtk4IsX11Backend())
-  {
-    GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(anchor_window));
-    if (surface && GDK_IS_X11_SURFACE(surface))
+    /* Create popover for anchor window approach */
+    popover = gtk_popover_menu_new_from_model(G_MENU_MODEL(menu_model));
+    if (!popover)
+      return IUP_ERROR;
+
+    /* Insert action group into anchor window */
+    gtk_widget_insert_action_group(anchor_window, "menu", G_ACTION_GROUP(action_group));
+
+    gtk_widget_set_parent(popover, anchor_window);
+    gtk_popover_set_has_arrow(GTK_POPOVER(popover), FALSE);
+
+    GdkRectangle pointing_rect = {0, 0, 1, 1};
+    gtk_popover_set_pointing_to(GTK_POPOVER(popover), &pointing_rect);
+    gtk_popover_set_position(GTK_POPOVER(popover), GTK_POS_BOTTOM);
+
+    /* On Wayland: Use offset to position popover at screen coordinates (x,y)
+     * since we can't position the anchor window itself */
+#ifndef GDK_WINDOWING_X11
+    gtk_popover_set_offset(GTK_POPOVER(popover), x, y);
+#else
+    if (!gtk4IsX11Backend())
     {
-      GdkDisplay *gdk_display = gdk_display_get_default();
-      Display *xdisplay = gdk_x11_display_get_xdisplay(gdk_display);
-      Window xwindow = gdk_x11_surface_get_xid(surface);
+      gtk_popover_set_offset(GTK_POPOVER(popover), x, y);
+    }
+#endif
 
-      if (xdisplay && xwindow)
-        iupgtk4X11MoveWindow(xdisplay, xwindow, x, y);
+    /* Store popover for cleanup */
+    iupAttribSet(ih, "_IUPGTK4_POPOVER", (char*)popover);
+    ih->handle = popover;
+
+    /* Connect closed signal to hide anchor window */
+    g_signal_connect(popover, "closed", G_CALLBACK(gtk4AnchorPopoverClosedCb), (gpointer)ih);
+
+    gtk_popover_popup(GTK_POPOVER(popover));
+
+    return IUP_NOERROR;
+  }
+
+  /* Dialog popup path (tree, etc.): Convert screen coordinates to parent_widget-local coordinates */
+  {
+    GtkNative *native = gtk_widget_get_native(parent_widget);
+    if (native)
+    {
+      double native_x, native_y;
+      gtk_native_get_surface_transform(native, &native_x, &native_y);
+
+      graphene_point_t point_in = {x - native_x, y - native_y};
+      graphene_point_t point_out;
+
+      if (gtk_widget_compute_point(GTK_WIDGET(native), parent_widget, &point_in, &point_out))
+      {
+        local_x = (int)point_out.x;
+        local_y = (int)point_out.y;
+      }
+      else
+      {
+        local_x = x;
+        local_y = y;
+      }
     }
   }
-#endif
 
-  gtk_widget_set_parent(popover, anchor_window);
+  /* Clean up previous popover if exists */
+  {
+    GtkWidget* old_popover = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_POPOVER");
+    if (old_popover && GTK_IS_WIDGET(old_popover))
+    {
+      GtkWidget* parent = gtk_widget_get_parent(old_popover);
+      if (parent)
+        gtk_widget_unparent(old_popover);
+      iupAttribSet(ih, "_IUPGTK4_POPOVER", NULL);
+    }
+  }
+
+  /* Create a nested main loop, this will block until the popover is closed.
+     This is needed because IUP expects IupPopup() to be synchronous (like GTK3's gtk_menu_popup + gtk_main). */
+  loop = g_main_loop_new(NULL, FALSE);
+
+  /* Create a fresh popover each time */
+  popover = gtk_popover_menu_new_from_model(G_MENU_MODEL(menu_model));
+  if (!popover)
+  {
+    g_main_loop_unref(loop);
+    return IUP_ERROR;
+  }
+
+  /* Connect closed signal to quit the nested main loop */
+  g_signal_connect(popover, "closed", G_CALLBACK(gtk4PopoverClosedCb), (gpointer)loop);
+
+  /* Store popover for cleanup in UnMapMethod */
+  iupAttribSet(ih, "_IUPGTK4_POPOVER", (char*)popover);
+  iupAttribSet(ih, "_IUPGTK4_POPOVER_PARENT", (char*)parent_widget);
+  ih->handle = popover;
+
+  /* Insert action group into the parent widget */
+  gtk_widget_insert_action_group(parent_widget, "menu", G_ACTION_GROUP(action_group));
+
+  /* Parent popover to the dialog's inner container */
+  gtk_widget_set_parent(popover, parent_widget);
+
   gtk_popover_set_has_arrow(GTK_POPOVER(popover), FALSE);
 
-  GdkRectangle pointing_rect = {0, 0, 1, 1};
-  gtk_popover_set_pointing_to(GTK_POPOVER(popover), &pointing_rect);
+  /* Position relative to parent widget at click location */
+  {
+    GdkRectangle pointing_rect = {local_x, local_y, 1, 1};
+    gtk_popover_set_pointing_to(GTK_POPOVER(popover), &pointing_rect);
+  }
   gtk_popover_set_position(GTK_POPOVER(popover), GTK_POS_BOTTOM);
 
-  /* On Wayland: Use offset to position popover at screen coordinates (x,y)
-   * since we can't position the anchor window itself */
-#ifndef GDK_WINDOWING_X11
-  gtk_popover_set_offset(GTK_POPOVER(popover), x, y);
-#else
-  if (!gtk4IsX11Backend())
-  {
-    gtk_popover_set_offset(GTK_POPOVER(popover), x, y);
-  }
-#endif
-
+  /* Show the popover */
   gtk_popover_popup(GTK_POPOVER(popover));
+
+  /* Block here until popover is closed, the closed signal handler will quit the loop */
+  g_main_loop_run(loop);
+  g_main_loop_unref(loop);
 
   return IUP_NOERROR;
 }
@@ -486,11 +651,12 @@ static int gtk4MenuMapMethod(Ihandle* ih)
     return IUP_NOERROR;
   }
 
-  /* This is a popup menu - create GtkPopoverMenu with GMenu model */
+  /* This is a popup menu - store data for deferred creation in iupdrvMenuPopup.
+   * We can't create the popover here because it needs a parent widget to resolve actions.
+   * Store the action group and menu model, create popover when popup is called. */
   {
     GMenu* menu_model;
     GSimpleActionGroup* action_group;
-    GtkWidget* popover;
 
     /* Create action group for this popup menu */
     action_group = g_simple_action_group_new();
@@ -503,111 +669,13 @@ static int gtk4MenuMapMethod(Ihandle* ih)
       return IUP_ERROR;
     }
 
-    /* Create GtkPopoverMenu from model */
-    popover = gtk_popover_menu_new_from_model(G_MENU_MODEL(menu_model));
-    if (!popover)
-    {
-      g_object_unref(menu_model);
-      g_object_unref(action_group);
-      return IUP_ERROR;
-    }
-
-    /* Store action group in the popover so it can access the actions */
-    gtk_widget_insert_action_group(popover, "menu", G_ACTION_GROUP(action_group));
-    g_object_unref(action_group);  /* popover takes ownership */
-    g_object_unref(menu_model);    /* popover takes ownership */
-
-    /* Store popover in IUP handle for iupdrvMenuPopup() */
-    iupAttribSet(ih, "_IUPGTK4_POPOVER", (char*)popover);
-
-    /* Keep popover alive by adding a reference */
-    g_object_ref_sink(popover);
-
-    /* Connect closed signal to handle cleanup */
-    g_signal_connect(popover, "closed", G_CALLBACK(gtk4PopoverClosedCb), (gpointer)ih);
-
-    /* Set ih->handle so child items can be mapped (IupMap checks parent->handle) */
-    ih->handle = popover;
-
-  }
-
-  return IUP_NOERROR;
-
-  if (iupMenuIsMenuBar(ih))
-  {
-    /* Use GtkBox for menu bar instead of GtkPopoverMenuBar.
-     * GtkPopoverMenuBar requires GMenu model with items predefined, but IUP dynamically builds menus by adding children later.
-     * Use a simple GtkBox to hold menu buttons added by children. */
-    ih->handle = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    if (!ih->handle)
-    {
-      return IUP_ERROR;
-    }
-
-    iupgtk4AddToParent(ih);
-
-    if (!ih->handle || !GTK_IS_WIDGET(ih->handle))
-      return IUP_ERROR;
-
-    GtkWidget* parent = gtk_widget_get_parent(ih->handle);
-    int visible = gtk_widget_get_visible(ih->handle);
-    int width = gtk_widget_get_allocated_width(ih->handle);
-    int height = gtk_widget_get_allocated_height(ih->handle);
-
-    /* Check natural size */
-    int nat_width, nat_height, min_width, min_height;
-    gtk_widget_measure(ih->handle, GTK_ORIENTATION_HORIZONTAL, -1, &min_width, &nat_width, NULL, NULL);
-    gtk_widget_measure(ih->handle, GTK_ORIENTATION_VERTICAL, -1, &min_height, &nat_height, NULL, NULL);
-
-    /* Count children */
-    int child_count = 0;
-    GtkWidget* child = gtk_widget_get_first_child(ih->handle);
-    while (child) {
-      child_count++;
-      child = gtk_widget_get_next_sibling(child);
-    }
-  }
-  else
-  {
-    /* Use GtkPopoverMenu for popup menus and submenus */
-    GMenu* menu_model = g_menu_new();
-    GtkWidget* popover = gtk_popover_menu_new_from_model(G_MENU_MODEL(menu_model));
-
-    if (!popover)
-    {
-      g_object_unref(menu_model);
-      return IUP_ERROR;
-    }
-
-    /* Store both the model and the popover */
+    /* Store for deferred popover creation */
     iupAttribSet(ih, "_IUPGTK4_MENU_MODEL", (char*)menu_model);
-    iupAttribSet(ih, "_IUPGTK4_POPOVER", (char*)popover);
+    iupAttribSet(ih, "_IUPGTK4_ACTION_GROUP", (char*)action_group);
 
-    /* The actual handle is a box that will contain menu items */
-    ih->handle = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    if (!ih->handle)
-      return IUP_ERROR;
-
-    gtk_popover_set_child(GTK_POPOVER(popover), ih->handle);
-
-    if (ih->parent)
-    {
-      /* Submenu - attach popover to parent submenu button */
-      gtk_menu_button_set_popover(GTK_MENU_BUTTON(ih->parent->handle), popover);
-
-      g_signal_connect(G_OBJECT(popover), "show", G_CALLBACK(gtk4MenuShow), ih);
-      g_signal_connect(G_OBJECT(popover), "hide", G_CALLBACK(gtk4MenuHide), ih);
-    }
-    else
-    {
-      /* Popup menu */
-      g_signal_connect(G_OBJECT(popover), "show", G_CALLBACK(gtk4MenuShow), ih);
-      g_signal_connect(G_OBJECT(popover), "closed", G_CALLBACK(gtk4MenuHide), ih);
-    }
+    /* Set a placeholder handle so IupMap considers this mapped */
+    ih->handle = (GtkWidget*)ih;  /* Placeholder, real handle set in iupdrvMenuPopup */
   }
-
-  ih->serial = iupMenuGetChildId(ih);
-  gtk_widget_show(ih->handle);
 
   return IUP_NOERROR;
 }
@@ -615,8 +683,39 @@ static int gtk4MenuMapMethod(Ihandle* ih)
 static void gtk4MenuUnMapMethod(Ihandle* ih)
 {
   GMenu* menu_model = (GMenu*)iupAttribGet(ih, "_IUPGTK4_MENU_MODEL");
+  GSimpleActionGroup* action_group = (GSimpleActionGroup*)iupAttribGet(ih, "_IUPGTK4_ACTION_GROUP");
   GtkWidget* popover = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_POPOVER");
+  GtkWidget* popover_parent = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_POPOVER_PARENT");
+  GtkWidget* anchor_window = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ANCHOR_WINDOW");
 
+  /* Remove action group from parent widget first */
+  if (popover_parent && GTK_IS_WIDGET(popover_parent))
+  {
+    gtk_widget_insert_action_group(popover_parent, "menu", NULL);
+    iupAttribSet(ih, "_IUPGTK4_POPOVER_PARENT", NULL);
+  }
+
+  /* Remove action group from anchor window if used */
+  if (anchor_window && GTK_IS_WIDGET(anchor_window))
+  {
+    gtk_widget_insert_action_group(anchor_window, "menu", NULL);
+  }
+
+  if (popover && GTK_IS_WIDGET(popover))
+  {
+    GtkWidget* parent = gtk_widget_get_parent(popover);
+    if (parent)
+      gtk_widget_unparent(popover);
+
+    iupAttribSet(ih, "_IUPGTK4_POPOVER", NULL);
+  }
+
+  /* Clean up anchor window if it was created (for tray popups) */
+  if (anchor_window && GTK_IS_WIDGET(anchor_window))
+  {
+    gtk_window_destroy(GTK_WINDOW(anchor_window));
+    iupAttribSet(ih, "_IUPGTK4_ANCHOR_WINDOW", NULL);
+  }
 
   if (menu_model)
   {
@@ -624,38 +723,17 @@ static void gtk4MenuUnMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPGTK4_MENU_MODEL", NULL);
   }
 
-  if (popover)
+  if (action_group)
   {
-    /* Release the popover widget */
-    if (GTK_IS_WIDGET(popover))
-    {
-      GtkWidget* parent = gtk_widget_get_parent(popover);
-
-      if (parent)
-      {
-        gtk_widget_unparent(popover);
-      }
-
-      /* Release our reference from g_object_ref_sink() in MapMethod */
-      g_object_unref(popover);
-    }
-    iupAttribSet(ih, "_IUPGTK4_POPOVER", NULL);
-  }
-
-  /* Clean up anchor window if it was created */
-  {
-    GtkWidget* anchor_window = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ANCHOR_WINDOW");
-    if (anchor_window && GTK_IS_WIDGET(anchor_window))
-    {
-      gtk_window_destroy(GTK_WINDOW(anchor_window));
-      iupAttribSet(ih, "_IUPGTK4_ANCHOR_WINDOW", NULL);
-    }
+    g_object_unref(action_group);
+    iupAttribSet(ih, "_IUPGTK4_ACTION_GROUP", NULL);
   }
 
   if (iupMenuIsMenuBar(ih))
     ih->parent = NULL;
 
-  iupdrvBaseUnMapMethod(ih);
+  /* For popup menus, handle is the popover which we just cleaned up. */
+  ih->handle = NULL;
 }
 
 void iupdrvMenuInitClass(Iclass* ic)
