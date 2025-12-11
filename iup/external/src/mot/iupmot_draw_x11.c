@@ -13,6 +13,10 @@
 #include <Xm/Xm.h>
 #include <X11/Xlib.h>
 
+#ifdef IUP_USE_XFT
+#include <X11/Xft/Xft.h>
+#endif
+
 #include "iup.h"
 
 #include "iup_attrib.h"
@@ -584,18 +588,122 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y2 = 0;
 }
 
-IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
+#ifdef IUP_USE_XFT
+static void iDrawTextXft(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, XftFont* xftfont, int flags)
 {
-  int num_line, width, off_x;
-  XFontStruct* xfont = (XFontStruct*)iupmotGetFontStruct(font);
+  int num_line, off_x;
+  XftDraw* xftdraw;
+  XftColor xftcolor;
+  XRenderColor rendercolor;
+  XGlyphInfo extents;
 
-  /* IUP_DRAW_LAYOUTCENTER, IUP_DRAW_ELLIPSIS and IUP_DRAW_WRAP are not supported */
-  (void)text_orientation;  /* not supported */
+  rendercolor.red = (unsigned short)(iupDrawRed(color) << 8);
+  rendercolor.green = (unsigned short)(iupDrawGreen(color) << 8);
+  rendercolor.blue = (unsigned short)(iupDrawBlue(color) << 8);
+  rendercolor.alpha = 0xFFFF;
+  XftColorAllocValue(iupmot_display, iupmot_visual, DefaultColormap(iupmot_display, iupmot_screen), &rendercolor, &xftcolor);
 
-  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color),iupDrawGreen(color),iupDrawBlue(color)));
-  XSetFont(iupmot_display, dc->pixmap_gc, xfont->fid);
+  xftdraw = XftDrawCreate(iupmot_display, dc->pixmap, iupmot_visual, DefaultColormap(iupmot_display, iupmot_screen));
+  if (!xftdraw)
+  {
+    XftColorFree(iupmot_display, iupmot_visual, DefaultColormap(iupmot_display, iupmot_screen), &xftcolor);
+    return;
+  }
+
+  if (flags & IUP_DRAW_CLIP)
+  {
+    XRectangle rect;
+    rect.x = (short)x;
+    rect.y = (short)y;
+    rect.width = (unsigned short)w;
+    rect.height = (unsigned short)h;
+    XftDrawSetClipRectangles(xftdraw, 0, 0, &rect, 1);
+  }
 
   num_line = iupStrLineCount(text, len);
+
+  if (num_line == 1)
+  {
+    off_x = 0;
+    if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
+    {
+      XftTextExtentsUtf8(iupmot_display, xftfont, (FcChar8*)text, len, &extents);
+      if (flags & IUP_DRAW_RIGHT)
+      {
+        off_x = w - extents.xOff;
+        if (off_x < 0) off_x = 0;
+      }
+      else
+      {
+        off_x = (w - extents.xOff) / 2;
+        if (off_x < 0) off_x = 0;
+      }
+    }
+
+    XftDrawStringUtf8(xftdraw, &xftcolor, xftfont, x + off_x, y + xftfont->ascent, (FcChar8*)text, len);
+  }
+  else
+  {
+    int i, line_height, l_len, sum_len = 0;
+    const char *p, *q;
+
+    line_height = xftfont->ascent + xftfont->descent;
+
+    p = text;
+    for (i = 0; i < num_line; i++)
+    {
+      q = strchr(p, '\n');
+      if (q)
+        l_len = (int)(q - p);
+      else
+        l_len = (int)strlen(p);
+
+      if (sum_len + l_len > len)
+        l_len = len - sum_len;
+
+      if (l_len)
+      {
+        off_x = 0;
+        if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
+        {
+          XftTextExtentsUtf8(iupmot_display, xftfont, (FcChar8*)p, l_len, &extents);
+          if (flags & IUP_DRAW_RIGHT)
+          {
+            off_x = w - extents.xOff;
+            if (off_x < 0) off_x = 0;
+          }
+          else
+          {
+            off_x = (w - extents.xOff) / 2;
+            if (off_x < 0) off_x = 0;
+          }
+        }
+
+        XftDrawStringUtf8(xftdraw, &xftcolor, xftfont, x + off_x, y + xftfont->ascent, (FcChar8*)p, l_len);
+      }
+
+      if (q)
+        p = q + 1;
+
+      sum_len += l_len;
+      if (sum_len == len)
+        break;
+
+      y += line_height;
+    }
+  }
+
+  XftDrawDestroy(xftdraw);
+  XftColorFree(iupmot_display, iupmot_visual, DefaultColormap(iupmot_display, iupmot_screen), &xftcolor);
+}
+#endif
+
+static void iDrawTextX11(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, XFontStruct* xfont, int flags)
+{
+  int num_line, width, off_x;
+
+  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+  XSetFont(iupmot_display, dc->pixmap_gc, xfont->fid);
 
   if (flags & IUP_DRAW_CLIP)
   {
@@ -607,19 +715,20 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     XSetClipRectangles(iupmot_display, dc->pixmap_gc, 0, 0, &rect, 1, Unsorted);
   }
 
+  num_line = iupStrLineCount(text, len);
+
   if (num_line == 1)
   {
     off_x = 0;
     if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
     {
-      /* Calculate width once for both center and right alignment */
       width = XTextWidth(xfont, text, len);
       if (flags & IUP_DRAW_RIGHT)
       {
         off_x = w - width;
         if (off_x < 0) off_x = 0;
       }
-      else /* IUP_DRAW_CENTER */
+      else
       {
         off_x = (w - width) / 2;
         if (off_x < 0) off_x = 0;
@@ -640,9 +749,9 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     {
       q = strchr(p, '\n');
       if (q)
-        l_len = (int)(q - p);  /* Cut the string to contain only one line */
+        l_len = (int)(q - p);
       else
-        l_len = (int)strlen(p);  /* use the remaining characters */
+        l_len = (int)strlen(p);
 
       if (sum_len + l_len > len)
         l_len = len - sum_len;
@@ -652,25 +761,22 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
         off_x = 0;
         if (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER))
         {
-          /* Calculate width once for both center and right alignment */
           width = XTextWidth(xfont, p, l_len);
           if (flags & IUP_DRAW_RIGHT)
           {
             off_x = w - width;
             if (off_x < 0) off_x = 0;
           }
-          else /* IUP_DRAW_CENTER */
+          else
           {
             off_x = (w - width) / 2;
             if (off_x < 0) off_x = 0;
           }
         }
 
-        /* Draw the line */
         XDrawString(iupmot_display, dc->pixmap, dc->pixmap_gc, x + off_x, y + xfont->ascent, p, l_len);
       }
 
-      /* Advance the string */
       if (q)
         p = q + 1;
 
@@ -678,14 +784,34 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
       if (sum_len == len)
         break;
 
-      /* Advance a line */
       y += line_height;
     }
   }
 
-  /* restore settings */
   if (flags & IUP_DRAW_CLIP)
     XSetClipMask(iupmot_display, dc->pixmap_gc, None);
+}
+
+IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
+{
+  (void)text_orientation;
+
+#ifdef IUP_USE_XFT
+  {
+    XftFont* xftfont = (XftFont*)iupmotGetXftFont(font);
+    if (xftfont)
+    {
+      iDrawTextXft(dc, text, len, x, y, w, h, color, xftfont, flags);
+      return;
+    }
+  }
+#endif
+
+  {
+    XFontStruct* xfont = (XFontStruct*)iupmotGetFontStruct(font);
+    if (xfont)
+      iDrawTextX11(dc, text, len, x, y, w, h, color, xfont, flags);
+  }
 }
 
 IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)

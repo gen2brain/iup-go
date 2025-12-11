@@ -44,6 +44,7 @@ char* iupmotGetFontStructAttrib(Ihandle *ih);
 char* iupmotGetFontIdAttrib(Ihandle *ih);
 #ifdef IUP_USE_XFT
 void* iupmotGetXftFontAttrib(Ihandle *ih);
+void* iupmotGetXftFont(const char* value);
 #endif
 
 /* tips */

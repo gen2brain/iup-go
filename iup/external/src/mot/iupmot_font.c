@@ -492,11 +492,23 @@ XmFontList iupmotGetFontList(const char* foundry, const char* value)
 XFontStruct* iupmotGetFontStruct(const char* value)
 {
   ImotFont *motfont = motFindFont(NULL, value);
-  if (!motfont) 
+  if (!motfont)
     return NULL;
   else
     return motfont->fontstruct;
 }
+
+#ifdef IUP_USE_XFT
+void* iupmotGetXftFont(const char* value)
+{
+  ImotFont *motfont = motFindFont(NULL, value);
+  if (!motfont)
+    return NULL;
+  if (motfont->is_xft)
+    return (void*)motfont->xftfont;
+  return NULL;
+}
+#endif
 
 static ImotFont* motFontCreateNativeFont(Ihandle* ih, const char* value)
 {
