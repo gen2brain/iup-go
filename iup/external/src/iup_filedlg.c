@@ -64,6 +64,7 @@ Iclass* iupFileDlgNewClass(void)
   iupClassRegisterAttribute(ic, "MULTIVALUEPATH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EXTDEFAULT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MULTIPLEFILES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PORTAL", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FILEEXIST", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_READONLY);
   iupClassRegisterAttribute(ic, "STATUS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_READONLY);
