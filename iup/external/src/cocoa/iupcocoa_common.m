@@ -411,6 +411,12 @@ static void iupCocoaDisplayUpdate(Ihandle *ih)
     NSView* the_view = [(NSViewController*)the_handle view];
     [the_view setNeedsDisplay:YES];
   }
+
+  NSView* main_view = iupcocoaGetMainView(ih);
+  if (main_view && main_view != (NSView*)the_handle)
+  {
+    [main_view setNeedsDisplay:YES];
+  }
 }
 
 void iupdrvRedrawNow(Ihandle *ih)
@@ -1071,9 +1077,9 @@ bool iupcocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the_event, NSVi
     CGFloat final_y = converted_point.y;
 
     /* IUP's WHEEL_CB 'delta' corresponds to vertical scrolling.
-       On macOS, this is deltaY. We negate it to match behavior on other platforms,
-       where a positive delta means scrolling up (away from the user). */
-    CGFloat delta = -[the_event deltaY];
+       On macOS, deltaY > 0 means scroll up (content should move up, showing content above).
+       This matches the IUP convention where positive delta means scroll up. */
+    CGFloat delta = [the_event deltaY];
 
     /* IUP does not have a separate parameter for horizontal scrolling (deltaX). */
 

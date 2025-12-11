@@ -76,6 +76,26 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 @end
 
 
+/**
+ * @brief Custom NSView subclass for absolute positioning of child views.
+ *
+ * This view is flipped (origin at top-left, like IUP's coordinate system)
+ * and allows child views to be positioned with setFrameOrigin/setFrame.
+ * Used as _IUP_EXTRAPARENT for canvas controls.
+ */
+@interface IupCocoaFixedView : NSView
+@end
+
+@implementation IupCocoaFixedView
+
+- (BOOL) isFlipped
+{
+  return YES;
+}
+
+@end
+
+
 @interface IupLogicalScrollClipView : NSClipView
 @end
 
@@ -167,6 +187,11 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
                                 name:NSWindowDidResignKeyNotification
                               object:[self window]
     ];
+
+    /* Trigger initial tracking area setup when view is added to window.
+       updateTrackingAreas is not called automatically until frame changes,
+       so we need to ensure the tracking area is set up for hover events. */
+    [self updateTrackingAreas];
   }
 }
 
@@ -287,11 +312,15 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   else
   {
     /* If there is no ACTION callback, we are responsible for drawing the background.
-       This drawing happens in virtual coordinates (no translation needed). */
+       Clip to bounds to avoid drawing outside the view. */
     if ([self backgroundColor])
     {
-      [[self backgroundColor] set];
-      NSRectFill(dirty_rect);
+      NSRect fill_rect = NSIntersectionRect(dirty_rect, [self bounds]);
+      if (!NSIsEmptyRect(fill_rect))
+      {
+        [[self backgroundColor] set];
+        NSRectFill(fill_rect);
+      }
     }
   }
 }
@@ -484,6 +513,54 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 - (BOOL) acceptsFirstMouse:(NSEvent *)theEvent
 {
   return YES;
+}
+
+- (void) updateTrackingAreas
+{
+  [super updateTrackingAreas];
+
+  for (NSTrackingArea* area in [self trackingAreas])
+  {
+    if ([area owner] == self)
+    {
+      [self removeTrackingArea:area];
+    }
+  }
+
+  NSTrackingAreaOptions options = NSTrackingMouseEnteredAndExited |
+                                  NSTrackingMouseMoved |
+                                  NSTrackingActiveInKeyWindow |
+                                  NSTrackingInVisibleRect;
+  NSTrackingArea* tracking_area = [[NSTrackingArea alloc] initWithRect:[self bounds]
+                                                               options:options
+                                                                 owner:self
+                                                              userInfo:nil];
+  [self addTrackingArea:tracking_area];
+  [tracking_area release];
+}
+
+- (void) mouseEntered:(NSEvent*)the_event
+{
+  if (![self isEnabled]) return;
+
+  IFn cb = (IFn)IupGetCallback(_ih, "ENTERWINDOW_CB");
+  if (cb)
+  {
+    if (cb(_ih) == IUP_CLOSE)
+      IupExitLoop();
+  }
+}
+
+- (void) mouseExited:(NSEvent*)the_event
+{
+  if (![self isEnabled]) return;
+
+  IFn cb = (IFn)IupGetCallback(_ih, "LEAVEWINDOW_CB");
+  if (cb)
+  {
+    if (cb(_ih) == IUP_CLOSE)
+      IupExitLoop();
+  }
 }
 
 - (void) flagsChanged:(NSEvent*)the_event
@@ -845,7 +922,7 @@ static NSScrollView* cocoaCanvasGetScrollView(Ihandle* ih)
 {
   if(iupAttribGetBoolean(ih, "_IUPCOCOA_CANVAS_HAS_SCROLLBAR"))
   {
-    NSScrollView* scroll_view = (NSScrollView*)ih->handle;
+    NSScrollView* scroll_view = (NSScrollView*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_ROOT");
     NSCAssert([scroll_view isKindOfClass:[NSScrollView class]], @"Expected NSScrollView");
     return scroll_view;
   }
@@ -879,8 +956,6 @@ static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
     NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
     if (!scroll_view) return 0;
 
-    iupAttribSet(ih, "SB_RESIZE", NULL);
-
     double dx;
     if (value) iupStrToDouble(value, &dx);
     else dx = iupAttribGetDouble(ih, "DX");
@@ -893,19 +968,12 @@ static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
     {
       if (iupAttribGetBoolean(ih, "XAUTOHIDE"))
       {
-        if ([scroll_view hasHorizontalScroller])
-        {
-          [scroll_view setHasHorizontalScroller:NO];
-          iupAttribSet(ih, "SB_RESIZE", "YES");
-        }
+        [scroll_view setHasHorizontalScroller:NO];
+        iupAttribSet(ih, "SB_RESIZE", "YES");
       }
       else
       {
-        if(![scroll_view hasHorizontalScroller])
-        {
-          [scroll_view setHasHorizontalScroller:YES];
-          iupAttribSet(ih, "SB_RESIZE", "YES");
-        }
+        [scroll_view setHasHorizontalScroller:YES];
         [[scroll_view horizontalScroller] setEnabled:NO];
       }
       iupAttribSet(ih, "XHIDDEN", "YES");
@@ -913,12 +981,9 @@ static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      if (![scroll_view hasHorizontalScroller])
-      {
-        [scroll_view setHasHorizontalScroller:YES];
-        iupAttribSet(ih, "SB_RESIZE", "YES");
-      }
+      [scroll_view setHasHorizontalScroller:YES];
       [[scroll_view horizontalScroller] setEnabled:YES];
+      iupAttribSet(ih, "SB_RESIZE", "YES");
       iupAttribSet(ih, "XHIDDEN", "NO");
 
       NSScroller* scroller = [scroll_view horizontalScroller];
@@ -929,11 +994,8 @@ static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
       }
     }
 
-    if (iupAttribGet(ih, "SB_RESIZE"))
-    {
-      [scroll_view tile];
-      [scroll_view setNeedsDisplay:YES];
-    }
+    [scroll_view tile];
+    [scroll_view setNeedsDisplay:YES];
   }
   return 1;
 }
@@ -944,8 +1006,6 @@ static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value)
   {
     NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
     if (!scroll_view) return 0;
-
-    iupAttribSet(ih, "SB_RESIZE", NULL);
 
     double dy;
     if (value) iupStrToDouble(value, &dy);
@@ -959,19 +1019,12 @@ static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value)
     {
       if (iupAttribGetBoolean(ih, "YAUTOHIDE"))
       {
-        if ([scroll_view hasVerticalScroller])
-        {
-          [scroll_view setHasVerticalScroller:NO];
-          iupAttribSet(ih, "SB_RESIZE", "YES");
-        }
+        [scroll_view setHasVerticalScroller:NO];
+        iupAttribSet(ih, "SB_RESIZE", "YES");
       }
       else
       {
-        if(![scroll_view hasVerticalScroller])
-        {
-          [scroll_view setHasVerticalScroller:YES];
-          iupAttribSet(ih, "SB_RESIZE", "YES");
-        }
+        [scroll_view setHasVerticalScroller:YES];
         [[scroll_view verticalScroller] setEnabled:NO];
       }
       iupAttribSet(ih, "YHIDDEN", "YES");
@@ -979,12 +1032,9 @@ static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      if (![scroll_view hasVerticalScroller])
-      {
-        [scroll_view setHasVerticalScroller:YES];
-        iupAttribSet(ih, "SB_RESIZE", "YES");
-      }
+      [scroll_view setHasVerticalScroller:YES];
       [[scroll_view verticalScroller] setEnabled:YES];
+      iupAttribSet(ih, "SB_RESIZE", "YES");
       iupAttribSet(ih, "YHIDDEN", "NO");
 
       NSScroller* scroller = [scroll_view verticalScroller];
@@ -995,11 +1045,8 @@ static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value)
       }
     }
 
-    if (iupAttribGet(ih, "SB_RESIZE"))
-    {
-      [scroll_view tile];
-      [scroll_view setNeedsDisplay:YES];
-    }
+    [scroll_view tile];
+    [scroll_view setNeedsDisplay:YES];
   }
   return 1;
 }
@@ -1222,6 +1269,9 @@ static int cocoaCanvasSetContextMenuAttrib(Ihandle* ih, const char* value)
 
 static int cocoaCanvasMapMethod(Ihandle* ih)
 {
+  /* Create extra parent for absolute positioning of IUP children */
+  IupCocoaFixedView* extra_parent = [[IupCocoaFixedView alloc] initWithFrame:NSZeroRect];
+
   NSView* root_view = nil;
   IupCocoaCanvasView* canvas_view = [[IupCocoaCanvasView alloc] initWithFrame:NSZeroRect ih:ih];
   iupAttribSet(ih, "_IUPCOCOA_CANVAS_VIEW", (char*)canvas_view);
@@ -1329,9 +1379,15 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
     root_view = canvas_view;
   }
 
-  ih->handle = root_view;
+  /* Add the root_view (canvas or scrollview) as subview of extra_parent */
+  [extra_parent addSubview:root_view];
 
-  iupcocoaSetAssociatedViews(ih, canvas_view, root_view);
+  /* ih->handle is the extra_parent (for layout positioning). The actual canvas/scrollview is stored in the attributes. */
+  ih->handle = extra_parent;
+  iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)extra_parent);
+  iupAttribSet(ih, "_IUPCOCOA_CANVAS_ROOT", (char*)root_view);
+
+  iupcocoaSetAssociatedViews(ih, canvas_view, extra_parent);
 
   iupcocoaAddToParent(ih);
 
@@ -1352,7 +1408,6 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
 
 static void cocoaCanvasUnMapMethod(Ihandle* ih)
 {
-  id root_view = ih->handle;
   IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
 
   if (canvas_view)
@@ -1372,14 +1427,32 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
 
   iupcocoaRemoveFromParent(ih);
   iupcocoaSetAssociatedViews(ih, nil, nil);
-  [root_view release];
+
+  /* ih->handle is the extra_parent which contains the canvas_root */
+  NSView* extra_parent = (NSView*)ih->handle;
+  if (extra_parent)
+  {
+    [extra_parent release];
+  }
+
   ih->handle = NULL;
   iupAttribSet(ih, "_IUPCOCOA_CANVAS_VIEW", NULL);
+  iupAttribSet(ih, "_IUP_EXTRAPARENT", NULL);
+  iupAttribSet(ih, "_IUPCOCOA_CANVAS_ROOT", NULL);
 }
 
 static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
 {
+  /* First call the base layout update to position the extra_parent */
   iupdrvBaseLayoutUpdateMethod(ih);
+
+  /* Now resize the canvas_root to fill the extra_parent */
+  NSView* canvas_root = (NSView*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_ROOT");
+
+  if (canvas_root)
+  {
+    [canvas_root setFrame:NSMakeRect(0, 0, ih->currentwidth, ih->currentheight)];
+  }
 
   if (ih->data->sb)
   {
@@ -1440,6 +1513,16 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   }
 }
 
+static void* cocoaCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
+{
+  (void)child;
+  /* Return the extra_parent view for absolute positioning of child elements */
+  NSView* extra_parent = (NSView*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (extra_parent)
+    return (void*)extra_parent;
+  return ih->handle;
+}
+
 void iupdrvCanvasInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -1447,6 +1530,7 @@ void iupdrvCanvasInitClass(Iclass* ic)
   ic->UnMap = cocoaCanvasUnMapMethod;
   ic->LayoutUpdate = cocoaCanvasLayoutUpdateMethod;
   ic->ComputeNaturalSize = cocoaCanvasComputeNaturalSizeMethod;
+  ic->GetInnerNativeContainerHandle = cocoaCanvasGetInnerNativeContainerHandleMethod;
 
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaCanvasSetBgColorAttrib, "232 232 232", NULL, IUPAF_DEFAULT);
