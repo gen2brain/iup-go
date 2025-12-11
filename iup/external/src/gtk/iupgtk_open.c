@@ -721,8 +721,12 @@ int iupdrvSetGlobalAppIDAttrib(const char* value)
 
 int iupdrvSetGlobalAppNameAttrib(const char* value)
 {
-  (void)value;
-  return 0;
+  static int appname_set = 0;
+  if (appname_set || !value || !value[0])
+    return 0;
+
+  appname_set = 1;
+  return 1;
 }
 
 void iupdrvClose(void)
