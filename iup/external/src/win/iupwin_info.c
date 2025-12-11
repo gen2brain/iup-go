@@ -466,32 +466,49 @@ IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
   return cur_dir;
 }
 
-/*
-Windows 7 and 10
-PreferencePath(0)=C:\Users\Tecgraf\
-PreferencePath(1)=C:\Users\Tecgraf\AppData\Roaming\
+static int iupwinMakeDirectory(const char* path)
+{
+  DWORD attrib = GetFileAttributesA(path);
+  if (attrib != INVALID_FILE_ATTRIBUTES)
+  {
+    if (attrib & FILE_ATTRIBUTE_DIRECTORY)
+      return 1;
+    return 0;
+  }
+  return CreateDirectoryA(path, NULL) ? 1 : 0;
+}
 
-Windows XP
-PreferencePath(0)=C:\Documents and Settings\Tecgraf\
-PreferencePath(1)=C:\Documents and Settings\Tecgraf\Application Data\
-*/
-
-IUP_SDK_API int iupdrvGetPreferencePath(char *filename, int use_system)
+IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
 {
   char* homedrive;
   char* homepath;
 
+  if (!app_name || !app_name[0])
+  {
+    filename[0] = '\0';
+    return 0;
+  }
+
   if (use_system)
   {
+    /* Windows Local AppData: %LOCALAPPDATA%\appname\config.cfg */
     TCHAR wpath[MAX_PATH];
-    if (SHGetFolderPath(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, wpath) == S_OK)
+    if (SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, wpath) == S_OK)
     {
       strcpy(filename, iupwinStrFromSystemFilename(wpath));
+
+      /* Add app directory */
       strcat(filename, "\\");
+      strcat(filename, app_name);
+      iupwinMakeDirectory(filename);
+
+      /* Add config filename */
+      strcat(filename, "\\config.cfg");
       return 1;
     }
   }
 
+  /* Legacy: %HOMEDRIVE%%HOMEPATH%\appname.cfg */
   homedrive = getenv("HOMEDRIVE");
   homepath = getenv("HOMEPATH");
   if (homedrive && homepath)
@@ -499,12 +516,13 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, int use_system)
     strcpy(filename, homedrive);
     strcat(filename, homepath);
     strcat(filename, "\\");
+    strcat(filename, app_name);
+    strcat(filename, ".cfg");
     return 1;
   }
 
   filename[0] = '\0';
   return 0;
-
 }
 
 IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
