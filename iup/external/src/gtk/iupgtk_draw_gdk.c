@@ -290,10 +290,59 @@ IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
   gdk_draw_point(dc->pixmap, dc->pixmap_gc, x, y);
 }
 
+static void iDrawBuildRoundedRectPath(int x1, int y1, int x2, int y2, int corner_radius, GdkPoint* points, int* num_points)
+{
+  int i, n = 0;
+  double angle, step;
+  double pi = 3.14159265359;
+  int points_per_corner = 16;
+
+  step = 90.0 / points_per_corner;
+
+  /* Top-left corner: from 180 to 270 degrees */
+  for (i = 0; i <= points_per_corner; i++)
+  {
+    angle = (180.0 + i * step) * pi / 180.0;
+    points[n].x = x1 + corner_radius + (int)(corner_radius * cos(angle));
+    points[n].y = y1 + corner_radius + (int)(corner_radius * sin(angle));
+    n++;
+  }
+
+  /* Top-right corner: from 270 to 360 degrees */
+  for (i = 1; i <= points_per_corner; i++)
+  {
+    angle = (270.0 + i * step) * pi / 180.0;
+    points[n].x = x2 - corner_radius + (int)(corner_radius * cos(angle));
+    points[n].y = y1 + corner_radius + (int)(corner_radius * sin(angle));
+    n++;
+  }
+
+  /* Bottom-right corner: from 0 to 90 degrees */
+  for (i = 1; i <= points_per_corner; i++)
+  {
+    angle = (i * step) * pi / 180.0;
+    points[n].x = x2 - corner_radius + (int)(corner_radius * cos(angle));
+    points[n].y = y2 - corner_radius + (int)(corner_radius * sin(angle));
+    n++;
+  }
+
+  /* Bottom-left corner: from 90 to 180 degrees */
+  for (i = 1; i <= points_per_corner; i++)
+  {
+    angle = (90.0 + i * step) * pi / 180.0;
+    points[n].x = x1 + corner_radius + (int)(corner_radius * cos(angle));
+    points[n].y = y2 - corner_radius + (int)(corner_radius * sin(angle));
+    n++;
+  }
+
+  *num_points = n;
+}
+
 IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
 {
   GdkColor c;
-  int diameter;
+  GdkPoint points[100];
+  int num_points;
 
   iupgdkColorSet(&c, color);
   gdk_gc_set_rgb_fg_color(dc->pixmap_gc, &c);
@@ -306,54 +355,31 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
   if (corner_radius > max_radius)
     corner_radius = max_radius;
 
-  diameter = corner_radius * 2;
-
-  if (style != IUP_DRAW_FILL)
+  if (corner_radius <= 0)
   {
-    iDrawSetLineWidth(dc, line_width);
-    iDrawSetLineStyle(dc, style);
+    if (style == IUP_DRAW_FILL)
+      gdk_draw_rectangle(dc->pixmap, dc->pixmap_gc, TRUE, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+    else
+    {
+      iDrawSetLineWidth(dc, line_width);
+      iDrawSetLineStyle(dc, style);
+      gdk_draw_rectangle(dc->pixmap, dc->pixmap_gc, FALSE, x1, y1, x2 - x1, y2 - y1);
+    }
+    return;
   }
+
+  iDrawBuildRoundedRectPath(x1, y1, x2, y2, corner_radius, points, &num_points);
 
   if (style == IUP_DRAW_FILL)
   {
-    /* Fill rounded rectangle by drawing filled arcs and rectangles */
-    /* Top-right arc */
-    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, TRUE, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
-    /* Bottom-right arc */
-    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, TRUE, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
-    /* Bottom-left arc */
-    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, TRUE, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
-    /* Top-left arc */
-    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, TRUE, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
-
-    /* Fill center rectangle */
-    gdk_draw_rectangle(dc->pixmap, dc->pixmap_gc, TRUE, x1 + corner_radius, y1, x2 - x1 - diameter + 1, y2 - y1 + 1);
-    /* Fill left rectangle */
-    gdk_draw_rectangle(dc->pixmap, dc->pixmap_gc, TRUE, x1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
-    /* Fill right rectangle */
-    gdk_draw_rectangle(dc->pixmap, dc->pixmap_gc, TRUE, x2 - corner_radius + 1, y1 + corner_radius, corner_radius, y2 - y1 - diameter + 1);
+    gdk_draw_polygon(dc->pixmap, dc->pixmap_gc, TRUE, points, num_points);
   }
   else
   {
-    /* Draw rounded rectangle by drawing arcs and lines */
-    /* Top-right arc */
-    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, FALSE, x2 - diameter, y1, diameter, diameter, 0 * 64, 90 * 64);
-    /* Bottom-right arc */
-    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, FALSE, x2 - diameter, y2 - diameter, diameter, diameter, 270 * 64, 90 * 64);
-    /* Bottom-left arc */
-    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, FALSE, x1, y2 - diameter, diameter, diameter, 180 * 64, 90 * 64);
-    /* Top-left arc */
-    gdk_draw_arc(dc->pixmap, dc->pixmap_gc, FALSE, x1, y1, diameter, diameter, 90 * 64, 90 * 64);
-
-    /* Draw connecting lines */
-    /* Top line */
-    gdk_draw_line(dc->pixmap, dc->pixmap_gc, x1 + corner_radius, y1, x2 - corner_radius, y1);
-    /* Right line */
-    gdk_draw_line(dc->pixmap, dc->pixmap_gc, x2, y1 + corner_radius, x2, y2 - corner_radius);
-    /* Bottom line */
-    gdk_draw_line(dc->pixmap, dc->pixmap_gc, x2 - corner_radius, y2, x1 + corner_radius, y2);
-    /* Left line */
-    gdk_draw_line(dc->pixmap, dc->pixmap_gc, x1, y2 - corner_radius, x1, y1 + corner_radius);
+    iDrawSetLineWidth(dc, line_width);
+    iDrawSetLineStyle(dc, style);
+    points[num_points] = points[0];
+    gdk_draw_lines(dc->pixmap, dc->pixmap_gc, points, num_points + 1);
   }
 }
 
@@ -396,11 +422,8 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
 {
   GdkRegion *region;
   GdkPoint points[100];
-  int num_points = 0;
-  int i;
-  double angle, step;
+  int num_points;
   int max_radius;
-  double pi = 3.14159265359;
 
   if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
   {
@@ -416,45 +439,7 @@ IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, i
   if (corner_radius > max_radius)
     corner_radius = max_radius;
 
-  /* Create a polygon approximation going clockwise from top-left */
-  /* 8 points per corner arc */
-  step = 90.0 / 8.0;
-
-  /* Top-left corner arc: from top edge (270) to left edge (180) going clockwise */
-  for (i = 0; i <= 8; i++)
-  {
-    angle = (270.0 - i * step) * pi / 180.0;
-    points[num_points].x = x1 + corner_radius + (int)(corner_radius * cos(angle));
-    points[num_points].y = y1 + corner_radius + (int)(corner_radius * sin(angle));
-    num_points++;
-  }
-
-  /* Bottom-left corner arc: from left edge (180) to bottom edge (90) going clockwise */
-  for (i = 1; i <= 8; i++)
-  {
-    angle = (180.0 - i * step) * pi / 180.0;
-    points[num_points].x = x1 + corner_radius + (int)(corner_radius * cos(angle));
-    points[num_points].y = y2 - corner_radius + (int)(corner_radius * sin(angle));
-    num_points++;
-  }
-
-  /* Bottom-right corner arc: from bottom edge (90) to right edge (0) going clockwise */
-  for (i = 1; i <= 8; i++)
-  {
-    angle = (90.0 - i * step) * pi / 180.0;
-    points[num_points].x = x2 - corner_radius + (int)(corner_radius * cos(angle));
-    points[num_points].y = y2 - corner_radius + (int)(corner_radius * sin(angle));
-    num_points++;
-  }
-
-  /* Top-right corner arc: from right edge (0) to top edge (270 = -90) going clockwise */
-  for (i = 1; i <= 8; i++)
-  {
-    angle = (0.0 - i * step) * pi / 180.0;
-    points[num_points].x = x2 - corner_radius + (int)(corner_radius * cos(angle));
-    points[num_points].y = y1 + corner_radius + (int)(corner_radius * sin(angle));
-    num_points++;
-  }
+  iDrawBuildRoundedRectPath(x1, y1, x2, y2, corner_radius, points, &num_points);
 
   /* Create region from polygon */
   region = gdk_region_polygon(points, num_points, GDK_WINDING_RULE);
