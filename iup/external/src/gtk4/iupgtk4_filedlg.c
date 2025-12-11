@@ -20,9 +20,10 @@
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 #include "iup_dialog.h"
+#include "iup_dlglist.h"
 #include "iup_predialogs.h"
 #include "iup_array.h"
-#include "iup_drvinfo.h"
+#include "iup_drv.h"
 
 #include "iupgtk4_drv.h"
 
@@ -226,9 +227,401 @@ static char* gtk4FileCheckExt(Ihandle* ih, const char* filename)
   return (char*)filename;
 }
 
-static int gtk4FileDlgPopup(Ihandle* ih, int x, int y)
+/* Context for blocking async dialog */
+typedef struct {
+  Ihandle* ih;
+  GFile* result_file;
+  GListModel* result_files;
+  gboolean cancelled;
+  gboolean done;
+  GMainLoop* loop;
+  int filter_count;
+  GtkFileFilter* selected_filter;
+  GListStore* filters_store;
+} Gtk4FileDialogData;
+
+static void gtk4FileDlgOpenCallback(GObject* source, GAsyncResult* result, gpointer user_data)
+{
+  Gtk4FileDialogData* data = (Gtk4FileDialogData*)user_data;
+  GtkFileDialog* dialog = GTK_FILE_DIALOG(source);
+  GError* error = NULL;
+
+  data->result_file = gtk_file_dialog_open_finish(dialog, result, &error);
+  if (error)
+  {
+    if (g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_CANCELLED) ||
+        g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED))
+      data->cancelled = TRUE;
+    g_error_free(error);
+  }
+
+  data->selected_filter = gtk_file_dialog_get_default_filter(dialog);
+  data->done = TRUE;
+  g_main_loop_quit(data->loop);
+}
+
+static void gtk4FileDlgOpenMultipleCallback(GObject* source, GAsyncResult* result, gpointer user_data)
+{
+  Gtk4FileDialogData* data = (Gtk4FileDialogData*)user_data;
+  GtkFileDialog* dialog = GTK_FILE_DIALOG(source);
+  GError* error = NULL;
+
+  data->result_files = gtk_file_dialog_open_multiple_finish(dialog, result, &error);
+  if (error)
+  {
+    if (g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_CANCELLED) ||
+        g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED))
+      data->cancelled = TRUE;
+    g_error_free(error);
+  }
+
+  data->selected_filter = gtk_file_dialog_get_default_filter(dialog);
+  data->done = TRUE;
+  g_main_loop_quit(data->loop);
+}
+
+static void gtk4FileDlgSaveCallback(GObject* source, GAsyncResult* result, gpointer user_data)
+{
+  Gtk4FileDialogData* data = (Gtk4FileDialogData*)user_data;
+  GtkFileDialog* dialog = GTK_FILE_DIALOG(source);
+  GError* error = NULL;
+
+  data->result_file = gtk_file_dialog_save_finish(dialog, result, &error);
+  if (error)
+  {
+    if (g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_CANCELLED) ||
+        g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED))
+      data->cancelled = TRUE;
+    g_error_free(error);
+  }
+
+  data->selected_filter = gtk_file_dialog_get_default_filter(dialog);
+  data->done = TRUE;
+  g_main_loop_quit(data->loop);
+}
+
+static void gtk4FileDlgSelectFolderCallback(GObject* source, GAsyncResult* result, gpointer user_data)
+{
+  Gtk4FileDialogData* data = (Gtk4FileDialogData*)user_data;
+  GtkFileDialog* dialog = GTK_FILE_DIALOG(source);
+  GError* error = NULL;
+
+  data->result_file = gtk_file_dialog_select_folder_finish(dialog, result, &error);
+  if (error)
+  {
+    if (g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_CANCELLED) ||
+        g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED))
+      data->cancelled = TRUE;
+    g_error_free(error);
+  }
+
+  data->done = TRUE;
+  g_main_loop_quit(data->loop);
+}
+
+static GtkWindow* gtk4FileDlgGetParentWindow(Ihandle* ih)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
+  if (parent)
+    return (GtkWindow*)parent;
+
+  Ihandle* ih_focus = IupGetFocus();
+  if (ih_focus)
+  {
+    Ihandle* dlg = IupGetDialog(ih_focus);
+    if (dlg && dlg->handle)
+      return (GtkWindow*)dlg->handle;
+  }
+
+  /* Fallback: find first visible IUP dialog */
+  {
+    Ihandle* dlg_iter = iupDlgListFirst();
+    while (dlg_iter)
+    {
+      if (dlg_iter->handle && dlg_iter != ih && iupdrvIsVisible(dlg_iter))
+        return (GtkWindow*)dlg_iter->handle;
+      dlg_iter = iupDlgListNext();
+    }
+  }
+
+  return NULL;
+}
+
+/* Default mode implementation using GtkFileDialog (GTK 4.10+) */
+static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
+{
+  GtkWindow* parent;
+  GtkFileDialog* dialog;
+  Gtk4FileDialogData data;
+  char* value;
+  int is_save = 0, is_dir = 0, is_multiple = 0;
+
+  (void)x;
+  (void)y;
+
+  parent = gtk4FileDlgGetParentWindow(ih);
+
+  memset(&data, 0, sizeof(data));
+  data.ih = ih;
+
+  value = iupAttribGetStr(ih, "DIALOGTYPE");
+  if (iupStrEqualNoCase(value, "SAVE"))
+    is_save = 1;
+  else if (iupStrEqualNoCase(value, "DIR"))
+    is_dir = 1;
+
+  if (iupAttribGetBoolean(ih, "MULTIPLEFILES") && !is_save && !is_dir)
+    is_multiple = 1;
+
+  dialog = gtk_file_dialog_new();
+  if (!dialog)
+    return IUP_ERROR;
+
+  gtk_file_dialog_set_modal(dialog, TRUE);
+
+  value = iupAttribGet(ih, "TITLE");
+  if (value)
+    gtk_file_dialog_set_title(dialog, iupgtk4StrConvertToSystem(value));
+  else
+  {
+    if (is_save)
+      gtk_file_dialog_set_title(dialog, "Save As");
+    else if (is_dir)
+      gtk_file_dialog_set_title(dialog, "Select Folder");
+    else
+      gtk_file_dialog_set_title(dialog, "Open");
+  }
+
+  if (is_save)
+    gtk_file_dialog_set_accept_label(dialog, "_Save");
+  else if (is_dir)
+    gtk_file_dialog_set_accept_label(dialog, "_Select");
+  else
+    gtk_file_dialog_set_accept_label(dialog, "_Open");
+
+  value = iupAttribGet(ih, "FILE");
+  if (value && value[0] != 0 && (value[0] == '/' || value[1] == ':'))
+  {
+    char* dir = iupStrFileGetPath(value);
+    int len = (int)strlen(dir);
+    iupAttribSetStr(ih, "DIRECTORY", dir);
+    free(dir);
+    iupAttribSetStr(ih, "FILE", value+len);
+  }
+
+  value = iupAttribGet(ih, "DIRECTORY");
+  if (value)
+  {
+    GFile* file = g_file_new_for_path(iupgtk4StrConvertToFilename(value));
+    gtk_file_dialog_set_initial_folder(dialog, file);
+    g_object_unref(file);
+  }
+
+  value = iupAttribGet(ih, "FILE");
+  if (value)
+  {
+    if (is_save)
+      gtk_file_dialog_set_initial_name(dialog, iupgtk4StrConvertToFilename(value));
+    else if (gtk4IsFile(value))
+    {
+      GFile* file = g_file_new_for_path(iupgtk4StrConvertToFilename(value));
+      gtk_file_dialog_set_initial_file(dialog, file);
+      g_object_unref(file);
+    }
+  }
+
+  value = iupAttribGet(ih, "EXTFILTER");
+  if (value && !is_dir)
+  {
+    char *name, *pattern, *filters = iupStrDup(value);
+    char atrib[30];
+    int i, pattern_count, j;
+    int filter_index = iupAttribGetInt(ih, "FILTERUSED");
+    GtkFileFilter* default_filter = NULL;
+
+    if (!filter_index)
+      filter_index = 1;
+
+    data.filter_count = iupStrReplace(filters, '|', 0) / 2;
+    data.filters_store = g_list_store_new(GTK_TYPE_FILE_FILTER);
+
+    name = filters;
+    for (i = 0; i < data.filter_count && name[0]; i++)
+    {
+      GtkFileFilter *filter = gtk_file_filter_new();
+
+      pattern = gtk4FileDlgGetNextStr(name);
+      pattern_count = iupStrReplace(pattern, ';', 0) + 1;
+
+      gtk_file_filter_set_name(filter, iupgtk4StrConvertToSystem(name));
+
+      for (j = 0; j < pattern_count && pattern[0]; j++)
+      {
+        gtk_file_filter_add_pattern(filter, pattern);
+        if (j < pattern_count - 1)
+          pattern = gtk4FileDlgGetNextStr(pattern);
+      }
+
+      g_list_store_append(data.filters_store, filter);
+
+      sprintf(atrib, "_IUPDLG_FILTER%d", i + 1);
+      iupAttribSet(ih, atrib, (char*)filter);
+
+      if (i + 1 == filter_index)
+        default_filter = filter;
+
+      g_object_unref(filter);
+      name = gtk4FileDlgGetNextStr(pattern);
+    }
+
+    gtk_file_dialog_set_filters(dialog, G_LIST_MODEL(data.filters_store));
+    if (default_filter)
+      gtk_file_dialog_set_default_filter(dialog, default_filter);
+
+    free(filters);
+  }
+  else
+  {
+    value = iupAttribGet(ih, "FILTER");
+    if (value && !is_dir)
+    {
+      char* filters = iupStrDup(value), *fstr;
+      int pattern_count, i;
+      GtkFileFilter *filter = gtk_file_filter_new();
+      char* info = iupAttribGet(ih, "FILTERINFO");
+      if (!info)
+        info = value;
+
+      pattern_count = iupStrReplace(filters, ';', 0) + 1;
+
+      gtk_file_filter_set_name(filter, iupgtk4StrConvertToSystem(info));
+
+      fstr = filters;
+      for (i = 0; i < pattern_count && fstr[0]; i++)
+      {
+        gtk_file_filter_add_pattern(filter, fstr);
+        fstr = gtk4FileDlgGetNextStr(fstr);
+      }
+
+      data.filters_store = g_list_store_new(GTK_TYPE_FILE_FILTER);
+      g_list_store_append(data.filters_store, filter);
+      gtk_file_dialog_set_filters(dialog, G_LIST_MODEL(data.filters_store));
+      gtk_file_dialog_set_default_filter(dialog, filter);
+
+      g_object_unref(filter);
+      free(filters);
+    }
+  }
+
+  data.loop = g_main_loop_new(NULL, FALSE);
+
+  if (is_save)
+    gtk_file_dialog_save(dialog, (GtkWindow*)parent, NULL, gtk4FileDlgSaveCallback, &data);
+  else if (is_dir)
+    gtk_file_dialog_select_folder(dialog, (GtkWindow*)parent, NULL, gtk4FileDlgSelectFolderCallback, &data);
+  else if (is_multiple)
+    gtk_file_dialog_open_multiple(dialog, (GtkWindow*)parent, NULL, gtk4FileDlgOpenMultipleCallback, &data);
+  else
+    gtk_file_dialog_open(dialog, (GtkWindow*)parent, NULL, gtk4FileDlgOpenCallback, &data);
+
+  g_main_loop_run(data.loop);
+  g_main_loop_unref(data.loop);
+
+  if (!data.cancelled && (data.result_file || data.result_files))
+  {
+    int file_exist, dir_exist;
+
+    if (data.filter_count && data.selected_filter)
+    {
+      int i;
+      char atrib[30];
+
+      for (i = 0; i < data.filter_count; i++)
+      {
+        sprintf(atrib, "_IUPDLG_FILTER%d", i + 1);
+        if (data.selected_filter == (GtkFileFilter*)iupAttribGet(ih, atrib))
+          iupAttribSetInt(ih, "FILTERUSED", i + 1);
+      }
+    }
+
+    if (is_multiple && data.result_files)
+    {
+      gtk4FileDlgGetMultipleFiles(ih, data.result_files);
+      g_object_unref(data.result_files);
+      file_exist = 1;
+      dir_exist = 0;
+    }
+    else if (data.result_file)
+    {
+      char* filename = g_file_get_path(data.result_file);
+      filename = gtk4FileCheckExt(ih, filename);
+      iupAttribSetStr(ih, "VALUE", iupgtk4StrConvertFromFilename(filename));
+      file_exist = gtk4IsFile(filename);
+      dir_exist = gtk4IsDirectory(filename);
+
+      {
+        char* dir = iupStrFileGetPath(filename);
+        iupAttribSetStr(ih, "DIRECTORY", dir);
+        free(dir);
+      }
+
+      if (!is_dir && !iupAttribGetBoolean(ih, "NOCHANGEDIR"))
+      {
+        char* dir = iupStrFileGetPath(filename);
+        if (dir)
+        {
+          g_chdir(dir);
+          free(dir);
+        }
+      }
+
+      g_free(filename);
+      g_object_unref(data.result_file);
+    }
+    else
+    {
+      file_exist = 0;
+      dir_exist = 0;
+    }
+
+    if (dir_exist)
+    {
+      iupAttribSet(ih, "FILEEXIST", NULL);
+      iupAttribSet(ih, "STATUS", "0");
+    }
+    else
+    {
+      if (file_exist)
+      {
+        iupAttribSet(ih, "FILEEXIST", "YES");
+        iupAttribSet(ih, "STATUS", "0");
+      }
+      else
+      {
+        iupAttribSet(ih, "FILEEXIST", "NO");
+        iupAttribSet(ih, "STATUS", "1");
+      }
+    }
+  }
+  else
+  {
+    iupAttribSet(ih, "FILTERUSED", NULL);
+    iupAttribSet(ih, "VALUE", NULL);
+    iupAttribSet(ih, "FILEEXIST", NULL);
+    iupAttribSet(ih, "STATUS", "-1");
+  }
+
+  if (data.filters_store)
+    g_object_unref(data.filters_store);
+
+  g_object_unref(dialog);
+
+  return IUP_NOERROR;
+}
+
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
+{
   GtkWidget* dialog;
   GtkWidget* preview_canvas = NULL;
   GtkFileChooserAction action;
@@ -237,7 +630,7 @@ static int gtk4FileDlgPopup(Ihandle* ih, int x, int y)
   char* value;
   int filter_count = 0;
 
-  iupAttribSetInt(ih, "_IUPDLG_X", x);   /* used in iupDialogUpdatePosition */
+  iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
 
   value = iupAttribGetStr(ih, "DIALOGTYPE");
@@ -266,10 +659,12 @@ static int gtk4FileDlgPopup(Ihandle* ih, int x, int y)
   open = "Open";
   help = "Help";
 
-  dialog = gtk_file_chooser_dialog_new(iupgtk4StrConvertToSystem(value), (GtkWindow*)parent, action,
+  dialog = gtk_file_chooser_dialog_new(iupgtk4StrConvertToSystem(value), NULL, action,
                                        cancel, GTK_RESPONSE_CANCEL, NULL);
   if (!dialog)
     return IUP_ERROR;
+
+  iupgtk4DialogSetTransientFor(GTK_WINDOW(dialog), ih);
 
   if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
     gtk_dialog_add_button(GTK_DIALOG(dialog), save, GTK_RESPONSE_OK);
@@ -642,6 +1037,27 @@ static int gtk4FileDlgPopup(Ihandle* ih, int x, int y)
   gtk_window_destroy(GTK_WINDOW(dialog));
 
   return IUP_NOERROR;
+}
+G_GNUC_END_IGNORE_DEPRECATIONS
+
+static int gtk4FileDlgPopup(Ihandle* ih, int x, int y)
+{
+  char* value;
+  IFnss file_cb;
+  int use_legacy = 0;
+
+  value = iupAttribGet(ih, "PORTAL");
+  if (value && !iupStrBoolean(value))
+    use_legacy = 1;
+
+  file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+  if (file_cb && iupAttribGetBoolean(ih, "SHOWPREVIEW"))
+    use_legacy = 1;
+
+  if (use_legacy)
+    return gtk4FileDlgPopupLegacy(ih, x, y);
+
+  return gtk4FileDlgPopupDefault(ih, x, y);
 }
 
 void iupdrvFileDlgInitClass(Iclass* ic)

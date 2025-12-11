@@ -93,6 +93,13 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
 
   (void)baseline;
 
+  /* Present any popover children */
+  for (child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child))
+  {
+    if (GTK_IS_POPOVER(child))
+      gtk_popover_present(GTK_POPOVER(child));
+  }
+
   /* Allocate children manually with IUP-specified sizes and positions */
   for (child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child))
   {
@@ -100,6 +107,10 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
     int child_width, child_height;
 
     if (!gtk_widget_get_visible(child))
+      continue;
+
+    /* Skip native widgets like popovers, they manage their own allocation */
+    if (GTK_IS_NATIVE(child))
       continue;
 
     /* Get position and size from widget data */

@@ -27,7 +27,6 @@
 
 static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
 {
-  InativeHandle* parent = iupDialogGetNativeParent(ih);
   GtkMessageType type = GTK_MESSAGE_OTHER;
   GtkWidget* dialog;
   char *icon, *buttons, *title;
@@ -47,9 +46,11 @@ static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
   else if (iupStrEqualNoCase(icon, "QUESTION"))
     type = GTK_MESSAGE_QUESTION;
 
-  dialog = gtk_message_dialog_new((GtkWindow*)parent, 0, type, GTK_BUTTONS_NONE, "%s", iupgtk4StrConvertToSystem(iupAttribGet(ih, "VALUE")));
+  dialog = gtk_message_dialog_new(NULL, 0, type, GTK_BUTTONS_NONE, "%s", iupgtk4StrConvertToSystem(iupAttribGet(ih, "VALUE")));
   if (!dialog)
     return IUP_ERROR;
+
+  iupgtk4DialogSetTransientFor(GTK_WINDOW(dialog), ih);
 
   title = iupAttribGet(ih, "TITLE");
   if (title)
