@@ -27,7 +27,6 @@
 #define GROUPKEYSIZE 100
 #define MAX_LINES 500
 
-
 static char* strGetGroupKeyName(const char* group, const char* key)
 {
   static char str[GROUPKEYSIZE];
@@ -57,47 +56,49 @@ static char* iConfigSetFilename(Ihandle* ih)
 {
   char* app_name;
   char* app_path;
-  int app_config, app_system;
-  
+  int app_config;
+  int use_system;
   char filename[10240] = "";
+
   char* app_filename = IupGetAttribute(ih, "APP_FILENAME");
   if (app_filename)
     return app_filename;
 
   app_name = IupGetAttribute(ih, "APP_NAME");
-  app_path = IupGetAttribute(ih, "APP_PATH");
-  app_config = IupGetInt(ih, "APP_CONFIG");
-  app_system = IupGetInt(ih, "APP_SYSTEMPATH");
+  if (!app_name)
+    app_name = IupGetGlobal("APPNAME");
+  if (!app_name)
+    app_name = IupGetGlobal("APPID");
 
   if (!app_name)
     return NULL;
 
-  if (!app_config && iupdrvGetPreferencePath(filename, app_system))
+  app_path = IupGetAttribute(ih, "APP_PATH");
+  app_config = IupGetInt(ih, "APP_CONFIG");
+
+  /* Use system/XDG paths by default, APP_SYSTEMPATH=NO for legacy paths */
+  use_system = 1;
+  if (IupGetAttribute(ih, "APP_SYSTEMPATH"))
+    use_system = IupGetInt(ih, "APP_SYSTEMPATH");
+
+  if (!app_config && iupdrvGetPreferencePath(filename, app_name, use_system))
   {
-#if defined(__ANDROID__) || defined(__APPLE__) || defined(WIN32) || defined(__EMSCRIPTEN__)
-    strcat(filename, app_name);
-    strcat(filename, ".cfg");
-#else
-    /* UNIX format */
-    strcat(filename, ".");
-    strcat(filename, app_name);
-#endif
+    /* Driver returns full path including filename */
   }
   else
   {
+    /* APP_CONFIG mode: use APP_PATH as base directory */
     if (!app_path)
       return NULL;
 
-    strcat(filename, app_path);
+    strcpy(filename, app_path);
 #if defined(__ANDROID__) || defined(__APPLE__) || defined(WIN32) || defined(__EMSCRIPTEN__)
-    /* these platforms shouldn't use a .dot file */
+    strcat(filename, app_name);
+    strcat(filename, ".cfg");
 #else
     /* Unix generic hidden dot prefix */
     strcat(filename, ".");
-#endif
     strcat(filename, app_name);
-#if defined(__ANDROID__) || defined(__APPLE__) || defined(WIN32) || defined(__EMSCRIPTEN__)
-    strcat(filename, ".cfg");
 #endif
   }
 

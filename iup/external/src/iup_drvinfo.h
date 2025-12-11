@@ -83,11 +83,10 @@ IUP_SDK_API void* iupdrvGetDisplay(void);
  * \ingroup drvinfo */
 IUP_SDK_API char* iupdrvLocaleInfo(void);
 
-/** Returns the path to the preference directory.
- * Path will always have a trailing slash.
- * Return 1 on success, 0 on failure.
+/** Returns the full path to a configuration file for the given app name.
+ * Creates necessary directories if they don't exist.
  * \ingroup drvinfo */
-IUP_SDK_API int iupdrvGetPreferencePath(char *filename, int use_system);
+IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system);
 
 /** Changes the current directory.
 * \ingroup drvinfo */

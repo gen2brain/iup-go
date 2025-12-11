@@ -1440,7 +1440,7 @@ IUP_SDK_API char* iupAttribGetInheritNativeParent(Ihandle* ih, const char* name)
     if (!ih)
       return NULL;
 
-    value = iupAttribGet(ih, name);
+    value = iupAttribGetStr(ih, name);
   }
 
   return value;

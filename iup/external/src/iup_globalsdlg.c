@@ -105,6 +105,7 @@ static iRegisteredGlobal global_attribs[] = {
   { "QTSTYLE", 0, 0, 0, 0, 1, 0, 1 },
   { "QTVERSION", 0, 0, 0, 0, 1, 0, 1 },
   { "SB_BGCOLOR", 0, 1, 1, 0, 0, 1, 0 },
+  { "SANDBOX", 0, 0, 1, 0, 1, 1, 1 },
   { "SCINTILLA_VERSION", 1, 1, 1, 1, 1, 1, 1 },
   { "SCREENDEPTH", 1, 1, 1, 1, 1, 1, 1 },
   { "SCREENDPI", 1, 1, 1, 1, 1, 1, 1 },
