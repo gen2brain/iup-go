@@ -521,6 +521,7 @@ static void gtkTreeSetFocus(Ihandle* ih, GtkTreePath* pathFocus, GtkTreeIter* it
 {
   int old_select = 0;
   GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle));
+  GtkTreeViewColumn* column = NULL;
 
   /* in a multiselection set_cursor will unselect all other nodes
      so must save and restore selection */
@@ -531,8 +532,12 @@ static void gtkTreeSetFocus(Ihandle* ih, GtkTreePath* pathFocus, GtkTreeIter* it
   if (gtkTreeIsNodeSelected(model, iterItemFocus))
     old_select = 1;
 
+  /* Need to pass the column when starting edit mode */
+  if (edit)
+    column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_COLUMN");
+
   iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
-  gtk_tree_view_set_cursor(GTK_TREE_VIEW(ih->handle), pathFocus, NULL, edit);
+  gtk_tree_view_set_cursor(GTK_TREE_VIEW(ih->handle), pathFocus, column, edit);
   iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
 
   if (!old_select)
@@ -1814,7 +1819,8 @@ static int gtkTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
 
-    for(i = 0; i < ih->data->node_count; /* increment only if not removed */)
+    /* Iterate backwards to avoid index shifting issues when deleting */
+    for (i = ih->data->node_count - 1; i >= 0; i--)
     {
       gtkTreeIterInit(ih, &iterItem, ih->data->node_cache[i].node_handle);
       if (gtkTreeIsNodeSelected(model, &iterItem))
@@ -1822,8 +1828,6 @@ static int gtkTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         gtkTreeCallNodeRemoved(ih, model, &iterItem);
         gtk_tree_store_remove(GTK_TREE_STORE(model), &iterItem);
       }
-      else
-        i++;
     }
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
@@ -1833,16 +1837,19 @@ static int gtkTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 }
 
 static int gtkTreeSetRenameAttrib(Ihandle* ih, const char* value)
-{  
+{
   if (ih->data->show_rename)
   {
-    GtkTreePath* path;
+    GtkTreePath* path = NULL;
     GtkTreeViewColumn *focus_column;
     GtkTreeIter iterItem;
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(ih->handle), &path, &focus_column);
-    gtk_tree_model_get_iter(gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle)), &iterItem, path);
-    gtkTreeSetFocus(ih, path, &iterItem, TRUE); /* start editing */
-    gtk_tree_path_free(path);
+    if (path)
+    {
+      gtk_tree_model_get_iter(gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle)), &iterItem, path);
+      gtkTreeSetFocus(ih, path, &iterItem, TRUE); /* start editing */
+      gtk_tree_path_free(path);
+    }
   }
 
   (void)value;

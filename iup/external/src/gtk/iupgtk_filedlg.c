@@ -246,6 +246,246 @@ static char* gtkFileCheckExt(Ihandle* ih, const char* filename)
   return (char*)filename;
 }
 
+/* Portal mode implementation using GtkFileChooserNative (GTK 3.20+)
+
+   GtkFileChooserNative uses XDG Desktop Portal automatically when:
+   - Running inside a sandbox (Flatpak, Snap), OR
+   - GTK_USE_PORTAL=1 environment variable is set
+
+   If neither condition is met, GtkFileChooserNative falls back to a
+   regular GtkFileChooserDialog internally.
+
+   The regular GtkFileChooserDialog (PORTAL=NO) never uses portals and
+   always shows the native GTK file chooser with full preview support. */
+#if GTK_CHECK_VERSION(3, 20, 0)
+static int gtkFileDlgPopupPortal(Ihandle* ih, int x, int y)
+{
+  InativeHandle* parent = iupDialogGetNativeParent(ih);
+  GtkFileChooserNative* native;
+  GtkFileChooserAction action;
+  const char *save_label, *open_label, *cancel_label;
+  char* value;
+  int response, filter_count = 0;
+
+  (void)x;
+  (void)y;
+
+  value = iupAttribGetStr(ih, "DIALOGTYPE");
+  if (iupStrEqualNoCase(value, "SAVE"))
+    action = GTK_FILE_CHOOSER_ACTION_SAVE;
+  else if (iupStrEqualNoCase(value, "DIR"))
+    action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
+  else
+    action = GTK_FILE_CHOOSER_ACTION_OPEN;
+
+  value = iupAttribGet(ih, "TITLE");
+  if (!value)
+  {
+    if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
+      value = "Save As";
+    else
+      value = "Open";
+  }
+
+  save_label = "_Save";
+  open_label = "_Open";
+  cancel_label = "_Cancel";
+
+  if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
+    native = gtk_file_chooser_native_new(iupgtkStrConvertToSystem(value), (GtkWindow*)parent, action, save_label, cancel_label);
+  else
+    native = gtk_file_chooser_native_new(iupgtkStrConvertToSystem(value), (GtkWindow*)parent, action, open_label, cancel_label);
+
+  if (!native)
+    return IUP_ERROR;
+
+  if (iupAttribGetBoolean(ih, "MULTIPLEFILES") && action == GTK_FILE_CHOOSER_ACTION_OPEN)
+    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(native), TRUE);
+
+  value = iupAttribGet(ih, "FILE");
+  if (value && value[0] != 0 && (value[0] == '/' || value[1] == ':'))
+  {
+    char* dir = iupStrFileGetPath(value);
+    int len = (int)strlen(dir);
+    iupAttribSetStr(ih, "DIRECTORY", dir);
+    free(dir);
+    iupAttribSetStr(ih, "FILE", value+len);
+  }
+
+  value = iupAttribGet(ih, "DIRECTORY");
+  if (value)
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(native), iupgtkStrConvertToFilename(value));
+
+  value = iupAttribGet(ih, "FILE");
+  if (value)
+  {
+    if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
+      gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(native), iupgtkStrConvertToFilename(value));
+    else
+    {
+      if (gtkIsFile(value))
+        gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(native), iupgtkStrConvertToFilename(value));
+    }
+  }
+
+  value = iupAttribGet(ih, "EXTFILTER");
+  if (value)
+  {
+    char *name, *pattern, *filters = iupStrDup(value);
+    char atrib[30];
+    int i, pattern_count, j;
+    int filter_index = iupAttribGetInt(ih, "FILTERUSED");
+    if (!filter_index)
+      filter_index = 1;
+
+    filter_count = iupStrReplace(filters, '|', 0) / 2;
+
+    name = filters;
+    for (i=0; i<filter_count && name[0]; i++)
+    {
+      GtkFileFilter *filter = gtk_file_filter_new();
+
+      pattern = gtkFileDlgGetNextStr(name);
+      pattern_count = iupStrReplace(pattern, ';', 0)+1;
+
+      gtk_file_filter_set_name(filter, iupgtkStrConvertToSystem(name));
+
+      for (j=0; j<pattern_count && pattern[0]; j++)
+      {
+        gtk_file_filter_add_pattern(filter, pattern);
+        if (j<pattern_count-1)
+          pattern = gtkFileDlgGetNextStr(pattern);
+      }
+
+      gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(native), filter);
+
+      sprintf(atrib, "_IUPDLG_FILTER%d", i+1);
+      iupAttribSet(ih, atrib, (char*)filter);
+
+      if (i+1 == filter_index)
+        gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(native), filter);
+
+      name = gtkFileDlgGetNextStr(pattern);
+    }
+
+    free(filters);
+  }
+  else
+  {
+    value = iupAttribGet(ih, "FILTER");
+    if (value)
+    {
+      char* filters = iupStrDup(value), *fstr;
+      int pattern_count, i;
+      GtkFileFilter *filter = gtk_file_filter_new();
+      char* info = iupAttribGet(ih, "FILTERINFO");
+      if (!info)
+        info = value;
+
+      pattern_count = iupStrReplace(filters, ';', 0)+1;
+
+      gtk_file_filter_set_name(filter, iupgtkStrConvertToSystem(info));
+
+      fstr = filters;
+      for (i=0; i<pattern_count && fstr[0]; i++)
+      {
+        gtk_file_filter_add_pattern(filter, fstr);
+        fstr = gtkFileDlgGetNextStr(fstr);
+      }
+      gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(native), filter);
+      free(filters);
+    }
+  }
+
+  gtk_native_dialog_set_modal(GTK_NATIVE_DIALOG(native), TRUE);
+  response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(native));
+
+  if (response == GTK_RESPONSE_ACCEPT)
+  {
+    int file_exist, dir_exist;
+
+    if (filter_count)
+    {
+      int i;
+      char atrib[30];
+      GtkFileFilter* filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(native));
+
+      for (i=0; i<filter_count; i++)
+      {
+        sprintf(atrib, "_IUPDLG_FILTER%d", i+1);
+        if (filter == (GtkFileFilter*)iupAttribGet(ih, atrib))
+          iupAttribSetInt(ih, "FILTERUSED", i+1);
+      }
+    }
+
+    if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
+    {
+      GSList* file_list = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(native));
+      gtkFileDlgGetMultipleFiles(ih, file_list);
+      g_slist_free(file_list);
+      file_exist = 1;
+      dir_exist = 0;
+    }
+    else
+    {
+      char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(native));
+      filename = gtkFileCheckExt(ih, filename);
+      iupAttribSetStr(ih, "VALUE", iupgtkStrConvertFromFilename(filename));
+      file_exist = gtkIsFile(filename);
+      dir_exist = gtkIsDirectory(filename);
+
+      {
+        char* dir = iupStrFileGetPath(filename);
+        iupAttribSetStr(ih, "DIRECTORY", dir);
+        free(dir);
+      }
+
+      g_free(filename);
+    }
+
+    if (dir_exist)
+    {
+      iupAttribSet(ih, "FILEEXIST", NULL);
+      iupAttribSet(ih, "STATUS", "0");
+    }
+    else
+    {
+      if (file_exist)
+      {
+        iupAttribSet(ih, "FILEEXIST", "YES");
+        iupAttribSet(ih, "STATUS", "0");
+      }
+      else
+      {
+        iupAttribSet(ih, "FILEEXIST", "NO");
+        iupAttribSet(ih, "STATUS", "1");
+      }
+    }
+
+    if (action != GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER && !iupAttribGetBoolean(ih, "NOCHANGEDIR"))
+    {
+      char* dir = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(native));
+      if (dir)
+      {
+        g_chdir(dir);
+        g_free(dir);
+      }
+    }
+  }
+  else
+  {
+    iupAttribSet(ih, "FILTERUSED", NULL);
+    iupAttribSet(ih, "VALUE", NULL);
+    iupAttribSet(ih, "FILEEXIST", NULL);
+    iupAttribSet(ih, "STATUS", "-1");
+  }
+
+  g_object_unref(native);
+
+  return IUP_NOERROR;
+}
+#endif
+
 static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
@@ -256,6 +496,20 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
   IFnss file_cb;
   char* value;
   int response, filter_count = 0;
+
+#if GTK_CHECK_VERSION(3, 20, 0)
+  {
+    int use_portal = 0;
+    value = iupAttribGet(ih, "PORTAL");
+    if (value)
+      use_portal = iupStrBoolean(value);
+    else if (IupGetGlobal("SANDBOX"))
+      use_portal = 1;
+
+    if (use_portal)
+      return gtkFileDlgPopupPortal(ih, x, y);
+  }
+#endif
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);   /* used in iupDialogUpdatePosition */
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
@@ -308,9 +562,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
   help = GTK_STOCK_HELP;
 #endif
 
-  dialog = gtk_file_chooser_dialog_new(iupgtkStrConvertToSystem(value), (GtkWindow*)parent, action, 
-                                       cancel, GTK_RESPONSE_CANCEL, 
-                                       NULL);
+  dialog = gtk_file_chooser_dialog_new(iupgtkStrConvertToSystem(value), (GtkWindow*)parent, action, cancel, GTK_RESPONSE_CANCEL, NULL);
   if (!dialog)
     return IUP_ERROR;
 

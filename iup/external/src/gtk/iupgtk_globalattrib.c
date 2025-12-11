@@ -276,5 +276,15 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     return "NO";  /* GTK < 3.16 doesn't have overlay scrollbars */
 #endif
   }
+  if (iupStrEqual(name, "SANDBOX"))
+  {
+    if (getenv("FLATPAK_ID"))
+      return "FLATPAK";
+    if (getenv("SNAP"))
+      return "SNAP";
+    if (getenv("APPIMAGE"))
+      return "APPIMAGE";
+    return NULL;
+  }
   return NULL;
 }
