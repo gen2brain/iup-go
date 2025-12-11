@@ -293,43 +293,64 @@ extern "C" IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
   return QDir::setCurrent(QString::fromUtf8(dir)) ? 1 : 0;
 }
 
-extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, int use_system)
+extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
 {
-  (void)use_system;
-
-  /* Use QStandardPaths to get the application data directory */
-  QString app_name = QCoreApplication::applicationName();
-  if (app_name.isEmpty())
-    app_name = QCoreApplication::applicationFilePath().section('/', -1);
-
-  QString config_path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-
-  if (config_path.isEmpty())
+  if (!app_name || !app_name[0])
   {
     filename[0] = '\0';
     return 0;
   }
 
-  /* Create directory if it doesn't exist */
-  QDir dir(config_path);
-  if (!dir.exists())
+  if (use_system)
   {
-    if (!dir.mkpath("."))
+    /* Use GenericConfigLocation for system config path:
+     * - Linux: ~/.config/appname/config
+     * - Windows: C:/Users/<USER>/AppData/Local/appname/config.cfg
+     * - macOS: ~/Library/Application Support/appname/config */
+    QString config_dir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+    if (config_dir.isEmpty())
     {
       filename[0] = '\0';
       return 0;
     }
+
+    QString app_dir = config_dir + "/" + QString::fromUtf8(app_name);
+
+    /* Create app directory if needed */
+    QDir dir(app_dir);
+    if (!dir.exists())
+      dir.mkpath(".");
+
+#ifdef _WIN32
+    QString config_file = app_dir + "/config.cfg";
+#else
+    QString config_file = app_dir + "/config";
+#endif
+
+    QByteArray path_bytes = config_file.toUtf8();
+    strcpy(filename, path_bytes.constData());
+    return 1;
   }
+  else
+  {
+    /* Legacy: home directory */
+    QString home_dir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    if (home_dir.isEmpty())
+    {
+      filename[0] = '\0';
+      return 0;
+    }
 
-  QByteArray path_bytes = config_path.toUtf8();
-  strcpy(filename, path_bytes.constData());
+#ifdef _WIN32
+    QString config_file = home_dir + "/" + QString::fromUtf8(app_name) + ".cfg";
+#else
+    QString config_file = home_dir + "/." + QString::fromUtf8(app_name);
+#endif
 
-  /* Ensure trailing separator */
-  int len = (int)strlen(filename);
-  if (len > 0 && filename[len-1] != '/' && filename[len-1] != '\\')
-    strcat(filename, "/");
-
-  return 1;
+    QByteArray path_bytes = config_file.toUtf8();
+    strcpy(filename, path_bytes.constData());
+    return 1;
+  }
 }
 
 extern "C" int qtMakeDirectory(const char* name)

@@ -184,6 +184,21 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   if (!dialog)
     return IUP_ERROR;
 
+  /* Handle PORTAL attribute:
+     PORTAL=YES: Use native/portal dialog (default Qt behavior on Linux with XDG portal)
+     PORTAL=NO: Force Qt's widget-based dialog (DontUseNativeDialog)
+     When PORTAL is not set: use native/portal in sandbox, otherwise Qt decides based on platform */
+  value = iupAttribGet(ih, "PORTAL");
+  if (value)
+  {
+    if (!iupStrBoolean(value))
+    {
+      /* PORTAL=NO: Force Qt's built-in widget dialog */
+      dialog->setOption(QFileDialog::DontUseNativeDialog, true);
+    }
+    /* PORTAL=YES: Let Qt use native/portal (default behavior, no action needed) */
+  }
+
   /* Determine dialog type */
   value = iupAttribGetStr(ih, "DIALOGTYPE");
   if (iupStrEqualNoCase(value, "SAVE"))

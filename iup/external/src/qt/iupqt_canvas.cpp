@@ -511,6 +511,114 @@ static void qtCanvasProcessScroll(Ihandle* ih, QScrollBar* scrollbar, int orient
 }
 
 /****************************************************************************
+ * Scrollbar DX/DY Attributes
+ ****************************************************************************/
+
+static int qtCanvasSetDXAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->sb & IUP_SB_HORIZ)
+  {
+    double dx;
+    if (!iupStrToDoubleDef(value, &dx, 0.1))
+      return 1;
+
+    IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);
+    if (container_data && container_data->sb_horiz)
+    {
+      double xmin = iupAttribGetDouble(ih, "XMIN");
+      double xmax = iupAttribGetDouble(ih, "XMAX");
+      double linex = iupAttribGetDouble(ih, "LINEX");
+      if (linex == 0) linex = dx / 10.0;
+      if (linex == 0) linex = 1;
+
+      QScrollBar* sb = container_data->sb_horiz;
+
+      if (dx >= (xmax - xmin))
+      {
+        if (iupAttribGetBoolean(ih, "XAUTOHIDE"))
+        {
+          sb->hide();
+          iupAttribSet(ih, "SB_RESIZE", "YES");
+          iupAttribSet(ih, "XHIDDEN", "YES");
+        }
+        else
+        {
+          sb->setEnabled(false);
+        }
+        ih->data->posx = xmin;
+      }
+      else
+      {
+        sb->show();
+        iupAttribSet(ih, "SB_RESIZE", "YES");
+        sb->setEnabled(true);
+
+        int range = (int)(xmax - xmin - dx);
+        if (range < 0) range = 0;
+        sb->setRange(0, range);
+        sb->setPageStep((int)dx);
+        sb->setSingleStep((int)linex);
+
+        iupAttribSet(ih, "XHIDDEN", "NO");
+      }
+    }
+  }
+  return 1;
+}
+
+static int qtCanvasSetDYAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->sb & IUP_SB_VERT)
+  {
+    double dy;
+    if (!iupStrToDoubleDef(value, &dy, 0.1))
+      return 1;
+
+    IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);
+    if (container_data && container_data->sb_vert)
+    {
+      double ymin = iupAttribGetDouble(ih, "YMIN");
+      double ymax = iupAttribGetDouble(ih, "YMAX");
+      double liney = iupAttribGetDouble(ih, "LINEY");
+      if (liney == 0) liney = dy / 10.0;
+      if (liney == 0) liney = 1;
+
+      QScrollBar* sb = container_data->sb_vert;
+
+      if (dy >= (ymax - ymin))
+      {
+        if (iupAttribGetBoolean(ih, "YAUTOHIDE"))
+        {
+          sb->hide();
+          iupAttribSet(ih, "SB_RESIZE", "YES");
+          iupAttribSet(ih, "YHIDDEN", "YES");
+        }
+        else
+        {
+          sb->setEnabled(false);
+        }
+        ih->data->posy = ymin;
+      }
+      else
+      {
+        sb->show();
+        iupAttribSet(ih, "SB_RESIZE", "YES");
+        sb->setEnabled(true);
+
+        int range = (int)(ymax - ymin - dy);
+        if (range < 0) range = 0;
+        sb->setRange(0, range);
+        sb->setPageStep((int)dy);
+        sb->setSingleStep((int)liney);
+
+        iupAttribSet(ih, "YHIDDEN", "NO");
+      }
+    }
+  }
+  return 1;
+}
+
+/****************************************************************************
  * Map Canvas to Native Control
  ****************************************************************************/
 
@@ -518,11 +626,15 @@ static int qtCanvasMapMethod(Ihandle* ih)
 {
   IupQtCanvasContainer* container_data = new IupQtCanvasContainer();
 
-  /* Create main container widget */
-  QWidget* container = new QWidget();
+  /* Create extra parent for absolute positioning of IUP children.
+     This widget has NO layout, allowing child widgets to be positioned with move(). */
+  QWidget* extra_parent = iupqtNativeContainerNew(0);
+
+  /* Create main container widget for canvas and its scrollbars */
+  QWidget* container = new QWidget(extra_parent);
   container_data->container = container;
 
-  /* IupQtCanvas handles ACTION callback and paintEvent correctly for both */
+  /* IupQtCanvas handles ACTION callback and paintEvent for both */
   IupQtCanvas* canvas = new IupQtCanvas();
   canvas->ih = ih;
   container_data->canvas = canvas;
@@ -533,11 +645,10 @@ static int qtCanvasMapMethod(Ihandle* ih)
     canvas->setAttribute(Qt::WA_NoSystemBackground, true);
   }
 
-  /* Create scrollbars if needed */
-  char* scrollbar = iupAttribGetStr(ih, "SCROLLBAR");
-  int has_sb = scrollbar && (iupStrEqualNoCase(scrollbar, "YES") ||
-                             iupStrEqualNoCase(scrollbar, "HORIZONTAL") ||
-                             iupStrEqualNoCase(scrollbar, "VERTICAL"));
+  /* Get scrollbar flags, required for DX/DY attribute setters */
+  ih->data->sb = iupBaseGetScrollbar(ih);
+
+  int has_sb = (ih->data->sb != IUP_SB_NONE);
 
   if (has_sb)
   {
@@ -553,8 +664,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
     hbox->addWidget(canvas_widget);
 
     /* Vertical scrollbar */
-    if (!scrollbar || iupStrEqualNoCase(scrollbar, "YES") ||
-        iupStrEqualNoCase(scrollbar, "VERTICAL"))
+    if (ih->data->sb & IUP_SB_VERT)
     {
       QScrollBar* sb_vert = new QScrollBar(Qt::Vertical);
       container_data->sb_vert = sb_vert;
@@ -572,8 +682,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
     vbox->addLayout(hbox);
 
     /* Horizontal scrollbar */
-    if (!scrollbar || iupStrEqualNoCase(scrollbar, "YES") ||
-        iupStrEqualNoCase(scrollbar, "HORIZONTAL"))
+    if (ih->data->sb & IUP_SB_HORIZ)
     {
       QScrollBar* sb_horiz = new QScrollBar(Qt::Horizontal);
       container_data->sb_horiz = sb_horiz;
@@ -601,12 +710,19 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
   iupAttribSet(ih, "_IUPQT_CANVAS_CONTAINER", (char*)container_data);
 
+  /* ih->handle is the container with layout (for canvas drawing)
+     _IUP_EXTRAPARENT is the outer container without layout (for absolute child positioning) */
   ih->handle = (InativeHandle*)container;
+  iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)extra_parent);
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
   iupqtAddToParent(ih);
+
+  /* Initialize scrollbar visibility based on default DX/DY values */
+  qtCanvasSetDXAttrib(ih, NULL);
+  qtCanvasSetDYAttrib(ih, NULL);
 
   return IUP_NOERROR;
 }
@@ -638,11 +754,33 @@ static void qtCanvasUnMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPQT_CANVAS_CONTAINER", nullptr);
   }
 
-  if (ih->handle)
+  /* Delete the extra parent (which will also delete ih->handle as its child) */
+  QWidget* extra_parent = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (extra_parent)
+  {
+    delete extra_parent;
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", nullptr);
+    ih->handle = nullptr;
+  }
+  else if (ih->handle)
   {
     QWidget* widget = (QWidget*)ih->handle;
     delete widget;
     ih->handle = nullptr;
+  }
+}
+
+static void qtCanvasLayoutUpdateMethod(Ihandle* ih)
+{
+  /* First call the base layout update to position the extra_parent */
+  iupdrvBaseLayoutUpdateMethod(ih);
+
+  /* Now resize the container (ih->handle) to fill the extra_parent */
+  QWidget* container = (QWidget*)ih->handle;
+  if (container)
+  {
+    container->move(0, 0);
+    container->resize(ih->currentwidth, ih->currentheight);
   }
 }
 
@@ -722,104 +860,9 @@ void qtCanvasUpdateScrollPos(Ihandle* ih, float posx, float posy)
   }
 }
 
-void qtCanvasUpdateScrollMax(Ihandle* ih, float dx, float dy)
-{
-  IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);
-
-  if (!container_data)
-    return;
-
-  double xmin = iupAttribGetDouble(ih, "XMIN");
-  double xmax = iupAttribGetDouble(ih, "XMAX");
-  double ymin = iupAttribGetDouble(ih, "YMIN");
-  double ymax = iupAttribGetDouble(ih, "YMAX");
-
-  if (container_data->sb_horiz)
-  {
-    int page = container_data->canvas->width();
-    double range = xmax - xmin - dx;
-    int max = (range > 0) ? 1000 : 0;  /* Use fixed max for better precision */
-
-    container_data->sb_horiz->blockSignals(true);
-    container_data->sb_horiz->setMaximum(max);
-    container_data->sb_horiz->setPageStep(page);
-    container_data->sb_horiz->setSingleStep(page / 10);
-    container_data->sb_horiz->blockSignals(false);
-
-    /* Handle XAUTOHIDE */
-    if (iupAttribGetBoolean(ih, "XAUTOHIDE"))
-    {
-      if (dx >= (xmax - xmin))
-      {
-        container_data->sb_horiz->hide();
-        iupAttribSet(ih, "XHIDDEN", "YES");
-      }
-      else
-      {
-        container_data->sb_horiz->show();
-        iupAttribSet(ih, "XHIDDEN", "NO");
-      }
-    }
-  }
-
-  if (container_data->sb_vert)
-  {
-    int page = container_data->canvas->height();
-    double range = ymax - ymin - dy;
-    int max = (range > 0) ? 1000 : 0;
-
-    container_data->sb_vert->blockSignals(true);
-    container_data->sb_vert->setMaximum(max);
-    container_data->sb_vert->setPageStep(page);
-    container_data->sb_vert->setSingleStep(page / 10);
-    container_data->sb_vert->blockSignals(false);
-
-    /* Handle YAUTOHIDE */
-    if (iupAttribGetBoolean(ih, "YAUTOHIDE"))
-    {
-      if (dy >= (ymax - ymin))
-      {
-        container_data->sb_vert->hide();
-        iupAttribSet(ih, "YHIDDEN", "YES");
-      }
-      else
-      {
-        container_data->sb_vert->show();
-        iupAttribSet(ih, "YHIDDEN", "NO");
-      }
-    }
-  }
-}
-
 /****************************************************************************
  * Attributes
  ****************************************************************************/
-
-static int qtCanvasSetDXAttrib(Ihandle* ih, const char* value)
-{
-  if (ih->data->sb & IUP_SB_HORIZ)
-  {
-    double dx;
-    if (!iupStrToDoubleDef(value, &dx, 0.1))
-      return 1;
-
-    iupAttribSetDouble(ih, "DX", dx);
-  }
-  return 1;
-}
-
-static int qtCanvasSetDYAttrib(Ihandle* ih, const char* value)
-{
-  if (ih->data->sb & IUP_SB_VERT)
-  {
-    double dy;
-    if (!iupStrToDoubleDef(value, &dy, 0.1))
-      return 1;
-
-    iupAttribSetDouble(ih, "DY", dy);
-  }
-  return 1;
-}
 
 static int qtCanvasSetPosXAttrib(Ihandle* ih, const char* value)
 {
@@ -961,6 +1004,20 @@ static char* qtCanvasGetScrollVisibleAttrib(Ihandle* ih)
 }
 
 /****************************************************************************
+ * Get Inner Native Container Handle
+ ****************************************************************************/
+
+static void* qtCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
+{
+  (void)child;
+  /* Return the extra_parent widget for absolute positioning of child elements */
+  QWidget* extra_parent = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (extra_parent)
+    return (void*)extra_parent;
+  return ih->handle;
+}
+
+/****************************************************************************
  * Canvas Driver Initialization
  ****************************************************************************/
 
@@ -969,6 +1026,8 @@ extern "C" void iupdrvCanvasInitClass(Iclass* ic)
   /* Driver Dependent Class functions */
   ic->Map = qtCanvasMapMethod;
   ic->UnMap = qtCanvasUnMapMethod;
+  ic->LayoutUpdate = qtCanvasLayoutUpdateMethod;
+  ic->GetInnerNativeContainerHandle = qtCanvasGetInnerNativeContainerHandleMethod;
 
   /* Canvas specific */
   iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, qtCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_DEFAULT);
@@ -987,8 +1046,8 @@ extern "C" void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "YMAX", nullptr, nullptr, "1", nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINEX", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINEY", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "XAUTOHIDE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "YAUTOHIDE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "XAUTOHIDE", nullptr, nullptr, "YES", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "YAUTOHIDE", nullptr, nullptr, "YES", nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "XHIDDEN", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "YHIDDEN", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 

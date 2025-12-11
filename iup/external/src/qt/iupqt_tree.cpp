@@ -25,6 +25,8 @@
 #include <QDrag>
 #include <QMimeData>
 #include <QToolTip>
+#include <QStyledItemDelegate>
+#include <QLineEdit>
 
 #include <cstdlib>
 #include <cstdio>
@@ -52,6 +54,101 @@ extern "C" {
 
 /* Tree add position constants (implementation-specific) */
 enum { ITREE_ADDROOT = 0, ITREE_ADDBRANCH = 1, ITREE_ADDLEAF = 2 };
+
+/* Forward declaration */
+static int qtTreeFindNodeId(Ihandle* ih, QTreeWidgetItem* item);
+
+/****************************************************************************
+ * Custom Item Delegate for Rename Support
+ ****************************************************************************/
+
+class IupQtTreeDelegate : public QStyledItemDelegate
+{
+private:
+  Ihandle* ih;
+  QString old_text;
+
+public:
+  IupQtTreeDelegate(Ihandle* ih_param, QObject* parent = nullptr)
+    : QStyledItemDelegate(parent), ih(ih_param) {}
+
+  QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+  {
+    if (!ih || !ih->data->show_rename)
+      return nullptr;
+
+    QTreeWidgetItem* item = static_cast<QTreeWidgetItem*>(index.internalPointer());
+    if (!item)
+      return nullptr;
+
+    int id = qtTreeFindNodeId(ih, item);
+
+    IFni cbShowRename = (IFni)IupGetCallback(ih, "SHOWRENAME_CB");
+    if (cbShowRename && cbShowRename(ih, id) == IUP_IGNORE)
+      return nullptr;
+
+    const_cast<IupQtTreeDelegate*>(this)->old_text = item->text(0);
+
+    QLineEdit* editor = new QLineEdit(parent);
+    (void)option;
+    return editor;
+  }
+
+  void setEditorData(QWidget* editor, const QModelIndex& index) const override
+  {
+    QStyledItemDelegate::setEditorData(editor, index);
+
+    QLineEdit* lineEdit = qobject_cast<QLineEdit*>(editor);
+    if (!lineEdit || !ih)
+      return;
+
+    char* value = iupAttribGetStr(ih, "RENAMECARET");
+    if (value)
+    {
+      int pos = 0;
+      iupStrToInt(value, &pos);
+      lineEdit->setCursorPosition(pos);
+    }
+
+    value = iupAttribGetStr(ih, "RENAMESELECTION");
+    if (value)
+    {
+      int start = 0, end = 0;
+      iupStrToIntInt(value, &start, &end, ':');
+      lineEdit->setSelection(start, end - start);
+    }
+  }
+
+  void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override
+  {
+    QLineEdit* lineEdit = qobject_cast<QLineEdit*>(editor);
+    if (!lineEdit || !ih)
+    {
+      QStyledItemDelegate::setModelData(editor, model, index);
+      return;
+    }
+
+    QString new_text = lineEdit->text();
+
+    if (new_text == old_text)
+      return;
+
+    QTreeWidgetItem* item = static_cast<QTreeWidgetItem*>(index.internalPointer());
+    if (!item)
+      return;
+
+    int id = qtTreeFindNodeId(ih, item);
+
+    IFnis cbRename = (IFnis)IupGetCallback(ih, "RENAME_CB");
+    if (cbRename)
+    {
+      if (cbRename(ih, id, (char*)new_text.toUtf8().constData()) == IUP_IGNORE)
+        return;
+    }
+
+    model->setData(index, new_text, Qt::EditRole);
+  }
+};
 
 /****************************************************************************
  * System Icon Loading
@@ -150,19 +247,13 @@ protected:
       {
         IFni cb = (IFni)IupGetCallback(ih, "EXECUTELEAF_CB");
         if (cb)
-        {
           cb(ih, id);
-          return;
-        }
       }
       else
       {
         IFni cb = (IFni)IupGetCallback(ih, "EXECUTEBRANCH_CB");
         if (cb)
-        {
           cb(ih, id);
-          return;
-        }
       }
     }
 
@@ -434,6 +525,10 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
     new_item->setText(0, QString::fromUtf8(title));
   qtTreeSetNodeKind(new_item, kind);
 
+  /* Enable editing if show_rename */
+  if (ih->data->show_rename)
+    new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
+
   /* Set default image */
   QPixmap* def_image = nullptr;
   if (kind == ITREE_BRANCH)
@@ -532,6 +627,10 @@ static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeW
   new_item->setBackground(0, src->background(0));
   new_item->setData(0, Qt::UserRole + 1, src->data(0, Qt::UserRole + 1));
 
+  /* Enable editing if show_rename */
+  if (ih->data->show_rename)
+    new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
+
   /* Initialize checkbox state based on destination tree settings, not source */
   if (ih->data->show_toggle)
   {
@@ -578,6 +677,9 @@ static QTreeWidgetItem* qtTreeDragDropCopyItem(Ihandle* src_ih, Ihandle* dst_ih,
   /* Copy IMAGEEXPANDED */
   new_item->setData(0, Qt::UserRole + 2, src_item->data(0, Qt::UserRole + 2));
 
+  /* Enable editing if show_rename */
+  if (dst_ih->data->show_rename)
+    new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
 
   /* Initialize checkbox state based on destination tree settings */
   if (dst_ih->data->show_toggle)
@@ -940,6 +1042,10 @@ static int qtTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
       item = new QTreeWidgetItem(tree);
       tree->addTopLevelItem(item);
       qtTreeSetNodeKind(item, ITREE_BRANCH);  /* Root is typically a branch */
+
+      /* Enable editing if show_rename */
+      if (ih->data->show_rename)
+        item->setFlags(item->flags() | Qt::ItemIsEditable);
 
       /* Initialize cache for node 0 */
       ih->data->node_count = 1;
@@ -1477,9 +1583,22 @@ static int qtTreeSetShowRenameAttrib(Ihandle* ih, const char* value)
   {
     IupQtTree* tree = (IupQtTree*)ih->handle;
     if (ih->data->show_rename)
-      tree->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
+      tree->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
     else
       tree->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    /* Update ItemIsEditable flag on all existing items */
+    for (int i = 0; i < ih->data->node_count; i++)
+    {
+      QTreeWidgetItem* item = (QTreeWidgetItem*)ih->data->node_cache[i].node_handle;
+      if (item)
+      {
+        if (ih->data->show_rename)
+          item->setFlags(item->flags() | Qt::ItemIsEditable);
+        else
+          item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+      }
+    }
   }
 
   return 0;
@@ -1627,43 +1746,55 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
   {
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
 
-    for (int i = 0; i < ih->data->node_count; /* increment only if not removed */)
+    /* First, collect all selected items (not their IDs, the actual QTreeWidgetItem pointers) */
+    QList<QTreeWidgetItem*> items_to_delete;
+    for (int i = 0; i < ih->data->node_count; i++)
     {
       QTreeWidgetItem* item = qtTreeFindNode(ih, i);
       if (item && item->isSelected())
+        items_to_delete.append(item);
+    }
+
+    /* Now delete collected items */
+    for (QTreeWidgetItem* item : items_to_delete)
+    {
+      /* Skip if item was already deleted as child of another deleted item */
+      if (!item->treeWidget())
+        continue;
+
+      int item_id = qtTreeFindNodeId(ih, item);
+      if (item_id == -1)
+        continue;
+
+      IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
+      if (cb)
       {
-        IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
-        if (cb)
-        {
-          std::function<void(QTreeWidgetItem*)> call_rec = [&](QTreeWidgetItem* it) {
-            int it_id = qtTreeFindNodeId(ih, it);
-            if (it_id != -1)
-            {
-              for (int j = 0; j < it->childCount(); j++)
-                call_rec(it->child(j));
-              cb(ih, (char*)ih->data->node_cache[it_id].userdata);
-            }
-          };
-          call_rec(item);
-        }
-
-        int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)item);
-
-        QTreeWidgetItem* parent = item->parent();
-        if (parent)
-          parent->removeChild(item);
-        else
-        {
-          int index = tree->indexOfTopLevelItem(item);
-          if (index >= 0)
-            tree->takeTopLevelItem(index);
-        }
-
-        delete item;
-        iupTreeDelFromCache(ih, i, count);
+        std::function<void(QTreeWidgetItem*)> call_rec = [&](QTreeWidgetItem* it) {
+          int it_id = qtTreeFindNodeId(ih, it);
+          if (it_id != -1)
+          {
+            for (int j = 0; j < it->childCount(); j++)
+              call_rec(it->child(j));
+            cb(ih, (char*)ih->data->node_cache[it_id].userdata);
+          }
+        };
+        call_rec(item);
       }
+
+      int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)item);
+
+      QTreeWidgetItem* parent = item->parent();
+      if (parent)
+        parent->removeChild(item);
       else
-        i++;
+      {
+        int index = tree->indexOfTopLevelItem(item);
+        if (index >= 0)
+          tree->takeTopLevelItem(index);
+      }
+
+      delete item;
+      iupTreeDelFromCache(ih, item_id, count);
     }
 
     /* After all deletions are done, rebuild the cache once. */
@@ -1820,22 +1951,6 @@ static void qtTreeItemChanged(Ihandle* ih, QTreeWidgetItem* item, int column)
       item->setSelected(state == Qt::Checked);
     }
   }
-
-  /* Check if this is a rename */
-  if (ih->data->show_rename && !iupAttribGet(ih, "_IUPTREE_IGNORE_RENAME"))
-  {
-    int id = qtTreeFindNodeId(ih, item);
-    QString new_title = item->text(0);
-
-    IFnis cb = (IFnis)IupGetCallback(ih, "RENAME_CB");
-    if (cb)
-    {
-      if (cb(ih, id, (char*)new_title.toUtf8().constData()) == IUP_IGNORE)
-      {
-        /* Restore old title - would need caching */
-      }
-    }
-  }
 }
 
 
@@ -1887,9 +2002,13 @@ static int qtTreeMapMethod(Ihandle* ih)
 
   /* Enable editing if show_rename */
   if (ih->data->show_rename)
-    tree->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
+    tree->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
   else
     tree->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+  /* Set custom delegate for rename callbacks */
+  IupQtTreeDelegate* delegate = new IupQtTreeDelegate(ih, tree);
+  tree->setItemDelegate(delegate);
 
   /* Set selection mode */
   iupdrvTreeUpdateMarkMode(ih);
@@ -1921,6 +2040,10 @@ static int qtTreeMapMethod(Ihandle* ih)
     QTreeWidgetItem* root = new QTreeWidgetItem(tree);
     root->setText(0, QString::fromUtf8("ROOT"));
     qtTreeSetNodeKind(root, ITREE_BRANCH);
+
+    /* Enable editing if show_rename */
+    if (ih->data->show_rename)
+      root->setFlags(root->flags() | Qt::ItemIsEditable);
 
     /* Initialize cache */
     ih->data->node_count = 1;

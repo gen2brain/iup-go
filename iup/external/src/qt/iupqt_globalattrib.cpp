@@ -308,6 +308,17 @@ extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     return iupStrReturnBoolean(iupqtIsSystemDarkMode());
   }
 
+  if (iupStrEqual(name, "SANDBOX"))
+  {
+    if (getenv("FLATPAK_ID"))
+      return (char*)"FLATPAK";
+    if (getenv("SNAP"))
+      return (char*)"SNAP";
+    if (getenv("APPIMAGE"))
+      return (char*)"APPIMAGE";
+    return NULL;
+  }
+
   return NULL;
 }
 

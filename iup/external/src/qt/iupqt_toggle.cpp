@@ -315,7 +315,14 @@ protected:
     {
       /* Interpolate track color based on thumb position for smooth animation */
       QColor track_off_color = pal.color(QPalette::Active, QPalette::Mid);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+      /* Use Accent if it's a real color (macOS sets it to controlAccentColor).
+         If Accent is white/near-white, it wasn't set properly - use Highlight instead. */
+      QColor accent = pal.color(QPalette::Active, QPalette::Accent);
+      QColor track_on_color = (accent.lightness() > 250) ? pal.color(QPalette::Active, QPalette::Highlight) : accent;
+#else
       QColor track_on_color = pal.color(QPalette::Active, QPalette::Highlight);
+#endif
 
       /* Blend colors based on thumb position */
       track_color = QColor(
