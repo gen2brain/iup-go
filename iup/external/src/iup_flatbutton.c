@@ -111,6 +111,7 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   if (draw_border)
   {
     char* bordercolor = iupAttribGetStr(ih, "BORDERCOLOR");
+    int corner_radius = iupAttribGetInt(ih, "CORNERRADIUS");
 
     if ((ih->data->pressed && ih->data->highlighted) || (selected && !ih->data->highlighted))
     {
@@ -125,9 +126,14 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
         bordercolor = hlcolor;
     }
 
-    iupFlatDrawBorder(dc, 0, ih->currentwidth - 1, 
-                          0, ih->currentheight - 1, 
-                          border_width, bordercolor, bgcolor, active);
+    if (corner_radius > 0)
+      iupFlatDrawRoundedBorder(dc, 0, ih->currentwidth - 1,
+                                0, ih->currentheight - 1,
+                                border_width, corner_radius, bordercolor, bgcolor, active);
+    else
+      iupFlatDrawBorder(dc, 0, ih->currentwidth - 1,
+                            0, ih->currentheight - 1,
+                            border_width, bordercolor, bgcolor, active);
   }
 
   /* simulate pressed when selected and has images (but colors and borders are not included) */
@@ -146,9 +152,46 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, -1, -1);
   }
   else
-    iupFlatDrawBox(dc, border_width, ih->currentwidth - 1 - border_width,
-                       border_width, ih->currentheight - 1 - border_width,
-                       bgcolor, NULL, 1);  /* background is always active */
+  {
+    char* gradient = iupAttribGet(ih, "GRADIENT");
+    int corner_radius = iupAttribGetInt(ih, "CORNERRADIUS");
+
+    if ((ih->data->pressed && ih->data->highlighted) || (selected && !ih->data->highlighted))
+    {
+      char* pressgrad = iupAttribGet(ih, "GRADIENTPS");
+      if (pressgrad)
+        gradient = pressgrad;
+    }
+    else if (ih->data->highlighted)
+    {
+      char* hlgrad = iupAttribGet(ih, "GRADIENTHL");
+      if (hlgrad)
+        gradient = hlgrad;
+    }
+
+    if (gradient)
+    {
+      char color1[30], color2[30];
+      float angle = iupAttribGetFloat(ih, "GRADIENTANGLE");
+      if (angle == 0) angle = 90;  /* default is top to bottom */
+      if (iupStrToStrStr(gradient, color1, color2, ':'))
+        iupFlatDrawGradientBox(dc, border_width, ih->currentwidth - 1 - border_width,
+                                border_width, ih->currentheight - 1 - border_width,
+                                corner_radius, angle, color1, color2, bgcolor, 1);  /* background is always active */
+      else
+        iupFlatDrawGradientBox(dc, border_width, ih->currentwidth - 1 - border_width,
+                                border_width, ih->currentheight - 1 - border_width,
+                                corner_radius, angle, gradient, bgcolor, bgcolor, 1);
+    }
+    else if (corner_radius > 0)
+      iupFlatDrawRoundedBox(dc, border_width, ih->currentwidth - 1 - border_width,
+                             border_width, ih->currentheight - 1 - border_width,
+                             corner_radius, bgcolor, NULL, 1);  /* background is always active */
+    else
+      iupFlatDrawBox(dc, border_width, ih->currentwidth - 1 - border_width,
+                         border_width, ih->currentheight - 1 - border_width,
+                         bgcolor, NULL, 1);  /* background is always active */
+  }
 
   /* reserve space for focus feedback (after background draw) */
   if (iupAttribGetBoolean(ih, "CANFOCUS") && focus_feedback)
@@ -776,6 +819,12 @@ Iclass* iupFlatButtonNewClass(void)
 
   iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FITTOBACKIMAGE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "CORNERRADIUS", NULL, iFlatButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENT", NULL, iFlatButtonSetAttribPostRedraw, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTHL", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTPS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTANGLE", NULL, iFlatButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "90", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FRONTIMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FRONTIMAGEPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);

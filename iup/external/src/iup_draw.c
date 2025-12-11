@@ -787,6 +787,76 @@ IUP_SDK_API void iupFlatDrawBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, i
   iupdrvDrawRectangle(dc, xmin, ymin, xmax, ymax, color, IUP_DRAW_FILL, 1);
 }
 
+IUP_SDK_API void iupFlatDrawRoundedBorder(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int border_width, int corner_radius, const char* fgcolor, const char* bgcolor, int active)
+{
+  long color = 0;
+
+  if (!fgcolor || border_width == 0 || xmin == xmax || ymin == ymax)
+    return;
+
+  iupDrawCheckSwapCoord(xmin, xmax);
+  iupDrawCheckSwapCoord(ymin, ymax);
+
+  color = iupDrawStrToColor(fgcolor, 0);
+  if (!active)
+    color = iFlatDrawColorMakeInactive(color, bgcolor);
+
+  iupdrvDrawRoundedRectangle(dc, xmin, ymin, xmax, ymax, corner_radius, color, IUP_DRAW_STROKE, 1);
+  while (border_width > 1)
+  {
+    border_width--;
+    iupdrvDrawRoundedRectangle(dc, xmin + border_width,
+                                ymin + border_width,
+                                xmax - border_width,
+                                ymax - border_width, corner_radius, color, IUP_DRAW_STROKE, 1);
+  }
+}
+
+IUP_SDK_API void iupFlatDrawRoundedBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, const char* fgcolor, const char* bgcolor, int active)
+{
+  long color;
+
+  if (!fgcolor || xmin == xmax || ymin == ymax)
+    return;
+
+  iupDrawCheckSwapCoord(xmin, xmax);
+  iupDrawCheckSwapCoord(ymin, ymax);
+
+  color = iupDrawStrToColor(fgcolor, 0);
+  if (!active)
+    color = iFlatDrawColorMakeInactive(color, bgcolor);
+
+  iupdrvDrawRoundedRectangle(dc, xmin, ymin, xmax, ymax, corner_radius, color, IUP_DRAW_FILL, 1);
+}
+
+IUP_SDK_API void iupFlatDrawGradientBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, float angle, const char* color1, const char* color2, const char* bgcolor, int active)
+{
+  long c1, c2;
+
+  if (!color1 || !color2 || xmin == xmax || ymin == ymax)
+    return;
+
+  iupDrawCheckSwapCoord(xmin, xmax);
+  iupDrawCheckSwapCoord(ymin, ymax);
+
+  c1 = iupDrawStrToColor(color1, 0);
+  c2 = iupDrawStrToColor(color2, 0);
+  if (!active)
+  {
+    c1 = iFlatDrawColorMakeInactive(c1, bgcolor);
+    c2 = iFlatDrawColorMakeInactive(c2, bgcolor);
+  }
+
+  if (corner_radius > 0)
+  {
+    iupdrvDrawSetClipRoundedRect(dc, xmin, ymin, xmax, ymax, corner_radius);
+    iupdrvDrawLinearGradient(dc, xmin, ymin, xmax, ymax, angle, c1, c2);
+    iupdrvDrawResetClip(dc);
+  }
+  else
+    iupdrvDrawLinearGradient(dc, xmin, ymin, xmax, ymax, angle, c1, c2);
+}
+
 static void iFlatDrawText(IdrawCanvas* dc, int x, int y, int w, int h, const char* str, const char* font, int text_flags, double text_orientation, const char* fgcolor, const char* bgcolor, int active)
 {
   long color;

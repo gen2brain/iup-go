@@ -68,8 +68,11 @@ IUP_SDK_API const char* iupFlatGetImageName(Ihandle* ih, const char* baseattrib,
 IUP_SDK_API const char* iupFlatGetImageNameId(Ihandle* ih, const char* baseattrib, int id, const char* basevalue, int press, int highlight, int active, int *make_inactive);
 
 IUP_SDK_API void iupFlatDrawBorder(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int border_width, const char* color, const char* bgcolor, int active);
+IUP_SDK_API void iupFlatDrawRoundedBorder(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int border_width, int corner_radius, const char* color, const char* bgcolor, int active);
 
 IUP_SDK_API void iupFlatDrawBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, const char* color, const char* bgcolor, int active);
+IUP_SDK_API void iupFlatDrawRoundedBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, const char* color, const char* bgcolor, int active);
+IUP_SDK_API void iupFlatDrawGradientBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, float angle, const char* color1, const char* color2, const char* bgcolor, int active);
 
 IUP_SDK_API void iupFlatDrawGetIconSize(Ihandle* ih, int img_position, int spacing, int horiz_padding, int vert_padding,
                             const char* imagename, const char* title, int *w, int *h, double text_orientation);
