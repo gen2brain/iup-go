@@ -128,8 +128,13 @@ func main() {
 
 	// Enable alternating colors for better readability
 	table.SetAttribute("ALTERNATECOLOR", "YES")
-	table.SetAttribute("EVENROWCOLOR", "#F5F5F5")
-	table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
+	if iup.GetGlobal("DARKMODE") == "YES" {
+		table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
+		table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
+	} else {
+		table.SetAttribute("EVENROWCOLOR", "#F5F5F5")
+		table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
+	}
 
 	// Info label
 	lblInfo := iup.Label(fmt.Sprintf("Virtual mode enabled: 100,000 rows loaded instantly!\n" +
