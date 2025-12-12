@@ -36,50 +36,49 @@ void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
   iupdrvButtonAddBorders(ih, x, y);
 }
 
+void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
+{
+  static int switch_w = -1;
+  static int switch_h = -1;
+  (void)ih;
+
+  if (switch_w < 0)
+  {
+    GtkWidget* temp_switch = gtk_switch_new();
+    int min_w, nat_w, min_h, nat_h;
+
+    g_object_ref_sink(temp_switch);
+
+    /* Get natural and minimum sizes using gtk_widget_measure */
+    gtk_widget_measure(temp_switch, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
+    gtk_widget_measure(temp_switch, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
+
+    /* Use natural size with fallback */
+    switch_w = (nat_w > 0) ? nat_w : 48;
+    switch_h = (nat_h > 0) ? nat_h : 24;
+
+    g_object_unref(temp_switch);
+  }
+
+  (*x) += 2 + switch_w + 2;
+  if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
+  else (*y) += 2 + 2;
+
+  if (str && str[0])
+    (*x) += 8;
+}
+
 void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
-  if (iupAttribGetBoolean(ih, "SWITCH"))
-  {
-    static int switch_w = -1;
-    static int switch_h = -1;
+  int check_box = IUP_TOGGLE_BOX;
+  (void)ih;
 
-    if (switch_w < 0)
-    {
-      GtkWidget* temp_switch = gtk_switch_new();
-      int min_w, nat_w, min_h, nat_h;
+  (*x) += 2 + check_box + 2;
+  if ((*y) < 2 + check_box + 2) (*y) = 2 + check_box + 2;
+  else (*y) += 2 + 2;
 
-      g_object_ref_sink(temp_switch);
-
-      /* Get natural and minimum sizes using gtk_widget_measure */
-      gtk_widget_measure(temp_switch, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
-      gtk_widget_measure(temp_switch, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
-
-      /* Use natural size with fallback */
-      switch_w = (nat_w > 0) ? nat_w : 48;
-      switch_h = (nat_h > 0) ? nat_h : 24;
-
-      g_object_unref(temp_switch);
-    }
-
-    (*x) += 2 + switch_w + 2;
-    if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
-    else (*y) += 2 + 2;
-
-    if (str && str[0])
-      (*x) += 8;
-  }
-  else
-  {
-    int check_box = IUP_TOGGLE_BOX;
-    (void)ih;
-
-    (*x) += 2 + check_box + 2;
-    if ((*y) < 2 + check_box + 2) (*y) = 2 + check_box + 2;
-    else (*y) += 2 + 2;
-
-    if (str && str[0])
-      (*x) += 8;
-  }
+  if (str && str[0])
+    (*x) += 8;
 }
 
 static int gtk4ToggleGetCheck(Ihandle* ih)

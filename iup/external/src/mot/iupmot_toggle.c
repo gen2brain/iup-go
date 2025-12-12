@@ -50,38 +50,36 @@ void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
   iupdrvButtonAddBorders(ih, x, y);
 }
 
+void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+{
+  (void)ih;
+
+  (*x) += 2 + SWITCH_TRACK_WIDTH + 2;
+  if ((*y) < 2 + SWITCH_TRACK_HEIGHT + 2)
+    (*y) = 2 + SWITCH_TRACK_HEIGHT + 2;
+  else
+    (*y) += 2 + 2;
+
+  if (str && str[0])
+    (*x) += 8;
+}
+
 void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
-  if (iupAttribGetBoolean(ih, "SWITCH"))
-  {
-    (*x) += 2 + SWITCH_TRACK_WIDTH + 2;
-    if ((*y) < 2 + SWITCH_TRACK_HEIGHT + 2)
-      (*y) = 2 + SWITCH_TRACK_HEIGHT + 2;
-    else
-      (*y) += 2 + 2;
+  int check_box = 15;
+  (void)ih;
 
-    if (str && str[0])
-      (*x) += 8;
-
-    return;
-  }
-
-  {
-    int check_box = 15;
-    (void)ih;
-
-    (*x) += 3 + check_box + 3;
+  (*x) += 3 + check_box + 3;
 #ifdef IUP_USE_XFT
-    if ((*y) < 3 + check_box + 7) (*y) = 3 + check_box + 7;
-    else (*y) += 3+7;
+  if ((*y) < 3 + check_box + 9) (*y) = 3 + check_box + 9;
+  else (*y) += 3+9;
 #else
-    if ((*y) < 3 + check_box + 5) (*y) = 3 + check_box + 5;
-    else (*y) += 3+5;
+  if ((*y) < 3 + check_box + 5) (*y) = 3 + check_box + 5;
+  else (*y) += 3+5;
 #endif
 
-    if (str && str[0])
-      (*x) += 4;
-  }
+  if (str && str[0])
+    (*x) += 4;
 }
 
 /*********************************************************************************/

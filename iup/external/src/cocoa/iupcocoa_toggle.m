@@ -302,34 +302,56 @@ void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
+void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+{
+  static int switch_w = -1;
+  static int switch_h = -1;
+  (void)ih;
+
+  if (switch_w < 0)
+  {
+    NSSwitch* temp_switch = [[NSSwitch alloc] initWithFrame:NSZeroRect];
+    NSSize size = [temp_switch intrinsicContentSize];
+    [temp_switch release];
+
+    switch_w = (size.width > 0) ? (int)size.width : 38;
+    switch_h = (size.height > 0) ? (int)size.height : 21;
+  }
+
+  *x += 2 + switch_w + 2;
+  if ((*y) < 2 + switch_h + 2) *y = 2 + switch_h + 2;
+  else *y += 2+2;
+
+  if (str && str[0])
+    *x += 8;
+}
+
 void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
-  if (iupAttribGetBoolean(ih, "SWITCH"))
+  static int check_w = -1;
+  static int check_h = -1;
+  (void)ih;
+
+  if (check_w < 0)
   {
-    /* NSSwitch dimensions estimate (macOS 11+) */
-    int switch_w = 38;
-    int switch_h = 20;
+    NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
+    [temp_button setButtonType:NSSwitchButton];
+    [temp_button setTitle:@""];
+    NSSize size = [temp_button intrinsicContentSize];
+    [temp_button release];
 
-    *x += 2 + switch_w + 2;
-    if ((*y) < 2 + switch_h + 2) *y = 2 + switch_h + 2;
-    else *y += 2+2;
-
-    if (str && str[0]) /* add spacing between switch and text */
-      *x += 8;
+    check_w = (size.width > 0) ? (int)size.width : 18;
+    check_h = (size.height > 0) ? (int)size.height : 18;
   }
-  else
-  {
-    *x += 20; /* checkbox width estimate */
-    *y = (*y < 20) ? 20 : *y; /* checkbox height estimate */
 
-    *x += 4; /* margins */
-    *y += 4;
+  *x += check_w;
+  if (*y < check_h) *y = check_h;
 
-    if (str && *str != 0) /* add spacing between check box and text */
-    {
-      *x += 8;
-    }
-  }
+  *x += 4;
+  *y += 4;
+
+  if (str && *str != 0)
+    *x += 8;
 }
 
 

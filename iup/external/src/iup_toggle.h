@@ -19,6 +19,7 @@ void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y);
 
 void iupdrvToggleInitClass(Iclass* ic);
 void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str);
+void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str);
 
 IUP_SDK_API Ihandle* iupRadioFindToggleParent(Ihandle* ih_toggle);
 char* iupToggleGetPaddingAttrib(Ihandle* ih);

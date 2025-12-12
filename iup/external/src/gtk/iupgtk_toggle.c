@@ -53,67 +53,209 @@ static GtkWidget* gtk_button_get_image(GtkButton *button)
 #endif
 #endif
 
+#if !GTK_CHECK_VERSION(3, 0, 0)
+/* GTK2 Switch dimensions (GTK3-style flat rectangle) */
+#define SWITCH_TRACK_WIDTH  48
+#define SWITCH_TRACK_HEIGHT 22
+#define SWITCH_THUMB_WIDTH  22
+#define SWITCH_THUMB_HEIGHT 18
+#define SWITCH_THUMB_MARGIN 2
+
+typedef struct _IupGtkSwitchData
+{
+  Ihandle* ih;
+  int checked_state;
+  GtkWidget* drawing_area;
+} IupGtkSwitchData;
+
+static void gtkSwitchDraw(Ihandle* ih, IupGtkSwitchData* switch_data, GdkWindow* window, GdkGC* gc)
+{
+  int is_checked = switch_data->checked_state;
+  int is_active = iupdrvIsActive(ih);
+  int thumb_x, thumb_y;
+  GtkStyle* style;
+  GdkColor track_color, thumb_color, border_color;
+  GdkColormap* colormap;
+
+  style = gtk_widget_get_style(ih->handle);
+  colormap = gtk_widget_get_colormap(ih->handle);
+
+  if (!is_active)
+  {
+    track_color = style->bg[GTK_STATE_INSENSITIVE];
+    thumb_color = style->light[GTK_STATE_INSENSITIVE];
+    border_color = style->dark[GTK_STATE_INSENSITIVE];
+  }
+  else if (is_checked)
+  {
+    track_color = style->bg[GTK_STATE_SELECTED];
+    thumb_color = style->light[GTK_STATE_NORMAL];
+    border_color = style->dark[GTK_STATE_SELECTED];
+  }
+  else
+  {
+    track_color = style->dark[GTK_STATE_NORMAL];
+    thumb_color = style->light[GTK_STATE_NORMAL];
+    border_color = style->dark[GTK_STATE_ACTIVE];
+  }
+
+  gdk_colormap_alloc_color(colormap, &track_color, FALSE, TRUE);
+  gdk_colormap_alloc_color(colormap, &thumb_color, FALSE, TRUE);
+  gdk_colormap_alloc_color(colormap, &border_color, FALSE, TRUE);
+
+  /* Draw track (filled rectangle) */
+  gdk_gc_set_foreground(gc, &track_color);
+  gdk_draw_rectangle(window, gc, TRUE, 0, 0, SWITCH_TRACK_WIDTH, SWITCH_TRACK_HEIGHT);
+
+  /* Draw track border */
+  gdk_gc_set_foreground(gc, &border_color);
+  gdk_draw_rectangle(window, gc, FALSE, 0, 0, SWITCH_TRACK_WIDTH - 1, SWITCH_TRACK_HEIGHT - 1);
+
+  /* Calculate thumb position */
+  if (is_checked)
+    thumb_x = SWITCH_TRACK_WIDTH - SWITCH_THUMB_WIDTH - SWITCH_THUMB_MARGIN;
+  else
+    thumb_x = SWITCH_THUMB_MARGIN;
+
+  thumb_y = (SWITCH_TRACK_HEIGHT - SWITCH_THUMB_HEIGHT) / 2;
+
+  /* Draw thumb (filled rectangle) */
+  gdk_gc_set_foreground(gc, &thumb_color);
+  gdk_draw_rectangle(window, gc, TRUE, thumb_x, thumb_y, SWITCH_THUMB_WIDTH, SWITCH_THUMB_HEIGHT);
+
+  /* Draw thumb border */
+  gdk_gc_set_foreground(gc, &border_color);
+  gdk_draw_rectangle(window, gc, FALSE, thumb_x, thumb_y, SWITCH_THUMB_WIDTH - 1, SWITCH_THUMB_HEIGHT - 1);
+}
+
+static gboolean gtkSwitchExposeEvent(GtkWidget* widget, GdkEventExpose* event, IupGtkSwitchData* switch_data)
+{
+  Ihandle* ih = switch_data->ih;
+  GdkGC* gc;
+
+  (void)event;
+
+  gc = gdk_gc_new(widget->window);
+  if (!gc)
+    return FALSE;
+
+  gtkSwitchDraw(ih, switch_data, widget->window, gc);
+
+  g_object_unref(gc);
+
+  return FALSE;
+}
+
+static gboolean gtkSwitchButtonPressEvent(GtkWidget* widget, GdkEventButton* event, Ihandle* ih)
+{
+  IupGtkSwitchData* switch_data;
+  IFni cb;
+  int new_check;
+
+  (void)widget;
+  (void)event;
+
+  switch_data = (IupGtkSwitchData*)iupAttribGet(ih, "_IUPGTK_SWITCHDATA");
+  if (!switch_data)
+    return FALSE;
+
+  new_check = switch_data->checked_state ? 0 : 1;
+  switch_data->checked_state = new_check;
+
+  gtk_widget_queue_draw(switch_data->drawing_area);
+
+  cb = (IFni)IupGetCallback(ih, "ACTION");
+  if (cb && cb(ih, new_check) == IUP_CLOSE)
+    IupExitLoop();
+
+  if (iupObjectCheck(ih))
+    iupBaseCallValueChangedCb(ih);
+
+  return TRUE;
+}
+
+static void gtkSwitchDestroyCallback(GtkWidget* widget, Ihandle* ih)
+{
+  IupGtkSwitchData* switch_data = (IupGtkSwitchData*)iupAttribGet(ih, "_IUPGTK_SWITCHDATA");
+  (void)widget;
+
+  if (switch_data)
+  {
+    free(switch_data);
+    iupAttribSet(ih, "_IUPGTK_SWITCHDATA", NULL);
+  }
+}
+#endif
+
 void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
   iupdrvButtonAddBorders(ih, x, y);
 }
 
-void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
-  if (iupAttribGetBoolean(ih, "SWITCH"))
+  static int switch_w = -1;
+  static int switch_h = -1;
+  (void)ih;
+
+  if (switch_w < 0)
   {
-    static int switch_w = -1;
-    static int switch_h = -1;
+    GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget* temp_switch = gtk_switch_new();
+    GtkAllocation allocation;
+    int min_w, nat_w, min_h, nat_h;
 
-    if (switch_w < 0)
-    {
-      GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-      GtkWidget* temp_switch = gtk_switch_new();
-      GtkAllocation allocation;
-      int min_w, nat_w, min_h, nat_h;
+    /* Add to window, show, and realize to get actual allocated size */
+    gtk_container_add(GTK_CONTAINER(temp_window), temp_switch);
+    gtk_widget_show_all(temp_window);
+    gtk_widget_realize(temp_window);
+    gtk_widget_realize(temp_switch);
 
-      /* Add to window, show, and realize to get actual allocated size */
-      gtk_container_add(GTK_CONTAINER(temp_window), temp_switch);
-      gtk_widget_show_all(temp_window);
-      gtk_widget_realize(temp_window);
-      gtk_widget_realize(temp_switch);
+    /* Force size allocation */
+    gtk_widget_get_preferred_width(temp_switch, &min_w, &nat_w);
+    gtk_widget_get_preferred_height(temp_switch, &min_h, &nat_h);
 
-      /* Force size allocation */
-      gtk_widget_get_preferred_width(temp_switch, &min_w, &nat_w);
-      gtk_widget_get_preferred_height(temp_switch, &min_h, &nat_h);
+    /* Get the actual allocated size after realization */
+    gtk_widget_get_allocation(temp_switch, &allocation);
 
-      /* Get the actual allocated size after realization */
-      gtk_widget_get_allocation(temp_switch, &allocation);
+    /* Use allocated size with fallback */
+    switch_w = (allocation.width > 0) ? allocation.width : 48;
+    switch_h = (allocation.height > 0) ? allocation.height : 24;
 
-      /* Use allocated size with fallback */
-      switch_w = (allocation.width > 0) ? allocation.width : 48;
-      switch_h = (allocation.height > 0) ? allocation.height : 24;
-
-      gtk_widget_destroy(temp_window);
-    }
-
-    (*x) += 2 + switch_w + 2;
-    if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
-    else (*y) += 2+2;
-
-    if (str && str[0])
-      (*x) += 8;
+    gtk_widget_destroy(temp_window);
   }
-  else
+
+  (*x) += 2 + switch_w + 2;
+  if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
+  else (*y) += 2+2;
+
+  if (str && str[0])
+    (*x) += 8;
+#else
+  /* GTK2: Use fixed dimensions matching our custom drawing */
+  (void)ih;
+
+  (*x) += 2 + SWITCH_TRACK_WIDTH + 2;
+  if ((*y) < 2 + SWITCH_TRACK_HEIGHT + 2) (*y) = 2 + SWITCH_TRACK_HEIGHT + 2;
+  else (*y) += 2+2;
+
+  if (str && str[0])
+    (*x) += 8;
 #endif
-  {
-    int check_box = IUP_TOGGLE_BOX;
-    (void)ih;
+}
 
-    /* has margins too */
-    (*x) += 2 + check_box + 2;
-    if ((*y) < 2 + check_box + 2) (*y) = 2 + check_box + 2; /* minimum height */
-    else (*y) += 2+2;
+void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+{
+  int check_box = IUP_TOGGLE_BOX;
+  (void)ih;
 
-    if (str && str[0]) /* add spacing between check box and text */
-      (*x) += 8;
-  }
+  (*x) += 2 + check_box + 2;
+  if ((*y) < 2 + check_box + 2) (*y) = 2 + check_box + 2;
+  else (*y) += 2+2;
+
+  if (str && str[0])
+    (*x) += 8;
 }
 
 static int gtkToggleGetCheck(Ihandle* ih)
@@ -199,9 +341,9 @@ static void gtkToggleUpdateImage(Ihandle* ih, int active, int check)
 
 static int gtkToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
-#if GTK_CHECK_VERSION(3, 0, 0)
   if (iupAttribGetBoolean(ih, "SWITCH"))
   {
+#if GTK_CHECK_VERSION(3, 0, 0)
     if (GTK_IS_SWITCH(ih->handle))
     {
       int check;
@@ -216,9 +358,25 @@ static int gtkToggleSetValueAttrib(Ihandle* ih, const char* value)
 
       iupAttribSet(ih, "_IUPGTK_IGNORE_TOGGLE", NULL);
     }
+#else
+    IupGtkSwitchData* switch_data = (IupGtkSwitchData*)iupAttribGet(ih, "_IUPGTK_SWITCHDATA");
+    if (switch_data)
+    {
+      int new_check;
+
+      if (iupStrEqualNoCase(value, "TOGGLE"))
+        new_check = !switch_data->checked_state;
+      else
+        new_check = iupStrBoolean(value);
+
+      switch_data->checked_state = new_check;
+
+      if (ih->handle && switch_data->drawing_area)
+        gtk_widget_queue_draw(switch_data->drawing_area);
+    }
+#endif
     return 0;
   }
-#endif
 
   if (iupStrEqualNoCase(value,"NOTDEF"))
     gtk_toggle_button_set_inconsistent((GtkToggleButton*)ih->handle, TRUE);
@@ -271,18 +429,23 @@ static int gtkToggleSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* gtkToggleGetValueAttrib(Ihandle* ih)
 {
+#if !GTK_CHECK_VERSION(3, 0, 0)
+  if (iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    IupGtkSwitchData* switch_data = (IupGtkSwitchData*)iupAttribGet(ih, "_IUPGTK_SWITCHDATA");
+    if (switch_data)
+      return iupStrReturnChecked(switch_data->checked_state);
+    return iupStrReturnChecked(0);
+  }
+#endif
   return iupStrReturnChecked(gtkToggleGetCheck(ih));
 }
 
 static int gtkToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
-#if GTK_CHECK_VERSION(3, 0, 0)
   if (iupAttribGetBoolean(ih, "SWITCH"))
-  {
-    if (GTK_IS_SWITCH(ih->handle))
-      return 0; /* GtkSwitch does not have a title */
-  }
-#endif
+    return 0; /* Switch does not have a title */
+
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
     GtkButton* button = (GtkButton*)ih->handle;
@@ -355,13 +518,8 @@ static int gtkToggleSetFgColorAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   GtkWidget* label;
 
-#if GTK_CHECK_VERSION(3, 0, 0)
   if (iupAttribGetBoolean(ih, "SWITCH"))
-  {
-    if (GTK_IS_SWITCH(ih->handle))
-      return 0; /* GtkSwitch does not have an internal label */
-  }
-#endif
+    return 0; /* Switch does not have an internal label */
 
   label = (GtkWidget*)gtk_button_get_image((GtkButton*)ih->handle);
   if (!label) return 0;
@@ -382,13 +540,10 @@ static int gtkToggleSetFontAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
   {
     GtkWidget* label = NULL;
-#if GTK_CHECK_VERSION(3, 0, 0)
+
     if (iupAttribGetBoolean(ih, "SWITCH"))
-    {
-      if (GTK_IS_SWITCH(ih->handle))
-        return 1; /* GtkSwitch does not have an internal label, but font attribute must be stored */
-    }
-#endif
+      return 1; /* Switch does not have an internal label, but font attribute must be stored */
+
     label = gtk_button_get_image((GtkButton*)ih->handle);
     if (label)
       iupgtkUpdateWidgetFont(ih, label);
@@ -609,6 +764,11 @@ static int gtkToggleMapMethod(Ihandle* ih)
   if (radio)
   {
     GtkRadioButton* last_tg = (GtkRadioButton*)iupAttribGet(radio, "_IUPGTK_LASTRADIOBUTTON");
+
+    /* Disable SWITCH for radio toggles */
+    if (iupAttribGetBoolean(ih, "SWITCH"))
+      iupAttribSet(ih, "SWITCH", "NO");
+
     if (last_tg)
       ih->handle = gtk_radio_button_new_from_widget(last_tg);
     else
@@ -625,13 +785,62 @@ static int gtkToggleMapMethod(Ihandle* ih)
   {
     if (ih->data->type == IUP_TOGGLE_TEXT)
     {
-#if GTK_CHECK_VERSION(3, 0, 0)
       if (iupAttribGetBoolean(ih, "SWITCH"))
       {
+#if GTK_CHECK_VERSION(3, 0, 0)
         ih->handle = gtk_switch_new();
+#else
+        /* GTK2: Create custom switch using GtkDrawingArea */
+        IupGtkSwitchData* switch_data;
+
+        switch_data = (IupGtkSwitchData*)calloc(1, sizeof(IupGtkSwitchData));
+        switch_data->ih = ih;
+        iupAttribSet(ih, "_IUPGTK_SWITCHDATA", (char*)switch_data);
+
+        switch_data->drawing_area = gtk_drawing_area_new();
+        gtk_widget_set_size_request(switch_data->drawing_area, SWITCH_TRACK_WIDTH, SWITCH_TRACK_HEIGHT);
+
+        ih->handle = switch_data->drawing_area;
+
+        if (!ih->handle)
+        {
+          free(switch_data);
+          return IUP_ERROR;
+        }
+
+        /* Set up events */
+        gtk_widget_add_events(ih->handle, GDK_BUTTON_PRESS_MASK | GDK_EXPOSURE_MASK);
+
+        /* Add to parent */
+        iupgtkAddToParent(ih);
+
+        if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+          iupgtkSetCanFocus(ih->handle, 0);
+
+        /* Connect signals */
+        g_signal_connect(G_OBJECT(ih->handle), "expose-event", G_CALLBACK(gtkSwitchExposeEvent), switch_data);
+        g_signal_connect(G_OBJECT(ih->handle), "button-press-event", G_CALLBACK(gtkSwitchButtonPressEvent), ih);
+        g_signal_connect(G_OBJECT(ih->handle), "enter-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);
+        g_signal_connect(G_OBJECT(ih->handle), "leave-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);
+        g_signal_connect(G_OBJECT(ih->handle), "focus-in-event", G_CALLBACK(iupgtkFocusInOutEvent), ih);
+        g_signal_connect(G_OBJECT(ih->handle), "focus-out-event", G_CALLBACK(iupgtkFocusInOutEvent), ih);
+        g_signal_connect(G_OBJECT(ih->handle), "key-press-event", G_CALLBACK(iupgtkKeyPressEvent), ih);
+        g_signal_connect(G_OBJECT(ih->handle), "show-help", G_CALLBACK(iupgtkShowHelp), ih);
+        g_signal_connect(G_OBJECT(ih->handle), "destroy", G_CALLBACK(gtkSwitchDestroyCallback), ih);
+
+        /* Set initial value */
+        value = iupAttribGet(ih, "VALUE");
+        if (value && iupStrBoolean(value))
+          switch_data->checked_state = 1;
+        else
+          switch_data->checked_state = 0;
+
+        gtk_widget_realize(ih->handle);
+
+        return IUP_NOERROR;
+#endif
       }
       else
-#endif
       {
         ih->handle = gtk_check_button_new();
         if (iupAttribGetBoolean(ih, "3STATE"))

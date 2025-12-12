@@ -382,53 +382,47 @@ extern "C" void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
   iupdrvButtonAddBorders(ih, x, y);
 }
 
+extern "C" void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+{
+  static int switch_w = -1;
+  static int switch_h = -1;
+  (void)ih;
+
+  if (switch_w < 0)
+  {
+    IupQtSwitch temp_switch(NULL);
+    QSize hint = temp_switch.sizeHint();
+
+    switch_w = hint.width();
+    switch_h = hint.height();
+  }
+
+  (*x) += 2 + switch_w + 2;
+  if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
+  else (*y) += 2 + 2;
+
+  if (str && str[0])
+    (*x) += 8;
+}
+
 extern "C" void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
-  if (iupAttribGetBoolean(ih, "SWITCH"))
+  int check_box = IUP_TOGGLE_BOX;
+
+  (*x) += 2 + check_box + 2;
+  if ((*y) < 2 + check_box + 2)
+    (*y) = 2 + check_box + 2;
+  else
+    (*y) += 2 + 2;
+
+  if (str && str[0])
   {
-    static int switch_w = -1;
-    static int switch_h = -1;
-
-    if (switch_w < 0)
-    {
-      /* Query the switch widget's size hint */
-      IupQtSwitch temp_switch(NULL);
-      QSize hint = temp_switch.sizeHint();
-
-      switch_w = hint.width();
-      switch_h = hint.height();
-    }
-
-    (*x) += 2 + switch_w + 2;
-    if ((*y) < 2 + switch_h + 2) (*y) = 2 + switch_h + 2;
-    else (*y) += 2 + 2;
-
-    if (str && str[0])
+    int spacing = iupAttribGetInt(ih, "SPACING");
+    if (spacing > 0)
+      (*x) += spacing;
+    else
       (*x) += 8;
   }
-  else
-  {
-    /* Regular checkbox */
-    int check_box = IUP_TOGGLE_BOX;
-
-    /* Has margins too */
-    (*x) += 2 + check_box + 2;
-    if ((*y) < 2 + check_box + 2)
-      (*y) = 2 + check_box + 2;  /* Minimum height */
-    else
-      (*y) += 2 + 2;
-
-    if (str && str[0])  /* Add spacing between checkbox and text */
-    {
-      int spacing = iupAttribGetInt(ih, "SPACING");
-      if (spacing > 0)
-        (*x) += spacing;
-      else
-        (*x) += 8;
-    }
-  }
-
-  (void)ih;
 }
 
 static int qtToggleGetCheck(Ihandle* ih)
