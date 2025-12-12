@@ -29,11 +29,15 @@
 
 static int gtkIsFile(const char* name)
 {
+  if (!name)
+    return 0;
   return g_file_test(name, G_FILE_TEST_IS_REGULAR);
 }
 
 static int gtkIsDirectory(const char* name)
 {
+  if (!name)
+    return 0;
   return g_file_test(name, G_FILE_TEST_IS_DIR);
 }            
 
@@ -210,6 +214,7 @@ static gboolean gtkFileDlgPreviewExposeEvent(GtkWidget *widget, GdkEventExpose *
 static void gtkFileDlgUpdatePreview(GtkFileChooser *file_chooser, Ihandle* ih)
 {
   char *filename = gtk_file_chooser_get_preview_filename(file_chooser);
+  GtkWidget* preview_canvas = (GtkWidget*)iupAttribGet(ih, "WID");
 
   IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
   if (cb) /* safety check - callback here always exists */
@@ -223,6 +228,9 @@ static void gtkFileDlgUpdatePreview(GtkFileChooser *file_chooser, Ihandle* ih)
   g_free (filename);
 
   gtk_file_chooser_set_preview_widget_active(file_chooser, TRUE);
+
+  if (preview_canvas)
+    gtk_widget_queue_draw(preview_canvas);
 }
   
 static char* gtkFileCheckExt(Ihandle* ih, const char* filename)

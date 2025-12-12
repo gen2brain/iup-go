@@ -467,6 +467,10 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
     [file_panel setAccessoryView:preview_view];
     iupAttribSetInt(ih, "PREVIEWWIDTH", width);
     iupAttribSetInt(ih, "PREVIEWHEIGHT", height);
+
+    ih->handle = (InativeHandle*)preview_view;
+    iupcocoaSetAssociatedViews(ih, preview_view, preview_view);
+
     [preview_view release];
   }
 
@@ -621,6 +625,11 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
   if (panel_delegate)
   {
     [panel_delegate release];
+  }
+
+  if (iupAttribGetBoolean(ih, "SHOWPREVIEW"))
+  {
+    ih->handle = NULL;
   }
 
   return IUP_NOERROR;

@@ -13,6 +13,13 @@
 #include <QUrl>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QDialog>
+#include <QSplitter>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QDialogButtonBox>
+#include <QPainter>
+#include <QPixmap>
 
 #include <cstdlib>
 #include <cstdio>
@@ -32,6 +39,164 @@ extern "C" {
 
 #include "iupqt_drv.h"
 
+
+/****************************************************************************
+ * Preview Canvas Widget
+ ****************************************************************************/
+
+class IupQtPreviewCanvas : public QWidget
+{
+public:
+  IupQtPreviewCanvas(Ihandle* ih, QWidget* parent = nullptr)
+    : QWidget(parent), m_ih(ih), m_buffer(nullptr)
+  {
+    setMinimumSize(100, 100);
+    setAttribute(Qt::WA_OpaquePaintEvent);
+  }
+
+  ~IupQtPreviewCanvas()
+  {
+    if (m_buffer)
+    {
+      delete m_buffer;
+      m_buffer = nullptr;
+    }
+  }
+
+  void setCurrentFile(const QString& filename)
+  {
+    m_currentFile = filename;
+    update();
+  }
+
+  QPixmap* buffer()
+  {
+    QSize widget_size = size();
+    if (!m_buffer || m_buffer->size() != widget_size)
+    {
+      if (m_buffer)
+        delete m_buffer;
+      m_buffer = new QPixmap(widget_size);
+      m_buffer->fill(Qt::white);
+    }
+    return m_buffer;
+  }
+
+protected:
+  void paintEvent(QPaintEvent* event) override
+  {
+    Q_UNUSED(event);
+
+    iupAttribSet(m_ih, "_IUPQT_PREVIEW_CANVAS", (char*)this);
+    iupAttribSet(m_ih, "_IUPQT_PREVIEW_BUFFER", (char*)buffer());
+
+    IFnss cb = (IFnss)IupGetCallback(m_ih, "FILE_CB");
+    if (cb)
+    {
+      QFileInfo fi(m_currentFile);
+      QByteArray fileBytes = m_currentFile.toUtf8();
+      if (fi.isFile())
+        cb(m_ih, (char*)fileBytes.constData(), (char*)"PAINT");
+      else
+        cb(m_ih, nullptr, (char*)"PAINT");
+    }
+
+    iupAttribSet(m_ih, "_IUPQT_PREVIEW_CANVAS", nullptr);
+    iupAttribSet(m_ih, "_IUPQT_PREVIEW_BUFFER", nullptr);
+
+    if (m_buffer)
+    {
+      QPainter painter(this);
+      painter.drawPixmap(0, 0, *m_buffer);
+    }
+  }
+
+private:
+  Ihandle* m_ih;
+  QString m_currentFile;
+  QPixmap* m_buffer;
+};
+
+/****************************************************************************
+ * Custom File Dialog with Preview
+ ****************************************************************************/
+
+class IupQtFileDialogWithPreview : public QDialog
+{
+public:
+  IupQtFileDialogWithPreview(Ihandle* ih, QWidget* parent = nullptr)
+    : QDialog(parent), m_ih(ih), m_result(QDialog::Rejected)
+  {
+    m_fileDialog = new QFileDialog(this);
+    m_fileDialog->setOption(QFileDialog::DontUseNativeDialog, true);
+
+    int preview_width = iupAttribGetInt(ih, "PREVIEWWIDTH");
+    int preview_height = iupAttribGetInt(ih, "PREVIEWHEIGHT");
+    if (preview_width <= 0) preview_width = 200;
+    if (preview_height <= 0) preview_height = 150;
+
+    m_previewCanvas = new IupQtPreviewCanvas(ih, this);
+    m_previewCanvas->setFixedWidth(preview_width);
+    m_previewCanvas->setMinimumHeight(preview_height);
+
+    iupAttribSetInt(ih, "PREVIEWWIDTH", preview_width);
+    iupAttribSetInt(ih, "PREVIEWHEIGHT", preview_height);
+
+    QSplitter* splitter = new QSplitter(Qt::Horizontal, this);
+    splitter->addWidget(m_fileDialog);
+    splitter->addWidget(m_previewCanvas);
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 0);
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->addWidget(splitter);
+    setLayout(layout);
+
+    connect(m_fileDialog, &QFileDialog::currentChanged, this, &IupQtFileDialogWithPreview::onCurrentChanged);
+    connect(m_fileDialog, &QFileDialog::accepted, this, &IupQtFileDialogWithPreview::onAccepted);
+    connect(m_fileDialog, &QFileDialog::rejected, this, &IupQtFileDialogWithPreview::onRejected);
+
+    resize(800, 500);
+  }
+
+  QFileDialog* fileDialog() const { return m_fileDialog; }
+  IupQtPreviewCanvas* previewCanvas() const { return m_previewCanvas; }
+  int dialogResult() const { return m_result; }
+
+private:
+  void onCurrentChanged(const QString& path)
+  {
+    IFnss cb = (IFnss)IupGetCallback(m_ih, "FILE_CB");
+    if (cb)
+    {
+      QFileInfo fi(path);
+      QByteArray pathBytes = path.toUtf8();
+      if (fi.isFile())
+        cb(m_ih, (char*)pathBytes.constData(), (char*)"SELECT");
+      else
+        cb(m_ih, (char*)pathBytes.constData(), (char*)"OTHER");
+    }
+    m_previewCanvas->setCurrentFile(path);
+  }
+
+  void onAccepted()
+  {
+    m_result = QDialog::Accepted;
+    accept();
+  }
+
+  void onRejected()
+  {
+    m_result = QDialog::Rejected;
+    reject();
+  }
+
+  Ihandle* m_ih;
+  QFileDialog* m_fileDialog;
+  IupQtPreviewCanvas* m_previewCanvas;
+  int m_result;
+};
 
 /****************************************************************************
  * Helper Functions
@@ -174,29 +339,42 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   QFileDialog::AcceptMode accept_mode;
   const char* value;
   int dialogtype;
+  IupQtFileDialogWithPreview* preview_dialog = nullptr;
+  IFnss file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
 
-  /* Create dialog */
-  dialog = new QFileDialog(parent);
-
-  if (!dialog)
-    return IUP_ERROR;
-
-  /* Handle PORTAL attribute:
-     PORTAL=YES: Use native/portal dialog (default Qt behavior on Linux with XDG portal)
-     PORTAL=NO: Force Qt's widget-based dialog (DontUseNativeDialog)
-     When PORTAL is not set: use native/portal in sandbox, otherwise Qt decides based on platform */
-  value = iupAttribGet(ih, "PORTAL");
-  if (value)
+  /* Check if preview mode is requested */
+  if (iupAttribGetBoolean(ih, "SHOWPREVIEW") && file_cb)
   {
-    if (!iupStrBoolean(value))
+    preview_dialog = new IupQtFileDialogWithPreview(ih, parent);
+    dialog = preview_dialog->fileDialog();
+
+    file_cb(ih, nullptr, (char*)"INIT");
+  }
+  else
+  {
+    /* Create standard dialog */
+    dialog = new QFileDialog(parent);
+
+    if (!dialog)
+      return IUP_ERROR;
+
+    /* Handle PORTAL attribute:
+       PORTAL=YES: Use native/portal dialog (default Qt behavior on Linux with XDG portal)
+       PORTAL=NO: Force Qt's widget-based dialog (DontUseNativeDialog)
+       When PORTAL is not set: use native/portal in sandbox, otherwise Qt decides based on platform */
+    value = iupAttribGet(ih, "PORTAL");
+    if (value)
     {
-      /* PORTAL=NO: Force Qt's built-in widget dialog */
-      dialog->setOption(QFileDialog::DontUseNativeDialog, true);
+      if (!iupStrBoolean(value))
+      {
+        /* PORTAL=NO: Force Qt's built-in widget dialog */
+        dialog->setOption(QFileDialog::DontUseNativeDialog, true);
+      }
+      /* PORTAL=YES: Let Qt use native/portal (default behavior, no action needed) */
     }
-    /* PORTAL=YES: Let Qt use native/portal (default behavior, no action needed) */
   }
 
   /* Determine dialog type */
@@ -360,15 +538,24 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   }
 
   /* Position dialog */
-  ih->handle = (InativeHandle*)dialog;
+  QDialog* exec_dialog = preview_dialog ? (QDialog*)preview_dialog : (QDialog*)dialog;
+  ih->handle = (InativeHandle*)exec_dialog;
   iupDialogUpdatePosition(ih);
   ih->handle = NULL;
+
+  /* Set window title on preview dialog if needed */
+  if (preview_dialog)
+  {
+    value = iupAttribGet(ih, "TITLE");
+    if (value)
+      preview_dialog->setWindowTitle(QString::fromUtf8(value));
+  }
 
   /* Show dialog */
   int result;
   do
   {
-    result = dialog->exec();
+    result = exec_dialog->exec();
 
     /* Handle HELP button response */
     if (result == QDialog::Rejected)
@@ -379,6 +566,12 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
   } while (0);
 
+  /* Call FINISH callback for preview mode */
+  if (preview_dialog && file_cb)
+  {
+    file_cb(ih, nullptr, (char*)"FINISH");
+  }
+
   /* Process result */
   if (result == QDialog::Accepted)
   {
@@ -388,7 +581,10 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     {
       iupAttribSet(ih, "VALUE", NULL);
       iupAttribSet(ih, "STATUS", "-1");
-      delete dialog;
+      if (preview_dialog)
+        delete preview_dialog;
+      else
+        delete dialog;
       return IUP_NOERROR;
     }
 
@@ -419,9 +615,12 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       if (dir_exist)
       {
         /* File is actually a directory */
-        QMessageBox::critical(dialog, QString::fromUtf8("Error"),
+        QMessageBox::critical(exec_dialog, QString::fromUtf8("Error"),
                             QString::fromUtf8("The selected path is a directory, not a file."));
-        delete dialog;
+        if (preview_dialog)
+          delete preview_dialog;
+        else
+          delete dialog;
         iupAttribSet(ih, "VALUE", NULL);
         iupAttribSet(ih, "STATUS", "-1");
         return IUP_NOERROR;
@@ -436,9 +635,12 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
         if (!iupStrBoolean(value))
         {
-          QMessageBox::critical(dialog, QString::fromUtf8("Error"),
+          QMessageBox::critical(exec_dialog, QString::fromUtf8("Error"),
                               QString::fromUtf8("The selected file does not exist."));
-          delete dialog;
+          if (preview_dialog)
+            delete preview_dialog;
+          else
+            delete dialog;
           iupAttribSet(ih, "VALUE", NULL);
           iupAttribSet(ih, "STATUS", "-1");
           return IUP_NOERROR;
@@ -516,7 +718,10 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     iupAttribSet(ih, "STATUS", "-1");
   }
 
-  delete dialog;
+  if (preview_dialog)
+    delete preview_dialog;
+  else
+    delete dialog;
 
   return IUP_NOERROR;
 }
@@ -532,8 +737,4 @@ extern "C" void iupdrvFileDlgInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "EXTFILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-
-  /* Note: SHOWPREVIEW, FILE_CB, and full preview canvas support would require significant custom Qt widgets.
-     Windows uses custom dialog templates, GTK has native preview widget support.
-     Qt's QFileDialog is more restrictive and doesn't easily support custom preview areas. */
 }

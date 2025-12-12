@@ -621,6 +621,110 @@ static UINT_PTR CALLBACK winFileDlgPreviewHook(HWND hWnd, UINT uiMsg, WPARAM wPa
   return 0;
 }
 
+static HGLOBAL winFileDlgCreatePreviewTemplate(void)
+{
+  /*
+   * Creates a dialog template in memory equivalent to:
+   *
+   * iupPreviewDlg DIALOG DISCARDABLE  0, 0, 250, 95
+   * STYLE WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | DS_3DLOOK | DS_CONTROL
+   * FONT 8, "MS Shell Dlg"
+   * BEGIN
+   *   CONTROL "", IUP_PREVIEWCANVAS, "STATIC", SS_OWNERDRAW, 70, 0, 120, 90, WS_EX_STATICEDGE
+   * END
+   */
+
+  HGLOBAL hGlobal;
+  BYTE* p;
+  WORD* pw;
+  int templateSize;
+
+  /* Calculate size: DLGTEMPLATE + menu(2) + class(2) + title(2) + font size(2) + font name */
+  /* Plus DLGITEMTEMPLATE + extra data for the static control */
+  templateSize = sizeof(DLGTEMPLATE) + 2 + 2 + 2 + 2 + 24 +  /* dialog header + "MS Shell Dlg" */
+                 sizeof(DLGITEMTEMPLATE) + 2 + 14 + 2 + 2;    /* item + "STATIC" class + creation data */
+  templateSize = (templateSize + 3) & ~3;  /* DWORD align */
+
+  hGlobal = GlobalAlloc(GMEM_ZEROINIT, templateSize);
+  if (!hGlobal)
+    return NULL;
+
+  p = (BYTE*)GlobalLock(hGlobal);
+  if (!p)
+  {
+    GlobalFree(hGlobal);
+    return NULL;
+  }
+
+  /* DLGTEMPLATE structure */
+  {
+    DLGTEMPLATE* pDlg = (DLGTEMPLATE*)p;
+    pDlg->style = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | DS_3DLOOK | DS_CONTROL | DS_SETFONT;
+    pDlg->dwExtendedStyle = 0;
+    pDlg->cdit = 1;  /* one control */
+    pDlg->x = 0;
+    pDlg->y = 0;
+    pDlg->cx = 250;
+    pDlg->cy = 95;
+    p += sizeof(DLGTEMPLATE);
+  }
+
+  /* Menu array */
+  pw = (WORD*)p;
+  *pw++ = 0;
+
+  /* Class array (use default) */
+  *pw++ = 0;
+
+  /* Title array */
+  *pw++ = 0;
+
+  /* Font size */
+  *pw++ = 8;
+
+  /* Font name */
+  {
+    WCHAR fontName[] = L"MS Shell Dlg";
+    memcpy(pw, fontName, sizeof(fontName));
+    pw += sizeof(fontName) / sizeof(WORD);
+  }
+
+  /* Align to DWORD for DLGITEMTEMPLATE */
+  p = (BYTE*)pw;
+  p = (BYTE*)(((ULONG_PTR)p + 3) & ~3);
+
+  /* DLGITEMTEMPLATE for the static control */
+  {
+    DLGITEMTEMPLATE* pItem = (DLGITEMTEMPLATE*)p;
+    pItem->style = WS_CHILD | WS_VISIBLE | SS_OWNERDRAW;
+    pItem->dwExtendedStyle = WS_EX_STATICEDGE;
+    pItem->x = 70;
+    pItem->y = 0;
+    pItem->cx = 120;
+    pItem->cy = 90;
+    pItem->id = IUP_PREVIEWCANVAS;
+    p += sizeof(DLGITEMTEMPLATE);
+  }
+
+  /* Class array for control */
+  pw = (WORD*)p;
+  {
+    WCHAR className[] = L"STATIC";
+    memcpy(pw, className, sizeof(className));
+    pw += sizeof(className) / sizeof(WORD);
+  }
+
+  /* Title array for control */
+  *pw++ = 0;
+
+  /* Creation data */
+  *pw++ = 0;
+
+  GlobalUnlock(hGlobal);
+
+  return hGlobal;
+}
+
 static TCHAR* winFileDlgStrReplaceSeparator(const TCHAR* name)
 {
   int i=0, len = lstrlen(name);
@@ -665,6 +769,7 @@ static int winFileDlgPopup(Ihandle *ih, int x, int y)
   int result, dialogtype;
   char *value, *initial_dir=NULL;
   TCHAR* extfilter = NULL;
+  HGLOBAL hPreviewTemplate = NULL;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);   /* used in iupDialogUpdatePosition */
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
@@ -794,10 +899,13 @@ static int winFileDlgPopup(Ihandle *ih, int x, int y)
 
   if (iupAttribGetBoolean(ih, "SHOWPREVIEW") && IupGetCallback(ih, "FILE_CB"))
   {
-    openfilename.Flags |= OFN_ENABLETEMPLATE;
-    openfilename.hInstance = iupwin_dll_hinstance? iupwin_dll_hinstance: iupwin_hinstance;
-    openfilename.lpTemplateName = TEXT("iupPreviewDlg");
-    openfilename.lpfnHook = winFileDlgPreviewHook;
+    hPreviewTemplate = winFileDlgCreatePreviewTemplate();
+    if (hPreviewTemplate)
+    {
+      openfilename.Flags |= OFN_ENABLETEMPLATEHANDLE;
+      openfilename.hInstance = (HINSTANCE)hPreviewTemplate;
+      openfilename.lpfnHook = winFileDlgPreviewHook;
+    }
   }
 
   if (IupGetCallback(ih, "HELP_CB"))
@@ -920,6 +1028,7 @@ static int winFileDlgPopup(Ihandle *ih, int x, int y)
   if (extfilter) free(extfilter);
   if (initial_dir) free(initial_dir);
   if (openfilename.lpstrFile) free(openfilename.lpstrFile);
+  if (hPreviewTemplate) GlobalFree(hPreviewTemplate);
 
   return IUP_NOERROR;
 }
