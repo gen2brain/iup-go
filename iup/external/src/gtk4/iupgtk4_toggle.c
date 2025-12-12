@@ -70,11 +70,28 @@ void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 
 void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
-  int check_box = IUP_TOGGLE_BOX;
+  static int check_w = -1;
+  static int check_h = -1;
   (void)ih;
 
-  (*x) += 2 + check_box + 2;
-  if ((*y) < 2 + check_box + 2) (*y) = 2 + check_box + 2;
+  if (check_w < 0)
+  {
+    GtkWidget* temp_check = gtk_check_button_new();
+    int min_w, nat_w, min_h, nat_h;
+
+    g_object_ref_sink(temp_check);
+
+    gtk_widget_measure(temp_check, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
+    gtk_widget_measure(temp_check, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
+
+    check_w = (nat_w > 0) ? nat_w : IUP_TOGGLE_BOX;
+    check_h = (nat_h > 0) ? nat_h : IUP_TOGGLE_BOX;
+
+    g_object_unref(temp_check);
+  }
+
+  (*x) += 2 + check_w + 2;
+  if ((*y) < 2 + check_h + 2) (*y) = 2 + check_h + 2;
   else (*y) += 2 + 2;
 
   if (str && str[0])
