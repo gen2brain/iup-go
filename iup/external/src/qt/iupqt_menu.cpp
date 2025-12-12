@@ -689,3 +689,108 @@ extern "C" void iupdrvSeparatorInitClass(Iclass* ic)
   ic->Map = qtSeparatorMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 }
+
+
+/****************************************************************************
+ * Recent Menu Support
+ ****************************************************************************/
+
+static void qtRecentItemTriggered(Ihandle* menu, int index)
+{
+  Icallback recent_cb = (Icallback)iupAttribGet(menu, "_IUP_RECENT_CB");
+  Ihandle* config = (Ihandle*)iupAttribGet(menu, "_IUP_CONFIG");
+
+  if (recent_cb && config)
+  {
+    char attr_name[32];
+    const char* filename;
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", index);
+    filename = iupAttribGet(menu, attr_name);
+
+    if (filename)
+    {
+      IupSetStrAttribute(config, "RECENTFILENAME", filename);
+      IupSetStrAttribute(config, "TITLE", filename);
+      config->parent = menu;
+
+      if (recent_cb(config) == IUP_CLOSE)
+        IupExitLoop();
+
+      config->parent = nullptr;
+      IupSetAttribute(config, "RECENTFILENAME", nullptr);
+      IupSetAttribute(config, "TITLE", nullptr);
+    }
+  }
+}
+
+extern "C" int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+{
+  iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
+  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", 0);
+  return 0;
+}
+
+extern "C" int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+{
+  QMenu* qmenu;
+  int max_recent, existing, i;
+
+  if (!menu || !menu->handle)
+    return -1;
+
+  qmenu = (QMenu*)menu->handle;
+  max_recent = iupAttribGetInt(menu, "_IUP_RECENT_MAX");
+  existing = iupAttribGetInt(menu, "_IUP_RECENT_COUNT");
+
+  if (count > max_recent)
+    count = max_recent;
+
+  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+
+  QList<QAction*> actions = qmenu->actions();
+
+  for (i = 0; i < count; i++)
+  {
+    char attr_name[32];
+    QString title = QString::fromUtf8(filenames[i]);
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    iupAttribSetStr(menu, attr_name, filenames[i]);
+
+    if (i < existing && i < actions.size())
+    {
+      actions[i]->setText(title);
+    }
+    else
+    {
+      QAction* action = new QAction(title, qmenu);
+      action->setData(QVariant(i));
+
+      QObject::connect(action, &QAction::triggered, [menu, i]() {
+        qtRecentItemTriggered(menu, i);
+      });
+
+      qmenu->addAction(action);
+    }
+  }
+
+  actions = qmenu->actions();
+  while (actions.size() > count && existing > count)
+  {
+    QAction* action = actions.last();
+    qmenu->removeAction(action);
+    delete action;
+
+    char attr_name[32];
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", existing - 1);
+    iupAttribSet(menu, attr_name, nullptr);
+
+    existing--;
+    actions = qmenu->actions();
+  }
+
+  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", count);
+  return 0;
+}

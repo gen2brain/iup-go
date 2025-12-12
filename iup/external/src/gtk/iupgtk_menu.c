@@ -544,6 +544,157 @@ static int gtkSubmenuMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+/*******************************************************************************************/
+
+static int gtkSeparatorMapMethod(Ihandle* ih)
+{
+  int pos;
+
+  if (!ih->parent)
+    return IUP_ERROR;
+
+  ih->handle = gtk_separator_menu_item_new();
+  if (!ih->handle)
+    return IUP_ERROR;
+
+  ih->serial = iupMenuGetChildId(ih);
+
+  pos = IupGetChildPos(ih->parent, ih);
+  gtk_menu_shell_insert((GtkMenuShell*)ih->parent->handle, ih->handle, pos);
+  gtk_widget_show(ih->handle);
+
+  return IUP_NOERROR;
+}
+
+void iupdrvSeparatorInitClass(Iclass* ic)
+{
+  /* Driver Dependent Class functions */
+  ic->Map = gtkSeparatorMapMethod;
+  ic->UnMap = iupdrvBaseUnMapMethod;
+}
+
+/*******************************************************************************************/
+
+static void gtkRecentItemActivate(GtkWidget *widget, Ihandle* menu)
+{
+  int index = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "_IUP_RECENT_INDEX"));
+  Icallback recent_cb = (Icallback)iupAttribGet(menu, "_IUP_RECENT_CB");
+  Ihandle* config = (Ihandle*)iupAttribGet(menu, "_IUP_CONFIG");
+
+  if (recent_cb && config)
+  {
+    char attr_name[32];
+    const char* filename;
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", index);
+    filename = iupAttribGet(menu, attr_name);
+
+    if (filename)
+    {
+      IupSetStrAttribute(config, "RECENTFILENAME", filename);
+      IupSetStrAttribute(config, "TITLE", filename);
+      config->parent = menu;
+
+      recent_cb(config);
+
+      config->parent = NULL;
+      IupSetAttribute(config, "RECENTFILENAME", NULL);
+      IupSetAttribute(config, "TITLE", NULL);
+    }
+  }
+}
+
+int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+{
+  iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
+  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", 0);
+  return 0;
+}
+
+int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+{
+  GtkMenuShell* gtk_menu;
+  GtkWidget* empty_item;
+  int max_recent, existing, i;
+
+  if (!menu || !menu->handle)
+    return -1;
+
+  gtk_menu = (GtkMenuShell*)menu->handle;
+  max_recent = iupAttribGetInt(menu, "_IUP_RECENT_MAX");
+  existing = iupAttribGetInt(menu, "_IUP_RECENT_COUNT");
+
+  if (count > max_recent)
+    count = max_recent;
+
+  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+
+  empty_item = (GtkWidget*)iupAttribGet(menu, "_IUP_RECENT_EMPTY");
+  if (count > 0 && empty_item)
+  {
+    gtk_container_remove(GTK_CONTAINER(gtk_menu), empty_item);
+    iupAttribSet(menu, "_IUP_RECENT_EMPTY", NULL);
+  }
+
+  for (i = 0; i < count; i++)
+  {
+    GtkWidget* item;
+    char attr_name[32];
+
+    sprintf(attr_name, "_IUP_RECENT_ITEM%d", i);
+    item = (GtkWidget*)iupAttribGet(menu, attr_name);
+
+    if (item)
+    {
+      GtkWidget* label = gtk_bin_get_child(GTK_BIN(item));
+      if (label)
+        gtk_label_set_text(GTK_LABEL(label), filenames[i]);
+    }
+    else
+    {
+      item = gtk_menu_item_new_with_label(filenames[i]);
+      g_object_set_data(G_OBJECT(item), "_IUP_RECENT_INDEX", GINT_TO_POINTER(i));
+      g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(gtkRecentItemActivate), menu);
+      gtk_menu_shell_insert(gtk_menu, item, i);
+      gtk_widget_show(item);
+      iupAttribSet(menu, attr_name, (char*)item);
+    }
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    iupAttribSetStr(menu, attr_name, filenames[i]);
+  }
+
+  for (; i < existing; i++)
+  {
+    char attr_name[32];
+    GtkWidget* item;
+
+    sprintf(attr_name, "_IUP_RECENT_ITEM%d", i);
+    item = (GtkWidget*)iupAttribGet(menu, attr_name);
+    if (item)
+    {
+      gtk_container_remove(GTK_CONTAINER(gtk_menu), item);
+      iupAttribSet(menu, attr_name, NULL);
+    }
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    iupAttribSet(menu, attr_name, NULL);
+  }
+
+  if (count == 0 && !iupAttribGet(menu, "_IUP_RECENT_EMPTY"))
+  {
+    empty_item = gtk_menu_item_new_with_label("");
+    gtk_widget_set_sensitive(empty_item, FALSE);
+    gtk_menu_shell_append(gtk_menu, empty_item);
+    gtk_widget_show(empty_item);
+    iupAttribSet(menu, "_IUP_RECENT_EMPTY", (char*)empty_item);
+  }
+
+  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", count);
+  return 0;
+}
+
 void iupdrvSubmenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -560,35 +711,4 @@ void iupdrvSubmenuInitClass(Iclass* ic)
   /* IupSubmenu only */
   iupClassRegisterAttribute(ic, "TITLE", NULL, gtkItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, gtkSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-}
-
-
-/*******************************************************************************************/
-
-
-static int gtkSeparatorMapMethod(Ihandle* ih)
-{
-  int pos;
-
-  if (!ih->parent)
-    return IUP_ERROR;
-
-  ih->handle = gtk_separator_menu_item_new();
-  if (!ih->handle)
-    return IUP_ERROR;
-
-  ih->serial = iupMenuGetChildId(ih); 
-
-  pos = IupGetChildPos(ih->parent, ih);
-  gtk_menu_shell_insert((GtkMenuShell*)ih->parent->handle, ih->handle, pos);
-  gtk_widget_show(ih->handle);
-
-  return IUP_NOERROR;
-}
-
-void iupdrvSeparatorInitClass(Iclass* ic)
-{
-  /* Driver Dependent Class functions */
-  ic->Map = gtkSeparatorMapMethod;
-  ic->UnMap = iupdrvBaseUnMapMethod;
 }

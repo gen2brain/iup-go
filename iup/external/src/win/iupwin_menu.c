@@ -58,6 +58,9 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
   return GetSystemMetrics(SM_CYMENU);
 }
 
+static int iupwinMenuIsRecentItem(int menuId);
+static void iupwinMenuRecentItemProc(HMENU hMenu, int menuId);
+
 static void winMenuUpdateBar(Ihandle* ih)
 {
   if (iupMenuIsMenuBar(ih) && ih->parent->handle)
@@ -167,10 +170,16 @@ void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, LPARAM lp)
       int menuId = GetMenuItemID((HMENU)lp, (int)wp);
       Icallback cb;
       Ihandle* ih;
-        
+
       if (menuId >= IUP_MDI_FIRSTCHILD)
         break;
-        
+
+      if (iupwinMenuIsRecentItem(menuId))
+      {
+        iupwinMenuRecentItemProc((HMENU)lp, menuId);
+        break;
+      }
+
       ih  = iupwinMenuGetItemHandle((HMENU)lp, menuId);
       if (!ih)
         break;
@@ -723,4 +732,119 @@ void iupdrvSeparatorInitClass(Iclass* ic)
   /* Driver Dependent Class functions */
   ic->Map = winSeparatorMapMethod;
   ic->UnMap = winMenuChildUnMapMethod;
+}
+
+/*******************************************************************************************/
+
+#define IUP_RECENT_FIRSTID 90000000
+
+static void winRecentItemActivate(Ihandle* menu, int index)
+{
+  Icallback recent_cb = (Icallback)iupAttribGet(menu, "_IUP_RECENT_CB");
+  Ihandle* config = (Ihandle*)iupAttribGet(menu, "_IUP_CONFIG");
+
+  if (recent_cb && config)
+  {
+    char attr_name[32];
+    const char* filename;
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", index);
+    filename = iupAttribGet(menu, attr_name);
+
+    if (filename)
+    {
+      IupSetStrAttribute(config, "RECENTFILENAME", filename);
+      IupSetStrAttribute(config, "TITLE", filename);
+      config->parent = menu;
+
+      if (recent_cb(config) == IUP_CLOSE)
+        IupExitLoop();
+
+      config->parent = NULL;
+      IupSetAttribute(config, "RECENTFILENAME", NULL);
+      IupSetAttribute(config, "TITLE", NULL);
+    }
+  }
+}
+
+static int iupwinMenuIsRecentItem(int menuId)
+{
+  return (menuId >= IUP_RECENT_FIRSTID && menuId < IUP_RECENT_FIRSTID + 100);
+}
+
+static void iupwinMenuRecentItemProc(HMENU hMenu, int menuId)
+{
+  int index = menuId - IUP_RECENT_FIRSTID;
+  Ihandle* menu = iupwinMenuGetHandle(hMenu);
+  if (menu)
+    winRecentItemActivate(menu, index);
+}
+
+int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+{
+  iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
+  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", 0);
+  return 0;
+}
+
+int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+{
+  HMENU hMenu;
+  int max_recent, existing, i;
+
+  if (!menu || !menu->handle)
+    return -1;
+
+  hMenu = (HMENU)menu->handle;
+  max_recent = iupAttribGetInt(menu, "_IUP_RECENT_MAX");
+  existing = iupAttribGetInt(menu, "_IUP_RECENT_COUNT");
+
+  if (count > max_recent)
+    count = max_recent;
+
+  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+
+  for (i = 0; i < count; i++)
+  {
+    char attr_name[32];
+    MENUITEMINFOA mii;
+    UINT menuId = IUP_RECENT_FIRSTID + i;
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    iupAttribSetStr(menu, attr_name, filenames[i]);
+
+    memset(&mii, 0, sizeof(MENUITEMINFOA));
+    mii.cbSize = sizeof(MENUITEMINFOA);
+    mii.fMask = MIIM_ID | MIIM_STRING | MIIM_DATA;
+    mii.wID = menuId;
+    mii.dwTypeData = (LPSTR)filenames[i];
+    mii.cch = (UINT)strlen(filenames[i]);
+    mii.dwItemData = (ULONG_PTR)menu;
+
+    if (i < existing)
+    {
+      mii.fMask = MIIM_STRING;
+      SetMenuItemInfoA(hMenu, i, TRUE, &mii);
+    }
+    else
+    {
+      InsertMenuItemA(hMenu, i, TRUE, &mii);
+    }
+  }
+
+  for (i = count; i < existing; i++)
+  {
+    char attr_name[32];
+    RemoveMenu(hMenu, count, MF_BYPOSITION);
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    iupAttribSet(menu, attr_name, NULL);
+  }
+
+  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", count);
+
+  winMenuUpdateBar(menu);
+
+  return 0;
 }
