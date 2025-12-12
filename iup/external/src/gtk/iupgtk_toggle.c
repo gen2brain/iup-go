@@ -247,11 +247,47 @@ void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
 
 void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
-  int check_box = IUP_TOGGLE_BOX;
+  static int check_w = -1;
+  static int check_h = -1;
   (void)ih;
 
-  (*x) += 2 + check_box + 2;
-  if ((*y) < 2 + check_box + 2) (*y) = 2 + check_box + 2;
+  if (check_w < 0)
+  {
+#if GTK_CHECK_VERSION(3, 0, 0)
+    GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget* temp_check = gtk_check_button_new();
+    GtkAllocation allocation;
+    int min_w, nat_w, min_h, nat_h;
+
+    gtk_container_add(GTK_CONTAINER(temp_window), temp_check);
+    gtk_widget_show_all(temp_window);
+    gtk_widget_realize(temp_window);
+    gtk_widget_realize(temp_check);
+
+    gtk_widget_get_preferred_width(temp_check, &min_w, &nat_w);
+    gtk_widget_get_preferred_height(temp_check, &min_h, &nat_h);
+
+    gtk_widget_get_allocation(temp_check, &allocation);
+
+    check_w = (allocation.width > 0) ? allocation.width : IUP_TOGGLE_BOX;
+    check_h = (allocation.height > 0) ? allocation.height : IUP_TOGGLE_BOX;
+
+    gtk_widget_destroy(temp_window);
+#else
+    GtkWidget* temp_check = gtk_check_button_new();
+    GtkRequisition requisition;
+
+    gtk_widget_size_request(temp_check, &requisition);
+
+    check_w = (requisition.width > 0) ? requisition.width : IUP_TOGGLE_BOX;
+    check_h = (requisition.height > 0) ? requisition.height : IUP_TOGGLE_BOX;
+
+    gtk_widget_destroy(temp_check);
+#endif
+  }
+
+  (*x) += 2 + check_w + 2;
+  if ((*y) < 2 + check_h + 2) (*y) = 2 + check_h + 2;
   else (*y) += 2+2;
 
   if (str && str[0])
