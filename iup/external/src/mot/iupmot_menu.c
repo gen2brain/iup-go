@@ -15,6 +15,7 @@
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -302,6 +303,131 @@ static char* motItemGetValueAttrib(Ihandle* ih)
   return iupStrReturnChecked(XmIsToggleButton(ih->handle) && XmToggleButtonGetState(ih->handle));
 }
 
+/*******************************************************************************************/
+
+static void motRecentItemActivateCallback(Widget w, XtPointer client_data, XtPointer call_data)
+{
+  int index = (int)(intptr_t)client_data;
+  Ihandle* menu = NULL;
+  Icallback recent_cb;
+  Ihandle* config;
+  char attr_name[32];
+  const char* filename;
+
+  XtVaGetValues(w, XmNuserData, &menu, NULL);
+  if (!menu)
+    return;
+
+  recent_cb = (Icallback)iupAttribGet(menu, "_IUP_RECENT_CB");
+  config = (Ihandle*)iupAttribGet(menu, "_IUP_CONFIG");
+
+  if (!recent_cb || !config)
+    return;
+
+  sprintf(attr_name, "_IUP_RECENT_FILE%d", index);
+  filename = iupAttribGet(menu, attr_name);
+
+  if (filename)
+  {
+    IupSetStrAttribute(config, "RECENTFILENAME", filename);
+    IupSetStrAttribute(config, "TITLE", filename);
+    config->parent = menu;
+
+    if (recent_cb(config) == IUP_CLOSE)
+      IupExitLoop();
+
+    config->parent = NULL;
+    IupSetAttribute(config, "RECENTFILENAME", NULL);
+    IupSetAttribute(config, "TITLE", NULL);
+  }
+
+  (void)call_data;
+}
+
+int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+{
+  iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
+  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", 0);
+  return 0;
+}
+
+int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+{
+  Widget menu_widget;
+  int max_recent, existing, i;
+
+  if (!menu || !menu->handle)
+    return -1;
+
+  menu_widget = (Widget)menu->handle;
+  max_recent = iupAttribGetInt(menu, "_IUP_RECENT_MAX");
+  existing = iupAttribGetInt(menu, "_IUP_RECENT_COUNT");
+
+  if (count > max_recent)
+    count = max_recent;
+
+  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+
+  for (i = 0; i < count; i++)
+  {
+    char attr_name[32];
+    Widget item;
+    XmString xm_title;
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    iupAttribSetStr(menu, attr_name, filenames[i]);
+
+    sprintf(attr_name, "_IUP_RECENT_ITEM%d", i);
+    item = (Widget)iupAttribGet(menu, attr_name);
+
+    xm_title = XmStringCreateLocalized((char*)filenames[i]);
+
+    if (item)
+    {
+      XtVaSetValues(item, XmNlabelString, xm_title, NULL);
+    }
+    else
+    {
+      item = XtVaCreateManagedWidget("recentitem",
+        xmCascadeButtonWidgetClass, menu_widget,
+        XmNlabelString, xm_title,
+        XmNuserData, menu,
+        XmNpositionIndex, i,
+        NULL);
+
+      XtAddCallback(item, XmNactivateCallback,
+        (XtCallbackProc)motRecentItemActivateCallback, (XtPointer)(intptr_t)i);
+
+      iupAttribSet(menu, attr_name, (char*)item);
+    }
+
+    XmStringFree(xm_title);
+  }
+
+  for (; i < existing; i++)
+  {
+    char attr_name[32];
+    Widget item;
+
+    sprintf(attr_name, "_IUP_RECENT_ITEM%d", i);
+    item = (Widget)iupAttribGet(menu, attr_name);
+    if (item)
+    {
+      XtDestroyWidget(item);
+      iupAttribSet(menu, attr_name, NULL);
+    }
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    iupAttribSet(menu, attr_name, NULL);
+  }
+
+  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", count);
+  return 0;
+}
+
+/*******************************************************************************************/
+
 static int motItemMapMethod(Ihandle* ih)
 {
   int pos;
@@ -372,6 +498,61 @@ static int motItemMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int motSubmenuMapMethod(Ihandle* ih)
+{
+  int pos;
+
+  if (!ih->parent)
+    return IUP_ERROR;
+
+  ih->handle = XtVaCreateManagedWidget(
+                 iupMenuGetChildIdStr(ih),
+                 xmCascadeButtonWidgetClass,
+                 ih->parent->handle,
+                 NULL);
+
+  if (!ih->handle)
+    return IUP_ERROR;
+
+  ih->serial = iupMenuGetChildId(ih); /* must be after using the string */
+
+  pos = IupGetChildPos(ih->parent, ih);
+  XtVaSetValues(ih->handle, XmNpositionIndex, pos, NULL);   /* RowColumn Constraint */
+
+  XtAddCallback(ih->handle, XmNcascadingCallback, (XtCallbackProc)motItemArmCallback, (XtPointer)ih);
+
+  if (iupStrBoolean(IupGetGlobal("INPUTCALLBACKS")))
+    XtAddEventHandler(ih->handle, PointerMotionMask, False, (XtEventHandler)iupmotDummyPointerMotionEvent, NULL);
+
+  iupUpdateFontAttrib(ih);
+
+  return IUP_NOERROR;
+}
+
+static int motSeparatorMapMethod(Ihandle* ih)
+{
+  int pos;
+
+  if (!ih->parent)
+    return IUP_ERROR;
+
+  ih->handle = XtVaCreateManagedWidget(
+                 iupMenuGetChildIdStr(ih),
+                 xmSeparatorWidgetClass,
+                 ih->parent->handle,
+                 NULL);
+
+  if (!ih->handle)
+    return IUP_ERROR;
+
+  ih->serial = iupMenuGetChildId(ih); /* must be after using the string */
+
+  pos = IupGetChildPos(ih->parent, ih);
+  XtVaSetValues(ih->handle, XmNpositionIndex, pos, NULL);  /* RowColumn Constraint */
+
+  return IUP_NOERROR;
+}
+
 void iupdrvItemInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -394,41 +575,6 @@ void iupdrvItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED);
 }
 
-
-/*******************************************************************************************/
-
-
-static int motSubmenuMapMethod(Ihandle* ih)
-{
-  int pos;
-
-  if (!ih->parent)
-    return IUP_ERROR;
-
-  ih->handle = XtVaCreateManagedWidget(
-                 iupMenuGetChildIdStr(ih),
-                 xmCascadeButtonWidgetClass, 
-                 ih->parent->handle,
-                 NULL);
-
-  if (!ih->handle)
-    return IUP_ERROR;
-
-  ih->serial = iupMenuGetChildId(ih); /* must be after using the string */
-
-  pos = IupGetChildPos(ih->parent, ih);
-  XtVaSetValues(ih->handle, XmNpositionIndex, pos, NULL);   /* RowColumn Constraint */
-
-  XtAddCallback(ih->handle, XmNcascadingCallback, (XtCallbackProc)motItemArmCallback, (XtPointer)ih);
-
-  if (iupStrBoolean(IupGetGlobal("INPUTCALLBACKS")))
-    XtAddEventHandler(ih->handle, PointerMotionMask, False, (XtEventHandler)iupmotDummyPointerMotionEvent, NULL);
-
-  iupUpdateFontAttrib(ih);
-
-  return IUP_NOERROR;
-}
-
 void iupdrvSubmenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -444,34 +590,6 @@ void iupdrvSubmenuInitClass(Iclass* ic)
 
   /* IupSubmenu only */
   iupClassRegisterAttribute(ic, "TITLE", NULL, motItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-}
-
-
-/*******************************************************************************************/
-
-
-static int motSeparatorMapMethod(Ihandle* ih)
-{
-  int pos;
-
-  if (!ih->parent)
-    return IUP_ERROR;
-
-  ih->handle = XtVaCreateManagedWidget(
-                 iupMenuGetChildIdStr(ih),
-                 xmSeparatorWidgetClass, 
-                 ih->parent->handle,
-                 NULL);
-
-  if (!ih->handle)
-    return IUP_ERROR;
-
-  ih->serial = iupMenuGetChildId(ih); /* must be after using the string */
-
-  pos = IupGetChildPos(ih->parent, ih);
-  XtVaSetValues(ih->handle, XmNpositionIndex, pos, NULL);  /* RowColumn Constraint */
-
-  return IUP_NOERROR;
 }
 
 void iupdrvSeparatorInitClass(Iclass* ic)

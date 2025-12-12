@@ -119,6 +119,14 @@ IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value);
  * \ingroup drv */
 IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value);
 
+/** Initializes recent menu structure. Called once during IupConfigRecentInit.
+ * \ingroup drv */
+IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb);
+
+/** Updates recent menu with new file list. Called during IupConfigRecentUpdate.
+ * \ingroup drv */
+IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb);
+
 
 /* Called only from IupOpen/IupClose. */
 int iupdrvOpen(int *argc, char ***argv);

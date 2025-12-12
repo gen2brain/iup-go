@@ -33,9 +33,6 @@
 #include <gdk/x11/gdkx.h>
 #endif
 
-/* Menus are completely redesigned using GMenu and GAction. GtkMenuBar, GtkMenu, GtkMenuItem are removed.
-   We use GMenu model with GSimpleActionGroup for proper native menus. */
-
 typedef struct _ImenuPos
 {
   int x, y;
@@ -133,7 +130,9 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
         if (submenu_model)
         {
           g_menu_append_submenu(menu, processed_title, G_MENU_MODEL(submenu_model));
-          g_object_unref(submenu_model);  /* menu takes ownership */
+          /* Store GMenu reference on the IUP menu handle for later access (e.g., recent files) */
+          iupAttribSet(submenu_ih, "_IUP_RECENT_GMENU", (char*)submenu_model);
+          /* Don't unref - we keep the reference for dynamic updates */
         }
       }
 
@@ -275,14 +274,14 @@ void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu)
     return;
   }
 
-  /* Configure expansion properties BEFORE adding to box. */
+  /* Configure expansion properties before adding to box. */
   inner_parent = (GtkWidget*)iupAttribGet(ih_dialog, "_IUPGTK4_INNER_PARENT");
 
-  /* Menu bar should NOT expand - it wants its natural height only */
+  /* Menu bar should not expand - it wants its natural height only */
   gtk_widget_set_vexpand(menubar_widget, FALSE);
   gtk_widget_set_hexpand(menubar_widget, TRUE);  /* But expand horizontally */
 
-  /* inner_parent MUST expand to fill remaining vertical space */
+  /* inner_parent must expand to fill remaining vertical space */
   gtk_widget_set_vexpand(inner_parent, TRUE);
   gtk_widget_set_hexpand(inner_parent, TRUE);
 
@@ -543,7 +542,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   }
 
   /* Create a nested main loop, this will block until the popover is closed.
-     This is needed because IUP expects IupPopup() to be synchronous (like GTK3's gtk_menu_popup + gtk_main). */
+     This is needed because IUP expects IupPopup() to be synchronous. */
   loop = g_main_loop_new(NULL, FALSE);
 
   /* Create a fresh popover each time */
@@ -859,6 +858,16 @@ static char* gtk4ItemGetValueAttrib(Ihandle* ih)
   return NULL;
 }
 
+static int gtk4SubmenuSetImageAttrib(Ihandle* ih, const char* value)
+{
+  if (iupAttribGet(ih, "_IUPGTK4_IMAGE_ITEM"))
+  {
+    gtk4ItemUpdateImage(ih, NULL, value, NULL);
+    return 1;
+  }
+  return 0;
+}
+
 static int gtk4ItemMapMethod(Ihandle* ih)
 {
   /* Native menu system handles items in gtk4BuildMenuModel() */
@@ -866,6 +875,157 @@ static int gtk4ItemMapMethod(Ihandle* ih)
   (void)ih;
   return IUP_NOERROR;
 }
+
+static int gtk4SubmenuMapMethod(Ihandle* ih)
+{
+  /* Native menu system handles submenus in gtk4BuildMenuModel() */
+  (void)ih;
+  return IUP_NOERROR;
+}
+
+static int gtk4SeparatorMapMethod(Ihandle* ih)
+{
+  /* Native menu system handles separators in gtk4BuildMenuModel() */
+  (void)ih;
+  return IUP_NOERROR;
+}
+
+/*******************************************************************************************/
+
+static void gtk4RecentActionActivated(GSimpleAction* action, GVariant* parameter, gpointer user_data)
+{
+  Ihandle* menu = (Ihandle*)user_data;
+  Icallback recent_cb;
+  Ihandle* config;
+  const char* action_name;
+  int index;
+
+  if (!menu)
+    return;
+
+  recent_cb = (Icallback)iupAttribGet(menu, "_IUP_RECENT_CB");
+  config = (Ihandle*)iupAttribGet(menu, "_IUP_CONFIG");
+
+  if (!recent_cb || !config)
+    return;
+
+  action_name = g_action_get_name(G_ACTION(action));
+  if (sscanf(action_name, "recent-%d", &index) == 1)
+  {
+    char attr_name[32];
+    const char* filename;
+
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", index);
+    filename = iupAttribGet(menu, attr_name);
+
+    if (filename)
+    {
+      IupSetStrAttribute(config, "RECENTFILENAME", filename);
+      IupSetStrAttribute(config, "TITLE", filename);
+      config->parent = menu;
+
+      recent_cb(config);
+
+      config->parent = NULL;
+      IupSetAttribute(config, "RECENTFILENAME", NULL);
+      IupSetAttribute(config, "TITLE", NULL);
+    }
+  }
+
+  (void)parameter;
+}
+
+int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+{
+  iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
+  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", 0);
+  return 0;
+}
+
+int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+{
+  GSimpleActionGroup* action_group;
+  GMenu* recent_menu;
+  Ihandle* dialog;
+  int max_recent, i, existing;
+
+  if (!menu)
+    return -1;
+
+  max_recent = iupAttribGetInt(menu, "_IUP_RECENT_MAX");
+  existing = iupAttribGetInt(menu, "_IUP_RECENT_COUNT");
+
+  if (count > max_recent)
+    count = max_recent;
+
+  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+
+  for (i = 0; i < count; i++)
+  {
+    char attr_name[32];
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    iupAttribSetStr(menu, attr_name, filenames[i]);
+  }
+
+  for (; i < existing; i++)
+  {
+    char attr_name[32];
+    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    iupAttribSet(menu, attr_name, NULL);
+  }
+
+  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", count);
+
+  recent_menu = (GMenu*)iupAttribGet(menu, "_IUP_RECENT_GMENU");
+  if (!recent_menu)
+    return 0;
+
+  /* Find the root menu by traversing up the parent chain */
+  {
+    Ihandle* root_menu = menu;
+    while (root_menu->parent)
+      root_menu = root_menu->parent;
+    dialog = IupGetDialog(root_menu);
+  }
+
+  if (!dialog)
+    return -1;
+
+  action_group = (GSimpleActionGroup*)iupAttribGet(dialog, "_IUPGTK4_MENU_ACTION_GROUP");
+  if (!action_group)
+    return -1;
+
+  for (i = 0; i < count; i++)
+  {
+    char action_name[32];
+    GAction* existing_action;
+
+    sprintf(action_name, "recent-%d", i);
+
+    existing_action = g_action_map_lookup_action(G_ACTION_MAP(action_group), action_name);
+    if (!existing_action)
+    {
+      GSimpleAction* action = g_simple_action_new(action_name, NULL);
+      g_signal_connect(action, "activate", G_CALLBACK(gtk4RecentActionActivated), menu);
+      g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(action));
+      g_object_unref(action);
+    }
+  }
+
+  g_menu_remove_all(recent_menu);
+
+  for (i = 0; i < count; i++)
+  {
+    char action_name[64];
+    sprintf(action_name, "menu.recent-%d", i);
+    g_menu_append(recent_menu, filenames[i], action_name);
+  }
+
+  return 0;
+}
+
+/*******************************************************************************************/
 
 void iupdrvItemInitClass(Iclass* ic)
 {
@@ -886,23 +1046,6 @@ void iupdrvItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }
 
-static int gtk4SubmenuSetImageAttrib(Ihandle* ih, const char* value)
-{
-  if (iupAttribGet(ih, "_IUPGTK4_IMAGE_ITEM"))
-  {
-    gtk4ItemUpdateImage(ih, NULL, value, NULL);
-    return 1;
-  }
-  return 0;
-}
-
-static int gtk4SubmenuMapMethod(Ihandle* ih)
-{
-  /* Native menu system handles submenus in gtk4BuildMenuModel() */
-  (void)ih;
-  return IUP_NOERROR;
-}
-
 void iupdrvSubmenuInitClass(Iclass* ic)
 {
   ic->Map = gtk4SubmenuMapMethod;
@@ -915,13 +1058,6 @@ void iupdrvSubmenuInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "TITLE", NULL, gtk4ItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, gtk4SubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-}
-
-static int gtk4SeparatorMapMethod(Ihandle* ih)
-{
-  /* Native menu system handles separators in gtk4BuildMenuModel() */
-  (void)ih;
-  return IUP_NOERROR;
 }
 
 void iupdrvSeparatorInitClass(Iclass* ic)

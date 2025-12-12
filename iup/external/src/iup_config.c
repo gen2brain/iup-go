@@ -15,17 +15,15 @@
 #include "iup_config.h"
 #include "iup_linefile.h"
 #include "iup_str.h"
+#include "iup_drv.h"
 #include "iup_attrib.h"
 #include "iup_assert.h"
-
 #include "iup_drvinfo.h"
 
-#if defined(__APPLE__)
-#import <TargetConditionals.h>
-#endif
 
 #define GROUPKEYSIZE 100
 #define MAX_LINES 500
+#define MAX_RECENT 100
 
 static char* strGetGroupKeyName(const char* group, const char* key)
 {
@@ -417,11 +415,7 @@ IUP_API void IupConfigSetListVariable(Ihandle* ih, const char *group, const char
   }
 }
 
-
 /******************************************************************/
-
-/* macOS/Cocoa needs a completely different implementation, so exclude Mac/Cocoa from compiling this. */
-#if !defined(__APPLE__) || !defined(TARGET_OS_OSX)
 
 static const char* iConfigGetRecentAttribName(const char* recent_name, const char* base_name)
 {
@@ -433,23 +427,6 @@ static const char* iConfigGetRecentAttribName(const char* recent_name, const cha
   }
   else
     return base_name;
-}
-
-static int iConfigItemRecent_CB(Ihandle* ih_item)
-{
-  Icallback recent_cb = IupGetCallback(ih_item, "RECENT_CB");
-  if (recent_cb)
-  {
-    Ihandle* ih = (Ihandle*)IupGetAttribute(ih_item, "_IUP_CONFIG");
-    IupSetStrAttribute(ih, "TITLE", IupGetAttribute(ih_item, "RECENTFILENAME"));  /* backward compatibility */
-    ih->parent = ih_item;
-
-    recent_cb(ih);
-
-    ih->parent = NULL;
-    IupSetAttribute(ih, "TITLE", NULL);
-  }
-  return IUP_DEFAULT;
 }
 
 static int iConfigListRecent_CB(Ihandle* list, char *text, int item, int state)
@@ -479,55 +456,22 @@ static int iConfigListRecent_CB(Ihandle* list, char *text, int item, int state)
   return IUP_DEFAULT;
 }
 
-static void iConfigBuildRecentMenu(Ihandle* ih, Ihandle* menu, int max_recent, const char* group_name, Icallback recent_cb)
-{
-  /* add the new items, reusing old ones */
-  int i;
-  int mapped = IupGetAttribute(menu, "WID") != NULL ? 1 : 0;
-  const char* value;
-
-  i = 1;
-  do
-  {
-    value = IupConfigGetVariableStrId(ih, group_name, "File", i);
-    if (value)
-    {
-      Ihandle* item = IupGetChild(menu, i - 1);
-      if (item)
-        IupSetStrAttribute(item, "TITLE", value);
-      else
-      {
-        item = IupItem(value, NULL);
-        IupSetAttribute(item, "_IUP_CONFIG", (char*)ih);
-        IupSetCallback(item, "ACTION", iConfigItemRecent_CB);
-        IupSetCallback(item, "RECENT_CB", recent_cb);
-        IupAppend(menu, item);
-        if (mapped) IupMap(item);
-      }
-
-      IupSetStrAttribute(item, "RECENTFILENAME", value); /* TITLE will convert the string to a native representation, so RECENTFILENAME will keep the original value */
-    }
-    i++;
-  } while (value && i <= max_recent);
-}
-
 static void iConfigBuildRecentList(Ihandle* ih, Ihandle* list, int max_recent, const char* group_name, Icallback recent_cb)
 {
-  /* add the new items, reusing old ones */
-  int i;
+  int i, count;
   const char* value;
 
-  IupSetAttribute(list, "1", NULL);
+  IupSetAttribute(list, "REMOVEITEM", "ALL");
 
-  i = 1;
-  do
+  count = 0;
+  for (i = 1; i <= max_recent; i++)
   {
     value = IupConfigGetVariableStrId(ih, group_name, "File", i);
-    if (value)
-      IupSetStrAttributeId(list, "", i, value);
-    i++;
-  } while (value && i <= max_recent);
-
+    if (!value || value[0] == '\0')
+      break;
+    count++;
+    IupSetStrAttributeId(list, "", count, value);
+  }
 
   IupSetCallback(list, "RECENT_CB", recent_cb);
   IupSetAttribute(list, "_IUP_CONFIG", (char*)ih);
@@ -538,9 +482,45 @@ static void iConfigBuildRecentList(Ihandle* ih, Ihandle* list, int max_recent, c
     IupSetCallback(list, "ACTION", (Icallback)iConfigListRecent_CB);
 }
 
+static void iConfigUpdateRecentMenu(Ihandle* ih, Ihandle* menu, int max_recent, const char* group_name, Icallback recent_cb)
+{
+  const char* filenames[MAX_RECENT];
+  int count = 0;
+  int i;
+
+  for (i = 1; i <= max_recent && count < MAX_RECENT; i++)
+  {
+    const char* value = IupConfigGetVariableStrId(ih, group_name, "File", i);
+    if (!value || value[0] == '\0')
+      break;
+    filenames[count++] = value;
+  }
+
+  iupdrvRecentMenuUpdate(menu, filenames, count, recent_cb);
+}
+
+static int iConfigRecentMenuMapCB(Ihandle* menu)
+{
+  Ihandle* ih = (Ihandle*)IupGetAttribute(menu, "_IUP_CONFIG");
+  if (ih)
+  {
+    char* recent_name = IupGetAttribute(ih, "RECENTNAME");
+    const char* group_name = recent_name;
+    int max_recent;
+    Icallback recent_cb;
+
+    if (!group_name) group_name = "Recent";
+
+    max_recent = IupGetInt(ih, iConfigGetRecentAttribName(recent_name, "RECENTMAX"));
+    recent_cb = IupGetCallback(ih, iConfigGetRecentAttribName(recent_name, "RECENT_CB"));
+
+    iConfigUpdateRecentMenu(ih, menu, max_recent, group_name, recent_cb);
+  }
+  return IUP_DEFAULT;
+}
+
 IUP_API void IupConfigRecentInit(Ihandle* ih, Ihandle* menu_list, Icallback recent_cb, int max_recent)
 {
-
   char* recent_name = IupGetAttribute(ih, "RECENTNAME");
   const char* group_name = recent_name;
   if (!group_name) group_name = "Recent";
@@ -550,8 +530,19 @@ IUP_API void IupConfigRecentInit(Ihandle* ih, Ihandle* menu_list, Icallback rece
 
   if (iupStrEqual(IupGetClassName(menu_list), "menu"))
   {
+    int already_init = (IupGetAttribute(menu_list, "_IUP_CONFIG") != NULL);
+    int is_mapped = (menu_list->handle != NULL) || (IupGetAttribute(menu_list, "_IUP_RECENT_GMENU") != NULL);
+
     IupSetAttribute(ih, iConfigGetRecentAttribName(recent_name, "RECENTMENU"), (char*)menu_list);
-    iConfigBuildRecentMenu(ih, menu_list, max_recent, group_name, recent_cb);
+    IupSetAttribute(menu_list, "_IUP_CONFIG", (char*)ih);
+
+    if (!already_init)
+      iupdrvRecentMenuInit(menu_list, max_recent, recent_cb);
+
+    if (is_mapped)
+      iConfigUpdateRecentMenu(ih, menu_list, max_recent, group_name, recent_cb);
+    else if (!already_init)
+      IupSetCallback(menu_list, "MAP_CB", (Icallback)iConfigRecentMenuMapCB);
   }
   else
   {
@@ -574,11 +565,9 @@ IUP_API void IupConfigRecentUpdate(Ihandle* ih, const char* filename)
   value = IupConfigGetVariableStr(ih, group_name, "File1");
   if (value && !iupStrEqual(value, filename))
   {
-    /* must update the stack */
     int found = 0;
-
-    /* First search for the new filename to avoid duplicates */
     int i = 1;
+
     do
     {
       value = IupConfigGetVariableStrId(ih, group_name, "File", i);
@@ -597,7 +586,6 @@ IUP_API void IupConfigRecentUpdate(Ihandle* ih, const char* filename)
     else
       i = max_recent;
 
-    /* simply open space for the new filename */
     do
     {
       value = IupConfigGetVariableStrId(ih, group_name, "File", i - 1);
@@ -607,31 +595,15 @@ IUP_API void IupConfigRecentUpdate(Ihandle* ih, const char* filename)
     } while (i > 1);
   }
 
-  /* push new at start always */
   IupConfigSetVariableStr(ih, group_name, "File1", filename);
 
   if (menu)
-    iConfigBuildRecentMenu(ih, menu, max_recent, group_name, recent_cb);
-  else
+    iConfigUpdateRecentMenu(ih, menu, max_recent, group_name, recent_cb);
+  if (list)
     iConfigBuildRecentList(ih, list, max_recent, group_name, recent_cb);
 }
-#else
-
-/* NOT supported in MacOS for now */
-
-IUP_API void IupConfigRecentInit(Ihandle* ih, Ihandle* menu_list, Icallback recent_cb, int max_recent)
-{
-}
-
-IUP_API void IupConfigRecentUpdate(Ihandle* ih, const char* filename)
-{
-}
-
-#endif /* macOS/Cocoa */
-
 
 /*******************************************************************/
-
 
 IUP_API void IupConfigDialogShow(Ihandle* ih, Ihandle* dialog, const char* name)
 {
