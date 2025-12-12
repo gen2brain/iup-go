@@ -1,12 +1,6 @@
 /** \file
  * \brief Canvas Drawing - Qt Implementation
  *
- * Performance notes:
- * - QPainter can use OpenGL backend for acceleration
- * - Double buffering prevents flicker during redraws
- * - Text rendering uses font hinting and subpixel positioning
- * - Image drawing supports alpha blending and transforms
- *
  * See Copyright Notice in "iup.h"
  */
 
@@ -99,6 +93,11 @@ extern "C" IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   /* Get the actual canvas widget from qtCanvasGetContext */
   /* ih->handle is the container, not the canvas widget */
   dc->widget = (QWidget*)iupqtCanvasGetContext(ih);
+
+  /* Fallback for file dialog preview canvas */
+  if (!dc->widget)
+    dc->widget = (QWidget*)iupAttribGet(ih, "_IUPQT_PREVIEW_CANVAS");
+
   dc->painter = nullptr;
   dc->release_gc = 0;
 
@@ -107,29 +106,37 @@ extern "C" IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   {
     QSize widget_size = dc->widget->size();
 
-    /* Check if buffer already exists */
-    QPixmap* old_buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
-    if (old_buffer)
+    /* Check for preview canvas buffer */
+    QPixmap* preview_buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_PREVIEW_BUFFER");
+    if (preview_buffer)
     {
-      /* Check if size changed - recreate buffer if needed */
-      if (old_buffer->size() != widget_size)
-      {
-        delete old_buffer;
-        old_buffer = nullptr;
-      }
-      else
-      {
-        dc->buffer = old_buffer;
-      }
+      dc->buffer = preview_buffer;
     }
-
-    if (!old_buffer)
+    else
     {
-      dc->buffer = new QPixmap(widget_size);
-      dc->buffer->fill(Qt::white);
+      /* Check if buffer already exists */
+      QPixmap* old_buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+      if (old_buffer)
+      {
+        if (old_buffer->size() != widget_size)
+        {
+          delete old_buffer;
+          old_buffer = nullptr;
+        }
+        else
+        {
+          dc->buffer = old_buffer;
+        }
+      }
 
-      /* Store buffer pointer so paintEvent can access it */
-      iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", (char*)dc->buffer);
+      if (!old_buffer)
+      {
+        dc->buffer = new QPixmap(widget_size);
+        dc->buffer->fill(Qt::white);
+
+        /* Store buffer pointer so paintEvent can access it */
+        iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", (char*)dc->buffer);
+      }
     }
   }
   else

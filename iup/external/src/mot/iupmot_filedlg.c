@@ -515,6 +515,7 @@ static void motFileDlgPreviewCanvasInit(Ihandle *ih, Widget w)
   iupAttribSet(ih, "PREVIEWDC", (char*)gc);
   iupAttribSet(ih, "WID", (char*)w);
 
+  iupAttribSet(ih, "DRAWABLE", (char*)XtWindow(w));
   iupAttribSet(ih, "XWINDOW", (char*)XtWindow(w));
   iupAttribSet(ih, "XDISPLAY", (char*)iupmot_display);
   motFileDlgUpdatePreviewGLCanvas(ih);
@@ -564,6 +565,18 @@ static void motFileDlgBrowseSelectionCallback(Widget w, Ihandle* ih, XmListCallb
     cb(ih, filename, "OTHER");
 
   XtFree(filename);
+
+  if (iupAttribGetBoolean(ih, "SHOWPREVIEW"))
+  {
+    Widget preview_canvas = (Widget)iupAttribGet(ih, "WID");
+    if (preview_canvas)
+    {
+      Window wnd = XtWindow(preview_canvas);
+      if (wnd)
+        XClearArea(iupmot_display, wnd, 0, 0, 0, 0, True);
+    }
+  }
+
   (void)w;
 }
 

@@ -139,72 +139,6 @@ static void gtk4FileDlgGetMultipleFiles(Ihandle* ih, GListModel* list)
   free(dir);
 }
 
-static void gtk4FileDlgRealize(GtkWidget *widget, Ihandle *ih)
-{
-  IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
-  cb(ih, NULL, "INIT");
-  (void)widget;
-}
-
-static void gtk4FileDlgPreviewResize(GtkWidget *widget, int width, int height, Ihandle *ih)
-{
-  iupAttribSetInt(ih, "PREVIEWWIDTH", width);
-  iupAttribSetInt(ih, "PREVIEWHEIGHT", height);
-  (void)widget;
-}
-
-static void gtk4FileDlgPreviewDraw(GtkDrawingArea *area, cairo_t *cr, int width, int height, Ihandle *ih)
-{
-  GtkFileChooser *file_chooser = (GtkFileChooser*)iupAttribGet(ih, "_IUPDLG_FILE_CHOOSER");
-  GFile* file = gtk_file_chooser_get_file(file_chooser);
-  IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
-
-  iupAttribSet(ih, "CAIRO_CR", (char*)cr);
-
-  if (file)
-  {
-    char* filename = g_file_get_path(file);
-    if (gtk4IsFile(filename))
-      cb(ih, iupgtk4StrConvertFromFilename(filename), "PAINT");
-    else
-      cb(ih, NULL, "PAINT");
-    g_free(filename);
-    g_object_unref(file);
-  }
-  else
-    cb(ih, NULL, "PAINT");
-
-  iupAttribSet(ih, "CAIRO_CR", NULL);
-
-  (void)area;
-  (void)width;
-  (void)height;
-}
-
-static void gtk4FileDlgUpdatePreview(GObject *chooser, GParamSpec *pspec, Ihandle* ih)
-{
-  GtkFileChooser *file_chooser = GTK_FILE_CHOOSER(chooser);
-  GFile* file = gtk_file_chooser_get_file(file_chooser);
-
-  IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
-  if (cb)
-  {
-    if (file)
-    {
-      char* filename = g_file_get_path(file);
-      if (gtk4IsFile(filename))
-        cb(ih, iupgtk4StrConvertFromFilename(filename), "SELECT");
-      else
-        cb(ih, iupgtk4StrConvertFromFilename(filename), "OTHER");
-      g_free(filename);
-      g_object_unref(file);
-    }
-    else
-      cb(ih, NULL, "OTHER");
-  }
-
-  (void)pspec;
-}
 
 static char* gtk4FileCheckExt(Ihandle* ih, const char* filename)
 {
@@ -623,7 +557,6 @@ G_GNUC_BEGIN_IGNORE_DEPRECATIONS
 static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
 {
   GtkWidget* dialog;
-  GtkWidget* preview_canvas = NULL;
   GtkFileChooserAction action;
   const char *ok, *cancel, *open, *save, *help;
   IFnss file_cb;
@@ -789,30 +722,6 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
   }
 
   file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
-  if (file_cb && action != GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER)
-  {
-    g_signal_connect(GTK_FILE_CHOOSER(dialog), "notify::file", G_CALLBACK(gtk4FileDlgUpdatePreview), ih);
-    g_signal_connect(dialog, "realize", G_CALLBACK(gtk4FileDlgRealize), ih);
-
-    if (iupAttribGetBoolean(ih, "SHOWPREVIEW"))
-    {
-      GtkWidget* frame = gtk_frame_new(NULL);
-      int preview_width = iupAttribGetInt(ih, "PREVIEWWIDTH");
-      int preview_height = iupAttribGetInt(ih, "PREVIEWHEIGHT");
-      if (preview_width <= 0) preview_width = 200;
-      if (preview_height <= 0) preview_height = 150;
-
-      gtk_frame_set_child(GTK_FRAME(frame), NULL);
-      gtk_widget_set_size_request(frame, preview_width, preview_height);
-
-      preview_canvas = gtk_drawing_area_new();
-      gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(preview_canvas),
-                                      (GtkDrawingAreaDrawFunc)gtk4FileDlgPreviewDraw, ih, NULL);
-      gtk_frame_set_child(GTK_FRAME(frame), preview_canvas);
-
-      iupAttribSet(ih, "_IUPDLG_FILE_CHOOSER", (char*)dialog);
-    }
-  }
 
   gtk_widget_realize(GTK_WIDGET(dialog));
 
@@ -1043,15 +952,10 @@ G_GNUC_END_IGNORE_DEPRECATIONS
 static int gtk4FileDlgPopup(Ihandle* ih, int x, int y)
 {
   char* value;
-  IFnss file_cb;
   int use_legacy = 0;
 
   value = iupAttribGet(ih, "PORTAL");
   if (value && !iupStrBoolean(value))
-    use_legacy = 1;
-
-  file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
-  if (file_cb && iupAttribGetBoolean(ih, "SHOWPREVIEW"))
     use_legacy = 1;
 
   if (use_legacy)
@@ -1067,4 +971,8 @@ void iupdrvFileDlgInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "EXTFILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "SHOWPREVIEW", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PREVIEWWIDTH", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PREVIEWHEIGHT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }
