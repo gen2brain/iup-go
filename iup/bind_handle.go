@@ -254,6 +254,23 @@ func (ih Ihandle) GetRGB(name string, ids ...interface{}) (r, g, b uint8) {
 	}
 }
 
+// GetBool returns a boolean attribute value.
+// Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+func (ih Ihandle) GetBool(name string, ids ...interface{}) bool {
+	switch len(ids) {
+	case 0:
+		return GetBool(ih, name)
+	case 1:
+		return GetBoolId(ih, name, ids[0].(int))
+	case 2:
+		return GetBoolId2(ih, name, ids[0].(int), ids[1].(int))
+	default:
+		panic("bad arguments passed to GetBool")
+	}
+}
+
 // GetPtr .
 func (ih Ihandle) GetPtr(name string, ids ...interface{}) uintptr {
 	switch len(ids) {

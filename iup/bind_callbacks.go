@@ -4287,3 +4287,22 @@ func setMatrixListActionFunc(ih Ihandle, name string, f MatrixListActionFunc) {
 }
 
 //--------------------
+
+//export goIupRecentCB
+func goIupRecentCB(ih unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("RECENT_CB_" + uuid)
+	if !ok {
+		return C.int(DEFAULT)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ActionFunc)
+	return C.int(f((Ihandle)(ih)))
+}
+
+// setRecentFunc stores the callback for recent file selection.
+// The callback is stored using the config handle's UUID.
+func setRecentFunc(config, menuOrList Ihandle, f ActionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("RECENT_CB_"+config.GetAttribute("UUID"), ch)
+}

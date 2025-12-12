@@ -33,6 +33,7 @@ package iup
 
 #cgo motif LDFLAGS: -lXm -lXmu -lXt -lXext -lX11
 #cgo linux,motif LDFLAGS: -lXpm
+#cgo darwin,motif LDFLAGS: -liconv
 #cgo motif,gl LDFLAGS: -lGL
 #cgo motif,xft CFLAGS: -DIUP_USE_XFT
 #cgo motif,xft,!nopkgconfig pkg-config: xft freetype2

@@ -311,34 +311,37 @@ func User() Ihandle {
 }
 
 // Execute runs the executable with the given parameters.
-// It is a non synchronous operation, i.e. the function will return just after execute the command and it will not wait for its result.
+// It is a non-synchronous operation, i.e., the function will return just after execute the command, and it will not wait for its result.
 // In Windows, there is no need to add the ".exe" file extension.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupexecute.html
 func Execute(fileName, parameters string) int {
 	cFileName := C.CString(fileName)
+	cParameters := cStrOrNull(parameters)
 	defer C.free(unsafe.Pointer(cFileName))
+	defer cStrFree(cParameters)
 
-	return int(C.IupExecute(cFileName, C.CString(parameters)))
+	return int(C.IupExecute(cFileName, cParameters))
 }
 
 // ExecuteWait runs the executable with the given parameters.
-// It is a synchronous operation, i.e. the function will wait the command to terminate before it returns.
+// It is a synchronous operation, i.e., the function will wait the command to terminate before it returns.
 // In Windows, there is no need to add the ".exe" file extension.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupexecutewait.html
 func ExecuteWait(fileName, parameters string) int {
 	cFileName := C.CString(fileName)
+	cParameters := cStrOrNull(parameters)
 	defer C.free(unsafe.Pointer(cFileName))
+	defer cStrFree(cParameters)
 
-	return int(C.IupExecuteWait(cFileName, C.CString(parameters)))
+	return int(C.IupExecuteWait(cFileName, cParameters))
 }
 
-// Help opens the given URL. In UNIX executes Netscape, Safari (MacOS) or Firefox (in Linux) passing the desired URL as a parameter.
+// Help opens the given URL. Executes "xdg-open" (Linux/Unix) or "open" (macOS) passing the desired URL as a parameter.
 // In Windows executes the shell "open" operation on the given URL.
-// In UNIX you can change the used browser setting the environment variable IUP_HELPAPP or using the global attribute "HELPAPP".
-// It is a non synchronous operation, i.e. the function will return just after execute the command and it will not wait for its result.
-// Since IUP 3.17, it will use the Execute function.
+// In UNIX, you can change the used browser setting the environment variable IUP_HELPAPP or using the global attribute "HELPAPP".
+// It is a non-synchronous operation, i.e., the function will return just after execute the command, and it will not wait for its result.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iuphelp.html
 func Help(url string) int {
@@ -349,7 +352,7 @@ func Help(url string) int {
 }
 
 // Log writes a message to the system log.
-// In Windows, writes to the Application event log. In Linux, writes to the Syslog.
+// In Windows, write to the Application event log. On Linux, write to the Syslog.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iuplog.html
 func Log(_type, str string) {
