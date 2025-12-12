@@ -3,7 +3,9 @@ package iup
 import (
 	"bytes"
 	"fmt"
+	"image/color"
 	"reflect"
+	"strings"
 	"unsafe"
 )
 
@@ -28,9 +30,8 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 	case uintptr:
 		C.IupSetAttribute(ih.ptr(), cName, cih(value.(Ihandle)))
 	case string:
-		cValue := C.CString(val)
-		defer C.free(unsafe.Pointer(cValue))
-
+		cValue := cStrOrNull(val)
+		defer cStrFree(cValue)
 		C.IupSetStrAttribute(ih.ptr(), cName, cValue)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		C.IupSetInt(ih.ptr(), cName, C.int(reflect.ValueOf(value).Int()))
@@ -39,7 +40,13 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 	case float64:
 		C.IupSetDouble(ih.ptr(), cName, C.double(val))
 	case [3]uint8:
-		C.IupSetRGB(ih.ptr(), cName, C.uchar(value.([3]uint8)[0]), C.uchar(value.([3]uint8)[1]), C.uchar(value.([3]uint8)[2]))
+		C.IupSetRGB(ih.ptr(), cName, C.uchar(val[0]), C.uchar(val[1]), C.uchar(val[2]))
+	case [4]uint8:
+		C.IupSetRGBA(ih.ptr(), cName, C.uchar(val[0]), C.uchar(val[1]), C.uchar(val[2]), C.uchar(val[3]))
+	case color.RGBA:
+		C.IupSetRGBA(ih.ptr(), cName, C.uchar(val.R), C.uchar(val.G), C.uchar(val.B), C.uchar(val.A))
+	case color.NRGBA:
+		C.IupSetRGBA(ih.ptr(), cName, C.uchar(val.R), C.uchar(val.G), C.uchar(val.B), C.uchar(val.A))
 	default:
 		panic("bad argument passed to SetAttribute")
 	}
@@ -68,7 +75,7 @@ func ResetAttribute(ih Ihandle, name string) {
 
 // SetAtt sets several attributes of an interface element and optionally sets its name.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupresetatt.html
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetatt.html
 func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
 	attrs := bytes.NewBufferString("")
 	for i := 0; i < len(args); i += 2 {
@@ -157,6 +164,46 @@ func GetAttributeHandle(ih Ihandle, name string) Ihandle {
 	return mkih(C.IupGetAttributeHandle(ih.ptr(), cName))
 }
 
+// SetAttributeHandleId sets an attribute handle with an id.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributehandle.html
+func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	C.IupSetAttributeHandleId(ih.ptr(), cName, C.int(id), ihNamed.ptr())
+}
+
+// GetAttributeHandleId returns the handle attribute with an id.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributehandle.html
+func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	return mkih(C.IupGetAttributeHandleId(ih.ptr(), cName, C.int(id)))
+}
+
+// SetAttributeHandleId2 sets an attribute handle with lin and col.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributehandle.html
+func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandle) {
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	C.IupSetAttributeHandleId2(ih.ptr(), cName, C.int(lin), C.int(col), ihNamed.ptr())
+}
+
+// GetAttributeHandleId2 returns the handle attribute with lin and col.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributehandle.html
+func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	return mkih(C.IupGetAttributeHandleId2(ih.ptr(), cName, C.int(lin), C.int(col)))
+}
+
 // SetAttributeId sets an interface element attribute.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
@@ -172,9 +219,8 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 	case uintptr:
 		C.IupSetAttributeId(ih.ptr(), cName, C.int(id), cih(value.(Ihandle)))
 	case string:
-		cValue := C.CString(val)
-		defer C.free(unsafe.Pointer(cValue))
-
+		cValue := cStrOrNull(val)
+		defer cStrFree(cValue)
 		C.IupSetStrAttributeId(ih.ptr(), cName, C.int(id), cValue)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		C.IupSetIntId(ih.ptr(), cName, C.int(id), C.int(reflect.ValueOf(value).Int()))
@@ -183,7 +229,7 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 	case float64:
 		C.IupSetDoubleId(ih.ptr(), cName, C.int(id), C.double(val))
 	case [3]uint8:
-		C.IupSetRGBId(ih.ptr(), cName, C.int(id), C.uchar(value.([3]uint8)[0]), C.uchar(value.([3]uint8)[1]), C.uchar(value.([3]uint8)[2]))
+		C.IupSetRGBId(ih.ptr(), cName, C.int(id), C.uchar(val[0]), C.uchar(val[1]), C.uchar(val[2]))
 	default:
 		panic("bad argument passed to SetAttributeId")
 	}
@@ -214,9 +260,8 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	case uintptr:
 		C.IupSetAttributeId2(ih.ptr(), cName, C.int(lin), C.int(col), cih(value.(Ihandle)))
 	case string:
-		cValue := C.CString(val)
-		defer C.free(unsafe.Pointer(cValue))
-
+		cValue := cStrOrNull(val)
+		defer cStrFree(cValue)
 		C.IupSetStrAttributeId2(ih.ptr(), cName, C.int(lin), C.int(col), cValue)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		C.IupSetIntId2(ih.ptr(), cName, C.int(lin), C.int(col), C.int(reflect.ValueOf(value).Int()))
@@ -225,7 +270,7 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	case float64:
 		C.IupSetDoubleId2(ih.ptr(), cName, C.int(lin), C.int(col), C.double(val))
 	case [3]uint8:
-		C.IupSetRGBId2(ih.ptr(), cName, C.int(lin), C.int(col), C.uchar(value.([3]uint8)[0]), C.uchar(value.([3]uint8)[1]), C.uchar(value.([3]uint8)[2]))
+		C.IupSetRGBId2(ih.ptr(), cName, C.int(lin), C.int(col), C.uchar(val[0]), C.uchar(val[1]), C.uchar(val[2]))
 	default:
 		panic("bad argument passed to SetAttributeId2")
 	}
@@ -259,16 +304,17 @@ func SetGlobal(name string, value interface{}) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
-	switch val := value.(type) { //TODO handle number values?
+	switch val := value.(type) {
+	case nil:
+		C.IupSetStrGlobal(cName, nil)
 	case string:
-		cValue := C.CString(val)
-		defer C.free(unsafe.Pointer(cValue))
-
-		C.IupSetStrGlobal(cName, cValue) // always copy value
+		cValue := cStrOrNull(val)
+		defer cStrFree(cValue)
+		C.IupSetStrGlobal(cName, cValue)
 	case Ihandle:
-		C.IupSetGlobal(cName, cih(value.(Ihandle)))
+		C.IupSetGlobal(cName, cih(val))
 	case uintptr:
-		C.IupSetGlobal(cName, cih(value.(Ihandle)))
+		C.IupSetGlobal(cName, cih(Ihandle(val)))
 	default:
 		panic("bad argument passed to SetGlobal")
 	}
@@ -373,6 +419,15 @@ func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
 	return
 }
 
+// GetBool returns a boolean attribute value.
+// Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+func GetBool(ih Ihandle, name string) bool {
+	val := strings.ToUpper(GetAttribute(ih, name))
+	return val == "YES" || val == "ON" || val == "TRUE" || val == "1"
+}
+
 // GetFloat returns the name of an interface element attribute.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
@@ -456,6 +511,15 @@ func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
 	return
 }
 
+// GetBoolId returns a boolean attribute value with an id.
+// Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+func GetBoolId(ih Ihandle, name string, id int) bool {
+	val := strings.ToUpper(GetAttributeId(ih, name, id))
+	return val == "YES" || val == "ON" || val == "TRUE" || val == "1"
+}
+
 // GetIntId2 returns the name of an interface element attribute.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
@@ -495,4 +559,13 @@ func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
 
 	C.IupGetRGBId2(ih.ptr(), cName, C.int(lin), C.int(col), (*C.uchar)(unsafe.Pointer(&r)), (*C.uchar)(unsafe.Pointer(&g)), (*C.uchar)(unsafe.Pointer(&b)))
 	return
+}
+
+// GetBoolId2 returns a boolean attribute value with lin and col.
+// Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+func GetBoolId2(ih Ihandle, name string, lin, col int) bool {
+	val := strings.ToUpper(GetAttributeId2(ih, name, lin, col))
+	return val == "YES" || val == "ON" || val == "TRUE" || val == "1"
 }

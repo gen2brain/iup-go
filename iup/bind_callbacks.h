@@ -771,5 +771,7 @@ static void goIupSetSortColumnCompareFunc(Ihandle *ih) {
 	IupSetCallback(ih, "SORTCOLUMNCOMPARE_CB", (Icallback) goIupSortColumnCompareCB);
 }
 
+extern int goIupRecentCB(void *);
+
 
 #endif /* BIND_CALLBACKS_H */

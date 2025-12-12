@@ -10,6 +10,7 @@ import (
 #include <stdlib.h>
 #include "iup.h"
 #include "iup_config.h"
+#include "bind_callbacks.h"
 */
 import "C"
 
@@ -269,4 +270,24 @@ func ConfigDialogClosed(ih, dialog Ihandle, name string) {
 	defer C.free(unsafe.Pointer(cName))
 
 	C.IupConfigDialogClosed(ih.ptr(), dialog.ptr(), cName)
+}
+
+// ConfigRecentInit initializes the recent files feature for a config handle.
+// menuOrList can be either a Menu or a List/FlatList control.
+// maxRecent is the maximum number of recent files to track.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+func ConfigRecentInit(ih, menuOrList Ihandle, recentCb ActionFunc, maxRecent int) {
+	setRecentFunc(ih, menuOrList, recentCb)
+	C.IupConfigRecentInit(ih.ptr(), menuOrList.ptr(), (C.Icallback)(C.goIupRecentCB), C.int(maxRecent))
+}
+
+// ConfigRecentUpdate adds or moves a filename to the top of the recent files list.
+// Call ConfigSave after this to persist the change.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+func ConfigRecentUpdate(ih Ihandle, filename string) {
+	cFilename := C.CString(filename)
+	defer C.free(unsafe.Pointer(cFilename))
+	C.IupConfigRecentUpdate(ih.ptr(), cFilename)
 }

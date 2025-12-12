@@ -172,7 +172,7 @@ func FlatSeparator() Ihandle {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/elem/iuplink.html
 func Link(url, title string) Ihandle {
-	cUrl := cStrOrNull(title)
+	cUrl := cStrOrNull(url)
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cUrl)
 	defer cStrFree(cTitle)

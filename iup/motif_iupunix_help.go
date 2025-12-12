@@ -1,4 +1,4 @@
-//go:build motif
+//go:build motif && !darwin
 
 package iup
 
