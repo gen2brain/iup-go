@@ -178,8 +178,14 @@ func main() {
 	table.SetAttribute("RASTERWIDTH2", "80")
 	table.SetAttribute("RASTERWIDTH3", "50")
 	table.SetAttribute("ALTERNATECOLOR", "YES")
-	table.SetAttribute("EVENROWCOLOR", "#F0F0F0")
-	table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
+
+	if iup.GetGlobal("DARKMODE") == "YES" && iup.GetGlobal("DRIVER") != "Win32" {
+		table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
+		table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
+	} else {
+		table.SetAttribute("EVENROWCOLOR", "#F0F0F0")
+		table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
+	}
 
 	sampleData := [][]string{
 		{"1", "Alice", "25", "NYC"},

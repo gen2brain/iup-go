@@ -70,6 +70,77 @@ func createButtonsAndTogglesTab() iup.Ihandle {
 		return iup.DEFAULT
 	}))
 
+	// Rounded corners examples
+	flatBtnRounded1 := iup.FlatButton("Rounded 5px")
+	flatBtnRounded1.SetAttributes(`PADDING=10x5, CORNERRADIUS=5, BGCOLOR="100 200 150"`)
+	iup.SetCallback(flatBtnRounded1, "FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+		updateStatus("Rounded button (5px) clicked")
+		return iup.DEFAULT
+	}))
+
+	flatBtnRounded2 := iup.FlatButton("Rounded 10px")
+	flatBtnRounded2.SetAttributes(`PADDING=10x5, CORNERRADIUS=10, BGCOLOR="200 150 100"`)
+	iup.SetCallback(flatBtnRounded2, "FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+		updateStatus("Rounded button (10px) clicked")
+		return iup.DEFAULT
+	}))
+
+	flatBtnRounded3 := iup.FlatButton("Pill Button")
+	flatBtnRounded3.SetAttributes(`PADDING=15x8, CORNERRADIUS=20, BGCOLOR="150 100 200"`)
+	iup.SetCallback(flatBtnRounded3, "FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+		updateStatus("Pill button (20px radius) clicked")
+		return iup.DEFAULT
+	}))
+
+	// Gradient examples
+	flatBtnGrad1 := iup.FlatButton("Gradient V")
+	flatBtnGrad1.SetAttributes(`PADDING=10x5, GRADIENT="100 180 255:50 100 200", FGCOLOR="255 255 255"`)
+	iup.SetCallback(flatBtnGrad1, "FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+		updateStatus("Gradient button (vertical) clicked")
+		return iup.DEFAULT
+	}))
+
+	flatBtnGrad2 := iup.FlatButton("Gradient H")
+	flatBtnGrad2.SetAttributes(`PADDING=10x5, GRADIENT="255 150 100:200 80 50", GRADIENTANGLE=0, FGCOLOR="255 255 255"`)
+	iup.SetCallback(flatBtnGrad2, "FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+		updateStatus("Gradient button (horizontal) clicked")
+		return iup.DEFAULT
+	}))
+
+	flatBtnGrad3 := iup.FlatButton("Gradient 45°")
+	flatBtnGrad3.SetAttributes(`PADDING=10x5, GRADIENT="150 255 150:50 180 50", GRADIENTANGLE=45, FGCOLOR="255 255 255"`)
+	iup.SetCallback(flatBtnGrad3, "FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+		updateStatus("Gradient button (45°) clicked")
+		return iup.DEFAULT
+	}))
+
+	// Combined: rounded + gradient
+	flatBtnCombo1 := iup.FlatButton("Rounded + Gradient")
+	flatBtnCombo1.SetAttributes(`PADDING=12x6, CORNERRADIUS=8, GRADIENT="80 150 255:40 80 180", FGCOLOR="255 255 255"`)
+	iup.SetCallback(flatBtnCombo1, "FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+		updateStatus("Rounded gradient button clicked")
+		return iup.DEFAULT
+	}))
+
+	flatBtnCombo2 := iup.FlatButton("Pill + Gradient")
+	flatBtnCombo2.SetAttributes(`PADDING=15x8, CORNERRADIUS=20, GRADIENT="255 100 150:200 50 100", FGCOLOR="255 255 255"`)
+	iup.SetCallback(flatBtnCombo2, "FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+		updateStatus("Pill gradient button clicked")
+		return iup.DEFAULT
+	}))
+
+	// Gradient with hover/press states
+	flatBtnStates := iup.FlatButton("Hover Me!")
+	flatBtnStates.SetAttributes(`PADDING=12x6, CORNERRADIUS=8`)
+	flatBtnStates.SetAttributes(`GRADIENT="100 150 200:70 120 170"`)
+	flatBtnStates.SetAttributes(`GRADIENTHL="130 180 230:100 150 200"`)
+	flatBtnStates.SetAttributes(`GRADIENTPS="70 120 170:40 90 140"`)
+	flatBtnStates.SetAttributes(`FGCOLOR="255 255 255"`)
+	iup.SetCallback(flatBtnStates, "FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+		updateStatus("Button with gradient states clicked")
+		return iup.DEFAULT
+	}))
+
 	flatToggle1 := iup.FlatToggle("FlatToggle 1")
 	iup.SetCallback(flatToggle1, "FLAT_ACTION", iup.FlatToggleActionFunc(func(ih iup.Ihandle, state int) int {
 		updateStatus(fmt.Sprintf("FlatToggle 1 state: %d", state))
@@ -93,6 +164,15 @@ func createButtonsAndTogglesTab() iup.Ihandle {
 	vbox := iup.Vbox(
 		iup.FlatLabel("FlatButton Examples:").SetAttributes("FONTBOLD=YES"),
 		iup.Hbox(flatBtn1, flatBtn2, flatBtn3).SetAttributes("GAP=10"),
+		iup.Fill(),
+		iup.FlatLabel("Rounded Corners:").SetAttributes("FONTBOLD=YES"),
+		iup.Hbox(flatBtnRounded1, flatBtnRounded2, flatBtnRounded3).SetAttributes("GAP=10"),
+		iup.Fill(),
+		iup.FlatLabel("Gradient Backgrounds:").SetAttributes("FONTBOLD=YES"),
+		iup.Hbox(flatBtnGrad1, flatBtnGrad2, flatBtnGrad3).SetAttributes("GAP=10"),
+		iup.Fill(),
+		iup.FlatLabel("Combined (Rounded + Gradient):").SetAttributes("FONTBOLD=YES"),
+		iup.Hbox(flatBtnCombo1, flatBtnCombo2, flatBtnStates).SetAttributes("GAP=10"),
 		iup.Fill(),
 		iup.FlatSeparator(),
 		iup.Fill(),

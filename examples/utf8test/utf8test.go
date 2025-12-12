@@ -128,7 +128,6 @@ func main() {
 	// Dialog
 	dlg := iup.Dialog(vbox)
 	dlg.SetAttribute("TITLE", "UTF-8 Test")
-	dlg.SetAttribute("RESIZE", "YES")
 
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
 

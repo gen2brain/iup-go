@@ -56,8 +56,13 @@ func main() {
 
 	// Enable alternating row colors by default
 	table.SetAttribute("ALTERNATECOLOR", "YES")
-	table.SetAttribute("EVENROWCOLOR", "#F0F0F0") // Light gray
-	table.SetAttribute("ODDROWCOLOR", "#FFFFFF")  // White
+	if iup.GetGlobal("DARKMODE") == "YES" {
+		table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
+		table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
+	} else {
+		table.SetAttribute("EVENROWCOLOR", "#F0F0F0")
+		table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
+	}
 
 	// Buttons for testing
 	btnAddRow := iup.Button("Add Row").SetAttribute("PADDING", "5x0")
