@@ -25,6 +25,7 @@
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
 #include "iupwin_str.h"
+#include "iupwin_draw.h"
 
 
 /* Not defined in Cygwin and MingW */
@@ -35,6 +36,83 @@
 
 #define IUP_PB_MAX 32000
 
+
+static void winProgressBarDraw(Ihandle* ih, HDC hDC)
+{
+  RECT rect;
+  HBRUSH hBrush;
+  COLORREF bgcolor, fgcolor;
+  unsigned char r, g, b;
+  char* value;
+  int width, height;
+  int is_vertical = iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL");
+  int progress;
+  double factor;
+
+  GetClientRect(ih->handle, &rect);
+  width = rect.right - rect.left;
+  height = rect.bottom - rect.top;
+
+  value = iupAttribGetStr(ih, "BGCOLOR");
+  if (iupStrToRGB(value, &r, &g, &b))
+    bgcolor = RGB(r, g, b);
+  else
+    bgcolor = GetSysColor(COLOR_3DFACE);
+
+  value = iupAttribGetStr(ih, "FGCOLOR");
+  if (iupStrToRGB(value, &r, &g, &b))
+    fgcolor = RGB(r, g, b);
+  else
+    fgcolor = GetSysColor(COLOR_HIGHLIGHT);
+
+  hBrush = CreateSolidBrush(bgcolor);
+  FillRect(hDC, &rect, hBrush);
+  DeleteObject(hBrush);
+
+  if (!ih->data->marquee)
+  {
+    factor = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
+
+    if (is_vertical)
+    {
+      progress = (int)(height * factor);
+      SetRect(&rect, 0, height - progress, width, height);
+    }
+    else
+    {
+      progress = (int)(width * factor);
+      SetRect(&rect, 0, 0, progress, height);
+    }
+
+    if (progress > 0)
+    {
+      hBrush = CreateSolidBrush(fgcolor);
+      FillRect(hDC, &rect, hBrush);
+      DeleteObject(hBrush);
+    }
+  }
+}
+
+static int winProgressBarMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
+{
+  if (msg == WM_PAINT)
+  {
+    PAINTSTRUCT ps;
+    HDC hDC = BeginPaint(ih->handle, &ps);
+    winProgressBarDraw(ih, hDC);
+    EndPaint(ih->handle, &ps);
+    *result = 0;
+    return 1;
+  }
+
+  if (msg == WM_ERASEBKGND)
+  {
+    *result = 1;
+    return 1;
+  }
+
+  return iupwinBaseMsgProc(ih, msg, wp, lp, result);
+}
 
 static int winProgressBarSetMarqueeAttrib(Ihandle* ih, const char* value)
 {
@@ -59,12 +137,18 @@ static int winProgressBarSetValueAttrib(Ihandle* ih, const char* value)
 
   iProgressBarCropValue(ih);
 
-  /* Shows when the marquee style is not set */
   if (!ih->data->marquee)
   {
-    double factor = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
-    int val = (int)(IUP_PB_MAX * factor);
-    SendMessage(ih->handle, PBM_SETPOS, (WPARAM)val, 0);
+    if (iupwin_comctl32ver6)
+    {
+      iupdrvRedrawNow(ih);
+    }
+    else
+    {
+      double factor = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
+      int val = (int)(IUP_PB_MAX * factor);
+      SendMessage(ih->handle, PBM_SETPOS, (WPARAM)val, 0);
+    }
   }
 
   return 0;
@@ -74,9 +158,11 @@ static int winProgressBarSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
 
-  /* Only works when using Classic style */
   if (iupwin_comctl32ver6)
-    return 0;
+  {
+    iupdrvRedrawNow(ih);
+    return 1;
+  }
 
   if (iupStrToRGB(value, &r, &g, &b))
   {
@@ -92,9 +178,11 @@ static int winProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
 
-  /* Only works when using Classic style */
   if (iupwin_comctl32ver6)
-    return 0;
+  {
+    iupdrvRedrawNow(ih);
+    return 1;
+  }
 
   if (iupStrToRGB(value, &r, &g, &b))
   {
@@ -137,7 +225,12 @@ static int winProgressBarMapMethod(Ihandle* ih)
   if (!iupwinCreateWindow(ih, PROGRESS_CLASS, 0, dwStyle, NULL))
     return IUP_ERROR;
 
-  /* configure the native range */
+  if (iupwin_comctl32ver6 && !ih->data->marquee)
+  {
+    iupwinDrawRemoveTheme(ih->handle);
+    IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winProgressBarMsgProc);
+  }
+
   SendMessage(ih->handle, PBM_SETRANGE, 0, MAKELPARAM(0, IUP_PB_MAX));
 
   return IUP_NOERROR;
@@ -149,14 +242,8 @@ void iupdrvProgressBarInitClass(Iclass* ic)
   ic->Map = winProgressBarMapMethod;
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winProgressBarSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);  
-
-  /* Special */
-  /* Only works when using Classic style */
-  if (iupwin_comctl32ver6)
-    iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winProgressBarSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  else
-    iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winProgressBarSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winProgressBarSetFgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* IupProgressBar only */
   iupClassRegisterAttribute(ic, "VALUE",  iProgressBarGetValueAttrib,  winProgressBarSetValueAttrib,  NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
