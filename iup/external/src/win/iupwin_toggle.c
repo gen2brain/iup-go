@@ -208,41 +208,39 @@ void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
   iupdrvButtonAddBorders(ih, x, y);
 }
 
+void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+{
+  int switch_w = SWITCH_TRACK_WIDTH;
+  int switch_h = SWITCH_TRACK_HEIGHT;
+  (void)ih;
+
+  (*x) += 2 + switch_w + 2;
+  if ((*y) < 2 + switch_h + 8)
+    (*y) = 2 + switch_h + 8;
+  else
+    (*y) += 2 + 8;
+
+  if (str && str[0])
+    (*x) += 8;
+}
+
 void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
-  /* LAYOUT_DECORATION_ESTIMATE */
-  if (iupAttribGetBoolean(ih, "SWITCH"))
+  int check_box = 16;
+  (void)ih;
+
+  if (iupwinGetScreenRes() > 120)
+    check_box = 26;
+
+  (*x) += check_box;
+  if ((*y) < check_box) (*y) = check_box;
+
+  if (str && str[0])
   {
-    /* Custom switch dimensions */
-    int switch_w = SWITCH_TRACK_WIDTH;
-    int switch_h = SWITCH_TRACK_HEIGHT;
+    (*x) += 8;
 
-    (*x) += 2 + switch_w + 2;  /* margins + width + margins */
-    if ((*y) < 2 + switch_h + 8)
-      (*y) = 2 + switch_h + 8;  /* margins + height + extra vertical space */
-    else
-      (*y) += 2 + 8;
-
-    if (str && str[0])  /* add spacing between switch and text */
-      (*x) += 8;
-  }
-  else
-  {
-    /* Standard checkbox */
-    int check_box = 16;
-    if (iupwinGetScreenRes() > 120)
-      check_box = 26;
-
-    (*x) += check_box;
-    if ((*y) < check_box) (*y) = check_box; /* minimum height */
-
-    if (str && str[0]) /* add spacing between check box and text */
-    {
-      (*x) += 8;
-
-      if (!iupwin_comctl32ver6)
-        (*x) += 4;
-    }
+    if (!iupwin_comctl32ver6)
+      (*x) += 4;
   }
 }
 

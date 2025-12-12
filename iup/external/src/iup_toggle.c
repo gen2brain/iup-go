@@ -88,7 +88,10 @@ static void iToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
     char* str = iupStrProcessMnemonic(title, NULL, 0);   /* remove & */
     iupdrvFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
 
-    iupdrvToggleAddCheckBox(ih, &natural_w, &natural_h, str);
+    if (iupAttribGetBoolean(ih, "SWITCH"))
+      iupdrvToggleAddSwitch(ih, &natural_w, &natural_h, str);
+    else
+      iupdrvToggleAddCheckBox(ih, &natural_w, &natural_h, str);
 
     if (str && str != title) free(str);
   }
