@@ -182,7 +182,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, in
   /* Callback for memory monitoring */
   IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
   if (cb)
-    cb(pixmap, "QPixmap");
+    cb(pixmap, const_cast<char*>("QPixmap"));
 
   return pixmap;
 }
@@ -327,7 +327,7 @@ extern "C" void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int ma
   /* Callback for memory monitoring */
   IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
   if (cb)
-    cb(pixmap, "QPixmap");
+    cb(pixmap, const_cast<char*>("QPixmap"));
 
   return pixmap;
 }
@@ -340,7 +340,7 @@ extern "C" void* iupdrvImageCreateIcon(Ihandle *ih)
   {
     IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
     if (cb)
-      cb(handle, "ICON");
+      cb(handle, const_cast<char*>("ICON"));
   }
 
   return handle;
@@ -365,7 +365,7 @@ extern "C" void* iupdrvImageCreateCursor(Ihandle *ih)
   /* Callback for memory monitoring */
   IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
   if (cb)
-    cb(cursor, "CURSOR");
+    cb(cursor, const_cast<char*>("CURSOR"));
 
   return cursor;
 }

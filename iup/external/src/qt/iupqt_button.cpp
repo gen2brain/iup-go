@@ -317,13 +317,13 @@ static int qtButtonSetSpacingAttrib(Ihandle* ih, const char* value)
 static char* qtButtonGetImagePositionAttrib(Ihandle* ih)
 {
   if (ih->data->img_position == IUP_IMGPOS_RIGHT)
-    return "RIGHT";
+    return const_cast<char*>("RIGHT");
   else if (ih->data->img_position == IUP_IMGPOS_TOP)
-    return "TOP";
+    return const_cast<char*>("TOP");
   else if (ih->data->img_position == IUP_IMGPOS_BOTTOM)
-    return "BOTTOM";
+    return const_cast<char*>("BOTTOM");
   else
-    return "LEFT";
+    return const_cast<char*>("LEFT");
 }
 
 static int qtButtonSetImagePositionAttrib(Ihandle* ih, const char* value)

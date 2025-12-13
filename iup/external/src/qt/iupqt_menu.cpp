@@ -705,7 +705,7 @@ static void qtRecentItemTriggered(Ihandle* menu, int index)
     char attr_name[32];
     const char* filename;
 
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", index);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", index);
     filename = iupAttribGet(menu, attr_name);
 
     if (filename)
@@ -756,7 +756,7 @@ extern "C" int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int
     char attr_name[32];
     QString title = QString::fromUtf8(filenames[i]);
 
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSetStr(menu, attr_name, filenames[i]);
 
     if (i < existing && i < actions.size())
@@ -784,7 +784,7 @@ extern "C" int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int
     delete action;
 
     char attr_name[32];
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", existing - 1);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", existing - 1);
     iupAttribSet(menu, attr_name, nullptr);
 
     existing--;

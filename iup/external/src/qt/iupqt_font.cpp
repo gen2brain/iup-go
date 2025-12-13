@@ -275,11 +275,11 @@ extern "C" char* iupdrvGetSystemFont(void)
   bool is_italic = info.italic();
 
   /* Build font string in IUP format (Pango-like) */
-  sprintf(str, "%s, %s%s%d",
-          family.toUtf8().constData(),
-          is_bold ? "Bold " : "",
-          is_italic ? "Italic " : "",
-          point_size);
+  snprintf(str, sizeof(str), "%s, %s%s%d",
+           family.toUtf8().constData(),
+           is_bold ? "Bold " : "",
+           is_italic ? "Italic " : "",
+           point_size);
 
   return str;
 }
