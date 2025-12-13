@@ -172,5 +172,7 @@ IUP_SDK_API char* iupdrvGetGlobal(const char *name)
     return iupStrReturnBoolean(iupmotStrGetUTF8Mode());
   if (iupStrEqual(name, "UTF8MODE_FILE"))
     return iupStrReturnBoolean(iupmotStrGetUTF8ModeFile());
+  if (iupStrEqual(name, "DARKMODE"))
+    return iupStrReturnBoolean(iupmotIsSystemDarkMode());
   return NULL;
 }
