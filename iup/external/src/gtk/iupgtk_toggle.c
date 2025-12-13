@@ -68,7 +68,67 @@ typedef struct _IupGtkSwitchData
   GtkWidget* drawing_area;
 } IupGtkSwitchData;
 
-static void gtkSwitchDraw(Ihandle* ih, IupGtkSwitchData* switch_data, GdkWindow* window, GdkGC* gc)
+static void gtkSwitchDrawCairo(Ihandle* ih, IupGtkSwitchData* switch_data, cairo_t* cr)
+{
+  int is_checked = switch_data->checked_state;
+  int is_active = iupdrvIsActive(ih);
+  int thumb_x, thumb_y;
+  GtkStyle* style;
+  GdkColor track_color, thumb_color, border_color;
+
+  style = gtk_widget_get_style(ih->handle);
+
+  if (!is_active)
+  {
+    track_color = style->bg[GTK_STATE_INSENSITIVE];
+    thumb_color = style->light[GTK_STATE_INSENSITIVE];
+    border_color = style->dark[GTK_STATE_INSENSITIVE];
+  }
+  else if (is_checked)
+  {
+    track_color = style->bg[GTK_STATE_SELECTED];
+    thumb_color = style->light[GTK_STATE_NORMAL];
+    border_color = style->dark[GTK_STATE_SELECTED];
+  }
+  else
+  {
+    track_color = style->dark[GTK_STATE_NORMAL];
+    thumb_color = style->light[GTK_STATE_NORMAL];
+    border_color = style->dark[GTK_STATE_ACTIVE];
+  }
+
+  /* Draw track (filled rectangle) */
+  gdk_cairo_set_source_color(cr, &track_color);
+  cairo_rectangle(cr, 0, 0, SWITCH_TRACK_WIDTH, SWITCH_TRACK_HEIGHT);
+  cairo_fill(cr);
+
+  /* Draw track border */
+  gdk_cairo_set_source_color(cr, &border_color);
+  cairo_rectangle(cr, 0.5, 0.5, SWITCH_TRACK_WIDTH - 1, SWITCH_TRACK_HEIGHT - 1);
+  cairo_set_line_width(cr, 1.0);
+  cairo_stroke(cr);
+
+  /* Calculate thumb position */
+  if (is_checked)
+    thumb_x = SWITCH_TRACK_WIDTH - SWITCH_THUMB_WIDTH - SWITCH_THUMB_MARGIN;
+  else
+    thumb_x = SWITCH_THUMB_MARGIN;
+
+  thumb_y = (SWITCH_TRACK_HEIGHT - SWITCH_THUMB_HEIGHT) / 2;
+
+  /* Draw thumb (filled rectangle) */
+  gdk_cairo_set_source_color(cr, &thumb_color);
+  cairo_rectangle(cr, thumb_x, thumb_y, SWITCH_THUMB_WIDTH, SWITCH_THUMB_HEIGHT);
+  cairo_fill(cr);
+
+  /* Draw thumb border */
+  gdk_cairo_set_source_color(cr, &border_color);
+  cairo_rectangle(cr, thumb_x + 0.5, thumb_y + 0.5, SWITCH_THUMB_WIDTH - 1, SWITCH_THUMB_HEIGHT - 1);
+  cairo_stroke(cr);
+}
+
+#ifndef GDK_DISABLE_DEPRECATED
+static void gtkSwitchDrawGdk(Ihandle* ih, IupGtkSwitchData* switch_data, GdkWindow* window, GdkGC* gc)
 {
   int is_checked = switch_data->checked_state;
   int is_active = iupdrvIsActive(ih);
@@ -127,21 +187,35 @@ static void gtkSwitchDraw(Ihandle* ih, IupGtkSwitchData* switch_data, GdkWindow*
   gdk_gc_set_foreground(gc, &border_color);
   gdk_draw_rectangle(window, gc, FALSE, thumb_x, thumb_y, SWITCH_THUMB_WIDTH - 1, SWITCH_THUMB_HEIGHT - 1);
 }
+#endif /* GDK_DISABLE_DEPRECATED */
 
 static gboolean gtkSwitchExposeEvent(GtkWidget* widget, GdkEventExpose* event, IupGtkSwitchData* switch_data)
 {
   Ihandle* ih = switch_data->ih;
-  GdkGC* gc;
 
   (void)event;
 
-  gc = gdk_gc_new(widget->window);
-  if (!gc)
-    return FALSE;
+#ifndef GDK_DISABLE_DEPRECATED
+  {
+    GdkGC* gc = gdk_gc_new(widget->window);
+    if (!gc)
+      return FALSE;
 
-  gtkSwitchDraw(ih, switch_data, widget->window, gc);
+    gtkSwitchDrawGdk(ih, switch_data, widget->window, gc);
 
-  g_object_unref(gc);
+    g_object_unref(gc);
+  }
+#else
+  {
+    cairo_t* cr = gdk_cairo_create(widget->window);
+    if (!cr)
+      return FALSE;
+
+    gtkSwitchDrawCairo(ih, switch_data, cr);
+
+    cairo_destroy(cr);
+  }
+#endif
 
   return FALSE;
 }

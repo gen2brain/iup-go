@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <gtk/gtk.h>
 
@@ -208,7 +209,10 @@ static void gtkFontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescrip
   IgtkFont* gtkfont;
 
 #if GTK_CHECK_VERSION(3, 0, 0)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   gtk_widget_override_font(widget, fontdesc);
+#pragma GCC diagnostic pop
 #else
   gtk_widget_modify_font(widget, fontdesc);
 #endif
@@ -357,15 +361,16 @@ char* iupgtkGetFontIdAttrib(Ihandle *ih)
     return NULL;
   else
   {
-#if GTK_CHECK_VERSION(3, 0, 0)
-    /* Not available in GTK3+: Pango/Cairo fonts do not expose X11 Font IDs needed for glXUseXFont().
+#if GTK_CHECK_VERSION(3, 0, 0) || defined(GDK_DISABLE_DEPRECATED)
+    /* Not available in GTK3+ or when GDK deprecated APIs are disabled:
+       Pango/Cairo fonts do not expose X11 Font IDs needed for glXUseXFont().
        Display list fonts (glXUseXFont/wglUseFontBitmaps) are deprecated in modern OpenGL. */
     return NULL;
 #else
     /* both functions are marked as deprecated in GDK (since 2.22) */
     GdkFont* gdk_font = gdk_font_from_description(gtkfont->fontdesc);
-    return (char*)gdk_font_id(gdk_font);  /* In UNIX will return an X Font ID,
-                                             in Win32 will return an HFONT */
+    return (char*)(intptr_t)gdk_font_id(gdk_font);  /* In UNIX will return an X Font ID,
+                                                       in Win32 will return an HFONT */
 #endif
   }
 }

@@ -2069,11 +2069,19 @@ static int gtkListMapMethod(Ihandle* ih)
       if (!iupAttribGetBoolean(ih, "CANFOCUS"))
       {
         iupgtkSetCanFocus(ih->handle, 0);
-        gtk_combo_box_set_focus_on_click((GtkComboBox*)ih->handle, FALSE);
+#if GTK_CHECK_VERSION(3, 20, 0)
+        gtk_widget_set_focus_on_click(ih->handle, FALSE);
+#else
+        gtk_combo_box_set_focus_on_click(GTK_COMBO_BOX(ih->handle), FALSE);
+#endif
       }
       else
       {
-        gtk_combo_box_set_focus_on_click((GtkComboBox*)ih->handle, TRUE);
+#if GTK_CHECK_VERSION(3, 20, 0)
+        gtk_widget_set_focus_on_click(ih->handle, TRUE);
+#else
+        gtk_combo_box_set_focus_on_click(GTK_COMBO_BOX(ih->handle), TRUE);
+#endif
         iupgtkSetCanFocus(ih->handle, 1);
       }
     }

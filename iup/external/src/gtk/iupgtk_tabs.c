@@ -450,7 +450,11 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       tab_close = gtk_button_new();
       gtk_button_set_image((GtkButton*)tab_close, image);
       gtk_button_set_relief((GtkButton*)tab_close, GTK_RELIEF_NONE);
-      gtk_button_set_focus_on_click((GtkButton*)tab_close, FALSE);
+#if GTK_CHECK_VERSION(3, 20, 0)
+      gtk_widget_set_focus_on_click(tab_close, FALSE);
+#else
+      gtk_button_set_focus_on_click(GTK_BUTTON(tab_close), FALSE);
+#endif
       iupgtkSetCanFocus(tab_close, FALSE);
 
       g_signal_connect(G_OBJECT(tab_close), "clicked", G_CALLBACK(gtkTabsCloseButtonClicked), child);

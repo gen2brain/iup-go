@@ -2122,7 +2122,10 @@ static void gtkTreeCellTextEditingStarted(GtkCellRenderer *cell, GtkCellEditable
   if (fontdesc)
   {
 #if GTK_CHECK_VERSION(3, 0, 0)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     gtk_widget_override_font(GTK_WIDGET(editable), fontdesc);
+#pragma GCC diagnostic pop
 #else
     gtk_widget_modify_font(GTK_WIDGET(editable), fontdesc);
 #endif

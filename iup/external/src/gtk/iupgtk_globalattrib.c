@@ -153,15 +153,10 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
 {
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
-    GdkScreen *screen = gdk_screen_get_default();
     int x = 0;
     int y = 0;
-    int w = gdk_screen_get_width(screen);
-    int h = gdk_screen_get_height(screen);
+    int w, h;
 
-#if GTK_CHECK_VERSION(3, 0, 0)
-    /* gdk_window_get_root_origin is deprecated and fails on Wayland. */
-    /* Get the origin from the primary monitor instead. */
 #if GTK_CHECK_VERSION(3, 22, 0)
     GdkDisplay *display = gdk_display_get_default();
     GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
@@ -171,7 +166,12 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     gdk_monitor_get_geometry(monitor, &rect);
     x = rect.x;
     y = rect.y;
-#else
+    w = rect.width;
+    h = rect.height;
+#elif GTK_CHECK_VERSION(3, 0, 0)
+    GdkScreen *screen = gdk_screen_get_default();
+    w = gdk_screen_get_width(screen);
+    h = gdk_screen_get_height(screen);
     GdkRectangle rect;
 #if GTK_CHECK_VERSION(2, 20, 0)
     gint monitor_num = gdk_screen_get_primary_monitor(screen);
@@ -181,9 +181,10 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
     gdk_screen_get_monitor_geometry(screen, monitor_num, &rect);
     x = rect.x;
     y = rect.y;
-#endif
 #else
-    /* GTK2, Wayland not supported. */
+    GdkScreen *screen = gdk_screen_get_default();
+    w = gdk_screen_get_width(screen);
+    h = gdk_screen_get_height(screen);
     GdkWindow *root = gdk_screen_get_root_window(gdk_screen_get_default());
     gdk_window_get_root_origin(root, &x, &y);
 #endif
@@ -230,7 +231,12 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
   }
   if (iupStrEqual(name, "TRUECOLORCANVAS"))
   {
+#if GTK_CHECK_VERSION(3, 22, 0)
+    GdkVisual* visual = gdk_screen_get_system_visual(gdk_screen_get_default());
+    return iupStrReturnBoolean(gdk_visual_get_depth(visual) > 8);
+#else
     return iupStrReturnBoolean(gdk_visual_get_best_depth() > 8);
+#endif
   }
   if (iupStrEqual(name, "UTF8MODE"))
   {

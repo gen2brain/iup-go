@@ -709,12 +709,14 @@ static int gtkDialogMapMethod(Ihandle* ih)
   gtk_container_add((GtkContainer*)ih->handle, inner_parent);
   gtk_widget_show(inner_parent);
 
+#if !GTK_CHECK_VERSION(3, 22, 0)
   /* Apply APPID if set (must be before realize) */
   {
     const char* appid = IupGetGlobal("_IUP_APPID_INTERNAL");
     if (appid)
       gtk_window_set_wmclass(GTK_WINDOW(ih->handle), appid, appid);
   }
+#endif
 
   /* initialize the widget */
   gtk_widget_realize(ih->handle);

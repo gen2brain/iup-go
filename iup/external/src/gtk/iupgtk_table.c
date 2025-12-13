@@ -1136,7 +1136,15 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
   /* Get theme border color for subtle focus indicator */
   GtkStyleContext* context = gtk_widget_get_style_context(widget);
   GdkRGBA color;
+#if GTK_CHECK_VERSION(3, 16, 0)
+  if (!gtk_style_context_lookup_color(context, "borders", &color) &&
+      !gtk_style_context_lookup_color(context, "theme_unfocused_border_color", &color))
+  {
+    color.red = 0.5; color.green = 0.5; color.blue = 0.5; color.alpha = 1.0;
+  }
+#else
   gtk_style_context_get_border_color(context, gtk_widget_get_state_flags(widget), &color);
+#endif
 
   /* Draw dashed border */
   cairo_set_source_rgba(cr, color.red, color.green, color.blue, 0.5);  /* More subtle with lower opacity */
@@ -1150,35 +1158,60 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
   cairo_rectangle(cr, cell_area.x + 0.5, cell_area.y + 0.5, cell_area.width - 1, cell_area.height - 1);
   cairo_stroke(cr);
 #else
-  /* GTK2: Use GDK drawing */
+  /* GTK2 */
   GtkStyle* style = gtk_widget_get_style(widget);
   GdkWindow* window = gtk_tree_view_get_bin_window(GTK_TREE_VIEW(gtk_data->tree_view));
 
   if (!window)
     return FALSE;
 
-  GdkGC* gc = gdk_gc_new(window);
-
-  /* Set dashed line style */
-  gint8 dashes[2] = {2, 2};
-  gdk_gc_set_dashes(gc, 0, dashes, 2);
-
-  GdkGCValues gcval;
-  gcval.line_style = GDK_LINE_ON_OFF_DASH;
-  gcval.line_width = 1;
-  gdk_gc_set_values(gc, &gcval, GDK_GC_LINE_STYLE | GDK_GC_LINE_WIDTH);
-
-  /* Use subtle dark color */
-  GdkColor* border_color = &style->dark[GTK_STATE_NORMAL];
-  gdk_gc_set_rgb_fg_color(gc, border_color);
-
-  /* Draw dashed rectangle, need to convert widget coords back to bin window coords */
+  /* Convert widget coords back to bin window coords for GTK2 */
   int bin_x, bin_y;
   gtk_tree_view_convert_widget_to_bin_window_coords(GTK_TREE_VIEW(gtk_data->tree_view), cell_area.x, cell_area.y, &bin_x, &bin_y);
 
-  gdk_draw_rectangle(window, gc, FALSE, bin_x, bin_y, cell_area.width - 1, cell_area.height - 1);
+#ifndef GDK_DISABLE_DEPRECATED
+  {
+    GdkGC* gc = gdk_gc_new(window);
 
-  g_object_unref(gc);
+    /* Set dashed line style */
+    gint8 dashes[2] = {2, 2};
+    gdk_gc_set_dashes(gc, 0, dashes, 2);
+
+    GdkGCValues gcval;
+    gcval.line_style = GDK_LINE_ON_OFF_DASH;
+    gcval.line_width = 1;
+    gdk_gc_set_values(gc, &gcval, GDK_GC_LINE_STYLE | GDK_GC_LINE_WIDTH);
+
+    /* Use subtle dark color */
+    GdkColor* border_color = &style->dark[GTK_STATE_NORMAL];
+    gdk_gc_set_rgb_fg_color(gc, border_color);
+
+    gdk_draw_rectangle(window, gc, FALSE, bin_x, bin_y, cell_area.width - 1, cell_area.height - 1);
+
+    g_object_unref(gc);
+  }
+#else
+  {
+    cairo_t* cr = gdk_cairo_create(window);
+    if (!cr)
+      return FALSE;
+
+    /* Use subtle dark color */
+    GdkColor* border_color = &style->dark[GTK_STATE_NORMAL];
+    gdk_cairo_set_source_color(cr, border_color);
+    cairo_set_line_width(cr, 1.0);
+
+    /* Set dash pattern */
+    double dashes[] = {2.0, 2.0};
+    cairo_set_dash(cr, dashes, 2, 0);
+
+    /* Draw rectangle */
+    cairo_rectangle(cr, bin_x + 0.5, bin_y + 0.5, cell_area.width - 1, cell_area.height - 1);
+    cairo_stroke(cr);
+
+    cairo_destroy(cr);
+  }
+#endif
 #endif
 
   return FALSE;  /* Allow other handlers to run */

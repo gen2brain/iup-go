@@ -180,7 +180,14 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
   old_parent = gtk_widget_get_parent(widget);
   if (old_parent != new_parent)
   {
+#if GTK_CHECK_VERSION(3, 14, 0)
+    g_object_ref(widget);
+    gtk_container_remove(GTK_CONTAINER(old_parent), widget);
+    gtk_container_add(GTK_CONTAINER(new_parent), widget);
+    g_object_unref(widget);
+#else
     gtk_widget_reparent(widget, new_parent);
+#endif
     gtk_widget_realize(widget);
   }
 }
@@ -286,9 +293,11 @@ IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
   /* Post a REDRAW */
   gtk_widget_queue_draw(ih->handle);
 
-  /* Force a REDRAW */
+#if !GTK_CHECK_VERSION(3, 22, 0)
+  /* Force a REDRAW (deprecated in GTK 3.22, no replacement needed) */
   if (window)
     gdk_window_process_updates(window, TRUE);
+#endif
 }
 
 static GtkWidget* gtkGetWindowedParent(GtkWidget* widget)
@@ -643,9 +652,12 @@ void iupgtkSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, u
 
   iupgdkRGBASet(&rgba, r, g, b);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   gtk_widget_override_color(handle, GTK_STATE_FLAG_NORMAL, &rgba);
   gtk_widget_override_color(handle, GTK_STATE_FLAG_ACTIVE, &rgba);
   gtk_widget_override_color(handle, GTK_STATE_FLAG_PRELIGHT, &rgba);
+#pragma GCC diagnostic pop
 #else
   GtkRcStyle *rc_style;  
   GdkColor color;
@@ -694,7 +706,7 @@ static GdkCursor* gtkEmptyCursor(Ihandle* ih)
 {
 #if GTK_CHECK_VERSION(2, 16, 0)
   (void)ih;
-  return gdk_cursor_new(GDK_BLANK_CURSOR);
+  return gdk_cursor_new_for_display(gdk_display_get_default(), GDK_BLANK_CURSOR);
 #else  
   /* creates an empty cursor */
   GdkColor cursor_color = {0L,0,0,0};
@@ -766,7 +778,7 @@ static GdkCursor* gtkGetCursor(Ihandle* ih, const char* name)
     if (iupStrEqualNoCase(name, table[i].iupname)) 
     {
       if (table[i].sysname)
-        cur = gdk_cursor_new(table[i].sysname);
+        cur = gdk_cursor_new_for_display(gdk_display_get_default(), table[i].sysname);
       else
         cur = gtkEmptyCursor(ih);
 
@@ -947,7 +959,7 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
   if (!keyval)
     return;
 
-  if (!gdk_keymap_get_entries_for_keyval(gdk_keymap_get_default(), keyval, &keys, &nkeys))
+  if (!gdk_keymap_get_entries_for_keyval(gdk_keymap_get_for_display(gdk_display_get_default()), keyval, &keys, &nkeys))
     return;
 
   window = iupgtkGetWindow(focus->handle);
@@ -964,7 +976,11 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
 IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
   /* VirtualBox does not reproduce the mouse move visually, but it is working. */
-#if GTK_CHECK_VERSION(3, 0, 0)
+#if GTK_CHECK_VERSION(3, 20, 0)
+  GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  gdk_device_warp(device, gdk_screen_get_default(), x, y);
+#elif GTK_CHECK_VERSION(3, 0, 0)
   GdkDeviceManager* device_manager = gdk_display_get_device_manager(gdk_display_get_default());
   GdkDevice* device = gdk_device_manager_get_client_pointer(device_manager);
   gdk_device_warp(device, gdk_screen_get_default(), x, y);
@@ -987,7 +1003,10 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 
     /* TODO check gdk_event_set_pointer_emulated */
 
-#if GTK_CHECK_VERSION(3, 0, 0)
+#if GTK_CHECK_VERSION(3, 20, 0)
+    GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());
+    GdkDevice* device = gdk_seat_get_pointer(seat);
+#elif GTK_CHECK_VERSION(3, 0, 0)
     GdkDeviceManager* device_manager = gdk_display_get_device_manager(gdk_display_get_default());
     GdkDevice* device = gdk_device_manager_get_client_pointer(device_manager);
 #endif
@@ -1116,7 +1135,12 @@ GdkWindow* iupgtkGetWindow(GtkWidget *widget)
 
 void iupgtkWindowGetPointer(GdkWindow *window, int *x, int *y, GdkModifierType *mask)
 {
-#if GTK_CHECK_VERSION(3, 0, 0)
+#if GTK_CHECK_VERSION(3, 20, 0)
+  GdkDisplay *display = gdk_window_get_display(window);
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  gdk_window_get_device_position(window, device, x, y, mask);
+#elif GTK_CHECK_VERSION(3, 0, 0)
   GdkDisplay *display = gdk_window_get_display(window);
   GdkDeviceManager* device_manager = gdk_display_get_device_manager(display);
   GdkDevice* device = gdk_device_manager_get_client_pointer(device_manager);
@@ -1175,7 +1199,14 @@ int iupgtkIsSystemDarkMode(void)
   temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   style = gtk_widget_get_style_context(temp_window);
 
+#if GTK_CHECK_VERSION(3, 16, 0)
+  if (!gtk_style_context_lookup_color(style, "theme_bg_color", &bg))
+  {
+    bg.red = 1.0; bg.green = 1.0; bg.blue = 1.0; bg.alpha = 1.0;
+  }
+#else
   gtk_style_context_get_background_color(style, GTK_STATE_FLAG_NORMAL, &bg);
+#endif
   gtk_style_context_get_color(style, GTK_STATE_FLAG_NORMAL, &fg);
 
   /* Calculate relative luminance using standard formula (ITU-R BT.709) */

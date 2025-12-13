@@ -531,7 +531,13 @@ static int gtkCanvasSetDXAttrib(Ihandle* ih, const char *value)
       iupAttribSet(ih, "XHIDDEN", "NO");
 
       if (value_changed)
+      {
+#if GTK_CHECK_VERSION(3, 18, 0)
+        g_signal_emit_by_name(sb_horiz_adjust, "value-changed");
+#else
         gtk_adjustment_value_changed(sb_horiz_adjust);
+#endif
+      }
     }
   }
   return 1;
@@ -619,7 +625,13 @@ static int gtkCanvasSetDYAttrib(Ihandle* ih, const char *value)
       iupAttribSet(ih, "YHIDDEN", "NO");
 
       if (value_changed)
+      {
+#if GTK_CHECK_VERSION(3, 18, 0)
+        g_signal_emit_by_name(sb_vert_adjust, "value-changed");
+#else
         gtk_adjustment_value_changed(sb_vert_adjust);
+#endif
+      }
     }
   }
   return 1;
@@ -706,14 +718,17 @@ static int gtkCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
       if (sb) iupgtkSetBgColor(sb, r, g, b);
     }
 
-    /* enable automatic double buffering */
+#if !GTK_CHECK_VERSION(3, 14, 0)
+    /* enable automatic double buffering (deprecated in GTK 3.14, always enabled) */
     gtk_widget_set_double_buffered(ih->handle, TRUE);
     gtk_widget_set_double_buffered(sb_win, TRUE);
+#endif
 
     return iupdrvBaseSetBgColorAttrib(ih, value);
   }
   else
   {
+#if !GTK_CHECK_VERSION(3, 14, 0)
     /* disable automatic double buffering if not a container or an OpenGL canvas */
     if (ih->iclass->childtype != IUP_CHILDNONE && !iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
     {
@@ -729,6 +744,7 @@ static int gtkCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
       gdk_window_set_back_pixmap(iupgtkGetWindow(ih->handle), NULL, FALSE);
 #endif
     }
+#endif
 
     iupAttribSet(ih, "_IUPGTK_NO_BGCOLOR", "1");
     return 1;
@@ -744,8 +760,10 @@ static char* gtkCanvasGetDrawSizeAttrib(Ihandle *ih)
 #if GTK_CHECK_VERSION(2, 24, 0)
     w = gdk_window_get_width(window);
     h = gdk_window_get_height(window);
-#else
+#elif !defined(GDK_DISABLE_DEPRECATED)
     gdk_drawable_get_size(window, &w, &h);
+#else
+    gdk_window_get_geometry(window, NULL, NULL, &w, &h, NULL);
 #endif
     return iupStrReturnIntInt(w, h, 'x');
   }

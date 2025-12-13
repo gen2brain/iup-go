@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#undef GTK_DISABLE_DEPRECATED  /* Since GTK 3.10 gtk_image_menu is deprecated. */
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -80,12 +79,58 @@ static void gtkMenuPositionFunc(GtkMenu *menu, gint *x, gint *y, gboolean *push_
 
 int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
+#if GTK_CHECK_VERSION(3, 22, 0)
+  GdkRectangle rect;
+  GdkWindow* window;
+  GdkGravity rect_anchor = GDK_GRAVITY_NORTH_WEST;
+  GdkGravity menu_anchor = GDK_GRAVITY_NORTH_WEST;
+  char* value = iupAttribGet(ih, "POPUPALIGN");
+
+  rect.x = x;
+  rect.y = y;
+  rect.width = 1;
+  rect.height = 1;
+
+  if (value)
+  {
+    char value1[30], value2[30];
+    iupStrToStrStr(value, value1, value2, ':');
+
+    if (iupStrEqualNoCase(value1, "ARIGHT"))
+      menu_anchor = GDK_GRAVITY_NORTH_EAST;
+    else if (iupStrEqualNoCase(value1, "ACENTER"))
+      menu_anchor = GDK_GRAVITY_NORTH;
+
+    if (iupStrEqualNoCase(value2, "ABOTTOM"))
+    {
+      if (menu_anchor == GDK_GRAVITY_NORTH_EAST)
+        menu_anchor = GDK_GRAVITY_SOUTH_EAST;
+      else if (menu_anchor == GDK_GRAVITY_NORTH)
+        menu_anchor = GDK_GRAVITY_SOUTH;
+      else
+        menu_anchor = GDK_GRAVITY_SOUTH_WEST;
+    }
+    else if (iupStrEqualNoCase(value2, "ACENTER"))
+    {
+      if (menu_anchor == GDK_GRAVITY_NORTH_EAST)
+        menu_anchor = GDK_GRAVITY_EAST;
+      else if (menu_anchor == GDK_GRAVITY_NORTH)
+        menu_anchor = GDK_GRAVITY_CENTER;
+      else
+        menu_anchor = GDK_GRAVITY_WEST;
+    }
+  }
+
+  window = gdk_screen_get_root_window(gdk_screen_get_default());
+  gtk_menu_popup_at_rect((GtkMenu*)ih->handle, window, &rect, rect_anchor, menu_anchor, NULL);
+#else
   ImenuPos menupos;
   menupos.x = x;
   menupos.y = y;
   menupos.ih = ih;
   gtk_menu_popup((GtkMenu*)ih->handle, NULL, NULL, (GtkMenuPositionFunc)gtkMenuPositionFunc,
                  (gpointer)&menupos, 0, gtk_get_current_event_time());
+#endif
   gtk_main();
   return IUP_NOERROR;
 }
@@ -101,38 +146,148 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 #endif
 }
 
-/* TODO:
-GtkImageMenuItem has been deprecated since GTK+ 3.10. 
-If you want to display an icon in a menu item, 
-you should use GtkMenuItem and pack a GtkBox with a GtkImage and a GtkLabel instead. 
+/* GTK 3.10+ uses GtkMenuItem + GtkBox instead of deprecated GtkImageMenuItem */
 
-Furthermore, if you would like to display keyboard accelerator, 
-you must pack the accel label into the box using gtk_box_pack_end() 
-and align the label, otherwise the accelerator will not display correctly. 
+#if GTK_CHECK_VERSION(3, 10, 0)
 
-Example:
+/* Check if menu item has our custom image box structure */
+static int gtkItemHasImageBox(Ihandle* ih)
+{
+  GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
+  return (child && GTK_IS_BOX(child));
+}
 
-GtkWidget *box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
-GtkWidget *icon = gtk_image_new_from_icon_name ("folder-music-symbolic", GTK_ICON_SIZE_MENU);
-GtkWidget *label = gtk_accel_label_new ("Music");
-GtkWidget *menu_item = gtk_menu_item_new ();
-GtkAccelGroup *accel_group = gtk_accel_group_new ();
+/* Get the image widget from our box structure */
+static GtkWidget* gtkItemGetImageWidget(Ihandle* ih)
+{
+  GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
+  if (child && GTK_IS_BOX(child))
+  {
+    GList* children = gtk_container_get_children(GTK_CONTAINER(child));
+    GList* l;
+    GtkWidget* image = NULL;
+    for (l = children; l; l = l->next)
+    {
+      if (GTK_IS_IMAGE(l->data))
+      {
+        image = (GtkWidget*)l->data;
+        break;
+      }
+    }
+    g_list_free(children);
+    return image;
+  }
+  return NULL;
+}
 
-gtk_container_add (GTK_CONTAINER (box), icon);
+/* Get the label widget from menu item (handles both box and simple structures) */
+static GtkWidget* gtkItemGetLabelWidget(Ihandle* ih)
+{
+  GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
+  if (child && GTK_IS_BOX(child))
+  {
+    GList* children = gtk_container_get_children(GTK_CONTAINER(child));
+    GList* l;
+    GtkWidget* label = NULL;
+    for (l = children; l; l = l->next)
+    {
+      if (GTK_IS_LABEL(l->data))
+      {
+        label = (GtkWidget*)l->data;
+        break;
+      }
+    }
+    g_list_free(children);
+    return label;
+  }
+  else if (child && GTK_IS_LABEL(child))
+    return child;
+  return NULL;
+}
 
-gtk_label_set_use_underline (GTK_LABEL (label), TRUE);
-gtk_label_set_xalign (GTK_LABEL (label), 0.0);
+/* Set/update/remove image in menu item with box structure */
+static void gtkItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
+{
+  GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
 
-gtk_widget_add_accelerator (menu_item, "activate", accel_group,
-GDK_KEY_m, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
-gtk_accel_label_set_accel_widget (GTK_ACCEL_LABEL (label), menu_item);
+  if (!pixbuf)
+  {
+    /* Remove image if present */
+    if (child && GTK_IS_BOX(child))
+    {
+      GtkWidget* image = gtkItemGetImageWidget(ih);
+      if (image)
+        gtk_widget_destroy(image);
+    }
+    return;
+  }
 
-gtk_box_pack_end (GTK_BOX (box), label, TRUE, TRUE, 0);
+  if (child && GTK_IS_BOX(child))
+  {
+    /* Box exists, update or add image */
+    GtkWidget* image = gtkItemGetImageWidget(ih);
+    if (image)
+    {
+      gtk_image_set_from_pixbuf(GTK_IMAGE(image), pixbuf);
+    }
+    else
+    {
+      image = gtk_image_new_from_pixbuf(pixbuf);
+      gtk_box_pack_start(GTK_BOX(child), image, FALSE, FALSE, 0);
+      gtk_box_reorder_child(GTK_BOX(child), image, 0);
+      gtk_widget_show(image);
+    }
+  }
+  else if (child && GTK_IS_LABEL(child))
+  {
+    /* Convert from simple label to box structure */
+    GtkWidget* box;
+    GtkWidget* image;
 
-gtk_container_add (GTK_CONTAINER (menu_item), box);
+    g_object_ref(child);
+    gtk_container_remove(GTK_CONTAINER(ih->handle), child);
 
-gtk_widget_show_all (menu_item);
-*/
+    box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    image = gtk_image_new_from_pixbuf(pixbuf);
+
+    gtk_box_pack_start(GTK_BOX(box), image, FALSE, FALSE, 0);
+    gtk_box_pack_end(GTK_BOX(box), child, TRUE, TRUE, 0);
+    g_object_unref(child);
+
+    gtk_container_add(GTK_CONTAINER(ih->handle), box);
+    gtk_widget_show_all(box);
+  }
+}
+
+/* Create a menu item with box structure for image support */
+static GtkWidget* gtkMenuItemNewWithImageSupport(void)
+{
+  GtkWidget* menu_item = gtk_menu_item_new();
+  GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+  GtkWidget* label = gtk_label_new("");
+
+  gtk_label_set_use_underline(GTK_LABEL(label), TRUE);
+  gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+
+  gtk_box_pack_end(GTK_BOX(box), label, TRUE, TRUE, 0);
+  gtk_container_add(GTK_CONTAINER(menu_item), box);
+
+  return menu_item;
+}
+
+static void gtkItemUpdateImage(Ihandle* ih, const char* value, const char* image, const char* impress)
+{
+  GdkPixbuf* pixbuf;
+
+  if (!impress || !iupStrBoolean(value))
+    pixbuf = iupImageGetImage(image, ih, 0, NULL);
+  else
+    pixbuf = iupImageGetImage(impress, ih, 0, NULL);
+
+  gtkItemSetImageWidget(ih, pixbuf);
+}
+
+#else /* GTK < 3.10 - use GtkImageMenuItem */
 
 static void gtkItemUpdateImage(Ihandle* ih, const char* value, const char* image, const char* impress)
 {
@@ -158,6 +313,8 @@ static void gtkItemUpdateImage(Ihandle* ih, const char* value, const char* image
   else
     gtk_image_menu_item_set_image((GtkImageMenuItem*)ih->handle, NULL);
 }
+
+#endif /* GTK_CHECK_VERSION(3, 10, 0) */
 
 
 /*******************************************************************************************/
@@ -214,7 +371,11 @@ static void gtkItemActivate(GtkWidget *widget, Ihandle* ih)
     g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkItemActivate), ih);
   }
 
+#if GTK_CHECK_VERSION(3, 10, 0)
+  if (gtkItemHasImageBox(ih))
+#else
   if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
+#endif
   {
     if (iupAttribGetBoolean(ih, "AUTOTOGGLE"))
     {
@@ -337,7 +498,11 @@ void iupdrvMenuInitClass(Iclass* ic)
 
 static int gtkItemSetTitleImageAttrib(Ihandle* ih, const char* value)
 {
+#if GTK_CHECK_VERSION(3, 10, 0)
+  if (gtkItemHasImageBox(ih))
+#else
   if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
+#endif
   {
     gtkItemUpdateImage(ih, NULL, value, NULL);
     return 1;
@@ -348,7 +513,11 @@ static int gtkItemSetTitleImageAttrib(Ihandle* ih, const char* value)
 
 static int gtkItemSetImageAttrib(Ihandle* ih, const char* value)
 {
+#if GTK_CHECK_VERSION(3, 10, 0)
+  if (gtkItemHasImageBox(ih))
+#else
   if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
+#endif
   {
     gtkItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), value, iupAttribGet(ih, "IMPRESS"));
     return 1;
@@ -359,7 +528,11 @@ static int gtkItemSetImageAttrib(Ihandle* ih, const char* value)
 
 static int gtkItemSetImpressAttrib(Ihandle* ih, const char* value)
 {
+#if GTK_CHECK_VERSION(3, 10, 0)
+  if (gtkItemHasImageBox(ih))
+#else
   if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
+#endif
   {
     gtkItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), iupAttribGet(ih, "IMAGE"), value);
     return 1;
@@ -381,9 +554,14 @@ static int gtkItemSetTitleAttrib(Ihandle* ih, const char* value)
   else
     str = iupMenuProcessTitle(ih, value);
 
+#if GTK_CHECK_VERSION(3, 10, 0)
+  label = gtkItemGetLabelWidget(ih);
+#else
   label = gtk_bin_get_child((GtkBin*)ih->handle);
+#endif
 
-  iupgtkSetMnemonicTitle(ih, (GtkLabel*)label, str);
+  if (label)
+    iupgtkSetMnemonicTitle(ih, (GtkLabel*)label, str);
 
   if (str != value) free(str);
   return 1;
@@ -401,7 +579,11 @@ static int gtkItemSetValueAttrib(Ihandle* ih, const char* value)
     g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkItemActivate), ih);
     return 0;
   }
+#if GTK_CHECK_VERSION(3, 10, 0)
+  else if (gtkItemHasImageBox(ih))
+#else
   else if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
+#endif
   {
     gtkItemUpdateImage(ih, value, iupAttribGet(ih, "IMAGE"), iupAttribGet(ih, "IMPRESS"));
     return 1;
@@ -429,7 +611,13 @@ static int gtkItemMapMethod(Ihandle* ih)
 #endif
   {
     if (iupAttribGet(ih, "IMAGE")||iupAttribGet(ih, "TITLEIMAGE"))
+    {
+#if GTK_CHECK_VERSION(3, 10, 0)
+      ih->handle = gtkMenuItemNewWithImageSupport();
+#else
       ih->handle = gtk_image_menu_item_new_with_label("");
+#endif
+    }
     else if (iupAttribGetBoolean(ih->parent, "RADIO"))
     {
       GtkRadioMenuItem* last_tg = (GtkRadioMenuItem*)iupAttribGet(ih->parent, "_IUPGTK_LASTRADIOITEM");
@@ -446,7 +634,7 @@ static int gtkItemMapMethod(Ihandle* ih)
       if (!hidemark)
       {
         /* change HIDEMARK default if VALUE is not defined, after GTK 2.14 */
-        if (!iupAttribGet(ih, "VALUE")) 
+        if (!iupAttribGet(ih, "VALUE"))
           hidemark = "YES";
       }
 #endif
@@ -505,7 +693,11 @@ void iupdrvItemInitClass(Iclass* ic)
 
 static int gtkSubmenuSetImageAttrib(Ihandle* ih, const char* value)
 {
+#if GTK_CHECK_VERSION(3, 10, 0)
+  if (gtkItemHasImageBox(ih))
+#else
   if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
+#endif
   {
     gtkItemUpdateImage(ih, NULL, value, NULL);
     return 1;
@@ -526,12 +718,18 @@ static int gtkSubmenuMapMethod(Ihandle* ih)
     ih->handle = gtk_menu_item_new_with_label("");
   else
 #endif
+  {
+#if GTK_CHECK_VERSION(3, 10, 0)
+    ih->handle = gtkMenuItemNewWithImageSupport();
+#else
     ih->handle = gtk_image_menu_item_new_with_label("");
+#endif
+  }
 
   if (!ih->handle)
     return IUP_ERROR;
 
-  ih->serial = iupMenuGetChildId(ih); 
+  ih->serial = iupMenuGetChildId(ih);
 
   pos = IupGetChildPos(ih->parent, ih);
   gtk_menu_shell_insert((GtkMenuShell*)ih->parent->handle, ih->handle, pos);
