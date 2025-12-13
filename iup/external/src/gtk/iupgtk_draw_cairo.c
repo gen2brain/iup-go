@@ -55,7 +55,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
 #if !GTK_CHECK_VERSION(3, 0, 0)
   dc->wnd = (GdkWindow*)IupGetAttribute(ih, "DRAWABLE");
-  gdk_drawable_get_size(dc->wnd, &dc->w, &dc->h);
+  gdk_window_get_geometry(dc->wnd, NULL, NULL, &dc->w, &dc->h, NULL);
 #else
   dc->w = gtk_widget_get_allocated_width(dc->widget);
   dc->h = gtk_widget_get_allocated_height(dc->widget);
@@ -120,7 +120,7 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 {
   int w, h;
 #if !GTK_CHECK_VERSION(3, 0, 0)
-  gdk_drawable_get_size(dc->wnd, &w, &h);
+  gdk_window_get_geometry(dc->wnd, NULL, NULL, &w, &h, NULL);
 #else
   w = gtk_widget_get_allocated_width(dc->widget);
   h = gtk_widget_get_allocated_height(dc->widget);

@@ -712,7 +712,9 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
       gtk_widget_set_size_request(frame, preview_width, preview_height);
 
       preview_canvas = gtk_drawing_area_new();
+#if !GTK_CHECK_VERSION(3, 14, 0)
       gtk_widget_set_double_buffered(preview_canvas, FALSE);
+#endif
       gtk_container_add(GTK_CONTAINER(frame), preview_canvas);
       gtk_widget_show(preview_canvas);
 

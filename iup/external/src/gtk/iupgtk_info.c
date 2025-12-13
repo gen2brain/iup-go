@@ -60,21 +60,33 @@ IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
 
 IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
 {
-  GdkScreen* screen = gdk_screen_get_default();
   GdkRectangle rect;
+#if GTK_CHECK_VERSION(3, 22, 0)
+  GdkDisplay* display = gdk_display_get_default();
+  GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
+  if (!monitor)
+    monitor = gdk_display_get_monitor(display, 0);
+  gdk_monitor_get_geometry(monitor, &rect);
+#else
+  GdkScreen* screen = gdk_screen_get_default();
 #if GTK_CHECK_VERSION(2, 20, 0)
   gint monitor = gdk_screen_get_primary_monitor(screen);
 #else
   gint monitor = gdk_screen_get_monitor_at_point(screen, 0, 0);
 #endif
   gdk_screen_get_monitor_geometry(screen, monitor, &rect);
+#endif
   *width = rect.width;
   *height = rect.height;
 }
 
 IUP_SDK_API int iupdrvGetScreenDepth(void)
 {
+#if GTK_CHECK_VERSION(3, 22, 0)
+  GdkVisual* visual = gdk_screen_get_system_visual(gdk_screen_get_default());
+#else
   GdkVisual* visual = gdk_visual_get_system();
+#endif
 #if GTK_CHECK_VERSION(2, 22, 0)
   return gdk_visual_get_depth(visual);
 #else
@@ -89,7 +101,11 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
 
 IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
 {
-#if GTK_CHECK_VERSION(3, 0, 0)
+#if GTK_CHECK_VERSION(3, 20, 0)
+  GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  gdk_device_get_position(device, NULL, x, y);
+#elif GTK_CHECK_VERSION(3, 0, 0)
   GdkDeviceManager* device_manager = gdk_display_get_device_manager(gdk_display_get_default());
   GdkDevice* device = gdk_device_manager_get_client_pointer(device_manager);
   gdk_device_get_position(device, NULL, x, y);
@@ -103,7 +119,7 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
   GdkModifierType aModifierType = 0;
 
 #if GTK_CHECK_VERSION(3, 4, 0)
-  GdkKeymap* keymap = gdk_keymap_get_default();
+  GdkKeymap* keymap = gdk_keymap_get_for_display(gdk_display_get_default());
   if (keymap)
     aModifierType = gdk_keymap_get_modifier_state(keymap);
 #else

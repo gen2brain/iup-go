@@ -281,7 +281,7 @@ void* iupdrvImageCreateCursor(Ihandle *ih)
   int hx=0, hy=0;
   iupStrToIntInt(iupAttribGet(ih, "HOTSPOT"), &hx, &hy, ':');
 
-#if !GTK_CHECK_VERSION(3, 0, 0)  /* not supported in GTK3 */
+#if !GTK_CHECK_VERSION(3, 0, 0) && !defined(GDK_DISABLE_DEPRECATED)  /* not supported in GTK3 or when GDK deprecated APIs are disabled */
   if (iupAttribGetInt(ih, "BPP") == 8 && !iupAttribGet(ih, "3"))
   {
     GdkPixmap *source, *mask;
