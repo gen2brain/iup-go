@@ -183,48 +183,71 @@ IUP_API int IupRecordInput(const char* filename, int mode)
 static void iPlayReadInt(FILE* file, int *value, int mode)
 {
   if (mode == IUP_RECTEXT)
-    fscanf(file, "%d ", value);
+  {
+    if (fscanf(file, "%d ", value) != 1)
+      *value = 0;
+  }
   else
-    fread(value, sizeof(int), 1, file);
+  {
+    if (fread(value, sizeof(int), 1, file) != 1)
+      *value = 0;
+  }
 }
 
 static void iPlayReadFloat(FILE* file, float *value, int mode)
 {
   if (mode == IUP_RECTEXT)
-    fscanf(file, "%f ", value);
+  {
+    if (fscanf(file, "%f ", value) != 1)
+      *value = 0;
+  }
   else
-    fread(value, sizeof(float), 1, file);
+  {
+    if (fread(value, sizeof(float), 1, file) != 1)
+      *value = 0;
+  }
 }
 
 static void iPlayReadByte(FILE* file, char *value, int mode)
 {
   if (mode == IUP_RECTEXT)
   {
-    int ivalue;
-    fscanf(file, "%d ", &ivalue);
+    int ivalue = 0;
+    if (fscanf(file, "%d ", &ivalue) != 1)
+      ivalue = 0;
     *value = (char)ivalue;
   }
   else
-    fread(value, 1, 1, file);
+  {
+    if (fread(value, 1, 1, file) != 1)
+      *value = 0;
+  }
 }
 
 static void iPlayReadChar(FILE* file, char *value, int mode)
 {
   if (mode == IUP_RECTEXT)
-    fscanf(file, "%c ", value);
+  {
+    if (fscanf(file, "%c ", value) != 1)
+      *value = 0;
+  }
   else
-    fread(value, 1, 1, file);
+  {
+    if (fread(value, 1, 1, file) != 1)
+      *value = 0;
+  }
 }
 
 static void iPlayReadStr(FILE* file, char* value, int len, int mode)
 {
-  fread(value, 1, len, file);
-  value[len] = 0;
+  size_t n = fread(value, 1, len, file);
+  value[n] = 0;
 
   if (mode == IUP_RECTEXT)
   {
     char spc;
-    fread(&spc, 1, 1, file); /* skip space */
+    if (fread(&spc, 1, 1, file) != 1)
+      return;
   }
 }
 

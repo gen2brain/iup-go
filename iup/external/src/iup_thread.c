@@ -7,13 +7,15 @@
 /* Define IUP_USE_GTK for any GTK version (GTK2, GTK3, or GTK4) */
 #if defined(IUP_USE_GTK2) || defined(IUP_USE_GTK3) || defined(IUP_USE_GTK4)
 #define IUP_USE_GTK
-#ifndef GLIB_CHECK_VERSION
-#define OLD_GLIB
-#endif
 #endif
 
 #ifdef IUP_USE_GTK
 #include <glib.h>
+#include <stdint.h>
+/* Check for old GLib (< 2.32) which requires deprecated thread APIs */
+#if !GLIB_CHECK_VERSION(2, 32, 0)
+#define OLD_GLIB
+#endif
 #elif defined(WIN32)
 #include <windows.h>
 #elif defined(__APPLE__) || defined(__unix__)
@@ -97,7 +99,7 @@ static int iThreadSetExitAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &exit_code);
 
 #ifdef IUP_USE_GTK
-  g_thread_exit((gpointer)exit_code);
+  g_thread_exit((gpointer)(intptr_t)exit_code);
 #elif defined(WIN32)
   ExitThread(exit_code);
 #elif defined(__APPLE__) || defined(__unix__)
