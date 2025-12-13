@@ -11,6 +11,7 @@
 #include <Xm/Text.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+#include <X11/XKBlib.h>
 
 #ifdef IUP_USE_XFT
 #include <X11/Xft/Xft.h>
@@ -757,7 +758,7 @@ static void motTableEditKeyPressCallback(Widget w, XtPointer client_data, XEvent
   if (event->type != KeyPress)
     return;
 
-  keysym = XKeycodeToKeysym(iupmot_display, ((XKeyEvent*)event)->keycode, 0);
+  keysym = XkbKeycodeToKeysym(iupmot_display, ((XKeyEvent*)event)->keycode, 0, 0);
 
   if (keysym == XK_Return || keysym == XK_KP_Enter)
   {

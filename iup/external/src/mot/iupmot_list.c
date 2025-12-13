@@ -18,6 +18,7 @@
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <time.h>
 #include <limits.h>
 
@@ -991,7 +992,7 @@ static int motListSetClipboardAttrib(Ihandle *ih, const char *value)
 static void motListDragTransferProc(Widget drop_context, Ihandle* ih, Atom *seltype, Atom *type, XtPointer value, unsigned long *length, int format)
 {
   Atom atomListItem = XInternAtom(iupmot_display, "LIST_ITEM", False);
-  int idDrag = (int)value;  /* starts at 1 */
+  int idDrag = (int)(intptr_t)value;  /* starts at 1 */
   int idDrop = iupAttribGetInt(ih, "_IUPLIST_DROPITEM");  /* starts at 1 */
 
   if (idDrop==0)
@@ -1136,7 +1137,7 @@ static Boolean motListConvertProc(Widget drop_context, Atom *selection, Atom *ta
 
   /* format the value for transfer */
   *type_return = atomTreeItem;
-  *value_return = (XtPointer)idDrag;  /* starts at 1 */
+  *value_return = (XtPointer)(intptr_t)idDrag;  /* starts at 1 */
   *length_return = 1;
   *format_return = 32;
   return True;

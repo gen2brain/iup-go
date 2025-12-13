@@ -15,6 +15,7 @@
 #include <memory.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <stdint.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -35,7 +36,7 @@
 
 static void motCanvasScrollbarCallback(Widget w, XtPointer client_data, XtPointer call_data)
 {
-  int op = (int)client_data, ipage, ipos;
+  int op = (int)(intptr_t)client_data, ipage, ipos;
   Ihandle *ih;
   IFniff cb;
   double posx, posy;
@@ -490,7 +491,7 @@ static char* motCanvasGetXDisplayAttrib(Ihandle *ih)
 static char* motCanvasGetXScreenAttrib(Ihandle *ih)
 {
   (void)ih;
-  return (char*)iupmot_screen;
+  return (char*)(intptr_t)iupmot_screen;
 }
 
 static char* motCanvasGetXWindowAttrib(Ihandle *ih)
