@@ -31,6 +31,7 @@
 
 #ifdef GDK_WINDOWING_X11
 #include <gdk/x11/gdkx.h>
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 typedef struct _ImenuPos
@@ -301,7 +302,7 @@ int iupdrvMenuGetMenuBarSize(Ihandle* ih_menu)
 
   menubar_widget = (GtkWidget*)ih_menu->handle;
 
-  int height = gtk_widget_get_allocated_height(menubar_widget);
+  int height = gtk_widget_get_height(menubar_widget);
 
   /* If not yet allocated (during initial layout), measure natural size */
   if (height == 0)

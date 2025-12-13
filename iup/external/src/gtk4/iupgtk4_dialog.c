@@ -8,6 +8,7 @@
 
 #ifdef GDK_WINDOWING_X11
 #include <gdk/x11/gdkx.h>
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 #ifdef GDK_WINDOWING_WAYLAND
@@ -907,15 +908,8 @@ static int gtk4DialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))
   {
-    /* Clear background image CSS if setting a color */
-    GtkCssProvider* provider = (GtkCssProvider*)iupAttribGet(ih, "_IUPGTK4_BACKGROUND_CSS_PROVIDER");
-    if (provider)
-    {
-      GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
-      gtk_style_context_remove_provider(context, GTK_STYLE_PROVIDER(provider));
-      g_object_unref(provider);
-      iupAttribSet(ih, "_IUPGTK4_BACKGROUND_CSS_PROVIDER", NULL);
-    }
+    /* Clear background image if setting a solid color */
+    iupAttribSet(ih, "_IUPGTK4_HAS_BG_IMAGE", NULL);
 
     iupgtk4SetBgColor(ih->handle, r, g, b);
     gtk_widget_queue_draw(ih->handle);
@@ -930,27 +924,9 @@ static int gtk4DialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       char* data_uri = gtk4DialogTextureToDataURI(texture);
       if (data_uri)
       {
-        /* Generate unique widget name for this window */
-        char* widget_name = iupStrReturnStrf("iup-window-%p", ih);
-        gtk_widget_set_name(ih->handle, widget_name);
-
-        /* Create CSS with background-image using data URI */
-        char* css = iupStrReturnStrf("#%s { background-image: url(\"%s\"); background-repeat: repeat; }",
-                                     widget_name, data_uri);
-
-        GtkCssProvider* provider = (GtkCssProvider*)iupAttribGet(ih, "_IUPGTK4_BACKGROUND_CSS_PROVIDER");
-        if (!provider)
-        {
-          provider = gtk_css_provider_new();
-          iupAttribSet(ih, "_IUPGTK4_BACKGROUND_CSS_PROVIDER", (char*)provider);
-
-          /* Apply to window's style context */
-          GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
-          gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-        }
-
-        /* Load the CSS */
-        gtk_css_provider_load_from_string(provider, css);
+        char* css_value = iupStrReturnStrf("url(\"%s\"); background-repeat: repeat", data_uri);
+        iupgtk4CssSetWidgetCustom(ih->handle, "background-image", css_value);
+        iupAttribSet(ih, "_IUPGTK4_HAS_BG_IMAGE", "1");
 
         /* Force window to redraw */
         gtk_widget_queue_draw(ih->handle);

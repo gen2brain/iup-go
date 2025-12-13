@@ -321,16 +321,7 @@ static int gtk4ToggleSetFgColorAttrib(Ihandle* ih, const char* value)
     return 0;
 
   /* GtkCheckButton doesn't expose label widget, use CSS to style text color */
-  {
-    char css[256];
-    GtkCssProvider* provider = gtk_css_provider_new();
-    GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
-
-    sprintf(css, "checkbutton { color: rgb(%d,%d,%d); }", r, g, b);
-    gtk_css_provider_load_from_string(provider, css);
-    gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-    g_object_unref(provider);
-  }
+  iupgtk4CssSetWidgetFgColor(ih->handle, r, g, b);
 
   return 1;
 }
@@ -354,16 +345,11 @@ static int gtk4ToggleSetFontAttrib(Ihandle* ih, const char* value)
         PangoWeight weight = pango_font_description_get_weight(fontdesc);
         PangoStyle style = pango_font_description_get_style(fontdesc);
 
-        GtkCssProvider* provider = gtk_css_provider_new();
-        GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
-
-        sprintf(css, "checkbutton { font-family: \"%s\"; font-size: %dpt; font-weight: %d; font-style: %s; }",
+        sprintf(css, "font-family: \"%s\"; font-size: %dpt; font-weight: %d; font-style: %s;",
                 family, size, weight,
                 (style == PANGO_STYLE_ITALIC) ? "italic" : "normal");
 
-        gtk_css_provider_load_from_string(provider, css);
-        gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-        g_object_unref(provider);
+        iupgtk4CssSetWidgetFont(ih->handle, css);
       }
     }
   }
@@ -571,14 +557,8 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
     gtk_button_set_child(GTK_BUTTON(ih->handle), image);
 
     /* Reset CSS padding to zero so image has full space */
-    {
-      GtkCssProvider* provider = gtk_css_provider_new();
-      gtk_css_provider_load_from_string(provider, "button { padding: 0; min-width: 0; min-height: 0; }");
-      gtk_widget_add_css_class(ih->handle, "iup-image-toggle");
-      GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
-      gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-      g_object_unref(provider);
-    }
+    gtk_widget_add_css_class(ih->handle, "iup-image-toggle");
+    iupgtk4CssAddStaticRule(".iup-image-toggle", "padding: 0; min-width: 0; min-height: 0;");
   }
 
   iupgtk4AddToParent(ih);

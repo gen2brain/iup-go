@@ -946,10 +946,7 @@ iupgtk4TreeRowExpandedChanged(GObject *row, GParamSpec *pspec, gpointer user_dat
 
   if (texture && widgets->image)
   {
-    GdkPixbuf *pixbuf = gdk_pixbuf_get_from_texture(texture);
-    gtk_image_set_from_pixbuf(GTK_IMAGE(widgets->image), pixbuf);
-    if (pixbuf)
-      g_object_unref(pixbuf);
+    gtk_image_set_from_paintable(GTK_IMAGE(widgets->image), GDK_PAINTABLE(texture));
   }
 
   /* Call IUP callbacks if not being ignored */
@@ -1137,10 +1134,7 @@ iupgtk4TreeBindCb(GtkListItemFactory *factory, GtkListItem *list_item, gpointer 
 
   if (texture)
   {
-    GdkPixbuf *pixbuf = gdk_pixbuf_get_from_texture(texture);
-    gtk_image_set_from_pixbuf(GTK_IMAGE(widgets->image), pixbuf);
-    if (pixbuf)
-      g_object_unref(pixbuf);
+    gtk_image_set_from_paintable(GTK_IMAGE(widgets->image), GDK_PAINTABLE(texture));
   }
   else
   {

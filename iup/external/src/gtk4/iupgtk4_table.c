@@ -237,7 +237,6 @@ typedef struct _Igtk4TableData
   int num_columns;  /* Number of GtkColumnViewColumn objects created */
   int current_row;  /* Current focused row (1-based, 0=none) */
   int current_col;  /* Current focused column (1-based, 0=none) */
-  GHashTable* css_provider_cache;  /* Cache: color string -> GtkCssProvider* */
 } Igtk4TableData;
 
 #define IGTK4_TABLE_DATA(ih) ((Igtk4TableData*)(ih->data->native_data))
@@ -651,40 +650,43 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
 
   if (bgcolor && *bgcolor)
   {
-    Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
-    GtkStyleContext* context = gtk_widget_get_style_context(box);
-    GtkCssProvider* old_provider = g_object_get_data(G_OBJECT(box), "iup-css-provider");
-    if (old_provider)
+    /* Generate a CSS class name from the color value */
+    char class_name[64];
+    snprintf(class_name, sizeof(class_name), "iup-cell-bg-%s", bgcolor);
+    /* Replace non-alphanumeric characters that aren't valid in CSS class names */
+    for (char* p = class_name; *p; p++)
     {
-      gtk_style_context_remove_provider(context, GTK_STYLE_PROVIDER(old_provider));
-      g_object_set_data(G_OBJECT(box), "iup-css-provider", NULL);
+      if (!g_ascii_isalnum(*p) && *p != '-')
+        *p = '-';
     }
 
-    char css_key[300];
-    snprintf(css_key, sizeof(css_key), "bgcolor_%s", bgcolor);
-
-    GtkCssProvider* provider = g_hash_table_lookup(gtk_data->css_provider_cache, css_key);
-    if (!provider)
+    /* Remove old color class if any */
+    const char* old_class = g_object_get_data(G_OBJECT(box), "iup-bgcolor-class");
+    if (old_class)
     {
-      char css[512];
-      snprintf(css, sizeof(css),
-        "row:not(:selected) .iup-table-cell-box { background-color: %s; }",
-        bgcolor);
-      provider = gtk_css_provider_new();
-      gtk_css_provider_load_from_string(provider, css);
-      g_hash_table_insert(gtk_data->css_provider_cache, g_strdup(css_key), provider);
+      gtk_widget_remove_css_class(box, old_class);
     }
-    gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-    g_object_set_data(G_OBJECT(box), "iup-css-provider", provider);
+
+    /* Add static CSS rule for this color (only done once per unique color) */
+    /* Use row:not(:selected) so selection highlight shows through */
+    char css_rules[128];
+    char selector[96];
+    snprintf(css_rules, sizeof(css_rules), "background-color: %s;", bgcolor);
+    snprintf(selector, sizeof(selector), "row:not(:selected) .%s", class_name);
+    iupgtk4CssAddStaticRule(selector, css_rules);
+
+    /* Apply the class to this cell */
+    gtk_widget_add_css_class(box, class_name);
+    g_object_set_data_full(G_OBJECT(box), "iup-bgcolor-class", g_strdup(class_name), g_free);
   }
   else
   {
-    GtkCssProvider* old_provider = g_object_get_data(G_OBJECT(box), "iup-css-provider");
-    if (old_provider)
+    /* Remove old color class if any */
+    const char* old_class = g_object_get_data(G_OBJECT(box), "iup-bgcolor-class");
+    if (old_class)
     {
-      GtkStyleContext* context = gtk_widget_get_style_context(box);
-      gtk_style_context_remove_provider(context, GTK_STYLE_PROVIDER(old_provider));
-      g_object_set_data(G_OBJECT(box), "iup-css-provider", NULL);
+      gtk_widget_remove_css_class(box, old_class);
+      g_object_set_data(G_OBJECT(box), "iup-bgcolor-class", NULL);
     }
   }
 
@@ -1171,7 +1173,6 @@ static int gtk4TableMapMethod(Ihandle* ih)
   memset(gtk_data, 0, sizeof(Igtk4TableData));
   ih->data->native_data = gtk_data;
 
-  gtk_data->css_provider_cache = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_object_unref);
   gtk_data->is_virtual = iupAttribGetBoolean(ih, "VIRTUALMODE");
 
   if (gtk_data->is_virtual)
@@ -1444,8 +1445,6 @@ static void gtk4TableUnMapMethod(Ihandle* ih)
 
   if (gtk_data)
   {
-    if (gtk_data->css_provider_cache)
-      g_hash_table_destroy(gtk_data->css_provider_cache);
     free(gtk_data);
     ih->data->native_data = NULL;
   }

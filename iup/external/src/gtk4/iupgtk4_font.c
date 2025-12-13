@@ -215,21 +215,17 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
   {
     /* GtkEntry is now GtkText under GtkEditable interface. For editable widgets, we need to use CSS */
     char css_font[512];
-    char *family = pango_font_description_get_family(fontdesc);
+    const char *family = pango_font_description_get_family(fontdesc);
     int size = pango_font_description_get_size(fontdesc);
 
     if (size > 0)
     {
       if (pango_font_description_get_size_is_absolute(fontdesc))
-        sprintf(css_font, "* { font-family: %s; font-size: %dpx; }", family ? family : "sans", size / PANGO_SCALE);
+        sprintf(css_font, "font-family: %s; font-size: %dpx;", family ? family : "sans", size / PANGO_SCALE);
       else
-        sprintf(css_font, "* { font-family: %s; font-size: %dpt; }", family ? family : "sans", size / PANGO_SCALE);
+        sprintf(css_font, "font-family: %s; font-size: %dpt;", family ? family : "sans", size / PANGO_SCALE);
 
-      GtkCssProvider *provider = gtk_css_provider_new();
-      gtk_css_provider_load_from_data(provider, css_font, -1);
-      gtk_widget_add_css_class(widget, "iup-custom-font");
-      gtk_style_context_add_provider(gtk_widget_get_style_context(widget), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-      g_object_unref(provider);
+      iupgtk4CssSetWidgetFont(widget, css_font);
     }
   }
 }
@@ -466,13 +462,6 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
     pango_layout_set_text(gtkfont->layout, text, len);
 
   pango_layout_get_pixel_size(gtkfont->layout, &w, NULL);
-
-  if (strstr(str, "star") != NULL || strstr(str, "image") != NULL) {
-    PangoFontDescription *desc = pango_layout_get_font_description(gtkfont->layout);
-    const char *family = desc ? pango_font_description_get_family(desc) : "none";
-    int size = desc ? pango_font_description_get_size(desc) / PANGO_SCALE : 0;
-    int orig_len = (int)strlen(str);
-  }
 
   return w;
 }

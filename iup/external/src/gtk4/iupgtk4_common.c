@@ -30,6 +30,296 @@
 #include "iupgtk4_drv.h"
 
 
+/******************************************************************************
+ * CSS Manager, GTK4 approach using display-wide CSS with widget classes
+ *****************************************************************************/
+
+typedef struct {
+  char* bg_css;      /* background color CSS or NULL */
+  char* fg_css;      /* foreground color CSS or NULL */
+  char* padding_css; /* padding CSS or NULL */
+  char* font_css;    /* font CSS or NULL */
+  char* custom_css;  /* custom CSS properties or NULL */
+} Igtk4WidgetStyle;
+
+static GtkCssProvider* gtk4_css_provider = NULL;
+static GHashTable* gtk4_widget_styles = NULL;  /* widget ptr -> Igtk4WidgetStyle* */
+static GString* gtk4_css_buffer = NULL;
+static GHashTable* gtk4_static_rules = NULL;   /* selector -> css_rules */
+
+static void gtk4CssWidgetStyleFree(gpointer data)
+{
+  Igtk4WidgetStyle* style = (Igtk4WidgetStyle*)data;
+  if (style)
+  {
+    g_free(style->bg_css);
+    g_free(style->fg_css);
+    g_free(style->padding_css);
+    g_free(style->font_css);
+    g_free(style->custom_css);
+    g_free(style);
+  }
+}
+
+static char* gtk4CssGetWidgetClassName(GtkWidget* widget)
+{
+  return g_strdup_printf("iup-w-%lx", (unsigned long)(uintptr_t)widget);
+}
+
+static void gtk4CssRebuildAndApply(void)
+{
+  GHashTableIter iter;
+  gpointer key, value;
+
+  if (!gtk4_css_provider || !gtk4_widget_styles)
+    return;
+
+  g_string_truncate(gtk4_css_buffer, 0);
+
+  /* Add static rules first */
+  if (gtk4_static_rules)
+  {
+    g_hash_table_iter_init(&iter, gtk4_static_rules);
+    while (g_hash_table_iter_next(&iter, &key, &value))
+    {
+      g_string_append_printf(gtk4_css_buffer, "%s { %s }\n", (char*)key, (char*)value);
+    }
+  }
+
+  /* Add per-widget rules */
+  g_hash_table_iter_init(&iter, gtk4_widget_styles);
+  while (g_hash_table_iter_next(&iter, &key, &value))
+  {
+    GtkWidget* widget = (GtkWidget*)key;
+    Igtk4WidgetStyle* style = (Igtk4WidgetStyle*)value;
+    char* class_name = gtk4CssGetWidgetClassName(widget);
+
+    g_string_append_printf(gtk4_css_buffer, ".%s {\n", class_name);
+
+    if (style->bg_css)
+      g_string_append_printf(gtk4_css_buffer, "  %s\n", style->bg_css);
+    if (style->fg_css)
+      g_string_append_printf(gtk4_css_buffer, "  %s\n", style->fg_css);
+    if (style->padding_css)
+      g_string_append_printf(gtk4_css_buffer, "  %s\n", style->padding_css);
+    if (style->font_css)
+      g_string_append_printf(gtk4_css_buffer, "  %s\n", style->font_css);
+    if (style->custom_css)
+      g_string_append_printf(gtk4_css_buffer, "  %s\n", style->custom_css);
+
+    g_string_append(gtk4_css_buffer, "}\n");
+
+    /* Add state variants for background color */
+    if (style->bg_css)
+    {
+      g_string_append_printf(gtk4_css_buffer, ".%s:disabled { %s }\n", class_name, style->bg_css);
+    }
+
+    /* Add state variants for foreground color */
+    if (style->fg_css)
+    {
+      g_string_append_printf(gtk4_css_buffer, ".%s:hover { %s }\n", class_name, style->fg_css);
+      g_string_append_printf(gtk4_css_buffer, ".%s:active { %s }\n", class_name, style->fg_css);
+    }
+
+    g_free(class_name);
+  }
+
+  gtk_css_provider_load_from_string(gtk4_css_provider, gtk4_css_buffer->str);
+}
+
+static Igtk4WidgetStyle* gtk4CssGetOrCreateWidgetStyle(GtkWidget* widget)
+{
+  Igtk4WidgetStyle* style = g_hash_table_lookup(gtk4_widget_styles, widget);
+
+  if (!style)
+  {
+    char* class_name;
+
+    style = g_new0(Igtk4WidgetStyle, 1);
+    g_hash_table_insert(gtk4_widget_styles, widget, style);
+
+    /* Add the CSS class to the widget */
+    class_name = gtk4CssGetWidgetClassName(widget);
+    gtk_widget_add_css_class(widget, class_name);
+    g_free(class_name);
+  }
+
+  return style;
+}
+
+void iupgtk4CssManagerInit(void)
+{
+  GdkDisplay* display;
+
+  if (gtk4_css_provider)
+    return;
+
+  display = gdk_display_get_default();
+  if (!display)
+    return;
+
+  gtk4_css_provider = gtk_css_provider_new();
+  gtk4_widget_styles = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, gtk4CssWidgetStyleFree);
+  gtk4_css_buffer = g_string_new("");
+  gtk4_static_rules = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+
+  gtk_style_context_add_provider_for_display(display, GTK_STYLE_PROVIDER(gtk4_css_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+}
+
+void iupgtk4CssManagerFinish(void)
+{
+  if (gtk4_css_provider)
+  {
+    GdkDisplay* display = gdk_display_get_default();
+    if (display)
+      gtk_style_context_remove_provider_for_display(display, GTK_STYLE_PROVIDER(gtk4_css_provider));
+
+    g_object_unref(gtk4_css_provider);
+    gtk4_css_provider = NULL;
+  }
+
+  if (gtk4_widget_styles)
+  {
+    g_hash_table_destroy(gtk4_widget_styles);
+    gtk4_widget_styles = NULL;
+  }
+
+  if (gtk4_css_buffer)
+  {
+    g_string_free(gtk4_css_buffer, TRUE);
+    gtk4_css_buffer = NULL;
+  }
+
+  if (gtk4_static_rules)
+  {
+    g_hash_table_destroy(gtk4_static_rules);
+    gtk4_static_rules = NULL;
+  }
+}
+
+void iupgtk4CssSetWidgetBgColor(GtkWidget* widget, unsigned char r, unsigned char g, unsigned char b, int is_text)
+{
+  Igtk4WidgetStyle* style;
+  GdkRGBA rgba;
+  char* color_str;
+
+  if (!gtk4_css_provider)
+    iupgtk4CssManagerInit();
+
+  style = gtk4CssGetOrCreateWidgetStyle(widget);
+
+  iupgtk4ColorSetRGB(&rgba, r, g, b);
+  color_str = gdk_rgba_to_string(&rgba);
+
+  g_free(style->bg_css);
+  style->bg_css = g_strdup_printf("background-color: %s;", color_str);
+
+  g_free(color_str);
+
+  (void)is_text;
+
+  gtk4CssRebuildAndApply();
+}
+
+void iupgtk4CssSetWidgetFgColor(GtkWidget* widget, unsigned char r, unsigned char g, unsigned char b)
+{
+  Igtk4WidgetStyle* style;
+  GdkRGBA rgba;
+  char* color_str;
+
+  if (!gtk4_css_provider)
+    iupgtk4CssManagerInit();
+
+  style = gtk4CssGetOrCreateWidgetStyle(widget);
+
+  iupgtk4ColorSetRGB(&rgba, r, g, b);
+  color_str = gdk_rgba_to_string(&rgba);
+
+  g_free(style->fg_css);
+  style->fg_css = g_strdup_printf("color: %s;", color_str);
+
+  g_free(color_str);
+
+  gtk4CssRebuildAndApply();
+}
+
+void iupgtk4CssSetWidgetPadding(GtkWidget* widget, int horiz, int vert)
+{
+  Igtk4WidgetStyle* style;
+
+  if (!gtk4_css_provider)
+    iupgtk4CssManagerInit();
+
+  style = gtk4CssGetOrCreateWidgetStyle(widget);
+
+  g_free(style->padding_css);
+  style->padding_css = g_strdup_printf("padding: %dpx %dpx;", vert, horiz);
+
+  gtk4CssRebuildAndApply();
+}
+
+void iupgtk4CssSetWidgetFont(GtkWidget* widget, const char* font_css)
+{
+  Igtk4WidgetStyle* style;
+
+  if (!gtk4_css_provider)
+    iupgtk4CssManagerInit();
+
+  style = gtk4CssGetOrCreateWidgetStyle(widget);
+
+  g_free(style->font_css);
+  style->font_css = g_strdup(font_css);
+
+  gtk4CssRebuildAndApply();
+}
+
+void iupgtk4CssSetWidgetCustom(GtkWidget* widget, const char* css_property, const char* css_value)
+{
+  Igtk4WidgetStyle* style;
+
+  if (!gtk4_css_provider)
+    iupgtk4CssManagerInit();
+
+  style = gtk4CssGetOrCreateWidgetStyle(widget);
+
+  g_free(style->custom_css);
+  style->custom_css = g_strdup_printf("%s: %s;", css_property, css_value);
+
+  gtk4CssRebuildAndApply();
+}
+
+void iupgtk4CssClearWidgetStyle(GtkWidget* widget)
+{
+  char* class_name;
+
+  if (!gtk4_widget_styles)
+    return;
+
+  if (g_hash_table_remove(gtk4_widget_styles, widget))
+  {
+    class_name = gtk4CssGetWidgetClassName(widget);
+    gtk_widget_remove_css_class(widget, class_name);
+    g_free(class_name);
+
+    gtk4CssRebuildAndApply();
+  }
+}
+
+void iupgtk4CssAddStaticRule(const char* selector, const char* css_rules)
+{
+  if (!gtk4_css_provider)
+    iupgtk4CssManagerInit();
+
+  g_hash_table_insert(gtk4_static_rules, g_strdup(selector), g_strdup(css_rules));
+
+  gtk4CssRebuildAndApply();
+}
+
+/******************************************************************************
+ * End CSS Manager
+ *****************************************************************************/
+
 /* Custom Fixed container for absolute positioning */
 typedef struct _iupGtk4Fixed
 {
@@ -54,14 +344,22 @@ static void iup_gtk4_fixed_snapshot(GtkWidget* widget, GtkSnapshot* snapshot)
   /* Draw border frame if enabled (for canvas BORDER=YES) */
   if (fixed->draw_border)
   {
-    GtkStyleContext* context = gtk_widget_get_style_context(widget);
     int width = gtk_widget_get_width(widget);
     int height = gtk_widget_get_height(widget);
 
-    gtk_style_context_save(context);
-    gtk_style_context_add_class(context, "frame");
-    gtk_snapshot_render_frame(snapshot, context, 0, 0, width, height);
-    gtk_style_context_restore(context);
+    if (width > 0 && height > 0)
+    {
+      GskRoundedRect rect;
+      float border_width[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+      GdkRGBA border_color[4];
+      GdkRGBA gray = {0.6f, 0.6f, 0.6f, 1.0f};
+
+      border_color[0] = border_color[1] = border_color[2] = border_color[3] = gray;
+      gsk_rounded_rect_init_from_rect(&rect,
+                                      &GRAPHENE_RECT_INIT(0, 0, width, height),
+                                      0);
+      gtk_snapshot_append_border(snapshot, &rect, border_width, border_color);
+    }
   }
 
   /* Chain up to parent to draw children */
@@ -144,8 +442,7 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
     }
 
     /* Allocate child */
-    gtk_widget_allocate(child, child_width, child_height, -1,
-                       gsk_transform_translate(NULL, &GRAPHENE_POINT_INIT(child_x, child_y)));
+    gtk_widget_allocate(child, child_width, child_height, -1, gsk_transform_translate(NULL, &GRAPHENE_POINT_INIT(child_x, child_y)));
   }
 }
 
@@ -472,7 +769,7 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
     return;
 
   if (GTK_IS_WIDGET(widget))
-    gtk_widget_hide(widget);
+    gtk_widget_set_visible(widget, FALSE);
 
   if (GTK_IS_WIDGET(widget))
     gtk_widget_unrealize(widget);
@@ -521,7 +818,15 @@ IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
   GtkWidget* wparent = gtk4GetWindowedParent(ih->handle);
 
   if (ih->handle != wparent && wparent)
-    gtk_widget_translate_coordinates(ih->handle, wparent, 0, 0, &dx, &dy);
+  {
+    graphene_point_t src_point = GRAPHENE_POINT_INIT(0, 0);
+    graphene_point_t dest_point;
+    if (gtk_widget_compute_point(ih->handle, wparent, &src_point, &dest_point))
+    {
+      dx = dest_point.x;
+      dy = dest_point.y;
+    }
+  }
 
   if (wparent)
   {
@@ -541,7 +846,15 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
   GtkWidget* wparent = gtk4GetWindowedParent(ih->handle);
 
   if (ih->handle != wparent && wparent)
-    gtk_widget_translate_coordinates(ih->handle, wparent, 0, 0, &dx, &dy);
+  {
+    graphene_point_t src_point = GRAPHENE_POINT_INIT(0, 0);
+    graphene_point_t dest_point;
+    if (gtk_widget_compute_point(ih->handle, wparent, &src_point, &dest_point))
+    {
+      dx = dest_point.x;
+      dy = dest_point.y;
+    }
+  }
 
   if (wparent)
   {
@@ -708,86 +1021,17 @@ static char* gtk4GetSelectedColorStr(void)
 
 void iupgtk4SetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
 {
-  GdkRGBA rgba, light_rgba, dark_rgba;
   int is_txt = 0;
-  char* bg;
-  char* bg_light;
-  char* bg_dark;
-  char* css;
-  GtkCssProvider* provider;
 
-  if (GTK_IS_TEXT_VIEW(handle) ||
-      GTK_IS_ENTRY(handle))
+  if (GTK_IS_TEXT_VIEW(handle) || GTK_IS_ENTRY(handle))
     is_txt = 1;
 
-  iupgtk4ColorSetRGB(&rgba, r, g, b);
-  dark_rgba = gtk4DarkerRGBA(&rgba);
-  light_rgba = gtk4LighterRGBA(&rgba);
-
-  bg = gdk_rgba_to_string(&rgba);
-  bg_light = gdk_rgba_to_string(&light_rgba);
-  bg_dark = gdk_rgba_to_string(&dark_rgba);
-
-  /* Style background color using CSS
-   * IMPORTANT: In GTK4, we do NOT set :hover or :active pseudo-states for background colors.
-   * This prevents unwanted hover effects on labels, containers, canvas, etc.
-   * GTK4's theme will handle interactive hover states for buttons and other controls automatically.
-   */
-  provider = gtk_css_provider_new();
-  if (is_txt)
-  {
-    char* selected = gtk4GetSelectedColorStr();
-
-    /* Text widgets need selected state but NOT hover/active */
-    css = g_strdup_printf("*         { background-color: %s; }"
-                         "*:selected { background-color: %s; }"
-                         "*:disabled { background-color: %s; }",
-                         bg, selected, bg_light);
-
-    g_free(selected);
-  }
-  else
-  {
-    /* All other widgets: only normal and disabled states */
-    css = g_strdup_printf("*         { background-color: %s; }"
-                         "*:disabled { background-color: %s; }",
-                         bg, bg_light);
-  }
-
-  gtk_style_context_add_provider(gtk_widget_get_style_context(handle), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-  gtk_css_provider_load_from_data(provider, css, -1);
-
-  g_free(bg);
-  g_free(bg_light);
-  g_free(bg_dark);
-  g_free(css);
-  g_object_unref(provider);
+  iupgtk4CssSetWidgetBgColor(handle, r, g, b, is_txt);
 }
 
 void iupgtk4SetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
 {
-  GdkRGBA rgba;
-  char* fg;
-  char* css;
-  GtkCssProvider* provider;
-
-  iupgtk4ColorSetRGB(&rgba, r, g, b);
-
-  fg = gdk_rgba_to_string(&rgba);
-
-  /* Style foreground color using CSS */
-  provider = gtk_css_provider_new();
-  css = g_strdup_printf("*         { color: %s; }"
-                       "*:active   { color: %s; }"
-                       "*:hover    { color: %s; }",
-                       fg, fg, fg);
-
-  gtk_style_context_add_provider(gtk_widget_get_style_context(handle), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-  gtk_css_provider_load_from_data(provider, css, -1);
-
-  g_free(fg);
-  g_free(css);
-  g_object_unref(provider);
+  iupgtk4CssSetWidgetFgColor(handle, r, g, b);
 }
 
 IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -944,36 +1188,12 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 
 void iupgtk4ClearSizeStyleCSS(GtkWidget* widget)
 {
-  /* Track CSS provider as widget data instead of listing all providers
-     (gtk_style_context_list_providers was removed in GTK4) */
-  GtkStyleContext* context = gtk_widget_get_style_context(widget);
-  GtkCssProvider* provider = g_object_get_data(G_OBJECT(widget), "_iup_size_css_provider");
-
-  if (provider)
-  {
-    gtk_style_context_remove_provider(context, GTK_STYLE_PROVIDER(provider));
-    g_object_unref(provider);
-    g_object_set_data(G_OBJECT(widget), "_iup_size_css_provider", NULL);
-  }
+  iupgtk4CssClearWidgetStyle(widget);
 }
 
 void iupgtk4SetMargin(GtkWidget* widget, int horiz_padding, int vert_padding)
 {
-  char css[100];
-  GtkCssProvider* provider;
-
-  iupgtk4ClearSizeStyleCSS(widget);
-
-  provider = gtk_css_provider_new();
-  sprintf(css, "* { padding: %dpx %dpx; }", vert_padding, horiz_padding);
-  gtk_css_provider_load_from_data(provider, css, -1);
-
-  /* Store provider on widget for later removal */
-  g_object_set_data(G_OBJECT(widget), "_iup_size_css_provider", provider);
-
-  gtk_style_context_add_provider(gtk_widget_get_style_context(widget), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-
-  /* Don't unref - we need to keep it alive for the widget */
+  iupgtk4CssSetWidgetPadding(widget, horiz_padding, vert_padding);
 }
 
 GdkSurface* iupgtk4GetSurface(GtkWidget* widget)

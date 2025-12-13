@@ -31,16 +31,7 @@ void iupdrvSetFocus(Ihandle *ih)
 
   if (!gtk_window_is_active((GtkWindow*)dialog->handle))
   {
-    /* gdk_window_focus removed, use gtk_window_present_with_time */
-    GdkSurface* surface = gtk_native_get_surface(GTK_NATIVE(dialog->handle));
-    if (surface)
-    {
-      /* gtk_get_current_event_time removed, use monotonic time */
-      guint32 timestamp = g_get_monotonic_time() / 1000;
-
-      /* Request focus for the window surface */
-      gtk_window_present_with_time(GTK_WINDOW(dialog->handle), timestamp);
-    }
+    gtk_window_present(GTK_WINDOW(dialog->handle));
   }
 
   gtk_widget_grab_focus(ih->handle);

@@ -16,144 +16,123 @@
 #include "iupgtk4_drv.h"
 
 
-#define IUP_RESPONSE_1 -100
-#define IUP_RESPONSE_2 -200
-#define IUP_RESPONSE_3 -300
-#define IUP_RESPONSE_HELP -400
+typedef struct {
+  GMainLoop* loop;
+  int button_response;
+} AlertDialogData;
 
-#ifndef GTK_MESSAGE_OTHER
-#define GTK_MESSAGE_OTHER GTK_MESSAGE_INFO
-#endif
+static void gtk4AlertDialogCallback(GObject* source, GAsyncResult* result, gpointer user_data)
+{
+  GtkAlertDialog* dialog = GTK_ALERT_DIALOG(source);
+  AlertDialogData* data = (AlertDialogData*)user_data;
+  GError* error = NULL;
+
+  int response = gtk_alert_dialog_choose_finish(dialog, result, &error);
+
+  if (error)
+  {
+    g_error_free(error);
+    data->button_response = -1;
+  }
+  else
+  {
+    data->button_response = response;
+  }
+
+  g_main_loop_quit(data->loop);
+}
 
 static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
 {
-  GtkMessageType type = GTK_MESSAGE_OTHER;
-  GtkWidget* dialog;
-  char *icon, *buttons, *title;
-  const char *ok, *cancel, *yes, *no, *help, *retry = IupGetLanguageString("IUP_RETRY");
+  GtkAlertDialog* dialog;
+  GtkWindow* parent = NULL;
+  char *buttons;
+  const char* button_labels[5];
+  int num_buttons = 0;
   int button_def;
+  int cancel_button = -1;
+  AlertDialogData data = {0};
 
-  iupAttribSetInt(ih, "_IUPDLG_X", x);
-  iupAttribSetInt(ih, "_IUPDLG_Y", y);
+  (void)x;
+  (void)y;
 
-  icon = iupAttribGetStr(ih, "DIALOGTYPE");
-  if (iupStrEqualNoCase(icon, "ERROR"))
-    type = GTK_MESSAGE_ERROR;
-  else if (iupStrEqualNoCase(icon, "WARNING"))
-    type = GTK_MESSAGE_WARNING;
-  else if (iupStrEqualNoCase(icon, "INFORMATION"))
-    type = GTK_MESSAGE_INFO;
-  else if (iupStrEqualNoCase(icon, "QUESTION"))
-    type = GTK_MESSAGE_QUESTION;
-
-  dialog = gtk_message_dialog_new(NULL, 0, type, GTK_BUTTONS_NONE, "%s", iupgtk4StrConvertToSystem(iupAttribGet(ih, "VALUE")));
+  dialog = gtk_alert_dialog_new("%s", iupgtk4StrConvertToSystem(iupAttribGet(ih, "VALUE")));
   if (!dialog)
     return IUP_ERROR;
 
-  iupgtk4DialogSetTransientFor(GTK_WINDOW(dialog), ih);
+  gtk_alert_dialog_set_modal(dialog, TRUE);
 
-  title = iupAttribGet(ih, "TITLE");
-  if (title)
-    gtk_window_set_title(GTK_WINDOW(dialog), iupgtk4StrConvertToSystem(title));
-
-  ok = "OK";
-  cancel = "Cancel";
-  yes = "Yes";
-  no = "No";
-  help = "Help";
+  /* Get parent window */
+  {
+    Ihandle* parent_ih = IupGetAttributeHandle(ih, "PARENTDIALOG");
+    if (!parent_ih)
+      parent_ih = IupGetAttributeHandle(NULL, "PARENTDIALOG");
+    if (parent_ih && parent_ih->handle)
+      parent = GTK_WINDOW(parent_ih->handle);
+  }
 
   buttons = iupAttribGetStr(ih, "BUTTONS");
   if (iupStrEqualNoCase(buttons, "OKCANCEL"))
   {
-    gtk_dialog_add_button(GTK_DIALOG(dialog), ok, IUP_RESPONSE_1);
-    gtk_dialog_add_button(GTK_DIALOG(dialog), cancel, IUP_RESPONSE_2);
+    button_labels[0] = "OK";
+    button_labels[1] = "Cancel";
+    num_buttons = 2;
+    cancel_button = 1;
   }
   else if (iupStrEqualNoCase(buttons, "RETRYCANCEL"))
   {
-    gtk_dialog_add_button(GTK_DIALOG(dialog), retry, IUP_RESPONSE_1);
-    gtk_dialog_add_button(GTK_DIALOG(dialog), cancel, IUP_RESPONSE_2);
+    button_labels[0] = IupGetLanguageString("IUP_RETRY");
+    button_labels[1] = "Cancel";
+    num_buttons = 2;
+    cancel_button = 1;
   }
   else if (iupStrEqualNoCase(buttons, "YESNO"))
   {
-    gtk_dialog_add_button(GTK_DIALOG(dialog), yes, IUP_RESPONSE_1);
-    gtk_dialog_add_button(GTK_DIALOG(dialog), no, IUP_RESPONSE_2);
+    button_labels[0] = "Yes";
+    button_labels[1] = "No";
+    num_buttons = 2;
+    cancel_button = 1;
   }
   else if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
   {
-    gtk_dialog_add_button(GTK_DIALOG(dialog), yes, IUP_RESPONSE_1);
-    gtk_dialog_add_button(GTK_DIALOG(dialog), no, IUP_RESPONSE_2);
-    gtk_dialog_add_button(GTK_DIALOG(dialog), cancel, IUP_RESPONSE_3);
+    button_labels[0] = "Yes";
+    button_labels[1] = "No";
+    button_labels[2] = "Cancel";
+    num_buttons = 3;
+    cancel_button = 2;
   }
   else
   {
-    gtk_dialog_add_button(GTK_DIALOG(dialog), ok, IUP_RESPONSE_1);
+    button_labels[0] = "OK";
+    num_buttons = 1;
   }
 
-  if (IupGetCallback(ih, "HELP_CB"))
-    gtk_dialog_add_button(GTK_DIALOG(dialog), help, IUP_RESPONSE_HELP);
+  button_labels[num_buttons] = NULL;
+  gtk_alert_dialog_set_buttons(dialog, button_labels);
 
   button_def = iupAttribGetInt(ih, "BUTTONDEFAULT");
-  if (button_def == 3)
-    gtk_dialog_set_default_response(GTK_DIALOG(dialog), IUP_RESPONSE_3);
-  else if (button_def == 2)
-    gtk_dialog_set_default_response(GTK_DIALOG(dialog), IUP_RESPONSE_2);
+  if (button_def >= 1 && button_def <= num_buttons)
+    gtk_alert_dialog_set_default_button(dialog, button_def - 1);
   else
-    gtk_dialog_set_default_response(GTK_DIALOG(dialog), IUP_RESPONSE_1);
+    gtk_alert_dialog_set_default_button(dialog, 0);
 
-  gtk_widget_realize(dialog);
+  if (cancel_button >= 0)
+    gtk_alert_dialog_set_cancel_button(dialog, cancel_button);
 
-  ih->handle = dialog;
-  iupDialogUpdatePosition(ih);
-  ih->handle = NULL;
+  data.loop = g_main_loop_new(NULL, FALSE);
+  data.button_response = -1;
 
-  gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
-  gtk_widget_set_visible(dialog, TRUE);
+  gtk_alert_dialog_choose(dialog, parent, NULL, gtk4AlertDialogCallback, &data);
 
-  gint response;
-  gint* response_ptr = &response;
+  g_main_loop_run(data.loop);
+  g_main_loop_unref(data.loop);
 
-  void response_cb(GtkDialog* d, gint r, gpointer data) {
-    *(gint*)data = r;
-    (void)d;
-  }
-
-  do
-  {
-    response = GTK_RESPONSE_NONE;
-
-    GMainLoop* loop = g_main_loop_new(NULL, FALSE);
-    gulong response_handler = g_signal_connect(dialog, "response", G_CALLBACK(response_cb), response_ptr);
-    gulong quit_handler = g_signal_connect_swapped(dialog, "response", G_CALLBACK(g_main_loop_quit), loop);
-
-    g_main_loop_run(loop);
-
-    g_signal_handler_disconnect(dialog, response_handler);
-    g_signal_handler_disconnect(dialog, quit_handler);
-    g_main_loop_unref(loop);
-
-    if (response == IUP_RESPONSE_HELP)
-    {
-      Icallback cb = IupGetCallback(ih, "HELP_CB");
-      if (cb && cb(ih) == IUP_CLOSE)
-      {
-        if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
-          response = IUP_RESPONSE_3;
-        else if(iupStrEqualNoCase(buttons, "OK"))
-          response = IUP_RESPONSE_1;
-        else
-          response = IUP_RESPONSE_2;
-      }
-    }
-  } while (response == IUP_RESPONSE_HELP);
-
-  if (response == IUP_RESPONSE_3)
-    IupSetAttribute(ih, "BUTTONRESPONSE", "3");
-  else if (response == IUP_RESPONSE_2)
-    IupSetAttribute(ih, "BUTTONRESPONSE", "2");
+  if (data.button_response >= 0)
+    IupSetInt(ih, "BUTTONRESPONSE", data.button_response + 1);
   else
     IupSetAttribute(ih, "BUTTONRESPONSE", "1");
 
-  gtk_window_destroy(GTK_WINDOW(dialog));
+  g_object_unref(dialog);
 
   return IUP_NOERROR;
 }
@@ -161,4 +140,7 @@ static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
 void iupdrvMessageDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = gtk4MessageDlgPopup;
+
+  /* GtkAlertDialog (GTK 4.10+) does not support dialog type icons */
+  iupClassRegisterAttribute(ic, "DIALOGTYPE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

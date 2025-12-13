@@ -47,7 +47,7 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
     GDateTime *dt = g_date_time_new_local(timeinfo->tm_year + 1900,
                                            timeinfo->tm_mon + 1,
                                            timeinfo->tm_mday, 0, 0, 0);
-    gtk_calendar_select_day(GTK_CALENDAR(ih->handle), dt);
+    gtk_calendar_set_date(GTK_CALENDAR(ih->handle), dt);
     g_date_time_unref(dt);
   }
   else
@@ -61,7 +61,7 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
       if (day > 31) day = 31;
 
       GDateTime *dt = g_date_time_new_local(year, month, day, 0, 0, 0);
-      gtk_calendar_select_day(GTK_CALENDAR(ih->handle), dt);
+      gtk_calendar_set_date(GTK_CALENDAR(ih->handle), dt);
       g_date_time_unref(dt);
     }
   }

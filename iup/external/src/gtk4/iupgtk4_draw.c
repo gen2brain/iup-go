@@ -47,14 +47,14 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->widget = (GtkWidget*)ih->handle;
 
   /* Use stored width/height from gtk4CanvasDraw instead of calling
-   * gtk_widget_get_allocated_width() which triggers CSS recalculation and
+   * gtk_widget_get_width() which triggers CSS recalculation and
    * frees the style object that GTK is currently using for rendering. */
   dc->w = iupAttribGetInt(ih, "_IUPGTK4_DRAW_WIDTH");
   dc->h = iupAttribGetInt(ih, "_IUPGTK4_DRAW_HEIGHT");
 
   /* Fallback for calls outside ACTION callback */
-  if (dc->w == 0) dc->w = gtk_widget_get_allocated_width(dc->widget);
-  if (dc->h == 0) dc->h = gtk_widget_get_allocated_height(dc->widget);
+  if (dc->w == 0) dc->w = gtk_widget_get_width(dc->widget);
+  if (dc->h == 0) dc->h = gtk_widget_get_height(dc->widget);
 
   /* Check if we have persistent offscreen buffer */
   buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
@@ -101,8 +101,8 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 {
   int w, h;
 
-  w = gtk_widget_get_allocated_width(dc->widget);
-  h = gtk_widget_get_allocated_height(dc->widget);
+  w = gtk_widget_get_width(dc->widget);
+  h = gtk_widget_get_height(dc->widget);
 
   if (w != dc->w || h != dc->h)
   {

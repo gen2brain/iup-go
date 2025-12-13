@@ -337,8 +337,6 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
 
   if (cb && !(ih->data->inside_resize))
   {
-    if (!iupAttribGet(ih, "_IUPGTK4_NO_BGCOLOR"))
-      gtk4CanvasSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));
 
     double x1, y1, x2, y2;
     cairo_clip_extents(cr, &x1, &y1, &x2, &y2);
@@ -368,19 +366,6 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
   (void)area;
   (void)width;
   (void)height;
-}
-
-static void gtk4CanvasBorderDraw(GtkDrawingArea *area, cairo_t* cr, int width, int height, void* user)
-{
-  GtkWidget* widget = GTK_WIDGET(area);
-  GtkStyleContext* context = gtk_widget_get_style_context(widget);
-
-  gtk_style_context_save(context);
-  gtk_style_context_add_class(context, "frame");
-  gtk_render_frame(context, cr, 0, 0, width, height);
-  gtk_style_context_restore(context);
-
-  (void)user;
 }
 
 static void gtk4CanvasSizeAllocate(GtkDrawingArea *drawing_area, int width, int height, gpointer user_data)
@@ -775,7 +760,7 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
     /* Create scrollbar with the adjustment */
     GtkWidget* sb_horiz = gtk_scrollbar_new(GTK_ORIENTATION_HORIZONTAL, sb_horiz_adjust);
     iupgtk4NativeContainerAdd(sb_win, sb_horiz);
-    gtk_widget_show(sb_horiz);
+    gtk_widget_set_visible(sb_horiz, TRUE);
 
     /* Connect to adjustment's value-changed signal BEFORE realize */
     g_signal_connect(G_OBJECT(sb_horiz_adjust), "value-changed", G_CALLBACK(gtk4CanvasAdjustHorizValueChanged), ih);
@@ -793,7 +778,7 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
     /* Create scrollbar with the adjustment */
     GtkWidget* sb_vert = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, sb_vert_adjust);
     iupgtk4NativeContainerAdd(sb_win, sb_vert);
-    gtk_widget_show(sb_vert);
+    gtk_widget_set_visible(sb_vert, TRUE);
 
     /* Connect to adjustment's value-changed signal BEFORE realize */
     g_signal_connect(G_OBJECT(sb_vert_adjust), "value-changed", G_CALLBACK(gtk4CanvasAdjustVertValueChanged), ih);
