@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <memory.h>
-#include <string.h>         
+#include <string.h>
+#include <stdint.h>
 
 #include "iup.h"
 
@@ -165,18 +166,18 @@ static void* iParseControlParam(char type)
   case 'b':
   case 'c':
     IPARSE_RETURN_IF_ERROR(iupLexMatch(IUPLEX_TK_NAME));
-    return (void*)(unsigned long)iupLexByte();
+    return (void*)(intptr_t)iupLexByte();
 
   case 'i':
   case 'j':
     IPARSE_RETURN_IF_ERROR(iupLexMatch(IUPLEX_TK_NAME));
-    return (void*)(unsigned long)iupLexInt();
+    return (void*)(intptr_t)iupLexInt();
 
   case 'f':
     IPARSE_RETURN_IF_ERROR(iupLexMatch(IUPLEX_TK_NAME));
     {
       float f = iupLexFloat();
-      unsigned long* l = (unsigned long*)&f;
+      intptr_t* l = (intptr_t*)&f;
       return (void*)*l;
     }
 

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
+#include <stdint.h>
 
 #include "iup_export.h"
 #include "iup_table.h"
@@ -610,7 +611,7 @@ static unsigned int iTableGetEntryIndex(Itable *it, const char *key, unsigned lo
   else
   {
     /* Pointer indexed */
-    *keyIndex = (unsigned long)key;   /* this could NOT be dependent from table size */
+    *keyIndex = (uintptr_t)key;   /* this could NOT be dependent from table size */
   }
 
   return (unsigned int)((*keyIndex) % it->entriesSize);

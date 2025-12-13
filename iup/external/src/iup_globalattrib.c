@@ -252,16 +252,12 @@ IUP_SDK_API int iupGlobalIsPointer(const char* name)
   static struct {
     const char *name;
   } ptr_table[] = {
-#ifndef GTK_MAC
-  #ifdef WIN32
     {"HINSTANCE"},
     {"DLL_HINSTANCE"},
-  #else
     {"XDISPLAY"},
     {"XSCREEN"},
     {"APPSHELL"},
-  #endif
-#endif
+    {"WL_DISPLAY"},
   };
 #define PTR_TABLE_SIZE ((sizeof ptr_table)/(sizeof ptr_table[0]))
 
