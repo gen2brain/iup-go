@@ -254,7 +254,7 @@ static void qtCalendarActivated(IupQtCalendar* calendar, const QDate& date, Ihan
   {
     QDate selected = calendar->selectedDate();
     char date_str[64];
-    sprintf(date_str, "%d/%d/%d", selected.year(), selected.month(), selected.day());
+    snprintf(date_str, sizeof(date_str), "%d/%d/%d", selected.year(), selected.month(), selected.day());
     cb(ih, date_str);
   }
 }

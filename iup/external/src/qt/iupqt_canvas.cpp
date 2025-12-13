@@ -221,7 +221,7 @@ protected:
       QPoint numDegrees = event->angleDelta() / 8;
       int delta = numDegrees.y() / 15;  /* Number of notches */
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
       int x = event->position().x();
       int y = event->position().y();
 #else
@@ -360,11 +360,19 @@ protected:
       if (cb)
       {
         QTouchEvent* touchEvent = static_cast<QTouchEvent*>(event);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        const QList<QEventPoint>& touchPoints = touchEvent->points();
+#else
         QList<QTouchEvent::TouchPoint> touchPoints = touchEvent->touchPoints();
+#endif
 
         if (!touchPoints.isEmpty())
         {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+          const QEventPoint& tp = touchPoints.first();
+#else
           const QTouchEvent::TouchPoint& tp = touchPoints.first();
+#endif
           int id = tp.id();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
           int x = tp.position().x();

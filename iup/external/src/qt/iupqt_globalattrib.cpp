@@ -68,8 +68,13 @@ protected:
         if (cb)
         {
           QMouseEvent* mouse_evt = static_cast<QMouseEvent*>(event);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+          int x = mouse_evt->globalPosition().x();
+          int y = mouse_evt->globalPosition().y();
+#else
           int x = mouse_evt->globalX();
           int y = mouse_evt->globalY();
+#endif
           int press = (event->type() != QEvent::MouseButtonRelease) ? 1 : 0;
           int doubleclick = (event->type() == QEvent::MouseButtonDblClick) ? 1 : 0;
 
@@ -105,8 +110,13 @@ protected:
         if (cb)
         {
           QMouseEvent* mouse_evt = static_cast<QMouseEvent*>(event);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+          int x = mouse_evt->globalPosition().x();
+          int y = mouse_evt->globalPosition().y();
+#else
           int x = mouse_evt->globalX();
           int y = mouse_evt->globalY();
+#endif
 
           char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
           iupqtButtonKeySetStatus(mouse_evt->modifiers(), Qt::NoButton, 0, status, 0);
@@ -240,15 +250,17 @@ extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
   {
     QList<QScreen*> screens = QGuiApplication::screens();
     int monitors_count = screens.size();
+    const int entry_size = 50;
 
-    char *str = iupStrGetMemory(monitors_count * 50);
+    char *str = iupStrGetMemory(monitors_count * entry_size);
     char* pstr = str;
 
     for (int i = 0; i < monitors_count; i++)
     {
       QRect geom = screens[i]->geometry();
-      pstr += sprintf(pstr, "%d %d %d %d\n",
-                     geom.x(), geom.y(), geom.width(), geom.height());
+      int written = snprintf(pstr, entry_size, "%d %d %d %d\n",
+                             geom.x(), geom.y(), geom.width(), geom.height());
+      pstr += written;
     }
 
     return str;

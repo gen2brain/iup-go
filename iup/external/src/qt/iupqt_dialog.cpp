@@ -13,6 +13,7 @@
 #include <QCloseEvent>
 #include <QResizeEvent>
 #include <QMoveEvent>
+#include <QShowEvent>
 #include <QWindowStateChangeEvent>
 #include <QString>
 #include <QVBoxLayout>
@@ -121,6 +122,25 @@ protected:
       event->accept();
   }
 
+  void showEvent(QShowEvent* event) override
+  {
+    QMainWindow::showEvent(event);
+
+    if (!iup_handle)
+      return;
+
+    /* On first show, move window to the position set by IUP */
+    if (iupAttribGet(iup_handle, "_IUPQT_FIRST_SHOW_DONE") == NULL)
+    {
+      iupAttribSet(iup_handle, "_IUPQT_FIRST_SHOW_DONE", "1");
+
+      int x = iupAttribGetInt(iup_handle, "_IUPQT_OLD_X");
+      int y = iupAttribGetInt(iup_handle, "_IUPQT_OLD_Y");
+
+      move(x, y);
+    }
+  }
+
   void resizeEvent(QResizeEvent* event) override
   {
     QMainWindow::resizeEvent(event);
@@ -133,9 +153,7 @@ protected:
       return;
     }
 
-    /* Don't update size tracking until after first show is complete.
-     * Skip if first_show has not been set yet (0), or if it's currently being shown (1).
-     * Only allow updates after first_show completes and gets cleared. */
+    /* Don't update size tracking until after first show is complete */
     if (iup_handle->data->first_show || !iupdrvDialogIsVisible(iup_handle)) {
       return;
     }
@@ -711,8 +729,9 @@ static char* qtDialogGetClientSizeAttrib(Ihandle *ih)
 
 static char* qtDialogGetClientOffsetAttrib(Ihandle *ih)
 {
+  (void)ih;
   /* In Qt, menu is part of the window, not client area */
-  return "0x0";
+  return const_cast<char*>("0x0");
 }
 
 static char* qtDialogGetResizeAttrib(Ihandle* ih)
@@ -1199,6 +1218,9 @@ extern "C" void qtDialogUnMapMethod(Ihandle* ih)
 
     /* Cleanup tray */
     iupqtTrayCleanup(ih);
+
+    /* Reset first show flag so dialog can be remapped */
+    iupAttribSet(ih, "_IUPQT_FIRST_SHOW_DONE", NULL);
 
     /* Qt will handle widget deletion */
     delete widget;

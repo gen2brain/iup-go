@@ -134,7 +134,11 @@ protected:
     /* Internal drag-drop: dragging within this list */
 
     /* Get the drop position */
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QListWidgetItem* drop_item = itemAt(event->position().toPoint());
+#else
     QListWidgetItem* drop_item = itemAt(event->pos());
+#endif
     int drop_id;
     if (drop_item)
     {

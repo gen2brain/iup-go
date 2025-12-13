@@ -319,10 +319,10 @@ public:
   QSize sizeHint() const override
   {
     QFontMetrics fm(font());
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    int charWidth = fm.width('X');
-#else
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int charWidth = fm.horizontalAdvance('X');
+#else
+    int charWidth = fm.width('X');
 #endif
     int charHeight = fm.height();
 
@@ -336,10 +336,10 @@ public:
   QSize minimumSizeHint() const override
   {
     QFontMetrics fm(font());
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    int charWidth = fm.width('X');
-#else
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int charWidth = fm.horizontalAdvance('X');
+#else
+    int charWidth = fm.width('X');
 #endif
     int charHeight = fm.height();
 
@@ -546,7 +546,7 @@ static Qt::Alignment qtTableGetColumnAlignment(Ihandle* ih, int col)
 {
   /* Check for column-specific alignment (1-based col index) */
   char name[50];
-  sprintf(name, "ALIGNMENT%d", col);
+  snprintf(name, sizeof(name), "ALIGNMENT%d", col);
   char* align_str = iupAttribGet(ih, name);
 
   if (!align_str)
@@ -564,7 +564,7 @@ static int qtTableIsColumnEditable(Ihandle* ih, int col)
 {
   /* Check for column-specific editable (1-based col index) */
   char name[50];
-  sprintf(name, "EDITABLE%d", col);
+  snprintf(name, sizeof(name), "EDITABLE%d", col);
   char* editable_str = iupAttribGet(ih, name);
 
   if (!editable_str)
@@ -827,11 +827,11 @@ static int qtTableMapMethod(Ihandle* ih)
     char name[50];
     int width = 0;
 
-    sprintf(name, "RASTERWIDTH%d", num_col);
+    snprintf(name, sizeof(name), "RASTERWIDTH%d", num_col);
     char* width_str = iupAttribGet(ih, name);
     if (!width_str)
     {
-      sprintf(name, "WIDTH%d", num_col);
+      snprintf(name, sizeof(name), "WIDTH%d", num_col);
       width_str = iupAttribGet(ih, name);
     }
 
@@ -861,12 +861,12 @@ static int qtTableMapMethod(Ihandle* ih)
     int width = 0;
 
     /* Check RASTERWIDTH first */
-    sprintf(name, "RASTERWIDTH%d", col);
+    snprintf(name, sizeof(name), "RASTERWIDTH%d", col);
     width_str = iupAttribGet(ih, name);
     if (!width_str)
     {
       /* Then check WIDTH */
-      sprintf(name, "WIDTH%d", col);
+      snprintf(name, sizeof(name), "WIDTH%d", col);
       width_str = iupAttribGet(ih, name);
     }
 

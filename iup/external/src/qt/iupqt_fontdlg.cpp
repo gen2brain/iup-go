@@ -209,13 +209,13 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
     bool is_strikeout = selected_font.strikeOut();
 
     char font_value[256];
-    sprintf(font_value, "%s, %s%s%s%s%d",
-            family.toUtf8().constData(),
-            is_bold ? "Bold " : "",
-            is_italic ? "Italic " : "",
-            is_underline ? "Underline " : "",
-            is_strikeout ? "Strikeout " : "",
-            point_size);
+    snprintf(font_value, sizeof(font_value), "%s, %s%s%s%s%d",
+             family.toUtf8().constData(),
+             is_bold ? "Bold " : "",
+             is_italic ? "Italic " : "",
+             is_underline ? "Underline " : "",
+             is_strikeout ? "Strikeout " : "",
+             point_size);
 
     iupAttribSetStr(ih, "VALUE", font_value);
     iupAttribSet(ih, "STATUS", "1");
