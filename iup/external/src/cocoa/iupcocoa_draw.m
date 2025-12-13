@@ -151,7 +151,7 @@ IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
       return NULL;
     }
 
-    graphicsContext = [NSGraphicsContext graphicsContextWithGraphicsPort:cgContext flipped:YES];
+    graphicsContext = [NSGraphicsContext graphicsContextWithCGContext:cgContext flipped:YES];
 
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:graphicsContext];

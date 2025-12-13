@@ -33,6 +33,14 @@
 #include "iupcocoa_drv.h"
 #import "IupCocoaTextSpinnerFilesOwner.h"
 
+@interface NSNib (IupTextSpinner)
++ (instancetype)IupTextSpinner;
+@end
+
+@interface NSNib (IupTextSpinnerNoBindings)
++ (instancetype)IupTextSpinnerNoBindings;
+@end
+
 static const void* IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY = "IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY";
 static const void* IUP_COCOA_TEXT_DELEGATE_OBJ_KEY = "IUP_COCOA_TEXT_DELEGATE_OBJ_KEY";
 static const void* IUP_COCOA_TEXT_FORMATTER_KEY = "IUP_COCOA_TEXT_FORMATTER_KEY";
@@ -89,7 +97,7 @@ static NSView* cocoaTextGetRootView(Ihandle* ih)
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
-        NSStackView* root_container_view = (NSView*)ih->handle;
+        NSStackView* root_container_view = (NSStackView*)ih->handle;
         NSCAssert([root_container_view isKindOfClass:[NSStackView class]], @"Expected NSStackView");
         return root_container_view;
       }
@@ -187,21 +195,14 @@ static IUPStepperObjectController* cocoaTextGetStepperObjectController(Ihandle* 
 - (BOOL) textView:(NSTextView*)text_view shouldChangeTextInRange:(NSRange)change_range replacementString:(NSString*)replacement_string
 {
   BOOL ret_flag;
-  if([super textView:text_view shouldChangeTextInRange:change_range replacementString:replacement_string])
+  id the_delegate = [self delegate];
+  if([the_delegate respondsToSelector:@selector(textView:shouldChangeTextInRange:replacementString:)])
   {
-    id the_delegate = [self delegate];
-    if([the_delegate respondsToSelector:@selector(textView:shouldChangeTextInRange:replacementString:)])
+    ret_flag = [the_delegate textView:text_view shouldChangeTextInRange:change_range replacementString:replacement_string];
+    if(NO == ret_flag)
     {
-      ret_flag = [the_delegate textView:text_view shouldChangeTextInRange:change_range replacementString:replacement_string];
-      if(NO == ret_flag)
-      {
-        return NO;
-      }
+      return NO;
     }
-  }
-  else
-  {
-    return NO;
   }
 
   NSTextField* text_field = self;
@@ -314,21 +315,14 @@ static IUPStepperObjectController* cocoaTextGetStepperObjectController(Ihandle* 
 - (BOOL) textView:(NSTextView*)text_view shouldChangeTextInRange:(NSRange)change_range replacementString:(NSString*)replacement_string
 {
   BOOL ret_flag;
-  if([super textView:text_view shouldChangeTextInRange:change_range replacementString:replacement_string])
+  id the_delegate = [self delegate];
+  if([the_delegate respondsToSelector:@selector(textView:shouldChangeTextInRange:replacementString:)])
   {
-    id the_delegate = [self delegate];
-    if([the_delegate respondsToSelector:@selector(textView:shouldChangeTextInRange:replacementString:)])
+    ret_flag = [the_delegate textView:text_view shouldChangeTextInRange:change_range replacementString:replacement_string];
+    if(NO == ret_flag)
     {
-      ret_flag = [the_delegate textView:text_view shouldChangeTextInRange:change_range replacementString:replacement_string];
-      if(NO == ret_flag)
-      {
-        return NO;
-      }
+      return NO;
     }
-  }
-  else
-  {
-    return NO;
   }
 
   NSTextField* text_field = self;
@@ -2192,7 +2186,7 @@ void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 static bool cocoaTextParseParagraphAttributes(NSMutableParagraphStyle* paragraph_style, Ihandle* formattag)
 {
   bool needs_paragraph_style = false;
-  char* format;
+  const char* format;
 
   format = iupAttribGet(formattag, "ALIGNMENT");
   if(format)
@@ -2296,12 +2290,12 @@ static bool cocoaTextParseParagraphAttributes(NSMutableParagraphStyle* paragraph
 
     while(format)
     {
-      str = iupStrDupUntil((char**)&format, ' ');
+      str = iupStrDupUntil(&format, ' ');
       if (!str) break;
       pos = atoi(str);
       free(str);
 
-      str = iupStrDupUntil((char**)&format, ' ');
+      str = iupStrDupUntil(&format, ' ');
       if (!str) break;
 
       NSTextTab* text_tab = nil;
@@ -5470,6 +5464,46 @@ static void cocoaTextUnMapMethod(Ihandle* ih)
       IupDestroy(context_menu_ih);
     }
     iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
+  }
+
+  if (ih->data->is_multiline)
+  {
+    NSScrollView* scroll_view = (NSScrollView*)the_view;
+    NSTextView* text_view = [scroll_view documentView];
+    if (text_view)
+    {
+      [text_view setDelegate:nil];
+      objc_setAssociatedObject(text_view, IUP_COCOA_TEXT_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+      objc_setAssociatedObject(text_view, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+    }
+  }
+  else if (iupAttribGetBoolean(ih, "SPIN"))
+  {
+    IUPTextSpinnerContainer* spinner_container = (IUPTextSpinnerContainer*)objc_getAssociatedObject(the_view, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY);
+    if (spinner_container)
+    {
+      NSTextField* text_field = [spinner_container textField];
+      NSStepper* stepper_view = [spinner_container stepperView];
+      if (text_field)
+      {
+        [text_field setDelegate:nil];
+        objc_setAssociatedObject(text_field, IUP_COCOA_TEXT_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        objc_setAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+      }
+      if (stepper_view)
+      {
+        [stepper_view setTarget:nil];
+        objc_setAssociatedObject(stepper_view, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+      }
+    }
+    objc_setAssociatedObject(the_view, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  }
+  else
+  {
+    NSTextField* text_field = (NSTextField*)the_view;
+    [text_field setDelegate:nil];
+    objc_setAssociatedObject(text_field, IUP_COCOA_TEXT_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
   }
 
   iupcocoaRemoveFromParent(ih);

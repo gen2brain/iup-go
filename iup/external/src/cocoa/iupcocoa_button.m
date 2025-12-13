@@ -332,7 +332,7 @@ static void cocoaButtonCalculateBorders(Ihandle* ih, int *border_x, int *border_
   BOOL is_flat = iupAttribGetBoolean(ih, "FLAT");
   BOOL has_impress_no_border = (ih->data->type & IUP_BUTTON_IMAGE) && iupAttribGet(ih, "IMPRESS") && !iupAttribGetBoolean(ih, "IMPRESSBORDER");
 
-  [temp_button setBezelStyle:NSRegularSquareBezelStyle];
+  [temp_button setBezelStyle:NSBezelStyleRegularSquare];
   [temp_button setFont:[NSFont systemFontOfSize:0]];
 
   if (has_impress_no_border || is_flat)
@@ -532,23 +532,23 @@ static int cocoaButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
   NSButton* the_button = ih->handle;
   char value1[30], value2[30];
-  NSTextAlignment alignment = NSCenterTextAlignment;
+  NSTextAlignment alignment = NSTextAlignmentCenter;
 
   iupStrToStrStr(value, value1, value2, ':');
 
   if (iupStrEqualNoCase(value1, "ARIGHT"))
   {
-    alignment = NSRightTextAlignment;
+    alignment = NSTextAlignmentRight;
     ih->data->horiz_alignment = IUP_ALIGN_ARIGHT;
   }
   else if (iupStrEqualNoCase(value1, "ALEFT"))
   {
-    alignment = NSLeftTextAlignment;
+    alignment = NSTextAlignmentLeft;
     ih->data->horiz_alignment = IUP_ALIGN_ALEFT;
   }
   else /* ACENTER (default) */
   {
-    alignment = NSCenterTextAlignment;
+    alignment = NSTextAlignmentCenter;
     ih->data->horiz_alignment = IUP_ALIGN_ACENTER;
   }
 
@@ -793,7 +793,7 @@ static int cocoaButtonMapMethod(Ihandle* ih)
   [(IupCocoaFlatButton*)the_button setIsHovering:NO];
 
   [the_button setTitle:@""];
-  [the_button setBezelStyle:NSRegularSquareBezelStyle];
+  [the_button setBezelStyle:NSBezelStyleRegularSquare];
   [the_button setButtonType:NSButtonTypeMomentaryPushIn];
 
   value = iupAttribGet(ih, "IMAGE");
@@ -939,6 +939,7 @@ static void cocoaButtonUnMapMethod(Ihandle* ih)
     iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
   }
 
+  [the_button setTarget:nil];
   id button_receiver = objc_getAssociatedObject(the_button, IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY);
   objc_setAssociatedObject(the_button, IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
   [button_receiver release];

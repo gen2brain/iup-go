@@ -83,7 +83,6 @@ int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
   {
     [tempBox setTitle:[NSString stringWithUTF8String:title]];
     [tempBox setTitlePosition:NSAtTop];
-    [tempBox setBorderType:NSLineBorder];
 
     IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     if (iup_font)
@@ -97,11 +96,6 @@ int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
   {
     [tempBox setTitle:@""];
     [tempBox setTitlePosition:NSNoTitle];
-
-    if (iupAttribGetBoolean(ih, "SUNKEN"))
-      [tempBox setBorderType:NSGrooveBorder];
-    else
-      [tempBox setBorderType:NSLineBorder];
   }
 
   /* Reduce content view margins to minimize padding */
@@ -165,8 +159,6 @@ static int cocoaFrameSetBgColorAttrib(Ihandle* ih, const char* value)
     /* No custom BGCOLOR set on this frame.
        Use system defaults which are dynamic and theme-aware. */
     [the_frame setBoxType:NSBoxPrimary];
-    [the_frame setFillColor:nil];
-    [the_frame setBorderColor:nil];
 
     if (content_view)
     {
@@ -262,25 +254,6 @@ static int cocoaFrameSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaFrameSetSunkenAttrib(Ihandle* ih, const char* value)
-{
-  /* SUNKEN only applies to frames without titles */
-  if (iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
-    return 0;
-
-  if (!ih->handle)
-    return 1;
-
-  NSBox* the_frame = (NSBox*)ih->handle;
-
-  if (iupStrBoolean(value))
-    [the_frame setBorderType:NSGrooveBorder];  /* Sunken appearance */
-  else
-    [the_frame setBorderType:NSLineBorder];    /* Flat line border */
-
-  return 1;
-}
-
 static int cocoaFrameMapMethod(Ihandle* ih)
 {
   char* title;
@@ -310,7 +283,7 @@ static int cocoaFrameMapMethod(Ihandle* ih)
 
   if (iupAttribGet(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    /* Show title at top with line border */
+    /* Show title at top */
     if (title && *title)
     {
       [the_frame setTitle:[NSString stringWithUTF8String:title]];
@@ -320,7 +293,6 @@ static int cocoaFrameMapMethod(Ihandle* ih)
       [the_frame setTitle:@""];
     }
     [the_frame setTitlePosition:NSAtTop];
-    [the_frame setBorderType:NSLineBorder];
 
     /* Apply font to title if specified */
     IupCocoaFont* iup_font = iupcocoaGetFont(ih);
@@ -335,14 +307,9 @@ static int cocoaFrameMapMethod(Ihandle* ih)
   }
   else
   {
-    /* Box frame: no title, border depends on SUNKEN attribute */
+    /* Box frame: no title */
     [the_frame setTitle:@""];
     [the_frame setTitlePosition:NSNoTitle];
-
-    if (iupAttribGetBoolean(ih, "SUNKEN"))
-      [the_frame setBorderType:NSGrooveBorder];
-    else
-      [the_frame setBorderType:NSLineBorder];
   }
 
   /* Reduce content view margins to minimize padding */
@@ -368,7 +335,7 @@ void iupdrvFrameInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, cocoaFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, cocoaFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SUNKEN", NULL, cocoaFrameSetSunkenAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SUNKEN", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

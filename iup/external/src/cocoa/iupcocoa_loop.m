@@ -134,7 +134,7 @@ int IupMainLoop(void)
 
 int IupLoopStepWait(void)
 {
-  NSEvent* event = [NSApp nextEventMatchingMask:NSAnyEventMask
+  NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
                                       untilDate:[NSDate distantFuture]
                                          inMode:NSDefaultRunLoopMode
                                         dequeue:YES];
@@ -149,7 +149,7 @@ int IupLoopStepWait(void)
 
 int IupLoopStep(void)
 {
-  NSEvent* event = [NSApp nextEventMatchingMask:NSAnyEventMask
+  NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
                                       untilDate:[NSDate dateWithTimeIntervalSinceNow:0.0]
                                          inMode:NSDefaultRunLoopMode
                                         dequeue:YES];
@@ -168,7 +168,7 @@ void IupFlush(void)
 {
   while (YES)
   {
-    NSEvent* event = [NSApp nextEventMatchingMask:NSAnyEventMask
+    NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
                                         untilDate:[NSDate dateWithTimeIntervalSinceNow:0.0]
                                            inMode:NSDefaultRunLoopMode
                                           dequeue:YES];

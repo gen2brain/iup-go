@@ -59,8 +59,13 @@ static IupCocoaFont *cocoaCreateIupCocoaFontFromNSFont(NSFont *ns_font)
   [the_font setFontSize:font_size];
   [the_font setTypeFace:ns_font_name];
 
-  /* (defaultLineHeightForFont includes line spacing which makes text appear larger) */
-  int char_height = iupROUND([ns_font ascender] + (-[ns_font descender]));
+  /* Use NSTextFieldCell to get the actual line height it uses for rendering. */
+  NSTextFieldCell* tempCell = [[NSTextFieldCell alloc] initTextCell:@"Wj"];
+  [tempCell setFont:ns_font];
+  [tempCell setWraps:YES];
+  NSSize singleLineSize = [tempCell cellSizeForBounds:NSMakeRect(0, 0, CGFLOAT_MAX, CGFLOAT_MAX)];
+  [tempCell release];
+  int char_height = iupROUND(singleLineSize.height);
   [the_font setCharHeight:char_height];
 
   /* For average char width, use the advancement of a common character like 'x'.
@@ -90,15 +95,20 @@ static IupCocoaFont *cocoaGetSystemFont()
   {
     NSFont *ns_font;
 
+#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 110000
     /* Use modern API on macOS 11+ */
     NSOperatingSystemVersion version = {11, 0, 0};
     if ([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version])
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunguarded-availability-new"
       ns_font = [NSFont preferredFontForTextStyle:NSFontTextStyleBody options:@{}];
+#pragma clang diagnostic pop
     }
     else
+#endif
     {
-      /* Fall back to legacy API */
+      /* Fall back to legacy API (or when SDK doesn't have macOS 11+ APIs) */
       ns_font = [NSFont messageFontOfSize:0];
     }
 
@@ -320,39 +330,27 @@ static void cocoaFontGetTextSize(IupCocoaFont *iup_font, const char *str, int le
     return;
   }
 
+  /* Use iupStrLineCount for accurate line counting (same as GTK driver) */
+  if (h)
+    line_count = iupStrLineCount(str, len);
+
   if (str[0] && len > 0)
   {
-    int l_len, sum_len = 0;
+    int l_len;
     const char *nextstr;
     const char *curstr = str;
 
     do
     {
       nextstr = iupStrNextLine(curstr, &l_len);
-      if (sum_len + l_len > len)
-      {
-        l_len = len - sum_len;
-      }
 
       if (l_len > 0)
       {
         NSString *line_str = [[NSString alloc] initWithBytes:curstr length:l_len encoding:NSUTF8StringEncoding];
         NSSize line_size = [line_str sizeWithAttributes:[iup_font attributeDictionary]];
-        /* Add 2 pixels to prevent text clipping at the end. */
-        int line_w = (int)ceil(line_size.width) + 2;
+        int line_w = (int)ceil(line_size.width) + 4;
         max_w = iupMAX(max_w, line_w);
         [line_str release];
-      }
-
-      sum_len += l_len;
-      if (sum_len >= len)
-      {
-        break;
-      }
-
-      if (*nextstr)
-      {
-        line_count++;
       }
 
       curstr = nextstr;

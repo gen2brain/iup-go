@@ -1116,9 +1116,9 @@ static void cocoaItemUnMapMethod(Ihandle* ih)
     [[item menu] removeItem:item];
   }
 
+  [item setTarget:nil];
   objc_setAssociatedObject(item, MENUITEM_TARGET_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
   objc_setAssociatedObject(item, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
-  [item setTarget:nil];
   [item release];
   ih->handle = NULL;
 }
@@ -1238,10 +1238,10 @@ static void cocoaSubmenuUnMapMethod(Ihandle* ih)
   NSMenuItem* item = (NSMenuItem*)ih->handle;
   if (!item) return;
   [[item menu] removeItem:item];
-  objc_setAssociatedObject(item, MENUITEM_TARGET_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
-  objc_setAssociatedObject(item, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
   [item setTarget:nil];
   [item setSubmenu:nil];
+  objc_setAssociatedObject(item, MENUITEM_TARGET_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+  objc_setAssociatedObject(item, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
   [item release];
   ih->handle = NULL;
 }
@@ -1387,6 +1387,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
   while ([nsmenu numberOfItems] > count && existing > count)
   {
     NSMenuItem* item = [nsmenu itemAtIndex:count];
+    [item setTarget:nil];
     objc_setAssociatedObject(item, RECENT_MENU_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
     [nsmenu removeItemAtIndex:count];
     existing--;

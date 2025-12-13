@@ -11,6 +11,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <objc/runtime.h>
+#import <CoreServices/CoreServices.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -347,7 +348,8 @@ int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_s
       }
       else if([best_type isEqualToString:NSPasteboardTypeColor])
       {
-        NSColor* ns_color = (NSColor*)[NSUnarchiver unarchiveObjectWithData:ns_data];
+        NSError* error = nil;
+        NSColor* ns_color = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSColor class] fromData:ns_data error:&error];
         NSColor* rgb_color = [ns_color colorUsingColorSpace:[NSColorSpace genericRGBColorSpace]];
         int r = iupROUND([rgb_color redComponent] * 255.0);
         int g = iupROUND([rgb_color greenComponent] * 255.0);
@@ -361,7 +363,8 @@ int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_s
       }
       else if([best_type isEqualToString:NSPasteboardTypeFont])
       {
-        NSFont* ns_font = (NSFont*)[NSUnarchiver unarchiveObjectWithData:ns_data];
+        NSError* error = nil;
+        NSFont* ns_font = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSFont class] fromData:ns_data error:&error];
         NSString* ns_string = iupcocoaGetFontStringFromFont(ns_font);
         const char* c_str = [ns_string UTF8String];
         size_t buffer_size = strlen(c_str) + 1;
@@ -457,16 +460,18 @@ static void cocoaSourceDragProvideDataForTypeDefault(Ihandle* ih, NSPasteboard* 
   {
     if([main_view respondsToSelector:@selector(attributedStringValue)])
     {
-      NSAttributedString* attr_str = [main_view attributedStringValue];
-      NSData* ns_data = [NSKeyedArchiver archivedDataWithRootObject:attr_str];
-      [pasteboard_item setData:ns_data forType:type_name];
+      NSAttributedString* attr_str = [(id)main_view attributedStringValue];
+      NSError* error = nil;
+      NSData* ns_data = [NSKeyedArchiver archivedDataWithRootObject:attr_str requiringSecureCoding:NO error:&error];
+      if (ns_data)
+        [pasteboard_item setData:ns_data forType:type_name];
     }
   }
   else if([type_name isEqualToString:NSPasteboardTypeHTML])
   {
     if([main_view respondsToSelector:@selector(stringValue)])
     {
-      NSString* ns_string = [main_view stringValue];
+      NSString* ns_string = [(id)main_view stringValue];
       [pasteboard_item setString:ns_string forType:type_name];
     }
   }
@@ -475,7 +480,7 @@ static void cocoaSourceDragProvideDataForTypeDefault(Ihandle* ih, NSPasteboard* 
     /* Providing a file or URL requires a string value from the view, which is then converted to a URL. */
     if([main_view respondsToSelector:@selector(stringValue)])
     {
-      NSString* ns_str = [main_view stringValue];
+      NSString* ns_str = [(id)main_view stringValue];
       NSURL* ns_url = [NSURL URLWithString:ns_str];
       NSData* ns_data = [NSData dataWithContentsOfURL:ns_url];
       [pasteboard_item setData:ns_data forType:type_name];
@@ -485,7 +490,7 @@ static void cocoaSourceDragProvideDataForTypeDefault(Ihandle* ih, NSPasteboard* 
   {
     if([main_view respondsToSelector:@selector(stringValue)])
     {
-      NSString* ns_string = [main_view stringValue];
+      NSString* ns_string = [(id)main_view stringValue];
       [pasteboard_item setString:ns_string forType:type_name];
     }
   }
@@ -500,21 +505,23 @@ static void cocoaSourceDragProvideDataForTypeDefault(Ihandle* ih, NSPasteboard* 
     NSColor* the_color = nil;
     if([main_view respondsToSelector:@selector(color)])
     {
-      the_color = [main_view color];
+      the_color = [(id)main_view color];
     }
     else if([main_view respondsToSelector:@selector(foregroundColor)])
     {
-      the_color = [main_view foregroundColor];
+      the_color = [(id)main_view foregroundColor];
     }
     else if([main_view respondsToSelector:@selector(backgroundColor)])
     {
-      the_color = [main_view backgroundColor];
+      the_color = [(id)main_view backgroundColor];
     }
 
     if(the_color)
     {
-      NSData* ns_data = [NSKeyedArchiver archivedDataWithRootObject:the_color];
-      [pasteboard_item setData:ns_data forType:type_name];
+      NSError* error = nil;
+      NSData* ns_data = [NSKeyedArchiver archivedDataWithRootObject:the_color requiringSecureCoding:NO error:&error];
+      if (ns_data)
+        [pasteboard_item setData:ns_data forType:type_name];
     }
   }
 }
@@ -605,8 +612,10 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
 
       IupCocoaFont* iup_cocoa_font = iupcocoaGetFont(iup_font);
       NSFont* cocoa_font = [iup_cocoa_font nativeFont];
-      NSData* ns_data = [NSKeyedArchiver archivedDataWithRootObject:cocoa_font];
-      [pasteboard_item setData:ns_data forType:type_name];
+      NSError* error = nil;
+      NSData* ns_data = [NSKeyedArchiver archivedDataWithRootObject:cocoa_font requiringSecureCoding:NO error:&error];
+      if (ns_data)
+        [pasteboard_item setData:ns_data forType:type_name];
     }
   }
   else if([type_name isEqualToString:NSPasteboardTypeColor])
@@ -621,8 +630,10 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
     if(is_valid)
     {
       NSColor* the_color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:a/255.0];
-      NSData* ns_data = [NSKeyedArchiver archivedDataWithRootObject:the_color];
-      [pasteboard_item setData:ns_data forType:type_name];
+      NSError* error = nil;
+      NSData* ns_data = [NSKeyedArchiver archivedDataWithRootObject:the_color requiringSecureCoding:NO error:&error];
+      if (ns_data)
+        [pasteboard_item setData:ns_data forType:type_name];
     }
   }
   else /* Handle as custom binary data. */
@@ -661,7 +672,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
   return (IupGetCallback(ih, "DRAGFILECREATE_CB") != NULL);
 }
 
-- (void) pasteboard:(nullable NSPasteboard*)paste_board item:(NSPasteboardItem*)pasteboard_item provideDataForType:(NSPasteboardType)type_name
+- (void) pasteboard:(NSPasteboard*)paste_board item:(NSPasteboardItem*)pasteboard_item provideDataForType:(NSPasteboardType)type_name
 {
   Ihandle* ih = [self ihandle];
   if(nil == ih)
@@ -732,9 +743,11 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
     id return_item = nil;
     if(wants_file_promise)
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
       NSFilePromiseProvider* promise_provider = [[NSFilePromiseProvider alloc] initWithFileType:(NSString*)kUTTypeData delegate:self];
+#pragma clang diagnostic pop
       [promise_provider autorelease];
-      [promise_provider setDataProvider:drag_source_data forTypes:registered_types];
       return_item = promise_provider;
     }
     else
@@ -887,7 +900,7 @@ static bool cocoaSourceDragDoDefaultFileCreate(NSFilePromiseProvider* file_promi
   return did_handle;
 }
 
-- (void) filePromiseProvider:(NSFilePromiseProvider*)file_promise_provider writePromiseToURL:(NSURL*)write_url completionHandler:(void (^)(NSError * __nullable errorOrNil))completion_handler;
+- (void) filePromiseProvider:(NSFilePromiseProvider*)file_promise_provider writePromiseToURL:(NSURL*)write_url completionHandler:(void (^)(NSError* errorOrNil))completion_handler
 {
   Ihandle* ih = [self ihandle];
   IFns file_create_callback = (IFns)IupGetCallback(ih, "DRAGFILECREATE_CB");

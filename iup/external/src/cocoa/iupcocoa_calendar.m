@@ -223,6 +223,7 @@ static void cocoaCalendarUnMapMethod(Ihandle* ih)
 
   id date_picker = ih->handle;
 
+  [date_picker setTarget:nil];
   objc_setAssociatedObject(date_picker, IUP_COCOA_CALENDAR_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   objc_setAssociatedObject(date_picker, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
 

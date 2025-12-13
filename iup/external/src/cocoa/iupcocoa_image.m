@@ -171,7 +171,7 @@ static NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromRawData(int width, int
                                                            pixelsWide:width pixelsHigh:height bitsPerSample:8
                                                       samplesPerPixel:4 hasAlpha:YES isPlanar:NO
                                                        colorSpaceName:NSDeviceRGBColorSpace
-                                                         bitmapFormat:NSAlphaNonpremultipliedBitmapFormat
+                                                         bitmapFormat:NSBitmapFormatAlphaNonpremultiplied
                                                           bytesPerRow:CalculateBytesPerRow(width, 4)
                                                          bitsPerPixel:32];
   }
@@ -278,7 +278,7 @@ NSBitmapImageRep* iupcocoaImageNSBitmapImageRepFromPixels(int width, int height,
                                                            pixelsWide:width pixelsHigh:height bitsPerSample:8
                                                       samplesPerPixel:4 hasAlpha:YES isPlanar:NO
                                                        colorSpaceName:NSDeviceRGBColorSpace
-                                                         bitmapFormat:NSAlphaNonpremultipliedBitmapFormat
+                                                         bitmapFormat:NSBitmapFormatAlphaNonpremultiplied
                                                           bytesPerRow:CalculateBytesPerRow(width, 4)
                                                          bitsPerPixel:32];
   }
@@ -409,7 +409,7 @@ static NSImage* iupCocoaCreateNSImage(Ihandle *ih, const char* bgcolor, int make
                                                            pixelsWide:width pixelsHigh:height bitsPerSample:8
                                                       samplesPerPixel:4 hasAlpha:YES isPlanar:NO
                                                        colorSpaceName:NSDeviceRGBColorSpace
-                                                         bitmapFormat:NSAlphaNonpremultipliedBitmapFormat
+                                                         bitmapFormat:NSBitmapFormatAlphaNonpremultiplied
                                                           bytesPerRow:CalculateBytesPerRow(width, 4)
                                                          bitsPerPixel:32];
   }
@@ -655,7 +655,7 @@ void* iupdrvImageLoad(const char* name, int type)
     {
       const char* type_str = (type == IUPIMAGE_CURSOR) ? "CURSOR" :
                              (type == IUPIMAGE_ICON) ? "ICON" : "NSImage";
-      cb(the_image, type_str);
+      cb(the_image, (char*)type_str);
     }
   }
 
@@ -711,7 +711,7 @@ IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
 
   IFvs cb = (IFvs)IupGetFunction("IMAGEDESTROY_CB");
   if (cb)
-    cb(handle, type_str);
+    cb(handle, (char*)type_str);
 
   [((__bridge id)handle) release];
 }

@@ -200,6 +200,8 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   /* For OpenGL canvases, use clearDrawable + setView pattern before calling ACTION */
   if (iupAttribGet(_ih, "_IUP_GLCONTROLDATA"))
   {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     NSOpenGLContext* gl_context = (NSOpenGLContext*)iupAttribGet(_ih, "CONTEXT");
     if (gl_context)
     {
@@ -207,6 +209,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
       [gl_context setView:self];
       [gl_context update];
     }
+#pragma clang diagnostic pop
 
     IFn cb = (IFn)IupGetCallback(_ih, "ACTION");
     if (cb && !(_ih->data->inside_resize))
@@ -369,6 +372,8 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   {
     if (view_rect.size.width > 0 && view_rect.size.height > 0)
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
       NSOpenGLContext* gl_context = (NSOpenGLContext*)iupAttribGet(_ih, "CONTEXT");
       if (gl_context)
       {
@@ -378,6 +383,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
           dispatch_sync(dispatch_get_main_queue(), ^{ [gl_context setView:self]; });
         iupAttribSet(_ih, "_IUPCOCOA_GL_VIEW_ATTACHED", "1");
       }
+#pragma clang diagnostic pop
     }
   }
 
@@ -411,12 +417,15 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 {
   if (_ih && iupAttribGet(_ih, "_IUP_GLCONTROLDATA"))
   {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     NSOpenGLContext* gl_context = (NSOpenGLContext*)iupAttribGet(_ih, "CONTEXT");
     if (gl_context)
     {
       [gl_context makeCurrentContext];
       [gl_context update];
     }
+#pragma clang diagnostic pop
   }
 }
 
@@ -615,7 +624,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
     [super mouseDragged:the_event];
   }
 
-  if(([the_event associatedEventsMask] & NSLeftMouseDragged) && ![self startedDrag])
+  if(([the_event associatedEventsMask] & NSEventMaskLeftMouseDragged) && ![self startedDrag])
   {
     IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(_ih);
     if([drag_source_data isDragSourceEnabled] && iupAttribGetBoolean(_ih, "AUTOBEGINDRAG"))
@@ -1298,19 +1307,10 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
     [scroll_view setDocumentView:canvas_view];
     [canvas_view release];
 
-    /* For a canvas with custom drawing via SCROLL_CB,
-       we must disable bit-blit scrolling (copiesOnScroll=NO) to force a full redraw on each scroll step. */
-    if (IupGetCallback(ih, "SCROLL_CB"))
-    {
-      [clip_view setCopiesOnScroll:NO];
-    }
-
     /* Disable automatic scrollbar hiding and let IUP manage it explicitly
        based on DX/DY and AUTOHIDE attributes. */
     [scroll_view setAutohidesScrollers:NO];
 
-    [scroll_view setScrollerKnobStyle:NSScrollerKnobStyleDefault];
-    [scroll_view setScrollerStyle:NSScrollerStyleLegacy];
 
     [scroll_view setHasHorizontalScroller:(ih->data->sb & IUP_SB_HORIZ)];
     [scroll_view setHorizontalScrollElasticity:NSScrollElasticityNone];
@@ -1343,11 +1343,15 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
                                 name:NSViewFrameDidChangeNotification
                               object:scroll_view];
 
-    /* Register for global frame changes (window move, show/hide) */
+    /* Register for window move/screen changes (for OpenGL context updates) */
     [notification_center addObserver:canvas_view
                             selector:@selector(globalFrameDidChangeNotification:)
-                                name:NSViewGlobalFrameDidChangeNotification
-                              object:canvas_view];
+                                name:NSWindowDidMoveNotification
+                              object:nil];
+    [notification_center addObserver:canvas_view
+                            selector:@selector(globalFrameDidChangeNotification:)
+                                name:NSWindowDidChangeScreenNotification
+                              object:nil];
 
     /* Register for scroll notifications to trigger SCROLL_CB. */
     [clip_view setPostsBoundsChangedNotifications:YES];
@@ -1369,11 +1373,15 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
                                 name:NSViewFrameDidChangeNotification
                               object:canvas_view];
 
-    /* Register for global frame changes (window move, show/hide) */
+    /* Register for window move/screen changes (for OpenGL context updates) */
     [notification_center addObserver:canvas_view
                             selector:@selector(globalFrameDidChangeNotification:)
-                                name:NSViewGlobalFrameDidChangeNotification
-                              object:canvas_view];
+                                name:NSWindowDidMoveNotification
+                              object:nil];
+    [notification_center addObserver:canvas_view
+                            selector:@selector(globalFrameDidChangeNotification:)
+                                name:NSWindowDidChangeScreenNotification
+                              object:nil];
 
     [canvas_view setPostsBoundsChangedNotifications:YES];
     root_view = canvas_view;
@@ -1413,6 +1421,20 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
   if (canvas_view)
   {
     [[NSNotificationCenter defaultCenter] removeObserver:canvas_view];
+  }
+
+  if (ih->data->sb)
+  {
+    NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
+    if (scroll_view)
+    {
+      NSScroller* h_scroller = [scroll_view horizontalScroller];
+      NSScroller* v_scroller = [scroll_view verticalScroller];
+      if (h_scroller)
+        [h_scroller setTarget:nil];
+      if (v_scroller)
+        [v_scroller setTarget:nil];
+    }
   }
 
   cocoaTargetDropDestroyAssociatedData(ih);

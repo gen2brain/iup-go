@@ -1242,7 +1242,10 @@ static void cocoaTabsUnMapMethod(Ihandle* ih)
   id root_view = ih->handle;
   if (!root_view) return;
 
-  /* Release the delegate */
+  IupCocoaTabBarView* tab_bar_view = [(IupTabsRootView*)root_view tabBarView];
+  if (tab_bar_view)
+    [tab_bar_view setDelegate:nil];
+
   objc_setAssociatedObject(root_view, @"IUP_TABS_DELEGATE", nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   Iarray* visible_array = (Iarray*)iupAttribGet(ih, "_IUPCOCOA_VISIBLEARRAY");

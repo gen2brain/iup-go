@@ -16,5 +16,7 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 @interface IUPCocoaVerticalAlignmentTextFieldCell : NSTextFieldCell
 
 @property(assign, nonatomic) IUPTextVerticalAlignment alignmentMode;
+@property(assign, nonatomic) BOOL useWordWrap;
+@property(assign, nonatomic) BOOL useEllipsis;
 
 @end

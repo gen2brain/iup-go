@@ -86,17 +86,17 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
 
     if (current == 1)
     {
-      [self setState:NSMixedState];
+      [self setState:NSControlStateValueMixed];
       iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
     }
     else if (current == -1)
     {
-      [self setState:NSOffState];
+      [self setState:NSControlStateValueOff];
       iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 0);
     }
     else
     {
-      [self setState:NSOnState];
+      [self setState:NSControlStateValueOn];
       iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 1);
     }
 
@@ -128,17 +128,17 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
 
       if (current == 1)
       {
-        [self setState:NSMixedState];
+        [self setState:NSControlStateValueMixed];
         iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
       }
       else if (current == -1)
       {
-        [self setState:NSOffState];
+        [self setState:NSControlStateValueOff];
         iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 0);
       }
       else
       {
-        [self setState:NSOnState];
+        [self setState:NSControlStateValueOn];
         iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 1);
       }
 
@@ -181,18 +181,18 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
   }
   else if (!radio && ih->data->type == IUP_TOGGLE_TEXT && [the_sender allowsMixedState])
   {
-    int state_val = (new_state == NSOnState) ? 1 : (new_state == NSMixedState) ? -1 : 0;
+    int state_val = (new_state == NSControlStateValueOn) ? 1 : (new_state == NSControlStateValueMixed) ? -1 : 0;
     iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", state_val);
   }
   else if (radio)
   {
-    if (new_state == NSOnState)
+    if (new_state == NSControlStateValueOn)
     {
       Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE");
       if (iupObjectCheck(last_tg) && last_tg != ih)
       {
         NSButton* last_button = (NSButton*)last_tg->handle;
-        [last_button setState:NSOffState];
+        [last_button setState:NSControlStateValueOff];
 
         if (last_tg->data->type == IUP_TOGGLE_IMAGE)
         {
@@ -240,7 +240,7 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
     if (ih->data->type == IUP_TOGGLE_IMAGE)
     {
       char* name = NULL;
-      int is_checked = (new_state == NSOnState) ? 1 : 0;
+      int is_checked = (new_state == NSControlStateValueOn) ? 1 : 0;
 
       if (is_checked)
       {
@@ -266,7 +266,7 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
   if (action_callback_function)
   {
     int state = (int)new_state;
-    if (new_state == NSMixedState)
+    if (new_state == NSControlStateValueMixed)
       state = -1;
 
     if (action_callback_function(ih, state) == IUP_CLOSE)
@@ -335,7 +335,7 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
   if (check_w < 0)
   {
     NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
-    [temp_button setButtonType:NSSwitchButton];
+    [temp_button setButtonType:NSButtonTypeSwitch];
     [temp_button setTitle:@""];
     NSSize size = [temp_button intrinsicContentSize];
     [temp_button release];
@@ -486,13 +486,13 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
     else if (iupStrEqualNoCase(value, "TOGGLE"))
     {
       NSControlStateValue current_state = [the_toggle state];
-      NSControlStateValue new_state = (current_state == NSOffState) ? NSOnState : NSOffState;
+      NSControlStateValue new_state = (current_state == NSControlStateValueOff) ? NSControlStateValueOn : NSControlStateValueOff;
       [the_toggle setState:new_state];
     }
     else
     {
       int new_state = iupStrBoolean(value);
-      [the_toggle setState:new_state ? NSOnState : NSOffState];
+      [the_toggle setState:new_state ? NSControlStateValueOn : NSControlStateValueOff];
     }
   }
   else
@@ -501,7 +501,7 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
     if (iupStrEqualNoCase(value, "NOTDEF"))
     {
       [the_toggle setAllowsMixedState:YES];
-      [the_toggle setState:NSMixedState];
+      [the_toggle setState:NSControlStateValueMixed];
       if (!radio && ih->data->type == IUP_TOGGLE_TEXT)
         iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
     }
@@ -513,32 +513,32 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
 
         if (current == 1)
         {
-          [the_toggle setState:NSMixedState];
+          [the_toggle setState:NSControlStateValueMixed];
           iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
         }
         else if (current == -1)
         {
-          [the_toggle setState:NSOffState];
+          [the_toggle setState:NSControlStateValueOff];
           iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 0);
         }
         else
         {
-          [the_toggle setState:NSOnState];
+          [the_toggle setState:NSControlStateValueOn];
           iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 1);
         }
       }
       else
       {
         NSControlStateValue current_state = [the_toggle state];
-        NSControlStateValue new_state = (current_state == NSOffState) ? NSOnState : NSOffState;
+        NSControlStateValue new_state = (current_state == NSControlStateValueOff) ? NSControlStateValueOn : NSControlStateValueOff;
 
-        if (radio && new_state == NSOnState)
+        if (radio && new_state == NSControlStateValueOn)
         {
           Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE");
           if (iupObjectCheck(last_tg) && last_tg != ih)
           {
             NSButton* last_button = (NSButton*)last_tg->handle;
-            [last_button setState:NSOffState];
+            [last_button setState:NSControlStateValueOff];
 
             if (last_tg->data->type == IUP_TOGGLE_IMAGE)
             {
@@ -552,12 +552,12 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
 
         if (ih->data->type == IUP_TOGGLE_IMAGE)
         {
-          cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), new_state == NSOnState);
+          cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), new_state == NSControlStateValueOn);
         }
 
         if (!radio && ih->data->type == IUP_TOGGLE_TEXT && [the_toggle allowsMixedState])
         {
-          int state_val = (new_state == NSOnState) ? 1 : 0;
+          int state_val = (new_state == NSControlStateValueOn) ? 1 : 0;
           iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", state_val);
         }
       }
@@ -574,7 +574,7 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
           if (iupObjectCheck(last_tg) && last_tg != ih)
           {
             NSButton* last_button = (NSButton*)last_tg->handle;
-            [last_button setState:NSOffState];
+            [last_button setState:NSControlStateValueOff];
 
             if (last_tg->data->type == IUP_TOGGLE_IMAGE)
             {
@@ -582,7 +582,7 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
             }
           }
           iupAttribSet(radio, "_IUPCOCOA_LASTTOGGLE", (char*)ih);
-          [the_toggle setState:NSOnState];
+          [the_toggle setState:NSControlStateValueOn];
         }
         else
         {
@@ -592,7 +592,7 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
       }
       else
       {
-        [the_toggle setState:new_state ? NSOnState : NSOffState];
+        [the_toggle setState:new_state ? NSControlStateValueOn : NSControlStateValueOff];
 
         if (ih->data->type == IUP_TOGGLE_TEXT && [the_toggle allowsMixedState])
         {
@@ -617,16 +617,16 @@ static char* cocoaToggleGetValueAttrib(Ihandle* ih)
 
   if ([the_toggle isKindOfClass:[NSSwitch class]])
   {
-    if (current_state == NSOnState)
+    if (current_state == NSControlStateValueOn)
       return iupStrReturnChecked(1);
     else
       return iupStrReturnChecked(0);
   }
   else
   {
-    if (current_state == NSMixedState)
+    if (current_state == NSControlStateValueMixed)
       return iupStrReturnChecked(-1);
-    else if (current_state == NSOnState)
+    else if (current_state == NSControlStateValueOn)
       return iupStrReturnChecked(1);
     else
       return iupStrReturnChecked(0);
@@ -642,7 +642,7 @@ static int cocoaToggleSetImageAttrib(Ihandle* ih, const char* value)
     if (value != iupAttribGet(ih, "IMAGE"))
       iupAttribSet(ih, "IMAGE", (char*)value);
 
-    cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), [the_toggle state] == NSOnState);
+    cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), [the_toggle state] == NSControlStateValueOn);
     return 1;
   }
 
@@ -659,7 +659,7 @@ static int cocoaToggleSetImInactiveAttrib(Ihandle* ih, const char* value)
     if (!iupdrvIsActive(ih))
     {
       NSButton* the_toggle = ih->handle;
-      cocoaToggleUpdateImage(ih, 0, [the_toggle state] == NSOnState);
+      cocoaToggleUpdateImage(ih, 0, [the_toggle state] == NSControlStateValueOn);
     }
 
     return 1;
@@ -677,7 +677,7 @@ static int cocoaToggleSetImPressAttrib(Ihandle* ih, const char* value)
     if (value != iupAttribGet(ih, "IMPRESS"))
       iupAttribSet(ih, "IMPRESS", (char*)value);
 
-    if ([the_toggle state] == NSOnState)
+    if ([the_toggle state] == NSControlStateValueOn)
     {
       cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), 1);
     }
@@ -694,7 +694,7 @@ static int cocoaToggleSetActiveAttrib(Ihandle* ih, const char* value)
   {
     NSButton* the_toggle = ih->handle;
     int active = iupStrBoolean(value);
-    int check = ([the_toggle state] == NSOnState) ? 1 : 0;
+    int check = ([the_toggle state] == NSControlStateValueOn) ? 1 : 0;
     cocoaToggleUpdateImage(ih, active, check);
   }
 
@@ -819,7 +819,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
     {
-      [the_toggle setButtonType:NSPushOnPushOffButton];
+      [the_toggle setButtonType:NSButtonTypePushOnPushOff];
 
       if (ih->data->flat)
       {
@@ -838,7 +838,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
     {
       if (radio)
       {
-        [the_toggle setButtonType:NSRadioButton];
+        [the_toggle setButtonType:NSButtonTypeRadio];
         ih->data->is_radio = 1;
 
         if (!iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE"))
@@ -852,7 +852,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
       }
       else
       {
-        [the_toggle setButtonType:NSSwitchButton]; /* This is the checkbox style */
+        [the_toggle setButtonType:NSButtonTypeSwitch]; /* This is the checkbox style */
 
         if (iupAttribGetBoolean(ih, "3STATE"))
         {
@@ -927,6 +927,7 @@ static void cocoaToggleUnMapMethod(Ihandle* ih)
     iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
   }
 
+  [the_toggle setTarget:nil];
   id button_receiver = objc_getAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY);
   objc_setAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 

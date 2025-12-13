@@ -56,8 +56,8 @@
 
 - (void)drawInteriorWithFrame:(NSRect)cellFrame inView:(NSView *)controlView
 {
-  /* Pass our vertically-aligned rect to the superclass for drawing. */
-  [super drawInteriorWithFrame:[self titleRectForBounds:cellFrame] inView:controlView];
+  NSRect titleRect = [self titleRectForBounds:cellFrame];
+  [super drawInteriorWithFrame:titleRect inView:controlView];
 }
 
 - (void)selectWithFrame:(NSRect)rect inView:(NSView *)controlView editor:(NSText *)editor delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length

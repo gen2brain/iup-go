@@ -59,7 +59,7 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
 
     if (path_str && [[NSFileManager defaultManager] fileExistsAtPath:path_str isDirectory:&is_dir] && !is_dir)
     {
-      cb(ih, [path_str UTF8String], "PAINT");
+      cb(ih, (char*)[path_str UTF8String], "PAINT");
     }
     else
     {
@@ -256,11 +256,11 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
     BOOL is_dir;
     if ([[NSFileManager defaultManager] fileExistsAtPath:[url path] isDirectory:&is_dir] && !is_dir)
     {
-      cb(ih, path_utf8, "SELECT");
+      cb(ih, (char*)path_utf8, "SELECT");
     }
     else
     {
-      cb(ih, path_utf8, "OTHER");
+      cb(ih, (char*)path_utf8, "OTHER");
     }
   }
 
@@ -282,7 +282,7 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
   if (cb)
   {
     const char* path_utf8 = [[url path] UTF8String];
-    int ret = cb(ih, path_utf8, "OK");
+    int ret = cb(ih, (char*)path_utf8, "OK");
     if (ret == IUP_IGNORE)
     {
       return NO;
@@ -364,10 +364,7 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
     file_cb(ih, NULL, "INIT");
   }
 
-  if (help_cb)
-  {
-    [file_panel setShowsHelp:YES];
-  }
+  (void)help_cb;
 
   char* extfilter_val = iupAttribGet(ih, "EXTFILTER");
   char* filter_val = iupAttribGet(ih, "FILTER");
@@ -412,7 +409,10 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
     }
     if ([extention_array count] > 0)
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
       [file_panel setAllowedFileTypes:extention_array];
+#pragma clang diagnostic pop
     }
   }
 
@@ -624,6 +624,7 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
 
   if (panel_delegate)
   {
+    [file_panel setDelegate:nil];
     [panel_delegate release];
   }
 

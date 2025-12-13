@@ -34,6 +34,13 @@
 #include "iupcocoa_drv.h"
 #import "IupCocoaTreeToggleTableCellView.h"
 
+@interface NSNib (IupCocoaOutlineView)
++ (instancetype)IupCocoaOutlineView;
+@end
+
+@interface NSNib (IupCocoaOutlineViewToggle)
++ (instancetype)IupCocoaOutlineViewToggle;
+@end
 
 static const void* IUP_COCOA_TREE_DELEGATE_OBJ_KEY = "IUP_COCOA_TREE_DELEGATE_OBJ_KEY";
 static const void* IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY = "IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY";
@@ -557,7 +564,7 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
   IFnis cb = (IFnis)IupGetCallback(ih, "RENAME_CB");
   if (cb)
   {
-    int ret = cb(ih, iupTreeFindNodeId(ih, (InodeHandle*)item), [newTitle UTF8String]);
+    int ret = cb(ih, iupTreeFindNodeId(ih, (InodeHandle*)item), (char*)[newTitle UTF8String]);
     if (ret == IUP_IGNORE)
     {
       /* Revert to old title */
@@ -918,7 +925,7 @@ static NSInteger Helper_FindFlatIndexofTreeItemInOutlineView(IupCocoaTreeDelegat
   [tree_item setParentItem:target_parent_tree_item];
 }
 
-- (NSInteger) outlineView:(NSOutlineView*)outline_view numberOfChildrenOfItem:(nullable id)the_item
+- (NSInteger) outlineView:(NSOutlineView*)outline_view numberOfChildrenOfItem:(id)the_item
 {
   if(nil == the_item)
   {
@@ -930,7 +937,7 @@ static NSInteger Helper_FindFlatIndexofTreeItemInOutlineView(IupCocoaTreeDelegat
   }
 }
 
-- (id) outlineView:(NSOutlineView*)outline_view child:(NSInteger)the_index ofItem:(nullable id)the_item
+- (id) outlineView:(NSOutlineView*)outline_view child:(NSInteger)the_index ofItem:(id)the_item
 {
   if(nil == the_item)
   {
@@ -1042,7 +1049,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 }
 
 /* WARNING: This is another method that should be fast for performance. */
-- (nullable NSView *)outlineView:(NSOutlineView*)outline_view viewForTableColumn:(nullable NSTableColumn*)table_column item:(id)the_item
+- (NSView *)outlineView:(NSOutlineView*)outline_view viewForTableColumn:(NSTableColumn*)table_column item:(id)the_item
 {
   Ihandle* ih = [(IupCocoaOutlineView*)outline_view ih];
   IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)the_item;
@@ -1405,7 +1412,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 
 - (NSString *)outlineView:(NSOutlineView *)outlineView toolTipForCell:(NSCell *)cell rect:(NSRectPointer)rect tableColumn:(NSTableColumn *)tableColumn item:(id)item mouseLocation:(NSPoint)mouseLocation
 {
-  Ihandle* ih = [outlineView ih];
+  Ihandle* ih = [(IupCocoaOutlineView*)outlineView ih];
   if (!ih)
     return nil;
 
@@ -4499,6 +4506,11 @@ static void cocoaTreeUnMapMethod(Ihandle* ih)
 
   IupCocoaOutlineView* outline_view = (IupCocoaOutlineView*)cocoaTreeGetOutlineView(ih);
   [outline_view setMarkStartNode:nil];
+  [outline_view setDataSource:nil];
+  [outline_view setDelegate:nil];
+
+  NSScrollView* scroll_view = (NSScrollView*)root_view;
+  objc_setAssociatedObject(scroll_view, IUP_COCOA_TREE_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   iupcocoaSetAssociatedViews(ih, nil, nil);
   iupcocoaRemoveFromParent(ih);
