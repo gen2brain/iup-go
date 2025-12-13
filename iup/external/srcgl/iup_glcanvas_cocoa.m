@@ -4,6 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/gl.h>
 #import <OpenGL/OpenGL.h>
