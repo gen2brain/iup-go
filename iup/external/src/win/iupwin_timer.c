@@ -5,9 +5,10 @@
  */
 
 #include <windows.h>
- 
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -71,7 +72,7 @@ void iupdrvTimerRun(Ihandle *ih)
     long long start;
 
     ih->serial = (int)SetTimer(NULL, 0, time_ms, winTimerFunc);  /* minimum is 10 ms */
-    iupTableSet(wintimer_id_table, (const char*)ih->serial, ih, IUPTABLE_POINTER);
+    iupTableSet(wintimer_id_table, (const char*)(intptr_t)ih->serial, ih, IUPTABLE_POINTER);
 
     start = winTimerGetTickCount();
     iupAttribSetStrf(ih, "STARTCOUNT", "%lld", start);
@@ -83,7 +84,7 @@ void iupdrvTimerStop(Ihandle* ih)
   if (ih->serial > 0)
   {
     KillTimer(NULL, ih->serial);
-    iupTableRemove(wintimer_id_table, (const char*)ih->serial);
+    iupTableRemove(wintimer_id_table, (const char*)(intptr_t)ih->serial);
     ih->serial = -1;
   }
 }

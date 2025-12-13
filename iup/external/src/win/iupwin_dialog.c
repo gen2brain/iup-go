@@ -14,6 +14,7 @@
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -2010,7 +2011,7 @@ static int winDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       off_style = WS_BORDER | WS_THICKFRAME | WS_CAPTION | 
                   WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU;
       new_style = GetWindowLong(ih->handle, GWL_STYLE);
-      iupAttribSet(ih, "_IUPWIN_FS_STYLE", (char*)new_style);
+      iupAttribSet(ih, "_IUPWIN_FS_STYLE", (char*)(intptr_t)new_style);
       new_style &= (~off_style);
       SetWindowLong(ih->handle, GWL_STYLE, new_style);
 
@@ -2047,7 +2048,7 @@ static int winDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    LONG style = (LONG)iupAttribGet(ih, "_IUPWIN_FS_STYLE");
+    LONG style = (LONG)(intptr_t)iupAttribGet(ih, "_IUPWIN_FS_STYLE");
     if (style)
     {
       BOOL visible = ShowWindow(ih->handle, SW_HIDE);

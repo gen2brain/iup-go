@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -359,13 +360,13 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
   if (iupStrEqual(name, "CLIENTAREAANIMATION"))
   {
     BOOL flag = iupStrBoolean(value);
-    SystemParametersInfoA(SPI_SETCLIENTAREAANIMATION, 0, (void*)flag, 0);
+    SystemParametersInfoA(SPI_SETCLIENTAREAANIMATION, 0, (void*)(intptr_t)flag, 0);
     return 1;
   }
   if (iupStrEqual(name, "HOTTRACKING"))
   {
     BOOL flag = iupStrBoolean(value);
-    SystemParametersInfoA(SPI_SETHOTTRACKING, 0, (void*)flag, 0);
+    SystemParametersInfoA(SPI_SETHOTTRACKING, 0, (void*)(intptr_t)flag, 0);
     return 1;
   }
   if (iupStrEqual(name, "PROCESSWINDOWSGHOSTING"))

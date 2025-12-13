@@ -12,6 +12,7 @@
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -190,9 +191,9 @@ void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add
   iupwinGetColor(iupAttribGetStr(ih, "FGCOLOR"), &itemData->color);
 
   if (kind == ITREE_BRANCH)
-    item.iSelectedImage = item.iImage = (int)ih->data->def_image_collapsed;
+    item.iSelectedImage = item.iImage = (int)(intptr_t)ih->data->def_image_collapsed;
   else
-    item.iSelectedImage = item.iImage = (int)ih->data->def_image_leaf;
+    item.iSelectedImage = item.iImage = (int)(intptr_t)ih->data->def_image_leaf;
 
   /* Save the heading level in the node's application-defined data area */
   tvins.item = item;
@@ -300,9 +301,9 @@ static void winTreeExpandItem(Ihandle* ih, HTREEITEM hItem, int expand)
   itemData = (winTreeItemData*)item.lParam;
 
   if (expand)
-    item.iSelectedImage = item.iImage = (itemData->image_expanded!=-1)? itemData->image_expanded: (int)ih->data->def_image_expanded;
+    item.iSelectedImage = item.iImage = (itemData->image_expanded!=-1)? itemData->image_expanded: (int)(intptr_t)ih->data->def_image_expanded;
   else
-    item.iSelectedImage = item.iImage = (itemData->image!=-1)? itemData->image: (int)ih->data->def_image_collapsed;
+    item.iSelectedImage = item.iImage = (itemData->image!=-1)? itemData->image: (int)(intptr_t)ih->data->def_image_collapsed;
 
   item.hItem = hItem;
   item.mask = TVIF_HANDLE | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
@@ -643,7 +644,7 @@ static void winTreeUpdateImages(Ihandle* ih, int mode)
         if (mode == ITREE_UPDATEIMAGE_EXPANDED)
         {
           item.mask = TVIF_HANDLE | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
-          item.iSelectedImage = item.iImage = (itemData->image_expanded!=-1)? itemData->image_expanded: (int)ih->data->def_image_expanded;
+          item.iSelectedImage = item.iImage = (itemData->image_expanded!=-1)? itemData->image_expanded: (int)(intptr_t)ih->data->def_image_expanded;
           SendMessage(ih->handle, TVM_SETITEM, 0, (LPARAM)(LPTVITEM)&item);
         }
       }
@@ -652,7 +653,7 @@ static void winTreeUpdateImages(Ihandle* ih, int mode)
         if (mode == ITREE_UPDATEIMAGE_COLLAPSED)
         {
           item.mask = TVIF_HANDLE | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
-          item.iSelectedImage = item.iImage = (itemData->image!=-1)? itemData->image: (int)ih->data->def_image_collapsed;
+          item.iSelectedImage = item.iImage = (itemData->image!=-1)? itemData->image: (int)(intptr_t)ih->data->def_image_collapsed;
           SendMessage(ih->handle, TVM_SETITEM, 0, (LPARAM)(LPTVITEM)&item);
         }
       }
@@ -662,7 +663,7 @@ static void winTreeUpdateImages(Ihandle* ih, int mode)
       if (mode == ITREE_UPDATEIMAGE_LEAF)
       {
         item.mask = TVIF_HANDLE | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
-        item.iSelectedImage = item.iImage = (itemData->image!=-1)? itemData->image: (int)ih->data->def_image_leaf;
+        item.iSelectedImage = item.iImage = (itemData->image!=-1)? itemData->image: (int)(intptr_t)ih->data->def_image_leaf;
         SendMessage(ih->handle, TVM_SETITEM, 0, (LPARAM)(LPTVITEM)&item);
       }
     }
@@ -973,7 +974,7 @@ static int winTreeCallDragDropCb(Ihandle* ih, HTREEITEM	hItemDrag, HTREEITEM hIt
 
 static int winTreeSetImageBranchExpandedAttrib(Ihandle* ih, const char* value)
 {
-  ih->data->def_image_expanded = (void*)winTreeGetImageIndex(ih, value);
+  ih->data->def_image_expanded = (void*)(intptr_t)winTreeGetImageIndex(ih, value);
 
   /* Update all images */
   winTreeUpdateImages(ih, ITREE_UPDATEIMAGE_EXPANDED);
@@ -983,7 +984,7 @@ static int winTreeSetImageBranchExpandedAttrib(Ihandle* ih, const char* value)
 
 static int winTreeSetImageBranchCollapsedAttrib(Ihandle* ih, const char* value)
 {
-  ih->data->def_image_collapsed = (void*)winTreeGetImageIndex(ih, value);
+  ih->data->def_image_collapsed = (void*)(intptr_t)winTreeGetImageIndex(ih, value);
 
   /* Update all images */
   winTreeUpdateImages(ih, ITREE_UPDATEIMAGE_COLLAPSED);
@@ -993,7 +994,7 @@ static int winTreeSetImageBranchCollapsedAttrib(Ihandle* ih, const char* value)
 
 static int winTreeSetImageLeafAttrib(Ihandle* ih, const char* value)
 {
-  ih->data->def_image_leaf = (void*)winTreeGetImageIndex(ih, value);
+  ih->data->def_image_leaf = (void*)(intptr_t)winTreeGetImageIndex(ih, value);
 
   /* Update all images */
   winTreeUpdateImages(ih, ITREE_UPDATEIMAGE_LEAF);
@@ -1018,7 +1019,7 @@ static int winTreeSetImageExpandedAttrib(Ihandle* ih, int id, const char* value)
   if (itemData->kind == ITREE_BRANCH && item.state & TVIS_EXPANDED)
   {
     if (itemData->image_expanded == -1)
-      item.iSelectedImage = item.iImage = (int)ih->data->def_image_expanded;
+      item.iSelectedImage = item.iImage = (int)(intptr_t)ih->data->def_image_expanded;
     else
       item.iSelectedImage = item.iImage = itemData->image_expanded;
     item.mask = TVIF_HANDLE | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
@@ -1047,7 +1048,7 @@ static int winTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
     if (!(item.state & TVIS_EXPANDED))
     {
       if (itemData->image == -1)
-        item.iSelectedImage = item.iImage = (int)ih->data->def_image_collapsed;
+        item.iSelectedImage = item.iImage = (int)(intptr_t)ih->data->def_image_collapsed;
       else
         item.iSelectedImage = item.iImage = itemData->image;
 
@@ -1058,7 +1059,7 @@ static int winTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
   else
   {
     if (itemData->image == -1)
-      item.iSelectedImage = item.iImage = (int)ih->data->def_image_leaf;
+      item.iSelectedImage = item.iImage = (int)(intptr_t)ih->data->def_image_leaf;
     else
       item.iSelectedImage = item.iImage = itemData->image;
 
@@ -2872,9 +2873,9 @@ static int winTreeWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
       winTreeItemData* itemData = (winTreeItemData*)tree_info->itemNew.lParam;
 
       if (tree_info->action == TVE_EXPAND)
-        item.iSelectedImage = item.iImage = (itemData->image_expanded!=-1)? itemData->image_expanded: (int)ih->data->def_image_expanded;
+        item.iSelectedImage = item.iImage = (itemData->image_expanded!=-1)? itemData->image_expanded: (int)(intptr_t)ih->data->def_image_expanded;
       else
-        item.iSelectedImage = item.iImage = (itemData->image!=-1)? itemData->image: (int)ih->data->def_image_collapsed;
+        item.iSelectedImage = item.iImage = (itemData->image!=-1)? itemData->image: (int)(intptr_t)ih->data->def_image_collapsed;
 
       item.hItem = hItem;
       item.mask = TVIF_HANDLE | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
@@ -3143,9 +3144,9 @@ static int winTreeMapMethod(Ihandle* ih)
   }
 
   /* Initialize the default images */
-  ih->data->def_image_leaf = (void*)winTreeGetImageIndex(ih, iupAttribGetStr(ih, "IMAGELEAF"));
-  ih->data->def_image_collapsed = (void*)winTreeGetImageIndex(ih, iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED"));
-  ih->data->def_image_expanded = (void*)winTreeGetImageIndex(ih, iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED"));
+  ih->data->def_image_leaf = (void*)(intptr_t)winTreeGetImageIndex(ih, iupAttribGetStr(ih, "IMAGELEAF"));
+  ih->data->def_image_collapsed = (void*)(intptr_t)winTreeGetImageIndex(ih, iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED"));
+  ih->data->def_image_expanded = (void*)(intptr_t)winTreeGetImageIndex(ih, iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED"));
 
   if (ih->data->show_toggle)
   {
