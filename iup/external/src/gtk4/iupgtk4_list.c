@@ -500,14 +500,9 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
         /* Measure actual GtkEntry widget with CSS applied */
         GtkWidget *temp_entry = gtk_entry_new();
 
-        {
-          GtkStyleContext *context = gtk_widget_get_style_context(temp_entry);
-          GtkCssProvider *provider = gtk_css_provider_new();
-          gtk_css_provider_load_from_string(GTK_CSS_PROVIDER(provider),
-            "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }");
-          gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-          g_object_unref(provider);
-        }
+        /* Add static CSS rule for list entry padding (used by all IUP list entries) */
+        iupgtk4CssAddStaticRule(".iup-list-entry", "padding-left: 2px; padding-right: 2px; min-height: 24px;");
+        gtk_widget_add_css_class(temp_entry, "iup-list-entry");
 
         int min_w, nat_w, min_h, nat_h;
 
@@ -2120,14 +2115,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
       iupAttribSet(ih, "_IUPGTK4_ENTRY", (char*)entry);
 
       /* Apply same CSS as IupText single-line to reduce padding */
-      {
-        GtkStyleContext *context = gtk_widget_get_style_context(entry);
-        GtkCssProvider *provider = gtk_css_provider_new();
-        gtk_css_provider_load_from_string(GTK_CSS_PROVIDER(provider),
-          "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }");
-        gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-        g_object_unref(provider);
-      }
+      gtk_widget_add_css_class(entry, "iup-list-entry");
 
       /* Measure GtkEntry's natural width with the same text width as dropdown */
       int entry_width = iupAttribGetInt(ih, "_IUP_DROPDOWN_NATURAL_W");
@@ -2142,14 +2130,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
           GtkWidget* temp_entry = gtk_entry_new();
 
           /* Apply same CSS to get accurate measurements */
-          {
-            GtkStyleContext *context = gtk_widget_get_style_context(temp_entry);
-            GtkCssProvider *provider = gtk_css_provider_new();
-            gtk_css_provider_load_from_string(GTK_CSS_PROVIDER(provider),
-              "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }");
-            gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-            g_object_unref(provider);
-          }
+          gtk_widget_add_css_class(temp_entry, "iup-list-entry");
 
           gtk_editable_set_text(GTK_EDITABLE(temp_entry), "WWWWWWWWWW");
 
@@ -2291,14 +2272,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
       iupgtk4ClearSizeStyleCSS(entry);
 
       /* Apply same CSS as IupText single-line to reduce padding */
-      {
-        GtkStyleContext *context = gtk_widget_get_style_context(entry);
-        GtkCssProvider *provider = gtk_css_provider_new();
-        gtk_css_provider_load_from_string(GTK_CSS_PROVIDER(provider),
-          "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }");
-        gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-        g_object_unref(provider);
-      }
+      gtk_widget_add_css_class(entry, "iup-list-entry");
 
       iupAttribSet(ih, "_IUPGTK4_ENTRY", (char*)entry);
 

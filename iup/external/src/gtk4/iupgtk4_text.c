@@ -1543,11 +1543,8 @@ static int gtk4TextMapMethod(Ihandle* ih)
 
     if (!iupAttribGetBoolean(ih, "BORDER"))
     {
-      GtkStyleContext *context = gtk_widget_get_style_context(ih->handle);
-      GtkCssProvider *provider = gtk_css_provider_new();
-      gtk_css_provider_load_from_string(GTK_CSS_PROVIDER(provider), "*{ border: none; }");
-      gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-      g_object_unref(provider);
+      gtk_widget_add_css_class(ih->handle, "iup-text-noborder");
+      iupgtk4CssAddStaticRule(".iup-text-noborder", "border: none;");
     }
 
     if (iupAttribGetBoolean(ih, "PASSWORD"))

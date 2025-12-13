@@ -104,6 +104,17 @@ int iupgtk4TrayCleanup(Ihandle *ih);
 /* Loop */
 void iupgtk4LoopCleanup(void);
 
+/* CSS Manager */
+void iupgtk4CssManagerInit(void);
+void iupgtk4CssManagerFinish(void);
+void iupgtk4CssSetWidgetBgColor(GtkWidget* widget, unsigned char r, unsigned char g, unsigned char b, int is_text);
+void iupgtk4CssSetWidgetFgColor(GtkWidget* widget, unsigned char r, unsigned char g, unsigned char b);
+void iupgtk4CssSetWidgetPadding(GtkWidget* widget, int horiz, int vert);
+void iupgtk4CssSetWidgetFont(GtkWidget* widget, const char* font_css);
+void iupgtk4CssSetWidgetCustom(GtkWidget* widget, const char* css_property, const char* css_value);
+void iupgtk4CssClearWidgetStyle(GtkWidget* widget);
+void iupgtk4CssAddStaticRule(const char* selector, const char* css_rules);
+
 int iupgtk4IsSystemDarkMode(void);
 
 #ifdef GDK_WINDOWING_X11

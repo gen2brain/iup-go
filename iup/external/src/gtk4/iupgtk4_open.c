@@ -14,6 +14,7 @@
 
 #ifdef GDK_WINDOWING_X11
 #include <gdk/x11/gdkx.h>
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 #ifdef GDK_WINDOWING_WAYLAND
@@ -188,6 +189,11 @@ static void gtkSetGlobalColorAttrib(const char* name, GdkRGBA *color)
     (int)(color->blue * 255.0));
 }
 
+/* Suppress deprecation warnings for gtk_style_context_lookup_color.
+   This function is used only to READ theme colors at startup.
+   There is no GTK4 replacement for querying theme color values. */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
 {
   GdkRGBA color;
@@ -258,13 +264,14 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
     gtkSetGlobalColorAttrib("MENUBGCOLOR", &color);
   }
 }
+#pragma GCC diagnostic pop
 
 static void gtkSetGlobalColors(void)
 {
   GtkWidget* dialog = gtk_window_new();
   GtkWidget* text = gtk_entry_new();
   gtk_window_set_child(GTK_WINDOW(dialog), text);
-  gtk_widget_show(text);
+  gtk_widget_set_visible(text, TRUE);
   gtk_widget_realize(text);
   gtk_widget_realize(dialog);
   gtkUpdateGlobalColors(dialog, text);
@@ -301,11 +308,14 @@ int iupdrvOpen(int *argc, char ***argv)
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
 
+  iupgtk4CssManagerInit();
+
   return IUP_NOERROR;
 }
 
 void iupdrvClose(void)
 {
+  iupgtk4CssManagerFinish();
   iupgtk4StrRelease();
   iupgtk4LoopCleanup();
 
