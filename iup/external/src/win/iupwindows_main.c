@@ -54,10 +54,10 @@ int WINAPI WinMain (HINSTANCE hinst, HINSTANCE hprev, LPSTR cmdline, int ncmdsho
     return IupMain(_argc, _argv);
   }              
 #else
-  {                        
+  {
     /* this seems to work for all the compilers we tested, except Watcom compilers */
     /* These are declared in <stdlib.h>, except for Cygwin. */
-#ifdef __GNUC__
+#ifdef __CYGWIN__
     extern int __argc;
     extern char** __argv;
 #endif

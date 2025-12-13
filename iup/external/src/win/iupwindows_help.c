@@ -9,6 +9,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "iup.h"
 #include "iupwin_str.h"
@@ -19,7 +20,7 @@
 
 IUP_API int IupExecute(const char *filename, const char* parameters)
 {
-  int err = (int)ShellExecute(GetDesktopWindow(), TEXT("open"), iupwinStrToSystemFilename(filename), iupwinStrToSystemFilename(parameters), NULL, SW_SHOWNORMAL);
+  int err = (int)(intptr_t)ShellExecute(GetDesktopWindow(), TEXT("open"), iupwinStrToSystemFilename(filename), iupwinStrToSystemFilename(parameters), NULL, SW_SHOWNORMAL);
   if (err <= 32)
   {
     switch (err)
@@ -49,7 +50,7 @@ IUP_API int IupExecuteWait(const char *filename, const char* parameters)
 
   if (!ShellExecuteEx(&ExecInfo))
   {
-    int err = (int)ExecInfo.hInstApp;
+    int err = (int)(intptr_t)ExecInfo.hInstApp;
     switch (err)
     {
     case SE_ERR_FNF:

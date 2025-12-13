@@ -6,9 +6,10 @@
 #include <windows.h>
 #include <commctrl.h>
 
-#include <stdio.h>              
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>             
+#include <string.h>
+#include <stdint.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -1082,7 +1083,7 @@ HWND iupwinCreateWindowEx(HWND hParent, LPCTSTR lpClassName, DWORD dwExStyle, DW
     10,                           /* horizontal size - set this to avoid initial size problems */
     10,                           /* vertical size */
     hParent,                      /* window parent */
-    (HMENU)serial,                /* child identifier */
+    (HMENU)(intptr_t)serial,      /* child identifier */
     iupwin_hinstance,             /* instance of app. */
     clientdata);
 }

@@ -7,10 +7,10 @@
 #include <windows.h>
 #include <uxtheme.h>
 
-#if (_MSC_VER >= 1700)  /* Visual C++ 11.0 ( Visual Studio 2012) */
-#include <vssym32.h>
-#else
+#if defined(_MSC_VER) && (_MSC_VER < 1700)  /* Visual C++ before 11.0 (Visual Studio 2012) */
 #include <tmschema.h>
+#else
+#include <vssym32.h>
 #endif
 
 
