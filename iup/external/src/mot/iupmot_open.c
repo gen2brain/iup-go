@@ -4,10 +4,11 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdlib.h>    
-#include <stdio.h>    
+#include <stdlib.h>
+#include <stdio.h>
 #include <locale.h>
-#include <string.h>    
+#include <string.h>
+#include <stdint.h>    
 
 #include <Xm/Xm.h>
 
@@ -82,7 +83,7 @@ int iupdrvOpen(int *argc, char ***argv)
   iupmot_screen  = XDefaultScreen(iupmot_display);
 
   IupSetGlobal("XDISPLAY", (char*)iupmot_display);
-  IupSetGlobal("XSCREEN", (char*)iupmot_screen);
+  IupSetGlobal("XSCREEN", (char*)(intptr_t)iupmot_screen);
 
   /* screen depth can be 8bpp, but canvas can be 24bpp */
   {
