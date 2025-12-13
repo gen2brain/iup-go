@@ -91,11 +91,23 @@ static int cocoaFontDlgPopup(Ihandle* ih, int x, int y)
     iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
   }
 
-  NSString* ns_typeface = [NSString stringWithUTF8String:typeface];
-  NSFont* font = [NSFont fontWithName:ns_typeface size:(CGFloat)size];
+  NSFont* font = nil;
+
+  /* System font names starting with '.' are internal and cannot be used with fontWithName:.
+     Use the proper system font API instead. */
+  if (typeface[0] == '.' || strcmp(typeface, "System") == 0 || strlen(typeface) == 0)
+  {
+    font = [NSFont systemFontOfSize:(CGFloat)size];
+  }
+  else
+  {
+    NSString* ns_typeface = [NSString stringWithUTF8String:typeface];
+    font = [NSFont fontWithName:ns_typeface size:(CGFloat)size];
+  }
+
   if (!font)
   {
-    font = [NSFont userFontOfSize:(CGFloat)size];
+    font = [NSFont systemFontOfSize:(CGFloat)size];
   }
 
   NSFontManager* fontManager = [NSFontManager sharedFontManager];
@@ -132,14 +144,14 @@ static int cocoaFontDlgPopup(Ihandle* ih, int x, int y)
   NSView* accessoryView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, view_width, button_height)];
 
   NSButton* okButton = [[NSButton alloc] initWithFrame:NSMakeRect(view_width - ok_button_width, 0, ok_button_width, button_height)];
-  [okButton setBezelStyle:NSRoundedBezelStyle];
+  [okButton setBezelStyle:NSBezelStyleRounded];
   [okButton setTitle:@"OK"];
   [okButton setKeyEquivalent:@"\r"];
   [okButton setAction:@selector(onOkClicked:)];
   [okButton setTarget:delegate];
 
   NSButton* cancelButton = [[NSButton alloc] initWithFrame:NSMakeRect(view_width - ok_button_width - ok_cancel_spacing - cancel_button_width, 0, cancel_button_width, button_height)];
-  [cancelButton setBezelStyle:NSRoundedBezelStyle];
+  [cancelButton setBezelStyle:NSBezelStyleRounded];
   [cancelButton setTitle:@"Cancel"];
   [cancelButton setKeyEquivalent:@"\e"];
   [cancelButton setAction:@selector(onCancelClicked:)];
@@ -151,7 +163,7 @@ static int cocoaFontDlgPopup(Ihandle* ih, int x, int y)
   if (IupGetCallback(ih, "HELP_CB"))
   {
     NSButton* helpButton = [[NSButton alloc] initWithFrame:NSMakeRect(0, 0, 32, 32)];
-    [helpButton setBezelStyle:NSHelpButtonBezelStyle];
+    [helpButton setBezelStyle:NSBezelStyleHelpButton];
     [helpButton setTitle:@""];
     [helpButton setAction:@selector(onHelpClicked:)];
     [helpButton setTarget:delegate];

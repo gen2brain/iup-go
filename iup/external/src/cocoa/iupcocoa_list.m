@@ -56,7 +56,21 @@ static char* cocoaListGetValueAttrib(Ihandle* ih);
 static int cocoaListSetValueAttrib(Ihandle* ih, const char* value);
 static void cocoaListUpdateDragDrop(Ihandle* ih);
 
-@class IupCocoaListTableViewReceiver;
+@interface IupCocoaListTableViewReceiver : NSObject <NSTableViewDelegate, NSTableViewDataSource>
+{
+  NSMutableArray* dataArray;
+}
+@property (nonatomic, retain) NSMutableArray* dataArray;
+- (NSInteger) numberOfRowsInTableView:(NSTableView*)table_view;
+- (NSView*) tableView:(NSTableView*)table_view viewForTableColumn:(NSTableColumn*)table_column row:(NSInteger)the_row;
+- (void) tableViewSelectionDidChange:(NSNotification*)the_notification;
+- (CGFloat) tableView:(NSTableView*)table_view heightOfRow:(NSInteger)row;
+- (id<NSPasteboardWriting>)tableView:(NSTableView *)tableView pasteboardWriterForRow:(NSInteger)row;
+- (NSDragOperation)tableView:(NSTableView *)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation;
+- (BOOL)tableView:(NSTableView *)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation;
+- (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session willBeginAtPoint:(NSPoint)screenPoint forRowIndexes:(NSIndexSet *)rowIndexes;
+- (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation;
+@end
 
 typedef enum
 {
@@ -1026,16 +1040,11 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 @end
 
 @interface IupCocoaListTableCellView : NSTableCellView
-{
-  NSImageView* imageView;
-}
-@property (nonatomic, retain) NSImageView* imageView;
 @property (nonatomic, retain) NSColor* customBackgroundColor;
 @property (nonatomic, retain) NSColor* customTextColor;
 @end
 
 @implementation IupCocoaListTableCellView
-@synthesize imageView;
 @synthesize customBackgroundColor;
 @synthesize customTextColor;
 
@@ -1046,36 +1055,33 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   {
     [self setWantsLayer:YES];
 
-    /* Use standard NSImageView.
+    /* Use standard NSImageView via superclass property.
        It must be set as non-editable so it does not interfere with dragging. */
-    imageView = [[NSImageView alloc] initWithFrame:NSZeroRect];
-    [imageView setImageFrameStyle:NSImageFrameNone];
-    [imageView setImageAlignment:NSImageAlignCenter];
-    [imageView setImageScaling:NSImageScaleProportionallyDown];
-    [imageView setEditable:NO];
-    [self addSubview:imageView];
+    self.imageView = [[[NSImageView alloc] initWithFrame:NSZeroRect] autorelease];
+    [self.imageView setImageFrameStyle:NSImageFrameNone];
+    [self.imageView setImageAlignment:NSImageAlignCenter];
+    [self.imageView setImageScaling:NSImageScaleProportionallyDown];
+    [self.imageView setEditable:NO];
+    [self.imageView setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [self addSubview:self.imageView];
 
     /* Use custom NSTextField with controlled text insets.
        It must be non-editable and non-selectable so it does not interfere with dragging. */
-    NSTextField* textField = [[IupCocoaListTextField alloc] initWithFrame:NSZeroRect];
+    NSTextField* textField = [[[IupCocoaListTextField alloc] initWithFrame:NSZeroRect] autorelease];
     [textField setBezeled:NO];
     [textField setDrawsBackground:NO];
     [textField setEditable:NO];
     [textField setSelectable:NO];
     [textField setLineBreakMode:NSLineBreakByClipping];
+    [textField setTranslatesAutoresizingMaskIntoConstraints:NO];
     [self addSubview:textField];
     [self setTextField:textField];
-    [textField release];
-
-    [imageView setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [textField setTranslatesAutoresizingMaskIntoConstraints:NO];
   }
   return self;
 }
 
 - (void) dealloc
 {
-  [imageView release];
   [customBackgroundColor release];
   [customTextColor release];
   [super dealloc];
@@ -1085,7 +1091,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 {
   [super setBackgroundStyle:backgroundStyle];
 
-  if (backgroundStyle == NSBackgroundStyleLight)
+  if (backgroundStyle == NSBackgroundStyleNormal)
   {
     if (self.customBackgroundColor)
     {
@@ -1117,7 +1123,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   NSMutableArray* constraintsToRemove = [NSMutableArray array];
   for (NSLayoutConstraint* constraint in [self constraints])
   {
-    if (constraint.firstItem == imageView || constraint.secondItem == imageView ||
+    if (constraint.firstItem == self.imageView || constraint.secondItem == self.imageView ||
         constraint.firstItem == [self textField] || constraint.secondItem == [self textField])
     {
       [constraintsToRemove addObject:constraint];
@@ -1125,17 +1131,17 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   }
   [self removeConstraints:constraintsToRemove];
 
-  NSDictionary* views = @{@"imageView": imageView, @"textField": [self textField]};
+  NSDictionary* views = @{@"imageView": self.imageView, @"textField": [self textField]};
   NSDictionary* metrics = @{@"padding": @(padding)};
 
-  if (showImage && ![imageView isHidden])
+  if (showImage && ![self.imageView isHidden])
   {
     [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-padding-[imageView(16)]-4-[textField]-padding-|"
                  options:NSLayoutFormatAlignAllCenterY
                  metrics:metrics
                    views:views]];
 
-    [self addConstraint:[NSLayoutConstraint constraintWithItem:imageView
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.imageView
               attribute:NSLayoutAttributeCenterY
               relatedBy:NSLayoutRelationEqual
                  toItem:self
@@ -1143,7 +1149,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
              multiplier:1.0
                constant:0.0]];
 
-    [self addConstraint:[NSLayoutConstraint constraintWithItem:imageView
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.imageView
               attribute:NSLayoutAttributeHeight
               relatedBy:NSLayoutRelationEqual
                  toItem:nil
@@ -1167,22 +1173,6 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
            multiplier:1.0
              constant:0.0]];
 }
-@end
-
-@interface IupCocoaListTableViewReceiver : NSObject <NSTableViewDelegate, NSTableViewDataSource>
-{
-  NSMutableArray* dataArray;
-}
-@property (nonatomic, retain) NSMutableArray* dataArray;
-- (NSInteger) numberOfRowsInTableView:(NSTableView*)table_view;
-- (nullable NSView*) tableView:(NSTableView*)table_view viewForTableColumn:(NSTableColumn*)table_column row:(NSInteger)the_row;
-- (void) tableViewSelectionDidChange:(NSNotification*)the_notification;
-- (CGFloat) tableView:(NSTableView*)table_view heightOfRow:(NSInteger)row;
-- (nullable id<NSPasteboardWriting>)tableView:(NSTableView *)tableView pasteboardWriterForRow:(NSInteger)row;
-- (NSDragOperation)tableView:(NSTableView *)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)dropOperation;
-- (BOOL)tableView:(NSTableView *)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation;
-- (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session willBeginAtPoint:(NSPoint)screenPoint forRowIndexes:(NSIndexSet *)rowIndexes;
-- (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation;
 @end
 
 @implementation IupCocoaListTableViewReceiver
@@ -1216,7 +1206,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   return [dataArray count];
 }
 
-- (nullable NSView*) tableView:(NSTableView*)table_view viewForTableColumn:(NSTableColumn*)table_column row:(NSInteger)the_row
+- (NSView*) tableView:(NSTableView*)table_view viewForTableColumn:(NSTableColumn*)table_column row:(NSInteger)the_row
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(table_view, IHANDLE_ASSOCIATED_OBJ_KEY);
 
@@ -1325,17 +1315,20 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
     font = iup_font ? [iup_font nativeFont] : [NSFont systemFontOfSize:13];
   }
 
-  NSLayoutManager* layoutManager = [[NSLayoutManager alloc] init];
-  CGFloat line_height = [layoutManager defaultLineHeightForFont:font];
-  [layoutManager release];
+  int char_width, char_height;
+  if (ih)
+    iupdrvFontGetCharSize(ih, &char_width, &char_height);
+  else
+    char_height = 16;
 
-  row_height = line_height;
+  row_height = (CGFloat)char_height;
 
-  CGFloat padding = kIupCocoaListDefaultPadding * 2;
+  int item_space = 0;
+  iupdrvListAddItemSpace(ih, &item_space);
+  row_height += (CGFloat)item_space;
+
   if (ih && ih->data && ih->data->spacing > 0)
-    padding = (CGFloat)(ih->data->spacing * 2);
-
-  row_height += padding;
+    row_height += (CGFloat)(ih->data->spacing * 2);
 
   if (ih && ih->data && ih->data->show_image)
   {
@@ -1346,14 +1339,12 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
       if (image && image != (id)[NSNull null])
       {
         NSSize imageSize = [image size];
+        CGFloat padding = (ih->data->spacing > 0) ? (CGFloat)(ih->data->spacing * 2) : 0;
         if (imageSize.height + padding > row_height)
           row_height = imageSize.height + padding;
       }
     }
   }
-
-  if (s_cocoa_measured_row_height > 0.0 && row_height < s_cocoa_measured_row_height)
-    row_height = s_cocoa_measured_row_height;
 
   return row_height;
 }
@@ -1457,7 +1448,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 }
 
 /* Drag Source */
-- (nullable id<NSPasteboardWriting>)tableView:(NSTableView *)tableView pasteboardWriterForRow:(NSInteger)row
+- (id<NSPasteboardWriting>)tableView:(NSTableView *)tableView pasteboardWriterForRow:(NSInteger)row
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return nil;
@@ -4068,30 +4059,45 @@ static void cocoaListUnMapMethod(Ihandle* ih)
   {
     case IUPCOCOALISTSUBTYPE_DROPDOWN:
       {
+        NSPopUpButton* popup_button = (NSPopUpButton*)base_view;
+        [popup_button setTarget:nil];
         objc_setAssociatedObject(base_view, IUP_COCOA_LIST_POPUPBUTTON_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
         break;
       }
     case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
       {
+        NSComboBox* combo_box = (NSComboBox*)base_view;
+        [combo_box setDelegate:nil];
         objc_setAssociatedObject(base_view, IUP_COCOA_LIST_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
         break;
       }
     case IUPCOCOALISTSUBTYPE_EDITBOX:
       {
         NSTextField* text_field = (NSTextField*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
+        NSTableView* table_view = (NSTableView*)iupAttribGet(ih, "_IUPCOCOA_TABLEVIEW");
         if(text_field)
         {
+          [text_field setDelegate:nil];
           objc_setAssociatedObject(text_field, IUP_COCOA_LIST_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
         }
-        /* fall through to clean up table view */
-      }
-    case IUPCOCOALISTSUBTYPE_MULTIPLELIST:
-      case IUPCOCOALISTSUBTYPE_SINGLELIST:
-      {
+        if(table_view)
+        {
+          [table_view setDataSource:nil];
+          [table_view setDelegate:nil];
+        }
         objc_setAssociatedObject(base_view, IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
         break;
       }
-      default:
+    case IUPCOCOALISTSUBTYPE_MULTIPLELIST:
+    case IUPCOCOALISTSUBTYPE_SINGLELIST:
+      {
+        NSTableView* table_view = (NSTableView*)base_view;
+        [table_view setDataSource:nil];
+        [table_view setDelegate:nil];
+        objc_setAssociatedObject(base_view, IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+        break;
+      }
+    default:
       break;
   }
 

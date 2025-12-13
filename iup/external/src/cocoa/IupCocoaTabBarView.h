@@ -36,7 +36,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
   IupCocoaTabPositionRight
 };
 
-@interface IupCocoaTabBarView : NSView<NSMenuDelegate>
+@interface IupCocoaTabBarView : NSView<NSMenuDelegate, NSDraggingSource>
 {
   NSMutableArray* tabs;
   NSBezierPath* tabListControlPath;
@@ -90,6 +90,18 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
 - (id)addTabViewWithTitle:(NSString*)title image:(NSImage*)image;
 - (void)redraw;
 - (void)removeTabCell:(IupCocoaTabCell*)tabCell;
+@end
+
+@interface IupCocoaTabBarView (Expose)
+- (NSRect)tabRectFromIndex:(NSUInteger)index;
+- (NSRect)rectForTabListControl;
+- (BOOL)isBlankAreaOfTabBarViewInPoint:(NSPoint)p;
+- (NSMenu *)tabsMenu;
+- (void)popupMenuDidChoosed:(NSMenuItem*)item;
+- (BOOL)validateMenuItem:(NSMenuItem*)menuItem;
+- (IupCocoaTabCell*)tabCellInPoint:(NSPoint)p;
+- (NSInteger)destinationCellIndexFromPoint:(NSPoint)p;
+- (void)exchangeTabWithIndex:(NSUInteger)One withTabIndex:(NSUInteger)two;
 @end
 
 /* IupCocoaTabBarView Delegates methods */

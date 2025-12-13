@@ -411,23 +411,6 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
   {
     cocoaDialogExitModal(ih);
   }
-
-  NSArray<NSWindow*>* child_windows = [[the_window childWindows] copy];
-
-  for (NSWindow* child_window in child_windows)
-  {
-    Ihandle* child_ih = (Ihandle*)objc_getAssociatedObject(child_window, IHANDLE_ASSOCIATED_OBJ_KEY);
-
-    if (iupObjectCheck(child_ih))
-    {
-      if(iupAttribGetBoolean(child_ih, "MODAL"))
-      {
-        cocoaDialogExitModal(child_ih);
-      }
-      IupDestroy(child_ih);
-    }
-  }
-  [child_windows release];
 }
 
 - (void) windowDidBecomeKey:(NSNotification*)notification
@@ -1252,14 +1235,6 @@ static char* cocoaDialogGetFullScreenAttrib(Ihandle* ih)
   return iupAttribGet(ih, "_IUPCOCOA_FULLSCREEN");
 }
 
-static int cocoaDialogSetHelpButtonAttrib(Ihandle* ih, const char* value)
-{
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
-  if (!the_window) return 0;
-
-  [the_window setShowsHelpButton:(BOOL)iupStrBoolean(value)];
-  return 1;
-}
 
 static int cocoaDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
 {
@@ -1503,7 +1478,7 @@ static int cocoaDialogMapMethod(Ihandle* ih)
   objc_setAssociatedObject(the_window, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 
   parent = iupDialogGetNativeParent(ih);
-  if (parent && [parent isKindOfClass:[NSWindow class]])
+  if (parent && [(id)parent isKindOfClass:[NSWindow class]])
   {
     NSWindow* parent_window = (NSWindow*)parent;
     [parent_window addChildWindow:the_window ordered:NSWindowAbove];
@@ -1576,20 +1551,6 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
     [parent_window removeChildWindow:the_window];
   }
 
-  NSArray<NSWindow*>* child_windows = [[the_window childWindows] copy];
-  for (NSWindow* child_window in child_windows)
-  {
-    Ihandle* child_ih = (Ihandle*)objc_getAssociatedObject(child_window, IHANDLE_ASSOCIATED_OBJ_KEY);
-    if (iupObjectCheck(child_ih))
-    {
-      if(iupAttribGetBoolean(child_ih, "MODAL"))
-      {
-        cocoaDialogExitModal(child_ih);
-      }
-      IupDestroy(child_ih);
-    }
-  }
-  [child_windows release];
 
   @try
   {
@@ -1857,18 +1818,20 @@ static int cocoaDialogSetTaskBarProgressStateAttrib(Ihandle *ih, const char *val
     }
     else if (iupStrEqualNoCase(value, "INDETERMINATE"))
     {
-      [progress setIndeterminate:YES];
+      progress.totalUnitCount = -1;
       [[NSApp dockTile] setBadgeLabel:@"◉"];
     }
     else if (iupStrEqualNoCase(value, "PAUSED"))
     {
-      [progress setIndeterminate:NO];
-      [progress setPaused:YES];
+      if (progress.totalUnitCount < 0)
+        progress.totalUnitCount = 100;
+      [progress pause];
     }
     else
     {
-      [progress setIndeterminate:NO];
-      [progress setPaused:NO];
+      if (progress.totalUnitCount < 0)
+        progress.totalUnitCount = 100;
+      [progress resume];
       [[NSApp dockTile] setBadgeLabel:nil];
     }
   }
@@ -1935,7 +1898,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, cocoaDialogSetCustomFrameAttrib, NULL, "NO", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWNOACTIVATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, cocoaDialogSetDialogHintAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, cocoaDialogSetHelpButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, cocoaDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 

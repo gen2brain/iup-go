@@ -50,9 +50,9 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
 
   if (parent)
   {
-    if ([parent isKindOfClass:[NSWindow class]])
+    if ([(id)parent isKindOfClass:[NSWindow class]])
       parentWindow = (NSWindow*)parent;
-    else if ([parent isKindOfClass:[NSView class]])
+    else if ([(id)parent isKindOfClass:[NSView class]])
       parentWindow = [(NSView*)parent window];
 
     if (parentWindow && !parent_ih)

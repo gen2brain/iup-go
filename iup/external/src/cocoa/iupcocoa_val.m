@@ -27,6 +27,7 @@
 static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY";
 
 @interface IupCocoaValSlider : NSSlider
+@property (nonatomic, assign) double incrementValue;
 @end
 
 @interface IupCocoaSliderReceiver : NSObject
@@ -34,6 +35,8 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
 @end
 
 @implementation IupCocoaValSlider
+
+@synthesize incrementValue = _incrementValue;
 
 - (BOOL)acceptsFirstResponder
 {
@@ -282,7 +285,7 @@ static int cocoaValSetMaxAttrib(Ihandle* ih, const char* value)
     [slider setMaxValue:new_value];
 
     double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
-    [slider setIncrementValue:inc_size];
+    [(IupCocoaValSlider*)slider setIncrementValue:inc_size];
 
     double page_inc_size = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
     [slider setAltIncrementValue:page_inc_size];
@@ -307,7 +310,7 @@ static int cocoaValSetMinAttrib(Ihandle* ih, const char* value)
     [slider setMinValue:new_value];
 
     double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
-    [slider setIncrementValue:inc_size];
+    [(IupCocoaValSlider*)slider setIncrementValue:inc_size];
 
     double page_inc_size = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
     [slider setAltIncrementValue:page_inc_size];
@@ -326,10 +329,8 @@ static int cocoaValSetStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->step), 0.01))
   {
-    /* STEP is a fraction of the total range. Convert to an absolute value for Cocoa. */
     double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
-    NSSlider* slider = ih->handle;
-    /* incrementValue is used for arrow key presses. */
+    IupCocoaValSlider* slider = ih->handle;
     [slider setIncrementValue:inc_size];
   }
   return 0;

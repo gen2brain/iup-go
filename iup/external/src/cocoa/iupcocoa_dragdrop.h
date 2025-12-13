@@ -6,9 +6,8 @@
 #include <stdbool.h>
 #include "iup.h"
 
-
-extern const void* _Nonnull IUPSOURCEDRAG_ASSOCIATED_OBJ_KEY;
-extern const void* _Nonnull IUPTARGETDROP_ASSOCIATED_OBJ_KEY;
+extern const void* IUPSOURCEDRAG_ASSOCIATED_OBJ_KEY;
+extern const void* IUPTARGETDROP_ASSOCIATED_OBJ_KEY;
 
 @interface IupTargetDropAssociatedData : NSObject
 @property(nonatomic, assign) Ihandle* ihandle;
@@ -37,10 +36,10 @@ extern const void* _Nonnull IUPTARGETDROP_ASSOCIATED_OBJ_KEY;
 @property(nonatomic, assign) NSView* rootView;
 
 /* @protocol: NSPasteboardItemDataProvider */
-- (void) pasteboard:(NSPasteboard* _Nullable)paste_board item:(NSPasteboardItem* _Nonnull)pasteboard_item provideDataForType:(NSPasteboardType _Nonnull)type_name;
+- (void) pasteboard:(NSPasteboard*)paste_board item:(NSPasteboardItem*)pasteboard_item provideDataForType:(NSPasteboardType)type_name;
 
 /* @protocol: NSDraggingSource */
-- (NSDragOperation) draggingSession:(NSDraggingSession* _Nonnull)dragging_session sourceOperationMaskForDraggingContext:(NSDraggingContext)dragging_context;
+- (NSDragOperation) draggingSession:(NSDraggingSession*)dragging_session sourceOperationMaskForDraggingContext:(NSDraggingContext)dragging_context;
 
 
 - (NSDraggingItem*) defaultDraggingItem;
@@ -50,7 +49,7 @@ extern const void* _Nonnull IUPTARGETDROP_ASSOCIATED_OBJ_KEY;
 /* @protocol: NSFilePromiseProviderDelegate */
 - (NSString*) filePromiseProvider:(NSFilePromiseProvider*)file_promise_provider fileNameForType:(NSString*)file_type;
 /* @protocol: NSFilePromiseProviderDelegate */
-- (void) filePromiseProvider:(NSFilePromiseProvider*)file_promise_provider writePromiseToURL:(NSURL*)write_url completionHandler:(void (^)(NSError * __nullable errorOrNil))completion_handler;
+- (void) filePromiseProvider:(NSFilePromiseProvider*)file_promise_provider writePromiseToURL:(NSURL*)write_url completionHandler:(void (^)(NSError* errorOrNil))completion_handler;
 
 - (void) draggingSession:(NSDraggingSession*)dragging_session willBeginAtPoint:(NSPoint)screen_point;
 - (void) draggingSession:(NSDraggingSession*)dragging_session endedAtPoint:(NSPoint)screen_point operation:(NSDragOperation)drag_operation;
@@ -70,6 +69,5 @@ void cocoaSourceDragDestroyAssociatedData(Ihandle* ih);
 /* These functions are called by the widget's NSView(DraggingDestination) implementation */
 int cocoaTargetDropBasePerformDropCallback(Ihandle* ih, id<NSDraggingInfo> the_sender, NSPasteboard* paste_board, NSPoint drop_point);
 NSDragOperation cocoaTargetDropBaseDraggingUpdated(Ihandle* ih, id<NSDraggingInfo> the_sender);
-
 
 #endif /* __IUPCOCOA_DRAGDROP_H */

@@ -1123,7 +1123,7 @@ static int cocoaLabelMapMethod(Ihandle* ih)
   IUPCocoaLabelEventView* event_view_wrapper = [[IUPCocoaLabelEventView alloc] initWithFrame:NSZeroRect];
   [event_view_wrapper addSubview:the_actual_label];
 
-  [the_actual_label setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
+  [(NSView*)the_actual_label setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
   [the_actual_label setFrame:[event_view_wrapper bounds]];
   [the_actual_label release];
 

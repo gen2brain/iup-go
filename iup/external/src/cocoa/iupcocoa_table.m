@@ -641,12 +641,12 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   if (column == numColumns - 1)
   {
     /* Get Ihandle from associated object */
-    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, "_IUPCOCOA_IHANDLE");
-    if (ih)
+    Ihandle* table_ih = (Ihandle*)objc_getAssociatedObject(self, "_IUPCOCOA_IHANDLE");
+    if (table_ih)
     {
       /* Check if last column has explicit width set OR if stretching is disabled */
-      const char* last_col_width_set = iupAttribGet(ih, "_IUP_TABLE_LAST_COL_WIDTH_SET");
-      if ((last_col_width_set && iupStrBoolean(last_col_width_set)) || !ih->data->stretch_last)
+      const char* last_col_width_set = iupAttribGet(table_ih, "_IUP_TABLE_LAST_COL_WIDTH_SET");
+      if ((last_col_width_set && iupStrBoolean(last_col_width_set)) || !table_ih->data->stretch_last)
       {
         /* Explicit width set or stretching disabled */
         return rect;
@@ -1127,7 +1127,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   /* Draw selection highlight when row is selected */
   if (self.selectionHighlightStyle != NSTableViewSelectionHighlightStyleNone)
   {
-    [[NSColor alternateSelectedControlColor] setFill];
+    [[NSColor selectedContentBackgroundColor] setFill];
     NSRectFill(self.bounds);
   }
 }
@@ -2340,9 +2340,6 @@ static int cocoaTableMapMethod(Ihandle* ih)
   [scrollView setHasVerticalScroller:YES];
   [scrollView setHasHorizontalScroller:NO];
 
-  /* Force legacy scrollbar style (non-overlay) to prevent width changes during user interaction.
-   * With overlay scrollbars (default), the scrollbar doesn't take space initially, but transitions to legacy mode when user clicks. */
-  [scrollView setScrollerStyle:NSScrollerStyleLegacy];
 
   [scrollView setBorderType:NSBezelBorder];
 
@@ -2453,6 +2450,15 @@ static void cocoaTableUnMapMethod(Ihandle* ih)
   if (ih->handle)
   {
     NSScrollView* scroll_view = (NSScrollView*)ih->handle;
+    NSTableView* tableView = [scroll_view documentView];
+    if (tableView)
+    {
+      [tableView setTarget:nil];
+      [tableView setDataSource:nil];
+      [tableView setDelegate:nil];
+      objc_setAssociatedObject(tableView, IUP_COCOA_TABLE_DATASOURCE_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(tableView, IUP_COCOA_TABLE_DELEGATE_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+    }
     [scroll_view removeFromSuperview];
     [scroll_view release];
     ih->handle = NULL;

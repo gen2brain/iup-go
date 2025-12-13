@@ -9,19 +9,6 @@
 
 #include "IupCocoaTabBarView.h"
 
-@interface IupCocoaTabBarView (Expose)
-- (NSRect)tabRectFromIndex:(NSUInteger)index;
-- (NSRect)rectForTabListControl;
-- (BOOL)isBlankAreaOfTabBarViewInPoint:(NSPoint)p;
-- (NSMenu *)tabsMenu;
-- (void)popupMenuDidChoosed:(NSMenuItem*)item;
-- (BOOL)validateMenuItem:(NSMenuItem*)menuItem;
-- (IupCocoaTabCell*)tabCellInPoint:(NSPoint)p;
-- (NSInteger)destinationCellIndexFromPoint:(NSPoint)p;
-- (void)exchangeTabWithIndex:(NSUInteger)One withTabIndex:(NSUInteger)two;
-@end
-
-
 @implementation IupCocoaTabBarView (Expose)
   - (NSRect)tabRectFromIndex:(NSUInteger)index
 {
@@ -667,15 +654,25 @@
     return ;
   }
 
-  NSSize offset = NSMakeSize(0.0, 0.0);
-
   p.x -= (draggingTab.frame.size.width / 2);
   p.y -= (draggingTab.frame.size.height / 2);
 
-  /* Get the pasteboard we prepared at the start of the drag. */
-  NSPasteboard *pasteboard = [NSPasteboard pasteboardWithName:NSPasteboardNameDrag];
+  /* Use modern dragging API (beginDraggingSessionWithItems:event:source:) */
+  NSPasteboardItem *pbItem = [[[NSPasteboardItem alloc] init] autorelease];
+  [pbItem setData:[NSData data] forType:NSPasteboardTypeString];
 
-  [self dragImage:draggingImage at:p offset:offset event:theEvent pasteboard:pasteboard source:self slideBack:NO];
+  NSDraggingItem *dragItem = [[[NSDraggingItem alloc] initWithPasteboardWriter:pbItem] autorelease];
+  NSRect dragFrame = NSMakeRect(p.x, p.y, draggingTab.frame.size.width, draggingTab.frame.size.height);
+  [dragItem setDraggingFrame:dragFrame contents:draggingImage];
+
+  [self beginDraggingSessionWithItems:@[dragItem] event:theEvent source:self];
+}
+
+#pragma mark - NSDraggingSource
+
+- (NSDragOperation)draggingSession:(NSDraggingSession *)session sourceOperationMaskForDraggingContext:(NSDraggingContext)context
+{
+  return NSDragOperationMove;
 }
 
 - (void)draggedImage:(NSImage *)image movedTo:(NSPoint)screenPoint
@@ -981,7 +978,7 @@
   NSMutableParagraphStyle* p = [[[NSMutableParagraphStyle alloc] init] autorelease];
 
   /* Both horizontal and vertical tabs use centered text */
-  p.alignment = kCTTextAlignmentCenter;
+  p.alignment = NSTextAlignmentCenter;
   p.lineBreakMode = NSLineBreakByTruncatingTail;
 
   [attrs setObject:[[self tabBarView] tabFont] forKey:NSFontAttributeName];
@@ -1016,7 +1013,7 @@
 
     [self.image drawInRect:imageRect
                   fromRect:NSZeroRect
-                 operation:NSCompositeSourceOver
+                 operation:NSCompositingOperationSourceOver
                   fraction:1.0];
   }
 
