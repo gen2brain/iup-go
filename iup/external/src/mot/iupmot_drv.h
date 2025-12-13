@@ -105,6 +105,9 @@ int iupmotSetTrayImageAttrib(Ihandle* ih, const char* value);
 int iupmotSetTrayMenuAttrib(Ihandle* ih, const char* value);
 void iupmotTrayCleanup(Ihandle* ih);
 
+/* dark mode */
+int iupmotIsSystemDarkMode(void);
+
 
 #ifdef __cplusplus
 }

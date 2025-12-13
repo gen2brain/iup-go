@@ -693,3 +693,24 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
   (void)title;
   (void)ih;
 }
+
+int iupmotIsSystemDarkMode(void)
+{
+  unsigned char bg_r, bg_g, bg_b;
+  unsigned char fg_r, fg_g, fg_b;
+  Pixel bg_color, fg_color;
+  double bg_lum, fg_lum;
+
+  XtVaGetValues(iupmot_appshell, XmNbackground, &bg_color, NULL);
+  XtVaGetValues(iupmot_appshell, XmNforeground, &fg_color, NULL);
+
+  iupmotColorGetRGB(bg_color, &bg_r, &bg_g, &bg_b);
+  iupmotColorGetRGB(fg_color, &fg_r, &fg_g, &fg_b);
+
+  /* Calculate relative luminance using standard formula (ITU-R BT.709) */
+  bg_lum = 0.2126 * bg_r + 0.7152 * bg_g + 0.0722 * bg_b;
+  fg_lum = 0.2126 * fg_r + 0.7152 * fg_g + 0.0722 * fg_b;
+
+  /* Dark theme has lower background luminance than foreground */
+  return (bg_lum < fg_lum) ? 1 : 0;
+}
