@@ -14,6 +14,7 @@ extern "C" {
 
 void iupdrvTextInitClass(Iclass* ic);
 void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h);
+void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h);
 void iupdrvTextAddSpin(Ihandle* ih, int *w, int h);
 void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih);
 void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state);
