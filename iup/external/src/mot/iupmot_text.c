@@ -76,6 +76,13 @@ void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
   (void)ih;
 }
 
+void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+{
+  (void)ih;
+  (void)w;
+  (void)h;
+}
+
 static void motTextGetLinColFromPosition(const char *str, int pos, int *lin, int *col )
 {
   int i;
