@@ -518,7 +518,7 @@ static int iMultilineCreateMethod(Ihandle* ih, void** params)
 
 static void iTextComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
-  int natural_w = 0, 
+  int natural_w = 0,
       natural_h = 0,
       visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS"),
       visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
@@ -534,6 +534,8 @@ static void iTextComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
   /* compute the borders space */
   if (iupAttribGetBoolean(ih, "BORDER"))
     iupdrvTextAddBorders(ih, &natural_w, &natural_h);
+  else
+    iupdrvTextAddExtraPadding(ih, &natural_w, &natural_h);
 
   if (iupAttribGetBoolean(ih, "SPIN"))
     iupdrvTextAddSpin(ih, &natural_w, natural_h);
