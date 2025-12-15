@@ -30,8 +30,6 @@
 #include "iupcocoa_drv.h"
 #include "iupcocoa_keycodes.h"
 
-static const CGFloat kIupCocoaDefaultWidthNSButton = 64.0;
-static const CGFloat kIupCocoaDefaultHeightNSButton = 32.0;
 static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY";
 
 @interface IupCocoaFlatButton : NSButton
@@ -326,36 +324,24 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 }
 @end
 
-static void cocoaButtonCalculateBorders(Ihandle* ih, int *border_x, int *border_y)
+static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, int img_position, int *border_x, int *border_y)
 {
   NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
-  BOOL is_flat = iupAttribGetBoolean(ih, "FLAT");
-  BOOL has_impress_no_border = (ih->data->type & IUP_BUTTON_IMAGE) && iupAttribGet(ih, "IMPRESS") && !iupAttribGetBoolean(ih, "IMPRESSBORDER");
-
   [temp_button setBezelStyle:NSBezelStyleRegularSquare];
   [temp_button setFont:[NSFont systemFontOfSize:0]];
+  [temp_button setBordered:YES];
 
-  if (has_impress_no_border || is_flat)
+  if (has_image)
   {
-    [temp_button setBordered:NO];
-  }
-  else
-  {
-    [temp_button setBordered:YES];
-  }
+    NSImage* temp_image = [[NSImage alloc] initWithSize:NSMakeSize(16, 16)];
 
-  NSImage *temp_image;
-  if (ih->data->type & IUP_BUTTON_IMAGE)
-  {
-    temp_image = [[NSImage alloc] initWithSize:NSMakeSize(16, 16)];
-
-    if (ih->data->type & IUP_BUTTON_TEXT)
+    if (has_text)
     {
       [temp_button setTitle:@"Test"];
       [temp_button setImage:temp_image];
 
       NSCellImagePosition position;
-      switch(ih->data->img_position)
+      switch(img_position)
       {
         case IUP_IMGPOS_TOP:
           position = NSImageAbove;
@@ -378,65 +364,110 @@ static void cocoaButtonCalculateBorders(Ihandle* ih, int *border_x, int *border_
       [temp_button setImage:temp_image];
       [temp_button setImagePosition:NSImageOnly];
     }
+
+    [temp_image release];
   }
   else
   {
-    [temp_button setTitle:@"Test"];
+    [temp_button setTitle:@"WWWWWWWWWW"];
     [temp_button setImagePosition:NSNoImage];
   }
 
   NSSize fitting_size = [temp_button fittingSize];
   NSSize intrinsic_size = [temp_button intrinsicContentSize];
 
-  if (intrinsic_size.width > 0 && intrinsic_size.height > 0)
-  {
-    *border_x = (int)(fitting_size.width - intrinsic_size.width);
-    *border_y = (int)(fitting_size.height - intrinsic_size.height);
+  *border_x = (int)(fitting_size.width - intrinsic_size.width);
+  *border_y = (int)(fitting_size.height - intrinsic_size.height);
 
-    if (*border_x < 0) *border_x = 0;
-    if (*border_y < 0) *border_y = 0;
-  }
-  else
+  /* When intrinsic == fitting, calculate border using known content size */
+  if (*border_x == 0 && *border_y == 0)
   {
-    *border_x = 8;
-    *border_y = 8;
+    if (has_image && has_text)
+    {
+      int iup_text_w = iupdrvFontGetStringWidth(ih, "Test");
+      int iup_text_h;
+      iupdrvFontGetCharSize(ih, NULL, &iup_text_h);
+      int content_w = 16 + 2 + iup_text_w;  /* image + spacing + text */
+      int content_h = (16 > iup_text_h) ? 16 : iup_text_h;
+
+      *border_x = (int)fitting_size.width - content_w;
+      *border_y = (int)fitting_size.height - content_h;
+    }
+    else if (!has_image)
+    {
+      int iup_text_w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
+      int iup_text_h;
+      iupdrvFontGetCharSize(ih, NULL, &iup_text_h);
+
+      *border_x = (int)fitting_size.width - iup_text_w;
+      *border_y = (int)fitting_size.height - iup_text_h;
+    }
   }
 
-  if (ih->data->type & IUP_BUTTON_IMAGE)
-  {
-    [temp_image release];
-  }
+  if (*border_x < 0) *border_x = 0;
+  if (*border_y < 0) *border_y = 0;
+
   [temp_button release];
 }
 
 void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
-  int border_x = 0, border_y = 0;
-  BOOL is_text = (ih->data->type & IUP_BUTTON_TEXT) && !(ih->data->type & IUP_BUTTON_IMAGE);
+  static int text_border_x = -1, text_border_y = -1;
+  static int image_border_x = -1, image_border_y = -1;
+  static int image_text_border_x = -1, image_text_border_y = -1;
 
-  cocoaButtonCalculateBorders(ih, &border_x, &border_y);
+  int border_x = 0, border_y = 0;
+  int has_image = 0;
+  int has_text = 0;
+  int has_bgcolor = 0;
+  int img_position = IUP_IMGPOS_LEFT;
+
+  if (ih)
+  {
+    char* image = iupAttribGet(ih, "IMAGE");
+    char* title = iupAttribGet(ih, "TITLE");
+    char* bgcolor = iupAttribGet(ih, "BGCOLOR");
+    has_image = (image != NULL);
+    has_text = (title != NULL && *title != 0);
+    has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
+    img_position = ih->data->img_position;
+  }
+
+  if (has_bgcolor)
+  {
+    if (text_border_x == -1)
+      cocoaButtonMeasureBorders(ih, 0, 1, IUP_IMGPOS_LEFT, &text_border_x, &text_border_y);
+
+    border_x = text_border_x;
+    border_y = text_border_y;
+  }
+  else if (has_image && has_text)
+  {
+    if (image_text_border_x == -1)
+      cocoaButtonMeasureBorders(ih, 1, 1, img_position, &image_text_border_x, &image_text_border_y);
+
+    border_x = image_text_border_x;
+    border_y = image_text_border_y;
+  }
+  else if (has_image)
+  {
+    if (image_border_x == -1)
+      cocoaButtonMeasureBorders(ih, 1, 0, IUP_IMGPOS_LEFT, &image_border_x, &image_border_y);
+
+    border_x = image_border_x;
+    border_y = image_border_y;
+  }
+  else
+  {
+    if (text_border_x == -1)
+      cocoaButtonMeasureBorders(ih, 0, 1, IUP_IMGPOS_LEFT, &text_border_x, &text_border_y);
+
+    border_x = text_border_x;
+    border_y = text_border_y;
+  }
 
   *x += border_x;
   *y += border_y;
-
-  /* Add user-defined padding */
-  *x += 2 * ih->data->horiz_padding;
-  *y += 2 * ih->data->vert_padding;
-
-  if (ih->data->horiz_padding == 0)
-  {
-    *x += 10;
-  }
-  if (ih->data->vert_padding == 0)
-  {
-    *y += 5;
-  }
-
-  /* Ensure minimum button height */
-  if (*y < (int)kIupCocoaDefaultHeightNSButton)
-  {
-    *y = (int)kIupCocoaDefaultHeightNSButton;
-  }
 }
 
 static int cocoaButtonSetTitleAttrib(Ihandle* ih, const char* value)
@@ -770,13 +801,28 @@ void cocoaButtonLayoutUpdateMethod(Ihandle *ih)
   }
 
   NSRect parent_rect = [parent_view frame];
+  NSRect child_rect;
 
-  NSRect child_rect = NSMakeRect(
-      ih->x,
-      parent_rect.size.height - ih->y - ih->currentheight,
-      ih->currentwidth,
-      ih->currentheight
-      );
+  if ([parent_view isFlipped])
+  {
+    child_rect = NSMakeRect(
+        ih->x,
+        ih->y,
+        ih->currentwidth,
+        ih->currentheight
+    );
+  }
+  else
+  {
+    child_rect = NSMakeRect(
+        ih->x,
+        parent_rect.size.height - ih->y - ih->currentheight,
+        ih->currentwidth,
+        ih->currentheight
+    );
+  }
+
+  (void)child_view;
 
   [child_view setFrame:NSIntegralRect(child_rect)];
 }
