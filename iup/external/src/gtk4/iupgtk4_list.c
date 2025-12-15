@@ -289,6 +289,21 @@ static gpointer iup_gtk4_virtual_list_model_get_item(GListModel *list, guint pos
   text = iupListGetItemValueCb(model->ih, position + 1);  /* 1-based */
   item = iup_list_item_new(text ? text : "");
 
+  /* Set image from IMAGE_CB if SHOWIMAGE is enabled */
+  if (model->ih->data->show_image)
+  {
+    char* image_name = iupListGetItemImageCb(model->ih, position + 1);
+    if (image_name)
+    {
+      GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(image_name, model->ih, 0, NULL);
+      if (paintable)
+      {
+        GdkTexture* texture = GDK_TEXTURE(paintable);
+        iup_list_item_set_image(item, texture);
+      }
+    }
+  }
+
   return item;
 }
 
@@ -1590,16 +1605,16 @@ static gboolean gtk4ListSimpleKeyPressEvent(GtkEventControllerKey *controller, g
 static void gtk4ListFactory_setup(GtkListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
 {
   GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
-  GtkWidget* image = gtk_image_new();
+  GtkWidget* picture = gtk_picture_new();
   GtkWidget* label = gtk_label_new("");
 
   gtk_label_set_xalign(GTK_LABEL(label), 0.0);
   gtk_widget_set_hexpand(label, TRUE);
 
-  gtk_widget_set_valign(image, GTK_ALIGN_CENTER);
+  gtk_widget_set_valign(picture, GTK_ALIGN_CENTER);
   gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
 
-  gtk_box_append(GTK_BOX(box), image);
+  gtk_box_append(GTK_BOX(box), picture);
   gtk_box_append(GTK_BOX(box), label);
 
   gtk_list_item_set_child(list_item, box);
@@ -1621,7 +1636,7 @@ static void gtk4ListItem_onPropertyUpdate(GObject* object, GParamSpec* pspec, gp
   if (!box)
     return;
 
-  GtkWidget* image = gtk_widget_get_first_child(box);
+  GtkWidget* picture = gtk_widget_get_first_child(box);
   GtkWidget* label = gtk_widget_get_last_child(box);
 
   const char* text = iup_list_item_get_text(item);
@@ -1630,13 +1645,13 @@ static void gtk4ListItem_onPropertyUpdate(GObject* object, GParamSpec* pspec, gp
   GdkTexture* texture = iup_list_item_get_image(item);
   if (texture)
   {
-    gtk_image_set_from_paintable(GTK_IMAGE(image), GDK_PAINTABLE(texture));
-    gtk_widget_set_visible(image, TRUE);
+    gtk_picture_set_paintable(GTK_PICTURE(picture), GDK_PAINTABLE(texture));
+    gtk_widget_set_visible(picture, TRUE);
   }
   else
   {
-    gtk_image_clear(GTK_IMAGE(image));
-    gtk_widget_set_visible(image, FALSE);
+    gtk_picture_set_paintable(GTK_PICTURE(picture), NULL);
+    gtk_widget_set_visible(picture, FALSE);
   }
 
   gboolean enabled = iup_list_item_get_enabled(item);
@@ -1654,22 +1669,28 @@ static void gtk4ListFactory_bind(GtkListItemFactory* factory, GtkListItem* list_
     return;
 
   GtkWidget* box = gtk_list_item_get_child(list_item);
-  GtkWidget* image = gtk_widget_get_first_child(box);
+  GtkWidget* picture = gtk_widget_get_first_child(box);
   GtkWidget* label = gtk_widget_get_last_child(box);
 
   const char* text = iup_list_item_get_text(item);
   gtk_label_set_text(GTK_LABEL(label), text ? text : "");
 
+  /* Set content fit based on FITIMAGE attribute */
+  if (ih->data->fit_image)
+    gtk_picture_set_content_fit(GTK_PICTURE(picture), GTK_CONTENT_FIT_SCALE_DOWN);
+  else
+    gtk_picture_set_content_fit(GTK_PICTURE(picture), GTK_CONTENT_FIT_FILL);
+
   GdkTexture* texture = iup_list_item_get_image(item);
   if (texture)
   {
-    gtk_image_set_from_paintable(GTK_IMAGE(image), GDK_PAINTABLE(texture));
-    gtk_widget_set_visible(image, TRUE);
+    gtk_picture_set_paintable(GTK_PICTURE(picture), GDK_PAINTABLE(texture));
+    gtk_widget_set_visible(picture, TRUE);
   }
   else
   {
-    gtk_image_clear(GTK_IMAGE(image));
-    gtk_widget_set_visible(image, FALSE);
+    gtk_picture_set_paintable(GTK_PICTURE(picture), NULL);
+    gtk_widget_set_visible(picture, FALSE);
   }
 
   gboolean enabled = iup_list_item_get_enabled(item);
@@ -2023,15 +2044,6 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
   if (ih->data->is_dropdown)
   {
-    selection_model = GTK_SELECTION_MODEL(gtk_single_selection_new(list_model));
-
-    if (ih->data->has_editbox)
-    {
-      g_object_set(selection_model, "autoselect", FALSE, "can-unselect", TRUE, NULL);
-    }
-
-    gtk4ListSetSelectionModel(ih, selection_model);
-
     ih->handle = (GtkWidget*)gtk_drop_down_new(list_model, NULL);
 
     if (!ih->handle)

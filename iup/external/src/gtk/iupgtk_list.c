@@ -144,6 +144,51 @@ static void iup_gtk_virtual_list_model_get_value(GtkTreeModel *tree_model, GtkTr
   if (column == IUPGTK_LIST_IMAGE)
   {
     g_value_init(value, GDK_TYPE_PIXBUF);
+
+    if (iter->stamp != model->stamp)
+    {
+      g_value_set_object(value, NULL);
+      return;
+    }
+
+    row = GPOINTER_TO_INT(iter->user_data);
+    if (row < 0 || row >= model->count)
+    {
+      g_value_set_object(value, NULL);
+      return;
+    }
+
+    /* Query image via IMAGE_CB (pos is 1-based) */
+    if (model->ih->data->show_image)
+    {
+      char* image_name = iupListGetItemImageCb(model->ih, row + 1);
+      if (image_name)
+      {
+        GdkPixbuf* pixImage = (GdkPixbuf*)iupImageGetImage(image_name, model->ih, 0, NULL);
+        if (pixImage)
+        {
+          /* Scale image down if needed to fit item height */
+          int charheight;
+          iupdrvFontGetCharSize(model->ih, NULL, &charheight);
+          int available_height = charheight + 2 * model->ih->data->spacing;
+          int img_height = gdk_pixbuf_get_height(pixImage);
+          int img_width = gdk_pixbuf_get_width(pixImage);
+
+          if (model->ih->data->fit_image && img_height > available_height)
+          {
+            int scaled_width = (img_width * available_height) / img_height;
+            GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixImage, scaled_width, available_height, GDK_INTERP_BILINEAR);
+            g_value_set_object(value, scaled);
+            g_object_unref(scaled);
+          }
+          else
+          {
+            g_value_set_object(value, pixImage);
+          }
+          return;
+        }
+      }
+    }
     g_value_set_object(value, NULL);
     return;
   }
@@ -1429,7 +1474,7 @@ static int gtkListSetImageAttrib(Ihandle* ih, int id, const char* value)
     int img_height = gdk_pixbuf_get_height(pixImage);
     int img_width = gdk_pixbuf_get_width(pixImage);
 
-    if (img_height > available_height)
+    if (ih->data->fit_image && img_height > available_height)
     {
       /* Scale down proportionally to fit available height */
       int scaled_width = (img_width * available_height) / img_height;

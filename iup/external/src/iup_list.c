@@ -352,6 +352,14 @@ char* iupListGetItemValueCb(Ihandle* ih, int pos)
   return NULL;
 }
 
+char* iupListGetItemImageCb(Ihandle* ih, int pos)
+{
+  sIFni image_cb = (sIFni)IupGetCallback(ih, "IMAGE_CB");
+  if (image_cb)
+    return image_cb(ih, pos);
+  return NULL;
+}
+
 static char* iListGetCountAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(iListGetCount(ih));
@@ -707,7 +715,18 @@ static int iListSetShowImageAttrib(Ihandle* ih, const char* value)
 
 static char* iListGetShowImageAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->show_image); 
+  return iupStrReturnBoolean (ih->data->show_image);
+}
+
+static int iListSetFitImageAttrib(Ihandle* ih, const char* value)
+{
+  ih->data->fit_image = iupStrBoolean(value);
+  return 0;
+}
+
+static char* iListGetFitImageAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(ih->data->fit_image);
 }
 
 int iupListCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl)
@@ -964,6 +983,7 @@ static int iListCreateMethod(Ihandle* ih, void** params)
 
   ih->data = iupALLOCCTRLDATA();
   ih->data->sb = 1;
+  ih->data->fit_image = 1;  /* default YES */
 
   return IUP_NOERROR;
 }
@@ -1033,17 +1053,64 @@ static void iListGetNaturalItemsSize(Ihandle *ih, int *w, int *h)
       *w = iupdrvFontGetStringWidth(ih, "WWWWW");
   }
 
-  if (ih->data->show_image && !ih->data->is_virtual)
+  if (ih->data->show_image)
   {
     int max_w = 0;
-    for (i=1; i<=count; i++)
+    int available_height = *h + 2 * ih->data->spacing;  /* max height for scaled images */
+
+    if (ih->data->is_virtual)
     {
-      int img_w, img_h;
-      iListGetItemImageInfo(ih, i, &img_w, &img_h);
-      if (img_w > max_w)
-        max_w = img_w;
-      if (img_h > max_h)
-        max_h = img_h;
+      /* For virtual mode, query IMAGE_CB for first item to get image size */
+      char* image_name = iupListGetItemImageCb(ih, 1);
+      if (image_name)
+      {
+        int img_w = 0, img_h = 0;
+        iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+
+        /* Scale image dimensions if needed */
+        if (ih->data->fit_image && img_h > available_height)
+        {
+          max_w = (img_w * available_height) / img_h;
+          max_h = available_height;
+        }
+        else
+        {
+          max_w = img_w;
+          max_h = img_h;
+        }
+      }
+      else
+      {
+        /* Default image size for virtual mode when no image returned */
+        max_w = 16;
+        max_h = 16;
+      }
+    }
+    else
+    {
+      for (i=1; i<=count; i++)
+      {
+        int img_w, img_h;
+        int scaled_w, scaled_h;
+        iListGetItemImageInfo(ih, i, &img_w, &img_h);
+
+        /* Scale image dimensions if needed */
+        if (ih->data->fit_image && img_h > available_height)
+        {
+          scaled_w = (img_w * available_height) / img_h;
+          scaled_h = available_height;
+        }
+        else
+        {
+          scaled_w = img_w;
+          scaled_h = img_h;
+        }
+
+        if (scaled_w > max_w)
+          max_w = scaled_w;
+        if (scaled_h > max_h)
+          max_h = scaled_h;
+      }
     }
 
     /* Used only in Windows */
@@ -1178,6 +1245,7 @@ Iclass* iupListNewClass(void)
   iupClassRegisterCallback(ic, "EDIT_CB", "is");
   iupClassRegisterCallback(ic, "CARET_CB", "iii");
   iupClassRegisterCallback(ic, "VALUE_CB", "i=s");  /* Virtual mode callback: (int pos) -> string */
+  iupClassRegisterCallback(ic, "IMAGE_CB", "i=s");  /* Virtual mode image callback: (int pos) -> string (image name) */
 
   /* Common Callbacks */
   iupBaseRegisterCommonCallbacks(ic);
@@ -1220,6 +1288,7 @@ Iclass* iupListNewClass(void)
   iupClassRegisterAttribute(ic, "VISIBLELINES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SHOWIMAGE", iListGetShowImageAttrib, iListSetShowImageAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FITIMAGE", iListGetFitImageAttrib, iListSetFitImageAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDRAGDROP", iListGetShowDragDropAttrib, iListSetShowDragDropAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGDROPLIST", NULL, iListSetDragDropListAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 

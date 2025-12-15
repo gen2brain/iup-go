@@ -1213,7 +1213,7 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   NSString* string_item = nil;
   NSImage* image_item = nil;
 
-  /* Virtual mode: fetch from VALUE_CB */
+  /* Virtual mode: fetch from VALUE_CB and IMAGE_CB */
   if (ih && ih->data && ih->data->is_virtual)
   {
     if (the_row < 0 || the_row >= ih->data->item_count)
@@ -1221,7 +1221,18 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 
     char* text = iupListGetItemValueCb(ih, (int)the_row + 1);  /* 1-based */
     string_item = [NSString stringWithUTF8String:(text ? text : "")];
-    image_item = nil;
+
+    /* Query IMAGE_CB for the image if SHOWIMAGE is enabled */
+    if (ih->data->show_image)
+    {
+      char* image_name = iupListGetItemImageCb(ih, (int)the_row + 1);  /* 1-based */
+      if (image_name)
+      {
+        void* handle = iupImageGetImage(image_name, ih, 0, NULL);
+        if (handle)
+          image_item = (NSImage*)handle;
+      }
+    }
   }
   else
   {
@@ -1280,6 +1291,12 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 
   if (ih && ih->data->show_image && image_item)
   {
+    /* Set scaling mode based on FITIMAGE attribute */
+    if (ih->data->fit_image)
+      [[cell_view imageView] setImageScaling:NSImageScaleProportionallyDown];
+    else
+      [[cell_view imageView] setImageScaling:NSImageScaleNone];
+
     [[cell_view imageView] setImage:image_item];
     [[cell_view imageView] setHidden:NO];
   }
@@ -2058,11 +2075,6 @@ void iupdrvListAppendItem(Ihandle* ih, const char* value)
 
         iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
         [menu addItemWithTitle:ns_string action:nil keyEquivalent:@""];
-
-        if ([menu numberOfItems] == 1)
-        {
-          [popup_button selectItemAtIndex:0];
-        }
         iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 
         if (iupAttribGet(ih, "_IUPLIST_SORT_ENABLED"))
@@ -4025,6 +4037,13 @@ static int cocoaListMapMethod(Ihandle* ih)
   /* Don't populate items in virtual mode */
   if (!ih->data->is_virtual)
     iupListSetInitialItems(ih);
+
+  if (sub_type == IUPCOCOALISTSUBTYPE_DROPDOWN)
+  {
+    NSPopUpButton* popup_button = (NSPopUpButton*)cocoaListGetBaseWidget(ih);
+    [popup_button selectItemAtIndex:-1];
+  }
+
   cocoaListUpdateDropExpand(ih);
 
   if (sub_type == IUPCOCOALISTSUBTYPE_MULTIPLELIST ||

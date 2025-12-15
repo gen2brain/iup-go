@@ -267,9 +267,9 @@ public:
           int available_height = font_height + 2 * ih->data->spacing;
           int img_x = rect.left() + ih->data->spacing;
 
-          /* Always scale images proportionally down to fit font-based row height */
+          /* Scale images proportionally down to fit font-based row height if FITIMAGE=YES */
           QPixmap scaled_pixmap;
-          if (pixmap->height() > available_height)
+          if (ih->data->fit_image && pixmap->height() > available_height)
           {
             scaled_pixmap = pixmap->scaled(QSize(pixmap->width(), available_height),
                                            Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -341,6 +341,21 @@ public:
     {
       char* text = iupListGetItemValueCb(ih, row + 1);  /* 1-based */
       return QString::fromUtf8(text ? text : "");
+    }
+
+    if (role == Qt::DecorationRole && ih->data->show_image)
+    {
+      char* image_name = iupListGetItemImageCb(ih, row + 1);  /* 1-based */
+      if (image_name)
+      {
+        void* handle = iupImageGetImage(image_name, ih, 0, NULL);
+        if (handle)
+        {
+          QPixmap* pixmap = static_cast<QPixmap*>(handle);
+          return QIcon(*pixmap);
+        }
+      }
+      return QVariant();
     }
 
     return QVariant();
@@ -1840,7 +1855,7 @@ static int qtListMapMethod(Ihandle* ih)
 
     /* Set selection mode */
     if (ih->data->is_multiple)
-      view->setSelectionMode(QAbstractItemView::MultiSelection);
+      view->setSelectionMode(QAbstractItemView::ExtendedSelection);
     else
       view->setSelectionMode(QAbstractItemView::SingleSelection);
 
@@ -1903,7 +1918,7 @@ static int qtListMapMethod(Ihandle* ih)
 
     /* Set selection mode */
     if (ih->data->is_multiple)
-      list->setSelectionMode(QAbstractItemView::MultiSelection);
+      list->setSelectionMode(QAbstractItemView::ExtendedSelection);
     else
       list->setSelectionMode(QAbstractItemView::SingleSelection);
 

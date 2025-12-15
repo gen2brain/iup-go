@@ -53,6 +53,7 @@ struct _IcontrolData
       has_editbox,
       maximg_w, maximg_h, /* used only in Windows */
       show_image,
+      fit_image,   /* scale images to fit row height, default 1 (YES) */
       show_dragdrop,
       is_virtual,  /* virtual mode flag, can be changed only before map */
       item_count;  /* number of items in virtual mode */
@@ -63,6 +64,7 @@ struct _IcontrolData
 int iupListIsVirtual(Ihandle* ih);
 int iupListGetItemCount(Ihandle* ih);
 char* iupListGetItemValueCb(Ihandle* ih, int pos);
+char* iupListGetItemImageCb(Ihandle* ih, int pos);
 void iupdrvListSetItemCount(Ihandle* ih, int count);
 
 
