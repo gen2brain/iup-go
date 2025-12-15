@@ -100,18 +100,24 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 
 static int gtk4ToggleGetCheck(Ihandle* ih)
 {
-  if (ih->handle && GTK_IS_SWITCH(ih->handle))
+  if (!ih->handle)
+    return 0;
+
+  if (GTK_IS_SWITCH(ih->handle))
     return gtk_switch_get_active(GTK_SWITCH(ih->handle)) ? 1 : 0;
 
-  if (!ih->handle || !GTK_IS_CHECK_BUTTON(ih->handle))
-    return 0; /* Widget not created yet or wrong type */
+  if (GTK_IS_TOGGLE_BUTTON(ih->handle))
+    return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ih->handle)) ? 1 : 0;
 
-  if (gtk_check_button_get_inconsistent(GTK_CHECK_BUTTON(ih->handle)))
-    return -1;
-  if (gtk_check_button_get_active(GTK_CHECK_BUTTON(ih->handle)))
-    return 1;
-  else
-    return 0;
+  if (GTK_IS_CHECK_BUTTON(ih->handle))
+  {
+    if (gtk_check_button_get_inconsistent(GTK_CHECK_BUTTON(ih->handle)))
+      return -1;
+    if (gtk_check_button_get_active(GTK_CHECK_BUTTON(ih->handle)))
+      return 1;
+  }
+
+  return 0;
 }
 
 static void gtk4ToggleSetPaintable(Ihandle* ih, const char* name, int make_inactive)
@@ -179,7 +185,10 @@ static void gtk4ToggleUpdateImage(Ihandle* ih, int active, int check)
 
 static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->handle && GTK_IS_SWITCH(ih->handle))
+  if (!ih->handle)
+    return 0;
+
+  if (GTK_IS_SWITCH(ih->handle))
   {
     int check;
     iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", "1");
@@ -195,8 +204,27 @@ static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  if (!ih->handle || !GTK_IS_CHECK_BUTTON(ih->handle))
-    return 0; /* Widget not created yet or wrong type */
+  if (GTK_IS_TOGGLE_BUTTON(ih->handle))
+  {
+    int check;
+    iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", "1");
+
+    if (iupStrEqualNoCase(value, "TOGGLE"))
+      check = !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ih->handle));
+    else
+      check = iupStrBoolean(value);
+
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ih->handle), check);
+
+    if (ih->data->type == IUP_TOGGLE_IMAGE)
+      gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), check);
+
+    iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", NULL);
+    return 0;
+  }
+
+  if (!GTK_IS_CHECK_BUTTON(ih->handle))
+    return 0;
 
   if (iupStrEqualNoCase(value, "NOTDEF"))
     gtk_check_button_set_inconsistent(GTK_CHECK_BUTTON(ih->handle), TRUE);

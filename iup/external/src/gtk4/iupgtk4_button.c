@@ -46,12 +46,8 @@ static void gtk4ButtonMeasurePadding(void)
   GtkRequisition button_size, child_size;
   GdkPaintable* temp_paintable;
 
-  /* Add static CSS rule for button padding (used by all IUP buttons) */
-  iupgtk4CssAddStaticRule(".iup-button", "padding: 4px; min-width: 0; min-height: 0;");
-
-  /* Measure TEXT-only button */
+  /* Measure text-only button */
   temp_button = gtk_button_new_with_label("Test");
-  gtk_widget_add_css_class(temp_button, "iup-button");
   gtk_widget_get_preferred_size(temp_button, NULL, &button_size);
   temp_label = gtk_button_get_child(GTK_BUTTON(temp_button));
   gtk_widget_get_preferred_size(temp_label, NULL, &child_size);
@@ -60,9 +56,8 @@ static void gtk4ButtonMeasurePadding(void)
   g_object_ref_sink(temp_button);
   g_object_unref(temp_button);
 
-  /* Measure IMAGE-only button */
+  /* Measure image-only button */
   temp_button = gtk_button_new();
-  gtk_widget_add_css_class(temp_button, "iup-button");
   temp_image = gtk_picture_new();
   temp_paintable = gdk_paintable_new_empty(16, 16);
   gtk_picture_set_paintable(GTK_PICTURE(temp_image), temp_paintable);
@@ -75,9 +70,8 @@ static void gtk4ButtonMeasurePadding(void)
   g_object_ref_sink(temp_button);
   g_object_unref(temp_button);
 
-  /* Measure IMAGE+TEXT button (use spacing=2) */
+  /* Measure image+text button (use spacing=2) */
   temp_button = gtk_button_new();
-  gtk_widget_add_css_class(temp_button, "iup-button");
   temp_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   temp_image = gtk_picture_new();
   temp_paintable = gdk_paintable_new_empty(16, 16);
@@ -94,7 +88,7 @@ static void gtk4ButtonMeasurePadding(void)
   g_object_ref_sink(temp_button);
   g_object_unref(temp_button);
 
-  /* Add static CSS rules for special button styles */
+  /* Add static CSS rules for flat button style (FLAT attribute) */
   iupgtk4CssAddStaticRule(".iup-button-flat", "padding: 0; margin: 0; border-width: 0; min-width: 0; min-height: 0;");
 
   gtk4_button_padding_measured = 1;
@@ -627,16 +621,10 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
   {
     ih->handle = gtk_button_new();
 
-    /* Apply CSS class for button padding */
     if (iupAttribGet(ih, "IMPRESS") && !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
     {
       /* IMPRESS without border: no padding since AddBorders is not called for these */
       gtk_widget_add_css_class(ih->handle, "iup-button-flat");
-    }
-    else
-    {
-      /* Normal buttons: 4px padding (same as measurement) */
-      gtk_widget_add_css_class(ih->handle, "iup-button");
     }
 
     /* Handle FLAT attribute for buttons with borders */
