@@ -40,9 +40,33 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   int border_size = winButtonGetBorder() * 2;
-  (void)ih;
-  (*x) += border_size;
-  (*y) += border_size;
+
+  int has_image = 0;
+  int has_text = 0;
+  int has_bgcolor = 0;
+
+  if (ih)
+  {
+    char* image = iupAttribGet(ih, "IMAGE");
+    char* title = iupAttribGet(ih, "TITLE");
+    char* bgcolor = iupAttribGet(ih, "BGCOLOR");
+    has_image = (image != NULL);
+    has_text = (title != NULL && *title != 0);
+    has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
+  }
+
+  if (has_bgcolor)
+  {
+    int charwidth, charheight;
+    iupdrvFontGetCharSize(ih, &charwidth, &charheight);
+    (*x) += charwidth * 4 + border_size;
+    (*y) += charheight + border_size;
+  }
+  else
+  {
+    (*x) += border_size;
+    (*y) += border_size;
+  }
 }
 
 /****************************************************************/
@@ -302,11 +326,13 @@ static void winButtonDrawText(Ihandle* ih, HDC hDC, int rect_width, int rect_hei
     if (bgcolor)
     {
       RECT rect;
-      unsigned char r=0, g=0, b=0;
-      iupStrToRGB(bgcolor, &r, &g, &b);
-      SetDCBrushColor(hDC, RGB(r,g,b));
-      SetRect(&rect, xpad, ypad, rect_width - xpad, rect_height - ypad);
-      FillRect(hDC, &rect, (HBRUSH)GetStockObject(DC_BRUSH));
+      unsigned char r, g, b;
+      if (iupStrToRGB(bgcolor, &r, &g, &b))
+      {
+        SetDCBrushColor(hDC, RGB(r, g, b));
+        SetRect(&rect, xpad, ypad, rect_width - xpad, rect_height - ypad);
+        FillRect(hDC, &rect, (HBRUSH)GetStockObject(DC_BRUSH));
+      }
     }
   }
 }
@@ -586,8 +612,12 @@ static int winButtonMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
         if (!iupAttribGetBoolean(ih, "CANFOCUS"))
         {
           Icallback cb = IupGetCallback(ih, "ACTION");
-          if (cb && cb(ih) == IUP_CLOSE)
-            IupExitLoop();
+          if (cb)
+          {
+            int ret = cb(ih);
+            if (ret == IUP_CLOSE)
+              IupExitLoop();
+          }
         }
       }
 

@@ -61,6 +61,13 @@ void iupdrvSetFocus(Ihandle *ih)
 void iupwinWmSetFocus(Ihandle *ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
+  if (!dialog)
+  {
+    /* Element is not inside a dialog (e.g., inside a Popover).
+       Just call the focus callback without tracking last focus. */
+    iupCallGetFocusCb(ih);
+    return;
+  }
   if (ih != dialog)
     iupAttribSet(dialog, "_IUPWIN_LASTFOCUS", (char*)ih);  /* used by IupMenu and here. */
   else
