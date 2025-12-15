@@ -26,6 +26,7 @@
 #include <QDropEvent>
 #include <QApplication>
 #include <QKeyEvent>
+#include <QStyle>
 
 #include <cstdlib>
 #include <cstdio>
@@ -403,129 +404,146 @@ protected:
  * Driver Functions
  ****************************************************************************/
 
-extern "C" void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+/* Cached measurements for list widget metrics */
+static int iupqt_list_item_space = -1;
+static int iupqt_list_row_height = -1;
+
+/* Cached item horizontal padding */
+static int iupqt_list_item_padding_x = -1;
+
+static void iupqtListMeasureItemMetrics(Ihandle* ih)
 {
-  static int spacing = -1;
-
-  if (spacing == -1)
+  if (iupqt_list_item_space < 0)
   {
-    /* Qt adds internal padding/spacing to each item beyond the text height.
-     * We measure a single item's actual rendered height and compare with text height. */
-    IupQtListWidget* temp_list = new IupQtListWidget(NULL);
+    int char_width, char_height;
+    iupdrvFontGetCharSize(ih, &char_width, &char_height);
+
+    QListWidget* temp_list = new QListWidget();
     temp_list->setMinimumSize(0, 0);
-    temp_list->addItem("X");  /* Single character */
-    temp_list->show();
+    temp_list->addItem("WWWWWWWWWW");  /* 10 W characters */
 
-    /* Get text height */
-    int char_height;
-    iupdrvFontGetCharSize(ih, NULL, &char_height);
+    int actual_row_height = temp_list->sizeHintForRow(0);
 
-    /* Measure actual item height */
-    int qt_item_height = 0;
-    QListWidgetItem* item = temp_list->item(0);
-    if (item)
+    int actual_item_width = temp_list->sizeHintForColumn(0);
+
+    QFontMetrics fm(temp_list->font());
+    int text_width = fm.horizontalAdvance("WWWWWWWWWW");
+
+    /* Item padding = actual item width - text width */
+    iupqt_list_item_padding_x = actual_item_width - text_width;
+    if (iupqt_list_item_padding_x < 0) iupqt_list_item_padding_x = 0;
+
+    /* If sizeHintForRow didn't work, fall back to style calculation */
+    if (actual_row_height <= 0)
     {
-      QRect item_rect = temp_list->visualItemRect(item);
-      qt_item_height = item_rect.height();
+      QStyle* style = QApplication::style();
+      int focus_margin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, nullptr, nullptr);
+      actual_row_height = char_height + 2 * (focus_margin + 1);
     }
 
-    /* Calculate spacing: item height - text height */
-    spacing = (qt_item_height > char_height) ? (qt_item_height - char_height) : 2;
+    iupqt_list_row_height = actual_row_height;
+    iupqt_list_item_space = actual_row_height - char_height;
+    if (iupqt_list_item_space < 0) iupqt_list_item_space = 0;
+
+    delete temp_list;
+  }
+}
+
+extern "C" void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+{
+  iupqtListMeasureItemMetrics(ih);
+  *h += iupqt_list_item_space;
+}
+
+/* Cached measurements for list borders */
+static int iupqt_list_border_x = -1;
+static int iupqt_list_border_y = -1;
+static int iupqt_dropdown_border_x = -1;
+static int iupqt_dropdown_border_y = -1;
+static int iupqt_editbox_height = -1;
+
+static void iupqtListMeasureBorders(Ihandle* ih)
+{
+  if (iupqt_list_border_x < 0)
+  {
+    QListWidget* temp_list = new QListWidget();
+    temp_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    temp_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    int frame_width = temp_list->frameWidth();
+
+    /* List border = frame on both sides */
+    iupqt_list_border_x = 2 * frame_width;
+    iupqt_list_border_y = 2 * frame_width;
 
     delete temp_list;
   }
 
-  *h += spacing;
+  if (iupqt_dropdown_border_x < 0)
+  {
+    QComboBox* temp_combo1 = new QComboBox();
+    QComboBox* temp_combo2 = new QComboBox();
+    temp_combo1->addItem("WWWWW");       /* 5 W characters */
+    temp_combo2->addItem("WWWWWWWWWW");  /* 10 W characters */
+
+    QSize combo_size1 = temp_combo1->sizeHint();
+    QSize combo_size2 = temp_combo2->sizeHint();
+
+    QFontMetrics fm(temp_combo1->font());
+    int text_width1 = fm.horizontalAdvance("WWWWW");
+    int text_width2 = fm.horizontalAdvance("WWWWWWWWWW");
+    int text_height = fm.height();
+
+    /* The fixed border = combo_size - text_width */
+    int border1 = combo_size1.width() - text_width1;
+    int border2 = combo_size2.width() - text_width2;
+
+    /* Use the average, they should be nearly identical */
+    iupqt_dropdown_border_x = (border1 + border2) / 2;
+    iupqt_dropdown_border_y = combo_size1.height() - text_height;
+
+    /* Ensure reasonable minimum */
+    if (iupqt_dropdown_border_x < 24) iupqt_dropdown_border_x = 24;
+    if (iupqt_dropdown_border_y < 4) iupqt_dropdown_border_y = 4;
+
+    delete temp_combo1;
+    delete temp_combo2;
+  }
+
+  if (iupqt_editbox_height < 0)
+  {
+    QLineEdit* temp_edit = new QLineEdit();
+    temp_edit->setFrame(true);
+
+    QSize edit_size = temp_edit->sizeHint();
+    iupqt_editbox_height = edit_size.height();
+
+    delete temp_edit;
+  }
+
+  (void)ih;
 }
 
 extern "C" void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
+  iupqtListMeasureBorders(ih);
+
   if (ih->data->is_dropdown)
   {
-    (*x) += 2 * 12;  /* base borders/padding: 24 pixels */
-    (*y) += 2 * 5;   /* vertical padding */
-
-    if (ih->data->has_editbox)
-    {
-      (*x) += 30;  /* extra space for editable combo: 24+30=54 pixels */
-      (*y) += 4;
-    }
-    else
-    {
-      (*x) += 10;  /* extra space for non-editable combo: 24+10=34 pixels */
-      (*y) += 4;
-    }
+    (*x) += iupqt_dropdown_border_x;
+    (*y) += iupqt_dropdown_border_y;
   }
   else
   {
-    /* Measure list widget borders dynamically */
-    static int qt_list_border_x = -1;
-    static int qt_list_border_y = -1;
-    static int qt_editbox_height = -1;
+    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
-    /* One-time measurement of list borders */
-    if (qt_list_border_x == -1)
-    {
-      /* Create temporary list to measure frame borders */
-      IupQtListWidget* temp_list = new IupQtListWidget(NULL);
-      temp_list->setMinimumSize(0, 0);
-      temp_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-      temp_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-      temp_list->show();
-
-      QSize widget_size = temp_list->size();
-      QSize viewport_size = temp_list->viewport()->size();
-
-      qt_list_border_x = widget_size.width() - viewport_size.width();
-      qt_list_border_y = widget_size.height() - viewport_size.height();
-
-      delete temp_list;
-    }
-
-    /* One-time measurement of edit box height */
-    if (qt_editbox_height == -1)
-    {
-      QLineEdit* temp_edit = new QLineEdit();
-      temp_edit->show();
-      QSize edit_size = temp_edit->size();
-      qt_editbox_height = edit_size.height();
-
-      delete temp_edit;
-    }
-
-    /* Capture IUP's calculated width before adding borders */
-    int x_before = *x;
-
-    /* Add base list borders */
-    (*x) += qt_list_border_x;
-    (*y) += qt_list_border_y;
-
-    /* Qt's QListWidget uses actual font metrics for text width, which differs from
-       IUP's char_width * num_chars calculation. We need to measure the compensation. */
-    static int qt_list_width_per_char = -1;
-    if (qt_list_width_per_char == -1)
-    {
-      /* Measure width per character using Qt's actual font metrics */
-      int actual_width = iupdrvFontGetStringWidth(ih, "XXXXXXXXX");  /* 9 chars */
-      int iup_calculated_width = x_before;  /* IUP calculated this based on char_width */
-
-      /* Calculate compensation per character */
-      qt_list_width_per_char = (actual_width - iup_calculated_width + 8) / 9;  /* +8 for rounding */
-    }
-
-    /* Add Qt's width compensation based on the number of characters */
-    int char_width, char_height;
-    iupdrvFontGetCharSize(ih, &char_width, &char_height);
-    int num_chars = x_before / char_width;  /* Calculate number of characters from IUP width */
-    int compensation = qt_list_width_per_char * num_chars;
-
-    (*x) += compensation;
+    /* Add base list borders + item horizontal padding */
+    (*x) += iupqt_list_border_x + iupqt_list_item_padding_x;
+    (*y) += iupqt_list_border_y;
 
     /* Handle EDITBOX composite widget */
     if (ih->data->has_editbox)
     {
-      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-
       if (visiblelines > 0)
       {
         /* VISIBLELINES includes the entry line. */
@@ -538,27 +556,7 @@ extern "C" void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       }
 
       /* Add entry widget height */
-      (*y) += qt_editbox_height;
-
-      /* Add scrollbar height for list part if scrollbars enabled */
-      if (ih->data->sb && !visiblelines)
-      {
-        int sb_size = iupdrvGetScrollbarSize();
-        (*y) += sb_size;
-      }
-    }
-    else
-    {
-      /* Plain list with scrollbars */
-      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-
-      /* With ScrollBarAsNeeded policy, the horizontal scrollbar appears
-       * inside the viewport, taking space from content height. */
-      if (ih->data->sb && !visiblelines)
-      {
-        int sb_size = iupdrvGetScrollbarSize();
-        (*y) += sb_size;
-      }
+      (*y) += iupqt_editbox_height;
     }
   }
 }

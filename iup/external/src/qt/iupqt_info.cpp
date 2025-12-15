@@ -20,6 +20,7 @@
 #include <QCoreApplication>
 #include <QStandardPaths>
 #include <QWidget>
+#include <QThread>
 
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -252,12 +253,7 @@ extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 
 extern "C" IUP_SDK_API void iupdrvSleep(int time)
 {
-  /* Sleep for specified milliseconds */
-#ifdef _WIN32
-  Sleep(time);
-#else
-  usleep(time * 1000);  /* usleep takes microseconds */
-#endif
+  QThread::msleep(time);
 }
 
 /****************************************************************************
