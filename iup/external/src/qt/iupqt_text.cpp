@@ -342,12 +342,84 @@ extern "C" void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
     *w = spin_min_width;
 }
 
+/* Cached measurements for text widget borders */
+static int iupqt_entry_border_x = -1;
+static int iupqt_entry_border_y = -1;
+static int iupqt_multiline_border_x = -1;
+static int iupqt_multiline_border_y = -1;
+
+static void iupqtTextMeasureEntryBorders(void)
+{
+  if (iupqt_entry_border_x < 0)
+  {
+    QLineEdit* temp_entry = new QLineEdit();
+    temp_entry->setFrame(true);
+    temp_entry->setText("WWWWWWWWWW");  /* 10 W characters */
+
+    QSize entry_size = temp_entry->sizeHint();
+
+    QFontMetrics fm(temp_entry->font());
+    int text_width = fm.horizontalAdvance("WWWWWWWWWW");
+    int text_height = fm.height();
+
+    /* Border = entry size - text size */
+    iupqt_entry_border_x = entry_size.width() - text_width;
+    iupqt_entry_border_y = entry_size.height() - text_height;
+
+    /* Ensure minimum reasonable border */
+    if (iupqt_entry_border_x < 6) iupqt_entry_border_x = 6;
+    if (iupqt_entry_border_y < 6) iupqt_entry_border_y = 6;
+
+    delete temp_entry;
+  }
+}
+
+static void iupqtTextMeasureMultilineBorders(void)
+{
+  if (iupqt_multiline_border_x < 0)
+  {
+    QTextEdit* temp_text = new QTextEdit();
+    temp_text->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+    temp_text->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    temp_text->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    int frame_width = temp_text->frameWidth();
+
+    int doc_margin = (int)temp_text->document()->documentMargin();
+
+    /* Total border includes frame width on both sides + document margin on both sides */
+    iupqt_multiline_border_x = 2 * frame_width + 2 * doc_margin;
+    iupqt_multiline_border_y = 2 * frame_width + 2 * doc_margin;
+
+    /* Ensure minimum reasonable border */
+    if (iupqt_multiline_border_x < 4) iupqt_multiline_border_x = 4;
+    if (iupqt_multiline_border_y < 4) iupqt_multiline_border_y = 4;
+
+    delete temp_text;
+  }
+}
+
 extern "C" void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
-  int border_size = 2 * 5;
-  (*x) += border_size;
-  (*y) += border_size;
+  if (ih->data->is_multiline)
+  {
+    iupqtTextMeasureMultilineBorders();
+    (*x) += iupqt_multiline_border_x;
+    (*y) += iupqt_multiline_border_y;
+  }
+  else
+  {
+    iupqtTextMeasureEntryBorders();
+    (*x) += iupqt_entry_border_x;
+    (*y) += iupqt_entry_border_y;
+  }
+}
+
+extern "C" void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+{
   (void)ih;
+  (void)w;
+  (void)h;
 }
 
 extern "C" void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)

@@ -18,6 +18,8 @@
 #include <QString>
 #include <QStyleOption>
 #include <QFrame>
+#include <QPainter>
+#include <QStylePainter>
 
 #include <cstdlib>
 #include <cstdio>
@@ -145,6 +147,42 @@ protected:
     iupqtMouseButtonEvent(this, event, iup_handle);
   }
 
+  void paintEvent(QPaintEvent* event) override
+  {
+    char* bgcolor = iupAttribGet(iup_handle, "BGCOLOR");
+    if (bgcolor && iup_handle->data->type == IUP_BUTTON_TEXT && !iupAttribGet(iup_handle, "TITLE"))
+    {
+      unsigned char r, g, b;
+      if (iupStrToRGB(bgcolor, &r, &g, &b))
+      {
+        QStylePainter p(this);
+        QStyleOptionButton option;
+        initStyleOption(&option);
+
+        /* Draw button frame/border */
+        p.drawControl(QStyle::CE_PushButtonBevel, option);
+
+        /* Get content rect inside the button */
+        QRect content_rect = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
+
+        /* Fill content area with background color */
+        p.fillRect(content_rect, QColor(r, g, b));
+
+        /* Draw focus rect if needed */
+        if (option.state & QStyle::State_HasFocus)
+        {
+          QStyleOptionFocusRect focus_opt;
+          focus_opt.QStyleOption::operator=(option);
+          focus_opt.rect = style()->subElementRect(QStyle::SE_PushButtonFocusRect, &option, this);
+          p.drawPrimitive(QStyle::PE_FrameFocusRect, focus_opt);
+        }
+        return;
+      }
+    }
+
+    QPushButton::paintEvent(event);
+  }
+
 public:
   static void qtButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive);
 };
@@ -216,10 +254,45 @@ static void qtButtonUpdateLayout(Ihandle* ih)
 
 extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
-  int border_size = 2 * 6;  /* Typical Qt button padding */
-  (void)ih;
-  (*x) += border_size;
-  (*y) += border_size;
+  static int border_x = -1, border_y = -1;
+
+  int has_image = 0;
+  int has_text = 0;
+  int has_bgcolor = 0;
+
+  if (ih)
+  {
+    char* image = iupAttribGet(ih, "IMAGE");
+    char* title = iupAttribGet(ih, "TITLE");
+    char* bgcolor = iupAttribGet(ih, "BGCOLOR");
+    has_image = (image != NULL);
+    has_text = (title != NULL && *title != 0);
+    has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
+  }
+
+  if (has_bgcolor)
+  {
+    /* Use empty button's natural size */
+    QPushButton temp_button;
+    QSize hint = temp_button.sizeHint();
+    (*x) += hint.width();
+    (*y) += hint.height();
+  }
+  else
+  {
+    if (border_x == -1)
+    {
+      /* Get border from style pixel metrics */
+      QPushButton temp_button;
+      QStyle* style = temp_button.style();
+      int margin = style->pixelMetric(QStyle::PM_ButtonMargin, nullptr, &temp_button);
+      int frame = style->pixelMetric(QStyle::PM_DefaultFrameWidth, nullptr, &temp_button);
+      border_x = margin + frame * 2;
+      border_y = margin + frame * 2;
+    }
+    (*x) += border_x;
+    (*y) += border_y;
+  }
 }
 
 /****************************************************************************
@@ -383,27 +456,17 @@ static int qtButtonSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!value)
   {
     if (ih->handle)
-    {
-      IupQtButton* button = (IupQtButton*)ih->handle;
-      button->setStyleSheet("");
-      return 1;
-    }
-    return 0;
+      iupdrvPostRedraw(ih);
+    return 1;
   }
 
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupQtButton* button = (IupQtButton*)ih->handle;
+  if (ih->handle)
+    iupdrvPostRedraw(ih);
 
-  if (button)
-  {
-    QString style = QString("QPushButton { background-color: rgb(%1,%2,%3); }").arg(r).arg(g).arg(b);
-    button->setStyleSheet(style);
-    return 1;
-  }
-
-  return 0;
+  return 1;
 }
 
 static int qtButtonSetFgColorAttrib(Ihandle* ih, const char* value)
