@@ -93,7 +93,14 @@ void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
   int border_size = 2 * 3;
   (*w) += border_size;
   (*h) += border_size;
-  (void)ih;  
+  (void)ih;
+}
+
+void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+{
+  (void)ih;
+  (void)w;
+  (void)h;
 }
 
 static void winTextParseParagraphFormat(Ihandle* formattag, PARAFORMAT2 *paraformat, int convert2twips)
