@@ -379,8 +379,10 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
   GtkWidget* child;
   iupGtk4Fixed* fixed = (iupGtk4Fixed*)widget;
 
-  /* Notify IUP dialog of size change for layout recalculation */
-  if (fixed->ih && (fixed->last_width != width || fixed->last_height != height))
+  /* Notify IUP dialog of size change for layout recalculation.
+     Only call for dialogs, other containers (like popover) don't have ih->data. */
+  if (fixed->ih && iupStrEqual(fixed->ih->iclass->name, "dialog") &&
+      (fixed->last_width != width || fixed->last_height != height))
   {
     fixed->last_width = width;
     fixed->last_height = height;
@@ -403,6 +405,7 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
   {
     int child_x, child_y;
     int child_width, child_height;
+    int is_scrolled_window = GTK_IS_SCROLLED_WINDOW(child);
 
     if (!gtk_widget_get_visible(child))
       continue;
@@ -440,6 +443,8 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
         if (child_height < min_h) child_height = min_h;
       }
     }
+
+    (void)is_scrolled_window;
 
     /* Allocate child */
     gtk_widget_allocate(child, child_width, child_height, -1, gsk_transform_translate(NULL, &GRAPHENE_POINT_INIT(child_x, child_y)));

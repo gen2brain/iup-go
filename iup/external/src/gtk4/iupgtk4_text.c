@@ -58,23 +58,112 @@ void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
     *w = spin_min_width;
 }
 
+static int gtk4_multiline_border_height = -1;
+static int gtk4_multiline_line_height = -1;
+static int gtk4_entry_border_x = -1;
+static int gtk4_entry_border_y = -1;
+static int gtk4_entry_noframe_border_y = -1;
+
+static void gtk4TextMeasureEntryBorders(void)
+{
+  if (gtk4_entry_border_x < 0)
+  {
+    GtkWidget *temp_entry, *temp_entry_noframe;
+    int entry_w, entry_h, entry_noframe_h;
+    int char_width, char_height;
+    PangoContext *context;
+    PangoLayout *layout;
+
+    /* Create entry with frame */
+    temp_entry = gtk_entry_new();
+    gtk_entry_set_has_frame(GTK_ENTRY(temp_entry), TRUE);
+    g_object_ref_sink(temp_entry);
+
+    /* Create separate entry without frame */
+    temp_entry_noframe = gtk_entry_new();
+    gtk_entry_set_has_frame(GTK_ENTRY(temp_entry_noframe), FALSE);
+    g_object_ref_sink(temp_entry_noframe);
+
+    context = gtk_widget_get_pango_context(temp_entry);
+    layout = pango_layout_new(context);
+    pango_layout_set_text(layout, "W", -1);
+    pango_layout_get_pixel_size(layout, &char_width, &char_height);
+
+    /* Measure with frame, get natural size for border calculation */
+    gtk_widget_measure(temp_entry, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &entry_w, NULL, NULL);
+    gtk_widget_measure(temp_entry, GTK_ORIENTATION_VERTICAL, -1, NULL, &entry_h, NULL, NULL);
+
+    /* Measure without frame, get minimum size */
+    gtk_widget_measure(temp_entry_noframe, GTK_ORIENTATION_VERTICAL, -1, &entry_noframe_h, NULL, NULL, NULL);
+
+    gtk4_entry_border_x = entry_w - char_width;
+    gtk4_entry_border_y = entry_h - char_height;
+    gtk4_entry_noframe_border_y = entry_noframe_h - char_height;
+
+    if (gtk4_entry_border_x < 0) gtk4_entry_border_x = 10;
+    if (gtk4_entry_border_y < 0) gtk4_entry_border_y = 10;
+    if (gtk4_entry_noframe_border_y < 0) gtk4_entry_noframe_border_y = 0;
+
+    g_object_unref(layout);
+    g_object_unref(temp_entry);
+    g_object_unref(temp_entry_noframe);
+  }
+}
+
+static void gtk4TextMeasureMultilineMetrics(void)
+{
+  if (gtk4_multiline_border_height < 0)
+  {
+    GtkWidget *temp_sw, *temp_tv;
+    PangoContext *context;
+    PangoLayout *layout;
+    int layout_1line_h, layout_2line_h;
+    int sw_empty_h;
+
+    temp_tv = gtk_text_view_new();
+    temp_sw = gtk_scrolled_window_new();
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(temp_sw), temp_tv);
+    gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(temp_sw), TRUE);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(temp_sw), GTK_POLICY_NEVER, GTK_POLICY_NEVER);
+
+    g_object_ref_sink(temp_sw);
+
+    gtk_widget_measure(temp_sw, GTK_ORIENTATION_VERTICAL, -1, NULL, &sw_empty_h, NULL, NULL);
+
+    context = gtk_widget_get_pango_context(temp_tv);
+    layout = pango_layout_new(context);
+
+    pango_layout_set_text(layout, "X", -1);
+    pango_layout_get_pixel_size(layout, NULL, &layout_1line_h);
+
+    pango_layout_set_text(layout, "X\nX", -1);
+    pango_layout_get_pixel_size(layout, NULL, &layout_2line_h);
+
+    gtk4_multiline_line_height = layout_2line_h - layout_1line_h;
+    if (gtk4_multiline_line_height <= 0) gtk4_multiline_line_height = 16;
+
+    gtk4_multiline_border_height = sw_empty_h;
+    if (gtk4_multiline_border_height < 0) gtk4_multiline_border_height = 2;
+
+    g_object_unref(layout);
+    g_object_unref(temp_sw);
+  }
+}
+
 void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
-  /* GtkEntry has larger internal padding than GTK3 */
-  int border_size = 2 * 9;
-  (*x) += border_size;
+  gtk4TextMeasureEntryBorders();
 
   static int spin_natural_height = -1;
   if (iupAttribGetBoolean(ih, "SPIN") && spin_natural_height == -1)
   {
-    /* Measure the actual spinbutton natural height */
     GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
 
     int spin_h;
     gtk_widget_measure(temp_spin, GTK_ORIENTATION_VERTICAL, -1, NULL, &spin_h, NULL, NULL);
 
     spin_natural_height = spin_h;
-    if (spin_natural_height < 16) spin_natural_height = 34;  /* Fallback to safe default */
+    if (spin_natural_height < 16) spin_natural_height = 34;
 
     g_object_ref_sink(temp_spin);
     g_object_unref(temp_spin);
@@ -84,38 +173,50 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   {
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
+    gtk4TextMeasureMultilineMetrics();
+
+    (*x) += gtk4_entry_border_x;
+
     if (visiblelines > 0)
     {
-      /* When VISIBLELINES is set, add line spacing + CSS border compensation */
-      int line_spacing = 2 * visiblelines;
-      (*y) += line_spacing;  /* Text view line spacing */
-      (*y) += 2;   /* Compensation for CSS .frame border (1px top + 1px bottom) */
+      int char_height;
+      iupdrvFontGetCharSize(ih, NULL, &char_height);
+
+      int iup_content_h = char_height * visiblelines;
+      int gtk_content_h = gtk4_multiline_line_height * visiblelines;
+      int line_diff = iup_content_h - gtk_content_h;
+
+      (*y) += gtk4_multiline_border_height;
+      (*y) -= line_diff;
     }
     else
     {
-      /* Without VISIBLELINES, use minimal border */
-      (*y) += 2;
+      (*y) += gtk4_multiline_border_height;
     }
-    (*x) += 2;
   }
   else
   {
-    /* Single-line text */
-
     if (iupAttribGetBoolean(ih, "SPIN"))
     {
       int before = *y;
-      /* Add the difference: measured natural height - what IUP calculated so far */
       int add = spin_natural_height - before;
-      if (add < 0) add = 0;  /* Don't subtract if already too large */
+      if (add < 0) add = 0;
       (*y) += add;
     }
     else
     {
-      /* Natural size needs vertical borders */
-      (*y) += border_size;
+      (*x) += gtk4_entry_border_x;
+      (*y) += gtk4_entry_border_y;
     }
   }
+}
+
+void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+{
+  (void)ih;
+  gtk4TextMeasureEntryBorders();
+  if (w) *w += gtk4_entry_noframe_border_y;
+  if (h) *h += gtk4_entry_noframe_border_y;
 }
 
 static void gtkTextMoveIterToLinCol(GtkTextBuffer* buffer, GtkTextIter* iter, int lin, int col)
@@ -1414,16 +1515,11 @@ static int gtk4TextMapMethod(Ihandle* ih)
   {
     GtkPolicyType hscrollbar_policy, vscrollbar_policy;
     int wordwrap = 0;
+    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
     ih->handle = gtk_text_view_new();
     if (!ih->handle)
       return IUP_ERROR;
-
-    /* Add natural padding to multiline text view to match single-line entry appearance */
-    gtk_text_view_set_left_margin((GtkTextView*)ih->handle, 2);
-    gtk_text_view_set_right_margin((GtkTextView*)ih->handle, 2);
-    gtk_text_view_set_top_margin((GtkTextView*)ih->handle, 2);
-    gtk_text_view_set_bottom_margin((GtkTextView*)ih->handle, 2);
 
     scrolled_window = (GtkScrolledWindow*)gtk_scrolled_window_new();
     if (!scrolled_window)
@@ -1431,34 +1527,10 @@ static int gtk4TextMapMethod(Ihandle* ih)
 
     gtk_scrolled_window_set_child(scrolled_window, ih->handle);
 
+    if (visiblelines > 0)
     {
-      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-      if (visiblelines > 0)
-      {
-        int char_width, char_height;
-        iupdrvFontGetCharSize(ih, &char_width, &char_height);
-        int line_height = char_height + 2;
-        int content_h = line_height * visiblelines;
-
-        /* Total height: content + CSS border compensation (2px) */
-        /* GTK4 scrolled_window has NO internal overhead, only external CSS border */
-        int total_h = content_h + 2;
-
-        /* Set size_request on scrolled_window, CSS will take 2px, leaving exact content size for child */
-        gtk_widget_set_size_request(GTK_WIDGET(scrolled_window), -1, total_h);
-        gtk_widget_set_vexpand(GTK_WIDGET(scrolled_window), FALSE);
-        gtk_widget_set_valign(GTK_WIDGET(scrolled_window), GTK_ALIGN_START);
-
-        /* Mark scrolled_window so layout manager doesn't enforce GTK's scrollbar minimum */
-        g_object_set_data(G_OBJECT(scrolled_window), "iup-visiblelines-set", (gpointer)"1");
-      }
-    }
-
-    /* Prevent scrolled window from expanding beyond natural size */
-    if (!iupAttribGetInt(ih, "VISIBLELINES"))
-    {
-      gtk_widget_set_vexpand(GTK_WIDGET(scrolled_window), FALSE);
-      gtk_widget_set_valign(GTK_WIDGET(scrolled_window), GTK_ALIGN_FILL);
+      /* Mark scrolled_window so layout manager doesn't enforce GTK's scrollbar minimum */
+      g_object_set_data(G_OBJECT(scrolled_window), "iup-visiblelines-set", (gpointer)"1");
     }
 
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)scrolled_window);
@@ -1494,30 +1566,9 @@ static int gtk4TextMapMethod(Ihandle* ih)
         vscrollbar_policy = GTK_POLICY_ALWAYS;
     }
     else
-    {
-      /* max_content_height only works when scrollbar policy != NEVER
-         So when VISIBLELINES is set, use AUTOMATIC to enable max_content_height clamping */
-      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-      if (visiblelines > 0)
-        vscrollbar_policy = GTK_POLICY_AUTOMATIC;
-      else
-        vscrollbar_policy = GTK_POLICY_NEVER;
-    }
+      vscrollbar_policy = GTK_POLICY_NEVER;
 
     gtk_scrolled_window_set_policy(scrolled_window, hscrollbar_policy, vscrollbar_policy);
-
-    {
-      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
-      if (visiblelines > 0)
-      {
-        int char_width, char_height;
-        iupdrvFontGetCharSize(ih, &char_width, &char_height);
-
-        /* Text views have line spacing */
-        int line_height = char_height + 2;
-        int content_h = line_height * visiblelines;
-      }
-    }
 
     if (wordwrap)
       gtk_text_view_set_wrap_mode((GtkTextView*)ih->handle, GTK_WRAP_WORD);
