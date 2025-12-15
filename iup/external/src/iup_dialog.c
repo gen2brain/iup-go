@@ -455,6 +455,12 @@ char* iupDialogGetChildIdStr(Ihandle* ih)
 {
   /* Used only in Motif */
   Ihandle* dialog = IupGetDialog(ih);
+  if (!dialog)
+  {
+    /* Element is not inside a dialog (e.g., inside a Popover).
+       Use the element's own address to generate a unique ID. */
+    return iupStrReturnStrf("iup-%s-%p", ih->iclass->name, (void*)ih);
+  }
   return iupStrReturnStrf("iup-%s-%d", ih->iclass->name, dialog->data->child_id);
 }
 

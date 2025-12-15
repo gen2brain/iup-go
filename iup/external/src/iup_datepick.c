@@ -23,6 +23,9 @@
 #include "iup_drvfont.h"
 #include "iup_register.h"
 #include "iup_childtree.h"
+#include "iup_mask.h"
+#include "iup_array.h"
+#include "iup_text.h"
 
 
 static int is_leap_year(int year)
@@ -73,78 +76,68 @@ static void iDatePickUpdateDayLimits(Ihandle* ih)
 static int iDatePickCalendarValueChanged_CB(Ihandle* ih_calendar)
 {
   Ihandle* ih = (Ihandle*)iupAttribGet(ih_calendar, "_IUP_DATEPICK");
+  Ihandle* ih_toggle = (Ihandle*)iupAttribGet(ih_calendar, "_IUP_DATEPICK_TOGGLE");
+  Ihandle* popover = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER");
 
   IupSetStrAttribute(ih, "VALUE", IupGetAttribute(ih_calendar, "VALUE"));
 
   iupBaseCallValueChangedCb(ih);
+
+  IupSetAttribute(ih_toggle, "VALUE", "OFF");
+  if (popover)
+    IupSetAttribute(popover, "VISIBLE", "NO");
+
   return IUP_DEFAULT;
 }
 
-static int iDatePickCalendarKillFocus_CB(Ihandle* ih_calendar)
+static int iDatePickPopoverShow_CB(Ihandle* popover, int state)
 {
-  Ihandle* ih_toggle = (Ihandle*)iupAttribGet(ih_calendar, "_IUP_DATEPICK_TOGGLE");
-  if (!iupAttribGet(ih_toggle, "_IUP_DATEPICK_INSIDETOGGLE"))
-    IupSetAttribute(ih_toggle, "VALUE", "OFF");
-  IupHide(IupGetDialog(ih_calendar));
-  return IUP_DEFAULT;
-}
-
-static int iDatePickToggleEnterWindow_CB(Ihandle* ih_toggle)
-{
-  iupAttribSet(ih_toggle, "_IUP_DATEPICK_INSIDETOGGLE", "1");
-  return IUP_DEFAULT;
-}
-
-static int iDatePickToggleLeaveWindow_CB(Ihandle* ih_toggle)
-{
-  iupAttribSet(ih_toggle, "_IUP_DATEPICK_INSIDETOGGLE", NULL);
+  if (state == IUP_HIDE)
+  {
+    Ihandle* ih_toggle = (Ihandle*)iupAttribGet(popover, "_IUP_DATEPICK_TOGGLE");
+    if (ih_toggle)
+      IupSetAttribute(ih_toggle, "VALUE", "OFF");
+  }
   return IUP_DEFAULT;
 }
 
 static int iDatePickToggleAction_CB(Ihandle* ih_toggle, int state)
 {
   Ihandle* ih = IupGetParent(IupGetParent(ih_toggle));
+  Ihandle* popover = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER");
   Ihandle* calendar = (Ihandle*)iupAttribGet(ih, "_IUP_CALENDAR");
 
   if (state == 1)
   {
-    int x, y;
-
-    if (!calendar)
+    if (!popover)
     {
-      Ihandle* dlg;
       char* weeknumbers;
 
       calendar = IupCalendar();
       weeknumbers = iupAttribGet(ih, "CALENDARWEEKNUMBERS");
       if (weeknumbers) IupSetStrAttribute(calendar, "WEEKNUMBERS", weeknumbers);
       IupSetCallback(calendar, "VALUECHANGED_CB", iDatePickCalendarValueChanged_CB);
-      IupSetCallback(calendar, "KILLFOCUS_CB", iDatePickCalendarKillFocus_CB);
       iupAttribSet(calendar, "_IUP_DATEPICK", (char*)ih);
       iupAttribSet(calendar, "_IUP_DATEPICK_TOGGLE", (char*)ih_toggle);
       iupAttribSet(ih, "_IUP_CALENDAR", (char*)calendar);
 
-      dlg = IupDialog(calendar);
-      IupSetAttribute(dlg, "BORDER", "NO");
-      IupSetAttribute(dlg, "MENUBOX", "NO");
-      IupSetAttribute(dlg, "MAXBOX", "NO");
-      IupSetAttribute(dlg, "MINBOX", "NO");
-      IupSetAttribute(dlg, "RESIZE", "NO");
+      popover = IupPopover(calendar);
+      IupSetAttributeHandle(popover, "ANCHOR", ih);
+      IupSetAttribute(popover, "POSITION", "BOTTOM");
+      IupSetAttribute(popover, "ARROW", "NO");
+      IupSetAttribute(popover, "AUTOHIDE", "NO");
+      IupSetCallback(popover, "SHOW_CB", (Icallback)iDatePickPopoverShow_CB);
+      iupAttribSet(popover, "_IUP_DATEPICK_TOGGLE", (char*)ih_toggle);
+      iupAttribSet(ih, "_IUP_POPOVER", (char*)popover);
     }
 
     IupSetStrAttribute(calendar, "VALUE", IupGetAttribute(ih, "VALUE"));
-
-    x = IupGetInt(ih, "X");
-    y = IupGetInt(ih, "Y");
-    y += IupGetInt2(ih, "RASTERSIZE");
-
-    IupShowXY(IupGetDialog(calendar), x, y);
-    IupSetFocus(calendar);
+    IupSetAttribute(popover, "VISIBLE", "YES");
   }
   else
   {
-    if (calendar)
-      IupHide(IupGetDialog(calendar));
+    if (popover)
+      IupSetAttribute(popover, "VISIBLE", "NO");
   }
 
   return IUP_DEFAULT;
@@ -163,11 +156,13 @@ static int iDatePickTextValueChanged_CB(Ihandle* ih_text)
 
 static int iDatePickTextKAny_CB(Ihandle* ih_text, int key)
 {
+  Ihandle* ih = IupGetParent(IupGetParent(ih_text));
+
   if (key == K_UP || key == K_plus || key == K_sPlus)
   {
     int value = IupGetInt(ih_text, "VALUE");
     value++;
-    if (iupAttribGetBoolean(ih_text, "ZEROPRECED"))
+    if (iupAttribGetBoolean(ih, "ZEROPRECED"))
       IupSetStrf(ih_text, "VALUEMASKED", "%02d", value);
     else
       IupSetInt(ih_text, "VALUEMASKED", value);
@@ -180,7 +175,7 @@ static int iDatePickTextKAny_CB(Ihandle* ih_text, int key)
   {
     int value = IupGetInt(ih_text, "VALUE");
     value--;
-    if (iupAttribGetBoolean(ih_text, "ZEROPRECED"))
+    if (iupAttribGetBoolean(ih, "ZEROPRECED"))
       IupSetStrf(ih_text, "VALUEMASKED", "%02d", value);
     else
       IupSetInt(ih_text, "VALUEMASKED", value);
@@ -330,7 +325,7 @@ static void iDatePickSetDayTextBox(Ihandle* ih, int pos)
   IupSetAttribute(txt, "MASKINT", "1:31");
   IupSetAttribute(txt, "MASKNOEMPTY", "Yes");
   IupSetAttribute(txt, "NC", "2");
-  IupSetAttribute(txt, "SIZE", "14x");
+  IupSetAttribute(txt, "VISIBLECOLUMNS", "2");
 
   iupAttribSet(ih, "_IUP_DATE_DAY", (char*)txt);
 }
@@ -342,7 +337,7 @@ static void iDatePickSetMonthTextBox(Ihandle* ih, int pos)
   IupSetAttribute(txt, "MASKINT", "1:12");
   IupSetAttribute(txt, "MASKNOEMPTY", "Yes");
   IupSetAttribute(txt, "NC", "2");
-  IupSetAttribute(txt, "SIZE", "14x");
+  IupSetAttribute(txt, "VISIBLECOLUMNS", "2");
 
   iupAttribSet(ih, "_IUP_DATE_MONTH", (char*)txt);
 }
@@ -353,7 +348,7 @@ static void iDatePickSetYearTextBox(Ihandle* ih, int pos)
   IupSetAttribute(txt, "MASK", IUP_MASK_UINT);
   IupSetAttribute(txt, "MASKNOEMPTY", "Yes");
   IupSetAttribute(txt, "NC", "4");
-  IupSetAttribute(txt, "SIZE", "26x");
+  IupSetAttribute(txt, "VISIBLECOLUMNS", "4");
 
   iupAttribSet(ih, "_IUP_DATE_YEAR", (char*)txt);
 }
@@ -361,9 +356,17 @@ static void iDatePickSetYearTextBox(Ihandle* ih, int pos)
 static int iDatePickSetOrderAttrib(Ihandle* ih, const char* value)
 {
   int i;
+  int year = 0, month = 0, day = 0;
+  Ihandle* txt_year = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_YEAR");
+  Ihandle* txt_month = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_MONTH");
+  Ihandle* txt_day = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_DAY");
 
   if (!value || strlen(value) != 3)
     return 0;
+
+  if (txt_year) year = IupGetInt(txt_year, "VALUE");
+  if (txt_month) month = IupGetInt(txt_month, "VALUE");
+  if (txt_day) day = IupGetInt(txt_day, "VALUE");
 
   for (i = 0; i < 3; i++)
   {
@@ -376,6 +379,27 @@ static int iDatePickSetOrderAttrib(Ihandle* ih, const char* value)
     else
       return 0;
   }
+
+  txt_year = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_YEAR");
+  txt_month = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_MONTH");
+  txt_day = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_DAY");
+
+  if (year && txt_year) IupSetInt(txt_year, "VALUE", year);
+  if (month && txt_month)
+  {
+    if (iupAttribGetBoolean(ih, "ZEROPRECED"))
+      IupSetStrf(txt_month, "VALUE", "%02d", month);
+    else
+      IupSetInt(txt_month, "VALUE", month);
+  }
+  if (day && txt_day)
+  {
+    if (iupAttribGetBoolean(ih, "ZEROPRECED"))
+      IupSetStrf(txt_day, "VALUE", "%02d", day);
+    else
+      IupSetInt(txt_day, "VALUE", day);
+  }
+
   return 1;
 }
 
@@ -387,6 +411,31 @@ static char* iDatePickGetTodayAttrib(Ihandle* ih)
   timeinfo = localtime(&timer);
   (void)ih;
   return iupStrReturnStrf("%d/%d/%d", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday);
+}
+
+static int iDatePickSetZeroprecedAttrib(Ihandle* ih, const char* value)
+{
+  Ihandle* txt_day = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_DAY");
+  Ihandle* txt_month = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_MONTH");
+
+  if (txt_day && txt_month)
+  {
+    int day = IupGetInt(txt_day, "VALUE");
+    int month = IupGetInt(txt_month, "VALUE");
+
+    if (iupStrBoolean(value))
+    {
+      IupSetStrf(txt_day, "VALUE", "%02d", day);
+      IupSetStrf(txt_month, "VALUE", "%02d", month);
+    }
+    else
+    {
+      IupSetInt(txt_day, "VALUE", day);
+      IupSetInt(txt_month, "VALUE", month);
+    }
+  }
+
+  return 1;
 }
 
 
@@ -415,12 +464,24 @@ static int iDatePickCreateMethod(Ihandle* ih, void** params)
   IupSetAttribute(tgl, "FLAT", "YES");
   IupSetAttribute(tgl, "IGNOREDOUBLECLICK", "YES");
   IupSetCallback(tgl, "ACTION", (Icallback)iDatePickToggleAction_CB);
-  IupSetCallback(tgl, "ENTERWINDOW_CB", (Icallback)iDatePickToggleEnterWindow_CB);
-  IupSetCallback(tgl, "LEAVEWINDOW_CB", (Icallback)iDatePickToggleLeaveWindow_CB);
 
-  box = IupHbox(iDatePickCreateText(), IupLabel("/"), iDatePickCreateText(), IupLabel("/"), iDatePickCreateText(), tgl, NULL);
-  IupSetAttribute(box, "MARGIN", "0x0");
-  IupSetAttribute(box, "GAP", "0");
+  {
+    Ihandle* lbl1 = IupLabel("/");
+    Ihandle* lbl2 = IupLabel("/");
+    int extra_w = 0, extra_h = 0;
+    iupdrvTextAddExtraPadding(NULL, &extra_w, &extra_h);
+    if (extra_h > 0 || extra_w > 0)
+    {
+      int horiz_padding = extra_w / 2;
+      int vert_padding = extra_h / 2;
+      IupSetfAttribute(lbl1, "PADDING", "%dx%d", horiz_padding, vert_padding);
+      IupSetfAttribute(lbl2, "PADDING", "%dx%d", horiz_padding, vert_padding);
+    }
+    box = IupHbox(iDatePickCreateText(), lbl1, iDatePickCreateText(), lbl2, iDatePickCreateText(), tgl, NULL);
+    IupSetAttribute(box, "MARGIN", "0x0");
+    IupSetAttribute(box, "GAP", "0");
+    IupSetAttribute(box, "ALIGNMENT", "ACENTER");
+  }
 
   iupChildTreeAppend(ih, box);
   box->flags |= IUP_INTERNAL;
@@ -439,10 +500,11 @@ static int iDatePickCreateMethod(Ihandle* ih, void** params)
 
 static void iDatePickUnMapMethod(Ihandle* ih)
 {
-  Ihandle* calendar = (Ihandle*)iupAttribGet(ih, "_IUP_CALENDAR");
-  if (iupObjectCheck(calendar))
+  Ihandle* popover = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER");
+  if (iupObjectCheck(popover))
   {
-    IupDestroy(IupGetDialog(calendar));
+    IupDestroy(popover);
+    iupAttribSet(ih, "_IUP_POPOVER", NULL);
     iupAttribSet(ih, "_IUP_CALENDAR", NULL);
   }
 }
@@ -471,7 +533,7 @@ Iclass* iupDatePickNewClass(void)
 
   iupClassRegisterAttribute(ic, "SEPARATOR", NULL, iDatePickSetSeparatorAttrib, IUPAF_SAMEASSYSTEM, "/", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORDER", NULL, iDatePickSetOrderAttrib, IUPAF_SAMEASSYSTEM, "DMY", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ZEROPRECED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ZEROPRECED", NULL, iDatePickSetZeroprecedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CALENDARWEEKNUMBERS", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, iDatePickSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);

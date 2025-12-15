@@ -271,6 +271,7 @@ IUP_API Ihandle*  IupLink       (const char* url, const char* title);
 IUP_API Ihandle*  IupAnimatedLabel(Ihandle* animation);
 IUP_API Ihandle*  IupDatePick   (void);
 IUP_API Ihandle*  IupCalendar   (void);
+IUP_API Ihandle*  IupPopover    (Ihandle* child);
 IUP_API Ihandle*  IupColorbar   (void);
 IUP_API Ihandle*  IupGauge      (void);
 IUP_API Ihandle*  IupDial       (const char* type);
