@@ -250,9 +250,7 @@ void iupgtkSetPosSize(GtkContainer* parent, GtkWidget* widget, int x, int y, int
       }
     }
     else
-    {
       gtk_widget_set_size_request(widget, width, height);
-    }
   }
 }
 
@@ -1172,20 +1170,6 @@ void iupgtkSetMargin(GtkWidget* widget, int horiz_padding, int vert_padding, int
   (void)mandatory_gtk3;
 }
 
-void iupgtkClearSizeStyleCSS(GtkWidget* widget)
-{
-#if GTK_CHECK_VERSION(3, 0, 0)
-  GtkStyleContext *context = gtk_widget_get_style_context(widget);
-  const char* str = "*{ padding-bottom: 0px ; padding-top: 0px; padding-left: 2px;  padding-right: 2px; "
-                        "margin-bottom: 0px;  margin-top: 0px;  margin-left: 0px;   margin-right: 0px; }";
-  GtkCssProvider *provider = gtk_css_provider_new();
-  gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(provider), str, -1, NULL);
-  gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-  g_object_unref(provider);
-#else
-  (void)widget;
-#endif
-}
 
 int iupgtkIsSystemDarkMode(void)
 {

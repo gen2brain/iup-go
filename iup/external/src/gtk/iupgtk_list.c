@@ -311,16 +311,77 @@ static void gtkListVirtualCellDataFunc(GtkTreeViewColumn* column, GtkCellRendere
   g_object_set(renderer, "text", text ? text : "", NULL);
 }
 
+/* Cached measurement for list item space */
+static int iupgtk_list_item_space = -1;
+static int iupgtk_list_row_height = -1;
+
+static void iupgtkListMeasureItemMetrics(void)
+{
+  if (iupgtk_list_item_space < 0)
+  {
+    GtkWidget *temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkListStore *temp_store = gtk_list_store_new(1, G_TYPE_STRING);
+    GtkWidget *temp_tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(temp_store));
+    GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+    GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("", renderer, "text", 0, NULL);
+    GtkTreeIter iter;
+    int char_height;
+    PangoContext *context;
+    PangoLayout *layout;
+    int row1_y, row2_y;
+
+    g_object_set(G_OBJECT(renderer), "xpad", 0, NULL);
+    g_object_set(G_OBJECT(renderer), "ypad", 0, NULL);
+
+    gtk_tree_view_append_column(GTK_TREE_VIEW(temp_tree), column);
+
+    gtk_list_store_append(temp_store, &iter);
+    gtk_list_store_set(temp_store, &iter, 0, "X", -1);
+    gtk_list_store_append(temp_store, &iter);
+    gtk_list_store_set(temp_store, &iter, 0, "X", -1);
+
+    gtk_container_add(GTK_CONTAINER(temp_window), temp_tree);
+    gtk_widget_show_all(temp_window);
+    gtk_widget_realize(temp_window);
+    gtk_widget_realize(temp_tree);
+
+    /* Measure actual row stride by comparing Y positions of row 0 and row 1 */
+    {
+      GtkTreePath *path0 = gtk_tree_path_new_from_string("0");
+      GtkTreePath *path1 = gtk_tree_path_new_from_string("1");
+      GdkRectangle rect0, rect1;
+
+      gtk_tree_view_get_background_area(GTK_TREE_VIEW(temp_tree), path0, column, &rect0);
+      gtk_tree_view_get_background_area(GTK_TREE_VIEW(temp_tree), path1, column, &rect1);
+
+      row1_y = rect0.y;
+      row2_y = rect1.y;
+      iupgtk_list_row_height = rect1.y - rect0.y;
+
+      gtk_tree_path_free(path0);
+      gtk_tree_path_free(path1);
+    }
+
+    context = gtk_widget_get_pango_context(temp_tree);
+    layout = pango_layout_new(context);
+    pango_layout_set_text(layout, "X", -1);
+    pango_layout_get_pixel_size(layout, NULL, &char_height);
+    g_object_unref(layout);
+
+    /* item_space = actual_row_height - char_height */
+    iupgtk_list_item_space = iupgtk_list_row_height - char_height;
+    if (iupgtk_list_item_space < 0) iupgtk_list_item_space = 2;
+
+    g_object_unref(temp_store);
+    gtk_widget_destroy(temp_window);
+  }
+}
+
 void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 {
   (void)ih;
-  /* FROM:
-    gtk_tree_view_column_cell_get_size
-      height = text_height + 2*focus_line_width;
-    gtk_widget_style_get(ih->handle, "focus-line-width", &focus_line_width, NULL);
-      returns always 1
-  */
-  *h += 2;
+  iupgtkListMeasureItemMetrics();
+  *h += iupgtk_list_item_space;
 }
 
 void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
@@ -382,28 +443,25 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   {
     GtkWidget *temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     GtkWidget *temp_entry = gtk_entry_new();
-    GtkAllocation allocation;
-
-#if GTK_CHECK_VERSION(3, 14, 0)
-    {
-      GtkStyleContext *context = gtk_widget_get_style_context(temp_entry);
-      GtkCssProvider *provider = gtk_css_provider_new();
-      gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(provider),
-        "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }", -1, NULL);
-      gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-      g_object_unref(provider);
-    }
-#endif
 
     gtk_container_add(GTK_CONTAINER(temp_window), temp_entry);
     gtk_widget_show_all(temp_window);
     gtk_widget_realize(temp_window);
     gtk_widget_realize(temp_entry);
 
-    gtk_widget_get_allocation(temp_entry, &allocation);
-
-    /* Entry border is just the entry height, VBox manages it separately */
-    editbox_border_y = allocation.height;
+#if GTK_CHECK_VERSION(3, 0, 0)
+    {
+      int entry_nat_h;
+      gtk_widget_get_preferred_height(temp_entry, NULL, &entry_nat_h);
+      editbox_border_y = entry_nat_h;
+    }
+#else
+    {
+      GtkRequisition requisition;
+      gtk_widget_size_request(temp_entry, &requisition);
+      editbox_border_y = requisition.height;
+    }
+#endif
 
     gtk_widget_destroy(temp_window);
   }
@@ -459,21 +517,6 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       GtkWidget* temp_combo_entry = gtk_combo_box_entry_new_with_model(GTK_TREE_MODEL(temp_store), 0);
 #endif
       GtkRequisition combo_entry_min, combo_entry_nat;
-
-#if GTK_CHECK_VERSION(3, 14, 0)
-      {
-        GtkWidget *entry = gtk_bin_get_child(GTK_BIN(temp_combo_entry));
-        if (entry)
-        {
-          GtkStyleContext *context = gtk_widget_get_style_context(entry);
-          GtkCssProvider *provider = gtk_css_provider_new();
-          gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(provider),
-            "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }", -1, NULL);
-          gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-          g_object_unref(provider);
-        }
-      }
-#endif
 
       gtk_container_add(GTK_CONTAINER(temp_window), temp_combo_entry);
       gtk_widget_show_all(temp_window);
@@ -1992,19 +2035,6 @@ static int gtkListMapMethod(Ihandle* ih)
       entry = gtk_bin_get_child(GTK_BIN(ih->handle));
       iupAttribSet(ih, "_IUPGTK_ENTRY", (char*)entry);
 
-#if GTK_CHECK_VERSION(3, 14, 0)
-      {
-        GtkStyleContext *context = gtk_widget_get_style_context(entry);
-        GtkCssProvider *provider = gtk_css_provider_new();
-        gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(provider),
-          "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }", -1, NULL);
-        gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-        g_object_unref(provider);
-      }
-#endif
-
-      iupgtkClearSizeStyleCSS(entry);
-
       g_signal_connect(G_OBJECT(entry), "focus-in-event",     G_CALLBACK(iupgtkFocusInOutEvent), ih);
       g_signal_connect(G_OBJECT(entry), "focus-out-event",    G_CALLBACK(iupgtkFocusInOutEvent), ih);
       g_signal_connect(G_OBJECT(entry), "enter-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);
@@ -2150,21 +2180,8 @@ static int gtkListMapMethod(Ihandle* ih)
       gtk_widget_set_hexpand(entry, FALSE);
 #endif
 
-#if GTK_CHECK_VERSION(3, 14, 0)
-      /* Apply same CSS as IupText to match padding and sizing */
-      {
-        GtkStyleContext *context = gtk_widget_get_style_context(entry);
-        GtkCssProvider *provider = gtk_css_provider_new();
-        gtk_css_provider_load_from_data(GTK_CSS_PROVIDER(provider),
-          "*{ padding-left: 2px; padding-right: 2px; min-height: 24px; }", -1, NULL);
-        gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-        g_object_unref(provider);
-      }
-#endif
-
       gtk_box_pack_start(vbox, entry, FALSE, FALSE, 0);
       iupAttribSet(ih, "_IUPGTK_ENTRY", (char*)entry);
-      iupgtkClearSizeStyleCSS(entry);
 
       gtk_widget_show((GtkWidget*)vbox);
 
@@ -2314,8 +2331,6 @@ static int gtkListMapMethod(Ihandle* ih)
     g_signal_connect(G_OBJECT(ih->handle), "button-press-event", G_CALLBACK(iupgtkButtonEvent), ih);
     g_signal_connect(G_OBJECT(ih->handle), "button-release-event", G_CALLBACK(iupgtkButtonEvent), ih);
   }
-
-  iupgtkClearSizeStyleCSS(ih->handle);
 
   /* Enable internal drag and drop support */
   if(ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple)

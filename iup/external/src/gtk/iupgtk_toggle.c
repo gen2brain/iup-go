@@ -984,11 +984,6 @@ static int gtkToggleMapMethod(Ihandle* ih)
     gtk_toggle_button_set_mode((GtkToggleButton*)ih->handle, FALSE);
   }
 
-#if GTK_CHECK_VERSION(3, 0, 0)
-  if (!iupAttribGetBoolean(ih, "SWITCH"))
-#endif
-    iupgtkClearSizeStyleCSS(ih->handle);
-
   /* add to the parent, all GTK controls must call this. */
   iupgtkAddToParent(ih);
 

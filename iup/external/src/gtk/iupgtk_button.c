@@ -49,16 +49,39 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
   int has_image = 0;
   int has_text = 0;
+  int has_bgcolor = 0;
 
   if (ih)
   {
     char* image = iupAttribGet(ih, "IMAGE");
     char* title = iupAttribGet(ih, "TITLE");
+    char* bgcolor = iupAttribGet(ih, "BGCOLOR");
     has_image = (image != NULL);
     has_text = (title != NULL && *title != 0);
+    has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
   }
 
-  if (has_image && has_text)
+  if (has_bgcolor)
+  {
+    GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget* temp_button = gtk_button_new();
+
+    gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
+    gtk_widget_show_all(temp_window);
+    gtk_widget_realize(temp_window);
+    gtk_widget_realize(temp_button);
+
+    gint button_nat_w, button_nat_h;
+    gtk_widget_get_preferred_width(temp_button, NULL, &button_nat_w);
+    gtk_widget_get_preferred_height(temp_button, NULL, &button_nat_h);
+
+    /* Empty button borders */
+    (*x) += button_nat_w;
+    (*y) += button_nat_h;
+
+    gtk_widget_destroy(temp_window);
+  }
+  else if (has_image && has_text)
   {
     if (image_text_border_x == -1)
     {
@@ -152,19 +175,19 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
       gtk_widget_realize(temp_window);
       gtk_widget_realize(temp_button);
 
-      /* Get button's preferred size */
-      gint button_width, button_height;
-      gtk_widget_get_preferred_width(temp_button, NULL, &button_width);
-      gtk_widget_get_preferred_height(temp_button, NULL, &button_height);
+      gint button_nat_w, button_nat_h;
+      gtk_widget_get_preferred_width(temp_button, NULL, &button_nat_w);
+      gtk_widget_get_preferred_height(temp_button, NULL, &button_nat_h);
 
-      /* Get child allocation */
       GtkWidget* child = gtk_bin_get_child(GTK_BIN(temp_button));
-      GtkAllocation child_alloc;
       if (child)
       {
-        gtk_widget_get_allocation(child, &child_alloc);
-        text_border_x = button_width - child_alloc.width;
-        text_border_y = button_height - child_alloc.height;
+        gint child_nat_w, child_nat_h;
+        gtk_widget_get_preferred_width(child, NULL, &child_nat_w);
+        gtk_widget_get_preferred_height(child, NULL, &child_nat_h);
+
+        text_border_x = button_nat_w - child_nat_w;
+        text_border_y = button_nat_h - child_nat_h;
       }
       else
       {
@@ -187,16 +210,40 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   /* Check if we need to measure for image+text button, image-only, or text-only button */
   int has_image = 0;
   int has_text = 0;
+  int has_bgcolor = 0;
 
   if (ih)
   {
     char* image = iupAttribGet(ih, "IMAGE");
     char* title = iupAttribGet(ih, "TITLE");
+    char* bgcolor = iupAttribGet(ih, "BGCOLOR");
     has_image = (image != NULL);
     has_text = (title != NULL && *title != 0);
+    has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
   }
 
-  if (has_image && has_text)
+  if (has_bgcolor)
+  {
+    GtkWidget* temp_window;
+    GtkRequisition req;
+
+    temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    temp_button = gtk_button_new();
+    gtk_widget_set_can_focus(temp_button, TRUE);
+    gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
+    gtk_widget_show_all(temp_window);
+    gtk_widget_realize(temp_window);
+    gtk_widget_realize(temp_button);
+
+    gtk_widget_size_request(temp_button, &req);
+
+    (*x) += req.width;
+    (*y) += req.height;
+
+    gtk_widget_destroy(temp_window);
+    return;
+  }
+  else if (has_image && has_text)
   {
     /* Create button with both image and text to match actual structure */
     GdkPixbuf* temp_pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, 32, 32);
@@ -273,6 +320,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
     if (inner_border)
       gtk_border_free(inner_border);
+
   }
   else
   {
@@ -439,22 +487,105 @@ static int gtkButtonSetPaddingAttrib(Ihandle* ih, const char* value)
     return 1; /* store until not mapped, when mapped will be set again */
 }
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+static gboolean gtkButtonColorDrawAreaDraw(GtkWidget* widget, cairo_t* cr, Ihandle* ih)
+{
+  GtkStyleContext* context = gtk_widget_get_style_context(widget);
+  int width = gtk_widget_get_allocated_width(widget);
+  int height = gtk_widget_get_allocated_height(widget);
+
+  (void)ih;
+  gtk_render_background(context, cr, 0, 0, width, height);
+
+  return FALSE;
+}
+
+static void gtkButtonColorDrawAreaRealize(GtkWidget* widget, Ihandle* ih)
+{
+  char* value = iupAttribGet(ih, "BGCOLOR");
+  if (value)
+  {
+    unsigned char r, g, b;
+    if (iupStrToRGB(value, &r, &g, &b))
+      iupgtkSetBgColor(widget, r, g, b);
+  }
+}
+#else
+static gboolean gtkButtonColorExposeAfter(GtkWidget* widget, GdkEventExpose* evt, Ihandle* ih)
+{
+  GtkAllocation allocation;
+  cairo_t* cr;
+  GdkWindow* window;
+  char* value;
+  unsigned char r, g, b;
+  int x, y, w, h;
+  gint xthickness, ythickness;
+
+  (void)evt;
+
+  value = iupAttribGet(ih, "BGCOLOR");
+  if (!value || !iupStrToRGB(value, &r, &g, &b))
+    return FALSE;
+
+  window = gtk_widget_get_window(widget);
+  if (!window)
+    return FALSE;
+
+  gtk_widget_get_allocation(widget, &allocation);
+
+  /* Draw inside the button frame (just inside xthickness/ythickness) */
+  xthickness = GTK_WIDGET(widget)->style->xthickness;
+  ythickness = GTK_WIDGET(widget)->style->ythickness;
+
+  /* GTK2 buttons use parent's window, so we need allocation offset */
+  x = allocation.x + xthickness;
+  y = allocation.y + ythickness;
+  w = allocation.width - 2 * xthickness;
+  h = allocation.height - 2 * ythickness;
+
+  if (w > 0 && h > 0)
+  {
+    cr = gdk_cairo_create(window);
+    cairo_set_source_rgb(cr, r / 255.0, g / 255.0, b / 255.0);
+    cairo_rectangle(cr, x, y, w, h);
+    cairo_fill(cr);
+    cairo_destroy(cr);
+  }
+
+  return FALSE;
+}
+#endif
+
 static int gtkButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
   if (ih->data->type == IUP_BUTTON_TEXT)
   {
-    /* Color button */
-    GtkWidget* frame = gtk_button_get_image(GTK_BUTTON(ih->handle));
+    /* Color button with frame+drawarea */
+    GtkWidget* frame = gtk_bin_get_child(GTK_BIN(ih->handle));
     if (frame && GTK_IS_FRAME(frame))
     {
       unsigned char r, g, b;
       if (!iupStrToRGB(value, &r, &g, &b))
         return 0;
 
-      iupgtkSetBgColor(gtk_bin_get_child(GTK_BIN(frame)), r, g, b);
+      GtkWidget* drawarea = gtk_bin_get_child(GTK_BIN(frame));
+      if (gtk_widget_get_realized(drawarea))
+        iupgtkSetBgColor(drawarea, r, g, b);
       return 1;
     }
   }
+#else
+  if (ih->data->type == IUP_BUTTON_TEXT)
+  {
+    char* bgcolor = iupAttribGet(ih, "BGCOLOR");
+    if (bgcolor)
+    {
+      gtk_widget_queue_draw(ih->handle);
+      return 1;
+    }
+  }
+#endif
 
   return iupdrvBaseSetBgColorAttrib(ih, value);
 }
@@ -644,19 +775,6 @@ static gboolean gtkButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *
 static void gtkButtonLayoutUpdateMethod(Ihandle *ih)
 {
   iupdrvBaseLayoutUpdateMethod(ih);
-
-  if (ih->data->type == IUP_BUTTON_TEXT)
-  {
-    /* Color button */
-    GtkWidget* frame = gtk_button_get_image(GTK_BUTTON(ih->handle));
-    if (frame && GTK_IS_FRAME(frame))
-    {
-      int x = 0, y = 0;
-      iupdrvButtonAddBorders(ih, &x, &y);
-      if (ih->currentwidth - x > 0 && ih->currentheight - y > 0)
-        gtk_widget_set_size_request(frame, ih->currentwidth-x, ih->currentheight-y);
-    }
-  }
 }
 
 static int gtkButtonMapMethod(Ihandle* ih)
@@ -720,23 +838,28 @@ static int gtkButtonMapMethod(Ihandle* ih)
   else
   {
     char* title = iupAttribGet(ih, "TITLE");
-    if (!title) 
+    if (!title || *title == 0)
     {
       if (iupAttribGet(ih, "BGCOLOR"))
       {
+#if GTK_CHECK_VERSION(3, 0, 0)
         GtkWidget* frame = gtk_frame_new(NULL);
-#if GTK_CHECK_VERSION(2, 18, 0)
         GtkWidget* drawarea = gtk_drawing_area_new();
         gtk_widget_set_has_window(drawarea, TRUE);
-#else
-        GtkWidget* drawarea = gtk_fixed_new();
-        gtk_fixed_set_has_window(GTK_FIXED(drawarea), TRUE);
-#endif
         gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
         gtk_container_add(GTK_CONTAINER(frame), drawarea);
         gtk_widget_show(drawarea);
 
-        gtk_button_set_image((GtkButton*)ih->handle, frame);
+        g_signal_connect(G_OBJECT(drawarea), "realize", G_CALLBACK(gtkButtonColorDrawAreaRealize), ih);
+        g_signal_connect(G_OBJECT(drawarea), "draw", G_CALLBACK(gtkButtonColorDrawAreaDraw), ih);
+
+        /* Add frame directly as button's child so it can expand to fill */
+        gtk_container_add(GTK_CONTAINER(ih->handle), frame);
+        gtk_widget_show(frame);
+#else
+        /* GTK2: Draw directly on button via expose-event */
+        g_signal_connect_after(G_OBJECT(ih->handle), "expose-event", G_CALLBACK(gtkButtonColorExposeAfter), ih);
+#endif
       }
       else
         gtk_button_set_label((GtkButton*)ih->handle, "");
@@ -745,10 +868,8 @@ static int gtkButtonMapMethod(Ihandle* ih)
       gtk_button_set_label((GtkButton*)ih->handle, "");
   }
 
-  if (has_border)
-    iupgtkClearSizeStyleCSS(ih->handle);
+  (void)has_border;
 
-  /* add to the parent, all GTK controls must call this. */
   iupgtkAddToParent(ih);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
@@ -788,7 +909,7 @@ static int gtkButtonMapMethod(Ihandle* ih)
   }
 
 #if !GTK_CHECK_VERSION(3, 0, 0)
-  /* GTK2: Apply button alignment BEFORE realize to actually center content. */
+  /* GTK2: Apply button alignment before realize to actually center content. */
   if (has_border && !iupAttribGet(ih, "_IUPGTK_EVENTBOX"))
   {
     gtk_button_set_alignment((GtkButton*)ih->handle, 0.5f, 0.5f);
