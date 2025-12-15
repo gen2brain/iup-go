@@ -14,7 +14,7 @@ import "C"
 
 // AnimatedLabel creates an animated label interface element, which displays an image that is changed periodically.
 //
-// It uses an animation that is simply an User with several Image as children.
+// It uses an animation that is simply a User with several Image as children.
 //
 // It inherits from Label.
 //
@@ -43,8 +43,8 @@ func Button(title string) Ihandle {
 // When selected, this element activates a function in the application.
 // Its visual presentation can contain a text and/or an image.
 //
-// It behaves just like an Button, but since it is not a native control it has more flexibility for additional options.
-// It can also behave like an Toggle (without the checkmark).
+// It behaves just like a Button, but since it is not a native control, it has more flexibility for additional options.
+// It can also behave like a Toggle (without the checkmark).
 //
 // https://www.tecgraf.puc-rio.br/iup/en/elem/iupflatbutton.html
 func FlatButton(title string) Ihandle {
@@ -365,6 +365,22 @@ func FlatVal(orientation string) Ihandle {
 	defer cStrFree(cOrientation)
 
 	h := mkih(C.IupFlatVal(cOrientation))
+	h.SetAttribute("UUID", uuid.NewString())
+	return h
+}
+
+// Popover creates a popover container that displays content anchored to a widget.
+//
+// Attributes:
+//   - ANCHOR: (Ihandle) The widget to anchor the popover to (required)
+//   - POSITION: "BOTTOM" (default), "TOP", "LEFT", "RIGHT" - position relative to anchor
+//   - ARROW: "YES" (default), "NO" - show arrow pointing to anchor (platform dependent)
+//   - AUTOHIDE: "YES" (default), "NO" - auto-hide when focus is lost
+//
+// Callbacks:
+//   - SHOW_CB: called when popover visibility changes (state: SHOW=0, HIDE=4)
+func Popover(child Ihandle) Ihandle {
+	h := mkih(C.IupPopover(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
