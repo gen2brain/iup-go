@@ -48,7 +48,6 @@ static const void* IUP_COCOA_TEXT_OVERWRITE_KEY = "IUP_COCOA_TEXT_OVERWRITE_KEY"
 
 typedef enum
 {
-  IupCocoaTextSubType_UNKNOWN = -1,
   IUPCOCOATEXTSUBTYPE_FIELD,
   IUPCOCOATEXTSUBTYPE_VIEW,
   IUPCOCOATEXTSUBTYPE_STEPPER,
@@ -75,7 +74,6 @@ static IupCocoaTextSubType cocoaTextGetSubType(Ihandle* ih)
   {
     return IUPCOCOATEXTSUBTYPE_FIELD;
   }
-  return IupCocoaTextSubType_UNKNOWN;
 }
 
 static NSView* cocoaTextGetRootView(Ihandle* ih)
@@ -111,16 +109,9 @@ static NSView* cocoaTextGetRootView(Ihandle* ih)
 
 static NSTextField* cocoaTextGetTextField(Ihandle* ih)
 {
-#ifdef USE_NSSTACKVIEW_TEXTFIELD_CONTAINER
-  NSStackView* root_container_view = (NSStackView*)ih->handle;
-  NSTextField* text_field = [[root_container_view views] firstObject];
-  NSCAssert([text_field isKindOfClass:[NSTextField class]], @"Expected NSTextField");
-  return text_field;
-#else
   NSTextField* root_container_view = (NSTextField*)ih->handle;
   NSCAssert([root_container_view isKindOfClass:[NSTextField class]], @"Expected NSTextField");
   return root_container_view;
-#endif
 }
 
 static NSTextView* cocoaTextGetTextView(Ihandle* ih)
@@ -151,13 +142,6 @@ static IUPStepperObject* cocoaTextGetStepperObject(Ihandle* ih)
   IUPTextSpinnerContainer* spinner_container = (IUPTextSpinnerContainer*)objc_getAssociatedObject((id)ih->handle, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY);
   NSCAssert([spinner_container isKindOfClass:[IUPTextSpinnerContainer class]], @"Expected IUPTextSpinnerContainer");
   return [spinner_container stepperObject];
-}
-
-static IUPStepperObjectController* cocoaTextGetStepperObjectController(Ihandle* ih)
-{
-  IUPTextSpinnerContainer* spinner_container = (IUPTextSpinnerContainer*)objc_getAssociatedObject((id)ih->handle, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY);
-  NSCAssert([spinner_container isKindOfClass:[IUPTextSpinnerContainer class]], @"Expected IUPTextSpinnerContainer");
-  return [spinner_container stepperObjectController];
 }
 
 /* Custom text field cell to control text insets */
@@ -763,6 +747,11 @@ void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 
 void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
+  static int cocoa_textfield_border_w = -1;
+  static int cocoa_textfield_border_h = -1;
+  static int cocoa_scrollview_border_w = -1;
+  static int cocoa_scrollview_border_h = -1;
+
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
 
   switch(sub_type)
@@ -770,11 +759,35 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
     case IUPCOCOATEXTSUBTYPE_VIEW:
       {
         /* Multiline text view with NSScrollView */
-        /* NSScrollView with NSBezelBorder has minimal borders */
-        const int SCROLLVIEW_BORDER_X = 2;
-        const int SCROLLVIEW_BORDER_Y = 2;
+        if (cocoa_scrollview_border_w < 0)
+        {
+          /* Measure NSScrollView with bezel border */
+          NSScrollView* temp_scroll = [[NSScrollView alloc] initWithFrame:NSZeroRect];
+          NSTextView* temp_text = [[NSTextView alloc] initWithFrame:NSZeroRect];
+          [temp_scroll setDocumentView:temp_text];
+          [temp_scroll setBorderType:NSBezelBorder];
+          [temp_scroll setHasVerticalScroller:YES];
 
-        *x += SCROLLVIEW_BORDER_X;
+          /* Get the content insets */
+          NSSize content_size = [temp_scroll contentSize];
+          NSSize frame_size = [NSScrollView frameSizeForContentSize:content_size
+                                            horizontalScrollerClass:nil
+                                              verticalScrollerClass:[NSScroller class]
+                                                         borderType:NSBezelBorder
+                                                        controlSize:NSControlSizeRegular
+                                                      scrollerStyle:NSScrollerStyleOverlay];
+
+          cocoa_scrollview_border_w = (int)lroundf(frame_size.width - content_size.width);
+          cocoa_scrollview_border_h = (int)lroundf(frame_size.height - content_size.height);
+
+          if (cocoa_scrollview_border_w < 0) cocoa_scrollview_border_w = 2;
+          if (cocoa_scrollview_border_h < 0) cocoa_scrollview_border_h = 2;
+
+          [temp_text release];
+          [temp_scroll release];
+        }
+
+        *x += cocoa_scrollview_border_w;
 
         /* For VISIBLELINES, we need to account for NSTextView's actual line height */
         int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
@@ -813,26 +826,117 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
           *y += total_spacing;
         }
 
-        *y += SCROLLVIEW_BORDER_Y;
+        *y += cocoa_scrollview_border_h;
         break;
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:
-  case IUPCOCOATEXTSUBTYPE_STEPPER:
+    case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
-        /* Single line text field (NSTextField) and spinbox */
-        int border_size = 2 * 3;
-        *x += border_size;
-        *y += border_size;
+        /* Single line text field (NSTextField) with border */
+        if (cocoa_textfield_border_w < 0)
+        {
+          /* Measure NSTextField with border */
+          NSTextField* temp_field = [[NSTextField alloc] initWithFrame:NSZeroRect];
+          [temp_field setBordered:YES];
+          [temp_field setBezeled:YES];
+          [temp_field setStringValue:@"W"];
+
+          /* Get font metrics */
+          NSFont* font = [temp_field font];
+          if (!font)
+            font = [NSFont systemFontOfSize:13];
+
+          /* Measure text size using font */
+          NSDictionary* attrs = @{NSFontAttributeName: font};
+          NSSize text_size = [@"W" sizeWithAttributes:attrs];
+
+          /* Get intrinsic content size of the text field */
+          NSSize intrinsic_size = [temp_field intrinsicContentSize];
+
+          /* Border is intrinsic size minus text size */
+          cocoa_textfield_border_w = (int)lroundf(intrinsic_size.width - text_size.width);
+          cocoa_textfield_border_h = (int)lroundf(intrinsic_size.height - text_size.height);
+
+          if (cocoa_textfield_border_w < 0) cocoa_textfield_border_w = 6;
+          if (cocoa_textfield_border_h < 0) cocoa_textfield_border_h = 6;
+
+          [temp_field release];
+        }
+
+        *x += cocoa_textfield_border_w;
+        *y += cocoa_textfield_border_h;
         break;
       }
-  default:
+    default:
       {
         break;
       }
   }
 }
 
-/* GOTCHA: Modern characters may be multiple bytes (e.g. emoji characters). */
+void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+{
+  static int cocoa_textfield_extra_w = -1;
+  static int cocoa_textfield_extra_h = -1;
+
+  if (cocoa_textfield_extra_w < 0)
+  {
+    /* Measure the difference between bordered and non-bordered NSTextField */
+    NSTextField* temp_bordered = [[NSTextField alloc] initWithFrame:NSZeroRect];
+    NSTextField* temp_noframe = [[NSTextField alloc] initWithFrame:NSZeroRect];
+
+    [temp_bordered setBordered:YES];
+    [temp_bordered setBezeled:YES];
+    [temp_bordered setStringValue:@"W"];
+
+    [temp_noframe setBordered:NO];
+    [temp_noframe setBezeled:NO];
+    [temp_noframe setStringValue:@"W"];
+
+    /* Get intrinsic sizes - bordered vs non-bordered */
+    NSSize bordered_size = [temp_bordered intrinsicContentSize];
+    NSSize noframe_size = [temp_noframe intrinsicContentSize];
+
+    /* Get font metrics */
+    NSFont* font = [temp_noframe font];
+    if (!font)
+      font = [NSFont systemFontOfSize:13];
+
+    NSDictionary* attrs = @{NSFontAttributeName: font};
+    NSSize text_size = [@"W" sizeWithAttributes:attrs];
+
+    /* The bezel adds extra size. The internal padding is what remains in no-frame version */
+    int extra_from_noframe_w = (int)lroundf(noframe_size.width - text_size.width);
+    int extra_from_noframe_h = (int)lroundf(noframe_size.height - text_size.height);
+
+    if (extra_from_noframe_w <= 0 || extra_from_noframe_h <= 0)
+    {
+      /* Fallback: Use a fraction of the border size as internal padding estimate */
+      int bezel_w = (int)lroundf(bordered_size.width - noframe_size.width);
+      int bezel_h = (int)lroundf(bordered_size.height - noframe_size.height);
+
+      cocoa_textfield_extra_w = (extra_from_noframe_w > 0) ? extra_from_noframe_w : (bezel_w > 0 ? bezel_w : 0);
+      cocoa_textfield_extra_h = (extra_from_noframe_h > 0) ? extra_from_noframe_h : (bezel_h > 0 ? bezel_h : 0);
+    }
+    else
+    {
+      cocoa_textfield_extra_w = extra_from_noframe_w;
+      cocoa_textfield_extra_h = extra_from_noframe_h;
+    }
+
+    if (cocoa_textfield_extra_w < 0) cocoa_textfield_extra_w = 0;
+    if (cocoa_textfield_extra_h < 0) cocoa_textfield_extra_h = 0;
+
+    [temp_bordered release];
+    [temp_noframe release];
+  }
+
+  (void)ih;
+  if (w) *w += cocoa_textfield_extra_w;
+  if (h) *h += cocoa_textfield_extra_h;
+}
+
+/* Characters may be multiple bytes (e.g. emoji characters). */
 static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
 {
   NSRange full_range = NSMakeRange(0, [text_string length]);
@@ -1101,15 +1205,11 @@ static int cocoaTextSetNCAttrib(Ihandle* ih, const char* value)
           [nc_formatter setIhandle:ih];
           [text_field setFormatter:nc_formatter];
           return 0;
-
-          break;
         }
       case IUPCOCOATEXTSUBTYPE_STEPPER:
         {
           /* Leave the existing the Number formatter alone */
           return 0;
-
-          break;
         }
       default:
         {
@@ -1552,8 +1652,6 @@ static int cocoaTextSetBgColorAttrib(Ihandle* ih, const char* value)
         [undo_manager endUndoGrouping];
 
         return 1;
-
-        break;
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:
       {
@@ -1574,8 +1672,6 @@ static int cocoaTextSetBgColorAttrib(Ihandle* ih, const char* value)
           [text_field setBackgroundColor:nil];
         }
         return 1;
-
-        break;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
@@ -1597,8 +1693,6 @@ static int cocoaTextSetBgColorAttrib(Ihandle* ih, const char* value)
         }
 
         return 1;
-
-        break;
       }
     default:
       {
@@ -1952,8 +2046,6 @@ void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
           }
         }
         return;
-
-        break;
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:
       {
@@ -1992,8 +2084,6 @@ void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
           }
         }
         return;
-
-        break;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
@@ -2032,8 +2122,6 @@ void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
           }
         }
         return;
-
-        break;
       }
     default:
       {
@@ -2069,8 +2157,6 @@ void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
           }
         }
         return;
-
-        break;
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:
       {
@@ -2110,8 +2196,6 @@ void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
           }
         }
         return;
-
-        break;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
@@ -2151,8 +2235,6 @@ void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
           }
         }
         return;
-
-        break;
       }
     default:
       {
@@ -3610,7 +3692,6 @@ static int cocoaTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
         [undo_manager endUndoGrouping];
 
         return 0;
-        break;
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:
       {
@@ -3626,7 +3707,6 @@ static int cocoaTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
         NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
         [(NSTextView*)field_editor insertText:ns_string replacementRange:selected_range];
         return 0;
-        break;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
@@ -3642,8 +3722,6 @@ static int cocoaTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
         NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
         [(NSTextView*)field_editor insertText:ns_string replacementRange:selected_range];
         return 0;
-
-        break;
       }
     default:
       {
@@ -3684,7 +3762,6 @@ static int cocoaTextSetSelectionAttrib(Ihandle* ih, const char* value)
     default:
       {
         return 0;
-        break;
       }
   }
 
@@ -3744,7 +3821,6 @@ static int cocoaTextSetSelectionAttrib(Ihandle* ih, const char* value)
     default:
         {
           return 0;
-          break;
         }
     }
 
@@ -3879,7 +3955,6 @@ static int cocoaTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     default:
       {
         return 0;
-        break;
       }
   }
 
@@ -3998,7 +4073,6 @@ static int cocoaTextSetCaretAttrib(Ihandle* ih, const char* value)
     default:
       {
         return 0;
-        break;
       }
   }
 
@@ -4262,7 +4336,6 @@ static int cocoaTextSetCaretPosAttrib(Ihandle* ih, const char* value)
     default:
       {
         return 0;
-        break;
       }
   }
 
@@ -4289,14 +4362,13 @@ static int cocoaTextSetCaretPosAttrib(Ihandle* ih, const char* value)
         break;
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:
-  case IUPCOCOATEXTSUBTYPE_STEPPER:
+    case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
         break;
       }
-  default:
+    default:
       {
         return 0;
-        break;
       }
   }
   return 0;
@@ -4759,7 +4831,6 @@ static int cocoaTextSetInsertAttrib(Ihandle* ih, const char* value)
         [undo_manager endUndoGrouping];
 
         return 0;
-        break;
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:
       {
@@ -4779,7 +4850,6 @@ static int cocoaTextSetInsertAttrib(Ihandle* ih, const char* value)
         NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
         [(NSTextView*)field_editor insertText:ns_string replacementRange:selected_range];
         return 0;
-        break;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
@@ -5354,10 +5424,6 @@ static int cocoaTextMapMethod(Ihandle* ih)
     [text_spinner_container setStepperObject:stepper_object];
     [text_spinner_container setStepperObjectController:stepper_object_controller];
 
-    {
-      /* Formatter will be set later */
-    }
-
     objc_setAssociatedObject(stack_view, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY, (id)text_spinner_container, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
     root_view = [stack_view retain];
@@ -5537,6 +5603,8 @@ static void cocoaTextComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *
 
   if (iupAttribGetBoolean(ih, "BORDER"))
     iupdrvTextAddBorders(ih, &natural_w, &natural_h);
+  else
+    iupdrvTextAddExtraPadding(ih, &natural_w, &natural_h);
 
   if (iupAttribGetBoolean(ih, "SPIN"))
     iupdrvTextAddSpin(ih, &natural_w, natural_h);

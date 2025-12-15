@@ -123,32 +123,47 @@ static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
   if (!parent_view) return;
 
   NSRect parent_bounds = [parent_view bounds];
+  NSSize intrinsic_size = [date_picker intrinsicContentSize];
   NSRect child_rect;
 
-  if ([parent_view isFlipped])
-  {
-    child_rect = NSMakeRect(ih->x, ih->y, ih->currentwidth, ih->currentheight);
-  }
-  else
-  {
-    child_rect = NSMakeRect(ih->x, parent_bounds.size.height - ih->y - ih->currentheight, ih->currentwidth, ih->currentheight);
-  }
+  /* Check if parent is a popover - if so, center the calendar */
+  Ihandle* ih_parent = ih->parent;
+  int is_in_popover = (ih_parent && ih_parent->iclass &&
+                       ih_parent->iclass->name &&
+                       strcmp(ih_parent->iclass->name, "popover") == 0);
 
-  NSSize intrinsic_size = [date_picker intrinsicContentSize];
-
-  [date_picker setFrame:child_rect];
-
-  /* If frame is larger than intrinsic size, scale content by setting bounds to intrinsic size
-     If frame matches or is smaller than intrinsic size, reset bounds to match frame (no scaling) */
-  if (child_rect.size.width > intrinsic_size.width || child_rect.size.height > intrinsic_size.height)
+  if (is_in_popover)
   {
-    /* Scale content: bounds stays at intrinsic size, frame is larger */
+    /* Center the date picker within the popover */
+    CGFloat x = (parent_bounds.size.width - intrinsic_size.width) / 2;
+    CGFloat y = (parent_bounds.size.height - intrinsic_size.height) / 2;
+    child_rect = NSMakeRect(x, y, intrinsic_size.width, intrinsic_size.height);
+    [date_picker setFrame:child_rect];
     [date_picker setBoundsSize:intrinsic_size];
   }
   else
   {
-    /* No scaling: bounds matches frame */
-    [date_picker setBoundsSize:child_rect.size];
+    /* Normal layout, use IUP computed position and size */
+    if ([parent_view isFlipped])
+    {
+      child_rect = NSMakeRect(ih->x, ih->y, ih->currentwidth, ih->currentheight);
+    }
+    else
+    {
+      child_rect = NSMakeRect(ih->x, parent_bounds.size.height - ih->y - ih->currentheight, ih->currentwidth, ih->currentheight);
+    }
+
+    [date_picker setFrame:child_rect];
+
+    /* If frame is larger than intrinsic size, scale content */
+    if (child_rect.size.width > intrinsic_size.width || child_rect.size.height > intrinsic_size.height)
+    {
+      [date_picker setBoundsSize:intrinsic_size];
+    }
+    else
+    {
+      [date_picker setBoundsSize:child_rect.size];
+    }
   }
 }
 
@@ -159,21 +174,31 @@ static void cocoaCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, i
   if (ih->handle)
   {
     NSDatePicker* date_picker = (NSDatePicker*)ih->handle;
-    /* Always return intrinsic content size, not the scaled frame size */
     NSSize intrinsic_size = [date_picker intrinsicContentSize];
     *w = iupROUND(intrinsic_size.width);
     *h = iupROUND(intrinsic_size.height);
   }
   else
   {
-    iupdrvFontGetMultiLineStringSize(ih, "W8W", w, h);
+    static int calendar_w = -1;
+    static int calendar_h = -1;
 
-    *h += 2;
-    (*w) *= 7;
-    (*h) *= 8;
-    *h += 2;
+    if (calendar_w < 0)
+    {
+      NSDatePicker* temp_picker = [[NSDatePicker alloc] initWithFrame:NSZeroRect];
+      [temp_picker setDatePickerStyle:NSDatePickerStyleClockAndCalendar];
+      [temp_picker setDatePickerElements:NSDatePickerElementFlagYearMonthDay];
+      [temp_picker setBezeled:YES];
 
-    iupdrvTextAddBorders(ih, w, h);
+      NSSize intrinsic_size = [temp_picker intrinsicContentSize];
+      calendar_w = iupROUND(intrinsic_size.width);
+      calendar_h = iupROUND(intrinsic_size.height);
+
+      [temp_picker release];
+    }
+
+    *w = calendar_w;
+    *h = calendar_h;
   }
 }
 

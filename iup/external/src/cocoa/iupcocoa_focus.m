@@ -88,13 +88,16 @@ void iupcocoaFocusIn(Ihandle* ih)
   }
 
   Ihandle* dialog = IupGetDialog(ih);
+  if (!dialog)
+    return;
+
   if (ih != dialog)
   {
     iupAttribSet(dialog, "_IUPCOCOA_LASTFOCUS", (char*)ih);
   }
   else
   {
-    Ihandle* last_focus = (Ihandle*)iupAttribGet(ih, "_IUPCOCOA_LASTFOCUS");
+    Ihandle* last_focus = (Ihandle*)iupAttribGet(dialog, "_IUPCOCOA_LASTFOCUS");
 
     if (iupObjectCheck(last_focus))
     {
