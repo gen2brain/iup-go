@@ -1,4 +1,4 @@
-//go:build !windows || (windows && gtk)
+//go:build (!windows && !qt) || ((windows || darwin) && gtk) || motif
 
 package iup
 
