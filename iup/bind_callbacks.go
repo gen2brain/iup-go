@@ -559,6 +559,36 @@ func setListValueFunc(ih Ihandle, f ListValueFunc) {
 
 //--------------------
 
+// ListImageFunc for List IMAGE_CB callback in virtual mode.
+// Called to get the image name for an item when VIRTUALMODE=YES and SHOWIMAGE=YES.
+// Returns the image name to display for the item, or empty string for no image.
+type ListImageFunc func(ih Ihandle, pos int) string
+
+//export goIupListImageCB
+func goIupListImageCB(ih unsafe.Pointer, pos C.int) *C.char {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("LIST_IMAGE_CB_" + uuid)
+	if !ok {
+		return nil
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ListImageFunc)
+	result := f((Ihandle)(ih), int(pos))
+	if result == "" {
+		return nil
+	}
+	return C.CString(result)
+}
+
+// setListImageFunc for List IMAGE_CB callback.
+func setListImageFunc(ih Ihandle, f ListImageFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("LIST_IMAGE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetListImageFunc(ih.ptr())
+}
+
+//--------------------
+
 // FlatListActionFunc for FlatList FLAT_ACTION callback.
 // Action generated when the state of an item in the list is interactively changed.
 type FlatListActionFunc func(ih Ihandle, text string, item, state int) int

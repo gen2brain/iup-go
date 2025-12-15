@@ -117,39 +117,53 @@ static void winListSetItemData(Ihandle* ih, int pos, const char* str, HBITMAP hB
 
 static void winListUpdateShowImageItemHeight(Ihandle* ih, winListItemData* itemdata, int pos)
 {
-  int txt_h, height;
+  int txt_h, height, available_height;
   iupdrvFontGetCharSize(ih, NULL, &txt_h);
 
+  available_height = txt_h + 2 * ih->data->spacing;
   height = txt_h;
 
   if (itemdata->hBitmap)
   {
     int img_w, img_h;
+    int scaled_w, scaled_h;
     iupdrvImageGetInfo(itemdata->hBitmap, &img_w, &img_h, NULL);
 
-    if (img_h > txt_h)
+    /* Calculate scaled dimensions (same logic as drawing) */
+    if (ih->data->fit_image && img_h > available_height)
     {
-      height = img_h;
+      scaled_w = (img_w * available_height) / img_h;
+      scaled_h = available_height;
+    }
+    else
+    {
+      scaled_w = img_w;
+      scaled_h = img_h;
+    }
 
-      if (ih->data->is_dropdown && 
-          !ih->data->has_editbox && 
-          img_h >= ih->data->maximg_h)
+    if (scaled_h > txt_h)
+    {
+      height = scaled_h;
+
+      if (ih->data->is_dropdown &&
+          !ih->data->has_editbox &&
+          scaled_h >= ih->data->maximg_h)
       {
         /* set also for the selection box of the dropdown */
-        SendMessage(ih->handle, WIN_SETITEMHEIGHT(ih), (WPARAM)-1, img_h);  
+        SendMessage(ih->handle, WIN_SETITEMHEIGHT(ih), (WPARAM)-1, scaled_h);
       }
     }
 
-    if (img_w > ih->data->maximg_w)
-      ih->data->maximg_w = img_w;
-    if (img_h > ih->data->maximg_h)
-      ih->data->maximg_h = img_h;
+    if (scaled_w > ih->data->maximg_w)
+      ih->data->maximg_w = scaled_w;
+    if (scaled_h > ih->data->maximg_h)
+      ih->data->maximg_h = scaled_h;
   }
 
   if (!ih->data->is_dropdown)
     height += 2*ih->data->spacing;
 
-  /* According to this documentation, the maximum height is 255 pixels. 
+  /* According to this documentation, the maximum height is 255 pixels.
      http://msdn.microsoft.com/en-us/library/ms997541.aspx */
   if (height > 255)
     height = 255;
@@ -1746,6 +1760,117 @@ static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int *result
       break;
     }
 
+    case NM_CUSTOMDRAW:
+    {
+      if (ih->data->show_image)
+      {
+        NMLVCUSTOMDRAW* pnmcd = (NMLVCUSTOMDRAW*)msg_info;
+
+        switch (pnmcd->nmcd.dwDrawStage)
+        {
+          case CDDS_PREPAINT:
+            *result = CDRF_NOTIFYITEMDRAW;
+            return 1;
+
+          case CDDS_ITEMPREPAINT:
+          {
+            int pos = (int)pnmcd->nmcd.dwItemSpec + 1;  /* 1-based */
+            char* text = iupListGetItemValueCb(ih, pos);
+            char* image_name = iupListGetItemImageCb(ih, pos);
+            RECT rc;
+            int img_w = ih->data->maximg_w;
+            HFONT hFont = (HFONT)iupwinGetHFontAttrib(ih);
+            HFONT oldFont;
+            COLORREF fgcolor, bgcolor;
+            UINT itemState;
+            int isSelected, hasFocus;
+
+            /* Query actual item state from ListView */
+            itemState = ListView_GetItemState(ih->handle, pnmcd->nmcd.dwItemSpec, LVIS_SELECTED | LVIS_FOCUSED);
+            isSelected = (itemState & LVIS_SELECTED) != 0;
+            hasFocus = (itemState & LVIS_FOCUSED) != 0;
+
+            ListView_GetItemRect(ih->handle, pnmcd->nmcd.dwItemSpec, &rc, LVIR_BOUNDS);
+
+            /* Draw background */
+            if (isSelected)
+              bgcolor = GetSysColor(COLOR_HIGHLIGHT);
+            else if (!iupwinGetColorRef(ih, "BGCOLOR", &bgcolor))
+              bgcolor = GetSysColor(COLOR_WINDOW);
+            SetDCBrushColor(pnmcd->nmcd.hdc, bgcolor);
+            FillRect(pnmcd->nmcd.hdc, &rc, (HBRUSH)GetStockObject(DC_BRUSH));
+
+            /* Get text color */
+            if (iupdrvIsActive(ih))
+            {
+              if (isSelected)
+                fgcolor = GetSysColor(COLOR_HIGHLIGHTTEXT);
+              else if (!iupwinGetColorRef(ih, "FGCOLOR", &fgcolor))
+                fgcolor = GetSysColor(COLOR_WINDOWTEXT);
+            }
+            else
+              fgcolor = GetSysColor(COLOR_GRAYTEXT);
+
+            /* Draw image */
+            if (image_name)
+            {
+              HBITMAP hBitmap = iupImageGetImage(image_name, ih, 0, NULL);
+              if (hBitmap)
+              {
+                int bpp, bmp_w, bmp_h;
+                int x, y;
+                int draw_w, draw_h;
+                int charheight;
+                int available_height;
+
+                iupdrvImageGetInfo(hBitmap, &bmp_w, &bmp_h, &bpp);
+                iupdrvFontGetCharSize(ih, NULL, &charheight);
+                available_height = charheight + 2 * ih->data->spacing;
+
+                /* Scale image down if needed to fit item height */
+                if (ih->data->fit_image && bmp_h > available_height)
+                {
+                  draw_w = (bmp_w * available_height) / bmp_h;
+                  draw_h = available_height;
+                }
+                else
+                {
+                  draw_w = bmp_w;
+                  draw_h = bmp_h;
+                }
+
+                x = rc.left + 2;
+                y = rc.top + (rc.bottom - rc.top - draw_h) / 2;
+
+                iupwinDrawBitmap(pnmcd->nmcd.hdc, hBitmap, x, y, draw_w, draw_h, bmp_w, bmp_h, bpp);
+              }
+            }
+
+            /* Draw text with offset for image */
+            if (text && *text)
+            {
+              RECT textRc = rc;
+              textRc.left += img_w + 6;  /* offset for image + spacing */
+
+              SetBkMode(pnmcd->nmcd.hdc, TRANSPARENT);
+              SetTextColor(pnmcd->nmcd.hdc, fgcolor);
+              oldFont = (HFONT)SelectObject(pnmcd->nmcd.hdc, hFont);
+              DrawText(pnmcd->nmcd.hdc, iupwinStrToSystem(text), -1, &textRc, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+              SelectObject(pnmcd->nmcd.hdc, oldFont);
+            }
+
+            /* Draw focus rectangle */
+            if (hasFocus)
+              iupwinDrawFocusRect(pnmcd->nmcd.hdc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+
+            *result = CDRF_SKIPDEFAULT;
+            return 1;
+          }
+        }
+      }
+      break;
+    }
+
     case LVN_ITEMCHANGED:
     {
       LPNMLISTVIEW pnmv = (LPNMLISTVIEW)msg_info;
@@ -1839,7 +1964,8 @@ static void winListDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
 {
   char* text;
   int txt_w, txt_h;
-  winListItemData* itemdata;
+  winListItemData* itemdata = NULL;
+  HBITMAP hBitmap = NULL;
   HFONT hFont = (HFONT)iupwinGetHFontAttrib(ih);
   iupwinBitmapDC bmpDC;
   HDC hDC;
@@ -1878,10 +2004,25 @@ static void winListDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
     fgcolor = GetSysColor(COLOR_GRAYTEXT);
 
   /* Get the bitmap associated with the item */
-  itemdata = winListGetItemData(ih, drawitem->itemID);
+  if (ih->data->is_virtual)
+  {
+    /* Virtual mode: query IMAGE_CB for the image */
+    char* image_name = iupListGetItemImageCb(ih, drawitem->itemID + 1);  /* 1-based */
+    if (image_name)
+      hBitmap = iupImageGetImage(image_name, ih, 0, NULL);
+  }
+  else
+  {
+    itemdata = winListGetItemData(ih, drawitem->itemID);
+    if (itemdata)
+      hBitmap = itemdata->hBitmap;
+  }
 
   /* Get and draw the string associated with the item */
-  text = winListGetText(ih, drawitem->itemID);
+  if (ih->data->is_virtual)
+    text = iupListGetItemValueCb(ih, drawitem->itemID + 1);  /* 1-based */
+  else
+    text = winListGetText(ih, drawitem->itemID);
   iupdrvFontGetMultiLineStringSize(ih, text, &txt_w, &txt_h);
 
   x = ih->data->maximg_w + 3; /* align text + spacing between text and image */
@@ -1889,15 +2030,31 @@ static void winListDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
   iupwinDrawText(hDC, text, x, y, txt_w, txt_h, hFont, fgcolor, 0);
 
   /* Draw the bitmap associated with the item */
-  if (itemdata->hBitmap)
+  if (hBitmap)
   {
     int bpp, img_w, img_h;
+    int draw_w, draw_h;
+    int charheight, available_height;
 
-    iupdrvImageGetInfo(itemdata->hBitmap, &img_w, &img_h, &bpp);
+    iupdrvImageGetInfo(hBitmap, &img_w, &img_h, &bpp);
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    available_height = charheight + 2 * ih->data->spacing;
+
+    /* Scale image down if needed to fit item height */
+    if (ih->data->fit_image && img_h > available_height)
+    {
+      draw_w = (img_w * available_height) / img_h;
+      draw_h = available_height;
+    }
+    else
+    {
+      draw_w = img_w;
+      draw_h = img_h;
+    }
 
     x = 0;
-    y = (height - img_h)/2;  /* vertically centered */
-    iupwinDrawBitmap(hDC, itemdata->hBitmap, x, y, img_w, img_h, img_w, img_h, bpp);
+    y = (height - draw_h)/2;  /* vertically centered */
+    iupwinDrawBitmap(hDC, hBitmap, x, y, draw_w, draw_h, img_w, img_h, bpp);
   }
 
   /* If the item has the focus, draw the focus rectangle */
