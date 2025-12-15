@@ -107,8 +107,18 @@ static void gtkCalendarComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
 static void gtkCalendarDaySelected(GtkCalendar *calendar, Ihandle* ih)
 {
-  iupBaseCallValueChangedCb(ih);
-  (void)calendar;
+  guint year, month, day;
+  int old_day;
+
+  gtk_calendar_get_date(calendar, &year, &month, &day);
+
+  old_day = iupAttribGetInt(ih, "_IUP_OLD_DAY");
+
+  if ((int)day != old_day)
+  {
+    iupAttribSetInt(ih, "_IUP_OLD_DAY", (int)day);
+    iupBaseCallValueChangedCb(ih);
+  }
 }
 
 static int gtkCalendarMapMethod(Ihandle* ih)
