@@ -297,6 +297,14 @@ func Thread() Ihandle {
 	return h
 }
 
+// Tray creates a system tray icon element in IUP, which is not associated with any interface element.
+// It allows placing an icon in the system notification area (system tray).
+func Tray() Ihandle {
+	h := mkih(C.IupTray())
+	h.SetAttribute("UUID", uuid.NewString())
+	return h
+}
+
 // User creates a user element in IUP, which is not associated to any interface element.
 // It is used to map an external element to a IUP element.
 // Its use is usually for additional elements, but you can use it to create an Ihandle to store private attributes.

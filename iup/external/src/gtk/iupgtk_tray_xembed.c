@@ -1,5 +1,5 @@
 /** \file
- * \brief GTK System Tray (XEmbed)
+ * \brief GTK System Tray Driver (XEmbed/GtkStatusIcon)
  *
  * See Copyright Notice in "iup.h"
  */
@@ -16,10 +16,11 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
+#include "iup_class.h"
+#include "iup_tray.h"
 
 #include "iupgtk_drv.h"
 
-/* gtk_status_icon - deprecated in 3.14, but still available in 3.22 */
 #if GTK_CHECK_VERSION(2, 10, 0)
 
 static int gtkTrayDoubleClick(int button)
@@ -106,14 +107,18 @@ static GtkStatusIcon* gtkGetStatusIcon(Ihandle *ih)
   return status_icon;
 }
 
-int iupgtkSetTrayAttrib(Ihandle *ih, const char *value)
+/******************************************************************************/
+/* Driver Interface Implementation                                            */
+/******************************************************************************/
+
+int iupdrvTraySetVisible(Ihandle *ih, int visible)
 {
   GtkStatusIcon* status_icon = gtkGetStatusIcon(ih);
-  gtk_status_icon_set_visible(status_icon, iupStrBoolean(value));
+  gtk_status_icon_set_visible(status_icon, visible);
   return 1;
 }
 
-int iupgtkSetTrayTipAttrib(Ihandle *ih, const char *value)
+int iupdrvTraySetTip(Ihandle *ih, const char *value)
 {
   GtkStatusIcon* status_icon = gtkGetStatusIcon(ih);
 
@@ -135,7 +140,7 @@ int iupgtkSetTrayTipAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-int iupgtkSetTrayImageAttrib(Ihandle *ih, const char *value)
+int iupdrvTraySetImage(Ihandle *ih, const char *value)
 {
   GtkStatusIcon* status_icon = gtkGetStatusIcon(ih);
   GdkPixbuf* icon = (GdkPixbuf*)iupImageGetIcon(value);
@@ -143,17 +148,25 @@ int iupgtkSetTrayImageAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
-int iupgtkSetTrayMenuAttrib(Ihandle *ih, const char *value)
+int iupdrvTraySetMenu(Ihandle *ih, Ihandle *menu)
 {
-  /* XEmbed tray doesn't support automatic menu popup via TRAYMENU.
-   * Applications should use TRAYCLICK_CB callback to show menu manually.
-   */
+  /* XEmbed tray protocol doesn't support automatic menu popup via MENU attribute.
+   * Applications should use TRAYCLICK_CB callback to show menu manually via IupPopup(). */
   (void)ih;
-  (void)value;
+  (void)menu;
   return 0;
 }
 
-int iupgtkTrayCleanup(Ihandle *ih)
+static gboolean gtkXEmbedDeferredExitLoop(gpointer data)
+{
+  (void)data;
+  if (gtk_main_level() > 1)
+    return G_SOURCE_CONTINUE;
+  IupExitLoop();
+  return G_SOURCE_REMOVE;
+}
+
+void iupdrvTrayDestroy(Ihandle *ih)
 {
   GtkStatusIcon* status_icon = (GtkStatusIcon*)iupAttribGet(ih, "_IUPGTK_STATUSICON");
 
@@ -161,9 +174,25 @@ int iupgtkTrayCleanup(Ihandle *ih)
   {
     g_object_unref(status_icon);
     iupAttribSet(ih, "_IUPGTK_STATUSICON", NULL);
-    return 1; /* Tray was cleaned up */
+
+    g_idle_add(gtkXEmbedDeferredExitLoop, NULL);
   }
-  return 0; /* No tray to clean up */
+}
+
+int iupdrvTrayIsAvailable(void)
+{
+  return 1;
+}
+
+void iupdrvTrayInitClass(Iclass* ic)
+{
+  iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "MENU", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPBALLOON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPBALLOONTITLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPBALLOONTITLEICON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPDELAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }
 
 #endif

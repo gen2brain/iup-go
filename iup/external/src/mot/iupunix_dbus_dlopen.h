@@ -79,7 +79,9 @@ struct DBusObjectPathVTable {
   void (*dbus_internal_pad4)(void*);
 };
 
+#define DBUS_NAME_FLAG_ALLOW_REPLACEMENT 0x1
 #define DBUS_NAME_FLAG_REPLACE_EXISTING 0x2
+#define DBUS_NAME_FLAG_DO_NOT_QUEUE 0x4
 #define DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER 1
 
 #define DBUS_TYPE_INVALID       ((int) '\0')

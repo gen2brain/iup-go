@@ -78,6 +78,23 @@ static char* cocoaItemGetActiveAttrib(Ihandle* ih);
 
 - (void) menuWillOpen:(NSMenu*)menu
 {
+  static const void* TRAYMENU_TRAY_IHANDLE_KEY = @"TRAYMENU_TRAY_IHANDLE_KEY";
+  Ihandle* tray_ih = (Ihandle*)objc_getAssociatedObject(menu, TRAYMENU_TRAY_IHANDLE_KEY);
+  if (tray_ih && iupObjectCheck(tray_ih))
+  {
+    IFniii tray_cb = (IFniii)IupGetCallback(tray_ih, "TRAYCLICK_CB");
+    if (tray_cb)
+    {
+      int button = iupcocoaTrayGetLastButton();
+      int dclick = iupcocoaTrayGetLastDclick();
+      int ret = tray_cb(tray_ih, button, 1, dclick);
+      if (ret == IUP_CLOSE)
+      {
+        IupExitLoop();
+      }
+    }
+  }
+
   if (!_ih) return;
 
   Icallback cb = IupGetCallback(_ih, "OPEN_CB");

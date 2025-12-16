@@ -1090,7 +1090,6 @@ extern "C" void iupdrvDialogInitClass(Iclass* ic)
   ic->SetChildrenPosition = qtDialogSetChildrenPositionMethod;
 
   /* Callbacks */
-  iupClassRegisterCallback(ic, "TRAYCLICK_CB", "iii");
   iupClassRegisterCallback(ic, "MOVE_CB", "ii");
   iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
@@ -1125,18 +1124,6 @@ extern "C" void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, qtDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXIMIZED", qtDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINIMIZED", qtDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-
-  /* System Tray Support */
-  iupClassRegisterAttribute(ic, "TRAY", NULL, iupqtSetTrayAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, iupqtSetTrayImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIP", NULL, iupqtSetTrayTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYMENU", NULL, iupqtSetTrayMenuAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
-
-  /* Tray Balloon Notification Support */
-  iupClassRegisterAttribute(ic, "TRAYBALLOON", NULL, iupqtSetTrayBalloonAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTITLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYBALLOONINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYBALLOONTIMEOUT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Native Window Handle (platform-specific: XWINDOW, WL_SURFACE, HWND, NSVIEW) */
   iupClassRegisterAttribute(ic, iupqtGetNativeWindowHandleName(), iupqtGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
@@ -1215,9 +1202,6 @@ extern "C" void qtDialogUnMapMethod(Ihandle* ih)
       IupDestroy(ih->data->menu);
       ih->data->menu = NULL;
     }
-
-    /* Cleanup tray */
-    iupqtTrayCleanup(ih);
 
     /* Reset first show flag so dialog can be remapped */
     iupAttribSet(ih, "_IUPQT_FIRST_SHOW_DONE", NULL);

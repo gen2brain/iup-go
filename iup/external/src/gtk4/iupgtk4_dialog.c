@@ -623,9 +623,6 @@ static void gtk4DialogUnMapMethod(Ihandle* ih)
     ih->data->menu = NULL;
   }
 
-  if (iupgtk4TrayCleanup(ih))
-    g_idle_add((GSourceFunc)IupExitLoop, NULL);
-
   gulong handler_id;
   GtkSettings* settings = gtk_settings_get_default();
 
@@ -953,7 +950,6 @@ void iupdrvDialogInitClass(Iclass* ic)
   ic->GetInnerNativeContainerHandle = gtk4DialogGetInnerNativeContainerHandleMethod;
   ic->SetChildrenPosition = gtk4DialogSetChildrenPositionMethod;
 
-  iupClassRegisterCallback(ic, "TRAYCLICK_CB", "iii");
   iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
   iupClassRegisterAttribute(ic, iupgtk4GetNativeWindowHandleName(), iupgtk4GetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT | IUPAF_NO_STRING);
@@ -979,11 +975,6 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "OPACITY", NULL, gtk4DialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAY", NULL, iupgtk4SetTrayAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, iupgtk4SetTrayImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIP", NULL, iupgtk4SetTrayTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIPMARKUP", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYMENU", NULL, iupgtk4SetTrayMenuAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, gtk4DialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 

@@ -81,6 +81,7 @@ Iclass* iupTableNewClass(void);
 Iclass* iupPopoverNewClass(void);
 
 Iclass* iupTimerNewClass(void);
+Iclass* iupTrayNewClass(void);
 Iclass* iupImageNewClass(void);
 Iclass* iupImageRGBNewClass(void);
 Iclass* iupImageRGBANewClass(void);
