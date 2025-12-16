@@ -1054,8 +1054,6 @@ static void motDialogUnMapMethod(Ihandle* ih)
 {
   Widget dialog_manager;
 
-  iupmotTrayCleanup(ih);
-
   if (ih->data->menu)
   {
     ih->data->menu->handle = NULL; /* the dialog will destroy the native menu */
@@ -1144,8 +1142,6 @@ void iupdrvDialogInitClass(Iclass* ic)
     iupmot_wm_deletewindow = XmInternAtom(iupmot_display, "WM_DELETE_WINDOW", False);
   }
 
-  iupClassRegisterCallback(ic, "TRAYCLICK_CB", "iii");
-
   /* Driver Dependent Attribute functions */
 
   /* Visual */
@@ -1165,11 +1161,6 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, motDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, motDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
-
-  iupClassRegisterAttribute(ic, "TRAY", NULL, iupmotSetTrayAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, iupmotSetTrayImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIP", NULL, iupmotSetTrayTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYMENU", NULL, iupmotSetTrayMenuAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
 
   /* IupDialog X Only */
   iupClassRegisterAttribute(ic, "XWINDOW", iupmotGetXWindowAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_NO_STRING);

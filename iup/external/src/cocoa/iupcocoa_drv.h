@@ -50,6 +50,7 @@ NSView* iupcocoaCommonBaseLayoutGetParentView(Ihandle* ih);
 NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih);
 
 void iupcocoaCommonLoopCallExitCb(void);
+int iupcocoaMainLoopShouldQuit(void);
 
 /* Coordinate conversion helpers: Cocoa uses Cartesian (y-up), IUP uses (y-down). */
 int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);
@@ -136,6 +137,10 @@ IUP_DRV_API void iupcocoaFocusOut(Ihandle* ih);
 
 /* System information */
 IUP_DRV_API int iupcocoaIsSystemDarkMode(void);
+
+/* Tray support */
+int iupcocoaTrayGetLastButton(void);
+int iupcocoaTrayGetLastDclick(void);
 
 #ifdef __cplusplus
 }

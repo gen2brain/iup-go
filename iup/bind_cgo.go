@@ -13,7 +13,7 @@ package iup
 #cgo linux LDFLAGS: -ldl
 #cgo !windows,!darwin LDFLAGS: -lm
 
-#cgo !windows,!darwin,!motif,!qt CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
+#cgo !windows,!darwin,!qt CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DIUPDBUS_USE_DLOPEN
 #cgo gtk,gtk2,gtk4 CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 
 #cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4 CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
@@ -41,7 +41,7 @@ package iup
 #cgo motif,gl LDFLAGS: -lGL
 #cgo motif,xft CFLAGS: -DIUP_USE_XFT
 #cgo motif,xft,!nopkgconfig pkg-config: xft freetype2
-#cgo motif CFLAGS: -Iexternal/src/mot -DIUPDBUS_USE_DLOPEN -DIUP_USE_ICONV
+#cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_ICONV
 
 #cgo windows CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
 #cgo windows,!gtk,!qt CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
@@ -53,7 +53,7 @@ package iup
 #cgo windows,gtk,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
 #cgo darwin,!gtk,!qt CFLAGS: -Iexternal/src/cocoa -x objective-c
-#cgo darwin,!gtk,!qt LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework Cocoa
+#cgo darwin,!gtk,!qt LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit
 #cgo darwin,gl LDFLAGS: -framework OpenGL
 #cgo darwin,!gtk,!qt,web LDFLAGS: -framework WebKit
 

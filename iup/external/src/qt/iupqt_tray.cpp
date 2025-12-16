@@ -1,5 +1,5 @@
 /** \file
- * \brief System Tray Support - Qt Implementation
+ * \brief Qt System Tray Driver
  *
  * See Copyright Notice in "iup.h"
  */
@@ -19,23 +19,175 @@ extern "C" {
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_drv.h"
+#include "iup_class.h"
+#include "iup_tray.h"
 }
 
 #include "iupqt_drv.h"
 
 
-/* System tray icon data stored per dialog */
+/* System tray icon data stored per tray control */
 struct IupQtTrayData
 {
   QSystemTrayIcon* tray_icon;
-  QMenu* context_menu;
-  Ihandle* menu_ih;
-  Ihandle* dialog_ih;  /* Store dialog handle for callbacks */
+  Ihandle* ih;
+  QMetaObject::Connection menu_connection;
 };
 
-/****************************************************************************
- * Get or Create Tray Data Structure
- ****************************************************************************/
+static void qtTrayConnectSignals(IupQtTrayData* tray_data, Ihandle* ih)
+{
+  QObject::connect(tray_data->tray_icon, &QSystemTrayIcon::activated,
+    [ih](QSystemTrayIcon::ActivationReason reason) {
+      IFniii cb = (IFniii)IupGetCallback(ih, "TRAYCLICK_CB");
+      if (cb)
+      {
+        int button = 0;
+        int pressed = 1;
+        int dclick = 0;
+
+        switch (reason)
+        {
+          case QSystemTrayIcon::Trigger:      /* Left click */
+            button = 1;
+            break;
+          case QSystemTrayIcon::DoubleClick:  /* Double click */
+            button = 1;
+            dclick = 1;
+            break;
+          case QSystemTrayIcon::Context:      /* Right click */
+            button = 3;
+            break;
+          case QSystemTrayIcon::MiddleClick:  /* Middle click */
+            button = 2;
+            break;
+          default:
+            return;
+        }
+
+        if (cb(ih, button, pressed, dclick) == IUP_CLOSE)
+          IupExitLoop();
+      }
+    });
+}
+
+static void qtTrayApplyImage(IupQtTrayData* tray_data, Ihandle* ih)
+{
+  const char* value = iupAttribGet(ih, "_IUPQT_TRAY_IMAGE");
+  if (!value)
+    return;
+
+  char* name = iupAttribGet(ih, value);
+  if (!name)
+    name = (char*)value;
+
+  void* image_handle = IupGetHandle(name);
+  if (image_handle)
+  {
+    QPixmap* pixmap = (QPixmap*)iupImageGetImage(name, ih, 0, NULL);
+    if (pixmap)
+    {
+      QIcon icon(*pixmap);
+      tray_data->tray_icon->setIcon(icon);
+      return;
+    }
+  }
+
+  QPixmap pixmap(QString::fromUtf8(value));
+  if (!pixmap.isNull())
+  {
+    QIcon icon(pixmap);
+    tray_data->tray_icon->setIcon(icon);
+  }
+}
+
+static void qtTrayApplyTip(IupQtTrayData* tray_data, Ihandle* ih)
+{
+  const char* value = iupAttribGet(ih, "_IUPQT_TRAY_TIP");
+  if (value)
+    tray_data->tray_icon->setToolTip(QString::fromUtf8(value));
+}
+
+#if defined(__unix__) || defined(__linux__)
+static void qtTrayResetPlatformMenu(QMenu* menu)
+{
+  if (!menu)
+    return;
+
+  /* Reset the platform menu so Qt creates a fresh one with new IDs.
+   * This is needed on Unix/Linux where Qt uses DBus for tray menus. */
+  menu->setPlatformMenu(nullptr);
+
+  /* Recursively reset submenus */
+  const auto actions = menu->actions();
+  for (QAction* action : actions)
+  {
+    if (action->menu())
+      qtTrayResetPlatformMenu(action->menu());
+  }
+}
+#endif
+
+static void qtTrayApplyMenu(IupQtTrayData* tray_data, Ihandle* ih)
+{
+  Ihandle* menu = (Ihandle*)iupAttribGet(ih, "_IUPQT_TRAY_MENU");
+  if (!menu || !iupObjectCheck(menu))
+    return;
+
+  if (!menu->handle)
+  {
+    if (IupMap(menu) == IUP_ERROR)
+      return;
+  }
+
+  QMenu* qt_menu = (QMenu*)menu->handle;
+
+#if defined(__unix__) || defined(__linux__)
+  /* Reset platform menu to force Qt to create fresh DBus menu with new IDs */
+  qtTrayResetPlatformMenu(qt_menu);
+#endif
+
+  tray_data->tray_icon->setContextMenu(qt_menu);
+
+  tray_data->menu_connection = QObject::connect(qt_menu, &QMenu::aboutToShow,
+    [ih]() {
+      IFniii cb = (IFniii)IupGetCallback(ih, "TRAYCLICK_CB");
+      if (cb)
+      {
+        int ret = cb(ih, 3, 1, 0);
+        if (ret == IUP_CLOSE)
+          IupExitLoop();
+      }
+    });
+}
+
+static void qtTrayDestroyIcon(IupQtTrayData* tray_data)
+{
+  if (!tray_data)
+    return;
+
+  if (tray_data->menu_connection)
+  {
+    QObject::disconnect(tray_data->menu_connection);
+    tray_data->menu_connection = QMetaObject::Connection();
+  }
+
+  if (tray_data->tray_icon)
+  {
+    tray_data->tray_icon->setContextMenu(nullptr);
+    tray_data->tray_icon->hide();
+    delete tray_data->tray_icon;
+    tray_data->tray_icon = nullptr;
+  }
+}
+
+static void qtTrayCreateIcon(IupQtTrayData* tray_data, Ihandle* ih)
+{
+  tray_data->tray_icon = new QSystemTrayIcon();
+  qtTrayConnectSignals(tray_data, ih);
+  qtTrayApplyImage(tray_data, ih);
+  qtTrayApplyTip(tray_data, ih);
+  qtTrayApplyMenu(tray_data, ih);
+}
 
 static IupQtTrayData* qtTrayGetData(Ihandle* ih, int create)
 {
@@ -44,128 +196,102 @@ static IupQtTrayData* qtTrayGetData(Ihandle* ih, int create)
   if (!tray_data && create)
   {
     tray_data = new IupQtTrayData();
-    tray_data->tray_icon = new QSystemTrayIcon();
-    tray_data->context_menu = nullptr;
-    tray_data->menu_ih = nullptr;
-    tray_data->dialog_ih = ih;
-
-    /* Connect activation signal (click, double-click, etc.) */
-    QObject::connect(tray_data->tray_icon, &QSystemTrayIcon::activated,
-      [ih](QSystemTrayIcon::ActivationReason reason) {
-        IFniii cb = (IFniii)IupGetCallback(ih, "TRAYCLICK_CB");
-        if (cb)
-        {
-          int button = 0;
-          int pressed = 1;  /* Single click = pressed */
-          int dclick = 0;
-
-          switch (reason)
-          {
-            case QSystemTrayIcon::Trigger:      /* Left click */
-              button = 1;
-              break;
-            case QSystemTrayIcon::DoubleClick:  /* Double click */
-              button = 1;
-              dclick = 1;
-              break;
-            case QSystemTrayIcon::Context:      /* Right click */
-              button = 3;
-              break;
-            case QSystemTrayIcon::MiddleClick:  /* Middle click */
-              button = 2;
-              break;
-            default:
-              return;
-          }
-
-          cb(ih, button, pressed, dclick);
-        }
-      });
-
+    tray_data->tray_icon = nullptr;
+    tray_data->ih = ih;
+    tray_data->menu_connection = QMetaObject::Connection();
     iupAttribSet(ih, "_IUPQT_TRAY_DATA", (char*)tray_data);
   }
 
   return tray_data;
 }
 
-/****************************************************************************
- * Set Tray Icon Visibility
- ****************************************************************************/
+/******************************************************************************/
+/* Driver Interface Implementation                                            */
+/******************************************************************************/
 
-extern "C" int iupqtSetTrayAttrib(Ihandle* ih, const char* value)
+extern "C" int iupdrvTraySetVisible(Ihandle* ih, int visible)
 {
   IupQtTrayData* tray_data = qtTrayGetData(ih, 1);
-  if (!tray_data || !tray_data->tray_icon)
+  if (!tray_data)
     return 0;
 
-  if (iupStrBoolean(value))
+#if defined(__unix__) || defined(__linux__)
+  /* On Unix/Linux, Qt uses DBus for tray icons. When visibility is toggled,
+   * the DBus connection state gets out of sync with the menu IDs. */
+  if (visible)
   {
-    /* Show tray icon - but only if an icon has been set.
-     * Qt requires an icon to be set before showing the tray icon.
-     * If no icon is set yet, we'll show it when TRAYIMAGE is set.
-     */
-    if (!tray_data->tray_icon->isVisible())
-    {
-      if (!tray_data->tray_icon->icon().isNull())
-      {
-        tray_data->tray_icon->show();
-      }
-      else
-      {
-        /* Store that we want to show the tray, will be shown when icon is set */
-        iupAttribSet(ih, "_IUPQT_TRAY_SHOW_PENDING", "1");
-      }
-    }
+    qtTrayDestroyIcon(tray_data);
+    qtTrayCreateIcon(tray_data, ih);
+
+    if (!tray_data->tray_icon->icon().isNull())
+      tray_data->tray_icon->setVisible(true);
+    else
+      iupAttribSet(ih, "_IUPQT_TRAY_SHOW_PENDING", "1");
   }
   else
   {
-    /* Hide tray icon */
-    if (tray_data->tray_icon->isVisible())
-    {
-      tray_data->tray_icon->hide();
-    }
+    qtTrayDestroyIcon(tray_data);
     iupAttribSet(ih, "_IUPQT_TRAY_SHOW_PENDING", NULL);
   }
+#else
+  /* On Windows and macOS, native APIs handle visibility correctly */
+  if (!tray_data->tray_icon)
+    qtTrayCreateIcon(tray_data, ih);
 
-  return 1;
-}
-
-/****************************************************************************
- * Set Tray Tooltip
- ****************************************************************************/
-
-extern "C" int iupqtSetTrayTipAttrib(Ihandle* ih, const char* value)
-{
-  IupQtTrayData* tray_data = qtTrayGetData(ih, 1);
-  if (!tray_data || !tray_data->tray_icon)
-    return 0;
-
-  if (value)
-    tray_data->tray_icon->setToolTip(QString::fromUtf8(value));
-  else
-    tray_data->tray_icon->setToolTip(QString());
-
-  return 1;
-}
-
-/****************************************************************************
- * Set Tray Icon Image
- ****************************************************************************/
-
-extern "C" int iupqtSetTrayImageAttrib(Ihandle* ih, const char* value)
-{
-  IupQtTrayData* tray_data = qtTrayGetData(ih, 1);
-  if (!tray_data || !tray_data->tray_icon)
-    return 0;
-
-  if (value)
+  if (visible)
   {
-    /* Get image handle */
+    if (!tray_data->tray_icon->icon().isNull())
+      tray_data->tray_icon->setVisible(true);
+    else
+      iupAttribSet(ih, "_IUPQT_TRAY_SHOW_PENDING", "1");
+  }
+  else
+  {
+    tray_data->tray_icon->setVisible(false);
+    iupAttribSet(ih, "_IUPQT_TRAY_SHOW_PENDING", NULL);
+  }
+#endif
+
+  return 1;
+}
+
+extern "C" int iupdrvTraySetTip(Ihandle* ih, const char* value)
+{
+  IupQtTrayData* tray_data = qtTrayGetData(ih, 1);
+  if (!tray_data)
+    return 0;
+
+  /* Store for later use when icon is created/recreated */
+  iupAttribSetStr(ih, "_IUPQT_TRAY_TIP", value);
+
+  /* Apply immediately if icon exists */
+  if (tray_data->tray_icon)
+  {
+    if (value)
+      tray_data->tray_icon->setToolTip(QString::fromUtf8(value));
+    else
+      tray_data->tray_icon->setToolTip(QString());
+  }
+
+  return 1;
+}
+
+extern "C" int iupdrvTraySetImage(Ihandle* ih, const char* value)
+{
+  IupQtTrayData* tray_data = qtTrayGetData(ih, 1);
+  if (!tray_data)
+    return 0;
+
+  /* Store for later use when icon is created/recreated */
+  iupAttribSetStr(ih, "_IUPQT_TRAY_IMAGE", value);
+
+  /* Apply immediately if icon exists */
+  if (tray_data->tray_icon && value)
+  {
     char* name = iupAttribGet(ih, value);
     if (!name)
       name = (char*)value;
 
-    /* Try to get the image */
     void* image_handle = IupGetHandle(name);
     if (image_handle)
     {
@@ -175,7 +301,6 @@ extern "C" int iupqtSetTrayImageAttrib(Ihandle* ih, const char* value)
         QIcon icon(*pixmap);
         tray_data->tray_icon->setIcon(icon);
 
-        /* If TRAY=YES was set before the icon, show the tray now */
         if (iupAttribGet(ih, "_IUPQT_TRAY_SHOW_PENDING"))
         {
           tray_data->tray_icon->show();
@@ -186,14 +311,12 @@ extern "C" int iupqtSetTrayImageAttrib(Ihandle* ih, const char* value)
       }
     }
 
-    /* Try to load from file */
     QPixmap pixmap(QString::fromUtf8(value));
     if (!pixmap.isNull())
     {
       QIcon icon(pixmap);
       tray_data->tray_icon->setIcon(icon);
 
-      /* If TRAY=YES was set before the icon, show the tray now */
       if (iupAttribGet(ih, "_IUPQT_TRAY_SHOW_PENDING"))
       {
         tray_data->tray_icon->show();
@@ -204,129 +327,79 @@ extern "C" int iupqtSetTrayImageAttrib(Ihandle* ih, const char* value)
     }
   }
 
-  return 0;
+  return value ? 0 : 1;
 }
 
-/****************************************************************************
- * Set Tray Context Menu
- ****************************************************************************/
-
-extern "C" int iupqtSetTrayMenuAttrib(Ihandle* ih, const char* value)
+extern "C" int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
   IupQtTrayData* tray_data = qtTrayGetData(ih, 1);
-  if (!tray_data || !tray_data->tray_icon)
+  if (!tray_data)
     return 0;
 
-  if (!value || !value[0])
+  /* Store for later use when icon is created/recreated */
+  iupAttribSet(ih, "_IUPQT_TRAY_MENU", (char*)menu);
+
+  /* Apply immediately if icon exists */
+  if (tray_data->tray_icon)
   {
-    /* Remove menu */
-    tray_data->tray_icon->setContextMenu(nullptr);
-    tray_data->context_menu = nullptr;
-    tray_data->menu_ih = nullptr;
-    return 1;
-  }
-
-  /* IUPAF_IHANDLENAME means value is a string name, convert it to Ihandle */
-  Ihandle* menu_ih = IupGetHandle(value);
-
-  if (menu_ih && iupObjectCheck(menu_ih))
-  {
-    /* On Linux with SNI protocol, we MUST use setContextMenu() for the menu to work.
-     * The activated signal doesn't fire for right-clicks with SNI.
-     * The menu must be mapped before we can use it.
-     */
-    QMenu* menu = (QMenu*)menu_ih->handle;
-
-    if (menu)
+    if (tray_data->menu_connection)
     {
-      tray_data->tray_icon->setContextMenu(menu);
-      tray_data->context_menu = menu;
-      tray_data->menu_ih = menu_ih;
-      return 1;
+      QObject::disconnect(tray_data->menu_connection);
+      tray_data->menu_connection = QMetaObject::Connection();
+    }
+
+    if (menu && iupObjectCheck(menu))
+    {
+      if (!menu->handle)
+      {
+        if (IupMap(menu) == IUP_ERROR)
+          return 0;
+      }
+
+      QMenu* qt_menu = (QMenu*)menu->handle;
+      tray_data->tray_icon->setContextMenu(qt_menu);
+
+      tray_data->menu_connection = QObject::connect(qt_menu, &QMenu::aboutToShow,
+        [ih]() {
+          IFniii cb = (IFniii)IupGetCallback(ih, "TRAYCLICK_CB");
+          if (cb)
+          {
+            int ret = cb(ih, 3, 1, 0);
+            if (ret == IUP_CLOSE)
+              IupExitLoop();
+          }
+        });
     }
     else
     {
-      tray_data->menu_ih = menu_ih;
-      tray_data->context_menu = nullptr;
+      tray_data->tray_icon->setContextMenu(nullptr);
     }
-  }
-  else
-  {
-    /* Remove menu */
-    tray_data->tray_icon->setContextMenu(nullptr);
-    tray_data->context_menu = nullptr;
-    tray_data->menu_ih = nullptr;
   }
 
   return 1;
 }
 
-extern "C" void iupqtTrayCleanup(Ihandle* ih)
+extern "C" void iupdrvTrayDestroy(Ihandle* ih)
 {
   IupQtTrayData* tray_data = (IupQtTrayData*)iupAttribGet(ih, "_IUPQT_TRAY_DATA");
 
   if (tray_data)
   {
-    if (tray_data->tray_icon)
-    {
-      tray_data->tray_icon->hide();
-      delete tray_data->tray_icon;
-      tray_data->tray_icon = nullptr;
-    }
-
-    /* Note: context_menu is owned by the menu Ihandle, don't delete it here */
-    tray_data->context_menu = nullptr;
-    tray_data->menu_ih = nullptr;
-
+    qtTrayDestroyIcon(tray_data);
     delete tray_data;
     iupAttribSet(ih, "_IUPQT_TRAY_DATA", nullptr);
   }
 }
 
-/****************************************************************************
- * Show Tray Balloon Notification (Qt 5.9+)
- ****************************************************************************/
-
-extern "C" int iupqtSetTrayBalloonAttrib(Ihandle* ih, const char* value)
-{
-  IupQtTrayData* tray_data = qtTrayGetData(ih, 0);
-  if (!tray_data || !tray_data->tray_icon || !tray_data->tray_icon->isVisible())
-    return 0;
-
-  if (!value)
-    return 0;
-
-  const char* title = iupAttribGetStr(ih, "TRAYTITLE");
-  const char* info = value;
-
-  const char* balloon_info = iupAttribGetStr(ih, "TRAYBALLOONINFO");
-  QSystemTrayIcon::MessageIcon icon_type = QSystemTrayIcon::Information;
-
-  if (balloon_info)
-  {
-    if (iupStrEqualNoCase(balloon_info, "ERROR"))
-      icon_type = QSystemTrayIcon::Critical;
-    else if (iupStrEqualNoCase(balloon_info, "WARNING"))
-      icon_type = QSystemTrayIcon::Warning;
-    else if (iupStrEqualNoCase(balloon_info, "INFO"))
-      icon_type = QSystemTrayIcon::Information;
-  }
-
-  int timeout = iupAttribGetInt(ih, "TRAYBALLOONTIMEOUT");
-  if (timeout <= 0)
-    timeout = 10000;  /* Default 10 seconds */
-
-  tray_data->tray_icon->showMessage(
-    title ? QString::fromUtf8(title) : QString(),
-    QString::fromUtf8(info),
-    icon_type,
-    timeout
-  );
-
-  return 1;
-}
-
-extern "C" int qtIsSystemTrayAvailable(void)
+extern "C" int iupdrvTrayIsAvailable(void)
 {
   return QSystemTrayIcon::isSystemTrayAvailable() ? 1 : 0;
+}
+
+extern "C" void iupdrvTrayInitClass(Iclass* ic)
+{
+  iupClassRegisterAttribute(ic, "BALLOON", NULL, NULL, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BALLOONTITLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BALLOONINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BALLOONTIMEOUT", NULL, NULL, IUPAF_SAMEASSYSTEM, "10000", IUPAF_NO_INHERIT);
 }

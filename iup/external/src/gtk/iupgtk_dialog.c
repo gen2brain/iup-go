@@ -834,14 +834,6 @@ static void gtkDialogUnMapMethod(Ihandle* ih)
     ih->data->menu = NULL;
   }
 
-#if GTK_CHECK_VERSION(2, 10, 0)
-  /* When dialog with tray is destroyed, exit the main loop.
-   * Use g_idle_add to defer the exit until after any nested loops (like menu popups) have finished.
-   * Only do this if a tray icon was actually cleaned up. */
-  if (iupgtkTrayCleanup(ih))
-    g_idle_add((GSourceFunc)IupExitLoop, NULL);
-#endif
-
   /* Disconnect theme change monitoring */
   {
     gulong handler_id;
@@ -1248,9 +1240,6 @@ void iupdrvDialogInitClass(Iclass* ic)
   ic->GetInnerNativeContainerHandle = gtkDialogGetInnerNativeContainerHandleMethod;
   ic->SetChildrenPosition = gtkDialogSetChildrenPositionMethod;
 
-  /* Callback Windows and GTK Only */
-  iupClassRegisterCallback(ic, "TRAYCLICK_CB", "iii");
-
   /* Callback for theme changes */
   iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
@@ -1284,14 +1273,6 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "OPACITY", NULL, gtkDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, gtkDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, gtkDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-#endif
-/* gtk_status_icon - deprecated in 3.14, but still available in 3.22 */
-#if GTK_CHECK_VERSION(2, 10, 0)
-  iupClassRegisterAttribute(ic, "TRAY", NULL, iupgtkSetTrayAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, iupgtkSetTrayImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIP", NULL, iupgtkSetTrayTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIPMARKUP", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYMENU", NULL, iupgtkSetTrayMenuAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
 #endif
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
 

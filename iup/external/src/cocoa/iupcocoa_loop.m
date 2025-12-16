@@ -70,6 +70,11 @@ int IupMainLoopLevel(void)
   return mac_main_loop_level;
 }
 
+int iupcocoaMainLoopShouldQuit(void)
+{
+  return mac_main_loop_should_quit;
+}
+
 int IupMainLoop(void)
 {
   static int has_done_entry = 0;
@@ -177,7 +182,6 @@ void IupFlush(void)
 
     macLoopProcessMessage(event);
 
-    /* If a callback requested an exit, stop flushing */
     if (mac_main_loop_should_quit)
       break;
   }

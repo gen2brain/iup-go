@@ -48,12 +48,9 @@
 #endif
 
 
-#define IUPWIN_TRAY_NOTIFICATION 102
-
 static int WM_HELPMSG;
 
 static int winDialogSetBgColorAttrib(Ihandle* ih, const char* value);
-static int winDialogSetTrayAttrib(Ihandle *ih, const char *value);
 
 /****************************************************************
                      ITaskbarList3 resources
@@ -808,58 +805,6 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
       else
         break;
     }
-  case WM_USER+IUPWIN_TRAY_NOTIFICATION:
-    {
-      int dclick  = 0;
-      int button  = 0;
-      int pressed = 0;
-
-      switch (lp)
-      {
-      case WM_LBUTTONDOWN:
-        pressed = 1;
-        button  = 1;
-        break;
-      case WM_MBUTTONDOWN:
-        pressed = 1;
-        button  = 2;
-        break;
-      case WM_RBUTTONDOWN:
-        pressed = 1;
-        button  = 3;
-        break;
-      case WM_LBUTTONDBLCLK:
-        dclick = 1;
-        button = 1;
-        break;
-      case WM_MBUTTONDBLCLK:
-        dclick = 1;
-        button = 2;
-        break;
-      case WM_RBUTTONDBLCLK:
-        dclick = 1;
-        button = 3;
-        break;
-      case WM_LBUTTONUP:
-        button = 1;
-        break;
-      case WM_MBUTTONUP:
-        button = 2;
-        break;
-      case WM_RBUTTONUP:
-        button = 3;
-        break;
-      }
-
-      if (button != 0)
-      {
-        IFniii cb = (IFniii)IupGetCallback(ih, "TRAYCLICK_CB");
-        if (cb && cb(ih, button, pressed, dclick) == IUP_CLOSE)
-          IupExitLoop();
-      }
-
-      break;
-    }
   case WM_CLOSE:
     {
       Icallback cb = IupGetCallback(ih, "CLOSE_CB");
@@ -1448,9 +1393,6 @@ static void winDialogUnMapMethod(Ihandle* ih)
   }
 #endif
 
-  if (iupAttribGet(ih, "_IUPDLG_HASTRAY"))
-    winDialogSetTrayAttrib(ih, NULL);
-
   iupwinTipsDestroy(ih);
   iupwinDestroyDragDrop(ih);
 
@@ -1804,128 +1746,6 @@ static char* winDialogGetMinimizedAttrib(Ihandle *ih)
   return iupStrReturnBoolean(IsIconic(ih->handle));
 }
 
-static void winDialogTrayMessage(HWND hWnd, DWORD dwMessage, HICON hIcon, const char* value)
-{
-  NOTIFYICONDATA tnd;
-  memset(&tnd, 0, sizeof(NOTIFYICONDATA));
-
-  tnd.cbSize  = sizeof(NOTIFYICONDATA);
-  tnd.hWnd    = hWnd;
-  tnd.uID     = 1000;
-
-  if (dwMessage == NIM_ADD)
-  {
-    tnd.uFlags = NIF_MESSAGE;
-    tnd.uCallbackMessage = WM_USER+IUPWIN_TRAY_NOTIFICATION;
-  }
-  else if (dwMessage == NIM_MODIFY)
-  {
-    if (hIcon)  
-    {
-      tnd.uFlags |= NIF_ICON;
-      tnd.hIcon = hIcon;
-    }
-
-    if (value) 
-    {
-      tnd.uFlags |= NIF_TIP;
-      iupwinStrCopy(tnd.szTip, value, sizeof(tnd.szTip));
-    }
-  }
-
-  Shell_NotifyIcon(dwMessage, &tnd);
-}
-
-static void winDialogTrayBalloonMessage(Ihandle *ih, const char* value)
-{
-  NOTIFYICONDATA tnd;
-  memset(&tnd, 0, sizeof(NOTIFYICONDATA));
-
-  tnd.cbSize  = sizeof(NOTIFYICONDATA);
-  tnd.hWnd    = ih->handle;
-  tnd.uID     = 1000;
-  tnd.uFlags |= NIF_INFO;
-
-  /* set to NULL to remove the tooltip */
-  if (value) 
-  {
-    char* balloon_title;
-
-    iupwinStrCopy(tnd.szInfo, value, sizeof(tnd.szInfo));
-
-    tnd.uTimeout = IupGetInt(ih, "TRAYTIPBALLOONDELAY"); /* must use IupGetInt to use inheritance */
-
-    balloon_title = IupGetAttribute(ih, "TRAYTIPBALLOONTITLE");
-    if (balloon_title)
-      iupwinStrCopy(tnd.szInfoTitle, balloon_title, sizeof(tnd.szInfoTitle));
-
-    tnd.dwInfoFlags = IupGetInt(ih, "TRAYTIPBALLOONTITLEICON");
-  }
-
-  Shell_NotifyIcon(NIM_MODIFY, &tnd);
-}
-
-static int winDialogCheckTray(Ihandle *ih)
-{
-  if (iupAttribGet(ih, "_IUPDLG_HASTRAY"))
-    return 1;
-
-  if (iupAttribGetBoolean(ih, "TRAY"))
-  {
-    winDialogTrayMessage(ih->handle, NIM_ADD, NULL, NULL);
-    iupAttribSet(ih, "_IUPDLG_HASTRAY", "YES");
-    return 1;
-  }
-
-  return 0;
-}
-
-static int winDialogSetTrayAttrib(Ihandle *ih, const char *value)
-{
-  int tray = iupStrBoolean(value);
-  if (iupAttribGet(ih, "_IUPDLG_HASTRAY"))
-  {
-    if (!tray)
-    {
-      winDialogTrayMessage(ih->handle, NIM_DELETE, NULL, NULL);
-      iupAttribSet(ih, "_IUPDLG_HASTRAY", NULL);
-    }
-  }
-  else
-  {
-    if (tray)
-    {
-      winDialogTrayMessage(ih->handle, NIM_ADD, NULL, NULL);
-      iupAttribSet(ih, "_IUPDLG_HASTRAY", "YES");
-    }
-  }
-  return 1;
-}
-
-static int winDialogSetTrayTipAttrib(Ihandle *ih, const char *value)
-{
-  if (winDialogCheckTray(ih))
-  {
-    int balloon = IupGetInt(ih, "TRAYTIPBALLOON");  /* must use IupGetInt to use inheritance */
-    if (balloon)
-      winDialogTrayBalloonMessage(ih, value);
-    else
-      winDialogTrayMessage(ih->handle, NIM_MODIFY, NULL, value);
-  }
-  return 1;
-}
-
-static int winDialogSetTrayImageAttrib(Ihandle *ih, const char *value)
-{
-  if (winDialogCheckTray(ih))
-  {
-    HICON hIcon = (HICON)iupImageGetIcon(value);
-    if (hIcon)
-      winDialogTrayMessage(ih->handle, NIM_MODIFY, hIcon, NULL);
-  }
-  return 1;
-}
-
 static int winDialogSetBringFrontAttrib(Ihandle *ih, const char *value)
 {
   if (iupStrBoolean(value))
@@ -2117,9 +1937,6 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterCallback(ic, "CUSTOMFRAMEDRAW_CB", "");
   iupClassRegisterCallback(ic, "CUSTOMFRAMEACTIVATE_CB", "i");
 
-  /* Callback Windows and GTK Only */
-  iupClassRegisterCallback(ic, "TRAYCLICK_CB", "iii");
-
   /* Driver Dependent Attribute functions */
 
   /* Visual */
@@ -2174,16 +1991,9 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", winDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, winDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, winDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAY", NULL, winDialogSetTrayAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, winDialogSetTrayImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIP", NULL, winDialogSetTrayTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
 
   /* IupDialog Windows Only */
-  iupClassRegisterAttribute(ic, "TRAYTIPDELAY", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIPBALLOON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIPBALLOONTITLE", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIPBALLOONTITLEICON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CUSTOMFRAMEDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);

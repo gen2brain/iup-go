@@ -32,9 +32,7 @@
 #include "iupcocoa_keycodes.h"
 
 
-static const void* TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY = @"TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY";
 static const void* DOCKPROGRESS_ASSOCIATED_OBJ_KEY = @"DOCKPROGRESS_ASSOCIATED_OBJ_KEY";
-static const void* TRAYCLICK_DELEGATE_ASSOCIATED_OBJ_KEY = @"TRAYCLICK_DELEGATE_ASSOCIATED_OBJ_KEY";
 static const char IUPCocoaZoomRestoreFrameKey = 0;
 
 static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
@@ -54,10 +52,6 @@ static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
 @end
 
 @interface IupCocoaWindowDelegate : NSObject <NSWindowDelegate>
-@end
-
-@interface IupTrayClickDelegate : NSObject
-- (void) trayAction:(id)sender;
 @end
 
 @interface IupCocoaWindow : NSWindow
@@ -168,14 +162,6 @@ static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
 /****************************************************************
  ****************** Utilities & Helpers *************************
  ****************************************************************/
-
-static NSStatusItem* cocoaDialogGetStatusItem(Ihandle* ih)
-{
-  if (!ih || !ih->handle) return nil;
-
-  NSStatusItem* status_item = (NSStatusItem*)iupAttribGet(ih, "_IUPCOCOA_STATUSITEM");
-  return status_item;
-}
 
 static NSWindowStyleMask cocoaDialogGetStyleMask(Ihandle* ih)
 {
@@ -655,64 +641,6 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
   }
 }
 
-@end
-
-@implementation IupTrayClickDelegate
-- (void) trayAction:(id)sender
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(sender, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupObjectCheck(ih)) return;
-
-  IFniii cb = (IFniii)IupGetCallback(ih, "TRAYCLICK_CB");
-  if (cb)
-  {
-    NSEvent* event = [NSApp currentEvent];
-    NSEventType event_type = [event type];
-    int pressed = 0;
-    int dclick = 0;
-    int button = 0;
-
-    switch(event_type)
-    {
-      case NSEventTypeLeftMouseDown:
-        pressed = 1;
-        button = 1;
-        break;
-      case NSEventTypeLeftMouseUp:
-        button = 1;
-        break;
-      case NSEventTypeRightMouseDown:
-        button = 3;
-        pressed = 1;
-        break;
-      case NSEventTypeRightMouseUp:
-        button = 3;
-        break;
-      case NSEventTypeOtherMouseDown:
-        button = 2;
-        pressed = 1;
-        break;
-      case NSEventTypeOtherMouseUp:
-        button = 2;
-        break;
-      default:
-        button = 1;
-        pressed = 1;
-        break;
-    }
-
-    if ([event clickCount] >= 2)
-      dclick = 1;
-
-    if (([event modifierFlags] & NSEventModifierFlagControl) && button == 1)
-      button = 3;
-
-    if (cb(ih, button, pressed, dclick) == IUP_CLOSE)
-    {
-      IupExitLoop();
-    }
-  }
-}
 @end
 
 
@@ -1524,22 +1452,6 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
     ih->data->menu = NULL;
   }
 
-  NSStatusItem* status_item = (NSStatusItem*)iupAttribGet(ih, "_IUPCOCOA_STATUSITEM");
-  if (status_item)
-  {
-    Ihandle* menu_ih = (Ihandle*)objc_getAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY);
-    if (menu_ih)
-      IupDestroy(menu_ih);
-
-    objc_setAssociatedObject([status_item button], IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
-    objc_setAssociatedObject(status_item, TRAYCLICK_DELEGATE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    objc_setAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
-
-    [[NSStatusBar systemStatusBar] removeStatusItem:status_item];
-    [status_item release];
-    iupAttribSet(ih, "_IUPCOCOA_STATUSITEM", NULL);
-  }
-
   NSWindow* the_window = (__bridge NSWindow*)ih->handle;
 
   NSWindow* parent_window = [the_window parentWindow];
@@ -1657,134 +1569,6 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
   ih->data->ignore_resize = 0;
 }
 
-/****************************************************************
- ********************** TRAY Attributes *************************
- ****************************************************************/
-
-static int cocoaDialogSetTrayAttrib(Ihandle* ih, const char* value)
-{
-  NSStatusItem* status_item = (NSStatusItem*)iupAttribGet(ih, "_IUPCOCOA_STATUSITEM");
-
-  if (iupStrBoolean(value))
-  {
-    if (!status_item)
-    {
-      NSStatusBar* status_bar = [NSStatusBar systemStatusBar];
-      status_item = [status_bar statusItemWithLength:NSVariableStatusItemLength];
-      [status_item retain];
-
-      iupAttribSet(ih, "_IUPCOCOA_STATUSITEM", (char*)status_item);
-
-      IupTrayClickDelegate* delegate = [[IupTrayClickDelegate alloc] init];
-      NSStatusBarButton* button = [status_item button];
-      [button setTarget:delegate];
-      [button setAction:@selector(trayAction:)];
-      [button sendActionOn:NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown |
-        NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp |
-          NSEventMaskOtherMouseDown | NSEventMaskOtherMouseUp];
-
-      objc_setAssociatedObject(button, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
-      objc_setAssociatedObject(status_item, TRAYCLICK_DELEGATE_ASSOCIATED_OBJ_KEY, delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-      [delegate release];
-    }
-
-    [status_item setVisible:YES];
-  }
-  else
-  {
-    if (status_item)
-    {
-      [status_item setVisible:NO];
-    }
-  }
-
-  return 1;
-}
-
-static int cocoaDialogSetTrayImageAttrib(Ihandle* ih, const char* value)
-{
-  NSStatusItem* status_item = cocoaDialogGetStatusItem(ih);
-  if (!status_item) return 0;
-
-  NSImage* user_image = (NSImage*)iupImageGetIcon(value);
-  if (user_image)
-  {
-    CGFloat height = [[NSStatusBar systemStatusBar] thickness];
-    [user_image setSize:NSMakeSize(height-4, height-4)];
-    [user_image setTemplate:YES];
-    [[status_item button] setImage:user_image];
-    return 1;
-  }
-  return 0;
-}
-
-static char* cocoaDialogGetTrayMenuAttrib(Ihandle* ih)
-{
-  NSStatusItem* status_item = cocoaDialogGetStatusItem(ih);
-  if (!status_item) return NULL;
-
-  return (char*)objc_getAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY);
-}
-
-static int cocoaDialogSetTrayMenuAttrib(Ihandle* ih, const char* value)
-{
-  NSStatusItem* status_item = cocoaDialogGetStatusItem(ih);
-  if (!status_item) return 0;
-
-  Ihandle* old_menu_ih = (Ihandle*)objc_getAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY);
-
-  Ihandle* menu_ih = NULL;
-  if (value && value[0])
-  {
-    menu_ih = IupGetHandle(value);
-    if (!menu_ih || !iupObjectCheck(menu_ih))
-    {
-      /* Invalid menu handle - clear the menu */
-      [status_item setMenu:nil];
-      objc_setAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
-      return 0;
-    }
-  }
-
-  if (old_menu_ih != menu_ih)
-  {
-    if (old_menu_ih)
-    {
-      /* Just remove the association, don't destroy */
-      objc_setAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
-    }
-  }
-
-  if (NULL == menu_ih)
-  {
-    [status_item setMenu:nil];
-    objc_setAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
-    return 1;
-  }
-
-  if (NULL == menu_ih->handle)
-    IupMap(menu_ih);
-
-  if (menu_ih->iclass->nativetype == IUP_TYPEMENU && [(id)menu_ih->handle isKindOfClass:[NSMenu class]])
-  {
-    NSMenu* the_menu = (NSMenu*)menu_ih->handle;
-    [status_item setMenu:the_menu];
-    objc_setAssociatedObject(status_item, TRAYMENUIHANDLE_ASSOCIATED_OBJ_KEY, (id)menu_ih, OBJC_ASSOCIATION_ASSIGN);
-  }
-  return 1;
-}
-
-static int cocoaDialogSetTrayTipAttrib(Ihandle* ih, const char* value)
-{
-  NSStatusItem* status_item = cocoaDialogGetStatusItem(ih);
-  if (status_item && [status_item.button respondsToSelector:@selector(setToolTip:)])
-  {
-    status_item.button.toolTip = value ? [NSString stringWithUTF8String:value] : nil;
-    return 1;
-  }
-  return 0;
-}
-
 
 /****************************************************************
  ******************** Other Attributes **************************
@@ -1878,7 +1662,6 @@ void iupdrvDialogInitClass(Iclass* ic)
   ic->LayoutUpdate = cocoaDialogLayoutUpdateMethod;
   ic->SetChildrenPosition = cocoaDialogSetChildrenPositionMethod;
 
-  iupClassRegisterCallback(ic, "TRAYCLICK_CB", "iii");
   iupClassRegisterCallback(ic, "MOVE_CB", "ii");
   iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
@@ -1914,11 +1697,6 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MINIMIZED", cocoaDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, cocoaDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "TRAY", NULL, cocoaDialogSetTrayAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYIMAGE", NULL, cocoaDialogSetTrayImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYMENU", cocoaDialogGetTrayMenuAttrib, cocoaDialogSetTrayMenuAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIP", NULL, cocoaDialogSetTrayTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-
   iupClassRegisterAttribute(ic, "TASKBARPROGRESS", NULL, cocoaDialogSetTaskBarProgressAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARPROGRESSSTATE", NULL, cocoaDialogSetTaskBarProgressStateAttrib, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARPROGRESSVALUE", NULL, cocoaDialogSetTaskBarProgressValueAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
@@ -1929,10 +1707,6 @@ void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIPBALLOON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIPBALLOONTITLE", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIPBALLOONTITLEICON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TRAYTIPDELAY", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "MDIFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MDICLIENT", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

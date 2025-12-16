@@ -22,6 +22,8 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
+#include "iup_class.h"
+#include "iup_tray.h"
 
 #include "iupmot_drv.h"
 #include "iupmot_color.h"
@@ -420,29 +422,42 @@ static IupmotTray* motGetTray(Ihandle* ih)
   return tray;
 }
 
-int iupmotSetTrayAttrib(Ihandle* ih, const char* value)
+/******************************************************************************/
+/* Driver Interface Implementation                                            */
+/******************************************************************************/
+
+int iupdrvTraySetVisible(Ihandle* ih, int visible)
 {
-  IupmotTray* tray = motGetTray(ih);
-  if (!tray)
-    return 0;
-
-  tray->visible = iupStrBoolean(value);
-
-  if (tray->visible)
+  if (visible)
   {
+    char* image;
+    char* tip;
+    IupmotTray* tray = motGetTray(ih);
+    if (!tray)
+      return 0;
+
+    tray->visible = 1;
+
+    image = iupAttribGet(ih, "IMAGE");
+    if (image)
+      iupdrvTraySetImage(ih, image);
+
+    tip = iupAttribGet(ih, "TIP");
+    if (tip)
+      iupdrvTraySetTip(ih, tip);
+
     motTraySendDockRequest(tray);
-    /* DO NOT map the window here. Wait for the XEMBED_EMBEDDED_NOTIFY message. */
+    XFlush(iupmot_display);
   }
   else
   {
-    XUnmapWindow(iupmot_display, tray->window);
+    iupdrvTrayDestroy(ih);
   }
 
-  XFlush(iupmot_display);
   return 1;
 }
 
-int iupmotSetTrayTipAttrib(Ihandle* ih, const char* value)
+int iupdrvTraySetTip(Ihandle* ih, const char* value)
 {
   IupmotTray* tray = motGetTray(ih);
   if (!tray)
@@ -452,8 +467,7 @@ int iupmotSetTrayTipAttrib(Ihandle* ih, const char* value)
   {
     Atom net_wm_name = XInternAtom(iupmot_display, "_NET_WM_NAME", False);
     Atom utf8_string = XInternAtom(iupmot_display, "UTF8_STRING", False);
-    XChangeProperty(iupmot_display, tray->window, net_wm_name, utf8_string, 8,
-                    PropModeReplace, (unsigned char*)value, strlen(value));
+    XChangeProperty(iupmot_display, tray->window, net_wm_name, utf8_string, 8, PropModeReplace, (unsigned char*)value, strlen(value));
   }
   else
   {
@@ -464,7 +478,7 @@ int iupmotSetTrayTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupmotSetTrayImageAttrib(Ihandle* ih, const char* value)
+int iupdrvTraySetImage(Ihandle* ih, const char* value)
 {
   IupmotTray* tray = motGetTray(ih);
   Pixmap icon, mask;
@@ -556,17 +570,17 @@ int iupmotSetTrayImageAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupmotSetTrayMenuAttrib(Ihandle* ih, const char* value)
+int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
-  /* XEmbed tray doesn't support automatic menu popup via TRAYMENU.
-   * Applications should use TRAYCLICK_CB callback to show menu manually.
-   */
+  /* XEmbed tray protocol doesn't support automatic menu popup via MENU attribute.
+   * The XEmbed protocol has no mechanism for the tray host to request context menu.
+   * Applications should use TRAYCLICK_CB callback to show menu manually via IupPopup(). */
   (void)ih;
-  (void)value;
+  (void)menu;
   return 0;
 }
 
-void iupmotTrayCleanup(Ihandle* ih)
+void iupdrvTrayDestroy(Ihandle* ih)
 {
   IupmotTray* tray = (IupmotTray*)iupAttribGet(ih, "_IUPMOT_TRAY");
 
@@ -603,4 +617,18 @@ void iupmotTrayCleanup(Ihandle* ih)
 
     free(tray);
   }
+}
+
+int iupdrvTrayIsAvailable(void)
+{
+  return 1;
+}
+
+void iupdrvTrayInitClass(Iclass* ic)
+{
+  iupClassRegisterAttribute(ic, "MENU", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPBALLOON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPBALLOONTITLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPBALLOONTITLEICON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPDELAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }
