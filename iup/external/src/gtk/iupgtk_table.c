@@ -1221,6 +1221,120 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
 /* Driver Functions - Widget Lifecycle                                      */
 /* ========================================================================= */
 
+static int gtk3TableCalculateColumnWidth(Ihandle* ih, int col_index)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  int max_width = 0;
+  int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
+
+  /* Measure column title */
+  GtkTreeViewColumn* column = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col_index);
+  if (column)
+  {
+    const char* title = gtk_tree_view_column_get_title(column);
+    if (title && title[0])
+    {
+      int title_width = iupdrvFontGetStringWidth(ih, title) + 8;
+      if (title_width > max_width)
+        max_width = title_width;
+    }
+  }
+
+  /* Measure cell content in first N rows */
+  GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(gtk_data->tree_view));
+  if (model)
+  {
+    GtkTreeIter iter;
+    int row = 0;
+    if (gtk_tree_model_get_iter_first(model, &iter))
+    {
+      do {
+        GValue value = G_VALUE_INIT;
+        gtk_tree_model_get_value(model, &iter, col_index, &value);
+        if (G_VALUE_HOLDS_STRING(&value))
+        {
+          const char* text = g_value_get_string(&value);
+          if (text && text[0])
+          {
+            int text_width = iupdrvFontGetStringWidth(ih, text) + 8;
+            if (text_width > max_width)
+              max_width = text_width;
+          }
+        }
+        g_value_unset(&value);
+        row++;
+      } while (row < max_rows_to_check && gtk_tree_model_iter_next(model, &iter));
+    }
+  }
+
+  if (max_width < 20)
+    max_width = 20;
+
+  return max_width;
+}
+
+static void gtkTableLayoutUpdateMethod(Ihandle* ih)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkWidget* widget = gtk_data->scrolled_win;
+  int width = ih->currentwidth;
+  int height = ih->currentheight;
+
+  /* If VISIBLELINES is set, clamp height to target */
+  int target_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "iup-table-target-height"));
+  if (target_height > 0 && height > target_height)
+    height = target_height;
+
+  /* If VISIBLECOLUMNS is set, clamp width to show exactly N columns */
+  int visible_columns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  if (visible_columns > 0 && gtk_data->tree_view)
+  {
+    int c, cols_width = 0;
+    int num_cols = visible_columns;
+    if (num_cols > ih->data->num_col)
+      num_cols = ih->data->num_col;
+
+    for (c = 0; c < num_cols; c++)
+    {
+      GtkTreeViewColumn* column = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), c);
+      if (column)
+      {
+        /* Try rendered width first (works after display) */
+        int col_width = gtk_tree_view_column_get_width(column);
+        if (col_width <= 0)
+        {
+          /* Calculate from content */
+          col_width = gtk3TableCalculateColumnWidth(ih, c);
+        }
+        cols_width += col_width;
+      }
+    }
+
+    int sb_size = iupdrvGetScrollbarSize();
+    int border = 2;
+
+    /* Only add vertical scrollbar width if it will actually be visible */
+    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+    int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
+    int vert_sb_width = need_vert_sb ? sb_size : 0;
+
+    int target_width = cols_width + vert_sb_width + border;
+    if (width > target_width)
+      width = target_width;
+  }
+
+  /* Get the GtkFixed parent container */
+  GtkWidget* parent = gtk_widget_get_parent(widget);
+  while (parent && !GTK_IS_FIXED(parent))
+    parent = gtk_widget_get_parent(parent);
+
+  if (parent)
+  {
+    iupgtkNativeContainerMove(parent, widget, ih->x, ih->y);
+    gtk_widget_set_size_request(widget, width, height);
+  }
+}
+
 static int gtkTableMapMethod(Ihandle* ih)
 {
   GtkListStore* store;
@@ -1551,6 +1665,20 @@ static int gtkTableMapMethod(Ihandle* ih)
 
   /* Set show grid */
   iupdrvTableSetShowGrid(ih, iupAttribGetBoolean(ih, "SHOWGRID"));
+
+  /* Set height constraint when VISIBLELINES is set.
+     Store target height in widget data for size-allocate handler to clamp.
+     GtkFixed ignores vexpand/valign, so we must use size-allocate clamping. */
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+  if (visiblelines > 0)
+  {
+    int row_height = iupdrvTableGetRowHeight(ih);
+    int header_height = iupdrvTableGetHeaderHeight(ih);
+    int content_height = header_height + (row_height * visiblelines);
+    content_height += 2;  /* scrolled window border */
+
+    g_object_set_data(G_OBJECT(gtk_data->scrolled_win), "iup-table-target-height", GINT_TO_POINTER(content_height));
+  }
 
   return IUP_NOERROR;
 }
@@ -2030,6 +2158,176 @@ int iupdrvTableGetBorderWidth(Ihandle* ih)
   return 0;
 }
 
+static int gtk3_table_row_height_nogrid = -1;
+static int gtk3_table_row_height_grid = -1;
+static int gtk3_table_header_height = -1;
+
+static void gtk3TableMeasureRowMetrics(Ihandle* ih, int with_grid)
+{
+  int* row_height_ptr = with_grid ? &gtk3_table_row_height_grid : &gtk3_table_row_height_nogrid;
+  if (*row_height_ptr >= 0 && gtk3_table_header_height >= 0)
+    return;
+
+  GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  GtkListStore* store = gtk_list_store_new(1, G_TYPE_STRING);
+  GtkWidget* tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+
+  /* Add a column with text renderer */
+  GtkCellRenderer* renderer = gtk_cell_renderer_text_new();
+  (void)renderer;
+  GtkTreeViewColumn* column = gtk_tree_view_column_new_with_attributes(
+    "Test", renderer, "text", 0, NULL);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+
+  /* Add two rows, measure height as Y difference between them */
+  GtkTreeIter iter;
+  gtk_list_store_append(store, &iter);
+  gtk_list_store_set(store, &iter, 0, "X", -1);
+  gtk_list_store_append(store, &iter);
+  gtk_list_store_set(store, &iter, 0, "X", -1);
+
+  /* Match grid lines setting */
+  if (with_grid)
+    gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(tree_view), GTK_TREE_VIEW_GRID_LINES_BOTH);
+
+  gtk_container_add(GTK_CONTAINER(temp_window), tree_view);
+  gtk_widget_show_all(temp_window);
+  gtk_widget_realize(temp_window);
+  gtk_widget_realize(tree_view);
+
+  /* Measure row height by comparing Y positions of row 0 and row 1 */
+  {
+    GtkTreePath* path0 = gtk_tree_path_new_from_string("0");
+    GtkTreePath* path1 = gtk_tree_path_new_from_string("1");
+    GdkRectangle rect0, rect1;
+
+    gtk_tree_view_get_background_area(GTK_TREE_VIEW(tree_view), path0, NULL, &rect0);
+    gtk_tree_view_get_background_area(GTK_TREE_VIEW(tree_view), path1, NULL, &rect1);
+
+    *row_height_ptr = rect1.y - rect0.y;
+
+    gtk_tree_path_free(path0);
+    gtk_tree_path_free(path1);
+  }
+
+  /* Fallback if measurement didn't work */
+  if (*row_height_ptr <= 0)
+  {
+    int charheight;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    *row_height_ptr = charheight + 4 + (with_grid ? 1 : 0);
+  }
+
+  /* Measure header height */
+  if (gtk3_table_header_height < 0)
+  {
+#if GTK_CHECK_VERSION(3, 0, 0)
+    GtkWidget* header_button = gtk_tree_view_column_get_button(column);
+    if (header_button)
+    {
+      GtkRequisition req;
+      gtk_widget_get_preferred_size(header_button, NULL, &req);
+      gtk3_table_header_height = req.height;
+    }
+    else
+    {
+      gtk3_table_header_height = *row_height_ptr + 4;
+    }
+#else
+    int charheight;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    gtk3_table_header_height = charheight + 8;
+#endif
+  }
+
+  /* Clean up */
+  g_object_unref(store);
+  gtk_widget_destroy(temp_window);
+}
+
+int iupdrvTableGetRowHeight(Ihandle* ih)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+
+  /* If table is mapped and has at least 2 rows, measure pitch between rows */
+  if (gtk_data && gtk_data->tree_view)
+  {
+    GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(gtk_data->tree_view));
+    int row_count = model ? gtk_tree_model_iter_n_children(model, NULL) : 0;
+
+    if (row_count >= 2)
+    {
+      GtkTreePath* path0 = gtk_tree_path_new_from_string("0");
+      GtkTreePath* path1 = gtk_tree_path_new_from_string("1");
+      GdkRectangle rect0, rect1;
+
+      gtk_tree_view_get_background_area(GTK_TREE_VIEW(gtk_data->tree_view), path0, NULL, &rect0);
+      gtk_tree_view_get_background_area(GTK_TREE_VIEW(gtk_data->tree_view), path1, NULL, &rect1);
+
+      int row_height = rect1.y - rect0.y;
+
+      gtk_tree_path_free(path0);
+      gtk_tree_path_free(path1);
+
+      if (row_height > 0)
+        return row_height;
+    }
+  }
+
+  /* Fallback to pre-measured value */
+  int with_grid = iupAttribGetBoolean(ih, "SHOWGRID");
+  gtk3TableMeasureRowMetrics(ih, with_grid);
+  return with_grid ? gtk3_table_row_height_grid : gtk3_table_row_height_nogrid;
+}
+
+int iupdrvTableGetHeaderHeight(Ihandle* ih)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+  /* If table is mapped, measure from actual header */
+  if (gtk_data && gtk_data->tree_view)
+  {
+    GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(gtk_data->tree_view));
+    if (columns)
+    {
+      GtkTreeViewColumn* column = GTK_TREE_VIEW_COLUMN(columns->data);
+      GtkWidget* button = gtk_tree_view_column_get_button(column);
+      if (button)
+      {
+        GtkRequisition req;
+        gtk_widget_get_preferred_size(button, NULL, &req);
+        g_list_free(columns);
+        return req.height;
+      }
+      g_list_free(columns);
+    }
+  }
+#else
+  (void)gtk_data;
+#endif
+
+  gtk3TableMeasureRowMetrics(ih, iupAttribGetBoolean(ih, "SHOWGRID"));
+  return gtk3_table_header_height;
+}
+
+void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+{
+  int sb_size = iupdrvGetScrollbarSize();
+
+  /* GtkScrolledWindow: add vertical scrollbar width */
+  *w += sb_size;
+
+  /* GtkScrolledWindow frame border */
+  *h += 2;
+
+  /* Add horizontal scrollbar height when VISIBLECOLUMNS causes it to appear */
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
+    *h += sb_size;
+}
+
+
 /* ========================================================================= */
 /* Attribute Handlers                                                        */
 /* ========================================================================= */
@@ -2156,6 +2454,7 @@ void iupdrvTableInitClass(Iclass* ic)
   /* Driver Dependent Class functions */
   ic->Map = gtkTableMapMethod;
   ic->UnMap = gtkTableUnMapMethod;
+  ic->LayoutUpdate = gtkTableLayoutUpdateMethod;
 
   /* Register GTK-specific attributes */
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);

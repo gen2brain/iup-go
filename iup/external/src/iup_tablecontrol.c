@@ -523,6 +523,8 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
   int natural_w = 0, natural_h = 0;
   int charwidth, charheight;
   int col;
+  int visiblecolumns, visiblelines;
+  int max_col, visible_lines;
 
   /* Tell parent container about our expand settings */
   *children_expand = ih->expand;
@@ -530,10 +532,20 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
   /* Get font metrics */
   iupdrvFontGetCharSize(ih, &charwidth, &charheight);
 
-  /* Calculate width from column widths or title lengths */
-  if (ih->data->num_col > 0)
+  /* Get VISIBLECOLUMNS and VISIBLELINES attributes */
+  visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+
+  /* Determine how many columns to include in width calculation */
+  if (visiblecolumns > 0 && ih->data->num_col > 0)
+    max_col = (visiblecolumns < ih->data->num_col) ? visiblecolumns : ih->data->num_col;
+  else
+    max_col = ih->data->num_col;
+
+  /* Calculate width from column widths */
+  if (max_col > 0)
   {
-    for (col = 1; col <= ih->data->num_col; col++)
+    for (col = 1; col <= max_col; col++)
     {
       int col_width = 0;
       char* value;
@@ -575,29 +587,32 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
   }
 
   /* Calculate height from number of lines */
-  int visible_lines = ih->data->num_lin;
-  if (visible_lines == 0)
-    visible_lines = 10;  /* Default to 10 visible lines */
-  else if (visible_lines > 15)
-    visible_lines = 15;  /* Cap at 15 lines for natural size to keep it reasonable */
+  if (visiblelines > 0)
+    visible_lines = visiblelines;
+  else
+  {
+    visible_lines = ih->data->num_lin;
+    if (visible_lines == 0)
+      visible_lines = 10;  /* Default to 10 visible lines */
+    else if (visible_lines > 15)
+      visible_lines = 15;  /* Cap at 15 lines for natural size to keep it reasonable */
+  }
 
-  /* Calculate row height: charheight + padding + grid lines */
-  int row_height = charheight + 8;  /* 8 pixels for padding and grid */
-  natural_h = row_height * (visible_lines + 1);  /* +1 for header row */
+  /* Get row heights from driver */
+  int row_height = iupdrvTableGetRowHeight(ih);
+  int header_height = iupdrvTableGetHeaderHeight(ih);
 
-  /* Add extra space for borders and scrollbar */
-  natural_h += 16;
+  /* Calculate height: header + visible data rows */
+  natural_h = header_height + (row_height * visible_lines);
 
-  /* Add space for vertical scrollbar, borders, grid lines, and potential dummy column */
-  int sb_size = iupdrvGetScrollbarSize();
+  /* Add space for grid lines, dummy column */
   int grid_lines = 0;
   int dummy_column = 0;
-  int border_width = iupdrvTableGetBorderWidth(ih);
 
   /* Only account for grid lines if SHOWGRID is enabled (default is YES) */
   char* showgrid = iupAttribGetStr(ih, "SHOWGRID");
-  if (iupStrBoolean(showgrid) && ih->data->num_col > 0)
-    grid_lines = ih->data->num_col - 1;  /* 1px grid line between each column */
+  if (iupStrBoolean(showgrid) && max_col > 0)
+    grid_lines = max_col - 1;  /* 1px grid line between each visible column */
 
   /* Check if drivers will add dummy column (when STRETCHLAST=NO or last column has explicit width) */
   if (!ih->data->stretch_last)
@@ -622,7 +637,10 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
     }
   }
 
-  natural_w += sb_size + grid_lines + dummy_column + border_width;
+  natural_w += grid_lines + dummy_column;
+
+  /* Add driver-specific borders (scrollbar, frame) */
+  iupdrvTableAddBorders(ih, &natural_w, &natural_h);
 
   *w = natural_w;
   *h = natural_h;
@@ -794,6 +812,10 @@ Iclass* iupTableNewClass(void)
 
   /* Virtual mode attributes */
   iupClassRegisterAttribute(ic, "VIRTUALMODE", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT); /* Enable/disable virtual mode for large datasets: YES, NO */
+
+  /* Visible size attributes (for natural size calculation) */
+  iupClassRegisterAttribute(ic, "VISIBLECOLUMNS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* Number of columns to display in natural size */
+  iupClassRegisterAttribute(ic, "VISIBLELINES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);    /* Number of data rows to display in natural size */
 
   /* Driver-specific attribute registration */
   iupdrvTableInitClass(ic);

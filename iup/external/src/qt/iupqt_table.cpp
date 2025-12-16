@@ -717,6 +717,68 @@ static void qtTableConfigureItem(Ihandle* ih, QTableWidgetItem* item, int lin, i
  * Widget Lifecycle
  ****************************************************************************/
 
+static void qtTableLayoutUpdateMethod(Ihandle* ih)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  if (!table)
+    return;
+
+  int width = ih->currentwidth;
+  int height = ih->currentheight;
+
+  /* If VISIBLELINES is set, clamp height to target */
+  QVariant targetVar = table->property("iup-table-target-height");
+  if (targetVar.isValid())
+  {
+    int target_height = targetVar.toInt();
+    if (target_height > 0 && height > target_height)
+      height = target_height;
+  }
+
+  /* If VISIBLECOLUMNS is set, clamp width to show exactly N columns */
+  QVariant visColVar = table->property("iup-table-visible-columns");
+  if (visColVar.isValid())
+  {
+    int visible_columns = visColVar.toInt();
+    if (visible_columns > 0)
+    {
+      int cols_width = 0;
+      int num_cols = visible_columns;
+      if (num_cols > ih->data->num_col)
+        num_cols = ih->data->num_col;
+
+      for (int c = 0; c < num_cols; c++)
+      {
+        int col_width = table->columnWidth(c);
+        if (col_width <= 0)
+          col_width = 80;  /* fallback to default */
+        cols_width += col_width;
+      }
+
+      int sb_size = iupdrvGetScrollbarSize();
+      int frame_width = table->frameWidth();
+
+      /* Only add vertical scrollbar width if it will actually be visible */
+      int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+      int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
+      int vert_sb_width = need_vert_sb ? sb_size : 0;
+
+      int target_width = cols_width + vert_sb_width + 2 * frame_width;
+      if (width > target_width)
+        width = target_width;
+    }
+  }
+
+  /* Position and size the widget */
+  QWidget* parent = table->parentWidget();
+  if (parent)
+    iupqtSetPosSize(parent, table, ih->x, ih->y, width, height);
+
+  /* Reset scroll position to top-left */
+  table->horizontalScrollBar()->setValue(0);
+  table->verticalScrollBar()->setValue(0);
+}
+
 static int qtTableMapMethod(Ihandle* ih)
 {
   if (!ih->parent)
@@ -923,6 +985,29 @@ static int qtTableMapMethod(Ihandle* ih)
 
   /* Add to parent */
   iupqtAddToParent(ih);
+
+  /* Store target height for VISIBLELINES clamping in LayoutUpdate */
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+  if (visiblelines > 0)
+  {
+    int row_height = iupdrvTableGetRowHeight(ih);
+    int header_height = iupdrvTableGetHeaderHeight(ih);
+    int sb_size = iupdrvGetScrollbarSize();
+    int frame_width = table->frameWidth();
+
+    /* Only add horizontal scrollbar height if it will actually be visible */
+    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+    int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
+    int horiz_sb_height = need_horiz_sb ? sb_size : 0;
+
+    int target_height = header_height + (row_height * visiblelines) + horiz_sb_height + 2 * frame_width;
+    table->setProperty("iup-table-target-height", target_height);
+  }
+
+  /* Store VISIBLECOLUMNS for width clamping in LayoutUpdate */
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  if (visiblecolumns > 0)
+    table->setProperty("iup-table-visible-columns", visiblecolumns);
 
   return IUP_NOERROR;
 }
@@ -1417,10 +1502,95 @@ int iupdrvTableGetBorderWidth(Ihandle* ih)
   return 0;
 }
 
+static int qt_table_row_height = -1;
+static int qt_table_header_height = -1;
+
+static void qtTableMeasureRowMetrics(Ihandle* ih)
+{
+  if (qt_table_row_height >= 0)
+    return;
+
+  QTableWidget* temp_table = new QTableWidget(1, 1);
+  temp_table->setItem(0, 0, new QTableWidgetItem("WWWWWWWWWW"));
+
+  /* Use same calculation as qtTableMapMethod */
+  QFontMetrics fm(temp_table->font());
+  int calculated_height = fm.height() + 8;
+
+  /* Set row height the same way map does */
+  temp_table->verticalHeader()->setDefaultSectionSize(calculated_height);
+  qt_table_row_height = calculated_height;
+
+  /* Set header height the same way map does */
+  QHeaderView* hHeader = temp_table->horizontalHeader();
+  hHeader->setFixedHeight(calculated_height);
+  qt_table_header_height = calculated_height;
+
+  delete temp_table;
+
+  (void)ih;
+}
+
+int iupdrvTableGetRowHeight(Ihandle* ih)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+
+  /* If table is mapped and has rows, use rowHeight */
+  if (table && table->rowCount() > 0)
+  {
+    int row_height = table->rowHeight(0);
+    if (row_height > 0)
+      return row_height;
+  }
+
+  /* Fallback to pre-measured value */
+  qtTableMeasureRowMetrics(ih);
+  return qt_table_row_height;
+}
+
+int iupdrvTableGetHeaderHeight(Ihandle* ih)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+
+  if (table)
+  {
+    QHeaderView* header = table->horizontalHeader();
+    int height = header->height();
+    if (height > 0)
+      return height;
+  }
+
+  qtTableMeasureRowMetrics(ih);
+  return qt_table_header_height;
+}
+
+void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+
+  int frame_width = 2;  /* Default */
+  if (table)
+    frame_width = table->frameWidth();
+
+  int sb_size = iupdrvGetScrollbarSize();
+
+  /* Add vertical scrollbar width + frame border */
+  *w += sb_size + 2 * frame_width;
+
+  /* Frame border */
+  *h += 2 * frame_width;
+
+  /* Add horizontal scrollbar height when VISIBLECOLUMNS causes it to appear */
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
+    *h += sb_size;
+}
+
 void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = qtTableMapMethod;
   ic->UnMap = qtTableUnMapMethod;
+  ic->LayoutUpdate = qtTableLayoutUpdateMethod;
 
   /* Replace core SET handlers to update native widget */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, qtTableSetSortableAttrib);

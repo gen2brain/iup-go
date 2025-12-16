@@ -111,6 +111,10 @@ typedef struct _ImotTableData
   Pixel grid_pixel;          /* Grid line color (derived from bg) */
   Pixel select_bg_pixel;     /* Selection background color */
 
+  /* VISIBLELINES/VISIBLECOLUMNS constraints (0 = no constraint) */
+  int target_height;
+  int visible_columns;
+
 } ImotTableData;
 
 #define IMOT_TABLE_DATA(ih) ((ImotTableData*)(ih->data->native_data))
@@ -1519,6 +1523,27 @@ static int motTableMapMethod(Ihandle* ih)
   /* Initialize auto-sizing flag (will run on first expose) */
   mot_data->columns_autosized = 0;
 
+  /* Store constraints for VISIBLELINES/VISIBLECOLUMNS clamping in LayoutUpdate */
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+  if (visiblelines > 0)
+  {
+    int row_height = iupdrvTableGetRowHeight(ih);
+    int header_height = iupdrvTableGetHeaderHeight(ih);
+    int border = iupdrvTableGetBorderWidth(ih);
+    int sb_size = iupdrvGetScrollbarSize();
+
+    /* Include horizontal scrollbar height, motTableSetSize reserves space for it,
+       and vertical scrollbar (from VISIBLELINES) can trigger horizontal scrollbar */
+    mot_data->target_height = header_height + (row_height * visiblelines) + border + sb_size;
+  }
+  else
+  {
+    mot_data->target_height = 0;
+  }
+
+  /* Store VISIBLECOLUMNS constraint */
+  mot_data->visible_columns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+
   /* Update scrollbars */
   motTableUpdateScrollbars(ih);
 
@@ -1529,7 +1554,7 @@ static int motTableMapMethod(Ihandle* ih)
 /* Layout Update Method                                                     */
 /* ========================================================================= */
 
-static void motTableSetSize(Ihandle* ih, Widget container, int setsize)
+static void motTableSetSize(Ihandle* ih, Widget container, int setsize, int use_width, int use_height)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int width, height, border;
@@ -1537,8 +1562,8 @@ static void motTableSetSize(Ihandle* ih, Widget container, int setsize)
 
   /* Get border width */
   XtVaGetValues(container, XmNborderWidth, &border, NULL);
-  width = ih->currentwidth - 2*border;
-  height = ih->currentheight - 2*border;
+  width = use_width - 2*border;
+  height = use_height - 2*border;
 
   /* Ensure minimum size */
   if (width <= 0) width = 1;
@@ -1565,8 +1590,45 @@ static void motTableSetSize(Ihandle* ih, Widget container, int setsize)
 
 static void motTableLayoutUpdateMethod(Ihandle* ih)
 {
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   Widget container = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-  motTableSetSize(ih, container, 1);
+  int width = ih->currentwidth;
+  int height = ih->currentheight;
+
+  /* If VISIBLELINES is set, clamp height to target */
+  if (mot_data && mot_data->target_height > 0)
+  {
+    if (height > mot_data->target_height)
+      height = mot_data->target_height;
+  }
+
+  /* If VISIBLECOLUMNS is set, clamp width to show exactly N columns */
+  if (mot_data && mot_data->visible_columns > 0 && mot_data->col_widths)
+  {
+    int c, cols_width = 0;
+    int num_cols = mot_data->visible_columns;
+    if (num_cols > ih->data->num_col)
+      num_cols = ih->data->num_col;
+
+    /* Sum up the widths of the visible columns */
+    for (c = 0; c < num_cols; c++)
+      cols_width += mot_data->col_widths[c];
+
+    int sb_size = iupdrvGetScrollbarSize();
+    int border = iupdrvTableGetBorderWidth(ih);
+
+    /* Only add vertical scrollbar width if it will actually be visible */
+    int visiblelines = mot_data->target_height > 0 ? 1 : 0;  /* target_height > 0 means VISIBLELINES was set */
+    int need_vert_sb = (visiblelines && ih->data->num_lin > iupAttribGetInt(ih, "VISIBLELINES"));
+    int vert_sb_width = need_vert_sb ? sb_size : 0;
+
+    int target_width = cols_width + vert_sb_width + border + sb_size;
+
+    if (width > target_width)
+      width = target_width;
+  }
+
+  motTableSetSize(ih, container, 1, width, height);
   iupmotSetPosition(container, ih->x, ih->y);
 }
 
@@ -2081,6 +2143,57 @@ int iupdrvTableGetBorderWidth(Ihandle* ih)
   }
 
   return 0;
+}
+
+int iupdrvTableGetRowHeight(Ihandle* ih)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  if (mot_data && mot_data->row_height > 0)
+    return mot_data->row_height;
+
+  /* Fallback before mapping */
+  return MOT_TABLE_DEF_ROW_HEIGHT;
+}
+
+int iupdrvTableGetHeaderHeight(Ihandle* ih)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  if (mot_data && mot_data->header_height > 0)
+    return mot_data->header_height;
+
+  /* Fallback before mapping */
+  return MOT_TABLE_HEADER_HEIGHT;
+}
+
+void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+{
+  int sb_size = iupdrvGetScrollbarSize();
+  int border = iupdrvTableGetBorderWidth(ih);
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+
+  /* Motif: add scrollbar width + border */
+  *w += sb_size + border;
+
+  /* Vertical border */
+  *h += border;
+
+  /* Add horizontal scrollbar height when it will be needed.
+     motTableSetSize always reserves space for horizontal scrollbar,
+     so we must account for it in natural size calculation. */
+  if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
+  {
+    /* VISIBLECOLUMNS will cause horizontal scrollbar */
+    *h += sb_size;
+  }
+  else if (visiblelines == 0)
+  {
+    /* No VISIBLELINES constraint - natural size must account for
+       the horizontal scrollbar space that motTableSetSize reserves */
+    *h += sb_size;
+  }
+  /* When VISIBLELINES is set (without VISIBLECOLUMNS causing scrollbar),
+     target_height in MapMethod already includes sb_size and will clamp the height */
 }
 
 /* ========================================================================= */

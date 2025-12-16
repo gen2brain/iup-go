@@ -1163,9 +1163,64 @@ static void gtk4TableSorterChanged(GtkSorter* sorter, GtkSorterChange change, gp
 /* Driver Functions - Widget Lifecycle                                      */
 /* ========================================================================= */
 
-/* NOTE: Dashed border (focus rectangle) is not implemented for GTK4 yet.
- * GtkColumnView doesn't provide easy access to cell positions like GtkTreeView does.
- * Would require complex overlay implementation. */
+static void gtk4TableLayoutUpdateMethod(Ihandle* ih)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GtkWidget* widget = gtk_data->scrolled_win;
+  int width = ih->currentwidth;
+  int height = ih->currentheight;
+
+  /* If VISIBLELINES is set, clamp height to target */
+  int target_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "iup-table-target-height"));
+  if (target_height > 0)
+  {
+    if (height > target_height)
+      height = target_height;
+  }
+
+  /* If VISIBLECOLUMNS is set, clamp width to show exactly N columns */
+  int visible_columns = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "iup-table-visible-columns"));
+  if (visible_columns > 0 && gtk_data->column_view)
+  {
+    int c, cols_width = 0;
+    int num_cols = visible_columns;
+    if (num_cols > ih->data->num_col)
+      num_cols = ih->data->num_col;
+
+    GListModel* columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
+    guint n_columns = g_list_model_get_n_items(columns);
+
+    for (c = 0; c < num_cols && c < (int)n_columns; c++)
+    {
+      GtkColumnViewColumn* column = g_list_model_get_item(columns, c);
+      if (column)
+      {
+        int col_width = gtk_column_view_column_get_fixed_width(column);
+        if (col_width <= 0)
+          col_width = 80;  /* fallback to default */
+        cols_width += col_width;
+        g_object_unref(column);
+      }
+    }
+
+    int sb_size = iupdrvGetScrollbarSize();
+    int border = 2;
+
+    /* Only add vertical scrollbar width if it will actually be visible */
+    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+    int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
+    int vert_sb_width = need_vert_sb ? sb_size : 0;
+
+    int target_width = cols_width + vert_sb_width + border;
+    if (width > target_width)
+      width = target_width;
+  }
+
+  /* Get the parent container and position the widget */
+  GtkWidget* parent = gtk_widget_get_parent(widget);
+  if (parent)
+    iupgtk4NativeContainerSetBounds(parent, widget, ih->x, ih->y, width, height);
+}
 
 static int gtk4TableMapMethod(Ihandle* ih)
 {
@@ -1435,6 +1490,28 @@ static int gtk4TableMapMethod(Ihandle* ih)
   iupgtk4AddToParent(ih);
 
   iupdrvTableSetShowGrid(ih, iupAttribGetBoolean(ih, "SHOWGRID"));
+
+  /* Store target height for VISIBLELINES clamping in LayoutUpdate */
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+  if (visiblelines > 0)
+  {
+    int row_height = iupdrvTableGetRowHeight(ih);
+    int header_height = iupdrvTableGetHeaderHeight(ih);
+    int sb_size = iupdrvGetScrollbarSize();
+
+    /* Only add horizontal scrollbar height if it will actually be visible */
+    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+    int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
+    int horiz_sb_height = need_horiz_sb ? sb_size : 0;
+
+    int content_height = header_height + (row_height * visiblelines) + horiz_sb_height + 2;
+    g_object_set_data(G_OBJECT(gtk_data->scrolled_win), "iup-table-target-height", GINT_TO_POINTER(content_height));
+  }
+
+  /* Store VISIBLECOLUMNS for width clamping in LayoutUpdate */
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  if (visiblecolumns > 0)
+    g_object_set_data(G_OBJECT(gtk_data->scrolled_win), "iup-table-visible-columns", GINT_TO_POINTER(visiblecolumns));
 
   return IUP_NOERROR;
 }
@@ -1851,6 +1928,106 @@ int iupdrvTableGetBorderWidth(Ihandle* ih)
   return 0;
 }
 
+static int gtk4_table_row_height = -1;
+static int gtk4_table_header_height = -1;
+
+static void gtk4TableMeasureRowMetrics(Ihandle* ih)
+{
+  if (gtk4_table_row_height >= 0)
+    return;
+
+  GtkWidget* temp_window = gtk_window_new();
+
+  /* Create a label like the one used in table cells */
+  GtkWidget* temp_label = gtk_label_new("Wg");
+
+  /* Create a box like the cell container */
+  GtkWidget* temp_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_box_append(GTK_BOX(temp_box), temp_label);
+
+  gtk_window_set_child(GTK_WINDOW(temp_window), temp_box);
+
+  /* Realize to get accurate measurements */
+  gtk_widget_realize(temp_window);
+
+  /* Measure the box (cell container) */
+  int min_h, nat_h;
+  gtk_widget_measure(temp_box, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
+
+  /* GtkColumnView adds padding around each row */
+  gtk4_table_row_height = nat_h + 6;
+
+  /* Header */
+  GtkWidget* temp_header_label = gtk_label_new("Header");
+  GtkWidget* temp_header_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_box_append(GTK_BOX(temp_header_box), temp_header_label);
+
+  /* Measure header */
+  int header_min, header_nat;
+  gtk_widget_measure(temp_header_label, GTK_ORIENTATION_VERTICAL, -1, &header_min, &header_nat, NULL, NULL);
+  gtk4_table_header_height = header_nat + 10;
+
+  /* Clean up */
+  gtk_window_destroy(GTK_WINDOW(temp_window));
+
+  (void)ih;
+}
+
+int iupdrvTableGetRowHeight(Ihandle* ih)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+
+  /* If table is mapped and has rows, try to measure actual row */
+  if (gtk_data && gtk_data->column_view && ih->data->num_lin > 0)
+  {
+    /* Get the selection model to access items */
+    GtkSelectionModel* model = gtk_column_view_get_model(GTK_COLUMN_VIEW(gtk_data->column_view));
+    if (model)
+    {
+      GListModel* list_model = G_LIST_MODEL(model);
+      guint n_items = g_list_model_get_n_items(list_model);
+      if (n_items > 0)
+      {
+        /* Measure the column view's natural height and calculate row height */
+        int min_h, nat_h;
+        gtk_widget_measure(gtk_data->column_view, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
+
+        /* Subtract header height and divide by number of items */
+        gtk4TableMeasureRowMetrics(ih);
+        int content_height = nat_h - gtk4_table_header_height;
+        if (content_height > 0 && n_items > 0)
+        {
+          int measured_row = content_height / n_items;
+          if (measured_row > 0)
+            return measured_row;
+        }
+      }
+    }
+  }
+
+  /* Fallback to pre-measured value */
+  gtk4TableMeasureRowMetrics(ih);
+  return gtk4_table_row_height;
+}
+
+int iupdrvTableGetHeaderHeight(Ihandle* ih)
+{
+  gtk4TableMeasureRowMetrics(ih);
+  return gtk4_table_header_height;
+}
+
+void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+{
+  (void)ih;
+  int sb_size = iupdrvGetScrollbarSize();
+
+  /* GtkScrolledWindow: add scrollbar width */
+  *w += sb_size;
+
+  /* GtkScrolledWindow frame border */
+  *h += 2;
+}
+
 /* ========================================================================= */
 /* Attribute Handlers                                                        */
 /* ========================================================================= */
@@ -1947,6 +2124,7 @@ void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = gtk4TableMapMethod;
   ic->UnMap = gtk4TableUnMapMethod;
+  ic->LayoutUpdate = gtk4TableLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
