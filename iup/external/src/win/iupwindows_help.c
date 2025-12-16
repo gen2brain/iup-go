@@ -9,10 +9,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdint.h>
 
 #include "iup.h"
-#include "iupwin_str.h"
 
 #ifndef SEE_MASK_NOASYNC
 #define SEE_MASK_NOASYNC 0x00000100
@@ -20,7 +18,7 @@
 
 IUP_API int IupExecute(const char *filename, const char* parameters)
 {
-  int err = (int)(intptr_t)ShellExecute(GetDesktopWindow(), TEXT("open"), iupwinStrToSystemFilename(filename), iupwinStrToSystemFilename(parameters), NULL, SW_SHOWNORMAL);
+  INT_PTR err = (INT_PTR)ShellExecuteA(GetDesktopWindow(), "open", filename, parameters, NULL, SW_SHOWNORMAL);
   if (err <= 32)
   {
     switch (err)
@@ -36,21 +34,21 @@ IUP_API int IupExecute(const char *filename, const char* parameters)
 }
 
 IUP_API int IupExecuteWait(const char *filename, const char* parameters)
-{                                          
-  SHELLEXECUTEINFO ExecInfo;
-  memset(&ExecInfo, 0, sizeof(SHELLEXECUTEINFO));
+{
+  SHELLEXECUTEINFOA ExecInfo;
+  memset(&ExecInfo, 0, sizeof(SHELLEXECUTEINFOA));
 
-  ExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+  ExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
   ExecInfo.fMask = SEE_MASK_NOASYNC | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI | SEE_MASK_NO_CONSOLE;
   ExecInfo.hwnd = GetDesktopWindow();
-  ExecInfo.lpVerb = TEXT("open");
-  ExecInfo.lpFile = iupwinStrToSystemFilename(filename);
-  ExecInfo.lpParameters = iupwinStrToSystemFilename(parameters);
+  ExecInfo.lpVerb = "open";
+  ExecInfo.lpFile = filename;
+  ExecInfo.lpParameters = parameters;
   ExecInfo.nShow = SW_SHOWNORMAL;
 
-  if (!ShellExecuteEx(&ExecInfo))
+  if (!ShellExecuteExA(&ExecInfo))
   {
-    int err = (int)(intptr_t)ExecInfo.hInstApp;
+    INT_PTR err = (INT_PTR)ExecInfo.hInstApp;
     switch (err)
     {
     case SE_ERR_FNF:
