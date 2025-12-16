@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
+#include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -42,6 +43,8 @@ static char kEditingRowKey;
 static char kEditingColKey;
 static char kEditEndedKey;
 static char kEditBeginCalledKey;
+static char kTargetHeightKey;
+static char kVisibleColumnsKey;
 
 /* ========================================================================= */
 /* Data Structures                                                           */
@@ -2318,6 +2321,131 @@ int iupdrvTableGetBorderWidth(Ihandle* ih)
   return 2;
 }
 
+static int cocoa_table_row_height = -1;
+static int cocoa_table_header_height = -1;
+
+static void cocoaTableMeasureRowMetrics(Ihandle* ih)
+{
+  if (cocoa_table_row_height >= 0)
+    return;
+
+  NSTableView* temp_table = [[NSTableView alloc] initWithFrame:NSMakeRect(0, 0, 200, 200)];
+
+  /* Add a column */
+  NSTableColumn* column = [[NSTableColumn alloc] initWithIdentifier:@"test"];
+  [column setWidth:100];
+  [[column headerCell] setStringValue:@"Test"];
+  [temp_table addTableColumn:column];
+
+  /* Get row height */
+  cocoa_table_row_height = (int)[temp_table rowHeight];
+
+  if (cocoa_table_row_height <= 0)
+  {
+    /* Fallback: use font metrics */
+    int charheight;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    cocoa_table_row_height = charheight + 4;
+  }
+
+  /* Measure header height */
+  NSTableHeaderView* header = [temp_table headerView];
+  if (header)
+  {
+    NSRect header_frame = [header frame];
+    cocoa_table_header_height = (int)NSHeight(header_frame);
+
+    if (cocoa_table_header_height <= 0)
+    {
+      NSSize header_size = [header intrinsicContentSize];
+      cocoa_table_header_height = (int)header_size.height;
+    }
+  }
+
+  if (cocoa_table_header_height <= 0)
+  {
+    int charheight;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    cocoa_table_header_height = charheight + 6;
+  }
+
+  [column release];
+  [temp_table release];
+}
+
+int iupdrvTableGetRowHeight(Ihandle* ih)
+{
+  NSTableView* table_view = cocoaTableGetTableView(ih);
+
+  /* If table is mapped, get actual row height */
+  if (table_view)
+  {
+    CGFloat row_height = [table_view rowHeight];
+    if (row_height > 0)
+      return (int)row_height;
+  }
+
+  cocoaTableMeasureRowMetrics(ih);
+  return cocoa_table_row_height;
+}
+
+int iupdrvTableGetHeaderHeight(Ihandle* ih)
+{
+  NSTableView* table_view = cocoaTableGetTableView(ih);
+
+  if (table_view)
+  {
+    NSTableHeaderView* header = [table_view headerView];
+    if (header)
+    {
+      NSRect frame = [header frame];
+      int height = (int)NSHeight(frame);
+      if (height > 0)
+        return height;
+    }
+  }
+
+  cocoaTableMeasureRowMetrics(ih);
+  return cocoa_table_header_height;
+}
+
+void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+{
+  NSScrollView* scroll = cocoaTableGetScrollView(ih);
+  int sb_size = iupdrvGetScrollbarSize();
+
+  if (scroll)
+  {
+    NSRect frame = [scroll frame];
+    NSSize content = [scroll contentSize];
+    int border_x = (int)(NSWidth(frame) - content.width);
+    int border_y = (int)(NSHeight(frame) - content.height);
+
+    if (border_x > 0 && border_y > 0)
+    {
+      *w += border_x;
+      *h += border_y;
+    }
+    else
+    {
+      /* Fallback for border */
+      *w += sb_size + 2;
+      *h += 2;
+    }
+  }
+  else
+  {
+    /* Fallback */
+    *w += sb_size + 2;
+    *h += 2;
+  }
+
+  /* Add horizontal scrollbar height when VISIBLECOLUMNS causes it to appear */
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
+    *h += sb_size;
+}
+
 /* ========================================================================= */
 /* Widget Creation - MapMethod                                               */
 /* ========================================================================= */
@@ -2335,7 +2463,7 @@ static int cocoaTableMapMethod(Ihandle* ih)
   if (iupStrBoolean(value))
     table_data->is_virtual_mode = YES;
 
-  /* Create NSScrollView (root widget) */
+  /* Create NSScrollView */
   NSScrollView* scrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)];
   [scrollView setHasVerticalScroller:YES];
   [scrollView setHasHorizontalScroller:NO];
@@ -2435,6 +2563,28 @@ static int cocoaTableMapMethod(Ihandle* ih)
   /* Add to parent */
   iupcocoaAddToParent(ih);
 
+  /* Store target height for VISIBLELINES clamping in LayoutUpdate */
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+  if (visiblelines > 0)
+  {
+    int row_height = iupdrvTableGetRowHeight(ih);
+    int header_height = iupdrvTableGetHeaderHeight(ih);
+    int sb_size = iupdrvGetScrollbarSize();
+
+    /* Only add horizontal scrollbar height if it will actually be visible */
+    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+    int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
+    int horiz_sb_height = need_horiz_sb ? sb_size : 0;
+
+    int target_height = header_height + (row_height * visiblelines) + horiz_sb_height + 2;
+    objc_setAssociatedObject(scrollView, &kTargetHeightKey, @(target_height), OBJC_ASSOCIATION_RETAIN);
+  }
+
+  /* Store VISIBLECOLUMNS for width clamping in LayoutUpdate */
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  if (visiblecolumns > 0)
+    objc_setAssociatedObject(scrollView, &kVisibleColumnsKey, @(visiblecolumns), OBJC_ASSOCIATION_RETAIN);
+
   return IUP_NOERROR;
 }
 
@@ -2474,16 +2624,74 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
   NSView* parent_view = [scroll_view superview];
   if (!parent_view) return;
 
+  int width = ih->currentwidth;
+  int height = ih->currentheight;
+
+  /* If VISIBLELINES is set, clamp height to target */
+  NSNumber* targetHeightNum = objc_getAssociatedObject(scroll_view, &kTargetHeightKey);
+  if (targetHeightNum)
+  {
+    int target_height = [targetHeightNum intValue];
+    if (target_height > 0 && height > target_height)
+      height = target_height;
+  }
+
+  /* If VISIBLECOLUMNS is set, clamp width to show exactly N columns */
+  NSNumber* visColNum = objc_getAssociatedObject(scroll_view, &kVisibleColumnsKey);
+  if (visColNum)
+  {
+    int visible_columns = [visColNum intValue];
+    if (visible_columns > 0)
+    {
+      NSTableView* tableView = (NSTableView*)[scroll_view documentView];
+      if (tableView && [tableView isKindOfClass:[NSTableView class]])
+      {
+        NSArray* columns = [tableView tableColumns];
+        int num_cols = visible_columns;
+        if (num_cols > (int)[columns count])
+          num_cols = (int)[columns count];
+
+        CGFloat cols_width = 0;
+        for (int c = 0; c < num_cols; c++)
+        {
+          NSTableColumn* column = [columns objectAtIndex:c];
+          CGFloat col_width = [column width];
+          if (col_width <= 0)
+            col_width = 80;  /* fallback to default */
+          cols_width += col_width;
+        }
+
+        int sb_size = iupdrvGetScrollbarSize();
+
+        /* Get actual border from scroll view */
+        NSSize contentSz = [scroll_view contentSize];
+        NSRect frameSz = [scroll_view frame];
+        int border_w = (int)(NSWidth(frameSz) - contentSz.width);
+
+        /* Only add vertical scrollbar width if it will actually be visible */
+        int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+        int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
+        int vert_sb_width = need_vert_sb ? sb_size : 0;
+
+        /* Use ceiling to ensure we have enough space for columns */
+        int cols_width_int = (int)ceil(cols_width);
+        int target_width = cols_width_int + vert_sb_width + border_w;
+        if (width > target_width)
+          width = target_width;
+      }
+    }
+  }
+
   NSRect parent_bounds = [parent_view bounds];
   NSRect child_rect;
 
   if ([parent_view isFlipped])
   {
-    child_rect = NSMakeRect(ih->x, ih->y, ih->currentwidth, ih->currentheight);
+    child_rect = NSMakeRect(ih->x, ih->y, width, height);
   }
   else
   {
-    child_rect = NSMakeRect(ih->x, parent_bounds.size.height - ih->y - ih->currentheight, ih->currentwidth, ih->currentheight);
+    child_rect = NSMakeRect(ih->x, parent_bounds.size.height - ih->y - height, width, height);
   }
 
   [scroll_view setFrame:child_rect];

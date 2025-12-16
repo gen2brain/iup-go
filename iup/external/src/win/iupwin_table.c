@@ -675,6 +675,143 @@ int iupdrvTableGetBorderWidth(Ihandle* ih)
   return 2;
 }
 
+static int win_table_row_height = -1;
+static int win_table_header_height = -1;
+
+static void winTableMeasureRowMetrics(Ihandle* ih)
+{
+  if (win_table_row_height >= 0)
+    return;
+
+  /* Create temporary ListView to measure */
+  HWND temp_list = CreateWindowEx(
+    WS_EX_CLIENTEDGE,
+    WC_LISTVIEW,
+    NULL,
+    WS_CHILD | LVS_REPORT | LVS_SINGLESEL,
+    0, 0, 200, 200,
+    GetDesktopWindow(),
+    NULL,
+    NULL,
+    NULL
+  );
+
+  if (!temp_list)
+  {
+    /* Fallback to font metrics */
+    int charheight;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    win_table_row_height = charheight + 4;
+    win_table_header_height = charheight + 8;
+    return;
+  }
+
+  /* Add a column */
+  LVCOLUMN col;
+  ZeroMemory(&col, sizeof(LVCOLUMN));
+  col.mask = LVCF_TEXT | LVCF_WIDTH;
+  col.pszText = TEXT("Test");
+  col.cx = 100;
+  ListView_InsertColumn(temp_list, 0, &col);
+
+  /* Add an item */
+  LVITEM item;
+  ZeroMemory(&item, sizeof(LVITEM));
+  item.mask = LVIF_TEXT;
+  item.iItem = 0;
+  item.pszText = TEXT("WWWWWWWWWW");
+  ListView_InsertItem(temp_list, &item);
+
+  /* Get item rectangle */
+  RECT rect;
+  if (ListView_GetItemRect(temp_list, 0, &rect, LVIR_BOUNDS))
+    win_table_row_height = rect.bottom - rect.top;
+  else
+  {
+    int charheight;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    win_table_row_height = charheight + 4;
+  }
+
+  /* Get header height */
+  HWND header = ListView_GetHeader(temp_list);
+  if (header)
+  {
+    RECT header_rect;
+    GetWindowRect(header, &header_rect);
+    win_table_header_height = header_rect.bottom - header_rect.top;
+  }
+  else
+  {
+    win_table_header_height = win_table_row_height + 4;
+  }
+
+  DestroyWindow(temp_list);
+}
+
+int iupdrvTableGetRowHeight(Ihandle* ih)
+{
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+  HWND list_view = winTableGetListView(ih);
+  (void)data;
+
+  /* If table is mapped and has items, measure directly */
+  if (list_view && ih->data->num_lin > 0)
+  {
+    RECT rect;
+    if (ListView_GetItemRect(list_view, 0, &rect, LVIR_BOUNDS))
+    {
+      int height = rect.bottom - rect.top;
+      if (height > 0)
+        return height;
+    }
+  }
+
+  /* Fallback to pre-measured value */
+  winTableMeasureRowMetrics(ih);
+  return win_table_row_height;
+}
+
+int iupdrvTableGetHeaderHeight(Ihandle* ih)
+{
+  HWND list_view = winTableGetListView(ih);
+
+  if (list_view)
+  {
+    HWND header = ListView_GetHeader(list_view);
+    if (header)
+    {
+      RECT rect;
+      GetWindowRect(header, &rect);
+      int height = rect.bottom - rect.top;
+      if (height > 0)
+        return height;
+    }
+  }
+
+  winTableMeasureRowMetrics(ih);
+  return win_table_header_height;
+}
+
+void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+{
+  int sb_size = iupdrvGetScrollbarSize();
+
+  /* ListView border from system metrics */
+  int border = GetSystemMetrics(SM_CXEDGE) * 2;
+
+  /* ListView: add scrollbar width + border */
+  *w += sb_size + border;
+
+  /* Vertical border */
+  *h += border;
+
+  /* Add horizontal scrollbar height when VISIBLECOLUMNS causes it to appear */
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
+    *h += sb_size;
+}
+
 /****************************************************************************
  * Table Structure
  ****************************************************************************/
@@ -2233,12 +2370,90 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
   HWND list_view = winTableGetListView(ih);
   BOOL was_visible = list_view ? IsWindowVisible(list_view) : FALSE;
 
-  /* Call base implementation first to position and size the control */
+  /* Call base implementation to position and size the control */
   iupdrvBaseLayoutUpdateMethod(ih);
 
-  /* Now adjust column widths based on the new size */
+  /* Enforce VISIBLELINES/VISIBLECOLUMNS constraints */
   if (list_view)
   {
+    RECT window_rect;
+    GetWindowRect(list_view, &window_rect);
+    int current_width = window_rect.right - window_rect.left;
+    int current_height = window_rect.bottom - window_rect.top;
+    int new_width = current_width;
+    int new_height = current_height;
+    int need_resize = 0;
+
+    /* VISIBLELINES height constraint */
+    int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+    if (visiblelines > 0)
+    {
+      int row_height = iupdrvTableGetRowHeight(ih);
+      int header_height = iupdrvTableGetHeaderHeight(ih);
+      int sb_size = iupdrvGetScrollbarSize();
+      int border = GetSystemMetrics(SM_CXEDGE) * 2;
+
+      /* Only add horizontal scrollbar height if it will actually be visible */
+      int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+      int need_horiz_sb = (visiblecolumns > 0 && ih->data->num_col > visiblecolumns);
+      int horiz_sb_height = need_horiz_sb ? sb_size : 0;
+
+      int max_height = header_height + (row_height * visiblelines) + horiz_sb_height + border;
+
+      if (current_height > max_height)
+      {
+        new_height = max_height;
+        need_resize = 1;
+      }
+    }
+
+    /* VISIBLECOLUMNS width constraint */
+    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+    if (visiblecolumns > 0)
+    {
+      int cols_width = 0;
+      int num_cols = visiblecolumns;
+      if (num_cols > ih->data->num_col)
+        num_cols = ih->data->num_col;
+
+      for (int c = 0; c < num_cols; c++)
+      {
+        /* Skip dummy column at index 0 - real columns start at index 1 */
+        int col_width = ListView_GetColumnWidth(list_view, c + 1);
+        if (col_width <= 0)
+          col_width = 80;  /* fallback to default */
+        cols_width += col_width;
+      }
+
+      int sb_size = iupdrvGetScrollbarSize();
+      int border = GetSystemMetrics(SM_CXEDGE) * 2;
+
+      /* Only add vertical scrollbar width if it will actually be visible */
+      int need_vert_sb = (visiblelines > 0 && ih->data->num_lin > visiblelines);
+      int vert_sb_width = need_vert_sb ? sb_size : 0;
+
+      int max_width = cols_width + vert_sb_width + border;
+
+      if (current_width > max_width)
+      {
+        new_width = max_width;
+        need_resize = 1;
+      }
+    }
+
+    if (need_resize)
+    {
+      HWND parent = GetParent(list_view);
+      POINT pt = { window_rect.left, window_rect.top };
+      ScreenToClient(parent, &pt);
+
+      SetWindowPos(list_view, NULL,
+                   pt.x, pt.y,
+                   new_width,
+                   new_height,
+                   SWP_NOZORDER);
+    }
+
     RECT rect;
     GetClientRect(list_view, &rect);
     int width = rect.right - rect.left;

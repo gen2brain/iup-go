@@ -81,6 +81,9 @@ void iupdrvTableSetShowGrid(Ihandle* ih, int show);
 
 /* Sizing */
 int iupdrvTableGetBorderWidth(Ihandle* ih);
+int iupdrvTableGetRowHeight(Ihandle* ih);
+int iupdrvTableGetHeaderHeight(Ihandle* ih);
+void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h);
 
 
 #ifdef __cplusplus
