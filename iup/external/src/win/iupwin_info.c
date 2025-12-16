@@ -16,10 +16,8 @@
 #include "iup_drv.h"
 
 #include "iupwin_info.h"
-#include "iupwin_str.h"
 
 #include <windows.h>
-#include <shlobj.h> /* for SHGetFolderPath */
 
 
 #ifdef _MSC_VER
@@ -428,138 +426,36 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
 IUP_SDK_API char *iupdrvGetComputerName(void)
 {
   DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
-  TCHAR wstr[MAX_COMPUTERNAME_LENGTH + 1];
-  GetComputerName(wstr, &size);
-  return iupwinStrFromSystem(wstr);
+  char* str = iupStrGetMemory(size);
+  GetComputerNameA((LPSTR)str, &size);
+  return str;
 }
-
-#define UNLEN 256 /* from <Lmcons.h> */
 
 IUP_SDK_API char *iupdrvGetUserName(void)
 {
-  DWORD size = UNLEN+1;
-  TCHAR wstr[UNLEN+1];
-  GetUserName(wstr, &size);
-  return iupwinStrFromSystem(wstr);
+  DWORD size = 256;
+  char* str = iupStrGetMemory(size);
+  GetUserNameA((LPSTR)str, &size);
+  return str;
 }
 
 IUP_SDK_API int iupdrvSetCurrentDirectory(const char* path)
 {
-  return SetCurrentDirectory(iupwinStrToSystemFilename(path));
+  return SetCurrentDirectoryA(path);
 }
 
 IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
-  TCHAR* wcur_dir = NULL;
-  char* cur_dir;
+  char* cur_dir = NULL;
 
-  int len = GetCurrentDirectory(0, NULL);
+  int len = GetCurrentDirectoryA(0, NULL);
   if (len == 0) return NULL;
 
-  wcur_dir = (TCHAR*)malloc((len + 2)*sizeof(TCHAR));
-  GetCurrentDirectory(len + 1, wcur_dir);
-  wcur_dir[len] = '\\';
-  wcur_dir[len + 1] = 0;
+  cur_dir = iupStrGetMemory(len + 2);
+  GetCurrentDirectoryA(len + 1, cur_dir);
+  cur_dir[len] = '\\';
+  cur_dir[len + 1] = 0;
 
-  cur_dir = iupwinStrFromSystemFilename(wcur_dir);
-  free(wcur_dir);
   return cur_dir;
 }
 
-static int iupwinMakeDirectory(const char* path)
-{
-  DWORD attrib = GetFileAttributesA(path);
-  if (attrib != INVALID_FILE_ATTRIBUTES)
-  {
-    if (attrib & FILE_ATTRIBUTE_DIRECTORY)
-      return 1;
-    return 0;
-  }
-  return CreateDirectoryA(path, NULL) ? 1 : 0;
-}
-
-IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
-{
-  char* homedrive;
-  char* homepath;
-
-  if (!app_name || !app_name[0])
-  {
-    filename[0] = '\0';
-    return 0;
-  }
-
-  if (use_system)
-  {
-    /* Windows Local AppData: %LOCALAPPDATA%\appname\config.cfg */
-    TCHAR wpath[MAX_PATH];
-    if (SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, wpath) == S_OK)
-    {
-      strcpy(filename, iupwinStrFromSystemFilename(wpath));
-
-      /* Add app directory */
-      strcat(filename, "\\");
-      strcat(filename, app_name);
-      iupwinMakeDirectory(filename);
-
-      /* Add config filename */
-      strcat(filename, "\\config.cfg");
-      return 1;
-    }
-  }
-
-  /* Legacy: %HOMEDRIVE%%HOMEPATH%\appname.cfg */
-  homedrive = getenv("HOMEDRIVE");
-  homepath = getenv("HOMEPATH");
-  if (homedrive && homepath)
-  {
-    strcpy(filename, homedrive);
-    strcat(filename, homepath);
-    strcat(filename, "\\");
-    strcat(filename, app_name);
-    strcat(filename, ".cfg");
-    return 1;
-  }
-
-  filename[0] = '\0';
-  return 0;
-}
-
-IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
-{
-  HANDLE EventSource;
-  WORD wtype = 0;
-
-  int size;
-  char* value = iupStrGetLargeMem(&size);
-  vsnprintf(value, size, format, arglist);
-
-  if (iupStrEqualNoCase(type, "DEBUG"))
-  {
-    OutputDebugString(iupwinStrToSystem(value));
-    return;
-  }
-  else if (iupStrEqualNoCase(type, "ERROR"))
-    wtype = EVENTLOG_ERROR_TYPE;
-  else if (iupStrEqualNoCase(type, "WARNING"))
-    wtype = EVENTLOG_WARNING_TYPE;
-  else if (iupStrEqualNoCase(type, "INFO"))
-    wtype = EVENTLOG_INFORMATION_TYPE;
-
-  EventSource = RegisterEventSource(NULL, TEXT("Application"));
-  if (EventSource)
-  {
-    TCHAR* wstr[1];
-    wstr[0] = iupwinStrToSystem(value);
-    ReportEvent(EventSource, wtype, 0, 0, NULL, 1, 0, (const WCHAR **)wstr, NULL);
-    DeregisterEventSource(EventSource);
-  }
-}
-
-IUP_API void IupLog(const char* type, const char* format, ...)
-{
-  va_list arglist;
-  va_start(arglist, format);
-  IupLogV(type, format, arglist);
-  va_end(arglist);
-}
