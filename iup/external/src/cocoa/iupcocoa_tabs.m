@@ -84,7 +84,7 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
 }
 
 /* The layout method is the core of the composite control.
-   It positions the tab bar and content area based on ih->data->type. */
+   It positions the tab bar and content area based on ih->data->type and ih->data->orientation. */
 - (void)layout
 {
   [super layout];
@@ -96,9 +96,9 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
   NSRect tab_bar_frame = NSZeroRect;
   NSRect content_frame = NSZeroRect;
 
-  /* We use kTabBarViewHeight from IupCocoaTabBarView.h as the thickness for horizontal tab bars.
-     For vertical, we use kMinTabCellWidth as the thickness. */
-  const CGFloat kVerticalTabBarWidth = kMinTabCellWidth;
+  /* For vertical tab bars (LEFT/RIGHT). The dimensions are swapped based on text orientation. */
+  BOOL isVerticalText = (ih->data->orientation == ITABS_VERTICAL);
+  CGFloat kVerticalTabBarWidth = isVerticalText ? kTabCellHeight : kMinTabCellWidth;
 
   switch (ih->data->type) {
     case ITABS_BOTTOM:
@@ -117,7 +117,7 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
       [self.tabBarView setOrientation:IupCocoaTabBarVertical];
       break;
     case ITABS_TOP:
-           default:
+    default:
       tab_bar_frame = NSMakeRect(0, 0, bounds.size.width, kTabBarViewHeight);
       content_frame = NSMakeRect(0, kTabBarViewHeight, bounds.size.width, bounds.size.height - kTabBarViewHeight);
       [self.tabBarView setOrientation:IupCocoaTabBarHorizontal];
@@ -618,6 +618,9 @@ void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_im
   int text_width = 0;
   int text_height = 0;
 
+  /* Check if this is vertical text orientation for LEFT/RIGHT tabs */
+  int isVerticalText = (ih->data->orientation == ITABS_VERTICAL) && (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT);
+
   /* Measure text dimensions */
   if (tab_title)
   {
@@ -672,8 +675,17 @@ void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_im
   if (width > kMaxTabCellWidth)
     width = kMaxTabCellWidth;
 
-  if (tab_width) *tab_width = width;
-  if (tab_height) *tab_height = height;
+  if (isVerticalText)
+  {
+    /* For vertical text, the text width becomes the tab height (text is rotated 90) */
+    if (tab_width) *tab_width = height;
+    if (tab_height) *tab_height = width;
+  }
+  else
+  {
+    if (tab_width) *tab_width = width;
+    if (tab_height) *tab_height = height;
+  }
 }
 
 int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
@@ -766,28 +778,26 @@ static int cocoaTabsSetMultilineAttrib(Ihandle* ih, const char* value)
 
 static int cocoaTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
 {
+  /* TABTYPE and TABORIENTATION are independent */
+  /* TABTYPE only sets the tab position, not the text orientation */
   if (iupStrEqualNoCase(value, "BOTTOM"))
   {
     ih->data->type = ITABS_BOTTOM;
-    ih->data->orientation = ITABS_HORIZONTAL;
     ih->data->is_multiline = 0;
   }
   else if (iupStrEqualNoCase(value, "LEFT"))
   {
     ih->data->type = ITABS_LEFT;
-    ih->data->orientation = ITABS_VERTICAL;
-    ih->data->is_multiline = 1;
+    ih->data->is_multiline = 1; /* LEFT/RIGHT tabs work better with MULTILINE */
   }
   else if (iupStrEqualNoCase(value, "RIGHT"))
   {
     ih->data->type = ITABS_RIGHT;
-    ih->data->orientation = ITABS_VERTICAL;
-    ih->data->is_multiline = 1;
+    ih->data->is_multiline = 1; /* LEFT/RIGHT tabs work better with MULTILINE */
   }
-  else
+  else /* "TOP" */
   {
     ih->data->type = ITABS_TOP;
-    ih->data->orientation = ITABS_HORIZONTAL;
     ih->data->is_multiline = 0;
   }
 
@@ -796,6 +806,19 @@ static int cocoaTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
     IupTabsRootView* root_view = (IupTabsRootView*)ih->handle;
     [root_view layout];
   }
+  return 0;
+}
+
+static int cocoaTabsSetTabOrientationAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle) /* Allow to set only before mapping */
+    return 0;
+
+  if (iupStrEqualNoCase(value, "VERTICAL"))
+    ih->data->orientation = ITABS_VERTICAL;
+  else
+    ih->data->orientation = ITABS_HORIZONTAL;
+
   return 0;
 }
 
@@ -1167,6 +1190,9 @@ static int cocoaTabsMapMethod(Ihandle* ih)
   iupcocoaSetAssociatedViews(ih, root_view, root_view);
   cocoaTabsGetVisibleArray(ih);
 
+  /* Set text orientation before tab type, as layout depends on it */
+  [tab_bar_view setTextOrientation: (ih->data->orientation == ITABS_VERTICAL) ? IupCocoaTabTextVertical : IupCocoaTabTextHorizontal];
+
   /* Set attributes that must be set before children are added */
   cocoaTabsSetTabTypeAttrib(ih, iupTabsGetTabTypeAttrib(ih));
 
@@ -1301,7 +1327,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, cocoaTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, cocoaTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, cocoaTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, cocoaTabsSetTabOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 

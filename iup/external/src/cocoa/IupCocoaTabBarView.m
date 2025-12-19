@@ -44,13 +44,27 @@
   {
     NSUInteger tabListHeight = self.allowsTabListMenu ? kHeightOfTabList : 0;
     CGFloat viewHeight = [self frame].size.height;
+    CGFloat availableHeight = viewHeight - tabListHeight;
+
+    CGFloat preferredTabHeight = (self.textOrientation == IupCocoaTabTextVertical) ? kMinTabCellWidth : kTabCellHeight;
+
+    /* Calculate actual tab height to fit all tabs in available space (like horizontal does for width) */
+    CGFloat tabHeight = preferredTabHeight;
+    if ([tabs count] > 0)
+    {
+      CGFloat totalNeeded = [tabs count] * preferredTabHeight;
+      if (totalNeeded > availableHeight)
+      {
+        tabHeight = availableHeight / [tabs count];
+      }
+    }
 
     CGFloat x = 0;
     /* Since the view is NOT flipped, y=0 is at the bottom. */
     /* We must calculate the y-origin (bottom-left) from the top. */
-    CGFloat y = viewHeight - tabListHeight - ((index + 1) * kTabCellHeight);
+    CGFloat y = viewHeight - tabListHeight - ((index + 1) * tabHeight);
     CGFloat width = [self frame].size.width; /* Use the full width of the tab bar */
-    CGFloat height = kTabCellHeight; /* Use fixed kTabCellHeight */
+    CGFloat height = tabHeight;
 
     NSRect rect = NSMakeRect(x, y, width, height);
     return rect;
@@ -289,6 +303,7 @@
 @synthesize selectedTab;
 @synthesize orientation;
 @synthesize tabPosition;
+@synthesize textOrientation;
 @synthesize allowsDragging;
 @synthesize allowsTabListMenu;
 @synthesize showsCloseButtonOnHover;
@@ -320,6 +335,7 @@
 
     orientation = IupCocoaTabBarHorizontal; /* Default orientation */
     tabPosition = IupCocoaTabPositionTop; /* Default position */
+    textOrientation = IupCocoaTabTextHorizontal; /* Default text orientation */
     allowsDragging = NO; /* Disabled by default */
     allowsTabListMenu = NO; /* Disabled by default */
     showsCloseButtonOnHover = NO; /* Default to persistent close buttons */
@@ -1020,30 +1036,86 @@
   NSRect titleRect = [self frame];
   CGFloat fontHeight = self.titleAttributedString.size.height;
 
-  /* The text drawing logic is also identical for both orientations. */
-  /* The text is vertically centered and positioned between the image and the close button. */
-  int yOffset = (titleRect.size.height - fontHeight) / 2.0;
-  titleRect.size.height = fontHeight;
-  titleRect.origin.y += yOffset;
+  BOOL isVerticalText = ([[self tabBarView] textOrientation] == IupCocoaTabTextVertical) &&
+                        ([[self tabBarView] orientation] == IupCocoaTabBarVertical);
 
-  CGFloat leftInset = (leftOffset > 0.0) ? leftOffset : 8.0;
-  CGFloat rightInset;
-
-  if ([self hasCloseButton])
+  if (isVerticalText)
   {
-    /* Reserve a square on the right for the close button. */
-    /* The button rect is (width - height, y, height, height). */
-    rightInset = [self frame].size.height;
+    /* Draw rotated text for TABORIENTATION=VERTICAL in vertical tab bars */
+    NSGraphicsContext *context = [NSGraphicsContext currentContext];
+    [context saveGraphicsState];
+
+    NSRect tabFrame = [self frame];
+    CGFloat centerX = NSMidX(tabFrame);
+    CGFloat centerY = NSMidY(tabFrame);
+
+    /* Rotate 90 counterclockwise around center of tab cell */
+    NSAffineTransform *transform = [NSAffineTransform transform];
+    [transform translateXBy:centerX yBy:centerY];
+    [transform rotateByDegrees:90];
+    [transform translateXBy:-centerX yBy:-centerY];
+    [transform concat];
+
+    CGFloat drawWidth = tabFrame.size.height;   /* 80 - maps to screen vertical */
+    CGFloat drawHeight = tabFrame.size.width;   /* 28 - maps to screen horizontal */
+
+    NSRect drawRect;
+    drawRect.origin.x = centerX - drawWidth / 2.0;
+    drawRect.origin.y = centerY - drawHeight / 2.0;
+    drawRect.size.width = drawWidth;
+    drawRect.size.height = drawHeight;
+
+    /* Apply screen top/bottom margins (affects drawing X) */
+    CGFloat screenVerticalMargin = 6.0;
+    drawRect.origin.x += screenVerticalMargin;
+    drawRect.size.width -= 2 * screenVerticalMargin;
+
+    /* Apply screen left/right margins (affects drawing Y) */
+    CGFloat screenHorizontalMargin = 2.0;
+    drawRect.origin.y += screenHorizontalMargin;
+    drawRect.size.height -= 2 * screenHorizontalMargin;
+
+    /* Text is horizontally centered due to paragraph style (NSTextAlignmentCenter) */
+    /* Vertically center in screen coords = center in drawing Y */
+    CGFloat textHeight = self.titleAttributedString.size.height;
+    CGFloat yOffset = (drawRect.size.height - textHeight) / 2.0;
+    if (yOffset > 0)
+    {
+      drawRect.origin.y += yOffset;
+      drawRect.size.height = textHeight;
+    }
+
+    [self.titleAttributedString drawInRect:drawRect];
+
+    [context restoreGraphicsState];
   }
   else
   {
-    rightInset = 10.0;
+    /* Standard horizontal text drawing */
+    /* The text is vertically centered and positioned between the image and the close button. */
+    int yOffset = (titleRect.size.height - fontHeight) / 2.0;
+    titleRect.size.height = fontHeight;
+    titleRect.origin.y += yOffset;
+
+    CGFloat leftInset = (leftOffset > 0.0) ? leftOffset : 8.0;
+    CGFloat rightInset;
+
+    if ([self hasCloseButton])
+    {
+      /* Reserve a square on the right for the close button. */
+      /* The button rect is (width - height, y, height, height). */
+      rightInset = [self frame].size.height;
+    }
+    else
+    {
+      rightInset = 10.0;
+    }
+
+    titleRect.origin.x += leftInset;
+    titleRect.size.width -= (leftInset + rightInset);
+
+    [self.titleAttributedString drawInRect:titleRect];
   }
-
-  titleRect.origin.x += leftInset;
-  titleRect.size.width -= (leftInset + rightInset);
-
-  [self.titleAttributedString drawInRect:titleRect];
 
   if ([self hasCloseButton])
   {
