@@ -44,22 +44,27 @@ package iup
 #cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_ICONV
 
 #cgo windows CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
-#cgo windows,!gtk,!qt CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
+#cgo windows,!gtk,!gtk4,!qt CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
 #cgo windows LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 #cgo windows,gl LDFLAGS: -lopengl32
 
 #cgo windows,gtk CFLAGS: -Iexternal/src/gtk
 #cgo windows,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
-#cgo windows,gtk,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo darwin,!gtk,!qt CFLAGS: -Iexternal/src/cocoa -x objective-c
-#cgo darwin,!gtk,!qt LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit
+#cgo windows,gtk4 CFLAGS: -Iexternal/src/gtk4
+#cgo windows,gtk4,!nopkgconfig pkg-config: gtk4
+
+#cgo darwin CFLAGS: -Iexternal/src/cocoa -x objective-c
+#cgo darwin LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit
 #cgo darwin,gl LDFLAGS: -framework OpenGL
-#cgo darwin,!gtk,!qt,web LDFLAGS: -framework WebKit
+#cgo darwin,!gtk,!gtk4,!qt,web LDFLAGS: -framework WebKit
 
 #cgo darwin,gtk CFLAGS: -Iexternal/src/gtk -x objective-c
-#cgo darwin,gtk LDFLAGS: -framework SystemConfiguration -framework QuartzCore
-#cgo darwin,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-quartz-3.0
+#cgo darwin,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
 #cgo darwin,gtk,web CFLAGS: -DIUPWEB_USE_DLOPEN
+
+#cgo darwin,gtk4 CFLAGS: -Iexternal/src/gtk4 -x objective-c
+#cgo darwin,gtk4,!nopkgconfig pkg-config: gtk4
+#cgo darwin,gtk4,web CFLAGS: -DIUPWEB_USE_DLOPEN
 */
 import "C"
