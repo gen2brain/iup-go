@@ -299,6 +299,12 @@ public:
   {
     QSize size = QStyledItemDelegate::sizeHint(option, index);
 
+    /* Use font-based height with small fixed padding for consistency */
+    QFontMetrics fm(option.font);
+    int normalized_height = fm.height() + 4;  /* font height + 4px padding (2px top + 2px bottom) */
+    if (size.height() > normalized_height)
+      size.setHeight(normalized_height);
+
     if (ih && ih->data->show_image)
     {
       /* Add space for image width, but do NOT expand row height for images.
@@ -437,8 +443,6 @@ static void iupqtListMeasureItemMetrics(Ihandle* ih)
     temp_list->setMinimumSize(0, 0);
     temp_list->addItem("WWWWWWWWWW");  /* 10 W characters */
 
-    int actual_row_height = temp_list->sizeHintForRow(0);
-
     int actual_item_width = temp_list->sizeHintForColumn(0);
 
     QFontMetrics fm(temp_list->font());
@@ -448,17 +452,9 @@ static void iupqtListMeasureItemMetrics(Ihandle* ih)
     iupqt_list_item_padding_x = actual_item_width - text_width;
     if (iupqt_list_item_padding_x < 0) iupqt_list_item_padding_x = 0;
 
-    /* If sizeHintForRow didn't work, fall back to style calculation */
-    if (actual_row_height <= 0)
-    {
-      QStyle* style = QApplication::style();
-      int focus_margin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, nullptr, nullptr);
-      actual_row_height = char_height + 2 * (focus_margin + 1);
-    }
-
-    iupqt_list_row_height = actual_row_height;
-    iupqt_list_item_space = actual_row_height - char_height;
-    if (iupqt_list_item_space < 0) iupqt_list_item_space = 0;
+    /* Use fixed 4px item spacing to match IupQtListItemDelegate::sizeHint(). */
+    iupqt_list_item_space = 4;
+    iupqt_list_row_height = char_height + iupqt_list_item_space;
 
     delete temp_list;
   }
@@ -1822,12 +1818,9 @@ static int qtListMapMethod(Ihandle* ih)
       }
     });
 
-    /* Setup image delegate if needed */
-    if (ih->data->show_image)
-    {
-      IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
-      list->setItemDelegate(delegate);
-    }
+    /* Use custom delegate to normalize item heights across platforms. The delegate also handles images. */
+    IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
+    list->setItemDelegate(delegate);
 
     /* Set initial items */
     iupListSetInitialItems(ih);
@@ -1880,6 +1873,10 @@ static int qtListMapMethod(Ihandle* ih)
       view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
       view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     }
+
+    /* Use custom delegate to normalize item heights across platforms. The delegate also handles images. */
+    IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
+    view->setItemDelegate(delegate);
 
     /* Connect selection signals */
     QObject::connect(view->selectionModel(), &QItemSelectionModel::selectionChanged,
@@ -1947,12 +1944,9 @@ static int qtListMapMethod(Ihandle* ih)
       list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     }
 
-    /* Setup image delegate if needed */
-    if (ih->data->show_image)
-    {
-      IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
-      list->setItemDelegate(delegate);
-    }
+    /* Use custom delegate to normalize item heights across platforms. The delegate also handles images. */
+    IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
+    list->setItemDelegate(delegate);
 
     /* Connect signals */
     QObject::connect(list, &QListWidget::itemSelectionChanged, [list, ih]() {
