@@ -18,7 +18,7 @@ func main() {
 	)
 
 	//btn.SetAttribute("BGCOLOR", "0 128 0")
-	//btn.SetAttribute("BORDER", "Yes")
+	btn.SetAttribute("BORDER", "Yes")
 
 	dlg := iup.Dialog(iup.Vbox(btn)).SetAttributes(`MARGIN=10x10, GAP=10, TITLE="BackgroundBox"`)
 

@@ -46,9 +46,9 @@ func main() {
 		iup.Vbox(
 			mltline,
 			iup.Hbox(text, list),
-			iup.Hbox(btnAppend, btnInsert, btnBorder, btnCaret, btnReadonly, btnSelection),
-			iup.Hbox(btnSelectedtext, btnNc, btnValue),
-		),
+			iup.Hbox(btnAppend, btnInsert, btnBorder, btnCaret, btnReadonly, btnSelection).SetAttributes(`GAP=5`),
+			iup.Hbox(btnSelectedtext, btnNc, btnValue).SetAttributes(`GAP=5`),
+		).SetAttributes(`MARGIN=5x5, GAP=5`),
 	)
 
 	iup.SetAttributes(dlg, "TITLE=\"MultiLine Example\", SIZE=HALFxQUARTER")
