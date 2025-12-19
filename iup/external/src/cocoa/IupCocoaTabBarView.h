@@ -36,6 +36,12 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
   IupCocoaTabPositionRight
 };
 
+/* Enum for tab text orientation (TABORIENTATION attribute) */
+typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
+  IupCocoaTabTextHorizontal,  /* Text drawn horizontally (default) */
+  IupCocoaTabTextVertical     /* Text drawn rotated 90 degrees */
+};
+
 @interface IupCocoaTabBarView : NSView<NSMenuDelegate, NSDraggingSource>
 {
   NSMutableArray* tabs;
@@ -61,9 +67,10 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
   id<IupCocoaTabBarViewDelegate> delegate;
 
   IupCocoaTabBarOrientation orientation;
-  IupCocoaTabPosition tabPosition; /* New ivar */
+  IupCocoaTabPosition tabPosition;
+  IupCocoaTabTextOrientation textOrientation;
   BOOL allowsDragging;
-  BOOL allowsTabListMenu; /* New property */
+  BOOL allowsTabListMenu;
   BOOL showsCloseButtonOnHover;
   BOOL allowsAddingTabsByDoubleClick;
 }
@@ -80,7 +87,8 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabPosition) {
 @property(nonatomic, retain) NSColor* smallControlColor;
 @property(nonatomic, assign) id<IupCocoaTabBarViewDelegate> delegate;
 @property(nonatomic, assign) IupCocoaTabBarOrientation orientation;
-@property(nonatomic, assign) IupCocoaTabPosition tabPosition; /* New property */
+@property(nonatomic, assign) IupCocoaTabPosition tabPosition;
+@property(nonatomic, assign) IupCocoaTabTextOrientation textOrientation;
 @property(nonatomic, assign) BOOL allowsDragging;
 @property(nonatomic, assign) BOOL allowsTabListMenu;
 @property(nonatomic, assign) BOOL showsCloseButtonOnHover;
