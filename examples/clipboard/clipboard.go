@@ -255,7 +255,7 @@ func main() {
 
 	// Layout
 	vboxMain := iup.Vbox(
-		iup.Label("IUP Clipboard Comprehensive Demo").SetAttributes(`FONT="Sans, Bold 12"`),
+		iup.Label("IUP Clipboard Demo").SetAttributes(`FONT="Sans, Bold 12"`),
 
 		iup.Frame(iup.Vbox(
 			iup.Label("Input Text:"),
