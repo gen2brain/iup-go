@@ -693,7 +693,12 @@ static char* iMatrixReadFile(const char* filename)
   }
 
   fseek(file, 0, SEEK_SET);
-  fread(data, size, 1, file);
+  if (fread(data, size, 1, file) != 1)
+  {
+    free(data);
+    fclose(file);
+    return NULL;
+  }
   data[size] = 0;
   fclose(file);
 

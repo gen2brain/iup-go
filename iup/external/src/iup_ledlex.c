@@ -371,18 +371,18 @@ int iupLexError (int n, ...)
   va_end(va);
 
   if (ilex.file || ilex.filename)
-    sprintf(ilex_erromsg, "led(%s):\n  -bad input at line %d\n  -%s\n", ilex.filename, ilex.line, msg);
+    snprintf(ilex_erromsg, sizeof(ilex_erromsg), "led(%s):\n  -bad input at line %d\n  -%s\n", ilex.filename, ilex.line, msg);
   else
   {
     const char* f = ilex.buffer;
     char* firstline = iupStrDupUntil(&f, '\n');
     if (firstline)
     {
-      sprintf(ilex_erromsg, "led(%s):\n  -bad input at line %d\n  -%s\n", firstline, ilex.line, msg);
+      snprintf(ilex_erromsg, sizeof(ilex_erromsg), "led(%s):\n  -bad input at line %d\n  -%s\n", firstline, ilex.line, msg);
       free(firstline);
     }
     else
-      sprintf(ilex_erromsg, "led(%s):\n  -bad input at line %d\n  -%s\n", ilex.buffer, ilex.line, msg);
+      snprintf(ilex_erromsg, sizeof(ilex_erromsg), "led(%s):\n  -bad input at line %d\n  -%s\n", ilex.buffer, ilex.line, msg);
   }
   return n;
 }

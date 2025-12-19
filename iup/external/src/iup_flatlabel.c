@@ -51,8 +51,12 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
   int text_flags = iupDrawGetTextFlags(ih, "TEXTALIGNMENT", "TEXTWRAP", "TEXTELLIPSIS");
   double text_orientation = iupAttribGetDouble(ih, "TEXTORIENTATION");
   const char* draw_image;
-  IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
+  IdrawCanvas* dc;
   int make_inactive = 0;
+
+  dc = iupdrvDrawCreateCanvas(ih);
+  if (!dc)
+    return IUP_DEFAULT;
 
   iupDrawParentBackground(dc, ih);
 
@@ -69,9 +73,11 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, 0, 0, -1, -1);
   }
   else
+  {
     iupFlatDrawBox(dc, 0, ih->currentwidth - 1,
                            0, ih->currentheight - 1,
                            bgcolor, NULL, 1);  /* background is always active */
+  }
 
   draw_image = iupFlatGetImageName(ih, "IMAGE", image, 0, 0, active, &make_inactive);
   iupFlatDrawIcon(ih, dc, 0, 0,
