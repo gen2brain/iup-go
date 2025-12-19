@@ -380,19 +380,16 @@ extern "C" QApplication* iupqtGetApplication(void)
 
 extern "C" int iupqtIsSystemDarkMode(void)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-  /* Qt 6.5+ has proper dark mode detection */
-  QStyleHints* hints = QGuiApplication::styleHints();
-  return (hints->colorScheme() == Qt::ColorScheme::Dark) ? 1 : 0;
-#else
-  /* For older versions, check palette */
   QPalette palette = QGuiApplication::palette();
   QColor bg = palette.color(QPalette::Window);
+  QColor fg = palette.color(QPalette::WindowText);
 
-  /* Simple heuristic: dark mode if background is darker than foreground */
-  int brightness = (bg.red() + bg.green() + bg.blue()) / 3;
-  return brightness < 128 ? 1 : 0;
-#endif
+  /* Calculate relative luminance using standard formula (ITU-R BT.709) */
+  double bg_lum = 0.2126 * bg.redF() + 0.7152 * bg.greenF() + 0.0722 * bg.blueF();
+  double fg_lum = 0.2126 * fg.redF() + 0.7152 * fg.greenF() + 0.0722 * fg.blueF();
+
+  /* Dark theme has lower background luminance than foreground */
+  return (bg_lum < fg_lum) ? 1 : 0;
 }
 
 /****************************************************************************
