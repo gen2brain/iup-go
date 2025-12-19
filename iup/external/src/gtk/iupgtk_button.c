@@ -63,13 +63,11 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
   if (has_bgcolor)
   {
-    GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget* temp_window = gtk_offscreen_window_new();
     GtkWidget* temp_button = gtk_button_new();
 
     gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
     gtk_widget_show_all(temp_window);
-    gtk_widget_realize(temp_window);
-    gtk_widget_realize(temp_button);
 
     gint button_nat_w, button_nat_h;
     gtk_widget_get_preferred_width(temp_button, NULL, &button_nat_w);
@@ -85,7 +83,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   {
     if (image_text_border_x == -1)
     {
-      GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+      GtkWidget* temp_window = gtk_offscreen_window_new();
       GtkWidget* temp_button = gtk_button_new();
       GtkWidget* temp_image = gtk_image_new_from_icon_name("document-open", GTK_ICON_SIZE_BUTTON);
 
@@ -95,8 +93,6 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
       gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
       gtk_widget_show_all(temp_window);
-      gtk_widget_realize(temp_window);
-      gtk_widget_realize(temp_button);
 
       /* Get button's preferred size */
       gint button_width, button_height;
@@ -127,7 +123,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   {
     if (image_border_x == -1)
     {
-      GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+      GtkWidget* temp_window = gtk_offscreen_window_new();
       GtkWidget* temp_button = gtk_button_new();
       GtkWidget* temp_image = gtk_image_new_from_icon_name("document-open", GTK_ICON_SIZE_BUTTON);
 
@@ -135,8 +131,6 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
       gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
       gtk_widget_show_all(temp_window);
-      gtk_widget_realize(temp_window);
-      gtk_widget_realize(temp_button);
 
       /* Get button's preferred size */
       gint button_width, button_height;
@@ -167,13 +161,11 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   {
     if (text_border_x == -1)
     {
-      GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+      GtkWidget* temp_window = gtk_offscreen_window_new();
       GtkWidget* temp_button = gtk_button_new_with_label("Test");
 
       gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
       gtk_widget_show_all(temp_window);
-      gtk_widget_realize(temp_window);
-      gtk_widget_realize(temp_button);
 
       gint button_nat_w, button_nat_h;
       gtk_widget_get_preferred_width(temp_button, NULL, &button_nat_w);
@@ -227,7 +219,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     GtkWidget* temp_window;
     GtkRequisition req;
 
-    temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    temp_window = gtk_offscreen_window_new();
     temp_button = gtk_button_new();
     gtk_widget_set_can_focus(temp_button, TRUE);
     gtk_container_add(GTK_CONTAINER(temp_window), temp_button);

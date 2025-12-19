@@ -364,7 +364,7 @@ static void iupgtkListMeasureItemMetrics(void)
 {
   if (iupgtk_list_item_space < 0)
   {
-    GtkWidget *temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *temp_window = gtk_offscreen_window_new();
     GtkListStore *temp_store = gtk_list_store_new(1, G_TYPE_STRING);
     GtkWidget *temp_tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(temp_store));
     GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
@@ -387,8 +387,6 @@ static void iupgtkListMeasureItemMetrics(void)
 
     gtk_container_add(GTK_CONTAINER(temp_window), temp_tree);
     gtk_widget_show_all(temp_window);
-    gtk_widget_realize(temp_window);
-    gtk_widget_realize(temp_tree);
 
     /* Measure actual row stride by comparing Y positions of row 0 and row 1 */
     {
@@ -444,7 +442,7 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   /* Measure scrolled_window border for plain lists */
   if (scrolled_window_border == -1)
   {
-    GtkWidget *temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *temp_window = gtk_offscreen_window_new();
     GtkWidget *temp_scrolled = gtk_scrolled_window_new(NULL, NULL);
     GtkWidget *temp_label = gtk_label_new("X");
     GtkRequisition label_min, label_nat;
@@ -456,9 +454,6 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
     gtk_container_add(GTK_CONTAINER(temp_scrolled), temp_label);
     gtk_container_add(GTK_CONTAINER(temp_window), temp_scrolled);
     gtk_widget_show_all(temp_window);
-    gtk_widget_realize(temp_window);
-    gtk_widget_realize(temp_scrolled);
-    gtk_widget_realize(temp_label);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
     gtk_widget_get_preferred_size(temp_label, &label_min, &label_nat);
@@ -486,13 +481,11 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   /* Measure plain GtkEntry for non-dropdown editbox list */
   if (editbox_border_y == -1)
   {
-    GtkWidget *temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *temp_window = gtk_offscreen_window_new();
     GtkWidget *temp_entry = gtk_entry_new();
 
     gtk_container_add(GTK_CONTAINER(temp_window), temp_entry);
     gtk_widget_show_all(temp_window);
-    gtk_widget_realize(temp_window);
-    gtk_widget_realize(temp_entry);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
     {
@@ -516,7 +509,7 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
     if (dropdown_button_width == -1)
     {
       /* Measure dropdown borders dynamically from temporary widgets */
-      GtkWidget *temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+      GtkWidget *temp_window = gtk_offscreen_window_new();
       GtkListStore *temp_store = gtk_list_store_new(1, G_TYPE_STRING);
       GtkTreeIter iter;
       gtk_list_store_append(temp_store, &iter);
@@ -531,8 +524,6 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
       gtk_container_add(GTK_CONTAINER(temp_window), temp_combo);
       gtk_widget_show_all(temp_window);
-      gtk_widget_realize(temp_window);
-      gtk_widget_realize(temp_combo);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
       gtk_widget_get_preferred_size(temp_combo, &combo_min, &combo_nat);
@@ -554,7 +545,7 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       gtk_widget_destroy(temp_window);
 
       /* Measure dropdown with editbox */
-      temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+      temp_window = gtk_offscreen_window_new();
 #if GTK_CHECK_VERSION(2, 24, 0)
       GtkWidget* temp_combo_entry = gtk_combo_box_new_with_model_and_entry(GTK_TREE_MODEL(temp_store));
       gtk_combo_box_set_entry_text_column((GtkComboBox*)temp_combo_entry, 0);
@@ -565,8 +556,6 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
       gtk_container_add(GTK_CONTAINER(temp_window), temp_combo_entry);
       gtk_widget_show_all(temp_window);
-      gtk_widget_realize(temp_window);
-      gtk_widget_realize(temp_combo_entry);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
       gtk_widget_get_preferred_size(temp_combo_entry, &combo_entry_min, &combo_entry_nat);

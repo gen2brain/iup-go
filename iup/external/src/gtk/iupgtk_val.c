@@ -33,7 +33,57 @@
 
 void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 {
-  /* LAYOUT_DECORATION_ESTIMATE */
+#if GTK_CHECK_VERSION(3, 0, 0)
+  static int horiz_min_w = -1, horiz_min_h = -1;
+  static int vert_min_w = -1, vert_min_h = -1;
+
+  if (horiz_min_w < 0)
+  {
+    GtkWidget* temp_window = gtk_offscreen_window_new();
+    GtkAdjustment* adj = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 1.0, 0.01, 0.1, 0));
+    GtkWidget* temp_horiz = gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, adj);
+    GtkWidget* temp_vert = gtk_scale_new(GTK_ORIENTATION_VERTICAL, adj);
+    GtkRequisition horiz_req, vert_req;
+
+    gtk_scale_set_draw_value(GTK_SCALE(temp_horiz), FALSE);
+    gtk_scale_set_draw_value(GTK_SCALE(temp_vert), FALSE);
+
+    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_pack_start(GTK_BOX(box), temp_horiz, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), temp_vert, FALSE, FALSE, 0);
+    gtk_container_add(GTK_CONTAINER(temp_window), box);
+
+    gtk_widget_show_all(temp_window);
+    gtk_widget_realize(temp_window);
+
+    gtk_widget_get_preferred_size(temp_horiz, NULL, &horiz_req);
+    gtk_widget_get_preferred_size(temp_vert, NULL, &vert_req);
+
+    horiz_min_w = horiz_req.width;
+    horiz_min_h = horiz_req.height;
+    vert_min_w = vert_req.width;
+    vert_min_h = vert_req.height;
+
+    if (horiz_min_w < 20) horiz_min_w = 20;
+    if (horiz_min_h < 20) horiz_min_h = 20;
+    if (vert_min_w < 20) vert_min_w = 20;
+    if (vert_min_h < 20) vert_min_h = 20;
+
+    gtk_widget_destroy(temp_window);
+  }
+
+  if (ih->data->orientation == IVAL_HORIZONTAL)
+  {
+    *w = horiz_min_w;
+    *h = horiz_min_h;
+  }
+  else
+  {
+    *w = vert_min_w;
+    *h = vert_min_h;
+  }
+#else
+  /* GTK2 fallback */
   if (ih->data->orientation == IVAL_HORIZONTAL)
   {
     *w = 20;
@@ -44,6 +94,7 @@ void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
     *w = 35;
     *h = 20;
   }
+#endif
 }
 
 static int gtkValSetStepAttrib(Ihandle* ih, const char* value)

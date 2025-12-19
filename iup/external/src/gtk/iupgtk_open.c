@@ -617,12 +617,10 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
 
 static void gtkSetGlobalColors(void)
 {
-  GtkWidget* dialog = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  GtkWidget* dialog = gtk_offscreen_window_new();
   GtkWidget* text = gtk_entry_new();
   gtk_container_add((GtkContainer*)dialog, text);
-  gtk_widget_show(text);
-  gtk_widget_realize(text);
-  gtk_widget_realize(dialog);
+  gtk_widget_show_all(dialog);
   gtkUpdateGlobalColors(dialog, text);
   gtk_widget_unrealize(dialog);
   gtk_widget_destroy(dialog);
@@ -665,6 +663,33 @@ static void iupgtk_log(const gchar *log_domain, GLogLevelFlags log_level, const 
 }
 #endif
 
+#if GTK_CHECK_VERSION(3, 0, 0) && GLIB_CHECK_VERSION(2, 50, 0)
+static GLogWriterOutput gtkLogWriter(GLogLevelFlags log_level, const GLogField *fields,
+                                      gsize n_fields, gpointer user_data)
+{
+  gsize i;
+  (void)user_data;
+
+  for (i = 0; i < n_fields; i++)
+  {
+    if (strcmp(fields[i].key, "MESSAGE") == 0 && fields[i].value)
+    {
+      const char* msg = (const char*)fields[i].value;
+      /* Suppress Ubuntu 24 GTK warning about dbus properties on non-Wayland windows.
+         This happens on Ubuntu's patched GTK when windows are created, but causes no issues. */
+      if (strstr(msg, "gdk_wayland_window_set_dbus_properties_libgtk_only"))
+        return G_LOG_WRITER_HANDLED;
+      /* Suppress GTK3 CSS gadget errors when scrollbars get negative size during resize.
+         This happens on Wayland during window resize when widgets temporarily get invalid sizes. */
+      if (strstr(msg, "gtk_box_gadget_distribute") && strstr(msg, "size >= 0"))
+        return G_LOG_WRITER_HANDLED;
+    }
+  }
+
+  return g_log_writer_default(log_level, fields, n_fields, user_data);
+}
+#endif
+
 int iupdrvOpen(int *argc, char ***argv)
 {
   char* value;
@@ -675,6 +700,11 @@ int iupdrvOpen(int *argc, char ***argv)
   /* reset to the C default numeric locale after gtk_init */
   setlocale(LC_NUMERIC, "C");
 
+#if GTK_CHECK_VERSION(3, 0, 0) && GLIB_CHECK_VERSION(2, 50, 0)
+  /* Install log writer to suppress warnings */
+  g_log_set_writer_func(gtkLogWriter, NULL, NULL);
+#endif
+
 #if defined(IUPGTK_DEBUG)
   g_log_set_default_handler(iupgtk_log, NULL);
 #endif
@@ -684,12 +714,8 @@ int iupdrvOpen(int *argc, char ***argv)
   IupStoreGlobal("SYSTEMLANGUAGE", pango_language_to_string(gtk_get_default_language()));
 
   /* driver system version */
-  IupSetfAttribute(NULL, "GTKVERSION", "%d.%d.%d", gtk_major_version,
-                                                   gtk_minor_version,
-                                                   gtk_micro_version);
-  IupSetfAttribute(NULL, "GTKDEVVERSION", "%d.%d.%d", GTK_MAJOR_VERSION,
-                                                      GTK_MINOR_VERSION,
-                                                      GTK_MICRO_VERSION);
+  IupSetfAttribute(NULL, "GTKVERSION", "%d.%d.%d", gtk_major_version, gtk_minor_version, gtk_micro_version);
+  IupSetfAttribute(NULL, "GTKDEVVERSION", "%d.%d.%d", GTK_MAJOR_VERSION, GTK_MINOR_VERSION, GTK_MICRO_VERSION);
 
   if (argv && *argv && (*argv)[0] && (*argv)[0][0] != 0)
     IupStoreGlobal("ARGV0", (*argv)[0]);
@@ -700,7 +726,7 @@ int iupdrvOpen(int *argc, char ***argv)
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
 
-  value = getenv("UBUNTU_MENUPROXY");  /* for now only in Ubuntu */
+  value = getenv("UBUNTU_MENUPROXY");
   if (value && (iupStrEqualNoCase(value, "libappmenu.so") || iupStrEqualNoCase(value, "1")))
     IupSetGlobal("GLOBALMENU", "Yes");
 

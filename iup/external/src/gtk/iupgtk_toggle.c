@@ -275,7 +275,7 @@ void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
 
   if (switch_w < 0)
   {
-    GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget* temp_window = gtk_offscreen_window_new();
     GtkWidget* temp_switch = gtk_switch_new();
     GtkAllocation allocation;
     int min_w, nat_w, min_h, nat_h;
@@ -328,7 +328,7 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
   if (check_w < 0)
   {
 #if GTK_CHECK_VERSION(3, 0, 0)
-    GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget* temp_window = gtk_offscreen_window_new();
     GtkWidget* temp_check = gtk_check_button_new();
     GtkAllocation allocation;
     int min_w, nat_w, min_h, nat_h;

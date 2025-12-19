@@ -2168,7 +2168,7 @@ static void gtk3TableMeasureRowMetrics(Ihandle* ih, int with_grid)
   if (*row_height_ptr >= 0 && gtk3_table_header_height >= 0)
     return;
 
-  GtkWidget* temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  GtkWidget* temp_window = gtk_offscreen_window_new();
   GtkListStore* store = gtk_list_store_new(1, G_TYPE_STRING);
   GtkWidget* tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
 

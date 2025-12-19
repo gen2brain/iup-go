@@ -283,8 +283,8 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
 {
   static char str[200]; /* must return a static string, because it will be used as the default value for the FONT attribute */
   const PangoFontDescription* font_desc = NULL;
-  GtkWidget* widget = gtk_invisible_new();
-  gtk_widget_realize(widget);
+  GtkWidget* widget = gtk_offscreen_window_new();
+  gtk_widget_show(widget);
 #if GTK_CHECK_VERSION(3, 0, 0)
   {
     GtkStyleContext* context = gtk_widget_get_style_context(widget);
@@ -312,7 +312,6 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
     strcpy(str, desc);
     g_free(desc);
   }
-  gtk_widget_unrealize(widget);
   gtk_widget_destroy(widget);
   return str;
 }
