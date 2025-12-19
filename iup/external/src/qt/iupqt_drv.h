@@ -164,6 +164,7 @@ void iupqtReleaseNativeGraphicsContext(QWidget* widget, void* gc);
  ****************************************************************************/
 
 int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
+QWidget* iupqtGetParentWidget(Ihandle* ih);
 
 /****************************************************************************
  * System Tray Support

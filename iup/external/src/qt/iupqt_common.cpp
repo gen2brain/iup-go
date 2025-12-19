@@ -50,6 +50,8 @@ extern "C" {
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_assert.h"
+#include "iup_dialog.h"
+#include "iup_dlglist.h"
 }
 
 #include "iupqt_drv.h"
@@ -100,6 +102,37 @@ static QWidget* qtGetNativeParent(Ihandle* ih)
      For canvas-based controls, this returns the _IUP_EXTRAPARENT (a QWidget without layout).
      For other controls, it returns the appropriate native container. */
   return (QWidget*)iupChildTreeGetNativeParentHandle(ih);
+}
+
+extern "C" QWidget* iupqtGetParentWidget(Ihandle* ih)
+{
+  InativeHandle* parent = iupDialogGetNativeParent(ih);
+  if (parent)
+    return (QWidget*)parent;
+
+  /* Try to find parent from focused element */
+  {
+    Ihandle* ih_focus = IupGetFocus();
+    if (ih_focus)
+    {
+      Ihandle* dlg = IupGetDialog(ih_focus);
+      if (dlg && dlg->handle)
+        return (QWidget*)dlg->handle;
+    }
+  }
+
+  /* Fallback: find first visible IUP dialog */
+  {
+    Ihandle* dlg_iter = iupDlgListFirst();
+    while (dlg_iter)
+    {
+      if (dlg_iter->handle && dlg_iter != ih && iupdrvIsVisible(dlg_iter))
+        return (QWidget*)dlg_iter->handle;
+      dlg_iter = iupDlgListNext();
+    }
+  }
+
+  return nullptr;
 }
 
 extern "C" const char* iupqtGetWidgetClassName(QWidget* widget)

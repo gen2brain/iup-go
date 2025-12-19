@@ -333,7 +333,7 @@ static void qtFileDlgGetMultipleFiles(Ihandle* ih, const QStringList& files)
 
 static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 {
-  QWidget* parent = (QWidget*)iupDialogGetNativeParent(ih);
+  QWidget* parent = iupqtGetParentWidget(ih);
   QFileDialog* dialog;
   QFileDialog::FileMode file_mode;
   QFileDialog::AcceptMode accept_mode;

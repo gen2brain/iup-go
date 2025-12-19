@@ -150,17 +150,13 @@ protected:
     QWidget::resizeEvent(event);
 
     if (!ih)
-    {
       return;
-    }
 
     /* Qt6: Ignore spurious resize events with invalid (0x0) size that occur during window initialization.
      * These cause the EGL window to collapse to 1x1 minimum size.
      * Only process resize events with valid dimensions. */
     if (event->size().width() <= 0 || event->size().height() <= 0)
-    {
       return;
-    }
 
     /* Invalidate the buffer when canvas size changes - forces ACTION callback to redraw at new size */
     QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");

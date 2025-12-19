@@ -180,6 +180,73 @@ protected:
       }
     }
 
+    /* For image-only buttons, draw icon centered manually to ensure cross-platform consistency */
+    if (iup_handle->data->type == IUP_BUTTON_IMAGE)
+    {
+      QStylePainter p(this);
+      QStyleOptionButton option;
+      initStyleOption(&option);
+
+      /* Draw button frame/border */
+      p.drawControl(QStyle::CE_PushButtonBevel, option);
+
+      /* Get content rect inside the button */
+      QRect content_rect = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
+
+      /* Draw icon in content area respecting alignment */
+      if (!icon().isNull())
+      {
+        QIcon::Mode mode = QIcon::Normal;
+        if (!(option.state & QStyle::State_Enabled))
+          mode = QIcon::Disabled;
+        else if (option.state & QStyle::State_MouseOver)
+          mode = QIcon::Active;
+
+        QIcon::State state = (option.state & QStyle::State_On) ? QIcon::On : QIcon::Off;
+
+        QSize icon_size = iconSize();
+        QPixmap pixmap = icon().pixmap(icon_size, mode, state);
+
+        int xpad = iup_handle->data->horiz_padding;
+        int ypad = iup_handle->data->vert_padding;
+
+        /* Calculate position based on alignment */
+        int x, y;
+        if (iup_handle->data->horiz_alignment == IUP_ALIGN_ARIGHT)
+          x = content_rect.right() - pixmap.width() - xpad;
+        else if (iup_handle->data->horiz_alignment == IUP_ALIGN_ALEFT)
+          x = content_rect.x() + xpad;
+        else /* ACENTER */
+          x = content_rect.x() + (content_rect.width() - pixmap.width()) / 2;
+
+        if (iup_handle->data->vert_alignment == IUP_ALIGN_ABOTTOM)
+          y = content_rect.bottom() - pixmap.height() - ypad;
+        else if (iup_handle->data->vert_alignment == IUP_ALIGN_ATOP)
+          y = content_rect.y() + ypad;
+        else /* ACENTER */
+          y = content_rect.y() + (content_rect.height() - pixmap.height()) / 2;
+
+        /* Apply button shift when pressed */
+        if (option.state & (QStyle::State_On | QStyle::State_Sunken))
+        {
+          x += style()->pixelMetric(QStyle::PM_ButtonShiftHorizontal, &option, this);
+          y += style()->pixelMetric(QStyle::PM_ButtonShiftVertical, &option, this);
+        }
+
+        p.drawPixmap(x, y, pixmap);
+      }
+
+      /* Draw focus rect if needed */
+      if (option.state & QStyle::State_HasFocus)
+      {
+        QStyleOptionFocusRect focus_opt;
+        focus_opt.QStyleOption::operator=(option);
+        focus_opt.rect = style()->subElementRect(QStyle::SE_PushButtonFocusRect, &option, this);
+        p.drawPrimitive(QStyle::PE_FrameFocusRect, focus_opt);
+      }
+      return;
+    }
+
     QPushButton::paintEvent(event);
   }
 
