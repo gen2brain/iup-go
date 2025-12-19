@@ -189,6 +189,28 @@ static void qtValUpdateValue(IupQtSlider* slider, Ihandle* ih, bool button_relea
 
 extern "C" void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 {
+  static int horiz_min_w = -1, horiz_min_h = -1;
+  static int vert_min_w = -1, vert_min_h = -1;
+
+  if (horiz_min_w < 0)
+  {
+    QSlider temp_horiz(Qt::Horizontal);
+    QSlider temp_vert(Qt::Vertical);
+
+    QSize horiz_hint = temp_horiz.minimumSizeHint();
+    QSize vert_hint = temp_vert.minimumSizeHint();
+
+    horiz_min_w = horiz_hint.width();
+    horiz_min_h = horiz_hint.height();
+    vert_min_w = vert_hint.width();
+    vert_min_h = vert_hint.height();
+
+    if (horiz_min_w < 20) horiz_min_w = 20;
+    if (horiz_min_h < 20) horiz_min_h = 20;
+    if (vert_min_w < 20) vert_min_w = 20;
+    if (vert_min_h < 20) vert_min_h = 20;
+  }
+
   int ticks_size = 0;
   if (iupAttribGetInt(ih, "SHOWTICKS"))
   {
@@ -201,13 +223,13 @@ extern "C" void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 
   if (ih->data->orientation == IVAL_HORIZONTAL)
   {
-    *w = 20;
-    *h = 35 + ticks_size;
+    *w = horiz_min_w;
+    *h = horiz_min_h + ticks_size;
   }
   else
   {
-    *w = 35 + ticks_size;
-    *h = 20;
+    *w = vert_min_w + ticks_size;
+    *h = vert_min_h;
   }
 }
 

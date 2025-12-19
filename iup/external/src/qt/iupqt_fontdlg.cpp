@@ -41,25 +41,15 @@ extern "C" {
 
 static int qtFontDlgPopup(Ihandle* ih, int x, int y)
 {
-  QWidget* parent = (QWidget*)iupDialogGetNativeParent(ih);
-  Ihandle* parent_ih = nullptr;
+  QWidget* parent = iupqtGetParentWidget(ih);
   QFont initial_font;
   QColor initial_color = Qt::black;
   char* font_str;
   char* color_str;
-  bool ok;
   int response;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
-
-  /* Find parent IUP dialog for focus restoration */
-  if (parent)
-  {
-    Ihandle* test_ih = (Ihandle*)iupAttribGet((Ihandle*)parent, "_IUP_DIALOG");
-    if (test_ih && iupObjectCheck(test_ih))
-      parent_ih = IupGetDialog(test_ih);
-  }
 
   font_str = iupAttribGet(ih, "VALUE");
   if (!font_str)
@@ -242,12 +232,6 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
   }
 
   delete dialog;
-
-  /* Restore focus to parent dialog (similar to MessageDlg and other dialogs) */
-  if (parent_ih && iupObjectCheck(parent_ih))
-  {
-    IupSetFocus(parent_ih);
-  }
 
   return IUP_NOERROR;
 }

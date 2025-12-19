@@ -8,8 +8,6 @@
 #include <QPushButton>
 #include <QWidget>
 #include <QString>
-#include <QVariant>
-#include <QWindow>
 
 #include <cstdlib>
 #include <cstdio>
@@ -46,43 +44,12 @@ static char* qtMessageDlgGetAutoModalAttrib(Ihandle* ih)
 }
 
 /****************************************************************************
- * Helper: Find Parent IUP Dialog
- ****************************************************************************/
-
-static Ihandle* qtMessageDlgFindParentDialog(Ihandle* ih)
-{
-  /* Check PARENTDIALOG attribute first */
-  Ihandle* parent_ih = IupGetAttributeHandle(ih, "PARENTDIALOG");
-  if (parent_ih && iupObjectCheck(parent_ih))
-    return IupGetDialog(parent_ih);
-
-  /* Try to get parent from native handle */
-  InativeHandle* parent = iupDialogGetNativeParent(ih);
-  if (parent)
-  {
-    QWidget* parent_widget = (QWidget*)parent;
-
-    /* Try to find associated Ihandle using Qt's dynamic property */
-    QVariant prop = parent_widget->property("IUP_DIALOG");
-    if (prop.isValid())
-    {
-      Ihandle* test_ih = (Ihandle*)prop.value<void*>();
-      if (test_ih && iupObjectCheck(test_ih))
-        return IupGetDialog(test_ih);
-    }
-  }
-
-  return nullptr;
-}
-
-/****************************************************************************
  * Message Dialog Popup
  ****************************************************************************/
 
 static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
 {
-  QWidget* parent = (QWidget*)iupDialogGetNativeParent(ih);
-  Ihandle* parent_ih = qtMessageDlgFindParentDialog(ih);
+  QWidget* parent = iupqtGetParentWidget(ih);
   QMessageBox* dialog;
   QMessageBox::Icon icon_type = QMessageBox::NoIcon;
   const char* icon;
@@ -177,9 +144,13 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
   else if (button1)
     dialog->setDefaultButton(button1);
 
-  ih->handle = (InativeHandle*)dialog;
-  iupDialogUpdatePosition(ih);
-  ih->handle = nullptr;
+  /* Only force position if no parent, Qt centers on parent automatically */
+  if (!parent)
+  {
+    ih->handle = (InativeHandle*)dialog;
+    iupDialogUpdatePosition(ih);
+    ih->handle = nullptr;
+  }
 
   do
   {
@@ -230,12 +201,6 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
     IupSetAttribute(ih, "BUTTONRESPONSE", "1");
 
   delete dialog;
-
-  /* Restore focus to parent dialog (similar to Cocoa implementation) */
-  if (parent_ih && iupObjectCheck(parent_ih))
-  {
-    IupSetFocus(parent_ih);
-  }
 
   return IUP_NOERROR;
 }

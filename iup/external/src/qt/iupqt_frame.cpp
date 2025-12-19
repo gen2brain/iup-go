@@ -35,11 +35,61 @@ extern "C" {
 #include "iupqt_drv.h"
 
 
+static void qtFrameMeasureDecor(int has_title, int* decor_w, int* decor_h, int* offset_x, int* offset_y, int* title_h)
+{
+  QGroupBox tempBox;
+
+  if (has_title)
+  {
+    tempBox.setTitle(QString::fromUtf8("Tj"));
+    tempBox.setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0.5em; } "
+                          "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding: 0 3px; }");
+  }
+  else
+  {
+    tempBox.setTitle(QString());
+    tempBox.setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0px; }");
+  }
+
+  tempBox.setMinimumSize(100, 100);
+  tempBox.adjustSize();
+
+  QRect contentsRect = tempBox.contentsRect();
+  QRect frameRect = tempBox.rect();
+
+  *decor_w = frameRect.width() - contentsRect.width();
+  *decor_h = frameRect.height() - contentsRect.height();
+  *offset_x = contentsRect.x();
+  *offset_y = contentsRect.y();
+
+  if (*decor_w < 0) *decor_w = 0;
+  if (*decor_h < 0) *decor_h = 0;
+  if (*offset_x < 0) *offset_x = 0;
+  if (*offset_y < 0) *offset_y = 0;
+
+  *title_h = 0;
+  if (has_title)
+  {
+    QFontMetrics fm(tempBox.font());
+    *title_h = fm.height();
+  }
+}
+
 extern "C" void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
 {
+  static int measured = 0;
+  static int offset_x = 0, offset_y = 0;
   (void)ih;
-  *x = 0;
-  *y = 0;
+
+  if (!measured)
+  {
+    int decor_w, decor_h, title_h;
+    qtFrameMeasureDecor(0, &decor_w, &decor_h, &offset_x, &offset_y, &title_h);
+    measured = 1;
+  }
+
+  *x = offset_x;
+  *y = offset_y;
 }
 
 extern "C" int iupdrvFrameHasClientOffset(Ihandle* ih)
@@ -50,42 +100,68 @@ extern "C" int iupdrvFrameHasClientOffset(Ihandle* ih)
 
 extern "C" int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
 {
-  (void)ih;
-  (void)h;
+  static int measured = 0;
+  static int cached_title_h = 0;
+
+  /* If frame is mapped, measure the actual widget */
+  if (ih->handle)
+  {
+    QGroupBox* groupbox = qobject_cast<QGroupBox*>((QWidget*)ih->handle);
+    if (groupbox && !groupbox->title().isEmpty())
+    {
+      QFontMetrics fm(groupbox->font());
+      *h = fm.height();
+      return 1;
+    }
+  }
+
+  /* Fallback: use cached measurement */
+  if (!measured)
+  {
+    int decor_w, decor_h, offset_x, offset_y;
+    qtFrameMeasureDecor(1, &decor_w, &decor_h, &offset_x, &offset_y, &cached_title_h);
+    measured = 1;
+  }
+
+  if (cached_title_h > 0)
+  {
+    *h = cached_title_h;
+    return 1;
+  }
+
   return 0;
 }
 
 extern "C" int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
 {
-  /* Create a temporary QGroupBox to measure decoration size */
-  QGroupBox tempBox;
-
+  static int titled_measured = 0, untitled_measured = 0;
+  static int titled_w = 0, titled_h = 0;
+  static int untitled_w = 0, untitled_h = 0;
   const char* title = iupAttribGet(ih, "TITLE");
-  if (title && *title)
+  int has_title = (title && *title) ? 1 : 0;
+
+  if (has_title)
   {
-    /* Titled frame */
-    tempBox.setTitle(QString::fromUtf8(title));
-    tempBox.setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0.5em; } "
-                          "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding: 0 3px; }");
+    if (!titled_measured)
+    {
+      int offset_x, offset_y, title_h;
+      qtFrameMeasureDecor(1, &titled_w, &titled_h, &offset_x, &offset_y, &title_h);
+      titled_measured = 1;
+    }
+    *w = titled_w;
+    *h = titled_h;
   }
   else
   {
-    /* Untitled frame */
-    tempBox.setTitle(QString());
-    tempBox.setStyleSheet("QGroupBox { border: 1px solid gray; padding: 2px; margin-top: 0px; }");
+    if (!untitled_measured)
+    {
+      int offset_x, offset_y, title_h;
+      qtFrameMeasureDecor(0, &untitled_w, &untitled_h, &offset_x, &offset_y, &title_h);
+      untitled_measured = 1;
+    }
+    *w = untitled_w;
+    *h = untitled_h;
   }
-
-  /* DON'T add a layout - we want to measure just the QGroupBox chrome itself
-   * The layout margins are handled separately by IUP */
-  tempBox.setMinimumSize(100, 100);
-  tempBox.adjustSize();
-
-  QRect contentsRect = tempBox.contentsRect();
-  QRect frameRect = tempBox.rect();
-
-  /* Decoration is the difference between the widget rect and its contents rect */
-  *w = (frameRect.width() - contentsRect.width());
-  *h = (frameRect.height() - contentsRect.height());
 
   return 1;
 }

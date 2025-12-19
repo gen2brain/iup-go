@@ -88,6 +88,9 @@ public:
     if (!has_titlebar && !iupAttribGetBoolean(iup_handle, "BORDER"))
       flags |= Qt::FramelessWindowHint;
 
+    if (has_titlebar)
+      flags |= Qt::WindowTitleHint;
+
     /* Window buttons */
     if (!iupAttribGetBoolean(iup_handle, "MENUBOX"))
       flags |= Qt::WindowSystemMenuHint;
@@ -110,7 +113,11 @@ public:
     if (iupAttribGetBoolean(iup_handle, "HIDETITLEBAR"))
       flags |= Qt::FramelessWindowHint;
 
-    setWindowFlags(flags);
+    /* Use overrideWindowFlags if widget is not yet visible to avoid side effects */
+    if (isVisible())
+      setWindowFlags(flags);
+    else
+      overrideWindowFlags(flags);
   }
 
 protected:
@@ -145,18 +152,15 @@ protected:
   {
     QMainWindow::resizeEvent(event);
 
-    if (!iup_handle) {
+    if (!iup_handle)
       return;
-    }
 
-    if (iup_handle->data->ignore_resize) {
+    if (iup_handle->data->ignore_resize)
       return;
-    }
 
-    /* Don't update size tracking until after first show is complete */
-    if (iup_handle->data->first_show || !iupdrvDialogIsVisible(iup_handle)) {
+    /* Skip if dialog is not visible */
+    if (!iupdrvDialogIsVisible(iup_handle))
       return;
-    }
 
     /* Update IUP size tracking */
     int border = 0, caption = 0, menu = 0;
@@ -165,9 +169,8 @@ protected:
     int new_width = event->size().width() + 2*border;
     int new_height = event->size().height() + 2*border + caption;
 
-    if (iup_handle->currentwidth == new_width && iup_handle->currentheight == new_height) {
+    if (iup_handle->currentwidth == new_width && iup_handle->currentheight == new_height)
       return;
-    }
 
     iup_handle->currentwidth = new_width;
     iup_handle->currentheight = new_height;
@@ -466,7 +469,12 @@ extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption
                    iupAttribGetBoolean(ih, "RESIZE") ||
                    iupAttribGetBoolean(ih, "BORDER");
 
+#ifdef Q_OS_MAC
+  /* On macOS, Qt uses the native global menu bar */
+  *menu = 0;
+#else
   *menu = qtDialogGetMenuSize(ih);
+#endif
 
   /* If we have cached values, prefer them to avoid race conditions during window resize.
    * Only query actual window decorations if we don't have cached values yet. */
@@ -595,7 +603,9 @@ extern "C" int iupdrvDialogSetPlacement(Ihandle* ih)
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
 
-    widget->setWindowState(widget->windowState() & ~(Qt::WindowMaximized | Qt::WindowMinimized | Qt::WindowFullScreen));
+    /* Only change window state if widget is already visible */
+    if (widget->isVisible())
+      widget->setWindowState(widget->windowState() & ~(Qt::WindowMaximized | Qt::WindowMinimized | Qt::WindowFullScreen));
 
     if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupDialogCustomFrameRestore(ih))
     {
@@ -1093,9 +1103,6 @@ extern "C" void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterCallback(ic, "MOVE_CB", "ii");
   iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
-  /* Visual */
-  iupBaseRegisterVisualAttrib(ic);
-
   /* Base Container */
   iupClassRegisterAttribute(ic, "CLIENTSIZE", qtDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", qtDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
@@ -1217,6 +1224,8 @@ extern "C" void qtDialogLayoutUpdateMethod(Ihandle *ih)
   int border, caption, menu;
   int width, height;
 
+  QWidget* widget = (QWidget*)ih->handle;
+
   if (ih->data->ignore_resize ||
       iupAttribGet(ih, "_IUPQT_FS_STYLE"))
   {
@@ -1233,10 +1242,8 @@ extern "C" void qtDialogLayoutUpdateMethod(Ihandle *ih)
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
 
-  QWidget* widget = (QWidget*)ih->handle;
   if (widget)
   {
-    QMainWindow* window = qobject_cast<QMainWindow*>(widget);
     widget->resize(width, height);
   }
 
