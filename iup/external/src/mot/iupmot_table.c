@@ -367,11 +367,11 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
       char* alternate_color = iupAttribGet(ih, "ALTERNATECOLOR");
       if (iupStrEqualNoCase(alternate_color, "YES"))
       {
-        /* Use EVENCOLOR for even rows, ODDCOLOR for odd rows */
+        /* Use EVENROWCOLOR for even rows, ODDROWCOLOR for odd rows */
         if (lin % 2 == 0)
-          bgcolor = iupAttribGetStr(ih, "EVENCOLOR");
+          bgcolor = iupAttribGetStr(ih, "EVENROWCOLOR");
         else
-          bgcolor = iupAttribGetStr(ih, "ODDCOLOR");
+          bgcolor = iupAttribGetStr(ih, "ODDROWCOLOR");
       }
     }
   }
@@ -426,7 +426,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     if (fgcolor && *fgcolor)
       XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr(fgcolor));
     else
-      XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr("0 0 0"));
+      XSetForeground(display, mot_data->gc, mot_data->fg_pixel);
 
     text_len = strlen(text);
 
@@ -489,7 +489,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
       if (fgcolor && *fgcolor)
         pixel = iupmotColorGetPixelStr(fgcolor);
       else
-        pixel = iupmotColorGetPixelStr("0 0 0");
+        pixel = mot_data->fg_pixel;
 
       /* Convert pixel to XRenderColor */
       xcolor.pixel = pixel;
@@ -522,12 +522,12 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
       /* Draw arrow based on sort direction */
       if (mot_data->sort_signs[col-1] == 1)  /* Ascending */
       {
-        XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr("60 60 60"));
+        XSetForeground(display, mot_data->gc, mot_data->fg_pixel);
         motTableDrawSortArrow(display, window, mot_data->gc, arrow_x, arrow_y, 1);
       }
       else if (mot_data->sort_signs[col-1] == -1)  /* Descending */
       {
-        XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr("60 60 60"));
+        XSetForeground(display, mot_data->gc, mot_data->fg_pixel);
         motTableDrawSortArrow(display, window, mot_data->gc, arrow_x, arrow_y, 0);
       }
     }
@@ -536,8 +536,9 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   /* Draw focus rectangle around the specific focused cell if FOCUSRECT=YES */
   if (is_focused_cell && iupAttribGetBoolean(ih, "FOCUSRECT"))
   {
-    /* Use a light gray color */
-    XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr("128 128 128"));
+    /* Use XOR mode for focus rectangle, always creates contrast by inverting pixels */
+    XSetFunction(display, mot_data->gc, GXxor);
+    XSetForeground(display, mot_data->gc, mot_data->fg_pixel ^ mot_data->bg_pixel);
 
     /* Set dashed line style */
     char dash_list[] = {2, 2};  /* 2 pixels on, 2 pixels off */
@@ -546,7 +547,8 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
 
     XDrawRectangle(display, window, mot_data->gc, x + 1, y + 1, w - 3, h - 3);
 
-    /* Reset to solid line for subsequent drawing */
+    /* Reset to normal drawing mode and solid line */
+    XSetFunction(display, mot_data->gc, GXcopy);
     XSetLineAttributes(display, mot_data->gc, 1, LineSolid, CapButt, JoinMiter);
   }
 }
@@ -2217,8 +2219,4 @@ void iupdrvTableInitClass(Iclass* ic)
   /* Replace core SET handlers to update native widget */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, motTableSetSortableAttrib);
 
-  /* Alternating row colors */
-  iupClassRegisterAttribute(ic, "ALTERNATECOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "EVENCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "240 240 240", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ODDCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_NO_INHERIT);
 }

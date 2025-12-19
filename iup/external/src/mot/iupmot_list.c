@@ -1629,14 +1629,6 @@ static int motListMapMethod(Ihandle* ih)
   else
     iupmotDisableDragSource(ih->handle);  /* Disable Drag Source */
 
-  if (IupGetGlobal("_IUP_RESET_TXTCOLORS"))
-  {
-    iupmotSetGlobalColorAttrib(ih->handle, XmNbackground, "TXTBGCOLOR");
-    iupmotSetGlobalColorAttrib(ih->handle, XmNforeground, "TXTFGCOLOR");
-    iupmotSetGlobalColorAttrib(ih->handle, XmNhighlightColor, "TXTHLCOLOR");
-    IupSetGlobal("_IUP_RESET_TXTCOLORS", NULL);
-  }
-
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)motListConvertXYToPos);
 
   if (ih->data->is_virtual)

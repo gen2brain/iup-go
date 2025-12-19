@@ -698,14 +698,45 @@ int iupmotIsSystemDarkMode(void)
 {
   unsigned char bg_r, bg_g, bg_b;
   unsigned char fg_r, fg_g, fg_b;
-  Pixel bg_color, fg_color;
   double bg_lum, fg_lum;
+  XColor xcolor;
+  Colormap colormap;
+  XrmDatabase db;
+  XrmValue value;
+  char* type = NULL;
+  char* bg_str = NULL;
+  char* fg_str = NULL;
 
-  XtVaGetValues(iupmot_appshell, XmNbackground, &bg_color, NULL);
-  XtVaGetValues(iupmot_appshell, XmNforeground, &fg_color, NULL);
+  db = XrmGetDatabase(iupmot_display);
+  if (!db)
+    return 0;
 
-  iupmotColorGetRGB(bg_color, &bg_r, &bg_g, &bg_b);
-  iupmotColorGetRGB(fg_color, &fg_r, &fg_g, &fg_b);
+  /* Try to read background/foreground from X resource database */
+  if (XrmGetResource(db, "*background", "*Background", &type, &value))
+    bg_str = value.addr;
+  if (XrmGetResource(db, "*foreground", "*Foreground", &type, &value))
+    fg_str = value.addr;
+
+  if (!bg_str || !fg_str)
+    return 0;  /* Can't determine, assume light mode */
+
+  colormap = DefaultColormap(iupmot_display, iupmot_screen);
+
+  /* Parse background color */
+  if (!XParseColor(iupmot_display, colormap, bg_str, &xcolor))
+    return 0;
+
+  bg_r = xcolor.red >> 8;
+  bg_g = xcolor.green >> 8;
+  bg_b = xcolor.blue >> 8;
+
+  /* Parse foreground color */
+  if (!XParseColor(iupmot_display, colormap, fg_str, &xcolor))
+    return 0;
+
+  fg_r = xcolor.red >> 8;
+  fg_g = xcolor.green >> 8;
+  fg_b = xcolor.blue >> 8;
 
   /* Calculate relative luminance using standard formula (ITU-R BT.709) */
   bg_lum = 0.2126 * bg_r + 0.7152 * bg_g + 0.0722 * bg_b;
