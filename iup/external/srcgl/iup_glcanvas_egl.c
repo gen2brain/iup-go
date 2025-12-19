@@ -51,6 +51,8 @@
   #ifdef GDK_WINDOWING_X11
   #include <gdk/x11/gdkx.h>
   #include <dlfcn.h>
+  /* X11 functions are deprecated in GTK4 but required for X11 backend */
+  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   #endif
 #endif
 
@@ -92,6 +94,8 @@
     extern struct wl_display* iupQtGetWaylandDisplay(void);
     extern struct wl_compositor* iupQtGetWaylandCompositor(void);
     extern struct wl_surface* iupQtGetWaylandSurface(void* qwindow_ptr);
+    extern void* iupQtGetWaylandSurfaceIfReady(void* qwindow_ptr);
+    extern int iupQtRegisterSurfaceReadyCallback(void* qwindow_ptr, void* ih, void (*callback)(void*, void*), void* user_data);
     extern void iupQtGetWidgetPosition(void* qwidget_ptr, int* x, int* y);
     extern void iupQtGetWindowFrameMargins(void* qwindow_ptr, int* left, int* top, int* right, int* bottom);
     extern void* iupQtGetTopLevelWindow(void* qwidget_ptr);
@@ -370,12 +374,12 @@ static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* phy
   {
     if (ih->handle && GTK_IS_WIDGET(ih->handle))
     {
-      GtkAllocation allocation;
-      gtk_widget_get_allocation((GtkWidget*)ih->handle, &allocation);
-      if (allocation.width > 0 && allocation.height > 0)
+      int w = gtk_widget_get_width((GtkWidget*)ih->handle);
+      int h = gtk_widget_get_height((GtkWidget*)ih->handle);
+      if (w > 0 && h > 0)
       {
-        realized_w = allocation.width;
-        realized_h = allocation.height;
+        realized_w = w;
+        realized_h = h;
       }
     }
   }
@@ -392,12 +396,12 @@ static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* phy
     {
       if (ih->handle && GTK_IS_WIDGET(ih->handle))
       {
-        GtkAllocation allocation;
-        gtk_widget_get_allocation((GtkWidget*)ih->handle, &allocation);
-        if (allocation.width > 0 && allocation.height > 0)
+        int w = gtk_widget_get_width((GtkWidget*)ih->handle);
+        int h = gtk_widget_get_height((GtkWidget*)ih->handle);
+        if (w > 0 && h > 0)
         {
-          realized_w = allocation.width;
-          realized_h = allocation.height;
+          realized_w = w;
+          realized_h = h;
         }
       }
     }
@@ -489,9 +493,7 @@ static int eGLCanvasDefaultResize(Ihandle *ih, int width, int height)
   int scale = 1;
 
   if (!gldata)
-  {
     return IUP_DEFAULT;
-  }
 
   gldata->last_logical_width = width;
   gldata->last_logical_height = height;
@@ -567,19 +569,24 @@ static int eGLCanvasDefaultResize(Ihandle *ih, int width, int height)
       }
 #elif defined(IUP_EGL_USE_GTK4) && defined(GDK_WINDOWING_WAYLAND)
       if (gldata->subsurface && ih->handle && GTK_IS_WIDGET(ih->handle)) {
-          GtkAllocation allocation;
-          gtk_widget_get_allocation((GtkWidget*)ih->handle, &allocation);
+          GtkWidget* widget = (GtkWidget*)ih->handle;
+          GtkWidget* parent = gtk_widget_get_parent(widget);
+          graphene_rect_t bounds;
+          int subsurface_x = 0, subsurface_y = 0;
+
+          if (parent && gtk_widget_compute_bounds(widget, parent, &bounds)) {
+              subsurface_x = (int)bounds.origin.x;
+              subsurface_y = (int)bounds.origin.y;
+          }
 
           Ihandle* dialog = IupGetDialog(ih);
 
-          /* GTK4: Use allocation x/y directly - it's already relative to the parent container.
+          /* GTK4: Use bounds relative to parent container.
            * The subsurface is parented to the window's wl_surface.
            *
-           * With Wayland + CSD, the wl_surface includes shadow borders, but GTK's allocation
+           * With Wayland + CSD, the wl_surface includes shadow borders, but GTK's
            * coordinates are relative to the Fixed container which is positioned accounting
            * for these shadows via xdg_surface_set_window_geometry(). */
-          int subsurface_x = allocation.x;
-          int subsurface_y = allocation.y;
 
           /* Check if window has CSD with invisible borders (not solid-csd) */
           GtkWidget* root = GTK_WIDGET(gtk_widget_get_root((GtkWidget*)ih->handle));
@@ -975,28 +982,30 @@ static EGLNativeWindowType eGLCanvasCreateQt6WaylandSubsurface(Ihandle* ih, IGlC
 
   struct wl_display* wl_display = iupQtGetWaylandDisplay();
 
-  /* Get top-level window - it should be exposed by now since we're called from GLMakeCurrent (after MAP_CB) */
+  /* Get top-level window */
   void* toplevel_qwindow = iupQtGetTopLevelWindow(ih->handle);
   if (!toplevel_qwindow) {
+      /* Window not ready yet - will retry on next GLMakeCurrent */
       return native_window;
   }
 
-  struct wl_surface* parent_surface = iupQtGetWaylandSurface(toplevel_qwindow);
+  /* Get Wayland surface if ready (non-blocking). On Wayland, the surface is created asynchronously.
+     If not ready yet, return NULL and let the caller retry on next GLMakeCurrent. */
+  struct wl_surface* parent_surface = (struct wl_surface*)iupQtGetWaylandSurfaceIfReady(toplevel_qwindow);
 
   if (!wl_display || !parent_surface) {
+      /* Surface not ready yet, will retry on next GLMakeCurrent */
       return native_window;
   }
 
   gldata->parent_surface = parent_surface;
+  gldata->qwindow = toplevel_qwindow;
 
   gldata->compositor = iupQtGetWaylandCompositor();
 
   if (gldata->compositor) {
       if (!gldata->subcompositor) {
-          gldata->subcompositor = eGLCanvasGetWaylandSubcompositor(wl_display,
-                                                                     &gldata->event_queue,
-                                                                     &gldata->registry_compositor,
-                                                                     &gldata->registry);
+          gldata->subcompositor = eGLCanvasGetWaylandSubcompositor(wl_display, &gldata->event_queue, &gldata->registry_compositor, &gldata->registry);
       }
   }
 
@@ -1031,8 +1040,7 @@ static EGLNativeWindowType eGLCanvasCreateQt6WaylandSubsurface(Ihandle* ih, IGlC
               wl_subsurface_set_position(gldata->subsurface, x, y);
 
               /* Commit parent surface on initial subsurface creation.
-               * Per Wayland protocol, subsurface position changes are buffered and require
-               * parent surface commit to take effect. */
+                 Per Wayland protocol, subsurface position changes are buffered and require parent surface commit to take effect. */
               if (gldata->parent_surface) {
                   wl_surface_commit(gldata->parent_surface);
               }
@@ -1041,8 +1049,7 @@ static EGLNativeWindowType eGLCanvasCreateQt6WaylandSubsurface(Ihandle* ih, IGlC
               int physical_width = 0, physical_height = 0;
               eGLCanvasGetActualSize(ih, gldata, &physical_width, &physical_height);
 
-              gldata->egl_window = wl_egl_window_create(gldata->subsurface_wl,
-                                                        physical_width, physical_height);
+              gldata->egl_window = wl_egl_window_create(gldata->subsurface_wl, physical_width, physical_height);
 
               if (gldata->egl_window) {
                   native_window = (EGLNativeWindowType)gldata->egl_window;
@@ -1253,11 +1260,14 @@ static EGLNativeWindowType eGLCanvasCreateGtk4WaylandSubsurface(Ihandle* ih, IGl
   /* Position the subsurface within the parent window */
   GtkWidget* widget = GTK_WIDGET(ih->handle);
   if (widget) {
-    GtkAllocation allocation;
-    gtk_widget_get_allocation(widget, &allocation);
+    GtkWidget* parent = gtk_widget_get_parent(widget);
+    graphene_rect_t bounds;
+    int subsurface_x = 0, subsurface_y = 0;
 
-    int subsurface_x = allocation.x;
-    int subsurface_y = allocation.y;
+    if (parent && gtk_widget_compute_bounds(widget, parent, &bounds)) {
+      subsurface_x = (int)bounds.origin.x;
+      subsurface_y = (int)bounds.origin.y;
+    }
 
     /* Check if window has CSD with invisible borders */
     GtkWidget* root = GTK_WIDGET(gtk_widget_get_root(widget));
@@ -1448,12 +1458,6 @@ static int eGLCanvasMapMethod(Ihandle* ih)
     {
       iupAttribSet(ih, "QWINDOW", (char*)gldata->qwindow);
     }
-  }
-
-  if (!gldata->qwindow)
-  {
-    iupAttribSet(ih, "ERROR", "Could not obtain valid QWindow handle from QWidget.");
-    return IUP_NOERROR;
   }
 
 #endif /* IUP_EGL_USE_QT */
@@ -2043,7 +2047,8 @@ void IupGLMakeCurrent(Ihandle* ih)
     EGLNativeWindowType native_window = eGLCanvasCreateQt6WaylandSubsurface(ih, gldata);
 
     if (native_window == (EGLNativeWindowType)NULL) {
-      iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
+      /* Window not ready yet. Keep the lazy init flag and return silently.
+         The next GLMakeCurrent call will retry when the window is exposed. */
       return;
     }
 
@@ -2448,13 +2453,7 @@ void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
 void IupGLWait(int gl)
 {
   if (gl)
-    glFinish(); /* Wait for GL commands to finish (implies eglWaitClient). */
+    eglWaitClient();
   else
-  {
-#ifdef EGL_CORE_NATIVE_ENGINE
-       eglWaitNative(EGL_CORE_NATIVE_ENGINE);
-#else
-       /* If EGL_CORE_NATIVE_ENGINE is not defined (older EGL versions), this synchronization might not be possible or necessary. */
-#endif
-  }
+    eglWaitNative(EGL_CORE_NATIVE_ENGINE);
 }

@@ -774,9 +774,11 @@ void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
 void IupGLWait(int gl)
 {
   if (gl)
-    glFinish(); /* Wait for GL commands to complete */
+    glFinish();
   else
   {
-    /* No-op: Cocoa has no direct equivalent to GdiFlush() or glXWaitX() for non-GL window system synchronization. */
+    NSGraphicsContext* ctx = [NSGraphicsContext currentContext];
+    if (ctx)
+      [ctx flushGraphics];
   }
 }

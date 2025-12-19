@@ -7,10 +7,12 @@
 #include <QWindow>
 #include <QWidget>
 #include <QGuiApplication>
+#include <QCoreApplication>
 #include <QString>
 #include <QByteArray>
 #include <QThread>
 #include <QEventLoop>
+#include <QTimer>
 
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0) && QT_CONFIG(wayland)
@@ -90,7 +92,11 @@ void* iupQtGetWindowFromWidget(void* qwidget_or_qwindow_ptr)
     {
       QWidget* topLevel = qwidget->window();
       if (topLevel)
+      {
+        if (QGuiApplication::platformName() != "wayland")
+          topLevel->winId();
         window = topLevel->windowHandle();
+      }
     }
   }
 
@@ -125,19 +131,22 @@ void* iupQtGetTopLevelWindow(void* qwidget_ptr)
 {
   QWidget* qwidget = static_cast<QWidget*>(qwidget_ptr);
   if (!qwidget)
-  {
     return nullptr;
-  }
 
   QWidget* topLevel = qwidget->window();
   if (!topLevel)
-  {
     return nullptr;
+
+  QWindow* window = topLevel->windowHandle();
+  if (!window)
+  {
+    /* Force native window creation to get the QWindow.
+     * On Wayland, this creates the wl_surface but we must wait for surfaceCreated signal. */
+    topLevel->winId();
+    window = topLevel->windowHandle();
   }
 
-  QWindow* windowHandle = topLevel->windowHandle();
-
-  return windowHandle;
+  return window;
 }
 
 /* Qt6 Wayland Support (Qt 6.7+) */
@@ -145,6 +154,68 @@ void* iupQtGetTopLevelWindow(void* qwidget_ptr)
 
 /* Wayland client API */
 #include <wayland-client.h>
+
+/* Callback type for async surface ready notification */
+typedef void (*IupQtSurfaceReadyCallback)(void* ih, void* user_data);
+
+/* Register a callback to be called when the Wayland window is ready for subsurfaces */
+int iupQtRegisterSurfaceReadyCallback(void* qwindow_ptr, void* ih, IupQtSurfaceReadyCallback callback, void* user_data)
+{
+  QWindow* qwindow = static_cast<QWindow*>(qwindow_ptr);
+  if (!qwindow || !callback)
+    return -1;
+
+  if (QGuiApplication::platformName() != "wayland")
+    return -1;
+
+  using namespace QNativeInterface::Private;
+  auto waylandWindow = qwindow->nativeInterface<QWaylandWindow>();
+  if (!waylandWindow)
+    return -1;
+
+  /* Check if window is already exposed (shell surface created and configured) */
+  if (qwindow->isExposed())
+  {
+    /* Window already ready, call callback via queued invocation to avoid re-entrancy */
+    QTimer::singleShot(0, qwindow, [callback, ih, user_data]() {
+      callback(ih, user_data);
+    });
+    return 1;
+  }
+
+  /* Connect to surfaceRoleCreated signal, this fires after initWindow() creates the shell surface */
+  QObject* connector = new QObject(qwindow);  /* Parent to qwindow for automatic cleanup */
+  QObject::connect(waylandWindow, &QWaylandWindow::surfaceRoleCreated, connector,
+    [callback, ih, user_data, connector]() {
+      callback(ih, user_data);
+      connector->deleteLater();
+    });
+
+  return 1;
+}
+
+/* Get Wayland surface. On Wayland, the shell surface is created when the window is shown.
+ * If not shown yet, we show the QWindow to trigger initialization. */
+void* iupQtGetWaylandSurfaceIfReady(void* qwindow_ptr)
+{
+  QWindow* qwindow = static_cast<QWindow*>(qwindow_ptr);
+  if (!qwindow)
+    return nullptr;
+
+  if (QGuiApplication::platformName() != "wayland")
+    return nullptr;
+
+  using namespace QNativeInterface::Private;
+  auto waylandWindow = qwindow->nativeInterface<QWaylandWindow>();
+  if (!waylandWindow)
+    return nullptr;
+
+  /* If window not visible yet, show it to trigger shell surface creation. */
+  if (!qwindow->isVisible())
+    qwindow->show();
+
+  return waylandWindow->surface();
+}
 
 struct wl_display* iupQtGetWaylandDisplay(void)
 {
@@ -255,6 +326,21 @@ void* iupQtGetWaylandSurface(void* qwindow_ptr)
 {
   (void)qwindow_ptr;
   return nullptr;
+}
+
+void* iupQtGetWaylandSurfaceIfReady(void* qwindow_ptr)
+{
+  (void)qwindow_ptr;
+  return nullptr;
+}
+
+int iupQtRegisterSurfaceReadyCallback(void* qwindow_ptr, void* ih, void (*callback)(void*, void*), void* user_data)
+{
+  (void)qwindow_ptr;
+  (void)ih;
+  (void)callback;
+  (void)user_data;
+  return -1;
 }
 
 void iupQtGetWidgetPosition(void* qwidget_ptr, int* x, int* y)
