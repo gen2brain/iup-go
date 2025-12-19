@@ -54,8 +54,11 @@ extern "C" {
 
 class IupQtTabStyle : public QProxyStyle
 {
+private:
+  Ihandle* ih;
+
 public:
-  IupQtTabStyle() : QProxyStyle() {}
+  IupQtTabStyle(Ihandle* ih_param) : QProxyStyle(), ih(ih_param) {}
 
   void drawControl(ControlElement element, const QStyleOption *option,
                    QPainter *painter, const QWidget *widget) const override
@@ -65,12 +68,12 @@ public:
       if (const QStyleOptionTab *tab = qstyleoption_cast<const QStyleOptionTab*>(option))
       {
         /* Check if this is a vertical tab (West or East position) */
-        bool isVertical = (tab->shape == QTabBar::RoundedWest ||
-                          tab->shape == QTabBar::RoundedEast ||
-                          tab->shape == QTabBar::TriangularWest ||
-                          tab->shape == QTabBar::TriangularEast);
+        bool isVerticalTab = (tab->shape == QTabBar::RoundedWest ||
+                              tab->shape == QTabBar::RoundedEast ||
+                              tab->shape == QTabBar::TriangularWest ||
+                              tab->shape == QTabBar::TriangularEast);
 
-        if (isVertical)
+        if (isVerticalTab && ih && ih->data->orientation == ITABS_HORIZONTAL)
         {
           QStyleOptionTab opt(*tab);
           painter->save();
@@ -100,8 +103,7 @@ public:
           else
           {
             /* Center text */
-            textRect = QRect(rect.left(), rect.center().y() - textSize.height() / 2,
-                           rect.width(), textSize.height());
+            textRect = QRect(rect.left(), rect.center().y() - textSize.height() / 2, rect.width(), textSize.height());
           }
 
           /* Draw icon if present */
@@ -120,7 +122,7 @@ public:
       }
     }
 
-    /* For all other cases (horizontal tabs), use default drawing */
+    /* For all other cases (horizontal tabs or TABORIENTATION=VERTICAL), use default drawing */
     QProxyStyle::drawControl(element, option, painter, widget);
   }
 };
@@ -201,14 +203,19 @@ protected:
     QSize size = QTabBar::tabSizeHint(index);
 
     /* For vertical tabs (West/East), Qt calculates size assuming rotated text */
-    /* Since we draw text horizontally, we need wider tabs */
+    /* Only swap dimensions when TABORIENTATION=HORIZONTAL (custom horizontal text drawing) */
+    /* For TABORIENTATION=VERTICAL, let Qt use natural size for rotated text */
     QTabBar::Shape tabShape = shape();
     if (tabShape == RoundedWest || tabShape == RoundedEast ||
         tabShape == TriangularWest || tabShape == TriangularEast)
     {
-      /* Swap width and height to account for horizontal text */
-      /* This gives us wider tabs that can fit horizontal text */
-      return QSize(size.height(), size.width());
+      /* Only swap when drawing horizontal text in vertical tabs */
+      if (ih && ih->data->orientation == ITABS_HORIZONTAL)
+      {
+        /* Swap width and height to account for horizontal text */
+        /* This gives us wider tabs that can fit horizontal text */
+        return QSize(size.height(), size.width());
+      }
     }
 
 #ifdef Q_OS_MAC
@@ -230,7 +237,7 @@ protected:
 public:
   IupQtTabBar(Ihandle* ih_param) : QTabBar(), ih(ih_param), closeCallback(nullptr)
   {
-    setStyle(new IupQtTabStyle());
+    setStyle(new IupQtTabStyle(ih_param));
   }
 
   void setIhandle(Ihandle* ih_param) { ih = ih_param; }
@@ -698,28 +705,22 @@ static int qtTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
   if (ih->handle) /* Allow to set only before mapping */
     return 0;
 
+  /* TABTYPE and TABORIENTATION are independent */
+  /* TABTYPE only sets the tab position, not the text orientation */
   if (iupStrEqualNoCase(value, "BOTTOM"))
-  {
     ih->data->type = ITABS_BOTTOM;
-    ih->data->orientation = ITABS_HORIZONTAL;
-  }
   else if (iupStrEqualNoCase(value, "LEFT"))
   {
     ih->data->type = ITABS_LEFT;
-    ih->data->orientation = ITABS_VERTICAL;
-    ih->data->is_multiline = 1; /* VERTICAL works only with MULTILINE */
+    ih->data->is_multiline = 1; /* LEFT/RIGHT tabs work better with MULTILINE */
   }
   else if (iupStrEqualNoCase(value, "RIGHT"))
   {
     ih->data->type = ITABS_RIGHT;
-    ih->data->orientation = ITABS_VERTICAL;
-    ih->data->is_multiline = 1; /* VERTICAL works only with MULTILINE */
+    ih->data->is_multiline = 1; /* LEFT/RIGHT tabs work better with MULTILINE */
   }
   else /* "TOP" */
-  {
     ih->data->type = ITABS_TOP;
-    ih->data->orientation = ITABS_HORIZONTAL;
-  }
 
   return 0;
 }
