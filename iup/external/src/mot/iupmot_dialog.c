@@ -1037,13 +1037,6 @@ static int motDialogMapMethod(Ihandle* ih)
   /* Ignore VISIBLE before mapping */
   iupAttribSet(ih, "VISIBLE", NULL);
 
-  if (IupGetGlobal("_IUP_RESET_DLGBGCOLOR"))
-  {
-    iupmotSetGlobalColorAttrib(dialog_manager, XmNbackground, "DLGBGCOLOR");
-    iupmotSetGlobalColorAttrib(dialog_manager, XmNforeground, "DLGFGCOLOR");
-    IupSetGlobal("_IUP_RESET_DLGBGCOLOR", NULL);
-  }
-
   if (iupStrBoolean(IupGetGlobal("INPUTCALLBACKS")))
     XtAddEventHandler(dialog_manager, PointerMotionMask, False, (XtEventHandler)iupmotDummyPointerMotionEvent, NULL);
 

@@ -37,7 +37,7 @@ IUP_SDK_API void* iupdrvGetDisplay(void)
 
 void iupmotSetGlobalColorAttrib(Widget w, const char* xmname, const char* name)
 {
-  unsigned char r, g, b; 
+  unsigned char r, g, b;
   Pixel color;
 
   XtVaGetValues(w, xmname, &color, NULL);
@@ -46,18 +46,39 @@ void iupmotSetGlobalColorAttrib(Widget w, const char* xmname, const char* name)
   iupGlobalSetDefaultColorAttrib(name, r, g, b);
 }
 
+/* Set IUP global color from X resource database, with fallback to default */
+static void iupmotSetGlobalColorFromXrm(const char* resource_name, const char* resource_class, const char* iup_name,
+                                         unsigned char def_r, unsigned char def_g, unsigned char def_b)
+{
+  XrmDatabase db;
+  XrmValue value;
+  char* type = NULL;
+
+  db = XrmGetDatabase(iupmot_display);
+  if (db && XrmGetResource(db, resource_name, resource_class, &type, &value))
+  {
+    XColor xcolor;
+    Colormap colormap = DefaultColormap(iupmot_display, iupmot_screen);
+
+    if (XParseColor(iupmot_display, colormap, value.addr, &xcolor))
+    {
+      unsigned char r = xcolor.red >> 8;
+      unsigned char g = xcolor.green >> 8;
+      unsigned char b = xcolor.blue >> 8;
+      iupGlobalSetDefaultColorAttrib(iup_name, r, g, b);
+      return;
+    }
+  }
+
+  /* Fallback to default values */
+  iupGlobalSetDefaultColorAttrib(iup_name, def_r, def_g, def_b);
+}
+
 int iupdrvOpen(int *argc, char ***argv)
 {
   IupSetGlobal("DRIVER", "Motif");
 
   setlocale(LC_ALL, "");
-
-  /* XtSetLanguageProc(NULL, NULL, NULL);
-     Removed to avoid invalid locale in modern Linux that set LANG=en_US.UTF-8 */
-
-  /* We do NOT use XtVaOpenApplication because it crashes when using internal dummy argc and argv.
-     iupmot_appshell = XtVaOpenApplication(&iupmot_appcontext, "Iup", NULL, 0, argc, *argv, NULL,
-                                           sessionShellWidgetClass, NULL); */
 
   XtToolkitInitialize();
 
@@ -114,17 +135,20 @@ int iupdrvOpen(int *argc, char ***argv)
 
   iupmotColorInit();
 
-  /* dialog background color */
+  /* Set default colors from X resources, with fallbacks.
+   * These colors are read from the X resource database (e.g., .Xresources)
+   * allowing users to theme Motif applications via standard X mechanisms. */
   {
-    iupmotSetGlobalColorAttrib(iupmot_appshell, XmNbackground, "DLGBGCOLOR");
-    iupGlobalSetDefaultColorAttrib("DLGFGCOLOR", 0, 0, 0);
-    IupSetGlobal("_IUP_RESET_DLGBGCOLOR", "YES");  /* will update the DLGFGCOLOR when the first dialog is mapped */
+    /* Dialog colors - use *.background and *.foreground */
+    iupmotSetGlobalColorFromXrm("*background", "*Background", "DLGBGCOLOR", 192, 192, 192);
+    iupmotSetGlobalColorFromXrm("*foreground", "*Foreground", "DLGFGCOLOR", 0, 0, 0);
 
-    iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", 255, 255, 255);
-    iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", 0, 0, 0);
-    iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", 128, 128, 128);
-    IupSetGlobal("_IUP_RESET_TXTCOLORS", "YES");   /* will update the TXTCOLORS when the first text or list is mapped */
+    /* Text widget colors - also use *.background and *.foreground for consistency */
+    iupmotSetGlobalColorFromXrm("*background", "*Background", "TXTBGCOLOR", 255, 255, 255);
+    iupmotSetGlobalColorFromXrm("*foreground", "*Foreground", "TXTFGCOLOR", 0, 0, 0);
+    iupmotSetGlobalColorFromXrm("*highlightColor", "*HighlightColor", "TXTHLCOLOR", 128, 128, 128);
 
+    /* Link color - typically blue, but can be themed */
     iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
   }
 
