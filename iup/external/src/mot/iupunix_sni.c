@@ -604,7 +604,8 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
   if (dbus_message_is_method_call(message, "org.freedesktop.DBus.Introspectable", "Introspect"))
   {
     DBusMessage* reply = dbus_message_new_method_return(message);
-    dbus_message_append_args(reply, DBUS_TYPE_STRING, &dbusmenu_introspection_xml, DBUS_TYPE_INVALID);
+    const char* xml_ptr = dbusmenu_introspection_xml;
+    dbus_message_append_args(reply, DBUS_TYPE_STRING, &xml_ptr, DBUS_TYPE_INVALID);
     dbus_connection_send(connection, reply, NULL);
     dbus_message_unref(reply);
     return DBUS_HANDLER_RESULT_HANDLED;
@@ -887,7 +888,8 @@ static DBusHandlerResult sniMessageHandler(DBusConnection* connection, DBusMessa
   if (dbus_message_is_method_call(message, "org.freedesktop.DBus.Introspectable", "Introspect"))
   {
     DBusMessage* reply = dbus_message_new_method_return(message);
-    dbus_message_append_args(reply, DBUS_TYPE_STRING, &sni_introspection_xml, DBUS_TYPE_INVALID);
+    const char* xml_ptr = sni_introspection_xml;
+    dbus_message_append_args(reply, DBUS_TYPE_STRING, &xml_ptr, DBUS_TYPE_INVALID);
     dbus_connection_send(connection, reply, NULL);
     dbus_message_unref(reply);
     return DBUS_HANDLER_RESULT_HANDLED;
