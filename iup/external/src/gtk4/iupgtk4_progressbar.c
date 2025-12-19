@@ -24,6 +24,48 @@
 
 #include "iupgtk4_drv.h"
 
+
+void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+{
+  static int horiz_min_w = -1, horiz_min_h = -1;
+  static int vert_min_w = -1, vert_min_h = -1;
+
+  if (horiz_min_w < 0)
+  {
+    GtkWidget* temp_horiz = gtk_progress_bar_new();
+    GtkWidget* temp_vert = gtk_progress_bar_new();
+
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(temp_horiz), GTK_ORIENTATION_HORIZONTAL);
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(temp_vert), GTK_ORIENTATION_VERTICAL);
+
+    gtk_widget_measure(temp_horiz, GTK_ORIENTATION_HORIZONTAL, -1, &horiz_min_w, NULL, NULL, NULL);
+    gtk_widget_measure(temp_horiz, GTK_ORIENTATION_VERTICAL, -1, &horiz_min_h, NULL, NULL, NULL);
+    gtk_widget_measure(temp_vert, GTK_ORIENTATION_HORIZONTAL, -1, &vert_min_w, NULL, NULL, NULL);
+    gtk_widget_measure(temp_vert, GTK_ORIENTATION_VERTICAL, -1, &vert_min_h, NULL, NULL, NULL);
+
+    if (horiz_min_w < 1) horiz_min_w = 150;
+    if (horiz_min_h < 1) horiz_min_h = 6;
+    if (vert_min_w < 1) vert_min_w = 7;
+    if (vert_min_h < 1) vert_min_h = 80;
+
+    g_object_ref_sink(temp_horiz);
+    g_object_unref(temp_horiz);
+    g_object_ref_sink(temp_vert);
+    g_object_unref(temp_vert);
+  }
+
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  {
+    *w = vert_min_w;
+    *h = vert_min_h;
+  }
+  else
+  {
+    *w = horiz_min_w;
+    *h = horiz_min_h;
+  }
+}
+
 static int gtk4ProgressBarTimeCb(Ihandle* timer)
 {
   Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUP_PROGRESSBAR");

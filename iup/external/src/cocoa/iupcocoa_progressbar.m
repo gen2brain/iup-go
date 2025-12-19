@@ -26,6 +26,49 @@
 #include "iupcocoa_drv.h"
 
 
+void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+{
+  static int horiz_min_w = -1, horiz_min_h = -1;
+  static int vert_min_w = -1, vert_min_h = -1;
+
+  if (horiz_min_w < 0)
+  {
+    NSProgressIndicator* temp_horiz = [[NSProgressIndicator alloc] init];
+    NSProgressIndicator* temp_vert = [[NSProgressIndicator alloc] init];
+
+    [temp_horiz setStyle:NSProgressIndicatorStyleBar];
+    [temp_vert setStyle:NSProgressIndicatorStyleBar];
+
+    NSSize horiz_size = [temp_horiz fittingSize];
+    NSSize vert_size = [temp_vert fittingSize];
+
+    horiz_min_w = (int)horiz_size.width;
+    horiz_min_h = (int)horiz_size.height;
+    vert_min_w = (int)vert_size.width;
+    vert_min_h = (int)vert_size.height;
+
+    /* NSProgressIndicator has flexible width, so use reasonable defaults */
+    if (horiz_min_w < 1) horiz_min_w = 100;
+    if (horiz_min_h < 1) horiz_min_h = 20;
+    if (vert_min_w < 1) vert_min_w = 20;
+    if (vert_min_h < 1) vert_min_h = 100;
+
+    [temp_horiz release];
+    [temp_vert release];
+  }
+
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  {
+    *w = vert_min_w;
+    *h = vert_min_h;
+  }
+  else
+  {
+    *w = horiz_min_w;
+    *h = horiz_min_h;
+  }
+}
+
 /*
    NOTE: Vertical NSProgressIndicator has a rendering bug in Cocoa when simply rotated.
    WORKAROUND: Use a hierarchy: root container → transform view (rotated) → progress bar.

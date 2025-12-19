@@ -29,6 +29,21 @@
 #include "iupmot_color.h"
 
 
+void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+{
+  /* Motif XmScale has no intrinsic size API */
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  {
+    *w = 15;
+    *h = 80;
+  }
+  else
+  {
+    *w = 100;
+    *h = 15;
+  }
+}
+
 static int motProgressBarTimeCb(Ihandle* timer)
 {
   Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUP_PROGRESSBAR");

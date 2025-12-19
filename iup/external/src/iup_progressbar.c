@@ -64,6 +64,30 @@ static char* iProgressBarGetMaxAttrib(Ihandle* ih)
   return iupStrReturnDouble(ih->data->vmax);
 }
 
+static int iProgressBarSetOrientationAttrib(Ihandle* ih, const char* value)
+{
+  int min_w, min_h;
+
+  /* valid only before map */
+  if (ih->handle)
+    return 0;
+
+  iupdrvProgressBarGetMinSize(ih, &min_w, &min_h);
+
+  if (iupStrEqualNoCase(value, "VERTICAL"))
+  {
+    /* progress bar natural vertical size is MinWx200 */
+    IupSetfAttribute(ih, "RASTERSIZE", "%dx%d", min_w, 200);
+  }
+  else /* "HORIZONTAL" */
+  {
+    /* progress bar natural horizontal size is 200xMinH */
+    IupSetfAttribute(ih, "RASTERSIZE", "%dx%d", 200, min_h);
+  }
+
+  return 0; /* do not store value in hash table */
+}
+
 static int iProgressBarCreateMethod(Ihandle* ih, void **params)
 {
   (void)params;
@@ -74,8 +98,8 @@ static int iProgressBarCreateMethod(Ihandle* ih, void **params)
   ih->data->vmax      = 1;
   ih->data->dashed    = 0;
 
-  /* progress bar default size is 200x30 */
-  IupSetAttribute(ih, "RASTERSIZE", "200x30");
+  /* set default size based on orientation (defaults to HORIZONTAL) */
+  iProgressBarSetOrientationAttrib(ih, "HORIZONTAL");
 
   return IUP_NOERROR;
 }
@@ -119,7 +143,7 @@ Iclass* iupProgressBarNewClass(void)
   iupClassRegisterAttribute(ic, "MIN", iProgressBarGetMinAttrib, iProgressBarSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAX", iProgressBarGetMaxAttrib, iProgressBarSetMaxAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ORIENTATION", NULL, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ORIENTATION", NULL, iProgressBarSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupdrvProgressBarInitClass(ic);
 

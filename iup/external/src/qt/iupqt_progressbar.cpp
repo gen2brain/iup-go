@@ -50,17 +50,42 @@ static int qtProgressBarTimeCb(Ihandle* timer)
  * Min Size Calculation
  ****************************************************************************/
 
-extern "C" void qtProgressBarGetMinSize(Ihandle* ih, int *w, int *h)
+extern "C" void iupdrvProgressBarGetMinSize(Ihandle* ih, int *w, int *h)
 {
+  static int horiz_min_w = -1, horiz_min_h = -1;
+  static int vert_min_w = -1, vert_min_h = -1;
+
+  if (horiz_min_w < 0)
+  {
+    QProgressBar temp_horiz(nullptr);
+    QProgressBar temp_vert(nullptr);
+
+    temp_horiz.setOrientation(Qt::Horizontal);
+    temp_vert.setOrientation(Qt::Vertical);
+
+    QSize horiz_hint = temp_horiz.minimumSizeHint();
+    QSize vert_hint = temp_vert.minimumSizeHint();
+
+    horiz_min_w = horiz_hint.width();
+    horiz_min_h = horiz_hint.height();
+    vert_min_w = vert_hint.width();
+    vert_min_h = vert_hint.height();
+
+    if (horiz_min_w < 1) horiz_min_w = 100;
+    if (horiz_min_h < 1) horiz_min_h = 20;
+    if (vert_min_w < 1) vert_min_w = 20;
+    if (vert_min_h < 1) vert_min_h = 100;
+  }
+
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
-    *w = 20;
-    *h = 100;
+    *w = vert_min_w;
+    *h = vert_min_h;
   }
   else
   {
-    *w = 100;
-    *h = 20;
+    *w = horiz_min_w;
+    *h = horiz_min_h;
   }
 }
 
