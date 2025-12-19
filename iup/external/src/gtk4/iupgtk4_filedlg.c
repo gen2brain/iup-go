@@ -54,6 +54,12 @@ static void iupStrRemoveChar(char* str, char c)
   *p = 0;
 }
 
+static void gtk4FileDlgResponseCB(GtkDialog* d, gint r, gpointer data)
+{
+  *(gint*)data = r;
+  (void)d;
+}
+
 static char* gtk4FileDlgGetNextStr(char* str)
 {
   /* after the 0 there is another string, must know a priori how many strings are before using this */
@@ -597,7 +603,11 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
   if (!dialog)
     return IUP_ERROR;
 
-  iupgtk4DialogSetTransientFor(GTK_WINDOW(dialog), ih);
+  {
+    GtkWindow* parent = iupgtk4GetTransientFor(ih);
+    if (parent)
+      gtk_window_set_transient_for(GTK_WINDOW(dialog), parent);
+  }
 
   if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
     gtk_dialog_add_button(GTK_DIALOG(dialog), save, GTK_RESPONSE_OK);
@@ -733,19 +743,13 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
   gtk_widget_set_visible(dialog, TRUE);
 
   gint response;
-  gint* response_ptr = &response;
-
-  /* Response callback to capture the response value */
-  void response_cb(GtkDialog* d, gint r, gpointer data) {
-    *(gint*)data = r;
-  }
 
   do
   {
     response = GTK_RESPONSE_NONE;
 
     GMainLoop* loop = g_main_loop_new(NULL, FALSE);
-    gulong response_handler = g_signal_connect(dialog, "response", G_CALLBACK(response_cb), response_ptr);
+    gulong response_handler = g_signal_connect(dialog, "response", G_CALLBACK(gtk4FileDlgResponseCB), &response);
     gulong quit_handler = g_signal_connect_swapped(dialog, "response", G_CALLBACK(g_main_loop_quit), loop);
 
     g_main_loop_run(loop);

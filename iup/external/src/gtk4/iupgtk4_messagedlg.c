@@ -45,7 +45,7 @@ static void gtk4AlertDialogCallback(GObject* source, GAsyncResult* result, gpoin
 static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
 {
   GtkAlertDialog* dialog;
-  GtkWindow* parent = NULL;
+  GtkWindow* parent;
   char *buttons;
   const char* button_labels[5];
   int num_buttons = 0;
@@ -56,20 +56,13 @@ static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
   (void)x;
   (void)y;
 
+  parent = iupgtk4GetTransientFor(ih);
+
   dialog = gtk_alert_dialog_new("%s", iupgtk4StrConvertToSystem(iupAttribGet(ih, "VALUE")));
   if (!dialog)
     return IUP_ERROR;
 
   gtk_alert_dialog_set_modal(dialog, TRUE);
-
-  /* Get parent window */
-  {
-    Ihandle* parent_ih = IupGetAttributeHandle(ih, "PARENTDIALOG");
-    if (!parent_ih)
-      parent_ih = IupGetAttributeHandle(NULL, "PARENTDIALOG");
-    if (parent_ih && parent_ih->handle)
-      parent = GTK_WINDOW(parent_ih->handle);
-  }
 
   buttons = iupAttribGetStr(ih, "BUTTONS");
   if (iupStrEqualNoCase(buttons, "OKCANCEL"))

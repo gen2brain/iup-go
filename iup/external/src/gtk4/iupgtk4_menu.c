@@ -322,12 +322,26 @@ static void gtk4PopoverClosedCb(GtkPopover *popover, gpointer user_data)
     g_main_loop_quit(loop);
 }
 
+static void gtk4MenuParentDestroyCb(GtkWidget* parent, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  GtkWidget* popover = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_POPOVER");
+
+  if (popover && GTK_IS_WIDGET(popover))
+  {
+    gtk_widget_unparent(popover);
+    iupAttribSet(ih, "_IUPGTK4_POPOVER", NULL);
+  }
+
+  iupAttribSet(ih, "_IUPGTK4_POPOVER_PARENT", NULL);
+}
+
 static void gtk4AnchorPopoverClosedCb(GtkPopover *popover, gpointer user_data)
 {
   Ihandle *ih = (Ihandle*)user_data;
   GtkWidget *anchor_window;
 
-  /* Hide anchor window when popover closes (for tray popups) */
+  /* Hide anchor window when popover closes */
   anchor_window = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ANCHOR_WINDOW");
   if (anchor_window)
     gtk_widget_set_visible(anchor_window, FALSE);
@@ -343,7 +357,6 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   GSimpleActionGroup* action_group;
   GMainLoop* loop;
   int local_x = 0, local_y = 0;
-  Ihandle* popup_dialog;
   int use_anchor_window = 0;
 
   /* Get stored menu model and action group from MapMethod */
@@ -353,21 +366,8 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   if (!menu_model || !action_group)
     return IUP_ERROR;
 
-  /* Get the dialog that triggered the popup (stored by controls like tree) */
-  popup_dialog = (Ihandle*)IupGetGlobal("_IUPGTK4_POPUP_DIALOG");
-  IupSetGlobal("_IUPGTK4_POPUP_DIALOG", NULL);
-
-  if (popup_dialog)
+  /* Try to find an active visible window */
   {
-    parent_widget = (GtkWidget*)iupAttribGet(popup_dialog, "_IUPGTK4_INNER_PARENT");
-    if (!parent_widget)
-      parent_widget = (GtkWidget*)popup_dialog->handle;
-  }
-
-  /* If no popup_dialog was set, try to find a visible dialog */
-  if (!parent_widget)
-  {
-    /* Try to get the active/focused window from GTK */
     GList* toplevels = gtk_window_list_toplevels();
     GList* l;
     for (l = toplevels; l != NULL; l = l->next)
@@ -391,7 +391,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     g_list_free(toplevels);
   }
 
-  /* If still no parent_widget (e.g., tray popup with no visible window), use anchor window */
+  /* If no parent_widget (no visible window), use anchor window */
   if (!parent_widget)
   {
     use_anchor_window = 1;
@@ -399,7 +399,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 
   if (use_anchor_window)
   {
-    /* Tray popup: Use positioned anchor window for free positioning at (x,y) */
+    /* Use positioned anchor window for free positioning at (x,y) */
     GtkWidget* anchor_window = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ANCHOR_WINDOW");
     GtkWidget* old_popover = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_POPOVER");
 
@@ -568,6 +568,9 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   /* Parent popover to the dialog's inner container */
   gtk_widget_set_parent(popover, parent_widget);
 
+  /* Connect to parent's destroy signal to unparent popover before window is finalized */
+  g_signal_connect(parent_widget, "destroy", G_CALLBACK(gtk4MenuParentDestroyCb), ih);
+
   gtk_popover_set_has_arrow(GTK_POPOVER(popover), FALSE);
 
   /* Position relative to parent widget at click location */
@@ -691,6 +694,8 @@ static void gtk4MenuUnMapMethod(Ihandle* ih)
   /* Remove action group from parent widget first */
   if (popover_parent && GTK_IS_WIDGET(popover_parent))
   {
+    /* Disconnect destroy signal before removing action group */
+    g_signal_handlers_disconnect_by_func(popover_parent, gtk4MenuParentDestroyCb, ih);
     gtk_widget_insert_action_group(popover_parent, "menu", NULL);
     iupAttribSet(ih, "_IUPGTK4_POPOVER_PARENT", NULL);
   }
@@ -710,7 +715,7 @@ static void gtk4MenuUnMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPGTK4_POPOVER", NULL);
   }
 
-  /* Clean up anchor window if it was created (for tray popups) */
+  /* Clean up anchor window if it was created */
   if (anchor_window && GTK_IS_WIDGET(anchor_window))
   {
     gtk_window_destroy(GTK_WINDOW(anchor_window));

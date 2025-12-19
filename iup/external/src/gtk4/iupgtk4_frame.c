@@ -26,11 +26,52 @@
 
 #include "iupgtk4_drv.h"
 
+static void gtk4FrameMeasureDecor(int has_title, int* decor_w, int* decor_h)
+{
+  GtkWidget* temp_frame = gtk_frame_new(NULL);
+  GtkWidget* temp_child = gtk_fixed_new();
+
+  if (has_title)
+    gtk_frame_set_label(GTK_FRAME(temp_frame), "Tj");
+
+  gtk_frame_set_child(GTK_FRAME(temp_frame), temp_child);
+  gtk_widget_set_size_request(temp_child, 100, 100);
+
+  int frame_min_w, frame_nat_w, frame_min_h, frame_nat_h;
+  gtk_widget_measure(temp_frame, GTK_ORIENTATION_HORIZONTAL, -1, &frame_min_w, &frame_nat_w, NULL, NULL);
+  gtk_widget_measure(temp_frame, GTK_ORIENTATION_VERTICAL, -1, &frame_min_h, &frame_nat_h, NULL, NULL);
+
+  int child_min_w, child_nat_w, child_min_h, child_nat_h;
+  gtk_widget_measure(temp_child, GTK_ORIENTATION_HORIZONTAL, -1, &child_min_w, &child_nat_w, NULL, NULL);
+  gtk_widget_measure(temp_child, GTK_ORIENTATION_VERTICAL, -1, &child_min_h, &child_nat_h, NULL, NULL);
+
+  *decor_w = frame_nat_w - child_nat_w;
+  *decor_h = frame_nat_h - child_nat_h;
+
+  if (*decor_w < 0) *decor_w = 0;
+  if (*decor_h < 0) *decor_h = 0;
+
+  g_object_ref_sink(temp_frame);
+  g_object_unref(temp_frame);
+}
+
 void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
+  static int measured = 0;
+  static int offset_x = 0, offset_y = 0;
   (void)ih;
-  *x = 2;
-  *y = 2;
+
+  if (!measured)
+  {
+    int decor_w, decor_h;
+    gtk4FrameMeasureDecor(0, &decor_w, &decor_h);
+    offset_x = decor_w / 2;
+    offset_y = decor_h / 2;
+    measured = 1;
+  }
+
+  *x = offset_x;
+  *y = offset_y;
 }
 
 int iupdrvFrameHasClientOffset(Ihandle* ih)
@@ -79,64 +120,31 @@ int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 
 int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
+  static int titled_measured = 0, untitled_measured = 0;
   static int titled_w = 0, titled_h = 0;
   static int untitled_w = 0, untitled_h = 0;
   const char* title = iupAttribGet(ih, "TITLE");
   int has_title = (title && *title) ? 1 : 0;
 
-  /* Check if we already measured this type */
-  if (has_title && titled_w > 0)
+  if (has_title)
   {
+    if (!titled_measured)
+    {
+      gtk4FrameMeasureDecor(1, &titled_w, &titled_h);
+      titled_measured = 1;
+    }
     *w = titled_w;
     *h = titled_h;
-    return 1;
-  }
-  else if (!has_title && untitled_w > 0)
-  {
-    *w = untitled_w;
-    *h = untitled_h;
-    return 1;
-  }
-
-  /* Measure decoration size by creating temporary frame */
-  GtkWidget* temp_frame = gtk_frame_new(NULL);
-  GtkWidget* temp_child = gtk_fixed_new();
-
-  if (has_title)
-    gtk_frame_set_label(GTK_FRAME(temp_frame), "Sample Title");
-
-  gtk_frame_set_child(GTK_FRAME(temp_frame), temp_child);
-  gtk_widget_set_size_request(temp_child, 100, 100);
-
-  int frame_min_w, frame_nat_w, frame_min_h, frame_nat_h;
-  gtk_widget_measure(temp_frame, GTK_ORIENTATION_HORIZONTAL, -1, &frame_min_w, &frame_nat_w, NULL, NULL);
-  gtk_widget_measure(temp_frame, GTK_ORIENTATION_VERTICAL, -1, &frame_min_h, &frame_nat_h, NULL, NULL);
-
-  int child_min_w, child_nat_w, child_min_h, child_nat_h;
-  gtk_widget_measure(temp_child, GTK_ORIENTATION_HORIZONTAL, -1, &child_min_w, &child_nat_w, NULL, NULL);
-  gtk_widget_measure(temp_child, GTK_ORIENTATION_VERTICAL, -1, &child_min_h, &child_nat_h, NULL, NULL);
-
-  *w = frame_nat_w - child_nat_w;
-  *h = frame_nat_h - child_nat_h;
-
-  /* Cleanup */
-  g_object_ref_sink(temp_frame);
-  g_object_unref(temp_frame);
-
-  /* Ensure minimum decoration size */
-  if (*w < 0) *w = 4;
-  if (*h < 0) *h = 4;
-
-  /* Cache the result */
-  if (has_title)
-  {
-    titled_w = *w;
-    titled_h = *h;
   }
   else
   {
-    untitled_w = *w;
-    untitled_h = *h;
+    if (!untitled_measured)
+    {
+      gtk4FrameMeasureDecor(0, &untitled_w, &untitled_h);
+      untitled_measured = 1;
+    }
+    *w = untitled_w;
+    *h = untitled_h;
   }
 
   return 1;
@@ -217,8 +225,6 @@ static int gtk4FrameMapMethod(Ihandle* ih)
 {
   char* title;
   GtkWidget* inner_parent;
-  GtkCssProvider* provider;
-  GtkStyleContext* context;
 
   if (!ih->parent)
     return IUP_ERROR;

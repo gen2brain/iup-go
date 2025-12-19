@@ -89,7 +89,7 @@ const char* iupgtk4GetNativeFontIdName(void);
 
 /* Dialog */
 gboolean iupgtk4DialogCloseRequest(GtkWindow *window, Ihandle *ih);
-void iupgtk4DialogSetTransientFor(GtkWindow* dialog, Ihandle* ih);
+GtkWindow* iupgtk4GetTransientFor(Ihandle* ih);
 
 /* Menu */
 void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu);

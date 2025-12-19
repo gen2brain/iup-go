@@ -1703,7 +1703,7 @@ static void gtk4ListFactory_bind(GtkListItemFactory* factory, GtkListItem* list_
 
   /* Connect to item's property update signal to handle dynamic changes */
   gulong handler_id = g_signal_connect(item, "notify::update", G_CALLBACK(gtk4ListItem_onPropertyUpdate), list_item);
-  g_object_set_data(G_OBJECT(item), "iup-notify-handler", (gpointer)handler_id);
+  g_object_set_data(G_OBJECT(item), "iup-notify-handler", GSIZE_TO_POINTER((gsize)handler_id));
 
   (void)factory;
 }
@@ -1715,7 +1715,7 @@ static void gtk4ListFactory_unbind(GtkListItemFactory* factory, GtkListItem* lis
   if (item)
   {
     /* Disconnect property update signal */
-    gulong handler_id = (gulong)g_object_get_data(G_OBJECT(item), "iup-notify-handler");
+    gulong handler_id = (gulong)GPOINTER_TO_SIZE(g_object_get_data(G_OBJECT(item), "iup-notify-handler"));
     if (handler_id)
     {
       g_signal_handler_disconnect(item, handler_id);
@@ -2422,8 +2422,8 @@ void* iupdrvListGetImageHandle(Ihandle* ih, int id)
       g_object_unref(item);
       return texture;
     }
-    return NULL;
   }
+  return NULL;
 }
 
 int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
@@ -2438,8 +2438,8 @@ int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
       iup_list_item_set_image(item, (GdkTexture*)hImage);
       g_object_unref(item);
     }
-    return 0;
   }
+  return 0;
 }
 
 static char* gtk4ListGetImageNativeHandleAttribId(Ihandle* ih, int id)
@@ -2455,8 +2455,8 @@ static char* gtk4ListGetImageNativeHandleAttribId(Ihandle* ih, int id)
       g_object_unref(item);
       return (char*)texture;
     }
-    return NULL;
   }
+  return NULL;
 }
 
 void iupdrvListInitClass(Iclass* ic)
