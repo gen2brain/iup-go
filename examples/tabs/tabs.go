@@ -71,8 +71,25 @@ func main() {
 	tabs2 := iup.Tabs(vboxD, vboxE)
 	tabs2.SetAttributes("TABTYPE=LEFT, ALLOWREORDER=YES")
 
+	// Create tabs 3 (left side with VERTICAL text orientation)
+	vboxF := iup.Vbox(
+		iup.Label("Inside Tab F"),
+		iup.Button("Button F"),
+	).SetAttributes("MARGIN=10x10, GAP=5")
+	vboxF.SetAttribute("TABTITLE", "Tab F")
+
+	vboxG := iup.Vbox(
+		iup.Label("Inside Tab G"),
+		iup.Button("Button G"),
+	).SetAttributes("MARGIN=10x10, GAP=5")
+	vboxG.SetAttribute("TABTITLE", "Tab G")
+
+	tabs3 := iup.Tabs(vboxF, vboxG)
+	tabs3.SetAttributes("TABTYPE=LEFT, TABORIENTATION=VERTICAL")
+
 	iup.SetHandle("tabs1", tabs1)
 	iup.SetHandle("tabs2", tabs2)
+	iup.SetHandle("tabs3", tabs3)
 
 	// TABCHANGE_CB - Called when the user changes the active tab
 	tabChangeCB := func(ih iup.Ihandle, newChild, oldChild iup.Ihandle) int {
@@ -88,6 +105,8 @@ func main() {
 		tabsName := "tabs1"
 		if ih == iup.GetHandle("tabs2") {
 			tabsName = "tabs2"
+		} else if ih == iup.GetHandle("tabs3") {
+			tabsName = "tabs3"
 		}
 
 		logMsg(fmt.Sprintf("TABCHANGE_CB (%s): '%s' -> '%s'", tabsName, oldTitle, newTitle))
@@ -99,6 +118,8 @@ func main() {
 		tabsName := "tabs1"
 		if ih == iup.GetHandle("tabs2") {
 			tabsName = "tabs2"
+		} else if ih == iup.GetHandle("tabs3") {
+			tabsName = "tabs3"
 		}
 
 		logMsg(fmt.Sprintf("TABCHANGEPOS_CB (%s): position %d -> %d", tabsName, oldPos, newPos))
@@ -110,6 +131,8 @@ func main() {
 		tabsName := "tabs1"
 		if ih == iup.GetHandle("tabs2") {
 			tabsName = "tabs2"
+		} else if ih == iup.GetHandle("tabs3") {
+			tabsName = "tabs3"
 		}
 
 		// Get the child at position
@@ -131,6 +154,8 @@ func main() {
 		tabsName := "tabs1"
 		if ih == iup.GetHandle("tabs2") {
 			tabsName = "tabs2"
+		} else if ih == iup.GetHandle("tabs3") {
+			tabsName = "tabs3"
 		}
 
 		// Get the child at position
@@ -157,10 +182,16 @@ func main() {
 	iup.SetCallback(tabs2, "TABCLOSE_CB", iup.TabCloseFunc(tabCloseCB))
 	iup.SetCallback(tabs2, "RIGHTCLICK_CB", iup.RightClickFunc(rightClickCB))
 
+	// Set callbacks for tabs3
+	iup.SetCallback(tabs3, "TABCHANGE_CB", iup.TabChangeFunc(tabChangeCB))
+	iup.SetCallback(tabs3, "TABCHANGEPOS_CB", iup.TabChangePosFunc(tabChangePosCB))
+	iup.SetCallback(tabs3, "TABCLOSE_CB", iup.TabCloseFunc(tabCloseCB))
+	iup.SetCallback(tabs3, "RIGHTCLICK_CB", iup.RightClickFunc(rightClickCB))
+
 	// Layout
 	vboxMain := iup.Vbox(
 		iup.Label("IUP Tabs").SetAttributes(`FONT="Sans, Bold 12"`),
-		iup.Hbox(tabs1, tabs2).SetAttribute("GAP", "10"),
+		iup.Hbox(tabs1, tabs2, tabs3).SetAttribute("GAP", "10"),
 		iup.Frame(txtLog).SetAttributes(`TITLE="Event Log", MARGIN=5x5`),
 	).SetAttributes("MARGIN=10x10, GAP=10")
 
@@ -169,6 +200,8 @@ func main() {
 	iup.Show(dlg)
 
 	logMsg(fmt.Sprintf("Driver: %s", driver))
+	logMsg("tabs2: LEFT tabs with HORIZONTAL text (default)")
+	logMsg("tabs3: LEFT tabs with VERTICAL text (rotated 90°)")
 	logMsg("Note: tabs2 has ALLOWREORDER=YES, try dragging tabs!")
 
 	iup.MainLoop()
