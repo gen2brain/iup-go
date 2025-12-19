@@ -20,7 +20,6 @@ You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
 * To remove a console window, i.e., compile a GUI app with WinMain entry-point, build with `-ldflags "-H=windowsgui"`.
 * You can add an icon resource to an .exe file with the [rsrc](https://github.com/akavel/rsrc) tool.
 * Windows manifest is included in the build by default. See below how to disable the manifest if you want to include your own.
-
 * You can build for Qt in MSYS2, with the `qt` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-base`.
 * You can build for GTK3 in MSYS2, with the `gtk` build tag. Install deps with `pacman -S mingw-w64-x86_64-gtk3`.
 * You can build for GTK4 in MSYS2, with the `gtk4` build tag. Install deps with `pacman -S mingw-w64-x86_64-gtk4`.
@@ -34,7 +33,6 @@ For MSYS2, use `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86
 On macOS, you need Command Line Tools for Xcode (if you have `brew`, you already have this).
 
 * To create an `.app` bundle or `.dmg` image, check this [gist](https://gist.github.com/mholt/11008646c95d787c30806d3f24b2c844).
-
 * You can build for Qt in macOS, with the `qt` build tag. Install deps with `brew install qt`.
 * You can build for GTK3 in macOS, with the `gtk` build tag. Install deps with `brew install gtk+3`.
 * You can build for GTK4 in macOS, with the `gtk4` build tag. Install deps with `brew install gtk4`.
