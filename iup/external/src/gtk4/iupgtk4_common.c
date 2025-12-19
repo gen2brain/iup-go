@@ -26,6 +26,8 @@
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_assert.h"
+#include "iup_dialog.h"
+#include "iup_dlglist.h"
 
 #include "iupgtk4_drv.h"
 
@@ -1228,12 +1230,43 @@ void iupgtk4SurfaceGetPointer(GdkSurface* surface, double* x, double* y, GdkModi
 
 int iupgtk4IsSystemDarkMode(void)
 {
+#if GTK_CHECK_VERSION(4, 20, 0)
+  /* GTK 4.20+ has gtk-interface-color-scheme which is the system-wide setting */
+  GtkSettings* settings = gtk_settings_get_default();
+  int color_scheme = 0;
+  g_object_get(settings, "gtk-interface-color-scheme", &color_scheme, NULL);
+  /* GTK_INTERFACE_COLOR_SCHEME_DARK = 2 */
+  return (color_scheme == 2) ? 1 : 0;
+#elif GTK_CHECK_VERSION(4, 10, 0)
+  /* For GTK4 4.10-4.19, measure actual widget colors */
+  GtkWidget* temp_window;
+  GdkRGBA fg;
+  double fg_lum;
+  int is_dark;
+
+  temp_window = gtk_window_new();
+  gtk_widget_realize(temp_window);
+
+  /* Get foreground color, in dark themes, foreground is light (high luminance) */
+  gtk_widget_get_color(temp_window, &fg);
+
+  /* Calculate relative luminance using standard formula (ITU-R BT.709) */
+  fg_lum = 0.2126 * fg.red + 0.7152 * fg.green + 0.0722 * fg.blue;
+
+  /* In dark mode, foreground text is light (high luminance, > 0.5) */
+  is_dark = (fg_lum > 0.5) ? 1 : 0;
+
+  gtk_window_destroy(GTK_WINDOW(temp_window));
+
+  return is_dark;
+#else
+  /* GTK4 < 4.10: fallback to checking app preference (not ideal but best we can do)
+     gtk-application-prefer-dark-theme only indicates if the APP requested dark theme. */
   GtkSettings* settings = gtk_settings_get_default();
   gboolean dark = FALSE;
-
   g_object_get(settings, "gtk-application-prefer-dark-theme", &dark, NULL);
-
   return dark ? 1 : 0;
+#endif
 }
 
 IUP_SDK_API void iupdrvSleep(int time)
@@ -1442,6 +1475,37 @@ const char* iupgtk4GetNativeFontIdName(void)
 {
   /* GTK4 uses Pango fonts like GTK3 */
   return "PANGOFONTDESC";
+}
+
+GtkWindow* iupgtk4GetTransientFor(Ihandle* ih)
+{
+  InativeHandle* parent = iupDialogGetNativeParent(ih);
+  if (parent)
+    return (GtkWindow*)parent;
+
+  /* Try to find parent from focused element */
+  {
+    Ihandle* ih_focus = IupGetFocus();
+    if (ih_focus)
+    {
+      Ihandle* dlg = IupGetDialog(ih_focus);
+      if (dlg && dlg->handle)
+        return (GtkWindow*)dlg->handle;
+    }
+  }
+
+  /* Fallback: find first visible IUP dialog */
+  {
+    Ihandle* dlg_iter = iupDlgListFirst();
+    while (dlg_iter)
+    {
+      if (dlg_iter->handle && dlg_iter != ih && iupdrvIsVisible(dlg_iter))
+        return (GtkWindow*)dlg_iter->handle;
+      dlg_iter = iupDlgListNext();
+    }
+  }
+
+  return NULL;
 }
 
 #ifdef GDK_WINDOWING_X11

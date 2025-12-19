@@ -39,13 +39,15 @@ static void gtk4FontDialogCallback(GObject* source, GAsyncResult* result, gpoint
 static int gtk4FontDlgPopup(Ihandle* ih, int x, int y)
 {
   GtkFontDialog* dialog;
-  GtkWindow* parent = NULL;
+  GtkWindow* parent;
   char* font;
   PangoFontDescription* initial_font = NULL;
   FontDialogData data = {0};
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
+
+  parent = iupgtk4GetTransientFor(ih);
 
   dialog = gtk_font_dialog_new();
   if (!dialog)
@@ -60,14 +62,6 @@ static int gtk4FontDlgPopup(Ihandle* ih, int x, int y)
 
   if (font)
     initial_font = pango_font_description_from_string(font);
-
-  {
-    Ihandle* parent_ih = IupGetAttributeHandle(ih, "PARENTDIALOG");
-    if (!parent_ih)
-      parent_ih = IupGetAttributeHandle(NULL, "PARENTDIALOG");
-    if (parent_ih && parent_ih->handle)
-      parent = GTK_WINDOW(parent_ih->handle);
-  }
 
   data.loop = g_main_loop_new(NULL, FALSE);
   data.font_desc = NULL;

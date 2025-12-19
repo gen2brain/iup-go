@@ -35,6 +35,15 @@ static int gtk4CalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void gtk4CalendarSetDate(GtkCalendar* calendar, GDateTime* dt)
+{
+#if GTK_CHECK_VERSION(4, 20, 0)
+  gtk_calendar_set_date(calendar, dt);
+#else
+  gtk_calendar_select_day(calendar, dt);
+#endif
+}
+
 static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqualNoCase(value, "TODAY"))
@@ -47,7 +56,7 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
     GDateTime *dt = g_date_time_new_local(timeinfo->tm_year + 1900,
                                            timeinfo->tm_mon + 1,
                                            timeinfo->tm_mday, 0, 0, 0);
-    gtk_calendar_set_date(GTK_CALENDAR(ih->handle), dt);
+    gtk4CalendarSetDate(GTK_CALENDAR(ih->handle), dt);
     g_date_time_unref(dt);
   }
   else
@@ -61,7 +70,7 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
       if (day > 31) day = 31;
 
       GDateTime *dt = g_date_time_new_local(year, month, day, 0, 0, 0);
-      gtk_calendar_set_date(GTK_CALENDAR(ih->handle), dt);
+      gtk4CalendarSetDate(GTK_CALENDAR(ih->handle), dt);
       g_date_time_unref(dt);
     }
   }

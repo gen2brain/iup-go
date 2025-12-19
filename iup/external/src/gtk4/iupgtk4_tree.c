@@ -849,12 +849,7 @@ iupgtk4TreeLabelClickPressed(GtkGestureClick *gesture, int n_press, double x, do
   /* Handle right-click */
   if (button == GDK_BUTTON_SECONDARY)
   {
-    Ihandle *dialog = IupGetDialog(ih);
-
     gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
-
-    /* Store the dialog for popup menu to find its inner_parent */
-    IupSetGlobal("_IUPGTK4_POPUP_DIALOG", (char*)dialog);
 
     IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
     if (cb)
