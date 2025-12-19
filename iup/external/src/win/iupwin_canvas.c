@@ -446,7 +446,7 @@ static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
     return 1; 
   case WM_PAINT:
     {
-      IFnff cb = (IFnff)IupGetCallback(ih, "ACTION");
+      IFn cb = (IFn)IupGetCallback(ih, "ACTION");
       if (cb && !(ih->data->inside_resize))
       {
         PAINTSTRUCT ps;
@@ -454,7 +454,7 @@ static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
         iupAttribSet(ih, "HDC_WMPAINT", (char*)hdc);
         iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right-ps.rcPaint.left, ps.rcPaint.bottom-ps.rcPaint.top);
 
-        cb(ih, (float)ih->data->posx, (float)ih->data->posy);
+        cb(ih);
 
         iupAttribSet(ih, "CLIPRECT", NULL);
         iupAttribSet(ih, "HDC_WMPAINT", NULL);

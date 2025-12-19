@@ -490,6 +490,16 @@ void iupdrvDrawQuadraticBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y
   iupdrvDrawBezierWDL(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
+void iupdrvDrawResetClipWDL(IdrawCanvas* dc)
+{
+  wdSetClip(dc->hCanvas, NULL, NULL);
+
+  dc->clip_x1 = 0;
+  dc->clip_y1 = 0;
+  dc->clip_x2 = 0;
+  dc->clip_y2 = 0;
+}
+
 void iupdrvDrawGetClipRectWDL(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
 {
   if (x1) *x1 = dc->clip_x1;
@@ -504,7 +514,7 @@ void iupdrvDrawSetClipRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 
   if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
   {
-    iupdrvDrawResetClip(dc);
+    iupdrvDrawResetClipWDL(dc);
     return;
   }
 
@@ -544,7 +554,7 @@ void iupdrvDrawSetClipRoundedRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, in
 
   if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
   {
-    iupdrvDrawResetClip(dc);
+    iupdrvDrawResetClipWDL(dc);
     return;
   }
 
@@ -578,16 +588,6 @@ void iupdrvDrawSetClipRoundedRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, in
   dc->clip_y1 = y1;
   dc->clip_x2 = x2;
   dc->clip_y2 = y2;
-}
-
-void iupdrvDrawResetClipWDL(IdrawCanvas* dc)
-{
-  wdSetClip(dc->hCanvas, NULL, NULL);
-
-  dc->clip_x1 = 0;
-  dc->clip_y1 = 0;
-  dc->clip_x2 = 0;
-  dc->clip_y2 = 0;
 }
 
 static int iCompensatePosX(float font_height)
