@@ -23,6 +23,8 @@
 #include "iup_predialogs.h"
 #include "iup_array.h"
 #include "iup_drvinfo.h"
+#include "iup_dlglist.h"
+#include "iup_drv.h"
 
 #include "iupgtk_drv.h"
 
@@ -504,6 +506,21 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
   IFnss file_cb;
   char* value;
   int response, filter_count = 0;
+
+  /* If no parent set, find the active window from dialog list */
+  if (!parent)
+  {
+    Ihandle* dlg;
+    for (dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
+    {
+      if (dlg->handle && iupdrvIsVisible(dlg) && gtk_window_is_active((GtkWindow*)dlg->handle))
+      {
+        parent = dlg->handle;
+        IupSetAttributeHandle(ih, "PARENTDIALOG", dlg);
+        break;
+      }
+    }
+  }
 
 #if GTK_CHECK_VERSION(3, 20, 0)
   {

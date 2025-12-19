@@ -45,15 +45,13 @@ void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
   /* Measure the minimum width required by GtkSpinButton */
   if (spin_min_width < 0)
   {
-    GtkWidget *temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *temp_window = gtk_offscreen_window_new();
     GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
     GtkAllocation allocation;
 
     /* Add to window, show, and realize to get actual allocated size */
     gtk_container_add(GTK_CONTAINER(temp_window), temp_spin);
     gtk_widget_show_all(temp_window);
-    gtk_widget_realize(temp_window);
-    gtk_widget_realize(temp_spin);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
     int min_w, nat_w;
@@ -98,7 +96,7 @@ static void iupgtkTextMeasureEntryBorders(void)
     PangoLayout *layout;
     GtkWidget *vbox;
 
-    temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    temp_window = gtk_offscreen_window_new();
 #if GTK_CHECK_VERSION(3, 0, 0)
     vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 #else
@@ -119,9 +117,6 @@ static void iupgtkTextMeasureEntryBorders(void)
     gtk_box_pack_start(GTK_BOX(vbox), temp_entry_noframe, FALSE, FALSE, 0);
 
     gtk_widget_show_all(temp_window);
-    gtk_widget_realize(temp_window);
-    gtk_widget_realize(temp_entry);
-    gtk_widget_realize(temp_entry_noframe);
 
     context = gtk_widget_get_pango_context(temp_entry);
     layout = pango_layout_new(context);
@@ -169,7 +164,7 @@ static void iupgtkTextMeasureMultilineMetrics(void)
     int layout_1line_h, layout_2line_h;
     int sw_h, tv_h;
 
-    temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    temp_window = gtk_offscreen_window_new();
     temp_tv = gtk_text_view_new();
     temp_sw = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(temp_sw), GTK_SHADOW_IN);
@@ -178,7 +173,6 @@ static void iupgtkTextMeasureMultilineMetrics(void)
     gtk_container_add(GTK_CONTAINER(temp_window), temp_sw);
 
     gtk_widget_show_all(temp_window);
-    gtk_widget_realize(temp_window);
 
     context = gtk_widget_get_pango_context(temp_tv);
     layout = pango_layout_new(context);
@@ -228,13 +222,11 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   static int spin_natural_height = -1;
   if (iupAttribGetBoolean(ih, "SPIN") && spin_natural_height == -1)
   {
-    GtkWidget *temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *temp_window = gtk_offscreen_window_new();
     GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
 
     gtk_container_add(GTK_CONTAINER(temp_window), temp_spin);
     gtk_widget_show_all(temp_window);
-    gtk_widget_realize(temp_window);
-    gtk_widget_realize(temp_spin);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
     gtk_widget_get_preferred_height(temp_spin, NULL, &spin_natural_height);

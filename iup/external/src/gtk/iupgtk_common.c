@@ -242,6 +242,7 @@ void iupgtkSetPosSize(GtkContainer* parent, GtkWidget* widget, int x, int y, int
               }
             }
             int sw_h = (entry_h > 0) ? (height - entry_h) : height;
+            if (sw_h < 1) sw_h = 1;
             gtk_widget_set_size_request(child, -1, sw_h);
             break;
           }
@@ -1180,7 +1181,7 @@ int iupgtkIsSystemDarkMode(void)
   double bg_lum, fg_lum;
   int is_dark;
 
-  temp_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  temp_window = gtk_offscreen_window_new();
   style = gtk_widget_get_style_context(temp_window);
 
 #if GTK_CHECK_VERSION(3, 16, 0)

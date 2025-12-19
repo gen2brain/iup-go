@@ -27,12 +27,72 @@
 #include "iupgtk_drv.h"
 
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+static void gtkFrameMeasureDecor(int has_title, int* decor_w, int* decor_h, int* title_h)
+{
+  GtkWidget* temp_window = gtk_offscreen_window_new();
+  GtkWidget* temp_frame = gtk_frame_new(NULL);
+  GtkWidget* temp_child = gtk_fixed_new();
+  GtkRequisition frame_req, child_req;
+
+  if (has_title)
+    gtk_frame_set_label(GTK_FRAME(temp_frame), "Tj");
+
+  gtk_container_add(GTK_CONTAINER(temp_frame), temp_child);
+  gtk_container_set_border_width(GTK_CONTAINER(temp_frame), 2);
+  gtk_widget_set_size_request(temp_child, 100, 100);
+
+  gtk_container_add(GTK_CONTAINER(temp_window), temp_frame);
+  gtk_widget_show_all(temp_window);
+
+  gtk_widget_get_preferred_size(temp_frame, NULL, &frame_req);
+  gtk_widget_get_preferred_size(temp_child, NULL, &child_req);
+
+  *decor_w = frame_req.width - child_req.width;
+  *decor_h = frame_req.height - child_req.height;
+  *title_h = 0;
+
+  if (has_title)
+  {
+    GtkWidget* label = gtk_frame_get_label_widget(GTK_FRAME(temp_frame));
+    if (label)
+    {
+      GtkRequisition label_req;
+      gtk_widget_get_preferred_size(label, NULL, &label_req);
+      *title_h = label_req.height;
+    }
+  }
+
+  if (*decor_w < 0) *decor_w = 4;
+  if (*decor_h < 0) *decor_h = 4;
+
+  gtk_widget_destroy(temp_window);
+}
+#endif
+
 void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
+  static int measured = 0;
+  static int offset_x = 0, offset_y = 0;
   (void)ih;
-  /* LAYOUT_DECORATION_ESTIMATE */
+
+  if (!measured)
+  {
+    int decor_w, decor_h, title_h;
+    gtkFrameMeasureDecor(0, &decor_w, &decor_h, &title_h);
+    offset_x = decor_w / 2;
+    offset_y = decor_h / 2;
+    measured = 1;
+  }
+
+  *x = offset_x;
+  *y = offset_y;
+#else
+  (void)ih;
   *x = 2;
   *y = 2;
+#endif
 }
 
 int iupdrvFrameHasClientOffset(Ihandle* ih)
@@ -43,17 +103,82 @@ int iupdrvFrameHasClientOffset(Ihandle* ih)
 
 int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
+  static int measured = 0;
+  static int cached_title_h = 0;
+
+  if (ih->handle)
+  {
+    GtkWidget* label = gtk_frame_get_label_widget((GtkFrame*)ih->handle);
+    if (label)
+    {
+      GtkRequisition req;
+      gtk_widget_get_preferred_size(label, NULL, &req);
+      *h = req.height;
+      return 1;
+    }
+  }
+
+  if (!measured)
+  {
+    int decor_w, decor_h;
+    gtkFrameMeasureDecor(1, &decor_w, &decor_h, &cached_title_h);
+    measured = 1;
+  }
+
+  if (cached_title_h > 0)
+  {
+    *h = cached_title_h;
+    return 1;
+  }
+
+  return 0;
+#else
   (void)ih;
   (void)h;
   return 0;
+#endif
 }
 
 int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
+  static int titled_measured = 0, untitled_measured = 0;
+  static int titled_w = 0, titled_h = 0;
+  static int untitled_w = 0, untitled_h = 0;
+  const char* title = iupAttribGet(ih, "TITLE");
+  int has_title = (title && *title) ? 1 : 0;
+
+  if (has_title)
+  {
+    if (!titled_measured)
+    {
+      int title_h;
+      gtkFrameMeasureDecor(1, &titled_w, &titled_h, &title_h);
+      titled_measured = 1;
+    }
+    *w = titled_w;
+    *h = titled_h;
+  }
+  else
+  {
+    if (!untitled_measured)
+    {
+      int title_h;
+      gtkFrameMeasureDecor(0, &untitled_w, &untitled_h, &title_h);
+      untitled_measured = 1;
+    }
+    *w = untitled_w;
+    *h = untitled_h;
+  }
+
+  return 1;
+#else
   (void)ih;
   (void)w;
   (void)h;
   return 0;
+#endif
 }
 
 static int gtkFrameSetTitleAttrib(Ihandle* ih, const char* value)
