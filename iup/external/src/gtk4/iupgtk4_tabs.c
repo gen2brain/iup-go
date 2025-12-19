@@ -453,8 +453,11 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
       if (ih->data->orientation == ITABS_VERTICAL)
       {
-        iupgtk4CssAddStaticRule(".iup-tab-label-vertical", "-gtk-transform: rotate(90deg);");
-        gtk_widget_add_css_class(tab_label, "iup-tab-label-vertical");
+        if (ih->data->type == ITABS_LEFT)
+          iupgtk4CssAddStaticRule(".iup-tab-label-vertical-left", "transform: rotate(-90deg);");
+        else
+          iupgtk4CssAddStaticRule(".iup-tab-label-vertical-right", "transform: rotate(90deg);");
+        gtk_widget_add_css_class(tab_label, ih->data->type == ITABS_LEFT ? "iup-tab-label-vertical-left" : "iup-tab-label-vertical-right");
       }
     }
 
