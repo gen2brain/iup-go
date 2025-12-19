@@ -26,6 +26,71 @@
 #include "iupgtk_drv.h"
 
 
+void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+{
+#if GTK_CHECK_VERSION(3, 0, 0)
+  static int horiz_min_w = -1, horiz_min_h = -1;
+  static int vert_min_w = -1, vert_min_h = -1;
+
+  if (horiz_min_w < 0)
+  {
+    GtkWidget* temp_window = gtk_offscreen_window_new();
+    GtkWidget* temp_horiz = gtk_progress_bar_new();
+    GtkWidget* temp_vert = gtk_progress_bar_new();
+    GtkRequisition horiz_req, vert_req;
+
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(temp_horiz), GTK_ORIENTATION_HORIZONTAL);
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(temp_vert), GTK_ORIENTATION_VERTICAL);
+
+    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_pack_start(GTK_BOX(box), temp_horiz, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), temp_vert, FALSE, FALSE, 0);
+    gtk_container_add(GTK_CONTAINER(temp_window), box);
+
+    gtk_widget_show_all(temp_window);
+    gtk_widget_realize(temp_window);
+
+    gtk_widget_get_preferred_size(temp_horiz, NULL, &horiz_req);
+    gtk_widget_get_preferred_size(temp_vert, NULL, &vert_req);
+
+    horiz_min_w = horiz_req.width;
+    horiz_min_h = horiz_req.height;
+    vert_min_w = vert_req.width;
+    vert_min_h = vert_req.height;
+
+    if (horiz_min_w < 1) horiz_min_w = 150;
+    if (horiz_min_h < 1) horiz_min_h = 6;
+    if (vert_min_w < 1) vert_min_w = 7;
+    if (vert_min_h < 1) vert_min_h = 80;
+
+    gtk_widget_destroy(temp_window);
+  }
+
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  {
+    *w = vert_min_w;
+    *h = vert_min_h;
+  }
+  else
+  {
+    *w = horiz_min_w;
+    *h = horiz_min_h;
+  }
+#else
+  /* GTK2 fallback */
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  {
+    *w = 7;
+    *h = 80;
+  }
+  else
+  {
+    *w = 150;
+    *h = 6;
+  }
+#endif
+}
+
 static int gtkProgressBarTimeCb(Ihandle* timer)
 {
   Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUP_PROGRESSBAR");

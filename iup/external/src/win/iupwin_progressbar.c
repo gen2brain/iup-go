@@ -37,6 +37,21 @@
 #define IUP_PB_MAX 32000
 
 
+void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+{
+  /* Windows progress bar has no intrinsic size API */
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  {
+    *w = 16;
+    *h = 80;
+  }
+  else
+  {
+    *w = 100;
+    *h = 16;
+  }
+}
+
 static void winProgressBarDraw(Ihandle* ih, HDC hDC)
 {
   RECT rect;
