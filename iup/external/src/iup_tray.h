@@ -19,6 +19,10 @@ int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu);
 void iupdrvTrayDestroy(Ihandle* ih);
 int iupdrvTrayIsAvailable(void);
 
+/* Image conversion for cross-backend tray support (GTK/Qt on Win32/Cocoa/SNI).
+   Converts backend image format to ARGB pixels. Caller must free(*pixels). */
+int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels);
+
 #ifdef __cplusplus
 }
 #endif

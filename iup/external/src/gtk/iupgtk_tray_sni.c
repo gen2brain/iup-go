@@ -13,7 +13,7 @@
 #include "iup.h"
 #include "iup_image.h"
 
-int iupdrvSNIGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
   GdkPixbuf* pixbuf;
   int w, h, rowstride, n_channels;
