@@ -20,11 +20,12 @@ You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
 * To remove a console window, i.e., compile a GUI app with WinMain entry-point, build with `-ldflags "-H=windowsgui"`.
 * You can add an icon resource to an .exe file with the [rsrc](https://github.com/akavel/rsrc) tool.
 * Windows manifest is included in the build by default. See below how to disable the manifest if you want to include your own.
-* You can build for Qt in MSYS2, with the `qt` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-base`.
-* You can build for GTK3 in MSYS2, with the `gtk` build tag. Install deps with `pacman -S mingw-w64-x86_64-gtk3`.
-* You can build for GTK4 in MSYS2, with the `gtk4` build tag. Install deps with `pacman -S mingw-w64-x86_64-gtk4`.
 
-For MSYS2, use `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config`
+
+* For MSYS2, install `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config`.
+* You can build for Qt, with the `qt` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-base`.
+* You can build for GTK3, with the `gtk` build tag. Install deps with `pacman -S mingw-w64-x86_64-gtk3`.
+* You can build for GTK4, with the `gtk4` build tag. Install deps with `pacman -S mingw-w64-x86_64-gtk4`.
 
 [<img src="examples/sample/sample_win32.png" width="700"/>](examples/sample/sample_win32.png)
 
@@ -33,9 +34,11 @@ For MSYS2, use `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86
 On macOS, you need Command Line Tools for Xcode (if you have `brew`, you already have this).
 
 * To create an `.app` bundle or `.dmg` image, check this [gist](https://gist.github.com/mholt/11008646c95d787c30806d3f24b2c844).
-* You can build for Qt in macOS, with the `qt` build tag. Install deps with `brew install qt`.
-* You can build for GTK3 in macOS, with the `gtk` build tag. Install deps with `brew install gtk+3`.
-* You can build for GTK4 in macOS, with the `gtk4` build tag. Install deps with `brew install gtk4`.
+
+
+* You can build for Qt, with the `qt` build tag. Install deps with `brew install qt`.
+* You can build for GTK3, with the `gtk` build tag. Install deps with `brew install gtk+3`.
+* You can build for GTK4, with the `gtk4` build tag. Install deps with `brew install gtk4`.
 
 [<img src="examples/sample/sample_cocoa.png" width="700"/>](examples/sample/sample_cocoa.png)
 
@@ -111,7 +114,7 @@ For the `GLCanvas` control, install `libgl-dev` or `libglvnd-devel`.
 * `ctl` - build with support for `Matrix` and `Cells` controls
 * `gtk` - use GTK in macOS or Windows
 * `gtk4` - build for GTK4, default is GTK3
-* `gtk2` - build for GTK2
+* `gtk2` - build for GTK2 (Linux/Unix)
 * `qt` - build for the Qt framework
 * `qt5` - build for Qt5 version, default is Qt6 (used with `qt`)
 * `motif` - build for X11/Motif 2.x environment
