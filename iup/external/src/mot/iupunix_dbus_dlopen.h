@@ -135,12 +135,21 @@ static void (*iupdbus_message_unref)(DBusMessage*);
 static dbus_bool_t (*iupdbus_message_append_args)(DBusMessage*, int, ...);
 static dbus_bool_t (*iupdbus_message_get_args)(DBusMessage*, DBusError*, int, ...);
 static dbus_bool_t (*iupdbus_message_is_method_call)(DBusMessage*, const char*, const char*);
+static dbus_bool_t (*iupdbus_message_is_signal)(DBusMessage*, const char*, const char*);
 static const char* (*iupdbus_message_get_interface)(DBusMessage*);
 static const char* (*iupdbus_message_get_member)(DBusMessage*);
 static void (*iupdbus_message_iter_init_append)(DBusMessage*, DBusMessageIter*);
 static dbus_bool_t (*iupdbus_message_iter_open_container)(DBusMessageIter*, int, const char*, DBusMessageIter*);
 static dbus_bool_t (*iupdbus_message_iter_close_container)(DBusMessageIter*, DBusMessageIter*);
 static dbus_bool_t (*iupdbus_message_iter_append_basic)(DBusMessageIter*, int, const void*);
+static dbus_bool_t (*iupdbus_connection_add_filter)(DBusConnection*, DBusHandleMessageFunction, void*, void*);
+static void (*iupdbus_connection_remove_filter)(DBusConnection*, DBusHandleMessageFunction, void*);
+static void (*iupdbus_bus_add_match)(DBusConnection*, const char*, DBusError*);
+static dbus_bool_t (*iupdbus_message_iter_init)(DBusMessage*, DBusMessageIter*);
+static int (*iupdbus_message_iter_get_arg_type)(DBusMessageIter*);
+static void (*iupdbus_message_iter_recurse)(DBusMessageIter*, DBusMessageIter*);
+static void (*iupdbus_message_iter_get_basic)(DBusMessageIter*, void*);
+static dbus_bool_t (*iupdbus_message_iter_next)(DBusMessageIter*);
 
 #define dbus_error_init iupdbus_error_init
 #define dbus_error_is_set iupdbus_error_is_set
@@ -165,12 +174,21 @@ static dbus_bool_t (*iupdbus_message_iter_append_basic)(DBusMessageIter*, int, c
 #define dbus_message_append_args iupdbus_message_append_args
 #define dbus_message_get_args iupdbus_message_get_args
 #define dbus_message_is_method_call iupdbus_message_is_method_call
+#define dbus_message_is_signal iupdbus_message_is_signal
 #define dbus_message_get_interface iupdbus_message_get_interface
 #define dbus_message_get_member iupdbus_message_get_member
 #define dbus_message_iter_init_append iupdbus_message_iter_init_append
 #define dbus_message_iter_open_container iupdbus_message_iter_open_container
 #define dbus_message_iter_close_container iupdbus_message_iter_close_container
 #define dbus_message_iter_append_basic iupdbus_message_iter_append_basic
+#define dbus_connection_add_filter iupdbus_connection_add_filter
+#define dbus_connection_remove_filter iupdbus_connection_remove_filter
+#define dbus_bus_add_match iupdbus_bus_add_match
+#define dbus_message_iter_init iupdbus_message_iter_init
+#define dbus_message_iter_get_arg_type iupdbus_message_iter_get_arg_type
+#define dbus_message_iter_recurse iupdbus_message_iter_recurse
+#define dbus_message_iter_get_basic iupdbus_message_iter_get_basic
+#define dbus_message_iter_next iupdbus_message_iter_next
 
 static inline int iupDBusOpen(void)
 {
@@ -207,12 +225,21 @@ static inline int iupDBusOpen(void)
   iupdbus_message_append_args = dlsym(iupdbus_handle, "dbus_message_append_args");
   iupdbus_message_get_args = dlsym(iupdbus_handle, "dbus_message_get_args");
   iupdbus_message_is_method_call = dlsym(iupdbus_handle, "dbus_message_is_method_call");
+  iupdbus_message_is_signal = dlsym(iupdbus_handle, "dbus_message_is_signal");
   iupdbus_message_get_interface = dlsym(iupdbus_handle, "dbus_message_get_interface");
   iupdbus_message_get_member = dlsym(iupdbus_handle, "dbus_message_get_member");
   iupdbus_message_iter_init_append = dlsym(iupdbus_handle, "dbus_message_iter_init_append");
   iupdbus_message_iter_open_container = dlsym(iupdbus_handle, "dbus_message_iter_open_container");
   iupdbus_message_iter_close_container = dlsym(iupdbus_handle, "dbus_message_iter_close_container");
   iupdbus_message_iter_append_basic = dlsym(iupdbus_handle, "dbus_message_iter_append_basic");
+  iupdbus_connection_add_filter = dlsym(iupdbus_handle, "dbus_connection_add_filter");
+  iupdbus_connection_remove_filter = dlsym(iupdbus_handle, "dbus_connection_remove_filter");
+  iupdbus_bus_add_match = dlsym(iupdbus_handle, "dbus_bus_add_match");
+  iupdbus_message_iter_init = dlsym(iupdbus_handle, "dbus_message_iter_init");
+  iupdbus_message_iter_get_arg_type = dlsym(iupdbus_handle, "dbus_message_iter_get_arg_type");
+  iupdbus_message_iter_recurse = dlsym(iupdbus_handle, "dbus_message_iter_recurse");
+  iupdbus_message_iter_get_basic = dlsym(iupdbus_handle, "dbus_message_iter_get_basic");
+  iupdbus_message_iter_next = dlsym(iupdbus_handle, "dbus_message_iter_next");
 
   if (!iupdbus_error_init || !iupdbus_bus_get || !iupdbus_connection_send)
   {

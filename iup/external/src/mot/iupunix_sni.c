@@ -30,9 +30,6 @@
 #include "iup_childtree.h"
 #include "iup_tray.h"
 
-/* Platform-specific icon conversion - implemented by each driver */
-extern int iupdrvSNIGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels);
-
 #define SNI_WATCHER_BUS_NAME "org.kde.StatusNotifierWatcher"
 #define SNI_WATCHER_OBJECT_PATH "/StatusNotifierWatcher"
 #define SNI_WATCHER_INTERFACE "org.kde.StatusNotifierWatcher"
@@ -1630,7 +1627,7 @@ int iupdrvTraySetImage(Ihandle* ih, const char* value)
   sni->icon_height = 0;
 
   /* Get new icon pixels from driver */
-  if (value && iupdrvSNIGetIconPixels(ih, value, &width, &height, &pixels))
+  if (value && iupdrvGetIconPixels(ih, value, &width, &height, &pixels))
   {
     sni->icon_width = width;
     sni->icon_height = height;
