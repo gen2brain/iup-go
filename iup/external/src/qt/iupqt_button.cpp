@@ -20,6 +20,7 @@
 #include <QFrame>
 #include <QPainter>
 #include <QStylePainter>
+#include <QFontMetrics>
 
 #include <cstdlib>
 #include <cstdio>
@@ -319,13 +320,63 @@ static void qtButtonUpdateLayout(Ihandle* ih)
  * Border Size Calculation
  ****************************************************************************/
 
+static int qt_button_padding_text_x = -1;
+static int qt_button_padding_text_y = -1;
+static int qt_button_padding_image_x = -1;
+static int qt_button_padding_image_y = -1;
+static int qt_button_padding_both_x = -1;
+static int qt_button_padding_both_y = -1;
+static int qt_button_padding_measured = 0;
+
+static void qtButtonMeasurePadding(void)
+{
+  /* Measure text-only button padding.
+     Must use a long string to exceed Qt's minimum button width,
+     otherwise we measure the minimum width, not the actual padding. */
+  {
+    const char* test_text = "This is a long test string for measuring";
+    QPushButton temp_button(test_text);
+    QSize button_size = temp_button.sizeHint();
+    QFontMetrics fm(temp_button.font());
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+    int text_w = fm.horizontalAdvance(test_text);
+#else
+    int text_w = fm.width(test_text);
+#endif
+    int text_h = fm.height();
+
+    qt_button_padding_text_x = button_size.width() - text_w;
+    qt_button_padding_text_y = button_size.height() - text_h;
+  }
+
+  /* Measure image-only button padding using large icon to exceed minimum */
+  {
+    QPushButton temp_button;
+    QPixmap pixmap(64, 64);
+    pixmap.fill(Qt::transparent);
+    temp_button.setIcon(QIcon(pixmap));
+    temp_button.setIconSize(QSize(64, 64));
+    QSize button_size = temp_button.sizeHint();
+
+    qt_button_padding_image_x = button_size.width() - 64;
+    qt_button_padding_image_y = button_size.height() - 64;
+  }
+
+  /* Image+text button uses same padding as text-only */
+  qt_button_padding_both_x = qt_button_padding_text_x;
+  qt_button_padding_both_y = qt_button_padding_text_y;
+
+  qt_button_padding_measured = 1;
+}
+
 extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
-  static int border_x = -1, border_y = -1;
-
   int has_image = 0;
   int has_text = 0;
   int has_bgcolor = 0;
+
+  if (!qt_button_padding_measured)
+    qtButtonMeasurePadding();
 
   if (ih)
   {
@@ -345,20 +396,20 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     (*x) += hint.width();
     (*y) += hint.height();
   }
+  else if (has_image && has_text)
+  {
+    (*x) += qt_button_padding_both_x;
+    (*y) += qt_button_padding_both_y;
+  }
+  else if (has_image)
+  {
+    (*x) += qt_button_padding_image_x;
+    (*y) += qt_button_padding_image_y;
+  }
   else
   {
-    if (border_x == -1)
-    {
-      /* Get border from style pixel metrics */
-      QPushButton temp_button;
-      QStyle* style = temp_button.style();
-      int margin = style->pixelMetric(QStyle::PM_ButtonMargin, nullptr, &temp_button);
-      int frame = style->pixelMetric(QStyle::PM_DefaultFrameWidth, nullptr, &temp_button);
-      border_x = margin + frame * 2;
-      border_y = margin + frame * 2;
-    }
-    (*x) += border_x;
-    (*y) += border_y;
+    (*x) += qt_button_padding_text_x;
+    (*y) += qt_button_padding_text_y;
   }
 }
 
@@ -709,8 +760,6 @@ static void qtButtonLayoutUpdateMethod(Ihandle *ih)
   IupQtButton* button = (IupQtButton*)ih->handle;
   if (!button)
     return;
-
-  QSize size_hint = button->sizeHint();
 
   iupdrvBaseLayoutUpdateMethod(ih);
   qtButtonUpdateLayout(ih);

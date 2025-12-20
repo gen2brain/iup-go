@@ -15,6 +15,8 @@
 #include <QCursor>
 #include <QPoint>
 #include <QApplication>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QEvent>
 
 #include <cstdlib>
@@ -60,23 +62,38 @@ extern "C" int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 
   const char* value = iupAttribGet(ih, "POPUPALIGN");
   QPoint pos(x, y);
+  QSize menuSize = menu->sizeHint();
 
   if (value)
   {
     char value1[30], value2[30];
     iupStrToStrStr(value, value1, value2, ':');
 
-    QSize size = menu->sizeHint();
-
     if (iupStrEqualNoCase(value1, "ARIGHT"))
-      pos.setX(x - size.width());
+      pos.setX(x - menuSize.width());
     else if (iupStrEqualNoCase(value1, "ACENTER"))
-      pos.setX(x - size.width() / 2);
+      pos.setX(x - menuSize.width() / 2);
 
     if (iupStrEqualNoCase(value2, "ABOTTOM"))
-      pos.setY(y - size.height());
+      pos.setY(y - menuSize.height());
     else if (iupStrEqualNoCase(value2, "ACENTER"))
-      pos.setY(y - size.height() / 2);
+      pos.setY(y - menuSize.height() / 2);
+  }
+  else
+  {
+    /* Auto-adjust position like Win32's TrackPopupMenu.
+       If menu would extend beyond screen edge, flip to other side */
+    QScreen* screen = QGuiApplication::screenAt(pos);
+    if (screen)
+    {
+      QRect screenGeom = screen->availableGeometry();
+
+      if (pos.y() + menuSize.height() > screenGeom.bottom())
+        pos.setY(y - menuSize.height());
+
+      if (pos.x() + menuSize.width() > screenGeom.right())
+        pos.setX(x - menuSize.width());
+    }
   }
 
   menu->exec(pos);
