@@ -257,6 +257,7 @@ IUP_API Ihandle*  IupMultiLine  (const char* action);
 IUP_API Ihandle*  IupToggle     (const char* title, const char* action);
 IUP_API Ihandle*  IupTimer      (void);
 IUP_API Ihandle*  IupTray       (void);
+IUP_API Ihandle*  IupNotify     (void);
 IUP_API Ihandle*  IupClipboard  (void);
 IUP_API Ihandle*  IupProgressBar(void);
 IUP_API Ihandle*  IupVal        (const char *type);

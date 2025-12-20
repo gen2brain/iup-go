@@ -112,6 +112,7 @@ void iupRegisterInternalClasses(void)
 
   iupRegisterClassInternal(iupTimerNewClass());
   iupRegisterClassInternal(iupTrayNewClass());
+  iupRegisterClassInternal(iupNotifyNewClass());
   iupRegisterClassInternal(iupImageNewClass());
   iupRegisterClassInternal(iupImageRGBNewClass());
   iupRegisterClassInternal(iupImageRGBANewClass());

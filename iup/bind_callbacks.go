@@ -4336,3 +4336,55 @@ func setRecentFunc(config, menuOrList Ihandle, f ActionFunc) {
 	ch := cgo.NewHandle(f)
 	callbacks.Store("RECENT_CB_"+config.GetAttribute("UUID"), ch)
 }
+
+//--------------------
+
+// NotifyFunc for NOTIFY_CB callback.
+// Called when the notification is activated (clicked or action button pressed).
+// action_id: 0=body clicked, 1-4=action buttons
+type NotifyFunc func(ih Ihandle, actionId int) int
+
+//export goIupNotifyCB
+func goIupNotifyCB(ih unsafe.Pointer, actionId C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("NOTIFY_CB_" + uuid)
+	if !ok {
+		return C.int(DEFAULT)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(NotifyFunc)
+	return C.int(f((Ihandle)(ih), int(actionId)))
+}
+
+// setNotifyFunc for NOTIFY_CB.
+func setNotifyFunc(ih Ihandle, f NotifyFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("NOTIFY_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetNotifyFunc(ih.ptr())
+}
+
+//--------------------
+
+// NotifyCloseFunc for CLOSE_CB callback on notification.
+// Called when the notification is dismissed.
+// reason: 1=expired, 2=user dismissed, 3=closed programmatically, 4=unknown
+type NotifyCloseFunc func(ih Ihandle, reason int) int
+
+//export goIupNotifyCloseCB
+func goIupNotifyCloseCB(ih unsafe.Pointer, reason C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("NOTIFY_CLOSE_CB_" + uuid)
+	if !ok {
+		return C.int(DEFAULT)
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(NotifyCloseFunc)
+	return C.int(f((Ihandle)(ih), int(reason)))
+}
+
+// setNotifyCloseFunc for CLOSE_CB on notifications.
+func setNotifyCloseFunc(ih Ihandle, f NotifyCloseFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("NOTIFY_CLOSE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetNotifyCloseFunc(ih.ptr())
+}

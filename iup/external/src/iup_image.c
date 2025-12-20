@@ -22,7 +22,7 @@
 #include "iup_array.h"
 
 
-static void iDataResizeRGBA(int src_width, int src_height, unsigned char *src_map, int dst_width, int dst_height, unsigned char *dst_map, int depth)
+void iupImageResizeRGBA(int src_width, int src_height, unsigned char *src_map, int dst_width, int dst_height, unsigned char *dst_map, int depth)
 {
   /* Do bilinear interpolation */
 
@@ -122,7 +122,7 @@ static void iImageResize(Ihandle* ih, int new_width, int new_height)
   if (bpp == 8)
     iDataStretchMap(ih->currentwidth, ih->currentheight, imgdata, new_width, new_height, new_imgdata);
   else
-    iDataResizeRGBA(ih->currentwidth, ih->currentheight, imgdata, new_width, new_height, new_imgdata, channels);
+    iupImageResizeRGBA(ih->currentwidth, ih->currentheight, imgdata, new_width, new_height, new_imgdata, channels);
 
   ih->currentwidth = new_width;
   ih->currentheight = new_height;

@@ -778,5 +778,14 @@ static void goIupSetSortColumnCompareFunc(Ihandle *ih) {
 
 extern int goIupRecentCB(void *);
 
+extern int goIupNotifyCB(void *, int action_id);
+static void goIupSetNotifyFunc(Ihandle *ih) {
+	IupSetCallback(ih, "NOTIFY_CB", (Icallback) goIupNotifyCB);
+}
+
+extern int goIupNotifyCloseCB(void *, int reason);
+static void goIupSetNotifyCloseFunc(Ihandle *ih) {
+	IupSetCallback(ih, "CLOSE_CB", (Icallback) goIupNotifyCloseCB);
+}
 
 #endif /* BIND_CALLBACKS_H */
