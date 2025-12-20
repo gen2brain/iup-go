@@ -127,6 +127,16 @@ int iupgtk4X11GetVendorRelease(void* xdisplay);
 void iupgtk4X11Cleanup(void);
 #endif
 
+#ifdef GDK_WINDOWING_WIN32
+int iupgtk4Win32MoveWindow(void* hwnd, int x, int y);
+int iupgtk4Win32HideFromTaskbar(void* hwnd);
+#endif
+
+#ifdef GDK_WINDOWING_MACOS
+int iupgtk4MacosMoveWindow(void* nswindow, int x, int y);
+int iupgtk4MacosHideFromTaskbar(void* nswindow);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

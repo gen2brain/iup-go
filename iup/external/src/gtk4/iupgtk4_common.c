@@ -1640,3 +1640,95 @@ void iupgtk4X11Cleanup(void)
   }
 }
 #endif
+
+#ifdef GDK_WINDOWING_WIN32
+#include <gdk/win32/gdkwin32.h>
+
+int iupgtk4Win32MoveWindow(void* hwnd, int x, int y)
+{
+  if (!hwnd)
+    return 0;
+
+  SetWindowPos((HWND)hwnd, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+  return 1;
+}
+
+int iupgtk4Win32HideFromTaskbar(void* hwnd)
+{
+  LONG_PTR exstyle;
+
+  if (!hwnd)
+    return 0;
+
+  exstyle = GetWindowLongPtr((HWND)hwnd, GWL_EXSTYLE);
+  exstyle |= WS_EX_TOOLWINDOW;
+  exstyle &= ~WS_EX_APPWINDOW;
+  SetWindowLongPtr((HWND)hwnd, GWL_EXSTYLE, exstyle);
+
+  return 1;
+}
+
+#endif
+
+#ifdef GDK_WINDOWING_MACOS
+#include <gdk/macos/gdkmacos.h>
+#include <objc/runtime.h>
+#include <objc/message.h>
+
+typedef struct { double x; double y; } IupNSPoint;
+typedef struct { IupNSPoint origin; IupNSPoint size; } IupNSRect;
+
+int iupgtk4MacosMoveWindow(void* nswindow, int x, int y)
+{
+  SEL sel_setFrameOrigin;
+  SEL sel_screen;
+  SEL sel_frame;
+  id screen;
+  IupNSPoint origin;
+
+  if (!nswindow)
+    return 0;
+
+  sel_setFrameOrigin = sel_registerName("setFrameOrigin:");
+  sel_screen = sel_registerName("screen");
+  sel_frame = sel_registerName("frame");
+
+  screen = ((id (*)(id, SEL))objc_msgSend)((id)nswindow, sel_screen);
+  if (screen)
+  {
+    IupNSRect screen_frame = ((IupNSRect (*)(id, SEL))objc_msgSend)(screen, sel_frame);
+    origin.x = (double)x;
+    origin.y = screen_frame.size.y - (double)y;
+  }
+  else
+  {
+    origin.x = (double)x;
+    origin.y = (double)y;
+  }
+
+  ((void (*)(id, SEL, IupNSPoint))objc_msgSend)((id)nswindow, sel_setFrameOrigin, origin);
+
+  return 1;
+}
+
+int iupgtk4MacosHideFromTaskbar(void* nswindow)
+{
+  SEL sel_setLevel;
+  SEL sel_setCollectionBehavior;
+  long popup_level = 101;
+  unsigned long behavior;
+
+  if (!nswindow)
+    return 0;
+
+  sel_setLevel = sel_registerName("setLevel:");
+  sel_setCollectionBehavior = sel_registerName("setCollectionBehavior:");
+
+  ((void (*)(id, SEL, long))objc_msgSend)((id)nswindow, sel_setLevel, popup_level);
+
+  behavior = (1 << 7) | (1 << 9);
+  ((void (*)(id, SEL, unsigned long))objc_msgSend)((id)nswindow, sel_setCollectionBehavior, behavior);
+
+  return 1;
+}
+#endif
