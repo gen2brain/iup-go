@@ -1411,6 +1411,10 @@ static int cocoaDialogMapMethod(Ihandle* ih)
     NSWindow* parent_window = (NSWindow*)parent;
     [parent_window addChildWindow:the_window ordered:NSWindowAbove];
 
+    /* addChildWindow makes the window visible as a side effect.
+       Hide it so IupShowXY properly increments the visible count. */
+    [the_window orderOut:nil];
+
     [[NSNotificationCenter defaultCenter] addObserver:window_delegate
                                              selector:@selector(cocoaDialogChildDestroyNotification:)
                                                  name:NSWindowWillCloseNotification

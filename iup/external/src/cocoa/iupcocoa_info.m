@@ -102,12 +102,13 @@ void iupdrvAddScreenOffset(int *x, int *y, int add)
     /* The y-offset is the height of the main menu bar. */
     int offset_y = frame.size.height - (visibleFrame.origin.y + visibleFrame.size.height);
 
-    if (add)
+    /* add > 0 means add offset, add < 0 means subtract offset, add == 0 means no change */
+    if (add > 0)
     {
       if (x) *x += offset_x;
       if (y) *y += offset_y;
     }
-    else
+    else if (add < 0)
     {
       if (x) *x -= offset_x;
       if (y) *y -= offset_y;
