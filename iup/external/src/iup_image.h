@@ -38,6 +38,9 @@ IUP_SDK_API void iupImageColorMakeInactive(unsigned char *r, unsigned char *g, u
                                unsigned char bg_r, unsigned char bg_g, unsigned char bg_b);
 int iupImageNormBpp(int bpp);
 
+void iupImageResizeRGBA(int src_width, int src_height, unsigned char *src_map,
+                        int dst_width, int dst_height, unsigned char *dst_map, int depth);
+
 #define iupALPHABLEND(_src,_dst,_alpha) (unsigned char)(((_src) * (_alpha) + (_dst) * (255 - (_alpha))) / 255)
 
 /* In Windows, RAW data is a DIB handle. 

@@ -179,7 +179,12 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "POSTMESSAGE_CB":
 		setPostMessageFunc(ih, fn.(PostMessageFunc))
 	case "CLOSE_CB":
-		setCloseFunc(ih, fn.(CloseFunc))
+		switch v := fn.(type) {
+		case CloseFunc:
+			setCloseFunc(ih, v)
+		case NotifyCloseFunc:
+			setNotifyCloseFunc(ih, v)
+		}
 	case "FOCUS_CB":
 		setFocusFunc(ih, fn.(FocusFunc))
 	case "MOVE_CB":
@@ -215,6 +220,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setScrollFunc(ih, fn.(ScrollFunc))
 	case "TRAYCLICK_CB":
 		setTrayClickFunc(ih, fn.(TrayClickFunc))
+	case "NOTIFY_CB":
+		setNotifyFunc(ih, fn.(NotifyFunc))
 	case "TABCLOSE_CB":
 		setTabCloseFunc(ih, fn.(TabCloseFunc))
 	case "RIGHTCLICK_CB":

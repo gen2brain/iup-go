@@ -19,8 +19,10 @@ package iup
 #cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4 CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
 #cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4 CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
 #cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4 CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
+
 #cgo qt CFLAGS: -Iexternal/src/qt -DIUP_USE_QT
 #cgo qt CXXFLAGS: -Iexternal/src/qt -DIUP_USE_QT
+#cgo qt,!windows,!darwin CFLAGS: -DIUPDBUS_USE_DLOPEN
 
 #cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
 #cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
@@ -48,22 +50,22 @@ package iup
 #cgo windows LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 #cgo windows,gl LDFLAGS: -lopengl32
 
-#cgo windows,gtk CFLAGS: -Iexternal/src/gtk
+#cgo windows,gtk CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
 #cgo windows,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
 
-#cgo windows,gtk4 CFLAGS: -Iexternal/src/gtk4
+#cgo windows,gtk4 CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
 #cgo windows,gtk4,!nopkgconfig pkg-config: gtk4
 
 #cgo darwin CFLAGS: -Iexternal/src/cocoa -x objective-c
-#cgo darwin LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit
+#cgo darwin LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications
 #cgo darwin,gl LDFLAGS: -framework OpenGL
 #cgo darwin,!gtk,!gtk4,!qt,web LDFLAGS: -framework WebKit
 
-#cgo darwin,gtk CFLAGS: -Iexternal/src/gtk -x objective-c
+#cgo darwin,gtk CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3 -x objective-c
 #cgo darwin,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
 #cgo darwin,gtk,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo darwin,gtk4 CFLAGS: -Iexternal/src/gtk4 -x objective-c
+#cgo darwin,gtk4 CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4 -x objective-c
 #cgo darwin,gtk4,!nopkgconfig pkg-config: gtk4
 #cgo darwin,gtk4,web CFLAGS: -DIUPWEB_USE_DLOPEN
 */

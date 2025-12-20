@@ -305,6 +305,16 @@ func Tray() Ihandle {
 	return h
 }
 
+// Notify creates a notification control for displaying desktop notifications.
+//
+// Desktop notifications appear in the system's notification area/center
+// and can include a title, body text, icon, and action buttons.
+func Notify() Ihandle {
+	h := mkih(C.IupNotify())
+	h.SetAttribute("UUID", uuid.NewString())
+	return h
+}
+
 // User creates a user element in IUP, which is not associated to any interface element.
 // It is used to map an external element to a IUP element.
 // Its use is usually for additional elements, but you can use it to create an Ihandle to store private attributes.
