@@ -34,6 +34,14 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
+#ifdef GDK_WINDOWING_WIN32
+#include <gdk/win32/gdkwin32.h>
+#endif
+
+#ifdef GDK_WINDOWING_MACOS
+#include <gdk/macos/gdkmacos.h>
+#endif
+
 typedef struct _ImenuPos
 {
   int x, y;
@@ -45,6 +53,26 @@ static int gtk4IsX11Backend(void)
 #ifdef GDK_WINDOWING_X11
   GdkDisplay *display = gdk_display_get_default();
   return (display && GDK_IS_X11_DISPLAY(display));
+#else
+  return 0;
+#endif
+}
+
+static int gtk4IsWin32Backend(void)
+{
+#ifdef GDK_WINDOWING_WIN32
+  GdkDisplay *display = gdk_display_get_default();
+  return (display && GDK_IS_WIN32_DISPLAY(display));
+#else
+  return 0;
+#endif
+}
+
+static int gtk4IsMacosBackend(void)
+{
+#ifdef GDK_WINDOWING_MACOS
+  GdkDisplay *display = gdk_display_get_default();
+  return (display && GDK_IS_MACOS_DISPLAY(display));
 #else
   return 0;
 #endif
@@ -429,21 +457,39 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
       while (!gtk_widget_get_mapped(anchor_window))
         g_main_context_iteration(NULL, FALSE);
 
-#ifdef GDK_WINDOWING_X11
-      if (gtk4IsX11Backend())
+      /* Hide anchor window from taskbar on all platforms */
       {
         GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(anchor_window));
-        if (surface && GDK_IS_X11_SURFACE(surface))
+        if (surface)
         {
-          GdkDisplay *gdk_display = gdk_display_get_default();
-          Display *xdisplay = gdk_x11_display_get_xdisplay(gdk_display);
-          Window xwindow = gdk_x11_surface_get_xid(surface);
-
-          if (xdisplay && xwindow)
-            iupgtk4X11HideFromTaskbar(xdisplay, xwindow);
+#ifdef GDK_WINDOWING_X11
+          if (gtk4IsX11Backend() && GDK_IS_X11_SURFACE(surface))
+          {
+            GdkDisplay *gdk_display = gdk_display_get_default();
+            Display *xdisplay = gdk_x11_display_get_xdisplay(gdk_display);
+            Window xwindow = gdk_x11_surface_get_xid(surface);
+            if (xdisplay && xwindow)
+              iupgtk4X11HideFromTaskbar(xdisplay, xwindow);
+          }
+#endif
+#ifdef GDK_WINDOWING_WIN32
+          if (gtk4IsWin32Backend() && GDK_IS_WIN32_SURFACE(surface))
+          {
+            HWND hwnd = gdk_win32_surface_get_handle(surface);
+            if (hwnd)
+              iupgtk4Win32HideFromTaskbar(hwnd);
+          }
+#endif
+#ifdef GDK_WINDOWING_MACOS
+          if (gtk4IsMacosBackend() && GDK_IS_MACOS_SURFACE(surface))
+          {
+            gpointer nswindow = gdk_macos_surface_get_native_window(GDK_MACOS_SURFACE(surface));
+            if (nswindow)
+              iupgtk4MacosHideFromTaskbar(nswindow);
+          }
+#endif
         }
       }
-#endif
     }
     else
     {
@@ -451,22 +497,40 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
       gtk_window_present(GTK_WINDOW(anchor_window));
     }
 
-#ifdef GDK_WINDOWING_X11
-    /* On X11: Position the anchor window at (x,y) */
-    if (gtk4IsX11Backend())
+    /* Position the anchor window at (x,y) on platforms that support it */
     {
       GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(anchor_window));
-      if (surface && GDK_IS_X11_SURFACE(surface))
-      {
-        GdkDisplay *gdk_display = gdk_display_get_default();
-        Display *xdisplay = gdk_x11_display_get_xdisplay(gdk_display);
-        Window xwindow = gdk_x11_surface_get_xid(surface);
 
-        if (xdisplay && xwindow)
-          iupgtk4X11MoveWindow(xdisplay, xwindow, x, y);
+      if (surface)
+      {
+#ifdef GDK_WINDOWING_X11
+        if (gtk4IsX11Backend() && GDK_IS_X11_SURFACE(surface))
+        {
+          GdkDisplay *gdk_display = gdk_display_get_default();
+          Display *xdisplay = gdk_x11_display_get_xdisplay(gdk_display);
+          Window xwindow = gdk_x11_surface_get_xid(surface);
+          if (xdisplay && xwindow)
+            iupgtk4X11MoveWindow(xdisplay, xwindow, x, y);
+        }
+#endif
+#ifdef GDK_WINDOWING_WIN32
+        if (gtk4IsWin32Backend() && GDK_IS_WIN32_SURFACE(surface))
+        {
+          HWND hwnd = gdk_win32_surface_get_handle(surface);
+          if (hwnd)
+            iupgtk4Win32MoveWindow(hwnd, x, y);
+        }
+#endif
+#ifdef GDK_WINDOWING_MACOS
+        if (gtk4IsMacosBackend() && GDK_IS_MACOS_SURFACE(surface))
+        {
+          gpointer nswindow = gdk_macos_surface_get_native_window(GDK_MACOS_SURFACE(surface));
+          if (nswindow)
+            iupgtk4MacosMoveWindow(nswindow, x, y);
+        }
+#endif
       }
     }
-#endif
 
     /* Create popover for anchor window approach */
     popover = gtk_popover_menu_new_from_model(G_MENU_MODEL(menu_model));
@@ -482,17 +546,6 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     GdkRectangle pointing_rect = {0, 0, 1, 1};
     gtk_popover_set_pointing_to(GTK_POPOVER(popover), &pointing_rect);
     gtk_popover_set_position(GTK_POPOVER(popover), GTK_POS_BOTTOM);
-
-    /* On Wayland: Use offset to position popover at screen coordinates (x,y)
-     * since we can't position the anchor window itself */
-#ifndef GDK_WINDOWING_X11
-    gtk_popover_set_offset(GTK_POPOVER(popover), x, y);
-#else
-    if (!gtk4IsX11Backend())
-    {
-      gtk_popover_set_offset(GTK_POPOVER(popover), x, y);
-    }
-#endif
 
     /* Store popover for cleanup */
     iupAttribSet(ih, "_IUPGTK4_POPOVER", (char*)popover);
