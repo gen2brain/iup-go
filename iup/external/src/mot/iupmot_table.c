@@ -1559,13 +1559,14 @@ static int motTableMapMethod(Ihandle* ih)
 static void motTableSetSize(Ihandle* ih, Widget container, int setsize, int use_width, int use_height)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
-  int width, height, border;
+  int width, height;
+  Dimension border = 0;
   int sb_size = iupdrvGetScrollbarSize();
 
   /* Get border width */
   XtVaGetValues(container, XmNborderWidth, &border, NULL);
-  width = use_width - 2*border;
-  height = use_height - 2*border;
+  width = use_width - 2*(int)border;
+  height = use_height - 2*(int)border;
 
   /* Ensure minimum size */
   if (width <= 0) width = 1;

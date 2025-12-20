@@ -49,31 +49,43 @@ static int motLabelSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int motLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  /* ignore given value, must use only from parent */
-  value = iupBaseNativeParentGetBgColor(ih);
+  unsigned char r, g, b;
+
+  /* Try to use provided value first */
+  if (!iupStrToRGB(value, &r, &g, &b))
+  {
+    /* Fall back to parent's background if no valid color provided */
+    value = iupBaseNativeParentGetBgColor(ih);
+  }
 
   if (iupdrvBaseSetBgColorAttrib(ih, value))
     return 1;
-  return 0; 
+  return 0;
 }
 
 static int motLabelSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
-  /* ignore given value, must use only from parent */
-  value = iupAttribGetInheritNativeParent(ih, "BACKGROUND");
+  unsigned char r, g, b;
 
-  if (iupdrvBaseSetBgColorAttrib(ih, value))
-    return 1;
-  else
+  /* Try to use provided value first */
+  if (!value || !iupStrToRGB(value, &r, &g, &b))
   {
-    Pixmap pixmap = (Pixmap)iupImageGetImage(value, ih, 0, NULL);
+    /* Check if it's an image name */
+    Pixmap pixmap = value ? (Pixmap)iupImageGetImage(value, ih, 0, NULL) : 0;
     if (pixmap)
     {
       XtVaSetValues(ih->handle, XmNbackgroundPixmap, pixmap, NULL);
       return 1;
     }
+
+    /* Fall back to parent's background */
+    value = iupAttribGetInheritNativeParent(ih, "BACKGROUND");
   }
-  return 0; 
+
+  if (iupdrvBaseSetBgColorAttrib(ih, value))
+    return 1;
+
+  return 0;
 }
 
 static int motLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
