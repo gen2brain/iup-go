@@ -13,24 +13,24 @@ package iup
 #cgo linux LDFLAGS: -ldl
 #cgo !windows,!darwin LDFLAGS: -lm
 
-#cgo !windows,!darwin,!qt CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DIUPDBUS_USE_DLOPEN
+#cgo !windows,!darwin,!qt,!efl CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DIUPDBUS_USE_DLOPEN
 #cgo gtk,gtk2,gtk4 CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 
-#cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4 CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
-#cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4 CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
-#cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4 CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
+#cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!efl CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
+#cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!efl CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
+#cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4,!efl CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
 
 #cgo qt CFLAGS: -Iexternal/src/qt -DIUP_USE_QT
 #cgo qt CXXFLAGS: -Iexternal/src/qt -DIUP_USE_QT
 #cgo qt,!windows,!darwin CFLAGS: -DIUPDBUS_USE_DLOPEN
 
-#cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
-#cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
-#cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
-#cgo !windows,!darwin,!motif,!qt,web CFLAGS: -DIUPWEB_USE_DLOPEN
+#cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!efl,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
+#cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!efl,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
+#cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4,!efl,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
+#cgo !windows,!darwin,!motif,!qt,!efl,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo !windows,!darwin,!motif,!gtk2,gl,!nopkgconfig pkg-config: wayland-egl egl gl
-#cgo !windows,!darwin,!motif,!qt,gtk2,gl,!nopkgconfig pkg-config: gl
+#cgo !windows,!darwin,!motif,!gtk2,!efl,gl,!nopkgconfig pkg-config: wayland-egl egl gl
+#cgo !windows,!darwin,!motif,!qt,gtk2,!efl,gl,!nopkgconfig pkg-config: gl
 
 #cgo qt,!qt5,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Widgets
 #cgo qt,qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets
@@ -68,5 +68,9 @@ package iup
 #cgo darwin,gtk4 CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4 -x objective-c
 #cgo darwin,gtk4,!nopkgconfig pkg-config: gtk4
 #cgo darwin,gtk4,web CFLAGS: -DIUPWEB_USE_DLOPEN
+
+#cgo efl CFLAGS: -Iexternal/src/efl -DIUP_USE_EFL -DEFL_BETA_API_SUPPORT=1 -DEFL_EO_API_SUPPORT=1 -DHAVE_ECORE_X -DHAVE_ECORE_WL2
+#cgo efl,!nopkgconfig pkg-config: elementary ecore-x ecore-wl2 dbus-1
+#cgo efl,gl,!nopkgconfig pkg-config: wayland-egl egl gl
 */
 import "C"

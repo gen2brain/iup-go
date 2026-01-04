@@ -3,7 +3,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/iup-go.svg)](https://pkg.go.dev/github.com/gen2brain/iup-go/iup)
 
 Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
-Library provides system native UI controls for Windows (Win32), macOS (Cocoa), and Linux (GTK, Qt, and Motif).
+Library provides system native UI controls for Windows (Win32), macOS (Cocoa), and Linux (GTK, Qt, EFL, and Motif).
 
 C source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
@@ -92,6 +92,18 @@ CGO_CXXFLAGS="-I/usr/include/qt6/QtCore/6.9.3 -I/usr/include/qt6/QtGui/6.9.3" go
 
 [<img src="examples/sample/sample_qt6.png" width="700"/>](examples/sample/sample_qt6.png)
 
+##### EFL
+
+* Debian/Ubuntu: `apt-get install libefl-all-dev`
+* RedHat/Fedora: `dnf install efl`
+
+EFL needs this [patch](https://gist.github.com/gen2brain/8ed03d6eef620cc25007b5d7a5cc5779) applied.
+You can still compile with distro packages, but opening any modal window will freeze the app.
+
+For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
+
+[<img src="examples/sample/sample_efl.png" width="700"/>](examples/sample/sample_efl.png)
+
 #### Other
 
 The library should work on other Unix-like systems, FreeBSD, NetBSD, OpenBSD, DragonFly, Solaris, Illumos, and AIX.
@@ -117,6 +129,7 @@ For the `GLCanvas` control, install `libgl-dev` or `libglvnd-devel`.
 * `gtk2` - build for GTK2 (Linux/Unix)
 * `qt` - build for the Qt framework
 * `qt5` - build for Qt5 version, default is Qt6 (used with `qt`)
+* `efl` - build for EFL (Enlightenment Foundation Libraries)
 * `motif` - build for X11/Motif 2.x environment
 * `xft` - build with Xft support (X FreeType interface) (used with `motif`)
 * `xembed` - use XEmbed tray protocol instead of SNI (GTK3/GTK2 and Motif)
