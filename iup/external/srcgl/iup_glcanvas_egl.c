@@ -13,15 +13,16 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-/* Differentiate between GTK3, GTK4, and Qt backends */
 #if defined(IUP_USE_GTK3)
   #define IUP_EGL_USE_GTK3
 #elif defined(IUP_USE_GTK4)
   #define IUP_EGL_USE_GTK4
 #elif defined(IUP_USE_QT)
   #define IUP_EGL_USE_QT
+#elif defined(IUP_USE_EFL)
+  #define IUP_EGL_USE_EFL
 #else
-  #error "No backend defined for EGL: must define IUP_USE_GTK3, IUP_USE_GTK4, or IUP_USE_QT"
+  #error "No backend defined for EGL: must define IUP_USE_GTK3, IUP_USE_GTK4, IUP_USE_QT, or IUP_USE_EFL"
 #endif
 
 #if defined(IUP_EGL_USE_GTK3)
@@ -107,6 +108,24 @@
   #endif
 #endif
 
+#ifdef IUP_EGL_USE_EFL
+  #include <Ecore.h>
+  #include <Ecore_Evas.h>
+  #include <Evas.h>
+
+  #ifdef HAVE_ECORE_WL2
+    #include <Ecore_Wl2.h>
+    #include <wayland-egl.h>
+    #include <wayland-client.h>
+  #endif
+
+  #ifdef HAVE_ECORE_X
+    #include <X11/Xlib.h>
+    #include <Ecore_X.h>
+  #endif
+
+#endif
+
 #include "iup.h"
 #include "iupcbs.h"
 #include "iupgl.h"
@@ -131,7 +150,6 @@
   }
   #endif
 #endif
-
 
 /* Definitions for platform specific EGL display acquisition (EGL 1.5 or extensions) */
 #ifndef EGL_PLATFORM_WAYLAND_KHR
@@ -206,6 +224,18 @@ typedef PFNEGLGETPLATFORMDISPLAYPROC PFN_eglGetPlatformDisplay;
 #define EGL_OPENGL_API 0x30A2
 #endif
 
+static int eGLCanvasEflIsWayland(Ecore_Evas* ee)
+{
+  const char* engine = ecore_evas_engine_name_get(ee);
+  return engine && (strncmp(engine, "wayland", 7) == 0);
+}
+
+static int eGLCanvasEflIsX11(Ecore_Evas* ee)
+{
+  const char* engine = ecore_evas_engine_name_get(ee);
+  return engine && (strstr(engine, "x11") != NULL);
+}
+
 typedef struct _IGlControlData
 {
   EGLDisplay display;
@@ -219,24 +249,27 @@ typedef struct _IGlControlData
   GdkSurface* gdk_surface;
 #elif defined(IUP_EGL_USE_QT)
   QWindow* qwindow;
+#elif defined(IUP_EGL_USE_EFL)
+  Evas_Object* evas_obj;
+  Ecore_Evas* ee;
 #endif
 
   int last_logical_width;
   int last_logical_height;
 
-/* Wayland EGL window support (GTK3/GTK4/Qt6) */
-#if defined(GDK_WINDOWING_WAYLAND) || defined(IUP_EGL_USE_QT)
+/* Wayland EGL window support (GTK3/GTK4/Qt6/EFL) */
+#if defined(GDK_WINDOWING_WAYLAND) || defined(IUP_EGL_USE_QT) || (defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2))
   struct wl_egl_window* egl_window;
   int egl_window_physical_width;
   int egl_window_physical_height;
 #endif
 
-/* Wayland subsurface support (GTK3/GTK4/Qt6) */
-#if (defined(IUP_EGL_USE_GTK3) && defined(GDK_WINDOWING_WAYLAND)) || (defined(IUP_EGL_USE_GTK4) && defined(GDK_WINDOWING_WAYLAND)) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES))
+/* Wayland subsurface support (GTK3/GTK4/Qt6/EFL) */
+#if (defined(IUP_EGL_USE_GTK3) && defined(GDK_WINDOWING_WAYLAND)) || (defined(IUP_EGL_USE_GTK4) && defined(GDK_WINDOWING_WAYLAND)) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES)) || (defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2))
   struct wl_surface* subsurface_wl;      /* Wayland surface for the canvas subsurface */
   struct wl_subsurface* subsurface;       /* Wayland subsurface attached to parent */
   struct wl_surface* parent_surface;      /* Parent wl_surface (needed for commits after subsurface position changes) */
-  struct wl_compositor* compositor;       /* Wayland compositor interface (from GTK/Qt, NOT owned by us) */
+  struct wl_compositor* compositor;       /* Wayland compositor interface (from GTK/Qt/EFL, NOT owned by us) */
   struct wl_compositor* registry_compositor; /* Compositor from registry (on our queue, must be destroyed) */
   struct wl_subcompositor* subcompositor; /* Wayland subcompositor interface */
   struct wl_registry* registry;           /* Wayland registry (for cleanup) */
@@ -425,6 +458,34 @@ static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* phy
   }
 #endif /* IUP_EGL_USE_QT */
 
+#ifdef IUP_EGL_USE_EFL
+  /* For EFL: get widget size from Evas object */
+  if (gldata->evas_obj)
+  {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(gldata->evas_obj);
+    if (geom.w > 0 && geom.h > 0)
+    {
+      realized_w = geom.w;
+      realized_h = geom.h;
+    }
+  }
+
+  /* Get scale factor - only for X11 (EFL Wayland doesn't expose output scale) */
+#ifdef HAVE_ECORE_X
+  if (gldata->ee && eGLCanvasEflIsX11(gldata->ee))
+  {
+    int dpi_x = 0, dpi_y = 0;
+    ecore_evas_screen_dpi_get(gldata->ee, &dpi_x, &dpi_y);
+    if (dpi_x > 0)
+    {
+      scale = dpi_x / 96;
+      if (scale < 1) scale = 1;
+    }
+  }
+#endif
+  /* For Wayland, leave scale=1 - EFL doesn't expose output scale and compositor handles HiDPI */
+#endif /* IUP_EGL_USE_EFL */
+
   if (ih->currentwidth > 0 && ih->currentheight > 0)
   {
     requested_w = ih->currentwidth;
@@ -478,7 +539,7 @@ static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* phy
   if (*physical_height < 1) *physical_height = 1;
 }
 
-#if defined(GDK_WINDOWING_WAYLAND) || defined(IUP_EGL_USE_QT)
+#if defined(GDK_WINDOWING_WAYLAND) || defined(IUP_EGL_USE_QT) || (defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2))
 /* Forward declaration for Wayland compositor registry function */
 static struct wl_subcompositor* eGLCanvasGetWaylandSubcompositor(struct wl_display* wl_display,
                                                                    struct wl_event_queue** out_queue,
@@ -538,11 +599,28 @@ static int eGLCanvasDefaultResize(Ihandle *ih, int width, int height)
   }
 #endif /* IUP_EGL_USE_QT */
 
+#ifdef IUP_EGL_USE_EFL
+  /* For EFL: get HiDPI scale factor - only for X11 (EFL Wayland doesn't expose output scale) */
+#ifdef HAVE_ECORE_X
+  if (gldata->ee && eGLCanvasEflIsX11(gldata->ee))
+  {
+    int dpi_x = 0, dpi_y = 0;
+    ecore_evas_screen_dpi_get(gldata->ee, &dpi_x, &dpi_y);
+    if (dpi_x > 0)
+    {
+      scale = dpi_x / 96;
+      if (scale < 1) scale = 1;
+    }
+  }
+#endif
+  /* For Wayland, leave scale=1 - EFL doesn't expose output scale and compositor handles HiDPI */
+#endif /* IUP_EGL_USE_EFL */
+
   physical_width = width * scale;
   physical_height = height * scale;
 
-/* Wayland EGL window resize (GTK3/GTK4/Qt6) */
-#if defined(GDK_WINDOWING_WAYLAND) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES))
+/* Wayland EGL window resize (GTK3/GTK4/Qt6/EFL) */
+#if defined(GDK_WINDOWING_WAYLAND) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES)) || (defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2))
   if (gldata->egl_window) {
       int resize_w = physical_width < 1 ? 1 : physical_width;
       int resize_h = physical_height < 1 ? 1 : physical_height;
@@ -653,6 +731,23 @@ static int eGLCanvasDefaultResize(Ihandle *ih, int width, int height)
           }
 
           wl_subsurface_set_position(gldata->subsurface, x, y);
+      }
+#elif defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2)
+      if (gldata->subsurface && gldata->evas_obj) {
+          Eina_Rect geom = efl_gfx_entity_geometry_get(gldata->evas_obj);
+          int subsurface_x = geom.x;
+          int subsurface_y = geom.y;
+
+          /* Use framespace for position - this is where EFL renders content */
+          Evas* evas = evas_object_evas_get(gldata->evas_obj);
+          if (evas) {
+              int fx = 0, fy = 0;
+              evas_output_framespace_get(evas, &fx, &fy, NULL, NULL);
+              subsurface_x += fx;
+              subsurface_y += fy;
+          }
+
+          wl_subsurface_set_position(gldata->subsurface, subsurface_x, subsurface_y);
       }
 #endif
   }
@@ -874,7 +969,7 @@ static char* eGLCanvasGetVisualAttrib(Ihandle *ih)
   return NULL;
 }
 
-#if defined(GDK_WINDOWING_WAYLAND) || defined(IUP_EGL_USE_QT)
+#if defined(GDK_WINDOWING_WAYLAND) || defined(IUP_EGL_USE_QT) || (defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2))
 /* Helper structure and function to retrieve wl_subcompositor from Wayland registry. */
 struct wayland_registry_data {
   struct wl_compositor* compositor;
@@ -1322,6 +1417,111 @@ static EGLNativeWindowType eGLCanvasCreateGtk4WaylandSubsurface(Ihandle* ih, IGl
 }
 #endif /* IUP_EGL_USE_GTK4 && GDK_WINDOWING_WAYLAND */
 
+#if defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2)
+/* EFL Wayland: Create subsurface lazily when first needed (on GLMakeCurrent). */
+static EGLNativeWindowType eGLCanvasCreateEflWaylandSubsurface(Ihandle* ih, IGlControlData* gldata)
+{
+  EGLNativeWindowType native_window = (EGLNativeWindowType)NULL;
+  Ecore_Wl2_Display* wl2_display;
+  Ecore_Wl2_Window* wl2_win;
+  struct wl_display* wl_display;
+  struct wl_surface* parent_surface;
+
+  if (!eGLCanvasEflIsWayland(gldata->ee))
+    return native_window;
+
+  wl2_win = ecore_evas_wayland2_window_get(gldata->ee);
+  if (!wl2_win)
+    return native_window;
+
+  wl2_display = ecore_wl2_window_display_get(wl2_win);
+  if (!wl2_display)
+    return native_window;
+
+  wl_display = ecore_wl2_display_get(wl2_display);
+  if (!wl_display)
+    return native_window;
+
+  parent_surface = ecore_wl2_window_surface_get(wl2_win);
+  if (!parent_surface)
+    return native_window;
+
+  gldata->parent_surface = parent_surface;
+
+  gldata->compositor = ecore_wl2_display_compositor_get(wl2_display);
+  if (!gldata->compositor)
+    return native_window;
+
+  /* Create a new Wayland surface for the canvas subsurface */
+  gldata->subsurface_wl = wl_compositor_create_surface(gldata->compositor);
+  if (!gldata->subsurface_wl)
+    return native_window;
+
+  /* Get wl_subcompositor from the Wayland registry */
+  if (!gldata->subcompositor) {
+    gldata->subcompositor = eGLCanvasGetWaylandSubcompositor(wl_display, &gldata->event_queue, &gldata->registry_compositor, &gldata->registry);
+  }
+
+  if (!gldata->subcompositor) {
+    wl_surface_destroy(gldata->subsurface_wl);
+    gldata->subsurface_wl = NULL;
+    return native_window;
+  }
+
+  /* Create subsurface attached to parent window's surface */
+  gldata->subsurface = wl_subcompositor_get_subsurface(
+      gldata->subcompositor,
+      gldata->subsurface_wl,
+      parent_surface);
+
+  if (!gldata->subsurface) {
+    wl_surface_destroy(gldata->subsurface_wl);
+    gldata->subsurface_wl = NULL;
+    return native_window;
+  }
+
+  /* Set subsurface to desynchronized mode for independent rendering */
+  wl_subsurface_set_desync(gldata->subsurface);
+
+  /* Position the subsurface within the parent window */
+  int subsurface_x = 0, subsurface_y = 0;
+  if (gldata->evas_obj)
+  {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(gldata->evas_obj);
+    subsurface_x = geom.x;
+    subsurface_y = geom.y;
+
+    /* Use framespace for position - this is where EFL renders content */
+    Evas* evas = evas_object_evas_get(gldata->evas_obj);
+    if (evas) {
+        int fx = 0, fy = 0;
+        evas_output_framespace_get(evas, &fx, &fy, NULL, NULL);
+        subsurface_x += fx;
+        subsurface_y += fy;
+    }
+  }
+
+  wl_subsurface_set_position(gldata->subsurface, subsurface_x, subsurface_y);
+
+  /* Create the EGL window using the subsurface.
+   * eGLCanvasGetActualSize returns the content area size (already excludes decorations). */
+  int physical_width = 0, physical_height = 0;
+  eGLCanvasGetActualSize(ih, gldata, &physical_width, &physical_height);
+  if (physical_width < 1) physical_width = 1;
+  if (physical_height < 1) physical_height = 1;
+
+  gldata->egl_window = wl_egl_window_create(gldata->subsurface_wl, physical_width, physical_height);
+
+  if (gldata->egl_window) {
+    native_window = (EGLNativeWindowType)gldata->egl_window;
+    gldata->egl_window_physical_width = physical_width;
+    gldata->egl_window_physical_height = physical_height;
+  }
+
+  return native_window;
+}
+#endif /* IUP_EGL_USE_EFL && HAVE_ECORE_WL2 */
+
 static int eGLCanvasMapMethod(Ihandle* ih)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
@@ -1462,6 +1662,29 @@ static int eGLCanvasMapMethod(Ihandle* ih)
 
 #endif /* IUP_EGL_USE_QT */
 
+#ifdef IUP_EGL_USE_EFL
+  /* Get the Evas object and Ecore_Evas from the canvas */
+  gldata->evas_obj = (Evas_Object*)ih->handle;
+
+  if (!gldata->evas_obj)
+  {
+    iupAttribSet(ih, "ERROR", "Could not obtain Evas_Object handle.");
+    return IUP_NOERROR;
+  }
+
+  {
+    Evas* evas = evas_object_evas_get(gldata->evas_obj);
+    if (evas)
+      gldata->ee = ecore_evas_ecore_evas_get(evas);
+  }
+
+  if (!gldata->ee)
+  {
+    iupAttribSet(ih, "ERROR", "Could not obtain Ecore_Evas handle.");
+    return IUP_NOERROR;
+  }
+#endif /* IUP_EGL_USE_EFL */
+
   /* Try to load eglGetPlatformDisplay (EGL 1.5 core) or eglGetPlatformDisplayEXT (extension) */
   eglGetPlatformDisplay_func = (PFN_eglGetPlatformDisplay)eglGetProcAddress("eglGetPlatformDisplay");
   if (!eglGetPlatformDisplay_func)
@@ -1572,6 +1795,48 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   }
 #endif /* IUP_EGL_USE_QT */
 
+#ifdef IUP_EGL_USE_EFL
+  /* EFL: Get native Display (X11 or Wayland) */
+#ifdef HAVE_ECORE_WL2
+  if (eGLCanvasEflIsWayland(gldata->ee)) {
+      Ecore_Wl2_Window* wl2_win = ecore_evas_wayland2_window_get(gldata->ee);
+      if (wl2_win) {
+          Ecore_Wl2_Display* wl2_display = ecore_wl2_window_display_get(wl2_win);
+          if (wl2_display) {
+              struct wl_display* wl_display = ecore_wl2_display_get(wl2_display);
+              if (wl_display) {
+                  if (eglGetPlatformDisplay_func) {
+                      gldata->display = eglGetPlatformDisplay_func(EGL_PLATFORM_WAYLAND_KHR, wl_display, NULL);
+                  }
+                  if (gldata->display == EGL_NO_DISPLAY) {
+                      gldata->display = eglGetDisplay((EGLNativeDisplayType)wl_display);
+                  }
+              }
+          }
+      }
+  }
+  else
+#endif
+#ifdef HAVE_ECORE_X
+  if (eGLCanvasEflIsX11(gldata->ee)) {
+      Display* x_display = ecore_x_display_get();
+      if (x_display) {
+          if (eglGetPlatformDisplay_func) {
+              gldata->display = eglGetPlatformDisplay_func(EGL_PLATFORM_X11_KHR, x_display, NULL);
+          }
+          if (gldata->display == EGL_NO_DISPLAY) {
+              gldata->display = eglGetDisplay((EGLNativeDisplayType)x_display);
+          }
+
+          /* Get X11 window handle for native window */
+          Ecore_X_Window xwin = ecore_evas_window_get(gldata->ee);
+          if (xwin)
+              native_window = (EGLNativeWindowType)xwin;
+      }
+  }
+#endif
+#endif /* IUP_EGL_USE_EFL */
+
   if (gldata->display == EGL_NO_DISPLAY) {
       gldata->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
   }
@@ -1661,12 +1926,22 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   }
 #endif /* IUP_EGL_USE_QT */
 
+#ifdef IUP_EGL_USE_EFL
+#ifdef HAVE_ECORE_WL2
+  if (eGLCanvasEflIsWayland(gldata->ee)) {
+      /* EFL Wayland: Defer subsurface creation until first GLMakeCurrent call. */
+      iupAttribSet(ih, "_IUP_EFL_WAYLAND_LAZY_INIT", "1");
+  }
+#endif
+#endif /* IUP_EGL_USE_EFL */
+
   /* If we are not in lazy-init mode and still have no window, it's an error */
   if (native_window == (EGLNativeWindowType)NULL &&
       !iupAttribGet(ih, "_IUP_GTK3_WAYLAND_LAZY_INIT") &&
       !iupAttribGet(ih, "_IUP_GTK4_WAYLAND_LAZY_INIT") &&
       !iupAttribGet(ih, "_IUP_GTK4_X11_LAZY_INIT") &&
-      !iupAttribGet(ih, "_IUP_QT6_WAYLAND_LAZY_INIT")) {
+      !iupAttribGet(ih, "_IUP_QT6_WAYLAND_LAZY_INIT") &&
+      !iupAttribGet(ih, "_IUP_EFL_WAYLAND_LAZY_INIT")) {
       /* This might happen if the backend is neither Wayland nor X11, or if getting the native handle failed. */
       iupAttribSet(ih, "ERROR", "Could not create/obtain native window handle (Wayland EGL window or X11 Window ID). Check backend.");
       return IUP_NOERROR;
@@ -1684,13 +1959,14 @@ static int eGLCanvasMapMethod(Ihandle* ih)
       !iupAttribGet(ih, "_IUP_GTK3_WAYLAND_LAZY_INIT") &&
       !iupAttribGet(ih, "_IUP_GTK4_WAYLAND_LAZY_INIT") &&
       !iupAttribGet(ih, "_IUP_GTK4_X11_LAZY_INIT") &&
-      !iupAttribGet(ih, "_IUP_QT6_WAYLAND_LAZY_INIT")) {
+      !iupAttribGet(ih, "_IUP_QT6_WAYLAND_LAZY_INIT") &&
+      !iupAttribGet(ih, "_IUP_EFL_WAYLAND_LAZY_INIT")) {
       gldata->surface = eglCreateWindowSurface(gldata->display, gldata->config, native_window, surface_attribs);
       if (gldata->surface == EGL_NO_SURFACE)
       {
           EGLint egl_error = eglGetError();
           iupAttribSetStrf(ih, "ERROR", "Could not create EGL surface. Error: 0x%X", egl_error);
-#if defined(GDK_WINDOWING_WAYLAND) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES))
+#if defined(GDK_WINDOWING_WAYLAND) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES)) || (defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2))
           if (gldata->egl_window)
           {
               wl_egl_window_destroy(gldata->egl_window);
@@ -1699,6 +1975,21 @@ static int eGLCanvasMapMethod(Ihandle* ih)
 #endif
           return IUP_NOERROR;
       }
+
+#if defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_X)
+      /* EFL X11: Mark if surface was created when window was 1x1 */
+      if (gldata->ee && eGLCanvasEflIsX11(gldata->ee))
+      {
+          Ecore_X_Window xwin = ecore_evas_window_get(gldata->ee);
+          if (xwin)
+          {
+              int x, y, w, h;
+              ecore_x_window_geometry_get(xwin, &x, &y, &w, &h);
+              if (w <= 1 || h <= 1)
+                  iupAttribSet(ih, "_IUP_EFL_X11_SURFACE_1x1", "1");
+          }
+      }
+#endif
   }
 
   EGLint context_attribs[15];
@@ -1898,8 +2189,8 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
     gldata->surface = EGL_NO_SURFACE;
   }
 
-/* Clean up Wayland EGL window (GTK3/GTK4/Qt6) */
-#if defined(GDK_WINDOWING_WAYLAND) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES))
+/* Clean up Wayland EGL window (GTK3/GTK4/Qt6/EFL) */
+#if defined(GDK_WINDOWING_WAYLAND) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES)) || (defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2))
   if (gldata->egl_window)
   {
     wl_egl_window_destroy(gldata->egl_window);
@@ -1907,8 +2198,8 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
   }
 #endif
 
-/* Clean up Wayland subsurface resources (GTK4/Qt6) */
-#if (defined(IUP_EGL_USE_GTK4) && defined(GDK_WINDOWING_WAYLAND)) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES))
+/* Clean up Wayland subsurface resources (GTK4/Qt6/EFL) */
+#if (defined(IUP_EGL_USE_GTK4) && defined(GDK_WINDOWING_WAYLAND)) || (defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES)) || (defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2))
   if (gldata->subsurface)
   {
     wl_subsurface_destroy(gldata->subsurface);
@@ -1949,11 +2240,11 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
     gldata->event_queue = NULL;
   }
 
-  /* Clear compositor pointer (but don't destroy - owned by GTK/Qt) */
+  /* Clear compositor pointer (but don't destroy - owned by GTK/Qt/EFL) */
   gldata->compositor = NULL;
 #endif
 
-  /* On X11, the native window is managed by GTK/GDK/Qt, so we don't destroy it. */
+  /* On X11, the native window is managed by GTK/GDK/Qt/EFL, so we don't destroy it. */
 
 #if defined(IUP_EGL_USE_GTK3)
   gldata->window = NULL;
@@ -1963,6 +2254,10 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
 #endif /* IUP_EGL_USE_GTK4 */
 #ifdef IUP_EGL_USE_QT
   gldata->qwindow = NULL;
+#endif
+#ifdef IUP_EGL_USE_EFL
+  gldata->evas_obj = NULL;
+  gldata->ee = NULL;
 #endif
   gldata->display = EGL_NO_DISPLAY;
 }
@@ -2018,26 +2313,18 @@ void IupGLMakeCurrent(Ihandle* ih)
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
-  {
     return;
-  }
 
   if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
-  {
     return;
-  }
 
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
   if (!gldata)
-  {
     return;
-  }
 
   if (!gldata || gldata->display == EGL_NO_DISPLAY)
-  {
     return;
-  }
 
   /* Qt6 Wayland lazy initialization: Create subsurface+surface+context on first GLMakeCurrent */
 #if defined(IUP_EGL_USE_QT) && !defined(IUP_QT_DISABLE_WAYLAND_INCLUDES)
@@ -2319,6 +2606,66 @@ void IupGLMakeCurrent(Ihandle* ih)
     /* Clear the lazy init flag */
     iupAttribSet(ih, "_IUP_GTK4_X11_LAZY_INIT", NULL);
   }
+#endif
+
+  /* EFL Wayland lazy initialization: Create subsurface+surface+context on first GLMakeCurrent */
+#if defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2)
+  if (gldata->surface == EGL_NO_SURFACE && iupAttribGet(ih, "_IUP_EFL_WAYLAND_LAZY_INIT"))
+  {
+    /* Create the Wayland subsurface */
+    EGLNativeWindowType native_window = eGLCanvasCreateEflWaylandSubsurface(ih, gldata);
+
+    if (native_window == (EGLNativeWindowType)NULL) {
+      iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
+      return;
+    }
+
+    /* Now create EGL surface */
+    EGLint surface_attribs[3] = { EGL_NONE, EGL_NONE, EGL_NONE };
+    if (iupStrEqualNoCase(iupAttribGetStr(ih,"BUFFER"), "SINGLE"))
+    {
+      surface_attribs[0] = EGL_RENDER_BUFFER;
+      surface_attribs[1] = EGL_SINGLE_BUFFER;
+    }
+
+    gldata->surface = eglCreateWindowSurface(gldata->display, gldata->config, native_window, surface_attribs);
+
+    if (gldata->surface == EGL_NO_SURFACE)
+    {
+      EGLint egl_error = eglGetError();
+      iupAttribSetStrf(ih, "ERROR", "Could not create EGL surface during lazy init. Error: 0x%X", egl_error);
+      if (gldata->egl_window)
+      {
+        wl_egl_window_destroy(gldata->egl_window);
+        gldata->egl_window = NULL;
+      }
+      return;
+    }
+
+    /* Create EGL context */
+    Ihandle* ih_shared = (Ihandle*)iupAttribGet(ih, "SHAREDCONTEXT");
+    EGLContext shared_context = EGL_NO_CONTEXT;
+    if (ih_shared && iupObjectCheck(ih_shared))
+    {
+      IGlControlData* shared_gldata = (IGlControlData*)iupAttribGet(ih_shared, "_IUP_GLCONTROLDATA");
+      if (shared_gldata)
+        shared_context = shared_gldata->context;
+    }
+
+    EGLint context_attribs[] = { EGL_NONE };
+    gldata->context = eglCreateContext(gldata->display, gldata->config, shared_context, context_attribs);
+
+    if (gldata->context == EGL_NO_CONTEXT)
+    {
+      EGLint egl_error = eglGetError();
+      iupAttribSetStrf(ih, "ERROR", "Could not create EGL context during lazy init. Error: 0x%X", egl_error);
+      return;
+    }
+
+    /* Clear the lazy init flag */
+    iupAttribSet(ih, "_IUP_EFL_WAYLAND_LAZY_INIT", NULL);
+  }
+#endif
 
   /* GTK4 X11: Check if surface needs recreation (was created at 1x1, now properly sized) */
 #if defined(IUP_EGL_USE_GTK4) && defined(GDK_WINDOWING_X11)
@@ -2358,6 +2705,47 @@ void IupGLMakeCurrent(Ihandle* ih)
     }
   }
 #endif
+
+  /* EFL X11: Check if surface needs recreation */
+#if defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_X)
+  if (gldata->surface != EGL_NO_SURFACE && iupAttribGet(ih, "_IUP_EFL_X11_SURFACE_1x1"))
+  {
+    if (gldata->ee && eGLCanvasEflIsX11(gldata->ee))
+    {
+      Ecore_X_Window xwin = ecore_evas_window_get(gldata->ee);
+      if (xwin)
+      {
+        int x, y, w, h;
+        ecore_x_window_geometry_get(xwin, &x, &y, &w, &h);
+
+        /* If window is now properly sized, recreate the surface */
+        if (w > 1 && h > 1)
+        {
+          /* Destroy old 1x1 surface */
+          eglDestroySurface(gldata->display, gldata->surface);
+
+          /* Create new surface at proper size */
+          EGLint surface_attribs[3] = { EGL_NONE, EGL_NONE, EGL_NONE };
+          if (iupStrEqualNoCase(iupAttribGetStr(ih,"BUFFER"), "SINGLE"))
+          {
+            surface_attribs[0] = EGL_RENDER_BUFFER;
+            surface_attribs[1] = EGL_SINGLE_BUFFER;
+          }
+
+          gldata->surface = eglCreateWindowSurface(gldata->display, gldata->config, (EGLNativeWindowType)xwin, surface_attribs);
+          if (gldata->surface == EGL_NO_SURFACE)
+          {
+            EGLint egl_error = eglGetError();
+            iupAttribSetStrf(ih, "ERROR", "Could not recreate EGL surface. Error: 0x%X", egl_error);
+            return;
+          }
+
+          /* Clear the 1x1 flag */
+          iupAttribSet(ih, "_IUP_EFL_X11_SURFACE_1x1", NULL);
+        }
+      }
+    }
+  }
 #endif
 
   if (gldata->context == EGL_NO_CONTEXT || gldata->surface == EGL_NO_SURFACE)
@@ -2381,6 +2769,21 @@ void IupGLMakeCurrent(Ihandle* ih)
   }
 #endif
 
+#if defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2)
+  if (gldata->egl_window) {
+    eGLCanvasGetActualSize(ih, gldata, &physical_width, &physical_height);
+
+    if (physical_width != gldata->egl_window_physical_width ||
+        physical_height != gldata->egl_window_physical_height)
+    {
+      wl_egl_window_resize(gldata->egl_window, physical_width, physical_height, 0, 0);
+      gldata->egl_window_physical_width = physical_width;
+      gldata->egl_window_physical_height = physical_height;
+      performed_resize = 1;
+    }
+  }
+#endif
+
   if (eglMakeCurrent(gldata->display, gldata->surface, gldata->surface, gldata->context) == EGL_FALSE)
   {
     iupAttribSetStrf(ih, "ERROR", "Failed to set new current context. Error: 0x%X", eglGetError());
@@ -2388,6 +2791,13 @@ void IupGLMakeCurrent(Ihandle* ih)
   else
   {
 #ifdef GDK_WINDOWING_WAYLAND
+    if (performed_resize)
+    {
+      glViewport(0, 0, physical_width, physical_height);
+    }
+#endif
+
+#if defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2)
     if (performed_resize)
     {
       glViewport(0, 0, physical_width, physical_height);
@@ -2428,7 +2838,28 @@ void IupGLSwapBuffers(Ihandle* ih)
 
   /* eglSwapBuffers commits the SUBSURFACE with the new rendered buffer.
    * Qt/GTK will commit the parent surface as part of their rendering pipeline. */
+#if defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2)
+  if (gldata->ee && eGLCanvasEflIsWayland(gldata->ee))
+  {
+    /* EFL Wayland: Set swap interval 0 to avoid blocking on frame callback. EFL's own wayland_egl engine does this.
+     * Without this, eglSwapBuffers blocks on second call waiting for frame callback. */
+    eglSwapInterval(gldata->display, 0);
+  }
+#endif
   eglSwapBuffers(gldata->display, gldata->surface);
+#if defined(IUP_EGL_USE_EFL) && defined(HAVE_ECORE_WL2)
+  if (gldata->ee && eGLCanvasEflIsWayland(gldata->ee))
+  {
+    /* Flush display to ensure events are sent to compositor */
+    Ecore_Wl2_Window* wl2_win = ecore_evas_wayland2_window_get(gldata->ee);
+    if (wl2_win)
+    {
+      Ecore_Wl2_Display* wl2_display = ecore_wl2_window_display_get(wl2_win);
+      if (wl2_display)
+        ecore_wl2_display_flush(wl2_display);
+    }
+  }
+#endif
 }
 
 void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
