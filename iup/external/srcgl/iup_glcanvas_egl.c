@@ -224,6 +224,7 @@ typedef PFNEGLGETPLATFORMDISPLAYPROC PFN_eglGetPlatformDisplay;
 #define EGL_OPENGL_API 0x30A2
 #endif
 
+#ifdef IUP_EGL_USE_EFL
 static int eGLCanvasEflIsWayland(Ecore_Evas* ee)
 {
   const char* engine = ecore_evas_engine_name_get(ee);
@@ -235,6 +236,7 @@ static int eGLCanvasEflIsX11(Ecore_Evas* ee)
   const char* engine = ecore_evas_engine_name_get(ee);
   return engine && (strstr(engine, "x11") != NULL);
 }
+#endif
 
 typedef struct _IGlControlData
 {
