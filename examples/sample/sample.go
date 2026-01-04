@@ -11,6 +11,9 @@ func main() {
 	iup.SetGlobal("APPID", "com.example.Sample") // For Wayland/XDG desktop file
 	iup.SetGlobal("APPNAME", "Sample")           // For taskbar/dock/WM
 
+	//iup.SetGlobal("DEFAULTFONTSIZE", "13")
+	//iup.SetGlobal("EFLTHEME", "/tmp/Ice.edj")
+
 	iup.ImageRGBA(32, 32, imgTecgraf).SetHandle("img1")
 
 	img := iup.Image(32, 32, imgBits).SetHandle("img2")
@@ -33,7 +36,7 @@ func main() {
 
 	fr1 := iup.Frame(
 		iup.Vbox(
-			iup.Button("Button Text").SetAttributes("PADDING=5x5"),
+			iup.Button("Button Text").SetAttributes("PADDING=5x5").SetHandle("button1"),
 			iup.Button("Text").SetAttributes("IMAGE=img1, PADDING=5x5").SetHandle("button2"),
 			iup.Hbox(
 				iup.Button("").SetAttributes("IMAGE=img1, IMPRESS=img2"),
@@ -41,6 +44,24 @@ func main() {
 			).SetAttribute("ALIGNMENT", "ACENTER"),
 		).SetAttribute("ALIGNMENT", "ACENTER"),
 	).SetAttribute("TITLE", "Button")
+
+	iup.GetHandle("button1").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		filedlg := iup.FileDlg().SetAttributes(`DIALOGTYPE=SAVE, TITLE="File Save", FILTER="*.jpg", FILTERINFO="Jpeg Files"`)
+		defer filedlg.Destroy()
+
+		iup.Popup(filedlg, iup.CENTER, iup.CENTER)
+
+		switch filedlg.GetInt("STATUS") {
+		case 1:
+			iup.Message("New file", filedlg.GetAttribute("VALUE"))
+		case 0:
+			iup.Message("File exists", filedlg.GetAttribute("VALUE"))
+		case -1:
+			iup.Message("IupFileDlg", "Operation Canceled")
+		}
+
+		return iup.DEFAULT
+	}))
 
 	iup.GetHandle("button2").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		dlg := iup.ColorDlg().SetAttributes(map[string]interface{}{
@@ -277,7 +298,7 @@ func main() {
 		).SetAttribute("GAP", "5"),
 	).SetAttributes("MARGIN=5x5, GAP=5").SetHandle("vbox1")
 
-	dlg := iup.Dialog(vbox1).SetAttributes(`TITLE="Sample", MENU=menu, ICON=img1`)
+	dlg := iup.Dialog(vbox1).SetAttributes(`TITLE="Sample", MENU=menu, ICON=img3`)
 	dlg.SetHandle("dlg")
 
 	iup.Show(dlg)

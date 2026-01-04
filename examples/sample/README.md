@@ -48,6 +48,12 @@
 ### macOS Qt6 Dark
 [<img src="sample_qt6_macos_dark.png" width="700" title="macOS Qt6 Dark" alt="macOS Qt6 Dark" />](sample_qt6_macos_dark.png)
 
+### Linux EFL
+[<img src="sample_efl.png" width="700" title="Linux EFL" alt="Linux EFL" />](sample_efl.png)
+
+### Linux EFL Default Dark Theme
+[<img src="sample_efl_dark.png" width="700" title="Linux EFL Dark" alt="Linux EFL Dark" />](sample_efl_dark.png)
+
 ### Motif
 [<img src="sample_motif.png" width="700" title="Motif" alt="Motif" />](sample_motif.png)
 

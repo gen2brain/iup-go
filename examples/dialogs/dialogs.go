@@ -75,6 +75,25 @@ func main() {
 		return iup.DEFAULT
 	}))
 
+	// File Dialog (Multiple Files)
+	btnFileMulti := iup.Button("File Dialog (Multiple)")
+	btnFileMulti.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		dlg := iup.FileDlg()
+		dlg.SetAttributes(`DIALOGTYPE=OPEN, TITLE="Select Multiple Files", MULTIPLEFILES=YES`)
+		iup.Popup(dlg, iup.CENTERPARENT, iup.CENTERPARENT)
+		if dlg.GetAttribute("STATUS") != "-1" {
+			fmt.Printf("VALUE: %s\n", dlg.GetAttribute("VALUE"))
+			fmt.Printf("DIRECTORY: %s\n", dlg.GetAttribute("DIRECTORY"))
+			fmt.Printf("MULTIVALUECOUNT: %s\n", dlg.GetAttribute("MULTIVALUECOUNT"))
+			count := dlg.GetInt("MULTIVALUECOUNT")
+			for i := 0; i < count; i++ {
+				fmt.Printf("MULTIVALUE%d: %s\n", i, iup.GetAttributeId(dlg, "MULTIVALUE", i))
+			}
+		}
+		iup.Destroy(dlg)
+		return iup.DEFAULT
+	}))
+
 	// Color Dialog
 	btnColor := iup.Button("Color Dialog")
 	btnColor.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
@@ -177,7 +196,7 @@ func main() {
 			).SetAttribute("TITLE", "Message Dialogs"),
 			iup.Frame(
 				iup.Vbox(
-					iup.Hbox(btnFileOpen, btnFileSave, btnFileDir).SetAttributes("GAP=5"),
+					iup.Hbox(btnFileOpen, btnFileSave, btnFileDir, btnFileMulti).SetAttributes("GAP=5"),
 				).SetAttributes("MARGIN=5x5"),
 			).SetAttribute("TITLE", "File Dialogs"),
 			iup.Frame(

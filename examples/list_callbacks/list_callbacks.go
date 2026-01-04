@@ -2,22 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/gen2brain/iup-go/iup"
 	"time"
-)
 
-func appendLog(msg string) {
-	log := iup.GetHandle("log")
-	timestamp := time.Now().Format("15:04:05.000")
-	log.SetAttribute("APPEND", fmt.Sprintf("[%s] %s\n", timestamp, msg))
-	fmt.Printf("[%s] %s\n", timestamp, msg)
-}
+	"github.com/gen2brain/iup-go/iup"
+)
 
 func main() {
 	iup.Open()
 	defer iup.Close()
 
-	// Create three different list types
+	// Create different list types
 	listSimple := iup.List()
 	listMulti := iup.List()
 	listDropdown := iup.List()
@@ -45,11 +39,11 @@ func main() {
 	// Log widget
 	txtLog := iup.Text()
 	txtLog.SetAttributes("MULTILINE=YES, EXPAND=YES, READONLY=YES, VISIBLELINES=10")
-	txtLog.SetAttribute("VALUE", "IupList Callback Demo - All Callbacks\n"+
+	txtLog.SetAttribute("VALUE", "IupList Callbacks\n"+
 		"=========================================\n"+
 		"• Simple List: Single selection, drag-drop enabled\n"+
 		"• Multi List: Multiple selection, drag-drop enabled\n"+
-		"• Dropdown: Editbox enabled\n"+
+		"• Dropdown\n"+
 		"---\n")
 
 	iup.SetHandle("log", txtLog)
@@ -124,22 +118,6 @@ func main() {
 			stateStr = "opened"
 		}
 		appendLog(fmt.Sprintf("list_dropdown: DROPDOWN_CB - state=%s", stateStr))
-		return iup.DEFAULT
-	}))
-
-	// EDIT_CB - Called when editbox content changes
-	iup.SetCallback(listDropdown, "EDIT_CB", iup.EditFunc(func(ih iup.Ihandle, c int, newValue string) int {
-		char := fmt.Sprintf("%c", c)
-		if c < 32 || c > 126 {
-			char = fmt.Sprintf("\\x%02x", c)
-		}
-		appendLog(fmt.Sprintf("list_dropdown: EDIT_CB - char=%s newValue='%s'", char, newValue))
-		return iup.DEFAULT
-	}))
-
-	// CARET_CB - Called when caret position changes in editbox
-	iup.SetCallback(listDropdown, "CARET_CB", iup.CaretFunc(func(ih iup.Ihandle, lin, col, pos int) int {
-		appendLog(fmt.Sprintf("list_dropdown: CARET_CB - lin=%d col=%d pos=%d", lin, col, pos))
 		return iup.DEFAULT
 	}))
 
@@ -263,7 +241,7 @@ func main() {
 
 	frameDropdown := iup.Frame(
 		iup.Vbox(
-			iup.Label("Dropdown with Editbox"),
+			iup.Label("Dropdown"),
 			listDropdown,
 		).SetAttributes("MARGIN=5x5, GAP=5"),
 	).SetAttribute("TITLE", "Dropdown")
@@ -293,4 +271,11 @@ func main() {
 
 	iup.Show(dlg)
 	iup.MainLoop()
+}
+
+func appendLog(msg string) {
+	log := iup.GetHandle("log")
+	timestamp := time.Now().Format("15:04:05.000")
+	log.SetAttribute("APPEND", fmt.Sprintf("[%s] %s\n", timestamp, msg))
+	fmt.Printf("[%s] %s\n", timestamp, msg)
 }
