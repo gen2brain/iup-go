@@ -349,11 +349,26 @@ static GtkLabel* gtkButtonGetLabel(Ihandle* ih)
   }
   else if (ih->data->type == IUP_BUTTON_BOTH) /* both */
   {
-    /* when both is set, button contains an GtkAlignment, that contains a GtkBox, that contains a label and an image */
-    GtkContainer *container = (GtkContainer*)gtk_bin_get_child((GtkBin*)gtk_bin_get_child((GtkBin*)ih->handle));
-    GtkLabel* label = NULL;
-    gtk_container_foreach(container, gtkButtonChildrenCb, &label);
-    return label;
+    if (iupAttribGet(ih, "_IUPGTK_EVENTBOX"))
+    {
+      /* Borderless IMAGE+TEXT */
+      GtkWidget* box = gtk_bin_get_child((GtkBin*)ih->handle);
+      if (box && GTK_IS_BOX(box))
+      {
+        GtkLabel* label = NULL;
+        gtk_container_foreach(GTK_CONTAINER(box), gtkButtonChildrenCb, &label);
+        return label;
+      }
+      return NULL;
+    }
+    else
+    {
+      /* when both is set, button contains an GtkAlignment, that contains a GtkBox, that contains a label and an image */
+      GtkContainer *container = (GtkContainer*)gtk_bin_get_child((GtkBin*)gtk_bin_get_child((GtkBin*)ih->handle));
+      GtkLabel* label = NULL;
+      gtk_container_foreach(container, gtkButtonChildrenCb, &label);
+      return label;
+    }
   }
   else
     return NULL;
@@ -365,26 +380,36 @@ static void gtkButtonFixVerticalAlignment(Ihandle* ih)
      center the image and text relative to each other. Fix this by setting CENTER alignment. */
   if (ih->data->type == IUP_BUTTON_BOTH)
   {
-    GtkWidget* align = gtk_bin_get_child((GtkBin*)ih->handle);
-    if (align && GTK_IS_BIN(align))
+    GtkWidget* box = NULL;
+
+    if (iupAttribGet(ih, "_IUPGTK_EVENTBOX"))
     {
-      GtkWidget* box = gtk_bin_get_child((GtkBin*)align);
-      if (box && GTK_IS_BOX(box))
+      /* Borderless IMAGE+TEXT */
+      box = gtk_bin_get_child((GtkBin*)ih->handle);
+    }
+    else
+    {
+      /* Normal button */
+      GtkWidget* align = gtk_bin_get_child((GtkBin*)ih->handle);
+      if (align && GTK_IS_BIN(align))
+        box = gtk_bin_get_child((GtkBin*)align);
+    }
+
+    if (box && GTK_IS_BOX(box))
+    {
+      GList* children = gtk_container_get_children(GTK_CONTAINER(box));
+      GList* l;
+      for (l = children; l != NULL; l = l->next)
       {
-        GList* children = gtk_container_get_children(GTK_CONTAINER(box));
-        GList* l;
-        for (l = children; l != NULL; l = l->next)
-        {
-          GtkWidget* child = GTK_WIDGET(l->data);
+        GtkWidget* child = GTK_WIDGET(l->data);
 #if GTK_CHECK_VERSION(3, 0, 0)
-          gtk_widget_set_valign(child, GTK_ALIGN_CENTER);
+        gtk_widget_set_valign(child, GTK_ALIGN_CENTER);
 #else
-          if (GTK_IS_MISC(child))
-            gtk_misc_set_alignment(GTK_MISC(child), 0.5, 0.5);
+        if (GTK_IS_MISC(child))
+          gtk_misc_set_alignment(GTK_MISC(child), 0.5, 0.5);
 #endif
-        }
-        g_list_free(children);
       }
+      g_list_free(children);
     }
   }
 }
@@ -610,13 +635,33 @@ static int gtkButtonSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void gtkButtonImageChildrenCb(GtkWidget *widget, gpointer client_data)
+{
+  if (GTK_IS_IMAGE(widget))
+  {
+    GtkImage **image = (GtkImage**)client_data;
+    *image = (GtkImage*)widget;
+  }
+}
+
 static void gtkButtonSetPixbuf(Ihandle* ih, const char* name, int make_inactive)
 {
-  GtkImage* image;
+  GtkImage* image = NULL;
+
   if (!iupAttribGet(ih, "_IUPGTK_EVENTBOX"))
+  {
     image = (GtkImage*)gtk_button_get_image((GtkButton*)ih->handle);
+  }
   else
-    image = (GtkImage*)gtk_bin_get_child((GtkBin*)ih->handle);
+  {
+    GtkWidget* child = gtk_bin_get_child((GtkBin*)ih->handle);
+    if (GTK_IS_IMAGE(child))
+      image = (GtkImage*)child;
+    else if (GTK_IS_BOX(child))
+    {
+      gtk_container_foreach(GTK_CONTAINER(child), gtkButtonImageChildrenCb, &image);
+    }
+  }
 
   if (name && image)
   {
@@ -627,7 +672,6 @@ static void gtkButtonSetPixbuf(Ihandle* ih, const char* name, int make_inactive)
     return;
   }
 
-  /* if not defined */
 #if GTK_CHECK_VERSION(2, 8, 0)
   if (image)
     gtk_image_clear(image);
@@ -785,18 +829,37 @@ static int gtkButtonMapMethod(Ihandle* ih)
   else
     ih->data->type = IUP_BUTTON_TEXT;
 
-  if (ih->data->type == IUP_BUTTON_IMAGE &&
+  if (ih->data->type & IUP_BUTTON_IMAGE &&
       iupAttribGet(ih, "IMPRESS") &&
       !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
     has_border = 0;
 
   if (!has_border)
   {
-    GtkWidget *img = gtk_image_new();
     ih->handle = gtk_event_box_new();
-    gtk_container_add((GtkContainer*)ih->handle, img);
-    gtk_widget_show(img);
     iupAttribSet(ih, "_IUPGTK_EVENTBOX", "1");
+
+    if (ih->data->type & IUP_BUTTON_TEXT)
+    {
+#if GTK_CHECK_VERSION(3, 0, 0)
+      GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, ih->data->spacing);
+#else
+      GtkWidget* box = gtk_hbox_new(FALSE, ih->data->spacing);
+#endif
+      GtkWidget* img = gtk_image_new();
+      GtkWidget* label = gtk_label_new("");
+
+      gtk_box_pack_start(GTK_BOX(box), img, FALSE, FALSE, 0);
+      gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
+      gtk_container_add((GtkContainer*)ih->handle, box);
+      gtk_widget_show_all(box);
+    }
+    else
+    {
+      GtkWidget* img = gtk_image_new();
+      gtk_container_add((GtkContainer*)ih->handle, img);
+      gtk_widget_show(img);
+    }
   }
   else
     ih->handle = gtk_button_new();
@@ -896,8 +959,9 @@ static int gtkButtonMapMethod(Ihandle* ih)
 
   if (!has_border)
   {
-    GtkWidget* img = gtk_bin_get_child((GtkBin*)ih->handle);
-    gtk_widget_realize(img);
+    GtkWidget* child = gtk_bin_get_child((GtkBin*)ih->handle);
+    if (child)
+      gtk_widget_realize(child);
   }
 
 #if !GTK_CHECK_VERSION(3, 0, 0)
