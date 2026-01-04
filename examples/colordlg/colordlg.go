@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/gen2brain/iup-go/iup"
 )
 
