@@ -27,6 +27,7 @@ static void eflValChangedCallback(void* data, const Efl_Event* ev)
   Ihandle* ih = (Ihandle*)data;
   IFnd cb;
   double val;
+  int is_dragging;
 
   val = efl_ui_range_value_get(ev->object);
 
@@ -39,7 +40,14 @@ static void eflValChangedCallback(void* data, const Efl_Event* ev)
   }
   else
   {
-    IFnd cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
+    IFnd cb_old;
+
+    is_dragging = iupAttribGetInt(ih, "_IUP_DRAGGING");
+    if (is_dragging)
+      cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
+    else
+      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
+
     if (cb_old)
       cb_old(ih, ih->data->val);
   }
@@ -49,6 +57,8 @@ static void eflValDragStartCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   IFnd cb;
+
+  iupAttribSet(ih, "_IUP_DRAGGING", "1");
 
   ih->data->val = efl_ui_range_value_get(ev->object);
 
@@ -61,6 +71,8 @@ static void eflValDragStopCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   IFnd cb;
+
+  iupAttribSet(ih, "_IUP_DRAGGING", NULL);
 
   ih->data->val = efl_ui_range_value_get(ev->object);
 
@@ -150,14 +162,31 @@ static int eflValSetPageStepAttrib(Ihandle* ih, const char* value)
 static int eflValSetInvertedAttrib(Ihandle* ih, const char* value)
 {
   Eo* slider = iupeflGetWidget(ih);
-
-  if (!slider)
-    return 0;
+  Efl_Ui_Layout_Orientation dir;
 
   if (iupStrBoolean(value))
     ih->data->inverted = 1;
   else
     ih->data->inverted = 0;
+
+  if (!slider)
+    return 0;
+
+  if (ih->data->orientation == IVAL_VERTICAL)
+  {
+    if (ih->data->inverted)
+      dir = EFL_UI_LAYOUT_ORIENTATION_VERTICAL;
+    else
+      dir = EFL_UI_LAYOUT_ORIENTATION_VERTICAL | EFL_UI_LAYOUT_ORIENTATION_INVERTED;
+  }
+  else
+  {
+    if (ih->data->inverted)
+      dir = EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL | EFL_UI_LAYOUT_ORIENTATION_INVERTED;
+    else
+      dir = EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL;
+  }
+  efl_ui_layout_orientation_set(slider, dir);
 
   return 0;
 }
@@ -180,6 +209,7 @@ static int eflValMapMethod(Ihandle* ih)
 {
   Eo* parent;
   Eo* slider;
+  Efl_Ui_Layout_Orientation dir;
 
   parent = iupeflGetParentWidget(ih);
   if (!parent)
@@ -192,9 +222,22 @@ static int eflValMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)slider;
 
   if (ih->data->orientation == IVAL_VERTICAL)
-    efl_ui_layout_orientation_set(slider, EFL_UI_LAYOUT_ORIENTATION_VERTICAL);
+  {
+    /* EFL vertical default is top-to-bottom, IUP expects bottom-to-top */
+    /* So we invert EFL's default, unless ih->data->inverted is set */
+    if (ih->data->inverted)
+      dir = EFL_UI_LAYOUT_ORIENTATION_VERTICAL;
+    else
+      dir = EFL_UI_LAYOUT_ORIENTATION_VERTICAL | EFL_UI_LAYOUT_ORIENTATION_INVERTED;
+  }
   else
-    efl_ui_layout_orientation_set(slider, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL);
+  {
+    if (ih->data->inverted)
+      dir = EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL | EFL_UI_LAYOUT_ORIENTATION_INVERTED;
+    else
+      dir = EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL;
+  }
+  efl_ui_layout_orientation_set(slider, dir);
 
   efl_ui_range_limits_set(slider, ih->data->vmin, ih->data->vmax);
   efl_ui_range_value_set(slider, ih->data->val);
