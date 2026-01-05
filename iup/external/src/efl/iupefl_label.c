@@ -317,10 +317,30 @@ void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
   *y += border_y;
 }
 
+static void eflLabelLayoutUpdateMethod(Ihandle* ih)
+{
+  int border_x = 0, border_y = 0;
+  int width = ih->currentwidth;
+  int height = ih->currentheight;
+
+  if (iupeflIsInsideTabs(ih))
+    return;
+
+  if (ih->data->type == IUP_LABEL_TEXT)
+  {
+    iupeflTextGetBorder(&border_x, &border_y);
+    width += border_x;
+    height += border_y;
+  }
+
+  iupeflSetPosSize(ih, ih->x, ih->y, width, height);
+}
+
 void iupdrvLabelInitClass(Iclass* ic)
 {
   ic->Map = eflLabelMapMethod;
   ic->UnMap = eflLabelUnMapMethod;
+  ic->LayoutUpdate = eflLabelLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "TITLE", NULL, eflLabelSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, eflLabelSetAlignmentAttrib, "ALEFT:ACENTER", NULL, IUPAF_NO_INHERIT);

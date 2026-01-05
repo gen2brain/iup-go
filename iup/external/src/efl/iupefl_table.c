@@ -327,6 +327,135 @@ static void eflTableSwapRows(Ihandle* ih, int lin1, int lin2)
   }
 }
 
+static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int num_col = ih->data->num_col;
+  int idx;
+  char* text;
+  Evas_Object* label;
+  Evas_Object* cell_bg;
+  int align;
+  const char* align_tag;
+  char markup[1024];
+  unsigned char fg_r, fg_g, fg_b;
+  unsigned char bg_r, bg_g, bg_b;
+
+  if (!data || !data->cell_labels)
+    return;
+
+  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > num_col)
+    return;
+
+  idx = (lin - 1) * num_col + (col - 1);
+  label = data->cell_labels[idx];
+
+  if (!label)
+    return;
+
+  text = eflTableGetCellText(ih, lin, col);
+
+  /* Get colors */
+  eflTableGetCellFgColor(ih, lin, col, &fg_r, &fg_g, &fg_b);
+  eflTableGetCellBgColor(ih, lin, col, &bg_r, &bg_g, &bg_b);
+
+  /* Apply alignment via style and color via markup */
+  align = eflTableGetColumnAlignment(ih, col);
+  switch (align)
+  {
+    case 1: align_tag = "right"; break;
+    case 0: align_tag = "center"; break;
+    default: align_tag = "left"; break;
+  }
+
+  /* Build and push text style with alignment and font */
+  {
+    char style[512];
+    char* font = eflTableGetCellFont(ih, lin, col);
+
+    if (font && font[0])
+    {
+      char font_family[100] = "Sans";
+      char font_style_str[50] = "";
+      int font_size = 10;
+      int is_bold = 0, is_italic = 0;
+      const char* p;
+
+      p = strchr(font, ',');
+      if (p)
+      {
+        int len = (int)(p - font);
+        if (len > 0 && len < 100)
+        {
+          strncpy(font_family, font, len);
+          font_family[len] = 0;
+        }
+        p++;
+        while (*p)
+        {
+          while (*p == ' ') p++;
+          if (strncasecmp(p, "Bold", 4) == 0)
+          {
+            is_bold = 1;
+            p += 4;
+          }
+          else if (strncasecmp(p, "Italic", 6) == 0)
+          {
+            is_italic = 1;
+            p += 6;
+          }
+          else if (*p >= '0' && *p <= '9')
+          {
+            font_size = atoi(p);
+            while (*p >= '0' && *p <= '9') p++;
+          }
+          else
+            p++;
+        }
+      }
+      else
+      {
+        if (sscanf(font, "%99s %d", font_family, &font_size) < 2)
+          strcpy(font_family, font);
+      }
+
+      if (is_bold && is_italic)
+        strcpy(font_style_str, ":style=Bold Italic");
+      else if (is_bold)
+        strcpy(font_style_str, ":style=Bold");
+      else if (is_italic)
+        strcpy(font_style_str, ":style=Italic");
+
+      snprintf(style, sizeof(style), "DEFAULT='align=%s font=%s%s font_size=%d'",
+               align_tag, font_family, font_style_str, font_size);
+    }
+    else
+    {
+      snprintf(style, sizeof(style), "DEFAULT='align=%s'", align_tag);
+    }
+
+    elm_entry_text_style_user_pop(label);
+    elm_entry_text_style_user_push(label, style);
+  }
+
+  snprintf(markup, sizeof(markup), "<color=#%02X%02X%02X>%s</color>",
+           fg_r, fg_g, fg_b, text ? text : "");
+  elm_object_text_set(label, markup);
+
+  /* Update cell background, preserve selection highlight */
+  if (data->cell_bgs)
+  {
+    cell_bg = data->cell_bgs[idx];
+    if (cell_bg)
+    {
+      if (lin == data->selected_lin)
+        evas_object_color_set(cell_bg, data->sel_r, data->sel_g, data->sel_b, 200);
+      else
+        evas_object_color_set(cell_bg, bg_r, bg_g, bg_b, 255);
+    }
+  }
+}
+
 static void eflTableRefreshCells(Ihandle* ih)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
@@ -341,13 +470,7 @@ static void eflTableRefreshCells(Ihandle* ih)
   {
     for (col = 1; col <= num_col; col++)
     {
-      int idx = (lin - 1) * num_col + (col - 1);
-      Evas_Object* label = data->cell_labels[idx];
-      if (label)
-      {
-        char* text = eflTableGetCellText(ih, lin, col);
-        elm_object_text_set(label, text ? text : "");
-      }
+      eflTableUpdateCellLabel(ih, lin, col);
     }
   }
 }
@@ -700,135 +823,6 @@ static void eflTableDragPointerUp(void* cb_data, const Efl_Event* ev)
   else if (!is_dragging && source >= 1)
   {
     eflTableDoSort(ih, source);
-  }
-}
-
-static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
-{
-  IeflTableData* data = IEFL_TABLE_DATA(ih);
-  int num_col = ih->data->num_col;
-  int idx;
-  char* text;
-  Evas_Object* label;
-  Evas_Object* cell_bg;
-  int align;
-  const char* align_tag;
-  char markup[1024];
-  unsigned char fg_r, fg_g, fg_b;
-  unsigned char bg_r, bg_g, bg_b;
-
-  if (!data || !data->cell_labels)
-    return;
-
-  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > num_col)
-    return;
-
-  idx = (lin - 1) * num_col + (col - 1);
-  label = data->cell_labels[idx];
-
-  if (!label)
-    return;
-
-  text = eflTableGetCellText(ih, lin, col);
-
-  /* Get colors */
-  eflTableGetCellFgColor(ih, lin, col, &fg_r, &fg_g, &fg_b);
-  eflTableGetCellBgColor(ih, lin, col, &bg_r, &bg_g, &bg_b);
-
-  /* Apply alignment via style and color via markup */
-  align = eflTableGetColumnAlignment(ih, col);
-  switch (align)
-  {
-    case 1: align_tag = "right"; break;
-    case 0: align_tag = "center"; break;
-    default: align_tag = "left"; break;
-  }
-
-  /* Build and push text style with alignment and font */
-  {
-    char style[512];
-    char* font = eflTableGetCellFont(ih, lin, col);
-
-    if (font && font[0])
-    {
-      char font_family[100] = "Sans";
-      char font_style_str[50] = "";
-      int font_size = 10;
-      int is_bold = 0, is_italic = 0;
-      const char* p;
-
-      p = strchr(font, ',');
-      if (p)
-      {
-        int len = (int)(p - font);
-        if (len > 0 && len < 100)
-        {
-          strncpy(font_family, font, len);
-          font_family[len] = 0;
-        }
-        p++;
-        while (*p)
-        {
-          while (*p == ' ') p++;
-          if (strncasecmp(p, "Bold", 4) == 0)
-          {
-            is_bold = 1;
-            p += 4;
-          }
-          else if (strncasecmp(p, "Italic", 6) == 0)
-          {
-            is_italic = 1;
-            p += 6;
-          }
-          else if (*p >= '0' && *p <= '9')
-          {
-            font_size = atoi(p);
-            while (*p >= '0' && *p <= '9') p++;
-          }
-          else
-            p++;
-        }
-      }
-      else
-      {
-        if (sscanf(font, "%99s %d", font_family, &font_size) < 2)
-          strcpy(font_family, font);
-      }
-
-      if (is_bold && is_italic)
-        strcpy(font_style_str, ":style=Bold Italic");
-      else if (is_bold)
-        strcpy(font_style_str, ":style=Bold");
-      else if (is_italic)
-        strcpy(font_style_str, ":style=Italic");
-
-      snprintf(style, sizeof(style), "DEFAULT='align=%s font=%s%s font_size=%d'",
-               align_tag, font_family, font_style_str, font_size);
-    }
-    else
-    {
-      snprintf(style, sizeof(style), "DEFAULT='align=%s'", align_tag);
-    }
-
-    elm_entry_text_style_user_pop(label);
-    elm_entry_text_style_user_push(label, style);
-  }
-
-  snprintf(markup, sizeof(markup), "<color=#%02X%02X%02X>%s</color>",
-           fg_r, fg_g, fg_b, text ? text : "");
-  elm_object_text_set(label, markup);
-
-  /* Update cell background, preserve selection highlight */
-  if (data->cell_bgs)
-  {
-    cell_bg = data->cell_bgs[idx];
-    if (cell_bg)
-    {
-      if (lin == data->selected_lin)
-        evas_object_color_set(cell_bg, data->sel_r, data->sel_g, data->sel_b, 200);
-      else
-        evas_object_color_set(cell_bg, bg_r, bg_g, bg_b, 255);
-    }
   }
 }
 

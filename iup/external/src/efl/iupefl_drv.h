@@ -144,6 +144,7 @@ int iupeflSetFgColorAttrib(Ihandle* ih, const char* value);
 
 void iupeflAddToParent(Ihandle* ih);
 void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height);
+int iupeflIsInsideTabs(Ihandle* ih);
 
 /* Base widget callbacks registration (EO API) */
 void iupeflBaseAddCallbacks(Ihandle* ih, Eo* widget);

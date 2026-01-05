@@ -9,6 +9,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef HAVE_ECORE_X
+#include <Ecore_X.h>
+#endif
+
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_str.h"
@@ -809,7 +813,7 @@ static void eflGetAbsolutePosition(Ihandle* ih, int* abs_x, int* abs_y)
   *abs_y = y;
 }
 
-static int eflIsInsideTabs(Ihandle* ih)
+int iupeflIsInsideTabs(Ihandle* ih)
 {
   Ihandle* parent = ih->parent;
   while (parent)
@@ -833,7 +837,7 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
   if (!widget)
     return;
 
-  if (eflIsInsideTabs(ih))
+  if (iupeflIsInsideTabs(ih))
     return;
 
   eflGetAbsolutePosition(ih, &abs_x, &abs_y);
@@ -986,6 +990,17 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 
 IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
+#ifdef HAVE_ECORE_X
+  if (iupeflIsX11())
+  {
+    Ecore_X_Window root = ecore_x_window_root_first_get();
+    if (root)
+    {
+      ecore_x_pointer_warp(root, x, y);
+      return;
+    }
+  }
+#endif
   (void)x;
   (void)y;
 }
