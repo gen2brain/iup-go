@@ -355,9 +355,6 @@ DECLARE_INTERFACE_(ICoreWebView2Environment, IUnknown)
 #ifdef __cplusplus
 extern "C++" {
 
-template<typename T>
-const GUID& __mingw_uuidof();
-
 template<>
 inline const GUID& __mingw_uuidof<ICoreWebView2NavigationStartingEventHandler>() {
   static const GUID guid = {0x9adbe429, 0xf36d, 0x432b, {0x9d, 0xdc, 0xf8, 0x88, 0x1f, 0xbd, 0x76, 0xe3}};

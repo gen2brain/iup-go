@@ -585,7 +585,7 @@ HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2N
       }
       else
       {
-        cb(ih, "Unknown URI");
+        cb(ih, (char*)"Unknown URI");
       }
     }
   }
@@ -616,7 +616,7 @@ HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2N
       }
       else
       {
-        cb(ih, "Unknown URI");
+        cb(ih, (char*)"Unknown URI");
       }
     }
   }
@@ -974,7 +974,7 @@ static char* winWebBrowserGetHTMLAttrib(Ihandle* ih)
   if (!ih->data->webviewWindow)
     return NULL;
 
-  char* script = "document.documentElement.outerHTML;";
+  const char* script = "document.documentElement.outerHTML;";
   WCHAR* wscript = iupwinStrChar2Wide(script);
 
   char* result = NULL;
@@ -1053,17 +1053,17 @@ static char* winWebBrowserGetHTMLAttrib(Ihandle* ih)
 static char* winWebBrowserGetStatusAttrib(Ihandle* ih)
 {
   if (!ih->data->webviewWindow)
-    return "COMPLETED";
+    return (char*)"COMPLETED";
 
   switch (ih->data->loadStatus)
   {
     case WEBVIEW_STATUS_LOADING:
-      return "LOADING";
+      return (char*)"LOADING";
     case WEBVIEW_STATUS_FAILED:
-      return "FAILED";
+      return (char*)"FAILED";
     case WEBVIEW_STATUS_COMPLETED:
     default:
-      return "COMPLETED";
+      return (char*)"COMPLETED";
   }
 }
 
@@ -1837,7 +1837,7 @@ static int winWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
 static char* winWebBrowserGetDirtyAttrib(Ihandle* ih)
 {
   if (iupAttribGet(ih, "_IUPWEB_DIRTY"))
-    return "YES";
+    return (char*)"YES";
 
   char* result = winWebBrowserRunJavaScriptSync(ih, "window.iupGetDirtyFlag ? window.iupGetDirtyFlag() : false;");
   if (result)
@@ -1848,7 +1848,7 @@ static char* winWebBrowserGetDirtyAttrib(Ihandle* ih)
       iupAttribSet(ih, "_IUPWEB_DIRTY", "1");
     return iupStrReturnBoolean(dirty);
   }
-  return "NO";
+  return (char*)"NO";
 }
 
 static int winWebBrowserSetFindAttrib(Ihandle* ih, const char* value)
