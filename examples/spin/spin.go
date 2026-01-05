@@ -14,7 +14,6 @@ func main() {
 
 	text := iup.Text()
 	text.SetAttribute("VALUE", "0")
-	text.SetAttribute("SIZE", "50x")
 	text.SetAttribute("SPIN", "YES")
 	text.SetAttribute("SPINMIN", "-10")
 	text.SetAttribute("SPINMAX", "10")
@@ -25,7 +24,6 @@ func main() {
 
 	text2 := iup.Text()
 	text2.SetAttribute("VALUE", "50")
-	text2.SetAttribute("SIZE", "60x")
 	text2.SetAttribute("SPIN", "YES")
 	text2.SetAttribute("SPINMIN", "0")
 	text2.SetAttribute("SPINMAX", "100")
@@ -37,7 +35,6 @@ func main() {
 
 	text3 := iup.Text()
 	text3.SetAttribute("VALUE", "0")
-	text3.SetAttribute("SIZE", "60x")
 	text3.SetAttribute("SPIN", "YES")
 	text3.SetAttribute("SPINWRAP", "YES")
 	text3.SetAttribute("SPINMIN", "0")

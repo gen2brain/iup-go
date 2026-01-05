@@ -27,7 +27,7 @@ func main() {
 			iup.Space().SetAttribute("SIZE", "x10"),
 			iup.Frame(multibox).SetAttribute("TITLE", "MultiBox Container"),
 		).SetAttributes("MARGIN=10x10, GAP=5"),
-	).SetAttributes(`TITLE="MultiBox Example", SIZE=350x300`)
+	).SetAttributes(`TITLE="MultiBox Example", SIZE=250x200`)
 
 	iup.Show(dlg)
 	iup.MainLoop()
