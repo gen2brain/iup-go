@@ -271,6 +271,7 @@ static GtkWidget* gtkMenuItemNewWithImageSupport(void)
 
   gtk_box_pack_end(GTK_BOX(box), label, TRUE, TRUE, 0);
   gtk_container_add(GTK_CONTAINER(menu_item), box);
+  gtk_widget_show_all(box);
 
   return menu_item;
 }
