@@ -91,6 +91,36 @@ jobs:
       run: go build -tags motif
       working-directory: iup
 
+  linux-efl:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install dependencies
+      run: sudo apt-get update -y && sudo apt-get install -y libefl-all-dev
+    - name: Build
+      run: go build -tags efl
+      working-directory: iup
+
+  linux-efl-gl:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install dependencies
+      run: sudo apt-get update -y && sudo apt-get install -y libefl-all-dev libgl1-mesa-dev
+    - name: Build
+      run: go build -tags efl,gl
+      working-directory: iup
+
   linux-gtk3-gl:
     runs-on: ubuntu-latest
     steps:
@@ -121,6 +151,51 @@ jobs:
       run: go build -tags gtk4,gl
       working-directory: iup
 
+  linux-gtk3-web:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install dependencies
+      run: sudo apt-get update -y && sudo apt-get install -y libgtk-3-dev
+    - name: Build
+      run: go build -tags web
+      working-directory: iup
+
+  linux-gtk4-web:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install dependencies
+      run: sudo apt-get update -y && sudo apt-get install -y libgtk-4-dev
+    - name: Build
+      run: go build -tags gtk4,web
+      working-directory: iup
+
+  linux-qt6-web:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install dependencies
+      run: sudo apt-get update -y && sudo apt-get install -y qt6-base-dev qt6-webengine-dev
+    - name: Build
+      run: go build -tags qt,web
+      working-directory: iup
+
   macos-cocoa:
     runs-on: macos-latest
     steps:
@@ -132,6 +207,19 @@ jobs:
         go-version: stable
     - name: Build
       run: go build
+      working-directory: iup
+
+  macos-cocoa-web:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Build
+      run: go build -tags web
       working-directory: iup
 
   macos-gtk3:
@@ -190,6 +278,19 @@ jobs:
         go-version: stable
     - name: Build
       run: go build
+      working-directory: iup
+
+  windows-win32-web:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Build
+      run: go build -tags web
       working-directory: iup
 
   windows-gtk3:
