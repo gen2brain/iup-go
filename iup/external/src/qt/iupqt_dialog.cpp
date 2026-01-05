@@ -254,29 +254,6 @@ protected:
       return;
     }
 
-    /* Handle DEFAULTENTER and DEFAULTESC */
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
-    {
-      Ihandle* button_ih = IupGetAttributeHandle(iup_handle, "DEFAULTENTER");
-      if (iupObjectCheck(button_ih))
-      {
-        iupdrvActivate(button_ih);
-        event->accept();
-        return;
-      }
-    }
-    else if (event->key() == Qt::Key_Escape)
-    {
-      Ihandle* button_ih = IupGetAttributeHandle(iup_handle, "DEFAULTESC");
-      if (iupObjectCheck(button_ih))
-      {
-        iupdrvActivate(button_ih);
-        event->accept();
-        return;
-      }
-    }
-
-    /* Let key event propagate to focused widget */
     if (iupqtKeyPressEvent(this, event, iup_handle))
     {
       event->accept();
@@ -456,6 +433,21 @@ static int qtDialogGetMenuSize(Ihandle* ih)
 
 extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
+#ifdef Q_OS_MAC
+  /* On macOS, Qt uses the native global menu bar */
+  *menu = 0;
+#else
+  *menu = qtDialogGetMenuSize(ih);
+#endif
+
+  /* CUSTOMFRAME or HIDETITLEBAR means no native window decorations */
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+  {
+    *border = 0;
+    *caption = 0;
+    return;
+  }
+
   int native_border = iupAttribGetInt(ih, "_IUPQT_NATIVE_BORDER");
   int native_caption = iupAttribGetInt(ih, "_IUPQT_NATIVE_CAPTION");
 
@@ -469,23 +461,12 @@ extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption
                    iupAttribGetBoolean(ih, "RESIZE") ||
                    iupAttribGetBoolean(ih, "BORDER");
 
-#ifdef Q_OS_MAC
-  /* On macOS, Qt uses the native global menu bar */
-  *menu = 0;
-#else
-  *menu = qtDialogGetMenuSize(ih);
-#endif
-
   /* If we have cached values, prefer them to avoid race conditions during window resize.
    * Only query actual window decorations if we don't have cached values yet. */
   if (native_border > 0 && native_caption > 0)
   {
     *border = has_border ? native_border : 0;
     *caption = has_titlebar ? native_caption : 0;
-
-    if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
-      *caption = 0;
-
     return;
   }
 
@@ -520,9 +501,6 @@ extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption
           if (win_caption > 0 && win_caption < 200)
             iupAttribSetInt(ih, "_IUPQT_NATIVE_CAPTION", win_caption);
 
-          if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
-            *caption = 0;
-
           return;
         }
       }
@@ -537,9 +515,6 @@ extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption
   *caption = 0;
   if (has_titlebar)
     *caption = native_caption ? native_caption : 25;
-
-  if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
-    *caption = 0;
 }
 
 extern "C" void qtDialogUpdateSize(Ihandle* ih)
@@ -607,7 +582,7 @@ extern "C" int iupdrvDialogSetPlacement(Ihandle* ih)
     if (widget->isVisible())
       widget->setWindowState(widget->windowState() & ~(Qt::WindowMaximized | Qt::WindowMinimized | Qt::WindowFullScreen));
 
-    if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupDialogCustomFrameRestore(ih))
+    if ((iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE")) && iupDialogCustomFrameRestore(ih))
     {
       ih->data->show_state = IUP_RESTORE;
       return 1;
@@ -616,7 +591,7 @@ extern "C" int iupdrvDialogSetPlacement(Ihandle* ih)
     return 0;
   }
 
-  if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupStrEqualNoCase(placement, "MAXIMIZED"))
+  if ((iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE")) && iupStrEqualNoCase(placement, "MAXIMIZED"))
   {
     iupDialogCustomFrameMaximize(ih);
     iupAttribSet(ih, "PLACEMENT", NULL);
@@ -1160,6 +1135,13 @@ extern "C" int qtDialogMapMethod(Ihandle* ih)
     return IUP_ERROR;
 
   ih->handle = (InativeHandle*)dialog;
+
+  /* Handle CUSTOMFRAME */
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
+  {
+    dialog->setWindowFlags(dialog->windowFlags() | Qt::FramelessWindowHint);
+    iupDialogCustomFrameSimulateCheckCallbacks(ih);
+  }
 
   /* Create central widget for content */
   QWidget* central = iupqtNativeContainerNew(0);

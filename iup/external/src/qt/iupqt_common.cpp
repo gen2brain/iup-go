@@ -28,6 +28,7 @@
 #include <QString>
 #include <QColor>
 #include <QPushButton>
+#include <QAbstractButton>
 #include <QLabel>
 #include <QFont>
 #include <QCursor>
@@ -156,11 +157,21 @@ extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
-  if (widget)
+  if (!widget)
+    return;
+
+  QAbstractButton* button = qobject_cast<QAbstractButton*>(widget);
+  if (button)
   {
-    QWidget* focus_widget = widget->focusWidget();
-    if (focus_widget)
-      focus_widget->activateWindow();
+    button->click();
+    return;
+  }
+
+  QLineEdit* line_edit = qobject_cast<QLineEdit*>(widget);
+  if (line_edit)
+  {
+    emit line_edit->returnPressed();
+    return;
   }
 }
 
@@ -227,8 +238,6 @@ extern "C" void iupqtSetPosSize(QWidget* parent, QWidget* widget, int x, int y, 
 
   if (widget)
   {
-    const char* className = widget->metaObject()->className();
-
     iupqtNativeContainerMove(parent, widget, x, y);
 
     if (width > 0 && height > 0)
