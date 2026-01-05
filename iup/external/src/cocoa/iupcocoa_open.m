@@ -112,6 +112,7 @@ int iupdrvOpen(int* argc, char*** argv)
   }
 
   IupSetGlobal("DRIVER", "Cocoa");
+  IupSetGlobal("WINDOWING", "COCOA");
   IupSetGlobal("SYSTEMLANGUAGE", iupCocoaGetSystemLanguage());
 
   iupCocoaUpdateGlobalColors();

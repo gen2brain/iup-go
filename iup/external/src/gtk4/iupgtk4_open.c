@@ -153,7 +153,7 @@ static void gtkSetGlobalAttrib(void)
     IupSetGlobal("XSCREEN", (char*)(long)iupgtk4X11GetDefaultScreen(xdisplay));
     IupSetGlobal("XSERVERVENDOR", iupgtk4X11GetServerVendor(xdisplay));
     IupSetInt(NULL, "XVENDORRELEASE", iupgtk4X11GetVendorRelease(xdisplay));
-    IupSetGlobal("GDK_WINDOWING", "X11");
+    IupSetGlobal("WINDOWING", "X11");
   }
 #endif
 
@@ -162,21 +162,21 @@ static void gtkSetGlobalAttrib(void)
   {
     struct wl_display* wl_display = gdk_wayland_display_get_wl_display(display);
     IupSetGlobal("WL_DISPLAY", (char*)wl_display);
-    IupSetGlobal("GDK_WINDOWING", "WAYLAND");
+    IupSetGlobal("WINDOWING", "WAYLAND");
   }
 #endif
 
 #ifdef GDK_WINDOWING_WIN32
   if (GDK_IS_WIN32_DISPLAY(display))
   {
-    IupSetGlobal("GDK_WINDOWING", "WIN32");
+    IupSetGlobal("WINDOWING", "WIN32");
   }
 #endif
 
 #ifdef GDK_WINDOWING_MACOS
   if (GDK_IS_MACOS_DISPLAY(display))
   {
-    IupSetGlobal("GDK_WINDOWING", "MACOS");
+    IupSetGlobal("WINDOWING", "COCOA");
   }
 #endif
 }

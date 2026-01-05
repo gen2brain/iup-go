@@ -77,6 +77,7 @@ static void iupmotSetGlobalColorFromXrm(const char* resource_name, const char* r
 int iupdrvOpen(int *argc, char ***argv)
 {
   IupSetGlobal("DRIVER", "Motif");
+  IupSetGlobal("WINDOWING", "X11");
 
   setlocale(LC_ALL, "");
 
