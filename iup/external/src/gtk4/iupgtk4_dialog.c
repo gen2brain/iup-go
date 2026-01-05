@@ -281,7 +281,22 @@ int iupdrvDialogSetPlacement(Ihandle* ih)
 
     gtk_window_unmaximize((GtkWindow*)ih->handle);
     gtk_window_unminimize((GtkWindow*)ih->handle);
+
+    if (iupAttribGetBoolean(ih, "CUSTOMFRAME") && iupDialogCustomFrameRestore(ih))
+    {
+      ih->data->show_state = IUP_RESTORE;
+      return 1;
+    }
+
     return 0;
+  }
+
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME") && iupStrEqualNoCase(placement, "MAXIMIZED"))
+  {
+    iupDialogCustomFrameMaximize(ih);
+    iupAttribSet(ih, "PLACEMENT", NULL);
+    ih->data->show_state = IUP_MAXIMIZE;
+    return 1;
   }
 
   if (iupStrEqualNoCase(placement, "MINIMIZED"))
@@ -495,6 +510,12 @@ static int gtk4DialogMapMethod(Ihandle* ih)
 
   if (iupAttribGetBoolean(ih, "DIALOGHINT"))
     gtk_window_set_modal(GTK_WINDOW(ih->handle), TRUE);
+
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
+  {
+    iupDialogCustomFrameSimulateCheckCallbacks(ih);
+    iupAttribSet(ih, "HIDETITLEBAR", "Yes");
+  }
 
   if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
     gtk_window_set_decorated((GtkWindow*)ih->handle, FALSE);

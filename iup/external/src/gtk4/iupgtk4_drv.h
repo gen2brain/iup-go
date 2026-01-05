@@ -124,6 +124,7 @@ int iupgtk4X11Sync(void* xdisplay);
 int iupgtk4X11GetDefaultScreen(void* xdisplay);
 char* iupgtk4X11GetServerVendor(void* xdisplay);
 int iupgtk4X11GetVendorRelease(void* xdisplay);
+int iupgtk4X11WarpPointer(void* xdisplay, int x, int y);
 void iupgtk4X11Cleanup(void);
 #endif
 
