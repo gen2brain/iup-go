@@ -937,6 +937,8 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
         {
           iupwinTitleBarThemeColor(ih->handle);
 
+          iupwinSetGlobalColors();
+
           int dark_mode = iupwinIsSystemDarkMode();
 
           IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");

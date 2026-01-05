@@ -78,9 +78,21 @@ IUP_DRV_API void iupwinShowLastError(void)
 static void winSetGlobalColor(int index, const char* name)
 {
   COLORREF color = GetSysColor(index);
-  iupGlobalSetDefaultColorAttrib(name, (int)GetRValue(color), 
-                                       (int)GetGValue(color), 
+  iupGlobalSetDefaultColorAttrib(name, (int)GetRValue(color),
+                                       (int)GetGValue(color),
                                        (int)GetBValue(color));
+}
+
+void iupwinSetGlobalColors(void)
+{
+  winSetGlobalColor(COLOR_BTNFACE, "DLGBGCOLOR");
+  winSetGlobalColor(COLOR_BTNTEXT, "DLGFGCOLOR");
+  winSetGlobalColor(COLOR_WINDOW, "TXTBGCOLOR");
+  winSetGlobalColor(COLOR_WINDOWTEXT, "TXTFGCOLOR");
+  winSetGlobalColor(COLOR_HIGHLIGHT, "TXTHLCOLOR");
+  winSetGlobalColor(COLOR_HOTLIGHT, "LINKFGCOLOR");
+  winSetGlobalColor(COLOR_MENU, "MENUBGCOLOR");
+  winSetGlobalColor(COLOR_MENUTEXT, "MENUFGCOLOR");
 }
 
 int iupdrvOpen(int *argc, char ***argv)
@@ -126,16 +138,7 @@ int iupdrvOpen(int *argc, char ***argv)
 #endif
   IupSetGlobal("SYSTEMLANGUAGE", iupwinGetSystemLanguage());
 
-  /* default colors */
-  winSetGlobalColor(COLOR_BTNFACE, "DLGBGCOLOR");
-  winSetGlobalColor(COLOR_BTNTEXT, "DLGFGCOLOR");
-  winSetGlobalColor(COLOR_WINDOW,     "TXTBGCOLOR");
-  winSetGlobalColor(COLOR_WINDOWTEXT, "TXTFGCOLOR");
-  winSetGlobalColor(COLOR_HIGHLIGHT,  "TXTHLCOLOR");
-  winSetGlobalColor(COLOR_HOTLIGHT, "LINKFGCOLOR");
-  /* only in Windows */
-  winSetGlobalColor(COLOR_MENU, "MENUBGCOLOR");
-  winSetGlobalColor(COLOR_MENUTEXT, "MENUFGCOLOR");
+  iupwinSetGlobalColors();
 
   iupwinHandleInit();
   iupwinBrushInit();

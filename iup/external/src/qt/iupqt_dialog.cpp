@@ -270,6 +270,8 @@ protected:
     {
       if (iup_handle)
       {
+        iupqtSetGlobalColors();
+
         int dark_mode = iupqtIsSystemDarkMode();
         IFni cb = (IFni)IupGetCallback(iup_handle, "THEMECHANGED_CB");
         if (cb)

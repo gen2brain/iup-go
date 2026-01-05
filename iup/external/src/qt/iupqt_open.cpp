@@ -258,7 +258,7 @@ static void qtSetGlobalColorAttrib(const char* name, const QColor &color)
   iupGlobalSetDefaultColorAttrib(name, color.red(), color.green(), color.blue());
 }
 
-static void qtSetGlobalColors(void)
+void iupqtSetGlobalColors(void)
 {
   QWidget dialog;
   QPalette palette = dialog.palette();
@@ -497,7 +497,7 @@ extern "C" int iupdrvOpen(int *argc, char ***argv)
   IupStoreGlobal("SYSTEMLANGUAGE", locale.toUtf8().constData());
 
   qtSetGlobalAttrib();
-  qtSetGlobalColors();
+  iupqtSetGlobalColors();
   qtSetScreenInfo();
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");

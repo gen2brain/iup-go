@@ -414,6 +414,8 @@ static void gtk4DialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Iha
   if (!iupObjectCheck(ih))
     return;
 
+  iupgtk4SetGlobalColors();
+
   dark_mode = iupgtk4IsSystemDarkMode();
 
   cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");

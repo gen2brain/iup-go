@@ -266,7 +266,7 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
 }
 #pragma GCC diagnostic pop
 
-static void gtkSetGlobalColors(void)
+void iupgtk4SetGlobalColors(void)
 {
   GtkWidget* dialog = gtk_window_new();
   GtkWidget* text = gtk_entry_new();
@@ -304,7 +304,7 @@ int iupdrvOpen(int *argc, char ***argv)
     IupStoreGlobal("ARGV0", (*argv)[0]);
 
   gtkSetGlobalAttrib();
-  gtkSetGlobalColors();
+  iupgtk4SetGlobalColors();
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
 

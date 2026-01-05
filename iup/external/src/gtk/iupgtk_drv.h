@@ -106,6 +106,7 @@ int iupgtkTrayCleanup(Ihandle *ih);
 #endif
 
 int iupgtkIsSystemDarkMode(void);
+void iupgtkSetGlobalColors(void);
 
 /* table */
 void iupgtkTableDetachVirtualModels(Ihandle* dialog);

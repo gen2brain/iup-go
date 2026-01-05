@@ -609,6 +609,8 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
     if (!iupObjectCheck(ih))
     return;
 
+    iupcocoaSetGlobalColors();
+
     int dark_mode = iupcocoaIsSystemDarkMode();
 
     IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");

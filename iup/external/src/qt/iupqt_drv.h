@@ -183,6 +183,7 @@ void iupqtTrayCleanup(Ihandle *ih);
 
 /* Dark mode detection */
 int iupqtIsSystemDarkMode(void);
+void iupqtSetGlobalColors(void);
 
 /* Qt application instance (singleton) */
 QApplication* iupqtGetApplication(void);

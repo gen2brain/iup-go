@@ -615,7 +615,7 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
 }
 
-static void gtkSetGlobalColors(void)
+void iupgtkSetGlobalColors(void)
 {
   GtkWidget* dialog = gtk_offscreen_window_new();
   GtkWidget* text = gtk_entry_new();
@@ -722,7 +722,7 @@ int iupdrvOpen(int *argc, char ***argv)
 
   gtkSetGlobalAttrib();
 
-  gtkSetGlobalColors();
+  iupgtkSetGlobalColors();
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
 
