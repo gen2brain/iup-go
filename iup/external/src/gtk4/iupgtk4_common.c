@@ -25,6 +25,7 @@
 #include "iup_key.h"
 #include "iup_image.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_assert.h"
 #include "iup_dialog.h"
 #include "iup_dlglist.h"
@@ -1172,7 +1173,14 @@ IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 
 IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
-  /* Pointer warping not supported */
+#ifdef GDK_WINDOWING_X11
+  void* xdisplay = iupdrvGetDisplay();
+  if (xdisplay)
+  {
+    iupgtk4X11WarpPointer(xdisplay, x, y);
+    return;
+  }
+#endif
   (void)x;
   (void)y;
 }
@@ -1521,6 +1529,8 @@ static int (*_XSync)(Display*, int) = NULL;
 static Atom (*_XInternAtom)(Display*, const char*, int) = NULL;
 static int (*_XSetWMNormalHints)(Display*, Window, XSizeHints*) = NULL;
 static int (*_XChangeProperty)(Display*, Window, Atom, Atom, int, int, const unsigned char*, int) = NULL;
+static int (*_XWarpPointer)(Display*, Window, Window, int, int, unsigned int, unsigned int, int, int) = NULL;
+static Window (*_XRootWindow)(Display*, int) = NULL;
 
 static int x11_load_functions(void)
 {
@@ -1542,8 +1552,10 @@ static int x11_load_functions(void)
   _XInternAtom = (Atom (*)(Display*, const char*, int))dlsym(x11_lib, "XInternAtom");
   _XSetWMNormalHints = (int (*)(Display*, Window, XSizeHints*))dlsym(x11_lib, "XSetWMNormalHints");
   _XChangeProperty = (int (*)(Display*, Window, Atom, Atom, int, int, const unsigned char*, int))dlsym(x11_lib, "XChangeProperty");
+  _XWarpPointer = (int (*)(Display*, Window, Window, int, int, unsigned int, unsigned int, int, int))dlsym(x11_lib, "XWarpPointer");
+  _XRootWindow = (Window (*)(Display*, int))dlsym(x11_lib, "XRootWindow");
 
-  if (!_XDefaultScreen || !_XServerVendor || !_XVendorRelease || !_XMoveWindow || !_XSync || !_XSetWMNormalHints || !_XChangeProperty)
+  if (!_XDefaultScreen || !_XServerVendor || !_XVendorRelease || !_XMoveWindow || !_XSync || !_XSetWMNormalHints || !_XChangeProperty || !_XWarpPointer || !_XRootWindow)
   {
     dlclose(x11_lib);
     x11_lib = NULL;
@@ -1629,6 +1641,19 @@ int iupgtk4X11GetVendorRelease(void* xdisplay)
   if (!x11_load_functions())
     return 0;
   return _XVendorRelease((Display*)xdisplay);
+}
+
+int iupgtk4X11WarpPointer(void* xdisplay, int x, int y)
+{
+  int screen;
+
+  if (!x11_load_functions())
+    return 0;
+
+  screen = _XDefaultScreen((Display*)xdisplay);
+  _XWarpPointer((Display*)xdisplay, None, _XRootWindow((Display*)xdisplay, screen), 0, 0, 0, 0, x, y);
+
+  return 1;
 }
 
 void iupgtk4X11Cleanup(void)
