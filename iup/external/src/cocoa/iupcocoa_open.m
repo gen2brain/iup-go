@@ -44,7 +44,7 @@ static bool cocoaGetByteRGBAFromNSColor(NSColor* ns_color, unsigned char* red, u
   }
 }
 
-static void iupCocoaUpdateGlobalColors(void)
+void iupcocoaSetGlobalColors(void)
 {
   unsigned char r, g, b, a;
 
@@ -115,7 +115,7 @@ int iupdrvOpen(int* argc, char*** argv)
   IupSetGlobal("WINDOWING", "COCOA");
   IupSetGlobal("SYSTEMLANGUAGE", iupCocoaGetSystemLanguage());
 
-  iupCocoaUpdateGlobalColors();
+  iupcocoaSetGlobalColors();
   IupSetGlobal("_IUP_RESET_GLOBALCOLORS", "YES");
 
   /* All NSStrings in this implementation use UTF-8. */

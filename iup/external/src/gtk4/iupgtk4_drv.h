@@ -116,6 +116,7 @@ void iupgtk4CssClearWidgetStyle(GtkWidget* widget);
 void iupgtk4CssAddStaticRule(const char* selector, const char* css_rules);
 
 int iupgtk4IsSystemDarkMode(void);
+void iupgtk4SetGlobalColors(void);
 
 #ifdef GDK_WINDOWING_X11
 int iupgtk4X11MoveWindow(void* xdisplay, unsigned long xwindow, int x, int y);

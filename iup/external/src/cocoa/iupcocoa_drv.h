@@ -137,6 +137,7 @@ IUP_DRV_API void iupcocoaFocusOut(Ihandle* ih);
 
 /* System information */
 IUP_DRV_API int iupcocoaIsSystemDarkMode(void);
+void iupcocoaSetGlobalColors(void);
 
 /* Tray support */
 int iupcocoaTrayGetLastButton(void);
