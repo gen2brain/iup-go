@@ -78,12 +78,12 @@ static void iupeflDetectBackend(void)
     if (strncmp(engine, "wayland", 7) == 0)
     {
       iupefl_backend_wayland = 1;
-      IupSetGlobal("EFL_WINDOWING", "WAYLAND");
+      IupSetGlobal("WINDOWING", "WAYLAND");
     }
     else if (strstr(engine, "x11") != NULL)
     {
       iupefl_backend_x11 = 1;
-      IupSetGlobal("EFL_WINDOWING", "X11");
+      IupSetGlobal("WINDOWING", "X11");
     }
   }
 

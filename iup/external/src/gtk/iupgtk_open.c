@@ -456,7 +456,7 @@ static void gtkSetGlobalAttrib(void)
       IupSetGlobal("XSERVERVENDOR", _XServerVendor(xdisplay));
       IupSetInt(NULL, "XVENDORRELEASE", _XVendorRelease(xdisplay));
     }
-    IupSetGlobal("GDK_WINDOWING", "X11");
+    IupSetGlobal("WINDOWING", "X11");
   }
 #endif
 
@@ -465,21 +465,21 @@ static void gtkSetGlobalAttrib(void)
   {
     struct wl_display* wl_display = gdk_wayland_display_get_wl_display(display);
     IupSetGlobal("WL_DISPLAY", (char*)wl_display);
-    IupSetGlobal("GDK_WINDOWING", "WAYLAND");
+    IupSetGlobal("WINDOWING", "WAYLAND");
   }
 #endif
 
 #ifdef GDK_WINDOWING_QUARTZ
   if (GDK_IS_QUARTZ_DISPLAY(display))
   {
-    IupSetGlobal("GDK_WINDOWING", "QUARTZ");
+    IupSetGlobal("WINDOWING", "COCOA");
   }
 #endif
 
 #ifdef GDK_WINDOWING_WIN32
   if (GDK_IS_WIN32_DISPLAY(display))
   {
-    IupSetGlobal("GDK_WINDOWING", "WIN32");
+    IupSetGlobal("WINDOWING", "WIN32");
   }
 #endif
 
@@ -495,7 +495,7 @@ static void gtkSetGlobalAttrib(void)
     IupSetGlobal("XSERVERVENDOR", _XServerVendor(xdisplay));
     IupSetInt(NULL, "XVENDORRELEASE", _XVendorRelease(xdisplay));
   }
-  IupSetGlobal("GDK_WINDOWING", "X11");
+  IupSetGlobal("WINDOWING", "X11");
 #endif
 
 #endif /* GTK_CHECK_VERSION(3, 0, 0) */

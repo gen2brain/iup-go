@@ -92,6 +92,7 @@ int iupdrvOpen(int *argc, char ***argv)
     return IUP_ERROR;
 
   IupSetGlobal("DRIVER",  "Win32");
+  IupSetGlobal("WINDOWING", "WIN32");
 
   if (!iupwin_hinstance)
   {
