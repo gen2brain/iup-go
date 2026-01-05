@@ -10,7 +10,7 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
-// historyCallback displays browser history (non-Windows only)
+// historyCallback displays browser history
 func historyCallback(ih iup.Ihandle) int {
 	back := ih.GetInt("BACKCOUNT")
 	fwrd := ih.GetInt("FORWARDCOUNT")
