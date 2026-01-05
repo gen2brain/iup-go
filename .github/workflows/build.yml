@@ -91,6 +91,21 @@ jobs:
       run: go build -tags motif
       working-directory: iup
 
+  linux-motif-gl:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install dependencies
+      run: sudo apt-get update -y && sudo apt-get install -y libmotif-dev libxmu-dev libxpm-dev libgl1-mesa-dev
+    - name: Build
+      run: go build -tags motif,gl
+      working-directory: iup
+
   linux-efl:
     runs-on: ubuntu-latest
     steps:
