@@ -26,6 +26,7 @@
 #include <QDropEvent>
 #include <QApplication>
 #include <QKeyEvent>
+#include <QFocusEvent>
 #include <QStyle>
 
 #include <cstdlib>
@@ -98,8 +99,29 @@ public:
   }
 
 protected:
-  /* Internal drag-drop uses Qt's built-in QListWidget drag-drop instead.
-   * For cross-widget drag-drop, the universal system (iupqt_dragdrop.cpp) is used. */
+  void focusInEvent(QFocusEvent* event) override
+  {
+    QListWidget::focusInEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void focusOutEvent(QFocusEvent* event) override
+  {
+    QListWidget::focusOutEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void mousePressEvent(QMouseEvent* event) override
+  {
+    iupqtMouseButtonEvent(this, event, ih);
+    QListWidget::mousePressEvent(event);
+  }
+
+  void mouseReleaseEvent(QMouseEvent* event) override
+  {
+    QListWidget::mouseReleaseEvent(event);
+    iupqtMouseButtonEvent(this, event, ih);
+  }
 
   void keyPressEvent(QKeyEvent* event) override
   {
@@ -409,6 +431,30 @@ public:
   }
 
 protected:
+  void focusInEvent(QFocusEvent* event) override
+  {
+    QListView::focusInEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void focusOutEvent(QFocusEvent* event) override
+  {
+    QListView::focusOutEvent(event);
+    iupqtFocusInOutEvent(this, event, ih);
+  }
+
+  void mousePressEvent(QMouseEvent* event) override
+  {
+    iupqtMouseButtonEvent(this, event, ih);
+    QListView::mousePressEvent(event);
+  }
+
+  void mouseReleaseEvent(QMouseEvent* event) override
+  {
+    QListView::mouseReleaseEvent(event);
+    iupqtMouseButtonEvent(this, event, ih);
+  }
+
   void keyPressEvent(QKeyEvent* event) override
   {
     extern int iupqtKeyPressEvent(QWidget*, QKeyEvent*, Ihandle*);
@@ -1563,6 +1609,8 @@ static int qtListSetFontAttrib(Ihandle* ih, const char* value)
 
 static void qtListComboBoxChanged(QComboBox* combo, Ihandle* ih, int index)
 {
+  (void)combo;
+
   if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
     return;
 
@@ -1570,7 +1618,7 @@ static void qtListComboBoxChanged(QComboBox* combo, Ihandle* ih, int index)
   if (cb)
   {
     int pos = index + 1;  /* IUP starts at 1 */
-    cb(ih, (char*)combo->itemText(index).toUtf8().constData(), pos, 1);
+    iupListSingleCallActionCb(ih, cb, pos);
   }
 
   iupBaseCallValueChangedCb(ih);
@@ -1589,9 +1637,8 @@ static void qtListWidgetItemSelectionChanged(QListWidget* list, Ihandle* ih)
       IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
       if (cb)
       {
-        QListWidgetItem* item = list->item(row);
         int pos = row + 1;  /* IUP starts at 1 */
-        cb(ih, (char*)item->text().toUtf8().constData(), pos, 1);
+        iupListSingleCallActionCb(ih, cb, pos);
       }
     }
   }
@@ -1892,10 +1939,7 @@ static int qtListMapMethod(Ihandle* ih)
           int pos = indexes.first().row() + 1;  /* 1-based */
           IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
           if (cb)
-          {
-            char* text = iupListGetItemValueCb(ih, pos);
-            cb(ih, text ? text : (char*)"", pos, 1);
-          }
+            iupListSingleCallActionCb(ih, cb, pos);
           iupBaseCallValueChangedCb(ih);
         }
       });

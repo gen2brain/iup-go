@@ -319,25 +319,31 @@ protected:
 
 extern "C" void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
-  static int spin_min_width = -1;
+  /* Get the actual range for this spin */
+  int min = iupAttribGetInt(ih, "SPINMIN");
+  int max = iupAttribGetInt(ih, "SPINMAX");
+  if (max == 0) max = 100;
 
-  (void)h;
-  (void)ih;
+  /* Calculate text width needed */
+  char min_str[32], max_str[32];
+  snprintf(min_str, sizeof(min_str), "%d", min);
+  snprintf(max_str, sizeof(max_str), "%d", max);
 
-  /* Measure the minimum width required by QSpinBox */
-  if (spin_min_width < 0)
-  {
-    QSpinBox* temp_spin = new QSpinBox();
-    temp_spin->setRange(0, 100);
-    temp_spin->setSingleStep(1);
+  int min_width = iupdrvFontGetStringWidth(ih, min_str);
+  int max_width = iupdrvFontGetStringWidth(ih, max_str);
+  int text_width = (min_width > max_width) ? min_width : max_width;
+  text_width += 6;  /* cursor blinking space + margins */
 
-    QSize minHint = temp_spin->minimumSizeHint();
-    spin_min_width = minHint.width();
+  /* Button width calculation matching Qt's style */
+  int button_width = h * 8 / 5;
+  if (button_width < 16) button_width = 16;
 
-    delete temp_spin;
-  }
+  /* Frame width (typically 2 pixels per side) */
+  int frame_width = 4;
 
-  /* Only enforce minimum width, don't force expansion */
+  /* Total minimum width = text area + buttons + frame */
+  int spin_min_width = text_width + button_width + frame_width;
+
   if (*w < spin_min_width)
     *w = spin_min_width;
 }
@@ -354,19 +360,19 @@ static void iupqtTextMeasureEntryBorders(void)
   {
     QLineEdit* temp_entry = new QLineEdit();
     temp_entry->setFrame(true);
-    temp_entry->setText("WWWWWWWWWW");  /* 10 W characters */
 
-    QSize entry_size = temp_entry->sizeHint();
-
+    /* Use minimumSizeHint which IS content-dependent (uses fm.maxWidth())
+       Same pattern as Button: get widget size, subtract content, get borders */
+    QSize min_hint = temp_entry->minimumSizeHint();
     QFontMetrics fm(temp_entry->font());
-    int text_width = fm.horizontalAdvance("WWWWWWWWWW");
-    int text_height = fm.height();
 
-    /* Border = entry size - text size */
-    iupqt_entry_border_x = entry_size.width() - text_width;
-    iupqt_entry_border_y = entry_size.height() - text_height;
+    /* minimumSizeHint uses fm.maxWidth() for width and fm.height() for height */
+    int char_width = fm.maxWidth();
+    int char_height = fm.height();
 
-    /* Ensure minimum reasonable border */
+    iupqt_entry_border_x = min_hint.width() - char_width;
+    iupqt_entry_border_y = min_hint.height() - char_height;
+
     if (iupqt_entry_border_x < 6) iupqt_entry_border_x = 6;
     if (iupqt_entry_border_y < 6) iupqt_entry_border_y = 6;
 
@@ -1557,6 +1563,9 @@ static int qtTextMapMethod(Ihandle* ih)
     spin->setRange(min, max);
     spin->setSingleStep(inc);
 
+    /* Set wrapping mode */
+    spin->setWrapping(iupAttribGetBoolean(ih, "SPINWRAP"));
+
     /* Set initial value */
     const char* spinvalue = iupAttribGetStr(ih, "SPINVALUE");
     if (spinvalue)
@@ -1566,6 +1575,11 @@ static int qtTextMapMethod(Ihandle* ih)
     QObject::connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), [ih, spin](int value) {
       iupAttribSetInt(ih, "SPINVALUE", value);
       qtTextValueChanged(ih);
+
+      /* Call SPIN_CB callback */
+      IFni spin_cb = (IFni)IupGetCallback(ih, "SPIN_CB");
+      if (spin_cb)
+        spin_cb(ih, value);
     });
 
     widget = spin;
@@ -1573,9 +1587,6 @@ static int qtTextMapMethod(Ihandle* ih)
   else
   {
     IupQtLineEdit* edit = new IupQtLineEdit(ih);
-
-    /* Set explicit text margins */
-    edit->setTextMargins(2, 2, 2, 2);
 
     /* Connect signals */
     QObject::connect(edit, &QLineEdit::textChanged, [ih]() {

@@ -358,14 +358,14 @@ protected:
     }
 
     /* Draw thumb (circle) with border */
-    QColor thumb_draw_color = thumb_color;
+    QColor thumb_border = border_color.lighter(110);
     if (is_hovered && isEnabled())
     {
-      /* Use system Light color for hover indication */
-      thumb_draw_color = pal.color(QPalette::Active, QPalette::Light);
+      /* Highlight border on hover */
+      thumb_border = track_color.lighter(130);
     }
-    painter.setBrush(thumb_draw_color);
-    painter.setPen(QPen(border_color.lighter(110), 1));
+    painter.setBrush(thumb_color);
+    painter.setPen(QPen(thumb_border, is_hovered ? 2 : 1));
     painter.drawEllipse(thumb_x, thumb_y, THUMB_SIZE, THUMB_SIZE);
   }
 };
