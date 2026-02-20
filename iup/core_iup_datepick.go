@@ -1,4 +1,4 @@
-//go:build (!windows && !qt) || ((windows || darwin) && (gtk || gtk4)) || motif
+//go:build (!windows && !qt) || ((windows || darwin) && (gtk || gtk4)) || motif || winui
 
 package iup
 

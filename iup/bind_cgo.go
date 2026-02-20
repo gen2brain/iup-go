@@ -46,7 +46,7 @@ package iup
 #cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_ICONV
 
 #cgo windows CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
-#cgo windows,!gtk,!gtk4,!qt CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
+#cgo windows,!gtk,!gtk4,!qt,!winui CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
 #cgo windows LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 #cgo windows,gl LDFLAGS: -lopengl32
 
@@ -55,6 +55,10 @@ package iup
 
 #cgo windows,gtk4 CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
 #cgo windows,gtk4,!nopkgconfig pkg-config: gtk4
+
+#cgo winui CFLAGS: -Iexternal/src/winui -DIUP_USE_WINUI -DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0A00 -DNTDDI_VERSION=0x0A000000
+#cgo winui CXXFLAGS: -Iexternal/src/winui -DIUP_USE_WINUI -D_WIN32_WINNT=0x0A00 -DNTDDI_VERSION=0x0A000000 -DUNICODE -D_UNICODE -std=c++20 -stdlib=libc++
+#cgo winui LDFLAGS: -lwindowsapp -lruntimeobject -ld2d1 -ld3d11 -ldxgi -ldwrite -lole32 -loleaut32 -luuid -luser32 -lshell32 -l:libc++.a -l:libc++abi.a
 
 #cgo darwin CFLAGS: -Iexternal/src/cocoa -x objective-c
 #cgo darwin LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications
