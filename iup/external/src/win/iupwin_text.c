@@ -1251,23 +1251,28 @@ static int winTextSetScrollToAttrib(Ihandle* ih, const char* value)
     iupStrToIntInt(value, &lin, &col, ',');
     if (lin < 1) lin = 1;
     if (col < 1) col = 1;
+
+    lin--;  /* return to Windows referece */
+    col--;
+
+    winTextScrollTo(ih, lin, col);
   }
   else
   {
     iupStrToInt(value, &col);
     if (col < 1) col = 1;
+    col--;
+
+    winTextSetSelection(ih, col, col);
+    SendMessage(ih->handle, EM_SCROLLCARET, 0L, 0L);
   }
 
-  lin--;  /* return to Windows referece */
-  col--;
-
-  winTextScrollTo(ih, lin, col);
   return 0;
 }
 
 static int winTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 {
-  int lin, col, pos = 0;
+  int pos = 0;
 
   if (!value)
     return 0;
@@ -1275,12 +1280,21 @@ static int winTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
 
-  iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
+  if (ih->data->is_multiline)
+  {
+    int lin, col;
+    iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
 
-  lin--;  /* return to Windows referece */
-  col--;
+    lin--;  /* return to Windows referece */
+    col--;
 
-  winTextScrollTo(ih, lin, col);
+    winTextScrollTo(ih, lin, col);
+  }
+  else
+  {
+    winTextSetSelection(ih, pos, pos);
+    SendMessage(ih->handle, EM_SCROLLCARET, 0L, 0L);
+  }
 
   return 0;
 }
