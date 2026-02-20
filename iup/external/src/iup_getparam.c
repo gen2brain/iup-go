@@ -1416,9 +1416,9 @@ static void iParamStrCopyLine(char* line, const char* format)
   line[i+1] = 0;
 }
 
-static char* iParamStrGetType(const char* format)
+static const char* iParamStrGetType(const char* format)
 {
-  char* type = strchr(format, '%');
+  const char* type = strchr(format, '%');
   while (type && *(type+1)=='%')
     type = strchr(type+2, '%');
   return type;
@@ -1427,8 +1427,8 @@ static char* iParamStrGetType(const char* format)
 /* Used in IupLua */
 IUP_SDK_API char iupGetParamType(const char* format, int *line_size)
 {
-  char* type = iParamStrGetType(format);
-  char* line_end = strchr(format, '\n');
+  const char* type = iParamStrGetType(format);
+  const char* line_end = strchr(format, '\n');
   if (line_end)
     *line_size = (int)(line_end-format) + 1;  /* include line separator */
   if (type)
@@ -1465,7 +1465,8 @@ static int iParamCreateMethod(Ihandle* param, void** params)
 {
   const char* format = NULL;
   char line[4096];
-  char* line_ptr = &line[0], *title, *type, *tip, *extra, *mask;
+  char* line_ptr = &line[0], *title, *tip, *extra, *mask;
+  const char* type;
   int count;
 
   if (params && params[0])
