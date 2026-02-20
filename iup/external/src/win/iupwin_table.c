@@ -5,6 +5,7 @@
  */
 
 #include <windows.h>
+#include <windowsx.h>
 #include <commctrl.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -63,6 +64,13 @@ typedef struct _IwinTableData {
 
   /* Suppress callbacks during programmatic changes */
   int suppress_callbacks;
+
+  /* Column reorder drag state */
+  int drag_source_col;
+  int drag_target_col;
+  BOOL is_dragging;
+  int drag_start_x;
+  int drag_start_y;
 } IwinTableData;
 
 #define IWIN_TABLE_DATA(ih) ((IwinTableData*)(ih->data->native_data))
@@ -97,6 +105,56 @@ static void winTableSetCell(char** cell, const char* value)
     *cell = NULL;
 }
 
+static void winTableAutoSizeColumns(Ihandle* ih)
+{
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+  HWND list_view = winTableGetListView(ih);
+
+  if (!data || !list_view)
+    return;
+
+  int num_col = ih->data->num_col;
+
+  HDC hdc = GetDC(list_view);
+  HFONT hFont = (HFONT)SendMessage(list_view, WM_GETFONT, 0, 0);
+  HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+
+  for (int i = 0; i < num_col; i++)
+  {
+    if (data->col_width_set[i])
+      continue;
+
+    ListView_SetColumnWidth(list_view, i + 1, LVSCW_AUTOSIZE_USEHEADER);
+    int header_width = ListView_GetColumnWidth(list_view, i + 1);
+
+    int title_width = 50;
+    if (data->col_titles[i])
+    {
+      SIZE size;
+      if (GetTextExtentPoint32A(hdc, data->col_titles[i], strlen(data->col_titles[i]), &size))
+        title_width = size.cx + 20;
+    }
+
+    int auto_width = (header_width > title_width) ? header_width : title_width;
+
+    if (auto_width < 50)
+    {
+      if (auto_width < 30)
+        auto_width = 30;
+    }
+    else if (auto_width < 80)
+    {
+      auto_width = 80;
+    }
+
+    ListView_SetColumnWidth(list_view, i + 1, auto_width);
+    data->col_widths[i] = auto_width;
+  }
+
+  SelectObject(hdc, hOldFont);
+  ReleaseDC(list_view, hdc);
+}
+
 static void winTableAdjustColumnWidths(Ihandle* ih)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
@@ -106,134 +164,36 @@ static void winTableAdjustColumnWidths(Ihandle* ih)
     return;
 
   int num_col = ih->data->num_col;
+  if (num_col <= 0)
+    return;
+
   int last_col_idx = num_col - 1;
 
-  HDC hdc = GetDC(list_view);
-  HFONT hFont = (HFONT)SendMessage(list_view, WM_GETFONT, 0, 0);
-  HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-
-  /* Auto-size columns that don't have explicit width (skip last column) */
-  for (int i = 0; i < num_col - 1; i++)
+  for (int i = 0; i < num_col; i++)
   {
-    if (!data->col_width_set[i])
-    {
-      /* Try auto-size based on header and content */
-      ListView_SetColumnWidth(list_view, i + 1, LVSCW_AUTOSIZE_USEHEADER);
-      int header_width = ListView_GetColumnWidth(list_view, i + 1);
-
-      /* Also calculate based on title text if available */
-      int title_width = 50;  /* Minimum width */
-      if (data->col_titles[i])
-      {
-        SIZE size;
-        if (GetTextExtentPoint32A(hdc, data->col_titles[i], strlen(data->col_titles[i]), &size))
-        {
-          title_width = size.cx + 20;  /* Add padding for sort arrow, margins */
-        }
-      }
-
-      /* Use the larger of the two, with a reasonable minimum */
-      int auto_width = (header_width > title_width) ? header_width : title_width;
-
-      /* Only enforce minimum if column is reasonably wide already */
-      if (auto_width < 50)
-      {
-        /* Very short column - use natural width with small padding */
-        if (auto_width < 30)
-          auto_width = 30;
-      }
-      else if (auto_width < 80)
-      {
-        /* Medium column - enforce reasonable minimum */
-        auto_width = 80;
-      }
-
-      ListView_SetColumnWidth(list_view, i + 1, auto_width);
-      data->col_widths[i] = auto_width;
-    }
-    else
-    {
-      /* Use explicit width */
+    if (data->col_width_set[i])
       ListView_SetColumnWidth(list_view, i + 1, data->col_widths[i]);
-    }
-  }
-
-  SelectObject(hdc, hOldFont);
-  ReleaseDC(list_view, hdc);
-
-  /* Handle last column, stretch to fill remaining space */
-  RECT rect;
-  GetClientRect(list_view, &rect);
-  int list_width = rect.right - rect.left;
-
-  /* Calculate total width of all columns except last */
-  int used_width = 0;
-  for (int i = 0; i < last_col_idx; i++)
-    used_width += data->col_widths[i];
-
-  /* Handle last column */
-  int last_col_width;
-
-  if (!data->col_width_set[last_col_idx])
-  {
-    /* Auto-size to get content width */
-    ListView_SetColumnWidth(list_view, num_col, LVSCW_AUTOSIZE_USEHEADER);
-    int auto_width = ListView_GetColumnWidth(list_view, num_col);
-
-    /* Also try LVSCW_AUTOSIZE (content only, no header) */
-    ListView_SetColumnWidth(list_view, num_col, LVSCW_AUTOSIZE);
-    int content_width = ListView_GetColumnWidth(list_view, num_col);
-
-    /* Use the smaller of the two */
-    auto_width = (content_width < auto_width) ? content_width : auto_width;
-
-    /* Calculate based on title text too */
-    if (data->col_titles[last_col_idx])
-    {
-      HDC hdc2 = GetDC(list_view);
-      HFONT hFont2 = (HFONT)SendMessage(list_view, WM_GETFONT, 0, 0);
-      HFONT hOldFont2 = (HFONT)SelectObject(hdc2, hFont2);
-      SIZE size;
-      if (GetTextExtentPoint32A(hdc2, data->col_titles[last_col_idx], strlen(data->col_titles[last_col_idx]), &size))
-      {
-        int title_width = size.cx + 20;
-        if (title_width > auto_width)
-          auto_width = title_width;
-      }
-      SelectObject(hdc2, hOldFont2);
-      ReleaseDC(list_view, hdc2);
-    }
-
-    if (ih->data->stretch_last)
-    {
-      /* Stretching enabled, apply minimum width and stretch to fill */
-      if (auto_width < 50)
-      {
-        if (auto_width < 30)
-          auto_width = 30;
-      }
-      else if (auto_width < 80)
-      {
-        auto_width = 80;
-      }
-
-      int remaining = list_width - used_width;
-      last_col_width = (remaining > auto_width) ? remaining : auto_width;
-    }
     else
-    {
-      /* No stretching, use auto width as-is (like other columns) */
-      last_col_width = auto_width;
-    }
-  }
-  else
-  {
-    /* Explicit width set, use it */
-    last_col_width = data->col_widths[last_col_idx];
+      data->col_widths[i] = ListView_GetColumnWidth(list_view, i + 1);
   }
 
-  ListView_SetColumnWidth(list_view, num_col, last_col_width);
-  data->col_widths[last_col_idx] = last_col_width;
+  if (ih->data->stretch_last && !data->col_width_set[last_col_idx])
+  {
+    RECT rect;
+    GetClientRect(list_view, &rect);
+    int list_width = rect.right - rect.left;
+
+    int used_width = 0;
+    for (int i = 0; i < last_col_idx; i++)
+      used_width += data->col_widths[i];
+
+    int remaining = list_width - used_width;
+    if (remaining > data->col_widths[last_col_idx])
+    {
+      ListView_SetColumnWidth(list_view, num_col, remaining);
+      data->col_widths[last_col_idx] = remaining;
+    }
+  }
 }
 
 /****************************************************************************
@@ -391,6 +351,327 @@ static void winTableSort(Ihandle* ih, int col)
       InvalidateRect(list_view, NULL, TRUE);
     }
   }
+}
+
+/****************************************************************************
+ * Column Reorder
+ ****************************************************************************/
+
+static void winTableSwapAttrib(Ihandle* ih, const char* name1, const char* name2)
+{
+  char* val1 = iupAttribGet(ih, name1);
+  char* val2 = iupAttribGet(ih, name2);
+  char* temp = val1 ? iupStrDup(val1) : NULL;
+
+  if (val2)
+    iupAttribSetStr(ih, name1, val2);
+  else
+    iupAttribSet(ih, name1, NULL);
+
+  if (temp)
+  {
+    iupAttribSetStr(ih, name2, temp);
+    free(temp);
+  }
+  else
+    iupAttribSet(ih, name2, NULL);
+}
+
+static void winTableSwapColumns(Ihandle* ih, int col1, int col2)
+{
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+  if (!data)
+    return;
+
+  int idx1 = col1 - 1;
+  int idx2 = col2 - 1;
+  int num_lin = ih->data->num_lin;
+  char name1[50], name2[50];
+
+  HWND list_view = winTableGetListView(ih);
+  if (list_view)
+  {
+    data->col_widths[idx1] = ListView_GetColumnWidth(list_view, col1);
+    data->col_widths[idx2] = ListView_GetColumnWidth(list_view, col2);
+  }
+
+  int tw = data->col_widths[idx1];
+  data->col_widths[idx1] = data->col_widths[idx2];
+  data->col_widths[idx2] = tw;
+
+  BOOL ts = data->col_width_set[idx1];
+  data->col_width_set[idx1] = data->col_width_set[idx2];
+  data->col_width_set[idx2] = ts;
+
+  char* tt = data->col_titles[idx1];
+  data->col_titles[idx1] = data->col_titles[idx2];
+  data->col_titles[idx2] = tt;
+
+  if (data->cell_values)
+  {
+    for (int lin = 0; lin < num_lin; lin++)
+    {
+      if (data->cell_values[lin])
+      {
+        char* tv = data->cell_values[lin][idx1];
+        data->cell_values[lin][idx1] = data->cell_values[lin][idx2];
+        data->cell_values[lin][idx2] = tv;
+      }
+    }
+  }
+
+  sprintf(name1, "ALIGNMENT%d", col1);
+  sprintf(name2, "ALIGNMENT%d", col2);
+  winTableSwapAttrib(ih, name1, name2);
+
+  sprintf(name1, "0:%d", col1);
+  sprintf(name2, "0:%d", col2);
+  winTableSwapAttrib(ih, name1, name2);
+
+  sprintf(name1, "BGCOLOR0:%d", col1);
+  sprintf(name2, "BGCOLOR0:%d", col2);
+  winTableSwapAttrib(ih, name1, name2);
+
+  sprintf(name1, "FGCOLOR0:%d", col1);
+  sprintf(name2, "FGCOLOR0:%d", col2);
+  winTableSwapAttrib(ih, name1, name2);
+
+  sprintf(name1, "FONT0:%d", col1);
+  sprintf(name2, "FONT0:%d", col2);
+  winTableSwapAttrib(ih, name1, name2);
+
+  for (int lin = 1; lin <= num_lin; lin++)
+  {
+    sprintf(name1, "CELLVALUE%d:%d", lin, col1);
+    sprintf(name2, "CELLVALUE%d:%d", lin, col2);
+    winTableSwapAttrib(ih, name1, name2);
+
+    sprintf(name1, "BGCOLOR%d:%d", lin, col1);
+    sprintf(name2, "BGCOLOR%d:%d", lin, col2);
+    winTableSwapAttrib(ih, name1, name2);
+
+    sprintf(name1, "FGCOLOR%d:%d", lin, col1);
+    sprintf(name2, "FGCOLOR%d:%d", lin, col2);
+    winTableSwapAttrib(ih, name1, name2);
+
+    sprintf(name1, "FONT%d:%d", lin, col1);
+    sprintf(name2, "FONT%d:%d", lin, col2);
+    winTableSwapAttrib(ih, name1, name2);
+  }
+
+  if (data->sort_column == col1)
+    data->sort_column = col2;
+  else if (data->sort_column == col2)
+    data->sort_column = col1;
+
+  if (data->current_col == col1)
+    data->current_col = col2;
+  else if (data->current_col == col2)
+    data->current_col = col1;
+}
+
+static void winTableRefreshAfterReorder(Ihandle* ih)
+{
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+  HWND list_view = winTableGetListView(ih);
+  if (!data || !list_view)
+    return;
+
+  for (int i = 0; i < ih->data->num_col; i++)
+  {
+    LVCOLUMN lvc;
+    ZeroMemory(&lvc, sizeof(LVCOLUMN));
+    lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
+    lvc.pszText = iupwinStrToSystem(data->col_titles[i] ? data->col_titles[i] : "");
+    lvc.cx = data->col_widths[i];
+
+    char name[50];
+    sprintf(name, "ALIGNMENT%d", i + 1);
+    char* align_str = iupAttribGet(ih, name);
+    if (align_str)
+    {
+      if (iupStrEqualNoCase(align_str, "ARIGHT") || iupStrEqualNoCase(align_str, "RIGHT"))
+        lvc.fmt = LVCFMT_RIGHT;
+      else if (iupStrEqualNoCase(align_str, "ACENTER") || iupStrEqualNoCase(align_str, "CENTER"))
+        lvc.fmt = LVCFMT_CENTER;
+      else
+        lvc.fmt = LVCFMT_LEFT;
+    }
+    else
+      lvc.fmt = LVCFMT_LEFT;
+
+    ListView_SetColumn(list_view, i + 1, &lvc);
+  }
+
+  if (data->sort_column > 0)
+    winTableUpdateSortArrow(ih, data->sort_column);
+
+  char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
+  if (!iupStrBoolean(virtualmode) && data->cell_values)
+  {
+    for (int r = 0; r < ih->data->num_lin; r++)
+    {
+      for (int c = 0; c < ih->data->num_col; c++)
+      {
+        LVITEM item;
+        ZeroMemory(&item, sizeof(LVITEM));
+        item.mask = LVIF_TEXT;
+        item.iItem = r;
+        item.iSubItem = c + 1;
+        item.pszText = iupwinStrToSystem(data->cell_values[r][c] ? data->cell_values[r][c] : "");
+        ListView_SetItem(list_view, &item);
+      }
+    }
+  }
+
+  InvalidateRect(list_view, NULL, TRUE);
+}
+
+static int winTableFindTargetColumn(Ihandle* ih, HWND header, int x)
+{
+  int num_col = ih->data->num_col;
+
+  for (int i = 1; i <= num_col; i++)
+  {
+    RECT rc;
+    Header_GetItemRect(header, i, &rc);
+    int mid_x = (rc.left + rc.right) / 2;
+    if (x < mid_x)
+      return i;
+  }
+
+  return num_col;
+}
+
+static LRESULT CALLBACK winTableHeaderWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+  Ihandle* ih = (Ihandle*)dwRefData;
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+
+  if (!data)
+    return DefSubclassProc(hwnd, msg, wp, lp);
+
+  switch (msg)
+  {
+    case WM_LBUTTONDOWN:
+    {
+      if (!ih->data->allow_reorder)
+        break;
+
+      int x = GET_X_LPARAM(lp);
+      int y = GET_Y_LPARAM(lp);
+
+      HDHITTESTINFO ht;
+      ht.pt.x = x;
+      ht.pt.y = y;
+      int hit = (int)SendMessage(hwnd, HDM_HITTEST, 0, (LPARAM)&ht);
+
+      if (hit >= 0 && ht.iItem > 0)
+      {
+        if (ih->data->user_resize && (ht.flags & (HHT_ONDIVIDER | HHT_ONDIVOPEN)))
+          break;
+        data->drag_source_col = ht.iItem;
+        data->drag_target_col = ht.iItem;
+        data->drag_start_x = x;
+        data->drag_start_y = y;
+        data->is_dragging = FALSE;
+        SetCapture(hwnd);
+        return 0;
+      }
+      break;
+    }
+
+    case WM_MOUSEMOVE:
+    {
+      if (data->drag_source_col == 0)
+        break;
+
+      int x = GET_X_LPARAM(lp);
+      int y = GET_Y_LPARAM(lp);
+
+      if (!data->is_dragging)
+      {
+        int dx = x - data->drag_start_x;
+        int dy = y - data->drag_start_y;
+        if (dx * dx + dy * dy < 25)
+          return 0;
+        data->is_dragging = TRUE;
+      }
+
+      int target = winTableFindTargetColumn(ih, hwnd, x);
+      if (target >= 1 && target != data->drag_target_col)
+      {
+        data->drag_target_col = target;
+        InvalidateRect(hwnd, NULL, FALSE);
+      }
+      return 0;
+    }
+
+    case WM_LBUTTONUP:
+    {
+      if (data->drag_source_col == 0)
+        break;
+
+      ReleaseCapture();
+
+      int source = data->drag_source_col;
+      int target = data->drag_target_col;
+      BOOL was_dragging = data->is_dragging;
+
+      data->drag_source_col = 0;
+      data->drag_target_col = 0;
+      data->is_dragging = FALSE;
+
+      InvalidateRect(hwnd, NULL, TRUE);
+
+      if (was_dragging && source != target && source >= 1 && target >= 1)
+      {
+        winTableSwapColumns(ih, source, target);
+        winTableRefreshAfterReorder(ih);
+      }
+      else if (!was_dragging && source >= 1)
+      {
+        if (ih->data->sortable)
+          winTableSort(ih, source);
+      }
+      return 0;
+    }
+
+    case WM_PAINT:
+    {
+      if (data->is_dragging && data->drag_source_col != data->drag_target_col)
+      {
+        LRESULT lr = DefSubclassProc(hwnd, msg, wp, lp);
+
+        int target = data->drag_target_col;
+        int source = data->drag_source_col;
+        RECT rc;
+        Header_GetItemRect(hwnd, target, &rc);
+
+        HDC hdc = GetDC(hwnd);
+        HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 120, 215));
+        HPEN old_pen = (HPEN)SelectObject(hdc, pen);
+
+        int indicator_x = (source < target) ? rc.right : rc.left;
+
+        MoveToEx(hdc, indicator_x, rc.top, NULL);
+        LineTo(hdc, indicator_x, rc.bottom);
+
+        SelectObject(hdc, old_pen);
+        DeleteObject(pen);
+        ReleaseDC(hwnd, hdc);
+
+        return lr;
+      }
+      break;
+    }
+
+    case WM_NCDESTROY:
+      RemoveWindowSubclass(hwnd, winTableHeaderWndProc, uIdSubclass);
+      break;
+  }
+
+  return DefSubclassProc(hwnd, msg, wp, lp);
 }
 
 /****************************************************************************
@@ -1212,26 +1493,10 @@ static int winTableSetSortableAttrib(Ihandle* ih, const char* value)
 
 static int winTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
 {
-  HWND list_view = winTableGetListView(ih);
-
   if (iupStrBoolean(value))
     ih->data->allow_reorder = 1;
   else
     ih->data->allow_reorder = 0;
-
-  if (list_view)
-  {
-    HWND header = ListView_GetHeader(list_view);
-    if (header)
-    {
-      DWORD style = GetWindowLong(header, GWL_STYLE);
-      if (ih->data->allow_reorder)
-        style |= HDS_DRAGDROP;
-      else
-        style &= ~HDS_DRAGDROP;
-      SetWindowLong(header, GWL_STYLE, style);
-    }
-  }
 
   return 0;
 }
@@ -1331,54 +1596,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
   if (!data)
     return 0;
-
-  /* Check if this notification is from the header control */
-  HWND header = ListView_GetHeader(data->list_view);
-  if (nmhdr->hwndFrom == header)
-  {
-    /* Handle header notifications */
-    switch (nmhdr->code)
-    {
-      case HDN_BEGINDRAG:
-      {
-        LPNMHEADER pnmh = (LPNMHEADER)msg_info;
-
-        /* Never allow dragging the dummy column at index 0 */
-        if (pnmh->iItem == 0)
-        {
-          *result = TRUE;  /* Cancel drag */
-          return 1;
-        }
-
-        /* Header column drag started, allow if ALLOWREORDER=YES */
-        if (ih->data->allow_reorder)
-        {
-          *result = FALSE;  /* Allow drag */
-          return 1;
-        }
-        else
-        {
-          *result = TRUE;  /* Cancel drag */
-          return 1;
-        }
-      }
-
-      case HDN_ENDDRAG:
-      {
-        /* Header column drag ended, allow auto-reorder */
-        if (ih->data->allow_reorder)
-        {
-          *result = FALSE;  /* Allow automatic reorder */
-          return 1;
-        }
-        else
-        {
-          *result = TRUE;  /* Cancel reorder */
-          return 1;
-        }
-      }
-    }
-  }
 
   /* Handle ListView notifications */
   switch (nmhdr->code)
@@ -1784,11 +2001,9 @@ static void winTableEndEdit(Ihandle* ih, BOOL save)
 
     /* Call VALUECHANGED_CB only if text actually changed */
     int text_changed = 0;
-    if (!old_text && buffer && *buffer)
+    if (!old_text && *buffer)
       text_changed = 1;  /* NULL → non-empty */
-    else if (old_text && !buffer)
-      text_changed = 1;  /* non-empty → NULL */
-    else if (old_text && buffer && strcmp(old_text, buffer) != 0)
+    else if (old_text && strcmp(old_text, buffer) != 0)
       text_changed = 1;  /* different text */
 
     if (text_changed)
@@ -2135,68 +2350,6 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
   /* Retrieve the control previous procedure for subclassing */
   oldProc = (WNDPROC)IupGetCallback(ih, "_IUPWIN_LISTVIEWOLDPROC_CB");
 
-  /* Handle WM_NOTIFY from header control */
-  if (msg == WM_NOTIFY)
-  {
-    NMHDR* nmhdr = (NMHDR*)lp;
-    IwinTableData* data = IWIN_TABLE_DATA(ih);
-
-    if (data)
-    {
-      HWND header = ListView_GetHeader(data->list_view);
-
-      /* Check if notification is from header control */
-      if (nmhdr->hwndFrom == header)
-      {
-        switch (nmhdr->code)
-        {
-          case HDN_BEGINDRAG:
-          {
-            LPNMHEADER pnmh = (LPNMHEADER)lp;
-
-            /* Never allow dragging the dummy column at index 0 */
-            if (pnmh->iItem == 0)
-              return TRUE;  /* Cancel drag */
-
-            /* Allow or block drag based on ALLOWREORDER attribute */
-            return ih->data->allow_reorder ? FALSE : TRUE;
-          }
-
-          case HDN_ENDDRAG:
-          {
-            /* Allow or block reorder based on ALLOWREORDER attribute */
-            if (!ih->data->allow_reorder)
-              return TRUE;
-
-            /* Let Windows handle the header reorder */
-            CallWindowProc(oldProc, hwnd, msg, wp, lp);
-
-            /* Now synchronize the ListView column order with the header */
-            int num_col = ih->data->num_col;
-            if (num_col > 0)
-            {
-              /* Order array must include dummy column at index 0 */
-              int total_cols = num_col + 1;
-              int* order = (int*)malloc(total_cols * sizeof(int));
-              if (order)
-              {
-                /* Get the new header order (includes dummy + real columns) */
-                Header_GetOrderArray(header, total_cols, order);
-
-                /* Apply it to the ListView columns */
-                ListView_SetColumnOrderArray(data->list_view, total_cols, order);
-
-                free(order);
-              }
-            }
-
-            return FALSE;
-          }
-        }
-      }
-    }
-  }
-
   /* Handle focus changes to redraw FOCUSRECT */
   if (msg == WM_SETFOCUS || msg == WM_KILLFOCUS)
   {
@@ -2338,6 +2491,8 @@ static int winTableMapMethod(Ihandle* ih)
   HWND header = ListView_GetHeader(data->list_view);
   if (header)
   {
+    SetWindowSubclass(header, winTableHeaderWndProc, 0, (DWORD_PTR)ih);
+
     /* Apply user_resize state (default is 0 = disabled) */
     if (!ih->data->user_resize)
     {
@@ -2461,14 +2616,13 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
     /* Only adjust if width is reasonable (> 100px) */
     if (width > 100)
     {
-      /* Adjust column widths based on actual ListView size */
+      if (!was_visible)
+        winTableAutoSizeColumns(ih);
+
       winTableAdjustColumnWidths(ih);
 
-      /* Show ListView after first proper layout to avoid resize flicker */
       if (!was_visible)
-      {
         ShowWindow(list_view, SW_SHOW);
-      }
     }
   }
 }
