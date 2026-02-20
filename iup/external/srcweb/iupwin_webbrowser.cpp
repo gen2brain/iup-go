@@ -30,9 +30,36 @@
 
 #include "iupwin_webbrowser.h"
 
-extern "C" {
-  IUP_DRV_API WCHAR* iupwinStrChar2Wide(const char* str);
-  IUP_DRV_API char* iupwinStrWide2Char(const WCHAR* wstr);
+static WCHAR* iupwinStrChar2Wide(const char* str)
+{
+  if (str)
+  {
+    int len = (int)strlen(str);
+    WCHAR* wstr = (WCHAR*)malloc((len + 1) * sizeof(WCHAR));
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, str, len, wstr, len);
+    if (wlen < 0)
+      wlen = 0;
+    wstr[wlen] = 0;
+    return wstr;
+  }
+
+  return NULL;
+}
+
+static char* iupwinStrWide2Char(const WCHAR* wstr)
+{
+  if (wstr)
+  {
+    int len = (int)wcslen(wstr);
+    char* str = (char*)malloc((3 * len + 1) * sizeof(char));
+    int clen = WideCharToMultiByte(CP_UTF8, 0, wstr, len, str, 3 * len, NULL, NULL);
+    if (clen < 0)
+      clen = 0;
+    str[clen] = 0;
+    return str;
+  }
+
+  return NULL;
 }
 
 #ifndef __IID_DEFINED__
@@ -307,7 +334,7 @@ struct _IcontrolData
 
 static LRESULT CALLBACK WebBrowserWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-  Ihandle* ih = (Ihandle*)GetProp(hwnd, "IUP_WEBBROWSER_IH");
+  Ihandle* ih = (Ihandle*)GetProp(hwnd, TEXT("IUP_WEBBROWSER_IH"));
 
   if (msg == WM_SIZE)
   {
@@ -343,7 +370,7 @@ public:
   EventHandler(Ihandle* handle) : refCount(1), ih(handle) {}
   virtual ~EventHandler() {}
 
-  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) noexcept override
   {
     if (riid == IID_IUnknown || riid == __mingw_uuidof<T>())
     {
@@ -355,12 +382,12 @@ public:
     return E_NOINTERFACE;
   }
 
-  ULONG STDMETHODCALLTYPE AddRef() override
+  ULONG STDMETHODCALLTYPE AddRef() noexcept override
   {
     return InterlockedIncrement(&refCount);
   }
 
-  ULONG STDMETHODCALLTYPE Release() override
+  ULONG STDMETHODCALLTYPE Release() noexcept override
   {
     ULONG count = InterlockedDecrement(&refCount);
     if (count == 0)
@@ -409,7 +436,7 @@ class NavigationStartingHandler : public EventHandler<ICoreWebView2NavigationSta
 public:
   NavigationStartingHandler(Ihandle* handle) : EventHandler(handle) {}
 
-  HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NavigationStartingEventArgs* args) override
+  HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NavigationStartingEventArgs* args) noexcept override
   {
     iupAttribSet(ih, "_IUPWEB_FAILED", NULL);
     ih->data->loadStatus = WEBVIEW_STATUS_LOADING;
@@ -442,7 +469,7 @@ class NavigationCompletedHandler : public EventHandler<ICoreWebView2NavigationCo
 public:
   NavigationCompletedHandler(Ihandle* handle) : EventHandler(handle) {}
 
-  HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NavigationCompletedEventArgs* args) override;
+  HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NavigationCompletedEventArgs* args) noexcept override;
 };
 
 class NewWindowHandler : public EventHandler<ICoreWebView2NewWindowRequestedEventHandler>
@@ -450,7 +477,7 @@ class NewWindowHandler : public EventHandler<ICoreWebView2NewWindowRequestedEven
 public:
   NewWindowHandler(Ihandle* handle) : EventHandler(handle) {}
 
-  HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NewWindowRequestedEventArgs* args) override
+  HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NewWindowRequestedEventArgs* args) noexcept override
   {
     IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
     if (cb)
@@ -475,7 +502,7 @@ class HistoryChangedHandler : public EventHandler<ICoreWebView2HistoryChangedEve
 public:
   HistoryChangedHandler(Ihandle* handle) : EventHandler(handle) {}
 
-  HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, IUnknown* args) override;
+  HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, IUnknown* args) noexcept override;
 };
 
 class WebMessageReceivedHandler : public EventHandler<ICoreWebView2WebMessageReceivedEventHandler>
@@ -483,7 +510,7 @@ class WebMessageReceivedHandler : public EventHandler<ICoreWebView2WebMessageRec
 public:
   WebMessageReceivedHandler(Ihandle* handle) : EventHandler(handle) {}
 
-  HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2WebMessageReceivedEventArgs* args) override
+  HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2WebMessageReceivedEventArgs* args) noexcept override
   {
     LPWSTR message = NULL;
     args->TryGetWebMessageAsString(&message);
@@ -516,7 +543,7 @@ private:
 public:
   CreateWebViewHandler(Ihandle* handle, HWND window) : EventHandler(handle), hwnd(window) {}
 
-  HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Controller* controller) override;
+  HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Controller* controller) noexcept override;
 };
 
 class CreateEnvironmentHandler : public EventHandler<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>
@@ -527,7 +554,7 @@ private:
 public:
   CreateEnvironmentHandler(Ihandle* handle, HWND window) : EventHandler(handle), hwnd(window) {}
 
-  HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Environment* env) override
+  HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Environment* env) noexcept override
   {
     if (FAILED(result))
     {
@@ -561,7 +588,7 @@ static void winWebBrowserUpdateHistory(Ihandle* ih)
   iupAttribSet(ih, "CANGOFORWARD", canGoForward ? "YES" : "NO");
 }
 
-HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2NavigationCompletedEventArgs* args)
+HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2NavigationCompletedEventArgs* args) noexcept
 {
   BOOL success = FALSE;
   args->get_IsSuccess(&success);
@@ -630,7 +657,7 @@ HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2N
   return S_OK;
 }
 
-HRESULT HistoryChangedHandler::Invoke(ICoreWebView2* sender, IUnknown* args)
+HRESULT HistoryChangedHandler::Invoke(ICoreWebView2* sender, IUnknown* args) noexcept
 {
   (void)sender;
   (void)args;
@@ -638,7 +665,7 @@ HRESULT HistoryChangedHandler::Invoke(ICoreWebView2* sender, IUnknown* args)
   return S_OK;
 }
 
-HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* controller)
+HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* controller) noexcept
 {
   if (FAILED(result))
   {
@@ -989,7 +1016,7 @@ static char* winWebBrowserGetHTMLAttrib(Ihandle* ih)
   public:
     GetHTMLHandler(Ihandle* handle, char** res, int* comp) : EventHandler(handle), result(res), complete(comp) {}
 
-    HRESULT STDMETHODCALLTYPE Invoke(HRESULT errorCode, LPCWSTR resultObjectAsJson) override
+    HRESULT STDMETHODCALLTYPE Invoke(HRESULT errorCode, LPCWSTR resultObjectAsJson) noexcept override
     {
       if (SUCCEEDED(errorCode) && resultObjectAsJson)
       {
@@ -1175,7 +1202,7 @@ private:
 public:
   ExecuteScriptHandler(Ihandle* handle, char** res, int* comp) : EventHandler(handle), result(res), complete(comp) {}
 
-  HRESULT STDMETHODCALLTYPE Invoke(HRESULT errorCode, LPCWSTR resultObjectAsJson) override
+  HRESULT STDMETHODCALLTYPE Invoke(HRESULT errorCode, LPCWSTR resultObjectAsJson) noexcept override
   {
     if (SUCCEEDED(errorCode) && resultObjectAsJson)
     {
@@ -1891,7 +1918,7 @@ static int winWebBrowserMapMethod(Ihandle* ih)
   if (!parent)
     return IUP_ERROR;
 
-  HWND hwnd = CreateWindowEx(0, "STATIC", "",
+  HWND hwnd = CreateWindowEx(0, TEXT("STATIC"), TEXT(""),
                               WS_CHILD | WS_VISIBLE,
                               ih->x, ih->y, ih->currentwidth, ih->currentheight,
                               parent, NULL, (HINSTANCE)GetModuleHandle(NULL), NULL);
@@ -1901,7 +1928,7 @@ static int winWebBrowserMapMethod(Ihandle* ih)
 
   ih->handle = hwnd;
 
-  SetProp(hwnd, "IUP_WEBBROWSER_IH", (HANDLE)ih);
+  SetProp(hwnd, TEXT("IUP_WEBBROWSER_IH"), (HANDLE)ih);
   ih->data->oldWndProc = (WNDPROC)SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WebBrowserWndProc);
 
   HRESULT hr = IupWebView2LoaderInit();
@@ -1993,7 +2020,7 @@ static void winWebBrowserUnMapMethod(Ihandle* ih)
       SetWindowLongPtr((HWND)ih->handle, GWLP_WNDPROC, (LONG_PTR)ih->data->oldWndProc);
       ih->data->oldWndProc = NULL;
     }
-    RemoveProp((HWND)ih->handle, "IUP_WEBBROWSER_IH");
+    RemoveProp((HWND)ih->handle, TEXT("IUP_WEBBROWSER_IH"));
     DestroyWindow((HWND)ih->handle);
     ih->handle = NULL;
   }
