@@ -3206,6 +3206,20 @@ void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHandle *itemSrc
   /* Update cache */
   count = dst->data->node_count - old_count;
   iupTreeCopyMoveCache(dst, id_dst, id_new, count, 1);
+
+  {
+    GListStore *store;
+    IupGtk4TreeNode *new_node;
+
+    if (dst_parent)
+      store = dst_parent->children;
+    else
+      store = (GListStore*)iupAttribGet(dst, "_IUPGTK4_ROOT_STORE");
+
+    new_node = g_list_model_get_item(G_LIST_MODEL(store), position);
+    iupgtk4TreeRebuildNodeCache(dst, id_new, new_node);
+    g_object_unref(new_node);
+  }
 }
 
 /*****************************************************************************/
