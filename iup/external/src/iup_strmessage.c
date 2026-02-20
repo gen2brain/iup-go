@@ -114,14 +114,12 @@ static void iupSetLngAtt(const char* first, ...)
 
 #include "iup_lng_english.h"
 #include "iup_lng_portuguese.h"
-#include "iup_lng_portuguese_utf8.h"
 #include "iup_lng_spanish.h"
-#include "iup_lng_spanish_utf8.h"
 #ifdef IUP_CZECH
-#include "iup_lng_czech_utf8.h"
+#include "iup_lng_czech.h"
 #endif
 #ifdef IUP_RUSSIAN
-#include "iup_lng_russian_utf8.h"
+#include "iup_lng_russian.h"
 #endif
 
 static void iStrMessageRegisterInternal(const char* language)
@@ -134,31 +132,22 @@ static void iStrMessageRegisterInternal(const char* language)
   }
   else if (iupStrEqualNoCase(language, "PORTUGUESE"))
   {
-    if (IupGetInt(NULL, "UTF8MODE"))
-      lng = iup_load_lng_portuguese_utf8();
-    else
-      lng = iup_load_lng_portuguese();
+    lng = iup_load_lng_portuguese();
   }
   else if (iupStrEqualNoCase(language, "SPANISH"))
   {
-    if (IupGetInt(NULL, "UTF8MODE"))
-      lng = iup_load_lng_spanish_utf8();
-    else
-      lng = iup_load_lng_spanish();
+    lng = iup_load_lng_spanish();
   }
-  /* To add a custom language */
 #ifdef IUP_CZECH
   else if (iupStrEqualNoCase(language, "CZECH"))
   {
-    if (IupGetInt(NULL, "UTF8MODE"))
-      lng = iup_load_lng_czech_utf8();
+    lng = iup_load_lng_czech();
   }
 #endif
 #ifdef IUP_RUSSIAN
   else if (iupStrEqualNoCase(language, "RUSSIAN"))
   {
-    if (IupGetInt(NULL, "UTF8MODE"))
-      lng = iup_load_lng_russian_utf8();
+    lng = iup_load_lng_russian();
   }
 #endif
 
@@ -177,31 +166,3 @@ void iupStrMessageUpdateLanguage(const char* language)
 
   iupRegisterUpdateClasses();
 }
-
-#if 0
-void iupSaveLanguagePack(const char* filename)
-{
-  char *name, *value;
-  int utf8mode = IupGetInt(NULL, "UTF8MODE");
-  char* lng = IupGetLanguage();
-
-  FILE* file = fopen(filename, "wb");
-
-  fprintf(file, "%s%s = user[\n", lng, utf8mode? "_UTF8": "");
-
-  name = iupTableFirst(istrmessage_table);
-  while (name)
-  {
-    value = (char*)iupTableGetCurr(istrmessage_table);
-
-    fprintf(file, "  %s = \"%s\",\n", name, value);
-
-    name = iupTableNext(istrmessage_table);
-  }
-
-  fprintf(file, "NULL = NULL\n");
-  fprintf(file, "]()\n");
-
-  fclose(file);
-}
-#endif

@@ -1,7 +1,7 @@
-/* This file is in UTF-8 encoding with no BOM */
-static Ihandle* iup_load_lng_russian_utf8(void)
+/* This file is in UTF-8 encoding */
+static Ihandle* iup_load_lng_russian(void)
 {
-  return IupSetAtt( "russian_utf8", IupUser(), 
+  return IupSetAtt( "RUSSIAN", IupUser(),
     "IUP_APPLY", "Применить", 
     "IUP_ATTENTION", "Внимание!", 
     "IUP_BLUE", "&Синий:", 

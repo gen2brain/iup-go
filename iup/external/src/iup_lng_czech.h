@@ -1,7 +1,7 @@
-/* This file is in UTF-8 encoding with no BOM */
-static Ihandle* iup_load_lng_czech_utf8(void)
+/* This file is in UTF-8 encoding */
+static Ihandle* iup_load_lng_czech(void)
 {
-  return IupSetAtt( "czech_utf8", IupUser(), 
+  return IupSetAtt( "CZECH", IupUser(),
     "IUP_APPLY", "Použít", 
     "IUP_ATTENTION", "Upozornění!", 
     "IUP_BLUE", "&Modrá:", 
