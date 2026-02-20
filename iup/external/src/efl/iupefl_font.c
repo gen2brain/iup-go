@@ -252,24 +252,6 @@ int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-char* iupdrvGetFontAttrib(Ihandle* ih)
-{
-  IeflFont* font = eflFontGet(ih);
-  char* str;
-
-  if (!font || !font->font_name)
-    return NULL;
-
-  str = iupStrGetMemory(200);
-  sprintf(str, "%s, %s%s%d",
-          font->font_name,
-          font->is_bold ? "Bold " : "",
-          font->is_italic ? "Italic " : "",
-          font->size);
-
-  return str;
-}
-
 void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
   IeflFont* font = eflFontGet(ih);
