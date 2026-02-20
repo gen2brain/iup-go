@@ -158,8 +158,18 @@ static void eflCalendarUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-void iupdrvCalendarInitClass(Iclass* ic)
+Iclass* iupCalendarNewClass(void)
 {
+  Iclass* ic = iupClassNew(NULL);
+
+  ic->name = "calendar";
+  ic->cons = "Calendar";
+  ic->format = NULL;
+  ic->nativetype = IUP_TYPECONTROL;
+  ic->childtype = IUP_CHILDNONE;
+  ic->is_interactive = 1;
+
+  ic->New = iupCalendarNewClass;
   ic->Map = eflCalendarMapMethod;
   ic->UnMap = eflCalendarUnMapMethod;
   ic->ComputeNaturalSize = eflCalendarComputeNaturalSizeMethod;
@@ -175,22 +185,6 @@ void iupdrvCalendarInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "VALUE", eflCalendarGetValueAttrib, eflCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", eflCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-}
-
-Iclass* iupCalendarNewClass(void)
-{
-  Iclass* ic = iupClassNew(NULL);
-
-  ic->name = "calendar";
-  ic->cons = "Calendar";
-  ic->format = NULL;
-  ic->nativetype = IUP_TYPECONTROL;
-  ic->childtype = IUP_CHILDNONE;
-  ic->is_interactive = 1;
-
-  ic->New = iupCalendarNewClass;
-
-  iupdrvCalendarInitClass(ic);
 
   return ic;
 }
