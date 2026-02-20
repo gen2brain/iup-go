@@ -1073,9 +1073,7 @@ static void iMatrixExDestroyMethod(Ihandle* ih)
 
 #include "iup_lng_english_matrix.h"
 #include "iup_lng_portuguese_matrix.h"
-#include "iup_lng_portuguese_matrix_utf8.h"
 #include "iup_lng_spanish_matrix.h"
-#include "iup_lng_spanish_matrix_utf8.h"
 
 static void iMatrixExSetClassUpdate(Iclass* ic)
 {
@@ -1089,17 +1087,11 @@ static void iMatrixExSetClassUpdate(Iclass* ic)
   }
   else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "PORTUGUESE"))
   {
-    if (IupGetInt(NULL, "UTF8MODE"))
-      lng = iup_load_lng_portuguese_matrix_utf8();
-    else
-      lng = iup_load_lng_portuguese_matrix();
+    lng = iup_load_lng_portuguese_matrix();
   }
   else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "SPANISH"))
   {
-    if (IupGetInt(NULL, "UTF8MODE"))
-      lng = iup_load_lng_spanish_matrix_utf8();
-    else
-      lng = iup_load_lng_spanish_matrix();
+    lng = iup_load_lng_spanish_matrix();
   }
 
   if (lng)

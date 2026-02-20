@@ -1,5 +1,5 @@
-/* This file is in ISO8859-1 encoding */
-static Ihandle* iup_load_lng_portuguese (void)
+/* This file is in UTF-8 encoding */
+static Ihandle* iup_load_lng_portuguese(void)
 {
   return IupSetAtt( "PORTUGUESE", IupUser(), 
     "IUP_APPLY", "Aplicar", 
