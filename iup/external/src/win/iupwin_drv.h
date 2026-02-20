@@ -30,6 +30,7 @@ void iupwinSetGlobalColors(void);
 /* focus */
 void iupwinWmSetFocus(Ihandle *ih);
 int iupwinGetKeyBoardCues(void);
+void iupwinBringWindowToForeground(HWND hwnd);
 
 /* key */
 int iupwinKeyEvent(Ihandle* ih, int wincode, int press);

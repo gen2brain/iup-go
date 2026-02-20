@@ -151,6 +151,9 @@ void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 
   ShowWindow(ih->handle, visible? ih->data->cmd_show: SW_HIDE);
+
+  if (visible)
+    iupwinBringWindowToForeground(ih->handle);
 }
 
 void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
@@ -1751,7 +1754,12 @@ static char* winDialogGetMinimizedAttrib(Ihandle *ih)
 static int winDialogSetBringFrontAttrib(Ihandle *ih, const char *value)
 {
   if (iupStrBoolean(value))
-    SetForegroundWindow(ih->handle);
+  {
+    if (IsIconic(ih->handle))
+      ShowWindow(ih->handle, SW_RESTORE);
+
+    iupwinBringWindowToForeground(ih->handle);
+  }
   return 0;
 }
 

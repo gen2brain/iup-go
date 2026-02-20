@@ -50,6 +50,25 @@ int iupwinGetKeyBoardCues(void)
     return 0;
 }
 
+void iupwinBringWindowToForeground(HWND hwnd)
+{
+  if (!hwnd)
+    return;
+
+  if (GetForegroundWindow() != hwnd)
+  {
+    INPUT inputs[2] = {0};
+    inputs[0].type = INPUT_KEYBOARD;
+    inputs[0].ki.wVk = VK_MENU;
+    inputs[1].type = INPUT_KEYBOARD;
+    inputs[1].ki.wVk = VK_MENU;
+    inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+    SendInput(2, inputs, sizeof(INPUT));
+
+    SetForegroundWindow(hwnd);
+  }
+}
+
 void iupdrvSetFocus(Ihandle *ih)
 {
   SetFocus(ih->handle);
