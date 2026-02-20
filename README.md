@@ -3,9 +3,9 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/iup-go.svg)](https://pkg.go.dev/github.com/gen2brain/iup-go/iup)
 
 Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
-Library provides system native UI controls for Windows (Win32), macOS (Cocoa), and Linux (GTK, Qt, EFL, and Motif).
+IUP-Go provides system native UI controls for Windows (Win32 and WinUI), macOS (Cocoa), and Linux (GTK, Qt, EFL, and Motif).
 
-C source code is included and compiled together with bindings.
+C/C++ source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
 
 ### Requirements
@@ -14,13 +14,14 @@ Go 1.21 is the minimum required version.
 
 #### Windows
 
-On Windows, you need a C compiler, like [Mingw-w64](https://mingw-w64.org) or [TDM-GCC](http://tdm-gcc.tdragon.net/).
-You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
-
 * To remove a console window, i.e., compile a GUI app with WinMain entry-point, build with `-ldflags "-H=windowsgui"`.
 * You can add an icon resource to an .exe file with the [rsrc](https://github.com/akavel/rsrc) tool.
 * Windows manifest is included in the build by default. See below how to disable the manifest if you want to include your own.
 
+##### Win32
+
+For Win32, you need a C compiler, like [MinGW-w64](https://mingw-w64.org) or [TDM-GCC](http://tdm-gcc.tdragon.net/).
+You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
 
 * For MSYS2, install `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config`.
 * You can build for Qt, with the `qt` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-base`.
@@ -29,12 +30,25 @@ You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
 
 [<img src="examples/sample/sample_win32.png" width="700"/>](examples/sample/sample_win32.png)
 
+##### WinUI
+
+For WinUI 3, you need a Clang C++ compiler.
+
+The easiest method is to install [MSYS2](https://msys2.github.io/) and to start a `MSYS2/CLANG64` session,
+then install `pacman -S mingw-w64-clang-x86_64-go mingw-w64-clang-x86_64-clang` in that session.
+
+You can also use [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw).
+
+The requirement is to have `Microsoft.WindowsAppRuntime.Bootstrap.dll` and `resources.pri` files next to the `.exe` file.
+You can find those files in `Microsoft.WindowsAppSDK` that you can install with `NuGet`.
+
+[<img src="examples/sample/sample_winui.png" width="700"/>](examples/sample/sample_winui.png)
+
 #### macOS
 
 On macOS, you need Command Line Tools for Xcode (if you have `brew`, you already have this).
 
-* To create an `.app` bundle or `.dmg` image, check this [gist](https://gist.github.com/mholt/11008646c95d787c30806d3f24b2c844).
-
+To create an `.app` bundle or `.dmg` image, check this [gist](https://gist.github.com/mholt/11008646c95d787c30806d3f24b2c844).
 
 * You can build for Qt, with the `qt` build tag. Install deps with `brew install qt`.
 * You can build for GTK3, with the `gtk` build tag. Install deps with `brew install gtk+3`.
@@ -44,7 +58,7 @@ On macOS, you need Command Line Tools for Xcode (if you have `brew`, you already
 
 #### Linux
 
-On Linux, you need a C compiler and development packages for GTK or Qt.
+On Linux, you need a C/C++ compiler and development packages for GTK or Qt.
 
 ##### GTK
 
@@ -163,7 +177,7 @@ You can also use the `IdleFunc` and `Timer`.
 
 ### Cross-compile (Linux)
 
-To cross-compile for Windows, install [MinGW](https://www.mingw-w64.org/) toolchain.
+To cross-compile for Win32, install [MinGW](https://www.mingw-w64.org/) toolchain.
 
 ```
 $ CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc GOOS=windows GOARCH=amd64 go build -ldflags "-s -w"
@@ -173,6 +187,14 @@ alarm.exe: PE32+ executable (console) x86-64, for MS Windows
 $ CGO_ENABLED=1 CC=i686-w64-mingw32-gcc GOOS=windows GOARCH=386 go build -ldflags "-s -w"
 $ file alarm.exe
 alarm.exe: PE32 executable (console) Intel 80386, for MS Windows
+```
+
+To cross-compile for WinUI, install [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw) toolchain.
+
+```
+$ CGO_ENABLED=1 CC=x86_64-w64-mingw32-clang CXX=x86_64-w64-mingw32-clang++ GOOS=windows GOARCH=amd64 go build -tags winui -ldflags "-s -w"
+$ file alarm.exe
+alarm.exe: PE32+ executable (console) x86-64, for MS Windows, 7 sections
 ```
 
 To cross-compile for macOS, install [OSXCross](https://github.com/tpoechtrager/osxcross) toolchain.
