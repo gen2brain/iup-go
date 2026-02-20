@@ -301,6 +301,19 @@ func main() {
 	dlg := iup.Dialog(vbox1).SetAttributes(`TITLE="Sample", MENU=menu, ICON=img3`)
 	dlg.SetHandle("dlg")
 
+	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(ih iup.Ihandle, darkMode int) int {
+		if iup.GetGlobal("DRIVER") != "Win32" {
+			if darkMode == 1 {
+				table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
+				table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
+			} else {
+				table.SetAttribute("EVENROWCOLOR", "#F0F0F0")
+				table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
+			}
+		}
+		return iup.DEFAULT
+	}))
+
 	iup.Show(dlg)
 
 	initTreeAttributes()
