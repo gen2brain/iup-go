@@ -32,12 +32,87 @@
 
 static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY";
 
+@interface IupCocoaButtonCell : NSButtonCell
+{
+  CGFloat _horizPadding;
+  CGFloat _vertPadding;
+  BOOL _hasUserPadding;
+}
+- (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert;
+- (BOOL)hasUserPadding;
+@end
+
+@implementation IupCocoaButtonCell
+
+- (instancetype)initTextCell:(NSString *)string
+{
+  self = [super initTextCell:string];
+  if (self)
+  {
+    _horizPadding = 0;
+    _vertPadding = 0;
+    _hasUserPadding = NO;
+  }
+  return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+  self = [super initWithCoder:coder];
+  if (self)
+  {
+    _horizPadding = 0;
+    _vertPadding = 0;
+    _hasUserPadding = NO;
+  }
+  return self;
+}
+
+- (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert
+{
+  _horizPadding = horiz;
+  _vertPadding = vert;
+  _hasUserPadding = YES;
+}
+
+- (BOOL)hasUserPadding
+{
+  return _hasUserPadding;
+}
+
+- (NSRect)drawingRectForBounds:(NSRect)rect
+{
+  if (!_hasUserPadding)
+    return [super drawingRectForBounds:rect];
+
+  NSRect drawingRect = [super drawingRectForBounds:rect];
+
+  CGFloat currentInsetX = drawingRect.origin.x - rect.origin.x;
+  CGFloat adjustmentX = _horizPadding - currentInsetX;
+  drawingRect.origin.x += adjustmentX;
+  drawingRect.size.width -= (2.0 * adjustmentX);
+
+  CGFloat currentInsetY = drawingRect.origin.y - rect.origin.y;
+  CGFloat adjustmentY = _vertPadding - currentInsetY;
+  drawingRect.origin.y += adjustmentY;
+  drawingRect.size.height -= (2.0 * adjustmentY);
+
+  return drawingRect;
+}
+
+@end
+
 @interface IupCocoaFlatButton : NSButton
 @property (nonatomic, assign) BOOL isFlat;
 @property (nonatomic, assign) BOOL isHovering;
 @end
 
 @implementation IupCocoaFlatButton
+
++ (Class)cellClass
+{
+  return [IupCocoaButtonCell class];
+}
 
 - (void)updateTrackingAreas
 {
@@ -324,6 +399,10 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 }
 @end
 
+static int text_border_x = -1, text_border_y = -1;
+static int image_border_x = -1, image_border_y = -1;
+static int image_text_border_x = -1, image_text_border_y = -1;
+
 static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, int img_position, int *border_x, int *border_y)
 {
   NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
@@ -412,14 +491,11 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
 
 void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
-  static int text_border_x = -1, text_border_y = -1;
-  static int image_border_x = -1, image_border_y = -1;
-  static int image_text_border_x = -1, image_text_border_y = -1;
-
   int border_x = 0, border_y = 0;
   int has_image = 0;
   int has_text = 0;
   int has_bgcolor = 0;
+  int has_user_padding = 0;
   int img_position = IUP_IMGPOS_LEFT;
 
   if (ih)
@@ -431,39 +507,48 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     has_text = (title != NULL && *title != 0);
     has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
     img_position = ih->data->img_position;
+
+    int horiz_padding = 0, vert_padding = 0;
+    char* padding = IupGetAttribute(ih, "PADDING");
+    if (padding)
+      iupStrToIntInt(padding, &horiz_padding, &vert_padding, 'x');
+    has_user_padding = (horiz_padding > 0 || vert_padding > 0);
   }
 
-  if (has_bgcolor)
+  if (!has_user_padding)
   {
-    if (text_border_x == -1)
-      cocoaButtonMeasureBorders(ih, 0, 1, IUP_IMGPOS_LEFT, &text_border_x, &text_border_y);
+    if (has_bgcolor)
+    {
+      if (text_border_x == -1)
+        cocoaButtonMeasureBorders(ih, 0, 1, IUP_IMGPOS_LEFT, &text_border_x, &text_border_y);
 
-    border_x = text_border_x;
-    border_y = text_border_y;
-  }
-  else if (has_image && has_text)
-  {
-    if (image_text_border_x == -1)
-      cocoaButtonMeasureBorders(ih, 1, 1, img_position, &image_text_border_x, &image_text_border_y);
+      border_x = text_border_x;
+      border_y = text_border_y;
+    }
+    else if (has_image && has_text)
+    {
+      if (image_text_border_x == -1)
+        cocoaButtonMeasureBorders(ih, 1, 1, img_position, &image_text_border_x, &image_text_border_y);
 
-    border_x = image_text_border_x;
-    border_y = image_text_border_y;
-  }
-  else if (has_image)
-  {
-    if (image_border_x == -1)
-      cocoaButtonMeasureBorders(ih, 1, 0, IUP_IMGPOS_LEFT, &image_border_x, &image_border_y);
+      border_x = image_text_border_x;
+      border_y = image_text_border_y;
+    }
+    else if (has_image)
+    {
+      if (image_border_x == -1)
+        cocoaButtonMeasureBorders(ih, 1, 0, IUP_IMGPOS_LEFT, &image_border_x, &image_border_y);
 
-    border_x = image_border_x;
-    border_y = image_border_y;
-  }
-  else
-  {
-    if (text_border_x == -1)
-      cocoaButtonMeasureBorders(ih, 0, 1, IUP_IMGPOS_LEFT, &text_border_x, &text_border_y);
+      border_x = image_border_x;
+      border_y = image_border_y;
+    }
+    else
+    {
+      if (text_border_x == -1)
+        cocoaButtonMeasureBorders(ih, 0, 1, IUP_IMGPOS_LEFT, &text_border_x, &text_border_y);
 
-    border_x = text_border_x;
-    border_y = text_border_y;
+      border_x = text_border_x;
+      border_y = text_border_y;
+    }
   }
 
   *x += border_x;
@@ -613,8 +698,6 @@ static char* cocoaButtonGetAlignmentAttrib(Ihandle* ih)
 
 static int cocoaButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 {
-  NSButton* the_button = ih->handle;
-
   if (iupStrEqual(value, "DEFAULTBUTTONPADDING"))
     value = IupGetGlobal("DEFAULTBUTTONPADDING");
 
@@ -622,24 +705,12 @@ static int cocoaButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    /* Apply content insets if available (macOS 11.0+) */
-    if ([the_button respondsToSelector:@selector(setContentInsets:)])
-    {
-      NSEdgeInsets insets = NSEdgeInsetsMake(
-        ih->data->vert_padding,
-        ih->data->horiz_padding,
-        ih->data->vert_padding,
-        ih->data->horiz_padding
-      );
+    NSButton* the_button = ih->handle;
+    IupCocoaButtonCell* cell = (IupCocoaButtonCell*)[the_button cell];
+    if (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0)
+      [cell setIupPaddingHoriz:ih->data->horiz_padding vert:ih->data->vert_padding];
 
-      NSMethodSignature *signature = [NSButton instanceMethodSignatureForSelector:@selector(setContentInsets:)];
-      NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
-      [invocation setSelector:@selector(setContentInsets:)];
-      [invocation setTarget:the_button];
-      [invocation setArgument:&insets atIndex:2];
-      [invocation invoke];
-    }
-
+    [the_button setNeedsDisplay:YES];
     IupRefresh(ih);
     return 0;
   }
@@ -921,23 +992,10 @@ static int cocoaButtonMapMethod(Ihandle* ih)
   [the_button setFont:[NSFont systemFontOfSize:0]];
   [[the_button cell] setLineBreakMode:NSLineBreakByClipping];
 
-  /* Apply initial padding if set and API is available */
-  if ((ih->data->horiz_padding != 0 || ih->data->vert_padding != 0) &&
-      [the_button respondsToSelector:@selector(setContentInsets:)])
+  if (ih->data->horiz_padding != 0 || ih->data->vert_padding != 0)
   {
-    NSEdgeInsets insets = NSEdgeInsetsMake(
-      ih->data->vert_padding,
-      ih->data->horiz_padding,
-      ih->data->vert_padding,
-      ih->data->horiz_padding
-    );
-
-    NSMethodSignature *signature = [NSButton instanceMethodSignatureForSelector:@selector(setContentInsets:)];
-    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
-    [invocation setSelector:@selector(setContentInsets:)];
-    [invocation setTarget:the_button];
-    [invocation setArgument:&insets atIndex:2];
-    [invocation invoke];
+    IupCocoaButtonCell* cell = (IupCocoaButtonCell*)[the_button cell];
+    [cell setIupPaddingHoriz:ih->data->horiz_padding vert:ih->data->vert_padding];
   }
 
   ih->handle = the_button;
