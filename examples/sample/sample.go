@@ -298,7 +298,7 @@ func main() {
 		).SetAttribute("GAP", "5"),
 	).SetAttributes("MARGIN=5x5, GAP=5").SetHandle("vbox1")
 
-	dlg := iup.Dialog(vbox1).SetAttributes(`TITLE="Sample", MENU=menu, ICON=img3`)
+	dlg := iup.Dialog(vbox1).SetAttributes(`TITLE="Sample", MENU=menu, ICON=img1`)
 	dlg.SetHandle("dlg")
 
 	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(ih iup.Ihandle, darkMode int) int {
