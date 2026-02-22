@@ -1861,6 +1861,15 @@ static int qtListMapMethod(Ihandle* ih)
       }
     });
 
+    QObject::connect(list, &QListWidget::itemActivated, [list, ih](QListWidgetItem* item) {
+      IFnis cb = (IFnis)IupGetCallback(ih, "DBLCLICK_CB");
+      if (cb)
+      {
+        int pos = list->row(item) + 1;
+        iupListSingleCallDblClickCb(ih, cb, pos);
+      }
+    });
+
     /* Use custom delegate to normalize item heights across platforms. The delegate also handles images. */
     IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
     list->setItemDelegate(delegate);
@@ -1939,6 +1948,15 @@ static int qtListMapMethod(Ihandle* ih)
           iupBaseCallValueChangedCb(ih);
         }
       });
+
+    QObject::connect(view, &QListView::activated, [ih](const QModelIndex& index) {
+      IFnis cb = (IFnis)IupGetCallback(ih, "DBLCLICK_CB");
+      if (cb)
+      {
+        int pos = index.row() + 1;
+        iupListSingleCallDblClickCb(ih, cb, pos);
+      }
+    });
   }
   else
   {
@@ -1991,6 +2009,15 @@ static int qtListMapMethod(Ihandle* ih)
     /* Connect signals */
     QObject::connect(list, &QListWidget::itemSelectionChanged, [list, ih]() {
       qtListWidgetItemSelectionChanged(list, ih);
+    });
+
+    QObject::connect(list, &QListWidget::itemActivated, [list, ih](QListWidgetItem* item) {
+      IFnis cb = (IFnis)IupGetCallback(ih, "DBLCLICK_CB");
+      if (cb)
+      {
+        int pos = list->row(item) + 1;
+        iupListSingleCallDblClickCb(ih, cb, pos);
+      }
     });
 
     /* Set initial items */
