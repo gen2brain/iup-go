@@ -46,10 +46,14 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   static int text_border_x = -1, text_border_y = -1;
   static int image_text_border_x = -1, image_text_border_y = -1;
   static int image_border_x = -1, image_border_y = -1;
+  static int text_struct_x = 0, text_struct_y = 0;
+  static int image_text_struct_x = 0, image_text_struct_y = 0;
+  static int image_struct_x = 0, image_struct_y = 0;
 
   int has_image = 0;
   int has_text = 0;
   int has_bgcolor = 0;
+  int has_user_padding = 0;
 
   if (ih)
   {
@@ -59,6 +63,14 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     has_image = (image != NULL);
     has_text = (title != NULL && *title != 0);
     has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
+
+    {
+      int horiz_padding = 0, vert_padding = 0;
+      char* padding = IupGetAttribute(ih, "PADDING");
+      if (padding)
+        iupStrToIntInt(padding, &horiz_padding, &vert_padding, 'x');
+      has_user_padding = (horiz_padding > 0 || vert_padding > 0);
+    }
   }
 
   if (has_bgcolor)
@@ -73,9 +85,23 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     gtk_widget_get_preferred_width(temp_button, NULL, &button_nat_w);
     gtk_widget_get_preferred_height(temp_button, NULL, &button_nat_h);
 
-    /* Empty button borders */
-    (*x) += button_nat_w;
-    (*y) += button_nat_h;
+    if (has_user_padding)
+    {
+      GtkStyleContext* context = gtk_widget_get_style_context(temp_button);
+      GtkBorder css_padding;
+      gtk_style_context_get_padding(context, GTK_STATE_FLAG_NORMAL, &css_padding);
+      int struct_x = button_nat_w - (css_padding.left + css_padding.right);
+      int struct_y = button_nat_h - (css_padding.top + css_padding.bottom);
+      if (struct_x < 0) struct_x = 0;
+      if (struct_y < 0) struct_y = 0;
+      (*x) += struct_x;
+      (*y) += struct_y;
+    }
+    else
+    {
+      (*x) += button_nat_w;
+      (*y) += button_nat_h;
+    }
 
     gtk_widget_destroy(temp_window);
   }
@@ -114,10 +140,28 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
         image_text_border_y = 11;
       }
 
+      {
+        GtkStyleContext* context = gtk_widget_get_style_context(temp_button);
+        GtkBorder css_padding;
+        gtk_style_context_get_padding(context, GTK_STATE_FLAG_NORMAL, &css_padding);
+        image_text_struct_x = image_text_border_x - (css_padding.left + css_padding.right);
+        image_text_struct_y = image_text_border_y - (css_padding.top + css_padding.bottom);
+        if (image_text_struct_x < 0) image_text_struct_x = 0;
+        if (image_text_struct_y < 0) image_text_struct_y = 0;
+      }
+
       gtk_widget_destroy(temp_window);
     }
-    (*x) += image_text_border_x;
-    (*y) += image_text_border_y;
+    if (has_user_padding)
+    {
+      (*x) += image_text_struct_x;
+      (*y) += image_text_struct_y;
+    }
+    else
+    {
+      (*x) += image_text_border_x;
+      (*y) += image_text_border_y;
+    }
   }
   else if (has_image)
   {
@@ -152,10 +196,28 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
         image_border_y = 11;
       }
 
+      {
+        GtkStyleContext* context = gtk_widget_get_style_context(temp_button);
+        GtkBorder css_padding;
+        gtk_style_context_get_padding(context, GTK_STATE_FLAG_NORMAL, &css_padding);
+        image_struct_x = image_border_x - (css_padding.left + css_padding.right);
+        image_struct_y = image_border_y - (css_padding.top + css_padding.bottom);
+        if (image_struct_x < 0) image_struct_x = 0;
+        if (image_struct_y < 0) image_struct_y = 0;
+      }
+
       gtk_widget_destroy(temp_window);
     }
-    (*x) += image_border_x;
-    (*y) += image_border_y;
+    if (has_user_padding)
+    {
+      (*x) += image_struct_x;
+      (*y) += image_struct_y;
+    }
+    else
+    {
+      (*x) += image_border_x;
+      (*y) += image_border_y;
+    }
   }
   else
   {
@@ -187,10 +249,28 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
         text_border_y = 11;
       }
 
+      {
+        GtkStyleContext* context = gtk_widget_get_style_context(temp_button);
+        GtkBorder css_padding;
+        gtk_style_context_get_padding(context, GTK_STATE_FLAG_NORMAL, &css_padding);
+        text_struct_x = text_border_x - (css_padding.left + css_padding.right);
+        text_struct_y = text_border_y - (css_padding.top + css_padding.bottom);
+        if (text_struct_x < 0) text_struct_x = 0;
+        if (text_struct_y < 0) text_struct_y = 0;
+      }
+
       gtk_widget_destroy(temp_window);
     }
-    (*x) += text_border_x;
-    (*y) += text_border_y;
+    if (has_user_padding)
+    {
+      (*x) += text_struct_x;
+      (*y) += text_struct_y;
+    }
+    else
+    {
+      (*x) += text_border_x;
+      (*y) += text_border_y;
+    }
   }
 #else
   /* GTK2: Measure actual borders since they depend on theme AND button type */
@@ -493,10 +573,32 @@ static int gtkButtonSetPaddingAttrib(Ihandle* ih, const char* value)
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
   if (ih->handle)
   {
-#if GTK_CHECK_VERSION(3, 4, 0)
-    iupgtkSetMargin(ih->handle, ih->data->horiz_padding, ih->data->vert_padding, 0);
+#if GTK_CHECK_VERSION(3, 0, 0)
+    GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
+    GtkCssProvider* old_provider = (GtkCssProvider*)g_object_get_data(
+        G_OBJECT(ih->handle), "iup-padding-provider");
+
+    if (old_provider)
+    {
+      gtk_style_context_remove_provider(context, GTK_STYLE_PROVIDER(old_provider));
+      g_object_set_data(G_OBJECT(ih->handle), "iup-padding-provider", NULL);
+    }
+
+    if (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0)
+    {
+      GtkCssProvider* provider = gtk_css_provider_new();
+      char* css = g_strdup_printf(
+          "* { padding: %dpx %dpx; min-width: 0; min-height: 0; }",
+          ih->data->vert_padding, ih->data->horiz_padding);
+      gtk_css_provider_load_from_data(provider, css, -1, NULL);
+      gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider),
+          GTK_STYLE_PROVIDER_PRIORITY_USER);
+      g_object_set_data_full(G_OBJECT(ih->handle), "iup-padding-provider",
+          provider, g_object_unref);
+      g_free(css);
+    }
 #else
-    (void)ih; /* Padding already handled in size calculation */
+    (void)ih;
 #endif
     return 0;
   }
