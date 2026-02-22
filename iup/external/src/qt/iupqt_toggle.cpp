@@ -377,9 +377,63 @@ protected:
 #define IUP_TOGGLE_BOX 18  /* Qt checkbox/radio size */
 
 
+static int qt_toggle_border_x = -1;
+static int qt_toggle_border_y = -1;
+static int qt_toggle_struct_x = 0;
+static int qt_toggle_struct_y = 0;
+
+static void qtToggleMeasureBorders(void)
+{
+  QToolButton temp_button;
+  QPixmap pixmap(64, 64);
+  pixmap.fill(Qt::transparent);
+  temp_button.setIcon(QIcon(pixmap));
+  temp_button.setIconSize(QSize(64, 64));
+  QSize button_size = temp_button.sizeHint();
+
+  qt_toggle_border_x = button_size.width() - 64;
+  qt_toggle_border_y = button_size.height() - 64;
+  if (qt_toggle_border_x < 0) qt_toggle_border_x = 0;
+  if (qt_toggle_border_y < 0) qt_toggle_border_y = 0;
+
+  /* Structural border (frame only) for when user sets explicit PADDING */
+  QStyleOptionToolButton opt;
+  opt.initFrom(&temp_button);
+  opt.rect = QRect(0, 0, button_size.width(), button_size.height());
+  QStyle* style = temp_button.style();
+  QRect contentRect = style->subControlRect(QStyle::CC_ToolButton, &opt, QStyle::SC_ToolButton, &temp_button);
+  qt_toggle_struct_x = button_size.width() - contentRect.width();
+  qt_toggle_struct_y = button_size.height() - contentRect.height();
+  if (qt_toggle_struct_x < 0) qt_toggle_struct_x = 0;
+  if (qt_toggle_struct_y < 0) qt_toggle_struct_y = 0;
+}
+
 extern "C" void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
-  iupdrvButtonAddBorders(ih, x, y);
+  int has_user_padding = 0;
+
+  if (qt_toggle_border_x < 0)
+    qtToggleMeasureBorders();
+
+  if (ih)
+  {
+    int horiz_padding = 0, vert_padding = 0;
+    char* padding = IupGetAttribute(ih, "PADDING");
+    if (padding)
+      iupStrToIntInt(padding, &horiz_padding, &vert_padding, 'x');
+    has_user_padding = (horiz_padding > 0 || vert_padding > 0);
+  }
+
+  if (has_user_padding)
+  {
+    (*x) += qt_toggle_struct_x;
+    (*y) += qt_toggle_struct_y;
+  }
+  else
+  {
+    (*x) += qt_toggle_border_x;
+    (*y) += qt_toggle_border_y;
+  }
 }
 
 extern "C" void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
@@ -688,8 +742,18 @@ static int qtToggleSetPaddingAttrib(Ihandle* ih, const char* value)
   if (ih->handle && ih->data->type == IUP_TOGGLE_IMAGE)
   {
     QAbstractButton* button = (QAbstractButton*)ih->handle;
-    button->setContentsMargins(ih->data->horiz_padding, ih->data->vert_padding,
-                               ih->data->horiz_padding, ih->data->vert_padding);
+
+    if (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0)
+    {
+      button->setStyleSheet(
+          QString("QToolButton { padding: %1px %2px; min-width: 0; min-height: 0; }")
+              .arg(ih->data->vert_padding)
+              .arg(ih->data->horiz_padding));
+    }
+    else
+    {
+      button->setStyleSheet(QString());
+    }
     return 0;
   }
 

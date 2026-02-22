@@ -326,6 +326,8 @@ static int qt_button_padding_image_x = -1;
 static int qt_button_padding_image_y = -1;
 static int qt_button_padding_both_x = -1;
 static int qt_button_padding_both_y = -1;
+static int qt_button_struct_x = 0;
+static int qt_button_struct_y = 0;
 static int qt_button_padding_measured = 0;
 
 static void qtButtonMeasurePadding(void)
@@ -349,22 +351,37 @@ static void qtButtonMeasurePadding(void)
     qt_button_padding_text_y = button_size.height() - text_h;
   }
 
-  /* Measure image-only button padding using large icon to exceed minimum */
+  /* Measure image-only button padding */
   {
     QPushButton temp_button;
-    QPixmap pixmap(64, 64);
-    pixmap.fill(Qt::transparent);
-    temp_button.setIcon(QIcon(pixmap));
-    temp_button.setIconSize(QSize(64, 64));
-    QSize button_size = temp_button.sizeHint();
-
-    qt_button_padding_image_x = button_size.width() - 64;
-    qt_button_padding_image_y = button_size.height() - 64;
+    QStyleOptionButton opt;
+    opt.initFrom(&temp_button);
+    QStyle* style = temp_button.style();
+    int margin = style->pixelMetric(QStyle::PM_ButtonMargin, &opt, &temp_button);
+    int frame = style->pixelMetric(QStyle::PM_DefaultFrameWidth, &opt, &temp_button);
+    qt_button_padding_image_x = margin + 2 * frame;
+    qt_button_padding_image_y = margin + 2 * frame;
   }
 
   /* Image+text button uses same padding as text-only */
   qt_button_padding_both_x = qt_button_padding_text_x;
   qt_button_padding_both_y = qt_button_padding_text_y;
+
+  /* Measure structural border (frame only, without theme padding).
+     Used when user sets explicit PADDING to replace theme padding. */
+  {
+    QPushButton temp_button;
+    QSize sz = temp_button.sizeHint();
+    QStyleOptionButton opt;
+    opt.initFrom(&temp_button);
+    opt.rect = QRect(0, 0, sz.width(), sz.height());
+    QStyle* style = temp_button.style();
+    QRect contentRect = style->subElementRect(QStyle::SE_PushButtonContents, &opt, &temp_button);
+    qt_button_struct_x = sz.width() - contentRect.width();
+    qt_button_struct_y = sz.height() - contentRect.height();
+    if (qt_button_struct_x < 0) qt_button_struct_x = 0;
+    if (qt_button_struct_y < 0) qt_button_struct_y = 0;
+  }
 
   qt_button_padding_measured = 1;
 }
@@ -374,6 +391,7 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   int has_image = 0;
   int has_text = 0;
   int has_bgcolor = 0;
+  int has_user_padding = 0;
 
   if (!qt_button_padding_measured)
     qtButtonMeasurePadding();
@@ -386,11 +404,23 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     has_image = (image != NULL);
     has_text = (title != NULL && *title != 0);
     has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
+
+    {
+      int horiz_padding = 0, vert_padding = 0;
+      char* padding = IupGetAttribute(ih, "PADDING");
+      if (padding)
+        iupStrToIntInt(padding, &horiz_padding, &vert_padding, 'x');
+      has_user_padding = (horiz_padding > 0 || vert_padding > 0);
+    }
   }
 
-  if (has_bgcolor)
+  if (has_user_padding)
   {
-    /* Use empty button's natural size */
+    (*x) += qt_button_struct_x;
+    (*y) += qt_button_struct_y;
+  }
+  else if (has_bgcolor)
+  {
     QPushButton temp_button;
     QSize hint = temp_button.sizeHint();
     (*x) += hint.width();
@@ -546,8 +576,18 @@ static int qtButtonSetPaddingAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
   {
     IupQtButton* button = (IupQtButton*)ih->handle;
-    button->setContentsMargins(ih->data->horiz_padding, ih->data->vert_padding,
-                               ih->data->horiz_padding, ih->data->vert_padding);
+
+    if (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0)
+    {
+      button->setStyleSheet(
+          QString("QPushButton { padding: %1px %2px; min-width: 0; min-height: 0; }")
+              .arg(ih->data->vert_padding)
+              .arg(ih->data->horiz_padding));
+    }
+    else
+    {
+      button->setStyleSheet(QString());
+    }
     return 0;
   }
   else
