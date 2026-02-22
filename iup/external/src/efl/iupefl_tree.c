@@ -2654,4 +2654,6 @@ void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "RENAME", NULL, eflTreeSetRenameAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterReplaceAttribFunc(ic, "SHOWDRAGDROP", NULL, eflTreeSetShowDragDropAttrib);
+
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

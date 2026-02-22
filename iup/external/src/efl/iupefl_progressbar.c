@@ -134,20 +134,6 @@ static char* eflProgressBarGetOrientationAttrib(Ihandle* ih)
   return (orient == EFL_UI_LAYOUT_ORIENTATION_VERTICAL) ? "VERTICAL" : "HORIZONTAL";
 }
 
-static int eflProgressBarSetBgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
-static int eflProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
 static int eflProgressBarMapMethod(Ihandle* ih)
 {
   Eo* parent;
@@ -221,6 +207,6 @@ void iupdrvProgressBarInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MARQUEE", eflProgressBarGetMarqueeAttrib, eflProgressBarSetMarqueeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DASHED", iProgressBarGetDashedAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIENTATION", eflProgressBarGetOrientationAttrib, eflProgressBarSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflProgressBarSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflProgressBarSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }

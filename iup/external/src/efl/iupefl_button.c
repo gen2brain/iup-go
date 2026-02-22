@@ -142,13 +142,6 @@ static int eflButtonSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int eflButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
 static int eflButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 {
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
@@ -281,13 +274,6 @@ static int eflButtonSetImPressAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int eflButtonSetFlatAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
 static int eflButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   Eo* btn = iupeflGetWidget(ih);
@@ -333,8 +319,16 @@ static int eflButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static int eflButtonSetFgColorAttrib(Ihandle* ih, const char* value)
 {
-  (void)ih;
+  Eo* btn = iupeflGetWidget(ih);
+
   (void)value;
+
+  if (!btn)
+    return 1;
+
+  if (ih->data->type & IUP_BUTTON_TEXT)
+    iupeflApplyTextStyle(ih, btn);
+
   return 1;
 }
 
@@ -564,13 +558,13 @@ void iupdrvButtonInitClass(Iclass* ic)
   ic->ComputeNaturalSize = eflButtonComputeNaturalSizeMethod;
 
   iupClassRegisterAttribute(ic, "TITLE", NULL, eflButtonSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, eflButtonSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, eflButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, eflButtonSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, eflButtonSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, eflButtonSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupeflBaseGetActiveAttrib, eflButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FLAT", NULL, eflButtonSetFlatAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflButtonSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FONT", NULL, eflButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);

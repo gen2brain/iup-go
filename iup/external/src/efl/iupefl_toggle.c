@@ -279,13 +279,6 @@ static int eflToggleSetTitleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int eflToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
 static int eflToggleSetPaddingAttrib(Ihandle* ih, const char* value)
 {
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
@@ -366,13 +359,6 @@ static int eflToggleSetActiveAttrib(Ihandle* ih, const char* value)
   }
 
   return iupBaseSetActiveAttrib(ih, value);
-}
-
-static int eflToggleSetBgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
 }
 
 static int eflToggleSetFgColorAttrib(Ihandle* ih, const char* value)
@@ -924,13 +910,14 @@ void iupdrvToggleInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "VALUE", eflToggleGetValueAttrib, eflToggleSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", NULL, eflToggleSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, eflToggleSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, eflToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, eflToggleSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupeflBaseGetActiveAttrib, eflToggleSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflToggleSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FONT", NULL, eflToggleSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }
