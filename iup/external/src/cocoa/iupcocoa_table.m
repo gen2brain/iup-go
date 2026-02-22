@@ -1626,27 +1626,17 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
 
+  /* Verify the text field belongs to this table */
+  NSTextField* textField = [notification object];
+  NSInteger row = [tableView rowForView:textField];
+  NSInteger col = [tableView columnForView:textField];
+  if (row < 0 || col < 0)
+    return;
+
   /* Check if keys already set (by delegate methods). If so, we are good. */
   NSNumber* existingRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
   if (existingRow)
       return;
-
-  /* Keys not set, meaning delegate method might have been skipped.
-     Attempt to identify the cell and trigger callbacks. */
-  NSTextField* textField = [notification object];
-  NSInteger row = [tableView rowForView:textField];
-  NSInteger col = [tableView columnForView:textField];
-
-  /* Fallback: If rowForView failed, use tracked selection */
-  if (row < 0 || col < 0) {
-      IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
-      if (table_data && table_data->current_row > 0 && table_data->current_col > 0) {
-          row = table_data->current_row - 1;
-          col = table_data->current_col - 1;
-      }
-  }
-
-  if (row < 0 || col < 0) return;
 
   /* Call EDITBEGIN_CB */
   int lin = (int)row + 1;
@@ -1670,30 +1660,36 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   NSTableView* tableView = cocoaTableGetTableView(ih);
   NSTextField* textField = [notification object];
 
+  /* Verify the text field belongs to this table */
+  NSInteger row = [tableView rowForView:textField];
+  NSInteger col = [tableView columnForView:textField];
+  if (row < 0 || col < 0)
+  {
+    /* Text field is not in this table. If we had an active edit session that was
+       interrupted (e.g. user clicked outside), clean up the editing state. */
+    NSNumber* editBeginCalled = objc_getAssociatedObject(tableView, &kEditBeginCalledKey);
+    if (editBeginCalled && [editBeginCalled boolValue])
+    {
+      objc_setAssociatedObject(tableView, &kEditEndedKey, @(YES), OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(tableView, &kEditingRowKey, nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(tableView, &kEditingColKey, nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(tableView, &kEditBeginCalledKey, nil, OBJC_ASSOCIATION_RETAIN);
+    }
+    return;
+  }
+
   /* Check if we've already processed this edit end */
   NSNumber* editEnded = objc_getAssociatedObject(tableView, &kEditEndedKey);
   if (editEnded && [editEnded boolValue])
       return;
 
-  /* Try to get row/col from view first */
-  NSInteger row = [tableView rowForView:textField];
-  NSInteger col = [tableView columnForView:textField];
-
-  /* Fallback to stored or tracked if view lookup fails (e.g. scrolling/recycling weirdness) */
-  if (row < 0 || col < 0) {
-      NSNumber *nRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
-      NSNumber *nCol = objc_getAssociatedObject(tableView, &kEditingColKey);
-      if (nRow && nCol) {
-          row = [nRow integerValue];
-          col = [nCol integerValue];
-      } else {
-          /* Last resort fallback to tracked position */
-          IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
-          if (table_data && table_data->current_row > 0 && table_data->current_col > 0) {
-              row = table_data->current_row - 1;
-              col = table_data->current_col - 1;
-          }
-      }
+  /* Use stored keys as fallback if view lookup returned valid but different position
+     (e.g. scrolling/recycling caused cell reuse) */
+  NSNumber *nRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
+  NSNumber *nCol = objc_getAssociatedObject(tableView, &kEditingColKey);
+  if (nRow && nCol) {
+      row = [nRow integerValue];
+      col = [nCol integerValue];
   }
 
   /* Mark that we've processed this edit end */
@@ -2745,6 +2741,10 @@ void iupdrvTableInitClass(Iclass* ic)
   ic->Map = cocoaTableMapMethod;
   ic->UnMap = cocoaTableUnMapMethod;
   ic->LayoutUpdate = cocoaTableLayoutUpdateMethod;
+
+  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE|IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   /* Replace core SET handlers to update native widget */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, cocoaTableSetSortableAttrib);
