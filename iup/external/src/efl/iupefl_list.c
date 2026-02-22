@@ -243,6 +243,42 @@ static void eflDropdownListSelectionChangedCallback(void* data, const Efl_Event*
                      Callbacks
 ****************************************************************/
 
+static void eflListItemClickedCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Efl_Ui_Item_Clickable_Clicked* item_clicked = ev->info;
+  IFnis cb;
+
+  if (item_clicked->clicked.repeated != 1)
+    return;
+
+  cb = (IFnis)IupGetCallback(ih, "DBLCLICK_CB");
+  if (cb)
+  {
+    int pos = efl_ui_item_index_get(item_clicked->item) + 1;
+    iupListSingleCallDblClickCb(ih, cb, pos);
+  }
+}
+
+static void eflGenlistDoubleClickCb(void* data, Evas_Object* obj, void* event_info)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Elm_Object_Item* item = (Elm_Object_Item*)event_info;
+  IFnis cb;
+
+  (void)obj;
+
+  if (!item)
+    return;
+
+  cb = (IFnis)IupGetCallback(ih, "DBLCLICK_CB");
+  if (cb)
+  {
+    int pos = (int)(uintptr_t)elm_object_item_data_get(item);
+    iupListSingleCallDblClickCb(ih, cb, pos);
+  }
+}
+
 static void eflListSelectionChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -1447,6 +1483,7 @@ static int eflListMapMethod(Ihandle* ih)
     efl_pack_end(box, list);
 
     efl_event_callback_add(list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflListSelectionChangedCallback, ih);
+    efl_event_callback_add(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
     efl_event_callback_add(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
@@ -1568,6 +1605,7 @@ static int eflListMapMethod(Ihandle* ih)
 
     evas_object_data_set(list, "_IUP_IHANDLE", ih);
     evas_object_smart_callback_add(list, "selected", eflGenlistItemSelectedCb, ih);
+    evas_object_smart_callback_add(list, "clicked,double", eflGenlistDoubleClickCb, ih);
 
     ih->handle = (InativeHandle*)list;
   }
@@ -1581,6 +1619,7 @@ static int eflListMapMethod(Ihandle* ih)
       efl_ui_multi_selectable_select_mode_set(list, EFL_UI_SELECT_MODE_MULTI);
 
     efl_event_callback_add(list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflListSelectionChangedCallback, ih);
+    efl_event_callback_add(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
     efl_event_callback_add(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
@@ -1653,6 +1692,7 @@ static void eflListUnMapMethod(Ihandle* ih)
       Eo* box = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
       Eo* entry = (Eo*)iupAttribGet(ih, "_IUPEFL_ENTRY");
       efl_event_callback_del(list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflListSelectionChangedCallback, ih);
+      efl_event_callback_del(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
       efl_event_callback_del(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
       efl_event_callback_del(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
@@ -1689,6 +1729,7 @@ static void eflListUnMapMethod(Ihandle* ih)
     else if (ih->data->is_virtual)
     {
       evas_object_smart_callback_del(list, "selected", eflGenlistItemSelectedCb);
+      evas_object_smart_callback_del(list, "clicked,double", eflGenlistDoubleClickCb);
       elm_genlist_clear(list);
       evas_object_del(list);
     }
@@ -1704,6 +1745,7 @@ static void eflListUnMapMethod(Ihandle* ih)
         efl_event_callback_del(list, EFL_UI_DND_EVENT_DRAG_FINISHED, eflListDragFinishedCb, ih);
       }
       efl_event_callback_del(list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflListSelectionChangedCallback, ih);
+      efl_event_callback_del(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
       efl_event_callback_del(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
       efl_event_callback_del(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
