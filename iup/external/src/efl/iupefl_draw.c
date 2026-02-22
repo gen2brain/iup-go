@@ -682,8 +682,6 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
   char* text_copy = NULL;
 
-  (void)text_orientation;
-
   if (!text || !text[0])
     return;
 
@@ -847,10 +845,40 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 
   {
     Eina_Matrix3 m;
-    eina_matrix3_values_set(&m,
-      1.0, 0.0, 0.0,
-      0.0, 1.0, 0.0,
-      (double)draw_x + 0.5, (double)draw_y + 0.5, 1.0);
+    if (text_orientation != 0)
+    {
+      double angle_rad = -text_orientation * M_PI / 180.0;
+      double cos_a = cos(angle_rad);
+      double sin_a = sin(angle_rad);
+
+      if (layout_center && w > 0 && h > 0)
+      {
+        double cx = x + w / 2.0;
+        double cy = y + h / 2.0;
+        double ox = -buf_w / 2.0;
+        double oy = -buf_h / 2.0;
+        eina_matrix3_values_set(&m,
+          cos_a, -sin_a, 0.0,
+          sin_a,  cos_a, 0.0,
+          cx + cos_a * ox - sin_a * oy,
+          cy + sin_a * ox + cos_a * oy,
+          1.0);
+      }
+      else
+      {
+        eina_matrix3_values_set(&m,
+          cos_a, -sin_a, 0.0,
+          sin_a,  cos_a, 0.0,
+          (double)draw_x, (double)draw_y, 1.0);
+      }
+    }
+    else
+    {
+      eina_matrix3_values_set(&m,
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        (double)draw_x + 0.5, (double)draw_y + 0.5, 1.0);
+    }
     efl_canvas_vg_node_transformation_set(vg_image, &m);
   }
   efl_canvas_vg_image_data_set(vg_image, pixels, EINA_SIZE2D(buf_w, buf_h));
