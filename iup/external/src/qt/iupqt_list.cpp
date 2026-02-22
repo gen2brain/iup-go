@@ -538,33 +538,37 @@ static void iupqtListMeasureBorders(Ihandle* ih)
 
   if (iupqt_dropdown_border_x < 0)
   {
-    QComboBox* temp_combo1 = new QComboBox();
-    QComboBox* temp_combo2 = new QComboBox();
-    temp_combo1->addItem("WWWWW");       /* 5 W characters */
-    temp_combo2->addItem("WWWWWWWWWW");  /* 10 W characters */
+    QComboBox* temp_combo = new QComboBox();
+    temp_combo->addItem("X");
 
-    QSize combo_size1 = temp_combo1->sizeHint();
-    QSize combo_size2 = temp_combo2->sizeHint();
-
-    QFontMetrics fm(temp_combo1->font());
-    int text_width1 = fm.horizontalAdvance("WWWWW");
-    int text_width2 = fm.horizontalAdvance("WWWWWWWWWW");
+    QSize combo_size = temp_combo->sizeHint();
+    QFontMetrics fm(temp_combo->font());
     int text_height = fm.height();
 
-    /* The fixed border = combo_size - text_width */
-    int border1 = combo_size1.width() - text_width1;
-    int border2 = combo_size2.width() - text_width2;
+    /* Use QStyle::subControlRect to measure actual decoration.
+       The core adds sb_size for the arrow, so subtract it. */
+    QStyleOptionComboBox opt;
+    opt.initFrom(temp_combo);
+    opt.subControls = QStyle::SC_All;
+    opt.editable = false;
+    opt.rect = QRect(0, 0, combo_size.width(), combo_size.height());
 
-    /* Use the average, they should be nearly identical */
-    iupqt_dropdown_border_x = (border1 + border2) / 2;
-    iupqt_dropdown_border_y = combo_size1.height() - text_height;
+    QStyle* style = temp_combo->style();
+    QRect editRect = style->subControlRect(QStyle::CC_ComboBox, &opt, QStyle::SC_ComboBoxEditField, temp_combo);
 
-    /* Ensure reasonable minimum */
-    if (iupqt_dropdown_border_x < 24) iupqt_dropdown_border_x = 24;
-    if (iupqt_dropdown_border_y < 4) iupqt_dropdown_border_y = 4;
+    int sb_size = iupdrvGetScrollbarSize();
+    int total_decor = combo_size.width() - editRect.width();
 
-    delete temp_combo1;
-    delete temp_combo2;
+    /* The style draws text inside editRect with internal margins. Add 2*frame_width as text margin to prevent clipping. */
+    int frame_width = style->pixelMetric(QStyle::PM_ComboBoxFrameWidth, &opt, temp_combo);
+
+    iupqt_dropdown_border_x = total_decor - sb_size + 2 * frame_width;
+    if (iupqt_dropdown_border_x < 0) iupqt_dropdown_border_x = 0;
+
+    iupqt_dropdown_border_y = combo_size.height() - text_height;
+    if (iupqt_dropdown_border_y < 0) iupqt_dropdown_border_y = 0;
+
+    delete temp_combo;
   }
 
   if (iupqt_editbox_height < 0)
@@ -1184,14 +1188,6 @@ static int qtListSetCueBannerAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int qtListSetDropExpandAttrib(Ihandle* ih, const char* value)
-{
-  /* Qt doesn't have direct support for expanding dropdown width */
-  /* Would need custom implementation with QListView */
-  (void)ih;
-  (void)value;
-  return 1;
-}
 
 static char* qtListGetSelectedTextAttrib(Ihandle* ih)
 {
@@ -2053,7 +2049,8 @@ extern "C" void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, qtListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, qtListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, qtListSetVisibleItemsAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, qtListSetDropExpandAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, qtListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, qtListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, qtListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
