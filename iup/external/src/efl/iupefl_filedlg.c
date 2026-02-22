@@ -9,6 +9,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fnmatch.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -22,6 +23,11 @@
 
 #include "iupefl_drv.h"
 
+
+typedef struct {
+  char** patterns;
+  int pattern_count;
+} EflFileFilterData;
 
 static int efl_filedlg_status = 0;
 static Eina_List* efl_filedlg_paths = NULL;
@@ -60,6 +66,73 @@ static char* eflFileCheckExt(Ihandle* ih, const char* filename)
     }
   }
   return (char*)filename;
+}
+
+static char* eflFileDlgGetNextStr(char* str)
+{
+  int len = (int)strlen(str);
+  return str + len + 1;
+}
+
+static Eina_Bool eflFileDlgFilterFunc(const char* path, Eina_Bool dir, void* data)
+{
+  EflFileFilterData* filter_data = (EflFileFilterData*)data;
+  const char* filename;
+  int i;
+
+  if (dir)
+    return EINA_TRUE;
+
+  filename = strrchr(path, '/');
+  if (filename)
+    filename++;
+  else
+    filename = path;
+
+  for (i = 0; i < filter_data->pattern_count; i++)
+  {
+    if (fnmatch(filter_data->patterns[i], filename, 0) == 0)
+      return EINA_TRUE;
+  }
+
+  return EINA_FALSE;
+}
+
+static EflFileFilterData* eflFileDlgParsePatterns(char* pattern_str)
+{
+  EflFileFilterData* data;
+  char* filters;
+  char* fstr;
+  int count, i;
+
+  filters = iupStrDup(pattern_str);
+  count = iupStrReplace(filters, ';', 0) + 1;
+
+  data = (EflFileFilterData*)malloc(sizeof(EflFileFilterData));
+  data->patterns = (char**)malloc(count * sizeof(char*));
+  data->pattern_count = count;
+
+  fstr = filters;
+  for (i = 0; i < count; i++)
+  {
+    data->patterns[i] = strdup(fstr);
+    if (i < count - 1)
+      fstr = eflFileDlgGetNextStr(fstr);
+  }
+
+  free(filters);
+  return data;
+}
+
+static void eflFileDlgFreeFilterData(EflFileFilterData* data)
+{
+  int i;
+  if (!data)
+    return;
+  for (i = 0; i < data->pattern_count; i++)
+    free(data->patterns[i]);
+  free(data->patterns);
+  free(data);
 }
 
 static void eflFileDlgGetMultipleFiles(Ihandle* ih, Eina_List* paths)
@@ -190,14 +263,35 @@ static void eflFileDlgDoneCallback(void* data, Evas_Object* obj, void* event_inf
   iupeflModalLoopQuit();
 }
 
+static void eflFileDlgSelectedCallback(void* data, Evas_Object* obj, void* event_info)
+{
+  Ihandle* ih = (Ihandle*)data;
+  const char* path = (const char*)event_info;
+  IFnss file_cb;
+
+  (void)obj;
+
+  file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+  if (!file_cb || !path)
+    return;
+
+  if (eflIsFile(path))
+    file_cb(ih, iupeflStrConvertFromSystem((char*)path), "SELECT");
+  else
+    file_cb(ih, iupeflStrConvertFromSystem((char*)path), "OTHER");
+}
+
 static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 {
   Eo* win;
   Evas_Object* fileselector;
-  char *dialogtype, *title, *file, *dir;
+  char *dialogtype, *title, *file, *dir, *value;
   int is_save = 0;
   int folder_mode = 0;
   int is_multi = 0;
+  int filter_count = 0;
+  EflFileFilterData** filter_list = NULL;
+  IFnss file_cb;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
@@ -245,6 +339,56 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
   if (iupAttribGetBoolean(ih, "SHOWHIDDEN"))
     elm_fileselector_hidden_visible_set(fileselector, EINA_TRUE);
 
+  value = iupAttribGet(ih, "EXTFILTER");
+  if (value)
+  {
+    char* filters = iupStrDup(value);
+    char* name;
+    int i;
+
+    filter_count = iupStrReplace(filters, '|', 0) / 2;
+    if (filter_count > 0)
+    {
+      filter_list = (EflFileFilterData**)malloc(filter_count * sizeof(EflFileFilterData*));
+
+      name = filters;
+      for (i = 0; i < filter_count && name[0]; i++)
+      {
+        char* pattern = eflFileDlgGetNextStr(name);
+
+        filter_list[i] = eflFileDlgParsePatterns(pattern);
+
+        elm_fileselector_custom_filter_append(fileselector,
+          eflFileDlgFilterFunc, filter_list[i],
+          iupeflStrConvertToSystem(name));
+
+        name = eflFileDlgGetNextStr(pattern);
+      }
+
+      filter_count = i;
+    }
+
+    free(filters);
+  }
+  else
+  {
+    value = iupAttribGet(ih, "FILTER");
+    if (value)
+    {
+      char* info = iupAttribGet(ih, "FILTERINFO");
+      if (!info)
+        info = value;
+
+      filter_list = (EflFileFilterData**)malloc(sizeof(EflFileFilterData*));
+      filter_list[0] = eflFileDlgParsePatterns(value);
+      filter_count = 1;
+
+      elm_fileselector_custom_filter_append(fileselector,
+        eflFileDlgFilterFunc, filter_list[0],
+        iupeflStrConvertToSystem(info));
+    }
+  }
+
   dir = iupAttribGet(ih, "DIRECTORY");
   if (dir && dir[0])
     elm_fileselector_path_set(fileselector, iupeflStrConvertToSystem(dir));
@@ -260,6 +404,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
     elm_fileselector_current_name_set(fileselector, iupeflStrConvertToSystem(file));
 
   evas_object_smart_callback_add(fileselector, "done", eflFileDlgDoneCallback, ih);
+  evas_object_smart_callback_add(fileselector, "selected", eflFileDlgSelectedCallback, ih);
 
   efl_gfx_hint_weight_set(fileselector, 1.0, 1.0);
   efl_gfx_hint_align_set(fileselector, EVAS_HINT_FILL, EVAS_HINT_FILL);
@@ -270,10 +415,77 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
   efl_gfx_entity_visible_set(win, EINA_TRUE);
   efl_ui_win_activate(win);
 
+  file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+  if (file_cb)
+    file_cb(ih, NULL, "INIT");
+
   efl_filedlg_status = 0;
   eflFileDlgFreePathList();
 
-  iupeflModalLoopRun();
+  for (;;)
+  {
+    iupeflModalLoopRun();
+
+    if (efl_filedlg_status == 1 && efl_filedlg_paths && is_save &&
+        !iupAttribGetBoolean(ih, "NOOVERWRITEPROMPT"))
+    {
+      char* filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
+      char* final_filename = eflFileCheckExt(ih, filename);
+
+      if (eflIsFile(final_filename))
+      {
+        int overwrite;
+        char msg[512];
+        const char* basename;
+
+        basename = strrchr(final_filename, '/');
+        if (basename)
+          basename++;
+        else
+          basename = final_filename;
+
+        snprintf(msg, sizeof(msg), "%s\n%s",
+          basename,
+          IupGetLanguageString("IUP_FILEOVERWRITE"));
+
+        overwrite = IupAlarm(IupGetLanguageString("IUP_SAVEAS"),
+          msg,
+          IupGetLanguageString("IUP_YES"),
+          IupGetLanguageString("IUP_NO"),
+          NULL);
+
+        if (final_filename != filename)
+          free(final_filename);
+
+        if (overwrite != 1)
+        {
+          eflFileDlgFreePathList();
+          efl_filedlg_status = 0;
+          continue;
+        }
+      }
+      else
+      {
+        if (final_filename != filename)
+          free(final_filename);
+      }
+    }
+
+    if (efl_filedlg_status == 1 && efl_filedlg_paths && file_cb)
+    {
+      char* filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
+      int ret = file_cb(ih, filename, "OK");
+
+      if (ret == IUP_IGNORE || ret == IUP_CONTINUE)
+      {
+        eflFileDlgFreePathList();
+        efl_filedlg_status = 0;
+        continue;
+      }
+    }
+
+    break;
+  }
 
   if (efl_filedlg_status == 1 && efl_filedlg_paths)
   {
@@ -328,6 +540,9 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
         free(final_filename);
     }
 
+    if (filter_count > 0)
+      iupAttribSetInt(ih, "FILTERUSED", 1);
+
     if (!folder_mode && !iupAttribGetBoolean(ih, "NOCHANGEDIR"))
     {
       char* cur_dir = iupAttribGet(ih, "DIRECTORY");
@@ -337,6 +552,9 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
         (void)ret;
       }
     }
+
+    if (file_cb)
+      file_cb(ih, NULL, "FINISH");
   }
   else
   {
@@ -348,8 +566,17 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
   }
 
   evas_object_smart_callback_del(fileselector, "done", eflFileDlgDoneCallback);
+  evas_object_smart_callback_del(fileselector, "selected", eflFileDlgSelectedCallback);
   efl_del(win);
   eflFileDlgFreePathList();
+
+  if (filter_list)
+  {
+    int i;
+    for (i = 0; i < filter_count; i++)
+      eflFileDlgFreeFilterData(filter_list[i]);
+    free(filter_list);
+  }
 
   return IUP_NOERROR;
 }
@@ -357,4 +584,8 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = eflFileDlgPopup;
+
+  iupClassRegisterAttribute(ic, "EXTFILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
