@@ -146,20 +146,56 @@ static IUPStepperObject* cocoaTextGetStepperObject(Ihandle* ih)
 
 /* Custom text field cell to control text insets */
 @interface IupCocoaTextFieldCell : NSTextFieldCell
+{
+  CGFloat _horizPadding;
+  CGFloat _vertPadding;
+}
+- (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert;
 @end
 
 @implementation IupCocoaTextFieldCell
 
+- (instancetype)initTextCell:(NSString *)string
+{
+  self = [super initTextCell:string];
+  if (self)
+  {
+    _horizPadding = 2.0;
+    _vertPadding = 2.0;
+  }
+  return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+  self = [super initWithCoder:coder];
+  if (self)
+  {
+    _horizPadding = 2.0;
+    _vertPadding = 2.0;
+  }
+  return self;
+}
+
+- (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert
+{
+  _horizPadding = horiz;
+  _vertPadding = vert;
+}
+
 - (NSRect)drawingRectForBounds:(NSRect)rect
 {
   NSRect drawingRect = [super drawingRectForBounds:rect];
-  /* Super already provides inset - reset to exactly 2px to match NSTextView textContainerInset */
-  CGFloat currentInset = drawingRect.origin.x - rect.origin.x;
-  CGFloat targetInset = 2.0;
-  CGFloat adjustment = targetInset - currentInset;
 
-  drawingRect.origin.x += adjustment;
-  drawingRect.size.width -= (2.0 * adjustment);
+  CGFloat currentInsetX = drawingRect.origin.x - rect.origin.x;
+  CGFloat adjustmentX = _horizPadding - currentInsetX;
+  drawingRect.origin.x += adjustmentX;
+  drawingRect.size.width -= (2.0 * adjustmentX);
+
+  CGFloat currentInsetY = drawingRect.origin.y - rect.origin.y;
+  CGFloat adjustmentY = _vertPadding - currentInsetY;
+  drawingRect.origin.y += adjustmentY;
+  drawingRect.size.height -= (2.0 * adjustmentY);
 
   return drawingRect;
 }
@@ -266,20 +302,56 @@ static IUPStepperObject* cocoaTextGetStepperObject(Ihandle* ih)
 
 /* Custom secure text field cell to control text insets */
 @interface IupCocoaSecureTextFieldCell : NSSecureTextFieldCell
+{
+  CGFloat _horizPadding;
+  CGFloat _vertPadding;
+}
+- (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert;
 @end
 
 @implementation IupCocoaSecureTextFieldCell
 
+- (instancetype)initTextCell:(NSString *)string
+{
+  self = [super initTextCell:string];
+  if (self)
+  {
+    _horizPadding = 2.0;
+    _vertPadding = 2.0;
+  }
+  return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+  self = [super initWithCoder:coder];
+  if (self)
+  {
+    _horizPadding = 2.0;
+    _vertPadding = 2.0;
+  }
+  return self;
+}
+
+- (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert
+{
+  _horizPadding = horiz;
+  _vertPadding = vert;
+}
+
 - (NSRect)drawingRectForBounds:(NSRect)rect
 {
   NSRect drawingRect = [super drawingRectForBounds:rect];
-  /* Super already provides inset - reset to exactly 2px to match NSTextView textContainerInset */
-  CGFloat currentInset = drawingRect.origin.x - rect.origin.x;
-  CGFloat targetInset = 2.0;
-  CGFloat adjustment = targetInset - currentInset;
 
-  drawingRect.origin.x += adjustment;
-  drawingRect.size.width -= (2.0 * adjustment);
+  CGFloat currentInsetX = drawingRect.origin.x - rect.origin.x;
+  CGFloat adjustmentX = _horizPadding - currentInsetX;
+  drawingRect.origin.x += adjustmentX;
+  drawingRect.size.width -= (2.0 * adjustmentX);
+
+  CGFloat currentInsetY = drawingRect.origin.y - rect.origin.y;
+  CGFloat adjustmentY = _vertPadding - currentInsetY;
+  drawingRect.origin.y += adjustmentY;
+  drawingRect.size.height -= (2.0 * adjustmentY);
 
   return drawingRect;
 }
@@ -5300,6 +5372,8 @@ static int cocoaTextSetContextMenuAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void cocoaTextApplyPadding(Ihandle* ih);
+
 static int cocoaTextMapMethod(Ihandle* ih)
 {
   NSView* root_view = nil;
@@ -5499,6 +5573,8 @@ static int cocoaTextMapMethod(Ihandle* ih)
     cocoaTextSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));
   if (iupAttribGet(ih, "FGCOLOR"))
     cocoaTextSetFgColorAttrib(ih, iupAttribGetStr(ih, "FGCOLOR"));
+  if (ih->data->horiz_padding || ih->data->vert_padding)
+    cocoaTextApplyPadding(ih);
   if (iupAttribGet(ih, "ALIGNMENT"))
     cocoaTextSetAlignmentAttrib(ih, iupAttribGetStr(ih, "ALIGNMENT"));
 
@@ -5633,6 +5709,53 @@ static void cocoaTextComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *
   }
 }
 
+static void cocoaTextApplyPaddingToField(NSTextField* text_field, int horiz_padding, int vert_padding)
+{
+  NSCell* cell = [text_field cell];
+  if ([cell respondsToSelector:@selector(setIupPaddingHoriz:vert:)])
+    [(id)cell setIupPaddingHoriz:(CGFloat)horiz_padding vert:(CGFloat)vert_padding];
+  [text_field setNeedsDisplay:YES];
+}
+
+static void cocoaTextApplyPadding(Ihandle* ih)
+{
+  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
+  switch (sub_type)
+  {
+    case IUPCOCOATEXTSUBTYPE_VIEW:
+    {
+      NSTextView* text_view = cocoaTextGetTextView(ih);
+      [text_view setTextContainerInset:NSMakeSize(ih->data->horiz_padding, ih->data->vert_padding)];
+      break;
+    }
+    case IUPCOCOATEXTSUBTYPE_FIELD:
+    {
+      NSTextField* text_field = cocoaTextGetTextField(ih);
+      cocoaTextApplyPaddingToField(text_field, ih->data->horiz_padding, ih->data->vert_padding);
+      break;
+    }
+    case IUPCOCOATEXTSUBTYPE_STEPPER:
+    {
+      NSTextField* text_field = cocoaTextGetStepperTextField(ih);
+      cocoaTextApplyPaddingToField(text_field, ih->data->horiz_padding, ih->data->vert_padding);
+      break;
+    }
+  }
+}
+
+static int cocoaTextSetPaddingAttrib(Ihandle* ih, const char* value)
+{
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
+
+  if (ih->handle)
+  {
+    cocoaTextApplyPadding(ih);
+    return 0;
+  }
+  else
+    return 1;
+}
+
 void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = cocoaTextMapMethod;
@@ -5640,6 +5763,8 @@ void iupdrvTextInitClass(Iclass* ic)
   ic->ComputeNaturalSize = cocoaTextComputeNaturalSizeMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, cocoaTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "ACTIVE", cocoaTextGetActiveAttrib, cocoaTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
