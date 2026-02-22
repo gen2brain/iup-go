@@ -38,6 +38,8 @@ using namespace Windows::Foundation;
 
 static int winui_button_padding_x = 25;
 static int winui_button_padding_y = 14;
+static int winui_button_struct_x = 2;
+static int winui_button_struct_y = 2;
 
 static void winuiButtonClickHandler(Ihandle* ih)
 {
@@ -619,20 +621,44 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     char* bgcolor = iupAttribGet(ih, "BGCOLOR");
     int has_image = (image != NULL);
     int has_text = (title != NULL && *title != 0);
+    int has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
 
     if (!has_image && !has_text && bgcolor != NULL)
     {
       int charwidth, charheight;
       iupdrvFontGetCharSize(ih, &charwidth, &charheight);
-      *x += charwidth * 4 + border_size;
-      *y += charheight + border_size;
+      if (has_user_padding)
+      {
+        *x += charwidth * 4 + winui_button_struct_x;
+        *y += charheight + winui_button_struct_y;
+      }
+      else
+      {
+        *x += charwidth * 4 + border_size;
+        *y += charheight + border_size;
+      }
       return;
     }
 
     if (has_image && !has_text)
     {
-      *x += border_size;
-      *y += border_size;
+      if (has_user_padding)
+      {
+        *x += winui_button_struct_x;
+        *y += winui_button_struct_y;
+      }
+      else
+      {
+        *x += border_size;
+        *y += border_size;
+      }
+      return;
+    }
+
+    if (has_user_padding)
+    {
+      *x += winui_button_struct_x;
+      *y += winui_button_struct_y;
       return;
     }
   }
