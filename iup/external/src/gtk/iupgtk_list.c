@@ -430,14 +430,12 @@ void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
-  static int dropdown_button_width = -1;
+  static int dropdown_border_x = -1;
   static int dropdown_border_y = -1;
   static int dropdown_editbox_border_x = -1;
   static int dropdown_editbox_border_y = -1;
   static int editbox_border_y = -1;
   static int scrolled_window_border = -1;
-  int x_before = *x;
-  int y_before = *y;
 
   /* Measure scrolled_window border for plain lists */
   if (scrolled_window_border == -1)
@@ -506,9 +504,8 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
   if (ih->data->is_dropdown)
   {
-    if (dropdown_button_width == -1)
+    if (dropdown_border_x == -1)
     {
-      /* Measure dropdown borders dynamically from temporary widgets */
       GtkWidget *temp_window = gtk_offscreen_window_new();
       GtkListStore *temp_store = gtk_list_store_new(1, G_TYPE_STRING);
       GtkTreeIter iter;
@@ -517,7 +514,6 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
       /* Measure regular dropdown (no editbox) */
       GtkWidget* temp_combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(temp_store));
-      GtkRequisition combo_min, combo_nat;
       GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
       gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(temp_combo), renderer, TRUE);
       gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(temp_combo), renderer, "text", 0, NULL);
@@ -525,22 +521,25 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       gtk_container_add(GTK_CONTAINER(temp_window), temp_combo);
       gtk_widget_show_all(temp_window);
 
+      GtkRequisition combo_nat;
+      gint renderer_nat_w, renderer_nat_h;
+      int sb_size = iupdrvGetScrollbarSize();
+
 #if GTK_CHECK_VERSION(3, 0, 0)
-      gtk_widget_get_preferred_size(temp_combo, &combo_min, &combo_nat);
+      gtk_widget_get_preferred_size(temp_combo, NULL, &combo_nat);
+      gtk_cell_renderer_get_preferred_width(renderer, temp_combo, NULL, &renderer_nat_w);
+      gtk_cell_renderer_get_preferred_height(renderer, temp_combo, NULL, &renderer_nat_h);
 #else
-      /* GTK2: Use size_request */
       gtk_widget_size_request(temp_combo, &combo_nat);
+      gtk_cell_renderer_get_size(renderer, temp_combo, NULL, NULL, NULL, &renderer_nat_w, &renderer_nat_h);
 #endif
 
-      /* single char width ~ button width + borders */
-      int char_width = 10;  /* Approximate single char width */
-      dropdown_button_width = (combo_nat.width > char_width) ? combo_nat.width - char_width : 15;
-      if (dropdown_button_width < 15) dropdown_button_width = 15;  /* Minimum arrow size */
+      /* Border = combo size - content - arrow (core adds sb_size for arrow) */
+      dropdown_border_x = combo_nat.width - renderer_nat_w - sb_size;
+      if (dropdown_border_x < 0) dropdown_border_x = 0;
 
-      /* Vertical border, measure actual difference */
-      int text_height = 16;
-      dropdown_border_y = combo_nat.height - text_height;
-      if (dropdown_border_y < 0) dropdown_border_y = 6;  /* fallback */
+      dropdown_border_y = combo_nat.height - renderer_nat_h;
+      if (dropdown_border_y < 0) dropdown_border_y = 0;
 
       gtk_widget_destroy(temp_window);
 
@@ -552,45 +551,69 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 #else
       GtkWidget* temp_combo_entry = gtk_combo_box_entry_new_with_model(GTK_TREE_MODEL(temp_store), 0);
 #endif
-      GtkRequisition combo_entry_min, combo_entry_nat;
 
       gtk_container_add(GTK_CONTAINER(temp_window), temp_combo_entry);
       gtk_widget_show_all(temp_window);
 
+      GtkRequisition combo_entry_nat;
+
 #if GTK_CHECK_VERSION(3, 0, 0)
-      gtk_widget_get_preferred_size(temp_combo_entry, &combo_entry_min, &combo_entry_nat);
+      gtk_widget_get_preferred_size(temp_combo_entry, NULL, &combo_entry_nat);
+
+      /* Measure entry child CSS decoration */
+      {
+        GtkWidget* entry = gtk_bin_get_child(GTK_BIN(temp_combo_entry));
+        gint entry_nat_w, entry_nat_h;
+        gtk_widget_get_preferred_width(entry, NULL, &entry_nat_w);
+        gtk_widget_get_preferred_height(entry, NULL, &entry_nat_h);
+
+        GtkStyleContext* entry_ctx = gtk_widget_get_style_context(entry);
+        GtkBorder entry_css_border, entry_css_padding;
+        gtk_style_context_get_border(entry_ctx, GTK_STATE_FLAG_NORMAL, &entry_css_border);
+        gtk_style_context_get_padding(entry_ctx, GTK_STATE_FLAG_NORMAL, &entry_css_padding);
+
+        int entry_decor_x = entry_css_border.left + entry_css_border.right +
+                            entry_css_padding.left + entry_css_padding.right;
+        int entry_decor_y = entry_css_border.top + entry_css_border.bottom +
+                            entry_css_padding.top + entry_css_padding.bottom;
+
+        int combo_outer_x = combo_entry_nat.width - entry_nat_w;
+        int combo_outer_y = combo_entry_nat.height - entry_nat_h;
+        if (combo_outer_x < 0) combo_outer_x = 0;
+        if (combo_outer_y < 0) combo_outer_y = 0;
+
+        dropdown_editbox_border_x = entry_decor_x + combo_outer_x - sb_size;
+        if (dropdown_editbox_border_x < 0) dropdown_editbox_border_x = 0;
+
+        dropdown_editbox_border_y = entry_decor_y + combo_outer_y;
+      }
 #else
-      /* GTK2: Use size_request */
       gtk_widget_size_request(temp_combo_entry, &combo_entry_nat);
+
+      dropdown_editbox_border_x = combo_entry_nat.width - renderer_nat_w - sb_size;
+      if (dropdown_editbox_border_x < 0) dropdown_editbox_border_x = 0;
+
+      dropdown_editbox_border_y = combo_entry_nat.height - renderer_nat_h;
+      if (dropdown_editbox_border_y < 0) dropdown_editbox_border_y = 0;
 #endif
-
-      /* Extra space needed for editbox combo */
-      dropdown_editbox_border_x = (combo_entry_nat.width > char_width + dropdown_button_width) ?
-                                   (combo_entry_nat.width - char_width) - dropdown_button_width : 5;
-      if (dropdown_editbox_border_x < 5) dropdown_editbox_border_x = 5;
-
-      /* Editbox combo vertical border - measure actual difference */
-      dropdown_editbox_border_y = combo_entry_nat.height - text_height;
-      if (dropdown_editbox_border_y < 0) dropdown_editbox_border_y = 6;  /* fallback */
 
       gtk_widget_destroy(temp_window);
       g_object_unref(temp_store);
     }
 
-    /* Dropdown doesn't use scrolled_window, so remove that border and add dropdown-specific border */
+    /* Dropdown doesn't use scrolled_window, remove those base borders */
+    (*x) -= 10;
     (*y) -= scrolled_window_border;
-
-    (*x) += dropdown_button_width;
 
     if (ih->data->has_editbox)
     {
-      (*x) += dropdown_editbox_border_x; /* measured extra space for editbox combo */
-      (*y) += dropdown_editbox_border_y; /* measured vertical border for editbox combo */
+      (*x) += dropdown_editbox_border_x;
+      (*y) += dropdown_editbox_border_y;
     }
     else
     {
-      (*y) += dropdown_border_y; /* measured vertical border */
-      (*x) += 4; /* extra horizontal padding space */
+      (*x) += dropdown_border_x;
+      (*y) += dropdown_border_y;
     }
   }
   else
