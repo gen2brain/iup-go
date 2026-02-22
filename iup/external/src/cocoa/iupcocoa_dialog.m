@@ -196,6 +196,9 @@ static NSWindowStyleMask cocoaDialogGetStyleMask(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "TOOLBOX"))
     style_mask |= NSWindowStyleMaskUtilityWindow;
 
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
+    style_mask |= NSWindowStyleMaskFullSizeContentView;
+
   return style_mask;
 }
 
@@ -676,6 +679,9 @@ void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
   if (visible)
   {
+    if (ih->data->show_state == IUP_MINIMIZE)
+      return;
+
     if (iupAttribGetBoolean(ih, "SHOWNOACTIVATE"))
     {
       [the_window orderFront:nil];
@@ -843,7 +849,7 @@ int iupdrvDialogSetPlacement(Ihandle* ih)
     if ([the_window isMiniaturized])
       [the_window deminiaturize:nil];
 
-    if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupDialogCustomFrameRestore(ih))
+    if ((iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE")) && iupDialogCustomFrameRestore(ih))
     {
       ih->data->show_state = IUP_RESTORE;
       return 1;
@@ -852,7 +858,7 @@ int iupdrvDialogSetPlacement(Ihandle* ih)
     return 0;
   }
 
-  if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupStrEqualNoCase(placement, "MAXIMIZED"))
+  if ((iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE")) && iupStrEqualNoCase(placement, "MAXIMIZED"))
   {
     iupDialogCustomFrameMaximize(ih);
     iupAttribSet(ih, "PLACEMENT", NULL);
@@ -1329,21 +1335,31 @@ static int cocoaDialogSetCustomFrameAttrib(Ihandle *ih, const char *value)
 
   if (iupStrBoolean(value))
   {
-    [window setStyleMask:NSWindowStyleMaskBorderless];
-    [window setMovableByWindowBackground:YES];
+    iupDialogCustomFrameSimulateCheckCallbacks(ih);
+
+    [window setStyleMask:[window styleMask] | NSWindowStyleMaskFullSizeContentView];
+    window.titlebarAppearsTransparent = YES;
+    window.titleVisibility = NSWindowTitleHidden;
+    [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
+    [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+    [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
     [window setHasShadow:YES];
   }
   else
   {
-    cocoaDialogUpdateStyleMask(ih);
-    [window setMovableByWindowBackground:NO];
+    [window setStyleMask:[window styleMask] & ~NSWindowStyleMaskFullSizeContentView];
+    window.titlebarAppearsTransparent = NO;
+    window.titleVisibility = NSWindowTitleVisible;
+    [[window standardWindowButton:NSWindowCloseButton] setHidden:NO];
+    [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:NO];
+    [[window standardWindowButton:NSWindowZoomButton] setHidden:NO];
   }
   return 1;
 }
 
 static char* cocoaDialogGetMaximizedAttrib(Ihandle *ih)
 {
-  if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE"))
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE"))
     return iupAttribGet(ih, "MAXIMIZED");
 
   NSWindow* the_window = cocoaDialogGetWindow(ih);
@@ -1438,6 +1454,18 @@ static int cocoaDialogMapMethod(Ihandle* ih)
                forKeyPath:@"effectiveAppearance"
                   options:NSKeyValueObservingOptionNew
                   context:IupCocoaAppearanceContext];
+
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
+  {
+    iupDialogCustomFrameSimulateCheckCallbacks(ih);
+
+    the_window.titlebarAppearsTransparent = YES;
+    the_window.titleVisibility = NSWindowTitleHidden;
+    [[the_window standardWindowButton:NSWindowCloseButton] setHidden:YES];
+    [[the_window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+    [[the_window standardWindowButton:NSWindowZoomButton] setHidden:YES];
+    [the_window setHasShadow:YES];
+  }
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
@@ -1547,29 +1575,47 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
     }
   }
 
-  int decor_w, decor_h;
-  NSRect sample_content_rect = NSMakeRect(0, 0, 100, 100);
-  NSRect sample_frame_rect = [NSWindow frameRectForContentRect:sample_content_rect styleMask:[the_window styleMask]];
-  decor_w = (int)round(sample_frame_rect.size.width - sample_content_rect.size.width);
-  decor_h = (int)round(sample_frame_rect.size.height - sample_content_rect.size.height);
-
-  width = ih->currentwidth - decor_w;
-  height = ih->currentheight - decor_h;
-  if(width <= 0) width = 1;
-  if(height <= 0) height = 1;
-
-  NSSize content_size = NSMakeSize(width, height);
-
-  /* Clear any existing size constraints before resizing */
-  [the_window setContentMinSize:NSMakeSize(1, 1)];
-  [the_window setContentMaxSize:NSMakeSize(65535, 65535)];
-
-  [the_window setContentSize:content_size];
-
-  if (!iupAttribGetBoolean(ih, "RESIZE"))
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
   {
-    [the_window setContentMinSize:content_size];
-    [the_window setContentMaxSize:content_size];
+    /* With CUSTOMFRAME + FullSizeContentView, the content view fills the entire
+       window frame. Set the frame directly so the window size matches exactly
+       what IUP calculated (which has no decoration space). */
+    [the_window setContentMinSize:NSMakeSize(1, 1)];
+    [the_window setContentMaxSize:NSMakeSize(65535, 65535)];
+
+    NSRect old_frame = [the_window frame];
+    NSRect new_frame = NSMakeRect(old_frame.origin.x,
+                                   old_frame.origin.y + old_frame.size.height - ih->currentheight,
+                                   ih->currentwidth,
+                                   ih->currentheight);
+    [the_window setFrame:new_frame display:YES];
+  }
+  else
+  {
+    int decor_w, decor_h;
+    NSRect sample_content_rect = NSMakeRect(0, 0, 100, 100);
+    NSRect sample_frame_rect = [NSWindow frameRectForContentRect:sample_content_rect styleMask:[the_window styleMask]];
+    decor_w = (int)round(sample_frame_rect.size.width - sample_content_rect.size.width);
+    decor_h = (int)round(sample_frame_rect.size.height - sample_content_rect.size.height);
+
+    width = ih->currentwidth - decor_w;
+    height = ih->currentheight - decor_h;
+    if(width <= 0) width = 1;
+    if(height <= 0) height = 1;
+
+    NSSize content_size = NSMakeSize(width, height);
+
+    /* Clear any existing size constraints before resizing */
+    [the_window setContentMinSize:NSMakeSize(1, 1)];
+    [the_window setContentMaxSize:NSMakeSize(65535, 65535)];
+
+    [the_window setContentSize:content_size];
+
+    if (!iupAttribGetBoolean(ih, "RESIZE"))
+    {
+      [the_window setContentMinSize:content_size];
+      [the_window setContentMaxSize:content_size];
+    }
   }
 
   ih->data->ignore_resize = 0;

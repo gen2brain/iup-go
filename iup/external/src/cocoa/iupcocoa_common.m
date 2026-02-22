@@ -808,6 +808,9 @@ void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 
 void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
+  iupClassRegisterAttribute(ic, "TIPBGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPFGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
 
 void iupdrvSendKey(int key, int press)
@@ -1028,6 +1031,20 @@ bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEvent* the_event
     else
     {
       caller_should_propagate = false;
+    }
+
+    /* Discard pending mouse-up events that may have been queued during
+       a modal dialog run inside the callback. */
+    if(is_pressed)
+    {
+      NSUInteger mask;
+      switch(which_cocoa_button)
+      {
+        case 0:  mask = NSEventMaskLeftMouseUp; break;
+        case 1:  mask = NSEventMaskRightMouseUp; break;
+        default: mask = NSEventMaskOtherMouseUp; break;
+      }
+      [NSApp discardEventsMatchingMask:mask beforeEvent:nil];
     }
   }
   else
