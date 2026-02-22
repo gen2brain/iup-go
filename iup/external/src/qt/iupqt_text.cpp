@@ -1660,9 +1660,6 @@ extern "C" void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
-  /* Special */
-  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
-
   /* IupText only */
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, qtTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "VALUE", qtTextGetValueAttrib, qtTextSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);

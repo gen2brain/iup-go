@@ -213,6 +213,5 @@ extern "C" void iupdrvMessageDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = qtMessageDlgPopup;
 
-  /* Register AUTOMODAL attribute (feature parity with Windows and Cocoa) */
   iupClassRegisterAttribute(ic, "AUTOMODAL", qtMessageDlgGetAutoModalAttrib, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

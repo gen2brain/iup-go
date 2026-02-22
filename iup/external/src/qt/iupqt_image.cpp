@@ -51,7 +51,10 @@ extern "C" void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   int bpp = image.depth();
 
   if (bpp == 8)
-    return;  /* Not supported */
+  {
+    memset(imgdata, 0, w * h * 3);
+    return;
+  }
 
   /* Convert QImage to IUP format (packed, top-bottom) */
   int planesize = w * h;

@@ -612,10 +612,7 @@ static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
     QAbstractItemView* view = qobject_cast<QAbstractItemView*>(widget);
     if (view && view->viewport())
     {
-      if (!filter)
-      {
-        view->viewport()->installEventFilter((IupQtDragDropFilter*)iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER"));
-      }
+      view->viewport()->installEventFilter(filter);
 
       QTreeWidget* tree = qobject_cast<QTreeWidget*>(widget);
       if (tree)
