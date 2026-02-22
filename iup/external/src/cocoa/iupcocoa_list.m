@@ -70,6 +70,7 @@ static void cocoaListUpdateDragDrop(Ihandle* ih);
 - (BOOL)tableView:(NSTableView *)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)dropOperation;
 - (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session willBeginAtPoint:(NSPoint)screenPoint forRowIndexes:(NSIndexSet *)rowIndexes;
 - (void)tableView:(NSTableView *)tableView draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation;
+- (void)listDoubleClickAction:(id)sender;
 @end
 
 typedef enum
@@ -1777,6 +1778,22 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (!ih) return;
 
   iupAttribSet(ih, "_IUPLIST_DRAGITEM", NULL);
+}
+
+- (void)listDoubleClickAction:(id)sender
+{
+  NSTableView* table_view = (NSTableView*)sender;
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(table_view, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih)
+    return;
+
+  NSInteger clicked_row = [table_view clickedRow];
+  if (clicked_row < 0)
+    return;
+
+  IFnis cb = (IFnis)IupGetCallback(ih, "DBLCLICK_CB");
+  if (cb)
+    iupListSingleCallDblClickCb(ih, cb, (int)clicked_row + 1);
 }
 
 @end
@@ -3850,6 +3867,8 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         [table_view setDataSource:list_receiver];
         [table_view setDelegate:list_receiver];
+        [table_view setDoubleAction:@selector(listDoubleClickAction:)];
+        [table_view setTarget:list_receiver];
 
         [scroll_view setDocumentView:table_view];
         [table_view release];
@@ -3948,6 +3967,8 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         [table_view setDataSource:list_receiver];
         [table_view setDelegate:list_receiver];
+        [table_view setDoubleAction:@selector(listDoubleClickAction:)];
+        [table_view setTarget:list_receiver];
 
         if (sub_type == IUPCOCOALISTSUBTYPE_MULTIPLELIST)
           [table_view setAllowsMultipleSelection:YES];
