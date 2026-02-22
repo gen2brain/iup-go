@@ -309,6 +309,38 @@ void iupgtk4CssClearWidgetStyle(GtkWidget* widget)
   }
 }
 
+void iupgtk4CssResetWidgetPadding(GtkWidget* widget)
+{
+  Igtk4WidgetStyle* style;
+
+  if (!gtk4_widget_styles)
+    return;
+
+  style = g_hash_table_lookup(gtk4_widget_styles, widget);
+  if (style && style->padding_css)
+  {
+    g_free(style->padding_css);
+    style->padding_css = NULL;
+    gtk4CssRebuildAndApply();
+  }
+}
+
+void iupgtk4CssResetWidgetCustom(GtkWidget* widget)
+{
+  Igtk4WidgetStyle* style;
+
+  if (!gtk4_widget_styles)
+    return;
+
+  style = g_hash_table_lookup(gtk4_widget_styles, widget);
+  if (style && style->custom_css)
+  {
+    g_free(style->custom_css);
+    style->custom_css = NULL;
+    gtk4CssRebuildAndApply();
+  }
+}
+
 void iupgtk4CssAddStaticRule(const char* selector, const char* css_rules)
 {
   if (!gtk4_css_provider)

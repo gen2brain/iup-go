@@ -91,6 +91,9 @@ const char* iupgtk4GetNativeFontIdName(void);
 gboolean iupgtk4DialogCloseRequest(GtkWindow *window, Ihandle *ih);
 GtkWindow* iupgtk4GetTransientFor(Ihandle* ih);
 
+/* Button */
+void iupgtk4ButtonApplyImagePadding(GtkWidget* widget);
+
 /* Menu */
 void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu);
 
@@ -113,6 +116,8 @@ void iupgtk4CssSetWidgetPadding(GtkWidget* widget, int horiz, int vert);
 void iupgtk4CssSetWidgetFont(GtkWidget* widget, const char* font_css);
 void iupgtk4CssSetWidgetCustom(GtkWidget* widget, const char* css_property, const char* css_value);
 void iupgtk4CssClearWidgetStyle(GtkWidget* widget);
+void iupgtk4CssResetWidgetPadding(GtkWidget* widget);
+void iupgtk4CssResetWidgetCustom(GtkWidget* widget);
 void iupgtk4CssAddStaticRule(const char* selector, const char* css_rules);
 
 int iupgtk4IsSystemDarkMode(void);
