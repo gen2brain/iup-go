@@ -1785,34 +1785,18 @@ static int iMatrixResize_CB(Ihandle* ih)
 
 static int iMatrixRedraw_CB(Ihandle* ih)
 {
-  static int call_count = 0;
-  int w, h;
-  char* cliprect;
-
-  call_count++;
-
-  /* Get current canvas size */
-  IupGetIntInt(ih, "DRAWSIZE", &w, &h);
-  cliprect = IupGetAttribute(ih, "CLIPRECT");
-
   /* IupDraw: Check if widget is mapped instead of checking cd_canvas */
   if (!ih->handle)
-  {
     return IUP_DEFAULT;
-  }
 
   /* Prevent recursion when resize triggers another redraw
    * (canvas.inside_resize is set by GTK/Qt resize handlers) */
   if (ih->data->canvas.inside_resize)
-  {
     return IUP_DEFAULT;
-  }
 
   /* Prevent recursion when CalcSizes sets DX/DY which triggers ACTION again */
   if (ih->data->inside_scroll_update)
-  {
     return IUP_DEFAULT;
-  }
 
   /* IupDraw: Always call iupMatrixDrawCB on every ACTION.
    * Unlike CD canvas which had automatic buffering, IupDraw requires us to redraw on every ACTION.
