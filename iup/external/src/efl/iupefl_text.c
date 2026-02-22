@@ -1333,12 +1333,267 @@ void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
   (void)state;
 }
 
+static int eflTextParseSelection(Ihandle* ih, const char* value, int* start, int* end)
+{
+  int lin_start = 1, col_start = 1, lin_end = 1, col_end = 1;
+
+  if (!value || iupStrEqualNoCase(value, "NONE"))
+  {
+    *start = 0;
+    *end = 0;
+    return 1;
+  }
+
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    Eo* entry = iupeflGetWidget(ih);
+    const char* text = iupeflGetText(entry);
+    *start = 0;
+    *end = text ? (int)strlen(text) : 0;
+    return 1;
+  }
+
+  if (sscanf(value, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end) != 4)
+    return 0;
+
+  if (lin_start < 1 || col_start < 1 || lin_end < 1 || col_end < 1)
+    return 0;
+
+  iupdrvTextConvertLinColToPos(ih, lin_start, col_start, start);
+  iupdrvTextConvertLinColToPos(ih, lin_end, col_end, end);
+  return 1;
+}
+
+static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* format)
+{
+  char* attr;
+  char buf[128];
+
+  attr = iupAttribGet(formattag, "FONTFACE");
+  if (attr)
+  {
+    const char* mapped_name = iupFontGetPangoName(attr);
+    if (mapped_name)
+      sprintf(buf, "font=%s ", mapped_name);
+    else
+      sprintf(buf, "font=%s ", attr);
+    strcat(format, buf);
+  }
+
+  attr = iupAttribGet(formattag, "FONTSIZE");
+  if (attr)
+  {
+    int val;
+    if (iupStrToInt(attr, &val))
+    {
+      if (val < 0)
+        val = -val;
+      if (val > 0)
+      {
+        sprintf(buf, "font_size=%d ", val);
+        strcat(format, buf);
+      }
+    }
+  }
+
+  attr = iupAttribGet(formattag, "FONTSCALE");
+  if (attr)
+  {
+    double fval = 0;
+    if (iupStrEqualNoCase(attr, "XX-SMALL"))
+      fval = 0.5806;
+    else if (iupStrEqualNoCase(attr, "X-SMALL"))
+      fval = 0.6944;
+    else if (iupStrEqualNoCase(attr, "SMALL"))
+      fval = 0.8333;
+    else if (iupStrEqualNoCase(attr, "MEDIUM"))
+      fval = 1.0;
+    else if (iupStrEqualNoCase(attr, "LARGE"))
+      fval = 1.2;
+    else if (iupStrEqualNoCase(attr, "X-LARGE"))
+      fval = 1.4400;
+    else if (iupStrEqualNoCase(attr, "XX-LARGE"))
+      fval = 1.7280;
+    else
+      iupStrToDouble(attr, &fval);
+
+    if (fval > 0)
+    {
+      int base_size = 0;
+      char* size_str = iupGetFontSizeAttrib(ih);
+      if (size_str)
+        iupStrToInt(size_str, &base_size);
+      if (base_size < 0)
+        base_size = -base_size;
+      if (base_size > 0)
+      {
+        int new_size = (int)(base_size * fval + 0.5);
+        if (new_size > 0)
+        {
+          sprintf(buf, "font_size=%d ", new_size);
+          strcat(format, buf);
+        }
+      }
+    }
+  }
+
+  attr = iupAttribGet(formattag, "LANGUAGE");
+  if (attr)
+  {
+    sprintf(buf, "lang=%s ", attr);
+    strcat(format, buf);
+  }
+
+  attr = iupAttribGet(formattag, "STRETCH");
+  if (attr)
+  {
+    if (iupStrEqualNoCase(attr, "EXTRA_CONDENSED"))
+      strcat(format, "font_width=extracondensed ");
+    else if (iupStrEqualNoCase(attr, "CONDENSED"))
+      strcat(format, "font_width=condensed ");
+    else if (iupStrEqualNoCase(attr, "SEMI_CONDENSED"))
+      strcat(format, "font_width=semicondensed ");
+    else if (iupStrEqualNoCase(attr, "SEMI_EXPANDED"))
+      strcat(format, "font_width=semiexpanded ");
+    else if (iupStrEqualNoCase(attr, "EXPANDED"))
+      strcat(format, "font_width=expanded ");
+    else if (iupStrEqualNoCase(attr, "EXTRA_EXPANDED"))
+      strcat(format, "font_width=extraexpanded ");
+    else /* "NORMAL" */
+      strcat(format, "font_width=normal ");
+  }
+
+  attr = iupAttribGet(formattag, "ITALIC");
+  if (attr)
+  {
+    if (iupStrBoolean(attr))
+      strcat(format, "font_style=italic ");
+    else
+      strcat(format, "font_style=normal ");
+  }
+
+  attr = iupAttribGet(formattag, "STRIKEOUT");
+  if (attr)
+  {
+    if (iupStrBoolean(attr))
+      strcat(format, "strikethrough_type=single ");
+    else
+      strcat(format, "strikethrough_type=none ");
+  }
+
+  attr = iupAttribGet(formattag, "WEIGHT");
+  if (attr)
+  {
+    if (iupStrEqualNoCase(attr, "EXTRALIGHT"))
+      strcat(format, "font_weight=ultralight ");
+    else if (iupStrEqualNoCase(attr, "LIGHT"))
+      strcat(format, "font_weight=light ");
+    else if (iupStrEqualNoCase(attr, "SEMIBOLD"))
+      strcat(format, "font_weight=semibold ");
+    else if (iupStrEqualNoCase(attr, "BOLD"))
+      strcat(format, "font_weight=bold ");
+    else if (iupStrEqualNoCase(attr, "EXTRABOLD"))
+      strcat(format, "font_weight=extrabold ");
+    else if (iupStrEqualNoCase(attr, "HEAVY"))
+      strcat(format, "font_weight=black ");
+    else /* "NORMAL" */
+      strcat(format, "font_weight=normal ");
+  }
+  else
+  {
+    attr = iupAttribGet(formattag, "BOLD");
+    if (attr)
+    {
+      if (iupStrBoolean(attr))
+        strcat(format, "font_weight=bold ");
+      else
+        strcat(format, "font_weight=normal ");
+    }
+  }
+
+  attr = iupAttribGet(formattag, "FGCOLOR");
+  if (attr)
+  {
+    unsigned char r, g, b;
+    if (iupStrToRGB(attr, &r, &g, &b))
+    {
+      sprintf(buf, "color=#%02X%02X%02X ", r, g, b);
+      strcat(format, buf);
+    }
+  }
+
+  attr = iupAttribGet(formattag, "BGCOLOR");
+  if (attr)
+  {
+    unsigned char r, g, b;
+    if (iupStrToRGB(attr, &r, &g, &b))
+    {
+      sprintf(buf, "background_type=solid background_color=#%02X%02X%02X ", r, g, b);
+      strcat(format, buf);
+    }
+  }
+
+  attr = iupAttribGet(formattag, "UNDERLINE");
+  if (attr)
+  {
+    if (iupStrEqualNoCase(attr, "SINGLE"))
+      strcat(format, "underline_type=single ");
+    else if (iupStrEqualNoCase(attr, "DOUBLE"))
+      strcat(format, "underline_type=double ");
+    else if (iupStrEqualNoCase(attr, "DOTTED"))
+      strcat(format, "underline_type=dashed ");
+    else if (iupStrBoolean(attr))
+      strcat(format, "underline_type=single ");
+    else
+      strcat(format, "underline_type=none ");
+  }
+}
+
+static void eflTextBuildParagraphFormat(Ihandle* formattag, char* format)
+{
+  char* attr;
+  char buf[64];
+  int val;
+
+  attr = iupAttribGet(formattag, "ALIGNMENT");
+  if (attr)
+  {
+    if (iupStrEqualNoCase(attr, "RIGHT"))
+      strcat(format, "align=right ");
+    else if (iupStrEqualNoCase(attr, "CENTER"))
+      strcat(format, "align=center ");
+    else /* "LEFT" or "JUSTIFY" (not supported in EFL) */
+      strcat(format, "align=left ");
+  }
+
+  attr = iupAttribGet(formattag, "INDENT");
+  if (attr && iupStrToInt(attr, &val))
+  {
+    sprintf(buf, "left_margin=%d ", val);
+    strcat(format, buf);
+  }
+
+  attr = iupAttribGet(formattag, "INDENTRIGHT");
+  if (attr && iupStrToInt(attr, &val))
+  {
+    sprintf(buf, "right_margin=%d ", val);
+    strcat(format, buf);
+  }
+
+  attr = iupAttribGet(formattag, "LINESPACING");
+  if (attr && iupStrToInt(attr, &val))
+  {
+    sprintf(buf, "line_gap=%d ", val);
+    strcat(format, buf);
+  }
+}
+
 void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   Eo* entry = iupeflGetWidget(ih);
-  char* selectionpos;
   int start_pos, end_pos;
-  char format[256] = "";
+  char format[512] = "";
+  char* selection;
   Efl_Text_Cursor_Object* start_cursor;
   Efl_Text_Cursor_Object* end_cursor;
 
@@ -1350,12 +1605,29 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
   if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
     return;
 
-  selectionpos = iupAttribGet(formattag, "SELECTIONPOS");
-  if (!selectionpos)
-    return;
-
-  if (iupStrToIntInt(selectionpos, &start_pos, &end_pos, ':') != 2)
-    return;
+  selection = iupAttribGet(formattag, "SELECTION");
+  if (selection)
+  {
+    if (!eflTextParseSelection(ih, selection, &start_pos, &end_pos))
+      return;
+  }
+  else
+  {
+    char* selectionpos = iupAttribGet(formattag, "SELECTIONPOS");
+    if (selectionpos)
+    {
+      if (iupStrToIntInt(selectionpos, &start_pos, &end_pos, ':') != 2)
+        return;
+    }
+    else
+    {
+      Efl_Text_Cursor_Object* cur = efl_text_interactive_main_cursor_get(entry);
+      if (!cur)
+        return;
+      start_pos = efl_text_cursor_object_position_get(cur);
+      end_pos = start_pos;
+    }
+  }
 
   start_cursor = efl_ui_textbox_cursor_create(entry);
   end_cursor = efl_ui_textbox_cursor_create(entry);
@@ -1370,57 +1642,66 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
   efl_text_cursor_object_position_set(start_cursor, start_pos);
   efl_text_cursor_object_position_set(end_cursor, end_pos);
 
-  {
-    char* bgcolor = iupAttribGet(formattag, "BGCOLOR");
-    if (bgcolor)
-    {
-      unsigned char r, g, b;
-      if (iupStrToRGB(bgcolor, &r, &g, &b))
-      {
-        char color_str[64];
-        sprintf(color_str, "background_type=solid background_color=#%02X%02X%02X ", r, g, b);
-        strcat(format, color_str);
-      }
-    }
-  }
-
-  {
-    char* fgcolor = iupAttribGet(formattag, "FGCOLOR");
-    if (fgcolor)
-    {
-      unsigned char r, g, b;
-      if (iupStrToRGB(fgcolor, &r, &g, &b))
-      {
-        char color_str[32];
-        sprintf(color_str, "color=#%02X%02X%02X ", r, g, b);
-        strcat(format, color_str);
-      }
-    }
-  }
-
-  {
-    char* underline = iupAttribGet(formattag, "UNDERLINE");
-    if (underline && iupStrBoolean(underline))
-      strcat(format, "underline=single ");
-  }
-
-  {
-    char* bold = iupAttribGet(formattag, "BOLD");
-    if (bold && iupStrBoolean(bold))
-      strcat(format, "font_weight=bold ");
-  }
-
-  {
-    char* italic = iupAttribGet(formattag, "ITALIC");
-    if (italic && iupStrBoolean(italic))
-      strcat(format, "font_style=italic ");
-  }
+  eflTextBuildCharacterFormat(ih, formattag, format);
+  eflTextBuildParagraphFormat(formattag, format);
 
   if (format[0])
     efl_text_formatter_attribute_insert(start_cursor, end_cursor, format);
 
   efl_del(start_cursor);
   efl_del(end_cursor);
+}
+
+static int eflTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
+{
+  Eo* entry;
+  Efl_Text_Cursor_Object *start_cursor, *end_cursor;
+
+  if (!ih->data->is_multiline)
+    return 0;
+
+  entry = iupeflGetWidget(ih);
+  if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
+    return 0;
+
+  start_cursor = efl_ui_textbox_cursor_create(entry);
+  end_cursor = efl_ui_textbox_cursor_create(entry);
+  if (!start_cursor || !end_cursor)
+  {
+    if (start_cursor) efl_del(start_cursor);
+    if (end_cursor) efl_del(end_cursor);
+    return 0;
+  }
+
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    const char* text = iupeflGetText(entry);
+    int len = text ? (int)strlen(text) : 0;
+    efl_text_cursor_object_position_set(start_cursor, 0);
+    efl_text_cursor_object_position_set(end_cursor, len);
+    efl_text_formatter_attribute_clear(start_cursor, end_cursor);
+  }
+  else
+  {
+    if (efl_text_interactive_have_selection_get(entry))
+    {
+      Efl_Text_Cursor_Object *sel_start, *sel_end;
+      int start_pos, end_pos;
+      efl_text_interactive_selection_cursors_get(entry, &sel_start, &sel_end);
+      if (sel_start && sel_end)
+      {
+        start_pos = efl_text_cursor_object_position_get(sel_start);
+        end_pos = efl_text_cursor_object_position_get(sel_end);
+        efl_text_cursor_object_position_set(start_cursor, start_pos);
+        efl_text_cursor_object_position_set(end_cursor, end_pos);
+        efl_text_formatter_attribute_clear(start_cursor, end_cursor);
+      }
+    }
+  }
+
+  efl_del(start_cursor);
+  efl_del(end_cursor);
+  return 0;
 }
 
 void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
@@ -1473,6 +1754,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, eflTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
