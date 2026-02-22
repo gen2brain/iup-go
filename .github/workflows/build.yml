@@ -282,6 +282,32 @@ jobs:
       run: go build -tags qt
       working-directory: iup
 
+  windows-winui:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install llvm-mingw
+      run: |
+        cd "$RUNNER_TEMP"
+        curl -L -o llvm-mingw.zip https://github.com/mstorsjo/llvm-mingw/releases/download/20251216/llvm-mingw-20251216-ucrt-x86_64.zip
+        unzip -q llvm-mingw.zip
+        echo "$RUNNER_TEMP/llvm-mingw-20251216-ucrt-x86_64/bin" >> $GITHUB_PATH
+    - name: Build
+      env:
+        CC: x86_64-w64-mingw32-clang
+        CXX: x86_64-w64-mingw32-clang++
+        CGO_ENABLED: "1"
+      run: go build -tags winui
+      working-directory: iup
+
   windows-win32:
     runs-on: windows-latest
     steps:
