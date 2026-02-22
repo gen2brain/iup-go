@@ -297,7 +297,16 @@ static int gtk4ToggleSetPaddingAttrib(Ihandle* ih, const char* value)
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
   if (ih->handle && ih->data->type == IUP_TOGGLE_IMAGE)
   {
-    iupgtk4SetMargin(ih->handle, ih->data->horiz_padding, ih->data->vert_padding);
+    if (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0)
+    {
+      iupgtk4CssSetWidgetPadding(ih->handle, ih->data->horiz_padding, ih->data->vert_padding);
+      iupgtk4CssSetWidgetCustom(ih->handle, "min-width", "0; min-height: 0");
+    }
+    else
+    {
+      iupgtk4CssResetWidgetPadding(ih->handle);
+      iupgtk4CssResetWidgetCustom(ih->handle);
+    }
     return 0;
   }
   else
@@ -583,10 +592,7 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
     gtk_widget_set_valign(image, GTK_ALIGN_CENTER);
 
     gtk_button_set_child(GTK_BUTTON(ih->handle), image);
-
-    /* Reset CSS padding to zero so image has full space */
-    gtk_widget_add_css_class(ih->handle, "iup-image-toggle");
-    iupgtk4CssAddStaticRule(".iup-image-toggle", "padding: 0; min-width: 0; min-height: 0;");
+    iupgtk4ButtonApplyImagePadding(ih->handle);
   }
 
   iupgtk4AddToParent(ih);
