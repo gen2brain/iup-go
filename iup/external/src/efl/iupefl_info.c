@@ -226,7 +226,49 @@ void* iupdrvGetDisplay(void)
 
 IUP_SDK_API int iupdrvGetScrollbarSize(void)
 {
-  return 15;
+  static int cached_size = 0;
+  Eo* win;
+  Evas* evas;
+  Evas_Object* scroller;
+
+  if (cached_size > 0)
+    return cached_size;
+
+  win = iupeflGetMainWindow();
+  if (!win)
+  {
+    cached_size = 15;
+    return cached_size;
+  }
+
+  evas = evas_object_evas_get(win);
+  scroller = elm_scroller_add(win);
+  if (scroller)
+  {
+    Evas_Object* content;
+    int sw = 0, sh = 0, cw = 0, ch = 0;
+
+    content = evas_object_rectangle_add(evas);
+    evas_object_resize(content, 500, 500);
+    elm_object_content_set(scroller, content);
+    elm_scroller_policy_set(scroller, ELM_SCROLLER_POLICY_ON, ELM_SCROLLER_POLICY_ON);
+    evas_object_resize(scroller, 200, 200);
+    evas_object_show(scroller);
+    evas_smart_objects_calculate(evas);
+
+    evas_object_geometry_get(scroller, NULL, NULL, &sw, &sh);
+    elm_scroller_region_get(scroller, NULL, NULL, &cw, &ch);
+
+    cached_size = sw - cw;
+    if (cached_size <= 0)
+      cached_size = 15;
+
+    evas_object_del(scroller);
+  }
+  else
+    cached_size = 15;
+
+  return cached_size;
 }
 
 IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
