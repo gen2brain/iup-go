@@ -59,10 +59,13 @@ void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 }
 
 static int gtk4_multiline_border_height = -1;
+static int gtk4_multiline_border_width = -1;
 static int gtk4_multiline_line_height = -1;
 static int gtk4_entry_border_x = -1;
 static int gtk4_entry_border_y = -1;
 static int gtk4_entry_noframe_border_y = -1;
+static int gtk4_entry_css_dec_x = 0;
+static int gtk4_entry_char_adjust_x = 0;
 
 static void gtk4TextMeasureEntryBorders(void)
 {
@@ -74,9 +77,11 @@ static void gtk4TextMeasureEntryBorders(void)
     PangoContext *context;
     PangoLayout *layout;
 
-    /* Create entry with frame */
+    /* Create entry with frame. Set width_chars=1 and max_width_chars=1 to isolate CSS decoration. */
     temp_entry = gtk_entry_new();
     gtk_entry_set_has_frame(GTK_ENTRY(temp_entry), TRUE);
+    gtk_editable_set_width_chars(GTK_EDITABLE(temp_entry), 1);
+    gtk_editable_set_max_width_chars(GTK_EDITABLE(temp_entry), 1);
     g_object_ref_sink(temp_entry);
 
     /* Create separate entry without frame */
@@ -89,8 +94,8 @@ static void gtk4TextMeasureEntryBorders(void)
     pango_layout_set_text(layout, "W", -1);
     pango_layout_get_pixel_size(layout, &char_width, &char_height);
 
-    /* Measure with frame, get natural size for border calculation */
-    gtk_widget_measure(temp_entry, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &entry_w, NULL, NULL);
+    /* Measure with frame, minimum width = 1*char_pixels + CSS decoration */
+    gtk_widget_measure(temp_entry, GTK_ORIENTATION_HORIZONTAL, -1, &entry_w, NULL, NULL, NULL);
     gtk_widget_measure(temp_entry, GTK_ORIENTATION_VERTICAL, -1, NULL, &entry_h, NULL, NULL);
 
     /* Measure without frame, get minimum size */
@@ -103,6 +108,22 @@ static void gtk4TextMeasureEntryBorders(void)
     if (gtk4_entry_border_x < 0) gtk4_entry_border_x = 10;
     if (gtk4_entry_border_y < 0) gtk4_entry_border_y = 10;
     if (gtk4_entry_noframe_border_y < 0) gtk4_entry_noframe_border_y = 0;
+
+    {
+      PangoFontMetrics* metrics = pango_context_get_metrics(context,
+          pango_context_get_font_description(context),
+          pango_context_get_language(context));
+      int avg_w = pango_font_metrics_get_approximate_char_width(metrics);
+      int digit_w = pango_font_metrics_get_approximate_digit_width(metrics);
+      int gtk_char_pixels = (MAX(avg_w, digit_w) + PANGO_SCALE - 1) / PANGO_SCALE;
+
+      gtk4_entry_css_dec_x = entry_w - gtk_char_pixels;
+      gtk4_entry_char_adjust_x = char_width - gtk_char_pixels;
+      if (gtk4_entry_css_dec_x < 2) gtk4_entry_css_dec_x = 2;
+      if (gtk4_entry_char_adjust_x < 0) gtk4_entry_char_adjust_x = 0;
+
+      pango_font_metrics_unref(metrics);
+    }
 
     g_object_unref(layout);
     g_object_unref(temp_entry);
@@ -129,6 +150,13 @@ static void gtk4TextMeasureMultilineMetrics(void)
     g_object_ref_sink(temp_sw);
 
     gtk_widget_measure(temp_sw, GTK_ORIENTATION_VERTICAL, -1, NULL, &sw_empty_h, NULL, NULL);
+
+    {
+      int sw_empty_w;
+      gtk_widget_measure(temp_sw, GTK_ORIENTATION_HORIZONTAL, -1, &sw_empty_w, NULL, NULL, NULL);
+      gtk4_multiline_border_width = sw_empty_w;
+      if (gtk4_multiline_border_width < 0) gtk4_multiline_border_width = 2;
+    }
 
     context = gtk_widget_get_pango_context(temp_tv);
     layout = pango_layout_new(context);
@@ -171,11 +199,12 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 
   if (ih->data && ih->data->is_multiline)
   {
+    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
     gtk4TextMeasureMultilineMetrics();
 
-    (*x) += gtk4_entry_border_x;
+    (*x) += gtk4_multiline_border_width - visiblecolumns * gtk4_entry_char_adjust_x;
 
     if (visiblelines > 0)
     {
@@ -196,6 +225,10 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   }
   else
   {
+    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+    int border = gtk4_entry_css_dec_x - visiblecolumns * gtk4_entry_char_adjust_x;
+    (*x) += border;
+
     if (iupAttribGetBoolean(ih, "SPIN"))
     {
       int before = *y;
@@ -205,7 +238,6 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
     }
     else
     {
-      (*x) += gtk4_entry_border_x;
       (*y) += gtk4_entry_border_y;
     }
   }
@@ -299,147 +331,6 @@ static int gtkTextConvertXYToPos(Ihandle* ih, int x, int y)
     pango_layout_xy_to_index(layout, x * PANGO_SCALE, y * PANGO_SCALE, &pos, &trailing);
     g_object_unref(layout);
     return pos + trailing;
-  }
-}
-
-static void gtkTextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
-{
-  int val;
-  char* format;
-
-  format = iupAttribGetStr(formattag, "INDENT");
-  if (format)
-  {
-    if (iupStrToInt(format, &val))
-      g_object_set(G_OBJECT(tag), "indent", val, NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "ALIGNMENT");
-  if (format)
-  {
-    GtkJustification justify;
-
-    if (iupStrEqualNoCase(format, "JUSTIFY"))
-      justify = GTK_JUSTIFY_FILL;
-    else if (iupStrEqualNoCase(format, "ACENTER"))
-      justify = GTK_JUSTIFY_CENTER;
-    else if (iupStrEqualNoCase(format, "ARIGHT"))
-      justify = GTK_JUSTIFY_RIGHT;
-    else
-      justify = GTK_JUSTIFY_LEFT;
-
-    g_object_set(G_OBJECT(tag), "justification", justify, NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "SPACEBEFORE");
-  if (format)
-  {
-    if (iupStrToInt(format, &val))
-      g_object_set(G_OBJECT(tag), "pixels-above-lines", val, NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "SPACEAFTER");
-  if (format)
-  {
-    if (iupStrToInt(format, &val))
-      g_object_set(G_OBJECT(tag), "pixels-below-lines", val, NULL);
-  }
-}
-
-static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
-{
-  int val;
-  char* format;
-
-  format = iupAttribGetStr(formattag, "DISABLED");
-  if (format)
-  {
-    if (iupStrBoolean(format))
-      g_object_set(G_OBJECT(tag), "foreground", "gray", NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "RISE");
-  if (format)
-  {
-    if (iupStrToInt(format, &val))
-      g_object_set(G_OBJECT(tag), "rise", val * PANGO_SCALE, NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "UNDERLINE");
-  if (format)
-  {
-    if (iupStrBoolean(format))
-      g_object_set(G_OBJECT(tag), "underline", PANGO_UNDERLINE_SINGLE, NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "STRIKEOUT");
-  if (format)
-  {
-    if (iupStrBoolean(format))
-      g_object_set(G_OBJECT(tag), "strikethrough", TRUE, NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "ITALIC");
-  if (format)
-  {
-    if (iupStrBoolean(format))
-      g_object_set(G_OBJECT(tag), "style", PANGO_STYLE_ITALIC, NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "WEIGHT");
-  if (format)
-  {
-    if (iupStrEqualNoCase(format, "BOLD"))
-      g_object_set(G_OBJECT(tag), "weight", PANGO_WEIGHT_BOLD, NULL);
-    else if (iupStrEqualNoCase(format, "NORMAL"))
-      g_object_set(G_OBJECT(tag), "weight", PANGO_WEIGHT_NORMAL, NULL);
-    else if (iupStrEqualNoCase(format, "LIGHT"))
-      g_object_set(G_OBJECT(tag), "weight", PANGO_WEIGHT_LIGHT, NULL);
-    else if (iupStrToInt(format, &val))
-      g_object_set(G_OBJECT(tag), "weight", val, NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "FONTSIZE");
-  if (format)
-  {
-    if (iupStrToInt(format, &val))
-      g_object_set(G_OBJECT(tag), "size", val * PANGO_SCALE, NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "FONTFACE");
-  if (format)
-  {
-    g_object_set(G_OBJECT(tag), "family", format, NULL);
-  }
-
-  format = iupAttribGetStr(formattag, "BGCOLOR");
-  if (format)
-  {
-    unsigned char r, g, b, a;
-    if (iupStrToRGBA(format, &r, &g, &b, &a))
-    {
-      GdkRGBA rgba;
-      rgba.red = r / 255.0;
-      rgba.green = g / 255.0;
-      rgba.blue = b / 255.0;
-      rgba.alpha = a / 255.0;
-      g_object_set(G_OBJECT(tag), "background-rgba", &rgba, NULL);
-    }
-  }
-
-  format = iupAttribGetStr(formattag, "FGCOLOR");
-  if (format)
-  {
-    unsigned char r, g, b, a;
-    if (iupStrToRGBA(format, &r, &g, &b, &a))
-    {
-      GdkRGBA rgba;
-      rgba.red = r / 255.0;
-      rgba.green = g / 255.0;
-      rgba.blue = b / 255.0;
-      rgba.alpha = a / 255.0;
-      g_object_set(G_OBJECT(tag), "foreground-rgba", &rgba, NULL);
-    }
   }
 }
 
@@ -1507,6 +1398,48 @@ static int gtk4TextSetSpinValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int gtk4TextGetCharSize(Ihandle* ih)
+{
+  int charwidth;
+  PangoFontMetrics* metrics;
+  PangoContext* context;
+  PangoFontDescription* fontdesc = (PangoFontDescription*)iupgtk4GetPangoFontDescAttrib(ih);
+  if (!fontdesc)
+    return 0;
+
+  context = gtk_widget_get_pango_context(ih->handle);
+  metrics = pango_context_get_metrics(context, fontdesc, pango_context_get_language(context));
+  charwidth = pango_font_metrics_get_approximate_char_width(metrics);
+  pango_font_metrics_unref(metrics);
+  return charwidth;
+}
+
+static int gtk4TextSetTabSizeAttrib(Ihandle* ih, const char* value)
+{
+  PangoTabArray *tabs;
+  int tabsize, charwidth;
+  if (!ih->data->is_multiline)
+    return 0;
+
+  iupStrToInt(value, &tabsize);
+  charwidth = gtk4TextGetCharSize(ih);
+  tabsize *= charwidth;
+  tabs = pango_tab_array_new_with_positions(1, FALSE, PANGO_TAB_LEFT, tabsize);
+  gtk_text_view_set_tabs(GTK_TEXT_VIEW(ih->handle), tabs);
+  pango_tab_array_free(tabs);
+  return 1;
+}
+
+static int gtk4TextSetCueBannerAttrib(Ihandle *ih, const char *value)
+{
+  if (!ih->data->is_multiline)
+  {
+    gtk_entry_set_placeholder_text(GTK_ENTRY(ih->handle), iupgtk4StrConvertToSystem(value));
+    return 1;
+  }
+  return 0;
+}
+
 static int gtk4TextMapMethod(Ihandle* ih)
 {
   GtkScrolledWindow* scrolled_window = NULL;
@@ -2029,6 +1962,11 @@ void iupdrvTextInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "CANFOCUS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "TABSIZE", NULL, gtk4TextSetTabSizeAttrib, "8", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "PASSWORD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUEBANNER", NULL, gtk4TextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
   /* Not Supported */
+  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
