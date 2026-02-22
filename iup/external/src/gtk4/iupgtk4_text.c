@@ -1919,6 +1919,30 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
   gtk_text_buffer_apply_tag(buffer, tag, &start_iter, &end_iter);
 }
 
+static int gtk4TextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
+{
+  GtkTextBuffer *buffer;
+  GtkTextIter start_iter, end_iter;
+
+  if (!ih->data->is_multiline)
+    return 0;
+
+  buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    gtk_text_buffer_get_start_iter(buffer, &start_iter);
+    gtk_text_buffer_get_end_iter(buffer, &end_iter);
+    gtk_text_buffer_remove_all_tags(buffer, &start_iter, &end_iter);
+  }
+  else
+  {
+    if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
+      gtk_text_buffer_remove_all_tags(buffer, &start_iter, &end_iter);
+  }
+
+  return 0;
+}
+
 void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = gtk4TextMapMethod;
@@ -1956,6 +1980,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, gtk4TextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPENDNEWLINE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLECOLUMNS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLELINES", NULL, NULL, IUPAF_SAMEASSYSTEM, "3", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
