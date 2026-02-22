@@ -81,9 +81,12 @@ void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 /* Cached measurements for text widget borders */
 static int iupgtk_multiline_line_height = -1;
 static int iupgtk_multiline_border_height = -1;
+static int iupgtk_multiline_border_width = -1;
 static int iupgtk_entry_border_x = -1;
 static int iupgtk_entry_border_y = -1;
 static int iupgtk_entry_noframe_border_y = -1;
+static int iupgtk_entry_css_dec_x = 0;
+static int iupgtk_entry_char_adjust_x = 0;
 
 static void iupgtkTextMeasureEntryBorders(void)
 {
@@ -149,6 +152,26 @@ static void iupgtkTextMeasureEntryBorders(void)
     if (iupgtk_entry_border_y < 0) iupgtk_entry_border_y = 10;
     if (iupgtk_entry_noframe_border_y < 0) iupgtk_entry_noframe_border_y = 0;
 
+    /* Measure the per-char width difference between "W" and GTK's average char.
+       GtkEntry uses approximate_char_width for width_chars sizing, but
+       IUP core uses "W" width for VISIBLECOLUMNS. We store the exact CSS decoration
+       and the per-char adjustment so iupdrvTextAddBorders can compensate. */
+    {
+      PangoFontMetrics* metrics = pango_context_get_metrics(context,
+          pango_context_get_font_description(context),
+          pango_context_get_language(context));
+      int avg_w = pango_font_metrics_get_approximate_char_width(metrics);
+      int digit_w = pango_font_metrics_get_approximate_digit_width(metrics);
+      int gtk_char_pixels = (MAX(avg_w, digit_w) + PANGO_SCALE - 1) / PANGO_SCALE;
+
+      iupgtk_entry_css_dec_x = entry_w - gtk_char_pixels;
+      iupgtk_entry_char_adjust_x = char_width - gtk_char_pixels;
+      if (iupgtk_entry_css_dec_x < 2) iupgtk_entry_css_dec_x = 2;
+      if (iupgtk_entry_char_adjust_x < 0) iupgtk_entry_char_adjust_x = 0;
+
+      pango_font_metrics_unref(metrics);
+    }
+
     g_object_unref(layout);
     gtk_widget_destroy(temp_window);
   }
@@ -189,6 +212,18 @@ static void iupgtkTextMeasureMultilineMetrics(void)
 
     /* Measure scrolled window with empty text view */
 #if GTK_CHECK_VERSION(3, 0, 0)
+    {
+      GtkStyleContext* sw_ctx = gtk_widget_get_style_context(temp_sw);
+      GtkStyleContext* tv_ctx = gtk_widget_get_style_context(temp_tv);
+      GtkBorder sw_border, sw_padding, tv_padding;
+      gtk_style_context_get_border(sw_ctx, GTK_STATE_FLAG_NORMAL, &sw_border);
+      gtk_style_context_get_padding(sw_ctx, GTK_STATE_FLAG_NORMAL, &sw_padding);
+      gtk_style_context_get_padding(tv_ctx, GTK_STATE_FLAG_NORMAL, &tv_padding);
+      iupgtk_multiline_border_width = sw_border.left + sw_border.right +
+                                      sw_padding.left + sw_padding.right +
+                                      tv_padding.left + tv_padding.right;
+    }
+
     gtk_widget_get_preferred_height(temp_sw, &sw_h, NULL);
     gtk_widget_get_preferred_height(temp_tv, &tv_h, NULL);
 #else
@@ -198,13 +233,15 @@ static void iupgtkTextMeasureMultilineMetrics(void)
       gtk_widget_size_request(temp_tv, &tv_req);
       sw_h = sw_req.height;
       tv_h = tv_req.height;
+      iupgtk_multiline_border_width = sw_req.width - tv_req.width;
     }
 #endif
 
-    /* Border height is scrolled_window height - text_view height */
     iupgtk_multiline_border_height = sw_h - tv_h;
     if (iupgtk_multiline_border_height < 0)
       iupgtk_multiline_border_height = 2;
+    if (iupgtk_multiline_border_width < 0)
+      iupgtk_multiline_border_width = 2;
 
     g_object_unref(layout);
     gtk_widget_destroy(temp_window);
@@ -243,19 +280,16 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
     gtk_widget_destroy(temp_window);
   }
 
-  /* For multiline text in scrolled window */
   if (ih->data && ih->data->is_multiline)
   {
+    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
     iupgtkTextMeasureMultilineMetrics();
 
-    /* Multiline uses scrolled window, use measured horizontal border */
-    (*x) += border_size_x;
+    (*x) += iupgtk_multiline_border_width - visiblecolumns * iupgtk_entry_char_adjust_x;
 
     if (visiblelines > 0)
     {
-      /* IUP calculates: char_height * visiblelines
-         GTK actually renders: pango_line_height * visiblelines + scrolled_window_border */
       int char_height;
       iupdrvFontGetCharSize(ih, NULL, &char_height);
 
@@ -263,20 +297,19 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
       int gtk_content_h = iupgtk_multiline_line_height * visiblelines;
       int line_diff = iup_content_h - gtk_content_h;
 
-      /* Add border height, subtract line height difference */
       (*y) += iupgtk_multiline_border_height;
       (*y) -= line_diff;
     }
     else
     {
-      /* No VISIBLELINES set, just add minimal border */
       (*y) += iupgtk_multiline_border_height;
     }
   }
   else
   {
-    /* Single-line entry */
-    (*x) += border_size_x;
+    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+    int border = iupgtk_entry_css_dec_x - visiblecolumns * iupgtk_entry_char_adjust_x;
+    (*x) += border;
 
     if (iupAttribGetBoolean(ih, "SPIN"))
     {
