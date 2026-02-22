@@ -58,6 +58,53 @@ static ScrollViewer winuiTextFindScrollViewer(DependencyObject parent)
   return nullptr;
 }
 
+static TextBox winuiFindTextBox(DependencyObject parent)
+{
+  int count = VisualTreeHelper::GetChildrenCount(parent);
+  for (int i = 0; i < count; i++)
+  {
+    auto child = VisualTreeHelper::GetChild(parent, i);
+    auto tb = child.try_as<TextBox>();
+    if (tb)
+      return tb;
+    tb = winuiFindTextBox(child);
+    if (tb)
+      return tb;
+  }
+  return nullptr;
+}
+
+static bool winuiRemoveDeleteButton(DependencyObject parent)
+{
+  int count = VisualTreeHelper::GetChildrenCount(parent);
+  for (int i = 0; i < count; i++)
+  {
+    auto child = VisualTreeHelper::GetChild(parent, i);
+    auto fe = child.try_as<FrameworkElement>();
+    if (fe && fe.Name() == L"DeleteButton")
+    {
+      auto panel = parent.try_as<Panel>();
+      if (panel)
+      {
+        auto uiElem = child.try_as<UIElement>();
+        if (uiElem)
+        {
+          uint32_t index;
+          if (panel.Children().IndexOf(uiElem, index))
+          {
+            panel.Children().RemoveAt(index);
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    if (winuiRemoveDeleteButton(child))
+      return true;
+  }
+  return false;
+}
+
 static void winuiTextSetScrollBarArrowCursors(DependencyObject parent)
 {
   using namespace Microsoft::UI::Xaml::Controls::Primitives;
@@ -550,6 +597,15 @@ static int winuiTextMapMethod(Ihandle* ih)
     Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
     if (parentCanvas)
       parentCanvas.Children().Append(nb);
+
+    nb.Loaded([](IInspectable const& sender, RoutedEventArgs const&) {
+      TextBox tb = winuiFindTextBox(sender.as<DependencyObject>());
+      if (tb)
+      {
+        tb.ApplyTemplate();
+        winuiRemoveDeleteButton(tb.as<DependencyObject>());
+      }
+    });
 
     winuiStoreHandle(ih, nb);
   }

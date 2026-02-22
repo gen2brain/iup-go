@@ -359,7 +359,6 @@ struct IupWinUIListAux
   bool hasEditbox;
   bool isMultiple;
   bool isVirtual;
-  bool ignoreChange;
 
   IupWinUIListAux() : selectionChangedToken{}, textChangedToken{},
                        dropDownOpenedToken{}, dropDownClosedToken{},
@@ -367,7 +366,7 @@ struct IupWinUIListAux
                        containerContentChangingToken{},
                        dragItemsStartingToken{}, dragItemsCompletedToken{},
                        isDropdown(false), hasEditbox(false), isMultiple(false),
-                       isVirtual(false), ignoreChange(false) {}
+                       isVirtual(false) {}
 };
 
 struct IupWinUITreeAux

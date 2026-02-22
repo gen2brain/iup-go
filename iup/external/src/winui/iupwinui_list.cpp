@@ -67,6 +67,37 @@ static void winuiListClearDragTracking()
 }
 
 
+static bool winuiListRemoveDeleteButton(DependencyObject parent)
+{
+  int count = VisualTreeHelper::GetChildrenCount(parent);
+  for (int i = 0; i < count; i++)
+  {
+    auto child = VisualTreeHelper::GetChild(parent, i);
+    auto fe = child.try_as<FrameworkElement>();
+    if (fe && fe.Name() == L"DeleteButton")
+    {
+      auto panel = parent.try_as<Panel>();
+      if (panel)
+      {
+        auto uiElem = child.try_as<UIElement>();
+        if (uiElem)
+        {
+          uint32_t index;
+          if (panel.Children().IndexOf(uiElem, index))
+          {
+            panel.Children().RemoveAt(index);
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    if (winuiListRemoveDeleteButton(child))
+      return true;
+  }
+  return false;
+}
+
 static void winuiListUpdateTextBlockFont(Ihandle* ih, TextBlock tb)
 {
   iupwinuiUpdateTextBlockFont(ih, tb);
@@ -310,12 +341,6 @@ static void winuiListSelectionChanged(Ihandle* ih)
   if (!aux)
     return;
 
-  if (aux->ignoreChange)
-  {
-    aux->ignoreChange = false;
-    return;
-  }
-
   if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
     return;
 
@@ -451,7 +476,6 @@ static int winuiListSetValueAttrib(Ihandle* ih, const char* value)
     return 0;
 
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
-  aux->ignoreChange = true;
 
   if (aux->isDropdown)
   {
@@ -1189,6 +1213,10 @@ static int winuiListMapMethod(Ihandle* ih)
     iupwinuiUpdateControlFont(ih, textBox);
     Grid::SetRow(textBox, 0);
     grid.Children().Append(textBox);
+
+    textBox.Loaded([](IInspectable const& sender, RoutedEventArgs const&) {
+      winuiListRemoveDeleteButton(sender.as<DependencyObject>());
+    });
 
     ListBox listBox;
     listBox.HorizontalAlignment(HorizontalAlignment::Stretch);
