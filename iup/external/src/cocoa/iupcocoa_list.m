@@ -1878,9 +1878,11 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
           NSSize intrinsic_size = [tempButton intrinsicContentSize];
           popup_decor_h = (int)lroundf(intrinsic_size.height);
 
-          /* Measure the width decoration: intrinsic width for "WWWWWWWWWW" minus text width */
+          /* Measure the width decoration: intrinsic width for "WWWWWWWWWW" minus text width. */
           int text_width = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
-          popup_decor_w = (int)lroundf(intrinsic_size.width) - text_width;
+          int sb_size = iupdrvGetScrollbarSize();
+          popup_decor_w = (int)lroundf(intrinsic_size.width) - text_width - sb_size;
+          if (popup_decor_w < 0) popup_decor_w = 0;
 
           [tempButton release];
         }
@@ -1911,9 +1913,11 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
           NSSize intrinsic_size = [tempComboBox intrinsicContentSize];
           combo_decor_h = (int)lroundf(intrinsic_size.height);
 
-          /* Measure the width decoration: intrinsic width minus text width */
+          /* Measure the width decoration: intrinsic width minus text width. */
           int text_width = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
-          combo_decor_w = (int)lroundf(intrinsic_size.width) - text_width;
+          int sb_size = iupdrvGetScrollbarSize();
+          combo_decor_w = (int)lroundf(intrinsic_size.width) - text_width - sb_size;
+          if (combo_decor_w < 0) combo_decor_w = 0;
 
           [tempComboBox release];
         }
