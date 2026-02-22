@@ -448,6 +448,33 @@ static char* eflTextGetSelectedTextAttrib(Ihandle* ih)
   return NULL;
 }
 
+static int eflTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
+{
+  Eo* entry = iupeflGetWidget(ih);
+  Efl_Text_Cursor_Object *sel_start, *sel_end;
+
+  if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
+    return 0;
+
+  if (!efl_text_interactive_have_selection_get(entry))
+    return 0;
+
+  efl_text_interactive_selection_cursors_get(entry, &sel_start, &sel_end);
+  if (!sel_start || !sel_end)
+    return 0;
+
+  ih->data->disable_callbacks = 1;
+
+  efl_text_cursor_object_range_delete(sel_start, sel_end);
+
+  if (value && value[0])
+    efl_text_cursor_object_text_insert(sel_start, iupeflStrConvertToSystem(value));
+
+  ih->data->disable_callbacks = 0;
+
+  return 0;
+}
+
 static int eflTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry = iupeflGetWidget(ih);
@@ -943,18 +970,6 @@ static char* eflTextGetPaddingAttrib(Ihandle* ih)
   return iupStrReturnIntInt(ih->data->horiz_padding, ih->data->vert_padding, 'x');
 }
 
-static int eflTextSetOverwriteAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
-static char* eflTextGetOverwriteAttrib(Ihandle* ih)
-{
-  return iupAttribGet(ih, "OVERWRITE");
-}
-
 /****************************************************************
                      Methods
 ****************************************************************/
@@ -1427,7 +1442,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PASSWORD", NULL, eflTextSetPasswordAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CARETPOS", eflTextGetCaretPosAttrib, eflTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", eflTextGetSelectionAttrib, eflTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", eflTextGetSelectedTextAttrib, NULL, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", eflTextGetSelectedTextAttrib, eflTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", NULL, eflTextSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERT", NULL, eflTextSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTO", NULL, eflTextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
@@ -1448,7 +1463,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUEBANNER", eflTextGetCueBannerAttrib, eflTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", eflTextGetTabSizeAttrib, eflTextSetTabSizeAttrib, "8", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "PADDING", eflTextGetPaddingAttrib, eflTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OVERWRITE", eflTextGetOverwriteAttrib, eflTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SPINVALUE", eflTextGetSpinValueAttrib, eflTextSetSpinValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMIN", NULL, eflTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
@@ -1458,4 +1473,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

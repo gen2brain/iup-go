@@ -822,6 +822,69 @@ static int eflDialogSetTopMostAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int eflDialogSetOpacityAttrib(Ihandle* ih, const char* value)
+{
+  Eo* win = iupeflGetWidget(ih);
+  Ecore_Evas* ee;
+  int opacity = 255;
+
+  if (!win)
+    return 0;
+
+  iupStrToInt(value, &opacity);
+  if (opacity < 0) opacity = 0;
+  if (opacity > 255) opacity = 255;
+
+  ee = ecore_evas_object_ecore_evas_get(win);
+  if (!ee)
+    return 0;
+
+  if (opacity < 255)
+    ecore_evas_alpha_set(ee, EINA_TRUE);
+  else
+    ecore_evas_alpha_set(ee, EINA_FALSE);
+
+  efl_gfx_color_set(win, opacity, opacity, opacity, opacity);
+  return 1;
+}
+
+static char* eflDialogGetClientSizeAttrib(Ihandle* ih)
+{
+  Eo* win = iupeflGetWidget(ih);
+  int width, height, menu_size;
+
+  if (!win)
+    return NULL;
+
+  {
+    Eina_Rect geom = iupeflGetGeometry(win);
+    width = geom.w;
+    height = geom.h;
+  }
+
+  menu_size = eflDialogGetMenuSize(ih);
+  height -= menu_size;
+  if (height < 0) height = 0;
+
+  return iupStrReturnIntInt(width, height, 'x');
+}
+
+static char* eflDialogGetClientOffsetAttrib(Ihandle* ih)
+{
+  int menu_size = eflDialogGetMenuSize(ih);
+  if (menu_size > 0)
+    return iupStrReturnIntInt(0, -menu_size, 'x');
+  return "0x0";
+}
+
+static char* eflDialogGetActiveWindowAttrib(Ihandle* ih)
+{
+  Eo* win = iupeflGetWidget(ih);
+  if (!win)
+    return "NO";
+  return efl_ui_focus_object_focus_get(win) ? "YES" : "NO";
+}
+
 static int eflDialogSetIconAttrib(Ihandle* ih, const char* value)
 {
   Eo* win = (Eo*)ih->handle;
@@ -886,6 +949,22 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, eflDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, eflDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "OPACITY", NULL, eflDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTSIZE", eflDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTOFFSET", eflDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_DEFAULTVALUE|IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", eflDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+
   iupClassRegisterAttribute(ic, "NATIVEPARENT", NULL, NULL, NULL, NULL, IUPAF_NO_STRING);
   iupClassRegisterAttribute(ic, "NATIVEWINDOWHANDLE", iupeflGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT | IUPAF_NO_STRING | IUPAF_READONLY);
+
+  iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDIFRAME", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDICLIENT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDIMENU", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDICHILD", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

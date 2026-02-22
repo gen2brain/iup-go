@@ -98,10 +98,6 @@ int iupeflIsX11(void);
  * Event Handlers
  ****************************************************************************/
 
-void iupeflClickedEvent(void *data, const Efl_Event *ev);
-void iupeflPressedEvent(void *data, const Efl_Event *ev);
-void iupeflUnpressedEvent(void *data, const Efl_Event *ev);
-void iupeflLongpressedEvent(void *data, const Efl_Event *ev);
 void iupeflFocusChangedEvent(void *data, const Efl_Event *ev);
 void iupeflKeyDownEvent(void *data, const Efl_Event *ev);
 void iupeflKeyUpEvent(void *data, const Efl_Event *ev);
