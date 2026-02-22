@@ -12,6 +12,8 @@
 #include <QTextDocument>
 #include <QTextBlock>
 #include <QTextCharFormat>
+#include <QTextBlockFormat>
+#include <QTextOption>
 #include <QScrollBar>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
@@ -1644,6 +1646,8 @@ static int qtTextSetPaddingAttrib(Ihandle* ih, const char* value)
     return 1; /* store until not mapped, when mapped will be set again */
 }
 
+static int qtTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value);
+
 /****************************************************************************
  * Class Initialization
  ****************************************************************************/
@@ -1700,11 +1704,11 @@ extern "C" void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", nullptr, iupTextSetAddFormatTagAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", nullptr, iupTextSetAddFormatTagHandleAttrib, nullptr, nullptr, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "REMOVEFORMATTING", nullptr, qtTextSetRemoveFormattingAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 }
 
 /* Format tag functions for rich text support */
 
-/* Helper function to parse SELECTIONPOS attribute (e.g., "7:24") */
 static bool qtTextParseSelectionPos(const char* selectionpos, int* start, int* end)
 {
   if (!selectionpos)
@@ -1716,10 +1720,310 @@ static bool qtTextParseSelectionPos(const char* selectionpos, int* start, int* e
   return false;
 }
 
+static bool qtTextParseSelection(Ihandle* ih, const char* value, int* start, int* end)
+{
+  int lin_start = 1, col_start = 1, lin_end = 1, col_end = 1;
+
+  if (!value || iupStrEqualNoCase(value, "NONE"))
+  {
+    *start = 0;
+    *end = 0;
+    return true;
+  }
+
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    QTextEdit* text = (QTextEdit*)ih->handle;
+    *start = 0;
+    *end = text->toPlainText().length();
+    return true;
+  }
+
+  if (sscanf(value, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end) != 4)
+    return false;
+
+  if (lin_start < 1 || col_start < 1 || lin_end < 1 || col_end < 1)
+    return false;
+
+  iupdrvTextConvertLinColToPos(ih, lin_start, col_start, start);
+  iupdrvTextConvertLinColToPos(ih, lin_end, col_end, end);
+  return true;
+}
+
+static bool qtTextParseParagraphFormat(Ihandle* formattag, QTextBlockFormat* blockFormat)
+{
+  int val;
+  const char* format;
+  bool has_format = false;
+
+  format = iupAttribGet(formattag, "ALIGNMENT");
+  if (format)
+  {
+    if (iupStrEqualNoCase(format, "JUSTIFY"))
+      blockFormat->setAlignment(Qt::AlignJustify);
+    else if (iupStrEqualNoCase(format, "RIGHT"))
+      blockFormat->setAlignment(Qt::AlignRight);
+    else if (iupStrEqualNoCase(format, "CENTER"))
+      blockFormat->setAlignment(Qt::AlignCenter);
+    else
+      blockFormat->setAlignment(Qt::AlignLeft);
+    has_format = true;
+  }
+
+  format = iupAttribGet(formattag, "INDENT");
+  if (format && iupStrToInt(format, &val))
+  {
+    blockFormat->setLeftMargin(val);
+
+    const char* indent_right = iupAttribGet(formattag, "INDENTRIGHT");
+    if (indent_right && iupStrToInt(indent_right, &val))
+      blockFormat->setRightMargin(val);
+
+    const char* indent_offset = iupAttribGet(formattag, "INDENTOFFSET");
+    if (indent_offset && iupStrToInt(indent_offset, &val))
+      blockFormat->setTextIndent(val);
+
+    has_format = true;
+  }
+
+  format = iupAttribGet(formattag, "SPACEBEFORE");
+  if (format && iupStrToInt(format, &val))
+  {
+    blockFormat->setTopMargin(val);
+    has_format = true;
+  }
+
+  format = iupAttribGet(formattag, "SPACEAFTER");
+  if (format && iupStrToInt(format, &val))
+  {
+    blockFormat->setBottomMargin(val);
+    has_format = true;
+  }
+
+  format = iupAttribGet(formattag, "LINESPACING");
+  if (format)
+  {
+    if (iupStrEqualNoCase(format, "SINGLE"))
+      blockFormat->setLineHeight(100, QTextBlockFormat::ProportionalHeight);
+    else if (iupStrEqualNoCase(format, "ONEHALF"))
+      blockFormat->setLineHeight(150, QTextBlockFormat::ProportionalHeight);
+    else if (iupStrEqualNoCase(format, "DOUBLE"))
+      blockFormat->setLineHeight(200, QTextBlockFormat::ProportionalHeight);
+    else if (iupStrToInt(format, &val))
+      blockFormat->setLineHeight(val, QTextBlockFormat::FixedHeight);
+    has_format = true;
+  }
+
+  format = iupAttribGet(formattag, "TABSARRAY");
+  if (format)
+  {
+    QList<QTextOption::Tab> tabs;
+    int pos, i = 0;
+    char* str;
+
+    while (format)
+    {
+      str = iupStrDupUntil((const char**)&format, ' ');
+      if (!str) break;
+      pos = atoi(str);
+      free(str);
+
+      str = iupStrDupUntil((const char**)&format, ' ');
+      if (!str) break;
+
+      QTextOption::TabType tabType = QTextOption::LeftTab;
+      if (iupStrEqualNoCase(str, "RIGHT"))
+        tabType = QTextOption::RightTab;
+      else if (iupStrEqualNoCase(str, "CENTER"))
+        tabType = QTextOption::CenterTab;
+      else if (iupStrEqualNoCase(str, "DECIMAL"))
+        tabType = QTextOption::DelimiterTab;
+      free(str);
+
+      tabs.append(QTextOption::Tab(pos, tabType));
+      i++;
+      if (i == 32) break;
+    }
+
+    blockFormat->setTabPositions(tabs);
+    has_format = true;
+  }
+
+  return has_format;
+}
+
+static void qtTextParseCharacterFormat(Ihandle* formattag, QTextCharFormat* charFormat)
+{
+  int val;
+  const char* format;
+
+  format = iupAttribGet(formattag, "FONTFACE");
+  if (format)
+  {
+    const char* mapped_name = iupFontGetPangoName(format);
+    if (mapped_name)
+      charFormat->setFontFamilies({QString(mapped_name)});
+    else
+      charFormat->setFontFamilies({QString(format)});
+  }
+
+  format = iupAttribGet(formattag, "FONTSIZE");
+  if (format && iupStrToInt(format, &val))
+  {
+    if (val < 0)
+      charFormat->setProperty(QTextFormat::FontPixelSize, -val);
+    else
+      charFormat->setFontPointSize(val);
+  }
+
+  format = iupAttribGet(formattag, "FONTSCALE");
+  if (format)
+  {
+    double fval = 0;
+    if (iupStrEqualNoCase(format, "XX-SMALL"))
+      fval = 0.5787037037037;
+    else if (iupStrEqualNoCase(format, "X-SMALL"))
+      fval = 0.6444444444444;
+    else if (iupStrEqualNoCase(format, "SMALL"))
+      fval = 0.8333333333333;
+    else if (iupStrEqualNoCase(format, "MEDIUM"))
+      fval = 1.0;
+    else if (iupStrEqualNoCase(format, "LARGE"))
+      fval = 1.2;
+    else if (iupStrEqualNoCase(format, "X-LARGE"))
+      fval = 1.4399999999999;
+    else if (iupStrEqualNoCase(format, "XX-LARGE"))
+      fval = 1.728;
+    else
+      iupStrToDouble(format, &fval);
+
+    if (fval > 0)
+    {
+      double currentSize = charFormat->fontPointSize();
+      if (currentSize > 0)
+        charFormat->setFontPointSize(currentSize * fval);
+    }
+  }
+
+  format = iupAttribGet(formattag, "RISE");
+  if (format)
+  {
+    if (iupStrEqualNoCase(format, "SUPERSCRIPT"))
+      charFormat->setVerticalAlignment(QTextCharFormat::AlignSuperScript);
+    else if (iupStrEqualNoCase(format, "SUBSCRIPT"))
+      charFormat->setVerticalAlignment(QTextCharFormat::AlignSubScript);
+    else if (iupStrToInt(format, &val))
+    {
+      if (val > 0)
+        charFormat->setVerticalAlignment(QTextCharFormat::AlignSuperScript);
+      else if (val < 0)
+        charFormat->setVerticalAlignment(QTextCharFormat::AlignSubScript);
+      else
+        charFormat->setVerticalAlignment(QTextCharFormat::AlignNormal);
+    }
+  }
+
+  format = iupAttribGet(formattag, "SMALLCAPS");
+  if (format)
+  {
+    if (iupStrBoolean(format))
+      charFormat->setFontCapitalization(QFont::SmallCaps);
+    else
+      charFormat->setFontCapitalization(QFont::MixedCase);
+  }
+
+  format = iupAttribGet(formattag, "ITALIC");
+  if (format)
+  {
+    charFormat->setFontItalic(iupStrBoolean(format));
+  }
+
+  format = iupAttribGet(formattag, "STRIKEOUT");
+  if (format)
+  {
+    charFormat->setFontStrikeOut(iupStrBoolean(format));
+  }
+
+  format = iupAttribGet(formattag, "PROTECTED");
+  if (format)
+  {
+    if (iupStrBoolean(format))
+      charFormat->setObjectType(QTextFormat::UserObject);
+  }
+
+  format = iupAttribGet(formattag, "FGCOLOR");
+  if (format)
+  {
+    unsigned char r, g, b;
+    if (iupStrToRGB(format, &r, &g, &b))
+      charFormat->setForeground(QColor(r, g, b));
+  }
+
+  format = iupAttribGet(formattag, "BGCOLOR");
+  if (format)
+  {
+    unsigned char r, g, b;
+    if (iupStrToRGB(format, &r, &g, &b))
+      charFormat->setBackground(QColor(r, g, b));
+  }
+
+  format = iupAttribGet(formattag, "UNDERLINE");
+  if (format)
+  {
+    if (iupStrEqualNoCase(format, "SINGLE"))
+      charFormat->setUnderlineStyle(QTextCharFormat::SingleUnderline);
+    else if (iupStrEqualNoCase(format, "DOUBLE"))
+      charFormat->setUnderlineStyle(QTextCharFormat::WaveUnderline);
+    else if (iupStrEqualNoCase(format, "DOTTED"))
+      charFormat->setUnderlineStyle(QTextCharFormat::DotLine);
+    else
+      charFormat->setUnderlineStyle(QTextCharFormat::NoUnderline);
+  }
+
+  format = iupAttribGet(formattag, "WEIGHT");
+  if (format)
+  {
+    if (iupStrEqualNoCase(format, "EXTRALIGHT"))
+      charFormat->setFontWeight(QFont::ExtraLight);
+    else if (iupStrEqualNoCase(format, "LIGHT"))
+      charFormat->setFontWeight(QFont::Light);
+    else if (iupStrEqualNoCase(format, "SEMIBOLD"))
+      charFormat->setFontWeight(QFont::DemiBold);
+    else if (iupStrEqualNoCase(format, "BOLD"))
+      charFormat->setFontWeight(QFont::Bold);
+    else if (iupStrEqualNoCase(format, "EXTRABOLD"))
+      charFormat->setFontWeight(QFont::ExtraBold);
+    else if (iupStrEqualNoCase(format, "HEAVY"))
+      charFormat->setFontWeight(QFont::Black);
+    else
+      charFormat->setFontWeight(QFont::Normal);
+  }
+}
+
+static int qtTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->is_multiline)
+    return 0;
+
+  QTextEdit* text = (QTextEdit*)ih->handle;
+  if (!text)
+    return 0;
+
+  QTextCursor cursor = text->textCursor();
+
+  if (iupStrEqualNoCase(value, "ALL"))
+    cursor.select(QTextCursor::Document);
+  else if (!cursor.hasSelection())
+    return 0;
+
+  cursor.setCharFormat(QTextCharFormat());
+  cursor.setBlockFormat(QTextBlockFormat());
+
+  return 0;
+}
+
 extern "C" void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
-  /* Qt formatting operations are efficient, but we can disable undo/redo
-   * during bulk operations for better performance */
   if (!ih->data->is_multiline)
     return NULL;
 
@@ -1727,7 +2031,6 @@ extern "C" void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
   if (!text)
     return NULL;
 
-  /* Store whether undo/redo was enabled */
   bool* undo_enabled = new bool(text->isUndoRedoEnabled());
   text->setUndoRedoEnabled(false);
 
@@ -1743,7 +2046,6 @@ extern "C" void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
   if (!text)
     return;
 
-  /* Restore undo/redo state */
   bool* undo_enabled = (bool*)state;
   text->setUndoRedoEnabled(*undo_enabled);
   delete undo_enabled;
@@ -1760,96 +2062,39 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
   if (!text)
     return;
 
-  /* Get the selection range from the format tag */
-  const char* selectionpos = iupAttribGet(formattag, "SELECTIONPOS");
-  if (!selectionpos)
-    return;
+  int start_pos = 0, end_pos = 0;
 
-  int start_pos, end_pos;
-  if (!qtTextParseSelectionPos(selectionpos, &start_pos, &end_pos))
-    return;
+  const char* selection = iupAttribGet(formattag, "SELECTION");
+  if (selection)
+  {
+    if (!qtTextParseSelection(ih, selection, &start_pos, &end_pos))
+      return;
+  }
+  else
+  {
+    const char* selectionpos = iupAttribGet(formattag, "SELECTIONPOS");
+    if (selectionpos)
+    {
+      if (!qtTextParseSelectionPos(selectionpos, &start_pos, &end_pos))
+        return;
+    }
+    else
+    {
+      QTextCursor cur = text->textCursor();
+      start_pos = cur.position();
+      end_pos = cur.position();
+    }
+  }
 
-  /* Create a cursor for the specified range */
   QTextCursor cursor = text->textCursor();
   cursor.setPosition(start_pos);
   cursor.setPosition(end_pos, QTextCursor::KeepAnchor);
 
-  /* Create character format */
-  QTextCharFormat format;
+  QTextCharFormat charFormat;
+  qtTextParseCharacterFormat(formattag, &charFormat);
+  cursor.mergeCharFormat(charFormat);
 
-  /* Apply BGCOLOR if specified */
-  const char* bgcolor = iupAttribGet(formattag, "BGCOLOR");
-  if (bgcolor)
-  {
-    unsigned char r, g, b;
-    if (iupStrToRGB(bgcolor, &r, &g, &b))
-    {
-      format.setBackground(QColor(r, g, b));
-    }
-  }
-
-  /* Apply FGCOLOR if specified */
-  const char* fgcolor = iupAttribGet(formattag, "FGCOLOR");
-  if (fgcolor)
-  {
-    unsigned char r, g, b;
-    if (iupStrToRGB(fgcolor, &r, &g, &b))
-    {
-      format.setForeground(QColor(r, g, b));
-    }
-  }
-
-  /* Apply UNDERLINE if specified */
-  const char* underline = iupAttribGet(formattag, "UNDERLINE");
-  if (underline && iupStrBoolean(underline))
-  {
-    format.setFontUnderline(true);
-  }
-
-  /* Apply ITALIC if specified */
-  const char* italic = iupAttribGet(formattag, "ITALIC");
-  if (italic && iupStrBoolean(italic))
-  {
-    format.setFontItalic(true);
-  }
-
-  /* Apply BOLD/WEIGHT if specified */
-  const char* bold = iupAttribGet(formattag, "BOLD");
-  if (bold && iupStrBoolean(bold))
-  {
-    format.setFontWeight(QFont::Bold);
-  }
-  else
-  {
-    const char* weight = iupAttribGet(formattag, "WEIGHT");
-    if (weight)
-    {
-      if (iupStrEqualNoCase(weight, "EXTRALIGHT"))
-        format.setFontWeight(QFont::ExtraLight);
-      else if (iupStrEqualNoCase(weight, "LIGHT"))
-        format.setFontWeight(QFont::Light);
-      else if (iupStrEqualNoCase(weight, "SEMIBOLD"))
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        format.setFontWeight(QFont::DemiBold);
-#else
-        format.setFontWeight(QFont::DemiBold);
-#endif
-      else if (iupStrEqualNoCase(weight, "BOLD"))
-        format.setFontWeight(QFont::Bold);
-      else if (iupStrEqualNoCase(weight, "HEAVY"))
-        format.setFontWeight(QFont::Black);
-      else  /* "NORMAL" */
-        format.setFontWeight(QFont::Normal);
-    }
-  }
-
-  /* Apply STRIKEOUT if specified */
-  const char* strikeout = iupAttribGet(formattag, "STRIKEOUT");
-  if (strikeout && iupStrBoolean(strikeout))
-  {
-    format.setFontStrikeOut(true);
-  }
-
-  /* Apply the format to the selected range */
-  cursor.mergeCharFormat(format);
+  QTextBlockFormat blockFormat;
+  if (qtTextParseParagraphFormat(formattag, &blockFormat))
+    cursor.mergeBlockFormat(blockFormat);
 }
