@@ -197,6 +197,8 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
 - (void) drawRect:(NSRect)dirty_rect
 {
+  NSRect bounds = [self bounds];
+
   /* For OpenGL canvases, use clearDrawable + setView pattern before calling ACTION */
   if (iupAttribGet(_ih, "_IUP_GLCONTROLDATA"))
   {
@@ -225,24 +227,21 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
     return;
   }
 
-  /* Check if there's a persistent buffer from SCROLL_CB or other drawing outside ACTION */
-  if (iupAttribGet(_ih, "_IUPCOCOA_BUFFER_DIRTY"))
+  if (bounds.size.width <= 0 || bounds.size.height <= 0)
+    return;
+
+  /* Check if there's a buffer ready to display (filled outside drawRect, e.g. by SCROLL_CB). */
   {
     NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_BUFFER");
 
     if (buffer)
     {
-      NSRect bounds = [self bounds];
-
-      /* If buffer exists and matches size, use it instead of calling ACTION */
       if ([buffer pixelsWide] == (NSInteger)bounds.size.width &&
           [buffer pixelsHigh] == (NSInteger)bounds.size.height)
       {
-        /* Draw buffer contents to screen */
         NSGraphicsContext* context = [NSGraphicsContext currentContext];
         [context saveGraphicsState];
 
-        /* Draw bitmap respecting flipped view - this prevents Y-axis inversion */
         [buffer drawInRect:bounds
                   fromRect:NSMakeRect(0, 0, bounds.size.width, bounds.size.height)
                  operation:NSCompositingOperationCopy
@@ -252,8 +251,10 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
         [context restoreGraphicsState];
 
-        /* Keep dirty flag set - continue using buffer until ACTION is called */
-        return;  /* Don't call ACTION callback */
+        [buffer release];
+        iupAttribSet(_ih, "_IUPCOCOA_CANVAS_BUFFER", NULL);
+
+        return;
       }
     }
   }
@@ -262,42 +263,16 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
   if (call_back)
   {
-    /* Clear dirty flag since ACTION is being called */
-    iupAttribSet(_ih, "_IUPCOCOA_BUFFER_DIRTY", NULL);
-
-    NSGraphicsContext* context = [NSGraphicsContext currentContext];
-    [context saveGraphicsState];
-
-    /* Get the scroll offset (top-left visible coordinate in virtual space).
-       We use the stored IUP POSX/POSY, which are synchronized with the visible rect. */
-    double xmin = iupAttribGetDouble(_ih, "XMIN");
-    double ymin = iupAttribGetDouble(_ih, "YMIN");
-    double offsetX = _ih->data->posx - xmin;
-    double offsetY = _ih->data->posy - ymin;
-
-    /* Apply the translation: T(x_app) = x_virt = x_app + OffsetX. */
-    CGContextRef cgContext = [context CGContext];
-    CGContextTranslateCTM(cgContext, offsetX, offsetY);
-
-    /* Set the CLIPRECT attribute, relative to the visible area (0,0).
-       The dirty_rect is in virtual coordinates, so we translate it back. */
-    NSRect clip_rect = dirty_rect;
-    clip_rect.origin.x -= offsetX;
-    clip_rect.origin.y -= offsetY;
-
-    /* IUP CLIPRECT definition: If the rectangle is empty, the attribute returns NULL. */
-    if (clip_rect.size.width <= 0 || clip_rect.size.height <= 0)
+    if (dirty_rect.size.width <= 0 || dirty_rect.size.height <= 0)
     {
       iupAttribSet(_ih, "CLIPRECT", NULL);
     }
     else
     {
-      /* IUP uses inclusive integer coordinates for the end point (x2, y2).
-         We use floor/ceil to ensure we cover the pixel area correctly and subtract 1 for inclusive end coordinate. */
-      double x1 = floor(clip_rect.origin.x);
-      double y1 = floor(clip_rect.origin.y);
-      double x2 = ceil(clip_rect.origin.x + clip_rect.size.width) - 1;
-      double y2 = ceil(clip_rect.origin.y + clip_rect.size.height) - 1;
+      double x1 = floor(dirty_rect.origin.x);
+      double y1 = floor(dirty_rect.origin.y);
+      double x2 = ceil(dirty_rect.origin.x + dirty_rect.size.width) - 1;
+      double y2 = ceil(dirty_rect.origin.y + dirty_rect.size.height) - 1;
 
       if (x2 < x1) x2 = x1;
       if (y2 < y1) y2 = y1;
@@ -305,12 +280,36 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
       iupAttribSetStrf(_ih, "CLIPRECT", "%.0f %.0f %.0f %.0f", x1, y1, x2, y2);
     }
 
-    /* The view is flipped, so the graphics context's coordinate system is
-       already top-down, matching IUP. The ACTION callback receives posx/posy to handle scrolling offsets. */
+    CGContextRef cgContext = [[NSGraphicsContext currentContext] CGContext];
+    iupAttribSet(_ih, "_IUPCOCOA_DRAWRECT_CGCONTEXT", (char*)cgContext);
+
     call_back(_ih);
 
+    iupAttribSet(_ih, "_IUPCOCOA_DRAWRECT_CGCONTEXT", NULL);
     iupAttribSet(_ih, "CLIPRECT", NULL);
-    [context restoreGraphicsState];
+
+    /* ACTION filled a buffer via IupDrawBegin/DrawFlush/DrawEnd.
+       Display the buffer immediately (single-pass). */
+    {
+      NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_BUFFER");
+      if (buffer)
+      {
+        NSGraphicsContext* context = [NSGraphicsContext currentContext];
+        [context saveGraphicsState];
+
+        [buffer drawInRect:bounds
+                  fromRect:NSMakeRect(0, 0, bounds.size.width, bounds.size.height)
+                 operation:NSCompositingOperationCopy
+                  fraction:1.0
+            respectFlipped:YES
+                     hints:nil];
+
+        [context restoreGraphicsState];
+
+        [buffer release];
+        iupAttribSet(_ih, "_IUPCOCOA_CANVAS_BUFFER", NULL);
+      }
+    }
   }
   else
   {
@@ -353,7 +352,6 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   }
   else
   {
-    NSLog(@"frameDidChangeNotification: unexpected notification object.");
     return;
   }
 
@@ -1447,6 +1445,13 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
   }
   iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
 
+  NSBitmapImageRep* canvas_buffer = (NSBitmapImageRep*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_BUFFER");
+  if (canvas_buffer)
+  {
+    [canvas_buffer release];
+    iupAttribSet(ih, "_IUPCOCOA_CANVAS_BUFFER", NULL);
+  }
+
   iupcocoaRemoveFromParent(ih);
   iupcocoaSetAssociatedViews(ih, nil, nil);
 
@@ -1471,6 +1476,19 @@ static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
   /* Now resize the canvas_root to fill the extra_parent */
   NSView* canvas_root = (NSView*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_ROOT");
 
+  if (ih->data->sb)
+  {
+    /* For scrollbar canvases, size the document view (canvas_view) BEFORE
+       the scroll_view. Setting the scroll_view frame triggers
+       frameDidChangeNotification: which calls RESIZE_CB. */
+    IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
+    if (canvas_view)
+    {
+      NSSize canvas_size = NSMakeSize(ih->currentwidth, ih->currentheight);
+      [canvas_view setFrameSize:canvas_size];
+    }
+  }
+
   if (canvas_root)
   {
     [canvas_root setFrame:NSMakeRect(0, 0, ih->currentwidth, ih->currentheight)];
@@ -1478,17 +1496,9 @@ static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
 
   if (ih->data->sb)
   {
-    /* For logical scrolling, keep document view (canvas) at a fixed size
-       The size should match ih->currentwidth x ih->currentheight (IUP's calculated size) */
     NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
-    IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
-    if (scroll_view && canvas_view)
+    if (scroll_view)
     {
-      NSSize canvas_size = NSMakeSize(ih->currentwidth, ih->currentheight);
-
-      [canvas_view setFrameSize:canvas_size];
-
-      /* Force scroll view to update scroller display without changing document size */
       [scroll_view tile];
     }
 
@@ -1584,6 +1594,7 @@ void iupdrvCanvasInitClass(Iclass* ic)
 
   /* Not Supported */
   iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   /* Layer backing */
   iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

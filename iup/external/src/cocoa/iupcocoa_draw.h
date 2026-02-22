@@ -16,10 +16,9 @@ struct _IdrawCanvas
   Ihandle* ih;
   NSView* canvasView;
 
-  CGContextRef cgContext;         /* on-screen view context */
-  CGContextRef image_cgContext;   /* off-screen buffer context for drawing */
-  CGLayerRef cgLayer;             /* off-screen buffer layer */
-  int release_context;            /* tracks if we called lockFocus */
+  CGContextRef cgContext;         /* bitmap buffer context (drawing target) */
+  CGContextRef image_cgContext;   /* same as cgContext (kept for API symmetry with other drivers) */
+  int release_context;
   CGFloat w, h;                   /* canvas size */
 
   /* clip region */
