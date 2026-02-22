@@ -148,11 +148,7 @@ protected:
           int y = global_pos.y();
 
           char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
           iupqtButtonKeySetStatus(wheel_evt->modifiers(), Qt::NoButton, 0, status, 0);
-#else
-          iupqtButtonKeySetStatus(wheel_evt->modifiers(), Qt::NoButton, 0, status, 0);
-#endif
 
           cb(delta, x, y, status);
         }

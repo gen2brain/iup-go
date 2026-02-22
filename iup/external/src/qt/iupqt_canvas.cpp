@@ -1061,6 +1061,10 @@ extern "C" void iupdrvCanvasInitClass(Iclass* ic)
   /* Native window handle (platform-specific: XWINDOW, WL_SURFACE, HWND, NSVIEW) */
   iupClassRegisterAttribute(ic, iupqtGetNativeWindowHandleName(), iupqtGetNativeWindowHandleAttrib, nullptr, nullptr, nullptr, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
 
+  /* Not supported */
+  iupClassRegisterAttribute(ic, "TOUCH", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKINGSTORE", nullptr, nullptr, "YES", nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+
   /* Other attributes */
   iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HTTRANSPARENT", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
