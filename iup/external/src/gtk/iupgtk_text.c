@@ -339,7 +339,26 @@ static void gtkTextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
 
   format = iupAttribGet(formattag, "INDENT");
   if (format && iupStrToInt(format, &val))
-    g_object_set(G_OBJECT(tag), "indent", val, NULL);
+  {
+    char* indent_offset = iupAttribGet(formattag, "INDENTOFFSET");
+    if (indent_offset)
+    {
+      int ioval = 0;
+      iupStrToInt(indent_offset, &ioval);
+      g_object_set(G_OBJECT(tag), "left-margin", val, NULL);
+      g_object_set(G_OBJECT(tag), "indent", ioval, NULL);
+    }
+    else
+      g_object_set(G_OBJECT(tag), "indent", val, NULL);
+
+    char* indent_right = iupAttribGet(formattag, "INDENTRIGHT");
+    if (indent_right)
+    {
+      int irval = 0;
+      iupStrToInt(indent_right, &irval);
+      g_object_set(G_OBJECT(tag), "right-margin", irval, NULL);
+    }
+  }
 
   format = iupAttribGet(formattag, "ALIGNMENT");
   if (format)
@@ -375,13 +394,15 @@ static void gtkTextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
       str = iupStrDupUntil((const char**)&format, ' ');
       if (!str) break;
 
-/*      if (iupStrEqualNoCase(str, "DECIMAL"))    unsupported for now
-        align = PANGO_TAB_NUMERIC;
-      else if (iupStrEqualNoCase(str, "RIGHT"))
+#if PANGO_VERSION_CHECK(1, 50, 0)
+      if (iupStrEqualNoCase(str, "RIGHT"))
         align = PANGO_TAB_RIGHT;
       else if (iupStrEqualNoCase(str, "CENTER"))
         align = PANGO_TAB_CENTER;
-      else */    /* "LEFT" */
+      else if (iupStrEqualNoCase(str, "DECIMAL"))
+        align = PANGO_TAB_DECIMAL;
+      else
+#endif
         align = PANGO_TAB_LEFT;
       free(str);
 
