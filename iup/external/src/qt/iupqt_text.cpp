@@ -31,6 +31,7 @@
 #include <QCompleter>
 #include <QStringListModel>
 #include <QFrame>
+#include <QTextList>
 
 #include <cstdlib>
 #include <cstdio>
@@ -2097,4 +2098,72 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
   QTextBlockFormat blockFormat;
   if (qtTextParseParagraphFormat(formattag, &blockFormat))
     cursor.mergeBlockFormat(blockFormat);
+
+  const char* numbering = iupAttribGet(formattag, "NUMBERING");
+  if (numbering)
+  {
+    if (iupStrEqualNoCase(numbering, "NONE"))
+    {
+      QTextList* list = cursor.currentList();
+      if (list)
+      {
+        QTextBlock block = cursor.block();
+        list->remove(block);
+      }
+    }
+    else
+    {
+      QTextListFormat listFormat;
+
+      if (iupStrEqualNoCase(numbering, "BULLET"))
+        listFormat.setStyle(QTextListFormat::ListDisc);
+      else if (iupStrEqualNoCase(numbering, "ARABIC"))
+        listFormat.setStyle(QTextListFormat::ListDecimal);
+      else if (iupStrEqualNoCase(numbering, "LCLETTER"))
+        listFormat.setStyle(QTextListFormat::ListLowerAlpha);
+      else if (iupStrEqualNoCase(numbering, "UCLETTER"))
+        listFormat.setStyle(QTextListFormat::ListUpperAlpha);
+      else if (iupStrEqualNoCase(numbering, "LCROMAN"))
+        listFormat.setStyle(QTextListFormat::ListLowerRoman);
+      else if (iupStrEqualNoCase(numbering, "UCROMAN"))
+        listFormat.setStyle(QTextListFormat::ListUpperRoman);
+      else
+        listFormat.setStyle(QTextListFormat::ListDisc);
+
+      const char* style = iupAttribGet(formattag, "NUMBERINGSTYLE");
+      if (style)
+      {
+        if (iupStrEqualNoCase(style, "RIGHTPARENTHESIS"))
+        {
+          listFormat.setNumberPrefix(QString());
+          listFormat.setNumberSuffix(QStringLiteral(")"));
+        }
+        else if (iupStrEqualNoCase(style, "PARENTHESES"))
+        {
+          listFormat.setNumberPrefix(QStringLiteral("("));
+          listFormat.setNumberSuffix(QStringLiteral(")"));
+        }
+        else if (iupStrEqualNoCase(style, "PERIOD"))
+        {
+          listFormat.setNumberPrefix(QString());
+          listFormat.setNumberSuffix(QStringLiteral("."));
+        }
+        else if (iupStrEqualNoCase(style, "NONUMBER"))
+        {
+          listFormat.setNumberPrefix(QString());
+          listFormat.setNumberSuffix(QString());
+        }
+      }
+
+      const char* numberingtab = iupAttribGet(formattag, "NUMBERINGTAB");
+      if (numberingtab)
+      {
+        int tabval = 0;
+        if (iupStrToInt(numberingtab, &tabval))
+          listFormat.setIndent(tabval / 8);
+      }
+
+      cursor.createList(listFormat);
+    }
+  }
 }
