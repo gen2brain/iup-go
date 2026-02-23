@@ -1611,7 +1611,26 @@ static void gtk4TextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
 
   format = iupAttribGet(formattag, "INDENT");
   if (format && iupStrToInt(format, &val))
-    g_object_set(G_OBJECT(tag), "indent", val, NULL);
+  {
+    char* indent_offset = iupAttribGet(formattag, "INDENTOFFSET");
+    if (indent_offset)
+    {
+      int ioval = 0;
+      iupStrToInt(indent_offset, &ioval);
+      g_object_set(G_OBJECT(tag), "left-margin", val, NULL);
+      g_object_set(G_OBJECT(tag), "indent", ioval, NULL);
+    }
+    else
+      g_object_set(G_OBJECT(tag), "indent", val, NULL);
+
+    char* indent_right = iupAttribGet(formattag, "INDENTRIGHT");
+    if (indent_right)
+    {
+      int irval = 0;
+      iupStrToInt(indent_right, &irval);
+      g_object_set(G_OBJECT(tag), "right-margin", irval, NULL);
+    }
+  }
 
   format = iupAttribGet(formattag, "ALIGNMENT");
   if (format)
@@ -1646,7 +1665,14 @@ static void gtk4TextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
       str = iupStrDupUntil((const char**)&format, ' ');
       if (!str) break;
 
-      align = PANGO_TAB_LEFT;
+      if (iupStrEqualNoCase(str, "RIGHT"))
+        align = PANGO_TAB_RIGHT;
+      else if (iupStrEqualNoCase(str, "CENTER"))
+        align = PANGO_TAB_CENTER;
+      else if (iupStrEqualNoCase(str, "DECIMAL"))
+        align = PANGO_TAB_DECIMAL;
+      else
+        align = PANGO_TAB_LEFT;
       free(str);
 
       pango_tab_array_set_tab(tabs, i, align, iupGTK4_PIXELS2PANGOUNITS(pos));
@@ -1919,6 +1945,21 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
   gtk_text_buffer_apply_tag(buffer, tag, &start_iter, &end_iter);
 }
 
+static int gtk4TextSetOverwriteAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->is_multiline)
+    return 0;
+  gtk_text_view_set_overwrite(GTK_TEXT_VIEW(ih->handle), iupStrBoolean(value));
+  return 0;
+}
+
+static char* gtk4TextGetOverwriteAttrib(Ihandle* ih)
+{
+  if (!ih->data->is_multiline)
+    return NULL;
+  return iupStrReturnChecked(gtk_text_view_get_overwrite(GTK_TEXT_VIEW(ih->handle)));
+}
+
 static int gtk4TextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
 {
   GtkTextBuffer *buffer;
@@ -1979,7 +2020,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", gtk4TextGetOverwriteAttrib, gtk4TextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, gtk4TextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPENDNEWLINE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLECOLUMNS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
