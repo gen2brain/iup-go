@@ -1465,6 +1465,50 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
     changed = true;
   }
 
+  val = iupAttribGet(formattag, "NUMBERING");
+  if (val)
+  {
+    if (iupStrEqualNoCase(val, "BULLET"))
+      pf.ListType(MarkerType::Bullet);
+    else if (iupStrEqualNoCase(val, "ARABIC"))
+      pf.ListType(MarkerType::Arabic);
+    else if (iupStrEqualNoCase(val, "LCLETTER"))
+      pf.ListType(MarkerType::LowercaseEnglishLetter);
+    else if (iupStrEqualNoCase(val, "UCLETTER"))
+      pf.ListType(MarkerType::UppercaseEnglishLetter);
+    else if (iupStrEqualNoCase(val, "LCROMAN"))
+      pf.ListType(MarkerType::LowercaseRoman);
+    else if (iupStrEqualNoCase(val, "UCROMAN"))
+      pf.ListType(MarkerType::UppercaseRoman);
+    else
+      pf.ListType(MarkerType::None);
+
+    char* style = iupAttribGet(formattag, "NUMBERINGSTYLE");
+    if (style)
+    {
+      if (iupStrEqualNoCase(style, "RIGHTPARENTHESIS"))
+        pf.ListStyle(MarkerStyle::Parenthesis);
+      else if (iupStrEqualNoCase(style, "PARENTHESES"))
+        pf.ListStyle(MarkerStyle::Parentheses);
+      else if (iupStrEqualNoCase(style, "PERIOD"))
+        pf.ListStyle(MarkerStyle::Period);
+      else if (iupStrEqualNoCase(style, "NONUMBER"))
+        pf.ListStyle(MarkerStyle::NoNumber);
+      else
+        pf.ListStyle(MarkerStyle::Plain);
+    }
+
+    char* numberingtab = iupAttribGet(formattag, "NUMBERINGTAB");
+    if (numberingtab)
+    {
+      int tabval = 0;
+      if (iupStrToInt(numberingtab, &tabval))
+        pf.ListTab((float)tabval * pixelToPoint);
+    }
+
+    changed = true;
+  }
+
   if (changed)
     range.ParagraphFormat(pf);
 }
@@ -2604,6 +2648,42 @@ static int winuiTextSetTabSizeAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int winuiTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
+{
+  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || !aux->isFormatted)
+    return 0;
+
+  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  if (!reb)
+    return 0;
+
+  auto doc = reb.Document();
+  auto defaultCF = doc.GetDefaultCharacterFormat();
+  auto defaultPF = doc.GetDefaultParagraphFormat();
+
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    hstring text;
+    doc.GetText(TextGetOptions::None, text);
+    auto range = doc.GetRange(0, (int32_t)text.size());
+    range.CharacterFormat().SetClone(defaultCF);
+    range.ParagraphFormat().SetClone(defaultPF);
+  }
+  else
+  {
+    auto sel = doc.Selection();
+    if (sel.StartPosition() != sel.EndPosition())
+    {
+      auto range = sel.GetClone();
+      range.CharacterFormat().SetClone(defaultCF);
+      range.ParagraphFormat().SetClone(defaultPF);
+    }
+  }
+
+  return 0;
+}
+
 extern "C" void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = winuiTextMapMethod;
@@ -2647,5 +2727,6 @@ extern "C" void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, winuiTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, winuiTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, winuiTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, winuiTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
