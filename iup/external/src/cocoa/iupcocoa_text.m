@@ -1875,114 +1875,75 @@ static bool cocoaTextComputeRangeFromLineColumnForTextView(NSTextView* text_view
   *out_range = NSMakeRange(0, 0);
 
   if(end_line < start_line)
-  {
     return false;
-  }
-  else if((end_line == start_line) && (end_column < start_column))
-  {
+  if((end_line == start_line) && (end_column < start_column))
     return false;
-  }
 
-  NSLayoutManager* layout_manager = [text_view layoutManager];
-  NSUInteger number_of_glyphs = [layout_manager numberOfGlyphs];
-  if(0 == number_of_glyphs)
+  NSString* text = [[text_view textStorage] string];
+  NSUInteger text_length = [text length];
+
+  if(text_length == 0)
   {
     if((start_line <= 1) && (start_column <= 1))
-    {
       return true;
-    }
-    else
-    {
-      return false;
-    }
-  }
-  NSUInteger number_of_lines;
-  NSUInteger index;
-
-  NSRange line_range = NSMakeRange(0, 0);
-
-  bool found_start_line = false;
-  bool found_start_column = false;
-  NSUInteger selection_start_index = 0;
-
-  for(number_of_lines = 0, index = 0; index < number_of_glyphs;)
-  {
-    NSUInteger last_index = index;
-    NSRange last_range = line_range;
-
-    (void) [layout_manager lineFragmentRectForGlyphAtIndex:index
-                                            effectiveRange:&line_range];
-    index = NSMaxRange(line_range);
-    number_of_lines++;
-    if(number_of_lines == start_line)
-    {
-      found_start_line = true;
-      if(line_range.length >= start_column)
-      {
-        found_start_column = true;
-        NSUInteger overshot_count = line_range.length - (start_column-1);
-        selection_start_index = index - overshot_count;
-      }
-      else
-      {
-        found_start_column = false;
-        selection_start_index = index;
-      }
-
-      /* Edge case: end_line is the same line as start_line */
-      if(start_line == end_line)
-      {
-        number_of_lines--;
-        line_range = last_range;
-        index = last_index;
-      }
-
-      break;
-    }
-  }
-
-  if(!found_start_line)
-  {
     return false;
   }
 
-  /* Do end */
-  bool found_end_line = false;
-  bool found_end_column = false;
-  NSUInteger selection_end_index = 0;
+  /* Use logical lines (paragraphs delimited by newlines), matching GTK's
+     gtk_text_buffer_get_iter_at_line() behavior. */
+  NSUInteger current_line = 1;
+  NSUInteger line_start = 0;
+  NSUInteger i;
 
-  for(; index < number_of_glyphs;)
+  for(i = 0; i < text_length && current_line < start_line; i++)
   {
-    (void) [layout_manager lineFragmentRectForGlyphAtIndex:index
-                                            effectiveRange:&line_range];
-    index = NSMaxRange(line_range);
-    number_of_lines++;
-    if(number_of_lines == end_line)
+    if([text characterAtIndex:i] == '\n')
     {
-      found_end_line = true;
-      if(line_range.length >= end_column)
-      {
-        found_start_column = true;
-        NSUInteger overshot_count = line_range.length - (end_column-1);
-        selection_end_index = index - overshot_count;
-      }
-      else
-      {
-        found_end_column = false;
-        selection_end_index = index;
-      }
-      break;
+      current_line++;
+      line_start = i + 1;
     }
   }
 
-  if(!found_end_line)
+  if(current_line < start_line)
+    return false;
+
+  NSUInteger start_pos = line_start + (start_column - 1);
+  if(start_pos > text_length)
+    start_pos = text_length;
+
+  NSUInteger end_line_start = line_start;
+  if(end_line > current_line)
   {
-    selection_end_index = index;
+    for(; i < text_length && current_line < end_line; i++)
+    {
+      if([text characterAtIndex:i] == '\n')
+      {
+        current_line++;
+        end_line_start = i + 1;
+      }
+    }
   }
 
-  NSRange selection_range = NSMakeRange(selection_start_index, selection_end_index-selection_start_index);
-  *out_range = selection_range;
+  /* Find end of end_line to clamp end_column */
+  NSUInteger end_line_end = text_length;
+  for(NSUInteger j = end_line_start; j < text_length; j++)
+  {
+    if([text characterAtIndex:j] == '\n')
+    {
+      end_line_end = j + 1;
+      break;
+    }
+  }
+  NSUInteger end_line_length = end_line_end - end_line_start;
 
+  NSUInteger end_col = end_column - 1;
+  if(end_col > end_line_length)
+    end_col = end_line_length;
+  NSUInteger end_pos = end_line_start + end_col;
+  if(end_pos > text_length)
+    end_pos = text_length;
+
+  *out_range = NSMakeRange(start_pos, end_pos - start_pos);
   return true;
 }
 
@@ -1994,104 +1955,47 @@ static bool cocoaTextComputeLineColumnFromRangeForTextView(NSTextView* text_view
   *out_end_line = 1;
   *out_end_column = 1;
 
-  NSUInteger start_line = 1;
-  NSUInteger start_column = 1;
-  NSUInteger end_line = 1;
-  NSUInteger end_column = 1;
+  NSString* text = [[text_view textStorage] string];
+  NSUInteger text_length = [text length];
 
-  NSLayoutManager* layout_manager = [text_view layoutManager];
-  NSUInteger number_of_glyphs = [layout_manager numberOfGlyphs];
-  if(0 == number_of_glyphs)
+  if(text_length == 0)
   {
     if(native_selection_range.location == 0)
-    {
       return true;
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-  NSUInteger number_of_lines;
-  NSUInteger index;
-  NSRange line_range = NSMakeRange(0, 0);
-
-  bool found_start_line = false;
-  bool found_start_column = false;
-  NSUInteger selection_start_index = native_selection_range.location;
-  NSUInteger selection_end_index = native_selection_range.location + native_selection_range.length;
-
-  for(number_of_lines = 0, index = 0; index < number_of_glyphs;)
-  {
-    (void) [layout_manager lineFragmentRectForGlyphAtIndex:index
-                                            effectiveRange:&line_range];
-    index = NSMaxRange(line_range);
-    number_of_lines++;
-    if(index >= selection_start_index)
-    {
-      found_start_line = true;
-      start_line = number_of_lines;
-
-      found_start_column = true;
-      NSUInteger overshot_count = index - (selection_start_index);
-      start_column = line_range.length - overshot_count + 1;
-
-      /* Edge case: end_line is the same line as start_line */
-      if(index >= selection_end_index)
-      {
-        NSUInteger overshot_end_count = index - (selection_end_index);
-        end_column = line_range.length - overshot_end_count + 1;
-        end_line = start_line;
-
-        *out_start_line = start_line;
-        *out_start_column = start_column;
-        *out_end_line = end_line;
-        *out_end_column = end_column;
-        return true;
-      }
-      break;
-    }
-  }
-
-  if(!found_start_line)
-  {
     return false;
   }
 
-  /* Do end */
-  bool found_end_line = false;
-  bool found_end_column = false;
+  NSUInteger start_pos = native_selection_range.location;
+  NSUInteger end_pos = start_pos + native_selection_range.length;
 
-  for(; index < number_of_glyphs;)
+  /* Use logical lines (paragraphs delimited by newlines), matching GTK's behavior. */
+  NSUInteger line = 1;
+  NSUInteger line_start = 0;
+
+  for(NSUInteger i = 0; i < text_length && i < start_pos; i++)
   {
-    (void) [layout_manager lineFragmentRectForGlyphAtIndex:index
-                                            effectiveRange:&line_range];
-    index = NSMaxRange(line_range);
-    number_of_lines++;
-    if(index >= selection_end_index)
+    if([text characterAtIndex:i] == '\n')
     {
-      found_end_line = true;
-      end_line = number_of_lines;
-
-      found_end_column = true;
-
-      NSUInteger overshot_count = index - (selection_end_index);
-      end_column = line_range.length - overshot_count + 1;
-      break;
+      line++;
+      line_start = i + 1;
     }
   }
 
-  if(!found_end_line)
+  *out_start_line = line;
+  *out_start_column = start_pos - line_start + 1;
+
+  for(NSUInteger i = start_pos; i < text_length && i < end_pos; i++)
   {
-    end_line = number_of_lines;
-    end_column = line_range.length;
+    if([text characterAtIndex:i] == '\n')
+    {
+      line++;
+      line_start = i + 1;
+    }
   }
 
-  *out_start_line = start_line;
-  *out_start_column = start_column;
-  *out_end_line = end_line;
-  *out_end_column = end_column;
+  *out_end_line = line;
+  *out_end_column = end_pos - line_start + 1;
+
   return true;
 }
 
@@ -2516,7 +2420,9 @@ static bool cocoaTextParseParagraphFormat(Ihandle* ih, Ihandle* formattag, NSTex
       bool needs_paragraph_style = cocoaTextParseParagraphAttributes(paragraph_style, formattag);
       if(needs_paragraph_style)
       {
+        ih->data->disable_callbacks = 1;
         [text_view shouldChangeTextInRange:paragraph_range replacementString:nil];
+        ih->data->disable_callbacks = 0;
         [text_storage addAttribute:NSParagraphStyleAttributeName value:paragraph_style range:paragraph_range];
         did_change_attribute = true;
       }
@@ -2543,7 +2449,6 @@ const NSUInteger kIupNumberingStyleNonNumber = 4;
 @property(nonatomic, assign) NSUInteger numberingStyle;
 
 - (NSString*) markerForItemNumber:(NSInteger)item_num;
-- (NSString*) markerWithTabsForItemNumber:(NSInteger)item_num;
 
 @end
 
@@ -2584,14 +2489,6 @@ const NSUInteger kIupNumberingStyleNonNumber = 4;
       }
   }
 
-  return customized_marker;
-}
-
-- (NSString*) markerWithTabsForItemNumber:(NSInteger)item_num
-{
-  NSString* base_string = [self markerForItemNumber:item_num];
-  NSString* customized_marker = nil;
-  customized_marker = [NSString stringWithFormat:@"\t%@\t", base_string];
   return customized_marker;
 }
 
@@ -2743,7 +2640,6 @@ static bool cocoaTextParseBulletNumberListFormat(Ihandle* ih, Ihandle* formattag
       __block NSUInteger applied_paragraph_start = NSUIntegerMax;
       __block NSUInteger applied_paragraph_end = 0;
       __block NSMutableArray<NSTextList*>* array_of_text_lists = [NSMutableArray array];
-      __block NSUInteger item_count = 1;
       [all_string enumerateSubstringsInRange:selection_range options:NSStringEnumerationByParagraphs usingBlock:
         ^(NSString * _Nullable substring, NSRange substring_range, NSRange enclosing_range, BOOL * _Nonnull stop)
         {
@@ -2763,30 +2659,10 @@ static bool cocoaTextParseBulletNumberListFormat(Ihandle* ih, Ihandle* formattag
             applied_paragraph_end = end_paragraph_index;
           }
 
-          NSRange paragraph_range = NSMakeRange(start_paragraph_index, end_paragraph_index-start_paragraph_index);
-
           IupNumberingTextList* text_list = [[IupNumberingTextList alloc] initWithMarkerFormat:which_list_marker options:0];
           [text_list autorelease];
           [text_list setNumberingStyle:which_number_style];
           [array_of_text_lists addObject:text_list];
-
-          NSMutableAttributedString* current_line = [[text_storage attributedSubstringFromRange:paragraph_range] mutableCopy];
-          [current_line autorelease];
-          NSDictionary<NSAttributedStringKey, id>* current_line_attributes = [current_line attributesAtIndex:0 effectiveRange:NULL];
-
-          NSString* marker_with_style_prefix = nil;
-          marker_with_style_prefix = [text_list markerWithTabsForItemNumber:item_count];
-
-          NSAttributedString* attribued_prefix = [[NSAttributedString alloc] initWithString:marker_with_style_prefix attributes:current_line_attributes];
-          [attribued_prefix autorelease];
-          [current_line insertAttributedString:attribued_prefix atIndex:0];
-
-          ih->data->disable_callbacks = 1;
-          [text_view shouldChangeTextInRange:paragraph_range replacementString:[current_line string]];
-          ih->data->disable_callbacks = 0;
-          [text_storage replaceCharactersInRange:paragraph_range withAttributedString:current_line];
-
-          item_count++;
         }
       ];
 
@@ -2811,6 +2687,25 @@ static bool cocoaTextParseBulletNumberListFormat(Ihandle* ih, Ihandle* formattag
       }
 
       [paragraph_style setTextLists:array_of_text_lists];
+
+      int numberingtab = 24;
+      char* tab_str = iupAttribGet(formattag, "NUMBERINGTAB");
+      if(tab_str)
+        iupStrToInt(tab_str, &numberingtab);
+
+      if(!iupAttribGet(formattag, "INDENT"))
+      {
+        [paragraph_style setFirstLineHeadIndent:0.0];
+        [paragraph_style setHeadIndent:(CGFloat)numberingtab];
+      }
+
+      if(!iupAttribGet(formattag, "TABSARRAY"))
+      {
+        NSTextTab* tab = [[NSTextTab alloc] initWithTextAlignment:NSTextAlignmentLeft location:(CGFloat)numberingtab options:[NSDictionary dictionary]];
+        [paragraph_style setTabStops:[NSArray arrayWithObject:tab]];
+        [tab release];
+      }
+
       [text_storage addAttribute:NSParagraphStyleAttributeName value:paragraph_style range:applied_paragraph_range];
 
       [text_storage endEditing];
@@ -2843,49 +2738,23 @@ static bool cocoaTextParseBulletNumberListFormat(Ihandle* ih, Ihandle* formattag
           {
             applied_paragraph_end = end_paragraph_index;
           }
-
-          NSRange paragraph_range = NSMakeRange(start_paragraph_index, end_paragraph_index-start_paragraph_index);
-
-          NSMutableAttributedString* current_line = [[text_storage attributedSubstringFromRange:paragraph_range] mutableCopy];
-          [current_line autorelease];
-          NSString* current_line_nsstr = [current_line string];
-
-          NSString* marker_prefix_pattern = @"^\t.*?\t";
-          NSError* ns_error = nil;
-          NSRegularExpression* reg_ex = [NSRegularExpression
-            regularExpressionWithPattern:marker_prefix_pattern
-                                 options:NSRegularExpressionAnchorsMatchLines
-                                   error:&ns_error
-          ];
-
-          NSArray<NSTextCheckingResult*>* regex_matches = [reg_ex matchesInString:current_line_nsstr
-                                                                          options:kNilOptions
-                                                                            range:NSMakeRange(0, [current_line_nsstr length])
-          ];
-
-          for(NSTextCheckingResult* match in regex_matches)
-          {
-            [current_line deleteCharactersInRange:[match range]];
-          }
-
-          ih->data->disable_callbacks = 1;
-          [text_view shouldChangeTextInRange:paragraph_range replacementString:[current_line string]];
-          ih->data->disable_callbacks = 0;
-          [text_storage replaceCharactersInRange:paragraph_range withAttributedString:current_line];
         }
       ];
-      NSRange applied_paragraph_range = NSMakeRange(applied_paragraph_start, applied_paragraph_end-applied_paragraph_start);
-      NSMutableDictionary<NSAttributedStringKey, id>* text_storage_attributes = [[[text_storage attributedSubstringFromRange:applied_paragraph_range] attributesAtIndex:0 effectiveRange:NULL] mutableCopy];
-      [text_storage_attributes autorelease];
-      NSMutableParagraphStyle* paragraph_style = [[text_storage_attributes objectForKey:NSParagraphStyleAttributeName] mutableCopy];
-      [paragraph_style autorelease];
-      if(nil == paragraph_style)
+
+      if(applied_paragraph_start != NSUIntegerMax && applied_paragraph_end > 0)
       {
-      }
-      else
-      {
-        [paragraph_style setTextLists:[NSArray array]];
-        [text_storage removeAttribute:NSParagraphStyleAttributeName range:applied_paragraph_range];
+        NSRange applied_paragraph_range = NSMakeRange(applied_paragraph_start, applied_paragraph_end-applied_paragraph_start);
+        NSMutableDictionary<NSAttributedStringKey, id>* text_storage_attributes = [[[text_storage attributedSubstringFromRange:applied_paragraph_range] attributesAtIndex:0 effectiveRange:NULL] mutableCopy];
+        [text_storage_attributes autorelease];
+        NSMutableParagraphStyle* paragraph_style = [[text_storage_attributes objectForKey:NSParagraphStyleAttributeName] mutableCopy];
+        [paragraph_style autorelease];
+        if(paragraph_style)
+        {
+          [paragraph_style setTextLists:[NSArray array]];
+          [paragraph_style setFirstLineHeadIndent:0.0];
+          [paragraph_style setHeadIndent:0.0];
+          [text_storage addAttribute:NSParagraphStyleAttributeName value:paragraph_style range:applied_paragraph_range];
+        }
       }
 
       [text_storage endEditing];
@@ -3339,6 +3208,56 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
   }
 }
 
+static bool cocoaTextInsertImage(Ihandle* ih, NSTextView* text_view, Ihandle* formattag, NSRange range)
+{
+  char* image_name = iupAttribGet(formattag, "IMAGE");
+  if(!image_name)
+    return false;
+
+  NSImage* ns_image = (NSImage*)iupImageGetImage(image_name, ih, 0, NULL);
+  if(!ns_image)
+    return false;
+
+  int img_w, img_h;
+  int new_w = 0, new_h = 0;
+  char* attr;
+
+  iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+
+  attr = iupAttribGet(formattag, "WIDTH");
+  if(attr) iupStrToInt(attr, &new_w);
+  attr = iupAttribGet(formattag, "HEIGHT");
+  if(attr) iupStrToInt(attr, &new_h);
+
+  NSTextAttachment* attachment = [[[NSTextAttachment alloc] init] autorelease];
+  attachment.image = ns_image;
+
+  if((new_w > 0 && new_w != img_w) || (new_h > 0 && new_h != img_h))
+  {
+    if(new_w <= 0) new_w = img_w;
+    if(new_h <= 0) new_h = img_h;
+    attachment.bounds = CGRectMake(0, 0, new_w, new_h);
+  }
+
+  NSAttributedString* attr_str = [NSAttributedString attributedStringWithAttachment:attachment];
+  NSTextStorage* text_storage = [text_view textStorage];
+
+  NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
+  [undo_manager beginUndoGrouping];
+
+  ih->data->disable_callbacks = 1;
+  [text_view shouldChangeTextInRange:range replacementString:[attr_str string]];
+  [text_storage beginEditing];
+  [text_storage replaceCharactersInRange:range withAttributedString:attr_str];
+  ih->data->disable_callbacks = 0;
+  [text_storage endEditing];
+  [text_view didChangeText];
+
+  [undo_manager endUndoGrouping];
+
+  return true;
+}
+
 void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   if(!ih->data->is_multiline)
@@ -3400,6 +3319,9 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
       NSTextStorage* text_storage = [text_view textStorage];
       native_selection_range = NSMakeRange([text_storage length], 0);
 
+      if(cocoaTextInsertImage(ih, text_view, formattag, native_selection_range))
+        return;
+
       NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
       [undo_manager beginUndoGrouping];
 
@@ -3460,23 +3382,21 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
     }
   }
 
-  IupCocoaFont* iup_font = iupcocoaGetFont(ih);
+  if(cocoaTextInsertImage(ih, text_view, formattag, native_selection_range))
+    return;
 
-  NSMutableDictionary* attribute_dict = [[iup_font attributeDictionary] mutableCopy];
-  [attribute_dict autorelease];
   NSTextStorage* text_storage = [text_view textStorage];
-  NSDictionary<NSAttributedStringKey, id>* text_storage_attributes = [[text_storage attributedSubstringFromRange:native_selection_range] attributesAtIndex:0 effectiveRange:NULL];
-  [attribute_dict addEntriesFromDictionary:text_storage_attributes];
 
   NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
   [undo_manager beginUndoGrouping];
 
-  [text_view shouldChangeTextInRange:native_selection_range replacementString:nil];
+  [text_storage beginEditing];
 
   cocoaTextParseBulletNumberListFormat(ih, formattag, text_view, native_selection_range);
   cocoaTextParseParagraphFormat(ih, formattag, text_view, native_selection_range);
   cocoaTextParseCharacterFormat(ih, formattag, text_view, native_selection_range);
 
+  [text_storage endEditing];
   [text_view didChangeText];
   [undo_manager endUndoGrouping];
 }
@@ -5164,18 +5084,14 @@ static char* cocoaTextGetLineCountAttrib(Ihandle* ih)
   }
 
   NSTextView* text_view = cocoaTextGetTextView(ih);
+  NSString* text = [[text_view textStorage] string];
+  NSUInteger text_length = [text length];
 
-  NSLayoutManager* layout_manager = [text_view layoutManager];
-  NSUInteger number_of_lines;
-  NSUInteger index;
-
-  NSUInteger number_of_glyphs = [layout_manager numberOfGlyphs];
-  NSRange line_range = NSMakeRange(0, 0);
-
-  for(number_of_lines = 0, index = 0; index < number_of_glyphs;)
+  NSUInteger number_of_lines = 1;
+  for(NSUInteger i = 0; i < text_length; i++)
   {
-    (void) [layout_manager lineFragmentRectForGlyphAtIndex:index effectiveRange:&line_range];
-    index = NSMaxRange(line_range);
+    if([text characterAtIndex:i] == '\n')
+      number_of_lines++;
   }
 
   return iupStrReturnInt((int)number_of_lines);
@@ -5420,7 +5336,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
 
     [scroll_view setDocumentView:text_view];
 
-    if (iupAttribGetBoolean(ih, "WORDWRAP"))
+    if (iupAttribGetBoolean(ih, "WORDWRAP") || ih->data->has_formatting)
     {
       ih->data->sb &= ~IUP_SB_HORIZ;
 
