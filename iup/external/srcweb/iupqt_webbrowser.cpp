@@ -135,18 +135,11 @@ static void qtWebBrowserRunJavaScript(Ihandle* ih, const char* format, ...)
   webview->page()->runJavaScript(QString::fromUtf8(js));
 }
 
-/* Run JavaScript synchronously and return the result */
-static char* qtWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
+static char* qtWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
 {
   QWebEngineView* webview = (QWebEngineView*)ih->handle;
   if (!webview)
     return nullptr;
-
-  char js[4096];
-  va_list arglist;
-  va_start(arglist, format);
-  vsnprintf(js, sizeof(js), format, arglist);
-  va_end(arglist);
 
   JavaScriptResult js_result;
   js_result.loop = new QEventLoop();
@@ -179,6 +172,18 @@ static char* qtWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
     return iupStrReturnStr(js_result.result.toUtf8().constData());
 
   return nullptr;
+}
+
+/* Run JavaScript synchronously and return the result */
+static char* qtWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
+{
+  char js[4096];
+  va_list arglist;
+  va_start(arglist, format);
+  vsnprintf(js, sizeof(js), format, arglist);
+  va_end(arglist);
+
+  return qtWebBrowserExecJavaScriptSync(ih, js);
 }
 
 /****************************************************************************
@@ -544,6 +549,23 @@ static int qtWebBrowserSetInnerTextAttrib(Ihandle* ih, const char* value)
   qtWebBrowserRunJavaScript(ih, "document.body.innerText = %s;", escaped);
   free(escaped);
 
+  return 0;
+}
+
+static char* qtWebBrowserGetJavascriptAttrib(Ihandle* ih)
+{
+  return iupAttribGet(ih, "_IUPWEB_JS_RESULT");
+}
+
+static int qtWebBrowserSetJavascriptAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSet(ih, "_IUPWEB_JS_RESULT", nullptr);
+  if (!value)
+    return 0;
+
+  char* result = qtWebBrowserExecJavaScriptSync(ih, value);
+  if (result)
+    iupAttribSetStr(ih, "_IUPWEB_JS_RESULT", result);
   return 0;
 }
 
@@ -1729,6 +1751,7 @@ extern "C" Iclass* iupWebBrowserNewClass(void)
   iupClassRegisterAttribute(ic, "ELEMENT_ID", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ATTRIBUTE_NAME", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ATTRIBUTE", qtWebBrowserGetAttributeAttrib, qtWebBrowserSetAttributeAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "JAVASCRIPT", qtWebBrowserGetJavascriptAttrib, qtWebBrowserSetJavascriptAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   /* Find text */
   iupClassRegisterAttribute(ic, "FIND", nullptr, qtWebBrowserSetFindAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);

@@ -335,7 +335,7 @@ static char* gtkWebBrowserGetItemHistoryAttrib(Ihandle* ih, int id)
     if (item)
       return iupStrReturnStr(webkit_web_history_item_get_uri(item));
   }
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   WebKitBackForwardListItem* item = webkit_back_forward_list_get_nth_item(back_forward_list, id);
   if (item)
     return iupStrReturnStr(webkit_back_forward_list_item_get_uri(item));
@@ -361,7 +361,7 @@ static char* gtkWebBrowserGetForwardCountAttrib(Ihandle* ih)
   {
     return iupStrReturnInt(webkit_web_back_forward_list_get_forward_length((WebKitWebBackForwardList*)back_forward_list));
   }
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   return iupStrReturnInt(g_list_length(webkit_back_forward_list_get_forward_list(back_forward_list)));
 #elif defined(IUPWEB_USE_WEBKIT1)
   return iupStrReturnInt(webkit_web_back_forward_list_get_forward_length((WebKitWebBackForwardList*)back_forward_list));
@@ -381,7 +381,7 @@ static char* gtkWebBrowserGetBackCountAttrib(Ihandle* ih)
   {
     return iupStrReturnInt(webkit_web_back_forward_list_get_back_length((WebKitWebBackForwardList*)back_forward_list));
   }
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   return iupStrReturnInt(g_list_length(webkit_back_forward_list_get_back_list(back_forward_list)));
 #elif defined(IUPWEB_USE_WEBKIT1)
   return iupStrReturnInt(webkit_web_back_forward_list_get_back_length((WebKitWebBackForwardList*)back_forward_list));
@@ -402,7 +402,7 @@ static int gtkWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
       webkit_web_view_load_html((WebKitWebView*)ih->handle, iupgtkStrConvertToSystem(value), NULL);
     else
       webkit_web_view_load_string((WebKitWebView*)ih->handle, iupgtkStrConvertToSystem(value), "text/html", "UTF-8", NULL);
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
     webkit_web_view_load_html((WebKitWebView*)ih->handle, iupgtkStrConvertToSystem(value), NULL);
 #elif defined(IUPWEB_USE_WEBKIT1)
     webkit_web_view_load_string((WebKitWebView*)ih->handle, iupgtkStrConvertToSystem(value), "text/html", "UTF-8", NULL);
@@ -413,7 +413,7 @@ static int gtkWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-#if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
+#if (defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_DLOPEN))
 static void gtkWebBrowserGetResourceData(GObject *source_object, GAsyncResult *res, gpointer user_data)
 {
   Ihandle* ih = (Ihandle*)user_data;
@@ -442,6 +442,7 @@ static void gtkWebBrowserGetResourceData(GObject *source_object, GAsyncResult *r
 }
 #endif
 
+static char* gtkWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js);
 static char* gtkWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...);
 
 static char* gtkWebBrowserGetHTMLAttrib(Ihandle* ih)
@@ -493,7 +494,7 @@ static char* gtkWebBrowserGetHTMLAttrib(Ihandle* ih)
     }
     return NULL;
   }
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   char* value = NULL;
   iupAttribSet(ih, "_IUP_WEB_HTML_RESULT", NULL);
   WebKitWebResource* resource = webkit_web_view_get_main_resource((WebKitWebView*)ih->handle);
@@ -574,7 +575,7 @@ static int gtkWebBrowserSetSaveAttrib(Ihandle* ih, const char* value)
         }
       }
     }
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
     GFile* file = g_file_new_for_path(iupgtkStrConvertToFilename(value));
     if (file)
     {
@@ -633,7 +634,7 @@ static int gtkWebBrowserSetCutAttrib(Ihandle* ih, const char* value)
     webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_CUT);
   else
     webkit_web_view_cut_clipboard((WebKitWebView*)ih->handle);
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_CUT);
 #elif defined(IUPWEB_USE_WEBKIT1)
   webkit_web_view_cut_clipboard((WebKitWebView*)ih->handle);
@@ -649,7 +650,7 @@ static int gtkWebBrowserSetCopyAttrib(Ihandle* ih, const char* value)
     webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_COPY);
   else
     webkit_web_view_copy_clipboard((WebKitWebView*)ih->handle);
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_COPY);
 #elif defined(IUPWEB_USE_WEBKIT1)
   webkit_web_view_copy_clipboard((WebKitWebView*)ih->handle);
@@ -665,7 +666,7 @@ static int gtkWebBrowserSetPasteAttrib(Ihandle* ih, const char* value)
     webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_PASTE);
   else
     webkit_web_view_paste_clipboard((WebKitWebView*)ih->handle);
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_PASTE);
 #elif defined(IUPWEB_USE_WEBKIT1)
   webkit_web_view_paste_clipboard((WebKitWebView*)ih->handle);
@@ -674,6 +675,7 @@ static int gtkWebBrowserSetPasteAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static char* gtkWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js);
 static char* gtkWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...);
 
 static char* gtkWebBrowserGetPasteAttrib(Ihandle* ih)
@@ -695,7 +697,7 @@ static int gtkWebBrowserSetUndoAttrib(Ihandle* ih, const char* value)
     webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_UNDO);
   else
     webkit_web_view_undo((WebKitWebView*)ih->handle);
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_UNDO);
 #elif defined(IUPWEB_USE_WEBKIT1)
   webkit_web_view_undo((WebKitWebView*)ih->handle);
@@ -711,7 +713,7 @@ static int gtkWebBrowserSetRedoAttrib(Ihandle* ih, const char* value)
     webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_REDO);
   else
     webkit_web_view_redo((WebKitWebView*)ih->handle);
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_REDO);
 #elif defined(IUPWEB_USE_WEBKIT1)
   webkit_web_view_redo((WebKitWebView*)ih->handle);
@@ -732,7 +734,7 @@ static int gtkWebBrowserSetSelectAllAttrib(Ihandle* ih, const char* value)
     webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_SELECT_ALL);
   else
     webkit_web_view_select_all((WebKitWebView*)ih->handle);
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, WEBKIT_EDITING_COMMAND_SELECT_ALL);
 #elif defined(IUPWEB_USE_WEBKIT1)
   webkit_web_view_select_all((WebKitWebView*)ih->handle);
@@ -768,7 +770,7 @@ static int gtkWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
 
     (void)value;
   }
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   WebKitPrintOperation *print_operation = webkit_print_operation_new((WebKitWebView*)ih->handle);
   if (iupStrBoolean(value))
   {
@@ -1097,28 +1099,47 @@ static void gtkWebBrowserJavaScriptFinished(GObject* object, GAsyncResult* resul
   #endif
   #if !defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN)
   {
-    /* WebKit2: Use JSCore C API */
     WebKitJavascriptResult* js_value = webkit_web_view_run_javascript_finish((WebKitWebView*)object, result, &error);
 
     if (js_value)
     {
-      JSGlobalContextRef context = webkit_javascript_result_get_global_context(js_value);
-      JSValueRef value = webkit_javascript_result_get_value(js_value);
-
-      if (value && !JSValueIsNull(context, value) && !JSValueIsUndefined(context, value))
+#ifdef IUPWEB_USE_DLOPEN
+      if (webkit_javascript_result_get_js_value && jsc_value_to_string)
       {
-        JSStringRef js_str = JSValueToStringCopy(context, value, NULL);
-        if (js_str)
+        /* WebKit2GTK 2.22+: Use JSC GObject API */
+        JSCValue* jsc_val = webkit_javascript_result_get_js_value(js_value);
+        if (jsc_val && !jsc_value_is_null(jsc_val) && !jsc_value_is_undefined(jsc_val))
         {
-          size_t max_size = JSStringGetMaximumUTF8CStringSize(js_str);
-          char* buffer = malloc(max_size);
-          if (buffer)
+          char* str = jsc_value_to_string(jsc_val);
+          if (str)
           {
-            JSStringGetUTF8CString(js_str, buffer, max_size);
-            js_result->result = iupStrDup(buffer);
-            free(buffer);
+            js_result->result = iupStrDup(str);
+            g_free(str);
           }
-          JSStringRelease(js_str);
+        }
+      }
+      else
+#endif
+      {
+        /* Old WebKit2: Use JSCore C API */
+        JSGlobalContextRef context = webkit_javascript_result_get_global_context(js_value);
+        JSValueRef value = webkit_javascript_result_get_value(js_value);
+
+        if (value && !JSValueIsNull(context, value) && !JSValueIsUndefined(context, value))
+        {
+          JSStringRef js_str = JSValueToStringCopy(context, value, NULL);
+          if (js_str)
+          {
+            size_t max_size = JSStringGetMaximumUTF8CStringSize(js_str);
+            char* buffer = malloc(max_size);
+            if (buffer)
+            {
+              JSStringGetUTF8CString(js_str, buffer, max_size);
+              js_result->result = iupStrDup(buffer);
+              free(buffer);
+            }
+            JSStringRelease(js_str);
+          }
         }
       }
       webkit_javascript_result_unref(js_value);
@@ -1134,14 +1155,8 @@ static void gtkWebBrowserJavaScriptFinished(GObject* object, GAsyncResult* resul
     g_main_loop_quit(js_result->loop);
 }
 
-static char* gtkWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
+static char* gtkWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
 {
-  char js[1024];
-  va_list arglist;
-  va_start(arglist, format);
-  vsnprintf(js, 1024, format, arglist);
-  va_end(arglist);
-
   #ifdef IUPWEB_USE_DLOPEN
   if (s_use_webkit2)
   #endif
@@ -1178,6 +1193,17 @@ static char* gtkWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...
   #ifdef IUPWEB_USE_DLOPEN
   return NULL;
   #endif
+}
+
+static char* gtkWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
+{
+  char js[1024];
+  va_list arglist;
+  va_start(arglist, format);
+  vsnprintf(js, 1024, format, arglist);
+  va_end(arglist);
+
+  return gtkWebBrowserExecJavaScriptSync(ih, js);
 }
 
 static char* gtkWebBrowserQueryCommandValue(Ihandle* ih, const char* cmd)
@@ -1262,7 +1288,7 @@ static int gtkWebBrowserExecCommandAttrib(Ihandle* ih, const char* value)
       snprintf(cmd, sizeof(cmd), "document.execCommand('%s', false, null);", value);
       webkit_web_view_execute_script((WebKitWebView*)ih->handle, cmd);
     }
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
     webkit_web_view_execute_editing_command((WebKitWebView*)ih->handle, value);
 #elif defined(IUPWEB_USE_WEBKIT1)
     char cmd[256];
@@ -1609,7 +1635,7 @@ static char* gtkWebBrowserGetStatusAttrib(Ihandle* ih)
     }
     return "FAILED";
   }
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
   if (webkit_web_view_is_loading((WebKitWebView*)ih->handle))
     return "LOADING";
   else
@@ -1669,7 +1695,7 @@ static int gtkWebBrowserSetBackForwardAttrib(Ihandle* ih, const char* value)
     {
       webkit_web_view_go_back_or_forward((WebKitWebView*)ih->handle, val);
     }
-#elif defined(IUPWEB_USE_WEBKIT2)
+#elif defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_WEBKIT2)
     if (val > 0)
     {
       int i;
@@ -1916,6 +1942,26 @@ static int gtkWebBrowserSetInnerTextAttrib(Ihandle* ih, const char* value)
   free(escaped_value);
 
   gtkWebBrowserRunJavascript(ih, "%s", js);
+  return 0;
+}
+
+static char* gtkWebBrowserGetJavascriptAttrib(Ihandle* ih)
+{
+  return iupAttribGet(ih, "_IUPWEB_JS_RESULT");
+}
+
+static int gtkWebBrowserSetJavascriptAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSet(ih, "_IUPWEB_JS_RESULT", NULL);
+  if (!value)
+    return 0;
+
+  char* result = gtkWebBrowserExecJavaScriptSync(ih, value);
+  if (result)
+  {
+    iupAttribSetStr(ih, "_IUPWEB_JS_RESULT", result);
+    free(result);
+  }
   return 0;
 }
 
@@ -2318,7 +2364,11 @@ static int gtkWebBrowserMapMethod(Ihandle* ih)
     else
       gtk_scrolled_window_set_policy(scrolled_window, GTK_POLICY_NEVER, GTK_POLICY_NEVER);
 
+#if GTK_CHECK_VERSION(4, 0, 0)
+    gtk_widget_set_visible((GtkWidget*)scrolled_window, TRUE);
+#else
     gtk_widget_show((GtkWidget*)scrolled_window);
+#endif
 
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)scrolled_window);
   }
@@ -2517,6 +2567,7 @@ Iclass* iupWebBrowserNewClass(void)
   iupClassRegisterAttribute(ic, "INNERTEXT", gtkWebBrowserGetInnerTextAttrib, gtkWebBrowserSetInnerTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ATTRIBUTE_NAME", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ATTRIBUTE", gtkWebBrowserGetAttributeAttrib, gtkWebBrowserSetAttributeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "JAVASCRIPT", gtkWebBrowserGetJavascriptAttrib, gtkWebBrowserSetJavascriptAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BACKCOUNT", gtkWebBrowserGetBackCountAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORWARDCOUNT", gtkWebBrowserGetForwardCountAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_READONLY|IUPAF_NO_INHERIT);

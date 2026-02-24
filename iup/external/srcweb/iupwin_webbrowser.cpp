@@ -1824,6 +1824,26 @@ static int winWebBrowserSetInnerTextAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static char* winWebBrowserGetJavascriptAttrib(Ihandle* ih)
+{
+  return iupAttribGet(ih, "_IUPWEB_JS_RESULT");
+}
+
+static int winWebBrowserSetJavascriptAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSet(ih, "_IUPWEB_JS_RESULT", NULL);
+  if (!value)
+    return 0;
+
+  char* result = winWebBrowserRunJavaScriptSync(ih, value);
+  if (result)
+  {
+    iupAttribSetStr(ih, "_IUPWEB_JS_RESULT", result);
+    free(result);
+  }
+  return 0;
+}
+
 static char* winWebBrowserGetAttributeAttrib(Ihandle* ih)
 {
   char* element_id = iupAttribGet(ih, "ELEMENT_ID");
@@ -2163,6 +2183,7 @@ Iclass* iupWebBrowserNewClass(void)
   iupClassRegisterAttribute(ic, "INNERTEXT", winWebBrowserGetInnerTextAttrib, winWebBrowserSetInnerTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ATTRIBUTE_NAME", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ATTRIBUTE", winWebBrowserGetAttributeAttrib, winWebBrowserSetAttributeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "JAVASCRIPT", winWebBrowserGetJavascriptAttrib, winWebBrowserSetJavascriptAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BACKCOUNT", winWebBrowserGetBackCountAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORWARDCOUNT", winWebBrowserGetForwardCountAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);

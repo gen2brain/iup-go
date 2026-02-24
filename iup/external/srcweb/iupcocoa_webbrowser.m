@@ -13,6 +13,8 @@
 #import <WebKit/WKUserScript.h>
 #import <WebKit/WKWebViewConfiguration.h>
 #import <WebKit/WKScriptMessageHandler.h>
+#import <WebKit/WKBackForwardList.h>
+#import <WebKit/WKBackForwardListItem.h>
 
 #import <objc/runtime.h>
 
@@ -95,7 +97,7 @@ typedef NS_ENUM(NSInteger, IupAppleWKWebViewLoadStatus)
 	}
 }
 
-- (nullable WKWebView *)webView:(WKWebView*)web_view createWebViewWithConfiguration:(WKWebViewConfiguration*)webview_configuration forNavigationAction:(WKNavigationAction*)navigation_action windowFeatures:(WKWindowFeatures*)window_features
+- (WKWebView *)webView:(WKWebView*)web_view createWebViewWithConfiguration:(WKWebViewConfiguration*)webview_configuration forNavigationAction:(WKNavigationAction*)navigation_action windowFeatures:(WKWindowFeatures*)window_features
 {
 	Ihandle* ih = [self ihandle];
 
@@ -124,15 +126,11 @@ typedef NS_ENUM(NSInteger, IupAppleWKWebViewLoadStatus)
 	{
 		if ([the_error code] != NSURLErrorCancelled)
 		{
-			const char* failed_url = [[[the_error userInfo] valueForKey:NSURLErrorFailingURLStringErrorKey] UTF8String];
-			if (failed_url == NULL)
-			{
-				NSURL* current_url = [web_view URL];
-				if (current_url)
-					failed_url = [[current_url absoluteString] UTF8String];
-			}
-			if (failed_url)
-				cb(ih, (char*)failed_url);
+			NSURL* error_url = [[the_error userInfo] valueForKey:NSURLErrorFailingURLErrorKey];
+			if (!error_url)
+				error_url = [web_view URL];
+			if (error_url)
+				cb(ih, (char*)[[error_url absoluteString] UTF8String]);
 		}
 	}
 }
@@ -150,15 +148,11 @@ typedef NS_ENUM(NSInteger, IupAppleWKWebViewLoadStatus)
 	{
 		if ([the_error code] != NSURLErrorCancelled)
 		{
-			const char* failed_url = [[[the_error userInfo] valueForKey:NSURLErrorFailingURLStringErrorKey] UTF8String];
-			if (failed_url == NULL)
-			{
-				NSURL* current_url = [web_view URL];
-				if (current_url)
-					failed_url = [[current_url absoluteString] UTF8String];
-			}
-			if (failed_url)
-				cb(ih, (char*)failed_url);
+			NSURL* error_url = [[the_error userInfo] valueForKey:NSURLErrorFailingURLErrorKey];
+			if (!error_url)
+				error_url = [web_view URL];
+			if (error_url)
+				cb(ih, (char*)[[error_url absoluteString] UTF8String]);
 		}
 	}
 }
@@ -240,12 +234,14 @@ static NSString* cocoaWKWebBrowserEscapeJavaScript(const char* c_str)
 {
 	if (!c_str) return @"null";
 	NSString* ns_str = [NSString stringWithUTF8String:c_str];
+	if (!ns_str) return @"null";
 
 	NSArray* wrapper_array = [NSArray arrayWithObject:ns_str];
 	NSData* data = [NSJSONSerialization dataWithJSONObject:wrapper_array options:0 error:nil];
 	if (!data) return @"null";
 
 	NSString* json_array_string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+	if (!json_array_string) return @"null";
 
 	NSString* json_string;
 	if ([json_array_string length] > 2)
@@ -448,13 +444,15 @@ static void cocoaWKWebBrowserExecCommand(Ihandle* ih, const char* cmd)
 
 	if ([NSThread isMainThread])
 	{
-		[web_view.window makeFirstResponder:web_view];
+		NSWindow* win = [web_view window];
+		if (win) [win makeFirstResponder:web_view];
 		[web_view evaluateJavaScript:js_cmd completionHandler:nil];
 	}
 	else
 	{
 		dispatch_async(dispatch_get_main_queue(), ^{
-			[web_view.window makeFirstResponder:web_view];
+			NSWindow* win = [web_view window];
+			if (win) [win makeFirstResponder:web_view];
 			[web_view evaluateJavaScript:js_cmd completionHandler:nil];
 		});
 	}
@@ -469,13 +467,15 @@ static void cocoaWKWebBrowserExecCommandParam(Ihandle* ih, const char* cmd, cons
 
 	if ([NSThread isMainThread])
 	{
-		[web_view.window makeFirstResponder:web_view];
+		NSWindow* win = [web_view window];
+		if (win) [win makeFirstResponder:web_view];
 		[web_view evaluateJavaScript:js_cmd completionHandler:nil];
 	}
 	else
 	{
 		dispatch_async(dispatch_get_main_queue(), ^{
-			[web_view.window makeFirstResponder:web_view];
+			NSWindow* win = [web_view window];
+			if (win) [win makeFirstResponder:web_view];
 			[web_view evaluateJavaScript:js_cmd completionHandler:nil];
 		});
 	}
@@ -564,6 +564,8 @@ static int cocoaWKWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
 	{
 		WKWebView* web_view = (WKWebView*)ih->handle;
 		NSString* html_string = [NSString stringWithUTF8String:value];
+		if (!html_string)
+			return 0;
 		iupAttribSet(ih, "_IUPWEB_DIRTY", NULL);
 		iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
 		[web_view loadHTMLString:html_string baseURL:nil];
@@ -613,7 +615,7 @@ static int cocoaWKWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
 	[[print_operation printPanel] setOptions:NSPrintPanelShowsCopies | NSPrintPanelShowsPageRange | NSPrintPanelShowsPaperSize | NSPrintPanelShowsOrientation];
 
 	Ihandle* dlg = IupGetDialog(ih);
-	NSWindow* parent_window = NULL;
+	NSWindow* parent_window = nil;
 	if (dlg && dlg->handle)
 	{
 		parent_window = (NSWindow*)dlg->handle;
@@ -1009,6 +1011,26 @@ static char* cocoaWKWebBrowserGetInnerTextAttrib(Ihandle* ih)
 	return NULL;
 }
 
+static char* cocoaWKWebBrowserGetJavascriptAttrib(Ihandle* ih)
+{
+	return iupAttribGet(ih, "_IUPWEB_JS_RESULT");
+}
+
+static int cocoaWKWebBrowserSetJavascriptAttrib(Ihandle* ih, const char* value)
+{
+	iupAttribSet(ih, "_IUPWEB_JS_RESULT", NULL);
+	if (!value)
+		return 0;
+
+	NSString* js_string = [NSString stringWithUTF8String:value];
+	if (!js_string)
+		return 0;
+	char* result = cocoaWKWebBrowserRunJavaScriptSync(ih, js_string);
+	if (result)
+		iupAttribSetStr(ih, "_IUPWEB_JS_RESULT", result);
+	return 0;
+}
+
 static int cocoaWKWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
 {
 	if (value)
@@ -1255,22 +1277,37 @@ static int cocoaWKWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
 		    iupStrEqualPartial(value, "file://") || iupStrEqualPartial(value, "ftp://"))
 		{
 			NSString* url_string = [NSString stringWithUTF8String:value];
-			NSURL* ns_url = [NSURL URLWithString:url_string];
-			NSURLRequest* url_request = [NSURLRequest requestWithURL:ns_url];
-			iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
-			[web_view loadRequest:url_request];
-			iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", NULL);
+			if (url_string)
+			{
+				NSURL* ns_url = [NSURL URLWithString:url_string];
+				if (ns_url)
+				{
+					NSURLRequest* url_request = [NSURLRequest requestWithURL:ns_url];
+					iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
+					[web_view loadRequest:url_request];
+					iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", NULL);
+				}
+			}
 		}
 		else
 		{
 			char* url = iupStrFileMakeURL(value);
 			if (url)
 			{
-				NSURL* ns_url = [NSURL URLWithString:[NSString stringWithUTF8String:url]];
-				NSURL* read_access_url = [ns_url URLByDeletingLastPathComponent];
-				iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
-				[web_view loadFileURL:ns_url allowingReadAccessToURL:read_access_url];
-				iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", NULL);
+				NSString* url_string = [NSString stringWithUTF8String:url];
+				if (url_string)
+				{
+					NSURL* ns_url = [NSURL URLWithString:url_string];
+					if (ns_url)
+					{
+						NSURL* read_access_url = [ns_url URLByDeletingLastPathComponent];
+						if (!read_access_url)
+							read_access_url = ns_url;
+						iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
+						[web_view loadFileURL:ns_url allowingReadAccessToURL:read_access_url];
+						iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", NULL);
+					}
+				}
 				free(url);
 			}
 		}
@@ -1356,6 +1393,7 @@ Iclass* iupWebBrowserNewClass(void)
   iupClassRegisterAttribute(ic, "INNERTEXT", cocoaWKWebBrowserGetInnerTextAttrib, cocoaWKWebBrowserSetInnerTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ATTRIBUTE_NAME", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ATTRIBUTE", cocoaWKWebBrowserGetAttributeAttrib, cocoaWKWebBrowserSetAttributeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "JAVASCRIPT", cocoaWKWebBrowserGetJavascriptAttrib, cocoaWKWebBrowserSetJavascriptAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BACKCOUNT", cocoaWKWebBrowserGetBackCountAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORWARDCOUNT", cocoaWKWebBrowserGetForwardCountAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);

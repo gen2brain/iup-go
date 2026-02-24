@@ -150,6 +150,7 @@ static void (*webkit_web_view_run_javascript)(WebKitWebView *web_view, const gch
 static WebKitJavascriptResult* (*webkit_web_view_run_javascript_finish)(WebKitWebView *web_view, GAsyncResult *result, GError **error);
 static JSGlobalContextRef (*webkit_javascript_result_get_global_context)(WebKitJavascriptResult *js_result);
 static JSValueRef (*webkit_javascript_result_get_value)(WebKitJavascriptResult *js_result);
+static JSCValue* (*webkit_javascript_result_get_js_value)(WebKitJavascriptResult *js_result);
 static void (*webkit_javascript_result_unref)(WebKitJavascriptResult *js_result);
 static WebKitNavigationAction* (*webkit_navigation_policy_decision_get_navigation_action)(WebKitNavigationPolicyDecision *decision);
 static WebKitURIRequest* (*webkit_navigation_action_get_request)(WebKitNavigationAction *navigation);
@@ -255,6 +256,7 @@ static void iupgtkWebBrowser_ClearDLSymbols()
   webkit_web_view_run_javascript_finish = NULL;
   webkit_javascript_result_get_global_context = NULL;
   webkit_javascript_result_get_value = NULL;
+  webkit_javascript_result_get_js_value = NULL;
   webkit_javascript_result_unref = NULL;
   webkit_navigation_policy_decision_get_navigation_action = NULL;
   webkit_navigation_action_get_request = NULL;
@@ -350,6 +352,7 @@ static int iupgtkWebBrowser_SetDLSymbolsWK2(void* webkit_library)
   webkit_web_view_run_javascript_finish = (WebKitJavascriptResult* (*)(WebKitWebView*, GAsyncResult*, GError**))dlsym(webkit_library, "webkit_web_view_run_javascript_finish");
   webkit_javascript_result_get_global_context = (JSGlobalContextRef (*)(WebKitJavascriptResult*))dlsym(webkit_library, "webkit_javascript_result_get_global_context");
   webkit_javascript_result_get_value = (JSValueRef (*)(WebKitJavascriptResult*))dlsym(webkit_library, "webkit_javascript_result_get_value");
+  webkit_javascript_result_get_js_value = (JSCValue* (*)(WebKitJavascriptResult*))dlsym(webkit_library, "webkit_javascript_result_get_js_value");
   webkit_javascript_result_unref = (void (*)(WebKitJavascriptResult*))dlsym(webkit_library, "webkit_javascript_result_unref");
   webkit_navigation_policy_decision_get_navigation_action = (WebKitNavigationAction* (*)(WebKitNavigationPolicyDecision*))dlsym(webkit_library, "webkit_navigation_policy_decision_get_navigation_action");
   webkit_navigation_action_get_request = (WebKitURIRequest* (*)(WebKitNavigationAction*))dlsym(webkit_library, "webkit_navigation_action_get_request");
@@ -363,7 +366,15 @@ static int iupgtkWebBrowser_SetDLSymbolsWK2(void* webkit_library)
   webkit_web_view_new_with_user_content_manager = (WebKitWebView* (*)(WebKitUserContentManager*))dlsym(webkit_library, "webkit_web_view_new_with_user_content_manager");
   webkit_web_view_get_user_content_manager = (WebKitUserContentManager* (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_get_user_content_manager");
 
-  /* Load JSCore Symbols (for JavaScript result handling) */
+  /* Load JSCore GObject Symbols (WebKit2GTK 2.22+, preferred over old JSCore C API) */
+  jsc_value_to_string = (char* (*)(JSCValue*))dlsym(webkit_library, "jsc_value_to_string");
+  jsc_value_is_null = (gboolean (*)(JSCValue*))dlsym(webkit_library, "jsc_value_is_null");
+  jsc_value_is_undefined = (gboolean (*)(JSCValue*))dlsym(webkit_library, "jsc_value_is_undefined");
+  jsc_value_get_context = (JSCContext* (*)(JSCValue*))dlsym(webkit_library, "jsc_value_get_context");
+  jsc_context_get_exception = (JSCException* (*)(JSCContext*))dlsym(webkit_library, "jsc_context_get_exception");
+  jsc_exception_get_message = (char* (*)(JSCException*))dlsym(webkit_library, "jsc_exception_get_message");
+
+  /* Load JSCore C API Symbols (fallback for older WebKit2GTK) */
   JSValueToStringCopy = (JSStringRef (*)(JSGlobalContextRef, JSValueRef, JSValueRef*))dlsym(webkit_library, "JSValueToStringCopy");
   JSStringGetMaximumUTF8CStringSize = (size_t (*)(JSStringRef))dlsym(webkit_library, "JSStringGetMaximumUTF8CStringSize");
   JSStringGetUTF8CString = (size_t (*)(JSStringRef, char*, size_t))dlsym(webkit_library, "JSStringGetUTF8CString");
