@@ -443,7 +443,14 @@ extern "C" void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int 
 
     QTextBlock block = doc->findBlockByLineNumber(lin);
     if (block.isValid())
+    {
+      int blockLen = block.length() - 1;
+      if (col > blockLen)
+        col = blockLen;
+      if (col < 0)
+        col = 0;
       *pos = block.position() + col;
+    }
     else
       *pos = 0;
   }
@@ -1613,6 +1620,9 @@ static int qtTextMapMethod(Ihandle* ih)
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
+  if (ih->data->formattags)
+    iupTextUpdateFormatTags(ih);
+
   return IUP_NOERROR;
 }
 
@@ -2090,6 +2100,40 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
   QTextCursor cursor = text->textCursor();
   cursor.setPosition(start_pos);
   cursor.setPosition(end_pos, QTextCursor::KeepAnchor);
+
+  {
+    const char* image_name = iupAttribGet(formattag, "IMAGE");
+    if (image_name)
+    {
+      QPixmap* pixmap = (QPixmap*)iupImageGetImage(image_name, ih, 0, NULL);
+      if (pixmap)
+      {
+        int img_w, img_h;
+        int new_w = 0, new_h = 0;
+        const char* attr;
+
+        iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+
+        attr = iupAttribGet(formattag, "WIDTH");
+        if (attr) iupStrToInt(attr, &new_w);
+        attr = iupAttribGet(formattag, "HEIGHT");
+        if (attr) iupStrToInt(attr, &new_h);
+
+        QString resName = QString("iup_image_%1").arg(image_name);
+        text->document()->addResource(QTextDocument::ImageResource, QUrl(resName), *pixmap);
+
+        cursor.removeSelectedText();
+
+        QTextImageFormat imgFormat;
+        imgFormat.setName(resName);
+        if (new_w > 0) imgFormat.setWidth(new_w);
+        if (new_h > 0) imgFormat.setHeight(new_h);
+
+        cursor.insertImage(imgFormat);
+      }
+      return;
+    }
+  }
 
   QTextCharFormat charFormat;
   qtTextParseCharacterFormat(formattag, &charFormat);
