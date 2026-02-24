@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <richedit.h>
+#include <richole.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,6 +26,7 @@
 #include "iup_drvfont.h"
 #include "iup_array.h"
 #include "iup_text.h"
+#include "iup_image.h"
 #include "iup_key.h"
 #include "iup_dialog.h"
 
@@ -1455,6 +1457,283 @@ void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* stateOpaque)
   iupdrvRedrawNow(ih);
 }
 
+typedef struct {
+  IDataObjectVtbl* lpVtbl;
+  LONG refCount;
+  STGMEDIUM stgm;
+  FORMATETC fmt;
+} winBitmapDataObject;
+
+static HRESULT STDMETHODCALLTYPE winBDO_QueryInterface(IDataObject* This, REFIID riid, void** ppv)
+{
+  if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IDataObject))
+  {
+    *ppv = This;
+    This->lpVtbl->AddRef(This);
+    return S_OK;
+  }
+  *ppv = NULL;
+  return E_NOINTERFACE;
+}
+
+static ULONG STDMETHODCALLTYPE winBDO_AddRef(IDataObject* This)
+{
+  return InterlockedIncrement(&((winBitmapDataObject*)This)->refCount);
+}
+
+static ULONG STDMETHODCALLTYPE winBDO_Release(IDataObject* This)
+{
+  winBitmapDataObject* obj = (winBitmapDataObject*)This;
+  LONG ref = InterlockedDecrement(&obj->refCount);
+  if (ref == 0)
+  {
+    ReleaseStgMedium(&obj->stgm);
+    free(obj);
+  }
+  return ref;
+}
+
+static HRESULT STDMETHODCALLTYPE winBDO_GetData(IDataObject* This, FORMATETC* pFmt, STGMEDIUM* pMedium)
+{
+  winBitmapDataObject* obj = (winBitmapDataObject*)This;
+  if (pFmt->cfFormat == obj->fmt.cfFormat && (pFmt->tymed & obj->fmt.tymed))
+  {
+    pMedium->tymed = obj->stgm.tymed;
+    pMedium->pUnkForRelease = NULL;
+    if (obj->stgm.tymed == TYMED_ENHMF)
+      pMedium->hEnhMetaFile = CopyEnhMetaFile(obj->stgm.hEnhMetaFile, NULL);
+    else
+      return DV_E_FORMATETC;
+    return S_OK;
+  }
+  return DV_E_FORMATETC;
+}
+
+static HRESULT STDMETHODCALLTYPE winBDO_GetDataHere(IDataObject* This, FORMATETC* pFmt, STGMEDIUM* pMedium)
+{
+  (void)This; (void)pFmt; (void)pMedium;
+  return E_NOTIMPL;
+}
+
+static HRESULT STDMETHODCALLTYPE winBDO_QueryGetData(IDataObject* This, FORMATETC* pFmt)
+{
+  winBitmapDataObject* obj = (winBitmapDataObject*)This;
+  if (pFmt->cfFormat == obj->fmt.cfFormat && (pFmt->tymed & obj->fmt.tymed))
+    return S_OK;
+  return DV_E_FORMATETC;
+}
+
+static HRESULT STDMETHODCALLTYPE winBDO_GetCanonicalFormatEtc(IDataObject* This, FORMATETC* pIn, FORMATETC* pOut)
+{
+  (void)This; (void)pIn;
+  pOut->ptd = NULL;
+  return E_NOTIMPL;
+}
+
+static HRESULT STDMETHODCALLTYPE winBDO_SetData(IDataObject* This, FORMATETC* pFmt, STGMEDIUM* pMedium, BOOL fRelease)
+{
+  (void)This; (void)pFmt; (void)pMedium; (void)fRelease;
+  return E_NOTIMPL;
+}
+
+static HRESULT STDMETHODCALLTYPE winBDO_EnumFormatEtc(IDataObject* This, DWORD dwDir, IEnumFORMATETC** ppEnum)
+{
+  (void)This; (void)dwDir; (void)ppEnum;
+  return E_NOTIMPL;
+}
+
+static HRESULT STDMETHODCALLTYPE winBDO_DAdvise(IDataObject* This, FORMATETC* pFmt, DWORD advf, IAdviseSink* pAdvSink, DWORD* pdwConn)
+{
+  (void)This; (void)pFmt; (void)advf; (void)pAdvSink; (void)pdwConn;
+  return OLE_E_ADVISENOTSUPPORTED;
+}
+
+static HRESULT STDMETHODCALLTYPE winBDO_DUnadvise(IDataObject* This, DWORD dwConn)
+{
+  (void)This; (void)dwConn;
+  return OLE_E_ADVISENOTSUPPORTED;
+}
+
+static HRESULT STDMETHODCALLTYPE winBDO_EnumDAdvise(IDataObject* This, IEnumSTATDATA** ppEnum)
+{
+  (void)This; (void)ppEnum;
+  return OLE_E_ADVISENOTSUPPORTED;
+}
+
+static IDataObjectVtbl winBDO_Vtbl = {
+  winBDO_QueryInterface,
+  winBDO_AddRef,
+  winBDO_Release,
+  winBDO_GetData,
+  winBDO_GetDataHere,
+  winBDO_QueryGetData,
+  winBDO_GetCanonicalFormatEtc,
+  winBDO_SetData,
+  winBDO_EnumFormatEtc,
+  winBDO_DAdvise,
+  winBDO_DUnadvise,
+  winBDO_EnumDAdvise
+};
+
+static void winTextInsertImage(Ihandle* ih, const char* image_name, int img_w, int img_h)
+{
+  HBITMAP hBitmap;
+  BITMAP bm;
+  HDC hdcScreen, hdcSrc, hdcEmf;
+  int dpiX, dpiY, emf_w, emf_h;
+  RECT emfRect;
+  HENHMETAFILE hEmf;
+  IRichEditOle* pRichEditOle = NULL;
+  IOleClientSite* pClientSite = NULL;
+  ILockBytes* pLockBytes = NULL;
+  IStorage* pStorage = NULL;
+  IOleObject* pOleObject = NULL;
+  winBitmapDataObject* pDataObj;
+  REOBJECT reobj;
+
+  hBitmap = (HBITMAP)iupImageGetImage(image_name, ih, 0, NULL);
+  if (!hBitmap)
+    return;
+
+  if (!GetObject(hBitmap, sizeof(BITMAP), &bm))
+    return;
+
+  hdcScreen = GetDC(NULL);
+  dpiX = GetDeviceCaps(hdcScreen, LOGPIXELSX);
+  dpiY = GetDeviceCaps(hdcScreen, LOGPIXELSY);
+
+  emf_w = MulDiv(img_w, 2540, dpiX);
+  emf_h = MulDiv(img_h, 2540, dpiY);
+
+  emfRect.left = 0;
+  emfRect.top = 0;
+  emfRect.right = emf_w;
+  emfRect.bottom = emf_h;
+
+  hdcEmf = CreateEnhMetaFile(hdcScreen, NULL, &emfRect, NULL);
+  if (!hdcEmf)
+  {
+    ReleaseDC(NULL, hdcScreen);
+    return;
+  }
+
+  hdcSrc = CreateCompatibleDC(hdcScreen);
+  {
+    HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcSrc, hBitmap);
+
+    if (bm.bmBitsPixel == 32)
+    {
+      BLENDFUNCTION bf;
+      bf.BlendOp = AC_SRC_OVER;
+      bf.BlendFlags = 0;
+      bf.SourceConstantAlpha = 255;
+      bf.AlphaFormat = AC_SRC_ALPHA;
+
+      {
+        HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 255));
+        RECT rc;
+        rc.left = 0;
+        rc.top = 0;
+        rc.right = img_w;
+        rc.bottom = img_h;
+        FillRect(hdcEmf, &rc, hBrush);
+        DeleteObject(hBrush);
+      }
+
+      GdiAlphaBlend(hdcEmf, 0, 0, img_w, img_h,
+                    hdcSrc, 0, 0, bm.bmWidth, bm.bmHeight, bf);
+    }
+    else
+    {
+      StretchBlt(hdcEmf, 0, 0, img_w, img_h,
+                 hdcSrc, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+    }
+
+    SelectObject(hdcSrc, hOldBmp);
+  }
+  DeleteDC(hdcSrc);
+  ReleaseDC(NULL, hdcScreen);
+
+  hEmf = CloseEnhMetaFile(hdcEmf);
+  if (!hEmf)
+    return;
+
+  /* build IDataObject wrapping the EMF */
+  pDataObj = (winBitmapDataObject*)malloc(sizeof(winBitmapDataObject));
+  if (!pDataObj)
+  {
+    DeleteEnhMetaFile(hEmf);
+    return;
+  }
+
+  pDataObj->lpVtbl = &winBDO_Vtbl;
+  pDataObj->refCount = 1;
+  pDataObj->stgm.tymed = TYMED_ENHMF;
+  pDataObj->stgm.hEnhMetaFile = hEmf;
+  pDataObj->stgm.pUnkForRelease = NULL;
+  pDataObj->fmt.cfFormat = CF_ENHMETAFILE;
+  pDataObj->fmt.ptd = NULL;
+  pDataObj->fmt.dwAspect = DVASPECT_CONTENT;
+  pDataObj->fmt.lindex = -1;
+  pDataObj->fmt.tymed = TYMED_ENHMF;
+
+  /* delete the selected text before inserting the image */
+  SendMessage(ih->handle, EM_REPLACESEL, (WPARAM)TRUE, (LPARAM)TEXT(""));
+
+  SendMessage(ih->handle, EM_GETOLEINTERFACE, 0, (LPARAM)&pRichEditOle);
+  if (!pRichEditOle)
+  {
+    ((IDataObject*)pDataObj)->lpVtbl->Release((IDataObject*)pDataObj);
+    return;
+  }
+
+  pRichEditOle->lpVtbl->GetClientSite(pRichEditOle, &pClientSite);
+  if (!pClientSite)
+  {
+    pRichEditOle->lpVtbl->Release(pRichEditOle);
+    ((IDataObject*)pDataObj)->lpVtbl->Release((IDataObject*)pDataObj);
+    return;
+  }
+
+  CreateILockBytesOnHGlobal(NULL, TRUE, &pLockBytes);
+  if (pLockBytes)
+    StgCreateDocfileOnILockBytes(pLockBytes, STGM_SHARE_EXCLUSIVE | STGM_CREATE | STGM_READWRITE, 0, &pStorage);
+
+  if (pStorage)
+  {
+    HRESULT hr = OleCreateStaticFromData((IDataObject*)pDataObj, &IID_IOleObject,
+                                          OLERENDER_FORMAT, &pDataObj->fmt,
+                                          pClientSite, pStorage, (void**)&pOleObject);
+    if (SUCCEEDED(hr) && pOleObject)
+    {
+      OleSetContainedObject((IUnknown*)pOleObject, TRUE);
+
+      memset(&reobj, 0, sizeof(REOBJECT));
+      reobj.cbStruct = sizeof(REOBJECT);
+      reobj.cp = REO_CP_SELECTION;
+      reobj.clsid = CLSID_NULL;
+      reobj.poleobj = pOleObject;
+      reobj.pstg = pStorage;
+      reobj.polesite = pClientSite;
+      reobj.dvaspect = DVASPECT_CONTENT;
+      reobj.sizel.cx = emf_w;
+      reobj.sizel.cy = emf_h;
+
+      pRichEditOle->lpVtbl->InsertObject(pRichEditOle, &reobj);
+
+      pOleObject->lpVtbl->Release(pOleObject);
+    }
+
+    pStorage->lpVtbl->Release(pStorage);
+  }
+
+  if (pLockBytes)
+    pLockBytes->lpVtbl->Release(pLockBytes);
+  pClientSite->lpVtbl->Release(pClientSite);
+  pRichEditOle->lpVtbl->Release(pRichEditOle);
+  ((IDataObject*)pDataObj)->lpVtbl->Release((IDataObject*)pDataObj);
+}
+
 void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   int convert2twips, pixel2twips;
@@ -1499,6 +1778,32 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
     }
   }
 
+  {
+    char* image_name = iupAttribGet(formattag, "IMAGE");
+    if (image_name)
+    {
+      int img_w, img_h;
+      int new_w = 0, new_h = 0;
+      char* attr;
+
+      iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+
+      attr = iupAttribGet(formattag, "WIDTH");
+      if (attr) iupStrToInt(attr, &new_w);
+      attr = iupAttribGet(formattag, "HEIGHT");
+      if (attr) iupStrToInt(attr, &new_h);
+
+      if (new_w <= 0) new_w = img_w;
+      if (new_h <= 0) new_h = img_h;
+
+      winTextInsertImage(ih, image_name, new_w, new_h);
+
+      if (!bulk)
+        iupdrvTextAddFormatTagStopBulk(ih, state);
+      return;
+    }
+  }
+
   if (iupAttribGet(formattag, "FONTSCALE") && !iupAttribGet(formattag, "FONTSIZE"))
     iupAttribSet(formattag, "FONTSIZE", iupGetFontSizeAttrib(ih));
 
@@ -1510,8 +1815,7 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
   if (charformat.dwMask != 0)
     SendMessage(ih->handle, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&charformat);
 
-  /* restore state here if not applying a bulk */
-  if (!bulk) 
+  if (!bulk)
     iupdrvTextAddFormatTagStopBulk(ih, state);
 }
 
