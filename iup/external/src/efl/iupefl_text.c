@@ -18,11 +18,120 @@
 #include "iup_array.h"
 #include "iup_mask.h"
 #include "iup_text.h"
+#include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_key.h"
 
 #include "iupefl_drv.h"
+
+
+/****************************************************************
+                     Image Overlay Management
+****************************************************************/
+
+typedef struct _IeflImageOverlay {
+  Evas_Object* image_obj;
+  int item_pos;
+  struct _IeflImageOverlay* next;
+} IeflImageOverlay;
+
+static Evas_Object* eflTextGetTextblock(Ihandle* ih)
+{
+  return (Evas_Object*)iupAttribGet(ih, "_IUP_EFL_TEXTBLOCK");
+}
+
+static void eflTextUpdateImageOverlays(Ihandle* ih)
+{
+  Eo* entry = iupeflGetWidget(ih);
+  IeflImageOverlay* overlay;
+  Evas_Object* textblock;
+  Evas_Coord tx, ty;
+  Evas_Textblock_Cursor* cur;
+
+  if (!entry)
+    return;
+
+  overlay = (IeflImageOverlay*)iupAttribGet(ih, "_IUP_EFL_IMAGE_OVERLAYS");
+  if (!overlay)
+    return;
+
+  textblock = eflTextGetTextblock(ih);
+  if (!textblock)
+    return;
+
+  evas_object_geometry_get(textblock, &tx, &ty, NULL, NULL);
+
+  evas_object_textblock_size_formatted_get(textblock, NULL, NULL);
+
+  cur = evas_object_textblock_cursor_new(textblock);
+  if (!cur)
+    return;
+
+  while (overlay)
+  {
+    Evas_Coord cx, cy, cw, ch;
+
+    evas_textblock_cursor_pos_set(cur, overlay->item_pos);
+
+    if (evas_textblock_cursor_format_item_geometry_get(cur, &cx, &cy, &cw, &ch))
+    {
+      evas_object_move(overlay->image_obj, tx + cx, ty + cy);
+      evas_object_resize(overlay->image_obj, cw, ch);
+      evas_object_show(overlay->image_obj);
+    }
+    else
+    {
+      evas_object_hide(overlay->image_obj);
+    }
+
+    overlay = overlay->next;
+  }
+
+  evas_textblock_cursor_free(cur);
+}
+
+static void eflTextImageOverlayResizeCB(void* data, Evas* e, Evas_Object* obj, void* event_info)
+{
+  (void)e;
+  (void)obj;
+  (void)event_info;
+  eflTextUpdateImageOverlays((Ihandle*)data);
+}
+
+static void eflTextImageOverlayMoveCB(void* data, Evas* e, Evas_Object* obj, void* event_info)
+{
+  (void)e;
+  (void)obj;
+  (void)event_info;
+  eflTextUpdateImageOverlays((Ihandle*)data);
+}
+
+static void eflTextDestroyImageOverlays(Ihandle* ih)
+{
+  IeflImageOverlay* overlay;
+  Evas_Object* textblock;
+
+  overlay = (IeflImageOverlay*)iupAttribGet(ih, "_IUP_EFL_IMAGE_OVERLAYS");
+
+  while (overlay)
+  {
+    IeflImageOverlay* next = overlay->next;
+    if (overlay->image_obj)
+      evas_object_del(overlay->image_obj);
+    free(overlay);
+    overlay = next;
+  }
+
+  iupAttribSet(ih, "_IUP_EFL_IMAGE_OVERLAYS", NULL);
+
+  textblock = eflTextGetTextblock(ih);
+  if (textblock)
+  {
+    evas_object_event_callback_del_full((Evas_Object*)textblock, EVAS_CALLBACK_RESIZE, eflTextImageOverlayResizeCB, ih);
+    evas_object_event_callback_del_full((Evas_Object*)textblock, EVAS_CALLBACK_MOVE, eflTextImageOverlayMoveCB, ih);
+  }
+}
 
 
 /****************************************************************
@@ -1027,6 +1136,42 @@ static int eflTextMapMethod(Ihandle* ih)
     if (!widget)
       return IUP_ERROR;
 
+    {
+      Evas_Object* edje = elm_layout_edje_get(widget);
+      if (edje)
+      {
+        Evas_Object* swallowed = edje_object_part_swallow_get(edje, "efl.text");
+        if (!swallowed)
+          swallowed = edje_object_part_swallow_get(edje, "elm.text");
+        if (swallowed)
+        {
+          const char* obj_type = evas_object_type_get(swallowed);
+          if (obj_type && strcmp(obj_type, "textblock") == 0)
+          {
+            iupAttribSet(ih, "_IUP_EFL_TEXTBLOCK", (char*)swallowed);
+          }
+          else
+          {
+            Eina_Iterator* it = evas_object_smart_iterator_new(swallowed);
+            if (it)
+            {
+              Evas_Object* child;
+              while (eina_iterator_next(it, (void**)&child))
+              {
+                obj_type = evas_object_type_get(child);
+                if (obj_type && strcmp(obj_type, "textblock") == 0)
+                {
+                  iupAttribSet(ih, "_IUP_EFL_TEXTBLOCK", (char*)child);
+                  break;
+                }
+              }
+              eina_iterator_free(it);
+            }
+          }
+        }
+      }
+    }
+
     if (ih->data->is_multiline)
     {
       efl_text_multiline_set(widget, EINA_TRUE);
@@ -1062,12 +1207,17 @@ static int eflTextMapMethod(Ihandle* ih)
 
   iupeflApplyTextStyle(ih, widget);
 
+  if (ih->data->formattags)
+    iupTextUpdateFormatTags(ih);
+
   return IUP_NOERROR;
 }
 
 static void eflTextUnMapMethod(Ihandle* ih)
 {
   Eo* entry = iupeflGetWidget(ih);
+
+  eflTextDestroyImageOverlays(ih);
 
   if (entry)
   {
@@ -1265,16 +1415,28 @@ void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
     if (*p == '\n')
       current_line++;
     current_pos++;
-    p++;
+    if ((*p & 0x80) == 0)        p++;
+    else if ((*p & 0xE0) == 0xC0) p += 2;
+    else if ((*p & 0xF0) == 0xE0) p += 3;
+    else                           p += 4;
   }
 
-  current_pos += (col - 1);
+  int line_len = 0;
+  const char* lp = p;
+  while (*lp && *lp != '\n')
+  {
+    line_len++;
+    if ((*lp & 0x80) == 0)        lp++;
+    else if ((*lp & 0xE0) == 0xC0) lp += 2;
+    else if ((*lp & 0xF0) == 0xE0) lp += 3;
+    else                            lp += 4;
+  }
 
-  int text_len = strlen(text);
-  if (current_pos > text_len)
-    current_pos = text_len;
+  int c = col - 1;
+  if (c < 0) c = 0;
+  if (c > line_len) c = line_len;
 
-  *pos = current_pos;
+  *pos = current_pos + c;
 }
 
 void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
@@ -1314,7 +1476,10 @@ void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
       current_col++;
     }
     current_pos++;
-    p++;
+    if ((*p & 0x80) == 0)        p++;
+    else if ((*p & 0xE0) == 0xC0) p += 2;
+    else if ((*p & 0xF0) == 0xE0) p += 3;
+    else                           p += 4;
   }
 
   *lin = current_line;
@@ -1476,7 +1641,17 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
   if (attr)
   {
     if (iupStrBoolean(attr))
+    {
+      unsigned char r = 0, g = 0, b = 0, a = 255;
+      const char* fgattr = iupAttribGet(formattag, "FGCOLOR");
+      if (fgattr)
+        iupStrToRGB(fgattr, &r, &g, &b);
+      else
+        efl_text_color_get(iupeflGetWidget(ih), &r, &g, &b, &a);
       strcat(format, "strikethrough_type=single ");
+      sprintf(buf, "strikethrough_color=#%02X%02X%02X%02X ", r, g, b, a);
+      strcat(format, buf);
+    }
     else
       strcat(format, "strikethrough_type=none ");
   }
@@ -1536,17 +1711,168 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
   attr = iupAttribGet(formattag, "UNDERLINE");
   if (attr)
   {
-    if (iupStrEqualNoCase(attr, "SINGLE"))
-      strcat(format, "underline_type=single ");
-    else if (iupStrEqualNoCase(attr, "DOUBLE"))
-      strcat(format, "underline_type=double ");
-    else if (iupStrEqualNoCase(attr, "DOTTED"))
-      strcat(format, "underline_type=dashed ");
-    else if (iupStrBoolean(attr))
-      strcat(format, "underline_type=single ");
+    if (iupStrEqualNoCase(attr, "SINGLE") || iupStrEqualNoCase(attr, "DOUBLE") ||
+        iupStrEqualNoCase(attr, "DOTTED") || iupStrBoolean(attr))
+    {
+      unsigned char r = 0, g = 0, b = 0, a = 255;
+      const char* fgattr = iupAttribGet(formattag, "FGCOLOR");
+      if (fgattr)
+        iupStrToRGB(fgattr, &r, &g, &b);
+      else
+        efl_text_color_get(iupeflGetWidget(ih), &r, &g, &b, &a);
+
+      if (iupStrEqualNoCase(attr, "DOUBLE"))
+        strcat(format, "underline_type=double ");
+      else if (iupStrEqualNoCase(attr, "DOTTED"))
+        strcat(format, "underline_type=dashed ");
+      else
+        strcat(format, "underline_type=single ");
+
+      sprintf(buf, "underline_color=#%02X%02X%02X%02X ", r, g, b, a);
+      strcat(format, buf);
+
+      if (iupStrEqualNoCase(attr, "DOUBLE"))
+      {
+        sprintf(buf, "secondary_underline_color=#%02X%02X%02X%02X ", r, g, b, a);
+        strcat(format, buf);
+      }
+    }
     else
       strcat(format, "underline_type=none ");
   }
+}
+
+static void eflIntToRoman(int num, char* buf, int bufsize, int uppercase)
+{
+  static const int values[] = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+  static const char* upper_sym[] = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
+  static const char* lower_sym[] = {"m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i"};
+  const char** sym = uppercase ? upper_sym : lower_sym;
+  int i, pos = 0;
+
+  if (num <= 0 || num > 3999)
+  {
+    buf[0] = '?';
+    buf[1] = '\0';
+    return;
+  }
+
+  for (i = 0; i < 13 && num > 0; i++)
+  {
+    while (num >= values[i] && pos < bufsize - 4)
+    {
+      int len = (int)strlen(sym[i]);
+      memcpy(buf + pos, sym[i], len);
+      pos += len;
+      num -= values[i];
+    }
+  }
+  buf[pos] = '\0';
+}
+
+static int eflNumberingPrefix(int counter, const char* numbering, const char* style, char* buf, int bufsize)
+{
+  char number[64] = "";
+
+  if (iupStrEqualNoCase(numbering, "BULLET"))
+  {
+    snprintf(buf, bufsize, "\xe2\x80\xa2 ");
+    return (int)strlen(buf);
+  }
+
+  if (iupStrEqualNoCase(numbering, "ARABIC"))
+    snprintf(number, sizeof(number), "%d", counter);
+  else if (iupStrEqualNoCase(numbering, "LCLETTER"))
+  {
+    if (counter >= 1 && counter <= 26)
+      snprintf(number, sizeof(number), "%c", 'a' + counter - 1);
+    else
+      snprintf(number, sizeof(number), "%d", counter);
+  }
+  else if (iupStrEqualNoCase(numbering, "UCLETTER"))
+  {
+    if (counter >= 1 && counter <= 26)
+      snprintf(number, sizeof(number), "%c", 'A' + counter - 1);
+    else
+      snprintf(number, sizeof(number), "%d", counter);
+  }
+  else if (iupStrEqualNoCase(numbering, "LCROMAN"))
+    eflIntToRoman(counter, number, sizeof(number), 0);
+  else if (iupStrEqualNoCase(numbering, "UCROMAN"))
+    eflIntToRoman(counter, number, sizeof(number), 1);
+  else
+    return 0;
+
+  if (style)
+  {
+    if (iupStrEqualNoCase(style, "RIGHTPARENTHESIS"))
+      snprintf(buf, bufsize, "%s) ", number);
+    else if (iupStrEqualNoCase(style, "PARENTHESES"))
+      snprintf(buf, bufsize, "(%s) ", number);
+    else if (iupStrEqualNoCase(style, "PERIOD"))
+      snprintf(buf, bufsize, "%s. ", number);
+    else if (iupStrEqualNoCase(style, "NONUMBER"))
+      snprintf(buf, bufsize, " ");
+    else
+      snprintf(buf, bufsize, "%s ", number);
+  }
+  else
+    snprintf(buf, bufsize, "%s ", number);
+
+  return (int)strlen(buf);
+}
+
+static void eflTextApplyNumbering(Eo* entry, int* p_start_pos, int* p_end_pos,
+                                  const char* numbering, const char* style)
+{
+  Efl_Text_Cursor_Object* cursor;
+  Efl_Text_Cursor_Object* tmp;
+  int start_line, end_line, line;
+
+  tmp = efl_ui_textbox_cursor_create(entry);
+  if (!tmp)
+    return;
+
+  efl_text_cursor_object_position_set(tmp, *p_start_pos);
+  start_line = efl_text_cursor_object_line_number_get(tmp);
+
+  efl_text_cursor_object_position_set(tmp, *p_end_pos);
+  end_line = efl_text_cursor_object_line_number_get(tmp);
+
+  if (end_line > start_line)
+  {
+    efl_text_cursor_object_move(tmp, EFL_TEXT_CURSOR_MOVE_TYPE_LINE_START);
+    if (efl_text_cursor_object_position_get(tmp) == *p_end_pos)
+      end_line--;
+  }
+
+  efl_del(tmp);
+
+  cursor = efl_ui_textbox_cursor_create(entry);
+  if (!cursor)
+    return;
+
+  for (line = start_line; line <= end_line; line++)
+  {
+    char prefix[128];
+
+    efl_text_cursor_object_line_number_set(cursor, line);
+    efl_text_cursor_object_move(cursor, EFL_TEXT_CURSOR_MOVE_TYPE_LINE_START);
+
+    if (eflNumberingPrefix(line - start_line + 1, numbering, style, prefix, sizeof(prefix)) > 0)
+      efl_text_cursor_object_text_insert(cursor, prefix);
+  }
+
+  /* Update positions to cover the full range including inserted prefixes */
+  efl_text_cursor_object_line_number_set(cursor, start_line);
+  efl_text_cursor_object_move(cursor, EFL_TEXT_CURSOR_MOVE_TYPE_LINE_START);
+  *p_start_pos = efl_text_cursor_object_position_get(cursor);
+
+  efl_text_cursor_object_line_number_set(cursor, end_line);
+  efl_text_cursor_object_move(cursor, EFL_TEXT_CURSOR_MOVE_TYPE_LINE_END);
+  *p_end_pos = efl_text_cursor_object_position_get(cursor);
+
+  efl_del(cursor);
 }
 
 static void eflTextBuildParagraphFormat(Ihandle* formattag, char* format)
@@ -1585,6 +1911,21 @@ static void eflTextBuildParagraphFormat(Ihandle* formattag, char* format)
   {
     sprintf(buf, "line_gap=%d ", val);
     strcat(format, buf);
+  }
+
+  attr = iupAttribGet(formattag, "NUMBERING");
+  if (attr && !iupStrEqualNoCase(attr, "NONE"))
+  {
+    if (!iupAttribGet(formattag, "INDENT"))
+    {
+      int numberingtab = 24;
+      char* tab_str = iupAttribGet(formattag, "NUMBERINGTAB");
+      if (tab_str)
+        iupStrToInt(tab_str, &numberingtab);
+
+      sprintf(buf, "left_margin=%d ", numberingtab);
+      strcat(format, buf);
+    }
   }
 }
 
@@ -1629,6 +1970,15 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
     }
   }
 
+  {
+    char* numbering = iupAttribGet(formattag, "NUMBERING");
+    if (numbering && !iupStrEqualNoCase(numbering, "NONE"))
+    {
+      char* numbering_style = iupAttribGet(formattag, "NUMBERINGSTYLE");
+      eflTextApplyNumbering(entry, &start_pos, &end_pos, numbering, numbering_style);
+    }
+  }
+
   start_cursor = efl_ui_textbox_cursor_create(entry);
   end_cursor = efl_ui_textbox_cursor_create(entry);
 
@@ -1641,6 +1991,106 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 
   efl_text_cursor_object_position_set(start_cursor, start_pos);
   efl_text_cursor_object_position_set(end_cursor, end_pos);
+
+  {
+    char* image_name = iupAttribGet(formattag, "IMAGE");
+    if (image_name)
+    {
+      int img_w, img_h;
+      int new_w = 0, new_h = 0;
+      char* attr;
+      char item_markup[128];
+      char tmp_path[256];
+      void* native_img;
+      Evas_Object* src_img;
+      Evas_Object* textblock;
+
+      iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+
+      attr = iupAttribGet(formattag, "WIDTH");
+      if (attr) iupStrToInt(attr, &new_w);
+      attr = iupAttribGet(formattag, "HEIGHT");
+      if (attr) iupStrToInt(attr, &new_h);
+
+      if (new_w <= 0) new_w = img_w;
+      if (new_h <= 0) new_h = img_h;
+
+      native_img = iupImageGetImage(image_name, ih, 0, NULL);
+      if (!native_img)
+      {
+        efl_del(start_cursor);
+        efl_del(end_cursor);
+        return;
+      }
+
+      src_img = elm_image_object_get((Evas_Object*)native_img);
+      if (!src_img)
+      {
+        efl_del(start_cursor);
+        efl_del(end_cursor);
+        return;
+      }
+
+      snprintf(tmp_path, sizeof(tmp_path), "/tmp/iup_efl_%p_%s.png", (void*)ih, image_name);
+      if (!evas_object_image_save(src_img, tmp_path, NULL, NULL))
+      {
+        efl_del(start_cursor);
+        efl_del(end_cursor);
+        return;
+      }
+
+      if (start_pos != end_pos)
+        efl_text_cursor_object_range_delete(start_cursor, end_cursor);
+
+      sprintf(item_markup, "<item absize=%dx%d></item>", new_w, new_h);
+      efl_text_cursor_object_markup_insert(start_cursor, item_markup);
+
+      textblock = eflTextGetTextblock(ih);
+      if (textblock)
+      {
+        Evas* evas = evas_object_evas_get(entry);
+        Evas_Object* overlay_img = evas_object_image_filled_add(evas);
+        Evas_Object* clip;
+        IeflImageOverlay* overlay;
+        IeflImageOverlay* existing;
+        int pos_adjustment = 1 - (end_pos - start_pos);
+
+        evas_object_image_file_set(overlay_img, tmp_path, NULL);
+        evas_object_pass_events_set(overlay_img, EINA_TRUE);
+
+        evas_object_layer_set(overlay_img, evas_object_layer_get(textblock) + 1);
+
+        clip = evas_object_clip_get(textblock);
+        if (clip)
+          evas_object_clip_set(overlay_img, clip);
+
+        for (existing = (IeflImageOverlay*)iupAttribGet(ih, "_IUP_EFL_IMAGE_OVERLAYS"); existing; existing = existing->next)
+        {
+          if (existing->item_pos > start_pos)
+            existing->item_pos += pos_adjustment;
+        }
+
+        overlay = (IeflImageOverlay*)calloc(1, sizeof(IeflImageOverlay));
+        overlay->image_obj = overlay_img;
+        overlay->item_pos = start_pos;
+        overlay->next = (IeflImageOverlay*)iupAttribGet(ih, "_IUP_EFL_IMAGE_OVERLAYS");
+
+        if (!overlay->next)
+        {
+          evas_object_event_callback_add((Evas_Object*)textblock, EVAS_CALLBACK_RESIZE, eflTextImageOverlayResizeCB, ih);
+          evas_object_event_callback_add((Evas_Object*)textblock, EVAS_CALLBACK_MOVE, eflTextImageOverlayMoveCB, ih);
+        }
+
+        iupAttribSet(ih, "_IUP_EFL_IMAGE_OVERLAYS", (char*)overlay);
+
+        eflTextUpdateImageOverlays(ih);
+      }
+
+      efl_del(start_cursor);
+      efl_del(end_cursor);
+      return;
+    }
+  }
 
   eflTextBuildCharacterFormat(ih, formattag, format);
   eflTextBuildParagraphFormat(formattag, format);
