@@ -19,6 +19,7 @@ extern "C" {
 #include "iup_drvfont.h"
 #include "iup_mask.h"
 #include "iup_text.h"
+#include "iup_image.h"
 #include "iup_register.h"
 #include "iup_childtree.h"
 #include "iup_focus.h"
@@ -29,15 +30,20 @@ extern "C" {
 #include "iupwinui_drv.h"
 
 #include <winrt/Microsoft.UI.Text.h>
+#include <winrt/Windows.Storage.Streams.h>
+#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
+#include <winrt/Windows.Graphics.Imaging.h>
 
 using namespace winrt;
 using namespace Microsoft::UI;
 using namespace Microsoft::UI::Xaml;
 using namespace Microsoft::UI::Xaml::Controls;
 using namespace Microsoft::UI::Xaml::Media;
+using namespace Microsoft::UI::Xaml::Media::Imaging;
 using namespace Microsoft::UI::Xaml::Input;
 using namespace Microsoft::UI::Text;
 using namespace Windows::Foundation;
+using namespace Windows::Storage::Streams;
 using namespace Microsoft::UI::Dispatching;
 
 
@@ -649,6 +655,8 @@ static int winuiTextMapMethod(Ihandle* ih)
     RichEditBox reb;
     reb.HorizontalAlignment(HorizontalAlignment::Left);
     reb.VerticalAlignment(VerticalAlignment::Top);
+    reb.SelectionFlyout(nullptr);
+    reb.ContextFlyout(nullptr);
 
     if (iupAttribGetBoolean(ih, "WORDWRAP"))
     {
@@ -697,6 +705,26 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     iupwinuiUpdateControlFont(ih, reb);
+
+    reb.ClearValue(Control::FontSizeProperty());
+    reb.ClearValue(Control::FontFamilyProperty());
+
+    {
+      auto doc = reb.Document();
+      auto dcf = doc.GetDefaultCharacterFormat();
+      int fontSize = 0;
+      char* szStr = iupGetFontSizeAttrib(ih);
+      if (szStr && iupStrToInt(szStr, &fontSize))
+      {
+        if (fontSize < 0)
+          fontSize = (-fontSize) * 72 / (int)iupdrvGetScreenDpi();
+        dcf.Size((float)fontSize);
+      }
+      char* fontFace = iupGetFontFaceAttrib(ih);
+      if (fontFace)
+        dcf.Name(iupwinuiStringToHString(fontFace));
+      doc.SetDefaultCharacterFormat(dcf);
+    }
 
     Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
     if (parentCanvas)
@@ -801,6 +829,12 @@ static int winuiTextMapMethod(Ihandle* ih)
   }
 
   winuiSetAux(ih, IUPWINUI_TEXT_AUX, aux);
+
+  if (ih->data->has_formatting)
+  {
+    iupAttribSet(ih, "_IUPWINUI_FONTUPDATECHECK", "1");
+    iupUpdateFontAttrib(ih);
+  }
 
   iupTextUpdateFormatTags(ih);
 
@@ -1049,23 +1083,28 @@ static int winuiTextLinColToPos(ITextDocument const& doc, int lin, int col);
 static int winuiTextStringLinColToPos(const wchar_t* text, int textLen, int lin, int col)
 {
   int currentLine = 1;
-  int pos = 0;
+  int lineStart = 0;
 
-  while (currentLine < lin && pos < textLen)
+  while (currentLine < lin && lineStart < textLen)
   {
-    if (text[pos] == L'\r')
+    if (text[lineStart] == L'\r')
       currentLine++;
-    pos++;
+    lineStart++;
   }
 
-  pos += (col - 1);
+  int lineLen = 0;
+  int p = lineStart;
+  while (p < textLen && text[p] != L'\r')
+  {
+    lineLen++;
+    p++;
+  }
 
-  if (pos > textLen)
-    pos = textLen;
-  if (pos < 0)
-    pos = 0;
+  col--;
+  if (col < 0) col = 0;
+  if (col > lineLen) col = lineLen;
 
-  return pos;
+  return lineStart + col;
 }
 
 static void winuiTextStringPosToLinCol(const wchar_t* text, int textLen, int pos, int* lin, int* col)
@@ -1193,25 +1232,31 @@ static int winuiTextLinColToPos(ITextDocument const& doc, int lin, int col)
   hstring text;
   doc.GetText(TextGetOptions::None, text);
   std::wstring_view wtext(text.c_str(), text.size());
+  int textLen = (int)wtext.size();
 
   int currentLine = 1;
-  int pos = 0;
+  int lineStart = 0;
 
-  while (currentLine < lin && pos < (int)wtext.size())
+  while (currentLine < lin && lineStart < textLen)
   {
-    if (wtext[pos] == L'\r')
+    if (wtext[lineStart] == L'\r')
       currentLine++;
-    pos++;
+    lineStart++;
   }
 
-  pos += (col - 1);
+  int lineLen = 0;
+  int p = lineStart;
+  while (p < textLen && wtext[p] != L'\r')
+  {
+    lineLen++;
+    p++;
+  }
 
-  if (pos > (int)wtext.size())
-    pos = (int)wtext.size();
-  if (pos < 0)
-    pos = 0;
+  col--;
+  if (col < 0) col = 0;
+  if (col > lineLen) col = lineLen;
 
-  return pos;
+  return lineStart + col;
 }
 
 static void winuiTextParseCharacterFormat(Ihandle* formattag, ITextRange const& range)
@@ -1286,71 +1331,6 @@ static void winuiTextParseCharacterFormat(Ihandle* formattag, ITextRange const& 
     else if (iupStrEqualNoCase(val, "EXTRABOLD")) weight = 800;
     else if (iupStrEqualNoCase(val, "HEAVY")) weight = 900;
     cf.Weight(weight);
-    changed = true;
-  }
-
-  val = iupAttribGet(formattag, "FONTFACE");
-  if (val)
-  {
-    cf.Name(iupwinuiStringToHString(val));
-    changed = true;
-  }
-
-  val = iupAttribGet(formattag, "FONTSIZE");
-  if (val)
-  {
-    int size = 0;
-    if (iupStrToInt(val, &size))
-    {
-      float fontSize;
-      if (size > 0)
-        fontSize = (float)size;
-      else
-        fontSize = (float)(-size) * 72.0f / (float)iupdrvGetScreenDpi();
-
-      char* fontscale = iupAttribGet(formattag, "FONTSCALE");
-      if (fontscale)
-      {
-        double scale = 0;
-        if (iupStrEqualNoCase(fontscale, "XX-SMALL")) scale = 0.5787;
-        else if (iupStrEqualNoCase(fontscale, "X-SMALL")) scale = 0.6944;
-        else if (iupStrEqualNoCase(fontscale, "SMALL")) scale = 0.8333;
-        else if (iupStrEqualNoCase(fontscale, "MEDIUM")) scale = 1.0;
-        else if (iupStrEqualNoCase(fontscale, "LARGE")) scale = 1.2;
-        else if (iupStrEqualNoCase(fontscale, "X-LARGE")) scale = 1.44;
-        else if (iupStrEqualNoCase(fontscale, "XX-LARGE")) scale = 1.728;
-        else iupStrToDouble(fontscale, &scale);
-
-        if (scale > 0)
-          fontSize = (float)(fontSize * scale);
-      }
-
-      cf.Size(fontSize);
-      changed = true;
-    }
-  }
-
-  val = iupAttribGet(formattag, "RISE");
-  if (val)
-  {
-    if (iupStrEqualNoCase(val, "SUPERSCRIPT"))
-    {
-      cf.Superscript(FormatEffect::On);
-      cf.Subscript(FormatEffect::Off);
-    }
-    else if (iupStrEqualNoCase(val, "SUBSCRIPT"))
-    {
-      cf.Subscript(FormatEffect::On);
-      cf.Superscript(FormatEffect::Off);
-    }
-    else
-    {
-      int rise = 0;
-      iupStrToInt(val, &rise);
-      cf.Position((float)rise);
-      cf.Superscript(FormatEffect::Off);
-      cf.Subscript(FormatEffect::Off);
-    }
     changed = true;
   }
 
@@ -1513,6 +1493,189 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
     range.ParagraphFormat(pf);
 }
 
+static int winuiTextHasRtfCharAttribs(Ihandle* formattag)
+{
+  return iupAttribGet(formattag, "FONTSIZE") ||
+         iupAttribGet(formattag, "FONTFACE") ||
+         iupAttribGet(formattag, "RISE");
+}
+
+static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITextSelection const& sel)
+{
+  hstring plainText;
+  sel.GetText(TextGetOptions::None, plainText);
+  auto wtext = plainText.c_str();
+  int textLen = (int)plainText.size();
+
+  if (textLen <= 0)
+    return;
+
+  char* val;
+
+  char defaultFontFace[128] = "";
+  char* fontFace = iupAttribGet(formattag, "FONTFACE");
+  if (!fontFace)
+  {
+    char* face = iupGetFontFaceAttrib(ih);
+    if (face)
+    {
+      strncpy(defaultFontFace, face, sizeof(defaultFontFace) - 1);
+      defaultFontFace[sizeof(defaultFontFace) - 1] = '\0';
+    }
+  }
+
+  unsigned char fgR = 0, fgG = 0, fgB = 0;
+  int hasFg = 0;
+  val = iupAttribGet(formattag, "FGCOLOR");
+  if (val && iupStrToRGB(val, &fgR, &fgG, &fgB))
+    hasFg = 1;
+
+  unsigned char bgR = 0, bgG = 0, bgB = 0;
+  int hasBg = 0;
+  val = iupAttribGet(formattag, "BGCOLOR");
+  if (val && iupStrToRGB(val, &bgR, &bgG, &bgB))
+    hasBg = 1;
+
+  size_t bufSize = 1024 + textLen * 12;
+  char* rtf = (char*)malloc(bufSize);
+  int pos = 0;
+
+  pos += sprintf(rtf + pos, "{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fnil %s;}}",
+                 fontFace ? fontFace : defaultFontFace);
+
+  if (hasFg || hasBg)
+  {
+    pos += sprintf(rtf + pos, "{\\colortbl;");
+    if (hasFg)
+      pos += sprintf(rtf + pos, "\\red%d\\green%d\\blue%d;", fgR, fgG, fgB);
+    if (hasBg)
+    {
+      if (!hasFg)
+        pos += sprintf(rtf + pos, ";");
+      pos += sprintf(rtf + pos, "\\red%d\\green%d\\blue%d;", bgR, bgG, bgB);
+    }
+    pos += sprintf(rtf + pos, "}");
+  }
+
+  pos += sprintf(rtf + pos, "\\f0");
+
+  val = iupAttribGet(formattag, "FONTSIZE");
+  if (val)
+  {
+    int size = 0;
+    if (iupStrToInt(val, &size))
+    {
+      float fontSize;
+      if (size > 0)
+        fontSize = (float)size;
+      else
+        fontSize = (float)(-size) * 72.0f / (float)iupdrvGetScreenDpi();
+
+      char* fontscale = iupAttribGet(formattag, "FONTSCALE");
+      if (fontscale)
+      {
+        double scale = 0;
+        if (iupStrEqualNoCase(fontscale, "XX-SMALL")) scale = 0.5787;
+        else if (iupStrEqualNoCase(fontscale, "X-SMALL")) scale = 0.6944;
+        else if (iupStrEqualNoCase(fontscale, "SMALL")) scale = 0.8333;
+        else if (iupStrEqualNoCase(fontscale, "MEDIUM")) scale = 1.0;
+        else if (iupStrEqualNoCase(fontscale, "LARGE")) scale = 1.2;
+        else if (iupStrEqualNoCase(fontscale, "X-LARGE")) scale = 1.44;
+        else if (iupStrEqualNoCase(fontscale, "XX-LARGE")) scale = 1.728;
+        else iupStrToDouble(fontscale, &scale);
+
+        if (scale > 0)
+          fontSize = (float)(fontSize * scale);
+      }
+
+      pos += sprintf(rtf + pos, "\\fs%d", (int)(fontSize * 2.0f));
+    }
+  }
+
+  val = iupAttribGet(formattag, "ITALIC");
+  if (val)
+    pos += sprintf(rtf + pos, iupStrBoolean(val) ? "\\i" : "\\i0");
+
+  val = iupAttribGet(formattag, "STRIKEOUT");
+  if (val)
+    pos += sprintf(rtf + pos, iupStrBoolean(val) ? "\\strike" : "\\strike0");
+
+  val = iupAttribGet(formattag, "UNDERLINE");
+  if (val)
+  {
+    if (iupStrEqualNoCase(val, "SINGLE"))
+      pos += sprintf(rtf + pos, "\\ul");
+    else if (iupStrEqualNoCase(val, "DOUBLE"))
+      pos += sprintf(rtf + pos, "\\uldb");
+    else if (iupStrEqualNoCase(val, "DOTTED"))
+      pos += sprintf(rtf + pos, "\\uld");
+    else
+      pos += sprintf(rtf + pos, "\\ulnone");
+  }
+
+  val = iupAttribGet(formattag, "WEIGHT");
+  if (val)
+  {
+    if (iupStrEqualNoCase(val, "BOLD") || iupStrEqualNoCase(val, "EXTRABOLD") ||
+        iupStrEqualNoCase(val, "HEAVY") || iupStrEqualNoCase(val, "SEMIBOLD"))
+      pos += sprintf(rtf + pos, "\\b");
+    else
+      pos += sprintf(rtf + pos, "\\b0");
+  }
+
+  val = iupAttribGet(formattag, "RISE");
+  if (val)
+  {
+    if (iupStrEqualNoCase(val, "SUPERSCRIPT"))
+      pos += sprintf(rtf + pos, "\\super");
+    else if (iupStrEqualNoCase(val, "SUBSCRIPT"))
+      pos += sprintf(rtf + pos, "\\sub");
+    else
+      pos += sprintf(rtf + pos, "\\nosupersub");
+  }
+
+  if (hasFg)
+    pos += sprintf(rtf + pos, "\\cf1");
+  if (hasBg)
+    pos += sprintf(rtf + pos, "\\highlight%d", hasFg ? 2 : 1);
+
+  val = iupAttribGet(formattag, "SMALLCAPS");
+  if (val)
+    pos += sprintf(rtf + pos, iupStrBoolean(val) ? "\\scaps" : "\\scaps0");
+
+  val = iupAttribGet(formattag, "PROTECTED");
+  if (val)
+    pos += sprintf(rtf + pos, iupStrBoolean(val) ? "\\protect" : "\\protect0");
+
+  rtf[pos++] = ' ';
+
+  for (int i = 0; i < textLen; i++)
+  {
+    wchar_t ch = wtext[i];
+    if (ch == L'\\')
+    { rtf[pos++] = '\\'; rtf[pos++] = '\\'; }
+    else if (ch == L'{')
+    { rtf[pos++] = '\\'; rtf[pos++] = '{'; }
+    else if (ch == L'}')
+    { rtf[pos++] = '\\'; rtf[pos++] = '}'; }
+    else if (ch == L'\r')
+    {
+      memcpy(rtf + pos, "\\par ", 5);
+      pos += 5;
+    }
+    else if (ch < 128)
+      rtf[pos++] = (char)ch;
+    else
+      pos += sprintf(rtf + pos, "\\u%d?", (int)(int16_t)ch);
+  }
+
+  rtf[pos++] = '}';
+  rtf[pos] = '\0';
+
+  sel.SetText(TextSetOptions::FormatRtf, winrt::to_hstring(rtf));
+  free(rtf);
+}
+
 extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
@@ -1525,9 +1688,16 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
 
   (void)bulk;
 
-  auto doc = reb.Document();
+  if (iupAttribGet(formattag, "FONTSCALE") && !iupAttribGet(formattag, "FONTSIZE"))
+    iupAttribSet(formattag, "FONTSIZE", iupGetFontSizeAttrib(ih));
 
-  ITextRange range{nullptr};
+  auto doc = reb.Document();
+  auto sel = doc.Selection();
+
+  int save_start = sel.StartPosition();
+  int save_end = sel.EndPosition();
+
+  int start_pos = -1, end_pos = -1;
 
   char* selection = iupAttribGet(formattag, "SELECTION");
   if (selection)
@@ -1536,16 +1706,16 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
     {
       hstring text;
       doc.GetText(TextGetOptions::None, text);
-      range = doc.GetRange(0, (int32_t)text.size());
+      start_pos = 0;
+      end_pos = (int)text.size();
     }
     else if (!iupStrEqualNoCase(selection, "NONE"))
     {
       int lin_start = 1, col_start = 1, lin_end = 1, col_end = 1;
       if (sscanf(selection, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end) == 4)
       {
-        int start_pos = winuiTextLinColToPos(doc, lin_start, col_start);
-        int end_pos = winuiTextLinColToPos(doc, lin_end, col_end);
-        range = doc.GetRange(start_pos, end_pos);
+        start_pos = winuiTextLinColToPos(doc, lin_start, col_start);
+        end_pos = winuiTextLinColToPos(doc, lin_end, col_end);
       }
     }
   }
@@ -1558,26 +1728,117 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
       {
         hstring text;
         doc.GetText(TextGetOptions::None, text);
-        range = doc.GetRange(0, (int32_t)text.size());
+        start_pos = 0;
+        end_pos = (int)text.size();
       }
       else if (!iupStrEqualNoCase(selectionpos, "NONE"))
       {
-        int start = 0, end = 0;
-        iupStrToIntInt(selectionpos, &start, &end, ':');
-        range = doc.GetRange(start, end);
+        iupStrToIntInt(selectionpos, &start_pos, &end_pos, ':');
       }
-    }
-    else
-    {
-      range = doc.Selection().GetClone();
     }
   }
 
-  if (!range)
-    return;
+  if (start_pos >= 0 && end_pos >= 0)
+    sel.SetRange(start_pos, end_pos);
 
-  winuiTextParseCharacterFormat(formattag, range);
-  winuiTextParseParagraphFormat(formattag, range);
+  {
+    char* image_name = iupAttribGet(formattag, "IMAGE");
+    if (image_name)
+    {
+      void* handle = iupImageGetImage(image_name, ih, 0, NULL);
+      WriteableBitmap bitmap = winuiGetBitmapFromHandle(handle);
+
+      if (bitmap)
+      {
+        int img_w, img_h;
+        int new_w = 0, new_h = 0;
+        char* attr;
+
+        iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+
+        attr = iupAttribGet(formattag, "WIDTH");
+        if (attr) iupStrToInt(attr, &new_w);
+        attr = iupAttribGet(formattag, "HEIGHT");
+        if (attr) iupStrToInt(attr, &new_h);
+
+        if (new_w <= 0) new_w = img_w;
+        if (new_h <= 0) new_h = img_h;
+
+        int width = bitmap.PixelWidth();
+        int height = bitmap.PixelHeight();
+        IBuffer pixelBuffer = bitmap.PixelBuffer();
+        uint8_t* pixels = pixelBuffer.data();
+        uint32_t pixelDataSize = width * height * 4;
+
+        InMemoryRandomAccessStream pngStream;
+        auto encoder = Windows::Graphics::Imaging::BitmapEncoder::CreateAsync(
+            Windows::Graphics::Imaging::BitmapEncoder::PngEncoderId(), pngStream).get();
+        encoder.SetPixelData(
+            Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8,
+            Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied,
+            width, height, 96.0, 96.0,
+            winrt::array_view<uint8_t const>(pixels, pixels + pixelDataSize));
+        if (new_w != width || new_h != height)
+        {
+          auto transform = encoder.BitmapTransform();
+          transform.ScaledWidth(new_w);
+          transform.ScaledHeight(new_h);
+        }
+        encoder.FlushAsync().get();
+
+        uint32_t pngSize = (uint32_t)pngStream.Size();
+        pngStream.Seek(0);
+        Buffer pngBuf(pngSize);
+        pngStream.ReadAsync(pngBuf, pngSize, InputStreamOptions::None).get();
+        uint8_t* pngData = pngBuf.data();
+
+        double dpi = iupdrvGetScreenDpi();
+        int twips_w = (int)(new_w * 1440.0 / dpi);
+        int twips_h = (int)(new_h * 1440.0 / dpi);
+
+        size_t rtfBufSize = 256 + pngSize * 2;
+        char* rtf = (char*)malloc(rtfBufSize);
+        int pos = sprintf(rtf, "{\\rtf1{\\pict\\pngblip\\picw%d\\pich%d\\picwgoal%d\\pichgoal%d ",
+                          new_w, new_h, twips_w, twips_h);
+
+        static const char hexChars[] = "0123456789abcdef";
+        for (uint32_t i = 0; i < pngSize; i++)
+        {
+          rtf[pos++] = hexChars[pngData[i] >> 4];
+          rtf[pos++] = hexChars[pngData[i] & 0x0f];
+        }
+        rtf[pos++] = '}';
+        rtf[pos++] = '}';
+        rtf[pos] = '\0';
+
+        sel.SetText(TextSetOptions::FormatRtf, winrt::to_hstring(rtf));
+        free(rtf);
+      }
+
+      sel.SetRange(save_start, save_end);
+      return;
+    }
+  }
+
+  {
+    int range_start = sel.StartPosition();
+    int range_end = sel.EndPosition();
+    ITextRange selRange = sel.as<ITextRange>();
+
+    if (winuiTextHasRtfCharAttribs(formattag))
+    {
+      winuiTextApplyCharFormatViaRtf(ih, formattag, sel);
+      sel.SetRange(range_start, range_end);
+    }
+    else
+    {
+      winuiTextParseCharacterFormat(formattag, selRange);
+    }
+
+    winuiTextParseParagraphFormat(formattag, selRange);
+  }
+
+  sel.SetRange(save_start, save_end);
 }
 
 static int winui_singleline_extra_h = -1;
@@ -2684,10 +2945,39 @@ static int winuiTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int winuiTextSetFontAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->has_formatting && ih->handle)
+  {
+    if (!iupAttribGet(ih, "_IUPWINUI_FONTUPDATECHECK"))
+    {
+      char* cur_value = iupAttribGetStr(ih, "FONT");
+      if (iupStrEqual(value, cur_value))
+        return 0;
+    }
+    iupAttribSet(ih, "_IUPWINUI_FONTUPDATECHECK", NULL);
+
+    int ret = iupdrvSetFontAttrib(ih, value);
+
+    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    if (reb)
+    {
+      reb.ClearValue(Control::FontSizeProperty());
+      reb.ClearValue(Control::FontFamilyProperty());
+    }
+
+    return ret;
+  }
+
+  return iupdrvSetFontAttrib(ih, value);
+}
+
 extern "C" void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = winuiTextMapMethod;
   ic->UnMap = winuiTextUnMapMethod;
+
+  iupClassRegisterAttribute(ic, "FONT", NULL, winuiTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "VALUE", winuiTextGetValueAttrib, winuiTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", NULL, winuiTextSetAppendAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
