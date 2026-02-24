@@ -332,6 +332,113 @@ void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
   if (h) *h += iupgtk_entry_noframe_border_y;
 }
 
+static void gtkIntToRoman(int num, char* buf, int bufsize, int uppercase)
+{
+  static const int values[] = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+  static const char* upper_sym[] = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
+  static const char* lower_sym[] = {"m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i"};
+  const char** sym = uppercase ? upper_sym : lower_sym;
+  int i, pos = 0;
+
+  if (num <= 0 || num > 3999)
+  {
+    buf[0] = '?';
+    buf[1] = '\0';
+    return;
+  }
+
+  for (i = 0; i < 13 && num > 0; i++)
+  {
+    while (num >= values[i] && pos < bufsize - 4)
+    {
+      int len = (int)strlen(sym[i]);
+      memcpy(buf + pos, sym[i], len);
+      pos += len;
+      num -= values[i];
+    }
+  }
+  buf[pos] = '\0';
+}
+
+static int gtkNumberingPrefix(int counter, const char* numbering, const char* style, char* buf, int bufsize)
+{
+  char number[64] = "";
+
+  if (iupStrEqualNoCase(numbering, "BULLET"))
+  {
+    snprintf(buf, bufsize, "\xe2\x80\xa2\t");
+    return (int)strlen(buf);
+  }
+
+  if (iupStrEqualNoCase(numbering, "ARABIC"))
+    snprintf(number, sizeof(number), "%d", counter);
+  else if (iupStrEqualNoCase(numbering, "LCLETTER"))
+  {
+    if (counter >= 1 && counter <= 26)
+      snprintf(number, sizeof(number), "%c", 'a' + counter - 1);
+    else
+      snprintf(number, sizeof(number), "%d", counter);
+  }
+  else if (iupStrEqualNoCase(numbering, "UCLETTER"))
+  {
+    if (counter >= 1 && counter <= 26)
+      snprintf(number, sizeof(number), "%c", 'A' + counter - 1);
+    else
+      snprintf(number, sizeof(number), "%d", counter);
+  }
+  else if (iupStrEqualNoCase(numbering, "LCROMAN"))
+    gtkIntToRoman(counter, number, sizeof(number), 0);
+  else if (iupStrEqualNoCase(numbering, "UCROMAN"))
+    gtkIntToRoman(counter, number, sizeof(number), 1);
+  else
+    return 0;
+
+  if (style)
+  {
+    if (iupStrEqualNoCase(style, "RIGHTPARENTHESIS"))
+      snprintf(buf, bufsize, "%s)\t", number);
+    else if (iupStrEqualNoCase(style, "PARENTHESES"))
+      snprintf(buf, bufsize, "(%s)\t", number);
+    else if (iupStrEqualNoCase(style, "PERIOD"))
+      snprintf(buf, bufsize, "%s.\t", number);
+    else if (iupStrEqualNoCase(style, "NONUMBER"))
+      snprintf(buf, bufsize, "\t");
+    else
+      snprintf(buf, bufsize, "%s\t", number);
+  }
+  else
+    snprintf(buf, bufsize, "%s\t", number);
+
+  return (int)strlen(buf);
+}
+
+static void gtkTextApplyNumbering(GtkTextBuffer* buffer, GtkTextIter* start_iter, GtkTextIter* end_iter,
+                                   const char* numbering, const char* style)
+{
+  int start_line = gtk_text_iter_get_line(start_iter);
+  int end_line = gtk_text_iter_get_line(end_iter);
+  int line;
+
+  if (end_line > start_line && gtk_text_iter_get_line_offset(end_iter) == 0)
+    end_line--;
+
+  for (line = start_line; line <= end_line; line++)
+  {
+    GtkTextIter line_iter;
+    char prefix[128];
+
+    gtk_text_buffer_get_iter_at_line(buffer, &line_iter, line);
+
+    if (gtkNumberingPrefix(line - start_line + 1, numbering, style, prefix, sizeof(prefix)) > 0)
+      gtk_text_buffer_insert(buffer, &line_iter, prefix, -1);
+  }
+
+  gtk_text_buffer_get_iter_at_line(buffer, start_iter, start_line);
+  gtk_text_buffer_get_iter_at_line(buffer, end_iter, end_line);
+  if (!gtk_text_iter_ends_line(end_iter))
+    gtk_text_iter_forward_to_line_end(end_iter);
+}
+
 static void gtkTextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
 {
   int val;
@@ -426,6 +533,29 @@ static void gtkTextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
   format = iupAttribGet(formattag, "LINESPACING");
   if (format && iupStrToInt(format, &val))
     g_object_set(G_OBJECT(tag), "pixels-inside-wrap", val, NULL);
+
+  format = iupAttribGet(formattag, "NUMBERING");
+  if (format && !iupStrEqualNoCase(format, "NONE"))
+  {
+    int numberingtab = 24;
+    char* tab_str = iupAttribGet(formattag, "NUMBERINGTAB");
+    if (tab_str)
+      iupStrToInt(tab_str, &numberingtab);
+
+    if (!iupAttribGet(formattag, "INDENT"))
+    {
+      g_object_set(G_OBJECT(tag), "left-margin", numberingtab, NULL);
+      g_object_set(G_OBJECT(tag), "indent", -numberingtab, NULL);
+    }
+
+    if (!iupAttribGet(formattag, "TABSARRAY"))
+    {
+      PangoTabArray* tabs = pango_tab_array_new(1, FALSE);
+      pango_tab_array_set_tab(tabs, 0, PANGO_TAB_LEFT, iupGTK_PIXELS2PANGOUNITS(numberingtab));
+      g_object_set(G_OBJECT(tag), "tabs", tabs, NULL);
+      pango_tab_array_free(tabs);
+    }
+  }
 }
 
 static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
@@ -1574,12 +1704,60 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
     {
       if (!gtkTextSelectionPosGetIter(ih, selectionpos, &start_iter, &end_iter))
         return;
-    } 
-    else 
+    }
+    else
     {
       GtkTextMark* mark = gtk_text_buffer_get_insert(buffer);
       gtk_text_buffer_get_iter_at_mark(buffer, &start_iter, mark);
       gtk_text_buffer_get_iter_at_mark(buffer, &end_iter, mark);
+    }
+  }
+
+  {
+    char* numbering = iupAttribGet(formattag, "NUMBERING");
+    if (numbering && !iupStrEqualNoCase(numbering, "NONE"))
+    {
+      char* numbering_style = iupAttribGet(formattag, "NUMBERINGSTYLE");
+      gtkTextApplyNumbering(buffer, &start_iter, &end_iter, numbering, numbering_style);
+    }
+  }
+
+  {
+    char* image_name = iupAttribGet(formattag, "IMAGE");
+    if (image_name)
+    {
+      GdkPixbuf* pixbuf = (GdkPixbuf*)iupImageGetImage(image_name, ih, 0, NULL);
+      if (pixbuf)
+      {
+        int img_w, img_h;
+        int new_w = 0, new_h = 0;
+        char* attr;
+        GdkPixbuf* scaled = NULL;
+
+        iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+
+        attr = iupAttribGet(formattag, "WIDTH");
+        if (attr) iupStrToInt(attr, &new_w);
+        attr = iupAttribGet(formattag, "HEIGHT");
+        if (attr) iupStrToInt(attr, &new_h);
+
+        if ((new_w > 0 && new_w != img_w) || (new_h > 0 && new_h != img_h))
+        {
+          if (new_w <= 0) new_w = img_w;
+          if (new_h <= 0) new_h = img_h;
+          scaled = gdk_pixbuf_scale_simple(pixbuf, new_w, new_h, GDK_INTERP_BILINEAR);
+          pixbuf = scaled;
+        }
+
+        if (!gtk_text_iter_equal(&start_iter, &end_iter))
+          gtk_text_buffer_delete(buffer, &start_iter, &end_iter);
+
+        gtk_text_buffer_insert_pixbuf(buffer, &start_iter, pixbuf);
+
+        if (scaled)
+          g_object_unref(scaled);
+      }
+      return;
     }
   }
 
