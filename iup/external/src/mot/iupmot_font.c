@@ -52,7 +52,7 @@ static int motGetFontSize(const char* font_name)
     i++;
   }
 
-  *(strchr(font_name, '-')) = 0;
+  *((char*)strchr(font_name, '-')) = 0;
   return atoi(font_name);
 }
 
@@ -604,7 +604,7 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 {
   ImotFont* motfont;
   int len;
-  char* line_end;
+  const char* line_end;
 
   if (!str || str[0]==0)
     return 0;

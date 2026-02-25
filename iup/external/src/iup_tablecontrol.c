@@ -22,6 +22,7 @@
 #include "iup_classbase.h"
 
 #include "iup_tablecontrol.h"
+#include "iup_image.h"
 
 
 /* ========================================================================= */
@@ -187,6 +188,62 @@ static int iTableSetIdValueAttrib(Ihandle* ih, int lin, int col, const char* val
     return 0;
 
   iupdrvTableSetCellValue(ih, lin, col, value);
+  return 0;
+}
+
+/* ========================================================================= */
+/* Image Support                                                             */
+/* ========================================================================= */
+
+char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col)
+{
+  sIFnii image_cb = (sIFnii)IupGetCallback(ih, "IMAGE_CB");
+  if (image_cb)
+    return image_cb(ih, lin, col);
+  return NULL;
+}
+
+static char* iTableGetShowImageAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(ih->data->show_image);
+}
+
+static int iTableSetShowImageAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle)
+    return 0;
+
+  if (iupStrBoolean(value))
+    ih->data->show_image = 1;
+  else
+    ih->data->show_image = 0;
+
+  return 0;
+}
+
+static char* iTableGetFitImageAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(ih->data->fit_image);
+}
+
+static int iTableSetFitImageAttrib(Ihandle* ih, const char* value)
+{
+  ih->data->fit_image = iupStrBoolean(value);
+  return 0;
+}
+
+static int iTableSetImageAttribId2(Ihandle* ih, int lin, int col, const char* value)
+{
+  if (!ih->data->show_image)
+    return 0;
+
+  if (!iupTableCheckCellPos(ih, lin, col))
+    return 0;
+
+  if (!ih->handle)
+    return 0;
+
+  iupdrvTableSetCellImage(ih, lin, col, value);
   return 0;
 }
 
@@ -511,6 +568,8 @@ static int iTableCreateMethod(Ihandle* ih, void** params)
   ih->data->allow_reorder = 0;  /* Column reordering disabled by default */
   ih->data->user_resize = 0;  /* User column resizing disabled by default */
   ih->data->stretch_last = 1;  /* Last column stretching enabled by default */
+  ih->data->show_image = 0;
+  ih->data->fit_image = 1;
 
   /* Default EXPAND is YES */
   ih->expand = IUP_EXPAND_BOTH;
@@ -739,6 +798,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterCallback(ic, "EDITEND_CB", "iisi");  /* lin, col, new_value, apply (1=accepted, 0=cancelled), return IUP_IGNORE to reject */
   iupClassRegisterCallback(ic, "EDITION_CB", "iis");  /* lin, col, new_text */
   iupClassRegisterCallback(ic, "VALUE_CB", "ii=s");  /* lin, col, returns string value for virtual mode */
+  iupClassRegisterCallback(ic, "IMAGE_CB", "ii=s");  /* lin, col, returns image name for virtual mode */
 
   /* Common Callbacks */
   iupBaseRegisterCommonCallbacks(ic);
@@ -812,6 +872,11 @@ Iclass* iupTableNewClass(void)
 
   /* Virtual mode attributes */
   iupClassRegisterAttribute(ic, "VIRTUALMODE", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT); /* Enable/disable virtual mode for large datasets: YES, NO */
+
+  /* Image attributes */
+  iupClassRegisterAttribute(ic, "SHOWIMAGE", iTableGetShowImageAttrib, iTableSetShowImageAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FITIMAGE", iTableGetFitImageAttrib, iTableSetFitImageAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId2(ic, "IMAGE", NULL, iTableSetImageAttribId2, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   /* Visible size attributes (for natural size calculation) */
   iupClassRegisterAttribute(ic, "VISIBLECOLUMNS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* Number of columns to display in natural size */

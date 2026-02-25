@@ -2012,6 +2012,14 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   return motTableGetCellValueInternal(ih, lin, col);
 }
 
+void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+{
+  (void)ih;
+  (void)lin;
+  (void)col;
+  (void)image;
+}
+
 void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
@@ -2216,6 +2224,9 @@ void iupdrvTableInitClass(Iclass* ic)
   /* Mark unsupported features */
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "USERRESIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FITIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId2(ic, "IMAGE", NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   /* Replace core SET handlers to update native widget */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, motTableSetSortableAttrib);

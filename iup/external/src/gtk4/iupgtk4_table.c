@@ -20,6 +20,7 @@
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
 #include "iup_key.h"
+#include "iup_image.h"
 
 #include "iupgtk4_drv.h"
 #include "iup_tablecontrol.h"
@@ -36,6 +37,7 @@ struct _IupTableRow
 {
   GObject parent;
   gchar** values;  /* Array of string values (one per column) */
+  GdkPaintable** images;  /* Array of image paintables (one per column), NULL if no images */
   gint num_cols;
   gint row_index;  /* 1-based row index for IUP callbacks */
   guint update_count;  /* Incremented whenever any value changes */
@@ -67,10 +69,18 @@ static void iup_table_row_finalize(GObject* object)
   if (row->values)
   {
     for (gint i = 0; i < row->num_cols; i++)
-    {
       g_free(row->values[i]);
-    }
     g_free(row->values);
+  }
+
+  if (row->images)
+  {
+    for (gint i = 0; i < row->num_cols; i++)
+    {
+      if (row->images[i])
+        g_object_unref(row->images[i]);
+    }
+    g_free(row->images);
   }
 
   G_OBJECT_CLASS(iup_table_row_parent_class)->finalize(object);
@@ -92,6 +102,7 @@ static void iup_table_row_get_property(GObject* object, guint prop_id, GValue* v
 static void iup_table_row_init(IupTableRow* row)
 {
   row->values = NULL;
+  row->images = NULL;
   row->num_cols = 0;
   row->row_index = 0;
   row->update_count = 0;
@@ -131,6 +142,25 @@ static void iup_table_row_set_value(IupTableRow* row, gint col_index, const char
 
   g_free(row->values[col_index]);
   row->values[col_index] = g_strdup(value ? value : "");
+
+  row->update_count++;
+  g_object_notify_by_pspec(G_OBJECT(row), row_props[PROP_UPDATE]);
+}
+
+static void iup_table_row_set_image(IupTableRow* row, gint col_index, GdkPaintable* paintable)
+{
+  if (!row || col_index < 0 || col_index >= row->num_cols)
+    return;
+
+  if (!row->images)
+    row->images = g_new0(GdkPaintable*, row->num_cols);
+
+  if (row->images[col_index])
+    g_object_unref(row->images[col_index]);
+
+  row->images[col_index] = paintable;
+  if (paintable)
+    g_object_ref(paintable);
 
   row->update_count++;
   g_object_notify_by_pspec(G_OBJECT(row), row_props[PROP_UPDATE]);
@@ -202,6 +232,20 @@ static gpointer iup_table_virtual_model_get_item(GListModel* list, guint positio
       {
         g_free(row->values[col]);
         row->values[col] = g_strdup(value);
+      }
+    }
+  }
+
+  if (model->ih->data->show_image)
+  {
+    for (gint col = 0; col < model->ih->data->num_col; col++)
+    {
+      char* image_name = iupTableGetCellImageCb(model->ih, position + 1, col + 1);
+      if (image_name)
+      {
+        GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(image_name, model->ih, 0, NULL);
+        if (paintable)
+          iup_table_row_set_image(row, col, paintable);
       }
     }
   }
@@ -480,7 +524,7 @@ static void cell_factory_setup(GtkSignalListItemFactory* factory, GtkListItem* l
     editable_str = iupAttribGet(ih, "EDITABLE");
   int is_editable = iupStrBoolean(editable_str);
 
-  GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, ih->data->show_image ? 4 : 0);
   gtk_widget_set_hexpand(box, TRUE);
 
   gtk_widget_add_css_class(box, "iup-table-cell-box");
@@ -522,6 +566,14 @@ static void cell_factory_setup(GtkSignalListItemFactory* factory, GtkListItem* l
       gtk_label_set_xalign(GTK_LABEL(widget), 0.0);
   }
 
+  if (ih->data->show_image)
+  {
+    GtkWidget* image = gtk_image_new();
+    gtk_widget_set_valign(image, GTK_ALIGN_CENTER);
+    gtk_widget_set_visible(image, FALSE);
+    gtk_box_append(GTK_BOX(box), image);
+  }
+
   gtk_widget_set_hexpand(widget, TRUE);
   gtk_box_append(GTK_BOX(box), widget);
 
@@ -547,9 +599,26 @@ static void on_row_update(IupTableRow* row, GParamSpec* pspec, gpointer user_dat
   if (!widget)
     return;
 
+  if (GTK_IS_IMAGE(widget))
+  {
+    GdkPaintable* paintable = (row->images && col < row->num_cols) ? row->images[col] : NULL;
+    if (paintable)
+    {
+      gtk_image_set_from_paintable(GTK_IMAGE(widget), paintable);
+      gtk_widget_set_visible(widget, TRUE);
+    }
+    else
+    {
+      gtk_image_clear(GTK_IMAGE(widget));
+      gtk_widget_set_visible(widget, FALSE);
+    }
+    widget = gtk_widget_get_next_sibling(widget);
+    if (!widget)
+      return;
+  }
+
   if (GTK_IS_EDITABLE_LABEL(widget))
   {
-    /* Don't update text if currently editing - it would reset the cursor position! */
     gboolean editing = gtk_editable_label_get_editing(GTK_EDITABLE_LABEL(widget));
     if (!editing)
     {
@@ -584,6 +653,36 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
   gint lin = row->row_index;
   gboolean is_selected = gtk_list_item_get_selected(list_item);
 
+  if (GTK_IS_IMAGE(widget))
+  {
+    GdkPaintable* paintable = (row->images && col < row->num_cols) ? row->images[col] : NULL;
+
+    if (paintable)
+    {
+      gtk_image_set_from_paintable(GTK_IMAGE(widget), paintable);
+
+      if (ih->data->fit_image)
+      {
+        int charheight;
+        iupdrvFontGetCharSize(ih, NULL, &charheight);
+        gtk_image_set_pixel_size(GTK_IMAGE(widget), charheight);
+      }
+      else
+      {
+        int img_h = gdk_paintable_get_intrinsic_height(paintable);
+        gtk_image_set_pixel_size(GTK_IMAGE(widget), img_h);
+      }
+      gtk_widget_set_visible(widget, TRUE);
+    }
+    else
+    {
+      gtk_image_clear(GTK_IMAGE(widget));
+      gtk_widget_set_visible(widget, FALSE);
+    }
+
+    widget = gtk_widget_get_next_sibling(widget);
+  }
+
   if (GTK_IS_EDITABLE_LABEL(widget))
   {
     g_object_set_data(G_OBJECT(widget), "list_item", list_item);
@@ -592,7 +691,7 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
     gtk_editable_set_text(GTK_EDITABLE(widget), row->values[col]);
     g_signal_handlers_unblock_by_func(widget, G_CALLBACK(on_edit_done), data);
   }
-  else
+  else if (GTK_IS_LABEL(widget))
   {
     gtk_label_set_text(GTK_LABEL(widget), row->values[col]);
   }
@@ -1672,6 +1771,28 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   return NULL;
 }
 
+void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+
+  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+    return;
+
+  if (!gtk_data || gtk_data->is_virtual)
+    return;
+
+  IupTableRow* row = IUP_TABLE_ROW(g_list_model_get_item(gtk_data->model, lin - 1));
+  if (row)
+  {
+    GdkPaintable* paintable = NULL;
+    if (image)
+      paintable = (GdkPaintable*)iupImageGetImage(image, ih, 0, NULL);
+
+    iup_table_row_set_image(row, col - 1, paintable);
+    g_object_unref(row);
+  }
+}
+
 /* ========================================================================= */
 /* Driver Functions - Column Operations                                     */
 /* ========================================================================= */
@@ -1682,6 +1803,15 @@ static int gtk4TableCalculateColumnWidth(Ihandle* ih, int col_index)
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
   int max_width = 0;
   int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
+  int iup_col = col_index + 1;
+  int charheight = 0;
+  int image_extra = 0;
+
+  if (ih->data->show_image)
+  {
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    image_extra = charheight + 4;
+  }
 
   /* Measure column title */
   GListModel* columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
@@ -1702,14 +1832,23 @@ static int gtk4TableCalculateColumnWidth(Ihandle* ih, int col_index)
   /* Measure cell content (check first N rows for performance) */
   for (int lin = 1; lin <= max_rows_to_check; lin++)
   {
-    char* cell_value = iupAttribGetId2(ih, "", lin, col_index + 1);
+    int cell_width = 0;
+    char* cell_value = iupAttribGetId2(ih, "", lin, iup_col);
     if (cell_value && *cell_value)
+      cell_width = iupdrvFontGetStringWidth(ih, cell_value);
+    cell_width += 16;  /* Add padding (8px left + 8px right) */
+
+    if (ih->data->show_image)
     {
-      int cell_width = iupdrvFontGetStringWidth(ih, cell_value);
-      cell_width += 16;  /* Add padding (8px left + 8px right) */
-      if (cell_width > max_width)
-        max_width = cell_width;
+      char* image_name = iupAttribGetId2(ih, "IMAGE", lin, iup_col);
+      if (!image_name)
+        image_name = iupTableGetCellImageCb(ih, lin, iup_col);
+      if (image_name)
+        cell_width += image_extra;
     }
+
+    if (cell_width > max_width)
+      max_width = cell_width;
   }
 
   return max_width;

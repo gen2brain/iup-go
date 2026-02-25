@@ -25,6 +25,7 @@
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
 #include "iup_key.h"
+#include "iup_image.h"
 
 #include "iupgtk_drv.h"
 #include "iup_tablecontrol.h"
@@ -70,6 +71,11 @@ typedef struct _IgtkTableData
 
 #define IGTK_TABLE_DATA(ih) ((IgtkTableData*)(ih->data->native_data))
 
+/* Forward declarations for model column mapping */
+static int gtkTableModelColCount(Ihandle* ih);
+static int gtkTableTextModelCol(Ihandle* ih, int iup_col);
+static int gtkTableImageModelCol(int iup_col);
+
 /* ========================================================================= */
 /* Custom Virtual Tree Model Implementation                                  */
 /* ========================================================================= */
@@ -99,12 +105,16 @@ static GtkTreeModelFlags iup_gtk_virtual_model_get_flags(GtkTreeModel *tree_mode
 static gint iup_gtk_virtual_model_get_n_columns(GtkTreeModel *tree_model)
 {
   IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
-  return model->ih ? model->ih->data->num_col : 0;
+  if (!model->ih) return 0;
+  return gtkTableModelColCount(model->ih);
 }
 
 static GType iup_gtk_virtual_model_get_column_type(GtkTreeModel *tree_model, gint index)
 {
-  return G_TYPE_STRING;  /* All columns are strings */
+  IupGtkVirtualModel *model = IUP_GTK_VIRTUAL_MODEL(tree_model);
+  if (model->ih && model->ih->data->show_image && (index % 2 == 0))
+    return GDK_TYPE_PIXBUF;
+  return G_TYPE_STRING;
 }
 
 static gboolean iup_gtk_virtual_model_get_iter(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreePath *path)
@@ -147,15 +157,46 @@ static void iup_gtk_virtual_model_get_value(GtkTreeModel *tree_model, GtkTreeIte
   if (iter->stamp != model->stamp)
     return;
 
+  gint row = GPOINTER_TO_INT(iter->user_data);
+
+  if (model->ih->data->show_image && (column % 2 == 0))
+  {
+    g_value_init(value, GDK_TYPE_PIXBUF);
+
+    gint iup_col = column / 2;
+    char* image_name = iupTableGetCellImageCb(model->ih, row + 1, iup_col + 1);
+    if (image_name)
+    {
+      GdkPixbuf* pixbuf = (GdkPixbuf*)iupImageGetImage(image_name, model->ih, 0, NULL);
+      if (pixbuf && model->ih->data->fit_image)
+      {
+        int charheight;
+        iupdrvFontGetCharSize(model->ih, NULL, &charheight);
+        int available_height = charheight + 4;
+        int img_height = gdk_pixbuf_get_height(pixbuf);
+        if (img_height > available_height)
+        {
+          int img_width = gdk_pixbuf_get_width(pixbuf);
+          int scaled_width = (img_width * available_height) / img_height;
+          GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixbuf, scaled_width, available_height, GDK_INTERP_BILINEAR);
+          g_value_take_object(value, scaled);
+          return;
+        }
+      }
+      g_value_set_object(value, pixbuf);
+    }
+    return;
+  }
+
   g_value_init(value, G_TYPE_STRING);
 
-  gint row = GPOINTER_TO_INT(iter->user_data);
+  gint iup_col = model->ih->data->show_image ? (column / 2) : column;
 
   /* Query data via VALUE_CB (row and column are 1-based for IUP) */
   sIFnii value_cb = (sIFnii)IupGetCallback(model->ih, "VALUE_CB");
   if (value_cb)
   {
-    char *cell_value = value_cb(model->ih, row + 1, column + 1);
+    char *cell_value = value_cb(model->ih, row + 1, iup_col + 1);
     if (cell_value)
     {
       g_value_set_string(value, cell_value);
@@ -284,33 +325,63 @@ static gint gtkTableCompareFn(GtkTreeModel* model, GtkTreeIter* a, GtkTreeIter* 
   return result;
 }
 
+static int gtkTableModelColCount(Ihandle* ih)
+{
+  if (ih->data->show_image)
+    return ih->data->num_col * 2;
+  return ih->data->num_col;
+}
+
+static int gtkTableTextModelCol(Ihandle* ih, int iup_col)
+{
+  if (ih->data->show_image)
+    return iup_col * 2 + 1;
+  return iup_col;
+}
+
+static int gtkTableImageModelCol(int iup_col)
+{
+  return iup_col * 2;
+}
+
 static void gtkTableEnsureStore(Ihandle* ih)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  int model_cols = gtkTableModelColCount(ih);
 
-  /* If store already exists and has correct number of columns, nothing to do */
-  if (gtk_data->store && gtk_tree_model_get_n_columns(GTK_TREE_MODEL(gtk_data->store)) == ih->data->num_col)
+  if (gtk_data->store && gtk_tree_model_get_n_columns(GTK_TREE_MODEL(gtk_data->store)) == model_cols)
     return;
 
-  /* Create new store with correct number of columns */
   if (gtk_data->column_types)
     free(gtk_data->column_types);
 
-  gtk_data->column_types = (GType*)malloc(sizeof(GType) * ih->data->num_col);
+  gtk_data->column_types = (GType*)malloc(sizeof(GType) * model_cols);
 
   int i;
-  for (i = 0; i < ih->data->num_col; i++)
-    gtk_data->column_types[i] = G_TYPE_STRING;
+  if (ih->data->show_image)
+  {
+    for (i = 0; i < ih->data->num_col; i++)
+    {
+      gtk_data->column_types[i * 2] = GDK_TYPE_PIXBUF;
+      gtk_data->column_types[i * 2 + 1] = G_TYPE_STRING;
+    }
+  }
+  else
+  {
+    for (i = 0; i < ih->data->num_col; i++)
+      gtk_data->column_types[i] = G_TYPE_STRING;
+  }
 
   if (gtk_data->store)
     g_object_unref(gtk_data->store);
 
-  gtk_data->store = gtk_list_store_newv(ih->data->num_col, gtk_data->column_types);
+  gtk_data->store = gtk_list_store_newv(model_cols, gtk_data->column_types);
   gtk_tree_view_set_model(GTK_TREE_VIEW(gtk_data->tree_view), GTK_TREE_MODEL(gtk_data->store));
 
   for (i = 0; i < ih->data->num_col; i++)
   {
-    gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(gtk_data->store), i, gtkTableCompareFn, GINT_TO_POINTER(i), NULL);
+    int sort_col = gtkTableTextModelCol(ih, i);
+    gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(gtk_data->store), sort_col, gtkTableCompareFn, GINT_TO_POINTER(sort_col), NULL);
   }
 }
 
@@ -331,8 +402,19 @@ static void gtkTableUpdateColumns(Ihandle* ih)
   int col;
   for (col = 0; col < ih->data->num_col; col++)
   {
+    int text_model_col = gtkTableTextModelCol(ih, col);
+    GtkTreeViewColumn* column = gtk_tree_view_column_new();
+
+    if (ih->data->show_image)
+    {
+      GtkCellRenderer* pix_renderer = gtk_cell_renderer_pixbuf_new();
+      gtk_tree_view_column_pack_start(column, pix_renderer, FALSE);
+      gtk_tree_view_column_add_attribute(column, pix_renderer, "pixbuf", gtkTableImageModelCol(col));
+    }
+
     GtkCellRenderer* renderer = gtk_cell_renderer_text_new();
-    GtkTreeViewColumn* column = gtk_tree_view_column_new_with_attributes("", renderer, "text", col, NULL);
+    gtk_tree_view_column_pack_start(column, renderer, TRUE);
+    gtk_tree_view_column_add_attribute(column, renderer, "text", text_model_col);
 
     /* Check if sorting is allowed */
     if (ih->data->sortable)
@@ -342,15 +424,13 @@ static void gtkTableUpdateColumns(Ihandle* ih)
         /* Virtual mode - disable GTK automatic sorting, use manual handling */
         gtk_tree_view_column_set_sort_column_id(column, -1);
         gtk_tree_view_column_set_clickable(column, TRUE);
-        /* Connect clicked signal for manual sort handling */
         g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
       }
       else
       {
-        /* Normal mode - enable GTK's automatic sorting and connect clicked signal for SORT_CB notification */
-        gtk_tree_view_column_set_sort_column_id(column, col);
+        /* Normal mode - enable GTK's automatic sorting */
+        gtk_tree_view_column_set_sort_column_id(column, text_model_col);
         gtk_tree_view_column_set_clickable(column, TRUE);
-        /* Connect clicked signal to call SORT_CB after GTK sorts */
         g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
       }
     }
@@ -1028,7 +1108,7 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
 
         if (gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(gtk_data->store), &iter, NULL, lin - 1))
         {
-          gtk_tree_model_get(GTK_TREE_MODEL(gtk_data->store), &iter, col - 1, &value, -1);
+          gtk_tree_model_get(GTK_TREE_MODEL(gtk_data->store), &iter, gtkTableTextModelCol(ih, col - 1), &value, -1);
         }
 
         if (value && *value)
@@ -1069,7 +1149,7 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
             GtkTreeIter iter;
             if (gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(gtk_data->store), &iter, NULL, lin - 1))
             {
-              gtk_list_store_set(gtk_data->store, &iter, col - 1, text, -1);
+              gtk_list_store_set(gtk_data->store, &iter, gtkTableTextModelCol(ih, col - 1), text, -1);
             }
 
             /* Call VALUECHANGED_CB if defined */
@@ -1226,6 +1306,15 @@ static int gtk3TableCalculateColumnWidth(Ihandle* ih, int col_index)
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
   int max_width = 0;
   int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
+  int iup_col = col_index + 1;
+  int charheight = 0;
+  int image_extra = 0;
+
+  if (ih->data->show_image)
+  {
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    image_extra = charheight + 4;
+  }
 
   /* Measure column title */
   GtkTreeViewColumn* column = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col_index);
@@ -1249,19 +1338,30 @@ static int gtk3TableCalculateColumnWidth(Ihandle* ih, int col_index)
     if (gtk_tree_model_get_iter_first(model, &iter))
     {
       do {
+        int cell_width = 0;
         GValue value = G_VALUE_INIT;
-        gtk_tree_model_get_value(model, &iter, col_index, &value);
+        gtk_tree_model_get_value(model, &iter, gtkTableTextModelCol(ih, col_index), &value);
         if (G_VALUE_HOLDS_STRING(&value))
         {
           const char* text = g_value_get_string(&value);
           if (text && text[0])
-          {
-            int text_width = iupdrvFontGetStringWidth(ih, text) + 8;
-            if (text_width > max_width)
-              max_width = text_width;
-          }
+            cell_width = iupdrvFontGetStringWidth(ih, text);
         }
         g_value_unset(&value);
+        cell_width += 8;
+
+        if (ih->data->show_image)
+        {
+          char* image_name = iupAttribGetId2(ih, "IMAGE", row + 1, iup_col);
+          if (!image_name)
+            image_name = iupTableGetCellImageCb(ih, row + 1, iup_col);
+          if (image_name)
+            cell_width += image_extra;
+        }
+
+        if (cell_width > max_width)
+          max_width = cell_width;
+
         row++;
       } while (row < max_rows_to_check && gtk_tree_model_iter_next(model, &iter));
     }
@@ -1361,11 +1461,23 @@ static int gtkTableMapMethod(Ihandle* ih)
     /* Create standard GtkListStore */
     if (ih->data->num_col > 0)
     {
-      gtk_data->column_types = (GType*)malloc(sizeof(GType) * ih->data->num_col);
-      for (i = 0; i < ih->data->num_col; i++)
-        gtk_data->column_types[i] = G_TYPE_STRING;
+      int model_cols = gtkTableModelColCount(ih);
+      gtk_data->column_types = (GType*)malloc(sizeof(GType) * model_cols);
+      if (ih->data->show_image)
+      {
+        for (i = 0; i < ih->data->num_col; i++)
+        {
+          gtk_data->column_types[i * 2] = GDK_TYPE_PIXBUF;
+          gtk_data->column_types[i * 2 + 1] = G_TYPE_STRING;
+        }
+      }
+      else
+      {
+        for (i = 0; i < ih->data->num_col; i++)
+          gtk_data->column_types[i] = G_TYPE_STRING;
+      }
 
-      gtk_data->store = gtk_list_store_newv(ih->data->num_col, gtk_data->column_types);
+      gtk_data->store = gtk_list_store_newv(model_cols, gtk_data->column_types);
     }
     else
     {
@@ -1466,11 +1578,21 @@ static int gtkTableMapMethod(Ihandle* ih)
       g_signal_connect(G_OBJECT(renderer), "edited", G_CALLBACK(gtkTableCellEdited), ih);
       g_signal_connect(G_OBJECT(renderer), "editing-canceled", G_CALLBACK(gtkTableCellEditingCanceled), ih);
 
-      GtkTreeViewColumn* column = gtk_tree_view_column_new_with_attributes("", renderer, "text", col, NULL);
+      int text_model_col = gtkTableTextModelCol(ih, col);
+      GtkTreeViewColumn* column = gtk_tree_view_column_new();
+
+      if (ih->data->show_image)
+      {
+        GtkCellRenderer* pix_renderer = gtk_cell_renderer_pixbuf_new();
+        gtk_tree_view_column_pack_start(column, pix_renderer, FALSE);
+        gtk_tree_view_column_add_attribute(column, pix_renderer, "pixbuf", gtkTableImageModelCol(col));
+      }
+
+      gtk_tree_view_column_pack_start(column, renderer, TRUE);
+      gtk_tree_view_column_add_attribute(column, renderer, "text", text_model_col);
 
       gtk_tree_view_column_set_resizable(column, TRUE);
 
-      /* Check if column reordering is allowed (from ih->data) */
       gtk_tree_view_column_set_reorderable(column, ih->data->allow_reorder);
 
       /* Set up cell data function for colors */
@@ -1561,9 +1683,8 @@ static int gtkTableMapMethod(Ihandle* ih)
         else
         {
           /* Normal mode - enable GTK's automatic sorting and connect clicked signal for SORT_CB notification */
-          gtk_tree_view_column_set_sort_column_id(column, col);
+          gtk_tree_view_column_set_sort_column_id(column, text_model_col);
           gtk_tree_view_column_set_clickable(column, TRUE);
-          /* Connect clicked signal to call SORT_CB after GTK sorts */
           g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
         }
       }
@@ -1810,7 +1931,7 @@ void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
       int col;
       for (col = 0; col < ih->data->num_col; col++)
       {
-        gtk_list_store_set(gtk_data->store, &iter, col, "", -1);
+        gtk_list_store_set(gtk_data->store, &iter, gtkTableTextModelCol(ih, col), "", -1);
       }
     }
   }
@@ -1884,7 +2005,7 @@ void iupdrvTableAddLin(Ihandle* ih, int pos)
   int col;
   for (col = 0; col < ih->data->num_col; col++)
   {
-    gtk_list_store_set(gtk_data->store, &iter, col, "", -1);
+    gtk_list_store_set(gtk_data->store, &iter, gtkTableTextModelCol(ih, col), "", -1);
   }
 
   ih->data->num_lin++;
@@ -1935,7 +2056,8 @@ void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 
   if (gtk_tree_model_get_iter(GTK_TREE_MODEL(gtk_data->store), &iter, path))
   {
-    gtk_list_store_set(gtk_data->store, &iter, col - 1, value ? value : "", -1);
+    int model_col = gtkTableTextModelCol(ih, col - 1);
+    gtk_list_store_set(gtk_data->store, &iter, model_col, value ? value : "", -1);
   }
 
   gtk_tree_path_free(path);
@@ -1958,7 +2080,8 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   if (gtk_tree_model_get_iter(GTK_TREE_MODEL(gtk_data->store), &iter, path))
   {
     gchar* gtk_value;
-    gtk_tree_model_get(GTK_TREE_MODEL(gtk_data->store), &iter, col - 1, &gtk_value, -1);
+    int model_col = gtkTableTextModelCol(ih, col - 1);
+    gtk_tree_model_get(GTK_TREE_MODEL(gtk_data->store), &iter, model_col, &gtk_value, -1);
 
     if (gtk_value)
     {
@@ -1969,6 +2092,52 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 
   gtk_tree_path_free(path);
   return value;
+}
+
+void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+
+  if (!gtk_data || !gtk_data->store)
+    return;
+
+  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+    return;
+
+  GtkTreeIter iter;
+  GtkTreePath* path = gtk_tree_path_new_from_indices(lin - 1, -1);
+
+  if (gtk_tree_model_get_iter(GTK_TREE_MODEL(gtk_data->store), &iter, path))
+  {
+    int model_col = gtkTableImageModelCol(col - 1);
+    GdkPixbuf* pixbuf = NULL;
+
+    if (image)
+    {
+      pixbuf = (GdkPixbuf*)iupImageGetImage(image, ih, 0, NULL);
+      if (pixbuf && ih->data->fit_image)
+      {
+        int charheight;
+        iupdrvFontGetCharSize(ih, NULL, &charheight);
+        int available_height = charheight + 4;
+        int img_height = gdk_pixbuf_get_height(pixbuf);
+        if (img_height > available_height)
+        {
+          int img_width = gdk_pixbuf_get_width(pixbuf);
+          int scaled_width = (img_width * available_height) / img_height;
+          GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixbuf, scaled_width, available_height, GDK_INTERP_BILINEAR);
+          gtk_list_store_set(gtk_data->store, &iter, model_col, scaled, -1);
+          g_object_unref(scaled);
+          gtk_tree_path_free(path);
+          return;
+        }
+      }
+    }
+
+    gtk_list_store_set(gtk_data->store, &iter, model_col, pixbuf, -1);
+  }
+
+  gtk_tree_path_free(path);
 }
 
 /* ========================================================================= */
@@ -2355,7 +2524,7 @@ static int gtkTableSetSortableAttrib(Ihandle* ih, const char* value)
 
         if (ih->data->sortable)
         {
-          gtk_tree_view_column_set_sort_column_id(column, col_index);
+          gtk_tree_view_column_set_sort_column_id(column, gtkTableTextModelCol(ih, col_index));
           gtk_tree_view_column_set_clickable(column, TRUE);
         }
         else

@@ -20,6 +20,7 @@
 #include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_tablecontrol.h"
+#include "iup_image.h"
 #include "iup_key.h"
 #include "iup_focus.h"
 
@@ -324,6 +325,27 @@ static void eflTableSwapRows(Ihandle* ih, int lin1, int lin2)
     }
     else
       iupAttribSet(ih, name2, NULL);
+
+    if (ih->data->show_image)
+    {
+      val1 = iupAttribGetId2(ih, "_IUPEFL_CELLIMAGE", lin1, col);
+      val2 = iupAttribGetId2(ih, "_IUPEFL_CELLIMAGE", lin2, col);
+
+      temp = val1 ? iupStrDup(val1) : NULL;
+
+      if (val2)
+        iupAttribSetStrId2(ih, "_IUPEFL_CELLIMAGE", lin1, col, val2);
+      else
+        iupAttribSetId2(ih, "_IUPEFL_CELLIMAGE", lin1, col, NULL);
+
+      if (temp)
+      {
+        iupAttribSetStrId2(ih, "_IUPEFL_CELLIMAGE", lin2, col, temp);
+        free(temp);
+      }
+      else
+        iupAttribSetId2(ih, "_IUPEFL_CELLIMAGE", lin2, col, NULL);
+    }
   }
 }
 
@@ -2193,6 +2215,19 @@ void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 {
   return eflTableGetCellText(ih, lin, col);
+}
+
+void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+{
+  if (!ih->handle)
+    return;
+
+  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+    return;
+
+  iupAttribSetStrId2(ih, "_IUPEFL_CELLIMAGE", lin, col, image);
+
+  iupdrvTableRedraw(ih);
 }
 
 void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)

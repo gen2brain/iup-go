@@ -35,6 +35,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_key.h"
+#include "iup_image.h"
 #include "iup_tablecontrol.h"
 }
 
@@ -302,6 +303,38 @@ public:
         else
         {
           existingItem->setText(QString());
+        }
+
+        /* Query IMAGE_CB for cell image (1-based indices) */
+        if (ih->data->show_image)
+        {
+          char* image_name = iupTableGetCellImageCb(ih, row + 1, col + 1);
+          if (image_name)
+          {
+            QPixmap* pixImage = (QPixmap*)iupImageGetImage(image_name, ih, 0, NULL);
+            if (pixImage)
+            {
+              if (ih->data->fit_image)
+              {
+                int charheight;
+                iupdrvFontGetCharSize(ih, NULL, &charheight);
+                int available_height = charheight + 4;
+                if (pixImage->height() > available_height)
+                {
+                  QPixmap scaled = pixImage->scaledToHeight(available_height, Qt::SmoothTransformation);
+                  existingItem->setIcon(QIcon(scaled));
+                }
+                else
+                  existingItem->setIcon(QIcon(*pixImage));
+              }
+              else
+                existingItem->setIcon(QIcon(*pixImage));
+            }
+            else
+              existingItem->setIcon(QIcon());
+          }
+          else
+            existingItem->setIcon(QIcon());
         }
 
         /* Configure item with alignment, colors, fonts, editable flags */
@@ -1183,6 +1216,52 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
     return nullptr;
 
   return iupStrReturnStr(text.toUtf8().constData());
+}
+
+void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  if (!table)
+    return;
+
+  int qt_row = lin - 1;
+  int qt_col = col - 1;
+
+  if (qt_row < 0 || qt_row >= table->rowCount() ||
+      qt_col < 0 || qt_col >= table->columnCount())
+    return;
+
+  qtTableEnsureItem(table, qt_row, qt_col);
+  QTableWidgetItem* item = table->item(qt_row, qt_col);
+  if (!item)
+    return;
+
+  if (image)
+  {
+    QPixmap* pixImage = (QPixmap*)iupImageGetImage(image, ih, 0, NULL);
+    if (pixImage)
+    {
+      if (ih->data->fit_image)
+      {
+        int charheight;
+        iupdrvFontGetCharSize(ih, NULL, &charheight);
+        int available_height = charheight + 4;
+        if (pixImage->height() > available_height)
+        {
+          QPixmap scaled = pixImage->scaledToHeight(available_height, Qt::SmoothTransformation);
+          item->setIcon(QIcon(scaled));
+        }
+        else
+          item->setIcon(QIcon(*pixImage));
+      }
+      else
+        item->setIcon(QIcon(*pixImage));
+    }
+    else
+      item->setIcon(QIcon());
+  }
+  else
+    item->setIcon(QIcon());
 }
 
 /****************************************************************************

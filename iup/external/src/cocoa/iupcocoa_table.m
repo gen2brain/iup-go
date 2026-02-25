@@ -97,43 +97,50 @@ typedef struct _IcocoaTableData {
 {
   [super layout];
 
+  CGFloat cellWidth = self.bounds.size.width;
+
+  /* Get the table view and ask for current cell frame */
+  NSTableView* tableView = (NSTableView*)[self superview];
+  if (tableView && [tableView isKindOfClass:[NSTableView class]])
+  {
+    NSInteger row = [tableView rowForView:self];
+    NSInteger column = [tableView columnForView:self];
+    if (row >= 0 && column >= 0)
+    {
+      NSRect cellFrame = [tableView frameOfCellAtColumn:column row:row];
+      cellWidth = cellFrame.size.width;
+    }
+  }
+
+  CGFloat cellHeight = self.bounds.size.height;
+  CGFloat xStart = 2.0;
+
+  /* Position image view if visible */
+  if (self.imageView && ![self.imageView isHidden])
+  {
+    CGFloat imgSize = 16.0;
+    CGFloat imgY = floor((cellHeight - imgSize) / 2.0);
+    [self.imageView setFrame:NSMakeRect(xStart, imgY, imgSize, imgSize)];
+    xStart += imgSize + 4.0;
+  }
+
   /* Position text field centered vertically */
   if (self.textField)
   {
-    CGFloat cellWidth = self.bounds.size.width;
-
-    /* Get the table view and ask for current cell frame */
-    NSTableView* tableView = (NSTableView*)[self superview];
-    if (tableView && [tableView isKindOfClass:[NSTableView class]])
-    {
-      NSInteger row = [tableView rowForView:self];
-      NSInteger column = [tableView columnForView:self];
-      if (row >= 0 && column >= 0)
-      {
-        NSRect cellFrame = [tableView frameOfCellAtColumn:column row:row];
-        cellWidth = cellFrame.size.width;
-      }
-    }
-
-    /* Get text field's natural height */
     CGFloat textHeight = [self.textField intrinsicContentSize].height;
+    CGFloat yOffset = floor((cellHeight - textHeight) / 2.0);
 
-    /* Center vertically */
-    CGFloat yOffset = floor((self.bounds.size.height - textHeight) / 2.0);
-
-    /* Check alignment - CENTER needs full width, LEFT/RIGHT need padding */
+    BOOL hasImage = (self.imageView && ![self.imageView isHidden]);
     NSTextAlignment alignment = [self.textField alignment];
     NSRect textFrame;
 
-    if (alignment == NSTextAlignmentCenter)
+    if (!hasImage && alignment == NSTextAlignmentCenter)
     {
-      /* CENTER: Use full cell width */
       textFrame = NSMakeRect(0.0, yOffset, cellWidth, textHeight);
     }
     else
     {
-      /* LEFT/RIGHT: Add 2px padding so text doesn't touch cell borders */
-      textFrame = NSMakeRect(2.0, yOffset, cellWidth - 6.0, textHeight);
+      textFrame = NSMakeRect(xStart, yOffset, cellWidth - xStart - 4.0, textHeight);
     }
 
     [self.textField setFrame:textFrame];
@@ -278,6 +285,11 @@ static CGFloat cocoaTableCalculateColumnWidth(Ihandle* ih, int col_index, NSFont
     }
   }
 
+  /* Account for image width if SHOWIMAGE is enabled */
+  CGFloat image_extra = 0.0;
+  if (ih->data->show_image)
+    image_extra = 16.0 + 4.0;  /* 16px image + 4px gap */
+
   /* Measure cell content (check first N rows) */
   for (int lin = 0; lin < max_rows_to_check; lin++)
   {
@@ -286,7 +298,7 @@ static CGFloat cocoaTableCalculateColumnWidth(Ihandle* ih, int col_index, NSFont
     {
       NSDictionary* attrs = @{NSFontAttributeName: font};
       NSSize cell_size = [cell_value sizeWithAttributes:attrs];
-      CGFloat cell_width = cell_size.width + 16.0;  /* Add padding (8px left + 8px right) */
+      CGFloat cell_width = cell_size.width + 16.0 + image_extra;  /* Add padding + image space */
       if (cell_width > max_width)
       {
         max_width = cell_width;
@@ -1192,6 +1204,17 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     [cellView setIdentifier:identifier];
     [cellView setIh:ih];
 
+    /* Create image view for cell images */
+    NSImageView* imageView = [[NSImageView alloc] initWithFrame:NSZeroRect];
+    [imageView setImageFrameStyle:NSImageFrameNone];
+    [imageView setImageAlignment:NSImageAlignCenter];
+    [imageView setImageScaling:NSImageScaleProportionallyDown];
+    [imageView setEditable:NO];
+    [imageView setHidden:YES];
+    [cellView setImageView:imageView];
+    [cellView addSubview:imageView];
+    [imageView release];
+
     /* Create text field, positioned via layout method */
     NSTextField* textField = [[NSTextField alloc] initWithFrame:NSZeroRect];
     [textField setBordered:NO];
@@ -1212,8 +1235,53 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   NSString* value = cocoaTableGetCellValue(ih, (int)row, (int)col);
   cellView.textField.stringValue = value;
 
-  /* Check if cell is editable - convert to 1-based */
+  /* Set cell image if SHOWIMAGE is enabled */
   int col_1based = (int)col + 1;
+  int row_1based = (int)row + 1;
+  BOOL hasImage = NO;
+
+  if (ih->data->show_image)
+  {
+    NSImage* ns_image = nil;
+    IcocoaTableData* td = cocoaTableGetData(ih);
+
+    if (td->is_virtual_mode)
+    {
+      char* image_name = iupTableGetCellImageCb(ih, row_1based, col_1based);
+      if (image_name)
+        ns_image = (NSImage*)iupImageGetImage(image_name, ih, 0, NULL);
+    }
+    else
+    {
+      char* image_name = iupAttribGetId2(ih, "_IUPCOCOA_CELLIMAGE", row_1based, col_1based);
+      if (image_name)
+        ns_image = (NSImage*)iupImageGetImage(image_name, ih, 0, NULL);
+    }
+
+    if (ns_image)
+    {
+      if (ih->data->fit_image)
+        [[cellView imageView] setImageScaling:NSImageScaleProportionallyDown];
+      else
+        [[cellView imageView] setImageScaling:NSImageScaleNone];
+
+      [[cellView imageView] setImage:ns_image];
+      [[cellView imageView] setHidden:NO];
+      hasImage = YES;
+    }
+    else
+    {
+      [[cellView imageView] setImage:nil];
+      [[cellView imageView] setHidden:YES];
+    }
+  }
+  else
+  {
+    [[cellView imageView] setImage:nil];
+    [[cellView imageView] setHidden:YES];
+  }
+
+  /* Check if cell is editable */
   char name[50];
   sprintf(name, "EDITABLE%d", col_1based);
   char* editable_str = iupAttribGet(ih, name);
@@ -1262,7 +1330,6 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   cellView.textField.alignment = alignment;
 
   /* Check if this cell is the focused cell (1-based coordinates in table_data) */
-  int row_1based = (int)row + 1;
   BOOL isFocused = (table_data->current_row == row_1based && table_data->current_col == col_1based);
 
   /* Always explicitly set the flag (not just when focused) to handle cell reuse. */
@@ -1277,22 +1344,30 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   cocoaTableApplyCellColors(ih, cellView, (int)row + 1, col_1based, isSelected);
   cocoaTableApplyCellFont(ih, cellView.textField, (int)row + 1, col_1based);
 
-  /* Explicitly set textField frame based on CURRENT cell frame */
+  /* Explicitly set frames based on CURRENT cell frame */
   NSRect cellFrame = [tableView frameOfCellAtColumn:col row:row];
+  CGFloat xStart = 2.0;
+
+  /* Position image view if visible */
+  if (hasImage)
+  {
+    CGFloat imgSize = 16.0;
+    CGFloat imgY = floor((cellFrame.size.height - imgSize) / 2.0);
+    [[cellView imageView] setFrame:NSMakeRect(xStart, imgY, imgSize, imgSize)];
+    xStart += imgSize + 4.0;
+  }
+
   CGFloat textHeight = [cellView.textField intrinsicContentSize].height;
   CGFloat yOffset = floor((cellFrame.size.height - textHeight) / 2.0);
-  /* Reuse the 'alignment' variable that was set earlier */
   NSRect textFrame;
 
-  if (alignment == NSTextAlignmentCenter)
+  if (!hasImage && alignment == NSTextAlignmentCenter)
   {
-    /* CENTER: Use full cell width */
     textFrame = NSMakeRect(0.0, yOffset, cellFrame.size.width, textHeight);
   }
   else
   {
-    /* LEFT/RIGHT: Add 2px padding so text doesn't touch cell borders */
-    textFrame = NSMakeRect(2.0, yOffset, cellFrame.size.width - 6.0, textHeight);
+    textFrame = NSMakeRect(xStart, yOffset, cellFrame.size.width - xStart - 4.0, textHeight);
   }
 
   [cellView.textField setFrame:textFrame];
@@ -2100,6 +2175,28 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   }
 
   return NULL;
+}
+
+void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+{
+  IcocoaTableData* table_data = cocoaTableGetData(ih);
+  if (!table_data)
+    return;
+
+  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+    return;
+
+  if (table_data->is_virtual_mode)
+    return;
+
+  iupAttribSetStrId2(ih, "_IUPCOCOA_CELLIMAGE", lin, col, image);
+
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  if (tableView)
+  {
+    [tableView reloadDataForRowIndexes:[NSIndexSet indexSetWithIndex:lin - 1]
+                         columnIndexes:[NSIndexSet indexSetWithIndex:col - 1]];
+  }
 }
 
 /* ========================================================================= */
