@@ -36,6 +36,8 @@ typedef struct _IeflTableData
   Evas_Object** header_labels; /* Array of column header labels */
   Evas_Object** cell_labels;   /* 2D array (flattened): [(lin-1) * num_col + (col-1)] */
   Evas_Object** cell_bgs;      /* Background rectangles for cells (for colors) */
+  Evas_Object** cell_images;   /* Image widgets per cell (only when show_image) */
+  Evas_Object** cell_containers; /* Box containers per cell (only when show_image, packed into table) */
   Evas_Object* focus_rect;     /* Focus rectangle overlay */
   int focus_rect_lin;          /* Current focus rect position */
   int focus_rect_col;
@@ -278,6 +280,119 @@ static char* eflTableGetCellText(Ihandle* ih, int lin, int col)
   return value;
 }
 
+static char* eflTableGetCellImageName(Ihandle* ih, int lin, int col)
+{
+  char* image_name;
+
+  image_name = iupAttribGetId2(ih, "_IUPEFL_CELLIMAGE", lin, col);
+  if (image_name)
+    return image_name;
+
+  return iupTableGetCellImageCb(ih, lin, col);
+}
+
+static void eflTableUpdateCellImage(Ihandle* ih, Evas_Object* image_widget, const char* image_name)
+{
+  if (!image_widget)
+    return;
+
+  if (!image_name || !image_name[0])
+  {
+    evas_object_hide(image_widget);
+    return;
+  }
+
+  if (iupeflImageUpdateImage(image_widget, image_name, ih, 0))
+  {
+    if (ih->data->fit_image)
+    {
+      int img_w, img_h, charheight;
+      int available_height;
+
+      iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+      iupdrvFontGetCharSize(ih, NULL, &charheight);
+      available_height = charheight;
+
+      if (img_h > available_height && available_height > 0)
+      {
+        int scaled_w = (img_w * available_height) / img_h;
+        int scaled_h = available_height;
+
+        elm_image_no_scale_set(image_widget, EINA_FALSE);
+        elm_image_resizable_set(image_widget, EINA_TRUE, EINA_TRUE);
+        elm_image_aspect_fixed_set(image_widget, EINA_TRUE);
+        evas_object_size_hint_min_set(image_widget, scaled_w, scaled_h);
+        evas_object_size_hint_max_set(image_widget, scaled_w, scaled_h);
+      }
+    }
+
+    evas_object_show(image_widget);
+  }
+  else
+    evas_object_hide(image_widget);
+}
+
+static int eflTableCalculateColumnWidth(Ihandle* ih, int col)
+{
+  int max_width = 0;
+  int max_rows_to_check;
+  int title_width;
+  int image_extra = 0;
+  int lin;
+  char name[50];
+  char* title;
+  char* value;
+
+  max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
+
+  /* Measure header title */
+  sprintf(name, "COLTITLE%d", col);
+  title = iupAttribGet(ih, name);
+  if (title)
+  {
+    title_width = iupdrvFontGetStringWidth(ih, title);
+    title_width += 20;
+    if (title_width > max_width)
+      max_width = title_width;
+  }
+
+  if (ih->data->show_image)
+  {
+    int charheight;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    image_extra = charheight + 4;
+  }
+
+  /* Measure cell content */
+  for (lin = 1; lin <= max_rows_to_check; lin++)
+  {
+    int cell_width;
+
+    value = eflTableGetCellText(ih, lin, col);
+    if (value && value[0])
+      cell_width = iupdrvFontGetStringWidth(ih, value);
+    else
+      cell_width = 0;
+
+    cell_width += 16;
+
+    if (ih->data->show_image)
+    {
+      char* image_name = eflTableGetCellImageName(ih, lin, col);
+      if (image_name)
+        cell_width += image_extra;
+    }
+
+    if (cell_width > max_width)
+      max_width = cell_width;
+  }
+
+  if (max_width < 50)
+    max_width = 50;
+
+  return max_width;
+}
+
 static char* eflTableGetHeaderText(Ihandle* ih, int col)
 {
   char name[50];
@@ -475,6 +590,13 @@ static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
       else
         evas_object_color_set(cell_bg, bg_r, bg_g, bg_b, 255);
     }
+  }
+
+  if (ih->data->show_image && data->cell_images)
+  {
+    Evas_Object* image_widget = data->cell_images[idx];
+    char* image_name = eflTableGetCellImageName(ih, lin, col);
+    eflTableUpdateCellImage(ih, image_widget, image_name);
   }
 }
 
@@ -1425,8 +1547,27 @@ static void eflTableClearCells(Ihandle* ih)
     data->header_labels = NULL;
   }
 
-  /* Clear cell labels */
-  if (data->cell_labels)
+  /* Clear cell containers (boxes containing image + entry, when show_image) */
+  if (data->cell_containers)
+  {
+    for (i = 0; i < alloc_lin * alloc_col; i++)
+    {
+      if (data->cell_containers[i])
+      {
+        evas_object_del(data->cell_containers[i]);
+        data->cell_containers[i] = NULL;
+      }
+    }
+    free(data->cell_containers);
+    data->cell_containers = NULL;
+
+    /* Entries and images were children of containers, already deleted */
+    free(data->cell_labels);
+    data->cell_labels = NULL;
+    free(data->cell_images);
+    data->cell_images = NULL;
+  }
+  else if (data->cell_labels)
   {
     for (i = 0; i < alloc_lin * alloc_col; i++)
     {
@@ -1485,23 +1626,27 @@ static void eflTableRebuildCells(Ihandle* ih)
     data->col_widths = (int*)calloc(num_col, sizeof(int));
     for (col = 0; col < num_col; col++)
     {
-      char name[50];
-      char* width_str;
-      int width = DEFAULT_COL_WIDTH;
-
-      /* Check RASTERWIDTH first, then WIDTH */
-      sprintf(name, "RASTERWIDTH%d", col + 1);
-      width_str = iupAttribGet(ih, name);
-      if (!width_str)
+      if (eflTableColHasExplicitWidth(ih, col + 1))
       {
-        sprintf(name, "WIDTH%d", col + 1);
-        width_str = iupAttribGet(ih, name);
-      }
+        char name[50];
+        char* width_str;
+        int width = DEFAULT_COL_WIDTH;
 
-      if (width_str && iupStrToInt(width_str, &width) && width > 0)
-        data->col_widths[col] = width;
+        sprintf(name, "RASTERWIDTH%d", col + 1);
+        width_str = iupAttribGet(ih, name);
+        if (!width_str)
+        {
+          sprintf(name, "WIDTH%d", col + 1);
+          width_str = iupAttribGet(ih, name);
+        }
+
+        if (width_str && iupStrToInt(width_str, &width) && width > 0)
+          data->col_widths[col] = width;
+        else
+          data->col_widths[col] = DEFAULT_COL_WIDTH;
+      }
       else
-        data->col_widths[col] = DEFAULT_COL_WIDTH;
+        data->col_widths[col] = eflTableCalculateColumnWidth(ih, col + 1);
     }
   }
 
@@ -1554,6 +1699,11 @@ static void eflTableRebuildCells(Ihandle* ih)
   /* Allocate cell labels and cell backgrounds */
   data->cell_labels = (Evas_Object**)calloc(num_lin * num_col, sizeof(Evas_Object*));
   data->cell_bgs = (Evas_Object**)calloc(num_lin * num_col, sizeof(Evas_Object*));
+  if (ih->data->show_image)
+  {
+    data->cell_images = (Evas_Object**)calloc(num_lin * num_col, sizeof(Evas_Object*));
+    data->cell_containers = (Evas_Object**)calloc(num_lin * num_col, sizeof(Evas_Object*));
+  }
   data->alloc_num_lin = num_lin;
 
   /* Determine if last column should stretch (only compute once) */
@@ -1590,14 +1740,54 @@ static void eflTableRebuildCells(Ihandle* ih)
         /* Create cell label on top of background */
         text = eflTableGetCellText(ih, lin, col);
         label = eflTableCreateCellWidget(ih, data->table, text, 0, lin, col);
-        evas_object_size_hint_min_set(label, col_width, data->row_height);
-        evas_object_size_hint_weight_set(label, weight_x, 0.0);
 
-        /* Add click handler */
-        efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
+        if (ih->data->show_image)
+        {
+          Evas_Object* box;
+          Evas_Object* image;
+          char* image_name;
 
-        elm_table_pack(data->table, label, col - 1, lin, 1, 1);
-        data->cell_labels[idx] = label;
+          box = elm_box_add(data->table);
+          elm_box_horizontal_set(box, EINA_TRUE);
+          elm_box_padding_set(box, 4, 0);
+          evas_object_size_hint_align_set(box, EVAS_HINT_FILL, EVAS_HINT_FILL);
+          evas_object_size_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+
+          image = elm_image_add(box);
+          elm_image_no_scale_set(image, EINA_TRUE);
+          elm_image_resizable_set(image, EINA_FALSE, EINA_FALSE);
+          evas_object_size_hint_align_set(image, 0.0, 0.5);
+          evas_object_hide(image);
+          elm_box_pack_end(box, image);
+
+          evas_object_size_hint_align_set(label, EVAS_HINT_FILL, EVAS_HINT_FILL);
+          evas_object_size_hint_weight_set(label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+          elm_box_pack_end(box, label);
+
+          evas_object_size_hint_min_set(box, col_width, data->row_height);
+          evas_object_size_hint_weight_set(box, weight_x, 0.0);
+          evas_object_show(box);
+
+          efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
+
+          elm_table_pack(data->table, box, col - 1, lin, 1, 1);
+          data->cell_containers[idx] = box;
+          data->cell_labels[idx] = label;
+          data->cell_images[idx] = image;
+
+          image_name = eflTableGetCellImageName(ih, lin, col);
+          eflTableUpdateCellImage(ih, image, image_name);
+        }
+        else
+        {
+          evas_object_size_hint_min_set(label, col_width, data->row_height);
+          evas_object_size_hint_weight_set(label, weight_x, 0.0);
+
+          efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
+
+          elm_table_pack(data->table, label, col - 1, lin, 1, 1);
+          data->cell_labels[idx] = label;
+        }
       }
     }
   }
@@ -1662,22 +1852,27 @@ static void eflTableRebuildHeaders(Ihandle* ih)
     data->alloc_num_col = num_col;
     for (col = 0; col < num_col; col++)
     {
-      char name[50];
-      char* width_str;
-      int width = DEFAULT_COL_WIDTH;
-
-      sprintf(name, "RASTERWIDTH%d", col + 1);
-      width_str = iupAttribGet(ih, name);
-      if (!width_str)
+      if (eflTableColHasExplicitWidth(ih, col + 1))
       {
-        sprintf(name, "WIDTH%d", col + 1);
-        width_str = iupAttribGet(ih, name);
-      }
+        char name[50];
+        char* width_str;
+        int width = DEFAULT_COL_WIDTH;
 
-      if (width_str && iupStrToInt(width_str, &width) && width > 0)
-        data->col_widths[col] = width;
+        sprintf(name, "RASTERWIDTH%d", col + 1);
+        width_str = iupAttribGet(ih, name);
+        if (!width_str)
+        {
+          sprintf(name, "WIDTH%d", col + 1);
+          width_str = iupAttribGet(ih, name);
+        }
+
+        if (width_str && iupStrToInt(width_str, &width) && width > 0)
+          data->col_widths[col] = width;
+        else
+          data->col_widths[col] = DEFAULT_COL_WIDTH;
+      }
       else
-        data->col_widths[col] = DEFAULT_COL_WIDTH;
+        data->col_widths[col] = eflTableCalculateColumnWidth(ih, col + 1);
     }
   }
 
@@ -1807,22 +2002,27 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
     data->col_widths = (int*)calloc(num_col, sizeof(int));
     for (col = 0; col < num_col; col++)
     {
-      char name[50];
-      char* width_str;
-      int width = DEFAULT_COL_WIDTH;
-
-      sprintf(name, "RASTERWIDTH%d", col + 1);
-      width_str = iupAttribGet(ih, name);
-      if (!width_str)
+      if (eflTableColHasExplicitWidth(ih, col + 1))
       {
-        sprintf(name, "WIDTH%d", col + 1);
-        width_str = iupAttribGet(ih, name);
-      }
+        char name[50];
+        char* width_str;
+        int width = DEFAULT_COL_WIDTH;
 
-      if (width_str && iupStrToInt(width_str, &width) && width > 0)
-        data->col_widths[col] = width;
+        sprintf(name, "RASTERWIDTH%d", col + 1);
+        width_str = iupAttribGet(ih, name);
+        if (!width_str)
+        {
+          sprintf(name, "WIDTH%d", col + 1);
+          width_str = iupAttribGet(ih, name);
+        }
+
+        if (width_str && iupStrToInt(width_str, &width) && width > 0)
+          data->col_widths[col] = width;
+        else
+          data->col_widths[col] = DEFAULT_COL_WIDTH;
+      }
       else
-        data->col_widths[col] = DEFAULT_COL_WIDTH;
+        data->col_widths[col] = eflTableCalculateColumnWidth(ih, col + 1);
     }
   }
 
@@ -1872,6 +2072,11 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
   /* Allocate cell arrays for visible rows only */
   data->cell_labels = (Evas_Object**)calloc(visible_rows * num_col, sizeof(Evas_Object*));
   data->cell_bgs = (Evas_Object**)calloc(visible_rows * num_col, sizeof(Evas_Object*));
+  if (ih->data->show_image)
+  {
+    data->cell_images = (Evas_Object**)calloc(visible_rows * num_col, sizeof(Evas_Object*));
+    data->cell_containers = (Evas_Object**)calloc(visible_rows * num_col, sizeof(Evas_Object*));
+  }
   data->alloc_num_lin = visible_rows;
 
   value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
@@ -1918,11 +2123,52 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
           text = value_cb(ih, lin, col);
 
         label = eflTableCreateCellWidget(ih, table, text, 0, lin, col);
-        evas_object_size_hint_min_set(label, col_width, row_height);
-        evas_object_size_hint_weight_set(label, weight_x, 0.0);
-        efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
-        elm_table_pack(table, label, col - 1, table_row, 1, 1);
-        data->cell_labels[idx] = label;
+
+        if (ih->data->show_image)
+        {
+          Evas_Object* box;
+          Evas_Object* image;
+          char* image_name;
+
+          box = elm_box_add(table);
+          elm_box_horizontal_set(box, EINA_TRUE);
+          elm_box_padding_set(box, 4, 0);
+          evas_object_size_hint_align_set(box, EVAS_HINT_FILL, EVAS_HINT_FILL);
+          evas_object_size_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+
+          image = elm_image_add(box);
+          elm_image_no_scale_set(image, EINA_TRUE);
+          elm_image_resizable_set(image, EINA_FALSE, EINA_FALSE);
+          evas_object_size_hint_align_set(image, 0.0, 0.5);
+          evas_object_hide(image);
+          elm_box_pack_end(box, image);
+
+          evas_object_size_hint_align_set(label, EVAS_HINT_FILL, EVAS_HINT_FILL);
+          evas_object_size_hint_weight_set(label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+          elm_box_pack_end(box, label);
+
+          evas_object_size_hint_min_set(box, col_width, row_height);
+          evas_object_size_hint_weight_set(box, weight_x, 0.0);
+          evas_object_show(box);
+
+          efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
+
+          elm_table_pack(table, box, col - 1, table_row, 1, 1);
+          data->cell_containers[idx] = box;
+          data->cell_labels[idx] = label;
+          data->cell_images[idx] = image;
+
+          image_name = eflTableGetCellImageName(ih, lin, col);
+          eflTableUpdateCellImage(ih, image, image_name);
+        }
+        else
+        {
+          evas_object_size_hint_min_set(label, col_width, row_height);
+          evas_object_size_hint_weight_set(label, weight_x, 0.0);
+          efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
+          elm_table_pack(table, label, col - 1, table_row, 1, 1);
+          data->cell_labels[idx] = label;
+        }
       }
     }
   }
@@ -2107,6 +2353,13 @@ static void eflTableUpdateVisibleRows(Ihandle* ih)
         else
           evas_object_color_set(bg, bg_r, bg_g, bg_b, 255);
       }
+
+      if (ih->data->show_image && data->cell_images)
+      {
+        Evas_Object* image_widget = data->cell_images[idx];
+        char* image_name = eflTableGetCellImageName(ih, data_row, col);
+        eflTableUpdateCellImage(ih, image_widget, image_name);
+      }
     }
   }
 
@@ -2141,7 +2394,29 @@ void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
       int col;
       data->col_widths = (int*)calloc(num_col, sizeof(int));
       for (col = 0; col < num_col; col++)
-        data->col_widths[col] = DEFAULT_COL_WIDTH;
+      {
+        if (eflTableColHasExplicitWidth(ih, col + 1))
+        {
+          char name[50];
+          char* width_str;
+          int width = DEFAULT_COL_WIDTH;
+
+          sprintf(name, "RASTERWIDTH%d", col + 1);
+          width_str = iupAttribGet(ih, name);
+          if (!width_str)
+          {
+            sprintf(name, "WIDTH%d", col + 1);
+            width_str = iupAttribGet(ih, name);
+          }
+
+          if (width_str && iupStrToInt(width_str, &width) && width > 0)
+            data->col_widths[col] = width;
+          else
+            data->col_widths[col] = DEFAULT_COL_WIDTH;
+        }
+        else
+          data->col_widths[col] = eflTableCalculateColumnWidth(ih, col + 1);
+      }
     }
 
     if (ih->handle)
@@ -2219,15 +2494,24 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 
 void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int num_col = ih->data->num_col;
+  int idx;
+
   if (!ih->handle)
     return;
 
-  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > num_col)
     return;
 
   iupAttribSetStrId2(ih, "_IUPEFL_CELLIMAGE", lin, col, image);
 
-  iupdrvTableRedraw(ih);
+  if (data && data->cell_images)
+  {
+    idx = (lin - 1) * num_col + (col - 1);
+    if (idx < data->alloc_num_lin * data->alloc_num_col)
+      eflTableUpdateCellImage(ih, data->cell_images[idx], image);
+  }
 }
 
 void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
@@ -2279,15 +2563,16 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
     if (data->header_labels && data->header_labels[col - 1])
       evas_object_size_hint_min_set(data->header_labels[col - 1], width, data->header_height);
 
-    /* Update all cell labels in this column */
-    if (data->cell_labels)
+    /* Update all cells in this column */
     {
       int max_lin = data->is_virtual ? data->alloc_num_lin : ih->data->num_lin;
       for (lin = 1; lin <= max_lin; lin++)
       {
         int idx = (lin - 1) * ih->data->num_col + (col - 1);
-        if (data->cell_labels[idx])
-          evas_object_size_hint_min_set(data->cell_labels[idx], width, data->row_height);
+        Evas_Object* widget = (data->cell_containers && data->cell_containers[idx]) ?
+                               data->cell_containers[idx] : (data->cell_labels ? data->cell_labels[idx] : NULL);
+        if (widget)
+          evas_object_size_hint_min_set(widget, width, data->row_height);
       }
     }
   }
