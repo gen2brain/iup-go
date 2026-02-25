@@ -400,7 +400,12 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 			setListValueFunc(ih, v)
 		}
 	case "IMAGE_CB":
-		setListImageFunc(ih, fn.(ListImageFunc))
+		switch v := fn.(type) {
+		case ListImageFunc:
+			setListImageFunc(ih, v)
+		case TableImageFunc:
+			setTableImageFunc(ih, v)
+		}
 	case "SORT_CB":
 		setTableSortFunc(ih, fn.(TableSortFunc))
 	case "MENUDROP_CB":
