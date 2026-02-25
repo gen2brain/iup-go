@@ -84,7 +84,7 @@ static int motGetFontSize(const char* font_name)
     i++;
   }
 
-  *(strchr(font_name, '-')) = 0;
+  *((char*)strchr(font_name, '-')) = 0;
   return atoi(font_name)/10;  /* deci-points to points */
 }
 

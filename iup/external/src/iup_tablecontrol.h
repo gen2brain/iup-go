@@ -28,6 +28,9 @@ struct _IcontrolData
   int user_resize;    /* Enable/disable user column resizing */
   int stretch_last;   /* Enable/disable last column stretching to fill space */
 
+  int show_image;     /* Enable image display, set before map only */
+  int fit_image;      /* Scale images to fit row height, default 1 (YES) */
+
   /* Platform-specific data */
   void* native_data;  /* Platform-specific data (GtkTreeView, QTableWidget, etc.) */
 };
@@ -38,6 +41,7 @@ struct _IcontrolData
 
 int iupTableIsValid(Ihandle* ih);
 int iupTableCheckCellPos(Ihandle* ih, int lin, int col);
+char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
 
 /* ========================================================================= */
 /* Driver Functions                                                         */
@@ -61,6 +65,7 @@ void iupdrvTableDelCol(Ihandle* ih, int pos);
 /* Cell operations */
 void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value);
 char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col);
+void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image);
 
 /* Column operations */
 void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title);

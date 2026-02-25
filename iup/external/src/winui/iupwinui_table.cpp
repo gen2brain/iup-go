@@ -25,7 +25,10 @@ extern "C" {
 #include "iup_key.h"
 #include "iup_classbase.h"
 #include "iup_tablecontrol.h"
+#include "iup_image.h"
 }
+
+#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 
 #include "iupwinui_drv.h"
 
@@ -33,6 +36,7 @@ using namespace winrt;
 using namespace Microsoft::UI::Xaml;
 using namespace Microsoft::UI::Xaml::Controls;
 using namespace Microsoft::UI::Xaml::Media;
+using namespace Microsoft::UI::Xaml::Media::Imaging;
 using namespace Microsoft::UI::Xaml::Input;
 using namespace Microsoft::UI::Xaml::Hosting;
 using namespace Windows::Foundation;
@@ -130,8 +134,46 @@ static Border winuiTableGetCellBorder(Grid rowGrid, int col)
 static TextBlock winuiTableGetCellTextBlock(Grid rowGrid, int col)
 {
   Border border = winuiTableGetCellBorder(rowGrid, col);
-  if (border)
-    return border.Child().try_as<TextBlock>();
+  if (!border)
+    return nullptr;
+
+  auto child = border.Child();
+  if (!child)
+    return nullptr;
+
+  auto tb = child.try_as<TextBlock>();
+  if (tb)
+    return tb;
+
+  auto panel = child.try_as<StackPanel>();
+  if (panel)
+  {
+    for (uint32_t i = 0; i < panel.Children().Size(); i++)
+    {
+      tb = panel.Children().GetAt(i).try_as<TextBlock>();
+      if (tb)
+        return tb;
+    }
+  }
+  return nullptr;
+}
+
+static Controls::Image winuiTableGetCellImage(Grid rowGrid, int col)
+{
+  Border border = winuiTableGetCellBorder(rowGrid, col);
+  if (!border)
+    return nullptr;
+
+  auto panel = border.Child().try_as<StackPanel>();
+  if (panel)
+  {
+    for (uint32_t i = 0; i < panel.Children().Size(); i++)
+    {
+      auto img = panel.Children().GetAt(i).try_as<Controls::Image>();
+      if (img)
+        return img;
+    }
+  }
   return nullptr;
 }
 
@@ -295,7 +337,28 @@ static Grid winuiTableCreateRowGrid(Ihandle* ih, int num_col, bool show_grid)
     TextBlock tb;
     tb.TextTrimming(TextTrimming::CharacterEllipsis);
     winuiTableUpdateCellFont(ih, tb);
-    border.Child(tb);
+
+    if (ih->data->show_image)
+    {
+      StackPanel panel;
+      panel.Orientation(Orientation::Horizontal);
+      panel.Spacing(4);
+
+      Controls::Image img;
+      img.Stretch(Stretch::Uniform);
+      img.VerticalAlignment(VerticalAlignment::Center);
+      img.Visibility(Visibility::Collapsed);
+      panel.Children().Append(img);
+
+      tb.VerticalAlignment(VerticalAlignment::Center);
+      panel.Children().Append(tb);
+
+      border.Child(panel);
+    }
+    else
+    {
+      border.Child(tb);
+    }
 
     grid.Children().Append(border);
   }
@@ -350,6 +413,70 @@ static Border winuiTableCreateHeaderCell(Ihandle* ih, int col)
 }
 
 /****************************************************************************
+ * Cell Image Support
+ ****************************************************************************/
+
+static void winuiTableSetCellImageFromName(Ihandle* ih, Grid rowGrid, int col, const char* image_name)
+{
+  Controls::Image img = winuiTableGetCellImage(rowGrid, col);
+  if (!img)
+    return;
+
+  if (!image_name)
+  {
+    img.Source(nullptr);
+    img.Visibility(Visibility::Collapsed);
+    return;
+  }
+
+  void* imghandle = iupImageGetImage(image_name, ih, 0, NULL);
+  WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
+  if (!bitmap)
+  {
+    img.Source(nullptr);
+    img.Visibility(Visibility::Collapsed);
+    return;
+  }
+
+  if (ih->data->fit_image)
+  {
+    int row_height = iupdrvTableGetRowHeight(ih);
+    int available_height = row_height - 5;
+    int img_w = bitmap.PixelWidth();
+    int img_h = bitmap.PixelHeight();
+    if (img_h > available_height && available_height > 0)
+    {
+      int scaled_width = (img_w * available_height) / img_h;
+      img.Width((double)scaled_width);
+      img.Height((double)available_height);
+    }
+    else
+    {
+      img.Width((double)img_w);
+      img.Height((double)img_h);
+    }
+  }
+
+  img.Source(bitmap);
+  img.Visibility(Visibility::Visible);
+}
+
+static void winuiTablePopulateCellImages(Ihandle* ih, int lin, Grid rowGrid)
+{
+  if (!ih->data->show_image)
+    return;
+
+  for (int col = 1; col <= ih->data->num_col; col++)
+  {
+    char* image_name = iupTableGetCellImageCb(ih, lin, col);
+    if (!image_name)
+      image_name = iupAttribGetId2(ih, "_IUPWINUI_CELLIMAGE", lin, col);
+
+    winuiTableSetCellImageFromName(ih, rowGrid, col - 1, image_name);
+  }
+}
+
+/****************************************************************************
  * Virtual Mode Support
  ****************************************************************************/
 
@@ -371,6 +498,8 @@ static void winuiTablePopulateVirtualRow(Ihandle* ih, int lin, Grid rowGrid)
       tb.Text(iupwinuiStringToHString(value ? value : ""));
     }
   }
+
+  winuiTablePopulateCellImages(ih, lin, rowGrid);
 }
 
 static void winuiTablePopulateVirtualContainer(Ihandle* ih, int lin, Primitives::SelectorItem lvi)
@@ -443,6 +572,58 @@ static void winuiTableApplyColumnWidthsToRowGrid(Grid rowGrid, IupWinUITableAux*
     rowGrid.ColumnDefinitions().GetAt(c).Width(GridLength{(double)aux->col_widths[c], GridUnitType::Pixel});
 }
 
+static int winuiTableCalculateColumnWidth(Ihandle* ih, int col_index)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  int max_width = 0;
+  int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
+  int iup_col = col_index + 1;
+  int charheight = 0;
+  int image_extra = 0;
+
+  if (ih->data->show_image)
+  {
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    image_extra = charheight + 4;
+  }
+
+  /* Measure column title */
+  if (aux->col_titles && aux->col_titles[col_index])
+  {
+    int title_width = iupdrvFontGetStringWidth(ih, aux->col_titles[col_index]);
+    title_width += 20;
+    if (title_width > max_width)
+      max_width = title_width;
+  }
+
+  /* Measure cell content */
+  for (int lin = 1; lin <= max_rows_to_check; lin++)
+  {
+    int cell_width = 0;
+    char* value = iupdrvTableGetCellValue(ih, lin, iup_col);
+    if (value && *value)
+      cell_width = iupdrvFontGetStringWidth(ih, value);
+    cell_width += 16;
+
+    if (ih->data->show_image)
+    {
+      char* image_name = iupAttribGetId2(ih, "_IUPWINUI_CELLIMAGE", lin, iup_col);
+      if (!image_name)
+        image_name = iupTableGetCellImageCb(ih, lin, iup_col);
+      if (image_name)
+        cell_width += image_extra;
+    }
+
+    if (cell_width > max_width)
+      max_width = cell_width;
+  }
+
+  if (max_width < 50)
+    max_width = 50;
+
+  return max_width;
+}
+
 static void winuiTableAdjustColumnWidths(Ihandle* ih)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
@@ -461,24 +642,25 @@ static void winuiTableAdjustColumnWidths(Ihandle* ih)
   for (int i = 0; i < num_col - 1; i++)
   {
     if (!aux->col_width_set[i])
-      aux->col_widths[i] = 100;
+      aux->col_widths[i] = winuiTableCalculateColumnWidth(ih, i);
     used_width += aux->col_widths[i];
   }
 
   int last_col = num_col - 1;
   if (!aux->col_width_set[last_col])
   {
+    int content_width = winuiTableCalculateColumnWidth(ih, last_col);
     if (ih->data->stretch_last)
     {
       int remaining = (int)available_width - used_width;
-      if (remaining > 100)
+      if (remaining > content_width)
         aux->col_widths[last_col] = remaining;
       else
-        aux->col_widths[last_col] = 100;
+        aux->col_widths[last_col] = content_width;
     }
     else
     {
-      aux->col_widths[last_col] = 100;
+      aux->col_widths[last_col] = content_width;
     }
   }
 
@@ -627,6 +809,8 @@ static void winuiTableRebuildListViewItems(Ihandle* ih)
       if (border && tb)
         winuiTableApplyCellColors(ih, i + 1, j + 1, border, tb);
     }
+
+    winuiTablePopulateCellImages(ih, i + 1, rowGrid);
 
     listView.Items().Append(rowGrid);
   }
@@ -1469,6 +1653,23 @@ extern "C" char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   return NULL;
 }
 
+extern "C" void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+{
+  if (!ih->handle)
+    return;
+
+  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+    return;
+
+  iupAttribSetStrId2(ih, "_IUPWINUI_CELLIMAGE", lin, col, image);
+
+  Grid rowGrid = winuiTableGetRowGrid(ih, lin);
+  if (rowGrid)
+    winuiTableSetCellImageFromName(ih, rowGrid, col - 1, image);
+  else
+    iupdrvTableRedraw(ih);
+}
+
 /****************************************************************************
  * Column Operations
  ****************************************************************************/
@@ -1758,7 +1959,18 @@ extern "C" int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   int text_height = winuiTableMeasureTextHeight(ih);
   /* Cell Border: Padding(4,2,4,2) + BorderThickness(0,0,1,1) = 2 top + 2 bottom + 1 grid bottom = 5 */
-  return text_height + 5;
+  int row_height = text_height + 5;
+
+  if (ih->data->show_image)
+  {
+    int charheight;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    int image_height = charheight + 8;
+    if (image_height > row_height)
+      row_height = image_height;
+  }
+
+  return row_height;
 }
 
 extern "C" int iupdrvTableGetHeaderHeight(Ihandle* ih)

@@ -22,6 +22,7 @@
 #include "iup_drvfont.h"
 #include "iup_key.h"
 #include "iup_tablecontrol.h"
+#include "iup_image.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
@@ -114,6 +115,15 @@ static void winTableAutoSizeColumns(Ihandle* ih)
     return;
 
   int num_col = ih->data->num_col;
+  int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
+  int charheight = 0;
+  int image_extra = 0;
+
+  if (ih->data->show_image)
+  {
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    image_extra = charheight + 4;
+  }
 
   HDC hdc = GetDC(list_view);
   HFONT hFont = (HFONT)SendMessage(list_view, WM_GETFONT, 0, 0);
@@ -124,31 +134,48 @@ static void winTableAutoSizeColumns(Ihandle* ih)
     if (data->col_width_set[i])
       continue;
 
-    ListView_SetColumnWidth(list_view, i + 1, LVSCW_AUTOSIZE_USEHEADER);
-    int header_width = ListView_GetColumnWidth(list_view, i + 1);
+    int iup_col = i + 1;
+    int max_width = 0;
 
-    int title_width = 50;
+    /* Measure column title */
     if (data->col_titles[i])
     {
       SIZE size;
-      if (GetTextExtentPoint32A(hdc, data->col_titles[i], strlen(data->col_titles[i]), &size))
-        title_width = size.cx + 20;
+      if (GetTextExtentPoint32A(hdc, data->col_titles[i], (int)strlen(data->col_titles[i]), &size))
+        max_width = size.cx + 20;
     }
 
-    int auto_width = (header_width > title_width) ? header_width : title_width;
-
-    if (auto_width < 50)
+    /* Measure cell content */
+    for (int lin = 1; lin <= max_rows_to_check; lin++)
     {
-      if (auto_width < 30)
-        auto_width = 30;
-    }
-    else if (auto_width < 80)
-    {
-      auto_width = 80;
+      int cell_width = 0;
+      char* value = iupdrvTableGetCellValue(ih, lin, iup_col);
+      if (value && *value)
+      {
+        SIZE size;
+        if (GetTextExtentPoint32A(hdc, value, (int)strlen(value), &size))
+          cell_width = size.cx;
+      }
+      cell_width += 16;
+
+      if (ih->data->show_image)
+      {
+        char* image_name = iupAttribGetId2(ih, "_IUPWIN_CELLIMAGE", lin, iup_col);
+        if (!image_name)
+          image_name = iupTableGetCellImageCb(ih, lin, iup_col);
+        if (image_name)
+          cell_width += image_extra;
+      }
+
+      if (cell_width > max_width)
+        max_width = cell_width;
     }
 
-    ListView_SetColumnWidth(list_view, i + 1, auto_width);
-    data->col_widths[i] = auto_width;
+    if (max_width < 50)
+      max_width = 50;
+
+    ListView_SetColumnWidth(list_view, iup_col, max_width);
+    data->col_widths[i] = max_width;
   }
 
   SelectObject(hdc, hOldFont);
@@ -732,6 +759,21 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
     /* Normal mode: return from cell_values */
     return data->cell_values[lin-1][col-1];
   }
+}
+
+void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+{
+  if (!ih->handle)
+    return;
+
+  if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
+    return;
+
+  iupAttribSetStrId2(ih, "_IUPWIN_CELLIMAGE", lin, col, image);
+
+  HWND list_view = winTableGetListView(ih);
+  if (list_view)
+    InvalidateRect(list_view, NULL, FALSE);
 }
 
 /****************************************************************************
@@ -1740,7 +1782,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
           int lin = (int)lplvcd->nmcd.dwItemSpec + 1;  /* Convert to 1-based */
           int col = lplvcd->iSubItem;  /* iSubItem already matches IUP column (dummy at 0) */
-          int needs_postpaint = 0;
 
           /* Check if this row is selected (selection takes priority over custom colors) */
           UINT itemState = ListView_GetItemState(data->list_view, lplvcd->nmcd.dwItemSpec, LVIS_SELECTED);
@@ -1766,52 +1807,15 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             }
           }
 
-          /* Apply background color (but not when row is selected) */
-          if (!is_row_selected)
-          {
-            if (bgcolor && *bgcolor)
-            {
-              unsigned char r, g, b;
-              if (iupStrToRGB(bgcolor, &r, &g, &b))
-              {
-                lplvcd->clrTextBk = RGB(r, g, b);
-              }
-              else
-              {
-                lplvcd->clrTextBk = CLR_DEFAULT;
-              }
-            }
-            else
-            {
-              lplvcd->clrTextBk = CLR_DEFAULT;
-            }
-          }
-
           /* Foreground color: per-cell > per-column > per-row */
+          char* fgcolor = NULL;
           if (!is_row_selected)
           {
-            char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
+            fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
             if (!fgcolor)
               fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
             if (!fgcolor)
               fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
-
-            if (fgcolor && *fgcolor)
-            {
-              unsigned char r, g, b;
-              if (iupStrToRGB(fgcolor, &r, &g, &b))
-              {
-                lplvcd->clrText = RGB(r, g, b);
-              }
-              else
-              {
-                lplvcd->clrText = CLR_DEFAULT;
-              }
-            }
-            else
-            {
-              lplvcd->clrText = CLR_DEFAULT;
-            }
           }
 
           /* Font: per-cell > per-column > per-row */
@@ -1821,27 +1825,210 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
           if (!font)
             font = iupAttribGetId2(ih, "FONT", lin, 0);
 
-          /* Apply font */
+          /* Resolve font handle */
           HFONT hFont = NULL;
-          HFONT hOldFont = NULL;
           int font_changed = 0;
           if (font && *font)
           {
             hFont = iupwinGetHFont(font);
             if (hFont)
-            {
-              hOldFont = (HFONT)SelectObject(lplvcd->nmcd.hdc, hFont);
               font_changed = 1;
+          }
+
+          if (ih->data->show_image)
+          {
+            HDC hdc = lplvcd->nmcd.hdc;
+            RECT rc = lplvcd->nmcd.rc;
+
+            /* Get cell rect via ListView for accurate bounds */
+            RECT sub_rc;
+            sub_rc.top = col;
+            sub_rc.left = LVIR_BOUNDS;
+            SendMessage(data->list_view, LVM_GETSUBITEMRECT, (WPARAM)lplvcd->nmcd.dwItemSpec, (LPARAM)&sub_rc);
+            rc = sub_rc;
+
+            /* Draw background */
+            COLORREF bg_color;
+            if (is_row_selected)
+            {
+              bg_color = GetSysColor(COLOR_HIGHLIGHT);
+            }
+            else if (bgcolor && *bgcolor)
+            {
+              unsigned char r, g, b;
+              if (iupStrToRGB(bgcolor, &r, &g, &b))
+                bg_color = RGB(r, g, b);
+              else
+                bg_color = GetSysColor(COLOR_WINDOW);
+            }
+            else
+            {
+              bg_color = GetSysColor(COLOR_WINDOW);
+            }
+
+            SetDCBrushColor(hdc, bg_color);
+            FillRect(hdc, &rc, (HBRUSH)GetStockObject(DC_BRUSH));
+
+            /* Resolve text color */
+            COLORREF fg_color;
+            if (is_row_selected)
+            {
+              fg_color = GetSysColor(COLOR_HIGHLIGHTTEXT);
+            }
+            else if (fgcolor && *fgcolor)
+            {
+              unsigned char r, g, b;
+              if (iupStrToRGB(fgcolor, &r, &g, &b))
+                fg_color = RGB(r, g, b);
+              else
+                fg_color = GetSysColor(COLOR_WINDOWTEXT);
+            }
+            else
+            {
+              fg_color = GetSysColor(COLOR_WINDOWTEXT);
+            }
+
+            int img_offset = 0;
+
+            /* Get image name: virtual mode uses IMAGE_CB, normal mode uses stored attribute */
+            char* image_name = NULL;
+            char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
+            if (iupStrBoolean(virtualmode))
+              image_name = iupTableGetCellImageCb(ih, lin, col);
+            else
+              image_name = iupAttribGetId2(ih, "_IUPWIN_CELLIMAGE", lin, col);
+
+            if (image_name)
+            {
+              HBITMAP hBitmap = (HBITMAP)iupImageGetImage(image_name, ih, 0, NULL);
+              if (hBitmap)
+              {
+                int bpp, bmp_w, bmp_h;
+                int draw_w, draw_h;
+
+                iupdrvImageGetInfo(hBitmap, &bmp_w, &bmp_h, &bpp);
+
+                draw_w = bmp_w;
+                draw_h = bmp_h;
+
+                if (ih->data->fit_image)
+                {
+                  int available_height = rc.bottom - rc.top - 2;
+                  if (bmp_h > available_height && available_height > 0)
+                  {
+                    draw_w = (bmp_w * available_height) / bmp_h;
+                    draw_h = available_height;
+                  }
+                }
+
+                int img_x = rc.left + 2;
+                int img_y = rc.top + (rc.bottom - rc.top - draw_h) / 2;
+
+                iupwinDrawBitmap(hdc, hBitmap, img_x, img_y, draw_w, draw_h, bmp_w, bmp_h, bpp);
+
+                img_offset = draw_w + 4;
+              }
+            }
+
+            /* Draw text */
+            char* value = iupdrvTableGetCellValue(ih, lin, col);
+            if (value && *value)
+            {
+              RECT textRc = rc;
+              textRc.left += img_offset + 4;
+
+              HFONT hDrawFont = hFont;
+              if (!hDrawFont)
+                hDrawFont = (HFONT)SendMessage(data->list_view, WM_GETFONT, 0, 0);
+
+              HFONT hOldFont = (HFONT)SelectObject(hdc, hDrawFont);
+
+              SetBkMode(hdc, TRANSPARENT);
+              SetTextColor(hdc, fg_color);
+              DrawText(hdc, iupwinStrToSystem(value), -1, &textRc, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+
+              SelectObject(hdc, hOldFont);
+            }
+
+            /* Draw grid lines */
+            if (data->show_grid && lin <= ih->data->num_lin && col <= ih->data->num_col)
+            {
+              HPEN hPen = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DFACE));
+              HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+
+              MoveToEx(hdc, rc.right - 1, rc.top, NULL);
+              LineTo(hdc, rc.right - 1, rc.bottom);
+
+              MoveToEx(hdc, rc.left, rc.bottom - 1, NULL);
+              LineTo(hdc, rc.right, rc.bottom - 1);
+
+              SelectObject(hdc, hOldPen);
+              DeleteObject(hPen);
+            }
+
+            /* Draw focus rectangle */
+            if (lin == data->current_row && col == data->current_col &&
+                iupAttribGetBoolean(ih, "FOCUSRECT") &&
+                GetFocus() == data->list_view)
+            {
+              HPEN hPen = CreatePen(PS_DOT, 1, GetSysColor(COLOR_GRAYTEXT));
+              HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+              HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+
+              Rectangle(hdc, rc.left + 1, rc.top + 1, rc.right - 1, rc.bottom - 1);
+
+              SelectObject(hdc, hOldBrush);
+              SelectObject(hdc, hOldPen);
+              DeleteObject(hPen);
+            }
+
+            *result = CDRF_SKIPDEFAULT;
+            return 1;
+          }
+
+          /* Non-image mode: let ListView draw text, customize colors/font */
+          HFONT hOldFont = NULL;
+          if (font_changed)
+            hOldFont = (HFONT)SelectObject(lplvcd->nmcd.hdc, hFont);
+
+          /* Apply background color (but not when row is selected) */
+          if (!is_row_selected)
+          {
+            if (bgcolor && *bgcolor)
+            {
+              unsigned char r, g, b;
+              if (iupStrToRGB(bgcolor, &r, &g, &b))
+                lplvcd->clrTextBk = RGB(r, g, b);
+              else
+                lplvcd->clrTextBk = CLR_DEFAULT;
+            }
+            else
+            {
+              lplvcd->clrTextBk = CLR_DEFAULT;
+            }
+
+            if (fgcolor && *fgcolor)
+            {
+              unsigned char r, g, b;
+              if (iupStrToRGB(fgcolor, &r, &g, &b))
+                lplvcd->clrText = RGB(r, g, b);
+              else
+                lplvcd->clrText = CLR_DEFAULT;
+            }
+            else
+            {
+              lplvcd->clrText = CLR_DEFAULT;
             }
           }
 
           /* Need postpaint for grid lines, focused cell, or font restoration */
+          int needs_postpaint = 0;
           if (data->show_grid)
             needs_postpaint = 1;
           else if (lin == data->current_row && col == data->current_col)
             needs_postpaint = 1;
           else if (font_changed)
-            needs_postpaint = 1;  /* Need postpaint to restore font */
+            needs_postpaint = 1;
 
           /* Store old font for restoration in postpaint */
           if (font_changed)
@@ -2437,6 +2624,15 @@ static int winTableMapMethod(Ihandle* ih)
   DWORD exStyle = LVS_EX_FULLROWSELECT;
   ListView_SetExtendedListViewStyle(data->list_view, exStyle);
 
+  if (ih->data->show_image)
+  {
+    int charheight;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    int row_h = charheight + 8;
+    HIMAGELIST hImgList = ImageList_Create(1, row_h, ILC_COLOR, 1, 0);
+    ListView_SetImageList(data->list_view, hImgList, LVSIL_SMALL);
+  }
+
   /* Create dummy column at index 0 to allow alignment of first real column */
   LVCOLUMN lvc_dummy;
   ZeroMemory(&lvc_dummy, sizeof(LVCOLUMN));
@@ -2674,6 +2870,14 @@ static void winTableUnMapMethod(Ihandle* ih)
   {
     DestroyWindow(data->edit_control);
     data->edit_control = NULL;
+  }
+
+  /* Destroy image list used for row height adjustment */
+  if (data->list_view)
+  {
+    HIMAGELIST hImgList = ListView_GetImageList(data->list_view, LVSIL_SMALL);
+    if (hImgList)
+      ImageList_Destroy(hImgList);
   }
 
   /* Destroy ListView */
