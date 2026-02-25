@@ -2669,6 +2669,33 @@ func goIupTableValueCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 	return C.CString(result)
 }
 
+// TableImageFunc for IMAGE_CB callback.
+// Called to get the image name for a cell in virtual mode when SHOWIMAGE=YES.
+// Returns the image name to display in the cell, or empty string for no image.
+type TableImageFunc func(ih Ihandle, lin, col int) string
+
+//export goIupTableImageCB
+func goIupTableImageCB(ih unsafe.Pointer, lin, col C.int) *C.char {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("TABLE_IMAGE_CB_" + uuid)
+	if !ok {
+		return nil
+	}
+	ch := h.(cgo.Handle)
+	f := ch.Value().(TableImageFunc)
+	result := f((Ihandle)(ih), int(lin), int(col))
+	if result == "" {
+		return nil
+	}
+	return C.CString(result)
+}
+
+func setTableImageFunc(ih Ihandle, f TableImageFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("TABLE_IMAGE_CB_"+ih.GetAttribute("UUID"), ch)
+	C.goIupSetTableImageFunc(ih.ptr())
+}
+
 // TableSortFunc for SORT_CB callback.
 // Called when user clicks a column header to sort.
 // Returns DEFAULT to proceed with sorting or IGNORE to cancel.

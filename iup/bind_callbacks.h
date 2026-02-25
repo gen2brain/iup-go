@@ -582,6 +582,11 @@ static void goIupSetTableValueFunc(Ihandle *ih) {
 	IupSetCallback(ih, "VALUE_CB", (Icallback) goIupTableValueCB);
 }
 
+CGO_EXPORT extern char* goIupTableImageCB(void *, int lin, int col);
+static void goIupSetTableImageFunc(Ihandle *ih) {
+	IupSetCallback(ih, "IMAGE_CB", (Icallback) goIupTableImageCB);
+}
+
 CGO_EXPORT extern int goIupTableSortCB(void *, int col);
 static void goIupSetTableSortFunc(Ihandle *ih) {
 	IupSetCallback(ih, "SORT_CB", (Icallback) goIupTableSortCB);
