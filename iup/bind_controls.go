@@ -356,6 +356,18 @@ func Val(_type string) Ihandle {
 	return h
 }
 
+// Scrollbar creates a standalone Scrollbar control with a proportional thumb.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/elem/iupscrollbar.html
+func Scrollbar(orientation string) Ihandle {
+	cOrientation := cStrOrNull(orientation)
+	defer cStrFree(cOrientation)
+
+	h := mkih(C.IupScrollbar(cOrientation))
+	h.SetAttribute("UUID", uuid.NewString())
+	return h
+}
+
 // FlatVal creates a Valuator control, but it does not have native decorations.
 // Selects a value in a limited interval. Also known as Scale or Trackbar in native systems.
 //
