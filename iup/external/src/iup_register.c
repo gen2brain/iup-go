@@ -157,6 +157,7 @@ void iupRegisterInternalClasses(void)
 
   iupRegisterClassInternal(iupProgressBarNewClass());
   iupRegisterClassInternal(iupValNewClass());
+  iupRegisterClassInternal(iupScrollbarNewClass());
   iupRegisterClassInternal(iupTabsNewClass());
   iupRegisterClassInternal(iupSpinNewClass());
   iupRegisterClassInternal(iupSpinboxNewClass());

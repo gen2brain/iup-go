@@ -29,6 +29,7 @@ Iclass* iupProgressBarNewClass(void);
 Iclass* iupTextNewClass(void);
 Iclass* iupMultilineNewClass(void);
 Iclass* iupValNewClass(void);
+Iclass* iupScrollbarNewClass(void);
 Iclass* iupTabsNewClass(void);
 Iclass* iupSpinNewClass(void);
 Iclass* iupSpinboxNewClass(void);
