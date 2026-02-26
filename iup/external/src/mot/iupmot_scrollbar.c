@@ -15,6 +15,7 @@
 #include <memory.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <stdint.h>
 
 #include "iup.h"
 #include "iupcbs.h"
