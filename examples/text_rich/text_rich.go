@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gen2brain/iup-go/iup"
 )
 
@@ -24,7 +26,8 @@ func main() {
 			"Superscript and Subscript test: E=mc2 H2O\n"+
 			"Line with indentation and spacing.\n"+
 			"Bullet list and numbering test.\n"+
-			"Image inline test: [IMG1] and scaled [IMG2] done.")
+			"Image inline test: [IMG1] and scaled [IMG2] done.\n"+
+			"Visit IUP Documentation for more info.")
 
 	// Title - large, centered, bold
 	formattag := iup.User()
@@ -96,6 +99,17 @@ func main() {
 	iup.SetAttribute(formattag, "NUMBERING", "BULLET")
 	iup.SetAttribute(formattag, "SELECTION", "8,1:8,50")
 	iup.SetAttributeHandle(mltline, "ADDFORMATTAG", formattag)
+
+	// Hyperlink on "IUP Documentation" (line 10, cols 7-23)
+	formattag = iup.User()
+	iup.SetAttribute(formattag, "LINK", "https://www.tecgraf.puc-rio.br/iup/")
+	iup.SetAttribute(formattag, "SELECTION", "10,7:10,24")
+	iup.SetAttributeHandle(mltline, "ADDFORMATTAG", formattag)
+
+	iup.SetCallback(mltline, "LINK_CB", iup.TextLinkFunc(func(ih iup.Ihandle, url string) int {
+		fmt.Printf("Link clicked: %s\n", url)
+		return iup.DEFAULT
+	}))
 
 	dlg := iup.Dialog(iup.Vbox(mltline))
 	iup.SetAttribute(dlg, "TITLE", "Rich Text Formatting")

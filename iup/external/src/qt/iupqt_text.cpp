@@ -203,6 +203,7 @@ public:
   explicit IupQtTextEdit(Ihandle* ihandle) : QTextEdit(), ih(ihandle), overwrite_mode(false)
   {
     setAcceptDrops(true);
+    setMouseTracking(true);
   }
 
   void setOverwriteMode(bool mode) { overwrite_mode = mode; }
@@ -309,10 +310,54 @@ protected:
     QTextEdit::dropEvent(event);
   }
 
+  void mouseReleaseEvent(QMouseEvent* event) override
+  {
+    if (event->button() == Qt::LeftButton)
+    {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      QString url = anchorAt(event->position().toPoint());
+#else
+      QString url = anchorAt(event->pos());
+#endif
+      if (!url.isEmpty())
+      {
+        QByteArray urlBytes = url.toUtf8();
+        IFns cb = (IFns)IupGetCallback(ih, "LINK_CB");
+        if (cb)
+        {
+          int ret = cb(ih, (char*)urlBytes.constData());
+          if (ret == IUP_CLOSE)
+            IupExitLoop();
+          else if (ret == IUP_DEFAULT)
+            IupHelp(urlBytes.constData());
+        }
+        else
+          IupHelp(urlBytes.constData());
+      }
+    }
+
+    QTextEdit::mouseReleaseEvent(event);
+  }
+
+  void mouseMoveEvent(QMouseEvent* event) override
+  {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QString url = anchorAt(event->position().toPoint());
+#else
+    QString url = anchorAt(event->pos());
+#endif
+
+    if (!url.isEmpty())
+      viewport()->setCursor(Qt::PointingHandCursor);
+    else
+      viewport()->setCursor(Qt::IBeamCursor);
+
+    QTextEdit::mouseMoveEvent(event);
+  }
+
   void setOverwriteCursor(bool overwrite)
   {
-    /* Could change cursor appearance for overwrite mode */
-    /* Qt doesn't have a built-in overwrite cursor, but we track the mode */
+    (void)overwrite;
   }
 };
 
@@ -2008,6 +2053,19 @@ static void qtTextParseCharacterFormat(Ihandle* formattag, QTextCharFormat* char
       charFormat->setFontWeight(QFont::Black);
     else
       charFormat->setFontWeight(QFont::Normal);
+  }
+
+  format = iupAttribGet(formattag, "LINK");
+  if (format)
+  {
+    charFormat->setAnchor(true);
+    charFormat->setAnchorHref(QString(format));
+
+    if (!iupAttribGet(formattag, "FGCOLOR"))
+      charFormat->setForeground(QColor(0, 0, 255));
+
+    if (!iupAttribGet(formattag, "UNDERLINE"))
+      charFormat->setUnderlineStyle(QTextCharFormat::SingleUnderline);
   }
 }
 

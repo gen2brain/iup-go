@@ -338,6 +338,11 @@ static void goIupSetLinkActionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "ACTION", (Icallback) goIupLinkActionCB);
 }
 
+CGO_EXPORT extern int goIupTextLinkCB(void *, void *url);
+static void goIupSetTextLinkFunc(Ihandle *ih) {
+	IupSetCallback(ih, "LINK_CB", (Icallback) goIupTextLinkCB);
+}
+
 CGO_EXPORT extern int goIupWheelCB(void *, float delta, int x, int y, void *status);
 static void goIupSetWheelFunc(Ihandle *ih) {
 	IupSetCallback(ih, "WHEEL_CB", (Icallback) goIupWheelCB);

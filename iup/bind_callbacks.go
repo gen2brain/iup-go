@@ -1859,6 +1859,34 @@ func setLinkActionFunc(ih Ihandle, f LinkActionFunc) {
 
 //--------------------
 
+// TextLinkFunc for LINK_CB callback on multiline text controls.
+// Action generated when a hyperlink in formatted text is clicked.
+type TextLinkFunc func(ih Ihandle, url string) int
+
+//export goIupTextLinkCB
+func goIupTextLinkCB(ih, url unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("LINK_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "LINK_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(TextLinkFunc)
+
+	goUrl := C.GoString((*C.char)(url))
+	return C.int(f((Ihandle)(ih), goUrl))
+}
+
+func setTextLinkFunc(ih Ihandle, f TextLinkFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("LINK_CB_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetTextLinkFunc(ih.ptr())
+}
+
+//--------------------
+
 // WheelFunc for WHEEL_CB callback.
 // Action generated when the mouse wheel is rotated.
 type WheelFunc func(ih Ihandle, delta float64, x, y int, status string) int
