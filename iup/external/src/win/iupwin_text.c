@@ -442,7 +442,27 @@ static void winTextParseCharacterFormat(Ihandle* formattag, CHARFORMAT2 *charfor
       charformat->dwEffects |= CFE_BOLD;
     }
   }
-}                      
+
+  format = iupAttribGet(formattag, "LINK");
+  if (format)
+  {
+    charformat->dwMask |= CFM_LINK;
+    charformat->dwEffects |= CFE_LINK;
+
+    if (!iupAttribGet(formattag, "FGCOLOR"))
+    {
+      charformat->dwMask |= CFM_COLOR;
+      charformat->crTextColor = RGB(0, 0, 255);
+    }
+
+    if (!iupAttribGet(formattag, "UNDERLINE"))
+    {
+      charformat->dwMask |= CFM_UNDERLINETYPE | CFM_UNDERLINE;
+      charformat->bUnderlineType = CFU_UNDERLINE;
+      charformat->dwEffects |= CFE_UNDERLINE;
+    }
+  }
+}
 
 static void winTextUpdateFontFormat(CHARFORMAT2* charformat, const char* value)
 {
@@ -1815,6 +1835,26 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
   if (charformat.dwMask != 0)
     SendMessage(ih->handle, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&charformat);
 
+  {
+    char* link_url = iupAttribGet(formattag, "LINK");
+    if (link_url)
+    {
+      CHARRANGE cr;
+      char attr_name[80];
+      int idx = iupAttribGetInt(ih, "_IUP_LINK_COUNT");
+
+      SendMessage(ih->handle, EM_EXGETSEL, 0, (LPARAM)&cr);
+
+      sprintf(attr_name, "_IUP_LINK_URL_%d", idx);
+      iupAttribSetStr(ih, attr_name, link_url);
+
+      sprintf(attr_name, "_IUP_LINK_RANGE_%d", idx);
+      iupAttribSetStrf(ih, attr_name, "%d:%d", (int)cr.cpMin, (int)cr.cpMax);
+
+      iupAttribSetInt(ih, "_IUP_LINK_COUNT", idx + 1);
+    }
+  }
+
   if (!bulk)
     iupdrvTextAddFormatTagStopBulk(ih, state);
 }
@@ -2132,6 +2172,57 @@ static int winTextSpinWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
   return 0; /* result not used */
 }
 
+static const char* winTextFindLinkUrl(Ihandle* ih, int cpMin, int cpMax)
+{
+  int count = iupAttribGetInt(ih, "_IUP_LINK_COUNT");
+  int i;
+
+  for (i = 0; i < count; i++)
+  {
+    int start, end;
+    char attr_name[80];
+
+    sprintf(attr_name, "_IUP_LINK_RANGE_%d", i);
+    if (iupStrToIntInt(iupAttribGet(ih, attr_name), &start, &end, ':') == 2)
+    {
+      if (cpMin >= start && cpMin < end)
+      {
+        sprintf(attr_name, "_IUP_LINK_URL_%d", i);
+        return iupAttribGet(ih, attr_name);
+      }
+    }
+  }
+
+  return NULL;
+}
+
+static void winTextHandleLinkClick(Ihandle* ih, int x, int y)
+{
+  POINT point;
+  int pos;
+  const char* url;
+
+  point.x = x;
+  point.y = y;
+  pos = (int)SendMessage(ih->handle, EM_CHARFROMPOS, 0, (LPARAM)&point);
+
+  url = winTextFindLinkUrl(ih, pos, pos);
+  if (url)
+  {
+    IFns cb = (IFns)IupGetCallback(ih, "LINK_CB");
+    if (cb)
+    {
+      int ret = cb(ih, (char*)url);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      else if (ret == IUP_DEFAULT)
+        IupHelp(url);
+    }
+    else
+      IupHelp(url);
+  }
+}
+
 static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
 {
   int ret = 0;
@@ -2344,6 +2435,10 @@ static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
         *result = 0;
         return 1;
       }
+
+      if (msg == WM_LBUTTONUP && ih->data->has_formatting)
+        winTextHandleLinkClick(ih, (int)(short)LOWORD(lp), (int)(short)HIWORD(lp));
+
       PostMessage(ih->handle, WM_IUPCARET, 0, 0L);
       break;
     }
@@ -2602,6 +2697,7 @@ static int winTextMapMethod(Ihandle* ih)
   {
     SendMessage(ih->handle, EM_SETTEXTMODE, (WPARAM)(TM_RICHTEXT|TM_MULTILEVELUNDO|TM_SINGLECODEPAGE), 0);
     SendMessage(ih->handle, EM_SETEVENTMASK, 0, ENM_CHANGE);
+    SendMessage(ih->handle, EM_AUTOURLDETECT, 0, 0);
 
     /* must update FONT before updating the formattags */
     iupAttribSet(ih, "_IUPWIN_FONTUPDATECHECK", "1");

@@ -781,6 +781,36 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
   return YES;
 }
 
+- (BOOL) textView:(NSTextView*)textView clickedOnLink:(id)link atIndex:(NSUInteger)charIndex
+{
+  Ihandle* ih = [self ihandle];
+  const char* url = NULL;
+
+  if([link isKindOfClass:[NSURL class]])
+    url = [[link absoluteString] UTF8String];
+  else if([link isKindOfClass:[NSString class]])
+    url = [link UTF8String];
+
+  if(url)
+  {
+    IFns cb = (IFns)IupGetCallback(ih, "LINK_CB");
+    if(cb)
+    {
+      int ret = cb(ih, (char*)url);
+      if(ret == IUP_CLOSE)
+        IupExitLoop();
+      else if(ret == IUP_DEFAULT)
+        IupHelp(url);
+    }
+    else
+      IupHelp(url);
+  }
+
+  (void)textView;
+  (void)charIndex;
+  return YES;
+}
+
 - (void) textViewDidChangeSelection:(NSNotification*)the_notification
 {
   Ihandle* ih = [self ihandle];
@@ -3082,6 +3112,30 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
         needs_add_font_fgcolor = false;
       }
     }
+    did_change_attribute = true;
+  }
+
+  format = iupAttribGet(formattag, "LINK");
+  if(format)
+  {
+    NSURL* link_url = [NSURL URLWithString:[NSString stringWithUTF8String:format]];
+    if(link_url)
+      [attribute_dict setValue:link_url forKey:NSLinkAttributeName];
+
+    if(!iupAttribGet(formattag, "FGCOLOR"))
+    {
+      NSColor* blue = [NSColor colorWithCalibratedRed:0.0 green:0.0 blue:1.0 alpha:1.0];
+      [attribute_dict setValue:blue forKey:NSForegroundColorAttributeName];
+      did_change_font_fgcolor = true;
+      needs_add_font_fgcolor = true;
+    }
+
+    if(!iupAttribGet(formattag, "UNDERLINE"))
+    {
+      [attribute_dict setValue:[NSNumber numberWithInt:NSUnderlinePatternSolid|NSUnderlineStyleSingle]
+                        forKey:NSUnderlineStyleAttributeName];
+    }
+
     did_change_attribute = true;
   }
 

@@ -534,6 +534,76 @@ static int winuiTextSetActiveAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static const char* winuiTextFindLinkUrl(Ihandle* ih, int pos);
+
+static int winuiTextGetPosFromPoint(Ihandle* ih, Windows::Foundation::Point point)
+{
+  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  if (!reb)
+    return -1;
+
+  try
+  {
+    auto doc = reb.Document();
+    auto range = doc.GetRangeFromPoint(point, PointOptions::ClientCoordinates);
+    if (!range)
+      return -1;
+
+    return range.StartPosition();
+  }
+  catch (...)
+  {
+    return -1;
+  }
+}
+
+static void winuiTextLinkTapped(Ihandle* ih, Windows::Foundation::Point point)
+{
+  int pos = winuiTextGetPosFromPoint(ih, point);
+  if (pos < 0)
+    return;
+
+  const char* url = winuiTextFindLinkUrl(ih, pos);
+  if (url)
+  {
+    IFns cb = (IFns)IupGetCallback(ih, "LINK_CB");
+    if (cb)
+    {
+      int ret = cb(ih, (char*)url);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      else if (ret == IUP_DEFAULT)
+        IupHelp(url);
+    }
+    else
+      IupHelp(url);
+  }
+}
+
+static void winuiTextLinkPointerMoved(Ihandle* ih, Windows::Foundation::Point clientPoint, Windows::Foundation::Point hostPoint)
+{
+  using namespace Microsoft::UI::Input;
+
+  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  if (!reb)
+    return;
+
+  int pos = winuiTextGetPosFromPoint(ih, clientPoint);
+  const char* url = (pos >= 0) ? winuiTextFindLinkUrl(ih, pos) : NULL;
+  InputSystemCursorShape shape = url ? InputSystemCursorShape::Hand : InputSystemCursorShape::IBeam;
+
+  auto elements = VisualTreeHelper::FindElementsInHostCoordinates(hostPoint, reb.as<UIElement>());
+  for (auto const& elem : elements)
+  {
+    auto protectedUI = elem.try_as<Microsoft::UI::Xaml::IUIElementProtected>();
+    if (protectedUI)
+    {
+      protectedUI.ProtectedCursor(InputSystemCursor::Create(shape));
+      break;
+    }
+  }
+}
+
 static int winuiTextMapMethod(Ihandle* ih)
 {
   IupWinUITextAux* aux = new IupWinUITextAux();
@@ -703,6 +773,20 @@ static int winuiTextMapMethod(Ihandle* ih)
       if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
         args.Handled(true);
     });
+
+    reb.AddHandler(UIElement::PointerReleasedEvent(), winrt::box_value(
+      PointerEventHandler([ih](IInspectable const& sender, PointerRoutedEventArgs const& args) {
+        auto pt = args.GetCurrentPoint(sender.as<UIElement>());
+        if (pt.Properties().PointerUpdateKind() == Microsoft::UI::Input::PointerUpdateKind::LeftButtonReleased)
+          winuiTextLinkTapped(ih, pt.Position());
+      })), true);
+
+    reb.AddHandler(UIElement::PointerMovedEvent(), winrt::box_value(
+      PointerEventHandler([ih](IInspectable const& sender, PointerRoutedEventArgs const& args) {
+        auto clientPt = args.GetCurrentPoint(sender.as<UIElement>()).Position();
+        auto hostPt = args.GetCurrentPoint(nullptr).Position();
+        winuiTextLinkPointerMoved(ih, clientPt, hostPt);
+      })), true);
 
     iupwinuiUpdateControlFont(ih, reb);
 
@@ -890,6 +974,8 @@ static void winuiTextUnMapMethod(Ihandle* ih)
           reb.LostFocus(aux->lostFocusToken);
         if (aux->keyDownToken)
           reb.PreviewKeyDown(aux->keyDownToken);
+        if (aux->tappedToken)
+          reb.Tapped(aux->tappedToken);
       }
     }
     else
@@ -1345,6 +1431,22 @@ static void winuiTextParseCharacterFormat(Ihandle* formattag, ITextRange const& 
   if (val)
   {
     cf.SmallCaps(iupStrBoolean(val) ? FormatEffect::On : FormatEffect::Off);
+    changed = true;
+  }
+
+  val = iupAttribGet(formattag, "LINK");
+  if (val)
+  {
+    if (!iupAttribGet(formattag, "FGCOLOR"))
+    {
+      Windows::UI::Color blue;
+      blue.A = 255; blue.R = 0; blue.G = 0; blue.B = 255;
+      cf.ForegroundColor(blue);
+    }
+
+    if (!iupAttribGet(formattag, "UNDERLINE"))
+      cf.Underline(UnderlineType::Single);
+
     changed = true;
   }
 
@@ -1829,6 +1931,9 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
     {
       winuiTextApplyCharFormatViaRtf(ih, formattag, sel);
       sel.SetRange(range_start, range_end);
+
+      if (iupAttribGet(formattag, "LINK"))
+        winuiTextParseCharacterFormat(formattag, selRange);
     }
     else
     {
@@ -1836,9 +1941,49 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
     }
 
     winuiTextParseParagraphFormat(formattag, selRange);
+
+    {
+      char* link_url = iupAttribGet(formattag, "LINK");
+      if (link_url)
+      {
+        int idx = iupAttribGetInt(ih, "_IUP_LINK_COUNT");
+        char attr_name[80];
+
+        sprintf(attr_name, "_IUP_LINK_URL_%d", idx);
+        iupAttribSetStr(ih, attr_name, link_url);
+
+        sprintf(attr_name, "_IUP_LINK_RANGE_%d", idx);
+        iupAttribSetStrf(ih, attr_name, "%d:%d", range_start, range_end);
+
+        iupAttribSetInt(ih, "_IUP_LINK_COUNT", idx + 1);
+      }
+    }
   }
 
   sel.SetRange(save_start, save_end);
+}
+
+static const char* winuiTextFindLinkUrl(Ihandle* ih, int pos)
+{
+  int count = iupAttribGetInt(ih, "_IUP_LINK_COUNT");
+
+  for (int i = 0; i < count; i++)
+  {
+    int start, end;
+    char attr_name[80];
+
+    sprintf(attr_name, "_IUP_LINK_RANGE_%d", i);
+    if (iupStrToIntInt(iupAttribGet(ih, attr_name), &start, &end, ':') == 2)
+    {
+      if (pos >= start && pos < end)
+      {
+        sprintf(attr_name, "_IUP_LINK_URL_%d", i);
+        return iupAttribGet(ih, attr_name);
+      }
+    }
+  }
+
+  return NULL;
 }
 
 static int winui_singleline_extra_h = -1;

@@ -1080,6 +1080,145 @@ static char* eflTextGetPaddingAttrib(Ihandle* ih)
 }
 
 /****************************************************************
+                     Link Support
+****************************************************************/
+
+static const char* eflTextFindLinkUrl(Ihandle* ih, int pos)
+{
+  int count = iupAttribGetInt(ih, "_IUP_LINK_COUNT");
+  int i;
+
+  for (i = 0; i < count; i++)
+  {
+    int start, end;
+    char range_attr[80];
+    const char* url;
+
+    sprintf(range_attr, "_IUP_LINK_RANGE_%d", i);
+    if (iupStrToIntInt(iupAttribGet(ih, range_attr), &start, &end, ':') == 2)
+    {
+      if (pos >= start && pos < end)
+      {
+        char url_attr[80];
+        sprintf(url_attr, "_IUP_LINK_URL_%d", i);
+        url = iupAttribGet(ih, url_attr);
+        if (url)
+          return url;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+static void eflTextSetLinkCursor(Ihandle* ih, int over_link)
+{
+  Eo* entry = iupeflGetWidget(ih);
+  if (!entry)
+    return;
+
+  if (over_link)
+    efl_ui_widget_cursor_set(entry, "hand1");
+  else
+    efl_ui_widget_cursor_set(entry, NULL);
+}
+
+static void eflTextLinkRelease(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Efl_Input_Pointer* pointer = ev->info;
+  Eo* entry;
+  Evas_Object* textblock;
+  Eina_Position2D pos;
+  Evas_Coord tx, ty;
+  int button;
+  Efl_Text_Cursor_Object* cursor;
+  int char_pos;
+  const char* url;
+
+  button = efl_input_pointer_button_get(pointer);
+  if (button != 1)
+    return;
+
+  entry = iupeflGetWidget(ih);
+  if (!entry)
+    return;
+
+  textblock = eflTextGetTextblock(ih);
+  if (!textblock)
+    return;
+
+  pos = efl_input_pointer_position_get(pointer);
+  evas_object_geometry_get(textblock, &tx, &ty, NULL, NULL);
+
+  cursor = efl_ui_textbox_cursor_create(entry);
+  if (!cursor)
+    return;
+
+  efl_text_cursor_object_char_coord_set(cursor, EINA_POSITION2D(pos.x - tx, pos.y - ty));
+  char_pos = efl_text_cursor_object_position_get(cursor);
+  efl_del(cursor);
+
+  url = eflTextFindLinkUrl(ih, char_pos);
+  if (url)
+  {
+    IFns cb = (IFns)IupGetCallback(ih, "LINK_CB");
+    if (cb)
+    {
+      int ret = cb(ih, (char*)url);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      else if (ret == IUP_DEFAULT)
+        IupHelp(url);
+    }
+    else
+      IupHelp(url);
+  }
+}
+
+static void eflTextLinkMotion(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Efl_Input_Pointer* pointer = ev->info;
+  Eo* entry;
+  Evas_Object* textblock;
+  Eina_Position2D pos;
+  Evas_Coord tx, ty;
+  Efl_Text_Cursor_Object* cursor;
+  int char_pos;
+  const char* url;
+  int over_link;
+
+  entry = iupeflGetWidget(ih);
+  if (!entry)
+    return;
+
+  textblock = eflTextGetTextblock(ih);
+  if (!textblock)
+    return;
+
+  pos = efl_input_pointer_position_get(pointer);
+  evas_object_geometry_get(textblock, &tx, &ty, NULL, NULL);
+
+  cursor = efl_ui_textbox_cursor_create(entry);
+  if (!cursor)
+    return;
+
+  efl_text_cursor_object_char_coord_set(cursor, EINA_POSITION2D(pos.x - tx, pos.y - ty));
+  char_pos = efl_text_cursor_object_position_get(cursor);
+  efl_del(cursor);
+
+  url = eflTextFindLinkUrl(ih, char_pos);
+  over_link = (url != NULL);
+
+  if (over_link != iupAttribGetInt(ih, "_IUP_EFL_OVER_LINK"))
+  {
+    iupAttribSetInt(ih, "_IUP_EFL_OVER_LINK", over_link);
+    eflTextSetLinkCursor(ih, over_link);
+  }
+}
+
+/****************************************************************
                      Methods
 ****************************************************************/
 
@@ -1203,6 +1342,12 @@ static int eflTextMapMethod(Ihandle* ih)
 
   iupeflBaseAddCallbacks(ih, widget);
 
+  if (ih->data->is_multiline && !is_spin)
+  {
+    efl_event_callback_add(widget, EFL_EVENT_POINTER_UP, eflTextLinkRelease, ih);
+    efl_event_callback_add(widget, EFL_EVENT_POINTER_MOVE, eflTextLinkMotion, ih);
+  }
+
   iupeflAddToParent(ih);
 
   iupeflApplyTextStyle(ih, widget);
@@ -1224,7 +1369,15 @@ static void eflTextUnMapMethod(Ihandle* ih)
     if (iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
       efl_event_callback_del(entry, EFL_UI_RANGE_EVENT_CHANGED, eflSpinChangedCallback, ih);
     else
+    {
       efl_event_callback_del(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflTextChangedCallback, ih);
+
+      if (ih->data->is_multiline)
+      {
+        efl_event_callback_del(entry, EFL_EVENT_POINTER_UP, eflTextLinkRelease, ih);
+        efl_event_callback_del(entry, EFL_EVENT_POINTER_MOVE, eflTextLinkMotion, ih);
+      }
+    }
 
     iupeflDelete(entry);
   }
@@ -1740,6 +1893,16 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
     else
       strcat(format, "underline_type=none ");
   }
+
+  attr = iupAttribGet(formattag, "LINK");
+  if (attr)
+  {
+    if (!iupAttribGet(formattag, "FGCOLOR"))
+      strcat(format, "color=#0000FF ");
+
+    if (!iupAttribGet(formattag, "UNDERLINE"))
+      strcat(format, "underline_type=single underline_color=#0000FFFF ");
+  }
 }
 
 static void eflIntToRoman(int num, char* buf, int bufsize, int uppercase)
@@ -2097,6 +2260,23 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 
   if (format[0])
     efl_text_formatter_attribute_insert(start_cursor, end_cursor, format);
+
+  {
+    char* link_url = iupAttribGet(formattag, "LINK");
+    if (link_url)
+    {
+      int idx = iupAttribGetInt(ih, "_IUP_LINK_COUNT");
+      char attr[80];
+
+      sprintf(attr, "_IUP_LINK_URL_%d", idx);
+      iupAttribSetStr(ih, attr, link_url);
+
+      sprintf(attr, "_IUP_LINK_RANGE_%d", idx);
+      iupAttribSetStrf(ih, attr, "%d:%d", start_pos, end_pos);
+
+      iupAttribSetInt(ih, "_IUP_LINK_COUNT", idx + 1);
+    }
+  }
 
   efl_del(start_cursor);
   efl_del(end_cursor);

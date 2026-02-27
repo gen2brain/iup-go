@@ -761,6 +761,28 @@ static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
 
     g_object_set(G_OBJECT(tag), "weight", val, NULL);
   }
+
+  format = iupAttribGet(formattag, "LINK");
+  if (format)
+  {
+    g_object_set_data_full(G_OBJECT(tag), "iup-link-url", g_strdup(format), g_free);
+
+    if (!iupAttribGet(formattag, "FGCOLOR"))
+    {
+#if GTK_CHECK_VERSION(3, 4, 0)
+      GdkRGBA rgba;
+      iupgdkRGBASet(&rgba, 0, 0, 255);
+      g_object_set(G_OBJECT(tag), "foreground-rgba", &rgba, NULL);
+#else
+      GdkColor color;
+      iupgdkColorSetRGB(&color, 0, 0, 255);
+      g_object_set(G_OBJECT(tag), "foreground-gdk", &color, NULL);
+#endif
+    }
+
+    if (!iupAttribGet(formattag, "UNDERLINE"))
+      g_object_set(G_OBJECT(tag), "underline", PANGO_UNDERLINE_SINGLE, NULL);
+  }
 }
 
 static void gtkTextMoveIterToLinCol(GtkTextBuffer *buffer, GtkTextIter *iter, int lin, int col)
@@ -1994,6 +2016,87 @@ static gboolean gtkTextButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihand
   return iupgtkButtonEvent(widget, evt, ih);
 }
 
+static const char* gtkTextGetLinkUrlAtIter(GtkTextIter* iter)
+{
+  GSList* tags = gtk_text_iter_get_tags(iter);
+  GSList* item;
+  const char* url = NULL;
+
+  for (item = tags; item != NULL; item = item->next)
+  {
+    GtkTextTag* tag = (GtkTextTag*)item->data;
+    url = (const char*)g_object_get_data(G_OBJECT(tag), "iup-link-url");
+    if (url)
+      break;
+  }
+
+  g_slist_free(tags);
+  return url;
+}
+
+static gboolean gtkTextLinkRelease(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
+{
+  if (evt->type == GDK_BUTTON_RELEASE && evt->button == 1)
+  {
+    GtkTextView* text_view = GTK_TEXT_VIEW(widget);
+    GtkTextIter iter;
+    int buf_x, buf_y;
+
+    gtk_text_view_window_to_buffer_coords(text_view, GTK_TEXT_WINDOW_WIDGET, (int)evt->x, (int)evt->y, &buf_x, &buf_y);
+    gtk_text_view_get_iter_at_location(text_view, &iter, buf_x, buf_y);
+
+    {
+      const char* url = gtkTextGetLinkUrlAtIter(&iter);
+      if (url)
+      {
+        IFns cb = (IFns)IupGetCallback(ih, "LINK_CB");
+        if (cb)
+        {
+          int ret = cb(ih, (char*)url);
+          if (ret == IUP_CLOSE)
+            IupExitLoop();
+          else if (ret == IUP_DEFAULT)
+            IupHelp(url);
+        }
+        else
+          IupHelp(url);
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+static gboolean gtkTextLinkMotion(GtkWidget *widget, GdkEventMotion *evt, Ihandle *ih)
+{
+  GtkTextView* text_view = GTK_TEXT_VIEW(widget);
+  GtkTextIter iter;
+  int buf_x, buf_y;
+  GdkCursor* cursor;
+  GdkWindow* win;
+
+  gtk_text_view_window_to_buffer_coords(text_view, GTK_TEXT_WINDOW_WIDGET, (int)evt->x, (int)evt->y, &buf_x, &buf_y);
+  gtk_text_view_get_iter_at_location(text_view, &iter, buf_x, buf_y);
+
+  win = gtk_text_view_get_window(text_view, GTK_TEXT_WINDOW_TEXT);
+  if (!win)
+    return FALSE;
+
+  {
+    const char* url = gtkTextGetLinkUrlAtIter(&iter);
+    if (url)
+      cursor = gdk_cursor_new_for_display(gtk_widget_get_display(widget), GDK_HAND2);
+    else
+      cursor = gdk_cursor_new_for_display(gtk_widget_get_display(widget), GDK_XTERM);
+  }
+
+  gdk_window_set_cursor(win, cursor);
+  gdk_cursor_unref(cursor);
+
+  (void)ih;
+  return FALSE;
+}
+
 static void gtkTextEntryDeleteText(GtkEditable *editable, int start, int end, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
@@ -2273,6 +2376,9 @@ static int gtkTextMapMethod(Ihandle* ih)
     g_signal_connect(G_OBJECT(buffer), "delete-range", G_CALLBACK(gtkTextBufferDeleteRange), ih);
     g_signal_connect(G_OBJECT(buffer), "insert-text", G_CALLBACK(gtkTextBufferInsertText), ih);
     g_signal_connect(G_OBJECT(buffer), "changed", G_CALLBACK(gtkTextChanged), ih);
+
+    g_signal_connect_after(G_OBJECT(ih->handle), "button-release-event", G_CALLBACK(gtkTextLinkRelease), ih);
+    g_signal_connect(G_OBJECT(ih->handle), "motion-notify-event", G_CALLBACK(gtkTextLinkMotion), ih);
   }
   else
   {

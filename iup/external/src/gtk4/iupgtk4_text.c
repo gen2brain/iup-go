@@ -513,6 +513,75 @@ static void gtk4TextBufferInsertText(GtkTextBuffer *buffer, GtkTextIter *pos, gc
   (void)len;
 }
 
+static const char* gtk4TextGetLinkUrlAtIter(GtkTextIter* iter)
+{
+  GSList* tags = gtk_text_iter_get_tags(iter);
+  GSList* item;
+  const char* url = NULL;
+
+  for (item = tags; item != NULL; item = item->next)
+  {
+    GtkTextTag* tag = (GtkTextTag*)item->data;
+    url = (const char*)g_object_get_data(G_OBJECT(tag), "iup-link-url");
+    if (url)
+      break;
+  }
+
+  g_slist_free(tags);
+  return url;
+}
+
+static void gtk4TextLinkClick(GtkGestureClick *gesture, int n_press, double x, double y, Ihandle *ih)
+{
+  GtkTextView* text_view = GTK_TEXT_VIEW(gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(gesture)));
+  GtkTextIter iter;
+  int buf_x, buf_y;
+
+  (void)n_press;
+
+  gtk_text_view_window_to_buffer_coords(text_view, GTK_TEXT_WINDOW_WIDGET, (int)x, (int)y, &buf_x, &buf_y);
+  gtk_text_view_get_iter_at_location(text_view, &iter, buf_x, buf_y);
+
+  {
+    const char* url = gtk4TextGetLinkUrlAtIter(&iter);
+    if (url)
+    {
+      IFns cb = (IFns)IupGetCallback(ih, "LINK_CB");
+      if (cb)
+      {
+        int ret = cb(ih, (char*)url);
+        if (ret == IUP_CLOSE)
+          IupExitLoop();
+        else if (ret == IUP_DEFAULT)
+          IupHelp(url);
+      }
+      else
+        IupHelp(url);
+    }
+  }
+}
+
+static void gtk4TextLinkMotion(GtkEventControllerMotion *controller, double x, double y, Ihandle *ih)
+{
+  GtkWidget* widget = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(controller));
+  GtkTextView* text_view = GTK_TEXT_VIEW(widget);
+  GtkTextIter iter;
+  int buf_x, buf_y;
+
+  gtk_text_view_window_to_buffer_coords(text_view, GTK_TEXT_WINDOW_WIDGET, (int)x, (int)y, &buf_x, &buf_y);
+  gtk_text_view_get_iter_at_location(text_view, &iter, buf_x, buf_y);
+
+  {
+    const char* url = gtk4TextGetLinkUrlAtIter(&iter);
+    if (url)
+      gtk_widget_set_cursor_from_name(widget, "pointer");
+    else
+      gtk_widget_set_cursor_from_name(widget, "text");
+  }
+
+  (void)ih;
+}
+
 static void gtk4TextEntryDeleteText(GtkEditable *editable, gint start_pos, gint end_pos, Ihandle* ih)
 {
   if (!ih->data->disable_callbacks)
@@ -1577,6 +1646,16 @@ static int gtk4TextMapMethod(Ihandle* ih)
     g_signal_connect(G_OBJECT(buffer), "delete-range", G_CALLBACK(gtk4TextBufferDeleteRange), ih);
     g_signal_connect(G_OBJECT(buffer), "insert-text", G_CALLBACK(gtk4TextBufferInsertText), ih);
     g_signal_connect(G_OBJECT(buffer), "changed", G_CALLBACK(gtk4TextChanged), ih);
+
+    {
+      GtkGesture* link_gesture = gtk_gesture_click_new();
+      gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(link_gesture));
+      g_signal_connect(link_gesture, "released", G_CALLBACK(gtk4TextLinkClick), ih);
+
+      GtkEventController* link_motion = gtk_event_controller_motion_new();
+      gtk_widget_add_controller(ih->handle, link_motion);
+      g_signal_connect(link_motion, "motion", G_CALLBACK(gtk4TextLinkMotion), ih);
+    }
   }
   else
   {
@@ -2017,6 +2096,22 @@ static void gtk4TextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
       val = PANGO_WEIGHT_NORMAL;
 
     g_object_set(G_OBJECT(tag), "weight", val, NULL);
+  }
+
+  format = iupAttribGet(formattag, "LINK");
+  if (format)
+  {
+    g_object_set_data_full(G_OBJECT(tag), "iup-link-url", g_strdup(format), g_free);
+
+    if (!iupAttribGet(formattag, "FGCOLOR"))
+    {
+      GdkRGBA color;
+      iupgtk4ColorSetRGB(&color, 0, 0, 255);
+      g_object_set(G_OBJECT(tag), "foreground-rgba", &color, NULL);
+    }
+
+    if (!iupAttribGet(formattag, "UNDERLINE"))
+      g_object_set(G_OBJECT(tag), "underline", PANGO_UNDERLINE_SINGLE, NULL);
   }
 }
 
