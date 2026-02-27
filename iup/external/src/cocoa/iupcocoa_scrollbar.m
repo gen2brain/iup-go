@@ -39,7 +39,6 @@ static const void* IUP_COCOA_SCROLLBAR_RECEIVER_OBJ_KEY = "IUP_COCOA_SCROLLBAR_R
 
   NSScroller* scroller = (NSScroller*)sender;
   double old_val = ih->data->val;
-  double range = ih->data->vmax - ih->data->vmin;
   double max_pos = ih->data->vmax - ih->data->pagesize;
   int op = -1;
 
@@ -57,20 +56,16 @@ static const void* IUP_COCOA_SCROLLBAR_RECEIVER_OBJ_KEY = "IUP_COCOA_SCROLLBAR_R
         op = IUP_SBDRAGV;
       break;
     }
-  case NSScrollerDecrementLine:
-    ih->data->val -= ih->data->linestep;
-    if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
-      op = IUP_SBLEFT;
-    else
-      op = IUP_SBUP;
-    break;
-  case NSScrollerIncrementLine:
-    ih->data->val += ih->data->linestep;
-    if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
-      op = IUP_SBRIGHT;
-    else
-      op = IUP_SBDN;
-    break;
+  case NSScrollerKnobSlot:
+    {
+      double knob_val = [scroller doubleValue];
+      ih->data->val = knob_val * (max_pos - ih->data->vmin) + ih->data->vmin;
+      if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
+        op = IUP_SBPOSH;
+      else
+        op = IUP_SBPOSV;
+      break;
+    }
   case NSScrollerDecrementPage:
     ih->data->val -= ih->data->pagestep;
     if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
@@ -91,7 +86,7 @@ static const void* IUP_COCOA_SCROLLBAR_RECEIVER_OBJ_KEY = "IUP_COCOA_SCROLLBAR_R
 
   iupScrollbarCropValue(ih);
 
-  if (part != NSScrollerKnob)
+  if (part != NSScrollerKnob && part != NSScrollerKnobSlot)
   {
     double new_knob_val = 0;
     if (max_pos > ih->data->vmin)
@@ -202,7 +197,16 @@ static int cocoaScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
 
 static int cocoaScrollbarMapMethod(Ihandle* ih)
 {
-  NSScroller* scroller = [[NSScroller alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+  CGFloat sb_size = [NSScroller scrollerWidthForControlSize:NSControlSizeRegular scrollerStyle:NSScrollerStyleLegacy];
+  if (sb_size < 15) sb_size = 15;
+
+  NSRect initial_frame;
+  if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
+    initial_frame = NSMakeRect(0, 0, 3 * sb_size, sb_size);
+  else
+    initial_frame = NSMakeRect(0, 0, sb_size, 3 * sb_size);
+
+  NSScroller* scroller = [[NSScroller alloc] initWithFrame:initial_frame];
   ih->handle = scroller;
 
   [scroller setScrollerStyle:NSScrollerStyleLegacy];
