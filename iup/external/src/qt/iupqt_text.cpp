@@ -2193,6 +2193,9 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
     }
   }
 
+  if (iupAttribGet(formattag, "FONTSCALE") && !iupAttribGet(formattag, "FONTSIZE"))
+    iupAttribSet(formattag, "FONTSIZE", iupGetFontSizeAttrib(ih));
+
   QTextCharFormat charFormat;
   qtTextParseCharacterFormat(formattag, &charFormat);
   cursor.mergeCharFormat(charFormat);

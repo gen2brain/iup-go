@@ -2163,7 +2163,6 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
       int new_w = 0, new_h = 0;
       char* attr;
       char item_markup[128];
-      char tmp_path[256];
       void* native_img;
       Evas_Object* src_img;
       Evas_Object* textblock;
@@ -2194,14 +2193,6 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
         return;
       }
 
-      snprintf(tmp_path, sizeof(tmp_path), "/tmp/iup_efl_%p_%s.png", (void*)ih, image_name);
-      if (!evas_object_image_save(src_img, tmp_path, NULL, NULL))
-      {
-        efl_del(start_cursor);
-        efl_del(end_cursor);
-        return;
-      }
-
       if (start_pos != end_pos)
         efl_text_cursor_object_range_delete(start_cursor, end_cursor);
 
@@ -2217,8 +2208,26 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
         IeflImageOverlay* overlay;
         IeflImageOverlay* existing;
         int pos_adjustment = 1 - (end_pos - start_pos);
+        int src_w, src_h;
+        unsigned int* src_pixels;
+        unsigned int* dst_pixels;
 
-        evas_object_image_file_set(overlay_img, tmp_path, NULL);
+        evas_object_image_size_get(src_img, &src_w, &src_h);
+        evas_object_image_alpha_set(overlay_img, evas_object_image_alpha_get(src_img));
+        evas_object_image_size_set(overlay_img, src_w, src_h);
+
+        src_pixels = evas_object_image_data_get(src_img, EINA_FALSE);
+        if (src_pixels)
+        {
+          dst_pixels = evas_object_image_data_get(overlay_img, EINA_TRUE);
+          if (dst_pixels)
+          {
+            memcpy(dst_pixels, src_pixels, src_w * src_h * 4);
+            evas_object_image_data_set(overlay_img, dst_pixels);
+            evas_object_image_data_update_add(overlay_img, 0, 0, src_w, src_h);
+          }
+        }
+
         evas_object_pass_events_set(overlay_img, EINA_TRUE);
 
         evas_object_layer_set(overlay_img, evas_object_layer_get(textblock) + 1);

@@ -294,7 +294,7 @@ void* iupdrvImageLoad(const char* name, int type)
 
     /* Use GtkIconTheme to load icon */
     icon_theme = gtk_icon_theme_get_for_display(gdk_display_get_default());
-    if (icon_theme)
+    if (icon_theme && gtk_icon_theme_has_icon(icon_theme, name))
     {
       paintable = gtk_icon_theme_lookup_icon(icon_theme, name, NULL, stock_size, 1, GTK_TEXT_DIR_NONE, 0);
       if (paintable)
@@ -316,21 +316,23 @@ void* iupdrvImageLoad(const char* name, int type)
     /* Try removing "gtk-" prefix for stock icons */
     if (!texture && iupStrEqualPartial(name, "gtk-"))
     {
-      paintable = gtk_icon_theme_lookup_icon(icon_theme, name + 4, NULL, stock_size, 1,
-                                             GTK_TEXT_DIR_NONE, 0);
-      if (paintable)
+      if (icon_theme && gtk_icon_theme_has_icon(icon_theme, name + 4))
       {
-        GFile *file = gtk_icon_paintable_get_file(paintable);
-        if (file)
+        paintable = gtk_icon_theme_lookup_icon(icon_theme, name + 4, NULL, stock_size, 1, GTK_TEXT_DIR_NONE, 0);
+        if (paintable)
         {
-          char *filename = g_file_get_path(file);
-          if (filename)
+          GFile *file = gtk_icon_paintable_get_file(paintable);
+          if (file)
           {
-            texture = gdk_texture_new_from_filename(filename, NULL);
-            g_free(filename);
+            char *filename = g_file_get_path(file);
+            if (filename)
+            {
+              texture = gdk_texture_new_from_filename(filename, NULL);
+              g_free(filename);
+            }
           }
+          g_object_unref(paintable);
         }
-        g_object_unref(paintable);
       }
 
       /* Try new names for old stock icons */
@@ -345,21 +347,23 @@ void* iupdrvImageLoad(const char* name, int type)
         {
           if (iupStrEqual(name + 4, old_names[i]))
           {
-            paintable = gtk_icon_theme_lookup_icon(icon_theme, new_names[i], NULL, stock_size, 1,
-                                                   GTK_TEXT_DIR_NONE, 0);
-            if (paintable)
+            if (icon_theme && gtk_icon_theme_has_icon(icon_theme, new_names[i]))
             {
-              GFile *file = gtk_icon_paintable_get_file(paintable);
-              if (file)
+              paintable = gtk_icon_theme_lookup_icon(icon_theme, new_names[i], NULL, stock_size, 1, GTK_TEXT_DIR_NONE, 0);
+              if (paintable)
               {
-                char *filename = g_file_get_path(file);
-                if (filename)
+                GFile *file = gtk_icon_paintable_get_file(paintable);
+                if (file)
                 {
-                  texture = gdk_texture_new_from_filename(filename, NULL);
-                  g_free(filename);
+                  char *filename = g_file_get_path(file);
+                  if (filename)
+                  {
+                    texture = gdk_texture_new_from_filename(filename, NULL);
+                    g_free(filename);
+                  }
                 }
+                g_object_unref(paintable);
               }
-              g_object_unref(paintable);
             }
             break;
           }

@@ -22,6 +22,7 @@
 #include "iup_mask.h"
 #include "iup_array.h"
 #include "iup_text.h"
+#include "iup_markdown.h"
 #include "iup_assert.h"
 
 
@@ -630,6 +631,15 @@ IUP_API Ihandle* IupText(const char* action)
   return IupCreatev("text", params);
 }
 
+static int iTextSetMarkdownValueAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_formatting || !ih->data->is_multiline)
+    return 0;
+  if (value)
+    iupMarkdownSetValue(ih, value);
+  return 0;
+}
+
 Iclass* iupTextNewClass(void)
 {
   Iclass* ic = iupClassNew(NULL);
@@ -694,6 +704,7 @@ Iclass* iupTextNewClass(void)
   iupClassRegisterAttribute(ic, "VISIBLELINES", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CHANGECASE", NULL, iTextSetChangeCaseAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKDOWNVALUE", NULL, iTextSetMarkdownValueAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupdrvTextInitClass(ic);
 

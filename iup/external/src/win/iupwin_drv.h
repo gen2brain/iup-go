@@ -58,6 +58,9 @@ int iupwinDragDetectStart(Ihandle* ih);
 void iupwinDropFiles(HDROP hDrop, Ihandle *ih);
 void iupwinDestroyDragDrop(Ihandle* ih);
 
+/* image */
+HBITMAP iupwinWdlLoadImageFile(const TCHAR* filename);
+
 /* menu */
 void iupwinMenuDialogProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp);
 Ihandle* iupwinMenuGetItemHandle(HMENU hmenu, int menuId);
