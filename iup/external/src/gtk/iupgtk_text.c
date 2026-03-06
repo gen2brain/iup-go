@@ -2091,7 +2091,11 @@ static gboolean gtkTextLinkMotion(GtkWidget *widget, GdkEventMotion *evt, Ihandl
   }
 
   gdk_window_set_cursor(win, cursor);
+#if GTK_CHECK_VERSION(3, 0, 0)
+  g_object_unref(cursor);
+#else
   gdk_cursor_unref(cursor);
+#endif
 
   (void)ih;
   return FALSE;

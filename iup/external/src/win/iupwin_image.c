@@ -824,6 +824,8 @@ void* iupdrvImageLoad(const char* name, int type)
     hImage = LoadImage(iupwin_dll_hinstance, iupwinStrToSystem(name), iup2win[type], 0, 0, type == IUPIMAGE_IMAGE ? LR_CREATEDIBSECTION : 0);
   if (!hImage)
     hImage = LoadImage(NULL, iupwinStrToSystemFilename(name), iup2win[type], 0, 0, LR_LOADFROMFILE | (type == IUPIMAGE_IMAGE ? LR_CREATEDIBSECTION : 0));
+  if (!hImage && type == IUPIMAGE_IMAGE)
+    hImage = (HANDLE)iupwinWdlLoadImageFile(iupwinStrToSystemFilename(name));
 
   if (hImage)
   {

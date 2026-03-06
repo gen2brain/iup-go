@@ -345,7 +345,19 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
   {
     RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
+    {
+      if (value && strchr(value, '\n') != NULL)
+      {
+        value = iupStrReturnStr(value);
+        iupStrToMac((char*)value);
+      }
+      bool wasReadOnly = reb.IsReadOnly();
+      if (wasReadOnly)
+        reb.IsReadOnly(false);
       reb.Document().SetText(TextSetOptions::None, iupwinuiStringToHString(value ? value : ""));
+      if (wasReadOnly)
+        reb.IsReadOnly(true);
+    }
   }
   else
   {
@@ -1434,6 +1446,51 @@ static void winuiTextParseCharacterFormat(Ihandle* formattag, ITextRange const& 
     changed = true;
   }
 
+  val = iupAttribGet(formattag, "FONTSIZE");
+  if (val)
+  {
+    int size = 0;
+    if (iupStrToInt(val, &size))
+    {
+      float fontSize;
+      if (size > 0)
+        fontSize = (float)size;
+      else
+        fontSize = (float)(-size) * 72.0f / (float)iupdrvGetScreenDpi();
+
+      char* fontscale = iupAttribGet(formattag, "FONTSCALE");
+      if (fontscale)
+      {
+        double scale = 0;
+        if (iupStrEqualNoCase(fontscale, "XX-SMALL")) scale = 0.5787;
+        else if (iupStrEqualNoCase(fontscale, "X-SMALL")) scale = 0.6944;
+        else if (iupStrEqualNoCase(fontscale, "SMALL")) scale = 0.8333;
+        else if (iupStrEqualNoCase(fontscale, "MEDIUM")) scale = 1.0;
+        else if (iupStrEqualNoCase(fontscale, "LARGE")) scale = 1.2;
+        else if (iupStrEqualNoCase(fontscale, "X-LARGE")) scale = 1.44;
+        else if (iupStrEqualNoCase(fontscale, "XX-LARGE")) scale = 1.728;
+        else iupStrToDouble(fontscale, &scale);
+
+        if (scale > 0)
+          fontSize = (float)(fontSize * scale);
+      }
+
+      cf.Size(fontSize);
+      changed = true;
+    }
+  }
+
+  val = iupAttribGet(formattag, "FONTFACE");
+  if (val)
+  {
+    const char* mapped_name = iupFontGetWinName(val);
+    if (mapped_name)
+      cf.Name(iupwinuiStringToHString(mapped_name));
+    else
+      cf.Name(iupwinuiStringToHString(val));
+    changed = true;
+  }
+
   val = iupAttribGet(formattag, "LINK");
   if (val)
   {
@@ -1597,9 +1654,7 @@ static void winuiTextParseParagraphFormat(Ihandle* formattag, ITextRange const& 
 
 static int winuiTextHasRtfCharAttribs(Ihandle* formattag)
 {
-  return iupAttribGet(formattag, "FONTSIZE") ||
-         iupAttribGet(formattag, "FONTFACE") ||
-         iupAttribGet(formattag, "RISE");
+  return iupAttribGet(formattag, "RISE") != NULL;
 }
 
 static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITextSelection const& sel)
@@ -1616,7 +1671,13 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
 
   char defaultFontFace[128] = "";
   char* fontFace = iupAttribGet(formattag, "FONTFACE");
-  if (!fontFace)
+  if (fontFace)
+  {
+    const char* mapped_name = iupFontGetWinName(fontFace);
+    if (mapped_name)
+      fontFace = (char*)mapped_name;
+  }
+  else
   {
     char* face = iupGetFontFaceAttrib(ih);
     if (face)
@@ -1787,6 +1848,10 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
   RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
   if (!reb)
     return;
+
+  bool wasReadOnly = reb.IsReadOnly();
+  if (wasReadOnly)
+    reb.IsReadOnly(false);
 
   (void)bulk;
 
@@ -1961,6 +2026,9 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
   }
 
   sel.SetRange(save_start, save_end);
+
+  if (wasReadOnly)
+    reb.IsReadOnly(true);
 }
 
 static const char* winuiTextFindLinkUrl(Ihandle* ih, int pos)
@@ -3064,6 +3132,10 @@ static int winuiTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   if (!reb)
     return 0;
 
+  bool wasReadOnly = reb.IsReadOnly();
+  if (wasReadOnly)
+    reb.IsReadOnly(false);
+
   auto doc = reb.Document();
   auto defaultCF = doc.GetDefaultCharacterFormat();
   auto defaultPF = doc.GetDefaultParagraphFormat();
@@ -3086,6 +3158,9 @@ static int winuiTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
       range.ParagraphFormat().SetClone(defaultPF);
     }
   }
+
+  if (wasReadOnly)
+    reb.IsReadOnly(true);
 
   return 0;
 }

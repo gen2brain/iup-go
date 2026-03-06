@@ -406,3 +406,74 @@ WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_
   return handle;
 }
 
+HBITMAP iupwinWdlLoadImageFile(const TCHAR* filename)
+{
+  WD_HIMAGE hImage;
+  HBITMAP hBitmap = NULL;
+  UINT width, height;
+  BITMAPINFO bmi;
+  BYTE* bits;
+
+  hImage = wdLoadImageFromFile(filename);
+  if (!hImage)
+    return NULL;
+
+  wdGetImageSize(hImage, &width, &height);
+
+  memset(&bmi, 0, sizeof(bmi));
+  bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  bmi.bmiHeader.biWidth = width;
+  bmi.bmiHeader.biHeight = -(INT)height;
+  bmi.bmiHeader.biPlanes = 1;
+  bmi.bmiHeader.biBitCount = 32;
+  bmi.bmiHeader.biCompression = BI_RGB;
+
+  hBitmap = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void**)&bits, NULL, 0);
+  if (!hBitmap)
+  {
+    wdDestroyImage(hImage);
+    return NULL;
+  }
+
+  if (d2d_enabled())
+  {
+    IWICBitmapSource* bitmap = (IWICBitmapSource*)hImage;
+    HRESULT hr = IWICBitmapSource_CopyPixels(bitmap, NULL, width * 4, width * height * 4, bits);
+    if (FAILED(hr))
+    {
+      DeleteObject(hBitmap);
+      hBitmap = NULL;
+    }
+  }
+  else
+  {
+    dummy_GpBitmapData bitmapData;
+    dummy_GpRectI rect;
+    int status;
+
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = width;
+    rect.h = height;
+
+    status = gdix_vtable->fn_BitmapLockBits((dummy_GpBitmap*)hImage, &rect,
+               1, dummy_PixelFormat32bppPARGB, &bitmapData);
+    if (status == 0)
+    {
+      UINT y;
+      for (y = 0; y < height; y++)
+        memcpy(bits + y * width * 4, (BYTE*)bitmapData.Scan0 + y * bitmapData.Stride, width * 4);
+
+      gdix_vtable->fn_BitmapUnlockBits((dummy_GpBitmap*)hImage, &bitmapData);
+    }
+    else
+    {
+      DeleteObject(hBitmap);
+      hBitmap = NULL;
+    }
+  }
+
+  wdDestroyImage(hImage);
+  return hBitmap;
+}
+

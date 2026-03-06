@@ -19,6 +19,7 @@ extern "C" {
 #include "iupwinui_drv.h"
 
 #include <winrt/Windows.Storage.Streams.h>
+#include <winrt/Windows.Graphics.Imaging.h>
 #include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 
 using namespace winrt;
@@ -261,15 +262,92 @@ extern "C" void* iupdrvImageCreateCursor(Ihandle *ih)
   return (void*)winuiImageCreateCursorIcon(ih, 1);
 }
 
+static void* winuiLoadImageFile(const char* name)
+{
+  std::wstring wname = iupwinuiStringToWString(name);
+
+  HANDLE hFile = CreateFileW(wname.c_str(), GENERIC_READ, FILE_SHARE_READ,
+                             NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (hFile == INVALID_HANDLE_VALUE)
+    return nullptr;
+
+  DWORD fileSize = GetFileSize(hFile, NULL);
+  if (fileSize == INVALID_FILE_SIZE || fileSize == 0)
+  {
+    CloseHandle(hFile);
+    return nullptr;
+  }
+
+  uint8_t* fileData = (uint8_t*)malloc(fileSize);
+  if (!fileData)
+  {
+    CloseHandle(hFile);
+    return nullptr;
+  }
+
+  DWORD bytesRead;
+  BOOL readOk = ReadFile(hFile, fileData, fileSize, &bytesRead, NULL);
+  CloseHandle(hFile);
+
+  if (!readOk || bytesRead != fileSize)
+  {
+    free(fileData);
+    return nullptr;
+  }
+
+  void* handle = nullptr;
+
+  try
+  {
+    InMemoryRandomAccessStream stream;
+    DataWriter writer(stream);
+    writer.WriteBytes(winrt::array_view<uint8_t const>(fileData, fileData + fileSize));
+    writer.StoreAsync().get();
+    writer.DetachStream();
+    free(fileData);
+    fileData = nullptr;
+
+    stream.Seek(0);
+
+    auto decoder = Windows::Graphics::Imaging::BitmapDecoder::CreateAsync(stream).get();
+    uint32_t width = decoder.PixelWidth();
+    uint32_t height = decoder.PixelHeight();
+
+    auto transform = Windows::Graphics::Imaging::BitmapTransform();
+    auto pixelDataProvider = decoder.GetPixelDataAsync(
+      Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8,
+      Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied,
+      transform,
+      Windows::Graphics::Imaging::ExifOrientationMode::RespectExifOrientation,
+      Windows::Graphics::Imaging::ColorManagementMode::ColorManageToSRgb).get();
+    auto pixelArray = pixelDataProvider.DetachPixelData();
+
+    WriteableBitmap bitmap(width, height);
+    IBuffer pixelBuffer = bitmap.PixelBuffer();
+    memcpy(pixelBuffer.data(), pixelArray.data(), width * height * 4);
+    bitmap.Invalidate();
+
+    winrt::copy_to_abi(bitmap, handle);
+  }
+  catch (...)
+  {
+    free(fileData);
+  }
+
+  return handle;
+}
+
 extern "C" void* iupdrvImageLoad(const char* name, int type)
 {
-  int iup2win[3] = {IMAGE_BITMAP, IMAGE_ICON, IMAGE_CURSOR};
+  if (type == IUPIMAGE_IMAGE)
+    return winuiLoadImageFile(name);
+
   HANDLE hImage;
 
-  hImage = LoadImageA(GetModuleHandle(NULL), name, iup2win[type], 0, 0, type == IUPIMAGE_IMAGE ? LR_CREATEDIBSECTION : 0);
+  hImage = LoadImageA(GetModuleHandle(NULL), name, type == IUPIMAGE_ICON ? IMAGE_ICON : IMAGE_CURSOR, 0, 0, 0);
 
   if (!hImage)
-    hImage = LoadImageA(NULL, name, iup2win[type], 0, 0, LR_LOADFROMFILE | (type == IUPIMAGE_IMAGE ? LR_CREATEDIBSECTION : 0));
+    hImage = LoadImageA(NULL, name, type == IUPIMAGE_ICON ? IMAGE_ICON : IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE);
 
   return hImage;
 }

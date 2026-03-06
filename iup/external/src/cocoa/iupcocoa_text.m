@@ -2798,46 +2798,11 @@ static bool cocoaTextParseBulletNumberListFormat(Ihandle* ih, Ihandle* formattag
 static NSFont* cocoaTextChangeFontWeight(NSFont* start_font, int font_target_weight)
 {
   NSFontManager* font_manager = [NSFontManager sharedFontManager];
-  NSFont* target_font = start_font;
 
-  NSInteger current_weight = [font_manager weightOfFont:target_font];
-  if(current_weight < font_target_weight)
-  {
-    while(current_weight < font_target_weight)
-    {
-      NSFont* result_font;
-      result_font = [font_manager convertWeight:YES ofFont:target_font];
-      current_weight = [font_manager weightOfFont:target_font];
-
-      if(result_font == target_font)
-      {
-        break;
-      }
-      else
-      {
-        target_font = result_font;
-      }
-    }
-  }
-  else if(current_weight > font_target_weight)
-  {
-    while(current_weight > font_target_weight)
-    {
-      NSFont* result_font;
-      result_font = [font_manager convertWeight:NO ofFont:target_font];
-      current_weight = [font_manager weightOfFont:target_font];
-
-      if(result_font == target_font)
-      {
-        break;
-      }
-      else
-      {
-        target_font = result_font;
-      }
-    }
-  }
-  return target_font;
+  if (font_target_weight >= 6)
+    return [font_manager convertFont:start_font toHaveTrait:NSBoldFontMask];
+  else
+    return [font_manager convertFont:start_font toNotHaveTrait:NSBoldFontMask];
 }
 
 static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* formattag, NSTextView* text_view, NSRange selection_range)
@@ -3323,6 +3288,9 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
     return;
   }
   NSTextView* text_view = cocoaTextGetTextView(ih);
+
+  if (iupAttribGet(formattag, "FONTSCALE") && !iupAttribGet(formattag, "FONTSIZE"))
+    iupAttribSet(formattag, "FONTSIZE", iupGetFontSizeAttrib(ih));
 
   char* iup_selection = NULL;
   NSRange native_selection_range = {0, 0};
