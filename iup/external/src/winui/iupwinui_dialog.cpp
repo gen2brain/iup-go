@@ -33,6 +33,7 @@ extern "C" {
 #include "iupwinui_drv.h"
 
 #include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
+#include <winrt/Microsoft.UI.Composition.SystemBackdrops.h>
 
 using namespace winrt;
 using namespace Microsoft::UI;
@@ -144,6 +145,9 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
     {
       if (ih)
       {
+        if (iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE"))
+          return 1;
+
         unsigned char r, g, b;
         const char* color = iupAttribGet(ih, "_IUPWINUI_BACKGROUND_COLOR");
         if (color && iupStrToRGB(color, &r, &g, &b))
@@ -357,7 +361,7 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
           {
             unsigned char r, g, b;
             iupAttribSetStr(ih, "_IUPWINUI_BACKGROUND_COLOR", bgcolor);
-            if (dlgaux && dlgaux->rootPanel && iupStrToRGB(bgcolor, &r, &g, &b))
+            if (dlgaux && dlgaux->rootPanel && !iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE") && iupStrToRGB(bgcolor, &r, &g, &b))
             {
               Windows::UI::Color color;
               color.A = 255;
@@ -416,6 +420,64 @@ static void winuiDialogRegisterClass(void)
 
   RegisterClassExW(&wc);
   registered = true;
+}
+
+static int winuiDialogSetBackdropAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+
+  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+  if (!aux || !aux->xamlSource)
+    return 1;
+
+  if (!value || value[0] == '\0')
+  {
+    aux->xamlSource.SystemBackdrop(nullptr);
+    iupAttribSet(ih, "_IUPWINUI_BACKDROP_ACTIVE", NULL);
+
+    unsigned char r, g, b;
+    const char* bgcolor = iupAttribGet(ih, "_IUPWINUI_BACKGROUND_COLOR");
+    if (bgcolor && iupStrToRGB(bgcolor, &r, &g, &b) && aux->rootPanel)
+    {
+      Windows::UI::Color color;
+      color.A = 255;
+      color.R = r;
+      color.G = g;
+      color.B = b;
+      aux->rootPanel.Background(SolidColorBrush(color));
+    }
+
+    winuiDialogRefreshThemeColors(ih);
+    return 1;
+  }
+
+  if (iupStrEqualNoCase(value, "MICA"))
+  {
+    Xaml::Media::MicaBackdrop backdrop;
+    aux->xamlSource.SystemBackdrop(backdrop);
+  }
+  else if (iupStrEqualNoCase(value, "MICAALT"))
+  {
+    Xaml::Media::MicaBackdrop backdrop;
+    backdrop.Kind(Microsoft::UI::Composition::SystemBackdrops::MicaKind::BaseAlt);
+    aux->xamlSource.SystemBackdrop(backdrop);
+  }
+  else if (iupStrEqualNoCase(value, "ACRYLIC"))
+  {
+    Xaml::Media::DesktopAcrylicBackdrop backdrop;
+    aux->xamlSource.SystemBackdrop(backdrop);
+  }
+  else
+    return 1;
+
+  if (aux->rootPanel)
+    aux->rootPanel.Background(nullptr);
+  iupAttribSetStr(ih, "_IUPWINUI_BACKDROP_ACTIVE", value);
+
+  winuiDialogRefreshThemeColors(ih);
+
+  return 1;
 }
 
 static int winuiDialogMapMethod(Ihandle* ih)
@@ -606,6 +668,12 @@ static int winuiDialogMapMethod(Ihandle* ih)
 
   aux->xamlSource.Content(aux->rootPanel);
 
+  {
+    const char* backdrop = iupAttribGet(ih, "BACKDROP");
+    if (backdrop && backdrop[0])
+      winuiDialogSetBackdropAttrib(ih, backdrop);
+  }
+
   aux->takeFocusToken = aux->xamlSource.TakeFocusRequested(
     [ih](DesktopWindowXamlSource const&, DesktopWindowXamlSourceTakeFocusRequestedEventArgs const& args)
     {
@@ -772,7 +840,7 @@ static int winuiDialogSetBgColorAttrib(Ihandle* ih, const char* value)
     if (ih->handle)
     {
       IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
-      if (aux && aux->rootPanel)
+      if (aux && aux->rootPanel && !iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE"))
       {
         Windows::UI::Color color;
         color.A = 255;
@@ -1202,7 +1270,7 @@ static int winuiDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       if (ih->handle)
       {
         IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
-        if (aux && aux->rootPanel)
+        if (aux && aux->rootPanel && !iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE"))
         {
           ImageBrush brush;
           brush.ImageSource(bitmap);
@@ -1365,6 +1433,8 @@ extern "C" void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, winuiDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, winuiDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "BACKDROP", NULL, winuiDialogSetBackdropAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "TASKBARPROGRESS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARPROGRESSSTATE", NULL, winuiDialogSetTaskBarProgressStateAttrib, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_WRITEONLY|IUPAF_NO_INHERIT);

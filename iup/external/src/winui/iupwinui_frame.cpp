@@ -77,16 +77,37 @@ static void winuiFrameUpdateTitleBackground(Ihandle* ih)
     return;
 
   unsigned char r, g, b;
-  const char* bgcolor = IupGetGlobal("DLGBGCOLOR");
-  if (iupStrToRGB(bgcolor, &r, &g, &b))
+
+  Ihandle* dlg = IupGetDialog(ih);
+  const char* backdrop = dlg ? iupAttribGet(dlg, "_IUPWINUI_BACKDROP_ACTIVE") : NULL;
+  if (backdrop)
   {
-    Color color;
-    color.A = 255;
-    color.R = r;
-    color.G = g;
-    color.B = b;
-    aux->titleBorder.Background(SolidColorBrush(color));
+    int dark = iupwinuiIsSystemDarkMode();
+    if (iupStrEqualNoCase(backdrop, "MICAALT"))
+    {
+      r = dark ? 0x2C : 0xF9;
+      g = r; b = r;
+    }
+    else if (iupStrEqualNoCase(backdrop, "ACRYLIC"))
+    {
+      r = dark ? 0x2C : 0xF9;
+      g = r; b = r;
+    }
+    else
+    {
+      r = dark ? 0x20 : 0xF3;
+      g = r; b = r;
+    }
   }
+  else if (!iupStrToRGB(iupAttribGetStr(ih, "BGCOLOR"), &r, &g, &b))
+    return;
+
+  Color color;
+  color.A = 255;
+  color.R = r;
+  color.G = g;
+  color.B = b;
+  aux->titleBorder.Background(SolidColorBrush(color));
 }
 
 static int winuiFrameSetFontAttrib(Ihandle* ih, const char* value)
