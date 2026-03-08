@@ -367,30 +367,21 @@ protected:
 
 extern "C" void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
-  /* Get the actual range for this spin */
-  int min = iupAttribGetInt(ih, "SPINMIN");
-  int max = iupAttribGetInt(ih, "SPINMAX");
-  if (max == 0) max = 100;
+  static int spin_min_width = -1;
 
-  /* Calculate text width needed */
-  char min_str[32], max_str[32];
-  snprintf(min_str, sizeof(min_str), "%d", min);
-  snprintf(max_str, sizeof(max_str), "%d", max);
+  (void)h;
+  (void)ih;
 
-  int min_width = iupdrvFontGetStringWidth(ih, min_str);
-  int max_width = iupdrvFontGetStringWidth(ih, max_str);
-  int text_width = (min_width > max_width) ? min_width : max_width;
-  text_width += 6;  /* cursor blinking space + margins */
+  if (spin_min_width < 0)
+  {
+    QSpinBox* temp_spin = new QSpinBox();
+    temp_spin->setRange(0, 100);
 
-  /* Button width calculation matching Qt's style */
-  int button_width = h * 8 / 5;
-  if (button_width < 16) button_width = 16;
+    QSize min_hint = temp_spin->minimumSizeHint();
+    spin_min_width = (min_hint.width() > 0) ? min_hint.width() : 130;
 
-  /* Frame width (typically 2 pixels per side) */
-  int frame_width = 4;
-
-  /* Total minimum width = text area + buttons + frame */
-  int spin_min_width = text_width + button_width + frame_width;
+    delete temp_spin;
+  }
 
   if (*w < spin_min_width)
     *w = spin_min_width;
