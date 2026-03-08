@@ -613,6 +613,16 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   }
 }
 
+- (void) mouseMoved:(NSEvent*)the_event
+{
+  if(![self isEnabled]) return;
+
+  if(!iupcocoaCommonBaseHandleMouseMotionCallback(_ih, the_event, self))
+  {
+    [super mouseMoved:the_event];
+  }
+}
+
 - (void) mouseDragged:(NSEvent*)the_event
 {
   if(![self isEnabled]) return;
