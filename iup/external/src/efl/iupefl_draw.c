@@ -42,7 +42,30 @@ struct _IdrawCanvas
 
   int clip_x1, clip_y1, clip_x2, clip_y2;
   int clip_corner_radius;
+
+  Ecore_Evas* offscreen_ee;
+  int offscreen_w, offscreen_h;
 };
+
+static Evas* iDrawGetOffscreen(IdrawCanvas* dc, int w, int h)
+{
+  if (!dc->offscreen_ee)
+  {
+    dc->offscreen_ee = ecore_evas_buffer_new(w, h);
+    if (!dc->offscreen_ee)
+      return NULL;
+    ecore_evas_alpha_set(dc->offscreen_ee, EINA_TRUE);
+    dc->offscreen_w = w;
+    dc->offscreen_h = h;
+  }
+  else if (dc->offscreen_w != w || dc->offscreen_h != h)
+  {
+    ecore_evas_resize(dc->offscreen_ee, w, h);
+    dc->offscreen_w = w;
+    dc->offscreen_h = h;
+  }
+  return ecore_evas_get(dc->offscreen_ee);
+}
 
 static void iDrawGetColor(long color, int* r, int* g, int* b, int* a)
 {
@@ -113,6 +136,22 @@ static void iDrawClearVgImages(Eina_List** list)
   *list = NULL;
 }
 
+static void iDrawFreeVgImagePixels(Eina_List** list)
+{
+  IeflVgImageData* data;
+
+  if (!list || !*list)
+    return;
+
+  EINA_LIST_FREE(*list, data)
+  {
+    free(data->pixels);
+    free(data);
+  }
+
+  *list = NULL;
+}
+
 static int iDrawHasClip(IdrawCanvas* dc)
 {
   return (dc->clip_x1 > 0 || dc->clip_y1 > 0 || dc->clip_x2 < dc->w - 1 || dc->clip_y2 < dc->h - 1);
@@ -148,15 +187,11 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   Eo* vg;
   Efl_VG* root;
   Eina_Size2D size;
-  Eina_List* old_evas_objects;
-  Eina_List* old_vg_images;
 
   dc->ih = ih;
 
   vg = iupeflGetWidget(ih);
-  root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT");
-
-  if (!vg || !root)
+  if (!vg)
   {
     free(dc);
     return NULL;
@@ -166,6 +201,51 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->w = size.w;
   dc->h = size.h;
   dc->vg = vg;
+
+  /* Free deferred data from the previous-previous frame. */
+  {
+    Efl_VG* deferred_root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT_DEFERRED");
+    Eina_List* deferred_vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES_DEFERRED");
+    Eina_List* deferred_evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS_DEFERRED");
+
+    if (deferred_root)
+      efl_del(deferred_root);
+    iDrawFreeVgImagePixels(&deferred_vg_images);
+    iDrawClearEvasObjects(&deferred_evas_objects);
+
+    iupAttribSet(ih, "_IUP_EFL_VG_ROOT_DEFERRED", NULL);
+    iupAttribSet(ih, "_IUP_EFL_VG_IMAGES_DEFERRED", NULL);
+    iupAttribSet(ih, "_IUP_EFL_EVAS_OBJECTS_DEFERRED", NULL);
+  }
+
+  /* Defer current scene graph data, the render thread might still be using it.
+     VG image nodes and their ector buffers must stay alive until the render thread finishes. */
+  {
+    Efl_VG* old_root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT");
+    Eina_List* old_vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES");
+    Eina_List* old_evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS");
+
+    iupAttribSet(ih, "_IUP_EFL_VG_ROOT_DEFERRED", (char*)old_root);
+    iupAttribSet(ih, "_IUP_EFL_VG_IMAGES_DEFERRED", (char*)old_vg_images);
+    iupAttribSet(ih, "_IUP_EFL_EVAS_OBJECTS_DEFERRED", (char*)old_evas_objects);
+
+    iupAttribSet(ih, "_IUP_EFL_VG_ROOT", NULL);
+    iupAttribSet(ih, "_IUP_EFL_VG_IMAGES", NULL);
+    iupAttribSet(ih, "_IUP_EFL_EVAS_OBJECTS", NULL);
+  }
+
+  /* Create a new root container for this frame.
+     The old root remains as a child of vg but is no longer the VG root,
+     so it won't be rendered. It stays alive for the render thread. */
+  root = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, vg);
+  if (!root)
+  {
+    free(dc);
+    return NULL;
+  }
+  efl_canvas_vg_object_root_node_set(vg, root);
+  iupAttribSet(ih, "_IUP_EFL_VG_ROOT", (char*)root);
+
   dc->root = root;
   dc->shapes = NULL;
   dc->evas_objects = NULL;
@@ -184,16 +264,6 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   efl_canvas_vg_object_viewbox_set(vg, EINA_RECT(0, 0, dc->w, dc->h));
   efl_canvas_vg_object_fill_mode_set(vg, EFL_CANVAS_VG_FILL_MODE_NONE);
-
-  old_vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES");
-  iDrawClearVgImages(&old_vg_images);
-  iupAttribSet(ih, "_IUP_EFL_VG_IMAGES", NULL);
-
-  iDrawClearChildren(root);
-
-  old_evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS");
-  iDrawClearEvasObjects(&old_evas_objects);
-  iupAttribSet(ih, "_IUP_EFL_EVAS_OBJECTS", NULL);
 
   dc->clip_x1 = 0;
   dc->clip_y1 = 0;
@@ -215,6 +285,9 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 
   if (dc->vg_images)
     iupAttribSet(dc->ih, "_IUP_EFL_VG_IMAGES", (char*)dc->vg_images);
+
+  if (dc->offscreen_ee)
+    ecore_evas_free(dc->offscreen_ee);
 
   free(dc);
 }
@@ -363,10 +436,10 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
 
   if (iDrawHasClip(dc))
   {
-    Ecore_Evas* ee;
     Evas* off_evas;
     Eo* vg;
     Efl_VG* root;
+    Evas_Object* bg;
     Efl_VG* vg_image;
     IeflVgImageData* img_data;
     const void* src_pixels;
@@ -382,12 +455,17 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
     if (vis_w <= 0 || vis_h <= 0)
       return;
 
-    ee = ecore_evas_buffer_new(dc->w, dc->h);
-    if (!ee)
+    off_evas = iDrawGetOffscreen(dc, dc->w, dc->h);
+    if (!off_evas)
       return;
-    ecore_evas_alpha_set(ee, EINA_TRUE);
 
-    off_evas = ecore_evas_get(ee);
+    bg = evas_object_rectangle_add(off_evas);
+    evas_object_color_set(bg, 0, 0, 0, 0);
+    evas_object_render_op_set(bg, EVAS_RENDER_COPY);
+    evas_object_move(bg, 0, 0);
+    evas_object_resize(bg, dc->w, dc->h);
+    evas_object_show(bg);
+
     vg = evas_object_vg_add(off_evas);
     evas_object_resize(vg, dc->w, dc->h);
     evas_object_show(vg);
@@ -397,18 +475,20 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
 
     iDrawArcToVg(root, NULL, x1, y1, x2, y2, a1, a2, color, style, line_width);
 
-    ecore_evas_manual_render(ee);
-    src_pixels = ecore_evas_buffer_pixels_get(ee);
+    ecore_evas_manual_render(dc->offscreen_ee);
+    src_pixels = ecore_evas_buffer_pixels_get(dc->offscreen_ee);
     if (!src_pixels)
     {
-      ecore_evas_free(ee);
+      efl_del(vg);
+      efl_del(bg);
       return;
     }
 
     pixels = (unsigned int*)malloc(vis_w * vis_h * sizeof(unsigned int));
     if (!pixels)
     {
-      ecore_evas_free(ee);
+      efl_del(vg);
+      efl_del(bg);
       return;
     }
 
@@ -422,7 +502,8 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
       }
     }
 
-    ecore_evas_free(ee);
+    efl_del(vg);
+    efl_del(bg);
 
     vg_image = efl_add(EFL_CANVAS_VG_IMAGE_CLASS, dc->root);
     if (!vg_image)
@@ -664,7 +745,6 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
 
 IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
-  Ecore_Evas* ee;
   Evas* off_evas;
   Evas_Object* text_obj;
   Efl_VG* vg_image;
@@ -733,98 +813,107 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     return;
   }
 
-  ee = ecore_evas_buffer_new(buf_w, buf_h);
-  if (!ee)
+  off_evas = iDrawGetOffscreen(dc, buf_w, buf_h);
+  if (!off_evas)
   {
     if (text_copy) free(text_copy);
     return;
   }
-  ecore_evas_alpha_set(ee, EINA_TRUE);
 
-  off_evas = ecore_evas_get(ee);
-
-  if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
   {
-    Evas_Textblock_Style* ts;
-    char style[512];
-    const char* align_str = "left";
+    Evas_Object* bg = evas_object_rectangle_add(off_evas);
+    evas_object_color_set(bg, 0, 0, 0, 0);
+    evas_object_render_op_set(bg, EVAS_RENDER_COPY);
+    evas_object_move(bg, 0, 0);
+    evas_object_resize(bg, buf_w, buf_h);
+    evas_object_show(bg);
 
-    if (flags & IUP_DRAW_RIGHT)
-      align_str = "right";
-    else if (flags & IUP_DRAW_CENTER)
-      align_str = "center";
+    if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
+    {
+      Evas_Textblock_Style* ts;
+      char style[512];
+      const char* align_str = "left";
 
-    text_obj = evas_object_textblock_add(off_evas);
-    ts = evas_textblock_style_new();
+      if (flags & IUP_DRAW_RIGHT)
+        align_str = "right";
+      else if (flags & IUP_DRAW_CENTER)
+        align_str = "center";
 
-    snprintf(style, sizeof(style),
-        "DEFAULT='font=%s%s%s font_size=%d color=#%02X%02X%02X%02X "
-        "wrap=%s ellipsis=%s align=%s'",
-        typeface,
-        bold ? ":style=Bold" : "",
-        italic ? ":style=Italic" : "",
-        fontsize,
-        r, g, b, a,
-        (flags & IUP_DRAW_WRAP) ? "word" : "none",
-        (flags & IUP_DRAW_ELLIPSIS) ? "1.0" : "-1.0",
-        align_str);
+      text_obj = evas_object_textblock_add(off_evas);
+      ts = evas_textblock_style_new();
 
-    evas_textblock_style_set(ts, style);
-    evas_object_textblock_style_set(text_obj, ts);
-    evas_object_textblock_text_markup_set(text_obj, text);
-    evas_object_resize(text_obj, buf_w, buf_h);
-    evas_object_move(text_obj, 0, 0);
-    evas_object_show(text_obj);
+      snprintf(style, sizeof(style),
+          "DEFAULT='font=%s%s%s font_size=%d color=#%02X%02X%02X%02X "
+          "wrap=%s ellipsis=%s align=%s'",
+          typeface,
+          bold ? ":style=Bold" : "",
+          italic ? ":style=Italic" : "",
+          fontsize,
+          r, g, b, a,
+          (flags & IUP_DRAW_WRAP) ? "word" : "none",
+          (flags & IUP_DRAW_ELLIPSIS) ? "1.0" : "-1.0",
+          align_str);
 
-    evas_textblock_style_free(ts);
+      evas_textblock_style_set(ts, style);
+      evas_object_textblock_style_set(text_obj, ts);
+      evas_object_textblock_text_markup_set(text_obj, text);
+      evas_object_resize(text_obj, buf_w, buf_h);
+      evas_object_move(text_obj, 0, 0);
+      evas_object_show(text_obj);
+
+      evas_textblock_style_free(ts);
+    }
+    else
+    {
+      char font_with_style[300];
+
+      text_obj = evas_object_text_add(off_evas);
+
+      snprintf(font_with_style, sizeof(font_with_style), "%s%s%s",
+          typeface,
+          bold ? ":style=Bold" : "",
+          italic ? ":style=Italic" : "");
+
+      evas_object_text_font_set(text_obj, font_with_style, fontsize);
+      evas_object_text_text_set(text_obj, text);
+      evas_object_color_set(text_obj, r, g, b, a);
+
+      evas_object_geometry_get(text_obj, NULL, NULL, &tw, &th);
+
+      text_x = 0;
+      if (flags & IUP_DRAW_RIGHT)
+        text_x = buf_w - tw;
+      else if (flags & IUP_DRAW_CENTER)
+        text_x = (buf_w - tw) / 2;
+
+      evas_object_move(text_obj, text_x, 0);
+      evas_object_show(text_obj);
+    }
+
+    ecore_evas_manual_render(dc->offscreen_ee);
+
+    src_pixels = ecore_evas_buffer_pixels_get(dc->offscreen_ee);
+    if (!src_pixels)
+    {
+      efl_del(text_obj);
+      efl_del(bg);
+      if (text_copy) free(text_copy);
+      return;
+    }
+
+    pixels = (unsigned int*)malloc(buf_w * buf_h * sizeof(unsigned int));
+    if (!pixels)
+    {
+      efl_del(text_obj);
+      efl_del(bg);
+      if (text_copy) free(text_copy);
+      return;
+    }
+    memcpy(pixels, src_pixels, buf_w * buf_h * sizeof(unsigned int));
+
+    efl_del(text_obj);
+    efl_del(bg);
   }
-  else
-  {
-    char font_with_style[300];
-
-    text_obj = evas_object_text_add(off_evas);
-
-    snprintf(font_with_style, sizeof(font_with_style), "%s%s%s",
-        typeface,
-        bold ? ":style=Bold" : "",
-        italic ? ":style=Italic" : "");
-
-    evas_object_text_font_set(text_obj, font_with_style, fontsize);
-    evas_object_text_text_set(text_obj, text);
-    evas_object_color_set(text_obj, r, g, b, a);
-
-    evas_object_geometry_get(text_obj, NULL, NULL, &tw, &th);
-
-    text_x = 0;
-    if (flags & IUP_DRAW_RIGHT)
-      text_x = buf_w - tw;
-    else if (flags & IUP_DRAW_CENTER)
-      text_x = (buf_w - tw) / 2;
-
-    evas_object_move(text_obj, text_x, 0);
-    evas_object_show(text_obj);
-  }
-
-  ecore_evas_manual_render(ee);
-
-  src_pixels = ecore_evas_buffer_pixels_get(ee);
-  if (!src_pixels)
-  {
-    ecore_evas_free(ee);
-    if (text_copy) free(text_copy);
-    return;
-  }
-
-  pixels = (unsigned int*)malloc(buf_w * buf_h * sizeof(unsigned int));
-  if (!pixels)
-  {
-    ecore_evas_free(ee);
-    if (text_copy) free(text_copy);
-    return;
-  }
-  memcpy(pixels, src_pixels, buf_w * buf_h * sizeof(unsigned int));
-
-  ecore_evas_free(ee);
 
   draw_x = x;
   draw_y = y;
@@ -833,6 +922,85 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   {
     draw_x = x + (w - buf_w) / 2;
     draw_y = y + (h - buf_h) / 2;
+  }
+
+  if (text_orientation == 0)
+  {
+    int vis_x = (draw_x > dc->clip_x1) ? draw_x : dc->clip_x1;
+    int vis_y = (draw_y > dc->clip_y1) ? draw_y : dc->clip_y1;
+    int vis_w = (((draw_x + buf_w) < (dc->clip_x2 + 1)) ? (draw_x + buf_w) : (dc->clip_x2 + 1)) - vis_x;
+    int vis_h = (((draw_y + buf_h) < (dc->clip_y2 + 1)) ? (draw_y + buf_h) : (dc->clip_y2 + 1)) - vis_y;
+
+    if (vis_w <= 0 || vis_h <= 0)
+    {
+      free(pixels);
+      if (text_copy) free(text_copy);
+      return;
+    }
+
+    if (vis_x != draw_x || vis_y != draw_y || vis_w != buf_w || vis_h != buf_h)
+    {
+      unsigned int* clipped = (unsigned int*)malloc(vis_w * vis_h * sizeof(unsigned int));
+      if (!clipped)
+      {
+        free(pixels);
+        if (text_copy) free(text_copy);
+        return;
+      }
+      {
+        int sx = vis_x - draw_x;
+        int sy = vis_y - draw_y;
+        int py;
+        for (py = 0; py < vis_h; py++)
+          memcpy(clipped + py * vis_w, pixels + (sy + py) * buf_w + sx, vis_w * sizeof(unsigned int));
+      }
+      free(pixels);
+      pixels = clipped;
+      draw_x = vis_x;
+      draw_y = vis_y;
+      buf_w = vis_w;
+      buf_h = vis_h;
+    }
+  }
+  else
+  {
+    double angle_rad = -text_orientation * M_PI / 180.0;
+    double ca = cos(angle_rad), sa = sin(angle_rad);
+    double tx, ty;
+    double bx[4], by[4];
+    double min_x, min_y;
+    int i;
+
+    if (layout_center && w > 0 && h > 0)
+    {
+      double ctr_x = x + w / 2.0, ctr_y = y + h / 2.0;
+      tx = ctr_x + ca * (-buf_w / 2.0) - sa * (-buf_h / 2.0);
+      ty = ctr_y + sa * (-buf_w / 2.0) + ca * (-buf_h / 2.0);
+    }
+    else
+    {
+      tx = (double)draw_x;
+      ty = (double)draw_y;
+    }
+
+    bx[0] = tx;                            by[0] = ty;
+    bx[1] = buf_w * ca + tx;               by[1] = buf_w * (-sa) + ty;
+    bx[2] = buf_h * sa + tx;               by[2] = buf_h * ca + ty;
+    bx[3] = buf_w * ca + buf_h * sa + tx;  by[3] = buf_w * (-sa) + buf_h * ca + ty;
+
+    min_x = bx[0]; min_y = by[0];
+    for (i = 1; i < 4; i++)
+    {
+      if (bx[i] < min_x) min_x = bx[i];
+      if (by[i] < min_y) min_y = by[i];
+    }
+
+    if (min_x < 0 || min_y < 0)
+    {
+      free(pixels);
+      if (text_copy) free(text_copy);
+      return;
+    }
   }
 
   vg_image = efl_add(EFL_CANVAS_VG_IMAGE_CLASS, dc->root);
