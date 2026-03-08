@@ -37,7 +37,7 @@ static void winuiRecentItemActivate(Ihandle* menu, int index)
     return;
 
   char attr_name[32];
-  sprintf(attr_name, "_IUP_RECENT_FILE%d", index);
+  snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", index);
   const char* filename = iupAttribGet(menu, attr_name);
 
   if (filename)
@@ -85,7 +85,7 @@ extern "C" int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int
   for (i = 0; i < existing; i++)
   {
     char attr_name[32];
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSet(menu, attr_name, NULL);
   }
 
@@ -95,7 +95,7 @@ extern "C" int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int
   for (i = 0; i < count; i++)
   {
     char attr_name[32];
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSetStr(menu, attr_name, filenames[i]);
 
     MenuFlyoutItem item;

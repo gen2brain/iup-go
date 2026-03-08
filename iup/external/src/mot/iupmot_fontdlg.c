@@ -103,7 +103,7 @@ static void motFontDlgInitSizeList(Ihandle* ih, const char* fontface, int size)
   int size_list[32767];
   char**font_list_str;
 
-  sprintf(pattern,"-*-%s-medium-r-*-*-*-*-*-*-*-*-*-*", fontface);
+  snprintf(pattern, sizeof(pattern), "-*-%s-medium-r-*-*-*-*-*-*-*-*-*-*", fontface);
   font_list_str = XListFonts(iupmot_display, pattern, 32767, &count);
   if (!font_list_str)
     return;

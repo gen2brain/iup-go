@@ -1412,7 +1412,7 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo *inTrafoX, const iupPlotTraf
     inAxisY.SetFont(ctx->ih, inAxisY.mFontStyle, inAxisY.mFontSize);
     int fontStyle = inAxisY.mFontStyle == -1 ? inAxisY.mDefaultFontStyle : inAxisY.mFontStyle;
     int fontSize = inAxisY.mFontSize == 0 ? inAxisY.mDefaultFontSize : inAxisY.mFontSize;
-    iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr);
+    iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr, sizeof(fontStr));
   }
 
   for (int i = 0; i < theCount; i++)
@@ -1464,7 +1464,7 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo *inTrafoX, const iupPlotTraf
           iupPlotDrawAlignedText(ctx, px, py, text_alignment, ((iupPlotDataString *)mDataX)->GetSampleString(i), inAxisY.mColor, fontStr, 0);
         else
         {
-          sprintf(theBuf, "%d", i);
+          snprintf(theBuf, sizeof(theBuf), "%d", i);
           iupPlotDrawAlignedText(ctx, px, py, text_alignment, theBuf, inAxisY.mColor, fontStr, 0);
         }
         break;

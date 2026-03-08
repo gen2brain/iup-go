@@ -428,7 +428,7 @@ void iupPlotAxis::SetFont(Ihandle* ih, int inFontStyle, int inFontSize) const
   if (inFontStyle == -1) inFontStyle = mDefaultFontStyle;
   if (inFontSize == 0) inFontSize = mDefaultFontSize;
   char fontStr[256];
-  iupPlotBuildFont(ih, inFontStyle, inFontSize, fontStr);
+  iupPlotBuildFont(ih, inFontStyle, inFontSize, fontStr, sizeof(fontStr));
   IupSetStrAttribute(ih, "DRAWFONT", fontStr);
 }
 
@@ -573,7 +573,7 @@ bool iupPlotAxisX::DrawX(const iupPlotRect &inRect, iupPlotDrawContext* ctx, con
     char fontStr[256];
     int fontStyle = mFontStyle == -1 ? mDefaultFontStyle : mFontStyle;
     int fontSize = mFontSize == 0 ? mDefaultFontSize : mFontSize;
-    iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr);
+    iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr, sizeof(fontStr));
 
     if (mLabelCentered)
     {
@@ -612,7 +612,7 @@ void iupPlotAxisX::DrawXTick(double inX, double inScreenY, bool inMajor, const c
         char fontStr[256];
         int fontStyle = mTick.mFontStyle == -1 ? mDefaultFontStyle : mTick.mFontStyle;
         int fontSize = mTick.mFontSize == 0 ? mDefaultFontSize : mTick.mFontSize;
-        iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr);
+        iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr, sizeof(fontStr));
 
         if (mTick.mRotateNumber)
           iupPlotDrawAlignedText(ctx, theScreenX, theScreenY, mReverseTicksLabel ? IUP_PLOT_WEST : IUP_PLOT_EAST, theBuf, mColor, fontStr, mTick.mRotateNumberAngle);
@@ -737,7 +737,7 @@ bool iupPlotAxisY::DrawY(const iupPlotRect &inRect, iupPlotDrawContext* ctx, con
     char fontStr[256];
     int fontStyle = mFontStyle == -1 ? mDefaultFontStyle : mFontStyle;
     int fontSize = mFontSize == 0 ? mDefaultFontSize : mFontSize;
-    iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr);
+    iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr, sizeof(fontStr));
 
     if (mLabelCentered)
     {
@@ -776,7 +776,7 @@ void iupPlotAxisY::DrawYTick(double inY, double inScreenX, bool inMajor, const c
         char fontStr[256];
         int fontStyle = mTick.mFontStyle == -1 ? mDefaultFontStyle : mTick.mFontStyle;
         int fontSize = mTick.mFontSize == 0 ? mDefaultFontSize : mTick.mFontSize;
-        iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr);
+        iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr, sizeof(fontStr));
 
         if (mTick.mRotateNumber)
           iupPlotDrawAlignedText(ctx, theScreenX, theScreenY, mReverseTicksLabel ? IUP_PLOT_NORTH : IUP_PLOT_SOUTH, theBuf, mColor, fontStr, mTick.mRotateNumberAngle);

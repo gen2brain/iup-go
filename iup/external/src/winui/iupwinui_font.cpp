@@ -245,7 +245,7 @@ extern "C" char* iupdrvGetSystemFont(void)
     char facename[64];
     WideCharToMultiByte(CP_UTF8, 0, lf->lfFaceName, -1, facename, sizeof(facename), NULL, NULL);
 
-    sprintf(str, "%s, %s%s%d", facename,
+    snprintf(str, sizeof(str), "%s, %s%s%d", facename,
             is_bold ? "Bold " : "",
             is_italic ? "Italic " : "",
             size);

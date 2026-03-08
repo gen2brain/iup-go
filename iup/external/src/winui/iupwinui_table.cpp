@@ -289,7 +289,7 @@ static void winuiTableUpdateCellFont(Ihandle* ih, TextBlock tb)
 static TextAlignment winuiTableGetColumnAlignment(Ihandle* ih, int col)
 {
   char name[50];
-  sprintf(name, "ALIGNMENT%d", col);
+  snprintf(name, sizeof(name), "ALIGNMENT%d", col);
   char* align_str = iupAttribGet(ih, name);
   if (align_str)
   {
@@ -861,7 +861,7 @@ static void winuiTableSort(Ihandle* ih, int col)
 static void winuiTableShiftAttrib(Ihandle* ih, const char* fmt, int source, int target)
 {
   char src_name[50], dst_name[50];
-  sprintf(src_name, fmt, source);
+  snprintf(src_name, sizeof(src_name), fmt, source);
   char* saved = iupAttribGet(ih, src_name);
   saved = saved ? iupStrDup(saved) : NULL;
 
@@ -870,8 +870,8 @@ static void winuiTableShiftAttrib(Ihandle* ih, const char* fmt, int source, int 
     for (int i = source; i < target; i++)
     {
       char from[50], to[50];
-      sprintf(from, fmt, i + 1);
-      sprintf(to, fmt, i);
+      snprintf(from, sizeof(from), fmt, i + 1);
+      snprintf(to, sizeof(to), fmt, i);
       char* val = iupAttribGet(ih, from);
       if (val)
         iupAttribSetStr(ih, to, val);
@@ -884,8 +884,8 @@ static void winuiTableShiftAttrib(Ihandle* ih, const char* fmt, int source, int 
     for (int i = source; i > target; i--)
     {
       char from[50], to[50];
-      sprintf(from, fmt, i - 1);
-      sprintf(to, fmt, i);
+      snprintf(from, sizeof(from), fmt, i - 1);
+      snprintf(to, sizeof(to), fmt, i);
       char* val = iupAttribGet(ih, from);
       if (val)
         iupAttribSetStr(ih, to, val);
@@ -894,7 +894,7 @@ static void winuiTableShiftAttrib(Ihandle* ih, const char* fmt, int source, int 
     }
   }
 
-  sprintf(dst_name, fmt, target);
+  snprintf(dst_name, sizeof(dst_name), fmt, target);
   if (saved)
   {
     iupAttribSetStr(ih, dst_name, saved);
@@ -907,7 +907,7 @@ static void winuiTableShiftAttrib(Ihandle* ih, const char* fmt, int source, int 
 static void winuiTableShiftAttribLinCol(Ihandle* ih, const char* fmt, int lin, int source, int target)
 {
   char src_name[50], dst_name[50];
-  sprintf(src_name, fmt, lin, source);
+  snprintf(src_name, sizeof(src_name), fmt, lin, source);
   char* saved = iupAttribGet(ih, src_name);
   saved = saved ? iupStrDup(saved) : NULL;
 
@@ -916,8 +916,8 @@ static void winuiTableShiftAttribLinCol(Ihandle* ih, const char* fmt, int lin, i
     for (int i = source; i < target; i++)
     {
       char from[50], to[50];
-      sprintf(from, fmt, lin, i + 1);
-      sprintf(to, fmt, lin, i);
+      snprintf(from, sizeof(from), fmt, lin, i + 1);
+      snprintf(to, sizeof(to), fmt, lin, i);
       char* val = iupAttribGet(ih, from);
       if (val)
         iupAttribSetStr(ih, to, val);
@@ -930,8 +930,8 @@ static void winuiTableShiftAttribLinCol(Ihandle* ih, const char* fmt, int lin, i
     for (int i = source; i > target; i--)
     {
       char from[50], to[50];
-      sprintf(from, fmt, lin, i - 1);
-      sprintf(to, fmt, lin, i);
+      snprintf(from, sizeof(from), fmt, lin, i - 1);
+      snprintf(to, sizeof(to), fmt, lin, i);
       char* val = iupAttribGet(ih, from);
       if (val)
         iupAttribSetStr(ih, to, val);
@@ -940,7 +940,7 @@ static void winuiTableShiftAttribLinCol(Ihandle* ih, const char* fmt, int lin, i
     }
   }
 
-  sprintf(dst_name, fmt, lin, target);
+  snprintf(dst_name, sizeof(dst_name), fmt, lin, target);
   if (saved)
   {
     iupAttribSetStr(ih, dst_name, saved);
@@ -1521,7 +1521,7 @@ static bool winuiTableIsCellEditable(Ihandle* ih, int lin, int col)
     return false;
 
   char name[50];
-  sprintf(name, "EDITABLE%d", col);
+  snprintf(name, sizeof(name), "EDITABLE%d", col);
   char* editable = iupAttribGet(ih, name);
   if (!editable)
     editable = iupAttribGet(ih, "EDITABLE");
@@ -3103,16 +3103,16 @@ static int winuiTableMapMethod(Ihandle* ih)
   for (int i = 1; i <= num_col; i++)
   {
     char name[50];
-    sprintf(name, "TITLE%d", i);
+    snprintf(name, sizeof(name), "TITLE%d", i);
     char* title = iupAttribGet(ih, name);
     if (title)
       iupdrvTableSetColTitle(ih, i, title);
 
-    sprintf(name, "RASTERWIDTH%d", i);
+    snprintf(name, sizeof(name), "RASTERWIDTH%d", i);
     char* rw = iupAttribGet(ih, name);
     if (!rw)
     {
-      sprintf(name, "WIDTH%d", i);
+      snprintf(name, sizeof(name), "WIDTH%d", i);
       rw = iupAttribGet(ih, name);
     }
     if (rw)
@@ -3122,7 +3122,7 @@ static int winuiTableMapMethod(Ihandle* ih)
         iupdrvTableSetColWidth(ih, i, width);
     }
 
-    sprintf(name, "ALIGNMENT%d", i);
+    snprintf(name, sizeof(name), "ALIGNMENT%d", i);
     char* align = iupAttribGet(ih, name);
     if (align)
       winuiTableSetAlignmentAttrib(ih, i, align);

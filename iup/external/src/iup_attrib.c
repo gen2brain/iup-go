@@ -63,7 +63,7 @@ void iupAttribSetTheme(Ihandle* ih, Ihandle* theme)
     name = iupTableNext(theme->attrib);
   }
 
-  sprintf(class_name, "IUP%s", ih->iclass->name);
+  snprintf(class_name, sizeof(class_name), "IUP%s", ih->iclass->name);
   iupStrUpper(class_name, class_name);
   value = iupAttribGet(theme, class_name);
   if (value)
@@ -195,7 +195,7 @@ IUP_API char* IupGetAttributes(Ihandle *ih)
       value = iupTableGetCurr(ih->attrib);
       if (iupAttribIsNotString(ih, name))
       {
-        sprintf(sb, "%p", (void*) value);
+        snprintf(sb, sizeof(sb), "%p", (void*) value);
         value = sb;
       }
 
@@ -526,28 +526,28 @@ IUP_API void IupSetfAttributeId(Ihandle *ih, const char* name, int id, const cha
 IUP_API void IupSetIntId(Ihandle* ih, const char* name, int id, int num)
 {
   char value[20];  /* +4,294,967,296 */
-  sprintf(value, "%d", num);
+  snprintf(value, sizeof(value), "%d", num);
   IupStoreAttributeId(ih, name, id, value);
 }
 
 IUP_API void IupSetFloatId(Ihandle* ih, const char* name, int id, float num)
 {
   char value[80];
-  sprintf(value, IUP_FLOAT2STR, num);
+  snprintf(value, sizeof(value), IUP_FLOAT2STR, num);
   IupStoreAttributeId(ih, name, id, value);
 }
 
 IUP_API void IupSetDoubleId(Ihandle* ih, const char* name, int id, double num)
 {
   char value[80];
-  sprintf(value, IUP_DOUBLE2STR, num);
+  snprintf(value, sizeof(value), IUP_DOUBLE2STR, num);
   IupStoreAttributeId(ih, name, id, value);
 }
 
 IUP_API void IupSetRGBId(Ihandle *ih, const char* name, int id, unsigned char r, unsigned char g, unsigned char b)
 {
   char value[60];
-  sprintf(value, "%d %d %d", (int)r, (int)g, (int)b);
+  snprintf(value, sizeof(value), "%d %d %d", (int)r, (int)g, (int)b);
   IupStoreAttributeId(ih, name, id, value);
 }
 
@@ -618,28 +618,28 @@ IUP_API void IupSetfAttributeId2(Ihandle* ih, const char* name, int lin, int col
 IUP_API void IupSetIntId2(Ihandle* ih, const char* name, int lin, int col, int num)
 {
   char value[20];  /* +4,294,967,296 */
-  sprintf(value, "%d", num);
+  snprintf(value, sizeof(value), "%d", num);
   IupStoreAttributeId2(ih, name, lin, col, value);
 }
 
 IUP_API void IupSetFloatId2(Ihandle* ih, const char* name, int lin, int col, float num)
 {
   char value[80];
-  sprintf(value, IUP_FLOAT2STR, num);
+  snprintf(value, sizeof(value), IUP_FLOAT2STR, num);
   IupStoreAttributeId2(ih, name, lin, col, value);
 }
 
 IUP_API void IupSetDoubleId2(Ihandle* ih, const char* name, int lin, int col, double num)
 {
   char value[80];
-  sprintf(value, IUP_DOUBLE2STR, num);
+  snprintf(value, sizeof(value), IUP_DOUBLE2STR, num);
   IupStoreAttributeId2(ih, name, lin, col, value);
 }
 
 IUP_API void IupSetRGBId2(Ihandle *ih, const char* name, int lin, int col, unsigned char r, unsigned char g, unsigned char b)
 {
   char value[60];
-  sprintf(value, "%d %d %d", (int)r, (int)g, (int)b);
+  snprintf(value, sizeof(value), "%d %d %d", (int)r, (int)g, (int)b);
   IupStoreAttributeId2(ih, name, lin, col, value);
 }
 
@@ -905,42 +905,42 @@ IUP_API void IupSetfAttribute(Ihandle *ih, const char* name, const char* f, ...)
 IUP_API void IupSetInt(Ihandle* ih, const char* name, int num)
 {
   char value[20];  /* +4,294,967,296 */
-  sprintf(value, "%d", num);
+  snprintf(value, sizeof(value), "%d", num);
   IupStoreAttribute(ih, name, value);
 }
 
 IUP_API void IupSetFloat(Ihandle* ih, const char* name, float num)
 {
   char value[80];
-  sprintf(value, IUP_FLOAT2STR, num);
+  snprintf(value, sizeof(value), IUP_FLOAT2STR, num);
   IupStoreAttribute(ih, name, value);
 }
 
 IUP_API void IupSetDouble(Ihandle* ih, const char* name, double num)
 {
   char value[80];
-  sprintf(value, IUP_DOUBLE2STR, num);
+  snprintf(value, sizeof(value), IUP_DOUBLE2STR, num);
   IupStoreAttribute(ih, name, value);
 }
 
 IUP_API void IupSetRGB(Ihandle *ih, const char* name, unsigned char r, unsigned char g, unsigned char b)
 {
   char value[60];
-  sprintf(value, "%d %d %d", (int)r, (int)g, (int)b);
+  snprintf(value, sizeof(value), "%d %d %d", (int)r, (int)g, (int)b);
   IupStoreAttribute(ih, name, value);
 }
 
 IUP_API void IupSetRGBA(Ihandle *ih, const char* name, unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
   char value[60];
-  sprintf(value, "%d %d %d %d", (int)r, (int)g, (int)b, (int)a);
+  snprintf(value, sizeof(value), "%d %d %d %d", (int)r, (int)g, (int)b, (int)a);
   IupStoreAttribute(ih, name, value);
 }
 
 IUP_SDK_API void iupAttribSetHandleName(Ihandle *ih)
 {
   char str_name[100];
-  sprintf(str_name, "_IUP_NAME(%p)", ih);
+  snprintf(str_name, sizeof(str_name), "_IUP_NAME(%p)", ih);
   IupSetHandle(str_name, ih);
 }
 
@@ -976,30 +976,30 @@ IUP_API void IupSetAttributeHandle(Ihandle* ih, const char* name, Ihandle* ih_na
   IupStoreAttribute(ih, name, handle_name);
 }
 
-static void iAttribSetNameId2(char* nameid, const char* name, int lin, int col)
+static void iAttribSetNameId2(char* nameid, int nameid_size, const char* name, int lin, int col)
 {
   if (lin == IUP_INVALID_ID && col == IUP_INVALID_ID)
-    sprintf(nameid, "%s", name);
+    snprintf(nameid, nameid_size, "%s", name);
   else if (lin == IUP_INVALID_ID)
-    sprintf(nameid, "%s*:%d", name, col);
+    snprintf(nameid, nameid_size, "%s*:%d", name, col);
   else if (col == IUP_INVALID_ID)
-    sprintf(nameid, "%s%d:*", name, lin);
+    snprintf(nameid, nameid_size, "%s%d:*", name, lin);
   else
-    sprintf(nameid, "%s%d:%d", name, lin, col);
+    snprintf(nameid, nameid_size, "%s%d:%d", name, lin, col);
 }
 
-static void iAttribSetNameId(char* nameid, const char* name, int id)
+static void iAttribSetNameId(char* nameid, int nameid_size, const char* name, int id)
 {
   if (id == IUP_INVALID_ID)
-    sprintf(nameid, "%s", name);
+    snprintf(nameid, nameid_size, "%s", name);
   else
-    sprintf(nameid, "%s%d", name, id);
+    snprintf(nameid, nameid_size, "%s%d", name, id);
 }
 
 IUP_API void IupSetAttributeHandleId(Ihandle* ih, const char* name, int id, Ihandle* ih_named)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   IupSetAttributeHandle(ih, nameid, ih_named);
 }
 
@@ -1018,21 +1018,21 @@ IUP_API Ihandle* IupGetAttributeHandle(Ihandle *ih, const char* name)
 IUP_API Ihandle* IupGetAttributeHandleId(Ihandle *ih, const char* name, int id)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   return IupGetAttributeHandle(ih, nameid);
 }
 
 IUP_API void IupSetAttributeHandleId2(Ihandle* ih, const char* name, int lin, int col, Ihandle* ih_named)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   IupSetAttributeHandle(ih, nameid, ih_named);
 }
 
 IUP_API Ihandle* IupGetAttributeHandleId2(Ihandle *ih, const char* name, int lin, int col)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   return IupGetAttributeHandle(ih, nameid);
 }
 
@@ -1132,161 +1132,161 @@ IUP_SDK_API void iupAttribSetStrf(Ihandle *ih, const char* name, const char* f, 
 IUP_SDK_API void iupAttribSetInt(Ihandle *ih, const char* name, int num)
 {
   char value[20];  /* +4,294,967,296 */
-  sprintf(value, "%d", num);
+  snprintf(value, sizeof(value), "%d", num);
   iupAttribSetStr(ih, name, value);
 }
 
 IUP_SDK_API void iupAttribSetFloat(Ihandle *ih, const char* name, float num)
 {
   char value[80];
-  sprintf(value, IUP_FLOAT2STR, num);
+  snprintf(value, sizeof(value), IUP_FLOAT2STR, num);
   iupAttribSetStr(ih, name, value);
 }
 
 IUP_SDK_API void iupAttribSetDouble(Ihandle *ih, const char* name, double num)
 {
   char value[80];
-  sprintf(value, IUP_DOUBLE2STR, num);
+  snprintf(value, sizeof(value), IUP_DOUBLE2STR, num);
   iupAttribSetStr(ih, name, value);
 }
 
 IUP_SDK_API void iupAttribSetId(Ihandle *ih, const char* name, int id, const char* value)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   iupAttribSet(ih, nameid, value);
 }
 
 IUP_SDK_API void iupAttribSetStrId(Ihandle *ih, const char* name, int id, const char* value)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   iupAttribSetStr(ih, nameid, value);
 }
 
 IUP_SDK_API void iupAttribSetId2(Ihandle *ih, const char* name, int lin, int col, const char* value)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   iupAttribSet(ih, nameid, value);
 }
 
 IUP_SDK_API void iupAttribSetStrId2(Ihandle *ih, const char* name, int lin, int col, const char* value)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   iupAttribSetStr(ih, nameid, value);
 }
 
 IUP_SDK_API void iupAttribSetIntId(Ihandle *ih, const char* name, int id, int num)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   iupAttribSetInt(ih, nameid, num);
 }
 
 IUP_SDK_API void iupAttribSetIntId2(Ihandle *ih, const char* name, int lin, int col, int num)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   iupAttribSetInt(ih, nameid, num);
 }
 
 IUP_SDK_API void iupAttribSetFloatId(Ihandle *ih, const char* name, int id, float num)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   iupAttribSetFloat(ih, nameid, num);
 }
 
 IUP_SDK_API void iupAttribSetDoubleId(Ihandle *ih, const char* name, int id, double num)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   iupAttribSetDouble(ih, nameid, num);
 }
 
 IUP_SDK_API void iupAttribSetFloatId2(Ihandle *ih, const char* name, int lin, int col, float num)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   iupAttribSetFloat(ih, nameid, num);
 }
 
 IUP_SDK_API void iupAttribSetDoubleId2(Ihandle *ih, const char* name, int lin, int col, double num)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   iupAttribSetDouble(ih, nameid, num);
 }
 
 IUP_SDK_API char* iupAttribGetId(Ihandle* ih, const char* name, int id)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   return iupAttribGet(ih, nameid);
 }
 
 IUP_SDK_API int iupAttribGetIntId(Ihandle* ih, const char* name, int id)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   return iupAttribGetInt(ih, nameid);
 }
 
 IUP_SDK_API int iupAttribGetBooleanId(Ihandle* ih, const char* name, int id)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   return iupAttribGetBoolean(ih, nameid);
 }
 
 IUP_SDK_API float iupAttribGetFloatId(Ihandle* ih, const char* name, int id)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   return iupAttribGetFloat(ih, nameid);
 }
 
 IUP_SDK_API double iupAttribGetDoubleId(Ihandle* ih, const char* name, int id)
 {
   char nameid[100];
-  iAttribSetNameId(nameid, name, id);
+  iAttribSetNameId(nameid, sizeof(nameid), name, id);
   return iupAttribGetDouble(ih, nameid);
 }
 
 IUP_SDK_API char* iupAttribGetId2(Ihandle* ih, const char* name, int lin, int col)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   return iupAttribGet(ih, nameid);
 }
 
 IUP_SDK_API int iupAttribGetIntId2(Ihandle* ih, const char* name, int lin, int col)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   return iupAttribGetInt(ih, nameid);
 }
 
 IUP_SDK_API int iupAttribGetBooleanId2(Ihandle* ih, const char* name, int lin, int col)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   return iupAttribGetBoolean(ih, nameid);
 }
 
 IUP_SDK_API float iupAttribGetFloatId2(Ihandle* ih, const char* name, int lin, int col)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   return iupAttribGetFloat(ih, nameid);
 }
 
 IUP_SDK_API double iupAttribGetDoubleId2(Ihandle* ih, const char* name, int lin, int col)
 {
   char nameid[100];
-  iAttribSetNameId2(nameid, name, lin, col);
+  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   return iupAttribGetDouble(ih, nameid);
 }
 

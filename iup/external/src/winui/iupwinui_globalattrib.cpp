@@ -71,7 +71,7 @@ extern "C" char* iupdrvGetGlobal(const char* name)
     EnumDisplayMonitors(NULL, NULL, winuiMonitorInfoEnum, (LPARAM)monitors_rect);
 
     for (i = 0; i < monitors_count; i++)
-      pstr += sprintf(pstr, "%d %d %d %d\n", (int)monitors_rect[i].left, (int)monitors_rect[i].top,
+      pstr += snprintf(pstr, (monitors_count * 50) - (int)(pstr - str), "%d %d %d %d\n", (int)monitors_rect[i].left, (int)monitors_rect[i].top,
                       (int)(monitors_rect[i].right - monitors_rect[i].left),
                       (int)(monitors_rect[i].bottom - monitors_rect[i].top));
 

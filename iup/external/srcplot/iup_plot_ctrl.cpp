@@ -113,7 +113,7 @@ static char* iPlotDataSetValuesMatrixValue_CB(Ihandle *ih_matrix, int lin, int c
   if (col == 0)
   {
     static char str[30];
-    sprintf(str, "%d", lin - 1);
+    snprintf(str, sizeof(str), "%d", lin - 1);
     return str;
   }
 
@@ -581,7 +581,7 @@ static void iPlotSetParamDouble(Ihandle* control, const char* name, double num)
   char value[80];
   char format[30];
   int prec = IupGetInt(NULL, "DEFAULTPRECISION");
-  sprintf(format, "%%.%df", prec);
+  snprintf(format, sizeof(format), "%%.%df", prec);
   iupStrPrintfDoubleLocale(value, format, num, IupGetGlobal("DEFAULTDECIMALSYMBOL"));
 
   IupStoreAttribute(control, name, value);
@@ -871,7 +871,7 @@ static void iPlotPropertiesAddParamBox(Ihandle* ih, Ihandle* zbox, iPlotAttribPa
 
   while (attribs[count].name)
   {
-    sprintf(format, "%s%%%s%s%s\n", attribs[count].label, attribs[count].type, attribs[count].extra, attribs[count].tip);
+    snprintf(format, sizeof(format), "%s%%%s%s%s\n", attribs[count].label, attribs[count].type, attribs[count].extra, attribs[count].tip);
     params[count] = IupParam(format);
 
     if (attribs[count].name[0] != 0)

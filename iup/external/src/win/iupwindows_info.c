@@ -86,7 +86,7 @@ IUP_SDK_API char *iupdrvGetSystemVersion(void)
   osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXA);
   GetVersionExA((OSVERSIONINFOA*)&osvi);
 
-  sprintf(str, "%d.%d.%d", (int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion, (int)osvi.dwBuildNumber);
+  snprintf(str, 256, "%d.%d.%d", (int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion, (int)osvi.dwBuildNumber);
 
   /* Display service pack (if any). */
   if (osvi.szCSDVersion[0] != 0)

@@ -94,11 +94,11 @@ static int eflTableColHasExplicitWidth(Ihandle* ih, int col)
 {
   char name[50];
 
-  sprintf(name, "RASTERWIDTH%d", col);
+  snprintf(name, sizeof(name), "RASTERWIDTH%d", col);
   if (iupAttribGet(ih, name))
     return 1;
 
-  sprintf(name, "WIDTH%d", col);
+  snprintf(name, sizeof(name), "WIDTH%d", col);
   if (iupAttribGet(ih, name))
     return 1;
 
@@ -110,7 +110,7 @@ static int eflTableGetColumnAlignment(Ihandle* ih, int col)
   char name[50];
   char* value;
 
-  sprintf(name, "ALIGNMENT%d", col);
+  snprintf(name, sizeof(name), "ALIGNMENT%d", col);
   value = iupAttribGet(ih, name);
 
   if (value)
@@ -275,7 +275,7 @@ static char* eflTableGetCellText(Ihandle* ih, int lin, int col)
     }
   }
 
-  sprintf(name, "CELLVALUE%d:%d", lin, col);
+  snprintf(name, sizeof(name), "CELLVALUE%d:%d", lin, col);
   value = iupAttribGet(ih, name);
   return value;
 }
@@ -346,7 +346,7 @@ static int eflTableCalculateColumnWidth(Ihandle* ih, int col)
   max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
 
   /* Measure header title */
-  sprintf(name, "COLTITLE%d", col);
+  snprintf(name, sizeof(name), "COLTITLE%d", col);
   title = iupAttribGet(ih, name);
   if (title)
   {
@@ -398,11 +398,11 @@ static char* eflTableGetHeaderText(Ihandle* ih, int col)
   char name[50];
   char* title;
 
-  sprintf(name, "COLTITLE%d", col);
+  snprintf(name, sizeof(name), "COLTITLE%d", col);
   title = iupAttribGet(ih, name);
   if (!title)
   {
-    sprintf(name, "%d:0", col);
+    snprintf(name, sizeof(name), "%d:0", col);
     title = iupAttribGet(ih, name);
   }
   return title;
@@ -421,8 +421,8 @@ static void eflTableSwapRows(Ihandle* ih, int lin1, int lin2)
     char* val2;
     char* temp;
 
-    sprintf(name1, "CELLVALUE%d:%d", lin1, col);
-    sprintf(name2, "CELLVALUE%d:%d", lin2, col);
+    snprintf(name1, sizeof(name1), "CELLVALUE%d:%d", lin1, col);
+    snprintf(name2, sizeof(name2), "CELLVALUE%d:%d", lin2, col);
     val1 = iupAttribGet(ih, name1);
     val2 = iupAttribGet(ih, name2);
 
@@ -791,54 +791,54 @@ static void eflTableSwapColumns(Ihandle* ih, int col1, int col2)
   int num_lin = ih->data->num_lin;
   char name1[50], name2[50];
 
-  sprintf(name1, "COLTITLE%d", col1);
-  sprintf(name2, "COLTITLE%d", col2);
+  snprintf(name1, sizeof(name1), "COLTITLE%d", col1);
+  snprintf(name2, sizeof(name2), "COLTITLE%d", col2);
   eflTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "WIDTH%d", col1);
-  sprintf(name2, "WIDTH%d", col2);
+  snprintf(name1, sizeof(name1), "WIDTH%d", col1);
+  snprintf(name2, sizeof(name2), "WIDTH%d", col2);
   eflTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "RASTERWIDTH%d", col1);
-  sprintf(name2, "RASTERWIDTH%d", col2);
+  snprintf(name1, sizeof(name1), "RASTERWIDTH%d", col1);
+  snprintf(name2, sizeof(name2), "RASTERWIDTH%d", col2);
   eflTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "ALIGNMENT%d", col1);
-  sprintf(name2, "ALIGNMENT%d", col2);
+  snprintf(name1, sizeof(name1), "ALIGNMENT%d", col1);
+  snprintf(name2, sizeof(name2), "ALIGNMENT%d", col2);
   eflTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "0:%d", col1);
-  sprintf(name2, "0:%d", col2);
+  snprintf(name1, sizeof(name1), "0:%d", col1);
+  snprintf(name2, sizeof(name2), "0:%d", col2);
   eflTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "BGCOLOR0:%d", col1);
-  sprintf(name2, "BGCOLOR0:%d", col2);
+  snprintf(name1, sizeof(name1), "BGCOLOR0:%d", col1);
+  snprintf(name2, sizeof(name2), "BGCOLOR0:%d", col2);
   eflTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "FGCOLOR0:%d", col1);
-  sprintf(name2, "FGCOLOR0:%d", col2);
+  snprintf(name1, sizeof(name1), "FGCOLOR0:%d", col1);
+  snprintf(name2, sizeof(name2), "FGCOLOR0:%d", col2);
   eflTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "FONT0:%d", col1);
-  sprintf(name2, "FONT0:%d", col2);
+  snprintf(name1, sizeof(name1), "FONT0:%d", col1);
+  snprintf(name2, sizeof(name2), "FONT0:%d", col2);
   eflTableSwapAttrib(ih, name1, name2);
 
   for (lin = 1; lin <= num_lin; lin++)
   {
-    sprintf(name1, "CELLVALUE%d:%d", lin, col1);
-    sprintf(name2, "CELLVALUE%d:%d", lin, col2);
+    snprintf(name1, sizeof(name1), "CELLVALUE%d:%d", lin, col1);
+    snprintf(name2, sizeof(name2), "CELLVALUE%d:%d", lin, col2);
     eflTableSwapAttrib(ih, name1, name2);
 
-    sprintf(name1, "BGCOLOR%d:%d", lin, col1);
-    sprintf(name2, "BGCOLOR%d:%d", lin, col2);
+    snprintf(name1, sizeof(name1), "BGCOLOR%d:%d", lin, col1);
+    snprintf(name2, sizeof(name2), "BGCOLOR%d:%d", lin, col2);
     eflTableSwapAttrib(ih, name1, name2);
 
-    sprintf(name1, "FGCOLOR%d:%d", lin, col1);
-    sprintf(name2, "FGCOLOR%d:%d", lin, col2);
+    snprintf(name1, sizeof(name1), "FGCOLOR%d:%d", lin, col1);
+    snprintf(name2, sizeof(name2), "FGCOLOR%d:%d", lin, col2);
     eflTableSwapAttrib(ih, name1, name2);
 
-    sprintf(name1, "FONT%d:%d", lin, col1);
-    sprintf(name2, "FONT%d:%d", lin, col2);
+    snprintf(name1, sizeof(name1), "FONT%d:%d", lin, col1);
+    snprintf(name2, sizeof(name2), "FONT%d:%d", lin, col2);
     eflTableSwapAttrib(ih, name1, name2);
   }
 }
@@ -1056,7 +1056,7 @@ static int eflTableIsCellEditable(Ihandle* ih, int col)
   char name[50];
   char* editable_str;
 
-  sprintf(name, "EDITABLE%d", col);
+  snprintf(name, sizeof(name), "EDITABLE%d", col);
   editable_str = iupAttribGet(ih, name);
   if (!editable_str)
     editable_str = iupAttribGet(ih, "EDITABLE");
@@ -1632,11 +1632,11 @@ static void eflTableRebuildCells(Ihandle* ih)
         char* width_str;
         int width = DEFAULT_COL_WIDTH;
 
-        sprintf(name, "RASTERWIDTH%d", col + 1);
+        snprintf(name, sizeof(name), "RASTERWIDTH%d", col + 1);
         width_str = iupAttribGet(ih, name);
         if (!width_str)
         {
-          sprintf(name, "WIDTH%d", col + 1);
+          snprintf(name, sizeof(name), "WIDTH%d", col + 1);
           width_str = iupAttribGet(ih, name);
         }
 
@@ -1662,11 +1662,11 @@ static void eflTableRebuildCells(Ihandle* ih)
     int is_last_col = (col == num_col - 1);
     int should_stretch = is_last_col && ih->data->stretch_last && !eflTableColHasExplicitWidth(ih, col + 1);
 
-    sprintf(name, "COLTITLE%d", col + 1);
+    snprintf(name, sizeof(name), "COLTITLE%d", col + 1);
     text = iupAttribGet(ih, name);
     if (!text)
     {
-      sprintf(name, "Col %d", col + 1);
+      snprintf(name, sizeof(name), "Col %d", col + 1);
       text = name;
     }
 
@@ -1858,11 +1858,11 @@ static void eflTableRebuildHeaders(Ihandle* ih)
         char* width_str;
         int width = DEFAULT_COL_WIDTH;
 
-        sprintf(name, "RASTERWIDTH%d", col + 1);
+        snprintf(name, sizeof(name), "RASTERWIDTH%d", col + 1);
         width_str = iupAttribGet(ih, name);
         if (!width_str)
         {
-          sprintf(name, "WIDTH%d", col + 1);
+          snprintf(name, sizeof(name), "WIDTH%d", col + 1);
           width_str = iupAttribGet(ih, name);
         }
 
@@ -1888,11 +1888,11 @@ static void eflTableRebuildHeaders(Ihandle* ih)
     int is_last_col = (col == num_col - 1);
     int should_stretch = is_last_col && ih->data->stretch_last && !eflTableColHasExplicitWidth(ih, col + 1);
 
-    sprintf(name, "COLTITLE%d", col + 1);
+    snprintf(name, sizeof(name), "COLTITLE%d", col + 1);
     text = iupAttribGet(ih, name);
     if (!text)
     {
-      sprintf(name, "Col %d", col + 1);
+      snprintf(name, sizeof(name), "Col %d", col + 1);
       text = name;
     }
 
@@ -2008,11 +2008,11 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
         char* width_str;
         int width = DEFAULT_COL_WIDTH;
 
-        sprintf(name, "RASTERWIDTH%d", col + 1);
+        snprintf(name, sizeof(name), "RASTERWIDTH%d", col + 1);
         width_str = iupAttribGet(ih, name);
         if (!width_str)
         {
-          sprintf(name, "WIDTH%d", col + 1);
+          snprintf(name, sizeof(name), "WIDTH%d", col + 1);
           width_str = iupAttribGet(ih, name);
         }
 
@@ -2037,11 +2037,11 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
     int is_last_col = (col == num_col - 1);
     int should_stretch = is_last_col && ih->data->stretch_last && !eflTableColHasExplicitWidth(ih, col + 1);
 
-    sprintf(name, "COLTITLE%d", col + 1);
+    snprintf(name, sizeof(name), "COLTITLE%d", col + 1);
     text = iupAttribGet(ih, name);
     if (!text)
     {
-      sprintf(name, "Col %d", col + 1);
+      snprintf(name, sizeof(name), "Col %d", col + 1);
       text = name;
     }
 
@@ -2401,11 +2401,11 @@ void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
           char* width_str;
           int width = DEFAULT_COL_WIDTH;
 
-          sprintf(name, "RASTERWIDTH%d", col + 1);
+          snprintf(name, sizeof(name), "RASTERWIDTH%d", col + 1);
           width_str = iupAttribGet(ih, name);
           if (!width_str)
           {
-            sprintf(name, "WIDTH%d", col + 1);
+            snprintf(name, sizeof(name), "WIDTH%d", col + 1);
             width_str = iupAttribGet(ih, name);
           }
 
@@ -2480,7 +2480,7 @@ void iupdrvTableDelLin(Ihandle* ih, int pos)
 void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   char name[50];
-  sprintf(name, "CELLVALUE%d:%d", lin, col);
+  snprintf(name, sizeof(name), "CELLVALUE%d:%d", lin, col);
   iupAttribSetStr(ih, name, value);
 
   if (ih->handle)
@@ -2519,7 +2519,7 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   char name[50];
 
-  sprintf(name, "COLTITLE%d", col);
+  snprintf(name, sizeof(name), "COLTITLE%d", col);
   iupAttribSetStr(ih, name, title);
 
   if (ih->handle && data && data->header_labels)
@@ -2540,7 +2540,7 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   char name[50];
-  sprintf(name, "COLTITLE%d", col);
+  snprintf(name, sizeof(name), "COLTITLE%d", col);
   return iupAttribGet(ih, name);
 }
 

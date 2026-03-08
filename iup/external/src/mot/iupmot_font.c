@@ -84,7 +84,7 @@ static XFontStruct* motLoadFont(const char* foundry, const char *typeface, int s
   else
     slant = "r";
 
-  sprintf(font_name,"-%s-%s-%s-%s-*-*-*-*-*-*-*-*-*-*", foundry, typeface, weight, slant);
+  snprintf(font_name, sizeof(font_name), "-%s-%s-%s-%s-*-*-*-*-*-*-*-*-*-*", foundry, typeface, weight, slant);
 
   font_names_list = XListFonts(iupmot_display, font_name, 32767, &num_fonts);
   if (!num_fonts && italic)
@@ -102,7 +102,7 @@ static XFontStruct* motLoadFont(const char* foundry, const char *typeface, int s
     if (font_names_list)
       XFreeFontNames(font_names_list);
     weight = "medium";
-    sprintf(font_name,"-%s-%s-%s-%s-*-*-*-*-*-*-*-*-*-*", foundry, typeface, weight, slant);
+    snprintf(font_name, sizeof(font_name), "-%s-%s-%s-%s-*-*-*-*-*-*-*-*-*-*", foundry, typeface, weight, slant);
     font_names_list = XListFonts(iupmot_display, font_name, 32767, &num_fonts);
   }
   if (!num_fonts)
@@ -135,7 +135,7 @@ static XFontStruct* motLoadFont(const char* foundry, const char *typeface, int s
 
   XFreeFontNames(font_names_list);
 
-  sprintf(font_name,"-%s-%s-%s-%s-*-*-*-%d-*-*-*-*-*-*", foundry, typeface, weight, slant, near_size);
+  snprintf(font_name, sizeof(font_name), "-%s-%s-%s-%s-*-*-*-%d-*-*-*-*-*-*", foundry, typeface, weight, slant, near_size);
   fontstruct = XLoadQueryFont(iupmot_display, font_name);
 
   if (fontstruct)
@@ -166,13 +166,13 @@ static XftFont* motLoadXftFont(const char* typeface, int size, int bold, int ita
     xft_size = size;
 
   if (bold && italic)
-    sprintf(font_name, "%s:size=%d:weight=bold:slant=italic", typeface, xft_size);
+    snprintf(font_name, sizeof(font_name), "%s:size=%d:weight=bold:slant=italic", typeface, xft_size);
   else if (bold)
-    sprintf(font_name, "%s:size=%d:weight=bold", typeface, xft_size);
+    snprintf(font_name, sizeof(font_name), "%s:size=%d:weight=bold", typeface, xft_size);
   else if (italic)
-    sprintf(font_name, "%s:size=%d:slant=italic", typeface, xft_size);
+    snprintf(font_name, sizeof(font_name), "%s:size=%d:slant=italic", typeface, xft_size);
   else
-    sprintf(font_name, "%s:size=%d", typeface, xft_size);
+    snprintf(font_name, sizeof(font_name), "%s:size=%d", typeface, xft_size);
 
   xftfont = XftFontOpenName(iupmot_display, iupmot_screen, font_name);
 

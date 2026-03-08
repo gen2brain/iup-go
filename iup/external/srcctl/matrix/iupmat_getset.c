@@ -74,7 +74,7 @@ static char* iMatrixSetValueNumeric(Ihandle* ih, int lin, int col, const char* v
     else if (ret == 2 || (convert && ih->data->numeric_columns[col].unit_shown != ih->data->numeric_columns[col].unit))
     {
       /* only use the number if locale was set or a conversion occurred */
-      sprintf(ih->data->numeric_buffer_set, IUP_DOUBLE2STR, number);
+      snprintf(ih->data->numeric_buffer_set, sizeof(ih->data->numeric_buffer_set), IUP_DOUBLE2STR, number);
       value = ih->data->numeric_buffer_set;
     }
   }
@@ -194,7 +194,7 @@ char* iupMatrixGetValue(Ihandle* ih, int lin, int col)
     {
       /* no formatting and no conversion here */
       double number = getvalue_cb(ih, lin, col);
-      sprintf(ih->data->numeric_buffer_get, IUP_DOUBLE2STR, number);  /* maximum precision */
+      snprintf(ih->data->numeric_buffer_get, sizeof(ih->data->numeric_buffer_get), IUP_DOUBLE2STR, number);
       return ih->data->numeric_buffer_get;
     }
   }
@@ -213,7 +213,7 @@ char* iupMatrixGetNumericFormatDef(Ihandle* ih)
     else
     {
       static char f[30];
-      sprintf(f, "%%.%df", prec);
+      snprintf(f, sizeof(f), "%%.%df", prec);
       format = f;
     }
   }
@@ -235,9 +235,9 @@ static char* iMatrixGetValueNumericTitle(Ihandle* ih, int col, const char* value
     if (unit_symbol)
     {
       if (value)
-        sprintf(ih->data->numeric_buffer_get, format, value, unit_symbol);
+        snprintf(ih->data->numeric_buffer_get, sizeof(ih->data->numeric_buffer_get), format, value, unit_symbol);
       else
-        sprintf(ih->data->numeric_buffer_get, format, unit_symbol);
+        snprintf(ih->data->numeric_buffer_get, sizeof(ih->data->numeric_buffer_get), format, unit_symbol);
       return ih->data->numeric_buffer_get;
     }
   }

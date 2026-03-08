@@ -20,8 +20,11 @@ IUP_API int IupExecute(const char *filename, const char* parameters)
   char* cmd;
   Eina_Bool success;
 
-  cmd = (char*)malloc(sizeof(char)*(strlen(filename) + strlen(parameters) + 3));
-  sprintf(cmd, "%s %s", filename, parameters);
+  {
+  int cmd_size = (int)(strlen(filename) + strlen(parameters) + 3);
+  cmd = (char*)malloc(sizeof(char)*cmd_size);
+  snprintf(cmd, cmd_size, "%s %s", filename, parameters);
+  }
 
   success = ecore_exe_run(cmd, NULL) != NULL;
   if (!success)
@@ -38,8 +41,11 @@ IUP_API int IupExecuteWait(const char *filename, const char* parameters)
   char* cmd;
   int exit_status;
 
-  cmd = (char*)malloc(sizeof(char)*(strlen(filename) + strlen(parameters) + 3));
-  sprintf(cmd, "%s %s", filename, parameters);
+  {
+  int cmd_size = (int)(strlen(filename) + strlen(parameters) + 3);
+  cmd = (char*)malloc(sizeof(char)*cmd_size);
+  snprintf(cmd, cmd_size, "%s %s", filename, parameters);
+  }
 
   exit_status = system(cmd);
   if (exit_status == -1)

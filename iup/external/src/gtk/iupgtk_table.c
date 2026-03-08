@@ -1131,7 +1131,7 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
       {
         /* Check if cell is editable */
         char name[50];
-        sprintf(name, "EDITABLE%d", col);
+        snprintf(name, sizeof(name), "EDITABLE%d", col);
         char* editable = iupAttribGet(ih, name);
         if (!editable)
           editable = iupAttribGet(ih, "EDITABLE");
@@ -1538,12 +1538,12 @@ static int gtkTableMapMethod(Ihandle* ih)
 
       /* Store renderer pointer for later access */
       char renderer_name[50];
-      sprintf(renderer_name, "_IUPGTK_RENDERER_%d", col);
+      snprintf(renderer_name, sizeof(renderer_name), "_IUPGTK_RENDERER_%d", col);
       iupAttribSet(ih, renderer_name, (char*)renderer);
 
       /* Check if column should be editable */
       char name[50];
-      sprintf(name, "EDITABLE%d", col + 1);
+      snprintf(name, sizeof(name), "EDITABLE%d", col + 1);
       char* editable_str = iupAttribGet(ih, name);
       if (!editable_str)
         editable_str = iupAttribGet(ih, "EDITABLE");  /* Global editable */
@@ -1558,7 +1558,7 @@ static int gtkTableMapMethod(Ihandle* ih)
       }
 
       /* Check if column has alignment set (applies to entire column: header + cells) */
-      sprintf(name, "ALIGNMENT%d", col + 1);
+      snprintf(name, sizeof(name), "ALIGNMENT%d", col + 1);
       char* align_str = iupAttribGet(ih, name);
       float xalign = 0.0f;  /* Default: left */
 
@@ -1602,11 +1602,11 @@ static int gtkTableMapMethod(Ihandle* ih)
       gtk_tree_view_column_set_cell_data_func(column, renderer, gtkTableCellDataFunc, data_info, free);  /* free as destroy notify */
 
       /* Check if width was set before mapping */
-      sprintf(name, "RASTERWIDTH%d", col + 1);
+      snprintf(name, sizeof(name), "RASTERWIDTH%d", col + 1);
       char* width_str = iupAttribGet(ih, name);
       if (!width_str)
       {
-        sprintf(name, "WIDTH%d", col + 1);
+        snprintf(name, sizeof(name), "WIDTH%d", col + 1);
         width_str = iupAttribGet(ih, name);
       }
 
@@ -1708,11 +1708,11 @@ static int gtkTableMapMethod(Ihandle* ih)
     int last_col_has_width = 0;
     {
       char name[50];
-      sprintf(name, "RASTERWIDTH%d", ih->data->num_col);
+      snprintf(name, sizeof(name), "RASTERWIDTH%d", ih->data->num_col);
       char* width_str = iupAttribGet(ih, name);
       if (!width_str)
       {
-        sprintf(name, "WIDTH%d", ih->data->num_col);
+        snprintf(name, sizeof(name), "WIDTH%d", ih->data->num_col);
         width_str = iupAttribGet(ih, name);
       }
       int width = 0;
@@ -1774,7 +1774,7 @@ static int gtkTableMapMethod(Ihandle* ih)
   for (col = 1; col <= ih->data->num_col; col++)
   {
     char name[50];
-    sprintf(name, "TITLE%d", col);
+    snprintf(name, sizeof(name), "TITLE%d", col);
     char* title = iupAttribGet(ih, name);
     if (title)
       iupdrvTableSetColTitle(ih, col, title);

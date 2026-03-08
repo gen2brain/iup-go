@@ -351,10 +351,10 @@ static int iParseError(int err, char *s)
   switch (err)
   {
   case IPARSE_SYMBEXIST:
-    sprintf(msg, "handle name '%s' already exists", s);
+    snprintf(msg, sizeof(msg), "handle name '%s' already exists", s);
     break;
   case IPARSE_SYMBNOTDEF:
-    sprintf(msg, "handle name '%s' not defined", s);
+    snprintf(msg, sizeof(msg), "handle name '%s' not defined", s);
     break;
   }
 

@@ -129,7 +129,7 @@ static Igtk4Font* gtk4FindFont(const char *font)
         size = iupRound((-size * 72.0) / res); /* from pixels to points */
       }
 
-      sprintf(new_font, "%s, %s%s%d", typeface, is_bold?"Bold ":"", is_italic?"Italic ":"", size);
+      snprintf(new_font, sizeof(new_font), "%s, %s%s%d", typeface, is_bold?"Bold ":"", is_italic?"Italic ":"", size);
 
       fontdesc = pango_font_description_from_string(new_font);
     }
@@ -217,9 +217,9 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
     if (size > 0)
     {
       if (pango_font_description_get_size_is_absolute(fontdesc))
-        sprintf(css_font, "font-family: %s; font-size: %dpx;", family ? family : "sans", size / PANGO_SCALE);
+        snprintf(css_font, sizeof(css_font), "font-family: %s; font-size: %dpx;", family ? family : "sans", size / PANGO_SCALE);
       else
-        sprintf(css_font, "font-family: %s; font-size: %dpt;", family ? family : "sans", size / PANGO_SCALE);
+        snprintf(css_font, sizeof(css_font), "font-family: %s; font-size: %dpt;", family ? family : "sans", size / PANGO_SCALE);
 
       iupgtk4CssSetWidgetFont(widget, css_font);
     }

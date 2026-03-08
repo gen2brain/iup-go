@@ -1703,24 +1703,24 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
   char* rtf = (char*)malloc(bufSize);
   int pos = 0;
 
-  pos += sprintf(rtf + pos, "{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fnil %s;}}",
+  pos += snprintf(rtf + pos, bufSize - pos, "{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fnil %s;}}",
                  fontFace ? fontFace : defaultFontFace);
 
   if (hasFg || hasBg)
   {
-    pos += sprintf(rtf + pos, "{\\colortbl;");
+    pos += snprintf(rtf + pos, bufSize - pos, "{\\colortbl;");
     if (hasFg)
-      pos += sprintf(rtf + pos, "\\red%d\\green%d\\blue%d;", fgR, fgG, fgB);
+      pos += snprintf(rtf + pos, bufSize - pos, "\\red%d\\green%d\\blue%d;", fgR, fgG, fgB);
     if (hasBg)
     {
       if (!hasFg)
-        pos += sprintf(rtf + pos, ";");
-      pos += sprintf(rtf + pos, "\\red%d\\green%d\\blue%d;", bgR, bgG, bgB);
+        pos += snprintf(rtf + pos, bufSize - pos, ";");
+      pos += snprintf(rtf + pos, bufSize - pos, "\\red%d\\green%d\\blue%d;", bgR, bgG, bgB);
     }
-    pos += sprintf(rtf + pos, "}");
+    pos += snprintf(rtf + pos, bufSize - pos, "}");
   }
 
-  pos += sprintf(rtf + pos, "\\f0");
+  pos += snprintf(rtf + pos, bufSize - pos, "\\f0");
 
   val = iupAttribGet(formattag, "FONTSIZE");
   if (val)
@@ -1751,29 +1751,29 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
           fontSize = (float)(fontSize * scale);
       }
 
-      pos += sprintf(rtf + pos, "\\fs%d", (int)(fontSize * 2.0f));
+      pos += snprintf(rtf + pos, bufSize - pos, "\\fs%d", (int)(fontSize * 2.0f));
     }
   }
 
   val = iupAttribGet(formattag, "ITALIC");
   if (val)
-    pos += sprintf(rtf + pos, iupStrBoolean(val) ? "\\i" : "\\i0");
+    pos += snprintf(rtf + pos, bufSize - pos, iupStrBoolean(val) ? "\\i" : "\\i0");
 
   val = iupAttribGet(formattag, "STRIKEOUT");
   if (val)
-    pos += sprintf(rtf + pos, iupStrBoolean(val) ? "\\strike" : "\\strike0");
+    pos += snprintf(rtf + pos, bufSize - pos, iupStrBoolean(val) ? "\\strike" : "\\strike0");
 
   val = iupAttribGet(formattag, "UNDERLINE");
   if (val)
   {
     if (iupStrEqualNoCase(val, "SINGLE"))
-      pos += sprintf(rtf + pos, "\\ul");
+      pos += snprintf(rtf + pos, bufSize - pos, "\\ul");
     else if (iupStrEqualNoCase(val, "DOUBLE"))
-      pos += sprintf(rtf + pos, "\\uldb");
+      pos += snprintf(rtf + pos, bufSize - pos, "\\uldb");
     else if (iupStrEqualNoCase(val, "DOTTED"))
-      pos += sprintf(rtf + pos, "\\uld");
+      pos += snprintf(rtf + pos, bufSize - pos, "\\uld");
     else
-      pos += sprintf(rtf + pos, "\\ulnone");
+      pos += snprintf(rtf + pos, bufSize - pos, "\\ulnone");
   }
 
   val = iupAttribGet(formattag, "WEIGHT");
@@ -1781,34 +1781,34 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
   {
     if (iupStrEqualNoCase(val, "BOLD") || iupStrEqualNoCase(val, "EXTRABOLD") ||
         iupStrEqualNoCase(val, "HEAVY") || iupStrEqualNoCase(val, "SEMIBOLD"))
-      pos += sprintf(rtf + pos, "\\b");
+      pos += snprintf(rtf + pos, bufSize - pos, "\\b");
     else
-      pos += sprintf(rtf + pos, "\\b0");
+      pos += snprintf(rtf + pos, bufSize - pos, "\\b0");
   }
 
   val = iupAttribGet(formattag, "RISE");
   if (val)
   {
     if (iupStrEqualNoCase(val, "SUPERSCRIPT"))
-      pos += sprintf(rtf + pos, "\\super");
+      pos += snprintf(rtf + pos, bufSize - pos, "\\super");
     else if (iupStrEqualNoCase(val, "SUBSCRIPT"))
-      pos += sprintf(rtf + pos, "\\sub");
+      pos += snprintf(rtf + pos, bufSize - pos, "\\sub");
     else
-      pos += sprintf(rtf + pos, "\\nosupersub");
+      pos += snprintf(rtf + pos, bufSize - pos, "\\nosupersub");
   }
 
   if (hasFg)
-    pos += sprintf(rtf + pos, "\\cf1");
+    pos += snprintf(rtf + pos, bufSize - pos, "\\cf1");
   if (hasBg)
-    pos += sprintf(rtf + pos, "\\highlight%d", hasFg ? 2 : 1);
+    pos += snprintf(rtf + pos, bufSize - pos, "\\highlight%d", hasFg ? 2 : 1);
 
   val = iupAttribGet(formattag, "SMALLCAPS");
   if (val)
-    pos += sprintf(rtf + pos, iupStrBoolean(val) ? "\\scaps" : "\\scaps0");
+    pos += snprintf(rtf + pos, bufSize - pos, iupStrBoolean(val) ? "\\scaps" : "\\scaps0");
 
   val = iupAttribGet(formattag, "PROTECTED");
   if (val)
-    pos += sprintf(rtf + pos, iupStrBoolean(val) ? "\\protect" : "\\protect0");
+    pos += snprintf(rtf + pos, bufSize - pos, iupStrBoolean(val) ? "\\protect" : "\\protect0");
 
   rtf[pos++] = ' ';
 
@@ -1829,7 +1829,7 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
     else if (ch < 128)
       rtf[pos++] = (char)ch;
     else
-      pos += sprintf(rtf + pos, "\\u%d?", (int)(int16_t)ch);
+      pos += snprintf(rtf + pos, bufSize - pos, "\\u%d?", (int)(int16_t)ch);
   }
 
   rtf[pos++] = '}';
@@ -1965,7 +1965,7 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
 
         size_t rtfBufSize = 256 + pngSize * 2;
         char* rtf = (char*)malloc(rtfBufSize);
-        int pos = sprintf(rtf, "{\\rtf1{\\pict\\pngblip\\picw%d\\pich%d\\picwgoal%d\\pichgoal%d ",
+        int pos = snprintf(rtf, rtfBufSize, "{\\rtf1{\\pict\\pngblip\\picw%d\\pich%d\\picwgoal%d\\pichgoal%d ",
                           new_w, new_h, twips_w, twips_h);
 
         static const char hexChars[] = "0123456789abcdef";
@@ -2014,10 +2014,10 @@ extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk
         int idx = iupAttribGetInt(ih, "_IUP_LINK_COUNT");
         char attr_name[80];
 
-        sprintf(attr_name, "_IUP_LINK_URL_%d", idx);
+        snprintf(attr_name, sizeof(attr_name), "_IUP_LINK_URL_%d", idx);
         iupAttribSetStr(ih, attr_name, link_url);
 
-        sprintf(attr_name, "_IUP_LINK_RANGE_%d", idx);
+        snprintf(attr_name, sizeof(attr_name), "_IUP_LINK_RANGE_%d", idx);
         iupAttribSetStrf(ih, attr_name, "%d:%d", range_start, range_end);
 
         iupAttribSetInt(ih, "_IUP_LINK_COUNT", idx + 1);
@@ -2040,12 +2040,12 @@ static const char* winuiTextFindLinkUrl(Ihandle* ih, int pos)
     int start, end;
     char attr_name[80];
 
-    sprintf(attr_name, "_IUP_LINK_RANGE_%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_LINK_RANGE_%d", i);
     if (iupStrToIntInt(iupAttribGet(ih, attr_name), &start, &end, ':') == 2)
     {
       if (pos >= start && pos < end)
       {
-        sprintf(attr_name, "_IUP_LINK_URL_%d", i);
+        snprintf(attr_name, sizeof(attr_name), "_IUP_LINK_URL_%d", i);
         return iupAttribGet(ih, attr_name);
       }
     }

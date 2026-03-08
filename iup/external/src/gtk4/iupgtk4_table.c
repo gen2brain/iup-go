@@ -551,7 +551,7 @@ static void cell_factory_setup(GtkSignalListItemFactory* factory, GtkListItem* l
   }
 
   char align_name[50];
-  sprintf(align_name, "ALIGNMENT%d", col + 1);
+  snprintf(align_name, sizeof(align_name), "ALIGNMENT%d", col + 1);
   char* alignment = iupAttribGet(ih, align_name);
   if (!alignment)
     alignment = iupAttribGetId(ih, "ALIGNMENT", col + 1);
@@ -1359,11 +1359,11 @@ static int gtk4TableMapMethod(Ihandle* ih)
 
     /* Check if width was set before mapping */
     char name[50];
-    sprintf(name, "RASTERWIDTH%d", col + 1);
+    snprintf(name, sizeof(name), "RASTERWIDTH%d", col + 1);
     char* width_str = iupAttribGet(ih, name);
     if (!width_str)
     {
-      sprintf(name, "WIDTH%d", col + 1);
+      snprintf(name, sizeof(name), "WIDTH%d", col + 1);
       width_str = iupAttribGet(ih, name);
     }
 
@@ -1439,11 +1439,11 @@ static int gtk4TableMapMethod(Ihandle* ih)
   int last_col_has_width = 0;
   {
     char name[50];
-    sprintf(name, "RASTERWIDTH%d", ih->data->num_col);
+    snprintf(name, sizeof(name), "RASTERWIDTH%d", ih->data->num_col);
     char* width_str = iupAttribGet(ih, name);
     if (!width_str)
     {
-      sprintf(name, "WIDTH%d", ih->data->num_col);
+      snprintf(name, sizeof(name), "WIDTH%d", ih->data->num_col);
       width_str = iupAttribGet(ih, name);
     }
     int col_width = 0;
@@ -1557,7 +1557,7 @@ static int gtk4TableMapMethod(Ihandle* ih)
   for (int col = 1; col <= ih->data->num_col; col++)
   {
     char name[50];
-    sprintf(name, "TITLE%d", col);
+    snprintf(name, sizeof(name), "TITLE%d", col);
     char* title = iupAttribGet(ih, name);
     if (title)
       iupdrvTableSetColTitle(ih, col, title);
@@ -1873,11 +1873,11 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 
     /* Check if this column has explicit width */
     char width_name[50];
-    sprintf(width_name, "RASTERWIDTH%d", col);
+    snprintf(width_name, sizeof(width_name), "RASTERWIDTH%d", col);
     char* width_str = iupAttribGet(ih, width_name);
     if (!width_str)
     {
-      sprintf(width_name, "WIDTH%d", col);
+      snprintf(width_name, sizeof(width_name), "WIDTH%d", col);
       width_str = iupAttribGet(ih, width_name);
     }
 

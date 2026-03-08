@@ -344,7 +344,7 @@ int iupLexError (int n, ...)
   case IUPLEX_ERR_FILENOTOPENED:
     {
       char *fn=va_arg(va,char *);
-      sprintf (msg, "cannot open file %s", fn);
+      snprintf(msg, sizeof(msg), "cannot open file %s", fn);
     }
     break;
   case IUPLEX_ERR_NOTMATCH:
@@ -353,18 +353,18 @@ int iupLexError (int n, ...)
       int te=va_arg(va,int);        /* iLexToken expected */
       char *str=iupTokenStr(tr);
       char *ste=iupTokenStr(te);
-      sprintf (msg, "expected %s but found %s", ste, str);
+      snprintf(msg, sizeof(msg), "expected %s but found %s", ste, str);
     }
     break;
   case IUPLEX_ERR_NOTENDATTR:
     {
-      sprintf (msg, "missing ']'");
+      snprintf(msg, sizeof(msg), "missing ']'");
     }
     break;
   case IUPLEX_ERR_PARSE:
     {
       char* s=va_arg(va,char*);        /* iLexToken expected */
-      sprintf(msg,"%.*s",(int)(sizeof(msg)-1),s);
+      snprintf(msg, sizeof(msg), "%.*s",(int)(sizeof(msg)-1),s);
     }
     break;
   }

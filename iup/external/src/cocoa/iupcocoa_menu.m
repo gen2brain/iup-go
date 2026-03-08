@@ -1326,7 +1326,7 @@ static const void* RECENT_MENU_ASSOCIATED_OBJ_KEY = &RECENT_MENU_ASSOCIATED_OBJ_
     char attr_name[32];
     const char* filename;
 
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", _index);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", _index);
     filename = iupAttribGet(_menu, attr_name);
 
     if (filename)
@@ -1377,7 +1377,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
     char attr_name[32];
     NSString* title = [NSString stringWithUTF8String:filenames[i]];
 
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSetStr(menu, attr_name, filenames[i]);
 
     if (i < existing)
@@ -1410,7 +1410,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
     existing--;
 
     char attr_name[32];
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", existing);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", existing);
     iupAttribSet(menu, attr_name, NULL);
   }
 

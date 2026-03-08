@@ -381,7 +381,7 @@ static Cursor motGetCursor(Ihandle* ih, const char* name)
   int i, count = sizeof(table)/sizeof(table[0]);
 
   /* check the cursor cache first (per control)*/
-  sprintf(str, "_IUPMOT_CURSOR_%s", name);
+  snprintf(str, sizeof(str), "_IUPMOT_CURSOR_%s", name);
   cur = (Cursor)iupAttribGet(ih, str);
   if (cur)
     return cur;

@@ -447,42 +447,42 @@ static void winTableSwapColumns(Ihandle* ih, int col1, int col2)
     }
   }
 
-  sprintf(name1, "ALIGNMENT%d", col1);
-  sprintf(name2, "ALIGNMENT%d", col2);
+  snprintf(name1, sizeof(name1), "ALIGNMENT%d", col1);
+  snprintf(name2, sizeof(name2), "ALIGNMENT%d", col2);
   winTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "0:%d", col1);
-  sprintf(name2, "0:%d", col2);
+  snprintf(name1, sizeof(name1), "0:%d", col1);
+  snprintf(name2, sizeof(name2), "0:%d", col2);
   winTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "BGCOLOR0:%d", col1);
-  sprintf(name2, "BGCOLOR0:%d", col2);
+  snprintf(name1, sizeof(name1), "BGCOLOR0:%d", col1);
+  snprintf(name2, sizeof(name2), "BGCOLOR0:%d", col2);
   winTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "FGCOLOR0:%d", col1);
-  sprintf(name2, "FGCOLOR0:%d", col2);
+  snprintf(name1, sizeof(name1), "FGCOLOR0:%d", col1);
+  snprintf(name2, sizeof(name2), "FGCOLOR0:%d", col2);
   winTableSwapAttrib(ih, name1, name2);
 
-  sprintf(name1, "FONT0:%d", col1);
-  sprintf(name2, "FONT0:%d", col2);
+  snprintf(name1, sizeof(name1), "FONT0:%d", col1);
+  snprintf(name2, sizeof(name2), "FONT0:%d", col2);
   winTableSwapAttrib(ih, name1, name2);
 
   for (int lin = 1; lin <= num_lin; lin++)
   {
-    sprintf(name1, "CELLVALUE%d:%d", lin, col1);
-    sprintf(name2, "CELLVALUE%d:%d", lin, col2);
+    snprintf(name1, sizeof(name1), "CELLVALUE%d:%d", lin, col1);
+    snprintf(name2, sizeof(name2), "CELLVALUE%d:%d", lin, col2);
     winTableSwapAttrib(ih, name1, name2);
 
-    sprintf(name1, "BGCOLOR%d:%d", lin, col1);
-    sprintf(name2, "BGCOLOR%d:%d", lin, col2);
+    snprintf(name1, sizeof(name1), "BGCOLOR%d:%d", lin, col1);
+    snprintf(name2, sizeof(name2), "BGCOLOR%d:%d", lin, col2);
     winTableSwapAttrib(ih, name1, name2);
 
-    sprintf(name1, "FGCOLOR%d:%d", lin, col1);
-    sprintf(name2, "FGCOLOR%d:%d", lin, col2);
+    snprintf(name1, sizeof(name1), "FGCOLOR%d:%d", lin, col1);
+    snprintf(name2, sizeof(name2), "FGCOLOR%d:%d", lin, col2);
     winTableSwapAttrib(ih, name1, name2);
 
-    sprintf(name1, "FONT%d:%d", lin, col1);
-    sprintf(name2, "FONT%d:%d", lin, col2);
+    snprintf(name1, sizeof(name1), "FONT%d:%d", lin, col1);
+    snprintf(name2, sizeof(name2), "FONT%d:%d", lin, col2);
     winTableSwapAttrib(ih, name1, name2);
   }
 
@@ -513,7 +513,7 @@ static void winTableRefreshAfterReorder(Ihandle* ih)
     lvc.cx = data->col_widths[i];
 
     char name[50];
-    sprintf(name, "ALIGNMENT%d", i + 1);
+    snprintf(name, sizeof(name), "ALIGNMENT%d", i + 1);
     char* align_str = iupAttribGet(ih, name);
     if (align_str)
     {
@@ -806,7 +806,7 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   {
     /* Check for ALIGNMENT attribute */
     char name[50];
-    sprintf(name, "ALIGNMENT%d", col);
+    snprintf(name, sizeof(name), "ALIGNMENT%d", col);
     char* align_str = iupAttribGet(ih, name);
 
     if (align_str)
@@ -2123,7 +2123,7 @@ static BOOL winTableIsCellEditable(Ihandle* ih, int lin, int col)
     return FALSE;
 
   char name[50];
-  sprintf(name, "EDITABLE%d", col);
+  snprintf(name, sizeof(name), "EDITABLE%d", col);
   char* editable = iupAttribGet(ih, name);
   if (!editable)
     editable = iupAttribGet(ih, "EDITABLE");
@@ -2469,7 +2469,7 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         {
           /* Check if cell is editable */
           char name[50];
-          sprintf(name, "EDITABLE%d", col);
+          snprintf(name, sizeof(name), "EDITABLE%d", col);
           char* editable = iupAttribGet(ih, name);
           if (!editable)
             editable = iupAttribGet(ih, "EDITABLE");

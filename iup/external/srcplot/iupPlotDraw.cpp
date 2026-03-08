@@ -8,7 +8,7 @@
 #include "iup_drvfont.h"
 
 
-void iupPlotBuildFont(Ihandle* ih, int fontStyle, int fontSize, char* fontStr)
+void iupPlotBuildFont(Ihandle* ih, int fontStyle, int fontSize, char* fontStr, int fontStrSize)
 {
   char* fontFace = IupGetAttribute(ih, "FONTFACE");
   if (!fontFace)
@@ -23,7 +23,7 @@ void iupPlotBuildFont(Ihandle* ih, int fontStyle, int fontSize, char* fontStr)
   default:                        styleStr = ""; break;
   }
 
-  sprintf(fontStr, "%s, %s%d", fontFace, styleStr, fontSize);
+  snprintf(fontStr, fontStrSize, "%s, %s%d", fontFace, styleStr, fontSize);
 }
 
 void iupPlotDrawMark(iupPlotDrawContext* ctx, int x, int y, int markStyle, int markSize, long color)
@@ -344,7 +344,7 @@ void iupPlot::DrawTitle(iupPlotDrawContext* ctx) const
     char fontStr[256];
     iupPlotBuildFont(ctx->ih, mTitle.mFontStyle == -1 ? mDefaultFontStyle : mTitle.mFontStyle,
                      mTitle.mFontSize == 0 ? (IupGetInt(ih, "FONTSIZE") > 0 ? IupGetInt(ih, "FONTSIZE") + 6 : IupGetInt(ih, "FONTSIZE") - 8) : mTitle.mFontSize,
-                     fontStr);
+                     fontStr, sizeof(fontStr));
 
     iupPlotDrawAlignedText(ctx, mTitle.mPosX, mTitle.mPosY, IUP_PLOT_NORTH,
                            mTitle.GetText(), mTitle.mColor, fontStr, 0);
@@ -405,7 +405,7 @@ bool iupPlot::DrawLegend(const iupPlotRect &inRect, iupPlotDrawContext* ctx, iup
     char fontStr[256];
     int fontStyle = mLegend.mFontStyle == -1 ? mDefaultFontStyle : mLegend.mFontStyle;
     int fontSize = mLegend.mFontSize == 0 ? mDefaultFontSize : mLegend.mFontSize;
-    iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr);
+    iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr, sizeof(fontStr));
     SetFont(ctx->ih, mLegend.mFontStyle, mLegend.mFontSize);
 
     iupdrvFontGetFontDim(IupGetAttribute(ctx->ih, "DRAWFONT"), NULL, &theFontHeight, NULL, NULL);
@@ -573,7 +573,7 @@ bool iupPlot::DrawSampleColorLegend(iupPlotDataSet *dataset, const iupPlotRect &
     char fontStr[256];
     int fontStyle = mLegend.mFontStyle == -1 ? mDefaultFontStyle : mLegend.mFontStyle;
     int fontSize = mLegend.mFontSize == 0 ? mDefaultFontSize : mLegend.mFontSize;
-    iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr);
+    iupPlotBuildFont(ctx->ih, fontStyle, fontSize, fontStr, sizeof(fontStr));
     SetFont(ctx->ih, mLegend.mFontStyle, mLegend.mFontSize);
 
     iupdrvFontGetFontDim(IupGetAttribute(ctx->ih, "DRAWFONT"), NULL, &theFontHeight, NULL, NULL);

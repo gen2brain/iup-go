@@ -741,8 +741,11 @@ static int eflListSetAppendAttrib(Ihandle* ih, const char* value)
   current = efl_text_get(entry);
   if (current && current[0])
   {
-    newtext = malloc(strlen(current) + strlen(value) + 2);
-    sprintf(newtext, "%s\n%s", current, value);
+    {
+    int newtext_size = (int)(strlen(current) + strlen(value) + 2);
+    newtext = malloc(newtext_size);
+    snprintf(newtext, newtext_size, "%s\n%s", current, value);
+    }
     efl_text_set(entry, newtext);
     free(newtext);
   }

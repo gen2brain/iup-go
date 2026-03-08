@@ -244,7 +244,7 @@ IUP_SDK_API char* iupKeyCodeToName(int code)
   if (!base_name)
   {
     static char code_name[30];
-    sprintf(code_name, "K_0x%X", iup_XkeyBase(code));
+    snprintf(code_name, sizeof(code_name), "K_0x%X", iup_XkeyBase(code));
     base_name = code_name;
   }
 

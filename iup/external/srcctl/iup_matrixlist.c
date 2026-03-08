@@ -256,7 +256,7 @@ static void iMatrixListInitSize(Ihandle* ih, ImatrixListData* mtxList)
   if (mtxList->image_col != 0)
     num_col++;
   
-  sprintf(str, "%d", num_col);
+  snprintf(str, sizeof(str), "%d", num_col);
   iupMatrixSetNumColAttrib(ih, str);  /* "NUMCOL" */
   IupSetStrAttribute(ih, "NUMCOL_VISIBLE", str);
 
@@ -462,7 +462,7 @@ static int iMatrixListSetCountAttrib(Ihandle* ih, const char* value)
     if (iupStrToInt(value, &count))
     {
       char str[50];
-      sprintf(str, "%d", count+1);
+      snprintf(str, sizeof(str), "%d", count+1);
       iMatrixListSetNumLinAttrib(ih, str);
     }
   }
@@ -766,7 +766,7 @@ static int iMatrixListSetAppendItemAttrib(Ihandle* ih, const char* value)
   if (mtxList->editable)
     num_lin--;
 
-  sprintf(str, "%d", num_lin);
+  snprintf(str, sizeof(str), "%d", num_lin);
   iMatrixListSetAddLinAttrib(ih, str);  /* after this id */
   iMatrixListSetIdValueAttrib(ih, num_lin+1, value);
   return 0;
@@ -785,7 +785,7 @@ static int iMatrixListSetInsertItemAttrib(Ihandle* ih, int lin, const char* valu
   if (mtxList->editable && lin == ih->data->lines.num-1)
     lin--;
 
-  sprintf(str, "%d", lin);
+  snprintf(str, sizeof(str), "%d", lin);
   iMatrixListSetAddLinAttrib(ih, str);  /* after this id */
   iMatrixListSetIdValueAttrib(ih, lin+1, value);
   return 0;
@@ -912,7 +912,7 @@ static int iMatrixListDrawColorCol(Ihandle *ih, int lin, int x1, int x2, int y1,
     }
 
     /* Fill the box with the color */
-    sprintf(color_str, "%d %d %d", red, green, blue);
+    snprintf(color_str, sizeof(color_str), "%d %d %d", red, green, blue);
     IupSetAttribute(ih, "DRAWCOLOR", color_str);
     IupSetAttribute(ih, "DRAWSTYLE", "FILL");
     IupDrawRectangle(ih, x1 + DX_FILL, y1 + DY_FILL, x2 - DX_FILL, y2 - DY_FILL);

@@ -628,7 +628,7 @@ IUP_SDK_API long iupDrawStrToColor(const char* str, long c_def)
 IUP_SDK_API void iupDrawSetColor(Ihandle *ih, const char* name, long color)
 {
   char value[60];
-  sprintf(value, "%d %d %d", (int)iupDrawRed(color), (int)iupDrawGreen(color), (int)iupDrawBlue(color));
+  snprintf(value, sizeof(value), "%d %d %d", (int)iupDrawRed(color), (int)iupDrawGreen(color), (int)iupDrawBlue(color));
   iupAttribSetStr(ih, name, value);
 }
 

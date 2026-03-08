@@ -31,7 +31,7 @@ static void iParamSetDoublePrec(Ihandle* ih, const char* name, double num, int p
   char value[80];
   char format[30];
   if (prec <= 0) prec = IupGetInt(NULL, "DEFAULTPRECISION");
-  sprintf(format, "%%.%df", prec);
+  snprintf(format, sizeof(format), "%%.%df", prec);
   iupStrPrintfDoubleLocale(value, format, num, IupGetGlobal("DEFAULTDECIMALSYMBOL"));
 
   IupStoreAttribute(ih, name, value);

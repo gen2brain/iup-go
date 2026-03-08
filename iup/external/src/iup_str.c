@@ -497,42 +497,42 @@ IUP_SDK_API char* iupStrReturnChecked(int check)
 IUP_SDK_API char* iupStrReturnUInt(unsigned int i)
 {
   char* str = iupStrGetSmallMem();  /* 20 */
-  sprintf(str, "%u", i);
+  snprintf(str, 80, "%u", i);
   return str;
 }
 
 IUP_SDK_API char* iupStrReturnInt(int i)
 {
   char* str = iupStrGetSmallMem();  /* 20 */
-  sprintf(str, "%d", i);
+  snprintf(str, 80, "%d", i);
   return str;
 }
 
 IUP_SDK_API char* iupStrReturnFloat(float f)
 {
   char* str = iupStrGetSmallMem();  /* 80 */
-  sprintf(str, IUP_FLOAT2STR, f);
+  snprintf(str, 80, IUP_FLOAT2STR, f);
   return str;
 }
 
 IUP_SDK_API char* iupStrReturnDouble(double d)
 {
   char* str = iupStrGetSmallMem();  /* 80 */
-  sprintf(str, IUP_DOUBLE2STR, d);
+  snprintf(str, 80, IUP_DOUBLE2STR, d);
   return str;
 }
 
 IUP_SDK_API char* iupStrReturnRGB(unsigned char r, unsigned char g, unsigned char b)
 {
   char* str = iupStrGetSmallMem();  /* 3*20 */
-  sprintf(str, "%d %d %d", (int)r, (int)g, (int)b);
+  snprintf(str, 80, "%d %d %d", (int)r, (int)g, (int)b);
   return str;
 }
 
 IUP_SDK_API char* iupStrReturnRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
   char* str = iupStrGetSmallMem();  /* 4*20 */
-  sprintf(str, "%d %d %d %d", (int)r, (int)g, (int)b, (int)a);
+  snprintf(str, 80, "%d %d %d %d", (int)r, (int)g, (int)b, (int)a);
   return str;
 }
 
@@ -558,7 +558,7 @@ IUP_SDK_API char* iupStrReturnStrStr(const char *str1, const char *str2, char se
 IUP_SDK_API char* iupStrReturnIntInt(int i1, int i2, char sep)
 {
   char* str = iupStrGetSmallMem();  /* 2*20 */
-  sprintf(str, "%d%c%d", i1, sep, i2);
+  snprintf(str, 80, "%d%c%d", i1, sep, i2);
   return str;
 }
 
@@ -1871,7 +1871,7 @@ IUP_SDK_API void iupStrPrintfDoubleLocale(char *str, const char *format, double 
 {
   char* old_locale = iStrSetLocale(decimal_symbol);
 
-  sprintf(str, format, d);
+  snprintf(str, 80, format, d);
 
   iStrResetLocale(old_locale);
 }

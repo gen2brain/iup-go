@@ -383,7 +383,7 @@ char *iupdrvGetGlobal(const char *name)
       CGFloat screen_top = frame.origin.y + frame.size.height;
       int iup_x = (int)frame.origin.x;
       int iup_y = (int)(primary_screen_top - screen_top);
-      pstr += sprintf(pstr, "%d %d %d %d\n", iup_x, iup_y, (int)frame.size.width, (int)frame.size.height);
+      pstr += snprintf(pstr, (monitors_count * 50) - (pstr - str), "%d %d %d %d\n", iup_x, iup_y, (int)frame.size.width, (int)frame.size.height);
     }
     return str;
   }

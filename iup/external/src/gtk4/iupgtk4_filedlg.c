@@ -404,7 +404,7 @@ static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
 
       g_list_store_append(data.filters_store, filter);
 
-      sprintf(atrib, "_IUPDLG_FILTER%d", i + 1);
+      snprintf(atrib, sizeof(atrib), "_IUPDLG_FILTER%d", i + 1);
       iupAttribSet(ih, atrib, (char*)filter);
 
       if (i + 1 == filter_index)
@@ -478,7 +478,7 @@ static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
 
       for (i = 0; i < data.filter_count; i++)
       {
-        sprintf(atrib, "_IUPDLG_FILTER%d", i + 1);
+        snprintf(atrib, sizeof(atrib), "_IUPDLG_FILTER%d", i + 1);
         if (data.selected_filter == (GtkFileFilter*)iupAttribGet(ih, atrib))
           iupAttribSetInt(ih, "FILTERUSED", i + 1);
       }
@@ -693,7 +693,7 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
 
       gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 
-      sprintf(atrib, "_IUPDLG_FILTER%d", i+1);
+      snprintf(atrib, sizeof(atrib), "_IUPDLG_FILTER%d", i+1);
       iupAttribSet(ih, atrib, (char*)filter);
 
       if (i+1 == filter_index)
@@ -871,7 +871,7 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
 
       for (i=0; i<filter_count; i++)
       {
-        sprintf(atrib, "_IUPDLG_FILTER%d", i+1);
+        snprintf(atrib, sizeof(atrib), "_IUPDLG_FILTER%d", i+1);
         if (filter == (GtkFileFilter*)iupAttribGet(ih, atrib))
           iupAttribSetInt(ih, "FILTERUSED", i+1);
       }

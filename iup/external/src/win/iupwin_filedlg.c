@@ -947,7 +947,7 @@ static int winFileDlgPopup(Ihandle *ih, int x, int y)
             {
               char nameid[100];
               value = iupAttribGet(ih, "VALUE");
-              sprintf(nameid, "MULTIVALUE%d", count);
+              snprintf(nameid, sizeof(nameid), "MULTIVALUE%d", count);
               iupAttribSetStrf(ih, nameid, "%s%s", dir, filename);
 
               iupAttribSetStrf(ih, "VALUE", "%s%s|", value, iupAttribGetId(ih, "MULTIVALUE", count));

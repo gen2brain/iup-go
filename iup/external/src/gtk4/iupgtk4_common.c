@@ -1131,7 +1131,7 @@ static GdkCursor* gtk4GetCursor(Ihandle* ih, const char* name)
   int i, count = sizeof(table) / sizeof(table[0]);
 
   /* Check cursor cache first (per control) */
-  sprintf(str, "_IUPGTK4_CURSOR_%s", name);
+  snprintf(str, sizeof(str), "_IUPGTK4_CURSOR_%s", name);
   cur = (GdkCursor*)iupAttribGet(ih, str);
   if (cur)
     return cur;

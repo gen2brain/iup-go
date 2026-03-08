@@ -68,7 +68,7 @@ static void iGaugeDrawText(Ihandle* ih, int xmid, int w, int h, long fgcolor)
 
   if (text == NULL)
   {
-    sprintf(buffer, "%.1f%%", 100 * (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin));
+    snprintf(buffer, sizeof(buffer), "%.1f%%", 100 * (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin));
     text = buffer;
   }
 

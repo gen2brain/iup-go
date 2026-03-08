@@ -39,7 +39,7 @@ extern "C" char* iupdrvGetSystemVersion(void)
     GetVersionExW(&osvi);
 #pragma warning(pop)
 
-    sprintf(version, "%lu.%lu.%lu",
+    snprintf(version, sizeof(version), "%lu.%lu.%lu",
             osvi.dwMajorVersion,
             osvi.dwMinorVersion,
             osvi.dwBuildNumber);

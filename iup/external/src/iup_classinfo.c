@@ -47,9 +47,9 @@ static char* getClassParameters(const char* format, const char* format_attr)
       if (fstr)
       {
         if (i!=0)
-          pstr += sprintf(pstr, "%s", ", ");
+          pstr += snprintf(pstr, sizeof(str) - (pstr - str), "%s", ", ");
 
-        pstr += sprintf(pstr, "%s", fstr);
+        pstr += snprintf(pstr, sizeof(str) - (pstr - str), "%s", fstr);
 
         if (format[i] == 's')
         {
@@ -57,10 +57,10 @@ static char* getClassParameters(const char* format, const char* format_attr)
           {
             char attr[100];
             iupStrLower(attr, format_attr);
-            pstr += sprintf(pstr, "%s", attr);
+            pstr += snprintf(pstr, sizeof(str) - (pstr - str), "%s", attr);
           }
           else
-            pstr += sprintf(pstr, "%s", "title");
+            pstr += snprintf(pstr, sizeof(str) - (pstr - str), "%s", "title");
         }
       }
       else
@@ -105,7 +105,7 @@ static char* getCallbackParameters(const char* format)
   static char str[200], *pstr;
   pstr = &str[0];
 
-  pstr += sprintf(pstr, "%s", "Ihandle*");  /* First parameter in all callbacks */
+  pstr += snprintf(pstr, sizeof(str) - (pstr - str), "%s", "Ihandle*");  /* First parameter in all callbacks */
 
   if (format && format[0]!=0)
   {
@@ -136,7 +136,7 @@ static char* getCallbackParameters(const char* format)
         return NULL;
       }
 
-      pstr += sprintf(pstr, ", %s", fstr);
+      pstr += snprintf(pstr, sizeof(str) - (pstr - str), ", %s", fstr);
     }
   }
 
@@ -217,7 +217,7 @@ static const char* getChildType(int childtype)
   if (childtype > IUP_CHILDMANY)
   {
     static char buf[100];
-    sprintf(buf, "%d CHILDREN", childtype-IUP_CHILDMANY);
+    snprintf(buf, sizeof(buf), "%d CHILDREN", childtype-IUP_CHILDMANY);
     return buf;
   }
   else
@@ -364,8 +364,8 @@ IUP_SDK_API void iupClassInfoShowHelp(const char* className)
   else if (iupStrEqual(className, "webbrowser"))
     className = "web";
 
-  /* sprintf(url, "http://www.tecgraf.puc-rio.br/iup/en/%s/iup%s%s.html", folder, sep, className); -- direct page version */
-  sprintf(url, "http://www.tecgraf.puc-rio.br/iup/index.html?url=%s/iup%s%s.html", folder, sep, className);
+  /* snprintf(url, sizeof(url), "http://www.tecgraf.puc-rio.br/iup/en/%s/iup%s%s.html", folder, sep, className); -- direct page version */
+  snprintf(url, sizeof(url), "http://www.tecgraf.puc-rio.br/iup/index.html?url=%s/iup%s%s.html", folder, sep, className);
 
   IupHelp(url);
 }

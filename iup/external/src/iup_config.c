@@ -230,21 +230,21 @@ IUP_API int IupConfigSave(Ihandle* ih)
 IUP_API void IupConfigSetVariableStrId(Ihandle* ih, const char* group, const char* key, int id, const char* value)
 {
   char key_id[GROUPKEYSIZE];
-  sprintf(key_id, "%s%d", key, id);
+  snprintf(key_id, sizeof(key_id), "%s%d", key, id);
   IupConfigSetVariableStr(ih, group, key_id, value);
 }
 
 IUP_API void IupConfigSetVariableIntId(Ihandle* ih, const char* group, const char* key, int id, int value)
 {
   char key_id[GROUPKEYSIZE];
-  sprintf(key_id, "%s%d", key, id);
+  snprintf(key_id, sizeof(key_id), "%s%d", key, id);
   IupConfigSetVariableInt(ih, group, key_id, value);
 }
 
 IUP_API void IupConfigSetVariableDoubleId(Ihandle* ih, const char* group, const char* key, int id, double value)
 {
   char key_id[GROUPKEYSIZE];
-  sprintf(key_id, "%s%d", key, id);
+  snprintf(key_id, sizeof(key_id), "%s%d", key, id);
   IupConfigSetVariableDouble(ih, group, key_id, value);
 }
 
@@ -329,21 +329,21 @@ IUP_API double IupConfigGetVariableDoubleIdDef(Ihandle* ih, const char* group, c
 IUP_API const char* IupConfigGetVariableStrId(Ihandle* ih, const char* group, const char* key, int id)
 {
   char key_id[GROUPKEYSIZE];
-  sprintf(key_id, "%s%d", key, id);
+  snprintf(key_id, sizeof(key_id), "%s%d", key, id);
   return IupConfigGetVariableStr(ih, group, key_id);
 }
 
 IUP_API int IupConfigGetVariableIntId(Ihandle* ih, const char* group, const char* key, int id)
 {
   char key_id[GROUPKEYSIZE];
-  sprintf(key_id, "%s%d", key, id);
+  snprintf(key_id, sizeof(key_id), "%s%d", key, id);
   return IupConfigGetVariableInt(ih, group, key_id);
 }
 
 IUP_API double IupConfigGetVariableDoubleId(Ihandle* ih, const char* group, const char* key, int id)
 {
   char key_id[GROUPKEYSIZE];
-  sprintf(key_id, "%s%d", key, id);
+  snprintf(key_id, sizeof(key_id), "%s%d", key, id);
   return IupConfigGetVariableDouble(ih, group, key_id);
 }
 
@@ -422,7 +422,7 @@ static const char* iConfigGetRecentAttribName(const char* recent_name, const cha
   if (recent_name)
   {
     static char name[100];
-    sprintf(name, "%s%s", recent_name, base_name);
+    snprintf(name, sizeof(name), "%s%s", recent_name, base_name);
     return name;
   }
   else

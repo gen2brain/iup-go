@@ -260,7 +260,7 @@ static char* iTableGetTitleIdAttrib(Ihandle* ih, int col)
   {
     /* Return from hash table if not mapped */
     char name[50];
-    sprintf(name, "TITLE%d", col);
+    snprintf(name, sizeof(name), "TITLE%d", col);
     return iupAttribGet(ih, name);
   }
 
@@ -276,7 +276,7 @@ static int iTableSetTitleIdAttrib(Ihandle* ih, int col, const char* value)
   {
     /* Store in hash table if not mapped */
     char name[50];
-    sprintf(name, "TITLE%d", col);
+    snprintf(name, sizeof(name), "TITLE%d", col);
     iupAttribSetStr(ih, name, value);
     return 0;
   }
@@ -294,7 +294,7 @@ static char* iTableGetWidthIdAttrib(Ihandle* ih, int col)
     return NULL;
 
   /* Always check hash table first */
-  sprintf(name, "WIDTH%d", col);
+  snprintf(name, sizeof(name), "WIDTH%d", col);
   value = iupAttribGet(ih, name);
   if (value)
     return value;
@@ -325,7 +325,7 @@ static int iTableSetWidthIdAttrib(Ihandle* ih, int col, const char* value)
     width = 0;
 
   /* Always store in hash table for natural size calculation */
-  sprintf(name, "WIDTH%d", col);
+  snprintf(name, sizeof(name), "WIDTH%d", col);
   iupAttribSetStr(ih, name, value);
 
   /* If mapped, also apply to native widget */
@@ -346,13 +346,13 @@ static char* iTableGetRasterWidthIdAttrib(Ihandle* ih, int col)
     return NULL;
 
   /* Check for RASTERWIDTH first, then fall back to WIDTH */
-  sprintf(name, "RASTERWIDTH%d", col);
+  snprintf(name, sizeof(name), "RASTERWIDTH%d", col);
   value = iupAttribGet(ih, name);
   if (value)
     return value;
 
   /* Try WIDTH attribute */
-  sprintf(name, "WIDTH%d", col);
+  snprintf(name, sizeof(name), "WIDTH%d", col);
   value = iupAttribGet(ih, name);
   if (value)
     return value;
@@ -611,7 +611,7 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
 
       /* Check if WIDTH or RASTERWIDTH is set (these are ID-based attributes) */
       char name[50];
-      sprintf(name, "RASTERWIDTH%d", col);
+      snprintf(name, sizeof(name), "RASTERWIDTH%d", col);
       value = iupAttribGet(ih, name);
       if (value)
       {
@@ -623,7 +623,7 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
         }
       }
 
-      sprintf(name, "WIDTH%d", col);
+      snprintf(name, sizeof(name), "WIDTH%d", col);
       value = iupAttribGet(ih, name);
       if (value)
       {
@@ -682,11 +682,11 @@ static void iTableComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
   {
     /* Check if last column has explicit width */
     char name[50];
-    sprintf(name, "RASTERWIDTH%d", ih->data->num_col);
+    snprintf(name, sizeof(name), "RASTERWIDTH%d", ih->data->num_col);
     char* width_str = iupAttribGet(ih, name);
     if (!width_str)
     {
-      sprintf(name, "WIDTH%d", ih->data->num_col);
+      snprintf(name, sizeof(name), "WIDTH%d", ih->data->num_col);
       width_str = iupAttribGet(ih, name);
     }
     int width = 0;

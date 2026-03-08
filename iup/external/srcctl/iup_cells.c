@@ -59,7 +59,7 @@ static void iCellsParseColor(const char* color_str, unsigned char* r, unsigned c
 static void iCellsSetDrawColor(Ihandle* ih, unsigned char r, unsigned char g, unsigned char b)
 {
   char color_str[32];
-  sprintf(color_str, "%d %d %d", r, g, b);
+  snprintf(color_str, sizeof(color_str), "%d %d %d", r, g, b);
   IupSetStrAttribute(ih, "DRAWCOLOR", color_str);
 }
 

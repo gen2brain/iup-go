@@ -213,7 +213,7 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
 #else
       gdk_screen_get_monitor_geometry(screen, i, &rect);
 #endif
-      pstr += sprintf(pstr, "%d %d %d %d\n", rect.x, rect.y, rect.width, rect.height);
+      pstr += snprintf(pstr, (str + monitors_count * 50) - pstr, "%d %d %d %d\n", rect.x, rect.y, rect.width, rect.height);
     }
 
     return str;
