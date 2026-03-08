@@ -298,11 +298,25 @@ static int winuiTabsMapMethod(Ihandle* ih)
   winuiSetAux(ih, IUPWINUI_TABS_AUX, aux);
   winuiStoreHandle(ih, tabView);
 
-  Ihandle* child = ih->firstchild;
-  while (child)
+  /* Create pages and tabs */
+  if (ih->firstchild)
   {
-    winuiTabsChildAddedMethod(ih, child);
-    child = child->brother;
+    Ihandle* child;
+    Ihandle* current_child = (Ihandle*)iupAttribGet(ih, "_IUPTABS_VALUE_HANDLE");
+
+    for (child = ih->firstchild; child; child = child->brother)
+      winuiTabsChildAddedMethod(ih, child);
+
+    if (current_child)
+    {
+      IupSetAttribute(ih, "VALUE_HANDLE", (char*)current_child);
+
+      /* current value is now given by the native system */
+      iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", NULL);
+    }
+
+    if (!current_child)
+      iupdrvTabsSetCurrentTab(ih, 0);
   }
 
   return IUP_NOERROR;
@@ -341,8 +355,13 @@ static void winuiTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
   iupTabsCheckCurrentTab(ih, pos, 1);
 
+  IupWinUITabsAux* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
+  if (aux) aux->ignoreChange = 1;
+
   if (pos >= 0 && (uint32_t)pos < tabView.TabItems().Size())
     tabView.TabItems().RemoveAt(pos);
+
+  if (aux) aux->ignoreChange = 0;
 
   iupAttribSet(child, "_IUPTAB_CONTAINER", nullptr);
   iupAttribSet(child, IUPWINUI_TABITEMNATIVE, nullptr);
