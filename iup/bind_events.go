@@ -256,7 +256,12 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "EXTENDED_CB":
 		setExtendedFunc(ih, fn.(ExtendedFunc))
 	case "SELECT_CB":
-		setSelectFunc(ih, fn.(SelectFunc))
+		switch v := fn.(type) {
+		case SelectFunc:
+			setSelectFunc(ih, v)
+		case PlotSelectFunc:
+			setPlotSelectFunc(ih, v)
+		}
 	case "SWITCH_CB":
 		setSwitchFunc(ih, fn.(SwitchFunc))
 	case "WHEEL_CB":
@@ -441,9 +446,19 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "BUSY_CB":
 		setBusyFunc(ih, fn.(BusyFunc))
 	case "MENUCONTEXT_CB":
-		setMenuContextFunc(ih, fn.(MenuContextFunc))
+		switch v := fn.(type) {
+		case MenuContextFunc:
+			setMenuContextFunc(ih, v)
+		case PlotMenuContextFunc:
+			setPlotMenuContextFunc(ih, v)
+		}
 	case "MENUCONTEXTCLOSE_CB":
-		setMenuContextCloseFunc(ih, fn.(MenuContextCloseFunc))
+		switch v := fn.(type) {
+		case MenuContextCloseFunc:
+			setMenuContextCloseFunc(ih, v)
+		case PlotMenuContextCloseFunc:
+			setPlotMenuContextCloseFunc(ih, v)
+		}
 	case "PASTESIZE_CB":
 		setPasteSizeFunc(ih, fn.(PasteSizeFunc))
 	case "NUMERICGETVALUE_CB":
@@ -452,6 +467,44 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setNumericSetValueFunc(ih, fn.(NumericSetValueFunc))
 	case "SORTCOLUMNCOMPARE_CB":
 		setSortColumnCompareFunc(ih, fn.(SortColumnCompareFunc))
+	case "PREDRAW_CB":
+		setPlotPreDrawFunc(ih, fn.(PlotDrawFunc))
+	case "POSTDRAW_CB":
+		setPlotPostDrawFunc(ih, fn.(PlotDrawFunc))
+	case "CLICKSAMPLE_CB":
+		setPlotClickSampleFunc(ih, fn.(PlotClickSampleFunc))
+	case "CLICKSEGMENT_CB":
+		setPlotClickSegmentFunc(ih, fn.(PlotClickSegmentFunc))
+	case "DRAWSAMPLE_CB":
+		setPlotDrawSampleFunc(ih, fn.(PlotDrawSampleFunc))
+	case "PLOTMOTION_CB":
+		setPlotMotionFunc(ih, fn.(PlotMotionFunc))
+	case "PLOTBUTTON_CB":
+		setPlotButtonFunc(ih, fn.(PlotButtonFunc))
+	case "EDITSAMPLE_CB":
+		setPlotEditSampleFunc(ih, fn.(PlotEditSampleFunc))
+	case "DELETE_CB":
+		setPlotDeleteFunc(ih, fn.(PlotDeleteFunc))
+	case "DELETEBEGIN_CB":
+		setPlotDeleteBeginFunc(ih, fn.(PlotDeleteBeginFunc))
+	case "DELETEEND_CB":
+		setPlotDeleteEndFunc(ih, fn.(PlotDeleteEndFunc))
+	case "SELECTBEGIN_CB":
+		setPlotSelectBeginFunc(ih, fn.(PlotSelectBeginFunc))
+	case "SELECTEND_CB":
+		setPlotSelectEndFunc(ih, fn.(PlotSelectEndFunc))
+	case "PROPERTIESCHANGED_CB":
+		setPlotPropertiesChangedFunc(ih, fn.(PlotPropertiesChangedFunc))
+	case "PROPERTIESVALIDATE_CB":
+		setPlotPropertiesValidateFunc(ih, fn.(PlotPropertiesValidateFunc))
+	case "DSPROPERTIESCHANGED_CB":
+		setPlotDSPropertiesChangedFunc(ih, fn.(PlotDSPropertiesChangedFunc))
+	case "DSPROPERTIESVALIDATE_CB":
+		setPlotDSPropertiesValidateFunc(ih, fn.(PlotDSPropertiesValidateFunc))
+	case "XTICKFORMATNUMBER_CB":
+		setPlotXTickFormatNumberFunc(ih, fn.(PlotTickFormatNumberFunc))
+	case "YTICKFORMATNUMBER_CB":
+		setPlotYTickFormatNumberFunc(ih, fn.(PlotTickFormatNumberFunc))
 	}
 }
 

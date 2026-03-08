@@ -137,6 +137,7 @@ For the `GLCanvas` control, install `libgl-dev` or `libglvnd-devel`.
 
 * `gl` - build with support for `GLCanvas` control
 * `web` - build with support for `WebBrowser` control
+* `plot` - build with support for `Plot` control
 * `ctl` - build with support for `Matrix` and `Cells` controls
 * `gtk` - use GTK in macOS or Windows
 * `gtk4` - build for GTK4, default is GTK3
