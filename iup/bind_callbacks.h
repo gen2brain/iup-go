@@ -804,4 +804,114 @@ static void goIupSetNotifyCloseFunc(Ihandle *ih) {
 	IupSetCallback(ih, "CLOSE_CB", (Icallback) goIupNotifyCloseCB);
 }
 
+CGO_EXPORT extern int goIupPlotPreDrawCB(void *);
+static void goIupSetPlotPreDrawFunc(Ihandle *ih) {
+	IupSetCallback(ih, "PREDRAW_CB", (Icallback) goIupPlotPreDrawCB);
+}
+
+CGO_EXPORT extern int goIupPlotPostDrawCB(void *);
+static void goIupSetPlotPostDrawFunc(Ihandle *ih) {
+	IupSetCallback(ih, "POSTDRAW_CB", (Icallback) goIupPlotPostDrawCB);
+}
+
+CGO_EXPORT extern int goIupPlotClickSampleCB(void *, int, int, double, double, int);
+static void goIupSetPlotClickSampleFunc(Ihandle *ih) {
+	IupSetCallback(ih, "CLICKSAMPLE_CB", (Icallback) goIupPlotClickSampleCB);
+}
+
+CGO_EXPORT extern int goIupPlotClickSegmentCB(void *, int, int, double, double, int, double, double, int);
+static void goIupSetPlotClickSegmentFunc(Ihandle *ih) {
+	IupSetCallback(ih, "CLICKSEGMENT_CB", (Icallback) goIupPlotClickSegmentCB);
+}
+
+CGO_EXPORT extern int goIupPlotDrawSampleCB(void *, int, int, double, double, int);
+static void goIupSetPlotDrawSampleFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DRAWSAMPLE_CB", (Icallback) goIupPlotDrawSampleCB);
+}
+
+CGO_EXPORT extern int goIupPlotMotionCB(void *, double, double, void *);
+static void goIupSetPlotMotionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "PLOTMOTION_CB", (Icallback) goIupPlotMotionCB);
+}
+
+CGO_EXPORT extern int goIupPlotButtonCB(void *, int, int, double, double, void *);
+static void goIupSetPlotButtonFunc(Ihandle *ih) {
+	IupSetCallback(ih, "PLOTBUTTON_CB", (Icallback) goIupPlotButtonCB);
+}
+
+CGO_EXPORT extern int goIupPlotEditSampleCB(void *, int, int, double, double);
+static void goIupSetPlotEditSampleFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITSAMPLE_CB", (Icallback) goIupPlotEditSampleCB);
+}
+
+CGO_EXPORT extern int goIupPlotDeleteCB(void *, int, int, double, double);
+static void goIupSetPlotDeleteFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DELETE_CB", (Icallback) goIupPlotDeleteCB);
+}
+
+CGO_EXPORT extern int goIupPlotDeleteBeginCB(void *);
+static void goIupSetPlotDeleteBeginFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DELETEBEGIN_CB", (Icallback) goIupPlotDeleteBeginCB);
+}
+
+CGO_EXPORT extern int goIupPlotDeleteEndCB(void *);
+static void goIupSetPlotDeleteEndFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DELETEEND_CB", (Icallback) goIupPlotDeleteEndCB);
+}
+
+CGO_EXPORT extern int goIupPlotSelectCB(void *, int, int, double, double, int);
+static void goIupSetPlotSelectFunc(Ihandle *ih) {
+	IupSetCallback(ih, "SELECT_CB", (Icallback) goIupPlotSelectCB);
+}
+
+CGO_EXPORT extern int goIupPlotSelectBeginCB(void *);
+static void goIupSetPlotSelectBeginFunc(Ihandle *ih) {
+	IupSetCallback(ih, "SELECTBEGIN_CB", (Icallback) goIupPlotSelectBeginCB);
+}
+
+CGO_EXPORT extern int goIupPlotSelectEndCB(void *);
+static void goIupSetPlotSelectEndFunc(Ihandle *ih) {
+	IupSetCallback(ih, "SELECTEND_CB", (Icallback) goIupPlotSelectEndCB);
+}
+
+CGO_EXPORT extern int goIupPlotMenuContextCB(void *, void *, int, int);
+static void goIupSetPlotMenuContextFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MENUCONTEXT_CB", (Icallback) goIupPlotMenuContextCB);
+}
+
+CGO_EXPORT extern int goIupPlotMenuContextCloseCB(void *, void *, int, int);
+static void goIupSetPlotMenuContextCloseFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MENUCONTEXTCLOSE_CB", (Icallback) goIupPlotMenuContextCloseCB);
+}
+
+CGO_EXPORT extern int goIupPlotPropertiesChangedCB(void *);
+static void goIupSetPlotPropertiesChangedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "PROPERTIESCHANGED_CB", (Icallback) goIupPlotPropertiesChangedCB);
+}
+
+CGO_EXPORT extern int goIupPlotPropertiesValidateCB(void *, void *, void *);
+static void goIupSetPlotPropertiesValidateFunc(Ihandle *ih) {
+	IupSetCallback(ih, "PROPERTIESVALIDATE_CB", (Icallback) goIupPlotPropertiesValidateCB);
+}
+
+CGO_EXPORT extern int goIupPlotDSPropertiesChangedCB(void *, int);
+static void goIupSetPlotDSPropertiesChangedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DSPROPERTIESCHANGED_CB", (Icallback) goIupPlotDSPropertiesChangedCB);
+}
+
+CGO_EXPORT extern int goIupPlotDSPropertiesValidateCB(void *, void *, void *, int);
+static void goIupSetPlotDSPropertiesValidateFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DSPROPERTIESVALIDATE_CB", (Icallback) goIupPlotDSPropertiesValidateCB);
+}
+
+CGO_EXPORT extern int goIupPlotXTickFormatNumberCB(void *, void *, void *, double, void *);
+static void goIupSetPlotXTickFormatNumberFunc(Ihandle *ih) {
+	IupSetCallback(ih, "XTICKFORMATNUMBER_CB", (Icallback) goIupPlotXTickFormatNumberCB);
+}
+
+CGO_EXPORT extern int goIupPlotYTickFormatNumberCB(void *, void *, void *, double, void *);
+static void goIupSetPlotYTickFormatNumberFunc(Ihandle *ih) {
+	IupSetCallback(ih, "YTICKFORMATNUMBER_CB", (Icallback) goIupPlotYTickFormatNumberCB);
+}
+
 #endif /* BIND_CALLBACKS_H */

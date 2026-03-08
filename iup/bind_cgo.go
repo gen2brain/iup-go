@@ -8,6 +8,7 @@ package iup
 
 #cgo CXXFLAGS: -Iexternal/include -Iexternal/src
 #cgo CXXFLAGS: -std=c++17
+#cgo plot CXXFLAGS: -Iexternal/srcplot
 #cgo web CXXFLAGS: -Iexternal/srcweb
 
 #cgo linux LDFLAGS: -ldl
