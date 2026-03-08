@@ -102,7 +102,7 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
       GdkMonitor* monitor = g_list_model_get_item(monitors, i);
       GdkRectangle rect;
       gdk_monitor_get_geometry(monitor, &rect);
-      pstr += sprintf(pstr, "%d %d %d %d\n", rect.x, rect.y, rect.width, rect.height);
+      pstr += snprintf(pstr, (n_monitors * 50) - (pstr - str), "%d %d %d %d\n", rect.x, rect.y, rect.width, rect.height);
       g_object_unref(monitor);
     }
 

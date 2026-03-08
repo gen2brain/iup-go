@@ -270,20 +270,20 @@ IUP_SDK_API char* iupLayoutGetElementTitle(Ihandle* ih)
     }
 
     if (name)
-      sprintf(str, "[%s] \"%.50s\" (%.50s)", IupGetClassName(ih), title, name);
+      snprintf(str, 200, "[%s] \"%.50s\" (%.50s)", IupGetClassName(ih), title, name);
     else
-      sprintf(str, "[%s] \"%.50s\"", IupGetClassName(ih), title);
+      snprintf(str, 200, "[%s] \"%.50s\"", IupGetClassName(ih), title);
   }
   else
   {
     if (name)
-      sprintf(str, "[%s] (%.50s)", IupGetClassName(ih), name);
+      snprintf(str, 200, "[%s] (%.50s)", IupGetClassName(ih), name);
     else
-      sprintf(str, "[%s]", IupGetClassName(ih));
+      snprintf(str, 200, "[%s]", IupGetClassName(ih));
   }
 
   if (ih->iclass->nativetype == IUP_TYPEIMAGE)
-    sprintf(str + strlen(str), " - %s", IupGetAttribute(ih, "RASTERSIZE"));
+    snprintf(str + strlen(str), 200 - strlen(str), " - %s", IupGetAttribute(ih, "RASTERSIZE"));
 
   return str;
 }

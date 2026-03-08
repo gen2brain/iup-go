@@ -324,7 +324,7 @@ static void motRecentItemActivateCallback(Widget w, XtPointer client_data, XtPoi
   if (!recent_cb || !config)
     return;
 
-  sprintf(attr_name, "_IUP_RECENT_FILE%d", index);
+  snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", index);
   filename = iupAttribGet(menu, attr_name);
 
   if (filename)
@@ -375,10 +375,10 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
     Widget item;
     XmString xm_title;
 
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSetStr(menu, attr_name, filenames[i]);
 
-    sprintf(attr_name, "_IUP_RECENT_ITEM%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_ITEM%d", i);
     item = (Widget)iupAttribGet(menu, attr_name);
 
     xm_title = XmStringCreateLocalized((char*)filenames[i]);
@@ -410,7 +410,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
     char attr_name[32];
     Widget item;
 
-    sprintf(attr_name, "_IUP_RECENT_ITEM%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_ITEM%d", i);
     item = (Widget)iupAttribGet(menu, attr_name);
     if (item)
     {
@@ -418,7 +418,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
       iupAttribSet(menu, attr_name, NULL);
     }
 
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSet(menu, attr_name, NULL);
   }
 

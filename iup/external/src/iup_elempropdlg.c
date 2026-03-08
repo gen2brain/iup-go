@@ -215,7 +215,7 @@ static int iLayoutPropertiesSet_CB(Ihandle* button)
       if (!id || id[0] == 0)
         id = "";
 
-      sprintf(nameid, "%s%s", name, id);
+      snprintf(nameid, sizeof(nameid), "%s%s", name, id);
 
       if (!value || iupStrEqual(value, "NULL"))
         IupSetAttribute(elem, nameid, NULL);
@@ -266,7 +266,7 @@ static int iLayoutPropertiesSetColor_CB(Ihandle *colorbut)
       if (!id || id[0] == 0)
         id = "";
 
-      sprintf(nameid, "%s%s", name, id);
+      snprintf(nameid, sizeof(nameid), "%s%s", name, id);
       IupStoreAttribute(elem, nameid, value);
     }
     else
@@ -310,7 +310,7 @@ static int iLayoutPropertiesSetFont_CB(Ihandle *fontbut)
       if (!id || id[0] == 0)
         id = "";
 
-      sprintf(nameid, "%s%s", name, id);
+      snprintf(nameid, sizeof(nameid), "%s%s", name, id);
       IupStoreAttribute(elem, nameid, value);
     }
     else

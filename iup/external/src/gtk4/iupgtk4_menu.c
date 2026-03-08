@@ -974,7 +974,7 @@ static void gtk4RecentActionActivated(GSimpleAction* action, GVariant* parameter
     char attr_name[32];
     const char* filename;
 
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", index);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", index);
     filename = iupAttribGet(menu, attr_name);
 
     if (filename)
@@ -1023,14 +1023,14 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
   for (i = 0; i < count; i++)
   {
     char attr_name[32];
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSetStr(menu, attr_name, filenames[i]);
   }
 
   for (; i < existing; i++)
   {
     char attr_name[32];
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSet(menu, attr_name, NULL);
   }
 
@@ -1060,7 +1060,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
     char action_name[32];
     GAction* existing_action;
 
-    sprintf(action_name, "recent-%d", i);
+    snprintf(action_name, sizeof(action_name), "recent-%d", i);
 
     existing_action = g_action_map_lookup_action(G_ACTION_MAP(action_group), action_name);
     if (!existing_action)
@@ -1077,7 +1077,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
   for (i = 0; i < count; i++)
   {
     char action_name[64];
-    sprintf(action_name, "menu.recent-%d", i);
+    snprintf(action_name, sizeof(action_name), "menu.recent-%d", i);
     g_menu_append(recent_menu, filenames[i], action_name);
   }
 

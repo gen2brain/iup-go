@@ -163,7 +163,7 @@ static char* iMatrixExGetCellFormat(Ihandle *ih, int lin, int col, char* format)
     char rgb[50];
     unsigned char r, g, b;
     iupStrToRGB(value, &r, &g, &b);
-    sprintf(rgb, "background-color: #%02X%02X%02X; ", (int)r, (int)g, (int)b);
+    snprintf(rgb, sizeof(rgb), "background-color: #%02X%02X%02X; ", (int)r, (int)g, (int)b);
 
     value = rgb;
     _STRCATFORMAT;
@@ -175,7 +175,7 @@ static char* iMatrixExGetCellFormat(Ihandle *ih, int lin, int col, char* format)
     char rgb[50];
     unsigned char r, g, b;
     iupStrToRGB(value, &r, &g, &b);
-    sprintf(rgb, "color: #%02X%02X%02X; ", (int)r, (int)g, (int)b);
+    snprintf(rgb, sizeof(rgb), "color: #%02X%02X%02X; ", (int)r, (int)g, (int)b);
 
     value = rgb;
     _STRCATFORMAT;

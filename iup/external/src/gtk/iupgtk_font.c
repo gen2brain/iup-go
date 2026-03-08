@@ -147,7 +147,7 @@ static IgtkFont* gtkFindFont(const char *font)
         size = iupRound((-size * 72.0) / res); /* from pixels to points */
       }
 
-      sprintf(new_font, "%s, %s%s%d", typeface, is_bold?"Bold ":"", is_italic?"Italic ":"", size);
+      snprintf(new_font, sizeof(new_font), "%s, %s%s%d", typeface, is_bold?"Bold ":"", is_italic?"Italic ":"", size);
 
       fontdesc = pango_font_description_from_string(new_font);
     }

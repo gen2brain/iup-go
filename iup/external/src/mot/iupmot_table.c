@@ -448,7 +448,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     /* Get column alignment (for both headers and cells) */
     char align_attr[64];
     char* align_str = NULL;
-    sprintf(align_attr, "ALIGNMENT%d", col);
+    snprintf(align_attr, sizeof(align_attr), "ALIGNMENT%d", col);
     align_str = iupAttribGet(ih, align_attr);
 
     /* Calculate text X position based on alignment */
@@ -992,7 +992,7 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
         {
           char name[50];
           char* editable;
-          sprintf(name, "EDITABLE%d", col);
+          snprintf(name, sizeof(name), "EDITABLE%d", col);
           editable = iupAttribGetStr(ih, name);
           if (!editable)
             editable = iupAttribGetStr(ih, "EDITABLE");
@@ -1079,7 +1079,7 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
     {
       char name[50];
       char* editable;
-      sprintf(name, "EDITABLE%d", mot_data->current_col);
+      snprintf(name, sizeof(name), "EDITABLE%d", mot_data->current_col);
       editable = iupAttribGetStr(ih, name);
       if (!editable)
         editable = iupAttribGetStr(ih, "EDITABLE");
@@ -1108,7 +1108,7 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
       /* Check if cell is editable */
       char name[50];
       char* editable;
-      sprintf(name, "EDITABLE%d", mot_data->current_col);
+      snprintf(name, sizeof(name), "EDITABLE%d", mot_data->current_col);
       editable = iupAttribGetStr(ih, name);
       if (!editable)
         editable = iupAttribGetStr(ih, "EDITABLE");
@@ -1330,11 +1330,11 @@ static int motTableMapMethod(Ihandle* ih)
   for (c = 0; c < ih->data->num_col; c++)
   {
     char name[50];
-    sprintf(name, "RASTERWIDTH%d", c + 1);
+    snprintf(name, sizeof(name), "RASTERWIDTH%d", c + 1);
     char* width_str = iupAttribGet(ih, name);
     if (!width_str)
     {
-      sprintf(name, "WIDTH%d", c + 1);
+      snprintf(name, sizeof(name), "WIDTH%d", c + 1);
       width_str = iupAttribGet(ih, name);
     }
 
@@ -1377,7 +1377,7 @@ static int motTableMapMethod(Ihandle* ih)
   for (c = 0; c < ih->data->num_col; c++)
   {
     char default_title[32];
-    sprintf(default_title, "Col %d", c + 1);
+    snprintf(default_title, sizeof(default_title), "Col %d", c + 1);
     mot_data->col_titles[c] = iupStrDup(default_title);
   }
 

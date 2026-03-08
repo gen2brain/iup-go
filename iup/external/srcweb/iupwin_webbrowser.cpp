@@ -1532,10 +1532,11 @@ static int winWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* value)
           mime = "image/webp";
       }
 
-      char* dataUrl = (char*)malloc(strlen(mime) + base64_len + 20);
+      size_t dataUrlSize = strlen(mime) + base64_len + 20;
+      char* dataUrl = (char*)malloc(dataUrlSize);
       if (dataUrl)
       {
-        sprintf(dataUrl, "data:%s;base64,%s", mime, base64);
+        snprintf(dataUrl, dataUrlSize, "data:%s;base64,%s", mime, base64);
         winWebBrowserSetInsertImageAttrib(ih, dataUrl);
         free(dataUrl);
       }
@@ -1762,7 +1763,7 @@ static int winWebBrowserSetForeColorAttrib(Ihandle* ih, const char* value)
   if (iupStrToRGB(value, &r, &g, &b))
   {
     char rgb_color[32];
-    sprintf(rgb_color, "rgb(%d,%d,%d)", r, g, b);
+    snprintf(rgb_color, sizeof(rgb_color), "rgb(%d,%d,%d)", r, g, b);
     winWebBrowserExecCommandParam(ih, "foreColor", rgb_color);
   }
   return 0;
@@ -1786,7 +1787,7 @@ static int winWebBrowserSetBackColorAttrib(Ihandle* ih, const char* value)
   if (iupStrToRGB(value, &r, &g, &b))
   {
     char rgb_color[32];
-    sprintf(rgb_color, "rgb(%d,%d,%d)", r, g, b);
+    snprintf(rgb_color, sizeof(rgb_color), "rgb(%d,%d,%d)", r, g, b);
     winWebBrowserExecCommandParam(ih, "backColor", rgb_color);
   }
   return 0;

@@ -3177,7 +3177,7 @@ static int iPlotSetAxisXTickFormatPrecisionAttrib(Ihandle* ih, const char* value
   int precision;
   if (iupStrToInt(value, &precision))
   {
-    sprintf(axis->mTick.mFormatString, "%%.%df", precision);
+    snprintf(axis->mTick.mFormatString, sizeof(axis->mTick.mFormatString), "%%.%df", precision);
     axis->mTick.mFormatAuto = false;
   }
   else
@@ -3195,7 +3195,7 @@ static int iPlotSetAxisYTickFormatPrecisionAttrib(Ihandle* ih, const char* value
   int precision;
   if (iupStrToInt(value, &precision))
   {
-    sprintf(axis->mTick.mFormatString, "%%.%df", precision);
+    snprintf(axis->mTick.mFormatString, sizeof(axis->mTick.mFormatString), "%%.%df", precision);
     axis->mTick.mFormatAuto = false;
   }
   else
@@ -3262,7 +3262,7 @@ static int iPlotSetAxisXTipFormatPrecisionAttrib(Ihandle* ih, const char* value)
 
   int precision;
   if (iupStrToInt(value, &precision))
-    sprintf(axis->mTipFormatString, "%%.%df", precision);
+    snprintf(axis->mTipFormatString, sizeof(axis->mTipFormatString), "%%.%df", precision);
   else
     strcpy(axis->mTipFormatString, IUP_PLOT_DEF_TIPFORMAT);
   return 0;
@@ -3274,7 +3274,7 @@ static int iPlotSetAxisYTipFormatPrecisionAttrib(Ihandle* ih, const char* value)
 
   int precision;
   if (iupStrToInt(value, &precision))
-    sprintf(axis->mTipFormatString, "%%.%df", precision);
+    snprintf(axis->mTipFormatString, sizeof(axis->mTipFormatString), "%%.%df", precision);
   else
     strcpy(axis->mTipFormatString, IUP_PLOT_DEF_TIPFORMAT);
   return 0;

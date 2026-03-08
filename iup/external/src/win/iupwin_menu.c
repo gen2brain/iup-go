@@ -748,7 +748,7 @@ static void winRecentItemActivate(Ihandle* menu, int index)
     char attr_name[32];
     const char* filename;
 
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", index);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", index);
     filename = iupAttribGet(menu, attr_name);
 
     if (filename)
@@ -811,7 +811,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
     MENUITEMINFOA mii;
     UINT menuId = IUP_RECENT_FIRSTID + i;
 
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSetStr(menu, attr_name, filenames[i]);
 
     memset(&mii, 0, sizeof(MENUITEMINFOA));
@@ -838,7 +838,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
     char attr_name[32];
     RemoveMenu(hMenu, count, MF_BYPOSITION);
 
-    sprintf(attr_name, "_IUP_RECENT_FILE%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSet(menu, attr_name, NULL);
   }
 

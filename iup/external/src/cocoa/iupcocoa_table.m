@@ -724,7 +724,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
       /* Check if cell is editable */
       int col_1based = selectedColumn + 1;
       char name[50];
-      sprintf(name, "EDITABLE%d", col_1based);
+      snprintf(name, sizeof(name), "EDITABLE%d", col_1based);
       char* editable = iupAttribGet(ih, name);
       if (!editable)
         editable = iupAttribGet(ih, "EDITABLE");
@@ -873,7 +873,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     if (selectedRow >= 0 && selectedColumn >= 0)
     {
       char name[50];
-      sprintf(name, "EDITABLE%d", col_1based);
+      snprintf(name, sizeof(name), "EDITABLE%d", col_1based);
       char* editable_str = iupAttribGet(ih, name);
       if (!editable_str)
         editable_str = iupAttribGet(ih, "EDITABLE");
@@ -1283,7 +1283,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
   /* Check if cell is editable */
   char name[50];
-  sprintf(name, "EDITABLE%d", col_1based);
+  snprintf(name, sizeof(name), "EDITABLE%d", col_1based);
   char* editable_str = iupAttribGet(ih, name);
   if (!editable_str)
     editable_str = iupAttribGet(ih, "EDITABLE");
@@ -1313,7 +1313,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     /* Column info doesn't exist yet (early rendering before NUMCOL completes).
      * Read alignment attribute directly from IUP attributes as fallback. */
     char align_name[50];
-    sprintf(align_name, "ALIGNMENT%d", col_1based);
+    snprintf(align_name, sizeof(align_name), "ALIGNMENT%d", col_1based);
     char* align_str = iupAttribGet(ih, align_name);
 
     if (align_str)
@@ -1493,7 +1493,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
   /* Check column-specific EDITABLE attribute */
   char name[50];
-  sprintf(name, "EDITABLE%d", col_1based);
+  snprintf(name, sizeof(name), "EDITABLE%d", col_1based);
   char* editable_str = iupAttribGet(ih, name);
   if (!editable_str)
     editable_str = iupAttribGet(ih, "EDITABLE");
@@ -1554,7 +1554,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   if (clickedRow >= 0 && clickedCol >= 0)
   {
     char name[50];
-    sprintf(name, "EDITABLE%d", col);
+    snprintf(name, sizeof(name), "EDITABLE%d", col);
     char* editable_str = iupAttribGet(ih, name);
     if (!editable_str)
       editable_str = iupAttribGet(ih, "EDITABLE");
@@ -1875,7 +1875,7 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
 
       /* Read ALIGNMENTn attribute to apply to entire column (header + cells) */
       char align_name[50];
-      sprintf(align_name, "ALIGNMENT%d", i + 1);
+      snprintf(align_name, sizeof(align_name), "ALIGNMENT%d", i + 1);
       char* align_str = iupAttribGet(ih, align_name);
 
       NSTextAlignment alignment = NSTextAlignmentLeft; /* Default */
@@ -1894,11 +1894,11 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
 
       /* Check if this column has explicit width set (RASTERWIDTHn or WIDTHn) */
       char width_name[50];
-      sprintf(width_name, "RASTERWIDTH%d", i + 1);
+      snprintf(width_name, sizeof(width_name), "RASTERWIDTH%d", i + 1);
       char* width_str = iupAttribGet(ih, width_name);
       if (!width_str)
       {
-        sprintf(width_name, "WIDTH%d", i + 1);
+        snprintf(width_name, sizeof(width_name), "WIDTH%d", i + 1);
         width_str = iupAttribGet(ih, width_name);
       }
 
@@ -2224,11 +2224,11 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 
     /* Check if this column has explicit width */
     char width_name[50];
-    sprintf(width_name, "RASTERWIDTH%d", col);
+    snprintf(width_name, sizeof(width_name), "RASTERWIDTH%d", col);
     char* width_str = iupAttribGet(ih, width_name);
     if (!width_str)
     {
-      sprintf(width_name, "WIDTH%d", col);
+      snprintf(width_name, sizeof(width_name), "WIDTH%d", col);
       width_str = iupAttribGet(ih, width_name);
     }
 

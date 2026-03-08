@@ -852,7 +852,7 @@ static int iMatrixSetMoveColAttrib(Ihandle* ih, int from_col, const char* value)
 
   iMatrixSetCopyColAttrib(ih, from_col, value);
 
-  sprintf(str, "%d", from_col);
+  snprintf(str, sizeof(str), "%d", from_col);
   iupMatrixSetDelColAttrib(ih, str);
   return 0;
 }
@@ -873,7 +873,7 @@ static int iMatrixSetMoveLinAttrib(Ihandle* ih, int from_lin, const char* value)
 
   iMatrixSetCopyLinAttrib(ih, from_lin, value);
 
-  sprintf(str, "%d", from_lin);
+  snprintf(str, sizeof(str), "%d", from_lin);
   iupMatrixSetDelLinAttrib(ih, str);
   return 0;
 }
@@ -1599,7 +1599,7 @@ static char* iMatrixGetCellAlignmentAttrib(Ihandle* ih, int lin, int col)
 
     iupMatrixGetCellAlign(ih, lin, col, &col_alignment, &lin_alignment);
 
-    sprintf(str, "%s:%s", horiz_align_str[col_alignment], vert_align_str[lin_alignment]);
+    snprintf(str, 30, "%s:%s", horiz_align_str[col_alignment], vert_align_str[lin_alignment]);
     return str;
   }
   else

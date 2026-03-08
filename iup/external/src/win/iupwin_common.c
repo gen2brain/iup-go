@@ -831,7 +831,7 @@ HCURSOR iupwinGetCursor(Ihandle* ih, const char* name)
   int i, count = sizeof(table)/sizeof(table[0]);
 
   /* check the cursor cache first (per control)*/
-  sprintf(str, "_IUPWIN_CURSOR_%s", name);
+  snprintf(str, sizeof(str), "_IUPWIN_CURSOR_%s", name);
   cur = (HCURSOR)iupAttribGet(ih, str);
   if (cur)
     return cur;

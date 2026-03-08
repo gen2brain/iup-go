@@ -78,11 +78,11 @@ IUP_API int IupScanf (const char *format, ...)
     case 'x':
     case 'X':
       if (s[-3]=='l')
-        sprintf(text[i],outf,*((long *)va_arg(va,long *)));
+        snprintf(text[i], (size_t)(width[i]+1),outf,*((long *)va_arg(va,long *)));
       else if (s[-3]=='h')
-        sprintf(text[i],outf,*((short *)va_arg(va,short *)));
+        snprintf(text[i], (size_t)(width[i]+1),outf,*((short *)va_arg(va,short *)));
       else
-        sprintf(text[i],outf,*((int *)va_arg(va,int *)));
+        snprintf(text[i], (size_t)(width[i]+1),outf,*((int *)va_arg(va,int *)));
       break;
     case 'e':
     case 'f':
@@ -90,12 +90,12 @@ IUP_API int IupScanf (const char *format, ...)
     case 'E':
     case 'G':
       if (s[-3]=='l')
-        sprintf(text[i],outf,*((double *)va_arg(va,double *)));
+        snprintf(text[i], (size_t)(width[i]+1),outf,*((double *)va_arg(va,double *)));
       else
-        sprintf(text[i],outf,*((float *)va_arg(va,float *)));
+        snprintf(text[i], (size_t)(width[i]+1),outf,*((float *)va_arg(va,float *)));
       break;
     case 's':
-      sprintf(text[i],outf,((char *)va_arg(va,char *)));
+      snprintf(text[i], (size_t)(width[i]+1),outf,((char *)va_arg(va,char *)));
       break;
     default:
       goto cleanup_arg;

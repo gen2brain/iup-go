@@ -635,7 +635,7 @@ void iupdrvListAppendItem(Ihandle* ih, const char* value)
 
     int pos = g_list_model_get_n_items(G_LIST_MODEL(store));
     char attr_name[30];
-    sprintf(attr_name, "IMAGE%d", pos + 1);
+    snprintf(attr_name, sizeof(attr_name), "IMAGE%d", pos + 1);
     const char* image_name = iupAttribGet(ih, attr_name);
     if (image_name)
     {
@@ -663,7 +663,7 @@ void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
     IupListItem* item = iup_list_item_new(iupgtk4StrConvertToSystem(value));
 
     char attr_name[30];
-    sprintf(attr_name, "IMAGE%d", pos + 1);
+    snprintf(attr_name, sizeof(attr_name), "IMAGE%d", pos + 1);
     const char* image_name = iupAttribGet(ih, attr_name);
     if (image_name)
     {

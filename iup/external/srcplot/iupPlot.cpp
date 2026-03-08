@@ -68,7 +68,7 @@ void iupPlot::SetFont(Ihandle* ih, int inFontStyle, int inFontSize) const
   if (inFontStyle == -1) inFontStyle = mDefaultFontStyle;
   if (inFontSize == 0) inFontSize = mDefaultFontSize;
   char fontStr[256];
-  iupPlotBuildFont(ih, inFontStyle, inFontSize, fontStr);
+  iupPlotBuildFont(ih, inFontStyle, inFontSize, fontStr, sizeof(fontStr));
   IupSetStrAttribute(ih, "DRAWFONT", fontStr);
 }
 
@@ -163,7 +163,7 @@ void iupPlot::AddDataSet(iupPlotDataSet* inDataSet)
     mDataSetListCount++;
 
     char theLegend[30];
-    sprintf(theLegend, "plot %d", mCurrentDataSet);
+    snprintf(theLegend, sizeof(theLegend), "plot %d", mCurrentDataSet);
 
     mDataSetList[mCurrentDataSet] = inDataSet;
 

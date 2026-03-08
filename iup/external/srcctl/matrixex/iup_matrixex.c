@@ -34,9 +34,9 @@ void iupMatrixExGetDialogPosition(ImatExData* matex_data, int *x, int *y)
   IupGetIntInt(matex_data->ih, "SCREENPOSITION", x, y);
   IupGetIntInt(matex_data->ih, "FOCUSCELL", &lin, &col);
   IupSetfAttribute(matex_data->ih,"SHOW", "%d:%d", lin, col);
-  sprintf(attrib, "CELLOFFSET%d:%d", lin, col);
+  snprintf(attrib, sizeof(attrib), "CELLOFFSET%d:%d", lin, col);
   IupGetIntInt(matex_data->ih, attrib, &cx, &cy);
-  sprintf(attrib, "CELLSIZE%d:%d", lin, col);
+  snprintf(attrib, sizeof(attrib), "CELLSIZE%d:%d", lin, col);
   IupGetIntInt(matex_data->ih, attrib, &cw, &ch);
   *x += cx + cw;
   *y += cy + ch;
@@ -598,7 +598,7 @@ static int iMatrixExItemShowLin_CB(Ihandle* ih_item)
   return IUP_DEFAULT;
 }
 
-static void iMatrixExInitUnitList(ImatExData* matex_data, int col, char* list_str, int old_unit)
+static void iMatrixExInitUnitList(ImatExData* matex_data, int col, char* list_str, int bufsize, int old_unit)
 {
   int i, count, len = 0;
   char* unit_name;
@@ -608,7 +608,7 @@ static void iMatrixExInitUnitList(ImatExData* matex_data, int col, char* list_st
   {
     IupSetIntId(matex_data->ih, "NUMERICUNITSHOWNINDEX", col, i);
     unit_name = IupGetAttributeId(matex_data->ih, "NUMERICUNITSYMBOLSHOWN", col);
-    len += sprintf(list_str+len, "%s|", unit_name);
+    len += snprintf(list_str+len, bufsize - len, "%s|", unit_name);
   }
 
   IupSetIntId(matex_data->ih, "NUMERICUNITSHOWNINDEX", col, old_unit);
@@ -626,9 +626,9 @@ static int iMatrixExItemNumericUnits_CB(Ihandle* ih_item)
   decimals = IupGetIntId(matex_data->ih, "NUMERICFORMATPRECISION", col);
   unit = IupGetIntId(matex_data->ih, "NUMERICUNITSHOWNINDEX", col);
 
-  iMatrixExInitUnitList(matex_data, col, list_str+1, unit);
+  iMatrixExInitUnitList(matex_data, col, list_str+1, (int)(sizeof(list_str) - 1), unit);
 
-  sprintf(format, "_@IUP_UNITS%%l%s\n_@IUP_DECIMALS%%i[0]\n", list_str);
+  snprintf(format, sizeof(format), "_@IUP_UNITS%%l%s\n_@IUP_DECIMALS%%i[0]\n", list_str);
 
   if (IupGetParam("_@IUP_COLUMNUNITS", setparent_param_cb, IupGetDialog(matex_data->ih), format, &unit, &decimals, NULL))
   {
@@ -877,7 +877,7 @@ static int iMatrixExButton_CB(Ihandle* ih, int b, int press, int x, int y, char*
       IupTextConvertPosToLinCol(ih, pos, &lin, &col);
 
       IupGetIntInt(ih, "SCREENPOSITION", &sx, &sy);
-      sprintf(position, "%d,%d", sx + x, sy + y);
+      snprintf(position, sizeof(position), "%d,%d", sx + x, sy + y);
 
       iMatrixSetShowMenuContextAttribId(ih, lin, col, position);
     }

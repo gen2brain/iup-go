@@ -1845,10 +1845,10 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 
       SendMessage(ih->handle, EM_EXGETSEL, 0, (LPARAM)&cr);
 
-      sprintf(attr_name, "_IUP_LINK_URL_%d", idx);
+      snprintf(attr_name, sizeof(attr_name), "_IUP_LINK_URL_%d", idx);
       iupAttribSetStr(ih, attr_name, link_url);
 
-      sprintf(attr_name, "_IUP_LINK_RANGE_%d", idx);
+      snprintf(attr_name, sizeof(attr_name), "_IUP_LINK_RANGE_%d", idx);
       iupAttribSetStrf(ih, attr_name, "%d:%d", (int)cr.cpMin, (int)cr.cpMax);
 
       iupAttribSetInt(ih, "_IUP_LINK_COUNT", idx + 1);
@@ -2182,12 +2182,12 @@ static const char* winTextFindLinkUrl(Ihandle* ih, int cpMin, int cpMax)
     int start, end;
     char attr_name[80];
 
-    sprintf(attr_name, "_IUP_LINK_RANGE_%d", i);
+    snprintf(attr_name, sizeof(attr_name), "_IUP_LINK_RANGE_%d", i);
     if (iupStrToIntInt(iupAttribGet(ih, attr_name), &start, &end, ':') == 2)
     {
       if (cpMin >= start && cpMin < end)
       {
-        sprintf(attr_name, "_IUP_LINK_URL_%d", i);
+        snprintf(attr_name, sizeof(attr_name), "_IUP_LINK_URL_%d", i);
         return iupAttribGet(ih, attr_name);
       }
     }

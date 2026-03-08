@@ -1094,13 +1094,13 @@ static const char* eflTextFindLinkUrl(Ihandle* ih, int pos)
     char range_attr[80];
     const char* url;
 
-    sprintf(range_attr, "_IUP_LINK_RANGE_%d", i);
+    snprintf(range_attr, sizeof(range_attr), "_IUP_LINK_RANGE_%d", i);
     if (iupStrToIntInt(iupAttribGet(ih, range_attr), &start, &end, ':') == 2)
     {
       if (pos >= start && pos < end)
       {
         char url_attr[80];
-        sprintf(url_attr, "_IUP_LINK_URL_%d", i);
+        snprintf(url_attr, sizeof(url_attr), "_IUP_LINK_URL_%d", i);
         url = iupAttribGet(ih, url_attr);
         if (url)
           return url;
@@ -1692,9 +1692,9 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
   {
     const char* mapped_name = iupFontGetPangoName(attr);
     if (mapped_name)
-      sprintf(buf, "font=%s ", mapped_name);
+      snprintf(buf, sizeof(buf), "font=%s ", mapped_name);
     else
-      sprintf(buf, "font=%s ", attr);
+      snprintf(buf, sizeof(buf), "font=%s ", attr);
     strcat(format, buf);
   }
 
@@ -1708,7 +1708,7 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
         val = -val;
       if (val > 0)
       {
-        sprintf(buf, "font_size=%d ", val);
+        snprintf(buf, sizeof(buf), "font_size=%d ", val);
         strcat(format, buf);
       }
     }
@@ -1748,7 +1748,7 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
         int new_size = (int)(base_size * fval + 0.5);
         if (new_size > 0)
         {
-          sprintf(buf, "font_size=%d ", new_size);
+          snprintf(buf, sizeof(buf), "font_size=%d ", new_size);
           strcat(format, buf);
         }
       }
@@ -1758,7 +1758,7 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
   attr = iupAttribGet(formattag, "LANGUAGE");
   if (attr)
   {
-    sprintf(buf, "lang=%s ", attr);
+    snprintf(buf, sizeof(buf), "lang=%s ", attr);
     strcat(format, buf);
   }
 
@@ -1802,7 +1802,7 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
       else
         efl_text_color_get(iupeflGetWidget(ih), &r, &g, &b, &a);
       strcat(format, "strikethrough_type=single ");
-      sprintf(buf, "strikethrough_color=#%02X%02X%02X%02X ", r, g, b, a);
+      snprintf(buf, sizeof(buf), "strikethrough_color=#%02X%02X%02X%02X ", r, g, b, a);
       strcat(format, buf);
     }
     else
@@ -1845,7 +1845,7 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
     unsigned char r, g, b;
     if (iupStrToRGB(attr, &r, &g, &b))
     {
-      sprintf(buf, "color=#%02X%02X%02X ", r, g, b);
+      snprintf(buf, sizeof(buf), "color=#%02X%02X%02X ", r, g, b);
       strcat(format, buf);
     }
   }
@@ -1856,7 +1856,7 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
     unsigned char r, g, b;
     if (iupStrToRGB(attr, &r, &g, &b))
     {
-      sprintf(buf, "background_type=solid background_color=#%02X%02X%02X ", r, g, b);
+      snprintf(buf, sizeof(buf), "background_type=solid background_color=#%02X%02X%02X ", r, g, b);
       strcat(format, buf);
     }
   }
@@ -1881,12 +1881,12 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
       else
         strcat(format, "underline_type=single ");
 
-      sprintf(buf, "underline_color=#%02X%02X%02X%02X ", r, g, b, a);
+      snprintf(buf, sizeof(buf), "underline_color=#%02X%02X%02X%02X ", r, g, b, a);
       strcat(format, buf);
 
       if (iupStrEqualNoCase(attr, "DOUBLE"))
       {
-        sprintf(buf, "secondary_underline_color=#%02X%02X%02X%02X ", r, g, b, a);
+        snprintf(buf, sizeof(buf), "secondary_underline_color=#%02X%02X%02X%02X ", r, g, b, a);
         strcat(format, buf);
       }
     }
@@ -2058,21 +2058,21 @@ static void eflTextBuildParagraphFormat(Ihandle* formattag, char* format)
   attr = iupAttribGet(formattag, "INDENT");
   if (attr && iupStrToInt(attr, &val))
   {
-    sprintf(buf, "left_margin=%d ", val);
+    snprintf(buf, sizeof(buf), "left_margin=%d ", val);
     strcat(format, buf);
   }
 
   attr = iupAttribGet(formattag, "INDENTRIGHT");
   if (attr && iupStrToInt(attr, &val))
   {
-    sprintf(buf, "right_margin=%d ", val);
+    snprintf(buf, sizeof(buf), "right_margin=%d ", val);
     strcat(format, buf);
   }
 
   attr = iupAttribGet(formattag, "LINESPACING");
   if (attr && iupStrToInt(attr, &val))
   {
-    sprintf(buf, "line_gap=%d ", val);
+    snprintf(buf, sizeof(buf), "line_gap=%d ", val);
     strcat(format, buf);
   }
 
@@ -2086,7 +2086,7 @@ static void eflTextBuildParagraphFormat(Ihandle* formattag, char* format)
       if (tab_str)
         iupStrToInt(tab_str, &numberingtab);
 
-      sprintf(buf, "left_margin=%d ", numberingtab);
+      snprintf(buf, sizeof(buf), "left_margin=%d ", numberingtab);
       strcat(format, buf);
     }
   }
@@ -2196,7 +2196,7 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
       if (start_pos != end_pos)
         efl_text_cursor_object_range_delete(start_cursor, end_cursor);
 
-      sprintf(item_markup, "<item absize=%dx%d></item>", new_w, new_h);
+      snprintf(item_markup, sizeof(item_markup), "<item absize=%dx%d></item>", new_w, new_h);
       efl_text_cursor_object_markup_insert(start_cursor, item_markup);
 
       textblock = eflTextGetTextblock(ih);
@@ -2277,10 +2277,10 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
       int idx = iupAttribGetInt(ih, "_IUP_LINK_COUNT");
       char attr[80];
 
-      sprintf(attr, "_IUP_LINK_URL_%d", idx);
+      snprintf(attr, sizeof(attr), "_IUP_LINK_URL_%d", idx);
       iupAttribSetStr(ih, attr, link_url);
 
-      sprintf(attr, "_IUP_LINK_RANGE_%d", idx);
+      snprintf(attr, sizeof(attr), "_IUP_LINK_RANGE_%d", idx);
       iupAttribSetStrf(ih, attr, "%d:%d", start_pos, end_pos);
 
       iupAttribSetInt(ih, "_IUP_LINK_COUNT", idx + 1);

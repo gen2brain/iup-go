@@ -40,7 +40,7 @@ wd_log(const char* fmt, ...)
 
     last_error = GetLastError();
 
-    offset += sprintf(buffer, "[%08x] ", (unsigned) GetCurrentThreadId());
+    offset += snprintf(buffer, sizeof(buffer), "[%08x] ", (unsigned) GetCurrentThreadId());
 
     va_start(args, fmt);
     n = _vsnprintf(buffer + offset, sizeof(buffer)-offset-2, fmt, args);

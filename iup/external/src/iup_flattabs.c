@@ -263,7 +263,7 @@ static void iFlatTabsGetTabSize(Ihandle* ih, int fixedwidth, int horiz_padding, 
 
   if (!tab_image && !tab_title)
   {
-    sprintf(num_title, "%d", pos);
+    snprintf(num_title, sizeof(num_title), "%d", pos);
     tab_title = num_title;
   }
 
@@ -665,7 +665,7 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
 
       if (!tab_image && !tab_title)
       {
-        sprintf(num_title, "%d", pos);
+        snprintf(num_title, sizeof(num_title), "%d", pos);
         tab_title = num_title;
       }
 

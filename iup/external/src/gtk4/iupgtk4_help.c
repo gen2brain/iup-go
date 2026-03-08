@@ -19,8 +19,9 @@ IUP_API int IupExecute(const char *filename, const char* parameters)
 {
   GError *error = NULL;
   int ret = 1;
-  char* cmd = (char*)malloc(sizeof(char)*(strlen(filename) + strlen(parameters) + 3));
-  sprintf(cmd, "%s %s", filename, parameters);
+  size_t cmd_size = sizeof(char)*(strlen(filename) + strlen(parameters) + 3);
+  char* cmd = (char*)malloc(cmd_size);
+  snprintf(cmd, cmd_size, "%s %s", filename, parameters);
 
   if (!g_spawn_command_line_async(cmd, &error))
   {
@@ -42,8 +43,9 @@ IUP_API int IupExecuteWait(const char *filename, const char* parameters)
 {
   GError *error = NULL;
   int ret = 1;
-  char* cmd = (char*)malloc(sizeof(char)*(strlen(filename) + strlen(parameters) + 3));
-  sprintf(cmd, "%s %s", filename, parameters);
+  size_t cmd_size = sizeof(char)*(strlen(filename) + strlen(parameters) + 3);
+  char* cmd = (char*)malloc(cmd_size);
+  snprintf(cmd, cmd_size, "%s %s", filename, parameters);
 
   if (!g_spawn_command_line_sync(cmd, NULL, NULL, NULL, &error))
   {

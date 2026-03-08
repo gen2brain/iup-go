@@ -20,14 +20,16 @@ IUP_API int IupExecute(const char *filename, const char* parameters)
   if (parameters && *parameters)
   {
     /* Allocate for filename, parameters, and " & \0" */
-    cmd = (char*)malloc(strlen(filename) + strlen(parameters) + 4);
-    sprintf(cmd, "%s %s &", filename, parameters);
+    size_t cmd_size = strlen(filename) + strlen(parameters) + 4;
+    cmd = (char*)malloc(cmd_size);
+    snprintf(cmd, cmd_size, "%s %s &", filename, parameters);
   }
   else
   {
     /* Allocate for filename and " &\0" */
-    cmd = (char*)malloc(strlen(filename) + 3);
-    sprintf(cmd, "%s &", filename);
+    size_t cmd_size = strlen(filename) + 3;
+    cmd = (char*)malloc(cmd_size);
+    snprintf(cmd, cmd_size, "%s &", filename);
   }
 
   ret = system(cmd);
@@ -51,8 +53,9 @@ IUP_API int IupExecuteWait(const char *filename, const char* parameters)
   if (parameters && *parameters)
   {
     /* Allocate for filename, parameters, and " \0" */
-    cmd = (char*)malloc(strlen(filename) + strlen(parameters) + 2);
-    sprintf(cmd, "%s %s", filename, parameters);
+    size_t cmd_size = strlen(filename) + strlen(parameters) + 2;
+    cmd = (char*)malloc(cmd_size);
+    snprintf(cmd, cmd_size, "%s %s", filename, parameters);
   }
   else
   {

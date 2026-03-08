@@ -91,7 +91,7 @@ static char* qtWebBrowserEscapeJavaScript(const char* str)
       default:
         if ((unsigned char)*s < 32)
         {
-          sprintf(p, "\\u%04x", (unsigned char)*s);
+          snprintf(p, (size_t)((result + escaped_len) - p), "\\u%04x", (unsigned char)*s);
           p += 6;
         }
         else
@@ -966,7 +966,7 @@ static int qtWebBrowserSetForeColorAttrib(Ihandle* ih, const char* value)
   if (iupStrToRGB(value, &r, &g, &b))
   {
     char rgb_color[32];
-    sprintf(rgb_color, "rgb(%d,%d,%d)", r, g, b);
+    snprintf(rgb_color, sizeof(rgb_color), "rgb(%d,%d,%d)", r, g, b);
     return qtWebBrowserExecCommandWithParamAttrib(ih, "foreColor", rgb_color);
   }
   return 0;
@@ -978,7 +978,7 @@ static int qtWebBrowserSetBackColorAttrib(Ihandle* ih, const char* value)
   if (iupStrToRGB(value, &r, &g, &b))
   {
     char rgb_color[32];
-    sprintf(rgb_color, "rgb(%d,%d,%d)", r, g, b);
+    snprintf(rgb_color, sizeof(rgb_color), "rgb(%d,%d,%d)", r, g, b);
     return qtWebBrowserExecCommandWithParamAttrib(ih, "backColor", rgb_color);
   }
   return 0;

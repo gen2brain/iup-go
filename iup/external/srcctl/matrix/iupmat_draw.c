@@ -51,7 +51,7 @@ static void iMatrixParseColor(const char* color_str, unsigned char* r, unsigned 
 static void iMatrixSetDrawColor(Ihandle* ih, unsigned char r, unsigned char g, unsigned char b)
 {
   char color_str[32];
-  sprintf(color_str, "%d %d %d", r, g, b);
+  snprintf(color_str, sizeof(color_str), "%d %d %d", r, g, b);
   IupSetStrAttribute(ih, "DRAWCOLOR", color_str);
 }
 
@@ -449,7 +449,7 @@ static void iMatrixDrawFeedbackImage(Ihandle* ih, int x1, int x2, int y1, int y2
     char bgcolor_str[32];
     unsigned char r = 255, g = 255, b = 255;
     iupMatrixGetBgRGB(ih, lin, col, &r, &g, &b, marked, active);
-    sprintf(bgcolor_str, "%d %d %d", r, g, b);
+    snprintf(bgcolor_str, sizeof(bgcolor_str), "%d %d %d", r, g, b);
 
     y = (y2 + y1 - image_height) / 2;
     x = (x2 + x1 - image_width) / 2;
@@ -742,7 +742,7 @@ static void iMatrixDrawFill(Ihandle* ih, int x1, int x2, int y1, int y2, int mar
     int y = (int)((y1 + y2) / 2.0 - 0.5);
     int empty1 = ((x2 - x1)*fill) / 100;
     char text[50];
-    sprintf(text, "%d%%", fill);
+    snprintf(text, sizeof(text), "%d%%", fill);
     IupSetAttribute(ih, "DRAWFONT", iupMatrixGetFont(ih, lin, col));
     IupSetInt(ih, "DRAWTEXTALIGNMENT", IUP_ALIGN_ACENTER);
 
@@ -781,7 +781,7 @@ static void iMatrixDrawImage(Ihandle* ih, int x1, int x2, int y1, int y2, int co
     int image_height = IupGetInt(image, "HEIGHT");
     unsigned char r = 255, g = 255, b = 255;
     iupMatrixGetBgRGB(ih, lin, col, &r, &g, &b, marked, active);
-    sprintf(bgcolor_str, "%d %d %d", r, g, b);
+    snprintf(bgcolor_str, sizeof(bgcolor_str), "%d %d %d", r, g, b);
 
     if (lin_alignment == IMAT_ALIGN_CENTER)
       y = (y2 + y1 - image_height) / 2;

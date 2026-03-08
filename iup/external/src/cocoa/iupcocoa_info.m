@@ -218,7 +218,7 @@ char *iupdrvGetSystemName(void)
   char buffer[100];
   if (codename)
   {
-    sprintf(buffer, "macOS %s", codename);
+    snprintf(buffer, sizeof(buffer), "macOS %s", codename);
   }
   else
   {
@@ -235,7 +235,7 @@ char *iupdrvGetSystemVersion(void)
   char* str = iupStrGetMemory(100);
 
   NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
-  sprintf(str, "%ld.%ld.%ld", (long)version.majorVersion, (long)version.minorVersion, (long)version.patchVersion);
+  snprintf(str, 100, "%ld.%ld.%ld", (long)version.majorVersion, (long)version.minorVersion, (long)version.patchVersion);
 
   /* Append architecture info. */
   struct utsname systemInfo;

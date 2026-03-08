@@ -382,7 +382,7 @@ static int gtk4ToggleSetFontAttrib(Ihandle* ih, const char* value)
         PangoWeight weight = pango_font_description_get_weight(fontdesc);
         PangoStyle style = pango_font_description_get_style(fontdesc);
 
-        sprintf(css, "font-family: \"%s\"; font-size: %dpt; font-weight: %d; font-style: %s;",
+        snprintf(css, sizeof(css), "font-family: \"%s\"; font-size: %dpt; font-weight: %d; font-style: %s;",
                 family, size, weight,
                 (style == PANGO_STYLE_ITALIC) ? "italic" : "normal");
 

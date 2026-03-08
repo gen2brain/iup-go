@@ -55,7 +55,7 @@ static void iMatrixExUndoDataClear(IundoData* undo_data)
 static void iMatrixExUndoDataAddCell(IundoData* undo_data, int lin, int col, const char* value)
 {
   char id[40];
-  sprintf(id, "%d:%d", lin, col);
+  snprintf(id, sizeof(id), "%d:%d", lin, col);
   if (!value)
     iupTableSet(undo_data->data_table, id, (void*)"", IUPTABLE_POINTER);  /* store NULL pointers so they can be restored later */
   else

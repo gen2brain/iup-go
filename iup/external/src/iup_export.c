@@ -220,7 +220,7 @@ static void iExportChangedAttribs(FILE* file, Ihandle* ih, const char* indent, i
               if (value && value[0] && !iupATTRIB_ISINTERNAL(value))
               {
                 char str[50];
-                sprintf(str, "%s%d:%d", name, lin, col);
+                snprintf(str, sizeof(str), "%s%d:%d", name, lin, col);
                 iExportWriteAttrib(file, str, value, indent, export_format);
                 wcount++;
               }
@@ -236,7 +236,7 @@ static void iExportChangedAttribs(FILE* file, Ihandle* ih, const char* indent, i
             if (value && value[0] && !iupATTRIB_ISINTERNAL(value))
             {
               char str[50];
-              sprintf(str, "%s%d", name, id);
+              snprintf(str, sizeof(str), "%s%d", name, id);
               iExportWriteAttrib(file, str, value, indent, export_format);
               wcount++;
             }
@@ -725,7 +725,7 @@ static int iExportImagePrintBuffer(Iarray *buffer, const char *format, va_list a
 
   count = iupArrayCount(buffer);
 
-  len = vsprintf(str, format, arglist);
+  len = vsnprintf(str, sizeof(str), format, arglist);
 
   if (len < 0)
     return len;

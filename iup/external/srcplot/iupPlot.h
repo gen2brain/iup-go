@@ -140,7 +140,7 @@ inline int iupPlotLineStyleToDrawStyle(int plotStyle)
   }
 }
 
-void iupPlotBuildFont(Ihandle* ih, int fontStyle, int fontSize, char* fontStr);
+void iupPlotBuildFont(Ihandle* ih, int fontStyle, int fontSize, char* fontStr, int fontStrSize);
 void iupPlotDrawMark(iupPlotDrawContext* ctx, int x, int y, int markStyle, int markSize, long color);
 void iupPlotDrawAlignedText(iupPlotDrawContext* ctx, double refX, double refY,
                             int plotAlignment, const char* text, long color,
