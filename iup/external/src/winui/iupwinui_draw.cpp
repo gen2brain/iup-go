@@ -133,22 +133,29 @@ static D2D1_COLOR_F winuiDrawColor(long color)
 
 static com_ptr<ID2D1StrokeStyle> winuiDrawStrokeStyle(int style)
 {
-  D2D1_DASH_STYLE dashStyle;
+  float* dashes = nullptr;
+  UINT32 dashCount = 0;
+
+  static float s_dash[2] = { 9.0f, 3.0f };
+  static float s_dot[2] = { 1.0f, 2.0f };
+  static float s_dash_dot[4] = { 7.0f, 3.0f, 1.0f, 3.0f };
+  static float s_dash_dot_dot[6] = { 7.0f, 3.0f, 1.0f, 3.0f, 1.0f, 3.0f };
+
   switch (style)
   {
-    case IUP_DRAW_STROKE_DASH:         dashStyle = D2D1_DASH_STYLE_DASH; break;
-    case IUP_DRAW_STROKE_DOT:          dashStyle = D2D1_DASH_STYLE_DOT; break;
-    case IUP_DRAW_STROKE_DASH_DOT:     dashStyle = D2D1_DASH_STYLE_DASH_DOT; break;
-    case IUP_DRAW_STROKE_DASH_DOT_DOT: dashStyle = D2D1_DASH_STYLE_DASH_DOT_DOT; break;
-    default:                           dashStyle = D2D1_DASH_STYLE_SOLID; break;
+    case IUP_DRAW_STROKE_DASH:         dashes = s_dash; dashCount = 2; break;
+    case IUP_DRAW_STROKE_DOT:          dashes = s_dot; dashCount = 2; break;
+    case IUP_DRAW_STROKE_DASH_DOT:     dashes = s_dash_dot; dashCount = 4; break;
+    case IUP_DRAW_STROKE_DASH_DOT_DOT: dashes = s_dash_dot_dot; dashCount = 6; break;
+    default: break;
   }
 
   D2D1_STROKE_STYLE_PROPERTIES props = D2D1::StrokeStyleProperties(
     D2D1_CAP_STYLE_FLAT, D2D1_CAP_STYLE_FLAT, D2D1_CAP_STYLE_FLAT,
-    D2D1_LINE_JOIN_MITER, 10.0f, dashStyle, 0.0f);
+    D2D1_LINE_JOIN_MITER, 10.0f, D2D1_DASH_STYLE_CUSTOM, 0.0f);
 
   com_ptr<ID2D1StrokeStyle> strokeStyle;
-  g_d2dFactory->CreateStrokeStyle(props, nullptr, 0, strokeStyle.put());
+  g_d2dFactory->CreateStrokeStyle(props, dashes, dashCount, strokeStyle.put());
   return strokeStyle;
 }
 
