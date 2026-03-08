@@ -526,13 +526,9 @@ static ImotFont* motFontCreateNativeFont(Ihandle* ih, const char* value)
 
 static ImotFont* motGetFont(Ihandle *ih)
 {
-  ImotFont* motfont = (ImotFont*)iupAttribGet(ih, "_IUPMOT_FONT");
+  ImotFont* motfont = motFindFont(NULL, iupGetFontValue(ih));
   if (!motfont)
-  {
-    motfont = motFontCreateNativeFont(ih, iupGetFontValue(ih));
-    if (!motfont)
-      motfont = motFontCreateNativeFont(ih, IupGetGlobal("DEFAULTFONT"));
-  }
+    motfont = motFindFont(NULL, IupGetGlobal("DEFAULTFONT"));
   return motfont;
 }
 

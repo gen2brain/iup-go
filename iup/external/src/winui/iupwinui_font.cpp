@@ -189,23 +189,11 @@ static IwinuiFont* winuiFindFont(const char* font)
 
 static IwinuiFont* winuiFontGet(Ihandle* ih)
 {
-  IwinuiFont* winfont = (IwinuiFont*)iupAttribGet(ih, "_IUP_WINUIFONT");
+  IwinuiFont* winfont = winuiFindFont(iupGetFontValue(ih));
   if (!winfont)
-  {
-    const char* fontvalue = iupGetFontValue(ih);
-    if (fontvalue)
-      winfont = winuiFindFont(fontvalue);
-    if (!winfont)
-    {
-      const char* defaultfont = IupGetGlobal("DEFAULTFONT");
-      if (defaultfont)
-        winfont = winuiFindFont(defaultfont);
-    }
-    if (!winfont)
-      winfont = winuiFindFont("Segoe UI, 9");
-    if (winfont)
-      iupAttribSet(ih, "_IUP_WINUIFONT", (char*)winfont);
-  }
+    winfont = winuiFindFont(IupGetGlobal("DEFAULTFONT"));
+  if (!winfont)
+    winfont = winuiFindFont("Segoe UI, 9");
   return winfont;
 }
 

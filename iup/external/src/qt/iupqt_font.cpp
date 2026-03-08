@@ -169,24 +169,11 @@ static IqtFont* qtFontCreateNativeFont(Ihandle* ih, const char* value)
 
 static IqtFont* qtFontGet(Ihandle* ih)
 {
-  IqtFont* qtfont = (IqtFont*)iupAttribGet(ih, "_IUP_QTFONT");
+  IqtFont* qtfont = qtFindFont(iupGetFontValue(ih));
   if (!qtfont)
-  {
-    const char* fontvalue = iupGetFontValue(ih);
-    qtfont = qtFontCreateNativeFont(ih, fontvalue);
-    if (!qtfont)
-    {
-      const char* defaultfont = IupGetGlobal("DEFAULTFONT");
-      qtfont = qtFontCreateNativeFont(ih, defaultfont);
-    }
-    if (!qtfont)
-    {
-      /* Last resort: create a default system font to ensure we never return NULL
-       * This prevents iupdrvFontGetStringWidth from returning 0, which would cause
-       * text controls to have zero natural size */
-      qtfont = qtFontCreateNativeFont(ih, "Sans, 10");
-    }
-  }
+    qtfont = qtFindFont(IupGetGlobal("DEFAULTFONT"));
+  if (!qtfont)
+    qtfont = qtFindFont("Sans, 10");
   return qtfont;
 }
 

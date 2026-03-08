@@ -270,15 +270,9 @@ static IupCocoaFont *cocoaFontCreateNativeFont(Ihandle *ih, const char *value)
 
 static IupCocoaFont *cocoaFontGet(Ihandle *ih)
 {
-  IupCocoaFont *the_font = (IupCocoaFont *)iupAttribGet(ih, "_IUP_COCOAFONT");
+  IupCocoaFont *the_font = iupcocoaFindFont(iupGetFontValue(ih));
   if (nil == the_font)
-  {
-    the_font = cocoaFontCreateNativeFont(ih, iupGetFontValue(ih));
-    if (nil == the_font)
-    {
-      the_font = cocoaFontCreateNativeFont(ih, IupGetGlobal("DEFAULTFONT"));
-    }
-  }
+    the_font = iupcocoaFindFont(IupGetGlobal("DEFAULTFONT"));
   return the_font;
 }
 
