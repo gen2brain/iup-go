@@ -30,7 +30,11 @@ int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   if (value && *value)
     elm_object_tooltip_text_set(widget, value);
   else
-    elm_object_tooltip_unset(widget);
+  {
+    const char* old_tip = iupAttribGet(ih, "TIP");
+    if (old_tip && *old_tip)
+      elm_object_tooltip_unset(widget);
+  }
 
   return 1;
 }
@@ -44,7 +48,11 @@ int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
     return 0;
 
   if (iupStrBoolean(value))
-    elm_object_tooltip_show(widget);
+  {
+    const char* tip = iupAttribGet(ih, "TIP");
+    if (tip && *tip)
+      elm_object_tooltip_show(widget);
+  }
   else
     elm_object_tooltip_hide(widget);
 

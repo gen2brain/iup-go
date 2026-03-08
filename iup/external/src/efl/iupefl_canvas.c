@@ -389,6 +389,82 @@ static void eflCanvasKeyCallback(void* data, const Efl_Event* ev)
 }
 
 /****************************************************************
+                     Tooltip Support
+****************************************************************/
+
+static Eo* eflCanvasGetTooltipWidget(Ihandle* ih)
+{
+  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
+  if (scroller)
+    return scroller;
+
+  Eo* overlay = (Eo*)iupAttribGet(ih, "_IUP_EFL_TOOLTIP_OVERLAY");
+  if (overlay)
+    return overlay;
+
+  Eo* parent = iupeflGetParentWidget(ih);
+  if (!parent)
+    return NULL;
+
+  overlay = efl_add(EFL_UI_BG_CLASS, parent,
+    efl_gfx_entity_visible_set(efl_added, EINA_TRUE));
+  if (!overlay)
+    return NULL;
+
+  efl_gfx_color_set(overlay, 0, 0, 0, 0);
+  efl_canvas_object_repeat_events_set(overlay, EINA_TRUE);
+
+  Eo* vg = iupeflGetWidget(ih);
+  if (vg)
+  {
+    Eina_Position2D pos = efl_gfx_entity_position_get(vg);
+    Eina_Size2D size = efl_gfx_entity_size_get(vg);
+    efl_gfx_entity_position_set(overlay, pos);
+    efl_gfx_entity_size_set(overlay, size);
+    efl_gfx_stack_above(overlay, vg);
+  }
+
+  iupAttribSet(ih, "_IUP_EFL_TOOLTIP_OVERLAY", (char*)overlay);
+  return overlay;
+}
+
+static int eflCanvasSetTipAttrib(Ihandle* ih, const char* value)
+{
+  Eo* widget = eflCanvasGetTooltipWidget(ih);
+  if (!widget)
+    return 1;
+
+  if (value && *value)
+    elm_object_tooltip_text_set(widget, value);
+  else
+  {
+    const char* old_tip = iupAttribGet(ih, "TIP");
+    if (old_tip && *old_tip)
+      elm_object_tooltip_unset(widget);
+  }
+
+  return 1;
+}
+
+static int eflCanvasSetTipVisibleAttrib(Ihandle* ih, const char* value)
+{
+  Eo* widget = eflCanvasGetTooltipWidget(ih);
+  if (!widget)
+    return 0;
+
+  if (iupStrBoolean(value))
+  {
+    const char* tip = iupAttribGet(ih, "TIP");
+    if (tip && *tip)
+      elm_object_tooltip_show(widget);
+  }
+  else
+    elm_object_tooltip_hide(widget);
+
+  return 0;
+}
+
+/****************************************************************
                      Attributes
 ****************************************************************/
 
@@ -546,7 +622,36 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
   Efl_VG* root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT");
   Eina_List* evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS");
   Eina_List* vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES");
+  Efl_VG* deferred_root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT_DEFERRED");
+  Eina_List* deferred_vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES_DEFERRED");
+  Eina_List* deferred_evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS_DEFERRED");
 
+  if (deferred_root)
+  {
+    efl_del(deferred_root);
+    iupAttribSet(ih, "_IUP_EFL_VG_ROOT_DEFERRED", NULL);
+  }
+
+  if (deferred_vg_images)
+  {
+    IeflVgImageData* data;
+    EINA_LIST_FREE(deferred_vg_images, data)
+    {
+      free(data->pixels);
+      free(data);
+    }
+    iupAttribSet(ih, "_IUP_EFL_VG_IMAGES_DEFERRED", NULL);
+  }
+
+  if (deferred_evas_objects)
+  {
+    Eo* obj;
+    EINA_LIST_FREE(deferred_evas_objects, obj)
+    {
+      efl_del(obj);
+    }
+    iupAttribSet(ih, "_IUP_EFL_EVAS_OBJECTS_DEFERRED", NULL);
+  }
 
   if (vg_images)
   {
@@ -604,6 +709,15 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUP_EXTRAPARENT", NULL);
   }
 
+  {
+    Eo* overlay = (Eo*)iupAttribGet(ih, "_IUP_EFL_TOOLTIP_OVERLAY");
+    if (overlay)
+    {
+      efl_del(overlay);
+      iupAttribSet(ih, "_IUP_EFL_TOOLTIP_OVERLAY", NULL);
+    }
+  }
+
   iupAttribSet(ih, "_IUP_EFL_VG_ROOT", NULL);
   ih->handle = NULL;
 }
@@ -613,29 +727,44 @@ static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
   Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
   Eo* vg = iupeflGetWidget(ih);
 
-  if (scroller)
+  if (!iupeflIsInsideTabs(ih))
   {
-    Ihandle* parent;
-    int abs_x = ih->x;
-    int abs_y = ih->y;
-
-    parent = ih->parent;
-    while (parent)
+    if (scroller)
     {
-      if (parent->iclass->nativetype != IUP_TYPEVOID)
-      {
-        abs_x += parent->x;
-        abs_y += parent->y;
-      }
-      parent = parent->parent;
-    }
+      Ihandle* parent;
+      int abs_x = ih->x;
+      int abs_y = ih->y;
 
-    efl_gfx_entity_position_set(scroller, EINA_POSITION2D(abs_x, abs_y));
-    efl_gfx_entity_size_set(scroller, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
+      parent = ih->parent;
+      while (parent)
+      {
+        if (parent->iclass->nativetype != IUP_TYPEVOID)
+        {
+          abs_x += parent->x;
+          abs_y += parent->y;
+        }
+        parent = parent->parent;
+      }
+
+      efl_gfx_entity_position_set(scroller, EINA_POSITION2D(abs_x, abs_y));
+      efl_gfx_entity_size_set(scroller, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
+    }
+    else if (vg)
+    {
+      iupeflSetPosSize(ih, ih->x, ih->y, ih->currentwidth, ih->currentheight);
+    }
   }
-  else if (vg)
+
   {
-    iupeflSetPosSize(ih, ih->x, ih->y, ih->currentwidth, ih->currentheight);
+    Eo* overlay = (Eo*)iupAttribGet(ih, "_IUP_EFL_TOOLTIP_OVERLAY");
+    if (overlay && vg)
+    {
+      Eina_Position2D pos = efl_gfx_entity_position_get(vg);
+      Eina_Size2D size = efl_gfx_entity_size_get(vg);
+      efl_gfx_entity_position_set(overlay, pos);
+      efl_gfx_entity_size_set(overlay, size);
+      efl_gfx_stack_above(overlay, vg);
+    }
   }
 }
 
@@ -671,4 +800,7 @@ void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "TIP", NULL, eflCanvasSetTipAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPVISIBLE", NULL, eflCanvasSetTipVisibleAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
