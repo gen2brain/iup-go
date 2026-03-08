@@ -322,11 +322,8 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
   IFn cb = (IFn)IupGetCallback(ih,"ACTION");
   cairo_surface_t* buffer;
 
-  /* Check if there's a persistent buffer from SCROLL_CB or other drawing outside ACTION */
+  /* Check if there's a persistent buffer from drawing outside ACTION (e.g. SCROLL_CB) */
   buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
-
-  /* If buffer exists and is valid, use it instead of calling ACTION
-   * This happens when SCROLL_CB drew to the buffer */
   if (buffer && cairo_image_surface_get_width(buffer) == width &&
       cairo_image_surface_get_height(buffer) == height)
   {
@@ -337,7 +334,6 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
 
   if (cb && !(ih->data->inside_resize))
   {
-
     double x1, y1, x2, y2;
     cairo_clip_extents(cr, &x1, &y1, &x2, &y2);
     iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", (int)x1, (int)y1, (int)x2-1, (int)y2-1);
@@ -351,16 +347,6 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
 
     iupAttribSet(ih, "CLIPRECT", NULL);
     iupAttribSet(ih, "CAIRO_CR", NULL);
-
-    /* Clear buffer reference so next draw calls ACTION again
-     * The buffer is only meant to persist for SCROLL_CB drawings done outside ACTION
-     * Note: We only clear the reference, not destroy the surface - IupDraw manages lifecycle */
-    buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
-    if (buffer)
-    {
-      cairo_surface_destroy(buffer);
-      iupAttribSet(ih, "_IUPGTK4_CANVAS_BUFFER", NULL);
-    }
   }
 
   (void)area;
