@@ -195,15 +195,21 @@ IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
     strlcpy(type_face, mapped_name, sizeof(type_face));
   }
 
-  NSString *ns_type_face = [NSString stringWithUTF8String:type_face];
-  NSFont *ns_font = [NSFont fontWithName:ns_type_face size:final_font_size];
+  NSFont *ns_font = nil;
+  if (type_face[0] == '.' || strcmp(type_face, "System") == 0 || strlen(type_face) == 0)
+  {
+    ns_font = [NSFont systemFontOfSize:final_font_size];
+  }
+  else
+  {
+    NSString *ns_type_face = [NSString stringWithUTF8String:type_face];
+    ns_font = [NSFont fontWithName:ns_type_face size:final_font_size];
+  }
 
-  /* If the font is not found by name, fall back to the system font with the specified size.
-     This increases robustness, similar to font substitution on Windows and GTK/Pango. */
   if (nil == ns_font)
   {
     ns_font = [NSFont systemFontOfSize:final_font_size];
-    if (nil == ns_font) /* Should not happen with a valid size, but check just in case. */
+    if (nil == ns_font)
     {
       return NULL;
     }
