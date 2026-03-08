@@ -94,17 +94,28 @@ static void winuiTipEnsurePopup(Ihandle* ih)
   if (!aux || !aux->rootPanel)
     return;
 
+  auto resources = Application::Current().Resources();
+
   TextBlock text;
   text.TextWrapping(TextWrapping::Wrap);
   text.MaxWidth(400);
-  text.Foreground(SolidColorBrush(Microsoft::UI::ColorHelper::FromArgb(255, 32, 32, 32)));
   text.FontSize(12);
 
+  auto fgKey = box_value(L"ToolTipForeground");
+  if (resources.HasKey(fgKey))
+    text.Foreground(resources.Lookup(fgKey).as<Media::Brush>());
+
   Border border;
-  border.Background(SolidColorBrush(Microsoft::UI::ColorHelper::FromArgb(255, 242, 242, 242)));
-  border.BorderBrush(SolidColorBrush(Microsoft::UI::ColorHelper::FromArgb(255, 153, 153, 153)));
   border.BorderThickness(ThicknessHelper::FromUniformLength(1));
   border.Padding(ThicknessHelper::FromLengths(8, 4, 8, 4));
+
+  auto bgKey = box_value(L"ToolTipBackground");
+  if (resources.HasKey(bgKey))
+    border.Background(resources.Lookup(bgKey).as<Media::Brush>());
+
+  auto borderKey = box_value(L"ToolTipBorderBrush");
+  if (resources.HasKey(borderKey))
+    border.BorderBrush(resources.Lookup(borderKey).as<Media::Brush>());
   border.Child(text);
 
   Primitives::Popup popup;
