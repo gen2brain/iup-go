@@ -427,6 +427,8 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     /* Use iupGtk4Fixed (custom container) for proper sizing and positioning */
     tab_container = iupgtk4NativeContainerNew();
     gtk_widget_set_visible(tab_container, TRUE);
+    gtk_widget_set_hexpand(tab_container, TRUE);
+    gtk_widget_set_vexpand(tab_container, TRUE);
     gtk_box_append(GTK_BOX(tab_page), tab_container);
 
     tabtitle = iupAttribGet(child, "TABTITLE");
