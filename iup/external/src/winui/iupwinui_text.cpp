@@ -634,6 +634,8 @@ static int winuiTextMapMethod(Ihandle* ih)
     NumberBox nb;
     nb.HorizontalAlignment(HorizontalAlignment::Left);
     nb.VerticalAlignment(VerticalAlignment::Top);
+    nb.MinWidth(0);
+    nb.MinHeight(0);
     nb.SpinButtonPlacementMode(NumberBoxSpinButtonPlacementMode::Inline);
 
     int spinMin = iupAttribGetInt(ih, "SPINMIN");
@@ -702,6 +704,8 @@ static int winuiTextMapMethod(Ihandle* ih)
     PasswordBox pb = PasswordBox();
     pb.HorizontalAlignment(HorizontalAlignment::Left);
     pb.VerticalAlignment(VerticalAlignment::Top);
+    pb.MinWidth(0);
+    pb.MinHeight(0);
 
     if (value)
       pb.Password(iupwinuiStringToHString(value));
@@ -737,6 +741,8 @@ static int winuiTextMapMethod(Ihandle* ih)
     RichEditBox reb;
     reb.HorizontalAlignment(HorizontalAlignment::Left);
     reb.VerticalAlignment(VerticalAlignment::Top);
+    reb.MinWidth(0);
+    reb.MinHeight(0);
     reb.SelectionFlyout(nullptr);
     reb.ContextFlyout(nullptr);
 
@@ -840,6 +846,8 @@ static int winuiTextMapMethod(Ihandle* ih)
     TextBox tb = TextBox();
     tb.HorizontalAlignment(HorizontalAlignment::Left);
     tb.VerticalAlignment(VerticalAlignment::Top);
+    tb.MinWidth(0);
+    tb.MinHeight(0);
 
     if (aux->isMultiline)
     {
@@ -1110,13 +1118,16 @@ static char* winuiTextGetSpinValueAttrib(Ihandle* ih)
 }
 
 static float winui_multiline_border_height = -1;
+static int winui_border_x = -1;
+static int winui_border_y = -1;
 
-static void winuiTextMeasureMultilineMetrics(void)
+static void winuiTextMeasureBorderMetrics(void)
 {
-  if (winui_multiline_border_height >= 0)
+  if (winui_border_x >= 0)
     return;
 
   float border_v = 0;
+  float border_h = 0;
   auto resources = Application::Current().Resources();
 
   auto borderKey = box_value(L"TextControlBorderThemeThickness");
@@ -1124,6 +1135,7 @@ static void winuiTextMeasureMultilineMetrics(void)
   {
     auto bt = unbox_value<Thickness>(resources.Lookup(borderKey));
     border_v += (float)(bt.Top + bt.Bottom);
+    border_h += (float)(bt.Left + bt.Right);
   }
 
   auto paddingKey = box_value(L"TextControlThemePadding");
@@ -1131,21 +1143,27 @@ static void winuiTextMeasureMultilineMetrics(void)
   {
     auto pd = unbox_value<Thickness>(resources.Lookup(paddingKey));
     border_v += (float)(pd.Top + pd.Bottom);
+    border_h += (float)(pd.Left + pd.Right);
   }
 
   winui_multiline_border_height = border_v;
   if (winui_multiline_border_height < 2) winui_multiline_border_height = 6;
+
+  winui_border_x = (int)ceil(border_h);
+  winui_border_y = (int)ceil(border_v);
+  if (winui_border_x < 6) winui_border_x = 6;
+  if (winui_border_y < 6) winui_border_y = 6;
 }
 
 extern "C" void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 {
+  winuiTextMeasureBorderMetrics();
+
   if (ih->data && ih->data->is_multiline)
   {
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
-    winuiTextMeasureMultilineMetrics();
-
-    *x += 6;
+    *x += winui_border_x;
 
     if (visiblelines > 0)
     {
@@ -1164,8 +1182,8 @@ extern "C" void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
   }
   else
   {
-    *x += 6;
-    *y += 6;
+    *x += winui_border_x;
+    *y += winui_border_y;
   }
 }
 
