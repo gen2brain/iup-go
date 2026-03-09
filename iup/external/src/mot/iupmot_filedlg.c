@@ -826,4 +826,8 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
 void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = motFileDlgPopup;
+
+  iupClassRegisterAttribute(ic, "EXTFILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }

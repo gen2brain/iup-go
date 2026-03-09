@@ -553,8 +553,6 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
       }
     }
 
-    if (file_cb)
-      file_cb(ih, NULL, "FINISH");
   }
   else
   {
@@ -564,6 +562,9 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
     iupAttribSet(ih, "FILTERUSED", NULL);
     iupAttribSet(ih, "STATUS", "-1");
   }
+
+  if (file_cb)
+    file_cb(ih, NULL, "FINISH");
 
   evas_object_smart_callback_del(fileselector, "done", eflFileDlgDoneCallback);
   evas_object_smart_callback_del(fileselector, "selected", eflFileDlgSelectedCallback);
@@ -588,4 +589,9 @@ void iupdrvFileDlgInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "EXTFILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "SHOWPREVIEW", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PREVIEWDC", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PREVIEWWIDTH", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PREVIEWHEIGHT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

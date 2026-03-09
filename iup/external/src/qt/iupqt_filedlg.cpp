@@ -182,6 +182,26 @@ private:
 
   void onAccepted()
   {
+    IFnss cb = (IFnss)IupGetCallback(m_ih, "FILE_CB");
+    if (cb)
+    {
+      QStringList selectedFiles = m_fileDialog->selectedFiles();
+      if (!selectedFiles.isEmpty())
+      {
+        QByteArray pathBytes = selectedFiles[0].toUtf8();
+        int ret = cb(m_ih, (char*)pathBytes.constData(), (char*)"OK");
+        if (ret == IUP_IGNORE)
+          return;
+        if (ret == IUP_CONTINUE)
+        {
+          char* value = iupAttribGet(m_ih, "FILE");
+          if (value)
+            m_fileDialog->selectFile(QString::fromUtf8(value));
+          return;
+        }
+      }
+    }
+
     m_result = QDialog::Accepted;
     accept();
   }
@@ -350,8 +370,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   {
     preview_dialog = new IupQtFileDialogWithPreview(ih, parent);
     dialog = preview_dialog->fileDialog();
-
-    file_cb(ih, nullptr, (char*)"INIT");
   }
   else
   {
@@ -551,23 +569,50 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       preview_dialog->setWindowTitle(QString::fromUtf8(value));
   }
 
+  if (file_cb)
+    file_cb(ih, nullptr, (char*)"INIT");
+
   /* Show dialog */
   int result;
-  do
+  for (;;)
   {
     result = exec_dialog->exec();
 
-    /* Handle HELP button response */
     if (result == QDialog::Rejected)
-    {
-      /* Check if help button was clicked (we handle this in the lambda above) */
       break;
+
+    if (!preview_dialog && file_cb)
+    {
+      QStringList selectedFiles = dialog->selectedFiles();
+      if (!selectedFiles.isEmpty())
+      {
+        QByteArray pathBytes = selectedFiles[0].toUtf8();
+        int ret = file_cb(ih, (char*)pathBytes.constData(), (char*)"OK");
+        if (ret == IUP_IGNORE)
+        {
+          if (dialog->testOption(QFileDialog::DontUseNativeDialog))
+            continue;
+          result = QDialog::Rejected;
+          break;
+        }
+        if (ret == IUP_CONTINUE)
+        {
+          char* val = iupAttribGet(ih, "FILE");
+          if (val)
+            dialog->selectFile(QString::fromUtf8(val));
+          if (dialog->testOption(QFileDialog::DontUseNativeDialog))
+            continue;
+          result = QDialog::Rejected;
+          break;
+        }
+      }
     }
 
-  } while (0);
+    break;
+  }
 
-  /* Call FINISH callback for preview mode */
-  if (preview_dialog && file_cb)
+  /* Call FINISH callback */
+  if (file_cb)
   {
     file_cb(ih, nullptr, (char*)"FINISH");
   }
