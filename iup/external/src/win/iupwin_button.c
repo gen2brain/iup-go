@@ -59,14 +59,11 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   {
     int charwidth, charheight;
     iupdrvFontGetCharSize(ih, &charwidth, &charheight);
-    (*x) += charwidth * 4 + border_size;
-    (*y) += charheight + border_size;
+    (*x) += charheight;
   }
-  else
-  {
-    (*x) += border_size;
-    (*y) += border_size;
-  }
+
+  (*x) += border_size;
+  (*y) += border_size;
 }
 
 /****************************************************************/

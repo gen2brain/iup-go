@@ -23,6 +23,7 @@
 #include "iup_str.h"
 #include "iup_button.h"
 #include "iup_drv.h"
+#include "iup_drvfont.h"
 #include "iup_image.h"
 #include "iup_key.h"
 
@@ -32,7 +33,19 @@
 void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
   int border_size = 2*5;
-  (void)ih;  
+
+  if (ih)
+  {
+    char* image = iupAttribGet(ih, "IMAGE");
+    char* title = iupAttribGet(ih, "TITLE");
+    if (!image && (!title || !*title) && iupAttribGet(ih, "BGCOLOR"))
+    {
+      int charwidth, charheight;
+      iupdrvFontGetCharSize(ih, &charwidth, &charheight);
+      (*x) += charheight;
+    }
+  }
+
   (*x) += border_size;
   (*y) += border_size;
 }
@@ -330,4 +343,6 @@ void iupdrvButtonInitClass(Iclass* ic)
 
   /* NOT supported */
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "IMAGEPOSITION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPACING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
