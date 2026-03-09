@@ -156,6 +156,13 @@ void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   image = iupAttribGet(ih, "IMAGE");
   title = iupAttribGet(ih, "TITLE");
 
+  if (!image && (!title || !*title) && iupAttribGet(ih, "BGCOLOR"))
+  {
+    int charwidth, charheight;
+    iupdrvFontGetCharSize(ih, &charwidth, &charheight);
+    *x += charheight;
+  }
+
   if (image && title && *title != 0)
     button_type = IUP_BUTTON_BOTH;
   else if (image)
@@ -746,12 +753,20 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
 
     if (ih->data->type & IUP_BUTTON_TEXT)
     {
-      /* Use IUP's spacing value (default 2) to match size calculation */
-      GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, ih->data->spacing);
-      gtk_box_append(GTK_BOX(box), image);
-
+      GtkOrientation orient = (ih->data->img_position == IUP_IMGPOS_TOP || ih->data->img_position == IUP_IMGPOS_BOTTOM) ? GTK_ORIENTATION_VERTICAL : GTK_ORIENTATION_HORIZONTAL;
+      GtkWidget* box = gtk_box_new(orient, ih->data->spacing);
       GtkWidget* label = gtk_label_new("");
-      gtk_box_append(GTK_BOX(box), label);
+
+      if (ih->data->img_position == IUP_IMGPOS_RIGHT || ih->data->img_position == IUP_IMGPOS_BOTTOM)
+      {
+        gtk_box_append(GTK_BOX(box), label);
+        gtk_box_append(GTK_BOX(box), image);
+      }
+      else
+      {
+        gtk_box_append(GTK_BOX(box), image);
+        gtk_box_append(GTK_BOX(box), label);
+      }
 
       if (GTK_IS_BUTTON(ih->handle))
         gtk_button_set_child(GTK_BUTTON(ih->handle), box);
@@ -795,13 +810,14 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
   else
   {
     char* title = iupAttribGet(ih, "TITLE");
-    if (!title)
+    if (!title || !*title)
     {
       if (iupAttribGet(ih, "BGCOLOR"))
       {
         GtkWidget* drawarea = gtk_drawing_area_new();
-        gtk_widget_set_size_request(drawarea, 20, 20);
         gtk_button_set_child(GTK_BUTTON(ih->handle), drawarea);
+        iupgtk4CssSetWidgetPadding(ih->handle, 0, 0);
+        iupgtk4CssSetWidgetCustom(ih->handle, "min-width", "0; min-height: 0");
       }
       else
         gtk_button_set_label(GTK_BUTTON(ih->handle), "");

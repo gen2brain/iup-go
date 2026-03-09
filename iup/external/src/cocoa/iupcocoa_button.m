@@ -515,17 +515,16 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     has_user_padding = (horiz_padding > 0 || vert_padding > 0);
   }
 
+  if (has_bgcolor)
+  {
+    int charwidth, charheight;
+    iupdrvFontGetCharSize(ih, &charwidth, &charheight);
+    *x += charheight;
+  }
+
   if (!has_user_padding)
   {
-    if (has_bgcolor)
-    {
-      if (text_border_x == -1)
-        cocoaButtonMeasureBorders(ih, 0, 1, IUP_IMGPOS_LEFT, &text_border_x, &text_border_y);
-
-      border_x = text_border_x;
-      border_y = text_border_y;
-    }
-    else if (has_image && has_text)
+    if (has_image && has_text)
     {
       if (image_text_border_x == -1)
         cocoaButtonMeasureBorders(ih, 1, 1, img_position, &image_text_border_x, &image_text_border_y);

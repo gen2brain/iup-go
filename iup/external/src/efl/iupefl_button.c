@@ -464,8 +464,8 @@ static void eflButtonComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
       iupdrvFontGetMultiLineStringSize(ih, title, &natural_w, &natural_h);
     else if (iupAttribGet(ih, "BGCOLOR"))
     {
-      natural_w = 16;
-      natural_h = 16;
+      iupdrvFontGetCharSize(ih, NULL, &natural_h);
+      natural_w = natural_h;
     }
   }
 
@@ -539,8 +539,16 @@ void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
         !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
       has_border = 0;
 
-    if (iupAttribGetBoolean(ih, "FLAT"))
-      has_border = 0;
+    {
+      char* image = iupAttribGet(ih, "IMAGE");
+      char* title = iupAttribGet(ih, "TITLE");
+      if (!image && (!title || !*title) && iupAttribGet(ih, "BGCOLOR"))
+      {
+        int charwidth, charheight;
+        iupdrvFontGetCharSize(ih, &charwidth, &charheight);
+        *x += charheight;
+      }
+    }
   }
 
   if (has_border)
@@ -568,4 +576,7 @@ void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflButtonSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FONT", NULL, eflButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
+
+  iupClassRegisterAttribute(ic, "IMAGEPOSITION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPACING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

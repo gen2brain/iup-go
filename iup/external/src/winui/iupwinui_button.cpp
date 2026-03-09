@@ -167,17 +167,36 @@ static void winuiButtonSetImage(Ihandle* ih, const char* name, int make_inactive
   if ((ih->data->type & IUP_BUTTON_TEXT) && title && title[0])
   {
     StackPanel sp;
-    sp.Orientation(Orientation::Horizontal);
-    sp.Children().Append(image);
+    Orientation orient = (ih->data->img_position == IUP_IMGPOS_TOP || ih->data->img_position == IUP_IMGPOS_BOTTOM) ? Orientation::Vertical : Orientation::Horizontal;
+    sp.Orientation(orient);
 
     char c = 0;
     hstring text = iupwinuiProcessMnemonic(title, &c);
 
     TextBlock tb;
     tb.Text(text);
-    tb.Margin(ThicknessHelper::FromLengths(ih->data->spacing, 0, 0, 0));
-    tb.VerticalAlignment(VerticalAlignment::Center);
-    sp.Children().Append(tb);
+
+    if (orient == Orientation::Vertical)
+    {
+      tb.Margin(ThicknessHelper::FromLengths(0, ih->data->spacing, 0, 0));
+      tb.HorizontalAlignment(HorizontalAlignment::Center);
+    }
+    else
+    {
+      tb.Margin(ThicknessHelper::FromLengths(ih->data->spacing, 0, 0, 0));
+      tb.VerticalAlignment(VerticalAlignment::Center);
+    }
+
+    if (ih->data->img_position == IUP_IMGPOS_RIGHT || ih->data->img_position == IUP_IMGPOS_BOTTOM)
+    {
+      sp.Children().Append(tb);
+      sp.Children().Append(image);
+    }
+    else
+    {
+      sp.Children().Append(image);
+      sp.Children().Append(tb);
+    }
 
     border.Child(sp);
     if (c)
@@ -445,17 +464,36 @@ static int winuiButtonMapMethod(Ihandle* ih)
       if (ih->data->type & IUP_BUTTON_TEXT)
       {
         StackPanel sp;
-        sp.Orientation(Orientation::Horizontal);
-        sp.Children().Append(img);
+        Orientation orient = (ih->data->img_position == IUP_IMGPOS_TOP || ih->data->img_position == IUP_IMGPOS_BOTTOM) ? Orientation::Vertical : Orientation::Horizontal;
+        sp.Orientation(orient);
 
         char c = 0;
         hstring text = iupwinuiProcessMnemonic(title, &c);
 
         TextBlock tb;
         tb.Text(text);
-        tb.Margin(ThicknessHelper::FromLengths(ih->data->spacing, 0, 0, 0));
-        tb.VerticalAlignment(VerticalAlignment::Center);
-        sp.Children().Append(tb);
+
+        if (orient == Orientation::Vertical)
+        {
+          tb.Margin(ThicknessHelper::FromLengths(0, ih->data->spacing, 0, 0));
+          tb.HorizontalAlignment(HorizontalAlignment::Center);
+        }
+        else
+        {
+          tb.Margin(ThicknessHelper::FromLengths(ih->data->spacing, 0, 0, 0));
+          tb.VerticalAlignment(VerticalAlignment::Center);
+        }
+
+        if (ih->data->img_position == IUP_IMGPOS_RIGHT || ih->data->img_position == IUP_IMGPOS_BOTTOM)
+        {
+          sp.Children().Append(tb);
+          sp.Children().Append(img);
+        }
+        else
+        {
+          sp.Children().Append(img);
+          sp.Children().Append(tb);
+        }
 
         contentBorder.Child(sp);
         if (c)
@@ -627,17 +665,7 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     {
       int charwidth, charheight;
       iupdrvFontGetCharSize(ih, &charwidth, &charheight);
-      if (has_user_padding)
-      {
-        *x += charwidth * 4 + winui_button_struct_x;
-        *y += charheight + winui_button_struct_y;
-      }
-      else
-      {
-        *x += charwidth * 4 + border_size;
-        *y += charheight + border_size;
-      }
-      return;
+      *x += charheight;
     }
 
     if (has_image && !has_text)

@@ -414,17 +414,17 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     }
   }
 
+  if (has_bgcolor)
+  {
+    int charwidth, charheight;
+    iupdrvFontGetCharSize(ih, &charwidth, &charheight);
+    (*x) += charheight;
+  }
+
   if (has_user_padding)
   {
     (*x) += qt_button_struct_x;
     (*y) += qt_button_struct_y;
-  }
-  else if (has_bgcolor)
-  {
-    QPushButton temp_button;
-    QSize hint = temp_button.sizeHint();
-    (*x) += hint.width();
-    (*y) += hint.height();
   }
   else if (has_image && has_text)
   {
