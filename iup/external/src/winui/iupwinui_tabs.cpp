@@ -16,6 +16,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_drvfont.h"
 #include "iup_tabs.h"
 #include "iup_image.h"
@@ -38,6 +39,8 @@ using namespace Windows::Foundation;
 #define IUPWINUI_TABITEMNATIVE "_IUPWINUI_TABITEMNATIVE"
 #define IUPWINUI_TABIMAGE_NATIVE "_IUPWINUI_TABIMAGE_NATIVE"
 #define IUPWINUI_TABLABEL_NATIVE "_IUPWINUI_TABLABEL_NATIVE"
+#define IUPWINUI_TABTIP_ENTERED "_IUPWINUI_TABTIP_ENTERED"
+#define IUPWINUI_TABTIP_EXITED "_IUPWINUI_TABTIP_EXITED"
 
 struct IupWinUITabsAux
 {
@@ -185,6 +188,80 @@ static TabViewItem winuiTabsGetTabViewItem(Ihandle* child)
   return obj.try_as<TabViewItem>();
 }
 
+static void winuiTabsTipUnregister(Ihandle* child)
+{
+  event_token enteredToken;
+  event_token exitedToken;
+  char* enteredPtr = iupAttribGet(child, IUPWINUI_TABTIP_ENTERED);
+  char* exitedPtr = iupAttribGet(child, IUPWINUI_TABTIP_EXITED);
+
+  if (!enteredPtr && !exitedPtr)
+    return;
+
+  enteredToken.value = (int64_t)(intptr_t)enteredPtr;
+  exitedToken.value = (int64_t)(intptr_t)exitedPtr;
+
+  TabViewItem item = winuiTabsGetTabViewItem(child);
+  if (item)
+  {
+    item.PointerEntered(enteredToken);
+    item.PointerExited(exitedToken);
+  }
+
+  iupAttribSet(child, IUPWINUI_TABTIP_ENTERED, NULL);
+  iupAttribSet(child, IUPWINUI_TABTIP_EXITED, NULL);
+}
+
+static void winuiTabsTipRegister(Ihandle* ih, Ihandle* child)
+{
+  if (iupAttribGet(child, IUPWINUI_TABTIP_ENTERED))
+    return;
+
+  TabViewItem item = winuiTabsGetTabViewItem(child);
+  if (!item)
+    return;
+
+  event_token enteredToken = item.PointerEntered([ih](IInspectable const&, Input::PointerRoutedEventArgs const&) {
+    if (!iupObjectCheck(ih))
+      return;
+
+    IFnii cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
+    if (cb)
+    {
+      int x, y;
+      iupdrvGetCursorPos(&x, &y);
+      iupdrvScreenToClient(ih, &x, &y);
+      cb(ih, x, y);
+    }
+
+    IupSetAttribute(ih, "TIPVISIBLE", "YES");
+  });
+
+  event_token exitedToken = item.PointerExited([ih](IInspectable const&, Input::PointerRoutedEventArgs const&) {
+    if (!iupObjectCheck(ih))
+      return;
+    IupSetAttribute(ih, "TIPVISIBLE", "NO");
+  });
+
+  iupAttribSet(child, IUPWINUI_TABTIP_ENTERED, (char*)(intptr_t)enteredToken.value);
+  iupAttribSet(child, IUPWINUI_TABTIP_EXITED, (char*)(intptr_t)exitedToken.value);
+}
+
+static int winuiTabsSetTipAttrib(Ihandle* ih, const char* value)
+{
+  Ihandle* child;
+
+  for (child = ih->firstchild; child; child = child->brother)
+  {
+    if (value)
+      winuiTabsTipRegister(ih, child);
+    else
+      winuiTabsTipUnregister(child);
+  }
+
+  return 1;
+}
+
 static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
   if (!ih->handle)
@@ -264,6 +341,9 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   iupAttribSetHandleName(child);
 
   tabView.TabItems().Append(item);
+
+  if (iupAttribGet(ih, "TIP"))
+    winuiTabsTipRegister(ih, child);
 }
 
 static int winuiTabsMapMethod(Ihandle* ih)
@@ -324,6 +404,10 @@ static int winuiTabsMapMethod(Ihandle* ih)
 
 static void winuiTabsUnMapMethod(Ihandle* ih)
 {
+  Ihandle* child;
+  for (child = ih->firstchild; child; child = child->brother)
+    winuiTabsTipUnregister(child);
+
   IupWinUITabsAux* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
   if (aux)
   {
@@ -352,6 +436,8 @@ static void winuiTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   TabView tabView = winuiTabsGetTabView(ih);
   if (!tabView)
     return;
+
+  winuiTabsTipUnregister(child);
 
   iupTabsCheckCurrentTab(ih, pos, 1);
 
@@ -582,6 +668,8 @@ extern "C" void iupdrvTabsInitClass(Iclass* ic)
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+
+  iupClassRegisterAttribute(ic, "TIP", NULL, winuiTabsSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupTabs only */
   iupClassRegisterAttributeId(ic, "TABTITLE", NULL, winuiTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
