@@ -30,7 +30,86 @@
 
 #include "iupcocoa_drv.h"
 
-#import "IupCocoaVerticalAlignmentTextFieldCell.h"
+typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
+{
+  IUPTextVerticalAlignmentCenter = 0,
+  IUPTextVerticalAlignmentTop = 1,
+  IUPTextVerticalAlignmentBottom = 2
+};
+
+@interface IUPCocoaVerticalAlignmentTextFieldCell : NSTextFieldCell
+
+@property(assign, nonatomic) IUPTextVerticalAlignment alignmentMode;
+@property(assign, nonatomic) BOOL useWordWrap;
+@property(assign, nonatomic) BOOL useEllipsis;
+
+@end
+
+@implementation IUPCocoaVerticalAlignmentTextFieldCell
+
+- (NSRect)titleRectForBounds:(NSRect)cellFrame
+{
+  /* Get the default rect for drawing the text. */
+  NSRect titleRect = [super titleRectForBounds:cellFrame];
+
+  /* Top alignment is the default Cocoa behavior, so we can exit early. */
+  if (self.alignmentMode == IUPTextVerticalAlignmentTop) {
+    return titleRect;
+  }
+
+  NSAttributedString *attrString = self.attributedStringValue;
+  if (attrString.length == 0) {
+    return titleRect;
+  }
+
+  /* Calculate the actual height of the text given the available width. */
+  /* The attributed string respects the cell's lineBreakMode property. */
+  NSRect textBoundingRect = [attrString boundingRectWithSize:NSMakeSize(titleRect.size.width, CGFLOAT_MAX)
+                                                     options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading];
+
+  CGFloat textHeight = NSHeight(textBoundingRect);
+
+  /* If the text is taller than or fits perfectly in the available space, no alignment is needed. */
+  if (textHeight >= titleRect.size.height) {
+    return titleRect;
+  }
+
+  /* Create a new rect to position the text. */
+  NSRect newTitleRect = titleRect;
+
+  /* Adjust the vertical origin based on the desired alignment. */
+  switch (self.alignmentMode) {
+    case IUPTextVerticalAlignmentCenter:
+      newTitleRect.origin.y += (newTitleRect.size.height - textHeight) / 2.0;
+      break;
+    case IUPTextVerticalAlignmentBottom:
+      newTitleRect.origin.y += (newTitleRect.size.height - textHeight);
+      break;
+    case IUPTextVerticalAlignmentTop:
+      break;
+  }
+
+  /* When a field is selected, a "field editor" (an NSTextView) is placed over the cell. */
+  /* By setting the height of our drawing rect to the text's actual height, we ensure */
+  /* the field editor is created with a tight frame. */
+  newTitleRect.size.height = textHeight;
+
+  return newTitleRect;
+}
+
+- (void)drawInteriorWithFrame:(NSRect)cellFrame inView:(NSView *)controlView
+{
+  NSRect titleRect = [self titleRectForBounds:cellFrame];
+  [super drawInteriorWithFrame:titleRect inView:controlView];
+}
+
+- (void)selectWithFrame:(NSRect)rect inView:(NSView *)controlView editor:(NSText *)editor delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length
+{
+  /* Pass our vertically-aligned rect to the superclass to position the field editor. */
+  [super selectWithFrame:[self titleRectForBounds:rect] inView:controlView editor:editor delegate:delegate start:start length:length];
+}
+
+@end
 
 
 @interface IUPCocoaLabelEventView : NSView
@@ -191,17 +270,14 @@ static int cocoaLabelSetPaddingAttrib(Ihandle* ih, const char* value)
 {
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
 
-  if (ih->handle && ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
-  {
-    IupRefresh(ih);
-    return 0;
-  }
-
   return 1;
 }
 
 static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
 {
+  if (ih->data->type != IUP_LABEL_TEXT)
+    return 0;
+
   NSTextField* the_label = cocoaLabelGetTextField(ih);
   if (!the_label)
     return 0;
@@ -295,9 +371,6 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
     [the_label setStringValue:ns_string];
   }
 
-  if (ih->handle)
-    IupRefresh(ih);
-
   return 1;
 }
 
@@ -388,6 +461,9 @@ static int cocoaLabelSetActiveAttrib(Ihandle* ih, const char* value)
 
 static char* cocoaLabelGetTitleAttrib(Ihandle* ih)
 {
+  if (ih->data->type != IUP_LABEL_TEXT)
+    return NULL;
+
   NSTextField* the_label = cocoaLabelGetTextField(ih);
   if (the_label)
   {
@@ -653,8 +729,7 @@ static int cocoaLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
       }
     }
 
-    if (ih->handle)
-      IupRefresh(ih);
+
 
     return 1;
   }
@@ -748,8 +823,7 @@ static int cocoaLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
       }
     }
 
-    if (ih->handle)
-      IupRefresh(ih);
+
 
     return 1;
   }
@@ -787,8 +861,7 @@ static int cocoaLabelSetImageAttrib(Ihandle* ih, const char* value)
     id the_bitmap = iupImageGetImage(name, ih, make_inactive, NULL);
     [image_view setImage:the_bitmap];
 
-    if (ih->handle)
-      IupRefresh(ih);
+
   }
 
   return 1;
@@ -940,8 +1013,6 @@ static int cocoaLabelSetFontAttrib(Ihandle* ih, const char* value)
     {
       [the_label setFont:font.nativeFont];
     }
-
-    IupRefresh(ih);
   }
 
   return 1;

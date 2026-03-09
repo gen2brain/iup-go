@@ -238,6 +238,9 @@ static int iupCocoaNotifyIsSupported(void)
   if (NSClassFromString(@"UNUserNotificationCenter") == nil)
     return 0;
 
+  if ([[NSBundle mainBundle] bundleIdentifier] == nil)
+    return 0;
+
   supported = 1;
   return 1;
 }
@@ -408,15 +411,7 @@ int iupdrvNotifyShow(Ihandle* ih)
   {
     IFns error_cb = (IFns)IupGetCallback(ih, "ERROR_CB");
     if (error_cb)
-      error_cb(ih, (char*)"Notifications require macOS 10.15 or later");
-    return 0;
-  }
-
-  if ([[NSBundle mainBundle] bundleIdentifier] == nil)
-  {
-    IFns error_cb = (IFns)IupGetCallback(ih, "ERROR_CB");
-    if (error_cb)
-      error_cb(ih, (char*)"Notifications require a bundled application with bundle identifier");
+      error_cb(ih, (char*)"Notifications require macOS 10.15+ and a bundled application with bundle identifier");
     return 0;
   }
 
@@ -640,11 +635,7 @@ void iupdrvNotifyDestroy(Ihandle* ih)
 
 int iupdrvNotifyIsAvailable(void)
 {
-  if (!iupCocoaNotifyIsSupported())
-    return 0;
-  if ([[NSBundle mainBundle] bundleIdentifier] == nil)
-    return 0;
-  return 1;
+  return iupCocoaNotifyIsSupported();
 }
 
 void iupdrvNotifyInitClass(Iclass* ic)

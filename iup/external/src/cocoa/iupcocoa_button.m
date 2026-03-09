@@ -611,10 +611,6 @@ static int cocoaButtonSetTitleAttrib(Ihandle* ih, const char* value)
         [the_button setImagePosition:position];
       }
 
-      if(ih->handle)
-      {
-        IupRefresh(ih);
-      }
       return 1;
     }
   }
@@ -633,10 +629,6 @@ static int cocoaButtonSetFontAttrib(Ihandle* ih, const char* value)
   if (font && font.nativeFont)
   {
     [the_button setFont:font.nativeFont];
-
-    if (ih->handle)
-      IupRefresh(ih);
-
     return 1;
   }
 
@@ -710,7 +702,6 @@ static int cocoaButtonSetPaddingAttrib(Ihandle* ih, const char* value)
       [cell setIupPaddingHoriz:ih->data->horiz_padding vert:ih->data->vert_padding];
 
     [the_button setNeedsDisplay:YES];
-    IupRefresh(ih);
     return 0;
   }
 
@@ -771,11 +762,6 @@ static int cocoaButtonSetImageAttrib(Ihandle* ih, const char* value)
 
     the_bitmap = iupImageGetImage(value, ih, make_inactive, NULL);
     [the_button setImage:the_bitmap];
-
-    if (ih->handle)
-    {
-      IupRefresh(ih);
-    }
     return 1;
   }
 
@@ -818,10 +804,6 @@ static int cocoaButtonSetImpressAttrib(Ihandle* ih, const char* value)
       [the_button setAlternateImage:nil];
     }
 
-    if (ih->handle)
-    {
-      IupRefresh(ih);
-    }
     return 1;
   }
 
