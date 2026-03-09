@@ -301,6 +301,10 @@ func main() {
 	dlg := iup.Dialog(vbox1).SetAttributes(`TITLE="Sample", MENU=menu, ICON=img1`)
 	dlg.SetHandle("dlg")
 
+	if iup.GetGlobal("DRIVER") == "WinUI" {
+		dlg.SetAttribute("BACKDROP", "MICA")
+	}
+
 	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(ih iup.Ihandle, darkMode int) int {
 		if iup.GetGlobal("DRIVER") != "Win32" {
 			if darkMode == 1 {
