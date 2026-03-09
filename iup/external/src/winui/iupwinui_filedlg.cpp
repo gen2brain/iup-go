@@ -1,7 +1,8 @@
 /** \file
  * \brief WinUI Driver - File Dialog
  *
- * Uses IFileDialog COM API (IFileOpenDialog/IFileSaveDialog).
+ * Uses IFileDialog COM API (IFileOpenDialog/IFileSaveDialog)
+ * with IFileDialogEvents for FILE_CB callback support.
  *
  * See Copyright Notice in "iup.h"
  */
@@ -16,6 +17,7 @@
 
 extern "C" {
 #include "iup.h"
+#include "iupcbs.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -29,6 +31,8 @@ extern "C" {
 using namespace winrt;
 using namespace Microsoft::UI::Dispatching;
 
+
+#define WINUI_FILEDLG_HELP_BTN    150
 
 static Ihandle* winui_filedlg_ih = NULL;
 static HWND winui_filedlg_parent = NULL;
@@ -237,6 +241,17 @@ static char* winuiFileDlgGetPathFromItem(IShellItem* pItem)
   return NULL;
 }
 
+static int winuiFileDlgFileExists(const char* filename)
+{
+  std::wstring wname = iupwinuiStringToWString(filename);
+  DWORD attrib = GetFileAttributesW(wname.c_str());
+  if (attrib == INVALID_FILE_ATTRIBUTES)
+    return 0;
+  if (attrib & FILE_ATTRIBUTE_DIRECTORY)
+    return 0;
+  return 1;
+}
+
 static HRESULT winuiFileDlgShow(IFileDialog* pDialog, HWND parent, Ihandle* ih)
 {
   winui_filedlg_ih = ih;
@@ -257,9 +272,283 @@ static HRESULT winuiFileDlgShow(IFileDialog* pDialog, HWND parent, Ihandle* ih)
   return hr;
 }
 
+
+/******************************************************************************
+ * IFileDialogEvents + IFileDialogControlEvents
+ ******************************************************************************/
+
+class winuiFileDlgEventHandler : public IFileDialogEvents, public IFileDialogControlEvents
+{
+public:
+  IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv)
+  {
+    if (riid == IID_IUnknown || riid == IID_IFileDialogEvents)
+    {
+      *ppv = static_cast<IFileDialogEvents*>(this);
+      AddRef();
+      return S_OK;
+    }
+    else if (riid == IID_IFileDialogControlEvents)
+    {
+      *ppv = static_cast<IFileDialogControlEvents*>(this);
+      AddRef();
+      return S_OK;
+    }
+    *ppv = NULL;
+    return E_NOINTERFACE;
+  }
+
+  IFACEMETHODIMP_(ULONG) AddRef() { return InterlockedIncrement(&_cRef); }
+  IFACEMETHODIMP_(ULONG) Release()
+  {
+    long cRef = InterlockedDecrement(&_cRef);
+    if (!cRef) delete this;
+    return cRef;
+  }
+
+  IFACEMETHODIMP OnFileOk(IFileDialog* pfd);
+  IFACEMETHODIMP OnSelectionChange(IFileDialog* pfd);
+  IFACEMETHODIMP OnTypeChange(IFileDialog* pfd);
+  IFACEMETHODIMP OnFolderChange(IFileDialog*) { return S_OK; }
+  IFACEMETHODIMP OnFolderChanging(IFileDialog*, IShellItem*) { return S_OK; }
+  IFACEMETHODIMP OnShareViolation(IFileDialog*, IShellItem*, FDE_SHAREVIOLATION_RESPONSE*) { return S_OK; }
+  IFACEMETHODIMP OnOverwrite(IFileDialog*, IShellItem*, FDE_OVERWRITE_RESPONSE*) { return S_OK; }
+
+  IFACEMETHODIMP OnButtonClicked(IFileDialogCustomize*, DWORD dwIDCtl);
+  IFACEMETHODIMP OnItemSelected(IFileDialogCustomize*, DWORD, DWORD) { return S_OK; }
+  IFACEMETHODIMP OnCheckButtonToggled(IFileDialogCustomize*, DWORD, BOOL) { return S_OK; }
+  IFACEMETHODIMP OnControlActivating(IFileDialogCustomize*, DWORD) { return S_OK; }
+
+  winuiFileDlgEventHandler(Ihandle* _ih) : _cRef(1), ih(_ih) {}
+
+private:
+  ~winuiFileDlgEventHandler() {}
+  Ihandle* ih;
+  long _cRef;
+};
+
+IFACEMETHODIMP winuiFileDlgEventHandler::OnFileOk(IFileDialog* pfd)
+{
+  IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+  if (!cb)
+    return S_OK;
+
+  char* filename = NULL;
+
+  if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
+  {
+    IFileOpenDialog* pfod = NULL;
+    HRESULT hr = pfd->QueryInterface(IID_PPV_ARGS(&pfod));
+    if (SUCCEEDED(hr))
+    {
+      IShellItemArray* pItems = NULL;
+      hr = pfod->GetResults(&pItems);
+      if (SUCCEEDED(hr) && pItems)
+      {
+        IShellItem* psi = NULL;
+        pItems->GetItemAt(0, &psi);
+        if (psi)
+        {
+          filename = winuiFileDlgGetPathFromItem(psi);
+          psi->Release();
+        }
+        pItems->Release();
+      }
+      pfod->Release();
+    }
+  }
+  else
+  {
+    IShellItem* psi = NULL;
+    HRESULT hr = pfd->GetResult(&psi);
+    if (SUCCEEDED(hr) && psi)
+    {
+      filename = winuiFileDlgGetPathFromItem(psi);
+      psi->Release();
+    }
+  }
+
+  if (!filename)
+    return S_OK;
+
+  int ret = cb(ih, filename, (char*)"OK");
+  if (ret == IUP_IGNORE || ret == IUP_CONTINUE)
+  {
+    if (ret == IUP_CONTINUE)
+    {
+      char* value = iupAttribGet(ih, "FILE");
+      if (value)
+        pfd->SetFileName(iupwinuiStringToWString(value).c_str());
+    }
+    return S_FALSE;
+  }
+
+  return S_OK;
+}
+
+IFACEMETHODIMP winuiFileDlgEventHandler::OnSelectionChange(IFileDialog* pfd)
+{
+  IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+  if (!cb)
+    return S_OK;
+
+  IShellItem* psi = NULL;
+  HRESULT hr = pfd->GetCurrentSelection(&psi);
+  if (FAILED(hr) || !psi)
+    return S_OK;
+
+  char* filename = NULL;
+  char* status = (char*)"SELECT";
+
+  SFGAOF attr;
+  hr = psi->GetAttributes(SFGAO_FILESYSTEM | SFGAO_FOLDER, &attr);
+  if (SUCCEEDED(hr) && (attr & SFGAO_FILESYSTEM))
+  {
+    filename = winuiFileDlgGetPathFromItem(psi);
+    if (attr & SFGAO_FOLDER)
+      status = (char*)"OTHER";
+  }
+  psi->Release();
+
+  if (!filename)
+    return S_OK;
+
+  int ret = cb(ih, filename, status);
+  if (ret == IUP_IGNORE || ret == IUP_CONTINUE)
+    return S_FALSE;
+
+  return S_OK;
+}
+
+IFACEMETHODIMP winuiFileDlgEventHandler::OnTypeChange(IFileDialog* pfd)
+{
+  IFnss cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+  if (!cb)
+    return S_OK;
+
+  IShellItem* folder = NULL;
+  HRESULT hr = pfd->GetFolder(&folder);
+  if (FAILED(hr) || !folder)
+    return S_OK;
+
+  char* pathname = winuiFileDlgGetPathFromItem(folder);
+  folder->Release();
+  if (!pathname || pathname[0] == 0)
+    return S_OK;
+
+  LPWSTR pszFileName = NULL;
+  hr = pfd->GetFileName(&pszFileName);
+  if (FAILED(hr) || !pszFileName)
+    return S_OK;
+
+  if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
+  {
+    /* the returned filename may contain more than one name in quotes */
+    LPWSTR p = pszFileName;
+    int found = 0;
+    while (*p)
+    {
+      if (*p == L'"')
+      {
+        if (!found)
+          found = 1;
+        else
+        {
+          *(p - 1) = 0;
+          break;
+        }
+      }
+      if (found)
+        *p = *(p + 1);
+      p++;
+    }
+  }
+
+  char* name = iupwinuiHStringToString(winrt::hstring(pszFileName));
+  CoTaskMemFree(pszFileName);
+  if (!name || name[0] == 0)
+    return S_OK;
+
+  UINT index;
+  pfd->GetFileTypeIndex(&index);
+  iupAttribSetInt(ih, "FILTERUSED", index);
+
+  int pathlen = (int)strlen(pathname);
+  int namelen = (int)strlen(name);
+  char* buffer = (char*)malloc(pathlen + namelen + 2);
+  strcpy(buffer, pathname);
+  strcat(buffer, "\\");
+  strcat(buffer, name);
+
+  int ret = cb(ih, buffer, (char*)"FILTER");
+  free(buffer);
+
+  if (ret == IUP_CONTINUE)
+  {
+    char* value = iupAttribGet(ih, "FILE");
+    if (value)
+      pfd->SetFileName(iupwinuiStringToWString(value).c_str());
+  }
+
+  return S_OK;
+}
+
+IFACEMETHODIMP winuiFileDlgEventHandler::OnButtonClicked(IFileDialogCustomize*, DWORD dwIDCtl)
+{
+  if (dwIDCtl == WINUI_FILEDLG_HELP_BTN)
+  {
+    IFn cb = (IFn)IupGetCallback(ih, "HELP_CB");
+    if (cb)
+      cb(ih);
+  }
+
+  return S_OK;
+}
+
+
+/******************************************************************************
+ * Dialog setup helpers
+ ******************************************************************************/
+
+static void winuiFileDlgSetFileAndDir(IFileDialog* pfd, Ihandle* ih)
+{
+  char* value = iupAttribGet(ih, "FILE");
+  char* directory = iupStrDup(iupAttribGet(ih, "DIRECTORY"));
+
+  if (value)
+  {
+    char name[4096] = "";
+    char dir[4096] = "";
+
+    iupStrFileNameSplit(value, dir, name);
+
+    if (name[0] != 0)
+      pfd->SetFileName(iupwinuiStringToWString(name).c_str());
+    else
+      pfd->SetFileName(iupwinuiStringToWString(value).c_str());
+
+    if (dir[0] != 0)
+      winuiFileDlgSetInitialDir(pfd, dir);
+    else if (directory)
+      winuiFileDlgSetInitialDir(pfd, directory);
+  }
+  else if (directory)
+  {
+    winuiFileDlgSetInitialDir(pfd, directory);
+  }
+
+  if (directory)
+    free(directory);
+}
+
+
+/******************************************************************************
+ * Popup
+ ******************************************************************************/
+
 static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
 {
-  char* dialogtype;
+  char* value;
   HWND parent = (HWND)iupDialogGetNativeParent(ih);
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
@@ -270,7 +559,7 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
 
   iupAttribSet(ih, "NATIVEPARENT", (char*)parent);
 
-  dialogtype = iupAttribGet(ih, "DIALOGTYPE");
+  char* dialogtype = iupAttribGet(ih, "DIALOGTYPE");
 
   if (iupStrEqualNoCase(dialogtype, "DIR"))
   {
@@ -281,7 +570,19 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
 
     DWORD options = 0;
     pDialog->GetOptions(&options);
-    pDialog->SetOptions(options | FOS_PICKFOLDERS);
+    options |= FOS_PICKFOLDERS;
+
+    if (iupAttribGetBoolean(ih, "NOCHANGEDIR"))
+      options |= FOS_NOCHANGEDIR;
+
+    if (iupAttribGetBoolean(ih, "SHOWHIDDEN"))
+      options |= FOS_FORCESHOWHIDDEN;
+
+    pDialog->SetOptions(options);
+
+    value = iupAttribGet(ih, "TITLE");
+    if (value)
+      pDialog->SetTitle(iupwinuiStringToWString(value).c_str());
 
     char* initial_dir = iupAttribGet(ih, "DIRECTORY");
     if (initial_dir)
@@ -311,92 +612,142 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
 
     pDialog->Release();
   }
-  else if (iupStrEqualNoCase(dialogtype, "SAVE"))
+  else
   {
-    IFileSaveDialog* pDialog = NULL;
-    HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL, IID_IFileSaveDialog, (void**)&pDialog);
-    if (FAILED(hr) || !pDialog)
-      return IUP_ERROR;
+    int isSave = iupStrEqualNoCase(dialogtype, "SAVE");
 
-    char* initial_dir = iupAttribGet(ih, "DIRECTORY");
-    if (initial_dir)
-      winuiFileDlgSetInitialDir(pDialog, initial_dir);
+    IFileOpenDialog* opfd = NULL;
+    IFileSaveDialog* spfd = NULL;
+    IFileDialog* pfd = NULL;
+    HRESULT hr;
 
-    char* value = iupAttribGet(ih, "FILE");
-    if (value)
-      pDialog->SetFileName(iupwinuiStringToWString(value).c_str());
-
-    char* extfilter = iupAttribGet(ih, "EXTFILTER");
-    char* filter = iupAttribGet(ih, "FILTER");
-    char* filterinfo = iupAttribGet(ih, "FILTERINFO");
-    char* extdefault = iupAttribGet(ih, "EXTDEFAULT");
-
-    winuiFileDlgSetFilters(pDialog, extfilter, filter, filterinfo);
-
-    if (extdefault)
-      pDialog->SetDefaultExtension(iupwinuiStringToWString(extdefault).c_str());
-
-    hr = winuiFileDlgShow(pDialog, parent, ih);
-    if (SUCCEEDED(hr))
+    if (isSave)
     {
-      IShellItem* pItem = NULL;
-      pDialog->GetResult(&pItem);
-      if (pItem)
-      {
-        char* filename = winuiFileDlgGetPathFromItem(pItem);
-        if (filename)
-        {
-          iupAttribSetStr(ih, "VALUE", filename);
-
-          char* dir = iupStrFileGetPath(filename);
-          iupAttribSetStr(ih, "DIRECTORY", dir);
-          free(dir);
-        }
-        pItem->Release();
-      }
-
-      iupAttribSet(ih, "FILEEXIST", "NO");
-      iupAttribSet(ih, "FILTERUSED", "1");
-      iupAttribSet(ih, "STATUS", "0");
+      hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL, IID_PPV_ARGS(&spfd));
+      if (SUCCEEDED(hr))
+        hr = spfd->QueryInterface(IID_IFileDialog, reinterpret_cast<void**>(&pfd));
     }
     else
     {
-      iupAttribSet(ih, "VALUE", NULL);
-      iupAttribSet(ih, "DIRECTORY", NULL);
-      iupAttribSet(ih, "FILTERUSED", NULL);
-      iupAttribSet(ih, "STATUS", "-1");
-      iupAttribSet(ih, "FILEEXIST", NULL);
+      hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_PPV_ARGS(&opfd));
+      if (SUCCEEDED(hr))
+        hr = opfd->QueryInterface(IID_IFileDialog, reinterpret_cast<void**>(&pfd));
     }
 
-    pDialog->Release();
-  }
-  else
-  {
-    IFileOpenDialog* pDialog = NULL;
-    HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, (void**)&pDialog);
-    if (FAILED(hr) || !pDialog)
+    if (FAILED(hr) || !pfd)
+    {
+      if (pfd) pfd->Release();
+      if (opfd) opfd->Release();
+      if (spfd) spfd->Release();
       return IUP_ERROR;
+    }
 
-    char* initial_dir = iupAttribGet(ih, "DIRECTORY");
-    if (initial_dir)
-      winuiFileDlgSetInitialDir(pDialog, initial_dir);
+    /* event handler */
+    winuiFileDlgEventHandler* pfde = new (std::nothrow) winuiFileDlgEventHandler(ih);
+    if (!pfde)
+    {
+      pfd->Release();
+      if (opfd) opfd->Release();
+      if (spfd) spfd->Release();
+      return IUP_ERROR;
+    }
 
+    DWORD dwCookie = 0;
+    hr = pfd->Advise(pfde, &dwCookie);
+    if (FAILED(hr))
+    {
+      pfde->Release();
+      pfd->Release();
+      if (opfd) opfd->Release();
+      if (spfd) spfd->Release();
+      return IUP_ERROR;
+    }
+
+    /* flags */
+    DWORD dwFlags;
+    pfd->GetOptions(&dwFlags);
+
+    value = iupAttribGet(ih, "ALLOWNEW");
+    if (!value)
+      value = isSave ? (char*)"YES" : (char*)"NO";
+    if (iupStrBoolean(value))
+      dwFlags |= FOS_CREATEPROMPT;
+    else
+      dwFlags |= FOS_FILEMUSTEXIST;
+
+    if (iupAttribGetBoolean(ih, "NOCHANGEDIR"))
+      dwFlags |= FOS_NOCHANGEDIR;
+
+    if (iupAttribGetBoolean(ih, "MULTIPLEFILES") && !isSave)
+      dwFlags |= FOS_ALLOWMULTISELECT;
+
+    if (!iupAttribGetBoolean(ih, "NOOVERWRITEPROMPT"))
+      dwFlags |= FOS_OVERWRITEPROMPT;
+
+    if (iupAttribGetBoolean(ih, "SHOWHIDDEN"))
+      dwFlags |= FOS_FORCESHOWHIDDEN;
+
+    if (iupAttribGetBoolean(ih, "SHOWPREVIEW"))
+      dwFlags |= FOS_FORCEPREVIEWPANEON;
+
+    pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
+
+    /* default extension */
+    value = iupAttribGet(ih, "EXTDEFAULT");
+    if (value)
+      pfd->SetDefaultExtension(iupwinuiStringToWString(value).c_str());
+
+    /* filters */
     char* extfilter = iupAttribGet(ih, "EXTFILTER");
     char* filter = iupAttribGet(ih, "FILTER");
+    char* filterinfo = iupAttribGet(ih, "FILTERINFO");
+    winuiFileDlgSetFilters(pfd, extfilter, filter, filterinfo);
 
-    winuiFileDlgSetFilters(pDialog, extfilter, filter, NULL);
+    /* initial filter index */
+    int filterIndex;
+    value = iupAttribGet(ih, "FILTERUSED");
+    if (iupStrToInt(value, &filterIndex))
+      pfd->SetFileTypeIndex(filterIndex);
 
-    if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
+    /* initial directory and file */
+    winuiFileDlgSetFileAndDir(pfd, ih);
+
+    /* title */
+    value = iupAttribGet(ih, "TITLE");
+    if (value)
+      pfd->SetTitle(iupwinuiStringToWString(value).c_str());
+
+    /* help button */
+    if (IupGetCallback(ih, "HELP_CB"))
     {
-      DWORD options = 0;
-      pDialog->GetOptions(&options);
-      pDialog->SetOptions(options | FOS_ALLOWMULTISELECT);
-
-      hr = winuiFileDlgShow(pDialog, parent, ih);
+      IFileDialogCustomize* pfdc = NULL;
+      hr = pfd->QueryInterface(IID_PPV_ARGS(&pfdc));
       if (SUCCEEDED(hr))
       {
+        pfdc->AddPushButton(WINUI_FILEDLG_HELP_BTN,
+                            iupwinuiStringToWString(IupGetLanguageString("IUP_HELP")).c_str());
+        pfdc->Release();
+      }
+    }
+
+    /* INIT callback */
+    IFnss file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
+    if (file_cb)
+      file_cb(ih, NULL, (char*)"INIT");
+
+    /* show */
+    hr = winuiFileDlgShow(pfd, parent, ih);
+
+    /* FINISH callback */
+    if (file_cb)
+      file_cb(ih, NULL, (char*)"FINISH");
+
+    if (SUCCEEDED(hr))
+    {
+      if (iupAttribGetBoolean(ih, "MULTIPLEFILES") && opfd)
+      {
         IShellItemArray* pItems = NULL;
-        pDialog->GetResults(&pItems);
+        opfd->GetResults(&pItems);
 
         DWORD count = 0;
         if (pItems)
@@ -454,7 +805,6 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
           if (pFirst) pFirst->Release();
 
           iupAttribSet(ih, "FILEEXIST", "YES");
-          iupAttribSet(ih, "FILTERUSED", "1");
           iupAttribSet(ih, "STATUS", "0");
         }
         else
@@ -470,49 +820,61 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
       }
       else
       {
-        iupAttribSet(ih, "VALUE", NULL);
-        iupAttribSet(ih, "STATUS", "-1");
-        iupAttribSet(ih, "FILEEXIST", NULL);
-        iupAttribSet(ih, "FILTERUSED", NULL);
-        iupAttribSet(ih, "DIRECTORY", NULL);
-      }
-    }
-    else
-    {
-      hr = winuiFileDlgShow(pDialog, parent, ih);
-      if (SUCCEEDED(hr))
-      {
         IShellItem* pItem = NULL;
-        pDialog->GetResult(&pItem);
+        pfd->GetResult(&pItem);
         if (pItem)
         {
           char* filename = winuiFileDlgGetPathFromItem(pItem);
           if (filename)
           {
-            iupAttribSetStr(ih, "VALUE", filename);
-
             char* dir = iupStrFileGetPath(filename);
+            int dir_len = (int)strlen(dir);
             iupAttribSetStr(ih, "DIRECTORY", dir);
+
+            iupAttribSetStrId(ih, "MULTIVALUE", 0, dir);
             free(dir);
+
+            if (iupAttribGetBoolean(ih, "MULTIVALUEPATH"))
+              dir_len = 0;
+
+            iupAttribSetStrId(ih, "MULTIVALUE", 1, filename + dir_len);
+            iupAttribSetStr(ih, "VALUE", filename);
+            iupAttribSetInt(ih, "MULTIVALUECOUNT", 2);
+
+            if (winuiFileDlgFileExists(filename))
+            {
+              iupAttribSet(ih, "FILEEXIST", "YES");
+              iupAttribSet(ih, "STATUS", "0");
+            }
+            else
+            {
+              iupAttribSet(ih, "FILEEXIST", "NO");
+              iupAttribSet(ih, "STATUS", "1");
+            }
           }
           pItem->Release();
         }
+      }
 
-        iupAttribSet(ih, "FILEEXIST", "YES");
-        iupAttribSet(ih, "FILTERUSED", "1");
-        iupAttribSet(ih, "STATUS", "0");
-      }
-      else
-      {
-        iupAttribSet(ih, "VALUE", NULL);
-        iupAttribSet(ih, "DIRECTORY", NULL);
-        iupAttribSet(ih, "FILTERUSED", NULL);
-        iupAttribSet(ih, "STATUS", "-1");
-        iupAttribSet(ih, "FILEEXIST", NULL);
-      }
+      UINT index;
+      pfd->GetFileTypeIndex(&index);
+      iupAttribSetInt(ih, "FILTERUSED", index);
+    }
+    else
+    {
+      iupAttribSet(ih, "FILTERUSED", NULL);
+      iupAttribSet(ih, "VALUE", NULL);
+      iupAttribSet(ih, "DIRECTORY", NULL);
+      iupAttribSet(ih, "FILEEXIST", NULL);
+      iupAttribSet(ih, "STATUS", "-1");
     }
 
-    pDialog->Release();
+    pfd->Unadvise(dwCookie);
+    pfde->Release();
+
+    pfd->Release();
+    if (opfd) opfd->Release();
+    if (spfd) spfd->Release();
   }
 
   iupAttribSet(ih, "NATIVEPARENT", NULL);
@@ -523,4 +885,12 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
 extern "C" void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = winuiFileDlgPopup;
+
+  iupClassRegisterAttribute(ic, "EXTFILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "PREVIEWDC", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PREVIEWWIDTH", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PREVIEWHEIGHT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

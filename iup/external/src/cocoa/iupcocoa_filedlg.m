@@ -19,6 +19,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_dialog.h"
+#include "iup_drvinfo.h"
 #include "iup_key.h"
 
 #include "iupcocoa_drv.h"
@@ -479,14 +480,26 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
     [(NSOpenPanel*)file_panel setAllowsMultipleSelection:YES];
   }
 
+  char saved_dir[4096] = "";
+  if (iupAttribGetBoolean(ih, "NOCHANGEDIR"))
+  {
+    char* cur = iupdrvGetCurrentDirectory();
+    if (cur)
+      strncpy(saved_dir, cur, sizeof(saved_dir) - 1);
+  }
+
   NSInteger response = [file_panel runModal];
+
+  if (saved_dir[0] != 0)
+    iupdrvSetCurrentDirectory(saved_dir);
 
   if (file_cb)
   {
     file_cb(ih, NULL, "FINISH");
   }
 
-  iupAttribSet(ih, "FILTERUSED", NULL);
+  int filter_index = iupAttribGetInt(ih, "FILTERUSED");
+  if (filter_index == 0) filter_index = 1;
 
   if (response == NSModalResponseOK)
   {
@@ -614,12 +627,15 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
         }
       }
     }
+
+    iupAttribSetInt(ih, "FILTERUSED", filter_index);
   }
   else
   {
     iupAttribSet(ih, "VALUE", NULL);
     iupAttribSet(ih, "STATUS", "-1");
     iupAttribSet(ih, "FILEEXIST", NULL);
+    iupAttribSet(ih, "FILTERUSED", NULL);
   }
 
   if (panel_delegate)
