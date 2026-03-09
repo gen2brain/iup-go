@@ -41,6 +41,7 @@ void iupwinuiSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g,
  ****************************************************************************/
 
 void iupwinuiAddToParent(Ihandle* ih);
+void iupwinuiTipsDestroy(Ihandle* ih);
 
 /****************************************************************************
  * Focus Management

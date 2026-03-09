@@ -172,7 +172,12 @@ extern "C" void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 
 extern "C" void iupdrvBaseUnMapMethod(Ihandle* ih)
 {
-  if (!ih || !ih->handle || winuiHandleIsHWND(ih))
+  if (!ih || !ih->handle)
+    return;
+
+  iupwinuiTipsDestroy(ih);
+
+  if (winuiHandleIsHWND(ih))
     return;
 
   UIElement elem = winuiGetHandle<UIElement>(ih);

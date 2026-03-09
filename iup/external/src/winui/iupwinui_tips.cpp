@@ -199,6 +199,22 @@ static void winuiTipUnhookHover(Ihandle* ih)
   winui_tip_hover.erase(it);
 }
 
+extern "C" void iupwinuiTipsDestroy(Ihandle* ih)
+{
+  winuiTipUnhookHover(ih);
+
+  if (winui_tip_ih == ih)
+    winuiTipTimerStop();
+
+  if (winui_tip_popup_dlg == ih)
+  {
+    winuiTipHide();
+    winui_tip_popup = nullptr;
+    winui_tip_text = nullptr;
+    winui_tip_popup_dlg = NULL;
+  }
+}
+
 extern "C" int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
   winuiTipHide();
