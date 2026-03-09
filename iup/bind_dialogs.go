@@ -2,7 +2,10 @@ package iup
 
 import (
 	"bytes"
+	"fmt"
 	"image/color"
+	"runtime/cgo"
+	"strings"
 	"unsafe"
 
 	"github.com/google/uuid"
@@ -12,6 +15,7 @@ import (
 #include <stdlib.h>
 #include <string.h>
 #include "iup.h"
+#include "bind_callbacks.h"
 */
 import "C"
 
@@ -316,4 +320,202 @@ func ClassInfoDialog(dialog Ihandle) Ihandle {
 	h := mkih(C.IupClassInfoDialog(dialog.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
+}
+
+// Param creates a Param element from a format string line.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/elem/iupparam.html
+func Param(format string) Ihandle {
+	cFormat := C.CString(format)
+	defer C.free(unsafe.Pointer(cFormat))
+
+	return mkih(C.IupParam(cFormat))
+}
+
+// ParamBox creates a ParamBox element from an array of Param elements.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/elem/iupparambox.html
+func ParamBox(params ...Ihandle) Ihandle {
+	cParams := make([]*C.Ihandle, len(params)+1)
+	for i, p := range params {
+		cParams[i] = p.ptr()
+	}
+	cParams[len(params)] = nil
+
+	return mkih(C.IupParamBoxv((**C.Ihandle)(unsafe.Pointer(&cParams[0]))))
+}
+
+// getParamInfo parses a GetParam format string and returns the parameter count,
+// extra count (separators and button names), and the type letter for each data parameter.
+func getParamInfo(format string) (paramCount, paramExtra int, types []byte) {
+	lines := strings.Split(format, "\n")
+	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
+
+		pctIdx := strings.LastIndex(line, "%")
+		if pctIdx < 0 || pctIdx+1 >= len(line) {
+			continue
+		}
+		typeLetter := line[pctIdx+1]
+
+		switch typeLetter {
+		case 't', 'u':
+			paramExtra++
+		case 'x':
+			paramCount++
+		default:
+			paramCount++
+			types = append(types, typeLetter)
+		}
+	}
+	return
+}
+
+// GetParam shows a modal dialog with automatically created controls based on the format string.
+// Each line in the format string describes a parameter. The data arguments must be pointers
+// matching the format types:
+//   - %b, %i, %l, %o → *int
+//   - %r, %a → *float32
+//   - %R, %A → *float64
+//   - %s, %m, %c, %f, %n, %d → *string
+//   - %h → Ihandle (not a pointer)
+//   - %t, %u → no data argument
+//
+// Returns 1 if the user pressed OK, 0 if Cancel.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgetparam.html
+func GetParam(title string, action GetParamFunc, format string, data ...interface{}) int {
+	cTitle := C.CString(title)
+	defer C.free(unsafe.Pointer(cTitle))
+	cFormat := C.CString(format)
+	defer C.free(unsafe.Pointer(cFormat))
+
+	paramCount, paramExtra, types := getParamInfo(format)
+
+	if len(types) != len(data) {
+		panic(fmt.Sprintf("GetParam: format expects %d data arguments, got %d", len(types), len(data)))
+	}
+
+	paramData := make([]unsafe.Pointer, paramCount)
+
+	type allocation struct {
+		ptr unsafe.Pointer
+	}
+	var allocs []allocation
+
+	p := 0
+	dataIdx := 0
+	for i := 0; i < paramCount; i++ {
+		if p < len(types) && i == p {
+			switch types[p] {
+			case 'b', 'i', 'l', 'o':
+				ip, ok := data[dataIdx].(*int)
+				if !ok {
+					panic(fmt.Sprintf("GetParam: data[%d] must be *int for %%%c", dataIdx, types[p]))
+				}
+				cVal := (*C.int)(C.malloc(C.size_t(unsafe.Sizeof(C.int(0)))))
+				*cVal = C.int(*ip)
+				paramData[i] = unsafe.Pointer(cVal)
+				allocs = append(allocs, allocation{unsafe.Pointer(cVal)})
+			case 'r', 'a':
+				fp, ok := data[dataIdx].(*float32)
+				if !ok {
+					panic(fmt.Sprintf("GetParam: data[%d] must be *float32 for %%%c", dataIdx, types[p]))
+				}
+				cVal := (*C.float)(C.malloc(C.size_t(unsafe.Sizeof(C.float(0)))))
+				*cVal = C.float(*fp)
+				paramData[i] = unsafe.Pointer(cVal)
+				allocs = append(allocs, allocation{unsafe.Pointer(cVal)})
+			case 'R', 'A':
+				dp, ok := data[dataIdx].(*float64)
+				if !ok {
+					panic(fmt.Sprintf("GetParam: data[%d] must be *float64 for %%%c", dataIdx, types[p]))
+				}
+				cVal := (*C.double)(C.malloc(C.size_t(unsafe.Sizeof(C.double(0)))))
+				*cVal = C.double(*dp)
+				paramData[i] = unsafe.Pointer(cVal)
+				allocs = append(allocs, allocation{unsafe.Pointer(cVal)})
+			case 's', 'm', 'c', 'f', 'n', 'd':
+				sp, ok := data[dataIdx].(*string)
+				if !ok {
+					panic(fmt.Sprintf("GetParam: data[%d] must be *string for %%%c", dataIdx, types[p]))
+				}
+				var bufSize int
+				switch types[p] {
+				case 'm':
+					bufSize = 10240
+				case 'f':
+					bufSize = 4096
+				default:
+					bufSize = 512
+				}
+				cBuf := (*C.char)(C.malloc(C.size_t(bufSize)))
+				cStr := C.CString(*sp)
+				C.strncpy(cBuf, cStr, C.size_t(bufSize-1))
+				*(*C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(cBuf)) + uintptr(bufSize-1))) = 0
+				C.free(unsafe.Pointer(cStr))
+				paramData[i] = unsafe.Pointer(cBuf)
+				allocs = append(allocs, allocation{unsafe.Pointer(cBuf)})
+			case 'h':
+				ih, ok := data[dataIdx].(Ihandle)
+				if !ok {
+					panic(fmt.Sprintf("GetParam: data[%d] must be Ihandle for %%h", dataIdx))
+				}
+				paramData[i] = unsafe.Pointer(ih.ptr())
+			default:
+				panic(fmt.Sprintf("GetParam: unsupported format type %%%c", types[p]))
+			}
+			p++
+			dataIdx++
+		} else {
+			paramData[i] = nil
+		}
+	}
+
+	defer func() {
+		for _, a := range allocs {
+			C.free(a.ptr)
+		}
+	}()
+
+	var paramDataPtr *unsafe.Pointer
+	if len(paramData) > 0 {
+		paramDataPtr = &paramData[0]
+	}
+
+	var ret C.int
+	if action != nil {
+		ch := cgo.NewHandle(action)
+		defer ch.Delete()
+		ret = C.goIupCallGetParamv(cTitle, unsafe.Pointer(ch), cFormat,
+			C.int(paramCount), C.int(paramExtra), (*unsafe.Pointer)(unsafe.Pointer(paramDataPtr)))
+	} else {
+		ret = C.goIupCallGetParamvNoAction(cTitle, cFormat,
+			C.int(paramCount), C.int(paramExtra), (*unsafe.Pointer)(unsafe.Pointer(paramDataPtr)))
+	}
+
+	if ret == 1 {
+		dataIdx = 0
+		for i := 0; i < len(types); i++ {
+			switch types[i] {
+			case 'b', 'i', 'l', 'o':
+				ip := data[dataIdx].(*int)
+				*ip = int(*(*C.int)(paramData[i]))
+			case 'r', 'a':
+				fp := data[dataIdx].(*float32)
+				*fp = float32(*(*C.float)(paramData[i]))
+			case 'R', 'A':
+				dp := data[dataIdx].(*float64)
+				*dp = float64(*(*C.double)(paramData[i]))
+			case 's', 'm', 'c', 'f', 'n', 'd':
+				sp := data[dataIdx].(*string)
+				*sp = C.GoString((*C.char)(paramData[i]))
+			}
+			dataIdx++
+		}
+	}
+
+	return int(ret)
 }
