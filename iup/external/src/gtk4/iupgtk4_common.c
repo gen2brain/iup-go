@@ -837,74 +837,46 @@ IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
     gdk_display_sync(display);
 }
 
-static GtkWidget* gtk4GetWindowedParent(GtkWidget* widget)
-{
-  /* All widgets can receive input, find first parent with surface */
-  GtkNative* native;
-  while (widget)
-  {
-    native = gtk_widget_get_native(widget);
-    if (native && gtk_native_get_surface(native))
-      return widget;
-    widget = gtk_widget_get_parent(widget);
-  }
-  return NULL;
-}
-
 IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
-  double win_x = 0, win_y = 0;
-  double dx = 0, dy = 0;
-  GtkWidget* wparent = gtk4GetWindowedParent(ih->handle);
-
-  if (ih->handle != wparent && wparent)
+  GtkNative* native = gtk_widget_get_native(ih->handle);
+  if (native)
   {
-    graphene_point_t src_point = GRAPHENE_POINT_INIT(0, 0);
-    graphene_point_t dest_point;
-    if (gtk_widget_compute_point(ih->handle, wparent, &src_point, &dest_point))
+    double native_x, native_y;
+    graphene_point_t src_point, dest_point;
+
+    gtk_native_get_surface_transform(native, &native_x, &native_y);
+
+    src_point.x = (float)(*x - native_x);
+    src_point.y = (float)(*y - native_y);
+
+    if (gtk_widget_compute_point(GTK_WIDGET(native), ih->handle, &src_point, &dest_point))
     {
-      dx = dest_point.x;
-      dy = dest_point.y;
+      *x = (int)dest_point.x;
+      *y = (int)dest_point.y;
     }
   }
-
-  if (wparent)
-  {
-    GdkSurface* surface = iupgtk4GetSurface(wparent);
-    if (surface)
-      iupgtk4SurfaceGetPointer(surface, &win_x, &win_y, NULL);
-  }
-
-  *x -= (int)(win_x + dx);
-  *y -= (int)(win_y + dy);
 }
 
 IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
-  double win_x = 0, win_y = 0;
-  double dx = 0, dy = 0;
-  GtkWidget* wparent = gtk4GetWindowedParent(ih->handle);
-
-  if (ih->handle != wparent && wparent)
+  GtkNative* native = gtk_widget_get_native(ih->handle);
+  if (native)
   {
-    graphene_point_t src_point = GRAPHENE_POINT_INIT(0, 0);
-    graphene_point_t dest_point;
-    if (gtk_widget_compute_point(ih->handle, wparent, &src_point, &dest_point))
+    double native_x, native_y;
+    graphene_point_t src_point, dest_point;
+
+    gtk_native_get_surface_transform(native, &native_x, &native_y);
+
+    src_point.x = (float)*x;
+    src_point.y = (float)*y;
+
+    if (gtk_widget_compute_point(ih->handle, GTK_WIDGET(native), &src_point, &dest_point))
     {
-      dx = dest_point.x;
-      dy = dest_point.y;
+      *x = (int)(dest_point.x + native_x);
+      *y = (int)(dest_point.y + native_y);
     }
   }
-
-  if (wparent)
-  {
-    GdkSurface* surface = iupgtk4GetSurface(wparent);
-    if (surface)
-      iupgtk4SurfaceGetPointer(surface, &win_x, &win_y, NULL);
-  }
-
-  *x += (int)(win_x + dx);
-  *y += (int)(win_y + dy);
 }
 
 IUP_DRV_API gboolean iupgtk4ShowHelp(GtkWidget* widget, gpointer arg1, Ihandle* ih)
