@@ -366,6 +366,19 @@ jobs:
       run: go build
       working-directory: iup
 
+  windows-win32-gl:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Build
+      run: go build -tags gl
+      working-directory: iup
+
   windows-win32-web:
     runs-on: windows-latest
     steps:
