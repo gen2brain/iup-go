@@ -914,4 +914,17 @@ static void goIupSetPlotYTickFormatNumberFunc(Ihandle *ih) {
 	IupSetCallback(ih, "YTICKFORMATNUMBER_CB", (Icallback) goIupPlotYTickFormatNumberCB);
 }
 
+CGO_EXPORT extern int goIupGetParamCB(void *, int, void *);
+static int goIupGetParamTrampoline(Ihandle *dialog, int param_index, void *user_data) {
+	return goIupGetParamCB((void *)dialog, param_index, user_data);
+}
+
+static int goIupCallGetParamv(const char *title, void *user_data, const char *format, int param_count, int param_extra, void **param_data) {
+	return IupGetParamv(title, goIupGetParamTrampoline, user_data, format, param_count, param_extra, param_data);
+}
+
+static int goIupCallGetParamvNoAction(const char *title, const char *format, int param_count, int param_extra, void **param_data) {
+	return IupGetParamv(title, NULL, NULL, format, param_count, param_extra, param_data);
+}
+
 #endif /* BIND_CALLBACKS_H */

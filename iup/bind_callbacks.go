@@ -4949,3 +4949,20 @@ func setPlotYTickFormatNumberFunc(ih Ihandle, f PlotTickFormatNumberFunc) {
 	callbacks.Store("YTICKFORMATNUMBER_CB_"+ih.GetAttribute("UUID"), ch)
 	C.goIupSetPlotYTickFormatNumberFunc(ih.ptr())
 }
+
+//--------------------
+
+// GetParamFunc is the callback for GetParam dialog.
+// It is called when a parameter value changes, a button is pressed, or the dialog is mapped/initialized.
+// The paramIndex is >= 0 for parameter changes, or one of the GETPARAM_* constants for events.
+// Return 1 to accept the change or 0 to reject it.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgetparam.html
+type GetParamFunc func(dialog Ihandle, paramIndex int) int
+
+//export goIupGetParamCB
+func goIupGetParamCB(dialog unsafe.Pointer, paramIndex C.int, userData unsafe.Pointer) C.int {
+	ch := cgo.Handle(userData)
+	f := ch.Value().(GetParamFunc)
+	return C.int(f(Ihandle(dialog), int(paramIndex)))
+}
