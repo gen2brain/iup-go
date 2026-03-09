@@ -31,17 +31,8 @@
 #include "iup_childtree.h"
 
 #include "iupcocoa_drv.h"
-#import "IupCocoaTextSpinnerFilesOwner.h"
 
-@interface NSNib (IupTextSpinner)
-+ (instancetype)IupTextSpinner;
-@end
-
-@interface NSNib (IupTextSpinnerNoBindings)
-+ (instancetype)IupTextSpinnerNoBindings;
-@end
-
-static const void* IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY = "IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY";
+static const void* IUP_COCOA_TEXT_STEPPER_OBJ_KEY = "IUP_COCOA_TEXT_STEPPER_OBJ_KEY";
 static const void* IUP_COCOA_TEXT_DELEGATE_OBJ_KEY = "IUP_COCOA_TEXT_DELEGATE_OBJ_KEY";
 static const void* IUP_COCOA_TEXT_FORMATTER_KEY = "IUP_COCOA_TEXT_FORMATTER_KEY";
 static const void* IUP_COCOA_TEXT_OVERWRITE_KEY = "IUP_COCOA_TEXT_OVERWRITE_KEY";
@@ -95,8 +86,8 @@ static NSView* cocoaTextGetRootView(Ihandle* ih)
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
-        NSStackView* root_container_view = (NSStackView*)ih->handle;
-        NSCAssert([root_container_view isKindOfClass:[NSStackView class]], @"Expected NSStackView");
+        NSView* root_container_view = (NSView*)ih->handle;
+        NSCAssert([root_container_view isKindOfClass:[NSView class]], @"Expected NSView");
         return root_container_view;
       }
     default:
@@ -125,23 +116,14 @@ static NSTextView* cocoaTextGetTextView(Ihandle* ih)
 
 static NSStepper* cocoaTextGetStepperView(Ihandle* ih)
 {
-  IUPTextSpinnerContainer* spinner_container = (IUPTextSpinnerContainer*)objc_getAssociatedObject((id)ih->handle, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY);
-  NSCAssert([spinner_container isKindOfClass:[IUPTextSpinnerContainer class]], @"Expected IUPTextSpinnerContainer");
-  return [spinner_container stepperView];
+  NSStepper* stepper = (NSStepper*)objc_getAssociatedObject((id)ih->handle, IUP_COCOA_TEXT_STEPPER_OBJ_KEY);
+  NSCAssert([stepper isKindOfClass:[NSStepper class]], @"Expected NSStepper");
+  return stepper;
 }
 
 static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
 {
-  IUPTextSpinnerContainer* spinner_container = (IUPTextSpinnerContainer*)objc_getAssociatedObject((id)ih->handle, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY);
-  NSCAssert([spinner_container isKindOfClass:[IUPTextSpinnerContainer class]], @"Expected IUPTextSpinnerContainer");
-  return [spinner_container textField];
-}
-
-static IUPStepperObject* cocoaTextGetStepperObject(Ihandle* ih)
-{
-  IUPTextSpinnerContainer* spinner_container = (IUPTextSpinnerContainer*)objc_getAssociatedObject((id)ih->handle, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY);
-  NSCAssert([spinner_container isKindOfClass:[IUPTextSpinnerContainer class]], @"Expected IUPTextSpinnerContainer");
-  return [spinner_container stepperObject];
+  return (NSTextField*)iupcocoaGetMainView(ih);
 }
 
 /* Custom text field cell to control text insets */
@@ -580,23 +562,20 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
 
 - (IBAction) mySpinnerClickAction:(id)the_sender
 {
-  IFni callback_function;
   Ihandle* ih = [self ihandle];
+  NSStepper* stepper_view = (NSStepper*)the_sender;
+  int current_value = [stepper_view intValue];
 
-  callback_function = (IFni)IupGetCallback(ih, "SPIN_CB");
+  if(iupAttribGetBoolean(ih, "SPINAUTO"))
+  {
+    NSTextField* text_field = cocoaTextGetStepperTextField(ih);
+    [text_field setIntValue:current_value];
+  }
+
+  IFni callback_function = (IFni)IupGetCallback(ih, "SPIN_CB");
   if(callback_function)
   {
-    IUPStepperObject* stepper_object = cocoaTextGetStepperObject(ih);
-    NSNumber* ns_number = [stepper_object stepperValue];
-
-    int current_value = [ns_number intValue];
-
-    int ret_val = callback_function(ih, current_value);
-
-    if(IUP_IGNORE == ret_val)
-    {
-      /* We can't do anything with this */
-    }
+    callback_function(ih, current_value);
   }
 }
 
@@ -1651,14 +1630,9 @@ static int cocoaTextSetValueAttrib(Ihandle* ih, const char* value)
           current_number = min_value;
         }
 
-        if(iupAttribGetBoolean(ih, "SPINAUTO"))
         {
-          NSNumber* number_to_set = [NSNumber numberWithDouble:current_number];
-          IUPStepperObject* stepper_object = cocoaTextGetStepperObject(ih);
-          [stepper_object setStepperValue:number_to_set];
-        }
-        else
-        {
+          NSStepper* stepper_view = cocoaTextGetStepperView(ih);
+          [stepper_view setDoubleValue:current_number];
           ns_string = [NSString stringWithFormat:@"%lf", current_number];
           [text_field setStringValue:ns_string];
         }
@@ -5147,14 +5121,8 @@ static int cocoaTextSetSpinValueAttrib(Ihandle* ih, const char* value)
             int_value = (int)min_value;
           }
 
-          if(iupAttribGetBoolean(ih, "SPINAUTO"))
           {
-            NSNumber* number_to_set = [NSNumber numberWithInt:int_value];
-            IUPStepperObject* stepper_object = cocoaTextGetStepperObject(ih);
-            [stepper_object setStepperValue:number_to_set];
-          }
-          else
-          {
+            [stepper_view setIntValue:int_value];
             NSString* ns_string = [NSString stringWithFormat:@"%d", int_value];
             [text_field setStringValue:ns_string];
           }
@@ -5408,42 +5376,29 @@ static int cocoaTextMapMethod(Ihandle* ih)
   }
   else if(iupAttribGetBoolean(ih, "SPIN"))
   {
-    NSBundle* framework_bundle = [NSBundle bundleWithIdentifier:@"br.puc-rio.tecgraf.iup"];
-    NSNib* text_spinner_nib = nil;
-    if(!iupAttribGetBoolean(ih, "SPINAUTO"))
-    {
-      text_spinner_nib = [NSNib IupTextSpinnerNoBindings];
-    }
-    else
-    {
-      text_spinner_nib = [NSNib IupTextSpinner];
-    }
+    NSTextField* text_field = [[IupCocoaTextField alloc] initWithFrame:NSZeroRect];
+    NSStepper* stepper_view = [[NSStepper alloc] initWithFrame:NSZeroRect];
 
-    NSArray* top_level_objects = nil;
-    IUPTextSpinnerFilesOwner* files_owner = [[IUPTextSpinnerFilesOwner alloc] init];
-    IUPTextSpinnerContainer* text_spinner_container = [[IUPTextSpinnerContainer alloc] init];
+    [stepper_view sizeToFit];
+    CGFloat stepper_width = NSWidth([stepper_view frame]);
+    CGFloat stepper_height = NSHeight([stepper_view frame]);
+    CGFloat spacing = 4;
 
-    [text_spinner_nib instantiateWithOwner:files_owner topLevelObjects:&top_level_objects];
+    CGFloat text_height = NSHeight([text_field frame]);
+    CGFloat container_height = (text_height > stepper_height) ? text_height : stepper_height;
 
-    NSStackView* stack_view = [files_owner stackView];
-    NSStepper* stepper_view = [files_owner stepperView];
-    NSTextField* text_field = [files_owner textField];
-    IUPStepperObject* stepper_object = [files_owner stepperObject];
-    IUPStepperObjectController* stepper_object_controller = [files_owner stepperObjectController];
+    NSView* container_view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 100, container_height)];
 
-    [text_spinner_container setStepperView:stepper_view];
-    [text_spinner_container setTextField:text_field];
-    [text_spinner_container setStepperObject:stepper_object];
-    [text_spinner_container setStepperObjectController:stepper_object_controller];
+    [text_field setFrame:NSMakeRect(0, 0, 100 - stepper_width - spacing, container_height)];
+    [text_field setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
-    objc_setAssociatedObject(stack_view, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY, (id)text_spinner_container, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [stepper_view setFrame:NSMakeRect(100 - stepper_width, (container_height - stepper_height) / 2, stepper_width, stepper_height)];
+    [stepper_view setAutoresizingMask:NSViewMinXMargin | NSViewMinYMargin | NSViewMaxYMargin];
 
-    root_view = [stack_view retain];
-    main_view = text_field;
+    [container_view addSubview:text_field];
+    [container_view addSubview:stepper_view];
 
-    [text_spinner_container release];
-    [files_owner release];
-    [text_spinner_nib release];
+    [stepper_view setValueWraps:(BOOL)iupAttribGetBoolean(ih, "SPINWRAP")];
 
     IupNumberFormatter* number_formatter = [[IupNumberFormatter alloc] init];
     [number_formatter autorelease];
@@ -5452,8 +5407,6 @@ static int cocoaTextMapMethod(Ihandle* ih)
     [number_formatter setPartialStringValidationEnabled:YES];
     [number_formatter setNumberStyle:NSNumberFormatterNoStyle];
     [text_field setFormatter:number_formatter];
-
-    [stepper_view setValueWraps:(BOOL)iupAttribGetBoolean(ih, "SPINWRAP")];
 
     IupCocoaTextSpinnerDelegate* text_spinner_delegate = [[IupCocoaTextSpinnerDelegate alloc] init];
     [text_field setDelegate:text_spinner_delegate];
@@ -5466,6 +5419,14 @@ static int cocoaTextMapMethod(Ihandle* ih)
     objc_setAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
     objc_setAssociatedObject(text_field, IUP_COCOA_TEXT_DELEGATE_OBJ_KEY, (id)text_spinner_delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [text_spinner_delegate release];
+
+    root_view = container_view;
+    main_view = text_field;
+
+    objc_setAssociatedObject(container_view, IUP_COCOA_TEXT_STEPPER_OBJ_KEY, stepper_view, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+    [text_field release];
+    [stepper_view release];
 
     ih->data->has_formatting = 0;
 
@@ -5559,24 +5520,20 @@ static void cocoaTextUnMapMethod(Ihandle* ih)
   }
   else if (iupAttribGetBoolean(ih, "SPIN"))
   {
-    IUPTextSpinnerContainer* spinner_container = (IUPTextSpinnerContainer*)objc_getAssociatedObject(the_view, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY);
-    if (spinner_container)
+    NSTextField* text_field = (NSTextField*)iupcocoaGetMainView(ih);
+    NSStepper* stepper_view = (NSStepper*)objc_getAssociatedObject(the_view, IUP_COCOA_TEXT_STEPPER_OBJ_KEY);
+    if (text_field)
     {
-      NSTextField* text_field = [spinner_container textField];
-      NSStepper* stepper_view = [spinner_container stepperView];
-      if (text_field)
-      {
-        [text_field setDelegate:nil];
-        objc_setAssociatedObject(text_field, IUP_COCOA_TEXT_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        objc_setAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
-      }
-      if (stepper_view)
-      {
-        [stepper_view setTarget:nil];
-        objc_setAssociatedObject(stepper_view, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
-      }
+      [text_field setDelegate:nil];
+      objc_setAssociatedObject(text_field, IUP_COCOA_TEXT_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+      objc_setAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
     }
-    objc_setAssociatedObject(the_view, IUP_COCOA_TEXT_SPINNERCONTAINER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    if (stepper_view)
+    {
+      [stepper_view setTarget:nil];
+      objc_setAssociatedObject(stepper_view, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
+    }
+    objc_setAssociatedObject(the_view, IUP_COCOA_TEXT_STEPPER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   }
   else
   {

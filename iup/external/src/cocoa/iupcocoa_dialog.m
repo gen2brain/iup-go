@@ -682,6 +682,14 @@ void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     if (ih->data->show_state == IUP_MINIMIZE)
       return;
 
+    InativeHandle* parent = iupDialogGetNativeParent(ih);
+    if (parent && [(id)parent isKindOfClass:[NSWindow class]])
+    {
+      NSWindow* parent_window = (NSWindow*)parent;
+      if (![parent_window childWindows] || ![[parent_window childWindows] containsObject:the_window])
+        [parent_window addChildWindow:the_window ordered:NSWindowAbove];
+    }
+
     if (iupAttribGetBoolean(ih, "SHOWNOACTIVATE"))
     {
       [the_window orderFront:nil];
@@ -1409,7 +1417,7 @@ static int cocoaDialogMapMethod(Ihandle* ih)
   NSWindow* the_window = [[IupCocoaWindow alloc] initWithContentRect:NSMakeRect(0, 0, 100, 100)
                                                    styleMask:style_mask
                                                      backing:NSBackingStoreBuffered
-                                                       defer:NO];
+                                                       defer:YES];
 
   [the_window setReleasedWhenClosed:NO];
   [the_window setAutorecalculatesKeyViewLoop:YES];
@@ -1426,13 +1434,6 @@ static int cocoaDialogMapMethod(Ihandle* ih)
   parent = iupDialogGetNativeParent(ih);
   if (parent && [(id)parent isKindOfClass:[NSWindow class]])
   {
-    NSWindow* parent_window = (NSWindow*)parent;
-    [parent_window addChildWindow:the_window ordered:NSWindowAbove];
-
-    /* addChildWindow makes the window visible as a side effect.
-       Hide it so IupShowXY properly increments the visible count. */
-    [the_window orderOut:nil];
-
     [[NSNotificationCenter defaultCenter] addObserver:window_delegate
                                              selector:@selector(cocoaDialogChildDestroyNotification:)
                                                  name:NSWindowWillCloseNotification

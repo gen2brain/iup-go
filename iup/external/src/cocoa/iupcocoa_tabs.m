@@ -1257,7 +1257,6 @@ static int cocoaTabsMapMethod(Ihandle* ih)
       iupdrvTabsSetCurrentTab(ih, 0);
     }
 
-    IupRefresh(ih);
   }
 
   return IUP_NOERROR;

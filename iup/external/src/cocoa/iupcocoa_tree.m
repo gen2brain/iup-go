@@ -32,14 +32,88 @@
 #include "iup_drvinfo.h"
 
 #include "iupcocoa_drv.h"
-#import "IupCocoaTreeToggleTableCellView.h"
 
-@interface NSNib (IupCocoaOutlineView)
-+ (instancetype)IupCocoaOutlineView;
+@interface IupCocoaTreeToggleTableCellView : NSTableCellView
+@property(retain, nonatomic) IBOutlet NSButton* checkBox;
 @end
 
-@interface NSNib (IupCocoaOutlineViewToggle)
-+ (instancetype)IupCocoaOutlineViewToggle;
+@implementation IupCocoaTreeToggleTableCellView
+
+@synthesize checkBox = _checkBox;
+
+- (instancetype)initWithFrame:(NSRect)frameRect
+{
+  self = [super initWithFrame:frameRect];
+  if (self)
+  {
+    /* Create the checkbox. */
+    self.checkBox = [[[NSButton alloc] initWithFrame:NSZeroRect] autorelease];
+    [self.checkBox setButtonType:NSButtonTypeSwitch];
+    [self.checkBox setTitle:@""]; /* A checkbox shouldn't have a title of its own */
+    [self.checkBox setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [self addSubview:self.checkBox];
+
+    /* The superclass (NSTableCellView) has imageView and textField properties. */
+    self.imageView = [[[NSImageView alloc] initWithFrame:NSZeroRect] autorelease];
+    [self.imageView setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [self addSubview:self.imageView];
+
+    self.textField = [[[NSTextField alloc] initWithFrame:NSZeroRect] autorelease];
+    [self.textField setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [self.textField setBezeled:NO];
+    [self.textField setDrawsBackground:NO];
+    [self.textField setEditable:NO];
+    [self.textField setSelectable:NO];
+    [self addSubview:self.textField];
+
+    /* Set up Auto Layout constraints */
+    NSDictionary* views = @{
+      @"checkBox": self.checkBox,
+     @"imageView": self.imageView,
+     @"textField": self.textField
+    };
+
+         /* Horizontal constraints, arrange checkbox, image, and text from left to right. */
+         [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-2-[checkBox]-5-[imageView]-5-[textField]-2-|"
+                      options:0
+                      metrics:nil
+                        views:views]];
+
+             /* Vertical constraints, center all subviews vertically within the cell. */
+             [self addConstraint:[NSLayoutConstraint constraintWithItem:self.checkBox
+                       attribute:NSLayoutAttributeCenterY
+                       relatedBy:NSLayoutRelationEqual
+                          toItem:self
+                       attribute:NSLayoutAttributeCenterY
+                      multiplier:1.0
+                        constant:0]];
+
+             [self addConstraint:[NSLayoutConstraint constraintWithItem:self.imageView
+                       attribute:NSLayoutAttributeCenterY
+                       relatedBy:NSLayoutRelationEqual
+                          toItem:self
+                       attribute:NSLayoutAttributeCenterY
+                      multiplier:1.0
+                        constant:0]];
+
+             [self addConstraint:[NSLayoutConstraint constraintWithItem:self.textField
+                       attribute:NSLayoutAttributeCenterY
+                       relatedBy:NSLayoutRelationEqual
+                          toItem:self
+                       attribute:NSLayoutAttributeCenterY
+                      multiplier:1.0
+                        constant:0]];
+  }
+  return self;
+}
+
+- (void)dealloc
+{
+  [_checkBox release];
+  _checkBox = nil;
+  [super dealloc];
+}
+
 @end
 
 static const void* IUP_COCOA_TREE_DELEGATE_OBJ_KEY = "IUP_COCOA_TREE_DELEGATE_OBJ_KEY";
@@ -1066,6 +1140,45 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
     {
       table_cell_view = [[[IupCocoaTreeToggleTableCellView alloc] initWithFrame:NSZeroRect] autorelease];
       [table_cell_view setIdentifier:@"IupCocoaTreeToggleTableCellView"];
+
+      NSButton* new_check_box = [[NSButton alloc] initWithFrame:NSZeroRect];
+      [new_check_box setButtonType:NSButtonTypeSwitch];
+      [new_check_box setTitle:@""];
+      [new_check_box setControlSize:NSControlSizeSmall];
+      [new_check_box setTranslatesAutoresizingMaskIntoConstraints:NO];
+      [table_cell_view addSubview:new_check_box];
+      [(IupCocoaTreeToggleTableCellView*)table_cell_view setCheckBox:new_check_box];
+      [new_check_box release];
+
+      NSImageView* new_image_view = [[NSImageView alloc] initWithFrame:NSZeroRect];
+      [new_image_view setImageScaling:NSImageScaleProportionallyUpOrDown];
+      [new_image_view setTranslatesAutoresizingMaskIntoConstraints:NO];
+      [table_cell_view addSubview:new_image_view];
+      [table_cell_view setImageView:new_image_view];
+      [new_image_view release];
+
+      IupCocoaTreeTextField* new_text_field = [[IupCocoaTreeTextField alloc] initWithFrame:NSZeroRect];
+      [new_text_field setBezeled:NO];
+      [new_text_field setDrawsBackground:NO];
+      [new_text_field setEditable:NO];
+      [new_text_field setSelectable:YES];
+      [new_text_field setTranslatesAutoresizingMaskIntoConstraints:NO];
+      [new_text_field setContentCompressionResistancePriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationHorizontal];
+      [table_cell_view addSubview:new_text_field];
+      [table_cell_view setTextField:new_text_field];
+      [new_text_field release];
+
+      [NSLayoutConstraint constraintWithItem:new_check_box attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
+      [NSLayoutConstraint constraintWithItem:new_image_view attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
+      [NSLayoutConstraint constraintWithItem:new_text_field attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
+
+      [NSLayoutConstraint constraintWithItem:new_image_view attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:16.0].active = YES;
+      [NSLayoutConstraint constraintWithItem:new_image_view attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:16.0].active = YES;
+
+      [NSLayoutConstraint constraintWithItem:new_check_box attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeLeading multiplier:1.0 constant:6.0].active = YES;
+      [NSLayoutConstraint constraintWithItem:new_image_view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:new_check_box attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:2.0].active = YES;
+      [NSLayoutConstraint constraintWithItem:new_text_field attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:new_image_view attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:5.0].active = YES;
+      [NSLayoutConstraint constraintWithItem:new_text_field attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:-2.0].active = YES;
     }
     IupCocoaTreeToggleTableCellView* toggle_cell_view = (IupCocoaTreeToggleTableCellView*)table_cell_view;
 
@@ -4408,33 +4521,31 @@ static int cocoaTreeSetHideButtonsAttrib(Ihandle* ih, const char* value)
 
 static int cocoaTreeMapMethod(Ihandle* ih)
 {
-  NSNib* outline_nib = nil;
+  IupCocoaOutlineView* outline_view = [[IupCocoaOutlineView alloc] initWithFrame:NSZeroRect];
+  [outline_view setAllowsExpansionToolTips:YES];
+  [outline_view setColumnAutoresizingStyle:NSTableViewFirstColumnOnlyAutoresizingStyle];
+  [outline_view setAllowsColumnReordering:NO];
+  [outline_view setAllowsMultipleSelection:NO];
+  [outline_view setRowSizeStyle:NSTableViewRowSizeStyleDefault];
+  [outline_view setIndentationPerLevel:16];
+  [outline_view setAutoresizesOutlineColumn:YES];
+  [outline_view setIntercellSpacing:NSMakeSize(3, 2)];
 
-  if (ih->data->show_toggle > 0)
-    outline_nib = [NSNib IupCocoaOutlineViewToggle];
-  else
-    outline_nib = [NSNib IupCocoaOutlineView];
+  NSTableColumn* table_column = [[NSTableColumn alloc] initWithIdentifier:@"IupCocoaTreeColumn"];
+  [table_column setWidth:235];
+  [table_column setMinWidth:40];
+  [table_column setMaxWidth:1000];
+  [table_column setResizingMask:(NSTableColumnAutoresizingMask | NSTableColumnUserResizingMask)];
+  [outline_view addTableColumn:table_column];
+  [outline_view setOutlineTableColumn:table_column];
+  [table_column release];
 
-  NSArray* top_level_objects = nil;
-  IupCocoaOutlineView* outline_view = nil;
-  NSScrollView* scroll_view = nil;
-
-  if ([outline_nib instantiateWithOwner:nil topLevelObjects:&top_level_objects])
-  {
-    for (id current_object in top_level_objects)
-    {
-      if ([current_object isKindOfClass:[NSScrollView class]])
-      {
-        scroll_view = current_object;
-        break;
-      }
-    }
-  }
-
-  outline_view = (IupCocoaOutlineView*)[scroll_view documentView];
-  NSCAssert([outline_view isKindOfClass:[IupCocoaOutlineView class]], @"Expected IupCocoaOutlineView");
-
-  [scroll_view retain];
+  NSScrollView* scroll_view = [[NSScrollView alloc] initWithFrame:NSZeroRect];
+  [scroll_view setAutohidesScrollers:YES];
+  [scroll_view setHasVerticalScroller:YES];
+  [scroll_view setHasHorizontalScroller:YES];
+  [scroll_view setDocumentView:outline_view];
+  [outline_view release];
 
   [outline_view setIh:ih];
 
