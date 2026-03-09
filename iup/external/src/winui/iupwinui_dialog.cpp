@@ -712,6 +712,8 @@ static int winuiDialogMapMethod(Ihandle* ih)
 
 static void winuiDialogUnMapMethod(Ihandle* ih)
 {
+  iupwinuiTipsDestroy(ih);
+
   ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWINUI_TASKBARLIST");
   if (tbl)
   {
