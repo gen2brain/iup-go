@@ -766,9 +766,9 @@ void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add
 
   if (id == -1)
   {
-    new_item = elm_genlist_item_append(tree, itc, node, NULL,
-                                        (kind == ITREE_BRANCH) ? ELM_GENLIST_ITEM_TREE : ELM_GENLIST_ITEM_NONE,
-                                        NULL, NULL);
+    new_item = elm_genlist_item_prepend(tree, itc, node, NULL,
+                                         (kind == ITREE_BRANCH) ? ELM_GENLIST_ITEM_TREE : ELM_GENLIST_ITEM_NONE,
+                                         NULL, NULL);
   }
   else
   {
@@ -798,9 +798,9 @@ void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add
       else
       {
         parent_item = elm_genlist_item_parent_get(ref_item);
-        new_item = elm_genlist_item_insert_before(tree, itc, node, parent_item, ref_item,
-                                                   (kind == ITREE_BRANCH) ? ELM_GENLIST_ITEM_TREE : ELM_GENLIST_ITEM_NONE,
-                                                   NULL, NULL);
+        new_item = elm_genlist_item_insert_after(tree, itc, node, parent_item, ref_item,
+                                                  (kind == ITREE_BRANCH) ? ELM_GENLIST_ITEM_TREE : ELM_GENLIST_ITEM_NONE,
+                                                  NULL, NULL);
       }
     }
     else
