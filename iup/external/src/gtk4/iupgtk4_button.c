@@ -146,6 +146,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int button_type;
   int has_user_padding = 0;
+  int has_user_size = 0;
   char* image;
   char* title;
 
@@ -179,9 +180,11 @@ void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     has_user_padding = (horiz_padding > 0 || vert_padding > 0);
   }
 
+  has_user_size = (ih && (ih->userwidth > 0 || ih->userheight > 0));
+
   if (button_type == IUP_BUTTON_TEXT)
   {
-    if (has_user_padding)
+    if (has_user_padding || has_user_size)
     {
       (*x) += gtk4_button_struct_text_x;
       (*y) += gtk4_button_struct_text_y;
@@ -194,7 +197,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   }
   else if (button_type == IUP_BUTTON_IMAGE)
   {
-    if (has_user_padding)
+    if (has_user_padding || has_user_size)
     {
       (*x) += gtk4_button_struct_image_x;
       (*y) += gtk4_button_struct_image_y;
@@ -207,7 +210,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   }
   else if (button_type == IUP_BUTTON_BOTH)
   {
-    if (has_user_padding)
+    if (has_user_padding || has_user_size)
     {
       (*x) += gtk4_button_struct_both_x;
       (*y) += gtk4_button_struct_both_y;
@@ -824,6 +827,12 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
     }
     else
       gtk_button_set_label(GTK_BUTTON(ih->handle), "");
+
+    if (ih->userwidth > 0 || ih->userheight > 0)
+    {
+      iupgtk4CssSetWidgetPadding(ih->handle, 0, 0);
+      iupgtk4CssSetWidgetCustom(ih->handle, "min-width", "0; min-height: 0");
+    }
   }
 
   iupgtk4AddToParent(ih);
