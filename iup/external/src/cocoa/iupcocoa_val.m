@@ -447,26 +447,16 @@ static int cocoaValMapMethod(Ihandle* ih)
   iupcocoaSetAssociatedViews(ih, slider, slider);
   iupcocoaAddToParent(ih);
 
-  cocoaValSetMinAttrib(ih, iupAttribGetStr(ih, "MIN"));
-  cocoaValSetMaxAttrib(ih, iupAttribGetStr(ih, "MAX"));
-  cocoaValSetStepAttrib(ih, NULL);
-  cocoaValSetPageStepAttrib(ih, NULL);
+  [slider setMinValue:ih->data->vmin];
+  [slider setMaxValue:ih->data->vmax];
 
-  const char* inverted_str = iupAttribGetStr(ih, "INVERTED");
-  if (inverted_str)
-  {
-    ih->data->inverted = iupStrBoolean(inverted_str);
-  }
+  double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
+  [slider setIncrementValue:inc_size];
 
-  const char* value_str = iupAttribGetStr(ih, "VALUE");
-  if (value_str)
-  {
-    cocoaValSetValueAttrib(ih, value_str);
-  }
-  else
-  {
-    cocoaValSetValueAttrib(ih, "0");
-  }
+  double page_inc_size = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
+  [slider setAltIncrementValue:page_inc_size];
+
+  cocoaValSetValueAttrib(ih, NULL);
 
   return IUP_NOERROR;
 }

@@ -1611,27 +1611,27 @@ static int cocoaTextSetValueAttrib(Ihandle* ih, const char* value)
         NSTextField* text_field = cocoaTextGetStepperTextField(ih);
         NSCAssert([text_field isKindOfClass:[NSTextField class]], @"Expected NSTextField");
 
-        NSNumberFormatter* conversion_formatter = [[NSNumberFormatter alloc] init];
-        [conversion_formatter autorelease];
-        NSNumberFormatter* text_field_formatter = (NSNumberFormatter*)[text_field formatter];
-        [conversion_formatter setNumberStyle:[text_field_formatter numberStyle]];
-        NSNumber* ns_number = [conversion_formatter numberFromString:ns_string];
-
-        double current_number = [ns_number doubleValue];
-        NSStepper* stepper_view = cocoaTextGetStepperView(ih);
-        double max_value = [stepper_view maxValue];
-        if(current_number > max_value)
+        if(!iupAttribGetBoolean(ih, "SPINAUTO"))
         {
-          current_number = max_value;
+          [text_field setStringValue:ns_string];
         }
-        double min_value = [stepper_view minValue];
-        if(current_number < min_value)
+        else
         {
-          current_number = min_value;
-        }
+          NSNumberFormatter* conversion_formatter = [[NSNumberFormatter alloc] init];
+          [conversion_formatter autorelease];
+          NSNumberFormatter* text_field_formatter = (NSNumberFormatter*)[text_field formatter];
+          [conversion_formatter setNumberStyle:[text_field_formatter numberStyle]];
+          NSNumber* ns_number = [conversion_formatter numberFromString:ns_string];
 
-        {
+          double current_number = [ns_number doubleValue];
           NSStepper* stepper_view = cocoaTextGetStepperView(ih);
+          double max_value = [stepper_view maxValue];
+          if(current_number > max_value)
+            current_number = max_value;
+          double min_value = [stepper_view minValue];
+          if(current_number < min_value)
+            current_number = min_value;
+
           [stepper_view setDoubleValue:current_number];
           ns_string = [NSString stringWithFormat:@"%lf", current_number];
           [text_field setStringValue:ns_string];
@@ -5102,8 +5102,6 @@ static int cocoaTextSetSpinValueAttrib(Ihandle* ih, const char* value)
   {
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-
         int int_value = 0;
         if(iupStrToInt(value, &int_value))
         {
@@ -5112,17 +5110,16 @@ static int cocoaTextSetSpinValueAttrib(Ihandle* ih, const char* value)
           NSStepper* stepper_view = cocoaTextGetStepperView(ih);
           double max_value = [stepper_view maxValue];
           if((double)int_value > max_value)
-          {
             int_value = (int)max_value;
-          }
           double min_value = [stepper_view minValue];
           if((double)int_value < min_value)
-          {
             int_value = (int)min_value;
-          }
 
+          [stepper_view setIntValue:int_value];
+
+          if(iupAttribGetBoolean(ih, "SPINAUTO"))
           {
-            [stepper_view setIntValue:int_value];
+            NSTextField* text_field = cocoaTextGetStepperTextField(ih);
             NSString* ns_string = [NSString stringWithFormat:@"%d", int_value];
             [text_field setStringValue:ns_string];
           }
@@ -5148,11 +5145,8 @@ static char* cocoaTextGetSpinValueAttrib(Ihandle* ih)
   {
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSString* ns_string = [text_field stringValue];
-        return iupStrReturnStr([ns_string UTF8String]);
-
-        break;
+        NSStepper* stepper_view = cocoaTextGetStepperView(ih);
+        return iupStrReturnInt([stepper_view intValue]);
       }
     default:
       {
