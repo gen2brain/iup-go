@@ -381,21 +381,6 @@ static char* qtValGetStepOnTicksAttrib(Ihandle* ih)
   return iupAttribGet(ih, "STEPONTICKS");
 }
 
-static char* qtValGetMinAttrib(Ihandle* ih)
-{
-  return iupStrReturnDouble(ih->data->vmin);
-}
-
-static char* qtValGetMaxAttrib(Ihandle* ih)
-{
-  return iupStrReturnDouble(ih->data->vmax);
-}
-
-static char* qtValGetInvertedAttrib(Ihandle* ih)
-{
-  return iupStrReturnBoolean(ih->data->inverted);
-}
-
 static int qtValSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
@@ -546,9 +531,4 @@ extern "C" void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, qtValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TICKSPOS", NULL, qtValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "STEPONTICKS", qtValGetStepOnTicksAttrib, qtValSetStepOnTicksAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT);
-
-  /* MIN/MAX/INVERTED getters */
-  iupClassRegisterAttribute(ic, "MIN", qtValGetMinAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAX", qtValGetMaxAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INVERTED", qtValGetInvertedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }
