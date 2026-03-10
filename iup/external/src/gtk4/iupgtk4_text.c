@@ -31,33 +31,6 @@
 #include "iupgtk4_drv.h"
 
 
-void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
-{
-  static int spin_min_width = -1;
-
-  (void)h;
-  (void)ih;
-
-  /* Measure the minimum width required by GtkSpinButton */
-  if (spin_min_width < 0)
-  {
-    GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
-    int min_w, nat_w;
-
-    gtk_widget_measure(temp_spin, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
-
-    /* Use minimum width with fallback */
-    spin_min_width = (min_w > 0) ? min_w : 130;
-
-    g_object_ref_sink(temp_spin);
-    g_object_unref(temp_spin);
-  }
-
-  /* Only enforce minimum width, don't force expansion */
-  if (*w < spin_min_width)
-    *w = spin_min_width;
-}
-
 static int gtk4_multiline_border_height = -1;
 static int gtk4_multiline_border_width = -1;
 static int gtk4_multiline_line_height = -1;
@@ -129,6 +102,41 @@ static void gtk4TextMeasureEntryBorders(void)
     g_object_unref(temp_entry);
     g_object_unref(temp_entry_noframe);
   }
+}
+
+void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+{
+  static int spin_arrow_width = -1;
+
+  (void)ih;
+
+  if (spin_arrow_width < 0)
+  {
+    GtkWidget *spin_a = gtk_spin_button_new_with_range(0, 100, 1);
+    GtkWidget *spin_b = gtk_spin_button_new_with_range(0, 100, 1);
+    int w_a, w_b, per_char, spin_overhead;
+
+    gtk_editable_set_width_chars(GTK_EDITABLE(spin_a), 10);
+    gtk_editable_set_width_chars(GTK_EDITABLE(spin_b), 20);
+
+    g_object_ref_sink(spin_a);
+    g_object_ref_sink(spin_b);
+
+    gtk_widget_measure(spin_a, GTK_ORIENTATION_HORIZONTAL, -1, &w_a, NULL, NULL, NULL);
+    gtk_widget_measure(spin_b, GTK_ORIENTATION_HORIZONTAL, -1, &w_b, NULL, NULL, NULL);
+
+    per_char = (w_b - w_a) / 10;
+    spin_overhead = w_a - 10 * per_char;
+
+    gtk4TextMeasureEntryBorders();
+    spin_arrow_width = spin_overhead - gtk4_entry_css_dec_x;
+    if (spin_arrow_width <= 0) spin_arrow_width = h;
+
+    g_object_unref(spin_a);
+    g_object_unref(spin_b);
+  }
+
+  *w += spin_arrow_width;
 }
 
 static void gtk4TextMeasureMultilineMetrics(void)
