@@ -489,7 +489,7 @@ func GetParam(title string, action GetParamFunc, format string, data ...interfac
 	if action != nil {
 		ch := cgo.NewHandle(action)
 		defer ch.Delete()
-		ret = C.goIupCallGetParamv(cTitle, unsafe.Pointer(ch), cFormat,
+		ret = C.goIupCallGetParamv(cTitle, C.uintptr_t(ch), cFormat,
 			C.int(paramCount), C.int(paramExtra), (*unsafe.Pointer)(unsafe.Pointer(paramDataPtr)))
 	} else {
 		ret = C.goIupCallGetParamvNoAction(cTitle, cFormat,

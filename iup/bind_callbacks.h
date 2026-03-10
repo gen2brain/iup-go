@@ -8,6 +8,7 @@
 #define BIND_CALLBACKS_H
 
 #include <stdlib.h>
+#include <stdint.h>
 #include "iup.h"
 
 #if defined(_WIN32)
@@ -522,8 +523,8 @@ static int goIupGetParamTrampoline(Ihandle *dialog, int param_index, void *user_
 	return goIupGetParamCB((void *)dialog, param_index, user_data);
 }
 
-static int goIupCallGetParamv(const char *title, void *user_data, const char *format, int param_count, int param_extra, void **param_data) {
-	return IupGetParamv(title, goIupGetParamTrampoline, user_data, format, param_count, param_extra, param_data);
+static int goIupCallGetParamv(const char *title, uintptr_t user_data, const char *format, int param_count, int param_extra, void **param_data) {
+	return IupGetParamv(title, goIupGetParamTrampoline, (void *)user_data, format, param_count, param_extra, param_data);
 }
 
 static int goIupCallGetParamvNoAction(const char *title, const char *format, int param_count, int param_extra, void **param_data) {
