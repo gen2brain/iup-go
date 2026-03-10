@@ -54,6 +54,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   int has_text = 0;
   int has_bgcolor = 0;
   int has_user_padding = 0;
+  int has_user_size = 0;
 
   if (ih)
   {
@@ -71,6 +72,8 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
         iupStrToIntInt(padding, &horiz_padding, &vert_padding, 'x');
       has_user_padding = (horiz_padding > 0 || vert_padding > 0);
     }
+
+    has_user_size = (ih->userwidth > 0 || ih->userheight > 0);
   }
 
   if (has_bgcolor)
@@ -127,7 +130,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
       gtk_widget_destroy(temp_window);
     }
-    if (has_user_padding)
+    if (has_user_padding || has_user_size)
     {
       (*x) += image_text_struct_x;
       (*y) += image_text_struct_y;
@@ -183,7 +186,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
       gtk_widget_destroy(temp_window);
     }
-    if (has_user_padding)
+    if (has_user_padding || has_user_size)
     {
       (*x) += image_struct_x;
       (*y) += image_struct_y;
@@ -236,7 +239,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
       gtk_widget_destroy(temp_window);
     }
-    if (has_user_padding)
+    if (has_user_padding || has_user_size)
     {
       (*x) += text_struct_x;
       (*y) += text_struct_y;
@@ -997,6 +1000,18 @@ static int gtkButtonMapMethod(Ihandle* ih)
     }
     else
       gtk_button_set_label((GtkButton*)ih->handle, "");
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+    if (ih->userwidth > 0 || ih->userheight > 0)
+    {
+      GtkCssProvider* provider = gtk_css_provider_new();
+      gtk_css_provider_load_from_data(provider,
+        "* { min-height: 0; min-width: 0; padding: 0; }", -1, NULL);
+      gtk_style_context_add_provider(gtk_widget_get_style_context(ih->handle),
+        GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+      g_object_unref(provider);
+    }
+#endif
   }
 
   (void)has_border;
