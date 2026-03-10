@@ -7,8 +7,6 @@
 #ifndef BIND_CALLBACKS_H
 #define BIND_CALLBACKS_H
 
-#include <iup.h>
-
 #include <stdlib.h>
 #include "iup.h"
 
@@ -17,6 +15,10 @@
 #else
 #define CGO_EXPORT
 #endif
+
+// ============================================================================
+// CORE IUP CALLBACKS
+// ============================================================================
 
 CGO_EXPORT extern int goIupIdleCB();
 static void goIupSetIdleFunc() {
@@ -448,133 +450,14 @@ static void goIupSetThemeChangedFunc(Ihandle *ih) {
 	IupSetCallback(ih, "THEMECHANGED_CB", (Icallback) goIupThemeChangedCB);
 }
 
-CGO_EXPORT extern int goIupCompletedCB(void *, void *url);
-static void goIupSetCompletedFunc(Ihandle *ih) {
-	IupSetCallback(ih, "COMPLETED_CB", (Icallback) goIupCompletedCB);
-}
-
-CGO_EXPORT extern int goIupErrorCB(void *, void *url);
-static void goIupSetErrorFunc(Ihandle *ih) {
-	IupSetCallback(ih, "ERROR_CB", (Icallback) goIupErrorCB);
-}
-
-CGO_EXPORT extern int goIupNavigateCB(void *, void *url);
-static void goIupSetNavigateFunc(Ihandle *ih) {
-	IupSetCallback(ih, "NAVIGATE_CB", (Icallback) goIupNavigateCB);
-}
-
-CGO_EXPORT extern int goIupNewWindowCB(void *, void *url);
-static void goIupSetNewWindowFunc(Ihandle *ih) {
-	IupSetCallback(ih, "NEWWINDOW_CB", (Icallback) goIupNewWindowCB);
-}
-
 CGO_EXPORT extern int goIupUpdateCB(void *);
 static void goIupSetUpdateFunc(Ihandle *ih) {
 	IupSetCallback(ih, "UPDATE_CB", (Icallback) goIupUpdateCB);
 }
 
-// ============================================================================
-// CELLS AND MATRIX CONTROL CALLBACKS
-// ============================================================================
-
-CGO_EXPORT extern int goIupCellsDrawCB(void *, int i, int j, int xmin, int xmax, int ymin, int ymax);
-static void goIupSetCellsDrawFunc(Ihandle *ih) {
-	IupSetCallback(ih, "DRAW_CB", (Icallback) goIupCellsDrawCB);
-}
-
-CGO_EXPORT extern int goIupMouseClickCB(void *, int button, int pressed, int i, int j, int x, int y, void *status);
-static void goIupSetMouseClickFunc(Ihandle *ih) {
-	IupSetCallback(ih, "MOUSECLICK_CB", (Icallback) goIupMouseClickCB);
-}
-
-CGO_EXPORT extern int goIupMouseMotionCB(void *, int i, int j, int x, int y, void *status);
-static void goIupSetMouseMotionFunc(Ihandle *ih) {
-	IupSetCallback(ih, "MOUSEMOTION_CB", (Icallback) goIupMouseMotionCB);
-}
-
-CGO_EXPORT extern int goIupScrollingCB(void *, int i, int j);
-static void goIupSetScrollingFunc(Ihandle *ih) {
-	IupSetCallback(ih, "SCROLLING_CB", (Icallback) goIupScrollingCB);
-}
-
-CGO_EXPORT extern int goIupNColsCB(void *);
-static void goIupSetNColsFunc(Ihandle *ih) {
-	IupSetCallback(ih, "NCOLS_CB", (Icallback) goIupNColsCB);
-}
-
-CGO_EXPORT extern int goIupNLinesCB(void *);
-static void goIupSetNLinesFunc(Ihandle *ih) {
-	IupSetCallback(ih, "NLINES_CB", (Icallback) goIupNLinesCB);
-}
-
-CGO_EXPORT extern int goIupHSpanCB(void *, int i, int j);
-static void goIupSetHSpanFunc(Ihandle *ih) {
-	IupSetCallback(ih, "HSPAN_CB", (Icallback) goIupHSpanCB);
-}
-
-CGO_EXPORT extern int goIupVSpanCB(void *, int i, int j);
-static void goIupSetVSpanFunc(Ihandle *ih) {
-	IupSetCallback(ih, "VSPAN_CB", (Icallback) goIupVSpanCB);
-}
-
-CGO_EXPORT extern int goIupHeightCB(void *, int i);
-static void goIupSetHeightFunc(Ihandle *ih) {
-	IupSetCallback(ih, "HEIGHT_CB", (Icallback) goIupHeightCB);
-}
-
-CGO_EXPORT extern int goIupWidthCB(void *, int j);
-static void goIupSetWidthFunc(Ihandle *ih) {
-	IupSetCallback(ih, "WIDTH_CB", (Icallback) goIupWidthCB);
-}
-
-CGO_EXPORT extern int goIupMatrixDrawCB(void *, int lin, int col, int x1, int x2, int y1, int y2);
-static void goIupSetMatrixDrawFunc(Ihandle *ih) {
-	IupSetCallback(ih, "DRAW_CB", (Icallback) goIupMatrixDrawCB);
-}
-
-CGO_EXPORT extern int goIupEnterItemCB(void *, int lin, int col);
-static void goIupSetEnterItemFunc(Ihandle *ih) {
-	IupSetCallback(ih, "ENTERITEM_CB", (Icallback) goIupEnterItemCB);
-}
-
-CGO_EXPORT extern int goIupLeaveItemCB(void *, int lin, int col);
-static void goIupSetLeaveItemFunc(Ihandle *ih) {
-	IupSetCallback(ih, "LEAVEITEM_CB", (Icallback) goIupLeaveItemCB);
-}
-
-CGO_EXPORT extern int goIupClickCB(void *, int lin, int col, void *status);
-static void goIupSetClickFunc(Ihandle *ih) {
-	IupSetCallback(ih, "CLICK_CB", (Icallback) goIupClickCB);
-}
-
-CGO_EXPORT extern int goIupReleaseCB(void *, int lin, int col, void *status);
-static void goIupSetReleaseFunc(Ihandle *ih) {
-	IupSetCallback(ih, "RELEASE_CB", (Icallback) goIupReleaseCB);
-}
-
-CGO_EXPORT extern int goIupMatrixMouseMoveCB(void *, int lin, int col);
-static void goIupSetMatrixMouseMoveFunc(Ihandle *ih) {
-	IupSetCallback(ih, "MOUSEMOVE_CB", (Icallback) goIupMatrixMouseMoveCB);
-}
-
-CGO_EXPORT extern int goIupEditionCB(void *, int lin, int col, int mode, int update);
-static void goIupSetEditionFunc(Ihandle *ih) {
-	IupSetCallback(ih, "EDITION_CB", (Icallback) goIupEditionCB);
-}
-
 CGO_EXPORT extern int goIupTableEditionCB(void *, int lin, int col, char* update);
 static void goIupSetTableEditionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "EDITION_CB", (Icallback) goIupTableEditionCB);
-}
-
-CGO_EXPORT extern int goIupEditBeginCB(void *, int lin, int col);
-static void goIupSetEditBeginFunc(Ihandle *ih) {
-	IupSetCallback(ih, "EDITBEGIN_CB", (Icallback) goIupEditBeginCB);
-}
-
-CGO_EXPORT extern int goIupEditEndCB(void *, int lin, int col, char* newValue, int apply);
-static void goIupSetEditEndFunc(Ihandle *ih) {
-	IupSetCallback(ih, "EDITEND_CB", (Icallback) goIupEditEndCB);
 }
 
 CGO_EXPORT extern int goIupTableValueChangedCB(void *, int lin, int col);
@@ -595,116 +478,6 @@ static void goIupSetTableImageFunc(Ihandle *ih) {
 CGO_EXPORT extern int goIupTableSortCB(void *, int col);
 static void goIupSetTableSortFunc(Ihandle *ih) {
 	IupSetCallback(ih, "SORT_CB", (Icallback) goIupTableSortCB);
-}
-
-CGO_EXPORT extern int goIupDropCheckCB(void *, int lin, int col);
-static void goIupSetDropCheckFunc(Ihandle *ih) {
-	IupSetCallback(ih, "DROPCHECK_CB", (Icallback) goIupDropCheckCB);
-}
-
-CGO_EXPORT extern int goIupMarkCB(void *, int lin, int col);
-static void goIupSetMarkFunc(Ihandle *ih) {
-	IupSetCallback(ih, "MARK_CB", (Icallback) goIupMarkCB);
-}
-
-CGO_EXPORT extern int goIupMarkEditCB(void *, int lin, int col, int marked);
-static void goIupSetMarkEditFunc(Ihandle *ih) {
-	IupSetCallback(ih, "MARKEDIT_CB", (Icallback) goIupMarkEditCB);
-}
-
-CGO_EXPORT extern int goIupValueEditCB(void *, int lin, int col, void *newval);
-static void goIupSetValueEditFunc(Ihandle *ih) {
-	IupSetCallback(ih, "VALUE_EDIT_CB", (Icallback) goIupValueEditCB);
-}
-
-CGO_EXPORT extern int goIupColResizeCB(void *, int col);
-static void goIupSetColResizeFunc(Ihandle *ih) {
-	IupSetCallback(ih, "COLRESIZE_CB", (Icallback) goIupColResizeCB);
-}
-
-CGO_EXPORT extern int goIupResizeMatrixCB(void *, int width, int height);
-static void goIupSetResizeMatrixFunc(Ihandle *ih) {
-	IupSetCallback(ih, "RESIZEMATRIX_CB", (Icallback) goIupResizeMatrixCB);
-}
-
-CGO_EXPORT extern int goIupScrollTopCB(void *, int lin, int col);
-static void goIupSetScrollTopFunc(Ihandle *ih) {
-	IupSetCallback(ih, "SCROLLTOP_CB", (Icallback) goIupScrollTopCB);
-}
-
-CGO_EXPORT extern int goIupBgColorCB(void *, int lin, int col, int *r, int *g, int *b);
-static void goIupSetBgColorFunc(Ihandle *ih) {
-	IupSetCallback(ih, "BGCOLOR_CB", (Icallback) goIupBgColorCB);
-}
-
-CGO_EXPORT extern int goIupFgColorCB(void *, int lin, int col, int *r, int *g, int *b);
-static void goIupSetFgColorFunc(Ihandle *ih) {
-	IupSetCallback(ih, "FGCOLOR_CB", (Icallback) goIupFgColorCB);
-}
-
-CGO_EXPORT extern int goIupMatrixDropCB(void *, void *drop, int lin, int col);
-static void goIupSetMatrixDropFunc(Ihandle *ih) {
-	IupSetCallback(ih, "DROP_CB", (Icallback) goIupMatrixDropCB);
-}
-
-CGO_EXPORT extern int goIupMatrixActionCB(void *, int key, int lin, int col, int edition, char *status);
-static void goIupSetMatrixActionFunc(Ihandle *ih) {
-	IupSetCallback(ih, "ACTION_CB", (Icallback) goIupMatrixActionCB);
-}
-
-CGO_EXPORT extern int goIupEditClickCB(void *, int lin, int col, char *status);
-static void goIupSetEditClickFunc(Ihandle *ih) {
-	IupSetCallback(ih, "EDITCLICK_CB", (Icallback) goIupEditClickCB);
-}
-
-CGO_EXPORT extern int goIupEditReleaseCB(void *, int lin, int col, char *status);
-static void goIupSetEditReleaseFunc(Ihandle *ih) {
-	IupSetCallback(ih, "EDITRELEASE_CB", (Icallback) goIupEditReleaseCB);
-}
-
-CGO_EXPORT extern int goIupEditMouseMoveCB(void *, int lin, int col);
-static void goIupSetEditMouseMoveFunc(Ihandle *ih) {
-	IupSetCallback(ih, "EDITMOUSEMOVE_CB", (Icallback) goIupEditMouseMoveCB);
-}
-
-CGO_EXPORT extern char* goIupMatrixFontCB(void *, int lin, int col);
-static void goIupSetMatrixFontFunc(Ihandle *ih) {
-	IupSetCallback(ih, "FONT_CB", (Icallback) goIupMatrixFontCB);
-}
-
-CGO_EXPORT extern char* goIupMatrixTypeCB(void *, int lin, int col);
-static void goIupSetMatrixTypeFunc(Ihandle *ih) {
-	IupSetCallback(ih, "TYPE_CB", (Icallback) goIupMatrixTypeCB);
-}
-
-CGO_EXPORT extern char* goIupTranslateValueCB(void *, int lin, int col, char *value);
-static void goIupSetTranslateValueFunc(Ihandle *ih) {
-	IupSetCallback(ih, "TRANSLATEVALUE_CB", (Icallback) goIupTranslateValueCB);
-}
-
-CGO_EXPORT extern int goIupMenuDropCB(void *, void *menu, int lin, int col);
-static void goIupSetMenuDropFunc(Ihandle *ih) {
-	IupSetCallback(ih, "MENUDROP_CB", (Icallback) goIupMenuDropCB);
-}
-
-CGO_EXPORT extern int goIupDropSelectCB(void *, int lin, int col, void *drop, char *text, int item, int col2);
-static void goIupSetDropSelectFunc(Ihandle *ih) {
-	IupSetCallback(ih, "DROPSELECT_CB", (Icallback) goIupDropSelectCB);
-}
-
-CGO_EXPORT extern char* goIupMatrixValueCB(void *, int lin, int col);
-static void goIupSetMatrixValueFunc(Ihandle *ih) {
-	IupSetCallback(ih, "VALUE_CB", (Icallback) goIupMatrixValueCB);
-}
-
-CGO_EXPORT extern int goIupMatrixToggleValueCB(void *, int lin, int col, int value);
-static void goIupSetMatrixToggleValueFunc(Ihandle *ih) {
-	IupSetCallback(ih, "TOGGLEVALUE_CB", (Icallback) goIupMatrixToggleValueCB);
-}
-
-CGO_EXPORT extern int goIupMatrixListActionCB(void *, int item, int state);
-static void goIupSetMatrixListActionFunc(Ihandle *ih, char *name) {
-	IupSetCallback(ih, name, (Icallback) goIupMatrixListActionCB);
 }
 
 CGO_EXPORT extern int goIupFileCB(void *, char *filename, char *status);
@@ -731,6 +504,35 @@ CGO_EXPORT extern int goIupColorUpdateCB(void *);
 static void goIupSetColorUpdateFunc(Ihandle *ih) {
 	IupSetCallback(ih, "COLORUPDATE_CB", (Icallback) goIupColorUpdateCB);
 }
+
+CGO_EXPORT extern int goIupRecentCB(void *);
+
+CGO_EXPORT extern int goIupNotifyCB(void *, int action_id);
+static void goIupSetNotifyFunc(Ihandle *ih) {
+	IupSetCallback(ih, "NOTIFY_CB", (Icallback) goIupNotifyCB);
+}
+
+CGO_EXPORT extern int goIupNotifyCloseCB(void *, int reason);
+static void goIupSetNotifyCloseFunc(Ihandle *ih) {
+	IupSetCallback(ih, "CLOSE_CB", (Icallback) goIupNotifyCloseCB);
+}
+
+CGO_EXPORT extern int goIupGetParamCB(void *, int, void *);
+static int goIupGetParamTrampoline(Ihandle *dialog, int param_index, void *user_data) {
+	return goIupGetParamCB((void *)dialog, param_index, user_data);
+}
+
+static int goIupCallGetParamv(const char *title, void *user_data, const char *format, int param_count, int param_extra, void **param_data) {
+	return IupGetParamv(title, goIupGetParamTrampoline, user_data, format, param_count, param_extra, param_data);
+}
+
+static int goIupCallGetParamvNoAction(const char *title, const char *format, int param_count, int param_extra, void **param_data) {
+	return IupGetParamv(title, NULL, NULL, format, param_count, param_extra, param_data);
+}
+
+// ============================================================================
+// CTL CALLBACKS (Cells, Matrix, MatrixList, MatrixEx)
+// ============================================================================
 
 CGO_EXPORT extern int goIupListReleaseCB(void *, int lin, int col, char *status);
 static void goIupSetListReleaseFunc(Ihandle *ih) {
@@ -792,17 +594,214 @@ static void goIupSetSortColumnCompareFunc(Ihandle *ih) {
 	IupSetCallback(ih, "SORTCOLUMNCOMPARE_CB", (Icallback) goIupSortColumnCompareCB);
 }
 
-CGO_EXPORT extern int goIupRecentCB(void *);
-
-CGO_EXPORT extern int goIupNotifyCB(void *, int action_id);
-static void goIupSetNotifyFunc(Ihandle *ih) {
-	IupSetCallback(ih, "NOTIFY_CB", (Icallback) goIupNotifyCB);
+CGO_EXPORT extern int goIupCellsDrawCB(void *, int i, int j, int xmin, int xmax, int ymin, int ymax);
+static void goIupSetCellsDrawFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DRAW_CB", (Icallback) goIupCellsDrawCB);
 }
 
-CGO_EXPORT extern int goIupNotifyCloseCB(void *, int reason);
-static void goIupSetNotifyCloseFunc(Ihandle *ih) {
-	IupSetCallback(ih, "CLOSE_CB", (Icallback) goIupNotifyCloseCB);
+CGO_EXPORT extern int goIupMouseClickCB(void *, int button, int pressed, int i, int j, int x, int y, void *status);
+static void goIupSetMouseClickFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MOUSECLICK_CB", (Icallback) goIupMouseClickCB);
 }
+
+CGO_EXPORT extern int goIupMouseMotionCB(void *, int i, int j, int x, int y, void *status);
+static void goIupSetMouseMotionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MOUSEMOTION_CB", (Icallback) goIupMouseMotionCB);
+}
+
+CGO_EXPORT extern int goIupScrollingCB(void *, int i, int j);
+static void goIupSetScrollingFunc(Ihandle *ih) {
+	IupSetCallback(ih, "SCROLLING_CB", (Icallback) goIupScrollingCB);
+}
+
+CGO_EXPORT extern int goIupNColsCB(void *);
+static void goIupSetNColsFunc(Ihandle *ih) {
+	IupSetCallback(ih, "NCOLS_CB", (Icallback) goIupNColsCB);
+}
+
+CGO_EXPORT extern int goIupNLinesCB(void *);
+static void goIupSetNLinesFunc(Ihandle *ih) {
+	IupSetCallback(ih, "NLINES_CB", (Icallback) goIupNLinesCB);
+}
+
+CGO_EXPORT extern int goIupHSpanCB(void *, int i, int j);
+static void goIupSetHSpanFunc(Ihandle *ih) {
+	IupSetCallback(ih, "HSPAN_CB", (Icallback) goIupHSpanCB);
+}
+
+CGO_EXPORT extern int goIupVSpanCB(void *, int i, int j);
+static void goIupSetVSpanFunc(Ihandle *ih) {
+	IupSetCallback(ih, "VSPAN_CB", (Icallback) goIupVSpanCB);
+}
+
+CGO_EXPORT extern int goIupHeightCB(void *, int i);
+static void goIupSetHeightFunc(Ihandle *ih) {
+	IupSetCallback(ih, "HEIGHT_CB", (Icallback) goIupHeightCB);
+}
+
+CGO_EXPORT extern int goIupWidthCB(void *, int j);
+static void goIupSetWidthFunc(Ihandle *ih) {
+	IupSetCallback(ih, "WIDTH_CB", (Icallback) goIupWidthCB);
+}
+
+CGO_EXPORT extern int goIupBgColorCB(void *, int lin, int col, int *r, int *g, int *b);
+static void goIupSetBgColorFunc(Ihandle *ih) {
+	IupSetCallback(ih, "BGCOLOR_CB", (Icallback) goIupBgColorCB);
+}
+
+CGO_EXPORT extern int goIupClickCB(void *, int lin, int col, void *status);
+static void goIupSetClickFunc(Ihandle *ih) {
+	IupSetCallback(ih, "CLICK_CB", (Icallback) goIupClickCB);
+}
+
+CGO_EXPORT extern int goIupColResizeCB(void *, int col);
+static void goIupSetColResizeFunc(Ihandle *ih) {
+	IupSetCallback(ih, "COLRESIZE_CB", (Icallback) goIupColResizeCB);
+}
+
+CGO_EXPORT extern int goIupDropCheckCB(void *, int lin, int col);
+static void goIupSetDropCheckFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DROPCHECK_CB", (Icallback) goIupDropCheckCB);
+}
+
+CGO_EXPORT extern int goIupDropSelectCB(void *, int lin, int col, void *drop, char *text, int item, int col2);
+static void goIupSetDropSelectFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DROPSELECT_CB", (Icallback) goIupDropSelectCB);
+}
+
+CGO_EXPORT extern int goIupEditBeginCB(void *, int lin, int col);
+static void goIupSetEditBeginFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITBEGIN_CB", (Icallback) goIupEditBeginCB);
+}
+
+CGO_EXPORT extern int goIupEditClickCB(void *, int lin, int col, char *status);
+static void goIupSetEditClickFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITCLICK_CB", (Icallback) goIupEditClickCB);
+}
+
+CGO_EXPORT extern int goIupEditEndCB(void *, int lin, int col, char* newValue, int apply);
+static void goIupSetEditEndFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITEND_CB", (Icallback) goIupEditEndCB);
+}
+
+CGO_EXPORT extern int goIupEditMouseMoveCB(void *, int lin, int col);
+static void goIupSetEditMouseMoveFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITMOUSEMOVE_CB", (Icallback) goIupEditMouseMoveCB);
+}
+
+CGO_EXPORT extern int goIupEditReleaseCB(void *, int lin, int col, char *status);
+static void goIupSetEditReleaseFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITRELEASE_CB", (Icallback) goIupEditReleaseCB);
+}
+
+CGO_EXPORT extern int goIupEditionCB(void *, int lin, int col, int mode, int update);
+static void goIupSetEditionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITION_CB", (Icallback) goIupEditionCB);
+}
+
+CGO_EXPORT extern int goIupEnterItemCB(void *, int lin, int col);
+static void goIupSetEnterItemFunc(Ihandle *ih) {
+	IupSetCallback(ih, "ENTERITEM_CB", (Icallback) goIupEnterItemCB);
+}
+
+CGO_EXPORT extern int goIupFgColorCB(void *, int lin, int col, int *r, int *g, int *b);
+static void goIupSetFgColorFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FGCOLOR_CB", (Icallback) goIupFgColorCB);
+}
+
+CGO_EXPORT extern int goIupLeaveItemCB(void *, int lin, int col);
+static void goIupSetLeaveItemFunc(Ihandle *ih) {
+	IupSetCallback(ih, "LEAVEITEM_CB", (Icallback) goIupLeaveItemCB);
+}
+
+CGO_EXPORT extern int goIupMarkEditCB(void *, int lin, int col, int marked);
+static void goIupSetMarkEditFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MARKEDIT_CB", (Icallback) goIupMarkEditCB);
+}
+
+CGO_EXPORT extern int goIupMarkCB(void *, int lin, int col);
+static void goIupSetMarkFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MARK_CB", (Icallback) goIupMarkCB);
+}
+
+CGO_EXPORT extern int goIupMatrixActionCB(void *, int key, int lin, int col, int edition, char *status);
+static void goIupSetMatrixActionFunc(Ihandle *ih) {
+	IupSetCallback(ih, "ACTION_CB", (Icallback) goIupMatrixActionCB);
+}
+
+CGO_EXPORT extern int goIupMatrixDrawCB(void *, int lin, int col, int x1, int x2, int y1, int y2);
+static void goIupSetMatrixDrawFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DRAW_CB", (Icallback) goIupMatrixDrawCB);
+}
+
+CGO_EXPORT extern int goIupMatrixDropCB(void *, void *drop, int lin, int col);
+static void goIupSetMatrixDropFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DROP_CB", (Icallback) goIupMatrixDropCB);
+}
+
+CGO_EXPORT extern char* goIupMatrixFontCB(void *, int lin, int col);
+static void goIupSetMatrixFontFunc(Ihandle *ih) {
+	IupSetCallback(ih, "FONT_CB", (Icallback) goIupMatrixFontCB);
+}
+
+CGO_EXPORT extern int goIupMatrixMouseMoveCB(void *, int lin, int col);
+static void goIupSetMatrixMouseMoveFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MOUSEMOVE_CB", (Icallback) goIupMatrixMouseMoveCB);
+}
+
+CGO_EXPORT extern int goIupMatrixToggleValueCB(void *, int lin, int col, int value);
+static void goIupSetMatrixToggleValueFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TOGGLEVALUE_CB", (Icallback) goIupMatrixToggleValueCB);
+}
+
+CGO_EXPORT extern char* goIupMatrixTypeCB(void *, int lin, int col);
+static void goIupSetMatrixTypeFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TYPE_CB", (Icallback) goIupMatrixTypeCB);
+}
+
+CGO_EXPORT extern char* goIupMatrixValueCB(void *, int lin, int col);
+static void goIupSetMatrixValueFunc(Ihandle *ih) {
+	IupSetCallback(ih, "VALUE_CB", (Icallback) goIupMatrixValueCB);
+}
+
+CGO_EXPORT extern int goIupMenuDropCB(void *, void *menu, int lin, int col);
+static void goIupSetMenuDropFunc(Ihandle *ih) {
+	IupSetCallback(ih, "MENUDROP_CB", (Icallback) goIupMenuDropCB);
+}
+
+CGO_EXPORT extern int goIupReleaseCB(void *, int lin, int col, void *status);
+static void goIupSetReleaseFunc(Ihandle *ih) {
+	IupSetCallback(ih, "RELEASE_CB", (Icallback) goIupReleaseCB);
+}
+
+CGO_EXPORT extern int goIupResizeMatrixCB(void *, int width, int height);
+static void goIupSetResizeMatrixFunc(Ihandle *ih) {
+	IupSetCallback(ih, "RESIZEMATRIX_CB", (Icallback) goIupResizeMatrixCB);
+}
+
+CGO_EXPORT extern int goIupScrollTopCB(void *, int lin, int col);
+static void goIupSetScrollTopFunc(Ihandle *ih) {
+	IupSetCallback(ih, "SCROLLTOP_CB", (Icallback) goIupScrollTopCB);
+}
+
+CGO_EXPORT extern char* goIupTranslateValueCB(void *, int lin, int col, char *value);
+static void goIupSetTranslateValueFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TRANSLATEVALUE_CB", (Icallback) goIupTranslateValueCB);
+}
+
+CGO_EXPORT extern int goIupValueEditCB(void *, int lin, int col, void *newval);
+static void goIupSetValueEditFunc(Ihandle *ih) {
+	IupSetCallback(ih, "VALUE_EDIT_CB", (Icallback) goIupValueEditCB);
+}
+
+CGO_EXPORT extern int goIupMatrixListActionCB(void *, int item, int state);
+static void goIupSetMatrixListActionFunc(Ihandle *ih, char *name) {
+	IupSetCallback(ih, name, (Icallback) goIupMatrixListActionCB);
+}
+
+// ============================================================================
+// PLOT CALLBACKS (IupPlot)
+// ============================================================================
 
 CGO_EXPORT extern int goIupPlotPreDrawCB(void *);
 static void goIupSetPlotPreDrawFunc(Ihandle *ih) {
@@ -914,17 +913,28 @@ static void goIupSetPlotYTickFormatNumberFunc(Ihandle *ih) {
 	IupSetCallback(ih, "YTICKFORMATNUMBER_CB", (Icallback) goIupPlotYTickFormatNumberCB);
 }
 
-CGO_EXPORT extern int goIupGetParamCB(void *, int, void *);
-static int goIupGetParamTrampoline(Ihandle *dialog, int param_index, void *user_data) {
-	return goIupGetParamCB((void *)dialog, param_index, user_data);
+// ============================================================================
+// WEB CALLBACKS (WebBrowser)
+// ============================================================================
+
+CGO_EXPORT extern int goIupCompletedCB(void *, void *url);
+static void goIupSetCompletedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "COMPLETED_CB", (Icallback) goIupCompletedCB);
 }
 
-static int goIupCallGetParamv(const char *title, void *user_data, const char *format, int param_count, int param_extra, void **param_data) {
-	return IupGetParamv(title, goIupGetParamTrampoline, user_data, format, param_count, param_extra, param_data);
+CGO_EXPORT extern int goIupErrorCB(void *, void *url);
+static void goIupSetErrorFunc(Ihandle *ih) {
+	IupSetCallback(ih, "ERROR_CB", (Icallback) goIupErrorCB);
 }
 
-static int goIupCallGetParamvNoAction(const char *title, const char *format, int param_count, int param_extra, void **param_data) {
-	return IupGetParamv(title, NULL, NULL, format, param_count, param_extra, param_data);
+CGO_EXPORT extern int goIupNavigateCB(void *, void *url);
+static void goIupSetNavigateFunc(Ihandle *ih) {
+	IupSetCallback(ih, "NAVIGATE_CB", (Icallback) goIupNavigateCB);
+}
+
+CGO_EXPORT extern int goIupNewWindowCB(void *, void *url);
+static void goIupSetNewWindowFunc(Ihandle *ih) {
+	IupSetCallback(ih, "NEWWINDOW_CB", (Icallback) goIupNewWindowCB);
 }
 
 #endif /* BIND_CALLBACKS_H */
