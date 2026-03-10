@@ -103,13 +103,11 @@ static int eflValSetMinAttrib(Ihandle* ih, const char* value)
   Eo* slider = iupeflGetWidget(ih);
   double min;
 
-  if (!slider)
-    return 0;
-
   if (iupStrToDouble(value, &min))
   {
     ih->data->vmin = min;
-    efl_ui_range_limits_set(slider, min, ih->data->vmax);
+    if (slider)
+      efl_ui_range_limits_set(slider, min, ih->data->vmax);
   }
 
   return 0;
@@ -120,13 +118,11 @@ static int eflValSetMaxAttrib(Ihandle* ih, const char* value)
   Eo* slider = iupeflGetWidget(ih);
   double max;
 
-  if (!slider)
-    return 0;
-
   if (iupStrToDouble(value, &max))
   {
     ih->data->vmax = max;
-    efl_ui_range_limits_set(slider, ih->data->vmin, max);
+    if (slider)
+      efl_ui_range_limits_set(slider, ih->data->vmin, max);
   }
 
   return 0;

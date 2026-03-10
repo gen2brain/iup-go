@@ -281,7 +281,14 @@ static int eflTextSetValueAttrib(Ihandle* ih, const char* value)
 
   if (iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
   {
-    if (value && value[0])
+    if (!iupAttribGetBoolean(ih, "SPINAUTO"))
+    {
+      iupAttribSetStr(ih, "_IUPEFL_SPIN_TEXT", value);
+      Eo* text_button = efl_content_get(efl_part(widget, "efl.text_button"));
+      if (text_button)
+        efl_text_set(text_button, value ? value : "");
+    }
+    else if (value && value[0])
     {
       int val = atoi(value);
       ih->data->disable_callbacks = 1;
@@ -319,6 +326,13 @@ static char* eflTextGetValueAttrib(Ihandle* ih)
 
   if (iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
   {
+    if (!iupAttribGetBoolean(ih, "SPINAUTO"))
+    {
+      char* text = iupAttribGet(ih, "_IUPEFL_SPIN_TEXT");
+      if (text && text[0])
+        return iupStrReturnStr(text);
+      return NULL;
+    }
     int val = (int)efl_ui_range_value_get(widget);
     return iupStrReturnInt(val);
   }
@@ -343,6 +357,17 @@ static int eflTextSetSpinValueAttrib(Ihandle* ih, const char* value)
     ih->data->disable_callbacks = 1;
     efl_ui_range_value_set(widget, (double)val);
     ih->data->disable_callbacks = 0;
+
+    if (!iupAttribGetBoolean(ih, "SPINAUTO"))
+    {
+      Eo* text_button = efl_content_get(efl_part(widget, "efl.text_button"));
+      if (text_button)
+      {
+        char* text_value = iupAttribGet(ih, "_IUPEFL_SPIN_TEXT");
+        if (text_value)
+          efl_text_set(text_button, text_value);
+      }
+    }
   }
 
   return 0;
@@ -362,49 +387,49 @@ static char* eflTextGetSpinValueAttrib(Ihandle* ih)
 static int eflTextSetSpinMinAttrib(Ihandle* ih, const char* value)
 {
   Eo* widget = iupeflGetWidget(ih);
-  double min, max;
 
-  if (!widget || !iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
-    return 0;
+  if (widget && iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
+  {
+    double min, max;
+    efl_ui_range_limits_get(widget, &min, &max);
+    if (value)
+      min = (double)atoi(value);
+    efl_ui_range_limits_set(widget, min, max);
+  }
 
-  efl_ui_range_limits_get(widget, &min, &max);
-  if (value)
-    min = (double)atoi(value);
-  efl_ui_range_limits_set(widget, min, max);
-
-  return 0;
+  return 1;
 }
 
 static int eflTextSetSpinMaxAttrib(Ihandle* ih, const char* value)
 {
   Eo* widget = iupeflGetWidget(ih);
-  double min, max;
 
-  if (!widget || !iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
-    return 0;
+  if (widget && iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
+  {
+    double min, max;
+    efl_ui_range_limits_get(widget, &min, &max);
+    if (value)
+      max = (double)atoi(value);
+    efl_ui_range_limits_set(widget, min, max);
+  }
 
-  efl_ui_range_limits_get(widget, &min, &max);
-  if (value)
-    max = (double)atoi(value);
-  efl_ui_range_limits_set(widget, min, max);
-
-  return 0;
+  return 1;
 }
 
 static int eflTextSetSpinIncAttrib(Ihandle* ih, const char* value)
 {
   Eo* widget = iupeflGetWidget(ih);
 
-  if (!widget || !iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
-    return 0;
-
-  if (value)
+  if (widget && iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
   {
-    int inc = atoi(value);
-    efl_ui_range_step_set(widget, (double)inc);
+    if (value)
+    {
+      int inc = atoi(value);
+      efl_ui_range_step_set(widget, (double)inc);
+    }
   }
 
-  return 0;
+  return 1;
 }
 
 static int eflTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
