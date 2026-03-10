@@ -16,7 +16,7 @@ func main() {
 	pIntegerSpin := 8
 	pAngle := 90.0
 	pString := "string text"
-	pMulti := "second,line,text,multi,line,edit,control"
+	pMulti := "second\nline\ntext\nmulti\nline\nedit\ncontrol"
 	pList := 2
 	pOptions := 1
 	pFile := "test.txt"
@@ -34,7 +34,7 @@ func main() {
 		"%t\n" +
 		"List%l|item1|item2|item3|item4|item5|item6|\n" +
 		"Options%o|option1|option2|option3|\n" +
-		"File%f[OPEN,*.txt,dir,test.txt,Text Files,*.txt]\n" +
+		"File%f[OPEN|*.txt]\n" +
 		"Color%c\n" +
 		"Font%n\n" +
 		"Date%d\n"
