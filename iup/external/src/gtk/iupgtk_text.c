@@ -37,45 +37,51 @@
 
 void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
-  static int spin_min_width = -1;
+  static int spin_arrow_width = -1;
 
-  (void)h;
   (void)ih;
 
-  /* Measure the minimum width required by GtkSpinButton */
-  if (spin_min_width < 0)
+  if (spin_arrow_width < 0)
   {
     GtkWidget *temp_window = gtk_offscreen_window_new();
     GtkWidget *temp_spin = gtk_spin_button_new_with_range(0, 100, 1);
-    GtkAllocation allocation;
+    GtkWidget *temp_entry = gtk_entry_new();
+#if GTK_CHECK_VERSION(3, 0, 0)
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+#else
+    GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
+#endif
 
-    /* Add to window, show, and realize to get actual allocated size */
-    gtk_container_add(GTK_CONTAINER(temp_window), temp_spin);
+    gtk_entry_set_width_chars(GTK_ENTRY(temp_spin), 1);
+    gtk_entry_set_width_chars(GTK_ENTRY(temp_entry), 1);
+
+    gtk_container_add(GTK_CONTAINER(temp_window), vbox);
+    gtk_box_pack_start(GTK_BOX(vbox), temp_spin, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), temp_entry, FALSE, FALSE, 0);
     gtk_widget_show_all(temp_window);
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-    int min_w, nat_w;
-    gtk_widget_get_preferred_width(temp_spin, &min_w, &nat_w);
-
-    /* Get the actual allocated size after realization */
-    gtk_widget_get_allocation(temp_spin, &allocation);
-
-    /* Use allocated width with fallback */
-    spin_min_width = (allocation.width > 0) ? allocation.width : 130;
+    {
+      int spin_w, entry_w;
+      gtk_widget_get_preferred_width(temp_spin, NULL, &spin_w);
+      gtk_widget_get_preferred_width(temp_entry, NULL, &entry_w);
+      spin_arrow_width = spin_w - entry_w;
+    }
 #else
-    GtkRequisition requisition;
-    gtk_widget_size_request(temp_spin, &requisition);
-    gtk_widget_get_allocation(temp_spin, &allocation);
-
-    spin_min_width = (allocation.width > 0) ? allocation.width : 130;
+    {
+      GtkRequisition spin_req, entry_req;
+      gtk_widget_size_request(temp_spin, &spin_req);
+      gtk_widget_size_request(temp_entry, &entry_req);
+      spin_arrow_width = spin_req.width - entry_req.width;
+    }
 #endif
+
+    if (spin_arrow_width < 0) spin_arrow_width = h;
 
     gtk_widget_destroy(temp_window);
   }
 
-  /* Only enforce minimum width, don't force expansion */
-  if (*w < spin_min_width)
-    *w = spin_min_width;
+  *w += spin_arrow_width;
 }
 
 /* Cached measurements for text widget borders */
