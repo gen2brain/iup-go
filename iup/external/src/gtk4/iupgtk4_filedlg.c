@@ -350,7 +350,7 @@ static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
   }
 
   value = iupAttribGet(ih, "DIRECTORY");
-  if (value)
+  if (value && value[0])
   {
     GFile* file = g_file_new_for_path(iupgtk4StrConvertToFilename(value));
     gtk_file_dialog_set_initial_folder(dialog, file);
@@ -638,7 +638,7 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
   }
 
   value = iupAttribGet(ih, "DIRECTORY");
-  if (value)
+  if (value && value[0])
   {
     GFile* file = g_file_new_for_path(iupgtk4StrConvertToFilename(value));
     gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), file, NULL);
