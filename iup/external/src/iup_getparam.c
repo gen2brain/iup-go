@@ -729,7 +729,16 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
     IupAppend(box, ctrl);
 
     IupSetCallback(ctrl, "VALUECHANGED_CB", (Icallback)iParamDateValueChanged_CB);
-    IupStoreAttribute(ctrl, "VALUE", iupAttribGet(param, "VALUE"));
+
+    value = iupAttribGet(param, "VALUE");
+    if (value && *value)
+      IupStoreAttribute(ctrl, "VALUE", value);
+    else
+    {
+      value = IupGetAttribute(ctrl, "TODAY");
+      IupStoreAttribute(ctrl, "VALUE", value);
+      iupAttribSetStr(param, "VALUE", value);
+    }
 
     value = iupAttribGet(param, "SEPARATOR");
     if (value) IupStoreAttribute(ctrl, "SEPARATOR", value);
