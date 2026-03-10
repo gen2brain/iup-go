@@ -7,7 +7,6 @@
 #include <QLineEdit>
 #include <QTextEdit>
 #include <QPlainTextEdit>
-#include <QSpinBox>
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QTextBlock>
@@ -189,6 +188,61 @@ protected:
       return;
     }
     QLineEdit::dropEvent(event);
+  }
+};
+
+/* Custom QSpinBox that supports SPINAUTO=NO mode */
+class IupQtSpinBox : public QSpinBox
+{
+public:
+  Ihandle* ih;
+  bool spinauto;
+
+  explicit IupQtSpinBox(Ihandle* ihandle) : QSpinBox(), ih(ihandle), spinauto(true) {}
+
+  QString textFromValue(int value) const override
+  {
+    if (!spinauto)
+    {
+      /* When spinauto is off, preserve whatever text is in the line edit */
+      return lineEdit()->text();
+    }
+    return QSpinBox::textFromValue(value);
+  }
+
+  int valueFromText(const QString& text) const override
+  {
+    if (!spinauto)
+      return value();
+    return QSpinBox::valueFromText(text);
+  }
+
+  QValidator::State validate(QString& input, int& pos) const override
+  {
+    if (!spinauto)
+      return QValidator::Acceptable;
+    return QSpinBox::validate(input, pos);
+  }
+
+  void setDisplayText(const QString& text)
+  {
+    lineEdit()->setText(text);
+  }
+
+  QString displayText() const
+  {
+    return lineEdit()->text();
+  }
+
+protected:
+  void keyPressEvent(QKeyEvent* event) override
+  {
+    if (ih && qtTextKeyPress(ih, event))
+    {
+      event->accept();
+      return;
+    }
+    QSpinBox::keyPressEvent(event);
   }
 };
 
@@ -446,7 +500,7 @@ static void iupqtTextMeasureMultilineBorders(void)
 
 extern "C" void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
-  if (ih->data->is_multiline)
+  if (iupAttribGetBoolean(ih, "_IUP_MULTILINE_TEXT"))
   {
     iupqtTextMeasureMultilineBorders();
     (*x) += iupqt_multiline_border_x;
@@ -648,15 +702,20 @@ static int qtTextSetValueAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    /* Check if this is actually a QSpinBox (used for SPIN=YES attribute) */
-    QSpinBox* spinbox = qobject_cast<QSpinBox*>((QWidget*)ih->handle);
+    IupQtSpinBox* spinbox = (IupQtSpinBox*)iupAttribGet(ih, "_IUPQT_SPINBOX");
     if (spinbox)
     {
-      /* For spinbox, set the value as an integer */
-      int int_value = 0;
-      if (value && *value)
-        sscanf(value, "%d", &int_value);
-      spinbox->setValue(int_value);
+      if (!spinbox->spinauto)
+      {
+        spinbox->setDisplayText(QString::fromUtf8(value));
+      }
+      else
+      {
+        int int_value = 0;
+        if (value && *value)
+          sscanf(value, "%d", &int_value);
+        spinbox->setValue(int_value);
+      }
     }
     else
     {
@@ -681,12 +740,13 @@ static char* qtTextGetValueAttrib(Ihandle* ih)
   }
   else
   {
-    /* Check if this is a QSpinBox */
-    QSpinBox* spinbox = qobject_cast<QSpinBox*>((QWidget*)ih->handle);
+    IupQtSpinBox* spinbox = (IupQtSpinBox*)iupAttribGet(ih, "_IUPQT_SPINBOX");
     if (spinbox)
     {
-      /* Return spinbox value as string */
-      return iupStrReturnInt(spinbox->value());
+      if (!spinbox->spinauto)
+        return iupStrReturnStr(spinbox->displayText().toUtf8().constData());
+      else
+        return iupStrReturnInt(spinbox->value());
     }
     else
     {
@@ -1250,6 +1310,30 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int qtTextSetSpinValueAttrib(Ihandle* ih, const char* value)
+{
+  IupQtSpinBox* spinbox = (IupQtSpinBox*)iupAttribGet(ih, "_IUPQT_SPINBOX");
+  if (spinbox)
+  {
+    int pos;
+    if (iupStrToInt(value, &pos))
+    {
+      ih->data->disable_callbacks = 1;
+      spinbox->setValue(pos);
+      ih->data->disable_callbacks = 0;
+    }
+  }
+  return 1;
+}
+
+static char* qtTextGetSpinValueAttrib(Ihandle* ih)
+{
+  IupQtSpinBox* spinbox = (IupQtSpinBox*)iupAttribGet(ih, "_IUPQT_SPINBOX");
+  if (spinbox)
+    return iupStrReturnInt(spinbox->value());
+  return NULL;
+}
+
 static int qtTextSetPasswordAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->data->is_multiline)
@@ -1595,10 +1679,9 @@ static int qtTextMapMethod(Ihandle* ih)
   }
   else if (iupAttribGetBoolean(ih, "SPIN"))
   {
-    /* Create spin box for numeric input with spin buttons */
-    QSpinBox* spin = new QSpinBox();
+    IupQtSpinBox* spin = new IupQtSpinBox(ih);
+    iupAttribSet(ih, "_IUPQT_SPINBOX", (char*)spin);
 
-    /* Set range from attributes */
     int min = iupAttribGetInt(ih, "SPINMIN");
     int max = iupAttribGetInt(ih, "SPINMAX");
     int inc = iupAttribGetInt(ih, "SPININC");
@@ -1608,21 +1691,22 @@ static int qtTextMapMethod(Ihandle* ih)
 
     spin->setRange(min, max);
     spin->setSingleStep(inc);
-
-    /* Set wrapping mode */
     spin->setWrapping(iupAttribGetBoolean(ih, "SPINWRAP"));
 
-    /* Set initial value */
+    if (!iupAttribGetBoolean(ih, "SPINAUTO"))
+      spin->spinauto = false;
+
     const char* spinvalue = iupAttribGetStr(ih, "SPINVALUE");
     if (spinvalue)
       spin->setValue(atoi(spinvalue));
 
-    /* Connect signal */
     QObject::connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), [ih, spin](int value) {
+      if (ih->data->disable_callbacks)
+        return;
+
       iupAttribSetInt(ih, "SPINVALUE", value);
       qtTextValueChanged(ih);
 
-      /* Call SPIN_CB callback */
       IFni spin_cb = (IFni)IupGetCallback(ih, "SPIN_CB");
       if (spin_cb)
         spin_cb(ih, value);
@@ -1730,7 +1814,7 @@ extern "C" void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SPINMIN", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMAX", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPININC", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPINVALUE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINVALUE", qtTextGetSpinValueAttrib, qtTextSetSpinValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COUNT", qtTextGetCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINECOUNT", qtTextGetLineCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, qtTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
