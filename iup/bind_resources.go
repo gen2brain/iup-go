@@ -62,6 +62,45 @@ func ImageFromImage(i image.Image) Ihandle {
 	return h
 }
 
+// ImageToImage returns an image.RGBA from an IUP image handle.
+// The returned image is a copy of the IUP image data.
+func ImageToImage(ih Ihandle) *image.RGBA {
+	width := GetInt(ih, "WIDTH")
+	height := GetInt(ih, "HEIGHT")
+	bpp := GetInt(ih, "BPP")
+	if width == 0 || height == 0 || (bpp != 24 && bpp != 32) {
+		return nil
+	}
+
+	channels := bpp / 8
+	size := width * height * channels
+
+	cWID := C.CString("WID")
+	defer C.free(unsafe.Pointer(cWID))
+
+	ptr := C.IupGetAttribute(ih.ptr(), cWID)
+	if ptr == nil {
+		return nil
+	}
+
+	src := unsafe.Slice((*byte)(unsafe.Pointer(ptr)), size)
+
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+
+	if bpp == 32 {
+		copy(img.Pix, src)
+	} else {
+		for i, j := 0, 0; i < size; i, j = i+3, j+4 {
+			img.Pix[j] = src[i]
+			img.Pix[j+1] = src[i+1]
+			img.Pix[j+2] = src[i+2]
+			img.Pix[j+3] = 255
+		}
+	}
+
+	return img
+}
+
 // ImageGetHandle returns an IupImage handle from a name.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupimagegethandle.html
