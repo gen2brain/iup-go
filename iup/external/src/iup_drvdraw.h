@@ -136,6 +136,19 @@ IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, i
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2);
 
+/** Extracts the offscreen buffer contents as RGBA pixel data (top-down, non-premultiplied).
+ * Caller provides pre-allocated buffer of size w*h*4 bytes.
+ * Returns 1 on success, 0 on failure.
+ * \ingroup drvdraw */
+IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data);
+
+/** Extracts the canvas persistent buffer contents as RGBA pixel data (top-down, non-premultiplied).
+ * Can be called outside DrawBegin/DrawEnd to read the last rendered frame.
+ * Caller provides pre-allocated buffer of size w*h*4 bytes.
+ * Returns 1 on success, 0 on failure.
+ * \ingroup drvdraw */
+IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h);
+
 
 #ifdef __cplusplus
 }

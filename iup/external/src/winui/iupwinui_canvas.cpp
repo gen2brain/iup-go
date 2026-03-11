@@ -26,6 +26,8 @@ extern "C" {
 
 #include "iupwinui_drv.h"
 
+#include <d2d1_1.h>
+
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
 using namespace Microsoft::UI::Xaml::Controls;
@@ -929,6 +931,15 @@ static void winuiCanvasUnMapMethod(Ihandle* ih)
       aux->sbVert.Scroll(aux->sbVertScrollToken);
 
     winuiReleaseHandle<Canvas>(ih);
+  }
+
+  {
+    ID2D1Bitmap1* buffer = (ID2D1Bitmap1*)iupAttribGet(ih, "_IUPWINUI_CANVAS_BUFFER");
+    if (buffer)
+    {
+      buffer->Release();
+      iupAttribSet(ih, "_IUPWINUI_CANVAS_BUFFER", NULL);
+    }
   }
 
   if (aux)

@@ -310,6 +310,55 @@ extern "C" void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   }
 }
 
+static void winuiDrawCopyToBuffer(IdrawCanvas* dc)
+{
+  int isCanvas = iupClassMatch(dc->ih->iclass, "canvas");
+  if (!isCanvas || !dc->d2dContext)
+    return;
+
+  ID2D1Bitmap1* oldBuffer = (ID2D1Bitmap1*)iupAttribGet(dc->ih, "_IUPWINUI_CANVAS_BUFFER");
+  if (oldBuffer)
+  {
+    oldBuffer->Release();
+    iupAttribSet(dc->ih, "_IUPWINUI_CANVAS_BUFFER", NULL);
+  }
+
+  com_ptr<ID2D1Image> target;
+  dc->d2dContext->GetTarget(target.put());
+  if (!target)
+    return;
+
+  com_ptr<ID2D1Bitmap1> targetBitmap;
+  target->QueryInterface(targetBitmap.put());
+  if (!targetBitmap)
+    return;
+
+  D2D1_BITMAP_PROPERTIES1 props = D2D1::BitmapProperties1(
+    D2D1_BITMAP_OPTIONS_CPU_READ | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+    D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
+
+  ID2D1Bitmap1* stagingBitmap = nullptr;
+  HRESULT hr = dc->d2dContext->CreateBitmap(
+    D2D1::SizeU(dc->w, dc->h), nullptr, 0, props, &stagingBitmap);
+  if (FAILED(hr) || !stagingBitmap)
+    return;
+
+  D2D1_POINT_2U destPoint = {0, 0};
+  D2D1_RECT_U srcRect = {
+    (UINT32)dc->drawOffset.x, (UINT32)dc->drawOffset.y,
+    (UINT32)(dc->drawOffset.x + dc->w), (UINT32)(dc->drawOffset.y + dc->h)
+  };
+
+  hr = stagingBitmap->CopyFromBitmap(&destPoint, targetBitmap.get(), &srcRect);
+  if (FAILED(hr))
+  {
+    stagingBitmap->Release();
+    return;
+  }
+
+  iupAttribSet(dc->ih, "_IUPWINUI_CANVAS_BUFFER", (char*)stagingBitmap);
+}
+
 extern "C" void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (!dc)
@@ -317,6 +366,8 @@ extern "C" void iupdrvDrawFlush(IdrawCanvas* dc)
 
   if (dc->d2dContext)
   {
+    winuiDrawCopyToBuffer(dc);
+
     if (dc->clipType == WINUI_CLIP_RECT)
       dc->d2dContext->PopAxisAlignedClip();
     else if (dc->clipType == WINUI_CLIP_LAYER)
@@ -1034,4 +1085,99 @@ extern "C" void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int ra
   dc->d2dContext->FillEllipse(
     D2D1::Ellipse(D2D1::Point2F((float)cx, (float)cy), (float)radius, (float)radius),
     brush.get());
+}
+
+static void iD2DCopyBgraPremulToRgba(unsigned char* dst, const unsigned char* src, int w, int h, int dst_w, int src_pitch)
+{
+  for (int y = 0; y < h; y++)
+  {
+    const unsigned char* src_line = src + y * src_pitch;
+    unsigned char* dst_line = dst + y * dst_w * 4;
+    for (int x = 0; x < w; x++)
+    {
+      unsigned char b = src_line[x * 4 + 0];
+      unsigned char g = src_line[x * 4 + 1];
+      unsigned char r = src_line[x * 4 + 2];
+      unsigned char a = src_line[x * 4 + 3];
+
+      if (a != 0 && a != 255)
+      {
+        r = (unsigned char)((r * 255) / a);
+        g = (unsigned char)((g * 255) / a);
+        b = (unsigned char)((b * 255) / a);
+      }
+
+      dst_line[x * 4 + 0] = r;
+      dst_line[x * 4 + 1] = g;
+      dst_line[x * 4 + 2] = b;
+      dst_line[x * 4 + 3] = a;
+    }
+  }
+}
+
+extern "C" int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+{
+  if (!dc || !dc->d2dContext)
+    return 0;
+
+  com_ptr<ID2D1Image> target;
+  dc->d2dContext->GetTarget(target.put());
+  if (!target)
+    return 0;
+
+  com_ptr<ID2D1Bitmap1> targetBitmap;
+  target->QueryInterface(targetBitmap.put());
+  if (!targetBitmap)
+    return 0;
+
+  D2D1_BITMAP_PROPERTIES1 props = D2D1::BitmapProperties1(
+    D2D1_BITMAP_OPTIONS_CPU_READ | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+    D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
+
+  com_ptr<ID2D1Bitmap1> stagingBitmap;
+  HRESULT hr = dc->d2dContext->CreateBitmap(
+    D2D1::SizeU(dc->w, dc->h), nullptr, 0, props, stagingBitmap.put());
+  if (FAILED(hr))
+    return 0;
+
+  D2D1_POINT_2U destPoint = {0, 0};
+  D2D1_RECT_U srcRect = {
+    (UINT32)dc->drawOffset.x, (UINT32)dc->drawOffset.y,
+    (UINT32)(dc->drawOffset.x + dc->w), (UINT32)(dc->drawOffset.y + dc->h)
+  };
+
+  hr = stagingBitmap->CopyFromBitmap(&destPoint, targetBitmap.get(), &srcRect);
+  if (FAILED(hr))
+    return 0;
+
+  D2D1_MAPPED_RECT mapped;
+  hr = stagingBitmap->Map(D2D1_MAP_OPTIONS_READ, &mapped);
+  if (FAILED(hr))
+    return 0;
+
+  iD2DCopyBgraPremulToRgba(data, mapped.bits, dc->w, dc->h, dc->w, mapped.pitch);
+
+  stagingBitmap->Unmap();
+  return 1;
+}
+
+extern "C" int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
+{
+  ID2D1Bitmap1* buffer = (ID2D1Bitmap1*)iupAttribGet(ih, "_IUPWINUI_CANVAS_BUFFER");
+  if (!buffer)
+    return 0;
+
+  D2D1_MAPPED_RECT mapped;
+  HRESULT hr = buffer->Map(D2D1_MAP_OPTIONS_READ, &mapped);
+  if (FAILED(hr))
+    return 0;
+
+  D2D1_SIZE_U size = buffer->GetPixelSize();
+  int copyW = (w < (int)size.width) ? w : (int)size.width;
+  int copyH = (h < (int)size.height) ? h : (int)size.height;
+
+  iD2DCopyBgraPremulToRgba(data, mapped.bits, copyW, copyH, w, mapped.pitch);
+
+  buffer->Unmap();
+  return 1;
 }

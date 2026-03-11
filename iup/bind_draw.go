@@ -218,6 +218,16 @@ func DrawGetImageInfo(name string) (w, h, bpp int) {
 	return
 }
 
+// DrawGetImage returns an IupImageRGBA containing the current contents of the
+// offscreen drawing buffer. Must be called between DrawBegin and DrawEnd.
+// Returns 0 (nil handle) if the operation fails.
+// The caller is responsible for destroying the returned image handle.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+func DrawGetImage(ih Ihandle) Ihandle {
+	return mkih(C.IupDrawGetImage(ih.ptr()))
+}
+
 // DrawLinearGradient draws a linear gradient between two colors.
 // angle: 0=horizontal right, 90=vertical down, 180=horizontal left, 270=vertical up.
 // color1 and color2 are color strings (e.g., "255 0 0" for red).

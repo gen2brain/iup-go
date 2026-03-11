@@ -110,6 +110,34 @@ static void iCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
 /******************************************************************************/
 
 
+static char* iCanvasGetDrawImageAttrib(Ihandle* ih)
+{
+  Ihandle* prev_image = (Ihandle*)iupAttribGet(ih, "_IUP_DRAWIMAGE_CACHE");
+  Ihandle* image;
+  char* name;
+
+  if (prev_image)
+  {
+    name = iupAttribGet(ih, "_IUP_DRAWIMAGE_NAME");
+    if (name)
+      IupSetHandle(name, NULL);
+    IupDestroy(prev_image);
+    iupAttribSet(ih, "_IUP_DRAWIMAGE_CACHE", NULL);
+  }
+
+  image = IupDrawGetImage(ih);
+  if (!image)
+    return NULL;
+
+  iupAttribSetStrf(ih, "_IUP_DRAWIMAGE_NAME", "_IUP_DRAWIMAGE_%p", (void*)ih);
+  name = iupAttribGet(ih, "_IUP_DRAWIMAGE_NAME");
+  IupSetHandle(name, image);
+  iupAttribSet(ih, "_IUP_DRAWIMAGE_CACHE", (char*)image);
+
+  return name;
+}
+
+
 IUP_API Ihandle* IupCanvas(const char* action)
 {
   void *params[2];
@@ -195,7 +223,8 @@ Iclass* iupCanvasNewClass(void)
   iupClassRegisterAttribute(ic, "DRAWBGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* used only for images */
   iupClassRegisterAttribute(ic, "DRAWMAKEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* used only for images */
   iupClassRegisterAttribute(ic, "DRAWDRIVER", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  
+  iupClassRegisterAttribute(ic, "DRAWIMAGE", iCanvasGetDrawImageAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT | IUPAF_IHANDLENAME);
+
   iupdrvCanvasInitClass(ic);
 
   return ic;

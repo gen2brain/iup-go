@@ -230,6 +230,7 @@ void iupdrvDrawFlush(IdrawCanvas* dc)
 
   if (!iupAttribGet(dc->ih, "_IUPCOCOA_DRAWRECT_CGCONTEXT"))
   {
+    iupAttribSet(dc->ih, "_IUPCOCOA_BUFFER_PENDING", "1");
     [dc->canvasView setNeedsDisplay:YES];
   }
 }
@@ -911,4 +912,63 @@ void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long 
 
   CGGradientRelease(gradient);
   CGColorSpaceRelease(colorSpace);
+}
+
+static void iCocoaCopyPremulToRgba(unsigned char* dst, const unsigned char* src, int w, int h, int src_stride)
+{
+  int x, y;
+  for (y = 0; y < h; y++)
+  {
+    const unsigned char* src_line = src + y * src_stride;
+    unsigned char* dst_line = dst + y * w * 4;
+    for (x = 0; x < w; x++)
+    {
+      unsigned char r = src_line[x * 4 + 0];
+      unsigned char g = src_line[x * 4 + 1];
+      unsigned char b = src_line[x * 4 + 2];
+      unsigned char a = src_line[x * 4 + 3];
+
+      if (a != 0 && a != 255)
+      {
+        r = (unsigned char)((r * 255) / a);
+        g = (unsigned char)((g * 255) / a);
+        b = (unsigned char)((b * 255) / a);
+      }
+
+      dst_line[x * 4 + 0] = r;
+      dst_line[x * 4 + 1] = g;
+      dst_line[x * 4 + 2] = b;
+      dst_line[x * 4 + 3] = a;
+    }
+  }
+}
+
+IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+{
+  NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(dc->ih, "_IUPCOCOA_CANVAS_BUFFER");
+  if (!buffer)
+    return 0;
+
+  unsigned char* src = [buffer bitmapData];
+  if (!src)
+    return 0;
+
+  CGContextFlush(dc->cgContext);
+
+  iCocoaCopyPremulToRgba(data, src, (int)dc->w, (int)dc->h, (int)[buffer bytesPerRow]);
+  return 1;
+}
+
+IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
+{
+  NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_BUFFER");
+  if (!buffer)
+    return 0;
+
+  unsigned char* src = [buffer bitmapData];
+  if (!src)
+    return 0;
+
+  iCocoaCopyPremulToRgba(data, src, w, h, (int)[buffer bytesPerRow]);
+  return 1;
 }

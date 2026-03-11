@@ -485,6 +485,56 @@ IUP_API void IupDrawGetImageInfo(const char* name, int *w, int *h, int *bpp)
   iupImageGetInfo(name, w, h, bpp);
 }
 
+IUP_API Ihandle* IupDrawGetImage(Ihandle* ih)
+{
+  IdrawCanvas* dc;
+  int w, h;
+  unsigned char* data;
+  Ihandle* image;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return NULL;
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+  if (dc)
+  {
+    iupdrvDrawGetSize(dc, &w, &h);
+    if (w <= 0 || h <= 0)
+      return NULL;
+
+    data = (unsigned char*)malloc(w * h * 4);
+    if (!data)
+      return NULL;
+
+    if (!iupdrvDrawGetImageData(dc, data))
+    {
+      free(data);
+      return NULL;
+    }
+  }
+  else
+  {
+    IupGetIntInt(ih, "DRAWSIZE", &w, &h);
+    if (w <= 0 || h <= 0)
+      return NULL;
+
+    data = (unsigned char*)malloc(w * h * 4);
+    if (!data)
+      return NULL;
+
+    if (!iupdrvCanvasGetImageData(ih, data, w, h))
+    {
+      free(data);
+      return NULL;
+    }
+  }
+
+  image = IupImageRGBA(w, h, data);
+  free(data);
+  return image;
+}
+
 IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, int h)
 {
   IdrawCanvas* dc;
