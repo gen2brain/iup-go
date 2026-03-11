@@ -897,8 +897,11 @@ static int gtk4DialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))
   {
-    /* Clear background image if setting a solid color */
-    iupAttribSet(ih, "_IUPGTK4_HAS_BG_IMAGE", NULL);
+    if (iupAttribGet(ih, "_IUPGTK4_HAS_BG_IMAGE"))
+    {
+      iupgtk4CssSetWidgetCustom(ih->handle, "background-image", "none");
+      iupAttribSet(ih, "_IUPGTK4_HAS_BG_IMAGE", NULL);
+    }
 
     iupgtk4SetBgColor(ih->handle, r, g, b);
     gtk_widget_queue_draw(ih->handle);
