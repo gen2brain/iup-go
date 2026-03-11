@@ -50,6 +50,8 @@ IUP_API void IupDrawGetSize(Ihandle* ih, int *w, int *h);
 IUP_API void IupDrawGetTextSize(Ihandle* ih, const char* text, int len, int *w, int *h);
 IUP_API void IupDrawGetImageInfo(const char* name, int *w, int *h, int *bpp);
 
+IUP_API Ihandle* IupDrawGetImage(Ihandle* ih);
+
 
 #ifdef __cplusplus
 }

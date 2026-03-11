@@ -55,6 +55,7 @@ void iupdrvDrawBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3
 void iupdrvDrawQuadraticBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width);
 void iupdrvDrawLinearGradientWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2);
 void iupdrvDrawRadialGradientWDL(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge);
+int iupdrvDrawGetImageDataWDL(IdrawCanvas* dc, unsigned char* data);
 
 struct _IdrawCanvas{
   Ihandle* ih;
@@ -1168,4 +1169,110 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
       DeleteObject(hPen);
     }
   }
+}
+
+static void iGdiCopyBgrToRgba(unsigned char* dst, const unsigned char* src, int w, int h)
+{
+  int x, y;
+  for (y = 0; y < h; y++)
+  {
+    const unsigned char* src_line = src + y * w * 4;
+    unsigned char* dst_line = dst + y * w * 4;
+    for (x = 0; x < w; x++)
+    {
+      dst_line[x * 4 + 0] = src_line[x * 4 + 2];
+      dst_line[x * 4 + 1] = src_line[x * 4 + 1];
+      dst_line[x * 4 + 2] = src_line[x * 4 + 0];
+      dst_line[x * 4 + 3] = 255;
+    }
+  }
+}
+
+IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+{
+  BITMAPINFOHEADER bmi;
+  unsigned char* temp;
+
+  if (dc->wdl_gc)
+    return iupdrvDrawGetImageDataWDL(dc->wdl_gc, data);
+
+  memset(&bmi, 0, sizeof(bmi));
+  bmi.biSize = sizeof(BITMAPINFOHEADER);
+  bmi.biWidth = dc->w;
+  bmi.biHeight = -dc->h;
+  bmi.biPlanes = 1;
+  bmi.biBitCount = 32;
+  bmi.biCompression = BI_RGB;
+
+  temp = (unsigned char*)malloc(dc->w * dc->h * 4);
+  if (!temp)
+    return 0;
+
+  if (!GetDIBits(dc->hBitmapDC, dc->hBitmap, 0, dc->h, temp, (BITMAPINFO*)&bmi, DIB_RGB_COLORS))
+  {
+    free(temp);
+    return 0;
+  }
+
+  iGdiCopyBgrToRgba(data, temp, dc->w, dc->h);
+
+  free(temp);
+  return 1;
+}
+
+IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
+{
+  HWND hwnd = (HWND)IupGetAttribute(ih, "HWND");
+  HDC hDC, hMemDC;
+  HBITMAP hBitmap;
+  HGDIOBJ hOld;
+  BITMAPINFOHEADER bmi;
+  unsigned char* temp;
+
+  if (!hwnd)
+    return 0;
+
+  hDC = GetDC(hwnd);
+  hMemDC = CreateCompatibleDC(hDC);
+  hBitmap = CreateCompatibleBitmap(hDC, w, h);
+  hOld = SelectObject(hMemDC, hBitmap);
+
+  BitBlt(hMemDC, 0, 0, w, h, hDC, 0, 0, SRCCOPY);
+
+  memset(&bmi, 0, sizeof(bmi));
+  bmi.biSize = sizeof(BITMAPINFOHEADER);
+  bmi.biWidth = w;
+  bmi.biHeight = -h;  /* top-down */
+  bmi.biPlanes = 1;
+  bmi.biBitCount = 32;
+  bmi.biCompression = BI_RGB;
+
+  temp = (unsigned char*)malloc(w * h * 4);
+  if (!temp)
+  {
+    SelectObject(hMemDC, hOld);
+    DeleteObject(hBitmap);
+    DeleteDC(hMemDC);
+    ReleaseDC(hwnd, hDC);
+    return 0;
+  }
+
+  if (!GetDIBits(hMemDC, hBitmap, 0, h, temp, (BITMAPINFO*)&bmi, DIB_RGB_COLORS))
+  {
+    free(temp);
+    SelectObject(hMemDC, hOld);
+    DeleteObject(hBitmap);
+    DeleteDC(hMemDC);
+    ReleaseDC(hwnd, hDC);
+    return 0;
+  }
+
+  iGdiCopyBgrToRgba(data, temp, w, h);
+
+  free(temp);
+  SelectObject(hMemDC, hOld);
+  DeleteObject(hBitmap);
+  DeleteDC(hMemDC);
+  ReleaseDC(hwnd, hDC);
+  return 1;
 }

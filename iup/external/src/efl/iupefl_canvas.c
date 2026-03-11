@@ -613,6 +613,7 @@ static int eflCanvasMapMethod(Ihandle* ih)
 typedef struct _IeflVgImageData {
   Efl_VG* node;
   void* pixels;
+  int w, h;
 } IeflVgImageData;
 
 static void eflCanvasUnMapMethod(Ihandle* ih)
@@ -620,6 +621,15 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
   Eo* vg = iupeflGetWidget(ih);
   Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
   Efl_VG* root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT");
+
+  {
+    unsigned char* buffer = (unsigned char*)iupAttribGet(ih, "_IUP_EFL_CANVAS_BUFFER");
+    if (buffer)
+    {
+      free(buffer);
+      iupAttribSet(ih, "_IUP_EFL_CANVAS_BUFFER", NULL);
+    }
+  }
   Eina_List* evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS");
   Eina_List* vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES");
   Efl_VG* deferred_root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT_DEFERRED");

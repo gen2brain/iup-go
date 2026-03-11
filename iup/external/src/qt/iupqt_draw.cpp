@@ -1282,3 +1282,42 @@ extern "C" void qtDrawEnd(IdrawCanvas* dc)
     /* Nothing to do - painter will be deleted in flush */
   }
 }
+
+extern "C" int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+{
+  if (!dc || !dc->buffer)
+    return 0;
+
+  QImage img = dc->buffer->toImage().convertToFormat(QImage::Format_RGBA8888);
+  int w = img.width();
+  int h = img.height();
+
+  for (int y = 0; y < h; y++)
+  {
+    const unsigned char* src_line = img.constScanLine(y);
+    unsigned char* dst_line = data + y * w * 4;
+    memcpy(dst_line, src_line, w * 4);
+  }
+
+  return 1;
+}
+
+extern "C" int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
+{
+  QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+  if (!buffer)
+    buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_PREVIEW_BUFFER");
+  if (!buffer)
+    return 0;
+
+  QImage img = buffer->toImage().convertToFormat(QImage::Format_RGBA8888);
+
+  for (int y = 0; y < h; y++)
+  {
+    const unsigned char* src_line = img.constScanLine(y);
+    unsigned char* dst_line = data + y * w * 4;
+    memcpy(dst_line, src_line, w * 4);
+  }
+
+  return 1;
+}

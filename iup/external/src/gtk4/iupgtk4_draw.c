@@ -134,9 +134,40 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   cairo_set_operator(dc->cr, CAIRO_OPERATOR_SOURCE);
   cairo_paint(dc->cr);
 
-  /* If drawing was to an offscreen buffer (outside ACTION), trigger repaint */
   if (dc->release_cr)
+  {
+    /* Outside ACTION: buffer was the draw target, just trigger repaint */
     gtk_widget_queue_draw(dc->widget);
+  }
+  else
+  {
+    /* Inside ACTION: also copy rendered content to persistent buffer */
+    cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(dc->ih, "_IUPGTK4_CANVAS_BUFFER");
+    if (buffer)
+    {
+      int buf_w = cairo_image_surface_get_width(buffer);
+      int buf_h = cairo_image_surface_get_height(buffer);
+      if (buf_w != dc->w || buf_h != dc->h)
+      {
+        cairo_surface_destroy(buffer);
+        buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
+        iupAttribSet(dc->ih, "_IUPGTK4_CANVAS_BUFFER", (char*)buffer);
+      }
+    }
+    else
+    {
+      buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
+      iupAttribSet(dc->ih, "_IUPGTK4_CANVAS_BUFFER", (char*)buffer);
+    }
+
+    {
+      cairo_t* buf_cr = cairo_create(buffer);
+      cairo_set_source_surface(buf_cr, cairo_get_target(dc->image_cr), 0, 0);
+      cairo_set_operator(buf_cr, CAIRO_OPERATOR_SOURCE);
+      cairo_paint(buf_cr);
+      cairo_destroy(buf_cr);
+    }
+  }
 }
 
 IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
@@ -808,4 +839,72 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   cairo_arc(dc->image_cr, cx, cy, radius, 0, 2 * G_PI);
   cairo_fill(dc->image_cr);
   cairo_pattern_destroy(pattern);
+}
+
+static void iCairoCopyBgraPremulToRgba(unsigned char* dst, const unsigned char* src, int w, int h, int src_stride)
+{
+  int x, y;
+  for (y = 0; y < h; y++)
+  {
+    const unsigned char* src_line = src + y * src_stride;
+    unsigned char* dst_line = dst + y * w * 4;
+    for (x = 0; x < w; x++)
+    {
+      unsigned char b = src_line[x * 4 + 0];
+      unsigned char g = src_line[x * 4 + 1];
+      unsigned char r = src_line[x * 4 + 2];
+      unsigned char a = src_line[x * 4 + 3];
+
+      if (a != 0 && a != 255)
+      {
+        r = (unsigned char)((r * 255) / a);
+        g = (unsigned char)((g * 255) / a);
+        b = (unsigned char)((b * 255) / a);
+      }
+
+      dst_line[x * 4 + 0] = r;
+      dst_line[x * 4 + 1] = g;
+      dst_line[x * 4 + 2] = b;
+      dst_line[x * 4 + 3] = a;
+    }
+  }
+}
+
+IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+{
+  cairo_surface_t* surface = cairo_get_target(dc->image_cr);
+  unsigned char* src;
+  int stride;
+
+  cairo_surface_flush(surface);
+
+  src = cairo_image_surface_get_data(surface);
+  if (!src)
+    return 0;
+
+  stride = cairo_image_surface_get_stride(surface);
+
+  iCairoCopyBgraPremulToRgba(data, src, dc->w, dc->h, stride);
+  return 1;
+}
+
+IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
+{
+  cairo_surface_t* surface = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
+  unsigned char* src;
+  int stride;
+
+  if (!surface)
+    return 0;
+
+  cairo_surface_flush(surface);
+
+  src = cairo_image_surface_get_data(surface);
+  if (!src)
+    return 0;
+
+  stride = cairo_image_surface_get_stride(surface);
+
+  iCairoCopyBgraPremulToRgba(data, src, w, h, stride);
+  return 1;
 }

@@ -842,3 +842,94 @@ void iupdrvDrawRadialGradientWDL(IdrawCanvas* dc, int cx, int cy, int radius, lo
     }
   }
 }
+
+int iupdrvDrawGetImageDataWDL(IdrawCanvas* dc, unsigned char* data)
+{
+  BITMAPINFOHEADER bmi;
+  HBITMAP hBitmap;
+  HDC hMemDC, hWndDC;
+  HGDIOBJ hOld;
+  unsigned char* temp;
+  int x, y;
+
+  /* Flush D2D content to the window, then read from the window HDC */
+  wdEndPaint(dc->hCanvas);
+
+  hWndDC = GetDC(dc->hWnd);
+  if (!hWndDC)
+  {
+    wdBeginPaint(dc->hCanvas);
+    return 0;
+  }
+
+  hMemDC = CreateCompatibleDC(hWndDC);
+  if (!hMemDC)
+  {
+    ReleaseDC(dc->hWnd, hWndDC);
+    wdBeginPaint(dc->hCanvas);
+    return 0;
+  }
+
+  hBitmap = CreateCompatibleBitmap(hWndDC, dc->w, dc->h);
+  if (!hBitmap)
+  {
+    DeleteDC(hMemDC);
+    ReleaseDC(dc->hWnd, hWndDC);
+    wdBeginPaint(dc->hCanvas);
+    return 0;
+  }
+
+  hOld = SelectObject(hMemDC, hBitmap);
+  BitBlt(hMemDC, 0, 0, dc->w, dc->h, hWndDC, 0, 0, SRCCOPY);
+  ReleaseDC(dc->hWnd, hWndDC);
+
+  memset(&bmi, 0, sizeof(bmi));
+  bmi.biSize = sizeof(BITMAPINFOHEADER);
+  bmi.biWidth = dc->w;
+  bmi.biHeight = -dc->h;
+  bmi.biPlanes = 1;
+  bmi.biBitCount = 32;
+  bmi.biCompression = BI_RGB;
+
+  temp = (unsigned char*)malloc(dc->w * dc->h * 4);
+  if (!temp)
+  {
+    SelectObject(hMemDC, hOld);
+    DeleteObject(hBitmap);
+    DeleteDC(hMemDC);
+    wdBeginPaint(dc->hCanvas);
+    return 0;
+  }
+
+  if (!GetDIBits(hMemDC, hBitmap, 0, dc->h, temp, (BITMAPINFO*)&bmi, DIB_RGB_COLORS))
+  {
+    free(temp);
+    SelectObject(hMemDC, hOld);
+    DeleteObject(hBitmap);
+    DeleteDC(hMemDC);
+    wdBeginPaint(dc->hCanvas);
+    return 0;
+  }
+
+  for (y = 0; y < dc->h; y++)
+  {
+    unsigned char* src_line = temp + y * dc->w * 4;
+    unsigned char* dst_line = data + y * dc->w * 4;
+    for (x = 0; x < dc->w; x++)
+    {
+      dst_line[x * 4 + 0] = src_line[x * 4 + 2];
+      dst_line[x * 4 + 1] = src_line[x * 4 + 1];
+      dst_line[x * 4 + 2] = src_line[x * 4 + 0];
+      dst_line[x * 4 + 3] = 255;
+    }
+  }
+
+  free(temp);
+  SelectObject(hMemDC, hOld);
+  DeleteObject(hBitmap);
+  DeleteDC(hMemDC);
+
+  wdBeginPaint(dc->hCanvas);
+
+  return 1;
+}

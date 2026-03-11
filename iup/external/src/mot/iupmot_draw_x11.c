@@ -991,3 +991,50 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
     XFillArc(iupmot_display, dc->pixmap, dc->pixmap_gc, (int)(cx - r), (int)(cy - r), (int)(2 * r), (int)(2 * r), 0, 23040);
   }
 }
+
+static void iX11CopyPixelsToRgba(unsigned char* dst, XImage* ximage, int w, int h)
+{
+  int x, y;
+  for (y = 0; y < h; y++)
+  {
+    unsigned char* dst_line = dst + y * w * 4;
+    for (x = 0; x < w; x++)
+    {
+      unsigned long pixel = XGetPixel(ximage, x, y);
+      dst_line[x * 4 + 0] = (unsigned char)((pixel >> 16) & 0xFF);
+      dst_line[x * 4 + 1] = (unsigned char)((pixel >> 8) & 0xFF);
+      dst_line[x * 4 + 2] = (unsigned char)((pixel >> 0) & 0xFF);
+      dst_line[x * 4 + 3] = 255;
+    }
+  }
+}
+
+IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+{
+  XImage* ximage = XGetImage(iupmot_display, dc->pixmap, 0, 0, dc->w, dc->h, AllPlanes, ZPixmap);
+  if (!ximage)
+    return 0;
+
+  iX11CopyPixelsToRgba(data, ximage, dc->w, dc->h);
+
+  XDestroyImage(ximage);
+  return 1;
+}
+
+IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
+{
+  XImage* ximage;
+
+  Window wnd = XtWindow((Widget)ih->handle);
+  if (!wnd)
+    return 0;
+
+  ximage = XGetImage(iupmot_display, wnd, 0, 0, w, h, AllPlanes, ZPixmap);
+  if (!ximage)
+    return 0;
+
+  iX11CopyPixelsToRgba(data, ximage, w, h);
+
+  XDestroyImage(ximage);
+  return 1;
+}

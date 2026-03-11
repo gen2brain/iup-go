@@ -230,7 +230,8 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   if (bounds.size.width <= 0 || bounds.size.height <= 0)
     return;
 
-  /* Check if there's a buffer ready to display (filled outside drawRect, e.g. by SCROLL_CB). */
+  /* Check if there's a pending buffer to display (filled outside drawRect, e.g. by SCROLL_CB). */
+  if (iupAttribGet(_ih, "_IUPCOCOA_BUFFER_PENDING"))
   {
     NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_BUFFER");
 
@@ -251,8 +252,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
         [context restoreGraphicsState];
 
-        [buffer release];
-        iupAttribSet(_ih, "_IUPCOCOA_CANVAS_BUFFER", NULL);
+        iupAttribSet(_ih, "_IUPCOCOA_BUFFER_PENDING", NULL);
 
         return;
       }
@@ -305,9 +305,6 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
                      hints:nil];
 
         [context restoreGraphicsState];
-
-        [buffer release];
-        iupAttribSet(_ih, "_IUPCOCOA_CANVAS_BUFFER", NULL);
       }
     }
   }

@@ -26,6 +26,7 @@
 typedef struct _IeflVgImageData {
   Efl_VG* node;
   void* pixels;
+  int w, h;
 } IeflVgImageData;
 
 struct _IdrawCanvas
@@ -155,6 +156,217 @@ static void iDrawFreeVgImagePixels(Eina_List** list)
 static int iDrawHasClip(IdrawCanvas* dc)
 {
   return (dc->clip_x1 > 0 || dc->clip_y1 > 0 || dc->clip_x2 < dc->w - 1 || dc->clip_y2 < dc->h - 1);
+}
+
+static Efl_VG* iDrawCloneTree(Efl_VG* node, Efl_VG* new_parent, Eina_List* vg_images)
+{
+  if (efl_isa(node, EFL_CANVAS_VG_IMAGE_CLASS))
+  {
+    Efl_VG* clone = efl_add(EFL_CANVAS_VG_IMAGE_CLASS, new_parent);
+    const Eina_Matrix3* m = efl_canvas_vg_node_transformation_get(node);
+    if (m)
+      efl_canvas_vg_node_transformation_set(clone, m);
+    {
+      int r, g, b, a;
+      efl_gfx_color_get(node, &r, &g, &b, &a);
+      efl_gfx_color_set(clone, r, g, b, a);
+    }
+    efl_gfx_entity_visible_set(clone, efl_gfx_entity_visible_get(node));
+
+    if (vg_images)
+    {
+      Eina_List* l;
+      IeflVgImageData* img;
+      EINA_LIST_FOREACH(vg_images, l, img)
+      {
+        if (img->node == node)
+        {
+          efl_canvas_vg_image_data_set(clone, img->pixels, EINA_SIZE2D(img->w, img->h));
+          break;
+        }
+      }
+    }
+    return clone;
+  }
+
+  if (efl_isa(node, EFL_CANVAS_VG_CONTAINER_CLASS))
+  {
+    Efl_VG* clone = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, new_parent);
+    const Eina_Matrix3* m = efl_canvas_vg_node_transformation_get(node);
+    if (m)
+      efl_canvas_vg_node_transformation_set(clone, m);
+
+    {
+      const Eina_List* children = efl_canvas_vg_container_children_direct_get(node);
+      const Eina_List* l;
+      Efl_VG* child;
+      EINA_LIST_FOREACH(children, l, child)
+        iDrawCloneTree(child, clone, vg_images);
+    }
+    return clone;
+  }
+
+  {
+    Efl_VG* clone = efl_duplicate(node);
+    efl_parent_set(clone, new_parent);
+    return clone;
+  }
+}
+
+static int iDrawRenderToBuffer(IdrawCanvas* dc, unsigned char* data)
+{
+  Ecore_Evas* export_ee;
+  Evas* off_evas;
+  Eo* off_vg;
+  Efl_VG* cloned_root;
+  const void* src_pixels;
+  int x, y;
+
+  export_ee = ecore_evas_buffer_new(dc->w, dc->h);
+  if (!export_ee)
+    return 0;
+  ecore_evas_alpha_set(export_ee, EINA_TRUE);
+  off_evas = ecore_evas_get(export_ee);
+
+  off_vg = efl_add(EFL_CANVAS_VG_OBJECT_CLASS, off_evas);
+  if (!off_vg)
+  {
+    ecore_evas_free(export_ee);
+    return 0;
+  }
+
+  evas_object_move(off_vg, 0, 0);
+  evas_object_resize(off_vg, dc->w, dc->h);
+  efl_canvas_vg_object_viewbox_set(off_vg, EINA_RECT(0, 0, dc->w, dc->h));
+  efl_canvas_vg_object_fill_mode_set(off_vg, EFL_CANVAS_VG_FILL_MODE_NONE);
+
+  cloned_root = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, off_vg);
+  {
+    const Eina_Matrix3* m = efl_canvas_vg_node_transformation_get(dc->root);
+    if (m)
+      efl_canvas_vg_node_transformation_set(cloned_root, m);
+  }
+
+  {
+    const Eina_List* children = efl_canvas_vg_container_children_direct_get(dc->root);
+    const Eina_List* l;
+    Efl_VG* child;
+    EINA_LIST_FOREACH(children, l, child)
+    {
+      if (!efl_isa(child, EFL_CANVAS_VG_IMAGE_CLASS))
+        iDrawCloneTree(child, cloned_root, dc->vg_images);
+    }
+  }
+
+  efl_canvas_vg_object_root_node_set(off_vg, cloned_root);
+  evas_object_show(off_vg);
+
+  {
+    Eina_List* l;
+    IeflVgImageData* img;
+    Eina_Matrix3 root_m;
+    const Eina_Matrix3* rm = efl_canvas_vg_node_transformation_get(dc->root);
+    if (rm)
+      eina_matrix3_copy(&root_m, rm);
+    else
+      eina_matrix3_identity(&root_m);
+
+    EINA_LIST_FOREACH(dc->vg_images, l, img)
+    {
+      Evas_Object* evas_img;
+      const Eina_Matrix3* node_m;
+      Eina_Matrix3 abs_m;
+      double m00, m01, m02, m10, m11, m12, m20, m21, m22;
+      double cx[4], cy[4];
+      double sx[4] = {0, (double)img->w, (double)img->w, 0};
+      double sy[4] = {0, 0, (double)img->h, (double)img->h};
+      int i;
+      Evas_Map* map;
+
+      node_m = efl_canvas_vg_node_transformation_get(img->node);
+      if (node_m)
+        eina_matrix3_compose(&root_m, node_m, &abs_m);
+      else
+        eina_matrix3_copy(&abs_m, &root_m);
+
+      eina_matrix3_values_get(&abs_m,
+        &m00, &m01, &m02,
+        &m10, &m11, &m12,
+        &m20, &m21, &m22);
+
+      for (i = 0; i < 4; i++)
+      {
+        cx[i] = sx[i] * m00 + sy[i] * m10 + m20;
+        cy[i] = sx[i] * m01 + sy[i] * m11 + m21;
+      }
+
+      evas_img = evas_object_image_filled_add(off_evas);
+      evas_object_image_alpha_set(evas_img, EINA_TRUE);
+      evas_object_image_size_set(evas_img, img->w, img->h);
+      {
+        void* dst = evas_object_image_data_get(evas_img, EINA_TRUE);
+        if (dst)
+        {
+          memcpy(dst, img->pixels, img->w * img->h * sizeof(unsigned int));
+          evas_object_image_data_set(evas_img, dst);
+          evas_object_image_data_update_add(evas_img, 0, 0, img->w, img->h);
+        }
+      }
+      evas_object_resize(evas_img, img->w, img->h);
+
+      map = evas_map_new(4);
+      for (i = 0; i < 4; i++)
+      {
+        evas_map_point_coord_set(map, i, (int)(cx[i] + 0.5), (int)(cy[i] + 0.5), 0);
+        evas_map_point_image_uv_set(map, i, sx[i], sy[i]);
+      }
+      evas_object_map_set(evas_img, map);
+      evas_object_map_enable_set(evas_img, EINA_TRUE);
+      evas_map_free(map);
+
+      evas_object_show(evas_img);
+    }
+  }
+
+  ecore_evas_manual_render(export_ee);
+
+  src_pixels = ecore_evas_buffer_pixels_get(export_ee);
+
+  if (!src_pixels)
+  {
+    ecore_evas_free(export_ee);
+    return 0;
+  }
+
+  for (y = 0; y < dc->h; y++)
+  {
+    const unsigned int* src_line = (const unsigned int*)src_pixels + y * dc->w;
+    unsigned char* dst_line = data + y * dc->w * 4;
+    for (x = 0; x < dc->w; x++)
+    {
+      unsigned int pixel = src_line[x];
+      unsigned char a = (unsigned char)((pixel >> 24) & 0xFF);
+      unsigned char r = (unsigned char)((pixel >> 16) & 0xFF);
+      unsigned char g = (unsigned char)((pixel >> 8) & 0xFF);
+      unsigned char b = (unsigned char)((pixel >> 0) & 0xFF);
+
+      if (a != 0 && a != 255)
+      {
+        r = (unsigned char)((r * 255) / a);
+        g = (unsigned char)((g * 255) / a);
+        b = (unsigned char)((b * 255) / a);
+      }
+
+      dst_line[x * 4 + 0] = r;
+      dst_line[x * 4 + 1] = g;
+      dst_line[x * 4 + 2] = b;
+      dst_line[x * 4 + 3] = a;
+    }
+  }
+
+  ecore_evas_free(export_ee);
+
+  return 1;
 }
 
 static void iDrawSetDash(Efl_VG* shape, int style)
@@ -307,7 +519,32 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
-  (void)dc;
+  int isCanvas = iupClassMatch(dc->ih->iclass, "canvas");
+  if (isCanvas)
+  {
+    unsigned char* old_buffer = (unsigned char*)iupAttribGet(dc->ih, "_IUP_EFL_CANVAS_BUFFER");
+    unsigned char* buffer;
+    int size = dc->w * dc->h * 4;
+
+    if (old_buffer)
+    {
+      free(old_buffer);
+      iupAttribSet(dc->ih, "_IUP_EFL_CANVAS_BUFFER", NULL);
+    }
+
+    buffer = (unsigned char*)malloc(size);
+    if (buffer)
+    {
+      if (iDrawRenderToBuffer(dc, buffer))
+      {
+        iupAttribSet(dc->ih, "_IUP_EFL_CANVAS_BUFFER", (char*)buffer);
+        iupAttribSetInt(dc->ih, "_IUP_EFL_CANVAS_BUFFER_W", dc->w);
+        iupAttribSetInt(dc->ih, "_IUP_EFL_CANVAS_BUFFER_H", dc->h);
+      }
+      else
+        free(buffer);
+    }
+  }
 }
 
 IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
@@ -525,6 +762,8 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
     img_data = (IeflVgImageData*)malloc(sizeof(IeflVgImageData));
     img_data->node = vg_image;
     img_data->pixels = pixels;
+    img_data->w = vis_w;
+    img_data->h = vis_h;
     dc->vg_images = eina_list_append(dc->vg_images, img_data);
   }
   else
@@ -1054,6 +1293,8 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   img_data = (IeflVgImageData*)malloc(sizeof(IeflVgImageData));
   img_data->node = vg_image;
   img_data->pixels = pixels;
+  img_data->w = buf_w;
+  img_data->h = buf_h;
   dc->vg_images = eina_list_append(dc->vg_images, img_data);
 
   if (text_copy)
@@ -1219,6 +1460,8 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   img_data = (IeflVgImageData*)malloc(sizeof(IeflVgImageData));
   img_data->node = vg_image;
   img_data->pixels = pixels;
+  img_data->w = vis_w;
+  img_data->h = vis_h;
   dc->vg_images = eina_list_append(dc->vg_images, img_data);
 }
 
@@ -1265,4 +1508,29 @@ IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, i
 IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 255), IUP_DRAW_STROKE_DOT, 1);
+}
+
+IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+{
+  return iDrawRenderToBuffer(dc, data);
+}
+
+IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
+{
+  unsigned char* buffer = (unsigned char*)iupAttribGet(ih, "_IUP_EFL_CANVAS_BUFFER");
+  int buf_w, buf_h, copy_w, copy_h, y;
+
+  if (!buffer)
+    return 0;
+
+  buf_w = iupAttribGetInt(ih, "_IUP_EFL_CANVAS_BUFFER_W");
+  buf_h = iupAttribGetInt(ih, "_IUP_EFL_CANVAS_BUFFER_H");
+
+  copy_w = (w < buf_w) ? w : buf_w;
+  copy_h = (h < buf_h) ? h : buf_h;
+
+  for (y = 0; y < copy_h; y++)
+    memcpy(data + y * w * 4, buffer + y * buf_w * 4, copy_w * 4);
+
+  return 1;
 }
