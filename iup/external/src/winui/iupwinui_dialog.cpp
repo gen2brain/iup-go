@@ -852,6 +852,7 @@ static int winuiDialogSetBgColorAttrib(Ihandle* ih, const char* value)
         aux->rootPanel.Background(SolidColorBrush(color));
       }
       RedrawWindow((HWND)ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+      winuiDialogRefreshThemeColors(ih);
     }
     return 1;
   }
