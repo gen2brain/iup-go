@@ -585,6 +585,8 @@ static void eflDialogUnMapMethod(Ihandle* ih)
     efl_event_callback_del(win, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflDialogResizeCallback, ih);
     efl_event_callback_del(win, EFL_UI_WIN_EVENT_THEME_CHANGED, eflDialogThemeChangedCallback, ih);
     efl_event_callback_del(win, EFL_EVENT_KEY_DOWN, eflDialogKeyDownCallback, ih);
+    iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", NULL);
+
     efl_del(win);
   }
 
@@ -822,6 +824,72 @@ static int eflDialogSetTopMostAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
+{
+  if (iupeflSetBgColorAttrib(ih, value))
+  {
+    Eo* old_bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
+    if (old_bg_img)
+    {
+      evas_object_del(old_bg_img);
+      iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", NULL);
+    }
+    return 1;
+  }
+  else
+  {
+    Evas_Object* elm_img = (Evas_Object*)iupImageGetImage(value, ih, 0, NULL);
+    if (elm_img)
+    {
+      Eo* win = iupeflGetWidget(ih);
+      Evas_Object* evas_img = elm_image_object_get(elm_img);
+      Eo* inner = (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
+      Eo* bg_img;
+      unsigned int* src_pixels;
+      unsigned int* dst_pixels;
+      int w, h;
+
+      if (!evas_img || !win)
+        return 0;
+
+      evas_object_image_size_get(evas_img, &w, &h);
+      if (w <= 0 || h <= 0)
+        return 0;
+
+      src_pixels = evas_object_image_data_get(evas_img, EINA_FALSE);
+      if (!src_pixels)
+        return 0;
+
+      bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
+      if (!bg_img)
+      {
+        Evas* evas = evas_object_evas_get(inner ? inner : win);
+        bg_img = evas_object_image_filled_add(evas);
+        iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", (char*)bg_img);
+      }
+
+      evas_object_image_size_set(bg_img, w, h);
+      evas_object_image_alpha_set(bg_img, evas_object_image_alpha_get(evas_img));
+
+      dst_pixels = evas_object_image_data_get(bg_img, EINA_TRUE);
+      if (dst_pixels)
+      {
+        memcpy(dst_pixels, src_pixels, w * h * sizeof(unsigned int));
+        evas_object_image_data_set(bg_img, dst_pixels);
+      }
+
+      evas_object_resize(bg_img, ih->currentwidth, ih->currentheight);
+      evas_object_move(bg_img, 0, 0);
+      efl_gfx_stack_lower_to_bottom(bg_img);
+      evas_object_show(bg_img);
+
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 static int eflDialogSetOpacityAttrib(Ihandle* ih, const char* value)
 {
   Eo* win = iupeflGetWidget(ih);
@@ -846,6 +914,142 @@ static int eflDialogSetOpacityAttrib(Ihandle* ih, const char* value)
 
   efl_gfx_color_set(win, opacity, opacity, opacity, opacity);
   return 1;
+}
+
+static int eflDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
+{
+  Eo* win = iupeflGetWidget(ih);
+  Ecore_Evas* ee;
+  Ihandle* image;
+
+  if (!win)
+    return 0;
+
+  ee = ecore_evas_object_ecore_evas_get(win);
+  if (!ee)
+    return 0;
+
+  if (!value)
+  {
+    ecore_evas_shaped_set(ee, EINA_FALSE);
+    return 1;
+  }
+
+  image = IupGetHandle(value);
+  if (image)
+  {
+    unsigned char* imgdata = (unsigned char*)iupAttribGet(image, "WID");
+    int channels = iupAttribGetInt(image, "CHANNELS");
+    int w = image->currentwidth;
+    int h = image->currentheight;
+
+    if (imgdata && channels == 4)
+    {
+      Evas* evas = ecore_evas_get(ee);
+      Evas_Object* mask_img = evas_object_image_filled_add(evas);
+      unsigned int* pixels;
+      int x, y;
+
+      evas_object_image_size_set(mask_img, w, h);
+      evas_object_image_alpha_set(mask_img, EINA_TRUE);
+
+      pixels = evas_object_image_data_get(mask_img, EINA_TRUE);
+      if (pixels)
+      {
+        for (y = 0; y < h; y++)
+        {
+          for (x = 0; x < w; x++)
+          {
+            unsigned char a = imgdata[(y * w + x) * 4 + 3];
+            if (a > 0)
+              pixels[y * w + x] = 0xFFFFFFFF;
+            else
+              pixels[y * w + x] = 0x00000000;
+          }
+        }
+        evas_object_image_data_set(mask_img, pixels);
+      }
+
+      evas_object_resize(mask_img, w, h);
+      evas_object_show(mask_img);
+
+      ecore_evas_shaped_set(ee, EINA_TRUE);
+
+      evas_object_del(mask_img);
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+static int eflDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
+{
+  Eo* win = iupeflGetWidget(ih);
+  Ecore_Evas* ee;
+  Ihandle* image;
+
+  if (!win)
+    return 0;
+
+  ee = ecore_evas_object_ecore_evas_get(win);
+  if (!ee)
+    return 0;
+
+  if (!value)
+  {
+    ecore_evas_alpha_set(ee, EINA_FALSE);
+    efl_gfx_color_set(win, 255, 255, 255, 255);
+    return 1;
+  }
+
+  image = IupGetHandle(value);
+  if (image)
+  {
+    unsigned char* imgdata = (unsigned char*)iupAttribGet(image, "WID");
+    int channels = iupAttribGetInt(image, "CHANNELS");
+    int w = image->currentwidth;
+    int h = image->currentheight;
+
+    if (imgdata && channels == 4)
+    {
+      Evas* evas = ecore_evas_get(ee);
+      Evas_Object* bg_img = evas_object_image_filled_add(evas);
+      unsigned int* pixels;
+      int x, y;
+
+      evas_object_image_size_set(bg_img, w, h);
+      evas_object_image_alpha_set(bg_img, EINA_TRUE);
+
+      pixels = evas_object_image_data_get(bg_img, EINA_TRUE);
+      if (pixels)
+      {
+        for (y = 0; y < h; y++)
+        {
+          for (x = 0; x < w; x++)
+          {
+            int idx = (y * w + x) * 4;
+            unsigned char r = imgdata[idx];
+            unsigned char g = imgdata[idx + 1];
+            unsigned char b = imgdata[idx + 2];
+            unsigned char a = imgdata[idx + 3];
+            pixels[y * w + x] = (a << 24) | (r << 16) | (g << 8) | b;
+          }
+        }
+        evas_object_image_data_set(bg_img, pixels);
+      }
+
+      ecore_evas_alpha_set(ee, EINA_TRUE);
+
+      evas_object_resize(bg_img, w, h);
+      evas_object_move(bg_img, 0, 0);
+      evas_object_show(bg_img);
+
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 static char* eflDialogGetClientSizeAttrib(Ihandle* ih)
@@ -949,7 +1153,11 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, eflDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, eflDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "BACKGROUND", NULL, eflDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+
   iupClassRegisterAttribute(ic, "OPACITY", NULL, eflDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, eflDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, eflDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTSIZE", eflDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", eflDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_DEFAULTVALUE|IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", eflDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
