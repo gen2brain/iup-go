@@ -99,8 +99,15 @@ static void winuiFrameUpdateTitleBackground(Ihandle* ih)
       g = r; b = r;
     }
   }
-  else if (!iupStrToRGB(iupAttribGetStr(ih, "BGCOLOR"), &r, &g, &b))
-    return;
+  else
+  {
+    const char* dlg_bg = dlg ? iupAttribGet(dlg, "_IUPWINUI_BACKGROUND_COLOR") : NULL;
+    if (!dlg_bg || !iupStrToRGB(dlg_bg, &r, &g, &b))
+    {
+      if (!iupStrToRGB(iupAttribGetStr(ih, "BGCOLOR"), &r, &g, &b))
+        return;
+    }
+  }
 
   Color color;
   color.A = 255;

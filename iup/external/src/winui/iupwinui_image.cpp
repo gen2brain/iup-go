@@ -24,6 +24,7 @@ extern "C" {
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml::Media::Imaging;
+using namespace Windows::Foundation;
 using namespace Windows::Storage::Streams;
 
 
@@ -297,42 +298,48 @@ static void* winuiLoadImageFile(const char* name)
 
   void* handle = nullptr;
 
-  try
-  {
-    InMemoryRandomAccessStream stream;
-    DataWriter writer(stream);
-    writer.WriteBytes(winrt::array_view<uint8_t const>(fileData, fileData + fileSize));
-    writer.StoreAsync().get();
-    writer.DetachStream();
-    free(fileData);
-    fileData = nullptr;
+  InMemoryRandomAccessStream stream;
+  DataWriter writer(stream);
+  writer.WriteBytes(winrt::array_view<uint8_t const>(fileData, fileData + fileSize));
 
-    stream.Seek(0);
-
-    auto decoder = Windows::Graphics::Imaging::BitmapDecoder::CreateAsync(stream).get();
-    uint32_t width = decoder.PixelWidth();
-    uint32_t height = decoder.PixelHeight();
-
-    auto transform = Windows::Graphics::Imaging::BitmapTransform();
-    auto pixelDataProvider = decoder.GetPixelDataAsync(
-      Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8,
-      Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied,
-      transform,
-      Windows::Graphics::Imaging::ExifOrientationMode::RespectExifOrientation,
-      Windows::Graphics::Imaging::ColorManagementMode::ColorManageToSRgb).get();
-    auto pixelArray = pixelDataProvider.DetachPixelData();
-
-    WriteableBitmap bitmap(width, height);
-    IBuffer pixelBuffer = bitmap.PixelBuffer();
-    memcpy(pixelBuffer.data(), pixelArray.data(), width * height * 4);
-    bitmap.Invalidate();
-
-    winrt::copy_to_abi(bitmap, handle);
-  }
-  catch (...)
+  auto storeOp = writer.StoreAsync();
+  if (storeOp.Status() == AsyncStatus::Error)
   {
     free(fileData);
+    return nullptr;
   }
+  storeOp.get();
+  writer.DetachStream();
+  free(fileData);
+
+  stream.Seek(0);
+
+  auto decoderOp = Windows::Graphics::Imaging::BitmapDecoder::CreateAsync(stream);
+  if (decoderOp.Status() == AsyncStatus::Error)
+    return nullptr;
+  auto decoder = decoderOp.get();
+
+  uint32_t width = decoder.PixelWidth();
+  uint32_t height = decoder.PixelHeight();
+
+  auto transform = Windows::Graphics::Imaging::BitmapTransform();
+  auto pixelDataOp = decoder.GetPixelDataAsync(
+    Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8,
+    Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied,
+    transform,
+    Windows::Graphics::Imaging::ExifOrientationMode::RespectExifOrientation,
+    Windows::Graphics::Imaging::ColorManagementMode::ColorManageToSRgb);
+  if (pixelDataOp.Status() == AsyncStatus::Error)
+    return nullptr;
+  auto pixelDataProvider = pixelDataOp.get();
+  auto pixelArray = pixelDataProvider.DetachPixelData();
+
+  WriteableBitmap bitmap(width, height);
+  IBuffer pixelBuffer = bitmap.PixelBuffer();
+  memcpy(pixelBuffer.data(), pixelArray.data(), width * height * 4);
+  bitmap.Invalidate();
+
+  winrt::copy_to_abi(bitmap, handle);
 
   return handle;
 }
