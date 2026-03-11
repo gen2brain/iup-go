@@ -316,6 +316,8 @@ static void winuiDrawCopyToBuffer(IdrawCanvas* dc)
   if (!isCanvas || !dc->d2dContext)
     return;
 
+  dc->d2dContext->Flush();
+
   ID2D1Bitmap1* oldBuffer = (ID2D1Bitmap1*)iupAttribGet(dc->ih, "_IUPWINUI_CANVAS_BUFFER");
   if (oldBuffer)
   {
@@ -1119,6 +1121,8 @@ extern "C" int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
   if (!dc || !dc->d2dContext)
     return 0;
+
+  dc->d2dContext->Flush();
 
   com_ptr<ID2D1Image> target;
   dc->d2dContext->GetTarget(target.put());
