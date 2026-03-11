@@ -1217,17 +1217,51 @@ static int gtkDialogSetIconAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+static gboolean gtkDialogBackgroundDraw(GtkWidget* widget, cairo_t* cr, Ihandle* ih)
+{
+  GdkPixbuf* pixbuf = (GdkPixbuf*)iupAttribGet(ih, "_IUPGTK_BACKGROUND_IMAGE");
+  if (pixbuf)
+  {
+    cairo_surface_t* surface = gdk_cairo_surface_create_from_pixbuf(pixbuf, 0, gtk_widget_get_window(widget));
+
+    cairo_set_source_surface(cr, surface, 0, 0);
+    cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
+    cairo_paint(cr);
+
+    cairo_surface_destroy(surface);
+  }
+
+  return FALSE;
+}
+#endif
+
 static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
-  if (iupdrvBaseSetBgColorAttrib(ih, value))
+  unsigned char r, g, b;
+  if (iupStrToRGB(value, &r, &g, &b))
   {
-#if !GTK_CHECK_VERSION(3, 0, 0)
-    GtkStyle *style = gtk_widget_get_style(ih->handle);
-    if (style->bg_pixmap[GTK_STATE_NORMAL])
+#if GTK_CHECK_VERSION(3, 0, 0)
+    iupgtkSetBgColor(ih->handle, r, g, b);
+
+    if (iupAttribGet(ih, "_IUPGTK_BACKGROUND_IMAGE"))
     {
-      style = gtk_style_copy(style);
-      style->bg_pixmap[GTK_STATE_NORMAL] = NULL;
-      gtk_widget_set_style(ih->handle, style);
+      GtkWidget* viewport = gtk_bin_get_child((GtkBin*)ih->handle);
+      gulong handler_id = (gulong)(uintptr_t)iupAttribGet(ih, "_IUPGTK_BG_DRAW_HANDLER");
+      if (handler_id)
+        g_signal_handler_disconnect(G_OBJECT(viewport), handler_id);
+
+      iupAttribSet(ih, "_IUPGTK_BACKGROUND_IMAGE", NULL);
+      iupAttribSet(ih, "_IUPGTK_BG_DRAW_HANDLER", NULL);
+    }
+#else
+    {
+      GtkWidget* viewport = gtk_bin_get_child((GtkBin*)ih->handle);
+
+      gtk_widget_set_style(viewport, NULL);
+
+      iupgtkSetBgColor(ih->handle, r, g, b);
+      iupgtkSetBgColor((InativeHandle*)viewport, r, g, b);
     }
 #endif
     return 1;
@@ -1238,22 +1272,30 @@ static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     if (pixbuf)
     {
 #if GTK_CHECK_VERSION(3, 0, 0)
-      /* Background images not supported.
-         GTK3 CSS url() uses g_file_read() which doesn't support data: URIs.
-         Using file:// URLs requires saving to temporary files which is inefficient. */
-      (void)pixbuf;
-      return 0;
+      GtkWidget* viewport = gtk_bin_get_child((GtkBin*)ih->handle);
+      gulong handler_id;
+
+      iupAttribSet(ih, "_IUPGTK_BACKGROUND_IMAGE", (char*)pixbuf);
+
+      handler_id = (gulong)(uintptr_t)iupAttribGet(ih, "_IUPGTK_BG_DRAW_HANDLER");
+      if (!handler_id)
+      {
+        handler_id = g_signal_connect(G_OBJECT(viewport), "draw", G_CALLBACK(gtkDialogBackgroundDraw), ih);
+        iupAttribSet(ih, "_IUPGTK_BG_DRAW_HANDLER", (char*)(uintptr_t)handler_id);
+      }
+
+      gtk_widget_queue_draw(viewport);
 #else
+      GtkWidget* viewport = gtk_bin_get_child((GtkBin*)ih->handle);
       GdkPixmap* pixmap;
-      GtkStyle *style = gtk_style_copy(gtk_widget_get_style(ih->handle));
+      GtkStyle* style = gtk_style_copy(gtk_widget_get_style(viewport));
 
       gdk_pixbuf_render_pixmap_and_mask(pixbuf, &pixmap, NULL, 255);
 
       style->bg_pixmap[GTK_STATE_NORMAL] = pixmap;
-      gtk_widget_set_style(ih->handle, style);
-
-      return 1;
+      gtk_widget_set_style(viewport, style);
 #endif
+      return 1;
     }
   }
 
