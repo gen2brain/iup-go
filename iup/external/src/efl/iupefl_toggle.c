@@ -757,6 +757,9 @@ static void eflToggleUnMapMethod(Ihandle* ih)
 
   iupAttribSet(ih, "_IUP_EFL_CHECK", NULL);
   iupAttribSet(ih, "_IUP_EFL_LABEL", NULL);
+
+  iupeflFontFree(ih);
+
   ih->handle = NULL;
 }
 

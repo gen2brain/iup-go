@@ -300,6 +300,8 @@ static void eflFrameUnMapMethod(Ihandle* ih)
     iupeflDelete(frame);
 
   iupAttribSet(ih, "_IUP_EFL_INNER", NULL);
+
+  iupeflFontFree(ih);
 }
 
 static void eflFrameComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)

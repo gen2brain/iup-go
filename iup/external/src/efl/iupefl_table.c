@@ -3233,6 +3233,8 @@ static void eflTableUnMapMethod(Ihandle* ih)
   }
 
   ih->handle = NULL;
+
+  iupeflFontFree(ih);
 }
 
 static void eflTableLayoutUpdateMethod(Ihandle* ih)

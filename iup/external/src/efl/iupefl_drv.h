@@ -179,6 +179,7 @@ void iupeflDialogSetFocus(Ihandle* ih);
 void iupeflUpdateWidgetFont(Ihandle* ih, Eo* widget);
 void iupeflBuildTextStyle(Ihandle* ih, char* style, int style_size);
 void iupeflApplyTextStyle(Ihandle* ih, Eo* widget);
+void iupeflFontFree(Ihandle* ih);
 
 /****************************************************************************
  * Textbox Border Measurement

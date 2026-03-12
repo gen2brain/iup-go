@@ -2600,6 +2600,8 @@ static void eflTreeUnMapMethod(Ihandle* ih)
   }
 
   ih->handle = NULL;
+
+  iupeflFontFree(ih);
 }
 
 void iupdrvTreeInitClass(Iclass* ic)
