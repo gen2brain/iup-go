@@ -19,10 +19,16 @@
 #include "iup_varg.h"
 
 
-#ifdef _MSC_VER
-/* warning C4996: 'GetVersionExW': was declared deprecated */
-#pragma warning( disable : 4996 )
-#endif
+typedef LONG (WINAPI *PFN_RtlGetVersion)(OSVERSIONINFOW*);
+
+static void iupwinGetVersionInfo(OSVERSIONINFOW* osvi)
+{
+  HMODULE ntdll = GetModuleHandleA("ntdll.dll");
+  PFN_RtlGetVersion pRtlGetVersion = (PFN_RtlGetVersion)GetProcAddress(ntdll, "RtlGetVersion");
+  ZeroMemory(osvi, sizeof(OSVERSIONINFOW));
+  osvi->dwOSVersionInfoSize = sizeof(OSVERSIONINFOW);
+  pRtlGetVersion(osvi);
+}
 
 IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
@@ -31,14 +37,10 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
   return iupStrReturnStr(info.CodePageName);
 }
 
-/* TODO: Since Windows 8.1/Visual Studio 2013 GetVersionEx is deprecated. 
-         We can replace it using GetProductInfo. But for now leave it. */
-
 IUP_SDK_API char *iupdrvGetSystemName(void)
 {
-  OSVERSIONINFOA osvi;
-  osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
-  GetVersionExA(&osvi);
+  OSVERSIONINFOW osvi;
+  iupwinGetVersionInfo(&osvi);
 
   if (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT)
   {
@@ -60,14 +62,15 @@ IUP_SDK_API char *iupdrvGetSystemName(void)
     if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 2)
       return "Win8";
 
-    /* IMPORTANT: starting here will work only if the Manifest has been changed 
-       to include Windows 8+ support. Otherwise GetVersionEx will report 6.2 */
-
     if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 3)
       return "Win81";
 
     if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0)
+    {
+      if (osvi.dwBuildNumber >= 22000)
+        return "Win11";
       return "Win10";
+    }
   }
 
   return "Windows";
@@ -76,23 +79,23 @@ IUP_SDK_API char *iupdrvGetSystemName(void)
 IUP_SDK_API char *iupdrvGetSystemVersion(void)
 {
   char *str = iupStrGetMemory(256);
-  OSVERSIONINFOEXA osvi;
+  OSVERSIONINFOW osvi;
   SYSTEM_INFO si;
 
   ZeroMemory(&si, sizeof(SYSTEM_INFO));
   GetSystemInfo(&si);
 
-  ZeroMemory(&osvi, sizeof(OSVERSIONINFOEXA));
-  osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXA);
-  GetVersionExA((OSVERSIONINFOA*)&osvi);
+  iupwinGetVersionInfo(&osvi);
 
   snprintf(str, 256, "%d.%d.%d", (int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion, (int)osvi.dwBuildNumber);
 
   /* Display service pack (if any). */
   if (osvi.szCSDVersion[0] != 0)
   {
+    char csd[128];
+    WideCharToMultiByte(CP_ACP, 0, osvi.szCSDVersion, -1, csd, sizeof(csd), NULL, NULL);
     strcat(str, " ");
-    strcat(str, osvi.szCSDVersion);
+    strcat(str, csd);
   }
 
   if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64)
