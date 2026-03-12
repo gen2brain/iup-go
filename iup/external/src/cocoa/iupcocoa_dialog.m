@@ -30,6 +30,7 @@
 
 #include "iupcocoa_drv.h"
 #include "iupcocoa_keycodes.h"
+#include "iupcocoa_dragdrop.h"
 
 
 static const void* DOCKPROGRESS_ASSOCIATED_OBJ_KEY = @"DOCKPROGRESS_ASSOCIATED_OBJ_KEY";
@@ -155,6 +156,45 @@ static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
   }
   else
     [super flagsChanged:event];
+}
+
+- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)the_sender
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupObjectCheck(ih))
+    return NSDragOperationNone;
+
+  IupTargetDropAssociatedData* target_drop_data = cocoaTargetDropGetAssociatedData(ih);
+  NSArray* supported_types = [target_drop_data dropRegisteredTypes];
+  NSPasteboard* paste_board = [the_sender draggingPasteboard];
+
+  if ([paste_board availableTypeFromArray:supported_types])
+    return NSDragOperationCopy;
+
+  return NSDragOperationNone;
+}
+
+- (NSDragOperation)draggingUpdated:(id<NSDraggingInfo>)the_sender
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupObjectCheck(ih))
+    return NSDragOperationNone;
+
+  return cocoaTargetDropBaseDraggingUpdated(ih, the_sender);
+}
+
+- (BOOL)performDragOperation:(id<NSDraggingInfo>)the_sender
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupObjectCheck(ih))
+    return NO;
+
+  NSPasteboard* paste_board = [the_sender draggingPasteboard];
+  NSView* content_view = [self contentView];
+  NSPoint drop_point = [content_view convertPoint:[the_sender draggingLocation] fromView:nil];
+
+  cocoaTargetDropBasePerformDropCallback(ih, the_sender, paste_board, drop_point);
+  return YES;
 }
 
 @end
@@ -1468,6 +1508,9 @@ static int cocoaDialogMapMethod(Ihandle* ih)
     [the_window setHasShadow:YES];
   }
 
+  NSView* content_view = [the_window contentView];
+  cocoaTargetDropCreateAssociatedData(ih, content_view, content_view);
+
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
@@ -1519,6 +1562,8 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
   IupCocoaWindowDelegate* window_delegate = [the_window delegate];
   [the_window setDelegate:nil];
   [window_delegate release];
+
+  cocoaTargetDropDestroyAssociatedData(ih);
 
   iupcocoaSetAssociatedViews(ih, nil, nil);
   [the_window release];
