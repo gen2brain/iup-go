@@ -181,11 +181,19 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
         IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
         if (dlgaux && dlgaux->windowCreated)
         {
-          if (LOWORD(wParam) != WA_INACTIVE)
-            iupCallGetFocusCb(ih);
-          else
+          if (LOWORD(wParam) == WA_INACTIVE)
+          {
+            dlgaux->lastFocusedHwnd = GetFocus();
             iupCallKillFocusCb(ih);
-          return 0;
+          }
+          else
+          {
+            if (dlgaux->lastFocusedHwnd)
+              SetFocus(dlgaux->lastFocusedHwnd);
+            else if (dlgaux->islandHwnd)
+              SetFocus(dlgaux->islandHwnd);
+            iupCallGetFocusCb(ih);
+          }
         }
       }
       break;
@@ -198,14 +206,8 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
         IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
         if (dlgaux && dlgaux->islandHwnd)
         {
-          Ihandle* lastfocus = (Ihandle*)iupAttribGet(ih, "_IUPWINUI_LASTFOCUS");
-          if (iupObjectCheck(lastfocus) && !iupAttribGetBoolean(ih, "IGNORELASTFOCUS"))
-          {
-            IupSetFocus(lastfocus);
-            return 0;
-          }
-
-          SetFocus(dlgaux->islandHwnd);
+          if (!dlgaux->lastFocusedHwnd)
+            SetFocus(dlgaux->islandHwnd);
         }
       }
       return 0;
