@@ -324,6 +324,9 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
     {
       if (ih)
       {
+        if (iupAttribGet(ih, "_IUPWINUI_CONTENT_DIALOG_ACTIVE"))
+          return 0;
+
         Icallback cb = IupGetCallback(ih, "CLOSE_CB");
         if (cb)
         {
