@@ -1000,8 +1000,6 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
     GtkWidget* grab_widget;
     gint origin_x, origin_y;
 
-    /* TODO check gdk_event_set_pointer_emulated */
-
 #if GTK_CHECK_VERSION(3, 20, 0)
     GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());
     GdkDevice* device = gdk_seat_get_pointer(seat);
