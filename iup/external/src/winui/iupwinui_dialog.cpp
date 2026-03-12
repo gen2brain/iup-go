@@ -712,6 +712,9 @@ static int winuiDialogMapMethod(Ihandle* ih)
 
   aux->windowCreated = true;
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
