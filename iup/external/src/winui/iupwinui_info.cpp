@@ -20,8 +20,53 @@ extern "C" {
 
 #include "iupwinui_drv.h"
 
+typedef LONG (WINAPI *PFN_RtlGetVersion)(OSVERSIONINFOW*);
+
+static void iupwinuiGetVersionInfo(OSVERSIONINFOW* osvi)
+{
+  HMODULE ntdll = GetModuleHandleA("ntdll.dll");
+  PFN_RtlGetVersion pRtlGetVersion = (PFN_RtlGetVersion)GetProcAddress(ntdll, "RtlGetVersion");
+  ZeroMemory(osvi, sizeof(OSVERSIONINFOW));
+  osvi->dwOSVersionInfoSize = sizeof(OSVERSIONINFOW);
+  pRtlGetVersion(osvi);
+}
+
 extern "C" char* iupdrvGetSystemName(void)
 {
+  OSVERSIONINFOW osvi;
+  iupwinuiGetVersionInfo(&osvi);
+
+  if (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT)
+  {
+    if (osvi.dwMajorVersion <= 4)
+      return (char*)"WinNT";
+
+    if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
+      return (char*)"Win2K";
+
+    if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion > 0)
+      return (char*)"WinXP";
+
+    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 0)
+      return (char*)"Vista";
+
+    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 1)
+      return (char*)"Win7";
+
+    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 2)
+      return (char*)"Win8";
+
+    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 3)
+      return (char*)"Win81";
+
+    if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0)
+    {
+      if (osvi.dwBuildNumber >= 22000)
+        return (char*)"Win11";
+      return (char*)"Win10";
+    }
+  }
+
   return (char*)"Windows";
 }
 
@@ -31,13 +76,7 @@ extern "C" char* iupdrvGetSystemVersion(void)
   if (version[0] == 0)
   {
     OSVERSIONINFOW osvi;
-    ZeroMemory(&osvi, sizeof(OSVERSIONINFOW));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOW);
-
-#pragma warning(push)
-#pragma warning(disable: 4996)
-    GetVersionExW(&osvi);
-#pragma warning(pop)
+    iupwinuiGetVersionInfo(&osvi);
 
     snprintf(version, sizeof(version), "%lu.%lu.%lu",
             osvi.dwMajorVersion,
