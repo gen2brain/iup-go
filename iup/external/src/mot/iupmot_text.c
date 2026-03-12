@@ -856,7 +856,7 @@ static void motTextModifyVerifyCallback(Widget w, Ihandle *ih, XmTextVerifyPtr t
     remove_dir = -1;
   }
 
-  ret = iupEditCallActionCb(ih, cb, insert_value, start, end, ih->data->mask, ih->data->nc, remove_dir, 0);  /* TODO: UTF8 support */
+  ret = iupEditCallActionCb(ih, cb, insert_value, start, end, ih->data->mask, ih->data->nc, remove_dir, iupmotStrGetUTF8Mode());
   if (ret == 0)
   {
     text->doit = False;     /* abort processing */
