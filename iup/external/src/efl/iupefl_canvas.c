@@ -730,6 +730,8 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
 
   iupAttribSet(ih, "_IUP_EFL_VG_ROOT", NULL);
   ih->handle = NULL;
+
+  iupeflFontFree(ih);
 }
 
 static void eflCanvasLayoutUpdateMethod(Ihandle* ih)

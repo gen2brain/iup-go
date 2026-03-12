@@ -180,6 +180,8 @@ static void eflProgressBarUnMapMethod(Ihandle* ih)
 
   if (pbar)
     iupeflDelete(pbar);
+
+  iupeflFontFree(ih);
 }
 
 void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)

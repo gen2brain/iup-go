@@ -302,6 +302,8 @@ static void eflLabelUnMapMethod(Ihandle* ih)
     iupeflBaseRemoveCallbacks(ih, label);
     efl_del(label);
   }
+
+  iupeflFontFree(ih);
 }
 
 void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)

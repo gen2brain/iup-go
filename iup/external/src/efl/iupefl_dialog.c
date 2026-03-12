@@ -594,6 +594,8 @@ static void eflDialogUnMapMethod(Ihandle* ih)
   }
 
   ih->handle = NULL;
+
+  iupeflFontFree(ih);
 }
 
 static void eflDialogLayoutUpdateMethod(Ihandle* ih)

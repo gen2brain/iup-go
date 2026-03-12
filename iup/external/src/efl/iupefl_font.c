@@ -66,6 +66,18 @@ static IeflFont* eflFontGet(Ihandle* ih)
   return (IeflFont*)iupAttribGet(ih, "_IUP_EFL_FONT");
 }
 
+void iupeflFontFree(Ihandle* ih)
+{
+  IeflFont* font = eflFontGet(ih);
+  if (font)
+  {
+    if (font->font_name)
+      free(font->font_name);
+    free(font);
+    iupAttribSet(ih, "_IUP_EFL_FONT", NULL);
+  }
+}
+
 static void eflFontParse(const char* value, char* family, int* size, int* is_bold, int* is_italic, int* is_underline, int* is_strikeout)
 {
   const char* p;

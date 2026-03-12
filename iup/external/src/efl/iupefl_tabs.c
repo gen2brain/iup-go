@@ -908,6 +908,8 @@ static void eflTabsUnMapMethod(Ihandle* ih)
   }
 
   ih->handle = NULL;
+
+  iupeflFontFree(ih);
 }
 
 void iupdrvTabsInitClass(Iclass* ic)

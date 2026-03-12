@@ -1760,6 +1760,8 @@ static void eflListUnMapMethod(Ihandle* ih)
   }
 
   ih->handle = NULL;
+
+  iupeflFontFree(ih);
 }
 
 int iupdrvListGetCount(Ihandle* ih)

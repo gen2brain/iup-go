@@ -165,6 +165,8 @@ static void eflScrollbarUnMapMethod(Ihandle* ih)
     efl_event_callback_del(slider, EFL_UI_RANGE_EVENT_CHANGED, eflScrollbarChangedCallback, ih);
     iupeflDelete(slider);
   }
+
+  iupeflFontFree(ih);
 }
 
 void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)

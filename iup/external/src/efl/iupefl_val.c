@@ -249,6 +249,8 @@ static void eflValUnMapMethod(Ihandle* ih)
     efl_event_callback_del(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_STOP, eflValDragStopCallback, ih);
     iupeflDelete(slider);
   }
+
+  iupeflFontFree(ih);
 }
 
 void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)

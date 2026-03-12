@@ -421,6 +421,8 @@ static void eflButtonUnMapMethod(Ihandle* ih)
     efl_del(btn);
   }
 
+  iupeflFontFree(ih);
+
   ih->handle = NULL;
 }
 
