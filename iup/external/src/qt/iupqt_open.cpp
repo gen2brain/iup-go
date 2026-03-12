@@ -142,7 +142,8 @@ extern "C" char* iupqtGetNativeWidgetHandle(QWidget *widget)
 
 extern "C" const char* iupqtGetNativeWindowHandleName(void)
 {
-  const char* platform = QGuiApplication::platformName().toUtf8().constData();
+  QByteArray platformUtf8 = QGuiApplication::platformName().toUtf8();
+  const char* platform = platformUtf8.constData();
 
   if (strcmp(platform, "xcb") == 0)
     return "XWINDOW";
@@ -161,7 +162,8 @@ extern "C" const char* iupqtGetNativeWindowHandleName(void)
 
 extern "C" const char* iupqtGetNativeFontIdName(void)
 {
-  const char* platform = QGuiApplication::platformName().toUtf8().constData();
+  QByteArray platformUtf8 = QGuiApplication::platformName().toUtf8();
+  const char* platform = platformUtf8.constData();
 
   if (strcmp(platform, "xcb") == 0)
     return "XFONTID";

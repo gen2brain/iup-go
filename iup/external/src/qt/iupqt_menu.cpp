@@ -258,10 +258,16 @@ static int qtMenuMapMethod(Ihandle* ih)
 
 static void qtMenuUnMapMethod(Ihandle* ih)
 {
+  QActionGroup* radio_group = (QActionGroup*)iupAttribGet(ih, "_IUPQT_RADIOGROUP");
+  if (radio_group)
+    delete radio_group;
+
   if (iupMenuIsMenuBar(ih))
     ih->parent = nullptr;
 
-  iupdrvBaseUnMapMethod(ih);
+  QWidget* widget = (QWidget*)ih->handle;
+  if (widget)
+    delete widget;
 }
 
 /****************************************************************************
@@ -495,11 +501,18 @@ static int qtItemMapMethod(Ihandle* ih)
  * Item Class Init
  ****************************************************************************/
 
+static void qtItemUnMapMethod(Ihandle* ih)
+{
+  QAction* action = (QAction*)ih->handle;
+  if (action)
+    delete action;
+}
+
 extern "C" void iupdrvItemInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtItemMapMethod;
-  ic->UnMap = iupdrvBaseUnMapMethod;
+  ic->UnMap = qtItemUnMapMethod;
 
   /* Common */
   iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
@@ -644,11 +657,18 @@ static int qtSubmenuMapMethod(Ihandle* ih)
  * Submenu Class Init
  ****************************************************************************/
 
+static void qtSubmenuUnMapMethod(Ihandle* ih)
+{
+  QAction* action = (QAction*)ih->handle;
+  if (action)
+    delete action;
+}
+
 extern "C" void iupdrvSubmenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtSubmenuMapMethod;
-  ic->UnMap = iupdrvBaseUnMapMethod;
+  ic->UnMap = qtSubmenuUnMapMethod;
 
   /* Common */
   iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
@@ -701,10 +721,17 @@ static int qtSeparatorMapMethod(Ihandle* ih)
  * Separator Class Init
  ****************************************************************************/
 
+static void qtSeparatorUnMapMethod(Ihandle* ih)
+{
+  QAction* action = (QAction*)ih->handle;
+  if (action)
+    delete action;
+}
+
 extern "C" void iupdrvSeparatorInitClass(Iclass* ic)
 {
   ic->Map = qtSeparatorMapMethod;
-  ic->UnMap = iupdrvBaseUnMapMethod;
+  ic->UnMap = qtSeparatorUnMapMethod;
 }
 
 
