@@ -1349,6 +1349,7 @@ static int gtk4TableMapMethod(Ihandle* ih)
     factory_data->col_index = col;
 
     GtkListItemFactory* factory = gtk_signal_list_item_factory_new();
+    g_object_set_data_full(G_OBJECT(factory), "iup-factory-data", factory_data, g_free);
     g_signal_connect(factory, "setup", G_CALLBACK(cell_factory_setup), factory_data);
     g_signal_connect(factory, "bind", G_CALLBACK(cell_factory_bind), factory_data);
     g_signal_connect(factory, "unbind", G_CALLBACK(cell_factory_unbind), factory_data);
@@ -1430,6 +1431,7 @@ static int gtk4TableMapMethod(Ihandle* ih)
     }
 
     gtk_column_view_append_column(GTK_COLUMN_VIEW(gtk_data->column_view), column);
+    g_object_unref(column);
     gtk_data->num_columns++;
   }
 
@@ -1456,6 +1458,7 @@ static int gtk4TableMapMethod(Ihandle* ih)
     gtk_column_view_column_set_expand(dummy_column, TRUE);
     gtk_column_view_column_set_resizable(dummy_column, FALSE);
     gtk_column_view_append_column(GTK_COLUMN_VIEW(gtk_data->column_view), dummy_column);
+    g_object_unref(dummy_column);
   }
 
   GListModel* model_for_selection;

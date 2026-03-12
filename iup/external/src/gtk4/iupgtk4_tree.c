@@ -1437,6 +1437,7 @@ iupgtk4TreeGetThemeIcon(Ihandle *ih, const char *icon_name, int size)
         g_error_free(error);
         texture = NULL;
       }
+      g_object_unref(file);
     }
     g_object_unref(icon_paintable);
   }

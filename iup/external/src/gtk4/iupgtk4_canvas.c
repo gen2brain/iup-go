@@ -801,9 +801,19 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void gtk4CanvasUnMapMethod(Ihandle* ih)
+{
+  cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
+  if (buffer)
+    cairo_surface_destroy(buffer);
+
+  iupdrvBaseUnMapMethod(ih);
+}
+
 void iupdrvCanvasInitClass(Iclass* ic)
 {
   ic->Map = gtk4CanvasMapMethod;
+  ic->UnMap = gtk4CanvasUnMapMethod;
   ic->LayoutUpdate = gtk4CanvasLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, gtk4CanvasSetBgColorAttrib, "255 255 255", NULL, IUPAF_NO_SAVE|IUPAF_DEFAULT);
