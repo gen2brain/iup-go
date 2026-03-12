@@ -175,15 +175,17 @@ protected:
       int y = event->pos().y();
 #endif
 
-      QString fileList;
       for (int i = 0; i < count; i++)
       {
-        if (i > 0) fileList += "\n";
-        fileList += urls[i].toLocalFile();
+        QString filePath = urls[i].toLocalFile();
+        if (!filePath.isEmpty())
+        {
+          QByteArray fileArray = filePath.toUtf8();
+          if (cb(ih, (char*)fileArray.constData(), count - i - 1, x, y) == IUP_IGNORE)
+            break;
+        }
       }
 
-      QByteArray fileArray = fileList.toUtf8();
-      cb(ih, (char*)fileArray.constData(), count, x, y);
       event->acceptProposedAction();
       return;
     }
@@ -349,15 +351,17 @@ protected:
       int y = event->pos().y();
 #endif
 
-      QString fileList;
       for (int i = 0; i < count; i++)
       {
-        if (i > 0) fileList += "\n";
-        fileList += urls[i].toLocalFile();
+        QString filePath = urls[i].toLocalFile();
+        if (!filePath.isEmpty())
+        {
+          QByteArray fileArray = filePath.toUtf8();
+          if (cb(ih, (char*)fileArray.constData(), count - i - 1, x, y) == IUP_IGNORE)
+            break;
+        }
       }
 
-      QByteArray fileArray = fileList.toUtf8();
-      cb(ih, (char*)fileArray.constData(), count, x, y);
       event->acceptProposedAction();
       return;
     }
