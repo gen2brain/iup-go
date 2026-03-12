@@ -324,25 +324,33 @@ protected:
 
         if (!handled_custom)
         {
+          if (mime->hasUrls())
+          {
+            IFnsiii cbDropFiles = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+            if (cbDropFiles)
+            {
+              QList<QUrl> urls = mime->urls();
+              int count = urls.size();
+
+              for (int i = 0; i < count; i++)
+              {
+                QString filePath = urls[i].toLocalFile();
+                if (!filePath.isEmpty())
+                {
+                  QByteArray fileArray = filePath.toUtf8();
+                  if (cbDropFiles(ih, (char*)fileArray.constData(), count - i - 1, x, y) == IUP_IGNORE)
+                    break;
+                }
+              }
+
+              drop->acceptProposedAction();
+              return true;
+            }
+          }
+
           if (mime->hasText())
           {
             iupAttribSetStr(ih, "DROPTEXT", mime->text().toUtf8().constData());
-          }
-
-          if (mime->hasUrls())
-          {
-            QList<QUrl> urls = mime->urls();
-            if (!urls.isEmpty())
-            {
-              QString files;
-              for (int i = 0; i < urls.size(); i++)
-              {
-                if (i > 0)
-                  files += "\n";
-                files += urls[i].toLocalFile();
-              }
-              iupAttribSetStr(ih, "DROPFILESTARGET", files.toUtf8().constData());
-            }
           }
 
           IFnsViii cb = (IFnsViii)IupGetCallback(ih, "DROP_CB");
@@ -745,6 +753,7 @@ extern "C" void iupqtDragDropRegisterAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "DRAGFILES", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPTEXT", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
+  iupClassRegisterCallback(ic, "DROPFILES_CB", "siii");
   iupClassRegisterCallback(ic, "DRAGBEGIN_CB", "ii");
   iupClassRegisterCallback(ic, "DRAGEND_CB", "i");
   iupClassRegisterCallback(ic, "DROPMOTION_CB", "iis");
