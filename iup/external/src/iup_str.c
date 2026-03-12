@@ -623,133 +623,41 @@ IUP_SDK_API int iupStrToRGBA(const char *str, unsigned char *r, unsigned char *g
   return 1;
 }
 
-/* TODO: are strtod/atof and strtol/atoi faster/better than sscanf? 
-         must handle the 0 return value. */
-
 IUP_SDK_API int iupStrToInt(const char *str, int *i)
 {
+  char* endptr;
+  long val;
   if (!str) return 0;
-  if (sscanf(str, "%d", i) != 1) return 0;
+  val = strtol(str, &endptr, 10);
+  if (endptr == str) return 0;
+  *i = (int)val;
   return 1;
 }
 
 IUP_SDK_API int iupStrToUInt(const char *str, unsigned int *i)
 {
+  char* endptr;
+  unsigned long val;
   if (!str) return 0;
-  if (sscanf(str, "%u", i) != 1) return 0;
+  val = strtoul(str, &endptr, 10);
+  if (endptr == str) return 0;
+  *i = (unsigned int)val;
   return 1;
 }
 
 IUP_SDK_API int iupStrToIntInt(const char *str, int *i1, int *i2, char sep)
 {
-  if (!str) return 0;
-                         
-  if (iup_tolower(*str) == sep) /* no first value */
-  {
-    str++; /* skip separator */
-    if (sscanf(str, "%d", i2) != 1) return 0;
-    return 1;
-  }
-  else 
-  {
-    char* p_str = iStrDupUntilNoCase((char**)&str, sep);
-    
-    if (!p_str)   /* no separator means no second value */
-    {        
-      if (sscanf(str, "%d", i1) != 1) return 0;
-      return 1;
-    }
-    else if (*str==0)  /* separator exists, but second value empty, also means no second value */
-    {        
-      int ret = sscanf(p_str, "%d", i1);
-      free(p_str);
-      if (ret != 1) return 0;
-      return 1;
-    }
-    else
-    {
-      int ret = 0;
-      if (sscanf(p_str, "%d", i1) == 1) ret++;
-      if (sscanf(str, "%d", i2) == 1) ret++;
-      free(p_str);
-      return ret;
-    }
-  }
-}
+  char* endptr;
+  long val;
 
-IUP_SDK_API int iupStrToFloatDef(const char *str, float *f, float def)
-{
-  if (!str) { *f = def;  return 1; }
-  if (sscanf(str, "%f", f) != 1) return 0;
-  return 1;
-}
-
-IUP_SDK_API int iupStrToFloat(const char *str, float *f)
-{
-  if (!str) return 0;
-  if (sscanf(str, "%f", f) != 1) return 0;
-  return 1;
-}
-
-IUP_SDK_API int iupStrToDouble(const char *str, double *d)
-{
-  if (!str) return 0;
-  if (sscanf(str, "%lf", d) != 1) return 0;
-  return 1;
-}
-
-IUP_SDK_API int iupStrToDoubleDef(const char *str, double *d, double def)
-{
-  if (!str) { *d = def;  return 1; }
-  if (sscanf(str, "%lf", d) != 1) return 0;
-  return 1;
-}
-
-IUP_SDK_API int iupStrToFloatFloat(const char *str, float *f1, float *f2, char sep)
-{
   if (!str) return 0;
 
   if (iup_tolower(*str) == sep) /* no first value */
   {
     str++; /* skip separator */
-    if (sscanf(str, "%f", f2) != 1) return 0;
-    return 1;
-  }
-  else 
-  {
-    char* p_str = iStrDupUntilNoCase((char**)&str, sep);
-    
-    if (!p_str)   /* no separator means no second value */
-    {        
-      if (sscanf(str, "%f", f1) != 1) return 0;
-      return 1;
-    }
-    else if (*str==0)    /* separator exists, but second value empty, also means no second value */
-    {        
-      int ret = sscanf(p_str, "%f", f1);
-      free(p_str);
-      if (ret != 1) return 0;
-      return 1;
-    }
-    else
-    {
-      int ret = 0;
-      if (sscanf(p_str, "%f", f1) == 1) ret++;
-      if (sscanf(str, "%f", f2) == 1) ret++;
-      free(p_str);
-      return ret;
-    }
-  }
-}
-
-IUP_SDK_API int iupStrToDoubleDouble(const char *str, double *f1, double *f2, char sep)
-{
-  if (!str) return 0;
-
-  if (iup_tolower(*str) == sep) /* no first value */
-  {
-    str++; /* skip separator */
-    if (sscanf(str, "%lf", f2) != 1) return 0;
+    val = strtol(str, &endptr, 10);
+    if (endptr == str) return 0;
+    *i2 = (int)val;
     return 1;
   }
   else
@@ -758,21 +666,164 @@ IUP_SDK_API int iupStrToDoubleDouble(const char *str, double *f1, double *f2, ch
 
     if (!p_str)   /* no separator means no second value */
     {
-      if (sscanf(str, "%lf", f1) != 1) return 0;
+      val = strtol(str, &endptr, 10);
+      if (endptr == str) return 0;
+      *i1 = (int)val;
       return 1;
     }
-    else if (*str == 0)    /* separator exists, but second value empty, also means no second value */
+    else if (*str==0)  /* separator exists, but second value empty, also means no second value */
     {
-      int ret = sscanf(p_str, "%lf", f1);
+      val = strtol(p_str, &endptr, 10);
       free(p_str);
-      if (ret != 1) return 0;
+      if (endptr == p_str) return 0;
+      *i1 = (int)val;
       return 1;
     }
     else
     {
       int ret = 0;
-      if (sscanf(p_str, "%lf", f1) == 1) ret++;
-      if (sscanf(str, "%lf", f2) == 1) ret++;
+      val = strtol(p_str, &endptr, 10);
+      if (endptr != p_str) { *i1 = (int)val; ret++; }
+      val = strtol(str, &endptr, 10);
+      if (endptr != str) { *i2 = (int)val; ret++; }
+      free(p_str);
+      return ret;
+    }
+  }
+}
+
+IUP_SDK_API int iupStrToFloatDef(const char *str, float *f, float def)
+{
+  char* endptr;
+  float val;
+  if (!str) { *f = def;  return 1; }
+  val = strtof(str, &endptr);
+  if (endptr == str) return 0;
+  *f = val;
+  return 1;
+}
+
+IUP_SDK_API int iupStrToFloat(const char *str, float *f)
+{
+  char* endptr;
+  float val;
+  if (!str) return 0;
+  val = strtof(str, &endptr);
+  if (endptr == str) return 0;
+  *f = val;
+  return 1;
+}
+
+IUP_SDK_API int iupStrToDouble(const char *str, double *d)
+{
+  char* endptr;
+  double val;
+  if (!str) return 0;
+  val = strtod(str, &endptr);
+  if (endptr == str) return 0;
+  *d = val;
+  return 1;
+}
+
+IUP_SDK_API int iupStrToDoubleDef(const char *str, double *d, double def)
+{
+  char* endptr;
+  double val;
+  if (!str) { *d = def;  return 1; }
+  val = strtod(str, &endptr);
+  if (endptr == str) return 0;
+  *d = val;
+  return 1;
+}
+
+IUP_SDK_API int iupStrToFloatFloat(const char *str, float *f1, float *f2, char sep)
+{
+  char* endptr;
+  float val;
+
+  if (!str) return 0;
+
+  if (iup_tolower(*str) == sep) /* no first value */
+  {
+    str++; /* skip separator */
+    val = strtof(str, &endptr);
+    if (endptr == str) return 0;
+    *f2 = val;
+    return 1;
+  }
+  else
+  {
+    char* p_str = iStrDupUntilNoCase((char**)&str, sep);
+
+    if (!p_str)   /* no separator means no second value */
+    {
+      val = strtof(str, &endptr);
+      if (endptr == str) return 0;
+      *f1 = val;
+      return 1;
+    }
+    else if (*str==0)    /* separator exists, but second value empty, also means no second value */
+    {
+      val = strtof(p_str, &endptr);
+      free(p_str);
+      if (endptr == p_str) return 0;
+      *f1 = val;
+      return 1;
+    }
+    else
+    {
+      int ret = 0;
+      val = strtof(p_str, &endptr);
+      if (endptr != p_str) { *f1 = val; ret++; }
+      val = strtof(str, &endptr);
+      if (endptr != str) { *f2 = val; ret++; }
+      free(p_str);
+      return ret;
+    }
+  }
+}
+
+IUP_SDK_API int iupStrToDoubleDouble(const char *str, double *f1, double *f2, char sep)
+{
+  char* endptr;
+  double val;
+
+  if (!str) return 0;
+
+  if (iup_tolower(*str) == sep) /* no first value */
+  {
+    str++; /* skip separator */
+    val = strtod(str, &endptr);
+    if (endptr == str) return 0;
+    *f2 = val;
+    return 1;
+  }
+  else
+  {
+    char* p_str = iStrDupUntilNoCase((char**)&str, sep);
+
+    if (!p_str)   /* no separator means no second value */
+    {
+      val = strtod(str, &endptr);
+      if (endptr == str) return 0;
+      *f1 = val;
+      return 1;
+    }
+    else if (*str == 0)    /* separator exists, but second value empty, also means no second value */
+    {
+      val = strtod(p_str, &endptr);
+      free(p_str);
+      if (endptr == p_str) return 0;
+      *f1 = val;
+      return 1;
+    }
+    else
+    {
+      int ret = 0;
+      val = strtod(p_str, &endptr);
+      if (endptr != p_str) { *f1 = val; ret++; }
+      val = strtod(str, &endptr);
+      if (endptr != str) { *f2 = val; ret++; }
       free(p_str);
       return ret;
     }
@@ -1453,31 +1504,32 @@ IUP_SDK_API int iupStrCompare(const char *l, const char *r, int casesensitive, i
     }
     else /* mode==NUMBER */
     {
-      unsigned long r_int;
-      long diff;
+      const char *l_start = l, *r_start = r;
+      int l_len = 0, r_len = 0;
 
-      /* get the left number */
-      unsigned long l_int=0;
-      while(*l && iup_isdigit(*l))
+      /* skip leading zeros */
+      while (*l == '0') { ++l; }
+      while (*r == '0') { ++r; }
+
+      /* count significant digits */
+      l_start = l;
+      while (*l && iup_isdigit(*l)) { ++l; l_len++; }
+      r_start = r;
+      while (*r && iup_isdigit(*r)) { ++r; r_len++; }
+
+      /* longer number is larger */
+      if (l_len != r_len)
+        return l_len - r_len;
+
+      /* same length: compare digit by digit */
       {
-        /* TODO: this can overflow */
-        l_int = l_int*10 + *l-'0';
-        ++l;
+        int i;
+        for (i = 0; i < l_len; i++)
+        {
+          if (l_start[i] != r_start[i])
+            return (unsigned char)l_start[i] - (unsigned char)r_start[i];
+        }
       }
-
-      /* get the right number */
-      r_int=0;
-      while(*r && iup_isdigit(*r))
-      {
-        /* TODO: this can overflow */
-        r_int = r_int*10 + *r-'0';
-        ++r;
-      }
-
-      /* if the difference is not equal to zero, we have a comparison result */
-      diff = l_int-r_int;
-      if (diff != 0)
-        return (int)diff;
 
       /* otherwise we process the next substring in STRING mode */
       mode=STRING;
