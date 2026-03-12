@@ -773,14 +773,11 @@ void iupdrvFontFinish(void)
       XftFontClose(iupmot_display, fonts[i].xftfont);
       fonts[i].xftfont = NULL;
     }
-    else
 #endif
+    if (fonts[i].fontstruct)
     {
-      if (fonts[i].fontstruct)
-      {
-        XFreeFont(iupmot_display, fonts[i].fontstruct);
-        fonts[i].fontstruct = NULL;
-      }
+      XFreeFont(iupmot_display, fonts[i].fontstruct);
+      fonts[i].fontstruct = NULL;
     }
   }
   iupArrayDestroy(mot_fonts);
