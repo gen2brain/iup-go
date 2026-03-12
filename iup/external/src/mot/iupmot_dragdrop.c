@@ -45,15 +45,16 @@ static void motDoNothing(Widget w, XEvent*  evt, String* params, Cardinal* num_p
 
 void iupmotDisableDragSource(Widget w)
 {
-  char dragTranslations[] = "#override <Btn2Down>: iupDoNothing()";
+  static XtTranslations drag_translations = NULL;
   static int do_nothing_rec = 0;
   if (!do_nothing_rec)
   {
     XtActionsRec rec = {"iupDoNothing", (XtActionProc)motDoNothing};
     XtAppAddActions(iupmot_appcontext, &rec, 1);
+    drag_translations = XtParseTranslationTable("#override <Btn2Down>: iupDoNothing()");
     do_nothing_rec = 1;
   }
-  XtOverrideTranslations(w, XtParseTranslationTable(dragTranslations));
+  XtOverrideTranslations(w, drag_translations);
 }
 
 static void motDropTransferProc(Widget dropTransfer, Ihandle* ih, Atom *selType, Atom *typeAtom,
@@ -425,16 +426,17 @@ static int motSetDragSourceAttrib(Ihandle* ih, const char* value)
 
   if(iupStrBoolean(value))
   {
-    char dragTranslations[] = "#override <Btn2Down>: iupStartDrag()";
+    static XtTranslations drag_start_translations = NULL;
     static int do_rec = 0;
 
     if (!do_rec)
     {
       XtActionsRec rec = {"iupStartDrag", (XtActionProc)motDragStart};
       XtAppAddActions(iupmot_appcontext, &rec, 1);
+      drag_start_translations = XtParseTranslationTable("#override <Btn2Down>: iupStartDrag()");
       do_rec = 1;
     }
-    XtOverrideTranslations(w, XtParseTranslationTable(dragTranslations));
+    XtOverrideTranslations(w, drag_start_translations);
 
     XtVaSetValues(w, XmNuserData, ih, NULL);  /* Warning: always check if this affects other controls */
   }
