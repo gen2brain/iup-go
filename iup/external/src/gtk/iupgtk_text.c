@@ -835,6 +835,7 @@ static int gtkTextGetCharSize(Ihandle* ih)
   metrics = pango_context_get_metrics(context, fontdesc, pango_context_get_language(context));
   charwidth = pango_font_metrics_get_approximate_char_width(metrics);
   pango_font_metrics_unref(metrics);
+  g_object_unref(context);
   return charwidth;
 }
 
