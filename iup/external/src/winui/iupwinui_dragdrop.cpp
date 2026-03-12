@@ -86,14 +86,25 @@ static void winuiDropFilesDrop(Ihandle* ih, IInspectable const&, DragEventArgs c
   }
 }
 
+static UIElement winuiGetDropFilesElement(Ihandle* ih)
+{
+  if (ih->iclass->nativetype == IUP_TYPEDIALOG)
+  {
+    IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+    if (aux && aux->rootPanel)
+      return aux->rootPanel.try_as<UIElement>();
+    return nullptr;
+  }
+
+  return winuiGetHandle<UIElement>(ih);
+}
+
 static int winuiSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)
     return 1;
 
-  IInspectable obj{nullptr};
-  winrt::copy_from_abi(obj, ih->handle);
-  UIElement elem = obj.try_as<UIElement>();
+  UIElement elem = winuiGetDropFilesElement(ih);
   if (!elem)
     return 1;
 
