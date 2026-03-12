@@ -1,7 +1,8 @@
 /** \file
  * \brief WinUI Driver - Message Dialog
  *
- * Uses WinUI ContentDialog.
+ * Uses WinUI ContentDialog hosted on the parent dialog's XamlRoot.
+ * Falls back to a temporary XAML island when no parent dialog exists.
  *
  * See Copyright Notice in "iup.h"
  */
@@ -34,8 +35,6 @@ using namespace Windows::Graphics;
 
 static LRESULT CALLBACK winuiMsgDlgHostWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-  if (msg == WM_MOUSEACTIVATE)
-    return MA_NOACTIVATE;
   if (msg == WM_SETFOCUS)
   {
     HWND island = (HWND)GetWindowLongPtr(hwnd, GWLP_USERDATA);
@@ -62,28 +61,8 @@ static void winuiMsgDlgRegisterHostClass(void)
   registered = true;
 }
 
-static char* winuiMessageDlgGetAutoModalAttrib(Ihandle* ih)
+static Ihandle* winuiMsgDlgFindParent(Ihandle* ih)
 {
-  InativeHandle* parent = iupDialogGetNativeParent(ih);
-  int automodal = 1;
-  if (parent)
-    automodal = 0;
-  return iupStrReturnBoolean(automodal);
-}
-
-static int winuiMessageDlgPopup(Ihandle* ih, int x, int y)
-{
-  char* buttons;
-  int button_def;
-
-  (void)x;
-  (void)y;
-
-  XamlRoot xamlRoot{nullptr};
-  HWND tempHwnd = NULL;
-  DesktopWindowXamlSource tempXamlSource{nullptr};
-  Grid tempRoot{nullptr};
-
   Ihandle* parent = IupGetAttributeHandle(ih, "PARENTDIALOG");
   if (!parent)
     parent = IupGetGlobal("PARENTDIALOG") ? IupGetHandle(IupGetGlobal("PARENTDIALOG")) : NULL;
@@ -98,86 +77,24 @@ static int winuiMessageDlgPopup(Ihandle* ih, int x, int y)
         parent = ih_active;
     }
   }
-  HWND parentHwnd = (parent && parent->handle) ? (HWND)parent->handle : NULL;
 
-  winuiMsgDlgRegisterHostClass();
+  return (parent && parent->handle) ? parent : NULL;
+}
 
-  int screenW = GetSystemMetrics(SM_CXSCREEN);
-  int screenH = GetSystemMetrics(SM_CYSCREEN);
+static XamlRoot winuiMsgDlgGetParentXamlRoot(Ihandle* parent)
+{
+  if (!parent)
+    return nullptr;
 
-  tempHwnd = CreateWindowExW(
-    WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
-    WINUI_MSGDLG_HOST_CLASS,
-    L"",
-    WS_POPUP,
-    0, 0, screenW, screenH,
-    parentHwnd, NULL, GetModuleHandle(NULL), NULL
-  );
+  IupWinUIDialogAux* parentAux = winuiGetAux<IupWinUIDialogAux>(parent, IUPWINUI_DIALOG_AUX);
+  if (parentAux && parentAux->rootPanel)
+    return parentAux->rootPanel.XamlRoot();
 
-  if (!tempHwnd)
-    return IUP_ERROR;
+  return nullptr;
+}
 
-  tempXamlSource = DesktopWindowXamlSource();
-
-  Microsoft::UI::WindowId wid = winrt::Microsoft::UI::GetWindowIdFromWindow(tempHwnd);
-  tempXamlSource.Initialize(wid);
-
-  DesktopChildSiteBridge siteBridge = tempXamlSource.SiteBridge();
-  if (siteBridge)
-  {
-    HWND islandHwnd = GetWindowFromWindowId(siteBridge.WindowId());
-    if (islandHwnd)
-    {
-      SetWindowLong(islandHwnd, GWL_STYLE, WS_CHILD | WS_VISIBLE);
-      SetWindowLongPtr(tempHwnd, GWLP_USERDATA, (LONG_PTR)islandHwnd);
-    }
-
-    Windows::Graphics::RectInt32 islandRect = {0, 0, screenW, screenH};
-    siteBridge.MoveAndResize(islandRect);
-  }
-
-  tempRoot = Grid();
-  tempRoot.Width(static_cast<double>(screenW));
-  tempRoot.Height(static_cast<double>(screenH));
-  tempXamlSource.Content(tempRoot);
-
-  ShowWindow(tempHwnd, SW_SHOW);
-  UpdateWindow(tempHwnd);
-
-  if (parentHwnd)
-    EnableWindow(parentHwnd, FALSE);
-
-  {
-    MSG flush;
-    while (PeekMessage(&flush, NULL, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}
-  }
-
-  {
-    MSG msg;
-    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-    {
-      BOOL handled = iupwinuiContentPreTranslateMessage(&msg);
-      if (!handled)
-      {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-      }
-    }
-  }
-
-  xamlRoot = tempRoot.XamlRoot();
-
-  if (!xamlRoot)
-  {
-    if (parentHwnd)
-      EnableWindow(parentHwnd, TRUE);
-    if (tempXamlSource) { tempXamlSource.Close(); tempXamlSource = nullptr; }
-    if (tempHwnd) DestroyWindow(tempHwnd);
-    return IUP_ERROR;
-  }
-
-  ContentDialog dialog;
-
+static void winuiMsgDlgConfigureContent(ContentDialog& dialog, Ihandle* ih)
+{
   char* title = iupAttribGet(ih, "TITLE");
   if (title)
     dialog.Title(box_value(iupwinuiStringToHString(title)));
@@ -216,10 +133,11 @@ static int winuiMessageDlgPopup(Ihandle* ih, int x, int y)
   }
   else if (value)
     dialog.Content(box_value(iupwinuiStringToHString(value)));
+}
 
-  dialog.XamlRoot(xamlRoot);
-
-  buttons = iupAttribGetStr(ih, "BUTTONS");
+static void winuiMsgDlgConfigureButtons(ContentDialog& dialog, Ihandle* ih)
+{
+  char* buttons = iupAttribGetStr(ih, "BUTTONS");
 
   if (iupStrEqualNoCase(buttons, "OKCANCEL"))
   {
@@ -247,47 +165,29 @@ static int winuiMessageDlgPopup(Ihandle* ih, int x, int y)
     dialog.PrimaryButtonText(L"OK");
   }
 
-  button_def = iupAttribGetInt(ih, "BUTTONDEFAULT");
+  int button_def = iupAttribGetInt(ih, "BUTTONDEFAULT");
   if (button_def == 3)
     dialog.DefaultButton(ContentDialogButton::Close);
   else if (button_def == 2)
     dialog.DefaultButton(ContentDialogButton::Secondary);
   else
     dialog.DefaultButton(ContentDialogButton::Primary);
+}
 
-  ContentDialogResult dialogResult = ContentDialogResult::None;
-  bool dialogCompleted = false;
+static void winuiMsgDlgSetResult(Ihandle* ih, ContentDialogResult dialogResult)
+{
+  char* buttons = iupAttribGetStr(ih, "BUTTONS");
 
-  auto asyncOp = dialog.ShowAsync();
-  asyncOp.Completed([&dialogResult, &dialogCompleted](
-      IAsyncOperation<ContentDialogResult> const& op, AsyncStatus status) {
-    if (status == AsyncStatus::Completed)
-      dialogResult = op.GetResults();
-    dialogCompleted = true;
-  });
+  if (dialogResult == ContentDialogResult::Primary)
+    iupAttribSet(ih, "BUTTONRESPONSE", "1");
+  else if (dialogResult == ContentDialogResult::Secondary)
+    iupAttribSet(ih, "BUTTONRESPONSE", "2");
+  else
+    iupAttribSet(ih, "BUTTONRESPONSE", iupStrEqualNoCase(buttons, "YESNOCANCEL") ? "3" : "2");
+}
 
-  {
-    MSG msg;
-    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-    {
-      BOOL handled = iupwinuiContentPreTranslateMessage(&msg);
-      if (!handled)
-      {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-      }
-      if (dialogCompleted)
-        break;
-    }
-  }
-
-  iupwinuiBringWindowToForeground(tempHwnd);
-  {
-    HWND islandHwnd = (HWND)GetWindowLongPtr(tempHwnd, GWLP_USERDATA);
-    if (islandHwnd)
-      SetFocus(islandHwnd);
-  }
-
+static void winuiMsgDlgRunMessageLoop(bool& dialogCompleted)
+{
   MSG msg;
   while (!dialogCompleted)
   {
@@ -302,36 +202,160 @@ static int winuiMessageDlgPopup(Ihandle* ih, int x, int y)
       DispatchMessage(&msg);
     }
   }
+}
 
-  if (dialogResult == ContentDialogResult::Primary)
-    iupAttribSet(ih, "BUTTONRESPONSE", "1");
-  else if (dialogResult == ContentDialogResult::Secondary)
-    iupAttribSet(ih, "BUTTONRESPONSE", "2");
-  else
-    iupAttribSet(ih, "BUTTONRESPONSE", iupStrEqualNoCase(buttons, "YESNOCANCEL") ? "3" : "2");
+static int winuiMsgDlgShowOnParent(Ihandle* ih, Ihandle* parent)
+{
+  XamlRoot xamlRoot = winuiMsgDlgGetParentXamlRoot(parent);
+  if (!xamlRoot)
+    return IUP_ERROR;
 
-  {
-    MSG flush;
-    while (PeekMessage(&flush, NULL, WM_KEYFIRST, WM_KEYLAST, PM_REMOVE)) {}
-  }
+  HWND parentHwnd = (HWND)parent->handle;
 
-  if (parentHwnd)
-  {
-    EnableWindow(parentHwnd, TRUE);
-    iupwinuiBringWindowToForeground(parentHwnd);
-  }
+  iupAttribSet(parent, "_IUPWINUI_CONTENT_DIALOG_ACTIVE", "1");
 
-  if (tempHwnd)
-    SetWindowLongPtr(tempHwnd, GWLP_USERDATA, 0);
-  if (tempXamlSource)
-  {
-    tempXamlSource.Close();
-    tempXamlSource = nullptr;
-  }
-  if (tempHwnd)
-    DestroyWindow(tempHwnd);
+  ContentDialog dialog;
+  dialog.XamlRoot(xamlRoot);
+  winuiMsgDlgConfigureContent(dialog, ih);
+  winuiMsgDlgConfigureButtons(dialog, ih);
+
+  ContentDialogResult dialogResult = ContentDialogResult::None;
+  bool dialogCompleted = false;
+
+  auto asyncOp = dialog.ShowAsync();
+  asyncOp.Completed([&dialogResult, &dialogCompleted](
+      IAsyncOperation<ContentDialogResult> const& op, AsyncStatus status) {
+    if (status == AsyncStatus::Completed)
+      dialogResult = op.GetResults();
+    dialogCompleted = true;
+  });
+
+  iupwinuiProcessPendingMessages();
+
+  IupWinUIDialogAux* parentAux = winuiGetAux<IupWinUIDialogAux>(parent, IUPWINUI_DIALOG_AUX);
+  if (parentAux && parentAux->islandHwnd)
+    SetFocus(parentAux->islandHwnd);
+
+  winuiMsgDlgRunMessageLoop(dialogCompleted);
+
+  winuiMsgDlgSetResult(ih, dialogResult);
+
+  iupAttribSet(parent, "_IUPWINUI_CONTENT_DIALOG_ACTIVE", NULL);
 
   return IUP_NOERROR;
+}
+
+static int winuiMsgDlgShowStandalone(Ihandle* ih)
+{
+  winuiMsgDlgRegisterHostClass();
+
+  int screenW = GetSystemMetrics(SM_CXSCREEN);
+  int screenH = GetSystemMetrics(SM_CYSCREEN);
+
+  HWND tempHwnd = CreateWindowExW(
+    WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+    WINUI_MSGDLG_HOST_CLASS,
+    L"",
+    WS_POPUP,
+    0, 0, screenW, screenH,
+    NULL, NULL, GetModuleHandle(NULL), NULL
+  );
+
+  if (!tempHwnd)
+    return IUP_ERROR;
+
+  DesktopWindowXamlSource tempXamlSource = DesktopWindowXamlSource();
+
+  Microsoft::UI::WindowId wid = winrt::Microsoft::UI::GetWindowIdFromWindow(tempHwnd);
+  tempXamlSource.Initialize(wid);
+
+  DesktopChildSiteBridge siteBridge = tempXamlSource.SiteBridge();
+  if (siteBridge)
+  {
+    HWND islandHwnd = GetWindowFromWindowId(siteBridge.WindowId());
+    if (islandHwnd)
+    {
+      SetWindowLong(islandHwnd, GWL_STYLE, WS_TABSTOP | WS_CHILD | WS_VISIBLE);
+      SetWindowLongPtr(tempHwnd, GWLP_USERDATA, (LONG_PTR)islandHwnd);
+    }
+
+    RectInt32 islandRect = {0, 0, screenW, screenH};
+    siteBridge.MoveAndResize(islandRect);
+  }
+
+  Grid tempRoot;
+  tempRoot.Width(static_cast<double>(screenW));
+  tempRoot.Height(static_cast<double>(screenH));
+  tempXamlSource.Content(tempRoot);
+
+  ShowWindow(tempHwnd, SW_SHOW);
+  UpdateWindow(tempHwnd);
+
+  iupwinuiProcessPendingMessages();
+
+  XamlRoot xamlRoot = tempRoot.XamlRoot();
+  if (!xamlRoot)
+  {
+    tempXamlSource.Close();
+    DestroyWindow(tempHwnd);
+    return IUP_ERROR;
+  }
+
+  ContentDialog dialog;
+  dialog.XamlRoot(xamlRoot);
+  winuiMsgDlgConfigureContent(dialog, ih);
+  winuiMsgDlgConfigureButtons(dialog, ih);
+
+  ContentDialogResult dialogResult = ContentDialogResult::None;
+  bool dialogCompleted = false;
+
+  auto asyncOp = dialog.ShowAsync();
+  asyncOp.Completed([&dialogResult, &dialogCompleted](
+      IAsyncOperation<ContentDialogResult> const& op, AsyncStatus status) {
+    if (status == AsyncStatus::Completed)
+      dialogResult = op.GetResults();
+    dialogCompleted = true;
+  });
+
+  iupwinuiProcessPendingMessages();
+
+  {
+    HWND islandHwnd = (HWND)GetWindowLongPtr(tempHwnd, GWLP_USERDATA);
+    if (islandHwnd)
+      SetFocus(islandHwnd);
+  }
+
+  winuiMsgDlgRunMessageLoop(dialogCompleted);
+
+  winuiMsgDlgSetResult(ih, dialogResult);
+
+  SetWindowLongPtr(tempHwnd, GWLP_USERDATA, 0);
+  tempXamlSource.Close();
+  DestroyWindow(tempHwnd);
+
+  return IUP_NOERROR;
+}
+
+static int winuiMessageDlgPopup(Ihandle* ih, int x, int y)
+{
+  (void)x;
+  (void)y;
+
+  Ihandle* parent = winuiMsgDlgFindParent(ih);
+
+  if (parent)
+    return winuiMsgDlgShowOnParent(ih, parent);
+  else
+    return winuiMsgDlgShowStandalone(ih);
+}
+
+static char* winuiMessageDlgGetAutoModalAttrib(Ihandle* ih)
+{
+  InativeHandle* parent = iupDialogGetNativeParent(ih);
+  int automodal = 1;
+  if (parent)
+    automodal = 0;
+  return iupStrReturnBoolean(automodal);
 }
 
 extern "C" void iupdrvMessageDlgInitClass(Iclass* ic)
