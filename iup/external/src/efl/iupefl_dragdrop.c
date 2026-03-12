@@ -457,27 +457,61 @@ static int eflSetDragSourceAttrib(Ihandle* ih, const char* value)
 }
 
 /*****************************************************************************
- * File Drop Support
+ * File Drop Support (Ecore_Evas level)
  *****************************************************************************/
 
-static Eina_Value eflDropFilesDataReceivedCb(Eo* obj, void* data, const Eina_Value value)
+extern void ecore_evas_dnd_mark_motion_used(Ecore_Evas *ee, unsigned int seat);
+
+typedef struct {
+  Ihandle *ih;
+  int x, y;
+} eflDropFilesData;
+
+static Ihandle* eflDropFilesIhFromEe(Ecore_Evas *ee)
 {
-  Ihandle* ih = (Ihandle*)data;
+  return (Ihandle*)ecore_evas_data_get(ee, "_IUP_DROPFILES_IH");
+}
+
+static void eflDropFilesMotionCb(Ecore_Evas *ee, unsigned int seat, Eina_Position2D p)
+{
+  Ihandle* ih = eflDropFilesIhFromEe(ee);
+
+  (void)p;
+
+  if (!ih || !iupObjectCheck(ih))
+    return;
+
+  ecore_evas_dnd_mark_motion_used(ee, seat);
+}
+
+static void eflDropFilesStateChangedCb(Ecore_Evas *ee, unsigned int seat, Eina_Position2D p, Eina_Bool move_inside)
+{
+  (void)ee;
+  (void)seat;
+  (void)p;
+  (void)move_inside;
+}
+
+static Eina_Value eflDropFilesSelectionCb(Eo* obj, void* data, const Eina_Value value)
+{
+  eflDropFilesData* dfd = (eflDropFilesData*)data;
+  Ihandle* ih = dfd->ih;
+  int drop_x = dfd->x;
+  int drop_y = dfd->y;
   IFnsiii cbDropFiles;
   Eina_Content* content;
+  Eina_Slice slice;
   char* dataCopy;
   char* savePtr = NULL;
   char* line;
   int count = 0;
   int remaining;
-  Eina_Slice slice;
 
   (void)obj;
 
-  if (eina_value_type_get(&value) != EINA_VALUE_TYPE_CONTENT)
-    return value;
+  free(dfd);
 
-  eina_value_get(&value, &content);
+  content = eina_value_to_content(&value);
   if (!content)
     return value;
 
@@ -523,7 +557,7 @@ static Eina_Value eflDropFilesDataReceivedCb(Eo* obj, void* data, const Eina_Val
     if (strncmp(filename, "file://", 7) == 0)
       filename += 7;
 
-    if (cbDropFiles(ih, filename, remaining, 0, 0) == IUP_IGNORE)
+    if (cbDropFiles(ih, filename, remaining, drop_x, drop_y) == IUP_IGNORE)
       break;
 
     remaining--;
@@ -535,21 +569,39 @@ static Eina_Value eflDropFilesDataReceivedCb(Eo* obj, void* data, const Eina_Val
   return value;
 }
 
-static void eflDropFilesDroppedCb(void *data, const Efl_Event *ev)
+static void eflDropFilesDropCb(Ecore_Evas *ee, unsigned int seat, Eina_Position2D p, const char *action)
 {
-  Ihandle* ih = (Ihandle*)data;
-  Eo* widget = iupeflGetWidget(ih);
-  Eina_Future* future;
+  Ihandle* ih = eflDropFilesIhFromEe(ee);
   Eina_Array* types;
+  Eina_Future* future;
 
-  if (!widget)
+  (void)action;
+
+  if (!ih || !iupObjectCheck(ih))
+    return;
+
+  if (!IupGetCallback(ih, "DROPFILES_CB"))
     return;
 
   types = eina_array_new(1);
   eina_array_push(types, "text/uri-list");
 
-  future = efl_ui_dnd_drop_data_get(widget, iupeflGetDefaultSeat(widget), eina_array_iterator_new(types));
-  efl_future_then(ev->object, future, .success = eflDropFilesDataReceivedCb, .data = ih);
+  future = ecore_evas_selection_get(ee, seat, ECORE_EVAS_SELECTION_BUFFER_DRAG_AND_DROP_BUFFER, eina_array_iterator_new(types));
+  if (future)
+  {
+    Eo* widget = iupeflGetWidget(ih);
+    if (widget)
+    {
+      eflDropFilesData* dfd = (eflDropFilesData*)calloc(1, sizeof(eflDropFilesData));
+      if (dfd)
+      {
+        dfd->ih = ih;
+        dfd->x = p.x;
+        dfd->y = p.y;
+        efl_future_then(widget, future, .success = eflDropFilesSelectionCb, .data = dfd);
+      }
+    }
+  }
 
   eina_array_free(types);
 }
@@ -557,7 +609,15 @@ static void eflDropFilesDroppedCb(void *data, const Efl_Event *ev)
 static int eflSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
   Eo* widget = iupeflGetWidget(ih);
+  Evas* evas;
+  Ecore_Evas* ee;
+
   if (!widget)
+    return 0;
+
+  evas = evas_object_evas_get(widget);
+  ee = evas ? ecore_evas_ecore_evas_get(evas) : NULL;
+  if (!ee)
     return 0;
 
   if (iupStrBoolean(value))
@@ -565,7 +625,10 @@ static int eflSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
     if (iupAttribGet(ih, "_IUPEFL_DROPFILES_ACTIVE"))
       return 1;
 
-    efl_event_callback_add(widget, EFL_UI_DND_EVENT_DROP_DROPPED, eflDropFilesDroppedCb, ih);
+    ecore_evas_data_set(ee, "_IUP_DROPFILES_IH", ih);
+    ecore_evas_callback_drop_motion_set(ee, eflDropFilesMotionCb);
+    ecore_evas_callback_drop_state_changed_set(ee, eflDropFilesStateChangedCb);
+    ecore_evas_callback_drop_drop_set(ee, eflDropFilesDropCb);
 
     iupAttribSet(ih, "_IUPEFL_DROPFILES_ACTIVE", "1");
   }
@@ -573,7 +636,10 @@ static int eflSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
   {
     if (iupAttribGet(ih, "_IUPEFL_DROPFILES_ACTIVE"))
     {
-      efl_event_callback_del(widget, EFL_UI_DND_EVENT_DROP_DROPPED, eflDropFilesDroppedCb, ih);
+      ecore_evas_callback_drop_motion_set(ee, NULL);
+      ecore_evas_callback_drop_state_changed_set(ee, NULL);
+      ecore_evas_callback_drop_drop_set(ee, NULL);
+      ecore_evas_data_set(ee, "_IUP_DROPFILES_IH", NULL);
 
       iupAttribSet(ih, "_IUPEFL_DROPFILES_ACTIVE", NULL);
     }

@@ -561,6 +561,9 @@ static int eflDialogMapMethod(Ihandle* ih)
   if (parent)
     iupdrvDialogSetParent(ih, (InativeHandle*)parent);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
