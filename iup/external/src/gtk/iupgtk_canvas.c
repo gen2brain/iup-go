@@ -927,10 +927,22 @@ static int gtkCanvasMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void gtkCanvasUnMapMethod(Ihandle* ih)
+{
+#if GTK_CHECK_VERSION(3, 0, 0)
+  cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK3_CANVAS_BUFFER");
+  if (buffer)
+    cairo_surface_destroy(buffer);
+#endif
+
+  iupdrvBaseUnMapMethod(ih);
+}
+
 void iupdrvCanvasInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkCanvasMapMethod;
+  ic->UnMap = gtkCanvasUnMapMethod;
   ic->LayoutUpdate = gtkCanvasLayoutUpdateMethod;
 
   /* Driver Dependent Attribute functions */

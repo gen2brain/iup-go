@@ -307,6 +307,9 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
     char* desc = pango_font_description_to_string(font_desc);
     strcpy(str, desc);
     g_free(desc);
+#if GTK_CHECK_VERSION(3, 8, 0)
+    pango_font_description_free((PangoFontDescription*)font_desc);
+#endif
   }
   gtk_widget_destroy(widget);
   return str;
