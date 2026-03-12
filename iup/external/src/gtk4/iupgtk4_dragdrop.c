@@ -31,6 +31,17 @@
 static int gtk4SetDragSourceAttrib(Ihandle* ih, const char* value);
 static int gtk4SetDropTargetAttrib(Ihandle* ih, const char* value);
 
+static GtkWidget* gtk4GetDropWidget(Ihandle* ih)
+{
+  if (GTK_IS_WINDOW(ih->handle))
+  {
+    GtkWidget* child = gtk_window_get_child(GTK_WINDOW(ih->handle));
+    if (child)
+      return child;
+  }
+  return ih->handle;
+}
+
 static gboolean gtk4DropTargetDrop(GtkDropTarget *target, const GValue *value, double x, double y, Ihandle *ih)
 {
   IFnsViii cbDropData = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
@@ -281,10 +292,11 @@ static void gtk4BytesDeserializer(GdkContentDeserializer *deserializer)
 static int gtk4SetDropTargetAttrib(Ihandle* ih, const char* value)
 {
   GtkDropTarget *drop_target = (GtkDropTarget*)iupAttribGet(ih, "_IUPGTK4_DROP_TARGET");
+  GtkWidget *drop_widget = gtk4GetDropWidget(ih);
 
   if (drop_target && ih->handle)
   {
-    gtk_widget_remove_controller(ih->handle, GTK_EVENT_CONTROLLER(drop_target));
+    gtk_widget_remove_controller(drop_widget, GTK_EVENT_CONTROLLER(drop_target));
     iupAttribSet(ih, "_IUPGTK4_DROP_TARGET", NULL);
   }
 
@@ -309,7 +321,7 @@ static int gtk4SetDropTargetAttrib(Ihandle* ih, const char* value)
     g_signal_connect(drop_target, "drop", G_CALLBACK(gtk4DropTargetDrop), ih);
     g_signal_connect(drop_target, "motion", G_CALLBACK(gtk4DropTargetMotion), ih);
 
-    gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(drop_target));
+    gtk_widget_add_controller(drop_widget, GTK_EVENT_CONTROLLER(drop_target));
     iupAttribSet(ih, "_IUPGTK4_DROP_TARGET", (char*)drop_target);
   }
 
@@ -381,79 +393,224 @@ static int gtk4SetDragSourceAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static gboolean gtk4DropFileDrop(GtkDropTarget *target, const GValue *value, double x, double y, Ihandle *ih)
+typedef struct {
+  Ihandle *ih;
+  GdkDrop *drop;
+  GInputStream *stream;
+  GOutputStream *mem_stream;
+  double x, y;
+} gtk4DropFileData;
+
+static void gtk4DropFilesProcessUris(gtk4DropFileData *data)
 {
-  IFnsiii cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
-  GSList *file_list;
-  GSList *l;
-  int count, i;
+  IFnsiii cb = (IFnsiii)IupGetCallback(data->ih, "DROPFILES_CB");
+  if (cb)
+  {
+    GBytes *bytes = g_memory_output_stream_steal_as_bytes(G_MEMORY_OUTPUT_STREAM(data->mem_stream));
+    gsize size;
+    const char *uri_data = g_bytes_get_data(bytes, &size);
+    char *uri_str = g_strndup(uri_data, size);
+    gchar **uris = g_uri_list_extract_uris(uri_str);
+    g_free(uri_str);
+    if (uris)
+    {
+      int count;
+      int i;
+      for (count = 0; uris[count]; count++);
+      for (i = 0; uris[i]; i++)
+      {
+        GFile *file = g_file_new_for_uri(uris[i]);
+        char *filename = g_file_get_path(file);
+        if (!filename)
+          filename = g_strdup(uris[i]);
+
+        if (filename)
+        {
+          if (cb(data->ih, filename, count - i - 1, (int)data->x, (int)data->y) == IUP_IGNORE)
+          {
+            g_free(filename);
+            g_object_unref(file);
+            break;
+          }
+          g_free(filename);
+        }
+        g_object_unref(file);
+      }
+      g_strfreev(uris);
+    }
+    g_bytes_unref(bytes);
+  }
+}
+
+static void gtk4DropFilesSpliceDone(GObject *source, GAsyncResult *result, gpointer user_data)
+{
+  gtk4DropFileData *data = (gtk4DropFileData*)user_data;
+  GError *error = NULL;
+  gssize written;
+
+  written = g_output_stream_splice_finish(G_OUTPUT_STREAM(source), result, &error);
+
+  if (error)
+  {
+    g_error_free(error);
+  }
+  else if (written > 0)
+  {
+    gtk4DropFilesProcessUris(data);
+  }
+
+  gdk_drop_finish(data->drop, GDK_ACTION_COPY);
+  g_object_unref(data->mem_stream);
+  g_object_unref(data->stream);
+  g_object_unref(data->drop);
+  g_free(data);
+}
+
+static void gtk4DropFilesReadDone(GObject *source, GAsyncResult *result, gpointer user_data)
+{
+  GdkDrop *drop = GDK_DROP(source);
+  gtk4DropFileData *data = (gtk4DropFileData*)user_data;
+  GError *error = NULL;
+  const char *mime_type = NULL;
+
+  data->stream = gdk_drop_read_finish(drop, result, &mime_type, &error);
+  if (error)
+  {
+    gdk_drop_finish(drop, 0);
+    g_error_free(error);
+    g_object_unref(data->drop);
+    g_free(data);
+    return;
+  }
+
+  data->mem_stream = g_memory_output_stream_new_resizable();
+  g_output_stream_splice_async(data->mem_stream, data->stream,
+                               G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
+                               G_PRIORITY_DEFAULT, NULL,
+                               gtk4DropFilesSpliceDone, data);
+}
+
+static gboolean gtk4DropFilesAccept(GtkDropTargetAsync *target, GdkDrop *drop, Ihandle *ih)
+{
+  GdkContentFormats *formats;
 
   (void)target;
 
-  if (!cb)
+  if (!IupGetCallback(ih, "DROPFILES_CB"))
     return FALSE;
 
-  if (!G_VALUE_HOLDS(value, GDK_TYPE_FILE_LIST))
+  formats = gdk_drop_get_formats(drop);
+  return gdk_content_formats_contain_mime_type(formats, "text/uri-list");
+}
+
+static GdkDragAction gtk4DropFilesDragEnter(GtkDropTargetAsync *target, GdkDrop *drop, double x, double y, Ihandle *ih)
+{
+  (void)target;
+  (void)drop;
+  (void)x;
+  (void)y;
+  (void)ih;
+  return GDK_ACTION_COPY;
+}
+
+static GdkDragAction gtk4DropFilesDragMotion(GtkDropTargetAsync *target, GdkDrop *drop, double x, double y, Ihandle *ih)
+{
+  (void)target;
+  (void)drop;
+  (void)x;
+  (void)y;
+  (void)ih;
+  return GDK_ACTION_COPY;
+}
+
+static gboolean gtk4DropFilesDrop(GtkDropTargetAsync *target, GdkDrop *drop, double x, double y, Ihandle *ih)
+{
+  gtk4DropFileData *data;
+  const char *mime_types[] = { "text/uri-list", NULL };
+
+  (void)target;
+
+  if (!IupGetCallback(ih, "DROPFILES_CB"))
     return FALSE;
 
-  file_list = g_value_get_boxed(value);
-  if (!file_list)
-    return FALSE;
+  data = g_new(gtk4DropFileData, 1);
+  data->ih = ih;
+  data->drop = g_object_ref(drop);
+  data->stream = NULL;
+  data->mem_stream = NULL;
+  data->x = x;
+  data->y = y;
 
-  count = g_slist_length(file_list);
-
-  /* Call callback for each file */
-  i = 0;
-  for (l = file_list; l != NULL; l = l->next)
-  {
-    GFile *file = (GFile*)l->data;
-    char *filename = g_file_get_path(file);
-
-    if (!filename)
-      filename = g_file_get_uri(file);
-
-    if (filename)
-    {
-      /* Remove file:// prefix if present */
-      char *final_name = filename;
-      if (iupStrEqualPartial(filename, "file://"))
-      {
-        final_name = filename + strlen("file://");
-        if (final_name[2] == ':')  /* Windows extra '/' */
-          final_name++;
-      }
-
-      if (cb(ih, final_name, count - i - 1, (int)x, (int)y) == IUP_IGNORE)
-      {
-        g_free(filename);
-        break;
-      }
-      g_free(filename);
-    }
-    i++;
-  }
-
+  gdk_drop_read_async(drop, mime_types, G_PRIORITY_DEFAULT, NULL, gtk4DropFilesReadDone, data);
   return TRUE;
+}
+
+static GtkWidget* gtk4GetDropFilesWidget(Ihandle* ih)
+{
+  GtkWidget *widget;
+
+  widget = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_INNER_PARENT");
+  if (widget)
+    return widget;
+
+  return ih->handle;
+}
+
+static void gtk4RemoveChildDropTargets(GtkWidget *widget)
+{
+  GListModel *controllers;
+  GtkWidget *child;
+  guint i;
+
+  controllers = gtk_widget_observe_controllers(widget);
+  for (i = g_list_model_get_n_items(controllers); i > 0; i--)
+  {
+    GtkEventController *ctrl = g_list_model_get_item(controllers, i - 1);
+    if (GTK_IS_DROP_TARGET(ctrl))
+      gtk_widget_remove_controller(widget, ctrl);
+    g_object_unref(ctrl);
+  }
+  g_object_unref(controllers);
+
+  for (child = gtk_widget_get_first_child(widget); child; child = gtk_widget_get_next_sibling(child))
+    gtk4RemoveChildDropTargets(child);
+}
+
+static void gtk4DropFilesWidgetMapped(GtkWidget *widget, gpointer user_data)
+{
+  (void)user_data;
+  gtk4RemoveChildDropTargets(widget);
+  g_signal_handlers_disconnect_by_func(widget, gtk4DropFilesWidgetMapped, user_data);
 }
 
 static int gtk4SetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
-  GtkDropTarget *drop_target = (GtkDropTarget*)iupAttribGet(ih, "_IUPGTK4_DROPFILES_TARGET");
+  GtkEventController *controller = (GtkEventController*)iupAttribGet(ih, "_IUPGTK4_DROPFILES_TARGET");
+  GtkWidget *target_widget = gtk4GetDropFilesWidget(ih);
 
-  if (drop_target)
+  if (controller)
   {
-    gtk_widget_remove_controller(ih->handle, GTK_EVENT_CONTROLLER(drop_target));
+    gtk_widget_remove_controller(target_widget, controller);
     iupAttribSet(ih, "_IUPGTK4_DROPFILES_TARGET", NULL);
+    g_signal_handlers_disconnect_by_func(target_widget, gtk4DropFilesWidgetMapped, ih);
   }
 
   if (iupStrBoolean(value))
   {
-    drop_target = gtk_drop_target_new(GDK_TYPE_FILE_LIST, GDK_ACTION_COPY);
+    GtkDropTargetAsync *async_target = gtk_drop_target_async_new(NULL, GDK_ACTION_COPY);
 
-    g_signal_connect(drop_target, "drop", G_CALLBACK(gtk4DropFileDrop), ih);
+    g_signal_connect(async_target, "accept", G_CALLBACK(gtk4DropFilesAccept), ih);
+    g_signal_connect(async_target, "drag-enter", G_CALLBACK(gtk4DropFilesDragEnter), ih);
+    g_signal_connect(async_target, "drag-motion", G_CALLBACK(gtk4DropFilesDragMotion), ih);
+    g_signal_connect(async_target, "drop", G_CALLBACK(gtk4DropFilesDrop), ih);
 
-    gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(drop_target));
-    iupAttribSet(ih, "_IUPGTK4_DROPFILES_TARGET", (char*)drop_target);
+    gtk_widget_add_controller(target_widget, GTK_EVENT_CONTROLLER(async_target));
+    iupAttribSet(ih, "_IUPGTK4_DROPFILES_TARGET", (char*)async_target);
+
+    if (gtk_widget_get_mapped(target_widget))
+      gtk4RemoveChildDropTargets(target_widget);
+    else
+      g_signal_connect(target_widget, "map", G_CALLBACK(gtk4DropFilesWidgetMapped), ih);
   }
 
   return 1;
