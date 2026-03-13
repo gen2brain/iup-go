@@ -228,6 +228,18 @@ func DrawGetImage(ih Ihandle) Ihandle {
 	return mkih(C.IupDrawGetImage(ih.ptr()))
 }
 
+// DrawGetSvg triggers a repaint of the canvas/plot and captures all drawing
+// operations as SVG. Returns the complete SVG document as a string, or empty
+// string on failure. Works with any drawable control (Canvas, Plot, etc.).
+func DrawGetSvg(ih Ihandle) string {
+	cStr := C.IupDrawGetSvg(ih.ptr())
+	if cStr == nil {
+		return ""
+	}
+	defer C.free(unsafe.Pointer(cStr))
+	return C.GoString(cStr)
+}
+
 // DrawLinearGradient draws a linear gradient between two colors.
 // angle: 0=horizontal right, 90=vertical down, 180=horizontal left, 270=vertical up.
 // color1 and color2 are color strings (e.g., "255 0 0" for red).
