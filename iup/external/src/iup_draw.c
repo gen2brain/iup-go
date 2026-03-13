@@ -19,21 +19,41 @@
 #include "iup_drvfont.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
+#include "iup_draw_svg.h"
 #include "iup_assert.h"
 #include "iup_image.h"
 
 
+#define IUP_SVG_GET(ih) ((iSvgCanvas*)iupAttribGet(ih, "_IUP_SVG_CANVAS"))
+
+static void iSvgColorStr(long color, char* buf, int buf_size)
+{
+  unsigned char r = iupDrawRed(color);
+  unsigned char g = iupDrawGreen(color);
+  unsigned char b = iupDrawBlue(color);
+  unsigned char a = iupDrawAlpha(color);
+  if (a >= 255)
+    snprintf(buf, buf_size, "%d %d %d", r, g, b);
+  else
+    snprintf(buf, buf_size, "%d %d %d %d", r, g, b, a);
+}
 
 IUP_API void IupDrawBegin(Ihandle* ih)
 {
-  IdrawCanvas* dc;
-
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = iupdrvDrawCreateCanvas(ih);
-  iupAttribSet(ih, "_IUP_DRAW_DC", (char*)dc);
+  if (IUP_SVG_GET(ih))
+  {
+    iupAttribSet(ih, "_IUP_DRAW_DC", (char*)1);
+    return;
+  }
+
+  {
+    IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
+    iupAttribSet(ih, "_IUP_DRAW_DC", (char*)dc);
+  }
 }
 
 IUP_API void IupDrawEnd(Ihandle* ih)
@@ -43,6 +63,12 @@ IUP_API void IupDrawEnd(Ihandle* ih)
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
+
+  if (IUP_SVG_GET(ih))
+  {
+    iupAttribSet(ih, "_IUP_DRAW_DC", NULL);
+    return;
+  }
 
   dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
   if (!dc)
@@ -55,17 +81,25 @@ IUP_API void IupDrawEnd(Ihandle* ih)
 
 IUP_API void IupDrawGetSize(Ihandle* ih, int *w, int *h)
 {
-  IdrawCanvas* dc;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawGetSize(svg, w, h);
     return;
+  }
 
-  iupdrvDrawGetSize(dc, w, h);
+  {
+    IdrawCanvas* dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+    if (!dc)
+      return;
+    iupdrvDrawGetSize(dc, w, h);
+  }
 }
 
 IUP_API void IupDrawParentBackground(Ihandle* ih)
@@ -74,6 +108,9 @@ IUP_API void IupDrawParentBackground(Ihandle* ih)
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
+    return;
+
+  if (IUP_SVG_GET(ih))
     return;
 
   dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
@@ -86,6 +123,10 @@ IUP_API void IupDrawParentBackground(Ihandle* ih)
 static int iDrawGetStyle(Ihandle* ih)
 {
   char* style = iupAttribGetStr(ih, "DRAWSTYLE");
+  if (!style)
+    return IUP_DRAW_STROKE;
+  if (style[0] >= '0' && style[0] <= '5')
+    return (int)(style[0] - '0');
   if (iupStrEqualNoCase(style, "FILL"))
     return IUP_DRAW_FILL;
   else if (iupStrEqualNoCase(style, "STROKE_DASH"))
@@ -114,20 +155,28 @@ IUP_API void IupDrawLine(Ihandle* ih, int x1, int y1, int x2, int y2)
   IdrawCanvas* dc;
   long color = 0;
   int style, line_width;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
-
   line_width = iDrawGetLineWidth(ih);
   style = iDrawGetStyle(ih);
 
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    char c[32]; iSvgColorStr(color, c, sizeof(c));
+    iupSvgDrawLine(svg, x1, y1, x2, y2, c, style, line_width);
+    return;
+  }
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
   iupdrvDrawLine(dc, x1, y1, x2, y2, color, style, line_width);
 }
 
@@ -136,209 +185,272 @@ IUP_API void IupDrawRectangle(Ihandle* ih, int x1, int y1, int x2, int y2)
   IdrawCanvas* dc;
   long color;
   int style, line_width;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
-
   line_width = iDrawGetLineWidth(ih);
   style = iDrawGetStyle(ih);
 
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    char c[32]; iSvgColorStr(color, c, sizeof(c));
+    iupSvgDrawRectangle(svg, x1, y1, x2, y2, c, style, line_width);
+    return;
+  }
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, color, style, line_width);
 }
 
 IUP_API void IupDrawArc(Ihandle* ih, int x1, int y1, int x2, int y2, double a1, double a2)
 {
-  IdrawCanvas* dc;
   long color = 0;
   int style, line_width;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
-
   line_width = iDrawGetLineWidth(ih);
   style = iDrawGetStyle(ih);
 
-  iupdrvDrawArc(dc, x1, y1, x2, y2, a1, a2, color, style, line_width);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    char c[32]; iSvgColorStr(color, c, sizeof(c));
+    iupSvgDrawArc(svg, x1, y1, x2, y2, a1, a2, c, style, line_width);
+    return;
+  }
+
+  iupdrvDrawArc((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, a1, a2, color, style, line_width);
 }
 
 IUP_API void IupDrawEllipse(Ihandle* ih, int x1, int y1, int x2, int y2)
 {
-  IdrawCanvas* dc;
   long color = 0;
   int style, line_width;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
-
   line_width = iDrawGetLineWidth(ih);
   style = iDrawGetStyle(ih);
 
-  iupdrvDrawEllipse(dc, x1, y1, x2, y2, color, style, line_width);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    char c[32]; iSvgColorStr(color, c, sizeof(c));
+    iupSvgDrawEllipse(svg, x1, y1, x2, y2, c, style, line_width);
+    return;
+  }
+
+  iupdrvDrawEllipse((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, color, style, line_width);
 }
 
 IUP_API void IupDrawPolygon(Ihandle* ih, int* points, int count)
 {
-  IdrawCanvas* dc;
   long color = 0;
   int style, line_width;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
-
   line_width = iDrawGetLineWidth(ih);
   style = iDrawGetStyle(ih);
 
-  iupdrvDrawPolygon(dc, points, count, color, style, line_width);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    char c[32]; iSvgColorStr(color, c, sizeof(c));
+    iupSvgDrawPolygon(svg, points, count, c, style, line_width);
+    return;
+  }
+
+  iupdrvDrawPolygon((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), points, count, color, style, line_width);
 }
 
 IUP_API void IupDrawPixel(Ihandle* ih, int x, int y)
 {
-  IdrawCanvas* dc;
   long color = 0;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
 
-  iupdrvDrawPixel(dc, x, y, color);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    char c[32]; iSvgColorStr(color, c, sizeof(c));
+    iupSvgDrawPixel(svg, x, y, c);
+    return;
+  }
+
+  iupdrvDrawPixel((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x, y, color);
 }
 
 IUP_API void IupDrawRoundedRectangle(Ihandle* ih, int x1, int y1, int x2, int y2, int corner_radius)
 {
-  IdrawCanvas* dc;
   long color = 0;
   int style, line_width;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
-
   line_width = iDrawGetLineWidth(ih);
   style = iDrawGetStyle(ih);
 
-  iupdrvDrawRoundedRectangle(dc, x1, y1, x2, y2, corner_radius, color, style, line_width);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    char c[32]; iSvgColorStr(color, c, sizeof(c));
+    iupSvgDrawRoundedRectangle(svg, x1, y1, x2, y2, corner_radius, c, style, line_width);
+    return;
+  }
+
+  iupdrvDrawRoundedRectangle((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, corner_radius, color, style, line_width);
 }
 
 IUP_API void IupDrawBezier(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4)
 {
-  IdrawCanvas* dc;
   long color = 0;
   int style, line_width;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
-
   line_width = iDrawGetLineWidth(ih);
   style = iDrawGetStyle(ih);
 
-  iupdrvDrawBezier(dc, x1, y1, x2, y2, x3, y3, x4, y4, color, style, line_width);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    char c[32]; iSvgColorStr(color, c, sizeof(c));
+    iupSvgDrawBezier(svg, x1, y1, x2, y2, x3, y3, x4, y4, c, style, line_width);
+    return;
+  }
+
+  iupdrvDrawBezier((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, x3, y3, x4, y4, color, style, line_width);
 }
 
 IUP_API void IupDrawQuadraticBezier(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3)
 {
-  IdrawCanvas* dc;
   long color = 0;
   int style, line_width;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
-
   line_width = iDrawGetLineWidth(ih);
   style = iDrawGetStyle(ih);
 
-  iupdrvDrawQuadraticBezier(dc, x1, y1, x2, y2, x3, y3, color, style, line_width);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    char c[32]; iSvgColorStr(color, c, sizeof(c));
+    iupSvgDrawQuadraticBezier(svg, x1, y1, x2, y2, x3, y3, c, style, line_width);
+    return;
+  }
+
+  iupdrvDrawQuadraticBezier((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, x3, y3, color, style, line_width);
 }
 
 IUP_API void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2)
 {
-  IdrawCanvas* dc;
-  long c1, c2;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
-  c1 = iupDrawStrToColor(color1, 0);
-  c2 = iupDrawStrToColor(color2, 0);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawLinearGradient(svg, x1, y1, x2, y2, angle, color1, color2);
+    return;
+  }
 
-  iupdrvDrawLinearGradient(dc, x1, y1, x2, y2, angle, c1, c2);
+  {
+    long c1 = iupDrawStrToColor(color1, 0);
+    long c2 = iupDrawStrToColor(color2, 0);
+    iupdrvDrawLinearGradient((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, angle, c1, c2);
+  }
 }
 
 IUP_API void IupDrawRadialGradient(Ihandle* ih, int cx, int cy, int radius, const char* colorCenter, const char* colorEdge)
 {
-  IdrawCanvas* dc;
-  long c1, c2;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
-  c1 = iupDrawStrToColor(colorCenter, 0);
-  c2 = iupDrawStrToColor(colorEdge, 0);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawRadialGradient(svg, cx, cy, radius, colorCenter, colorEdge);
+    return;
+  }
 
-  iupdrvDrawRadialGradient(dc, cx, cy, radius, c1, c2);
+  {
+    long c1 = iupDrawStrToColor(colorCenter, 0);
+    long c2 = iupDrawStrToColor(colorEdge, 0);
+    iupdrvDrawRadialGradient((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), cx, cy, radius, c1, c2);
+  }
 }
 
 static void iDrawRotatePoint(int x, int y, int *rx, int *ry, double sin_theta, double cos_theta)
@@ -425,10 +537,10 @@ IUP_SDK_API int iupDrawGetTextFlags(Ihandle* ih, const char* align_name, const c
 
 IUP_API void IupDrawText(Ihandle* ih, const char* text, int len, int x, int y, int w, int h)
 {
-  IdrawCanvas* dc;
   long color = 0;
   int text_flags;
   double text_orientation;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -438,8 +550,7 @@ IUP_API void IupDrawText(Ihandle* ih, const char* text, int len, int x, int y, i
   if (!text || text[0] == 0)
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   color = iupDrawStrToColor(iupAttribGetStr(ih, "DRAWCOLOR"), 0);
@@ -459,7 +570,16 @@ IUP_API void IupDrawText(Ihandle* ih, const char* text, int len, int x, int y, i
     char* font = iupDrawGetTextSize(ih, text, len, &txt_w, &txt_h, text_orientation);
     if (w == -1 || w == 0) w = txt_w;
     if (h == -1 || h == 0) h = txt_h;
-    iupdrvDrawText(dc, text, len, x, y, w, h, color, font, text_flags, text_orientation);
+
+    svg = IUP_SVG_GET(ih);
+    if (svg)
+    {
+      char c[32]; iSvgColorStr(color, c, sizeof(c));
+      iupSvgDrawText(svg, text, len, x, y, w, h, c, font, text_flags, text_orientation);
+      return;
+    }
+
+    iupdrvDrawText((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), text, len, x, y, w, h, color, font, text_flags, text_orientation);
   }
 }
 
@@ -535,114 +655,274 @@ IUP_API Ihandle* IupDrawGetImage(Ihandle* ih)
   return image;
 }
 
+IUP_API char* IupDrawGetSvg(Ihandle* ih)
+{
+  int w, h;
+  iSvgCanvas* svg;
+  const char* str;
+  char* result;
+  Icallback action_cb;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return NULL;
+
+  IupGetIntInt(ih, "DRAWSIZE", &w, &h);
+  if (w <= 0 || h <= 0)
+    return NULL;
+
+  svg = iupSvgDrawCreateCanvas(w, h);
+  if (!svg)
+    return NULL;
+
+  iupAttribSet(ih, "_IUP_SVG_CANVAS", (char*)svg);
+
+  action_cb = IupGetCallback(ih, "ACTION");
+  if (action_cb)
+    action_cb(ih);
+
+  str = iupSvgDrawGetString(svg);
+  if (str)
+  {
+    int len = (int)strlen(str);
+    result = (char*)malloc(len + 1);
+    if (result)
+      memcpy(result, str, len + 1);
+  }
+  else
+    result = NULL;
+
+  iupAttribSet(ih, "_IUP_SVG_CANVAS", NULL);
+  iupSvgDrawKillCanvas(svg);
+
+  return result;
+}
+
+static void iDrawGetImageRGBA(const char* name, int make_inactive, const char* bgcolor, unsigned char** out_rgba, int* out_w, int* out_h)
+{
+  Ihandle* img_ih;
+  unsigned char* imgdata;
+  int img_w, img_h, bpp, channels;
+
+  *out_rgba = NULL;
+  *out_w = 0;
+  *out_h = 0;
+
+  img_ih = iupImageGetImageFromName(name);
+  if (!img_ih)
+    return;
+
+  imgdata = (unsigned char*)iupAttribGet(img_ih, "WID");
+  if (!imgdata)
+    return;
+
+  img_w = img_ih->currentwidth;
+  img_h = img_ih->currentheight;
+  bpp = iupAttribGetInt(img_ih, "BPP");
+  channels = iupAttribGetInt(img_ih, "CHANNELS");
+
+  if (img_w <= 0 || img_h <= 0 || channels <= 0)
+    return;
+
+  {
+    int i, count = img_w * img_h;
+    unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
+    unsigned char* rgba = (unsigned char*)malloc(count * 4);
+    if (!rgba)
+      return;
+
+    if (bgcolor)
+      iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
+
+    if (bpp == 32)
+      memcpy(rgba, imgdata, count * 4);
+    else if (bpp == 24)
+    {
+      for (i = 0; i < count; i++)
+      {
+        rgba[i * 4 + 0] = imgdata[i * 3 + 0];
+        rgba[i * 4 + 1] = imgdata[i * 3 + 1];
+        rgba[i * 4 + 2] = imgdata[i * 3 + 2];
+        rgba[i * 4 + 3] = 255;
+      }
+    }
+    else
+    {
+      free(rgba);
+      return;
+    }
+
+    if (make_inactive)
+    {
+      for (i = 0; i < count; i++)
+        iupImageColorMakeInactive(&rgba[i * 4], &rgba[i * 4 + 1], &rgba[i * 4 + 2], bg_r, bg_g, bg_b);
+    }
+
+    *out_rgba = rgba;
+    *out_w = img_w;
+    *out_h = img_h;
+  }
+}
+
 IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, int h)
 {
-  IdrawCanvas* dc;
   char* bgcolor;
   int make_inactive;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
   bgcolor = iupAttribGetStr(ih, "DRAWBGCOLOR");
   make_inactive = iupAttribGetInt(ih, "DRAWMAKEINACTIVE");
 
-  iupdrvDrawImage(dc, name, make_inactive, bgcolor, x, y, w, h);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    unsigned char* rgba;
+    int img_w, img_h;
+    iDrawGetImageRGBA(name, make_inactive, bgcolor, &rgba, &img_w, &img_h);
+    if (rgba)
+    {
+      if (w == -1 || w == 0) w = img_w;
+      if (h == -1 || h == 0) h = img_h;
+      iupSvgDrawImageRGBA(svg, rgba, img_w, img_h, x, y, w, h);
+      free(rgba);
+    }
+    return;
+  }
+
+  iupdrvDrawImage((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), name, make_inactive, bgcolor, x, y, w, h);
 }
 
 IUP_API void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2)
 {
-  IdrawCanvas* dc;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
-  iupdrvDrawSetClipRect(dc, x1, y1, x2, y2);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawSetClipRect(svg, x1, y1, x2, y2);
+    return;
+  }
+
+  iupdrvDrawSetClipRect((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2);
 }
 
 IUP_API void IupDrawSetClipRoundedRect(Ihandle* ih, int x1, int y1, int x2, int y2, int corner_radius)
 {
-  IdrawCanvas* dc;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
-  iupdrvDrawSetClipRoundedRect(dc, x1, y1, x2, y2, corner_radius);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawSetClipRoundedRect(svg, x1, y1, x2, y2, corner_radius);
+    return;
+  }
+
+  iupdrvDrawSetClipRoundedRect((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2, corner_radius);
 }
 
 IUP_API void IupDrawGetClipRect(Ihandle* ih, int *x1, int *y1, int *x2, int *y2)
 {
-  IdrawCanvas* dc;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
-  iupdrvDrawGetClipRect(dc, x1, y1, x2, y2);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawGetClipRect(svg, x1, y1, x2, y2);
+    return;
+  }
+
+  iupdrvDrawGetClipRect((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2);
 }
 
 IUP_API void IupDrawResetClip(Ihandle* ih)
 {
-  IdrawCanvas* dc;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
-  iupdrvDrawResetClip(dc);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawResetClip(svg);
+    return;
+  }
+
+  iupdrvDrawResetClip((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"));
 }
 
 IUP_API void IupDrawSelectRect(Ihandle* ih, int x1, int y1, int x2, int y2)
 {
-  IdrawCanvas* dc;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
-  iupdrvDrawSelectRect(dc, x1, y1, x2, y2);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawSelectRect(svg, x1, y1, x2, y2);
+    return;
+  }
+
+  iupdrvDrawSelectRect((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2);
 }
 
 IUP_API void IupDrawFocusRect(Ihandle* ih, int x1, int y1, int x2, int y2)
 {
-  IdrawCanvas* dc;
+  iSvgCanvas* svg;
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return;
 
-  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
-  if (!dc)
+  if (!iupAttribGet(ih, "_IUP_DRAW_DC"))
     return;
 
-  iupdrvDrawFocusRect(dc, x1, y1, x2, y2);
+  svg = IUP_SVG_GET(ih);
+  if (svg)
+  {
+    iupSvgDrawFocusRect(svg, x1, y1, x2, y2);
+    return;
+  }
+
+  iupdrvDrawFocusRect((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2);
 }
 
 
@@ -678,7 +958,11 @@ IUP_SDK_API long iupDrawStrToColor(const char* str, long c_def)
 IUP_SDK_API void iupDrawSetColor(Ihandle *ih, const char* name, long color)
 {
   char value[60];
-  snprintf(value, sizeof(value), "%d %d %d", (int)iupDrawRed(color), (int)iupDrawGreen(color), (int)iupDrawBlue(color));
+  unsigned char a = iupDrawAlpha(color);
+  if (a < 255)
+    snprintf(value, sizeof(value), "%d %d %d %d", (int)iupDrawRed(color), (int)iupDrawGreen(color), (int)iupDrawBlue(color), (int)a);
+  else
+    snprintf(value, sizeof(value), "%d %d %d", (int)iupDrawRed(color), (int)iupDrawGreen(color), (int)iupDrawBlue(color));
   iupAttribSetStr(ih, name, value);
 }
 
