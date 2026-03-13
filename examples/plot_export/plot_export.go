@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"math"
 	"os"
+	"strings"
 
 	"github.com/gen2brain/iup-go/iup"
 )
@@ -30,11 +31,14 @@ func main() {
 	addSineData()
 	addCosineData()
 
-	btnSave := iup.Button("Save as PNG...").SetAttributes("PADDING=10x4")
-	btnSave.SetCallback("ACTION", iup.ActionFunc(onSave))
+	btnSavePng := iup.Button("Save as PNG...").SetAttributes("PADDING=10x4")
+	btnSavePng.SetCallback("ACTION", iup.ActionFunc(onSavePng))
+
+	btnSaveSvg := iup.Button("Save as SVG...").SetAttributes("PADDING=10x4")
+	btnSaveSvg.SetCallback("ACTION", iup.ActionFunc(onSaveSvg))
 
 	dlg := iup.Dialog(
-		iup.Vbox(plot, btnSave).SetAttributes("MARGIN=10x10, GAP=8"),
+		iup.Vbox(plot, iup.Hbox(btnSavePng, btnSaveSvg).SetAttributes("GAP=8")).SetAttributes("MARGIN=10x10, GAP=8"),
 	).SetAttribute("TITLE", "Plot Export")
 
 	iup.Show(dlg)
@@ -65,7 +69,7 @@ func addCosineData() {
 	plot.SetAttribute("DS_COLOR", "50 50 220")
 }
 
-func onSave(ih iup.Ihandle) int {
+func onSavePng(ih iup.Ihandle) int {
 	filedlg := iup.FileDlg().SetAttributes(`DIALOGTYPE=SAVE, TITLE="Save Plot as PNG", FILTER="*.png", FILTERINFO="PNG Files", EXTDEFAULT="png"`)
 	defer filedlg.Destroy()
 
@@ -103,6 +107,39 @@ func onSave(ih iup.Ihandle) int {
 	}
 
 	iup.Message("Success", fmt.Sprintf("Image saved to:\n%s\n\nSize: %dx%d", filename, goImg.Bounds().Dx(), goImg.Bounds().Dy()))
+
+	return iup.DEFAULT
+}
+
+func onSaveSvg(ih iup.Ihandle) int {
+	filedlg := iup.FileDlg().SetAttributes(`DIALOGTYPE=SAVE, TITLE="Save Plot as SVG", FILTER="*.svg", FILTERINFO="SVG Files", EXTDEFAULT="svg"`)
+	defer filedlg.Destroy()
+
+	iup.Popup(filedlg, iup.CENTER, iup.CENTER)
+
+	if filedlg.GetInt("STATUS") == -1 {
+		return iup.DEFAULT
+	}
+
+	filename := filedlg.GetAttribute("VALUE")
+	if !strings.HasSuffix(strings.ToLower(filename), ".svg") {
+		filename += ".svg"
+	}
+
+	svg := iup.DrawGetSvg(plot)
+	if svg == "" {
+		iup.Message("Error", "Failed to generate SVG.")
+		return iup.DEFAULT
+	}
+
+	err := os.WriteFile(filename, []byte(svg), 0644)
+	if err != nil {
+		iup.Message("Error", fmt.Sprintf("Failed to write SVG: %s", err))
+		return iup.DEFAULT
+	}
+
+	_, w, h := iup.GetInt2(plot, "DRAWSIZE")
+	iup.Message("Success", fmt.Sprintf("SVG saved to:\n%s\n\nSize: %dx%d", filename, w, h))
 
 	return iup.DEFAULT
 }
