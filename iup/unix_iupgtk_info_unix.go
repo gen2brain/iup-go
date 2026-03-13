@@ -4,6 +4,6 @@ package iup
 
 /*
 #include "external/src/gtk/iupgtk_info.c"
-#include "external/src/mot/iupunix_info.c"
+#include "external/src/unix/iupunix_info.c"
 */
 import "C"

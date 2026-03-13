@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "external/src/mot/iupunix_sni.c"
+#include "external/src/unix/iupunix_sni.c"
 */
 import "C"

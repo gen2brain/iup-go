@@ -3,6 +3,6 @@
 package iup
 
 /*
-#include "external/src/mot/iupunix_notify.c"
+#include "external/src/unix/iupunix_notify.c"
 */
 import "C"
