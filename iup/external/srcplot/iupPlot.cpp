@@ -433,7 +433,7 @@ void iupPlot::DataSetClipArea(iupPlotDrawContext* ctx, int xmin, int xmax, int y
     int absY1 = iupPlotDrawCalcY(ctx, ymax);
     int absX2 = iupPlotDrawCalcX(ctx, xmax);
     int absY2 = iupPlotDrawCalcY(ctx, ymin);
-    iupdrvDrawSetClipRect(ctx->dc, absX1, absY1, absX2, absY2);
+    IupDrawSetClipRect(ctx->ih, absX1, absY1, absX2, absY2);
   }
 }
 
@@ -474,7 +474,7 @@ bool iupPlot::Render(iupPlotDrawContext* ctx)
     int clipY1 = iupPlotDrawCalcY(ctx, mViewport.mHeight - 1);
     int clipX2 = iupPlotDrawCalcX(ctx, mViewport.mWidth - 1);
     int clipY2 = iupPlotDrawCalcY(ctx, 0);
-    iupdrvDrawSetClipRect(ctx->dc, clipX1, clipY1, clipX2, clipY2);
+    IupDrawSetClipRect(ctx->ih, clipX1, clipY1, clipX2, clipY2);
   }
 
   if (!mDataSetListCount)
@@ -556,7 +556,7 @@ bool iupPlot::Render(iupPlotDrawContext* ctx)
     int clipY1 = iupPlotDrawCalcY(ctx, theDataSetArea.mY + theDataSetArea.mHeight - 1);
     int clipX2 = iupPlotDrawCalcX(ctx, theDataSetArea.mX + theDataSetArea.mWidth - 1);
     int clipY2 = iupPlotDrawCalcY(ctx, theDataSetArea.mY);
-    iupdrvDrawSetClipRect(ctx->dc, clipX1, clipY1, clipX2, clipY2);
+    IupDrawSetClipRect(ctx->ih, clipX1, clipY1, clipX2, clipY2);
   }
 
   if (mCrossHairH)
@@ -598,7 +598,7 @@ bool iupPlot::Render(iupPlotDrawContext* ctx)
     int clipY1 = iupPlotDrawCalcY(ctx, mViewport.mHeight - 1);
     int clipX2 = iupPlotDrawCalcX(ctx, mViewport.mWidth - 1);
     int clipY2 = iupPlotDrawCalcY(ctx, 0);
-    iupdrvDrawSetClipRect(ctx->dc, clipX1, clipY1, clipX2, clipY2);
+    IupDrawSetClipRect(ctx->ih, clipX1, clipY1, clipX2, clipY2);
   }
 
   DrawTitle(ctx);

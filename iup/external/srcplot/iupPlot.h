@@ -11,8 +11,10 @@
 #include "iup_array.h"
 #include "iup_str.h"
 
+#include "iupdraw.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
+#include "iup_attrib.h"
 
 #ifndef __IUPPLOT_H__
 #define __IUPPLOT_H__
@@ -120,7 +122,6 @@ inline double iupPlotExp(double inFloat, double inBase)
 /************************************************************************************/
 
 struct iupPlotDrawContext {
-  IdrawCanvas* dc;
   Ihandle* ih;
   int viewportX, viewportY, viewportW, viewportH;
   char font[256];
@@ -140,11 +141,65 @@ inline int iupPlotLineStyleToDrawStyle(int plotStyle)
   }
 }
 
+inline void iupPlotSetDrawState(Ihandle* ih, long color, int style, int line_width)
+{
+  iupDrawSetColor(ih, "DRAWCOLOR", color);
+  iupAttribSetInt(ih, "DRAWSTYLE", style);
+  iupAttribSetInt(ih, "DRAWLINEWIDTH", line_width);
+}
+
+inline void iupPlotDrawLine(Ihandle* ih, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+{
+  iupPlotSetDrawState(ih, color, style, line_width);
+  IupDrawLine(ih, x1, y1, x2, y2);
+}
+
+inline void iupPlotDrawRectangle(Ihandle* ih, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+{
+  iupPlotSetDrawState(ih, color, style, line_width);
+  IupDrawRectangle(ih, x1, y1, x2, y2);
+}
+
+inline void iupPlotDrawArc(Ihandle* ih, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
+{
+  iupPlotSetDrawState(ih, color, style, line_width);
+  IupDrawArc(ih, x1, y1, x2, y2, a1, a2);
+}
+
+inline void iupPlotDrawPolygon(Ihandle* ih, int* points, int count, long color, int style, int line_width)
+{
+  iupPlotSetDrawState(ih, color, style, line_width);
+  IupDrawPolygon(ih, points, count);
+}
+
+inline void iupPlotDrawText(Ihandle* ih, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double orientation)
+{
+  iupDrawSetColor(ih, "DRAWCOLOR", color);
+  if (font)
+    iupAttribSetStr(ih, "DRAWFONT", font);
+  if (flags & IUP_DRAW_CENTER)
+    iupAttribSetStr(ih, "DRAWTEXTALIGNMENT", "ACENTER");
+  else if (flags & IUP_DRAW_RIGHT)
+    iupAttribSetStr(ih, "DRAWTEXTALIGNMENT", "ARIGHT");
+  else
+    iupAttribSetStr(ih, "DRAWTEXTALIGNMENT", "ALEFT");
+  iupAttribSetStr(ih, "DRAWTEXTWRAP", (flags & IUP_DRAW_WRAP) ? "Yes" : "No");
+  iupAttribSetStr(ih, "DRAWTEXTELLIPSIS", (flags & IUP_DRAW_ELLIPSIS) ? "Yes" : "No");
+  iupAttribSetDouble(ih, "DRAWTEXTORIENTATION", orientation);
+  IupDrawText(ih, text, len, x, y, w, h);
+}
+
+inline void iupPlotDrawImage(Ihandle* ih, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+{
+  iupAttribSetInt(ih, "DRAWMAKEINACTIVE", make_inactive);
+  if (bgcolor)
+    iupAttribSetStr(ih, "DRAWBGCOLOR", bgcolor);
+  IupDrawImage(ih, name, x, y, w, h);
+}
+
 void iupPlotBuildFont(Ihandle* ih, int fontStyle, int fontSize, char* fontStr, int fontStrSize);
 void iupPlotDrawMark(iupPlotDrawContext* ctx, int x, int y, int markStyle, int markSize, long color);
-void iupPlotDrawAlignedText(iupPlotDrawContext* ctx, double refX, double refY,
-                            int plotAlignment, const char* text, long color,
-                            const char* font, double orientation);
+void iupPlotDrawAlignedText(iupPlotDrawContext* ctx, double refX, double refY, int plotAlignment, const char* text, long color, const char* font, double orientation);
 
 inline int iupPlotDrawCalcX(const iupPlotDrawContext* ctx, double x)
 {
@@ -198,12 +253,12 @@ public:
     if (mCount < 2) return;
     int drawStyle = iupPlotLineStyleToDrawStyle(lineStyle);
     for (int i = 0; i < mCount - 1; i++)
-      iupdrvDrawLine(ctx->dc, mPoints[i*2], mPoints[i*2+1], mPoints[(i+1)*2], mPoints[(i+1)*2+1], color, drawStyle, lineWidth);
+      iupPlotDrawLine(ctx->ih, mPoints[i*2], mPoints[i*2+1], mPoints[(i+1)*2], mPoints[(i+1)*2+1], color, drawStyle, lineWidth);
   }
 
   void DrawFill(iupPlotDrawContext* ctx, long color) {
     if (mCount < 3) return;
-    iupdrvDrawPolygon(ctx->dc, mPoints, mCount, color, IUP_DRAW_FILL, 1);
+    iupPlotDrawPolygon(ctx->ih, mPoints, mCount, color, IUP_DRAW_FILL, 1);
   }
 
   void Clear() { mCount = 0; }

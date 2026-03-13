@@ -1209,13 +1209,10 @@ void iupPlotRedraw(Ihandle* ih, int flush, int only_current, int reset_redraw)
   if (ih->data->sync_view || ih->data->merge_view || ih->data->plot_list_count > 1)
     only_current = 0;
 
-  IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
-  if (!dc)
-    return;
+  IupDrawBegin(ih);
 
   iupPlotDrawContext ctx;
   memset(&ctx, 0, sizeof(ctx));
-  ctx.dc = dc;
   ctx.ih = ih;
   ctx.defaultFontStyle = ih->data->default_font_style;
   ctx.defaultFontSize = ih->data->default_font_size;
@@ -1293,10 +1290,7 @@ void iupPlotRedraw(Ihandle* ih, int flush, int only_current, int reset_redraw)
     iupPlotSetPlotCurrent(ih, old_current);
   }
 
-  if (flush)
-    iupdrvDrawFlush(dc);
-
-  iupdrvDrawKillCanvas(dc);
+  IupDrawEnd(ih);
 }
 
 static int iPlotAction_CB(Ihandle* ih)
