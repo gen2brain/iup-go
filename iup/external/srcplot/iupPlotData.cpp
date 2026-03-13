@@ -856,13 +856,13 @@ void iupPlotDataSet::SetSampleExtra(int inSampleIndex, double inExtra)
 static void iPlotDrawHighlightedBar(iupPlotDrawContext* ctx, int x1, int y1, int x2, int y2, long color, int lineWidth)
 {
   long hlColor = iupDrawColor(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), HIGHLIGHT_ALPHA);
-  iupdrvDrawRectangle(ctx->dc, x1, y1, x2, y2, hlColor, IUP_DRAW_STROKE, lineWidth + HIGHLIGHT_OFFSET);
+  iupPlotDrawRectangle(ctx->ih, x1, y1, x2, y2, hlColor, IUP_DRAW_STROKE, lineWidth + HIGHLIGHT_OFFSET);
 }
 
 static void iPlotDrawHighlightedStem(iupPlotDrawContext* ctx, int x1, int y1, int x2, int y2, long color, int markSize, int lineWidth)
 {
   long hlColor = iupDrawColor(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), HIGHLIGHT_ALPHA);
-  iupdrvDrawLine(ctx->dc, x1, y1, x2, y2, hlColor, IUP_DRAW_STROKE, lineWidth + HIGHLIGHT_OFFSET);
+  iupPlotDrawLine(ctx->ih, x1, y1, x2, y2, hlColor, IUP_DRAW_STROKE, lineWidth + HIGHLIGHT_OFFSET);
   iupPlotDrawMark(ctx, x2, y2, IUP_PLOT_MARK_CIRCLE, markSize + HIGHLIGHT_OFFSET, hlColor);
 }
 
@@ -875,7 +875,7 @@ static void iPlotDrawHighlightedMark(iupPlotDrawContext* ctx, int x, int y, long
 static void iPlotDrawHighlightedArc(iupPlotDrawContext* ctx, int x1, int y1, int x2, int y2, double startAngle, double endAngle, long color, int lineWidth)
 {
   long hlColor = iupDrawColor(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), HIGHLIGHT_ALPHA);
-  iupdrvDrawArc(ctx->dc, x1, y1, x2, y2, startAngle, endAngle, hlColor, IUP_DRAW_STROKE, lineWidth + HIGHLIGHT_OFFSET);
+  iupPlotDrawArc(ctx->ih, x1, y1, x2, y2, startAngle, endAngle, hlColor, IUP_DRAW_STROKE, lineWidth + HIGHLIGHT_OFFSET);
 }
 
 static void iPlotDrawHighlightedCurve(iupPlotDrawContext* ctx, int inCount, const iupPlotData* inDataX, const iupPlotData* inDataY, const iupPlotDataBool* inSegment,
@@ -983,9 +983,9 @@ void iupPlotDataSet::DrawErrorBar(const iupPlotTrafo *inTrafoY, iupPlotDrawConte
   int absXL = iupPlotDrawCalcX(ctx, theScreenX - theBarWidth);
   int absXR = iupPlotDrawCalcX(ctx, theScreenX + theBarWidth);
 
-  iupdrvDrawLine(ctx->dc, absX, absY1, absX, absY2, mColor, IUP_DRAW_STROKE, mLineWidth);
-  iupdrvDrawLine(ctx->dc, absXL, absY1, absXR, absY1, mColor, IUP_DRAW_STROKE, mLineWidth);
-  iupdrvDrawLine(ctx->dc, absXL, absY2, absXR, absY2, mColor, IUP_DRAW_STROKE, mLineWidth);
+  iupPlotDrawLine(ctx->ih, absX, absY1, absX, absY2, mColor, IUP_DRAW_STROKE, mLineWidth);
+  iupPlotDrawLine(ctx->ih, absXL, absY1, absXR, absY1, mColor, IUP_DRAW_STROKE, mLineWidth);
+  iupPlotDrawLine(ctx->ih, absXL, absY2, absXR, absY2, mColor, IUP_DRAW_STROKE, mLineWidth);
 }
 
 void iupPlotDataSet::SetSampleExtraMarkSize(const iupPlotTrafo *inTrafoY, int inSampleIndex, int *outMarkSize) const
@@ -1052,7 +1052,7 @@ void iupPlotDataSet::DrawDataStem(const iupPlotTrafo *inTrafoX, const iupPlotTra
       iupPlotDrawMark(ctx, absX, absY, mMarkStyle, theMarkSize, mColor);
     }
 
-    iupdrvDrawLine(ctx->dc, absX, absY0, absX, absY, mColor, IUP_DRAW_STROKE, mLineWidth);
+    iupPlotDrawLine(ctx->ih, absX, absY0, absX, absY, mColor, IUP_DRAW_STROKE, mLineWidth);
 
     if (i == mHighlightedSample)
       iPlotDrawHighlightedStem(ctx, absX, absY0, absX, absY, mColor, mMarkSize, mLineWidth);
@@ -1159,7 +1159,7 @@ static void iPlotDrawBarRect(iupPlotDrawContext* ctx, double x, double y, double
     x2 = iupPlotDrawCalcX(ctx, x + barWidth);
     y2 = iupPlotDrawCalcY(ctx, y + barHeight);
   }
-  iupdrvDrawRectangle(ctx->dc, x1, y1, x2, y2, color, style, lineWidth);
+  iupPlotDrawRectangle(ctx->ih, x1, y1, x2, y2, color, style, lineWidth);
 }
 
 void iupPlotDataSet::DrawDataBar(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *inTrafoY, iupPlotDrawContext* ctx, const iupPlotSampleNotify* inNotify) const
@@ -1434,10 +1434,10 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo *inTrafoX, const iupPlotTraf
     int ay1 = iupPlotDrawCalcY(ctx, yc + h / 2);
     int ax2 = iupPlotDrawCalcX(ctx, xc + w / 2);
     int ay2 = iupPlotDrawCalcY(ctx, yc - h / 2);
-    iupdrvDrawArc(ctx->dc, ax1, ay1, ax2, ay2, startAngle, startAngle + angle, sampleColor, IUP_DRAW_FILL, 1);
+    iupPlotDrawArc(ctx->ih, ax1, ay1, ax2, ay2, startAngle, startAngle + angle, sampleColor, IUP_DRAW_FILL, 1);
 
     if (mPieContour)
-      iupdrvDrawArc(ctx->dc, ax1, ay1, ax2, ay2, startAngle, startAngle + angle, mColor, IUP_DRAW_STROKE, mLineWidth);
+      iupPlotDrawArc(ctx->ih, ax1, ay1, ax2, ay2, startAngle, startAngle + angle, mColor, IUP_DRAW_STROKE, mLineWidth);
 
     if (i == mHighlightedSample)
     {
@@ -1499,10 +1499,10 @@ void iupPlotDataSet::DrawDataPie(const iupPlotTrafo *inTrafoX, const iupPlotTraf
     int hy1 = iupPlotDrawCalcY(ctx, yc + hh / 2);
     int hx2 = iupPlotDrawCalcX(ctx, xc + hw / 2);
     int hy2 = iupPlotDrawCalcY(ctx, yc - hh / 2);
-    iupdrvDrawArc(ctx->dc, hx1, hy1, hx2, hy2, 0, 360, inBackColor, IUP_DRAW_FILL, 1);
+    iupPlotDrawArc(ctx->ih, hx1, hy1, hx2, hy2, 0, 360, inBackColor, IUP_DRAW_FILL, 1);
 
     if (mPieContour)
-      iupdrvDrawArc(ctx->dc, hx1, hy1, hx2, hy2, 0, 360, mColor, IUP_DRAW_STROKE, mLineWidth);
+      iupPlotDrawArc(ctx->ih, hx1, hy1, hx2, hy2, 0, 360, mColor, IUP_DRAW_STROKE, mLineWidth);
   }
 }
 

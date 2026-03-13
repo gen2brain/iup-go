@@ -33,30 +33,30 @@ void iupPlotDrawMark(iupPlotDrawContext* ctx, int x, int y, int markStyle, int m
   switch (markStyle)
   {
   case IUP_PLOT_MARK_PLUS:
-    iupdrvDrawLine(ctx->dc, x - s, y, x + s, y, color, IUP_DRAW_STROKE, 1);
-    iupdrvDrawLine(ctx->dc, x, y - s, x, y + s, color, IUP_DRAW_STROKE, 1);
+    iupPlotDrawLine(ctx->ih, x - s, y, x + s, y, color, IUP_DRAW_STROKE, 1);
+    iupPlotDrawLine(ctx->ih, x, y - s, x, y + s, color, IUP_DRAW_STROKE, 1);
     break;
   case IUP_PLOT_MARK_X:
-    iupdrvDrawLine(ctx->dc, x - s, y - s, x + s, y + s, color, IUP_DRAW_STROKE, 1);
-    iupdrvDrawLine(ctx->dc, x - s, y + s, x + s, y - s, color, IUP_DRAW_STROKE, 1);
+    iupPlotDrawLine(ctx->ih, x - s, y - s, x + s, y + s, color, IUP_DRAW_STROKE, 1);
+    iupPlotDrawLine(ctx->ih, x - s, y + s, x + s, y - s, color, IUP_DRAW_STROKE, 1);
     break;
   case IUP_PLOT_MARK_STAR:
-    iupdrvDrawLine(ctx->dc, x - s, y, x + s, y, color, IUP_DRAW_STROKE, 1);
-    iupdrvDrawLine(ctx->dc, x, y - s, x, y + s, color, IUP_DRAW_STROKE, 1);
-    iupdrvDrawLine(ctx->dc, x - s, y - s, x + s, y + s, color, IUP_DRAW_STROKE, 1);
-    iupdrvDrawLine(ctx->dc, x - s, y + s, x + s, y - s, color, IUP_DRAW_STROKE, 1);
+    iupPlotDrawLine(ctx->ih, x - s, y, x + s, y, color, IUP_DRAW_STROKE, 1);
+    iupPlotDrawLine(ctx->ih, x, y - s, x, y + s, color, IUP_DRAW_STROKE, 1);
+    iupPlotDrawLine(ctx->ih, x - s, y - s, x + s, y + s, color, IUP_DRAW_STROKE, 1);
+    iupPlotDrawLine(ctx->ih, x - s, y + s, x + s, y - s, color, IUP_DRAW_STROKE, 1);
     break;
   case IUP_PLOT_MARK_CIRCLE:
-    iupdrvDrawArc(ctx->dc, x - s, y - s, x + s, y + s, 0, 360, color, IUP_DRAW_FILL, 1);
+    iupPlotDrawArc(ctx->ih, x - s, y - s, x + s, y + s, 0, 360, color, IUP_DRAW_FILL, 1);
     break;
   case IUP_PLOT_MARK_HOLLOW_CIRCLE:
-    iupdrvDrawArc(ctx->dc, x - s, y - s, x + s, y + s, 0, 360, color, IUP_DRAW_STROKE, 1);
+    iupPlotDrawArc(ctx->ih, x - s, y - s, x + s, y + s, 0, 360, color, IUP_DRAW_STROKE, 1);
     break;
   case IUP_PLOT_MARK_BOX:
-    iupdrvDrawRectangle(ctx->dc, x - s, y - s, x + s, y + s, color, IUP_DRAW_FILL, 1);
+    iupPlotDrawRectangle(ctx->ih, x - s, y - s, x + s, y + s, color, IUP_DRAW_FILL, 1);
     break;
   case IUP_PLOT_MARK_HOLLOW_BOX:
-    iupdrvDrawRectangle(ctx->dc, x - s, y - s, x + s, y + s, color, IUP_DRAW_STROKE, 1);
+    iupPlotDrawRectangle(ctx->ih, x - s, y - s, x + s, y + s, color, IUP_DRAW_STROKE, 1);
     break;
   case IUP_PLOT_MARK_DIAMOND:
     {
@@ -65,7 +65,7 @@ void iupPlotDrawMark(iupPlotDrawContext* ctx, int x, int y, int markStyle, int m
       points[2] = x + s; points[3] = y;
       points[4] = x;     points[5] = y + s;
       points[6] = x - s; points[7] = y;
-      iupdrvDrawPolygon(ctx->dc, points, 4, color, IUP_DRAW_FILL, 1);
+      iupPlotDrawPolygon(ctx->ih, points, 4, color, IUP_DRAW_FILL, 1);
     }
     break;
   case IUP_PLOT_MARK_HOLLOW_DIAMOND:
@@ -75,7 +75,7 @@ void iupPlotDrawMark(iupPlotDrawContext* ctx, int x, int y, int markStyle, int m
       points[2] = x + s; points[3] = y;
       points[4] = x;     points[5] = y + s;
       points[6] = x - s; points[7] = y;
-      iupdrvDrawPolygon(ctx->dc, points, 4, color, IUP_DRAW_STROKE, 1);
+      iupPlotDrawPolygon(ctx->ih, points, 4, color, IUP_DRAW_STROKE, 1);
     }
     break;
   }
@@ -137,7 +137,7 @@ void iupPlotDrawAlignedText(iupPlotDrawContext* ctx, double refX, double refY,
     break;
   }
 
-  iupdrvDrawText(ctx->dc, text, len, drawX, drawY, w, h, color, font, IUP_DRAW_LEFT, orientation);
+  iupPlotDrawText(ctx->ih, text, len, drawX, drawY, w, h, color, font, IUP_DRAW_LEFT, orientation);
 }
 
 
@@ -152,7 +152,7 @@ void iupPlotBox::Draw(const iupPlotRect &inRect, iupPlotDrawContext* ctx) const
   int y2 = iupPlotDrawCalcY(ctx, inRect.mY);
 
   int drawStyle = iupPlotLineStyleToDrawStyle(mLineStyle);
-  iupdrvDrawRectangle(ctx->dc, x1, y1, x2, y2, mColor, drawStyle, mLineWidth);
+  iupPlotDrawRectangle(ctx->ih, x1, y1, x2, y2, mColor, drawStyle, mLineWidth);
 }
 
 bool iupPlotGrid::DrawX(iupPlotTickIter* inTickIter, iupPlotTrafo* inTrafo, const iupPlotRect &inRect, iupPlotDrawContext* ctx) const
@@ -176,7 +176,7 @@ bool iupPlotGrid::DrawX(iupPlotTickIter* inTickIter, iupPlotTrafo* inTrafo, cons
       {
         double theScreenX = inTrafo->Transform(theX);
         int absX = iupPlotDrawCalcX(ctx, theScreenX);
-        iupdrvDrawLine(ctx->dc, absX, absY1, absX, absY2, mColor, drawStyle, mLineWidth);
+        iupPlotDrawLine(ctx->ih, absX, absY1, absX, absY2, mColor, drawStyle, mLineWidth);
       }
     }
   }
@@ -205,7 +205,7 @@ bool iupPlotGrid::DrawY(iupPlotTickIter* inTickIter, iupPlotTrafo* inTrafo, cons
       {
         double theScreenY = inTrafo->Transform(theY);
         int absY = iupPlotDrawCalcY(ctx, theScreenY);
-        iupdrvDrawLine(ctx->dc, absX1, absY, absX2, absY, mColor, drawStyle, mLineWidth);
+        iupPlotDrawLine(ctx->ih, absX1, absY, absX2, absY, mColor, drawStyle, mLineWidth);
       }
     }
   }
@@ -243,7 +243,7 @@ void iupPlot::DrawCrossSamplesH(const iupPlotRect &inRect, const iupPlotData *in
       double theScreenY = mAxisY.mTrafo->Transform(theY);
       int absY = iupPlotDrawCalcY(ctx, theScreenY);
 
-      iupdrvDrawLine(ctx->dc, absX1, absY, absX2, absY, color, IUP_DRAW_STROKE, 1);
+      iupPlotDrawLine(ctx->ih, absX1, absY, absX2, absY, color, IUP_DRAW_STROKE, 1);
 
       theFirstIsLess = theCurrentIsLess;
     }
@@ -256,7 +256,7 @@ void iupPlot::DrawCrossHairH(const iupPlotRect &inRect, iupPlotDrawContext* ctx)
   int absY1 = iupPlotDrawCalcY(ctx, inRect.mY);
   int absY2 = iupPlotDrawCalcY(ctx, inRect.mY + inRect.mHeight - 1);
 
-  iupdrvDrawLine(ctx->dc, absX, absY1, absX, absY2, mAxisY.mColor, IUP_DRAW_STROKE, 1);
+  iupPlotDrawLine(ctx->ih, absX, absY1, absX, absY2, mAxisY.mColor, IUP_DRAW_STROKE, 1);
 
   for (int ds = 0; ds < mDataSetListCount; ds++)
   {
@@ -294,7 +294,7 @@ void iupPlot::DrawCrossSamplesV(const iupPlotRect &inRect, const iupPlotData *in
       double theScreenX = mAxisX.mTrafo->Transform(theX);
       int absX = iupPlotDrawCalcX(ctx, theScreenX);
 
-      iupdrvDrawLine(ctx->dc, absX, absY1, absX, absY2, color, IUP_DRAW_STROKE, 1);
+      iupPlotDrawLine(ctx->ih, absX, absY1, absX, absY2, color, IUP_DRAW_STROKE, 1);
 
       theFirstIsLess = theCurrentIsLess;
     }
@@ -307,7 +307,7 @@ void iupPlot::DrawCrossHairV(const iupPlotRect &inRect, iupPlotDrawContext* ctx)
   int absX2 = iupPlotDrawCalcX(ctx, inRect.mX + inRect.mWidth - 1);
   int absY = iupPlotDrawCalcY(ctx, mCrossHairY);
 
-  iupdrvDrawLine(ctx->dc, absX1, absY, absX2, absY, mAxisX.mColor, IUP_DRAW_STROKE, 1);
+  iupPlotDrawLine(ctx->ih, absX1, absY, absX2, absY, mAxisX.mColor, IUP_DRAW_STROKE, 1);
 
   for (int ds = 0; ds < mDataSetListCount; ds++)
   {
@@ -355,8 +355,8 @@ void iupPlot::DrawBackground(iupPlotDrawContext* ctx) const
 {
   if (!mBack.mTransparent)
   {
-    iupdrvDrawResetClip(ctx->dc);
-    iupdrvDrawRectangle(ctx->dc, mViewportBack.mX, mViewportBack.mY,
+    IupDrawResetClip(ctx->ih);
+    iupPlotDrawRectangle(ctx->ih, mViewportBack.mX, mViewportBack.mY,
                         mViewportBack.mX + mViewportBack.mWidth - 1,
                         mViewportBack.mY + mViewportBack.mHeight - 1,
                         mBack.mColor, IUP_DRAW_FILL, 1);
@@ -365,9 +365,9 @@ void iupPlot::DrawBackground(iupPlotDrawContext* ctx) const
 
 void iupPlot::DrawInactive(iupPlotDrawContext* ctx) const
 {
-  iupdrvDrawResetClip(ctx->dc);
+  IupDrawResetClip(ctx->ih);
   long inactive_color = iupDrawColor(128, 128, 128, 96);
-  iupdrvDrawRectangle(ctx->dc, mViewportBack.mX, mViewportBack.mY,
+  iupPlotDrawRectangle(ctx->ih, mViewportBack.mX, mViewportBack.mY,
                       mViewportBack.mX + mViewportBack.mWidth - 1,
                       mViewportBack.mY + mViewportBack.mHeight - 1,
                       inactive_color, IUP_DRAW_FILL, 1);
@@ -391,7 +391,7 @@ void iupPlot::DrawBackgroundImage(iupPlotDrawContext* ctx) const
     int theW = iupPlotRound(theScreenW);
     int theH = iupPlotRound(theScreenH);
 
-    iupdrvDrawImage(ctx->dc, mBack.GetImage(), 0, NULL, theX, theY, theW, theH);
+    iupPlotDrawImage(ctx->ih, mBack.GetImage(), 0, NULL, theX, theY, theW, theH);
   }
 }
 
@@ -481,7 +481,7 @@ bool iupPlot::DrawLegend(const iupPlotRect &inRect, iupPlotDrawContext* ctx, iup
     int clipY1 = iupPlotDrawCalcY(ctx, ioPos.mY + ioPos.mHeight - 1);
     int clipX2 = iupPlotDrawCalcX(ctx, ioPos.mX + ioPos.mWidth - 1);
     int clipY2 = iupPlotDrawCalcY(ctx, ioPos.mY);
-    iupdrvDrawSetClipRect(ctx->dc, clipX1, clipY1, clipX2, clipY2);
+    IupDrawSetClipRect(ctx->ih, clipX1, clipY1, clipX2, clipY2);
 
     if (mLegend.mBoxShow)
     {
@@ -489,14 +489,14 @@ bool iupPlot::DrawLegend(const iupPlotRect &inRect, iupPlotDrawContext* ctx, iup
       int by1 = iupPlotDrawCalcY(ctx, ioPos.mY + ioPos.mHeight - 2);
       int bx2 = iupPlotDrawCalcX(ctx, ioPos.mX + ioPos.mWidth - 2);
       int by2 = iupPlotDrawCalcY(ctx, ioPos.mY + 1);
-      iupdrvDrawRectangle(ctx->dc, bx1, by1, bx2, by2, mLegend.mBoxBackColor, IUP_DRAW_FILL, 1);
+      iupPlotDrawRectangle(ctx->ih, bx1, by1, bx2, by2, mLegend.mBoxBackColor, IUP_DRAW_FILL, 1);
 
       int rx1 = iupPlotDrawCalcX(ctx, ioPos.mX);
       int ry1 = iupPlotDrawCalcY(ctx, ioPos.mY + ioPos.mHeight - 1);
       int rx2 = iupPlotDrawCalcX(ctx, ioPos.mX + ioPos.mWidth - 1);
       int ry2 = iupPlotDrawCalcY(ctx, ioPos.mY);
       int drawStyle = iupPlotLineStyleToDrawStyle(mLegend.mBoxLineStyle);
-      iupdrvDrawRectangle(ctx->dc, rx1, ry1, rx2, ry2, mLegend.mBoxColor, drawStyle, mLegend.mBoxLineWidth);
+      iupPlotDrawRectangle(ctx->ih, rx1, ry1, rx2, ry2, mLegend.mBoxColor, drawStyle, mLegend.mBoxLineWidth);
     }
 
     for (ds = 0; ds < mDataSetListCount; ds++)
@@ -521,7 +521,7 @@ bool iupPlot::DrawLegend(const iupPlotRect &inRect, iupPlotDrawContext* ctx, iup
         int absLX2 = iupPlotDrawCalcX(ctx, theLegendX + theLineSpace - 3);
         int absLY = iupPlotDrawCalcY(ctx, theMarkY);
         int drawStyle = iupPlotLineStyleToDrawStyle(dataset->mLineStyle);
-        iupdrvDrawLine(ctx->dc, absLX1, absLY, absLX2, absLY, dataset->mColor, drawStyle, dataset->mLineWidth);
+        iupPlotDrawLine(ctx->ih, absLX1, absLY, absLX2, absLY, dataset->mColor, drawStyle, dataset->mLineWidth);
       }
 
       double textRefX = theLegendX + theLineSpace;
@@ -643,7 +643,7 @@ bool iupPlot::DrawSampleColorLegend(iupPlotDataSet *dataset, const iupPlotRect &
     int clipY1 = iupPlotDrawCalcY(ctx, ioPos.mY + ioPos.mHeight - 1);
     int clipX2 = iupPlotDrawCalcX(ctx, ioPos.mX + ioPos.mWidth - 1);
     int clipY2 = iupPlotDrawCalcY(ctx, ioPos.mY);
-    iupdrvDrawSetClipRect(ctx->dc, clipX1, clipY1, clipX2, clipY2);
+    IupDrawSetClipRect(ctx->ih, clipX1, clipY1, clipX2, clipY2);
 
     if (mLegend.mBoxShow)
     {
@@ -651,14 +651,14 @@ bool iupPlot::DrawSampleColorLegend(iupPlotDataSet *dataset, const iupPlotRect &
       int by1 = iupPlotDrawCalcY(ctx, ioPos.mY + ioPos.mHeight - 2);
       int bx2 = iupPlotDrawCalcX(ctx, ioPos.mX + ioPos.mWidth - 2);
       int by2 = iupPlotDrawCalcY(ctx, ioPos.mY + 1);
-      iupdrvDrawRectangle(ctx->dc, bx1, by1, bx2, by2, mLegend.mBoxBackColor, IUP_DRAW_FILL, 1);
+      iupPlotDrawRectangle(ctx->ih, bx1, by1, bx2, by2, mLegend.mBoxBackColor, IUP_DRAW_FILL, 1);
 
       int rx1 = iupPlotDrawCalcX(ctx, ioPos.mX);
       int ry1 = iupPlotDrawCalcY(ctx, ioPos.mY + ioPos.mHeight - 1);
       int rx2 = iupPlotDrawCalcX(ctx, ioPos.mX + ioPos.mWidth - 1);
       int ry2 = iupPlotDrawCalcY(ctx, ioPos.mY);
       int drawStyle = iupPlotLineStyleToDrawStyle(mLegend.mBoxLineStyle);
-      iupdrvDrawRectangle(ctx->dc, rx1, ry1, rx2, ry2, mLegend.mBoxColor, drawStyle, mLegend.mBoxLineWidth);
+      iupPlotDrawRectangle(ctx->ih, rx1, ry1, rx2, ry2, mLegend.mBoxColor, drawStyle, mLegend.mBoxLineWidth);
     }
 
     for (int i = 0; i < theCount; i++)
@@ -674,7 +674,7 @@ bool iupPlot::DrawSampleColorLegend(iupPlotDataSet *dataset, const iupPlotRect &
       int by1 = iupPlotDrawCalcY(ctx, theLegendY + boxSize);
       int bx2 = iupPlotDrawCalcX(ctx, theLegendX + boxSize);
       int by2 = iupPlotDrawCalcY(ctx, theLegendY);
-      iupdrvDrawRectangle(ctx->dc, bx1, by1, bx2, by2, sampleColor, IUP_DRAW_FILL, 1);
+      iupPlotDrawRectangle(ctx->ih, bx1, by1, bx2, by2, sampleColor, IUP_DRAW_FILL, 1);
 
       double textRefX = theLegendX + theLineSpace;
       double textRefY = theLegendY + boxSize / 2;

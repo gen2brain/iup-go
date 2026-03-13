@@ -388,7 +388,7 @@ static void iPlotFillArrowI(iupPlotDrawContext* ctx, int inX1, int inY1, int inX
   points[3] = inY2;
   points[4] = inX3;
   points[5] = inY3;
-  iupdrvDrawPolygon(ctx->dc, points, 3, color, IUP_DRAW_FILL, 1);
+  iupPlotDrawPolygon(ctx->ih, points, 3, color, IUP_DRAW_FILL, 1);
 }
 
 static void iPlotDrawArrow(iupPlotDrawContext* ctx, double inX, double inY, int inVertical, int inDirection, int inSize, long color, int lineWidth)
@@ -400,7 +400,7 @@ static void iPlotDrawArrow(iupPlotDrawContext* ctx, double inX, double inY, int 
     int theAbsX = iupPlotDrawCalcX(ctx, inX);
     int theAbsY1 = iupPlotDrawCalcY(ctx, inY);
     int theAbsY2 = iupPlotDrawCalcY(ctx, inY + inDirection*inSize);
-    iupdrvDrawLine(ctx->dc, theAbsX, theAbsY1, theAbsX, theAbsY2, color, IUP_DRAW_STROKE, lineWidth);
+    iupPlotDrawLine(ctx->ih, theAbsX, theAbsY1, theAbsX, theAbsY2, color, IUP_DRAW_STROKE, lineWidth);
 
     int theArrowTipY = theAbsY2;
     int theArrowBaseY = iupPlotDrawCalcY(ctx, inY + inDirection*inSize - inDirection*theSizeDir);
@@ -413,7 +413,7 @@ static void iPlotDrawArrow(iupPlotDrawContext* ctx, double inX, double inY, int 
     int theAbsY = iupPlotDrawCalcY(ctx, inY);
     int theAbsX1 = iupPlotDrawCalcX(ctx, inX);
     int theAbsX2 = iupPlotDrawCalcX(ctx, inX + inDirection*inSize);
-    iupdrvDrawLine(ctx->dc, theAbsX1, theAbsY, theAbsX2, theAbsY, color, IUP_DRAW_STROKE, lineWidth);
+    iupPlotDrawLine(ctx->ih, theAbsX1, theAbsY, theAbsX2, theAbsY, color, IUP_DRAW_STROKE, lineWidth);
 
     int theArrowTipX = theAbsX2;
     int theArrowBaseX = iupPlotDrawCalcX(ctx, inX + inDirection*inSize - inDirection*theSizeDir);
@@ -515,7 +515,7 @@ bool iupPlotAxisX::DrawX(const iupPlotRect &inRect, iupPlotDrawContext* ctx, con
   int absX1 = iupPlotDrawCalcX(ctx, theScreenX1);
   int absX2 = iupPlotDrawCalcX(ctx, theScreenX2);
   int absY = iupPlotDrawCalcY(ctx, theScreenY);
-  iupdrvDrawLine(ctx->dc, absX1, absY, absX2, absY, mColor, IUP_DRAW_STROKE, mLineWidth);
+  iupPlotDrawLine(ctx->ih, absX1, absY, absX2, absY, mColor, IUP_DRAW_STROKE, mLineWidth);
 
   if (mShowArrow)
   {
@@ -632,7 +632,7 @@ void iupPlotAxisX::DrawXTick(double inX, double inScreenY, bool inMajor, const c
   else
     absY2 = iupPlotDrawCalcY(ctx, inScreenY - theTickSize);
 
-  iupdrvDrawLine(ctx->dc, absX, absY1, absX, absY2, mColor, IUP_DRAW_STROKE, mLineWidth);
+  iupPlotDrawLine(ctx->ih, absX, absY1, absX, absY2, mColor, IUP_DRAW_STROKE, mLineWidth);
 }
 
 
@@ -679,7 +679,7 @@ bool iupPlotAxisY::DrawY(const iupPlotRect &inRect, iupPlotDrawContext* ctx, con
   int absX = iupPlotDrawCalcX(ctx, theScreenX);
   int absY1 = iupPlotDrawCalcY(ctx, theScreenY1);
   int absY2 = iupPlotDrawCalcY(ctx, theScreenY2);
-  iupdrvDrawLine(ctx->dc, absX, absY1, absX, absY2, mColor, drawStyle, mLineWidth);
+  iupPlotDrawLine(ctx->ih, absX, absY1, absX, absY2, mColor, drawStyle, mLineWidth);
 
   if (mShowArrow)
   {
@@ -796,5 +796,5 @@ void iupPlotAxisY::DrawYTick(double inY, double inScreenX, bool inMajor, const c
   else
     absX2 = iupPlotDrawCalcX(ctx, inScreenX - theTickSize);
 
-  iupdrvDrawLine(ctx->dc, absX1, absY, absX2, absY, mColor, IUP_DRAW_STROKE, mLineWidth);
+  iupPlotDrawLine(ctx->ih, absX1, absY, absX2, absY, mColor, IUP_DRAW_STROKE, mLineWidth);
 }
