@@ -151,7 +151,7 @@ func main() {
 	}))
 
 	// ListDialog convenience function
-	btnListDialog := iup.Button("ListDialog (convenience)")
+	btnListDialog := iup.Button("ListDialog")
 	btnListDialog.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		items := []string{"Apple", "Banana", "Cherry", "Date", "Elderberry"}
 		marks := make([]bool, len(items))
@@ -162,6 +162,38 @@ func main() {
 					fmt.Printf("ListDialog selected: %s\n", items[i])
 				}
 			}
+		}
+		return iup.DEFAULT
+	}))
+
+	// GetParam convenience function
+	btnGetParam := iup.Button("GetParam (convenience)")
+	btnGetParam.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		pBoolean := 1
+		pInteger := 3456
+		pReal := 3.543
+		pString := "string text"
+		pList := 2
+		pColor := "128 0 255"
+
+		format := "Boolean%b[No,Yes]\n" +
+			"Integer%i\n" +
+			"Real%R[0,1000]\n" +
+			"String%s\n" +
+			"List%l|item1|item2|item3|\n" +
+			"Color%c\n"
+
+		ret := iup.GetParam("GetParam Example", nil, format,
+			&pBoolean, &pInteger, &pReal, &pString, &pList, &pColor,
+		)
+
+		if ret == 1 {
+			fmt.Printf("Boolean: %d\n", pBoolean)
+			fmt.Printf("Integer: %d\n", pInteger)
+			fmt.Printf("Real: %f\n", pReal)
+			fmt.Printf("String: %s\n", pString)
+			fmt.Printf("List: %d\n", pList)
+			fmt.Printf("Color: %s\n", pColor)
 		}
 		return iup.DEFAULT
 	}))
@@ -185,6 +217,24 @@ func main() {
 		return iup.DEFAULT
 	}))
 
+	// Globals Dialog
+	btnGlobals := iup.Button("Globals Dialog")
+	btnGlobals.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		dlg := iup.GlobalsDialog()
+		iup.Popup(dlg, iup.CENTERPARENT, iup.CENTERPARENT)
+		iup.Destroy(dlg)
+		return iup.DEFAULT
+	}))
+
+	// Class Info Dialog
+	btnClassInfo := iup.Button("Class Info Dialog")
+
+	// Layout Dialog
+	btnLayout := iup.Button("Layout Dialog")
+
+	// Element Properties Dialog
+	btnElementProps := iup.Button("Element Properties Dialog")
+
 	// Create main dialog
 	dlg := iup.Dialog(
 		iup.Vbox(
@@ -206,17 +256,43 @@ func main() {
 			).SetAttribute("TITLE", "Picker Dialogs"),
 			iup.Frame(
 				iup.Vbox(
-					iup.Hbox(btnGetFile, btnGetColor, btnGetText, btnListDialog).SetAttributes("GAP=5"),
+					iup.Hbox(btnGetFile, btnGetColor, btnGetText, btnGetParam).SetAttributes("GAP=5"),
 				).SetAttributes("MARGIN=5x5"),
 			).SetAttribute("TITLE", "Convenience Functions"),
 			iup.Frame(
 				iup.Vbox(
-					iup.Hbox(btnProgress).SetAttributes("GAP=5"),
+					iup.Hbox(btnProgress, btnListDialog).SetAttributes("GAP=5"),
 				).SetAttributes("MARGIN=5x5"),
 			).SetAttribute("TITLE", "Other Dialogs"),
+			iup.Frame(
+				iup.Vbox(
+					iup.Hbox(btnGlobals, btnClassInfo, btnLayout, btnElementProps).SetAttributes("GAP=5"),
+				).SetAttributes("MARGIN=5x5"),
+			).SetAttribute("TITLE", "Debug Dialogs"),
 			iup.Fill(),
 		).SetAttributes("MARGIN=10x10, GAP=10"),
-	).SetAttributes("TITLE=Dialog Examples, SIZE=500x350")
+	).SetAttributes("TITLE=Dialog Examples, SIZE=600x400")
+
+	btnClassInfo.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		d := iup.ClassInfoDialog(dlg)
+		iup.Popup(d, iup.CENTERPARENT, iup.CENTERPARENT)
+		iup.Destroy(d)
+		return iup.DEFAULT
+	}))
+
+	btnLayout.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		d := iup.LayoutDialog(dlg)
+		iup.Popup(d, iup.CENTERPARENT, iup.CENTERPARENT)
+		iup.Destroy(d)
+		return iup.DEFAULT
+	}))
+
+	btnElementProps.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		d := iup.ElementPropertiesDialog(dlg, dlg)
+		iup.Popup(d, iup.CENTERPARENT, iup.CENTERPARENT)
+		iup.Destroy(d)
+		return iup.DEFAULT
+	}))
 
 	iup.Show(dlg)
 	iup.MainLoop()
