@@ -13,6 +13,8 @@
 
 #include "iupefl_drv.h"
 
+#include "iupunix_portal.h"
+
 
 IUP_API int IupExecute(const char *filename, const char* parameters)
 {
@@ -60,19 +62,22 @@ IUP_API int IupExecuteWait(const char *filename, const char* parameters)
 
 IUP_API int IupHelp(const char* url)
 {
-  char *browser = getenv("IUP_HELPAPP");
+  char *browser;
+
+  if (iupUnixPortalHelp(url) == 1)
+    return 1;
+
+  browser = getenv("IUP_HELPAPP");
   if (!browser)
     browser = IupGetGlobal("HELPAPP");
 
   if (!browser)
   {
     char* system_name = IupGetGlobal("SYSTEM");
-    if (iupStrEqualNoCase(system_name, "Linux") || iupStrEqualNoCase(system_name, "FreeBSD"))
-        browser = "xdg-open";
-    else if (iupStrEqualNoCase(system_name, "MacOS"))
+    if (iupStrEqualNoCase(system_name, "MacOS"))
       browser = "open";
     else
-      browser = "firefox";
+      browser = "xdg-open";
   }
 
   return IupExecute(browser, url);

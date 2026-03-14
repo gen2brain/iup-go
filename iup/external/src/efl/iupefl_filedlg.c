@@ -23,6 +23,8 @@
 
 #include "iupefl_drv.h"
 
+#include "iupunix_portal.h"
+
 
 typedef struct {
   char** patterns;
@@ -292,6 +294,21 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
   int filter_count = 0;
   EflFileFilterData** filter_list = NULL;
   IFnss file_cb;
+
+  {
+    int use_portal = 0;
+    value = iupAttribGet(ih, "PORTAL");
+    if (value)
+      use_portal = iupStrBoolean(value);
+    else if (IupGetGlobal("SANDBOX"))
+      use_portal = 1;
+
+    if (use_portal)
+    {
+      if (iupUnixPortalFileDialog(ih) == IUP_NOERROR)
+        return IUP_NOERROR;
+    }
+  }
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);

@@ -272,6 +272,16 @@ char* iupdrvGetGlobal(const char* name)
   {
     return iupStrReturnBoolean(iupeflIsSystemDarkMode());
   }
+  if (iupStrEqual(name, "SANDBOX"))
+  {
+    if (getenv("FLATPAK_ID"))
+      return "FLATPAK";
+    if (getenv("SNAP"))
+      return "SNAP";
+    if (getenv("APPIMAGE"))
+      return "APPIMAGE";
+    return NULL;
+  }
 
   return NULL;
 }
