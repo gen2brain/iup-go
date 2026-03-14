@@ -6,6 +6,7 @@
 
 #include <Xm/Xm.h>
 
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "iup.h"
@@ -174,5 +175,15 @@ IUP_SDK_API char* iupdrvGetGlobal(const char *name)
     return iupStrReturnBoolean(iupmotStrGetUTF8ModeFile());
   if (iupStrEqual(name, "DARKMODE"))
     return iupStrReturnBoolean(iupmotIsSystemDarkMode());
+  if (iupStrEqual(name, "SANDBOX"))
+  {
+    if (getenv("FLATPAK_ID"))
+      return "FLATPAK";
+    if (getenv("SNAP"))
+      return "SNAP";
+    if (getenv("APPIMAGE"))
+      return "APPIMAGE";
+    return NULL;
+  }
   return NULL;
 }

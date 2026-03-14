@@ -38,6 +38,8 @@
 
 #include "iupmot_drv.h"
 
+#include "iupunix_portal.h"
+
 
 enum {IUP_DIALOGOPEN, IUP_DIALOGSAVE, IUP_DIALOGDIR};
 
@@ -588,6 +590,21 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
   IFnss file_cb = NULL;
   Widget preview_canvas = NULL;
   char* value;
+
+  {
+    int use_portal = 0;
+    value = iupAttribGet(ih, "PORTAL");
+    if (value)
+      use_portal = iupStrBoolean(value);
+    else if (IupGetGlobal("SANDBOX"))
+      use_portal = 1;
+
+    if (use_portal)
+    {
+      if (iupUnixPortalFileDialog(ih) == IUP_NOERROR)
+        return IUP_NOERROR;
+    }
+  }
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);   /* used in iupDialogUpdatePosition */
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
