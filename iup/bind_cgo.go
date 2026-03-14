@@ -7,7 +7,6 @@ package iup
 #cgo web CFLAGS: -Iexternal/srcweb
 
 #cgo CXXFLAGS: -Iexternal/include -Iexternal/src
-#cgo CXXFLAGS: -std=c++17
 #cgo plot CXXFLAGS: -Iexternal/srcplot
 #cgo web CXXFLAGS: -Iexternal/srcweb
 
@@ -24,7 +23,7 @@ package iup
 #cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4,!efl CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
 
 #cgo qt CFLAGS: -Iexternal/src/qt -DIUP_USE_QT
-#cgo qt CXXFLAGS: -Iexternal/src/qt -DIUP_USE_QT
+#cgo qt CXXFLAGS: -Iexternal/src/qt -DIUP_USE_QT -std=c++17
 
 #cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!efl,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
 #cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!efl,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
@@ -47,9 +46,9 @@ package iup
 #cgo motif,xft,!nopkgconfig pkg-config: xft freetype2
 #cgo motif CFLAGS: -Iexternal/src/mot -Iexternal/src/unix -DIUP_USE_ICONV
 
-#cgo windows CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
+#cgo windows,!winui CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
 #cgo windows,!gtk,!gtk4,!qt,!winui CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
-#cgo windows LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
+#cgo windows,!winui LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 #cgo windows,gl LDFLAGS: -lopengl32
 
 #cgo windows,gtk CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3
