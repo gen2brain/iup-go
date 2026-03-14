@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <glib.h>
+#include <gio/gio.h>
 
 #include "iup.h"
 
@@ -65,19 +66,35 @@ IUP_API int IupExecuteWait(const char *filename, const char* parameters)
 
 IUP_API int IupHelp(const char* url)
 {
-  char *browser = getenv("IUP_HELPAPP");
+  GError *error = NULL;
+  char *browser;
+
+  if (g_app_info_launch_default_for_uri(url, NULL, &error))
+  {
+    return 1;
+  }
+
+  if (error)
+  {
+    if (error->code == G_IO_ERROR_NOT_FOUND)
+    {
+      g_error_free(error);
+      return -2;
+    }
+    g_error_free(error);
+  }
+
+  browser = getenv("IUP_HELPAPP");
   if (!browser)
     browser = IupGetGlobal("HELPAPP");
 
   if (!browser)
   {
     char* system = IupGetGlobal("SYSTEM");
-    if (iupStrEqualNoCase(system, "Linux") || iupStrEqualNoCase(system, "FreeBSD"))
-        browser = "xdg-open";
-    else if (iupStrEqualNoCase(system, "MacOS"))
+    if (iupStrEqualNoCase(system, "MacOS"))
       browser = "open";
     else
-      browser = "firefox";
+      browser = "xdg-open";
   }
 
   return IupExecute(browser, url);
