@@ -16,6 +16,8 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
+	iup.SetHandle("HOUSE_IMG", createHouseImage())
+
 	canvas = iup.Canvas().SetAttributes("RASTERSIZE=600x400, BORDER=NO")
 	canvas.SetCallback("ACTION", iup.ActionFunc(redraw))
 
@@ -135,6 +137,7 @@ func drawScene(ih iup.Ihandle, w, h int) {
 	drawSun(ih, w, h)
 	drawTrees(ih, w, h)
 	drawGround(ih, w, h)
+	drawHouse(ih, w, h)
 	drawTitle(ih, w)
 }
 
@@ -195,6 +198,71 @@ func drawTrees(ih iup.Ihandle, w, h int) {
 		ih.SetAttribute("DRAWSTYLE", "FILL")
 		iup.DrawPolygon(ih, []int{x - treeH/3, baseY - treeH/3, x, baseY - treeH, x + treeH/3, baseY - treeH/3}, 3)
 	}
+}
+
+func drawHouse(ih iup.Ihandle, w, h int) {
+	groundY := h * 2 / 3
+	imgW, imgH := 48, 48
+	x := w/2 - imgW/2
+	y := groundY - imgH + 5
+
+	iup.DrawImage(ih, "HOUSE_IMG", x, y, imgW, imgH)
+}
+
+func createHouseImage() iup.Ihandle {
+	const size = 48
+	pixels := make([]byte, size*size*4)
+
+	setPixel := func(x, y int, r, g, b, a byte) {
+		if x >= 0 && x < size && y >= 0 && y < size {
+			off := (y*size + x) * 4
+			pixels[off] = r
+			pixels[off+1] = g
+			pixels[off+2] = b
+			pixels[off+3] = a
+		}
+	}
+
+	fillRect := func(x1, y1, x2, y2 int, r, g, b, a byte) {
+		for y := y1; y <= y2; y++ {
+			for x := x1; x <= x2; x++ {
+				setPixel(x, y, r, g, b, a)
+			}
+		}
+	}
+
+	// Roof (triangle)
+	for y := 8; y <= 22; y++ {
+		halfW := (y - 8) * 24 / 14
+		cx := 24
+		for x := cx - halfW; x <= cx+halfW; x++ {
+			setPixel(x, y, 180, 60, 40, 255)
+		}
+	}
+
+	// Walls
+	fillRect(6, 22, 42, 44, 220, 190, 140, 255)
+
+	// Door
+	fillRect(19, 30, 28, 44, 120, 70, 30, 255)
+
+	// Doorknob
+	setPixel(26, 37, 255, 215, 0, 255)
+
+	// Left window
+	fillRect(9, 26, 16, 32, 160, 210, 240, 255)
+	fillRect(12, 26, 13, 32, 100, 70, 50, 255) // cross vertical
+	fillRect(9, 29, 16, 29, 100, 70, 50, 255)  // cross horizontal
+
+	// Right window
+	fillRect(31, 26, 38, 32, 160, 210, 240, 255)
+	fillRect(34, 26, 35, 32, 100, 70, 50, 255)
+	fillRect(31, 29, 38, 29, 100, 70, 50, 255)
+
+	// Chimney
+	fillRect(33, 8, 38, 18, 150, 50, 35, 255)
+
+	return iup.ImageRGBA(size, size, pixels)
 }
 
 func drawTitle(ih iup.Ihandle, w int) {
