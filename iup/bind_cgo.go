@@ -59,7 +59,7 @@ package iup
 
 #cgo winui CFLAGS: -Iexternal/src/winui -DIUP_USE_WINUI -DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0A00 -DNTDDI_VERSION=0x0A000000
 #cgo winui CXXFLAGS: -Iexternal/src/winui -DIUP_USE_WINUI -D_WIN32_WINNT=0x0A00 -DNTDDI_VERSION=0x0A000000 -DUNICODE -D_UNICODE -std=c++20 -stdlib=libc++
-#cgo winui LDFLAGS: -lwindowsapp -lruntimeobject -ld2d1 -ldwrite -luuid -loleaut32 -lole32 -luser32 -lshell32 -l:libc++.a -l:libc++abi.a
+#cgo winui LDFLAGS: -lwindowsapp -lruntimeobject -ld2d1 -ldwrite -luuid -loleaut32 -lole32 -luser32 -lshell32 -lgdi32 -lcomdlg32 -l:libc++.a -l:libc++abi.a
 
 #cgo darwin CFLAGS: -Iexternal/src/cocoa -x objective-c
 #cgo darwin LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications
