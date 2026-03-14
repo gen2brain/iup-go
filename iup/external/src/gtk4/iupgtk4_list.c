@@ -2350,6 +2350,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
       iupgtk4SetupFocusEvents(ih->handle, ih);
 
       GtkEventController* key_controller = gtk_event_controller_key_new();
+      gtk_event_controller_set_propagation_phase(key_controller, GTK_PHASE_CAPTURE);
       gtk_widget_add_controller(ih->handle, key_controller);
       g_signal_connect(key_controller, "key-pressed", G_CALLBACK(gtk4ListSimpleKeyPressEvent), ih);
     }
