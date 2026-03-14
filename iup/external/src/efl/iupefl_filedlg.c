@@ -188,6 +188,8 @@ static void eflFileDlgGetMultipleFiles(Ihandle* ih, Eina_List* paths)
     {
       filename = iupeflStrConvertFromSystem((char*)path);
       len = (int)strlen(filename) - dir_len;
+      if (len <= 0)
+        continue;
 
       cur_len = iupArrayCount(names_array);
 
@@ -203,7 +205,7 @@ static void eflFileDlgGetMultipleFiles(Ihandle* ih, Eina_List* paths)
 
     cur_len = iupArrayCount(names_array);
     all_names = iupArrayInc(names_array);
-    all_names[cur_len + 1] = 0;
+    all_names[cur_len] = 0;
 
     iupAttribSetStr(ih, "VALUE", all_names);
 

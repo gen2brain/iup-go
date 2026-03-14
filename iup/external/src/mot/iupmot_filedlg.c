@@ -169,7 +169,7 @@ static int motFileDlgGetMultipleFiles(Ihandle* ih, const char* dir, Widget wList
   /* check if just one file is selected */
   if (sel_count == 1)
   {
-    filename = iupmotGetXmString(items[pos[0] - 1]);  /* XmListGetSelectedPos starts at 1 */
+    XmStringGetLtoR(items[pos[0] - 1], XmSTRING_DEFAULT_CHARSET, &filename);  /* XmListGetSelectedPos starts at 1 */
     if (filename)
     {
       iupAttribSetStrId(ih, "MULTIVALUE", 0, dir);  /* same as directory, includes last separator */
@@ -207,7 +207,7 @@ static int motFileDlgGetMultipleFiles(Ihandle* ih, const char* dir, Widget wList
 
     for (i = 0; i < sel_count; i++)
     {
-      filename = iupmotGetXmString(items[pos[i] - 1]);  /* XmListGetSelectedPos starts at 1 */
+      XmStringGetLtoR(items[pos[i] - 1], XmSTRING_DEFAULT_CHARSET, &filename);  /* XmListGetSelectedPos starts at 1 */
       if (filename)
       {
         len = (int)strlen(filename) - dir_len;
@@ -229,7 +229,7 @@ static int motFileDlgGetMultipleFiles(Ihandle* ih, const char* dir, Widget wList
 
     cur_len = iupArrayCount(names_array);
     all_names = iupArrayInc(names_array);
-    all_names[cur_len + 1] = 0;
+    all_names[cur_len] = 0;
 
     /* replace VALUE with the correct sequence */
     iupAttribSetStr(ih, "VALUE", all_names);

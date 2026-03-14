@@ -117,6 +117,12 @@ static void gtkFileDlgGetMultipleFiles(Ihandle* ih, GSList* list)
     {
       filename = iupgtkStrConvertFromFilename((char*)list->data);
       len = (int)strlen(filename) - dir_len;
+      if (len <= 0)
+      {
+        g_free(list->data);
+        list = list->next;
+        continue;
+      }
 
       cur_len = iupArrayCount(names_array);
 
@@ -135,7 +141,7 @@ static void gtkFileDlgGetMultipleFiles(Ihandle* ih, GSList* list)
 
     cur_len = iupArrayCount(names_array);
     all_names = iupArrayInc(names_array);
-    all_names[cur_len + 1] = 0;
+    all_names[cur_len] = 0;
 
     iupAttribSetStr(ih, "VALUE", all_names);
 
