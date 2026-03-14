@@ -39,6 +39,29 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
 @end
 
 
+static int cocoaPreviewMapButton(NSInteger buttonNumber)
+{
+  switch (buttonNumber)
+  {
+    case 0: return IUP_BUTTON1;
+    case 1: return IUP_BUTTON3;
+    case 2: return IUP_BUTTON2;
+    default: return (int)buttonNumber + 1;
+  }
+}
+
+static void cocoaPreviewSetButtonStatus(int button, char* status)
+{
+  switch(button)
+  {
+    case IUP_BUTTON1: iupKEY_SETBUTTON1(status); break;
+    case IUP_BUTTON2: iupKEY_SETBUTTON2(status); break;
+    case IUP_BUTTON3: iupKEY_SETBUTTON3(status); break;
+    case IUP_BUTTON4: iupKEY_SETBUTTON4(status); break;
+    case IUP_BUTTON5: iupKEY_SETBUTTON5(status); break;
+  }
+}
+
 @implementation IupPreviewCanvasView
 
 - (BOOL)isFlipped
@@ -72,6 +95,15 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
 - (void)updateTrackingAreas
 {
   [super updateTrackingAreas];
+
+  for (NSTrackingArea* area in [self trackingAreas])
+  {
+    if ([area owner] == self)
+    {
+      [self removeTrackingArea:area];
+    }
+  }
+
   NSTrackingArea* area = [[NSTrackingArea alloc] initWithRect:[self bounds]
                                                       options:(NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved | NSTrackingActiveInKeyWindow)
                                                         owner:self userInfo:nil];
@@ -106,28 +138,11 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
   {
     NSPoint p = [self convertPoint:[theEvent locationInWindow] fromView:nil];
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    int doubleclick = ([theEvent clickCount] > 1) ? 1 : 0;
-    int button = 0;
-
-    switch ([theEvent buttonNumber])
-    {
-      case 0: button = IUP_BUTTON1; break;
-      case 1: button = IUP_BUTTON3; break;
-      case 2: button = IUP_BUTTON2; break;
-      default: button = (int)[theEvent buttonNumber] + 1; break;
-    }
+    int button = cocoaPreviewMapButton([theEvent buttonNumber]);
 
     iupcocoaButtonKeySetStatus(theEvent, status);
-    if(doubleclick) iupKEY_SETDOUBLE(status);
-
-    switch(button)
-    {
-      case IUP_BUTTON1: iupKEY_SETBUTTON1(status); break;
-      case IUP_BUTTON2: iupKEY_SETBUTTON2(status); break;
-      case IUP_BUTTON3: iupKEY_SETBUTTON3(status); break;
-      case IUP_BUTTON4: iupKEY_SETBUTTON4(status); break;
-      case IUP_BUTTON5: iupKEY_SETBUTTON5(status); break;
-    }
+    if ([theEvent clickCount] > 1) iupKEY_SETDOUBLE(status);
+    cocoaPreviewSetButtonStatus(button, status);
 
     int ret = cb(ih, button, 1, (int)p.x, (int)p.y, status);
     if (ret == IUP_CLOSE)
@@ -145,26 +160,10 @@ static char* iupCocoaFileDlgGetNextStr(char* str)
   {
     NSPoint p = [self convertPoint:[theEvent locationInWindow] fromView:nil];
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    int button = 0;
-
-    switch ([theEvent buttonNumber])
-    {
-      case 0: button = IUP_BUTTON1; break;
-      case 1: button = IUP_BUTTON3; break;
-      case 2: button = IUP_BUTTON2; break;
-      default: button = (int)[theEvent buttonNumber] + 1; break;
-    }
+    int button = cocoaPreviewMapButton([theEvent buttonNumber]);
 
     iupcocoaButtonKeySetStatus(theEvent, status);
-
-    switch(button)
-    {
-      case IUP_BUTTON1: iupKEY_SETBUTTON1(status); break;
-      case IUP_BUTTON2: iupKEY_SETBUTTON2(status); break;
-      case IUP_BUTTON3: iupKEY_SETBUTTON3(status); break;
-      case IUP_BUTTON4: iupKEY_SETBUTTON4(status); break;
-      case IUP_BUTTON5: iupKEY_SETBUTTON5(status); break;
-    }
+    cocoaPreviewSetButtonStatus(button, status);
 
     int ret = cb(ih, button, 0, (int)p.x, (int)p.y, status);
     if (ret == IUP_CLOSE)
@@ -364,8 +363,6 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
   {
     file_cb(ih, NULL, "INIT");
   }
-
-  (void)help_cb;
 
   char* extfilter_val = iupAttribGet(ih, "EXTFILTER");
   char* filter_val = iupAttribGet(ih, "FILTER");
@@ -606,6 +603,13 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
         NSURL* url = [(NSOpenPanel*)file_panel URL];
         const char* path_utf8 = [[url path] UTF8String];
         iupAttribSetStr(ih, "VALUE", path_utf8);
+
+        if (dialogtype != IUP_DIALOGDIR)
+        {
+          char* dir = iupStrFileGetPath(path_utf8);
+          iupAttribSetStr(ih, "DIRECTORY", dir);
+          free(dir);
+        }
 
         if (dialogtype == IUP_DIALOGDIR)
         {

@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
 #include <stdarg.h>
 
 #include "iup.h"
@@ -33,84 +32,48 @@
 
 #include "iupcocoa_drv.h"
 
+
+@interface IupCocoaTreeTableCellView : NSTableCellView
+@property(retain, nonatomic) NSFont* itemFont;
+@end
+
+@implementation IupCocoaTreeTableCellView
+
+- (void)viewWillDraw
+{
+  [super viewWillDraw];
+  if (_itemFont)
+    [self.textField setFont:_itemFont];
+}
+
+- (void)dealloc
+{
+  [_itemFont release];
+  [super dealloc];
+}
+
+@end
+
 @interface IupCocoaTreeToggleTableCellView : NSTableCellView
 @property(retain, nonatomic) IBOutlet NSButton* checkBox;
+@property(retain, nonatomic) NSFont* itemFont;
 @end
 
 @implementation IupCocoaTreeToggleTableCellView
 
 @synthesize checkBox = _checkBox;
 
-- (instancetype)initWithFrame:(NSRect)frameRect
+- (void)viewWillDraw
 {
-  self = [super initWithFrame:frameRect];
-  if (self)
-  {
-    /* Create the checkbox. */
-    self.checkBox = [[[NSButton alloc] initWithFrame:NSZeroRect] autorelease];
-    [self.checkBox setButtonType:NSButtonTypeSwitch];
-    [self.checkBox setTitle:@""]; /* A checkbox shouldn't have a title of its own */
-    [self.checkBox setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [self addSubview:self.checkBox];
-
-    /* The superclass (NSTableCellView) has imageView and textField properties. */
-    self.imageView = [[[NSImageView alloc] initWithFrame:NSZeroRect] autorelease];
-    [self.imageView setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [self addSubview:self.imageView];
-
-    self.textField = [[[NSTextField alloc] initWithFrame:NSZeroRect] autorelease];
-    [self.textField setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [self.textField setBezeled:NO];
-    [self.textField setDrawsBackground:NO];
-    [self.textField setEditable:NO];
-    [self.textField setSelectable:NO];
-    [self addSubview:self.textField];
-
-    /* Set up Auto Layout constraints */
-    NSDictionary* views = @{
-      @"checkBox": self.checkBox,
-     @"imageView": self.imageView,
-     @"textField": self.textField
-    };
-
-         /* Horizontal constraints, arrange checkbox, image, and text from left to right. */
-         [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-2-[checkBox]-5-[imageView]-5-[textField]-2-|"
-                      options:0
-                      metrics:nil
-                        views:views]];
-
-             /* Vertical constraints, center all subviews vertically within the cell. */
-             [self addConstraint:[NSLayoutConstraint constraintWithItem:self.checkBox
-                       attribute:NSLayoutAttributeCenterY
-                       relatedBy:NSLayoutRelationEqual
-                          toItem:self
-                       attribute:NSLayoutAttributeCenterY
-                      multiplier:1.0
-                        constant:0]];
-
-             [self addConstraint:[NSLayoutConstraint constraintWithItem:self.imageView
-                       attribute:NSLayoutAttributeCenterY
-                       relatedBy:NSLayoutRelationEqual
-                          toItem:self
-                       attribute:NSLayoutAttributeCenterY
-                      multiplier:1.0
-                        constant:0]];
-
-             [self addConstraint:[NSLayoutConstraint constraintWithItem:self.textField
-                       attribute:NSLayoutAttributeCenterY
-                       relatedBy:NSLayoutRelationEqual
-                          toItem:self
-                       attribute:NSLayoutAttributeCenterY
-                      multiplier:1.0
-                        constant:0]];
-  }
-  return self;
+  [super viewWillDraw];
+  if (_itemFont)
+    [self.textField setFont:_itemFont];
 }
 
 - (void)dealloc
 {
   [_checkBox release];
-  _checkBox = nil;
+  [_itemFont release];
   [super dealloc];
 }
 
@@ -214,7 +177,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
   NSImage* bitmapImage;
   NSImage* collapsedImage;
   NSColor* textColor;
-  NSFont* font;
+  IupCocoaFont* font;
   IupCocoaTreeToggleReceiver* toggleReceiver; /* For TOGGLE_CB callbacks. */
 }
 
@@ -227,7 +190,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
 @property(nonatomic, retain) NSImage* bitmapImage;
 @property(nonatomic, retain) NSImage* collapsedImage;
 @property(nonatomic, retain) NSColor* textColor;
-@property(nonatomic, retain) NSFont* font;
+@property(nonatomic, retain) IupCocoaFont* font;
 @property(nonatomic, retain) IupCocoaTreeToggleReceiver* toggleReceiver;
 
 - (instancetype) cloneWithNewParentItem:(IupCocoaTreeItem*)new_parent_item ihandle:(Ihandle*)ih;
@@ -1102,11 +1065,11 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   CGFloat image_height = 0.0;
   helperGetActiveImageForTreeItem(tree_item, (IupCocoaOutlineView*)outline_view, &image_width, &image_height);
 
-  /* Use item's custom font if available to calculate text height */
-  NSFont *font = [tree_item font];
-  if (font)
+  IupCocoaFont* iup_font = [tree_item font];
+  NSFont* native_font = [iup_font nativeFont];
+  if (native_font)
   {
-    text_height = [font capHeight] + 2; /* Approximate height from font */
+    text_height = ceil([native_font ascender] - [native_font descender] + [native_font leading]);
   }
 
   CGFloat final_height;
@@ -1201,7 +1164,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
     table_cell_view = [outline_view makeViewWithIdentifier:@"IupCocoaTreeTableCellView" owner:self];
     if(nil == table_cell_view)
     {
-      table_cell_view = [[[NSTableCellView alloc] initWithFrame:NSZeroRect] autorelease];
+      table_cell_view = [[[IupCocoaTreeTableCellView alloc] initWithFrame:NSZeroRect] autorelease];
       [table_cell_view setIdentifier:@"IupCocoaTreeTableCellView"];
 
       /* Initialize ImageView */
@@ -1264,19 +1227,12 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [text_field setDelegate:nil];
     }
 
-    /* Apply custom font and color */
-    NSFont* item_font = [tree_item font];
-    if (!item_font)
-    {
-      IupCocoaFont* iup_font = iupcocoaGetFont(ih);
-      if (!iup_font)
-      {
-        const char* default_font = IupGetGlobal("DEFAULTFONT");
-        iup_font = iupcocoaFindFont(default_font);
-      }
-      item_font = iup_font ? [iup_font nativeFont] : [NSFont systemFontOfSize:13];
-    }
-    [text_field setFont:item_font];
+    IupCocoaFont* item_iup_font = [tree_item font];
+    NSFont* item_native_font = [item_iup_font nativeFont];
+    if (ih->data->show_toggle > 0)
+      [(IupCocoaTreeToggleTableCellView*)table_cell_view setItemFont:item_native_font];
+    else
+      [(IupCocoaTreeTableCellView*)table_cell_view setItemFont:item_native_font];
     [text_field setTextColor:([tree_item textColor] ?: [NSColor controlTextColor])];
     [text_field setEnabled:is_enabled];
   }
@@ -3427,12 +3383,12 @@ static char* cocoaTreeGetTitleFontAttrib(Ihandle* ih, int id)
     return NULL;
 
   IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)inode_handle;
-  NSFont* font = [tree_item font];
+  IupCocoaFont* iup_font = [tree_item font];
 
-  if (font == nil)
+  if (iup_font == nil)
     return NULL;
 
-  return iupStrReturnStr([[font fontName] UTF8String]);
+  return iupStrReturnStr([[iup_font iupFontName] UTF8String]);
 }
 
 static int cocoaTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
@@ -3449,7 +3405,7 @@ static int cocoaTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
     IupCocoaFont* iup_font = iupcocoaFindFont(value);
     if (nil != iup_font)
     {
-      [tree_item setFont:[iup_font nativeFont]];
+      [tree_item setFont:iup_font];
       cocoaTreeReloadItem(tree_item, outline_view);
     }
   }
@@ -4334,14 +4290,13 @@ static int cocoaTreeSetFgColorAttrib(Ihandle* ih, const char* value)
 
 static int cocoaTreeSetHlColorAttrib(Ihandle* ih, const char* value)
 {
+  (void)value;
   if (ih->handle)
   {
-    /* Redraw rows to apply the new highlight color */
     NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
     [outline_view setNeedsDisplay:YES];
   }
-  (void)value;
-  return 1; /* Mark as stored */
+  return 1;
 }
 
 static int cocoaTreeSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -4503,22 +4458,6 @@ static char* cocoaTreeGetTipAttrib(Ihandle* ih)
   return NULL;
 }
 
-static int cocoaTreeSetHideLinesAttrib(Ihandle* ih, const char* value)
-{
-  /* NSOutlineView does not draw connecting lines between nodes like GTK TreeView. */
-  (void)ih;
-  (void)value;
-  return 0;
-}
-
-static int cocoaTreeSetHideButtonsAttrib(Ihandle* ih, const char* value)
-{
-  /* NSOutlineView does not provide a straightforward way to hide disclosure triangles. */
-  (void)ih;
-  (void)value;
-  return 0;
-}
-
 static int cocoaTreeMapMethod(Ihandle* ih)
 {
   IupCocoaOutlineView* outline_view = [[IupCocoaOutlineView alloc] initWithFrame:NSZeroRect];
@@ -4563,16 +4502,6 @@ static int cocoaTreeMapMethod(Ihandle* ih)
   iupcocoaAddToParent(ih);
 
   [outline_view setHeaderView:nil];
-
-  if (iupAttribGetBoolean(ih, "HIDELINES"))
-  {
-    /* NSOutlineView does not draw lines by default */
-  }
-
-  if (iupAttribGetBoolean(ih, "HIDEBUTTONS"))
-  {
-    /* NSOutlineView disclosure triangles cannot be easily hidden */
-  }
 
   NSImage* leaf_image = iupImageGetImage(iupAttribGetStr(ih, "IMAGELEAF"), ih, 0, NULL);
   [outline_view setLeafImage:leaf_image];
@@ -4694,8 +4623,8 @@ void iupdrvTreeInitClass(Iclass* ic)
 
   /* IupTree Attributes - macOS specific */
   iupClassRegisterAttribute(ic, "RUBBERBAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDELINES", NULL, cocoaTreeSetHideLinesAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDEBUTTONS", NULL, cocoaTreeSetHideButtonsAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDEBUTTONS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INFOTIP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Tooltip attributes */

@@ -38,20 +38,6 @@ static const char IUPCocoaZoomRestoreFrameKey = 0;
 
 static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
 
-@interface ModalInfo : NSObject
-{
-  Ihandle* _ih;
-  NSModalSession _modalSession;
-}
-@property(assign, nonatomic) Ihandle* ih;
-@property(assign, nonatomic) NSModalSession modalSession;
-@end
-
-@implementation ModalInfo
-@synthesize ih;
-@synthesize modalSession;
-@end
-
 @interface IupCocoaWindowDelegate : NSObject <NSWindowDelegate>
 @end
 
@@ -462,12 +448,6 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
   }
 }
 
-- (void) windowDidResignKey:(NSNotification*)notification
-{
-  NSWindow* the_window = [notification object];
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_window, IHANDLE_ASSOCIATED_OBJ_KEY);
-}
-
 - (NSSize) windowWillResize:(NSWindow*)the_sender toSize:(NSSize)frame_size
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_sender, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -797,37 +777,13 @@ void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu
 {
   *menu = 0; /* In Cocoa, the menu bar is not part of the window's decoration height. */
 
-  /* Determine the window's style mask, which defines its decorations. */
   NSWindowStyleMask style_mask = 0;
   NSWindow* the_window = cocoaDialogGetWindow(ih);
 
   if (the_window)
-  {
     style_mask = [the_window styleMask];
-  }
   else
-  {
-    /* If the window is not yet mapped, we must infer the style mask from IUP attributes. */
-    /* This logic is derived from what cocoaDialogMapMethod would do. */
-    int has_titlebar = iupAttribGet(ih, "TITLE") ||
-                       iupAttribGetBoolean(ih, "MAXBOX") ||
-                       iupAttribGetBoolean(ih, "MINBOX") ||
-                       iupAttribGetBoolean(ih, "MENUBOX");
-
-    if (has_titlebar || iupAttribGetBoolean(ih, "BORDER"))
-      style_mask = NSWindowStyleMaskTitled;
-    else
-      style_mask = NSWindowStyleMaskBorderless;
-
-    if (iupAttribGetBoolean(ih, "RESIZE"))
-      style_mask |= NSWindowStyleMaskResizable;
-    if (iupAttribGetBoolean(ih, "MINBOX"))
-      style_mask |= NSWindowStyleMaskMiniaturizable;
-    if (iupAttribGetBoolean(ih, "MENUBOX"))
-      style_mask |= NSWindowStyleMaskClosable;
-    if (iupAttribGetBoolean(ih, "TOOLBOX"))
-      style_mask |= NSWindowStyleMaskUtilityWindow;
-  }
+    style_mask = cocoaDialogGetStyleMask(ih);
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE"))
   {
@@ -971,17 +927,11 @@ static int cocoaDialogSetMenuAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
+static void cocoaDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
 {
   NSWindow* the_window = cocoaDialogGetWindow(ih);
   if (!the_window)
-    return iupBaseSetMinSizeAttrib(ih, value);
-
-  int min_w = 1, min_h = 1;
-  int max_w = 65535, max_h = 65535;
-  iupStrToIntInt(value, &min_w, &min_h, 'x');
-
-  iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
+    return;
 
   int decorwidth = 0, decorheight = 0;
   iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
@@ -1000,39 +950,28 @@ static int cocoaDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
 
   [the_window setContentMinSize:minSize];
   [the_window setContentMaxSize:maxSize];
+}
+
+static int cocoaDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
+{
+  int min_w = 1, min_h = 1;
+  int max_w = 65535, max_h = 65535;
+  iupStrToIntInt(value, &min_w, &min_h, 'x');
+  iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
+
+  cocoaDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
 
   return iupBaseSetMinSizeAttrib(ih, value);
 }
 
 static int cocoaDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
-  if (!the_window)
-    return iupBaseSetMaxSizeAttrib(ih, value);
-
   int min_w = 1, min_h = 1;
   int max_w = 65535, max_h = 65535;
   iupStrToIntInt(value, &max_w, &max_h, 'x');
-
   iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
 
-  int decorwidth = 0, decorheight = 0;
-  iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
-
-  NSSize minSize = NSMakeSize(1, 1);
-  if (min_w > decorwidth)
-    minSize.width = min_w - decorwidth;
-  if (min_h > decorheight)
-    minSize.height = min_h - decorheight;
-
-  NSSize maxSize = NSMakeSize(65535, 65535);
-  if (max_w > decorwidth && max_w > minSize.width)
-    maxSize.width = max_w - decorwidth;
-  if (max_h > decorheight && max_h > minSize.height)
-    maxSize.height = max_h - decorheight;
-
-  [the_window setContentMinSize:minSize];
-  [the_window setContentMaxSize:maxSize];
+  cocoaDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
 
   return iupBaseSetMaxSizeAttrib(ih, value);
 }
@@ -1489,7 +1428,6 @@ static int cocoaDialogMapMethod(Ihandle* ih)
   [nc addObserver:window_delegate selector:@selector(windowDidEnterFullScreen:) name:NSWindowDidEnterFullScreenNotification object:the_window];
   [nc addObserver:window_delegate selector:@selector(windowDidExitFullScreen:) name:NSWindowDidExitFullScreenNotification object:the_window];
   [nc addObserver:window_delegate selector:@selector(windowDidBecomeKey:) name:NSWindowDidBecomeKeyNotification object:the_window];
-  [nc addObserver:window_delegate selector:@selector(windowDidResignKey:) name:NSWindowDidResignKeyNotification object:the_window];
 
   [the_window addObserver:window_delegate
                forKeyPath:@"effectiveAppearance"
@@ -1535,7 +1473,7 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
   NSWindow* parent_window = [the_window parentWindow];
   if (parent_window)
   {
-    [[NSNotificationCenter defaultCenter] removeObserver:[parent_window delegate]
+    [[NSNotificationCenter defaultCenter] removeObserver:[the_window delegate]
                                                      name:NSWindowWillCloseNotification
                                                    object:the_window];
     [parent_window removeChildWindow:the_window];
@@ -1638,11 +1576,8 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
   }
   else
   {
-    int decor_w, decor_h;
-    NSRect sample_content_rect = NSMakeRect(0, 0, 100, 100);
-    NSRect sample_frame_rect = [NSWindow frameRectForContentRect:sample_content_rect styleMask:[the_window styleMask]];
-    decor_w = (int)round(sample_frame_rect.size.width - sample_content_rect.size.width);
-    decor_h = (int)round(sample_frame_rect.size.height - sample_content_rect.size.height);
+    int decor_w = 0, decor_h = 0;
+    iupDialogGetDecorSize(ih, &decor_w, &decor_h);
 
     width = ih->currentwidth - decor_w;
     height = ih->currentheight - decor_h;

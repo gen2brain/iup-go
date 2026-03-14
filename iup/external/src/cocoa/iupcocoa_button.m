@@ -24,11 +24,11 @@
 #include "iup_button.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_image.h"
 #include "iup_key.h"
 
 #include "iupcocoa_drv.h"
 #include "iupcocoa_keycodes.h"
+
 
 static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY";
 
@@ -276,13 +276,15 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 
 - (void)scrollWheel:(NSEvent *)event
 {
-  [super scrollWheel:event];
-
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (ih)
   {
     if (!iupcocoaCommonBaseScrollWheelCallback(ih, event, self))
       [super scrollWheel:event];
+  }
+  else
+  {
+    [super scrollWheel:event];
   }
 }
 
@@ -399,6 +401,18 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 }
 @end
 
+static NSCellImagePosition cocoaButtonGetImagePosition(int img_position)
+{
+  switch(img_position)
+  {
+    case IUP_IMGPOS_TOP:    return NSImageAbove;
+    case IUP_IMGPOS_BOTTOM: return NSImageBelow;
+    case IUP_IMGPOS_RIGHT:  return NSImageRight;
+    case IUP_IMGPOS_LEFT:
+    default:                return NSImageLeft;
+  }
+}
+
 static int text_border_x = -1, text_border_y = -1;
 static int image_border_x = -1, image_border_y = -1;
 static int image_text_border_x = -1, image_text_border_y = -1;
@@ -418,25 +432,7 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
     {
       [temp_button setTitle:@"Test"];
       [temp_button setImage:temp_image];
-
-      NSCellImagePosition position;
-      switch(img_position)
-      {
-        case IUP_IMGPOS_TOP:
-          position = NSImageAbove;
-          break;
-        case IUP_IMGPOS_BOTTOM:
-          position = NSImageBelow;
-          break;
-        case IUP_IMGPOS_RIGHT:
-          position = NSImageRight;
-          break;
-        case IUP_IMGPOS_LEFT:
-        default:
-          position = NSImageLeft;
-          break;
-      }
-      [temp_button setImagePosition:position];
+      [temp_button setImagePosition:cocoaButtonGetImagePosition(img_position)];
     }
     else
     {
@@ -591,24 +587,7 @@ static int cocoaButtonSetTitleAttrib(Ihandle* ih, const char* value)
 
       if(ih->data->type & IUP_BUTTON_IMAGE)
       {
-        NSCellImagePosition position;
-        switch(ih->data->img_position)
-        {
-          case IUP_IMGPOS_TOP:
-            position = NSImageAbove;
-            break;
-          case IUP_IMGPOS_BOTTOM:
-            position = NSImageBelow;
-            break;
-          case IUP_IMGPOS_RIGHT:
-            position = NSImageRight;
-            break;
-          case IUP_IMGPOS_LEFT:
-          default:
-            position = NSImageLeft;
-            break;
-        }
-        [the_button setImagePosition:position];
+        [the_button setImagePosition:cocoaButtonGetImagePosition(ih->data->img_position)];
       }
 
       return 1;
@@ -874,8 +853,6 @@ void cocoaButtonLayoutUpdateMethod(Ihandle *ih)
     );
   }
 
-  (void)child_view;
-
   [child_view setFrame:NSIntegralRect(child_rect)];
 }
 
@@ -911,25 +888,7 @@ static int cocoaButtonMapMethod(Ihandle* ih)
         free(stripped_str);
 
       [the_button setTitle:ns_string];
-
-      NSCellImagePosition position;
-      switch(ih->data->img_position)
-      {
-        case IUP_IMGPOS_TOP:
-          position = NSImageAbove;
-          break;
-        case IUP_IMGPOS_BOTTOM:
-          position = NSImageBelow;
-          break;
-        case IUP_IMGPOS_RIGHT:
-          position = NSImageRight;
-          break;
-        case IUP_IMGPOS_LEFT:
-        default:
-          position = NSImageLeft;
-          break;
-      }
-      [the_button setImagePosition:position];
+      [the_button setImagePosition:cocoaButtonGetImagePosition(ih->data->img_position)];
     }
     else
     {

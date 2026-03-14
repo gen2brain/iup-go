@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include "iup.h"
 
+
 extern const void* IUPSOURCEDRAG_ASSOCIATED_OBJ_KEY;
 extern const void* IUPTARGETDROP_ASSOCIATED_OBJ_KEY;
 

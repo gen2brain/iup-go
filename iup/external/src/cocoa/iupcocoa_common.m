@@ -25,7 +25,6 @@
 #include "iup_class.h"
 #include "iup_attrib.h"
 #include "iup_focus.h"
-#include "iup_key.h"
 #include "iup_image.h"
 #include "iup_loop.h"
 #include "iup_drv.h"
@@ -47,52 +46,31 @@ NSObject* iupcocoaGetRootObject(Ihandle* ih)
   return (NSObject*)ih->handle;
 }
 
-NSView* iupcocoaGetRootView(Ihandle* ih)
+static NSView* cocoaGetAssociatedView(Ihandle* ih, const void* key)
 {
-  if(NULL == ih)
-  {
+  if (NULL == ih)
     return nil;
-  }
-  id root_object = (NSObject*)ih->handle;
 
-  if(nil == root_object)
-  {
+  id root_object = (id)ih->handle;
+  if (nil == root_object)
     return nil;
-  }
-
-  NSView* root_view = (NSView*)objc_getAssociatedObject(root_object, ROOTVIEW_ASSOCIATED_OBJ_KEY);
 
   if (ih->iclass->nativetype == IUP_TYPEMENU || [root_object isKindOfClass:[NSStatusItem class]])
-  {
     return nil;
-  }
 
-  NSCAssert([root_view isKindOfClass:[NSView class]], @"Expected NSView");
-  return root_view;
+  NSView* view = (NSView*)objc_getAssociatedObject(root_object, key);
+  NSCAssert([view isKindOfClass:[NSView class]], @"Expected NSView");
+  return view;
+}
+
+NSView* iupcocoaGetRootView(Ihandle* ih)
+{
+  return cocoaGetAssociatedView(ih, ROOTVIEW_ASSOCIATED_OBJ_KEY);
 }
 
 NSView* iupcocoaGetMainView(Ihandle* ih)
 {
-  if(NULL == ih)
-  {
-    return nil;
-  }
-  id root_object = (NSObject*)ih->handle;
-
-  if(nil == root_object)
-  {
-    return nil;
-  }
-
-  NSView* main_view = (NSView*)objc_getAssociatedObject(root_object, MAINVIEW_ASSOCIATED_OBJ_KEY);
-
-  if (ih->iclass->nativetype == IUP_TYPEMENU || [root_object isKindOfClass:[NSStatusItem class]])
-  {
-    return nil;
-  }
-
-  NSCAssert([main_view isKindOfClass:[NSView class]], @"Expected NSView");
-  return main_view;
+  return cocoaGetAssociatedView(ih, MAINVIEW_ASSOCIATED_OBJ_KEY);
 }
 
 void iupcocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSView* root_view)
@@ -105,90 +83,14 @@ void iupcocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSView* root_vie
 
 void iupcocoaAddToParent(Ihandle* ih)
 {
-  NSView* parent_view = nil;
+  NSView* parent_view = iupcocoaCommonBaseLayoutGetParentView(ih);
 
-  /* Check if this element is intended for a specific container within a composite control (e.g., IupTabs).
-     This allows the native hierarchy (child inside container) to differ from the IUP hierarchy (child inside Tabs). */
-  NSView* specific_container = (NSView*)iupAttribGet(ih, "_IUPTAB_CONTAINER");
+  NSView* child_view = iupcocoaCommonBaseLayoutGetChildView(ih);
+  if (!child_view || !parent_view)
+    return;
 
-  if (specific_container != NULL)
-  {
-    NSCAssert([specific_container isKindOfClass:[NSView class]], @"Expected specific container (e.g., _IUPTAB_CONTAINER) to be an NSView");
-    parent_view = specific_container;
-  }
-  else
-  {
-    id parent_native_handle = iupChildTreeGetNativeParentHandle(ih);
-
-    if (parent_native_handle == nil)
-    {
-      /* If parent_native_handle is nil, parent_view remains nil.
-         This is expected for top-level elements like dialogs before mapping, or unparented elements. */
-    }
-    else if([parent_native_handle isKindOfClass:[NSWindow class]])
-    {
-      NSWindow* parent_window = (NSWindow*)parent_native_handle;
-      parent_view = [parent_window contentView];
-    }
-    else if([parent_native_handle isKindOfClass:[NSBox class]])
-    {
-      parent_view = [(NSBox*)parent_native_handle contentView];
-    }
-    else if([parent_native_handle isKindOfClass:[NSView class]])
-    {
-      parent_view = (NSView*)parent_native_handle;
-    }
-    else if([parent_native_handle isKindOfClass:[NSViewController class]])
-    {
-      NSViewController* view_controller = (NSViewController*)parent_native_handle;
-      parent_view = [view_controller view];
-    }
-    else if([parent_native_handle isKindOfClass:[NSStatusItem class]])
-    {
-      /* An NSStatusItem (tray icon) cannot contain a view. This is an invalid hierarchy.
-         We simply ignore the addition.
-         Menus are handled via the TRAYMENU attribute and not via child tree addition. */
-      return;
-    }
-    else
-    {
-      if (ih->iclass->nativetype != IUP_TYPEMENU)
-      {
-        NSCAssert(0, @"Unexpected type for parent widget: %@", [parent_native_handle class]);
-        @throw @"Unexpected type for parent widget";
-      }
-    }
-  }
-
-  id child_handle = ih->handle;
-  if([child_handle isKindOfClass:[NSViewController class]])
-  {
-    child_handle = [child_handle view];
-  }
-
-  if([child_handle isKindOfClass:[NSView class]])
-  {
-    if (parent_view == nil)
-    {
-      return;
-    }
-
-    NSView* the_view = (NSView*)child_handle;
-
-    [the_view setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
-
-    [parent_view addSubview:the_view];
-  }
-  else
-  {
-    if (ih->iclass->nativetype != IUP_TYPEMENU)
-    {
-      if (child_handle != nil) {
-          NSCAssert(0, @"Unexpected type for child widget: %@", [child_handle class]);
-          @throw @"Unexpected type for child widget";
-      }
-    }
-  }
+  [child_view setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
+  [parent_view addSubview:child_view];
 }
 
 void iupcocoaRemoveFromParent(Ihandle* ih)
@@ -362,8 +264,6 @@ void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
   }
 
   [child_view setFrame:child_rect];
-
-  NSRect actual_bounds = [child_view bounds];
 
   cocoaUpdateTip(ih);
 }

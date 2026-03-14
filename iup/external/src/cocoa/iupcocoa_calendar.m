@@ -10,10 +10,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <limits.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -84,12 +80,10 @@ static char* cocoaCalendarGetIupStrFromDate(NSDate* the_date)
   NSDateComponents* components = [[NSCalendar currentCalendar] components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay
                                                                  fromDate:the_date];
 
-  char* result = iupStrReturnStrf("%ld/%ld/%ld",
+  return iupStrReturnStrf("%ld/%ld/%ld",
       (long)[components year],
       (long)[components month],
       (long)[components day]);
-
-  return result;
 }
 
 static char* cocoaCalendarGetValueAttrib(Ihandle* ih)
@@ -104,14 +98,6 @@ static char* cocoaCalendarGetTodayAttrib(Ihandle* ih)
   (void)ih;
   NSDate* today_date = [NSDate date];
   return cocoaCalendarGetIupStrFromDate(today_date);
-}
-
-static int cocoaCalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
-{
-  /* NSDatePicker does not support week numbers on macOS */
-  (void)ih;
-  (void)value;
-  return 0;
 }
 
 static void cocoaCalendarLayoutUpdateMethod(Ihandle* ih)
@@ -278,7 +264,7 @@ Iclass* iupCalendarNewClass(void)
   iupBaseRegisterVisualAttrib(ic);
 
   iupClassRegisterAttribute(ic, "VALUE", cocoaCalendarGetValueAttrib, cocoaCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, cocoaCalendarSetWeekNumbersAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", cocoaCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 

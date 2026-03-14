@@ -162,16 +162,12 @@ IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     return NULL;
   }
 
-  /* Draw directly to the bitmap context (no intermediate layer).
-   * This matches GTK4's pattern: dc->image_cr = dc->cr. */
-  dc->image_cgContext = dc->cgContext;
-
   /* Apply Y-flip so IUP's top-down coordinate system maps correctly. */
-  CGContextTranslateCTM(dc->image_cgContext, 0.0, dc->h);
-  CGContextScaleCTM(dc->image_cgContext, 1.0, -1.0);
+  CGContextTranslateCTM(dc->cgContext, 0.0, dc->h);
+  CGContextScaleCTM(dc->cgContext, 1.0, -1.0);
 
-  CGContextSetLineCap(dc->image_cgContext, kCGLineCapButt);
-  CGContextSetLineJoin(dc->image_cgContext, kCGLineJoinMiter);
+  CGContextSetLineCap(dc->cgContext, kCGLineCapButt);
+  CGContextSetLineJoin(dc->cgContext, kCGLineJoinMiter);
 
   dc->clip_state = 0;
 
@@ -241,24 +237,9 @@ void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
   if (h) *h = iupROUND(dc->h);
 }
 
-void cocoaDrawParentBackground(IdrawCanvas* dc)
-{
-  char* color_str = iupBaseNativeParentGetBgColor(dc->ih);
-  if (!color_str)
-    color_str = "255 255 255";
-
-  long color = iupDrawStrToColor(color_str, 0);
-
-  CGContextRef cg_context = dc->image_cgContext;
-  CGColorRef the_color = iupCocoaDrawCreateColor(color);
-
-  CGContextSetFillColorWithColor(cg_context, the_color);
-  CGContextFillRect(cg_context, CGRectMake(0, 0, dc->w, dc->h));
-}
-
 void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-  CGContextRef cg_context = dc->image_cgContext;
+  CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
 
   iupDrawCheckSwapCoord(x1, x2);
@@ -292,7 +273,7 @@ void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long c
 
 void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-  CGContextRef cg_context = dc->image_cgContext;
+  CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
 
   CGContextSetStrokeColorWithColor(cg_context, the_color);
@@ -332,7 +313,7 @@ void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color,
 
 void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
-  CGContextRef cg_context = dc->image_cgContext;
+  CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
 
   iupDrawCheckSwapCoord(x1, x2);
@@ -413,7 +394,7 @@ void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, d
 
 void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
-  CGContextRef cg_context = dc->image_cgContext;
+  CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
 
   iupDrawCheckSwapCoord(x1, x2);
@@ -444,7 +425,7 @@ void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long col
 
 void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
-  CGContextRef cg_context = dc->image_cgContext;
+  CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
 
   if (style == IUP_DRAW_FILL)
@@ -473,7 +454,7 @@ void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int 
 
 void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 {
-  CGContextRef cg_context = dc->image_cgContext;
+  CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
 
   CGContextSetFillColorWithColor(cg_context, the_color);
@@ -482,7 +463,7 @@ void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 
 void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
 {
-  CGContextRef cg_context = dc->image_cgContext;
+  CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
   CGFloat radius = (CGFloat)corner_radius;
 
@@ -522,7 +503,7 @@ void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
 
 void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
 {
-  CGContextRef cg_context = dc->image_cgContext;
+  CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
 
   /* Set color and line properties */
@@ -594,11 +575,11 @@ void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 
   iupdrvDrawResetClip(dc);
 
-  CGContextSaveGState(dc->image_cgContext);
+  CGContextSaveGState(dc->cgContext);
   dc->clip_state = 1;
 
   CGRect clip_rect = CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
-  CGContextClipToRect(dc->image_cgContext, clip_rect);
+  CGContextClipToRect(dc->cgContext, clip_rect);
 
   dc->clip_x1 = (CGFloat)x1;
   dc->clip_y1 = (CGFloat)y1;
@@ -630,16 +611,16 @@ void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y
 
   iupdrvDrawResetClip(dc);
 
-  CGContextSaveGState(dc->image_cgContext);
+  CGContextSaveGState(dc->cgContext);
   dc->clip_state = 1;
 
   /* Create rounded rectangle path and use as clip */
   CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, w, h);
   CGPathRef path = CGPathCreateWithRoundedRect(rect, radius, radius, NULL);
 
-  CGContextBeginPath(dc->image_cgContext);
-  CGContextAddPath(dc->image_cgContext, path);
-  CGContextClip(dc->image_cgContext);
+  CGContextBeginPath(dc->cgContext);
+  CGContextAddPath(dc->cgContext, path);
+  CGContextClip(dc->cgContext);
 
   CGPathRelease(path);
 
@@ -653,7 +634,7 @@ void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   if (dc->clip_state == 1)
   {
-    CGContextRestoreGState(dc->image_cgContext);
+    CGContextRestoreGState(dc->cgContext);
     dc->clip_state = 0;
   }
 
@@ -669,7 +650,7 @@ void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, in
     return;
 
   @autoreleasepool {
-    CGContextRef cg_context = dc->image_cgContext;
+    CGContextRef cg_context = dc->cgContext;
     CGContextSaveGState(cg_context);
 
     NSGraphicsContext* temp_ns_context = [NSGraphicsContext graphicsContextWithCGContext:cg_context flipped:YES];
@@ -768,7 +749,7 @@ void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const
     if (w == -1 || w == 0) w = image_size.width;
     if (h == -1 || h == 0) h = image_size.height;
 
-    CGContextRef cg_context = dc->image_cgContext;
+    CGContextRef cg_context = dc->cgContext;
     CGContextSaveGState(cg_context);
 
     /* Use flipped NSGraphicsContext to correctly draw image in y-down coordinate system */
@@ -792,8 +773,8 @@ void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   CGRect iup_rect = CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 
   CGColorRef select_color = iupCocoaDrawCreateColor(iupDrawColor(0, 0, 255, 153));
-  CGContextSetFillColorWithColor(dc->image_cgContext, select_color);
-  CGContextFillRect(dc->image_cgContext, iup_rect);
+  CGContextSetFillColorWithColor(dc->cgContext, select_color);
+  CGContextFillRect(dc->cgContext, iup_rect);
 }
 
 void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
@@ -813,7 +794,7 @@ void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   else
   {
     /* Draw a simple dotted rectangle for focus indication */
-    CGContextRef cg_context = dc->image_cgContext;
+    CGContextRef cg_context = dc->cgContext;
     CGContextSaveGState(cg_context);
 
     CGRect iup_rect = CGRectMake(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
@@ -831,7 +812,7 @@ void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 
 void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
 {
-  CGContextRef cg_context = dc->image_cgContext;
+  CGContextRef cg_context = dc->cgContext;
   CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
 
   iupDrawCheckSwapCoord(x1, x2);
@@ -876,7 +857,7 @@ void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, f
 
 void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
 {
-  CGContextRef cg_context = dc->image_cgContext;
+  CGContextRef cg_context = dc->cgContext;
   CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
 
   /* Create gradient colors */

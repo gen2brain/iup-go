@@ -119,6 +119,21 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
 @end
 
+static void cocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
+{
+  NSGraphicsContext* context = [NSGraphicsContext currentContext];
+  [context saveGraphicsState];
+
+  [buffer drawInRect:bounds
+            fromRect:NSMakeRect(0, 0, bounds.size.width, bounds.size.height)
+           operation:NSCompositingOperationCopy
+            fraction:1.0
+      respectFlipped:YES
+               hints:nil];
+
+  [context restoreGraphicsState];
+}
+
 @implementation IupCocoaCanvasView
 
 - (instancetype) initWithFrame:(NSRect)frame_rect ih:(Ihandle*)ih
@@ -240,20 +255,8 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
       if ([buffer pixelsWide] == (NSInteger)bounds.size.width &&
           [buffer pixelsHigh] == (NSInteger)bounds.size.height)
       {
-        NSGraphicsContext* context = [NSGraphicsContext currentContext];
-        [context saveGraphicsState];
-
-        [buffer drawInRect:bounds
-                  fromRect:NSMakeRect(0, 0, bounds.size.width, bounds.size.height)
-                 operation:NSCompositingOperationCopy
-                  fraction:1.0
-            respectFlipped:YES
-                     hints:nil];
-
-        [context restoreGraphicsState];
-
+        cocoaCanvasDrawBuffer(buffer, bounds);
         iupAttribSet(_ih, "_IUPCOCOA_BUFFER_PENDING", NULL);
-
         return;
       }
     }
@@ -293,19 +296,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
     {
       NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_BUFFER");
       if (buffer)
-      {
-        NSGraphicsContext* context = [NSGraphicsContext currentContext];
-        [context saveGraphicsState];
-
-        [buffer drawInRect:bounds
-                  fromRect:NSMakeRect(0, 0, bounds.size.width, bounds.size.height)
-                 operation:NSCompositingOperationCopy
-                  fraction:1.0
-            respectFlipped:YES
-                     hints:nil];
-
-        [context restoreGraphicsState];
-      }
+        cocoaCanvasDrawBuffer(buffer, bounds);
     }
   }
   else
@@ -1000,16 +991,17 @@ static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "SB_RESIZE", "YES");
       iupAttribSet(ih, "XHIDDEN", "NO");
 
+      [scroll_view tile];
+
       NSScroller* scroller = [scroll_view horizontalScroller];
       if (scroller && content_width > 0)
       {
         CGFloat knob_proportion = (CGFloat)(dx / content_width);
         [scroller setKnobProportion:knob_proportion];
       }
-    }
 
-    [scroll_view tile];
-    [scroll_view setNeedsDisplay:YES];
+      [scroll_view setNeedsDisplay:YES];
+    }
   }
   return 1;
 }
@@ -1051,16 +1043,17 @@ static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "SB_RESIZE", "YES");
       iupAttribSet(ih, "YHIDDEN", "NO");
 
+      [scroll_view tile];
+
       NSScroller* scroller = [scroll_view verticalScroller];
       if (scroller && content_height > 0)
       {
         CGFloat knob_proportion = (CGFloat)(dy / content_height);
         [scroller setKnobProportion:knob_proportion];
       }
-    }
 
-    [scroll_view tile];
-    [scroll_view setNeedsDisplay:YES];
+      [scroll_view setNeedsDisplay:YES];
+    }
   }
   return 1;
 }
@@ -1503,24 +1496,8 @@ static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih)
 
   if (ih->data->sb)
   {
-    NSScrollView* scroll_view = cocoaCanvasGetScrollView(ih);
-    if (scroll_view)
-    {
-      [scroll_view tile];
-    }
-
-    /* Update scrollbar visibility/enabled state based on layout.
-       These functions manually set knobProportion based on DX/DY */
     cocoaCanvasSetDXAttrib(ih, NULL);
     cocoaCanvasSetDYAttrib(ih, NULL);
-
-    /* Re-apply knobProportion after tile (which may have reset it) */
-    if (scroll_view)
-    {
-      [scroll_view tile];
-      cocoaCanvasSetDXAttrib(ih, NULL);
-      cocoaCanvasSetDYAttrib(ih, NULL);
-    }
   }
 }
 

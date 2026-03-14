@@ -9,6 +9,7 @@
 
 #include "iup_export.h"
 
+
 typedef struct _IdrawCanvas IdrawCanvas;
 
 struct _IdrawCanvas
@@ -17,7 +18,6 @@ struct _IdrawCanvas
   NSView* canvasView;
 
   CGContextRef cgContext;         /* bitmap buffer context (drawing target) */
-  CGContextRef image_cgContext;   /* same as cgContext (kept for API symmetry with other drivers) */
   int release_context;
   CGFloat w, h;                   /* canvas size */
 

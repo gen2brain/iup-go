@@ -157,6 +157,38 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
     return 0;
 }
 
+static int cocoaKeyApplyModifiers(int iup_key, int has_shift, int has_ctrl, int has_alt, int has_sys, int has_caps)
+{
+  int is_letter = (iup_key >= K_a && iup_key <= K_z);
+
+  if (has_caps && is_letter)
+    has_shift = !has_shift;
+
+  if (has_ctrl || has_alt || has_sys)
+  {
+    if (iup_key >= K_a && iup_key <= K_z)
+      iup_key = iup_toupper(iup_key);
+    else if (iup_key == K_ccedilla)
+      iup_key = K_Ccedilla;
+  }
+
+  if (has_shift &&
+      ((iup_key < K_exclam || iup_key > K_tilde) ||
+       (has_ctrl || has_alt || has_sys)))
+  {
+    iup_key = iup_XkeyShift(iup_key);
+  }
+
+  if (has_ctrl)
+    iup_key = iup_XkeyCtrl(iup_key);
+  if (has_alt)
+    iup_key = iup_XkeyAlt(iup_key);
+  if (has_sys)
+    iup_key = iup_XkeySys(iup_key);
+
+  return iup_key;
+}
+
 /*
  * Decodes an NSEvent to its corresponding IUP key code.
  *
@@ -237,46 +269,7 @@ static int cocoaKeyDecode(NSEvent *ns_event, int mac_key_code)
   }
   else
   {
-    /* For special keys or when modifiers are present, apply IUP encoding */
-    int is_letter = (iup_result_key >= K_a && iup_result_key <= K_z);
-
-    /* CapsLock inverts shift state for letters */
-    if (has_caps && is_letter)
-    {
-      has_shift = !has_shift;
-    }
-
-    /* Convert to uppercase when Ctrl/Alt/Sys are present */
-    if (has_ctrl || has_alt || has_sys)
-    {
-      if (iup_result_key >= K_a && iup_result_key <= K_z)
-      {
-        iup_result_key = iup_toupper(iup_result_key);
-      }
-      else if (iup_result_key == K_ccedilla)
-      {
-        iup_result_key = K_Ccedilla;
-      }
-    }
-
-    /* Apply Shift encoding for:
-     * - Non-printable keys (arrows, function keys, etc.)
-     * - Printable keys when other modifiers are present
-     * This matches the behavior in GTK and Windows implementations. */
-    if (has_shift &&
-        ((iup_result_key < K_exclam || iup_result_key > K_tilde) ||
-         (has_ctrl || has_alt || has_sys)))
-    {
-      iup_result_key = iup_XkeyShift(iup_result_key);
-    }
-
-    /* Apply remaining modifier encodings */
-    if (has_ctrl)
-      iup_result_key = iup_XkeyCtrl(iup_result_key);
-    if (has_alt)
-      iup_result_key = iup_XkeyAlt(iup_result_key);
-    if (has_sys)
-      iup_result_key = iup_XkeySys(iup_result_key);
+    iup_result_key = cocoaKeyApplyModifiers(iup_result_key, has_shift, has_ctrl, has_alt, has_sys, has_caps);
   }
 
   return iup_result_key;
@@ -410,14 +403,8 @@ bool iupCocoaKeyUpEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
 
 bool iupcocoaKeyEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code, bool is_pressed)
 {
-  if (is_pressed)
-  {
-    return iupCocoaKeyDownEvent(ih, ns_event, mac_key_code);
-  }
-  else
-  {
-    return iupCocoaKeyUpEvent(ih, ns_event, mac_key_code);
-  }
+  return is_pressed ? iupCocoaKeyDownEvent(ih, ns_event, mac_key_code)
+                    : iupCocoaKeyUpEvent(ih, ns_event, mac_key_code);
 }
 
 bool iupcocoaModifierEvent(Ihandle *ih, NSEvent *ns_event, int mac_key_code)
@@ -520,53 +507,12 @@ int iupcocoaKeyDecode(CGEventRef event)
   if (iup_base_key == 0)
     return 0;
 
-  int iup_result_key = iup_base_key;
-
-  /* Get modifier states */
-  int has_shift = (flags & kCGEventFlagMaskShift) != 0;
-  int has_ctrl = (flags & kCGEventFlagMaskControl) != 0;
-  int has_alt = (flags & kCGEventFlagMaskAlternate) != 0;
-  int has_sys = (flags & kCGEventFlagMaskCommand) != 0;
-  int has_caps = (flags & kCGEventFlagMaskAlphaShift) != 0;
-
-  int is_letter = (iup_result_key >= K_a && iup_result_key <= K_z);
-
-  /* CapsLock inverts shift state for letters */
-  if (has_caps && is_letter)
-  {
-    has_shift = !has_shift;
-  }
-
-  /* Convert to uppercase when Ctrl/Alt/Sys are present */
-  if (has_ctrl || has_alt || has_sys)
-  {
-    if (iup_result_key >= K_a && iup_result_key <= K_z)
-    {
-      iup_result_key = iup_toupper(iup_result_key);
-    }
-    else if (iup_result_key == K_ccedilla)
-    {
-      iup_result_key = K_Ccedilla;
-    }
-  }
-
-  /* Apply Shift encoding for non-printable keys or when other modifiers are present */
-  if (has_shift &&
-      ((iup_result_key < K_exclam || iup_result_key > K_tilde) ||
-       (has_ctrl || has_alt || has_sys)))
-  {
-    iup_result_key = iup_XkeyShift(iup_result_key);
-  }
-
-  /* Apply remaining modifier encodings */
-  if (has_ctrl)
-    iup_result_key = iup_XkeyCtrl(iup_result_key);
-  if (has_alt)
-    iup_result_key = iup_XkeyAlt(iup_result_key);
-  if (has_sys)
-    iup_result_key = iup_XkeySys(iup_result_key);
-
-  return iup_result_key;
+  return cocoaKeyApplyModifiers(iup_base_key,
+      (flags & kCGEventFlagMaskShift) != 0,
+      (flags & kCGEventFlagMaskControl) != 0,
+      (flags & kCGEventFlagMaskAlternate) != 0,
+      (flags & kCGEventFlagMaskCommand) != 0,
+      (flags & kCGEventFlagMaskAlphaShift) != 0);
 }
 
 void iupdrvKeyEncode(int code, unsigned int *maccode, unsigned int *state)

@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
 #include <stdarg.h>
 
 #include "iup.h"
@@ -24,13 +23,13 @@
 #include "iup_mask.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_image.h"
 #include "iup_key.h"
 #include "iup_array.h"
 #include "iup_text.h"
 #include "iup_childtree.h"
 
 #include "iupcocoa_drv.h"
+
 
 static const void* IUP_COCOA_TEXT_STEPPER_OBJ_KEY = "IUP_COCOA_TEXT_STEPPER_OBJ_KEY";
 static const void* IUP_COCOA_TEXT_DELEGATE_OBJ_KEY = "IUP_COCOA_TEXT_DELEGATE_OBJ_KEY";
@@ -69,33 +68,9 @@ static IupCocoaTextSubType cocoaTextGetSubType(Ihandle* ih)
 
 static NSView* cocoaTextGetRootView(Ihandle* ih)
 {
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
-  {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        NSView* root_container_view = (NSView*)ih->handle;
-        NSCAssert([root_container_view isKindOfClass:[NSView class]], @"Expected NSView");
-        return root_container_view;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSView* root_container_view = (NSView*)ih->handle;
-        NSCAssert([root_container_view isKindOfClass:[NSView class]], @"Expected NSView");
-        return root_container_view;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSView* root_container_view = (NSView*)ih->handle;
-        NSCAssert([root_container_view isKindOfClass:[NSView class]], @"Expected NSView");
-        return root_container_view;
-      }
-    default:
-      {
-        break;
-      }
-  }
-  return nil;
+  NSView* root_container_view = (NSView*)ih->handle;
+  NSCAssert([root_container_view isKindOfClass:[NSView class]], @"Expected NSView");
+  return root_container_view;
 }
 
 static NSTextField* cocoaTextGetTextField(Ihandle* ih)
@@ -184,30 +159,8 @@ static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
 
 @end
 
-@interface IupCocoaTextField : NSTextField
-@end
-
-@implementation IupCocoaTextField
-
-+ (Class)cellClass
+static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView* text_view, NSRange change_range, NSString* replacement_string)
 {
-  return [IupCocoaTextFieldCell class];
-}
-
-- (BOOL) textView:(NSTextView*)text_view shouldChangeTextInRange:(NSRange)change_range replacementString:(NSString*)replacement_string
-{
-  BOOL ret_flag;
-  id the_delegate = [self delegate];
-  if([the_delegate respondsToSelector:@selector(textView:shouldChangeTextInRange:replacementString:)])
-  {
-    ret_flag = [the_delegate textView:text_view shouldChangeTextInRange:change_range replacementString:replacement_string];
-    if(NO == ret_flag)
-    {
-      return NO;
-    }
-  }
-
-  NSTextField* text_field = self;
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
 
   if(ih->data->disable_callbacks)
@@ -216,7 +169,6 @@ static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
   }
 
   IFnis action_cb = (IFnis)IupGetCallback(ih, "ACTION");
-  int ret_val;
 
   int start_pos = (int)change_range.location;
   int end_pos = (int)(start_pos + change_range.length);
@@ -240,7 +192,7 @@ static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
     remove_dir = 0;
   }
 
-  ret_val = iupEditCallActionCb(ih, action_cb, c_str, start_pos, end_pos, ih->data->mask, ih->data->nc, remove_dir, YES);
+  int ret_val = iupEditCallActionCb(ih, action_cb, c_str, start_pos, end_pos, ih->data->mask, ih->data->nc, remove_dir, YES);
 
   if(ret_val == 0)
   {
@@ -264,6 +216,27 @@ static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
 
   [text_view didChangeText];
   return YES;
+}
+
+@interface IupCocoaTextField : NSTextField
+@end
+
+@implementation IupCocoaTextField
+
++ (Class)cellClass
+{
+  return [IupCocoaTextFieldCell class];
+}
+
+- (BOOL) textView:(NSTextView*)text_view shouldChangeTextInRange:(NSRange)change_range replacementString:(NSString*)replacement_string
+{
+  id the_delegate = [self delegate];
+  if([the_delegate respondsToSelector:@selector(textView:shouldChangeTextInRange:replacementString:)])
+  {
+    if(![the_delegate textView:text_view shouldChangeTextInRange:change_range replacementString:replacement_string])
+      return NO;
+  }
+  return cocoaTextHandleShouldChangeText(self, text_view, change_range, replacement_string);
 }
 
 - (NSMenu *)textView:(NSTextView *)text_view menu:(NSMenu *)the_menu forEvent:(NSEvent *)the_event atIndex:(NSUInteger)char_index
@@ -352,95 +325,27 @@ static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
 
 - (BOOL) textView:(NSTextView*)text_view shouldChangeTextInRange:(NSRange)change_range replacementString:(NSString*)replacement_string
 {
-  BOOL ret_flag;
   id the_delegate = [self delegate];
   if([the_delegate respondsToSelector:@selector(textView:shouldChangeTextInRange:replacementString:)])
   {
-    ret_flag = [the_delegate textView:text_view shouldChangeTextInRange:change_range replacementString:replacement_string];
-    if(NO == ret_flag)
-    {
+    if(![the_delegate textView:text_view shouldChangeTextInRange:change_range replacementString:replacement_string])
       return NO;
-    }
   }
-
-  NSTextField* text_field = self;
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
-
-  if(ih->data->disable_callbacks)
-  {
-    return YES;
-  }
-
-  IFnis action_cb = (IFnis)IupGetCallback(ih, "ACTION");
-  int ret_val;
-
-  int start_pos = (int)change_range.location;
-  int end_pos = (int)(start_pos + change_range.length);
-
-  if(end_pos < start_pos)
-  {
-    end_pos = start_pos;
-  }
-
-  const char* c_str;
-  int remove_dir;
-
-  if([replacement_string length] == 0)
-  {
-    c_str = NULL;
-    remove_dir = -1;
-  }
-  else
-  {
-    c_str = [replacement_string UTF8String];
-    remove_dir = 0;
-  }
-
-  ret_val = iupEditCallActionCb(ih, action_cb, c_str, start_pos, end_pos, ih->data->mask, ih->data->nc, remove_dir, YES);
-
-  if(ret_val == 0)
-  {
-    return NO;
-  }
-  else if(ret_val != -1 && c_str != NULL)
-  {
-    char replace_char[2];
-    replace_char[0] = (char)ret_val;
-    replace_char[1] = 0;
-
-    NSString* replacement = [NSString stringWithUTF8String:replace_char];
-
-    ih->data->disable_callbacks = 1;
-    [text_view replaceCharactersInRange:change_range withString:replacement];
-    ih->data->disable_callbacks = 0;
-
-    [text_view didChangeText];
-    return NO;
-  }
-
-  [text_view didChangeText];
-  return YES;
+  return cocoaTextHandleShouldChangeText(self, text_view, change_range, replacement_string);
 }
 
 - (NSMenu *)textView:(NSTextView *)text_view menu:(NSMenu *)the_menu forEvent:(NSEvent *)the_event atIndex:(NSUInteger)char_index
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-
-  if (!iupAttribGet(ih, "_IUPCOCOA_CONTEXTMENU_SET"))
+  if (iupAttribGet(ih, "_IUPCOCOA_CONTEXTMENU_SET"))
   {
-    return the_menu;
+    Ihandle* menu_ih = (Ihandle*)iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
+    if (menu_ih && menu_ih->handle)
+      return (NSMenu*)menu_ih->handle;
+    else
+      return nil;
   }
-
-  Ihandle* menu_ih = (Ihandle*)iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
-
-  if(menu_ih && menu_ih->handle)
-  {
-    return (NSMenu*)menu_ih->handle;
-  }
-  else
-  {
-    return nil;
-  }
+  return the_menu;
 }
 
 @end
@@ -1529,6 +1434,14 @@ static int cocoaTextSetTabSizeAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static NSColor* cocoaTextColorFromStr(const char* value)
+{
+  unsigned char r, g, b;
+  if (iupStrToRGB(value, &r, &g, &b))
+    return [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+  return nil;
+}
+
 static int cocoaTextSetValueAttrib(Ihandle* ih, const char* value)
 {
   NSString* ns_string;
@@ -1561,16 +1474,8 @@ static int cocoaTextSetValueAttrib(Ihandle* ih, const char* value)
         /* Otherwise, default to the system's adaptive text color to support dark/light mode. */
         if (![attributes objectForKey:NSForegroundColorAttributeName])
         {
-          char* fgcolor_str = iupAttribGet(ih, "FGCOLOR");
-          unsigned char r, g, b;
-          if (fgcolor_str && iupStrToRGB(fgcolor_str, &r, &g, &b))
-          {
-            [attributes setObject:[NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0] forKey:NSForegroundColorAttributeName];
-          }
-          else
-          {
-            [attributes setObject:[NSColor textColor] forKey:NSForegroundColorAttributeName];
-          }
+          NSColor* fg_color = cocoaTextColorFromStr(iupAttribGet(ih, "FGCOLOR"));
+          [attributes setObject:(fg_color ? fg_color : [NSColor textColor]) forKey:NSForegroundColorAttributeName];
         }
 
         NSAttributedString* attributed_string = [[NSAttributedString alloc] initWithString:ns_string attributes:attributes];
@@ -1708,21 +1613,11 @@ static int cocoaTextSetBgColorAttrib(Ihandle* ih, const char* value)
         NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
         [undo_manager beginUndoGrouping];
 
-        unsigned char r, g, b;
-        if(iupStrToRGB(value, &r, &g, &b))
-        {
-          CGFloat red = r/255.0;
-          CGFloat green = g/255.0;
-          CGFloat blue = b/255.0;
-
-          NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
+        NSColor* the_color = cocoaTextColorFromStr(value);
+        if (the_color)
           [text_view setBackgroundColor:the_color];
-        }
         else
-        {
-          NSColor* the_color = [NSColor textBackgroundColor];
-          [text_view setBackgroundColor:the_color];
-        }
+          [text_view setBackgroundColor:[NSColor textBackgroundColor]];
 
         [text_view didChangeText];
         [undo_manager endUndoGrouping];
@@ -1732,42 +1627,15 @@ static int cocoaTextSetBgColorAttrib(Ihandle* ih, const char* value)
     case IUPCOCOATEXTSUBTYPE_FIELD:
       {
         NSTextField* text_field = cocoaTextGetTextField(ih);
-
-        unsigned char r, g, b;
-        if(iupStrToRGB(value, &r, &g, &b))
-        {
-          CGFloat red = r/255.0;
-          CGFloat green = g/255.0;
-          CGFloat blue = b/255.0;
-
-          NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
-          [text_field setBackgroundColor:the_color];
-        }
-        else
-        {
-          [text_field setBackgroundColor:nil];
-        }
+        NSColor* the_color = cocoaTextColorFromStr(value);
+        [text_field setBackgroundColor:the_color];
         return 1;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
         NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-
-        unsigned char r, g, b;
-        if(iupStrToRGB(value, &r, &g, &b))
-        {
-          CGFloat red = r/255.0;
-          CGFloat green = g/255.0;
-          CGFloat blue = b/255.0;
-
-          NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
-          [text_field setBackgroundColor:the_color];
-        }
-        else
-        {
-          [text_field setBackgroundColor:nil];
-        }
-
+        NSColor* the_color = cocoaTextColorFromStr(value);
+        [text_field setBackgroundColor:the_color];
         return 1;
       }
     default:
@@ -1794,19 +1662,9 @@ static int cocoaTextSetFgColorAttrib(Ihandle* ih, const char* value)
         [undo_manager beginUndoGrouping];
         [text_storage beginEditing];
 
-        unsigned char r, g, b;
-        NSColor* the_color;
-        if (iupStrToRGB(value, &r, &g, &b))
-        {
-          CGFloat red = r / 255.0;
-          CGFloat green = g / 255.0;
-          CGFloat blue = b / 255.0;
-          the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
-        }
-        else
-        {
+        NSColor* the_color = cocoaTextColorFromStr(value);
+        if (!the_color)
           the_color = [NSColor textColor];
-        }
 
         /* This sets typing attributes for new text. */
         [text_view setTextColor:the_color];
@@ -1826,42 +1684,21 @@ static int cocoaTextSetFgColorAttrib(Ihandle* ih, const char* value)
     case IUPCOCOATEXTSUBTYPE_FIELD:
       {
         NSTextField* text_field = cocoaTextGetTextField(ih);
-
-        unsigned char r, g, b;
-        if(iupStrToRGB(value, &r, &g, &b))
-        {
-          CGFloat red = r/255.0;
-          CGFloat green = g/255.0;
-          CGFloat blue = b/255.0;
-
-          NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
+        NSColor* the_color = cocoaTextColorFromStr(value);
+        if (the_color)
           [text_field setTextColor:the_color];
-        }
         else
-        {
           [text_field setTextColor:nil];
-        }
         break;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
         NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-
-        unsigned char r, g, b;
-        if(iupStrToRGB(value, &r, &g, &b))
-        {
-          CGFloat red = r/255.0;
-          CGFloat green = g/255.0;
-          CGFloat blue = b/255.0;
-
-          NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
+        NSColor* the_color = cocoaTextColorFromStr(value);
+        if (the_color)
           [text_field setTextColor:the_color];
-        }
         else
-        {
           [text_field setTextColor:nil];
-        }
-
         break;
       }
     default:
@@ -1870,7 +1707,7 @@ static int cocoaTextSetFgColorAttrib(Ihandle* ih, const char* value)
       }
   }
 
-  return iupdrvBaseSetBgColorAttrib(ih, value);
+  return 1;
 }
 
 /* For the provided start_line, start_column, end_line, end_column, get the native NSRange for the selection. */
@@ -2984,17 +2821,10 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
   format = iupAttribGet(formattag, "FGCOLOR");
   if(format)
   {
-    unsigned char r, g, b;
-    if(iupStrToRGB(format, &r, &g, &b))
+    NSColor* the_color = cocoaTextColorFromStr(format);
+    if (the_color)
     {
-      CGFloat red = r/255.0;
-      CGFloat green = g/255.0;
-      CGFloat blue = b/255.0;
-
-      NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
-      [attribute_dict setValue:the_color
-                        forKey:NSForegroundColorAttributeName];
-
+      [attribute_dict setValue:the_color forKey:NSForegroundColorAttributeName];
       needs_add_font_fgcolor = true;
     }
     else
@@ -3008,16 +2838,10 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
   format = iupAttribGet(formattag, "BGCOLOR");
   if(format)
   {
-    unsigned char r, g, b;
-    if(iupStrToRGB(format, &r, &g, &b))
+    NSColor* the_color = cocoaTextColorFromStr(format);
+    if (the_color)
     {
-      CGFloat red = r/255.0;
-      CGFloat green = g/255.0;
-      CGFloat blue = b/255.0;
-
-      NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
-      [attribute_dict setObject:the_color
-                         forKey:NSBackgroundColorAttributeName];
+      [attribute_dict setObject:the_color forKey:NSBackgroundColorAttributeName];
       needs_add_font_bgcolor = true;
     }
     else
@@ -3454,15 +3278,13 @@ static int cocoaTextSetFormattingAttrib(Ihandle* ih, const char* value)
           [text_storage setAttributes:nil range:selection_range];
           ih->data->disable_callbacks = 0;
 
-          [text_storage endEditing];
-
           IupCocoaFont* iup_font = iupcocoaGetFont(ih);
 
           [text_view setTypingAttributes:[iup_font attributeDictionary]];
           [text_view setRichText:enable_formatting];
 
-          [text_view didChangeText];
           [text_storage endEditing];
+          [text_view didChangeText];
           [undo_manager removeAllActions];
         }
 
@@ -3515,9 +3337,7 @@ static int cocoaTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   ih->data->disable_callbacks = 0;
 
   [text_storage endEditing];
-
   [text_view didChangeText];
-  [text_storage endEditing];
   [undo_manager endUndoGrouping];
 
   return 0;
@@ -4288,6 +4108,7 @@ static int cocoaTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
     return 0;
 
   NSRange cursor_range = NSMakeRange(pos, 0);
+  [text_view setSelectedRange:cursor_range];
   [text_view scrollRangeToVisible:cursor_range];
 
   return 0;
@@ -4702,7 +4523,6 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
     NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
     [undo_manager beginUndoGrouping];
 
-    ih->data->disable_callbacks = 1;
     [text_view shouldChangeTextInRange:change_range replacementString:[attributed_append_string string]];
     [text_storage beginEditing];
 
@@ -4735,6 +4555,7 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
           [attributed_append_string autorelease];
 
           [old_string_value appendAttributedString:attributed_append_string];
+          [text_field setAttributedStringValue:old_string_value];
 
           break;
         }
@@ -5290,8 +5111,6 @@ static int cocoaTextMapMethod(Ihandle* ih)
     else
       [scroll_view setBorderType:NSNoBorder];
 
-    [scroll_view setHasVerticalScroller:YES];
-    [scroll_view setHasHorizontalScroller:YES];
     [scroll_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
     text_view = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0,
@@ -5299,7 +5118,6 @@ static int cocoaTextMapMethod(Ihandle* ih)
 
     [text_view setMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
     [text_view setVerticallyResizable:YES];
-    [text_view setHorizontallyResizable:YES];
     [text_view setAutoresizingMask:NSViewWidthSizable];
 
     [text_view setEditable:!iupAttribGetBoolean(ih, "READONLY")];
@@ -5315,8 +5133,6 @@ static int cocoaTextMapMethod(Ihandle* ih)
     [text_view setTextContainerInset:NSMakeSize(4.0, 2.0)];
 
     NSTextContainer* text_container = [text_view textContainer];
-    [text_container setContainerSize:NSMakeSize(scrollview_content_size.width, FLT_MAX)];
-    [text_container setWidthTracksTextView:YES];
 
     [scroll_view setDocumentView:text_view];
 
@@ -5324,7 +5140,6 @@ static int cocoaTextMapMethod(Ihandle* ih)
     {
       ih->data->sb &= ~IUP_SB_HORIZ;
 
-      [scroll_view setHasHorizontalScroller:NO];
       [text_view setHorizontallyResizable:NO];
       [text_container setContainerSize:NSMakeSize(scrollview_content_size.width, FLT_MAX)];
       [text_container setWidthTracksTextView:YES];
@@ -5332,20 +5147,14 @@ static int cocoaTextMapMethod(Ihandle* ih)
     }
     else
     {
-      [scroll_view setHasHorizontalScroller:YES];
       [text_view setHorizontallyResizable:YES];
       [text_container setContainerSize:NSMakeSize(FLT_MAX, FLT_MAX)];
       [text_container setWidthTracksTextView:NO];
       [text_container setLineFragmentPadding:0.0];
     }
 
-    if (ih->data->sb & IUP_SB_HORIZ)
-      [scroll_view setHasHorizontalScroller:YES];
-    else
-      [scroll_view setHasHorizontalScroller:NO];
-
-    if (!(ih->data->sb & IUP_SB_VERT))
-      [scroll_view setHasVerticalScroller:NO];
+    [scroll_view setHasHorizontalScroller:(ih->data->sb & IUP_SB_HORIZ) ? YES : NO];
+    [scroll_view setHasVerticalScroller:(ih->data->sb & IUP_SB_VERT) ? YES : NO];
 
     IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     if (iup_font)
@@ -5456,10 +5265,11 @@ static int cocoaTextMapMethod(Ihandle* ih)
   ih->handle = root_view;
   iupcocoaSetAssociatedViews(ih, main_view, root_view);
 
-  IupCocoaFont* iup_font = iupcocoaGetFont(ih);
-  if (iup_font && [main_view respondsToSelector:@selector(setFont:)])
+  if (!ih->data->is_multiline)
   {
-    [(id)main_view setFont:[iup_font nativeFont]];
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
+    if (iup_font && [main_view respondsToSelector:@selector(setFont:)])
+      [(id)main_view setFont:[iup_font nativeFont]];
   }
 
   if (iupAttribGet(ih, "BGCOLOR"))

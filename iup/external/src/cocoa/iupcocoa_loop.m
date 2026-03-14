@@ -16,6 +16,7 @@
 #include "iup_loop.h"
 #include "iupcocoa_drv.h"
 
+
 static IFidle mac_idle_cb = NULL;
 static int mac_main_loop_should_quit = 0;
 static int mac_main_loop_level = 0;

@@ -113,28 +113,10 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
 
   BOOL handled = NO;
 
-  if (keyCode == kVK_Home)
+  if (keyCode == kVK_Home || keyCode == kVK_End)
   {
-    if (ih->data->inverted)
-      [self setDoubleValue:ih->data->vmax];
-    else
-      [self setDoubleValue:ih->data->vmin];
-
-    IupCocoaSliderReceiver* receiver = (IupCocoaSliderReceiver*)objc_getAssociatedObject(self, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY);
-    if (receiver)
-    {
-      iupAttribSet(ih, "_IUPCOCOA_VAL_KEYPRESS", "1");
-      [receiver sliderAction:self];
-      iupAttribSet(ih, "_IUPCOCOA_VAL_KEYPRESS", NULL);
-    }
-    handled = YES;
-  }
-  else if (keyCode == kVK_End)
-  {
-    if (ih->data->inverted)
-      [self setDoubleValue:ih->data->vmin];
-    else
-      [self setDoubleValue:ih->data->vmax];
+    BOOL go_to_max = (keyCode == kVK_Home) ? ih->data->inverted : !ih->data->inverted;
+    [self setDoubleValue:go_to_max ? ih->data->vmax : ih->data->vmin];
 
     IupCocoaSliderReceiver* receiver = (IupCocoaSliderReceiver*)objc_getAssociatedObject(self, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY);
     if (receiver)
@@ -275,21 +257,22 @@ static int cocoaValSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void cocoaValUpdateIncrements(Ihandle* ih, IupCocoaValSlider* slider)
+{
+  double range = ih->data->vmax - ih->data->vmin;
+  [slider setIncrementValue:ih->data->step * range];
+  [slider setAltIncrementValue:ih->data->pagestep * range];
+}
+
 static int cocoaValSetMaxAttrib(Ihandle* ih, const char* value)
 {
   double new_value;
   if (iupStrToDouble(value, &new_value))
   {
-    NSSlider* slider = ih->handle;
+    IupCocoaValSlider* slider = ih->handle;
     ih->data->vmax = new_value;
     [slider setMaxValue:new_value];
-
-    double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
-    [(IupCocoaValSlider*)slider setIncrementValue:inc_size];
-
-    double page_inc_size = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
-    [slider setAltIncrementValue:page_inc_size];
-
+    cocoaValUpdateIncrements(ih, slider);
     cocoaValSetValueAttrib(ih, NULL);
   }
   return 0;
@@ -305,16 +288,10 @@ static int cocoaValSetMinAttrib(Ihandle* ih, const char* value)
   double new_value;
   if (iupStrToDouble(value, &new_value))
   {
-    NSSlider* slider = ih->handle;
+    IupCocoaValSlider* slider = ih->handle;
     ih->data->vmin = new_value;
     [slider setMinValue:new_value];
-
-    double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
-    [(IupCocoaValSlider*)slider setIncrementValue:inc_size];
-
-    double page_inc_size = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
-    [slider setAltIncrementValue:page_inc_size];
-
+    cocoaValUpdateIncrements(ih, slider);
     cocoaValSetValueAttrib(ih, NULL);
   }
   return 0;
@@ -352,10 +329,7 @@ static int cocoaValSetPageStepAttrib(Ihandle* ih, const char* value)
 static int cocoaValSetShowTicksAttrib(Ihandle* ih, const char* value)
 {
   int show_ticks = 0;
-  if (value)
-  {
-    show_ticks = atoi(value);
-  }
+  iupStrToInt(value, &show_ticks);
   if (show_ticks < 0) show_ticks = 0;
 
   ih->data->show_ticks = show_ticks;
@@ -449,12 +423,7 @@ static int cocoaValMapMethod(Ihandle* ih)
 
   [slider setMinValue:ih->data->vmin];
   [slider setMaxValue:ih->data->vmax];
-
-  double inc_size = ih->data->step * (ih->data->vmax - ih->data->vmin);
-  [slider setIncrementValue:inc_size];
-
-  double page_inc_size = ih->data->pagestep * (ih->data->vmax - ih->data->vmin);
-  [slider setAltIncrementValue:page_inc_size];
+  cocoaValUpdateIncrements(ih, slider);
 
   cocoaValSetValueAttrib(ih, NULL);
 
