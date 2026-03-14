@@ -343,6 +343,36 @@ func TreeSetAttributeHandle(ih Ihandle, name string, id int, ihNamed Ihandle) {
 	C.IupTreeSetAttributeHandle(ih.ptr(), cName, C.int(id), ihNamed.ptr())
 }
 
+// TreeSetUserId associates a user data pointer with a given tree node id.
+// The userid is typically an Ihandle value (e.g. from User()), or a
+// cgo.NewHandle value for associating arbitrary Go data with a node.
+//
+// Returns 1 on success, 0 on failure (invalid id).
+//
+// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptree.html
+func TreeSetUserId(ih Ihandle, id int, userid uintptr) int {
+	return int(C.IupTreeSetUserId(ih.ptr(), C.int(id), unsafe.Pointer(cih(Ihandle(userid)))))
+}
+
+// TreeGetUserId returns the user data pointer associated with a given tree node id.
+// Returns 0 if the id is invalid or no user data is set.
+//
+// The returned value can be cast back to an Ihandle or cgo.Handle depending
+// on what was stored with TreeSetUserId.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptree.html
+func TreeGetUserId(ih Ihandle, id int) uintptr {
+	return uintptr(unsafe.Pointer(C.IupTreeGetUserId(ih.ptr(), C.int(id))))
+}
+
+// TreeGetId returns the node id associated with a given user data pointer.
+// Returns -1 if the user data is not found.
+//
+// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptree.html
+func TreeGetId(ih Ihandle, userid uintptr) int {
+	return int(C.IupTreeGetId(ih.ptr(), unsafe.Pointer(cih(Ihandle(userid)))))
+}
+
 // Val creates a Valuator control. Selects a value in a limited interval.
 // Also known as Scale or Trackbar in native systems.
 //
