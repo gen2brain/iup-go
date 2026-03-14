@@ -162,7 +162,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 
   /* Copy the image buffer to the target surface */
   cairo_set_source_surface(dc->cr, cairo_get_target(dc->image_cr), 0, 0);
-  cairo_set_operator(dc->cr, CAIRO_OPERATOR_SOURCE);
+  cairo_set_operator(dc->cr, CAIRO_OPERATOR_OVER);
   cairo_paint(dc->cr);  /* paints the entire source surface */
 
 #if !GTK_CHECK_VERSION(3, 0, 0)
