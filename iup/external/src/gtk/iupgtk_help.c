@@ -14,6 +14,8 @@
 
 #include "iup_str.h"
 
+#include "iupunix_portal.h"
+
 
 IUP_API int IupExecute(const char *filename, const char* parameters)
 {
@@ -65,22 +67,22 @@ IUP_API int IupExecuteWait(const char *filename, const char* parameters)
 
 IUP_API int IupHelp(const char* url)
 {
-  char *browser = getenv("IUP_HELPAPP");
+  char *browser;
+
+  if (iupUnixPortalHelp(url) == 1)
+    return 1;
+
+  browser = getenv("IUP_HELPAPP");
   if (!browser)
     browser = IupGetGlobal("HELPAPP");
 
   if (!browser)
   {
     char* system = IupGetGlobal("SYSTEM");
-    if (iupStrEqualNoCase(system, "Linux") ||
-        iupStrEqualNoCase(system, "FreeBSD"))
-        browser = "xdg-open";
-    else if (iupStrEqualNoCase(system, "MacOS"))
+    if (iupStrEqualNoCase(system, "MacOS"))
       browser = "open";
-    else if (iupStrEqualPartial(system, "CYGWIN"))
-      browser = "iexplore";
     else
-      browser = "netscape";
+      browser = "xdg-open";
   }
 
   return IupExecute(browser, url);
