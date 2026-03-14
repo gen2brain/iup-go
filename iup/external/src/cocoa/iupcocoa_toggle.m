@@ -32,6 +32,27 @@
 
 static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY";
 
+static void cocoaToggleCycle3State(Ihandle* ih, NSButton* button)
+{
+  int current = iupAttribGetInt(ih, "_IUPCOCOA_3STATE_CURRENT");
+
+  if (current == 1)
+  {
+    [button setState:NSControlStateValueMixed];
+    iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
+  }
+  else if (current == -1)
+  {
+    [button setState:NSControlStateValueOff];
+    iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 0);
+  }
+  else
+  {
+    [button setState:NSControlStateValueOn];
+    iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 1);
+  }
+}
+
 @interface IupCocoaToggleButton : NSButton
 @end
 
@@ -82,24 +103,7 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
 
   if (ih && !ih->data->is_radio && ih->data->type == IUP_TOGGLE_TEXT && [self allowsMixedState])
   {
-    int current = iupAttribGetInt(ih, "_IUPCOCOA_3STATE_CURRENT");
-
-    if (current == 1)
-    {
-      [self setState:NSControlStateValueMixed];
-      iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
-    }
-    else if (current == -1)
-    {
-      [self setState:NSControlStateValueOff];
-      iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 0);
-    }
-    else
-    {
-      [self setState:NSControlStateValueOn];
-      iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 1);
-    }
-
+    cocoaToggleCycle3State(ih, self);
     [self sendAction:[self action] to:[self target]];
     return;
   }
@@ -124,24 +128,7 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
   {
     if (keyCode == kVK_Space || keyCode == kVK_Return || keyCode == kVK_ANSI_KeypadEnter)
     {
-      int current = iupAttribGetInt(ih, "_IUPCOCOA_3STATE_CURRENT");
-
-      if (current == 1)
-      {
-        [self setState:NSControlStateValueMixed];
-        iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
-      }
-      else if (current == -1)
-      {
-        [self setState:NSControlStateValueOff];
-        iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 0);
-      }
-      else
-      {
-        [self setState:NSControlStateValueOn];
-        iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 1);
-      }
-
+      cocoaToggleCycle3State(ih, self);
       [self sendAction:[self action] to:[self target]];
       return;
     }
@@ -152,6 +139,89 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
 
 
 @end
+
+
+static void cocoaToggleUpdateImageSize(Ihandle* ih)
+{
+  if (ih->data->type == IUP_TOGGLE_IMAGE)
+  {
+    NSButton* the_toggle = ih->handle;
+    NSImage* image = [the_toggle image];
+
+    if (image)
+    {
+      NSSize imageSize = [image size];
+
+      int width = (int)imageSize.width;
+      int height = (int)imageSize.height;
+
+      width += 2 * ih->data->horiz_padding;
+      height += 2 * ih->data->vert_padding;
+
+      if (!ih->data->flat)
+      {
+        width += 8;
+        height += 8;
+      }
+
+      NSRect frame = [the_toggle frame];
+      frame.size.width = width;
+      frame.size.height = height;
+      [the_toggle setFrame:frame];
+    }
+  }
+}
+
+static void cocoaToggleUpdateImage(Ihandle* ih, int active, int check)
+{
+  if (ih->data->type == IUP_TOGGLE_IMAGE)
+  {
+    NSButton* the_toggle = ih->handle;
+    char* name = NULL;
+
+    if (!active)
+      name = iupAttribGet(ih, "IMINACTIVE");
+
+    if (!name)
+    {
+      if (check)
+      {
+        name = iupAttribGet(ih, "IMPRESS");
+        if (!name)
+          name = iupAttribGet(ih, "IMAGE");
+      }
+      else
+        name = iupAttribGet(ih, "IMAGE");
+    }
+
+    if (name)
+    {
+      NSImage* the_bitmap = iupImageGetImage(name, ih, !active, NULL);
+      [the_toggle setImage:the_bitmap];
+      cocoaToggleUpdateImageSize(ih);
+    }
+    else
+    {
+      [the_toggle setImage:nil];
+    }
+  }
+}
+
+static void cocoaToggleDeselectRadio(Ihandle* radio, Ihandle* ih)
+{
+  Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE");
+  if (iupObjectCheck(last_tg) && last_tg != ih)
+  {
+    NSButton* last_button = (NSButton*)last_tg->handle;
+    [last_button setState:NSControlStateValueOff];
+
+    if (last_tg->data->type == IUP_TOGGLE_IMAGE)
+    {
+      cocoaToggleUpdateImage(last_tg, iupdrvIsActive(last_tg), 0);
+    }
+  }
+  iupAttribSet(radio, "_IUPCOCOA_LASTTOGGLE", (char*)ih);
+}
 
 
 @interface IupCocoaToggleReceiver : NSObject
@@ -196,13 +266,7 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
 
         if (last_tg->data->type == IUP_TOGGLE_IMAGE)
         {
-          char* name = iupAttribGet(last_tg, "IMAGE");
-          if (name)
-          {
-            int make_inactive = !iupdrvIsActive(last_tg);
-            NSImage* the_bitmap = iupImageGetImage(name, last_tg, make_inactive, NULL);
-            [last_button setImage:the_bitmap];
-          }
+          cocoaToggleUpdateImage(last_tg, iupdrvIsActive(last_tg), 0);
         }
 
         IFni action_cb = (IFni)IupGetCallback(last_tg, "ACTION");
@@ -225,13 +289,7 @@ static const void* IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY = "IUP_COCOA_TOGGLE_RECEIVE
 
       if (ih->data->type == IUP_TOGGLE_IMAGE)
       {
-        char* name = iupAttribGet(ih, "IMPRESS");
-        if (name)
-        {
-          int make_inactive = !iupdrvIsActive(ih);
-          NSImage* the_bitmap = iupImageGetImage(name, ih, make_inactive, NULL);
-          [the_sender setImage:the_bitmap];
-        }
+        cocoaToggleUpdateImage(ih, iupdrvIsActive(ih), 1);
       }
     }
   }
@@ -355,87 +413,6 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 }
 
 
-static void cocoaToggleUpdateImageSize(Ihandle* ih)
-{
-  if (ih->data->type == IUP_TOGGLE_IMAGE)
-  {
-    NSButton* the_toggle = ih->handle;
-    NSImage* image = [the_toggle image];
-
-    if (image)
-    {
-      NSSize imageSize = [image size];
-
-      int width = (int)imageSize.width;
-      int height = (int)imageSize.height;
-
-      width += 2 * ih->data->horiz_padding;
-      height += 2 * ih->data->vert_padding;
-
-      if (!ih->data->flat)
-      {
-        width += 8;
-        height += 8;
-      }
-
-      NSRect frame = [the_toggle frame];
-      frame.size.width = width;
-      frame.size.height = height;
-      [the_toggle setFrame:frame];
-    }
-  }
-}
-
-static void cocoaToggleUpdateImage(Ihandle* ih, int active, int check)
-{
-  if (ih->data->type == IUP_TOGGLE_IMAGE)
-  {
-    NSButton* the_toggle = ih->handle;
-    char* name = NULL;
-
-    if (!active)
-    {
-      name = iupAttribGet(ih, "IMINACTIVE");
-      if (!name)
-      {
-        if (check)
-        {
-          name = iupAttribGet(ih, "IMPRESS");
-          if (!name)
-            name = iupAttribGet(ih, "IMAGE");
-        }
-        else
-          name = iupAttribGet(ih, "IMAGE");
-      }
-    }
-    else
-    {
-      if (check)
-      {
-        name = iupAttribGet(ih, "IMPRESS");
-        if (!name)
-          name = iupAttribGet(ih, "IMAGE");
-      }
-      else
-      {
-        name = iupAttribGet(ih, "IMAGE");
-      }
-    }
-
-    if (name)
-    {
-      int make_inactive = !active;
-      NSImage* the_bitmap = iupImageGetImage(name, ih, make_inactive, NULL);
-      [the_toggle setImage:the_bitmap];
-      cocoaToggleUpdateImageSize(ih);
-    }
-    else
-    {
-      [the_toggle setImage:nil];
-    }
-  }
-}
-
 static int cocoaToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
   id the_toggle = ih->handle;
@@ -509,23 +486,7 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
     {
       if (!radio && ih->data->type == IUP_TOGGLE_TEXT && [the_toggle allowsMixedState])
       {
-        int current = iupAttribGetInt(ih, "_IUPCOCOA_3STATE_CURRENT");
-
-        if (current == 1)
-        {
-          [the_toggle setState:NSControlStateValueMixed];
-          iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", -1);
-        }
-        else if (current == -1)
-        {
-          [the_toggle setState:NSControlStateValueOff];
-          iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 0);
-        }
-        else
-        {
-          [the_toggle setState:NSControlStateValueOn];
-          iupAttribSetInt(ih, "_IUPCOCOA_3STATE_CURRENT", 1);
-        }
+        cocoaToggleCycle3State(ih, the_toggle);
       }
       else
       {
@@ -534,18 +495,7 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
 
         if (radio && new_state == NSControlStateValueOn)
         {
-          Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE");
-          if (iupObjectCheck(last_tg) && last_tg != ih)
-          {
-            NSButton* last_button = (NSButton*)last_tg->handle;
-            [last_button setState:NSControlStateValueOff];
-
-            if (last_tg->data->type == IUP_TOGGLE_IMAGE)
-            {
-              cocoaToggleUpdateImage(last_tg, iupdrvIsActive(last_tg), 0);
-            }
-          }
-          iupAttribSet(radio, "_IUPCOCOA_LASTTOGGLE", (char*)ih);
+          cocoaToggleDeselectRadio(radio, ih);
         }
 
         [the_toggle setState:new_state];
@@ -570,18 +520,7 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
       {
         if (new_state)
         {
-          Ihandle* last_tg = (Ihandle*)iupAttribGet(radio, "_IUPCOCOA_LASTTOGGLE");
-          if (iupObjectCheck(last_tg) && last_tg != ih)
-          {
-            NSButton* last_button = (NSButton*)last_tg->handle;
-            [last_button setState:NSControlStateValueOff];
-
-            if (last_tg->data->type == IUP_TOGGLE_IMAGE)
-            {
-              cocoaToggleUpdateImage(last_tg, iupdrvIsActive(last_tg), 0);
-            }
-          }
-          iupAttribSet(radio, "_IUPCOCOA_LASTTOGGLE", (char*)ih);
+          cocoaToggleDeselectRadio(radio, ih);
           [the_toggle setState:NSControlStateValueOn];
         }
         else
@@ -928,7 +867,6 @@ static void cocoaToggleUnMapMethod(Ihandle* ih)
   }
 
   [the_toggle setTarget:nil];
-  id button_receiver = objc_getAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY);
   objc_setAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
   Ihandle* radio = iupRadioFindToggleParent(ih);

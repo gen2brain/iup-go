@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -161,34 +160,47 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
   }
 }
 
-static NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromRawData(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
+static NSBitmapImageRep* cocoaImageCreateBitmapRep(int width, int height, int bpp)
 {
-  NSBitmapImageRep* bitmap_image = nil;
-
-  if (bpp == 32 || bpp == 8) /* For 8bpp, we create a 32bpp image */
+  if (bpp == 32 || bpp == 8)
   {
-    bitmap_image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-                                                           pixelsWide:width pixelsHigh:height bitsPerSample:8
-                                                      samplesPerPixel:4 hasAlpha:YES isPlanar:NO
-                                                       colorSpaceName:NSDeviceRGBColorSpace
-                                                         bitmapFormat:NSBitmapFormatAlphaNonpremultiplied
-                                                          bytesPerRow:CalculateBytesPerRow(width, 4)
-                                                         bitsPerPixel:32];
+    return [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+                                                   pixelsWide:width pixelsHigh:height bitsPerSample:8
+                                              samplesPerPixel:4 hasAlpha:YES isPlanar:NO
+                                               colorSpaceName:NSDeviceRGBColorSpace
+                                                 bitmapFormat:NSBitmapFormatAlphaNonpremultiplied
+                                                  bytesPerRow:CalculateBytesPerRow(width, 4)
+                                                 bitsPerPixel:32];
   }
   else if (bpp == 24)
   {
-    bitmap_image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-                                                           pixelsWide:width pixelsHigh:height bitsPerSample:8
-                                                      samplesPerPixel:3 hasAlpha:NO isPlanar:NO
-                                                       colorSpaceName:NSDeviceRGBColorSpace
-                                                         bitmapFormat:0
-                                                          bytesPerRow:CalculateBytesPerRow(width, 3)
-                                                         bitsPerPixel:24];
+    return [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+                                                   pixelsWide:width pixelsHigh:height bitsPerSample:8
+                                              samplesPerPixel:3 hasAlpha:NO isPlanar:NO
+                                               colorSpaceName:NSDeviceRGBColorSpace
+                                                 bitmapFormat:0
+                                                  bytesPerRow:CalculateBytesPerRow(width, 3)
+                                                 bitsPerPixel:24];
   }
-  else
-  {
+  return nil;
+}
+
+static NSImage* cocoaImageWrapBitmapRep(NSBitmapImageRep* bitmap, int width, int height)
+{
+  if (!bitmap)
+    return nil;
+
+  NSImage* ns_image = [[NSImage alloc] initWithSize:NSMakeSize(width, height)];
+  [ns_image addRepresentation:bitmap];
+  [bitmap release];
+  return ns_image;
+}
+
+static NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromRawData(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
+{
+  NSBitmapImageRep* bitmap_image = cocoaImageCreateBitmapRep(width, height, bpp);
+  if (!bitmap_image)
     return NULL;
-  }
 
   unsigned char *pixels = [bitmap_image bitmapData];
   NSInteger bytesPerRow = [bitmap_image bytesPerRow];
@@ -250,52 +262,14 @@ static NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromRawData(int width, int
 static NSImage* iupCocoaImageNSImageFromRawData(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
 {
   NSBitmapImageRep* bitmap_image = iupCocoaImageNSBitmapImageRepFromRawData(width, height, bpp, colors, colors_count, imgdata);
-  if (nil == bitmap_image)
-  {
-    return nil;
-  }
-
-  NSImage* ns_image = [[NSImage alloc] initWithSize:NSMakeSize(width,height)];
-  if (nil == ns_image)
-  {
-    [bitmap_image release];
-    return nil;
-  }
-
-  [ns_image addRepresentation:bitmap_image];
-  [bitmap_image release];
-
-  return ns_image;
+  return cocoaImageWrapBitmapRep(bitmap_image, width, height);
 }
 
 NSBitmapImageRep* iupcocoaImageNSBitmapImageRepFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
 {
-  NSBitmapImageRep* bitmap_image = nil;
-
-  if (bpp == 32 || bpp == 8)
-  {
-    bitmap_image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-                                                           pixelsWide:width pixelsHigh:height bitsPerSample:8
-                                                      samplesPerPixel:4 hasAlpha:YES isPlanar:NO
-                                                       colorSpaceName:NSDeviceRGBColorSpace
-                                                         bitmapFormat:NSBitmapFormatAlphaNonpremultiplied
-                                                          bytesPerRow:CalculateBytesPerRow(width, 4)
-                                                         bitsPerPixel:32];
-  }
-  else if (bpp == 24)
-  {
-    bitmap_image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-                                                           pixelsWide:width pixelsHigh:height bitsPerSample:8
-                                                      samplesPerPixel:3 hasAlpha:NO isPlanar:NO
-                                                       colorSpaceName:NSDeviceRGBColorSpace
-                                                         bitmapFormat:0
-                                                          bytesPerRow:CalculateBytesPerRow(width, 3)
-                                                         bitsPerPixel:24];
-  }
-  else
-  {
+  NSBitmapImageRep* bitmap_image = cocoaImageCreateBitmapRep(width, height, bpp);
+  if (!bitmap_image)
     return NULL;
-  }
 
   unsigned char *pixels = [bitmap_image bitmapData];
   NSInteger bytesPerRow = [bitmap_image bytesPerRow];
@@ -348,22 +322,7 @@ NSBitmapImageRep* iupcocoaImageNSBitmapImageRepFromPixels(int width, int height,
 NSImage* iupcocoaImageNSImageFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
 {
   NSBitmapImageRep* bitmap_image = iupcocoaImageNSBitmapImageRepFromPixels(width, height, bpp, colors, colors_count, imgdata);
-  if (nil == bitmap_image)
-  {
-    return nil;
-  }
-
-  NSImage* ns_image = [[NSImage alloc] initWithSize:NSMakeSize(width, height)];
-  if (nil == ns_image)
-  {
-    [bitmap_image release];
-    return nil;
-  }
-
-  [ns_image addRepresentation:bitmap_image];
-  [bitmap_image release];
-
-  return ns_image;
+  return cocoaImageWrapBitmapRep(bitmap_image, width, height);
 }
 
 IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
@@ -400,38 +359,9 @@ static NSImage* iupCocoaCreateNSImage(Ihandle *ih, const char* bgcolor, int make
 
   iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
 
-  NSBitmapImageRep* bitmap_image = nil;
-
-  /* For 8bpp, we create a 32bpp image for simplicity and to handle alpha. */
-  if (bpp == 32 || bpp == 8)
-  {
-    bitmap_image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-                                                           pixelsWide:width pixelsHigh:height bitsPerSample:8
-                                                      samplesPerPixel:4 hasAlpha:YES isPlanar:NO
-                                                       colorSpaceName:NSDeviceRGBColorSpace
-                                                         bitmapFormat:NSBitmapFormatAlphaNonpremultiplied
-                                                          bytesPerRow:CalculateBytesPerRow(width, 4)
-                                                         bitsPerPixel:32];
-  }
-  else if (bpp == 24)
-  {
-    bitmap_image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-                                                           pixelsWide:width pixelsHigh:height bitsPerSample:8
-                                                      samplesPerPixel:3 hasAlpha:NO isPlanar:NO
-                                                       colorSpaceName:NSDeviceRGBColorSpace
-                                                         bitmapFormat:0
-                                                          bytesPerRow:CalculateBytesPerRow(width, 3)
-                                                         bitsPerPixel:24];
-  }
-  else
-  {
-    return NULL;
-  }
-
+  NSBitmapImageRep* bitmap_image = cocoaImageCreateBitmapRep(width, height, bpp);
   if (!bitmap_image)
-  {
     return NULL;
-  }
 
   unsigned char *pixels = [bitmap_image bitmapData];
   NSInteger bytes_per_row = [bitmap_image bytesPerRow];
@@ -538,9 +468,7 @@ static NSImage* iupCocoaCreateNSImage(Ihandle *ih, const char* bgcolor, int make
     }
   }
 
-  NSImage* ns_image = [[NSImage alloc] initWithSize:NSMakeSize(width, height)];
-  [ns_image addRepresentation:bitmap_image];
-  [bitmap_image release];
+  NSImage* ns_image = cocoaImageWrapBitmapRep(bitmap_image, width, height);
 
   if (make_inactive || flat_alpha)
   {
@@ -648,15 +576,12 @@ void* iupdrvImageLoad(const char* name, int type)
     }
   }
 
-  if (the_image)
+  IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
+  if (cb)
   {
-    IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
-    if (cb)
-    {
-      const char* type_str = (type == IUPIMAGE_CURSOR) ? "CURSOR" :
-                             (type == IUPIMAGE_ICON) ? "ICON" : "NSImage";
-      cb(the_image, (char*)type_str);
-    }
+    const char* type_str = (type == IUPIMAGE_CURSOR) ? "CURSOR" :
+                           (type == IUPIMAGE_ICON) ? "ICON" : "NSImage";
+    cb(the_image, (char*)type_str);
   }
 
   return (void*)the_image;

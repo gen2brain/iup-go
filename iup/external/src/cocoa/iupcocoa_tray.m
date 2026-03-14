@@ -22,6 +22,7 @@
 #include "iup_class.h"
 #include "iup_tray.h"
 
+
 #if defined(IUP_USE_GTK3) || defined(IUP_USE_GTK4) || defined(IUP_USE_GTK2) || defined(IUP_USE_QT)
 #define IUPCOCOA_TRAY_USE_EXTERNAL_IMAGE
 
@@ -56,17 +57,16 @@ static NSImage* cocoaTrayCreateImageFromPixels(int width, int height, unsigned c
   {
     for (x = 0; x < width; x++)
     {
-      int srcOffset = (y * width + x) * 4;
-      int dstOffset = (y * width + x) * 4;
-      unsigned char a = pixels[srcOffset + 0];
-      unsigned char r = pixels[srcOffset + 1];
-      unsigned char g = pixels[srcOffset + 2];
-      unsigned char b = pixels[srcOffset + 3];
+      int offset = (y * width + x) * 4;
+      unsigned char a = pixels[offset + 0];
+      unsigned char r = pixels[offset + 1];
+      unsigned char g = pixels[offset + 2];
+      unsigned char b = pixels[offset + 3];
 
-      destPixels[dstOffset + 0] = r;
-      destPixels[dstOffset + 1] = g;
-      destPixels[dstOffset + 2] = b;
-      destPixels[dstOffset + 3] = a;
+      destPixels[offset + 0] = r;
+      destPixels[offset + 1] = g;
+      destPixels[offset + 2] = b;
+      destPixels[offset + 3] = a;
     }
   }
 
@@ -107,8 +107,6 @@ static const void* TRAYMENU_ITEM_IHANDLE_KEY = @"TRAYMENU_ITEM_IHANDLE_KEY";
 
 - (void) dealloc
 {
-  _ih = NULL;
-  _tray_ih = NULL;
   [super dealloc];
 }
 
@@ -160,7 +158,7 @@ static void cocoaTrayBuildMenuItems(NSMenu* ns_menu, Ihandle* parent_ih, Ihandle
     {
       [ns_menu addItem:[NSMenuItem separatorItem]];
     }
-    else if (iupStrEqual(child->iclass->name, "item"))
+    else if (iupStrEqual(child->iclass->name, "item") || iupStrEqual(child->iclass->name, "submenu"))
     {
       char* title = iupAttribGet(child, "TITLE");
       if (!title) title = "";
@@ -169,44 +167,32 @@ static void cocoaTrayBuildMenuItems(NSMenu* ns_menu, Ihandle* parent_ih, Ihandle
       NSString* ns_title = title_str ? [NSString stringWithUTF8String:title_str] : @"";
       if (title_str && title_str != title) free(title_str);
 
+      BOOL is_item = iupStrEqual(child->iclass->name, "item");
       NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:ns_title
-                                                    action:@selector(onMenuItemAction:)
+                                                    action:is_item ? @selector(onMenuItemAction:) : nil
                                              keyEquivalent:@""];
 
-      IupTrayMenuItemTarget* target = [[IupTrayMenuItemTarget alloc] initWithIhandle:child trayHandle:tray_ih];
-      [item setTarget:target];
-      objc_setAssociatedObject(item, TRAYMENU_ITEM_IHANDLE_KEY, target, OBJC_ASSOCIATION_RETAIN);
-      [target release];
-
-      char* value = iupAttribGet(child, "VALUE");
-      if (value && iupStrBoolean(value))
-        [item setState:NSControlStateValueOn];
-
-      char* active = iupAttribGet(child, "ACTIVE");
-      if (active && !iupStrBoolean(active))
-        [item setEnabled:NO];
-
-      [ns_menu addItem:item];
-      [item release];
-    }
-    else if (iupStrEqual(child->iclass->name, "submenu"))
-    {
-      char* title = iupAttribGet(child, "TITLE");
-      if (!title) title = "";
-
-      char* title_str = iupStrProcessMnemonic(title, NULL, 0);
-      NSString* ns_title = title_str ? [NSString stringWithUTF8String:title_str] : @"";
-      if (title_str && title_str != title) free(title_str);
-
-      NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:ns_title action:nil keyEquivalent:@""];
-
-      Ihandle* submenu_ih = child->firstchild;
-      if (submenu_ih && iupStrEqual(submenu_ih->iclass->name, "menu"))
+      if (is_item)
       {
-        NSMenu* submenu = cocoaTrayBuildMenuFromIhandle(submenu_ih, tray_ih);
-        [submenu setTitle:ns_title];
-        [item setSubmenu:submenu];
-        [submenu release];
+        IupTrayMenuItemTarget* target = [[IupTrayMenuItemTarget alloc] initWithIhandle:child trayHandle:tray_ih];
+        [item setTarget:target];
+        objc_setAssociatedObject(item, TRAYMENU_ITEM_IHANDLE_KEY, target, OBJC_ASSOCIATION_RETAIN);
+        [target release];
+
+        char* value = iupAttribGet(child, "VALUE");
+        if (value && iupStrBoolean(value))
+          [item setState:NSControlStateValueOn];
+      }
+      else
+      {
+        Ihandle* submenu_ih = child->firstchild;
+        if (submenu_ih && iupStrEqual(submenu_ih->iclass->name, "menu"))
+        {
+          NSMenu* submenu = cocoaTrayBuildMenuFromIhandle(submenu_ih, tray_ih);
+          [submenu setTitle:ns_title];
+          [item setSubmenu:submenu];
+          [submenu release];
+        }
       }
 
       char* active = iupAttribGet(child, "ACTIVE");
@@ -382,16 +368,8 @@ int iupdrvTraySetVisible(Ihandle* ih, int visible)
 {
   NSStatusItem* status_item = cocoaGetStatusItem(ih, visible);
 
-  if (visible)
-  {
-    if (status_item)
-      [status_item setVisible:YES];
-  }
-  else
-  {
-    if (status_item)
-      [status_item setVisible:NO];
-  }
+  if (status_item)
+    [status_item setVisible:visible];
 
   return 1;
 }
@@ -584,17 +562,16 @@ int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height,
   {
     for (x = 0; x < w; x++)
     {
-      int srcOffset = (y * w + x) * 4;
-      int dstOffset = (y * w + x) * 4;
-      unsigned char r = srcData[srcOffset + 0];
-      unsigned char g = srcData[srcOffset + 1];
-      unsigned char b = srcData[srcOffset + 2];
-      unsigned char a = srcData[srcOffset + 3];
+      int offset = (y * w + x) * 4;
+      unsigned char r = srcData[offset + 0];
+      unsigned char g = srcData[offset + 1];
+      unsigned char b = srcData[offset + 2];
+      unsigned char a = srcData[offset + 3];
 
-      dstData[dstOffset + 0] = a;
-      dstData[dstOffset + 1] = r;
-      dstData[dstOffset + 2] = g;
-      dstData[dstOffset + 3] = b;
+      dstData[offset + 0] = a;
+      dstData[offset + 1] = r;
+      dstData[offset + 2] = g;
+      dstData[offset + 3] = b;
     }
   }
 

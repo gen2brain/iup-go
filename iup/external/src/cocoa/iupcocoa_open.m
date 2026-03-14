@@ -18,6 +18,7 @@
 
 #include "iupcocoa_drv.h"
 
+
 static NSAutoreleasePool* s_autoreleasePool = nil;
 
 IUP_SDK_API void* iupdrvGetDisplay(void)

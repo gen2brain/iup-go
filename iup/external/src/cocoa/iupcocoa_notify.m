@@ -23,6 +23,7 @@
 #include "iup_tray.h"
 #include "iup_image.h"
 
+
 #define IUPCOCOA_NOTIFY_MAX_ICON_SIZE 256
 
 @interface IupCocoaNotifyDelegate : NSObject <UNUserNotificationCenterDelegate>
@@ -76,21 +77,9 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
     completionHandler();
     return;
   }
-  else if ([actionId isEqualToString:@"action1"])
+  else if ([actionId hasPrefix:@"action"])
   {
-    action = 1;
-  }
-  else if ([actionId isEqualToString:@"action2"])
-  {
-    action = 2;
-  }
-  else if ([actionId isEqualToString:@"action3"])
-  {
-    action = 3;
-  }
-  else if ([actionId isEqualToString:@"action4"])
-  {
-    action = 4;
+    action = [[actionId substringFromIndex:6] intValue];
   }
 
   IFni notify_cb = (IFni)IupGetCallback(ih, "NOTIFY_CB");
@@ -249,42 +238,20 @@ static void cocoaNotifyRegisterCategory(Ihandle* ih)
 {
   NSMutableArray* actions = [NSMutableArray array];
 
-  const char* action1 = IupGetAttribute(ih, "ACTION1");
-  const char* action2 = IupGetAttribute(ih, "ACTION2");
-  const char* action3 = IupGetAttribute(ih, "ACTION3");
-  const char* action4 = IupGetAttribute(ih, "ACTION4");
-
-  if (action1)
+  for (int i = 1; i <= 4; i++)
   {
-    UNNotificationAction* act = [UNNotificationAction
-        actionWithIdentifier:@"action1"
-                       title:[NSString stringWithUTF8String:action1]
-                     options:UNNotificationActionOptionForeground];
-    [actions addObject:act];
-  }
-  if (action2)
-  {
-    UNNotificationAction* act = [UNNotificationAction
-        actionWithIdentifier:@"action2"
-                       title:[NSString stringWithUTF8String:action2]
-                     options:UNNotificationActionOptionForeground];
-    [actions addObject:act];
-  }
-  if (action3)
-  {
-    UNNotificationAction* act = [UNNotificationAction
-        actionWithIdentifier:@"action3"
-                       title:[NSString stringWithUTF8String:action3]
-                     options:UNNotificationActionOptionForeground];
-    [actions addObject:act];
-  }
-  if (action4)
-  {
-    UNNotificationAction* act = [UNNotificationAction
-        actionWithIdentifier:@"action4"
-                       title:[NSString stringWithUTF8String:action4]
-                     options:UNNotificationActionOptionForeground];
-    [actions addObject:act];
+    char attr_name[16];
+    snprintf(attr_name, sizeof(attr_name), "ACTION%d", i);
+    const char* action_title = IupGetAttribute(ih, attr_name);
+    if (action_title)
+    {
+      NSString* identifier = [NSString stringWithFormat:@"action%d", i];
+      UNNotificationAction* act = [UNNotificationAction
+          actionWithIdentifier:identifier
+                         title:[NSString stringWithUTF8String:action_title]
+                       options:UNNotificationActionOptionForeground];
+      [actions addObject:act];
+    }
   }
 
   UNNotificationCategory* category = [UNNotificationCategory

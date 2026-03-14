@@ -386,13 +386,9 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
     iupTabsCheckCurrentTab(ih, iup_pos, 0);
     visible_data[iup_pos] = 0;
 
-    IupTabsDelegate* delegate = (IupTabsDelegate*)self;
     IupCocoaTabBarView* tab_bar_view = [(IupTabsRootView*)(ih->handle) tabBarView];
-    if (delegate)
-    {
-      int new_native_pos = (int)[[tab_bar_view tabs] indexOfObject:[tab_bar_view selectedTab]];
-      delegate.previousIupPos = cocoaTabsPosFixFromNative(ih, new_native_pos);
-    }
+    int new_native_pos = (int)[[tab_bar_view tabs] indexOfObject:[tab_bar_view selectedTab]];
+    self.previousIupPos = cocoaTabsPosFixFromNative(ih, new_native_pos);
   }
 
   objc_setAssociatedObject(tab, @"IUP_CLOSE_ACTION", nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -749,7 +745,6 @@ static int cocoaTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
       }
     }
   }
-  IupRefresh(ih);
   return 0;
 }
 
@@ -891,14 +886,7 @@ static int cocoaTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
   if (!tab_bar_view || (NSUInteger)native_pos >= [[tab_bar_view tabs] count]) return 0;
 
   IupCocoaTabCell* tab_cell = [[tab_bar_view tabs] objectAtIndex:native_pos];
-  if (iupStrBoolean(value))
-  {
-    [tab_cell setHasCloseButton:YES];
-  }
-  else
-  {
-    [tab_cell setHasCloseButton:NO];
-  }
+  [tab_cell setHasCloseButton:iupStrBoolean(value)];
 
   [tab_bar_view redraw];
   return 1;
@@ -950,14 +938,7 @@ static int cocoaTabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
   IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
   if (tab_bar_view)
   {
-    if (iupStrBoolean(value))
-    {
-      [tab_bar_view setAllowsDragging:YES];
-    }
-    else
-    {
-      [tab_bar_view setAllowsDragging:NO];
-    }
+    [tab_bar_view setAllowsDragging:iupStrBoolean(value)];
   }
   return 1;
 }
@@ -967,14 +948,7 @@ static int cocoaTabsSetTabListAttrib(Ihandle* ih, const char* value)
   IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
   if (tab_bar_view)
   {
-    if (iupStrBoolean(value))
-    {
-      [tab_bar_view setAllowsTabListMenu:YES];
-    }
-    else
-    {
-      [tab_bar_view setAllowsTabListMenu:NO];
-    }
+    [tab_bar_view setAllowsTabListMenu:iupStrBoolean(value)];
     [tab_bar_view redraw];
   }
   return 1;
@@ -985,14 +959,7 @@ static int cocoaTabsSetCloseButtonOnHoverAttrib(Ihandle* ih, const char* value)
   IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
   if (tab_bar_view)
   {
-    if (iupStrBoolean(value))
-    {
-      [tab_bar_view setShowsCloseButtonOnHover:YES];
-    }
-    else
-    {
-      [tab_bar_view setShowsCloseButtonOnHover:NO];
-    }
+    [tab_bar_view setShowsCloseButtonOnHover:iupStrBoolean(value)];
     [tab_bar_view redraw];
   }
   return 1;
@@ -1020,7 +987,6 @@ static int cocoaTabsSetBgColorAttrib(Ihandle* ih, const char* value)
   }
   return 1;
 }
-
 
 /*
    ===============================================================================
@@ -1055,10 +1021,7 @@ static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos
 
   IupCocoaTabCell *tab_cell = [IupCocoaTabCell tabCellWithTabBarView:tab_bar_view title:ns_title image:ns_image];
 
-  if (iupStrBoolean(show_close))
-  {
-    [tab_cell setHasCloseButton:YES];
-  }
+  [tab_cell setHasCloseButton:iupStrBoolean(show_close)];
 
   id<IupCocoaTabBarViewDelegate> delegate = [tab_bar_view delegate];
 

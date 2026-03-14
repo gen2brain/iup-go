@@ -45,6 +45,33 @@ static NSRect iupCocoaGetVirtualScreenRect(void)
   return virtualRect;
 }
 
+static void cocoaGlobalBuildStatus(CGEventFlags flags, char* status)
+{
+  if (flags & kCGEventFlagMaskShift)
+    iupKEY_SETSHIFT(status);
+  if (flags & kCGEventFlagMaskControl)
+    iupKEY_SETCONTROL(status);
+  if (flags & kCGEventFlagMaskAlternate)
+    iupKEY_SETALT(status);
+  if (flags & kCGEventFlagMaskCommand)
+    iupKEY_SETSYS(status);
+
+  if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonLeft))
+    iupKEY_SETBUTTON1(status);
+  if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonRight))
+    iupKEY_SETBUTTON3(status);
+  if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonCenter))
+    iupKEY_SETBUTTON2(status);
+}
+
+static int cocoaGlobalMapButton(int64_t button_number)
+{
+  if (button_number == 0) return IUP_BUTTON1;
+  if (button_number == 1) return IUP_BUTTON3;
+  if (button_number == 2) return IUP_BUTTON2;
+  return IUP_BUTTON1 + (int)button_number;
+}
+
 static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon)
 {
   NSRect main_screen_frame = [[NSScreen mainScreen] frame];
@@ -63,45 +90,6 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
     case kCGEventLeftMouseDown:
     case kCGEventRightMouseDown:
     case kCGEventOtherMouseDown:
-    {
-      IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
-      if (cb)
-      {
-        CGPoint location = CGEventGetLocation(event);
-        CGEventFlags flags = CGEventGetFlags(event);
-        int64_t button_number = CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber);
-        int64_t click_count = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
-        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-
-        if (flags & kCGEventFlagMaskShift)
-          iupKEY_SETSHIFT(status);
-        if (flags & kCGEventFlagMaskControl)
-          iupKEY_SETCONTROL(status);
-        if (flags & kCGEventFlagMaskAlternate)
-          iupKEY_SETALT(status);
-        if (flags & kCGEventFlagMaskCommand)
-          iupKEY_SETSYS(status);
-
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonLeft))
-          iupKEY_SETBUTTON1(status);
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonRight))
-          iupKEY_SETBUTTON3(status);
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonCenter))
-          iupKEY_SETBUTTON2(status);
-
-        if (click_count == 2)
-          iupKEY_SETDOUBLE(status);
-
-        int iup_button = (button_number == 0) ? IUP_BUTTON1 :
-                         (button_number == 1) ? IUP_BUTTON3 :
-                         (button_number == 2) ? IUP_BUTTON2 :
-                         IUP_BUTTON1 + (int)button_number;
-
-        int iup_y = (int)(main_screen_top - location.y);
-        cb(iup_button, 1, (int)location.x, iup_y, status);
-      }
-      break;
-    }
     case kCGEventLeftMouseUp:
     case kCGEventRightMouseUp:
     case kCGEventOtherMouseUp:
@@ -109,34 +97,22 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
       IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
       if (cb)
       {
+        int pressed = (type == kCGEventLeftMouseDown || type == kCGEventRightMouseDown || type == kCGEventOtherMouseDown);
         CGPoint location = CGEventGetLocation(event);
-        CGEventFlags flags = CGEventGetFlags(event);
         int64_t button_number = CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber);
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
 
-        if (flags & kCGEventFlagMaskShift)
-          iupKEY_SETSHIFT(status);
-        if (flags & kCGEventFlagMaskControl)
-          iupKEY_SETCONTROL(status);
-        if (flags & kCGEventFlagMaskAlternate)
-          iupKEY_SETALT(status);
-        if (flags & kCGEventFlagMaskCommand)
-          iupKEY_SETSYS(status);
+        cocoaGlobalBuildStatus(CGEventGetFlags(event), status);
 
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonLeft))
-          iupKEY_SETBUTTON1(status);
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonRight))
-          iupKEY_SETBUTTON3(status);
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonCenter))
-          iupKEY_SETBUTTON2(status);
-
-        int iup_button = (button_number == 0) ? IUP_BUTTON1 :
-                         (button_number == 1) ? IUP_BUTTON3 :
-                         (button_number == 2) ? IUP_BUTTON2 :
-                         IUP_BUTTON1 + (int)button_number;
+        if (pressed)
+        {
+          int64_t click_count = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
+          if (click_count == 2)
+            iupKEY_SETDOUBLE(status);
+        }
 
         int iup_y = (int)(main_screen_top - location.y);
-        cb(iup_button, 0, (int)location.x, iup_y, status);
+        cb(cocoaGlobalMapButton(button_number), pressed, (int)location.x, iup_y, status);
       }
       break;
     }
@@ -149,24 +125,9 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
       if (cb)
       {
         CGPoint location = CGEventGetLocation(event);
-        CGEventFlags flags = CGEventGetFlags(event);
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
 
-        if (flags & kCGEventFlagMaskShift)
-          iupKEY_SETSHIFT(status);
-        if (flags & kCGEventFlagMaskControl)
-          iupKEY_SETCONTROL(status);
-        if (flags & kCGEventFlagMaskAlternate)
-          iupKEY_SETALT(status);
-        if (flags & kCGEventFlagMaskCommand)
-          iupKEY_SETSYS(status);
-
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonLeft))
-          iupKEY_SETBUTTON1(status);
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonRight))
-          iupKEY_SETBUTTON3(status);
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonCenter))
-          iupKEY_SETBUTTON2(status);
+        cocoaGlobalBuildStatus(CGEventGetFlags(event), status);
 
         int iup_y = (int)(main_screen_top - location.y);
         cb((int)location.x, iup_y, status);
@@ -180,24 +141,9 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
       {
         CGPoint location = CGEventGetLocation(event);
         int64_t delta = CGEventGetIntegerValueField(event, kCGScrollWheelEventDeltaAxis1);
-        CGEventFlags flags = CGEventGetFlags(event);
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
 
-        if (flags & kCGEventFlagMaskShift)
-          iupKEY_SETSHIFT(status);
-        if (flags & kCGEventFlagMaskControl)
-          iupKEY_SETCONTROL(status);
-        if (flags & kCGEventFlagMaskAlternate)
-          iupKEY_SETALT(status);
-        if (flags & kCGEventFlagMaskCommand)
-          iupKEY_SETSYS(status);
-
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonLeft))
-          iupKEY_SETBUTTON1(status);
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonRight))
-          iupKEY_SETBUTTON3(status);
-        if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonCenter))
-          iupKEY_SETBUTTON2(status);
+        cocoaGlobalBuildStatus(CGEventGetFlags(event), status);
 
         int iup_y = (int)(main_screen_top - location.y);
         cb((float)(-delta), (int)location.x, iup_y, status);
@@ -389,10 +335,7 @@ char *iupdrvGetGlobal(const char *name)
   }
   if (iupStrEqual(name, "TRUECOLORCANVAS"))
   {
-    if (iupdrvGetScreenDepth() > 8)
-      return "YES";
-    else
-      return "NO";
+    return iupStrReturnBoolean(iupdrvGetScreenDepth() > 8);
   }
   if (iupStrEqual(name, "UTF8MODE"))
   {

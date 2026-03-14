@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
 #include <string.h>
 
 #import <Cocoa/Cocoa.h>
@@ -17,7 +16,6 @@
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iupcocoa_drv.h"
-
 
 
 static int cocoaClipboardSetTextAttrib(Ihandle* ih, const char* value)
@@ -219,11 +217,6 @@ static int cocoaClipboardSetAddFormatAttrib(Ihandle* ih, const char* value)
 
 static int cocoaClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih)
-  {
-    return 0;
-  }
-
   NSPasteboard* paste_board = [NSPasteboard generalPasteboard];
 
   if (!value)
@@ -260,11 +253,6 @@ static int cocoaClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
 
 static char* cocoaClipboardGetFormatDataAttrib(Ihandle* ih)
 {
-  if (!ih)
-  {
-    return NULL;
-  }
-
   char* format = iupAttribGetStr(ih, "FORMAT");
   if (!format)
   {
@@ -302,11 +290,6 @@ static char* cocoaClipboardGetFormatDataAttrib(Ihandle* ih)
 
 static char* cocoaClipboardGetFormatAvailableAttrib(Ihandle* ih)
 {
-  if (!ih)
-  {
-    return NULL;
-  }
-
   char* format = iupAttribGetStr(ih, "FORMAT");
   if (!format)
   {
@@ -327,15 +310,9 @@ static char* cocoaClipboardGetFormatAvailableAttrib(Ihandle* ih)
 static int cocoaClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* value)
 {
   if (value)
-  {
-    int len = (int)strlen(value);
-    iupAttribSetInt(ih, "FORMATDATASIZE", len + 1); /* include the terminator */
-    return cocoaClipboardSetFormatDataAttrib(ih, value);
-  }
-  else
-  {
-    return cocoaClipboardSetFormatDataAttrib(ih, NULL);
-  }
+    iupAttribSetInt(ih, "FORMATDATASIZE", (int)strlen(value) + 1); /* include the terminator */
+
+  return cocoaClipboardSetFormatDataAttrib(ih, value);
 }
 
 static char* cocoaClipboardGetFormatDataStringAttrib(Ihandle* ih)

@@ -30,11 +30,7 @@
 IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
   NSString *curDir = [[NSFileManager defaultManager] currentDirectoryPath];
-  const char *dir = [curDir UTF8String];
-  size_t size = strlen(dir) + 1;
-  char *buffer = (char *)iupStrGetMemory(size);
-  strcpy(buffer, dir);
-  return buffer;
+  return iupStrReturnStr([curDir UTF8String]);
 }
 
 IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
@@ -89,7 +85,7 @@ int cocoaGetWindowDecor(void* wnd, int *border, int *caption)
   return 1;
 }
 
-void iupdrvAddScreenOffset(int *x, int *y, int add)
+IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
 {
   NSScreen *screen = [NSScreen mainScreen];
   if (screen)
@@ -116,7 +112,7 @@ void iupdrvAddScreenOffset(int *x, int *y, int add)
   }
 }
 
-void iupdrvGetScreenSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetScreenSize(int *width, int *height)
 {
   /* Returns the usable screen area, excluding the menu bar and dock. */
   NSRect screen_rect = [[NSScreen mainScreen] visibleFrame];
@@ -124,14 +120,14 @@ void iupdrvGetScreenSize(int *width, int *height)
   if (height) *height = (int)screen_rect.size.height;
 }
 
-void iupdrvGetFullSize(int *width, int *height)
+IUP_SDK_API void iupdrvGetFullSize(int *width, int *height)
 {
   NSRect screen_rect = [[NSScreen mainScreen] frame];
   if (width) *width = (int)screen_rect.size.width;
   if (height) *height = (int)screen_rect.size.height;
 }
 
-int iupdrvGetScreenDepth(void)
+IUP_SDK_API int iupdrvGetScreenDepth(void)
 {
   NSScreen* screen = [NSScreen mainScreen];
   if (screen)
@@ -147,7 +143,7 @@ int iupdrvGetScreenDepth(void)
   return 32;
 }
 
-double iupdrvGetScreenDpi(void)
+IUP_SDK_API double iupdrvGetScreenDpi(void)
 {
   NSScreen* screen = [NSScreen mainScreen];
   if (screen != nil)
@@ -159,7 +155,7 @@ double iupdrvGetScreenDpi(void)
   return 72.0;
 }
 
-void iupdrvGetCursorPos(int *x, int *y)
+IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
 {
   /* [NSEvent mouseLocation] origin is bottom-left of the primary screen. */
   NSPoint mouse_point = [NSEvent mouseLocation];
@@ -172,7 +168,7 @@ void iupdrvGetCursorPos(int *x, int *y)
   if (y) *y = iupROUND(inverted_y);
 }
 
-void iupdrvGetKeyState(char* key)
+IUP_SDK_API void iupdrvGetKeyState(char* key)
 {
   NSEventModifierFlags flags = [NSEvent modifierFlags];
 
@@ -183,7 +179,7 @@ void iupdrvGetKeyState(char* key)
   key[4] = 0;
 }
 
-char *iupdrvGetSystemName(void)
+IUP_SDK_API char *iupdrvGetSystemName(void)
 {
   NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
   const char* codename = NULL;
@@ -225,12 +221,10 @@ char *iupdrvGetSystemName(void)
     strcpy(buffer, "macOS");
   }
 
-  char* iup_str = iupStrGetMemory((int)strlen(buffer) + 1);
-  strcpy(iup_str, buffer);
-  return iup_str;
+  return iupStrReturnStr(buffer);
 }
 
-char *iupdrvGetSystemVersion(void)
+IUP_SDK_API char *iupdrvGetSystemVersion(void)
 {
   char* str = iupStrGetMemory(100);
 
@@ -249,47 +243,25 @@ char *iupdrvGetSystemVersion(void)
   return str;
 }
 
-char *iupdrvGetComputerName(void)
+IUP_SDK_API char *iupdrvGetComputerName(void)
 {
   NSString* computer_name = [(NSString *)SCDynamicStoreCopyComputerName(NULL, NULL) autorelease];
   if (!computer_name)
-  {
     return NULL;
-  }
 
-  const char* c_str = [computer_name UTF8String];
-  if (!c_str)
-  {
-    return NULL;
-  }
-
-  char* iup_str = iupStrGetMemory((int)strlen(c_str) + 1);
-  strcpy(iup_str, c_str);
-
-  return iup_str;
+  return iupStrReturnStr([computer_name UTF8String]);
 }
 
-char *iupdrvGetUserName(void)
+IUP_SDK_API char *iupdrvGetUserName(void)
 {
   NSString* user_name = NSUserName();
   if (!user_name)
-  {
     return NULL;
-  }
 
-  const char* c_str = [user_name UTF8String];
-  if (!c_str)
-  {
-    return NULL;
-  }
-
-  char* iup_str = iupStrGetMemory((int)strlen(c_str) + 1);
-  strcpy(iup_str, c_str);
-
-  return iup_str;
+  return iupStrReturnStr([user_name UTF8String]);
 }
 
-int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
+IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
 {
   if (!app_name || !app_name[0])
   {
@@ -343,7 +315,7 @@ int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system
   return 0;
 }
 
-char* iupdrvLocaleInfo(void)
+IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
   return iupStrReturnStr(nl_langinfo(CODESET));
 }

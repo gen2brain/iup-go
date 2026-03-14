@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
 #include <stdarg.h>
 
 #include "iup.h"
@@ -52,10 +51,8 @@ static const void* IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY = @"IUP_COCOA_LIST_
 /* Shared row height for lists */
 static CGFloat s_cocoa_measured_row_height = -1.0;
 
-/* Forward declarations */
+/* Forward declaration */
 static char* cocoaListGetValueAttrib(Ihandle* ih);
-static int cocoaListSetValueAttrib(Ihandle* ih, const char* value);
-static void cocoaListUpdateDragDrop(Ihandle* ih);
 
 @interface IupCocoaListTableViewReceiver : NSObject <NSTableViewDelegate, NSTableViewDataSource>
 {
@@ -572,23 +569,13 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 - (BOOL)acceptsFirstResponder
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-
   if (ih)
   {
-    BOOL canFocus;
     if (iupAttribGet(ih, "_IUPCOCOA_CANFOCUS"))
-    {
-      canFocus = iupAttribGetBoolean(ih, "_IUPCOCOA_CANFOCUS");
-    }
-    else
-    {
-      canFocus = iupAttribGetBoolean(ih, "CANFOCUS");
-    }
-    return canFocus;
+      return iupAttribGetBoolean(ih, "_IUPCOCOA_CANFOCUS");
+    return iupAttribGetBoolean(ih, "CANFOCUS");
   }
-
-  BOOL result = [super acceptsFirstResponder];
-  return result;
+  return [super acceptsFirstResponder];
 }
 
 - (BOOL)becomeFirstResponder
@@ -1214,6 +1201,11 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 @end
 
 @interface IupCocoaListTableCellView : NSTableCellView
+{
+  CGFloat lastPadding;
+  BOOL lastShowImage;
+  BOOL constraintsApplied;
+}
 @property (nonatomic, retain) NSColor* customBackgroundColor;
 @property (nonatomic, retain) NSColor* customTextColor;
 @end
@@ -1294,6 +1286,9 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
 - (void) updateLayoutWithPadding:(CGFloat)padding showImage:(BOOL)showImage
 {
+  if (constraintsApplied && padding == lastPadding && showImage == lastShowImage)
+    return;
+
   NSMutableArray* constraintsToRemove = [NSMutableArray array];
   for (NSLayoutConstraint* constraint in [self constraints])
   {
@@ -1346,6 +1341,10 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
             attribute:NSLayoutAttributeCenterY
            multiplier:1.0
              constant:0.0]];
+
+  lastPadding = padding;
+  lastShowImage = showImage;
+  constraintsApplied = YES;
 }
 @end
 
@@ -2877,10 +2876,7 @@ static void cocoaListUpdateDragDrop(Ihandle* ih)
 
 static int cocoaListSetShowDragDropAttrib(Ihandle* ih, const char* value)
 {
-  if (iupStrBoolean(value))
-    ih->data->show_dragdrop = 1;
-  else
-    ih->data->show_dragdrop = 0;
+  ih->data->show_dragdrop = iupStrBoolean(value);
 
   if (ih->handle)
   {
@@ -2912,37 +2908,23 @@ static int cocoaListSetShowDropdownAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static NSControl* cocoaListGetEditControl(Ihandle* ih)
+{
+  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
+  if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN)
+    return (NSControl*)cocoaListGetBaseWidget(ih);
+  if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOX)
+    return (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
+  return nil;
+}
+
 static int cocoaListSetInsertAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->has_editbox)
-    return 0;
-  if (!value)
+  if (!ih->data->has_editbox || !value)
     return 0;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSText* field_editor = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        NSComboBox* combo_box = (NSComboBox*)cocoaListGetBaseWidget(ih);
-        field_editor = [[combo_box window] fieldEditor:YES forObject:combo_box];
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        NSTextField* text_field = (NSTextField*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        if (text_field)
-        {
-          field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        }
-        break;
-      }
-    default:
-      break;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
+  NSText* field_editor = text_control ? [[text_control window] fieldEditor:YES forObject:text_control] : nil;
   if (field_editor)
   {
     NSString* ns_string = [NSString stringWithUTF8String:value];
@@ -2959,32 +2941,12 @@ static int cocoaListSetAppendAttrib(Ihandle* ih, const char* value)
   if (!value)
     value = "";
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  switch(sub_type)
+  NSControl* text_control = cocoaListGetEditControl(ih);
+  if (text_control)
   {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        NSComboBox* combo_box = (NSComboBox*)cocoaListGetBaseWidget(ih);
-        NSString* current = [combo_box stringValue];
-        NSString* append = [NSString stringWithUTF8String:value];
-        NSString* new_value = [current stringByAppendingString:append];
-        [combo_box setStringValue:new_value];
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        NSTextField* text_field = (NSTextField*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        if (text_field)
-        {
-          NSString* current = [text_field stringValue];
-          NSString* append = [NSString stringWithUTF8String:value];
-          NSString* new_value = [current stringByAppendingString:append];
-          [text_field setStringValue:new_value];
-        }
-        break;
-      }
-    default:
-      break;
+    NSString* current = [(id)text_control stringValue];
+    NSString* append = [NSString stringWithUTF8String:value];
+    [(id)text_control setStringValue:[current stringByAppendingString:append]];
   }
 
   return 0;
@@ -2995,25 +2957,7 @@ static int cocoaListSetSelectionAttrib(Ihandle* ih, const char* value)
   if (!ih->data->has_editbox)
     return 0;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return 0;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (!text_control)
     return 0;
 
@@ -3060,30 +3004,11 @@ static char* cocoaListGetSelectionAttrib(Ihandle* ih)
   if (!ih->data->has_editbox)
     return NULL;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return NULL;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (!text_control)
     return NULL;
 
   NSText* field_editor = [[text_control window] fieldEditor:NO forObject:text_control];
-
   if (!field_editor)
     return NULL;
 
@@ -3101,35 +3026,15 @@ static int cocoaListSetSelectionPosAttrib(Ihandle* ih, const char* value)
   if (!ih->data->has_editbox)
     return 0;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return 0;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (!text_control)
     return 0;
 
   NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-
   if (!field_editor)
   {
     [[text_control window] makeFirstResponder:text_control];
     field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-
     if (!field_editor)
       return 0;
   }
@@ -3164,30 +3069,11 @@ static char* cocoaListGetSelectionPosAttrib(Ihandle* ih)
   if (!ih->data->has_editbox)
     return NULL;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return NULL;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (!text_control)
     return NULL;
 
   NSText* field_editor = [[text_control window] fieldEditor:NO forObject:text_control];
-
   if (!field_editor)
     return NULL;
 
@@ -3205,30 +3091,11 @@ static int cocoaListSetSelectedTextAttrib(Ihandle* ih, const char* value)
   if (!ih->data->has_editbox || !value)
     return 0;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return 0;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (!text_control)
     return 0;
 
   NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-
   if (!field_editor)
     return 0;
 
@@ -3247,32 +3114,8 @@ static char* cocoaListGetSelectedTextAttrib(Ihandle* ih)
   if (!ih->data->has_editbox)
     return NULL;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-  NSString* full_string = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        full_string = [(NSComboBox*)text_control stringValue];
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        if (text_control)
-        {
-          full_string = [(NSTextField*)text_control stringValue];
-        }
-        break;
-      }
-    default:
-      return NULL;
-  }
-
-  if (!text_control || !full_string)
+  NSControl* text_control = cocoaListGetEditControl(ih);
+  if (!text_control)
     return NULL;
 
   NSText* field_editor = [[text_control window] fieldEditor:NO forObject:text_control];
@@ -3282,6 +3125,10 @@ static char* cocoaListGetSelectedTextAttrib(Ihandle* ih)
 
   NSRange range = [field_editor selectedRange];
   if (range.length == 0)
+    return NULL;
+
+  NSString* full_string = [(id)text_control stringValue];
+  if (!full_string)
     return NULL;
 
   NSString* selected = [full_string substringWithRange:range];
@@ -3299,25 +3146,7 @@ static int cocoaListSetCaretAttrib(Ihandle* ih, const char* value)
   if (pos < 1) pos = 1;
   pos--;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return 0;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (text_control)
   {
     NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
@@ -3335,30 +3164,11 @@ static char* cocoaListGetCaretAttrib(Ihandle* ih)
   if (!ih->data->has_editbox)
     return NULL;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return NULL;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (!text_control)
     return NULL;
 
   NSText* field_editor = [[text_control window] fieldEditor:NO forObject:text_control];
-
   if (!field_editor)
     return NULL;
 
@@ -3376,32 +3186,12 @@ static int cocoaListSetCaretPosAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return 0;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (text_control)
   {
     NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-    if(field_editor)
-    {
+    if (field_editor)
       [field_editor setSelectedRange:NSMakeRange(pos, 0)];
-    }
   }
 
   return 0;
@@ -3412,30 +3202,11 @@ static char* cocoaListGetCaretPosAttrib(Ihandle* ih)
   if (!ih->data->has_editbox)
     return NULL;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return NULL;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (!text_control)
     return NULL;
 
   NSText* field_editor = [[text_control window] fieldEditor:NO forObject:text_control];
-
   if (!field_editor)
     return NULL;
 
@@ -3454,32 +3225,12 @@ static int cocoaListSetScrollToAttrib(Ihandle* ih, const char* value)
   if (pos < 1) pos = 1;
   pos--;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return 0;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (text_control)
   {
     NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-    if(field_editor)
-    {
+    if (field_editor)
       [field_editor scrollRangeToVisible:NSMakeRange(pos, 0)];
-    }
   }
 
   return 0;
@@ -3494,32 +3245,12 @@ static int cocoaListSetScrollToPosAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return 0;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (text_control)
   {
     NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-    if(field_editor)
-    {
+    if (field_editor)
       [field_editor scrollRangeToVisible:NSMakeRange(pos, 0)];
-    }
   }
 
   return 0;
@@ -3576,28 +3307,9 @@ static int cocoaListSetReadOnlyAttrib(Ihandle* ih, const char* value)
   if (!ih->data->has_editbox)
     return 0;
 
-  BOOL is_editable = !iupStrBoolean(value);
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-    {
-      NSComboBox* combo_box = (NSComboBox*)cocoaListGetBaseWidget(ih);
-      if (combo_box)
-        [combo_box setEditable:is_editable];
-      break;
-    }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-    {
-      NSTextField* text_field = (NSTextField*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-      if (text_field)
-        [text_field setEditable:is_editable];
-      break;
-    }
-    default:
-      break;
-  }
+  NSControl* text_control = cocoaListGetEditControl(ih);
+  if (text_control)
+    [(id)text_control setEditable:!iupStrBoolean(value)];
 
   return 0;
 }
@@ -3607,27 +3319,9 @@ static char* cocoaListGetReadOnlyAttrib(Ihandle* ih)
   if (!ih->data->has_editbox)
     return NULL;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-    {
-      NSComboBox* combo_box = (NSComboBox*)cocoaListGetBaseWidget(ih);
-      if (combo_box)
-        return iupStrReturnBoolean(![combo_box isEditable]);
-      break;
-    }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-    {
-      NSTextField* text_field = (NSTextField*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-      if (text_field)
-        return iupStrReturnBoolean(![text_field isEditable]);
-      break;
-    }
-    default:
-      break;
-  }
+  NSControl* text_control = cocoaListGetEditControl(ih);
+  if (text_control)
+    return iupStrReturnBoolean(![(id)text_control isEditable]);
 
   return NULL;
 }
@@ -3637,30 +3331,11 @@ static int cocoaListSetClipboardAttrib(Ihandle* ih, const char* value)
   if (!ih->data->has_editbox || !value)
     return 0;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  NSControl* text_control = nil;
-
-  switch(sub_type)
-  {
-    case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      {
-        text_control = (NSControl*)cocoaListGetBaseWidget(ih);
-        break;
-      }
-    case IUPCOCOALISTSUBTYPE_EDITBOX:
-      {
-        text_control = (NSControl*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-        break;
-      }
-    default:
-      return 0;
-  }
-
+  NSControl* text_control = cocoaListGetEditControl(ih);
   if (!text_control)
     return 0;
 
   NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-
   if (!field_editor)
     return 0;
 
@@ -3783,31 +3458,17 @@ static int cocoaListSetPaddingAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-    NSTextField* text_field = nil;
-    if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN)
+    NSControl* text_control = cocoaListGetEditControl(ih);
+    if (text_control && cocoaListGetSubType(ih) == IUPCOCOALISTSUBTYPE_EDITBOX)
     {
-      text_field = (NSTextField*)cocoaListGetBaseWidget(ih);
-    }
-    else if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOX)
-    {
-      text_field = (NSTextField*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-    }
-
-    if (text_field)
-    {
-      NSRect currentFrame = [text_field frame];
-      NSRect superBounds = [[text_field superview] bounds];
-
-      if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOX)
+      NSRect currentFrame = [text_control frame];
+      NSRect superBounds = [[text_control superview] bounds];
+      CGFloat newWidth = superBounds.size.width - (ih->data->horiz_padding * 2);
+      if (newWidth > 0)
       {
-        CGFloat newWidth = superBounds.size.width - (ih->data->horiz_padding * 2);
-        if (newWidth > 0)
-        {
-          currentFrame.origin.x = ih->data->horiz_padding;
-          currentFrame.size.width = newWidth;
-          [text_field setFrame:currentFrame];
-        }
+        currentFrame.origin.x = ih->data->horiz_padding;
+        currentFrame.size.width = newWidth;
+        [text_control setFrame:currentFrame];
       }
     }
     return 0;
@@ -3821,36 +3482,11 @@ static int cocoaListSetCueBannerAttrib(Ihandle* ih, const char* value)
   if (!ih->data->has_editbox)
     return 0;
 
-  IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-
-  if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN)
+  NSControl* text_control = cocoaListGetEditControl(ih);
+  if (text_control)
   {
-    NSComboBox* combo_box = (NSComboBox*)cocoaListGetBaseWidget(ih);
-    if (value)
-    {
-      NSString* placeholder = [NSString stringWithUTF8String:value];
-      [[combo_box cell] setPlaceholderString:placeholder];
-    }
-    else
-    {
-      [[combo_box cell] setPlaceholderString:nil];
-    }
-  }
-  else if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOX)
-  {
-    NSTextField* text_field = (NSTextField*)iupAttribGet(ih, "_IUPCOCOA_EDITFIELD");
-    if (text_field)
-    {
-      if (value)
-      {
-        NSString* placeholder = [NSString stringWithUTF8String:value];
-        [[text_field cell] setPlaceholderString:placeholder];
-      }
-      else
-      {
-        [[text_field cell] setPlaceholderString:nil];
-      }
-    }
+    NSString* placeholder = value ? [NSString stringWithUTF8String:value] : nil;
+    [[text_control cell] setPlaceholderString:placeholder];
   }
 
   return 1;
@@ -3930,14 +3566,6 @@ static char* cocoaListGetImageNativeHandleAttribId(Ihandle* ih, int id)
   return (char*)handle;
 }
 
-static int cocoaListSetAutoRedrawAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  /* NSView handles automatic redrawing, no manual control needed on macOS */
-  return 1;
-}
-
 static int cocoaListMapMethod(Ihandle* ih)
 {
   NSView* root_view = nil;
@@ -3960,14 +3588,7 @@ static int cocoaListMapMethod(Ihandle* ih)
         objc_setAssociatedObject(popup_button, IUP_COCOA_LIST_POPUPBUTTON_RECEIVER_OBJ_KEY, (id)list_receiver, OBJC_ASSOCIATION_RETAIN);
         [list_receiver release];
 
-        if (!iupAttribGetBoolean(ih, "CANFOCUS"))
-        {
-          iupcocoaSetCanFocus(ih, 0);
-        }
-        else
-        {
-          iupcocoaSetCanFocus(ih, 1);
-        }
+        iupcocoaSetCanFocus(ih, iupAttribGetBoolean(ih, "CANFOCUS"));
 
         break;
       }
@@ -3992,14 +3613,7 @@ static int cocoaListMapMethod(Ihandle* ih)
           voptions = 5;
         [combo_box setNumberOfVisibleItems:voptions];
 
-        if (!iupAttribGetBoolean(ih, "CANFOCUS"))
-        {
-          iupcocoaSetCanFocus(ih, 0);
-        }
-        else
-        {
-          iupcocoaSetCanFocus(ih, 1);
-        }
+        iupcocoaSetCanFocus(ih, iupAttribGetBoolean(ih, "CANFOCUS"));
 
         break;
       }
@@ -4103,14 +3717,7 @@ static int cocoaListMapMethod(Ihandle* ih)
         iupAttribSet(ih, "_IUPCOCOA_TABLEVIEW", (char*)table_view);
         iupAttribSet(ih, "_IUPCOCOA_SCROLLVIEW", (char*)scroll_view);
 
-        if (!iupAttribGetBoolean(ih, "CANFOCUS"))
-        {
-          iupcocoaSetCanFocus(ih, 0);
-        }
-        else
-        {
-          iupcocoaSetCanFocus(ih, 1);
-        }
+        iupcocoaSetCanFocus(ih, iupAttribGetBoolean(ih, "CANFOCUS"));
 
         break;
       }
@@ -4184,14 +3791,7 @@ static int cocoaListMapMethod(Ihandle* ih)
         [scroll_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
         [[scroll_view contentView] setAutoresizesSubviews:YES];
 
-        if (!iupAttribGetBoolean(ih, "CANFOCUS"))
-        {
-          iupcocoaSetCanFocus(ih, 0);
-        }
-        else
-        {
-          iupcocoaSetCanFocus(ih, 1);
-        }
+        iupcocoaSetCanFocus(ih, iupAttribGetBoolean(ih, "CANFOCUS"));
 
         break;
       }
@@ -4211,26 +3811,7 @@ static int cocoaListMapMethod(Ihandle* ih)
   iupcocoaAddToParent(ih);
 
   if (iupAttribGetBoolean(ih, "SORT"))
-  {
-    IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-    if (sub_type == IUPCOCOALISTSUBTYPE_DROPDOWN)
-    {
-      iupAttribSet(ih, "_IUPLIST_SORT_ENABLED", "1");
-    }
-    else if (sub_type == IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN)
-    {
-      iupAttribSet(ih, "_IUPLIST_SORT_ENABLED", "1");
-    }
-    else if (sub_type >= IUPCOCOALISTSUBTYPE_EDITBOX)
-    {
-      NSTableView* table_view = (NSTableView*)cocoaListGetBaseWidget(ih);
-      IupCocoaListTableViewReceiver* list_receiver = objc_getAssociatedObject(table_view, IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY);
-      if (list_receiver)
-      {
-        iupAttribSet(ih, "_IUPLIST_SORT_ENABLED", "1");
-      }
-    }
-  }
+    iupAttribSet(ih, "_IUPLIST_SORT_ENABLED", "1");
 
   /* Don't populate items in virtual mode */
   if (!ih->data->is_virtual)
@@ -4369,7 +3950,7 @@ void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FILTER", NULL, cocoaListSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", cocoaListGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, cocoaListSetAutoRedrawAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, cocoaListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", cocoaListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);

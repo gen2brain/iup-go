@@ -210,7 +210,6 @@ static void cocoaItemUpdateRadioGroup(Ihandle* ih)
 
   Ihandle* child;
 
-  /* Set the selected item to ON and all others to OFF */
   for (child = ih->parent->firstchild; child; child = child->brother)
   {
     if (iupStrEqual(child->iclass->name, "item") && child->handle)
@@ -219,14 +218,6 @@ static void cocoaItemUpdateRadioGroup(Ihandle* ih)
       NSInteger desiredState = shouldBeOn ? NSControlStateValueOn : NSControlStateValueOff;
       [(NSMenuItem*)child->handle setState:desiredState];
       iupAttribSet(child, "VALUE", shouldBeOn ? "ON" : "OFF");
-    }
-  }
-
-  /* Update images for all items to reflect the new state */
-  for (child = ih->parent->firstchild; child; child = child->brother)
-  {
-    if (iupStrEqual(child->iclass->name, "item") && child->handle)
-    {
       cocoaMenuUpdateImage(child);
     }
   }
@@ -528,7 +519,6 @@ static void cocoaMenuCreateAppMenu(NSMenu* main_menu)
   [app_menu addItem:[NSMenuItem separatorItem]];
 
   [app_menu addItemWithTitle:[NSString stringWithFormat:@"Quit %@", app_name] action:@selector(terminate:) keyEquivalent:@"q"];
-
 
   /* Attach the submenu and insert into the main menu at the beginning */
   [app_item setSubmenu:app_menu];
@@ -1196,36 +1186,6 @@ static int cocoaSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaSubmenuSetActiveAttrib(Ihandle* ih, const char* value)
-{
-  NSMenuItem* item = (NSMenuItem*)ih->handle;
-  if (!item) return 0;
-
-  iupBaseSetActiveAttrib(ih, value);
-
-  BOOL enabled = (BOOL)iupStrBoolean(value);
-  [item setEnabled:enabled];
-
-  cocoaMenuUpdateImage(ih);
-  return 1;
-}
-
-static char* cocoaSubmenuGetActiveAttrib(Ihandle* ih)
-{
-  NSMenuItem* item = (NSMenuItem*)ih->handle;
-  if (!item)
-    return iupBaseGetActiveAttrib(ih);
-
-  return iupStrReturnBoolean([item isEnabled]);
-}
-
-static int cocoaSubmenuSetImageAttrib(Ihandle* ih, const char* value)
-{
-  (void)value;
-  cocoaMenuUpdateImage(ih);
-  return 1;
-}
-
 static int cocoaSubmenuMapMethod(Ihandle* ih)
 {
   if (!ih->parent || !ih->parent->handle) return IUP_ERROR;
@@ -1269,10 +1229,10 @@ void iupdrvSubmenuInitClass(Iclass* ic)
   ic->UnMap = cocoaSubmenuUnMapMethod;
   iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaSubmenuSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FONT", NULL, cocoaMenuItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "ACTIVE", cocoaSubmenuGetActiveAttrib, cocoaSubmenuSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACTIVE", cocoaItemGetActiveAttrib, cocoaItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
 
 

@@ -33,6 +33,16 @@ static char* cocoaMessageDlgGetAutoModalAttrib(Ihandle* ih)
   return iupStrReturnBoolean(automodal);
 }
 
+static void cocoaMessageDlgSetCancelResponse(Ihandle* ih, const char* buttons_str)
+{
+  if (iupStrEqualNoCase(buttons_str, "YESNOCANCEL"))
+    iupAttribSet(ih, "BUTTONRESPONSE", "3");
+  else if (iupStrEqualNoCase(buttons_str, "OK"))
+    iupAttribSet(ih, "BUTTONRESPONSE", "1");
+  else
+    iupAttribSet(ih, "BUTTONRESPONSE", "2");
+}
+
 static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
 {
   (void)x; /* Positioning is not supported by NSAlert. */
@@ -190,12 +200,7 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
       Icallback cb = IupGetCallback(ih, "HELP_CB");
       if (cb && cb(ih) == IUP_CLOSE)
       {
-        if (iupStrEqualNoCase(buttons_str, "YESNOCANCEL"))
-          iupAttribSet(ih, "BUTTONRESPONSE", "3");
-        else if (iupStrEqualNoCase(buttons_str, "OK"))
-          iupAttribSet(ih, "BUTTONRESPONSE", "1");
-        else
-          iupAttribSet(ih, "BUTTONRESPONSE", "2");
+        cocoaMessageDlgSetCancelResponse(ih, buttons_str);
 
         if(responseMap) [responseMap release];
         return IUP_NOERROR;
@@ -211,13 +216,7 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
   }
   else
   {
-    /* This case occurs if the dialog is dismissed unexpectedly (e.g., window close button). */
-    if (iupStrEqualNoCase(buttons_str, "YESNOCANCEL"))
-      iupAttribSet(ih, "BUTTONRESPONSE", "3");
-    else if (iupStrEqualNoCase(buttons_str, "OK"))
-      iupAttribSet(ih, "BUTTONRESPONSE", "1");
-    else
-      iupAttribSet(ih, "BUTTONRESPONSE", "2");
+    cocoaMessageDlgSetCancelResponse(ih, buttons_str);
   }
 
   if (parent_ih && iupObjectCheck(parent_ih))
