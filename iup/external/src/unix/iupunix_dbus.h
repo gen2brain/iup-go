@@ -150,6 +150,9 @@ static int (*iupdbus_message_iter_get_arg_type)(DBusMessageIter*);
 static void (*iupdbus_message_iter_recurse)(DBusMessageIter*, DBusMessageIter*);
 static void (*iupdbus_message_iter_get_basic)(DBusMessageIter*, void*);
 static dbus_bool_t (*iupdbus_message_iter_next)(DBusMessageIter*);
+static const char* (*iupdbus_bus_get_unique_name)(DBusConnection*);
+static const char* (*iupdbus_message_get_path)(DBusMessage*);
+static void (*iupdbus_bus_remove_match)(DBusConnection*, const char*, DBusError*);
 
 #define dbus_error_init iupdbus_error_init
 #define dbus_error_is_set iupdbus_error_is_set
@@ -189,6 +192,9 @@ static dbus_bool_t (*iupdbus_message_iter_next)(DBusMessageIter*);
 #define dbus_message_iter_recurse iupdbus_message_iter_recurse
 #define dbus_message_iter_get_basic iupdbus_message_iter_get_basic
 #define dbus_message_iter_next iupdbus_message_iter_next
+#define dbus_bus_get_unique_name iupdbus_bus_get_unique_name
+#define dbus_message_get_path iupdbus_message_get_path
+#define dbus_bus_remove_match iupdbus_bus_remove_match
 
 static inline int iupDBusOpen(void)
 {
@@ -240,6 +246,9 @@ static inline int iupDBusOpen(void)
   iupdbus_message_iter_recurse = dlsym(iupdbus_handle, "dbus_message_iter_recurse");
   iupdbus_message_iter_get_basic = dlsym(iupdbus_handle, "dbus_message_iter_get_basic");
   iupdbus_message_iter_next = dlsym(iupdbus_handle, "dbus_message_iter_next");
+  iupdbus_bus_get_unique_name = dlsym(iupdbus_handle, "dbus_bus_get_unique_name");
+  iupdbus_message_get_path = dlsym(iupdbus_handle, "dbus_message_get_path");
+  iupdbus_bus_remove_match = dlsym(iupdbus_handle, "dbus_bus_remove_match");
 
   if (!iupdbus_error_init || !iupdbus_bus_get || !iupdbus_connection_send)
   {

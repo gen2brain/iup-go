@@ -15,7 +15,7 @@
 #include <unistd.h>
 
 #ifdef IUPDBUS_USE_DLOPEN
-#include "iupunix_dbus_dlopen.h"
+#include "iupunix_dbus.h"
 #else
 #include <dbus/dbus.h>
 #endif
