@@ -540,6 +540,9 @@ static void portalGetMultipleFiles(Ihandle* ih, char** uris, int uri_count)
     for (i = 0; i < uri_count; i++)
     {
       len = (int)strlen(uris[i]) - dir_len;
+      if (len <= 0)
+        continue;
+
       cur_len = iupArrayCount(names_array);
 
       all_names = iupArrayAdd(names_array, len + 1);
@@ -554,7 +557,7 @@ static void portalGetMultipleFiles(Ihandle* ih, char** uris, int uri_count)
 
     cur_len = iupArrayCount(names_array);
     all_names = iupArrayInc(names_array);
-    all_names[cur_len + 1] = 0;
+    all_names[cur_len] = 0;
 
     iupAttribSetStr(ih, "VALUE", all_names);
 

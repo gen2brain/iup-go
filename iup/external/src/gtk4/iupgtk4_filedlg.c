@@ -118,6 +118,11 @@ static void gtk4FileDlgGetMultipleFiles(Ihandle* ih, GListModel* list)
       GFile* file = g_list_model_get_item(list, i);
       filename = iupgtk4StrConvertFromFilename(g_file_get_path(file));
       len = (int)strlen(filename) - dir_len;
+      if (len <= 0)
+      {
+        g_object_unref(file);
+        continue;
+      }
 
       cur_len = iupArrayCount(names_array);
 
@@ -135,7 +140,7 @@ static void gtk4FileDlgGetMultipleFiles(Ihandle* ih, GListModel* list)
 
     cur_len = iupArrayCount(names_array);
     all_names = iupArrayInc(names_array);
-    all_names[cur_len + 1] = 0;
+    all_names[cur_len] = 0;
 
     iupAttribSetStr(ih, "VALUE", all_names);
 

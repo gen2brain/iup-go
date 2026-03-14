@@ -79,7 +79,7 @@ func main() {
 	btnFileMulti := iup.Button("File Dialog (Multiple)")
 	btnFileMulti.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		dlg := iup.FileDlg()
-		dlg.SetAttributes(`DIALOGTYPE=OPEN, TITLE="Select Multiple Files", MULTIPLEFILES=YES`)
+		dlg.SetAttributes(`DIALOGTYPE=OPEN, TITLE="Select Multiple Files", MULTIPLEFILES=YES, MULTIVALUEPATH=YES`)
 		iup.Popup(dlg, iup.CENTERPARENT, iup.CENTERPARENT)
 		if dlg.GetAttribute("STATUS") != "-1" {
 			fmt.Printf("VALUE: %s\n", dlg.GetAttribute("VALUE"))
