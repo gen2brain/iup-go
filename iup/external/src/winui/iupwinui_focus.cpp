@@ -24,6 +24,7 @@ using namespace winrt;
 using namespace Microsoft::UI::Xaml;
 using namespace Microsoft::UI::Xaml::Controls;
 using namespace Microsoft::UI::Xaml::Controls::Primitives;
+using namespace Microsoft::UI::Xaml::Hosting;
 using namespace Microsoft::UI::Xaml::Input;
 
 
@@ -125,8 +126,11 @@ static void winuiSetFocusToIsland(Ihandle* dialog)
   iupwinuiBringWindowToForeground((HWND)dialog->handle);
 
   IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
-  if (aux && aux->islandHwnd)
-    SetFocus(aux->islandHwnd);
+  if (aux && aux->xamlSource)
+  {
+    XamlSourceFocusNavigationRequest request(XamlSourceFocusNavigationReason::First);
+    aux->xamlSource.NavigateFocus(request);
+  }
 }
 
 extern "C" void iupdrvSetFocus(Ihandle* ih)

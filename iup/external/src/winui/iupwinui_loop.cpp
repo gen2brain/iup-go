@@ -18,13 +18,34 @@ extern "C" {
 #include "iup_str.h"
 #include "iup_object.h"
 #include "iup_loop.h"
+#include "iup_dlglist.h"
+#include "iup_class.h"
 }
 
 #include "iupwinui_drv.h"
 
+using namespace Microsoft::UI::Xaml;
+using namespace Microsoft::UI::Xaml::Controls;
+
 static int winui_main_loop_level = 0;
 static int winui_exit_loop = 0;
 static IFidle winui_idle_cb = NULL;
+
+static void winuiFlushXamlLayout(void)
+{
+  Ihandle* ih;
+  for (ih = iupDlgListFirst(); ih; ih = iupDlgListNext())
+  {
+    if (!ih->handle || !iupObjectCheck(ih))
+      continue;
+    if (!IupClassMatch(ih, "dialog"))
+      continue;
+
+    IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+    if (aux && aux->rootPanel)
+      aux->rootPanel.UpdateLayout();
+  }
+}
 
 extern "C" void iupwinuiLoopCleanup(void)
 {
@@ -201,16 +222,20 @@ extern "C" int IupLoopStep(void)
 extern "C" void IupFlush(void)
 {
   int post_quit = 0;
+  int count = 0;
   MSG msg;
 
-  while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+  while (count < 100 && PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
   {
     if (winuiLoopProcessMessage(&msg) == IUP_CLOSE)
     {
       post_quit = 1;
       break;
     }
+    count++;
   }
+
+  winuiFlushXamlLayout();
 
   if (post_quit && winui_main_loop_level > 0)
   {

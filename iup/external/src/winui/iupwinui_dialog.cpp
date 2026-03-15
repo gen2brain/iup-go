@@ -43,6 +43,7 @@ using namespace Microsoft::UI::Xaml::Hosting;
 using namespace Microsoft::UI::Xaml::Media;
 using namespace Microsoft::UI::Xaml::Media::Imaging;
 using namespace Microsoft::UI::Content;
+using namespace Microsoft::UI::Windowing;
 using namespace Windows::Foundation;
 using namespace Windows::Graphics;
 
@@ -190,8 +191,11 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
           {
             if (dlgaux->lastFocusedHwnd)
               SetFocus(dlgaux->lastFocusedHwnd);
-            else if (dlgaux->islandHwnd)
-              SetFocus(dlgaux->islandHwnd);
+            else if (dlgaux->xamlSource)
+            {
+              XamlSourceFocusNavigationRequest request(XamlSourceFocusNavigationReason::First);
+              dlgaux->xamlSource.NavigateFocus(request);
+            }
             iupCallGetFocusCb(ih);
           }
         }
@@ -204,10 +208,10 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
       if (ih)
       {
         IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
-        if (dlgaux && dlgaux->islandHwnd)
+        if (dlgaux && !dlgaux->lastFocusedHwnd && dlgaux->xamlSource)
         {
-          if (!dlgaux->lastFocusedHwnd)
-            SetFocus(dlgaux->islandHwnd);
+          XamlSourceFocusNavigationRequest request(XamlSourceFocusNavigationReason::First);
+          dlgaux->xamlSource.NavigateFocus(request);
         }
       }
       return 0;
@@ -614,6 +618,10 @@ static int winuiDialogMapMethod(Ihandle* ih)
 
   WindowId parentWindowId = winrt::Microsoft::UI::GetWindowIdFromWindow(hwnd);
 
+  aux->appWindow = AppWindow::GetFromWindowId(parentWindowId);
+  if (aux->appWindow)
+    aux->appWindow.AssociateWithDispatcherQueue(winrt::Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread());
+
   aux->xamlSource = DesktopWindowXamlSource();
   aux->xamlSource.Initialize(parentWindowId);
 
@@ -989,12 +997,26 @@ extern "C" void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
     if (visible)
     {
-      ShowWindow(hwnd, ih->data->cmd_show);
+      if (aux && aux->appWindow)
+      {
+        aux->appWindow.Show();
+
+        if (ih->data->cmd_show != SW_SHOWNORMAL && ih->data->cmd_show != SW_SHOWNOACTIVATE)
+          ShowWindow(hwnd, ih->data->cmd_show);
+      }
+      else
+      {
+        ShowWindow(hwnd, ih->data->cmd_show);
+      }
+
       UpdateWindow(hwnd);
     }
     else
     {
-      ShowWindow(hwnd, SW_HIDE);
+      if (aux && aux->appWindow)
+        aux->appWindow.Hide();
+      else
+        ShowWindow(hwnd, SW_HIDE);
     }
   }
 }

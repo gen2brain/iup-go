@@ -526,7 +526,16 @@ static int winuiButtonMapMethod(Ihandle* ih)
 
   IupWinUIButtonAux* aux = new IupWinUIButtonAux();
   aux->clickToken = btn.Click([ih](IInspectable const&, RoutedEventArgs const&) {
-    winuiButtonClickHandler(ih);
+    Microsoft::UI::Dispatching::DispatcherQueue dq = Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
+    if (dq)
+    {
+      dq.TryEnqueue([ih]() {
+        if (iupObjectCheck(ih))
+          winuiButtonClickHandler(ih);
+      });
+    }
+    else
+      winuiButtonClickHandler(ih);
   });
 
   if (impress && (ih->data->type & IUP_BUTTON_IMAGE))
