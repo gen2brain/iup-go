@@ -133,8 +133,11 @@ static void winuiTreeSetNodeImage(TreeViewNode const& node, void* imghandle)
     return;
 
   Windows::Foundation::Collections::PropertySet newPs;
-  if (oldPs.HasKey(L"Title"))
-    newPs.Insert(L"Title", oldPs.Lookup(L"Title"));
+  for (auto const& pair : oldPs)
+  {
+    if (pair.Key() != L"ImageSource")
+      newPs.Insert(pair.Key(), pair.Value());
+  }
 
   if (imghandle)
   {
@@ -199,17 +202,15 @@ static void winuiTreeApplyItemTemplate(Ihandle* ih, TreeView const& treeView)
   xaml += std::to_wstring(fontSize);
   xaml += L"}'";
 
-  xaml += L" FontFamily='{Binding Content[NodeFontFamily], FallbackValue=";
-  xaml += std::wstring(fontFamily);
-  xaml += L"}'";
+  xaml += L" FontFamily='{Binding Content[NodeFontFamily]}'";
 
-  xaml += L" FontWeight='{Binding Content[NodeFontWeight], FallbackValue=";
+  xaml += L" FontWeight='";
   xaml += isBold ? L"Bold" : L"Normal";
-  xaml += L"}'";
+  xaml += L"'";
 
-  xaml += L" FontStyle='{Binding Content[NodeFontStyle], FallbackValue=";
+  xaml += L" FontStyle='";
   xaml += isItalic ? L"Italic" : L"Normal";
-  xaml += L"}'";
+  xaml += L"'";
 
   xaml += L"/></StackPanel></DataTemplate>";
 
@@ -654,9 +655,12 @@ static int winuiTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
     if (oldPs)
     {
       Windows::Foundation::Collections::PropertySet newPs;
+      for (auto const& pair : oldPs)
+      {
+        if (pair.Key() != L"Title")
+          newPs.Insert(pair.Key(), pair.Value());
+      }
       newPs.Insert(L"Title", box_value(iupwinuiStringToHString(value)));
-      if (oldPs.HasKey(L"ImageSource"))
-        newPs.Insert(L"ImageSource", oldPs.Lookup(L"ImageSource"));
       node.Content(newPs);
     }
   }
@@ -1314,24 +1318,38 @@ static char* winuiTreeGetColorAttrib(Ihandle* ih, int id)
   return iupStrReturnRGB(color.R, color.G, color.B);
 }
 
+/* TODO: TITLEFONT per-node font customization
+ *
+ * The DataTemplate binding infrastructure for per-node fonts IS working:
+ * {Binding Content[NodeFontFamily]} and {Binding Content[NodeFontSize]}
+ * resolve correctly when NodeFontFamily (Media::FontFamily) and
+ * NodeFontSize (box_value(double)) are in the PropertySet at node
+ * creation time (confirmed: hardcoding in winuiTreeCreateNodeContent
+ * shows all nodes in the specified font).
+ *
+ * The problem is applying font AFTER node creation:
+ * - node.Content(newPs) with a new PropertySet does NOT trigger visual
+ *   refresh in TreeView (github.com/microsoft/microsoft-ui-xaml/issues/10002).
+ * - In-place PropertySet.Insert() also does not trigger binding re-evaluation.
+ * - ContainerFromNode() returns null at attribute-set time because XAML has
+ *   not yet realized the containers (tree is shown but layout is pending).
+ * - DispatcherQueue.TryEnqueue() callback also gets null from ContainerFromNode.
+ *
+ * COLOR attribute uses the same node.Content(newPs) pattern via
+ * winuiTreeSetNodeProperty and it visually updates. COLOR stores a
+ * SolidColorBrush (inherits from DependencyObject). FontFamily and boxed
+ * double do not. This may be why XAML binding handles them differently.
+ */
 static int winuiTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
 {
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
     return 0;
 
-  auto oldPs = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
-  if (!oldPs)
-    return 0;
-
-  Windows::Foundation::Collections::PropertySet newPs;
-  for (auto const& pair : oldPs)
-  {
-    auto key = pair.Key();
-    if (key != L"NodeFontFamily" && key != L"NodeFontSize" &&
-        key != L"NodeFontWeight" && key != L"NodeFontStyle")
-      newPs.Insert(key, pair.Value());
-  }
+  if (value && value[0] != 0)
+    iupAttribSetStrId(ih, "_IUPWINUI_TREE_TITLEFONT", id, value);
+  else
+    iupAttribSetStrId(ih, "_IUPWINUI_TREE_TITLEFONT", id, NULL);
 
   if (value && value[0] != 0)
   {
@@ -1340,17 +1358,22 @@ static int winuiTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
     if (!iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
       return 0;
 
-    iupAttribSetStrId(ih, "_IUPWINUI_TREE_TITLEFONT", id, value);
-
-    newPs.Insert(L"NodeFontFamily", box_value(iupwinuiStringToHString(typeface)));
-    newPs.Insert(L"NodeFontSize", box_value((double)size));
-    newPs.Insert(L"NodeFontWeight", box_value(iupwinuiStringToHString(is_bold ? "Bold" : "Normal")));
-    newPs.Insert(L"NodeFontStyle", box_value(iupwinuiStringToHString(is_italic ? "Italic" : "Normal")));
+    winuiTreeSetNodeProperty(node, L"NodeFontFamily", Media::FontFamily(iupwinuiStringToHString(typeface)));
+    winuiTreeSetNodeProperty(node, L"NodeFontSize", box_value((double)size));
   }
   else
-    iupAttribSetStrId(ih, "_IUPWINUI_TREE_TITLEFONT", id, NULL);
+  {
+    auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
+    if (ps)
+    {
+      if (ps.HasKey(L"NodeFontFamily"))
+        ps.Remove(L"NodeFontFamily");
+      if (ps.HasKey(L"NodeFontSize"))
+        ps.Remove(L"NodeFontSize");
+      node.Content(ps);
+    }
+  }
 
-  node.Content(newPs);
   return 0;
 }
 
@@ -1912,7 +1935,16 @@ static int winuiTreeMapMethod(Ihandle* ih)
   winuiTreeInitDefaultImages(ih);
 
   if (iupAttribGetInt(ih, "ADDROOT"))
+  {
     iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
+
+    TreeView tv = winuiTreeGetTreeView(ih);
+    if (tv && tv.RootNodes().Size() > 0)
+    {
+      tv.SelectedNodes().Clear();
+      tv.SelectedNodes().Append(tv.RootNodes().GetAt(0));
+    }
+  }
 
   winuiTreeSetBgColorAttrib(ih, IupGetGlobal("TXTBGCOLOR"));
 
@@ -1999,6 +2031,11 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
     if (prevNode.HasChildren() || prevNode.HasUnrealizedChildren())
       kindPrev = ITREE_BRANCH;
   }
+  else if (id != -1)
+  {
+    if (!winuiTreeGetNode(ih, id))
+      return;
+  }
 
   TreeViewNode newNode;
 
@@ -2010,7 +2047,10 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
 
   if (!prevNode)
   {
-    treeView.RootNodes().InsertAt(0, newNode);
+    if (id == -1)
+      treeView.RootNodes().InsertAt(0, newNode);
+    else
+      treeView.RootNodes().Append(newNode);
   }
   else if (add && kindPrev == ITREE_BRANCH)
   {
@@ -2039,9 +2079,10 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
   void* nodePtr = nullptr;
   winrt::copy_to_abi(newNode, nodePtr);
 
-  iupTreeAddToCache(ih, add, kindPrev,
-                    prevNode ? (InodeHandle*)winrt::get_abi(prevNode) : NULL,
-                    (InodeHandle*)nodePtr);
+  if (prevNode)
+    iupTreeAddToCache(ih, add, kindPrev, (InodeHandle*)winrt::get_abi(prevNode), (InodeHandle*)nodePtr);
+  else
+    iupTreeAddToCache(ih, 0, 0, NULL, (InodeHandle*)nodePtr);
 }
 
 extern "C" InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
@@ -2512,7 +2553,7 @@ extern "C" void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMAGEBRANCHEXPANDED", NULL, winuiTreeSetImageBranchExpandedAttrib, IUPAF_SAMEASSYSTEM, "IMGEXPANDED", IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "COLOR", winuiTreeGetColorAttrib, winuiTreeSetColorAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TITLEFONT", winuiTreeGetTitleFontAttrib, winuiTreeSetTitleFontAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TITLEFONT", NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
