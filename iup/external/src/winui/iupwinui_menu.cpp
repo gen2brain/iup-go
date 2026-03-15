@@ -645,6 +645,8 @@ extern "C" int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     ShowWindow(hWndActive, SW_SHOWNA);
   }
 
+  SetForegroundWindow(hWndActive);
+
   POINT pt = { x, y };
   ScreenToClient(hWndActive, &pt);
 
