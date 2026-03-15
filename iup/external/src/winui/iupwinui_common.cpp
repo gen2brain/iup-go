@@ -333,6 +333,14 @@ extern "C" void iupdrvSetActive(Ihandle* ih, int active)
 
   if (winuiHandleIsHWND(ih))
   {
+    if (IupClassMatch(ih, "dialog"))
+    {
+      IupWinUIDialogAux* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
+      if (dlgaux && dlgaux->rootPanel)
+        dlgaux->rootPanel.IsHitTestVisible(active ? true : false);
+      return;
+    }
+
     HWND hwnd = (HWND)ih->handle;
     if (hwnd)
       EnableWindow(hwnd, active);

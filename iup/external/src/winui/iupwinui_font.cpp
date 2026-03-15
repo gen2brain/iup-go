@@ -38,8 +38,8 @@ struct IwinuiFont
 };
 
 static std::deque<IwinuiFont> winui_fonts;
-static IDWriteFactory* winui_dwrite_factory = NULL;
-static float winui_screen_dpi = 96.0f;
+IDWriteFactory* winui_dwrite_factory = NULL;
+float winui_screen_dpi = 96.0f;
 
 #define iupWINUI_PT2PIXEL(_pt, _dpi) ((_pt) * (_dpi) / 72.0f)
 #define iupWINUI_PIXEL2PT(_px, _dpi) ((_px) * 72.0f / (_dpi))
@@ -140,10 +140,9 @@ static IwinuiFont* winuiFindFont(const char* font)
   newfont.textFormat = textFormat;
   newfont.fontSize = fontSize;
 
-  /* Measure character dimensions using "W" for width and line metrics for height */
   float charW, charH;
-  winuiDWriteMeasureText(textFormat, L"W", 1, &charW, &charH);
-  newfont.charwidth = (int)ceil(charW);
+  winuiDWriteMeasureText(textFormat, L"abcdefghijklmnopqrstuvwxyz", 26, &charW, &charH);
+  newfont.charwidth = (int)ceil(charW / 26.0f);
   newfont.charheight = (int)ceil(charH);
   newfont.charheight_f = charH;
 
