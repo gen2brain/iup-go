@@ -349,30 +349,7 @@ extern "C" void iupdrvClose(void)
 
     if (winui_dispatcher_controller)
     {
-      auto shutdownOp = winui_dispatcher_controller.ShutdownQueueAsync();
-      HANDLE event = CreateEvent(NULL, TRUE, FALSE, NULL);
-      if (event)
-      {
-        shutdownOp.Completed([event](auto&&, auto&&) { SetEvent(event); });
-        while (true)
-        {
-          DWORD result = MsgWaitForMultipleObjectsEx(1, &event, 5000, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
-          if (result == WAIT_OBJECT_0)
-            break;
-          if (result == WAIT_OBJECT_0 + 1)
-          {
-            MSG msg;
-            while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-            {
-              TranslateMessage(&msg);
-              DispatchMessage(&msg);
-            }
-          }
-          else
-            break;
-        }
-        CloseHandle(event);
-      }
+      winui_dispatcher_controller.ShutdownQueue();
       winui_dispatcher_controller = nullptr;
     }
 
