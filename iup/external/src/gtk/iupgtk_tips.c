@@ -104,7 +104,11 @@ int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   GtkWidget* widget = gtkTipGetWidget(ih);
 
 #if GTK_CHECK_VERSION(2, 12, 0)
-  g_signal_connect(widget, "query-tooltip", G_CALLBACK(gtkQueryTooltip), ih);
+  if (!iupAttribGet(ih, "_IUPGTK_TIP_CONNECTED"))
+  {
+    g_signal_connect(widget, "query-tooltip", G_CALLBACK(gtkQueryTooltip), ih);
+    iupAttribSet(ih, "_IUPGTK_TIP_CONNECTED", "1");
+  }
 #else
   if (gtk_tips == NULL)
     gtk_tips = gtk_tooltips_new();
