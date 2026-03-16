@@ -292,9 +292,6 @@ static int qtDatePickMapMethod(Ihandle* ih)
 {
   IupQtDatePick* datepick = new IupQtDatePick(ih);
 
-  if (!datepick)
-    return IUP_ERROR;
-
   ih->handle = (InativeHandle*)datepick;
 
   datepick->setDate(QDate::currentDate());

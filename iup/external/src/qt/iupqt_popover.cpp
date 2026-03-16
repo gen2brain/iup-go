@@ -8,7 +8,6 @@
 #include <QFrame>
 #include <QVBoxLayout>
 #include <QApplication>
-#include <QScreen>
 #include <QEvent>
 #include <QFocusEvent>
 #include <QPainter>
@@ -16,7 +15,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
-#include <cstdarg>
 
 extern "C" {
 #include "iup.h"
@@ -223,8 +221,6 @@ static int qtPopoverMapMethod(Ihandle* ih)
   }
 
   IupQtPopover* popover = new IupQtPopover(ih, autohide != 0, anchor_toplevel);
-  if (!popover)
-    return IUP_ERROR;
 
   ih->handle = (InativeHandle*)popover;
 

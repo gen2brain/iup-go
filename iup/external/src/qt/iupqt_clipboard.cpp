@@ -12,7 +12,6 @@
 #include <QString>
 #include <QByteArray>
 #include <QFile>
-#include <QBuffer>
 
 #include <cstdio>
 #include <cstdlib>
@@ -103,12 +102,9 @@ static int qtClipboardSetImageAttrib(Ihandle *ih, const char *value)
     return 0;
   }
 
-  QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, nullptr);
+  QPixmap* pixmap = (QPixmap*)iupImageGetImage(value, ih, 0, NULL);
   if (pixmap && !pixmap->isNull())
-  {
     clipboard->setPixmap(*pixmap);
-    iupImageRemoveFromCache(ih, pixmap);
-  }
 
   return 0;
 }
@@ -191,7 +187,6 @@ static int qtClipboardSetNativeVectorImageAttrib(Ihandle *ih, const char *value)
     clipboard->setMimeData(mimeData);
   }
 
-  (void)ih;
   return 0;
 }
 
@@ -380,7 +375,7 @@ static char* qtClipboardGetFormatDataStringAttrib(Ihandle *ih)
 {
   char* data = qtClipboardGetFormatDataAttrib(ih);
   if (!data)
-    return nullptr;
+    return NULL;
 
   int size = iupAttribGetInt(ih, "FORMATDATASIZE");
   data[size] = 0;

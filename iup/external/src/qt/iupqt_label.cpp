@@ -7,15 +7,12 @@
 #include <QLabel>
 #include <QFrame>
 #include <QPixmap>
-#include <QIcon>
 #include <QString>
 #include <QEvent>
 #include <QMouseEvent>
 #include <QEnterEvent>
 #include <QWidget>
 #include <QPalette>
-#include <QFont>
-#include <QFontMetrics>
 
 #include <cstdlib>
 #include <cstdio>
@@ -762,13 +759,6 @@ static int qtLabelMapMethod(Ihandle* ih)
         label->adjustSize();
       }
     }
-    else /* IUP_LABEL_IMAGE */
-    {
-      char* image = iupAttribGet(ih, "IMAGE");
-      if (image)
-        qtLabelSetPixmap(ih, image, 0);
-    }
-
     inner_widget = label;
   }
 

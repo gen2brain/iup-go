@@ -136,13 +136,6 @@ extern "C" QWidget* iupqtGetParentWidget(Ihandle* ih)
   return nullptr;
 }
 
-extern "C" const char* iupqtGetWidgetClassName(QWidget* widget)
-{
-  if (widget)
-    return widget->metaObject()->className();
-  return "NULL";
-}
-
 extern "C" void iupqtUpdateMnemonic(Ihandle* ih)
 {
   /* Qt handles mnemonics automatically through & in text */
@@ -279,6 +272,8 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   if (ih->iclass->nativetype == IUP_TYPEVOID ||
       ih->iclass->nativetype == IUP_TYPEMENU)
     return;
+
+  iupqtDragDropCleanup(ih);
 
   QWidget* widget = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
 
@@ -493,11 +488,6 @@ extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
   }
 }
 
-extern "C" int iupqtIsVisible(QWidget* widget)
-{
-  return widget ? widget->isVisible() : 0;
-}
-
 extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 {
   /* Skip for types that don't have a QWidget handle (TYPEVOID, TYPEMENU) */
@@ -554,102 +544,6 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 
   if (widget)
     widget->setEnabled(enable);
-}
-
-/****************************************************************************
- * Color Management
- ****************************************************************************/
-
-static QColor qtDarkerColor(const QColor& color)
-{
-  return QColor(
-    (color.red() * 9) / 10,
-    (color.green() * 9) / 10,
-    (color.blue() * 9) / 10
-  );
-}
-
-static QColor qtLighterColor(const QColor& color)
-{
-  int r = qMin(255, (color.red() * 11) / 10);
-  int g = qMin(255, (color.green() * 11) / 10);
-  int b = qMin(255, (color.blue() * 11) / 10);
-
-  return QColor(r, g, b);
-}
-
-extern "C" void iupqtColorSetRGB(QColor* color, unsigned char r, unsigned char g, unsigned char b)
-{
-  if (color)
-    color->setRgb(r, g, b);
-}
-
-extern "C" void iupqtSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
-{
-  QWidget* widget = (QWidget*)handle;
-
-  if (!widget)
-    return;
-
-  QColor color(r, g, b);
-
-  QPalette palette = widget->palette();
-  palette.setColor(QPalette::Window, color);
-  palette.setColor(QPalette::Base, color);
-  palette.setColor(QPalette::Light, qtLighterColor(color));
-  palette.setColor(QPalette::Dark, qtDarkerColor(color));
-
-  widget->setPalette(palette);
-  widget->setAutoFillBackground(true);
-}
-
-extern "C" void iupqtSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
-{
-  QWidget* widget = (QWidget*)handle;
-
-  if (!widget)
-    return;
-
-  QColor color(r, g, b);
-
-  QPalette palette = widget->palette();
-  palette.setColor(QPalette::WindowText, color);
-  palette.setColor(QPalette::Text, color);
-  palette.setColor(QPalette::ButtonText, color);
-
-  widget->setPalette(palette);
-}
-
-/****************************************************************************
- * Window/Widget Utilities
- ****************************************************************************/
-
-extern "C" void* iupqtGetWindow(QWidget *widget)
-{
-  if (!widget)
-    return NULL;
-
-  QWindow* window = widget->windowHandle();
-  return window;
-}
-
-extern "C" void iupqtWindowGetPointer(void *window, int *x, int *y, int *mask)
-{
-  (void)window;
-  (void)mask;
-
-  QPoint pos = QCursor::pos();
-
-  if (x) *x = pos.x();
-  if (y) *y = pos.y();
-}
-
-extern "C" void iupqtSetMargin(QWidget* widget, int horiz_padding, int vert_padding)
-{
-  if (widget)
-  {
-    widget->setContentsMargins(horiz_padding, vert_padding, horiz_padding, vert_padding);
-  }
 }
 
 /****************************************************************************

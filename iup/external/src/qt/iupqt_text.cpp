@@ -6,7 +6,6 @@
 
 #include <QLineEdit>
 #include <QTextEdit>
-#include <QPlainTextEdit>
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QTextBlock>
@@ -24,11 +23,9 @@
 #include <QPalette>
 #include <QKeyEvent>
 #include <QClipboard>
-#include <QApplication>
 #include <QMimeData>
 #include <QUrl>
 #include <QCompleter>
-#include <QStringListModel>
 #include <QFrame>
 #include <QTextList>
 
@@ -1623,6 +1620,54 @@ static char* qtTextGetBorderAttrib(Ihandle* ih)
 }
 
 /****************************************************************************
+ * Spin Attribute Setters
+ ****************************************************************************/
+
+static int qtTextSetSpinMinAttrib(Ihandle* ih, const char* value)
+{
+  IupQtSpinBox* spin = (IupQtSpinBox*)iupAttribGet(ih, "_IUPQT_SPINBOX");
+  if (spin)
+  {
+    int min;
+    if (iupStrToInt(value, &min))
+    {
+      ih->data->disable_callbacks = 1;
+      spin->setMinimum(min);
+      ih->data->disable_callbacks = 0;
+    }
+  }
+  return 1;
+}
+
+static int qtTextSetSpinMaxAttrib(Ihandle* ih, const char* value)
+{
+  IupQtSpinBox* spin = (IupQtSpinBox*)iupAttribGet(ih, "_IUPQT_SPINBOX");
+  if (spin)
+  {
+    int max;
+    if (iupStrToInt(value, &max))
+    {
+      ih->data->disable_callbacks = 1;
+      spin->setMaximum(max);
+      ih->data->disable_callbacks = 0;
+    }
+  }
+  return 1;
+}
+
+static int qtTextSetSpinIncAttrib(Ihandle* ih, const char* value)
+{
+  IupQtSpinBox* spin = (IupQtSpinBox*)iupAttribGet(ih, "_IUPQT_SPINBOX");
+  if (spin)
+  {
+    int inc;
+    if (iupStrToInt(value, &inc))
+      spin->setSingleStep(inc);
+  }
+  return 1;
+}
+
+/****************************************************************************
  * UnMap Method
  ****************************************************************************/
 
@@ -1806,8 +1851,8 @@ extern "C" void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SELECTEDTEXT", qtTextGetSelectedTextAttrib, qtTextSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", qtTextGetSelectionAttrib, qtTextSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTIONPOS", qtTextGetSelectionPosAttrib, qtTextSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", qtTextGetCaretAttrib, qtTextSetCaretAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", qtTextGetCaretPosAttrib, qtTextSetCaretPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", qtTextGetCaretAttrib, qtTextSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", qtTextGetCaretPosAttrib, qtTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERT", nullptr, qtTextSetInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", nullptr, qtTextSetAppendAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", qtTextGetReadOnlyAttrib, qtTextSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
@@ -1815,9 +1860,9 @@ extern "C" void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, qtTextSetClipboardAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, qtTextSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, qtTextSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPINMIN", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPINMAX", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPININC", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINMIN", nullptr, qtTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINMAX", nullptr, qtTextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPININC", nullptr, qtTextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINVALUE", qtTextGetSpinValueAttrib, qtTextSetSpinValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COUNT", qtTextGetCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINECOUNT", qtTextGetLineCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);

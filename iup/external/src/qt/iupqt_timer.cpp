@@ -67,20 +67,10 @@ extern "C" void iupdrvTimerRun(Ihandle *ih)
   if (time_ms > 0)
   {
     IupQtTimer* timer_data = new IupQtTimer();
-    if (!timer_data)
-      return;
 
     timer_data->ih = ih;
     timer_data->qtimer = new QTimer();
     timer_data->elapsed_timer = new QElapsedTimer();
-
-    if (!timer_data->qtimer || !timer_data->elapsed_timer)
-    {
-      if (timer_data->qtimer) delete timer_data->qtimer;
-      if (timer_data->elapsed_timer) delete timer_data->elapsed_timer;
-      delete timer_data;
-      return;
-    }
 
     timer_data->qtimer->setInterval(time_ms);
 
@@ -118,7 +108,6 @@ extern "C" void iupdrvTimerStop(Ihandle* ih)
         delete timer_data->qtimer;
       }
 
-      /* Free elapsed timer (GTK leaks this, we don't!) */
       if (timer_data->elapsed_timer)
         delete timer_data->elapsed_timer;
 

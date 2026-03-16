@@ -405,11 +405,6 @@ public:
     }
   }
 
-  void refreshAll()
-  {
-    beginResetModel();
-    endResetModel();
-  }
 };
 
 /* Custom QListView for virtual mode */
@@ -482,8 +477,8 @@ static void iupqtListMeasureItemMetrics(Ihandle* ih)
 {
   if (iupqt_list_item_space < 0)
   {
-    int char_width, char_height;
-    iupdrvFontGetCharSize(ih, &char_width, &char_height);
+    int char_height;
+    iupdrvFontGetCharSize(ih, NULL, &char_height);
 
     QListWidget* temp_list = new QListWidget();
     temp_list->setMinimumSize(0, 0);
@@ -776,13 +771,39 @@ extern "C" void iupdrvListRemoveAllItems(Ihandle* ih)
 
 extern "C" int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
-  /* Qt list doesn't support setting image handles directly in this way.
-   * Images are managed through the IMAGE attribute with qtListSetImageAttrib.
-   * This function is called during drag-drop but Qt handles this differently. */
-  (void)ih;
-  (void)id;
-  (void)hImage;
-  return 0;
+  QPixmap* pixmap = (QPixmap*)hImage;
+
+  if (ih->data->is_dropdown)
+  {
+    QComboBox* combo = (QComboBox*)ih->handle;
+    if (!combo || id < 0 || id >= combo->count())
+      return 0;
+
+    if (pixmap)
+      combo->setItemData(id, QVariant::fromValue(pixmap), Qt::UserRole + 1);
+    else
+      combo->setItemData(id, QVariant(), Qt::UserRole + 1);
+  }
+  else
+  {
+    QListWidget* list = (QListWidget*)ih->handle;
+    if (ih->data->has_editbox)
+      list = (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST");
+
+    if (!list || id < 0 || id >= list->count())
+      return 0;
+
+    QListWidgetItem* item = list->item(id);
+    if (item)
+    {
+      if (pixmap)
+        item->setData(Qt::UserRole + 1, QVariant::fromValue(pixmap));
+      else
+        item->setData(Qt::UserRole + 1, QVariant());
+    }
+  }
+
+  return 1;
 }
 
 extern "C" void* iupdrvListGetImageHandle(Ihandle* ih, int id)
@@ -857,7 +878,7 @@ static char* qtListGetIdValueAttrib(Ihandle* ih, int id)
         return iupStrReturnStr(text.toUtf8().constData());
       }
     }
-    else
+    else if (!ih->data->is_virtual)
     {
       QListWidget* list;
       if (ih->data->has_editbox)
@@ -1130,6 +1151,11 @@ static int qtListSetImageAttrib(Ihandle* ih, int id, const char* value)
   return 1;
 }
 
+static char* qtListGetImageNativeHandleAttribId(Ihandle* ih, int id)
+{
+  return (char*)iupdrvListGetImageHandle(ih, id);
+}
+
 static int qtListSetTopItemAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->data->is_dropdown)
@@ -1137,8 +1163,14 @@ static int qtListSetTopItemAttrib(Ihandle* ih, const char* value)
     int pos;
     if (iupStrToInt(value, &pos) && pos > 0)
     {
-      QListWidget* list = (QListWidget*)ih->handle;
-      list->scrollToItem(list->item(pos - 1), QAbstractItemView::PositionAtTop);
+      QListWidget* list;
+      if (ih->data->has_editbox)
+        list = (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST");
+      else
+        list = (QListWidget*)ih->handle;
+
+      if (list)
+        list->scrollToItem(list->item(pos - 1), QAbstractItemView::PositionAtTop);
     }
   }
   return 0;
@@ -1189,172 +1221,138 @@ static int qtListSetCueBannerAttrib(Ihandle* ih, const char* value)
 }
 
 
+static QLineEdit* qtListGetEditBox(Ihandle* ih)
+{
+  if (!ih->data->has_editbox)
+    return NULL;
+
+  if (ih->data->is_dropdown)
+  {
+    QComboBox* combo = (QComboBox*)ih->handle;
+    return combo->lineEdit();
+  }
+  else
+  {
+    return (QLineEdit*)iupAttribGet(ih, "_IUPQT_EDIT");
+  }
+}
+
 static char* qtListGetSelectedTextAttrib(Ihandle* ih)
 {
-  if (ih->data->has_editbox)
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (edit)
   {
-    QLineEdit* edit = NULL;
-    if (ih->data->is_dropdown)
-    {
-      QComboBox* combo = (QComboBox*)ih->handle;
-      edit = combo->lineEdit();
-    }
-    else
-    {
-      edit = (QLineEdit*)iupAttribGet(ih, "_IUPQT_EDIT");
-    }
-
-    if (edit)
-    {
-      QString selected = edit->selectedText();
-      return iupStrReturnStr(selected.toUtf8().constData());
-    }
+    QString selected = edit->selectedText();
+    return iupStrReturnStr(selected.toUtf8().constData());
   }
   return NULL;
 }
 
 static int qtListSetSelectedTextAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
-  {
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
-    if (edit && edit->hasSelectedText())
-    {
-      edit->insert(QString::fromUtf8(value ? value : ""));
-    }
-  }
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (edit && edit->hasSelectedText())
+    edit->insert(QString::fromUtf8(value ? value : ""));
   return 0;
 }
 
 static char* qtListGetSelectionAttrib(Ihandle* ih)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (edit)
   {
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
-    if (edit)
-    {
-      int start = edit->selectionStart();
-      int len = edit->selectedText().length();
-      if (len > 0)
-        return iupStrReturnIntInt(start + 1, start + len, ':');  /* IUP starts at 1 */
-    }
+    int start = edit->selectionStart();
+    int len = edit->selectedText().length();
+    if (len > 0)
+      return iupStrReturnIntInt(start + 1, start + len, ':');
   }
   return NULL;
 }
 
 static int qtListSetSelectionAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (!edit)
+    return 0;
+
+  if (!value || iupStrEqualNoCase(value, "NONE"))
   {
-    int start = 1, end = 1;
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
+    edit->deselect();
+    return 0;
+  }
 
-    if (!edit)
-      return 0;
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    edit->selectAll();
+    return 0;
+  }
 
-    if (!value || iupStrEqualNoCase(value, "NONE"))
-    {
-      edit->deselect();
-      return 0;
-    }
+  int start = 1, end = 1;
+  if (iupStrToIntInt(value, &start, &end, ':') == 2)
+  {
+    if (start < 1) start = 1;
+    if (end < 1) end = 1;
 
-    if (iupStrEqualNoCase(value, "ALL"))
-    {
-      edit->selectAll();
-      return 0;
-    }
+    start--;
+    end--;
 
-    if (iupStrToIntInt(value, &start, &end, ':') == 2)
-    {
-      if (start < 1) start = 1;
-      if (end < 1) end = 1;
+    if (end < start)
+      end = start;
 
-      start--; /* IUP starts at 1 */
-      end--;
-
-      if (end < start)
-        end = start;
-
-      edit->setSelection(start, end - start + 1);
-    }
+    edit->setSelection(start, end - start + 1);
   }
   return 0;
 }
 
 static char* qtListGetCaretAttrib(Ihandle* ih)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
-  {
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
-    if (edit)
-      return iupStrReturnInt(edit->cursorPosition() + 1);  /* IUP starts at 1 */
-  }
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (edit)
+    return iupStrReturnInt(edit->cursorPosition() + 1);
   return NULL;
 }
 
 static int qtListSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (!edit)
+    return 0;
+
+  int pos;
+  if (iupStrToInt(value, &pos))
   {
-    int pos;
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
-
-    if (!edit)
-      return 0;
-
-    if (iupStrToInt(value, &pos))
-    {
-      if (pos < 1) pos = 1;
-      pos--;  /* IUP starts at 1 */
-
-      edit->setCursorPosition(pos);
-    }
+    if (pos < 1) pos = 1;
+    pos--;
+    edit->setCursorPosition(pos);
   }
   return 0;
 }
 
 static int qtListSetInsertAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
-  {
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
-    if (edit)
-      edit->insert(QString::fromUtf8(value ? value : ""));
-  }
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (edit)
+    edit->insert(QString::fromUtf8(value ? value : ""));
   return 0;
 }
 
 static int qtListSetAppendAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (edit)
   {
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
-    if (edit)
-    {
-      QString text = edit->text();
-      text.append(QString::fromUtf8(value ? value : ""));
-      edit->setText(text);
-    }
+    QString text = edit->text();
+    text.append(QString::fromUtf8(value ? value : ""));
+    edit->setText(text);
   }
   return 0;
 }
 
 static char* qtListGetReadOnlyAttrib(Ihandle* ih)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
-  {
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
-    if (edit)
-      return iupStrReturnBoolean(edit->isReadOnly());
-  }
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (edit)
+    return iupStrReturnBoolean(edit->isReadOnly());
   return NULL;
 }
 
@@ -1387,77 +1385,56 @@ static char* qtListGetScrollVisibleAttrib(Ihandle* ih)
 
 static int qtListSetReadOnlyAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
-  {
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
-    if (edit)
-      edit->setReadOnly(iupStrBoolean(value));
-  }
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (edit)
+    edit->setReadOnly(iupStrBoolean(value));
   return 0;
 }
 
 static int qtListSetNCAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (!edit)
+    return 0;
+
+  int max;
+  if (iupStrToInt(value, &max))
   {
-    int max;
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
-
-    if (!edit)
-      return 0;
-
-    if (iupStrToInt(value, &max))
-    {
-      if (max < 0) max = 0;
-      edit->setMaxLength(max);
-    }
+    if (max < 0) max = 0;
+    edit->setMaxLength(max);
   }
   return 0;
 }
 
 static int qtListSetClipboardAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
-  {
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (!edit)
+    return 0;
 
-    if (!edit)
-      return 0;
-
-    if (iupStrEqualNoCase(value, "COPY"))
-      edit->copy();
-    else if (iupStrEqualNoCase(value, "CUT"))
-      edit->cut();
-    else if (iupStrEqualNoCase(value, "PASTE"))
-      edit->paste();
-    else if (iupStrEqualNoCase(value, "CLEAR"))
-      edit->clear();
-  }
+  if (iupStrEqualNoCase(value, "COPY"))
+    edit->copy();
+  else if (iupStrEqualNoCase(value, "CUT"))
+    edit->cut();
+  else if (iupStrEqualNoCase(value, "PASTE"))
+    edit->paste();
+  else if (iupStrEqualNoCase(value, "CLEAR"))
+    edit->clear();
   return 0;
 }
 
 static int qtListSetScrollToAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->has_editbox && ih->data->is_dropdown)
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (!edit)
+    return 0;
+
+  int pos;
+  if (iupStrToInt(value, &pos))
   {
-    int pos;
-    QComboBox* combo = (QComboBox*)ih->handle;
-    QLineEdit* edit = combo->lineEdit();
-
-    if (!edit)
-      return 0;
-
-    if (iupStrToInt(value, &pos))
-    {
-      if (pos < 1) pos = 1;
-      pos--;  /* IUP starts at 1 */
-
-      edit->setCursorPosition(pos);
-      /* LineEdit doesn't have direct scroll-to, but cursor position handles it */
-    }
+    if (pos < 1) pos = 1;
+    pos--;
+    edit->setCursorPosition(pos);
   }
   return 0;
 }
@@ -1709,9 +1686,6 @@ static int qtListMapMethod(Ihandle* ih)
     /* Create ComboBox for dropdown lists */
     QComboBox* combo = new QComboBox();
 
-    if (!combo)
-      return IUP_ERROR;
-
     ih->handle = (InativeHandle*)combo;
 
     /* Remove minimum size constraints - similar to GTK's iupgtkClearSizeStyleCSS
@@ -1882,9 +1856,6 @@ static int qtListMapMethod(Ihandle* ih)
     /* Virtual mode: Create QListView with custom model */
     IupQtVirtualListView* view = new IupQtVirtualListView(ih);
 
-    if (!view)
-      return IUP_ERROR;
-
     ih->handle = (InativeHandle*)view;
 
     /* Create and set the virtual model */
@@ -1962,9 +1933,6 @@ static int qtListMapMethod(Ihandle* ih)
   {
     /* Create ListWidget for plain list with drag-drop support */
     IupQtListWidget* list = new IupQtListWidget(ih);
-
-    if (!list)
-      return IUP_ERROR;
 
     ih->handle = (InativeHandle*)list;
 
@@ -2098,4 +2066,5 @@ extern "C" void iupdrvListInitClass(Iclass* ic)
 
   /* Image support */
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, qtListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", qtListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

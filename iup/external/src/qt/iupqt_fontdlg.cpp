@@ -7,7 +7,6 @@
 #include <QFontDialog>
 #include <QFont>
 #include <QFontInfo>
-#include <QColor>
 #include <QWidget>
 #include <QScreen>
 #include <QString>
@@ -43,9 +42,7 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
 {
   QWidget* parent = iupqtGetParentWidget(ih);
   QFont initial_font;
-  QColor initial_color = Qt::black;
   char* font_str;
-  char* color_str;
   int response;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
@@ -106,25 +103,14 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
     initial_font = QFont();
   }
 
-  color_str = iupAttribGet(ih, "COLOR");
-  if (color_str)
-  {
-    unsigned char r, g, b;
-    if (iupStrToRGB(color_str, &r, &g, &b))
-      initial_color = QColor(r, g, b);
-  }
-
-  QFontDialog::FontDialogOptions options = QFontDialog::FontDialogOptions();
-
   QFontDialog* dialog = new QFontDialog(parent);
   dialog->setCurrentFont(initial_font);
 
   /* To support PREVIEWTEXT, SHOWCOLOR, or HELP_CB, we need the non-native dialog */
   const char* preview_text = iupAttribGet(ih, "PREVIEWTEXT");
-  bool show_color = iupAttribGetBoolean(ih, "SHOWCOLOR");
   bool has_help = (IupGetCallback(ih, "HELP_CB") != nullptr);
 
-  if (preview_text || show_color || has_help)
+  if (preview_text || has_help)
     dialog->setOption(QFontDialog::DontUseNativeDialog, true);
 
   const char* title = iupAttribGet(ih, "TITLE");
@@ -210,19 +196,6 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
     iupAttribSetStr(ih, "VALUE", font_value);
     iupAttribSet(ih, "STATUS", "1");
 
-    /* Store color if color selection was shown
-     * Note: Standard QFontDialog doesn't provide color selection.
-     * This is a Qt platform limitation. Windows uses a custom dialog template, and Cocoa uses NSFontPanel with text attributes.
-     * For Qt, we preserve the input COLOR value as a workaround. */
-    if (show_color)
-    {
-      /* Keep the initial color - Qt limitation */
-      /* Color remains as set via the COLOR attribute before popup */
-    }
-    else
-    {
-      iupAttribSet(ih, "COLOR", nullptr);
-    }
   }
   else
   {

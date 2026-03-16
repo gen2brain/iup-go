@@ -6,14 +6,10 @@
 
 #include <QPixmap>
 #include <QImage>
-#include <QIcon>
 #include <QCursor>
-#include <QBitmap>
 #include <QColor>
 #include <QString>
-#include <QFile>
 #include <QApplication>
-#include <QGuiApplication>
 #include <QScreen>
 #include <QStyle>
 
@@ -57,18 +53,20 @@ extern "C" void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   }
 
   /* Convert QImage to IUP format (packed, top-bottom) */
-  int planesize = w * h;
+  int channels = (bpp == 32) ? 4 : 3;
+  int line_size = w * channels;
   for (int y = 0; y < h; y++)
   {
-    unsigned char* line_data = imgdata + y * planesize;
-    const uchar* scanline = image.constScanLine(y);
+    unsigned char* line_data = imgdata + y * line_size;
 
     for (int x = 0; x < w; x++)
     {
       QRgb pixel = image.pixel(x, y);
-      line_data[x * 3 + 0] = qRed(pixel);
-      line_data[x * 3 + 1] = qGreen(pixel);
-      line_data[x * 3 + 2] = qBlue(pixel);
+      line_data[x * channels + 0] = qRed(pixel);
+      line_data[x * channels + 1] = qGreen(pixel);
+      line_data[x * channels + 2] = qBlue(pixel);
+      if (channels == 4)
+        line_data[x * channels + 3] = qAlpha(pixel);
     }
   }
 }
@@ -337,16 +335,7 @@ extern "C" void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int ma
 
 extern "C" void* iupdrvImageCreateIcon(Ihandle *ih)
 {
-  void* handle = iupdrvImageCreateImage(ih, NULL, 0);
-
-  if (handle)
-  {
-    IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
-    if (cb)
-      cb(handle, const_cast<char*>("ICON"));
-  }
-
-  return handle;
+  return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
 extern "C" void* iupdrvImageCreateCursor(Ihandle *ih)

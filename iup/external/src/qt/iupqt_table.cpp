@@ -11,7 +11,6 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QKeyEvent>
-#include <QMouseEvent>
 #include <QShowEvent>
 #include <QResizeEvent>
 #include <QPainter>
@@ -19,7 +18,6 @@
 #include <QStyleOptionFocusRect>
 #include <QFontMetrics>
 #include <QLineEdit>
-#include <QtGlobal>
 
 #include <cstdlib>
 #include <cstdio>
@@ -1481,20 +1479,11 @@ static int qtTableSetSortableAttrib(Ihandle* ih, const char* value)
 
       if (ih->data->sortable)
       {
-        if (iupStrBoolean(virtualmode))
-        {
-          /* Virtual mode - disable automatic sorting */
-          table->setSortingEnabled(false);
-          hHeader->setSectionsClickable(true);
-          hHeader->setSortIndicatorShown(true);
-        }
-        else
-        {
-          /* Normal mode - enable Qt's automatic sorting */
-          table->setSortingEnabled(true);
-          hHeader->setSectionsClickable(true);
-          hHeader->setSortIndicatorShown(true);
-        }
+        /* Virtual mode: disable automatic sorting (callback handles it)
+           Normal mode: enable Qt's automatic sorting */
+        table->setSortingEnabled(!iupStrBoolean(virtualmode));
+        hHeader->setSectionsClickable(true);
+        hHeader->setSortIndicatorShown(true);
       }
       else
       {

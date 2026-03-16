@@ -8,7 +8,6 @@
 #include <QRadioButton>
 #include <QToolButton>
 #include <QAbstractButton>
-#include <QLabel>
 #include <QPixmap>
 #include <QIcon>
 #include <QString>
@@ -976,21 +975,10 @@ static int qtToggleMapMethod(Ihandle* ih)
       IupQtRadioButton* radio_btn = new IupQtRadioButton(ih);
       button = radio_btn;
 
-      /* Link to radio group */
+      /* Set first radio button as checked by default */
       Ihandle* last_toggle = (Ihandle*)iupAttribGet(radio, "_IUPQT_LASTRADIOBUTTON");
-      if (last_toggle)
-      {
-        QRadioButton* last_btn = (QRadioButton*)last_toggle->handle;
-        if (last_btn)
-        {
-          /* Qt automatically groups radio buttons in the same parent */
-        }
-      }
-      else
-      {
-        /* This is the first radio button in the group */
+      if (!last_toggle)
         radio_btn->setChecked(true);
-      }
       iupAttribSet(radio, "_IUPQT_LASTRADIOBUTTON", (char*)ih);
     }
 

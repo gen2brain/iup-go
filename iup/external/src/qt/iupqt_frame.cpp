@@ -7,13 +7,11 @@
 #include <QGroupBox>
 #include <QFrame>
 #include <QWidget>
-#include <QLabel>
 #include <QString>
 #include <QPalette>
 #include <QLayout>
 #include <QVBoxLayout>
 #include <QFontMetrics>
-#include <QEvent>
 
 #include <cstdlib>
 #include <cstdio>
@@ -376,9 +374,6 @@ static int qtFrameMapMethod(Ihandle* ih)
 
   groupbox->setFlat(false);
   frame_widget = groupbox;
-
-  if (!frame_widget)
-    return IUP_ERROR;
 
   ih->handle = (InativeHandle*)frame_widget;
 

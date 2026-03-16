@@ -10,15 +10,9 @@
 #include <QEvent>
 #include <QString>
 #include <QRect>
-#include <QPixmap>
-#include <QIcon>
 #include <QPoint>
 #include <QCursor>
 #include <QApplication>
-#include <QPalette>
-#include <QFont>
-#include <QColor>
-#include <QTimer>
 
 #include <cstdio>
 #include <cstdlib>
@@ -29,7 +23,6 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_str.h"
 #include "iup_attrib.h"
-#include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 }
@@ -91,22 +84,7 @@ protected:
           const char* tip = iupAttribGet(ih, "TIP");
           if (tip)
           {
-            QString tip_text;
-
-            const char* tipicon = iupAttribGet(ih, "TIPICON");
-            if (tipicon && iupAttribGetBoolean(ih, "TIPMARKUP"))
-            {
-              /* With markup enabled and icon specified, create rich text tooltip
-               * Note: Qt doesn't easily support icons in tooltips via QPixmap,
-               * but we can use HTML img tags if the icon is a file */
-              tip_text = QString::fromUtf8(tip);
-            }
-            else
-            {
-              tip_text = QString::fromUtf8(tip);
-            }
-
-            QToolTip::showText(helpEvent->globalPos(), tip_text, widget);
+            QToolTip::showText(helpEvent->globalPos(), QString::fromUtf8(tip), widget);
           }
           else
           {
@@ -130,22 +108,12 @@ static IupQtTooltipFilter* qt_tooltip_filter = nullptr;
 
 static void qtTooltipSetTitle(Ihandle* ih, QWidget* widget, const char* value)
 {
-  if (!value || value[0] == 0)
-  {
-    widget->setToolTip(QString());
-    return;
-  }
+  (void)ih;
 
-  if (iupAttribGetBoolean(ih, "TIPMARKUP"))
-  {
-    /* Treat as HTML/rich text */
-    widget->setToolTip(QString::fromUtf8(value));
-  }
+  if (!value || value[0] == 0)
+    widget->setToolTip(QString());
   else
-  {
-    /* Plain text - Qt will auto-escape HTML entities */
     widget->setToolTip(QString::fromUtf8(value));
-  }
 }
 
 static QWidget* qtTipGetWidget(Ihandle* ih)
@@ -213,107 +181,8 @@ extern "C" char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 }
 
 /****************************************************************************
- * Additional Tip Attribute Functions
+ * Tooltip Destroy
  ****************************************************************************/
-
-extern "C" int qtBaseSetTipBgColorAttrib(Ihandle* ih, const char* value)
-{
-  /* Qt tooltips use the system palette - we can set a custom palette
-   * but it affects all tooltips globally via QPalette */
-  if (value)
-  {
-    unsigned char r, g, b;
-    if (iupStrToRGB(value, &r, &g, &b))
-    {
-      QPalette palette = QToolTip::palette();
-      palette.setColor(QPalette::ToolTipBase, QColor(r, g, b));
-      QToolTip::setPalette(palette);
-    }
-  }
-
-  (void)ih;
-  return 1;
-}
-
-extern "C" int qtBaseSetTipFgColorAttrib(Ihandle* ih, const char* value)
-{
-  /* Qt tooltips use the system palette */
-  if (value)
-  {
-    unsigned char r, g, b;
-    if (iupStrToRGB(value, &r, &g, &b))
-    {
-      QPalette palette = QToolTip::palette();
-      palette.setColor(QPalette::ToolTipText, QColor(r, g, b));
-      QToolTip::setPalette(palette);
-    }
-  }
-
-  (void)ih;
-  return 1;
-}
-
-extern "C" int qtBaseSetTipFontAttrib(Ihandle* ih, const char* value)
-{
-  /* Qt tooltips can have a custom font set globally */
-  if (value)
-  {
-    QFont* qfont = iupqtGetQFont(value);
-    if (qfont)
-      QToolTip::setFont(*qfont);
-  }
-
-  (void)ih;
-  return 1;
-}
-
-extern "C" int qtBaseSetTipDelayAttrib(Ihandle* ih, const char* value)
-{
-  /* Qt doesn't provide a direct API for tooltip delay per widget */
-  (void)ih;
-  (void)value;
-
-  return 0;
-}
-
-extern "C" int qtBaseSetTipRectAttrib(Ihandle* ih, const char* value)
-{
-  /* Store for use in tooltip event handler */
-  (void)value;
-
-  /* The actual TIPRECT handling is done in the event filter when the tooltip is about to be shown */
-  return 0;
-}
-
-
-extern "C" int qtBaseSetTipIconAttrib(Ihandle* ih, const char* value)
-{
-  /* Store icon name for later use in tooltip display
-   * Qt supports rich text in tooltips, so we can embed images */
-  (void)ih;
-  (void)value;
-
-  /* The icon will be handled when the tooltip is shown */
-  return 0;
-}
-
-/****************************************************************************
- * Tooltip Update and Destroy
- ****************************************************************************/
-
-extern "C" void qtUpdateTip(Ihandle* ih)
-{
-  if (!ih)
-    return;
-
-  QWidget* widget = qtTipGetWidget(ih);
-  if (!widget)
-    return;
-
-  const char* tip = iupAttribGet(ih, "TIP");
-  if (tip)
-    qtTooltipSetTitle(ih, widget, tip);
-}
 
 extern "C" void iupqtTipsDestroy(Ihandle* ih)
 {

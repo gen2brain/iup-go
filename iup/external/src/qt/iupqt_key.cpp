@@ -378,8 +378,7 @@ extern "C" int iupqtKeyReleaseEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih
  * Button/Key Status String
  ****************************************************************************/
 
-extern "C" void iupqtButtonKeySetStatus(Qt::KeyboardModifiers modifiers, Qt::MouseButtons buttons,
-                                        int button, char* status, int doubleclick)
+extern "C" void iupqtButtonKeySetStatus(Qt::KeyboardModifiers modifiers, Qt::MouseButtons buttons, int button, char* status, int doubleclick)
 {
   if (modifiers & Qt::ShiftModifier)
     iupKEY_SETSHIFT(status);

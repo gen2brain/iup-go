@@ -7,20 +7,13 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QString>
-#include <QWidget>
-#include <QEvent>
 #include <QProcess>
 #include <QStringList>
 
 extern "C" {
 #include "iup.h"
-#include "iupcbs.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
 }
-
-#include "iupqt_drv.h"
 
 
 /****************************************************************************
@@ -117,32 +110,3 @@ extern "C" IUP_API int IupHelp(const char* url)
     return -1;
 }
 
-extern "C" int qtHelp(const char* url)
-{
-  return IupHelp(url);
-}
-
-/****************************************************************************
- * Show Help for Widget (F1 key handler)
- ****************************************************************************/
-
-extern "C" int iupqtShowHelp(QWidget* widget, Ihandle* ih)
-{
-  IFn help_cb;
-
-  (void)widget;
-
-  if (!ih)
-    return 0;
-
-  help_cb = (IFn)IupGetCallback(ih, "HELP_CB");
-  if (help_cb)
-  {
-    if (help_cb(ih) == IUP_CLOSE)
-    {
-      IupExitLoop();
-    }
-  }
-
-  return 1;
-}

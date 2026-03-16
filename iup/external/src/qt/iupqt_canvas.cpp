@@ -5,11 +5,8 @@
  */
 
 #include <QWidget>
-#include <QWindow>
-#include <QSurface>
 #include <QPainter>
 #include <QScrollBar>
-#include <QFrame>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPaintEvent>
@@ -942,19 +939,10 @@ static int qtCanvasSetBorderAttrib(Ihandle* ih, const char* value)
 
   if (container_data && container_data->canvas)
   {
-    QFrame* frame = qobject_cast<QFrame*>(container_data->canvas);
-    if (!frame)
-      return 0;
-
     if (iupStrBoolean(value))
-    {
-      frame->setFrameStyle(QFrame::StyledPanel | QFrame::Plain);
-      frame->setLineWidth(1);
-    }
+      container_data->canvas->setStyleSheet("QWidget { border: 1px solid palette(mid); }");
     else
-    {
-      frame->setFrameStyle(QFrame::NoFrame);
-    }
+      container_data->canvas->setStyleSheet(QString());
     return 1;
   }
 
