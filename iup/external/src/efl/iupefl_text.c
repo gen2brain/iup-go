@@ -302,7 +302,7 @@ static int eflTextSetValueAttrib(Ihandle* ih, const char* value)
   ih->data->disable_callbacks = 1;
 
   if (value && value[0])
-    iupeflSetText(widget, iupeflStrConvertToSystem(value));
+    iupeflSetText(widget, value);
   else
     iupeflSetText(widget, "");
 
@@ -603,7 +603,7 @@ static int eflTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   efl_text_cursor_object_range_delete(sel_start, sel_end);
 
   if (value && value[0])
-    efl_text_cursor_object_text_insert(sel_start, iupeflStrConvertToSystem(value));
+    efl_text_cursor_object_text_insert(sel_start, value);
 
   ih->data->disable_callbacks = 0;
 
@@ -1351,7 +1351,7 @@ static int eflTextMapMethod(Ihandle* ih)
 
     value = iupAttribGet(ih, "VALUE");
     if (value && value[0])
-      iupeflSetText(widget, iupeflStrConvertToSystem(value));
+      iupeflSetText(widget, value);
 
     /* EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER only fires for user-initiated changes, not programmatic style changes. */
     efl_event_callback_add(widget, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflTextChangedCallback, ih);

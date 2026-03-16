@@ -107,7 +107,7 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
   title = iupAttribGet(ih, "TITLE");
 
   win = efl_add(EFL_UI_WIN_CLASS, parent_win ? parent_win : efl_main_loop_get(),
-                efl_text_set(efl_added, title ? iupeflStrConvertToSystem(title) : "Message"),
+                efl_text_set(efl_added, title ? title : "Message"),
                 efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_DIALOG_BASIC),
                 efl_ui_win_autodel_set(efl_added, EINA_FALSE));
   if (!win)
@@ -164,7 +164,7 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
 
   if (value)
   {
-    efl_text_set(label, iupeflStrConvertToSystem(value));
+    efl_text_set(label, value);
     eflMessageDlgMeasureText(evas_object_evas_get(win), value, &text_w, &text_h);
   }
 

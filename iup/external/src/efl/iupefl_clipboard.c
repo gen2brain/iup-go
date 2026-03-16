@@ -241,7 +241,7 @@ static char* eflClipboardGetFormatDataStringAttrib(Ihandle* ih)
   char* data = eflClipboardGetFormatDataAttrib(ih);
   if (!data)
     return NULL;
-  return iupStrReturnStr(iupeflStrConvertFromSystem(data));
+  return iupStrReturnStr(data);
 }
 
 static int eflClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* value)
@@ -250,7 +250,7 @@ static int eflClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* value)
   {
     int len = (int)strlen(value);
     iupAttribSetInt(ih, "FORMATDATASIZE", len + 1);
-    return eflClipboardSetFormatDataAttrib(ih, iupeflStrConvertToSystem(value));
+    return eflClipboardSetFormatDataAttrib(ih, value);
   }
   else
     return eflClipboardSetFormatDataAttrib(ih, NULL);

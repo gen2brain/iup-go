@@ -127,7 +127,7 @@ static int eflButtonSetTitleAttrib(Ihandle* ih, const char* value)
   if (!btn)
     return 0;
 
-  efl_text_set(btn, iupeflStrConvertToSystem(value ? value : ""));
+  efl_text_set(btn, value ? value : "");
 
   if (value && value[0])
     ih->data->type |= IUP_BUTTON_TEXT;
@@ -379,7 +379,7 @@ static int eflButtonMapMethod(Ihandle* ih)
 
   value = iupAttribGet(ih, "TITLE");
   if (value && value[0])
-    efl_text_set(btn, iupeflStrConvertToSystem(value));
+    efl_text_set(btn, value);
 
   value = iupAttribGet(ih, "IMAGE");
   if (value && value[0])
