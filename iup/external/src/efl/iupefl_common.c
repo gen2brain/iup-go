@@ -7,11 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-
-#ifdef HAVE_ECORE_X
-#include <Ecore_X.h>
-#endif
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -451,8 +446,30 @@ void iupeflPointerMoveEvent(void* data, const Efl_Event* ev)
   pos = efl_input_pointer_position_get(pointer);
   widget_pos = efl_gfx_entity_position_get(ev->object);
 
-  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-  cb(ih, pos.x - widget_pos.x, pos.y - widget_pos.y, status);
+  {
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    unsigned int pressed_buttons;
+
+    if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_SHIFT, NULL))
+      iupKEY_SETSHIFT(status);
+    if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_CONTROL, NULL))
+      iupKEY_SETCONTROL(status);
+    if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_ALT, NULL))
+      iupKEY_SETALT(status);
+    if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_META, NULL) ||
+        efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_SUPER, NULL))
+      iupKEY_SETSYS(status);
+
+    pressed_buttons = (unsigned int)efl_input_pointer_value_get(pointer, EFL_INPUT_VALUE_BUTTONS_PRESSED);
+    if (pressed_buttons & (1 << 0))
+      iupKEY_SETBUTTON1(status);
+    if (pressed_buttons & (1 << 1))
+      iupKEY_SETBUTTON2(status);
+    if (pressed_buttons & (1 << 2))
+      iupKEY_SETBUTTON3(status);
+
+    cb(ih, pos.x - widget_pos.x, pos.y - widget_pos.y, status);
+  }
 }
 
 void iupeflPointerWheelEvent(void* data, const Efl_Event* ev)
@@ -470,12 +487,24 @@ void iupeflPointerWheelEvent(void* data, const Efl_Event* ev)
   pos = efl_input_pointer_position_get(pointer);
   widget_pos = efl_gfx_entity_position_get(ev->object);
 
-  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-  Eina_Bool is_horizontal = efl_input_pointer_wheel_horizontal_get(pointer);
-  int wheel_delta = efl_input_pointer_wheel_delta_get(pointer);
-  float delta = is_horizontal ? 0.0f : (float)wheel_delta;
+  {
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    Eina_Bool is_horizontal = efl_input_pointer_wheel_horizontal_get(pointer);
+    int wheel_delta = efl_input_pointer_wheel_delta_get(pointer);
+    float delta = is_horizontal ? 0.0f : (float)wheel_delta;
 
-  cb(ih, delta, pos.x - widget_pos.x, pos.y - widget_pos.y, status);
+    if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_SHIFT, NULL))
+      iupKEY_SETSHIFT(status);
+    if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_CONTROL, NULL))
+      iupKEY_SETCONTROL(status);
+    if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_ALT, NULL))
+      iupKEY_SETALT(status);
+    if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_META, NULL) ||
+        efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_SUPER, NULL))
+      iupKEY_SETSYS(status);
+
+    cb(ih, delta, pos.x - widget_pos.x, pos.y - widget_pos.y, status);
+  }
 }
 
 void iupeflPointerInEvent(void* data, const Efl_Event* ev)
@@ -500,57 +529,6 @@ void iupeflPointerOutEvent(void* data, const Efl_Event* ev)
   cb = (IFn)IupGetCallback(ih, "LEAVEWINDOW_CB");
   if (cb)
     cb(ih);
-}
-
-void iupeflFocusChangedEvent(void* data, const Efl_Event* ev)
-{
-  Ihandle* ih = (Ihandle*)data;
-  Eina_Bool focused = *((Eina_Bool*)ev->info);
-  IFn cb;
-
-  if (focused)
-  {
-    cb = (IFn)IupGetCallback(ih, "GETFOCUS_CB");
-    if (cb)
-      cb(ih);
-  }
-  else
-  {
-    cb = (IFn)IupGetCallback(ih, "KILLFOCUS_CB");
-    if (cb)
-      cb(ih);
-  }
-}
-
-void iupeflManagerFocusChangedEvent(void* data, const Efl_Event* ev)
-{
-  Ihandle* ih = (Ihandle*)data;
-  Eina_Bool* prev_focused = (Eina_Bool*)iupAttribGet(ih, "_IUP_EFL_MANAGER_FOCUSED");
-  Eina_Bool currently_focused = (efl_ui_focus_manager_focus_get(ev->object) != NULL);
-  IFn cb;
-
-  if (prev_focused && *prev_focused == currently_focused)
-    return;
-
-  if (!prev_focused)
-  {
-    prev_focused = malloc(sizeof(Eina_Bool));
-    iupAttribSet(ih, "_IUP_EFL_MANAGER_FOCUSED", (char*)prev_focused);
-  }
-  *prev_focused = currently_focused;
-
-  if (currently_focused)
-  {
-    cb = (IFn)IupGetCallback(ih, "GETFOCUS_CB");
-    if (cb)
-      cb(ih);
-  }
-  else
-  {
-    cb = (IFn)IupGetCallback(ih, "KILLFOCUS_CB");
-    if (cb)
-      cb(ih);
-  }
 }
 
 /****************************************************************************
@@ -614,64 +592,6 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
   }
   else
     return 0;
-}
-
-IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
-{
-  Eo* widget = iupeflGetWidget(ih);
-  int widget_x = 0, widget_y = 0;
-  int screen_x = 0, screen_y = 0;
-
-  if (widget)
-  {
-    Eina_Rect geometry = iupeflGetGeometry(widget);
-    widget_x = geometry.x;
-    widget_y = geometry.y;
-
-    Eo* win = iupeflGetMainWindow();
-    if (win)
-    {
-      Evas* evas = evas_object_evas_get(win);
-      if (evas)
-      {
-        Ecore_Evas* ee = ecore_evas_ecore_evas_get(evas);
-        if (ee)
-          ecore_evas_geometry_get(ee, &screen_x, &screen_y, NULL, NULL);
-      }
-    }
-  }
-
-  if (x) *x += widget_x + screen_x;
-  if (y) *y += widget_y + screen_y;
-}
-
-IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
-{
-  Eo* widget = iupeflGetWidget(ih);
-  int widget_x = 0, widget_y = 0;
-  int screen_x = 0, screen_y = 0;
-
-  if (widget)
-  {
-    Eina_Rect geometry = iupeflGetGeometry(widget);
-    widget_x = geometry.x;
-    widget_y = geometry.y;
-
-    Eo* win = iupeflGetMainWindow();
-    if (win)
-    {
-      Evas* evas = evas_object_evas_get(win);
-      if (evas)
-      {
-        Ecore_Evas* ee = ecore_evas_ecore_evas_get(evas);
-        if (ee)
-          ecore_evas_geometry_get(ee, &screen_x, &screen_y, NULL, NULL);
-      }
-    }
-  }
-
-  if (x) *x -= widget_x + screen_x;
-  if (y) *y -= widget_y + screen_y;
 }
 
 IUP_SDK_API void iupdrvReparent(Ihandle* ih)
@@ -859,51 +779,14 @@ IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 
 IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
-  (void)ic;
-}
+  iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
 
-IUP_SDK_API void iupdrvSendKey(int key, int press)
-{
-  (void)key;
-  (void)press;
-}
-
-IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
-{
-  (void)x;
-  (void)y;
-  (void)bt;
-  (void)status;
-}
-
-IUP_SDK_API void iupdrvWarpPointer(int x, int y)
-{
-#ifdef HAVE_ECORE_X
-  if (iupeflIsX11())
-  {
-    Ecore_X_Window root = ecore_x_window_root_first_get();
-    if (root)
-    {
-      ecore_x_pointer_warp(root, x, y);
-      return;
-    }
-  }
-#endif
-  (void)x;
-  (void)y;
+  iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPRECT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
 }
 
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   (void)ih;
   (void)title;
-}
-
-IUP_SDK_API void iupdrvSleep(int time)
-{
-#ifdef WIN32
-  Sleep(time);
-#else
-  usleep((useconds_t)(time * 1000));
-#endif
 }

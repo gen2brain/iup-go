@@ -144,10 +144,12 @@ static void eflFontParse(const char* value, char* family, int* size, int* is_bol
 
 static Eo* eflFontGetMeasureTextblock(void)
 {
+  Evas* evas;
+
   if (efl_font_measure_tb)
     return efl_font_measure_tb;
 
-  Evas* evas = eflFontGetMeasureEvas();
+  evas = eflFontGetMeasureEvas();
   if (!evas)
     return NULL;
 

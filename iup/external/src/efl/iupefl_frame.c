@@ -12,7 +12,7 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
+#include "iup_class.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_frame.h"
@@ -294,33 +294,9 @@ static int eflFrameMapMethod(Ihandle* ih)
 
 static void eflFrameUnMapMethod(Ihandle* ih)
 {
-  Eo* frame = iupeflGetWidget(ih);
-
-  if (frame)
-    iupeflDelete(frame);
-
   iupAttribSet(ih, "_IUP_EFL_INNER", NULL);
 
-  iupeflFontFree(ih);
-}
-
-static void eflFrameComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
-{
-  int decor_w = 8, decor_h = 8;
-  Ihandle* child = ih->firstchild;
-
-  (void)children_expand;
-
-  iupdrvFrameGetDecorSize(ih, &decor_w, &decor_h);
-
-  *w = decor_w;
-  *h = decor_h;
-
-  if (child)
-  {
-    *w += child->naturalwidth;
-    *h += child->naturalheight;
-  }
+  iupdrvBaseUnMapMethod(ih);
 }
 
 void iupdrvFrameInitClass(Iclass* ic)

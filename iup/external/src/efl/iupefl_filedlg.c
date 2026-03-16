@@ -20,6 +20,8 @@
 #include "iup_dialog.h"
 #include "iup_predialogs.h"
 #include "iup_array.h"
+#include "iup_dlglist.h"
+#include "iup_drv.h"
 
 #include "iupefl_drv.h"
 
@@ -37,6 +39,8 @@ static Eina_List* efl_filedlg_paths = NULL;
 static int eflIsFile(const char* name)
 {
   struct stat st;
+  if (!name)
+    return 0;
   if (stat(name, &st) != 0)
     return 0;
   return S_ISREG(st.st_mode);
@@ -45,6 +49,8 @@ static int eflIsFile(const char* name)
 static int eflIsDirectory(const char* name)
 {
   struct stat st;
+  if (!name)
+    return 0;
   if (stat(name, &st) != 0)
     return 0;
   return S_ISDIR(st.st_mode);
@@ -57,7 +63,7 @@ static char* eflFileCheckExt(Ihandle* ih, const char* filename)
   {
     int len = (int)strlen(filename);
     int ext_len = (int)strlen(ext);
-    if (len > 0 && filename[len - ext_len - 1] != '.')
+    if (len > ext_len && filename[len - ext_len - 1] != '.')
     {
       char* new_filename = (char*)malloc(len + ext_len + 2);
       memcpy(new_filename, filename, len);
@@ -288,6 +294,7 @@ static void eflFileDlgSelectedCallback(void* data, Evas_Object* obj, void* event
 static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 {
   Eo* win;
+  Eo* parent_win = NULL;
   Evas_Object* fileselector;
   char *dialogtype, *title, *file, *dir, *value;
   int is_save = 0;
@@ -296,6 +303,21 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
   int filter_count = 0;
   EflFileFilterData** filter_list = NULL;
   IFnss file_cb;
+
+  parent_win = (Eo*)iupDialogGetNativeParent(ih);
+  if (!parent_win)
+  {
+    Ihandle* dlg;
+    for (dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
+    {
+      if (dlg->handle && iupdrvIsVisible(dlg))
+      {
+        parent_win = iupeflGetWidget(dlg);
+        IupSetAttributeHandle(ih, "PARENTDIALOG", dlg);
+        break;
+      }
+    }
+  }
 
   {
     int use_portal = 0;
@@ -317,7 +339,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
   title = iupAttribGet(ih, "TITLE");
 
-  win = efl_add(EFL_UI_WIN_CLASS, efl_main_loop_get(),
+  win = efl_add(EFL_UI_WIN_CLASS, parent_win ? parent_win : efl_main_loop_get(),
     efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_DIALOG_BASIC),
     efl_text_set(efl_added, title ? iupeflStrConvertToSystem(title) : ""));
   if (!win)
@@ -408,6 +430,16 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
     }
   }
 
+  file = iupAttribGet(ih, "FILE");
+  if (file && file[0] && file[0] == '/')
+  {
+    char* file_dir = iupStrFileGetPath(file);
+    int len = (int)strlen(file_dir);
+    iupAttribSetStr(ih, "DIRECTORY", file_dir);
+    free(file_dir);
+    iupAttribSetStr(ih, "FILE", file + len);
+  }
+
   dir = iupAttribGet(ih, "DIRECTORY");
   if (dir && dir[0])
     elm_fileselector_path_set(fileselector, iupeflStrConvertToSystem(dir));
@@ -490,6 +522,48 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
       }
     }
 
+    if (efl_filedlg_status == 1 && efl_filedlg_paths && folder_mode)
+    {
+      char* filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
+      if (!eflIsDirectory(filename))
+      {
+        IupMessageError(ih, "IUP_INVALIDDIR");
+        eflFileDlgFreePathList();
+        efl_filedlg_status = 0;
+        continue;
+      }
+    }
+
+    if (efl_filedlg_status == 1 && efl_filedlg_paths && !is_multi && !folder_mode)
+    {
+      char* filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
+      int file_exist = eflIsFile(filename);
+      int dir_exist = eflIsDirectory(filename);
+
+      if (dir_exist)
+      {
+        IupMessageError(ih, "IUP_FILEISDIR");
+        eflFileDlgFreePathList();
+        efl_filedlg_status = 0;
+        continue;
+      }
+
+      if (!file_exist)
+      {
+        value = iupAttribGet(ih, "ALLOWNEW");
+        if (!value)
+          value = is_save ? "YES" : "NO";
+
+        if (!iupStrBoolean(value))
+        {
+          IupMessageError(ih, "IUP_FILENOTEXIST");
+          eflFileDlgFreePathList();
+          efl_filedlg_status = 0;
+          continue;
+        }
+      }
+    }
+
     if (efl_filedlg_status == 1 && efl_filedlg_paths && file_cb)
     {
       char* filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
@@ -497,6 +571,13 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
       if (ret == IUP_IGNORE || ret == IUP_CONTINUE)
       {
+        if (ret == IUP_CONTINUE)
+        {
+          value = iupAttribGet(ih, "FILE");
+          if (value && is_save)
+            elm_fileselector_current_name_set(fileselector, iupeflStrConvertToSystem(value));
+        }
+
         eflFileDlgFreePathList();
         efl_filedlg_status = 0;
         continue;

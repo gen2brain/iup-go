@@ -24,11 +24,11 @@ void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   Evas_Object* elm_img = (Evas_Object*)handle;
   Evas_Object* evas_img;
-  int w, h, y;
+  int w, h, bpp, x, y;
   unsigned int* pixels;
-  int stride;
+  int stride, channels;
 
-  if (!iupdrvImageGetInfo(handle, &w, &h, NULL))
+  if (!iupdrvImageGetInfo(handle, &w, &h, &bpp))
     return;
 
   evas_img = elm_image_object_get(elm_img);
@@ -40,13 +40,27 @@ void iupdrvImageGetData(void* handle, unsigned char* imgdata)
     return;
 
   stride = evas_object_image_stride_get(evas_img);
+  channels = bpp / 8;
 
   for (y = 0; y < h; y++)
   {
-    unsigned char* line_data = imgdata + y * w * 4;
+    unsigned char* line_data = imgdata + y * w * channels;
     unsigned int* pix_line = (unsigned int*)((unsigned char*)pixels + y * stride);
 
-    memcpy(line_data, pix_line, w * 4);
+    if (channels == 4)
+    {
+      memcpy(line_data, pix_line, w * 4);
+    }
+    else
+    {
+      for (x = 0; x < w; x++)
+      {
+        unsigned int pix = pix_line[x];
+        line_data[x * 3]     = (pix >> 16) & 0xFF;
+        line_data[x * 3 + 1] = (pix >> 8) & 0xFF;
+        line_data[x * 3 + 2] = pix & 0xFF;
+      }
+    }
   }
 
   evas_object_image_data_set(evas_img, pixels);
@@ -195,57 +209,11 @@ IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupC
   return elm_img;
 }
 
-void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
+static void eflImageFillPixels(unsigned int* pixels, unsigned char* imgdata, int width, int height, int bpp,
+                               iupColor* colors, int colors_count, int has_alpha, int make_inactive,
+                               unsigned char bg_r, unsigned char bg_g, unsigned char bg_b)
 {
-  Evas_Object* elm_img;
-  Evas_Object* evas_img;
-  unsigned int* pixels;
-  unsigned char* imgdata;
-  unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
-  int x, y, bpp, colors_count = 0, has_alpha = 0;
-  iupColor colors[256];
-  int width = ih->currentwidth;
-  int height = ih->currentheight;
-
-  Evas_Object* win = iupeflGetMainWindow();
-  if (!win)
-    return NULL;
-
-  bpp = iupAttribGetInt(ih, "BPP");
-
-  if (bpp == 8)
-    has_alpha = iupImageInitColorTable(ih, colors, &colors_count);
-  else if (bpp == 32)
-    has_alpha = 1;
-
-  elm_img = elm_image_add(win);
-  if (!elm_img)
-    return NULL;
-
-  elm_image_aspect_fixed_set(elm_img, EINA_FALSE);
-  elm_image_no_scale_set(elm_img, EINA_TRUE);
-
-  evas_img = elm_image_object_get(elm_img);
-  if (!evas_img)
-  {
-    evas_object_del(elm_img);
-    return NULL;
-  }
-
-  evas_object_image_size_set(evas_img, width, height);
-  evas_object_image_alpha_set(evas_img, has_alpha ? EINA_TRUE : EINA_FALSE);
-
-  pixels = evas_object_image_data_get(evas_img, EINA_TRUE);
-  if (!pixels)
-  {
-    evas_object_del(elm_img);
-    return NULL;
-  }
-
-  imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
-
-  if (make_inactive)
-    iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
+  int x, y;
 
   if (bpp == 8)
   {
@@ -261,7 +229,6 @@ void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive
           colors[i].b = bg_b;
           colors[i].a = 255;
         }
-
         iupImageColorMakeInactive(&colors[i].r, &colors[i].g, &colors[i].b, bg_r, bg_g, bg_b);
       }
     }
@@ -320,6 +287,61 @@ void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive
       }
     }
   }
+}
+
+void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
+{
+  Evas_Object* elm_img;
+  Evas_Object* evas_img;
+  unsigned int* pixels;
+  unsigned char* imgdata;
+  unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
+  int bpp, colors_count = 0, has_alpha = 0;
+  iupColor colors[256];
+  int width = ih->currentwidth;
+  int height = ih->currentheight;
+
+  Evas_Object* win = iupeflGetMainWindow();
+  if (!win)
+    return NULL;
+
+  bpp = iupAttribGetInt(ih, "BPP");
+
+  if (bpp == 8)
+    has_alpha = iupImageInitColorTable(ih, colors, &colors_count);
+  else if (bpp == 32)
+    has_alpha = 1;
+
+  elm_img = elm_image_add(win);
+  if (!elm_img)
+    return NULL;
+
+  elm_image_aspect_fixed_set(elm_img, EINA_FALSE);
+  elm_image_no_scale_set(elm_img, EINA_TRUE);
+
+  evas_img = elm_image_object_get(elm_img);
+  if (!evas_img)
+  {
+    evas_object_del(elm_img);
+    return NULL;
+  }
+
+  evas_object_image_size_set(evas_img, width, height);
+  evas_object_image_alpha_set(evas_img, has_alpha ? EINA_TRUE : EINA_FALSE);
+
+  pixels = evas_object_image_data_get(evas_img, EINA_TRUE);
+  if (!pixels)
+  {
+    evas_object_del(elm_img);
+    return NULL;
+  }
+
+  imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+
+  if (make_inactive)
+    iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
+
+  eflImageFillPixels(pixels, imgdata, width, height, bpp, colors, colors_count, has_alpha, make_inactive, bg_r, bg_g, bg_b);
 
   evas_object_image_data_set(evas_img, pixels);
   evas_object_image_data_update_add(evas_img, 0, 0, width, height);
@@ -416,7 +438,7 @@ static Evas_Object* eflImageCreateFromIhandle(Ihandle* img_ih, Evas_Object* pare
   unsigned int* pixels;
   unsigned char* imgdata;
   unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
-  int x, y, bpp, colors_count = 0, has_alpha = 0;
+  int bpp, colors_count = 0, has_alpha = 0;
   iupColor colors[256];
   int width = img_ih->currentwidth;
   int height = img_ih->currentheight;
@@ -461,78 +483,7 @@ static Evas_Object* eflImageCreateFromIhandle(Ihandle* img_ih, Evas_Object* pare
   if (make_inactive)
     iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
 
-  if (bpp == 8)
-  {
-    if (make_inactive)
-    {
-      int i;
-      for (i = 0; i < colors_count; i++)
-      {
-        if (colors[i].a == 0)
-        {
-          colors[i].r = bg_r;
-          colors[i].g = bg_g;
-          colors[i].b = bg_b;
-          colors[i].a = 255;
-        }
-        iupImageColorMakeInactive(&colors[i].r, &colors[i].g, &colors[i].b, bg_r, bg_g, bg_b);
-      }
-    }
-
-    for (y = 0; y < height; y++)
-    {
-      unsigned char* line_data = imgdata + y * width;
-      unsigned int* pix_line = pixels + y * width;
-
-      for (x = 0; x < width; x++)
-      {
-        unsigned char index = line_data[x];
-        iupColor* c = &colors[index];
-        unsigned char pa = c->a;
-        unsigned char pr = (c->r * pa) / 255;
-        unsigned char pg = (c->g * pa) / 255;
-        unsigned char pb = (c->b * pa) / 255;
-        pix_line[x] = (pa << 24) | (pr << 16) | (pg << 8) | pb;
-      }
-    }
-  }
-  else
-  {
-    int channels = (bpp == 32) ? 4 : 3;
-
-    for (y = 0; y < height; y++)
-    {
-      unsigned char* line_data = imgdata + y * width * channels;
-      unsigned int* pix_line = pixels + y * width;
-
-      for (x = 0; x < width; x++)
-      {
-        unsigned char r = line_data[x * channels];
-        unsigned char g = line_data[x * channels + 1];
-        unsigned char b = line_data[x * channels + 2];
-        unsigned char a = (bpp == 32) ? line_data[x * channels + 3] : 255;
-
-        if (make_inactive)
-        {
-          if (a == 0 && has_alpha)
-          {
-            r = bg_r;
-            g = bg_g;
-            b = bg_b;
-            a = 255;
-          }
-          iupImageColorMakeInactive(&r, &g, &b, bg_r, bg_g, bg_b);
-        }
-
-        {
-          unsigned char pr = (r * a) / 255;
-          unsigned char pg = (g * a) / 255;
-          unsigned char pb = (b * a) / 255;
-          pix_line[x] = (a << 24) | (pr << 16) | (pg << 8) | pb;
-        }
-      }
-    }
-  }
+  eflImageFillPixels(pixels, imgdata, width, height, bpp, colors, colors_count, has_alpha, make_inactive, bg_r, bg_g, bg_b);
 
   evas_object_image_data_set(evas_img, pixels);
   evas_object_image_data_update_add(evas_img, 0, 0, width, height);
@@ -550,7 +501,7 @@ static int eflImageUpdateFromIhandle(Evas_Object* elm_img, Ihandle* img_ih, int 
   unsigned int* pixels;
   unsigned char* imgdata;
   unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
-  int x, y, bpp, colors_count = 0, has_alpha = 0;
+  int bpp, colors_count = 0, has_alpha = 0;
   iupColor colors[256];
   int width = img_ih->currentwidth;
   int height = img_ih->currentheight;
@@ -581,78 +532,7 @@ static int eflImageUpdateFromIhandle(Evas_Object* elm_img, Ihandle* img_ih, int 
   if (make_inactive)
     iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
 
-  if (bpp == 8)
-  {
-    if (make_inactive)
-    {
-      int i;
-      for (i = 0; i < colors_count; i++)
-      {
-        if (colors[i].a == 0)
-        {
-          colors[i].r = bg_r;
-          colors[i].g = bg_g;
-          colors[i].b = bg_b;
-          colors[i].a = 255;
-        }
-        iupImageColorMakeInactive(&colors[i].r, &colors[i].g, &colors[i].b, bg_r, bg_g, bg_b);
-      }
-    }
-
-    for (y = 0; y < height; y++)
-    {
-      unsigned char* line_data = imgdata + y * width;
-      unsigned int* pix_line = pixels + y * width;
-
-      for (x = 0; x < width; x++)
-      {
-        unsigned char index = line_data[x];
-        iupColor* c = &colors[index];
-        unsigned char pa = c->a;
-        unsigned char pr = (c->r * pa) / 255;
-        unsigned char pg = (c->g * pa) / 255;
-        unsigned char pb = (c->b * pa) / 255;
-        pix_line[x] = (pa << 24) | (pr << 16) | (pg << 8) | pb;
-      }
-    }
-  }
-  else
-  {
-    int channels = (bpp == 32) ? 4 : 3;
-
-    for (y = 0; y < height; y++)
-    {
-      unsigned char* line_data = imgdata + y * width * channels;
-      unsigned int* pix_line = pixels + y * width;
-
-      for (x = 0; x < width; x++)
-      {
-        unsigned char r = line_data[x * channels];
-        unsigned char g = line_data[x * channels + 1];
-        unsigned char b = line_data[x * channels + 2];
-        unsigned char a = (bpp == 32) ? line_data[x * channels + 3] : 255;
-
-        if (make_inactive)
-        {
-          if (a == 0 && has_alpha)
-          {
-            r = bg_r;
-            g = bg_g;
-            b = bg_b;
-            a = 255;
-          }
-          iupImageColorMakeInactive(&r, &g, &b, bg_r, bg_g, bg_b);
-        }
-
-        {
-          unsigned char pr = (r * a) / 255;
-          unsigned char pg = (g * a) / 255;
-          unsigned char pb = (b * a) / 255;
-          pix_line[x] = (a << 24) | (pr << 16) | (pg << 8) | pb;
-        }
-      }
-    }
-  }
+  eflImageFillPixels(pixels, imgdata, width, height, bpp, colors, colors_count, has_alpha, make_inactive, bg_r, bg_g, bg_b);
 
   evas_object_image_data_set(evas_img, pixels);
   evas_object_image_data_update_add(evas_img, 0, 0, width, height);

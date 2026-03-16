@@ -466,8 +466,7 @@ static void eflDialogSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
     y += eflDialogGetMenuSize(ih);
 
-    if (ih->firstchild)
-      iupBaseSetPosition(ih->firstchild, x, y);
+    iupBaseSetPosition(ih->firstchild, x, y);
   }
 }
 
@@ -480,6 +479,55 @@ static void* eflDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* 
     return (void*)inner;
 
   return ih->handle;
+}
+
+static void eflDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
+{
+  Eo* win = iupeflGetWidget(ih);
+  Ecore_Evas* ee;
+
+  if (!win)
+    return;
+
+  ee = ecore_evas_object_ecore_evas_get(win);
+  if (!ee)
+    return;
+
+  if (min_w < 1) min_w = 1;
+  if (min_h < 1) min_h = 1;
+
+  ecore_evas_size_min_set(ee, min_w, min_h);
+
+  if (max_w >= 65535) max_w = 0;
+  if (max_h >= 65535) max_h = 0;
+
+  ecore_evas_size_max_set(ee, max_w, max_h);
+}
+
+static int eflDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
+{
+  int min_w = 1, min_h = 1;
+  int max_w = 65535, max_h = 65535;
+  iupStrToIntInt(value, &min_w, &min_h, 'x');
+
+  iupStrToIntInt(iupAttribGet(ih, "MAXSIZE"), &max_w, &max_h, 'x');
+
+  eflDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
+
+  return iupBaseSetMinSizeAttrib(ih, value);
+}
+
+static int eflDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
+{
+  int min_w = 1, min_h = 1;
+  int max_w = 65535, max_h = 65535;
+  iupStrToIntInt(value, &max_w, &max_h, 'x');
+
+  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
+
+  eflDialogSetMinMax(ih, min_w, min_h, max_w, max_h);
+
+  return iupBaseSetMaxSizeAttrib(ih, value);
 }
 
 static int eflDialogMapMethod(Ihandle* ih)
@@ -564,6 +612,8 @@ static int eflDialogMapMethod(Ihandle* ih)
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
+  eflDialogSetMinMax(ih, 1, 1, 65535, 65535);
+
   return IUP_NOERROR;
 }
 
@@ -588,7 +638,17 @@ static void eflDialogUnMapMethod(Ihandle* ih)
     efl_event_callback_del(win, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflDialogResizeCallback, ih);
     efl_event_callback_del(win, EFL_UI_WIN_EVENT_THEME_CHANGED, eflDialogThemeChangedCallback, ih);
     efl_event_callback_del(win, EFL_EVENT_KEY_DOWN, eflDialogKeyDownCallback, ih);
-    iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", NULL);
+
+    {
+      Eo* bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
+      Eo* op_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_OPACITY_IMAGE");
+      if (bg_img)
+        evas_object_del(bg_img);
+      if (op_img)
+        evas_object_del(op_img);
+      iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", NULL);
+      iupAttribSet(ih, "_IUP_EFL_OPACITY_IMAGE", NULL);
+    }
 
     efl_del(win);
   }
@@ -655,89 +715,6 @@ static char* eflDialogGetTitleAttrib(Ihandle* ih)
   return (char*)iupeflGetText(win);
 }
 
-static int eflDialogSetSizeAttrib(Ihandle* ih, const char* value)
-{
-  if (!value)
-  {
-    ih->userwidth = 0;
-    ih->userheight = 0;
-  }
-  else
-  {
-    int s = 0, d = 0;
-    iupStrToIntInt(value, &s, &d, 'x');
-    if (s > 0)
-    {
-      int charwidth, charheight;
-      iupdrvFontGetCharSize(ih, &charwidth, &charheight);
-      ih->userwidth = iupWIDTH2RASTER(s, charwidth);
-    }
-    else
-      ih->userwidth = 0;
-    if (d > 0)
-    {
-      int charwidth, charheight;
-      iupdrvFontGetCharSize(ih, &charwidth, &charheight);
-      ih->userheight = iupHEIGHT2RASTER(d, charheight);
-    }
-    else
-      ih->userheight = 0;
-  }
-
-  iupLayoutCompute(ih);
-
-  if (!ih->handle)
-    return 0;
-
-  iupLayoutUpdate(ih);
-
-  return 0;
-}
-
-static int eflDialogSetRasterSizeAttrib(Ihandle* ih, const char* value)
-{
-  if (!value)
-  {
-    ih->userwidth = 0;
-    ih->userheight = 0;
-  }
-  else
-  {
-    int w = 0, h = 0;
-    iupStrToIntInt(value, &w, &h, 'x');
-    ih->userwidth = w;
-    ih->userheight = h;
-  }
-
-  iupLayoutCompute(ih);
-
-  if (!ih->handle)
-    return 0;
-
-  iupLayoutUpdate(ih);
-
-  return 0;
-}
-
-static int eflDialogSetVisibleAttrib(Ihandle* ih, const char* value)
-{
-  Eo* win = iupeflGetWidget(ih);
-  if (!win)
-    return 0;
-
-  iupeflSetVisible(win, iupStrBoolean(value) ? EINA_TRUE : EINA_FALSE);
-
-  return 0;
-}
-
-static char* eflDialogGetVisibleAttrib(Ihandle* ih)
-{
-  Eo* win = iupeflGetWidget(ih);
-  if (!win)
-    return "NO";
-
-  return iupeflIsVisible(win) ? "YES" : "NO";
-}
 
 static int eflDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 {
@@ -748,15 +725,6 @@ static int eflDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
   efl_ui_win_fullscreen_set(win, iupStrBoolean(value) ? EINA_TRUE : EINA_FALSE);
 
   return 1;
-}
-
-static char* eflDialogGetFullScreenAttrib(Ihandle* ih)
-{
-  Eo* win = iupeflGetWidget(ih);
-  if (!win)
-    return "NO";
-
-  return efl_ui_win_fullscreen_get(win) ? "YES" : "NO";
 }
 
 static int eflDialogSetMaximizedAttrib(Ihandle* ih, const char* value)
@@ -1003,6 +971,12 @@ static int eflDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 
   if (!value)
   {
+    Eo* old_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_OPACITY_IMAGE");
+    if (old_img)
+    {
+      evas_object_del(old_img);
+      iupAttribSet(ih, "_IUP_EFL_OPACITY_IMAGE", NULL);
+    }
     ecore_evas_alpha_set(ee, EINA_FALSE);
     efl_gfx_color_set(win, 255, 255, 255, 255);
     return 1;
@@ -1019,9 +993,16 @@ static int eflDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
     if (imgdata && channels == 4)
     {
       Evas* evas = ecore_evas_get(ee);
-      Evas_Object* bg_img = evas_object_image_filled_add(evas);
+      Eo* old_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_OPACITY_IMAGE");
+      Evas_Object* bg_img;
       unsigned int* pixels;
       int x, y;
+
+      if (old_img)
+        evas_object_del(old_img);
+
+      bg_img = evas_object_image_filled_add(evas);
+      iupAttribSet(ih, "_IUP_EFL_OPACITY_IMAGE", (char*)bg_img);
 
       evas_object_image_size_set(bg_img, w, h);
       evas_object_image_alpha_set(bg_img, EINA_TRUE);
@@ -1119,46 +1100,33 @@ static int eflDialogSetIconAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static void eflDialogSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
-{
-  int decorwidth, decorheight, client_width, client_height;
-
-  (void)shrink;
-
-  client_width = ih->currentwidth;
-  client_height = ih->currentheight;
-
-  iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
-
-  client_width  -= decorwidth;
-  client_height -= decorheight;
-  if (client_width < 0) client_width = 0;
-  if (client_height < 0) client_height = 0;
-
-  iupBaseSetCurrentSize(ih->firstchild, client_width, client_height, 1);
-}
 
 void iupdrvDialogInitClass(Iclass* ic)
 {
   ic->Map = eflDialogMapMethod;
   ic->UnMap = eflDialogUnMapMethod;
   ic->LayoutUpdate = eflDialogLayoutUpdateMethod;
-  ic->SetChildrenCurrentSize = eflDialogSetChildrenCurrentSizeMethod;
   ic->SetChildrenPosition = eflDialogSetChildrenPositionMethod;
   ic->GetInnerNativeContainerHandle = eflDialogGetInnerNativeContainerHandleMethod;
 
   iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
   iupClassRegisterAttribute(ic, "TITLE", eflDialogGetTitleAttrib, eflDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VISIBLE", eflDialogGetVisibleAttrib, eflDialogSetVisibleAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "FULLSCREEN", eflDialogGetFullScreenAttrib, eflDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupeflSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
+
+  iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, eflDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXIMIZED", eflDialogGetMaximizedAttrib, eflDialogSetMaximizedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINIMIZED", eflDialogGetMinimizedAttrib, eflDialogSetMinimizedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, eflDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, eflDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINSIZE", NULL, eflDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXSIZE", NULL, eflDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, eflDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "OPACITY", NULL, eflDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, eflDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);

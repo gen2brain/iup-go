@@ -141,6 +141,8 @@ static char* eflClipboardGetTextAttrib(Ihandle* ih)
   return NULL;
 }
 
+/* EFL has_selection only checks if the buffer has any content,
+   not whether the content is specifically text. */
 static char* eflClipboardGetTextAvailableAttrib(Ihandle* ih)
 {
   Eo* win;
@@ -223,8 +225,9 @@ static char* eflClipboardGetFormatDataAttrib(Ihandle* ih)
 
   if (result.data)
   {
-    void* ret = iupStrGetMemory((int)result.size);
+    void* ret = iupStrGetMemory((int)result.size + 1);
     memcpy(ret, result.data, result.size);
+    ((char*)ret)[result.size] = 0;
     free(result.data);
     iupAttribSetInt(ih, "FORMATDATASIZE", (int)result.size);
     return ret;
@@ -233,6 +236,28 @@ static char* eflClipboardGetFormatDataAttrib(Ihandle* ih)
   return NULL;
 }
 
+static char* eflClipboardGetFormatDataStringAttrib(Ihandle* ih)
+{
+  char* data = eflClipboardGetFormatDataAttrib(ih);
+  if (!data)
+    return NULL;
+  return iupStrReturnStr(iupeflStrConvertFromSystem(data));
+}
+
+static int eflClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* value)
+{
+  if (value)
+  {
+    int len = (int)strlen(value);
+    iupAttribSetInt(ih, "FORMATDATASIZE", len + 1);
+    return eflClipboardSetFormatDataAttrib(ih, iupeflStrConvertToSystem(value));
+  }
+  else
+    return eflClipboardSetFormatDataAttrib(ih, NULL);
+}
+
+/* EFL has_selection only checks if the buffer has any content,
+   not whether the specific format is available. */
 static char* eflClipboardGetFormatAvailableAttrib(Ihandle* ih)
 {
   Eo* win;
@@ -264,7 +289,13 @@ Iclass* iupClipboardNewClass(void)
   iupClassRegisterAttribute(ic, "TEXTAVAILABLE", eflClipboardGetTextAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMAT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATAVAILABLE", eflClipboardGetFormatAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NATIVEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_IHANDLENAME | IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGEAVAILABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "ADDFORMAT", NULL, NULL, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATA", eflClipboardGetFormatDataAttrib, eflClipboardSetFormatDataAttrib, NULL, NULL, IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATDATASTRING", eflClipboardGetFormatDataStringAttrib, eflClipboardSetFormatDataStringAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATASIZE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   return ic;

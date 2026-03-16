@@ -12,6 +12,7 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_class.h"
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -126,11 +127,12 @@ static int eflProgressBarSetOrientationAttrib(Ihandle* ih, const char* value)
 static char* eflProgressBarGetOrientationAttrib(Ihandle* ih)
 {
   Eo* pbar = iupeflGetWidget(ih);
+  Efl_Ui_Layout_Orientation orient;
 
   if (!pbar)
     return "HORIZONTAL";
 
-  Efl_Ui_Layout_Orientation orient = efl_ui_layout_orientation_get(pbar);
+  orient = efl_ui_layout_orientation_get(pbar);
   return (orient == EFL_UI_LAYOUT_ORIENTATION_VERTICAL) ? "VERTICAL" : "HORIZONTAL";
 }
 
@@ -174,16 +176,6 @@ static int eflProgressBarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void eflProgressBarUnMapMethod(Ihandle* ih)
-{
-  Eo* pbar = iupeflGetWidget(ih);
-
-  if (pbar)
-    iupeflDelete(pbar);
-
-  iupeflFontFree(ih);
-}
-
 void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   if (iupStrEqualNoCase(iupAttribGet(ih, "ORIENTATION"), "VERTICAL"))
@@ -201,7 +193,6 @@ void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 void iupdrvProgressBarInitClass(Iclass* ic)
 {
   ic->Map = eflProgressBarMapMethod;
-  ic->UnMap = eflProgressBarUnMapMethod;
 
   iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, eflProgressBarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MIN", NULL, eflProgressBarSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);

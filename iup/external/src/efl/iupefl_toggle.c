@@ -123,6 +123,7 @@ static void eflRadioGroupValueChangedCallback(void* data, const Efl_Event* ev)
     if (child->iclass->nativetype == IUP_TYPEVOID)
       continue;
 
+    {
     int my_value = (intptr_t)iupAttribGet(child, "_IUP_EFL_RADIO_VALUE");
     if (my_value == new_value)
     {
@@ -144,6 +145,7 @@ static void eflRadioGroupValueChangedCallback(void* data, const Efl_Event* ev)
 
       iupBaseCallValueChangedCb(child);
       break;
+    }
     }
   }
 }
@@ -378,13 +380,12 @@ static int eflToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 
 static int eflToggleSetFontAttrib(Ihandle* ih, const char* value)
 {
-  Eo* label;
-
-  iupdrvSetFontAttrib(ih, value);
+  if (!iupdrvSetFontAttrib(ih, value))
+    return 0;
 
   if (ih->data->type == IUP_TOGGLE_TEXT && !iupAttribGetBoolean(ih, "SWITCH"))
   {
-    label = (Eo*)iupAttribGet(ih, "_IUP_EFL_LABEL");
+    Eo* label = (Eo*)iupAttribGet(ih, "_IUP_EFL_LABEL");
     if (label)
       iupeflApplyTextStyle(ih, label);
   }
@@ -523,9 +524,11 @@ static int eflToggleMapMethod(Ihandle* ih)
       efl_pack_end(toggle, radio_btn);
       iupAttribSet(ih, "_IUP_EFL_CHECK", (char*)radio_btn);
 
-      int my_value = radio_value_counter++;
-      iupAttribSet(ih, "_IUP_EFL_RADIO_VALUE", (char*)(intptr_t)my_value);
-      efl_ui_radio_state_value_set(radio_btn, my_value);
+      {
+        int my_value = radio_value_counter++;
+        iupAttribSet(ih, "_IUP_EFL_RADIO_VALUE", (char*)(intptr_t)my_value);
+        efl_ui_radio_state_value_set(radio_btn, my_value);
+      }
 
       if (radio_group)
       {
@@ -611,8 +614,6 @@ static int eflToggleMapMethod(Ihandle* ih)
 
     if (title && title[0])
     {
-      Evas_Object* event_rect;
-
       label = efl_add(EFL_UI_TEXTBOX_CLASS, toggle,
                       efl_text_interactive_editable_set(efl_added, EINA_FALSE),
                       efl_text_interactive_selection_allowed_set(efl_added, EINA_FALSE),

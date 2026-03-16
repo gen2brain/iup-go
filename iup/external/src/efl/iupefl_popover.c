@@ -26,71 +26,6 @@
 #include "iupefl_drv.h"
 
 
-static void eflPopoverFocusOutCb(void* data, const Efl_Event* ev);
-static void eflPopoverAnchorDelCb(void* data, const Efl_Event* ev);
-
-static int eflPopoverMapMethod(Ihandle* ih)
-{
-  Ihandle* anchor;
-  Eo* anchor_widget;
-  Eo* parent_win;
-  Eo* popup_win;
-  Eo* frame;
-
-  anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
-  if (!anchor || !anchor->handle)
-    return IUP_ERROR;
-
-  anchor_widget = iupeflGetWidget(anchor);
-  if (!anchor_widget)
-    return IUP_ERROR;
-
-  parent_win = efl_provider_find(anchor_widget, EFL_UI_WIN_CLASS);
-  if (!parent_win)
-    parent_win = iupeflGetMainWindow();
-  if (!parent_win)
-    return IUP_ERROR;
-
-  /* Create a borderless popup window */
-  popup_win = efl_add(EFL_UI_WIN_CLASS, parent_win, efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_BASIC));
-  if (!popup_win)
-    return IUP_ERROR;
-
-  ih->handle = (InativeHandle*)popup_win;
-
-  /* Make it borderless and act as popup */
-  efl_ui_win_borderless_set(popup_win, EINA_TRUE);
-
-  /* Create a frame inside the window for visual border */
-  frame = efl_add(EFL_UI_FRAME_CLASS, popup_win);
-  if (frame)
-  {
-    /* Hide frame title, just use for border effect */
-    efl_text_set(frame, "");
-    efl_gfx_hint_weight_set(frame, EFL_GFX_HINT_EXPAND, EFL_GFX_HINT_EXPAND);
-    efl_gfx_hint_fill_set(frame, EINA_TRUE, EINA_TRUE);
-    efl_gfx_entity_visible_set(frame, EINA_TRUE);
-    iupAttribSet(ih, "_IUP_EFL_FRAME", (char*)frame);
-    iupAttribSet(ih, "_IUP_EFL_INNER", (char*)frame);
-  }
-  else
-  {
-    /* Fallback to window directly if frame creation fails */
-    iupAttribSet(ih, "_IUP_EFL_INNER", (char*)popup_win);
-  }
-
-  /* Connect focus-out for autohide */
-  if (iupAttribGetBoolean(ih, "AUTOHIDE"))
-  {
-    efl_event_callback_add(popup_win, EFL_EVENT_FOCUS_OUT, eflPopoverFocusOutCb, ih);
-  }
-
-  /* Track anchor deletion */
-  efl_event_callback_add(anchor_widget, EFL_EVENT_DEL, eflPopoverAnchorDelCb, ih);
-
-  return IUP_NOERROR;
-}
-
 static Eina_Bool eflPopoverIsCursorOverAnchor(Ihandle* ih)
 {
   Ihandle* anchor;
@@ -159,6 +94,68 @@ static void eflPopoverAnchorDelCb(void* data, const Efl_Event* ev)
   }
 }
 
+static int eflPopoverMapMethod(Ihandle* ih)
+{
+  Ihandle* anchor;
+  Eo* anchor_widget;
+  Eo* parent_win;
+  Eo* popup_win;
+  Eo* frame;
+
+  anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
+  if (!anchor || !anchor->handle)
+    return IUP_ERROR;
+
+  anchor_widget = iupeflGetWidget(anchor);
+  if (!anchor_widget)
+    return IUP_ERROR;
+
+  parent_win = efl_provider_find(anchor_widget, EFL_UI_WIN_CLASS);
+  if (!parent_win)
+    parent_win = iupeflGetMainWindow();
+  if (!parent_win)
+    return IUP_ERROR;
+
+  /* Create a borderless popup window */
+  popup_win = efl_add(EFL_UI_WIN_CLASS, parent_win, efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_BASIC));
+  if (!popup_win)
+    return IUP_ERROR;
+
+  ih->handle = (InativeHandle*)popup_win;
+
+  /* Make it borderless and act as popup */
+  efl_ui_win_borderless_set(popup_win, EINA_TRUE);
+
+  /* Create a frame inside the window for visual border */
+  frame = efl_add(EFL_UI_FRAME_CLASS, popup_win);
+  if (frame)
+  {
+    /* Hide frame title, just use for border effect */
+    efl_text_set(frame, "");
+    efl_gfx_hint_weight_set(frame, EFL_GFX_HINT_EXPAND, EFL_GFX_HINT_EXPAND);
+    efl_gfx_hint_fill_set(frame, EINA_TRUE, EINA_TRUE);
+    efl_gfx_entity_visible_set(frame, EINA_TRUE);
+    iupAttribSet(ih, "_IUP_EFL_FRAME", (char*)frame);
+    iupAttribSet(ih, "_IUP_EFL_INNER", (char*)frame);
+  }
+  else
+  {
+    /* Fallback to window directly if frame creation fails */
+    iupAttribSet(ih, "_IUP_EFL_INNER", (char*)popup_win);
+  }
+
+  /* Connect focus-out for autohide */
+  if (iupAttribGetBoolean(ih, "AUTOHIDE"))
+  {
+    efl_event_callback_add(popup_win, EFL_EVENT_FOCUS_OUT, eflPopoverFocusOutCb, ih);
+  }
+
+  /* Track anchor deletion */
+  efl_event_callback_add(anchor_widget, EFL_EVENT_DEL, eflPopoverAnchorDelCb, ih);
+
+  return IUP_NOERROR;
+}
+
 static void eflPopoverUnMapMethod(Ihandle* ih)
 {
   Eo* popup_win = iupeflGetWidget(ih);
@@ -202,9 +199,9 @@ static void eflPopoverLayoutUpdateMethod(Ihandle* ih)
 
   if (ih->firstchild)
   {
+    Ihandle* child;
     ih->iclass->SetChildrenPosition(ih, 0, 0);
 
-    Ihandle* child;
     for (child = ih->firstchild; child; child = child->brother)
       iupLayoutUpdate(child);
   }

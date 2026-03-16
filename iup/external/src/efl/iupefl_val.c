@@ -12,6 +12,7 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_class.h"
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -247,10 +248,9 @@ static void eflValUnMapMethod(Ihandle* ih)
     efl_event_callback_del(slider, EFL_UI_RANGE_EVENT_CHANGED, eflValChangedCallback, ih);
     efl_event_callback_del(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_START, eflValDragStartCallback, ih);
     efl_event_callback_del(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_STOP, eflValDragStopCallback, ih);
-    iupeflDelete(slider);
   }
 
-  iupeflFontFree(ih);
+  iupdrvBaseUnMapMethod(ih);
 }
 
 void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
