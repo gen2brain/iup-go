@@ -401,18 +401,18 @@ extern "C" void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   IBuffer buffer = bitmap.PixelBuffer();
   uint8_t* pixels = buffer.data();
 
-  int planesize = width * height;
-
   for (int y = 0; y < height; y++)
   {
+    unsigned char* line_data = imgdata + y * width * 4;
     for (int x = 0; x < width; x++)
     {
       int src_pos = y * width * 4 + x * 4;
-      int dst_pos = y * width + x;
 
-      imgdata[dst_pos] = pixels[src_pos + 2];
-      imgdata[dst_pos + planesize] = pixels[src_pos + 1];
-      imgdata[dst_pos + 2*planesize] = pixels[src_pos];
+      line_data[0] = pixels[src_pos + 2];
+      line_data[1] = pixels[src_pos + 1];
+      line_data[2] = pixels[src_pos];
+      line_data[3] = pixels[src_pos + 3];
+      line_data += 4;
     }
   }
 }

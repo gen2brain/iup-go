@@ -273,8 +273,6 @@ struct IupWinUIDialogAux
   winrt::Microsoft::UI::Xaml::Controls::Canvas contentCanvas;
   winrt::Microsoft::UI::Xaml::Controls::MenuBar menuBar;
   winrt::Microsoft::UI::Windowing::AppWindow appWindow;
-  winrt::event_token takeFocusToken;
-  winrt::event_token gotFocusToken;
   HWND islandHwnd;
   HWND lastFocusedHwnd;
   bool isVisible;
@@ -283,7 +281,6 @@ struct IupWinUIDialogAux
   IupWinUIDialogAux() : xamlSource(nullptr), siteBridge(nullptr),
                         rootPanel(nullptr), contentCanvas(nullptr), menuBar(nullptr),
                         appWindow(nullptr),
-                        takeFocusToken{}, gotFocusToken{},
                         islandHwnd(NULL), lastFocusedHwnd(NULL),
                         isVisible(false), windowCreated(false) {}
 };

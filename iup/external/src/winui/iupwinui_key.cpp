@@ -33,6 +33,7 @@ static void winuiKeyInit(void)
   memset(winuiKeyMap, 0, sizeof(winuiKeyMap));
   memset(winuiKeyMapShift, 0, sizeof(winuiKeyMapShift));
 
+  winuiKeyMap[VK_CANCEL] = K_cPAUSE;
   winuiKeyMap[VK_ESCAPE] = K_ESC;
   winuiKeyMap[VK_PAUSE] = K_PAUSE;
   winuiKeyMap[VK_SNAPSHOT] = K_Print;
@@ -154,6 +155,23 @@ static void winuiKeyInit(void)
   winuiKeyMapShift['X'] = K_X;
   winuiKeyMapShift['Y'] = K_Y;
   winuiKeyMapShift['Z'] = K_Z;
+
+  winuiKeyMap[VK_OEM_PLUS] = LOWORD(MapVirtualKeyA(VK_OEM_PLUS, MAPVK_VK_TO_CHAR));
+  winuiKeyMap[VK_OEM_COMMA] = LOWORD(MapVirtualKeyA(VK_OEM_COMMA, MAPVK_VK_TO_CHAR));
+  winuiKeyMap[VK_OEM_MINUS] = LOWORD(MapVirtualKeyA(VK_OEM_MINUS, MAPVK_VK_TO_CHAR));
+  winuiKeyMap[VK_OEM_PERIOD] = LOWORD(MapVirtualKeyA(VK_OEM_PERIOD, MAPVK_VK_TO_CHAR));
+  winuiKeyMap[VK_DECIMAL] = LOWORD(MapVirtualKeyA(VK_DECIMAL, MAPVK_VK_TO_CHAR));
+  winuiKeyMap[VK_SEPARATOR] = LOWORD(MapVirtualKeyA(VK_SEPARATOR, MAPVK_VK_TO_CHAR));
+
+  if (!winuiKeyMap[VK_OEM_1]) winuiKeyMap[VK_OEM_1] = LOWORD(MapVirtualKeyA(VK_OEM_1, MAPVK_VK_TO_CHAR));
+  if (!winuiKeyMap[VK_OEM_2]) winuiKeyMap[VK_OEM_2] = LOWORD(MapVirtualKeyA(VK_OEM_2, MAPVK_VK_TO_CHAR));
+  if (!winuiKeyMap[VK_OEM_3]) winuiKeyMap[VK_OEM_3] = LOWORD(MapVirtualKeyA(VK_OEM_3, MAPVK_VK_TO_CHAR));
+  if (!winuiKeyMap[VK_OEM_4]) winuiKeyMap[VK_OEM_4] = LOWORD(MapVirtualKeyA(VK_OEM_4, MAPVK_VK_TO_CHAR));
+  if (!winuiKeyMap[VK_OEM_5]) winuiKeyMap[VK_OEM_5] = LOWORD(MapVirtualKeyA(VK_OEM_5, MAPVK_VK_TO_CHAR));
+  if (!winuiKeyMap[VK_OEM_6]) winuiKeyMap[VK_OEM_6] = LOWORD(MapVirtualKeyA(VK_OEM_6, MAPVK_VK_TO_CHAR));
+  if (!winuiKeyMap[VK_OEM_7]) winuiKeyMap[VK_OEM_7] = LOWORD(MapVirtualKeyA(VK_OEM_7, MAPVK_VK_TO_CHAR));
+  if (!winuiKeyMap[VK_OEM_8]) winuiKeyMap[VK_OEM_8] = LOWORD(MapVirtualKeyA(VK_OEM_8, MAPVK_VK_TO_CHAR));
+  winuiKeyMap[VK_OEM_102] = LOWORD(MapVirtualKeyA(VK_OEM_102, MAPVK_VK_TO_CHAR));
 
   winui_key_initialized = 1;
 }

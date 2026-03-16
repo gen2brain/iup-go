@@ -206,13 +206,7 @@ static void winuiDragStartingHandler(Ihandle* ih, DragStartingEventArgs const& e
       if (data)
       {
         dragdata_cb(ih, drag_types, data, size);
-
-        winuiDragDataCleanup();
-        winui_drag_data = data;
-        winui_drag_data_size = size;
-        strncpy(winui_drag_type, drag_types, sizeof(winui_drag_type) - 1);
-        winui_drag_type[sizeof(winui_drag_type) - 1] = '\0';
-
+        winuiDragSetInProcessData(drag_types, data, size);
         e.Data().SetText(iupwinuiStringToHString(drag_types));
       }
     }
@@ -388,6 +382,8 @@ extern "C" void iupdrvRegisterDragDropAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, winuiSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPTARGET", NULL, winuiSetDropTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DRAGDROP", NULL, winuiSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPFILESTARGET", NULL, winuiSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);

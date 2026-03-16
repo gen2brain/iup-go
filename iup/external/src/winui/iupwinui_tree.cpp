@@ -2555,7 +2555,7 @@ extern "C" void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "COLOR", winuiTreeGetColorAttrib, winuiTreeSetColorAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLEFONT", NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_NO_SAVE);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttributeId(ic, "TOGGLEVALUE", winuiTreeGetToggleValueAttrib, winuiTreeSetToggleValueAttrib, IUPAF_NO_INHERIT);
@@ -2568,4 +2568,7 @@ extern "C" void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, winuiTreeSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, winuiTreeSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "EMPTYAS3STATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

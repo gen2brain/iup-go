@@ -79,26 +79,35 @@ extern "C" int IupHelp(const char* url)
   return IupExecute(url, NULL);
 }
 
-extern "C" void IupLog(const char* type, const char* format, ...)
+extern "C" void IupLogV(const char* type, const char* format, va_list arglist)
 {
-  va_list arglist;
-  char msg[1024];
-  int len;
+  int size;
+  char* value;
 
   if (!format)
     return;
 
-  va_start(arglist, format);
-  len = vsnprintf(msg, sizeof(msg), format, arglist);
-  va_end(arglist);
+  value = iupStrGetLargeMem(&size);
+  vsnprintf(value, size, format, arglist);
 
-  if (len > 0)
+  if (iupStrEqualNoCase(type, "DEBUG"))
   {
-    OutputDebugStringA(msg);
-
-    if (type && iupStrEqualNoCase(type, "ERROR"))
-      fprintf(stderr, "%s", msg);
-    else
-      fprintf(stdout, "%s", msg);
+    OutputDebugStringA(value);
+    return;
   }
+
+  OutputDebugStringA(value);
+
+  if (iupStrEqualNoCase(type, "ERROR"))
+    fprintf(stderr, "%s", value);
+  else
+    fprintf(stdout, "%s", value);
+}
+
+extern "C" void IupLog(const char* type, const char* format, ...)
+{
+  va_list arglist;
+  va_start(arglist, format);
+  IupLogV(type, format, arglist);
+  va_end(arglist);
 }

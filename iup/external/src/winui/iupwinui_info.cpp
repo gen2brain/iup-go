@@ -88,18 +88,18 @@ extern "C" char* iupdrvGetSystemVersion(void)
 
 extern "C" char* iupdrvGetComputerName(void)
 {
-  const char* name = getenv("COMPUTERNAME");
-  if (name)
-    return (char*)name;
-  return (char*)"localhost";
+  DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
+  char* str = iupStrGetMemory(size);
+  GetComputerNameA((LPSTR)str, &size);
+  return str;
 }
 
 extern "C" char* iupdrvGetUserName(void)
 {
-  const char* name = getenv("USERNAME");
-  if (name)
-    return (char*)name;
-  return (char*)"user";
+  DWORD size = 256;
+  char* str = iupStrGetMemory(size);
+  GetUserNameA((LPSTR)str, &size);
+  return str;
 }
 
 static int iupwinuiMakeDirectory(const char* path)

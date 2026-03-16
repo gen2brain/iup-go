@@ -1472,8 +1472,16 @@ static void winuiListUnMapMethod(Ihandle* ih)
           grid.PreviewKeyDown(aux->keyDownToken);
       }
 
-      iupAttribSet(ih, "_IUPWINUI_LISTBOX", nullptr);
-      iupAttribSet(ih, "_IUPWINUI_TEXTBOX", nullptr);
+      {
+        void* ptr = (void*)iupAttribGet(ih, "_IUPWINUI_LISTBOX");
+        if (ptr) { IInspectable obj{nullptr}; winrt::attach_abi(obj, ptr); }
+        iupAttribSet(ih, "_IUPWINUI_LISTBOX", nullptr);
+      }
+      {
+        void* ptr = (void*)iupAttribGet(ih, "_IUPWINUI_TEXTBOX");
+        if (ptr) { IInspectable obj{nullptr}; winrt::attach_abi(obj, ptr); }
+        iupAttribSet(ih, "_IUPWINUI_TEXTBOX", nullptr);
+      }
       winuiReleaseHandle<Grid>(ih);
     }
     else if (aux->isVirtual)
@@ -1803,6 +1811,296 @@ extern "C" void iupdrvListSetItemCount(Ihandle* ih, int count)
   listView.ItemsSource(winrt::single_threaded_vector<IInspectable>(std::move(items)));
 }
 
+static char* winuiListGetSelectedTextAttrib(Ihandle* ih)
+{
+  if (!ih->data->has_editbox)
+    return NULL;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return NULL;
+
+  int start = tb.SelectionStart();
+  int len = tb.SelectionLength();
+  if (len == 0)
+    return NULL;
+
+  hstring text = tb.SelectedText();
+  return iupwinuiHStringToString(text);
+}
+
+static int winuiListSetSelectedTextAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox || !value)
+    return 0;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb || tb.SelectionLength() == 0)
+    return 0;
+
+  tb.SelectedText(iupwinuiStringToHString(value));
+  return 0;
+}
+
+static char* winuiListGetSelectionAttrib(Ihandle* ih)
+{
+  if (!ih->data->has_editbox)
+    return NULL;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return NULL;
+
+  int start = tb.SelectionStart();
+  int len = tb.SelectionLength();
+  if (len == 0)
+    return NULL;
+
+  return iupStrReturnIntInt(start + 1, start + len + 1, ':');
+}
+
+static int winuiListSetSelectionAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox)
+    return 0;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return 0;
+
+  if (!value || iupStrEqualNoCase(value, "NONE"))
+  {
+    tb.Select(0, 0);
+    return 0;
+  }
+
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    tb.SelectAll();
+    return 0;
+  }
+
+  int start = 1, end = 1;
+  if (iupStrToIntInt(value, &start, &end, ':') != 2)
+    return 0;
+
+  if (start < 1 || end < 1)
+    return 0;
+
+  start--;
+  end--;
+
+  tb.Select(start, end - start);
+  return 0;
+}
+
+static char* winuiListGetSelectionPosAttrib(Ihandle* ih)
+{
+  if (!ih->data->has_editbox)
+    return NULL;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return NULL;
+
+  int start = tb.SelectionStart();
+  int len = tb.SelectionLength();
+  if (len == 0)
+    return NULL;
+
+  return iupStrReturnIntInt(start, start + len, ':');
+}
+
+static int winuiListSetSelectionPosAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox)
+    return 0;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return 0;
+
+  if (!value || iupStrEqualNoCase(value, "NONE"))
+  {
+    tb.Select(0, 0);
+    return 0;
+  }
+
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    tb.SelectAll();
+    return 0;
+  }
+
+  int start = 0, end = 0;
+  if (iupStrToIntInt(value, &start, &end, ':') != 2)
+    return 0;
+
+  if (start < 0 || end < 0)
+    return 0;
+
+  tb.Select(start, end - start);
+  return 0;
+}
+
+static char* winuiListGetCaretAttrib(Ihandle* ih)
+{
+  if (!ih->data->has_editbox)
+    return NULL;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return NULL;
+
+  int pos = tb.SelectionStart() + tb.SelectionLength();
+  return iupStrReturnInt(pos + 1);
+}
+
+static int winuiListSetCaretAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox || !value)
+    return 0;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return 0;
+
+  int pos = 1;
+  iupStrToInt(value, &pos);
+  if (pos < 1) pos = 1;
+  pos--;
+
+  tb.Select(pos, 0);
+  return 0;
+}
+
+static char* winuiListGetCaretPosAttrib(Ihandle* ih)
+{
+  if (!ih->data->has_editbox)
+    return NULL;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return NULL;
+
+  int pos = tb.SelectionStart() + tb.SelectionLength();
+  return iupStrReturnInt(pos);
+}
+
+static int winuiListSetCaretPosAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox || !value)
+    return 0;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return 0;
+
+  int pos = 0;
+  iupStrToInt(value, &pos);
+  if (pos < 0) pos = 0;
+
+  tb.Select(pos, 0);
+  return 0;
+}
+
+static int winuiListSetInsertAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox || !value)
+    return 0;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return 0;
+
+  tb.SelectedText(iupwinuiStringToHString(value));
+  return 0;
+}
+
+static int winuiListSetAppendAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox)
+    return 0;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return 0;
+
+  if (!value) value = "";
+
+  int len = (int)tb.Text().size();
+  tb.Select(len, 0);
+  tb.SelectedText(iupwinuiStringToHString(value));
+  return 0;
+}
+
+static char* winuiListGetReadOnlyAttrib(Ihandle* ih)
+{
+  if (!ih->data->has_editbox)
+    return NULL;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return NULL;
+
+  return iupStrReturnBoolean(tb.IsReadOnly());
+}
+
+static int winuiListSetReadOnlyAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox)
+    return 0;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return 0;
+
+  tb.IsReadOnly(iupStrBoolean(value) ? true : false);
+  return 0;
+}
+
+static int winuiListSetNCAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox)
+    return 0;
+
+  if (!iupStrToInt(value, &ih->data->nc))
+    ih->data->nc = 0;
+
+  if (ih->handle)
+  {
+    TextBox tb = winuiListGetTextBox(ih);
+    if (tb)
+      tb.MaxLength(ih->data->nc);
+    return 0;
+  }
+
+  return 1;
+}
+
+static int winuiListSetClipboardAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox || !value)
+    return 0;
+
+  TextBox tb = winuiListGetTextBox(ih);
+  if (!tb)
+    return 0;
+
+  if (iupStrEqualNoCase(value, "COPY"))
+    tb.CopySelectionToClipboard();
+  else if (iupStrEqualNoCase(value, "CUT"))
+    tb.CutSelectionToClipboard();
+  else if (iupStrEqualNoCase(value, "PASTE"))
+    tb.PasteFromClipboard();
+  else if (iupStrEqualNoCase(value, "CLEAR"))
+    tb.SelectedText(hstring(L""));
+  else if (iupStrEqualNoCase(value, "UNDO"))
+    tb.Undo();
+
+  return 0;
+}
+
 static void winuiListLayoutUpdateMethod(Ihandle* ih)
 {
   if (ih->data->is_dropdown)
@@ -1830,6 +2128,8 @@ extern "C" void iupdrvListInitClass(Iclass* ic)
   ic->LayoutUpdate = winuiListLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, winuiListSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", winuiListGetValueAttrib, winuiListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IDVALUE", winuiListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
@@ -1837,9 +2137,26 @@ extern "C" void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, winuiListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, winuiListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, winuiListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", winuiListGetImageNativeHandleAttrib, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winuiListGetSelectedTextAttrib, winuiListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", winuiListGetSelectionAttrib, winuiListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", winuiListGetSelectionPosAttrib, winuiListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", winuiListGetCaretAttrib, winuiListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", winuiListGetCaretPosAttrib, winuiListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, winuiListSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, winuiListSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "READONLY", winuiListGetReadOnlyAttrib, winuiListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, winuiListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, winuiListSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
   iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, winuiListSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

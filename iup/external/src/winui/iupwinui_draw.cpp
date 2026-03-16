@@ -817,6 +817,20 @@ extern "C" void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x
 
   D2D1_RECT_F layoutRect = D2D1::RectF(fx, fy, fx + fw, fy + fh);
 
+  com_ptr<IDWriteTextLayout> textLayout;
+  if (is_underline || is_strikeout)
+  {
+    g_dwriteFactory->CreateTextLayout(wtext, wlen, textFormat.get(), fw, fh, textLayout.put());
+    if (textLayout)
+    {
+      DWRITE_TEXT_RANGE range = {0, (UINT32)wlen};
+      if (is_underline)
+        textLayout->SetUnderline(TRUE, range);
+      if (is_strikeout)
+        textLayout->SetStrikethrough(TRUE, range);
+    }
+  }
+
   if (text_orientation != 0.0)
   {
     D2D1_MATRIX_3X2_F oldTransform;
@@ -824,27 +838,31 @@ extern "C" void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x
 
     float tcx = fx + fw / 2.0f;
     float tcy = fy + fh / 2.0f;
-    float rad = (float)(-text_orientation * IUP_DEG2RAD);
 
     D2D1_MATRIX_3X2_F rotation = D2D1::Matrix3x2F::Rotation(
       (float)(-text_orientation), D2D1::Point2F(tcx, tcy));
 
     dc->d2dContext->SetTransform(oldTransform * rotation);
-    dc->d2dContext->DrawText(wtext, wlen, textFormat.get(), layoutRect, dc->solidBrush.get());
+
+    if (textLayout)
+      dc->d2dContext->DrawTextLayout(D2D1::Point2F(fx, fy), textLayout.get(), dc->solidBrush.get());
+    else
+      dc->d2dContext->DrawText(wtext, wlen, textFormat.get(), layoutRect, dc->solidBrush.get());
+
     dc->d2dContext->SetTransform(oldTransform);
   }
   else
   {
     if (flags & IUP_DRAW_CLIP)
-    {
       dc->d2dContext->PushAxisAlignedClip(layoutRect, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-      dc->d2dContext->DrawText(wtext, wlen, textFormat.get(), layoutRect, dc->solidBrush.get());
-      dc->d2dContext->PopAxisAlignedClip();
-    }
+
+    if (textLayout)
+      dc->d2dContext->DrawTextLayout(D2D1::Point2F(fx, fy), textLayout.get(), dc->solidBrush.get());
     else
-    {
       dc->d2dContext->DrawText(wtext, wlen, textFormat.get(), layoutRect, dc->solidBrush.get());
-    }
+
+    if (flags & IUP_DRAW_CLIP)
+      dc->d2dContext->PopAxisAlignedClip();
   }
 
   free(wtext);

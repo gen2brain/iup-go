@@ -207,7 +207,10 @@ static int winuiGetDialogMenuHeight(Ihandle* dialog)
 {
   IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
   if (aux && aux->menuBar)
-    return 40;
+  {
+    double h = aux->menuBar.ActualHeight();
+    return (h > 0) ? (int)h : 40;
+  }
   return 0;
 }
 
@@ -502,12 +505,78 @@ extern "C" void iupdrvReparent(Ihandle* ih)
 
 extern "C" void iupdrvSendKey(int key, int press)
 {
-  INPUT input;
-  ZeroMemory(&input, sizeof(INPUT));
-  input.type = INPUT_KEYBOARD;
-  input.ki.wVk = (WORD)key;
-  input.ki.dwFlags = press ? 0 : KEYEVENTF_KEYUP;
-  SendInput(1, &input, sizeof(INPUT));
+  unsigned int keyval, state;
+  INPUT input[2];
+  WORD state_scan = 0, key_scan;
+  ZeroMemory(input, 2 * sizeof(INPUT));
+
+  iupdrvKeyEncode(key, &keyval, &state);
+  if (!keyval)
+    return;
+
+  LPARAM extra_info = GetMessageExtraInfo();
+  if (state)
+    state_scan = (WORD)MapVirtualKey(state, MAPVK_VK_TO_VSC);
+  key_scan = (WORD)MapVirtualKey(keyval, MAPVK_VK_TO_VSC);
+
+  if (press & 0x01)
+  {
+    if (state)
+    {
+      input[0].type = INPUT_KEYBOARD;
+      input[0].ki.wVk = (WORD)state;
+      input[0].ki.wScan = state_scan;
+      input[0].ki.dwExtraInfo = extra_info;
+
+      input[1].type = INPUT_KEYBOARD;
+      input[1].ki.wVk = (WORD)keyval;
+      input[1].ki.wScan = key_scan;
+      input[1].ki.dwExtraInfo = extra_info;
+
+      SendInput(2, input, sizeof(INPUT));
+    }
+    else
+    {
+      input[0].type = INPUT_KEYBOARD;
+      input[0].ki.wVk = (WORD)keyval;
+      input[0].ki.wScan = key_scan;
+      input[0].ki.dwExtraInfo = extra_info;
+
+      SendInput(1, input, sizeof(INPUT));
+    }
+  }
+
+  if (press & 0x02)
+  {
+    ZeroMemory(input, 2 * sizeof(INPUT));
+
+    if (state)
+    {
+      input[0].type = INPUT_KEYBOARD;
+      input[0].ki.dwFlags = KEYEVENTF_KEYUP;
+      input[0].ki.wVk = (WORD)keyval;
+      input[0].ki.wScan = key_scan;
+      input[0].ki.dwExtraInfo = extra_info;
+
+      input[1].type = INPUT_KEYBOARD;
+      input[1].ki.dwFlags = KEYEVENTF_KEYUP;
+      input[1].ki.wVk = (WORD)state;
+      input[1].ki.wScan = state_scan;
+      input[1].ki.dwExtraInfo = extra_info;
+
+      SendInput(2, input, sizeof(INPUT));
+    }
+    else
+    {
+      input[0].type = INPUT_KEYBOARD;
+      input[0].ki.dwFlags = KEYEVENTF_KEYUP;
+      input[0].ki.wVk = (WORD)keyval;
+      input[0].ki.wScan = key_scan;
+      input[0].ki.dwExtraInfo = extra_info;
+
+      SendInput(1, input, sizeof(INPUT));
+    }
+  }
 }
 
 extern "C" void iupdrvWarpPointer(int x, int y)
@@ -515,35 +584,88 @@ extern "C" void iupdrvWarpPointer(int x, int y)
   SetCursorPos(x, y);
 }
 
+static DWORD winuiGetButtonFlags(int bt, int pressed)
+{
+  if (pressed)
+  {
+    switch (bt)
+    {
+    case IUP_BUTTON1: return MOUSEEVENTF_LEFTDOWN;
+    case IUP_BUTTON2: return MOUSEEVENTF_MIDDLEDOWN;
+    case IUP_BUTTON3: return MOUSEEVENTF_RIGHTDOWN;
+    case IUP_BUTTON4: return MOUSEEVENTF_XDOWN;
+    case IUP_BUTTON5: return MOUSEEVENTF_XDOWN;
+    }
+  }
+  else
+  {
+    switch (bt)
+    {
+    case IUP_BUTTON1: return MOUSEEVENTF_LEFTUP;
+    case IUP_BUTTON2: return MOUSEEVENTF_MIDDLEUP;
+    case IUP_BUTTON3: return MOUSEEVENTF_RIGHTUP;
+    case IUP_BUTTON4: return MOUSEEVENTF_XUP;
+    case IUP_BUTTON5: return MOUSEEVENTF_XUP;
+    }
+  }
+  return 0;
+}
+
 extern "C" void iupdrvSendMouse(int x, int y, int bt, int status)
 {
   INPUT input;
   ZeroMemory(&input, sizeof(INPUT));
+
   input.type = INPUT_MOUSE;
-  input.mi.dx = x * (65535 / GetSystemMetrics(SM_CXSCREEN));
-  input.mi.dy = y * (65535 / GetSystemMetrics(SM_CYSCREEN));
-  input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+  input.mi.dx = x;
+  input.mi.dy = y;
+  input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE;
+  input.mi.dwExtraInfo = GetMessageExtraInfo();
 
-  if (status == 1)
+  if (bt != 'W' && status == -1)
   {
-    if (bt == IUP_BUTTON1)
-      input.mi.dwFlags |= MOUSEEVENTF_LEFTDOWN;
-    else if (bt == IUP_BUTTON2)
-      input.mi.dwFlags |= MOUSEEVENTF_MIDDLEDOWN;
-    else if (bt == IUP_BUTTON3)
-      input.mi.dwFlags |= MOUSEEVENTF_RIGHTDOWN;
+    input.mi.dwFlags |= MOUSEEVENTF_MOVE;
   }
-  else if (status == 0)
+  else
   {
-    if (bt == IUP_BUTTON1)
-      input.mi.dwFlags |= MOUSEEVENTF_LEFTUP;
-    else if (bt == IUP_BUTTON2)
-      input.mi.dwFlags |= MOUSEEVENTF_MIDDLEUP;
-    else if (bt == IUP_BUTTON3)
-      input.mi.dwFlags |= MOUSEEVENTF_RIGHTUP;
+    if (bt != 'W')
+      input.mi.dwFlags |= winuiGetButtonFlags(bt, status);
+
+    switch (bt)
+    {
+    case 'W':
+      input.mi.mouseData = status * 120;
+      input.mi.dwFlags |= MOUSEEVENTF_WHEEL;
+      break;
+    case IUP_BUTTON4:
+      input.mi.mouseData = XBUTTON1;
+      break;
+    case IUP_BUTTON5:
+      input.mi.mouseData = XBUTTON2;
+      break;
+    }
   }
 
-  SendInput(1, &input, sizeof(INPUT));
+  if (status == 2)
+  {
+    SendInput(1, &input, sizeof(INPUT));
+
+    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE;
+    input.mi.dwFlags |= winuiGetButtonFlags(bt, 0);
+    SendInput(1, &input, sizeof(INPUT));
+
+    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE;
+    input.mi.dwFlags |= winuiGetButtonFlags(bt, 1);
+    SendInput(1, &input, sizeof(INPUT));
+
+    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE;
+    input.mi.dwFlags |= winuiGetButtonFlags(bt, 0);
+    SendInput(1, &input, sizeof(INPUT));
+  }
+  else
+    SendInput(1, &input, sizeof(INPUT));
+
+  iupdrvWarpPointer(x, y);
 }
 
 extern "C" int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -675,7 +797,9 @@ extern "C" int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
 
 extern "C" int iupdrvGetScrollbarSize(void)
 {
-  return 16;
+  int xv = GetSystemMetrics(SM_CXVSCROLL);
+  int yh = GetSystemMetrics(SM_CYHSCROLL);
+  return xv > yh ? xv : yh;
 }
 
 extern "C" void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
@@ -716,6 +840,7 @@ extern "C" void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 extern "C" void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
 }
 
 Canvas iupwinuiGetParentCanvas(Ihandle* ih)
@@ -761,4 +886,77 @@ Canvas iupwinuiGetParentCanvas(Ihandle* ih)
   }
 
   return winuiGetHandle<Canvas>(parent);
+}
+
+/****************************************************************************
+ * String Conversion (UTF-8/UTF-16)
+ ****************************************************************************/
+
+hstring iupwinuiStringToHString(const char* str)
+{
+  if (!str || !str[0])
+    return hstring();
+
+  int wlen = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+  if (wlen <= 0)
+    return hstring();
+
+  std::wstring wstr(wlen - 1, L'\0');
+  MultiByteToWideChar(CP_UTF8, 0, str, -1, &wstr[0], wlen);
+
+  return hstring(wstr);
+}
+
+char* iupwinuiHStringToString(const hstring& str)
+{
+  if (str.empty())
+    return NULL;
+
+  int len = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, NULL, 0, NULL, NULL);
+  if (len <= 0)
+    return NULL;
+
+  char* buf = iupStrGetMemory(len);
+  WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, buf, len, NULL, NULL);
+
+  return buf;
+}
+
+std::wstring iupwinuiStringToWString(const char* str)
+{
+  if (!str || !str[0])
+    return std::wstring();
+
+  int wlen = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+  if (wlen <= 0)
+    return std::wstring();
+
+  std::wstring wstr(wlen - 1, L'\0');
+  MultiByteToWideChar(CP_UTF8, 0, str, -1, &wstr[0], wlen);
+
+  return wstr;
+}
+
+hstring iupwinuiProcessMnemonic(const char* str, char* c)
+{
+  if (c)
+    *c = 0;
+
+  if (!str || !str[0])
+    return hstring();
+
+  char mnemonic = 0;
+  char* processed = iupStrProcessMnemonic(str, &mnemonic, -1);
+  if (!processed)
+    return hstring();
+
+  hstring result = iupwinuiStringToHString(processed);
+
+  if (processed != str)
+    free(processed);
+
+  if (c)
+    *c = mnemonic;
+
+  return result;
 }

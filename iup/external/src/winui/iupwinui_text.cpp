@@ -510,6 +510,72 @@ static int winuiTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static char* winuiTextGetReadOnlyAttrib(Ihandle* ih)
+{
+  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || aux->isPassword || aux->isSpin)
+    return NULL;
+
+  if (aux->isFormatted)
+  {
+    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    if (reb)
+      return iupStrReturnBoolean(reb.IsReadOnly());
+  }
+  else
+  {
+    TextBox tb = winuiGetHandle<TextBox>(ih);
+    if (tb)
+      return iupStrReturnBoolean(tb.IsReadOnly());
+  }
+
+  return NULL;
+}
+
+static char* winuiTextGetLineValueAttrib(Ihandle* ih)
+{
+  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || aux->isPassword || aux->isSpin)
+    return NULL;
+
+  hstring fullText;
+  int caretPos = 0;
+
+  if (aux->isFormatted)
+  {
+    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    if (!reb) return NULL;
+    hstring val;
+    reb.Document().GetText(winrt::Microsoft::UI::Text::TextGetOptions::None, val);
+    fullText = val;
+    auto sel = reb.Document().Selection();
+    caretPos = sel.StartPosition();
+  }
+  else
+  {
+    TextBox tb = winuiGetHandle<TextBox>(ih);
+    if (!tb) return NULL;
+    fullText = tb.Text();
+    caretPos = tb.SelectionStart();
+  }
+
+  std::wstring text(fullText.c_str(), fullText.size());
+  if (text.empty())
+    return NULL;
+
+  int lineStart = caretPos;
+  while (lineStart > 0 && text[lineStart - 1] != L'\r' && text[lineStart - 1] != L'\n')
+    lineStart--;
+
+  int lineEnd = caretPos;
+  int len = (int)text.size();
+  while (lineEnd < len && text[lineEnd] != L'\r' && text[lineEnd] != L'\n')
+    lineEnd++;
+
+  std::wstring line = text.substr(lineStart, lineEnd - lineStart);
+  return iupwinuiHStringToString(hstring(line));
+}
+
 static int winuiTextSetActiveAttrib(Ihandle* ih, const char* value)
 {
   IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
@@ -3219,7 +3285,8 @@ extern "C" void iupdrvTextInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "VALUE", winuiTextGetValueAttrib, winuiTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", NULL, winuiTextSetAppendAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "READONLY", NULL, winuiTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "READONLY", winuiTextGetReadOnlyAttrib, winuiTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "LINEVALUE", winuiTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "SPINMIN", NULL, winuiTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
@@ -3256,5 +3323,11 @@ extern "C" void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, winuiTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, winuiTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, winuiTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PASSWORD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "APPENDNEWLINE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+
   iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

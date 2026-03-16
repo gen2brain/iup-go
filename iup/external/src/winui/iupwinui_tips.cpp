@@ -19,6 +19,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 }
 
 #include "iupwinui_drv.h"
@@ -170,8 +171,11 @@ static void winuiTipDismissStart(Ihandle* ih)
   auto dq = dq_obj.as<Microsoft::UI::Dispatching::DispatcherQueue>();
 
   winui_tip_ih = ih;
+  int delay = iupAttribGetInt(ih, "TIPDELAY");
+  if (delay <= 0) delay = 5000;
+
   winui_tip_timer = dq.CreateTimer();
-  winui_tip_timer.Interval(std::chrono::milliseconds{5000});
+  winui_tip_timer.Interval(std::chrono::milliseconds{delay});
   winui_tip_timer.IsRepeating(false);
   winui_tip_timer_token = winui_tip_timer.Tick([](auto&&, auto&&) {
     winuiTipTimerStop();
@@ -265,6 +269,16 @@ extern "C" int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
       hover.enteredToken = elem.PointerEntered([ih](IInspectable const&, Input::PointerRoutedEventArgs const&) {
         if (!iupObjectCheck(ih))
           return;
+
+        IFnii tips_cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
+        if (tips_cb)
+        {
+          int x, y;
+          iupdrvGetCursorPos(&x, &y);
+          iupdrvScreenToClient(ih, &x, &y);
+          tips_cb(ih, x, y);
+        }
+
         const char* tip = iupAttribGet(ih, "TIP");
         if (!tip)
           return;
@@ -274,6 +288,7 @@ extern "C" int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
           return;
 
         winuiTipShowAt(ih, tip, (double)pt.x, (double)pt.y);
+        winuiTipDismissStart(ih);
       });
 
       hover.exitedToken = elem.PointerExited([](IInspectable const&, Input::PointerRoutedEventArgs const&) {

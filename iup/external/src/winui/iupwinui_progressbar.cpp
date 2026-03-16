@@ -98,7 +98,11 @@ extern "C" void iupdrvProgressBarInitClass(Iclass* ic)
   ic->Map = winuiProgressBarMapMethod;
   ic->UnMap = winuiProgressBarUnMapMethod;
 
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+
   iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, winuiProgressBarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIENTATION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARQUEE", NULL, winuiProgressBarSetMarqueeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DASHED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
