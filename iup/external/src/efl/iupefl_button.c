@@ -12,6 +12,7 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_class.h"
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -138,7 +139,15 @@ static int eflButtonSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int eflButtonSetFontAttrib(Ihandle* ih, const char* value)
 {
-  iupdrvSetFontAttrib(ih, value);
+  if (!iupdrvSetFontAttrib(ih, value))
+    return 0;
+
+  if (ih->handle && (ih->data->type & IUP_BUTTON_TEXT))
+  {
+    Eo* btn = iupeflGetWidget(ih);
+    iupeflApplyTextStyle(ih, btn);
+  }
+
   return 1;
 }
 
@@ -187,48 +196,45 @@ static int eflButtonSetImageAttrib(Ihandle* ih, const char* value)
 
 static int eflButtonSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  Eo* btn = iupeflGetWidget(ih);
-
-  if (!btn)
-    return 0;
-
-  efl_ui_widget_disabled_set(btn, iupStrBoolean(value) ? EINA_FALSE : EINA_TRUE);
-
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
-    if (!iupStrBoolean(value))
+    Eo* btn = iupeflGetWidget(ih);
+    if (btn)
     {
-      char* name = iupAttribGet(ih, "IMINACTIVE");
-      if (name)
+      if (!iupStrBoolean(value))
       {
-        Eo* image = iupeflImageGetImage(name, ih, 0);
-        if (image)
-          efl_content_set(btn, image);
+        char* name = iupAttribGet(ih, "IMINACTIVE");
+        if (name)
+        {
+          Eo* image = iupeflImageGetImage(name, ih, 0);
+          if (image)
+            efl_content_set(btn, image);
+        }
+        else
+        {
+          name = iupAttribGet(ih, "IMAGE");
+          if (name)
+          {
+            Eo* image = iupeflImageGetImage(name, ih, 1);
+            if (image)
+              efl_content_set(btn, image);
+          }
+        }
       }
       else
       {
-        name = iupAttribGet(ih, "IMAGE");
+        char* name = iupAttribGet(ih, "IMAGE");
         if (name)
         {
-          Eo* image = iupeflImageGetImage(name, ih, 1);
+          Eo* image = iupeflImageGetImage(name, ih, 0);
           if (image)
             efl_content_set(btn, image);
         }
       }
     }
-    else
-    {
-      char* name = iupAttribGet(ih, "IMAGE");
-      if (name)
-      {
-        Eo* image = iupeflImageGetImage(name, ih, 0);
-        if (image)
-          efl_content_set(btn, image);
-      }
-    }
   }
 
-  return 0;
+  return iupBaseSetActiveAttrib(ih, value);
 }
 
 static int eflButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
@@ -396,6 +402,11 @@ static int eflButtonMapMethod(Ihandle* ih)
   efl_event_callback_add(btn, EFL_EVENT_FOCUS_OUT, iupeflManagerFocusChangedEvent, ih);
 
   iupeflAddToParent(ih);
+
+  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+    iupeflSetCanFocus(btn, 0);
+
+  iupeflUpdateMnemonic(ih);
 
   return IUP_NOERROR;
 }

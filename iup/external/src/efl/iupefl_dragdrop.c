@@ -29,6 +29,7 @@ static Ihandle* efl_drag_source_ih = NULL;
 static char* efl_drag_data = NULL;
 static int efl_drag_data_size = 0;
 static char efl_drag_type[64] = {0};
+static int efl_drag_is_move = 0;
 
 static void eflDragCleanup(void)
 {
@@ -40,6 +41,7 @@ static void eflDragCleanup(void)
   efl_drag_data_size = 0;
   efl_drag_source_ih = NULL;
   efl_drag_type[0] = '\0';
+  efl_drag_is_move = 0;
 }
 
 static Eina_Bool eflDragEndIdleCb(void *data)
@@ -49,9 +51,10 @@ static Eina_Bool eflDragEndIdleCb(void *data)
   if (iupAttribGet(ih, "_IUPEFL_DRAGEND_PENDING"))
   {
     IFni cbDragEnd = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+    int remove = efl_drag_is_move ? 1 : 0;
     iupAttribSet(ih, "_IUPEFL_DRAGEND_PENDING", NULL);
     if (cbDragEnd)
-      cbDragEnd(ih, 0);
+      cbDragEnd(ih, remove);
     eflDragCleanup();
   }
 
@@ -105,18 +108,6 @@ static Evas_Modifier* eflGetModifiers(Ihandle* ih)
  * Drop Target Callbacks (Modern EFL API)
  *****************************************************************************/
 
-static void eflDropEnteredCb(void *data, const Efl_Event *ev)
-{
-  (void)data;
-  (void)ev;
-}
-
-static void eflDropLeftCb(void *data, const Efl_Event *ev)
-{
-  (void)data;
-  (void)ev;
-}
-
 static void eflDropPositionChangedCb(void *data, const Efl_Event *ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -155,9 +146,10 @@ static void eflDropDroppedCb(void *data, const Efl_Event *ev)
   if (efl_drag_source_ih && iupAttribGet(efl_drag_source_ih, "_IUPEFL_DRAGEND_PENDING"))
   {
     IFni cbDragEnd = (IFni)IupGetCallback(efl_drag_source_ih, "DRAGEND_CB");
+    int remove = efl_drag_is_move ? 1 : 0;
     iupAttribSet(efl_drag_source_ih, "_IUPEFL_DRAGEND_PENDING", NULL);
     if (cbDragEnd)
-      cbDragEnd(efl_drag_source_ih, 0);
+      cbDragEnd(efl_drag_source_ih, remove);
   }
 
   eflDragCleanup();
@@ -190,8 +182,6 @@ static int eflSetDropTargetAttrib(Ihandle* ih, const char* value)
     if (iupAttribGet(ih, "_IUPEFL_DROP_TARGET_ACTIVE"))
       return 1;
 
-    efl_event_callback_add(widget, EFL_UI_DND_EVENT_DROP_ENTERED, eflDropEnteredCb, ih);
-    efl_event_callback_add(widget, EFL_UI_DND_EVENT_DROP_LEFT, eflDropLeftCb, ih);
     efl_event_callback_add(widget, EFL_UI_DND_EVENT_DROP_POSITION_CHANGED, eflDropPositionChangedCb, ih);
     efl_event_callback_add(widget, EFL_UI_DND_EVENT_DROP_DROPPED, eflDropDroppedCb, ih);
 
@@ -201,8 +191,6 @@ static int eflSetDropTargetAttrib(Ihandle* ih, const char* value)
   {
     if (iupAttribGet(ih, "_IUPEFL_DROP_TARGET_ACTIVE"))
     {
-      efl_event_callback_del(widget, EFL_UI_DND_EVENT_DROP_ENTERED, eflDropEnteredCb, ih);
-      efl_event_callback_del(widget, EFL_UI_DND_EVENT_DROP_LEFT, eflDropLeftCb, ih);
       efl_event_callback_del(widget, EFL_UI_DND_EVENT_DROP_POSITION_CHANGED, eflDropPositionChangedCb, ih);
       efl_event_callback_del(widget, EFL_UI_DND_EVENT_DROP_DROPPED, eflDropDroppedCb, ih);
 
@@ -285,6 +273,7 @@ static void eflStartDrag(Ihandle* ih, int x, int y)
   }
   strncpy(efl_drag_type, typeStr, sizeof(efl_drag_type) - 1);
   efl_drag_type[sizeof(efl_drag_type) - 1] = '\0';
+  efl_drag_is_move = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE");
 
   widget = iupeflGetWidget(ih);
   if (!widget)
@@ -484,14 +473,6 @@ static void eflDropFilesMotionCb(Ecore_Evas *ee, unsigned int seat, Eina_Positio
   ecore_evas_dnd_mark_motion_used(ee, seat);
 }
 
-static void eflDropFilesStateChangedCb(Ecore_Evas *ee, unsigned int seat, Eina_Position2D p, Eina_Bool move_inside)
-{
-  (void)ee;
-  (void)seat;
-  (void)p;
-  (void)move_inside;
-}
-
 static Eina_Value eflDropFilesSelectionCb(Eo* obj, void* data, const Eina_Value value)
 {
   eflDropFilesData* dfd = (eflDropFilesData*)data;
@@ -530,21 +511,18 @@ static Eina_Value eflDropFilesSelectionCb(Eo* obj, void* data, const Eina_Value 
   memcpy(dataCopy, slice.mem, slice.len);
   dataCopy[slice.len] = '\0';
 
-  line = strtok_r(dataCopy, "\r\n", &savePtr);
-  while (line)
   {
-    count++;
-    line = strtok_r(NULL, "\r\n", &savePtr);
+    const char* p = (const char*)slice.mem;
+    const char* end = p + slice.len;
+    while (p < end)
+    {
+      if (*p == '\n')
+        count++;
+      p++;
+    }
+    if (slice.len > 0 && ((const char*)slice.mem)[slice.len - 1] != '\n')
+      count++;
   }
-
-  free(dataCopy);
-
-  dataCopy = (char*)malloc(slice.len + 1);
-  if (!dataCopy)
-    return value;
-
-  memcpy(dataCopy, slice.mem, slice.len);
-  dataCopy[slice.len] = '\0';
 
   savePtr = NULL;
   remaining = count - 1;
@@ -627,7 +605,6 @@ static int eflSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 
     ecore_evas_data_set(ee, "_IUP_DROPFILES_IH", ih);
     ecore_evas_callback_drop_motion_set(ee, eflDropFilesMotionCb);
-    ecore_evas_callback_drop_state_changed_set(ee, eflDropFilesStateChangedCb);
     ecore_evas_callback_drop_drop_set(ee, eflDropFilesDropCb);
 
     iupAttribSet(ih, "_IUPEFL_DROPFILES_ACTIVE", "1");
@@ -637,7 +614,6 @@ static int eflSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
     if (iupAttribGet(ih, "_IUPEFL_DROPFILES_ACTIVE"))
     {
       ecore_evas_callback_drop_motion_set(ee, NULL);
-      ecore_evas_callback_drop_state_changed_set(ee, NULL);
       ecore_evas_callback_drop_drop_set(ee, NULL);
       ecore_evas_data_set(ee, "_IUP_DROPFILES_IH", NULL);
 

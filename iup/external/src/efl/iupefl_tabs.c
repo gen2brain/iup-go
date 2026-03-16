@@ -12,6 +12,7 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_class.h"
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -146,7 +147,6 @@ static void eflTabsReorderTab(Ihandle* ih, int source, int target)
   Eo* item;
   Ihandle* child;
   Ihandle* ref_child;
-  int insert_pos;
   int current_tab;
 
   current_tab = iupdrvTabsGetCurrentTab(ih);
@@ -161,12 +161,7 @@ static void eflTabsReorderTab(Ihandle* ih, int source, int target)
 
   efl_pack_unpack(pager, page);
 
-  if (source < target)
-    insert_pos = target;
-  else
-    insert_pos = target;
-
-  efl_pack_at(pager, page, insert_pos);
+  efl_pack_at(pager, page, target);
 
   item = efl_ui_tab_page_tab_bar_item_get(page);
   if (item)
@@ -351,8 +346,10 @@ void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
     Eo* page = efl_pack_content_get(pager, pos);
     if (page)
     {
+      {
+      Eo* tab_bar;
       iupAttribSet(ih, "_IUP_EFL_IGNORE_CHANGE", "1");
-      Eo* tab_bar = efl_ui_tab_pager_tab_bar_get(pager);
+      tab_bar = efl_ui_tab_pager_tab_bar_get(pager);
       if (tab_bar)
       {
         Eo* item = efl_ui_tab_page_tab_bar_item_get(page);
@@ -360,6 +357,7 @@ void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
           efl_ui_selectable_selected_set(item, EINA_TRUE);
       }
       iupAttribSet(ih, "_IUP_EFL_IGNORE_CHANGE", NULL);
+      }
     }
   }
 }
@@ -425,6 +423,7 @@ static void eflTabsItemSelectedCallback(void* data, const Efl_Event* ev)
   if (!selected)
     return;
 
+  {
   Eo* page = efl_parent_get(selected);
   if (!page)
     return;
@@ -455,6 +454,7 @@ static void eflTabsItemSelectedCallback(void* data, const Efl_Event* ev)
     IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
     if (cb2)
       cb2(ih, pos, prev_pos);
+  }
   }
 }
 
@@ -728,13 +728,15 @@ static void eflTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   if (ih->handle)
   {
-    if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
-      return;
-    Eo* pager = iupeflGetWidget(ih);
+    Eo* pager;
     Eo* page;
     Eo* content_box;
     char *tabtitle, *tabimage;
     int pos;
+
+    if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+      return;
+    pager = iupeflGetWidget(ih);
 
     pos = IupGetChildPos(ih, child);
 
@@ -769,6 +771,7 @@ static void eflTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     if (!tabtitle && !tabimage)
       tabtitle = "     ";
 
+    {
     Eo* item = efl_ui_tab_page_tab_bar_item_get(page);
     if (item)
     {
@@ -785,6 +788,7 @@ static void eflTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
       eflTabsAddReorderCallbacks(ih, item);
     }
+    }
 
     efl_pack_at(pager, page, pos);
 
@@ -797,12 +801,12 @@ static void eflTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 {
   if (ih->handle)
   {
-    if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
-      return;
-
     Eo* pager = iupeflGetWidget(ih);
     Eo* page = (Eo*)iupAttribGet(child, "_IUPTAB_PAGE");
     Eo* close_btn = (Eo*)iupAttribGet(child, "_IUPTAB_CLOSE");
+
+    if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+      return;
 
     if (close_btn)
     {
@@ -903,13 +907,9 @@ static void eflTabsUnMapMethod(Ihandle* ih)
       efl_event_callback_del(tab_bar, EFL_UI_EVENT_ITEM_SELECTED,
                               eflTabsItemSelectedCallback, ih);
     }
-
-    iupeflDelete(pager);
   }
 
-  ih->handle = NULL;
-
-  iupeflFontFree(ih);
+  iupdrvBaseUnMapMethod(ih);
 }
 
 void iupdrvTabsInitClass(Iclass* ic)

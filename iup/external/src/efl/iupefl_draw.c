@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
 #include <math.h>
 
 #include "iupefl_drv.h"
@@ -22,12 +21,6 @@
 #include "iup_draw.h"
 #include "iup_drvfont.h"
 
-
-typedef struct _IeflVgImageData {
-  Efl_VG* node;
-  void* pixels;
-  int w, h;
-} IeflVgImageData;
 
 struct _IdrawCanvas
 {
@@ -852,7 +845,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
 
 IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 {
-  iupdrvDrawRectangle(dc, x, y, x + 1, y + 1, color, IUP_DRAW_FILL, 1);
+  iupdrvDrawRectangle(dc, x, y, x, y, color, IUP_DRAW_FILL, 1);
 }
 
 IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
@@ -893,15 +886,24 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
   Efl_VG* shape;
   int r, g, b, a;
 
-  (void)style;
-
   iDrawGetColor(color, &r, &g, &b, &a);
 
   shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, dc->root,
     efl_gfx_path_append_move_to(efl_added, x1, y1),
-    efl_gfx_path_append_cubic_to(efl_added, x2, y2, x3, y3, x4, y4),
-    efl_gfx_shape_stroke_color_set(efl_added, r, g, b, a),
-    efl_gfx_shape_stroke_width_set(efl_added, line_width > 0 ? line_width : 1));
+    efl_gfx_path_append_cubic_to(efl_added, x2, y2, x3, y3, x4, y4));
+
+  if (style == IUP_DRAW_FILL)
+  {
+    efl_gfx_path_append_close(shape);
+    efl_gfx_color_set(shape, r, g, b, a);
+    efl_gfx_shape_stroke_color_set(shape, 0, 0, 0, 0);
+  }
+  else
+  {
+    efl_gfx_shape_stroke_color_set(shape, r, g, b, a);
+    efl_gfx_shape_stroke_width_set(shape, line_width > 0 ? line_width : 1);
+    iDrawSetDash(shape, style);
+  }
 
   dc->shapes = eina_list_append(dc->shapes, shape);
 }
@@ -924,8 +926,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   int r1, g1, b1, a1;
   int r2, g2, b2, a2;
   int corner_radius = dc->clip_corner_radius;
-
-  (void)angle;
+  double rad, w, h, gx0, gy0, gx1, gy1;
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -933,12 +934,21 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   iDrawGetColor(color1, &r1, &g1, &b1, &a1);
   iDrawGetColor(color2, &r2, &g2, &b2, &a2);
 
+  w = (double)(x2 - x1);
+  h = (double)(y2 - y1);
+  rad = angle * M_PI / 180.0;
+
+  gx0 = x1 + w / 2.0 - (w * cos(rad)) / 2.0;
+  gy0 = y1 + h / 2.0 - (h * sin(rad)) / 2.0;
+  gx1 = x1 + w / 2.0 + (w * cos(rad)) / 2.0;
+  gy1 = y1 + h / 2.0 + (h * sin(rad)) / 2.0;
+
   shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, dc->root,
     efl_gfx_path_append_rect(efl_added, x1, y1, x2 - x1 + 1, y2 - y1 + 1, corner_radius, corner_radius));
 
   grad = efl_add(EFL_CANVAS_VG_GRADIENT_LINEAR_CLASS, dc->root,
-    efl_gfx_gradient_linear_start_set(efl_added, x1, y1),
-    efl_gfx_gradient_linear_end_set(efl_added, x2, y2));
+    efl_gfx_gradient_linear_start_set(efl_added, gx0, gy0),
+    efl_gfx_gradient_linear_end_set(efl_added, gx1, gy1));
 
   stops[0].offset = 0.0;
   stops[0].r = r1; stops[0].g = g1; stops[0].b = b1; stops[0].a = a1;

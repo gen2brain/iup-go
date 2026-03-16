@@ -192,6 +192,14 @@ static void eflFontDlgCancelCallback(void* data, const Efl_Event* ev)
   iupeflModalLoopQuit();
 }
 
+static void eflFontDlgCloseCallback(void* data, const Efl_Event* ev)
+{
+  EflFontDlgData* dlg = (EflFontDlgData*)data;
+  (void)ev;
+  dlg->status = 0;
+  iupeflModalLoopQuit();
+}
+
 static void eflFontDlgBuildFontList(EflFontDlgData* dlg, Evas* evas)
 {
   Eina_List* fonts_list;
@@ -301,15 +309,23 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
 
-  title = iupAttribGet(ih, "TITLE");
-  if (!title)
-    title = (char*)IupGetLanguageString("IUP_FONTDLG");
+  {
+    Eo* parent_win = (Eo*)iupDialogGetNativeParent(ih);
+    if (!parent_win)
+      parent_win = iupeflGetMainWindow();
 
-  win = efl_add(EFL_UI_WIN_CLASS, efl_main_loop_get(),
-    efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_DIALOG_BASIC),
-    efl_text_set(efl_added, iupeflStrConvertToSystem(title)));
-  if (!win)
-    return IUP_ERROR;
+    title = iupAttribGet(ih, "TITLE");
+    if (!title)
+      title = (char*)IupGetLanguageString("IUP_FONTDLG");
+
+    win = efl_add(EFL_UI_WIN_CLASS, parent_win ? parent_win : efl_main_loop_get(),
+      efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_DIALOG_BASIC),
+      efl_text_set(efl_added, iupeflStrConvertToSystem(title)));
+    if (!win)
+      return IUP_ERROR;
+  }
+
+  efl_event_callback_add(win, EFL_UI_WIN_EVENT_DELETE_REQUEST, eflFontDlgCloseCallback, &dlg);
 
   evas = evas_object_evas_get(win);
   eflFontDlgBuildFontList(&dlg, evas);
@@ -514,6 +530,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
     eflFontDlgSizeSelectedCallback, &dlg);
   efl_event_callback_del(btn_ok, EFL_INPUT_EVENT_CLICKED, eflFontDlgOkCallback, &dlg);
   efl_event_callback_del(btn_cancel, EFL_INPUT_EVENT_CLICKED, eflFontDlgCancelCallback, &dlg);
+  efl_event_callback_del(win, EFL_UI_WIN_EVENT_DELETE_REQUEST, eflFontDlgCloseCallback, &dlg);
 
   eflFontDlgFreeFontList(&dlg);
 

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -239,6 +240,64 @@ static void eflDropdownListSelectionChangedCallback(void* data, const Efl_Event*
   iupBaseCallValueChangedCb(ih);
 }
 
+static void eflListEditChangedCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Efl_Text_Change_Info* info = (Efl_Text_Change_Info*)ev->info;
+  IFnis edit_cb;
+
+  if (iupAttribGet(ih, "_IUPEFL_DISABLE_TEXT_CB"))
+    return;
+
+  edit_cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
+
+  if (edit_cb || ih->data->nc)
+  {
+    const char* insert_value = NULL;
+    int start, end;
+    int remove_dir = 0;
+    int ret;
+
+    if (info->type == EFL_TEXT_CHANGE_TYPE_INSERT)
+    {
+      insert_value = info->content;
+      start = (int)info->position;
+      end = start;
+    }
+    else
+    {
+      start = (int)info->position;
+      end = start + (int)info->length;
+      remove_dir = 1;
+    }
+
+    ret = iupEditCallActionCb(ih, edit_cb, insert_value, start, end, ih->data->mask, ih->data->nc, remove_dir, 1);
+
+    if (ret == 0)
+    {
+      Eo* entry = ev->object;
+      iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", "1");
+
+      if (info->type == EFL_TEXT_CHANGE_TYPE_INSERT)
+      {
+        Efl_Text_Cursor_Object* cur_start = efl_ui_textbox_cursor_create(entry);
+        Efl_Text_Cursor_Object* cur_end = efl_ui_textbox_cursor_create(entry);
+
+        if (cur_start && cur_end)
+        {
+          efl_text_cursor_object_position_set(cur_start, (int)info->position);
+          efl_text_cursor_object_position_set(cur_end, (int)(info->position + info->length));
+          efl_text_cursor_object_range_delete(cur_start, cur_end);
+        }
+      }
+
+      iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", NULL);
+    }
+  }
+
+  iupBaseCallValueChangedCb(ih);
+}
+
 /****************************************************************
                      Callbacks
 ****************************************************************/
@@ -327,9 +386,11 @@ static void eflListSelectionChangedCallback(void* data, const Efl_Event* ev)
           iupeflSetText(entry, text);
       }
 
-      IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
-      if (cb)
-        iupListSingleCallActionCb(ih, cb, pos);
+      {
+        IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
+        if (cb)
+          iupListSingleCallActionCb(ih, cb, pos);
+      }
     }
   }
 
@@ -843,20 +904,15 @@ static int eflListSetNCAttrib(Ihandle* ih, const char* value)
   if (!ih->data->has_editbox)
     return 0;
 
-  if (!ih->handle)
-    return 1;
+  if (!iupStrToInt(value, &ih->data->nc))
+    ih->data->nc = INT_MAX;
 
   return 1;
 }
 
 static int eflListSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  unsigned char r, g, b;
-
-  if (!iupStrToRGB(value, &r, &g, &b))
-    return 0;
-
-  return 1;
+  return iupeflSetBgColorAttrib(ih, value);
 }
 
 static int eflListSetFgColorAttrib(Ihandle* ih, const char* value)
@@ -1271,9 +1327,6 @@ static void eflListDragPointerMoveCb(void *data, const Efl_Event *ev)
       Eina_Slice slice;
       char* item_text;
 
-      if (iupAttribGetBoolean(ih, "DRAGDROPLIST"))
-        return;
-
       item_text = IupGetAttributeId(ih, "", idDrag);
       efl_list_drag_source = ih;
 
@@ -1342,12 +1395,18 @@ static void eflListDropCb(void *data, const Efl_Event *ev)
   int idDrop;
   Ihandle* ih_source;
   int idDrag;
-  int is_shift = 0;
-  int is_ctrl = 0;
+  int is_shift, is_ctrl;
   IFniiii cb;
+  Evas_Modifier* modifiers;
+  Evas* evas;
 
   if (!ih || !efl_list_drag_source)
     return;
+
+  evas = evas_object_evas_get(iupeflGetWidget(ih));
+  modifiers = evas ? (Evas_Modifier*)evas_key_modifier_get(evas) : NULL;
+  is_shift = (modifiers && evas_key_modifier_is_set(modifiers, "Shift")) ? 1 : 0;
+  is_ctrl = (modifiers && evas_key_modifier_is_set(modifiers, "Control")) ? 1 : 0;
 
   idDrop = eflListConvertXYToPos(ih, drop_ev->dnd.position.x, drop_ev->dnd.position.y);
   if (idDrop <= 0)
@@ -1374,7 +1433,6 @@ static void eflListDropCb(void *data, const Efl_Event *ev)
 static void eflListEnableDragDrop(Ihandle* ih)
 {
   Eo* list = iupeflGetWidget(ih);
-  int is_dragdroplist = iupAttribGetBoolean(ih, "DRAGDROPLIST");
 
   if (!list)
     return;
@@ -1382,12 +1440,8 @@ static void eflListEnableDragDrop(Ihandle* ih)
   efl_event_callback_add(list, EFL_EVENT_POINTER_DOWN, eflListDragPointerDownCb, ih);
   efl_event_callback_add(list, EFL_EVENT_POINTER_MOVE, eflListDragPointerMoveCb, ih);
   efl_event_callback_add(list, EFL_EVENT_POINTER_UP, eflListDragPointerUpCb, ih);
-
-  if (!is_dragdroplist)
-  {
-    efl_event_callback_add(list, EFL_UI_DND_EVENT_DROP_DROPPED, eflListDropCb, ih);
-    efl_event_callback_add(list, EFL_UI_DND_EVENT_DRAG_FINISHED, eflListDragFinishedCb, ih);
-  }
+  efl_event_callback_add(list, EFL_UI_DND_EVENT_DROP_DROPPED, eflListDropCb, ih);
+  efl_event_callback_add(list, EFL_UI_DND_EVENT_DRAG_FINISHED, eflListDragFinishedCb, ih);
 }
 
 /****************************************************************
@@ -1498,6 +1552,7 @@ static int eflListMapMethod(Ihandle* ih)
 
     ih->handle = (InativeHandle*)list;
 
+    efl_event_callback_add(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflListEditChangedCallback, ih);
     iupeflBaseAddCallbacks(ih, entry);
   }
   else if (is_dropdown)
@@ -1701,6 +1756,7 @@ static void eflListUnMapMethod(Ihandle* ih)
       efl_event_callback_del(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
+      efl_event_callback_del(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflListEditChangedCallback, ih);
       iupeflBaseRemoveCallbacks(ih, entry);
       efl_pack_clear(list);
       iupeflDelete(list);
@@ -2091,9 +2147,15 @@ void iupdrvListSetItemCount(Ihandle* ih, int count)
 static char* eflListGetIdValueAttrib(Ihandle* ih, int id)
 {
   Eo* list;
-  Eo* item;
   int pos;
-  const char* text;
+
+  if (ih->data->is_virtual)
+  {
+    char* text = iupListGetItemValueCb(ih, id);
+    if (text)
+      return iupStrReturnStr(text);
+    return NULL;
+  }
 
   if (ih->data->is_dropdown && !ih->data->has_editbox)
     list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
@@ -2107,13 +2169,15 @@ static char* eflListGetIdValueAttrib(Ihandle* ih, int id)
   if (pos < 0)
     return NULL;
 
-  item = efl_pack_content_get(list, pos);
-  if (!item)
-    return NULL;
+  {
+    Eo* item = efl_pack_content_get(list, pos);
+    if (!item)
+      return NULL;
 
-  text = efl_text_get(item);
-  if (text)
-    return iupStrReturnStr(text);
+    const char* text = efl_text_get(item);
+    if (text)
+      return iupStrReturnStr(text);
+  }
 
   return NULL;
 }

@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <limits.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -252,6 +251,19 @@ static void eflCanvasActionCallback(void* data, const Efl_Event* ev)
     cb(ih);
 }
 
+static void eflCanvasSetModifierStatus(Efl_Input_Pointer* pointer, char* status)
+{
+  if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_SHIFT, NULL))
+    iupKEY_SETSHIFT(status);
+  if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_CONTROL, NULL))
+    iupKEY_SETCONTROL(status);
+  if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_ALT, NULL))
+    iupKEY_SETALT(status);
+  if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_META, NULL) ||
+      efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_SUPER, NULL))
+    iupKEY_SETSYS(status);
+}
+
 static void eflCanvasMotionCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -264,6 +276,8 @@ static void eflCanvasMotionCallback(void* data, const Efl_Event* ev)
 
   pos = efl_input_pointer_position_get(pointer);
   canvas_pos = efl_gfx_entity_position_get(ev->object);
+
+  eflCanvasSetModifierStatus(pointer, status);
 
   pressed_buttons = (unsigned int)efl_input_pointer_value_get(pointer, EFL_INPUT_VALUE_BUTTONS_PRESSED);
   if (pressed_buttons & (1 << 0))
@@ -307,6 +321,8 @@ static void eflCanvasButtonCallback(void* data, const Efl_Event* ev)
     if (efl_input_pointer_double_click_get(pointer))
       iupKEY_SETDOUBLE(status);
 
+    eflCanvasSetModifierStatus(pointer, status);
+
     pressed_buttons = (unsigned int)efl_input_pointer_value_get(pointer, EFL_INPUT_VALUE_BUTTONS_PRESSED);
     if ((pressed_buttons & (1 << 0)) || button == 1)
       iupKEY_SETBUTTON1(status);
@@ -336,6 +352,8 @@ static void eflCanvasWheelCallback(void* data, const Efl_Event* ev)
   canvas_pos = efl_gfx_entity_position_get(ev->object);
   wheel_delta = efl_input_pointer_wheel_delta_get(pointer);
 
+  eflCanvasSetModifierStatus(pointer, status);
+
   pressed_buttons = (unsigned int)efl_input_pointer_value_get(pointer, EFL_INPUT_VALUE_BUTTONS_PRESSED);
   if (pressed_buttons & (1 << 0))
     iupKEY_SETBUTTON1(status);
@@ -349,42 +367,6 @@ static void eflCanvasWheelCallback(void* data, const Efl_Event* ev)
   {
     float delta = (float)wheel_delta;
     cb(ih, delta, pos.x - canvas_pos.x, pos.y - canvas_pos.y, status);
-  }
-}
-
-static void eflCanvasKeyCallback(void* data, const Efl_Event* ev)
-{
-  Ihandle* ih = (Ihandle*)data;
-  Efl_Input_Key* key_ev = ev->info;
-  IFnii cb;
-  IFni cb_any;
-  int key;
-  const char* keyname;
-
-  keyname = efl_input_key_name_get(key_ev);
-  if (!keyname)
-    return;
-
-  key = iupeflKeyDecode(NULL);
-  if (key == 0)
-    return;
-
-  cb = (IFnii)IupGetCallback(ih, "KEYPRESS_CB");
-  if (cb)
-  {
-    int ret = cb(ih, key, 1);
-    if (ret == IUP_CLOSE)
-      IupExitLoop();
-    else if (ret == IUP_IGNORE)
-      return;
-  }
-
-  cb_any = (IFni)IupGetCallback(ih, "K_ANY");
-  if (cb_any)
-  {
-    int ret = cb_any(ih, key);
-    if (ret == IUP_CLOSE)
-      IupExitLoop();
   }
 }
 
@@ -600,7 +582,8 @@ static int eflCanvasMapMethod(Ihandle* ih)
   efl_event_callback_add(vg, EFL_EVENT_POINTER_DOWN, eflCanvasButtonCallback, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_UP, eflCanvasButtonCallback, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_WHEEL, eflCanvasWheelCallback, ih);
-  efl_event_callback_add(vg, EFL_EVENT_KEY_DOWN, eflCanvasKeyCallback, ih);
+  efl_event_callback_add(vg, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+  efl_event_callback_add(vg, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
 
@@ -609,12 +592,6 @@ static int eflCanvasMapMethod(Ihandle* ih)
 
   return IUP_NOERROR;
 }
-
-typedef struct _IeflVgImageData {
-  Efl_VG* node;
-  void* pixels;
-  int w, h;
-} IeflVgImageData;
 
 static void eflCanvasUnMapMethod(Ihandle* ih)
 {
@@ -704,7 +681,8 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
     efl_event_callback_del(vg, EFL_EVENT_POINTER_DOWN, eflCanvasButtonCallback, ih);
     efl_event_callback_del(vg, EFL_EVENT_POINTER_UP, eflCanvasButtonCallback, ih);
     efl_event_callback_del(vg, EFL_EVENT_POINTER_WHEEL, eflCanvasWheelCallback, ih);
-    efl_event_callback_del(vg, EFL_EVENT_KEY_DOWN, eflCanvasKeyCallback, ih);
+    efl_event_callback_del(vg, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+    efl_event_callback_del(vg, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
     if (root)
       efl_del(root);

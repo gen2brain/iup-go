@@ -12,6 +12,7 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_class.h"
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -669,14 +670,7 @@ static int eflTextSetInsertAttrib(Ihandle* ih, const char* value)
 
 static int eflTextSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  Eo* entry = iupeflGetWidget(ih);
-
-  if (!entry)
-    return 0;
-
-  iupeflSetDisabled(entry, iupStrBoolean(value) ? EINA_FALSE : EINA_TRUE);
-
-  return 0;
+  return iupBaseSetActiveAttrib(ih, value);
 }
 
 static int eflTextSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -1404,20 +1398,22 @@ static void eflTextUnMapMethod(Ihandle* ih)
       }
     }
 
+    iupeflBaseRemoveCallbacks(ih, entry);
     iupeflDelete(entry);
   }
+
+  ih->handle = NULL;
 
   iupeflFontFree(ih);
 }
 
 static int eflTextSetFontAttrib(Ihandle* ih, const char* value)
 {
-  Eo* widget = iupeflGetWidget(ih);
+  if (!iupdrvSetFontAttrib(ih, value))
+    return 0;
 
-  iupdrvSetFontAttrib(ih, value);
-
-  if (widget)
-    iupeflApplyTextStyle(ih, widget);
+  if (ih->handle)
+    iupeflApplyTextStyle(ih, iupeflGetWidget(ih));
 
   return 1;
 }

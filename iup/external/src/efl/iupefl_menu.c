@@ -26,8 +26,6 @@
 #include "iupefl_drv.h"
 
 
-static void eflItemUpdateMark(Ihandle* ih);
-
 /****************************************************************
                      Mnemonic Support
 ****************************************************************/
@@ -150,25 +148,6 @@ static Elm_Object_Item* eflMenuGetParentItem(Ihandle* ih)
                      Hover Layer
 ****************************************************************/
 
-static void eflMenuSetHoverLayer(Evas_Object* menu);
-
-static void eflMenuShowCallback(void* data, Evas* e, Evas_Object* obj, void* event_info)
-{
-  Ihandle* ih = (Ihandle*)data;
-  Icallback cb;
-
-  (void)e;
-  (void)event_info;
-
-  eflMenuSetHoverLayer(obj);
-
-  cb = IupGetCallback(ih, "OPEN_CB");
-  if (!cb && ih->parent)
-    cb = IupGetCallback(ih->parent, "OPEN_CB");
-  if (cb)
-    cb(ih);
-}
-
 static void eflMenuSetHoverLayer(Evas_Object* menu)
 {
   Evas* evas;
@@ -197,6 +176,61 @@ static void eflMenuSetHoverLayer(Evas_Object* menu)
       break;
     obj = next;
   }
+}
+
+static void eflMenuShowCallback(void* data, Evas* e, Evas_Object* obj, void* event_info)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Icallback cb;
+
+  (void)e;
+  (void)event_info;
+
+  eflMenuSetHoverLayer(obj);
+
+  cb = IupGetCallback(ih, "OPEN_CB");
+  if (!cb && ih->parent)
+    cb = IupGetCallback(ih->parent, "OPEN_CB");
+  if (cb)
+    cb(ih);
+}
+
+static void eflItemUpdateMark(Ihandle* ih)
+{
+  Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
+  Evas_Object* icon;
+  Evas_Object* layout;
+  char* hidemark;
+  int show_mark;
+  int is_checked;
+
+  if (!item)
+    return;
+
+  hidemark = iupAttribGet(ih, "HIDEMARK");
+  show_mark = (hidemark == NULL || !iupStrEqualNoCase(hidemark, "YES"));
+  is_checked = iupAttribGetBoolean(ih, "VALUE");
+
+  icon = elm_object_item_part_content_get(item, NULL);
+  layout = elm_menu_item_object_get(item);
+
+  if (!icon || !layout)
+    return;
+
+  if (show_mark && is_checked)
+  {
+    if (!elm_icon_standard_set(icon, "object-select-symbolic"))
+      if (!elm_icon_standard_set(icon, "emblem-default"))
+        elm_icon_standard_set(icon, "emblem-ok");
+    evas_object_show(icon);
+    elm_layout_signal_emit(layout, "elm,state,icon,visible", "elm");
+  }
+  else
+  {
+    evas_object_hide(icon);
+    elm_layout_signal_emit(layout, "elm,state,icon,hidden", "elm");
+  }
+  edje_object_message_signal_process(elm_layout_edje_get(layout));
 }
 
 /****************************************************************
@@ -252,44 +286,6 @@ static void eflMenuDismissedCallback(void* data, Evas_Object* obj, void* event_i
                      Item Attributes
 ****************************************************************/
 
-static void eflItemUpdateMark(Ihandle* ih)
-{
-  Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
-  Evas_Object* icon;
-  Evas_Object* layout;
-  char* hidemark;
-  int show_mark;
-  int is_checked;
-
-  if (!item)
-    return;
-
-  hidemark = iupAttribGet(ih, "HIDEMARK");
-  show_mark = (hidemark == NULL || !iupStrEqualNoCase(hidemark, "YES"));
-  is_checked = iupAttribGetBoolean(ih, "VALUE");
-
-  icon = elm_object_item_part_content_get(item, NULL);
-  layout = elm_menu_item_object_get(item);
-
-  if (!icon || !layout)
-    return;
-
-  if (show_mark && is_checked)
-  {
-    if (!elm_icon_standard_set(icon, "object-select-symbolic"))
-      if (!elm_icon_standard_set(icon, "emblem-default"))
-        elm_icon_standard_set(icon, "emblem-ok");
-    evas_object_show(icon);
-    elm_layout_signal_emit(layout, "elm,state,icon,visible", "elm");
-  }
-  else
-  {
-    evas_object_hide(icon);
-    elm_layout_signal_emit(layout, "elm,state,icon,hidden", "elm");
-  }
-  edje_object_message_signal_process(elm_layout_edje_get(layout));
-}
-
 static int eflItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
@@ -312,40 +308,9 @@ static int eflItemSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int eflItemSetValueAttrib(Ihandle* ih, const char* value)
 {
-  Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
-  Evas_Object* icon;
-  Evas_Object* layout;
-  char* hidemark;
-  int show_mark;
-  int is_checked;
+  (void)value;
 
-  if (!item)
-    return 1;
-
-  hidemark = iupAttribGet(ih, "HIDEMARK");
-  show_mark = (hidemark == NULL || !iupStrEqualNoCase(hidemark, "YES"));
-  is_checked = iupStrBoolean(value);
-
-  icon = elm_object_item_part_content_get(item, NULL);
-  layout = elm_menu_item_object_get(item);
-
-  if (!icon || !layout)
-    return 1;
-
-  if (show_mark && is_checked)
-  {
-    if (!elm_icon_standard_set(icon, "object-select-symbolic"))
-      if (!elm_icon_standard_set(icon, "emblem-default"))
-        elm_icon_standard_set(icon, "emblem-ok");
-    evas_object_show(icon);
-    elm_layout_signal_emit(layout, "elm,state,icon,visible", "elm");
-  }
-  else
-  {
-    evas_object_hide(icon);
-    elm_layout_signal_emit(layout, "elm,state,icon,hidden", "elm");
-  }
-  edje_object_message_signal_process(elm_layout_edje_get(layout));
+  eflItemUpdateMark(ih);
 
   return 1;
 }

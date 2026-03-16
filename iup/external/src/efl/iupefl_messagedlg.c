@@ -80,6 +80,7 @@ static const char* eflMessageDlgGetIconName(const char* dialogtype)
 static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
 {
   Eo* win;
+  Eo* parent_win;
   Eo* vbox;
   Eo* content_hbox;
   Eo* label;
@@ -99,9 +100,13 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
 
+  parent_win = (Eo*)iupDialogGetNativeParent(ih);
+  if (!parent_win)
+    parent_win = iupeflGetMainWindow();
+
   title = iupAttribGet(ih, "TITLE");
 
-  win = efl_add(EFL_UI_WIN_CLASS, efl_main_loop_get(),
+  win = efl_add(EFL_UI_WIN_CLASS, parent_win ? parent_win : efl_main_loop_get(),
                 efl_text_set(efl_added, title ? iupeflStrConvertToSystem(title) : "Message"),
                 efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_DIALOG_BASIC),
                 efl_ui_win_autodel_set(efl_added, EINA_FALSE));
@@ -328,7 +333,18 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
     }
   } while (efl_msgdlg_response == -1);
 
-  if (efl_msgdlg_response == 3)
+  if (efl_msgdlg_response == 0)
+  {
+    if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
+      IupSetAttribute(ih, "BUTTONRESPONSE", "3");
+    else if (iupStrEqualNoCase(buttons, "OKCANCEL") ||
+             iupStrEqualNoCase(buttons, "RETRYCANCEL") ||
+             iupStrEqualNoCase(buttons, "YESNO"))
+      IupSetAttribute(ih, "BUTTONRESPONSE", "2");
+    else
+      IupSetAttribute(ih, "BUTTONRESPONSE", "1");
+  }
+  else if (efl_msgdlg_response == 3)
     IupSetAttribute(ih, "BUTTONRESPONSE", "3");
   else if (efl_msgdlg_response == 2)
     IupSetAttribute(ih, "BUTTONRESPONSE", "2");

@@ -12,6 +12,7 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_class.h"
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -161,12 +162,9 @@ static void eflScrollbarUnMapMethod(Ihandle* ih)
   Eo* slider = iupeflGetWidget(ih);
 
   if (slider)
-  {
     efl_event_callback_del(slider, EFL_UI_RANGE_EVENT_CHANGED, eflScrollbarChangedCallback, ih);
-    iupeflDelete(slider);
-  }
 
-  iupeflFontFree(ih);
+  iupdrvBaseUnMapMethod(ih);
 }
 
 void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)

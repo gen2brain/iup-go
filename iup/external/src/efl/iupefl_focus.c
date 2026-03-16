@@ -5,14 +5,14 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "iup.h"
 
 #include "iup_object.h"
-#include "iup_focus.h"
 #include "iup_attrib.h"
+#include "iup_focus.h"
 #include "iup_drv.h"
-#include "iup_assert.h"
 
 #include "iupefl_drv.h"
 
@@ -40,33 +40,53 @@ void iupdrvSetFocus(Ihandle *ih)
   }
 }
 
-void iupeflFocusInEvent(void *data, Evas_Object *obj, void *event_info)
+void iupeflFocusChangedEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-
-  (void)obj;
-  (void)event_info;
+  Eina_Bool focused = *((Eina_Bool*)ev->info);
 
   if (!iupObjectCheck(ih))
     return;
 
-  if (!iupdrvIsActive(ih))
-    return;
+  if (focused)
+  {
+    if (!iupdrvIsActive(ih))
+      return;
 
-  iupCallGetFocusCb(ih);
+    iupCallGetFocusCb(ih);
+  }
+  else
+    iupCallKillFocusCb(ih);
 }
 
-void iupeflFocusOutEvent(void *data, Evas_Object *obj, void *event_info)
+void iupeflManagerFocusChangedEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-
-  (void)obj;
-  (void)event_info;
+  Eina_Bool* prev_focused = (Eina_Bool*)iupAttribGet(ih, "_IUP_EFL_MANAGER_FOCUSED");
+  Eina_Bool currently_focused = (efl_ui_focus_manager_focus_get(ev->object) != NULL);
 
   if (!iupObjectCheck(ih))
     return;
 
-  iupCallKillFocusCb(ih);
+  if (prev_focused && *prev_focused == currently_focused)
+    return;
+
+  if (!prev_focused)
+  {
+    prev_focused = malloc(sizeof(Eina_Bool));
+    iupAttribSet(ih, "_IUP_EFL_MANAGER_FOCUSED", (char*)prev_focused);
+  }
+  *prev_focused = currently_focused;
+
+  if (currently_focused)
+  {
+    if (!iupdrvIsActive(ih))
+      return;
+
+    iupCallGetFocusCb(ih);
+  }
+  else
+    iupCallKillFocusCb(ih);
 }
 
 void iupeflDialogSetFocus(Ihandle* ih)

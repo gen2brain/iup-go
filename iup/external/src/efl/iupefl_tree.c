@@ -2595,6 +2595,7 @@ static void eflTreeUnMapMethod(Ihandle* ih)
     efl_event_callback_del(tree, EFL_EVENT_POINTER_DOWN, eflTreeRightClickCallback, ih);
     efl_event_callback_del(tree, EFL_EVENT_POINTER_DOWN, eflTreeClickCallback, ih);
     efl_event_callback_del(tree, EFL_EVENT_KEY_DOWN, eflTreeKeyDownCallback, ih);
+    iupeflBaseRemoveCallbacks(ih, tree);
     elm_genlist_clear(tree);
     iupeflDelete(tree);
   }
@@ -2657,5 +2658,7 @@ void iupdrvTreeInitClass(Iclass* ic)
 
   iupClassRegisterReplaceAttribFunc(ic, "SHOWDRAGDROP", NULL, eflTreeSetShowDragDropAttrib);
 
+  iupClassRegisterAttribute(ic, "INDENTATION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPACING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

@@ -12,6 +12,7 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_class.h"
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -165,6 +166,33 @@ static int eflLabelSetImageAttrib(Ihandle* ih, const char* value)
   return eflLabelReplaceWithImage(ih, value, 0);
 }
 
+static int eflLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type == IUP_LABEL_IMAGE && !iupdrvIsActive(ih))
+  {
+    Eo* label = iupeflGetWidget(ih);
+    if (label)
+    {
+      if (value)
+      {
+        if (!iupeflImageUpdateImage(label, value, ih, 0))
+          eflLabelReplaceWithImage(ih, value, 0);
+      }
+      else
+      {
+        char* name = iupAttribGet(ih, "IMAGE");
+        if (name)
+        {
+          if (!iupeflImageUpdateImage(label, name, ih, 1))
+            eflLabelReplaceWithImage(ih, name, 1);
+        }
+      }
+    }
+    return 1;
+  }
+  return 0;
+}
+
 static int eflLabelSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
@@ -178,10 +206,8 @@ static int eflLabelSetFgColorAttrib(Ihandle* ih, const char* value)
 
 static int eflLabelSetFontAttrib(Ihandle* ih, const char* value)
 {
-  iupdrvSetFontAttrib(ih, value);
-
-  if (ih->data->type != IUP_LABEL_TEXT)
-    return 1;
+  if (!iupdrvSetFontAttrib(ih, value))
+    return 0;
 
   eflLabelApplyFont(ih);
   return 1;
@@ -189,37 +215,32 @@ static int eflLabelSetFontAttrib(Ihandle* ih, const char* value)
 
 static int eflLabelSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  Eo* label = iupeflGetWidget(ih);
-
-  if (!label)
-    return 0;
-
-  if (efl_isa(label, EFL_UI_WIDGET_CLASS))
-  {
-    if (iupStrBoolean(value))
-      efl_ui_widget_disabled_set(label, EINA_FALSE);
-    else
-      efl_ui_widget_disabled_set(label, EINA_TRUE);
-  }
-
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
-    char* name;
-    int make_inactive = !iupStrBoolean(value);
-
-    if (make_inactive)
-      name = iupAttribGet(ih, "IMINACTIVE");
-    else
-      name = iupAttribGet(ih, "IMAGE");
-
-    if (name)
+    Eo* label = iupeflGetWidget(ih);
+    if (label)
     {
-      if (!iupeflImageUpdateImage(label, name, ih, make_inactive))
-        eflLabelReplaceWithImage(ih, name, make_inactive);
+      char* name;
+      int make_inactive = !iupStrBoolean(value);
+
+      if (make_inactive)
+      {
+        name = iupAttribGet(ih, "IMINACTIVE");
+        if (!name)
+          name = iupAttribGet(ih, "IMAGE");
+      }
+      else
+        name = iupAttribGet(ih, "IMAGE");
+
+      if (name)
+      {
+        if (!iupeflImageUpdateImage(label, name, ih, make_inactive))
+          eflLabelReplaceWithImage(ih, name, make_inactive);
+      }
     }
   }
 
-  return 0;
+  return iupBaseSetActiveAttrib(ih, value);
 }
 
 static int eflLabelMapMethod(Ihandle* ih)
@@ -295,15 +316,7 @@ static int eflLabelMapMethod(Ihandle* ih)
 
 static void eflLabelUnMapMethod(Ihandle* ih)
 {
-  Eo* label = iupeflGetWidget(ih);
-
-  if (label)
-  {
-    iupeflBaseRemoveCallbacks(ih, label);
-    efl_del(label);
-  }
-
-  iupeflFontFree(ih);
+  iupdrvBaseUnMapMethod(ih);
 }
 
 void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
@@ -350,9 +363,9 @@ void iupdrvLabelInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, eflLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, eflLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, eflLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, eflLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupeflBaseGetActiveAttrib, eflLabelSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupeflSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, iupeflSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflLabelSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FONT", NULL, eflLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 }

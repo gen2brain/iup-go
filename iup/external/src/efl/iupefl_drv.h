@@ -120,11 +120,9 @@ void iupeflUpdateMnemonic(Ihandle* ih);
  * String Conversion (UTF-8 Handling)
  ****************************************************************************/
 
-/* EFL uses UTF-8 internally, so conversions are mostly pass-through */
-char* iupeflStrConvertToSystem(const char* str);
-char* iupeflStrConvertFromSystem(const char* str);
-char* iupeflStrConvertFromFilename(const char* str);
-char* iupeflStrConvertToFilename(const char* str);
+/* EFL uses UTF-8 internally, so conversions are pass-through */
+#define iupeflStrConvertToSystem(str)   ((char*)(str))
+#define iupeflStrConvertFromSystem(str) ((char*)(str))
 
 /****************************************************************************
  * Color Management
@@ -188,6 +186,16 @@ void iupeflFontFree(Ihandle* ih);
 void iupeflTextGetBorder(int* border_x, int* border_y);
 
 /****************************************************************************
+ * VG Image Data (used by canvas and draw)
+ ****************************************************************************/
+
+typedef struct _IeflVgImageData {
+  Efl_VG* node;
+  void* pixels;
+  int w, h;
+} IeflVgImageData;
+
+/****************************************************************************
  * Image Management
  ****************************************************************************/
 
@@ -208,7 +216,6 @@ const char* iupeflGetNativeWindowHandleName(void);
  * Dialog Management
  ****************************************************************************/
 
-void iupeflDialogCloseCallback(void* data, const Efl_Event* ev);
 Eo* iupeflGetParentWidget(Ihandle* ih);
 Eo* iupeflGetMainWindow(void);
 void iupeflSetMainWindow(Eo* win);
@@ -218,7 +225,6 @@ unsigned int iupeflGetDefaultSeat(Eo* widget);
  * Key Code Conversion
  ****************************************************************************/
 
-int iupeflKeyDecode(Evas_Event_Key_Down* ev);
 void iupeflKeyEncode(int key, const char** keyname, const char** keystr);
 void iupeflButtonKeySetStatus(Evas_Modifier* modifiers, unsigned int button, char* status, int doubleclick);
 
