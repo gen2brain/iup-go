@@ -640,12 +640,22 @@ static void eflDialogUnMapMethod(Ihandle* ih)
     efl_event_callback_del(win, EFL_EVENT_KEY_DOWN, eflDialogKeyDownCallback, ih);
 
     {
+      Eo* bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
       Eo* bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
       Eo* op_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_OPACITY_IMAGE");
+      if (bg_rect)
+      {
+        elm_win_resize_object_del(win, bg_rect);
+        evas_object_del(bg_rect);
+      }
       if (bg_img)
+      {
+        elm_win_resize_object_del(win, bg_img);
         evas_object_del(bg_img);
+      }
       if (op_img)
         evas_object_del(op_img);
+      iupAttribSet(ih, "_IUP_EFL_BGRECT", NULL);
       iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", NULL);
       iupAttribSet(ih, "_IUP_EFL_OPACITY_IMAGE", NULL);
     }
@@ -658,10 +668,18 @@ static void eflDialogUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
+static void eflDialogStackBgBelow(Ihandle* ih, Eo* bg)
+{
+  Eo* inner = (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
+  if (inner)
+    evas_object_stack_below(bg, inner);
+}
+
 static void eflDialogLayoutUpdateMethod(Ihandle* ih)
 {
   int width, height;
   Eo* win = iupeflGetWidget(ih);
+  Eo* bg;
 
   if (ih->data->ignore_resize)
     return;
@@ -678,6 +696,14 @@ static void eflDialogLayoutUpdateMethod(Ihandle* ih)
   if (height <= 0) height = 1;
 
   iupeflSetSize(win, width, height);
+
+  bg = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
+  if (bg)
+    eflDialogStackBgBelow(ih, bg);
+
+  bg = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
+  if (bg)
+    eflDialogStackBgBelow(ih, bg);
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
@@ -797,13 +823,43 @@ static int eflDialogSetTopMostAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int eflDialogSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  Eo* win = iupeflGetWidget(ih);
+  Eo* bg_rect;
+  unsigned char r, g, b;
+
+  if (!win)
+    return 0;
+
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+
+  bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
+  if (!bg_rect)
+  {
+    Evas* evas = evas_object_evas_get(win);
+    bg_rect = evas_object_rectangle_add(evas);
+    elm_win_resize_object_add(win, bg_rect);
+    iupAttribSet(ih, "_IUP_EFL_BGRECT", (char*)bg_rect);
+    evas_object_show(bg_rect);
+  }
+
+  evas_object_color_set(bg_rect, r, g, b, 255);
+  eflDialogStackBgBelow(ih, bg_rect);
+
+  return 1;
+}
+
 static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
-  if (iupeflSetBgColorAttrib(ih, value))
+  if (eflDialogSetBgColorAttrib(ih, value))
   {
     Eo* old_bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
     if (old_bg_img)
     {
+      Eo* win = iupeflGetWidget(ih);
+      elm_win_resize_object_del(win, old_bg_img);
       evas_object_del(old_bg_img);
       iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", NULL);
     }
@@ -817,6 +873,7 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       Eo* win = iupeflGetWidget(ih);
       Evas_Object* evas_img = elm_image_object_get(elm_img);
       Eo* inner = (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
+      Eo* bg_rect;
       Eo* bg_img;
       unsigned int* src_pixels;
       unsigned int* dst_pixels;
@@ -833,11 +890,20 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       if (!src_pixels)
         return 0;
 
+      bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
+      if (bg_rect)
+      {
+        elm_win_resize_object_del(win, bg_rect);
+        evas_object_del(bg_rect);
+        iupAttribSet(ih, "_IUP_EFL_BGRECT", NULL);
+      }
+
       bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
       if (!bg_img)
       {
-        Evas* evas = evas_object_evas_get(inner ? inner : win);
+        Evas* evas = evas_object_evas_get(win);
         bg_img = evas_object_image_filled_add(evas);
+        elm_win_resize_object_add(win, bg_img);
         iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", (char*)bg_img);
       }
 
@@ -851,9 +917,7 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
         evas_object_image_data_set(bg_img, dst_pixels);
       }
 
-      evas_object_resize(bg_img, ih->currentwidth, ih->currentheight);
-      evas_object_move(bg_img, 0, 0);
-      efl_gfx_stack_lower_to_bottom(bg_img);
+      eflDialogStackBgBelow(ih, bg_img);
       evas_object_show(bg_img);
 
       return 1;
@@ -1113,7 +1177,7 @@ void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "TITLE", eflDialogGetTitleAttrib, eflDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupeflSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflDialogSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, eflDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXIMIZED", eflDialogGetMaximizedAttrib, eflDialogSetMaximizedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
