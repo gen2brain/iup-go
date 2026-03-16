@@ -117,14 +117,6 @@ int iupeflSetMnemonicTitle(Ihandle* ih, Eo* widget, const char* value);
 void iupeflUpdateMnemonic(Ihandle* ih);
 
 /****************************************************************************
- * String Conversion (UTF-8 Handling)
- ****************************************************************************/
-
-/* EFL uses UTF-8 internally, so conversions are pass-through */
-#define iupeflStrConvertToSystem(str)   ((char*)(str))
-#define iupeflStrConvertFromSystem(str) ((char*)(str))
-
-/****************************************************************************
  * Color Management
  ****************************************************************************/
 

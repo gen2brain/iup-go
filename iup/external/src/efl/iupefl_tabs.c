@@ -558,7 +558,7 @@ static int eflTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
       {
         Eo* item = efl_ui_tab_page_tab_bar_item_get(page);
         if (item)
-          efl_text_set(item, iupeflStrConvertToSystem(value));
+          efl_text_set(item, value);
       }
     }
   }
@@ -776,7 +776,7 @@ static void eflTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     if (item)
     {
       if (tabtitle)
-        efl_text_set(item, iupeflStrConvertToSystem(tabtitle));
+        efl_text_set(item, tabtitle);
       if (tabimage)
         eflTabsSetItemIcon(item, tabimage, ih);
 

@@ -154,7 +154,7 @@ static void eflFileDlgGetMultipleFiles(Ihandle* ih, Eina_List* paths)
   if (!paths || eina_list_count(paths) == 0)
     return;
 
-  filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(paths));
+  filename = (char*)eina_list_data_get(paths);
   dir = iupStrFileGetPath(filename);
   dir_len = (int)strlen(dir);
   iupAttribSetStr(ih, "DIRECTORY", dir);
@@ -192,7 +192,7 @@ static void eflFileDlgGetMultipleFiles(Ihandle* ih, Eina_List* paths)
 
     EINA_LIST_FOREACH(paths, l, path)
     {
-      filename = iupeflStrConvertFromSystem((char*)path);
+      filename = (char*)path;
       len = (int)strlen(filename) - dir_len;
       if (len <= 0)
         continue;
@@ -286,9 +286,9 @@ static void eflFileDlgSelectedCallback(void* data, Evas_Object* obj, void* event
     return;
 
   if (eflIsFile(path))
-    file_cb(ih, iupeflStrConvertFromSystem((char*)path), "SELECT");
+    file_cb(ih, (char*)path, "SELECT");
   else
-    file_cb(ih, iupeflStrConvertFromSystem((char*)path), "OTHER");
+    file_cb(ih, (char*)path, "OTHER");
 }
 
 static int eflFileDlgPopup(Ihandle* ih, int x, int y)
@@ -341,7 +341,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
   win = efl_add(EFL_UI_WIN_CLASS, parent_win ? parent_win : efl_main_loop_get(),
     efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_DIALOG_BASIC),
-    efl_text_set(efl_added, title ? iupeflStrConvertToSystem(title) : ""));
+    efl_text_set(efl_added, title ? title : ""));
   if (!win)
     return IUP_ERROR;
 
@@ -401,7 +401,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
         elm_fileselector_custom_filter_append(fileselector,
           eflFileDlgFilterFunc, filter_list[i],
-          iupeflStrConvertToSystem(name));
+          name);
 
         name = eflFileDlgGetNextStr(pattern);
       }
@@ -426,7 +426,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
       elm_fileselector_custom_filter_append(fileselector,
         eflFileDlgFilterFunc, filter_list[0],
-        iupeflStrConvertToSystem(info));
+        info);
     }
   }
 
@@ -442,7 +442,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
   dir = iupAttribGet(ih, "DIRECTORY");
   if (dir && dir[0])
-    elm_fileselector_path_set(fileselector, iupeflStrConvertToSystem(dir));
+    elm_fileselector_path_set(fileselector, dir);
   else
   {
     const char* home = getenv("HOME");
@@ -452,7 +452,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
   file = iupAttribGet(ih, "FILE");
   if (file && file[0] && is_save)
-    elm_fileselector_current_name_set(fileselector, iupeflStrConvertToSystem(file));
+    elm_fileselector_current_name_set(fileselector, file);
 
   evas_object_smart_callback_add(fileselector, "done", eflFileDlgDoneCallback, ih);
   evas_object_smart_callback_add(fileselector, "selected", eflFileDlgSelectedCallback, ih);
@@ -480,7 +480,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
     if (efl_filedlg_status == 1 && efl_filedlg_paths && is_save &&
         !iupAttribGetBoolean(ih, "NOOVERWRITEPROMPT"))
     {
-      char* filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
+      char* filename = (char*)eina_list_data_get(efl_filedlg_paths);
       char* final_filename = eflFileCheckExt(ih, filename);
 
       if (eflIsFile(final_filename))
@@ -524,7 +524,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
     if (efl_filedlg_status == 1 && efl_filedlg_paths && folder_mode)
     {
-      char* filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
+      char* filename = (char*)eina_list_data_get(efl_filedlg_paths);
       if (!eflIsDirectory(filename))
       {
         IupMessageError(ih, "IUP_INVALIDDIR");
@@ -536,7 +536,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
     if (efl_filedlg_status == 1 && efl_filedlg_paths && !is_multi && !folder_mode)
     {
-      char* filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
+      char* filename = (char*)eina_list_data_get(efl_filedlg_paths);
       int file_exist = eflIsFile(filename);
       int dir_exist = eflIsDirectory(filename);
 
@@ -566,7 +566,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
     if (efl_filedlg_status == 1 && efl_filedlg_paths && file_cb)
     {
-      char* filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
+      char* filename = (char*)eina_list_data_get(efl_filedlg_paths);
       int ret = file_cb(ih, filename, "OK");
 
       if (ret == IUP_IGNORE || ret == IUP_CONTINUE)
@@ -575,7 +575,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
         {
           value = iupAttribGet(ih, "FILE");
           if (value && is_save)
-            elm_fileselector_current_name_set(fileselector, iupeflStrConvertToSystem(value));
+            elm_fileselector_current_name_set(fileselector, value);
         }
 
         eflFileDlgFreePathList();
@@ -591,7 +591,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
   {
     if (folder_mode)
     {
-      char* selected_dir = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
+      char* selected_dir = (char*)eina_list_data_get(efl_filedlg_paths);
       iupAttribSetStr(ih, "VALUE", selected_dir);
       iupAttribSet(ih, "STATUS", "0");
       iupAttribSet(ih, "FILEEXIST", NULL);
@@ -604,7 +604,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
     }
     else
     {
-      char* filename = iupeflStrConvertFromSystem((char*)eina_list_data_get(efl_filedlg_paths));
+      char* filename = (char*)eina_list_data_get(efl_filedlg_paths);
       char* final_filename;
       int file_exist, dir_exist;
 

@@ -179,7 +179,7 @@ static int eflFrameSetTitleAttrib(Ihandle* ih, const char* value)
 
   if (iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    iupeflSetText(frame, iupeflStrConvertToSystem(value ? value : ""));
+    iupeflSetText(frame, value ? value : "");
     eflFrameApplyFont(ih);
     return 1;
   }
@@ -257,7 +257,7 @@ static int eflFrameMapMethod(Ihandle* ih)
     efl_ui_frame_autocollapse_set(frame, EINA_FALSE);
 
     iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");
-    iupeflSetText(frame, iupeflStrConvertToSystem(title));
+    iupeflSetText(frame, title);
     eflFrameApplyFont(ih);
   }
   else

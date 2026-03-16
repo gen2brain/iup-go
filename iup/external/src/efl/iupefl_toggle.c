@@ -273,7 +273,7 @@ static int eflToggleSetTitleAttrib(Ihandle* ih, const char* value)
   label = (Eo*)iupAttribGet(ih, "_IUP_EFL_LABEL");
   if (label)
   {
-    efl_text_set(label, iupeflStrConvertToSystem(value));
+    efl_text_set(label, value);
     iupeflApplyTextStyle(ih, label);
     return 1;
   }
@@ -559,7 +559,7 @@ static int eflToggleMapMethod(Ihandle* ih)
                         efl_gfx_hint_align_set(efl_added, 0.0, 0.5));
         if (label)
         {
-          efl_text_set(label, iupeflStrConvertToSystem(title));
+          efl_text_set(label, title);
           efl_pack_end(toggle, label);
           iupAttribSet(ih, "_IUP_EFL_LABEL", (char*)label);
 
@@ -621,7 +621,7 @@ static int eflToggleMapMethod(Ihandle* ih)
                       efl_gfx_hint_align_set(efl_added, 0.0, 0.5));
       if (label)
       {
-        efl_text_set(label, iupeflStrConvertToSystem(title));
+        efl_text_set(label, title);
         efl_pack_end(toggle, label);
         iupAttribSet(ih, "_IUP_EFL_LABEL", (char*)label);
 

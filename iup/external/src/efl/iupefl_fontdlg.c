@@ -320,7 +320,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
 
     win = efl_add(EFL_UI_WIN_CLASS, parent_win ? parent_win : efl_main_loop_get(),
       efl_ui_win_type_set(efl_added, EFL_UI_WIN_TYPE_DIALOG_BASIC),
-      efl_text_set(efl_added, iupeflStrConvertToSystem(title)));
+      efl_text_set(efl_added, title));
     if (!win)
       return IUP_ERROR;
   }

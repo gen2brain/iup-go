@@ -298,7 +298,7 @@ static int eflItemSetTitleAttrib(Ihandle* ih, const char* value)
     value = "";
 
   display_title = eflMenuGetDisplayTitle(value);
-  elm_object_item_text_set(item, iupeflStrConvertToSystem(display_title));
+  elm_object_item_text_set(item, display_title);
 
   if (display_title != value)
     free(display_title);
@@ -375,7 +375,7 @@ static int eflItemMapMethod(Ihandle* ih)
 
   display_title = eflMenuGetDisplayTitle(title);
 
-  item = elm_menu_item_add(menu, parent_item, NULL, iupeflStrConvertToSystem(display_title), eflMenuItemActivateCallback, ih);
+  item = elm_menu_item_add(menu, parent_item, NULL, display_title, eflMenuItemActivateCallback, ih);
 
   if (display_title != title)
     free(display_title);
@@ -490,7 +490,7 @@ static int eflSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
     value = "";
 
   display_title = eflMenuGetDisplayTitle(value);
-  elm_object_item_text_set(item, iupeflStrConvertToSystem(display_title));
+  elm_object_item_text_set(item, display_title);
 
   if (display_title != value)
     free(display_title);
@@ -555,7 +555,7 @@ static int eflSubmenuMapMethod(Ihandle* ih)
   display_title = eflMenuGetDisplayTitle(title);
   mnemonic = eflMenuExtractMnemonic(title);
 
-  item = elm_menu_item_add(menu, parent_item, NULL, iupeflStrConvertToSystem(display_title), NULL, NULL);
+  item = elm_menu_item_add(menu, parent_item, NULL, display_title, NULL, NULL);
 
   if (display_title != title)
     free(display_title);
