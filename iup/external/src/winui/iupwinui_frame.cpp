@@ -76,12 +76,14 @@ static void winuiFrameUpdateTitleBackground(Ihandle* ih)
   if (!aux || !aux->titleBorder)
     return;
 
-  unsigned char r, g, b;
-
   Ihandle* dlg = IupGetDialog(ih);
-  const char* backdrop = dlg ? iupAttribGet(dlg, "_IUPWINUI_BACKDROP_ACTIVE") : NULL;
+  if (!dlg)
+    return;
+
+  const char* backdrop = iupAttribGet(dlg, "_IUPWINUI_BACKDROP_ACTIVE");
   if (backdrop)
   {
+    unsigned char r, g, b;
     int dark = iupwinuiIsSystemDarkMode();
     if (iupStrEqualNoCase(backdrop, "MICAALT"))
     {
@@ -98,23 +100,42 @@ static void winuiFrameUpdateTitleBackground(Ihandle* ih)
       r = dark ? 0x20 : 0xF3;
       g = r; b = r;
     }
+
+    Color color;
+    color.A = 255;
+    color.R = r;
+    color.G = g;
+    color.B = b;
+    aux->titleBorder.Background(SolidColorBrush(color));
+    return;
   }
-  else
+
+  IupWinUIDialogAux* dlg_aux = winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX);
+  if (dlg_aux && dlg_aux->rootPanel)
   {
-    const char* dlg_bg = dlg ? iupAttribGet(dlg, "_IUPWINUI_BACKGROUND_COLOR") : NULL;
-    if (!dlg_bg || !iupStrToRGB(dlg_bg, &r, &g, &b))
+    Brush bg = dlg_aux->rootPanel.Background();
+    if (bg && bg.try_as<ImageBrush>())
     {
-      if (!iupStrToRGB(iupAttribGetStr(ih, "BGCOLOR"), &r, &g, &b))
-        return;
+      aux->titleBorder.Background(nullptr);
+      return;
     }
   }
 
-  Color color;
-  color.A = 255;
-  color.R = r;
-  color.G = g;
-  color.B = b;
-  aux->titleBorder.Background(SolidColorBrush(color));
+  unsigned char r, g, b;
+  const char* dlg_bg = iupAttribGet(dlg, "_IUPWINUI_BACKGROUND_COLOR");
+  if (!dlg_bg || !iupStrToRGB(dlg_bg, &r, &g, &b))
+  {
+    if (!iupStrToRGB(iupAttribGetStr(ih, "BGCOLOR"), &r, &g, &b))
+      return;
+  }
+  {
+    Color color;
+    color.A = 255;
+    color.R = r;
+    color.G = g;
+    color.B = b;
+    aux->titleBorder.Background(SolidColorBrush(color));
+  }
 }
 
 static int winuiFrameSetFontAttrib(Ihandle* ih, const char* value)

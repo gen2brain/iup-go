@@ -182,6 +182,18 @@ protected:
       IupRefresh(iup_handle);
       iup_handle->data->ignore_resize = 0;
     }
+
+    if (iupAttribGetBoolean(iup_handle, "BACKIMAGEZOOM"))
+    {
+      QPixmap* pixmap = (QPixmap*)iupAttribGet(iup_handle, "_IUPQT_BACKGROUND_IMAGE");
+      if (pixmap)
+      {
+        QPalette palette = this->palette();
+        QPixmap scaled = pixmap->scaled(this->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        palette.setBrush(QPalette::Window, QBrush(scaled));
+        this->setPalette(palette);
+      }
+    }
   }
 
   void moveEvent(QMoveEvent* event) override
@@ -946,6 +958,7 @@ static int qtDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     palette.setColor(QPalette::Window, QColor(r, g, b));
     widget->setPalette(palette);
     widget->setAutoFillBackground(true);
+    iupAttribSet(ih, "_IUPQT_BACKGROUND_IMAGE", NULL);
     return 1;
   }
   else
@@ -955,7 +968,16 @@ static int qtDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     if (pixmap)
     {
       QPalette palette = widget->palette();
-      palette.setBrush(QPalette::Window, QBrush(*pixmap));
+      iupAttribSet(ih, "_IUPQT_BACKGROUND_IMAGE", (char*)pixmap);
+
+      if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+      {
+        QPixmap scaled = pixmap->scaled(widget->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        palette.setBrush(QPalette::Window, QBrush(scaled));
+      }
+      else
+        palette.setBrush(QPalette::Window, QBrush(*pixmap));
+
       widget->setPalette(palette);
       widget->setAutoFillBackground(true);
       return 1;
@@ -1144,6 +1166,15 @@ extern "C" void qtDialogLayoutUpdateMethod(Ihandle *ih)
   ih->data->ignore_resize = 0;
 }
 
+static int qtDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  char* background = iupAttribGet(ih, "BACKGROUND");
+  if (background)
+    qtDialogSetBackgroundAttrib(ih, background);
+  return 1;
+}
+
 extern "C" void iupdrvDialogInitClass(Iclass* ic)
 {
   /* Driver Dependent Class methods */
@@ -1163,6 +1194,7 @@ extern "C" void iupdrvDialogInitClass(Iclass* ic)
 
   /* IupDialog */
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, qtDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, qtDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, qtDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, qtDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, qtDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);

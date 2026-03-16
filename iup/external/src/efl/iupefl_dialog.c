@@ -76,6 +76,13 @@ static void eflDialogCloseCallback(void* data, const Efl_Event* ev)
   IupHide(ih);
 }
 
+static void eflDialogStackBgBelow(Ihandle* ih, Eo* bg)
+{
+  Eo* inner = (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
+  if (inner)
+    evas_object_stack_below(bg, inner);
+}
+
 static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -104,6 +111,16 @@ static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
       ih->data->ignore_resize = 1;
       IupRefresh(ih);
       ih->data->ignore_resize = 0;
+    }
+
+    {
+      Eo* bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
+      if (bg_img)
+      {
+        if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+          evas_object_image_fill_set(bg_img, 0, 0, w, h);
+        eflDialogStackBgBelow(ih, bg_img);
+      }
     }
   }
 }
@@ -668,13 +685,6 @@ static void eflDialogUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
-static void eflDialogStackBgBelow(Ihandle* ih, Eo* bg)
-{
-  Eo* inner = (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
-  if (inner)
-    evas_object_stack_below(bg, inner);
-}
-
 static void eflDialogLayoutUpdateMethod(Ihandle* ih)
 {
   int width, height;
@@ -703,7 +713,11 @@ static void eflDialogLayoutUpdateMethod(Ihandle* ih)
 
   bg = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
   if (bg)
+  {
+    if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+      evas_object_image_fill_set(bg, 0, 0, width, height);
     eflDialogStackBgBelow(ih, bg);
+  }
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
@@ -902,13 +916,18 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       if (!bg_img)
       {
         Evas* evas = evas_object_evas_get(win);
-        bg_img = evas_object_image_filled_add(evas);
+        bg_img = evas_object_image_add(evas);
         elm_win_resize_object_add(win, bg_img);
         iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", (char*)bg_img);
       }
 
       evas_object_image_size_set(bg_img, w, h);
       evas_object_image_alpha_set(bg_img, evas_object_image_alpha_get(evas_img));
+
+      if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+        evas_object_image_fill_set(bg_img, 0, 0, ih->currentwidth, ih->currentheight);
+      else
+        evas_object_image_fill_set(bg_img, 0, 0, w, h);
 
       dst_pixels = evas_object_image_data_get(bg_img, EINA_TRUE);
       if (dst_pixels)
@@ -1164,6 +1183,17 @@ static int eflDialogSetIconAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int eflDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  if (iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE"))
+  {
+    char* background = iupAttribGet(ih, "BACKGROUND");
+    if (background)
+      eflDialogSetBackgroundAttrib(ih, background);
+  }
+  return 1;
+}
 
 void iupdrvDialogInitClass(Iclass* ic)
 {
@@ -1188,6 +1218,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, eflDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, eflDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, eflDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);

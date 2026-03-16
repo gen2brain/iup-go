@@ -542,6 +542,15 @@ static gboolean gtkDialogConfigureEvent(GtkWidget *widget, GdkEventConfigure *ev
       IupRefresh(ih);
       ih->data->ignore_resize = 0;
     }
+
+#if !GTK_CHECK_VERSION(3, 0, 0)
+    if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM") && iupAttribGet(ih, "_IUPGTK_BACKGROUND_IMAGE"))
+    {
+      char* background = iupAttribGet(ih, "BACKGROUND");
+      if (background)
+        IupSetAttribute(ih, "BACKGROUND", background);
+    }
+#endif
   }
 
   old_x = iupAttribGetInt(ih, "_IUPGTK_OLD_X");
@@ -1226,7 +1235,20 @@ static gboolean gtkDialogBackgroundDraw(GtkWidget* widget, cairo_t* cr, Ihandle*
     cairo_surface_t* surface = gdk_cairo_surface_create_from_pixbuf(pixbuf, 0, gtk_widget_get_window(widget));
 
     cairo_set_source_surface(cr, surface, 0, 0);
-    cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
+
+    if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+    {
+      int img_w = gdk_pixbuf_get_width(pixbuf);
+      int img_h = gdk_pixbuf_get_height(pixbuf);
+      GtkAllocation allocation;
+      cairo_matrix_t matrix;
+      gtk_widget_get_allocation(widget, &allocation);
+      cairo_matrix_init_scale(&matrix, (double)img_w / allocation.width, (double)img_h / allocation.height);
+      cairo_pattern_set_matrix(cairo_get_source(cr), &matrix);
+    }
+    else
+      cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
+
     cairo_paint(cr);
 
     cairo_surface_destroy(surface);
@@ -1262,6 +1284,8 @@ static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 
       iupgtkSetBgColor(ih->handle, r, g, b);
       iupgtkSetBgColor((InativeHandle*)viewport, r, g, b);
+
+      iupAttribSet(ih, "_IUPGTK_BACKGROUND_IMAGE", NULL);
     }
 #endif
     return 1;
@@ -1290,10 +1314,20 @@ static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       GdkPixmap* pixmap;
       GtkStyle* style = gtk_style_copy(gtk_widget_get_style(viewport));
 
-      gdk_pixbuf_render_pixmap_and_mask(pixbuf, &pixmap, NULL, 255);
+      if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+      {
+        GdkPixbuf* scaled;
+        scaled = gdk_pixbuf_scale_simple(pixbuf, ih->currentwidth, ih->currentheight, GDK_INTERP_BILINEAR);
+        gdk_pixbuf_render_pixmap_and_mask(scaled, &pixmap, NULL, 255);
+        g_object_unref(scaled);
+      }
+      else
+        gdk_pixbuf_render_pixmap_and_mask(pixbuf, &pixmap, NULL, 255);
 
       style->bg_pixmap[GTK_STATE_NORMAL] = pixmap;
       gtk_widget_set_style(viewport, style);
+
+      iupAttribSet(ih, "_IUPGTK_BACKGROUND_IMAGE", (char*)pixbuf);
 #endif
       return 1;
     }
@@ -1309,6 +1343,19 @@ static int gtkDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 #endif
+
+static int gtkDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+#if GTK_CHECK_VERSION(3, 0, 0)
+  if (iupAttribGet(ih, "_IUPGTK_BACKGROUND_IMAGE"))
+  {
+    GtkWidget* viewport = gtk_bin_get_child((GtkBin*)ih->handle);
+    gtk_widget_queue_draw(viewport);
+  }
+#endif
+  return 1;
+}
 
 /****************************************************************************************************************/
 
@@ -1339,6 +1386,7 @@ void iupdrvDialogInitClass(Iclass* ic)
 
   /* IupDialog only */
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, gtkDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, gtkDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, gtkDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, gtkDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, gtkDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);

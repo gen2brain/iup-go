@@ -529,6 +529,17 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
     IupRefresh(ih);
     ih->data->ignore_resize = 0;
   }
+
+  if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+  {
+    char* background = iupAttribGet(ih, "BACKGROUND");
+    if (background)
+    {
+      unsigned char r_tmp, g_tmp, b_tmp;
+      if (!iupStrToRGB(background, &r_tmp, &g_tmp, &b_tmp))
+        IupSetAttribute(ih, "BACKGROUND", background);
+    }
+  }
 }
 
 - (void) windowDidMove:(NSNotification*)the_notification
@@ -1268,7 +1279,24 @@ static int cocoaDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     NSImage* image = iupImageGetImage(value, ih, 0, NULL);
     if (image)
     {
-      [the_window setBackgroundColor:[NSColor colorWithPatternImage:image]];
+      if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+      {
+        NSSize windowSize = [[the_window contentView] bounds].size;
+        if (windowSize.width > 0 && windowSize.height > 0)
+        {
+          NSImage* scaledImage = [[NSImage alloc] initWithSize:windowSize];
+          [scaledImage lockFocus];
+          [image drawInRect:NSMakeRect(0, 0, windowSize.width, windowSize.height)
+                   fromRect:NSZeroRect
+                  operation:NSCompositingOperationCopy
+                   fraction:1.0];
+          [scaledImage unlockFocus];
+          [the_window setBackgroundColor:[NSColor colorWithPatternImage:scaledImage]];
+          [scaledImage release];
+        }
+      }
+      else
+        [the_window setBackgroundColor:[NSColor colorWithPatternImage:image]];
       return 1;
     }
   }
@@ -1684,6 +1712,15 @@ static int cocoaDialogSetTaskBarProgressValueAttrib(Ihandle *ih, const char *val
 }
 
 
+static int cocoaDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  char* background = iupAttribGet(ih, "BACKGROUND");
+  if (background)
+    cocoaDialogSetBackgroundAttrib(ih, background);
+  return 1;
+}
+
 /****************************************************************
  ******************** Class Registration ************************
  ****************************************************************/
@@ -1719,6 +1756,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, cocoaDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, cocoaDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, cocoaDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, cocoaDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITY", NULL, cocoaDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, cocoaDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);

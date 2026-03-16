@@ -766,6 +766,14 @@ static void winuiDialogLayoutUpdateMethod(Ihandle* ih)
 
   winuiDialogUpdateDescendants(ih);
 
+  if (!iupAttribGetBoolean(ih, "BACKIMAGEZOOM") && iupAttribGet(ih, "BACKGROUND"))
+  {
+    char* background = iupAttribGet(ih, "BACKGROUND");
+    unsigned char r, g, b;
+    if (!iupStrToRGB(background, &r, &g, &b))
+      IupSetAttribute(ih, "BACKGROUND", background);
+  }
+
   ih->data->ignore_resize = 0;
 }
 
@@ -1248,10 +1256,46 @@ static int winuiDialogSetOpacityAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static WriteableBitmap winuiDialogCreateTiledBitmap(WriteableBitmap src, int dst_w, int dst_h)
+{
+  int src_w = src.PixelWidth();
+  int src_h = src.PixelHeight();
+  if (src_w <= 0 || src_h <= 0 || dst_w <= 0 || dst_h <= 0)
+    return nullptr;
+
+  WriteableBitmap dst(dst_w, dst_h);
+  uint8_t* src_data = src.PixelBuffer().data();
+  uint8_t* dst_data = dst.PixelBuffer().data();
+  int src_stride = src_w * 4;
+  int dst_stride = dst_w * 4;
+
+  for (int y = 0; y < dst_h; y++)
+  {
+    int sy = y % src_h;
+    uint8_t* src_row = src_data + sy * src_stride;
+    uint8_t* dst_row = dst_data + y * dst_stride;
+    int x = 0;
+    while (x < dst_w)
+    {
+      int copy_w = src_w;
+      if (x + copy_w > dst_w)
+        copy_w = dst_w - x;
+      memcpy(dst_row + x * 4, src_row, copy_w * 4);
+      x += copy_w;
+    }
+  }
+
+  dst.Invalidate();
+  return dst;
+}
+
 static int winuiDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
   if (winuiDialogSetBgColorAttrib(ih, value))
+  {
+    winuiDialogRefreshThemeColors(ih);
     return 1;
+  }
 
   void* handle = iupImageGetImage(value, ih, 0, NULL);
   if (handle)
@@ -1267,10 +1311,20 @@ static int winuiDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
         if (aux && aux->rootPanel && !iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE"))
         {
           ImageBrush brush;
-          brush.ImageSource(bitmap);
-          brush.Stretch(Stretch::Fill);
+          if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+          {
+            brush.ImageSource(bitmap);
+            brush.Stretch(Stretch::Fill);
+          }
+          else
+          {
+            WriteableBitmap tiled = winuiDialogCreateTiledBitmap(bitmap, ih->currentwidth, ih->currentheight);
+            brush.ImageSource(tiled ? tiled : bitmap);
+            brush.Stretch(Stretch::Fill);
+          }
           aux->rootPanel.Background(brush);
         }
+        winuiDialogRefreshThemeColors(ih);
         RedrawWindow((HWND)ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
       }
       return 1;
@@ -1388,6 +1442,15 @@ void winuiDialogSetMenuBar(Ihandle* ih, MenuBar menuBar)
   }
 }
 
+static int winuiDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  char* background = iupAttribGet(ih, "BACKGROUND");
+  if (background)
+    winuiDialogSetBackgroundAttrib(ih, background);
+  return 1;
+}
+
 extern "C" void iupdrvDialogInitClass(Iclass* ic)
 {
   ic->Map = winuiDialogMapMethod;
@@ -1425,6 +1488,7 @@ extern "C" void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "LAYERALPHA", NULL, winuiDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, winuiDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, winuiDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, winuiDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
