@@ -438,6 +438,9 @@ static void winDialogResize(Ihandle* ih, int width, int height)
     IupRefresh(ih);
     ih->data->ignore_resize = 0;
   }
+
+  if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM") && iupAttribGet(ih, "_IUPWIN_BACKGROUND_BITMAP"))
+    RedrawWindow(ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
 }
 
 static int winDialogGetChildPosX(Ihandle* child)
@@ -457,10 +460,25 @@ static int winDialogDrawBackground(Ihandle* ih, HDC hdc, int force_bgcolor)
   if (hBitmap)
   {
     RECT rect;
-    HBRUSH hBrush = CreatePatternBrush(hBitmap);
     GetClientRect(ih->handle, &rect);
-    FillRect(hdc, &rect, hBrush);
-    DeleteObject(hBrush);
+
+    if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+    {
+      BITMAP bm;
+      HDC hdcMem = CreateCompatibleDC(hdc);
+      HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hBitmap);
+      GetObject(hBitmap, sizeof(bm), &bm);
+      SetStretchBltMode(hdc, HALFTONE);
+      StretchBlt(hdc, 0, 0, rect.right, rect.bottom, hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+      SelectObject(hdcMem, hOldBmp);
+      DeleteDC(hdcMem);
+    }
+    else
+    {
+      HBRUSH hBrush = CreatePatternBrush(hBitmap);
+      FillRect(hdc, &rect, hBrush);
+      DeleteObject(hBrush);
+    }
     return 1;
   }
   else
@@ -1923,6 +1941,14 @@ static int winDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int winDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  if (iupAttribGet(ih, "_IUPWIN_BACKGROUND_BITMAP"))
+    RedrawWindow(ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+  return 1;
+}
+
 void iupdrvDialogInitClass(Iclass* ic)
 {
   if (!iupwinClassExist(TEXT("IupDialog")))
@@ -1961,6 +1987,7 @@ void iupdrvDialogInitClass(Iclass* ic)
 
   /* IupDialog only */
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, winDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, winDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, winDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, winDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);

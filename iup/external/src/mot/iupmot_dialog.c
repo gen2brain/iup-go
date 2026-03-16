@@ -579,7 +579,7 @@ static int motDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
   if (motDialogSetBgColorAttrib(ih, value))
     return 1;
-  else                                     
+  else
   {
     Pixmap pixmap = (Pixmap)iupImageGetImage(value, ih, 0, NULL);
     if (pixmap)
@@ -589,7 +589,7 @@ static int motDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       return 1;
     }
   }
-  return 0; 
+  return 0;
 }
 
 static int motDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
@@ -1149,6 +1149,7 @@ void iupdrvDialogInitClass(Iclass* ic)
 
   /* IupDialog only */
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, motDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, motDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, motDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, motDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);

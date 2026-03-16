@@ -895,7 +895,11 @@ static int gtk4DialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       char* data_uri = gtk4DialogTextureToDataURI(texture);
       if (data_uri)
       {
-        char* css_value = iupStrReturnStrf("url(\"%s\"); background-repeat: repeat", data_uri);
+        char* css_value;
+        if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+          css_value = iupStrReturnStrf("url(\"%s\"); background-size: 100%% 100%%; background-repeat: no-repeat", data_uri);
+        else
+          css_value = iupStrReturnStrf("url(\"%s\"); background-repeat: repeat", data_uri);
         iupgtk4CssSetWidgetCustom(ih->handle, "background-image", css_value);
         iupAttribSet(ih, "_IUPGTK4_HAS_BG_IMAGE", "1");
 
@@ -913,6 +917,18 @@ static int gtk4DialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 static int gtk4DialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 {
   gtk_window_set_decorated((GtkWindow*)ih->handle, !iupStrBoolean(value));
+  return 1;
+}
+
+static int gtk4DialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  if (iupAttribGet(ih, "_IUPGTK4_HAS_BG_IMAGE"))
+  {
+    char* background = iupAttribGet(ih, "BACKGROUND");
+    if (background)
+      gtk4DialogSetBackgroundAttrib(ih, background);
+  }
   return 1;
 }
 
@@ -936,6 +952,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TITLE", NULL, gtk4DialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, gtk4DialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, gtk4DialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, gtk4DialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, gtk4DialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINSIZE", NULL, gtk4DialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
