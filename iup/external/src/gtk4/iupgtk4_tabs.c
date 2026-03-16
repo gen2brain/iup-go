@@ -311,6 +311,30 @@ static int gtk4TabsSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int gtk4TabsSetTipAttrib(Ihandle* ih, const char* value)
+{
+  Ihandle* child;
+
+  for (child = ih->firstchild; child; child = child->brother)
+  {
+    GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABLABEL");
+    if (tab_label)
+    {
+      if (value)
+      {
+        if (iupAttribGetBoolean(ih, "TIPMARKUP"))
+          gtk_widget_set_tooltip_markup(tab_label, iupgtk4StrConvertToSystem(value));
+        else
+          gtk_widget_set_tooltip_text(tab_label, iupgtk4StrConvertToSystem(value));
+      }
+      else
+        gtk_widget_set_tooltip_text(tab_label, NULL);
+    }
+  }
+
+  return 1;
+}
+
 static int gtk4TabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
@@ -686,6 +710,7 @@ void iupdrvTabsInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtk4TabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtk4TabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIP", NULL, gtk4TabsSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, gtk4TabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, gtk4TabsSetTabOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

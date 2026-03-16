@@ -329,3 +329,10 @@ void iupgtk4ButtonKeySetStatus(GdkModifierType state, unsigned int but, char* st
   if (doubleclick)
     iupKEY_SETDOUBLE(status);
 }
+
+void iupgtk4SetupKeyEvents(GtkWidget* widget, Ihandle* ih)
+{
+  GtkEventController* key_controller = gtk_event_controller_key_new();
+  gtk_widget_add_controller(widget, key_controller);
+  g_signal_connect(key_controller, "key-pressed", G_CALLBACK(iupgtk4KeyPressEvent), ih);
+}

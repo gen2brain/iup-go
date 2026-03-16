@@ -38,22 +38,6 @@ static int gtk4IsDirectory(const char* name)
   return g_file_test(name, G_FILE_TEST_IS_DIR);
 }
 
-static void iupStrRemoveChar(char* str, char c)
-{
-  char* p = str;
-  while (*str)
-  {
-    if (*str != c)
-    {
-      *p = *str;
-      p++;
-    }
-
-    str++;
-  }
-  *p = 0;
-}
-
 static void gtk4FileDlgResponseCB(GtkDialog* d, gint r, gpointer data)
 {
   *(gint*)data = r;
@@ -92,6 +76,7 @@ static void gtk4FileDlgGetMultipleFiles(Ihandle* ih, GListModel* list)
     iupAttribSetStr(ih, "VALUE", filename);  /* here value is not separated by '|' */
     iupAttribSetInt(ih, "MULTIVALUECOUNT", 2);
 
+    g_free(filename);
     g_object_unref(first_file);
   }
   else
@@ -113,6 +98,8 @@ static void gtk4FileDlgGetMultipleFiles(Ihandle* ih, GListModel* list)
     if (iupAttribGetBoolean(ih, "MULTIVALUEPATH"))
       dir_len = 0;
 
+    g_free(filename);
+
     for (guint i = 0; i < n_items; i++)
     {
       GFile* file = g_list_model_get_item(list, i);
@@ -120,6 +107,7 @@ static void gtk4FileDlgGetMultipleFiles(Ihandle* ih, GListModel* list)
       len = (int)strlen(filename) - dir_len;
       if (len <= 0)
       {
+        g_free(filename);
         g_object_unref(file);
         continue;
       }
@@ -133,6 +121,7 @@ static void gtk4FileDlgGetMultipleFiles(Ihandle* ih, GListModel* list)
       iupAttribSetStrId(ih, "MULTIVALUE", count, filename + dir_len);
       count++;
 
+      g_free(filename);
       g_object_unref(file);
     }
 
@@ -498,8 +487,8 @@ static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
     }
     else if (data.result_file)
     {
-      char* filename = g_file_get_path(data.result_file);
-      filename = gtk4FileCheckExt(ih, filename);
+      char* orig_filename = g_file_get_path(data.result_file);
+      char* filename = gtk4FileCheckExt(ih, orig_filename);
       iupAttribSetStr(ih, "VALUE", iupgtk4StrConvertFromFilename(filename));
       file_exist = gtk4IsFile(filename);
       dir_exist = gtk4IsDirectory(filename);
@@ -520,7 +509,9 @@ static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
         }
       }
 
-      g_free(filename);
+      if (filename != orig_filename)
+        g_free(filename);
+      g_free(orig_filename);
       g_object_unref(data.result_file);
     }
     else
@@ -895,8 +886,8 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
     else
     {
       GFile* file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dialog));
-      char* filename = g_file_get_path(file);
-      filename = gtk4FileCheckExt(ih, filename);
+      char* orig_filename = g_file_get_path(file);
+      char* filename = gtk4FileCheckExt(ih, orig_filename);
       iupAttribSetStr(ih, "VALUE", iupgtk4StrConvertFromFilename(filename));
       file_exist = gtk4IsFile(filename);
       dir_exist = gtk4IsDirectory(filename);
@@ -908,7 +899,9 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
         free(dir);
       }
 
-      g_free(filename);
+      if (filename != orig_filename)
+        g_free(filename);
+      g_free(orig_filename);
       g_object_unref(file);
     }
 

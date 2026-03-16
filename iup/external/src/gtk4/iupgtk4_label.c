@@ -22,7 +22,6 @@
 #include "iup_image.h"
 #include "iup_label.h"
 #include "iup_drv.h"
-#include "iup_image.h"
 #include "iup_focus.h"
 
 #include "iupgtk4_drv.h"

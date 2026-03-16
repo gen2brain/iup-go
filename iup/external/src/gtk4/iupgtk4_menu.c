@@ -21,10 +21,7 @@
 #include "iup_attrib.h"
 #include "iup_dialog.h"
 #include "iup_str.h"
-#include "iup_label.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_image.h"
 #include "iup_menu.h"
 
 #include "iupgtk4_drv.h"
@@ -643,60 +640,6 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-static void gtk4ItemUpdateImage(Ihandle* ih, const char* value, const char* image, const char* impress)
-{
-  GdkTexture* texture;
-  GtkWidget* box;
-  GtkWidget* img_widget;
-
-  if (!impress || !iupStrBoolean(value))
-    texture = iupImageGetImage(image, ih, 0, NULL);
-  else
-    texture = iupImageGetImage(impress, ih, 0, NULL);
-
-  /* Menu items use custom box with image and label */
-  box = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_MENU_BOX");
-  if (!box)
-    return;
-
-  img_widget = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_MENU_IMAGE");
-
-  if (texture)
-  {
-    if (!img_widget)
-    {
-      img_widget = gtk_image_new();
-      iupAttribSet(ih, "_IUPGTK4_MENU_IMAGE", (char*)img_widget);
-      gtk_box_prepend(GTK_BOX(box), img_widget);
-    }
-
-    gtk_image_set_from_paintable(GTK_IMAGE(img_widget), GDK_PAINTABLE(texture));
-  }
-  else if (img_widget)
-  {
-    gtk_box_remove(GTK_BOX(box), img_widget);
-    iupAttribSet(ih, "_IUPGTK4_MENU_IMAGE", NULL);
-  }
-}
-
-static void gtk4MenuShow(GtkWidget *widget, Ihandle* ih)
-{
-  Icallback cb = IupGetCallback(ih, "OPEN_CB");
-  if (!cb && ih->parent) cb = (Icallback)IupGetCallback(ih->parent, "OPEN_CB");
-  if (cb) cb(ih);
-
-  (void)widget;
-}
-
-static void gtk4MenuHide(GtkWidget *widget, Ihandle* ih)
-{
-  Icallback cb = IupGetCallback(ih, "MENUCLOSE_CB");
-  if (!cb && ih->parent) cb = (Icallback)IupGetCallback(ih->parent, "MENUCLOSE_CB");
-  if (cb) cb(ih);
-
-  (void)widget;
-}
-
 static int gtk4MenuMapMethod(Ihandle* ih)
 {
   /* Menubars are created in iupgtk4DialogSetMenuBar(), but popup menus need GtkPopoverMenu */
@@ -803,57 +746,6 @@ void iupdrvMenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
 }
 
-static int gtk4ItemSetTitleImageAttrib(Ihandle* ih, const char* value)
-{
-  if (iupAttribGet(ih, "_IUPGTK4_IMAGE_ITEM"))
-  {
-    gtk4ItemUpdateImage(ih, NULL, value, NULL);
-    return 1;
-  }
-  return 0;
-}
-
-static int gtk4ItemSetImageAttrib(Ihandle* ih, const char* value)
-{
-  if (iupAttribGet(ih, "_IUPGTK4_IMAGE_ITEM"))
-  {
-    gtk4ItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), value, iupAttribGet(ih, "IMPRESS"));
-    return 1;
-  }
-  return 0;
-}
-
-static int gtk4ItemSetImpressAttrib(Ihandle* ih, const char* value)
-{
-  if (iupAttribGet(ih, "_IUPGTK4_IMAGE_ITEM"))
-  {
-    gtk4ItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), iupAttribGet(ih, "IMAGE"), value);
-    return 1;
-  }
-  return 0;
-}
-
-static int gtk4ItemSetTitleAttrib(Ihandle* ih, const char* value)
-{
-  char *str;
-  GtkWidget* label;
-
-  if (!value)
-  {
-    str = "     ";
-    value = str;
-  }
-  else
-    str = iupMenuProcessTitle(ih, value);
-
-  label = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_MENU_LABEL");
-  if (label)
-    iupgtk4SetMnemonicTitle(ih, (GtkLabel*)label, str);
-
-  if (str != value) free(str);
-  return 1;
-}
-
 static int gtk4ItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   /* GMenu-based system: check state is stored in GAction, not widget */
@@ -878,10 +770,6 @@ static int gtk4ItemSetValueAttrib(Ihandle* ih, const char* value)
     }
     /* Menu not built yet - return 1 to store in hash table for later use during menu building */
     return 1;
-  }
-  else if (iupAttribGet(ih, "_IUPGTK4_IMAGE_ITEM"))
-  {
-    gtk4ItemUpdateImage(ih, value, iupAttribGet(ih, "IMAGE"), iupAttribGet(ih, "IMPRESS"));
   }
 
   /* Always return 1 to store VALUE in hash table - needed for menu building to read initial state */
@@ -915,16 +803,6 @@ static char* gtk4ItemGetValueAttrib(Ihandle* ih)
   }
 
   return NULL;
-}
-
-static int gtk4SubmenuSetImageAttrib(Ihandle* ih, const char* value)
-{
-  if (iupAttribGet(ih, "_IUPGTK4_IMAGE_ITEM"))
-  {
-    gtk4ItemUpdateImage(ih, NULL, value, NULL);
-    return 1;
-  }
-  return 0;
 }
 
 static int gtk4ItemMapMethod(Ihandle* ih)
@@ -1091,16 +969,15 @@ void iupdrvItemInitClass(Iclass* ic)
   ic->Map = gtk4ItemMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-
-  iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "VALUE", gtk4ItemGetValueAttrib, gtk4ItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT|IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, gtk4ItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, gtk4ItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, gtk4ItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, gtk4ItemSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }
@@ -1110,13 +987,12 @@ void iupdrvSubmenuInitClass(Iclass* ic)
   ic->Map = gtk4SubmenuMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-
-  iupClassRegisterAttribute(ic, "TITLE", NULL, gtk4ItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, gtk4SubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
 
 void iupdrvSeparatorInitClass(Iclass* ic)

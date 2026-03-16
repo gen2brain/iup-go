@@ -23,7 +23,6 @@
 #include "iup_mask.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_image.h"
 #include "iup_key.h"
 #include "iup_array.h"
 #include "iup_text.h"
@@ -1076,7 +1075,14 @@ static int gtk4TextSetSelectedTextAttrib(Ihandle* ih, const char* value)
     gtk_text_buffer_insert_at_cursor(buffer, iupgtk4StrConvertToSystem(value), -1);
   }
   else
-    gtk_editable_delete_selection(GTK_EDITABLE(ih->handle));
+  {
+    int start, end;
+    if (gtk_editable_get_selection_bounds(GTK_EDITABLE(ih->handle), &start, &end))
+    {
+      gtk_editable_delete_selection(GTK_EDITABLE(ih->handle));
+      gtk_editable_insert_text(GTK_EDITABLE(ih->handle), iupgtk4StrConvertToSystem(value), -1, &start);
+    }
+  }
 
   ih->data->disable_callbacks = 0;
 
@@ -1249,9 +1255,16 @@ static int gtk4TextSetClipboardAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      GdkClipboard* clipboard = gtk_widget_get_clipboard(ih->handle);
-      const char* text = gtk_editable_get_text(GTK_EDITABLE(ih->handle));
-      gdk_clipboard_set_text(clipboard, text);
+      int start, end;
+      if (gtk_editable_get_selection_bounds(GTK_EDITABLE(ih->handle), &start, &end))
+      {
+        const char* text = gtk_editable_get_text(GTK_EDITABLE(ih->handle));
+        char* sel = iupStrDup(text);
+        sel[end] = 0;
+        GdkClipboard* clipboard = gtk_widget_get_clipboard(ih->handle);
+        gdk_clipboard_set_text(clipboard, sel + start);
+        free(sel);
+      }
     }
   }
   else if (iupStrEqualNoCase(value, "CUT"))
@@ -1264,10 +1277,17 @@ static int gtk4TextSetClipboardAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      GdkClipboard* clipboard = gtk_widget_get_clipboard(ih->handle);
-      const char* text = gtk_editable_get_text(GTK_EDITABLE(ih->handle));
-      gdk_clipboard_set_text(clipboard, text);
-      gtk_editable_delete_selection(GTK_EDITABLE(ih->handle));
+      int start, end;
+      if (gtk_editable_get_selection_bounds(GTK_EDITABLE(ih->handle), &start, &end))
+      {
+        const char* text = gtk_editable_get_text(GTK_EDITABLE(ih->handle));
+        char* sel = iupStrDup(text);
+        sel[end] = 0;
+        GdkClipboard* clipboard = gtk_widget_get_clipboard(ih->handle);
+        gdk_clipboard_set_text(clipboard, sel + start);
+        free(sel);
+        gtk_editable_delete_selection(GTK_EDITABLE(ih->handle));
+      }
     }
   }
   else if (iupStrEqualNoCase(value, "PASTE"))

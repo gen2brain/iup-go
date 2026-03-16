@@ -218,6 +218,73 @@ static int gtk4ValMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void gtk4ValUpdateTicks(Ihandle* ih, int num_ticks)
+{
+  int i;
+  GtkPositionType pos;
+
+  gtk_scale_clear_marks(GTK_SCALE(ih->handle));
+
+  if (num_ticks < 2)
+    return;
+
+  /* Determine tick position from TICKSPOS attribute */
+  {
+    char* tickspos = iupAttribGet(ih, "TICKSPOS");
+    if (ih->data->orientation == IVAL_HORIZONTAL)
+    {
+      if (iupStrEqualNoCase(tickspos, "REVERSE"))
+        pos = GTK_POS_TOP;
+      else
+        pos = GTK_POS_BOTTOM;
+    }
+    else
+    {
+      if (iupStrEqualNoCase(tickspos, "REVERSE"))
+        pos = GTK_POS_LEFT;
+      else
+        pos = GTK_POS_RIGHT;
+    }
+  }
+
+  for (i = 0; i < num_ticks; i++)
+  {
+    double fval = (double)i / (double)(num_ticks - 1);
+    gtk_scale_add_mark(GTK_SCALE(ih->handle), fval, pos, NULL);
+  }
+}
+
+static int gtk4ValSetShowTicksAttrib(Ihandle* ih, const char* value)
+{
+  int num_ticks;
+
+  if (!ih->handle)
+    return 1;
+
+  if (!iupStrToInt(value, &num_ticks))
+    num_ticks = 0;
+
+  gtk4ValUpdateTicks(ih, num_ticks);
+
+  return 0;
+}
+
+static int gtk4ValSetTicksPosAttrib(Ihandle* ih, const char* value)
+{
+  int num_ticks;
+
+  if (!ih->handle)
+    return 1;
+
+  (void)value;
+
+  num_ticks = iupAttribGetInt(ih, "SHOWTICKS");
+  if (num_ticks > 1)
+    gtk4ValUpdateTicks(ih, num_ticks);
+
+  return 0;
+}
+
 void iupdrvValInitClass(Iclass* ic)
 {
   ic->Map = gtk4ValMapMethod;
@@ -228,6 +295,6 @@ void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, gtk4ValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, gtk4ValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "SHOWTICKS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, gtk4ValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, gtk4ValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
 }

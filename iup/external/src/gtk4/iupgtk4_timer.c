@@ -67,6 +67,13 @@ void iupdrvTimerStop(Ihandle* ih)
 {
   if (ih->serial > 0)
   {
+    GTimer* g_timer = (GTimer*)iupAttribGet(ih, "G_TIMER");
+    if (g_timer)
+    {
+      g_timer_destroy(g_timer);
+      iupAttribSet(ih, "G_TIMER", NULL);
+    }
+
     g_source_remove(ih->serial);
     ih->serial = -1;
   }

@@ -362,8 +362,9 @@ gboolean iupgtk4DialogCloseRequest(GtkWindow* window, Ihandle* ih)
 
 void gtk4DialogSizeAllocate(GtkWidget* widget, int width, int height, int baseline, Ihandle* ih)
 {
-  int old_width, old_height;
-  gboolean is_maximized;
+  IFnii cb;
+  int border, caption, menu;
+  int client_width, client_height;
   (void)widget;
   (void)baseline;
 
@@ -374,32 +375,23 @@ void gtk4DialogSizeAllocate(GtkWidget* widget, int width, int height, int baseli
   }
 
   if (ih->data->ignore_resize)
-  {
     return;
-  }
 
-  if (width != old_width || height != old_height)
+  /* Get decoration sizes - we need menu height for total size calculation */
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+
+  ih->currentwidth = width;
+  ih->currentheight = height + menu;
+
+  client_width = ih->currentwidth - 2 * border;
+  client_height = ih->currentheight;
+
+  cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+  if (!cb || cb(ih, client_width, client_height - menu) != IUP_IGNORE)
   {
-    IFnii cb;
-    int border, caption, menu;
-    int client_width, client_height;
-
-    /* Get decoration sizes - we need menu height for total size calculation */
-    iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
-
-    ih->currentwidth = width;
-    ih->currentheight = height + menu;
-
-    client_width = ih->currentwidth - 2 * border;
-    client_height = ih->currentheight;
-
-    cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
-    if (!cb || cb(ih, client_width, client_height - menu) != IUP_IGNORE)
-    {
-      ih->data->ignore_resize = 1;
-      IupRefresh(ih);
-      ih->data->ignore_resize = 0;
-    }
+    ih->data->ignore_resize = 1;
+    IupRefresh(ih);
+    ih->data->ignore_resize = 0;
   }
 }
 
@@ -718,7 +710,10 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
 static void gtk4DialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
 {
   int border = 0, caption = 0, menu = 0;
-  int decorwidth = 0, decorheight = 0;
+  int decorwidth, decorheight;
+
+  (void)max_w;
+  (void)max_h;
 
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
@@ -735,16 +730,7 @@ static void gtk4DialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, in
   else
     min_h = 1;
 
-  if (max_w > decorwidth && max_w > min_w)
-    max_w = max_w - decorwidth;
-  else
-    max_w = 65535;
-
-  if (max_h > decorheight && max_h > min_h)
-    max_h = max_h - decorheight;
-  else
-    max_h = 65535;
-
+  /* GTK4 removed gtk_window_set_geometry_hints, max size constraints are not supported */
   gtk_widget_set_size_request(ih->handle, min_w, min_h);
 }
 
@@ -785,15 +771,15 @@ static int gtk4DialogSetTitleAttrib(Ihandle* ih, const char* value)
 static int gtk4DialogSetIconAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
-    return 0;
-
-  GdkTexture* texture = (GdkTexture*)iupImageGetIcon(value);
-  if (texture)
   {
-    GdkPaintable* paintable = GDK_PAINTABLE(texture);
     gtk_window_set_icon_name(GTK_WINDOW(ih->handle), NULL);
+    return 0;
   }
-  return 0;
+
+  /* GTK4 only supports named theme icons for window icons.
+     Try it as a theme icon name. */
+  gtk_window_set_icon_name(GTK_WINDOW(ih->handle), value);
+  return 1;
 }
 
 static int gtk4DialogSetFullScreenAttrib(Ihandle* ih, const char* value)
@@ -849,16 +835,9 @@ static char* gtk4DialogGetClientOffsetAttrib(Ihandle* ih)
 
 static char* gtk4DialogGetActiveWindowAttrib(Ihandle* ih)
 {
-  (void)ih;
-  return NULL;
+  return iupStrReturnBoolean(gtk_window_is_active(GTK_WINDOW(ih->handle)));
 }
 
-static int gtk4DialogSetTopMostAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 0;
-}
 
 static int gtk4DialogSetOpacityAttrib(Ihandle* ih, const char* value)
 {
@@ -965,7 +944,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", gtk4DialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPMOST", NULL, gtk4DialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITY", NULL, gtk4DialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);

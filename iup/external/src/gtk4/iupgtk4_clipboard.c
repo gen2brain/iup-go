@@ -36,27 +36,6 @@ typedef struct {
   int size;
 } gtk4ClipInfo;
 
-/* Clipboard provider callback - called when clipboard is pasted */
-static void gtk4ClipboardProvideData(GdkClipboard *clipboard, GOutputStream *stream,
-                                     const char *mime_type, int io_priority,
-                                     GCancellable *cancellable, gpointer user_data)
-{
-  gtk4ClipInfo* clip_info = (gtk4ClipInfo*)user_data;
-  GError *error = NULL;
-
-  /* Write data to output stream */
-  g_output_stream_write_all(stream, clip_info->data, clip_info->size, NULL, cancellable, &error);
-
-  if (error)
-  {
-    g_error_free(error);
-  }
-
-  (void)clipboard;
-  (void)mime_type;
-  (void)io_priority;
-}
-
 static void gtk4ClipboardDataClearFunc(gpointer user_data)
 {
   gtk4ClipInfo* clip_info = (gtk4ClipInfo*)user_data;
@@ -99,15 +78,11 @@ static int gtk4ClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   clip_info->mime_type = mime_type;
 
   /* Use GdkContentProvider for custom formats */
-  GdkContentFormats *formats = gdk_content_formats_new((const char **)&mime_type, 1);
-  GdkContentProvider *provider = gdk_content_provider_new_for_bytes(mime_type,
-                                   g_bytes_new_with_free_func(data, size,
-                                   gtk4ClipboardDataClearFunc, clip_info));
+  GdkContentProvider *provider = gdk_content_provider_new_for_bytes(mime_type, g_bytes_new_with_free_func(data, size, gtk4ClipboardDataClearFunc, clip_info));
 
   gdk_clipboard_set_content(clipboard, provider);
 
   g_object_unref(provider);
-  gdk_content_formats_unref(formats);
 
   return 0;
 }
@@ -124,10 +99,19 @@ static void gtk4ClipboardReadCallback(GObject *source, GAsyncResult *result, gpo
 {
   gtk4ClipboardReadData *read_data = (gtk4ClipboardReadData*)user_data;
 
-  read_data->stream = gdk_clipboard_read_finish(GDK_CLIPBOARD(source), result,
-                                                 &read_data->mime_type, &read_data->error);
+  read_data->stream = gdk_clipboard_read_finish(GDK_CLIPBOARD(source), result, &read_data->mime_type, &read_data->error);
 
   g_main_loop_quit(read_data->loop);
+}
+
+static void gtk4ClipboardWriteFinished(GObject *source, GAsyncResult *result, gpointer user_data)
+{
+  gboolean *done = (gboolean*)user_data;
+  GError *error = NULL;
+  gdk_content_provider_write_mime_type_finish(GDK_CONTENT_PROVIDER(source), result, &error);
+  if (error)
+    g_error_free(error);
+  *done = TRUE;
 }
 
 static char* gtk4ClipboardGetFormatDataAttrib(Ihandle *ih)
@@ -135,70 +119,106 @@ static char* gtk4ClipboardGetFormatDataAttrib(Ihandle *ih)
   const char* mime_type;
   GdkDisplay *display = gdk_display_get_default();
   GdkClipboard *clipboard = gdk_display_get_clipboard(display);
-  GInputStream *stream;
   void *data;
   gsize size = 0;
-  const char* mime_types[2];
-  gtk4ClipboardReadData read_data;
-  GError *error = NULL;
 
   mime_type = gtk4ClipboardGetFormatMimeType(ih);
   if (mime_type==NULL)
     return NULL;
 
-  mime_types[0] = mime_type;
-  mime_types[1] = NULL;
-
-  /* Read clipboard data using async API with nested main loop */
-  read_data.stream = NULL;
-  read_data.error = NULL;
-  read_data.loop = g_main_loop_new(NULL, FALSE);
-  read_data.mime_type = NULL;
-
-  gdk_clipboard_read_async(clipboard, mime_types, G_PRIORITY_DEFAULT, NULL, gtk4ClipboardReadCallback, &read_data);
-
-  /* Run nested loop until callback completes */
-  g_main_loop_run(read_data.loop);
-  g_main_loop_unref(read_data.loop);
-
-  stream = read_data.stream;
-  error = read_data.error;
-
-  if (!stream || error)
+  if (gdk_clipboard_is_local(clipboard))
   {
-    if (error)
-      g_error_free(error);
-    return NULL;
+    /* Local clipboard: read directly from content provider to avoid deadlock.
+       gdk_clipboard_read_async with a nested main loop deadlocks because the
+       provider's async write needs the same main loop that we're blocking. */
+    GdkContentProvider *content = gdk_clipboard_get_content(clipboard);
+    if (content)
+    {
+      GOutputStream *mem_stream = g_memory_output_stream_new_resizable();
+      gboolean write_done = FALSE;
+
+      gdk_content_provider_write_mime_type_async(content, mime_type, mem_stream, G_PRIORITY_DEFAULT, NULL, gtk4ClipboardWriteFinished, &write_done);
+
+      while (!write_done)
+        g_main_context_iteration(NULL, TRUE);
+
+      g_output_stream_close(mem_stream, NULL, NULL);
+
+      size = g_memory_output_stream_get_data_size(G_MEMORY_OUTPUT_STREAM(mem_stream));
+      gpointer mem_data = g_memory_output_stream_steal_data(G_MEMORY_OUTPUT_STREAM(mem_stream));
+      g_object_unref(mem_stream);
+
+      if (size <= 0 || !mem_data)
+        return NULL;
+
+      data = iupStrGetMemory((int)size + 1);
+      memcpy(data, mem_data, size);
+      g_free(mem_data);
+
+      iupAttribSetInt(ih, "FORMATDATASIZE", (int)size);
+      return data;
+    }
   }
 
-  /* Read all data from stream */
-  GOutputStream *mem_stream = g_memory_output_stream_new_resizable();
-  g_output_stream_splice(mem_stream, stream, G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
-                         NULL, &error);
-
-  if (error)
+  /* Remote clipboard: use async API with nested main loop */
   {
-    g_error_free(error);
-    g_object_unref(stream);
-    g_object_unref(mem_stream);
-    return NULL;
+    const char* mime_types[2];
+    gtk4ClipboardReadData read_data;
+    GInputStream *stream;
+    GError *error = NULL;
+
+    mime_types[0] = mime_type;
+    mime_types[1] = NULL;
+
+    read_data.stream = NULL;
+    read_data.error = NULL;
+    read_data.loop = g_main_loop_new(NULL, FALSE);
+    read_data.mime_type = NULL;
+
+    gdk_clipboard_read_async(clipboard, mime_types, G_PRIORITY_DEFAULT, NULL, gtk4ClipboardReadCallback, &read_data);
+
+    g_main_loop_run(read_data.loop);
+    g_main_loop_unref(read_data.loop);
+
+    stream = read_data.stream;
+    error = read_data.error;
+
+    if (!stream || error)
+    {
+      if (error)
+        g_error_free(error);
+      return NULL;
+    }
+
+    {
+      GOutputStream *mem_stream = g_memory_output_stream_new_resizable();
+      g_output_stream_splice(mem_stream, stream, G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE | G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET, NULL, &error);
+
+      if (error)
+      {
+        g_error_free(error);
+        g_object_unref(stream);
+        g_object_unref(mem_stream);
+        return NULL;
+      }
+
+      size = g_memory_output_stream_get_data_size(G_MEMORY_OUTPUT_STREAM(mem_stream));
+      gpointer mem_data = g_memory_output_stream_steal_data(G_MEMORY_OUTPUT_STREAM(mem_stream));
+
+      g_object_unref(stream);
+      g_object_unref(mem_stream);
+
+      if (size <= 0 || !mem_data)
+        return NULL;
+
+      data = iupStrGetMemory((int)size + 1);
+      memcpy(data, mem_data, size);
+      g_free(mem_data);
+
+      iupAttribSetInt(ih, "FORMATDATASIZE", (int)size);
+      return data;
+    }
   }
-
-  size = g_memory_output_stream_get_data_size(G_MEMORY_OUTPUT_STREAM(mem_stream));
-  gpointer mem_data = g_memory_output_stream_steal_data(G_MEMORY_OUTPUT_STREAM(mem_stream));
-
-  g_object_unref(stream);
-  g_object_unref(mem_stream);
-
-  if (size <= 0 || !mem_data)
-    return NULL;
-
-  data = iupStrGetMemory((int)size + 1); /* reserve room for terminator */
-  memcpy(data, mem_data, size);
-  g_free(mem_data);
-
-  iupAttribSetInt(ih, "FORMATDATASIZE", (int)size);
-  return data;
 }
 
 static char* gtk4ClipboardGetFormatDataStringAttrib(Ihandle *ih)
@@ -396,8 +416,6 @@ static int gtk4ClipboardSetAddFormatAttrib(Ihandle *ih, const char *value)
   (void)value;
   return 0;
 }
-
-/******************************************************************************/
 
 IUP_API Ihandle* IupClipboard(void)
 {

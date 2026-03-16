@@ -23,7 +23,6 @@
 #include "iup_button.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_image.h"
 #include "iup_key.h"
 
 #include "iupgtk4_drv.h"
@@ -431,20 +430,8 @@ static void gtk4ButtonSetPaintable(Ihandle* ih, const char* name, int make_inact
     GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(name, ih, make_inactive, NULL);
     if (paintable)
     {
-      int pw = gdk_paintable_get_intrinsic_width(paintable);
-      int ph = gdk_paintable_get_intrinsic_height(paintable);
-
-      /* Set content_fit BEFORE setting the paintable */
       gtk_picture_set_content_fit(picture, GTK_CONTENT_FIT_SCALE_DOWN);
-
       gtk_picture_set_paintable(picture, paintable);
-
-      /* Don't set size_request - let GtkPicture use paintable's intrinsic size.
-         The paintable already has the correct size, and GtkPicture will honor it
-         when using GTK_CONTENT_FIT_SCALE_DOWN with can_shrink=FALSE. */
-      (void)pw;
-      (void)ph;
-
       return;
     }
   }
@@ -550,83 +537,6 @@ static void gtk4ButtonReleased(GtkGestureClick* gesture, int n_press, double x, 
   /* Handle IMPRESS image restore on release */
   if (ih->data->type == IUP_BUTTON_IMAGE)
   {
-    char* image = iupAttribGet(ih, "IMAGE");
-    if (image)
-      gtk4ButtonSetPaintable(ih, image, 0);
-  }
-
-  /* Call BUTTON_CB with pressed=0 */
-  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-  if (cb)
-  {
-    int button = gtk_gesture_single_get_current_button(GTK_GESTURE_SINGLE(gesture));
-    int b = IUP_BUTTON1 + (button - 1);
-    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    GdkModifierType state = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(gesture));
-
-    iupgtk4ButtonKeySetStatus(state, button, status, 0);  /* no doubleclick on release */
-
-    int ret = cb(ih, b, 0, (int)x, (int)y, status);  /* pressed = 0 */
-    if (ret == IUP_CLOSE)
-      IupExitLoop();
-    else if (ret == IUP_IGNORE)
-      gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
-  }
-}
-
-static void gtk4ButtonClicked(GtkButton* widget, Ihandle* ih)
-{
-  /* "clicked" signal is for ACTION callback only */
-  Icallback cb = IupGetCallback(ih, "ACTION");
-  if (cb)
-  {
-    if (cb(ih) == IUP_CLOSE)
-      IupExitLoop();
-  }
-  (void)widget;
-}
-
-static void gtk4ButtonGesturePressed(GtkGestureClick *gesture, int n_press, double x, double y, Ihandle* ih)
-{
-
-  /* Handle IMPRESS image swap on press */
-  if (ih->data->type == IUP_BUTTON_IMAGE)
-  {
-    char* impress = iupAttribGet(ih, "IMPRESS");
-    if (impress)
-    {
-      gtk4ButtonSetPaintable(ih, impress, 0);
-    }
-  }
-
-  /* Call BUTTON_CB with pressed=1 */
-  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-  if (cb)
-  {
-    int button = gtk_gesture_single_get_current_button(GTK_GESTURE_SINGLE(gesture));
-    int b = IUP_BUTTON1 + (button - 1);
-    int doubleclick = (n_press == 2) ? 1 : 0;
-    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    GdkModifierType state = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(gesture));
-
-    iupgtk4ButtonKeySetStatus(state, button, status, doubleclick);
-
-    int ret = cb(ih, b, 1, (int)x, (int)y, status);  /* press = 1 */
-    if (ret == IUP_CLOSE)
-      IupExitLoop();
-    else if (ret == IUP_IGNORE)
-    {
-      gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
-    }
-  }
-}
-
-static void gtk4ButtonGestureReleased(GtkGestureClick *gesture, int n_press, double x, double y, Ihandle* ih)
-{
-
-  /* Handle IMPRESS image swap on release - restore original IMAGE */
-  if (ih->data->type == IUP_BUTTON_IMAGE)
-  {
     char* impress = iupAttribGet(ih, "IMPRESS");
     if (impress)
     {
@@ -636,8 +546,8 @@ static void gtk4ButtonGestureReleased(GtkGestureClick *gesture, int n_press, dou
   }
 
   /* Call BUTTON_CB with pressed=0 */
-  IFniiiis button_cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-  if (button_cb)
+  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+  if (cb)
   {
     int button = gtk_gesture_single_get_current_button(GTK_GESTURE_SINGLE(gesture));
     int b = IUP_BUTTON1 + (button - 1);
@@ -646,7 +556,7 @@ static void gtk4ButtonGestureReleased(GtkGestureClick *gesture, int n_press, dou
 
     iupgtk4ButtonKeySetStatus(state, button, status, 0);
 
-    int ret = button_cb(ih, b, 0, (int)x, (int)y, status);  /* press = 0 */
+    int ret = cb(ih, b, 0, (int)x, (int)y, status);
     if (ret == IUP_CLOSE)
       IupExitLoop();
     else if (ret == IUP_IGNORE)
@@ -656,19 +566,27 @@ static void gtk4ButtonGestureReleased(GtkGestureClick *gesture, int n_press, dou
     }
   }
 
-  Icallback action_cb = IupGetCallback(ih, "ACTION");
-  if (action_cb)
+  /* For borderless image buttons (GtkBox), fire ACTION here since there's no "clicked" signal */
+  if (iupAttribGet(ih, "_IUPGTK4_EVENTBOX"))
   {
-    int ret = action_cb(ih);
-    if (ret == IUP_CLOSE)
-      IupExitLoop();
+    Icallback action_cb = IupGetCallback(ih, "ACTION");
+    if (action_cb)
+    {
+      if (action_cb(ih) == IUP_CLOSE)
+        IupExitLoop();
+    }
   }
 }
 
-static void gtk4ButtonGestureBegin(GtkGesture *gesture, GdkEventSequence *sequence, Ihandle* ih)
+static void gtk4ButtonClicked(GtkButton* widget, Ihandle* ih)
 {
-  (void)gesture;
-  (void)sequence;
+  Icallback cb = IupGetCallback(ih, "ACTION");
+  if (cb)
+  {
+    if (cb(ih) == IUP_CLOSE)
+      IupExitLoop();
+  }
+  (void)widget;
 }
 
 static void gtk4ButtonMotionEnter(GtkEventControllerMotion* controller, double x, double y, Ihandle* ih)
@@ -724,7 +642,7 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
   if (!has_border)
   {
     ih->handle = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    iupAttribSet(ih, "_IUPGTK_EVENTBOX", "1");
+    iupAttribSet(ih, "_IUPGTK4_EVENTBOX", "1");
   }
   else
   {
@@ -795,18 +713,8 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
       GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(value, ih, 0, NULL);
       if (paintable)
       {
-        int pw = gdk_paintable_get_intrinsic_width(paintable);
-        int ph = gdk_paintable_get_intrinsic_height(paintable);
-
-        /* Use GtkPicture which renders paintables at exact pixel size */
-        gtk_picture_set_paintable(GTK_PICTURE(image), paintable);
-
-        /* Set content_fit to prevent scaling up */
         gtk_picture_set_content_fit(GTK_PICTURE(image), GTK_CONTENT_FIT_SCALE_DOWN);
-
-        /* Don't set size_request - let GtkPicture use paintable's intrinsic size */
-        (void)pw;
-        (void)ph;
+        gtk_picture_set_paintable(GTK_PICTURE(image), paintable);
       }
     }
   }
@@ -870,10 +778,8 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
     GtkGesture* gesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), GDK_BUTTON_PRIMARY);
 
-    /* Connect gesture signals */
-    g_signal_connect(gesture, "begin", G_CALLBACK(gtk4ButtonGestureBegin), ih);
-    g_signal_connect(gesture, "pressed", G_CALLBACK(gtk4ButtonGesturePressed), ih);
-    g_signal_connect(gesture, "released", G_CALLBACK(gtk4ButtonGestureReleased), ih);
+    g_signal_connect(gesture, "pressed", G_CALLBACK(gtk4ButtonPressed), ih);
+    g_signal_connect(gesture, "released", G_CALLBACK(gtk4ButtonReleased), ih);
 
     gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(gesture));
 
@@ -916,6 +822,4 @@ void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, gtk4ButtonSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ACENTER:ACENTER", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", NULL, NULL, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
-
-  iupClassRegisterAttribute(ic, "CANFOCUS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 }

@@ -14,8 +14,6 @@
 #include "iup_focus.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_assert.h"
-#include "iup_drv.h"
 
 #include "iupgtk4_drv.h"
 
@@ -37,21 +35,21 @@ void iupdrvSetFocus(Ihandle *ih)
   gtk_widget_grab_focus(ih->handle);
 }
 
-IUP_DRV_API void iupgtk4FocusInOutEvent(GtkEventControllerFocus *controller, Ihandle *ih)
+static void gtk4FocusEnter(GtkEventControllerFocus* controller, Ihandle* ih)
 {
   (void)controller;
 
   if (!iupObjectCheck(ih))
     return;
 
-  /* even when ACTIVE=NO the dialog gets this evt */
+  /* even when ACTIVE=NO the widget gets this event */
   if (!iupdrvIsActive(ih))
     return;
 
   iupCallGetFocusCb(ih);
 }
 
-IUP_DRV_API void iupgtk4FocusOutEvent(GtkEventControllerFocus *controller, Ihandle *ih)
+static void gtk4FocusLeave(GtkEventControllerFocus* controller, Ihandle* ih)
 {
   (void)controller;
 
@@ -60,3 +58,12 @@ IUP_DRV_API void iupgtk4FocusOutEvent(GtkEventControllerFocus *controller, Ihand
 
   iupCallKillFocusCb(ih);
 }
+
+void iupgtk4SetupFocusEvents(GtkWidget* widget, Ihandle* ih)
+{
+  GtkEventController* focus_controller = gtk_event_controller_focus_new();
+  gtk_widget_add_controller(widget, focus_controller);
+  g_signal_connect(focus_controller, "enter", G_CALLBACK(gtk4FocusEnter), ih);
+  g_signal_connect(focus_controller, "leave", G_CALLBACK(gtk4FocusLeave), ih);
+}
+
