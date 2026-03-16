@@ -311,9 +311,6 @@ static int qtProgressBarMapMethod(Ihandle* ih)
 {
   QProgressBar* pbar = new QProgressBar();
 
-  if (!pbar)
-    return IUP_ERROR;
-
   ih->handle = (InativeHandle*)pbar;
 
   /* Set range [0, 1000] for better precision with double values */

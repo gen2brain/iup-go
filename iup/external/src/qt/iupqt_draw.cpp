@@ -13,7 +13,6 @@
 #include <QPixmap>
 #include <QImage>
 #include <QPainterPath>
-#include <QTransform>
 #include <QTextLayout>
 #include <QTextOption>
 #include <cmath>
@@ -356,7 +355,7 @@ extern "C" void iupdrvDrawResetClip(IdrawCanvas* dc)
  * Parent Background
  ****************************************************************************/
 
-extern "C" void qtDrawParentBackground(IdrawCanvas* dc)
+void qtDrawParentBackground(IdrawCanvas* dc)
 {
   if (!dc || !dc->painter || !dc->widget)
     return;
@@ -379,8 +378,7 @@ extern "C" void qtDrawParentBackground(IdrawCanvas* dc)
  * Line Draw
  ****************************************************************************/
 
-extern "C" void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
-                               long color, int style, int line_width)
+extern "C" void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   if (!dc || !dc->painter)
     return;
@@ -423,8 +421,7 @@ extern "C" void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
  * Rectangle Draw
  ****************************************************************************/
 
-extern "C" void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
-                                    long color, int style, int line_width)
+extern "C" void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   if (!dc || !dc->painter)
     return;
@@ -460,8 +457,7 @@ extern "C" void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int
  * Arc Draw
  ****************************************************************************/
 
-extern "C" void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
-                              double a1, double a2, long color, int style, int line_width)
+extern "C" void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
   if (!dc || !dc->painter)
     return;
@@ -505,8 +501,7 @@ extern "C" void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
  * Ellipse Draw
  ****************************************************************************/
 
-extern "C" void qtDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
-                                  long color, int style, int line_width)
+extern "C" void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   if (!dc || !dc->painter)
     return;
@@ -522,14 +517,12 @@ extern "C" void qtDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
 
   if (style == IUP_DRAW_FILL)
   {
-    /* Filled ellipse */
     dc->painter->setPen(Qt::NoPen);
     dc->painter->setBrush(qcolor);
     dc->painter->drawEllipse(x1, y1, w, h);
   }
   else
   {
-    /* Stroke ellipse */
     QPen pen(qcolor);
     pen.setWidth(line_width);
     pen.setStyle(Qt::SolidLine);
@@ -540,18 +533,11 @@ extern "C" void qtDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
   }
 }
 
-extern "C" void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
-                                   long color, int style, int line_width)
-{
-  qtDrawEllipse(dc, x1, y1, x2, y2, color, style, line_width);
-}
-
 /****************************************************************************
  * Polygon Draw
  ****************************************************************************/
 
-extern "C" void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count,
-                                  long color, int style, int line_width)
+extern "C" void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   if (!dc || !dc->painter || count < 2)
     return;
@@ -613,9 +599,7 @@ extern "C" void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
  * Rounded Rectangle Draw
  ****************************************************************************/
 
-extern "C" void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1,
-                                            int x2, int y2, int corner_radius,
-                                            long color, int style, int line_width)
+extern "C" void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
 {
   if (!dc || !dc->painter)
     return;
@@ -660,9 +644,7 @@ extern "C" void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1,
  * Bezier Curve Draw (Cubic)
  ****************************************************************************/
 
-extern "C" void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
-                                   int x3, int y3, int x4, int y4,
-                                   long color, int style, int line_width)
+extern "C" void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
 {
   if (!dc || !dc->painter)
     return;
@@ -699,9 +681,7 @@ extern "C" void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2
  * Bezier Curve Draw (Quadratic)
  ****************************************************************************/
 
-extern "C" void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1,
-                                           int x2, int y2, int x3, int y3,
-                                           long color, int style, int line_width)
+extern "C" void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
   if (!dc || !dc->painter)
     return;
@@ -709,7 +689,7 @@ extern "C" void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1,
   QColor qcolor;
   qtDrawGetColor(color, qcolor);
 
-  /* Qt has native support for quadratic Bezier curves! */
+  /* Qt has native support for quadratic Bezier curves */
   QPainterPath path;
   path.moveTo(x1, y1);
   path.quadTo(x2, y2, x3, y3);
@@ -738,8 +718,7 @@ extern "C" void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1,
  * Polyline Draw (not closed)
  ****************************************************************************/
 
-extern "C" void qtDrawPolyline(IdrawCanvas* dc, int* points, int count,
-                                   long color, int style, int line_width)
+void qtDrawPolyline(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   if (!dc || !dc->painter || count < 2)
     return;
@@ -788,8 +767,7 @@ extern "C" void qtDrawPolyline(IdrawCanvas* dc, int* points, int count,
  * Rounded Rectangle Draw
  ****************************************************************************/
 
-extern "C" void qtDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
-                                           int radius_x, int radius_y, long color, int style, int line_width)
+void qtDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int radius_x, int radius_y, long color, int style, int line_width)
 {
   if (!dc || !dc->painter)
     return;
@@ -827,9 +805,7 @@ extern "C" void qtDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, 
  * Text Draw with improved wrap/ellipsis support
  ****************************************************************************/
 
-extern "C" void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y,
-                               int w, int h, long color, const char* font, int flags,
-                               double text_orientation)
+extern "C" void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   if (!dc || !dc->painter || !text)
     return;
@@ -946,8 +922,9 @@ extern "C" void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x
       }
       else
       {
-        /* Draw at position */
-        dc->painter->drawText(x, y, qtext);
+        /* Draw at position. Use large rect with AlignTop since
+           QPainter::drawText(x,y,text) uses y as baseline, not top */
+        dc->painter->drawText(QRect(x, y, 32767, 32767), Qt::AlignLeft | Qt::AlignTop, qtext);
       }
     }
   }
@@ -957,8 +934,7 @@ extern "C" void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x
  * Image Draw
  ****************************************************************************/
 
-extern "C" void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive,
-                                const char* bgcolor, int x, int y, int w, int h)
+extern "C" void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
 {
   if (!dc || !dc->painter || !name)
     return;
@@ -1089,8 +1065,7 @@ extern "C" void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int ra
  * Get Text Size
  ****************************************************************************/
 
-extern "C" void qtDrawGetTextSize(IdrawCanvas* dc, const char* text, int len,
-                                      int *w, int *h, const char* font)
+void qtDrawGetTextSize(IdrawCanvas* dc, const char* text, int len, int *w, int *h, const char* font)
 {
   if (!text)
   {
@@ -1124,7 +1099,7 @@ extern "C" void qtDrawGetTextSize(IdrawCanvas* dc, const char* text, int len,
  * Get Image Info
  ****************************************************************************/
 
-extern "C" void qtDrawGetImageInfo(const char* name, int *w, int *h, int *bpp)
+void qtDrawGetImageInfo(const char* name, int *w, int *h, int *bpp)
 {
   if (!name)
   {
@@ -1167,7 +1142,7 @@ extern "C" void qtDrawGetImageInfo(const char* name, int *w, int *h, int *bpp)
  * Winding Rule
  ****************************************************************************/
 
-extern "C" void qtDrawSetWindingRule(IdrawCanvas* dc, int winding_rule)
+void qtDrawSetWindingRule(IdrawCanvas* dc, int winding_rule)
 {
   if (!dc)
     return;
@@ -1184,7 +1159,7 @@ extern "C" void qtDrawSetWindingRule(IdrawCanvas* dc, int winding_rule)
  * Anti-aliasing Control
  ****************************************************************************/
 
-extern "C" void qtDrawSetTextAntiAlias(IdrawCanvas* dc, int antialias)
+void qtDrawSetTextAntiAlias(IdrawCanvas* dc, int antialias)
 {
   if (dc)
   {
@@ -1196,7 +1171,7 @@ extern "C" void qtDrawSetTextAntiAlias(IdrawCanvas* dc, int antialias)
   }
 }
 
-extern "C" void qtDrawSetShapeAntiAlias(IdrawCanvas* dc, int antialias)
+void qtDrawSetShapeAntiAlias(IdrawCanvas* dc, int antialias)
 {
   if (dc)
   {
@@ -1251,7 +1226,7 @@ extern "C" void iupdrvDrawUpdateSize(IdrawCanvas* dc)
  * Begin/End Drawing
  ****************************************************************************/
 
-extern "C" void qtDrawBegin(IdrawCanvas* dc)
+void qtDrawBegin(IdrawCanvas* dc)
 {
   if (!dc || !dc->widget)
     return;
@@ -1271,16 +1246,9 @@ extern "C" void qtDrawBegin(IdrawCanvas* dc)
   }
 }
 
-extern "C" void qtDrawEnd(IdrawCanvas* dc)
+void qtDrawEnd(IdrawCanvas* dc)
 {
-  if (!dc)
-    return;
-
-  /* Don't delete painter here - it's needed until flush */
-  if (dc->painter)
-  {
-    /* Nothing to do - painter will be deleted in flush */
-  }
+  (void)dc;
 }
 
 extern "C" int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)

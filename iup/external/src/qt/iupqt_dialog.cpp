@@ -14,7 +14,6 @@
 #include <QResizeEvent>
 #include <QMoveEvent>
 #include <QShowEvent>
-#include <QWindowStateChangeEvent>
 #include <QString>
 #include <QVBoxLayout>
 #include <QMenuBar>
@@ -213,8 +212,6 @@ protected:
 
     if (event->type() == QEvent::WindowStateChange)
     {
-      QWindowStateChangeEvent* state_event = static_cast<QWindowStateChangeEvent*>(event);
-      Qt::WindowStates old_state = state_event->oldState();
       Qt::WindowStates new_state = windowState();
 
       int iup_state = -1;
@@ -519,30 +516,7 @@ extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption
     *caption = native_caption ? native_caption : 25;
 }
 
-extern "C" void qtDialogUpdateSize(Ihandle* ih)
-{
-  QWidget* widget = (QWidget*)ih->handle;
-
-  if (widget)
-  {
-    int width = ih->currentwidth;
-    int height = ih->currentheight;
-
-    /* Account for decorations */
-    int border = 0, caption = 0, menu = 0;
-    iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
-
-    width -= 2*border;
-    height -= 2*border + caption;
-
-    if (width < 1) width = 1;
-    if (height < 1) height = 1;
-
-    widget->resize(width, height);
-  }
-}
-
-extern "C" void qtDialogGetClientSize(Ihandle* ih, int *width, int *height)
+static void qtDialogGetClientSize(Ihandle* ih, int *width, int *height)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -721,16 +695,6 @@ static char* qtDialogGetClientOffsetAttrib(Ihandle *ih)
   return const_cast<char*>("0x0");
 }
 
-static char* qtDialogGetResizeAttrib(Ihandle* ih)
-{
-  QWidget* widget = (QWidget*)ih->handle;
-  if (!widget)
-    return iupAttribGet(ih, "RESIZE");
-
-  Qt::WindowFlags flags = widget->windowFlags();
-  return iupStrReturnBoolean(flags & Qt::WindowMaximizeButtonHint);
-}
-
 static int qtDialogSetResizeAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
@@ -857,6 +821,16 @@ static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 }
 
 static int qtDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle)
+  {
+    IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+    dialog->updateWindowFlags();
+  }
+  return 1;
+}
+
+static int qtDialogSetToolBoxAttrib(Ihandle *ih, const char *value)
 {
   if (ih->handle)
   {
@@ -1047,9 +1021,7 @@ static void qtDialogSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
     if (offset) iupStrToIntInt(offset, &x, &y, 'x');
 
-    /* Child coordinates are relative to client left-top corner. */
-    if (ih->firstchild)
-      iupBaseSetPosition(ih->firstchild, x, y);
+    iupBaseSetPosition(ih->firstchild, x, y);
   }
 }
 
@@ -1062,79 +1034,10 @@ static void* qtDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* c
   return NULL;
 }
 
-/* Forward declarations */
-extern "C" int qtDialogMapMethod(Ihandle* ih);
-extern "C" void qtDialogUnMapMethod(Ihandle* ih);
-extern "C" void qtDialogLayoutUpdateMethod(Ihandle *ih);
-
-extern "C" void iupdrvDialogInitClass(Iclass* ic)
-{
-  /* Driver Dependent Class methods */
-  ic->Map = qtDialogMapMethod;
-  ic->UnMap = qtDialogUnMapMethod;
-  ic->LayoutUpdate = qtDialogLayoutUpdateMethod;
-  ic->GetInnerNativeContainerHandle = qtDialogGetInnerNativeContainerHandleMethod;
-  ic->SetChildrenPosition = qtDialogSetChildrenPositionMethod;
-
-  /* Callbacks */
-  iupClassRegisterCallback(ic, "MOVE_CB", "ii");
-  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
-
-  /* Base Container */
-  iupClassRegisterAttribute(ic, "CLIENTSIZE", qtDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIENTOFFSET", qtDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
-
-  /* IupDialog */
-  iupClassRegisterAttribute(ic, "BACKGROUND", NULL, qtDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ICON", NULL, qtDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, qtDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINSIZE", NULL, qtDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXSIZE", NULL, qtDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, qtDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RESIZE", qtDialogGetResizeAttrib, qtDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BORDER", NULL, qtDialogSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINBOX", NULL, qtDialogSetMinBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXBOX", NULL, qtDialogSetMaxBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MENUBOX", NULL, qtDialogSetMenuBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-
-  /* IupDialog Windows and GTK Only */
-  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", qtDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPMOST", NULL, qtDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, qtDialogSetDialogHintAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OPACITY", NULL, qtDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, qtDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, qtDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, qtDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, qtDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXIMIZED", qtDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINIMIZED", qtDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-
-  /* Native Window Handle (platform-specific: XWINDOW, WL_SURFACE, HWND, NSVIEW) */
-  iupClassRegisterAttribute(ic, iupqtGetNativeWindowHandleName(), iupqtGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
-
-  /* IupDialog Windows and GTK Only - not implemented yet */
-  iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWNOACTIVATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
-
-  /* Not Supported */
-  iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDIFRAME", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDICLIENT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDIMENU", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDICHILD", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-}
-
 extern "C" int qtDialogMapMethod(Ihandle* ih)
 {
   /* Create Qt dialog widget */
   IupQtDialog* dialog = new IupQtDialog(ih);
-
-  if (!dialog)
-    return IUP_ERROR;
 
   ih->handle = (InativeHandle*)dialog;
 
@@ -1234,17 +1137,70 @@ extern "C" void qtDialogLayoutUpdateMethod(Ihandle *ih)
   /* Update min/max constraints for non-resizable dialogs */
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
-    int client_width, client_height;
-
-    client_width = ih->currentwidth - 2*border;
-    client_height = ih->currentheight - 2*border - caption;
-
-    if (client_width <= 0) client_width = 1;
-    if (client_height <= 0) client_height = 1;
-
     qtDialogSetMinMax(ih, ih->currentwidth, ih->currentheight,
                       ih->currentwidth, ih->currentheight);
   }
 
   ih->data->ignore_resize = 0;
+}
+
+extern "C" void iupdrvDialogInitClass(Iclass* ic)
+{
+  /* Driver Dependent Class methods */
+  ic->Map = qtDialogMapMethod;
+  ic->UnMap = qtDialogUnMapMethod;
+  ic->LayoutUpdate = qtDialogLayoutUpdateMethod;
+  ic->GetInnerNativeContainerHandle = qtDialogGetInnerNativeContainerHandleMethod;
+  ic->SetChildrenPosition = qtDialogSetChildrenPositionMethod;
+
+  /* Callbacks */
+  iupClassRegisterCallback(ic, "MOVE_CB", "ii");
+  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
+
+  /* Base Container */
+  iupClassRegisterAttribute(ic, "CLIENTSIZE", qtDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTOFFSET", qtDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
+
+  /* IupDialog */
+  iupClassRegisterAttribute(ic, "BACKGROUND", NULL, qtDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ICON", NULL, qtDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, qtDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINSIZE", NULL, qtDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXSIZE", NULL, qtDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, qtDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZE", NULL, qtDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BORDER", NULL, qtDialogSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINBOX", NULL, qtDialogSetMinBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXBOX", NULL, qtDialogSetMaxBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MENUBOX", NULL, qtDialogSetMenuBoxAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+
+  /* IupDialog Windows and GTK Only */
+  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", qtDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPMOST", NULL, qtDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, qtDialogSetDialogHintAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITY", NULL, qtDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, qtDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, qtDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, qtDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, qtDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXIMIZED", qtDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINIMIZED", qtDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+
+  /* Native Window Handle (platform-specific: XWINDOW, WL_SURFACE, HWND, NSVIEW) */
+  iupClassRegisterAttribute(ic, iupqtGetNativeWindowHandleName(), iupqtGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
+
+  /* IupDialog Windows and GTK Only - not implemented yet */
+  iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOOLBOX", NULL, qtDialogSetToolBoxAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWNOACTIVATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+
+  /* Not Supported */
+  iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDIFRAME", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDICLIENT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDIMENU", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDICHILD", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

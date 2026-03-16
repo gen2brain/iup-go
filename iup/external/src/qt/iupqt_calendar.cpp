@@ -238,23 +238,18 @@ static int qtCalendarSetBgColorAttrib(Ihandle* ih, const char* value)
  * Callbacks
  ****************************************************************************/
 
-static void qtCalendarSelectionChanged(IupQtCalendar* calendar, Ihandle* ih)
+static void qtCalendarSelectionChanged(Ihandle* ih)
 {
-  (void)calendar;
   iupBaseCallValueChangedCb(ih);
 }
 
-static void qtCalendarActivated(IupQtCalendar* calendar, const QDate& date, Ihandle* ih)
+static void qtCalendarActivated(const QDate& date, Ihandle* ih)
 {
-  (void)calendar;
-  (void)date;
-
   IFns cb = (IFns)IupGetCallback(ih, "SELECT_CB");
   if (cb)
   {
-    QDate selected = calendar->selectedDate();
     char date_str[64];
-    snprintf(date_str, sizeof(date_str), "%d/%d/%d", selected.year(), selected.month(), selected.day());
+    snprintf(date_str, sizeof(date_str), "%d/%d/%d", date.year(), date.month(), date.day());
     cb(ih, date_str);
   }
 }
@@ -267,9 +262,6 @@ static int qtCalendarMapMethod(Ihandle* ih)
 {
   IupQtCalendar* calendar = new IupQtCalendar(ih);
 
-  if (!calendar)
-    return IUP_ERROR;
-
   ih->handle = (InativeHandle*)calendar;
 
   if (iupAttribGetBoolean(ih, "WEEKNUMBERS"))
@@ -280,12 +272,12 @@ static int qtCalendarMapMethod(Ihandle* ih)
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
     iupqtSetCanFocus(calendar, 0);
 
-  QObject::connect(calendar, &QCalendarWidget::selectionChanged, [calendar, ih]() {
-    qtCalendarSelectionChanged(calendar, ih);
+  QObject::connect(calendar, &QCalendarWidget::selectionChanged, [ih]() {
+    qtCalendarSelectionChanged(ih);
   });
 
-  QObject::connect(calendar, &QCalendarWidget::activated, [calendar, ih](const QDate& date) {
-    qtCalendarActivated(calendar, date, ih);
+  QObject::connect(calendar, &QCalendarWidget::activated, [ih](const QDate& date) {
+    qtCalendarActivated(date, ih);
   });
 
   return IUP_NOERROR;

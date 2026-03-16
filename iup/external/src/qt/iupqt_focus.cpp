@@ -7,7 +7,6 @@
 #include <QWidget>
 #include <QWindow>
 #include <QEvent>
-#include <QFocusEvent>
 #include <QApplication>
 #include <QGuiApplication>
 
@@ -96,8 +95,6 @@ extern "C" int iupqtFocusInOutEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
 
   if (evt->type() == QEvent::FocusIn)
   {
-    QFocusEvent* focus_evt = static_cast<QFocusEvent*>(evt);
-
     /* Even when ACTIVE=NO the widget might get this event */
     if (!iupdrvIsActive(ih))
       return 1;
@@ -109,16 +106,10 @@ extern "C" int iupqtFocusInOutEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
       iupAttribSet(dialog, "_IUPQT_LASTFOCUS", (char*)ih);
 
     iupCallGetFocusCb(ih);
-
-    (void)focus_evt;
   }
   else if (evt->type() == QEvent::FocusOut)
   {
-    QFocusEvent* focus_evt = static_cast<QFocusEvent*>(evt);
-
     iupCallKillFocusCb(ih);
-
-    (void)focus_evt;
   }
 
   return 0; /* FALSE - allow event to propagate */

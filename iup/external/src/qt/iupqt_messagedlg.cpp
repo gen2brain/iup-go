@@ -78,9 +78,6 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
 
   dialog = new QMessageBox(icon_type, QString(), QString(), QMessageBox::NoButton, parent);
 
-  if (!dialog)
-    return IUP_ERROR;
-
   title = iupAttribGet(ih, "TITLE");
   if (title)
     dialog->setWindowTitle(QString::fromUtf8(title));

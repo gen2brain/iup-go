@@ -6,7 +6,6 @@
 
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
-#include <QHeaderView>
 #include <QScrollBar>
 #include <QWidget>
 #include <QFont>
@@ -16,20 +15,12 @@
 #include <QString>
 #include <QEvent>
 #include <QMouseEvent>
-#include <QKeyEvent>
-#include <QItemSelectionModel>
 #include <QAbstractItemView>
-#include <QCheckBox>
 #include <QApplication>
 #include <QStyle>
-#include <QDrag>
-#include <QMimeData>
-#include <QToolTip>
 #include <QStyledItemDelegate>
 #include <QLineEdit>
 
-#include <cstdlib>
-#include <cstdio>
 #include <cstring>
 #include <functional>
 
@@ -277,31 +268,6 @@ protected:
     }
 
     return QTreeWidget::event(e);
-  }
-
-  void startDrag()
-  {
-    QTreeWidgetItem* item = currentItem();
-    if (!item || !ih)
-      return;
-
-    int id = (int)(size_t)item->data(0, Qt::UserRole).value<void*>();
-
-    IFniiii cb = (IFniiii)IupGetCallback(ih, "DRAGDROP_CB");
-    if (cb)
-    {
-      int drag_id = id;
-      int drop_id = -1;
-      int shift = 0;
-      int control = 0;
-
-      cb(ih, drag_id, drop_id, shift, control);
-    }
-  }
-
-  void dropEvent(QDropEvent* event) override
-  {
-    event->ignore();
   }
 
 public:
@@ -1119,7 +1085,17 @@ static int qtTreeSetTitleFgColorAttrib(Ihandle* ih, int id, const char* value)
 
 static char* qtTreeGetColorAttrib(Ihandle* ih, int id)
 {
-  return qtTreeGetTitleFontAttrib(ih, id);
+  QTreeWidgetItem* item = qtTreeFindNode(ih, id);
+  if (!item)
+    return NULL;
+
+  QBrush brush = item->foreground(0);
+  QColor color = brush.color();
+
+  if (!color.isValid())
+    return NULL;
+
+  return iupStrReturnRGB(color.red(), color.green(), color.blue());
 }
 
 static int qtTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
@@ -1981,9 +1957,6 @@ static int qtTreeMapMethod(Ihandle* ih)
 {
   IupQtTree* tree = new IupQtTree(ih);
 
-  if (!tree)
-    return IUP_ERROR;
-
   ih->handle = (InativeHandle*)tree;
 
   /* Configure tree */
@@ -2197,7 +2170,7 @@ extern "C" void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "STARTING", nullptr, qtTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKSTART", nullptr, qtTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKEDNODES", qtTreeGetMarkedNodesAttrib, qtTreeSetMarkedNodesAttrib, nullptr, nullptr, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", qtTreeGetValueAttrib, qtTreeSetValueAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", qtTreeGetValueAttrib, qtTreeSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupTree Attributes - ACTION */
   iupClassRegisterAttribute(ic, "ADDROOT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

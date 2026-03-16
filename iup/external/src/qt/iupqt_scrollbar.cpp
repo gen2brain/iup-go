@@ -369,9 +369,6 @@ static int qtScrollbarMapMethod(Ihandle* ih)
 
   IupQtScrollBar* sb = new IupQtScrollBar(orientation, ih);
 
-  if (!sb)
-    return IUP_ERROR;
-
   ih->handle = (InativeHandle*)sb;
 
   if (ih->data->inverted)

@@ -15,7 +15,6 @@
 #include <QList>
 #include <QMouseEvent>
 #include <QApplication>
-#include <QClipboard>
 #include <QAbstractItemView>
 #include <QTreeWidget>
 
@@ -291,7 +290,6 @@ protected:
         dd_data->last_y = y;
 
         const char* drop_types = iupAttribGetStr(ih, "DROPTYPES");
-        bool handled_custom = false;
 
         if (drop_types && !iupStrEqualNoCase(drop_types, "TEXT") && !iupStrEqualNoCase(drop_types, "FILES"))
         {
@@ -304,27 +302,19 @@ protected:
             {
               QByteArray data = mime->data(mime_type);
 
-              int action = qtDragDropActionToIup(drop->proposedAction());
               int ret = cbDropData(ih, (char*)drop_types, (void*)data.constData(), data.size(), x, y);
 
               if (ret == IUP_IGNORE)
-              {
                 drop->ignore();
-              }
               else
-              {
                 drop->acceptProposedAction();
-              }
 
-              handled_custom = true;
               return true;
             }
           }
         }
 
-        if (!handled_custom)
-        {
-          if (mime->hasUrls())
+        if (mime->hasUrls())
           {
             IFnsiii cbDropFiles = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
             if (cbDropFiles)
@@ -356,9 +346,6 @@ protected:
           IFnsViii cb = (IFnsViii)IupGetCallback(ih, "DROP_CB");
           if (cb)
           {
-            char status[IUPKEY_STATUS_SIZE];
-            qtDragDropGetModifiers(status);
-
             int action = qtDragDropActionToIup(drop->proposedAction());
 
             int ret = cb(ih, nullptr, 0, x, y, action);
@@ -374,7 +361,6 @@ protected:
 
             return true;
           }
-        }
 
         drop->acceptProposedAction();
         return true;

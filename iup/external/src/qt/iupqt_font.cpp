@@ -6,8 +6,6 @@
 
 #include <QFont>
 #include <QFontMetrics>
-#include <QFontMetricsF>
-#include <QFontDatabase>
 #include <QFontInfo>
 #include <QApplication>
 #include <QWidget>
@@ -128,7 +126,6 @@ static IqtFont* qtFindFont(const char* font)
   qfont->setStrikeOut(is_strikeout);
 
   QFontMetrics metrics(*qfont);
-  QFontMetricsF metricsF(*qfont);
 
   fonts = (IqtFont*)iupArrayInc(qt_fonts);
 
@@ -330,9 +327,10 @@ static void qtFontGetTextSize(Ihandle* ih, IqtFont* qtfont, const char* str, int
       QSizeF size = doc.size();
       max_w = (int)size.width();
 
-      /* QTextDocument handles line breaks, so use its height */
-      if (h)
-        *h = (int)size.height();
+      /* QTextDocument handles line breaks, so use its height directly */
+      if (w) *w = max_w;
+      if (h) *h = (int)size.height();
+      return;
     }
     else
     {

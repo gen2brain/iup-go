@@ -201,8 +201,6 @@ static int qtMenuMapMethod(Ihandle* ih)
   {
     /* Top level menu used for MENU attribute in IupDialog (a menu bar) */
     QMenuBar* menubar = new QMenuBar();
-    if (!menubar)
-      return IUP_ERROR;
 
     /* Set size policy to expand horizontally to fill the window width.
      * By default QMenuBar has a preferred size based on its contents, but
@@ -220,8 +218,6 @@ static int qtMenuMapMethod(Ihandle* ih)
   {
     /* Popup menu or submenu */
     QMenu* menu = new QMenu();
-    if (!menu)
-      return IUP_ERROR;
 
     ih->handle = (InativeHandle*)menu;
 
@@ -432,8 +428,6 @@ static int qtItemMapMethod(Ihandle* ih)
     return IUP_ERROR;
 
   QAction* action = new QAction();
-  if (!action)
-    return IUP_ERROR;
 
   ih->handle = (InativeHandle*)action;
   ih->serial = iupMenuGetChildId(ih);
@@ -615,8 +609,6 @@ static int qtSubmenuMapMethod(Ihandle* ih)
 
   /* Create action for submenu */
   QAction* action = new QAction();
-  if (!action)
-    return IUP_ERROR;
 
   ih->handle = (InativeHandle*)action;
   ih->serial = iupMenuGetChildId(ih);
@@ -694,9 +686,6 @@ static int qtSeparatorMapMethod(Ihandle* ih)
 
   /* Create separator action */
   QAction* action = new QAction();
-  if (!action)
-    return IUP_ERROR;
-
   action->setSeparator(true);
 
   ih->handle = (InativeHandle*)action;

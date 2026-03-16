@@ -1133,9 +1133,6 @@ static int qtTabsMapMethod(Ihandle* ih)
 {
   IupQtTabWidget* tabs = new IupQtTabWidget(ih);
 
-  if (!tabs)
-    return IUP_ERROR;
-
   ih->handle = (InativeHandle*)tabs;
   tabs->setIhandle(ih);
 

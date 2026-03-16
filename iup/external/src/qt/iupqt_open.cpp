@@ -18,11 +18,9 @@
 #include <QWindow>
 #include <QPalette>
 #include <QStyle>
-#include <QStyleHints>
 #include <QString>
 #include <QGuiApplication>
 #include <QScreen>
-#include <QFileInfo>
 
 /* Qt6 native interface handling */
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -68,7 +66,6 @@ extern "C" {
 
 
 static QApplication* qt_application = NULL;
-static char* qt_str_buffer = NULL;
 
 extern "C" void iupqtLoopCleanup(void);
 
@@ -180,31 +177,12 @@ extern "C" char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih)
   return iupqtGetNativeWidgetHandle((QWidget*)ih->handle);
 }
 
-extern "C" void* iupqtGetNativeGraphicsContext(QWidget* widget)
-{
-  /* Qt uses QPainter, not native graphics contexts directly */
-  /* This would need platform-specific implementation if needed */
-  (void)widget;
-  return NULL;
-}
-
-extern "C" void iupqtReleaseNativeGraphicsContext(QWidget* widget, void* gc)
-{
-  (void)widget;
-  (void)gc;
-}
-
 /****************************************************************************
  * String Conversion (UTF-8 handling)
  ****************************************************************************/
 
 extern "C" void iupqtStrRelease(void)
 {
-  if (qt_str_buffer)
-  {
-    free(qt_str_buffer);
-    qt_str_buffer = NULL;
-  }
 }
 
 extern "C" char* iupqtStrConvertToSystem(const char* str)
@@ -456,9 +434,6 @@ extern "C" int iupdrvOpen(int *argc, char ***argv)
     }
 
     qt_application = new QApplication(*argc, *argv);
-
-    if (!qt_application)
-      return IUP_ERROR;
 
     /* Disable automatic quit on last window close
      * IUP manually controls quit via IupExitLoop() in processEvents loop

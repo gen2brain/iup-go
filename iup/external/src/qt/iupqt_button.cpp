@@ -8,8 +8,6 @@
 #include <QLabel>
 #include <QPixmap>
 #include <QIcon>
-#include <QHBoxLayout>
-#include <QVBoxLayout>
 #include <QWidget>
 #include <QEvent>
 #include <QMouseEvent>
@@ -17,7 +15,6 @@
 #include <QFocusEvent>
 #include <QString>
 #include <QStyleOption>
-#include <QFrame>
 #include <QPainter>
 #include <QStylePainter>
 #include <QFontMetrics>
@@ -307,12 +304,6 @@ static void qtButtonUpdateLayout(Ihandle* ih)
         break;
     }
 
-    int spacing = ih->data->spacing;
-    if (spacing >= 0)
-    {
-      QString style = QString("QPushButton { icon-size: %1px; }").arg(spacing);
-      /* QPushButton doesn't have direct icon-text spacing control */
-    }
   }
 }
 
@@ -392,6 +383,7 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   int has_text = 0;
   int has_bgcolor = 0;
   int has_user_padding = 0;
+  int has_user_size = 0;
 
   if (!qt_button_padding_measured)
     qtButtonMeasurePadding();
@@ -412,6 +404,8 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
         iupStrToIntInt(padding, &horiz_padding, &vert_padding, 'x');
       has_user_padding = (horiz_padding > 0 || vert_padding > 0);
     }
+
+    has_user_size = (ih->userwidth > 0 || ih->userheight > 0);
   }
 
   if (has_bgcolor)
@@ -421,7 +415,7 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     (*x) += charheight;
   }
 
-  if (has_user_padding)
+  if (has_user_padding || has_user_size)
   {
     (*x) += qt_button_struct_x;
     (*y) += qt_button_struct_y;
@@ -502,17 +496,7 @@ static int qtButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
     ih->data->vert_alignment = IUP_ALIGN_ACENTER;
 
   if (ih->handle)
-  {
-    IupQtButton* button = (IupQtButton*)ih->handle;
-
-    QString align_style;
-    if (ih->data->horiz_alignment == IUP_ALIGN_ARIGHT)
-      align_style = "text-align: right; padding-right: 5px;";
-    else if (ih->data->horiz_alignment == IUP_ALIGN_ALEFT)
-      align_style = "text-align: left; padding-left: 5px;";
-    else
-      align_style = "text-align: center;";
-  }
+    iupdrvPostRedraw(ih);
 
   return 1;
 }
@@ -596,15 +580,10 @@ static int qtButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 
 static char* qtButtonGetBgColorAttrib(Ihandle* ih)
 {
-  if (ih->data->type & IUP_BUTTON_IMAGE && !iupAttribGet(ih, "IMPRESS"))
-  {
-    return iupBaseNativeParentGetBgColorAttrib(ih);
-  }
-
-  if (iupAttribGet(ih, "IMPRESS"))
+  if (ih->data->type & IUP_BUTTON_IMAGE || iupAttribGet(ih, "IMPRESS"))
     return iupBaseNativeParentGetBgColorAttrib(ih);
 
-  return nullptr;
+  return NULL;
 }
 
 static int qtButtonSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -826,9 +805,6 @@ static int qtButtonMapMethod(Ihandle* ih)
     button = new IupQtButton(QString::fromUtf8(title), ih);
   else
     button = new IupQtButton(ih);
-
-  if (!button)
-    return IUP_ERROR;
 
   ih->handle = (InativeHandle*)button;
 

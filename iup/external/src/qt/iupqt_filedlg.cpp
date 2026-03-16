@@ -10,14 +10,12 @@
 #include <QString>
 #include <QStringList>
 #include <QWidget>
-#include <QUrl>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QDialog>
 #include <QSplitter>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QDialogButtonBox>
 #include <QPainter>
 #include <QPixmap>
 
@@ -376,9 +374,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     /* Create standard dialog */
     dialog = new QFileDialog(parent);
 
-    if (!dialog)
-      return IUP_ERROR;
-
     /* Handle PORTAL attribute:
        PORTAL=YES: Use native/portal dialog (default Qt behavior on Linux with XDG portal)
        PORTAL=NO: Force Qt's widget-based dialog (DontUseNativeDialog)
@@ -425,11 +420,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
   /* Show hidden files */
   if (iupAttribGetBoolean(ih, "SHOWHIDDEN"))
-  {
-    QFileDialog::Options options = dialog->options();
-    options |= QFileDialog::HideNameFilterDetails;
-    dialog->setOptions(options);
-  }
+    dialog->setFilter(dialog->filter() | QDir::Hidden);
 
   /* Multiple files */
   if (iupAttribGetBoolean(ih, "MULTIPLEFILES") && accept_mode == QFileDialog::AcceptOpen)
@@ -692,16 +683,6 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
         }
       }
     }
-    else if (dialogtype == 1) /* SAVE */
-    {
-      /* For SAVE, check ALLOWNEW */
-      value = iupAttribGet(ih, "ALLOWNEW");
-      if (!value)
-        value = "YES"; /* Default for SAVE is YES */
-
-      /* Qt already handles overwrite prompts if not disabled */
-    }
-
     if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
     {
       qtFileDlgGetMultipleFiles(ih, selectedFiles);
@@ -717,17 +698,19 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       char* final_filename = qtFileCheckExt(ih, filenameBytes.constData());
       iupAttribSetStr(ih, "VALUE", final_filename);
 
+      QString final_path = QString::fromUtf8(final_filename);
+
       if (final_filename != filenameBytes.constData())
         free(final_filename);
 
       /* Store directory */
-      QFileInfo fileInfo(filename);
+      QFileInfo fileInfo(final_path);
       QByteArray dirBytes = fileInfo.absolutePath().toUtf8();
       iupAttribSetStr(ih, "DIRECTORY", dirBytes.constData());
 
-      /* Check existence */
-      int file_exist = qtIsFile(filename);
-      int dir_exist = qtIsDirectory(filename);
+      /* Check existence using the final filename (with extension) */
+      int file_exist = qtIsFile(final_path);
+      int dir_exist = qtIsDirectory(final_path);
 
       if (dir_exist)
       {

@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <climits>
 
 #include <QScreen>
 #include <QGuiApplication>
@@ -16,8 +15,6 @@
 #include <QString>
 #include <QSysInfo>
 #include <QDir>
-#include <QFileInfo>
-#include <QCoreApplication>
 #include <QStandardPaths>
 #include <QWidget>
 #include <QThread>
@@ -37,12 +34,6 @@
 #include "iup_varg.h"
 
 #include "iupqt_drv.h"
-
-/* Forward declarations for IUP driver functions */
-extern "C" {
-    void iupdrvKeyEncode(int key, unsigned int *keyval, unsigned int *state);
-    void iupdrvWarpPointer(int x, int y);
-}
 
 /****************************************************************************
  * Screen Information
@@ -347,39 +338,6 @@ extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *a
     strcpy(filename, path_bytes.constData());
     return 1;
   }
-}
-
-extern "C" int qtMakeDirectory(const char* name)
-{
-  QDir dir;
-  return dir.mkpath(QString::fromUtf8(name)) ? 1 : 0;
-}
-
-extern "C" int qtIsFile(const char* name)
-{
-  QFileInfo info(QString::fromUtf8(name));
-  return (info.exists() && info.isFile()) ? 1 : 0;
-}
-
-extern "C" int qtIsDirectory(const char* name)
-{
-  QFileInfo info(QString::fromUtf8(name));
-  return (info.exists() && info.isDir()) ? 1 : 0;
-}
-
-extern "C" int qtGetWindowDecor(void* wnd, int *border, int *caption)
-{
-  (void)wnd;
-
-  /* Qt doesn't provide a direct API to get window decoration sizes
-   * These are typical values for most window managers */
-  if (border)
-    *border = 4;  /* Typical border width */
-
-  if (caption)
-    *caption = 30;  /* Typical title bar height */
-
-  return 1;
 }
 
 /****************************************************************************

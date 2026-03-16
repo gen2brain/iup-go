@@ -436,9 +436,6 @@ static int qtValMapMethod(Ihandle* ih)
 
   IupQtSlider* slider = new IupQtSlider(orientation, ih);
 
-  if (!slider)
-    return IUP_ERROR;
-
   ih->handle = (InativeHandle*)slider;
 
   if (ih->data->inverted)

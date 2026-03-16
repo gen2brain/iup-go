@@ -67,7 +67,6 @@ typedef struct _QMouseEvent QMouseEvent;
 IUP_DRV_API int iupqtEnterLeaveEvent(QWidget *widget, QEvent *evt, Ihandle* ih);
 int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
 IUP_DRV_API int iupqtMouseButtonEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
-IUP_DRV_API int iupqtShowHelp(QWidget *widget, Ihandle* ih);
 
 /****************************************************************************
  * Text and Mnemonic Handling
@@ -80,21 +79,13 @@ void iupqtUpdateMnemonic(Ihandle* ih);
  * Color Management
  ****************************************************************************/
 
-void iupqtColorSetRGB(QColor* color, unsigned char r, unsigned char g, unsigned char b);
-void iupqtSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b);
-void iupqtSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b);
 
 /****************************************************************************
  * Widget Management
  ****************************************************************************/
 
 IUP_DRV_API void iupqtAddToParent(Ihandle* ih);
-const char* iupqtGetWidgetClassName(QWidget* widget);
 void iupqtSetPosSize(QWidget* parent, QWidget* widget, int x, int y, int width, int height);
-void* iupqtGetWindow(QWidget *widget);
-void iupqtWindowGetPointer(void *window, int *x, int *y, int *mask);
-int iupqtIsVisible(QWidget* widget);
-void iupqtSetMargin(QWidget* widget, int horiz_padding, int vert_padding);
 
 /****************************************************************************
  * Container Management
@@ -156,8 +147,6 @@ char* iupqtGetNativeWidgetHandle(QWidget *widget);
 char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih);
 const char* iupqtGetNativeWindowHandleName(void);
 const char* iupqtGetNativeFontIdName(void);
-void* iupqtGetNativeGraphicsContext(QWidget* widget);
-void iupqtReleaseNativeGraphicsContext(QWidget* widget, void* gc);
 
 /****************************************************************************
  * Dialog Management
@@ -174,7 +163,6 @@ int iupqtSetTrayAttrib(Ihandle *ih, const char *value);
 int iupqtSetTrayTipAttrib(Ihandle *ih, const char *value);
 int iupqtSetTrayImageAttrib(Ihandle *ih, const char *value);
 int iupqtSetTrayMenuAttrib(Ihandle *ih, const char *value);
-int iupqtSetTrayBalloonAttrib(Ihandle *ih, const char *value);
 void iupqtTrayCleanup(Ihandle *ih);
 
 /****************************************************************************
@@ -193,6 +181,7 @@ QApplication* iupqtGetApplication(void);
  ****************************************************************************/
 
 void iupqtTipsDestroy(Ihandle* ih);
+void iupqtDragDropCleanup(Ihandle* ih);
 
 
 #ifdef __cplusplus
