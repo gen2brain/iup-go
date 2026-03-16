@@ -232,31 +232,6 @@ void iupgtk4UpdateWidgetFont(Ihandle *ih, GtkWidget* widget)
   gtk4FontUpdateWidget(ih, widget, fontdesc);
 }
 
-void iupgtk4UpdateObjectFont(Ihandle* ih, gpointer object)
-{
-  PangoAttrList *attrs;
-
-  Igtk4Font* gtkfont = gtk4FontGet(ih);
-  if (!gtkfont)
-    return;
-
-  g_object_set(object, "font-desc", gtkfont->fontdesc, NULL);
-
-  g_object_get(object, "attributes", &attrs, NULL);
-  if (!attrs)
-  {
-    attrs = pango_attr_list_new();
-    pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->strikethrough));
-    pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->underline));
-    g_object_set(object, "attributes", attrs, NULL);
-  }
-  else
-  {
-    pango_attr_list_change(attrs, pango_attribute_copy(gtkfont->strikethrough));
-    pango_attr_list_change(attrs, pango_attribute_copy(gtkfont->underline));
-  }
-}
-
 IUP_SDK_API char* iupdrvGetSystemFont(void)
 {
   static char str[200]; /* must return a static string, because it will be used as the default value for the FONT attribute */
@@ -366,9 +341,6 @@ static void gtk4FontGetTextSize(Ihandle* ih, Igtk4Font* gtkfont, const char* str
     int orig_len = len;
     char* text = iupgtk4StrConvertToSystemLen(str, &len);
 
-    if (strstr(str, "star") != NULL || strstr(str, "image") != NULL) {
-    }
-
     if (iupAttribGetBoolean(ih, "MARKUP"))
     {
       pango_layout_set_attributes(gtkfont->layout, NULL);
@@ -378,9 +350,6 @@ static void gtk4FontGetTextSize(Ihandle* ih, Igtk4Font* gtkfont, const char* str
       pango_layout_set_text(gtkfont->layout, text, len);
 
     pango_layout_get_pixel_size(gtkfont->layout, &max_w, &dummy_h);
-
-    if (strstr(str, "star") != NULL || strstr(str, "image") != NULL) {
-    }
   }
 
   if (w) *w = max_w;

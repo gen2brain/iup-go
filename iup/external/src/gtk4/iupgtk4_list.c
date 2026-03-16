@@ -723,6 +723,8 @@ void iupdrvListRemoveItem(Ihandle* ih, int pos)
 void iupdrvListRemoveAllItems(Ihandle* ih)
 {
   GListStore* store = gtk4ListGetGListStore(ih);
+  if (!store)
+    return;
 
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
   g_list_store_remove_all(store);
@@ -748,13 +750,6 @@ static int gtk4ListSetFontAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    if (ih->data->is_dropdown)
-    {
-      GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK4_RENDERER");
-      if (renderer)
-        iupgtk4UpdateObjectFont(ih, G_OBJECT(renderer));
-    }
-
     if (ih->data->has_editbox)
     {
       GtkEntry* entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
@@ -831,20 +826,6 @@ static int gtk4ListSetBgColorAttrib(Ihandle* ih, const char* value)
     iupgtk4SetBgColor(entry, r, g, b);
   }
 
-  if (!ih->data->is_dropdown)
-  {
-    GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK4_RENDERER");
-    if (renderer)
-    {
-      GdkRGBA rgba;
-      rgba.red = r / 255.0;
-      rgba.green = g / 255.0;
-      rgba.blue = b / 255.0;
-      rgba.alpha = 1.0;
-      g_object_set(G_OBJECT(renderer), "cell-background-rgba", &rgba, NULL);
-    }
-  }
-
   return iupdrvBaseSetBgColorAttrib(ih, value);
 }
 
@@ -860,20 +841,6 @@ static int gtk4ListSetFgColorAttrib(Ihandle* ih, const char* value)
   {
     GtkWidget* entry = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
     iupgtk4SetFgColor(entry, r, g, b);
-  }
-
-  if (!ih->data->is_dropdown)
-  {
-    GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK4_RENDERER");
-    if (renderer)
-    {
-      GdkRGBA rgba;
-      rgba.red = r / 255.0;
-      rgba.green = g / 255.0;
-      rgba.blue = b / 255.0;
-      rgba.alpha = 1.0;
-      g_object_set(G_OBJECT(renderer), "foreground-rgba", &rgba, NULL);
-    }
   }
 
   return 1;
@@ -1059,12 +1026,7 @@ static int gtk4ListSetSpacingAttrib(Ihandle* ih, const char* value)
     ih->data->spacing = 0;
 
   if (ih->handle)
-  {
-    GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK4_RENDERER");
-    if (renderer)
-      g_object_set(G_OBJECT(renderer), "xpad", ih->data->spacing, "ypad", ih->data->spacing, NULL);
     return 0;
-  }
   else
     return 1;
 }
@@ -1201,6 +1163,26 @@ static char* gtk4ListGetSelectedTextAttrib(Ihandle* ih)
   }
 
   return NULL;
+}
+
+static int gtk4ListSetSelectedTextAttrib(Ihandle* ih, const char* value)
+{
+  int start, end;
+  GtkEntry* entry;
+  if (!ih->data->has_editbox)
+    return 0;
+  if (!value)
+    return 0;
+
+  entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
+  if (gtk_editable_get_selection_bounds(GTK_EDITABLE(entry), &start, &end))
+  {
+    iupAttribSet(ih, "_IUPGTK4_DISABLE_TEXT_CB", "1");
+    gtk_editable_delete_selection(GTK_EDITABLE(entry));
+    gtk_editable_insert_text(GTK_EDITABLE(entry), iupgtk4StrConvertToSystem(value), -1, &start);
+    iupAttribSet(ih, "_IUPGTK4_DISABLE_TEXT_CB", NULL);
+  }
+  return 0;
 }
 
 static int gtk4ListSetCaretAttrib(Ihandle* ih, const char* value)
@@ -1361,14 +1343,30 @@ static int gtk4ListSetClipboardAttrib(Ihandle *ih, const char *value)
   entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
   if (iupStrEqualNoCase(value, "COPY"))
   {
-    GdkClipboard* clipboard = gtk_widget_get_clipboard((GtkWidget*)entry);
-    gdk_clipboard_set_text(clipboard, gtk_editable_get_text(GTK_EDITABLE(entry)));
+    int start, end;
+    if (gtk_editable_get_selection_bounds(GTK_EDITABLE(entry), &start, &end))
+    {
+      const char* text = gtk_editable_get_text(GTK_EDITABLE(entry));
+      char* sel = iupStrDup(text);
+      sel[end] = 0;
+      GdkClipboard* clipboard = gtk_widget_get_clipboard((GtkWidget*)entry);
+      gdk_clipboard_set_text(clipboard, sel + start);
+      free(sel);
+    }
   }
   else if (iupStrEqualNoCase(value, "CUT"))
   {
-    GdkClipboard* clipboard = gtk_widget_get_clipboard((GtkWidget*)entry);
-    gdk_clipboard_set_text(clipboard, gtk_editable_get_text(GTK_EDITABLE(entry)));
-    gtk_editable_delete_selection(GTK_EDITABLE(entry));
+    int start, end;
+    if (gtk_editable_get_selection_bounds(GTK_EDITABLE(entry), &start, &end))
+    {
+      const char* text = gtk_editable_get_text(GTK_EDITABLE(entry));
+      char* sel = iupStrDup(text);
+      sel[end] = 0;
+      GdkClipboard* clipboard = gtk_widget_get_clipboard((GtkWidget*)entry);
+      gdk_clipboard_set_text(clipboard, sel + start);
+      free(sel);
+      gtk_editable_delete_selection(GTK_EDITABLE(entry));
+    }
   }
   else if (iupStrEqualNoCase(value, "PASTE"))
   {
@@ -2460,9 +2458,26 @@ static char* gtk4ListGetImageNativeHandleAttribId(Ihandle* ih, int id)
   return NULL;
 }
 
+static void gtk4ListUnMapMethod(Ihandle* ih)
+{
+  if (ih->data->is_virtual)
+  {
+    IupGtk4VirtualListModel* model = (IupGtk4VirtualListModel*)iupAttribGet(ih, "_IUPGTK4_VIRTUAL_MODEL");
+    if (model)
+    {
+      model->count = 0;
+      g_object_unref(model);
+      iupAttribSet(ih, "_IUPGTK4_VIRTUAL_MODEL", NULL);
+    }
+  }
+
+  iupdrvBaseUnMapMethod(ih);
+}
+
 void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = gtk4ListMapMethod;
+  ic->UnMap = gtk4ListUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, gtk4ListSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
@@ -2476,7 +2491,7 @@ void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, gtk4ListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, gtk4ListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", gtk4ListGetSelectedTextAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", gtk4ListGetSelectedTextAttrib, gtk4ListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", gtk4ListGetSelectionAttrib, gtk4ListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTIONPOS", gtk4ListGetSelectionPosAttrib, gtk4ListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARET", gtk4ListGetCaretAttrib, gtk4ListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);

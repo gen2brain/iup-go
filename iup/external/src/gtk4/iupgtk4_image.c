@@ -26,8 +26,6 @@ void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   GdkTexture* texture = (GdkTexture*)handle;
   int w, h, bpp;
-  guchar *pixdata;
-  int planesize;
 
   if (!iupdrvImageGetInfo(handle, &w, &h, &bpp))
     return;
@@ -35,15 +33,8 @@ void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   if (bpp == 8)
     return;
 
-  /* Download texture data */
-  planesize = w * h * 4;
-  pixdata = g_malloc(planesize);
-  gdk_texture_download(texture, pixdata, w * 4);
-
-  /* Copy first plane (assuming RGBA format) */
-  memcpy(imgdata, pixdata, w * h);
-
-  g_free(pixdata);
+  /* GTK4 textures are always 32bpp RGBA, download directly */
+  gdk_texture_download(texture, imgdata, w * 4);
 }
 
 IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)

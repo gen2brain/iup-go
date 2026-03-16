@@ -96,7 +96,11 @@ int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   GtkWidget* widget = gtk4TipGetWidget(ih);
 
-  g_signal_connect(widget, "query-tooltip", G_CALLBACK(gtk4QueryTooltip), ih);
+  if (!iupAttribGet(ih, "_IUPGTK4_TIP_CONNECTED"))
+  {
+    g_signal_connect(widget, "query-tooltip", G_CALLBACK(gtk4QueryTooltip), ih);
+    iupAttribSet(ih, "_IUPGTK4_TIP_CONNECTED", "1");
+  }
 
   gtk4TooltipSetTitle(ih, widget, value);
 

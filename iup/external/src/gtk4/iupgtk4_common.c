@@ -22,7 +22,6 @@
 #include "iup_class.h"
 #include "iup_attrib.h"
 #include "iup_focus.h"
-#include "iup_key.h"
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
@@ -440,7 +439,6 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
   {
     int child_x, child_y;
     int child_width, child_height;
-    int is_scrolled_window = GTK_IS_SCROLLED_WINDOW(child);
 
     if (!gtk_widget_get_visible(child))
       continue;
@@ -478,8 +476,6 @@ static void iup_gtk4_fixed_layout_allocate(GtkWidget* widget, int width, int hei
         if (child_height < min_h) child_height = min_h;
       }
     }
-
-    (void)is_scrolled_window;
 
     /* Allocate child */
     gtk_widget_allocate(child, child_width, child_height, -1, gsk_transform_translate(NULL, &GRAPHENE_POINT_INIT(child_x, child_y)));
@@ -879,19 +875,6 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
   }
 }
 
-IUP_DRV_API gboolean iupgtk4ShowHelp(GtkWidget* widget, gpointer arg1, Ihandle* ih)
-{
-  Icallback cb;
-  (void)widget;
-  (void)arg1;
-
-  cb = IupGetCallback(ih, "HELP_CB");
-  if (cb && cb(ih) == IUP_CLOSE)
-    IupExitLoop();
-
-  return FALSE;
-}
-
 int iupgtk4SetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value)
 {
   char c = '_';
@@ -992,43 +975,6 @@ void iupgtk4ColorSetRGB(GdkRGBA* color, unsigned char r, unsigned char g, unsign
   color->green = iupgtk4ColorToDouble(g);
   color->blue = iupgtk4ColorToDouble(b);
   color->alpha = 1.0;
-}
-
-static GdkRGBA gtk4DarkerRGBA(GdkRGBA* rgba)
-{
-  GdkRGBA dark_rgba = {0, 0, 0, 1.0};
-
-  dark_rgba.red = (rgba->red * 9) / 10;
-  dark_rgba.green = (rgba->green * 9) / 10;
-  dark_rgba.blue = (rgba->blue * 9) / 10;
-
-  return dark_rgba;
-}
-
-static gdouble gtk4CROPDouble(gdouble x)
-{
-  if (x > 1.0) return 1.0;
-  return x;
-}
-
-static GdkRGBA gtk4LighterRGBA(GdkRGBA* rgba)
-{
-  GdkRGBA light_rgba = {0, 0, 0, 1.0};
-
-  light_rgba.red = gtk4CROPDouble((rgba->red * 11) / 10);
-  light_rgba.green = gtk4CROPDouble((rgba->green * 11) / 10);
-  light_rgba.blue = gtk4CROPDouble((rgba->blue * 11) / 10);
-
-  return light_rgba;
-}
-
-static char* gtk4GetSelectedColorStr(void)
-{
-  GdkRGBA rgba;
-  unsigned char r, g, b;
-  iupStrToRGB(IupGetGlobal("TXTHLCOLOR"), &r, &g, &b);
-  iupgtk4ColorSetRGB(&rgba, r, g, b);
-  return gdk_rgba_to_string(&rgba);
 }
 
 void iupgtk4SetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
@@ -1308,46 +1254,6 @@ int iupgtk4IsVisible(GtkWidget* widget)
     return 0;
 
   return gtk_widget_get_visible(widget) && gtk_widget_get_child_visible(widget);
-}
-
-static void gtk4FocusEnter(GtkEventControllerFocus* controller, Ihandle* ih)
-{
-  (void)controller;
-
-  if (!iupObjectCheck(ih))
-    return;
-
-  /* even when ACTIVE=NO the widget gets this event */
-  if (!iupdrvIsActive(ih))
-    return;
-
-  iupCallGetFocusCb(ih);
-}
-
-static void gtk4FocusLeave(GtkEventControllerFocus* controller, Ihandle* ih)
-{
-  (void)controller;
-
-  if (!iupObjectCheck(ih))
-    return;
-
-  iupCallKillFocusCb(ih);
-}
-
-void iupgtk4SetupFocusEvents(GtkWidget* widget, Ihandle* ih)
-{
-  GtkEventController* focus_controller = gtk_event_controller_focus_new();
-  gtk_widget_add_controller(widget, focus_controller);
-  g_signal_connect(focus_controller, "enter", G_CALLBACK(gtk4FocusEnter), ih);
-  g_signal_connect(focus_controller, "leave", G_CALLBACK(gtk4FocusLeave), ih);
-}
-
-void iupgtk4SetupKeyEvents(GtkWidget* widget, Ihandle* ih)
-{
-  /* Create key controller for generic key event handling (K_ANY callback support) */
-  GtkEventController* key_controller = gtk_event_controller_key_new();
-  gtk_widget_add_controller(widget, key_controller);
-  g_signal_connect(key_controller, "key-pressed", G_CALLBACK(iupgtk4KeyPressEvent), ih);
 }
 
 static void gtk4EnterNotify(GtkEventControllerMotion* controller, double x, double y, Ihandle* ih)

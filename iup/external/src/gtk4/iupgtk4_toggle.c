@@ -22,7 +22,6 @@
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_image.h"
 #include "iup_key.h"
 #include "iup_toggle.h"
 
@@ -134,9 +133,6 @@ static void gtk4ToggleSetPaintable(Ihandle* ih, const char* name, int make_inact
       GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(name, ih, make_inactive, NULL);
       if (paintable)
       {
-        int pw = gdk_paintable_get_intrinsic_width(paintable);
-        int ph = gdk_paintable_get_intrinsic_height(paintable);
-
         gtk_picture_set_paintable(GTK_PICTURE(child), paintable);
         return;
       }
@@ -313,31 +309,6 @@ static int gtk4ToggleSetPaddingAttrib(Ihandle* ih, const char* value)
     return 1;
 }
 
-static GtkWidget* gtk4ToggleGetLabel(Ihandle* ih)
-{
-  GtkWidget* child;
-
-  if (!ih->handle)
-    return NULL;
-
-  if (GTK_IS_CHECK_BUTTON(ih->handle))
-  {
-    /* GtkCheckButton has label as child */
-    child = gtk_check_button_get_child(GTK_CHECK_BUTTON(ih->handle));
-    if (child && GTK_IS_LABEL(child))
-      return child;
-  }
-  else if (GTK_IS_TOGGLE_BUTTON(ih->handle))
-  {
-    /* GtkToggleButton has label or box as child */
-    child = gtk_button_get_child(GTK_BUTTON(ih->handle));
-    if (child && GTK_IS_LABEL(child))
-      return child;
-  }
-
-  return NULL;
-}
-
 static int gtk4ToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
@@ -436,6 +407,52 @@ static int gtk4ToggleSetImInactiveAttrib(Ihandle* ih, const char* value)
   }
   else
     return 0;
+}
+
+static int gtk4ToggleSetImPressAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type == IUP_TOGGLE_IMAGE)
+  {
+    gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), gtk4ToggleGetCheck(ih));
+    return 1;
+  }
+  return 0;
+}
+
+static int gtk4ToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type == IUP_TOGGLE_IMAGE)
+  {
+    float xalign, yalign;
+    char value1[30], value2[30];
+
+    iupStrToStrStr(value, value1, value2, ':');
+
+    if (iupStrEqualNoCase(value1, "ARIGHT"))
+      xalign = 1.0f;
+    else if (iupStrEqualNoCase(value1, "ALEFT"))
+      xalign = 0;
+    else
+      xalign = 0.5f;
+
+    if (iupStrEqualNoCase(value2, "ABOTTOM"))
+      yalign = 1.0f;
+    else if (iupStrEqualNoCase(value2, "ATOP"))
+      yalign = 0;
+    else
+      yalign = 0.5f;
+
+    GtkWidget* child = gtk_button_get_child(GTK_BUTTON(ih->handle));
+    if (child)
+    {
+      gtk_widget_set_halign(child, xalign == 0 ? GTK_ALIGN_START : (xalign == 1.0f ? GTK_ALIGN_END : GTK_ALIGN_CENTER));
+      gtk_widget_set_valign(child, yalign == 0 ? GTK_ALIGN_START : (yalign == 1.0f ? GTK_ALIGN_END : GTK_ALIGN_CENTER));
+    }
+
+    return 1;
+  }
+
+  return 0;
 }
 
 static int gtk4ToggleSetActiveAttrib(Ihandle* ih, const char* value)
@@ -641,12 +658,11 @@ void iupdrvToggleInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "IMAGE", NULL, gtk4ToggleSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, gtk4ToggleSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", NULL, gtk4ToggleSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, gtk4ToggleSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, gtk4ToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-
-  iupClassRegisterAttribute(ic, "CANFOCUS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 }

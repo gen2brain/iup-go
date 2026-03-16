@@ -19,7 +19,6 @@ void iupgtk4SetupEnterLeaveEvents(GtkWidget *widget, Ihandle* ih);
 void iupgtk4SetupMotionEvents(GtkWidget *widget, Ihandle *ih);
 void iupgtk4SetupButtonEvents(GtkWidget *widget, Ihandle *ih);
 IUP_DRV_API void iupgtk4ButtonPressed(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih);
-IUP_DRV_API gboolean iupgtk4ShowHelp(GtkWidget *widget, gpointer arg1, Ihandle* ih);
 
 int iupgtk4SetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value);
 void iupgtk4UpdateMnemonic(Ihandle* ih);
@@ -72,7 +71,6 @@ PangoFontDescription* iupgtk4GetPangoFontDesc(const char* value);
 char* iupgtk4GetPangoFontDescAttrib(Ihandle *ih);
 char* iupgtk4GetPangoLayoutAttrib(Ihandle *ih);
 char* iupgtk4GetFontIdAttrib(Ihandle *ih);
-void iupgtk4UpdateObjectFont(Ihandle* ih, gpointer object);
 void iupgtk4UpdateWidgetFont(Ihandle *ih, GtkWidget* widget);
 PangoLayout* iupgtk4GetPangoLayout(const char* value);
 

@@ -299,22 +299,6 @@ static void gtk4CanvasButtonPressed(GtkGestureClick *gesture, int n_press, doubl
   (void)y;
 }
 
-static void gtk4CanvasButtonReleased(GtkGestureClick *gesture, int n_press, double x, double y, Ihandle *ih)
-{
-  (void)gesture;
-  (void)n_press;
-  (void)x;
-  (void)y;
-  (void)ih;
-}
-
-gboolean gtk4CanvasFocusLeave(GtkEventControllerFocus *controller, Ihandle *ih)
-{
-  (void)controller;
-  (void)ih;
-  return FALSE;
-}
-
 static int gtk4CanvasSetBgColorAttrib(Ihandle* ih, const char* value);
 
 static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int height, Ihandle *ih)
@@ -715,7 +699,6 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
   GtkGesture* click_gesture = gtk_gesture_click_new();
   gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(click_gesture));
   g_signal_connect(click_gesture, "pressed", G_CALLBACK(gtk4CanvasButtonPressed), ih);
-  g_signal_connect(click_gesture, "released", G_CALLBACK(gtk4CanvasButtonReleased), ih);
 
   iupgtk4SetupButtonEvents(ih->handle, ih);
   iupgtk4SetupMotionEvents(ih->handle, ih);
