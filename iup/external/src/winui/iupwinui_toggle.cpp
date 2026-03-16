@@ -23,6 +23,7 @@ extern "C" {
 #include "iup_toggle.h"
 #include "iup_register.h"
 #include "iup_childtree.h"
+#include "iup_classbase.h"
 }
 
 #include "iupwinui_drv.h"
@@ -148,6 +149,30 @@ static char* winuiToggleGetValueAttrib(Ihandle* ih)
   return winuiToggleGetChecked(ih) ? (char*)"ON" : (char*)"OFF";
 }
 
+static void winuiToggleSetImageTextContent(Ihandle* ih, ToggleButton tb, Image image, const char* title)
+{
+  (void)ih;
+  if (title && title[0])
+  {
+    StackPanel sp;
+    sp.Orientation(Orientation::Horizontal);
+
+    sp.Children().Append(image);
+
+    TextBlock txtBlock;
+    txtBlock.Text(iupwinuiStringToHString(title));
+    txtBlock.Margin(ThicknessHelper::FromLengths(4, 0, 0, 0));
+    txtBlock.VerticalAlignment(VerticalAlignment::Center);
+    sp.Children().Append(txtBlock);
+
+    tb.Content(sp);
+  }
+  else
+  {
+    tb.Content(image);
+  }
+}
+
 static void winuiToggleSetImageContent(Ihandle* ih, const char* name, int make_inactive)
 {
   IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
@@ -170,25 +195,7 @@ static void winuiToggleSetImageContent(Ihandle* ih, const char* name, int make_i
   image.Source(bitmap);
   image.Stretch(Media::Stretch::None);
 
-  const char* title = iupAttribGet(ih, "TITLE");
-  if (title && title[0])
-  {
-    StackPanel sp;
-    sp.Orientation(Orientation::Horizontal);
-    sp.Children().Append(image);
-
-    TextBlock txtBlock;
-    txtBlock.Text(iupwinuiStringToHString(title));
-    txtBlock.Margin(ThicknessHelper::FromLengths(4, 0, 0, 0));
-    txtBlock.VerticalAlignment(VerticalAlignment::Center);
-    sp.Children().Append(txtBlock);
-
-    tb.Content(sp);
-  }
-  else
-  {
-    tb.Content(image);
-  }
+  winuiToggleSetImageTextContent(ih, tb, image, iupAttribGet(ih, "TITLE"));
 }
 
 static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
@@ -293,46 +300,27 @@ static char* winuiToggleGetTitleAttrib(Ihandle* ih)
 
 static int winuiToggleSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
-  if (!aux)
-    return 0;
-
-  bool enabled = iupStrBoolean(value);
-
-  switch (aux->controlType)
+  if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
-  case IUPWINUI_TOGGLE_TOGGLESWITCH:
+    if (!iupStrBoolean(value))
     {
-      ToggleSwitch ts = winuiGetHandle<ToggleSwitch>(ih);
-      if (ts)
-        ts.IsEnabled(enabled);
+      char* name = iupAttribGet(ih, "IMINACTIVE");
+      if (name)
+        winuiToggleSetImageContent(ih, name, 0);
+      else
+      {
+        name = iupAttribGet(ih, "IMAGE");
+        winuiToggleSetImageContent(ih, name, 1);
+      }
     }
-    break;
-  case IUPWINUI_TOGGLE_TOGGLEBUTTON:
+    else
     {
-      ToggleButton tb = winuiGetHandle<ToggleButton>(ih);
-      if (tb)
-        tb.IsEnabled(enabled);
+      char* name = iupAttribGet(ih, "IMAGE");
+      winuiToggleSetImageContent(ih, name, 0);
     }
-    break;
-  case IUPWINUI_TOGGLE_RADIOBUTTON:
-    {
-      RadioButton rb = winuiGetHandle<RadioButton>(ih);
-      if (rb)
-        rb.IsEnabled(enabled);
-    }
-    break;
-  case IUPWINUI_TOGGLE_CHECKBOX:
-  default:
-    {
-      CheckBox cb = winuiGetHandle<CheckBox>(ih);
-      if (cb)
-        cb.IsEnabled(enabled);
-    }
-    break;
   }
 
-  return 0;
+  return iupBaseSetActiveAttrib(ih, value);
 }
 
 static int winuiToggleSetFgColorAttrib(Ihandle* ih, const char* value)
@@ -484,6 +472,8 @@ static int winuiToggleMapMethod(Ihandle* ih)
     ts.VerticalAlignment(VerticalAlignment::Top);
     ts.OnContent(nullptr);
     ts.OffContent(nullptr);
+    ts.MinWidth(0);
+    ts.MinHeight(0);
 
     if (title)
       ts.Header(box_value(iupwinuiProcessMnemonic(title, NULL)));
@@ -526,24 +516,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
         img.Source(bitmap);
         img.Stretch(Media::Stretch::None);
 
-        if (title)
-        {
-          StackPanel sp;
-          sp.Orientation(Orientation::Horizontal);
-          sp.Children().Append(img);
-
-          TextBlock txtBlock;
-          txtBlock.Text(iupwinuiStringToHString(title));
-          txtBlock.Margin(ThicknessHelper::FromLengths(4, 0, 0, 0));
-          txtBlock.VerticalAlignment(VerticalAlignment::Center);
-          sp.Children().Append(txtBlock);
-
-          tb.Content(sp);
-        }
-        else
-        {
-          tb.Content(img);
-        }
+        winuiToggleSetImageTextContent(ih, tb, img, title);
       }
     }
 
@@ -588,6 +561,8 @@ static int winuiToggleMapMethod(Ihandle* ih)
     RadioButton rb;
     rb.HorizontalAlignment(HorizontalAlignment::Left);
     rb.VerticalAlignment(VerticalAlignment::Top);
+    rb.MinWidth(0);
+    rb.MinHeight(0);
 
     char groupName[50];
     snprintf(groupName, sizeof(groupName), "radio_%p", (void*)radio);
@@ -631,6 +606,8 @@ static int winuiToggleMapMethod(Ihandle* ih)
     CheckBox cb;
     cb.HorizontalAlignment(HorizontalAlignment::Left);
     cb.VerticalAlignment(VerticalAlignment::Top);
+    cb.MinWidth(0);
+    cb.MinHeight(0);
 
     if (title)
       cb.Content(box_value(iupwinuiProcessMnemonic(title, NULL)));
@@ -772,7 +749,7 @@ extern "C" void iupdrvToggleInitClass(Iclass* ic)
   ic->UnMap = winuiToggleUnMapMethod;
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   /* Special */
@@ -785,4 +762,7 @@ extern "C" void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, winuiToggleSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, winuiToggleSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, winuiToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
 }

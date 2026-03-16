@@ -50,6 +50,20 @@ using namespace Windows::Graphics;
 
 #define WINUI_DIALOG_CLASS L"IupWinUIDialog"
 
+static void winuiDialogSetPanelBgColor(Grid rootPanel, const char* color)
+{
+  unsigned char r, g, b;
+  if (color && iupStrToRGB(color, &r, &g, &b))
+  {
+    Windows::UI::Color c;
+    c.A = 255;
+    c.R = r;
+    c.G = g;
+    c.B = b;
+    rootPanel.Background(SolidColorBrush(c));
+  }
+}
+
 static void winuiDialogUpdateXamlIsland(Ihandle* ih)
 {
   IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
@@ -368,17 +382,9 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
           const char* bgcolor = IupGetGlobal("DLGBGCOLOR");
           if (bgcolor)
           {
-            unsigned char r, g, b;
             iupAttribSetStr(ih, "_IUPWINUI_BACKGROUND_COLOR", bgcolor);
-            if (dlgaux && dlgaux->rootPanel && !iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE") && iupStrToRGB(bgcolor, &r, &g, &b))
-            {
-              Windows::UI::Color color;
-              color.A = 255;
-              color.R = r;
-              color.G = g;
-              color.B = b;
-              dlgaux->rootPanel.Background(SolidColorBrush(color));
-            }
+            if (dlgaux && dlgaux->rootPanel && !iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE"))
+              winuiDialogSetPanelBgColor(dlgaux->rootPanel, bgcolor);
           }
 
           IFni cb = (IFni)IupGetCallback(ih, "THEMECHANGED_CB");
@@ -400,11 +406,6 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
       break;
 
     case WM_NCDESTROY:
-      if (ih)
-      {
-        winuiFreeAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
-        ih->handle = NULL;
-      }
       SetWindowLongPtr(hwnd, GWLP_USERDATA, 0);
       return 0;
   }
@@ -445,17 +446,8 @@ static int winuiDialogSetBackdropAttrib(Ihandle* ih, const char* value)
     aux->xamlSource.SystemBackdrop(nullptr);
     iupAttribSet(ih, "_IUPWINUI_BACKDROP_ACTIVE", NULL);
 
-    unsigned char r, g, b;
-    const char* bgcolor = iupAttribGet(ih, "_IUPWINUI_BACKGROUND_COLOR");
-    if (bgcolor && iupStrToRGB(bgcolor, &r, &g, &b) && aux->rootPanel)
-    {
-      Windows::UI::Color color;
-      color.A = 255;
-      color.R = r;
-      color.G = g;
-      color.B = b;
-      aux->rootPanel.Background(SolidColorBrush(color));
-    }
+    if (aux->rootPanel)
+      winuiDialogSetPanelBgColor(aux->rootPanel, iupAttribGet(ih, "_IUPWINUI_BACKGROUND_COLOR"));
 
     winuiDialogRefreshThemeColors(ih);
     return 1;
@@ -665,19 +657,7 @@ static int winuiDialogMapMethod(Ihandle* ih)
   if (iupwinuiIsSystemDarkMode())
     aux->rootPanel.RequestedTheme(ElementTheme::Dark);
 
-  {
-    unsigned char r, g, b;
-    const char* bgcolor = IupGetGlobal("DLGBGCOLOR");
-    if (bgcolor && iupStrToRGB(bgcolor, &r, &g, &b))
-    {
-      Windows::UI::Color color;
-      color.A = 255;
-      color.R = r;
-      color.G = g;
-      color.B = b;
-      aux->rootPanel.Background(SolidColorBrush(color));
-    }
-  }
+  winuiDialogSetPanelBgColor(aux->rootPanel, IupGetGlobal("DLGBGCOLOR"));
 
   aux->xamlSource.Content(aux->rootPanel);
 
@@ -686,18 +666,6 @@ static int winuiDialogMapMethod(Ihandle* ih)
     if (backdrop && backdrop[0])
       winuiDialogSetBackdropAttrib(ih, backdrop);
   }
-
-  aux->takeFocusToken = aux->xamlSource.TakeFocusRequested(
-    [ih](DesktopWindowXamlSource const&, DesktopWindowXamlSourceTakeFocusRequestedEventArgs const& args)
-    {
-      (void)args;
-    });
-
-  aux->gotFocusToken = aux->xamlSource.GotFocus(
-    [ih](DesktopWindowXamlSource const&, DesktopWindowXamlSourceGotFocusEventArgs const&)
-    {
-      (void)ih;
-    });
 
   if (customframe)
   {
@@ -728,6 +696,13 @@ static int winuiDialogMapMethod(Ihandle* ih)
 
 static void winuiDialogUnMapMethod(Ihandle* ih)
 {
+  if (ih->data->menu)
+  {
+    ih->data->menu->handle = NULL;
+    IupDestroy(ih->data->menu);
+    ih->data->menu = NULL;
+  }
+
   iupwinuiTipsDestroy(ih);
 
   ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWINUI_TASKBARLIST");
@@ -742,11 +717,6 @@ static void winuiDialogUnMapMethod(Ihandle* ih)
   {
     if (aux->xamlSource)
     {
-      if (aux->takeFocusToken)
-        aux->xamlSource.TakeFocusRequested(aux->takeFocusToken);
-      if (aux->gotFocusToken)
-        aux->xamlSource.GotFocus(aux->gotFocusToken);
-
       aux->xamlSource.Close();
       aux->xamlSource = nullptr;
     }
@@ -859,14 +829,7 @@ static int winuiDialogSetBgColorAttrib(Ihandle* ih, const char* value)
     {
       IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
       if (aux && aux->rootPanel && !iupAttribGet(ih, "_IUPWINUI_BACKDROP_ACTIVE"))
-      {
-        Windows::UI::Color color;
-        color.A = 255;
-        color.R = r;
-        color.G = g;
-        color.B = b;
-        aux->rootPanel.Background(SolidColorBrush(color));
-      }
+        winuiDialogSetPanelBgColor(aux->rootPanel, value);
       RedrawWindow((HWND)ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
       winuiDialogRefreshThemeColors(ih);
     }
@@ -1159,6 +1122,8 @@ extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption
         Ihandle* ih_caption = IupGetDialogChild(ih, "CUSTOMFRAMECAPTION");
         if (ih_caption)
           *caption = ih_caption->currentheight;
+        else if (iupAttribGetBoolean(ih, "TOOLBOX") && iupAttribGet(ih, "PARENTDIALOG"))
+          *caption = GetSystemMetrics(SM_CYSMCAPTION);
         else
           *caption = GetSystemMetrics(SM_CYCAPTION);
       }
@@ -1166,11 +1131,7 @@ extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption
     }
 
     *border = 0;
-    if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
-    {
-      *border = 0;
-    }
-    else if (iupAttribGetBoolean(ih, "RESIZE"))
+    if (iupAttribGetBoolean(ih, "RESIZE"))
       *border = GetSystemMetrics(SM_CXFRAME);
     else if (has_titlebar)
       *border = GetSystemMetrics(SM_CXFIXEDFRAME);
@@ -1480,4 +1441,10 @@ extern "C" void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDIFRAME", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDICLIENT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDIMENU", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MDICHILD", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

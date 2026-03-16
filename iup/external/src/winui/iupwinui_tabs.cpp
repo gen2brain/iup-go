@@ -42,6 +42,17 @@ using namespace Windows::Foundation;
 #define IUPWINUI_TABTIP_ENTERED "_IUPWINUI_TABTIP_ENTERED"
 #define IUPWINUI_TABTIP_EXITED "_IUPWINUI_TABTIP_EXITED"
 
+static void winuiTabsReleaseChildAttrib(Ihandle* child, const char* attr_name)
+{
+  void* ptr = (void*)iupAttribGet(child, attr_name);
+  if (ptr)
+  {
+    IInspectable obj{nullptr};
+    winrt::attach_abi(obj, ptr);
+  }
+  iupAttribSet(child, attr_name, nullptr);
+}
+
 struct IupWinUITabsAux
 {
   event_token selectionChangedToken;
@@ -89,49 +100,6 @@ static void winuiTabsSelectionChanged(Ihandle* ih, IInspectable const& sender, S
     cb2(ih, newIndex, oldIndex);
 
   aux->previousIndex = newIndex;
-}
-
-static void winuiTabsCloseRequested(Ihandle* ih, TabView const& sender, TabViewTabCloseRequestedEventArgs const& args)
-{
-  (void)sender;
-
-  TabViewItem item = args.Tab();
-  if (!item)
-    return;
-
-  TabView tabView = winuiTabsGetTabView(ih);
-  if (!tabView)
-    return;
-
-  int pos = -1;
-  uint32_t count = tabView.TabItems().Size();
-  for (uint32_t i = 0; i < count; i++)
-  {
-    auto tabItem = tabView.TabItems().GetAt(i).try_as<TabViewItem>();
-    if (tabItem == item)
-    {
-      pos = (int)i;
-      break;
-    }
-  }
-
-  if (pos < 0)
-    return;
-
-  IFni cb = (IFni)IupGetCallback(ih, "TABCLOSE_CB");
-  if (cb)
-  {
-    int ret = cb(ih, pos);
-    if (ret == IUP_CONTINUE)
-    {
-      Ihandle* child = IupGetChild(ih, pos);
-      if (child)
-      {
-        IupDetach(child);
-        IupDestroy(child);
-      }
-    }
-  }
 }
 
 static Controls::Image winuiTabsGetTabImage(Ihandle* child)
@@ -346,6 +314,66 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     winuiTabsTipRegister(ih, child);
 }
 
+static int winuiTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
+{
+  Ihandle* child = IupGetChild(ih, pos);
+  if (!child)
+    return 0;
+
+  TabViewItem item = winuiTabsGetTabViewItem(child);
+  if (item)
+    item.Visibility(iupStrBoolean(value) ? Visibility::Visible : Visibility::Collapsed);
+
+  return 0;
+}
+
+static void winuiTabsCloseRequested(Ihandle* ih, TabView const& sender, TabViewTabCloseRequestedEventArgs const& args)
+{
+  (void)sender;
+
+  TabViewItem item = args.Tab();
+  if (!item)
+    return;
+
+  TabView tabView = winuiTabsGetTabView(ih);
+  if (!tabView)
+    return;
+
+  int pos = -1;
+  uint32_t count = tabView.TabItems().Size();
+  for (uint32_t i = 0; i < count; i++)
+  {
+    auto tabItem = tabView.TabItems().GetAt(i).try_as<TabViewItem>();
+    if (tabItem == item)
+    {
+      pos = (int)i;
+      break;
+    }
+  }
+
+  if (pos < 0)
+    return;
+
+  int ret = IUP_DEFAULT;
+  IFni cb = (IFni)IupGetCallback(ih, "TABCLOSE_CB");
+  if (cb)
+    ret = cb(ih, pos);
+
+  if (ret == IUP_CONTINUE)
+  {
+    Ihandle* child = IupGetChild(ih, pos);
+    if (child)
+    {
+      IupDetach(child);
+      IupDestroy(child);
+    }
+  }
+  else if (ret == IUP_DEFAULT)
+  {
+    winuiTabsSetTabVisibleAttrib(ih, pos, "NO");
+  }
+}
+
 static int winuiTabsMapMethod(Ihandle* ih)
 {
   TabView tabView;
@@ -406,7 +434,13 @@ static void winuiTabsUnMapMethod(Ihandle* ih)
 {
   Ihandle* child;
   for (child = ih->firstchild; child; child = child->brother)
+  {
     winuiTabsTipUnregister(child);
+    winuiTabsReleaseChildAttrib(child, "_IUPTAB_CONTAINER");
+    winuiTabsReleaseChildAttrib(child, IUPWINUI_TABITEMNATIVE);
+    winuiTabsReleaseChildAttrib(child, IUPWINUI_TABIMAGE_NATIVE);
+    winuiTabsReleaseChildAttrib(child, IUPWINUI_TABLABEL_NATIVE);
+  }
 
   IupWinUITabsAux* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
   if (aux)
@@ -449,10 +483,10 @@ static void winuiTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
   if (aux) aux->ignoreChange = 0;
 
-  iupAttribSet(child, "_IUPTAB_CONTAINER", nullptr);
-  iupAttribSet(child, IUPWINUI_TABITEMNATIVE, nullptr);
-  iupAttribSet(child, IUPWINUI_TABIMAGE_NATIVE, nullptr);
-  iupAttribSet(child, IUPWINUI_TABLABEL_NATIVE, nullptr);
+  winuiTabsReleaseChildAttrib(child, "_IUPTAB_CONTAINER");
+  winuiTabsReleaseChildAttrib(child, IUPWINUI_TABITEMNATIVE);
+  winuiTabsReleaseChildAttrib(child, IUPWINUI_TABIMAGE_NATIVE);
+  winuiTabsReleaseChildAttrib(child, IUPWINUI_TABLABEL_NATIVE);
 }
 
 static int winuiTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
@@ -587,19 +621,6 @@ extern "C" void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const c
   *tab_height = h;
 }
 
-static int winuiTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
-{
-  Ihandle* child = IupGetChild(ih, pos);
-  if (!child)
-    return 0;
-
-  TabViewItem item = winuiTabsGetTabViewItem(child);
-  if (item)
-    item.Visibility(iupStrBoolean(value) ? Visibility::Visible : Visibility::Collapsed);
-
-  return 0;
-}
-
 static void winuiTabsUpdatePagePadding(Ihandle* ih)
 {
   Ihandle* child;
@@ -665,14 +686,16 @@ extern "C" void iupdrvTabsInitClass(Iclass* ic)
   ic->ChildAdded = winuiTabsChildAddedMethod;
   ic->ChildRemoved = winuiTabsChildRemovedMethod;
 
+  iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
+
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "TIP", NULL, winuiTabsSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupTabs only */
-  iupClassRegisterAttributeId(ic, "TABTITLE", NULL, winuiTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, winuiTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, winuiTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, winuiTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, winuiTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

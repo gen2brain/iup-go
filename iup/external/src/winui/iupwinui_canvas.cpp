@@ -90,7 +90,11 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
       int y = (short)HIWORD(lParam);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus((int)wParam, button, status, 0);
-      cb(ih, button, 1, x, y, status);
+      int ret = cb(ih, button, 1, x, y, status);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      else if (ret == IUP_IGNORE)
+        return 0;
     }
     break;
   }
@@ -109,7 +113,11 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
       int y = (short)HIWORD(lParam);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus((int)wParam, button, status, 0);
-      cb(ih, button, 0, x, y, status);
+      int ret = cb(ih, button, 0, x, y, status);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      else if (ret == IUP_IGNORE)
+        return 0;
     }
     break;
   }
@@ -375,6 +383,21 @@ static void winuiCanvasGetContentSize(Ihandle* ih, int* w, int* h)
     if (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible)
       *h -= iupdrvGetScrollbarSize();
   }
+}
+
+static char* winuiCanvasGetScrollVisibleAttrib(Ihandle* ih)
+{
+  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+  if (!aux)
+    return (char*)"NO";
+
+  int sb_h = (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible) ? 1 : 0;
+  int sb_v = (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible) ? 1 : 0;
+
+  if (sb_h && sb_v) return (char*)"YES";
+  if (sb_h) return (char*)"HORIZONTAL";
+  if (sb_v) return (char*)"VERTICAL";
+  return (char*)"NO";
 }
 
 static char* winuiCanvasGetDrawSizeAttrib(Ihandle* ih)
@@ -697,7 +720,14 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       int y = (int)point.Position().Y;
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
-      cb(ih, button, 1, x, y, status);
+      int ret = cb(ih, button, 1, x, y, status);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      else if (ret == IUP_IGNORE)
+      {
+        args.Handled(true);
+        return;
+      }
     }
 
     if (iupAttribGetBoolean(ih, "CANFOCUS"))
@@ -725,7 +755,14 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       int y = (int)point.Position().Y;
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
-      cb(ih, button, 0, x, y, status);
+      int ret = cb(ih, button, 0, x, y, status);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      else if (ret == IUP_IGNORE)
+      {
+        args.Handled(true);
+        return;
+      }
     }
 
     args.Handled(true);
@@ -883,6 +920,9 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   winuiCanvasSetDXAttrib(ih, NULL);
   winuiCanvasSetDYAttrib(ih, NULL);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
@@ -1038,4 +1078,7 @@ extern "C" void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "YAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DRAWANTIALIAS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winuiCanvasGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

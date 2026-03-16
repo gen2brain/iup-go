@@ -143,6 +143,47 @@ static int winuiValSetPageStepAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int winuiValSetShowTicksAttrib(Ihandle* ih, const char* value)
+{
+  int ticks = 0;
+  iupStrToInt(value, &ticks);
+  ih->data->show_ticks = ticks;
+
+  Slider slider = winuiGetHandle<Slider>(ih);
+  if (slider)
+  {
+    if (ticks > 1)
+    {
+      double freq = WINUI_VAL_MAX / (double)(ticks - 1);
+      slider.TickFrequency(freq);
+      if (slider.TickPlacement() == Primitives::TickPlacement::None)
+        slider.TickPlacement(Primitives::TickPlacement::BottomRight);
+    }
+    else
+    {
+      slider.TickPlacement(Primitives::TickPlacement::None);
+    }
+  }
+
+  return 0;
+}
+
+static int winuiValSetTicksPosAttrib(Ihandle* ih, const char* value)
+{
+  Slider slider = winuiGetHandle<Slider>(ih);
+  if (!slider)
+    return 1;
+
+  if (iupStrEqualNoCase(value, "REVERSE"))
+    slider.TickPlacement(Primitives::TickPlacement::TopLeft);
+  else if (iupStrEqualNoCase(value, "BOTH"))
+    slider.TickPlacement(Primitives::TickPlacement::Outside);
+  else
+    slider.TickPlacement(Primitives::TickPlacement::BottomRight);
+
+  return 1;
+}
+
 static int winuiValMapMethod(Ihandle* ih)
 {
   IupWinUIValAux* aux = new IupWinUIValAux();
@@ -250,6 +291,8 @@ extern "C" void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, winuiValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, winuiValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "SHOWTICKS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, winuiValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, winuiValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
+
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 }

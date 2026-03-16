@@ -91,79 +91,8 @@ static char* winuiButtonGetTitleAttrib(Ihandle* ih)
   return NULL;
 }
 
-static int winuiButtonSetActiveAttrib(Ihandle* ih, const char* value)
+static void winuiButtonSetImageTextContent(Ihandle* ih, Button btn, Border border, Image image, const char* title)
 {
-  Button btn = winuiGetHandle<Button>(ih);
-  if (btn)
-    btn.IsEnabled(iupStrBoolean(value));
-
-  if (ih->data->type & IUP_BUTTON_IMAGE)
-  {
-    int make_inactive = !iupStrBoolean(value);
-    char* name = iupAttribGet(ih, "IMINACTIVE");
-    if (!name)
-      name = iupAttribGet(ih, "IMAGE");
-    if (name)
-    {
-      void* imghandle = iupImageGetImage(name, ih, make_inactive, NULL);
-      WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
-      if (bitmap)
-      {
-        Border border = btn.Content().try_as<Border>();
-        Image image = border ? border.Child().try_as<Image>() : nullptr;
-        if (image)
-          image.Source(bitmap);
-      }
-    }
-  }
-
-  return 0;
-}
-
-static void winuiButtonSetImage(Ihandle* ih, const char* name, int make_inactive)
-{
-  Button btn = winuiGetHandle<Button>(ih);
-  if (!btn || !name)
-    return;
-
-  void* imghandle = iupImageGetImage(name, ih, make_inactive, NULL);
-  WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
-  if (!bitmap)
-    return;
-
-  Border border = btn.Content().try_as<Border>();
-  if (border)
-  {
-    auto child = border.Child();
-    if (child)
-    {
-      Image existingImage = child.try_as<Image>();
-      if (!existingImage)
-      {
-        StackPanel sp = child.try_as<StackPanel>();
-        if (sp && sp.Children().Size() > 0)
-          existingImage = sp.Children().GetAt(0).try_as<Image>();
-      }
-      if (existingImage)
-      {
-        existingImage.Source(bitmap);
-        return;
-      }
-    }
-  }
-
-  Image image;
-  image.Source(bitmap);
-  image.Stretch(Media::Stretch::None);
-
-  if (!border)
-  {
-    border = Border();
-    border.Background(SolidColorBrush(Microsoft::UI::Colors::Transparent()));
-    btn.Content(border);
-  }
-
-  const char* title = iupAttribGet(ih, "TITLE");
   if ((ih->data->type & IUP_BUTTON_TEXT) && title && title[0])
   {
     StackPanel sp;
@@ -209,6 +138,77 @@ static void winuiButtonSetImage(Ihandle* ih, const char* name, int make_inactive
   {
     border.Child(image);
   }
+}
+
+static void winuiButtonSetImage(Ihandle* ih, const char* name, int make_inactive)
+{
+  Button btn = winuiGetHandle<Button>(ih);
+  if (!btn || !name)
+    return;
+
+  void* imghandle = iupImageGetImage(name, ih, make_inactive, NULL);
+  WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
+  if (!bitmap)
+    return;
+
+  Border border = btn.Content().try_as<Border>();
+  if (border)
+  {
+    auto child = border.Child();
+    if (child)
+    {
+      Image existingImage = child.try_as<Image>();
+      if (!existingImage)
+      {
+        StackPanel sp = child.try_as<StackPanel>();
+        if (sp && sp.Children().Size() > 0)
+          existingImage = sp.Children().GetAt(0).try_as<Image>();
+      }
+      if (existingImage)
+      {
+        existingImage.Source(bitmap);
+        return;
+      }
+    }
+  }
+
+  Image image;
+  image.Source(bitmap);
+  image.Stretch(Media::Stretch::None);
+
+  if (!border)
+  {
+    border = Border();
+    border.Background(SolidColorBrush(Microsoft::UI::Colors::Transparent()));
+    btn.Content(border);
+  }
+
+  winuiButtonSetImageTextContent(ih, btn, border, image, iupAttribGet(ih, "TITLE"));
+}
+
+static int winuiButtonSetActiveAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type & IUP_BUTTON_IMAGE)
+  {
+    if (!iupStrBoolean(value))
+    {
+      char* name = iupAttribGet(ih, "IMINACTIVE");
+      if (name)
+        winuiButtonSetImage(ih, name, 0);
+      else
+      {
+        name = iupAttribGet(ih, "IMAGE");
+        winuiButtonSetImage(ih, name, 1);
+      }
+    }
+    else
+    {
+      char* name = iupAttribGet(ih, "IMAGE");
+      winuiButtonSetImage(ih, name, 0);
+    }
+  }
+
+  return iupBaseSetActiveAttrib(ih, value);
 }
 
 static int winuiButtonSetImageAttrib(Ihandle* ih, const char* value)
@@ -461,51 +461,7 @@ static int winuiButtonMapMethod(Ihandle* ih)
       img.Source(bitmap);
       img.Stretch(Media::Stretch::None);
 
-      if (ih->data->type & IUP_BUTTON_TEXT)
-      {
-        StackPanel sp;
-        Orientation orient = (ih->data->img_position == IUP_IMGPOS_TOP || ih->data->img_position == IUP_IMGPOS_BOTTOM) ? Orientation::Vertical : Orientation::Horizontal;
-        sp.Orientation(orient);
-
-        char c = 0;
-        hstring text = iupwinuiProcessMnemonic(title, &c);
-
-        TextBlock tb;
-        tb.Text(text);
-
-        if (orient == Orientation::Vertical)
-        {
-          tb.Margin(ThicknessHelper::FromLengths(0, ih->data->spacing, 0, 0));
-          tb.HorizontalAlignment(HorizontalAlignment::Center);
-        }
-        else
-        {
-          tb.Margin(ThicknessHelper::FromLengths(ih->data->spacing, 0, 0, 0));
-          tb.VerticalAlignment(VerticalAlignment::Center);
-        }
-
-        if (ih->data->img_position == IUP_IMGPOS_RIGHT || ih->data->img_position == IUP_IMGPOS_BOTTOM)
-        {
-          sp.Children().Append(tb);
-          sp.Children().Append(img);
-        }
-        else
-        {
-          sp.Children().Append(img);
-          sp.Children().Append(tb);
-        }
-
-        contentBorder.Child(sp);
-        if (c)
-        {
-          wchar_t wc = (wchar_t)c;
-          btn.AccessKey(hstring(&wc, 1));
-        }
-      }
-      else
-      {
-        contentBorder.Child(img);
-      }
+      winuiButtonSetImageTextContent(ih, btn, contentBorder, img, title);
     }
   }
   else if (title)
@@ -564,6 +520,8 @@ static int winuiButtonMapMethod(Ihandle* ih)
       int ret = cb(ih, button, 1, x, y, status);
       if (ret == IUP_CLOSE)
         IupExitLoop();
+      else if (ret == IUP_IGNORE)
+        args.Handled(true);
     }
   });
 
@@ -582,6 +540,8 @@ static int winuiButtonMapMethod(Ihandle* ih)
       int ret = cb(ih, button, 0, x, y, status);
       if (ret == IUP_CLOSE)
         IupExitLoop();
+      else if (ret == IUP_IGNORE)
+        args.Handled(true);
     }
   });
 
@@ -600,6 +560,8 @@ static int winuiButtonMapMethod(Ihandle* ih)
       int ret = cb(ih, button, 0, x, y, status);
       if (ret == IUP_CLOSE)
         IupExitLoop();
+      else if (ret == IUP_IGNORE)
+        args.Handled(true);
     }
   });
 
@@ -711,7 +673,7 @@ extern "C" void iupdrvButtonInitClass(Iclass* ic)
 
   /* Visual */
   iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiButtonSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);
 
   /* Special */
