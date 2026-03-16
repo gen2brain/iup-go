@@ -137,6 +137,9 @@ static char* gtkClipboardGetFormatDataAttrib(Ihandle *ih)
 static char* gtkClipboardGetFormatDataStringAttrib(Ihandle *ih)
 {
   char* data = gtkClipboardGetFormatDataAttrib(ih);
+  if (!data)
+    return NULL;
+
   int size = iupAttribGetInt(ih, "FORMATDATASIZE");
   data[size] = 0;  /* add terminator */
   return iupStrReturnStr(iupgtkStrConvertFromSystem(data));
