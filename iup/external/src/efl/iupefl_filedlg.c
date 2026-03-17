@@ -475,7 +475,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
 
   for (;;)
   {
-    iupeflModalLoopRun();
+    iupeflModalLoopRun(win);
 
     if (efl_filedlg_status == 1 && efl_filedlg_paths && is_save &&
         !iupAttribGetBoolean(ih, "NOOVERWRITEPROMPT"))

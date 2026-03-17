@@ -285,7 +285,7 @@ static void eflDialogParentDestroyCallback(void* data, const Efl_Event* ev)
   Ihandle* ih = (Ihandle*)data;
   (void)ev;
 
-  if (iupObjectCheck(ih))
+  if (IupMainLoopLevel() > 0 && iupObjectCheck(ih))
     IupDestroy(ih);
 }
 
@@ -593,7 +593,7 @@ static int eflDialogMapMethod(Ihandle* ih)
   content_box = iupeflFixedContainerNew(win);
   if (content_box)
   {
-    elm_win_resize_object_add(win, content_box);
+    efl_content_set(win, content_box);
     evas_object_show(content_box);
     iupAttribSet(ih, "_IUP_EFL_INNER", (char*)content_box);
   }

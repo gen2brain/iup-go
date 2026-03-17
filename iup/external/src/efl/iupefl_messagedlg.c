@@ -316,7 +316,7 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
 
   do
   {
-    iupeflModalLoopRun();
+    iupeflModalLoopRun(win);
 
     if (efl_msgdlg_response == -1)
     {

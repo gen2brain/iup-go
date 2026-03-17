@@ -508,7 +508,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
 
   dlg.status = 0;
 
-  iupeflModalLoopRun();
+  iupeflModalLoopRun(win);
 
   if (dlg.status == 1)
   {
