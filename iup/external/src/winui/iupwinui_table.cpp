@@ -591,6 +591,8 @@ static int winuiTableCalculateColumnWidth(Ihandle* ih, int col_index)
   if (aux->col_titles && aux->col_titles[col_index])
   {
     int title_width = iupdrvFontGetStringWidth(ih, aux->col_titles[col_index]);
+    if (ih->data->sortable)
+      title_width += iupdrvFontGetStringWidth(ih, " \xe2\x96\xb2");  /* arrow */
     title_width += 20;
     if (title_width > max_width)
       max_width = title_width;

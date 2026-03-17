@@ -23,6 +23,7 @@ extern "C" {
 #include "iup_image.h"
 #include "iup_list.h"
 #include "iup_key.h"
+#include "iup_focus.h"
 #include "iup_classbase.h"
 #include "iup_register.h"
 }
@@ -1187,6 +1188,15 @@ static int winuiListMapMethod(Ihandle* ih)
         args.Handled(true);
     });
 
+    aux->gotFocusToken = comboBox.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      iupSetCurrentFocus(ih);
+      iupCallGetFocusCb(ih);
+    });
+
+    aux->lostFocusToken = comboBox.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      iupCallKillFocusCb(ih);
+    });
+
     iupwinuiUpdateControlFont(ih, comboBox);
 
     Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
@@ -1253,6 +1263,15 @@ static int winuiListMapMethod(Ihandle* ih)
     aux->keyDownToken = grid.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
       if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
         args.Handled(true);
+    });
+
+    aux->gotFocusToken = grid.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      iupSetCurrentFocus(ih);
+      iupCallGetFocusCb(ih);
+    });
+
+    aux->lostFocusToken = grid.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      iupCallKillFocusCb(ih);
     });
 
     void* lbPtr = nullptr;
@@ -1371,6 +1390,15 @@ static int winuiListMapMethod(Ihandle* ih)
         args.Handled(true);
     });
 
+    aux->gotFocusToken = listView.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      iupSetCurrentFocus(ih);
+      iupCallGetFocusCb(ih);
+    });
+
+    aux->lostFocusToken = listView.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      iupCallKillFocusCb(ih);
+    });
+
     Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
     if (parentCanvas)
       parentCanvas.Children().Append(listView);
@@ -1402,6 +1430,15 @@ static int winuiListMapMethod(Ihandle* ih)
     aux->keyDownToken = listBox.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
       if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
         args.Handled(true);
+    });
+
+    aux->gotFocusToken = listBox.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      iupSetCurrentFocus(ih);
+      iupCallGetFocusCb(ih);
+    });
+
+    aux->lostFocusToken = listBox.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      iupCallKillFocusCb(ih);
     });
 
     Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
@@ -1444,6 +1481,10 @@ static void winuiListUnMapMethod(Ihandle* ih)
           comboBox.DropDownClosed(aux->dropDownClosedToken);
         if (aux->keyDownToken)
           comboBox.PreviewKeyDown(aux->keyDownToken);
+        if (aux->gotFocusToken)
+          comboBox.GotFocus(aux->gotFocusToken);
+        if (aux->lostFocusToken)
+          comboBox.LostFocus(aux->lostFocusToken);
       }
       winuiReleaseHandle<ComboBox>(ih);
     }
@@ -1465,11 +1506,17 @@ static void winuiListUnMapMethod(Ihandle* ih)
           textBox.TextChanged(aux->textChangedToken);
       }
 
-      if (aux->keyDownToken)
       {
         Grid grid = winuiGetHandle<Grid>(ih);
         if (grid)
-          grid.PreviewKeyDown(aux->keyDownToken);
+        {
+          if (aux->keyDownToken)
+            grid.PreviewKeyDown(aux->keyDownToken);
+          if (aux->gotFocusToken)
+            grid.GotFocus(aux->gotFocusToken);
+          if (aux->lostFocusToken)
+            grid.LostFocus(aux->lostFocusToken);
+        }
       }
 
       {
@@ -1501,6 +1548,10 @@ static void winuiListUnMapMethod(Ihandle* ih)
           listView.DragItemsStarting(aux->dragItemsStartingToken);
         if (aux->dragItemsCompletedToken)
           listView.DragItemsCompleted(aux->dragItemsCompletedToken);
+        if (aux->gotFocusToken)
+          listView.GotFocus(aux->gotFocusToken);
+        if (aux->lostFocusToken)
+          listView.LostFocus(aux->lostFocusToken);
       }
       winuiReleaseHandle<ListView>(ih);
     }
@@ -1515,6 +1566,10 @@ static void winuiListUnMapMethod(Ihandle* ih)
           listBox.DoubleTapped(aux->doubleTappedToken);
         if (aux->keyDownToken)
           listBox.PreviewKeyDown(aux->keyDownToken);
+        if (aux->gotFocusToken)
+          listBox.GotFocus(aux->gotFocusToken);
+        if (aux->lostFocusToken)
+          listBox.LostFocus(aux->lostFocusToken);
       }
       winuiReleaseHandle<ListBox>(ih);
     }
