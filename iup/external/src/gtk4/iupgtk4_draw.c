@@ -139,35 +139,6 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
     /* Outside ACTION: buffer was the draw target, just trigger repaint */
     gtk_widget_queue_draw(dc->widget);
   }
-  else
-  {
-    /* Inside ACTION: also copy rendered content to persistent buffer */
-    cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(dc->ih, "_IUPGTK4_CANVAS_BUFFER");
-    if (buffer)
-    {
-      int buf_w = cairo_image_surface_get_width(buffer);
-      int buf_h = cairo_image_surface_get_height(buffer);
-      if (buf_w != dc->w || buf_h != dc->h)
-      {
-        cairo_surface_destroy(buffer);
-        buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-        iupAttribSet(dc->ih, "_IUPGTK4_CANVAS_BUFFER", (char*)buffer);
-      }
-    }
-    else
-    {
-      buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
-      iupAttribSet(dc->ih, "_IUPGTK4_CANVAS_BUFFER", (char*)buffer);
-    }
-
-    {
-      cairo_t* buf_cr = cairo_create(buffer);
-      cairo_set_source_surface(buf_cr, cairo_get_target(dc->image_cr), 0, 0);
-      cairo_set_operator(buf_cr, CAIRO_OPERATOR_SOURCE);
-      cairo_paint(buf_cr);
-      cairo_destroy(buf_cr);
-    }
-  }
 }
 
 IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
