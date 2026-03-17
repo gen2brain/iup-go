@@ -306,17 +306,23 @@ static void gtk4CanvasDraw(GtkDrawingArea *area, cairo_t* cr, int width, int hei
   IFn cb = (IFn)IupGetCallback(ih,"ACTION");
   cairo_surface_t* buffer;
 
-  /* Check if there's a persistent buffer from drawing outside ACTION (e.g. SCROLL_CB) */
+  /* If there's a persistent buffer from drawing outside ACTION (e.g. SCROLL_CB),
+     use it. When an ACTION callback exists, consume the buffer so the next
+     draw calls ACTION again. Without ACTION, keep the buffer for repaints. */
   buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
   if (buffer && cairo_image_surface_get_width(buffer) == width &&
       cairo_image_surface_get_height(buffer) == height)
   {
     cairo_set_source_surface(cr, buffer, 0, 0);
     cairo_paint(cr);
-    return;
-  }
 
-  if (cb && !(ih->data->inside_resize))
+    if (cb)
+    {
+      cairo_surface_destroy(buffer);
+      iupAttribSet(ih, "_IUPGTK4_CANVAS_BUFFER", NULL);
+    }
+  }
+  else if (cb && !(ih->data->inside_resize))
   {
     double x1, y1, x2, y2;
     cairo_clip_extents(cr, &x1, &y1, &x2, &y2);
