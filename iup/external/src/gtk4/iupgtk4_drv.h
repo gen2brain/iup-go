@@ -117,6 +117,7 @@ void iupgtk4CssClearWidgetStyle(GtkWidget* widget);
 void iupgtk4CssResetWidgetPadding(GtkWidget* widget);
 void iupgtk4CssResetWidgetCustom(GtkWidget* widget);
 void iupgtk4CssAddStaticRule(const char* selector, const char* css_rules);
+void iupgtk4CssFlush(void);
 
 int iupgtk4IsSystemDarkMode(void);
 void iupgtk4SetGlobalColors(void);
