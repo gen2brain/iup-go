@@ -80,7 +80,12 @@ static void eflDialogStackBgBelow(Ihandle* ih, Eo* bg)
 {
   Eo* inner = (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
   if (inner)
+  {
+    Evas_Object* parent = evas_object_smart_parent_get(inner);
+    if (parent)
+      evas_object_smart_member_add(bg, parent);
     evas_object_stack_below(bg, inner);
+  }
 }
 
 static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
@@ -114,9 +119,18 @@ static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
     }
 
     {
+      Eo* bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
       Eo* bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
+      if (bg_rect)
+      {
+        evas_object_resize(bg_rect, w, h);
+        evas_object_move(bg_rect, 0, 0);
+        eflDialogStackBgBelow(ih, bg_rect);
+      }
       if (bg_img)
       {
+        evas_object_resize(bg_img, w, h);
+        evas_object_move(bg_img, 0, 0);
         if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
           evas_object_image_fill_set(bg_img, 0, 0, w, h);
         eflDialogStackBgBelow(ih, bg_img);
@@ -515,10 +529,8 @@ static void eflDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int
 
   ecore_evas_size_min_set(ee, min_w, min_h);
 
-  if (max_w >= 65535) max_w = 0;
-  if (max_h >= 65535) max_h = 0;
-
-  ecore_evas_size_max_set(ee, max_w, max_h);
+  if (max_w > 0 && max_w < 65535 && max_h > 0 && max_h < 65535)
+    ecore_evas_size_max_set(ee, max_w, max_h);
 }
 
 static int eflDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
@@ -661,15 +673,9 @@ static void eflDialogUnMapMethod(Ihandle* ih)
       Eo* bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
       Eo* op_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_OPACITY_IMAGE");
       if (bg_rect)
-      {
-        elm_win_resize_object_del(win, bg_rect);
         evas_object_del(bg_rect);
-      }
       if (bg_img)
-      {
-        elm_win_resize_object_del(win, bg_img);
         evas_object_del(bg_img);
-      }
       if (op_img)
         evas_object_del(op_img);
       iupAttribSet(ih, "_IUP_EFL_BGRECT", NULL);
@@ -709,11 +715,17 @@ static void eflDialogLayoutUpdateMethod(Ihandle* ih)
 
   bg = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
   if (bg)
+  {
+    evas_object_resize(bg, width, height);
+    evas_object_move(bg, 0, 0);
     eflDialogStackBgBelow(ih, bg);
+  }
 
   bg = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
   if (bg)
   {
+    evas_object_resize(bg, width, height);
+    evas_object_move(bg, 0, 0);
     if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
       evas_object_image_fill_set(bg, 0, 0, width, height);
     eflDialogStackBgBelow(ih, bg);
@@ -854,12 +866,13 @@ static int eflDialogSetBgColorAttrib(Ihandle* ih, const char* value)
   {
     Evas* evas = evas_object_evas_get(win);
     bg_rect = evas_object_rectangle_add(evas);
-    elm_win_resize_object_add(win, bg_rect);
     iupAttribSet(ih, "_IUP_EFL_BGRECT", (char*)bg_rect);
     evas_object_show(bg_rect);
   }
 
   evas_object_color_set(bg_rect, r, g, b, 255);
+  evas_object_resize(bg_rect, ih->currentwidth, ih->currentheight);
+  evas_object_move(bg_rect, 0, 0);
   eflDialogStackBgBelow(ih, bg_rect);
 
   return 1;
@@ -872,8 +885,6 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     Eo* old_bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
     if (old_bg_img)
     {
-      Eo* win = iupeflGetWidget(ih);
-      elm_win_resize_object_del(win, old_bg_img);
       evas_object_del(old_bg_img);
       iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", NULL);
     }
@@ -907,7 +918,6 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
       if (bg_rect)
       {
-        elm_win_resize_object_del(win, bg_rect);
         evas_object_del(bg_rect);
         iupAttribSet(ih, "_IUP_EFL_BGRECT", NULL);
       }
@@ -917,7 +927,6 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       {
         Evas* evas = evas_object_evas_get(win);
         bg_img = evas_object_image_add(evas);
-        elm_win_resize_object_add(win, bg_img);
         iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", (char*)bg_img);
       }
 
@@ -936,6 +945,8 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
         evas_object_image_data_set(bg_img, dst_pixels);
       }
 
+      evas_object_resize(bg_img, ih->currentwidth, ih->currentheight);
+      evas_object_move(bg_img, 0, 0);
       eflDialogStackBgBelow(ih, bg_img);
       evas_object_show(bg_img);
 
