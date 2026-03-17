@@ -226,6 +226,12 @@ BOOL wdResizeCanvas(WD_HCANVAS hCanvas, UINT uWidth, UINT uHeight);
 HDC wdStartGdi(WD_HCANVAS hCanvas, BOOL bKeepContents);
 void wdEndGdi(WD_HCANVAS hCanvas, HDC hDC);
 
+/* Read pixel data from the canvas into a caller-provided buffer.
+ * The buffer receives pixels in BGRA premultiplied format, top-down.
+ * Must be called between wdBeginPaint() and wdEndPaint().
+ * Returns TRUE on success. */
+BOOL wdCanvasGetImageData(WD_HCANVAS hCanvas, BYTE* buffer, UINT width, UINT height);
+
 /* Clear the whole canvas with the given color. */
 void wdClear(WD_HCANVAS hCanvas, WD_COLOR color);
 

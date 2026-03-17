@@ -425,6 +425,123 @@ wdSetClip(WD_HCANVAS hCanvas, const WD_RECT* pRect, const WD_HPATH hPath)
     }
 }
 
+static BOOL
+d2d_canvas_get_image_data_d2d11(d2d_canvas_t* c, BYTE* buffer, UINT width, UINT height)
+{
+    dummy_ID2D1DeviceContext* dc = NULL;
+    dummy_ID2D1Bitmap1* staging = NULL;
+    dummy_D2D1_BITMAP_PROPERTIES1 props;
+    dummy_D2D1_SIZE_U size;
+    dummy_D2D1_MAPPED_RECT mapped;
+    HRESULT hr;
+    UINT y;
+
+    hr = dummy_ID2D1RenderTarget_QueryInterface(c->target, &dummy_IID_ID2D1DeviceContext, (void**)&dc);
+    if(FAILED(hr))
+        return FALSE;
+
+    size.width = width;
+    size.height = height;
+
+    memset(&props, 0, sizeof(props));
+    props.pixelFormat.format = dummy_DXGI_FORMAT_B8G8R8A8_UNORM;
+    props.pixelFormat.alphaMode = dummy_D2D1_ALPHA_MODE_PREMULTIPLIED;
+    props.dpiX = 96.0f;
+    props.dpiY = 96.0f;
+    props.bitmapOptions = dummy_D2D1_BITMAP_OPTIONS_CPU_READ | dummy_D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
+    props.colorContext = NULL;
+
+    hr = dummy_ID2D1DeviceContext_CreateBitmap(dc, size, NULL, 0, &props, &staging);
+    if(FAILED(hr)) {
+        dummy_ID2D1DeviceContext_Release(dc);
+        return FALSE;
+    }
+
+    hr = dummy_ID2D1Bitmap1_CopyFromRenderTarget(staging, NULL, c->target, NULL);
+    if(FAILED(hr)) {
+        dummy_ID2D1Bitmap1_Release(staging);
+        dummy_ID2D1DeviceContext_Release(dc);
+        return FALSE;
+    }
+
+    hr = dummy_ID2D1Bitmap1_Map(staging, dummy_D2D1_MAP_OPTIONS_READ, &mapped);
+    if(FAILED(hr)) {
+        dummy_ID2D1Bitmap1_Release(staging);
+        dummy_ID2D1DeviceContext_Release(dc);
+        return FALSE;
+    }
+
+    for(y = 0; y < height; y++)
+        memcpy(buffer + y * width * 4, mapped.bits + y * mapped.pitch, width * 4);
+
+    dummy_ID2D1Bitmap1_Unmap(staging);
+    dummy_ID2D1Bitmap1_Release(staging);
+    dummy_ID2D1DeviceContext_Release(dc);
+    return TRUE;
+}
+
+static BOOL
+gdix_canvas_get_image_data(gdix_canvas_t* c, BYTE* buffer, UINT width, UINT height)
+{
+    HDC hMemDC;
+    HBITMAP hBitmap;
+    HGDIOBJ hOld;
+    BITMAPINFOHEADER bmi;
+
+    hMemDC = CreateCompatibleDC(c->dc);
+    if(!hMemDC)
+        return FALSE;
+
+    hBitmap = CreateCompatibleBitmap(c->dc, width, height);
+    if(!hBitmap) {
+        DeleteDC(hMemDC);
+        return FALSE;
+    }
+
+    hOld = SelectObject(hMemDC, hBitmap);
+    BitBlt(hMemDC, 0, 0, width, height, c->dc, 0, 0, SRCCOPY);
+
+    memset(&bmi, 0, sizeof(bmi));
+    bmi.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.biWidth = width;
+    bmi.biHeight = -(INT)height;
+    bmi.biPlanes = 1;
+    bmi.biBitCount = 32;
+    bmi.biCompression = BI_RGB;
+
+    if(!GetDIBits(hMemDC, hBitmap, 0, height, buffer, (BITMAPINFO*)&bmi, DIB_RGB_COLORS)) {
+        SelectObject(hMemDC, hOld);
+        DeleteObject(hBitmap);
+        DeleteDC(hMemDC);
+        return FALSE;
+    }
+
+    SelectObject(hMemDC, hOld);
+    DeleteObject(hBitmap);
+    DeleteDC(hMemDC);
+    return TRUE;
+}
+
+BOOL
+wdCanvasGetImageData(WD_HCANVAS hCanvas, BYTE* buffer, UINT width, UINT height)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
+        BOOL ok;
+
+        d2d_reset_clip(c);
+        dummy_ID2D1RenderTarget_EndDraw(c->target, NULL, NULL);
+
+        ok = d2d_canvas_get_image_data_d2d11(c, buffer, width, height);
+
+        dummy_ID2D1RenderTarget_BeginDraw(c->target);
+        return ok;
+    } else {
+        gdix_canvas_t* c = (gdix_canvas_t*) hCanvas;
+        return gdix_canvas_get_image_data(c, buffer, width, height);
+    }
+}
+
 void
 wdRotateWorld(WD_HCANVAS hCanvas, float cx, float cy, float fAngle)
 {

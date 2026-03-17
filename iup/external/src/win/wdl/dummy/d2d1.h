@@ -41,6 +41,9 @@ static const GUID dummy_IID_ID2D1Factory =
 static const GUID dummy_IID_ID2D1GdiInteropRenderTarget =
         {0xe0db51c3,0x6f77,0x4bae,{0xb3,0xd5,0xe4,0x75,0x09,0xb3,0x58,0x38}};
 
+static const GUID dummy_IID_ID2D1DeviceContext =
+        {0xe8f7fe7a,0x191c,0x466d,{0xad,0x95,0x97,0x56,0x78,0xbd,0xa9,0x98}};
+
 
 /******************************
  ***  Forward declarations  ***
@@ -65,6 +68,8 @@ typedef struct dummy_ID2D1SolidColorBrush_tag           dummy_ID2D1SolidColorBru
 typedef struct dummy_ID2D1GradientStopCollection_tag    dummy_ID2D1GradientStopCollection;
 typedef struct dummy_ID2D1LinearGradientBrush_tag       dummy_ID2D1LinearGradientBrush;
 typedef struct dummy_ID2D1RadialGradientBrush_tag       dummy_ID2D1RadialGradientBrush;
+typedef struct dummy_ID2D1Bitmap1_tag                   dummy_ID2D1Bitmap1;
+typedef struct dummy_ID2D1DeviceContext_tag             dummy_ID2D1DeviceContext;
 
 
 /*****************************
@@ -180,12 +185,23 @@ enum dummy_D2D1_LINE_JOIN_tag {
 };
 
 
+/* D2D 1.1 bitmap options */
+#define dummy_D2D1_BITMAP_OPTIONS_NONE          0x00000000
+#define dummy_D2D1_BITMAP_OPTIONS_CANNOT_DRAW   0x00000002
+#define dummy_D2D1_BITMAP_OPTIONS_CPU_READ      0x00000004
+
+/* D2D 1.1 map options */
+#define dummy_D2D1_MAP_OPTIONS_READ             1
+
+
 /*************************
  ***  Helper Typedefs  ***
  *************************/
 
 typedef struct dummy_D2D1_BITMAP_PROPERTIES_tag dummy_D2D1_BITMAP_PROPERTIES;
 typedef D2D_COLOR_F                             dummy_D2D1_COLOR_F;
+typedef struct D2D_POINT_2U                     dummy_D2D1_POINT_2U;
+typedef struct D2D_RECT_U                       dummy_D2D1_RECT_U;
 typedef struct D2D_MATRIX_3X2_F                 dummy_D2D1_MATRIX_3X2_F;
 typedef struct D2D_POINT_2F                     dummy_D2D1_POINT_2F;
 typedef struct D2D_RECT_F                       dummy_D2D1_RECT_F;
@@ -295,6 +311,21 @@ struct dummy_D2D1_LAYER_PARAMETERS_tag {
     FLOAT opacity;
     dummy_ID2D1Brush* opacityBrush;
     unsigned layerOptions;
+};
+
+typedef struct dummy_D2D1_BITMAP_PROPERTIES1_tag dummy_D2D1_BITMAP_PROPERTIES1;
+struct dummy_D2D1_BITMAP_PROPERTIES1_tag {
+    dummy_D2D1_PIXEL_FORMAT pixelFormat;
+    FLOAT dpiX;
+    FLOAT dpiY;
+    UINT32 bitmapOptions;
+    void* colorContext;
+};
+
+typedef struct dummy_D2D1_MAPPED_RECT_tag dummy_D2D1_MAPPED_RECT;
+struct dummy_D2D1_MAPPED_RECT_tag {
+    UINT32 pitch;
+    BYTE* bits;
 };
 
 
@@ -1211,6 +1242,166 @@ struct dummy_ID2D1RadialGradientBrush_tag {
 #define dummy_ID2D1RadialGradientBrush_SetGradientOriginOffset(self,a)     (self)->vtbl->SetGradientOriginOffset(self,a)
 #define dummy_ID2D1RadialGradientBrush_SetRadiusX(self,a)                  (self)->vtbl->SetRadiusX(self,a)
 #define dummy_ID2D1RadialGradientBrush_SetRadiusY(self,a)                  (self)->vtbl->SetRadiusY(self,a)
+
+
+
+/********************************
+ ***  Interface ID2D1Bitmap1  ***
+ ********************************/
+
+typedef struct dummy_ID2D1Bitmap1Vtbl_tag dummy_ID2D1Bitmap1Vtbl;
+struct dummy_ID2D1Bitmap1Vtbl_tag {
+    /* IUnknown methods */
+    STDMETHOD(QueryInterface)(dummy_ID2D1Bitmap1*, REFIID, void**);
+    STDMETHOD_(ULONG, AddRef)(dummy_ID2D1Bitmap1*);
+    STDMETHOD_(ULONG, Release)(dummy_ID2D1Bitmap1*);
+
+    /* ID2D1Resource methods */
+    STDMETHOD(dummy_GetFactory)(void);
+
+    /* ID2D1Image methods */
+    /* none */
+
+    /* ID2D1Bitmap methods */
+    STDMETHOD(dummy_GetSize)(void);
+    STDMETHOD(dummy_GetPixelSize)(void);
+    STDMETHOD(dummy_GetPixelFormat)(void);
+    STDMETHOD(dummy_GetDpi)(void);
+    STDMETHOD(dummy_CopyFromBitmap)(void);
+    STDMETHOD(CopyFromRenderTarget)(dummy_ID2D1Bitmap1*, const dummy_D2D1_POINT_2U*, dummy_ID2D1RenderTarget*, const dummy_D2D1_RECT_U*);
+    STDMETHOD(dummy_CopyFromMemory)(void);
+
+    /* ID2D1Bitmap1 methods */
+    STDMETHOD(dummy_GetColorContext)(void);
+    STDMETHOD(dummy_GetOptions)(void);
+    STDMETHOD(dummy_GetSurface)(void);
+    STDMETHOD(Map)(dummy_ID2D1Bitmap1*, UINT32, dummy_D2D1_MAPPED_RECT*);
+    STDMETHOD(Unmap)(dummy_ID2D1Bitmap1*);
+};
+
+struct dummy_ID2D1Bitmap1_tag {
+    dummy_ID2D1Bitmap1Vtbl* vtbl;
+};
+
+#define dummy_ID2D1Bitmap1_Release(self)                    (self)->vtbl->Release(self)
+#define dummy_ID2D1Bitmap1_CopyFromRenderTarget(self,a,b,c) (self)->vtbl->CopyFromRenderTarget(self,a,b,c)
+#define dummy_ID2D1Bitmap1_Map(self,a,b)                    (self)->vtbl->Map(self,a,b)
+#define dummy_ID2D1Bitmap1_Unmap(self)                      (self)->vtbl->Unmap(self)
+
+
+/**************************************
+ ***  Interface ID2D1DeviceContext  ***
+ **************************************/
+
+typedef struct dummy_ID2D1DeviceContextVtbl_tag dummy_ID2D1DeviceContextVtbl;
+struct dummy_ID2D1DeviceContextVtbl_tag {
+    /* IUnknown methods */
+    STDMETHOD(QueryInterface)(dummy_ID2D1DeviceContext*, REFIID, void**);
+    STDMETHOD_(ULONG, AddRef)(dummy_ID2D1DeviceContext*);
+    STDMETHOD_(ULONG, Release)(dummy_ID2D1DeviceContext*);
+
+    /* ID2D1Resource methods */
+    STDMETHOD(dummy_GetFactory)(void);
+
+    /* ID2D1RenderTarget methods (57 total including IUnknown+Resource above) */
+    STDMETHOD(dummy_RT_CreateBitmap)(void);
+    STDMETHOD(dummy_RT_CreateBitmapFromWicBitmap)(void);
+    STDMETHOD(dummy_RT_CreateSharedBitmap)(void);
+    STDMETHOD(dummy_RT_CreateBitmapBrush)(void);
+    STDMETHOD(dummy_RT_CreateSolidColorBrush)(void);
+    STDMETHOD(dummy_RT_CreateGradientStopCollection)(void);
+    STDMETHOD(dummy_RT_CreateLinearGradientBrush)(void);
+    STDMETHOD(dummy_RT_CreateRadialGradientBrush)(void);
+    STDMETHOD(dummy_RT_CreateCompatibleRenderTarget)(void);
+    STDMETHOD(dummy_RT_CreateLayer)(void);
+    STDMETHOD(dummy_RT_CreateMesh)(void);
+    STDMETHOD(dummy_RT_DrawLine)(void);
+    STDMETHOD(dummy_RT_DrawRectangle)(void);
+    STDMETHOD(dummy_RT_FillRectangle)(void);
+    STDMETHOD(dummy_RT_DrawRoundedRectangle)(void);
+    STDMETHOD(dummy_RT_FillRoundedRectangle)(void);
+    STDMETHOD(dummy_RT_DrawEllipse)(void);
+    STDMETHOD(dummy_RT_FillEllipse)(void);
+    STDMETHOD(dummy_RT_DrawGeometry)(void);
+    STDMETHOD(dummy_RT_FillGeometry)(void);
+    STDMETHOD(dummy_RT_FillMesh)(void);
+    STDMETHOD(dummy_RT_FillOpacityMask)(void);
+    STDMETHOD(dummy_RT_DrawBitmap)(void);
+    STDMETHOD(dummy_RT_DrawText)(void);
+    STDMETHOD(dummy_RT_DrawTextLayout)(void);
+    STDMETHOD(dummy_RT_DrawGlyphRun)(void);
+    STDMETHOD(dummy_RT_SetTransform)(void);
+    STDMETHOD(dummy_RT_GetTransform)(void);
+    STDMETHOD(dummy_RT_SetAntialiasMode)(void);
+    STDMETHOD(dummy_RT_GetAntialiasMode)(void);
+    STDMETHOD(dummy_RT_SetTextAntialiasMode)(void);
+    STDMETHOD(dummy_RT_GetTextAntialiasMode)(void);
+    STDMETHOD(dummy_RT_SetTextRenderingParams)(void);
+    STDMETHOD(dummy_RT_GetTextRenderingParams)(void);
+    STDMETHOD(dummy_RT_SetTags)(void);
+    STDMETHOD(dummy_RT_GetTags)(void);
+    STDMETHOD(dummy_RT_PushLayer)(void);
+    STDMETHOD(dummy_RT_PopLayer)(void);
+    STDMETHOD(dummy_RT_Flush)(void);
+    STDMETHOD(dummy_RT_SaveDrawingState)(void);
+    STDMETHOD(dummy_RT_RestoreDrawingState)(void);
+    STDMETHOD(dummy_RT_PushAxisAlignedClip)(void);
+    STDMETHOD(dummy_RT_PopAxisAlignedClip)(void);
+    STDMETHOD(dummy_RT_Clear)(void);
+    STDMETHOD(dummy_RT_BeginDraw)(void);
+    STDMETHOD(dummy_RT_EndDraw)(void);
+    STDMETHOD(dummy_RT_GetPixelFormat)(void);
+    STDMETHOD(dummy_RT_SetDpi)(void);
+    STDMETHOD(dummy_RT_GetDpi)(void);
+    STDMETHOD(dummy_RT_GetSize)(void);
+    STDMETHOD(dummy_RT_GetPixelSize)(void);
+    STDMETHOD(dummy_RT_GetMaximumBitmapSize)(void);
+    STDMETHOD(dummy_RT_IsSupported)(void);
+
+    /* ID2D1DeviceContext methods */
+    STDMETHOD(CreateBitmap)(dummy_ID2D1DeviceContext*, dummy_D2D1_SIZE_U, const void*, UINT32, const dummy_D2D1_BITMAP_PROPERTIES1*, dummy_ID2D1Bitmap1**);
+    STDMETHOD(dummy_DC_CreateBitmapFromWicBitmap)(void);
+    STDMETHOD(dummy_DC_CreateColorContext)(void);
+    STDMETHOD(dummy_DC_CreateColorContextFromFilename)(void);
+    STDMETHOD(dummy_DC_CreateColorContextFromWicColorContext)(void);
+    STDMETHOD(dummy_DC_CreateBitmapFromDxgiSurface)(void);
+    STDMETHOD(dummy_DC_CreateEffect)(void);
+    STDMETHOD(dummy_DC_CreateGradientStopCollection)(void);
+    STDMETHOD(dummy_DC_CreateImageBrush)(void);
+    STDMETHOD(dummy_DC_CreateBitmapBrush)(void);
+    STDMETHOD(dummy_DC_CreateCommandList)(void);
+    STDMETHOD(dummy_DC_IsDxgiFormatSupported)(void);
+    STDMETHOD(dummy_DC_IsBufferPrecisionSupported)(void);
+    STDMETHOD(dummy_DC_GetImageLocalBounds)(void);
+    STDMETHOD(dummy_DC_GetImageWorldBounds)(void);
+    STDMETHOD(dummy_DC_GetGlyphRunWorldBounds)(void);
+    STDMETHOD(dummy_DC_GetDevice)(void);
+    STDMETHOD(dummy_DC_SetTarget)(void);
+    STDMETHOD(dummy_DC_GetTarget)(void);
+    STDMETHOD(dummy_DC_SetRenderingControls)(void);
+    STDMETHOD(dummy_DC_GetRenderingControls)(void);
+    STDMETHOD(dummy_DC_SetPrimitiveBlend)(void);
+    STDMETHOD(dummy_DC_GetPrimitiveBlend)(void);
+    STDMETHOD(dummy_DC_SetUnitMode)(void);
+    STDMETHOD(dummy_DC_GetUnitMode)(void);
+    STDMETHOD(dummy_DC_DrawGlyphRun)(void);
+    STDMETHOD(dummy_DC_DrawImage)(void);
+    STDMETHOD(dummy_DC_DrawGdiMetafile)(void);
+    STDMETHOD(dummy_DC_DrawBitmap)(void);
+    STDMETHOD(dummy_DC_PushLayer)(void);
+    STDMETHOD(dummy_DC_InvalidateEffectInputRectangle)(void);
+    STDMETHOD(dummy_DC_GetEffectInvalidRectangleCount)(void);
+    STDMETHOD(dummy_DC_GetEffectInvalidRectangles)(void);
+    STDMETHOD(dummy_DC_GetEffectRequiredInputRectangles)(void);
+};
+
+struct dummy_ID2D1DeviceContext_tag {
+    dummy_ID2D1DeviceContextVtbl* vtbl;
+};
+
+#define dummy_ID2D1DeviceContext_QueryInterface(self,a,b)        (self)->vtbl->QueryInterface(self,a,b)
+#define dummy_ID2D1DeviceContext_Release(self)                   (self)->vtbl->Release(self)
+#define dummy_ID2D1DeviceContext_CreateBitmap(self,a,b,c,d,e)    (self)->vtbl->CreateBitmap(self,a,b,c,d,e)
 
 
 #endif  /* DUMMY_D2D1_H */
