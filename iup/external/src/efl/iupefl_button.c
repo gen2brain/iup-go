@@ -55,10 +55,9 @@ static void eflButtonPressedCallback(void* data, const Efl_Event* ev)
     char* name = iupAttribGet(ih, "IMPRESS");
     if (name)
     {
-      Eo* btn = iupeflGetWidget(ih);
-      Eo* image = iupeflImageGetImage(name, ih, 0);
-      if (image)
-        efl_content_set(btn, image);
+      Eo* btn_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BTN_IMAGE");
+      if (btn_img)
+        iupeflImageUpdateImage(btn_img, name, ih, 0);
     }
   }
 
@@ -88,10 +87,9 @@ static void eflButtonUnpressedCallback(void* data, const Efl_Event* ev)
       name = iupAttribGet(ih, "IMAGE");
       if (name)
       {
-        Eo* btn = iupeflGetWidget(ih);
-        Eo* image = iupeflImageGetImage(name, ih, 0);
-        if (image)
-          efl_content_set(btn, image);
+        Eo* btn_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BTN_IMAGE");
+        if (btn_img)
+          iupeflImageUpdateImage(btn_img, name, ih, 0);
       }
     }
   }
@@ -173,7 +171,10 @@ static int eflButtonSetImageAttrib(Ihandle* ih, const char* value)
     {
       image = iupeflImageGetImage(value, ih, 0);
       if (image)
+      {
         efl_content_set(btn, image);
+        iupAttribSet(ih, "_IUP_EFL_BTN_IMAGE", (char*)image);
+      }
     }
     else
     {
@@ -181,7 +182,10 @@ static int eflButtonSetImageAttrib(Ihandle* ih, const char* value)
       {
         image = iupeflImageGetImage(value, ih, 1);
         if (image)
+        {
           efl_content_set(btn, image);
+          iupAttribSet(ih, "_IUP_EFL_BTN_IMAGE", (char*)image);
+        }
       }
     }
   }
@@ -189,6 +193,7 @@ static int eflButtonSetImageAttrib(Ihandle* ih, const char* value)
   {
     ih->data->type &= ~IUP_BUTTON_IMAGE;
     efl_content_unset(btn);
+    iupAttribSet(ih, "_IUP_EFL_BTN_IMAGE", NULL);
   }
 
   return 1;
@@ -386,7 +391,10 @@ static int eflButtonMapMethod(Ihandle* ih)
   {
     Eo* image = iupeflImageGetImage(value, ih, 0);
     if (image)
+    {
       efl_content_set(btn, image);
+      iupAttribSet(ih, "_IUP_EFL_BTN_IMAGE", (char*)image);
+    }
   }
 
   efl_event_callback_add(btn, EFL_INPUT_EVENT_CLICKED, eflButtonClickedCallback, ih);

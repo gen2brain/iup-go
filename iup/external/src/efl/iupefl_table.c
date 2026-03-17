@@ -218,7 +218,7 @@ static void eflTableUpdateFocusRect(Ihandle* ih)
   /* Hide focus rect if FOCUSRECT=NO */
   if (!iupAttribGetBoolean(ih, "FOCUSRECT"))
   {
-    evas_object_hide(data->focus_rect);
+    efl_gfx_entity_visible_set(data->focus_rect, EINA_FALSE);
     return;
   }
 
@@ -227,7 +227,7 @@ static void eflTableUpdateFocusRect(Ihandle* ih)
 
   if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
   {
-    evas_object_hide(data->focus_rect);
+    efl_gfx_entity_visible_set(data->focus_rect, EINA_FALSE);
     return;
   }
 
@@ -238,25 +238,29 @@ static void eflTableUpdateFocusRect(Ihandle* ih)
     cell_widget = data->cell_labels ? data->cell_labels[idx] : NULL;
   if (!cell_widget)
   {
-    evas_object_hide(data->focus_rect);
+    efl_gfx_entity_visible_set(data->focus_rect, EINA_FALSE);
     return;
   }
 
   /* Get cell geometry and position focus rect as overlay */
-  evas_object_geometry_get(cell_widget, &x, &y, &w, &h);
-  evas_object_geometry_set(data->focus_rect, x, y, w, h);
+  {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(cell_widget);
+    x = geom.x; y = geom.y; w = geom.w; h = geom.h;
+  }
+  efl_gfx_entity_position_set(data->focus_rect, EINA_POSITION2D(x, y));
+  efl_gfx_entity_size_set(data->focus_rect, EINA_SIZE2D(w, h));
 
   data->focus_rect_lin = lin;
   data->focus_rect_col = col;
 
   /* Style: semi-transparent overlay, dimmed when table doesn't have focus */
   if (data->has_focus)
-    evas_object_color_set(data->focus_rect, 0, 0, 0, 80);
+    efl_gfx_color_set(data->focus_rect, 0, 0, 0, 80);
   else
-    evas_object_color_set(data->focus_rect, 0, 0, 0, 30);
+    efl_gfx_color_set(data->focus_rect, 0, 0, 0, 30);
 
-  evas_object_raise(data->focus_rect);
-  evas_object_show(data->focus_rect);
+  efl_gfx_stack_raise_to_top(data->focus_rect);
+  efl_gfx_entity_visible_set(data->focus_rect, EINA_TRUE);
 }
 
 static char* eflTableGetCellText(Ihandle* ih, int lin, int col)
@@ -298,7 +302,7 @@ static void eflTableUpdateCellImage(Ihandle* ih, Evas_Object* image_widget, cons
 
   if (!image_name || !image_name[0])
   {
-    evas_object_hide(image_widget);
+    efl_gfx_entity_visible_set(image_widget, EINA_FALSE);
     return;
   }
 
@@ -318,18 +322,16 @@ static void eflTableUpdateCellImage(Ihandle* ih, Evas_Object* image_widget, cons
         int scaled_w = (img_w * available_height) / img_h;
         int scaled_h = available_height;
 
-        elm_image_no_scale_set(image_widget, EINA_FALSE);
-        elm_image_resizable_set(image_widget, EINA_TRUE, EINA_TRUE);
-        elm_image_aspect_fixed_set(image_widget, EINA_TRUE);
-        evas_object_size_hint_min_set(image_widget, scaled_w, scaled_h);
-        evas_object_size_hint_max_set(image_widget, scaled_w, scaled_h);
+        evas_object_image_filled_set(image_widget, EINA_TRUE);
+        efl_gfx_hint_size_min_set(image_widget, EINA_SIZE2D(scaled_w, scaled_h));
+        efl_gfx_hint_size_max_set(image_widget, EINA_SIZE2D(scaled_w, scaled_h));
       }
     }
 
-    evas_object_show(image_widget);
+    efl_gfx_entity_visible_set(image_widget, EINA_TRUE);
   }
   else
-    evas_object_hide(image_widget);
+    efl_gfx_entity_visible_set(image_widget, EINA_FALSE);
 }
 
 static int eflTableCalculateColumnWidth(Ihandle* ih, int col)
@@ -586,9 +588,9 @@ static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
     if (cell_bg)
     {
       if (lin == data->selected_lin)
-        evas_object_color_set(cell_bg, data->sel_r, data->sel_g, data->sel_b, 200);
+        efl_gfx_color_set(cell_bg, data->sel_r, data->sel_g, data->sel_b, 200);
       else
-        evas_object_color_set(cell_bg, bg_r, bg_g, bg_b, 255);
+        efl_gfx_color_set(cell_bg, bg_r, bg_g, bg_b, 255);
     }
   }
 
@@ -756,7 +758,10 @@ static int eflTableFindTargetColumn(Ihandle* ih, int x)
     {
       int lx, ly, lw, lh;
       int mid_x;
-      evas_object_geometry_get(label, &lx, &ly, &lw, &lh);
+      {
+        Eina_Rect geom = efl_gfx_entity_geometry_get(label);
+        lx = geom.x; ly = geom.y; lw = geom.w; lh = geom.h;
+      }
       mid_x = lx + lw / 2;
       if (x < mid_x)
         return col + 1;
@@ -850,7 +855,7 @@ static void eflTableHideDragIndicator(Ihandle* ih)
 {
   (void)ih;
   if (efl_table_drag_indicator)
-    evas_object_hide(efl_table_drag_indicator);
+    efl_gfx_entity_visible_set(efl_table_drag_indicator, EINA_FALSE);
 }
 
 static void eflTableUpdateDragIndicator(Ihandle* ih, int target)
@@ -874,19 +879,22 @@ static void eflTableUpdateDragIndicator(Ihandle* ih, int target)
   if (!label)
     return;
 
-  evas_object_geometry_get(label, &x, &y, &w, &h);
+  {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(label);
+    x = geom.x; y = geom.y; w = geom.w; h = geom.h;
+  }
 
   if (!efl_table_drag_indicator)
   {
-    Evas* evas = evas_object_evas_get(data->table);
-    efl_table_drag_indicator = evas_object_rectangle_add(evas);
-    evas_object_color_set(efl_table_drag_indicator, 0, 120, 215, 255);
+    efl_table_drag_indicator = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
+    efl_gfx_color_set(efl_table_drag_indicator, 0, 120, 215, 255);
   }
 
   indicator_x = (source < target) ? x + w - 1 : x;
-  evas_object_geometry_set(efl_table_drag_indicator, indicator_x, y, 2, h);
-  evas_object_show(efl_table_drag_indicator);
-  evas_object_raise(efl_table_drag_indicator);
+  efl_gfx_entity_position_set(efl_table_drag_indicator, EINA_POSITION2D(indicator_x, y));
+  efl_gfx_entity_size_set(efl_table_drag_indicator, EINA_SIZE2D(2, h));
+  efl_gfx_entity_visible_set(efl_table_drag_indicator, EINA_TRUE);
+  efl_gfx_stack_raise_to_top(efl_table_drag_indicator);
 }
 
 static void eflTableDragPointerMove(void* cb_data, const Efl_Event* ev)
@@ -984,11 +992,15 @@ static void eflTableResizeCallback(void* data, const Efl_Event* ev)
   if (table_data && table_data->scroller && table_data->table)
   {
     Evas_Coord vp_w, vp_h, table_w, table_h;
-    evas_object_geometry_get(table_data->scroller, NULL, NULL, &vp_w, &vp_h);
-    evas_object_geometry_get(table_data->table, NULL, NULL, &table_w, &table_h);
+    {
+      Eina_Rect sg = efl_gfx_entity_geometry_get(table_data->scroller);
+      Eina_Rect tg = efl_gfx_entity_geometry_get(table_data->table);
+      vp_w = sg.w; vp_h = sg.h;
+      table_w = tg.w; table_h = tg.h;
+    }
 
     if (vp_w > table_w && vp_w > 0)
-      evas_object_resize(table_data->table, vp_w, table_h);
+      efl_gfx_entity_size_set(table_data->table, EINA_SIZE2D(vp_w, table_h));
 
   }
 
@@ -1359,13 +1371,13 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
           int actual_row = table_data->is_virtual ? (table_data->first_visible_row - 1 + row) : row;
           if (actual_row == lin - 1)
           {
-            evas_object_color_set(cell_bg, table_data->sel_r, table_data->sel_g, table_data->sel_b, 200);
+            efl_gfx_color_set(cell_bg, table_data->sel_r, table_data->sel_g, table_data->sel_b, 200);
           }
           else
           {
             unsigned char r, g, b;
             eflTableGetCellBgColor(ih, actual_row + 1, c + 1, &r, &g, &b);
-            evas_object_color_set(cell_bg, r, g, b, 255);
+            efl_gfx_color_set(cell_bg, r, g, b, 255);
           }
         }
       }
@@ -1512,9 +1524,9 @@ static Evas_Object* eflTableCreateCellWidget(Ihandle* ih, Evas_Object* parent, c
   }
   elm_object_text_set(entry, markup);
 
-  evas_object_size_hint_align_set(entry, EVAS_HINT_FILL, EVAS_HINT_FILL);
-  evas_object_size_hint_weight_set(entry, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-  evas_object_show(entry);
+  efl_gfx_hint_align_set(entry, EVAS_HINT_FILL, EVAS_HINT_FILL);
+  efl_gfx_hint_weight_set(entry, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+  efl_gfx_entity_visible_set(entry, EINA_TRUE);
 
   return entry;
 }
@@ -1539,7 +1551,7 @@ static void eflTableClearCells(Ihandle* ih)
     {
       if (data->header_labels[i])
       {
-        evas_object_del(data->header_labels[i]);
+        efl_del(data->header_labels[i]);
         data->header_labels[i] = NULL;
       }
     }
@@ -1554,7 +1566,7 @@ static void eflTableClearCells(Ihandle* ih)
     {
       if (data->cell_containers[i])
       {
-        evas_object_del(data->cell_containers[i]);
+        efl_del(data->cell_containers[i]);
         data->cell_containers[i] = NULL;
       }
     }
@@ -1573,7 +1585,7 @@ static void eflTableClearCells(Ihandle* ih)
     {
       if (data->cell_labels[i])
       {
-        evas_object_del(data->cell_labels[i]);
+        efl_del(data->cell_labels[i]);
         data->cell_labels[i] = NULL;
       }
     }
@@ -1588,7 +1600,7 @@ static void eflTableClearCells(Ihandle* ih)
     {
       if (data->cell_bgs[i])
       {
-        evas_object_del(data->cell_bgs[i]);
+        efl_del(data->cell_bgs[i]);
         data->cell_bgs[i] = NULL;
       }
     }
@@ -1673,19 +1685,19 @@ static void eflTableRebuildCells(Ihandle* ih)
     col_width = data->col_widths[col];
 
     /* Create header background */
-    bg = evas_object_rectangle_add(evas_object_evas_get(data->table));
+    bg = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
     eflTableGetCellBgColor(ih, 0, col + 1, &bg_r, &bg_g, &bg_b);
-    evas_object_color_set(bg, bg_r, bg_g, bg_b, 255);
-    evas_object_size_hint_min_set(bg, col_width, data->header_height);
-    evas_object_size_hint_weight_set(bg, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
-    evas_object_size_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
-    evas_object_show(bg);
+    efl_gfx_color_set(bg, bg_r, bg_g, bg_b, 255);
+    efl_gfx_hint_size_min_set(bg, EINA_SIZE2D(col_width, data->header_height));
+    efl_gfx_hint_weight_set(bg, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
+    efl_gfx_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
+    efl_gfx_entity_visible_set(bg, EINA_TRUE);
     elm_table_pack(data->table, bg, col, 0, 1, 1);
 
     /* Create header label on top */
     label = eflTableCreateCellWidget(ih, data->table, text, 1, 0, col + 1);
-    evas_object_size_hint_min_set(label, col_width, data->header_height);
-    evas_object_size_hint_weight_set(label, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
+    efl_gfx_hint_size_min_set(label, EINA_SIZE2D(col_width, data->header_height));
+    efl_gfx_hint_weight_set(label, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
     elm_table_pack(data->table, label, col, 0, 1, 1);
     data->header_labels[col] = label;
     efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableHeaderClickCallback, ih);
@@ -1724,14 +1736,14 @@ static void eflTableRebuildCells(Ihandle* ih)
         col_width = data->col_widths[col - 1];
 
         /* Create cell background - query with proper (lin, col) for full hierarchy support */
-        bg = evas_object_rectangle_add(evas_object_evas_get(data->table));
+        bg = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
         eflTableGetCellBgColor(ih, lin, col, &bg_r, &bg_g, &bg_b);
-        evas_object_color_set(bg, bg_r, bg_g, bg_b, 255);
+        efl_gfx_color_set(bg, bg_r, bg_g, bg_b, 255);
 
-        evas_object_size_hint_min_set(bg, col_width, data->row_height);
-        evas_object_size_hint_weight_set(bg, weight_x, 0.0);
-        evas_object_size_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
-        evas_object_show(bg);
+        efl_gfx_hint_size_min_set(bg, EINA_SIZE2D(col_width, data->row_height));
+        efl_gfx_hint_weight_set(bg, weight_x, 0.0);
+        efl_gfx_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
+        efl_gfx_entity_visible_set(bg, EINA_TRUE);
 
         /* Pack background first (lower z-order) */
         elm_table_pack(data->table, bg, col - 1, lin, 1, 1);
@@ -1750,23 +1762,21 @@ static void eflTableRebuildCells(Ihandle* ih)
           box = elm_box_add(data->table);
           elm_box_horizontal_set(box, EINA_TRUE);
           elm_box_padding_set(box, 4, 0);
-          evas_object_size_hint_align_set(box, EVAS_HINT_FILL, EVAS_HINT_FILL);
-          evas_object_size_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+          efl_gfx_hint_align_set(box, EVAS_HINT_FILL, EVAS_HINT_FILL);
+          efl_gfx_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 
-          image = elm_image_add(box);
-          elm_image_no_scale_set(image, EINA_TRUE);
-          elm_image_resizable_set(image, EINA_FALSE, EINA_FALSE);
-          evas_object_size_hint_align_set(image, 0.0, 0.5);
-          evas_object_hide(image);
+          image = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, box);
+          efl_gfx_hint_align_set(image, 0.0, 0.5);
+          efl_gfx_entity_visible_set(image, EINA_FALSE);
           elm_box_pack_end(box, image);
 
-          evas_object_size_hint_align_set(label, EVAS_HINT_FILL, EVAS_HINT_FILL);
-          evas_object_size_hint_weight_set(label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+          efl_gfx_hint_align_set(label, EVAS_HINT_FILL, EVAS_HINT_FILL);
+          efl_gfx_hint_weight_set(label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
           elm_box_pack_end(box, label);
 
-          evas_object_size_hint_min_set(box, col_width, data->row_height);
-          evas_object_size_hint_weight_set(box, weight_x, 0.0);
-          evas_object_show(box);
+          efl_gfx_hint_size_min_set(box, EINA_SIZE2D(col_width, data->row_height));
+          efl_gfx_hint_weight_set(box, weight_x, 0.0);
+          efl_gfx_entity_visible_set(box, EINA_TRUE);
 
           efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
 
@@ -1780,8 +1790,8 @@ static void eflTableRebuildCells(Ihandle* ih)
         }
         else
         {
-          evas_object_size_hint_min_set(label, col_width, data->row_height);
-          evas_object_size_hint_weight_set(label, weight_x, 0.0);
+          efl_gfx_hint_size_min_set(label, EINA_SIZE2D(col_width, data->row_height));
+          efl_gfx_hint_weight_set(label, weight_x, 0.0);
 
           efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
 
@@ -1803,25 +1813,25 @@ static void eflTableRebuildCells(Ihandle* ih)
       unsigned char bg_r, bg_g, bg_b;
 
       /* Add dummy to header row */
-      dummy = evas_object_rectangle_add(evas_object_evas_get(data->table));
+      dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
       eflTableGetCellBgColor(ih, 0, num_col + 1, &bg_r, &bg_g, &bg_b);
-      evas_object_color_set(dummy, bg_r, bg_g, bg_b, 255);
-      evas_object_size_hint_min_set(dummy, 1, data->header_height);
-      evas_object_size_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
-      evas_object_size_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
-      evas_object_show(dummy);
+      efl_gfx_color_set(dummy, bg_r, bg_g, bg_b, 255);
+      efl_gfx_hint_size_min_set(dummy, EINA_SIZE2D(1, data->header_height));
+      efl_gfx_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
+      efl_gfx_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
+      efl_gfx_entity_visible_set(dummy, EINA_TRUE);
       elm_table_pack(data->table, dummy, num_col, 0, 1, 1);
 
       /* Add dummy to each data row */
       for (lin = 1; lin <= num_lin; lin++)
       {
-        dummy = evas_object_rectangle_add(evas_object_evas_get(data->table));
+        dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
         eflTableGetCellBgColor(ih, lin, num_col + 1, &bg_r, &bg_g, &bg_b);
-        evas_object_color_set(dummy, bg_r, bg_g, bg_b, 255);
-        evas_object_size_hint_min_set(dummy, 1, data->row_height);
-        evas_object_size_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
-        evas_object_size_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
-        evas_object_show(dummy);
+        efl_gfx_color_set(dummy, bg_r, bg_g, bg_b, 255);
+        efl_gfx_hint_size_min_set(dummy, EINA_SIZE2D(1, data->row_height));
+        efl_gfx_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
+        efl_gfx_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
+        efl_gfx_entity_visible_set(dummy, EINA_TRUE);
         elm_table_pack(data->table, dummy, num_col, lin, 1, 1);
       }
     }
@@ -1899,19 +1909,19 @@ static void eflTableRebuildHeaders(Ihandle* ih)
     col_width = data->col_widths[col];
 
     /* Create header background */
-    bg = evas_object_rectangle_add(evas_object_evas_get(data->table));
+    bg = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
     eflTableGetCellBgColor(ih, 0, col + 1, &bg_r, &bg_g, &bg_b);
-    evas_object_color_set(bg, bg_r, bg_g, bg_b, 255);
-    evas_object_size_hint_min_set(bg, col_width, data->header_height);
-    evas_object_size_hint_weight_set(bg, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
-    evas_object_size_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
-    evas_object_show(bg);
+    efl_gfx_color_set(bg, bg_r, bg_g, bg_b, 255);
+    efl_gfx_hint_size_min_set(bg, EINA_SIZE2D(col_width, data->header_height));
+    efl_gfx_hint_weight_set(bg, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
+    efl_gfx_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
+    efl_gfx_entity_visible_set(bg, EINA_TRUE);
     elm_table_pack(data->table, bg, col, 0, 1, 1);
 
     /* Create header label on top */
     label = eflTableCreateCellWidget(ih, data->table, text, 1, 0, col + 1);
-    evas_object_size_hint_min_set(label, col_width, data->header_height);
-    evas_object_size_hint_weight_set(label, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
+    efl_gfx_hint_size_min_set(label, EINA_SIZE2D(col_width, data->header_height));
+    efl_gfx_hint_weight_set(label, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
     elm_table_pack(data->table, label, col, 0, 1, 1);
     data->header_labels[col] = label;
     efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableHeaderClickCallback, ih);
@@ -2047,18 +2057,18 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
 
     col_width = data->col_widths[col];
 
-    bg = evas_object_rectangle_add(evas_object_evas_get(table));
+    bg = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
     eflTableGetCellBgColor(ih, 0, col + 1, &bg_r, &bg_g, &bg_b);
-    evas_object_color_set(bg, bg_r, bg_g, bg_b, 255);
-    evas_object_size_hint_min_set(bg, col_width, data->header_height);
-    evas_object_size_hint_weight_set(bg, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
-    evas_object_size_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
-    evas_object_show(bg);
+    efl_gfx_color_set(bg, bg_r, bg_g, bg_b, 255);
+    efl_gfx_hint_size_min_set(bg, EINA_SIZE2D(col_width, data->header_height));
+    efl_gfx_hint_weight_set(bg, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
+    efl_gfx_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
+    efl_gfx_entity_visible_set(bg, EINA_TRUE);
     elm_table_pack(table, bg, col, 0, 1, 1);
 
     label = eflTableCreateCellWidget(ih, table, text, 1, 0, col + 1);
-    evas_object_size_hint_min_set(label, col_width, data->header_height);
-    evas_object_size_hint_weight_set(label, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
+    efl_gfx_hint_size_min_set(label, EINA_SIZE2D(col_width, data->header_height));
+    efl_gfx_hint_weight_set(label, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
     elm_table_pack(table, label, col, 0, 1, 1);
     data->header_labels[col] = label;
     efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableHeaderClickCallback, ih);
@@ -2083,10 +2093,10 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
 
   /* Create top spacer at row 1 (between headers and cells) - initially 0 height */
   {
-    Evas_Object* spacer = evas_object_rectangle_add(evas_object_evas_get(table));
-    evas_object_color_set(spacer, 0, 0, 0, 0);
-    evas_object_size_hint_min_set(spacer, 1, 0);
-    evas_object_show(spacer);
+    Evas_Object* spacer = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
+    efl_gfx_color_set(spacer, 0, 0, 0, 0);
+    efl_gfx_hint_size_min_set(spacer, EINA_SIZE2D(1, 0));
+    efl_gfx_entity_visible_set(spacer, EINA_TRUE);
     elm_table_pack(table, spacer, 0, 1, num_col, 1);
     data->top_spacer = spacer;
   }
@@ -2107,13 +2117,13 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
 
         col_width = data->col_widths[col - 1];
 
-        bg = evas_object_rectangle_add(evas_object_evas_get(table));
+        bg = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
         eflTableGetCellBgColor(ih, lin, col, &bg_r, &bg_g, &bg_b);
-        evas_object_color_set(bg, bg_r, bg_g, bg_b, 255);
-        evas_object_size_hint_min_set(bg, col_width, row_height);
-        evas_object_size_hint_weight_set(bg, weight_x, 0.0);
-        evas_object_size_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
-        evas_object_show(bg);
+        efl_gfx_color_set(bg, bg_r, bg_g, bg_b, 255);
+        efl_gfx_hint_size_min_set(bg, EINA_SIZE2D(col_width, row_height));
+        efl_gfx_hint_weight_set(bg, weight_x, 0.0);
+        efl_gfx_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
+        efl_gfx_entity_visible_set(bg, EINA_TRUE);
         elm_table_pack(table, bg, col - 1, table_row, 1, 1);
         data->cell_bgs[idx] = bg;
 
@@ -2133,23 +2143,21 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
           box = elm_box_add(table);
           elm_box_horizontal_set(box, EINA_TRUE);
           elm_box_padding_set(box, 4, 0);
-          evas_object_size_hint_align_set(box, EVAS_HINT_FILL, EVAS_HINT_FILL);
-          evas_object_size_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+          efl_gfx_hint_align_set(box, EVAS_HINT_FILL, EVAS_HINT_FILL);
+          efl_gfx_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 
-          image = elm_image_add(box);
-          elm_image_no_scale_set(image, EINA_TRUE);
-          elm_image_resizable_set(image, EINA_FALSE, EINA_FALSE);
-          evas_object_size_hint_align_set(image, 0.0, 0.5);
-          evas_object_hide(image);
+          image = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, box);
+          efl_gfx_hint_align_set(image, 0.0, 0.5);
+          efl_gfx_entity_visible_set(image, EINA_FALSE);
           elm_box_pack_end(box, image);
 
-          evas_object_size_hint_align_set(label, EVAS_HINT_FILL, EVAS_HINT_FILL);
-          evas_object_size_hint_weight_set(label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+          efl_gfx_hint_align_set(label, EVAS_HINT_FILL, EVAS_HINT_FILL);
+          efl_gfx_hint_weight_set(label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
           elm_box_pack_end(box, label);
 
-          evas_object_size_hint_min_set(box, col_width, row_height);
-          evas_object_size_hint_weight_set(box, weight_x, 0.0);
-          evas_object_show(box);
+          efl_gfx_hint_size_min_set(box, EINA_SIZE2D(col_width, row_height));
+          efl_gfx_hint_weight_set(box, weight_x, 0.0);
+          efl_gfx_entity_visible_set(box, EINA_TRUE);
 
           efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
 
@@ -2163,8 +2171,8 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
         }
         else
         {
-          evas_object_size_hint_min_set(label, col_width, row_height);
-          evas_object_size_hint_weight_set(label, weight_x, 0.0);
+          efl_gfx_hint_size_min_set(label, EINA_SIZE2D(col_width, row_height));
+          efl_gfx_hint_weight_set(label, weight_x, 0.0);
           efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableCellClickCallback, ih);
           elm_table_pack(table, label, col - 1, table_row, 1, 1);
           data->cell_labels[idx] = label;
@@ -2177,10 +2185,10 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
   if (num_lin > visible_rows)
   {
     int spacer_height = (num_lin - visible_rows) * row_height;
-    Evas_Object* spacer = evas_object_rectangle_add(evas_object_evas_get(table));
-    evas_object_color_set(spacer, 0, 0, 0, 0);
-    evas_object_size_hint_min_set(spacer, 1, spacer_height);
-    evas_object_show(spacer);
+    Evas_Object* spacer = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
+    efl_gfx_color_set(spacer, 0, 0, 0, 0);
+    efl_gfx_hint_size_min_set(spacer, EINA_SIZE2D(1, spacer_height));
+    efl_gfx_entity_visible_set(spacer, EINA_TRUE);
     elm_table_pack(table, spacer, 0, visible_rows + 2, num_col, 1);
     data->bottom_spacer = spacer;
   }
@@ -2196,47 +2204,47 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
       unsigned char bg_r, bg_g, bg_b;
 
       /* Add dummy to header row */
-      dummy = evas_object_rectangle_add(evas_object_evas_get(table));
+      dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
       eflTableGetCellBgColor(ih, 0, num_col + 1, &bg_r, &bg_g, &bg_b);
-      evas_object_color_set(dummy, bg_r, bg_g, bg_b, 255);
-      evas_object_size_hint_min_set(dummy, 1, data->header_height);
-      evas_object_size_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
-      evas_object_size_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
-      evas_object_show(dummy);
+      efl_gfx_color_set(dummy, bg_r, bg_g, bg_b, 255);
+      efl_gfx_hint_size_min_set(dummy, EINA_SIZE2D(1, data->header_height));
+      efl_gfx_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
+      efl_gfx_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
+      efl_gfx_entity_visible_set(dummy, EINA_TRUE);
       elm_table_pack(table, dummy, num_col, 0, 1, 1);
 
       /* Add dummy to top spacer row */
-      dummy = evas_object_rectangle_add(evas_object_evas_get(table));
-      evas_object_color_set(dummy, bg_r, bg_g, bg_b, 255);
-      evas_object_size_hint_min_set(dummy, 1, 1);
-      evas_object_size_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
-      evas_object_size_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
-      evas_object_show(dummy);
+      dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
+      efl_gfx_color_set(dummy, bg_r, bg_g, bg_b, 255);
+      efl_gfx_hint_size_min_set(dummy, EINA_SIZE2D(1, 1));
+      efl_gfx_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
+      efl_gfx_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
+      efl_gfx_entity_visible_set(dummy, EINA_TRUE);
       elm_table_pack(table, dummy, num_col, 1, 1, 1);
 
       /* Add dummy to each visible data row */
       for (lin = 1; lin <= visible_rows; lin++)
       {
         int table_row = lin + 1;
-        dummy = evas_object_rectangle_add(evas_object_evas_get(table));
+        dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
         eflTableGetCellBgColor(ih, lin, num_col + 1, &bg_r, &bg_g, &bg_b);
-        evas_object_color_set(dummy, bg_r, bg_g, bg_b, 255);
-        evas_object_size_hint_min_set(dummy, 1, row_height);
-        evas_object_size_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
-        evas_object_size_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
-        evas_object_show(dummy);
+        efl_gfx_color_set(dummy, bg_r, bg_g, bg_b, 255);
+        efl_gfx_hint_size_min_set(dummy, EINA_SIZE2D(1, row_height));
+        efl_gfx_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
+        efl_gfx_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
+        efl_gfx_entity_visible_set(dummy, EINA_TRUE);
         elm_table_pack(table, dummy, num_col, table_row, 1, 1);
       }
 
       /* Add dummy to bottom spacer row if exists */
       if (num_lin > visible_rows)
       {
-        dummy = evas_object_rectangle_add(evas_object_evas_get(table));
-        evas_object_color_set(dummy, bg_r, bg_g, bg_b, 255);
-        evas_object_size_hint_min_set(dummy, 1, 1);
-        evas_object_size_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
-        evas_object_size_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
-        evas_object_show(dummy);
+        dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
+        efl_gfx_color_set(dummy, bg_r, bg_g, bg_b, 255);
+        efl_gfx_hint_size_min_set(dummy, EINA_SIZE2D(1, 1));
+        efl_gfx_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
+        efl_gfx_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
+        efl_gfx_entity_visible_set(dummy, EINA_TRUE);
         elm_table_pack(table, dummy, num_col, visible_rows + 2, 1, 1);
       }
     }
@@ -2298,14 +2306,14 @@ static void eflTableUpdateVisibleRows(Ihandle* ih)
   if (data->top_spacer)
   {
     int top_height = (first_data_row - 1) * row_height;
-    evas_object_size_hint_min_set(data->top_spacer, 1, top_height);
+    efl_gfx_hint_size_min_set(data->top_spacer, EINA_SIZE2D(1, top_height));
   }
   if (data->bottom_spacer)
   {
     int bottom_height = (num_lin - first_data_row - data->alloc_num_lin + 1) * row_height;
     if (bottom_height < 0)
       bottom_height = 0;
-    evas_object_size_hint_min_set(data->bottom_spacer, 1, bottom_height);
+    efl_gfx_hint_size_min_set(data->bottom_spacer, EINA_SIZE2D(1, bottom_height));
   }
 
   /* Update each visible cell content based on which data row it represents */
@@ -2349,9 +2357,9 @@ static void eflTableUpdateVisibleRows(Ihandle* ih)
       {
         eflTableGetCellBgColor(ih, data_row, col, &bg_r, &bg_g, &bg_b);
         if (data_row == data->selected_lin)
-          evas_object_color_set(bg, data->sel_r, data->sel_g, data->sel_b, 200);
+          efl_gfx_color_set(bg, data->sel_r, data->sel_g, data->sel_b, 200);
         else
-          evas_object_color_set(bg, bg_r, bg_g, bg_b, 255);
+          efl_gfx_color_set(bg, bg_r, bg_g, bg_b, 255);
       }
 
       if (ih->data->show_image && data->cell_images)
@@ -2561,7 +2569,7 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   {
     /* Update header label width */
     if (data->header_labels && data->header_labels[col - 1])
-      evas_object_size_hint_min_set(data->header_labels[col - 1], width, data->header_height);
+      efl_gfx_hint_size_min_set(data->header_labels[col - 1], EINA_SIZE2D(width, data->header_height));
 
     /* Update all cells in this column */
     {
@@ -2572,7 +2580,7 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
         Evas_Object* widget = (data->cell_containers && data->cell_containers[idx]) ?
                                data->cell_containers[idx] : (data->cell_labels ? data->cell_labels[idx] : NULL);
         if (widget)
-          evas_object_size_hint_min_set(widget, width, data->row_height);
+          efl_gfx_hint_size_min_set(widget, EINA_SIZE2D(width, data->row_height));
       }
     }
   }
@@ -2619,12 +2627,12 @@ void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
         {
           int actual_row = data->is_virtual ? (data->first_visible_row - 1 + row) : row;
           if (actual_row == lin - 1)
-            evas_object_color_set(cell_bg, data->sel_r, data->sel_g, data->sel_b, 200);
+            efl_gfx_color_set(cell_bg, data->sel_r, data->sel_g, data->sel_b, 200);
           else
           {
             unsigned char r, g, b;
             eflTableGetCellBgColor(ih, actual_row + 1, c + 1, &r, &g, &b);
-            evas_object_color_set(cell_bg, r, g, b, 255);
+            efl_gfx_color_set(cell_bg, r, g, b, 255);
           }
         }
       }
@@ -3026,8 +3034,8 @@ static int eflTableMapMethod(Ihandle* ih)
     }
 
     elm_scroller_policy_set(scroller, ELM_SCROLLER_POLICY_AUTO, ELM_SCROLLER_POLICY_AUTO);
-    evas_object_size_hint_weight_set(scroller, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-    evas_object_size_hint_align_set(scroller, EVAS_HINT_FILL, EVAS_HINT_FILL);
+    efl_gfx_hint_weight_set(scroller, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+    efl_gfx_hint_align_set(scroller, EVAS_HINT_FILL, EVAS_HINT_FILL);
 
     elm_object_focus_allow_set(scroller, EINA_TRUE);
     efl_event_callback_add(scroller, EFL_EVENT_KEY_DOWN, eflTableKeyDownCallback, ih);
@@ -3041,7 +3049,7 @@ static int eflTableMapMethod(Ihandle* ih)
     table = elm_table_add(scroller);
     if (!table)
     {
-      evas_object_del(scroller);
+      efl_del(scroller);
       free(data);
       ih->data->native_data = NULL;
       return IUP_ERROR;
@@ -3054,15 +3062,15 @@ static int eflTableMapMethod(Ihandle* ih)
     else
       elm_table_padding_set(table, 0, 0);
 
-    evas_object_size_hint_weight_set(table, EVAS_HINT_EXPAND, 0.0);
-    evas_object_size_hint_align_set(table, EVAS_HINT_FILL, 0.0);
-    evas_object_show(table);
+    efl_gfx_hint_weight_set(table, EVAS_HINT_EXPAND, 0.0);
+    efl_gfx_hint_align_set(table, EVAS_HINT_FILL, 0.0);
+    efl_gfx_entity_visible_set(table, EINA_TRUE);
 
     data->table = table;
 
     elm_object_content_set(scroller, table);
 
-    data->focus_rect = evas_object_rectangle_add(evas_object_evas_get(table));
+    data->focus_rect = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
     evas_object_pass_events_set(data->focus_rect, EINA_TRUE);
     data->focus_rect_lin = 0;
     data->focus_rect_col = 0;
@@ -3070,7 +3078,7 @@ static int eflTableMapMethod(Ihandle* ih)
     ih->handle = (void*)scroller;
 
     iupeflAddToParent(ih);
-    evas_object_show(scroller);
+    efl_gfx_entity_visible_set(scroller, EINA_TRUE);
 
     /* Initialize visible row tracking */
     data->first_visible_row = 1;
@@ -3093,8 +3101,8 @@ static int eflTableMapMethod(Ihandle* ih)
     }
 
     elm_scroller_policy_set(scroller, ELM_SCROLLER_POLICY_AUTO, ELM_SCROLLER_POLICY_AUTO);
-    evas_object_size_hint_weight_set(scroller, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-    evas_object_size_hint_align_set(scroller, EVAS_HINT_FILL, EVAS_HINT_FILL);
+    efl_gfx_hint_weight_set(scroller, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+    efl_gfx_hint_align_set(scroller, EVAS_HINT_FILL, EVAS_HINT_FILL);
 
     elm_object_focus_allow_set(scroller, EINA_TRUE);
     efl_event_callback_add(scroller, EFL_EVENT_KEY_DOWN, eflTableKeyDownCallback, ih);
@@ -3107,7 +3115,7 @@ static int eflTableMapMethod(Ihandle* ih)
     table = elm_table_add(scroller);
     if (!table)
     {
-      evas_object_del(scroller);
+      efl_del(scroller);
       free(data);
       ih->data->native_data = NULL;
       return IUP_ERROR;
@@ -3120,15 +3128,15 @@ static int eflTableMapMethod(Ihandle* ih)
     else
       elm_table_padding_set(table, 0, 0);
 
-    evas_object_size_hint_weight_set(table, EVAS_HINT_EXPAND, 0.0);
-    evas_object_size_hint_align_set(table, EVAS_HINT_FILL, 0.0);
-    evas_object_show(table);
+    efl_gfx_hint_weight_set(table, EVAS_HINT_EXPAND, 0.0);
+    efl_gfx_hint_align_set(table, EVAS_HINT_FILL, 0.0);
+    efl_gfx_entity_visible_set(table, EINA_TRUE);
 
     data->table = table;
 
     elm_object_content_set(scroller, table);
 
-    data->focus_rect = evas_object_rectangle_add(evas_object_evas_get(table));
+    data->focus_rect = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
     evas_object_pass_events_set(data->focus_rect, EINA_TRUE);
     data->focus_rect_lin = 0;
     data->focus_rect_col = 0;
@@ -3136,7 +3144,7 @@ static int eflTableMapMethod(Ihandle* ih)
     ih->handle = (void*)scroller;
 
     iupeflAddToParent(ih);
-    evas_object_show(scroller);
+    efl_gfx_entity_visible_set(scroller, EINA_TRUE);
 
     /* Normal mode: create all cells */
     eflTableRebuildCells(ih);
@@ -3202,7 +3210,7 @@ static void eflTableUnMapMethod(Ihandle* ih)
     /* Delete focus rectangle */
     if (data->focus_rect)
     {
-      evas_object_del(data->focus_rect);
+      efl_del(data->focus_rect);
       data->focus_rect = NULL;
     }
 
@@ -3221,7 +3229,7 @@ static void eflTableUnMapMethod(Ihandle* ih)
       evas_object_smart_callback_del(data->scroller, "unfocused", eflTableFocusOutCallback);
       if (data->is_virtual)
         evas_object_smart_callback_del(data->scroller, "scroll", eflTableVirtualScrollCallback);
-      evas_object_del(data->scroller);
+      efl_del(data->scroller);
       data->scroller = NULL;
       data->table = NULL;
       data->top_spacer = NULL;
@@ -3250,7 +3258,7 @@ static void eflTableLayoutUpdateMethod(Ihandle* ih)
 
   /* Also set max size hint on scroller to prevent expansion */
   if (data && data->scroller && data->target_height > 0)
-    evas_object_size_hint_max_set(data->scroller, -1, data->target_height);
+    efl_gfx_hint_size_max_set(data->scroller, EINA_SIZE2D(-1, data->target_height));
 }
 
 static int eflTableSetSortableAttrib(Ihandle* ih, const char* value)

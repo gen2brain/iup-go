@@ -303,22 +303,24 @@ IUP_SDK_API int iupdrvGetScrollbarSize(void)
     Evas_Object* content;
     int sw = 0, sh = 0, cw = 0, ch = 0;
 
-    content = evas_object_rectangle_add(evas);
-    evas_object_resize(content, 500, 500);
+    content = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas);
+    efl_gfx_entity_size_set(content, EINA_SIZE2D(500, 500));
     elm_object_content_set(scroller, content);
     elm_scroller_policy_set(scroller, ELM_SCROLLER_POLICY_ON, ELM_SCROLLER_POLICY_ON);
-    evas_object_resize(scroller, 200, 200);
-    evas_object_show(scroller);
+    efl_gfx_entity_size_set(scroller, EINA_SIZE2D(200, 200));
+    efl_gfx_entity_visible_set(scroller, EINA_TRUE);
     evas_smart_objects_calculate(evas);
 
-    evas_object_geometry_get(scroller, NULL, NULL, &sw, &sh);
+    Eina_Rect scroller_geom = efl_gfx_entity_geometry_get(scroller);
+    sw = scroller_geom.w;
+    sh = scroller_geom.h;
     elm_scroller_region_get(scroller, NULL, NULL, &cw, &ch);
 
     cached_size = sw - cw;
     if (cached_size <= 0)
       cached_size = 15;
 
-    evas_object_del(scroller);
+    efl_del(scroller);
   }
   else
     cached_size = 15;

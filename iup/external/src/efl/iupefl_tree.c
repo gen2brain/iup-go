@@ -114,7 +114,7 @@ static Evas_Object* eflTreeContentGet(void* data, Evas_Object* obj, const char* 
     img = iupeflImageGetImageForParent(image_name, ih, 0, obj);
     if (img)
     {
-      evas_object_size_hint_aspect_set(img, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
+      efl_gfx_hint_aspect_set(img, EFL_GFX_HINT_ASPECT_VERTICAL, EINA_SIZE2D(1, 1));
       return img;
     }
   }
@@ -124,11 +124,11 @@ static Evas_Object* eflTreeContentGet(void* data, Evas_Object* obj, const char* 
     img = elm_icon_add(obj);
     if (img && elm_icon_standard_set(img, theme_icon))
     {
-      evas_object_size_hint_aspect_set(img, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
+      efl_gfx_hint_aspect_set(img, EFL_GFX_HINT_ASPECT_VERTICAL, EINA_SIZE2D(1, 1));
       return img;
     }
     if (img)
-      evas_object_del(img);
+      efl_del(img);
   }
 
   return NULL;
@@ -587,7 +587,10 @@ static void eflTreeStartRenameEdit(Ihandle* ih, Elm_Object_Item* item)
   if (!track_obj)
     return;
 
-  evas_object_geometry_get(track_obj, &x, &y, &w, &h);
+  {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(track_obj);
+    x = geom.x; y = geom.y; w = geom.w; h = geom.h;
+  }
   elm_object_item_untrack(item);
 
   text_x = x;
@@ -596,8 +599,10 @@ static void eflTreeStartRenameEdit(Ihandle* ih, Elm_Object_Item* item)
   icon = elm_object_item_part_content_get(item, "elm.swallow.icon");
   if (icon)
   {
-    int icon_x, icon_y, iw, ih_icon;
-    evas_object_geometry_get(icon, &icon_x, &icon_y, &iw, &ih_icon);
+    int iw, ih_icon;
+    Eina_Rect ig = efl_gfx_entity_geometry_get(icon);
+    int icon_x = ig.x;
+    iw = ig.w; ih_icon = ig.h;
     text_x = icon_x + iw + 4;
     text_w = w - (text_x - x);
   }
@@ -620,9 +625,9 @@ static void eflTreeStartRenameEdit(Ihandle* ih, Elm_Object_Item* item)
     elm_object_text_set(entry, saved_title ? saved_title : "");
   }
 
-  evas_object_move(entry, text_x, y);
-  evas_object_resize(entry, text_w, h);
-  evas_object_show(entry);
+  efl_gfx_entity_position_set(entry, EINA_POSITION2D(text_x, y));
+  efl_gfx_entity_size_set(entry, EINA_SIZE2D(text_w, h));
+  efl_gfx_entity_visible_set(entry, EINA_TRUE);
 
   elm_object_focus_set(entry, EINA_TRUE);
 
@@ -683,7 +688,7 @@ static void eflTreeEndRenameEdit(Ihandle* ih, int apply)
 
   if (!node)
   {
-    evas_object_del(entry);
+    efl_del(entry);
     iupAttribSet(ih, "_IUP_EFL_EDITING_ENTRY", NULL);
     iupAttribSet(ih, "_IUP_EFL_EDITING_ITEM", NULL);
     iupAttribSet(ih, "_IUP_EFL_ORIGINAL_TITLE", NULL);
@@ -727,7 +732,7 @@ static void eflTreeEndRenameEdit(Ihandle* ih, int apply)
   if (new_text)
     free(new_text);
 
-  evas_object_del(entry);
+  efl_del(entry);
 
   if (tree && node->item)
     elm_genlist_item_update(node->item);

@@ -222,12 +222,12 @@ static void eflItemUpdateMark(Ihandle* ih)
     if (!elm_icon_standard_set(icon, "object-select-symbolic"))
       if (!elm_icon_standard_set(icon, "emblem-default"))
         elm_icon_standard_set(icon, "emblem-ok");
-    evas_object_show(icon);
+    efl_gfx_entity_visible_set(icon, EINA_TRUE);
     elm_layout_signal_emit(layout, "elm,state,icon,visible", "elm");
   }
   else
   {
-    evas_object_hide(icon);
+    efl_gfx_entity_visible_set(icon, EINA_FALSE);
     elm_layout_signal_emit(layout, "elm,state,icon,hidden", "elm");
   }
   edje_object_message_signal_process(elm_layout_edje_get(layout));
@@ -773,7 +773,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   }
 
   elm_menu_move(menu, x - wx, y - wy);
-  evas_object_show(menu);
+  efl_gfx_entity_visible_set(menu, EINA_TRUE);
   eflMenuSetHoverLayer(menu);
 
   iupeflModalLoopRun(NULL);
@@ -896,7 +896,7 @@ static void eflMenuUnMapMethod(Ihandle* ih)
     Evas_Object* menu = (Evas_Object*)ih->handle;
     evas_object_smart_callback_del(menu, "dismissed", eflMenuDismissedCallback);
     evas_object_event_callback_del(menu, EVAS_CALLBACK_SHOW, eflMenuShowCallback);
-    evas_object_del(menu);
+    efl_del(menu);
   }
 
   iupAttribSet(ih, "_IUP_EFL_MENU", NULL);

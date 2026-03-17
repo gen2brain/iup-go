@@ -19,33 +19,49 @@
 
 #include "iupefl_drv.h"
 
+static void eflImageSetPixels(Eo* img, unsigned int* pixels, int width, int height, Eina_Bool has_alpha)
+{
+  unsigned int* dst;
+
+  evas_object_image_alpha_set(img, has_alpha);
+  evas_object_image_size_set(img, width, height);
+
+  dst = evas_object_image_data_get(img, EINA_TRUE);
+  if (dst)
+  {
+    memcpy(dst, pixels, width * height * sizeof(unsigned int));
+    evas_object_image_data_set(img, dst);
+    evas_object_image_data_update_add(img, 0, 0, width, height);
+  }
+
+  evas_object_image_filled_set(img, EINA_TRUE);
+  efl_gfx_hint_size_min_set(img, EINA_SIZE2D(width, height));
+  efl_gfx_hint_size_max_set(img, EINA_SIZE2D(width, height));
+  efl_gfx_entity_size_set(img, EINA_SIZE2D(width, height));
+}
 
 void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
-  Evas_Object* elm_img = (Evas_Object*)handle;
-  Evas_Object* evas_img;
+  Eo* img = (Eo*)handle;
   int w, h, bpp, x, y;
-  unsigned int* pixels;
-  int stride, channels;
+  int stride = 0;
+  int channels;
+  Eina_Rw_Slice mapped;
 
   if (!iupdrvImageGetInfo(handle, &w, &h, &bpp))
     return;
 
-  evas_img = elm_image_object_get(elm_img);
-  if (!evas_img)
+  mapped = efl_gfx_buffer_map(img, EFL_GFX_BUFFER_ACCESS_MODE_READ,
+                               NULL, EFL_GFX_COLORSPACE_ARGB8888, 0, &stride);
+  if (!mapped.mem)
     return;
 
-  pixels = evas_object_image_data_get(evas_img, EINA_FALSE);
-  if (!pixels)
-    return;
-
-  stride = evas_object_image_stride_get(evas_img);
   channels = bpp / 8;
 
   for (y = 0; y < h; y++)
   {
     unsigned char* line_data = imgdata + y * w * channels;
-    unsigned int* pix_line = (unsigned int*)((unsigned char*)pixels + y * stride);
+    unsigned int* pix_line = (unsigned int*)((unsigned char*)mapped.mem + y * stride);
 
     if (channels == 4)
     {
@@ -63,17 +79,17 @@ void iupdrvImageGetData(void* handle, unsigned char* imgdata)
     }
   }
 
-  evas_object_image_data_set(evas_img, pixels);
+  efl_gfx_buffer_unmap(img, mapped);
 }
 
 IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
 {
-  Evas_Object* elm_img = (Evas_Object*)handle;
-  Evas_Object* evas_img;
+  Eo* img = (Eo*)handle;
   int w, h, x, y, bpp;
-  unsigned int* pixels;
-  int stride, planesize;
+  int stride = 0;
+  int planesize;
   unsigned char *r, *g, *b, *a;
+  Eina_Rw_Slice mapped;
 
   if (!iupdrvImageGetInfo(handle, &w, &h, &bpp))
     return;
@@ -81,15 +97,10 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
   if (bpp == 8)
     return;
 
-  evas_img = elm_image_object_get(elm_img);
-  if (!evas_img)
+  mapped = efl_gfx_buffer_map(img, EFL_GFX_BUFFER_ACCESS_MODE_READ,
+                               NULL, EFL_GFX_COLORSPACE_ARGB8888, 0, &stride);
+  if (!mapped.mem)
     return;
-
-  pixels = evas_object_image_data_get(evas_img, EINA_FALSE);
-  if (!pixels)
-    return;
-
-  stride = evas_object_image_stride_get(evas_img);
 
   planesize = w * h;
   r = imgdata;
@@ -100,7 +111,7 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
   for (y = 0; y < h; y++)
   {
     int lineoffset = (h - 1 - y) * w;
-    unsigned int* pix_line = (unsigned int*)((unsigned char*)pixels + y * stride);
+    unsigned int* pix_line = (unsigned int*)((unsigned char*)mapped.mem + y * stride);
 
     for (x = 0; x < w; x++)
     {
@@ -114,13 +125,12 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
     }
   }
 
-  evas_object_image_data_set(evas_img, pixels);
+  efl_gfx_buffer_unmap(img, mapped);
 }
 
 IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char* imgdata)
 {
-  Evas_Object* elm_img;
-  Evas_Object* evas_img;
+  Eo* img;
   unsigned int* pixels;
   int x, y;
 
@@ -130,27 +140,15 @@ IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupC
   if (!win)
     return NULL;
 
-  elm_img = elm_image_add(win);
-  if (!elm_img)
+  img = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, win);
+  if (!img)
     return NULL;
+  efl_gfx_entity_visible_set(img, EINA_FALSE);
 
-  elm_image_aspect_fixed_set(elm_img, EINA_FALSE);
-  elm_image_no_scale_set(elm_img, EINA_TRUE);
-
-  evas_img = elm_image_object_get(elm_img);
-  if (!evas_img)
-  {
-    evas_object_del(elm_img);
-    return NULL;
-  }
-
-  evas_object_image_size_set(evas_img, width, height);
-  evas_object_image_alpha_set(evas_img, (bpp == 32) ? EINA_TRUE : EINA_FALSE);
-
-  pixels = evas_object_image_data_get(evas_img, EINA_TRUE);
+  pixels = (unsigned int*)malloc(width * height * sizeof(unsigned int));
   if (!pixels)
   {
-    evas_object_del(elm_img);
+    efl_unref(img);
     return NULL;
   }
 
@@ -200,13 +198,10 @@ IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupC
     }
   }
 
-  evas_object_image_data_set(evas_img, pixels);
-  evas_object_image_data_update_add(evas_img, 0, 0, width, height);
+  eflImageSetPixels(img, pixels, width, height, (bpp == 32) ? EINA_TRUE : EINA_FALSE);
+  free(pixels);
 
-  evas_object_size_hint_min_set(elm_img, width, height);
-  evas_object_resize(elm_img, width, height);
-
-  return elm_img;
+  return img;
 }
 
 static void eflImageFillPixels(unsigned int* pixels, unsigned char* imgdata, int width, int height, int bpp,
@@ -291,8 +286,7 @@ static void eflImageFillPixels(unsigned int* pixels, unsigned char* imgdata, int
 
 void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
-  Evas_Object* elm_img;
-  Evas_Object* evas_img;
+  Eo* img;
   unsigned int* pixels;
   unsigned char* imgdata;
   unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
@@ -312,27 +306,15 @@ void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive
   else if (bpp == 32)
     has_alpha = 1;
 
-  elm_img = elm_image_add(win);
-  if (!elm_img)
+  img = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, win);
+  if (!img)
     return NULL;
+  efl_gfx_entity_visible_set(img, EINA_FALSE);
 
-  elm_image_aspect_fixed_set(elm_img, EINA_FALSE);
-  elm_image_no_scale_set(elm_img, EINA_TRUE);
-
-  evas_img = elm_image_object_get(elm_img);
-  if (!evas_img)
-  {
-    evas_object_del(elm_img);
-    return NULL;
-  }
-
-  evas_object_image_size_set(evas_img, width, height);
-  evas_object_image_alpha_set(evas_img, has_alpha ? EINA_TRUE : EINA_FALSE);
-
-  pixels = evas_object_image_data_get(evas_img, EINA_TRUE);
+  pixels = (unsigned int*)malloc(width * height * sizeof(unsigned int));
   if (!pixels)
   {
-    evas_object_del(elm_img);
+    efl_unref(img);
     return NULL;
   }
 
@@ -343,13 +325,10 @@ void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive
 
   eflImageFillPixels(pixels, imgdata, width, height, bpp, colors, colors_count, has_alpha, make_inactive, bg_r, bg_g, bg_b);
 
-  evas_object_image_data_set(evas_img, pixels);
-  evas_object_image_data_update_add(evas_img, 0, 0, width, height);
+  eflImageSetPixels(img, pixels, width, height, has_alpha ? EINA_TRUE : EINA_FALSE);
+  free(pixels);
 
-  evas_object_size_hint_min_set(elm_img, width, height);
-  evas_object_resize(elm_img, width, height);
-
-  return elm_img;
+  return img;
 }
 
 void* iupdrvImageCreateIcon(Ihandle* ih)
@@ -364,33 +343,32 @@ void* iupdrvImageCreateCursor(Ihandle* ih)
 
 void iupdrvImageDestroy(void* handle, int type)
 {
-  Evas_Object* image = (Evas_Object*)handle;
+  Eo* image = (Eo*)handle;
 
   (void)type;
 
   if (image)
-    evas_object_del(image);
+  {
+    if (efl_parent_get(image))
+      efl_parent_set(image, NULL);
+    efl_unref(image);
+  }
 }
 
 int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
-  Evas_Object* elm_img = (Evas_Object*)handle;
-  Evas_Object* evas_img;
-  int width, height;
+  Eo* img = (Eo*)handle;
+  Eina_Size2D size;
   Eina_Bool has_alpha;
 
-  if (!elm_img)
+  if (!img)
     return 0;
 
-  evas_img = elm_image_object_get(elm_img);
-  if (!evas_img)
-    return 0;
+  size = efl_gfx_buffer_size_get(img);
+  has_alpha = efl_gfx_buffer_alpha_get(img);
 
-  evas_object_image_size_get(evas_img, &width, &height);
-  has_alpha = evas_object_image_alpha_get(evas_img);
-
-  if (w) *w = width;
-  if (h) *h = height;
+  if (w) *w = size.w;
+  if (h) *h = size.h;
   if (bpp) *bpp = has_alpha ? 32 : 24;
 
   return 1;
@@ -406,7 +384,7 @@ IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iu
 
 void* iupdrvImageLoad(const char* name, int type)
 {
-  Evas_Object* elm_img;
+  Eo* img;
   Evas_Object* win;
 
   (void)type;
@@ -415,26 +393,25 @@ void* iupdrvImageLoad(const char* name, int type)
   if (!win)
     return NULL;
 
-  elm_img = elm_image_add(win);
-  if (!elm_img)
+  img = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, win);
+  if (!img)
     return NULL;
 
-  elm_image_aspect_fixed_set(elm_img, EINA_FALSE);
-  elm_image_no_scale_set(elm_img, EINA_TRUE);
-
-  if (!elm_image_file_set(elm_img, name, NULL))
+  if (efl_file_set(img, name) || efl_file_load(img))
   {
-    evas_object_del(elm_img);
+    efl_unref(img);
     return NULL;
   }
 
-  return elm_img;
+  evas_object_image_filled_set(img, EINA_TRUE);
+  efl_gfx_entity_visible_set(img, EINA_FALSE);
+
+  return img;
 }
 
-static Evas_Object* eflImageCreateFromIhandle(Ihandle* img_ih, Evas_Object* parent, int make_inactive, const char* bgcolor)
+static Eo* eflImageCreateFromIhandle(Ihandle* img_ih, Evas_Object* parent, int make_inactive, const char* bgcolor)
 {
-  Evas_Object* elm_img;
-  Evas_Object* evas_img;
+  Eo* img;
   unsigned int* pixels;
   unsigned char* imgdata;
   unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
@@ -453,28 +430,15 @@ static Evas_Object* eflImageCreateFromIhandle(Ihandle* img_ih, Evas_Object* pare
   else if (bpp == 32)
     has_alpha = 1;
 
-  elm_img = elm_image_add(parent);
-  if (!elm_img)
+  img = efl_add(EFL_CANVAS_IMAGE_CLASS, parent);
+  if (!img)
     return NULL;
+  efl_gfx_entity_visible_set(img, EINA_FALSE);
 
-  elm_image_preload_disabled_set(elm_img, EINA_TRUE);
-  elm_image_no_scale_set(elm_img, EINA_TRUE);
-  elm_image_resizable_set(elm_img, EINA_FALSE, EINA_FALSE);
-
-  evas_img = elm_image_object_get(elm_img);
-  if (!evas_img)
-  {
-    evas_object_del(elm_img);
-    return NULL;
-  }
-
-  evas_object_image_size_set(evas_img, width, height);
-  evas_object_image_alpha_set(evas_img, has_alpha ? EINA_TRUE : EINA_FALSE);
-
-  pixels = evas_object_image_data_get(evas_img, EINA_TRUE);
+  pixels = (unsigned int*)malloc(width * height * sizeof(unsigned int));
   if (!pixels)
   {
-    evas_object_del(elm_img);
+    efl_del(img);
     return NULL;
   }
 
@@ -485,19 +449,14 @@ static Evas_Object* eflImageCreateFromIhandle(Ihandle* img_ih, Evas_Object* pare
 
   eflImageFillPixels(pixels, imgdata, width, height, bpp, colors, colors_count, has_alpha, make_inactive, bg_r, bg_g, bg_b);
 
-  evas_object_image_data_set(evas_img, pixels);
-  evas_object_image_data_update_add(evas_img, 0, 0, width, height);
-  evas_object_image_filled_set(evas_img, EINA_TRUE);
+  eflImageSetPixels(img, pixels, width, height, has_alpha ? EINA_TRUE : EINA_FALSE);
+  free(pixels);
 
-  evas_object_size_hint_min_set(elm_img, width, height);
-  evas_object_resize(elm_img, width, height);
-
-  return elm_img;
+  return img;
 }
 
-static int eflImageUpdateFromIhandle(Evas_Object* elm_img, Ihandle* img_ih, int make_inactive, const char* bgcolor)
+static int eflImageUpdateFromIhandle(Eo* img, Ihandle* img_ih, int make_inactive, const char* bgcolor)
 {
-  Evas_Object* evas_img;
   unsigned int* pixels;
   unsigned char* imgdata;
   unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
@@ -506,7 +465,7 @@ static int eflImageUpdateFromIhandle(Evas_Object* elm_img, Ihandle* img_ih, int 
   int width = img_ih->currentwidth;
   int height = img_ih->currentheight;
 
-  if (!elm_img)
+  if (!img || !efl_isa(img, EFL_CANVAS_IMAGE_INTERNAL_CLASS))
     return 0;
 
   bpp = iupAttribGetInt(img_ih, "BPP");
@@ -516,14 +475,7 @@ static int eflImageUpdateFromIhandle(Evas_Object* elm_img, Ihandle* img_ih, int 
   else if (bpp == 32)
     has_alpha = 1;
 
-  evas_img = elm_image_object_get(elm_img);
-  if (!evas_img)
-    return 0;
-
-  evas_object_image_size_set(evas_img, width, height);
-  evas_object_image_alpha_set(evas_img, has_alpha ? EINA_TRUE : EINA_FALSE);
-
-  pixels = evas_object_image_data_get(evas_img, EINA_TRUE);
+  pixels = (unsigned int*)malloc(width * height * sizeof(unsigned int));
   if (!pixels)
     return 0;
 
@@ -534,22 +486,18 @@ static int eflImageUpdateFromIhandle(Evas_Object* elm_img, Ihandle* img_ih, int 
 
   eflImageFillPixels(pixels, imgdata, width, height, bpp, colors, colors_count, has_alpha, make_inactive, bg_r, bg_g, bg_b);
 
-  evas_object_image_data_set(evas_img, pixels);
-  evas_object_image_data_update_add(evas_img, 0, 0, width, height);
-  evas_object_image_filled_set(evas_img, EINA_TRUE);
-
-  evas_object_size_hint_min_set(elm_img, width, height);
-  evas_object_resize(elm_img, width, height);
+  eflImageSetPixels(img, pixels, width, height, has_alpha ? EINA_TRUE : EINA_FALSE);
+  free(pixels);
 
   return 1;
 }
 
-int iupeflImageUpdateImage(Evas_Object* elm_img, const char* name, Ihandle* ih_parent, int make_inactive)
+int iupeflImageUpdateImage(Eo* img, const char* name, Ihandle* ih_parent, int make_inactive)
 {
   Ihandle* img_ih;
   const char* bgcolor = NULL;
 
-  if (!elm_img || !name || !name[0])
+  if (!img || !name || !name[0])
     return 0;
 
   img_ih = iupImageGetImageFromName(name);
@@ -559,10 +507,10 @@ int iupeflImageUpdateImage(Evas_Object* elm_img, const char* name, Ihandle* ih_p
   if (ih_parent)
     bgcolor = IupGetAttribute(ih_parent, "BGCOLOR");
 
-  return eflImageUpdateFromIhandle(elm_img, img_ih, make_inactive, bgcolor);
+  return eflImageUpdateFromIhandle(img, img_ih, make_inactive, bgcolor);
 }
 
-Evas_Object* iupeflImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive)
+Eo* iupeflImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive)
 {
   Ihandle* img_ih;
   const char* bgcolor = NULL;
@@ -580,7 +528,7 @@ Evas_Object* iupeflImageGetImage(const char* name, Ihandle* ih_parent, int make_
   return eflImageCreateFromIhandle(img_ih, iupeflGetMainWindow(), make_inactive, bgcolor);
 }
 
-Evas_Object* iupeflImageGetImageForParent(const char* name, Ihandle* ih_parent, int make_inactive, Evas_Object* parent)
+Eo* iupeflImageGetImageForParent(const char* name, Ihandle* ih_parent, int make_inactive, Eo* parent)
 {
   Ihandle* img_ih;
   const char* bgcolor = NULL;
@@ -598,8 +546,3 @@ Evas_Object* iupeflImageGetImageForParent(const char* name, Ihandle* ih_parent, 
   return eflImageCreateFromIhandle(img_ih, parent, make_inactive, bgcolor);
 }
 
-void iupeflImageDestroy(Evas_Object* image)
-{
-  if (image)
-    evas_object_del(image);
-}
