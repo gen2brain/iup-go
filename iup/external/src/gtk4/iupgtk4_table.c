@@ -580,6 +580,46 @@ static void cell_factory_setup(GtkSignalListItemFactory* factory, GtkListItem* l
   gtk_list_item_set_child(list_item, box);
 }
 
+static void gtk4TableNotifyRow(Igtk4TableData* gtk_data, int lin)
+{
+  if (lin >= 1 && gtk_data->model)
+  {
+    IupTableRow* row = IUP_TABLE_ROW(g_list_model_get_item(gtk_data->model, lin - 1));
+    if (row)
+    {
+      row->update_count++;
+      g_object_notify_by_pspec(G_OBJECT(row), row_props[PROP_UPDATE]);
+      g_object_unref(row);
+    }
+  }
+}
+
+static void gtk4TableUpdateFocus(Ihandle* ih, int old_row, int old_col, int new_row, int new_col)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  gtk_data->current_row = new_row;
+  gtk_data->current_col = new_col;
+
+  if (old_row != new_row || old_col != new_col)
+  {
+    if (old_row >= 1)
+      gtk4TableNotifyRow(gtk_data, old_row);
+    if (new_row >= 1 && new_row != old_row)
+      gtk4TableNotifyRow(gtk_data, new_row);
+  }
+}
+
+static void gtk4TableUpdateCellFocusRect(Ihandle* ih, GtkWidget* box, int row_index, int col_index)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  if (iupAttribGetBoolean(ih, "FOCUSRECT") &&
+      row_index == gtk_data->current_row &&
+      col_index + 1 == gtk_data->current_col)
+    gtk_widget_add_css_class(box, "iup-table-focus-rect");
+  else
+    gtk_widget_remove_css_class(box, "iup-table-focus-rect");
+}
+
 static void on_row_update(IupTableRow* row, GParamSpec* pspec, gpointer user_data)
 {
   GtkListItem* list_item = GTK_LIST_ITEM(user_data);
@@ -631,6 +671,8 @@ static void on_row_update(IupTableRow* row, GParamSpec* pspec, gpointer user_dat
   {
     gtk_label_set_text(GTK_LABEL(widget), row->values[col]);
   }
+
+  gtk4TableUpdateCellFocusRect(data->ih, box, row->row_index, col);
 }
 
 static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
@@ -824,10 +866,16 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
   {
     pango_attr_list_unref(attr_list);
   }
+
+  gtk4TableUpdateCellFocusRect(ih, box, lin, col);
 }
 
 static void cell_factory_unbind(GtkSignalListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
 {
+  GtkWidget* box = gtk_list_item_get_child(list_item);
+  if (box)
+    gtk_widget_remove_css_class(box, "iup-table-focus-rect");
+
   gulong handler_id = GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(list_item), "update-handler"));
   if (handler_id)
   {
@@ -839,6 +887,9 @@ static void cell_factory_unbind(GtkSignalListItemFactory* factory, GtkListItem* 
       g_object_set_data(G_OBJECT(list_item), "bound-row", NULL);
     }
   }
+
+  (void)factory;
+  (void)user_data;
 }
 
 static void cell_factory_teardown(GtkSignalListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
@@ -852,6 +903,7 @@ static void cell_factory_teardown(GtkSignalListItemFactory* factory, GtkListItem
 static void on_selection_changed(GtkSelectionModel* selection, guint position, guint n_items, Ihandle* ih)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  int old_row = gtk_data->current_row;
 
   if (GTK_IS_SINGLE_SELECTION(selection))
   {
@@ -883,6 +935,12 @@ static void on_selection_changed(GtkSelectionModel* selection, guint position, g
       gtk_data->current_row = 0;
       gtk_data->current_col = 0;
     }
+  }
+
+  if (old_row != gtk_data->current_row)
+  {
+    gtk4TableNotifyRow(gtk_data, old_row);
+    gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
   }
 
   IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
@@ -931,6 +989,10 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
           g_object_unref(column);
         }
       }
+
+      if (old_row != gtk_data->current_row && old_row >= 1)
+        gtk4TableNotifyRow(gtk_data, old_row);
+      gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
 
       IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
       if (click_cb)
@@ -982,6 +1044,10 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
     if (gtk_data->current_row != old_row && GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
       gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), gtk_data->current_row - 1);
 
+    gtk4TableNotifyRow(gtk_data, old_row);
+    if (gtk_data->current_row != old_row)
+      gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+
     IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
     if (cb)
       cb(ih, gtk_data->current_row, gtk_data->current_col);
@@ -1007,7 +1073,11 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
     /* Not editing, navigate between cells */
     if (keyval == GDK_KEY_Left && gtk_data->current_col > 1)
     {
+      int old_col = gtk_data->current_col;
       gtk_data->current_col--;
+
+      if (old_col != gtk_data->current_col)
+        gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
 
       IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
       if (cb)
@@ -1017,7 +1087,11 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
     }
     else if (keyval == GDK_KEY_Right && gtk_data->current_col < ih->data->num_col)
     {
+      int old_col = gtk_data->current_col;
       gtk_data->current_col++;
+
+      if (old_col != gtk_data->current_col)
+        gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
 
       IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
       if (cb)
@@ -1534,6 +1608,10 @@ static int gtk4TableMapMethod(Ihandle* ih)
     "}\n"
     "columnview row > cell {\n"
     "  padding: 0;\n"
+    "}\n"
+    ".iup-table-focus-rect {\n"
+    "  outline: 1px dashed rgba(50,50,50,0.8);\n"
+    "  outline-offset: -2px;\n"
     "}\n");
   gtk_style_context_add_provider_for_display(gdk_display_get_default(), GTK_STYLE_PROVIDER(global_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
   g_object_unref(global_provider);
@@ -1969,16 +2047,21 @@ void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
     return;
 
-  /* Update current row and column tracking BEFORE setting selection */
-  gtk_data->current_row = lin;
-  gtk_data->current_col = col;
+  {
+    int old_row = gtk_data->current_row;
+    int old_col = gtk_data->current_col;
 
-  /* Set row selection - this will trigger selection changed signal which calls ENTERITEM_CB */
-  if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
-    gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), lin - 1);
+    gtk_data->current_row = lin;
+    gtk_data->current_col = col;
 
-  /* Trigger widget redraw to show focus in correct column */
-  gtk_widget_queue_draw(gtk_data->column_view);
+    /* Set row selection, this will trigger selection changed signal which calls ENTERITEM_CB */
+    if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
+      gtk_single_selection_set_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model), lin - 1);
+
+    gtk4TableNotifyRow(gtk_data, old_row);
+    if (lin != old_row)
+      gtk4TableNotifyRow(gtk_data, lin);
+  }
 }
 
 void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
@@ -2272,8 +2355,7 @@ void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SIZE", NULL, NULL, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
-  /* FOCUSRECT not supported - GtkColumnView architecture makes dashed border complex */
-  iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, gtk4TableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, gtk4TableSetAllowReorderAttrib);
