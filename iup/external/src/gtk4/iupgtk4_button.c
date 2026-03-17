@@ -40,6 +40,15 @@ static int gtk4_button_struct_both_x = 0, gtk4_button_struct_both_y = 0;
 static int gtk4_button_image_css_pad = 0;
 static int gtk4_button_padding_measured = 0;
 
+static int gtk4ButtonGetCharHeight(GtkWidget* widget)
+{
+  PangoContext* context = gtk_widget_get_pango_context(widget);
+  PangoFontMetrics* metrics = pango_context_get_metrics(context, NULL, NULL);
+  int h = iupGTK4_PANGOUNITS2PIXELS(pango_font_metrics_get_ascent(metrics) + pango_font_metrics_get_descent(metrics));
+  pango_font_metrics_unref(metrics);
+  return h;
+}
+
 static void gtk4ButtonMeasurePadding(void)
 {
   GtkWidget* temp_window;
@@ -49,10 +58,12 @@ static void gtk4ButtonMeasurePadding(void)
   GtkWidget* temp_box;
   GtkRequisition button_size, child_size;
   GdkPaintable* temp_paintable;
+  int iup_char_h;
 
   iupgtk4CssAddStaticRule(".iup-button-flat", "padding: 0; margin: 0; border-width: 0; min-width: 0; min-height: 0;");
   iupgtk4CssAddStaticRule(".iup-measure-zero-pad", "padding: 0; min-width: 0; min-height: 0;");
   iupgtk4CssAddStaticRule(".iup-measure-no-min", "min-width: 0; min-height: 0;");
+  iupgtk4CssFlush();
 
   /* Text-only button */
   temp_window = gtk_window_new();
@@ -62,14 +73,16 @@ static void gtk4ButtonMeasurePadding(void)
   gtk_widget_get_preferred_size(temp_button, NULL, &button_size);
   temp_label = gtk_button_get_child(GTK_BUTTON(temp_button));
   gtk_widget_get_preferred_size(temp_label, NULL, &child_size);
+  iup_char_h = gtk4ButtonGetCharHeight(temp_label);
+
   gtk4_button_padding_text_x = button_size.width - child_size.width;
-  gtk4_button_padding_text_y = button_size.height - child_size.height;
+  gtk4_button_padding_text_y = button_size.height - iup_char_h;
 
   gtk_widget_add_css_class(temp_button, "iup-measure-zero-pad");
   gtk_widget_queue_resize(temp_button);
   gtk_widget_get_preferred_size(temp_button, NULL, &button_size);
   gtk4_button_struct_text_x = button_size.width - child_size.width;
-  gtk4_button_struct_text_y = button_size.height - child_size.height;
+  gtk4_button_struct_text_y = button_size.height - iup_char_h;
   if (gtk4_button_struct_text_x < 0) gtk4_button_struct_text_x = 0;
   if (gtk4_button_struct_text_y < 0) gtk4_button_struct_text_y = 0;
 
@@ -124,14 +137,30 @@ static void gtk4ButtonMeasurePadding(void)
 
   gtk_widget_get_preferred_size(temp_button, NULL, &button_size);
   gtk_widget_get_preferred_size(temp_box, NULL, &child_size);
-  gtk4_button_padding_both_x = button_size.width - child_size.width;
-  gtk4_button_padding_both_y = button_size.height - child_size.height;
+  iup_char_h = gtk4ButtonGetCharHeight(temp_label);
+
+  {
+    GtkRequisition img_size;
+    int iup_content_h;
+    gtk_widget_get_preferred_size(temp_image, NULL, &img_size);
+    iup_content_h = iup_char_h > img_size.height ? iup_char_h : img_size.height;
+    gtk4_button_padding_both_x = button_size.width - child_size.width;
+    gtk4_button_padding_both_y = button_size.height - iup_content_h;
+  }
 
   gtk_widget_add_css_class(temp_button, "iup-measure-zero-pad");
   gtk_widget_queue_resize(temp_button);
   gtk_widget_get_preferred_size(temp_button, NULL, &button_size);
-  gtk4_button_struct_both_x = button_size.width - child_size.width;
-  gtk4_button_struct_both_y = button_size.height - child_size.height;
+
+  {
+    GtkRequisition img_size;
+    int iup_content_h;
+    gtk_widget_get_preferred_size(temp_image, NULL, &img_size);
+    iup_content_h = iup_char_h > img_size.height ? iup_char_h : img_size.height;
+    gtk4_button_struct_both_x = button_size.width - child_size.width;
+    gtk4_button_struct_both_y = button_size.height - iup_content_h;
+  }
+
   if (gtk4_button_struct_both_x < 0) gtk4_button_struct_both_x = 0;
   if (gtk4_button_struct_both_y < 0) gtk4_button_struct_both_y = 0;
 
