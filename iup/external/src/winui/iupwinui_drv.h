@@ -358,6 +358,8 @@ struct IupWinUIListAux
   winrt::event_token dropDownClosedToken;
   winrt::event_token doubleTappedToken;
   winrt::event_token keyDownToken;
+  winrt::event_token gotFocusToken;
+  winrt::event_token lostFocusToken;
   winrt::event_token containerContentChangingToken;
   winrt::event_token dragItemsStartingToken;
   winrt::event_token dragItemsCompletedToken;
@@ -369,6 +371,7 @@ struct IupWinUIListAux
   IupWinUIListAux() : selectionChangedToken{}, textChangedToken{},
                        dropDownOpenedToken{}, dropDownClosedToken{},
                        doubleTappedToken{}, keyDownToken{},
+                       gotFocusToken{}, lostFocusToken{},
                        containerContentChangingToken{},
                        dragItemsStartingToken{}, dragItemsCompletedToken{},
                        isDropdown(false), hasEditbox(false), isMultiple(false),
