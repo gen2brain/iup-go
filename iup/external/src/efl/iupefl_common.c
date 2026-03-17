@@ -20,6 +20,7 @@
 #include "iup_key.h"
 #include "iup_childtree.h"
 #include "iup_canvas.h"
+#include "iup_dlglist.h"
 
 #include "iupefl_drv.h"
 
@@ -540,6 +541,47 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
   Eo* widget = iupeflGetWidget(ih);
   if (!widget)
     return;
+
+  if (efl_isa(widget, EFL_UI_WIN_CLASS))
+  {
+    Evas* evas = evas_object_evas_get(widget);
+    if (!enable)
+    {
+      Eo* blocker = (Eo*)iupAttribGet(ih, "_IUP_EFL_MODAL_BLOCKER");
+      if (!blocker)
+      {
+        Eo* inner = (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
+        Evas_Object* parent = inner ? evas_object_smart_parent_get(inner) : NULL;
+        if (parent && evas)
+        {
+          blocker = evas_object_rectangle_add(evas);
+          evas_object_color_set(blocker, 0, 0, 0, 64);
+          evas_object_smart_member_add(blocker, parent);
+          evas_object_resize(blocker, ih->currentwidth, ih->currentheight);
+          evas_object_move(blocker, 0, 0);
+          evas_object_stack_above(blocker, inner);
+          evas_object_show(blocker);
+          iupAttribSet(ih, "_IUP_EFL_MODAL_BLOCKER", (char*)blocker);
+        }
+      }
+      if (evas)
+        evas_event_freeze(evas);
+    }
+    else
+    {
+      if (evas)
+        evas_event_thaw(evas);
+      {
+        Eo* blocker = (Eo*)iupAttribGet(ih, "_IUP_EFL_MODAL_BLOCKER");
+        if (blocker)
+        {
+          evas_object_del(blocker);
+          iupAttribSet(ih, "_IUP_EFL_MODAL_BLOCKER", NULL);
+        }
+      }
+    }
+    return;
+  }
 
   if (efl_isa(widget, EFL_UI_WIDGET_CLASS))
     iupeflSetDisabled(widget, enable ? EINA_FALSE : EINA_TRUE);

@@ -189,13 +189,15 @@ IUP_SDK_API void IupFlush(void)
  * Modal Loop Support
  ****************************************************************************/
 
-void iupeflModalLoopRun(void)
+void iupeflModalLoopRun(Eo* modal_win)
 {
   int level, i;
   Eo *loop = efl_main_loop_get();
 
   if (efl_modal_loop_level >= EFL_MODAL_LOOP_MAX_DEPTH)
     return;
+
+  (void)modal_win;
 
   level = efl_modal_loop_level;
   efl_modal_loop_level++;

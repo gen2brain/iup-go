@@ -81,8 +81,9 @@ Eo* iupeflGetLoop(void);
 /* Called from iupefl_open.c during iupdrvClose() */
 void iupeflLoopCleanup(void);
 
-/* Modal loop support - use instead of ecore_main_loop_begin/quit for dialogs */
-void iupeflModalLoopRun(void);
+/* Modal loop support - use instead of ecore_main_loop_begin/quit for dialogs.
+   Pass the modal window to block input on all other windows, or NULL for no blocking. */
+void iupeflModalLoopRun(Eo* modal_win);
 void iupeflModalLoopQuit(void);
 void iupeflMessagePendingFlush(Eo *loop);
 

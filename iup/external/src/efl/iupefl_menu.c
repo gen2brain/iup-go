@@ -776,7 +776,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   evas_object_show(menu);
   eflMenuSetHoverLayer(menu);
 
-  iupeflModalLoopRun();
+  iupeflModalLoopRun(NULL);
 
   return IUP_NOERROR;
 }

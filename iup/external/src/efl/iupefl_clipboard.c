@@ -128,7 +128,7 @@ static char* eflClipboardGetTextAttrib(Ihandle* ih)
   if (future)
   {
     eina_future_then(future, eflClipboardTextResolveCb, &result, NULL);
-    iupeflModalLoopRun();
+    iupeflModalLoopRun(NULL);
   }
 
   if (result)
@@ -220,7 +220,7 @@ static char* eflClipboardGetFormatDataAttrib(Ihandle* ih)
   if (future)
   {
     eina_future_then(future, eflClipboardFormatResolveCb, &result, NULL);
-    iupeflModalLoopRun();
+    iupeflModalLoopRun(NULL);
   }
 
   if (result.data)
