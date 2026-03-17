@@ -68,7 +68,9 @@ static char* gtk4CssGetWidgetClassName(GtkWidget* widget)
   return g_strdup_printf("iup-w-%lx", (unsigned long)(uintptr_t)widget);
 }
 
-static void gtk4CssRebuildAndApply(void)
+static guint gtk4_css_idle_id = 0;
+
+static void gtk4CssDoRebuild(void)
 {
   GHashTableIter iter;
   gpointer key, value;
@@ -130,6 +132,40 @@ static void gtk4CssRebuildAndApply(void)
   gtk_css_provider_load_from_string(gtk4_css_provider, gtk4_css_buffer->str);
 }
 
+static gboolean gtk4CssIdleRebuild(gpointer data)
+{
+  (void)data;
+  gtk4_css_idle_id = 0;
+  gtk4CssDoRebuild();
+  return G_SOURCE_REMOVE;
+}
+
+static void gtk4CssRebuildAndApply(void)
+{
+  if (!gtk4_css_provider)
+    return;
+
+  if (gtk4_css_idle_id == 0)
+    gtk4_css_idle_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE, gtk4CssIdleRebuild, NULL, NULL);
+}
+
+void iupgtk4CssFlush(void)
+{
+  if (gtk4_css_idle_id)
+  {
+    g_source_remove(gtk4_css_idle_id);
+    gtk4_css_idle_id = 0;
+    gtk4CssDoRebuild();
+  }
+}
+
+static void gtk4CssWidgetDestroyed(gpointer data, GObject* where_the_object_was)
+{
+  (void)data;
+  if (gtk4_widget_styles)
+    g_hash_table_remove(gtk4_widget_styles, where_the_object_was);
+}
+
 static Igtk4WidgetStyle* gtk4CssGetOrCreateWidgetStyle(GtkWidget* widget)
 {
   Igtk4WidgetStyle* style = g_hash_table_lookup(gtk4_widget_styles, widget);
@@ -145,6 +181,8 @@ static Igtk4WidgetStyle* gtk4CssGetOrCreateWidgetStyle(GtkWidget* widget)
     class_name = gtk4CssGetWidgetClassName(widget);
     gtk_widget_add_css_class(widget, class_name);
     g_free(class_name);
+
+    g_object_weak_ref(G_OBJECT(widget), gtk4CssWidgetDestroyed, NULL);
   }
 
   return style;
@@ -171,6 +209,12 @@ void iupgtk4CssManagerInit(void)
 
 void iupgtk4CssManagerFinish(void)
 {
+  if (gtk4_css_idle_id)
+  {
+    g_source_remove(gtk4_css_idle_id);
+    gtk4_css_idle_id = 0;
+  }
+
   if (gtk4_css_provider)
   {
     GdkDisplay* display = gdk_display_get_default();
