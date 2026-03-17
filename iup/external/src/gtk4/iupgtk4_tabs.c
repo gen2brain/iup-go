@@ -585,8 +585,6 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     {
       iupgtk4UpdateWidgetFont(ih, tab_label);
 
-      iupgtk4SetBgColor(tab_label, r, g, b);
-
       iupStrToRGB(IupGetAttribute(ih, "FGCOLOR"), &r, &g, &b);
       iupgtk4SetFgColor(tab_label, r, g, b);
 
