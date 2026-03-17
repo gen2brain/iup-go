@@ -1,5 +1,5 @@
 /** \file
-* \brief Draw Functions for DirectD2 using WinDrawLib
+* \brief Draw Functions using WinDrawLib (Direct2D / GDI+)
 *
 * See Copyright Notice in "iup.h"
 */
@@ -27,8 +27,9 @@
 #include "iupwin_str.h"
 
 #include "wdl.h"
+#include "backend-gdix.h"
 
-/* From iupwin_image_wdl.c - can be used only here */
+/* From iupwin_image_wdl.c */
 void iupwinWdlImageInit(void);
 WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor);
 
@@ -48,8 +49,10 @@ struct _IdrawCanvas{
 /* must be the same in wdInitialize and wdTerminate */
 const DWORD wdl_flags = WD_INIT_COREAPI | WD_INIT_IMAGEAPI | WD_INIT_STRINGAPI;
 
-int iupwinDrawInitWDL(void)
+void iupwinDrawInit(void)
 {
+  iupwinDrawThemeInit();
+
 #if 0
   wdPreInitialize(NULL, NULL, WD_DISABLE_D2D);  /* to force GDI+ */
 #endif
@@ -59,23 +62,18 @@ int iupwinDrawInitWDL(void)
   iupwinWdlImageInit();
 
   if (wdBackend() == WD_BACKEND_D2D)
-    return 1;
-  else
-    return 0;
+    gdix_init();  /* if WDL is using Direct2D must manually initialize GDI+ */
 }
 
-int iupwinDrawFinishWDL(void)
+void iupwinDrawFinish(void)
 {
-  int ret = 0;
-
   if (wdBackend() == WD_BACKEND_D2D)
-    ret = 1;
+    gdix_fini();  /* if WDL is using Direct2D must manually terminate GDI+ */
 
   wdTerminate(wdl_flags);
-  return ret;
 }
 
-IdrawCanvas* iupdrvDrawCreateCanvasWDL(Ihandle* ih)
+IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
   PAINTSTRUCT ps;
@@ -84,7 +82,7 @@ IdrawCanvas* iupdrvDrawCreateCanvasWDL(Ihandle* ih)
   char *rcPaint;
 
   dc->ih = ih;
-  dc->backend_type = wdBackend();  /* Cache backend type */
+  dc->backend_type = wdBackend();
 
   dc->hWnd = (HWND)IupGetAttribute(ih, "HWND");  /* Use the attribute, so it can work with FileDlg preview area */
 
@@ -147,7 +145,7 @@ IdrawCanvas* iupdrvDrawCreateCanvasWDL(Ihandle* ih)
   return dc;
 }
 
-void iupdrvDrawKillCanvasWDL(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   wdSetClip(dc->hCanvas, NULL, NULL); /* must reset clip before destroy */
   wdDestroyCanvas(dc->hCanvas);
@@ -159,7 +157,7 @@ void iupdrvDrawKillCanvasWDL(IdrawCanvas* dc)
   free(dc);
 }
 
-void iupdrvDrawUpdateSizeWDL(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 {
   int w, h;
   RECT rect;
@@ -177,12 +175,12 @@ void iupdrvDrawUpdateSizeWDL(IdrawCanvas* dc)
   }
 }
 
-void iupdrvDrawFlushWDL(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   wdEndPaint(dc->hCanvas);
 }
 
-void iupdrvDrawGetSizeWDL(IdrawCanvas* dc, int *w, int *h)
+IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
 {
   if (w) *w = dc->w;
   if (h) *h = dc->h;
@@ -228,7 +226,7 @@ static WD_HSTROKESTYLE iCreateStrokeStyle(int style)
   return wdCreateStrokeStyleCustom(dashes, dash_count, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
 }
 
-void iupdrvDrawRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
 
@@ -248,7 +246,7 @@ void iupdrvDrawRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, lon
   wdDestroyBrush(brush);
 }
 
-void iupdrvDrawLineWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
   WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
@@ -271,7 +269,7 @@ void iupdrvDrawLineWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long col
   wdDestroyBrush(brush);
 }
 
-void iupdrvDrawArcWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
   float xc, yc, rx, ry;
   float baseAngle, sweepAngle;
@@ -310,7 +308,7 @@ void iupdrvDrawArcWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1
   wdDestroyBrush(brush);
 }
 
-void iupdrvDrawEllipseWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   float xc, yc, rx, ry;
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
@@ -339,7 +337,7 @@ void iupdrvDrawEllipseWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long 
   wdDestroyBrush(brush);
 }
 
-void iupdrvDrawPolygonWDL(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
   WD_HPATH path;
@@ -374,14 +372,14 @@ void iupdrvDrawPolygonWDL(IdrawCanvas* dc, int* points, int count, long color, i
   wdDestroyBrush(brush);
 }
 
-void iupdrvDrawPixelWDL(IdrawCanvas* dc, int x, int y, long color)
+IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 {
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
   wdFillRect(dc->hCanvas, brush, iupInt2Float(x), iupInt2Float(y), iupInt2Float(x + 1), iupInt2Float(y + 1));
   wdDestroyBrush(brush);
 }
 
-void iupdrvDrawRoundedRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
 {
   WD_HBRUSH brush;
   int width, height;
@@ -409,7 +407,6 @@ void iupdrvDrawRoundedRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int 
   if (radius > max_radius)
     radius = max_radius;
 
-  /* Use native Direct2D rounded rectangle (optimized, no path allocation) */
   if (style == IUP_DRAW_FILL)
   {
     wdFillRoundedRect(dc->hCanvas, brush, x0, y0, x1f, y1f, radius);
@@ -425,7 +422,7 @@ void iupdrvDrawRoundedRectangleWDL(IdrawCanvas* dc, int x1, int y1, int x2, int 
   wdDestroyBrush(brush);
 }
 
-void iupdrvDrawBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
 {
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
   WD_HPATH path;
@@ -434,23 +431,16 @@ void iupdrvDrawBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3
   if (!brush)
     return;
 
-  /* Create path for Bezier curve */
   path = wdCreatePath(dc->hCanvas);
   wdOpenPathSink(&sink, path);
 
-  /* Start at first point */
   wdBeginFigure(&sink, iupInt2Float(x1), iupInt2Float(y1));
 
-  /* Add cubic Bezier curve using native Direct2D/GDI+ */
-  wdAddBezier(&sink, iupInt2Float(x2), iupInt2Float(y2),
-              iupInt2Float(x3), iupInt2Float(y3),
-              iupInt2Float(x4), iupInt2Float(y4));
+  wdAddBezier(&sink, iupInt2Float(x2), iupInt2Float(y2), iupInt2Float(x3), iupInt2Float(y3), iupInt2Float(x4), iupInt2Float(y4));
 
-  /* End figure without closing (open curve) */
   wdEndFigure(&sink, FALSE);
   wdClosePathSink(&sink);
 
-  /* Draw or fill the path */
   if (style == IUP_DRAW_FILL)
   {
     wdFillPath(dc->hCanvas, brush, path);
@@ -467,30 +457,20 @@ void iupdrvDrawBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3
   wdDestroyBrush(brush);
 }
 
-void iupdrvDrawQuadraticBezierWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
-  /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula:
-   * Given quadratic: Q(t) with control points q0, q1, q2
-   * Convert to cubic: C(t) with control points c0, c1, c2, c3
-   *
-   * c0 = q0                        (start point)
-   * c1 = q0 + (2/3) * (q1 - q0)   (first control point)
-   * c2 = q2 + (2/3) * (q1 - q2)   (second control point)
-   * c3 = q2                        (end point)
-   */
   int cx1, cy1, cx2, cy2;
 
-  /* Calculate cubic control points from quadratic */
+  /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula */
   cx1 = x1 + ((2 * (x2 - x1)) / 3);
   cy1 = y1 + ((2 * (y2 - y1)) / 3);
   cx2 = x3 + ((2 * (x2 - x3)) / 3);
   cy2 = y3 + ((2 * (y2 - y3)) / 3);
 
-  /* Draw as cubic Bezier */
-  iupdrvDrawBezierWDL(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
+  iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
-void iupdrvDrawResetClipWDL(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   wdSetClip(dc->hCanvas, NULL, NULL);
 
@@ -500,7 +480,7 @@ void iupdrvDrawResetClipWDL(IdrawCanvas* dc)
   dc->clip_y2 = 0;
 }
 
-void iupdrvDrawGetClipRectWDL(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
 {
   if (x1) *x1 = dc->clip_x1;
   if (y1) *y1 = dc->clip_y1;
@@ -508,13 +488,13 @@ void iupdrvDrawGetClipRectWDL(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y
   if (y2) *y2 = dc->clip_y2;
 }
 
-void iupdrvDrawSetClipRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   WD_RECT rect;
 
   if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
   {
-    iupdrvDrawResetClipWDL(dc);
+    iupdrvDrawResetClip(dc);
     return;
   }
 
@@ -545,7 +525,7 @@ void iupdrvDrawSetClipRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   dc->clip_y2 = y2;
 }
 
-void iupdrvDrawSetClipRoundedRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
+IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
 {
   WD_RECT rect;
   WD_HPATH path;
@@ -554,7 +534,7 @@ void iupdrvDrawSetClipRoundedRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, in
 
   if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
   {
-    iupdrvDrawResetClipWDL(dc);
+    iupdrvDrawResetClip(dc);
     return;
   }
 
@@ -595,7 +575,7 @@ static int iCompensatePosX(float font_height)
   return iupRound(font_height / 7.);  /* 15% */
 }
 
-void iupdrvDrawTextWDL(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
+IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   WD_RECT rect;
   DWORD dwFlags = WD_STR_TOPALIGN;
@@ -661,7 +641,7 @@ void iupdrvDrawTextWDL(IdrawCanvas* dc, const char* text, int len, int x, int y,
   wdDestroyBrush(brush);
 }
 
-void iupdrvDrawImageWDL(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
 {
   WD_HIMAGE hImage = iupwinWdlImageGetImage(name, dc->ih, make_inactive, bgcolor);
   if (hImage)
@@ -683,9 +663,9 @@ void iupdrvDrawImageWDL(IdrawCanvas* dc, const char* name, int make_inactive, co
   }
 }
 
-void iupdrvDrawSelectRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
-  WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(iupDrawColor(0, 0, 255, 153)));  /* R=0, G=0, B=255, A=153 (blue semi-transparent) */
+  WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(iupDrawColor(0, 0, 255, 153)));
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -695,7 +675,7 @@ void iupdrvDrawSelectRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   wdDestroyBrush(brush);
 }
 
-void iupdrvDrawFocusRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
 #if 0
   RECT rect;
@@ -713,11 +693,11 @@ void iupdrvDrawFocusRectWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   DrawFocusRect(hDC, &rect);
   wdEndGdi(dc->hCanvas, hDC);
 #else
-  iupdrvDrawRectangleWDL(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
+  iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
 #endif
 }
 
-static long iWdlInterpolateColor(long color1, long color2, float t)
+static long iInterpolateColor(long color1, long color2, float t)
 {
   unsigned char r1 = iupDrawRed(color1), g1 = iupDrawGreen(color1), b1 = iupDrawBlue(color1), a1 = iupDrawAlpha(color1);
   unsigned char r2 = iupDrawRed(color2), g2 = iupDrawGreen(color2), b2 = iupDrawBlue(color2), a2 = iupDrawAlpha(color2);
@@ -728,7 +708,7 @@ static long iWdlInterpolateColor(long color1, long color2, float t)
   return iupDrawColor(r, g, b, a);
 }
 
-void iupdrvDrawLinearGradientWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
 {
   WD_HBRUSH brush;
   float rad, dx, dy, cx, cy, w, h;
@@ -737,31 +717,24 @@ void iupdrvDrawLinearGradientWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  /* Calculate gradient direction based on angle */
-  /* 0 = left to right, 90 = top to bottom, 180 = right to left, 270 = bottom to top */
   rad = angle * 3.14159265359f / 180.0f;
   dx = (float)cos(rad);
   dy = (float)sin(rad);
 
-  /* Calculate gradient start and end points */
   w = (float)(x2 - x1);
   h = (float)(y2 - y1);
   cx = (float)x1 + w / 2.0f;
   cy = (float)y1 + h / 2.0f;
 
-  /* Calculate start point */
   x0 = cx - (w * dx) / 2.0f;
   y0 = cy - (h * dy) / 2.0f;
 
-  /* Calculate end point */
   x3 = cx + (w * dx) / 2.0f;
   y3 = cy + (h * dy) / 2.0f;
 
-  /* Try to create native gradient brush (only works with Direct2D backend) */
   brush = wdCreateLinearGradientBrush(dc->hCanvas, x0, y0, x3, y3, iupColor2ARGB(color1), iupColor2ARGB(color2));
   if (brush)
   {
-    /* Native gradient - single fill operation */
     wdFillRect(dc->hCanvas, brush, iupInt2Float(x1), iupInt2Float(y1), iupInt2Float(x2), iupInt2Float(y2));
     wdDestroyBrush(brush);
   }
@@ -780,7 +753,7 @@ void iupdrvDrawLinearGradientWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2
     for (i = 0; i < steps; i++)
     {
       t = (float)i / (float)(steps - 1);
-      long color = iWdlInterpolateColor(color1, color2, t);
+      long color = iInterpolateColor(color1, color2, t);
       brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
 
       if (fabs(dx) > fabs(dy))
@@ -804,19 +777,16 @@ void iupdrvDrawLinearGradientWDL(IdrawCanvas* dc, int x1, int y1, int x2, int y2
   }
 }
 
-void iupdrvDrawRadialGradientWDL(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
 {
   WD_HBRUSH brush;
 
-  /* Try to create native gradient brush (only works with Direct2D backend) */
   brush = wdCreateRadialGradientBrush(dc->hCanvas, iupInt2Float(cx), iupInt2Float(cy),
                                        iupInt2Float(radius), iupInt2Float(radius),
                                        iupColor2ARGB(colorCenter), iupColor2ARGB(colorEdge));
   if (brush)
   {
-    /* Native gradient - single fill operation */
-    wdFillEllipse(dc->hCanvas, brush, iupInt2Float(cx), iupInt2Float(cy),
-                   iupInt2Float(radius), iupInt2Float(radius));
+    wdFillEllipse(dc->hCanvas, brush, iupInt2Float(cx), iupInt2Float(cy), iupInt2Float(radius), iupInt2Float(radius));
     wdDestroyBrush(brush);
   }
   else
@@ -829,11 +799,10 @@ void iupdrvDrawRadialGradientWDL(IdrawCanvas* dc, int cx, int cy, int radius, lo
     if (steps < 2) steps = 2;
     if (steps > 256) steps = 256;
 
-    /* Draw concentric circles from outside to inside */
     for (i = steps - 1; i >= 0; i--)
     {
       t = (float)i / (float)(steps - 1);
-      long color = iWdlInterpolateColor(colorCenter, colorEdge, t);
+      long color = iInterpolateColor(colorCenter, colorEdge, t);
       brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
 
       r = (float)radius * t;
@@ -843,7 +812,7 @@ void iupdrvDrawRadialGradientWDL(IdrawCanvas* dc, int cx, int cy, int radius, lo
   }
 }
 
-int iupdrvDrawGetImageDataWDL(IdrawCanvas* dc, unsigned char* data)
+IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
   BITMAPINFOHEADER bmi;
   HBITMAP hBitmap;
@@ -931,5 +900,79 @@ int iupdrvDrawGetImageDataWDL(IdrawCanvas* dc, unsigned char* data)
 
   wdBeginPaint(dc->hCanvas);
 
+  return 1;
+}
+
+static void iBgrToRgba(unsigned char* dst, const unsigned char* src, int w, int h)
+{
+  int x, y;
+  for (y = 0; y < h; y++)
+  {
+    const unsigned char* src_line = src + y * w * 4;
+    unsigned char* dst_line = dst + y * w * 4;
+    for (x = 0; x < w; x++)
+    {
+      dst_line[x * 4 + 0] = src_line[x * 4 + 2];
+      dst_line[x * 4 + 1] = src_line[x * 4 + 1];
+      dst_line[x * 4 + 2] = src_line[x * 4 + 0];
+      dst_line[x * 4 + 3] = 255;
+    }
+  }
+}
+
+IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
+{
+  HWND hwnd = (HWND)IupGetAttribute(ih, "HWND");
+  HDC hDC, hMemDC;
+  HBITMAP hBitmap;
+  HGDIOBJ hOld;
+  BITMAPINFOHEADER bmi;
+  unsigned char* temp;
+
+  if (!hwnd)
+    return 0;
+
+  hDC = GetDC(hwnd);
+  hMemDC = CreateCompatibleDC(hDC);
+  hBitmap = CreateCompatibleBitmap(hDC, w, h);
+  hOld = SelectObject(hMemDC, hBitmap);
+
+  BitBlt(hMemDC, 0, 0, w, h, hDC, 0, 0, SRCCOPY);
+
+  memset(&bmi, 0, sizeof(bmi));
+  bmi.biSize = sizeof(BITMAPINFOHEADER);
+  bmi.biWidth = w;
+  bmi.biHeight = -h;  /* top-down */
+  bmi.biPlanes = 1;
+  bmi.biBitCount = 32;
+  bmi.biCompression = BI_RGB;
+
+  temp = (unsigned char*)malloc(w * h * 4);
+  if (!temp)
+  {
+    SelectObject(hMemDC, hOld);
+    DeleteObject(hBitmap);
+    DeleteDC(hMemDC);
+    ReleaseDC(hwnd, hDC);
+    return 0;
+  }
+
+  if (!GetDIBits(hMemDC, hBitmap, 0, h, temp, (BITMAPINFO*)&bmi, DIB_RGB_COLORS))
+  {
+    free(temp);
+    SelectObject(hMemDC, hOld);
+    DeleteObject(hBitmap);
+    DeleteDC(hMemDC);
+    ReleaseDC(hwnd, hDC);
+    return 0;
+  }
+
+  iBgrToRgba(data, temp, w, h);
+
+  free(temp);
+  SelectObject(hMemDC, hOld);
+  DeleteObject(hBitmap);
+  DeleteDC(hMemDC);
+  ReleaseDC(hwnd, hDC);
   return 1;
 }
