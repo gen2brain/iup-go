@@ -554,13 +554,13 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
         Evas_Object* parent = inner ? evas_object_smart_parent_get(inner) : NULL;
         if (parent && evas)
         {
-          blocker = evas_object_rectangle_add(evas);
-          evas_object_color_set(blocker, 0, 0, 0, 64);
+          blocker = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas);
+          efl_gfx_color_set(blocker, 0, 0, 0, 64);
           evas_object_smart_member_add(blocker, parent);
-          evas_object_resize(blocker, ih->currentwidth, ih->currentheight);
-          evas_object_move(blocker, 0, 0);
-          evas_object_stack_above(blocker, inner);
-          evas_object_show(blocker);
+          efl_gfx_entity_size_set(blocker, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
+          efl_gfx_entity_position_set(blocker, EINA_POSITION2D(0, 0));
+          efl_gfx_stack_above(blocker, inner);
+          efl_gfx_entity_visible_set(blocker, EINA_TRUE);
           iupAttribSet(ih, "_IUP_EFL_MODAL_BLOCKER", (char*)blocker);
         }
       }
@@ -575,7 +575,7 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
         Eo* blocker = (Eo*)iupAttribGet(ih, "_IUP_EFL_MODAL_BLOCKER");
         if (blocker)
         {
-          evas_object_del(blocker);
+          efl_del(blocker);
           iupAttribSet(ih, "_IUP_EFL_MODAL_BLOCKER", NULL);
         }
       }
@@ -713,7 +713,10 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   if (widget)
   {
     iupeflBaseRemoveCallbacks(ih, widget);
-    iupeflDelete(widget);
+    if (efl_parent_get(widget))
+      efl_del(widget);
+    else
+      efl_unref(widget);
   }
 
   iupeflFontFree(ih);

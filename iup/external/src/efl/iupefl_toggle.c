@@ -49,11 +49,10 @@ static void eflToggleLabelClickCallback(void* data, const Efl_Event* ev)
 
 static void eflToggleUpdateImage(Ihandle* ih, int check)
 {
-  Eo* toggle = iupeflGetWidget(ih);
   char* name;
-  Evas_Object* image;
+  Eo* toggle_img;
 
-  if (!toggle || ih->data->type != IUP_TOGGLE_IMAGE)
+  if (ih->data->type != IUP_TOGGLE_IMAGE)
     return;
 
   if (check)
@@ -67,17 +66,9 @@ static void eflToggleUpdateImage(Ihandle* ih, int check)
     name = iupAttribGet(ih, "IMAGE");
   }
 
-  if (name)
-  {
-    image = iupeflImageGetImage(name, ih, 0);
-    if (image)
-    {
-      if (ih->data->type == IUP_TOGGLE_IMAGE)
-        elm_object_content_set(toggle, image);
-      else
-        efl_content_set(toggle, image);
-    }
-  }
+  toggle_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_TOGGLE_IMAGE");
+  if (name && toggle_img)
+    iupeflImageUpdateImage(toggle_img, name, ih, 0);
 }
 
 /****************************************************************
@@ -299,13 +290,23 @@ static int eflToggleSetImageAttrib(Ihandle* ih, const char* value)
 
   if (value && value[0])
   {
-    Evas_Object* image = iupeflImageGetImage(value, ih, 0);
-    if (image)
-      elm_object_content_set(toggle, image);
+    Eo* toggle_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_TOGGLE_IMAGE");
+    if (toggle_img)
+      iupeflImageUpdateImage(toggle_img, value, ih, 0);
+    else
+    {
+      Evas_Object* image = iupeflImageGetImage(value, ih, 0);
+      if (image)
+      {
+        elm_object_content_set(toggle, image);
+        iupAttribSet(ih, "_IUP_EFL_TOGGLE_IMAGE", (char*)image);
+      }
+    }
   }
   else
   {
     elm_object_content_set(toggle, NULL);
+    iupAttribSet(ih, "_IUP_EFL_TOGGLE_IMAGE", NULL);
   }
 
   return 1;
@@ -354,9 +355,9 @@ static int eflToggleSetActiveAttrib(Ihandle* ih, const char* value)
 
     if (name)
     {
-      Evas_Object* image = iupeflImageGetImage(name, ih, disabled);
-      if (image)
-        elm_object_content_set(widget, image);
+      Eo* toggle_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_TOGGLE_IMAGE");
+      if (toggle_img)
+        iupeflImageUpdateImage(toggle_img, name, ih, disabled);
     }
   }
 
@@ -539,6 +540,7 @@ static int eflToggleMapMethod(Ihandle* ih)
         radio_group = efl_new(EFL_UI_RADIO_GROUP_IMPL_CLASS, NULL);
         iupAttribSet(radio, "_IUP_EFL_RADIO_GROUP", (char*)radio_group);
         efl_ui_radio_group_register(radio_group, radio_btn);
+        efl_ui_selectable_fallback_selection_set(radio_group, radio_btn);
         efl_event_callback_add(radio_group, EFL_UI_RADIO_GROUP_EVENT_VALUE_CHANGED, eflRadioGroupValueChangedCallback, radio);
         is_first_radio = 1;
       }
@@ -642,6 +644,7 @@ static int eflToggleMapMethod(Ihandle* ih)
         elm_object_content_set(toggle, image);
       else
         efl_content_set(toggle, image);
+      iupAttribSet(ih, "_IUP_EFL_TOGGLE_IMAGE", (char*)image);
     }
   }
 

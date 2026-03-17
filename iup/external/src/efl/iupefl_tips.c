@@ -68,19 +68,19 @@ static Evas_Object* eflTipContentCb(void* data, Evas_Object* obj, Evas_Object* t
       Evas_Object* ic = elm_icon_add(tooltip);
       if (ic && elm_icon_standard_set(ic, icon_name))
       {
-        evas_object_size_hint_min_set(ic, 16, 16);
-        evas_object_size_hint_max_set(ic, 16, 16);
+        efl_gfx_hint_size_min_set(ic, EINA_SIZE2D(16, 16));
+        efl_gfx_hint_size_max_set(ic, EINA_SIZE2D(16, 16));
         elm_box_pack_end(box, ic);
-        evas_object_show(ic);
+        efl_gfx_entity_visible_set(ic, EINA_TRUE);
       }
       else if (ic)
-        evas_object_del(ic);
+        efl_del(ic);
     }
 
     label = elm_label_add(tooltip);
     elm_object_text_set(label, tip);
     elm_box_pack_end(box, label);
-    evas_object_show(label);
+    efl_gfx_entity_visible_set(label, EINA_TRUE);
 
     return box;
   }

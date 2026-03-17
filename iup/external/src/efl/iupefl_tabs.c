@@ -92,7 +92,7 @@ static void eflTabsHideDragIndicator(Ihandle* ih)
 {
   (void)ih;
   if (efl_drag_indicator)
-    evas_object_hide(efl_drag_indicator);
+    efl_gfx_entity_visible_set(efl_drag_indicator, EINA_FALSE);
 }
 
 static void eflTabsUpdateDragIndicator(Ihandle* ih, int target)
@@ -119,9 +119,8 @@ static void eflTabsUpdateDragIndicator(Ihandle* ih, int target)
 
   if (!efl_drag_indicator)
   {
-    Evas* evas = evas_object_evas_get(tab_bar);
-    efl_drag_indicator = evas_object_rectangle_add(evas);
-    evas_object_color_set(efl_drag_indicator, 0, 120, 215, 255);
+    efl_drag_indicator = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(tab_bar));
+    efl_gfx_color_set(efl_drag_indicator, 0, 120, 215, 255);
   }
 
   page = efl_pack_content_get(pager, target);
@@ -135,9 +134,10 @@ static void eflTabsUpdateDragIndicator(Ihandle* ih, int target)
   geom = efl_gfx_entity_geometry_get(item);
 
   x = (source < target) ? geom.x + geom.w - 1 : geom.x;
-  evas_object_geometry_set(efl_drag_indicator, x, geom.y, 2, geom.h);
-  evas_object_show(efl_drag_indicator);
-  evas_object_raise(efl_drag_indicator);
+  efl_gfx_entity_position_set(efl_drag_indicator, EINA_POSITION2D(x, geom.y));
+  efl_gfx_entity_size_set(efl_drag_indicator, EINA_SIZE2D(2, geom.h));
+  efl_gfx_entity_visible_set(efl_drag_indicator, EINA_TRUE);
+  efl_gfx_stack_raise_to_top(efl_drag_indicator);
 }
 
 static void eflTabsReorderTab(Ihandle* ih, int source, int target)

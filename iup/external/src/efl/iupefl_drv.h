@@ -195,7 +195,6 @@ typedef struct _IeflVgImageData {
 Eo* iupeflImageGetImage(const char* name, Ihandle* ih, int make_inactive);
 Eo* iupeflImageGetImageForParent(const char* name, Ihandle* ih, int make_inactive, Eo* parent);
 int iupeflImageUpdateImage(Eo* elm_img, const char* name, Ihandle* ih, int make_inactive);
-void iupeflImageDestroy(Eo* image);
 
 /****************************************************************************
  * Native Handle Access

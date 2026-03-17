@@ -442,7 +442,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
   evas_object_textblock_text_markup_set(dlg.preview_label, "AaBbYyZz 0123");
   efl_gfx_hint_weight_set(dlg.preview_label, 1.0, 1.0);
   efl_gfx_hint_fill_set(dlg.preview_label, EINA_TRUE, EINA_TRUE);
-  evas_object_show(dlg.preview_label);
+  efl_gfx_entity_visible_set(dlg.preview_label, EINA_TRUE);
   efl_pack_end(preview_box, dlg.preview_label);
 
   efl_pack_end(main_box, preview_box);

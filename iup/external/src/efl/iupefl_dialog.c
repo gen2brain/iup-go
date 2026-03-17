@@ -84,8 +84,15 @@ static void eflDialogStackBgBelow(Ihandle* ih, Eo* bg)
     Evas_Object* parent = evas_object_smart_parent_get(inner);
     if (parent)
       evas_object_smart_member_add(bg, parent);
-    evas_object_stack_below(bg, inner);
+    efl_gfx_stack_below(bg, inner);
   }
+}
+
+static void eflDialogFreeCanvasImage(Eo* img)
+{
+  if (!img)
+    return;
+  efl_unref(img);
 }
 
 static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
@@ -123,14 +130,14 @@ static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
       Eo* bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
       if (bg_rect)
       {
-        evas_object_resize(bg_rect, w, h);
-        evas_object_move(bg_rect, 0, 0);
+        efl_gfx_entity_size_set(bg_rect, EINA_SIZE2D(w, h));
+        efl_gfx_entity_position_set(bg_rect, EINA_POSITION2D(0, 0));
         eflDialogStackBgBelow(ih, bg_rect);
       }
       if (bg_img)
       {
-        evas_object_resize(bg_img, w, h);
-        evas_object_move(bg_img, 0, 0);
+        efl_gfx_entity_size_set(bg_img, EINA_SIZE2D(w, h));
+        efl_gfx_entity_position_set(bg_img, EINA_POSITION2D(0, 0));
         if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
           evas_object_image_fill_set(bg_img, 0, 0, w, h);
         eflDialogStackBgBelow(ih, bg_img);
@@ -594,7 +601,7 @@ static int eflDialogMapMethod(Ihandle* ih)
   if (content_box)
   {
     efl_content_set(win, content_box);
-    evas_object_show(content_box);
+    efl_gfx_entity_visible_set(content_box, EINA_TRUE);
     iupAttribSet(ih, "_IUP_EFL_INNER", (char*)content_box);
   }
   else
@@ -673,11 +680,11 @@ static void eflDialogUnMapMethod(Ihandle* ih)
       Eo* bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
       Eo* op_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_OPACITY_IMAGE");
       if (bg_rect)
-        evas_object_del(bg_rect);
+        efl_unref(bg_rect);
       if (bg_img)
-        evas_object_del(bg_img);
+        eflDialogFreeCanvasImage(bg_img);
       if (op_img)
-        evas_object_del(op_img);
+        eflDialogFreeCanvasImage(op_img);
       iupAttribSet(ih, "_IUP_EFL_BGRECT", NULL);
       iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", NULL);
       iupAttribSet(ih, "_IUP_EFL_OPACITY_IMAGE", NULL);
@@ -716,16 +723,16 @@ static void eflDialogLayoutUpdateMethod(Ihandle* ih)
   bg = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
   if (bg)
   {
-    evas_object_resize(bg, width, height);
-    evas_object_move(bg, 0, 0);
+    efl_gfx_entity_size_set(bg, EINA_SIZE2D(width, height));
+    efl_gfx_entity_position_set(bg, EINA_POSITION2D(0, 0));
     eflDialogStackBgBelow(ih, bg);
   }
 
   bg = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
   if (bg)
   {
-    evas_object_resize(bg, width, height);
-    evas_object_move(bg, 0, 0);
+    efl_gfx_entity_size_set(bg, EINA_SIZE2D(width, height));
+    efl_gfx_entity_position_set(bg, EINA_POSITION2D(0, 0));
     if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
       evas_object_image_fill_set(bg, 0, 0, width, height);
     eflDialogStackBgBelow(ih, bg);
@@ -864,15 +871,14 @@ static int eflDialogSetBgColorAttrib(Ihandle* ih, const char* value)
   bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
   if (!bg_rect)
   {
-    Evas* evas = evas_object_evas_get(win);
-    bg_rect = evas_object_rectangle_add(evas);
+    bg_rect = efl_add_ref(EFL_CANVAS_RECTANGLE_CLASS, win);
     iupAttribSet(ih, "_IUP_EFL_BGRECT", (char*)bg_rect);
-    evas_object_show(bg_rect);
+    efl_gfx_entity_visible_set(bg_rect, EINA_TRUE);
   }
 
-  evas_object_color_set(bg_rect, r, g, b, 255);
-  evas_object_resize(bg_rect, ih->currentwidth, ih->currentheight);
-  evas_object_move(bg_rect, 0, 0);
+  efl_gfx_color_set(bg_rect, r, g, b, 255);
+  efl_gfx_entity_size_set(bg_rect, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
+  efl_gfx_entity_position_set(bg_rect, EINA_POSITION2D(0, 0));
   eflDialogStackBgBelow(ih, bg_rect);
 
   return 1;
@@ -885,70 +891,76 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     Eo* old_bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
     if (old_bg_img)
     {
-      evas_object_del(old_bg_img);
+      eflDialogFreeCanvasImage(old_bg_img);
       iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", NULL);
     }
     return 1;
   }
   else
   {
-    Evas_Object* elm_img = (Evas_Object*)iupImageGetImage(value, ih, 0, NULL);
-    if (elm_img)
+    Eo* src_img = (Eo*)iupImageGetImage(value, ih, 0, NULL);
+    if (src_img)
     {
       Eo* win = iupeflGetWidget(ih);
-      Evas_Object* evas_img = elm_image_object_get(elm_img);
-      Eo* inner = (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
       Eo* bg_rect;
       Eo* bg_img;
-      unsigned int* src_pixels;
-      unsigned int* dst_pixels;
+      Eina_Size2D size;
       int w, h;
+      int stride = 0;
+      Eina_Rw_Slice mapped;
 
-      if (!evas_img || !win)
+      if (!win)
         return 0;
 
-      evas_object_image_size_get(evas_img, &w, &h);
+      size = efl_gfx_buffer_size_get(src_img);
+      w = size.w;
+      h = size.h;
       if (w <= 0 || h <= 0)
         return 0;
 
-      src_pixels = evas_object_image_data_get(evas_img, EINA_FALSE);
-      if (!src_pixels)
+      mapped = efl_gfx_buffer_map(src_img, EFL_GFX_BUFFER_ACCESS_MODE_READ,
+                                   NULL, EFL_GFX_COLORSPACE_ARGB8888, 0, &stride);
+      if (!mapped.mem)
         return 0;
 
       bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
       if (bg_rect)
       {
-        evas_object_del(bg_rect);
+        efl_unref(bg_rect);
         iupAttribSet(ih, "_IUP_EFL_BGRECT", NULL);
       }
 
       bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
-      if (!bg_img)
+      if (bg_img)
+        eflDialogFreeCanvasImage(bg_img);
+
+      bg_img = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, win);
+      iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", (char*)bg_img);
+
+      evas_object_image_alpha_set(bg_img, efl_gfx_buffer_alpha_get(src_img));
+      evas_object_image_size_set(bg_img, w, h);
       {
-        Evas* evas = evas_object_evas_get(win);
-        bg_img = evas_object_image_add(evas);
-        iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", (char*)bg_img);
+        unsigned int* dst = evas_object_image_data_get(bg_img, EINA_TRUE);
+        if (dst)
+        {
+          int y;
+          for (y = 0; y < h; y++)
+            memcpy(dst + y * w, (unsigned char*)mapped.mem + y * stride, w * sizeof(unsigned int));
+          evas_object_image_data_set(bg_img, dst);
+        }
       }
 
-      evas_object_image_size_set(bg_img, w, h);
-      evas_object_image_alpha_set(bg_img, evas_object_image_alpha_get(evas_img));
+      efl_gfx_buffer_unmap(src_img, mapped);
 
       if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
         evas_object_image_fill_set(bg_img, 0, 0, ih->currentwidth, ih->currentheight);
       else
         evas_object_image_fill_set(bg_img, 0, 0, w, h);
 
-      dst_pixels = evas_object_image_data_get(bg_img, EINA_TRUE);
-      if (dst_pixels)
-      {
-        memcpy(dst_pixels, src_pixels, w * h * sizeof(unsigned int));
-        evas_object_image_data_set(bg_img, dst_pixels);
-      }
-
-      evas_object_resize(bg_img, ih->currentwidth, ih->currentheight);
-      evas_object_move(bg_img, 0, 0);
+      efl_gfx_entity_size_set(bg_img, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
+      efl_gfx_entity_position_set(bg_img, EINA_POSITION2D(0, 0));
       eflDialogStackBgBelow(ih, bg_img);
-      evas_object_show(bg_img);
+      efl_gfx_entity_visible_set(bg_img, EINA_TRUE);
 
       return 1;
     }
@@ -1012,37 +1024,37 @@ static int eflDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
 
     if (imgdata && channels == 4)
     {
-      Evas* evas = ecore_evas_get(ee);
-      Evas_Object* mask_img = evas_object_image_filled_add(evas);
-      unsigned int* pixels;
+      Eo* mask_img = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, win);
       int x, y;
 
-      evas_object_image_size_set(mask_img, w, h);
       evas_object_image_alpha_set(mask_img, EINA_TRUE);
-
-      pixels = evas_object_image_data_get(mask_img, EINA_TRUE);
-      if (pixels)
+      evas_object_image_size_set(mask_img, w, h);
       {
-        for (y = 0; y < h; y++)
+        unsigned int* pixels = evas_object_image_data_get(mask_img, EINA_TRUE);
+        if (pixels)
         {
-          for (x = 0; x < w; x++)
+          for (y = 0; y < h; y++)
           {
-            unsigned char a = imgdata[(y * w + x) * 4 + 3];
-            if (a > 0)
-              pixels[y * w + x] = 0xFFFFFFFF;
-            else
-              pixels[y * w + x] = 0x00000000;
+            for (x = 0; x < w; x++)
+            {
+              unsigned char a = imgdata[(y * w + x) * 4 + 3];
+              if (a > 0)
+                pixels[y * w + x] = 0xFFFFFFFF;
+              else
+                pixels[y * w + x] = 0x00000000;
+            }
           }
+          evas_object_image_data_set(mask_img, pixels);
         }
-        evas_object_image_data_set(mask_img, pixels);
       }
+      evas_object_image_filled_set(mask_img, EINA_TRUE);
 
-      evas_object_resize(mask_img, w, h);
-      evas_object_show(mask_img);
+      efl_gfx_entity_size_set(mask_img, EINA_SIZE2D(w, h));
+      efl_gfx_entity_visible_set(mask_img, EINA_TRUE);
 
       ecore_evas_shaped_set(ee, EINA_TRUE);
 
-      evas_object_del(mask_img);
+      eflDialogFreeCanvasImage(mask_img);
       return 1;
     }
   }
@@ -1068,7 +1080,7 @@ static int eflDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
     Eo* old_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_OPACITY_IMAGE");
     if (old_img)
     {
-      evas_object_del(old_img);
+      eflDialogFreeCanvasImage(old_img);
       iupAttribSet(ih, "_IUP_EFL_OPACITY_IMAGE", NULL);
     }
     ecore_evas_alpha_set(ee, EINA_FALSE);
@@ -1086,44 +1098,45 @@ static int eflDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
 
     if (imgdata && channels == 4)
     {
-      Evas* evas = ecore_evas_get(ee);
       Eo* old_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_OPACITY_IMAGE");
-      Evas_Object* bg_img;
+      Eo* bg_img;
       unsigned int* pixels;
       int x, y;
 
       if (old_img)
-        evas_object_del(old_img);
+        eflDialogFreeCanvasImage(old_img);
 
-      bg_img = evas_object_image_filled_add(evas);
+      bg_img = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, win);
       iupAttribSet(ih, "_IUP_EFL_OPACITY_IMAGE", (char*)bg_img);
 
-      evas_object_image_size_set(bg_img, w, h);
       evas_object_image_alpha_set(bg_img, EINA_TRUE);
-
-      pixels = evas_object_image_data_get(bg_img, EINA_TRUE);
-      if (pixels)
+      evas_object_image_size_set(bg_img, w, h);
       {
-        for (y = 0; y < h; y++)
+        unsigned int* dst = evas_object_image_data_get(bg_img, EINA_TRUE);
+        if (dst)
         {
-          for (x = 0; x < w; x++)
+          for (y = 0; y < h; y++)
           {
-            int idx = (y * w + x) * 4;
-            unsigned char r = imgdata[idx];
-            unsigned char g = imgdata[idx + 1];
-            unsigned char b = imgdata[idx + 2];
-            unsigned char a = imgdata[idx + 3];
-            pixels[y * w + x] = (a << 24) | (r << 16) | (g << 8) | b;
+            for (x = 0; x < w; x++)
+            {
+              int idx = (y * w + x) * 4;
+              unsigned char r = imgdata[idx];
+              unsigned char g = imgdata[idx + 1];
+              unsigned char b = imgdata[idx + 2];
+              unsigned char a = imgdata[idx + 3];
+              dst[y * w + x] = (a << 24) | (r << 16) | (g << 8) | b;
+            }
           }
+          evas_object_image_data_set(bg_img, dst);
         }
-        evas_object_image_data_set(bg_img, pixels);
       }
+      evas_object_image_filled_set(bg_img, EINA_TRUE);
 
       ecore_evas_alpha_set(ee, EINA_TRUE);
 
-      evas_object_resize(bg_img, w, h);
-      evas_object_move(bg_img, 0, 0);
-      evas_object_show(bg_img);
+      efl_gfx_entity_size_set(bg_img, EINA_SIZE2D(w, h));
+      efl_gfx_entity_position_set(bg_img, EINA_POSITION2D(0, 0));
+      efl_gfx_entity_visible_set(bg_img, EINA_TRUE);
 
       return 1;
     }

@@ -1030,12 +1030,10 @@ static int eflListSetImageAttrib(Ihandle* ih, int id, const char* value)
         int scaled_w = (img_w * available_height) / img_h;
         int scaled_h = available_height;
 
-        elm_image_no_scale_set(img, EINA_FALSE);
-        elm_image_resizable_set(img, EINA_TRUE, EINA_TRUE);
-        elm_image_aspect_fixed_set(img, EINA_TRUE);
-        evas_object_size_hint_min_set(img, scaled_w, scaled_h);
-        evas_object_size_hint_max_set(img, scaled_w, scaled_h);
-        evas_object_resize(img, scaled_w, scaled_h);
+        evas_object_image_filled_set(img, EINA_TRUE);
+        efl_gfx_hint_size_min_set(img, EINA_SIZE2D(scaled_w, scaled_h));
+        efl_gfx_hint_size_max_set(img, EINA_SIZE2D(scaled_w, scaled_h));
+        efl_gfx_entity_size_set(img, EINA_SIZE2D(scaled_w, scaled_h));
       }
     }
 
@@ -1790,7 +1788,7 @@ static void eflListUnMapMethod(Ihandle* ih)
       evas_object_smart_callback_del(list, "selected", eflGenlistItemSelectedCb);
       evas_object_smart_callback_del(list, "clicked,double", eflGenlistDoubleClickCb);
       elm_genlist_clear(list);
-      evas_object_del(list);
+      efl_del(list);
     }
     else
     {

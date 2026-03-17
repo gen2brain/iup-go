@@ -228,8 +228,8 @@ static int iDrawRenderToBuffer(IdrawCanvas* dc, unsigned char* data)
     return 0;
   }
 
-  evas_object_move(off_vg, 0, 0);
-  evas_object_resize(off_vg, dc->w, dc->h);
+  efl_gfx_entity_position_set(off_vg, EINA_POSITION2D(0, 0));
+  efl_gfx_entity_size_set(off_vg, EINA_SIZE2D(dc->w, dc->h));
   efl_canvas_vg_object_viewbox_set(off_vg, EINA_RECT(0, 0, dc->w, dc->h));
   efl_canvas_vg_object_fill_mode_set(off_vg, EFL_CANVAS_VG_FILL_MODE_NONE);
 
@@ -252,7 +252,7 @@ static int iDrawRenderToBuffer(IdrawCanvas* dc, unsigned char* data)
   }
 
   efl_canvas_vg_object_root_node_set(off_vg, cloned_root);
-  evas_object_show(off_vg);
+  efl_gfx_entity_visible_set(off_vg, EINA_TRUE);
 
   {
     Eina_List* l;
@@ -305,7 +305,7 @@ static int iDrawRenderToBuffer(IdrawCanvas* dc, unsigned char* data)
           evas_object_image_data_update_add(evas_img, 0, 0, img->w, img->h);
         }
       }
-      evas_object_resize(evas_img, img->w, img->h);
+      efl_gfx_entity_size_set(evas_img, EINA_SIZE2D(img->w, img->h));
 
       map = evas_map_new(4);
       for (i = 0; i < 4; i++)
@@ -317,7 +317,7 @@ static int iDrawRenderToBuffer(IdrawCanvas* dc, unsigned char* data)
       evas_object_map_enable_set(evas_img, EINA_TRUE);
       evas_map_free(map);
 
-      evas_object_show(evas_img);
+      efl_gfx_entity_visible_set(evas_img, EINA_TRUE);
     }
   }
 
@@ -689,16 +689,16 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
     if (!off_evas)
       return;
 
-    bg = evas_object_rectangle_add(off_evas);
-    evas_object_color_set(bg, 0, 0, 0, 0);
+    bg = efl_add(EFL_CANVAS_RECTANGLE_CLASS, off_evas);
+    efl_gfx_color_set(bg, 0, 0, 0, 0);
     evas_object_render_op_set(bg, EVAS_RENDER_COPY);
-    evas_object_move(bg, 0, 0);
-    evas_object_resize(bg, dc->w, dc->h);
-    evas_object_show(bg);
+    efl_gfx_entity_position_set(bg, EINA_POSITION2D(0, 0));
+    efl_gfx_entity_size_set(bg, EINA_SIZE2D(dc->w, dc->h));
+    efl_gfx_entity_visible_set(bg, EINA_TRUE);
 
     vg = evas_object_vg_add(off_evas);
-    evas_object_resize(vg, dc->w, dc->h);
-    evas_object_show(vg);
+    efl_gfx_entity_size_set(vg, EINA_SIZE2D(dc->w, dc->h));
+    efl_gfx_entity_visible_set(vg, EINA_TRUE);
 
     root = evas_vg_container_add(vg);
     evas_object_vg_root_node_set(vg, root);
@@ -1070,12 +1070,12 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   }
 
   {
-    Evas_Object* bg = evas_object_rectangle_add(off_evas);
-    evas_object_color_set(bg, 0, 0, 0, 0);
+    Evas_Object* bg = efl_add(EFL_CANVAS_RECTANGLE_CLASS, off_evas);
+    efl_gfx_color_set(bg, 0, 0, 0, 0);
     evas_object_render_op_set(bg, EVAS_RENDER_COPY);
-    evas_object_move(bg, 0, 0);
-    evas_object_resize(bg, buf_w, buf_h);
-    evas_object_show(bg);
+    efl_gfx_entity_position_set(bg, EINA_POSITION2D(0, 0));
+    efl_gfx_entity_size_set(bg, EINA_SIZE2D(buf_w, buf_h));
+    efl_gfx_entity_visible_set(bg, EINA_TRUE);
 
     if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
     {
@@ -1106,9 +1106,9 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
       evas_textblock_style_set(ts, style);
       evas_object_textblock_style_set(text_obj, ts);
       evas_object_textblock_text_markup_set(text_obj, text);
-      evas_object_resize(text_obj, buf_w, buf_h);
-      evas_object_move(text_obj, 0, 0);
-      evas_object_show(text_obj);
+      efl_gfx_entity_size_set(text_obj, EINA_SIZE2D(buf_w, buf_h));
+      efl_gfx_entity_position_set(text_obj, EINA_POSITION2D(0, 0));
+      efl_gfx_entity_visible_set(text_obj, EINA_TRUE);
 
       evas_textblock_style_free(ts);
     }
@@ -1125,9 +1125,13 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 
       evas_object_text_font_set(text_obj, font_with_style, fontsize);
       evas_object_text_text_set(text_obj, text);
-      evas_object_color_set(text_obj, r, g, b, a);
+      efl_gfx_color_set(text_obj, r, g, b, a);
 
-      evas_object_geometry_get(text_obj, NULL, NULL, &tw, &th);
+      {
+        Eina_Rect text_geom = efl_gfx_entity_geometry_get(text_obj);
+        tw = text_geom.w;
+        th = text_geom.h;
+      }
 
       text_x = 0;
       if (flags & IUP_DRAW_RIGHT)
@@ -1135,8 +1139,8 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
       else if (flags & IUP_DRAW_CENTER)
         text_x = (buf_w - tw) / 2;
 
-      evas_object_move(text_obj, text_x, 0);
-      evas_object_show(text_obj);
+      efl_gfx_entity_position_set(text_obj, EINA_POSITION2D(text_x, 0));
+      efl_gfx_entity_visible_set(text_obj, EINA_TRUE);
     }
 
     ecore_evas_manual_render(dc->offscreen_ee);

@@ -61,7 +61,10 @@ static void eflTextUpdateImageOverlays(Ihandle* ih)
   if (!textblock)
     return;
 
-  evas_object_geometry_get(textblock, &tx, &ty, NULL, NULL);
+  {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(textblock);
+    tx = geom.x; ty = geom.y;
+  }
 
   evas_object_textblock_size_formatted_get(textblock, NULL, NULL);
 
@@ -77,13 +80,13 @@ static void eflTextUpdateImageOverlays(Ihandle* ih)
 
     if (evas_textblock_cursor_format_item_geometry_get(cur, &cx, &cy, &cw, &ch))
     {
-      evas_object_move(overlay->image_obj, tx + cx, ty + cy);
-      evas_object_resize(overlay->image_obj, cw, ch);
-      evas_object_show(overlay->image_obj);
+      efl_gfx_entity_position_set(overlay->image_obj, EINA_POSITION2D(tx + cx, ty + cy));
+      efl_gfx_entity_size_set(overlay->image_obj, EINA_SIZE2D(cw, ch));
+      efl_gfx_entity_visible_set(overlay->image_obj, EINA_TRUE);
     }
     else
     {
-      evas_object_hide(overlay->image_obj);
+      efl_gfx_entity_visible_set(overlay->image_obj, EINA_FALSE);
     }
 
     overlay = overlay->next;
@@ -119,7 +122,7 @@ static void eflTextDestroyImageOverlays(Ihandle* ih)
   {
     IeflImageOverlay* next = overlay->next;
     if (overlay->image_obj)
-      evas_object_del(overlay->image_obj);
+      efl_del(overlay->image_obj);
     free(overlay);
     overlay = next;
   }
@@ -1168,7 +1171,10 @@ static void eflTextLinkRelease(void* data, const Efl_Event* ev)
     return;
 
   pos = efl_input_pointer_position_get(pointer);
-  evas_object_geometry_get(textblock, &tx, &ty, NULL, NULL);
+  {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(textblock);
+    tx = geom.x; ty = geom.y;
+  }
 
   cursor = efl_ui_textbox_cursor_create(entry);
   if (!cursor)
@@ -1217,7 +1223,10 @@ static void eflTextLinkMotion(void* data, const Efl_Event* ev)
     return;
 
   pos = efl_input_pointer_position_get(pointer);
-  evas_object_geometry_get(textblock, &tx, &ty, NULL, NULL);
+  {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(textblock);
+    tx = geom.x; ty = geom.y;
+  }
 
   cursor = efl_ui_textbox_cursor_create(entry);
   if (!cursor)
@@ -2187,7 +2196,6 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
       char* attr;
       char item_markup[128];
       void* native_img;
-      Evas_Object* src_img;
       Evas_Object* textblock;
 
       iupImageGetInfo(image_name, &img_w, &img_h, NULL);
@@ -2202,14 +2210,6 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 
       native_img = iupImageGetImage(image_name, ih, 0, NULL);
       if (!native_img)
-      {
-        efl_del(start_cursor);
-        efl_del(end_cursor);
-        return;
-      }
-
-      src_img = elm_image_object_get((Evas_Object*)native_img);
-      if (!src_img)
       {
         efl_del(start_cursor);
         efl_del(end_cursor);
@@ -2231,24 +2231,30 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
         IeflImageOverlay* overlay;
         IeflImageOverlay* existing;
         int pos_adjustment = 1 - (end_pos - start_pos);
+        Eina_Size2D src_size;
         int src_w, src_h;
-        unsigned int* src_pixels;
-        unsigned int* dst_pixels;
+        int stride = 0;
+        Eina_Rw_Slice mapped;
 
-        evas_object_image_size_get(src_img, &src_w, &src_h);
-        evas_object_image_alpha_set(overlay_img, evas_object_image_alpha_get(src_img));
+        src_size = efl_gfx_buffer_size_get((Eo*)native_img);
+        src_w = src_size.w;
+        src_h = src_size.h;
+        evas_object_image_alpha_set(overlay_img, efl_gfx_buffer_alpha_get((Eo*)native_img));
         evas_object_image_size_set(overlay_img, src_w, src_h);
 
-        src_pixels = evas_object_image_data_get(src_img, EINA_FALSE);
-        if (src_pixels)
+        mapped = efl_gfx_buffer_map((Eo*)native_img, EFL_GFX_BUFFER_ACCESS_MODE_READ, NULL, EFL_GFX_COLORSPACE_ARGB8888, 0, &stride);
+        if (mapped.mem)
         {
-          dst_pixels = evas_object_image_data_get(overlay_img, EINA_TRUE);
+          unsigned int* dst_pixels = evas_object_image_data_get(overlay_img, EINA_TRUE);
           if (dst_pixels)
           {
-            memcpy(dst_pixels, src_pixels, src_w * src_h * 4);
+            int y;
+            for (y = 0; y < src_h; y++)
+              memcpy(dst_pixels + y * src_w, (unsigned char*)mapped.mem + y * stride, src_w * sizeof(unsigned int));
             evas_object_image_data_set(overlay_img, dst_pixels);
             evas_object_image_data_update_add(overlay_img, 0, 0, src_w, src_h);
           }
+          efl_gfx_buffer_unmap((Eo*)native_img, mapped);
         }
 
         evas_object_pass_events_set(overlay_img, EINA_TRUE);

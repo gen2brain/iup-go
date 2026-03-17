@@ -54,8 +54,12 @@ static void eflMessageDlgMeasureText(Evas* evas, const char* text, int* w, int* 
   measure = evas_object_text_add(evas);
   evas_object_text_font_set(measure, "Sans", 12);
   evas_object_text_text_set(measure, text);
-  evas_object_geometry_get(measure, NULL, NULL, &tw, &th);
-  evas_object_del(measure);
+  {
+    Eina_Rect measure_geom = efl_gfx_entity_geometry_get(measure);
+    tw = measure_geom.w;
+    th = measure_geom.h;
+  }
+  efl_del(measure);
 
   if (tw <= 0) tw = (int)strlen(text) * 8;
   if (th <= 0) th = 16;
@@ -136,17 +140,17 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
     Evas_Object* icon = elm_icon_add(win);
     if (icon && elm_icon_standard_set(icon, icon_name))
     {
-      evas_object_size_hint_min_set(icon, 48, 48);
-      evas_object_size_hint_max_set(icon, 48, 48);
+      efl_gfx_hint_size_min_set(icon, EINA_SIZE2D(48, 48));
+      efl_gfx_hint_size_max_set(icon, EINA_SIZE2D(48, 48));
       efl_gfx_hint_weight_set(icon, 0.0, 0.0);
       efl_gfx_hint_align_set(icon, 0.5, 0.5);
       efl_pack(content_hbox, icon);
-      evas_object_show(icon);
+      efl_gfx_entity_visible_set(icon, EINA_TRUE);
       has_icon = 1;
     }
     else if (icon)
     {
-      evas_object_del(icon);
+      efl_del(icon);
     }
   }
 
