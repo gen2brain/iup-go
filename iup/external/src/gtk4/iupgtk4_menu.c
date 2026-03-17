@@ -539,6 +539,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 
     gtk_widget_set_parent(popover, anchor_window);
     gtk_popover_set_has_arrow(GTK_POPOVER(popover), FALSE);
+    gtk_widget_set_halign(popover, GTK_ALIGN_START);
 
     GdkRectangle pointing_rect = {0, 0, 1, 1};
     gtk_popover_set_pointing_to(GTK_POPOVER(popover), &pointing_rect);
@@ -623,7 +624,8 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 
   gtk_popover_set_has_arrow(GTK_POPOVER(popover), FALSE);
 
-  /* Position relative to parent widget at click location */
+  gtk_widget_set_halign(popover, GTK_ALIGN_START);
+
   {
     GdkRectangle pointing_rect = {local_x, local_y, 1, 1};
     gtk_popover_set_pointing_to(GTK_POPOVER(popover), &pointing_rect);
