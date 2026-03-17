@@ -677,24 +677,7 @@ IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, i
 
 IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
-#if 0
-  RECT rect;
-  HDC hDC;
-
-  iupDrawCheckSwapCoord(x1, x2);
-  iupDrawCheckSwapCoord(y1, y2);
-
-  rect.left = x1;
-  rect.right = x2;
-  rect.top = y1;
-  rect.bottom = y2;
-
-  hDC = wdStartGdi(dc->hCanvas, TRUE);  /* TODO wdStartGdi is crashing in D2D */
-  DrawFocusRect(hDC, &rect);
-  wdEndGdi(dc->hCanvas, hDC);
-#else
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
-#endif
 }
 
 static long iInterpolateColor(long color1, long color2, float t)
