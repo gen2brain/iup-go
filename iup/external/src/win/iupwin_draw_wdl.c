@@ -812,7 +812,7 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   }
 }
 
-IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+static int iDrawGetImageDataWindowFallback(IdrawCanvas* dc, unsigned char* data)
 {
   BITMAPINFOHEADER bmi;
   HBITMAP hBitmap;
@@ -821,7 +821,6 @@ IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
   unsigned char* temp;
   int x, y;
 
-  /* Flush D2D content to the window, then read from the window HDC */
   wdEndPaint(dc->hCanvas);
 
   hWndDC = GetDC(dc->hWnd);
@@ -899,8 +898,38 @@ IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
   DeleteDC(hMemDC);
 
   wdBeginPaint(dc->hCanvas);
-
   return 1;
+}
+
+IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+{
+  unsigned char* temp = (unsigned char*)malloc(dc->w * dc->h * 4);
+  if (!temp)
+    return 0;
+
+  if (wdCanvasGetImageData(dc->hCanvas, temp, dc->w, dc->h))
+  {
+    int x, y;
+    for (y = 0; y < dc->h; y++)
+    {
+      unsigned char* src_line = temp + y * dc->w * 4;
+      unsigned char* dst_line = data + y * dc->w * 4;
+      for (x = 0; x < dc->w; x++)
+      {
+        dst_line[x * 4 + 0] = src_line[x * 4 + 2];
+        dst_line[x * 4 + 1] = src_line[x * 4 + 1];
+        dst_line[x * 4 + 2] = src_line[x * 4 + 0];
+        dst_line[x * 4 + 3] = 255;
+      }
+    }
+    free(temp);
+    return 1;
+  }
+
+  free(temp);
+
+  /* D2D 1.1 not available (Windows 7), fall back to window readback */
+  return iDrawGetImageDataWindowFallback(dc, data);
 }
 
 static void iBgrToRgba(unsigned char* dst, const unsigned char* src, int w, int h)
