@@ -158,7 +158,9 @@ void iupPlot::CalculateMargins(Ihandle* ih)
     if (mTitle.GetText() && mTitle.mAutoPos)  // Affects only top margin
       mBack.mMargin.mTop += CalcTitleVerticalMargin(ih);
 
-    if (mAxisX.mShow && mAxisX.mPosition == IUP_PLOT_END)
+    if (mAxisX.mShow && (mAxisX.mPosition == IUP_PLOT_END ||
+        (mAxisX.mPosition == IUP_PLOT_CROSSORIGIN &&
+         ((!mAxisY.mReverse && 0 >= mAxisY.mMax) || (mAxisY.mReverse && 0 <= mAxisY.mMin)))))
       mBack.mMargin.mTop += CalcXTickVerticalMargin(ih);
 
     if (mAxisY.mShow)
@@ -169,7 +171,9 @@ void iupPlot::CalculateMargins(Ihandle* ih)
   {
     mBack.mMargin.mBottom = 0;
 
-    if (mAxisX.mShow && mAxisX.mPosition == IUP_PLOT_START)
+    if (mAxisX.mShow && (mAxisX.mPosition == IUP_PLOT_START ||
+        (mAxisX.mPosition == IUP_PLOT_CROSSORIGIN &&
+         ((!mAxisY.mReverse && 0 <= mAxisY.mMin) || (mAxisY.mReverse && 0 >= mAxisY.mMax)))))
       mBack.mMargin.mBottom += CalcXTickVerticalMargin(ih);
 
     if (mAxisY.mShow)
@@ -180,7 +184,9 @@ void iupPlot::CalculateMargins(Ihandle* ih)
   {
     mBack.mMargin.mLeft = 0;
 
-    if (mAxisY.mShow && mAxisY.mPosition == IUP_PLOT_START)
+    if (mAxisY.mShow && (mAxisY.mPosition == IUP_PLOT_START ||
+        (mAxisY.mPosition == IUP_PLOT_CROSSORIGIN &&
+         ((!mAxisX.mReverse && 0 <= mAxisX.mMin) || (mAxisX.mReverse && 0 >= mAxisX.mMax)))))
       mBack.mMargin.mLeft += CalcYTickHorizontalMargin(ih);
 
     if (mAxisX.mShow)
@@ -191,7 +197,9 @@ void iupPlot::CalculateMargins(Ihandle* ih)
   {
     mBack.mMargin.mRight = 0;
 
-    if (mAxisY.mShow && mAxisY.mPosition == IUP_PLOT_END)
+    if (mAxisY.mShow && (mAxisY.mPosition == IUP_PLOT_END ||
+        (mAxisY.mPosition == IUP_PLOT_CROSSORIGIN &&
+         ((!mAxisX.mReverse && 0 >= mAxisX.mMax) || (mAxisX.mReverse && 0 <= mAxisX.mMin)))))
       mBack.mMargin.mRight += CalcYTickHorizontalMargin(ih);
 
     if (mAxisX.mShow)
