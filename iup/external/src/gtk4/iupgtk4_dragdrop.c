@@ -632,6 +632,8 @@ void iupdrvRegisterDragDropAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, gtk4SetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPTARGET", NULL, gtk4SetDropTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DRAGDROP", NULL, gtk4SetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPFILESTARGET", NULL, gtk4SetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);

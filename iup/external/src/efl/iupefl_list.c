@@ -1723,8 +1723,6 @@ static int eflListMapMethod(Ihandle* ih)
 
   if (ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple)
     eflListEnableDragDrop(ih);
-  else if (iupAttribGetBoolean(ih, "DRAGDROPLIST"))
-    eflListEnableDragDrop(ih);
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
@@ -1795,8 +1793,7 @@ static void eflListUnMapMethod(Ihandle* ih)
     }
     else
     {
-      if ((ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple) ||
-          iupAttribGetBoolean(ih, "DRAGDROPLIST"))
+      if (ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple)
       {
         efl_event_callback_del(list, EFL_EVENT_POINTER_DOWN, eflListDragPointerDownCb, ih);
         efl_event_callback_del(list, EFL_EVENT_POINTER_MOVE, eflListDragPointerMoveCb, ih);

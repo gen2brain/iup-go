@@ -1356,12 +1356,12 @@ void iupdrvRegisterDragDropAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "DRAGSTART", NULL, cocoaSourceDragSetDragStartAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, cocoaSourceDragSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGTYPES", NULL, cocoaSourceDragSetDragTypesAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGTYPES", NULL, cocoaSourceDragSetDragTypesAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DRAGDROP", NULL, cocoaSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPFILESTARGET", NULL, cocoaSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPTARGET", NULL, cocoaTargetDropSetDropTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTYPES", NULL, cocoaTargetDropSetDropTypesAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPTYPES", NULL, cocoaTargetDropSetDropTypesAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DRAGCOPY", NULL, cocoaSourceDragSetCopyToPasteboardAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPPASTE", NULL, cocoaSourceDropSetPasteFromPasteboardAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
