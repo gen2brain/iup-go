@@ -1040,6 +1040,10 @@ static void winuiCanvasLayoutUpdateMethod(Ihandle* ih)
   iupdrvBaseLayoutUpdateMethod(ih);
   winuiCanvasUpdateChildLayout(ih);
 
+  RectangleGeometry clip;
+  clip.Rect({ 0, 0, (float)ih->currentwidth, (float)ih->currentheight });
+  canvas.Clip(clip);
+
   int new_w = ih->currentwidth;
   int new_h = ih->currentheight;
 
