@@ -230,7 +230,33 @@ protected:
       return;
     }
 
-    QWidget::wheelEvent(event);
+    QPoint numDegrees = event->angleDelta() / 8;
+    int delta = numDegrees.y() / 15;
+
+    if (numDegrees.y() != 0)
+    {
+      double posy = ih->data->posy;
+      posy -= delta * iupAttribGetDouble(ih, "DY") / 10.0;
+      IupSetDouble(ih, "POSY", posy);
+    }
+    else if (numDegrees.x() != 0)
+    {
+      int deltax = numDegrees.x() / 15;
+      double posx = ih->data->posx;
+      posx -= deltax * iupAttribGetDouble(ih, "DX") / 10.0;
+      IupSetDouble(ih, "POSX", posx);
+    }
+
+    IFniff scb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+    if (scb)
+    {
+      int op = delta > 0 ? IUP_SBUP : IUP_SBDN;
+      if (numDegrees.y() == 0)
+        op = (numDegrees.x() / 15) > 0 ? IUP_SBLEFT : IUP_SBRIGHT;
+      scb(ih, op, (float)ih->data->posx, (float)ih->data->posy);
+    }
+
+    event->accept();
   }
 
   void keyPressEvent(QKeyEvent* event) override
@@ -721,7 +747,6 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
   iupqtAddToParent(ih);
 
-  /* Initialize scrollbar visibility based on default DX/DY values */
   qtCanvasSetDXAttrib(ih, NULL);
   qtCanvasSetDYAttrib(ih, NULL);
 

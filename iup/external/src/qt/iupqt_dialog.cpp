@@ -157,19 +157,12 @@ protected:
     if (iup_handle->data->ignore_resize)
       return;
 
-    /* Skip if dialog is not visible */
-    if (!iupdrvDialogIsVisible(iup_handle))
-      return;
-
     /* Update IUP size tracking */
     int border = 0, caption = 0, menu = 0;
     iupdrvDialogGetDecoration(iup_handle, &border, &caption, &menu);
 
     int new_width = event->size().width() + 2*border;
     int new_height = event->size().height() + 2*border + caption;
-
-    if (iup_handle->currentwidth == new_width && iup_handle->currentheight == new_height)
-      return;
 
     iup_handle->currentwidth = new_width;
     iup_handle->currentheight = new_height;
