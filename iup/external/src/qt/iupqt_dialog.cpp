@@ -1186,6 +1186,7 @@ extern "C" void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", qtDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   /* IupDialog */
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, qtDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, qtDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, qtDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);

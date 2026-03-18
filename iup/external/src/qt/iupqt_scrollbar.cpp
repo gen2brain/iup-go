@@ -411,7 +411,7 @@ extern "C" void iupdrvScrollbarInitClass(Iclass* ic)
   ic->Map = qtScrollbarMapMethod;
   ic->UnMap = qtScrollbarUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, nullptr, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", iupScrollbarGetValueAttrib, qtScrollbarSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, qtScrollbarSetLineStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
