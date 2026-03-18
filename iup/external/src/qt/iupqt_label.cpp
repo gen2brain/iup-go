@@ -546,13 +546,6 @@ static int qtLabelSetImageAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* qtLabelGetImInactiveAttrib(Ihandle* ih)
-{
-  if (ih->data->type == IUP_LABEL_IMAGE)
-    return iupAttribGet(ih, "IMINACTIVE");
-
-  return nullptr;
-}
 
 static int qtLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
@@ -791,6 +784,9 @@ static int qtLabelMapMethod(Ihandle* ih)
   if (value)
     qtLabelSetHtTransparentAttrib(ih, value);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
@@ -821,7 +817,7 @@ extern "C" void iupdrvLabelInitClass(Iclass* ic)
   /* IupLabel only */
   iupClassRegisterAttribute(ic, "ALIGNMENT", qtLabelGetAlignmentAttrib, qtLabelSetAlignmentAttrib, "ALEFT:ACENTER", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", qtLabelGetImageAttrib, qtLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", qtLabelGetImInactiveAttrib, qtLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, qtLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, qtLabelSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, qtLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, qtLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);

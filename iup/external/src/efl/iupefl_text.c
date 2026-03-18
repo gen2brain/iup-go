@@ -1345,7 +1345,10 @@ static int eflTextMapMethod(Ihandle* ih)
       efl_ui_textbox_scrollable_set(widget, EINA_TRUE);
 
       if (iupAttribGetBoolean(ih, "WORDWRAP"))
+      {
         efl_text_wrap_set(widget, EFL_TEXT_FORMAT_WRAP_WORD);
+        ih->data->sb &= ~IUP_SB_HORIZ;
+      }
       else
         efl_text_wrap_set(widget, EFL_TEXT_FORMAT_WRAP_NONE);
     }
