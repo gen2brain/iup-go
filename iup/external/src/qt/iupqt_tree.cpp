@@ -2072,6 +2072,9 @@ static int qtTreeMapMethod(Ihandle* ih)
   /* Register XY to position converter for drag-drop support */
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)qtTreeConvertXYToPos);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
