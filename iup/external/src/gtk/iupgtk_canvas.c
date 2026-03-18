@@ -959,6 +959,7 @@ void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, gtkCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);  /* force new default value */
 
   iupClassRegisterAttribute(ic, "DRAWABLE", gtkCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING);
+  iupClassRegisterAttribute(ic, "CAIRO_CR", NULL, NULL, NULL, NULL, IUPAF_NO_STRING);
 
   /* IupCanvas Windows or X only */
   iupClassRegisterAttribute(ic, iupgtkGetNativeWindowHandleName(), iupgtkGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_NO_INHERIT);
