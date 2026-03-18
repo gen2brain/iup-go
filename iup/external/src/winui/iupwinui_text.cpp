@@ -1008,6 +1008,9 @@ static int winuiTextMapMethod(Ihandle* ih)
 
   iupTextUpdateFormatTags(ih);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
