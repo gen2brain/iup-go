@@ -600,6 +600,9 @@ static int eflCanvasMapMethod(Ihandle* ih)
   eflCanvasSetDXAttrib(ih, NULL);
   eflCanvasSetDYAttrib(ih, NULL);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
