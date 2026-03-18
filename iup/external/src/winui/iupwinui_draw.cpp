@@ -833,13 +833,20 @@ extern "C" void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x
   float fw = (w > 0) ? (float)w : (float)dc->w;
   float fh = (h > 0) ? (float)h : (float)dc->h;
 
-  D2D1_RECT_F layoutRect = D2D1::RectF(fx, fy, fx + fw, fy + fh);
+  int layout_w = w, layout_h = h;
+  int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
+
+  if (text_orientation)
+    iupDrawGetTextSize(dc->ih, text, len, &layout_w, &layout_h, 0);
+
+  float flw = (layout_w > 0) ? (float)layout_w : (float)dc->w;
+  float flh = (layout_h > 0) ? (float)layout_h : (float)dc->h;
 
   com_ptr<IDWriteTextLayout> textLayout;
-  if (is_underline || is_strikeout)
+  g_dwriteFactory->CreateTextLayout(wtext, wlen, textFormat.get(), flw, flh, textLayout.put());
+  if (textLayout)
   {
-    g_dwriteFactory->CreateTextLayout(wtext, wlen, textFormat.get(), fw, fh, textLayout.put());
-    if (textLayout)
+    if (is_underline || is_strikeout)
     {
       DWRITE_TEXT_RANGE range = {0, (UINT32)wlen};
       if (is_underline)
@@ -849,35 +856,55 @@ extern "C" void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x
     }
   }
 
+  D2D1_POINT_2F drawPoint = D2D1::Point2F(fx, fy);
+
   if (text_orientation != 0.0)
   {
     D2D1_MATRIX_3X2_F oldTransform;
     dc->d2dContext->GetTransform(&oldTransform);
 
-    float tcx = fx + fw / 2.0f;
-    float tcy = fy + fh / 2.0f;
+    if (flags & IUP_DRAW_CLIP)
+      dc->d2dContext->PushAxisAlignedClip(D2D1::RectF(fx, fy, fx + fw, fy + fh), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
-    D2D1_MATRIX_3X2_F rotation = D2D1::Matrix3x2F::Rotation(
-      (float)(-text_orientation), D2D1::Point2F(tcx, tcy));
+    if (layout_center)
+    {
+      float tcx = fx + fw / 2.0f;
+      float tcy = fy + fh / 2.0f;
 
-    dc->d2dContext->SetTransform(oldTransform * rotation);
+      D2D1_MATRIX_3X2_F rotation = D2D1::Matrix3x2F::Rotation(
+        (float)(-text_orientation), D2D1::Point2F(tcx, tcy));
+
+      dc->d2dContext->SetTransform(oldTransform * rotation);
+
+      drawPoint = D2D1::Point2F(tcx - flw / 2.0f, tcy - flh / 2.0f);
+    }
+    else
+    {
+      D2D1_MATRIX_3X2_F rotation = D2D1::Matrix3x2F::Rotation(
+        (float)(-text_orientation), D2D1::Point2F(fx, fy));
+
+      dc->d2dContext->SetTransform(oldTransform * rotation);
+    }
 
     if (textLayout)
-      dc->d2dContext->DrawTextLayout(D2D1::Point2F(fx, fy), textLayout.get(), dc->solidBrush.get());
+      dc->d2dContext->DrawTextLayout(drawPoint, textLayout.get(), dc->solidBrush.get());
     else
-      dc->d2dContext->DrawText(wtext, wlen, textFormat.get(), layoutRect, dc->solidBrush.get());
+      dc->d2dContext->DrawText(wtext, wlen, textFormat.get(), D2D1::RectF(drawPoint.x, drawPoint.y, drawPoint.x + flw, drawPoint.y + flh), dc->solidBrush.get());
 
     dc->d2dContext->SetTransform(oldTransform);
+
+    if (flags & IUP_DRAW_CLIP)
+      dc->d2dContext->PopAxisAlignedClip();
   }
   else
   {
     if (flags & IUP_DRAW_CLIP)
-      dc->d2dContext->PushAxisAlignedClip(layoutRect, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+      dc->d2dContext->PushAxisAlignedClip(D2D1::RectF(fx, fy, fx + fw, fy + fh), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
     if (textLayout)
-      dc->d2dContext->DrawTextLayout(D2D1::Point2F(fx, fy), textLayout.get(), dc->solidBrush.get());
+      dc->d2dContext->DrawTextLayout(drawPoint, textLayout.get(), dc->solidBrush.get());
     else
-      dc->d2dContext->DrawText(wtext, wlen, textFormat.get(), layoutRect, dc->solidBrush.get());
+      dc->d2dContext->DrawText(wtext, wlen, textFormat.get(), D2D1::RectF(fx, fy, fx + fw, fy + fh), dc->solidBrush.get());
 
     if (flags & IUP_DRAW_CLIP)
       dc->d2dContext->PopAxisAlignedClip();
