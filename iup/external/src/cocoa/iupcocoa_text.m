@@ -5295,6 +5295,9 @@ static int cocoaTextMapMethod(Ihandle* ih)
     [undo_manager removeAllActions];
   }
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
