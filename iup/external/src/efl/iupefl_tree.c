@@ -1097,13 +1097,6 @@ static int eflTreeSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int eflTreeSetFgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
 static IeflTreeNode* eflTreeGetNodeFromId(Ihandle* ih, int id)
 {
   InodeHandle* node_handle = iupTreeGetNode(ih, id);
@@ -2616,7 +2609,7 @@ void iupdrvTreeInitClass(Iclass* ic)
   ic->UnMap = eflTreeUnMapMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "EXPANDALL", NULL, eflTreeSetExpandAllAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, eflTreeSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);

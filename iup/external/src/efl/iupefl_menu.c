@@ -812,13 +812,6 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
   return height;
 }
 
-static int eflMenuSetBgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
 static int eflMenuMapMethod(Ihandle* ih)
 {
   if (iupMenuIsMenuBar(ih))
@@ -911,5 +904,5 @@ void iupdrvMenuInitClass(Iclass* ic)
   ic->UnMap = eflMenuUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, NULL, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflMenuSetBgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

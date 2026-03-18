@@ -194,19 +194,6 @@ static int eflFrameSetSunkenAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int eflFrameSetBgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
-static int eflFrameSetFgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
 
 static int eflFrameSetFontAttrib(Ihandle* ih, const char* value)
 {
@@ -307,10 +294,10 @@ void iupdrvFrameInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "FONT", NULL, eflFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, eflFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, eflFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SUNKEN", NULL, eflFrameSetSunkenAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", NULL, eflFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 }

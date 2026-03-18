@@ -606,19 +606,6 @@ static int eflTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
   return 0;
 }
 
-static int eflTabsSetBgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
-static int eflTabsSetFgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
 
 /****************************************************************
                      Methods
@@ -930,8 +917,8 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, eflTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, eflTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, eflTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
