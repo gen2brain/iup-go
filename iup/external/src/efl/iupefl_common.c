@@ -156,6 +156,24 @@ void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height)
     efl_gfx_entity_size_set(bg_rect, EINA_SIZE2D(width, height));
     efl_gfx_stack_below(bg_rect, widget);
   }
+
+  {
+    Ihandle* p = ih->parent;
+    while (p)
+    {
+      Eo* clip = (Eo*)iupAttribGet(p, "_IUP_EFL_CANVAS_CLIP");
+      if (clip)
+      {
+        evas_object_clip_set(widget, clip);
+        if (bg_rect)
+          evas_object_clip_set(bg_rect, clip);
+        break;
+      }
+      if (p->iclass->nativetype != IUP_TYPEVOID)
+        break;
+      p = p->parent;
+    }
+  }
 }
 
 /****************************************************************************

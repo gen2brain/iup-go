@@ -124,24 +124,24 @@ static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
       IupRefresh(ih);
       ih->data->ignore_resize = 0;
     }
+  }
 
+  {
+    Eo* bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
+    Eo* bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
+    if (bg_rect)
     {
-      Eo* bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
-      Eo* bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
-      if (bg_rect)
-      {
-        efl_gfx_entity_size_set(bg_rect, EINA_SIZE2D(w, h));
-        efl_gfx_entity_position_set(bg_rect, EINA_POSITION2D(0, 0));
-        eflDialogStackBgBelow(ih, bg_rect);
-      }
-      if (bg_img)
-      {
-        efl_gfx_entity_size_set(bg_img, EINA_SIZE2D(w, h));
-        efl_gfx_entity_position_set(bg_img, EINA_POSITION2D(0, 0));
-        if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
-          evas_object_image_fill_set(bg_img, 0, 0, w, h);
-        eflDialogStackBgBelow(ih, bg_img);
-      }
+      efl_gfx_entity_size_set(bg_rect, EINA_SIZE2D(w, h));
+      efl_gfx_entity_position_set(bg_rect, EINA_POSITION2D(0, 0));
+      eflDialogStackBgBelow(ih, bg_rect);
+    }
+    if (bg_img)
+    {
+      efl_gfx_entity_size_set(bg_img, EINA_SIZE2D(w, h));
+      efl_gfx_entity_position_set(bg_img, EINA_POSITION2D(0, 0));
+      if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
+        evas_object_image_fill_set(bg_img, 0, 0, w, h);
+      eflDialogStackBgBelow(ih, bg_img);
     }
   }
 }
@@ -698,6 +698,19 @@ static void eflDialogUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
+static void eflDialogDeferredRefresh(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  if (!iupObjectCheck(ih))
+    return;
+  if (ih->data->ignore_resize)
+    return;
+
+  ih->data->ignore_resize = 1;
+  IupRefresh(ih);
+  ih->data->ignore_resize = 0;
+}
+
 static void eflDialogLayoutUpdateMethod(Ihandle* ih)
 {
   int width, height;
@@ -749,6 +762,12 @@ static void eflDialogLayoutUpdateMethod(Ihandle* ih)
   }
 
   ih->data->ignore_resize = 0;
+
+  if (!iupAttribGetBoolean(ih, "_IUP_EFL_FIRST_REFRESH"))
+  {
+    iupAttribSet(ih, "_IUP_EFL_FIRST_REFRESH", "1");
+    ecore_job_add(eflDialogDeferredRefresh, ih);
+  }
 }
 
 /****************************************************************

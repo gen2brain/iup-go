@@ -553,7 +553,17 @@ static int eflCanvasMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)vg;
 
   if (scroller)
+  {
+    if (iupStrEqual(ih->iclass->name, "scrollbox") || iupStrEqual(ih->iclass->name, "flatscrollbox"))
+    {
+      Evas* evas = evas_object_evas_get(scroller);
+      Eo* clip = evas_object_rectangle_add(evas);
+      evas_object_show(clip);
+      iupAttribSet(ih, "_IUP_EFL_CANVAS_CLIP", (char*)clip);
+    }
+
     efl_content_set(scroller, vg);
+  }
 
   root = efl_add(EFL_CANVAS_VG_CONTAINER_CLASS, vg);
   if (!root)
@@ -598,6 +608,15 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
   Eo* vg = iupeflGetWidget(ih);
   Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
   Efl_VG* root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT");
+
+  {
+    Eo* clip = (Eo*)iupAttribGet(ih, "_IUP_EFL_CANVAS_CLIP");
+    if (clip)
+    {
+      evas_object_del(clip);
+      iupAttribSet(ih, "_IUP_EFL_CANVAS_CLIP", NULL);
+    }
+  }
 
   {
     unsigned char* buffer = (unsigned char*)iupAttribGet(ih, "_IUP_EFL_CANVAS_BUFFER");
@@ -738,6 +757,15 @@ static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
 
       efl_gfx_entity_position_set(scroller, EINA_POSITION2D(abs_x, abs_y));
       efl_gfx_entity_size_set(scroller, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
+
+      {
+        Eo* clip = (Eo*)iupAttribGet(ih, "_IUP_EFL_CANVAS_CLIP");
+        if (clip)
+        {
+          evas_object_move(clip, abs_x, abs_y);
+          evas_object_resize(clip, ih->currentwidth, ih->currentheight);
+        }
+      }
     }
     else if (vg)
     {
