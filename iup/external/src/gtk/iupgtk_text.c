@@ -2121,6 +2121,44 @@ static void gtkTextEntryDeleteText(GtkEditable *editable, int start, int end, Ih
     g_signal_stop_emission_by_name (editable, "delete_text");
 }
 
+static void gtkTextFilterInsertText(GtkEditable *editable, const gchar *text, gint length, gint *position, Ihandle* ih)
+{
+  char* filter = iupAttribGet(ih, "FILTER");
+  if (!filter)
+    return;
+
+  if (iupStrEqualNoCase(filter, "NUMBER"))
+  {
+    int i;
+    for (i = 0; i < length; i++)
+    {
+      if (!g_ascii_isdigit(text[i]))
+      {
+        g_signal_stop_emission_by_name(editable, "insert_text");
+        return;
+      }
+    }
+  }
+  else if (iupStrEqualNoCase(filter, "UPPERCASE"))
+  {
+    gchar* upper = g_utf8_strup(text, length);
+    g_signal_handlers_block_by_func(editable, (gpointer)gtkTextFilterInsertText, ih);
+    gtk_editable_insert_text(editable, upper, (int)strlen(upper), position);
+    g_signal_handlers_unblock_by_func(editable, (gpointer)gtkTextFilterInsertText, ih);
+    g_signal_stop_emission_by_name(editable, "insert_text");
+    g_free(upper);
+  }
+  else if (iupStrEqualNoCase(filter, "LOWERCASE"))
+  {
+    gchar* lower = g_utf8_strdown(text, length);
+    g_signal_handlers_block_by_func(editable, (gpointer)gtkTextFilterInsertText, ih);
+    gtk_editable_insert_text(editable, lower, (int)strlen(lower), position);
+    g_signal_handlers_unblock_by_func(editable, (gpointer)gtkTextFilterInsertText, ih);
+    g_signal_stop_emission_by_name(editable, "insert_text");
+    g_free(lower);
+  }
+}
+
 static void gtkTextEntryInsertText(GtkEditable *editable, char *insert_value, int len, int *pos, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
@@ -2394,6 +2432,7 @@ static int gtkTextMapMethod(Ihandle* ih)
   else
   {
     g_signal_connect(G_OBJECT(ih->handle), "delete-text", G_CALLBACK(gtkTextEntryDeleteText), ih);
+    g_signal_connect(G_OBJECT(ih->handle), "insert-text", G_CALLBACK(gtkTextFilterInsertText), ih);
     g_signal_connect(G_OBJECT(ih->handle), "insert-text", G_CALLBACK(gtkTextEntryInsertText), ih);
     g_signal_connect(G_OBJECT(ih->handle), "changed", G_CALLBACK(gtkTextChanged), ih);
   }
@@ -2464,7 +2503,6 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PASSWORD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, gtkTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* Not Supported */
-  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
