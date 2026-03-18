@@ -277,7 +277,9 @@ extern "C" void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, i
   }
   else
   {
-    /* Set clip rectangle */
+    iupDrawCheckSwapCoord(x1, x2);
+    iupDrawCheckSwapCoord(y1, y2);
+
     dc->painter->setClipRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
     dc->painter->setClipping(true);
     dc->clip_x1 = x1;

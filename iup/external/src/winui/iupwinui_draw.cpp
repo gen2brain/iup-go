@@ -943,8 +943,8 @@ extern "C" void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, i
   else if (dc->clipType == WINUI_CLIP_LAYER)
     dc->d2dContext->PopLayer();
 
-  if (x1 >= x2) x1 = x2;
-  if (y1 >= y2) y1 = y2;
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
 
   D2D1_RECT_F clipRect = D2D1::RectF((float)x1, (float)y1, (float)(x2 + 1), (float)(y2 + 1));
   dc->d2dContext->PushAxisAlignedClip(clipRect, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);

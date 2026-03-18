@@ -570,8 +570,8 @@ void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
     return;
   }
 
-  if (x1 >= x2) x1 = x2;
-  if (y1 >= y2) y1 = y2;
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
 
   iupdrvDrawResetClip(dc);
 

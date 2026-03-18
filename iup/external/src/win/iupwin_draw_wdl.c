@@ -492,9 +492,8 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
     return;
   }
 
-  /* make it an empty region */
-  if (x1 >= x2) x1 = x2;
-  if (y1 >= y2) y1 = y2;
+  iupDrawCheckSwapCoord(x1, x2);
+  iupDrawCheckSwapCoord(y1, y2);
 
   if (x1 == x2 || y1 == y2)
   {
