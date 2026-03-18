@@ -699,10 +699,13 @@ void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, in
     int layout_h = h;
     int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
 
-    if (text_orientation && layout_center)
+    if (text_orientation)
       iupDrawGetTextSize(dc->ih, text, len, &layout_w, &layout_h, 0);
 
-    NSRect text_rect = NSMakeRect(x, y, layout_w, layout_h);
+    if (flags & IUP_DRAW_CLIP)
+    {
+      [NSBezierPath clipRect:NSMakeRect(x, y, w, h)];
+    }
 
     if (text_orientation != 0.0)
     {
@@ -710,11 +713,10 @@ void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, in
 
       if (layout_center)
       {
-        NSPoint center = NSMakePoint(x + layout_w / 2.0, y + layout_h / 2.0);
+        NSPoint center = NSMakePoint(x + w / 2.0, y + h / 2.0);
         [transform translateXBy:center.x yBy:center.y];
         [transform rotateByDegrees:-text_orientation];
         [transform translateXBy:-center.x yBy:-center.y];
-        [transform translateXBy:(w - layout_w) / 2.0 yBy:(h - layout_h) / 2.0];
       }
       else
       {
@@ -726,12 +728,24 @@ void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, in
       [transform concat];
     }
 
-    if (flags & IUP_DRAW_CLIP)
+    if ((flags & IUP_DRAW_CLIP) || (flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
     {
-      [NSBezierPath clipRect:NSMakeRect(x, y, w, h)];
+      NSRect text_rect;
+      if (text_orientation && layout_center)
+        text_rect = NSMakeRect(x + (w - layout_w) / 2.0, y + (h - layout_h) / 2.0, layout_w, layout_h);
+      else
+        text_rect = NSMakeRect(x, y, layout_w, layout_h);
+      [ns_string drawInRect:text_rect withAttributes:attributes];
     }
-
-    [ns_string drawInRect:text_rect withAttributes:attributes];
+    else
+    {
+      NSPoint draw_point;
+      if (text_orientation && layout_center)
+        draw_point = NSMakePoint(x + (w - layout_w) / 2.0, y + (h - layout_h) / 2.0);
+      else
+        draw_point = NSMakePoint(x, y);
+      [ns_string drawAtPoint:draw_point withAttributes:attributes];
+    }
 
     [NSGraphicsContext restoreGraphicsState];
     CGContextRestoreGState(cg_context);
