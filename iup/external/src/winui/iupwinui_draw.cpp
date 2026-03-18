@@ -89,8 +89,17 @@ static bool winuiDrawEnsureDevices(void)
   return true;
 }
 
+static com_ptr<ID2D1StrokeStyle> g_strokeDash;
+static com_ptr<ID2D1StrokeStyle> g_strokeDot;
+static com_ptr<ID2D1StrokeStyle> g_strokeDashDot;
+static com_ptr<ID2D1StrokeStyle> g_strokeDashDotDot;
+
 extern "C" void iupwinuiDrawCleanup(void)
 {
+  g_strokeDash = nullptr;
+  g_strokeDot = nullptr;
+  g_strokeDashDot = nullptr;
+  g_strokeDashDotDot = nullptr;
   g_dwriteFactory = nullptr;
   g_d2dDevice = nullptr;
   g_d2dFactory = nullptr;
@@ -131,25 +140,8 @@ static D2D1_COLOR_F winuiDrawColor(long color)
     iupDrawAlpha(color) / 255.0f);
 }
 
-static com_ptr<ID2D1StrokeStyle> winuiDrawStrokeStyle(int style)
+static com_ptr<ID2D1StrokeStyle> winuiDrawCreateStrokeStyle(float* dashes, UINT32 dashCount)
 {
-  float* dashes = nullptr;
-  UINT32 dashCount = 0;
-
-  static float s_dash[2] = { 9.0f, 3.0f };
-  static float s_dot[2] = { 1.0f, 2.0f };
-  static float s_dash_dot[4] = { 7.0f, 3.0f, 1.0f, 3.0f };
-  static float s_dash_dot_dot[6] = { 7.0f, 3.0f, 1.0f, 3.0f, 1.0f, 3.0f };
-
-  switch (style)
-  {
-    case IUP_DRAW_STROKE_DASH:         dashes = s_dash; dashCount = 2; break;
-    case IUP_DRAW_STROKE_DOT:          dashes = s_dot; dashCount = 2; break;
-    case IUP_DRAW_STROKE_DASH_DOT:     dashes = s_dash_dot; dashCount = 4; break;
-    case IUP_DRAW_STROKE_DASH_DOT_DOT: dashes = s_dash_dot_dot; dashCount = 6; break;
-    default: break;
-  }
-
   D2D1_STROKE_STYLE_PROPERTIES props = D2D1::StrokeStyleProperties(
     D2D1_CAP_STYLE_FLAT, D2D1_CAP_STYLE_FLAT, D2D1_CAP_STYLE_FLAT,
     D2D1_LINE_JOIN_MITER, 10.0f, D2D1_DASH_STYLE_CUSTOM, 0.0f);
@@ -157,6 +149,32 @@ static com_ptr<ID2D1StrokeStyle> winuiDrawStrokeStyle(int style)
   com_ptr<ID2D1StrokeStyle> strokeStyle;
   g_d2dFactory->CreateStrokeStyle(props, dashes, dashCount, strokeStyle.put());
   return strokeStyle;
+}
+
+static ID2D1StrokeStyle* winuiDrawStrokeStyle(int style)
+{
+  static float s_dash[2] = { 9.0f, 3.0f };
+  static float s_dot[2] = { 1.0f, 2.0f };
+  static float s_dash_dot[4] = { 7.0f, 3.0f, 1.0f, 3.0f };
+  static float s_dash_dot_dot[6] = { 7.0f, 3.0f, 1.0f, 3.0f, 1.0f, 3.0f };
+
+  switch (style)
+  {
+    case IUP_DRAW_STROKE_DASH:
+      if (!g_strokeDash) g_strokeDash = winuiDrawCreateStrokeStyle(s_dash, 2);
+      return g_strokeDash.get();
+    case IUP_DRAW_STROKE_DOT:
+      if (!g_strokeDot) g_strokeDot = winuiDrawCreateStrokeStyle(s_dot, 2);
+      return g_strokeDot.get();
+    case IUP_DRAW_STROKE_DASH_DOT:
+      if (!g_strokeDashDot) g_strokeDashDot = winuiDrawCreateStrokeStyle(s_dash_dot, 4);
+      return g_strokeDashDot.get();
+    case IUP_DRAW_STROKE_DASH_DOT_DOT:
+      if (!g_strokeDashDotDot) g_strokeDashDotDot = winuiDrawCreateStrokeStyle(s_dash_dot_dot, 6);
+      return g_strokeDashDotDot.get();
+    default:
+      return nullptr;
+  }
 }
 
 static void winuiDrawGetWidgetSize(Ihandle* ih, int* w, int* h)
@@ -438,7 +456,7 @@ extern "C" void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
     dc->d2dContext->DrawLine(
       D2D1::Point2F((float)x1, (float)y1),
       D2D1::Point2F((float)x2, (float)y2),
-      dc->solidBrush.get(), (float)line_width, strokeStyle.get());
+      dc->solidBrush.get(), (float)line_width, strokeStyle);
   }
 }
 
@@ -465,7 +483,7 @@ extern "C" void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(style);
-    dc->d2dContext->DrawRectangle(rect, dc->solidBrush.get(), (float)line_width, strokeStyle.get());
+    dc->d2dContext->DrawRectangle(rect, dc->solidBrush.get(), (float)line_width, strokeStyle);
   }
 }
 
@@ -504,7 +522,7 @@ extern "C" void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, d
     else
     {
       auto strokeStyle = winuiDrawStrokeStyle(style);
-      dc->d2dContext->DrawEllipse(ellipse, dc->solidBrush.get(), (float)line_width, strokeStyle.get());
+      dc->d2dContext->DrawEllipse(ellipse, dc->solidBrush.get(), (float)line_width, strokeStyle);
     }
     return;
   }
@@ -555,7 +573,7 @@ extern "C" void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, d
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(style);
-    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle.get());
+    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle);
   }
 }
 
@@ -589,7 +607,7 @@ extern "C" void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(style);
-    dc->d2dContext->DrawEllipse(ellipse, dc->solidBrush.get(), (float)line_width, strokeStyle.get());
+    dc->d2dContext->DrawEllipse(ellipse, dc->solidBrush.get(), (float)line_width, strokeStyle);
   }
 }
 
@@ -627,7 +645,7 @@ extern "C" void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long 
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(style);
-    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle.get());
+    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle);
   }
 }
 
@@ -669,7 +687,7 @@ extern "C" void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int 
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(style);
-    dc->d2dContext->DrawRoundedRectangle(roundedRect, dc->solidBrush.get(), (float)line_width, strokeStyle.get());
+    dc->d2dContext->DrawRoundedRectangle(roundedRect, dc->solidBrush.get(), (float)line_width, strokeStyle);
   }
 }
 
@@ -708,7 +726,7 @@ extern "C" void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(style);
-    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle.get());
+    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle);
   }
 }
 
@@ -746,7 +764,7 @@ extern "C" void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x
   else
   {
     auto strokeStyle = winuiDrawStrokeStyle(style);
-    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle.get());
+    dc->d2dContext->DrawGeometry(pathGeometry.get(), dc->solidBrush.get(), (float)line_width, strokeStyle);
   }
 }
 
