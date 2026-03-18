@@ -224,7 +224,7 @@ void iupdrvDrawFlush(IdrawCanvas* dc)
 
   CGContextFlush(dc->cgContext);
 
-  if (!iupAttribGet(dc->ih, "_IUPCOCOA_DRAWRECT_CGCONTEXT"))
+  if (!iupAttribGet(dc->ih, "CGCONTEXT"))
   {
     iupAttribSet(dc->ih, "_IUPCOCOA_BUFFER_PENDING", "1");
     [dc->canvasView setNeedsDisplay:YES];

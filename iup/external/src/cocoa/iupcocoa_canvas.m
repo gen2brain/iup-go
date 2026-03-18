@@ -284,11 +284,11 @@ static void cocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
     }
 
     CGContextRef cgContext = [[NSGraphicsContext currentContext] CGContext];
-    iupAttribSet(_ih, "_IUPCOCOA_DRAWRECT_CGCONTEXT", (char*)cgContext);
+    iupAttribSet(_ih, "CGCONTEXT", (char*)cgContext);
 
     call_back(_ih);
 
-    iupAttribSet(_ih, "_IUPCOCOA_DRAWRECT_CGCONTEXT", NULL);
+    iupAttribSet(_ih, "CGCONTEXT", NULL);
     iupAttribSet(_ih, "CLIPRECT", NULL);
 
     /* ACTION filled a buffer via IupDrawBegin/DrawFlush/DrawEnd.
@@ -1416,6 +1416,9 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
   /* Set initial Scrollbar state */
   cocoaCanvasSetDXAttrib(ih, NULL);
   cocoaCanvasSetDYAttrib(ih, NULL);
+
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
   return IUP_NOERROR;
 }
