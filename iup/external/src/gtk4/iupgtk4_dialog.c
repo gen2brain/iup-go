@@ -936,6 +936,13 @@ static int gtk4DialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int gtk4DialogSetBringFrontAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrBoolean(value))
+    gtk_window_present(GTK_WINDOW(ih->handle));
+  return 0;
+}
+
 void iupdrvDialogInitClass(Iclass* ic)
 {
   ic->Map = gtk4DialogMapMethod;
@@ -973,7 +980,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, gtk4DialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, gtk4DialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
