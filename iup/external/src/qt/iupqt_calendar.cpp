@@ -212,28 +212,6 @@ static char* qtCalendarGetTodayAttrib(Ihandle* ih)
   return iupStrReturnStrf("%d/%d/%d", today.year(), today.month(), today.day());
 }
 
-static int qtCalendarSetBgColorAttrib(Ihandle* ih, const char* value)
-{
-  unsigned char r, g, b;
-
-  if (!iupStrToRGB(value, &r, &g, &b))
-    return 0;
-
-  IupQtCalendar* calendar = (IupQtCalendar*)ih->handle;
-
-  if (calendar)
-  {
-    QPalette palette = calendar->palette();
-    palette.setColor(QPalette::Window, QColor(r, g, b));
-    palette.setColor(QPalette::Base, QColor(r, g, b));
-    calendar->setPalette(palette);
-    calendar->setAutoFillBackground(true);
-    return 1;
-  }
-
-  return 0;
-}
-
 /****************************************************************************
  * Callbacks
  ****************************************************************************/
@@ -328,8 +306,6 @@ extern "C" Iclass* iupCalendarNewClass(void)
   iupBaseRegisterCommonCallbacks(ic);
   iupBaseRegisterCommonAttrib(ic);
   iupBaseRegisterVisualAttrib(ic);
-
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, qtCalendarSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", qtCalendarGetValueAttrib, qtCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, qtCalendarSetWeekNumbersAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
