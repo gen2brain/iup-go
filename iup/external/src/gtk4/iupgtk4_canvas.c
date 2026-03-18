@@ -816,7 +816,6 @@ void iupdrvCanvasInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "CURSOR", NULL, iupdrvBaseSetCursorAttrib, IUPAF_SAMEASSYSTEM, "ARROW", IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DRAWDRIVER", NULL, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWLINEWIDTH", NULL, NULL, "1", NULL, IUPAF_NO_INHERIT);
 
@@ -830,6 +829,8 @@ void iupdrvCanvasInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "XAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "YAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, iupgtk4GetNativeWindowHandleName(), iupgtk4GetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CAIRO_CR", NULL, NULL, NULL, NULL, IUPAF_NO_STRING);
   iupClassRegisterAttribute(ic, "CLIPRECT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
