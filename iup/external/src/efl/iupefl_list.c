@@ -1726,6 +1726,9 @@ static int eflListMapMethod(Ihandle* ih)
   else if (iupAttribGetBoolean(ih, "DRAGDROPLIST"))
     eflListEnableDragDrop(ih);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
