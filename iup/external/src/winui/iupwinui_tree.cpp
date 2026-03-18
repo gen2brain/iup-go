@@ -1948,6 +1948,9 @@ static int winuiTreeMapMethod(Ihandle* ih)
 
   winuiTreeSetBgColorAttrib(ih, IupGetGlobal("TXTBGCOLOR"));
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 

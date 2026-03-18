@@ -1459,6 +1459,9 @@ static int winuiListMapMethod(Ihandle* ih)
   if (ih->data->show_dragdrop && !aux->isDropdown && !aux->isMultiple)
     winuiListEnableDragDrop(ih);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
