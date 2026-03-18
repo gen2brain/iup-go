@@ -1238,6 +1238,21 @@ static int eflDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int eflDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrBoolean(value))
+  {
+    Eo* win = (Eo*)ih->handle;
+    if (win)
+    {
+      Ecore_Evas* ee = ecore_evas_object_ecore_evas_get(win);
+      if (ee)
+        ecore_evas_activate(ee);
+    }
+  }
+  return 0;
+}
+
 void iupdrvDialogInitClass(Iclass* ic)
 {
   ic->Map = eflDialogMapMethod;
@@ -1277,7 +1292,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, iupeflGetNativeWindowHandleName(), iupeflGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_NO_STRING);
 
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, eflDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
