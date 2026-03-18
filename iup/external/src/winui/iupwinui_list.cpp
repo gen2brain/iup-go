@@ -2176,6 +2176,45 @@ static void winuiListLayoutUpdateMethod(Ihandle* ih)
   iupdrvBaseLayoutUpdateMethod(ih);
 }
 
+static int winuiListSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+
+  Windows::UI::Color color;
+  color.A = 255; color.R = r; color.G = g; color.B = b;
+  SolidColorBrush brush(color);
+
+  if (ih->data->is_dropdown)
+  {
+    ComboBox comboBox = winuiGetHandle<ComboBox>(ih);
+    if (comboBox)
+      comboBox.Foreground(brush);
+  }
+  else if (ih->data->is_virtual)
+  {
+    ListView listView = winuiListGetListView(ih);
+    if (listView)
+      listView.Foreground(brush);
+  }
+  else
+  {
+    ListBox listBox = winuiListGetListBox(ih);
+    if (listBox)
+      listBox.Foreground(brush);
+
+    if (ih->data->has_editbox)
+    {
+      TextBox textBox = winuiListGetTextBox(ih);
+      if (textBox)
+        textBox.Foreground(brush);
+    }
+  }
+
+  return 1;
+}
+
 extern "C" void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = winuiListMapMethod;
@@ -2184,7 +2223,7 @@ extern "C" void iupdrvListInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "FONT", NULL, winuiListSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", winuiListGetValueAttrib, winuiListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IDVALUE", winuiListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
