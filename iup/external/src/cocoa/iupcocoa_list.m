@@ -3842,6 +3842,9 @@ static int cocoaListMapMethod(Ihandle* ih)
     }
   }
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
