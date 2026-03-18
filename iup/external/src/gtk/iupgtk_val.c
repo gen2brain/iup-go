@@ -268,6 +268,72 @@ static int gtkValMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void gtkValUpdateTicks(Ihandle* ih, int num_ticks)
+{
+  int i;
+  GtkPositionType pos;
+
+  gtk_scale_clear_marks(GTK_SCALE(ih->handle));
+
+  if (num_ticks < 2)
+    return;
+
+  {
+    char* tickspos = iupAttribGet(ih, "TICKSPOS");
+    if (ih->data->orientation == IVAL_HORIZONTAL)
+    {
+      if (iupStrEqualNoCase(tickspos, "REVERSE"))
+        pos = GTK_POS_TOP;
+      else
+        pos = GTK_POS_BOTTOM;
+    }
+    else
+    {
+      if (iupStrEqualNoCase(tickspos, "REVERSE"))
+        pos = GTK_POS_LEFT;
+      else
+        pos = GTK_POS_RIGHT;
+    }
+  }
+
+  for (i = 0; i < num_ticks; i++)
+  {
+    double fval = (double)i / (double)(num_ticks - 1);
+    gtk_scale_add_mark(GTK_SCALE(ih->handle), fval, pos, NULL);
+  }
+}
+
+static int gtkValSetShowTicksAttrib(Ihandle* ih, const char* value)
+{
+  int num_ticks;
+
+  if (!ih->handle)
+    return 1;
+
+  if (!iupStrToInt(value, &num_ticks))
+    num_ticks = 0;
+
+  gtkValUpdateTicks(ih, num_ticks);
+
+  return 0;
+}
+
+static int gtkValSetTicksPosAttrib(Ihandle* ih, const char* value)
+{
+  int num_ticks;
+
+  if (!ih->handle)
+    return 1;
+
+  (void)value;
+
+  num_ticks = iupAttribGetInt(ih, "SHOWTICKS");
+  if (num_ticks > 1)
+    gtkValUpdateTicks(ih, num_ticks);
+
+  return 0;
+}
+
 void iupdrvValInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -283,7 +349,6 @@ void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, gtkValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, gtkValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* NOT supported */
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "SHOWTICKS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, gtkValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, gtkValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
 }
