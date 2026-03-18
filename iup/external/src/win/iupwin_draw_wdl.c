@@ -49,6 +49,11 @@ struct _IdrawCanvas{
 /* must be the same in wdInitialize and wdTerminate */
 const DWORD wdl_flags = WD_INIT_COREAPI | WD_INIT_IMAGEAPI | WD_INIT_STRINGAPI;
 
+static WD_HSTROKESTYLE g_strokeDash = NULL;
+static WD_HSTROKESTYLE g_strokeDot = NULL;
+static WD_HSTROKESTYLE g_strokeDashDot = NULL;
+static WD_HSTROKESTYLE g_strokeDashDotDot = NULL;
+
 void iupwinDrawInit(void)
 {
   iupwinDrawThemeInit();
@@ -67,6 +72,11 @@ void iupwinDrawInit(void)
 
 void iupwinDrawFinish(void)
 {
+  if (g_strokeDash) { wdDestroyStrokeStyle(g_strokeDash); g_strokeDash = NULL; }
+  if (g_strokeDot) { wdDestroyStrokeStyle(g_strokeDot); g_strokeDot = NULL; }
+  if (g_strokeDashDot) { wdDestroyStrokeStyle(g_strokeDashDot); g_strokeDashDot = NULL; }
+  if (g_strokeDashDotDot) { wdDestroyStrokeStyle(g_strokeDashDotDot); g_strokeDashDotDot = NULL; }
+
   if (wdBackend() == WD_BACKEND_D2D)
     gdix_fini();  /* if WDL is using Direct2D must manually terminate GDI+ */
 
@@ -191,39 +201,31 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
 #define iupInt2FloatW(_x) ((float)_x)
 #define iupColor2ARGB(_c) WD_ARGB(iupDrawAlpha(_c), iupDrawRed(_c), iupDrawGreen(_c), iupDrawBlue(_c))
 
-/* Create stroke style - caller must destroy immediately after use */
+/* Returns a cached stroke style, destroyed in iupwinDrawFinish */
 static WD_HSTROKESTYLE iCreateStrokeStyle(int style)
 {
-  float dashes[6];
-  int dash_count;
+  static float s_dash[2] = { 9.0f, 3.0f };
+  static float s_dot[2] = { 1.0f, 2.0f };
+  static float s_dash_dot[4] = { 7.0f, 3.0f, 1.0f, 3.0f };
+  static float s_dash_dot_dot[6] = { 7.0f, 3.0f, 1.0f, 3.0f, 1.0f, 3.0f };
 
-  if (style == IUP_DRAW_STROKE || style == IUP_DRAW_FILL)
-    return NULL;
-
-  switch(style)
+  switch (style)
   {
     case IUP_DRAW_STROKE_DASH:
-      dashes[0] = 9.0f; dashes[1] = 3.0f;
-      dash_count = 2;
-      break;
+      if (!g_strokeDash) g_strokeDash = wdCreateStrokeStyleCustom(s_dash, 2, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
+      return g_strokeDash;
     case IUP_DRAW_STROKE_DOT:
-      dashes[0] = 1.0f; dashes[1] = 2.0f;
-      dash_count = 2;
-      break;
+      if (!g_strokeDot) g_strokeDot = wdCreateStrokeStyleCustom(s_dot, 2, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
+      return g_strokeDot;
     case IUP_DRAW_STROKE_DASH_DOT:
-      dashes[0] = 7.0f; dashes[1] = 3.0f; dashes[2] = 1.0f; dashes[3] = 3.0f;
-      dash_count = 4;
-      break;
+      if (!g_strokeDashDot) g_strokeDashDot = wdCreateStrokeStyleCustom(s_dash_dot, 4, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
+      return g_strokeDashDot;
     case IUP_DRAW_STROKE_DASH_DOT_DOT:
-      dashes[0] = 7.0f; dashes[1] = 3.0f; dashes[2] = 1.0f;
-      dashes[3] = 3.0f; dashes[4] = 1.0f; dashes[5] = 3.0f;
-      dash_count = 6;
-      break;
+      if (!g_strokeDashDotDot) g_strokeDashDotDot = wdCreateStrokeStyleCustom(s_dash_dot_dot, 6, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
+      return g_strokeDashDotDot;
     default:
       return NULL;
   }
-
-  return wdCreateStrokeStyleCustom(dashes, dash_count, WD_LINECAP_FLAT, WD_LINEJOIN_MITER);
 }
 
 IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
@@ -239,8 +241,7 @@ IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, in
   {
     WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
     wdDrawRectStyled(dc->hCanvas, brush, iupInt2Float(x1), iupInt2Float(y1), iupInt2Float(x2), iupInt2Float(y2), iupInt2FloatW(line_width), stroke_style);
-    if (stroke_style)
-      wdDestroyStrokeStyle(stroke_style);
+
   }
 
   wdDestroyBrush(brush);
@@ -264,8 +265,6 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
   else
     wdDrawLineStyled(dc->hCanvas, brush, iupInt2Float(x1), iupInt2Float(y1), iupInt2Float(x2), iupInt2Float(y2), iupInt2FloatW(line_width), stroke_style);
 
-  if (stroke_style)
-    wdDestroyStrokeStyle(stroke_style);
   wdDestroyBrush(brush);
 }
 
@@ -301,8 +300,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
       wdDrawEllipseStyled(dc->hCanvas, brush, xc, yc, rx, ry, iupInt2FloatW(line_width), stroke_style);
     else
       wdDrawEllipseArcStyled(dc->hCanvas, brush, xc, yc, rx, ry, baseAngle, sweepAngle, iupInt2FloatW(line_width), stroke_style);
-    if (stroke_style)
-      wdDestroyStrokeStyle(stroke_style);
+
   }
 
   wdDestroyBrush(brush);
@@ -330,8 +328,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
   {
     WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
     wdDrawEllipseStyled(dc->hCanvas, brush, xc, yc, rx, ry, iupInt2FloatW(line_width), stroke_style);
-    if (stroke_style)
-      wdDestroyStrokeStyle(stroke_style);
+
   }
 
   wdDestroyBrush(brush);
@@ -364,8 +361,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
   {
     WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
     wdDrawPathStyled(dc->hCanvas, brush, path, iupInt2FloatW(line_width), stroke_style);
-    if (stroke_style)
-      wdDestroyStrokeStyle(stroke_style);
+
   }
 
   wdDestroyPath(path);
@@ -415,8 +411,7 @@ IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int
   {
     WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
     wdDrawRoundedRectStyled(dc->hCanvas, brush, x0, y0, x1f, y1f, radius, iupInt2FloatW(line_width), stroke_style);
-    if (stroke_style)
-      wdDestroyStrokeStyle(stroke_style);
+
   }
 
   wdDestroyBrush(brush);
@@ -449,8 +444,7 @@ IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y
   {
     WD_HSTROKESTYLE stroke_style = iCreateStrokeStyle(style);
     wdDrawPathStyled(dc->hCanvas, brush, path, iupInt2FloatW(line_width), stroke_style);
-    if (stroke_style)
-      wdDestroyStrokeStyle(stroke_style);
+
   }
 
   wdDestroyPath(path);
