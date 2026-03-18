@@ -32,31 +32,16 @@ extern "C" {
 #include "iupqt_drv.h"
 
 
-/****************************************************************************
- * Drag and Drop Action Constants
- ****************************************************************************/
-
-#define IUP_DRAG_NONE 0
-#define IUP_DRAG_COPY 1
-#define IUP_DRAG_MOVE 2
-#define IUP_DRAG_LINK 3
-
 struct IupQtDragDropData
 {
   int is_source;
   int is_target;
 
-  /* Source data */
   QDrag* current_drag;
 
-  /* Last drop position */
   int last_x;
   int last_y;
 };
-
-/****************************************************************************
- * Get or Create Drag Drop Data
- ****************************************************************************/
 
 static IupQtDragDropData* qtDragDropGetData(Ihandle* ih, int create)
 {
@@ -77,90 +62,11 @@ static IupQtDragDropData* qtDragDropGetData(Ihandle* ih, int create)
   return dd_data;
 }
 
-/****************************************************************************
- * Convert Drop Action to IUP
- ****************************************************************************/
-
-static int qtDragDropActionToIup(Qt::DropAction action)
-{
-  switch (action)
-  {
-    case Qt::CopyAction:
-      return IUP_DRAG_COPY;
-    case Qt::MoveAction:
-      return IUP_DRAG_MOVE;
-    case Qt::LinkAction:
-      return IUP_DRAG_LINK;
-    default:
-      return IUP_DRAG_NONE;
-  }
-}
-
-/****************************************************************************
- * Convert IUP Action to Qt
- ****************************************************************************/
-
-static Qt::DropAction qtDragDropActionFromIup(int action)
-{
-  switch (action)
-  {
-    case IUP_DRAG_COPY:
-      return Qt::CopyAction;
-    case IUP_DRAG_MOVE:
-      return Qt::MoveAction;
-    case IUP_DRAG_LINK:
-      return Qt::LinkAction;
-    default:
-      return Qt::IgnoreAction;
-  }
-}
-
-/****************************************************************************
- * Convert Qt Drop Actions to IUP flags
- ****************************************************************************/
-
-static Qt::DropActions qtDragDropActionsFromIup(const char* value)
-{
-  Qt::DropActions actions = Qt::IgnoreAction;
-
-  if (!value)
-    return Qt::CopyAction;  /* Default */
-
-  if (iupStrEqualNoCase(value, "COPY"))
-    actions = Qt::CopyAction;
-  else if (iupStrEqualNoCase(value, "MOVE"))
-    actions = Qt::MoveAction;
-  else if (iupStrEqualNoCase(value, "LINK"))
-    actions = Qt::LinkAction;
-  else if (iupStrEqualNoCase(value, "COPYMOVE"))
-    actions = Qt::CopyAction | Qt::MoveAction;
-  else if (iupStrEqualNoCase(value, "COPYLINK"))
-    actions = Qt::CopyAction | Qt::LinkAction;
-  else if (iupStrEqualNoCase(value, "MOVELINK"))
-    actions = Qt::MoveAction | Qt::LinkAction;
-  else if (iupStrEqualNoCase(value, "ALL"))
-    actions = Qt::CopyAction | Qt::MoveAction | Qt::LinkAction;
-  else
-    actions = Qt::CopyAction;
-
-  return actions;
-}
-
-/****************************************************************************
- * Get Keyboard Modifier State
- ****************************************************************************/
-
 static void qtDragDropGetModifiers(char* status)
 {
   Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
-
-  /* Use Qt button/key status helper */
   iupqtButtonKeySetStatus(mods, Qt::NoButton, 0, status, 0);
 }
-
-/****************************************************************************
- * Custom Event Filter for Drag and Drop
- ****************************************************************************/
 
 class IupQtDragDropFilter : public QObject
 {
@@ -260,14 +166,6 @@ protected:
         if (!dd_data->is_target)
           return false;
 
-        IFniis cb = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
-        if (cb)
-        {
-          char status[IUPKEY_STATUS_SIZE];
-          qtDragDropGetModifiers(status);
-          cb(ih, -1, -1, status);
-        }
-
         return false;
       }
 
@@ -290,8 +188,7 @@ protected:
         dd_data->last_y = y;
 
         const char* drop_types = iupAttribGetStr(ih, "DROPTYPES");
-
-        if (drop_types && !iupStrEqualNoCase(drop_types, "TEXT") && !iupStrEqualNoCase(drop_types, "FILES"))
+        if (drop_types)
         {
           QString mime_type = QString("application/x-iup-") + QString::fromUtf8(drop_types).toLower();
 
@@ -301,66 +198,36 @@ protected:
             if (cbDropData)
             {
               QByteArray data = mime->data(mime_type);
-
-              int ret = cbDropData(ih, (char*)drop_types, (void*)data.constData(), data.size(), x, y);
-
-              if (ret == IUP_IGNORE)
-                drop->ignore();
-              else
-                drop->acceptProposedAction();
-
+              cbDropData(ih, (char*)drop_types, (void*)data.constData(), data.size(), x, y);
+              drop->acceptProposedAction();
               return true;
             }
           }
         }
 
         if (mime->hasUrls())
+        {
+          IFnsiii cbDropFiles = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+          if (cbDropFiles)
           {
-            IFnsiii cbDropFiles = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
-            if (cbDropFiles)
-            {
-              QList<QUrl> urls = mime->urls();
-              int count = urls.size();
+            QList<QUrl> urls = mime->urls();
+            int count = urls.size();
 
-              for (int i = 0; i < count; i++)
+            for (int i = 0; i < count; i++)
+            {
+              QString filePath = urls[i].toLocalFile();
+              if (!filePath.isEmpty())
               {
-                QString filePath = urls[i].toLocalFile();
-                if (!filePath.isEmpty())
-                {
-                  QByteArray fileArray = filePath.toUtf8();
-                  if (cbDropFiles(ih, (char*)fileArray.constData(), count - i - 1, x, y) == IUP_IGNORE)
-                    break;
-                }
+                QByteArray fileArray = filePath.toUtf8();
+                if (cbDropFiles(ih, (char*)fileArray.constData(), count - i - 1, x, y) == IUP_IGNORE)
+                  break;
               }
-
-              drop->acceptProposedAction();
-              return true;
-            }
-          }
-
-          if (mime->hasText())
-          {
-            iupAttribSetStr(ih, "DROPTEXT", mime->text().toUtf8().constData());
-          }
-
-          IFnsViii cb = (IFnsViii)IupGetCallback(ih, "DROP_CB");
-          if (cb)
-          {
-            int action = qtDragDropActionToIup(drop->proposedAction());
-
-            int ret = cb(ih, nullptr, 0, x, y, action);
-
-            if (ret == IUP_IGNORE)
-            {
-              drop->ignore();
-            }
-            else
-            {
-              drop->acceptProposedAction();
             }
 
+            drop->acceptProposedAction();
             return true;
           }
+        }
 
         drop->acceptProposedAction();
         return true;
@@ -416,80 +283,51 @@ protected:
               const char* drag_types = iupAttribGetStr(ih, "DRAGTYPES");
               if (drag_types)
               {
-                QDrag* drag = new QDrag(widget);
-                QMimeData* mime_data = new QMimeData();
+                IFns cbDragDataSize = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
+                IFnsVi cbDragData = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
 
-                if (iupStrEqualNoCase(drag_types, "TEXT"))
+                if (cbDragDataSize && cbDragData)
                 {
-                  const char* text = iupAttribGetStr(ih, "DRAGTEXT");
-                  if (text)
-                    mime_data->setText(QString::fromUtf8(text));
-                }
-                else if (iupStrEqualNoCase(drag_types, "FILES"))
-                {
-                  const char* files = iupAttribGetStr(ih, "DRAGFILES");
-                  if (files)
+                  int size = cbDragDataSize(ih, (char*)drag_types);
+                  if (size > 0)
                   {
-                    QList<QUrl> urls;
-                    char* str = iupStrDup(files);
-                    char* token = strtok(str, "\n");
-                    while (token)
+                    QDrag* drag = new QDrag(widget);
+                    QMimeData* mime_data = new QMimeData();
+
+                    void* data = malloc(size);
+                    cbDragData(ih, (char*)drag_types, data, size);
+
+                    QString mime_type = QString("application/x-iup-") + QString::fromUtf8(drag_types).toLower();
+                    QByteArray byte_array((const char*)data, size);
+                    mime_data->setData(mime_type, byte_array);
+                    free(data);
+
+                    drag->setMimeData(mime_data);
+
+                    Qt::DropActions actions = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE") ?
+                                              Qt::CopyAction | Qt::MoveAction : Qt::CopyAction;
+
+                    dd_data->current_drag = drag;
+
+                    Qt::DropAction result = drag->exec(actions);
+
+                    IFni end_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+                    if (end_cb)
                     {
-                      urls.append(QUrl::fromLocalFile(QString::fromUtf8(token)));
-                      token = strtok(nullptr, "\n");
+                      int remove = -1;
+                      if (result == Qt::MoveAction)
+                        remove = 1;
+                      else if (result == Qt::CopyAction)
+                        remove = 0;
+
+                      end_cb(ih, remove);
                     }
-                    free(str);
-                    mime_data->setUrls(urls);
+
+                    dd_data->current_drag = nullptr;
+
+                    return true;
                   }
                 }
-                else
-                {
-                  IFns cbDragDataSize = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
-                  IFnsVi cbDragData = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
-
-                  if (cbDragDataSize && cbDragData)
-                  {
-                    int size = cbDragDataSize(ih, (char*)drag_types);
-
-                    if (size > 0)
-                    {
-                      void* data = malloc(size);
-                      cbDragData(ih, (char*)drag_types, data, size);
-
-                      QString mime_type = QString("application/x-iup-") + QString::fromUtf8(drag_types).toLower();
-
-                      QByteArray byte_array((const char*)data, size);
-                      mime_data->setData(mime_type, byte_array);
-
-                      free(data);
-                    }
-                  }
-                }
-
-                drag->setMimeData(mime_data);
-
-                const char* actions_str = iupAttribGetStr(ih, "DRAGSOURCEACTION");
-                Qt::DropActions actions = qtDragDropActionsFromIup(actions_str);
-
-                dd_data->current_drag = drag;
-
-                Qt::DropAction result = drag->exec(actions);
-
-                IFni end_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
-                if (end_cb)
-                {
-                  int remove = -1;
-                  if (result == Qt::MoveAction)
-                    remove = 1;
-                  else if (result == Qt::CopyAction)
-                    remove = 0;
-
-                  end_cb(ih, remove);
-                }
-
-                dd_data->current_drag = nullptr;
-
-                return true;
               }
             }
           }
@@ -506,10 +344,6 @@ protected:
   }
 };
 
-/****************************************************************************
- * Enable Drag Source
- ****************************************************************************/
-
 static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
 {
   IupQtDragDropData* dd_data = qtDragDropGetData(ih, 1);
@@ -518,9 +352,7 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
 
   QWidget* widget = (QWidget*)ih->handle;
   if (!widget)
-  {
     return 0;
-  }
 
   int enable = iupStrBoolean(value);
 
@@ -572,10 +404,6 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-/****************************************************************************
- * Enable Drop Target
- ****************************************************************************/
-
 static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
 {
   IupQtDragDropData* dd_data = qtDragDropGetData(ih, 1);
@@ -584,9 +412,7 @@ static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
 
   QWidget* widget = (QWidget*)ih->handle;
   if (!widget)
-  {
     return 0;
-  }
 
   int enable = iupStrBoolean(value);
 
@@ -643,57 +469,10 @@ static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-/****************************************************************************
- * Set Drop Types
- ****************************************************************************/
-
-static int qtDragDropSetDropTypesAttrib(Ihandle* ih, const char* value)
-{
-  iupAttribSetStr(ih, "_IUPQT_DROPTYPES", value);
-  return 1;
-}
-
-/****************************************************************************
- * Set Drag Source Move (Compatibility Attribute)
- ****************************************************************************/
-
-static int qtDragDropSetDragSourceMoveAttrib(Ihandle* ih, const char* value)
-{
-  if (iupStrBoolean(value))
-    iupAttribSetStr(ih, "DRAGSOURCEACTION", "COPYMOVE");
-  else
-    iupAttribSetStr(ih, "DRAGSOURCEACTION", "COPY");
-
-  return 1;
-}
-
-/****************************************************************************
- * Set Drop Files Target (Convenience Attribute)
- ****************************************************************************/
-
 static int qtDragDropSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
-  int enable = iupStrBoolean(value);
-
-  if (enable)
-  {
-    iupAttribSetStr(ih, "DROPTARGET", "YES");
-    iupAttribSetStr(ih, "DROPTYPES", "FILES");
-  }
-  else
-  {
-    iupAttribSetStr(ih, "DROPTARGET", "NO");
-  }
-
-  qtDragDropSetDropTargetAttrib(ih, enable ? "YES" : "NO");
-  qtDragDropSetDropTypesAttrib(ih, enable ? "FILES" : NULL);
-
-  return 1;
+  return qtDragDropSetDropTargetAttrib(ih, value);
 }
-
-/****************************************************************************
- * Cleanup Drag Drop Resources
- ****************************************************************************/
 
 extern "C" void iupqtDragDropCleanup(Ihandle* ih)
 {
@@ -718,35 +497,25 @@ extern "C" void iupqtDragDropCleanup(Ihandle* ih)
   }
 }
 
-/****************************************************************************
- * Register Drag Drop Attributes
- ****************************************************************************/
-
-extern "C" void iupqtDragDropRegisterAttrib(Iclass* ic)
+extern "C" void iupdrvRegisterDragDropAttrib(Iclass* ic)
 {
+  iupClassRegisterCallback(ic, "DROPFILES_CB", "siii");
+
+  iupClassRegisterCallback(ic, "DRAGBEGIN_CB", "ii");
+  iupClassRegisterCallback(ic, "DRAGDATASIZE_CB", "s");
+  iupClassRegisterCallback(ic, "DRAGDATA_CB", "sVi");
+  iupClassRegisterCallback(ic, "DRAGEND_CB", "i");
+  iupClassRegisterCallback(ic, "DROPDATA_CB", "sViii");
+  iupClassRegisterCallback(ic, "DROPMOTION_CB", "iis");
+
+  iupClassRegisterAttribute(ic, "DRAGTYPES",  nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPTYPES",  nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGSOURCE", nullptr, qtDragDropSetDragSourceAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPTARGET", nullptr, qtDragDropSetDropTargetAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTYPES", nullptr, qtDragDropSetDropTypesAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGTYPES", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGSOURCEACTION", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTARGETACTION", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", nullptr, qtDragDropSetDragSourceMoveAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSOR", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DRAGDROP", nullptr, qtDragDropSetDropFilesTargetAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, qtDragDropSetDropFilesTargetAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-
-  iupClassRegisterAttribute(ic, "DRAGTEXT", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGFILES", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTEXT", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
-
-  iupClassRegisterCallback(ic, "DROPFILES_CB", "siii");
-  iupClassRegisterCallback(ic, "DRAGBEGIN_CB", "ii");
-  iupClassRegisterCallback(ic, "DRAGEND_CB", "i");
-  iupClassRegisterCallback(ic, "DROPMOTION_CB", "iis");
-  iupClassRegisterCallback(ic, "DROP_CB", "sViiii");
-}
-
-extern "C" void iupdrvRegisterDragDropAttrib(Iclass* ic)
-{
-  iupqtDragDropRegisterAttrib(ic);
 }
