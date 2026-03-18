@@ -1700,7 +1700,13 @@ static int qtTextMapMethod(Ihandle* ih)
 
     /* Configure multiline text */
     text->setAcceptRichText(false);
-    text->setLineWrapMode(iupAttribGetBoolean(ih, "WORDWRAP") ? QTextEdit::WidgetWidth : QTextEdit::NoWrap);
+    if (iupAttribGetBoolean(ih, "WORDWRAP"))
+    {
+      text->setLineWrapMode(QTextEdit::WidgetWidth);
+      ih->data->sb &= ~IUP_SB_HORIZ;
+    }
+    else
+      text->setLineWrapMode(QTextEdit::NoWrap);
     text->setTabStopDistance(40);
 
     /* Vertical scrollbar */

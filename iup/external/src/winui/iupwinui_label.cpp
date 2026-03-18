@@ -329,6 +329,9 @@ static int winuiLabelMapMethod(Ihandle* ih)
   if (ih->data->type == IUP_LABEL_TEXT)
     winuiLabelUpdateFont(ih);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 
@@ -423,6 +426,40 @@ extern "C" void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
   (void)y;
 }
 
+static int winuiLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type == IUP_LABEL_TEXT)
+  {
+    TextBlock textBlock = winuiLabelGetTextBlock(ih);
+    if (textBlock)
+    {
+      if (iupStrBoolean(value))
+        textBlock.TextWrapping(TextWrapping::Wrap);
+      else
+        textBlock.TextWrapping(TextWrapping::NoWrap);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+static int winuiLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type == IUP_LABEL_TEXT)
+  {
+    TextBlock textBlock = winuiLabelGetTextBlock(ih);
+    if (textBlock)
+    {
+      if (iupStrBoolean(value))
+        textBlock.TextTrimming(TextTrimming::CharacterEllipsis);
+      else
+        textBlock.TextTrimming(TextTrimming::None);
+    }
+    return 1;
+  }
+  return 0;
+}
+
 extern "C" void iupdrvLabelInitClass(Iclass* ic)
 {
   ic->Map = winuiLabelMapMethod;
@@ -439,7 +476,7 @@ extern "C" void iupdrvLabelInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "FONT", NULL, winuiLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, winuiLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, winuiLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
