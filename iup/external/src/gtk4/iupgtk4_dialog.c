@@ -500,7 +500,11 @@ static int gtk4DialogMapMethod(Ihandle* ih)
 
   g_signal_connect(G_OBJECT(ih->handle), "close-request", G_CALLBACK(iupgtk4DialogCloseRequest), ih);
 
-  gtk_window_set_default_size((GtkWindow*)ih->handle, 100, 100);
+  {
+    int init_w = ih->userwidth > 0 ? ih->userwidth : 100;
+    int init_h = ih->userheight > 0 ? ih->userheight : 100;
+    gtk_window_set_default_size((GtkWindow*)ih->handle, init_w, init_h);
+  }
 
   if (iupAttribGetBoolean(ih, "DIALOGHINT"))
     gtk_window_set_modal(GTK_WINDOW(ih->handle), TRUE);
