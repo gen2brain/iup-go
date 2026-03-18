@@ -1262,6 +1262,20 @@ static int cocoaDialogSetIconAttrib(Ihandle* ih, const char *value)
   return 1;
 }
 
+static int cocoaDialogSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  if (!the_window) return 0;
+
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+
+  NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+  [the_window setBackgroundColor:color];
+  return 1;
+}
+
 static int cocoaDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
   NSWindow* the_window = cocoaDialogGetWindow(ih);
@@ -1767,6 +1781,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, cocoaDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaDialogSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, cocoaDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, cocoaDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", NULL, cocoaDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
