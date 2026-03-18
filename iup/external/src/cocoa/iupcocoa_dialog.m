@@ -496,13 +496,13 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_window, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!iupObjectCheck(ih)) return;
 
-  if (ih->data->ignore_resize) return;
-
   NSRect frame_rect = [the_window frame];
   NSRect content_rect = [[the_window contentView] bounds];
 
   int new_width = iupROUND(frame_rect.size.width);
   int new_height = iupROUND(frame_rect.size.height);
+
+  if (ih->data->ignore_resize) return;
 
   if (ih->currentwidth == new_width && ih->currentheight == new_height)
     return;
@@ -1628,6 +1628,18 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
   }
 
   ih->data->ignore_resize = 0;
+
+  if (!iupAttribGetBoolean(ih, "_IUPCOCOA_FIRST_REFRESH"))
+  {
+    iupAttribSet(ih, "_IUPCOCOA_FIRST_REFRESH", "1");
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (!iupObjectCheck(ih)) return;
+      if (ih->data->ignore_resize) return;
+      ih->data->ignore_resize = 1;
+      IupRefresh(ih);
+      ih->data->ignore_resize = 0;
+    });
+  }
 }
 
 
