@@ -220,14 +220,10 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
     if (cb && !(ih->data->inside_resize))
     {
       PAINTSTRUCT ps;
-      HDC hdc = BeginPaint(hwnd, &ps);
-      iupAttribSet(ih, "HDC_WMPAINT", (char*)hdc);
-      iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top);
+      BeginPaint(hwnd, &ps);
 
       cb(ih);
 
-      iupAttribSet(ih, "CLIPRECT", NULL);
-      iupAttribSet(ih, "HDC_WMPAINT", NULL);
       EndPaint(hwnd, &ps);
       return 0;
     }
