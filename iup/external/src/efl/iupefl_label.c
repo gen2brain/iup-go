@@ -121,15 +121,76 @@ static int eflLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static Eo* eflLabelGetInternalImage(Ihandle* ih)
+{
+  Eo* widget = iupeflGetWidget(ih);
+  if (!widget)
+    return NULL;
+  if (efl_isa(widget, EFL_UI_IMAGE_CLASS))
+    return elm_image_object_get(widget);
+  return widget;
+}
+
+static Eo* eflLabelCreateImageWidget(const char* name, Ihandle* ih, Eo* parent, int make_inactive)
+{
+  Eo* raw_img = iupeflImageGetImage(name, ih, make_inactive);
+  if (!raw_img)
+    return NULL;
+
+  Eo* ui_image = efl_add(EFL_UI_IMAGE_CLASS, parent);
+  if (!ui_image)
+  {
+    efl_del(raw_img);
+    return NULL;
+  }
+
+  Eo* internal_img = elm_image_object_get(ui_image);
+  if (internal_img)
+  {
+    int w, h;
+    Eina_Bool alpha;
+    unsigned int* src;
+
+    evas_object_image_size_get(raw_img, &w, &h);
+    alpha = evas_object_image_alpha_get(raw_img);
+    src = evas_object_image_data_get(raw_img, EINA_FALSE);
+
+    evas_object_image_alpha_set(internal_img, alpha);
+    evas_object_image_size_set(internal_img, w, h);
+
+    if (src)
+    {
+      unsigned int* dst = evas_object_image_data_get(internal_img, EINA_TRUE);
+      if (dst)
+      {
+        memcpy(dst, src, w * h * sizeof(unsigned int));
+        evas_object_image_data_set(internal_img, dst);
+        evas_object_image_data_update_add(internal_img, 0, 0, w, h);
+      }
+    }
+
+    evas_object_image_filled_set(internal_img, EINA_TRUE);
+  }
+
+  efl_del(raw_img);
+
+  efl_gfx_hint_size_min_set(ui_image, efl_gfx_hint_size_min_get(ui_image));
+
+  return ui_image;
+}
+
 static int eflLabelReplaceWithImage(Ihandle* ih, const char* name, int make_inactive)
 {
   Eo* old_widget = iupeflGetWidget(ih);
   Eo* image;
+  Eo* parent;
 
   if (!old_widget)
     return 0;
 
-  image = iupeflImageGetImage(name, ih, make_inactive);
+  parent = efl_parent_get(old_widget);
+
+  image = eflLabelCreateImageWidget(name, ih, parent, make_inactive);
   if (!image)
     return 0;
 
@@ -159,7 +220,8 @@ static int eflLabelSetImageAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
-    if (iupeflImageUpdateImage(widget, value, ih, 0))
+    Eo* internal_img = eflLabelGetInternalImage(ih);
+    if (internal_img && iupeflImageUpdateImage(internal_img, value, ih, 0))
       return 1;
   }
 
@@ -170,12 +232,12 @@ static int eflLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_IMAGE && !iupdrvIsActive(ih))
   {
-    Eo* label = iupeflGetWidget(ih);
-    if (label)
+    Eo* internal_img = eflLabelGetInternalImage(ih);
+    if (internal_img)
     {
       if (value)
       {
-        if (!iupeflImageUpdateImage(label, value, ih, 0))
+        if (!iupeflImageUpdateImage(internal_img, value, ih, 0))
           eflLabelReplaceWithImage(ih, value, 0);
       }
       else
@@ -183,7 +245,7 @@ static int eflLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
         char* name = iupAttribGet(ih, "IMAGE");
         if (name)
         {
-          if (!iupeflImageUpdateImage(label, name, ih, 1))
+          if (!iupeflImageUpdateImage(internal_img, name, ih, 1))
             eflLabelReplaceWithImage(ih, name, 1);
         }
       }
@@ -217,8 +279,8 @@ static int eflLabelSetActiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
-    Eo* label = iupeflGetWidget(ih);
-    if (label)
+    Eo* internal_img = eflLabelGetInternalImage(ih);
+    if (internal_img)
     {
       char* name;
       int make_inactive = !iupStrBoolean(value);
@@ -234,7 +296,7 @@ static int eflLabelSetActiveAttrib(Ihandle* ih, const char* value)
 
       if (name)
       {
-        if (!iupeflImageUpdateImage(label, name, ih, make_inactive))
+        if (!iupeflImageUpdateImage(internal_img, name, ih, make_inactive))
           eflLabelReplaceWithImage(ih, name, make_inactive);
       }
     }
@@ -276,7 +338,7 @@ static int eflLabelMapMethod(Ihandle* ih)
     {
       ih->data->type = IUP_LABEL_IMAGE;
 
-      label = iupeflImageGetImage(value, ih, 0);
+      label = eflLabelCreateImageWidget(value, ih, parent, 0);
       if (!label)
       {
         label = efl_add(EFL_UI_IMAGE_CLASS, parent);

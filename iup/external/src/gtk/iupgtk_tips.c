@@ -11,12 +11,13 @@
 #include "iup.h" 
 #include "iupcbs.h" 
 
-#include "iup_object.h" 
-#include "iup_str.h" 
-#include "iup_attrib.h" 
-#include "iup_image.h" 
+#include "iup_object.h"
+#include "iup_str.h"
+#include "iup_attrib.h"
+#include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
+#include "iup_drvfont.h"
 
 #include "iupgtk_drv.h"
 
@@ -76,13 +77,60 @@ static gboolean gtkQueryTooltip(GtkWidget *widget, gint _x, gint _y, gboolean ke
       gtk_tooltip_set_icon(tooltip, icon);
   }
 
-  /* set again because it could has been changed inside the callback */
-  gtkTooltipSetTitle(ih, widget, iupAttribGet(ih, "TIP"));
+  value = iupAttribGet(ih, "TIP");
+  {
+    const char* tipfont = iupAttribGet(ih, "TIPFONT");
+    const char* tipbgcolor = iupAttribGet(ih, "TIPBGCOLOR");
+    const char* tipfgcolor = iupAttribGet(ih, "TIPFGCOLOR");
 
-  /* NOTE:
-   gtk_widget_get_tooltip_window could be used to set 
-   TIPBGCOLOR, TIPFGCOLOR and TIPFONT, but it does not work
-   because it returns NULL inside the signal. */
+    if (tipfont || tipbgcolor || tipfgcolor)
+    {
+      GtkWidget* label = gtk_label_new(NULL);
+      PangoAttrList* attrs = pango_attr_list_new();
+
+      if (iupAttribGetBoolean(ih, "TIPMARKUP"))
+        gtk_label_set_markup(GTK_LABEL(label), iupgtkStrConvertToSystem(value));
+      else
+        gtk_label_set_text(GTK_LABEL(label), iupgtkStrConvertToSystem(value));
+
+      if (tipfont && !iupStrEqualNoCase(tipfont, "SYSTEM"))
+      {
+        PangoFontDescription* fontdesc = iupgtkGetPangoFontDesc(tipfont);
+        if (fontdesc)
+          pango_attr_list_insert(attrs, pango_attr_font_desc_new(fontdesc));
+      }
+
+      if (tipfgcolor)
+      {
+        unsigned char r, g, b;
+        if (iupStrToRGB(tipfgcolor, &r, &g, &b))
+          pango_attr_list_insert(attrs, pango_attr_foreground_new(r * 257, g * 257, b * 257));
+      }
+
+      if (tipbgcolor)
+      {
+        unsigned char r, g, b;
+        if (iupStrToRGB(tipbgcolor, &r, &g, &b))
+          pango_attr_list_insert(attrs, pango_attr_background_new(r * 257, g * 257, b * 257));
+      }
+
+      gtk_label_set_attributes(GTK_LABEL(label), attrs);
+      pango_attr_list_unref(attrs);
+
+      gtk_widget_show(label);
+      gtk_tooltip_set_custom(tooltip, label);
+
+      (void)_y;
+      (void)_x;
+      (void)widget;
+      return TRUE;
+    }
+    else
+    {
+      gtk_tooltip_set_custom(tooltip, NULL);
+      gtkTooltipSetTitle(ih, widget, value);
+    }
+  }
 
   (void)_y;
   (void)_x;

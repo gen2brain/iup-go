@@ -1,16 +1,14 @@
 /** \file
  * \brief WinUI Driver TIPS management
  *
- * Uses a custom Popup with ShouldConstrainToRootBounds to avoid the broken
- * popup-window positioning in XAML Islands.
+ * Uses native ToolTip/ToolTipService for tooltip display.
  *
  * See Copyright Notice in "iup.h"
  */
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <chrono>
-#include <unordered_map>
 
 extern "C" {
 #include "iup.h"
@@ -20,6 +18,7 @@ extern "C" {
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
+#include "iup_drvfont.h"
 }
 
 #include "iupwinui_drv.h"
@@ -31,224 +30,91 @@ using namespace Microsoft::UI::Xaml::Media;
 using namespace Windows::Foundation;
 
 
-static Primitives::Popup winui_tip_popup{nullptr};
-static TextBlock winui_tip_text{nullptr};
-static Ihandle* winui_tip_popup_dlg = NULL;
-
-static Microsoft::UI::Dispatching::DispatcherQueueTimer winui_tip_timer{nullptr};
-static event_token winui_tip_timer_token{};
-static Ihandle* winui_tip_ih = NULL;
-
-struct WinUITipHover
+static ToolTip winuiTipCreateStyled(Ihandle* ih, const char* text)
 {
-  event_token enteredToken;
-  event_token exitedToken;
-};
-static std::unordered_map<Ihandle*, WinUITipHover> winui_tip_hover;
+  unsigned char r, g, b;
+  const char* value;
 
+  ToolTip tip;
 
-static void winuiTipTimerStop(void)
-{
-  if (winui_tip_timer)
+  TextBlock tb;
+  tb.TextWrapping(TextWrapping::Wrap);
+  tb.MaxWidth(400);
+  tb.Text(iupwinuiStringToHString(text));
+
+  value = iupAttribGet(ih, "TIPFONT");
+  if (value && !iupStrEqualNoCase(value, "SYSTEM"))
   {
-    winui_tip_timer.Stop();
-    winui_tip_timer.Tick(winui_tip_timer_token);
-    winui_tip_timer = nullptr;
-  }
-  winui_tip_ih = NULL;
-}
-
-static void winuiTipHide(void)
-{
-  if (winui_tip_popup)
-    winui_tip_popup.IsOpen(false);
-}
-
-static void winuiTipEnsurePopup(Ihandle* ih)
-{
-  Ihandle* dlg = IupGetDialog(ih);
-  if (!dlg || !dlg->handle)
-    return;
-
-  if (winui_tip_popup && winui_tip_popup_dlg == dlg)
-    return;
-
-  if (winui_tip_popup)
-  {
-    winui_tip_popup.IsOpen(false);
-    if (winui_tip_popup_dlg)
+    char typeface[50];
+    int size, is_bold, is_italic, is_underline, is_strikeout;
+    if (iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     {
-      IupWinUIDialogAux* oldAux = winuiGetAux<IupWinUIDialogAux>(winui_tip_popup_dlg, IUPWINUI_DIALOG_AUX);
-      if (oldAux && oldAux->rootPanel)
+      wchar_t wtypeface[50];
+      MultiByteToWideChar(CP_UTF8, 0, typeface, -1, wtypeface, 50);
+      tb.FontFamily(FontFamily(wtypeface));
+
+      if (size < 0)
+        tb.FontSize((double)(-size));
+      else
       {
-        auto children = oldAux->rootPanel.Children();
-        uint32_t idx;
-        if (children.IndexOf(winui_tip_popup, idx))
-          children.RemoveAt(idx);
+        HDC hdc = GetDC(NULL);
+        double dpi = (double)GetDeviceCaps(hdc, LOGPIXELSY);
+        ReleaseDC(NULL, hdc);
+        tb.FontSize((double)size * dpi / 72.0);
       }
+
+      tb.FontWeight(is_bold ?
+        Windows::UI::Text::FontWeights::Bold() :
+        Windows::UI::Text::FontWeights::Normal());
+      tb.FontStyle(is_italic ?
+        Windows::UI::Text::FontStyle::Italic :
+        Windows::UI::Text::FontStyle::Normal);
     }
-    winui_tip_popup = nullptr;
-    winui_tip_text = nullptr;
   }
 
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX);
-  if (!aux || !aux->rootPanel)
-    return;
-
-  auto resources = Application::Current().Resources();
-
-  TextBlock text;
-  text.TextWrapping(TextWrapping::Wrap);
-  text.MaxWidth(400);
-  text.FontSize(12);
-
-  auto fgKey = box_value(L"ToolTipForeground");
-  if (resources.HasKey(fgKey))
-    text.Foreground(resources.Lookup(fgKey).as<Media::Brush>());
-
-  Border border;
-  border.BorderThickness(ThicknessHelper::FromUniformLength(1));
-  border.Padding(ThicknessHelper::FromLengths(8, 4, 8, 4));
-
-  auto bgKey = box_value(L"ToolTipBackground");
-  if (resources.HasKey(bgKey))
-    border.Background(resources.Lookup(bgKey).as<Media::Brush>());
-
-  auto borderKey = box_value(L"ToolTipBorderBrush");
-  if (resources.HasKey(borderKey))
-    border.BorderBrush(resources.Lookup(borderKey).as<Media::Brush>());
-  border.Child(text);
-
-  Primitives::Popup popup;
-  popup.ShouldConstrainToRootBounds(true);
-  popup.IsHitTestVisible(false);
-  popup.Child(border);
-
-  aux->rootPanel.Children().Append(popup);
-
-  winui_tip_popup = popup;
-  winui_tip_text = text;
-  winui_tip_popup_dlg = dlg;
-}
-
-static void winuiTipShowAt(Ihandle* ih, const char* text, double x, double y)
-{
-  winuiTipEnsurePopup(ih);
-  if (!winui_tip_popup || !winui_tip_text)
-    return;
-
-  winui_tip_text.Text(iupwinuiStringToHString(text));
-  winui_tip_popup.HorizontalOffset(x);
-  winui_tip_popup.VerticalOffset(y + 20);
-  winui_tip_popup.IsOpen(true);
-}
-
-static bool winuiTipGetIslandCursorPos(Ihandle* ih, POINT* pt)
-{
-  Ihandle* dlg = IupGetDialog(ih);
-  if (!dlg || !dlg->handle)
-    return false;
-
-  IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX);
-  if (!aux || !aux->islandHwnd)
-    return false;
-
-  GetCursorPos(pt);
-  ScreenToClient(aux->islandHwnd, pt);
-  return true;
-}
-
-static void winuiTipDismissStart(Ihandle* ih)
-{
-  winuiTipTimerStop();
-
-  void* dq_ptr = iupwinuiGetDispatcherQueue();
-  if (!dq_ptr)
-    return;
-
-  IInspectable dq_obj{nullptr};
-  winrt::copy_from_abi(dq_obj, dq_ptr);
-  auto dq = dq_obj.as<Microsoft::UI::Dispatching::DispatcherQueue>();
-
-  winui_tip_ih = ih;
-  int delay = iupAttribGetInt(ih, "TIPDELAY");
-  if (delay <= 0) delay = 5000;
-
-  winui_tip_timer = dq.CreateTimer();
-  winui_tip_timer.Interval(std::chrono::milliseconds{delay});
-  winui_tip_timer.IsRepeating(false);
-  winui_tip_timer_token = winui_tip_timer.Tick([](auto&&, auto&&) {
-    winuiTipTimerStop();
-    winuiTipHide();
-  });
-  winui_tip_timer.Start();
-}
-
-static void winuiTipUnhookHover(Ihandle* ih)
-{
-  auto it = winui_tip_hover.find(ih);
-  if (it == winui_tip_hover.end())
-    return;
-
-  if (ih->handle && !winuiHandleIsHWND(ih))
+  value = iupAttribGet(ih, "TIPFGCOLOR");
+  if (value && iupStrToRGB(value, &r, &g, &b))
   {
-    UIElement elem = winuiGetHandle<UIElement>(ih);
-    if (elem)
-    {
-      elem.PointerEntered(it->second.enteredToken);
-      elem.PointerExited(it->second.exitedToken);
-    }
+    Windows::UI::Color c; c.A = 255; c.R = r; c.G = g; c.B = b;
+    tb.Foreground(SolidColorBrush(c));
   }
 
-  winui_tip_hover.erase(it);
+  value = iupAttribGet(ih, "TIPBGCOLOR");
+  if (value && iupStrToRGB(value, &r, &g, &b))
+  {
+    Windows::UI::Color c; c.A = 255; c.R = r; c.G = g; c.B = b;
+    tip.Background(SolidColorBrush(c));
+  }
+
+  tip.Content(tb);
+  return tip;
 }
+
+static ToolTip winuiTipGetToolTip(Ihandle* ih)
+{
+  if (!ih || !ih->handle || winuiHandleIsHWND(ih))
+    return nullptr;
+
+  DependencyObject elem = winuiGetHandle<DependencyObject>(ih);
+  if (!elem)
+    return nullptr;
+
+  IInspectable obj = ToolTipService::GetToolTip(elem);
+  if (!obj)
+    return nullptr;
+
+  return obj.try_as<ToolTip>();
+}
+
 
 extern "C" void iupwinuiTipsDestroy(Ihandle* ih)
 {
-  winuiTipUnhookHover(ih);
+  if (!ih || !ih->handle || winuiHandleIsHWND(ih))
+    return;
 
-  if (winui_tip_ih == ih)
-    winuiTipTimerStop();
-
-  if (winui_tip_popup_dlg == ih)
-  {
-    winuiTipHide();
-    winui_tip_popup = nullptr;
-    winui_tip_text = nullptr;
-    winui_tip_popup_dlg = NULL;
-  }
-}
-
-extern "C" int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
-{
-  winuiTipHide();
-  winuiTipTimerStop();
-
-  if (iupStrBoolean(value))
-  {
-    const char* tip = iupAttribGet(ih, "TIP");
-    if (!tip)
-      return 0;
-
-    POINT pt;
-    if (!winuiTipGetIslandCursorPos(ih, &pt))
-      return 0;
-
-    winuiTipShowAt(ih, tip, (double)pt.x, (double)pt.y);
-    winuiTipDismissStart(ih);
-  }
-
-  return 0;
-}
-
-extern "C" char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
-{
-  (void)ih;
-
-  if (winui_tip_popup)
-    return iupStrReturnBoolean(winui_tip_popup.IsOpen() ? 1 : 0);
-
-  return NULL;
+  DependencyObject elem = winuiGetHandle<DependencyObject>(ih);
+  if (elem)
+    ToolTipService::SetToolTip(elem, nullptr);
 }
 
 extern "C" int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
@@ -256,54 +122,113 @@ extern "C" int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return 0;
 
-  UIElement elem = winuiGetHandle<UIElement>(ih);
+  DependencyObject elem = winuiGetHandle<DependencyObject>(ih);
   if (!elem)
     return 0;
 
   if (value)
   {
-    if (winui_tip_hover.find(ih) == winui_tip_hover.end())
+    int need_styled = iupAttribGet(ih, "TIPFONT") ||
+                      iupAttribGet(ih, "TIPBGCOLOR") ||
+                      iupAttribGet(ih, "TIPFGCOLOR");
+
+    IFnii tips_cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
+
+    if (need_styled || tips_cb)
     {
-      WinUITipHover hover;
+      ToolTip tip = winuiTipCreateStyled(ih, value);
 
-      hover.enteredToken = elem.PointerEntered([ih](IInspectable const&, Input::PointerRoutedEventArgs const&) {
-        if (!iupObjectCheck(ih))
-          return;
+      if (tips_cb)
+      {
+        tip.Opened([ih](IInspectable const&, RoutedEventArgs const&) {
+          if (!iupObjectCheck(ih))
+            return;
 
-        IFnii tips_cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
-        if (tips_cb)
-        {
-          int x, y;
-          iupdrvGetCursorPos(&x, &y);
-          iupdrvScreenToClient(ih, &x, &y);
-          tips_cb(ih, x, y);
-        }
+          IFnii cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
+          if (cb)
+          {
+            int x, y;
+            iupdrvGetCursorPos(&x, &y);
+            iupdrvScreenToClient(ih, &x, &y);
+            cb(ih, x, y);
+          }
 
-        const char* tip = iupAttribGet(ih, "TIP");
-        if (!tip)
-          return;
+          const char* tip_text = iupAttribGet(ih, "TIP");
+          if (tip_text)
+          {
+            DependencyObject elem2 = winuiGetHandle<DependencyObject>(ih);
+            if (elem2)
+            {
+              IInspectable obj = ToolTipService::GetToolTip(elem2);
+              ToolTip tt = obj ? obj.try_as<ToolTip>() : nullptr;
+              if (tt)
+              {
+                TextBlock tb = tt.Content().try_as<TextBlock>();
+                if (tb)
+                  tb.Text(iupwinuiStringToHString(tip_text));
+              }
+            }
+          }
+        });
+      }
 
-        POINT pt;
-        if (!winuiTipGetIslandCursorPos(ih, &pt))
-          return;
-
-        winuiTipShowAt(ih, tip, (double)pt.x, (double)pt.y);
-        winuiTipDismissStart(ih);
-      });
-
-      hover.exitedToken = elem.PointerExited([](IInspectable const&, Input::PointerRoutedEventArgs const&) {
-        winuiTipHide();
-      });
-
-      winui_tip_hover[ih] = hover;
+      ToolTipService::SetToolTip(elem, tip);
+    }
+    else
+    {
+      ToolTipService::SetToolTip(elem, box_value(iupwinuiStringToHString(value)));
     }
   }
   else
   {
-    winuiTipUnhookHover(ih);
-    winuiTipTimerStop();
-    winuiTipHide();
+    ToolTipService::SetToolTip(elem, nullptr);
   }
 
   return 1;
+}
+
+extern "C" int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih || !ih->handle || winuiHandleIsHWND(ih))
+    return 0;
+
+  DependencyObject elem = winuiGetHandle<DependencyObject>(ih);
+  if (!elem)
+    return 0;
+
+  if (iupStrBoolean(value))
+  {
+    const char* tip = iupAttribGet(ih, "TIP");
+    if (!tip)
+      return 0;
+
+    IInspectable obj = ToolTipService::GetToolTip(elem);
+    ToolTip tt = obj ? obj.try_as<ToolTip>() : nullptr;
+
+    if (!tt)
+    {
+      tt = ToolTip();
+      tt.Content(box_value(iupwinuiStringToHString(tip)));
+      ToolTipService::SetToolTip(elem, tt);
+    }
+
+    tt.IsOpen(true);
+  }
+  else
+  {
+    ToolTip tt = winuiTipGetToolTip(ih);
+    if (tt)
+      tt.IsOpen(false);
+  }
+
+  return 0;
+}
+
+extern "C" char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
+{
+  ToolTip tt = winuiTipGetToolTip(ih);
+  if (tt)
+    return iupStrReturnBoolean(tt.IsOpen() ? 1 : 0);
+
+  return NULL;
 }

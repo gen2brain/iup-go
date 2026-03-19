@@ -13,6 +13,7 @@
 #include <QPoint>
 #include <QCursor>
 #include <QApplication>
+#include <QPalette>
 
 #include <cstdio>
 #include <cstdlib>
@@ -28,6 +29,44 @@ extern "C" {
 }
 
 #include "iupqt_drv.h"
+
+
+static void qtTipUpdateStyle(Ihandle* ih)
+{
+  const char* value;
+  unsigned char r, g, b;
+
+  value = iupAttribGet(ih, "TIPFONT");
+  if (value)
+  {
+    if (!iupStrEqualNoCase(value, "SYSTEM"))
+    {
+      QFont* qfont = iupqtGetQFont(value);
+      if (qfont)
+        QToolTip::setFont(*qfont);
+    }
+  }
+
+  QPalette palette = QToolTip::palette();
+  int palette_changed = 0;
+
+  value = iupAttribGet(ih, "TIPBGCOLOR");
+  if (value && iupStrToRGB(value, &r, &g, &b))
+  {
+    palette.setColor(QPalette::ToolTipBase, QColor(r, g, b));
+    palette_changed = 1;
+  }
+
+  value = iupAttribGet(ih, "TIPFGCOLOR");
+  if (value && iupStrToRGB(value, &r, &g, &b))
+  {
+    palette.setColor(QPalette::ToolTipText, QColor(r, g, b));
+    palette_changed = 1;
+  }
+
+  if (palette_changed)
+    QToolTip::setPalette(palette);
+}
 
 
 /****************************************************************************
@@ -54,7 +93,6 @@ protected:
 
         if (ih)
         {
-          /* Check TIPRECT - only show tooltip if cursor is in specified rectangle */
           const char* tiprect = iupAttribGet(ih, "TIPRECT");
           if (tiprect)
           {
@@ -84,6 +122,7 @@ protected:
           const char* tip = iupAttribGet(ih, "TIP");
           if (tip)
           {
+            qtTipUpdateStyle(ih);
             QToolTip::showText(helpEvent->globalPos(), QString::fromUtf8(tip), widget);
           }
           else
@@ -160,6 +199,8 @@ extern "C" int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
     const char* tip = iupAttribGet(ih, "TIP");
     if (tip)
     {
+      qtTipUpdateStyle(ih);
+
       QPoint globalPos = QCursor::pos();
       QToolTip::showText(globalPos, QString::fromUtf8(tip), widget);
     }
@@ -174,10 +215,8 @@ extern "C" int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 
 extern "C" char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
-  /* Qt doesn't provide a direct way to check if tooltip is visible
-   * This is a limitation - we return NULL to indicate unknown state */
   (void)ih;
-  return nullptr;
+  return iupStrReturnBoolean(QToolTip::isVisible() ? 1 : 0);
 }
 
 /****************************************************************************

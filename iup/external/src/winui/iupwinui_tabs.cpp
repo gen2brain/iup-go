@@ -39,8 +39,6 @@ using namespace Windows::Foundation;
 #define IUPWINUI_TABITEMNATIVE "_IUPWINUI_TABITEMNATIVE"
 #define IUPWINUI_TABIMAGE_NATIVE "_IUPWINUI_TABIMAGE_NATIVE"
 #define IUPWINUI_TABLABEL_NATIVE "_IUPWINUI_TABLABEL_NATIVE"
-#define IUPWINUI_TABTIP_ENTERED "_IUPWINUI_TABTIP_ENTERED"
-#define IUPWINUI_TABTIP_EXITED "_IUPWINUI_TABTIP_EXITED"
 
 static void winuiTabsReleaseChildAttrib(Ihandle* child, const char* attr_name)
 {
@@ -156,78 +154,22 @@ static TabViewItem winuiTabsGetTabViewItem(Ihandle* child)
   return obj.try_as<TabViewItem>();
 }
 
-static void winuiTabsTipUnregister(Ihandle* child)
+static int winuiTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
 {
-  event_token enteredToken;
-  event_token exitedToken;
-  char* enteredPtr = iupAttribGet(child, IUPWINUI_TABTIP_ENTERED);
-  char* exitedPtr = iupAttribGet(child, IUPWINUI_TABTIP_EXITED);
-
-  if (!enteredPtr && !exitedPtr)
-    return;
-
-  enteredToken.value = (int64_t)(intptr_t)enteredPtr;
-  exitedToken.value = (int64_t)(intptr_t)exitedPtr;
-
-  TabViewItem item = winuiTabsGetTabViewItem(child);
-  if (item)
+  Ihandle* child = IupGetChild(ih, pos);
+  if (child && ih->handle)
   {
-    item.PointerEntered(enteredToken);
-    item.PointerExited(exitedToken);
-  }
-
-  iupAttribSet(child, IUPWINUI_TABTIP_ENTERED, NULL);
-  iupAttribSet(child, IUPWINUI_TABTIP_EXITED, NULL);
-}
-
-static void winuiTabsTipRegister(Ihandle* ih, Ihandle* child)
-{
-  if (iupAttribGet(child, IUPWINUI_TABTIP_ENTERED))
-    return;
-
-  TabViewItem item = winuiTabsGetTabViewItem(child);
-  if (!item)
-    return;
-
-  event_token enteredToken = item.PointerEntered([ih](IInspectable const&, Input::PointerRoutedEventArgs const&) {
-    if (!iupObjectCheck(ih))
-      return;
-
-    IFnii cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
-    if (cb)
+    TabViewItem item = winuiTabsGetTabViewItem(child);
+    if (item)
     {
-      int x, y;
-      iupdrvGetCursorPos(&x, &y);
-      iupdrvScreenToClient(ih, &x, &y);
-      cb(ih, x, y);
+      if (value)
+        ToolTipService::SetToolTip(item, box_value(winrt::hstring(iupwinuiStringToHString(value))));
+      else
+        ToolTipService::SetToolTip(item, nullptr);
     }
-
-    IupSetAttribute(ih, "TIPVISIBLE", "YES");
-  });
-
-  event_token exitedToken = item.PointerExited([ih](IInspectable const&, Input::PointerRoutedEventArgs const&) {
-    if (!iupObjectCheck(ih))
-      return;
-    IupSetAttribute(ih, "TIPVISIBLE", "NO");
-  });
-
-  iupAttribSet(child, IUPWINUI_TABTIP_ENTERED, (char*)(intptr_t)enteredToken.value);
-  iupAttribSet(child, IUPWINUI_TABTIP_EXITED, (char*)(intptr_t)exitedToken.value);
-}
-
-static int winuiTabsSetTipAttrib(Ihandle* ih, const char* value)
-{
-  Ihandle* child;
-
-  for (child = ih->firstchild; child; child = child->brother)
-  {
-    if (value)
-      winuiTabsTipRegister(ih, child);
-    else
-      winuiTabsTipUnregister(child);
   }
 
-  return 1;
+  return 0;
 }
 
 static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
@@ -310,8 +252,12 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   tabView.TabItems().Append(item);
 
-  if (iupAttribGet(ih, "TIP"))
-    winuiTabsTipRegister(ih, child);
+  {
+    int pos = IupGetChildPos(ih, child);
+    const char* tabtip = iupAttribGetId(ih, "TABTIP", pos);
+    if (tabtip)
+      ToolTipService::SetToolTip(item, box_value(winrt::hstring(iupwinuiStringToHString(tabtip))));
+  }
 }
 
 static int winuiTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
@@ -435,7 +381,6 @@ static void winuiTabsUnMapMethod(Ihandle* ih)
   Ihandle* child;
   for (child = ih->firstchild; child; child = child->brother)
   {
-    winuiTabsTipUnregister(child);
     winuiTabsReleaseChildAttrib(child, "_IUPTAB_CONTAINER");
     winuiTabsReleaseChildAttrib(child, IUPWINUI_TABITEMNATIVE);
     winuiTabsReleaseChildAttrib(child, IUPWINUI_TABIMAGE_NATIVE);
@@ -471,7 +416,7 @@ static void winuiTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   if (!tabView)
     return;
 
-  winuiTabsTipUnregister(child);
+  /* tooltip cleanup handled by XAML */
 
   iupTabsCheckCurrentTab(ih, pos, 1);
 
@@ -692,10 +637,9 @@ extern "C" void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "TIP", NULL, winuiTabsSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-
   /* IupTabs only */
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, winuiTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTIP", NULL, winuiTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, winuiTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, winuiTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, winuiTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

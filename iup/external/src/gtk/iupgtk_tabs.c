@@ -850,30 +850,22 @@ static int gtkTabsMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static int gtkTabsSetTipAttrib(Ihandle* ih, const char* value)
+static int gtkTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
 {
-  Ihandle* child;
-
-  for (child = ih->firstchild; child; child = child->brother)
+  Ihandle* child = IupGetChild(ih, pos);
+  if (child)
   {
     GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABLABEL");
     if (tab_label)
     {
       if (value)
-      {
-        if (iupAttribGetBoolean(ih, "TIPMARKUP"))
-          gtk_widget_set_tooltip_markup(tab_label, iupgtkStrConvertToSystem(value));
-        else
-          gtk_widget_set_tooltip_text(tab_label, iupgtkStrConvertToSystem(value));
-      }
+        gtk_widget_set_tooltip_text(tab_label, iupgtkStrConvertToSystem(value));
       else
-      {
         gtk_widget_set_tooltip_text(tab_label, NULL);
-      }
     }
   }
 
-  return 1;
+  return 0;
 }
 
 void iupdrvTabsInitClass(Iclass* ic)
@@ -893,13 +885,12 @@ void iupdrvTabsInitClass(Iclass* ic)
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtkTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtkTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TIP", NULL, gtkTabsSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-
   /* IupTabs only */
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, gtkTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, gtkTabsSetTabOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, gtkTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, gtkTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTIP", NULL, gtkTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, gtkTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, gtkTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, gtkTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
