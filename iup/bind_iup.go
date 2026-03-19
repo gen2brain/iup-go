@@ -1,6 +1,7 @@
 package iup
 
 import (
+	"os"
 	"runtime"
 	"unsafe"
 )
@@ -26,6 +27,9 @@ func Open() int {
 	ret := int(C.IupOpen(nil, nil))
 	SetGlobal("UTF8MODE", "YES")
 	SetGlobal("UTF8MODE_FILE", "YES")
+	if len(os.Args) > 0 {
+		SetGlobal("ARGV0", os.Args[0])
+	}
 	return ret
 }
 
