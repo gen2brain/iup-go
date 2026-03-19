@@ -669,7 +669,10 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
   if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
   {
+    canvas->setAttribute(Qt::WA_NativeWindow, true);
+    canvas->setAttribute(Qt::WA_DontCreateNativeAncestors, true);
     canvas->setAttribute(Qt::WA_NoSystemBackground, true);
+    canvas->setAttribute(Qt::WA_PaintOnScreen, true);
   }
 
   /* Get scrollbar flags, required for DX/DY attribute setters */
@@ -734,6 +737,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
     container_data->sb_horiz = nullptr;
     container_data->sb_vert = nullptr;
   }
+
 
   iupAttribSet(ih, "_IUPQT_CANVAS_CONTAINER", (char*)container_data);
 

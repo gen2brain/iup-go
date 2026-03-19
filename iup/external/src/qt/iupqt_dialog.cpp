@@ -54,7 +54,6 @@ extern "C" {
 
 #include "iupqt_drv.h"
 
-
 /****************************************************************************
  * Qt Dialog Widget with Event Handling
  ****************************************************************************/
@@ -155,6 +154,10 @@ protected:
       return;
 
     if (iup_handle->data->ignore_resize)
+      return;
+
+    /* Skip resize events before dialog is visible, IUP controls sizing until then */
+    if (!isVisible())
       return;
 
     /* Update IUP size tracking */
