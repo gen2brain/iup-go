@@ -552,6 +552,12 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       GtkWidget* temp_combo_entry = gtk_combo_box_entry_new_with_model(GTK_TREE_MODEL(temp_store), 0);
 #endif
 
+      {
+        GtkWidget* temp_entry = gtk_bin_get_child(GTK_BIN(temp_combo_entry));
+        if (temp_entry && GTK_IS_ENTRY(temp_entry))
+          gtk_entry_set_width_chars(GTK_ENTRY(temp_entry), 1);
+      }
+
       gtk_container_add(GTK_CONTAINER(temp_window), temp_combo_entry);
       gtk_widget_show_all(temp_window);
 
@@ -560,32 +566,15 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 #if GTK_CHECK_VERSION(3, 0, 0)
       gtk_widget_get_preferred_size(temp_combo_entry, NULL, &combo_entry_nat);
 
-      /* Measure entry child CSS decoration */
       {
-        GtkWidget* entry = gtk_bin_get_child(GTK_BIN(temp_combo_entry));
-        gint entry_nat_w, entry_nat_h;
-        gtk_widget_get_preferred_width(entry, NULL, &entry_nat_w);
-        gtk_widget_get_preferred_height(entry, NULL, &entry_nat_h);
+        int char_width, char_height;
+        iupdrvFontGetCharSize(ih, &char_width, &char_height);
 
-        GtkStyleContext* entry_ctx = gtk_widget_get_style_context(entry);
-        GtkBorder entry_css_border, entry_css_padding;
-        gtk_style_context_get_border(entry_ctx, GTK_STATE_FLAG_NORMAL, &entry_css_border);
-        gtk_style_context_get_padding(entry_ctx, GTK_STATE_FLAG_NORMAL, &entry_css_padding);
-
-        int entry_decor_x = entry_css_border.left + entry_css_border.right +
-                            entry_css_padding.left + entry_css_padding.right;
-        int entry_decor_y = entry_css_border.top + entry_css_border.bottom +
-                            entry_css_padding.top + entry_css_padding.bottom;
-
-        int combo_outer_x = combo_entry_nat.width - entry_nat_w;
-        int combo_outer_y = combo_entry_nat.height - entry_nat_h;
-        if (combo_outer_x < 0) combo_outer_x = 0;
-        if (combo_outer_y < 0) combo_outer_y = 0;
-
-        dropdown_editbox_border_x = entry_decor_x + combo_outer_x - sb_size;
+        dropdown_editbox_border_x = combo_entry_nat.width - char_width - sb_size;
         if (dropdown_editbox_border_x < 0) dropdown_editbox_border_x = 0;
 
-        dropdown_editbox_border_y = entry_decor_y + combo_outer_y;
+        dropdown_editbox_border_y = combo_entry_nat.height - char_height;
+        if (dropdown_editbox_border_y < 0) dropdown_editbox_border_y = 0;
       }
 #else
       gtk_widget_size_request(temp_combo_entry, &combo_entry_nat);
@@ -2090,6 +2079,7 @@ static int gtkListMapMethod(Ihandle* ih)
       g_list_free(list);
 #endif
       entry = gtk_bin_get_child(GTK_BIN(ih->handle));
+      gtk_entry_set_width_chars(GTK_ENTRY(entry), 1);
       iupAttribSet(ih, "_IUPGTK_ENTRY", (char*)entry);
 
       g_signal_connect(G_OBJECT(entry), "focus-in-event",     G_CALLBACK(iupgtkFocusInOutEvent), ih);

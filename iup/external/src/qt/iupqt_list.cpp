@@ -1634,11 +1634,20 @@ static void qtListEditTextChanged(QLineEdit* edit, Ihandle* ih)
   if (iupAttribGet(ih, "_IUPQT_DISABLE_TEXT_CB"))
     return;
 
-  IFns cb = (IFns)IupGetCallback(ih, "EDIT_CB");
+  IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
   if (cb)
   {
     QString text = edit->text();
-    cb(ih, (char*)text.toUtf8().constData());
+    int start = edit->cursorPosition();
+    int end = start;
+
+    if (edit->hasSelectedText())
+    {
+      start = edit->selectionStart();
+      end = start + edit->selectedText().length();
+    }
+
+    iupEditCallActionCb(ih, cb, (char*)text.toUtf8().constData(), start, end, ih->data->mask, ih->data->nc, 0, 1);
   }
 
   iupBaseCallValueChangedCb(ih);

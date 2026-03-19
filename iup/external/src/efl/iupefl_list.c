@@ -117,22 +117,41 @@ static void eflDropdownCloseList(Ihandle* ih)
 
 static void eflDropdownSetText(Ihandle* ih, const char* text)
 {
-  Eo* text_label = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LABEL");
-  if (text_label)
-    efl_text_set(text_label, text ? text : "");
+  if (ih->data->has_editbox)
+  {
+    Eo* entry = (Eo*)iupAttribGet(ih, "_IUPEFL_ENTRY");
+    if (entry)
+      iupeflSetText(entry, text ? text : "");
+  }
+  else
+  {
+    Eo* text_label = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LABEL");
+    if (text_label)
+      efl_text_set(text_label, text ? text : "");
+  }
+}
+
+static Eo* eflDropdownGetContainer(Ihandle* ih)
+{
+  if (ih->data->has_editbox)
+  {
+    Eo* box = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+    return box ? box : (Eo*)ih->handle;
+  }
+  return (Eo*)ih->handle;
 }
 
 static void eflDropdownButtonClickedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  Eo* button = (Eo*)ih->handle;
+  Eo* container = eflDropdownGetContainer(ih);
   Eo* dropdown_list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
   Eina_Rect button_geom;
   int list_count, visible_items, item_height, list_height;
   IFni cb;
   (void)ev;
 
-  if (!dropdown_list || !button)
+  if (!dropdown_list || !container)
     return;
 
   if (efl_gfx_entity_visible_get(dropdown_list))
@@ -141,7 +160,7 @@ static void eflDropdownButtonClickedCallback(void* data, const Efl_Event* ev)
     return;
   }
 
-  button_geom = efl_gfx_entity_geometry_get(button);
+  button_geom = efl_gfx_entity_geometry_get(container);
 
   visible_items = iupAttribGetInt(ih, "VISIBLEITEMS");
   if (visible_items <= 0)
@@ -188,7 +207,7 @@ static void eflDropdownWindowPointerDownCallback(void* data, const Efl_Event* ev
 {
   Ihandle* ih = (Ihandle*)data;
   Eo* dropdown_list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
-  Eo* button = (Eo*)ih->handle;
+  Eo* container = eflDropdownGetContainer(ih);
   Efl_Input_Pointer* pointer = ev->info;
   Eina_Position2D pos;
   Eina_Rect button_rect, list_rect;
@@ -197,7 +216,7 @@ static void eflDropdownWindowPointerDownCallback(void* data, const Efl_Event* ev
     return;
 
   pos = efl_input_pointer_position_get(pointer);
-  button_rect = efl_gfx_entity_geometry_get(button);
+  button_rect = efl_gfx_entity_geometry_get(container);
   list_rect = efl_gfx_entity_geometry_get(dropdown_list);
 
   if (!eina_rectangle_coords_inside(&button_rect.rect, pos.x, pos.y) &&
@@ -415,8 +434,8 @@ static int eflListSetShowDropdownAttrib(Ihandle* ih, const char* value)
 
   if (iupStrBoolean(value))
   {
-    Eo* button = (Eo*)ih->handle;
-    Eina_Rect button_geom = efl_gfx_entity_geometry_get(button);
+    Eo* container = eflDropdownGetContainer(ih);
+    Eina_Rect button_geom = efl_gfx_entity_geometry_get(container);
     int visible_items = iupAttribGetInt(ih, "VISIBLEITEMS");
     int item_height, list_count, list_height;
 
@@ -928,7 +947,8 @@ static int eflListSetFgColorAttrib(Ihandle* ih, const char* value)
     if (entry)
       efl_text_color_set(entry, r, g, b, 255);
   }
-  else if (ih->data->is_dropdown)
+
+  if (ih->data->is_dropdown && !ih->data->has_editbox)
   {
     Eo* text_label = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LABEL");
     Eo* arrow_label = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_ARROW");
@@ -979,7 +999,7 @@ static int eflListSetImageAttrib(Ihandle* ih, int id, const char* value)
   Evas_Object* img;
   int pos;
 
-  if (ih->data->is_dropdown && !ih->data->has_editbox)
+  if (ih->data->is_dropdown)
     list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
   else
     list = iupeflGetWidget(ih);
@@ -1228,7 +1248,7 @@ static char* eflListGetCountAttrib(Ihandle* ih)
   if (ih->data->is_virtual)
     return iupStrReturnInt(iupdrvListGetCount(ih));
 
-  if (ih->data->is_dropdown && !ih->data->has_editbox)
+  if (ih->data->is_dropdown)
     list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
   else
     list = iupeflGetWidget(ih);
@@ -1500,7 +1520,81 @@ static int eflListMapMethod(Ihandle* ih)
   if (!parent)
     return IUP_ERROR;
 
-  if (ih->data->has_editbox)
+  if (ih->data->has_editbox && is_dropdown)
+  {
+    Eo* hbox;
+    Eo* entry;
+    Eo* arrow_button;
+    Eo* dropdown_list;
+    Eo* win = iupeflGetMainWindow();
+
+    if (!win)
+      return IUP_ERROR;
+
+    hbox = efl_add(EFL_UI_BOX_CLASS, parent,
+                   efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL));
+    if (!hbox)
+      return IUP_ERROR;
+
+    entry = efl_add(EFL_UI_TEXTBOX_CLASS, hbox);
+    efl_text_multiline_set(entry, EINA_FALSE);
+    efl_gfx_hint_weight_set(entry, 1.0, 1.0);
+    efl_gfx_hint_fill_set(entry, EINA_TRUE, EINA_TRUE);
+    efl_pack_end(hbox, entry);
+
+    arrow_button = efl_add(EFL_UI_BUTTON_CLASS, hbox);
+    if (arrow_button)
+    {
+      Eo* arrow_label = efl_add(EFL_UI_TEXTBOX_CLASS, arrow_button);
+      if (arrow_label)
+      {
+        efl_text_interactive_editable_set(arrow_label, EINA_FALSE);
+        efl_text_multiline_set(arrow_label, EINA_FALSE);
+        efl_text_set(arrow_label, "\u25BC");
+        efl_content_set(arrow_button, arrow_label);
+      }
+
+      efl_gfx_hint_weight_set(arrow_button, 0.0, 1.0);
+      efl_gfx_hint_fill_set(arrow_button, EINA_FALSE, EINA_TRUE);
+      efl_pack_end(hbox, arrow_button);
+
+      efl_event_callback_add(arrow_button, EFL_INPUT_EVENT_CLICKED, eflDropdownButtonClickedCallback, ih);
+    }
+
+    {
+      char* fgcolor = iupAttribGetStr(ih, "FGCOLOR");
+      unsigned char r = 0, g = 0, b = 0;
+      if (!fgcolor)
+        fgcolor = IupGetGlobal("DLGFGCOLOR");
+      if (fgcolor)
+        iupStrToRGB(fgcolor, &r, &g, &b);
+      efl_text_color_set(entry, r, g, b, 255);
+    }
+
+    dropdown_list = efl_add(EFL_UI_LIST_CLASS, win);
+    if (!dropdown_list)
+    {
+      efl_del(hbox);
+      return IUP_ERROR;
+    }
+
+    efl_gfx_entity_visible_set(dropdown_list, EINA_FALSE);
+
+    efl_event_callback_add(dropdown_list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflDropdownListSelectionChangedCallback, ih);
+    efl_event_callback_add(win, EFL_EVENT_POINTER_DOWN, eflDropdownWindowPointerDownCallback, ih);
+
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)hbox);
+    iupAttribSet(ih, "_IUPEFL_ENTRY", (char*)entry);
+    iupAttribSet(ih, "_IUPEFL_DROPDOWN_LIST", (char*)dropdown_list);
+    iupAttribSet(ih, "_IUPEFL_DROPDOWN_BUTTON", (char*)arrow_button);
+
+    ih->handle = (InativeHandle*)hbox;
+    list = dropdown_list;
+
+    efl_event_callback_add(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflListEditChangedCallback, ih);
+    iupeflBaseAddCallbacks(ih, entry);
+  }
+  else if (ih->data->has_editbox)
   {
     Eo* box;
     Eo* entry;
@@ -1744,7 +1838,37 @@ static void eflListUnMapMethod(Ihandle* ih)
 
   if (list)
   {
-    if (ih->data->has_editbox)
+    if (ih->data->has_editbox && is_dropdown)
+    {
+      Eo* hbox = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+      Eo* entry = (Eo*)iupAttribGet(ih, "_IUPEFL_ENTRY");
+      Eo* dropdown_list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
+      Eo* arrow_button = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_BUTTON");
+      Eo* win = iupeflGetMainWindow();
+
+      if (win)
+        efl_event_callback_del(win, EFL_EVENT_POINTER_DOWN, eflDropdownWindowPointerDownCallback, ih);
+
+      if (dropdown_list)
+      {
+        efl_event_callback_del(dropdown_list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflDropdownListSelectionChangedCallback, ih);
+        efl_pack_clear(dropdown_list);
+        efl_del(dropdown_list);
+      }
+
+      if (arrow_button)
+        efl_event_callback_del(arrow_button, EFL_INPUT_EVENT_CLICKED, eflDropdownButtonClickedCallback, ih);
+
+      if (entry)
+      {
+        efl_event_callback_del(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflListEditChangedCallback, ih);
+        iupeflBaseRemoveCallbacks(ih, entry);
+      }
+
+      if (hbox)
+        iupeflDelete(hbox);
+    }
+    else if (ih->data->has_editbox)
     {
       Eo* box = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
       Eo* entry = (Eo*)iupAttribGet(ih, "_IUPEFL_ENTRY");
@@ -1831,7 +1955,7 @@ int iupdrvListGetCount(Ihandle* ih)
     return 0;
   }
 
-  if (is_dropdown && !ih->data->has_editbox)
+  if (is_dropdown)
     list = (Evas_Object*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
   else
     list = iupeflGetWidget(ih);
@@ -1848,7 +1972,7 @@ void iupdrvListAppendItem(Ihandle* ih, const char* value)
   Eo* item;
   int is_dropdown = ih->data->is_dropdown;
 
-  if (is_dropdown && !ih->data->has_editbox)
+  if (is_dropdown)
     list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
   else
     list = iupeflGetWidget(ih);
@@ -1872,7 +1996,7 @@ void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   Eo* before;
   int is_dropdown = ih->data->is_dropdown;
 
-  if (is_dropdown && !ih->data->has_editbox)
+  if (is_dropdown)
     list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
   else
     list = iupeflGetWidget(ih);
@@ -1900,7 +2024,7 @@ void iupdrvListRemoveItem(Ihandle* ih, int pos)
   Eo* item;
   int is_dropdown = ih->data->is_dropdown;
 
-  if (is_dropdown && !ih->data->has_editbox)
+  if (is_dropdown)
     list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
   else
     list = iupeflGetWidget(ih);
@@ -1929,7 +2053,7 @@ void iupdrvListRemoveAllItems(Ihandle* ih)
   int is_dropdown = ih->data->is_dropdown;
   int i, count;
 
-  if (is_dropdown && !ih->data->has_editbox)
+  if (is_dropdown)
     list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
   else
     list = iupeflGetWidget(ih);
@@ -2067,7 +2191,7 @@ void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   Eo* item;
   int pos;
 
-  if (ih->data->is_dropdown && !ih->data->has_editbox)
+  if (ih->data->is_dropdown)
     return NULL;
 
   list = iupeflGetWidget(ih);
@@ -2092,7 +2216,7 @@ int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   const char* img_name;
   Evas_Object* new_img;
 
-  if (ih->data->is_dropdown && !ih->data->has_editbox)
+  if (ih->data->is_dropdown)
     return 0;
 
   if (!hImage)
@@ -2155,7 +2279,7 @@ static char* eflListGetIdValueAttrib(Ihandle* ih, int id)
     return NULL;
   }
 
-  if (ih->data->is_dropdown && !ih->data->has_editbox)
+  if (ih->data->is_dropdown)
     list = (Eo*)iupAttribGet(ih, "_IUPEFL_DROPDOWN_LIST");
   else
     list = iupeflGetWidget(ih);

@@ -401,7 +401,7 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
   static int editbox_border_x = -1, editbox_border_y = -1, editbox_entry_natural_height = -1;
   static int dropdown_border_x = -1, dropdown_border_y = -1, dropdown_natural_height = -1;
-  static int dropdown_editbox_border_x = -1;
+  static int dropdown_editbox_border_x = -1, dropdown_editbox_border_y = -1;
   static int scrolled_window_frame_border = -1;
   static int css_frame_border_compensation = -1;
 
@@ -465,16 +465,49 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
       g_object_unref(temp_combo);
     }
 
-    (*x) += dropdown_border_x;
-
     if (ih->data->has_editbox)
     {
       if (dropdown_editbox_border_x == -1)
-        dropdown_editbox_border_x = 5;  /* Additional space for editbox combo */
+      {
+        GtkWidget* temp_entry = gtk_entry_new();
+        gtk_editable_set_width_chars(GTK_EDITABLE(temp_entry), 1);
+        GtkWidget* temp_dropdown = gtk_drop_down_new(NULL, NULL);
+        GtkWidget* temp_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+        int vbox_nat_w, vbox_nat_h;
+        int char_width, char_height;
+        int sb_size = iupdrvGetScrollbarSize();
+
+        gtk_box_append(GTK_BOX(temp_vbox), temp_entry);
+        gtk_box_append(GTK_BOX(temp_vbox), temp_dropdown);
+
+        gtk_widget_measure(temp_vbox, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &vbox_nat_w, NULL, NULL);
+        gtk_widget_measure(temp_vbox, GTK_ORIENTATION_VERTICAL, -1, NULL, &vbox_nat_h, NULL, NULL);
+
+        iupdrvFontGetCharSize(ih, &char_width, &char_height);
+
+        {
+          int dd_nat_w, dd_nat_h;
+          gtk_widget_measure(temp_dropdown, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &dd_nat_w, NULL, NULL);
+          gtk_widget_measure(temp_dropdown, GTK_ORIENTATION_VERTICAL, -1, NULL, &dd_nat_h, NULL, NULL);
+
+          /* X: use dropdown width (entry stretches to fill, dropdown has fixed arrow) */
+          dropdown_editbox_border_x = dd_nat_w - char_width - border_size - sb_size;
+          if (dropdown_editbox_border_x < 0) dropdown_editbox_border_x = 0;
+
+          /* Y: use VBox height (entry + dropdown stacked) */
+          dropdown_editbox_border_y = vbox_nat_h - char_height - border_size;
+          if (dropdown_editbox_border_y < 0) dropdown_editbox_border_y = 0;
+        }
+
+        g_object_ref_sink(temp_vbox);
+        g_object_unref(temp_vbox);
+      }
       (*x) += dropdown_editbox_border_x;
+      (*y) += dropdown_editbox_border_y;
     }
     else
     {
+      (*x) += dropdown_border_x;
       (*y) += dropdown_border_y;
       (*x) += dropdown_border_y;
     }
@@ -1955,8 +1988,27 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
       natural_h += 2 * ih->data->vert_padding;
     }
 
-    gtk_widget_set_size_request(ih->handle, natural_w, natural_h);
+    if (ih->data->has_editbox)
+    {
+      GtkWidget* vbox = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+      if (vbox)
+        gtk_widget_set_size_request(vbox, natural_w, natural_h);
+    }
+    else
+      gtk_widget_set_size_request(ih->handle, natural_w, natural_h);
   }
+}
+
+static void gtk4DropDownPopoverNotifyVisible(GObject* object, GParamSpec* pspec, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
+  if (cb)
+  {
+    gboolean visible = gtk_widget_get_visible(GTK_WIDGET(object));
+    cb(ih, visible ? 1 : 0);
+  }
+  (void)pspec;
 }
 
 static void gtk4DropDownSelectionChanged(GObject* object, GParamSpec* pspec, gpointer user_data)
@@ -2097,50 +2149,23 @@ static int gtk4ListMapMethod(Ihandle* ih)
         natural_h += 2 * ih->data->vert_padding;
       }
 
-      /* Apply calculated natural size to dropdown widget */
-      gtk_widget_set_size_request(ih->handle, natural_w, natural_h);
-
-      /* Store natural_w for entry widget sizing below */
       if (ih->data->has_editbox)
+      {
+        /* For EDITBOX+DROPDOWN, don't set size on GtkDropDown alone.
+           The VBox will be sized by the core layout. Store width for entry sizing. */
         iupAttribSetInt(ih, "_IUP_DROPDOWN_NATURAL_W", natural_w);
+      }
+      else
+      {
+        gtk_widget_set_size_request(ih->handle, natural_w, natural_h);
+      }
     }
 
     if (ih->data->has_editbox)
     {
       GtkWidget *entry = gtk_entry_new();
+      gtk_editable_set_width_chars(GTK_EDITABLE(entry), 1);
       iupAttribSet(ih, "_IUPGTK4_ENTRY", (char*)entry);
-
-      /* Measure GtkEntry's natural width with the same text width as dropdown */
-      int entry_width = iupAttribGetInt(ih, "_IUP_DROPDOWN_NATURAL_W");
-      if (entry_width > 0)
-      {
-        /* GtkEntry needs extra space for borders/padding compared to list */
-        static int entry_extra_space = -1;
-
-        if (entry_extra_space == -1)
-        {
-          GtkWidget* temp_entry = gtk_entry_new();
-
-          gtk_editable_set_text(GTK_EDITABLE(temp_entry), "WWWWWWWWWW");
-
-          int min_w, nat_w;
-          gtk_widget_measure(temp_entry, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
-
-          /* Calculate extra space: measured width - text width */
-          int text_w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
-          entry_extra_space = (nat_w > text_w) ? (nat_w - text_w) : 10;
-
-          g_object_ref_sink(temp_entry);
-          g_object_unref(temp_entry);
-        }
-
-        /* Add entry's extra space to the dropdown width */
-        int entry_total_width = entry_width + entry_extra_space;
-        gtk_widget_set_size_request(entry, entry_total_width, -1);
-
-        /* Store total width for vbox sizing below */
-        iupAttribSetInt(ih, "_IUP_ENTRY_TOTAL_WIDTH", entry_total_width);
-      }
 
       GtkBox* vbox = (GtkBox*)gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
       gtk_box_set_homogeneous(vbox, FALSE);
@@ -2169,8 +2194,15 @@ static int gtk4ListMapMethod(Ihandle* ih)
       gtk_widget_add_controller(entry, GTK_EVENT_CONTROLLER(click_gesture));
       g_signal_connect(click_gesture, "pressed", G_CALLBACK(gtk4ListEditButtonPressed), ih);
 
-      g_signal_connect(G_OBJECT(entry), "delete-text", G_CALLBACK(gtk4ListEditDeleteText), ih);
-      g_signal_connect(G_OBJECT(entry), "insert-text", G_CALLBACK(gtk4ListEditInsertText), ih);
+      {
+        GtkEditable* delegate = gtk_editable_get_delegate(GTK_EDITABLE(entry));
+        if (delegate)
+        {
+          g_signal_connect(G_OBJECT(delegate), "delete-text", G_CALLBACK(gtk4ListEditDeleteText), ih);
+          g_signal_connect(G_OBJECT(delegate), "insert-text", G_CALLBACK(gtk4ListEditInsertText), ih);
+        }
+      }
+      g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(gtk4ListEditChanged), ih);
 
       if (!iupAttribGetBoolean(ih, "CANFOCUS"))
       {
@@ -2189,6 +2221,12 @@ static int gtk4ListMapMethod(Ihandle* ih)
     }
 
     g_signal_connect(ih->handle, "notify::selected", G_CALLBACK(gtk4DropDownSelectionChanged), ih);
+
+    {
+      GtkWidget* popover = gtk_widget_get_last_child(ih->handle);
+      if (popover && GTK_IS_POPOVER(popover))
+        g_signal_connect(popover, "notify::visible", G_CALLBACK(gtk4DropDownPopoverNotifyVisible), ih);
+    }
   }
   else
   {
@@ -2333,8 +2371,14 @@ static int gtk4ListMapMethod(Ihandle* ih)
       gtk_widget_add_controller(entry, GTK_EVENT_CONTROLLER(click_gesture));
       g_signal_connect(click_gesture, "pressed", G_CALLBACK(gtk4ListEditButtonPressed), ih);
 
-      g_signal_connect(G_OBJECT(entry), "delete-text", G_CALLBACK(gtk4ListEditDeleteText), ih);
-      g_signal_connect(G_OBJECT(entry), "insert-text", G_CALLBACK(gtk4ListEditInsertText), ih);
+      {
+        GtkEditable* delegate = gtk_editable_get_delegate(GTK_EDITABLE(entry));
+        if (delegate)
+        {
+          g_signal_connect(G_OBJECT(delegate), "delete-text", G_CALLBACK(gtk4ListEditDeleteText), ih);
+          g_signal_connect(G_OBJECT(delegate), "insert-text", G_CALLBACK(gtk4ListEditInsertText), ih);
+        }
+      }
       g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(gtk4ListEditChanged), ih);
     }
     else
