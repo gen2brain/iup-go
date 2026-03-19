@@ -268,6 +268,21 @@ char* iupdrvGetGlobal(const char* name)
   {
     return "YES";
   }
+  if (iupStrEqual(name, "EXEFILENAME"))
+  {
+    char* argv0 = IupGetGlobal("ARGV0");
+    if (argv0)
+    {
+      char* exefilename = realpath(argv0, NULL);
+      if (exefilename)
+      {
+        char* str = iupStrReturnStr(exefilename);
+        free(exefilename);
+        return str;
+      }
+    }
+    return NULL;
+  }
   if (iupStrEqual(name, "DARKMODE"))
   {
     return iupStrReturnBoolean(iupeflIsSystemDarkMode());
