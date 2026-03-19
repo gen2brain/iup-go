@@ -15,6 +15,8 @@ func main() {
 	listSimple := iup.List()
 	listMulti := iup.List()
 	listDropdown := iup.List()
+	listEditDropdown := iup.List()
+	listEditbox := iup.List()
 
 	// Configure lists
 	listSimple.SetAttributes("1=Apple, 2=Banana, 3=Cherry, 4=Date, 5=Elderberry")
@@ -31,20 +33,23 @@ func main() {
 	listDropdown.SetAttributes("EXPAND=HORIZONTAL, DROPDOWN=YES")
 	listDropdown.SetAttribute("VALUE", "1")
 
+	listEditDropdown.SetAttributes("1=Cat, 2=Dog, 3=Fish, 4=Bird, 5=Hamster")
+	listEditDropdown.SetAttributes("EXPAND=HORIZONTAL, DROPDOWN=YES, EDITBOX=YES")
+
+	listEditbox.SetAttributes("1=Berlin, 2=London, 3=Paris, 4=Rome, 5=Madrid")
+	listEditbox.SetAttributes("EXPAND=YES, VISIBLELINES=5, EDITBOX=YES")
+
 	// Store handles
 	iup.SetHandle("list_simple", listSimple)
 	iup.SetHandle("list_multi", listMulti)
 	iup.SetHandle("list_dropdown", listDropdown)
+	iup.SetHandle("list_edit_dropdown", listEditDropdown)
+	iup.SetHandle("list_editbox", listEditbox)
 
 	// Log widget
 	txtLog := iup.Text()
 	txtLog.SetAttributes("MULTILINE=YES, EXPAND=YES, READONLY=YES, VISIBLELINES=10")
-	txtLog.SetAttribute("VALUE", "IupList Callbacks\n"+
-		"=========================================\n"+
-		"• Simple List: Single selection, drag-drop enabled\n"+
-		"• Multi List: Multiple selection, drag-drop enabled\n"+
-		"• Dropdown\n"+
-		"---\n")
+	txtLog.SetAttribute("VALUE", "IupList Callbacks\n---\n")
 
 	iup.SetHandle("log", txtLog)
 
@@ -62,6 +67,8 @@ func main() {
 	iup.SetCallback(listSimple, "ACTION", actionCb)
 	iup.SetCallback(listMulti, "ACTION", actionCb)
 	iup.SetCallback(listDropdown, "ACTION", actionCb)
+	iup.SetCallback(listEditDropdown, "ACTION", actionCb)
+	iup.SetCallback(listEditbox, "ACTION", actionCb)
 
 	// MULTISELECT_CB - Called for multiple selection changes
 	// value string: '+' = newly selected, '-' = newly deselected, 'x' = unchanged
@@ -110,16 +117,32 @@ func main() {
 	iup.SetCallback(listSimple, "VALUECHANGED_CB", valueChangedCb)
 	iup.SetCallback(listMulti, "VALUECHANGED_CB", valueChangedCb)
 	iup.SetCallback(listDropdown, "VALUECHANGED_CB", valueChangedCb)
+	iup.SetCallback(listEditDropdown, "VALUECHANGED_CB", valueChangedCb)
+	iup.SetCallback(listEditbox, "VALUECHANGED_CB", valueChangedCb)
 
 	// DROPDOWN_CB - Called when dropdown opens/closes
-	iup.SetCallback(listDropdown, "DROPDOWN_CB", iup.DropDownFunc(func(ih iup.Ihandle, state int) int {
+	dropdownCb := iup.DropDownFunc(func(ih iup.Ihandle, state int) int {
+		name := iup.GetName(ih)
 		stateStr := "closed"
 		if state == 1 {
 			stateStr = "opened"
 		}
-		appendLog(fmt.Sprintf("list_dropdown: DROPDOWN_CB - state=%s", stateStr))
+		appendLog(fmt.Sprintf("%s: DROPDOWN_CB - state=%s", name, stateStr))
 		return iup.DEFAULT
-	}))
+	})
+
+	iup.SetCallback(listDropdown, "DROPDOWN_CB", dropdownCb)
+	iup.SetCallback(listEditDropdown, "DROPDOWN_CB", dropdownCb)
+
+	// EDIT_CB - Called when editbox text changes
+	editCb := iup.EditFunc(func(ih iup.Ihandle, item int, text string) int {
+		name := iup.GetName(ih)
+		appendLog(fmt.Sprintf("%s: EDIT_CB - item=%d text='%s'", name, item, text))
+		return iup.DEFAULT
+	})
+
+	iup.SetCallback(listEditDropdown, "EDIT_CB", editCb)
+	iup.SetCallback(listEditbox, "EDIT_CB", editCb)
 
 	// Common callbacks - GETFOCUS_CB, KILLFOCUS_CB
 	focusCb := iup.GetFocusFunc(func(ih iup.Ihandle) int {
@@ -137,10 +160,14 @@ func main() {
 	iup.SetCallback(listSimple, "GETFOCUS_CB", focusCb)
 	iup.SetCallback(listMulti, "GETFOCUS_CB", focusCb)
 	iup.SetCallback(listDropdown, "GETFOCUS_CB", focusCb)
+	iup.SetCallback(listEditDropdown, "GETFOCUS_CB", focusCb)
+	iup.SetCallback(listEditbox, "GETFOCUS_CB", focusCb)
 
 	iup.SetCallback(listSimple, "KILLFOCUS_CB", killfocusCb)
 	iup.SetCallback(listMulti, "KILLFOCUS_CB", killfocusCb)
 	iup.SetCallback(listDropdown, "KILLFOCUS_CB", killfocusCb)
+	iup.SetCallback(listEditDropdown, "KILLFOCUS_CB", killfocusCb)
+	iup.SetCallback(listEditbox, "KILLFOCUS_CB", killfocusCb)
 
 	// Enable drag-drop between lists
 	listSimple.SetAttribute("DRAGDROPLIST", "YES")
@@ -169,6 +196,8 @@ func main() {
 	iup.SetCallback(listSimple, "BUTTON_CB", buttonCb)
 	iup.SetCallback(listMulti, "BUTTON_CB", buttonCb)
 	iup.SetCallback(listDropdown, "BUTTON_CB", buttonCb)
+	iup.SetCallback(listEditDropdown, "BUTTON_CB", buttonCb)
+	iup.SetCallback(listEditbox, "BUTTON_CB", buttonCb)
 
 	// Buttons for testing
 	btnAddItem := iup.Button("Add Item")
@@ -215,45 +244,52 @@ func main() {
 		simple := iup.GetHandle("list_simple")
 		multi := iup.GetHandle("list_multi")
 		dropdown := iup.GetHandle("list_dropdown")
+		editDropdown := iup.GetHandle("list_edit_dropdown")
+		editbox := iup.GetHandle("list_editbox")
 
 		simpleVal := simple.GetAttribute("VALUE")
 		multiVal := multi.GetAttribute("VALUE")
 		dropdownVal := dropdown.GetAttribute("VALUE")
+		editDropdownVal := editDropdown.GetAttribute("VALUE")
+		editboxVal := editbox.GetAttribute("VALUE")
 
-		appendLog(fmt.Sprintf("VALUES: simple=%s multi=%s dropdown=%s", simpleVal, multiVal, dropdownVal))
+		appendLog(fmt.Sprintf("VALUES: simple=%s multi=%s dropdown=%s edit_dropdown='%s' editbox='%s'",
+			simpleVal, multiVal, dropdownVal, editDropdownVal, editboxVal))
 		return iup.DEFAULT
 	}))
 
 	// Create frames for each list
 	frameSimple := iup.Frame(
-		iup.Vbox(
-			iup.Label("Single Selection List"),
-			listSimple,
-		).SetAttributes("MARGIN=5x5, GAP=5"),
+		iup.Vbox(listSimple).SetAttributes("MARGIN=5x5"),
 	).SetAttribute("TITLE", "Simple List")
 
 	frameMulti := iup.Frame(
-		iup.Vbox(
-			iup.Label("Multiple Selection List"),
-			listMulti,
-		).SetAttributes("MARGIN=5x5, GAP=5"),
+		iup.Vbox(listMulti).SetAttributes("MARGIN=5x5"),
 	).SetAttribute("TITLE", "Multiple Selection")
 
 	frameDropdown := iup.Frame(
-		iup.Vbox(
-			iup.Label("Dropdown"),
-			listDropdown,
-		).SetAttributes("MARGIN=5x5, GAP=5"),
+		iup.Vbox(listDropdown).SetAttributes("MARGIN=5x5"),
 	).SetAttribute("TITLE", "Dropdown")
+
+	frameEditDropdown := iup.Frame(
+		iup.Vbox(listEditDropdown).SetAttributes("MARGIN=5x5"),
+	).SetAttribute("TITLE", "Edit Dropdown")
+
+	frameEditbox := iup.Frame(
+		iup.Vbox(listEditbox).SetAttributes("MARGIN=5x5"),
+	).SetAttribute("TITLE", "Editbox")
 
 	// Create dialog
 	dlg := iup.Dialog(
 		iup.Vbox(
-			iup.Label("IupList Callbacks").SetAttributes(`FONT="Sans, Bold 12"`),
 			iup.Hbox(
 				frameSimple,
 				frameMulti,
+				frameEditbox,
+			).SetAttributes("MARGIN=5x5, GAP=5"),
+			iup.Hbox(
 				frameDropdown,
+				frameEditDropdown,
 			).SetAttributes("MARGIN=5x5, GAP=5"),
 			iup.Hbox(
 				btnAddItem,
@@ -262,7 +298,6 @@ func main() {
 				btnGetValue,
 				btnClearLog,
 			).SetAttributes("MARGIN=5x5, GAP=5"),
-			iup.Label("Event Log (with timestamps):"),
 			txtLog,
 		).SetAttributes("MARGIN=10x10, GAP=10"),
 	)

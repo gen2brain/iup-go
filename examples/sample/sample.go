@@ -70,6 +70,7 @@ func main() {
 			"ALPHA":          "142",
 			"SHOWHEX":        "YES",
 			"SHOWCOLORTABLE": "YES",
+			"PARENTDIALOG":   "dlg",
 		})
 		defer dlg.Destroy()
 
