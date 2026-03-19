@@ -589,28 +589,6 @@ static int iGlobalsNameCheckHandles_CB(Ihandle* bt)
   return IUP_DEFAULT;
 }
 
-static int iGlobalsTabChangePos_CB(Ihandle* ih, int new_pos, int old_pos)
-{
-  (void)old_pos;
-  switch (new_pos)
-  {
-    case 0:
-      IupSetAttribute(ih, "TIP", "Application Global attributes.");
-      break;
-    case 1:
-      IupSetAttribute(ih, "TIP", "Registered Global attributes.");
-      break;
-    case 2:
-      IupSetAttribute(ih, "TIP", "Functions.");
-      break;
-    case 3:
-      IupSetAttribute(ih, "TIP", "Names.");
-      break;
-  }
-
-  IupSetAttribute(ih, "TIPVISIBLE", "YES");
-  return IUP_DEFAULT;
-}
 
 static int iGlobalsClose_CB(Ihandle* ih)
 {
@@ -650,7 +628,7 @@ static Ihandle* iGlobalsCreateDialog(void)
   IupSetAttribute(colorbut1, "VISIBLE", "NO");
 
   fontbut1 = IupButton("F", NULL);
-  IupSetAttribute(fontbut1, "SIZE", "20x10");
+  IupSetAttribute(fontbut1, "SIZE", "20x");
   IupStoreAttribute(fontbut1, "FONT", "Times, Bold Italic 12");
   IupSetCallback(fontbut1, "ACTION", (Icallback)iGlobalsSetFont_CB);
   IupSetAttribute(fontbut1, "VISIBLE", "NO");
@@ -677,7 +655,7 @@ static Ihandle* iGlobalsCreateDialog(void)
   IupSetAttribute(colorbut2, "VISIBLE", "NO");
 
   fontbut2 = IupButton("F", NULL);
-  IupSetAttribute(fontbut2, "SIZE", "20x10");
+  IupSetAttribute(fontbut2, "SIZE", "20x");
   IupStoreAttribute(fontbut2, "FONT", "Times, Bold Italic 12");
   IupSetCallback(fontbut2, "ACTION", (Icallback)iGlobalsSetFont_CB);
   IupSetAttribute(fontbut2, "VISIBLE", "NO");
@@ -779,8 +757,10 @@ static Ihandle* iGlobalsCreateDialog(void)
   IupSetAttribute(tabs, "TABTITLE1", "Custom Attributes");
   IupSetAttribute(tabs, "TABTITLE2", "Functions");
   IupSetAttribute(tabs, "TABTITLE3", "Names");
-  IupSetCallback(tabs, "TABCHANGEPOS_CB", (Icallback)iGlobalsTabChangePos_CB);
-  iGlobalsTabChangePos_CB(tabs, 0, 0);
+  IupSetAttribute(tabs, "TABTIP0", "Application Global attributes.");
+  IupSetAttribute(tabs, "TABTIP1", "Registered Global attributes.");
+  IupSetAttribute(tabs, "TABTIP2", "Functions.");
+  IupSetAttribute(tabs, "TABTIP3", "Names.");
 
   dlg_box = IupVbox(
     tabs,
