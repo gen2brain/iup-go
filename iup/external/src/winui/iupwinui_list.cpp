@@ -68,6 +68,26 @@ static void winuiListClearDragTracking()
 }
 
 
+static TextBox winuiListFindEditableTextBox(DependencyObject parent)
+{
+  int count = VisualTreeHelper::GetChildrenCount(parent);
+  for (int i = 0; i < count; i++)
+  {
+    auto child = VisualTreeHelper::GetChild(parent, i);
+    auto fe = child.try_as<FrameworkElement>();
+    if (fe && fe.Name() == L"EditableText")
+    {
+      auto tb = child.try_as<TextBox>();
+      if (tb)
+        return tb;
+    }
+    auto result = winuiListFindEditableTextBox(child);
+    if (result)
+      return result;
+  }
+  return nullptr;
+}
+
 static bool winuiListRemoveDeleteButton(DependencyObject parent)
 {
   int count = VisualTreeHelper::GetChildrenCount(parent);
@@ -1169,7 +1189,31 @@ static int winuiListMapMethod(Ihandle* ih)
     comboBox.VerticalAlignment(VerticalAlignment::Top);
 
     if (aux->hasEditbox)
+    {
       comboBox.IsEditable(true);
+
+      comboBox.Loaded([ih](IInspectable const& sender, RoutedEventArgs const&) {
+        TextBox editBox = winuiListFindEditableTextBox(sender.as<DependencyObject>());
+        if (editBox)
+        {
+          editBox.TextChanged([ih](IInspectable const&, TextChangedEventArgs const&) {
+            if (iupAttribGet(ih, "_IUPWINUI_DISABLE_TEXT_CB"))
+              return;
+            IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
+            if (cb)
+            {
+              ComboBox combo = winuiGetHandle<ComboBox>(ih);
+              if (combo)
+              {
+                hstring text = combo.Text();
+                cb(ih, 0, iupwinuiHStringToString(text));
+              }
+            }
+            iupBaseCallValueChangedCb(ih);
+          });
+        }
+      });
+    }
 
     aux->selectionChangedToken = comboBox.SelectionChanged([ih](IInspectable const&, SelectionChangedEventArgs const&) {
       winuiListSelectionChanged(ih);

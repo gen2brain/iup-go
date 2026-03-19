@@ -934,6 +934,8 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
 @interface IupCocoaListDelegate : NSObject <NSComboBoxDelegate, NSTextFieldDelegate, NSTextViewDelegate>
 - (void) comboBoxSelectionDidChange:(NSNotification*)the_notification;
+- (void) comboBoxWillPopUp:(NSNotification*)the_notification;
+- (void) comboBoxWillDismiss:(NSNotification*)the_notification;
 - (void) controlTextDidChange:(NSNotification*)the_notification;
 - (void) controlTextDidEndEditing:(NSNotification*)the_notification;
 - (void) controlTextDidBeginEditing:(NSNotification*)the_notification;
@@ -956,6 +958,24 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     iupListSingleCallActionCb(ih, cb, adjusted_index);
   }
   iupBaseCallValueChangedCb(ih);
+}
+
+- (void) comboBoxWillPopUp:(NSNotification*)the_notification
+{
+  NSComboBox* combo_box = [the_notification object];
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(combo_box, IHANDLE_ASSOCIATED_OBJ_KEY);
+  IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
+  if (cb)
+    cb(ih, 1);
+}
+
+- (void) comboBoxWillDismiss:(NSNotification*)the_notification
+{
+  NSComboBox* combo_box = [the_notification object];
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(combo_box, IHANDLE_ASSOCIATED_OBJ_KEY);
+  IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
+  if (cb)
+    cb(ih, 0);
 }
 
 - (void) controlTextDidChange:(NSNotification*)the_notification
@@ -3294,7 +3314,7 @@ static int cocoaListSetFontAttrib(Ihandle* ih, const char* value)
 
         NSInteger selected = [combo_box indexOfSelectedItem];
         [combo_box reloadData];
-        if (selected != NSNotFound)
+        if (selected >= 0 && selected < [combo_box numberOfItems])
           [combo_box selectItemAtIndex:selected];
       }
     }
@@ -3588,6 +3608,24 @@ static int cocoaListMapMethod(Ihandle* ih)
         objc_setAssociatedObject(popup_button, IUP_COCOA_LIST_POPUPBUTTON_RECEIVER_OBJ_KEY, (id)list_receiver, OBJC_ASSOCIATION_RETAIN);
         [list_receiver release];
 
+        {
+          id popup_observer = [[NSNotificationCenter defaultCenter] addObserverForName:NSPopUpButtonWillPopUpNotification
+            object:popup_button queue:nil usingBlock:^(NSNotification* note) {
+              IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
+              if (cb)
+                cb(ih, 1);
+          }];
+          iupAttribSet(ih, "_IUPCOCOA_POPUP_OBSERVER", (char*)popup_observer);
+
+          id menu_observer = [[NSNotificationCenter defaultCenter] addObserverForName:NSMenuDidEndTrackingNotification
+            object:[popup_button menu] queue:nil usingBlock:^(NSNotification* note) {
+              IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
+              if (cb)
+                cb(ih, 0);
+          }];
+          iupAttribSet(ih, "_IUPCOCOA_MENU_OBSERVER", (char*)menu_observer);
+        }
+
         iupcocoaSetCanFocus(ih, iupAttribGetBoolean(ih, "CANFOCUS"));
 
         break;
@@ -3861,6 +3899,12 @@ static void cocoaListUnMapMethod(Ihandle* ih)
     case IUPCOCOALISTSUBTYPE_DROPDOWN:
       {
         NSPopUpButton* popup_button = (NSPopUpButton*)base_view;
+        id popup_observer = (id)iupAttribGet(ih, "_IUPCOCOA_POPUP_OBSERVER");
+        id menu_observer = (id)iupAttribGet(ih, "_IUPCOCOA_MENU_OBSERVER");
+        if (popup_observer)
+          [[NSNotificationCenter defaultCenter] removeObserver:(id)popup_observer];
+        if (menu_observer)
+          [[NSNotificationCenter defaultCenter] removeObserver:(id)menu_observer];
         [popup_button setTarget:nil];
         objc_setAssociatedObject(base_view, IUP_COCOA_LIST_POPUPBUTTON_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
         break;
