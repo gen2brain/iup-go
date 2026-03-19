@@ -100,12 +100,14 @@ func main() {
 	}))
 
 	iup.SetCallback(btnImg1, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		setBackground("imgChecker", "Checker pattern")
+		iup.SetAttribute(dlg, "BACKIMAGEZOOM", "NO")
+		setBackground("imgChecker", "Checker pattern (tiled)")
 		return iup.DEFAULT
 	}))
 
 	iup.SetCallback(btnImg2, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		setBackground("imgGradient", "Gradient")
+		iup.SetAttribute(dlg, "BACKIMAGEZOOM", "YES")
+		setBackground("imgGradient", "Gradient (stretched)")
 		return iup.DEFAULT
 	}))
 
