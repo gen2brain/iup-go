@@ -788,6 +788,9 @@ static int iLayoutMenuClose_CB(Ihandle* ih)
   Ihandle* dlg = IupGetDialog(ih);
   if (IupGetInt(dlg, "DESTROYWHENCLOSED"))
   {
+    if (iupAttribGetBoolean(dlg, "MODAL"))
+      return IUP_CLOSE;
+
     IupDestroy(dlg);
     return IUP_IGNORE;
   }
@@ -3281,8 +3284,11 @@ static int iLayoutTreeSelection_CB(Ihandle* tree, int id, int status)
   {
     Ihandle* dlg = IupGetDialog(tree);
     iLayoutDialog* layoutdlg = (iLayoutDialog*)iupAttribGet(dlg, "_IUP_LAYOUTDIALOG");
-    iLayoutTreeSelectionChanged(layoutdlg, elem, id);
-    IupUpdate(iLayoutGetCanvas(layoutdlg));
+    if (elem)
+    {
+      iLayoutTreeSelectionChanged(layoutdlg, elem, id);
+      IupUpdate(iLayoutGetCanvas(layoutdlg));
+    }
   }
   else
     iLayoutTreeSetNodeColor(tree, id, elem);
@@ -3354,6 +3360,9 @@ static int iLayoutDialogClose_CB(Ihandle* dlg)
 {
   if (IupGetInt(dlg, "DESTROYWHENCLOSED"))
   {
+    if (iupAttribGetBoolean(dlg, "MODAL"))
+      return IUP_CLOSE;
+
     IupDestroy(dlg);
     return IUP_IGNORE;
   }

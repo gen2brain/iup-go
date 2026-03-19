@@ -523,25 +523,6 @@ static int iLayoutPropertiesList3_CB(Ihandle *list3, char *text, int item, int s
   return IUP_DEFAULT;
 }
 
-static int iLayoutPropertiesTabChangePos_CB(Ihandle* ih, int new_pos, int old_pos)
-{
-  (void)old_pos;
-  switch (new_pos)
-  {
-  case 0:
-    IupSetAttribute(ih, "TIP", "All attributes that are known by the element.");
-    break;
-  case 1:
-    IupSetAttribute(ih, "TIP", "Custom attributes set by the application.");
-    break;
-  case 2:
-    IupSetAttribute(ih, "TIP", "All callbacks that are known by the element.");
-    break;
-  }
-
-  IupSetAttribute(ih, "TIPVISIBLE", "YES");
-  return IUP_DEFAULT;
-}
 
 static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
 {
@@ -600,7 +581,7 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
   IupSetAttribute(colorbut, "VISIBLE", "NO");
 
   fontbut = IupButton("F", NULL);
-  IupSetAttribute(fontbut, "SIZE", "20x10");
+  IupSetAttribute(fontbut, "SIZE", "20x");
   IupStoreAttribute(fontbut, "FONT", "Times, Bold Italic 12");
   IupSetCallback(fontbut, "ACTION", (Icallback)iLayoutPropertiesSetFont_CB);
   IupSetAttribute(fontbut, "NAME", "SETFONTBUT");
@@ -667,8 +648,9 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
   IupSetAttribute(tabs, "TABTITLE0", "Registered Attributes");
   IupSetAttribute(tabs, "TABTITLE1", "Custom Attributes");
   IupSetAttribute(tabs, "TABTITLE2", "Callbacks");
-  IupSetCallback(tabs, "TABCHANGEPOS_CB", (Icallback)iLayoutPropertiesTabChangePos_CB);
-  iLayoutPropertiesTabChangePos_CB(tabs, 0, 0);
+  IupSetAttribute(tabs, "TABTIP0", "All attributes that are known by the element.");
+  IupSetAttribute(tabs, "TABTIP1", "Custom attributes set by the application.");
+  IupSetAttribute(tabs, "TABTIP2", "All callbacks that are known by the element.");
 
   dlg_box = IupVbox(
     IupSetAttributes(IupHbox(
