@@ -899,6 +899,28 @@ static void eflTabsUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
+static int eflTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
+{
+  Ihandle* child = IupGetChild(ih, pos);
+  if (child)
+  {
+    Eo* page = (Eo*)iupAttribGet(child, "_IUPTAB_PAGE");
+    if (page)
+    {
+      Eo* item = efl_ui_tab_page_tab_bar_item_get(page);
+      if (item)
+      {
+        if (value && *value)
+          elm_object_tooltip_text_set(item, value);
+        else
+          elm_object_tooltip_unset(item);
+      }
+    }
+  }
+
+  return 0;
+}
+
 void iupdrvTabsInitClass(Iclass* ic)
 {
   ic->Map = eflTabsMapMethod;
@@ -919,6 +941,8 @@ void iupdrvTabsInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttributeId(ic, "TABTIP", NULL, eflTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, eflTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 

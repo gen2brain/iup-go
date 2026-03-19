@@ -765,6 +765,25 @@ static int qtTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
   return 1;
 }
 
+static int qtTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
+{
+  Ihandle* child = IupGetChild(ih, pos);
+  if (child && ih->handle)
+  {
+    QTabWidget* tabs = (QTabWidget*)ih->handle;
+    QWidget* tab_page = (QWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+
+    if (tab_page)
+    {
+      int index = tabs->indexOf(tab_page);
+      if (index >= 0)
+        tabs->setTabToolTip(index, value ? QString::fromUtf8(value) : QString());
+    }
+  }
+
+  return 0;
+}
+
 static int qtTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 {
   Ihandle* child = IupGetChild(ih, pos);
@@ -1226,6 +1245,7 @@ extern "C" void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TABPADDING", qtTabsGetTabPaddingAttrib, qtTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, qtTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTIP", NULL, qtTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", nullptr, qtTabsSetTabImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, qtTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "SHOWCLOSE", nullptr, qtTabsSetShowCloseAttrib, IUPAF_NO_INHERIT);

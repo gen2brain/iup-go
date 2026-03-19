@@ -15,6 +15,7 @@
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
+#include "iup_drvfont.h"
 
 #include "iupefl_drv.h"
 
@@ -25,6 +26,51 @@ static Eo* eflTipGetWidget(Ihandle* ih)
   if (!widget)
     widget = iupeflGetWidget(ih);
   return widget;
+}
+
+
+static void eflTipSetLabelText(Evas_Object* label, Ihandle* ih, const char* tip)
+{
+  const char* tipfont = iupAttribGet(ih, "TIPFONT");
+  const char* tipfgcolor = iupAttribGet(ih, "TIPFGCOLOR");
+  const char* tipbgcolor = iupAttribGet(ih, "TIPBGCOLOR");
+
+  if (tipfont || tipfgcolor || tipbgcolor)
+  {
+    char markup[1024];
+    char open_tags[256] = "";
+    char close_tags[256] = "";
+    unsigned char r, g, b;
+
+    if (tipfont && !iupStrEqualNoCase(tipfont, "SYSTEM"))
+    {
+      char typeface[50];
+      int size, is_bold, is_italic, is_underline, is_strikeout;
+      if (iupGetFontInfo(tipfont, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+      {
+        char font_tag[128];
+        if (size < 0) size = -size;
+        sprintf(font_tag, "<font=%s><font_size=%d>", typeface, size);
+        strcat(open_tags, font_tag);
+        strcat(close_tags, "</font_size></font>");
+      }
+    }
+
+    if (tipfgcolor && iupStrToRGB(tipfgcolor, &r, &g, &b))
+    {
+      char color_tag[32];
+      sprintf(color_tag, "<color=#%02X%02X%02X>", r, g, b);
+      strcat(open_tags, color_tag);
+      strcat(close_tags, "</color>");
+    }
+
+    (void)tipbgcolor;
+
+    sprintf(markup, "%s%s%s", open_tags, tip, close_tags);
+    elm_object_text_set(label, markup);
+  }
+  else
+    elm_object_text_set(label, tip);
 }
 
 static Evas_Object* eflTipContentCb(void* data, Evas_Object* obj, Evas_Object* tooltip)
@@ -78,7 +124,7 @@ static Evas_Object* eflTipContentCb(void* data, Evas_Object* obj, Evas_Object* t
     }
 
     label = elm_label_add(tooltip);
-    elm_object_text_set(label, tip);
+    eflTipSetLabelText(label, ih, tip);
     elm_box_pack_end(box, label);
     efl_gfx_entity_visible_set(label, EINA_TRUE);
 
@@ -86,7 +132,7 @@ static Evas_Object* eflTipContentCb(void* data, Evas_Object* obj, Evas_Object* t
   }
 
   content = elm_label_add(tooltip);
-  elm_object_text_set(content, tip);
+  eflTipSetLabelText(content, ih, tip);
   return content;
 }
 
@@ -100,10 +146,12 @@ int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 
   if (value && *value)
   {
-    if (IupGetCallback(ih, "TIPS_CB") || iupAttribGet(ih, "TIPICON"))
+    if (IupGetCallback(ih, "TIPS_CB") || iupAttribGet(ih, "TIPICON") ||
+        iupAttribGet(ih, "TIPFONT") || iupAttribGet(ih, "TIPFGCOLOR") || iupAttribGet(ih, "TIPBGCOLOR"))
       elm_object_tooltip_content_cb_set(widget, eflTipContentCb, ih, NULL);
     else
       elm_object_tooltip_text_set(widget, value);
+
   }
   else
   {

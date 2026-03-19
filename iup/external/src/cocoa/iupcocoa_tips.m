@@ -169,30 +169,3 @@ char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
   return NULL;
 }
 
-int cocoaBaseSetTipRectAttrib(Ihandle* ih, const char* value)
-{
-  (void)value;
-  cocoaUpdateTip(ih);
-  return 0;
-}
-
-int cocoaBaseSetTipBgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 0;
-}
-
-int cocoaBaseSetTipFgColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 0;
-}
-
-int cocoaBaseSetTipFontAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 0;
-}

@@ -17,6 +17,7 @@
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
+#include "iup_drvfont.h"
 
 #include "iupgtk4_drv.h"
 
@@ -67,15 +68,66 @@ static gboolean gtk4QueryTooltip(GtkWidget *widget, gint _x, gint _y, gboolean k
       gtk_tooltip_set_icon(tooltip, icon);
   }
 
-  /* Set tooltip text on the GtkTooltip object, not the widget.
-     Setting it on the widget from within query-tooltip causes infinite recursion */
   value = iupAttribGet(ih, "TIP");
-  if (value)
   {
-    if (iupAttribGetBoolean(ih, "TIPMARKUP"))
-      gtk_tooltip_set_markup(tooltip, iupgtk4StrConvertToSystem(value));
+    const char* tipfont = iupAttribGet(ih, "TIPFONT");
+    const char* tipbgcolor = iupAttribGet(ih, "TIPBGCOLOR");
+    const char* tipfgcolor = iupAttribGet(ih, "TIPFGCOLOR");
+
+    if (tipfont || tipbgcolor || tipfgcolor)
+    {
+      GtkWidget* label = gtk_label_new(NULL);
+      PangoAttrList* attrs = pango_attr_list_new();
+
+      if (iupAttribGetBoolean(ih, "TIPMARKUP"))
+        gtk_label_set_markup(GTK_LABEL(label), iupgtk4StrConvertToSystem(value));
+      else
+        gtk_label_set_text(GTK_LABEL(label), iupgtk4StrConvertToSystem(value));
+
+      if (tipfont && !iupStrEqualNoCase(tipfont, "SYSTEM"))
+      {
+        PangoFontDescription* fontdesc = iupgtk4GetPangoFontDesc(tipfont);
+        if (fontdesc)
+          pango_attr_list_insert(attrs, pango_attr_font_desc_new(fontdesc));
+      }
+
+      if (tipfgcolor)
+      {
+        unsigned char r, g, b;
+        if (iupStrToRGB(tipfgcolor, &r, &g, &b))
+          pango_attr_list_insert(attrs, pango_attr_foreground_new(r * 257, g * 257, b * 257));
+      }
+
+      if (tipbgcolor)
+      {
+        unsigned char r, g, b;
+        if (iupStrToRGB(tipbgcolor, &r, &g, &b))
+          pango_attr_list_insert(attrs, pango_attr_background_new(r * 257, g * 257, b * 257));
+      }
+
+      gtk_label_set_attributes(GTK_LABEL(label), attrs);
+      pango_attr_list_unref(attrs);
+
+      gtk_tooltip_set_custom(tooltip, label);
+
+      (void)_y;
+      (void)_x;
+      (void)widget;
+      return TRUE;
+    }
     else
-      gtk_tooltip_set_text(tooltip, iupgtk4StrConvertToSystem(value));
+    {
+      /* Set tooltip text on the GtkTooltip object, not the widget.
+         Setting it on the widget from within query-tooltip causes infinite recursion */
+      gtk_tooltip_set_custom(tooltip, NULL);
+      if (value)
+      {
+        if (iupAttribGetBoolean(ih, "TIPMARKUP"))
+          gtk_tooltip_set_markup(tooltip, iupgtk4StrConvertToSystem(value));
+        else
+          gtk_tooltip_set_text(tooltip, iupgtk4StrConvertToSystem(value));
+      }
+    }
   }
 
   (void)_y;
@@ -115,15 +167,10 @@ int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
     return 0;
 
   if (iupStrBoolean(value))
-  {
-    /* Force tooltip to show - re-enable tooltip system */
-    gtk_widget_set_has_tooltip(widget, TRUE);
-  }
+    gtk_widget_trigger_tooltip_query(widget);
   else
   {
-    /* Hide tooltip - temporarily disable tooltip system */
     gtk_widget_set_has_tooltip(widget, FALSE);
-    /* Re-enable it so future queries work */
     gtk_widget_set_has_tooltip(widget, TRUE);
   }
 
