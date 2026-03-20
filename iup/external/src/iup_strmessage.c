@@ -115,12 +115,13 @@ static void iupSetLngAtt(const char* first, ...)
 #include "iup_lng_english.h"
 #include "iup_lng_portuguese.h"
 #include "iup_lng_spanish.h"
-#ifdef IUP_CZECH
 #include "iup_lng_czech.h"
-#endif
-#ifdef IUP_RUSSIAN
 #include "iup_lng_russian.h"
-#endif
+#include "iup_lng_german.h"
+#include "iup_lng_french.h"
+#include "iup_lng_chinese.h"
+#include "iup_lng_japanese.h"
+#include "iup_lng_italian.h"
 
 static void iStrMessageRegisterInternal(const char* language)
 {
@@ -138,18 +139,34 @@ static void iStrMessageRegisterInternal(const char* language)
   {
     lng = iup_load_lng_spanish();
   }
-#ifdef IUP_CZECH
   else if (iupStrEqualNoCase(language, "CZECH"))
   {
     lng = iup_load_lng_czech();
   }
-#endif
-#ifdef IUP_RUSSIAN
   else if (iupStrEqualNoCase(language, "RUSSIAN"))
   {
     lng = iup_load_lng_russian();
   }
-#endif
+  else if (iupStrEqualNoCase(language, "GERMAN"))
+  {
+    lng = iup_load_lng_german();
+  }
+  else if (iupStrEqualNoCase(language, "FRENCH"))
+  {
+    lng = iup_load_lng_french();
+  }
+  else if (iupStrEqualNoCase(language, "CHINESE"))
+  {
+    lng = iup_load_lng_chinese();
+  }
+  else if (iupStrEqualNoCase(language, "JAPANESE"))
+  {
+    lng = iup_load_lng_japanese();
+  }
+  else if (iupStrEqualNoCase(language, "ITALIAN"))
+  {
+    lng = iup_load_lng_italian();
+  }
 
   if (lng)
   {

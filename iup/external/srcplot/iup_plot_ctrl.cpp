@@ -2711,6 +2711,13 @@ static int iPlotCreateMethod(Ihandle* ih, void **params)
 #include "iup_lng_english_plot.h"
 #include "iup_lng_portuguese_plot.h"
 #include "iup_lng_spanish_plot.h"
+#include "iup_lng_czech_plot.h"
+#include "iup_lng_russian_plot.h"
+#include "iup_lng_german_plot.h"
+#include "iup_lng_french_plot.h"
+#include "iup_lng_chinese_plot.h"
+#include "iup_lng_japanese_plot.h"
+#include "iup_lng_italian_plot.h"
 
 static void iPlotSetClassUpdate(Iclass* ic)
 {
@@ -2729,6 +2736,34 @@ static void iPlotSetClassUpdate(Iclass* ic)
   else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "SPANISH"))
   {
     lng = iup_load_lng_spanish_plot();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "CZECH"))
+  {
+    lng = iup_load_lng_czech_plot();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "RUSSIAN"))
+  {
+    lng = iup_load_lng_russian_plot();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "GERMAN"))
+  {
+    lng = iup_load_lng_german_plot();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "FRENCH"))
+  {
+    lng = iup_load_lng_french_plot();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "CHINESE"))
+  {
+    lng = iup_load_lng_chinese_plot();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "JAPANESE"))
+  {
+    lng = iup_load_lng_japanese_plot();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "ITALIAN"))
+  {
+    lng = iup_load_lng_italian_plot();
   }
 
   if (lng)
