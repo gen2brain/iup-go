@@ -45,11 +45,14 @@ static void iMatrixExBusyShowProgress(ImatExData* matex_data, int count, const c
   
   if (busyname)
   {
-    char str[50] = "IUP_";
-    strcat(str, busyname);
+    char str[50];
+    snprintf(str, sizeof(str), "IUP_%s", busyname);
     iupStrReplace(str, ':', '_');
     if (iupStrEqual(busyname, "UNDO") || iupStrEqual(busyname, "REDO"))
-      strcat(str, "NAME");  /* To avoid conflict with the menu item string */
+    {
+      int p = (int)strlen(str);
+      snprintf(str + p, sizeof(str) - p, "NAME");
+    }
     busyname = IupGetLanguageString(str);
     if (!busyname)
       busyname = str+4;

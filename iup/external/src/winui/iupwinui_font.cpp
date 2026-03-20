@@ -95,7 +95,7 @@ static IwinuiFont* winuiFindFont(const char* font)
 
   const char* mapped_name = iupFontGetWinName(typeface);
   if (mapped_name)
-    strcpy(typeface, mapped_name);
+    iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
   float fontSize;
   if (size < 0)
@@ -251,7 +251,7 @@ extern "C" char* iupdrvGetSystemFont(void)
   }
   else
   {
-    strcpy(str, "Segoe UI, 9");
+    iupStrCopyN(str, sizeof(str), "Segoe UI, 9");
   }
   return str;
 }
@@ -472,7 +472,7 @@ static bool winuiGetFontProps(Ihandle* ih, WinUIFontProps* props)
 
   const char* mapped_name = iupFontGetWinName(typeface);
   if (mapped_name)
-    strcpy(typeface, mapped_name);
+    iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
   int wlen = MultiByteToWideChar(CP_UTF8, 0, typeface, -1, NULL, 0);
   props->typeface.assign(wlen - 1, L'\0');

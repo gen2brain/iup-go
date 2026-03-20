@@ -647,7 +647,7 @@ static int winuiFontDlgPopup(Ihandle* ih, int x, int y)
 
   const char* mapped_name = iupFontGetWinName(typeface);
   if (mapped_name)
-    strcpy(typeface, mapped_name);
+    iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
   WinUIFontDlgState state;
   state.showColor = iupAttribGetBoolean(ih, "SHOWCOLOR") ? true : false;
@@ -692,7 +692,7 @@ static int winuiFontDlgPopup(Ihandle* ih, int x, int y)
   if (selIdx >= 0 && selIdx < (int)state.fontFamilies.size())
     WideCharToMultiByte(CP_UTF8, 0, state.fontFamilies[selIdx].c_str(), -1, result_typeface, sizeof(result_typeface), NULL, NULL);
   else
-    strcpy(result_typeface, typeface);
+    iupStrCopyN(result_typeface, sizeof(result_typeface), typeface);
 
   hstring sizeText = state.sizeBox.Text();
   int result_height = _wtoi(sizeText.c_str());

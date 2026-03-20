@@ -271,7 +271,7 @@ extern "C" IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
   QDir current = QDir::current();
   QByteArray path = current.absolutePath().toUtf8();
   char* buffer = (char*)iupStrGetMemory(path.length() + 1);
-  strcpy(buffer, path.constData());
+  iupStrCopyN(buffer, path.length() + 1, path.constData());
   return buffer;
 }
 
@@ -315,7 +315,7 @@ extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *a
 #endif
 
     QByteArray path_bytes = config_file.toUtf8();
-    strcpy(filename, path_bytes.constData());
+    iupStrCopyN(filename, 10240, path_bytes.constData());
     return 1;
   }
   else
@@ -335,7 +335,7 @@ extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *a
 #endif
 
     QByteArray path_bytes = config_file.toUtf8();
-    strcpy(filename, path_bytes.constData());
+    iupStrCopyN(filename, 10240, path_bytes.constData());
     return 1;
   }
 }

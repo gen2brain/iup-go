@@ -110,14 +110,14 @@ static void iPlotMakeAutoFormatString(double inValue, char* outFormatString, boo
   if (inValue > kTickValueVeryBig || inValue < kTickValueVerySmall)
   {
     if (sign_space)
-      strcpy(outFormatString, "% .1e");
+      iupStrCopyN(outFormatString, 30, "% .1e");
     else
-      strcpy(outFormatString, "%.1e");
+      iupStrCopyN(outFormatString, 30, "%.1e");
   }
-  else 
+  else
   {
     int thePrecision = 0;
-    if (inValue < 1) 
+    if (inValue < 1)
     {
       double theSpan = inValue;
       while (theSpan < 1 && thePrecision < 9)
@@ -131,13 +131,13 @@ static void iPlotMakeAutoFormatString(double inValue, char* outFormatString, boo
     {
       char theBuf[128] = IUP_PLOT_DEF_NUMBERFORMATSIGNED;
       theBuf[3] = (char)('0' + thePrecision); // "% ."
-      strcpy(outFormatString, theBuf);
+      iupStrCopyN(outFormatString, 30, theBuf);
     }
     else
     {
       char theBuf[128] = IUP_PLOT_DEF_NUMBERFORMAT;
       theBuf[2] = (char)('0' + thePrecision);  // "%."
-      strcpy(outFormatString, theBuf);
+      iupStrCopyN(outFormatString, 30, theBuf);
     }
   }
 }
@@ -250,7 +250,7 @@ bool iupPlotTickIterLog::CalculateSpacing (double, double inDivGuess, iupPlotTic
 
   ioTick.mMinorDivision = iupPlotRound(ioTick.mMajorSpan);
 
-  strcpy(ioTick.mFormatString, "%.1e");
+  iupStrCopyN(ioTick.mFormatString, sizeof(ioTick.mFormatString), "%.1e");
   return true;
 }
 
@@ -335,13 +335,13 @@ bool iupPlotTickIterNamed::GetNextTick (double &outTick, bool &outIsMajorTick, c
     // TODO: improve this
     if (fabs(outTick - (double)theSampleIndex) > 0.1)
     {
-      if (outFormatString) strcpy(outFormatString, "");
+      if (outFormatString) outFormatString[0] = '\0';
       return true;
     }
 
     if (theSampleIndex >= 0 && theSampleIndex < mStringData->GetCount())
     {
-      if (outFormatString) strcpy(outFormatString, mStringData->GetSampleString(theSampleIndex));
+      if (outFormatString) iupStrCopyN(outFormatString, 30, mStringData->GetSampleString(theSampleIndex));
       return true;
     }
   }

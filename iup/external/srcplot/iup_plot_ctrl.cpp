@@ -44,7 +44,7 @@ static int iPlotSelectFile(Ihandle* parent, char* filename, const char* title, c
   if (IupGetInt(filedlg, "STATUS") != -1)
   {
     char* value = IupGetAttribute(filedlg, "VALUE");
-    strcpy(filename, value);
+    iupStrCopyN(filename, 4096, value);
 
     IupDestroy(filedlg);
     return 1;
@@ -1014,11 +1014,11 @@ static int iPlotDataSetProperties_CB(Ihandle* ih_item)
   IupSetInt(ih, "_IUP_DS", ds);
 
   char* ds_name = IupGetAttribute(ih, "DS_NAME");
-  strcpy(name, ds_name);
+  iupStrCopyN(name, sizeof(name), ds_name);
 
   const char* ds_color = IupGetAttribute(ih, "DS_COLOR");
   char color[30];
-  strcpy(color, ds_color);
+  iupStrCopyN(color, sizeof(color), ds_color);
 
   const char* ds_mode = IupGetAttribute(ih, "DS_MODE");
   const char* mode_list[] = { "LINE", "MARK", "MARKLINE", "AREA", "BAR", "STEM", "MARKSTEM", "HORIZONTALBAR", "MULTIBAR", "STEP", "ERRORBAR", "PIE", NULL };
@@ -1039,7 +1039,7 @@ static int iPlotDataSetProperties_CB(Ihandle* ih_item)
 
   const char* ds_barOutlineColor = IupGetAttribute(ih, "DS_BAROUTLINECOLOR");
   char barOutlineColor[30];
-  strcpy(barOutlineColor, ds_barOutlineColor);
+  iupStrCopyN(barOutlineColor, sizeof(barOutlineColor), ds_barOutlineColor);
 
   int barSpacing = IupGetInt(ih, "DS_BARSPACING");
 

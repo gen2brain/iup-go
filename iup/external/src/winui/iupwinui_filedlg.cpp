@@ -476,9 +476,7 @@ IFACEMETHODIMP winuiFileDlgEventHandler::OnTypeChange(IFileDialog* pfd)
   int pathlen = (int)strlen(pathname);
   int namelen = (int)strlen(name);
   char* buffer = (char*)malloc(pathlen + namelen + 2);
-  strcpy(buffer, pathname);
-  strcat(buffer, "\\");
-  strcat(buffer, name);
+  snprintf(buffer, pathlen + namelen + 2, "%s\\%s", pathname, name);
 
   int ret = cb(ih, buffer, (char*)"FILTER");
   free(buffer);

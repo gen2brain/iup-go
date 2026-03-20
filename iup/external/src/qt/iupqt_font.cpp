@@ -87,7 +87,7 @@ static IqtFont* qtFindFont(const char* font)
   /* Map standard names to native names */
   mapped_name = iupFontGetPangoName(typeface);
   if (mapped_name)
-    strcpy(typeface, mapped_name);
+    iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
   /* Convert size to pixels if negative (already in pixels) */
   int point_size = size;
@@ -129,7 +129,7 @@ static IqtFont* qtFindFont(const char* font)
 
   fonts = (IqtFont*)iupArrayInc(qt_fonts);
 
-  strcpy(fonts[i].font, font);
+  iupStrCopyN(fonts[i].font, sizeof(fonts[i].font), font);
   fonts[i].qfont = qfont;
   fonts[i].is_underline = is_underline;
   fonts[i].is_strikeout = is_strikeout;

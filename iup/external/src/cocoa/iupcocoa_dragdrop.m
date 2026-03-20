@@ -965,7 +965,7 @@ static NSMutableArray* cocoaParseDragDropTypes(const char* value)
   char value_temp1[256];
   char value_temp2[256];
 
-  strcpy(value_copy, value);
+  iupStrCopyN(value_copy, sizeof(value_copy), value);
   while (iupStrToStrStr(value_copy, value_temp1, sizeof(value_temp1), value_temp2, sizeof(value_temp2), ',') > 0)
   {
     NSString* type_string = [NSString stringWithUTF8String:value_temp1];
@@ -974,7 +974,7 @@ static NSMutableArray* cocoaParseDragDropTypes(const char* value)
     if (iupStrEqualNoCase(value_temp2, value_temp1))
       break;
 
-    strcpy(value_copy, value_temp2);
+    iupStrCopyN(value_copy, sizeof(value_copy), value_temp2);
   }
 
   return array_of_types;

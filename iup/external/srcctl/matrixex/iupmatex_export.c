@@ -138,7 +138,7 @@ static char* iMatrixExGetCellFormat(Ihandle *ih, int lin, int col, char* format)
 {
   char* value, *init = "style=\"";
 
-#define _STRCATFORMAT {if (value) { if (init) {strcpy(format, init); init=NULL;} strcat(format, value); }}
+#define _STRCATFORMAT {if (value) { if (init) {iupStrCopyN(format, 512, init); init=NULL;} { int _p=(int)strlen(format); snprintf(format+_p, 512-_p, "%s", value); } }}
 
   *format = 0;
 
@@ -202,7 +202,10 @@ static char* iMatrixExGetCellFormat(Ihandle *ih, int lin, int col, char* format)
   }
 
   if (format[0]!=0)
-    strcat(format, "\"");
+  {
+    int p = (int)strlen(format);
+    snprintf(format + p, 512 - p, "\"");
+  }
 
   return format;
 }

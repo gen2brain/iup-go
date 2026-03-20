@@ -2191,7 +2191,7 @@ static bool cocoaTextParseParagraphAttributes(NSMutableParagraphStyle* paragraph
     {
       str = iupStrDupUntil(&format, ' ');
       if (!str) break;
-      pos = atoi(str);
+      iupStrToInt(str, &pos);
       free(str);
 
       str = iupStrDupUntil(&format, ' ');
