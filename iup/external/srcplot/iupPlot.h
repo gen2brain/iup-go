@@ -618,7 +618,7 @@ public:
     mMajorSpan(1), mMajorSize(1), mMinorSize(1), mShow(true), mRotateNumberAngle(90),
     mFontSize(0), mFontStyle(-1), mRotateNumber(false), mFormatAuto(true)
   {
-    strcpy(mFormatString, IUP_PLOT_DEF_NUMBERFORMAT);
+    iupStrCopyN(mFormatString, sizeof(mFormatString), IUP_PLOT_DEF_NUMBERFORMAT);
   }
 
   bool mShow;
@@ -653,7 +653,7 @@ public:
     mNoZoomMin(0), mNoZoomMax(0), mNoZoomAutoScaleMin(false), mNoZoomAutoScaleMax(false),
     mPanMin(0), mReverseTicksLabel(false), mVertical(inVertical)
   {
-    strcpy(mTipFormatString, IUP_PLOT_DEF_TIPFORMAT);
+    iupStrCopyN(mTipFormatString, sizeof(mTipFormatString), IUP_PLOT_DEF_TIPFORMAT);
   }
   ~iupPlotAxis() { SetLabel(NULL); }
 

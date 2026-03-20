@@ -533,7 +533,7 @@ bool iupPlotAxisX::DrawX(const iupPlotRect &inRect, iupPlotDrawContext* ctx, con
     double theX;
     bool theIsMajorTick;
     char theFormatString[30];
-    strcpy(theFormatString, mTick.mFormatString);
+    iupStrCopyN(theFormatString, sizeof(theFormatString), mTick.mFormatString);
 
     IFnssds formatticknumber_cb = (IFnssds)IupGetCallback(ctx->ih, "XTICKFORMATNUMBER_CB");
 
@@ -697,7 +697,7 @@ bool iupPlotAxisY::DrawY(const iupPlotRect &inRect, iupPlotDrawContext* ctx, con
     double theY;
     bool theIsMajorTick;
     char theFormatString[30];
-    strcpy(theFormatString, mTick.mFormatString);
+    iupStrCopyN(theFormatString, sizeof(theFormatString), mTick.mFormatString);
 
     IFnssds formatticknumber_cb = (IFnssds)IupGetCallback(ctx->ih, "YTICKFORMATNUMBER_CB");
 

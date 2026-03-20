@@ -1753,7 +1753,11 @@ static int qtTextMapMethod(Ihandle* ih)
 
     const char* spinvalue = iupAttribGetStr(ih, "SPINVALUE");
     if (spinvalue)
-      spin->setValue(atoi(spinvalue));
+    {
+      int spinval = 0;
+      iupStrToInt(spinvalue, &spinval);
+      spin->setValue(spinval);
+    }
 
     QObject::connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), [ih, spin](int value) {
       if (ih->data->disable_callbacks)
@@ -2011,7 +2015,7 @@ static bool qtTextParseParagraphFormat(Ihandle* formattag, QTextBlockFormat* blo
     {
       str = iupStrDupUntil((const char**)&format, ' ');
       if (!str) break;
-      pos = atoi(str);
+      iupStrToInt(str, &pos);
       free(str);
 
       str = iupStrDupUntil((const char**)&format, ' ');

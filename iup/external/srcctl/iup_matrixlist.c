@@ -475,29 +475,19 @@ static char* iMatrixListGetColumnOrderAttrib(Ihandle *ih)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
   char* str = iupStrGetMemory(30);
+  int pos = 0;
+  const char* names[] = { NULL, NULL, NULL };
 
-  if (mtxList->label_col == 1)
-    strcat(str, "LABEL");
-  else if (mtxList->color_col == 1)
-    strcat(str, "COLOR");
-  else if (mtxList->image_col == 1)
-    strcat(str, "IMAGE");
+  if (mtxList->label_col >= 1 && mtxList->label_col <= 3) names[mtxList->label_col - 1] = "LABEL";
+  if (mtxList->color_col >= 1 && mtxList->color_col <= 3) names[mtxList->color_col - 1] = "COLOR";
+  if (mtxList->image_col >= 1 && mtxList->image_col <= 3) names[mtxList->image_col - 1] = "IMAGE";
 
-  if (mtxList->label_col == 2)
-    strcat(str, ":LABEL");
-  else if (mtxList->color_col == 2)
-    strcat(str, ":COLOR");
-  else if (mtxList->image_col == 2)
-    strcat(str, ":IMAGE");
-  else
-    return str;
-
-  if (mtxList->label_col == 3)
-    strcat(str, ":LABEL");
-  else if (mtxList->color_col == 3)
-    strcat(str, ":COLOR");
-  else if (mtxList->image_col == 3)
-    strcat(str, ":IMAGE");
+  if (names[0])
+    pos += snprintf(str + pos, 30 - pos, "%s", names[0]);
+  if (names[1])
+    pos += snprintf(str + pos, 30 - pos, ":%s", names[1]);
+  if (names[2])
+    pos += snprintf(str + pos, 30 - pos, ":%s", names[2]);
 
   return str;
 }

@@ -373,7 +373,7 @@ static int iMatrixGetUnity(const char* name, char* am_name)
   if (s)
   {
     int off = (int)(s - name);
-    strcpy(am_name, name);
+    iupStrCopyN(am_name, 30, name);
     strncpy(am_name+off, "meter", 5);
     return 1;
   }
@@ -383,7 +383,7 @@ static int iMatrixGetUnity(const char* name, char* am_name)
     if (s)
     {
       int off = (int)(s - name);
-      strcpy(am_name, name);
+      iupStrCopyN(am_name, 30, name);
       strncpy(am_name+off, "liter", 5);   /* don't confuse with litter */
       return 1;
     }

@@ -1296,7 +1296,8 @@ static int qtTreeSetValueAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    int id = atoi(value);
+    int id = 0;
+    iupStrToInt(value, &id);
     QTreeWidgetItem* item = qtTreeFindNode(ih, id);
     if (item)
     {
@@ -1393,7 +1394,8 @@ static int qtTreeSetMarkAttrib(Ihandle* ih, const char* value)
 
 static int qtTreeSetMarkStartAttrib(Ihandle* ih, const char* value)
 {
-  int id = atoi(value);
+  int id = 0;
+  iupStrToInt(value, &id);
   QTreeWidgetItem* item = qtTreeFindNode(ih, id);
 
   if (item)
@@ -1597,7 +1599,8 @@ static int qtTreeSetRenameAttrib(Ihandle* ih, const char* value)
 static int qtTreeSetTopItemAttrib(Ihandle* ih, const char* value)
 {
   IupQtTree* tree = (IupQtTree*)ih->handle;
-  int id = atoi(value);
+  int id = 0;
+  iupStrToInt(value, &id);
   QTreeWidgetItem* item = qtTreeFindNode(ih, id);
 
   if (item)

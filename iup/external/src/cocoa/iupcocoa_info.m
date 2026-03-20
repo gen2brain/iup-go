@@ -218,7 +218,7 @@ IUP_SDK_API char *iupdrvGetSystemName(void)
   }
   else
   {
-    strcpy(buffer, "macOS");
+    iupStrCopyN(buffer, sizeof(buffer), "macOS");
   }
 
   return iupStrReturnStr(buffer);
@@ -235,9 +235,7 @@ IUP_SDK_API char *iupdrvGetSystemVersion(void)
   struct utsname systemInfo;
   if (uname(&systemInfo) == 0)
   {
-    strcat(str, " (");
-    strcat(str, systemInfo.machine);
-    strcat(str, ")");
+    snprintf(str + strlen(str), 100 - strlen(str), " (%s)", systemInfo.machine);
   }
 
   return str;
@@ -289,7 +287,7 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
       const char* c_path = [ns_config_path fileSystemRepresentation];
       if (c_path != NULL)
       {
-        strcpy(filename, c_path);
+        iupStrCopyN(filename, 10240, c_path);
         return 1;
       }
     }
@@ -305,7 +303,7 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
       const char* c_path = [ns_path fileSystemRepresentation];
       if (c_path != NULL)
       {
-        strcpy(filename, c_path);
+        iupStrCopyN(filename, 10240, c_path);
         return 1;
       }
     }

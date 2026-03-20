@@ -255,10 +255,9 @@ static char* qtFileCheckExt(Ihandle* ih, const char* filename)
     /* If no dot, or dot is before last separator, add extension */
     if (!dot || (slash && dot < slash) || (backslash && dot < backslash))
     {
-      char* new_filename = (char*)malloc(len + ext_len + 2);
-      strcpy(new_filename, filename);
-      new_filename[len] = '.';
-      strcpy(new_filename + len + 1, ext);
+      int new_len = len + ext_len + 2;
+      char* new_filename = (char*)malloc(new_len);
+      snprintf(new_filename, new_len, "%s.%s", filename, ext);
       return new_filename;
     }
   }

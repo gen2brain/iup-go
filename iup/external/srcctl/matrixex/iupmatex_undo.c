@@ -38,8 +38,8 @@ static void iMatrixExUndoDataInit(IundoData* undo_data, const char* name)
 
   if (name)
   {
-    char str[50] = "IUP_";
-    strcat(str, name);
+    char str[50];
+    snprintf(str, sizeof(str), "IUP_%s", name);
     name = IupGetLanguageString(str);
     if (name != str)
       undo_data->name = name;

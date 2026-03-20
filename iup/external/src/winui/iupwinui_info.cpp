@@ -129,11 +129,10 @@ extern "C" int iupdrvGetPreferencePath(char* filename, const char* app_name, int
   {
     if (SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, filename) == S_OK)
     {
-      strcat(filename, "\\");
-      strcat(filename, app_name);
+      snprintf(filename + strlen(filename), 10240 - strlen(filename), "\\%s", app_name);
       iupwinuiMakeDirectory(filename);
 
-      strcat(filename, "\\config.cfg");
+      snprintf(filename + strlen(filename), 10240 - strlen(filename), "\\config.cfg");
       return 1;
     }
   }
@@ -142,11 +141,7 @@ extern "C" int iupdrvGetPreferencePath(char* filename, const char* app_name, int
   homepath = getenv("HOMEPATH");
   if (homedrive && homepath)
   {
-    strcpy(filename, homedrive);
-    strcat(filename, homepath);
-    strcat(filename, "\\");
-    strcat(filename, app_name);
-    strcat(filename, ".cfg");
+    snprintf(filename, 10240, "%s%s\\%s.cfg", homedrive, homepath, app_name);
     return 1;
   }
 

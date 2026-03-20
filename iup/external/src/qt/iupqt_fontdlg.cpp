@@ -66,7 +66,7 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
       /* Map standard names to native names */
       const char* mapped_name = iupFontGetPangoName(typeface);
       if (mapped_name)
-        strcpy(typeface, mapped_name);
+        iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
       /* Convert size to pixels if negative (already in pixels) */
       int point_size = size;

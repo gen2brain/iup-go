@@ -3138,12 +3138,12 @@ static int iPlotSetAxisXTickFormatAttrib(Ihandle* ih, const char* value)
 
   if (value && value[0] != 0)
   {
-    strcpy(axis->mTick.mFormatString, value);
+    iupStrCopyN(axis->mTick.mFormatString, sizeof(axis->mTick.mFormatString), value);
     axis->mTick.mFormatAuto = false;
   }
   else
   {
-    strcpy(axis->mTick.mFormatString, IUP_PLOT_DEF_NUMBERFORMAT);
+    iupStrCopyN(axis->mTick.mFormatString, sizeof(axis->mTick.mFormatString), IUP_PLOT_DEF_NUMBERFORMAT);
     axis->mTick.mFormatAuto = true;
   }
 
@@ -3157,12 +3157,12 @@ static int iPlotSetAxisYTickFormatAttrib(Ihandle* ih, const char* value)
 
   if (value && value[0] != 0)
   {
-    strcpy(axis->mTick.mFormatString, value);
+    iupStrCopyN(axis->mTick.mFormatString, sizeof(axis->mTick.mFormatString), value);
     axis->mTick.mFormatAuto = false;
   }
   else
   {
-    strcpy(axis->mTick.mFormatString, IUP_PLOT_DEF_NUMBERFORMAT);
+    iupStrCopyN(axis->mTick.mFormatString, sizeof(axis->mTick.mFormatString), IUP_PLOT_DEF_NUMBERFORMAT);
     axis->mTick.mFormatAuto = true;
   }
 
@@ -3182,7 +3182,7 @@ static int iPlotSetAxisXTickFormatPrecisionAttrib(Ihandle* ih, const char* value
   }
   else
   {
-    strcpy(axis->mTick.mFormatString, IUP_PLOT_DEF_NUMBERFORMAT);
+    iupStrCopyN(axis->mTick.mFormatString, sizeof(axis->mTick.mFormatString), IUP_PLOT_DEF_NUMBERFORMAT);
     axis->mTick.mFormatAuto = true;
   }
   return 0;
@@ -3200,7 +3200,7 @@ static int iPlotSetAxisYTickFormatPrecisionAttrib(Ihandle* ih, const char* value
   }
   else
   {
-    strcpy(axis->mTick.mFormatString, IUP_PLOT_DEF_NUMBERFORMAT);
+    iupStrCopyN(axis->mTick.mFormatString, sizeof(axis->mTick.mFormatString), IUP_PLOT_DEF_NUMBERFORMAT);
     axis->mTick.mFormatAuto = true;
   }
   return 0;
@@ -3237,9 +3237,9 @@ static int iPlotSetAxisXTipFormatAttrib(Ihandle* ih, const char* value)
   iupPlotAxis* axis = &ih->data->current_plot->mAxisX;
 
   if (value && value[0] != 0)
-    strcpy(axis->mTipFormatString, value);
+    iupStrCopyN(axis->mTipFormatString, sizeof(axis->mTipFormatString), value);
   else
-    strcpy(axis->mTipFormatString, IUP_PLOT_DEF_TIPFORMAT);
+    iupStrCopyN(axis->mTipFormatString, sizeof(axis->mTipFormatString), IUP_PLOT_DEF_TIPFORMAT);
 
   return 0;
 }
@@ -3249,9 +3249,9 @@ static int iPlotSetAxisYTipFormatAttrib(Ihandle* ih, const char* value)
   iupPlotAxis* axis = &ih->data->current_plot->mAxisY;
 
   if (value && value[0] != 0)
-    strcpy(axis->mTipFormatString, value);
+    iupStrCopyN(axis->mTipFormatString, sizeof(axis->mTipFormatString), value);
   else
-    strcpy(axis->mTipFormatString, IUP_PLOT_DEF_TIPFORMAT);
+    iupStrCopyN(axis->mTipFormatString, sizeof(axis->mTipFormatString), IUP_PLOT_DEF_TIPFORMAT);
 
   return 0;
 }
@@ -3264,7 +3264,7 @@ static int iPlotSetAxisXTipFormatPrecisionAttrib(Ihandle* ih, const char* value)
   if (iupStrToInt(value, &precision))
     snprintf(axis->mTipFormatString, sizeof(axis->mTipFormatString), "%%.%df", precision);
   else
-    strcpy(axis->mTipFormatString, IUP_PLOT_DEF_TIPFORMAT);
+    iupStrCopyN(axis->mTipFormatString, sizeof(axis->mTipFormatString), IUP_PLOT_DEF_TIPFORMAT);
   return 0;
 }
 
@@ -3276,7 +3276,7 @@ static int iPlotSetAxisYTipFormatPrecisionAttrib(Ihandle* ih, const char* value)
   if (iupStrToInt(value, &precision))
     snprintf(axis->mTipFormatString, sizeof(axis->mTipFormatString), "%%.%df", precision);
   else
-    strcpy(axis->mTipFormatString, IUP_PLOT_DEF_TIPFORMAT);
+    iupStrCopyN(axis->mTipFormatString, sizeof(axis->mTipFormatString), IUP_PLOT_DEF_TIPFORMAT);
   return 0;
 }
 

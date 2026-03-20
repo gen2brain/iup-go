@@ -294,7 +294,7 @@ static int qtValSetShowTicksAttrib(Ihandle* ih, const char* value)
   int show_ticks = 0;
 
   if (value)
-    show_ticks = atoi(value);
+    iupStrToInt(value, &show_ticks);
 
   if (show_ticks < 2) show_ticks = 0;
 

@@ -420,9 +420,9 @@ extern "C" int iupdrvOpen(int *argc, char ***argv)
       if (len > 0)
         exe_path[len] = '\0';
       else
-        strcpy(exe_path, "iup-qt");
+        iupStrCopyN(exe_path, sizeof(exe_path), "iup-qt");
 #else
-      strcpy(exe_path, "iup-qt");
+      iupStrCopyN(exe_path, sizeof(exe_path), "iup-qt");
 #endif
     }
 
