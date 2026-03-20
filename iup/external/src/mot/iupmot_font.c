@@ -53,7 +53,7 @@ static int motGetFontSize(const char* font_name)
   }
 
   *((char*)strchr(font_name, '-')) = 0;
-  return atoi(font_name);
+  { int val = 0; iupStrToInt(font_name, &val); return val; }
 }
 
 static XFontStruct* motLoadFont(const char* foundry, const char *typeface, int size, int bold, int italic, char *xlfd)
@@ -243,7 +243,7 @@ static XmFontList motFontCreateXftRenderTable(const char* xft_pattern, int is_un
         p++;
         if (strncmp(p, "size=", 5) == 0)
         {
-          size = atoi(p + 5);
+          size = 0; iupStrToInt(p + 5, &size);
           while (*p && *p != ':') p++;
         }
         else if (strncmp(p, "weight=bold", 11) == 0)

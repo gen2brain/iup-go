@@ -129,7 +129,7 @@ static void eflFontParse(const char* value, char* family, int* size, int* is_bol
       }
       else if (*p >= '0' && *p <= '9')
       {
-        *size = atoi(p);
+        *size = 0; iupStrToInt(p, size);
         while (*p >= '0' && *p <= '9') p++;
       }
       else

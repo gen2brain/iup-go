@@ -1086,7 +1086,7 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
     if (!vlist)
       return 0;
 
-    pos = atoi(value);
+    pos = 0; iupStrToInt(value, &pos);
     if (pos > 0)
     {
       Elm_Object_Item* item = elm_genlist_nth_item_get(vlist, pos - 1);
@@ -1104,7 +1104,7 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
   if (!list)
     return 0;
 
-  pos = atoi(value);
+  pos = 0; iupStrToInt(value, &pos);
   if (pos > 0)
   {
     Eo* item = efl_pack_content_get(list, pos - 1);
@@ -1221,7 +1221,7 @@ static int eflListSetTopItemAttrib(Ihandle* ih, const char* value)
   if (!list || !value || ih->data->is_dropdown)
     return 0;
 
-  pos = atoi(value);
+  pos = 0; iupStrToInt(value, &pos);
   if (pos > 0)
   {
     if (ih->data->is_virtual)

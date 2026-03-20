@@ -294,7 +294,7 @@ static int eflTextSetValueAttrib(Ihandle* ih, const char* value)
     }
     else if (value && value[0])
     {
-      int val = atoi(value);
+      int val = 0; iupStrToInt(value, &val);
       ih->data->disable_callbacks = 1;
       efl_ui_range_value_set(widget, (double)val);
       ih->data->disable_callbacks = 0;
@@ -357,7 +357,7 @@ static int eflTextSetSpinValueAttrib(Ihandle* ih, const char* value)
 
   if (value)
   {
-    int val = atoi(value);
+    int val = 0; iupStrToInt(value, &val);
     ih->data->disable_callbacks = 1;
     efl_ui_range_value_set(widget, (double)val);
     ih->data->disable_callbacks = 0;
@@ -397,7 +397,7 @@ static int eflTextSetSpinMinAttrib(Ihandle* ih, const char* value)
     double min, max;
     efl_ui_range_limits_get(widget, &min, &max);
     if (value)
-      min = (double)atoi(value);
+      { int tmp = 0; iupStrToInt(value, &tmp); min = (double)tmp; }
     efl_ui_range_limits_set(widget, min, max);
   }
 
@@ -413,7 +413,7 @@ static int eflTextSetSpinMaxAttrib(Ihandle* ih, const char* value)
     double min, max;
     efl_ui_range_limits_get(widget, &min, &max);
     if (value)
-      max = (double)atoi(value);
+      { int tmp = 0; iupStrToInt(value, &tmp); max = (double)tmp; }
     efl_ui_range_limits_set(widget, min, max);
   }
 
@@ -428,7 +428,7 @@ static int eflTextSetSpinIncAttrib(Ihandle* ih, const char* value)
   {
     if (value)
     {
-      int inc = atoi(value);
+      int inc = 0; iupStrToInt(value, &inc);
       efl_ui_range_step_set(widget, (double)inc);
     }
   }
@@ -1012,7 +1012,7 @@ static int eflTextSetNCAttrib(Ihandle* ih, const char* value)
   if (!value)
     ih->data->nc = 0;
   else
-    ih->data->nc = atoi(value);
+    { int tmp = 0; iupStrToInt(value, &tmp); ih->data->nc = tmp; }
   return 0;
 }
 
