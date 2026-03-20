@@ -2103,9 +2103,6 @@ static void gtkTreeCellTextEditingStarted(GtkCellRenderer *cell, GtkCellEditable
   cbShowRename = (IFni)IupGetCallback(ih, "SHOWRENAME_CB");
   if (cbShowRename && cbShowRename(ih, gtkTreeFindNodeId(ih, &iterItem))==IUP_IGNORE)
   {
-    /* TODO: none of these worked:
-    gtk_cell_renderer_stop_editing(cell, TRUE);
-    gtk_cell_editable_editing_done(editable);  */
     gtk_editable_set_editable(GTK_EDITABLE(editable), FALSE);
     return;
   }

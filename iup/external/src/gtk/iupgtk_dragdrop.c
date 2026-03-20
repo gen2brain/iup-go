@@ -411,10 +411,7 @@ void iupdrvRegisterDragDropAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "DROPFILESTARGET", NULL, gtkSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
 
-/* TODO:
-  Could not find a way to disable the internal DND support 
-  in IupText(GtkTextView or GtkEntry).
-  Mixing the generic support from here and the internal gives weird results.
-  So the application should use only the internal in this case.
-  The edit box in a IupList has the same problem.
-*/
+/* The internal DND support in IupText (GtkTextView or GtkEntry) cannot be disabled.
+   Mixing the generic DND support from here and the internal gives unexpected results.
+   The application should use only the internal DND in this case.
+   The edit box in a IupList has the same limitation. */
