@@ -931,24 +931,21 @@ static int qtTableMapMethod(Ihandle* ih)
     last_col_has_width = (width_str && iupStrToInt(width_str, &width) && width > 0);
   }
 
-  /* Stretch last section ONLY if STRETCHLAST=YES (default) AND last column doesn't have explicit width */
-  hHeader->setStretchLastSection((ih->data->stretch_last && !last_col_has_width) ? true : false);
-
-  /* Default to ResizeToContents - columns auto-size to their content */
-  /* This must be set AFTER setStretchLastSection so non-stretched last column uses ResizeToContents */
-  hHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
-
-  /* Set header row height to match IUP's natural size calculation */
+  /* Set header height to match Qt's natural sizing (includes bold font and style margins) */
   {
-    QFontMetrics fm(table->font());
-    int header_height = fm.height() + 8;
-    hHeader->setFixedHeight(header_height);
+    int header_height = hHeader->sizeHint().height();
+    if (header_height > 0)
+      hHeader->setFixedHeight(header_height);
   }
 
-  /* Apply any pre-set column widths (RASTERWIDTH/WIDTH set before mapping) */
-  /* This is especially important for virtual mode where empty cells would shrink columns */
+  /* Set per-column resize modes and widths.
+     Last column gets Stretch, columns with explicit width get Fixed, others get ResizeToContents. */
+  bool stretch_last = (ih->data->stretch_last && !last_col_has_width);
+  hHeader->setStretchLastSection(false);
+
   for (int col = 1; col <= num_col; col++)
   {
+    int qt_col = col - 1;
     char name[50];
     char* width_str = NULL;
     int width = 0;
@@ -965,20 +962,23 @@ static int qtTableMapMethod(Ihandle* ih)
 
     if (width_str && iupStrToInt(width_str, &width) && width > 0)
     {
-      int qt_col = col - 1;  /* Convert to 0-based */
-
-      /* Set the explicit width */
+      /* Column has explicit width */
       table->setColumnWidth(qt_col, width);
 
-      /* Set resize mode based on USERRESIZE setting */
       if (ih->data->user_resize)
-      {
         hHeader->setSectionResizeMode(qt_col, QHeaderView::Interactive);
-      }
       else
-      {
         hHeader->setSectionResizeMode(qt_col, QHeaderView::Fixed);
-      }
+    }
+    else if (col == num_col && stretch_last)
+    {
+      /* Last column without explicit width, Stretch to fill remaining space */
+      hHeader->setSectionResizeMode(qt_col, QHeaderView::Stretch);
+    }
+    else
+    {
+      /* Auto-size to content */
+      hHeader->setSectionResizeMode(qt_col, QHeaderView::ResizeToContents);
     }
   }
 
@@ -1002,9 +1002,10 @@ static int qtTableMapMethod(Ihandle* ih)
   QHeaderView* vHeader = table->verticalHeader();
   vHeader->setVisible(false);
 
-  /* Set default row height to match IUP's natural size calculation */
+  /* Set default row height using style-aware margin (DPI-scaled) */
   QFontMetrics fm(table->font());
-  int row_height = fm.height() + 8;
+  int margin = table->style()->pixelMetric(QStyle::PM_HeaderMargin, nullptr, table);
+  int row_height = fm.height() + 2 * margin;
   vHeader->setDefaultSectionSize(row_height);
 
   /* Clear any default selection - no cell should be selected on start */
@@ -1530,6 +1531,18 @@ static int qtTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   if (!table)
     return 0;
 
+  /* Check if last column should stretch */
+  bool last_col_has_width = false;
+  {
+    char name[50];
+    int w = 0;
+    snprintf(name, sizeof(name), "RASTERWIDTH%d", ih->data->num_col);
+    char* ws = iupAttribGet(ih, name);
+    if (!ws) { snprintf(name, sizeof(name), "WIDTH%d", ih->data->num_col); ws = iupAttribGet(ih, name); }
+    last_col_has_width = (ws && iupStrToInt(ws, &w) && w > 0);
+  }
+  bool stretch_last = (ih->data->stretch_last && !last_col_has_width);
+
   /* Update resize modes for all existing columns */
   QHeaderView* hHeader = table->horizontalHeader();
 
@@ -1537,20 +1550,19 @@ static int qtTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   {
     if (ih->data->user_resize)
     {
-      /* USERRESIZE=YES: Interactive mode for all columns */
       hHeader->setSectionResizeMode(col, QHeaderView::Interactive);
+    }
+    else if (col == ih->data->num_col - 1 && stretch_last)
+    {
+      hHeader->setSectionResizeMode(col, QHeaderView::Stretch);
+    }
+    else if (table->columnWidth(col) > 0)
+    {
+      hHeader->setSectionResizeMode(col, QHeaderView::Fixed);
     }
     else
     {
-      /* USERRESIZE=NO: Return to Fixed or ResizeToContents based on whether width was set */
-      if (table->columnWidth(col) > 0)
-      {
-        hHeader->setSectionResizeMode(col, QHeaderView::Fixed);
-      }
-      else
-      {
-        hHeader->setSectionResizeMode(col, QHeaderView::ResizeToContents);
-      }
+      hHeader->setSectionResizeMode(col, QHeaderView::ResizeToContents);
     }
   }
 
@@ -1581,18 +1593,19 @@ static void qtTableMeasureRowMetrics(Ihandle* ih)
   QTableWidget* temp_table = new QTableWidget(1, 1);
   temp_table->setItem(0, 0, new QTableWidgetItem("WWWWWWWWWW"));
 
-  /* Use same calculation as qtTableMapMethod */
+  /* Calculate row height using style-aware margin (DPI-scaled) */
   QFontMetrics fm(temp_table->font());
-  int calculated_height = fm.height() + 8;
+  int margin = temp_table->style()->pixelMetric(QStyle::PM_HeaderMargin, nullptr, temp_table);
+  int calculated_height = fm.height() + 2 * margin;
 
   /* Set row height the same way map does */
   temp_table->verticalHeader()->setDefaultSectionSize(calculated_height);
   qt_table_row_height = calculated_height;
 
-  /* Set header height the same way map does */
-  QHeaderView* hHeader = temp_table->horizontalHeader();
-  hHeader->setFixedHeight(calculated_height);
-  qt_table_header_height = calculated_height;
+  /* Measure header from Qt's natural sizing (includes bold font and style margins) */
+  qt_table_header_height = temp_table->horizontalHeader()->sizeHint().height();
+  if (qt_table_header_height <= 0)
+    qt_table_header_height = calculated_height;
 
   delete temp_table;
 
@@ -1623,7 +1636,7 @@ int iupdrvTableGetHeaderHeight(Ihandle* ih)
   if (table)
   {
     QHeaderView* header = table->horizontalHeader();
-    int height = header->height();
+    int height = header->sizeHint().height();
     if (height > 0)
       return height;
   }
