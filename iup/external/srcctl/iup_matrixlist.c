@@ -512,7 +512,7 @@ static int iMatrixListSetColumnOrderAttrib(Ihandle *ih, const char* value)
   if (ih->handle)
     return 0;
 
-  ret = iupStrToStrStr(value, value1, value2, ':');
+  ret = iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
   if (ret == 0)
     return 0;
 
@@ -543,9 +543,9 @@ static int iMatrixListSetColumnOrderAttrib(Ihandle *ih, const char* value)
       iMatrixListInitSize(ih, mtxList);
     return 0;
   }
-  
-  strcpy(value1, value2);
-  ret = iupStrToStrStr(value1, value2, value3, ':');
+
+  iupStrCopyN(value1, sizeof(value1), value2);
+  ret = iupStrToStrStr(value1, value2, sizeof(value2), value3, sizeof(value3), ':');
   if (ret == 0)
     return 0;
 

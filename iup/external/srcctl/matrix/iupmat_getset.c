@@ -742,7 +742,7 @@ void iupMatrixGetCellAlign(Ihandle* ih, int lin, int col, int *col_alignment, in
   if (align)
   {
     char col_align[30], lin_align[30];
-    if (iupStrToStrStr(align, lin_align, col_align, ':'))
+    if (iupStrToStrStr(align, lin_align, sizeof(lin_align), col_align, sizeof(col_align), ':'))
     {
       if (iupStrEqualNoCase(col_align, "ARIGHT"))
         *col_alignment = IMAT_ALIGN_END;
