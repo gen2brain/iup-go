@@ -1074,6 +1074,13 @@ static void iMatrixExDestroyMethod(Ihandle* ih)
 #include "iup_lng_english_matrix.h"
 #include "iup_lng_portuguese_matrix.h"
 #include "iup_lng_spanish_matrix.h"
+#include "iup_lng_czech_matrix.h"
+#include "iup_lng_russian_matrix.h"
+#include "iup_lng_german_matrix.h"
+#include "iup_lng_french_matrix.h"
+#include "iup_lng_chinese_matrix.h"
+#include "iup_lng_japanese_matrix.h"
+#include "iup_lng_italian_matrix.h"
 
 static void iMatrixExSetClassUpdate(Iclass* ic)
 {
@@ -1092,6 +1099,34 @@ static void iMatrixExSetClassUpdate(Iclass* ic)
   else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "SPANISH"))
   {
     lng = iup_load_lng_spanish_matrix();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "CZECH"))
+  {
+    lng = iup_load_lng_czech_matrix();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "RUSSIAN"))
+  {
+    lng = iup_load_lng_russian_matrix();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "GERMAN"))
+  {
+    lng = iup_load_lng_german_matrix();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "FRENCH"))
+  {
+    lng = iup_load_lng_french_matrix();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "CHINESE"))
+  {
+    lng = iup_load_lng_chinese_matrix();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "JAPANESE"))
+  {
+    lng = iup_load_lng_japanese_matrix();
+  }
+  else if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "ITALIAN"))
+  {
+    lng = iup_load_lng_italian_matrix();
   }
 
   if (lng)
