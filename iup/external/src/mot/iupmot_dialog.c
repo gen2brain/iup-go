@@ -363,11 +363,32 @@ static void motDialogChangeWMState(Ihandle* ih, Atom state1, Atom state2, int op
     }
     else
     {
-      /* TODO: This is not working. The property is not correctly removed. */
-      /* XDeleteProperty(iupmot_display, XtWindow(ih->handle), wmstate); */
+      Atom actual_type;
+      int actual_format;
+      unsigned long nitems, bytes_after;
+      unsigned char* prop_data = NULL;
 
-      /* Maybe the right way to do it is to retrieve all the atoms               */
-      /* and change again with all atoms except the one to remove                */
+      if (XGetWindowProperty(iupmot_display, XtWindow(ih->handle), wmstate,
+            0, 1024, False, XA_ATOM, &actual_type, &actual_format,
+            &nitems, &bytes_after, &prop_data) == Success && prop_data)
+      {
+        Atom* atoms = (Atom*)prop_data;
+        Atom filtered[64];
+        unsigned long i, count = 0;
+
+        for (i = 0; i < nitems && count < 64; i++)
+        {
+          if (atoms[i] != state1 && (!state2 || atoms[i] != state2))
+            filtered[count++] = atoms[i];
+        }
+
+        if (count > 0)
+          XChangeProperty(iupmot_display, XtWindow(ih->handle), wmstate, XA_ATOM, 32, PropModeReplace, (const unsigned char*)filtered, (int)count);
+        else
+          XDeleteProperty(iupmot_display, XtWindow(ih->handle), wmstate);
+
+        XFree(prop_data);
+      }
     }
   }
 }
@@ -430,12 +451,6 @@ int iupdrvDialogSetPlacement(Ihandle* ih)
       XIconifyWindow(iupmot_display, XtWindow(ih->handle), iupmot_screen);
     else
     {
-      /* TODO: This is not working, so force a minimize after visible.  */
-      /*XWMHints wm_hints;                                               */
-      /*wm_hints.flags = StateHint;                                      */
-      /*wm_hints.initial_state = IconicState;                            */
-      /*XSetWMHints(iupmot_display, XtWindow(ih->handle), &wm_hints);  */
-
       XtMapWidget(ih->handle);
       XIconifyWindow(iupmot_display, XtWindow(ih->handle), iupmot_screen);
     }
