@@ -63,7 +63,7 @@ static IwinFont* winFindFont(const char *font)
   /* Map standard names to native names */
   mapped_name = iupFontGetWinName(typeface);
   if (mapped_name)
-    strcpy(typeface, mapped_name);
+    iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
   /* get in pixels */
   if (size < 0)  
@@ -88,7 +88,7 @@ static IwinFont* winFindFont(const char *font)
   /* create room in the array */
   fonts = (IwinFont*)iupArrayInc(win_fonts);
 
-  strcpy(fonts[i].font, font);
+  iupStrCopyN(fonts[i].font, sizeof(fonts[i].font), font);
   fonts[i].hFont = hFont;
 
   {
@@ -143,9 +143,9 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
   else
   {
     if (iupwinIsVistaOrNew())
-      strcpy(str, "Segoe UI, 9");
+      iupStrCopyN(str, sizeof(str), "Segoe UI, 9");
     else
-      strcpy(str, "Tahoma, 10");
+      iupStrCopyN(str, sizeof(str), "Tahoma, 10");
   }
   return str;
 }

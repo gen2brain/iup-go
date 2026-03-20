@@ -5,7 +5,8 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h> 
+#include <stdlib.h>
+#include <string.h>
 
 /* This module should depend only on IUP core headers 
    and Windows system headers. */
@@ -89,21 +90,24 @@ IUP_SDK_API char *iupdrvGetSystemVersion(void)
 
   snprintf(str, 256, "%d.%d.%d", (int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion, (int)osvi.dwBuildNumber);
 
-  /* Display service pack (if any). */
-  if (osvi.szCSDVersion[0] != 0)
   {
-    char csd[128];
-    WideCharToMultiByte(CP_ACP, 0, osvi.szCSDVersion, -1, csd, sizeof(csd), NULL, NULL);
-    strcat(str, " ");
-    strcat(str, csd);
-  }
+    int pos = (int)strlen(str);
 
-  if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64)
-    strcat(str, " (IA64)");
-  else if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
-    strcat(str, " (x64)");
-  else
-    strcat(str, " (x86)");
+    /* Display service pack (if any). */
+    if (osvi.szCSDVersion[0] != 0)
+    {
+      char csd[128];
+      WideCharToMultiByte(CP_ACP, 0, osvi.szCSDVersion, -1, csd, sizeof(csd), NULL, NULL);
+      pos += snprintf(str + pos, 256 - pos, " %s", csd);
+    }
+
+    if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64)
+      snprintf(str + pos, 256 - pos, " (IA64)");
+    else if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
+      snprintf(str + pos, 256 - pos, " (x64)");
+    else
+      snprintf(str + pos, 256 - pos, " (x86)");
+  }
 
   return str;
 }
@@ -137,12 +141,11 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
     if (SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, filename) == S_OK)
     {
       /* Add app directory */
-      strcat(filename, "\\");
-      strcat(filename, app_name);
+      snprintf(filename + strlen(filename), 10240 - strlen(filename), "\\%s", app_name);
       iupwinMakeDirectory(filename);
 
       /* Add config filename */
-      strcat(filename, "\\config.cfg");
+      snprintf(filename + strlen(filename), 10240 - strlen(filename), "\\config.cfg");
       return 1;
     }
   }
@@ -152,11 +155,7 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
   homepath = getenv("HOMEPATH");
   if (homedrive && homepath)
   {
-    strcpy(filename, homedrive);
-    strcat(filename, homepath);
-    strcat(filename, "\\");
-    strcat(filename, app_name);
-    strcat(filename, ".cfg");
+    snprintf(filename, 10240, "%s%s\\%s.cfg", homedrive, homepath, app_name);
     return 1;
   }
 

@@ -208,7 +208,7 @@ static GtkTargetList* gtkCreateTargetList(const char* value)
   char valueTemp2[256];
   int info = 0;
 
-  strcpy(valueCopy, value);
+  iupStrCopyN(valueCopy, sizeof(valueCopy), value);
   while (iupStrToStrStr(valueCopy, valueTemp1, valueTemp2, ',') > 0)
   {
     gtk_target_list_add(targetlist, gdk_atom_intern(valueTemp1, FALSE), 0, info++);
@@ -216,7 +216,7 @@ static GtkTargetList* gtkCreateTargetList(const char* value)
     if (iupStrEqualNoCase(valueTemp2, valueTemp1))
       break;
 
-    strcpy(valueCopy, valueTemp2);
+    iupStrCopyN(valueCopy, sizeof(valueCopy), valueTemp2);
   }
 
   if (info == 0)

@@ -1052,7 +1052,7 @@ static int iDialogSetSizeAttrib(Ihandle* ih, const char* value)
   else
   {
     char *sh, sw[40];
-    strcpy(sw, value);
+    iupStrCopyN(sw, sizeof(sw), value);
     sh = strchr(sw, 'x');
     if (!sh)
       sh = "";

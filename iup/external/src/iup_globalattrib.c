@@ -40,8 +40,8 @@ static int iGlobalChangingDefaultColor(const char *name)
 {
   if (iupClassIsGlobalDefault(name, 1))
   {
-    char str[50] = "_IUP_USER_DEFAULT_";
-    strcat(str, name);
+    char str[50];
+    snprintf(str, sizeof(str), "_IUP_USER_DEFAULT_%s", name);
     iupTableSet(iglobal_table, str, (void*)"1", IUPTABLE_POINTER);  /* mark as changed by the User */
     return 1;
   }
@@ -50,8 +50,8 @@ static int iGlobalChangingDefaultColor(const char *name)
 
 int iupGlobalDefaultColorChanged(const char *name)
 {
-  char str[50] = "_IUP_USER_DEFAULT_";
-  strcat(str, name);
+  char str[50];
+  snprintf(str, sizeof(str), "_IUP_USER_DEFAULT_%s", name);
   return iupTableGet(iglobal_table, str) != NULL;
 }
 

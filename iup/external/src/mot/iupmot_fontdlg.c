@@ -65,7 +65,7 @@ static void motFontDlgInitFamilyList(Ihandle* ih)
     if (!iupStrEqual(family, prev))  /* avoid duplicates */
     {
       IupStoreAttributeId(list1, "", j, family);
-      strcpy(prev, family);
+      iupStrCopyN(prev, sizeof(prev), family);
       j++;
     }
   }

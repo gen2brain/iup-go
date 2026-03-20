@@ -299,8 +299,8 @@ static Ihandle* iParseControl(Iclass *ic)
 
           if (name)
           {
-            char led_name[200] = "_IUPLED_SAVED_";
-            strcat(led_name, name);
+            char led_name[200];
+            snprintf(led_name, sizeof(led_name), "_IUPLED_SAVED_%s", name);
             iupAttribSet(new_control, led_name, "1");
           }
         }

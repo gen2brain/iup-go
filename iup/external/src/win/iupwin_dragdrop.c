@@ -788,21 +788,21 @@ static void winDestroyDropTarget(IwinDropTarget* pDropTarget)
 static void winGetClipboardFormatName(CLIPFORMAT cf, TCHAR* name, int len)
 {
   if (cf == CF_TEXT)
-    lstrcpy(name, TEXT("TEXT"));
+    lstrcpyn(name, TEXT("TEXT"), len);
   else if (cf == CF_BITMAP)
-    lstrcpy(name, TEXT("BITMAP"));
+    lstrcpyn(name, TEXT("BITMAP"), len);
   else if (cf == CF_METAFILEPICT)
-    lstrcpy(name, TEXT("METAFILEPICT"));
+    lstrcpyn(name, TEXT("METAFILEPICT"), len);
   else if (cf == CF_TIFF)
-    lstrcpy(name, TEXT("TIFF"));
+    lstrcpyn(name, TEXT("TIFF"), len);
   else if (cf == CF_DIB)
-    lstrcpy(name, TEXT("DIB"));
+    lstrcpyn(name, TEXT("DIB"), len);
   else if (cf == CF_WAVE)
-    lstrcpy(name, TEXT("WAVE"));
+    lstrcpyn(name, TEXT("WAVE"), len);
   else if (cf == CF_UNICODETEXT)
-    lstrcpy(name, TEXT("UNICODETEXT"));
+    lstrcpyn(name, TEXT("UNICODETEXT"), len);
   else if (cf == CF_ENHMETAFILE)
-    lstrcpy(name, TEXT("ENHMETAFILE"));
+    lstrcpyn(name, TEXT("ENHMETAFILE"), len);
   else
     GetClipboardFormatName(cf, name, len);
 }
@@ -949,7 +949,7 @@ static Iarray* winCreateTypesList(const char* value)
   char valueTemp2[256];
   int i = 0;
 
-  strcpy(valueCopy, value);
+  iupStrCopyN(valueCopy, sizeof(valueCopy), value);
   while (iupStrToStrStr(valueCopy, valueTemp1, valueTemp2, ',') > 0)
   {
     newListData = (char**)iupArrayInc(newList);
@@ -959,7 +959,7 @@ static Iarray* winCreateTypesList(const char* value)
     if (iupStrEqualNoCase(valueTemp2, valueTemp1))
       break;
 
-    strcpy(valueCopy, valueTemp2);
+    iupStrCopyN(valueCopy, sizeof(valueCopy), valueTemp2);
   }
 
   if (i == 0)

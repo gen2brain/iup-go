@@ -555,15 +555,15 @@ static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
       else
       {
         if (sscanf(font, "%99s %d", font_family, &font_size) < 2)
-          strcpy(font_family, font);
+          iupStrCopyN(font_family, sizeof(font_family), font);
       }
 
       if (is_bold && is_italic)
-        strcpy(font_style_str, ":style=Bold Italic");
+        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Bold Italic");
       else if (is_bold)
-        strcpy(font_style_str, ":style=Bold");
+        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Bold");
       else if (is_italic)
-        strcpy(font_style_str, ":style=Italic");
+        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Italic");
 
       snprintf(style, sizeof(style), "DEFAULT='align=%s font=%s%s font_size=%d'",
                align_tag, font_family, font_style_str, font_size);
@@ -1491,15 +1491,15 @@ static Evas_Object* eflTableCreateCellWidget(Ihandle* ih, Evas_Object* parent, c
       {
         /* Simple format like "Monospace 10" */
         if (sscanf(font, "%99s %d", font_family, &font_size) < 2)
-          strcpy(font_family, font);
+          iupStrCopyN(font_family, sizeof(font_family), font);
       }
 
       if (is_bold && is_italic)
-        strcpy(font_style_str, ":style=Bold Italic");
+        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Bold Italic");
       else if (is_bold)
-        strcpy(font_style_str, ":style=Bold");
+        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Bold");
       else if (is_italic)
-        strcpy(font_style_str, ":style=Italic");
+        iupStrCopyN(font_style_str, sizeof(font_style_str), ":style=Italic");
 
       snprintf(style, sizeof(style), "DEFAULT='align=%s font=%s%s font_size=%d'",
                align_tag, font_family, font_style_str, font_size);

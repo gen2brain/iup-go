@@ -40,6 +40,7 @@ static void eflTipSetLabelText(Evas_Object* label, Ihandle* ih, const char* tip)
     char markup[1024];
     char open_tags[256] = "";
     char close_tags[256] = "";
+    int open_pos = 0, close_pos = 0;
     unsigned char r, g, b;
 
     if (tipfont && !iupStrEqualNoCase(tipfont, "SYSTEM"))
@@ -48,25 +49,23 @@ static void eflTipSetLabelText(Evas_Object* label, Ihandle* ih, const char* tip)
       int size, is_bold, is_italic, is_underline, is_strikeout;
       if (iupGetFontInfo(tipfont, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
       {
-        char font_tag[128];
         if (size < 0) size = -size;
-        sprintf(font_tag, "<font=%s><font_size=%d>", typeface, size);
-        strcat(open_tags, font_tag);
-        strcat(close_tags, "</font_size></font>");
+        open_pos += snprintf(open_tags + open_pos, sizeof(open_tags) - open_pos, "<font=%s><font_size=%d>", typeface, size);
+        close_pos += snprintf(close_tags + close_pos, sizeof(close_tags) - close_pos, "</font_size></font>");
       }
     }
 
     if (tipfgcolor && iupStrToRGB(tipfgcolor, &r, &g, &b))
     {
-      char color_tag[32];
-      sprintf(color_tag, "<color=#%02X%02X%02X>", r, g, b);
-      strcat(open_tags, color_tag);
-      strcat(close_tags, "</color>");
+      open_pos += snprintf(open_tags + open_pos, sizeof(open_tags) - open_pos, "<color=#%02X%02X%02X>", r, g, b);
+      close_pos += snprintf(close_tags + close_pos, sizeof(close_tags) - close_pos, "</color>");
     }
 
     (void)tipbgcolor;
+    (void)open_pos;
+    (void)close_pos;
 
-    sprintf(markup, "%s%s%s", open_tags, tip, close_tags);
+    snprintf(markup, sizeof(markup), "%s%s%s", open_tags, tip, close_tags);
     elm_object_text_set(label, markup);
   }
   else

@@ -18,6 +18,7 @@
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
 #include "iup_draw_svg.h"
+#include "iup_str.h"
 
 
 /* ---- String Buffer ---- */
@@ -556,11 +557,11 @@ static void iSvgParseFontAttrs(iSvgBuffer* buf, const char* font)
         word[wlen] = '\0';
 
         if (strcasecmp(word, "Bold") == 0)
-          strcpy(weight, "bold");
+          iupStrCopyN(weight, sizeof(weight), "bold");
         else if (strcasecmp(word, "Italic") == 0)
-          strcpy(style, "italic");
+          iupStrCopyN(style, sizeof(style), "italic");
         else if (strcasecmp(word, "Oblique") == 0)
-          strcpy(style, "oblique");
+          iupStrCopyN(style, sizeof(style), "oblique");
       }
     }
   }

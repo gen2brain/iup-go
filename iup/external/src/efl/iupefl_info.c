@@ -179,7 +179,7 @@ IUP_SDK_API char* iupdrvGetSystemName(void)
   char* str = iupStrGetMemory(50);
 
   uname(&un);
-  strcpy(str, un.sysname);
+  iupStrCopyN(str, 50, un.sysname);
 
   return str;
 }
@@ -190,7 +190,7 @@ IUP_SDK_API char* iupdrvGetSystemVersion(void)
   char* str = iupStrGetMemory(100);
 
   uname(&un);
-  strcpy(str, un.release);
+  iupStrCopyN(str, 100, un.release);
 
   return str;
 }
@@ -213,7 +213,7 @@ IUP_SDK_API char* iupdrvGetUserName(void)
     return NULL;
 
   str = iupStrGetMemory(100);
-  strcpy(str, pwd->pw_name);
+  iupStrCopyN(str, 100, pwd->pw_name);
 
   return str;
 }
@@ -228,15 +228,14 @@ IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, in
   if (!home)
     return 0;
 
-  strcpy(filename, home);
-  strcat(filename, "/.config/");
+  snprintf(filename, PATH_MAX, "%s/.config/", home);
 
   mkdir(filename, S_IRWXU);
 
   if (app_name && app_name[0])
   {
-    strcat(filename, app_name);
-    strcat(filename, "/");
+    int len = (int)strlen(filename);
+    snprintf(filename + len, PATH_MAX - len, "%s/", app_name);
     mkdir(filename, S_IRWXU);
   }
 
@@ -254,7 +253,7 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
   if (locale && locale[0])
   {
     char* str = iupStrGetMemory(100);
-    strcpy(str, locale);
+    iupStrCopyN(str, 100, locale);
     return str;
   }
 

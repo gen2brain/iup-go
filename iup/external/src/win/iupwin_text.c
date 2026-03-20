@@ -480,7 +480,7 @@ static void winTextUpdateFontFormat(CHARFORMAT2* charformat, const char* value)
   /* Map standard names to native names */
   mapped_name = iupFontGetWinName(typeface);
   if (mapped_name)
-    strcpy(typeface, mapped_name);
+    iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
   charformat->dwMask |= CFM_FACE;
   iupwinStrCopy(charformat->szFaceName, typeface, sizeof(charformat->szFaceName));

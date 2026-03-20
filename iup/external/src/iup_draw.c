@@ -1570,8 +1570,7 @@ IUP_SDK_API void iupFlatDrawDrawCircle(IdrawCanvas* dc, int xc, int yc, int radi
 static char* iFlatDrawGetImageName(Ihandle* ih, const char* baseattrib, const char* state)
 {
   char attrib[1024];
-  strcpy(attrib, baseattrib);
-  strcat(attrib, state);
+  snprintf(attrib, sizeof(attrib), "%s%s", baseattrib, state);
   return iupAttribGetStr(ih, attrib);
 }
 
@@ -1612,8 +1611,7 @@ IUP_SDK_API const char* iupFlatGetImageName(Ihandle* ih, const char* baseattrib,
 static char* iFlatDrawGetImageNameId(Ihandle* ih, const char* baseattrib, const char* state, int id)
 {
   char attrib[1024];
-  strcpy(attrib, baseattrib);
-  strcat(attrib, state);
+  snprintf(attrib, sizeof(attrib), "%s%s", baseattrib, state);
   return iupAttribGetId(ih, attrib, id);
 }
 
