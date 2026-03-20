@@ -12,6 +12,7 @@
 
 #include <Xm/Xm.h>
 #include <Xm/ScrollBar.h>
+#include <Xm/ScrolledW.h>
 #include <X11/cursorfont.h>
 
 #include "iup.h"
@@ -745,4 +746,41 @@ int iupmotIsSystemDarkMode(void)
 
   /* Dark theme has lower background luminance than foreground */
   return (bg_lum < fg_lum) ? 1 : 0;
+}
+
+void iupmotScrolledWindowWheelEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+{
+  XButtonEvent* but_evt = (XButtonEvent*)evt;
+  Widget sb_win, sb;
+  int value, slider_size, maximum, increment;
+
+  if (evt->type != ButtonPress)
+    return;
+  if (but_evt->button != Button4 && but_evt->button != Button5)
+    return;
+
+  sb_win = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (!sb_win)
+    return;
+
+  XtVaGetValues(sb_win, XmNverticalScrollBar, &sb, NULL);
+  if (!sb)
+    return;
+
+  XtVaGetValues(sb, XmNvalue, &value, XmNsliderSize, &slider_size, XmNmaximum, &maximum, XmNincrement, &increment, NULL);
+
+  if (but_evt->button == Button4)
+    value -= increment * 3;
+  else
+    value += increment * 3;
+
+  if (value < 0)
+    value = 0;
+  if (value > maximum - slider_size)
+    value = maximum - slider_size;
+
+  XmScrollBarSetValues(sb, value, slider_size, increment, increment * 3, True);
+
+  (void)w;
+  (void)cont;
 }

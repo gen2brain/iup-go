@@ -1606,6 +1606,7 @@ static int motListMapMethod(Ihandle* ih)
     XtAddEventHandler(ih->handle, KeyPressMask, False, (XtEventHandler)iupmotKeyPressEvent, (XtPointer)ih);
     XtAddEventHandler(ih->handle, PointerMotionMask, False, (XtEventHandler)iupmotPointerMotionEvent, (XtPointer)ih);
     XtAddEventHandler(ih->handle, ButtonPressMask|ButtonReleaseMask, False, (XtEventHandler)iupmotButtonPressReleaseEvent, (XtPointer)ih);
+    XtAddEventHandler(ih->handle, ButtonPressMask, False, (XtEventHandler)iupmotScrolledWindowWheelEvent, (XtPointer)ih);
 
     XtAddCallback(ih->handle, XmNhelpCallback, (XtCallbackProc)iupmotHelpCallback, (XtPointer)ih);
     XtAddCallback (ih->handle, XmNbrowseSelectionCallback, (XtCallbackProc)motListBrowseSelectionCallback, (XtPointer)ih);
@@ -1639,6 +1640,9 @@ static int motListMapMethod(Ihandle* ih)
   }
   else
     iupListSetInitialItems(ih);
+
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
   return IUP_NOERROR;
 }

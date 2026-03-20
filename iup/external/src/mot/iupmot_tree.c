@@ -222,13 +222,10 @@ static Widget motTreeCopyMoveNode(Ihandle* ih, Widget wItemSrc, Widget wItemDst,
 
     /* restore count, because we remove src */
     ih->data->node_count = old_count;
-
-    /* compensate position for a move */
-    if (id_new > id_src)
-      id_new -= count;
   }
 
-  motTreeRebuildNodeCache(ih, id_new, wItemNew);
+  /* Rebuild entire node_handle cache from root */
+  motTreeRebuildNodeCache(ih, 0, ih->data->node_cache[0].node_handle);
 
   return wItemNew;
 }
@@ -2770,7 +2767,9 @@ void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle *itemSrc
 
   count = dst->data->node_count - old_count;
   iupTreeCopyMoveCache(dst, id_dst, id_new, count, 1);  /* update only the dst control cache */
-  motTreeRebuildNodeCache(dst, id_new, wItemNew);
+
+  /* Rebuild entire node_handle cache from root */
+  motTreeRebuildNodeCache(dst, 0, dst->data->node_cache[0].node_handle);
 }
 
 /*******************************************************************************************/
@@ -2880,6 +2879,12 @@ static int motTreeMapMethod(Ihandle* ih)
   XtAddEventHandler(ih->handle, KeyPressMask,    False, (XtEventHandler)motTreeKeyPressEvent,    (XtPointer)ih);
   XtAddEventHandler(ih->handle, KeyReleaseMask,  False, (XtEventHandler)motTreeKeyReleaseEvent,  (XtPointer)ih);
   XtAddEventHandler(ih->handle, ButtonPressMask|ButtonReleaseMask, False, (XtEventHandler)motTreeButtonEvent, (XtPointer)ih);
+  {
+    Widget sb_clipwin = NULL;
+    XtVaGetValues(parent, XmNclipWindow, &sb_clipwin, NULL);
+    if (sb_clipwin)
+      XtAddEventHandler(sb_clipwin, ButtonPressMask, False, (XtEventHandler)iupmotScrolledWindowWheelEvent, (XtPointer)ih);
+  }
   XtAddEventHandler(ih->handle, PointerMotionMask, False, (XtEventHandler)iupmotPointerMotionEvent, (XtPointer)ih);
 
   /* Callbacks */
@@ -2951,6 +2956,9 @@ static int motTreeMapMethod(Ihandle* ih)
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)motTreeConvertXYToPos);
 
   iupdrvTreeUpdateMarkMode(ih);
+
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
   return IUP_NOERROR;
 }

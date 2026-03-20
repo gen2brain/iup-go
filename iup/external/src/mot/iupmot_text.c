@@ -1209,6 +1209,7 @@ static int motTextMapMethod(Ihandle* ih)
   XtAddEventHandler(ih->handle, KeyPressMask, False, (XtEventHandler)motTextKeyPressEvent, (XtPointer)ih);
   XtAddEventHandler(ih->handle, PointerMotionMask, False, (XtEventHandler)iupmotPointerMotionEvent, (XtPointer)ih);
   XtAddEventHandler(ih->handle, ButtonPressMask|ButtonReleaseMask, False, (XtEventHandler)iupmotButtonPressReleaseEvent, (XtPointer)ih);
+  XtAddEventHandler(ih->handle, ButtonPressMask, False, (XtEventHandler)iupmotScrolledWindowWheelEvent, (XtPointer)ih);
 
   XtAddCallback(ih->handle, XmNmodifyVerifyCallback, (XtCallbackProc)motTextModifyVerifyCallback, (XtPointer)ih);
   XtAddCallback(ih->handle, XmNmotionVerifyCallback, (XtCallbackProc)motTextMotionVerifyCallback, (XtPointer)ih);
@@ -1221,6 +1222,9 @@ static int motTextMapMethod(Ihandle* ih)
     XtRealizeWidget(ih->handle);
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)motTextConvertXYToPos);
+
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
   return IUP_NOERROR;
 }
