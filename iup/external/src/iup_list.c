@@ -58,7 +58,9 @@ void iupListUpdateOldValue(Ihandle* ih, int pos, int removed)
     char* old_value = iupAttribGet(ih, "_IUPLIST_OLDVALUE");
     if (old_value)
     {
-      int old_pos = atoi(old_value)-1; /* was in IUP reference, starting at 1 */
+      int old_pos = 0;
+      iupStrToInt(old_value, &old_pos);
+      old_pos -= 1; /* was in IUP reference, starting at 1 */
       if (ih->data->is_dropdown || !ih->data->is_multiple)
       {
         if (old_pos >= pos)
@@ -87,7 +89,8 @@ void iupListSingleCallActionCb(Ihandle* ih, IFnsii cb, int pos)
   char* old_str = iupAttribGet(ih, "_IUPLIST_OLDVALUE");
   if (old_str)
   {
-    int oldpos = atoi(old_str);
+    int oldpos = 0;
+    iupStrToInt(old_str, &oldpos);
     if (oldpos != pos)
     {
       iListCallActionCallback(ih, cb, oldpos, 0);

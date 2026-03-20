@@ -169,7 +169,7 @@ static void eflFontDlgSizeSelectedCallback(void* data, const Efl_Event* ev)
   if (!text)
     return;
 
-  dlg->selected_size = atoi(text);
+  dlg->selected_size = 0; iupStrToInt(text, &dlg->selected_size);
   if (dlg->selected_size <= 0)
     dlg->selected_size = 12;
 

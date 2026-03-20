@@ -89,7 +89,7 @@ static int winValSetShowTicksAttrib(Ihandle* ih, const char* value)
   if (!ih->data->show_ticks)  /* can only set if already not zero */
     return 0;
 
-  show_ticks = atoi(value);
+  show_ticks = 0; iupStrToInt(value, &show_ticks);
   if (show_ticks<2) show_ticks=2;
   ih->data->show_ticks = show_ticks;
 

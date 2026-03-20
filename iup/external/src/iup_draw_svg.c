@@ -576,7 +576,7 @@ static void iSvgParseFontAttrs(iSvgBuffer* buf, const char* font)
         flen = (int)sizeof(family) - 1;
       strncpy(family, font, flen);
       family[flen] = '\0';
-      size = atoi(last_space + 1);
+      iupStrToInt(last_space + 1, &size);
     }
     else
     {

@@ -545,7 +545,7 @@ static void eflTableUpdateCellLabel(Ihandle* ih, int lin, int col)
           }
           else if (*p >= '0' && *p <= '9')
           {
-            font_size = atoi(p);
+            font_size = 0; iupStrToInt(p, &font_size);
             while (*p >= '0' && *p <= '9') p++;
           }
           else
@@ -1480,7 +1480,7 @@ static Evas_Object* eflTableCreateCellWidget(Ihandle* ih, Evas_Object* parent, c
           }
           else if (*p >= '0' && *p <= '9')
           {
-            font_size = atoi(p);
+            font_size = 0; iupStrToInt(p, &font_size);
             while (*p >= '0' && *p <= '9') p++;
           }
           else

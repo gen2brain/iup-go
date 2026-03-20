@@ -46,7 +46,7 @@ IUP_SDK_API char *iupdrvGetSystemVersion(void)
   uname(&un);
   if (iupStrEqualNoCase(un.sysname, "Darwin"))
   {
-    int release = atoi(un.release);
+    int release = 0; iupStrToInt(un.release, &release);
     return iupStrReturnInt(release-4);
   }
   else

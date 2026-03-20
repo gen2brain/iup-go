@@ -205,7 +205,7 @@ static void winTextParseParagraphFormat(Ihandle* formattag, PARAFORMAT2 *parafor
     {
       str = iupStrDupUntil((const char**)&format, ' ');
       if (!str) break;
-      pos = atoi(str)*convert2twips;
+      pos = 0; iupStrToInt(str, &pos); pos *= convert2twips;
       free(str);
 
       str = iupStrDupUntil((const char**)&format, ' ');

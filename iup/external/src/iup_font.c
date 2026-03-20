@@ -492,7 +492,8 @@ IUP_SDK_API int iupFontParsePango(const char *font, char *typeface, int *size, i
   /* Look for a size at the end of the string */
   if (wordlen != 0)
   {
-    int new_size = atoi(p);
+    int new_size = 0;
+    iupStrToInt(p, &new_size);
     if (new_size != 0)
     {
       *size = new_size;
@@ -680,7 +681,7 @@ IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int typeface_siz
   /* pxlsz */
   token = strtok(NULL, "-");
   if (!token) return 0;
-  *size = -atoi(token); /* size in pixels */
+  { int tmp = 0; iupStrToInt(token, &tmp); *size = -tmp; } /* size in pixels */
 
   if (*size < 0)
     return 1;
@@ -688,7 +689,7 @@ IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int typeface_siz
   /* ptSz */
   token = strtok(NULL, "-");
   if (!token) return 0;
-  *size = atoi(token)/10; /* size in deci-points */
+  { int tmp = 0; iupStrToInt(token, &tmp); *size = tmp/10; } /* size in deci-points */
 
   if (*size > 0)
     return 1;

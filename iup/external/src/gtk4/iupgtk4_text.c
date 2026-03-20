@@ -1873,7 +1873,7 @@ static void gtk4TextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
     {
       str = iupStrDupUntil((const char**)&format, ' ');
       if (!str) break;
-      pos = atoi(str);
+      pos = 0; iupStrToInt(str, &pos);
       free(str);
 
       str = iupStrDupUntil((const char**)&format, ' ');
