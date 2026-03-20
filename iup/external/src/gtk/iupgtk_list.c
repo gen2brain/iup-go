@@ -2134,7 +2134,6 @@ static int gtkListMapMethod(Ihandle* ih)
       }
       else
       {
-        /* TODO: dummy code, actually it is NOT working */
         g_signal_connect(G_OBJECT(ih->handle), "focus-in-event", G_CALLBACK(iupgtkFocusInOutEvent), ih);
         g_signal_connect(G_OBJECT(ih->handle), "focus-out-event", G_CALLBACK(iupgtkFocusInOutEvent), ih);
         g_signal_connect(G_OBJECT(ih->handle), "enter-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);
