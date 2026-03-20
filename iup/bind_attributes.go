@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"reflect"
 	"strings"
+	"sync"
 	"unsafe"
 )
 
@@ -15,10 +16,15 @@ import (
 */
 import "C"
 
+var attrMu sync.RWMutex
+
 // SetAttribute sets an interface element attribute.
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetAttribute(ih Ihandle, name string, value interface{}) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -56,6 +62,9 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributes.html
 func SetAttributes(ih Ihandle, str string) Ihandle {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cStr := C.CString(str)
 	defer C.free(unsafe.Pointer(cStr))
 
@@ -67,6 +76,9 @@ func SetAttributes(ih Ihandle, str string) Ihandle {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupresetattribute.html
 func ResetAttribute(ih Ihandle, name string) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -107,6 +119,9 @@ func SetAttrs(ih Ihandle, args ...string) Ihandle {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributehandle.html
 func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -117,6 +132,9 @@ func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetAttribute(ih Ihandle, name string) string {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -127,6 +145,9 @@ func GetAttribute(ih Ihandle, name string) string {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetallattributes.html
 func GetAllAttributes(ih Ihandle) (ret []string) {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	n := int(C.IupGetAllAttributes(ih.ptr(), nil, 0))
 	if n > 0 {
 		ret = make([]string, n)
@@ -151,6 +172,9 @@ func GetAllAttributes(ih Ihandle) (ret []string) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributes.html
 func GetAttributes(ih Ihandle) string {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	return C.GoString(C.IupGetAttributes(ih.ptr()))
 }
 
@@ -158,6 +182,9 @@ func GetAttributes(ih Ihandle) string {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributehandle.html
 func GetAttributeHandle(ih Ihandle, name string) Ihandle {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -168,6 +195,9 @@ func GetAttributeHandle(ih Ihandle, name string) Ihandle {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributehandle.html
 func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -178,6 +208,9 @@ func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributehandle.html
 func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -188,6 +221,9 @@ func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributehandle.html
 func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandle) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -198,6 +234,9 @@ func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandl
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributehandle.html
 func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -208,6 +247,9 @@ func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -239,6 +281,9 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetAttributeId(ih Ihandle, name string, id int) string {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -249,6 +294,9 @@ func GetAttributeId(ih Ihandle, name string, id int) string {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -280,6 +328,9 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -290,6 +341,9 @@ func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -301,6 +355,9 @@ func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetglobal.html
 func SetGlobal(name string, value interface{}) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -325,6 +382,9 @@ func SetGlobal(name string, value interface{}) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
 func GetGlobal(name string) string {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -335,6 +395,9 @@ func GetGlobal(name string) string {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
 func GetGlobalPtr(name string) uintptr {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -345,6 +408,9 @@ func GetGlobalPtr(name string) uintptr {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
 func GetGlobalIh(name string) Ihandle {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -372,6 +438,9 @@ func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetRGB(ih Ihandle, name string, r, g, b uint8) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -382,6 +451,9 @@ func SetRGB(ih Ihandle, name string, r, g, b uint8) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -392,6 +464,9 @@ func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
 func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
+	attrMu.Lock()
+	defer attrMu.Unlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -402,6 +477,9 @@ func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetInt(ih Ihandle, name string) int {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -412,6 +490,9 @@ func GetInt(ih Ihandle, name string) int {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -432,6 +513,9 @@ func GetBool(ih Ihandle, name string) bool {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetFloat(ih Ihandle, name string) float32 {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -442,6 +526,9 @@ func GetFloat(ih Ihandle, name string) float32 {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetDouble(ih Ihandle, name string) float64 {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -452,6 +539,9 @@ func GetDouble(ih Ihandle, name string) float64 {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -463,6 +553,9 @@ func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -474,6 +567,9 @@ func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetIntId(ih Ihandle, name string, id int) int {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -484,6 +580,9 @@ func GetIntId(ih Ihandle, name string, id int) int {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetFloatId(ih Ihandle, name string, id int) float32 {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -494,6 +593,9 @@ func GetFloatId(ih Ihandle, name string, id int) float32 {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetDoubleId(ih Ihandle, name string, id int) float64 {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -504,6 +606,9 @@ func GetDoubleId(ih Ihandle, name string, id int) float64 {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -524,6 +629,9 @@ func GetBoolId(ih Ihandle, name string, id int) bool {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetIntId2(ih Ihandle, name string, lin, col int) int {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -534,6 +642,9 @@ func GetIntId2(ih Ihandle, name string, lin, col int) int {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -544,6 +655,9 @@ func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -554,6 +668,9 @@ func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
 //
 // https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
 func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
+	attrMu.RLock()
+	defer attrMu.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
