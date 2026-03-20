@@ -504,7 +504,7 @@ static int cocoaLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   if (ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
   {
     char value1[30], value2[30];
-    iupStrToStrStr(value, value1, value2, ':');
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
     if (ih->data->type == IUP_LABEL_TEXT)
     {
@@ -1013,7 +1013,7 @@ static int cocoaLabelMapMethod(Ihandle* ih)
       if (alignment)
       {
         char value1[30], value2[30];
-        iupStrToStrStr(alignment, value1, value2, ':');
+        iupStrToStrStr(alignment, value1, sizeof(value1), value2, sizeof(value2), ':');
 
         if (iupStrEqualNoCase(value1, "ARIGHT"))
           [the_actual_label setAlignment:NSTextAlignmentRight];

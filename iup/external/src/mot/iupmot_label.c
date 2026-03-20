@@ -95,7 +95,7 @@ static int motLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
     unsigned char align;
     char value1[30], value2[30];
 
-    iupStrToStrStr(value, value1, value2, ':');   /* value2 is ignored, NOT supported in Motif */
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');   /* value2 is ignored, NOT supported in Motif */
 
     if (iupStrEqualNoCase(value1, "ARIGHT"))
       align = XmALIGNMENT_END;

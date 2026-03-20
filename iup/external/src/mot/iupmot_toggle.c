@@ -323,7 +323,7 @@ static int motToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_TOGGLE_TEXT)
     return 0;
 
-  iupStrToStrStr(value, value1, value2, ':');   /* value2 is ignored, NOT supported in Motif */
+  iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');   /* value2 is ignored, NOT supported in Motif */
 
   if (iupStrEqualNoCase(value1, "ARIGHT"))
     align = XmALIGNMENT_END;

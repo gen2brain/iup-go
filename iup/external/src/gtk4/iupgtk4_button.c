@@ -312,7 +312,7 @@ static int gtk4ButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
   if (iupAttribGet(ih, "_IUPGTK4_EVENTBOX"))
     return 0;
 
-  iupStrToStrStr(value, value1, value2, ':');
+  iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
   if (iupStrEqualNoCase(value1, "ARIGHT"))
   {

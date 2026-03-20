@@ -456,7 +456,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   if (align_value)
   {
     char value1[30], value2[30];
-    iupStrToStrStr(align_value, value1, value2, ':');
+    iupStrToStrStr(align_value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
     NSSize menu_size = [menu size];
 

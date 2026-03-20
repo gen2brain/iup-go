@@ -197,7 +197,7 @@ static int winLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   {
     char value1[30], value2[30];
 
-    iupStrToStrStr(value, value1, value2, ':');
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
     if (iupStrEqualNoCase(value1, "ARIGHT"))
       ih->data->horiz_alignment = IUP_ALIGN_ARIGHT;

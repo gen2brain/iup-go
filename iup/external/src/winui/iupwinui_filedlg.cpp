@@ -520,7 +520,7 @@ static void winuiFileDlgSetFileAndDir(IFileDialog* pfd, Ihandle* ih)
     char name[4096] = "";
     char dir[4096] = "";
 
-    iupStrFileNameSplit(value, dir, name);
+    iupStrFileNameSplit(value, dir, sizeof(dir), name, sizeof(name));
 
     if (name[0] != 0)
       pfd->SetFileName(iupwinuiStringToWString(name).c_str());

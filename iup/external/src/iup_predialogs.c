@@ -320,7 +320,7 @@ IUP_API int IupGetFile(char* filename)
 
   dlg = IupFileDlg();
 
-  iupStrFileNameSplit(filename, dir, filter);
+  iupStrFileNameSplit(filename, dir, sizeof(dir), filter, sizeof(filter));
 
   IupSetAttribute(dlg, "FILTER", filter);
   IupSetAttribute(dlg, "DIRECTORY", dir);
@@ -338,7 +338,7 @@ IUP_API int IupGetFile(char* filename)
     if (value) 
     {
       iupStrCopyN(filename, 4096, value);
-      iupStrFileNameSplit(filename, dir, NULL);
+      iupStrFileNameSplit(filename, dir, sizeof(dir), NULL, 0);
     }
   }
 

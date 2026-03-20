@@ -426,7 +426,7 @@ static int gtk4ToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
     float xalign, yalign;
     char value1[30], value2[30];
 
-    iupStrToStrStr(value, value1, value2, ':');
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
     if (iupStrEqualNoCase(value1, "ARIGHT"))
       xalign = 1.0f;

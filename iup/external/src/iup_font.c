@@ -142,7 +142,7 @@ IUP_SDK_API int iupGetFontInfo(const char* font, char *typeface, int *size, int 
   /* parse the old Windows format first */
   if (!iupFontParseWin(font, typeface, size, is_bold, is_italic, is_underline, is_strikeout))
   {
-    if (!iupFontParseX(font, typeface, size, is_bold, is_italic, is_underline, is_strikeout))
+    if (!iupFontParseX(font, typeface, 1024, size, is_bold, is_italic, is_underline, is_strikeout))
     {
       if (!iupFontParsePango(font, typeface, size, is_bold, is_italic, is_underline, is_strikeout))
         return 0;
@@ -631,7 +631,7 @@ IUP_SDK_API int iupFontParseWin(const char *value, char *typeface, int *size, in
 }
 
 /* this code is shared between CD and IUP, must be updated on both libraries */
-IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int *size, int *bold, int *italic, int *underline, int *strikeout)
+IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int typeface_size, int *size, int *bold, int *italic, int *underline, int *strikeout)
 {
   char style1[30], style2[30];
   char* token;
@@ -654,7 +654,7 @@ IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int *size, int *
   /* fmly */
   token = strtok(NULL, "-");
   if (!token) return 0;
-  strcpy(typeface, token);
+  iupStrCopyN(typeface, typeface_size, token);
 
   /* wght */
   token = strtok(NULL, "-");

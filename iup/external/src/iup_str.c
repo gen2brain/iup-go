@@ -830,7 +830,7 @@ IUP_SDK_API int iupStrToDoubleDouble(const char *str, double *f1, double *f2, ch
   }
 }
 
-IUP_SDK_API int iupStrToStrStr(const char *str, char *str1, char *str2, char sep)
+IUP_SDK_API int iupStrToStrStr(const char *str, char *str1, int str1_size, char *str2, int str2_size, char sep)
 {
   str1[0] = 0;
   str2[0] = 0;
@@ -841,28 +841,28 @@ IUP_SDK_API int iupStrToStrStr(const char *str, char *str1, char *str2, char sep
   if (iup_tolower(*str) == sep) /* starts with separator, no first value */
   {
     str++; /* skip separator */
-    strcpy(str2, str);
+    iupStrCopyN(str2, str2_size, str);
     return 1;
   }
-  else 
+  else
   {
     char* p_str = iStrDupUntilNoCase((char**)&str, sep);
-    
+
     if (!p_str)   /* no separator means no second value */
-    {        
-      strcpy(str1, str);
+    {
+      iupStrCopyN(str1, str1_size, str);
       return 1;
     }
     else if (*str==0)    /* separator exists, but no second value */
-    {        
-      strcpy(str1, p_str);
+    {
+      iupStrCopyN(str1, str1_size, p_str);
       free(p_str);
       return 1;
     }
     else
     {
-      strcpy(str1, p_str);
-      strcpy(str2, str);
+      iupStrCopyN(str1, str1_size, p_str);
+      iupStrCopyN(str2, str2_size, str);
       free(p_str);
       return 2;
     }
@@ -989,7 +989,7 @@ IUP_SDK_API char* iupStrFileMakeFileName(const char* path, const char* title)
   }
 }
 
-IUP_SDK_API void iupStrFileNameSplit(const char* filename, char *path, char *title)
+IUP_SDK_API void iupStrFileNameSplit(const char* filename, char *path, int path_size, char *title, int title_size)
 {
   int i, n;
 
@@ -1000,18 +1000,19 @@ IUP_SDK_API void iupStrFileNameSplit(const char* filename, char *path, char *tit
   n = (int)strlen(filename);
   for (i = n - 1; i >= 0; i--)
   {
-    if (filename[i] == '\\' || filename[i] == '/') 
+    if (filename[i] == '\\' || filename[i] == '/')
     {
       if (path)
       {
-        strncpy(path, filename, i+1);
-        path[i+1] = 0;
+        int len = i + 1;
+        if (len >= path_size) len = path_size - 1;
+        memcpy(path, filename, len);
+        path[len] = 0;
       }
 
       if (title)
       {
-        strcpy(title, filename+i+1);
-        title[n-i] = 0;
+        iupStrCopyN(title, title_size, filename + i + 1);
       }
 
       return;

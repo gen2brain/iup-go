@@ -271,7 +271,7 @@ static int qtLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
       return 0;
 
     char value1[30], value2[30];
-    iupStrToStrStr(value, value1, value2, ':');
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
     /* Horizontal alignment */
     Qt::Alignment align = Qt::AlignLeft | Qt::AlignVCenter;
@@ -316,7 +316,7 @@ static int qtLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   {
     /* Store alignment for image labels */
     char value1[30], value2[30];
-    iupStrToStrStr(value, value1, value2, ':');
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
     if (iupStrEqualNoCase(value1, "ARIGHT"))
       ih->data->horiz_alignment = IUP_ALIGN_ARIGHT;

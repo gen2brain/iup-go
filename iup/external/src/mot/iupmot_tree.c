@@ -1321,7 +1321,7 @@ static int motTreeSetMarkAttrib(Ihandle* ih, const char* value)
   {
     Widget wItem1, wItem2;
     char str1[50], str2[50];
-    if (iupStrToStrStr(value, str1, str2, '-')!=2)
+    if (iupStrToStrStr(value, str1, sizeof(str1), str2, sizeof(str2), '-')!=2)
       return 0;
 
     wItem1 = iupTreeGetNodeFromString(ih, str1);

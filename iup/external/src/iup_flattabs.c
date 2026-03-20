@@ -486,7 +486,7 @@ static int iFlatTabsGetExtraActive(Ihandle* ih, int id)
 static void iFlatTabsGetAlignment(const char* alignment, int *horiz_alignment, int *vert_alignment)
 {
   char value1[30], value2[30];
-  iupStrToStrStr(alignment, value1, value2, ':');
+  iupStrToStrStr(alignment, value1, sizeof(value1), value2, sizeof(value2), ':');
   *horiz_alignment = iupFlatGetHorizontalAlignment(value1);
   *vert_alignment = iupFlatGetVerticalAlignment(value2);
 }

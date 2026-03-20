@@ -291,7 +291,7 @@ IUP_SDK_API int iupStrToDoubleDouble(const char *str, double *f1, double *f2, ch
  * Returns the number of converted values.
  * Values not extracted are set to empty strings.
  * \ingroup str */
-IUP_SDK_API int iupStrToStrStr(const char *str, char *str1, char *str2, char sep);
+IUP_SDK_API int iupStrToStrStr(const char *str, char *str1, int str1_size, char *str2, int str2_size, char sep);
 
 
 
@@ -327,7 +327,7 @@ IUP_SDK_API char* iupStrFileMakeURL(const char* filename);
 
 /** Split the filename in path and title using pre-allocated strings.
  * \ingroup str */
-IUP_SDK_API void iupStrFileNameSplit(const char* filename, char* path, char* title);
+IUP_SDK_API void iupStrFileNameSplit(const char* filename, char* path, int path_size, char* title, int title_size);
 
 /** Returns a filename for a temporary file.
  * A file with the result name is created and must be removed after use.
@@ -394,7 +394,7 @@ IUP_SDK_API int iupStrFindMnemonic(const char* str);
 /** Compare two strings using strcmp semantics, 
  *  but using the "Alphanum Algorithm" (A1 A2 A11 A30 ...). \n
  *  This means that numbers and text are sorted separately. \n
- *  Also natural alphabetic order is used: 123...aAáÁ...bBcC... \n
+ *  Also natural alphabetic order is used: 123...aAï¿½ï¿½...bBcC... \n
  *  Sorting and case insensitive will work only for Latin-1 characters, even when using utf8=1.
  * \ingroup str */
 IUP_SDK_API int iupStrCompare(const char* str1, const char* str2, int casesensitive, int utf8);

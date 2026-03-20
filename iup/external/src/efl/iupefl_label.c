@@ -62,7 +62,7 @@ static int eflLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   if (ih->data->type != IUP_LABEL_TEXT)
     return 1;
 
-  iupStrToStrStr(value, value1, value2, ':');
+  iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
   if (iupStrEqualNoCase(value1, "ARIGHT"))
     efl_text_horizontal_align_set(label, 1.0);

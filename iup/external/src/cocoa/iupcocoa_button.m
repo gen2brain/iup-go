@@ -620,7 +620,7 @@ static int cocoaButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
   char value1[30], value2[30];
   NSTextAlignment alignment = NSTextAlignmentCenter;
 
-  iupStrToStrStr(value, value1, value2, ':');
+  iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
   if (iupStrEqualNoCase(value1, "ARIGHT"))
   {
