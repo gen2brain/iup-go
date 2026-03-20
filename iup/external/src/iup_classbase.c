@@ -394,7 +394,7 @@ static Ihandle* iBaseFindNamedChild(Ihandle* ih, const char* name)
 IUP_API Ihandle* IupGetDialogChild(Ihandle* ih, const char* name)
 {
   Ihandle *child, *dialog;
-  char attrib[1024] = "_IUP_DIALOG_CHILD_";
+  char attrib[1024];
 
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -405,8 +405,8 @@ IUP_API Ihandle* IupGetDialogChild(Ihandle* ih, const char* name)
 
   dialog = IupGetDialog(ih);
   if (dialog) ih = dialog;
- 
-  strcat(attrib, name);
+
+  snprintf(attrib, sizeof(attrib), "_IUP_DIALOG_CHILD_%s", name);
   child = (Ihandle*)iupAttribGet(ih, attrib);
   if (child) return child;
 
@@ -434,8 +434,8 @@ IUP_SDK_API int iupBaseSetNameAttrib(Ihandle* ih, const char* value)
     if (value)
     {
       Ihandle* dialog;
-      char attrib[1024] = "_IUP_DIALOG_CHILD_";
-      strcat(attrib, value);
+      char attrib[1024];
+      snprintf(attrib, sizeof(attrib), "_IUP_DIALOG_CHILD_%s", value);
       dialog = (Ihandle*)iupAttribGet(ih, attrib);
       if (dialog)
         iupAttribSet(dialog, attrib, NULL);
@@ -446,8 +446,8 @@ IUP_SDK_API int iupBaseSetNameAttrib(Ihandle* ih, const char* value)
     Ihandle* dialog = IupGetDialog(ih);
     if (dialog)
     {
-      char attrib[1024] = "_IUP_DIALOG_CHILD_";
-      strcat(attrib, value);
+      char attrib[1024];
+      snprintf(attrib, sizeof(attrib), "_IUP_DIALOG_CHILD_%s", value);
       iupAttribSet(dialog, attrib, (char*)ih);
       iupAttribSet(ih, attrib, (char*)dialog);
     }

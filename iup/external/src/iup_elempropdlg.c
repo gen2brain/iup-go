@@ -166,11 +166,14 @@ static int iLayoutPropertiesIdTextChanged_CB(Ihandle* id_text)
     if (!itemlist1)
       return IUP_DEFAULT;
 
-    strcpy(name, IupGetAttribute(list1, itemlist1));
+    iupStrCopyN(name, sizeof(name), IupGetAttribute(list1, itemlist1));
 
     iupClassGetAttribNameInfo(elem->iclass, name, &def_value, &flags);
 
-    strcat(name, id);
+    {
+      int len = (int)strlen(name);
+      iupStrCopyN(name + len, sizeof(name) - len, id);
+    }
 
     value = IupGetAttribute(elem, name);
     if (value)

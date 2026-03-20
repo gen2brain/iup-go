@@ -18,7 +18,7 @@
 static char* iStrGetNoReserved(const char* p_name)
 {
   static char name[128];
-  strcpy(name, p_name);
+  iupStrCopyN(name, sizeof(name), p_name);
   iupStrReplaceReserved(name, '_');
   return name;
 }
@@ -127,8 +127,7 @@ static void iExportSavedAttribs(FILE* file, Ihandle* ih, const char* indent, int
   char localIndent[1024];
   int wcount = 0;
 
-  strcpy(localIndent, indent);
-  strcat(localIndent, "  ");
+  snprintf(localIndent, sizeof(localIndent), "%s  ", indent);
 
   attr_count = iupAttribGetAllSaved(ih, NULL, 0);
   attr_names = (char **)malloc(attr_count * sizeof(char *));
@@ -311,8 +310,7 @@ static void iExportElementLED(FILE* file, Ihandle* ih, const char* indent, int s
       Ihandle *child;
       char localIndent[1024];
 
-      strcpy(localIndent, indent);
-      strcat(localIndent, "  ");
+      snprintf(localIndent, sizeof(localIndent), "%s  ", indent);
 
       fprintf(file, "(\n");
 
@@ -410,8 +408,7 @@ static void iExportElementLED(FILE* file, Ihandle* ih, const char* indent, int s
                 {
                   char localIndent[1024];
 
-                  strcpy(localIndent, indent);
-                  strcat(localIndent, "  ");
+                  snprintf(localIndent, sizeof(localIndent), "%s  ", indent);
 
                   fprintf(file, "\n");
                   iExportElementLED(file, child, localIndent, saved_info);   /* here process the ones that does NOT have names */
@@ -436,8 +433,7 @@ static void iExportElementLED(FILE* file, Ihandle* ih, const char* indent, int s
                 {
                   char localIndent[1024];
 
-                  strcpy(localIndent, indent);
-                  strcat(localIndent, "  ");
+                  snprintf(localIndent, sizeof(localIndent), "%s  ", indent);
 
                   fprintf(file, "\n");
                   iExportElementLED(file, child, localIndent, saved_info);   /* here process the ones that does NOT have names */
@@ -479,8 +475,7 @@ static void iExportElementLua(FILE* file, Ihandle* ih, const char *indent, int s
   {
     char localIndent[1024];
 
-    strcpy(localIndent, indent);
-    strcat(localIndent, "  ");
+    snprintf(localIndent, sizeof(localIndent), "%s  ", indent);
 
     for (child = ih->firstchild; child; child = child->brother)
     {
@@ -506,8 +501,7 @@ static void iExportElementLua(FILE* file, Ihandle* ih, const char *indent, int s
     {
       char localIndent[1024];
 
-      strcpy(localIndent, indent);
-      strcat(localIndent, "  ");
+      snprintf(localIndent, sizeof(localIndent), "%s  ", indent);
 
       child = (Ihandle*)IupGetAttribute(ih, "FIRST_CONTROL_HANDLE");
       while (child)
@@ -553,8 +547,7 @@ static void iExportElementC(FILE* file, Ihandle* ih, const char *indent, const c
     else
       fprintf(file, "%sIupSetAtt(NULL, IupCreatep(\"%s\", \n", indent, ih->iclass->name);
 
-    strcpy(localIndent, indent);
-    strcat(localIndent, "    ");  /* indent twice for children */
+    snprintf(localIndent, sizeof(localIndent), "%s    ", indent);
 
     for (child = ih->firstchild; child; child = child->brother)
     {
@@ -580,8 +573,7 @@ static void iExportElementC(FILE* file, Ihandle* ih, const char *indent, const c
       else
         fprintf(file, "%sIupSetAtt(NULL, IupCreatep(\"%s\", \n", indent, ih->iclass->name);
 
-      strcpy(localIndent, indent);
-      strcat(localIndent, "  ");
+      snprintf(localIndent, sizeof(localIndent), "%s  ", indent);
 
       child = (Ihandle*)IupGetAttribute(ih, "FIRST_CONTROL_HANDLE");
       while (child)
@@ -1047,7 +1039,7 @@ IUP_API int IupSaveImageAsText(Ihandle* ih, const char* filename, const char* fo
       p_name = "image";
   }
 
-  strcpy(name, p_name);
+  iupStrCopyN(name, sizeof(name), p_name);
   iupStrReplaceReserved(name, '_');
 
   if (iupStrEqualNoCase(format, "LED"))
@@ -1071,7 +1063,7 @@ IUP_SDK_API int iupImageExportToFile(Ihandle* ih, FILE* packfile, const char* fo
       p_name = "image";
   }
 
-  strcpy(name, p_name);
+  iupStrCopyN(name, sizeof(name), p_name);
   iupStrReplaceReserved(name, '_');
 
   if (iupStrEqualNoCase(format, "LED"))
@@ -1096,7 +1088,7 @@ IUP_SDK_API int iupImageExportToString(Ihandle* ih, char **str, const char* form
       p_name = "image";
   }
 
-  strcpy(name, p_name);
+  iupStrCopyN(name, sizeof(name), p_name);
   iupStrReplaceReserved(name, '_');
 
   if (iupStrEqualNoCase(format, "LED"))

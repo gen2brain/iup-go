@@ -1720,20 +1720,26 @@ static int eflTextParseSelection(Ihandle* ih, const char* value, int* start, int
   return 1;
 }
 
-static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* format)
+static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* format, int format_size)
 {
   char* attr;
-  char buf[128];
+  int pos = (int)strlen(format);
+  int remaining;
+
+#define EFL_FMT_APPEND(s) do { remaining = format_size - pos; if (remaining > 1) pos += snprintf(format + pos, remaining, "%s", (s)); } while(0)
 
   attr = iupAttribGet(formattag, "FONTFACE");
   if (attr)
   {
     const char* mapped_name = iupFontGetPangoName(attr);
-    if (mapped_name)
-      snprintf(buf, sizeof(buf), "font=%s ", mapped_name);
-    else
-      snprintf(buf, sizeof(buf), "font=%s ", attr);
-    strcat(format, buf);
+    remaining = format_size - pos;
+    if (remaining > 1)
+    {
+      if (mapped_name)
+        pos += snprintf(format + pos, remaining, "font=%s ", mapped_name);
+      else
+        pos += snprintf(format + pos, remaining, "font=%s ", attr);
+    }
   }
 
   attr = iupAttribGet(formattag, "FONTSIZE");
@@ -1746,8 +1752,9 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
         val = -val;
       if (val > 0)
       {
-        snprintf(buf, sizeof(buf), "font_size=%d ", val);
-        strcat(format, buf);
+        remaining = format_size - pos;
+        if (remaining > 1)
+          pos += snprintf(format + pos, remaining, "font_size=%d ", val);
       }
     }
   }
@@ -1786,8 +1793,9 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
         int new_size = (int)(base_size * fval + 0.5);
         if (new_size > 0)
         {
-          snprintf(buf, sizeof(buf), "font_size=%d ", new_size);
-          strcat(format, buf);
+          remaining = format_size - pos;
+          if (remaining > 1)
+            pos += snprintf(format + pos, remaining, "font_size=%d ", new_size);
         }
       }
     }
@@ -1796,36 +1804,37 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
   attr = iupAttribGet(formattag, "LANGUAGE");
   if (attr)
   {
-    snprintf(buf, sizeof(buf), "lang=%s ", attr);
-    strcat(format, buf);
+    remaining = format_size - pos;
+    if (remaining > 1)
+      pos += snprintf(format + pos, remaining, "lang=%s ", attr);
   }
 
   attr = iupAttribGet(formattag, "STRETCH");
   if (attr)
   {
     if (iupStrEqualNoCase(attr, "EXTRA_CONDENSED"))
-      strcat(format, "font_width=extracondensed ");
+      EFL_FMT_APPEND("font_width=extracondensed ");
     else if (iupStrEqualNoCase(attr, "CONDENSED"))
-      strcat(format, "font_width=condensed ");
+      EFL_FMT_APPEND("font_width=condensed ");
     else if (iupStrEqualNoCase(attr, "SEMI_CONDENSED"))
-      strcat(format, "font_width=semicondensed ");
+      EFL_FMT_APPEND("font_width=semicondensed ");
     else if (iupStrEqualNoCase(attr, "SEMI_EXPANDED"))
-      strcat(format, "font_width=semiexpanded ");
+      EFL_FMT_APPEND("font_width=semiexpanded ");
     else if (iupStrEqualNoCase(attr, "EXPANDED"))
-      strcat(format, "font_width=expanded ");
+      EFL_FMT_APPEND("font_width=expanded ");
     else if (iupStrEqualNoCase(attr, "EXTRA_EXPANDED"))
-      strcat(format, "font_width=extraexpanded ");
-    else /* "NORMAL" */
-      strcat(format, "font_width=normal ");
+      EFL_FMT_APPEND("font_width=extraexpanded ");
+    else
+      EFL_FMT_APPEND("font_width=normal ");
   }
 
   attr = iupAttribGet(formattag, "ITALIC");
   if (attr)
   {
     if (iupStrBoolean(attr))
-      strcat(format, "font_style=italic ");
+      EFL_FMT_APPEND("font_style=italic ");
     else
-      strcat(format, "font_style=normal ");
+      EFL_FMT_APPEND("font_style=normal ");
   }
 
   attr = iupAttribGet(formattag, "STRIKEOUT");
@@ -1839,31 +1848,32 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
         iupStrToRGB(fgattr, &r, &g, &b);
       else
         efl_text_color_get(iupeflGetWidget(ih), &r, &g, &b, &a);
-      strcat(format, "strikethrough_type=single ");
-      snprintf(buf, sizeof(buf), "strikethrough_color=#%02X%02X%02X%02X ", r, g, b, a);
-      strcat(format, buf);
+      EFL_FMT_APPEND("strikethrough_type=single ");
+      remaining = format_size - pos;
+      if (remaining > 1)
+        pos += snprintf(format + pos, remaining, "strikethrough_color=#%02X%02X%02X%02X ", r, g, b, a);
     }
     else
-      strcat(format, "strikethrough_type=none ");
+      EFL_FMT_APPEND("strikethrough_type=none ");
   }
 
   attr = iupAttribGet(formattag, "WEIGHT");
   if (attr)
   {
     if (iupStrEqualNoCase(attr, "EXTRALIGHT"))
-      strcat(format, "font_weight=ultralight ");
+      EFL_FMT_APPEND("font_weight=ultralight ");
     else if (iupStrEqualNoCase(attr, "LIGHT"))
-      strcat(format, "font_weight=light ");
+      EFL_FMT_APPEND("font_weight=light ");
     else if (iupStrEqualNoCase(attr, "SEMIBOLD"))
-      strcat(format, "font_weight=semibold ");
+      EFL_FMT_APPEND("font_weight=semibold ");
     else if (iupStrEqualNoCase(attr, "BOLD"))
-      strcat(format, "font_weight=bold ");
+      EFL_FMT_APPEND("font_weight=bold ");
     else if (iupStrEqualNoCase(attr, "EXTRABOLD"))
-      strcat(format, "font_weight=extrabold ");
+      EFL_FMT_APPEND("font_weight=extrabold ");
     else if (iupStrEqualNoCase(attr, "HEAVY"))
-      strcat(format, "font_weight=black ");
-    else /* "NORMAL" */
-      strcat(format, "font_weight=normal ");
+      EFL_FMT_APPEND("font_weight=black ");
+    else
+      EFL_FMT_APPEND("font_weight=normal ");
   }
   else
   {
@@ -1871,9 +1881,9 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
     if (attr)
     {
       if (iupStrBoolean(attr))
-        strcat(format, "font_weight=bold ");
+        EFL_FMT_APPEND("font_weight=bold ");
       else
-        strcat(format, "font_weight=normal ");
+        EFL_FMT_APPEND("font_weight=normal ");
     }
   }
 
@@ -1883,8 +1893,9 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
     unsigned char r, g, b;
     if (iupStrToRGB(attr, &r, &g, &b))
     {
-      snprintf(buf, sizeof(buf), "color=#%02X%02X%02X ", r, g, b);
-      strcat(format, buf);
+      remaining = format_size - pos;
+      if (remaining > 1)
+        pos += snprintf(format + pos, remaining, "color=#%02X%02X%02X ", r, g, b);
     }
   }
 
@@ -1894,8 +1905,9 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
     unsigned char r, g, b;
     if (iupStrToRGB(attr, &r, &g, &b))
     {
-      snprintf(buf, sizeof(buf), "background_type=solid background_color=#%02X%02X%02X ", r, g, b);
-      strcat(format, buf);
+      remaining = format_size - pos;
+      if (remaining > 1)
+        pos += snprintf(format + pos, remaining, "background_type=solid background_color=#%02X%02X%02X ", r, g, b);
     }
   }
 
@@ -1913,34 +1925,38 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
         efl_text_color_get(iupeflGetWidget(ih), &r, &g, &b, &a);
 
       if (iupStrEqualNoCase(attr, "DOUBLE"))
-        strcat(format, "underline_type=double ");
+        EFL_FMT_APPEND("underline_type=double ");
       else if (iupStrEqualNoCase(attr, "DOTTED"))
-        strcat(format, "underline_type=dashed ");
+        EFL_FMT_APPEND("underline_type=dashed ");
       else
-        strcat(format, "underline_type=single ");
+        EFL_FMT_APPEND("underline_type=single ");
 
-      snprintf(buf, sizeof(buf), "underline_color=#%02X%02X%02X%02X ", r, g, b, a);
-      strcat(format, buf);
+      remaining = format_size - pos;
+      if (remaining > 1)
+        pos += snprintf(format + pos, remaining, "underline_color=#%02X%02X%02X%02X ", r, g, b, a);
 
       if (iupStrEqualNoCase(attr, "DOUBLE"))
       {
-        snprintf(buf, sizeof(buf), "secondary_underline_color=#%02X%02X%02X%02X ", r, g, b, a);
-        strcat(format, buf);
+        remaining = format_size - pos;
+        if (remaining > 1)
+          pos += snprintf(format + pos, remaining, "secondary_underline_color=#%02X%02X%02X%02X ", r, g, b, a);
       }
     }
     else
-      strcat(format, "underline_type=none ");
+      EFL_FMT_APPEND("underline_type=none ");
   }
 
   attr = iupAttribGet(formattag, "LINK");
   if (attr)
   {
     if (!iupAttribGet(formattag, "FGCOLOR"))
-      strcat(format, "color=#0000FF ");
+      EFL_FMT_APPEND("color=#0000FF ");
 
     if (!iupAttribGet(formattag, "UNDERLINE"))
-      strcat(format, "underline_type=single underline_color=#0000FFFF ");
+      EFL_FMT_APPEND("underline_type=single underline_color=#0000FFFF ");
   }
+
+#undef EFL_FMT_APPEND
 }
 
 static void eflIntToRoman(int num, char* buf, int bufsize, int uppercase)
@@ -2076,42 +2092,48 @@ static void eflTextApplyNumbering(Eo* entry, int* p_start_pos, int* p_end_pos,
   efl_del(cursor);
 }
 
-static void eflTextBuildParagraphFormat(Ihandle* formattag, char* format)
+static void eflTextBuildParagraphFormat(Ihandle* formattag, char* format, int format_size)
 {
   char* attr;
-  char buf[64];
   int val;
+  int pos = (int)strlen(format);
+  int remaining;
+
+#define EFL_FMT_APPEND(s) do { remaining = format_size - pos; if (remaining > 1) pos += snprintf(format + pos, remaining, "%s", (s)); } while(0)
 
   attr = iupAttribGet(formattag, "ALIGNMENT");
   if (attr)
   {
     if (iupStrEqualNoCase(attr, "RIGHT"))
-      strcat(format, "align=right ");
+      EFL_FMT_APPEND("align=right ");
     else if (iupStrEqualNoCase(attr, "CENTER"))
-      strcat(format, "align=center ");
-    else /* "LEFT" or "JUSTIFY" (not supported in EFL) */
-      strcat(format, "align=left ");
+      EFL_FMT_APPEND("align=center ");
+    else
+      EFL_FMT_APPEND("align=left ");
   }
 
   attr = iupAttribGet(formattag, "INDENT");
   if (attr && iupStrToInt(attr, &val))
   {
-    snprintf(buf, sizeof(buf), "left_margin=%d ", val);
-    strcat(format, buf);
+    remaining = format_size - pos;
+    if (remaining > 1)
+      pos += snprintf(format + pos, remaining, "left_margin=%d ", val);
   }
 
   attr = iupAttribGet(formattag, "INDENTRIGHT");
   if (attr && iupStrToInt(attr, &val))
   {
-    snprintf(buf, sizeof(buf), "right_margin=%d ", val);
-    strcat(format, buf);
+    remaining = format_size - pos;
+    if (remaining > 1)
+      pos += snprintf(format + pos, remaining, "right_margin=%d ", val);
   }
 
   attr = iupAttribGet(formattag, "LINESPACING");
   if (attr && iupStrToInt(attr, &val))
   {
-    snprintf(buf, sizeof(buf), "line_gap=%d ", val);
-    strcat(format, buf);
+    remaining = format_size - pos;
+    if (remaining > 1)
+      pos += snprintf(format + pos, remaining, "line_gap=%d ", val);
   }
 
   attr = iupAttribGet(formattag, "NUMBERING");
@@ -2124,10 +2146,13 @@ static void eflTextBuildParagraphFormat(Ihandle* formattag, char* format)
       if (tab_str)
         iupStrToInt(tab_str, &numberingtab);
 
-      snprintf(buf, sizeof(buf), "left_margin=%d ", numberingtab);
-      strcat(format, buf);
+      remaining = format_size - pos;
+      if (remaining > 1)
+        pos += snprintf(format + pos, remaining, "left_margin=%d ", numberingtab);
     }
   }
+
+#undef EFL_FMT_APPEND
 }
 
 void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
@@ -2299,8 +2324,8 @@ void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
     }
   }
 
-  eflTextBuildCharacterFormat(ih, formattag, format);
-  eflTextBuildParagraphFormat(formattag, format);
+  eflTextBuildCharacterFormat(ih, formattag, format, sizeof(format));
+  eflTextBuildParagraphFormat(formattag, format, sizeof(format));
 
   if (format[0])
     efl_text_formatter_attribute_insert(start_cursor, end_cursor, format);

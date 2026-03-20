@@ -185,27 +185,28 @@ IUP_API char* IupGetAttributes(Ihandle *ih)
   buffer[0] = 0;
 
   name = iupTableFirst(ih->attrib);
-  while (name && size)
   {
-    if (!iupATTRIB_ISINTERNAL(name))
+    int pos = 0;
+    while (name && pos < size - 1)
     {
-      if (buffer[0] != 0)
-        { strcat(buffer,","); size--; }
-
-      value = iupTableGetCurr(ih->attrib);
-      if (iupAttribIsNotString(ih, name))
+      if (!iupATTRIB_ISINTERNAL(name))
       {
-        snprintf(sb, sizeof(sb), "%p", (void*) value);
-        value = sb;
+        int written;
+
+        value = iupTableGetCurr(ih->attrib);
+        if (iupAttribIsNotString(ih, name))
+        {
+          snprintf(sb, sizeof(sb), "%p", (void*) value);
+          value = sb;
+        }
+
+        written = snprintf(buffer + pos, size - pos, "%s%s=\"%s\"", pos > 0 ? "," : "", name, value);
+        if (written > 0)
+          pos += written;
       }
 
-      strcat(buffer, name);  size -= (int)strlen(name);
-      strcat(buffer,"=\"");  size--;
-      strcat(buffer, value);  size -= (int)strlen(value);
-      strcat(buffer,"\"");  size--;
+      name = iupTableNext(ih->attrib);
     }
-
-    name = iupTableNext(ih->attrib);
   }
 
   return buffer;
@@ -1538,8 +1539,8 @@ IUP_SDK_API void iupAttribParse(Ihandle *ih, const char* str, int save_led_info)
 
         if (save_led_info)
         {
-          char led_name[200] = "_IUPLED_SAVED_";
-          strcat(led_name, name);
+          char led_name[200];
+          snprintf(led_name, sizeof(led_name), "_IUPLED_SAVED_%s", name);
           iupAttribSet(ih, led_name, "1");
         }
 

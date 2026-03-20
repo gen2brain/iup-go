@@ -139,7 +139,7 @@ static XFontStruct* motLoadFont(const char* foundry, const char *typeface, int s
   fontstruct = XLoadQueryFont(iupmot_display, font_name);
 
   if (fontstruct)
-    strcpy(xlfd, font_name); 
+    iupStrCopyN(xlfd, 1024, font_name);
 
   return fontstruct;
 }
@@ -177,7 +177,7 @@ static XftFont* motLoadXftFont(const char* typeface, int size, int bold, int ita
   xftfont = XftFontOpenName(iupmot_display, iupmot_screen, font_name);
 
   if (xftfont && pattern_out)
-    strcpy(pattern_out, font_name);
+    iupStrCopyN(pattern_out, 1024, font_name);
 
   return xftfont;
 }
@@ -277,14 +277,12 @@ static XmFontList motFontCreateXftRenderTable(const char* xft_pattern, int is_un
   if (weight || slant)
   {
     static char style[64];
-    style[0] = '\0';
-    if (weight)
-      strcat(style, "Bold");
-    if (slant)
-    {
-      if (weight) strcat(style, " ");
-      strcat(style, "Italic");
-    }
+    if (weight && slant)
+      snprintf(style, sizeof(style), "Bold Italic");
+    else if (weight)
+      snprintf(style, sizeof(style), "Bold");
+    else
+      snprintf(style, sizeof(style), "Italic");
     iupMOT_SETARG(args, num_args, XmNfontStyle, style);
   }
 
@@ -369,7 +367,7 @@ static ImotFont* motFindFont(const char* foundry, const char *font)
     fontstruct = XLoadQueryFont(iupmot_display, font);
     if (!fontstruct)
       return NULL;
-    strcpy(xlfd, font);
+    iupStrCopyN(xlfd, sizeof(xlfd), font);
   }
   else
   {
@@ -385,7 +383,7 @@ static ImotFont* motFindFont(const char* foundry, const char *font)
     /* Map standard names to native names */
     mapped_name = iupFontGetXName(typeface);
     if (mapped_name)
-      strcpy(typeface, mapped_name);
+      iupStrCopyN(typeface, 1024, mapped_name);
 
 #ifdef IUP_USE_XFT
     xftfont = motLoadXftFont(typeface, size, is_bold, is_italic, xft_pattern);
@@ -401,25 +399,25 @@ static ImotFont* motFindFont(const char* foundry, const char *font)
   /* create room in the array */
   fonts = (ImotFont*)iupArrayInc(mot_fonts);
 
-  strcpy(fonts[i].font, font);
+  iupStrCopyN(fonts[i].font, sizeof(fonts[i].font), font);
 #ifdef IUP_USE_XFT
   if (try_xft && xftfont)
   {
-    strcpy(fonts[i].xft_pattern, xft_pattern);
+    iupStrCopyN(fonts[i].xft_pattern, sizeof(fonts[i].xft_pattern), xft_pattern);
     fonts[i].xftfont = xftfont;
     fonts[i].is_xft = 1;
     fonts[i].fontlist = motFontCreateXftRenderTable(xft_pattern, is_underline, is_strikeout, xftfont);
 
     if (fontstruct)
     {
-      strcpy(fonts[i].xlfd, xlfd);
+      iupStrCopyN(fonts[i].xlfd, sizeof(fonts[i].xlfd), xlfd);
       fonts[i].fontstruct = fontstruct;
       fonts[i].charwidth = motFontCalcCharWidth(fontstruct);
       fonts[i].charheight = fontstruct->ascent + fontstruct->descent;
     }
     else
     {
-      strcpy(fonts[i].xlfd, "");
+      fonts[i].xlfd[0] = '\0';
       fonts[i].fontstruct = NULL;
       fonts[i].charwidth = motFontCalcXftCharWidth(xftfont);
       fonts[i].charheight = xftfont->ascent + xftfont->descent;
@@ -428,11 +426,11 @@ static ImotFont* motFindFont(const char* foundry, const char *font)
   else
 #endif
   {
-    strcpy(fonts[i].xlfd, xlfd);
+    iupStrCopyN(fonts[i].xlfd, sizeof(fonts[i].xlfd), xlfd);
     fonts[i].fontstruct = fontstruct;
 #ifdef IUP_USE_XFT
     fonts[i].xftfont = NULL;
-    strcpy(fonts[i].xft_pattern, "");
+    fonts[i].xft_pattern[0] = '\0';
     fonts[i].is_xft = 0;
 #endif
     fonts[i].fontlist = motFontCreateRenderTable(fontstruct, is_underline, is_strikeout);
@@ -461,7 +459,7 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
     motFindFont("misc", font);
   }
 
-  strcpy(str, font);
+  iupStrCopyN(str, sizeof(str), font);
   return str;
 }
 

@@ -14,6 +14,7 @@
 
 #include "iup_key.h"
 #include "iup_str.h"
+#include "iup_str.h"
 #include "iup_object.h"
 #include "iup_drv.h"
 #include "iup_focus.h"
@@ -223,9 +224,9 @@ static const char* iKeyBaseCodeToName(int code, unsigned char *mod)
 
 #define iKeyMakeXName(_name, _prefix, _base_name) \
 {                                                 \
-  strcpy(_name, _prefix);                         \
+  iupStrCopyN(_name, sizeof(_name), _prefix);     \
   _name[3] = iStrUpper(_base_name[2]);            \
-  strcpy(_name+4, _base_name+3);                  \
+  iupStrCopyN(_name+4, sizeof(_name)-4, _base_name+3); \
 }
 
 #define iKeyReturnXName(_prefix, _base_name) \

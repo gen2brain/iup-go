@@ -123,34 +123,33 @@ static int winDatePickSetOrderAttrib(Ihandle* ih, const char* value)
   if (!value || strlen(value) != 3)
     return 0;
 
-  for (i = 0; i < 3; i++)
   {
-    if (value[i] == 'D' || value[i] == 'd')
+    int pos = 0;
+    for (i = 0; i < 3; i++)
     {
-      if (zeropreced)
-        strcat(format, "dd");
+      if (value[i] == 'D' || value[i] == 'd')
+      {
+        if (zeropreced)
+          pos += snprintf(format + pos, sizeof(format) - pos, "dd");
+        else
+          pos += snprintf(format + pos, sizeof(format) - pos, "d");
+      }
+      else if (value[i] == 'M' || value[i] == 'm')
+      {
+        if (monthshortnames)
+          pos += snprintf(format + pos, sizeof(format) - pos, "MMM");
+        else if (zeropreced)
+          pos += snprintf(format + pos, sizeof(format) - pos, "MM");
+        else
+          pos += snprintf(format + pos, sizeof(format) - pos, "M");
+      }
+      else if (value[i] == 'Y' || value[i] == 'y')
+        pos += snprintf(format + pos, sizeof(format) - pos, "yyyy");
       else
-        strcat(format, "d");
-    }
-    else if (value[i] == 'M' || value[i] == 'm')
-    {
-      if (monthshortnames)
-        strcat(format, "MMM");
-      else if (zeropreced)
-        strcat(format, "MM");
-      else
-        strcat(format, "M");
-    }
-    else if (value[i] == 'Y' || value[i] == 'y')
-      strcat(format, "yyyy");
-    else
-      return 0;
+        return 0;
 
-    if (i < 2)
-    {
-      strcat(format, "'");
-      strcat(format, separator);
-      strcat(format, "'");
+      if (i < 2)
+        pos += snprintf(format + pos, sizeof(format) - pos, "'%s'", separator);
     }
   }
 

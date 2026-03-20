@@ -28,9 +28,7 @@
 static char* strGetGroupKeyName(const char* group, const char* key)
 {
   static char str[GROUPKEYSIZE];
-  strcpy(str, group);
-  strcat(str, ".");
-  strcat(str, key);
+  snprintf(str, sizeof(str), "%s.%s", group, key);
   return str;
 }
 
@@ -89,14 +87,10 @@ static char* iConfigSetFilename(Ihandle* ih)
     if (!app_path)
       return NULL;
 
-    strcpy(filename, app_path);
 #if defined(__ANDROID__) || defined(__APPLE__) || defined(WIN32) || defined(__EMSCRIPTEN__)
-    strcat(filename, app_name);
-    strcat(filename, ".cfg");
+    snprintf(filename, sizeof(filename), "%s%s.cfg", app_path, app_name);
 #else
-    /* Unix generic hidden dot prefix */
-    strcat(filename, ".");
-    strcat(filename, app_name);
+    snprintf(filename, sizeof(filename), "%s.%s", app_path, app_name);
 #endif
   }
 
@@ -202,7 +196,7 @@ IUP_API int IupConfigSave(Ihandle* ih)
     {
       /* write a new group */
       fprintf(file, "\n[%s]\n", group);
-      strcpy(last_group, group);
+      iupStrCopyN(last_group, sizeof(last_group), group);
     }
 
     value = IupGetAttribute(ih, names[i]);

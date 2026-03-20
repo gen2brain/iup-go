@@ -232,10 +232,10 @@ IUP_SDK_API void iupClassInfoGetDesc(Iclass* ic, Ihandle* ih, const char* attrib
   char constructor[50];
 
   if (ic->cons)
-    strcpy(constructor, ic->cons);
+    iupStrCopyN(constructor, sizeof(constructor), ic->cons);
   else
   {
-    strcpy(constructor, ic->name);
+    iupStrCopyN(constructor, sizeof(constructor), ic->name);
     constructor[0] = (char)toupper(constructor[0]);
   }
 

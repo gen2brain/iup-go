@@ -126,7 +126,7 @@ static void eflFontDlgFamilySelectedCallback(void* data, const Efl_Event* ev)
 
   eflFontDlgPopulateStyles(dlg, text);
 
-  strcpy(dlg->selected_style, "Regular");
+  iupStrCopyN(dlg->selected_style, sizeof(dlg->selected_style), "Regular");
 
   eflFontDlgUpdatePreview(dlg);
 }
@@ -303,8 +303,8 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
 
   memset(&dlg, 0, sizeof(dlg));
   dlg.selected_size = 12;
-  strcpy(dlg.selected_family, "Sans");
-  strcpy(dlg.selected_style, "Regular");
+  iupStrCopyN(dlg.selected_family, sizeof(dlg.selected_family), "Sans");
+  iupStrCopyN(dlg.selected_style, sizeof(dlg.selected_style), "Regular");
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
@@ -489,13 +489,13 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
         dlg.selected_size = fontsize;
 
       if (bold && italic)
-        strcpy(dlg.selected_style, "Bold Italic");
+        iupStrCopyN(dlg.selected_style, sizeof(dlg.selected_style), "Bold Italic");
       else if (bold)
-        strcpy(dlg.selected_style, "Bold");
+        iupStrCopyN(dlg.selected_style, sizeof(dlg.selected_style), "Bold");
       else if (italic)
-        strcpy(dlg.selected_style, "Italic");
+        iupStrCopyN(dlg.selected_style, sizeof(dlg.selected_style), "Italic");
       else
-        strcpy(dlg.selected_style, "Regular");
+        iupStrCopyN(dlg.selected_style, sizeof(dlg.selected_style), "Regular");
 
       eflFontDlgPopulateStyles(&dlg, dlg.selected_family);
     }

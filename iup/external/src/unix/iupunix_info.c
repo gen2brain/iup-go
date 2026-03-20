@@ -141,7 +141,7 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
     char* xdg_config = getenv("XDG_CONFIG_HOME");
     if (xdg_config && xdg_config[0])
     {
-      strcpy(filename, xdg_config);
+      iupStrCopyN(filename, 10240, xdg_config);
     }
     else
     {
@@ -151,20 +151,18 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
         filename[0] = '\0';
         return 0;
       }
-      strcpy(filename, home);
-      strcat(filename, "/.config");
+      snprintf(filename, 10240, "%s/.config", home);
     }
 
     /* Ensure base config directory exists */
     iupUnixMakeDirectoryIfNeeded(filename);
 
     /* Add app directory */
-    strcat(filename, "/");
-    strcat(filename, app_name);
+    snprintf(filename + strlen(filename), 10240 - strlen(filename), "/%s", app_name);
     iupUnixMakeDirectoryIfNeeded(filename);
 
     /* Add config filename */
-    strcat(filename, "/config");
+    snprintf(filename + strlen(filename), 10240 - strlen(filename), "/config");
     return 1;
   }
   else
@@ -176,9 +174,7 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
       filename[0] = '\0';
       return 0;
     }
-    strcpy(filename, home);
-    strcat(filename, "/.");
-    strcat(filename, app_name);
+    snprintf(filename, 10240, "%s/.%s", home, app_name);
     return 1;
   }
 }

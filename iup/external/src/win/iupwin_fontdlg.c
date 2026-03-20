@@ -119,7 +119,7 @@ static int winFontDlgPopup(Ihandle* ih, int x, int y)
         return IUP_ERROR;
 
       if (typeface[0] == 0)
-        strcpy(typeface, def_typeface);
+        iupStrCopyN(typeface, sizeof(typeface), def_typeface);
       if (height == 0)
         height = def_height;
       if (is_bold == 0)
@@ -136,7 +136,7 @@ static int winFontDlgPopup(Ihandle* ih, int x, int y)
   /* Map standard names to native names */
   mapped_name = iupFontGetWinName(typeface);
   if (mapped_name)
-    strcpy(typeface, mapped_name);
+    iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
   /* get size in pixels */
   if (height < 0)

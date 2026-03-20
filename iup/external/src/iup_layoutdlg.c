@@ -688,7 +688,7 @@ static int iLayoutGetExportFile(Ihandle* parent, char* filename)
     char* value = IupGetAttribute(file_dlg, "VALUE");
     if (value)
     {
-      strcpy(filename, value);
+      iupStrCopyN(filename, sizeof(filename), value);
       iupStrFileNameSplit(filename, dir, NULL);
     }
   }
@@ -1470,8 +1470,8 @@ static void iLayoutSaveAttrib(iLayoutDialog* layoutdlg, Ihandle* elem, const cha
 {
   if (!layoutdlg->destroy && iupAttribGet(layoutdlg->dialog, "_IUPLED_FILENAME"))
   {
-    char led_name[200] = "_IUPLED_SAVED_";
-    strcat(led_name, name);
+    char led_name[200];
+    snprintf(led_name, sizeof(led_name), "_IUPLED_SAVED_%s", name);
     iupAttribSet(elem, led_name, "1");
   }
 }
@@ -1492,7 +1492,7 @@ static int iLayoutContextMenuHandleName_CB(Ihandle* menu)
 
   char* elem_name = iLayoutGetName(elem);
   if (elem_name)
-    strcpy(name, elem_name);
+    iupStrCopyN(name, sizeof(name), elem_name);
 
   IupStoreGlobal("_IUP_OLD_PARENTDIALOG", IupGetGlobal("PARENTDIALOG"));
   IupSetAttributeHandle(NULL, "PARENTDIALOG", IupGetDialog(layoutdlg->tree));
@@ -1635,10 +1635,10 @@ static const char* iLayoutSelectClassDialog(Ihandle* parent)
     char constructor[50];
 
     if (elemClass->cons)
-      strcpy(constructor, elemClass->cons);
+      iupStrCopyN(constructor, sizeof(constructor), elemClass->cons);
     else
     {
-      strcpy(constructor, name);
+      iupStrCopyN(constructor, sizeof(constructor), name);
       constructor[0] = (char)toupper(constructor[0]);
     }
 

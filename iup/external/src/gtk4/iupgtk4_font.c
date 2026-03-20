@@ -100,7 +100,7 @@ static Igtk4Font* gtk4FindFont(const char *font)
     mapped_name = iupFontGetPangoName(typeface);
     if (mapped_name)
     {
-      strcpy(typeface, mapped_name);
+      iupStrCopyN(typeface, sizeof(typeface), mapped_name);
       is_pango = 0;
     }
 
@@ -141,7 +141,7 @@ static Igtk4Font* gtk4FindFont(const char *font)
   /* create room in the array */
   fonts = (Igtk4Font*)iupArrayInc(gtk4_fonts);
 
-  strcpy(fonts[i].font, font);
+  iupStrCopyN(fonts[i].font, sizeof(fonts[i].font), font);
 
   /* these are all released in iupdrvFontFinish */
   fonts[i].fontdesc = fontdesc;
@@ -250,7 +250,7 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
     g_free(font_name);
   }
   else
-    strcpy(str, "Sans, 10");
+    iupStrCopyN(str, sizeof(str), "Sans, 10");
 
   return str;
 }

@@ -522,17 +522,25 @@ static int iGlobalsNameFind_CB(Ihandle* bt)
       char* str = malloc(max_len);
       char** names = malloc(count * sizeof(char*));
       iupNamesFindAll(elem, names, count);
-      str[0] = 0;
-      for (i = 0; i < count; i++)
       {
-        total_len += (int)strlen(names[i]);
-        if (total_len > max_len)
+        int pos = 0;
+        for (i = 0; i < count; i++)
         {
-          max_len += 10 * (total_len - max_len);
-          str = realloc(str, max_len);
+          int name_len = (int)strlen(names[i]) + 1;
+          total_len += name_len;
+          if (total_len > max_len)
+          {
+            char* new_str;
+            max_len += 10 * (total_len - max_len);
+            new_str = realloc(str, max_len);
+            if (!new_str) break;
+            str = new_str;
+          }
+          memcpy(str + pos, names[i], name_len - 1);
+          pos += name_len - 1;
+          str[pos++] = '\n';
         }
-        strcat(str, names[i]);
-        strcat(str, "\n");
+        str[pos] = 0;
       }
       IupGetText("Other Names", str, -1);  /* read-only */
       free(names);

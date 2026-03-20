@@ -323,7 +323,8 @@ static void wdlImageSetHandleFromLoaded(const char* name, void* handle)
 
 WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor)
 {
-  char cache_name[100] = "_IUPIMAGE_WD_IMAGE";
+  char cache_name[100];
+  int pos;
   char* img_bgcolor;
   WD_HIMAGE handle;
   Ihandle *ih;
@@ -375,13 +376,13 @@ WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_
     bgcolor = img_bgcolor;
 
   if (make_inactive)
-    strcat(cache_name, "_INACTIVE");
+    pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_WD_IMAGE_INACTIVE");
+  else
+    pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_WD_IMAGE");
 
   if (iupAttribGet(ih, "_IUP_BGCOLOR_DEPEND") && bgcolor)
   {
-    strcat(cache_name, "(");
-    strcat(cache_name, bgcolor);
-    strcat(cache_name, ")");
+    snprintf(cache_name + pos, sizeof(cache_name) - pos, "(%s)", bgcolor);
     bg_concat = 1;
   }
 
@@ -395,9 +396,8 @@ WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_
 
   if (iupAttribGet(ih, "_IUP_BGCOLOR_DEPEND") && bgcolor && !bg_concat)  /* _IUP_BGCOLOR_DEPEND could be set during creation */
   {
-    strcat(cache_name, "(");
-    strcat(cache_name, bgcolor);
-    strcat(cache_name, ")");
+    pos = (int)strlen(cache_name);
+    snprintf(cache_name + pos, sizeof(cache_name) - pos, "(%s)", bgcolor);
   }
 
   /* save the native image in the cache */

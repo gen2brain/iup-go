@@ -640,7 +640,7 @@ IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int *size, int *
   if (font[0] != '-')
     return 0;
 
-  strcpy(xfont, font+1);  /* skip first '-' */
+  iupStrCopyN(xfont, sizeof(xfont), font+1);  /* skip first '-' */
 
   *bold = 0;
   *italic = 0;
@@ -659,14 +659,14 @@ IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int *size, int *
   /* wght */
   token = strtok(NULL, "-");
   if (!token) return 0;
-  strcpy(style1, token);
+  iupStrCopyN(style1, sizeof(style1), token);
   if (strstr("bold", style1))
     *bold = 1;
 
   /* slant */
   token = strtok(NULL, "-");
   if (!token) return 0;
-  strcpy(style2, token);
+  iupStrCopyN(style2, sizeof(style2), token);
   if (*style2 == 'i' || *style2 == 'o')
     *italic = 1;
 

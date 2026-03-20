@@ -1946,17 +1946,13 @@ IUP_SDK_API int iupStrTmpFileName(char* filename, const char* prefix)
   char* tmp = tempnam(NULL, prefix);
   if (!tmp)
     return 0;
-  strcpy(filename, tmp);
+  iupStrCopyN(filename, 10240, tmp);
   free(tmp);
 #else
   char* dirname = getenv("TMPDIR");
   if (!dirname) dirname = "/tmp";
-  if (strlen(dirname) >= 10240 - 10)
+  if (snprintf(filename, 10240, "%s/%sXXXXXX", dirname, prefix) >= 10240)
     return 0;
-  strcpy(filename, dirname);
-  strcat(filename, "/");
-  strcat(filename, prefix);
-  strcat(filename, "XXXXXX"); /* will be replaced by mkstemp */
   int fd = mkstemp(filename);
   if (fd == -1)
     return 0;

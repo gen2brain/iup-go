@@ -82,7 +82,7 @@ static void eflFontParse(const char* value, char* family, int* size, int* is_bol
 {
   const char* p;
 
-  strcpy(family, "Sans");
+  iupStrCopyN(family, 100, "Sans");
   *size = 12;
   *is_bold = 0;
   *is_italic = 0;
@@ -138,7 +138,7 @@ static void eflFontParse(const char* value, char* family, int* size, int* is_bol
   }
   else
   {
-    strcpy(family, value);
+    iupStrCopyN(family, 100, value);
   }
 }
 
@@ -288,7 +288,7 @@ void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int*
     size = font->size;
     is_bold = font->is_bold;
     is_italic = font->is_italic;
-    strcpy(family, font->font_name ? font->font_name : "Sans");
+    iupStrCopyN(family, sizeof(family), font->font_name ? font->font_name : "Sans");
     charheight = font->charheight;
   }
   else
@@ -435,7 +435,7 @@ char* iupdrvGetSystemFont(void)
     }
   }
 
-  strcpy(system_font, "Sans, 11");
+  iupStrCopyN(system_font, sizeof(system_font), "Sans, 11");
   return system_font;
 }
 
@@ -476,11 +476,11 @@ void iupeflBuildTextStyle(Ihandle* ih, char* style, int style_size)
     font_size = font->size > 0 ? font->size : 12;
 
     if (font->is_bold && font->is_italic)
-      strcpy(font_style, ":style=Bold Italic");
+      iupStrCopyN(font_style, sizeof(font_style), ":style=Bold Italic");
     else if (font->is_bold)
-      strcpy(font_style, ":style=Bold");
+      iupStrCopyN(font_style, sizeof(font_style), ":style=Bold");
     else if (font->is_italic)
-      strcpy(font_style, ":style=Italic");
+      iupStrCopyN(font_style, sizeof(font_style), ":style=Italic");
   }
 
   fgcolor = iupAttribGetStr(ih, "FGCOLOR");
