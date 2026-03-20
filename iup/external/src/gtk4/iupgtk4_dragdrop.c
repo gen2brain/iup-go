@@ -181,7 +181,7 @@ static GdkContentFormats* gtk4CreateContentFormats(const char* value)
   char valueTemp2[256];
 
   iupStrCopyN(valueCopy, sizeof(valueCopy), value);
-  while (iupStrToStrStr(valueCopy, valueTemp1, valueTemp2, ',') > 0)
+  while (iupStrToStrStr(valueCopy, valueTemp1, sizeof(valueTemp1), valueTemp2, sizeof(valueTemp2), ',') > 0)
   {
     gdk_content_formats_builder_add_mime_type(builder, valueTemp1);
 
@@ -215,7 +215,7 @@ static int gtk4SetDropTypesAttrib(Ihandle* ih, const char* value)
   char valueTemp1[256], valueTemp2[256];
   char valueCopy[256];
   iupStrCopyN(valueCopy, sizeof(valueCopy), value);
-  if (iupStrToStrStr(valueCopy, valueTemp1, valueTemp2, ',') > 0)
+  if (iupStrToStrStr(valueCopy, valueTemp1, sizeof(valueTemp1), valueTemp2, sizeof(valueTemp2), ',') > 0)
     iupAttribSetStr(ih, "_IUPGTK4_DROP_TYPE", valueTemp1);
 
   if (ih->handle && iupAttribGetBoolean(ih, "DROPTARGET"))
@@ -347,7 +347,7 @@ static int gtk4SetDragTypesAttrib(Ihandle* ih, const char* value)
   char valueTemp1[256], valueTemp2[256];
   char valueCopy[256];
   iupStrCopyN(valueCopy, sizeof(valueCopy), value);
-  if (iupStrToStrStr(valueCopy, valueTemp1, valueTemp2, ',') > 0)
+  if (iupStrToStrStr(valueCopy, valueTemp1, sizeof(valueTemp1), valueTemp2, sizeof(valueTemp2), ',') > 0)
     iupAttribSetStr(ih, "_IUPGTK4_DRAG_TYPE", valueTemp1);
 
   if (ih->handle && iupAttribGetBoolean(ih, "DRAGSOURCE"))

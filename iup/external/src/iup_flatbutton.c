@@ -174,7 +174,7 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
       char color1[30], color2[30];
       float angle = iupAttribGetFloat(ih, "GRADIENTANGLE");
       if (angle == 0) angle = 90;  /* default is top to bottom */
-      if (iupStrToStrStr(gradient, color1, color2, ':'))
+      if (iupStrToStrStr(gradient, color1, sizeof(color1), color2, sizeof(color2), ':'))
         iupFlatDrawGradientBox(dc, border_width, ih->currentwidth - 1 - border_width,
                                 border_width, ih->currentheight - 1 - border_width,
                                 corner_radius, angle, color1, color2, bgcolor, 1);  /* background is always active */
@@ -446,7 +446,7 @@ static int iFlatButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
   char value1[30], value2[30];
 
-  iupStrToStrStr(value, value1, value2, ':');
+  iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
  ih->data->horiz_alignment = iupFlatGetHorizontalAlignment(value1);
  ih->data->vert_alignment = iupFlatGetVerticalAlignment(value2);

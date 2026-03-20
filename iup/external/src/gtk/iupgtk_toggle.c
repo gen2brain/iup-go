@@ -576,7 +576,7 @@ static int gtkToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_TOGGLE_TEXT)
     return 0;
 
-  iupStrToStrStr(value, value1, value2, ':');
+  iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
   if (iupStrEqualNoCase(value1, "ARIGHT"))
     xalign = 1.0f;

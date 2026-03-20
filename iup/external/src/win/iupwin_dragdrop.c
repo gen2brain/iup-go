@@ -950,7 +950,7 @@ static Iarray* winCreateTypesList(const char* value)
   int i = 0;
 
   iupStrCopyN(valueCopy, sizeof(valueCopy), value);
-  while (iupStrToStrStr(valueCopy, valueTemp1, valueTemp2, ',') > 0)
+  while (iupStrToStrStr(valueCopy, valueTemp1, sizeof(valueTemp1), valueTemp2, sizeof(valueTemp2), ',') > 0)
   {
     newListData = (char**)iupArrayInc(newList);
     newListData[i] = iupStrDup(valueTemp1);

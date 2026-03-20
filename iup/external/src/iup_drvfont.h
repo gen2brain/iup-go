@@ -79,7 +79,7 @@ IUP_SDK_API int iupFontParseWin(const char *value, char* typeface, int *size, in
 /** Parse the X-Windows font format description.
  * Returns a non zero value if successful.
  * \ingroup drvfont */
-IUP_SDK_API int iupFontParseX(const char *value, char *typeface, int *size, int *bold, int *italic, int *underline, int *strikeout);
+IUP_SDK_API int iupFontParseX(const char *value, char *typeface, int typeface_size, int *size, int *bold, int *italic, int *underline, int *strikeout);
 
 
 /** Changes the FONT style only.

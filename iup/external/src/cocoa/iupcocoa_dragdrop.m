@@ -966,7 +966,7 @@ static NSMutableArray* cocoaParseDragDropTypes(const char* value)
   char value_temp2[256];
 
   strcpy(value_copy, value);
-  while (iupStrToStrStr(value_copy, value_temp1, value_temp2, ',') > 0)
+  while (iupStrToStrStr(value_copy, value_temp1, sizeof(value_temp1), value_temp2, sizeof(value_temp2), ',') > 0)
   {
     NSString* type_string = [NSString stringWithUTF8String:value_temp1];
     [array_of_types addObject:type_string];

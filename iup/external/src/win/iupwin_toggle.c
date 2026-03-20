@@ -330,7 +330,7 @@ static void winToggleGetAlignment(Ihandle* ih, int *horiz_alignment, int *vert_a
 {
   char value1[30], value2[30];
 
-  iupStrToStrStr(iupAttribGetStr(ih, "ALIGNMENT"), value1, value2, ':');
+  iupStrToStrStr(iupAttribGetStr(ih, "ALIGNMENT"), value1, sizeof(value1), value2, sizeof(value2), ':');
 
   if (iupStrEqualNoCase(value1, "ARIGHT"))
     *horiz_alignment = IUP_ALIGN_ARIGHT;

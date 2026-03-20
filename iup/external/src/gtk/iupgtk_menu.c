@@ -54,7 +54,7 @@ static void gtkMenuPositionFunc(GtkMenu *menu, gint *x, gint *y, gboolean *push_
   {
     GtkRequisition size;
     char value1[30], value2[30];
-    iupStrToStrStr(value, value1, value2, ':');
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
 #if GTK_CHECK_VERSION(3, 0, 0)
     gtk_widget_get_preferred_size(menupos->ih->handle, NULL, &size);
@@ -94,7 +94,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   if (value)
   {
     char value1[30], value2[30];
-    iupStrToStrStr(value, value1, value2, ':');
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
     if (iupStrEqualNoCase(value1, "ARIGHT"))
       menu_anchor = GDK_GRAVITY_NORTH_EAST;

@@ -2698,7 +2698,7 @@ static int gtkTreeSetMarkAttrib(Ihandle *ih, const char *value)
   else
   {
     char str1[50], str2[50];
-    if (iupStrToStrStr(value, str1, str2, '-') == 2)
+    if (iupStrToStrStr(value, str1, sizeof(str1), str2, sizeof(str2), '-') == 2)
     {
       int id1, id2;
       if (iupStrToInt(str1, &id1) && iupStrToInt(str2, &id2))

@@ -209,7 +209,7 @@ static GtkTargetList* gtkCreateTargetList(const char* value)
   int info = 0;
 
   iupStrCopyN(valueCopy, sizeof(valueCopy), value);
-  while (iupStrToStrStr(valueCopy, valueTemp1, valueTemp2, ',') > 0)
+  while (iupStrToStrStr(valueCopy, valueTemp1, sizeof(valueTemp1), valueTemp2, sizeof(valueTemp2), ',') > 0)
   {
     gtk_target_list_add(targetlist, gdk_atom_intern(valueTemp1, FALSE), 0, info++);
 

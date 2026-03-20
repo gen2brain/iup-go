@@ -217,7 +217,7 @@ static int iwinMenuGetPopupAlign(Ihandle* ih)
   {
     int horiz_alignment, vert_alignment;
     char value1[30], value2[30];
-    iupStrToStrStr(value, value1, value2, ':');
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
     horiz_alignment = TPM_LEFTALIGN;
     if (iupStrEqualNoCase(value1, "ARIGHT"))

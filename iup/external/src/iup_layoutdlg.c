@@ -66,7 +66,7 @@ static int iLayoutFindItemMatch(Ihandle *ih, const char *str, int searchType)
   {
     char att[80], val[80];
     char *attVal;
-    iupStrToStrStr(str, att, val, '=');
+    iupStrToStrStr(str, att, sizeof(att), val, sizeof(val), '=');
     attVal = iupAttribGetLocal(ih, att);
     if (attVal == NULL)
       return 0;
@@ -670,7 +670,7 @@ static int iLayoutGetExportFile(Ihandle* parent, char* filename)
 
   file_dlg = IupFileDlg();
 
-  iupStrFileNameSplit(filename, dir, filter);
+  iupStrFileNameSplit(filename, dir, sizeof(dir), filter, sizeof(filter));
 
   IupSetAttribute(file_dlg, "FILTER", filter);
   IupSetAttribute(file_dlg, "DIRECTORY", dir);
@@ -689,7 +689,7 @@ static int iLayoutGetExportFile(Ihandle* parent, char* filename)
     if (value)
     {
       iupStrCopyN(filename, sizeof(filename), value);
-      iupStrFileNameSplit(filename, dir, NULL);
+      iupStrFileNameSplit(filename, dir, sizeof(dir), NULL, 0);
     }
   }
 

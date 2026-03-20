@@ -48,7 +48,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   {
     int width, height;
     char value1[30], value2[30];
-    iupStrToStrStr(value, value1, value2, ':');
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
     iupmotGetWindowSize(ih, &width, &height); /* Have to ideia if this is going to work */
 

@@ -2024,7 +2024,7 @@ static int winTreeSetMarkAttrib(Ihandle* ih, const char* value)
     HTREEITEM hItem1, hItem2;
 
     char str1[50], str2[50];
-    if (iupStrToStrStr(value, str1, str2, '-')!=2)
+    if (iupStrToStrStr(value, str1, sizeof(str1), str2, sizeof(str2), '-')!=2)
       return 0;
 
     hItem1 = iupTreeGetNodeFromString(ih, str1);
