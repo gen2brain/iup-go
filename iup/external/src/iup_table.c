@@ -591,7 +591,7 @@ static unsigned int iTableGetEntryIndex(Itable *it, const char *key, unsigned lo
 {
   if (it->indexType == IUPTABLE_STRINGINDEXED)
   {
-    register unsigned int checksum = 0;
+    unsigned int checksum = 0;
 
 /*     Original version
     unsigned int i;
