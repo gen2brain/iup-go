@@ -1040,6 +1040,9 @@ static int motDialogMapMethod(Ihandle* ih)
   if (iupStrBoolean(IupGetGlobal("INPUTCALLBACKS")))
     XtAddEventHandler(dialog_manager, PointerMotionMask, False, (XtEventHandler)iupmotDummyPointerMotionEvent, NULL);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 

@@ -253,6 +253,9 @@ static int motLabelMapMethod(Ihandle* ih)
   if (ih->data->type == IUP_LABEL_TEXT)
     iupmotSetXmString(ih->handle, XmNlabelString, "");
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 

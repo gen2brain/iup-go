@@ -720,6 +720,9 @@ static int motCanvasMapMethod(Ihandle* ih)
   motCanvasSetDXAttrib(ih, NULL);
   motCanvasSetDYAttrib(ih, NULL);
 
+  if (IupGetCallback(ih, "DROPFILES_CB"))
+    iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
   return IUP_NOERROR;
 }
 

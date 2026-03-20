@@ -82,6 +82,7 @@ void iupmotSetPixmap(Ihandle* ih, const char* name, const char* prop, int make_i
 void iupmotSetGlobalColorAttrib(Widget w, const char* xmname, const char* name);
 void iupmotSetBgColor(Widget w, Pixel color);
 char* iupmotGetBgColorAttrib(Ihandle* ih);
+void iupmotScrolledWindowWheelEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont);
 
 /* image */
 Pixmap iupmotImageGetMask(const char* name);
