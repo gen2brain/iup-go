@@ -849,6 +849,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   Ihandle *lin1, *lin2, *col1, *col2;
 
   IcolorDlgData* colordlg_data = (IcolorDlgData*)malloc(sizeof(IcolorDlgData));
+  if (!colordlg_data) return IUP_ERROR;
   memset(colordlg_data, 0, sizeof(IcolorDlgData));
   iupAttribSet(ih, "_IUP_GC_DATA", (char*)colordlg_data);
 

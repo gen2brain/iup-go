@@ -254,6 +254,7 @@ static void iClassReleaseAttribFuncTable(Iclass* ic)
 IUP_SDK_API Iclass* iupClassNew(Iclass* parent)
 {
   Iclass* ic = malloc(sizeof(Iclass));
+  if (!ic) return NULL;
   memset(ic, 0, sizeof(Iclass));
 
   if (parent)

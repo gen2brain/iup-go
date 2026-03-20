@@ -1685,6 +1685,7 @@ IUP_API int IupGetParamv(const char* title, Iparamcb action, void* user_data, co
 
   count = param_count + param_extra;
   params = malloc((count+1)*sizeof(Ihandle*));
+  if (!params) return 0;
 
   p = 0;
   for (i = 0; i < count; i++)
@@ -1819,6 +1820,7 @@ IUP_API int IupGetParamV(const char* title, Iparamcb action, void* user_data, co
   param_count = iupGetParamCount(format, &param_extra);
 
   param_data = malloc(param_count*sizeof(void*));
+  if (!param_data) return 0;
 
   for (i = 0; i < param_count; i++)
   {

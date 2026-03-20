@@ -131,6 +131,7 @@ static void iExportSavedAttribs(FILE* file, Ihandle* ih, const char* indent, int
 
   attr_count = iupAttribGetAllSaved(ih, NULL, 0);
   attr_names = (char **)malloc(attr_count * sizeof(char *));
+  if (!attr_names) return;
 
   attr_count = iupAttribGetAllSaved(ih, attr_names, attr_count);
   for (i = 0; i < attr_count; i++)
@@ -169,6 +170,7 @@ static void iExportChangedAttribs(FILE* file, Ihandle* ih, const char* indent, i
   int i, wcount = 0, attr_count, has_attrib_id = ih->iclass->has_attrib_id, start_id = 0,
     total_count = IupGetClassAttributes(ih->iclass->name, NULL, 0);
   char **attr_names = (char **)malloc(total_count * sizeof(char *));
+  if (!attr_names) return;
 
   if (IupClassMatch(ih, "tree") || /* tree can only set id attributes after map, so they can not be saved */
       IupClassMatch(ih, "cells"))  /* cells does not have any savable id attributes */

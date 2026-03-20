@@ -3389,6 +3389,7 @@ IUP_API Ihandle* IupLayoutDialog(Ihandle* dialog)
   iLayoutDialog* layoutdlg;
 
   layoutdlg = calloc(1, sizeof(iLayoutDialog));
+  if (!layoutdlg) return NULL;
 
   layoutdlg->timer = IupTimer();
   IupSetCallback(layoutdlg->timer, "ACTION_CB", iLayoutTimerAutoRedraw_CB);
