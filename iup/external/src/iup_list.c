@@ -110,6 +110,7 @@ void iupListMultipleCallActionCb(Ihandle* ih, IFnsii cb, IFns multi_cb, int* pos
   int old_count = old_str? (int)strlen(old_str): 0;
 
   char* str = malloc(count+1);
+  if (!str) return;
   memset(str, '-', count);
   str[count]=0;
   for (i=0; i<sel_count; i++)

@@ -1010,6 +1010,7 @@ static Ihandle** iGridBoxGetChildArray(Ihandle* ih)
 {
   Ihandle* *child_array = (Ihandle**)calloc(ih->data->num_lin * ih->data->num_col, sizeof(Ihandle*));
   Ihandle* child;
+  if (!child_array) return NULL;
 
   int i = 0;
   for (child = ih->firstchild; child; child = child->brother)
@@ -1038,6 +1039,12 @@ static void iGridBoxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
   alignment_lin = (int*)malloc(ih->data->num_lin *sizeof(int));
   col_width = (int*)calloc(ih->data->num_col, sizeof(int));
   lin_height = (int*)calloc(ih->data->num_lin, sizeof(int));
+  if (!col_pos || !line_pos || !alignment_col || !alignment_lin || !col_width || !lin_height)
+  {
+    free(col_pos); free(line_pos); free(alignment_col);
+    free(alignment_lin); free(col_width); free(lin_height);
+    return;
+  }
 
   if (!ih->data->homogeneous_width || !ih->data->homogeneous_height)
     child_array = iGridBoxGetChildArray(ih);

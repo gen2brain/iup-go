@@ -268,6 +268,7 @@ static int classesList_ActionCB (Ihandle *ih, char *className, int pos, int stat
     
     total_n = IupGetClassAttributes(className, NULL, -1); /* total include callbacks */
     attr_names = (char **)malloc(total_n * sizeof(char *));
+    if (!attr_names) return IUP_DEFAULT;
 
     /************ attributes ************/
 
@@ -315,6 +316,7 @@ static void PopulateListOfClasses(Ihandle* ih)
 
   num_classes = IupGetAllClasses(NULL, -1);
   list = (char **)malloc(num_classes * sizeof(char *));
+  if (!list) return;
   IupGetAllClasses(list, num_classes);
 
   qsort(list, num_classes, sizeof(char*), compare_names);

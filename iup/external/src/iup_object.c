@@ -22,6 +22,7 @@
 static Ihandle* iHandleCreate(void)
 {
   Ihandle *ih = (Ihandle*)malloc(sizeof(Ihandle));
+  if (!ih) return NULL;
   memset(ih, 0, sizeof(Ihandle));
 
   ih->sig[0] = 'I';

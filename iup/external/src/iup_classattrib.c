@@ -566,6 +566,7 @@ IUP_SDK_API void iupClassRegisterAttribute(Iclass* ic, const char* name,
 #endif
 
   afunc = (IattribFunc*)malloc(sizeof(IattribFunc));
+  if (!afunc) return;
   afunc->get = _get;
   afunc->set = _set;
   if (_default_value == IUPAF_SAMEASSYSTEM)
@@ -596,6 +597,7 @@ IUP_SDK_API void iupClassRegisterAttributeId(Iclass* ic, const char* name,
 #endif
 
   afunc = (IattribFunc*)malloc(sizeof(IattribFunc));
+  if (!afunc) return;
   afunc->get = (IattribGetFunc)_get;
   afunc->set = (IattribSetFunc)_set;
   afunc->default_value = NULL;
@@ -619,6 +621,7 @@ IUP_SDK_API void iupClassRegisterAttributeId2(Iclass* ic, const char* name,
 #endif
 
   afunc = (IattribFunc*)malloc(sizeof(IattribFunc));
+  if (!afunc) return;
   afunc->get = (IattribGetFunc)_get;
   afunc->set = (IattribSetFunc)_set;
   afunc->default_value = NULL;

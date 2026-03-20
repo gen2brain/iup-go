@@ -481,6 +481,7 @@ static void iFlatListSelectItem(Ihandle* ih, int pos, int ctrlPressed, int shftP
     }
 
     str = malloc(count + 1);
+    if (!str) return;
     memset(str, 'x', count); /* mark all as unchanged */
     str[count] = 0;
 

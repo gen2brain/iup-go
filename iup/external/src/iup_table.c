@@ -679,10 +679,13 @@ static void iTableUpdateArraySize(ItableEntry *entry)
 
     newSize = entry->itemsSize + itable_itemGrow;
 
-    entry->items = (ItableItem *)realloc(entry->items, newSize * sizeof(ItableItem));
-    iupASSERT(entry->items!=NULL);
-    if (!entry->items)
-      return;
+    {
+      ItableItem* new_items = (ItableItem *)realloc(entry->items, newSize * sizeof(ItableItem));
+      iupASSERT(new_items!=NULL);
+      if (!new_items)
+        return;
+      entry->items = new_items;
+    }
 
     memset(entry->items + entry->itemsSize, 0, itable_itemGrow * sizeof(ItableItem));
 

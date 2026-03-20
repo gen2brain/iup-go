@@ -521,6 +521,7 @@ static int iGlobalsNameFind_CB(Ihandle* bt)
       int i, total_len = 0, max_len = count * 50;
       char* str = malloc(max_len);
       char** names = malloc(count * sizeof(char*));
+      if (!str || !names) { free(str); free(names); return IUP_DEFAULT; }
       iupNamesFindAll(elem, names, count);
       {
         int pos = 0;
@@ -565,6 +566,7 @@ static int iGlobalsNameCheckHandles_CB(Ihandle* bt)
   int i, count = IupGetInt(list, "COUNT");
   int log_size = 0, log_max_size = count * 50;
   char* log = malloc(log_max_size);
+  if (!log) return IUP_DEFAULT;
 
   for (i = 0; i < count; i++)
   {
@@ -575,8 +577,11 @@ static int iGlobalsNameCheckHandles_CB(Ihandle* bt)
       int name_len = (int)strlen(name);
       if (log_size + name_len + 1 > log_max_size)
       {
+        char* new_log;
         log_max_size += 10 * name_len;
-        log = realloc(log, log_max_size);
+        new_log = realloc(log, log_max_size);
+        if (!new_log) break;
+        log = new_log;
       }
 
       memcpy(log + log_size, name, name_len);

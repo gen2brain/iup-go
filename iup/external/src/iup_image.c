@@ -33,6 +33,7 @@ void iupImageResizeRGBA(int src_width, int src_height, unsigned char *src_map, i
 
   int *XL = (int*)malloc(dst_width * sizeof(int));
   double *T = (double*)malloc(dst_width * sizeof(double));
+  if (!XL || !T) { free(XL); free(T); return; }
 
   factor = (double)src_width / (double)dst_width;
   for (x = 0; x < dst_width; x++)
@@ -86,6 +87,7 @@ static void iDataStretchMap(int src_width, int src_height, unsigned char *src_ma
   double factor;
   unsigned char *line_map;
   int* XTab = (int*)malloc(dst_width*sizeof(int));
+  if (!XTab) return;
 
   /* initialize conversion tables to speed up the stretch process */
   factor = (double)(src_width - 1) / (double)(dst_width - 1);
@@ -176,6 +178,7 @@ IUP_SDK_API void iupImageStockSet(const char *name, iupImageStockCreateFunc func
     free(istock);  /* overwrite a previous registration */
 
   istock = (IimageStock*)malloc(sizeof(IimageStock));
+  if (!istock) return;
   istock->func = func;
   istock->image = NULL;
   istock->native_name = native_name;
@@ -194,6 +197,7 @@ IUP_SDK_API void iupImageStockSetNoResize(const char *name, iupImageStockCreateF
     free(istock);  /* overwrite a previous registration */
 
   istock = (IimageStock*)malloc(sizeof(IimageStock));
+  if (!istock) return;
   istock->func = func;
   istock->image = NULL;
   istock->native_name = native_name;
