@@ -12,7 +12,7 @@ Creates the separator interface element. It shows a line between two menu items.
 
 The separator is ignored when it is part of the definition of the items in a bar menu.
 
-In GTK uses GtkSeparatorMenuItem, in Windows uses InsertMenuItem, and in Motif uses xmSeparator.
+In GTK uses GtkSeparatorMenuItem, in GTK 4 uses GMenu separator section, in Windows uses InsertMenuItem, in WinUI uses XAML MenuFlyoutSeparator, in macOS uses NSMenuItem separatorItem, in Qt uses QAction separator, in EFL uses Elm_Menu separator, and in Motif uses xmSeparator.
 
 ### Examples
 
