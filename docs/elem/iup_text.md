@@ -12,9 +12,9 @@ Creates an editable text field.
 
 ### Attributes
 
-**ALIGNMENT** [Windows and GTK Only] (non-inheritable): horizontal text alignment.
+**ALIGNMENT** (non-inheritable): horizontal text alignment.
 Possible values: "ALEFT", "ARIGHT", "ACENTER". Default: "ALEFT".
-In Motif, text is always left aligned.
+Not supported in Motif.
 
 **APPEND** (write-only): Inserts a text at the end of the current text.
 In the Multiline, if APPENDNEWLINE=YES, a "\n" character is automatically inserted before the appended text if the current text is not empty(APPENDNEWLINE default is YES).
@@ -63,19 +63,22 @@ In Windows UNDO is also available, and REDO is available when FORMATTING=YES.
 
 **COUNT** (read-only): returns the number of **characters** in the text, including the line breaks.
 
-**CUEBANNER** [Windows and GTK Only] (non-inheritable): a text that is displayed when there is no text at the control.
+**CUEBANNER** (non-inheritable): a text that is displayed when there is no text at the control.
 It works as a textual cue, or tip to prompt the user for input.
-Valid only for MULTILINE=NO, and works only when Visual Styles are enabled. [GTK 3.2]
+Valid only for MULTILINE=NO. In Windows, works only when Visual Styles are enabled.
+Supported in Windows, GTK, GTK 4 and Qt.
 
-**DROPFILESTARGET** [Windows and GTK Only] (non-inheritable): Enable or disable the drop of files.
+**DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute TXTFGCOLOR.
 
-**FILTER** [Windows Only] (non-inheritable): allows a custom filter to process the characters: Can be LOWERCASE, UPPERCASE or NUMBER (only numbers allowed).
+**FILTER** (non-inheritable): allows a custom filter to process the characters: Can be LOWERCASE, UPPERCASE or NUMBER (only numbers allowed).
+Supported in Windows, Qt and macOS.
 
-[FORMATTING](../attrib/iup_formatting.md) [Windows and GTK Only] (non-inheritable): When enabled allows the use of text formatting attributes.
+[FORMATTING](../attrib/iup_formatting.md) (non-inheritable): When enabled allows the use of text formatting attributes.
 In GTK is always enabled, but only when MULTILINE=YES. Default: NO.
+Not supported in Motif.
 
 **INSERT** (write-only): Inserts a text in the caret's position, also replaces the current selection if any.
 Ignored if set before map.
@@ -104,17 +107,19 @@ Default: maximum.
 **NOHIDESEL** [Windows Only]: do not hide the selection when the control loses its focus.
 Default: Yes.
 
-**OVERWRITE** [Windows and GTK Only] (non-inheritable): turns the overwrite mode ON or OFF.
+**OVERWRITE** (non-inheritable): turns the overwrite mode ON or OFF.
 Works only when FORMATTING=YES.
+Supported in Windows, GTK, GTK 4, Qt and macOS.
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
-Default value: "0x0". In Windows, only the horizontal value is used. (GTK 2.10 for single line)
+Default value: "0x0". In Windows, only the horizontal value is used.
 
 **CPADDING**: same as PADDING but using the units of the **SIZE** attribute.
 It will actually set the PADDING attribute.
 
-**PASSWORD** (creation-only) [Windows and GTK Only] (non-inheritable): Hide the typed character using an "*".
+**PASSWORD** (creation-only) (non-inheritable): Hide the typed character using an "*".
 Default: "NO".
+Not supported in Motif.
 
 **READONLY**: Allows the user only to read the contents, without changing it.
 Restricts keyboard input only, text value can still be changed using attributes.
@@ -125,7 +130,8 @@ Associates an automatic horizontal and/or vertical scrollbar to the multiline.
 Can be: "VERTICAL", "HORIZONTAL", "YES" (both) or "NO" (none). Default: "YES".
 For all systems, when SCROLLBAR!=NO the natural size will always include its size even if the native system hides the scrollbar.
 If **AUTOHIDE**=YES scrollbars are visible only if they are necessary, by default AUTOHIDE=NO.
-In Windows when FORMATTING=NO, AUTOHIDE is not supported. In Motif AUTOHIDE is not supported.
+In Windows when FORMATTING=NO, AUTOHIDE is not supported.
+In Motif AUTOHIDE is not supported.
 
 **SCROLLTO** (non-inheritable, write-only): Scroll the text to make the given **character** position visible.
 It uses the same format and reference of the CARET attribute ("lin:col" or "col" starting at 1).
@@ -134,8 +140,9 @@ In Windows, when FORMATTING=Yes "col" is ignored.
 **SCROLLTOPOS** (non-inheritable, write-only): Scroll the text to make the given **character** position visible.
 It uses the same format and reference of the CARETPOS attribute ("pos" starting at 0).
 
-**SCROLLVISIBLE** (read-only) [Windows Only]: Returns which scrollbars are visible at the moment.
+**SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
+Supported in Windows and Qt.
 
 **SELECTEDTEXT** (non-inheritable): Selection text. Returns NULL if there is no selection.
 When changed replaces the current selection.
@@ -182,8 +189,9 @@ Default: YES. Use SPINAUTO=NO and the VALUE attribute during SPIN_CB to control 
 In Windows, the increment is multiplied by 5 after 2 seconds and multiplied by 20 after 5 seconds of a spin button pressed.
 In GTK, the increment change is progressively accelerated when a spin button is pressed.
 
-**TABSIZE** [Windows and GTK Only]: Valid only when MULTILINE=YES. Controls the number of characters for a tab stop.
+**TABSIZE**: Valid only when MULTILINE=YES. Controls the number of characters for a tab stop.
 Default: 8.
+Not supported in Motif.
 
 **VALUE** (non-inheritable): Text entered by the user.
 The '\n' character indicates a new line, valid only when MULTILINE=YES.
@@ -240,7 +248,7 @@ Use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordina
 
 For single line controls, **lin** is always 1, and **pos** is always "**col**-1".
 
-[DROPFILES_CB](../call/iup_dropfiles_cb.md) [Windows and GTK Only]: Action generated when one or more files are dropped in the element.
+[DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the element.
 
 [MOTION_CB](../call/iup_motion_cb.md): Action generated when the mouse is moved.
 Use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordinates in character positioning.
@@ -294,7 +302,7 @@ Internal Drag&Drop support is enabled by default.
 But in Windows the internal Drag&Drop is enabled only if FORMATTING=YES.
 In GTK the internal Drag&Drop cannot be disabled, so it will conflict with the [Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks.
 
-In GTK uses GtkTextView/GtkEntry/GtkSpinButton, in Windows uses RICHEDIT_CLASS (formatting)/WC_EDIT, and in Motif uses xmText/xmTextField, for Single/Multiline.
+In GTK uses GtkTextView/GtkEntry/GtkSpinButton, in Windows uses RICHEDIT_CLASS (formatting)/WC_EDIT, in WinUI uses XAML RichEditBox/TextBox, in macOS uses NSTextView/NSTextField, in Qt uses QTextEdit/QLineEdit, in EFL uses Elm_Entry, and in Motif uses xmText/xmTextField.
 
 #### Navigation, Selection and Clipboard Keys
 
