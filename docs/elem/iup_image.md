@@ -117,9 +117,13 @@ In Motif, names of bitmaps installed on the system are also accepted. For exampl
     IupSetAttribute(label, "IMAGE", "gtk-open");  // available in the GTK Stock Items
 
 In all drivers, a path to a file name can also be used as the attribute value.
-But the available file formats supported are system-dependent. The Windows driver supports BMP, ICO and CUR.
-The GTK driver supports the formats supported by the GDK-PixBuf library, such as BMP, GIF, JPEG, PCX, PNG, TIFF and many others.
-The Motif driver supports the X-Windows bitmap. For example:
+The available file formats supported are system-dependent.
+In Windows, BMP, ICO and CUR are supported via LoadImage, plus BMP, GIF, JPEG, PNG, TIFF and others via WIC.
+In GTK, the formats supported by GDK-PixBuf are available, such as BMP, GIF, JPEG, PNG, TIFF and many others.
+In macOS, the formats supported by NSImage are available, such as BMP, GIF, JPEG, PNG, TIFF and others.
+In Qt, the formats supported by QPixmap are available, such as BMP, GIF, JPEG, PNG and others.
+In EFL, the formats supported by Evas image loaders are available, such as BMP, GIF, JPEG, PNG, TIFF and others.
+In Motif, the X-Windows bitmap format is supported. For example:
 
     IupSetAttribute(label, "IMAGE", "../etc/tecgraf.bmp");
 
