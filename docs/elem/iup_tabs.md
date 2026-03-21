@@ -242,3 +242,7 @@ Motif does not supports vertical text.
 **Motif**
 ![](images/iuptabs_mot_top.png)
 ![](images/iuptabs_mot_left.png)
+
+### See Also
+
+[IupFlatTabs](iup_flattabs.md), [IupZbox](iup_zbox.md)

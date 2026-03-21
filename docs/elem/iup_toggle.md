@@ -150,4 +150,4 @@ In GTK uses GtkRadioButton/GtkCheckButton/GtkToggleButton, in GTK 4 uses GtkChec
 
 ### See Also
 
-[IupImage](iup_image.md), [IupButton](iup_button.md), [IupLabel](iup_label.md), [IupRadio](iup_radio.md).
+[IupImage](iup_image.md), [IupButton](iup_button.md), [IupLabel](iup_label.md), [IupRadio](iup_radio.md), [IupFlatToggle](iup_flattoggle.md).
