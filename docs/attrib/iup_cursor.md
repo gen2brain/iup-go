@@ -18,7 +18,7 @@ It will check first for the following predefined names:
 |      ![](images/wcursor_hand.gif)      |   ![](images/xcursor_hand.gif)    | "HAND" |
 |      ![](images/wcursor_help.gif)      |   ![](images/xcursor_help.gif)    | "HELP" |
 |      ![](images/wcursor_move.gif)      |   ![](images/xcursor_move.gif)    | "MOVE" |
-|       ![](images/wcursor_no.gif)       |                ---                | "NO" (Windows Only) |
+|       ![](images/wcursor_no.gif)       |                ---                | "NO" (Windows and macOS) |
 |   ![](images/wcursor_resize_ns.gif)    | ![](images/xcursor_resize_n.gif)  | "RESIZE_N" |
 |   ![](images/wcursor_resize_ns.gif)    | ![](images/xcursor_resize_s.gif)  | "RESIZE_S" |
 |   ![](images/wcursor_resize_ns.gif)    | ![](images/xcursor_resize_ns.gif) | "RESIZE_NS" |
@@ -37,12 +37,14 @@ It will check first for the following predefined names:
 Default: "ARROW"
 
 The GTK cursors have the same appearance of the X-Windows cursors.
-Although GTK cursors can have more than 2 colors depending on the X-Server.
+In Qt, the predefined names map to the standard Qt::CursorShape values.
+In macOS, the predefined names map to NSCursor class methods.
 
 If it is not a pre-defined name, then will check for other system cursors.
-In Windows, the value will be used to load a cursor form the application resources.
+In Windows, the value will be used to load a cursor from the application resources.
 In Motif, the value will be used as a X-Windows cursor number, see definitions in the X11 header "cursorfont.h".
-In GTK the value will be used as a cursor name, see the GDK documentation on Cursors.
+In GTK, the value will be used as a cursor name, see the GDK documentation on Cursors.
+In Qt, the value will be used to try to load the cursor from the system theme.
 
 If no system cursors were found, then the value will be used to try to find an IUP image with the same name.
 Use **IupSetHandle** to define a name for an **IupImage**.
@@ -55,7 +57,7 @@ The default value is "0:0".
 
 Usually only color indices 0, 1 and 2 can be used in a cursor, where 0 will be transparent (must be "BGCOLOR").
 The RGB colors corresponding to indices 1 and 2 are defined just as in regular images.
-In Windows and GTK, the cursor can have more than 2 colors.
+In Windows, GTK, macOS and Qt, the cursor can have more than 2 colors and support RGBA images.
 Cursor sizes are usually less than or equal to 32x32.
 
 The cursor will only change when the interface system regains control or when IupFlush is called.
