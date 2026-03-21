@@ -52,6 +52,19 @@ Can be set to NULL. If NULL, BGCOLOR will be used instead.
 **PSCOLOR**: background color used to indicate a press state. Pre-defined to "150 200 235".
 Can be set to NULL. If NULL, BGCOLOR will be used instead.
 
+**GRADIENT** (non-inheritable): gradient background colors in the format "color1:color2".
+When defined, the background is drawn as a linear gradient instead of a solid color.
+Can be set to NULL to disable.
+
+**GRADIENTHL** (non-inheritable): gradient colors used for highlight state.
+If not defined, GRADIENT will be used.
+
+**GRADIENTPS** (non-inheritable): gradient colors used for pressed state.
+If not defined, GRADIENT will be used.
+
+**GRADIENTANGLE** (non-inheritable): angle in degrees for the gradient direction.
+Default: "90" (top to bottom).
+
 **BORDER** (creation-only): the default value is "NO". This is the **IupCanvas** border.
 
 **BORDERCOLOR**: color used for borders. Default: "50 150 255".
@@ -65,6 +78,9 @@ Default use BORDERCOLOR.
 **BORDERWIDTH**: line width used for borders. Default: "1".
 Any borders can be hidden by simply setting this value to 0.
 This is for the **IupFlatButton** drawn border.
+
+**CORNERRADIUS** (non-inheritable): radius of the rounded corners for the button background and border.
+Default: "0" (no rounding).
 
 **SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=Yes borders are always show.
 When SHOWBORDER=Yes and BGCOLOR is not defined, the actual BGCOLOR will be a darker version of the background color of the native parent.
@@ -159,7 +175,9 @@ For the remaining lines to be visible, the element should use EXPAND=VERTICAL or
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
 It will be ignored when TEXTWRAP=Yes.
 
-  **TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
+**TEXTCLIP** (non-inheritable): If Yes, the text will be clipped to the button area. Default: No.
+
+**TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 
 **VALUE** (non-inheritable): Toggle's state. Values can be "ON", "OFF" or "TOGGLE".
