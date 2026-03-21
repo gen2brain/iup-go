@@ -2,7 +2,7 @@
 
 Creates a month calendar interface element, where the user can select a date.
 
-GTK and Windows only. NOT available in Motif.
+Not available in Motif.
 
 ### Creation
 
@@ -18,6 +18,7 @@ GTK and Windows only. NOT available in Motif.
 Can be set to "TODAY". Default value is the today date.
 
 **WEEKNUMBERS**: Shows the number of the week along the year. Default: NO.
+Not supported in WinUI and macOS.
 
 ### Callbacks
 
@@ -37,9 +38,7 @@ Can be set to "TODAY". Default value is the today date.
 
 In Windows, the view is changed when the month of year is clicked, so the user can select the month of the year or a year among years.
 
-In GTK the today date is not marked in the calendar.
-
-In GTK uses GtkCalendar, and in Windows uses MONTHCAL_CLASS.
+In GTK uses GtkCalendar, in Windows uses MONTHCAL_CLASS, in WinUI uses XAML CalendarView, in macOS uses NSDatePicker, in Qt uses QCalendarWidget, and in EFL uses a custom calendar control.
 
 ### Examples
 
