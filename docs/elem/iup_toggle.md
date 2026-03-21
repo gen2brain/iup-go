@@ -2,6 +2,7 @@
 
 Creates the toggle interface element. It is a two-state (on/off) button that, when selected, generates an action that activates a function in the associated application.
 Its visual representation can contain a text or an image.
+It can also be displayed as a switch control.
 
 ### Creation
 
@@ -41,15 +42,16 @@ Used only when IMAGE is defined. Can be YES or NO. Default: NO.
 **IMAGE** (non-inheritable): Image name. When the IMAGE attribute is defined, the TITLE is not shown.
 This makes the toggle looks just like a button with an image, but its behavior remains the same.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
-See also [IupImage](iup_image.md). (GTK 2.6)
+See also [IupImage](iup_image.md).
 
 **IMPRESS** (non-inheritable): Image name of the pressed toggle.
-Unlike buttons, toggles always display the button border when IMAGE and IMPRESS are both defined. (GTK 2.6)
+Unlike buttons, toggles always display the button border when IMAGE and IMPRESS are both defined.
 
 **IMINACTIVE** (non-inheritable): Image name of the inactive toggle.
-If it is not defined but IMAGE is defined then for inactive toggles the colors will be replaced by a modified version of the background color creating the disabled effect. (GTK 2.6)
+If it is not defined but IMAGE is defined then for inactive toggles the colors will be replaced by a modified version of the background color creating the disabled effect.
 
-**MARKUP** [GTK only]: allows the title string to contain pango markup commands.
+**MARKUP** [GTK and Qt only]: allows the title string to contain markup commands.
+In GTK uses Pango markup, in Qt uses HTML rich text.
 Works only if a mnemonic is NOT defined in the title. Can be "YES" or "NO". Default: "NO".
 
 **PADDING**: internal margin when IMAGE is defined.
@@ -78,6 +80,11 @@ The '\n' character is accepted for line change.
 The "&" character can be used to define a mnemonic, the next character will be used as a key.
 Use "&&" to show the "&" character instead on defining a mnemonic.
 The toggle can be activated from any control in the dialog using the "Alt+key" combination.
+
+**SWITCH** (creation-only): displays the toggle as a switch control instead of a checkbox.
+Can be "YES" or "NO". Default: "NO".
+In GTK 3 and GTK 4 uses native GtkSwitch, in WinUI uses XAML ToggleSwitch, in macOS uses NSSwitch, in EFL uses Elm_Check with the "toggle" style.
+In Win32, Qt and Motif the switch is custom drawn.
 
 **3STATE** (creation-only): Enable a three state toggle.
 Valid for toggles with text only, and that do not belong to a radio. Can be "YES" or NO".
@@ -125,7 +132,7 @@ If you need to dynamically remove toggles that belong to a radio in Windows, the
 
 A toggle that is a child of an **IupRadio** automatically receives a name when it is mapped into the native system.
 
-In GTK uses GtkRadioButton/GtkCheckButton/GtkToggleButton, in Windows uses WC_BUTTON, and in Motif uses xmToggleButton.
+In GTK uses GtkRadioButton/GtkCheckButton/GtkToggleButton, in GTK 4 uses GtkCheckButton/GtkSwitch, in Windows uses WC_BUTTON, in WinUI uses XAML CheckBox/RadioButton/ToggleSwitch, in macOS uses NSButton/NSSwitch, in Qt uses QCheckBox/QRadioButton, in EFL uses Elm_Check, and in Motif uses xmToggleButton.
 
 ### Examples
 
