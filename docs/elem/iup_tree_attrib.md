@@ -17,15 +17,15 @@ Default: the global attribute TXTFGCOLOR.
 **HIDEBUTTONS** (creation-only): hide the expand and collapse buttons.
 In GTK, branches will be only expanded programmatically.
 
-**HIDELINES** (creation-only): hide the lines that connect the nodes in the hierarchy. (GTK 2.10)
+**HIDELINES** (creation-only): hide the lines that connect the nodes in the hierarchy.
 
-**HLCOLOR** [Windows and Motif Only] (non-inheritable): the background color of the selected node.
+**HLCOLOR** (non-inheritable): the background color of the selected node.
 Default: TXTHLCOLOR global attribute.
 
 **INDENTATION**: sets the indentation level in pixels.
 The visual effect of changing the indentation is highly system-dependent.
 In GTK it acts as an additional indent value, and the lines do not follow the extra indent.
-In Windows is limited to a minimum of 5 pixels.  (GTK 2.12)
+In Windows is limited to a minimum of 5 pixels.
 
 **INFOTIP** [Windows Only]: the TIP is shown every time a node is highlighted.
 This is the default behavior for TIPs in native tree controls in Windows, if set to No then it will use the regular TIP behavior.
@@ -57,7 +57,7 @@ If any parent node is collapsed then they are automatically expanded.
 **HIDEBUTTONS** (creation-only): hide the expand and collapse buttons.
 In GTK, branches will be only expanded programmatically.
 
-**HIDELINES** (creation-only): hide the lines that connect the nodes in the hierarchy. (GTK 2.10)
+**HIDELINES** (creation-only): hide the lines that connect the nodes in the hierarchy.
 
 ### Nodes  (non-inheritable)
 
@@ -137,9 +137,9 @@ Default: "Yes".
 
 **IMAGEid** (write-only): image name to be used in the specified node, where id is the specified node identifier.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
-See also [IupImage](iup_image.md). In Windows and Motif set the BGCOLOR attribute before setting the image.
+See also [IupImage](iup_image.md).
 If node is a branch it is used when collapsed. In Windows all images must have the same size.
-In other systems only expanded and collpased images must have the same size.
+In other systems only expanded and collapsed images must have the same size.
 
 **IMAGEEXPANDEDid** (write-only): same as the IMAGE attribute but used for expanded branches.
 
@@ -159,7 +159,8 @@ Default: "IMGEXPANDED" (an open folder). If BGCOLOR is set the image is automati
 **VALUE** (non-inheritable): The focus node identifier.
 When retrieved but there isn't a node with focus it returns 0 if there are any nodes, and returns -1 if there are no nodes.
 When changed and MARKMODE=SINGLE the node is also selected. The tree is always scrolled so the node becomes visible.
-In Motif the tree will also receive the focus. Additionally, accepts the values:
+In Motif the tree will also receive the focus.
+Additionally, accepts the values:
 
 > **"ROOT" or "FIRST": the first node (which is always expanded)**\
 > "LAST": the last **expanded** node\
@@ -200,7 +201,7 @@ Can be set only when MARKMODE=MULTIPLE, can also be get when MARKMODE=SINGLE.
 **MARKSTART** (non-inheritable): Defines the initial node for the block marking, used when MARK=BLOCK.
 The value must be the node identifier. Default: 0 (first node).
 
-**MARKWHENTOGGLE** (non-inheritable) [GTK and Windows Only]: selects or clears the selection of a node when its toggle is changed.
+**MARKWHENTOGGLE** (non-inheritable): selects or clears the selection of a node when its toggle is changed.
 Works only if the node has a toggle. Default: No.
 
 ### Hierarchy  (non-inheritable)
@@ -283,7 +284,7 @@ Default: "NO". Works only if MARKMODE=SINGLE.
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes still need to be set in order to activate the drag & drop support, so the application can control if this tree is a source and/or target.
 Default: NO.
 
-**DROPFILESTARGET** [Windows and GTK Only] (non-inheritable): Enable or disable the drop of files.
+**DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
 This is NOT related to the drag&drop of nodes inside the tree.
 
