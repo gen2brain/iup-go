@@ -1,9 +1,19 @@
 ## IupHelp
 
-Opens the given URL. In UNIX executes Netscape, Safari (macOS) or Firefox (in Linux) passing the desired URL as a parameter.
-In Windows executes the shell "open" operation on the given URL.
+Opens the given URL in the default application.
 
-In UNIX, you can change the used browser setting the environment variable IUP_HELPAPP or using the global attribute "HELPAPP".
+In Windows, executes the shell "open" operation on the given URL via ShellExecute.
+
+In Linux/Unix with GTK 3, Motif, or EFL, it first attempts to use the XDG Desktop Portal (org.freedesktop.portal.OpenURI) via D-Bus.
+If the portal is not available, it falls back to the xdg-open command.
+
+In Linux/Unix with GTK 4, it uses the GIO g_app_info_launch_default_for_uri function, falling back to xdg-open if that fails.
+
+In Qt, it uses QDesktopServices::openUrl.
+
+In macOS, it uses the "open" command.
+
+In Linux/Unix, you can override the browser by setting the environment variable IUP_HELPAPP or using the global attribute "HELPAPP".
 
 It is a non-synchronous operation, i.e., the function will return just after executing the command, and it will not wait for its result.
 
