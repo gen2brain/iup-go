@@ -27,7 +27,8 @@ Default: 0x0.
 Default: the global attribute DLGFGCOLOR.
 
 **SUNKEN**: When not using a title, the frame line defines a sunken area (lowered area).
-Valid values: YES or NO*.* Default: NO.
+Valid values: YES or NO. Default: NO.
+Not supported in WinUI, GTK 4 and macOS.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Text the user will see at the top of the frame.
 If not defined during creation it cannot be added lately, to be changed it must be at least "" during creation.
@@ -59,7 +60,7 @@ To always use Visual Styles, set the title to "" before mapping, but be aware th
 
 The frame can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md). 
 
-In GTK uses GtkFrame, in Windows uses WC_BUTTON, and in Motif uses xmFrame.
+In GTK uses GtkFrame, in Windows uses WC_BUTTON, in WinUI uses a custom emulation with XAML Canvas and Border, in macOS uses NSBox, in Qt uses QGroupBox, in EFL uses Elm_Frame, and in Motif uses xmFrame.
 
 ### Examples
 
