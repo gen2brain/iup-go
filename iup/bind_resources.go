@@ -20,7 +20,7 @@ import "C"
 
 // Image creates an image to be shown on a label, button, toggle, or as a cursor.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupimage.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
 func Image(width, height int, pixMap []byte) Ihandle {
 	h := mkih(C.IupImage(C.int(width), C.int(height), (*C.uchar)(unsafe.Pointer(&pixMap[0]))))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -29,7 +29,7 @@ func Image(width, height int, pixMap []byte) Ihandle {
 
 // ImageRGB creates an image to be shown on a label, button, toggle, or as a cursor.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupimage.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
 func ImageRGB(width, height int, pixMap []byte) Ihandle {
 	h := mkih(C.IupImageRGB(C.int(width), C.int(height), (*C.uchar)(unsafe.Pointer(&pixMap[0]))))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -38,7 +38,7 @@ func ImageRGB(width, height int, pixMap []byte) Ihandle {
 
 // ImageRGBA creates an image to be shown on a label, button, toggle, or as a cursor.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupimage.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
 func ImageRGBA(width, height int, pixMap []byte) Ihandle {
 	h := mkih(C.IupImageRGBA(C.int(width), C.int(height), (*C.uchar)(unsafe.Pointer(&pixMap[0]))))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -103,7 +103,7 @@ func ImageToImage(ih Ihandle) *image.RGBA {
 
 // ImageGetHandle returns an IupImage handle from a name.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupimagegethandle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_imagegethandle.md
 func ImageGetHandle(name string) Ihandle {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -120,7 +120,7 @@ func ImageGetHandle(name string) Ihandle {
 //
 // This sequence is not the same sequence used by the Tab key, which is dependent on the native system.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupnextfield.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_nextfield.md
 func NextField(ih Ihandle) Ihandle {
 	return mkih(C.IupNextField(ih.ptr()))
 }
@@ -128,14 +128,14 @@ func NextField(ih Ihandle) Ihandle {
 // PreviousField shifts the focus to the previous element that can have the focus.
 // It is relative to the given element and does not depend on the element currently with the focus.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuppreviousfield.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_previousfield.md
 func PreviousField(ih Ihandle) Ihandle {
 	return mkih(C.IupPreviousField(ih.ptr()))
 }
 
 // GetFocus returns the identifier of the interface element that has the keyboard focus, i.e. the element that will receive keyboard events.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetfocus.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getfocus.md
 func GetFocus() Ihandle {
 	return mkih(C.IupGetFocus())
 }
@@ -143,14 +143,14 @@ func GetFocus() Ihandle {
 // SetFocus sets the interface element that will receive the keyboard focus, i.e., the element that will receive keyboard events.
 // But this will be processed only after the control actually receive the focus.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetfocus.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setfocus.md
 func SetFocus(ih Ihandle) Ihandle {
 	return mkih(C.IupSetFocus(ih.ptr()))
 }
 
 // Item creates an item of the menu interface element. When selected, it generates an action.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupitem.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_item.md
 func Item(title string) Ihandle {
 	cTitle := C.CString(title)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -163,7 +163,7 @@ func Item(title string) Ihandle {
 // Menu Creates a menu element, which groups 3 types of interface elements: item, submenu and separator.
 // Any other interface element defined inside a menu will be an error.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupmenu.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_menu.md
 func Menu(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -174,7 +174,7 @@ func Menu(children ...Ihandle) Ihandle {
 
 // Separator creates the separator interface element. It shows a line between two menu items.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupseparator.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_separator.md
 func Separator() Ihandle {
 	h := mkih(C.IupSeparator())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -183,7 +183,7 @@ func Separator() Ihandle {
 
 // Submenu creates a menu item that, when selected, opens another menu.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupsubmenu.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_submenu.md
 func Submenu(title string, child Ihandle) Ihandle {
 	cTitle := C.CString(title)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -195,7 +195,7 @@ func Submenu(title string, child Ihandle) Ihandle {
 
 // SetHandle associates a name with an interface element.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsethandle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_sethandle.md
 func SetHandle(name string, ih Ihandle) Ihandle {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -205,7 +205,7 @@ func SetHandle(name string, ih Ihandle) Ihandle {
 
 // GetHandle returns the identifier of an interface element that has an associated name using SetHandle.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgethandle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_gethandle.md
 func GetHandle(name string) Ihandle {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -216,14 +216,14 @@ func GetHandle(name string) Ihandle {
 // GetName returns a name of an interface element, if the element has an associated name using SetHandle.
 // Notice that a handle can have many names. GetName will return the last name set.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetname.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getname.md
 func GetName(ih Ihandle) string {
 	return C.GoString(C.IupGetName(ih.ptr()))
 }
 
 // GetAllNames returns the names of all interface elements that have an associated name using SetHandle.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetallnames.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallnames.md
 func GetAllNames() (names []string) {
 	n := int(C.IupGetAllNames(nil, 0))
 	if n > 0 {
@@ -240,7 +240,7 @@ func GetAllNames() (names []string) {
 // GetAllDialogs returns the names of all dialogs that have an associated name using SetHandle.
 // Other dialogs will not be returned.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetalldialogs.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getalldialogs.md
 func GetAllDialogs() (names []string) {
 	n := int(C.IupGetAllDialogs(nil, 0))
 	if n > 0 {
@@ -257,7 +257,7 @@ func GetAllDialogs() (names []string) {
 // SetLanguage sets the language name used by some pre-defined dialogs.
 // Can also be changed using the global attribute LANGUAGE.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetlanguage.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setlanguage.md
 func SetLanguage(lng string) {
 	cLng := C.CString(lng)
 	defer C.free(unsafe.Pointer(cLng))
@@ -268,14 +268,14 @@ func SetLanguage(lng string) {
 // GetLanguage returns the language used by some pre-defined dialogs.
 // Returns the same value as the LANGUAGE global attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetlanguage.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getlanguage.md
 func GetLanguage() string {
 	return C.GoString(C.IupGetLanguage())
 }
 
 // SetLanguageString associates a name with a string as an auxiliary method for Internationalization of applications.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetlanguagestring.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setlanguagestring.md
 func SetLanguageString(name, str string) {
 	cName, cStr := C.CString(name), C.CString(str)
 	defer C.free(unsafe.Pointer(cName))
@@ -287,7 +287,7 @@ func SetLanguageString(name, str string) {
 // GetLanguageString returns a language dependent string.
 // The string must have been associated with the name using the SetLanguageString or SetLanguagePack functions.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetlanguagestring.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getlanguagestring.md
 func GetLanguageString(name string) string {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -299,7 +299,7 @@ func GetLanguageString(name string) string {
 // It is simply a User element with several attributes set.
 // Internally will call SetLanguageString for each name in the pack.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetlanguagepack.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setlanguagepack.md
 func SetLanguagePack(ih Ihandle) {
 	C.IupSetLanguagePack(ih.ptr())
 }
@@ -309,7 +309,7 @@ func SetLanguagePack(ih Ihandle) {
 // but you can use only one for the entire application because it does not store any data inside.
 // Or you can simply create and destroy every time you need to copy or paste.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupclipboard.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_clipboard.md
 func Clipboard() Ihandle {
 	h := mkih(C.IupClipboard())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -319,7 +319,7 @@ func Clipboard() Ihandle {
 // Timer creates a timer which periodically invokes a callback when the time is up.
 // Each timer should be destroyed using Destroy.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptimer.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_timer.md
 func Timer() Ihandle {
 	h := mkih(C.IupTimer())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -329,7 +329,7 @@ func Timer() Ihandle {
 // Thread creates a thread element in IUP, which is not associated to any interface element.
 // It is a very simple support to create and manage threads in a multithreading environment.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupthread.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_thread.md
 func Thread() Ihandle {
 	h := mkih(C.IupThread())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -360,7 +360,7 @@ func Notify() Ihandle {
 //
 // It is also a void container. Its children can be dynamically added using Append or Insert.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupuser.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_user.md
 func User() Ihandle {
 	h := mkih(C.IupUser())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -371,7 +371,7 @@ func User() Ihandle {
 // It is a non-synchronous operation, i.e., the function will return just after execute the command, and it will not wait for its result.
 // In Windows, there is no need to add the ".exe" file extension.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupexecute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_execute.md
 func Execute(fileName, parameters string) int {
 	cFileName := C.CString(fileName)
 	cParameters := cStrOrNull(parameters)
@@ -385,7 +385,7 @@ func Execute(fileName, parameters string) int {
 // It is a synchronous operation, i.e., the function will wait the command to terminate before it returns.
 // In Windows, there is no need to add the ".exe" file extension.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupexecutewait.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_executewait.md
 func ExecuteWait(fileName, parameters string) int {
 	cFileName := C.CString(fileName)
 	cParameters := cStrOrNull(parameters)
@@ -400,7 +400,7 @@ func ExecuteWait(fileName, parameters string) int {
 // In UNIX, you can change the used browser setting the environment variable IUP_HELPAPP or using the global attribute "HELPAPP".
 // It is a non-synchronous operation, i.e., the function will return just after execute the command, and it will not wait for its result.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuphelp.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_help.md
 func Help(url string) int {
 	cUrl := C.CString(url)
 	defer C.free(unsafe.Pointer(cUrl))
@@ -411,7 +411,7 @@ func Help(url string) int {
 // Log writes a message to the system log.
 // In Windows, write to the Application event log. On Linux, write to the Syslog.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuplog.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_log.md
 func Log(_type, str string) {
 	cType, cStr := C.CString(_type), C.CString(str)
 	defer C.free(unsafe.Pointer(cType))

@@ -18,7 +18,7 @@ import "C"
 //
 // It does not have a native representation.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupfill.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_fill.md
 func Fill() Ihandle {
 	h := mkih(C.IupFill())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -31,7 +31,7 @@ func Fill() Ihandle {
 //
 // It does not have a native representation.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupspace.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_space.md
 func Space() Ihandle {
 	h := mkih(C.IupSpace())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -45,7 +45,7 @@ func Space() Ihandle {
 // The Cbox is equivalent of a Vbox or Hbox where all the children have the FLOATING attribute set to YES,
 // but children must use CX and CY attributes instead of the POSITION attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupcbox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_cbox.md
 func Cbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -60,7 +60,7 @@ func Cbox(children ...Ihandle) Ihandle {
 //
 // It does not have a native representation.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupgridbox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_gridbox.md
 func GridBox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -74,7 +74,7 @@ func GridBox(children ...Ihandle) Ihandle {
 // by distributing the elements in lines or in columns. But its EXPAND attribute does not behave as a regular container,
 // instead it behaves as a regular element expanding into the available space.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupmultibox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_multibox.md
 func MultiBox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -88,7 +88,7 @@ func MultiBox(children ...Ihandle) Ihandle {
 //
 // It does not have a native representation.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuphbox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_hbox.md
 func Hbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -102,7 +102,7 @@ func Hbox(children ...Ihandle) Ihandle {
 //
 // It does not have a native representation.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupvbox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_vbox.md
 func Vbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -116,7 +116,7 @@ func Vbox(children ...Ihandle) Ihandle {
 //
 // It does not have a native representation.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupzbox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_zbox.md
 func Zbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -131,7 +131,7 @@ func Zbox(children ...Ihandle) Ihandle {
 //
 // It does not have a native representation.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupradio.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_radio.md
 func Radio(child Ihandle) Ihandle {
 	h := mkih(C.IupRadio(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -141,7 +141,7 @@ func Radio(child Ihandle) Ihandle {
 // Normalizer creates a void container that does not affect the dialog layout.
 // It acts by normalizing all the controls in a list so their natural size becomes the biggest natural size amongst them.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupnormalizer.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_normalizer.md
 func Normalizer(ihList ...Ihandle) Ihandle {
 	ihList = append(ihList, Ihandle(0))
 
@@ -152,7 +152,7 @@ func Normalizer(ihList ...Ihandle) Ihandle {
 
 // Frame creates a native container, which draws a frame with a title around its child.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupframe.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_frame.md
 func Frame(child Ihandle) Ihandle {
 	h := mkih(C.IupFrame(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -162,7 +162,7 @@ func Frame(child Ihandle) Ihandle {
 // FlatFrame creates a native container, which draws a frame with a title around its child.
 // The decorations are manually drawn. The control inherits from BackgroundBox.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupflatframe.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatframe.md
 func FlatFrame(child Ihandle) Ihandle {
 	h := mkih(C.IupFlatFrame(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -174,7 +174,7 @@ func FlatFrame(child Ihandle) Ihandle {
 // The interaction is done in a line of tabs with titles and arranged according to the tab type.
 // Also known as Notebook in native systems.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptabs.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tabs.md
 func Tabs(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -189,7 +189,7 @@ func Tabs(children ...Ihandle) Ihandle {
 // Also known as Notebook in native systems.
 // Identical to the Tabs control but the decorations and buttons are manually drawn.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupflattabs.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flattabs.md
 func FlatTabs(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
@@ -201,7 +201,7 @@ func FlatTabs(children ...Ihandle) Ihandle {
 // BackgroundBox creates a simple native container with no decorations.
 // Useful for controlling children visibility for Zbox or Expander. It inherits from Canvas.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupbackgroundbox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_backgroundbox.md
 func BackgroundBox(child Ihandle) Ihandle {
 	h := mkih(C.IupBackgroundBox(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -210,7 +210,7 @@ func BackgroundBox(child Ihandle) Ihandle {
 
 // ScrollBox creates a native container that allows its child to be scrolled. It inherits from Canvas.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupscrollbox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_scrollbox.md
 func ScrollBox(child Ihandle) Ihandle {
 	h := mkih(C.IupScrollBox(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -220,7 +220,7 @@ func ScrollBox(child Ihandle) Ihandle {
 // FlatScrollBox Creates a native container that allows its child to be scrolled. It inherits from IupCanvas.
 // The difference from ScrollBox is that its scrollbars are drawn.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupflatscrollbox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatscrollbox.md
 func FlatScrollBox(child Ihandle) Ihandle {
 	h := mkih(C.IupFlatScrollBox(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -235,7 +235,7 @@ func FlatScrollBox(child Ihandle) Ihandle {
 //
 // It does not have a native representation, but it contains also a Canvas to implement the bar handler.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupdetachbox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_detachbox.md
 func DetachBox(child Ihandle) Ihandle {
 	h := mkih(C.IupDetachBox(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -246,7 +246,7 @@ func DetachBox(child Ihandle) Ihandle {
 //
 // It does not have a native representation, but it contains also several elements to implement the bar handler.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupexpander.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_expander.md
 func Expander(child Ihandle) Ihandle {
 	h := mkih(C.IupExpander(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -258,7 +258,7 @@ func Expander(child Ihandle) Ihandle {
 //
 // It does not have a native representation but it contains also a Canvas to implement the bar handler.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupsbox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_sbox.md
 func Sbox(child Ihandle) Ihandle {
 	h := mkih(C.IupSbox(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -271,7 +271,7 @@ func Sbox(child Ihandle) Ihandle {
 //
 // It does not have a native representation, but it contains also a Canvas to implement the bar handler.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupsplit.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_split.md
 func Split(child1, child2 Ihandle) Ihandle {
 	h := mkih(C.IupSplit(child1.ptr(), child2.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())

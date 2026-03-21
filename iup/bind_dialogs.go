@@ -22,7 +22,7 @@ import "C"
 // Dialog creates a dialog element. It manages user interaction with the interface elements.
 // For any interface element to be shown, it must be encapsulated in a dialog.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupdialog.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_dialog.md
 func Dialog(child Ihandle) Ihandle {
 	h := mkih(C.IupDialog(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -42,21 +42,21 @@ func Dialog(child Ihandle) Ihandle {
 // For a menu it returns automatically after a menu item is selected.
 // IMPORTANT: If a menu item callback returns CLOSE, it will also ends the current popup level dialog.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuppopup.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_popup.md
 func Popup(ih Ihandle, x, y int) int {
 	return int(C.IupPopup(ih.ptr(), C.int(x), C.int(y)))
 }
 
 // Show displays a dialog in the current position, or changes a control VISIBLE attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupshow.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_show.md
 func Show(ih Ihandle) int {
 	return int(C.IupShow(ih.ptr()))
 }
 
 // ShowXY displays a dialog in a given position on the screen.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupshowxy.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_showxy.md
 func ShowXY(ih Ihandle, x, y int) int {
 	return int(C.IupShowXY(ih.ptr(), C.int(x), C.int(y)))
 }
@@ -64,7 +64,7 @@ func ShowXY(ih Ihandle, x, y int) int {
 // Hide hides an interface element.
 // This function has the same effect as attributing value "NO" to the interface element’s VISIBLE attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuphide.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_hide.md
 func Hide(ih Ihandle) int {
 	return int(C.IupHide(ih.ptr()))
 }
@@ -72,7 +72,7 @@ func Hide(ih Ihandle) int {
 // FileDlg creates the File Dialog element. It is a predefined dialog for selecting files or a directory.
 // The dialog can be shown with the Popup function only.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupfiledlg.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_filedlg.md
 func FileDlg() Ihandle {
 	h := mkih(C.IupFileDlg())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -82,7 +82,7 @@ func FileDlg() Ihandle {
 // MessageDlg creates the Message Dialog element. It is a predefined dialog for displaying a message.
 // The dialog can be shown with the Popup function only.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupmessagedlg.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagedlg.md
 func MessageDlg() Ihandle {
 	h := mkih(C.IupMessageDlg())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -93,7 +93,7 @@ func MessageDlg() Ihandle {
 // The Windows and GTK dialogs can be shown only with the Popup function.
 // The ColorBrowser based dialog is a Dialog that can be shown as any regular Dialog.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupcolordlg.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_colordlg.md
 func ColorDlg() Ihandle {
 	h := mkih(C.IupColorDlg())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -103,7 +103,7 @@ func ColorDlg() Ihandle {
 // FontDlg creates the Font Dialog element. It is a predefined dialog for selecting a font.
 // The dialog can be shown with the Popup function only.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupfontdlg.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_fontdlg.md
 func FontDlg() Ihandle {
 	h := mkih(C.IupFontDlg())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -113,7 +113,7 @@ func FontDlg() Ihandle {
 // ProgressDlg creates a progress dialog element. It is a predefined dialog for displaying the progress of an operation.
 // The dialog is meant to be shown with the show functions Show or ShowXY.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupprogressdlg.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_progressdlg.md
 func ProgressDlg() Ihandle {
 	h := mkih(C.IupProgressDlg())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -122,7 +122,7 @@ func ProgressDlg() Ihandle {
 
 // Alarm shows a modal dialog containing a message and up to three buttons.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupalarm.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_alarm.md
 func Alarm(title, msg, b1, b2, b3 string) int {
 	cTitle, cMsg, cB1, cB2, cB3 := C.CString(title), C.CString(msg), C.CString(b1), cStrOrNull(b2), cStrOrNull(b3)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -136,7 +136,7 @@ func Alarm(title, msg, b1, b2, b3 string) int {
 
 // GetFile shows a modal dialog of the native interface system to select a filename. Uses the FileDlg element.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgetfile.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getfile.md
 func GetFile(path string) (sel string, ret int) {
 	if len(path) > 4095 {
 		panic("path is too long (maximum is 4095)")
@@ -153,7 +153,7 @@ func GetFile(path string) (sel string, ret int) {
 
 // GetColor shows a modal dialog which allows the user to select a color. Based on ColorDlg.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgetcolor.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getcolor.md
 func GetColor(x, y int) (col color.RGBA, ret int) {
 	var r, g, b uint8
 	ret = int(C.IupGetColor(C.int(x), C.int(y), (*C.uchar)(unsafe.Pointer(&r)), (*C.uchar)(unsafe.Pointer(&g)), (*C.uchar)(unsafe.Pointer(&b))))
@@ -167,7 +167,7 @@ func GetColor(x, y int) (col color.RGBA, ret int) {
 
 // GetText shows a modal dialog to edit a multiline text.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgettext.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_gettext.md
 func GetText(title, text string, maxSize int) (string, int) {
 	cTitle := C.CString(title)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -193,7 +193,7 @@ func GetText(title, text string, maxSize int) (string, int) {
 
 // ListDialog shows a modal dialog to select items from a simple or multiple selection list.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iuplistdialog.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_listdialog.md
 func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, marks *[]bool) (ret int) {
 	if len(list) != len(*marks) {
 		panic("bad parameter passed to ListDialog")
@@ -234,7 +234,7 @@ func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, 
 // Message shows a modal dialog containing a message.
 // It simply creates and popup a MessageDlg.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupmessage.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_message.md
 func Message(title, msg string) {
 	cTitle, cMsg := C.CString(title), C.CString(msg)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -246,7 +246,7 @@ func Message(title, msg string) {
 // MessageError shows a modal dialog containing an error message.
 // It simply creates and popup a MessageDlg with DIALOGTYPE=ERROR.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupmessageerror.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messageerror.md
 func MessageError(parent Ihandle, msg string) {
 	cMsg := C.CString(msg)
 	defer C.free(unsafe.Pointer(cMsg))
@@ -257,7 +257,7 @@ func MessageError(parent Ihandle, msg string) {
 // MessageAlarm shows a modal dialog containing a question message, similar to Alarm.
 // It simply creates and popup a MessageDlg with DIALOGTYPE=QUESTION.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupmessagealarm.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagealarm.md
 func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 	cTitle, cMsg, cButtons := C.CString(title), C.CString(msg), C.CString(buttons)
 	defer C.free(unsafe.Pointer(cTitle))
@@ -273,7 +273,7 @@ func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 //
 // This is a dialog intended for developers, so they can see and inspect their dialogs in other ways.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iuplayoutdialog.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_layoutdialog.md
 func LayoutDialog(dialog Ihandle) Ihandle {
 	h := mkih(C.IupLayoutDialog(dialog.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -287,7 +287,7 @@ func LayoutDialog(dialog Ihandle) Ihandle {
 //
 // This is a dialog intended for developers, so they can see and inspect their elements in other ways.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupelementpropdialog.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_elementpropdialog.md
 func ElementPropertiesDialog(parent, elem Ihandle) Ihandle {
 	h := mkih(C.IupElementPropertiesDialog(parent.ptr(), elem.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -301,7 +301,7 @@ func ElementPropertiesDialog(parent, elem Ihandle) Ihandle {
 //
 // This is a dialog intended for developers, so they can see and inspect their globals in other ways.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupglobalsdialog.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_globalsdialog.md
 func GlobalsDialog() Ihandle {
 	h := mkih(C.IupGlobalsDialog())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -315,7 +315,7 @@ func GlobalsDialog() Ihandle {
 //
 // This is a dialog intended for developers, so they can see attributes and callbacks information of a class.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupclassinfodialog.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_classinfodialog.md
 func ClassInfoDialog(dialog Ihandle) Ihandle {
 	h := mkih(C.IupClassInfoDialog(dialog.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -324,7 +324,7 @@ func ClassInfoDialog(dialog Ihandle) Ihandle {
 
 // Param creates a Param element from a format string line.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupparam.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_param.md
 func Param(format string) Ihandle {
 	cFormat := C.CString(format)
 	defer C.free(unsafe.Pointer(cFormat))
@@ -334,7 +334,7 @@ func Param(format string) Ihandle {
 
 // ParamBox creates a ParamBox element from an array of Param elements.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupparambox.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_parambox.md
 func ParamBox(params ...Ihandle) Ihandle {
 	cParams := make([]*C.Ihandle, len(params)+1)
 	for i, p := range params {
@@ -385,7 +385,7 @@ func getParamInfo(format string) (paramCount, paramExtra int, types []byte) {
 //
 // Returns 1 if the user pressed OK, 0 if Cancel.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/dlg/iupgetparam.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getparam.md
 func GetParam(title string, action GetParamFunc, format string, data ...interface{}) int {
 	cTitle := C.CString(title)
 	defer C.free(unsafe.Pointer(cTitle))

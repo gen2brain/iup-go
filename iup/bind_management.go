@@ -19,7 +19,7 @@ import "C"
 //
 // This function is automatically called before the dialog is shown in Show, ShowXY or Popup.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupmap.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_map.md
 func Map(ih Ihandle) int {
 	return int(C.IupMap(ih.ptr()))
 }
@@ -27,7 +27,7 @@ func Map(ih Ihandle) int {
 // Unmap unmap the element from the native system. It will also unmap all its children.
 // It will NOT detach the element from its parent, and it will NOT destroy the IUP element.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupunmap.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_unmap.md
 func Unmap(ih Ihandle) {
 	C.IupUnmap(ih.ptr())
 }
@@ -37,7 +37,7 @@ func Unmap(ih Ihandle) {
 //
 // After creation the element still needs to be attached to a container and mapped to the native system so it can be visible.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupcreate.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_create.md
 func Create(className string) Ihandle {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -48,14 +48,14 @@ func Create(className string) Ihandle {
 // Destroy destroys an interface element and all its children.
 // Only dialogs, timers, popup menus and images should be normally destroyed, but detached controls can also be destroyed.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdestroy.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_destroy.md
 func Destroy(ih Ihandle) {
 	C.IupDestroy(ih.ptr())
 }
 
 // GetAllClasses returns the names of all registered classes.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetallclasses.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallclasses.md
 func GetAllClasses() (names []string) {
 	n := int(C.IupGetAllClasses(nil, 0))
 	if n > 0 {
@@ -71,21 +71,21 @@ func GetAllClasses() (names []string) {
 
 // GetClassName returns the name of the class of an interface element.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetclassname.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclassname.md
 func GetClassName(ih Ihandle) string {
 	return C.GoString(C.IupGetClassName(ih.ptr()))
 }
 
 // GetClassType returns the name of the native type of an interface element.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetclasstype.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclasstype.md
 func GetClassType(ih Ihandle) string {
 	return C.GoString(C.IupGetClassType(ih.ptr()))
 }
 
 // ClassMatch checks if the give class name matches the class name of the given interface element.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupclassmatch.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_classmatch.md
 func ClassMatch(ih Ihandle, className string) bool {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -95,7 +95,7 @@ func ClassMatch(ih Ihandle, className string) bool {
 
 // GetClassAttributes returns the names of all registered attributes of a class.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetclassattributes.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclassattributes.md
 func GetClassAttributes(className string) (names []string) {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -114,7 +114,7 @@ func GetClassAttributes(className string) (names []string) {
 
 // GetClassCallbacks returns the names of all registered callbacks of a class.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetclasscallbacks.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclasscallbacks.md
 func GetClassCallbacks(className string) (names []string) {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -133,7 +133,7 @@ func GetClassCallbacks(className string) (names []string) {
 
 // SaveClassAttributes saves all registered attributes on the internal hash table.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsaveclasscallbacks.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_saveclassattributes.md
 func SaveClassAttributes(ih Ihandle) {
 	C.IupSaveClassAttributes(ih.ptr())
 }
@@ -141,7 +141,7 @@ func SaveClassAttributes(ih Ihandle) {
 // CopyClassAttributes copies all registered attributes from one element to another.
 // Both elements must be of the same class.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupcopyclassattributes.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_copyclassattributes.md
 func CopyClassAttributes(srcIh, dstIh Ihandle) {
 	C.IupCopyClassAttributes(srcIh.ptr(), dstIh.ptr())
 }
@@ -149,7 +149,7 @@ func CopyClassAttributes(srcIh, dstIh Ihandle) {
 // SetClassDefaultAttribute changes the default value of an attribute for a class.
 // It can be any attribute, i.e. registered attributes or user custom attributes.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetclassdefaultattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setclassdefaultattribute.md
 func SetClassDefaultAttribute(className, name, value string) {
 	cClassName, cName, cValue := C.CString(className), C.CString(name), C.CString(value)
 	defer C.free(unsafe.Pointer(cClassName))
@@ -161,21 +161,21 @@ func SetClassDefaultAttribute(className, name, value string) {
 
 // Update mark the element or its children to be redraw when the control returns to the system.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupupdate.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_update.md
 func Update(ih Ihandle) {
 	C.IupUpdate(ih.ptr())
 }
 
 // UpdateChildren mark the element or its children to be redraw when the control returns to the system.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupupdate.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_update.md
 func UpdateChildren(ih Ihandle) {
 	C.IupUpdateChildren(ih.ptr())
 }
 
 // Redraw force the element and its children to be redraw immediately.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupredraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_redraw.md
 func Redraw(ih Ihandle, children int) {
 	C.IupRedraw(ih.ptr(), C.int(children))
 }
@@ -185,7 +185,7 @@ func Redraw(ih Ihandle, children int) {
 // It can be used for Text and Scintilla (returns a position in the string), List (returns an item),
 // Tree (returns a node identifier) or Matrix (returns a cell position, where pos=lin*numcol + col).
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconvertxytopos.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_convertxytopos.md
 func ConvertXYToPos(ih Ihandle, x, y int) int {
 	return int(C.IupConvertXYToPos(ih.ptr(), C.int(x), C.int(y)))
 }
@@ -195,7 +195,7 @@ func ConvertXYToPos(ih Ihandle, x, y int) int {
 // Can be used for any element inside a dialog, but the layout of the dialog and all controls will be updated.
 // It can change the layout of all the controls inside the dialog because of the dynamic layout positioning.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuprefresh.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_refresh.md
 func Refresh(ih Ihandle) {
 	C.IupRefresh(ih.ptr())
 }
@@ -205,7 +205,7 @@ func Refresh(ih Ihandle) {
 // only its children will be updated. It can change the layout of all the controls inside
 // the given element because of the dynamic layout positioning.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuprefreshchildren.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_refreshchildren.md
 func RefreshChildren(ih Ihandle) {
 	C.IupRefreshChildren(ih.ptr())
 }

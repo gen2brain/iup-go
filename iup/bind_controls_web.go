@@ -15,14 +15,14 @@ import (
 
 // WebBrowserOpen must be called after Open, so that the control can be used.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupweb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_web.md
 func WebBrowserOpen() {
 	C.IupWebBrowserOpen()
 }
 
 // WebBrowser creates a web browser control.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupweb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_web.md
 func WebBrowser() Ihandle {
 	h := mkih(C.IupWebBrowser())
 	h.SetAttribute("UUID", uuid.NewString())

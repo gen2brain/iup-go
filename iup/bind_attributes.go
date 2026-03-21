@@ -20,7 +20,7 @@ var attrMu sync.RWMutex
 
 // SetAttribute sets an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetAttribute(ih Ihandle, name string, value interface{}) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -60,7 +60,7 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 
 // SetAttributes sets several attributes of an interface element.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributes.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributes.md
 func SetAttributes(ih Ihandle, str string) Ihandle {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -74,7 +74,7 @@ func SetAttributes(ih Ihandle, str string) Ihandle {
 // ResetAttribute removes an attribute from the hash table of the element, and its children if the attribute is inheritable.
 // It is useful to reset the state of inheritable attributes in a tree of elements.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupresetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_resetattribute.md
 func ResetAttribute(ih Ihandle, name string) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -87,7 +87,7 @@ func ResetAttribute(ih Ihandle, name string) {
 
 // SetAtt sets several attributes of an interface element and optionally sets its name.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetatt.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setatt.md
 func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
 	attrs := bytes.NewBufferString("")
 	for i := 0; i < len(args); i += 2 {
@@ -117,7 +117,7 @@ func SetAttrs(ih Ihandle, args ...string) Ihandle {
 //
 // It is very useful for associating images and menus.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributehandle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
 func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -130,7 +130,7 @@ func SetAttributeHandle(ih Ihandle, name string, ihNamed Ihandle) {
 
 // GetAttribute returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetAttribute(ih Ihandle, name string) string {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -143,7 +143,7 @@ func GetAttribute(ih Ihandle, name string) string {
 
 // GetAllAttributes returns the names of all attributes of an element that are set in its internal hash table only.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetallattributes.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallattributes.md
 func GetAllAttributes(ih Ihandle) (ret []string) {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -170,7 +170,7 @@ func GetAllAttributes(ih Ihandle) (ret []string) {
 //
 // This function should be avoided. Use iup.GetAllAttributes instead.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributes.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributes.md
 func GetAttributes(ih Ihandle) string {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -180,7 +180,7 @@ func GetAttributes(ih Ihandle) string {
 
 // GetAttributeHandle instead of using GetAttribute and GetHandle, this function directly returns the associated handle.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributehandle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
 func GetAttributeHandle(ih Ihandle, name string) Ihandle {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -193,7 +193,7 @@ func GetAttributeHandle(ih Ihandle, name string) Ihandle {
 
 // SetAttributeHandleId sets an attribute handle with an id.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributehandle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
 func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -206,7 +206,7 @@ func SetAttributeHandleId(ih Ihandle, name string, id int, ihNamed Ihandle) {
 
 // GetAttributeHandleId returns the handle attribute with an id.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributehandle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
 func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -219,7 +219,7 @@ func GetAttributeHandleId(ih Ihandle, name string, id int) Ihandle {
 
 // SetAttributeHandleId2 sets an attribute handle with lin and col.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributehandle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributehandle.md
 func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandle) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -232,7 +232,7 @@ func SetAttributeHandleId2(ih Ihandle, name string, lin, col int, ihNamed Ihandl
 
 // GetAttributeHandleId2 returns the handle attribute with lin and col.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattributehandle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattributehandle.md
 func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -245,7 +245,7 @@ func GetAttributeHandleId2(ih Ihandle, name string, lin, col int) Ihandle {
 
 // SetAttributeId sets an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -279,7 +279,7 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 
 // GetAttributeId returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetAttributeId(ih Ihandle, name string, id int) string {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -292,7 +292,7 @@ func GetAttributeId(ih Ihandle, name string, id int) string {
 
 // SetAttributeId2 sets an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -326,7 +326,7 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 
 // SetRGBId2 sets an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -339,7 +339,7 @@ func SetRGBId2(ih Ihandle, name string, lin, col int, r, g, b uint8) {
 
 // GetAttributeId2 returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -353,7 +353,7 @@ func GetAttributeId2(ih Ihandle, name string, lin, col int) string {
 // SetGlobal sets an attribute in the global environment.
 // If the driver process the attribute then it will not be stored internally.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetglobal.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setglobal.md
 func SetGlobal(name string, value interface{}) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -380,7 +380,7 @@ func SetGlobal(name string, value interface{}) {
 // GetGlobal returns an attribute value from the global environment.
 // The value can be returned from the driver or from the internal storage.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
 func GetGlobal(name string) string {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -393,7 +393,7 @@ func GetGlobal(name string) string {
 
 // GetGlobalPtr returns an attribute value from the global environment.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
 func GetGlobalPtr(name string) uintptr {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -406,7 +406,7 @@ func GetGlobalPtr(name string) uintptr {
 
 // GetGlobalIh returns an attribute value from the global environment.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetglobal.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobal.md
 func GetGlobalIh(name string) Ihandle {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -425,7 +425,7 @@ func GetGlobalIh(name string) Ihandle {
 // Also natural alphabetic order is used: 123...aAáÁ...bBcC...
 // The comparison will work only for Latin-1 characters, even if UTF8MODE is Yes.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupstringcompare.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_stringcompare.md
 func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 	cStr1, cStr2 := C.CString(str1), C.CString(str2)
 	defer C.free(unsafe.Pointer(cStr1))
@@ -436,7 +436,7 @@ func StringCompare(str1, str2 string, caseSensitive, lexicographic bool) int {
 
 // SetRGB sets an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGB(ih Ihandle, name string, r, g, b uint8) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -449,7 +449,7 @@ func SetRGB(ih Ihandle, name string, r, g, b uint8) {
 
 // SetRGBA sets an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -462,7 +462,7 @@ func SetRGBA(ih Ihandle, name string, r, g, b, a uint8) {
 
 // SetRGBId sets an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
 	attrMu.Lock()
 	defer attrMu.Unlock()
@@ -475,7 +475,7 @@ func SetRGBId(ih Ihandle, name string, id int, r, g, b uint8) {
 
 // GetInt returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetInt(ih Ihandle, name string) int {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -488,7 +488,7 @@ func GetInt(ih Ihandle, name string) int {
 
 // GetInt2 returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -503,7 +503,7 @@ func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
 // GetBool returns a boolean attribute value.
 // Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetBool(ih Ihandle, name string) bool {
 	val := strings.ToUpper(GetAttribute(ih, name))
 	return val == "YES" || val == "ON" || val == "TRUE" || val == "1"
@@ -511,7 +511,7 @@ func GetBool(ih Ihandle, name string) bool {
 
 // GetFloat returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetFloat(ih Ihandle, name string) float32 {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -524,7 +524,7 @@ func GetFloat(ih Ihandle, name string) float32 {
 
 // GetDouble returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetDouble(ih Ihandle, name string) float64 {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -537,7 +537,7 @@ func GetDouble(ih Ihandle, name string) float64 {
 
 // GetRGB returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -551,7 +551,7 @@ func GetRGB(ih Ihandle, name string) (r, g, b uint8) {
 
 // GetRGBA returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -565,7 +565,7 @@ func GetRGBA(ih Ihandle, name string) (r, g, b, a uint8) {
 
 // GetIntId returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetIntId(ih Ihandle, name string, id int) int {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -578,7 +578,7 @@ func GetIntId(ih Ihandle, name string, id int) int {
 
 // GetFloatId returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetFloatId(ih Ihandle, name string, id int) float32 {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -591,7 +591,7 @@ func GetFloatId(ih Ihandle, name string, id int) float32 {
 
 // GetDoubleId returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetDoubleId(ih Ihandle, name string, id int) float64 {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -604,7 +604,7 @@ func GetDoubleId(ih Ihandle, name string, id int) float64 {
 
 // GetRGBId returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -619,7 +619,7 @@ func GetRGBId(ih Ihandle, name string, id int) (r, g, b uint8) {
 // GetBoolId returns a boolean attribute value with an id.
 // Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetBoolId(ih Ihandle, name string, id int) bool {
 	val := strings.ToUpper(GetAttributeId(ih, name, id))
 	return val == "YES" || val == "ON" || val == "TRUE" || val == "1"
@@ -627,7 +627,7 @@ func GetBoolId(ih Ihandle, name string, id int) bool {
 
 // GetIntId2 returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetIntId2(ih Ihandle, name string, lin, col int) int {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -640,7 +640,7 @@ func GetIntId2(ih Ihandle, name string, lin, col int) int {
 
 // GetFloatId2 returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -653,7 +653,7 @@ func GetFloatId2(ih Ihandle, name string, lin, col int) float32 {
 
 // GetDoubleId2 returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -666,7 +666,7 @@ func GetDoubleId2(ih Ihandle, name string, lin, col int) float64 {
 
 // GetRGBId2 returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
 	attrMu.RLock()
 	defer attrMu.RUnlock()
@@ -681,7 +681,7 @@ func GetRGBId2(ih Ihandle, name string, lin, col int) (r, g, b uint8) {
 // GetBoolId2 returns a boolean attribute value with lin and col.
 // Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func GetBoolId2(ih Ihandle, name string, lin, col int) bool {
 	val := strings.ToUpper(GetAttributeId2(ih, name, lin, col))
 	return val == "YES" || val == "ON" || val == "TRUE" || val == "1"
