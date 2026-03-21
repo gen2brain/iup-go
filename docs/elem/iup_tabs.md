@@ -37,21 +37,27 @@ Same value returned by **IupGetChildCount**.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Tabs title color. Default: the global attribute DLGFGCOLOR.
 
-**MULTILINE** [Windows Only] (non-inheritable): Enable multiple lines of tab buttons.
+**ALLOWREORDER** (non-inheritable): enables the user to reorder tabs by dragging them.
+Can be "YES" or "NO". Default: "NO".
+Not supported in Motif.
+
+**MULTILINE** [Windows and Qt Only] (non-inheritable): Enable multiple lines of tab buttons.
 This will hide the tab scroll and fits to make all tab buttons visible. Can be "YES" or "NO".
 Default "NO". It is always enabled when TABTYPE=LEFT or TABTYPE=RIGHT.
 
-**SHOWCLOSE** [Windows and GTK Only] (non-inheritable): enables the close button on each tab.
+**SHOWCLOSE** (non-inheritable): enables the close button on each tab.
 Default value: "NO". In Windows the close button implies the classic visual for the control.
 By default, when closed the tab is hidden.
 To change that behavior, use the TABCLOSE_CB callback.
+Not supported in EFL and Motif.
 
 [SIZE](../attrib/iup_size.md) (non-inheritable): The default size is the smallest size that fits its largest child.
 All child elements are considered even invisible ones.
 
 **TABORIENTATION** (non-inheritable): Indicates the orientation of tab text, which can be "HORIZONTAL" or "VERTICAL".
 Default is "HORIZONTAL". VERTICAL is supported only in GTK and in Windows.
-In Windows, it cannot be set, it is dependent on the TABTYPE attribute, if TABTYPE=LEFT or TABTYPE=RIGHT then TABORIENTATION=VERTICAL, if TABTYPE=TOP or TABTYPE=BOTTOM then TABORIENTATION=HORIZONTAL. (GTK 2.6)
+In Windows, it cannot be set, it is dependent on the TABTYPE attribute, if TABTYPE=LEFT or TABTYPE=RIGHT then TABORIENTATION=VERTICAL, if TABTYPE=TOP or TABTYPE=BOTTOM then TABORIENTATION=HORIZONTAL.
+Not supported in WinUI.
 
 **TABPADDING** (non-inheritable): internal margin of the tab title.
 Works just like the MARGIN attribute of the IupHbox and IupVbox containers, but uses a different name to avoid inheritance problems.
@@ -130,7 +136,7 @@ int function(Ihandle* ih, int new_pos, int old_pos);
 **new_pos**: the new tab position selected by the user\
 **old_pos**: the previously selected tab position
 
-**TABCLOSE_CB** [Windows and GTK Only]: Callback called when the user clicks on the close button.
+**TABCLOSE_CB**: Callback called when the user clicks on the close button.
 Called only when SHOWCLOSE=Yes.
 
 int function(Ihandle* ih, int pos);
@@ -186,7 +192,7 @@ It is so because a disabled tab is a confusing interface situation.
 In Windows, when an **IupVal** is inside an **IupTabs**, the tabs disappear when the mouse moves over it after being used in the valuator.
 A workaround is to put the valuator inside an **IupFrame** and then inside the **IupTabs**, so the problem does not occur.
 
-In GTK uses GtkNotebook, in Windows uses WC_TABCONTROL, and in Motif uses xmNotebook.
+In GTK uses GtkNotebook, in Windows uses WC_TABCONTROL, in WinUI uses XAML TabView, in macOS uses a custom NSView, in Qt uses QTabWidget, in EFL uses a custom tab control, and in Motif uses xmNotebook.
 
 ### Utility Functions
 
