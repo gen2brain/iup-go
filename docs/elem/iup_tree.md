@@ -79,7 +79,7 @@ The callback also receives the new toggle's state.
 
 ### Notes
 
-In GTK uses GtkTreeView, in Windows uses WC_TREEVIEW, and in Motif uses xmContainer.
+In GTK uses GtkTreeView, in Windows uses WC_TREEVIEW, in WinUI uses XAML TreeView, in macOS uses NSOutlineView, in Qt uses QTreeWidget, in EFL uses Elm_Genlist, and in Motif uses xmContainer.
 
 #### Hierarchy
 
@@ -173,7 +173,7 @@ It is the default operation mode (MARKMODE=SINGLE). In this mode, only one node 
 
 IupTree allows marking several nodes simultaneously using the Shift and Control keys.
 To use multiple marking set MARKMODE=MULTIPLE.
-In GTK and Motif, multiple nodes can also be selected using a rubber band if SHOWDRAGDROP=NO.
+In GTK, Motif and EFL, multiple nodes can also be selected using a rubber band if SHOWDRAGDROP=NO.
 
 When a user keeps the Control key pressed, the individual marking mode is used.
 This way, the focus node can be modified without changing the marked node.
@@ -198,7 +198,7 @@ Using the keyboard:
 - **Esc**: cancels in place rename.
 
 In Motif when pressing Tab, the focus goes to the next visible node, if there is no next visible node, then the next control in the dialog receives the focus.
-In Windows and GTK, the focus simply goes directly to the next control.
+In other drivers, the focus simply goes directly to the next control.
 
 Using the left mouse button:
 
