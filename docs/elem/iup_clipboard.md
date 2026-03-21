@@ -29,25 +29,36 @@ If FORMAT is not set returns NULL. If set to NULL clears the clipboard data.
 When set the FORMATDATASIZE attribute must be set before with the data size.
 When retrieved FORMATDATASIZE will be set and available after data is retrieved.
 
-**FORMATDATASTRING** [Windows and GTK Only]: sets/gets FORMATDATA and FORMATDATASIZE considering data being a string in the system format.
+**FORMATDATASTRING**: sets/gets FORMATDATA and FORMATDATASIZE considering data being a string in the system format.
+Not supported in Motif.
 
 **FORMATDATASIZE**: size of the data on the clipboard.
 Used by the FORMATDATA attribute processing.
 
 **IMAGE** (write-only): name of an image to copy to the clipboard.
-If set to NULL clears the clipboard data. (GTK 2.6)
+If set to NULL clears the clipboard data.
+Not supported in EFL.
 
-**IMAGEAVAILABLE** (read-only): informs if there is an image available at the clipboard. (GTK 2.6)
+**IMAGEAVAILABLE** (read-only): informs if there is an image available at the clipboard.
+Not supported in EFL.
 
 **NATIVEIMAGE**: native handle of an image to copy or paste, to or from the clipboard.
-In Win32 is a **HANDLE** of a DIB. In GTK is a **GdkPixbuf***. In Motif is a **Pixmap**.
+In Win32 and WinUI is a **HANDLE** of a DIB.
+In GTK is a **GdkPixbuf***.
+In GTK 4 is a **GdkTexture***.
+In Motif is a **Pixmap**.
+In macOS is an **NSImage***.
+In Qt is a **QPixmap***.
 If set to NULL clears the clipboard data.
-The returned handle in a paste must be released after used (GlobalFree(handle), g_object_unref(pixbuf) or XFreePixmap(display, pixmap)).
-After copy, do NOT release the given handle. (GTK 2.6)
+The returned handle in a paste must be released after used.
+After copy, do NOT release the given handle.
+Not supported in EFL.
 
 **SAVEEMF** (write-only) [Windows Only]: saves the EMF from the clipboard to the given filename.
+Available in Win32 and WinUI.
 
 **SAVEWMF** (write-only) [Windows Only]: saves the WMF from the clipboard to the given filename.
+Available in Win32 and WinUI.
 
 **TEXT**: copy or paste text to or from the clipboard. If set to NULL clears the clipboard data.
 
