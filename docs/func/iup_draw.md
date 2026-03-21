@@ -2,28 +2,23 @@
 
 A group of functions to draw in a [IupCanvas](../elem/iup_canvas.md) or a [IupBackgroundBox](../elem/iup_backgroundbox.md).
 They are simple functions designed to help the drawing of custom controls based on these two controls.
-It is NOT a complete set of drawing functions, for that you should still use another toolkit like [CD](http://www.tecgraf.puc-rio.br/cd).
 
 To use the functions in C/C++, you must include the "iupdraw.h" header.
 
-Internally, IupDraw uses several drawing APIs: GDI, Direct2D, GDI+ (in Windows); X11 (in Motif), GDK and Cairo (in GTK).
+Internally, IupDraw uses several drawing APIs depending on the platform:
+- **Windows**: Direct2D or GDI+ via WinDrawLib
+- **GTK 3 / GTK 4**: Cairo
+- **macOS**: CoreGraphics
+- **Qt**: QPainter
+- **EFL**: Efl.Canvas.VG (vector graphics)
+- **Motif**: X11 (Xlib)
 
 All drivers are double buffered, so drawing occurs off-screen and the final result is displayed when **IupDrawEnd** is called only.
 
-Direct2D and GDI+ are accessed using the [WinDrawLib](https://github.com/mity/windrawlib) library by Martin Mitáš.
-This library is embedded in IUP source code and uses run-time dynamic linking to import Direct 2D and GDI+ functions in C, so no extra libraries need to be linked by the application.
-It uses the same MIT [license](windrawlib.txt) used by IUP.
-We would like to thank Martin Mitáš for sharing such an important tool.
+In Windows, Direct2D and GDI+ are accessed using the [WinDrawLib](https://github.com/mity/windrawlib) library by Martin Mitáš.
+This library is embedded in IUP source code and uses run-time dynamic linking, so no extra libraries need to be linked by the application.
 
-The Direct2D/GDI+ Windows, and Cairo in Linux (even in GTK 2) drivers added support for alpha (transparency) in colors and antialiasing in primitives.
-In Windows XP, when there is no Direct 2D, GDI+ is used.
-In IUP 3.25 we set the Direct 2D driver as default, but the overall performance of complex dialogs became noticeably slow unfortunately, so in 3.27 we were forced to go back to GDI.
-But we added a hack to use GDI+ for diagonal lines (non-vertical or horizontal), polygons, and arcs where antialiasing is more needed and does not affect less ordinary rectangular based drawings.
-The hack is enabled by default using the canvas **DRAWANTIALIAS** attribute in Windows when using GDI, set it to NO if you need to disable the hack.
-The Direct2D driver can be enabled by setting the canvas **DRAWUSEDIRECT2D** attribute to Yes.
-If you want to enable it for all controls at once, set **DRAWUSEDIRECT2D=Yes** as a global attribute.
-
-The canvas has a new attribute called DRAWDRIVER that returns: GDI, D2D, GDI+, X11, GDK or CAIRO.
+The canvas has a read-only attribute called **DRAWDRIVER** that returns the active backend: D2D, GDI+, CAIRO, COCOA, QT, EFL_VG or X11.
 
 IMPORTANT: all functions can be used only in **IupCanvas** or **IupBackgroundBox** and inside the ACTION callback.
 To force a redraw anytime, use the functions [IupUpdate](../func/iup_update.md) or [IupRedraw](iup_draw.md).
@@ -44,6 +39,10 @@ Terminates the drawing process and actually draw on screen.
 
 Defines a rectangular clipping region.
 
+    void IupDrawSetClipRoundedRect(Ihandle* ih, int x1, int y1, int x2, int y2, int corner_radius);
+
+Defines a rounded rectangular clipping region.
+
     void IupDrawResetClip(Ihandle* ih);
 
 Reset the clipping area to none.
@@ -57,7 +56,7 @@ Returns the previous rectangular clipping region set by IupDrawSetClipRect, if c
 The primitives color is controlled by the attribute **DRAWCOLOR**.  Default: "0 0 0".
 The alpha component is also supported but depends on the current driver, if not specified 255 (opaque) is assumed.
 
-Rectangle, Arc and Polygon can be filled or stroked. When stroked, the line style can be continuous, dashed or dotted.
+Rectangle, Arc, Ellipse and Polygon can be filled or stroked. When stroked, the line style can be continuous, dashed or dotted.
 These are controlled by the attribute **DRAWSTYLE**.
 It can have values: FILL, STROKE, STROKE_DASH, STROKE_DOT, STROKE_DASH_DOT or STROKE_DASH_DOT_DOT.
 Default: STROKE. The FILL value when set before the DrawLine has the same effect as STROKE.
@@ -76,15 +75,50 @@ Draws a line including start and end points.
 
 Draws a rectangle including start and end points.
 
+    void IupDrawRoundedRectangle(Ihandle* ih, int x1, int y1, int x2, int y2, int corner_radius);
+
+Draws a rounded rectangle with the given corner radius.
+
     void IupDrawArc(Ihandle* ih, int x1, int y1, int x2, int y2, double a1, double a2);
 
 Draws an arc inside a rectangle between the two angles in degrees.
 When filled will draw a pie shape with the vertex at the center of the rectangle.
 Angles are counter-clock wise relative to the 3 o'clock position.
 
+    void IupDrawEllipse(Ihandle* ih, int x1, int y1, int x2, int y2);
+
+Draws an ellipse inscribed in the given rectangle.
+
     void IupDrawPolygon(Ihandle* ih, int* points, int count);
 
 Draws a polygon. Coordinates are stored in the array in the sequence: x1, y1, x2, y2, ...
+
+    void IupDrawPixel(Ihandle* ih, int x, int y);
+
+Draws a single pixel at the given position.
+
+    void IupDrawBezier(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4);
+
+Draws a cubic Bezier curve from (x1,y1) to (x4,y4) with control points (x2,y2) and (x3,y3).
+
+    void IupDrawQuadraticBezier(Ihandle* ih, int x1, int y1, int x2, int y2, int x3, int y3);
+
+Draws a quadratic Bezier curve from (x1,y1) to (x3,y3) with control point (x2,y2).
+
+### Gradients
+
+Gradient colors are passed as parameters, not controlled by DRAWCOLOR.
+
+    void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2);
+
+Draws a linear gradient fill in the given rectangle.
+The angle is in degrees and defines the gradient direction.
+
+    void IupDrawRadialGradient(Ihandle* ih, int cx, int cy, int radius, const char* colorCenter, const char* colorEdge);
+
+Draws a radial gradient fill centered at (cx, cy) with the given radius.
+
+### Text and Images
 
     void IupDrawText(Ihandle* ih, const char* str, int len, int x, int y, int w, int h);
 
@@ -95,20 +129,22 @@ Strings with multiple lines are accepted using '\n" as line separator.
 Horizontal text alignment for multiple lines can be controlled using **DRAWTEXTALIGNMENT** attribute: ALEFT (default), ARIGHT and ACENTER options.
 For single line texts, if the text is larger than its box and **DRAWTEXTWRAP**=Yes, then the line will be automatically broken in multiple lines.
 Notice that this is done internally by the system, the element natural size will still use only a single line.
-For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines. If the text is larger that its box and **DRAWTEXTELLIPSIS**=Yes, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when WRAP=Yes.  w and h are optional and can be -1 or 0, the text size will be used, so WRAP nor ELLIPSIS will not produce any changes.
+For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
+If the text is larger that its box and **DRAWTEXTELLIPSIS**=Yes, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
+It will be ignored when WRAP=Yes.
+w and h are optional and can be -1 or 0, the text size will be used, so WRAP nor ELLIPSIS will not produce any changes.
 The text is not automatically clipped to the rectangle, if **DRAWTEXTCLIP**=Yes it will be clipped but depending on the driver may affect the clipping set by IupDrawSetClipRect.
 The text can be drawn in any angle using **DRAWTEXTORIENTATION**, in degrees and counterclockwise, its layout is not centered inside the given rectangle when text is oriented, to center the layout use **DRAWTEXTLAYOUTCENTER**=Yes.
-Text orientation, ellipsis and wrap are not supported in X11.
 
     void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, int h);
 
 Draws an image given its name. The coordinates are relative to the top-left corner of the image.
-The image name follows the same behavior as the IMAGE attribute used by many controls.  Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
+The image name follows the same behavior as the IMAGE attribute used by many controls.
+Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md).
 The **DRAWMAKEINACTIVE** attribute can be used to force the image to be drawn with an inactive state appearance.
-The **DRAWBGCOLOR** can be used to control the inactive state background color or when transparency is flattened. w and h are optional and can be -1 or 0, then the image size will be used, and no zoom will be performed.
-Image zoom is not supported in X11 and GDK.\
+The **DRAWBGCOLOR** can be used to control the inactive state background color or when transparency is flattened.
+w and h are optional and can be -1 or 0, then the image size will be used, and no zoom will be performed.
 
     void IupDrawSelectRect(Ihandle* ih, int x1, int y1, int x2, int y2);
 
@@ -126,11 +162,23 @@ Returns the drawing area size. In C unwanted values can be NULL.
 
     void IupDrawGetTextSize(Ihandle* ih, const char* str, int len, int *w, int *h);
 
-Returns the given text size using the font defined by DRAWFONT, if not defined then use [FONT](../attrib/iup_font.md).  In C, unwanted values can be NULL, and if len is -1 the string must be 0 terminated, and len will be calculated using strlen.
+Returns the given text size using the font defined by DRAWFONT, if not defined then use [FONT](../attrib/iup_font.md).
+In C, unwanted values can be NULL, and if len is -1 the string must be 0 terminated, and len will be calculated using strlen.
 
     void IupDrawGetImageInfo(const char* name, int *w, int *h, int *bpp);
 
-Returns the given image size and bits per pixel. bpp can be 8, 24 or 32.  In C unwanted values can be NULL.
+Returns the given image size and bits per pixel. bpp can be 8, 24 or 32.
+In C unwanted values can be NULL.
+
+    Ihandle* IupDrawGetImage(Ihandle* ih);
+
+Returns the offscreen drawing buffer as an IupImage.
+Must be called between IupDrawBegin and IupDrawEnd.
+
+    char* IupDrawGetSvg(Ihandle* ih);
+
+Returns an SVG string representation of the drawing.
+Must be called between IupDrawBegin and IupDrawEnd.
 
 ### Example
 
