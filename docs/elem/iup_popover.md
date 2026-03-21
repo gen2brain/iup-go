@@ -69,4 +69,4 @@ In GTK 3 uses GtkPopover (when ARROW=YES and AUTOHIDE=YES) or a GtkWindow popup 
 
 ### See Also
 
-[IupDialog](../dlg/iup_dialog.md)
+[IupDialog](../dlg/iup_dialog.md), [IupMenu](iup_menu.md)

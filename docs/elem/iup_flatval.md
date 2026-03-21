@@ -172,3 +172,7 @@ This is the default mapping when ORIENTATION=VERTICAL.
 |                            |
 |----------------------------|
 | ![](images/iupflatval.png) |
+
+### See Also
+
+[IupVal](iup_val.md), [IupScrollbar](iup_scrollbar.md)

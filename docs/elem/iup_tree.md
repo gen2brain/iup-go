@@ -292,3 +292,7 @@ But these functions are faster than the traditional functions because they do no
 **GTK**
 ![](images/iuptree_gtk.png)
 
+### See Also
+
+[IupFlatTree](iup_flattree.md), [IupList](iup_list.md), [IupTable](iup_table.md)
+

@@ -352,4 +352,4 @@ When SPIN=YES:
 
 ### See Also
 
-[IupList](iup_list.md), [IupMultiLine](iup_multiline.md)
+[IupList](iup_list.md), [IupMultiLine](iup_multiline.md), [IupSpin](iup_spin.md)

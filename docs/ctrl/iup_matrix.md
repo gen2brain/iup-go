@@ -225,4 +225,4 @@ For more features, like Import/Export, Clipboard, Undo/Redo, Search, Sort, Colum
 
 ### See Also
 
-[IupCanvas](../elem/iup_canvas.md), [IupMatrixEx](iup_matrixex.md)
+[IupCanvas](../elem/iup_canvas.md), [IupMatrixEx](iup_matrixex.md), [IupTable](../elem/iup_table.md)

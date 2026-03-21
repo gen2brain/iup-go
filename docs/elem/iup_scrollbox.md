@@ -79,3 +79,7 @@ Notice that it is possible to use the **IupScrollBox** to overcome the internal 
 
 ![](images/iupscrollbox.png)
 
+### See Also
+
+[IupFlatScrollBox](iup_flatscrollbox.md)
+

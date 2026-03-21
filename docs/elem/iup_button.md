@@ -142,4 +142,4 @@ The buttons with no text and BGCOLOR defined have their RASTERSIZE set.
 
 ### See Also
 
-[IupImage](iup_image.md), [IupToggle](iup_toggle.md), [IupLabel](iup_label.md)
+[IupImage](iup_image.md), [IupToggle](iup_toggle.md), [IupLabel](iup_label.md), [IupFlatButton](iup_flatbutton.md)

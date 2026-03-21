@@ -318,3 +318,7 @@ But these functions are faster than the traditional functions because they do no
 **Tree with extra text area**
 ![](images/iupflattree4.png)
 
+### See Also
+
+[IupTree](iup_tree.md), [IupList](iup_list.md)
+

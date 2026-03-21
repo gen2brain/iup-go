@@ -227,3 +227,7 @@ In GTK uses GtkFixed (with custom iupGtk4Fixed in GTK 4), in Windows uses a cust
 
 **GTK**
 ![](images/iupcanvas_gtk.png)
+
+### See Also
+
+[IupGLCanvas](../ctrl/iup_glcanvas.md), [IupBackgroundBox](iup_backgroundbox.md), [IupDraw](../func/iup_draw.md)

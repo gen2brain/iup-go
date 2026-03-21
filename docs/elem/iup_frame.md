@@ -103,3 +103,7 @@ In GTK uses GtkFrame, in Windows uses WC_BUTTON, in WinUI uses a custom emulatio
 **GTK**
 ![](images/iupframe_gtk.png)
 
+### See Also
+
+[IupFlatFrame](iup_flatframe.md), [IupBackgroundBox](iup_backgroundbox.md)
+

@@ -109,4 +109,4 @@ ALIGNMENT = "ARIGHT" (32 bpp Image).
 
 ### See Also
 
-[IupImage](iup_image.md), [IupButton](iup_button.md).
+[IupImage](iup_image.md), [IupButton](iup_button.md), [IupFlatLabel](iup_flatlabel.md).

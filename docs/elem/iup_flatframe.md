@@ -146,4 +146,4 @@ But the line cannot be positioned in the middle of the text like in IupFrame.
 
 ### See Also
 
-[IupImage](iup_image.md), [IupFrame](iup_frame.md)
+[IupFrame](iup_frame.md), [IupBackgroundBox](iup_backgroundbox.md)

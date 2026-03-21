@@ -134,3 +134,7 @@ But it is the same in all systems.
 | Motif                            | Windows Classic                    | Windows w/ Styles                  | Windows Vista                      | GTK                              |
 | ![](images/iupval_mot_horiz.png) | ![](images/iupval_win2k_horiz.png) | ![](images/iupval_winxp_horiz.png) | ![](images/iupval_vista_horiz.png) | ![](images/iupval_gtk_horiz.png) |
 | ![](images/iupval_mot_vert.png)  | ![](images/iupval_win2k_vert.png)  | ![](images/iupval_winxp_vert.png)  | ![](images/iupval_vista_vert.png)  | ![](images/iupval_gtk_vert.png)  |
+
+### See Also
+
+[IupFlatVal](iup_flatval.md), [IupScrollbar](iup_scrollbar.md), [IupDial](iup_dial.md)

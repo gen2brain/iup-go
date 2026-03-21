@@ -392,3 +392,7 @@ But these functions are faster than the traditional functions because they do no
     IupSetAttribute(ih, "EXPANDBUTTON", "Yes");
 
 ![](images/iupflattabs2.png)
+
+### See Also
+
+[IupTabs](iup_tabs.md), [IupZbox](iup_zbox.md)

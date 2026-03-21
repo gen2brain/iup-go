@@ -370,4 +370,4 @@ But these functions are faster than the traditional functions because they do no
 
 ### See Also
 
-[IupListDialog](../dlg/iup_listdialog.md), [IupText](iup_text.md)
+[IupListDialog](../dlg/iup_listdialog.md), [IupText](iup_text.md), [IupFlatList](iup_flatlist.md), [IupTable](iup_table.md)

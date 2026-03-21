@@ -38,3 +38,7 @@ In GTK uses g_timeout_add, in Windows uses SetTimer, in WinUI uses DispatcherQue
 ### Examples
 
 [Browse for Example Files](../../examples/)
+
+### See Also
+
+[IupNotify](iup_notify.md), [IupUser](iup_user.md)
