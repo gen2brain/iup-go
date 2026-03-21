@@ -40,17 +40,18 @@ If there are ticks then they are added to the natural size on the minor axis.
 The handler can be smaller than the normal size.
 Set to NULL to allow the automatic layout to use smaller values.
 
-**SHOWTICKS** [Windows and Motif Only]: The number of tick marks along the valuator trail.
+**SHOWTICKS**: The number of tick marks along the valuator trail.
 Minimum value is "2". Default is "0", in this case the ticks are not shown.
 It cannot be changed to 0 from a non-zero value, or vice versa, after the control is mapped.
-GTK does not support ticks.
+Not supported in GTK 3 and EFL.
 
 **STEP**: Controls the increment for keyboard control and the mouse wheel. It is not the size of the increment.
 The increment size is "step*(max-min)", so it must be 0<step<1. Default is "0.01".
 
-**TICKSPOS** [Windows Only] (creation-only): Allows to position the ticks in both sides (BOTH) or in the reverse side (REVERSE).
+**TICKSPOS** (creation-only): Allows to position the ticks in both sides (BOTH) or in the reverse side (REVERSE).
 Default: NORMAL. The normal position for horizontal orientation is at the top of the control, and for vertical orientation is at the left of the control.
 In Motif, the ticks position is always normal.
+Not supported in GTK 3 and EFL.
 
 **ORIENTATION** (creation-only) (non-inheritable):  Informs whether the valuator is "VERTICAL" or "HORIZONTAL".
 Vertical valuators are bottom to up, and horizontal valuators are left to right variations of min to max (but can be inverted using INVERTED).
@@ -89,7 +90,7 @@ The BUTTON_RELEASE_CB callback is called only when the user release the mouse bu
 
 In Motif, after the user clicks the handler a KILLFOCUS will be ignored when the control loses its focus.
 
-in GTK uses GtkHScale/GtkVScale (GTK 2) or GtkScale (GTK 3), in Windows uses TRACKBAR_CLASS, and in Motif uses xmScale.
+In GTK uses GtkScale, in Windows uses TRACKBAR_CLASS, in WinUI uses XAML Slider, in macOS uses NSSlider, in Qt uses QSlider, in EFL uses Efl_Ui_Slider, and in Motif uses xmScale.
 
 #### Keyboard Mapping
 
