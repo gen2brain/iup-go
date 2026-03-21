@@ -2,8 +2,8 @@
 
 Creates a date editing interface element, which can displays a calendar for selecting a date.
 
-In Windows is a native element. In GTK and Motif is a custom element.
-In Motif is not capable of displaying the calendar.
+In Windows and Qt is a native element. In GTK, GTK 4, macOS, EFL and Motif is a custom element built with IUP controls.
+In Motif the calendar dropdown is not available because the IupCalendar control is not supported.
 
 ### Creation
 
@@ -15,12 +15,13 @@ In Motif is not capable of displaying the calendar.
 
 **CALENDARWEEKNUMBERS**: Shows the number of the week along the year in the calendar. Default: NO.
 
-**FORMAT** [Windows Only]: Flexible format for the date in Windows.
-For more information see ["About Date and Time Picker Control"](https://msdn.microsoft.com/EN-US/library/windows/desktop/bb761726(v=vs.85).aspx) in the Windows SDK.
-The Windows control was configured to display date only without any time options.
-Default: "d'/'M'/'yyyy". See Noted below.
+**FORMAT** [Windows and Qt Only]: Flexible format for the date.
+In Windows, for more information see "About Date and Time Picker Control" in the Windows SDK.
+The control was configured to display date only without any time options.
+In Qt, uses QDateEdit display format.
+Default: "d'/'M'/'yyyy". See Notes below.
 
-**MONTHSHORTNAMES** [Windows Only]: Month display will use a short name instead of numbers.
+**MONTHSHORTNAMES** [Windows and Qt Only]: Month display will use a short name instead of numbers.
 Must be set before ORDER. Default: NO. Names will be in the language of the system.
 
 **ORDER**: Day, month and year order. Can be any combination of "D", "M" and "Y" without repetition, and with all three letters.
@@ -32,6 +33,7 @@ Default: "/".
 
 **SHOWDROPDOWN** (write-only): opens or closes the dropdown calendar. Can be "YES" or "NO".
 Ignored if set before map. In Windows, it works only for NO.
+Not supported in Qt.
 
 **TODAY** (read-only): Returns the date corresponding to today in VALUE format.
 
@@ -57,11 +59,11 @@ Default: No.
 
 ### Notes
 
-In GTK uses a custom control built with IUP elements, and in Windows uses DATETIMEPICK_CLASS.
+In Windows uses DATETIMEPICK_CLASS, in Qt uses QDateEdit, and in GTK, GTK 4, macOS, EFL and Motif uses a custom control built with IUP elements.
 
 In Windows, when the user navigates to other pages in the calendar, the date is not changed until the user actually selects a day.
 
-In Windows, FORMAT can have the following values, but other text in the format string must be enclosed in single quotes:
+In Windows and Qt, FORMAT can have the following values, but other text in the format string must be enclosed in single quotes:
 
 | Element | Description |
 |----|----|
