@@ -36,6 +36,18 @@ Informs the current driver being used.
 
 Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "EFL" and "Cocoa".
 
+### APPID
+
+Application identifier used by the desktop environment.
+In GTK/Wayland, it maps to the XDG desktop file ID.
+Supported in GTK, GTK 4, Qt, EFL and WinUI.
+
+### APPNAME
+
+Application name used by the system.
+In Windows, it is used for the taskbar and tray. In macOS, it is used for the dock.
+Supported in Windows, macOS, Qt, EFL and WinUI.
+
 ## System Control
 
 ### LOCKLOOP
@@ -54,14 +66,16 @@ Possible values: "YES" or "NO". Default: "YES".
 
 Enable a custom quit message instead of using WM_QUIT.
 
-### LASTERROR [Windows Only]  (read-only)
+### LASTERROR [Windows Only] (read-only)
 
 If an error is found, returns a string with the system error description.
+Available in Win32 and WinUI.
 
-### UTF8MODE [Windows and GTK Only]
+### UTF8MODE
 
 By default, IUP uses strings in the current locale (See [FONT](iup_font.md) attribute).
 To use UTF-8 strings, set this attribute to Yes. Default: NO.
+Not supported in Motif and WinUI.
 
 ### UTF8MODE_FILE [Windows Only]
 
@@ -104,24 +118,27 @@ Local attributes may overwrite the default. Default: 2.
 Symbol used for decimal separator in numeric values used in floating point output by some controls (**IupMatrixEx, IupGetParam** and **IupPlot**).
 Can be "." or "," only. Default uses the one defined by the system locale.
 
-### SB_BGCOLOR [GTK and Motif Only]
+### SB_BGCOLOR [GTK, GTK 4 and Motif Only]
 
 By default, the scrollbars will not be affected by the BGCOLOR in native controls.
 If set to Yes, the system will try to render scrollbars in the same color of the BGCOLOR, but notice that this may affect scrollbars visibility.
 This affects **IupCanvas**, **IupList**, **IupText** and **IupTree**.
 
-### SHOWMENUIMAGES [GTK Only]
+### SHOWMENUIMAGES
 
-Force the display of images in menus. Default: Yes
+Force the display of images in menus. Default: Yes.
+Supported in GTK, GTK 4, Qt, EFL and WinUI.
 
 ### OVERLAYSCROLLBAR [GTK Only]
 
 Allow the overlay scrollbar in **IupCanvas** to use a minimum space.
 By default, IUP will use a regular scrollbar space even when overlay scrollbar is enabled in the system.
+Supported in GTK 3 and GTK 4.
 
 ### GLOBALMENU [GTK Only]
 
 Flag indicating that GTK is using a global menu instead of a per window menu.
+This was used by the old Ubuntu Unity desktop with its AppMenu proxy.
 
 ### GLOBALLAYOUTDLGKEY
 
@@ -217,9 +234,9 @@ See the [Keyboard Codes](iup_keyboard_codes.md) table for a list of the possible
 Sends a key press and a key release messages to the element with the focus. The value is a key code.
 See the [Keyboard Codes](iup_keyboard_codes.md) table for a list of the possible values.
 
-### AUTOREPEAT [Motif Only]
+### AUTOREPEAT [Motif and EFL Only]
 
-Turns on/off  ("YES" or "NO") the auto-repeat of keyboard keys in the whole system.
+Turns on/off ("YES" or "NO") the auto-repeat of keyboard keys in the whole system.
 May be used as an optimization in high performance applications.
 
 ### INPUTCALLBACKS
@@ -275,15 +292,26 @@ Returns the width of the vertical scrollbar (the same as the height of the horiz
 
 Returns Yes or No if the Windows common controls are using Visual Styles or not.
 
+### DARKMODE (read-only)
+
+Returns "1" if the system is currently in dark mode, "0" otherwise.
+
+### WINDOWING (read-only)
+
+Returns the native windowing system in use.
+Can be: "WIN32", "WINUI", "X11", "WAYLAND", "COCOA", "QT" or "EFL".
+
 ### GTKVERSION (read-only) [GTK Only]
 
 Returns the run time version of the GTK toolkit.
 This is the version being used at the time of the IupOpen function was called by the application.
+Available in GTK 3 and GTK 4.
 
 ### GTKDEVVERSION (read-only) [GTK Only]
 
 Returns the development version of the GTK toolkit.
 This is the version at the time the IUP library was compiled.
+Available in GTK 3 and GTK 4.
 
 ### MOTIFVERSION (read-only) [Motif Only]
 
@@ -292,6 +320,32 @@ Returns the version of the run time Motif.
 ### MOTIFNUMBER (read-only) [Motif Only]
 
 Returns the number of the Motif Version if full form, e.x: 2.2.3 = "2203".
+
+### QTVERSION (read-only) [Qt Only]
+
+Returns the run time version of the Qt toolkit.
+
+### QTDEVVERSION (read-only) [Qt Only]
+
+Returns the development version of the Qt toolkit.
+This is the version at the time the IUP library was compiled.
+
+### QTSTYLE (read-only) [Qt Only]
+
+Returns the name of the current Qt widget style.
+
+### EFLVERSION (read-only) [EFL Only]
+
+Returns the run time version of the EFL toolkit.
+
+### WINUIVERSION (read-only) [WinUI Only]
+
+Returns the WinUI version.
+
+### WL_DISPLAY (read-only) [Wayland Only]
+
+Returns the Wayland display (wl_display*).
+Available in GTK, GTK 4, Qt and EFL when running on Wayland.
 
 ### COMPUTERNAME (read-only)
 
@@ -323,13 +377,15 @@ Returns the OpenGL vendor information. Available only after the first call to [I
 Returns the OpenGL renderer information.
 Available only after the first call to [IupGLMakeCurrent](../ctrl/iup_glcanvas.md).
 
-### XSERVERVENDOR (read-only) [GTK and Motif Only]
+### XSERVERVENDOR (read-only) [X11 Only]
 
 X-Windows Server Vendor string.
+Available in GTK, GTK 4 and Motif.
 
-### XVENDORRELEASE (read-only) [GTK and Motif Only]
+### XVENDORRELEASE (read-only) [X11 Only]
 
 X-Windows Server Vendor release number.
+Available in GTK, GTK 4 and Motif.
 
 ## Screen Information
 
@@ -365,21 +421,24 @@ Returns "YES" or "NO". Useful in Motif.
 Returns the Desktop Window Manager Composition flag. Returns "YES" or "NO". Works only in Windows Vista and newer.
 Returns NULL if not supported.
 
-### VIRTUALSCREEN (read-only) [Windows and GTK Only]
+### VIRTUALSCREEN (read-only)
 
 Returns the virtual screen position and size in pixels.
 It is the virtual space defined by all monitors in the system.
+Not supported in Motif.
 
 String in the "*x y width height*" format.
 
-### MONITORSCOUNT (read-only) [Windows and GTK Only]
+### MONITORSCOUNT (read-only)
 
 Returns the number of monitors.
+Not supported in Motif.
 
-### MONITORSINFO (read-only) [Windows and GTK Only]
+### MONITORSINFO (read-only)
 
 Returns the position and size in pixels of all monitors.
 Each monitor information is terminated by a "\n" character.
+Not supported in Motif.
 
 String in the "*x y width height*\n*x y width height*\n..." format.
 
@@ -396,14 +455,17 @@ Changes and returns a handle (HINSTANCE) that identifies the DLL where resources
 ### APPSHELL (read-only) [Motif Only]
 
 Returns the shell Widget created by XtOpenApplication.
+Also available in GTK and GTK 4.
 
-### XDISPLAY (read-only) [GTK and Motif Only]
+### XDISPLAY (read-only) [X11 Only]
 
 Returns the X-Windows Display.
+Available in GTK, GTK 4, Motif and EFL.
 
-### XSCREEN (read-only) [GTK and Motif Only]
+### XSCREEN (read-only) [X11 Only]
 
 Returns the X-Windows Screen.
+Available in GTK, GTK 4, Motif and EFL.
 
 ## Default Attributes
 
@@ -416,13 +478,15 @@ The default background color for all elements that have the background similar o
 The default foreground color for all elements that have text over the background of the dialog or similar.
 Usually is "0 0 0" - black.
 
-### MENUBGCOLOR  [Windows Only]
+### MENUBGCOLOR
 
 The default menu background color. Usually is "255 255 255" - white.
+Supported in Windows, macOS, Qt, EFL and WinUI.
 
-### MENUFGCOLOR  [Windows Only]
+### MENUFGCOLOR
 
 The system default menu foreground color. Usually is "0 0 0" - black.
+Supported in Windows, macOS, Qt, EFL and WinUI.
 
 ### TXTBGCOLOR
 
