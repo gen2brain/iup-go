@@ -13,14 +13,14 @@ import "C"
 // Append inserts an interface element at the end of the container, after the last element of the container.
 // Valid for any element that contains other elements like dialog, frame, hbox, vbox, zbox or menu.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupappend.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_append.md
 func Append(ih, child Ihandle) Ihandle {
 	return mkih(C.IupAppend(ih.ptr(), child.ptr()))
 }
 
 // Detach detaches an interface element from its parent.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdetach.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_detach.md
 func Detach(child Ihandle) {
 	C.IupDetach(child.ptr())
 }
@@ -28,7 +28,7 @@ func Detach(child Ihandle) {
 // Insert Inserts an interface element before another child of the container.
 // Valid for any element that contains other elements like dialog, frame, hbox, vbox, zbox, menu, etc.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupinsert.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_insert.md
 func Insert(ih, refChild, child Ihandle) Ihandle {
 	return mkih(C.IupInsert(ih.ptr(), refChild.ptr(), child.ptr()))
 }
@@ -38,49 +38,49 @@ func Insert(ih, refChild, child Ihandle) Ihandle {
 // If ref_child is NULL, then it will append the child to the new_parent.
 // If ref_child is NOT NULL then it will insert child before ref_child inside the new_parent.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupreparent.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_reparent.md
 func Reparent(ih, newParent, refChild Ihandle) int {
 	return int(C.IupReparent(ih.ptr(), newParent.ptr(), refChild.ptr()))
 }
 
 // GetParent returns the parent of a control.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetparent.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getparent.md
 func GetParent(ih Ihandle) Ihandle {
 	return mkih(C.IupGetParent(ih.ptr()))
 }
 
 // GetChild returns the a child of the control given its position.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetchild.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getchild.md
 func GetChild(ih Ihandle, pos int) Ihandle {
 	return mkih(C.IupGetChild(ih.ptr(), C.int(pos)))
 }
 
 // GetChildPos returns the position of a child of the given control.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetchildpos.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getchildpos.md
 func GetChildPos(ih, child Ihandle) int {
 	return int(C.IupGetChildPos(ih.ptr(), child.ptr()))
 }
 
 // GetChildCount returns the number of children of the given control.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetchildcount.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getchildcount.md
 func GetChildCount(ih Ihandle) int {
 	return int(C.IupGetChildCount(ih.ptr()))
 }
 
 // GetNextChild returns the a child of the given control given its brother.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetnextchild.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getnextchild.md
 func GetNextChild(ih, child Ihandle) Ihandle {
 	return mkih(C.IupGetNextChild(ih.ptr(), child.ptr()))
 }
 
 // GetBrother returns the brother of an element.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetbrother.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getbrother.md
 func GetBrother(ih Ihandle) Ihandle {
 	return mkih(C.IupGetBrother(ih.ptr()))
 }
@@ -88,7 +88,7 @@ func GetBrother(ih Ihandle) Ihandle {
 // GetDialog returns the handle of the dialog that contains that interface element.
 // Works also for children of a menu that is associated with a dialog.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetdialog.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getdialog.md
 func GetDialog(ih Ihandle) Ihandle {
 	return mkih(C.IupGetDialog(ih.ptr()))
 }
@@ -97,7 +97,7 @@ func GetDialog(ih Ihandle) Ihandle {
 // equals to the given value on the same dialog hierarchy.
 // Works also for children of a menu that is associated with a dialog.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetdialogchild.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getdialogchild.md
 func GetDialogChild(ih Ihandle, name string) Ihandle {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))

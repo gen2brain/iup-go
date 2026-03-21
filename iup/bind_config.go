@@ -16,7 +16,7 @@ import "C"
 
 // Config creates a new configuration database. To destroy it use the Destroy function.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func Config() Ihandle {
 	h := mkih(C.IupConfig())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -25,21 +25,21 @@ func Config() Ihandle {
 
 // ConfigLoad loads the configuration file.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigLoad(ih Ihandle) int {
 	return int(C.IupConfigLoad(ih.ptr()))
 }
 
 // ConfigSave saves the configuration file.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSave(ih Ihandle) int {
 	return int(C.IupConfigSave(ih.ptr()))
 }
 
 // ConfigSetVariableStr .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSetVariableStr(ih Ihandle, group, key string, value string) {
 	cGroup, cKey, cValue := C.CString(group), C.CString(key), C.CString(value)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -51,7 +51,7 @@ func ConfigSetVariableStr(ih Ihandle, group, key string, value string) {
 
 // ConfigSetVariableStrId .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSetVariableStrId(ih Ihandle, group, key string, id int, value string) {
 	cGroup, cKey, cValue := C.CString(group), C.CString(key), C.CString(value)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -63,7 +63,7 @@ func ConfigSetVariableStrId(ih Ihandle, group, key string, id int, value string)
 
 // ConfigSetVariableInt .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSetVariableInt(ih Ihandle, group, key string, value int) {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -74,7 +74,7 @@ func ConfigSetVariableInt(ih Ihandle, group, key string, value int) {
 
 // ConfigSetVariableIntId .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSetVariableIntId(ih Ihandle, group, key string, id int, value int) {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -85,7 +85,7 @@ func ConfigSetVariableIntId(ih Ihandle, group, key string, id int, value int) {
 
 // ConfigSetVariableDouble .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSetVariableDouble(ih Ihandle, group, key string, value float64) {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -96,7 +96,7 @@ func ConfigSetVariableDouble(ih Ihandle, group, key string, value float64) {
 
 // ConfigSetVariableDoubleId .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSetVariableDoubleId(ih Ihandle, group, key string, id int, value float64) {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -107,7 +107,7 @@ func ConfigSetVariableDoubleId(ih Ihandle, group, key string, id int, value floa
 
 // ConfigGetVariableStr .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableStr(ih Ihandle, group, key string) string {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -118,7 +118,7 @@ func ConfigGetVariableStr(ih Ihandle, group, key string) string {
 
 // ConfigGetVariableStrId .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableStrId(ih Ihandle, group, key string, id int) string {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -129,7 +129,7 @@ func ConfigGetVariableStrId(ih Ihandle, group, key string, id int) string {
 
 // ConfigGetVariableInt .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableInt(ih Ihandle, group, key string) int {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -140,7 +140,7 @@ func ConfigGetVariableInt(ih Ihandle, group, key string) int {
 
 // ConfigGetVariableIntId .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableIntId(ih Ihandle, group, key string, id int) int {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -151,7 +151,7 @@ func ConfigGetVariableIntId(ih Ihandle, group, key string, id int) int {
 
 // ConfigGetVariableDouble .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableDouble(ih Ihandle, group, key string) float64 {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -162,7 +162,7 @@ func ConfigGetVariableDouble(ih Ihandle, group, key string) float64 {
 
 // ConfigGetVariableDoubleId .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableDoubleId(ih Ihandle, group, key string, id int) float64 {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -173,7 +173,7 @@ func ConfigGetVariableDoubleId(ih Ihandle, group, key string, id int) float64 {
 
 // ConfigGetVariableStrDef .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableStrDef(ih Ihandle, group, key string, def string) string {
 	cGroup, cKey, cDef := C.CString(group), C.CString(key), C.CString(def)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -185,7 +185,7 @@ func ConfigGetVariableStrDef(ih Ihandle, group, key string, def string) string {
 
 // ConfigGetVariableStrIdDef .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableStrIdDef(ih Ihandle, group, key string, id int, def string) string {
 	cGroup, cKey, cDef := C.CString(group), C.CString(key), C.CString(def)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -197,7 +197,7 @@ func ConfigGetVariableStrIdDef(ih Ihandle, group, key string, id int, def string
 
 // ConfigGetVariableIntDef .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableIntDef(ih Ihandle, group, key string, def int) int {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -208,7 +208,7 @@ func ConfigGetVariableIntDef(ih Ihandle, group, key string, def int) int {
 
 // ConfigGetVariableIntIdDef .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableIntIdDef(ih Ihandle, group, key string, id int, def int) int {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -219,7 +219,7 @@ func ConfigGetVariableIntIdDef(ih Ihandle, group, key string, id int, def int) i
 
 // ConfigGetVariableDoubleDef .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableDoubleDef(ih Ihandle, group, key string, def float64) float64 {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -230,7 +230,7 @@ func ConfigGetVariableDoubleDef(ih Ihandle, group, key string, def float64) floa
 
 // ConfigGetVariableDoubleIdDef .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigGetVariableDoubleIdDef(ih Ihandle, group, key string, id int, def float64) float64 {
 	cGroup, cKey := C.CString(group), C.CString(key)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -241,7 +241,7 @@ func ConfigGetVariableDoubleIdDef(ih Ihandle, group, key string, id int, def flo
 
 // ConfigSetListVariable .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSetListVariable(ih Ihandle, group, key, value string, add int) {
 	cGroup, cKey, cValue := C.CString(group), C.CString(key), C.CString(value)
 	defer C.free(unsafe.Pointer(cGroup))
@@ -253,7 +253,7 @@ func ConfigSetListVariable(ih Ihandle, group, key, value string, add int) {
 
 // ConfigDialogShow show the dialog adjusting its size and position..
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigDialogShow(ih, dialog Ihandle, name string) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -264,7 +264,7 @@ func ConfigDialogShow(ih, dialog Ihandle, name string) {
 // ConfigDialogClosed save the last dialog position and size when the dialog is about to be closed,
 // usually inside the dialog CLOSE_CB callback..
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigDialogClosed(ih, dialog Ihandle, name string) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -276,7 +276,7 @@ func ConfigDialogClosed(ih, dialog Ihandle, name string) {
 // menuOrList can be either a Menu or a List/FlatList control.
 // maxRecent is the maximum number of recent files to track.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigRecentInit(ih, menuOrList Ihandle, recentCb ActionFunc, maxRecent int) {
 	setRecentFunc(ih, menuOrList, recentCb)
 	C.IupConfigRecentInit(ih.ptr(), menuOrList.ptr(), (C.Icallback)(C.goIupRecentCB), C.int(maxRecent))
@@ -285,7 +285,7 @@ func ConfigRecentInit(ih, menuOrList Ihandle, recentCb ActionFunc, maxRecent int
 // ConfigRecentUpdate adds or moves a filename to the top of the recent files list.
 // Call ConfigSave after this to persist the change.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupconfig.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigRecentUpdate(ih Ihandle, filename string) {
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))

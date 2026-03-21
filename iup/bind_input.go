@@ -170,147 +170,147 @@ const (
 
 // IsPrint informs if a key can be directly used as a printable character.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func IsPrint(c int) bool {
 	return c > 31 && c < 127
 }
 
 // IsXKey informs if a given key is an extended code.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func IsXKey(c int) bool {
 	return (c >= 128)
 }
 
 // IsShiftXKey informs if a given key is an extended code using the Shift modifier.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func IsShiftXKey(c int) bool {
 	return (uint(c) & 0x10000000) != 0
 }
 
 // IsCtrlXKey informs if a given key is an extended code using the Ctrl modifier.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func IsCtrlXKey(c int) bool {
 	return (uint(c) & 0x20000000) != 0
 }
 
 // IsAltXKey informs if a given key is an extended code using the Alt modifier.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func IsAltXKey(c int) bool {
 	return (uint(c) & 0x40000000) != 0
 }
 
 // IsSysXKey informs if a given key is an extended code using the Sys modifier.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func IsSysXKey(c int) bool {
 	return (uint(c) & 0x80000000) != 0
 }
 
 // XKeyBase obtains a key code for a generic combination.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func XKeyBase(c int) int {
 	return int(uint(c) & 0x0FFFFFFF)
 }
 
 // XKeyShift obtains a key code for a generic combination.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func XKeyShift(c int) int {
 	return int(uint(c) | 0x10000000)
 }
 
 // XKeyCtrl obtains a key code for a generic combination.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func XKeyCtrl(c int) int {
 	return int(uint(c) | 0x20000000)
 }
 
 // XKeyAlt obtains a key code for a generic combination.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func XKeyAlt(c int) int {
 	return int(uint(c) | 0x40000000)
 }
 
 // XKeySys obtains a key code for a generic combination.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/attrib/key.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/attrib/iup_keyboard_codes.md
 func XKeySys(c int) int {
 	return int(uint(c) | 0x80000000)
 }
 
 // IsShift mouse button macro.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
 func IsShift(s string) bool {
 	return s[0] == 'S'
 }
 
 // IsControl mouse button macro.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
 func IsControl(s string) bool {
 	return s[1] == 'C'
 }
 
 // IsButton1 mouse button macro.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
 func IsButton1(s string) bool {
 	return s[2] == '1'
 }
 
 // IsButton2 mouse button macro.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
 func IsButton2(s string) bool {
 	return s[3] == '2'
 }
 
 // IsButton3 mouse button macro.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
 func IsButton3(s string) bool {
 	return s[4] == '3'
 }
 
 // IsDouble mouse button macro.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
 func IsDouble(s string) bool {
 	return s[5] == 'D'
 }
 
 // IsAlt mouse button macro.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
 func IsAlt(s string) bool {
 	return s[6] == 'A'
 }
 
 // IsSys mouse button macro.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
 func IsSys(s string) bool {
 	return s[7] == 'Y'
 }
 
 // IsButton4 mouse button macro.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
 func IsButton4(s string) bool {
 	return s[8] == '4'
 }
 
 // IsButton5 mouse button macro.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/call/iup_button_cb.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_button_cb.md
 func IsButton5(s string) bool {
 	return s[9] == '5'
 }

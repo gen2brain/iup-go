@@ -17,8 +17,6 @@ import "C"
 // Must be called after IupOpen.
 //
 // Returns: IUP_NOERROR on success, IUP_OPENED if already opened, IUP_ERROR on failure.
-//
-// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupcontrols.html
 func ControlsOpen() int {
 	return int(C.IupControlsOpen())
 }
@@ -27,7 +25,7 @@ func ControlsOpen() int {
 // It is a canvas-based control that displays a scrollable grid of cells.
 // Each cell can be individually drawn via the DRAW_CB callback.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupcells.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_cells.md
 func Cells() Ihandle {
 	h := mkih(C.IupCells())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -39,7 +37,7 @@ func Cells() Ihandle {
 //
 // The action parameter is optional and can be "" or a callback name.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_matrix.md
 func Matrix(action string) Ihandle {
 	cAction := cStrOrNull(action)
 	defer cStrFree(cAction)
@@ -53,7 +51,7 @@ func Matrix(action string) Ihandle {
 // It is a specialized version of the matrix control designed for displaying lists with columns.
 // Supports label, color, and image columns.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrixlist.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_matrixlist.md
 func MatrixList() Ihandle {
 	h := mkih(C.IupMatrixList())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -64,7 +62,7 @@ func MatrixList() Ihandle {
 // It provides extra functionality on top of the standard Matrix control,
 // including undo/redo, copy/paste, sorting, searching, units conversion, etc.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/ctrl/iupmatrix_extra.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_matrixex.md
 func MatrixEx() Ihandle {
 	h := mkih(C.IupMatrixEx())
 	h.SetAttribute("UUID", uuid.NewString())

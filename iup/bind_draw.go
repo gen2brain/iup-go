@@ -13,21 +13,21 @@ import "C"
 
 // DrawBegin initialize the drawing process.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawBegin(ih Ihandle) {
 	C.IupDrawBegin(ih.ptr())
 }
 
 // DrawEnd terminates the drawing process and actually draw on screen..
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawEnd(ih Ihandle) {
 	C.IupDrawEnd(ih.ptr())
 }
 
 // DrawSetClipRect defines a rectangular clipping region.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawSetClipRect(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawSetClipRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
@@ -35,14 +35,14 @@ func DrawSetClipRect(ih Ihandle, x1, y1, x2, y2 int) {
 // DrawSetClipRoundedRect defines a rounded rectangular clipping region.
 // This is useful for drawing gradients or other content with rounded corners.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawSetClipRoundedRect(ih Ihandle, x1, y1, x2, y2, cornerRadius int) {
 	C.IupDrawSetClipRoundedRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(cornerRadius))
 }
 
 // DrawResetClip resets the clipping area to none.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawResetClip(ih Ihandle) {
 	C.IupDrawResetClip(ih.ptr())
 }
@@ -50,7 +50,7 @@ func DrawResetClip(ih Ihandle) {
 // DrawGetClipRect returns the previous rectangular clipping region set by DrawSetClipRect,
 // if clipping was reset returns 0 in all values.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawGetClipRect(ih Ihandle) (x1, y1, x2, y2 int) {
 	var cX1, cY1, cX2, cY2 C.int
 	C.IupDrawGetClipRect(ih.ptr(), &cX1, &cY1, &cX2, &cY2)
@@ -60,21 +60,21 @@ func DrawGetClipRect(ih Ihandle) (x1, y1, x2, y2 int) {
 
 // DrawParentBackground fills the canvas with the native parent background color.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawParentBackground(ih Ihandle) {
 	C.IupDrawParentBackground(ih.ptr())
 }
 
 // DrawLine draws a line including start and end points.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawLine(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawLine(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
 
 // DrawRectangle draws a rectangle including start and end points.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawRectangle(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawRectangle(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
@@ -83,7 +83,7 @@ func DrawRectangle(ih Ihandle, x1, y1, x2, y2 int) {
 // When filled will draw a pie shape with the vertex at the center of the rectangle.
 // Angles are counter-clock wise relative to the 3 o'clock position.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawArc(ih Ihandle, x1, y1, x2, y2 int, a1, a2 float64) {
 	C.IupDrawArc(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.double(a1), C.double(a2))
 }
@@ -91,7 +91,7 @@ func DrawArc(ih Ihandle, x1, y1, x2, y2 int, a1, a2 float64) {
 // DrawEllipse draws an ellipse inscribed in the rectangle (x1,y1)-(x2,y2).
 // The ellipse is controlled by DRAWCOLOR, DRAWSTYLE, and DRAWLINEWIDTH attributes.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawEllipse(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawEllipse(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
@@ -99,7 +99,7 @@ func DrawEllipse(ih Ihandle, x1, y1, x2, y2 int) {
 // DrawPolygon draws a polygon.
 // Coordinates are stored in the array in the sequence: x1, y1, x2, y2, ...
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawPolygon(ih Ihandle, points []int, count int) {
 	cPoints := make([]C.int, len(points))
 	for i, v := range points {
@@ -110,7 +110,7 @@ func DrawPolygon(ih Ihandle, points []int, count int) {
 
 // DrawPixel draws a single pixel at the given position.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawPixel(ih Ihandle, x, y int) {
 	C.IupDrawPixel(ih.ptr(), C.int(x), C.int(y))
 }
@@ -118,14 +118,14 @@ func DrawPixel(ih Ihandle, x, y int) {
 // DrawRoundedRectangle draws a rectangle with rounded corners.
 // The corner_radius parameter defines the radius of the corner arcs.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawRoundedRectangle(ih Ihandle, x1, y1, x2, y2, corner_radius int) {
 	C.IupDrawRoundedRectangle(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(corner_radius))
 }
 
 // DrawText draws a text in the given position using the font defined by DRAWFONT, if not defined then use FONT.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawText(ih Ihandle, str string, x, y, w, h int) {
 	cStr := C.CString(str)
 	defer C.free(unsafe.Pointer(cStr))
@@ -136,7 +136,7 @@ func DrawText(ih Ihandle, str string, x, y, w, h int) {
 // DrawImage draws an image given its name.
 // The coordinates are relative the top-left corner of the image.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawImage(ih Ihandle, name string, x, y, w, h int) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -146,14 +146,14 @@ func DrawImage(ih Ihandle, name string, x, y, w, h int) {
 
 // DrawSelectRect draws a selection rectangle.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawSelectRect(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawSelectRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
 
 // DrawFocusRect draws a focus rectangle.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawFocusRect(ih Ihandle, x1, y1, x2, y2 int) {
 	C.IupDrawFocusRect(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2))
 }
@@ -164,7 +164,7 @@ func DrawFocusRect(ih Ihandle, x1, y1, x2, y2 int) {
 //
 // The curve is controlled by DRAWCOLOR, DRAWSTYLE, and DRAWLINEWIDTH attributes.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawBezier(ih Ihandle, x1, y1, x2, y2, x3, y3, x4, y4 int) {
 	C.IupDrawBezier(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2),
 		C.int(x3), C.int(y3), C.int(x4), C.int(y4))
@@ -175,7 +175,7 @@ func DrawBezier(ih Ihandle, x1, y1, x2, y2, x3, y3, x4, y4 int) {
 //
 // The curve is controlled by DRAWCOLOR, DRAWSTYLE, and DRAWLINEWIDTH attributes.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawQuadraticBezier(ih Ihandle, x1, y1, x2, y2, x3, y3 int) {
 	C.IupDrawQuadraticBezier(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2),
 		C.int(x3), C.int(y3))
@@ -183,7 +183,7 @@ func DrawQuadraticBezier(ih Ihandle, x1, y1, x2, y2, x3, y3 int) {
 
 // DrawGetSize returns the drawing area size.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawGetSize(ih Ihandle) (w, h int) {
 	var cW, cH C.int
 	C.IupDrawGetSize(ih.ptr(), &cW, &cH)
@@ -193,7 +193,7 @@ func DrawGetSize(ih Ihandle) (w, h int) {
 
 // DrawGetTextSize returns the given text size using the font defined by DRAWFONT, if not defined then use FONT.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawGetTextSize(ih Ihandle, str string) (w, h int) {
 	cStr := C.CString(str)
 	defer C.free(unsafe.Pointer(cStr))
@@ -207,7 +207,7 @@ func DrawGetTextSize(ih Ihandle, str string) (w, h int) {
 // DrawGetImageInfo returns the given image size and bits per pixel.
 // bpp can be 8, 24 or 32.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawGetImageInfo(name string) (w, h, bpp int) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -223,7 +223,7 @@ func DrawGetImageInfo(name string) (w, h, bpp int) {
 // Returns 0 (nil handle) if the operation fails.
 // The caller is responsible for destroying the returned image handle.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawGetImage(ih Ihandle) Ihandle {
 	return mkih(C.IupDrawGetImage(ih.ptr()))
 }
@@ -244,7 +244,7 @@ func DrawGetSvg(ih Ihandle) string {
 // angle: 0=horizontal right, 90=vertical down, 180=horizontal left, 270=vertical up.
 // color1 and color2 are color strings (e.g., "255 0 0" for red).
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, color2 string) {
 	cColor1 := C.CString(color1)
 	defer C.free(unsafe.Pointer(cColor1))
@@ -257,7 +257,7 @@ func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, c
 // DrawRadialGradient draws a radial gradient from center to edge.
 // colorCenter and colorEdge are color strings (e.g., "255 0 0" for red).
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdraw.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_draw.md
 func DrawRadialGradient(ih Ihandle, cx, cy, radius int, colorCenter, colorEdge string) {
 	cColorCenter := C.CString(colorCenter)
 	defer C.free(unsafe.Pointer(cColorCenter))

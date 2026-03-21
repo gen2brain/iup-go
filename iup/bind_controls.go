@@ -18,7 +18,7 @@ import "C"
 //
 // It inherits from Label.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupanimatedlabel.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_animatedlabel.md
 func AnimatedLabel(animation Ihandle) Ihandle {
 	h := mkih(C.IupAnimatedLabel(animation.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -29,7 +29,7 @@ func AnimatedLabel(animation Ihandle) Ihandle {
 // When selected, this element activates a function in the application.
 // Its visual presentation can contain a text and/or an image.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupbutton.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_button.md
 func Button(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
@@ -46,7 +46,7 @@ func Button(title string) Ihandle {
 // It behaves just like a Button, but since it is not a native control, it has more flexibility for additional options.
 // It can also behave like a Toggle (without the checkmark).
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupflatbutton.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatbutton.md
 func FlatButton(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
@@ -59,7 +59,7 @@ func FlatButton(title string) Ihandle {
 // DropButton creates an interface element that is a button with a drop down arrow.
 // It can function as a button and as a dropdown. Its visual presentation can contain a text and/or an image.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupdropbutton.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_dropbutton.md
 func DropButton(dropchild Ihandle) Ihandle {
 	h := mkih(C.IupDropButton(dropchild.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -68,7 +68,7 @@ func DropButton(dropchild Ihandle) Ihandle {
 
 // Calendar creates a month calendar interface element, where the user can select a date.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupcalendar.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_calendar.md
 func Calendar() Ihandle {
 	h := mkih(C.IupCalendar())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -77,7 +77,7 @@ func Calendar() Ihandle {
 
 // Canvas creates an interface element that is a canvas - a working area for your application.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupcanvas.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_canvas.md
 func Canvas() Ihandle {
 	h := mkih(C.IupCanvas(nil))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -87,7 +87,7 @@ func Canvas() Ihandle {
 // ColorBar creates a color palette to enable a color selection from several samples. It can select one or two colors.
 // The primary color is selected with the left mouse button, and the secondary color is selected with the right mouse button.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupcolorbar.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_colorbar.md
 func ColorBar() Ihandle {
 	h := mkih(C.IupColorbar())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -97,7 +97,7 @@ func ColorBar() Ihandle {
 // ColorBrowser creates an element for selecting a color. The selection is done using a cylindrical projection of the RGB cube.
 // The transformation defines a coordinate color system called HSI, that is still the RGB color space but using cylindrical coordinates.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupcolorbrowser.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_colorbrowser.md
 func ColorBrowser() Ihandle {
 	h := mkih(C.IupColorBrowser())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -106,7 +106,7 @@ func ColorBrowser() Ihandle {
 
 // DatePick creates a date editing interface element, which can displays a calendar for selecting a date.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupdatepick.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_datepick.md
 func DatePick() Ihandle {
 	h := mkih(C.IupDatePick())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -115,7 +115,7 @@ func DatePick() Ihandle {
 
 // Dial creates a dial for regulating a given angular variable.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupdial.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_dial.md
 func Dial(orientation string) Ihandle {
 	cOrientation := cStrOrNull(orientation)
 	defer cStrFree(cOrientation)
@@ -127,7 +127,7 @@ func Dial(orientation string) Ihandle {
 
 // Gauge creates a Gauge control. Shows a percent value that can be updated to simulate a progression.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupgauge.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_gauge.md
 func Gauge() Ihandle {
 	h := mkih(C.IupGauge())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -136,7 +136,7 @@ func Gauge() Ihandle {
 
 // Label creates a label interface element, which displays a separator, a text or an image.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuplabel.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_label.md
 func Label(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
@@ -149,7 +149,7 @@ func Label(title string) Ihandle {
 // FlatLabel creates an interface element that is a label, but it does not have native decorations.
 // Its visual presentation can contain a text and/or an image.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupflatlabel.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatlabel.md
 func FlatLabel(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
@@ -161,7 +161,7 @@ func FlatLabel(title string) Ihandle {
 
 // FlatSeparator creates an interface element that is a Separator, but it does not have native decorations.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupflatseparator.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatseparator.md
 func FlatSeparator() Ihandle {
 	h := mkih(C.IupFlatSeparator())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -170,7 +170,7 @@ func FlatSeparator() Ihandle {
 
 // Link creates a label that displays an underlined clickable text. It inherits from Label.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuplink.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_link.md
 func Link(url, title string) Ihandle {
 	cUrl := cStrOrNull(url)
 	cTitle := cStrOrNull(title)
@@ -186,7 +186,7 @@ func Link(url, title string) Ihandle {
 // The list can be visible or can be dropped down. It also can have an edit box for text input. So it is a 4 in 1 element.
 // In native systems the dropped down case is called Combo Box.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuplist.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_list.md
 func List() Ihandle {
 	h := mkih(C.IupList(nil))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -195,7 +195,7 @@ func List() Ihandle {
 
 // FlatList creates an interface element that displays a list of items, but it does not have native decorations.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupflatlist.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatlist.md
 func FlatList() Ihandle {
 	h := mkih(C.IupFlatList())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -206,7 +206,7 @@ func FlatList() Ihandle {
 //
 // It is similar of Gauge, but uses native controls internally. Also does not have support for text inside the bar.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupprogressbar.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_progressbar.md
 func ProgressBar() Ihandle {
 	h := mkih(C.IupProgressBar())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -216,7 +216,7 @@ func ProgressBar() Ihandle {
 // Spin creates a control set with a vertical box containing two buttons, one with an up arrow and the other with a down arrow,
 // to be used to increment and decrement values.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupspin.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_spin.md
 func Spin() Ihandle {
 	h := mkih(C.IupSpin())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -225,7 +225,7 @@ func Spin() Ihandle {
 
 // SpinBox creates a horizontal container that already contains a Spin.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupspin.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_spin.md
 func SpinBox(child Ihandle) Ihandle {
 	h := mkih(C.IupSpinbox(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -234,7 +234,7 @@ func SpinBox(child Ihandle) Ihandle {
 
 // Text creates an editable text field.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptext.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_text.md
 func Text() Ihandle {
 	h := mkih(C.IupText(nil))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -244,7 +244,7 @@ func Text() Ihandle {
 // TextConvertLinColToPos converts a (lin, col) character positioning into an absolute position.
 // lin and col starts at 1, pos starts at 0. For single line controls pos is always "col-1".
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptext.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_text.md
 func TextConvertLinColToPos(ih Ihandle, lin, col int) (pos int) {
 	C.IupTextConvertLinColToPos(ih.ptr(), C.int(lin), C.int(col), (*C.int)(unsafe.Pointer(&pos)))
 	return
@@ -253,7 +253,7 @@ func TextConvertLinColToPos(ih Ihandle, lin, col int) (pos int) {
 // TextConvertPosToLinCol Converts an absolute position into a (lin, col) character positioning.
 // lin and col starts at 1, pos starts at 0. For single line controls lin is always 1, and col is always "pos+1".
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptext.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_text.md
 func TextConvertPosToLinCol(ih Ihandle, pos int) (lin, col int) {
 	C.IupTextConvertPosToLinCol(ih.ptr(), C.int(pos), (*C.int)(unsafe.Pointer(&lin)), (*C.int)(unsafe.Pointer(&col)))
 	return
@@ -264,7 +264,7 @@ func TextConvertPosToLinCol(ih Ihandle, pos int) (lin, col int) {
 // Text has support for multiple lines when the MULTILINE attribute is set to YES.
 // Now when a Multiline element is created in fact a Text element with MULTILINE=YES is created.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupmultiline.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_multiline.md
 func MultiLine() Ihandle {
 	h := mkih(C.IupMultiLine(nil))
 	h.SetAttribute("UUID", uuid.NewString())
@@ -275,7 +275,7 @@ func MultiLine() Ihandle {
 // It is a two-state (on/off) button that, when selected, generates an action that activates a function in the associated application.
 // Its visual representation can contain a text or an image.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptoggle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_toggle.md
 func Toggle(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
@@ -288,7 +288,7 @@ func Toggle(title string) Ihandle {
 // FlatToggle creates an interface element that is a toggle, but it does not have native decorations.
 // When selected, this element activates a function in the application. Its visual presentation can contain a text and/or an image.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupflattoggle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flattoggle.md
 func FlatToggle(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
@@ -307,7 +307,7 @@ func FlatToggle(title string) Ihandle {
 //
 // The focus node is the node with the focus rectangle, marked nodes have their background inverted.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptree.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tree.md
 func Tree() Ihandle {
 	h := mkih(C.IupTree())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -316,7 +316,7 @@ func Tree() Ihandle {
 
 // FlatTree creates a tree containing nodes of branches or leaves. Both branches and leaves can have an associated text and image.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupflattree.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flattree.md
 func FlatTree() Ihandle {
 	h := mkih(C.IupFlatTree())
 	h.SetAttribute("UUID", uuid.NewString())
@@ -335,7 +335,7 @@ func Table() Ihandle {
 
 // TreeSetAttributeHandle .
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptree.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tree.md
 func TreeSetAttributeHandle(ih Ihandle, name string, id int, ihNamed Ihandle) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -349,7 +349,7 @@ func TreeSetAttributeHandle(ih Ihandle, name string, id int, ihNamed Ihandle) {
 //
 // Returns 1 on success, 0 on failure (invalid id).
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptree.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tree.md
 func TreeSetUserId(ih Ihandle, id int, userid uintptr) int {
 	return int(C.IupTreeSetUserId(ih.ptr(), C.int(id), unsafe.Pointer(cih(Ihandle(userid)))))
 }
@@ -360,7 +360,7 @@ func TreeSetUserId(ih Ihandle, id int, userid uintptr) int {
 // The returned value can be cast back to an Ihandle or cgo.Handle depending
 // on what was stored with TreeSetUserId.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptree.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tree.md
 func TreeGetUserId(ih Ihandle, id int) uintptr {
 	return uintptr(unsafe.Pointer(C.IupTreeGetUserId(ih.ptr(), C.int(id))))
 }
@@ -368,7 +368,7 @@ func TreeGetUserId(ih Ihandle, id int) uintptr {
 // TreeGetId returns the node id associated with a given user data pointer.
 // Returns -1 if the user data is not found.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iuptree.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tree.md
 func TreeGetId(ih Ihandle, userid uintptr) int {
 	return int(C.IupTreeGetId(ih.ptr(), unsafe.Pointer(cih(Ihandle(userid)))))
 }
@@ -376,7 +376,7 @@ func TreeGetId(ih Ihandle, userid uintptr) int {
 // Val creates a Valuator control. Selects a value in a limited interval.
 // Also known as Scale or Trackbar in native systems.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupval.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_val.md
 func Val(_type string) Ihandle {
 	cType := cStrOrNull(_type)
 	defer cStrFree(cType)
@@ -388,7 +388,7 @@ func Val(_type string) Ihandle {
 
 // Scrollbar creates a standalone Scrollbar control with a proportional thumb.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupscrollbar.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_scrollbar.md
 func Scrollbar(orientation string) Ihandle {
 	cOrientation := cStrOrNull(orientation)
 	defer cStrFree(cOrientation)
@@ -401,7 +401,7 @@ func Scrollbar(orientation string) Ihandle {
 // FlatVal creates a Valuator control, but it does not have native decorations.
 // Selects a value in a limited interval. Also known as Scale or Trackbar in native systems.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/elem/iupflatval.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatval.md
 func FlatVal(orientation string) Ihandle {
 	cOrientation := cStrOrNull(orientation)
 	defer cStrFree(cOrientation)

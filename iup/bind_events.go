@@ -16,7 +16,7 @@ import "C"
 // If MainLoop is called without any visible dialogs and no active timers, the application will hang and will not be possible to close the main loop.
 // The process will have to be interrupted by the system.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupmainloop.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_mainloop.md
 func MainLoop() (ret int) {
 	return int(C.IupMainLoop())
 }
@@ -25,7 +25,7 @@ func MainLoop() (ret int) {
 //
 // You can use this function to check if MainLoop was already called and avoid calling it again.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupmainlooplevel.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_mainlooplevel.md
 func MainLoopLevel() (ret int) {
 	return int(C.IupMainLoopLevel())
 }
@@ -36,7 +36,7 @@ func MainLoopLevel() (ret int) {
 // This function is useful for allowing a second message loop to be managed by the application itself.
 // This means that messages can be intercepted and callbacks can be processed inside an application loop.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuploopstep.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_loopstep.md
 func LoopStep() (ret int) {
 	return int(C.IupLoopStep())
 }
@@ -45,14 +45,14 @@ func LoopStep() (ret int) {
 //
 // It puts the system in idle until a message is processed.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuploopstep.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_loopstep.md
 func LoopStepWait() (ret int) {
 	return int(C.IupLoopStepWait())
 }
 
 // ExitLoop terminates the current message loop. It has the same effect of a callback returning CLOSE.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupexitloop.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_exitloop.md
 func ExitLoop() {
 	C.IupExitLoop()
 }
@@ -60,7 +60,7 @@ func ExitLoop() {
 // PostMessage sends data to an element, that will be received by a callback when the main loop regains control.
 // It is expected to be thread safe.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuppostmessage.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_postmessage.md
 func PostMessage(ih Ihandle, s string, i int, p any) {
 	cS := C.CString(s)
 	defer C.free(unsafe.Pointer(cS))
@@ -76,14 +76,14 @@ func PostMessage(ih Ihandle, s string, i int, p any) {
 // When you change an attribute of a certain element, the change may not take place immediately.
 // For this update to occur faster than usual, call Flush after the attribute is changed.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupflush.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_flush.md
 func Flush() {
 	C.IupFlush()
 }
 
 // GetCallback returns the callback associated to an event.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetcallback.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getcallback.md
 func GetCallback(ih Ihandle, name string) uintptr {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -93,7 +93,7 @@ func GetCallback(ih Ihandle, name string) uintptr {
 
 // SetCallback associates a callback to an event.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetcallback.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setcallback.md
 func SetCallback(ih Ihandle, name string, fn interface{}) {
 	if fn == nil {
 		cName := C.CString(name)
@@ -511,7 +511,7 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 // GetFunction returns the function associated to an action only when they were set by SetFunction.
 // It will not work if SetCallback were used.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetfunction.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getfunction.md
 func GetFunction(name string) uintptr {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -527,7 +527,7 @@ func GetFunction(name string) uintptr {
 // Notice that the application or libraries may set the same name for two different functions by mistake.
 // SetCallback does not depends on global names.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetfunction.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setfunction.md
 func SetFunction(name string, fn interface{}) {
 	if fn == nil {
 		cName := C.CString(name)
@@ -557,7 +557,7 @@ func SetFunction(name string, fn interface{}) {
 // Any existing file will be replaced. Must stop recording before exiting the application.
 // If fileName is nil it will stop recording.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iuprecordinput.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_recordinput.md
 func RecordInput(fileName string, mode int) int {
 	cFileName := C.CString(fileName)
 	defer C.free(unsafe.Pointer(cFileName))
@@ -569,7 +569,7 @@ func RecordInput(fileName string, mode int) int {
 //
 // The file must had been saved using the RecordInput function. Record mode will be automatically detected.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupplayinput.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_playinput.md
 func PlayInput(fileName string) int {
 	cFileName := C.CString(fileName)
 	defer C.free(unsafe.Pointer(cFileName))

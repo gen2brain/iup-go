@@ -44,7 +44,7 @@ func (ih Ihandle) ptr() *C.Ihandle {
 // Destroy destroys an interface element and all its children.
 // Only dialogs, timers, popup menus and images should be normally destroyed, but detached controls can also be destroyed.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupdestroy.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_destroy.md
 func (ih Ihandle) Destroy() {
 	Destroy(ih)
 }
@@ -52,7 +52,7 @@ func (ih Ihandle) Destroy() {
 // ResetAttribute removes an attribute from the hash table of the element, and its children if the attribute is inheritable.
 // It is useful to reset the state of inheritable attributes in a tree of elements.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupresetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_resetattribute.md
 func (ih Ihandle) ResetAttribute(name string) Ihandle {
 	ResetAttribute(ih, name)
 	return ih
@@ -60,14 +60,14 @@ func (ih Ihandle) ResetAttribute(name string) Ihandle {
 
 // GetAllAttributes returns the names of all attributes of an element that are set in its internal hash table only.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetallattributes.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallattributes.md
 func (ih Ihandle) GetAllAttributes() []string {
 	return GetAllAttributes(ih)
 }
 
 // SetAttributes sets several attributes of an interface element.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattributes.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattributes.md
 func (ih Ihandle) SetAttributes(params ...interface{}) Ihandle {
 	for _, param := range params {
 		switch param := param.(type) {
@@ -159,7 +159,7 @@ func getAttributePriority(prefix string) int {
 
 // SetAttribute sets an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
 func (ih Ihandle) SetAttribute(name string, value ...interface{}) Ihandle {
 	switch len(value) {
 	case 1:
@@ -176,7 +176,7 @@ func (ih Ihandle) SetAttribute(name string, value ...interface{}) Ihandle {
 
 // GetAttribute returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func (ih Ihandle) GetAttribute(name string, ids ...interface{}) string {
 	switch len(ids) {
 	case 0:
@@ -192,7 +192,7 @@ func (ih Ihandle) GetAttribute(name string, ids ...interface{}) string {
 
 // GetInt returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func (ih Ihandle) GetInt(name string, ids ...interface{}) int {
 	switch len(ids) {
 	case 0:
@@ -208,7 +208,7 @@ func (ih Ihandle) GetInt(name string, ids ...interface{}) int {
 
 // GetFloat returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func (ih Ihandle) GetFloat(name string, ids ...interface{}) float32 {
 	switch len(ids) {
 	case 0:
@@ -224,7 +224,7 @@ func (ih Ihandle) GetFloat(name string, ids ...interface{}) float32 {
 
 // GetDouble returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func (ih Ihandle) GetDouble(name string, ids ...interface{}) float64 {
 	switch len(ids) {
 	case 0:
@@ -240,7 +240,7 @@ func (ih Ihandle) GetDouble(name string, ids ...interface{}) float64 {
 
 // GetRGB returns the name of an interface element attribute.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func (ih Ihandle) GetRGB(name string, ids ...interface{}) (r, g, b uint8) {
 	switch len(ids) {
 	case 0:
@@ -257,7 +257,7 @@ func (ih Ihandle) GetRGB(name string, ids ...interface{}) (r, g, b uint8) {
 // GetBool returns a boolean attribute value.
 // Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetattribute.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getattribute.md
 func (ih Ihandle) GetBool(name string, ids ...interface{}) bool {
 	switch len(ids) {
 	case 0:
@@ -311,7 +311,7 @@ func GetPtrId2(ih Ihandle, name string, lin, col int) uintptr {
 
 // SetCallback associates a callback to an event.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsetcallback.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setcallback.md
 func (ih Ihandle) SetCallback(name string, fn interface{}) Ihandle {
 	SetCallback(ih, name, fn)
 	return ih
@@ -319,14 +319,14 @@ func (ih Ihandle) SetCallback(name string, fn interface{}) Ihandle {
 
 // GetCallback returns the callback associated to an event.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupgetcallback.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getcallback.md
 func (ih Ihandle) GetCallback(name string) uintptr {
 	return GetCallback(ih, name)
 }
 
 // SetHandle associates a name with an interface element.
 //
-// https://www.tecgraf.puc-rio.br/iup/en/func/iupsethandle.html
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_sethandle.md
 func (ih Ihandle) SetHandle(name string) Ihandle {
 	SetHandle(name, ih)
 	return ih
