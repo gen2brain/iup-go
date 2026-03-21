@@ -12,7 +12,7 @@ x, y: x, y values of the **IupPopup** function.\
 The value in the variables at the moment the function is called defines the color being selected when the dialog is shown.
 If the OK button is not pressed, the r, g and b values are not changed. These values cannot be NULL.
 
-**Returns:** in C a code 1 if the OK button is pressed, or 0 otherwise.
+**Returns:** 1 if the OK button is pressed, or 0 otherwise.
 
 ### Notes
 
