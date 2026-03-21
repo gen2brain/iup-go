@@ -16,7 +16,6 @@ Default: the global attribute TXTFGCOLOR.
 
 **HIDEBUTTONS** (creation-only): hide the expand and collapse buttons.
 In GTK, branches will be only expanded programmatically.
-In Motif, it did not work and crash the test. (GTK 2.12)
 
 **HIDELINES** (creation-only): hide the lines that connect the nodes in the hierarchy. (GTK 2.10)
 
@@ -57,7 +56,6 @@ If any parent node is collapsed then they are automatically expanded.
 
 **HIDEBUTTONS** (creation-only): hide the expand and collapse buttons.
 In GTK, branches will be only expanded programmatically.
-In Motif it did not work and crash the test. (GTK 2.12)
 
 **HIDELINES** (creation-only): hide the lines that connect the nodes in the hierarchy. (GTK 2.10)
 
@@ -125,7 +123,6 @@ Actually changes the **TITLEFONTid** attribute.
 
 **SHOWTOGGLE** (creation-only) (non-inheritable): enables the use of toggles for all nodes of the tree.
 Can be "YES", "3STATE" or NO". Default: "NO".
-In Motif Versions 2.1.x and 2.2.x, the images are disabled (toggle and text only are drawn in nodes of the tree).
 
 **EMPTYAS3STATE** (non-inheritable) [Windows Only]: when SHOWTOGGLE=Yes, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle.
 Can be Yes or NO. Default: No.

@@ -306,8 +306,7 @@ In GTK older than 2.12, the editbox of a dropdown will not follow the list attri
 When mouse is released, the DRAGDROP_CB callback is called.
 If the callback does not exist or if it returns IUP_CONTINUE then the item is moved to the new position.
 If Ctrl is pressed then the node is copied instead of moved.
-In Windows and GTK, drag is performed with the left mouse button.
-In Motif, the middle mouse button is used to drag.
+Drag is performed with the left mouse button.
 
 In GTK uses GtkComboBox/GtkTreeView, in Windows uses COMBOBOX/LISTBOX, and in Motif uses xmComboBox/xmList.
 

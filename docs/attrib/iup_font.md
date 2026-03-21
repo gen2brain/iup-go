@@ -37,7 +37,8 @@ The DEFAULTFONT is retrieved from the user resource file (see below), if failed,
 
 The X-Windows Logical Font Description format (XLFD) is also supported.
 
-The native handle can be obtained using the "**XMFONTLIST**" and "**XFONTSTRUCT**" attributes.
+When compiled with XFT support, TrueType fonts are rendered using the Xft library for improved text quality and Unicode/UTF-8 support.
+The native handle can be obtained using the "**XMFONTLIST**" and "**XFONTSTRUCT**" attributes (or "**XFTFONT**" when using XFT).
 The selected X Logical Font Description string can be obtained from the attribute "**XLFD**".
 
 You can use the **xfontsel** program to obtain a string in the X-Windows Logical Font Description format (XLFD).
