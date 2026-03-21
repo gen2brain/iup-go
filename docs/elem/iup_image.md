@@ -93,7 +93,7 @@ Images that were associated with controls by names are automatically destroyed i
 
 Please observe the rules for creating cursor images: [CURSOR](../attrib/iup_cursor.md).
 
-In GTK uses GdkPixbuf/GdkCursor, in Windows uses HBITMAP/HICON, and in Motif uses Pixmap/Cursor.
+In GTK uses GdkPixbuf/GdkCursor, in GTK 4 uses GdkTexture/GdkCursor, in Windows uses HBITMAP/HICON, in WinUI uses WriteableBitmap, in macOS uses NSImage, in Qt uses QPixmap, in EFL uses Evas_Object, and in Motif uses Pixmap/Cursor.
 
 #### Usage
 
@@ -110,6 +110,8 @@ For example:
 
 In Windows, names of resources in RC files linked with the application are also accepted.
 In GTK, names of GTK Stock Items are also accepted.
+In GTK 4, names of icon theme icons are also accepted.
+In Qt, names of Qt standard pixmaps (QStyle::StandardPixmap) are also accepted for stock icons.
 In Motif, names of bitmaps installed on the system are also accepted. For example:
 
     IupSetAttribute(label, "IMAGE", "TECGRAF_BITMAP");  // available in the "etc/iup.rc" file
@@ -130,12 +132,12 @@ In Motif, the X-Windows bitmap format is supported. For example:
 #### Colors
 
 In Motif, the alpha channel in RGBA images is always composed with the control BGCOLOR by IUP prior to setting the image at the control.
-In Windows and in GTK, the alpha channel is composed internally by the system.
+In Windows, GTK, GTK 4, macOS, Qt and EFL, the alpha channel is composed internally by the system.
 But in Windows for some controls, the alpha must be composed a priori also, it includes: **IupItem** and **IupSubmenu** always; and **IupToggle** when NOT using Visual Styles.
 This implies that if the control background is not uniform, then probably there will be a visible difference where it should be transparent.
 
 For **IupImage**, if a color is not set, then it is used a default color for the 16 first colors.
-The default color table is the same for Windows, GTK and Motif:
+The default color table is the same for all drivers:
 
      0 =   0,  0,  0 (black)
      1 = 128,  0,  0 (dark red)
