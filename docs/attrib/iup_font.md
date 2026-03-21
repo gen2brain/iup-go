@@ -16,7 +16,8 @@ The names Helvetica, Courier and Times are always accepted in all systems.
 
 The supported **font style** is a combination of: **Bold**, **Italic**, **Underline** and **Strikeout**.
 The Pango format includes many other definitions not supported by the common format; they are supported only by the GTK driver.
-Unsupported values are simply ignored. The names must be in the same case described here.
+Unsupported values are simply ignored.
+The names must be in the same case described here.
 
 **Font size** is in points (1/72 inch) or in pixels (using negative values).
 
@@ -62,6 +63,26 @@ Those values can be used only when the string is a full Pango compliant font, i.
 
 In GNOME, go to the "Appearance Preferences" tool, then in the Fonts tab change the Applications Font to affect the default font.
 
+#### macOS
+
+The DEFAULTFONT is retrieved from the system font (NSFont systemFontOfSize).
+The default is typically "Helvetica Neue" or "San Francisco" depending on the macOS version.
+
+Uses CoreText for font rendering with full Unicode/UTF-8 support.
+
+#### Qt
+
+The DEFAULTFONT is retrieved from QApplication::font().
+
+Uses the Qt font engine (QFont/QFontInfo) for font rendering.
+Supports all fonts available to the Qt platform.
+
+#### EFL
+
+The DEFAULTFONT is retrieved from the Elementary font overlay configuration, if failed "Sans, 10" is assumed.
+
+Uses the EFL/Evas text rendering engine.
+
 #### Examples:
 
     "Times, Bold 18"
@@ -76,17 +97,17 @@ All elements, since the SIZE attribute depends on the FONT attribute, except for
 
 When the FONT is changed and [SIZE](iup_size.md) is set, then [RASTERSIZE](iup_rastersize.md) is also updated.
 
-Since font face names are not a standard between Windows, Motif and GTK, a few names are specially handled to improve application portability.
-If you want to use names that work for all systems, we recommend using: Courier, Times and Helvetica (same as Motif).
+Since font face names are not a standard across platforms, a few names are specially handled to improve application portability.
+If you want to use names that work for all systems, we recommend using: Courier, Times and Helvetica.
 Those names always have a native system name equivalent.
 If you use those names, IUP will automatically map to the native system equivalent.
 See the table below:
 
-| Recommended/Motif | Windows         | GTK       | Description                     |
-|-------------------|-----------------|-----------|---------------------------------|
-| **Helvetica**     | Arial           | Sans      | without serif, variable spacing |
-| **Courier**       | Courier New     | Monospace | with serif, fixed spacing       |
-| **Times**         | Times New Roman | Serif     | with serif, variable spacing    |
+| Recommended/Motif | Windows         | GTK       | macOS           | Description                     |
+|-------------------|-----------------|-----------|-----------------|---------------------------------|
+| **Helvetica**     | Arial           | Sans      | Helvetica Neue  | without serif, variable spacing |
+| **Courier**       | Courier New     | Monospace | Courier New     | with serif, fixed spacing       |
+| **Times**         | Times New Roman | Serif     | Times New Roman | with serif, variable spacing    |
 
 ### Auxiliary Attributes
 
@@ -129,8 +150,10 @@ IUP uses the default locale in ANSI-C. This means that it does not adopt a speci
 For example, if the developer is using a charset, and its user is also using the same encoding, then everything will work fine without the need of text encoding conversions.
 The advantage is that any charset can be used, and localization is usually done in that way.
 
-IUP supports also the UTF-8 (ISO10646-1) encoding in the GTK and Windows drivers.
+IUP supports UTF-8 (ISO10646-1) encoding in all drivers.
 To specify a string in UTF-8 encoding set the global attribute "[UTF8MODE](iup_globals.md)" to "Yes".
+In GTK, GTK 4, macOS, Qt and EFL, UTF-8 is the native encoding.
+In Windows and Motif (with XFT), UTF-8 strings are converted to the native encoding as needed.
 
 #### ISO8859-1 and Windows-1252 Displayable Characters
 
