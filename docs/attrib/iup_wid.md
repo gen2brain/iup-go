@@ -4,11 +4,14 @@ Element identifier in the native interface system.
 
 ### Value
 
-In Motif, returns the **Widget** handle.
+The native handle type depends on the driver:
 
-In Windows, returns the **HWND** handle.
-
-In GTK, return the **GtkWidget*** handle.
+- **Windows (Win32 and WinUI)**: returns the **HWND** handle.
+- **GTK 3 and GTK 4**: returns the **GtkWidget*** handle.
+- **Motif**: returns the **Widget** handle.
+- **macOS**: returns the **NSView*** or **NSWindow*** handle (as void*).
+- **Qt**: returns the **QWidget*** handle.
+- **EFL**: returns the **Evas_Object*** (Eo*) handle.
 
 ### Notes
 
