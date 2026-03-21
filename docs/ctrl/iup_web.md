@@ -22,6 +22,12 @@ The **IupWebBrowserOpen** function must be called after **IupOpen**.
 The "iupweb.h" file must also be included in the source code.
 The program must be linked to the controls library (iupweb).
 
+In Linux, the WebKitGTK library is loaded dynamically at runtime.
+If not found, **IupWebBrowserOpen** will return IUP_ERROR.
+In Windows, the WebView2 runtime is detected when the control is mapped.
+If not found, **IupMap** will return IUP_ERROR.
+In both cases, the global attribute **IUP_WEBBROWSER_MISSING_LIB** will be set with the name of the missing library.
+
 ### Creation
 
     Ihandle* IupWebBrowser(void);

@@ -3,6 +3,15 @@
 Creates an OpenGL canvas (drawing area for OpenGL).
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
+In Windows, the implementation uses WGL (Win32 OpenGL).
+
+In Linux/Unix with GTK 3, GTK 4, Qt, or EFL, the implementation uses EGL with native window integration.
+Both X11 and Wayland display servers are supported through EGL.
+
+In Linux/Unix with Motif, the implementation uses GLX (X11 OpenGL extension).
+
+In macOS, the implementation uses NSOpenGLContext (Cocoa OpenGL).
+
 ### Initialization and Usage
 
 The **IupGLCanvasOpen** function must be called after a **IupOpen**, so that the control can be used.
@@ -10,7 +19,8 @@ The "iupgl.h" file must also be included in the source code.
 The program must be linked to the controls library (iupgl), and with the OpenGL library.
 
 To link with the OpenGL libraries in Windows, add: opengl32.lib.
-In UNIX add before the X-Windows libraries: -LGL.
+In Unix add before the X-Windows libraries: -lGL.
+In macOS add: -framework OpenGL.
 
 ### Creation
 
@@ -28,7 +38,7 @@ Apart from these attributes, **IupGLCanvas** handle specific attributes used to 
 Such attributes are all **creation-only** attributes and must be set before the element is mapped on the native system.
 After the mapping, specifying these special attributes has no effect.
 
-> 
+>
 >
 > ------------------------------------------------------------------------
 
@@ -48,10 +58,11 @@ Default: NO.
 The system default is 8 (256-color palette).
 
 **COLOR**: Indicates the color model to be adopted: "INDEX" or "RGBA". Default is "RGBA".
+Indexed color mode is not supported on macOS; RGBA will be used instead.
 
-**COLORMAP** (read-only)**:** Returns "Colormap" in UNIX and "HPALETTE" in Win32, if COLOR=INDEX.
+**COLORMAP** (read-only): Returns the platform colormap handle, if COLOR=INDEX.
 
-**CONTEXT** (read-only)**:** Returns "GLXContext" in UNIX and "HGLRC" in Win32.
+**CONTEXT** (read-only): Returns the platform OpenGL context handle.
 
 **CONTEXTFLAGS** (non-inheritable): Context flags. Can be DEBUG, FORWARDCOMPATIBLE or DEBUGFORWARDCOMPATIBLE.
 Used only when ARBCONTEXT=Yes.
@@ -63,7 +74,7 @@ Used only when ARBCONTEXT=Yes.
 Used only when ARBCONTEXT=Yes.
 
 **DEPTH_SIZE**: Indicates the number of bits for representing the *z* coordinate in the z-buffer.
-Value 0 means the z-buffer is not necessary. 
+Value 0 means the z-buffer is not necessary.
 
 **ERROR** (read-only): If an error is found during **IupMap** and **IupGLMakeCurrent**, returns a string containing a description of the error in English.
 See notes below.
@@ -86,7 +97,10 @@ When this flag is set to Yes but the OpenGL driver does not support it, the map 
 **SHAREDCONTEXT**: name of another **IupGLCanvas** that will share its display lists and textures.
 That canvas must be mapped before this canvas.
 
-**VISUAL** (read-only)**:** Returns "XVisualInfo*" in UNIX and "HDC" in Win32.
+**VISUAL** (read-only): Returns the platform visual handle.
+
+**VSYNC** [macOS Only] (creation-only): Enable or disable vertical synchronization.
+Can be "YES" or "NO". Default: "YES".
 
 ### Callbacks
 
@@ -100,20 +114,21 @@ Additionally:
 
 **SWAPBUFFERS_CB**`:` action generated when **IupGLSwapBuffers** is called.
 
-    int function(Ihandle* ih); 
+    int function(Ihandle* ih);
 
 **ih**: identifier of the element that activated the event.
 
 ### Auxiliary Functions
 
-These are auxiliary functions based on the WGL and XGL extensions.
+These are auxiliary functions based on the platform OpenGL extensions.
 Check the respective documentations for more information.
 ERROR attribute will be set to "Failed to set new current context." if the call failed.
 It will reset the ERROR to NULL if successful.
 
     void IupGLMakeCurrent(Ihandle* ih);
 
-Activates the given canvas as the current OpenGL context. All subsequent OpenGL commands are directed to such canvas.
+Activates the given canvas as the current OpenGL context.
+All subsequent OpenGL commands are directed to such canvas.
 The first call will set the global attributes GL_VERSION, GL_VENDOR and GL_RENDERER.
 
     int IupGLIsCurrent(Ihandle* ih);
@@ -141,16 +156,18 @@ If gl is non-zero it will call glFinish or glXWaitGL, else will call GdiFlush or
 
 In Windows XP, if the COMPOSITE attribute is enabled, then the hardware acceleration will be disabled.
 
-The **IupGLCanvas** works with the GTK base driver in Windows and in UNIX (X-Windows).
-
-Not available in our SunOS510x86 pre-compiled binaries just because we were not able to compile OpenGL code in our installation.
-
 Possible ERROR strings during **IupMap**:
 
-    "X server has no OpenGL GLX extension." - OpenGL not supported (UNIX Only)
-    "No appropriate visual." - Failed to choose a Visual (UNIX Only) 
-    "No appropriate pixel format." - Failed to choose a Pixel Format (Windows Only)
-    "Could not create a rendering context." - Failed to create the OpenGL context. (Windows and UNIX)
+    "X server has no OpenGL GLX extension." - OpenGL not supported (GLX only)
+    "No appropriate visual." - Failed to choose a Visual (GLX only)
+    "No appropriate pixel format." - Failed to choose a Pixel Format (Windows only)
+    "Could not create a rendering context." - Failed to create the OpenGL context (Windows and GLX)
+    "EGL display not initialized." - EGL display unavailable (EGL only)
+    "No appropriate EGL config found." - Failed to choose an EGL configuration (EGL only)
+    "Could not create EGL surface." - Failed to create EGL surface (EGL only)
+    "Could not create EGL context." - Failed to create EGL context (EGL only)
+    "No appropriate pixel format found." - Failed to choose a pixel format (macOS only)
+    "Could not create OpenGL context." - Failed to create context (macOS only)
 
 ### Examples
 
