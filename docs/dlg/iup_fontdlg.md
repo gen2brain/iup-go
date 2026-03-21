@@ -11,12 +11,13 @@ The dialog can be shown with the **IupPopup** function only.
 
 ### Attributes
 
-**PREVIEWTEXT** [GTK and Motif only]: the text shown in the preview area.
+**PREVIEWTEXT**: the text shown in the preview area.
 If not defined, the system will provide a default text.
+Supported in GTK 3, Motif and Qt.
 
-**COLOR** [Windows Only]: The initial color value and the returned selected value if the user pressed the Ok button.
-In Windows the Choose Font dialog allows the user to select a color from a pre-defined list of colors.
-Since IUP 3.15 must set SHOWCOLOR=Yes to enable this option.
+**COLOR**: The initial color value and the returned selected value if the user pressed the Ok button.
+Must set SHOWCOLOR=Yes to enable this option.
+Supported in Windows, WinUI, macOS and Qt.
 
 [PARENTDIALOG](../attrib/iup_parentdialog.md) (creation-only): Name of a dialog to be used as parent.
 This dialog will always be in front of the parent dialog.
@@ -42,7 +43,7 @@ The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
 In Windows, the dialog will be modal relative only to its parent or to the active dialog.
 
-In GTK uses gtk_font_selection_dialog (GTK 2) or gtk_font_chooser (GTK 3), in Windows uses ChooseFont, and in Motif uses a custom dialog implemented using IUP controls.
+In Win32 uses ChooseFont, in WinUI uses a custom dialog, in GTK 3 uses GtkFontChooser, in GTK 4 uses GtkFontDialog, in macOS uses NSFontPanel, in Qt uses QFontDialog, in EFL and Motif uses a custom dialog implemented using IUP controls.
 
 ### Examples
 
@@ -63,7 +64,7 @@ In GTK uses gtk_font_selection_dialog (GTK 2) or gtk_font_chooser (GTK 3), in Wi
     else
       printf("CANCEL\n");
 
-    IupDestroy(dlg); 
+    IupDestroy(dlg);
 
 **Windows XP**
 ![](images/fontdlg_win.png)
