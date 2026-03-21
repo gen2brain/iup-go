@@ -7,7 +7,7 @@ Although it is an inheritable attribute, it is defined only on elements that hav
 
 Font description containing typeface, style and size. Default: the global attribute DEFAULTFONT.
 
-The common format definition is similar to the [Pango](http://www.pango.org/) library Font Description, used by GTK+.
+The common format definition is similar to the [Pango](http://www.pango.org/) library Font Description, used by GTK.
 It is defined as having 3 parts: "<font face>**,** <font styles> <font size>".
 
 Font face is the font face name and can be any name.
@@ -25,12 +25,9 @@ Returned values will be the same value when changing the attribute, except for t
 
 #### Windows
 
-The DEFAULTFONT is retrieved from the System Settings (see below), if this failed then "Tahoma, 10" for Windows XP, or "Segoe UI, 9" since Windows Vista, is assumed.
+The DEFAULTFONT is retrieved from the System Settings (see below), if this failed then "Segoe UI, 9" is assumed.
 
 The native handle can be obtained using the "**HFONT**" attribute.
-
-In "Control Panel", open the "Display Properties" then click on "Advanced" and select "Message Box" and change its Font to affect the default font for applications.
-In Vista go to "Window Color and Appearance", then "Open Classic Appearance", then Advanced.
 
 #### Motif
 

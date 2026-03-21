@@ -153,7 +153,7 @@ Use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordina
 FLAT_[MOTION_CB](../call/iup_motion_cb.md): Action generated when the mouse is moved over the element.
 Use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordinates in the node identifier.
 
-[DROPFILES_CB](../call/iup_dropfiles_cb.md) [Windows and GTK Only]: Action generated when one or more files are dropped in the element.
+[DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the element.
 
 ------------------------------------------------------------------------
 

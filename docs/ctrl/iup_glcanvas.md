@@ -154,7 +154,7 @@ If gl is non-zero it will call glFinish or glXWaitGL, else will call GdiFlush or
 
 ### Notes
 
-In Windows XP, if the COMPOSITE attribute is enabled, then the hardware acceleration will be disabled.
+In Windows, if the dialog COMPOSITED attribute is enabled, the hardware acceleration may be disabled.
 
 Possible ERROR strings during **IupMap**:
 

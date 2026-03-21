@@ -171,8 +171,8 @@ When another container is selected, and there is a cursor mark the drop will be 
 The **Spy++** tool distributed with Microsoft Visual Studio is very useful to inspect windows controls position, size and visibility.
 It can be found in the Visual Studio "Tools" menu.
 
-The **GTK+ Inspector** tool included in GTK is very useful to inspect GTK controls position, size, and visibility.
-To enable the GTK+ inspector, you can use the Control-Shift-I or Control-Shift-D keyboard shortcuts, or set the GTK_DEBUG=interactive environment variable.
+The **GTK Inspector** tool included in GTK is very useful to inspect GTK controls position, size, and visibility.
+To enable the GTK Inspector, you can use the Control-Shift-I or Control-Shift-D keyboard shortcuts, or set the GTK_DEBUG=interactive environment variable.
 
 ### Examples
 

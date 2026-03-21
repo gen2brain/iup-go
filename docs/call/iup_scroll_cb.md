@@ -3,10 +3,6 @@
 Called when some manipulation is made to the scrollbar.
 The canvas is automatically redrawn only if this callback is NOT defined.
 
-(GTK 2.8) Also, the POSX and POSY values will not be correctly updated for older GTK versions.
-
-In Ubuntu, when liboverlay-scrollbar is enabled (the tiny auto-hide scrollbar) only the IUP_SBPOSV and IUP_SBPOSH codes are used.
-
 ### Callback
 
     int function(Ihandle *ih, int op, float posx, float posy);
@@ -36,11 +32,11 @@ In Ubuntu, when liboverlay-scrollbar is enabled (the tiny auto-hide scrollbar) o
 
 ### Notes
 
-IUP_SBDRAGH and IUP_SBDRAGV are not supported in GTK.
-During drag IUP_SBPOSH and IUP_SBPOSV are used.
+IUP_SBDRAGH and IUP_SBDRAGV are not supported in GTK for canvas scrollbars.
+During drag IUP_SBPOSH and IUP_SBPOSV are used instead.
 
-In Windows, after a drag when mouse is released IUP_SBPOSH or IUP_SBPOSV are called.
+In Windows, after a drag when the mouse is released IUP_SBPOSH or IUP_SBPOSV are called.
 
 ### Affects
 
-[IupCanvas](../elem/iup_canvas.md), [IupGLCanvas](../ctrl/iup_glcanvas.md), [SCROLLBAR](../attrib/iup_scrollbar.md)
+[IupCanvas](../elem/iup_canvas.md), [IupGLCanvas](../ctrl/iup_glcanvas.md), [IupScrollbar](../elem/iup_scrollbar.md), [SCROLLBAR](../attrib/iup_scrollbar.md)
