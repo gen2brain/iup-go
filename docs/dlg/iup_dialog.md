@@ -176,46 +176,54 @@ Available in the Windows driver or in the GTK driver in Windows.
 **SAVEUNDER** [Windows and Motif Only] (creation-only): When this attribute is true (YES), the dialog stores the original image of the desktop region it occupies (if the system has enough memory to store the image).
 In this case, when the dialog is closed or moved, a redrawing event is not generated for the windows that were shadowed by it.
 Its default value is YES if the dialog has a parent dialog.
-To save memory disable it for your main dialog. Not available in GTK.
+To save memory disable it for your main dialog.
 
 **XWINDOW** [UNIX Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
 Available in the Motif driver or in the GTK driver in UNIX.
 
-####  
+####
 
-#### Exclusive [Windows and GTK Only]
+#### Exclusive
 
-**ACTIVEWINDOW** [Windows and GTK Only] (read-only): informs if the dialog is the active window (the window with focus).
+**ACTIVEWINDOW** (read-only): informs if the dialog is the active window (the window with focus).
 Can be Yes or No.
+Not supported in Motif.
 
-**CUSTOMFRAME** [Windows and GTK Only] (non-inheritable): allows the application to customize the dialog frame elements (the title and its buttons) by using IUP controls for its elements like caption, minimize button, maximize button, and close buttons.
+**CUSTOMFRAME** (non-inheritable): allows the application to customize the dialog frame elements (the title and its buttons) by using IUP controls for its elements like caption, minimize button, maximize button, and close buttons.
 The custom frame support uses the native system support for custom frames.
 The application is responsible for leaving space for the borders. One drawback is that menu bars will not work.
 For the dialog to be able to be moved an **IupLabel** or an **IupCanvas** must be at the top of the dialog and must have the NAME attribute set to CUSTOMFRAMECAPTION.
-Native custom frames are supported only in Windows and in GTK version 3.10, so for older GTK versions we have to simulate the support using CUSTOMFRAMESIMULATE. See the Custom Frame notes below.
+See the Custom Frame notes below.
+Not supported in Motif.
 
-**DROPFILESTARGET** [Windows and GTK Only] (non-inheritable): Enable or disable the drop of files.
+**DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
 
-**MAXIMIZED** [Windows and GTK Only] (read-only): indicates if the dialog is maximized.
+**MAXIMIZED** (read-only): indicates if the dialog is maximized.
 Can be YES or NO.
+Not supported in Motif.
 
-**MINIMIZED** [Windows and GTK Only] (read-only): indicates if the dialog is minimized.
+**MINIMIZED** (read-only): indicates if the dialog is minimized.
 Can be YES or NO.
+Not supported in Motif.
 
-**OPACITY** [Windows and GTK Only]: sets the dialog transparency alpha value.
+**OPACITY**: sets the dialog transparency alpha value.
 Valid values range from 0 (completely transparent) to 255 (opaque).
-In Windows must be set before map so the native window would be properly initialized when mapped. (GTK 2.12)
+In Windows must be set before map so the native window would be properly initialized when mapped.
+Not supported in Motif.
 
-**OPACITYIMAGE** [Windows Only]: sets an RGBA image as the dialog background so it is possible to create a non rectangle window with transparency, but it can not have children.
+**OPACITYIMAGE**: sets an RGBA image as the dialog background so it is possible to create a non rectangle window with transparency, but it can not have children.
 Used usually for splash screens. It must be set before map so the native window would be properly initialized when mapped.
-Works also for GTK but as the SHAPEIMAGE attribute.
+Not supported in GTK 4, Motif, and WinUI.
 
-**SHAPEIMAGE** [Windows and GTK Only]: sets an RGBA image as the dialog shape, so it is possible to create a non rectangle window with children. (GTK 2.12) Only the fully transparent pixels will be transparent.
+**SHAPEIMAGE**: sets an RGBA image as the dialog shape, so it is possible to create a non rectangle window with children.
+Only the fully transparent pixels will be transparent.
 The pixels colors will be ignored, only the alpha channel is used.
+Not supported in GTK 4 and Motif.
 
-**TOPMOST** [Windows and GTK Only]:  puts the dialog always in front of all other dialogs in all applications.
+**TOPMOST**: puts the dialog always in front of all other dialogs in all applications.
 Default: NO.
+Not supported in GTK 4 and Motif.
 
 #### Exclusive [Windows Only]
 
@@ -223,7 +231,7 @@ Default: NO.
 Use "YES" to activate it. Useful for multithreaded applications.
 
 **COMPOSITED** [Windows Only] (creation-only): controls if the window will have an automatic double buffer for all children.
-Default is "NO". In Windows Vista it is NOT working as expected.
+Default is "NO".
 It is NOT compatible with IupCanvas, and all derived IUP controls such as IupFlat*, IupGL*, IupPlot and IupMatrix, because IupCanvas uses CS_OWNDC in the window class.
 
 **CUSTOMFRAMEDRAW** [Windows Only] (non-inheritable): allows the application to customize the dialog frame elements (the title and its buttons) by drawing them with the CUSTOMFRAMEDRAW_CB callback.
@@ -251,21 +259,23 @@ Possible values: YES, NO. Default: NO.
 **TOOLBOX** [Windows Only] (creation-only): makes the dialog look like a toolbox with a smaller title bar.
 It is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined. Default: NO.
 
-#### Exclusive [GTK Only]
+#### Exclusive [GTK, Qt and macOS Only]
 
-**DIALOGHINT** [GTK Only] (creation-only): if enabled, set the window type hint to a dialog hint.
+**DIALOGHINT** (creation-only): if enabled, set the window type hint to a dialog hint.
+Supported in GTK, GTK 4, Qt, macOS, and EFL.
 
-**HIDETITLEBAR** [GTK Only] (non-inheritable): hides the title bar with al its elements. (GTK 3.10)
+**HIDETITLEBAR** (non-inheritable): hides the title bar with all its elements.
+Supported in GTK, GTK 4, Qt, and macOS.
 
-#### Exclusive Taskbar and Tray/Status Area [Windows and GTK Only]
+#### Exclusive Taskbar [Windows Only]
 
-**HIDETASKBAR** [Windows and GTK Only] (write-only): Action attribute that when set to "YES", hides the dialog, but does not decrement the visible dialog count, does not call SHOW_CB and does not mark the dialog as hidden inside IUP.
+**HIDETASKBAR** (write-only): Action attribute that when set to "YES", hides the dialog, but does not decrement the visible dialog count, does not call SHOW_CB and does not mark the dialog as hidden inside IUP.
 It is usually used to hide the dialog and keep the tray icon working without closing the main loop.
 It has the same effect as setting LOCKLOOP=Yes and normally hiding the dialog.
 IMPORTANT: when you hide using HIDETASKBAR, you must show using HIDETASKBAR also.
 Possible values: YES, NO.
 
-**TASKBARPROGRESS** [Windows Only] (write-only): this functionality enables the use of progress bar on a taskbar button (Windows 7 or earlier version) (Available only for Visual C++ 10 and above).
+**TASKBARPROGRESS** [Windows Only] (write-only): enables the use of a progress bar on a taskbar button.
 Default: NO.
 
 **TASKBARPROGRESSSTATE** [Windows Only] (write-only): sets the type and state of the progress indicator displayed on a taskbar button.
@@ -277,35 +287,6 @@ The value must be between 0 and 100.
 
 **TASKBARBUTTON** [Windows Only]: If set to SHOW force the application button to be shown on the taskbar even if the dialog does not have decorations.
 If set to HIDE force the application button to be hidden from the taskbar, but also in this case the system menu, the maximize and minimize buttons will be hidden.
-
-**TRAY** [Windows and GTK Only]: When set to "YES", displays an icon on the system tray. (GTK 2.10 and GTK < 3.14)
-
-**TRAYIMAGE** [Windows and GTK Only]: Name of an IUP image to be used as the tray icon.
-The Windows SDK recommends that cursors and icons should be implemented as resources rather than created at run time. (GTK 2.10 and GTK < 3.14)
-
-**TRAYTIP** [Windows and GTK Only]: Tray icon's tooltip text. (GTK 2.10 and GTK < 3.14)
-
-**TRAYTIPMARKUP** [GTK Only]: allows the tip string to contain Pango markup commands.
-Can be "YES" or "NO". Default: "NO". Must be set before setting the TRAYTIP attribute. (GTK 2.16)
-
-****TRAY**TIPBALLOON** [Windows Only]: The tip window will have the appearance of a cartoon "balloon" with rounded corners and a stem pointing to the item.
-Default: NO. Must be set before setting the TRAYTIP attribute.
-
-****TRAY**TIPBALLOONDELAY** [Windows Only]: Time the tip will remain visible. Default is system-dependent.
-The minimum and maximum values are 10000 and 30000 milliseconds.
-Must be set before setting the TRAYTIP attribute.
-
-****TRAY**TIPBALLOONTITLE** [Windows Only]: When using the balloon format, the tip can also have a title in a separate area.
-Must be set before setting the TRAYTIP attribute.
-
-****TRAY**TIPBALLOONTITLEICON** [Windows Only]: When using the balloon format, the tip can also have a pre-defined icon in the title area.
-Must be set before setting the TRAYTIP attribute.
-
-Values can be:\
-"0" - No icon (default)\
-"1" - Info icon\
-"2" - Warning icon\
-"3" - Error Icon
 
 #### Exclusive MDI [Windows Only]
 
@@ -357,7 +338,7 @@ Must set the global attribute SINGLEINSTANCE to be called.
 **cmdLine**: command line of the second instance.\
 **size**: size of the command line string including the null character.
 
-[DROPFILES_CB](../call/iup_dropfiles_cb.md) [Windows and GTK Only]: Action generated when one or more files are dropped in the dialog.
+[DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the dialog.
 
 **CUSTOMFRAME_CB** [Windows Only]: Called when the dialog must be redrawn.
 Although it is designed for drawing the frame elements, all the dialog must be painted.
@@ -393,7 +374,7 @@ It is not called when the child is shown for the first time.
 
 > **ih**: identifier of the element that activated the event.
 
-**MOVE_CB** [Windows and GTK Only]: Called after the dialog was moved on screen.
+**MOVE_CB**: Called after the dialog was moved on screen.
 The coordinates are the same as the [SCREENPOSITION](../attrib/iup_screenposition.md) attribute.
 
     int function(Ihandle *ih, int x, int y);
@@ -405,19 +386,6 @@ The coordinates are the same as the [SCREENPOSITION](../attrib/iup_screenpositio
 If returns IUP_IGNORE the dialog layout is NOT recalculated.
 
 [SHOW_CB](../call/iup_show_cb.md): Called right after the dialog is shown, hidden, maximized, minimized or restored from minimized/maximized.
-
-**TRAYCLICK_CB** [Windows and GTK Only]: Called right after the mouse button is pressed or released over the tray icon. (GTK 2.10)
-
-    int function(Ihandle *ih, int but, int pressed, int dclick);
-
-**ih**: identifier of the element that activated the event.\
-**but**: identifies the activated mouse button. Can be: 1, 2 or 3.
-Note that this is different from the BUTTON_CB canvas callback definition.
-GTK does not get button=2 messages.\
-**pressed**: indicates the state of the button. Always 1 in GTK.\
-**dclick**: indicates a double click. In GTK double click is simulated.
-
-**Returns**: IUP_CLOSE will be processed.
 
 **THEMECHANGED_CB**: Called when the system theme or color scheme changes (e.g., switching between light and dark mode).
 
@@ -450,7 +418,7 @@ For instance, the RESIZE_CB and the SHOW_CB are called in a different order in W
 
 In Windows, when all decorations are removed, the window icon is not displayed on the task bar; when minimized, a small rectangular window will be positioned above the task bar on the bottom-left corner of the desktop.
 
-In GTK uses a GtkWindow, in Windows uses a custom windows class called "IupDialog", and in Motif uses topLevelShellWidgetClass.
+In GTK uses GtkWindow, in Windows uses a custom window class called "IupDialog", in WinUI uses a Win32 window with XAML Islands, in macOS uses NSWindow, in Qt uses QMainWindow, in EFL uses Efl_Ui_Win, and in Motif uses topLevelShellWidgetClass.
 
 #### Windows MDI
 
@@ -526,4 +494,4 @@ Very simple dialog with a label and a button. The application is closed when the
 
 ### See Also
 
-[IupFileDlg](../dlg/iup_filedlg.md), [IupMessageDlg](../dlg/iup_messagedlg.md), [IupDestroy](../func/iup_destroy.md), [IupShowXY](../func/iup_showxy.md), [IupShow](../func/iup_show.md), [IupPopup](../func/iup_popup.md)
+[IupFileDlg](../dlg/iup_filedlg.md), [IupMessageDlg](../dlg/iup_messagedlg.md), [IupDestroy](../func/iup_destroy.md), [IupShowXY](../func/iup_showxy.md), [IupShow](../func/iup_show.md), [IupPopup](../func/iup_popup.md), [IupTray](../elem/iup_tray.md)
