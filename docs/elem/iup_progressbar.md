@@ -13,14 +13,16 @@ Also does not have support for text inside the bar.
 
 ### Attributes
 
-[BGCOLOR](../attrib/iup_bgcolor.md) [Windows Classic and Motif only]: controls the background color.
+[BGCOLOR](../attrib/iup_bgcolor.md): controls the background color.
 Default: the global attribute DLGBGCOLOR.
 
-**DASHED** (creation-only in Windows) [Windows and GTK only]: Changes the style of the progress bar for a dashed pattern.
+**DASHED** (creation-only in Windows): Changes the style of the progress bar for a dashed pattern.
 Default is "NO". In Windows, it is not supported since Windows Vista when using Visual Styles.
+Not supported in macOS.
 
-[FGCOLOR](../attrib/iup_fgcolor.md) [Windows Classic and Motif only]: Controls the bar color.
+[FGCOLOR](../attrib/iup_fgcolor.md): Controls the bar color.
 Default: the global attribute DLGFGCOLOR.
+Supported in Windows Classic, Motif and Qt.
 
 **MARQUEE** (creation): displays an undefined state. Default: NO.
 You can set the attribute after map but only to start or stop the animation.
@@ -34,6 +36,7 @@ The control display is not updated, must set VALUE attribute to update.
 
 **ORIENTATION** (creation-only): can be "VERTICAL" or "HORIZONTAL". Default: "HORIZONTAL".
 Horizontal goes from left to right, and vertical from bottom to top.
+Not supported in WinUI.
 
 [RASTERSIZE](../attrib/iup_rastersize.md): The initial size is defined as "200x30".
 Set to NULL to allow the use of smaller values in the layout computation.
@@ -52,7 +55,7 @@ Set to NULL to allow the use of smaller values in the layout computation.
 
 ### Notes
 
-In GTK uses GtkProgressBar, in Windows uses PROGRESS_CLASS, and in Motif uses xmScale.
+In GTK uses GtkProgressBar, in Windows uses PROGRESS_CLASS, in WinUI uses XAML ProgressBar, in macOS uses NSProgressIndicator, in Qt uses QProgressBar, in EFL uses Efl_Ui_Progressbar, and in Motif uses xmScale.
 
 ### Examples
 
