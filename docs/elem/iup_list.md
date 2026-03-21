@@ -55,25 +55,30 @@ Before mapping, it counts the number of non-NULL items before the first NULL ite
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes still need to be set in order to activate the drag & drop support, so the application can control if this list is a source and/or target.
 Default: NO.
 
-**DROPFILESTARGET** [Windows and GTK Only] (non-inheritable): Enable or disable the drop of files.
+**DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
 
 **DROPDOWN** (creation-only): Changes the appearance of the list for the user: only the selected item is shown beside a button with the image of an arrow pointing down.
 To select another option, the user must press this button, which displays all items in the list.
 Can be "YES" or "NO". Default "NO".
 
-**DROPEXPAND** [Windows Only]: When DROPDOWN= Yes, the size of the dropped list will expand to include the largest text.
+**DROPEXPAND** [Windows and macOS Only]: When DROPDOWN=Yes, the size of the dropped list will expand to include the largest text.
 Can be "YES" or "NO". Default: "YES".
 
 **EDITBOX** (creation-only): Adds an edit box to the list. Can be "YES" or "NO". Default "NO".
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute TXTFGCOLOR.
 
-**IMAGEid** (non-inheritable) (write-only) [Windows and GTK Only]: image name to be used in the specified item, where id is the specified item starting at 1.
+**FITIMAGE** (non-inheritable): when SHOWIMAGE=Yes, images are scaled proportionally to fit the item height based on the font size.
+Can be "YES" or "NO". Default: "YES".
+Not supported in Motif.
+
+**IMAGEid** (non-inheritable) (write-only): image name to be used in the specified item, where id is the specified item starting at 1.
 The item must already exist. Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](iup_image.md). The image is always displayed at the left of the text and only when SHOWIMAGE=Yes.
-When EDITBOX=Yes the image is not display at the edit box. Images don't need to have the same size.
+When EDITBOX=Yes the image is not displayed at the edit box. Images don't need to have the same size.
 In Windows, list items are limited to 255 pixels height.
+Not supported in Motif.
 
 **INSERTITEMid** (write-only): inserts an item before the given id position. id starts at 1.
 If id=COUNT+1 then it will append after the last item. Ignored if out of bounds.
@@ -96,8 +101,9 @@ Usually the scrollbars are shown if necessary. In GTK, scrollbars are never show
 In Motif, the horizontal scrollbar is never shown.
 In Windows, if DROPEXPAND=YES then the horizontal scrollbar is never shown.
 
-**SCROLLVISIBLE** (read-only) [Windows Only]: Returns which scrollbars are visible at the moment.
+**SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
+Supported in Windows, Qt and macOS.
 
 **SHOWDRAGDROP** (creation-only) (non-inheritable): enables the internal drag and drop of items in the same list, and enables the **DRAGDROP_CB** callback.
 Default: "NO". Works only if DROPDOWN=NO and MULTIPLE=NO.
@@ -106,8 +112,9 @@ Default: "NO". Works only if DROPDOWN=NO and MULTIPLE=NO.
 **SHOWDROPDOWN** (write-only): opens or closes the dropdown list. Can be "YES" or "NO".
 Valid only when DROPDOWN=YES. Ignored if set before map.
 
-**SHOWIMAGE** (creation-only) [Windows and GTK Only]: enables the use of an image for each item.
+**SHOWIMAGE** (creation-only): enables the use of an image for each item.
 Can be "YES" or "NO". Ignored if set after map.
+Not supported in Motif.
 
 [SIZE](../attrib/iup_size.md): Size of the list.
 The **Natural Size** is defined by the number of elements in the list and the with of the largest item, the default has room for 5 characters in 1 item.
@@ -142,7 +149,7 @@ When set it will search for the first item with the same string.
 **VALUEMASKED** (non-inheritable) (write-only): sets VALUE but first checks if it is validated by MASK.
 If not, does nothing. Works only when EDITBOX=YES.
 
-**VISIBLEITEMS** [Windows and Motif Only]: Number of items that are visible when DROPDOWN=YES is used for the dropdown list.
+**VISIBLEITEMS**: Number of items that are visible when DROPDOWN=YES is used for the dropdown list.
 Default: 5.
 
 **VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
@@ -151,7 +158,15 @@ Set this attribute to speed **Natural Size** computation for very large lists.
 
 **VISIBLELINES**: When DROPDOWN=NO defines the number of visible lines for the **Natural Size**, this means that will act also as minimum number of visible lines.
 
-> 
+**VIRTUALMODE** (creation-only): enables virtual mode for the list.
+In virtual mode, items are not stored internally, and the list queries the application for item text and images using callbacks.
+Set ITEMCOUNT to define the number of items, and use the list callbacks to provide item data.
+Can be "YES" or "NO". Default: "NO".
+
+**ITEMCOUNT** (non-inheritable): number of items in the list when VIRTUALMODE=Yes.
+Must be set after VIRTUALMODE is enabled.
+
+>
 >
 > ------------------------------------------------------------------------
 
@@ -227,7 +242,7 @@ Called only when DROPDOWN=YES.
 **ih**: identifier of the element that activated the event.\
 **state**: state of the list 1=shown, 0=hidden.
 
-[DROPFILES_CB](../call/iup_dropfiles_cb.md) [Windows and GTK Only]: Action generated when one or more files are dropped in the element.
+[DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the element.
 
 **EDIT_CB**: Action generated when the text in the text box is manually changed by the user, but before its value is actually updated.
 Valid only when EDITBOX=YES.
@@ -263,6 +278,15 @@ If this callback is defined, the **ACTION** callback will not be called.
 
 The non changed items marked with 'x' are simulated internally by IUP in all systems.
 If you add or remove items to/from the list, and you count on the 'x' values, then after adding/removing items set the VALUE attribute to ensure proper 'x' values.
+
+**IMAGE_CB**: Called to retrieve the image name for each item when SHOWIMAGE=Yes and VIRTUALMODE=Yes.
+
+    char* function(Ihandle *ih, int pos);
+
+**ih**: identifier of the element that activated the event.\
+**pos**: item position starting at 1.
+
+**Returns**: the image name to be used for the item.
 
 **VALUECHANGED_CB**: Called after the value was interactively changed by the user.
 Called when the selection is changed or when the text is edited.
@@ -300,15 +324,13 @@ So the **User** height from RASTERSIZE or SIZE will always be ignored.
 
 In Windows, list items are limited to 255 pixels height.
 
-In GTK older than 2.12, the editbox of a dropdown will not follow the list attributes: FONT, BGCOLOR, FGCOLOR and SPACING.
-
 **Clicking and dragging an item**: if SHOWDRAGDROP=Yes starts a drag.
 When mouse is released, the DRAGDROP_CB callback is called.
 If the callback does not exist or if it returns IUP_CONTINUE then the item is moved to the new position.
 If Ctrl is pressed then the node is copied instead of moved.
 Drag is performed with the left mouse button.
 
-In GTK uses GtkComboBox/GtkTreeView, in Windows uses COMBOBOX/LISTBOX, and in Motif uses xmComboBox/xmList.
+In GTK uses GtkComboBox/GtkTreeView, in GTK 4 uses GtkDropDown/GtkListView, in Windows uses COMBOBOX/LISTBOX, in WinUI uses XAML ComboBox/ListView, in macOS uses NSPopUpButton/NSComboBox/NSTableView, in Qt uses QComboBox/QListWidget, in EFL uses Elm_List, and in Motif uses xmComboBox/xmList.
 
 ### Utility Functions
 
