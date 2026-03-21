@@ -32,13 +32,14 @@ Default: NO.
 **CAIRO_CR** [GTK Only] (non-inheritable): Contains the "cairo_t*" parameter of the internal GTK callback.
 Valid only during the ACTION callback and only when using GTK version 3.
 
-**CLIPRECT** [Windows and GTK Only] (only during ACTION): Specifies a rectangle that has its region invalidated for painting, it could be used for clipping.
+**CLIPRECT** (only during ACTION): Specifies a rectangle that has its region invalidated for painting, it could be used for clipping.
 Format: "%d %d %d %d"="x1 y1 x2 y2".
+Supported in Windows, GTK, GTK 4, Qt and macOS.
 
 [CURSOR](../attrib/iup_cursor.md) (non-inheritable): Defines a cursor for the canvas.
 The Windows SDK recommends that cursors and icons should be implemented as resources rather than created at run time.
 
-**DROPFILESTARGET** [Windows and GTK Only] (non-inheritable): Enable or disable the drop of files.
+**DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
 
 **DRAWSIZE** (non-inheritable): The size of the drawing area in pixels.
@@ -49,6 +50,10 @@ The SCROLLBAR and BORDER attributes affect the size of the drawing area.
 
 **DRAWDRIVER** (read-only): returns the name of the draw driver in use by the IupDraw API.
 Can be: D2D, GDI+ (Windows), CAIRO (GTK), COCOA (macOS), QT, EFL_VG (EFL), or X11 (Motif).
+
+**DRAWIMAGE** (read-only): returns the offscreen drawing buffer as an [IupImage](iup_image.md) handle name.
+Must be used between IupDrawBegin and IupDrawEnd.
+The image is cached and automatically destroyed on the next query.
 
 **DRAWUSEGDI** [Windows Only] (non-inheritable): force the use of the old GDI driver, instead of the new DirectD2 driver.
 Used in the **IupGauge**, **IupMatrix** and Flat Scrollbars for better performance and backward compatibility.
@@ -83,21 +88,27 @@ Default: 1/10th of DY.\
 Default: "YES".\
 **YAUTOHIDE**: When enabled, if DY >= YMAX-YMIN then the vertical scrollbar is hidden.
 Default: "YES".\
-**SCROLLVISIBLE** (read-only) [Windows Only]: Returns which scrollbars are visible at the moment.
+**SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
+Supported in Windows, Qt and macOS.
 
 **TOUCH** [Windows Only]: enable the touch processing if touch support is available.
+In Qt, touch events are always enabled.
 
-**GESTURE**  [Windows Only]: disable the gesture support for touch interfaces.
+**GESTURE** [Windows Only]: disable the gesture support for touch interfaces.
 Accepts only the NO value.
 
 **WHEELDROPFOCUS** (non-inheritable): when the wheel is used the focus control receives a SHOWDROPDOWN=No.
 
-**XDISPLAY** [UNIX Only](non-inheritable, read-only): Returns the X-Windows Display.
-Available in the Motif driver or in the GTK driver in UNIX.
+**CGCONTEXT** [macOS Only] (non-inheritable, read-only): Returns the CoreGraphics context (CGContextRef).
 
-**XWINDOW** [UNIX Only](non-inheritable, read-only): Returns the X-Windows Window (Drawable).
-Available in the Motif driver or in the GTK driver in UNIX.
+**NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the NSView handle.
+
+**XDISPLAY** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Display.
+Available in Motif, GTK and GTK 4 on X11.
+
+**XWINDOW** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
+Available in Motif, GTK and GTK 4 on X11.
 
 > 
 >
@@ -121,7 +132,7 @@ Old parameter in float format, use POSX attribute to get the value in double for
 
 [BUTTON_CB](../call/iup_button_cb.md): Action generated when any mouse button is pressed or released.
 
-[DROPFILES_CB](../call/iup_dropfiles_cb.md) [Windows and GTK Only]: Action generated when one or more files are dropped in the element.
+[DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the element.
 
 **FOCUS_CB**: Called when the canvas gets or loses the focus.
 It is called after the common callbacks GETFOCUS_CB and KILL_FOCUS_CB.
@@ -141,11 +152,11 @@ If your callback process the arrow keys, we recommend you to return IUP_IGNORE s
 
 [RESIZE_CB](../call/iup_resize_cb.md): Action generated when the canvas size is changed.
 
-[SCROLL_CB](../call/iup_scroll_cb.md): Called when the scrollbar is manipulated. (GTK 2.8) Also the POSX and POSY values will not be correctly updated for older GTK versions.
+[SCROLL_CB](../call/iup_scroll_cb.md): Called when the scrollbar is manipulated.
 
-**TOUCH_CB** [Windows Only]: Action generated when a touch event occurred.
+**TOUCH_CB** [Windows and Qt Only]: Action generated when a touch event occurred.
 Multiple touch events will trigger several calls.
-Must set TOUCH=Yes to receive this event.
+In Windows must set TOUCH=Yes to receive this event. In Qt, touch events are always enabled.
 
     int function(Ihandle* ih, int id, int x, int y, char* state);
 
@@ -199,7 +210,7 @@ When the canvas is resized, the ACTION callback is always called after the RESIZ
 The [IupDraw](../func/iup_draw.md) API can be used to draw in the canvas.
 But the ACTION callback function cannot be called manually from inside the application, it must be invoked by the system, so if you need to redraw then call [IupRedraw](../func/iup_redraw.md) or [IupUpdate](../func/iup_update.md).
 
-In GTK uses GtkFixed, in Windows uses a custom window class called "IupCanvas", and in Motif uses xmDrawingArea.
+In GTK uses GtkFixed (with custom iupGtk4Fixed in GTK 4), in Windows uses a custom window class called "IupCanvas", in WinUI uses XAML Canvas, in macOS uses a custom NSView, in Qt uses a custom QWidget, in EFL uses Evas_Object, and in Motif uses xmDrawingArea.
 
 ### Examples
 
