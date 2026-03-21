@@ -49,7 +49,7 @@ Default "NO". It is always enabled when TABTYPE=LEFT or TABTYPE=RIGHT.
 Default value: "NO". In Windows the close button implies the classic visual for the control.
 By default, when closed the tab is hidden.
 To change that behavior, use the TABCLOSE_CB callback.
-Not supported in EFL and Motif.
+Not supported in Motif.
 
 [SIZE](../attrib/iup_size.md) (non-inheritable): The default size is the smallest size that fits its largest child.
 All child elements are considered even invisible ones.
