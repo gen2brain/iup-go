@@ -14,7 +14,7 @@ It will set the TITLE attribute.\
 
 ### Attributes
 
-**IMAGE** [Windows and GTK Only] (non-inheritable): Image name of the submenu image.
+**IMAGE** (non-inheritable): Image name of the submenu image.
 In Windows, an item in a menu bar cannot have a check mark. Ignored if submenu in a menu bar.
 A recommended size would be 16x16 to fit the image in the menu item.
 In Windows, if larger than the check mark area it will be cropped.
@@ -46,7 +46,7 @@ Use "&&" to show the "&" character instead on defining a mnemonic.
 
 In Motif and GTK, the text font will be affected by the dialog font when the menu is mapped.
 
-In GTK uses GtkSeparatorMenuItem, in Windows uses InsertMenuItem, and in Motif uses xmSeparator.
+In GTK uses GtkMenuItem, in GTK 4 uses GMenu submenu, in Windows uses InsertMenuItem, in WinUI uses XAML MenuFlyoutSubItem, in macOS uses NSMenuItem with submenu, in Qt uses QMenu (as action), in EFL uses Elm_Menu_Item with submenu, and in Motif uses xmCascadeButton.
 
 ### Examples
 
