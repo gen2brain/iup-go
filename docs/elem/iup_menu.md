@@ -54,7 +54,7 @@ It is not necessary to call **IupGetDialog**.
 
 The menu can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md). 
 
-In GTK uses GtkMenuBar/GtkMenu/GtkMenu, in Windows uses CreateMenu/CreatePopupMenu/CreatePopupMenu, and in Motif uses xmRowColumn/xmPulldownMenu/xmPopupMenu, for Menu Bar/Regular Menu/Popup Menu.
+In GTK uses GtkMenuBar/GtkMenu, in GTK 4 uses GMenu/GtkPopoverMenuBar, in Windows uses CreateMenu/CreatePopupMenu, in WinUI uses XAML MenuBar/MenuFlyout, in macOS uses NSMenu, in Qt uses QMenuBar/QMenu, in EFL uses Elm_Menu, and in Motif uses xmRowColumn/xmPulldownMenu/xmPopupMenu.
 
 ### Examples
 

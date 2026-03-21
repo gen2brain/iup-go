@@ -18,18 +18,17 @@ Default: NO.
 
 [KEY](../attrib/iup_key.md) (non-inheritable): Underlines a key character in the submenu title.
 It is updated only when TITLE is updated.  Deprecated**, use the mnemonic support directly in the TITLE attribute.
-HIDEMARK** [Motif and GTK Only]: If enabled the item cannot be checked, since the checkbox will not be shown.
+**HIDEMARK**: If enabled the item cannot be checked, since the checkbox will not be shown.
 If all items in a menu enable it, then no empty space will be shown in front of the items.
-Normally the unmarked checkbox will not be shown, but since GTK 2.14 the unmarked checkbox is always shown.
-If your item will not be marked you must set HIDEMARK=YES, since this is the most common case we changed the default value to YES for this version of GTK, but if VALUE is defined the default goes back to NO.
+If your item will not be marked you must set HIDEMARK=YES, but if VALUE is defined the default goes back to NO.
 Default: NO.
 
-**IMAGE** [Windows and GTK Only] (non-inheritable): Image name of the check mark image when VALUE=OFF.
+**IMAGE** (non-inheritable): Image name of the check mark image when VALUE=OFF.
 In Windows, an item in a menu bar cannot have a check mark. Ignored if item in a menu bar.
 A recommended size would be 16x16 to fit the image in the menu item.
 In Windows, if larger than the check mark area it will be cropped.
 
-**IMPRESS** [Windows and GTK Only] (non-inheritable): Image name of the check mark image when VALUE=ON.
+**IMPRESS** (non-inheritable): Image name of the check mark image when VALUE=ON.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Item text.
 The "&" character can be used to define a mnemonic, the next character will be used as key.
@@ -75,9 +74,9 @@ Menu items are activated using the Enter key.
 
 In Motif and GTK, the text font will be affected by the dialog font when the menu is mapped.
 
-Since GTK 2.14 to have a menu item that can be marked, you must set the VALUE attribute to ON or OFF, or set HIDEMARK=NO, before mapping the control.
+To have a menu item that can be marked, you must set the VALUE attribute to ON or OFF, or set HIDEMARK=NO, before mapping the control.
 
-In GTK uses GtkMenuItem/GtkImageMenuItem/GtkRadioMenuItem/GtkCheckMenuItem, in Windows uses InsertMenuItem, and in Motif uses xmCascadeButton/xmToggleButton.
+In GTK uses GtkMenuItem/GtkCheckMenuItem, in GTK 4 uses GMenu/GSimpleAction, in Windows uses InsertMenuItem, in WinUI uses XAML MenuFlyoutItem, in macOS uses NSMenuItem, in Qt uses QAction, in EFL uses Elm_Menu_Item, and in Motif uses xmCascadeButton/xmToggleButton.
 
 ### Examples
 
