@@ -96,11 +96,11 @@ API reference documentation for IUP (Portable User Interface).
 
 ### Containers
 
-[IupFill](elem/iup_fill.md), [IupSpace](elem/iup_space.md), [IupCbox](elem/iup_cbox.md), [IupGridBox](elem/iup_gridbox.md), [IupMultiBox](elem/iup_multibox.md), [IupHbox](elem/iup_hbox.md), [IupVbox](elem/iup_vbox.md), [IupZbox](elem/iup_zbox.md), [IupRadio](elem/iup_radio.md), [IupNormalizer](elem/iup_normalizer.md), [IupFrame](elem/iup_frame.md), [IupFlatFrame](elem/iup_flatframe.md), [IupTabs](elem/iup_tabs.md), [IupFlatTabs](elem/iup_flattabs.md), [IupBackgroundBox](elem/iup_backgroundbox.md), [IupScrollBox](elem/iup_scrollbox.md), [IupFlatScrollBox](elem/iup_flatscrollbox.md), [IupDetachBox](elem/iup_detachbox.md), [IupExpander](elem/iup_expander.md), [IupSbox](elem/iup_sbox.md), [IupSplit](elem/iup_split.md)
+[IupFill](elem/iup_fill.md), [IupSpace](elem/iup_space.md), [IupCbox](elem/iup_cbox.md), [IupGridBox](elem/iup_gridbox.md), [IupMultiBox](elem/iup_multibox.md), [IupHbox](elem/iup_hbox.md), [IupVbox](elem/iup_vbox.md), [IupZbox](elem/iup_zbox.md), [IupRadio](elem/iup_radio.md), [IupNormalizer](elem/iup_normalizer.md), [IupFrame](elem/iup_frame.md), [IupFlatFrame](elem/iup_flatframe.md), [IupPopover](elem/iup_popover.md), [IupTabs](elem/iup_tabs.md), [IupFlatTabs](elem/iup_flattabs.md), [IupBackgroundBox](elem/iup_backgroundbox.md), [IupScrollBox](elem/iup_scrollbox.md), [IupFlatScrollBox](elem/iup_flatscrollbox.md), [IupDetachBox](elem/iup_detachbox.md), [IupExpander](elem/iup_expander.md), [IupSbox](elem/iup_sbox.md), [IupSplit](elem/iup_split.md)
 
 ### Standard
 
-[IupAnimatedLabel](elem/iup_animatedlabel.md), [IupButton](elem/iup_button.md), [IupFlatButton](elem/iup_flatbutton.md), [IupDropButton](elem/iup_dropbutton.md), [IupCalendar](elem/iup_calendar.md), [IupCanvas](elem/iup_canvas.md), [IupColorbar](elem/iup_colorbar.md), [IupColorBrowser](elem/iup_colorbrowser.md), [IupDatePick](elem/iup_datepick.md), [IupDial](elem/iup_dial.md), [IupGauge](elem/iup_gauge.md), [IupLabel](elem/iup_label.md), [IupFlatLabel](elem/iup_flatlabel.md), [IupFlatSeparator](elem/iup_flatseparator.md), [IupLink](elem/iup_link.md), [IupList](elem/iup_list.md), [IupFlatList](elem/iup_flatlist.md), [IupProgressBar](elem/iup_progressbar.md), [IupSpin](elem/iup_spin.md), [IupText](elem/iup_text.md), [IupToggle](elem/iup_toggle.md), [IupFlatToggle](elem/iup_flattoggle.md), [IupTree](elem/iup_tree.md), [IupFlatTree](elem/iup_flattree.md), [IupVal](elem/iup_val.md), [IupFlatVal](elem/iup_flatval.md)
+[IupAnimatedLabel](elem/iup_animatedlabel.md), [IupButton](elem/iup_button.md), [IupFlatButton](elem/iup_flatbutton.md), [IupDropButton](elem/iup_dropbutton.md), [IupCalendar](elem/iup_calendar.md), [IupCanvas](elem/iup_canvas.md), [IupColorbar](elem/iup_colorbar.md), [IupColorBrowser](elem/iup_colorbrowser.md), [IupDatePick](elem/iup_datepick.md), [IupDial](elem/iup_dial.md), [IupGauge](elem/iup_gauge.md), [IupLabel](elem/iup_label.md), [IupFlatLabel](elem/iup_flatlabel.md), [IupFlatSeparator](elem/iup_flatseparator.md), [IupLink](elem/iup_link.md), [IupList](elem/iup_list.md), [IupFlatList](elem/iup_flatlist.md), [IupProgressBar](elem/iup_progressbar.md), [IupScrollbar](elem/iup_scrollbar.md), [IupSpin](elem/iup_spin.md), [IupTable](elem/iup_table.md), [IupText](elem/iup_text.md), [IupToggle](elem/iup_toggle.md), [IupFlatToggle](elem/iup_flattoggle.md), [IupTree](elem/iup_tree.md), [IupFlatTree](elem/iup_flattree.md), [IupVal](elem/iup_val.md), [IupFlatVal](elem/iup_flatval.md)
 
 ### Additional
 
@@ -144,6 +144,6 @@ API reference documentation for IUP (Portable User Interface).
 
 ### Other
 
-[IupClipboard](elem/iup_clipboard.md), [IupTimer](elem/iup_timer.md), [IupThread](elem/iup_thread.md), [IupUser](elem/iup_user.md), [IupParam](elem/iup_param.md), [IupParamBox](elem/iup_parambox.md)
+[IupClipboard](elem/iup_clipboard.md), [IupNotify](elem/iup_notify.md), [IupTimer](elem/iup_timer.md), [IupThread](elem/iup_thread.md), [IupTray](elem/iup_tray.md), [IupUser](elem/iup_user.md), [IupParam](elem/iup_param.md), [IupParamBox](elem/iup_parambox.md)
 
 [IupConfig](func/iup_config.md), [IupExecute](func/iup_execute.md), [IupExecuteWait](func/iup_executewait.md), [IupHelp](func/iup_help.md), [IupLog](func/iup_log.md), [IupMapFont](func/iup_mapfont.md), [IupUnMapFont](func/iup_unmapfont.md)
