@@ -17,7 +17,7 @@ Also does not have support for text inside the bar.
 Default: the global attribute DLGBGCOLOR.
 
 **DASHED** (creation-only in Windows): Changes the style of the progress bar for a dashed pattern.
-Default is "NO". In Windows, it is not supported since Windows Vista when using Visual Styles.
+Default is "NO". In Windows, it is not supported when using Visual Styles.
 Not supported in macOS.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Controls the bar color.

@@ -3,7 +3,7 @@
 The application can control the focus using the functions **IupGetFocus** and **IupSetFocus**.
 When the focus is changed, the application is notified through the callbacks GETFOCUS_CB and KILLFOCUS_CB.
 
-Keyboard navigation in the dialog uses the "Tab" and "Shilf+Tab" keys to change the keyboard focus from one control to another.
+Keyboard navigation in the dialog uses the "Tab" and "Shift+Tab" keys to change the keyboard focus from one control to another.
 The exception is when the focus is at an **IupMultiline** control, to change focus the combination "Ctrl+Tab" must be used, because "Tab" is a valid input for the text.
 All IUP interactive controls have Tab stops, but the navigation order is related to the order the controls are placed in the dialog and cannot be changed.
 The order is the same implemented by the functions **IupNextField** and **IupPreviousField**.
@@ -23,8 +23,8 @@ These attributes configure buttons to be activated when the respective key is pr
 Again, "Enter" is a valid key for the Multiline, so the combination "Ctrl+Enter" must be used instead.
 If the focus is at a button, then the Enter key will activate that button independent of the DEFAULTENTER attribute.
 
-Usually, the application will process keyboard input in the **IupCanvas** using the [KEYPRESS_CB](elem/iup_canvas.md) callback.
+Usually, the application will process keyboard input in the **IupCanvas** using the [KEYPRESS_CB](call/iup_keypress_cb.md) callback.
 But there is also the [K_ANY](call/iup_k_any.md) callback that can be used for all the controls, but it does not have control of the press state, it is called only when the key is pressed.
-Both callbacks use the key codification explained in [Keyboard Codes](attrib/key.md).
+Both callbacks use the key codification explained in [Keyboard Codes](attrib/iup_keyboard_codes.md).
 These codes are also used in the ACTION callbacks of **IupText** and **IupMultiline**, and in shortcuts using the KEY attribute of **IupItem** and **IupSubmenu**.
 Finally, all the keyboard codes can be used as callback names to implement application hot keys.

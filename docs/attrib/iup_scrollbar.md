@@ -83,7 +83,7 @@ For example, you can convert it to a 0-1 interval and then scale to the new limi
     old_posx_relative = (old_posx - old_xmin)/(old_xmax - old_xmin)
     posx = (xmax - xmin)*old_posx_relative + xmin
 
-**IupList, IupTree**, and **IupText/IupMultiline** scrollbars are automatically managed and do NOT have the POS*, *MIN, *MAX and D* attributes.
+**IupList**, **IupTree**, and **IupText/IupMultiline** scrollbars are automatically managed and do NOT have the POS*, *MIN, *MAX and D* attributes.
 
 When updating the virtual space size, or when the canvas is resized, if **XAUTOHIDE**=Yes then calculating the actual DX size can be very tricky.
 Here is a helpful algorithm:

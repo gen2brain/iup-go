@@ -138,7 +138,6 @@ Supported in GTK 3 and GTK 4.
 ### GLOBALMENU [GTK Only]
 
 Flag indicating that GTK is using a global menu instead of a per window menu.
-This was used by the old Ubuntu Unity desktop with its AppMenu proxy.
 
 ### GLOBALLAYOUTDLGKEY
 
@@ -191,7 +190,7 @@ So usually in the application initialization after **IupOpen**, set SINGLEINSTAN
 Controls and returns the cursor position in absolute coordinates relative to the origin of the main screen.
 The origin of the main screen is at the top-left corner, in Windows it is affected by the position of the Start Menu when it is at the top or left side of the screen.
 Accept values in the format "X**x**Y" (in C "%dx%d), example "200x200".
-In GTK and Motif also generates mouse motion messages. (since GTK 2.8)
+In GTK and Motif also generates mouse motion messages.
 
 ### MOUSEBUTTON (write-only)
 
@@ -249,8 +248,7 @@ Their parameters are the same as the standard callbacks, but without the **Ihand
 
 ### SYSTEM (read-only)
 
-Informs the current operating system. On UNIX, it is equivalent to the command "uname -s" (sysname).
-On Windows, it identifies if you are on Windows 2000, Windows XP or Windows Vista. Some known names:
+Informs the current operating system. On UNIX, it is equivalent to the command "uname -s" (sysname). Some known names:
 
 > - "MacOS"
 > - "FreeBSD"
@@ -265,8 +263,7 @@ On Windows, it identifies if you are on Windows 2000, Windows XP or Windows Vist
 > - "Vista"
 > - "Win7"
 > - "Win8"
->
-> Notice that "Windows 8.1" will normally be detected as "Windows 8", unless a special Manifest is used. See [MSDN](http://msdn.microsoft.com/EN-US/library/windows/desktop/dn481241(v=vs.85).aspx) for more information.
+> - "Win10"
 
 ### SYSTEMVERSION (read-only)
 
@@ -418,7 +415,7 @@ Returns "YES" or "NO". Useful in Motif.
 
 ### DWM_COMPOSITION (read-only) [Windows Only]
 
-Returns the Desktop Window Manager Composition flag. Returns "YES" or "NO". Works only in Windows Vista and newer.
+Returns the Desktop Window Manager Composition flag. Returns "YES" or "NO". Windows only.
 Returns NULL if not supported.
 
 ### VIRTUALSCREEN (read-only)

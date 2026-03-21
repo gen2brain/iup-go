@@ -161,7 +161,7 @@ In Windows, when using UTF-8 strings (UTF8MODE=Yes), attributes that return file
 To use UTF-8 filenames (that can lately be converted to UTF-16) set the global attribute [UTF8MODE_FILE](../attrib/iup_globals.md) to Yes.
 In a specific case, the application can set before popup, and unset after, so for just that call will return in UTF-8.
 
-In Windows (Win32), if FILE_CB and HELP_CB are not defined, and x,y are IUP_CENTER or IUP_CURRENT then it will use a newer Explorer interface available since Windows Vista.
+In Windows (Win32), if FILE_CB and HELP_CB are not defined, and x,y are IUP_CENTER or IUP_CURRENT then it will use the newer Explorer interface.
 
 When saving a file, the overwrite check is done before the FILE_CB callback is called with status=OK.
 If the application wants to add an extension to the file name inside the FILE_CB callback when status=OK, then it must manually check if the file with the extension exits and asks the user if the file should be replaced, if not then the callback can set the FILE attribute and returns IUP_CONTINUE, so the file dialog will remain open and the user will have an opportunity to change the file name now that it contains the extension.
