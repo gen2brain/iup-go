@@ -6,7 +6,8 @@ They are simple functions designed to help the drawing of custom controls based 
 To use the functions in C/C++, you must include the "iupdraw.h" header.
 
 Internally, IupDraw uses several drawing APIs depending on the platform:
-- **Windows**: Direct2D or GDI+ via WinDrawLib
+- **Windows (Win32)**: Direct2D or GDI+ via WinDrawLib
+- **Windows (WinUI)**: Direct2D
 - **GTK 3 / GTK 4**: Cairo
 - **macOS**: CoreGraphics
 - **Qt**: QPainter

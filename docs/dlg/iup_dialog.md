@@ -419,7 +419,17 @@ GTK does not get button=2 messages.\
 
 **Returns**: IUP_CLOSE will be processed.
 
-> 
+**THEMECHANGED_CB**: Called when the system theme or color scheme changes (e.g., switching between light and dark mode).
+
+    int function(Ihandle *ih, int dark_mode);
+
+**ih**: identifier of the element that activated the event.\
+**dark_mode**: is non-zero if the system is now in dark mode, zero if in light mode.
+
+Supported in Windows (Win32 and WinUI), GTK 3, GTK 4, Qt, EFL and macOS.
+Not supported in Motif.
+
+>
 >
 > ------------------------------------------------------------------------
 

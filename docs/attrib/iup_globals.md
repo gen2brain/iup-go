@@ -14,7 +14,7 @@ In C, the functions [IupGetAttribute](../func/iup_getattribute.md) and [IupSetAt
 
 The language used by some pre-defined dialogs.
 
-Can have the values of ENGLISH, SPANISH and PORTUGUESE. Default: ENGLISH.
+Can have the values ENGLISH, PORTUGUESE, SPANISH, CZECH, RUSSIAN, GERMAN, FRENCH, CHINESE, JAPANESE or ITALIAN. Default: ENGLISH.
 It can also be set by [IupSetLanguage](../func/iup_setlanguage.md).
 
 ### VERSION (read-only)

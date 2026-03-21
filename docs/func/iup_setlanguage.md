@@ -13,8 +13,15 @@ It can also be changed using the global attribute LANGUAGE.
 - "ENGLISH"
 - "PORTUGUESE"
 - "SPANISH"
+- "CZECH"
+- "RUSSIAN"
+- "GERMAN"
+- "FRENCH"
+- "CHINESE"
+- "JAPANESE"
+- "ITALIAN"
 
-default: "ENGLISH".
+Default: "ENGLISH".
 
 ### Affects
 
