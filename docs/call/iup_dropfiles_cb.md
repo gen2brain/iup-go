@@ -5,7 +5,7 @@ When several files are dropped at once, the callback is called several times, on
 
 If defined after the element is mapped then the attribute DROPFILESTARGET must be set to YES.
 
-[Windows and GTK Only] (GTK 2.6)
+In Motif, file drops from external applications are received via the XDND protocol.
 
 ### Callback
 

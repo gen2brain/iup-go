@@ -34,7 +34,7 @@ Returns the IUP's copyright.
 
 Informs the current driver being used.
 
-Two drivers are available now, one for each platform: "GTK", "Motif" and "Win32".
+Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "EFL" and "Cocoa".
 
 ## System Control
 
@@ -188,7 +188,6 @@ In Windows button can be 'W' and state=delta, so a wheel button scroll is simula
 **IMPORTANT**: **not fully working**. In Windows and GTK, menu items are not activated.
 Although submenus open, menu items even in the menu bar are not activated.
 In Windows, inside the **IupFileDlg** dialog, clicks in the folder navigation list are not correctly interpreted.
-In Motif click and drag operations are not performed.
 
 ### SHIFTKEY (read-only)
 
@@ -343,7 +342,7 @@ String in the "*width*x*height*" format.
 ### SCREENSIZE (read-only)
 
 Returns the screen size in pixels available for dialogs, i.e., not including menu bars, task bars, etc.
-In Motif has the same value as the FULLSIZE attribute.
+In Motif, uses the `_NET_WORKAREA` property if available from the window manager, otherwise has the same value as the FULLSIZE attribute.
 The main screen size does not include additional monitors.
 
 String in the "*width*x*height*" format.

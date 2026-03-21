@@ -2,7 +2,7 @@
 
 When enabled, allow the use of callbacks for controlling the drag and drop handling.
 
-The user starts a drag and drop transfer by pressing the mouse button over the data (Windows and GTK: left button; Motif: middle button) which is referred to as the drag source.
+The user starts a drag and drop transfer by pressing the left mouse button over the data, which is referred to as the drag source.
 The data can be dropped in any location that has been registered as a drop target.
 The drop occurs when the user releases the mouse button.
 This can be done inside a control, from one control to another in the same dialog, in different dialogs of the same application, or between different applications (the other application does NOT need to be implemented with IUP).

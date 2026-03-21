@@ -21,7 +21,6 @@ The key will be used when navigating in the parent menu that contains the item.
 If the same character key is present in the title, then it will be underlined.
 
 In the menu bar, some systems automatically associate the ALT+<letter> combination for the chosen letter.
-This is valid for the Windows driver, but not for the Motif driver.
 
 Be careful not to misuse this attribute in relation to [K_ANY](../call/iup_k_any.md) or K_* callbacks.
 

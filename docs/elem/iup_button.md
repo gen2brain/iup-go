@@ -41,7 +41,7 @@ The border space is always there. Can be YES or NO. Default: NO.
 **IMAGE** (non-inheritable): Image name. If set before map defines the behavior of the button to contain an image.
 The natural size will be size of the image in pixels, plus the button borders.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
-See also [IupImage](iup_image.md). If TITLE is also defined and not empty both will be shown (except in Motif). (GTK 2.6)
+See also [IupImage](iup_image.md). If TITLE is also defined and not empty both will be shown.
 
 **IMINACTIVE** (non-inheritable): Image name of the element when inactive.
 If it is not defined then the IMAGE is used and the colors will be replaced by a modified version of the background color creating the disabled effect.
@@ -81,7 +81,6 @@ The '\n' character is accepted for line change.
 The "&" character can be used to define a mnemonic, the next character will be used as key.
 Use "&&" to show the "&" character instead on defining a mnemonic.
 The button can be activated from any control in the dialog using the "Alt+key" combination.
-In old Motif versions (2.1) using a '\n' causes an invalid memory access inside Motif.
 
 > 
 >

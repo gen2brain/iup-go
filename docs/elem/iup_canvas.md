@@ -48,7 +48,7 @@ Notice that the drawing area size is not the same as RASTERSIZE.
 The SCROLLBAR and BORDER attributes affect the size of the drawing area.
 
 **DRAWDRIVER** (read-only): returns the name of the draw driver in use by the IupDraw API.
-Can be: X11 (Motif), GDK (GTK), Cairo (GTK), D2D (Windows), GDI+ (Windows) or GDI (Windows).
+Can be: D2D, GDI+ (Windows), CAIRO (GTK), COCOA (macOS), QT, EFL_VG (EFL), or X11 (Motif).
 
 **DRAWUSEGDI** [Windows Only] (non-inheritable): force the use of the old GDI driver, instead of the new DirectD2 driver.
 Used in the **IupGauge**, **IupMatrix** and Flat Scrollbars for better performance and backward compatibility.

@@ -42,7 +42,7 @@ To implement a shortcut, use the K_* callbacks in the dialog.
 
 **TITLEIMAGE** (non-inheritable): Image name of the title image.
 In Windows, it appears before of the title text and after the check mark area (so both title and title image can be visible).
-In Motif, it must be at least defined during map, it replaces the text, and only images will be possible to set (TITLE will be hidden).
+In Motif, it replaces the text, and only images will be possible to set (TITLE will be hidden).
 In GTK, it will appear on the check mark area.
 
 **VALUE** (non-inheritable): Indicates the item's state.
