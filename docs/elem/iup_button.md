@@ -45,20 +45,22 @@ See also [IupImage](iup_image.md). If TITLE is also defined and not empty both w
 
 **IMINACTIVE** (non-inheritable): Image name of the element when inactive.
 If it is not defined then the IMAGE is used and the colors will be replaced by a modified version of the background color creating the disabled effect.
-GTK will also change the inactive image to look like other inactive objects. (GTK 2.6)
+GTK will also change the inactive image to look like other inactive objects.
 
 **IMPRESS** (non-inheritable): Image name of the pressed button.
 If IMPRESS and IMAGE are defined, the button borders are not shown and not computed in natural size.
 When the button is clicked the pressed image does not offset.
-In Motif the button will lose its focus feedback also. (GTK 2.6)
+In Motif the button will lose its focus feedback also.
 
 **IMPRESSBORDER** (non-inheritable): if enabled, the button borders will be shown and computed even if IMPRESS is defined.
 Can be "YES" or "NO". Default: "NO".
 
 **IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
-Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT. (GTK 2.10)
+Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
+Not supported in Motif and EFL.
 
-**MARKUP** [GTK only]: allows the title string to contain pango markup commands.
+**MARKUP** [GTK and Qt only]: allows the title string to contain markup commands.
+In GTK uses Pango markup, in Qt uses HTML rich text.
 Works only if a mnemonic is NOT defined in the title. Can be "YES" or "NO". Default: "NO".
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
@@ -121,7 +123,7 @@ In this case in Windows TITLE can also be defined.
 
 Usually toolbar buttons have FLAT=Yes and CANFOCUS=NO.
 
-In GTK uses GtkButton/GtkImage, in Windows uses WC_BUTTON, and in Motif uses xmPushButton.
+In GTK uses GtkButton, in Windows uses WC_BUTTON, in WinUI uses XAML Button, in macOS uses NSButton, in Qt uses QPushButton, in EFL uses Elm_Button, and in Motif uses xmPushButton.
 
 ### Examples
 
