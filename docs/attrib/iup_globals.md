@@ -176,12 +176,14 @@ The minimum resulted size when automatically resized is 24 pixels height.
 If set to NO will disable the window ghosting feature for the duration of the process, cannot be enabled again.
 When disabled, the application dialogs cannot be moved or resized while application that is not responding, also the "Not Responding" display at the application tittle bar will not be done anymore.
 
-### SINGLEINSTANCE [Windows Only]
+### SINGLEINSTANCE
 
 Restricts the number of instances of the application by using a name to identify it.
-The value must also be a partial match to the title of a dialog that will receive the COPYDATA_CB callback with the command line of the second instance.
+The first dialog that has a COPYDATA_CB callback will receive the command line of the second instance.
 When consulted returns NULL if inside the second instance.
 So usually in the application initialization after **IupOpen**, set SINGLEINSTANCE and then consult its value, if NULL abort the second instance by calling **IupClose** and returning from *main*.
+
+In Windows uses a named mutex for detection and WM_COPYDATA for communication. In Linux/Unix uses D-Bus session bus name ownership. In macOS uses CFMessagePort.
 
 ## System Mouse and Keyboard
 

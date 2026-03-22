@@ -19,6 +19,7 @@
 #include "iup_drvinfo.h"
 #include "iup_key.h"
 #include "iup_strmessage.h"
+#include "iup_singleinstance.h"
 
 #include "iupcocoa_drv.h"
 #include "iupcocoa_keycodes.h"
@@ -174,6 +175,13 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
 
 int iupdrvSetGlobal(const char *name, const char *value)
 {
+  if (iupStrEqual(name, "SINGLEINSTANCE"))
+  {
+    if (iupdrvSingleInstanceSet(value))
+      return 0;
+    else
+      return 1;
+  }
   if (iupStrEqual(name, "INPUTCALLBACKS"))
   {
     if (iupStrBoolean(value))

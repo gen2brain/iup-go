@@ -19,6 +19,7 @@
 #include "iup_drvinfo.h"
 #include "iup_key.h"
 #include "iup_class.h"
+#include "iup_singleinstance.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_str.h"
@@ -36,78 +37,7 @@
 
 
 static int win_monitor_index = 0;
-static HANDLE win_singleintance = NULL;
-static HWND win_findwindow = NULL;
 static HHOOK win_OldGetMessageHook = NULL;
-
-
-static int winGlobalSetMutex(const char* name)
-{
-  if (win_singleintance)
-    ReleaseMutex(win_singleintance);
-
-  /* try to create a mutex (will fail if already one of that name) */
-  win_singleintance = CreateMutex(NULL, FALSE, iupwinStrToSystem(name));
-
-  /* Return TRUE if existing semaphore opened */
-  if (win_singleintance != NULL && GetLastError()==ERROR_ALREADY_EXISTS)
-  {
-    CloseHandle(win_singleintance);
-    return 1;
-  }
-
-  /* wasn't found, new one created therefore return FALSE */
-  return (win_singleintance == NULL);
-}
-
-static BOOL CALLBACK winGlobalEnumWindowProc(HWND hWnd, LPARAM lParam)
-{
-  TCHAR* name = (TCHAR*)lParam;
-  int name_len = lstrlen(name);
-  TCHAR str[256];
-  int len = GetWindowText(hWnd, str, 256);
-  if (len)
-  {
-    if (len > name_len) len = name_len;
-    if (CompareString(LOCALE_INVARIANT, 0, str, len, name, name_len)==CSTR_EQUAL)
-    {
-      win_findwindow = hWnd;
-      return FALSE;
-    }
-  }
-
-  return TRUE;  /* continue searching */
-}
-
-static HWND winGlobalFindWindow(const char* name)
-{
-  win_findwindow = NULL;
-  EnumWindows(winGlobalEnumWindowProc, (LPARAM)iupwinStrToSystem(name));
-  return win_findwindow;
-}
-
-static void winGlobalFindFirstInstance(const char* name)
-{
-  HWND hWnd = winGlobalFindWindow(name);
-  if (hWnd)
-  {
-    int len;
-    LPTSTR cmdLine = GetCommandLine();
-
-    SetForegroundWindow(hWnd);
-
-    /* Command line is not empty. Send it to the first instance. */ 
-    len = lstrlen(cmdLine);
-    if (len != 0) 
-    {
-      COPYDATASTRUCT cds;
-      cds.dwData = (ULONG_PTR)"IUP_DATA";
-      cds.cbData = (len+1)*sizeof(TCHAR);
-      cds.lpData = cmdLine;
-      SendMessage(hWnd, WM_COPYDATA, 0, (LPARAM)&cds);
-    }
-  }
-}
 
 static BOOL CALLBACK winGlobalMonitorInfoEnum(HMONITOR handle, HDC handle_dc, LPRECT rect, LPARAM data)
 {
@@ -349,13 +279,10 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
   }
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
-    if (winGlobalSetMutex(value))
-    {
-      winGlobalFindFirstInstance(value);
-      return 0;  /* don't save the attribute, mutex already exist */
-    }
+    if (iupdrvSingleInstanceSet(value))
+      return 0;
     else
-      return 1; /* save the attribute, this is the first instance */
+      return 1;
   }
   if (iupStrEqual(name, "CLIENTAREAANIMATION"))
   {

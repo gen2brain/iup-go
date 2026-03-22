@@ -332,7 +332,7 @@ Each MDI child is automatically named if it does not have one. Default: NO.
 
 [CLOSE_CB](../call/iup_close_cb.md): Called right before the dialog is closed.
 
-**COPYDATA_CB** [Windows Only]: Called at the first instance, when a second instance is running.
+**COPYDATA_CB**: Called at the first instance, when a second instance is running.
 Must set the global attribute SINGLEINSTANCE to be called.
 
     int function(Ihandle *ih, char* cmdLine, int size);

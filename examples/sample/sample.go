@@ -11,6 +11,11 @@ func main() {
 	iup.SetGlobal("APPID", "com.example.Sample") // For Wayland/XDG desktop file
 	iup.SetGlobal("APPNAME", "Sample")           // For taskbar/dock/WM
 
+	iup.SetGlobal("SINGLEINSTANCE", "Sample")
+	if iup.GetGlobal("SINGLEINSTANCE") == "" {
+		return
+	}
+
 	//iup.SetGlobal("DEFAULTFONTSIZE", "13")
 	//iup.SetGlobal("EFLTHEME", "/tmp/Ice.edj")
 

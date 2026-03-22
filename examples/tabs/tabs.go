@@ -53,7 +53,7 @@ func main() {
 	vbox3.SetAttribute("TABTITLE", "Tab C")
 
 	tabs1 := iup.Tabs(vbox1, vbox2, vbox3)
-	tabs1.SetAttributes("SHOWCLOSE=YES")
+	tabs1.SetAttributes("SHOWCLOSE=YES, ALLOWREORDER=YES")
 
 	// Create tabs 2 (left side)
 	vboxD := iup.Vbox(
@@ -170,13 +170,26 @@ func main() {
 		return iup.DEFAULT
 	}
 
+	// REORDER_CB - Called when the user reorders a tab by dragging
+	reorderCB := func(ih iup.Ihandle, oldPos, newPos int) int {
+		tabsName := "tabs1"
+		if ih == iup.GetHandle("tabs2") {
+			tabsName = "tabs2"
+		}
+
+		logMsg(fmt.Sprintf("REORDER_CB (%s): tab moved from %d to %d", tabsName, oldPos, newPos))
+		return iup.DEFAULT
+	}
+
 	// Set callbacks for tabs1
+	iup.SetCallback(tabs1, "REORDER_CB", iup.ReorderFunc(reorderCB))
 	iup.SetCallback(tabs1, "TABCHANGE_CB", iup.TabChangeFunc(tabChangeCB))
 	iup.SetCallback(tabs1, "TABCHANGEPOS_CB", iup.TabChangePosFunc(tabChangePosCB))
 	iup.SetCallback(tabs1, "TABCLOSE_CB", iup.TabCloseFunc(tabCloseCB))
 	iup.SetCallback(tabs1, "RIGHTCLICK_CB", iup.RightClickFunc(rightClickCB))
 
 	// Set callbacks for tabs2
+	iup.SetCallback(tabs2, "REORDER_CB", iup.ReorderFunc(reorderCB))
 	iup.SetCallback(tabs2, "TABCHANGE_CB", iup.TabChangeFunc(tabChangeCB))
 	iup.SetCallback(tabs2, "TABCHANGEPOS_CB", iup.TabChangePosFunc(tabChangePosCB))
 	iup.SetCallback(tabs2, "TABCLOSE_CB", iup.TabCloseFunc(tabCloseCB))

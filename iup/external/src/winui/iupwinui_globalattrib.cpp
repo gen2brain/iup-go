@@ -15,6 +15,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_globalattrib.h"
+#include "iup_singleinstance.h"
 }
 
 #include "iupwinui_drv.h"
@@ -33,6 +34,13 @@ static BOOL CALLBACK winuiMonitorInfoEnum(HMONITOR handle, HDC handle_dc, LPRECT
 
 extern "C" int iupdrvSetGlobal(const char* name, const char* value)
 {
+  if (iupStrEqual(name, "SINGLEINSTANCE"))
+  {
+    if (iupdrvSingleInstanceSet(value))
+      return 0;
+    else
+      return 1;
+  }
   if (iupStrEqual(name, "UTF8MODE"))
   {
     return 1;
