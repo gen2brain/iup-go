@@ -331,9 +331,7 @@ IUP_API void IupMessagef(const char *title, const char *format, ...);
 IUP_API void IupMessageError(Ihandle* parent, const char* message);
 IUP_API int IupMessageAlarm(Ihandle* parent, const char* title, const char *message, const char *buttons);
 IUP_API int  IupAlarm(const char *title, const char *msg, const char *b1, const char *b2, const char *b3);
-IUP_API int  IupScanf(const char *format, ...);
-IUP_API int  IupListDialog(int type, const char *title, int size, const char** list,
-                   int op, int max_col, int max_lin, int* marks);
+IUP_API int  IupListDialog(int type, const char *title, int size, const char** list, int op, int max_col, int max_lin, int* marks);
 IUP_API int  IupGetText(const char* title, char* text, int maxsize);
 IUP_API int  IupGetColor(int x, int y, unsigned char* r, unsigned char* g, unsigned char* b);
 

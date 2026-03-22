@@ -11,10 +11,7 @@
 extern "C" {
 #endif
 
-/* Used by the IupScanf implementations in C and Lua */
-IUP_SDK_API int iupDataEntry(int maxlin, int* maxcol, int* maxscr, char* title, char** text, char** data);
-
-/* Other functions declared in <iup.h> and implemented here. 
+/* Other functions declared in <iup.h> and implemented here.
 IupListDialog
 IupAlarm
 IupMessagef
