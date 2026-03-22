@@ -1065,55 +1065,6 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 
     gdk_event_put((GdkEvent*)&evt);
   }
-#if 0 /* kept for future reference */
-  else
-  {
-    GtkWidget* grab_widget;
-    gint origin_x, origin_y;
-
-    GdkEventMotion evt;
-    memset(&evt, 0, sizeof(GdkEventMotion));
-    evt.send_event = TRUE;
-
-    evt.x_root = x;
-    evt.y_root = y;
-    evt.type = GDK_MOTION_NOTIFY;
-    evt.device = gdk_device_get_core_pointer();
-
-    grab_widget = gtk_grab_get_current();
-    if (grab_widget) 
-      evt.window = iupgtkGetWindow(grab_widget);
-    else
-      evt.window = gdk_window_at_pointer(NULL, NULL);
-
-    switch(bt)
-    {
-    case IUP_BUTTON1:
-      evt.state = GDK_BUTTON1_MASK;
-      break;
-    case IUP_BUTTON2:
-      evt.state = GDK_BUTTON2_MASK;
-      break;
-    case IUP_BUTTON3:
-      evt.state = GDK_BUTTON3_MASK;
-      break;
-    case IUP_BUTTON4:
-      evt.state = GDK_BUTTON4_MASK;
-      break;
-    case IUP_BUTTON5:
-      evt.state = GDK_BUTTON5_MASK;
-      break;
-    default:
-      return;
-    }
-
-    gdk_window_get_origin(evt.window, &origin_x, &origin_y);
-    evt.x = x - origin_x;
-    evt.y = y - origin_y;
-
-    gdk_event_put((GdkEvent*)&evt);
-  }
-#endif
 }
 
 IUP_SDK_API void iupdrvSleep(int time)

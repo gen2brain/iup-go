@@ -346,55 +346,6 @@ void* iupdrvImageCreateCursor(Ihandle *ih)
   return cursor;
 }
 
-#if 0  /* OLD unused code - kept for reference */
-void* iupgtkImageCreateMask(Ihandle *ih)
-{
-#if GTK_CHECK_VERSION(3, 0, 0)
-  (void)ih;
-  return NULL;  /* not supported in GTK3 */
-#else
-  int bpp;
-  GdkPixmap *mask;
-  char *bits, *sb;
-  int y, x, line_size = (ih->currentwidth+7)/8;
-  int size_bytes = line_size*ih->currentheight;
-  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
-  unsigned char colors[256];
-
-  bpp = iupAttribGetInt(ih, "BPP");
-  if (bpp > 8)
-    return NULL;
-
-  bits = (char*)malloc(size_bytes);
-  if (!bits) return NULL;
-  memset(bits, 0, size_bytes);
-
-  iupImageInitNonBgColors(ih, colors);
-
-  sb = bits;
-  for (y=0; y<ih->currentheight; y++)
-  {
-    for (x=0; x<ih->currentwidth; x++)
-    {
-      int byte = x/8;
-      int bit = x%8;
-      int index = (int)imgdata[y*ih->currentwidth+x];
-      if (colors[index])
-        sb[byte] = (char)(sb[byte] | (1<<bit));
-    }
-
-    sb += line_size;
-  }
-
-  mask = gdk_bitmap_create_from_data(NULL, bits, ih->currentwidth, ih->currentheight);
-
-  free(bits);
-
-  return mask;
-#endif
-}
-#endif
-
 #if !GTK_CHECK_VERSION(3, 10, 0) /* Stock Items deprecated in GTK 3.10 */
 static GdkPixbuf* gtkImageRenderPixbuf(GtkIconSet* icon_set, int render_icon_size, int dir)
 {
@@ -536,11 +487,6 @@ void* iupdrvImageLoad(const char* name, int type)
       pixbuf = gdk_pixbuf_new_from_file(iupgtkStrConvertToSystem(name), &error);  /* filename here is in UTF-8, do NOT use iupgtkStrConvertToFilename */ 
       if (error) g_error_free(error);
     }
-
-#if 0 /* for debugging */
-    if (!pixbuf)
-      printf("Couldn't load icon (%s)", name);
-#endif
 
     return pixbuf;
   }

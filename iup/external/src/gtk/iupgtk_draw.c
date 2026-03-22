@@ -821,26 +821,7 @@ IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, i
 
 IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
-#if 0
-#if GTK_CHECK_VERSION(3, 0, 0)
-  GtkStyleContext* context = gtk_widget_get_style_context(dc->widget);
-#endif
-
-  iupDrawCheckSwapCoord(x1, x2);
-  iupDrawCheckSwapCoord(y1, y2);
-
-#if !GTK_CHECK_VERSION(3, 0, 0)
-  dc->draw_focus = 1;  /* draw focus on the next flush */
-  dc->focus_x1 = x1;
-  dc->focus_y1 = y1;
-  dc->focus_x2 = x2;
-  dc->focus_y2 = y2;
-#else
-  gtk_render_focus(context, dc->image_cr, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
-#endif
-#else
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
-#endif
 }
 
 IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)

@@ -59,27 +59,6 @@ static void gtkFontUpdateLayout(IgtkFont* gtkfont, PangoLayout* layout)
   }
 }
 
-#if 0
-static int gtkFontTypefaceCheck(const char* typeface)
-{
-  PangoFontFamily **families = NULL;
-  int i, n_families = 0;
-  pango_context_list_families(gtk_fonts_context,  &families, &n_families);
-
-  for (i = 0; i < n_families; i++)
-  {
-    if (iupStrEqualNoCase(typeface, pango_font_family_get_name(families[i])))
-    {
-      g_free(families);
-      return 1;
-    }
-  }
-
-  g_free(families);
-  return 0;
-}
-#endif
-
 static IgtkFont* gtkFindFont(const char *font)
 {
   PangoFontMetrics* metrics;
