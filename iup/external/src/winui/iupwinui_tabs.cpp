@@ -56,10 +56,11 @@ struct IupWinUITabsAux
   event_token selectionChangedToken;
   event_token tabCloseToken;
   event_token keyDownToken;
+  event_token tabItemsChangedToken;
   int ignoreChange;
   int previousIndex;
 
-  IupWinUITabsAux() : selectionChangedToken{}, tabCloseToken{}, keyDownToken{}, ignoreChange(0), previousIndex(0) {}
+  IupWinUITabsAux() : selectionChangedToken{}, tabCloseToken{}, keyDownToken{}, tabItemsChangedToken{}, ignoreChange(0), previousIndex(0) {}
 };
 
 static TabView winuiTabsGetTabView(Ihandle* ih)
@@ -177,9 +178,14 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   if (!ih->handle)
     return;
 
+  iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
+
   TabView tabView = winuiTabsGetTabView(ih);
   if (!tabView)
+  {
+    iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
     return;
+  }
 
   TabViewItem item;
 
@@ -258,6 +264,8 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     if (tabtip)
       ToolTipService::SetToolTip(item, box_value(winrt::hstring(iupwinuiStringToHString(tabtip))));
   }
+
+  iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
 }
 
 static int winuiTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
@@ -340,6 +348,34 @@ static int winuiTabsMapMethod(Ihandle* ih)
     winuiTabsCloseRequested(ih, sender, args);
   });
 
+  aux->tabItemsChangedToken = tabView.TabItemsChanged([ih](TabView const&, Windows::Foundation::Collections::IVectorChangedEventArgs const& args) {
+    if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+      return;
+
+    auto change = args.CollectionChange();
+    if (change == Windows::Foundation::Collections::CollectionChange::ItemRemoved)
+    {
+      iupAttribSetInt(ih, "_IUPTABS_REORDER_FROM", (int)args.Index());
+    }
+    else if (change == Windows::Foundation::Collections::CollectionChange::ItemInserted)
+    {
+      const char* from_str = iupAttribGet(ih, "_IUPTABS_REORDER_FROM");
+      if (from_str)
+      {
+        int from = iupAttribGetInt(ih, "_IUPTABS_REORDER_FROM");
+        int to = (int)args.Index();
+        iupAttribSet(ih, "_IUPTABS_REORDER_FROM", NULL);
+
+        if (from != to)
+        {
+          IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+          if (cb)
+            cb(ih, from, to);
+        }
+      }
+    }
+  });
+
   aux->keyDownToken = tabView.PreviewKeyDown([ih](IInspectable const&, Input::KeyRoutedEventArgs const& args) {
     if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
       args.Handled(true);
@@ -395,6 +431,7 @@ static void winuiTabsUnMapMethod(Ihandle* ih)
     {
       tabView.SelectionChanged(aux->selectionChangedToken);
       tabView.TabCloseRequested(aux->tabCloseToken);
+      tabView.TabItemsChanged(aux->tabItemsChangedToken);
       if (aux->keyDownToken)
         tabView.PreviewKeyDown(aux->keyDownToken);
     }

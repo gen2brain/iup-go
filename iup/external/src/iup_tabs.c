@@ -673,6 +673,7 @@ Iclass* iupTabsNewClass(void)
   iupClassRegisterCallback(ic, "TABCHANGE_CB", "nn");
   iupClassRegisterCallback(ic, "TABCHANGEPOS_CB", "ii");
   iupClassRegisterCallback(ic, "RIGHTCLICK_CB", "i");
+  iupClassRegisterCallback(ic, "REORDER_CB", "ii");
   iupClassRegisterCallback(ic, "FOCUS_CB", "i");
 
   /* Common Callbacks */

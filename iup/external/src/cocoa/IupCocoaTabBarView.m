@@ -751,9 +751,16 @@
   }
   else
   {
+    BOOL allow = YES;
+    if (delegate && [delegate respondsToSelector:@selector(tabWillReorderFromIndex:toIndex:)])
+      allow = [delegate tabWillReorderFromIndex:sourceIndex toIndex:destinationIndex];
+
     [draggingTab setIsDraggingTab:NO];
     [tabs removeObject:draggingTab];
-    [tabs insertObject:draggingTab atIndex:destinationIndex];
+    if (allow)
+      [tabs insertObject:draggingTab atIndex:destinationIndex];
+    else
+      [tabs insertObject:draggingTab atIndex:sourceIndex];
   }
 
   [draggingTab release];

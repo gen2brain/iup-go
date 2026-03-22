@@ -149,6 +149,10 @@ static void eflTabsReorderTab(Ihandle* ih, int source, int target)
   Ihandle* ref_child;
   int current_tab;
 
+  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  if (cb && cb(ih, source, target) == IUP_IGNORE)
+    return;
+
   current_tab = iupdrvTabsGetCurrentTab(ih);
 
   page = efl_pack_content_get(pager, source);
