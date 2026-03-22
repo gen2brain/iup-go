@@ -55,9 +55,6 @@ Can be: D2D, GDI+ (Windows), CAIRO (GTK), COCOA (macOS), QT, EFL_VG (EFL), or X1
 Must be used between IupDrawBegin and IupDrawEnd.
 The image is cached and automatically destroyed on the next query.
 
-**DRAWUSEGDI** [Windows Only] (non-inheritable): force the use of the old GDI driver, instead of the new DirectD2 driver.
-Used in the **IupGauge**, **IupMatrix** and Flat Scrollbars for better performance and backward compatibility.
-
 [EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
 The natural size is the size of 1 character.
 
