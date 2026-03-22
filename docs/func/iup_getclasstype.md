@@ -14,13 +14,13 @@ Returns the name of the native type of an interface element.
 
 There are only a few pre-defined class types:
 
-    "void" - No native representation - HBOX, VBOX, ZBOX, FILL, RADIO, ...
-    "control" - Native controls - BUTTON, LABEL, TOGGLE, LIST, TEXT, MULTILINE, FRAME, ...
+    "void" - No native representation - HBOX, VBOX, ZBOX, FILL, RADIO, NORMALIZER, ...
+    "control" - Native controls - BUTTON, LABEL, TOGGLE, LIST, TEXT, MULTILINE, FRAME, TABS, TABLE, SCROLLBAR, ...
     "canvas" - Drawing canvas, also used as a base control for custom controls (Flat* elements, GL*, Plot, Matrix, ...)
-    "dialog" - dialogs, pre-defined dialogs
-    "image" - all image types
-    "menu" - all menu types: MENU, SUBMENU, ITEM, SEPARATOR
-    "other" - other resources: TIMER, CLIPBOARD, USER, ...
+    "dialog" - Dialogs and pre-defined dialogs
+    "image" - All image types: IMAGE, IMAGERGB, IMAGERGBA
+    "menu" - All menu types: MENU, SUBMENU, ITEM, SEPARATOR
+    "other" - Other resources: TIMER, CLIPBOARD, USER, THREAD, TRAY, NOTIFY, ...
 
 ### See Also
 
