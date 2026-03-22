@@ -868,6 +868,116 @@ static int gtkTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
   return 0;
 }
 
+static int gtkTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
+{
+  if (pos == IUP_INVALID_ID)
+  {
+    ih->data->show_close = iupStrBoolean(value);
+
+    if (ih->handle)
+    {
+      int i, count = IupGetChildCount(ih);
+      for (i = 0; i < count; i++)
+      {
+        Ihandle* child = IupGetChild(ih, i);
+        if (!child) continue;
+
+        char* child_show_close = iupAttribGet(child, "SHOWCLOSE");
+        if (!child_show_close)
+          gtkTabsSetShowCloseAttrib(ih, i, value);
+      }
+    }
+
+    return 1;
+  }
+  else
+  {
+    Ihandle* child = IupGetChild(ih, pos);
+    if (child)
+      iupAttribSetStr(child, "SHOWCLOSE", value);
+
+    if (ih->handle && child)
+    {
+      GtkWidget* tab_close = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABCLOSE");
+      GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+
+      if (iupStrBoolean(value))
+      {
+        if (!tab_close)
+        {
+          GtkWidget* box;
+
+#if GTK_CHECK_VERSION(3, 10, 0)
+          GtkWidget* image = gtk_image_new_from_icon_name("window-close", GTK_ICON_SIZE_MENU);
+#else
+          GtkWidget* image = gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU);
+#endif
+
+          tab_close = gtk_button_new();
+          gtk_button_set_image((GtkButton*)tab_close, image);
+          gtk_button_set_relief((GtkButton*)tab_close, GTK_RELIEF_NONE);
+#if GTK_CHECK_VERSION(3, 20, 0)
+          gtk_widget_set_focus_on_click(tab_close, FALSE);
+#else
+          gtk_button_set_focus_on_click(GTK_BUTTON(tab_close), FALSE);
+#endif
+          iupgtkSetCanFocus(tab_close, FALSE);
+
+          g_signal_connect(G_OBJECT(tab_close), "clicked", G_CALLBACK(gtkTabsCloseButtonClicked), child);
+
+          GtkWidget* tab_header = gtk_notebook_get_tab_label((GtkNotebook*)ih->handle, tab_page);
+          if (tab_header)
+          {
+            GtkWidget* evtBox = tab_header;
+            GtkWidget* evtBox_child = gtk_bin_get_child((GtkBin*)evtBox);
+
+            if (GTK_IS_BOX(evtBox_child))
+            {
+              gtk_container_add((GtkContainer*)evtBox_child, tab_close);
+            }
+            else
+            {
+#if GTK_CHECK_VERSION(3, 0, 0)
+              if (ih->data->orientation == ITABS_VERTICAL)
+                box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+              else
+                box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+#else
+              if (ih->data->orientation == ITABS_VERTICAL)
+                box = gtk_vbox_new(FALSE, 2);
+              else
+                box = gtk_hbox_new(FALSE, 2);
+#endif
+              gtk_widget_show(box);
+
+              g_object_ref(evtBox_child);
+              gtk_container_remove((GtkContainer*)evtBox, evtBox_child);
+              gtk_container_add((GtkContainer*)box, evtBox_child);
+              g_object_unref(evtBox_child);
+
+              gtk_container_add((GtkContainer*)box, tab_close);
+              gtk_container_add((GtkContainer*)evtBox, box);
+            }
+          }
+
+          gtk_widget_show(tab_close);
+          iupAttribSet(child, "_IUPGTK_TABCLOSE", (char*)tab_close);
+        }
+      }
+      else
+      {
+        if (tab_close)
+        {
+          gtk_widget_destroy(tab_close);
+          iupAttribSet(child, "_IUPGTK_TABCLOSE", NULL);
+        }
+      }
+    }
+
+    return 0;
+  }
+}
+
 void iupdrvTabsInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -894,6 +1004,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, gtkTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, gtkTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, gtkTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, gtkTabsSetShowCloseAttrib, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* NOT supported */
   iupClassRegisterAttribute(ic, "MULTILINE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);

@@ -919,6 +919,50 @@ static int motTabsMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int motTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
+{
+  if (pos == IUP_INVALID_ID)
+  {
+    ih->data->show_close = iupStrBoolean(value);
+
+    if (ih->handle)
+    {
+      int i, count = IupGetChildCount(ih);
+      for (i = 0; i < count; i++)
+      {
+        Ihandle* child = IupGetChild(ih, i);
+        if (!child) continue;
+
+        char* child_show_close = iupAttribGet(child, "SHOWCLOSE");
+        if (!child_show_close)
+          motTabsSetShowCloseAttrib(ih, i, value);
+      }
+    }
+
+    return 1;
+  }
+  else
+  {
+    Ihandle* child = IupGetChild(ih, pos);
+    if (child)
+      iupAttribSetStr(child, "SHOWCLOSE", value);
+
+    if (ih->handle && child)
+    {
+      Widget close_button = (Widget)iupAttribGet(child, "_IUPMOT_TABCLOSE");
+      if (close_button)
+      {
+        if (iupStrBoolean(value))
+          XtManageChild(close_button);
+        else
+          XtUnmanageChild(close_button);
+      }
+    }
+
+    return 0;
+  }
+}
+
 void iupdrvTabsInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -954,6 +998,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, motTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, motTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, motTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, motTabsSetShowCloseAttrib, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* NOT supported */
   iupClassRegisterAttribute(ic, "MULTILINE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);

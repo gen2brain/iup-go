@@ -166,11 +166,10 @@ protected:
     Ihandle* child = IupGetChild(ih, index);
     if (!child) return;
 
-    char* show_close = iupAttribGet(child, "SHOWCLOSE");
-    if (!show_close)
-      show_close = iupAttribGet(ih, "SHOWCLOSE");
+    char* child_show_close = iupAttribGet(child, "SHOWCLOSE");
+    int do_show_close = child_show_close ? iupStrBoolean(child_show_close) : ih->data->show_close;
 
-    if (show_close && iupStrBoolean(show_close))
+    if (do_show_close)
     {
       /* Create close button */
       QToolButton* close_btn = new QToolButton();
@@ -872,9 +871,8 @@ static int qtTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
 
 static int qtTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 {
-  if (pos == -1)
+  if (pos == IUP_INVALID_ID)
   {
-    /* Global attribute - set for all tabs */
     ih->data->show_close = iupStrBoolean(value);
 
     if (ih->handle)
@@ -1248,7 +1246,7 @@ extern "C" void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABTIP", NULL, qtTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", nullptr, qtTabsSetTabImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, qtTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "SHOWCLOSE", nullptr, qtTabsSetShowCloseAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "SHOWCLOSE", nullptr, qtTabsSetShowCloseAttrib, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* Read-only attributes */
   iupClassRegisterAttribute(ic, "CLIENTSIZE", qtTabsGetClientSizeAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);

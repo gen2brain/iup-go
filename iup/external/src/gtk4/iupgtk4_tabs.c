@@ -421,6 +421,121 @@ static void gtk4TabsCloseButtonClicked(GtkButton *widget, Ihandle* child)
   (void)widget;
 }
 
+static void gtk4TabsUpdateShowClose(Ihandle* ih, Ihandle* child, int show)
+{
+  GtkWidget* tab_close = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABCLOSE");
+  GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+  if (!tab_page) return;
+
+  if (show)
+  {
+    if (!tab_close)
+    {
+      GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABLABEL");
+      GtkWidget* image = gtk_image_new_from_icon_name("window-close-symbolic");
+      GtkWidget* current_tab_widget;
+      GtkWidget* box;
+
+      gtk_image_set_icon_size(GTK_IMAGE(image), GTK_ICON_SIZE_NORMAL);
+
+      tab_close = gtk_button_new();
+      gtk_button_set_child(GTK_BUTTON(tab_close), image);
+      gtk_button_set_has_frame(GTK_BUTTON(tab_close), FALSE);
+      gtk_widget_set_can_focus(tab_close, FALSE);
+
+      g_signal_connect(G_OBJECT(tab_close), "clicked", G_CALLBACK(gtk4TabsCloseButtonClicked), child);
+
+      current_tab_widget = gtk_notebook_get_tab_label((GtkNotebook*)ih->handle, tab_page);
+
+      if (current_tab_widget && GTK_IS_BOX(current_tab_widget))
+      {
+        gtk_box_append(GTK_BOX(current_tab_widget), tab_close);
+      }
+      else
+      {
+        if (ih->data->orientation == ITABS_VERTICAL)
+          box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+        else
+          box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+        gtk_widget_set_visible(box, TRUE);
+
+        if (current_tab_widget)
+        {
+          g_object_ref(current_tab_widget);
+          gtk_notebook_set_tab_label((GtkNotebook*)ih->handle, tab_page, NULL);
+          gtk_box_append(GTK_BOX(box), current_tab_widget);
+          g_object_unref(current_tab_widget);
+        }
+
+        gtk_box_append(GTK_BOX(box), tab_close);
+
+        GtkGesture* gesture = gtk_gesture_click_new();
+        gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), 0);
+        gtk_widget_add_controller(box, GTK_EVENT_CONTROLLER(gesture));
+        g_signal_connect(gesture, "pressed", G_CALLBACK(gtk4TabsButtonPressed), child);
+
+        gtk_notebook_set_tab_label((GtkNotebook*)ih->handle, tab_page, box);
+
+        if (tab_label)
+          gtk_notebook_set_menu_label_text((GtkNotebook*)ih->handle, tab_page, gtk_label_get_text((GtkLabel*)tab_label));
+      }
+
+      gtk_widget_set_visible(tab_close, TRUE);
+      gtk_widget_realize(tab_close);
+
+      iupAttribSet(child, "_IUPGTK4_TABCLOSE", (char*)tab_close);
+    }
+  }
+  else
+  {
+    if (tab_close)
+    {
+      GtkWidget* parent = gtk_widget_get_parent(tab_close);
+      if (parent && GTK_IS_BOX(parent))
+        gtk_box_remove(GTK_BOX(parent), tab_close);
+      else
+        gtk_widget_unparent(tab_close);
+
+      iupAttribSet(child, "_IUPGTK4_TABCLOSE", NULL);
+    }
+  }
+}
+
+static int gtk4TabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
+{
+  if (pos == IUP_INVALID_ID)
+  {
+    ih->data->show_close = iupStrBoolean(value);
+
+    if (ih->handle)
+    {
+      int i, count = IupGetChildCount(ih);
+      for (i = 0; i < count; i++)
+      {
+        Ihandle* child = IupGetChild(ih, i);
+        if (!child) continue;
+
+        char* child_show_close = iupAttribGet(child, "SHOWCLOSE");
+        if (!child_show_close)
+          gtk4TabsUpdateShowClose(ih, child, ih->data->show_close);
+      }
+    }
+
+    return 1;
+  }
+  else
+  {
+    Ihandle* child = IupGetChild(ih, pos);
+    if (child)
+      iupAttribSetStr(child, "SHOWCLOSE", value);
+
+    if (ih->handle && child)
+      gtk4TabsUpdateShowClose(ih, child, iupStrBoolean(value));
+
+    return 0;
+  }
+}
+
 static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
   /* make sure it has at least one name */
@@ -710,6 +825,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, gtk4TabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, gtk4TabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, gtk4TabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, gtk4TabsSetShowCloseAttrib, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "MULTILINE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
 }
