@@ -16,7 +16,6 @@
 #include "iup_object.h"
 #include "iup_childtree.h"
 #include "iup_str.h"
-#include "iup_ledlex.h"
 #include "iup_attrib.h"
 #include "iup_assert.h"
 #include "iup_varg.h"
@@ -1470,6 +1469,11 @@ static void iAttribSkipComment(void)
   } while ((c > 0) && (c != '\n'));
 }
 
+#define IATTRIB_TK_END    -1
+#define IATTRIB_TK_SET     7
+#define IATTRIB_TK_COMMA   8
+#define IATTRIB_TK_NAME    5
+
 static int iAttribToken(char* env_buffer)
 {
   for (;;)
@@ -1478,7 +1482,7 @@ static int iAttribToken(char* env_buffer)
     switch (c)
     {
     case 0:
-      return IUPLEX_TK_END;
+      return IATTRIB_TK_END;
 
     case '#':          /* Skip comment */
     case '%':          /* Skip comment */
@@ -1494,14 +1498,14 @@ static int iAttribToken(char* env_buffer)
       continue;
 
     case '=':          /* attribuicao */
-      return IUPLEX_TK_SET;
+      return IATTRIB_TK_SET;
 
     case ',':
-      return IUPLEX_TK_COMMA;
+      return IATTRIB_TK_COMMA;
 
     case '\"':          /* string */
       iAttribCapture(env_buffer, "\"");
-      return IUPLEX_TK_NAME;
+      return IATTRIB_TK_NAME;
 
     default:
       if (c > 32)          /* identifier */
@@ -1509,7 +1513,7 @@ static int iAttribToken(char* env_buffer)
         --env_str;                     /* unget first character of env_buffer */
         iAttribCapture(env_buffer, "=, \t\n\r\f\v"); /* get env_buffer until delimiter */
         --env_str;                     /* unget delimiter */
-        return IUPLEX_TK_NAME;
+        return IATTRIB_TK_NAME;
       }
     }
   }
@@ -1529,10 +1533,10 @@ IUP_SDK_API void iupAttribParse(Ihandle *ih, const char* str, int save_led_info)
   {
     switch (iAttribToken(env_buffer))
     {
-    case IUPLEX_TK_END:           /* same as IUPLEX_TK_COMMA */
+    case IATTRIB_TK_END:           /* same as IATTRIB_TK_COMMA */
       end = 1;
       /* fall-through */
-    case IUPLEX_TK_COMMA:
+    case IATTRIB_TK_COMMA:
       if (name)
       {
         IupStoreAttribute(ih, name, value);
@@ -1552,11 +1556,11 @@ IUP_SDK_API void iupAttribParse(Ihandle *ih, const char* str, int save_led_info)
       state = 'a';
       break;
 
-    case IUPLEX_TK_SET:
+    case IATTRIB_TK_SET:
       state = 'v';                /* get value */
       break;
 
-    case IUPLEX_TK_NAME:
+    case IATTRIB_TK_NAME:
       if (state == 'a')
       {
         if (name) free(name);

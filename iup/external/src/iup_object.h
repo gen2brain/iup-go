@@ -134,7 +134,7 @@ struct Ihandle_
 
 
 /* Creates an object initializes iclass and nativetype.
- * Called only from IupCreate and IupLoad. */
+ * Called only from IupCreate. */
 IUP_SDK_API Ihandle* iupObjectCreate(Iclass* ic, void** params);
 
 
