@@ -473,13 +473,9 @@ static void qtCanvasScrollCallback(Ihandle* ih, QScrollBar* scrollbar, int orien
   }
   else
   {
-    /* If no SCROLL_CB, trigger ACTION callback with full redraw */
     IFn action_cb = (IFn)IupGetCallback(ih, "ACTION");
     if (action_cb)
-    {
-      action_cb(ih);
       iupdrvRedrawNow(ih);
-    }
   }
 }
 
