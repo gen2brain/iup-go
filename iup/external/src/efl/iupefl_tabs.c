@@ -843,8 +843,7 @@ static int eflTabsMapMethod(Ihandle* ih)
   tab_bar = efl_ui_tab_pager_tab_bar_get(pager);
   if (tab_bar)
   {
-    efl_event_callback_add(tab_bar, EFL_UI_EVENT_ITEM_SELECTED,
-                            eflTabsItemSelectedCallback, ih);
+    efl_event_callback_add(tab_bar, EFL_UI_EVENT_ITEM_SELECTED, eflTabsItemSelectedCallback, ih);
   }
 
   iupAttribSetInt(ih, "_IUP_EFL_PREV_POS", 0);
@@ -891,8 +890,7 @@ static void eflTabsUnMapMethod(Ihandle* ih)
     Eo* tab_bar = efl_ui_tab_pager_tab_bar_get(pager);
     if (tab_bar)
     {
-      efl_event_callback_del(tab_bar, EFL_UI_EVENT_ITEM_SELECTED,
-                              eflTabsItemSelectedCallback, ih);
+      efl_event_callback_del(tab_bar, EFL_UI_EVENT_ITEM_SELECTED, eflTabsItemSelectedCallback, ih);
     }
   }
 
@@ -923,7 +921,7 @@ static int eflTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
 
 static int eflTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 {
-  if (pos == -1)
+  if (pos == IUP_INVALID_ID)
   {
     ih->data->show_close = iupStrBoolean(value);
 
@@ -990,8 +988,9 @@ void iupdrvTabsInitClass(Iclass* ic)
 
   iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
 
-  /* TABTYPE is read-only - EFL Tab_Pager only supports TOP position (theme-controlled) */
+  /* TABTYPE is read-only. EFL Tab_Pager only supports TOP position (theme-controlled) */
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, NULL, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_READONLY | IUPAF_NO_INHERIT);
+
   iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, eflTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, eflTabsSetTabImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
@@ -1002,7 +1001,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "TABTIP", NULL, eflTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, eflTabsSetShowCloseAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, eflTabsSetShowCloseAttrib, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, eflTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 

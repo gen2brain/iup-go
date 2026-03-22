@@ -1615,6 +1615,49 @@ static void winTabsDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
   iupwinDrawDestroyBitmapDC(&bmpDC);
 }
 
+static int winTabsSetShowCloseAttrib(Ihandle* ih, const char* value)
+{
+  int prev = ih->data->show_close;
+  ih->data->show_close = iupStrBoolean(value);
+
+  if (ih->handle && ih->data->show_close != prev)
+  {
+    DWORD dwStyle = (DWORD)GetWindowLong(ih->handle, GWL_STYLE);
+
+    if (ih->data->show_close)
+    {
+      dwStyle |= TCS_OWNERDRAWFIXED;
+      SetWindowLong(ih->handle, GWL_STYLE, dwStyle);
+
+      SendMessage(ih->handle, TCM_SETPADDING, 0, MAKELPARAM(ih->data->horiz_padding + ITABS_CLOSE_SIZE, ih->data->vert_padding));
+
+      iupAttribSetInt(ih, "_IUPTABS_CLOSEHIGH", -1);
+      iupAttribSetInt(ih, "_IUPTABS_CLOSEPRESS", -1);
+
+      IupSetCallback(ih, "_IUPWIN_DRAWITEM_CB", (Icallback)winTabsDrawItem);
+
+      if (iupwin_comctl32ver6 && ih->data->type == ITABS_TOP)
+        iupwinDrawRemoveTheme(ih->handle);
+    }
+    else
+    {
+      dwStyle &= ~TCS_OWNERDRAWFIXED;
+      SetWindowLong(ih->handle, GWL_STYLE, dwStyle);
+
+      SendMessage(ih->handle, TCM_SETPADDING, 0, MAKELPARAM(ih->data->horiz_padding, ih->data->vert_padding));
+
+      iupAttribSet(ih, "_IUPTABS_CLOSEHIGH", NULL);
+      iupAttribSet(ih, "_IUPTABS_CLOSEPRESS", NULL);
+
+      IupSetCallback(ih, "_IUPWIN_DRAWITEM_CB", NULL);
+    }
+
+    InvalidateRect(ih->handle, NULL, TRUE);
+  }
+
+  return 1;
+}
+
 /* ------------------------------------------------------------------------- */
 /* winTabs - Methods and Init Class                                          */
 /* ------------------------------------------------------------------------- */
@@ -1856,6 +1899,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, winTabsSetTabVisibleAttrib, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, winTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, winTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWCLOSE", NULL, winTabsSetShowCloseAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* necessary because transparent background does not work when not using visual styles */
   if (!iupwin_comctl32ver6)  /* Used by iupdrvImageCreateImage */

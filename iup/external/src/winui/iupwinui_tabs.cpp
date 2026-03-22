@@ -230,7 +230,7 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   if (tabimage)
     winuiTabsSetItemIcon(child, tabimage, ih);
 
-  if (iupAttribGetBoolean(ih, "SHOWCLOSE"))
+  if (ih->data->show_close)
     item.IsClosable(true);
   else
     item.IsClosable(false);
@@ -643,7 +643,7 @@ extern "C" void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, winuiTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, winuiTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, winuiTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWCLOSE", NULL, winuiTabsSetShowCloseAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWCLOSE", NULL, winuiTabsSetShowCloseAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, winuiTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "TABTYPE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

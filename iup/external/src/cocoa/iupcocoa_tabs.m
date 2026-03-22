@@ -863,17 +863,25 @@ static int cocoaTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 
 static int cocoaTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 {
-  if (pos == -1) /* Global attribute */
+  if (pos == IUP_INVALID_ID)
   {
-    int i, count = IupGetChildCount(ih);
-    for (i = 0; i < count; i++)
+    ih->data->show_close = iupStrBoolean(value);
+
+    if (ih->handle)
     {
-      /* Call self recursively for each child */
-      cocoaTabsSetShowCloseAttrib(ih, i, value);
+      int i, count = IupGetChildCount(ih);
+      for (i = 0; i < count; i++)
+      {
+        Ihandle* child = IupGetChild(ih, i);
+        if (!child) continue;
+
+        char* child_show_close = iupAttribGet(child, "SHOWCLOSE");
+        if (!child_show_close)
+          cocoaTabsSetShowCloseAttrib(ih, i, value);
+      }
     }
-    /* Also set the default for future children */
-    iupAttribSetStr(ih, "SHOWCLOSE", value);
-    return 1; /* Mark as processed */
+
+    return 1;
   }
 
   Ihandle* child = IupGetChild(ih, pos);
@@ -1006,8 +1014,8 @@ static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos
   char* image_name = iupAttribGet(child, "TABIMAGE");
   if (!image_name) image_name = iupAttribGetId(ih, "TABIMAGE", iup_pos);
 
-  char* show_close = iupAttribGet(child, "SHOWCLOSE");
-  if (!show_close) show_close = iupAttribGet(ih, "SHOWCLOSE");
+  char* child_show_close = iupAttribGet(child, "SHOWCLOSE");
+  int do_show_close = child_show_close ? iupStrBoolean(child_show_close) : ih->data->show_close;
 
   NSString* ns_title = @"";
   if (title)
@@ -1021,7 +1029,7 @@ static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos
 
   IupCocoaTabCell *tab_cell = [IupCocoaTabCell tabCellWithTabBarView:tab_bar_view title:ns_title image:ns_image];
 
-  [tab_cell setHasCloseButton:iupStrBoolean(show_close)];
+  [tab_cell setHasCloseButton:do_show_close];
 
   id<IupCocoaTabBarViewDelegate> delegate = [tab_bar_view delegate];
 
@@ -1299,7 +1307,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, cocoaTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABLIST", NULL, cocoaTabsSetTabListAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, cocoaTabsSetShowCloseAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, cocoaTabsSetShowCloseAttrib, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLOSEBUTTONONHOVER", NULL, cocoaTabsSetCloseButtonOnHoverAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "TABPADDING", NULL, NULL, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
