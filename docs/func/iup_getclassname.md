@@ -1,4 +1,4 @@
-## IupGetClassName (renamed from IupGetType in 2.7)
+## IupGetClassName
 
 Returns the name of the class of an interface element.
 
@@ -14,41 +14,113 @@ Returns the name of the class of an interface element.
 
 The following names are known:
 
-    "image"
+**Primitives:**
+
+    "animatedlabel"
     "button"
+    "calendar"
     "canvas"
-    "dialog"
-    "fill"
-    "frame" 
-    "hbox"
-    "item"
-    "separator"
-    "submenu"
+    "colorbar"
+    "colorbrowser"
+    "datepick"
+    "dial"
+    "dropbutton"
+    "flatbutton"
+    "flatlabel"
+    "flatlist"
+    "flatseparator"
+    "flattoggle"
+    "flattree"
+    "flatval"
+    "gauge"
     "label"
+    "link"
     "list"
-    "menu"
-    "radio"
-    "text" 
+    "multiline"
+    "progressbar"
+    "scrollbar"
+    "spin"
+    "table"
+    "tabs"
+    "flattabs"
+    "text"
     "toggle"
+    "tree"
+    "val"
+
+**Containers:**
+
+    "backgroundbox"
+    "cbox"
+    "detachbox"
+    "dialog"
+    "expander"
+    "fill"
+    "flatframe"
+    "flatscrollbox"
+    "frame"
+    "gridbox"
+    "hbox"
+    "multibox"
+    "normalizer"
+    "popover"
+    "radio"
+    "sbox"
+    "scrollbox"
+    "space"
+    "spinbox"
+    "split"
     "vbox"
     "zbox"
-    "multiline"
+
+**Menus:**
+
+    "item"
+    "menu"
+    "separator"
+    "submenu"
+
+**Images:**
+
+    "image"
+    "imagergb"
+    "imagergba"
+
+**Dialogs:**
+
+    "colordlg"
+    "filedlg"
+    "fontdlg"
+    "messagedlg"
+    "progressdlg"
+    "param"
+    "parambox"
+
+**Resources:**
+
+    "clipboard"
+    "notify"
+    "thread"
+    "timer"
+    "tray"
     "user"
-    "matrix"
-    "tree"
-    "dial"
-    "gauge"
-    "val"
-    "glcanvas"
-    "tabs"
+
+**Additional Controls** (require [ControlsOpen](iup_open.md)):
+
     "cells"
-    "colorbrowser"
-    "colorbar"
-    "spin"
-    "sbox"
-    "cbox"
-    "progressbar"
-    "olecontrol"
+    "matrix"
+    "matrixex"
+    "matrixlist"
+    "plot"
+
+**GL Controls** (require [GLCanvasOpen](iup_open.md)):
+
+    "glcanvas"
+    "glbackgroundbox"
+
+**Web Controls** (require [WebBrowserOpen](iup_open.md)):
+
+    "webbrowser"
 
 ### See Also
 
