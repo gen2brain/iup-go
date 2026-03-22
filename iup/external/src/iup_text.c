@@ -723,7 +723,7 @@ Iclass* iupMultilineNewClass(void)
 {
   Iclass* ic = iupClassNew(iupRegisterFindClass("text"));
 
-  ic->name = "multiline";   /* register the multiline name, so LED will work */
+  ic->name = "multiline";
   ic->cons = "MultiLine";
   ic->format = "a"; /* one ACTION callback name */
   ic->nativetype = IUP_TYPECONTROL;
