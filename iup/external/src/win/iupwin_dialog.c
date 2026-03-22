@@ -1972,6 +1972,7 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterCallback(ic, "MDIACTIVATE_CB", "");
   iupClassRegisterCallback(ic, "CUSTOMFRAMEDRAW_CB", "");
   iupClassRegisterCallback(ic, "CUSTOMFRAMEACTIVATE_CB", "i");
+  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
   /* Driver Dependent Attribute functions */
 
