@@ -62,9 +62,6 @@ IUP_API int       IupExecuteWait(const char *filename, const char* parameters);
 IUP_API int       IupHelp(const char* url);
 IUP_API void      IupLog(const char* type, const char* format, ...);
 
-IUP_API char*     IupLoad          (const char *filename);
-IUP_API char*     IupLoadBuffer    (const char *buffer);
-
 IUP_API char*     IupVersion       (void);
 IUP_API char*     IupVersionDate   (void);
 IUP_API int       IupVersionNumber (void);
