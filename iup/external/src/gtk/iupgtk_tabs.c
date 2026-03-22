@@ -38,7 +38,11 @@ int iupdrvTabsExtraDecor(Ihandle* ih)
 
 int iupdrvTabsExtraMargin(void)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
+  return 2;  /* notebook frame border + header border */
+#else
   return 0;
+#endif
 }
 
 int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
@@ -671,6 +675,26 @@ static int gtkTabsGetTabOverlap(Ihandle* ih)
   return tab_overlap;
 }
 
+static int gtkTabsGetCloseButtonSize(Ihandle* ih)
+{
+  Ihandle* child;
+  for (child = ih->firstchild; child; child = child->brother)
+  {
+    GtkWidget* tab_close = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABCLOSE");
+    if (tab_close)
+    {
+      GtkRequisition requisition;
+#if GTK_CHECK_VERSION(3, 0, 0)
+      gtk_widget_get_preferred_size(tab_close, NULL, &requisition);
+#else
+      gtk_widget_size_request(tab_close, &requisition);
+#endif
+      return requisition.width + 2;
+    }
+  }
+  return 0;
+}
+
 void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
 {
   int width = 0;
@@ -678,7 +702,6 @@ void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_im
   int text_width = 0;
   int text_height = 0;
 
-  /* Measure text dimensions */
   if (tab_title)
   {
     text_width = iupdrvFontGetStringWidth(ih, tab_title);
@@ -687,7 +710,6 @@ void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_im
     height = text_height;
   }
 
-  /* Add image dimensions */
   if (tab_image)
   {
     void* img = iupImageGetImage(tab_image, ih, 0, NULL);
@@ -695,64 +717,86 @@ void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_im
     {
       int img_w, img_h;
       iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
-
-      /* Width: add image width + spacing */
       width += img_w;
       if (tab_title)
         width += 2;
-
-      /* Height: use MAX of text and image */
       if (img_h > height)
         height = img_h;
     }
   }
 
-  /* Add GTK tab padding and margin */
 #if GTK_CHECK_VERSION(3, 0, 0)
-  width += 56;  /* GTK3 CSS: 24px padding + 8px margin + ~24px label padding */
-  height += 14;  /* GTK3 vertical padding for tabs */
-#else
-  /* GTK2 padding includes borders, shadows, and internal spacing */
-  width += 44;  /* Accounts for GTK2's border/shadow overhead and internal spacing */
-  height += 18;  /* GTK2 vertical padding for tabs */
-#endif
-
-  /* Add scroll arrows size if scrollable mode is enabled */
-  if (ih->handle && gtk_notebook_get_scrollable((GtkNotebook*)ih->handle))
+  if (ih->handle)
   {
-#if GTK_CHECK_VERSION(3, 0, 0)
+    /* Measure first tab's evtbox to derive label overhead,
+       add tab + header CSS (padding + border) */
     GtkNotebook* notebook = (GtkNotebook*)ih->handle;
-    gint arrow_length = 16;  /* default */
-    const char* style_prop;
+    GtkWidget* page = gtk_notebook_get_nth_page(notebook, 0);
+    GtkWidget* evtbox = page ? gtk_notebook_get_tab_label(notebook, page) : NULL;
+    if (evtbox)
+    {
+      GtkRequisition req;
+      int our_w, our_h;
+      Ihandle* first = ih->firstchild;
+      char* ft = first ? iupAttribGet(first, "TABTITLE") : NULL;
+      if (!ft && first) ft = iupAttribGetId(ih, "TABTITLE", 0);
+      if (!ft) ft = "     ";
 
-    /* Different property names for horizontal vs vertical tabs */
-    if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
-      style_prop = "scroll-arrow-vlength";
+      gtk_widget_get_preferred_size(evtbox, NULL, &req);
+      our_w = iupdrvFontGetStringWidth(ih, ft);
+      iupdrvFontGetCharSize(ih, NULL, &our_h);
+
+      /* Subtract close button from req to avoid double-counting (added below) */
+      {
+        int close_w = (ih->data->show_close) ? gtkTabsGetCloseButtonSize(ih) : 0;
+        width += (req.width - our_w - close_w) + 30;
+      }
+      height += (req.height - our_h) + 10;
+    }
     else
-      style_prop = "scroll-arrow-hlength";
-
-    gtk_widget_style_get(GTK_WIDGET(notebook), style_prop, &arrow_length, NULL);
-
-    /* GTK has 4 possible arrows (2 on each side), but typically only 2 are active
-       Add size for both arrows (left + right for TOP/BOTTOM, or top + bottom for LEFT/RIGHT) */
-    width += arrow_length * 2;
-#else
-    /* GTK2: Use fixed arrow size */
-    width += 32;
-#endif
+    {
+      width += 30;
+      height += 10;
+    }
   }
-
-  /* For LEFT/RIGHT tabs, swap width/height because tabs are arranged vertically */
-  if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
+  else
   {
-    if (tab_width) *tab_width = height;   /* Use text height as tab width */
-    if (tab_height) *tab_height = width;  /* Use text width as tab height */
+    width += 30;
+    height += 10;
+  }
+  if (width < 30) width = 30;
+  if (height < 30) height = 30;
+#else
+  if (ih->handle)
+  {
+    GtkStyle* style = gtk_widget_get_style(GTK_WIDGET(ih->handle));
+    gint tab_curvature = 1, focus_width = 1, tab_overlap = 2;
+    gtk_widget_style_get(GTK_WIDGET(ih->handle), "tab-curvature", &tab_curvature, "focus-line-width", &focus_width, "tab-overlap", &tab_overlap, NULL);
+    width += 2 * style->xthickness + 2 * (tab_curvature + focus_width + gtk_notebook_get_tab_hborder((GtkNotebook*)ih->handle)) - tab_overlap;
+    height += 2 * style->ythickness + 2 * (gtk_notebook_get_tab_vborder((GtkNotebook*)ih->handle) + focus_width);
+  }
+  else
+  {
+    width += 10;
+    height += 10;
+  }
+#endif
+
+  if (ih->data->show_close && ih->handle)
+    width += gtkTabsGetCloseButtonSize(ih);
+
+  if (ih->data->orientation == ITABS_VERTICAL &&
+      (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT))
+  {
+    if (tab_width) *tab_width = height;
+    if (tab_height) *tab_height = width;
   }
   else
   {
     if (tab_width) *tab_width = width;
     if (tab_height) *tab_height = height;
   }
+
 }
 
 static void gtkTabsSizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, Ihandle* ih)
