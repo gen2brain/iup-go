@@ -837,9 +837,7 @@ static int qtTableMapMethod(Ihandle* ih)
 
   /* Virtual mode: cells are populated on-demand via VALUE_CB */
 
-  /* Configure editing triggers (double-click, selected cell, or F2) */
   table->setEditTriggers(QAbstractItemView::DoubleClicked |
-                         QAbstractItemView::SelectedClicked |
                          QAbstractItemView::EditKeyPressed |
                          QAbstractItemView::AnyKeyPressed);
 
