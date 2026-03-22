@@ -1071,7 +1071,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
           return [val2 compare:val1];
       }];
 
-      [tableView reloadData];
+    [tableView reloadData];
     }
   }
 }
@@ -2312,7 +2312,10 @@ void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
   if (table_data)
+  {
+    table_data->current_row = lin;
     table_data->current_col = col;
+  }
 
   [tableView scrollRowToVisible:row];
   [tableView scrollColumnToVisible:column];
@@ -2360,7 +2363,9 @@ void iupdrvTableRedraw(Ihandle* ih)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (tableView)
+  {
     [tableView reloadData];
+  }
 }
 
 void iupdrvTableSetShowGrid(Ihandle* ih, int show)
@@ -2777,17 +2782,6 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
     [tableView setFrame:tableFrame];
   }
 
-  /* Force table reload after layout completes for NORMAL mode only. */
-  /* Virtual mode cells are already reloaded constantly via scrolling */
-  IcocoaTableData* table_data = cocoaTableGetData(ih);
-  if (table_data && !table_data->is_virtual_mode)
-  {
-    NSTableView* tableView = (NSTableView*)[scroll_view documentView];
-    if (tableView && [tableView isKindOfClass:[NSTableView class]])
-    {
-      [tableView reloadData];
-    }
-  }
 }
 
 /* ========================================================================= */
