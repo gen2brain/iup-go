@@ -192,41 +192,49 @@ static int qtLabelSetTitleAttrib(Ihandle* ih, const char* value)
 
     if (label)
     {
-      /* Qt doesn't have setText_with_mnemonic like GTK, so we need to
-       * process mnemonics manually: remove & and underline the next character */
       if (value)
       {
-        char c;
-        char* str = iupStrProcessMnemonic(value, &c, -1); /* action=-1: remove & and return mnemonic in c */
-
-        if (str && str != value)
+        if (iupAttribGetBoolean(ih, "MARKUP"))
         {
-          /* Found a mnemonic - convert to HTML with underline */
-          QString text = QString::fromUtf8(str);
+          label->setTextFormat(Qt::RichText);
+          label->setText(QString::fromUtf8(value));
+          label->adjustSize();
+        }
+        else
+        {
+          /* Process mnemonics manually: remove & and underline the next character */
+          char c;
+          char* str = iupStrProcessMnemonic(value, &c, -1); /* action=-1: remove & and return mnemonic in c */
 
-          /* Find the mnemonic character and wrap it in <u> tags */
-          int idx = text.indexOf(QChar(c), 0, Qt::CaseInsensitive);
-          if (idx >= 0)
+          if (str && str != value)
           {
-            text = text.left(idx) + "<u>" + text.mid(idx, 1) + "</u>" + text.mid(idx + 1);
-            label->setTextFormat(Qt::RichText);
-            label->setText(text);
-            label->adjustSize();
+            /* Found a mnemonic - convert to HTML with underline */
+            QString text = QString::fromUtf8(str);
+
+            /* Find the mnemonic character and wrap it in <u> tags */
+            int idx = text.indexOf(QChar(c), 0, Qt::CaseInsensitive);
+            if (idx >= 0)
+            {
+              text = text.left(idx) + "<u>" + text.mid(idx, 1) + "</u>" + text.mid(idx + 1);
+              label->setTextFormat(Qt::RichText);
+              label->setText(text);
+              label->adjustSize();
+            }
+            else
+            {
+              label->setTextFormat(Qt::PlainText);
+              label->setText(text);
+              label->adjustSize();
+            }
+
+            free(str);
           }
           else
           {
             label->setTextFormat(Qt::PlainText);
-            label->setText(text);
+            label->setText(QString::fromUtf8(value));
             label->adjustSize();
           }
-
-          free(str);
-        }
-        else
-        {
-          label->setTextFormat(Qt::PlainText);
-          label->setText(QString::fromUtf8(value));
-          label->adjustSize();
         }
       }
       else
