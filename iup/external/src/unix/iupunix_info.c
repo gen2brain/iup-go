@@ -35,7 +35,7 @@ IUP_SDK_API char *iupdrvGetSystemName(void)
   struct utsname un;
   uname(&un);
   if (iupStrEqualNoCase(un.sysname, "Darwin"))
-    return iupStrReturnStr("MacOS");
+    return iupStrReturnStr("macOS");
   else
     return iupStrReturnStr(un.sysname);
 }

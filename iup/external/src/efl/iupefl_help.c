@@ -74,7 +74,7 @@ IUP_API int IupHelp(const char* url)
   if (!browser)
   {
     char* system_name = IupGetGlobal("SYSTEM");
-    if (iupStrEqualNoCase(system_name, "MacOS"))
+    if (iupStrEqualNoCase(system_name, "macOS"))
       browser = "open";
     else
       browser = "xdg-open";
