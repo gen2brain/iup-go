@@ -25,7 +25,6 @@ static Ihandle* iup_load_lng_czech(void)
     "IUP_HUE", "&Odstín:",
     "IUP_INTENSITY", "&Intenzita:",
     "IUP_INVALIDDIR", "Neplatný adresář.",
-    "IUP_LUAERROR", "Chyba Lua",
     "IUP_NAMENEWFOLDER", "Název nové složky:",
     "IUP_NO", "Ne",
     "IUP_OK", "OK",
