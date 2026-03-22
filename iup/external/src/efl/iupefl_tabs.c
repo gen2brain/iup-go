@@ -921,6 +921,65 @@ static int eflTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
   return 0;
 }
 
+static int eflTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
+{
+  if (pos == -1)
+  {
+    ih->data->show_close = iupStrBoolean(value);
+
+    if (ih->handle)
+    {
+      int i, count = IupGetChildCount(ih);
+      for (i = 0; i < count; i++)
+      {
+        Ihandle* child = IupGetChild(ih, i);
+        if (!child) continue;
+
+        char* child_show_close = iupAttribGet(child, "SHOWCLOSE");
+        if (!child_show_close)
+          eflTabsSetShowCloseAttrib(ih, i, value);
+      }
+    }
+
+    return 1;
+  }
+  else
+  {
+    Ihandle* child = IupGetChild(ih, pos);
+    if (child)
+      iupAttribSetStr(child, "SHOWCLOSE", value);
+
+    if (ih->handle)
+    {
+      Eo* page = child ? (Eo*)iupAttribGet(child, "_IUPTAB_PAGE") : NULL;
+      Eo* item = page ? efl_ui_tab_page_tab_bar_item_get(page) : NULL;
+      if (!item) return 0;
+
+      Eo* close_btn = child ? (Eo*)iupAttribGet(child, "_IUPTAB_CLOSE") : NULL;
+
+      if (iupStrBoolean(value))
+      {
+        if (!close_btn)
+        {
+          close_btn = eflTabsCreateCloseButton(ih, child, item);
+          iupAttribSet(child, "_IUPTAB_CLOSE", (char*)close_btn);
+        }
+      }
+      else
+      {
+        if (close_btn)
+        {
+          efl_event_callback_del(close_btn, EFL_INPUT_EVENT_CLICKED, eflTabsCloseButtonClicked, child);
+          efl_del(close_btn);
+          iupAttribSet(child, "_IUPTAB_CLOSE", NULL);
+        }
+      }
+    }
+
+    return 0;
+  }
+}
+
 void iupdrvTabsInitClass(Iclass* ic)
 {
   ic->Map = eflTabsMapMethod;
@@ -943,6 +1002,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "TABTIP", NULL, eflTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, eflTabsSetShowCloseAttrib, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, eflTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 

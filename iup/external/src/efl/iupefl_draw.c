@@ -407,32 +407,23 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->h = size.h;
   dc->vg = vg;
 
-  /* Free deferred data from the previous-previous frame. */
+  /* Wait for the render thread to finish before freeing old scene graph data. */
   {
-    Efl_VG* deferred_root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT_DEFERRED");
-    Eina_List* deferred_vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES_DEFERRED");
-    Eina_List* deferred_evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS_DEFERRED");
-
-    if (deferred_root)
-      efl_del(deferred_root);
-    iDrawFreeVgImagePixels(&deferred_vg_images);
-    iDrawClearEvasObjects(&deferred_evas_objects);
-
-    iupAttribSet(ih, "_IUP_EFL_VG_ROOT_DEFERRED", NULL);
-    iupAttribSet(ih, "_IUP_EFL_VG_IMAGES_DEFERRED", NULL);
-    iupAttribSet(ih, "_IUP_EFL_EVAS_OBJECTS_DEFERRED", NULL);
+    Evas* evas = evas_object_evas_get(vg);
+    if (evas)
+      evas_sync(evas);
   }
 
-  /* Defer current scene graph data, the render thread might still be using it.
-     VG image nodes and their ector buffers must stay alive until the render thread finishes. */
+  /* Free old scene graph data — render thread is done with it. */
   {
     Efl_VG* old_root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT");
     Eina_List* old_vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES");
     Eina_List* old_evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS");
 
-    iupAttribSet(ih, "_IUP_EFL_VG_ROOT_DEFERRED", (char*)old_root);
-    iupAttribSet(ih, "_IUP_EFL_VG_IMAGES_DEFERRED", (char*)old_vg_images);
-    iupAttribSet(ih, "_IUP_EFL_EVAS_OBJECTS_DEFERRED", (char*)old_evas_objects);
+    if (old_root)
+      efl_del(old_root);
+    iDrawFreeVgImagePixels(&old_vg_images);
+    iDrawClearEvasObjects(&old_evas_objects);
 
     iupAttribSet(ih, "_IUP_EFL_VG_ROOT", NULL);
     iupAttribSet(ih, "_IUP_EFL_VG_IMAGES", NULL);

@@ -233,7 +233,6 @@ static void eflCanvasActionCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_SCROLLER");
-  IFn cb;
   Eina_Size2D size;
 
   (void)ev;
@@ -246,9 +245,7 @@ static void eflCanvasActionCallback(void* data, const Efl_Event* ev)
   if (size.w <= 0 || size.h <= 0)
     return;
 
-  cb = (IFn)IupGetCallback(ih, "ACTION");
-  if (cb)
-    cb(ih);
+  iupdrvRedrawNow(ih);
 }
 
 static void eflCanvasSetModifierStatus(Efl_Input_Pointer* pointer, char* status)
@@ -631,35 +628,11 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
   }
   Eina_List* evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS");
   Eina_List* vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES");
-  Efl_VG* deferred_root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT_DEFERRED");
-  Eina_List* deferred_vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES_DEFERRED");
-  Eina_List* deferred_evas_objects = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_EVAS_OBJECTS_DEFERRED");
 
-  if (deferred_root)
   {
-    efl_del(deferred_root);
-    iupAttribSet(ih, "_IUP_EFL_VG_ROOT_DEFERRED", NULL);
-  }
-
-  if (deferred_vg_images)
-  {
-    IeflVgImageData* data;
-    EINA_LIST_FREE(deferred_vg_images, data)
-    {
-      free(data->pixels);
-      free(data);
-    }
-    iupAttribSet(ih, "_IUP_EFL_VG_IMAGES_DEFERRED", NULL);
-  }
-
-  if (deferred_evas_objects)
-  {
-    Eo* obj;
-    EINA_LIST_FREE(deferred_evas_objects, obj)
-    {
-      efl_del(obj);
-    }
-    iupAttribSet(ih, "_IUP_EFL_EVAS_OBJECTS_DEFERRED", NULL);
+    Evas* evas = evas_object_evas_get(vg);
+    if (evas)
+      evas_sync(evas);
   }
 
   if (vg_images)
