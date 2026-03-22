@@ -2936,8 +2936,12 @@ static int winuiTableMapMethod(Ihandle* ih)
 
     if (was_dragging && source != target && source >= 1 && target >= 1)
     {
-      winuiTableMoveColumn(ih, source, target);
-      winuiTableRefreshAfterReorder(ih);
+      IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+      if (!cb || cb(ih, source, target) != IUP_IGNORE)
+      {
+        winuiTableMoveColumn(ih, source, target);
+        winuiTableRefreshAfterReorder(ih);
+      }
     }
 
     if (was_dragging)

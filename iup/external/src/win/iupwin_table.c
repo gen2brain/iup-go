@@ -653,8 +653,12 @@ static LRESULT CALLBACK winTableHeaderWndProc(HWND hwnd, UINT msg, WPARAM wp, LP
 
       if (was_dragging && source != target && source >= 1 && target >= 1)
       {
-        winTableSwapColumns(ih, source, target);
-        winTableRefreshAfterReorder(ih);
+        IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+        if (!cb || cb(ih, source, target) != IUP_IGNORE)
+        {
+          winTableSwapColumns(ih, source, target);
+          winTableRefreshAfterReorder(ih);
+        }
       }
       else if (!was_dragging && source >= 1)
       {

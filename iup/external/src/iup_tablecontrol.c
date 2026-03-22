@@ -799,6 +799,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterCallback(ic, "EDITION_CB", "iis");  /* lin, col, new_text */
   iupClassRegisterCallback(ic, "VALUE_CB", "ii=s");  /* lin, col, returns string value for virtual mode */
   iupClassRegisterCallback(ic, "IMAGE_CB", "ii=s");  /* lin, col, returns image name for virtual mode */
+  iupClassRegisterCallback(ic, "REORDER_CB", "ii");
 
   /* Common Callbacks */
   iupBaseRegisterCommonCallbacks(ic);
