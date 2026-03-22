@@ -19,13 +19,11 @@ Use [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate the 
 
 **ARROW** (non-inheritable): Shows an arrow pointing to the anchor element.
 Can be "YES" or "NO". Default: "YES".
-Only supported natively in GTK and macOS. In other systems the popover is displayed without an arrow.
-In GTK 3, setting ARROW=NO forces the use of a fallback popup window instead of the native GtkPopover.
+Only supported in GTK 4 and macOS. In GTK 3 the arrow is always shown. In other systems the popover is displayed without an arrow.
 
 **AUTOHIDE** (non-inheritable): When enabled, the popover is automatically hidden when the user clicks outside of it or when focus leaves.
 Clicks on the anchor element do not trigger auto-hide.
 Can be "YES" or "NO". Default: "YES".
-In GTK 3, setting AUTOHIDE=NO forces the use of a fallback popup window instead of the native GtkPopover.
 
 **POSITION** (non-inheritable): The position of the popover relative to the anchor element.
 Can be "BOTTOM", "TOP", "LEFT" or "RIGHT". Default: "BOTTOM".
@@ -65,7 +63,7 @@ The ANCHOR attribute must be set before mapping, and the anchor element must alr
 When AUTOHIDE=YES, the popover behaves like a modal popup that closes on outside interaction.
 When AUTOHIDE=NO, the popover remains visible until explicitly hidden via VISIBLE=NO.
 
-In GTK 3 uses GtkPopover (when ARROW=YES and AUTOHIDE=YES) or a GtkWindow popup as fallback, in GTK 4 uses GtkPopover, in Windows uses a custom popup window, in WinUI uses XAML Flyout, in macOS uses NSPopover, in Qt uses a custom QFrame popup, in EFL uses a borderless popup window, and in Motif uses a transient shell popup.
+In GTK 3 and GTK 4 uses GtkPopover, in Windows uses a custom popup window, in WinUI uses XAML Flyout, in macOS uses NSPopover, in Qt uses a custom QFrame popup, in EFL uses a borderless popup window, and in Motif uses a transient shell popup.
 
 ### See Also
 
