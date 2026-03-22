@@ -37,8 +37,8 @@
 #define SWITCH_THUMB_SIZE   12  /* Normal state: 12x12, scales to 14x14 on hover */
 #define SWITCH_THUMB_MARGIN 4   /* (20 - 12) / 2 = 4px margin on each side */
 
-/* Animation parameters (matching Windows 11 ModernWpf specs) */
-#define SWITCH_ANIMATION_DURATION 367  /* milliseconds (0.367s reposition duration) */
+/* Animation parameters (matching WinUI 3 RepositionThemeAnimation) */
+#define SWITCH_ANIMATION_DURATION 250  /* milliseconds */
 #define SWITCH_ANIMATION_FPS      60   /* frames per second */
 #define SWITCH_ANIMATION_INTERVAL (1000 / SWITCH_ANIMATION_FPS)  /* ~16ms */
 
@@ -54,12 +54,11 @@ typedef struct _IupWinSwitchData
   int is_hovering;            /* 1 if mouse is over the control */
 } IupWinSwitchData;
 
-static double winSwitchEaseInOutQuad(double t)
+static double winSwitchEaseOut(double t)
 {
-  if (t < 0.5)
-    return 2.0 * t * t;
-  else
-    return 1.0 - 2.0 * (1.0 - t) * (1.0 - t);
+  /* Approximation of WinUI ControlFastOutSlowInKeySpline (0,0,0,1) */
+  double u = 1.0 - t;
+  return 1.0 - u * u * u;
 }
 
 static void winSwitchAnimationStep(Ihandle* ih, IupWinSwitchData* switch_data)
@@ -83,7 +82,7 @@ static void winSwitchAnimationStep(Ihandle* ih, IupWinSwitchData* switch_data)
   {
     /* Interpolate with easing */
     double t = (double)elapsed / (double)SWITCH_ANIMATION_DURATION;
-    double eased_t = winSwitchEaseInOutQuad(t);
+    double eased_t = winSwitchEaseOut(t);
     switch_data->thumb_position = switch_data->animation_start +
                                    (switch_data->animation_end - switch_data->animation_start) * eased_t;
   }
