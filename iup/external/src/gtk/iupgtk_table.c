@@ -487,7 +487,11 @@ static void gtkTableUpdateColumns(Ihandle* ih)
     gtk_tree_view_append_column(GTK_TREE_VIEW(gtk_data->tree_view), column);
     g_object_set_data(G_OBJECT(column), "iup_col", GINT_TO_POINTER(col + 1));
     g_object_set_data(G_OBJECT(column), "iup_ih", (gpointer)ih);
+#if GTK_CHECK_VERSION(3, 0, 0)
     g_signal_connect(gtk_tree_view_column_get_button(column), "button-press-event", G_CALLBACK(gtkTableHeaderButtonPress), column);
+#else
+    g_signal_connect(column->button, "button-press-event", G_CALLBACK(gtkTableHeaderButtonPress), column);
+#endif
   }
 }
 
@@ -655,42 +659,52 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
 
 static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
-  if (evt->type == GDK_BUTTON_PRESS && evt->button == 1)
+  if (evt->button != 1)
+    return FALSE;
+
+  GtkTreePath* path;
+  GtkTreeViewColumn* column;
+
+  if (!gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget), (gint)evt->x, (gint)evt->y, &path, &column, NULL, NULL))
+    return FALSE;
+
+  GtkTreeViewColumn* dummy_column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_DUMMY_COLUMN");
+  if (dummy_column && column == dummy_column)
   {
-    /* Single click */
-    GtkTreePath* path;
-    GtkTreeViewColumn* column;
-
-    if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget), (gint)evt->x, (gint)evt->y, &path, &column, NULL, NULL))
-    {
-      /* Check if this is the dummy column, ignore clicks on it */
-      GtkTreeViewColumn* dummy_column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_DUMMY_COLUMN");
-      if (dummy_column && column == dummy_column)
-      {
-        gtk_tree_path_free(path);
-        return TRUE;  /* Block event */
-      }
-
-      IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-      if (cb)
-      {
-        GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(widget));
-        int col_index = g_list_index(columns, column) + 1;  /* 1-based */
-        int* indices = gtk_tree_path_get_indices(path);
-        int lin = indices[0] + 1;  /* 1-based */
-        g_list_free(columns);
-
-        char status[IUPKEY_STATUS_SIZE] = "";
-        iupgtkButtonKeySetStatus(evt->state, evt->button, status, 0);
-
-        cb(ih, lin, col_index, status);
-      }
-
-      gtk_tree_path_free(path);
-    }
+    gtk_tree_path_free(path);
+    return TRUE;
   }
 
-  return FALSE;  /* Allow default processing */
+  if (evt->type == GDK_BUTTON_PRESS)
+  {
+    IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+    if (cb)
+    {
+      GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(widget));
+      int col_index = g_list_index(columns, column) + 1;
+      int* indices = gtk_tree_path_get_indices(path);
+      int lin = indices[0] + 1;
+      g_list_free(columns);
+
+      char status[IUPKEY_STATUS_SIZE] = "";
+      iupgtkButtonKeySetStatus(evt->state, evt->button, status, 0);
+
+      cb(ih, lin, col_index, status);
+    }
+
+    gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), path, column, FALSE);
+    gtk_tree_path_free(path);
+    return TRUE;
+  }
+  else if (evt->type == GDK_2BUTTON_PRESS)
+  {
+    gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), path, column, TRUE);
+    gtk_tree_path_free(path);
+    return TRUE;
+  }
+
+  gtk_tree_path_free(path);
+  return FALSE;
 }
 
 static void gtkTableColumnClicked(GtkTreeViewColumn* column, Ihandle* ih)
@@ -1632,7 +1646,6 @@ static int gtkTableMapMethod(Ihandle* ih)
       {
         g_object_set(G_OBJECT(renderer), "editable", TRUE, NULL);
 
-        /* Verify it was set */
         gboolean is_editable = FALSE;
         g_object_get(G_OBJECT(renderer), "editable", &is_editable, NULL);
       }
@@ -1782,8 +1795,11 @@ static int gtkTableMapMethod(Ihandle* ih)
       gtk_tree_view_append_column(GTK_TREE_VIEW(gtk_data->tree_view), column);
       g_object_set_data(G_OBJECT(column), "iup_col", GINT_TO_POINTER(col + 1));
       g_object_set_data(G_OBJECT(column), "iup_ih", (gpointer)ih);
-      g_signal_connect(gtk_tree_view_column_get_button(column), "button-press-event",
-                       G_CALLBACK(gtkTableHeaderButtonPress), column);
+#if GTK_CHECK_VERSION(3, 0, 0)
+      g_signal_connect(gtk_tree_view_column_get_button(column), "button-press-event", G_CALLBACK(gtkTableHeaderButtonPress), column);
+#else
+      g_signal_connect(column->button, "button-press-event", G_CALLBACK(gtkTableHeaderButtonPress), column);
+#endif
     }
 
     /* if ALL columns have expand=FALSE, it gives extra space to the LAST column.
@@ -1830,6 +1846,16 @@ static int gtkTableMapMethod(Ihandle* ih)
   /* Set the main handle to tree view, scrolled window as extra parent */
   ih->handle = gtk_data->tree_view;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)gtk_data->scrolled_win);
+
+  /* Suppress GTK's built-in focus rendering, we draw our own via FOCUSRECT */
+#if GTK_CHECK_VERSION(3, 0, 0)
+  {
+    GtkCssProvider* provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(provider, "treeview.view { outline-width: 0; } treeview.view row:focus { outline-width: 0; }", -1, NULL);
+    gtk_style_context_add_provider(gtk_widget_get_style_context(gtk_data->tree_view), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(provider);
+  }
+#endif
 
   /* Connect signals */
   g_signal_connect(gtk_data->tree_view, "button-press-event", G_CALLBACK(gtkTableButtonEvent), ih);
