@@ -176,6 +176,11 @@ static void goIupSetTabChangePosFunc(Ihandle *ih) {
 	IupSetCallback(ih, "TABCHANGEPOS_CB", (Icallback) goIupTabChangePosCB);
 }
 
+CGO_EXPORT extern int goIupReorderCB(void *ih, int old_pos, int new_pos);
+static void goIupSetReorderFunc(Ihandle *ih) {
+	IupSetCallback(ih, "REORDER_CB", (Icallback) goIupReorderCB);
+}
+
 CGO_EXPORT extern int goIupSpinCB(void *ih, int inc);
 static void goIupSetSpinFunc(Ihandle *ih) {
 	IupSetCallback(ih, "SPIN_CB", (Icallback) goIupSpinCB);

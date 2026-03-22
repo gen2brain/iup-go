@@ -929,6 +929,33 @@ func setTabChangePosFunc(ih Ihandle, f TabChangePosFunc) {
 
 //--------------------
 
+// ReorderFunc for REORDER_CB callback.
+type ReorderFunc func(ih Ihandle, old_pos, new_pos int) int
+
+//export goIupReorderCB
+func goIupReorderCB(ih unsafe.Pointer, old_pos, new_pos C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("REORDER_CB_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "REORDER_CB_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(ReorderFunc)
+
+	return C.int(f((Ihandle)(ih), int(old_pos), int(new_pos)))
+}
+
+// setReorderFunc for REORDER_CB.
+func setReorderFunc(ih Ihandle, f ReorderFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("REORDER_CB_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetReorderFunc(ih.ptr())
+}
+
+//--------------------
+
 // SpinFunc for SPIN_CB callback.
 type SpinFunc func(ih Ihandle, inc int) int
 

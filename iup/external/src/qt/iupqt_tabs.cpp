@@ -260,6 +260,7 @@ class IupQtTabWidget;
 /* Forward declarations for static callback functions */
 static void qtTabsHandleCurrentChanged(IupQtTabWidget* tabs, int index, Ihandle* ih, int* prev_index);
 static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihandle* ih);
+static void qtTabsHandleTabMoved(int from, int to, Ihandle* ih);
 
 class IupQtTabWidget : public QTabWidget
 {
@@ -282,6 +283,10 @@ public:
     /* Connect tab change signal using lambda */
     QObject::connect(this, &QTabWidget::currentChanged, [this, ih_param](int index) {
       qtTabsHandleCurrentChanged(this, index, ih_param, &prev_index);
+    });
+
+    QObject::connect(custom_bar, &QTabBar::tabMoved, [ih_param](int from, int to) {
+      qtTabsHandleTabMoved(from, to, ih_param);
     });
   }
 
@@ -407,6 +412,38 @@ static void qtTabsHandleTabCloseRequested(IupQtTabWidget* tabs, int index, Ihand
     }
   }
   /* IUP_IGNORE - do nothing */
+}
+
+static void qtTabsHandleTabMoved(int from, int to, Ihandle* ih)
+{
+  if (!ih || from == to) return;
+
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
+  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  if (cb && cb(ih, from, to) == IUP_IGNORE)
+  {
+    iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
+    IupQtTabWidget* tabs = (IupQtTabWidget*)ih->handle;
+    if (tabs)
+      tabs->tabBar()->moveTab(to, from);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
+    return;
+  }
+
+  Ihandle* child = IupGetChild(ih, from);
+  if (child)
+  {
+    Ihandle* ref_child;
+    if (from < to)
+      ref_child = IupGetChild(ih, to + 1);
+    else
+      ref_child = IupGetChild(ih, to);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
+    IupReparent(child, ih, ref_child);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
+  }
 }
 
 /****************************************************************************
@@ -1030,6 +1067,9 @@ static char* qtTabsGetClientOffsetAttrib(Ihandle* ih)
 
 static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
   /* Make sure it has at least one name */
   if (!iupAttribGetHandleName(child))
     iupAttribSetHandleName(child);
@@ -1115,6 +1155,9 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
 static void qtTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 {
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
   if (ih->handle)
   {
     QTabWidget* tabs = (QTabWidget*)ih->handle;

@@ -174,6 +174,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setTabChangeFunc(ih, fn.(TabChangeFunc))
 	case "TABCHANGEPOS_CB":
 		setTabChangePosFunc(ih, fn.(TabChangePosFunc))
+	case "REORDER_CB":
+		setReorderFunc(ih, fn.(ReorderFunc))
 	case "LINK_CB":
 		setTextLinkFunc(ih, fn.(TextLinkFunc))
 	case "SPIN_CB":

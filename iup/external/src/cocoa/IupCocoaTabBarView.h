@@ -137,6 +137,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
 
 - (void)tabWillBeCreated:(IupCocoaTabCell*)tab;
 - (void)tabDidBeCreated:(IupCocoaTabCell*)tab;
+- (BOOL)tabWillReorderFromIndex:(NSInteger)sourceIdx toIndex:(NSInteger)destinationIdx;
 @end
 
 @interface IupCocoaTabCell : NSObject

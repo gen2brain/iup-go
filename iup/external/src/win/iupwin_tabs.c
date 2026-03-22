@@ -925,6 +925,10 @@ static void winTabsReorderTab(Ihandle* ih, int source_index, int target_index)
   Ihandle* source_child;
   Ihandle* target_child;
 
+  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  if (cb && cb(ih, source_index, target_index) == IUP_IGNORE)
+    return;
+
   int source_p = winTabsPosFixToWin(ih, source_index);
   int target_p = winTabsPosFixToWin(ih, target_index);
 
@@ -949,15 +953,13 @@ static void winTabsReorderTab(Ihandle* ih, int source_index, int target_index)
     Ihandle* ref_child;
 
     if (source_index < target_index)
-    {
       ref_child = IupGetChild(ih, target_index + 1);
-      IupReparent(source_child, ih, ref_child);
-    }
     else
-    {
       ref_child = IupGetChild(ih, target_index);
-      IupReparent(source_child, ih, ref_child);
-    }
+
+    iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
+    IupReparent(source_child, ih, ref_child);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
   }
 
   current_sel = (int)SendMessage(ih->handle, TCM_GETCURSEL, 0, 0);
@@ -1664,6 +1666,9 @@ static int winTabsSetShowCloseAttrib(Ihandle* ih, const char* value)
 
 static void winTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
   /* make sure it has at least one name */
   if (!iupAttribGetHandleName(child))
     iupAttribSetHandleName(child);
@@ -1685,6 +1690,9 @@ static void winTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
 static void winTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 {
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
   if (ih->handle)
   {
     HWND tab_container = (HWND)iupAttribGet(child, "_IUPTAB_PAGE");

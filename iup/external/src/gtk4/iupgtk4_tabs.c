@@ -346,6 +346,52 @@ static int gtk4TabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void gtk4TabsPageReordered(GtkNotebook* notebook, GtkWidget* child_page, guint new_pos, Ihandle* ih)
+{
+  Ihandle* child;
+  int old_pos = -1;
+  int i = 0;
+
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
+  for (child = ih->firstchild; child; child = child->brother, i++)
+  {
+    GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+    if (tab_page == child_page)
+    {
+      old_pos = i;
+      break;
+    }
+  }
+
+  if (old_pos < 0 || old_pos == (int)new_pos)
+    return;
+
+  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  if (cb && cb(ih, old_pos, (int)new_pos) == IUP_IGNORE)
+  {
+    iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
+    gtk_notebook_reorder_child(notebook, child_page, old_pos);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
+    return;
+  }
+
+  if (child)
+  {
+    Ihandle* ref_child;
+    if (old_pos < (int)new_pos)
+      ref_child = IupGetChild(ih, (int)new_pos + 1);
+    else
+      ref_child = IupGetChild(ih, (int)new_pos);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
+    IupReparent(child, ih, ref_child);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
+  }
+
+  (void)notebook;
+}
+
 static void gtk4TabsSwitchPage(GtkNotebook* notebook, GtkWidget* page, guint page_num, Ihandle* ih)
 {
   IFnnn cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
@@ -538,6 +584,9 @@ static int gtk4TabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 
 static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
   /* make sure it has at least one name */
   if (!iupAttribGetHandleName(child))
     iupAttribSetHandleName(child);
@@ -722,6 +771,9 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
 static void gtk4TabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 {
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
   if (ih->handle && GTK_IS_WIDGET(ih->handle))
   {
     GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
@@ -781,6 +833,7 @@ static int gtk4TabsMapMethod(Ihandle* ih)
   iupgtk4SetupKeyEvents(ih->handle, ih);
 
   g_signal_connect(G_OBJECT(ih->handle), "switch-page", G_CALLBACK(gtk4TabsSwitchPage), ih);
+  g_signal_connect(G_OBJECT(ih->handle), "page-reordered", G_CALLBACK(gtk4TabsPageReordered), ih);
 
   gtk_widget_realize(ih->handle);
 

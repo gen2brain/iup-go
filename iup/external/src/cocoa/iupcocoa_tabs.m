@@ -395,6 +395,36 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
   objc_setAssociatedObject(tab, @"IUP_CLOSE_POS", nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
+- (BOOL)tabWillReorderFromIndex:(NSInteger)sourceIdx toIndex:(NSInteger)destinationIdx
+{
+  Ihandle* ih = self.ihandle;
+  if (!ih) return YES;
+
+  int old_pos = cocoaTabsPosFixFromNative(ih, (int)sourceIdx);
+  int new_pos = cocoaTabsPosFixFromNative(ih, (int)destinationIdx);
+  if (old_pos < 0 || new_pos < 0 || old_pos == new_pos)
+    return YES;
+
+  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  if (cb && cb(ih, old_pos, new_pos) == IUP_IGNORE)
+    return NO;
+
+  Ihandle* child = IupGetChild(ih, old_pos);
+  if (child)
+  {
+    Ihandle* ref_child;
+    if (old_pos < new_pos)
+      ref_child = IupGetChild(ih, new_pos + 1);
+    else
+      ref_child = IupGetChild(ih, new_pos);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", "1");
+    IupReparent(child, ih, ref_child);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
+  }
+
+  return YES;
+}
+
 @end
 
 
@@ -1063,6 +1093,9 @@ static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos
 
 static void cocoaTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
   if (!iupAttribGetHandleName(child)) iupAttribSetHandleName(child);
 
   if (ih->handle)
@@ -1088,6 +1121,9 @@ static void cocoaTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
 static void cocoaTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 {
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
   if (!ih->handle) return;
 
   NSView* content_container = (NSView*)iupAttribGet(child, "_IUPTAB_CONTAINER");
