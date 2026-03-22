@@ -18,6 +18,7 @@
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_key.h"
+#include "iup_singleinstance.h"
 
 #include "iupgtk_drv.h"
 
@@ -116,6 +117,13 @@ static void iGdkEventFunc(GdkEvent *evt, gpointer	data)
 
 IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
 {
+  if (iupStrEqual(name, "SINGLEINSTANCE"))
+  {
+    if (iupdrvSingleInstanceSet(value))
+      return 0;
+    else
+      return 1;
+  }
   if (iupStrEqual(name, "INPUTCALLBACKS"))
   {
     if (iupStrBoolean(value))

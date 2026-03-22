@@ -170,6 +170,13 @@ func main() {
 		return iup.DEFAULT
 	}))
 
+	// Reorder callback
+	iup.SetCallback(table, "REORDER_CB", iup.ReorderFunc(func(ih iup.Ihandle, oldPos, newPos int) int {
+		log := iup.GetHandle("log")
+		log.SetAttribute("APPEND", fmt.Sprintf("REORDER_CB: column moved from %d to %d\n", oldPos, newPos))
+		return iup.DEFAULT
+	}))
+
 	// Create dialog
 	dlg := iup.Dialog(
 		iup.Vbox(

@@ -15,6 +15,7 @@
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_drvfont.h"
+#include "iup_singleinstance.h"
 
 #include "iupefl_drv.h"
 
@@ -148,6 +149,13 @@ static void eflApplyGlobalFontOverlays(const char* font)
 
 int iupdrvSetGlobal(const char* name, const char* value)
 {
+  if (iupStrEqual(name, "SINGLEINSTANCE"))
+  {
+    if (iupdrvSingleInstanceSet(value))
+      return 0;
+    else
+      return 1;
+  }
   if (iupStrEqual(name, "EFLTHEME"))
   {
     if (!efl_theme_path && value && value[0])

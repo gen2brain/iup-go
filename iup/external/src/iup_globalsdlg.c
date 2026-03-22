@@ -117,7 +117,7 @@ static iRegisteredGlobal global_attribs[] = {
   { "SCROLLBARSIZE", 1, 1, 1, 1, 1, 1, 1, 1, 1 },
   { "SHIFTKEY", 1, 1, 1, 1, 1, 1, 1, 1, 1 },
   { "SHOWMENUIMAGES", 0, 0, 1, 0, 1, 1, 1, 1, 0 },
-  { "SINGLEINSTANCE", 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { "SINGLEINSTANCE", 1, 1, 1, 1, 1, 1, 1, 1, 0 },
   { "SYSTEM", 1, 1, 1, 1, 1, 1, 1, 1, 1 },
   { "SYSTEMLANGUAGE", 1, 1, 1, 1, 1, 1, 1, 1, 1 },
   { "SYSTEMLOCALE", 1, 1, 1, 1, 1, 1, 1, 1, 1 },
