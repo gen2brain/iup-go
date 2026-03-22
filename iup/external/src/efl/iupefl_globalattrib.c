@@ -218,10 +218,6 @@ int iupdrvSetGlobal(const char* name, const char* value)
   {
     return 1;
   }
-  if (iupStrEqual(name, "GLOBALMENU"))
-  {
-    return 1;
-  }
   if (iupStrEqual(name, "IABORTWITHWARNING"))
   {
     return 1;
