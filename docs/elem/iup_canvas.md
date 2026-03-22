@@ -62,7 +62,7 @@ The natural size is the size of 1 character.
 Valid only during the ACTION callback.
 
 **HWND** [Windows Only] (non-inheritable, read-only): Returns the Windows Window handle.
-Available in the Windows driver or in the GTK driver in Windows.
+Available in Windows, or in the GTK/GTK 4/Qt drivers on Windows.
 
 [SCROLLBAR](../attrib/iup_scrollbar.md) (creation-only): Associates a horizontal and/or vertical scrollbar to the canvas.
 Default: "NO". The secondary attributes are all non-inheritable.
@@ -101,11 +101,19 @@ Accepts only the NO value.
 
 **NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the NSView handle.
 
+**DRAWABLE** [Unix/macOS Only] (non-inheritable, read-only): Returns an offscreen drawing surface handle.
+Available in GTK, Cocoa, Qt and EFL.
+
 **XDISPLAY** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Display.
-Available in Motif, GTK and GTK 4 on X11.
+Available in Motif and GTK on X11.
 
 **XWINDOW** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
-Available in Motif, GTK and GTK 4 on X11.
+Available in Motif, GTK, GTK 4, Qt and EFL on X11.
+
+**XSCREEN** [Motif Only] (non-inheritable, read-only): Returns the X-Windows Screen.
+
+**WL_SURFACE** [Unix Only] (non-inheritable, read-only): Returns the Wayland surface handle.
+Available in GTK, GTK 4, Qt and EFL on Wayland.
 
 > 
 >

@@ -12,10 +12,11 @@ To remove the Tab stop from a control, use the CANFOCUS attribute.
 Arrows can also be used for navigation between buttons and toggles.
 This is necessary because when an **IupToggle** is inside an **IupRadio** the "Tab" keys will navigate only to the selected toggle.
 
-In Windows, the focus feedback only appears after the user presses a key (except for the **IupText** where the feedback is the caret).
+In Windows and WinUI, the focus feedback only appears after the user presses a key (except for the **IupText** where the feedback is the caret).
 Before pressing a key if you click on a control, the focus feedback will NOT be shown, although it will be in focus.
 **IupMatrix** and other additional controls will always show their focus feedback.
-In GTK and Motif, the focus feedback is always shown for the control that has the focus.
+In GTK, GTK 4, Qt, Motif and EFL, the focus feedback is always shown for the control that has the focus.
+In macOS, focus ring visibility depends on the system keyboard navigation preference.
 
 Two keys are also important in keyboard navigation: "Enter" and "Esc".
 But they are only effective if the application registers the attributes DEFAULTENTER and DEFAULTESC of the [IupDialog](dlg/iup_dialog.md).
