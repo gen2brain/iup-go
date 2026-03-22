@@ -56,7 +56,6 @@ These keys are only enabled if the global attribute GLOBALLAYOUTDLGKEY is enable
         Load - loads an existent dialog from the application.
         Load Visible - lists only visible dialogs from the application to be loaded.
         Reload - reloads the current dialog into the Layout Dialog.
-        Export - exports the current dialog to a text file in the specified language.
         Redraw - send a redraw to the current dialog (IupRedraw).
         Show - shows the current dialog (IupShow) 
         Hide - hides the current dialog (IupHide) 
@@ -74,10 +73,6 @@ These keys are only enabled if the global attribute GLOBALLAYOUTDLGKEY is enable
 
 Use **Reload** when the dialog has been changed and the layout was modified by the application.
 Use **Update** when attributes of the dialog were changed by the application and the layout needs to be redrawn.
-
-The **Export** items will export only the dialog and its children.
-Associated elements such as menus and images will not be exported.
-The selected file will be overwritten if existent.
 
 The **Find** dialog can search for several kinds of strings, such as: Type (element type like "button", "label", etc.), Handle (handle name previously associated with IupSetHandle), Name (the NAME attribute), Title (the TITLE attribute), Attribute (a combination of attribute and value using the format "attribute=value".
 All searches are not case-sensitive. F3 can be used to search for the next occurrence, but focus must be on the IupLayoutDialog not at the Find dialog (notice that Handle and Name are searched only once).
