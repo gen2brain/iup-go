@@ -63,44 +63,96 @@ void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_im
 {
   int width = 0;
   int height = 0;
-  int text_width = 0;
-  int text_height = 0;
 
-  /* Measure text dimensions */
-  if (tab_title)
+  if (ih->handle)
   {
-    text_width = iupdrvFontGetStringWidth(ih, tab_title);
-    iupdrvFontGetCharSize(ih, NULL, &text_height);
-    width = text_width;
-    height = text_height;
-  }
+    /* Measure the tab gizmo (parent of tab_label), includes CSS padding */
+    GtkNotebook* notebook = (GtkNotebook*)ih->handle;
+    int n_pages = gtk_notebook_get_n_pages(notebook);
+    int i;
 
-  /* Add image dimensions */
-  if (tab_image)
-  {
-    void* img = iupImageGetImage(tab_image, ih, 0, NULL);
-    if (img)
+    for (i = 0; i < n_pages; i++)
     {
-      int img_w, img_h;
-      iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
-      width += img_w;
-      if (tab_title)
-        width += 2;  /* spacing between icon and text */
-      if (img_h > height)
-        height = img_h;
+      GtkWidget* page = gtk_notebook_get_nth_page(notebook, i);
+      GtkWidget* label = gtk_notebook_get_tab_label(notebook, page);
+      GtkWidget* tab_gizmo;
+      Ihandle* child;
+      char* ct;
+      char* ci;
+
+      if (!label)
+        continue;
+
+      tab_gizmo = gtk_widget_get_parent(label);
+      if (!tab_gizmo)
+        continue;
+
+      child = IupGetChild(ih, i);
+      if (!child)
+        continue;
+
+      ct = iupAttribGet(child, "TABTITLE");
+      if (!ct) ct = iupAttribGetId(ih, "TABTITLE", i);
+      ci = iupAttribGet(child, "TABIMAGE");
+      if (!ci) ci = iupAttribGetId(ih, "TABIMAGE", i);
+      if (!ct && !ci)
+        ct = "     ";
+
+      if (!((tab_title && ct && strcmp(tab_title, ct) == 0) ||
+            (tab_image && ci && strcmp(tab_image, ci) == 0) ||
+            (!tab_title && !ct && !tab_image && !ci)))
+        continue;
+
+      gtk_widget_measure(tab_gizmo, GTK_ORIENTATION_HORIZONTAL, -1, &width, NULL, NULL, NULL);
+      gtk_widget_measure(tab_gizmo, GTK_ORIENTATION_VERTICAL, width, &height, NULL, NULL, NULL);
+
+      /* LEFT/RIGHT tabs have per-tab vertical margin not included in measure */
+      if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
+        height += 8;
+
+      if (tab_width) *tab_width = width;
+      if (tab_height) *tab_height = height;
+      return;
     }
   }
 
-  /* Add GTK4 tab padding and margin */
-  width += 56;   /* Match GTK CSS */
-  height += 14;  /* 7px top + 7px bottom */
-  (void)ih;
+  /* Not mapped fallback, only used before IupShow */
+  {
+    int text_width = 0;
+    int text_height = 0;
 
-  /* For LEFT/RIGHT tabs, swap width/height because tabs are arranged vertically */
+    if (tab_title)
+    {
+      text_width = iupdrvFontGetStringWidth(ih, tab_title);
+      iupdrvFontGetCharSize(ih, NULL, &text_height);
+      width = text_width;
+      height = text_height;
+    }
+
+    if (tab_image)
+    {
+      void* img = iupImageGetImage(tab_image, ih, 0, NULL);
+      if (img)
+      {
+        int img_w, img_h;
+        iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+        width += img_w;
+        if (tab_title)
+          width += 2;
+        if (img_h > height)
+          height = img_h;
+      }
+    }
+
+    /* Tab CSS */
+    width += 26;
+    height += 8;
+  }
+
   if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
   {
-    if (tab_width) *tab_width = height;   /* Use text height as tab width */
-    if (tab_height) *tab_height = width;  /* Use text width as tab height */
+    if (tab_width) *tab_width = height;
+    if (tab_height) *tab_height = width;
   }
   else
   {
