@@ -299,7 +299,6 @@ typedef struct _IupCellFactoryData
 /* Cell Factory Callbacks                                                    */
 /* ========================================================================= */
 
-/* Track which GtkEditableLabel is currently being edited */
 static GtkWidget* currently_editing_label = NULL;
 
 /* Key handler to track Escape key for cancelling edits */
@@ -329,7 +328,6 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
 
   if (editing)
   {
-    /* Editing started */
     GtkListItem* list_item = g_object_get_data(object, "list_item");
     if (!list_item)
       return;
@@ -360,9 +358,6 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
 
     /* Clear edit_cancelled flag - default is accepted unless Escape is pressed */
     g_object_set_data(object, "edit_cancelled", GINT_TO_POINTER(0));
-
-    /* Disable "editing.start" action during editing to allow Enter key to end editing */
-    gtk_widget_action_set_enabled(GTK_WIDGET(object), "editing.start", FALSE);
 
     /* Connect to GtkText to monitor Escape key */
     GtkEditable* editable = GTK_EDITABLE(object);
@@ -443,9 +438,6 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
       }
     }
 
-    /* Re-enable "editing.start" action after editing ends */
-    gtk_widget_action_set_enabled(GTK_WIDGET(object), "editing.start", TRUE);
-
     /* Clean up stored data */
     g_object_set_data(object, "edit_cancelled", NULL);
     g_object_set_data(object, "original_value", NULL);
@@ -493,24 +485,19 @@ static void on_label_click_pressed(GtkGestureClick* gesture, int n_press, double
 {
   GtkWidget* widget = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(gesture));
 
-  /* If another cell is currently being edited, stop it and block this click */
-  if (currently_editing_label && currently_editing_label != widget)
+  /* Stop editing on the previously active cell */
+  if (currently_editing_label && currently_editing_label != widget &&
+      GTK_IS_EDITABLE_LABEL(currently_editing_label) &&
+      gtk_editable_label_get_editing(GTK_EDITABLE_LABEL(currently_editing_label)))
   {
-    if (GTK_IS_EDITABLE_LABEL(currently_editing_label))
-    {
-      gboolean still_editing = gtk_editable_label_get_editing(GTK_EDITABLE_LABEL(currently_editing_label));
-      if (still_editing)
-        gtk_editable_label_stop_editing(GTK_EDITABLE_LABEL(currently_editing_label), TRUE);
-    }
-
-    /* Block the click - don't let it start editing on the new cell */
-    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+    gtk_editable_label_stop_editing(GTK_EDITABLE_LABEL(currently_editing_label), TRUE);
   }
 
-  (void)n_press;
-  (void)x;
-  (void)y;
-  (void)user_data;
+  /* Start editing on double-click via idle to run after row selection settles focus */
+  if (n_press >= 2 && GTK_IS_EDITABLE_LABEL(widget))
+    g_idle_add_once((GDestroyNotify)gtk_editable_label_start_editing, widget);
+
+  (void)gesture; (void)x; (void)y; (void)user_data;
 }
 
 static void cell_factory_setup(GtkSignalListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
@@ -535,10 +522,38 @@ static void cell_factory_setup(GtkSignalListItemFactory* factory, GtkListItem* l
     widget = gtk_editable_label_new("");
     gtk_editable_set_editable(GTK_EDITABLE(widget), TRUE);
 
-    /* Add click handler to prevent starting edit if another cell is already editing */
+    /* Remove inner GtkLabel's click gesture that claims events and blocks row selection */
+    {
+      GtkWidget* child;
+      for (child = gtk_widget_get_first_child(widget); child; child = gtk_widget_get_next_sibling(child))
+      {
+        if (GTK_IS_STACK(child))
+        {
+          GtkWidget* inner_label = gtk_stack_get_child_by_name(GTK_STACK(child), "label");
+          if (inner_label)
+          {
+            GListModel* controllers = gtk_widget_observe_controllers(inner_label);
+            guint n = g_list_model_get_n_items(controllers);
+            for (guint i = 0; i < n; i++)
+            {
+              GtkEventController* ctrl = g_list_model_get_item(controllers, i);
+              if (GTK_IS_GESTURE_CLICK(ctrl))
+              {
+                gtk_widget_remove_controller(inner_label, ctrl);
+                g_object_unref(ctrl);
+                break;
+              }
+              g_object_unref(ctrl);
+            }
+            g_object_unref(controllers);
+          }
+          break;
+        }
+      }
+    }
+
     GtkGesture* click_gesture = gtk_gesture_click_new();
-    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click_gesture), 0);  /* Any button */
-    gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(click_gesture), GTK_PHASE_CAPTURE);
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click_gesture), 0);
     g_signal_connect(click_gesture, "pressed", G_CALLBACK(on_label_click_pressed), NULL);
     gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(click_gesture));
 
