@@ -49,7 +49,6 @@ Default "NO". It is always enabled when TABTYPE=LEFT or TABTYPE=RIGHT.
 Default value: "NO". In Windows the close button implies the classic visual for the control.
 By default, when closed the tab is hidden.
 To change that behavior, use the TABCLOSE_CB callback.
-Not supported in Motif.
 
 [SIZE](../attrib/iup_size.md) (non-inheritable): The default size is the smallest size that fits its largest child.
 All child elements are considered even invisible ones.
@@ -163,7 +162,18 @@ int function(Ihandle* ih, int pos);
 **ih**: identifier of the element that activated the event.\
 **pos**: the tab position
 
-> 
+**REORDER_CB**: Callback called when the user reorders a tab by dragging it to a new position.
+Called only when ALLOWREORDER=Yes. Not supported in Motif.
+
+int function(Ihandle* ih, int old_pos, int new_pos);
+
+**ih**: identifier of the element that activated the event.\
+**old_pos**: the original tab position before the reorder.\
+**new_pos**: the new tab position after the reorder.
+
+**Returns**: if IUP_IGNORE is returned the reorder is rejected and the tab returns to its original position.
+
+>
 >
 > ------------------------------------------------------------------------
 

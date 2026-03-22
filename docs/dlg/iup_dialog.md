@@ -171,7 +171,7 @@ Updated after SHOW_CB is called and only if the focus was not changed during the
 #### Exclusive [System Dependent]
 
 **HWND** [Windows Only] (non-inheritable, read-only): Returns the Windows Window handle.
-Available in the Windows driver or in the GTK driver in Windows.
+Available in Windows, WinUI, or in the GTK/GTK 4/Qt drivers on Windows.
 
 **SAVEUNDER** [Windows and Motif Only] (creation-only): When this attribute is true (YES), the dialog stores the original image of the desktop region it occupies (if the system has enough memory to store the image).
 In this case, when the dialog is closed or moved, a redrawing event is not generated for the windows that were shadowed by it.
@@ -179,7 +179,10 @@ Its default value is YES if the dialog has a parent dialog.
 To save memory disable it for your main dialog.
 
 **XWINDOW** [UNIX Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
-Available in the Motif driver or in the GTK driver in UNIX.
+Available in Motif, GTK, GTK 4, Qt and EFL on X11.
+
+**WL_SURFACE** [UNIX Only] (non-inheritable, read-only): Returns the Wayland surface handle.
+Available in GTK, GTK 4, Qt and EFL on Wayland.
 
 ####
 

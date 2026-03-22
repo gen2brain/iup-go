@@ -250,7 +250,7 @@ Their parameters are the same as the standard callbacks, but without the **Ihand
 
 Informs the current operating system. On UNIX, it is equivalent to the command "uname -s" (sysname). Some known names:
 
-> - "MacOS"
+> - "macOS"
 > - "FreeBSD"
 > - "Linux"
 > - "SunOS"

@@ -19,27 +19,14 @@ On the other hand, attributes are used by the application to communicate with th
 
 Even though callbacks have different purposes from attributes, they are also associated to an element by means of a name.
 
-The OLD method to associate a function to a callback, the application must employ the **IupSetAttribute** function, linking the action to a name (passed as a string).
-From this point on, this name will refer to a callback.
-By means of function **IupSetFunction**, the user connects this name to the callback.
-
-For example:
-
-    int myButton_action(Ihandle* self);
-    ...
-    IupSetAttribute(myButton, "ACTION", "my_button_action");
-    IupSetFunction("my_button_action", (Icallback)myButton_action);
-
-In the NEW method, the application does not needs a global name, it directly sets the callback using the attribute name using **IupSetCallback**.
+To associate a function to a callback, the application directly sets the callback using the attribute name with **IupSetCallback**.
 For example:
 
     int myButton_action(Ihandle* self);
     ...
     IupSetCallback(myButton, "ACTION", (Icallback)myButton_action);
 
-The new method is more efficient and more secure, because there is no risk of a name conflict.
-
-Although enabled in old versions, callbacks do NOT have **inheritance** like attributes.
+Callbacks do NOT have **inheritance** like attributes.
 
 All callbacks receive at least the element which activated the action as a parameter (self).
 

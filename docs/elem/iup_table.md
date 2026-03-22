@@ -183,6 +183,17 @@ The default value of EXPAND is "YES".
 
 **Returns:** IUP_IGNORE to suppress the sort operation.
 
+**REORDER_CB**: Callback called when the user reorders a column by dragging it to a new position.
+Called only when ALLOWREORDER=YES.
+
+    int function(Ihandle *ih, int old_pos, int new_pos);
+
+**ih**: identifier of the element that activated the event.\
+**old_pos**: the original column position before the reorder (1-based).\
+**new_pos**: the new column position after the reorder (1-based).
+
+**Returns**: if IUP_IGNORE is returned the reorder is rejected and the column returns to its original position.
+
 **VALUECHANGED_CB**: Called after a cell value was changed.
 
     int function(Ihandle *ih, int lin, int col);
