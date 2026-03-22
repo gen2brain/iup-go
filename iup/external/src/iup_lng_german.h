@@ -25,7 +25,6 @@ static Ihandle* iup_load_lng_german(void)
     "IUP_HUE", "&Farbton:",
     "IUP_INTENSITY", "&Intensität:",
     "IUP_INVALIDDIR", "Ungültiges Verzeichnis.",
-    "IUP_LUAERROR", "Lua-Fehler",
     "IUP_NAMENEWFOLDER", "Name des neuen Ordners:",
     "IUP_NO", "Nein",
     "IUP_OK", "OK",

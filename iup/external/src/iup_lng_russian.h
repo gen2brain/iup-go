@@ -25,7 +25,6 @@ static Ihandle* iup_load_lng_russian(void)
     "IUP_HUE", "О&ттенок:",
     "IUP_INTENSITY", "&Интенсивность:",
     "IUP_INVALIDDIR", "Недопустимый каталог.",
-    "IUP_LUAERROR", "Ошибка Lua",
     "IUP_NAMENEWFOLDER", "Название новой папки:",
     "IUP_NO", "Нет",
     "IUP_OK", "OK",

@@ -25,7 +25,6 @@ static Ihandle* iup_load_lng_spanish(void)
     "IUP_HUE", "&Matiz:", 
     "IUP_INTENSITY", "&Intensidad:", 
     "IUP_INVALIDDIR", "Directorio inválido.", 
-    "IUP_LUAERROR", "Error de Lua", 
     "IUP_NAMENEWFOLDER", "Nombre del nuevo directorio:", 
     "IUP_NO", "No", 
     "IUP_OK", "Aceptar", 

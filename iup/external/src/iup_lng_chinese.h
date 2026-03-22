@@ -25,7 +25,6 @@ static Ihandle* iup_load_lng_chinese(void)
     "IUP_HUE", "色相(&H):",
     "IUP_INTENSITY", "亮度(&I):",
     "IUP_INVALIDDIR", "无效的目录。",
-    "IUP_LUAERROR", "Lua 错误",
     "IUP_NAMENEWFOLDER", "新文件夹名称:",
     "IUP_NO", "否",
     "IUP_OK", "确定",

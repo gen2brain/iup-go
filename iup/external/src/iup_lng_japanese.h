@@ -25,7 +25,6 @@ static Ihandle* iup_load_lng_japanese(void)
     "IUP_HUE", "色相(&H):",
     "IUP_INTENSITY", "明度(&I):",
     "IUP_INVALIDDIR", "無効なディレクトリです。",
-    "IUP_LUAERROR", "Luaエラー",
     "IUP_NAMENEWFOLDER", "新しいフォルダの名前:",
     "IUP_NO", "いいえ",
     "IUP_OK", "OK",

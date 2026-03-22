@@ -26,7 +26,6 @@ static Ihandle* iup_load_lng_english (void)
     "IUP_HUE", "&Hue:", 
     "IUP_INTENSITY", "&Intensity:", 
     "IUP_INVALIDDIR", "Invalid directory.", 
-    "IUP_LUAERROR", "Lua Error", 
     "IUP_NAMENEWFOLDER", "Name of the new folder:", 
     "IUP_NO", "No", 
     "IUP_OK", "OK", 
