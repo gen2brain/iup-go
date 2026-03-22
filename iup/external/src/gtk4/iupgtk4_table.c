@@ -281,6 +281,7 @@ typedef struct _Igtk4TableData
   int num_columns;  /* Number of GtkColumnViewColumn objects created */
   int current_row;  /* Current focused row (1-based, 0=none) */
   int current_col;  /* Current focused column (1-based, 0=none) */
+  int has_focus;    /* 1 if table control has keyboard focus */
 } Igtk4TableData;
 
 #define IGTK4_TABLE_DATA(ih) ((Igtk4TableData*)(ih->data->native_data))
@@ -627,12 +628,25 @@ static void gtk4TableUpdateFocus(Ihandle* ih, int old_row, int old_col, int new_
 static void gtk4TableUpdateCellFocusRect(Ihandle* ih, GtkWidget* box, int row_index, int col_index)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
-  if (iupAttribGetBoolean(ih, "FOCUSRECT") &&
-      row_index == gtk_data->current_row &&
-      col_index + 1 == gtk_data->current_col)
+  int is_focus_cell = iupAttribGetBoolean(ih, "FOCUSRECT") &&
+                      row_index == gtk_data->current_row &&
+                      col_index + 1 == gtk_data->current_col;
+
+  if (is_focus_cell && gtk_data->has_focus)
+  {
     gtk_widget_add_css_class(box, "iup-table-focus-rect");
-  else
+    gtk_widget_remove_css_class(box, "iup-table-focus-rect-unfocused");
+  }
+  else if (is_focus_cell)
+  {
     gtk_widget_remove_css_class(box, "iup-table-focus-rect");
+    gtk_widget_add_css_class(box, "iup-table-focus-rect-unfocused");
+  }
+  else
+  {
+    gtk_widget_remove_css_class(box, "iup-table-focus-rect");
+    gtk_widget_remove_css_class(box, "iup-table-focus-rect-unfocused");
+  }
 }
 
 static void on_row_update(IupTableRow* row, GParamSpec* pspec, gpointer user_data)
@@ -889,7 +903,10 @@ static void cell_factory_unbind(GtkSignalListItemFactory* factory, GtkListItem* 
 {
   GtkWidget* box = gtk_list_item_get_child(list_item);
   if (box)
+  {
     gtk_widget_remove_css_class(box, "iup-table-focus-rect");
+    gtk_widget_remove_css_class(box, "iup-table-focus-rect-unfocused");
+  }
 
   gulong handler_id = GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(list_item), "update-handler"));
   if (handler_id)
@@ -1445,6 +1462,24 @@ static void gtk4TableColumnsChanged(GListModel* model, guint position, guint rem
   }
 }
 
+static void gtk4TableFocusEnter(GtkEventControllerFocus* controller, Ihandle* ih)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  (void)controller;
+  gtk_data->has_focus = 1;
+  if (gtk_data->current_row >= 1)
+    gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+}
+
+static void gtk4TableFocusLeave(GtkEventControllerFocus* controller, Ihandle* ih)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  (void)controller;
+  gtk_data->has_focus = 0;
+  if (gtk_data->current_row >= 1)
+    gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+}
+
 static int gtk4TableMapMethod(Ihandle* ih)
 {
   Igtk4TableData* gtk_data = (Igtk4TableData*)malloc(sizeof(Igtk4TableData));
@@ -1662,6 +1697,10 @@ static int gtk4TableMapMethod(Ihandle* ih)
     ".iup-table-focus-rect {\n"
     "  outline: 1px dashed rgba(50,50,50,0.8);\n"
     "  outline-offset: -2px;\n"
+    "}\n"
+    ".iup-table-focus-rect-unfocused {\n"
+    "  outline: 1px dashed rgba(150,150,150,0.5);\n"
+    "  outline-offset: -2px;\n"
     "}\n");
   gtk_style_context_add_provider_for_display(gdk_display_get_default(), GTK_STYLE_PROVIDER(global_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
   g_object_unref(global_provider);
@@ -1689,6 +1728,13 @@ static int gtk4TableMapMethod(Ihandle* ih)
   gtk_event_controller_set_propagation_phase(key_controller, GTK_PHASE_CAPTURE);
   gtk_widget_add_controller(gtk_data->column_view, key_controller);
   g_signal_connect(key_controller, "key-pressed", G_CALLBACK(on_key_pressed), ih);
+
+  {
+    GtkEventController* focus_controller = gtk_event_controller_focus_new();
+    gtk_widget_add_controller(gtk_data->column_view, focus_controller);
+    g_signal_connect(focus_controller, "enter", G_CALLBACK(gtk4TableFocusEnter), ih);
+    g_signal_connect(focus_controller, "leave", G_CALLBACK(gtk4TableFocusLeave), ih);
+  }
 
   for (int col = 1; col <= ih->data->num_col; col++)
   {
