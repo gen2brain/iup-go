@@ -1798,6 +1798,32 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   }
 }
 
+- (void)tableView:(NSTableView *)tableView didDragTableColumn:(NSTableColumn *)tableColumn
+{
+  if (!ih) return;
+
+  NSArray* columns = [tableView tableColumns];
+  NSInteger new_native_pos = [columns indexOfObject:tableColumn];
+  if (new_native_pos == NSNotFound) return;
+
+  NSNumber* stored = objc_getAssociatedObject(tableColumn, "iup_col");
+  int old_pos = stored ? [stored intValue] : 0;
+  if (old_pos <= 0) return;
+
+  int new_pos = (int)new_native_pos + 1;
+  if (old_pos == new_pos) return;
+
+  IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+  if (cb)
+    cb(ih, old_pos, new_pos);
+
+  for (NSUInteger i = 0; i < [columns count]; i++)
+  {
+    NSTableColumn* col = [columns objectAtIndex:i];
+    objc_setAssociatedObject(col, "iup_col", [NSNumber numberWithInt:(int)i + 1], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  }
+}
+
 @end
 
 /* ========================================================================= */
@@ -1916,6 +1942,7 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
       }
 
       [tableView addTableColumn:column];
+      objc_setAssociatedObject(column, "iup_col", [NSNumber numberWithInt:i + 1], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
       [column release];
 
       /* Store column info with correct alignment */

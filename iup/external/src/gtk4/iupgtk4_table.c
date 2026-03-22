@@ -1395,6 +1395,41 @@ static void gtk4TableLayoutUpdateMethod(Ihandle* ih)
     iupgtk4NativeContainerSetBounds(parent, widget, ih->x, ih->y, width, height);
 }
 
+static void gtk4TableColumnsChanged(GListModel* model, guint position, guint removed, guint added, Ihandle* ih)
+{
+  if (!ih->data->allow_reorder)
+    return;
+
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_COLUMNS_CHANGED"))
+    return;
+
+  if (removed == 1 && added == 0)
+  {
+    iupAttribSetInt(ih, "_IUPTABLE_REORDER_FROM", (int)position + 1);
+  }
+  else if (removed == 0 && added == 1)
+  {
+    const char* from_str = iupAttribGet(ih, "_IUPTABLE_REORDER_FROM");
+    if (from_str)
+    {
+      int from = iupAttribGetInt(ih, "_IUPTABLE_REORDER_FROM");
+      int to = (int)position + 1;
+      iupAttribSet(ih, "_IUPTABLE_REORDER_FROM", NULL);
+
+      if (from != to)
+      {
+        IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+        if (cb)
+          cb(ih, from, to);
+      }
+    }
+  }
+  else
+  {
+    iupAttribSet(ih, "_IUPTABLE_REORDER_FROM", NULL);
+  }
+}
+
 static int gtk4TableMapMethod(Ihandle* ih)
 {
   Igtk4TableData* gtk_data = (Igtk4TableData*)malloc(sizeof(Igtk4TableData));
@@ -1625,6 +1660,11 @@ static int gtk4TableMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)gtk_data->scrolled_win);
 
   g_signal_connect(gtk_data->selection_model, "selection-changed", G_CALLBACK(on_selection_changed), ih);
+
+  {
+    GListModel* columns_model = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
+    g_signal_connect(columns_model, "items-changed", G_CALLBACK(gtk4TableColumnsChanged), ih);
+  }
 
   GtkGesture* click_gesture = gtk_gesture_click_new();
   gtk_widget_add_controller(gtk_data->column_view, GTK_EVENT_CONTROLLER(click_gesture));

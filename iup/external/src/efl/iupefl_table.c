@@ -955,6 +955,10 @@ static void eflTableDragPointerUp(void* cb_data, const Efl_Event* ev)
 
   if (is_dragging && source != target && source >= 1 && target >= 1)
   {
+    IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+    if (cb && cb(ih, source, target) == IUP_IGNORE)
+      return;
+
     eflTableSwapColumns(ih, source, target);
 
     if (data)

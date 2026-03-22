@@ -914,6 +914,13 @@ static int qtTableMapMethod(Ihandle* ih)
   /* Check for ALLOWREORDER attribute (from ih->data) */
   hHeader->setSectionsMovable(ih->data->allow_reorder);
 
+  QObject::connect(hHeader, &QHeaderView::sectionMoved, [ih](int logicalIndex, int oldVisualIndex, int newVisualIndex) {
+    (void)logicalIndex;
+    IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+    if (cb)
+      cb(ih, oldVisualIndex + 1, newVisualIndex + 1);
+  });
+
   /* Check if last column has explicit width set */
   bool last_col_has_width = false;
   {
