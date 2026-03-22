@@ -449,19 +449,26 @@ static int qtButtonSetTitleAttrib(Ihandle* ih, const char* value)
 
     if (button)
     {
-      /* Process mnemonic and set text */
-      char c = '&';
-      char* str = iupStrProcessMnemonic(value, &c, 1);
-
-      if (str)
+      if (iupAttribGetBoolean(ih, "MARKUP"))
       {
-        button->setText(QString::fromUtf8(str));
-        if (str != value)
-          free(str);
-
-        qtButtonUpdateLayout(ih);
-        return 1;
+        button->setText(QString::fromUtf8(value ? value : ""));
       }
+      else
+      {
+        /* Process mnemonic and set text */
+        char c = '&';
+        char* str = iupStrProcessMnemonic(value, &c, 1);
+
+        if (str)
+        {
+          button->setText(QString::fromUtf8(str));
+          if (str != value)
+            free(str);
+        }
+      }
+
+      qtButtonUpdateLayout(ih);
+      return 1;
     }
   }
 
