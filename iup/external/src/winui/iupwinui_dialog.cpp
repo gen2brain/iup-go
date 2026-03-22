@@ -1458,6 +1458,8 @@ extern "C" void iupdrvDialogInitClass(Iclass* ic)
   ic->LayoutUpdate = winuiDialogLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = winuiDialogGetInnerNativeContainerHandleMethod;
 
+  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
+
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiDialogSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "TITLE", winuiDialogGetTitleAttrib, winuiDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
