@@ -50,9 +50,10 @@ Unlike buttons, toggles always display the button border when IMAGE and IMPRESS 
 **IMINACTIVE** (non-inheritable): Image name of the inactive toggle.
 If it is not defined but IMAGE is defined then for inactive toggles the colors will be replaced by a modified version of the background color creating the disabled effect.
 
-**MARKUP** [GTK and Qt only]: allows the title string to contain markup commands.
-In GTK uses Pango markup, in Qt uses HTML rich text.
+**MARKUP**: allows the title string to contain markup commands.
+Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes. GTK uses Pango markup natively; other drivers convert to their native format.
 Works only if a mnemonic is NOT defined in the title. Can be "YES" or "NO". Default: "NO".
+Not supported in Win32 and Motif (markup tags are stripped and plain text is displayed).
 
 **PADDING**: internal margin when IMAGE is defined.
 Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
