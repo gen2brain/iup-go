@@ -20,6 +20,7 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_key.h"
+#include "iup_markup.h"
 
 #include "iupefl_drv.h"
 
@@ -264,7 +265,14 @@ static int eflToggleSetTitleAttrib(Ihandle* ih, const char* value)
   label = (Eo*)iupAttribGet(ih, "_IUP_EFL_LABEL");
   if (label)
   {
-    efl_text_set(label, value);
+    if (iupAttribGetBoolean(ih, "MARKUP"))
+    {
+      char* efl_markup = iupMarkupToEfl(value ? value : "");
+      efl_text_markup_set(label, efl_markup);
+      free(efl_markup);
+    }
+    else
+      efl_text_set(label, value);
     iupeflApplyTextStyle(ih, label);
     return 1;
   }
@@ -926,6 +934,6 @@ void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupeflSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FONT", NULL, eflToggleSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

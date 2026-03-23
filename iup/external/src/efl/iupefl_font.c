@@ -16,6 +16,7 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
+#include "iup_markup.h"
 
 #include "iupefl_drv.h"
 
@@ -300,6 +301,23 @@ void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int*
   {
     if (w) *w = 0;
     if (h) *h = charheight;
+    return;
+  }
+
+  if (ih && iupAttribGetBoolean(ih, "MARKUP"))
+  {
+    char* efl_markup = iupMarkupToEfl(str);
+    Eo* tb = eflFontGetMeasureTextblock();
+    if (tb)
+    {
+      Eina_Size2D sz;
+      eflFontApplyStyle(tb, family, size, is_bold, is_italic);
+      efl_text_markup_set(tb, efl_markup);
+      sz = efl_canvas_textblock_size_native_get(tb);
+      if (w) *w = sz.w > 0 ? sz.w : 0;
+      if (h) *h = sz.h > 0 ? sz.h : charheight;
+    }
+    free(efl_markup);
     return;
   }
 
