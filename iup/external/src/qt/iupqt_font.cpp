@@ -12,6 +12,7 @@
 #include <QScreen>
 #include <QString>
 #include <QTextDocument>
+#include <QtMath>
 
 #include <cstdlib>
 #include <cstdio>
@@ -26,6 +27,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_assert.h"
+#include "iup_markup.h"
 }
 
 #include "iupqt_drv.h"
@@ -314,22 +316,19 @@ static void qtFontGetTextSize(Ihandle* ih, IqtFont* qtfont, const char* str, int
 
   if (str[0])
   {
-    /* Check if MARKUP is enabled (similar to GTK implementation) */
     bool use_markup = ih && iupAttribGetBoolean(ih, "MARKUP");
 
     if (use_markup)
     {
-      /* Use QTextDocument for rich text/HTML rendering */
+      char* html = iupMarkupToHtml(str);
       QTextDocument doc;
       doc.setDefaultFont(*qtfont->qfont);
-      doc.setHtml(QString::fromUtf8(str, len));
+      doc.setHtml(QString::fromUtf8(html));
+      doc.setTextWidth(100000);
+      free(html);
 
-      QSizeF size = doc.size();
-      max_w = (int)size.width();
-
-      /* QTextDocument handles line breaks, so use its height directly */
-      if (w) *w = max_w;
-      if (h) *h = (int)size.height();
+      if (w) *w = qCeil(doc.idealWidth());
+      if (h) *h = qCeil(doc.size().height());
       return;
     }
     else
@@ -422,16 +421,17 @@ extern "C" int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
   else
     len = (int)strlen(str);
 
-  /* Check if MARKUP is enabled */
   bool use_markup = iupAttribGetBoolean(ih, "MARKUP");
 
   if (use_markup)
   {
-    /* Use QTextDocument for rich text/HTML */
+    char* html = iupMarkupToHtml(str);
     QTextDocument doc;
     doc.setDefaultFont(*qtfont->qfont);
-    doc.setHtml(QString::fromUtf8(str, len));
-    result = (int)doc.size().width();
+    doc.setHtml(QString::fromUtf8(html));
+    doc.setTextWidth(100000);
+    free(html);
+    result = qCeil(doc.idealWidth());
   }
   else
   {

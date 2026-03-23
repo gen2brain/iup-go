@@ -29,6 +29,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_label.h"
+#include "iup_markup.h"
 }
 
 #include "iupqt_drv.h"
@@ -196,9 +197,11 @@ static int qtLabelSetTitleAttrib(Ihandle* ih, const char* value)
       {
         if (iupAttribGetBoolean(ih, "MARKUP"))
         {
+          char* html = iupMarkupToHtml(value);
           label->setTextFormat(Qt::RichText);
-          label->setText(QString::fromUtf8(value));
+          label->setText(QString::fromUtf8(html));
           label->adjustSize();
+          free(html);
         }
         else
         {
@@ -254,13 +257,15 @@ static char* qtLabelGetTitleAttrib(Ihandle* ih)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
   {
+    if (iupAttribGetBoolean(ih, "MARKUP"))
+      return iupAttribGet(ih, "TITLE");
+
     QWidget* widget = qtLabelGetInnerWidget(ih);
     QLabel* label = qobject_cast<QLabel*>(widget);
 
     if (label)
     {
       QString text = label->text();
-      /* Remove Qt's HTML formatting if any */
       return iupStrReturnStr(text.toUtf8().constData());
     }
   }

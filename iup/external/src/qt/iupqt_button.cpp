@@ -6,6 +6,7 @@
 
 #include <QPushButton>
 #include <QLabel>
+#include <QHBoxLayout>
 #include <QPixmap>
 #include <QIcon>
 #include <QWidget>
@@ -36,6 +37,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_key.h"
+#include "iup_markup.h"
 }
 
 #include "iupqt_drv.h"
@@ -451,7 +453,24 @@ static int qtButtonSetTitleAttrib(Ihandle* ih, const char* value)
     {
       if (iupAttribGetBoolean(ih, "MARKUP"))
       {
-        button->setText(QString::fromUtf8(value ? value : ""));
+        char* html = iupMarkupToHtml(value ? value : "");
+        button->setText(QString());
+
+        QLabel* markupLabel = button->findChild<QLabel*>("_iup_markup_label");
+        if (!markupLabel)
+        {
+          markupLabel = new QLabel(button);
+          markupLabel->setObjectName("_iup_markup_label");
+          markupLabel->setAlignment(Qt::AlignCenter);
+          markupLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+          if (!button->layout())
+            button->setLayout(new QHBoxLayout());
+          button->layout()->setContentsMargins(0, 0, 0, 0);
+          button->layout()->addWidget(markupLabel);
+        }
+        markupLabel->setTextFormat(Qt::RichText);
+        markupLabel->setText(QString::fromUtf8(html));
+        free(html);
       }
       else
       {
