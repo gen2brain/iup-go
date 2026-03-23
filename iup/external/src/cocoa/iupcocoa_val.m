@@ -473,6 +473,4 @@ void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TICKSPOS", NULL, cocoaValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "STEPONTICKS", cocoaValGetStepOnTicksAttrib, cocoaValSetStepOnTicksAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT);
 
-  /* macOS Specific */
-  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 }
