@@ -267,6 +267,17 @@ static char* gtk4ToggleGetValueAttrib(Ihandle* ih)
   return iupStrReturnChecked(gtk4ToggleGetCheck(ih));
 }
 
+static GtkLabel* gtk4ToggleGetLabel(GtkWidget* widget)
+{
+  GtkWidget* child;
+  for (child = gtk_widget_get_first_child(widget); child; child = gtk_widget_get_next_sibling(child))
+  {
+    if (GTK_IS_LABEL(child))
+      return GTK_LABEL(child);
+  }
+  return NULL;
+}
+
 static int gtk4ToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SWITCH"))
@@ -277,8 +288,12 @@ static int gtk4ToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
-    gtk_check_button_set_label(GTK_CHECK_BUTTON(ih->handle), iupgtk4StrConvertToSystem(value ? value : ""));
-    gtk_check_button_set_use_underline(GTK_CHECK_BUTTON(ih->handle), TRUE);
+    gtk_check_button_set_label(GTK_CHECK_BUTTON(ih->handle), value ? value : "");
+
+    GtkLabel* label = gtk4ToggleGetLabel(ih->handle);
+    if (label)
+      iupgtk4SetMnemonicTitle(ih, label, value);
+
     return 1;
   }
 

@@ -28,6 +28,7 @@
 #include "iup_assert.h"
 #include "iup_dialog.h"
 #include "iup_dlglist.h"
+#include "iup_markup.h"
 
 #include "iupgtk4_drv.h"
 
@@ -938,7 +939,9 @@ int iupgtk4SetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value)
   {
     if (iupAttribGetBoolean(ih, "MARKUP"))
     {
-      gtk_label_set_markup(label, iupgtk4StrConvertToSystem(str));
+      char* pango = iupMarkupToPango(str);
+      gtk_label_set_markup(label, iupgtk4StrConvertToSystem(pango));
+      free(pango);
     }
     else
     {
