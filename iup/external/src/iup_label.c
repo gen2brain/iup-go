@@ -19,6 +19,8 @@
 #include "iup_layout.h"
 #include "iup_label.h"
 #include "iup_image.h"
+#include "iup_class.h"
+#include "iup_markup.h"
 
 
 static int iLabelSetSeparatorAttrib(Ihandle* ih, const char* value)
@@ -103,8 +105,19 @@ char* iupLabelGetPaddingAttrib(Ihandle* ih)
 static int iLabelCreateMethod(Ihandle* ih, void** params)
 {
   if (params && params[0])
-    iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
-  
+  {
+    int flags = 0;
+    iupClassRegisterGetAttribute(ih->iclass, "MARKUP", NULL, NULL, NULL, NULL, &flags);
+    if (flags & IUPAF_NOT_SUPPORTED)
+    {
+      char* stripped = iupMarkupStripTags((char*)(params[0]));
+      iupAttribSetStr(ih, "TITLE", stripped);
+      free(stripped);
+    }
+    else
+      iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
+  }
+
   ih->data = iupALLOCCTRLDATA();
 
   /* used only by the Windows driver */

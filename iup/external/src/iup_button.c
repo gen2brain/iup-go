@@ -19,6 +19,8 @@
 #include "iup_layout.h"
 #include "iup_button.h"
 #include "iup_image.h"
+#include "iup_class.h"
+#include "iup_markup.h"
 
 
 char* iupButtonGetPaddingAttrib(Ihandle* ih)
@@ -74,7 +76,19 @@ static int iButtonCreateMethod(Ihandle* ih, void** params)
 {
   if (params)
   {
-    if (params[0]) iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
+    if (params[0])
+    {
+      int flags = 0;
+      iupClassRegisterGetAttribute(ih->iclass, "MARKUP", NULL, NULL, NULL, NULL, &flags);
+      if (flags & IUPAF_NOT_SUPPORTED)
+      {
+        char* stripped = iupMarkupStripTags((char*)(params[0]));
+        iupAttribSetStr(ih, "TITLE", stripped);
+        free(stripped);
+      }
+      else
+        iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
+    }
     if (params[1]) iupAttribSetStr(ih, "ACTION", (char*)(params[1]));
   }
   ih->data = iupALLOCCTRLDATA();
