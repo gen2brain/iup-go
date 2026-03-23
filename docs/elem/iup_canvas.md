@@ -101,6 +101,9 @@ Accepts only the NO value.
 
 **NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the NSView handle.
 
+**NATIVEFOCUSRING** [macOS Only] (non-inheritable): Controls whether the canvas uses the native macOS focus ring (blue glow) instead of a cross-platform dotted rectangle for focus indication.
+Can be "YES" or "NO". Default: "NO".
+
 **DRAWABLE** [Unix/macOS Only] (non-inheritable, read-only): Returns an offscreen drawing surface handle.
 Available in GTK, Cocoa, Qt and EFL.
 

@@ -68,7 +68,7 @@ On Linux/Unix, two tray protocols are supported depending on the build configura
 - **SNI (StatusNotifierItem)**: Used by GTK 4, Qt, EFL, and optionally GTK 3 and Motif. Communicates via D-Bus and supports the MENU attribute via the dbusmenu protocol.
 - **XEmbed**: Legacy protocol used by GTK 3 and Motif when built with the `xembed` build tag. Uses GtkStatusIcon (GTK) or X11 XEmbed protocol (Motif). Does not support the MENU attribute.
 
-In Windows (Win32 and WinUI) uses Shell_NotifyIcon API, in macOS uses NSStatusItem, in GTK 3 uses GtkStatusIcon (XEmbed) or SNI via D-Bus, in GTK 4 uses SNI via D-Bus, in Qt uses SNI via D-Bus, in EFL uses SNI via D-Bus, and in Motif uses XEmbed protocol or SNI via D-Bus.
+In Windows (Win32 and WinUI) uses Shell_NotifyIcon API, in macOS uses NSStatusItem, in GTK 3 uses GtkStatusIcon (XEmbed) or SNI via D-Bus, in GTK 4, Qt and EFL uses SNI via D-Bus, and in Motif uses XEmbed protocol or SNI via D-Bus.
 
 ### See Also
 

@@ -50,6 +50,12 @@ Default value: "NO". In Windows the close button implies the classic visual for 
 By default, when closed the tab is hidden.
 To change that behavior, use the TABCLOSE_CB callback.
 
+**CLOSEBUTTONONHOVER** [macOS Only] (non-inheritable): When SHOWCLOSE=YES, close buttons on tabs are only shown when hovering over the tab.
+Can be "YES" or "NO". Default: "NO".
+
+**TABLIST** [macOS Only] (non-inheritable): Shows a dropdown menu control in the tab bar that lists all tabs. Useful when there are too many tabs to display.
+Can be "YES" or "NO". Default: "NO".
+
 [SIZE](../attrib/iup_size.md) (non-inheritable): The default size is the smallest size that fits its largest child.
 All child elements are considered even invisible ones.
 

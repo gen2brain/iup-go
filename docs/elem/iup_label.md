@@ -69,7 +69,11 @@ The next control from the label will be activated from any control in the dialog
 Can be "YES" or "NO". Default: "NO". Can only set WORDWRAP=YES if ALIGNMENT=ALEFT.
 Not supported in Motif.
 
-> 
+**SELECTABLE** (non-inheritable): Makes the label text selectable by the user for copy/paste.
+Can be "YES" or "NO". Default: "NO".
+Supported in GTK, GTK 4, Qt and macOS.
+
+>
 >
 > ------------------------------------------------------------------------
 
