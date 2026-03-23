@@ -472,14 +472,14 @@ static void gtkSetGlobalAttrib(void)
 #ifdef GDK_WINDOWING_QUARTZ
   if (GDK_IS_QUARTZ_DISPLAY(display))
   {
-    IupSetGlobal("WINDOWING", "COCOA");
+    IupSetGlobal("WINDOWING", "QUARTZ");
   }
 #endif
 
 #ifdef GDK_WINDOWING_WIN32
   if (GDK_IS_WIN32_DISPLAY(display))
   {
-    IupSetGlobal("WINDOWING", "WIN32");
+    IupSetGlobal("WINDOWING", "DWM");
   }
 #endif
 
