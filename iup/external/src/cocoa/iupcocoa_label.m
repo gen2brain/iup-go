@@ -24,8 +24,8 @@
 #include "iup_label.h"
 #include "iup_drv.h"
 #include "iup_focus.h"
-
 #include "iup_childtree.h"
+#include "iup_markup.h"
 
 #include "iupcocoa_drv.h"
 
@@ -288,6 +288,23 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
       return 0;
   }
 
+  if (iupAttribGetBoolean(ih, "MARKUP") && value)
+  {
+    NSMutableAttributedString* attr_str = iupcocoaBuildMarkupAttributedString(ih, value);
+    if (attr_str)
+    {
+      NSTextAlignment text_alignment = [the_label alignment];
+      NSMutableParagraphStyle* paragraph_style = [[NSMutableParagraphStyle alloc] init];
+      [paragraph_style setAlignment:text_alignment];
+      [attr_str addAttribute:NSParagraphStyleAttributeName value:paragraph_style range:NSMakeRange(0, [attr_str length])];
+      [paragraph_style release];
+
+      [the_label setAttributedStringValue:attr_str];
+      [attr_str release];
+      return 1;
+    }
+  }
+
   NSString* ns_string = nil;
   BOOL has_newlines = NO;
   if (value)
@@ -462,6 +479,9 @@ static char* cocoaLabelGetTitleAttrib(Ihandle* ih)
 {
   if (ih->data->type != IUP_LABEL_TEXT)
     return NULL;
+
+  if (iupAttribGetBoolean(ih, "MARKUP"))
+    return iupAttribGet(ih, "TITLE");
 
   NSTextField* the_label = cocoaLabelGetTextField(ih);
   if (the_label)
@@ -1122,6 +1142,5 @@ void iupdrvLabelInitClass(Iclass* ic)
   /* Mac only */
   iupClassRegisterAttribute(ic, "SELECTABLE", cocoaLabelGetSelectable, cocoaLabelSetSelectable, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT|IUPAF_NO_INHERIT);
 
-  /* Not supported */
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }

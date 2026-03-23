@@ -25,6 +25,7 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_key.h"
+#include "iup_markup.h"
 
 #include "iupcocoa_drv.h"
 #include "iupcocoa_keycodes.h"
@@ -558,6 +559,18 @@ static int cocoaButtonSetTitleAttrib(Ihandle* ih, const char* value)
   {
     if(value && *value!=0)
     {
+      if (iupAttribGetBoolean(ih, "MARKUP"))
+      {
+        NSMutableAttributedString* attr_str = iupcocoaBuildMarkupAttributedString(ih, value);
+        if (attr_str)
+        {
+          [the_button setAttributedTitle:attr_str];
+          [attr_str release];
+          [[the_button cell] setLineBreakMode:NSLineBreakByClipping];
+          return 1;
+        }
+      }
+
       char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
       NSString* ns_string = [NSString stringWithUTF8String:stripped_str];
 
@@ -1014,7 +1027,7 @@ void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMPRESSBORDER", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, cocoaButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 }

@@ -114,6 +114,8 @@ IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent* ns_event, char* out_status)
 IUP_DRV_API IupCocoaFont* iupcocoaGetFont(Ihandle* ih);
 IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char *iup_font_name);
 
+NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, const char* value);
+
 IUP_DRV_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y);
 
 /* Image conversion helpers. */
