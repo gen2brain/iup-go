@@ -75,6 +75,10 @@ DRAGDROPTREE, DROPFILESTARGET, DROPEQUALDRAG, SHOWDRAGDROP
 **TOGGLEVALUE_CB**: Action generated when the toggle's state was changed.
 The callback also receives the new toggle's state.
 
+**CONTEXTMENU** [macOS Only] (non-inheritable): Sets a custom context (right-click) menu for the control. The value is an IUP menu handle.
+Set to a menu handle to replace the default system context menu, or set to NULL to disable the context menu entirely.
+If never set, the default system context menu is shown.
+
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks are supported, but SHOWDRAGDROP must be set to NO.
 
 ### Notes

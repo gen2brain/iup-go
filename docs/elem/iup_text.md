@@ -217,6 +217,10 @@ Default: NO.
 
 [ACTIVE](../attrib/iup_active.md), [FONT](../attrib/iup_font.md), [EXPAND](../attrib/iup_expand.md), [SCREENPOSITION](../attrib/iup_screenposition.md), [POSITION](../attrib/iup_position.md), [MINSIZE](../attrib/iup_minsize.md), [MAXSIZE](../attrib/iup_maxsize.md), [WID](../attrib/iup_wid.md), [TIP](../attrib/iup_tip.md), [RASTERSIZE](../attrib/iup_rastersize.md), [ZORDER](../attrib/iup_zorder.md), [VISIBLE](../attrib/iup_visible.md), [THEME](../attrib/iup_theme.md): also accepted.
 
+**CONTEXTMENU** [macOS Only] (non-inheritable): Sets a custom context (right-click) menu for the control. The value is an IUP menu handle.
+Set to a menu handle to replace the default system context menu, or set to NULL to disable the context menu entirely.
+If never set, the default system context menu (Cut/Copy/Paste) is shown.
+
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes are supported. See Notes below.
 
 ### Callbacks
