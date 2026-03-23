@@ -105,6 +105,27 @@ static int gtkLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int gtkLabelSetSelectableAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type == IUP_LABEL_TEXT)
+  {
+    GtkLabel* label = (GtkLabel*)ih->handle;
+    gtk_label_set_selectable(label, iupStrBoolean(value));
+    return 1;
+  }
+  return 0;
+}
+
+static char* gtkLabelGetSelectableAttrib(Ihandle* ih)
+{
+  if (ih->data->type == IUP_LABEL_TEXT)
+  {
+    GtkLabel* label = (GtkLabel*)ih->handle;
+    return iupStrReturnBoolean(gtk_label_get_selectable(label));
+  }
+  return "NO";
+}
+
 static int gtkLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
@@ -392,6 +413,8 @@ void iupdrvLabelInitClass(Iclass* ic)
   /* IupLabel Windows and GTK only */
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, gtkLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, gtkLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
+
+  iupClassRegisterAttribute(ic, "SELECTABLE", gtkLabelGetSelectableAttrib, gtkLabelSetSelectableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT|IUPAF_NO_INHERIT);
 
   /* IupLabel GTK only */
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
