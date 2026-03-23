@@ -36,7 +36,6 @@
 
 
 /* Forward declarations */
-static int cocoaCanvasSetBeginDragAttrib(Ihandle* ih, const char* value);
 static void cocoaCanvasLayoutUpdateMethod(Ihandle *ih);
 static int cocoaCanvasSetDXAttrib(Ihandle* ih, const char* value);
 static int cocoaCanvasSetDYAttrib(Ihandle* ih, const char* value);
@@ -619,15 +618,6 @@ static void cocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
   {
     [super mouseDragged:the_event];
   }
-
-  if(([the_event associatedEventsMask] & NSEventMaskLeftMouseDragged) && ![self startedDrag])
-  {
-    IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(_ih);
-    if([drag_source_data isDragSourceEnabled] && iupAttribGetBoolean(_ih, "AUTOBEGINDRAG"))
-    {
-      cocoaCanvasSetBeginDragAttrib(_ih, NULL);
-    }
-  }
 }
 
 - (void) mouseUp:(NSEvent*)the_event
@@ -1166,39 +1156,6 @@ static int cocoaCanvasSetPosYAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaCanvasSetBeginDragAttrib(Ihandle* ih, const char* value)
-{
-  IupSourceDragAssociatedData* drag_source_data = cocoaSourceDragGetAssociatedData(ih);
-  if(![drag_source_data isDragSourceEnabled]) return 1;
-
-  NSDraggingItem* dragging_item = [drag_source_data defaultDraggingItem];
-  NSView* main_view = [drag_source_data mainView];
-
-  /* For file promises, ensure the user info (image representation) is set. */
-  if([drag_source_data usesFilePromise] && ![drag_source_data hasFilePromiseCallback])
-  {
-    NSFilePromiseProvider* file_promise = (NSFilePromiseProvider*)[dragging_item item];
-    NSDraggingImageComponent* image_component = [[dragging_item imageComponents] firstObject];
-    if(image_component)
-    {
-      [file_promise setUserInfo:[image_component contents]];
-    }
-    else /* Fallback to a PDF representation of the view */
-    {
-      NSData* pdf_data = [main_view dataWithPDFInsideRect:[main_view bounds]];
-      NSImage* image_data = [[NSImage alloc] initWithData:pdf_data];
-      [file_promise setUserInfo:image_data];
-      [image_data release];
-    }
-  }
-
-  NSEvent* the_event = [[NSApplication sharedApplication] currentEvent];
-  [main_view beginDraggingSessionWithItems:@[dragging_item] event:the_event source:drag_source_data];
-
-  (void)value;
-  return 1;
-}
-
 static char* cocoaCanvasGetCGContextAttrib(Ihandle* ih)
 {
   (void)ih;
@@ -1581,10 +1538,6 @@ void iupdrvCanvasInitClass(Iclass* ic)
 
   /* Focus ring support */
   iupClassRegisterAttribute(ic, "NATIVEFOCUSRING", cocoaCanvasGetNativeFocusRingAttrib, cocoaCanvasSetNativeFocusRingAttrib, "NO", NULL, IUPAF_NO_INHERIT);
-
-  /* Drag and drop */
-  iupClassRegisterAttribute(ic, "DRAGINITIATE", NULL, cocoaCanvasSetBeginDragAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "AUTOBEGINDRAG", NULL, NULL, "NO", NULL, IUPAF_NO_INHERIT);
 
   /* Not Supported */
   iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
