@@ -169,14 +169,14 @@ static void gtkSetGlobalAttrib(void)
 #ifdef GDK_WINDOWING_WIN32
   if (GDK_IS_WIN32_DISPLAY(display))
   {
-    IupSetGlobal("WINDOWING", "WIN32");
+    IupSetGlobal("WINDOWING", "DWM");
   }
 #endif
 
 #ifdef GDK_WINDOWING_MACOS
   if (GDK_IS_MACOS_DISPLAY(display))
   {
-    IupSetGlobal("WINDOWING", "COCOA");
+    IupSetGlobal("WINDOWING", "QUARTZ");
   }
 #endif
 }

@@ -277,7 +277,7 @@ extern "C" int iupdrvOpen(int *argc, char ***argv)
   setlocale(LC_NUMERIC, "C");
 
   IupSetGlobal("DRIVER", "WinUI");
-  IupSetGlobal("WINDOWING", "WINUI");
+  IupSetGlobal("WINDOWING", "DWM");
   IupSetGlobal("WINUIVERSION", "3");
 
   if (argv && *argv && (*argv)[0] && (*argv)[0][0] != 0)

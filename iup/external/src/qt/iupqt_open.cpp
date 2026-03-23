@@ -298,11 +298,11 @@ static void qtSetGlobalAttrib(void)
   }
   else if (platform == "windows")
   {
-    IupSetGlobal("WINDOWING", "WIN32");
+    IupSetGlobal("WINDOWING", "DWM");
   }
   else if (platform == "cocoa")
   {
-    IupSetGlobal("WINDOWING", "COCOA");
+    IupSetGlobal("WINDOWING", "QUARTZ");
   }
   else
   {
@@ -330,11 +330,11 @@ static void qtSetGlobalAttrib(void)
   }
   else if (platform == "windows")
   {
-    IupSetGlobal("WINDOWING", "WIN32");
+    IupSetGlobal("WINDOWING", "DWM");
   }
   else if (platform == "cocoa")
   {
-    IupSetGlobal("WINDOWING", "COCOA");
+    IupSetGlobal("WINDOWING", "QUARTZ");
   }
   else
   {

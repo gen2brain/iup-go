@@ -85,6 +85,14 @@ static void iupeflDetectBackend(void)
       iupefl_backend_x11 = 1;
       IupSetGlobal("WINDOWING", "X11");
     }
+    else if (strstr(engine, "win32") != NULL || strstr(engine, "gdi") != NULL || strstr(engine, "ddraw") != NULL)
+    {
+      IupSetGlobal("WINDOWING", "DWM");
+    }
+    else if (strstr(engine, "cocoa") != NULL)
+    {
+      IupSetGlobal("WINDOWING", "QUARTZ");
+    }
   }
 
   efl_del(temp_win);

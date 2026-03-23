@@ -300,7 +300,7 @@ Returns "1" if the system is currently in dark mode, "0" otherwise.
 ### WINDOWING (read-only)
 
 Returns the native windowing system in use.
-Can be: "WIN32", "WINUI", "X11", "WAYLAND", "COCOA", "QT" or "EFL".
+Can be: "DWM", "X11", "WAYLAND" or "QUARTZ".
 
 ### GTKVERSION (read-only) [GTK Only]
 
