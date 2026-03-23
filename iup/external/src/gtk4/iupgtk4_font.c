@@ -19,6 +19,7 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_assert.h"
+#include "iup_markup.h"
 
 #include "iupgtk4_drv.h"
 
@@ -198,13 +199,23 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
   {
     PangoAttrList *attrs = pango_attr_list_new();
 
-    /* Add font description as attribute */
-    PangoAttribute *font_attr = pango_attr_font_desc_new(fontdesc);
-    pango_attr_list_insert(attrs, font_attr);
+    if (ih && iupAttribGetBoolean(ih, "MARKUP"))
+    {
+      PangoFontDescription* base = pango_font_description_copy(fontdesc);
+      pango_font_description_unset_fields(base,
+        PANGO_FONT_MASK_WEIGHT | PANGO_FONT_MASK_STYLE | PANGO_FONT_MASK_VARIANT |
+        PANGO_FONT_MASK_FAMILY | PANGO_FONT_MASK_SIZE);
+      pango_attr_list_insert(attrs, pango_attr_font_desc_new(base));
+      pango_font_description_free(base);
+    }
+    else
+    {
+      pango_attr_list_insert(attrs, pango_attr_font_desc_new(fontdesc));
+      pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->strikethrough));
+      pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->underline));
+    }
 
-    pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->strikethrough));
-    pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->underline));
-    gtk_label_set_attributes (GTK_LABEL(widget), attrs);
+    gtk_label_set_attributes(GTK_LABEL(widget), attrs);
     pango_attr_list_unref(attrs);
   }
   else if (GTK_IS_EDITABLE(widget))
@@ -341,10 +352,12 @@ static void gtk4FontGetTextSize(Ihandle* ih, Igtk4Font* gtkfont, const char* str
     int orig_len = len;
     char* text = iupgtk4StrConvertToSystemLen(str, &len);
 
-    if (iupAttribGetBoolean(ih, "MARKUP"))
+    if (ih && iupAttribGetBoolean(ih, "MARKUP"))
     {
+      char* pango = iupMarkupToPango(text);
       pango_layout_set_attributes(gtkfont->layout, NULL);
-      pango_layout_set_markup(gtkfont->layout, text, len);
+      pango_layout_set_markup(gtkfont->layout, pango, (int)strlen(pango));
+      free(pango);
     }
     else
       pango_layout_set_text(gtkfont->layout, text, len);
@@ -420,8 +433,10 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 
   if (iupAttribGetBoolean(ih, "MARKUP"))
   {
+    char* pango = iupMarkupToPango(text);
     pango_layout_set_attributes(gtkfont->layout, NULL);
-    pango_layout_set_markup(gtkfont->layout, text, len);
+    pango_layout_set_markup(gtkfont->layout, pango, (int)strlen(pango));
+    free(pango);
   }
   else
     pango_layout_set_text(gtkfont->layout, text, len);
