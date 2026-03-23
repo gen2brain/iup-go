@@ -45,6 +45,7 @@ The filename (with path) can be set using a regular attribute called APP_FILENAM
 
 But the most interesting is to let the filename be dynamically constructed using the APP_NAME attribute.
 In this case, APP_FILENAME must **not** be defined.
+If APP_NAME is not set, the global [APPNAME](../attrib/iup_globals.md#appname) attribute is used as a fallback, and if that is also not set, the global [APPID](../attrib/iup_globals.md#appid) attribute is used.
 The file name creation will depend on the system and on its usage.
 
 There are two defined usages. First, for a **User Configuration File,** it will be stored on the user Home folder.

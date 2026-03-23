@@ -40,12 +40,14 @@ Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "EFL" and "Co
 
 Application identifier used by the desktop environment.
 In GTK/Wayland, it maps to the XDG desktop file ID.
+Also used by [IupConfig](../func/iup_config.md) as a last fallback when neither APP_NAME nor APPNAME is set.
 Supported in GTK, GTK 4, Qt, EFL and WinUI.
 
 ### APPNAME
 
 Application name used by the system.
 In Windows, it is used for the taskbar and tray. In macOS, it is used for the dock.
+Also used by [IupConfig](../func/iup_config.md) as a fallback when APP_NAME is not set (APPNAME is checked first, then APPID).
 Supported in Windows, macOS, Qt, EFL and WinUI.
 
 ## System Control
