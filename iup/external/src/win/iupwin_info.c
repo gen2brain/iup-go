@@ -17,31 +17,12 @@
 
 #include "iupwin_info.h"
 
-#include <windows.h>
-
 
 #ifdef _MSC_VER
 /* warning C4996: 'GetVersionExW': was declared deprecated */
 #pragma warning( disable : 4996 )
 #endif
 
-/* other method, when replaced should do it in CD also (cdwinp.cpp) */
-static BOOL winCheckWindowsVersion(DWORD major, DWORD minor) 
-{
-  OSVERSIONINFOEX osvi;
-  DWORDLONG dwlConditionMask = 0;
-
-  ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
-  osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-  osvi.dwMajorVersion = major;
-  osvi.dwMinorVersion = minor;
-
-  VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-  VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-  return VerifyVersionInfo(&osvi, VER_MAJORVERSION|VER_MINORVERSION, dwlConditionMask);
-}
-        
 int iupwinCheckWindowsVersion(DWORD major, DWORD minor)
 {
   OSVERSIONINFO osvi;
@@ -68,11 +49,6 @@ int iupwinIsVistaOrNew(void)
 int iupwinIsWin7OrNew(void)
 {
   return iupwinCheckWindowsVersion(6, 1);
-}
-
-int iupwinIsWin8OrNew(void)
-{
-  return iupwinCheckWindowsVersion(6, 2);
 }
 
 int iupwinIsWin10OrNew(void)

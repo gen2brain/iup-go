@@ -346,18 +346,6 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
       break;
     }
   case WM_SETFOCUS:
-    /* TODO: Not setting WS_TABSTOP still allows the control 
-       to receive the focus when clicked. 
-       But this code does make several controls 
-       with CANFOCUS=NO to stop working. 
-       So we use it inside some of the controls. */
-/*  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
-    {
-      HWND previous = (HWND)wp;
-      if (previous && previous != ih->handle)
-        SetFocus(previous);
-      break;
-    }  */
     iupwinWmSetFocus(ih);
     break;
   case WM_KILLFOCUS:

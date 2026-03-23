@@ -178,14 +178,6 @@ void iupwinKeyInit(void)
     if (!(winkey_map[i].iupcode))    
     {  
       winkey_map[i].iupcode = winMapVirtualKeyToChar(i);
-
-      /* TODO: how to get the shift code? 
-      if (winkey_map[i].iupcode && !(winkey_map[i].shift_iupcode))
-      {
-        winkey_map[i].shift_iupcode = LOWORD((DWORD)CharUpperA((LPSTR)MAKELONG(winkey_map[i].iupcode, 0)));
-        if (winkey_map[i].shift_iupcode == winkey_map[i].iupcode)
-          winkey_map[i].shift_iupcode = 0;
-      }  */
     }
   }
 }

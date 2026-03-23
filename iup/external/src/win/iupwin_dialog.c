@@ -5,9 +5,6 @@
  */
 #include <windows.h>
 #include <commdlg.h>
-#undef NTDDI_VERSION 
-#define NTDDI_VERSION NTDDI_VISTA
-#include <uxtheme.h>
 
 #include <stdlib.h>
 #include <stdio.h>
