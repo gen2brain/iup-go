@@ -41,9 +41,10 @@ See also [IupImage](iup_image.md).
 If it is not defined then the IMAGE is used and the colors will be replaced by a modified version of the background color creating the disabled effect.
 Not supported in Win32 and WinUI.
 
-**MARKUP** [GTK and Qt only]: allows the title string to contain markup commands.
-In GTK uses Pango markup, in Qt uses HTML rich text.
+**MARKUP**: allows the title string to contain markup commands.
+Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes. GTK uses Pango markup natively; other drivers convert to their native format.
 Works only if a mnemonic is NOT defined in the title. Can be "YES" or "NO". Default: "NO".
+Not supported in Win32 and Motif (markup tags are stripped and plain text is displayed).
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
 Not used when SEPARATOR is used. Default value: "0x0".
@@ -99,7 +100,7 @@ In GTK uses GtkSeparator/GtkImage/GtkLabel, in GTK 4 uses GtkSeparator/GtkImage/
 
 Normal Text Label: FGCOLOR = "0 0 255" ALIGNMENT="ALEFT:ATOP",
 FONT = "Helvetica, 14" ALIGNMENT = "ACENTER:ACENTER",
-MARKUP = "YES" (GTK and Qt) ALIGNMENT = "ARIGHT:ABOTTOM".
+MARKUP = "YES" ALIGNMENT = "ARIGHT:ABOTTOM".
 
 Normal Image Label: (8bpp Image),
 ALIGNMENT = "ACENTER" (24 bpp Image),

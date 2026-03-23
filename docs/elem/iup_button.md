@@ -59,9 +59,10 @@ Can be "YES" or "NO". Default: "NO".
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
 Not supported in Motif and EFL.
 
-**MARKUP** [GTK and Qt only]: allows the title string to contain markup commands.
-In GTK uses Pango markup, in Qt uses HTML rich text.
+**MARKUP**: allows the title string to contain markup commands.
+Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes. GTK uses Pango markup natively; other drivers convert to their native format.
 Works only if a mnemonic is NOT defined in the title. Can be "YES" or "NO". Default: "NO".
+Not supported in Win32 and Motif (markup tags are stripped and plain text is displayed).
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
 Default value: "0x0". Value can be DEFAULTBUTTONPADDING, so the global attribute of this name will be used instead.
