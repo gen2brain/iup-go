@@ -25,6 +25,7 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_key.h"
+#include "iup_markup.h"
 
 #include "iupcocoa_drv.h"
 #include "iupcocoa_keycodes.h"
@@ -425,6 +426,17 @@ static int cocoaToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
+    if (iupAttribGetBoolean(ih, "MARKUP"))
+    {
+      NSMutableAttributedString* attr_str = iupcocoaBuildMarkupAttributedString(ih, value ? value : "");
+      if (attr_str)
+      {
+        [the_toggle setAttributedTitle:attr_str];
+        [attr_str release];
+        return 1;
+      }
+    }
+
     char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
 
     if (stripped_str && *stripped_str != 0)
@@ -903,7 +915,7 @@ void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, cocoaToggleSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, cocoaToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "FLAT", NULL, cocoaToggleSetFlatAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
 

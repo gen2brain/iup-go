@@ -29,6 +29,7 @@
 #include "iup_loop.h"
 #include "iup_drv.h"
 #include "iup_menu.h"
+#include "iup_markup.h"
 
 #include "iupcocoa_drv.h"
 
@@ -714,6 +715,92 @@ void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TIPVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+}
+
+NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, const char* value)
+{
+  ImarkupData* data = iupMarkupParse(value);
+  if (!data)
+    return nil;
+
+  NSMutableAttributedString* result = [[NSMutableAttributedString alloc] init];
+  IupCocoaFont* iup_font = iupcocoaGetFont(ih);
+  NSFont* base_font = [iup_font nativeFont];
+  CGFloat base_size = base_font ? [base_font pointSize] : [NSFont systemFontSize];
+
+  for (int i = 0; i < data->count; i++)
+  {
+    ImarkupRun* run = &data->runs[i];
+    NSString* text = [NSString stringWithUTF8String:run->text];
+    NSMutableDictionary* attrs = [NSMutableDictionary dictionary];
+
+    CGFloat font_size = base_size;
+    if (run->font_size)
+      font_size = (CGFloat)run->font_size;
+    else if (run->big || run->small_size)
+    {
+      int net = run->big - run->small_size;
+      int j;
+      for (j = 0; j < net; j++) font_size *= 1.2;
+      for (j = 0; j > net; j--) font_size *= 0.83;
+    }
+
+    NSString* family = run->font_family
+      ? [NSString stringWithUTF8String:run->font_family]
+      : (base_font ? [base_font familyName] : nil);
+
+    NSFontTraitMask traits = 0;
+    if (run->bold || run->font_weight >= 700)
+      traits |= NSBoldFontMask;
+    if (run->italic || run->font_style == 1 || run->font_style == 2)
+      traits |= NSItalicFontMask;
+
+    NSFont* font = nil;
+    if (family)
+      font = [[NSFontManager sharedFontManager] fontWithFamily:family traits:traits weight:5 size:font_size];
+    if (!font)
+      font = [NSFont systemFontOfSize:font_size];
+    if (font)
+      [attrs setObject:font forKey:NSFontAttributeName];
+
+    if (run->fg_color)
+    {
+      unsigned char r, g, b;
+      if (iupStrToRGB(run->fg_color, &r, &g, &b))
+      {
+        NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+        [attrs setObject:color forKey:NSForegroundColorAttributeName];
+      }
+    }
+
+    if (run->bg_color)
+    {
+      unsigned char r, g, b;
+      if (iupStrToRGB(run->bg_color, &r, &g, &b))
+      {
+        NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+        [attrs setObject:color forKey:NSBackgroundColorAttributeName];
+      }
+    }
+
+    if (run->underline)
+      [attrs setObject:@(NSUnderlineStyleSingle) forKey:NSUnderlineStyleAttributeName];
+
+    if (run->strikethrough)
+      [attrs setObject:@(NSUnderlineStyleSingle) forKey:NSStrikethroughStyleAttributeName];
+
+    if (run->superscript)
+      [attrs setObject:@(1) forKey:NSSuperscriptAttributeName];
+    else if (run->subscript)
+      [attrs setObject:@(-1) forKey:NSSuperscriptAttributeName];
+
+    NSAttributedString* run_str = [[NSAttributedString alloc] initWithString:text attributes:attrs];
+    [result appendAttributedString:run_str];
+    [run_str release];
+  }
+
+  iupMarkupFree(data);
+  return result;
 }
 
 void iupdrvSendKey(int key, int press)

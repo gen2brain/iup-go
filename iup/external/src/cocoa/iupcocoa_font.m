@@ -18,6 +18,7 @@
 #include "iup_drvinfo.h"
 #include "iup_object.h"
 #include "iup_str.h"
+#include "iup_markup.h"
 
 #include "iupcocoa_drv.h"
 
@@ -367,6 +368,18 @@ IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle *ih, const char *str, 
   IupCocoaFont *iup_font = cocoaFontGet(ih);
   if (iup_font)
   {
+    if (str && ih && iupAttribGetBoolean(ih, "MARKUP"))
+    {
+      NSMutableAttributedString* attrStr = iupcocoaBuildMarkupAttributedString(ih, str);
+      if (attrStr)
+      {
+        NSSize size = [attrStr size];
+        if (w) *w = (int)ceil(size.width) + 4;
+        if (h) *h = (int)ceil(size.height);
+        return;
+      }
+    }
+
     cocoaFontGetTextSize(iup_font, str, str ? (int)strlen(str) : 0, w, h);
   }
 }
