@@ -18,6 +18,8 @@
 #include <QHBoxLayout>
 #include <QPainter>
 #include <QPixmap>
+#include <QShowEvent>
+#include <QGuiApplication>
 
 #include <cstdlib>
 #include <cstdio>
@@ -42,11 +44,13 @@ extern "C" {
  * Preview Canvas Widget
  ****************************************************************************/
 
+static void qtFileDlgUpdatePreviewGLCanvas(Ihandle* ih, QWidget* preview_widget);
+
 class IupQtPreviewCanvas : public QWidget
 {
 public:
   IupQtPreviewCanvas(Ihandle* ih, QWidget* parent = nullptr)
-    : QWidget(parent), m_ih(ih), m_buffer(nullptr)
+    : QWidget(parent), m_ih(ih), m_buffer(nullptr), m_glcanvas_initialized(false)
   {
     setMinimumSize(100, 100);
     setAttribute(Qt::WA_OpaquePaintEvent);
@@ -81,6 +85,17 @@ public:
   }
 
 protected:
+  void showEvent(QShowEvent* event) override
+  {
+    QWidget::showEvent(event);
+
+    if (!m_glcanvas_initialized)
+    {
+      m_glcanvas_initialized = true;
+      qtFileDlgUpdatePreviewGLCanvas(m_ih, this);
+    }
+  }
+
   void paintEvent(QPaintEvent* event) override
   {
     Q_UNUSED(event);
@@ -113,7 +128,23 @@ private:
   Ihandle* m_ih;
   QString m_currentFile;
   QPixmap* m_buffer;
+  bool m_glcanvas_initialized;
 };
+
+static void qtFileDlgUpdatePreviewGLCanvas(Ihandle* ih, QWidget* preview_widget)
+{
+  Ihandle* glcanvas = IupGetAttributeHandle(ih, "PREVIEWGLCANVAS");
+  if (glcanvas)
+  {
+    const char* handle_name = iupqtGetNativeWindowHandleName();
+    if (handle_name && strcmp(handle_name, "XWINDOW") == 0)
+    {
+      WId xid = preview_widget->winId();
+      iupAttribSet(glcanvas, "XWINDOW", (char*)(uintptr_t)xid);
+      glcanvas->iclass->Map(glcanvas);
+    }
+  }
+}
 
 /****************************************************************************
  * Custom File Dialog with Preview
