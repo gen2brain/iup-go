@@ -1130,32 +1130,6 @@ char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih)
   return (char*)iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
 }
 
-int iupcocoaCommonBaseSetSendActionAttrib(Ihandle* ih, const char* value)
-{
-  if(NULL == value)
-  {
-    return 0;
-  }
-
-  NSView* target_view = nil;
-  id sender_object = nil;
-  if(NULL == ih)
-  {
-    target_view = nil;
-    sender_object = nil;
-  }
-  else
-  {
-    target_view = iupcocoaGetMainView(ih);
-    sender_object = target_view;
-  }
-
-  SEL the_selector = sel_getUid(value);
-
-  [[NSApplication sharedApplication] sendAction:the_selector to:target_view from:sender_object];
-
-  return 0;
-}
 
 NSWindow* cocoaDialogGetWindow(Ihandle* ih)
 {
