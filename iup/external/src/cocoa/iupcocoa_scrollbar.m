@@ -269,6 +269,4 @@ void iupdrvScrollbarInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, cocoaScrollbarSetLineStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESTEP", iupScrollbarGetPageStepAttrib, cocoaScrollbarSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESIZE", iupScrollbarGetPageSizeAttrib, cocoaScrollbarSetPageSizeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-
-  iupClassRegisterAttribute(ic, "LAYERBACKED", iupCocoaCommonBaseGetLayerBackedAttrib, iupcocoaCommonBaseSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 }

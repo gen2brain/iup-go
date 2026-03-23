@@ -75,10 +75,6 @@ IUP_DRV_API bool iupcocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEven
 /* WHEEL_CB: WARNING: IUP does not support delta-y axis. */
 IUP_DRV_API bool iupcocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view);
 
-/* For Layer Backed Views. */
-IUP_DRV_API int iupcocoaCommonBaseSetLayerBackedAttrib(Ihandle* ih, const char* value);
-IUP_DRV_API char* iupCocoaCommonBaseGetLayerBackedAttrib(Ihandle* ih);
-
 /* Helpers for NSResponder context menus. */
 IUP_DRV_API void iupcocoaCommonBaseAppendMenuItems(NSMenu* dst_menu, NSMenu* src_menu);
 IUP_DRV_API void iupcocoaCommonBaseAppendDefaultMenuItemsForClassType(NSMenu* dst_menu, Class class_of_widget);

@@ -4373,23 +4373,6 @@ static int cocoaTreeSetContextMenuAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* cocoaTreeGetLayerBackedAttrib(Ihandle* ih)
-{
-  NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
-  BOOL layer_state = [outline_view wantsLayer];
-  return iupStrReturnInt(layer_state);
-}
-
-static int cocoaTreeSetLayerBackedAttrib(Ihandle* ih, const char* value)
-{
-  NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
-  bool layer_state = iupStrBoolean(value);
-  [outline_view setWantsLayer:layer_state];
-  [cocoaTreeGetScrollView(ih) setWantsLayer:layer_state];
-
-  return 1;
-}
-
 static char* cocoaTreeGetActiveAttrib(Ihandle *ih)
 {
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
@@ -4632,7 +4615,6 @@ void iupdrvTreeInitClass(Iclass* ic)
 
   /* New API for view specific contextual menus */
   iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaTreeSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LAYERBACKED", cocoaTreeGetLayerBackedAttrib, cocoaTreeSetLayerBackedAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE);
 
   iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", cocoaTreeGetActiveAttrib, cocoaTreeSetActiveAttrib);
 
