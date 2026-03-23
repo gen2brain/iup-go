@@ -13,7 +13,7 @@
 #include "iup.h"
 
 #include "iup_object.h"
-#include "iup_table.h" 
+#include "iup_hashtable.h"
 #include "iupcbs.h" 
 
 #include "iupwin_handle.h"  

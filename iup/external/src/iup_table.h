@@ -1,148 +1,94 @@
 /** \file
- * \brief Simple hash table C API.
- * Does not allow 0 values for items...
+ * \brief IupTable control internal definitions
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_TABLE_H 
+
+#ifndef __IUP_TABLE_H
 #define __IUP_TABLE_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-/** \defgroup table Hash Table
- * \par
- * The hash table can be indexed by strings or pointer address, 
- * and each value can contain strings, pointers or function pointers.
- * \par
- * See \ref iup_table.h
- * \ingroup util */
 
+/* ========================================================================= */
+/* IupTable Data Structure                                                   */
+/* ========================================================================= */
 
-/** How the table key is interpreted.
- * \ingroup table */
-typedef enum _Itable_IndexTypes
+struct _IcontrolData
 {
-  IUPTABLE_POINTERINDEXED = 10, /**< a pointer address is used as key. */
-  IUPTABLE_STRINGINDEXED        /**< a string as key */
-} Itable_IndexTypes;
+  /* Table dimensions */
+  int num_lin;  /* Number of rows */
+  int num_col;  /* Number of columns */
 
-/** How the value is interpreted.
- * \ingroup table */
-typedef enum _Itable_Types
-{
-  IUPTABLE_POINTER,     /**< regular pointer for strings and other pointers */
-  IUPTABLE_STRING,      /**< string duplicated internally */
-  IUPTABLE_FUNCPOINTER  /**< function pointer */
-} Itable_Types;
+  /* Table behavior */
+  int sortable;       /* Enable/disable column sorting */
+  int allow_reorder;  /* Enable/disable column reordering */
+  int user_resize;    /* Enable/disable user column resizing */
+  int stretch_last;   /* Enable/disable last column stretching to fill space */
 
+  int show_image;     /* Enable image display, set before map only */
+  int fit_image;      /* Scale images to fit row height, default 1 (YES) */
 
-typedef void (*Ifunc)(void);
+  /* Platform-specific data */
+  void* native_data;  /* Platform-specific data (GtkTreeView, QTableWidget, etc.) */
+};
 
-struct _Itable;
-typedef struct _Itable Itable;
+/* ========================================================================= */
+/* Validation Functions (used by core and drivers)                          */
+/* ========================================================================= */
 
+int iupTableIsValid(Ihandle* ih);
+int iupTableCheckCellPos(Ihandle* ih, int lin, int col);
+char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
 
-/** Creates a hash table with an initial default size.
- * This function is equivalent to iupTableCreateSized(0);
- * \ingroup table */
-IUP_SDK_API Itable *iupTableCreate(Itable_IndexTypes indexType);
+/* ========================================================================= */
+/* Driver Functions                                                         */
+/* ========================================================================= */
 
-/** Creates a hash table with the specified initial size.
- * Use this function if you expect the table to become very large.
- * initialSizeIndex is an array into the (internal) list of
- * possible hash table sizes. Currently only indexes from 0 to 8
- * are supported. If you specify a higher value here, the maximum
- * allowed value will be used.
- * \ingroup table */
-IUP_SDK_API Itable *iupTableCreateSized(Itable_IndexTypes indexType, unsigned int initialSizeIndex);
+/* Class initialization */
+void iupdrvTableInitClass(Iclass* ic);
 
-/** Destroys the Itable.
- * Calls \ref iupTableClear.
- * \ingroup table */
-IUP_SDK_API void iupTableDestroy(Itable *it);
+/* Widget lifecycle */
+int iupdrvTableMapMethod(Ihandle* ih);
+void iupdrvTableUnMapMethod(Ihandle* ih);
 
-/** Removes all items in the table.
- * This function does also free the memory of strings contained in the table!!!!
- * \ingroup table */
-IUP_SDK_API void iupTableClear(Itable *it);
+/* Table structure */
+void iupdrvTableSetNumLin(Ihandle* ih, int num_lin);
+void iupdrvTableSetNumCol(Ihandle* ih, int num_col);
+void iupdrvTableAddLin(Ihandle* ih, int pos);
+void iupdrvTableDelLin(Ihandle* ih, int pos);
+void iupdrvTableAddCol(Ihandle* ih, int pos);
+void iupdrvTableDelCol(Ihandle* ih, int pos);
 
-/** Returns the number of keys stored in the table.
- * \ingroup table */
-IUP_SDK_API int iupTableCount(Itable *it);
+/* Cell operations */
+void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value);
+char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col);
+void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image);
 
-/** Store an element in the table.
- * \ingroup table */
-IUP_SDK_API void iupTableSet(Itable *it, const char *key, void *value, Itable_Types itemType);
+/* Column operations */
+void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title);
+char* iupdrvTableGetColTitle(Ihandle* ih, int col);
+void iupdrvTableSetColWidth(Ihandle* ih, int col, int width);
+int iupdrvTableGetColWidth(Ihandle* ih, int col);
 
-/** Store a function pointer in the table.
- * Type is set to IUPTABLE_FUNCPOINTER.
- * \ingroup table */
-IUP_SDK_API void iupTableSetFunc(Itable *it, const char *key, Ifunc func);
+/* Selection */
+void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col);
+void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col);
 
-/** Retrieves an element from the table.
- * Returns NULL if not found.
- * \ingroup table */
-IUP_SDK_API void *iupTableGet(Itable *it, const char *key);
+/* Scrolling */
+void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col);
 
-/** Retrieves a function pointer from the table. 
- * If not a function or not found returns NULL.
- * value always contains the element pointer.
- * \ingroup table */
-IUP_SDK_API Ifunc iupTableGetFunc(Itable *it, const char *key, void **value);
+/* Display */
+void iupdrvTableRedraw(Ihandle* ih);
+void iupdrvTableSetShowGrid(Ihandle* ih, int show);
 
-/** Retrieves an element from the table and its type.
- * \ingroup table */
-IUP_SDK_API void *iupTableGetTyped(Itable *it, const char *key, Itable_Types *itemType);
-
-/** Removes the entry at the specified key from the
- * hash table and frees the memory used by it if
- * it is a string...
- * \ingroup table */
-IUP_SDK_API void iupTableRemove(Itable *it, const char *key);
-
-/** Key iteration function. Returns a key.
- * To iterate over all keys call iupTableFirst at the first
- * and call iupTableNext in a loop
- * until 0 is returned...
- * Do NOT change the content of the hash table during iteration.
- * During an iteration you can use context with
- * iupTableGetCurr() to access the value of the key
- * very fast.
- * \ingroup table */
-IUP_SDK_API char *iupTableFirst(Itable *it);
-
-/** Key iteration function. See \ref iupTableNext.
- * \ingroup table */
-IUP_SDK_API char *iupTableNext(Itable *it);
-
-/** Returns the value at the current position.  \n
- * The current context is an iterator
- * that is filled by iupTableNext().  \n
- * iupTableGetCur() is faster then iupTableGet(),
- * so when you want to access an item stored
- * at a key returned by iupTableNext(),
- * use this function instead of iupTableGet().
- * \ingroup table */
-IUP_SDK_API void *iupTableGetCurr(Itable *it);
-
-/** Returns the type at the current position. \n
- * Same as \ref iupTableGetCurr but returns the type.
- * Returns -1 if failed.
- * \ingroup table */
-IUP_SDK_API int iupTableGetCurrType(Itable *it);
-
-/** Replaces the data at the current position.
- * \ingroup table */
-IUP_SDK_API void iupTableSetCurr(Itable *it, void *value, Itable_Types itemType);
-
-/** Removes the current element and returns the next key.
- * Use this function to remove an element during an iteration.
- * \ingroup table */
-IUP_SDK_API char *iupTableRemoveCurr(Itable *it);
+/* Sizing */
+int iupdrvTableGetBorderWidth(Ihandle* ih);
+int iupdrvTableGetRowHeight(Ihandle* ih);
+int iupdrvTableGetHeaderHeight(Ihandle* ih);
+void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h);
 
 
 #ifdef __cplusplus
@@ -150,4 +96,3 @@ IUP_SDK_API char *iupTableRemoveCurr(Itable *it);
 #endif
 
 #endif
-

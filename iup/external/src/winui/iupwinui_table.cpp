@@ -24,7 +24,7 @@ extern "C" {
 #include "iup_drvfont.h"
 #include "iup_key.h"
 #include "iup_classbase.h"
-#include "iup_tablecontrol.h"
+#include "iup_table.h"
 #include "iup_image.h"
 }
 

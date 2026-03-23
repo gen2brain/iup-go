@@ -26,7 +26,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_table.h"
+#include "iup_hashtable.h"
 #include "iup_childtree.h"
 #include "iup_dialog.h"
 #include "iup_layout.h"
@@ -37,7 +37,7 @@
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
 #include "iup_key.h"
-#include "iup_tablecontrol.h"
+#include "iup_table.h"
 
 
 /* Default sizes */

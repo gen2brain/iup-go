@@ -7,7 +7,7 @@
 #ifndef __IUP_CLASS_H 
 #define __IUP_CLASS_H
 
-#include "iup_table.h"
+#include "iup_hashtable.h"
 
 #ifdef __cplusplus
 extern "C" {

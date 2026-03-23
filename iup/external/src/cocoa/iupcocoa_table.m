@@ -23,8 +23,8 @@
 #include "iup_drvfont.h"
 #include "iup_key.h"
 #include "iup_image.h"
+#include "iup_hashtable.h"
 #include "iup_table.h"
-#include "iup_tablecontrol.h"
 
 #include "iupcocoa_drv.h"
 
