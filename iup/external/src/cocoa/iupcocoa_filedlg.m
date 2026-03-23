@@ -27,6 +27,16 @@
 
 enum {IUP_DIALOGOPEN, IUP_DIALOGSAVE, IUP_DIALOGDIR};
 
+static void cocoaFileDlgUpdatePreviewGLCanvas(Ihandle* ih)
+{
+  Ihandle* glcanvas = IupGetAttributeHandle(ih, "PREVIEWGLCANVAS");
+  if (glcanvas)
+  {
+    iupAttribSet(glcanvas, "NSVIEW", (char*)ih->handle);
+    glcanvas->iclass->Map(glcanvas);
+  }
+}
+
 /* Helper to get the next string in a list of null-separated strings. */
 static char* iupCocoaFileDlgGetNextStr(char* str)
 {
@@ -468,6 +478,7 @@ static int cocoaFileDlgPopup(Ihandle *ih, int x, int y)
 
     ih->handle = (InativeHandle*)preview_view;
     iupcocoaSetAssociatedViews(ih, preview_view, preview_view);
+    cocoaFileDlgUpdatePreviewGLCanvas(ih);
 
     [preview_view release];
   }
