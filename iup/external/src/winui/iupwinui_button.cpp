@@ -22,6 +22,7 @@ extern "C" {
 #include "iup_key.h"
 #include "iup_register.h"
 #include "iup_childtree.h"
+#include "iup_markup.h"
 }
 
 #include "iupwinui_drv.h"
@@ -57,19 +58,28 @@ static int winuiButtonSetTitleAttrib(Ihandle* ih, const char* value)
   Button btn = winuiGetHandle<Button>(ih);
   if (btn)
   {
-    char c = 0;
-    hstring text = iupwinuiProcessMnemonic(value, &c);
     Border border = btn.Content().try_as<Border>();
     if (border)
     {
       TextBlock tb = border.Child().try_as<TextBlock>();
       if (tb)
-        tb.Text(text);
-    }
-    if (c)
-    {
-      wchar_t wc = (wchar_t)c;
-      btn.AccessKey(hstring(&wc, 1));
+      {
+        if (iupAttribGetBoolean(ih, "MARKUP"))
+        {
+          iupwinuiApplyMarkupToTextBlock(tb, value);
+        }
+        else
+        {
+          char c = 0;
+          hstring text = iupwinuiProcessMnemonic(value, &c);
+          tb.Text(text);
+          if (c)
+          {
+            wchar_t wc = (wchar_t)c;
+            btn.AccessKey(hstring(&wc, 1));
+          }
+        }
+      }
     }
   }
   return 1;
@@ -77,6 +87,9 @@ static int winuiButtonSetTitleAttrib(Ihandle* ih, const char* value)
 
 static char* winuiButtonGetTitleAttrib(Ihandle* ih)
 {
+  if (iupAttribGetBoolean(ih, "MARKUP"))
+    return iupAttribGet(ih, "TITLE");
+
   Button btn = winuiGetHandle<Button>(ih);
   if (btn)
   {
@@ -685,5 +698,5 @@ extern "C" void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, winuiButtonSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, winuiButtonSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, winuiButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }

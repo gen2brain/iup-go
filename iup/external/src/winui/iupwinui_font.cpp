@@ -21,6 +21,7 @@ extern "C" {
 #include "iup_array.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
+#include "iup_markup.h"
 }
 
 #include "iupwinui_drv.h"
@@ -335,6 +336,12 @@ extern "C" void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, i
   {
     if (w) *w = 0;
     if (h) *h = winfont->charheight;
+    return;
+  }
+
+  if (ih && iupAttribGetBoolean(ih, "MARKUP"))
+  {
+    iupwinuiMeasureMarkupText(str, w, h);
     return;
   }
 
