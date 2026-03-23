@@ -21,6 +21,7 @@
 #include "iup_childtree.h"
 #include "iup_canvas.h"
 #include "iup_dlglist.h"
+#include "iup_markup.h"
 
 #include "iupefl_drv.h"
 
@@ -270,12 +271,23 @@ Eo* iupeflNativeContainerNew(Eo* parent)
 int iupeflSetMnemonicTitle(Ihandle* ih, Eo* widget, const char* value)
 {
   char* str;
-  char* markup = NULL;
-
-  (void)ih;
+  char* efl_markup = NULL;
 
   if (!widget)
     return 0;
+
+  if (iupAttribGetBoolean(ih, "MARKUP"))
+  {
+    efl_markup = iupMarkupToEfl(value ? value : "");
+
+    if (efl_isa(widget, EFL_TEXT_MARKUP_INTERFACE))
+      efl_text_markup_set(widget, efl_markup);
+    else
+      efl_text_markup_set(efl_part(widget, "efl.text"), efl_markup);
+
+    free(efl_markup);
+    return 1;
+  }
 
   str = iupStrProcessMnemonic(value, NULL, 0);
   if (!str)
@@ -287,11 +299,11 @@ int iupeflSetMnemonicTitle(Ihandle* ih, Eo* widget, const char* value)
   }
   else
   {
-    markup = evas_textblock_text_utf8_to_markup(NULL, str);
-    if (markup)
+    efl_markup = evas_textblock_text_utf8_to_markup(NULL, str);
+    if (efl_markup)
     {
-      elm_object_text_set(widget, markup);
-      free(markup);
+      elm_object_text_set(widget, efl_markup);
+      free(efl_markup);
     }
     else
     {

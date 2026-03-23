@@ -21,6 +21,7 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_key.h"
+#include "iup_markup.h"
 
 #include "iupefl_drv.h"
 
@@ -125,7 +126,23 @@ static int eflButtonSetTitleAttrib(Ihandle* ih, const char* value)
   if (!btn)
     return 0;
 
-  efl_text_set(btn, value ? value : "");
+  if (iupAttribGetBoolean(ih, "MARKUP"))
+  {
+    char* efl_markup = iupMarkupToEfl(value ? value : "");
+    Eo* markup_label = (Eo*)iupAttribGet(ih, "_IUP_EFL_MARKUP_LABEL");
+    if (!markup_label)
+    {
+      markup_label = efl_add(EFL_UI_TEXTBOX_CLASS, btn,
+        efl_text_interactive_editable_set(efl_added, EINA_FALSE),
+        efl_text_interactive_selection_allowed_set(efl_added, EINA_FALSE));
+      efl_content_set(btn, markup_label);
+      iupAttribSet(ih, "_IUP_EFL_MARKUP_LABEL", (char*)markup_label);
+    }
+    efl_text_markup_set(markup_label, efl_markup);
+    free(efl_markup);
+  }
+  else
+    efl_text_set(btn, value ? value : "");
 
   if (value && value[0])
     ih->data->type |= IUP_BUTTON_TEXT;
@@ -384,7 +401,7 @@ static int eflButtonMapMethod(Ihandle* ih)
 
   value = iupAttribGet(ih, "TITLE");
   if (value && value[0])
-    efl_text_set(btn, value);
+    eflButtonSetTitleAttrib(ih, value);
 
   value = iupAttribGet(ih, "IMAGE");
   if (value && value[0])
@@ -598,7 +615,7 @@ void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FONT", NULL, eflButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
