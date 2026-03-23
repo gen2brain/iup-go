@@ -20,7 +20,6 @@ int   iupwinIsSystemDarkMode(void);
 int   iupwinIsVistaOrNew(void);
 int   iupwinIsWinXPOrNew(void);
 int   iupwinIsWin7OrNew(void);
-int   iupwinIsWin8OrNew(void);
 int   iupwinIsWin10OrNew(void);
 
 
