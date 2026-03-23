@@ -18,18 +18,23 @@
 #include "iupwin_info.h"
 
 
-#ifdef _MSC_VER
-/* warning C4996: 'GetVersionExW': was declared deprecated */
-#pragma warning( disable : 4996 )
-#endif
+typedef LONG (WINAPI *PFN_RtlGetVersion)(OSVERSIONINFOW*);
+
+static void iupwinGetVersionInfo(OSVERSIONINFOW* osvi)
+{
+  HMODULE ntdll = GetModuleHandleA("ntdll.dll");
+  PFN_RtlGetVersion pRtlGetVersion = (PFN_RtlGetVersion)GetProcAddress(ntdll, "RtlGetVersion");
+  ZeroMemory(osvi, sizeof(OSVERSIONINFOW));
+  osvi->dwOSVersionInfoSize = sizeof(OSVERSIONINFOW);
+  pRtlGetVersion(osvi);
+}
 
 int iupwinCheckWindowsVersion(DWORD major, DWORD minor)
 {
-  OSVERSIONINFO osvi;
-  osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-  GetVersionEx(&osvi);
+  OSVERSIONINFOW osvi;
+  iupwinGetVersionInfo(&osvi);
 
-  if (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT && 
+  if (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT &&
       (osvi.dwMajorVersion > major || (osvi.dwMajorVersion == major && osvi.dwMinorVersion >= minor)))
     return 1;
 
