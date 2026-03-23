@@ -138,6 +138,9 @@ winrt::Microsoft::UI::Xaml::Controls::Canvas iupwinuiGetParentCanvas(Ihandle* ih
 void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Control control);
 void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock);
 
+void iupwinuiApplyMarkupToTextBlock(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value);
+void iupwinuiMeasureMarkupText(const char* markup, int* w, int* h);
+
 void winuiDialogSetMenuBar(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::MenuBar menuBar);
 
 winrt::Windows::Foundation::Collections::IVector<winrt::Microsoft::UI::Xaml::Controls::MenuFlyoutItemBase> winuiMenuGetItemsCollection(Ihandle* menu);

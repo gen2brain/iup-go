@@ -21,15 +21,18 @@ extern "C" {
 #include "iup_register.h"
 #include "iup_childtree.h"
 #include "iup_classbase.h"
+#include "iup_markup.h"
 }
 
 #include "iupwinui_drv.h"
 
 #include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
+#include <winrt/Microsoft.UI.Xaml.Documents.h>
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
 using namespace Microsoft::UI::Xaml::Controls;
+using namespace Microsoft::UI::Xaml::Documents;
 using namespace Microsoft::UI::Xaml::Media;
 using namespace Microsoft::UI::Xaml::Media::Imaging;
 using namespace Windows::Foundation;
@@ -63,13 +66,127 @@ static Image winuiLabelGetImage(Ihandle* ih)
   return nullptr;
 }
 
+void iupwinuiApplyMarkupToTextBlock(TextBlock textBlock, const char* value)
+{
+  ImarkupData* data = iupMarkupParse(value);
+  if (!data)
+  {
+    textBlock.Text(winrt::to_hstring(value ? value : ""));
+    return;
+  }
+
+  textBlock.Text(winrt::hstring{});
+  textBlock.Inlines().Clear();
+
+  for (int i = 0; i < data->count; i++)
+  {
+    ImarkupRun* mr = &data->runs[i];
+
+    Run run;
+    run.Text(winrt::to_hstring(mr->text));
+
+    if (mr->font_family)
+    {
+      const char* family = mr->font_family;
+      if (iupStrEqualNoCase(family, "Serif")) family = "Times New Roman";
+      else if (iupStrEqualNoCase(family, "Sans-Serif") || iupStrEqualNoCase(family, "Sans")) family = "Segoe UI";
+      else if (iupStrEqualNoCase(family, "Monospace") || iupStrEqualNoCase(family, "Mono")) family = "Consolas";
+      else if (iupStrEqualNoCase(family, "Courier")) family = "Courier New";
+      run.FontFamily(Media::FontFamily(winrt::to_hstring(family)));
+    }
+
+    if (mr->font_size)
+    {
+      run.FontSize((double)mr->font_size);
+    }
+    else if (mr->big || mr->small_size)
+    {
+      double base = textBlock.FontSize();
+      int net = mr->big - mr->small_size;
+      for (int j = 0; j < net; j++) base *= 1.2;
+      for (int j = 0; j > net; j--) base *= 0.83;
+      run.FontSize(base);
+    }
+
+    if (mr->bold || (mr->font_weight >= 700))
+    {
+      run.FontWeight(Windows::UI::Text::FontWeight{700});
+    }
+    else if (mr->font_weight)
+    {
+      run.FontWeight(Windows::UI::Text::FontWeight{(uint16_t)mr->font_weight});
+    }
+
+    if (mr->italic || mr->font_style == 1)
+    {
+      run.FontStyle(Windows::UI::Text::FontStyle::Italic);
+    }
+    else if (mr->font_style == 2)
+    {
+      run.FontStyle(Windows::UI::Text::FontStyle::Oblique);
+    }
+
+    if (mr->fg_color)
+    {
+      unsigned char r, g, b;
+      if (iupStrToRGB(mr->fg_color, &r, &g, &b))
+      {
+        Color c; c.A = 255; c.R = r; c.G = g; c.B = b;
+        run.Foreground(SolidColorBrush(c));
+      }
+    }
+
+    auto decorations = Windows::UI::Text::TextDecorations::None;
+    if (mr->underline)
+      decorations = decorations | Windows::UI::Text::TextDecorations::Underline;
+    if (mr->strikethrough)
+      decorations = decorations | Windows::UI::Text::TextDecorations::Strikethrough;
+    if (decorations != Windows::UI::Text::TextDecorations::None)
+    {
+      run.TextDecorations(decorations);
+    }
+
+    if (mr->superscript)
+    {
+      Documents::Typography::SetVariants(run, Microsoft::UI::Xaml::FontVariants::Superscript);
+    }
+    else if (mr->subscript)
+    {
+      Documents::Typography::SetVariants(run, Microsoft::UI::Xaml::FontVariants::Subscript);
+    }
+
+    textBlock.Inlines().Append(run);
+  }
+
+  iupMarkupFree(data);
+}
+
+void iupwinuiMeasureMarkupText(const char* markup, int* w, int* h)
+{
+  TextBlock tb;
+  iupwinuiApplyMarkupToTextBlock(tb, markup);
+  tb.TextWrapping(TextWrapping::NoWrap);
+  tb.Padding(Thickness{0, 0, 0, 0});
+  tb.Measure(Size{100000.0f, 100000.0f});
+  Size ds = tb.DesiredSize();
+  if (w) *w = (int)ceil(ds.Width);
+  if (h) *h = (int)ceil(ds.Height);
+}
+
 static int winuiLabelSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
   {
     TextBlock textBlock = winuiLabelGetTextBlock(ih);
     if (textBlock)
-      textBlock.Text(iupwinuiProcessMnemonic(value, NULL));
+    {
+      if (iupAttribGetBoolean(ih, "MARKUP"))
+      {
+        iupwinuiApplyMarkupToTextBlock(textBlock, value);
+      }
+      else
+        textBlock.Text(iupwinuiProcessMnemonic(value, NULL));
+    }
   }
   return 1;
 }
@@ -78,6 +195,9 @@ static char* winuiLabelGetTitleAttrib(Ihandle* ih)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
   {
+    if (iupAttribGetBoolean(ih, "MARKUP"))
+      return iupAttribGet(ih, "TITLE");
+
     TextBlock textBlock = winuiLabelGetTextBlock(ih);
     if (textBlock)
       return iupwinuiHStringToString(textBlock.Text());
@@ -478,5 +598,5 @@ extern "C" void iupdrvLabelInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, winuiLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, winuiLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }

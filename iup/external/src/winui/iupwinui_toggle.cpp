@@ -24,15 +24,18 @@ extern "C" {
 #include "iup_register.h"
 #include "iup_childtree.h"
 #include "iup_classbase.h"
+#include "iup_markup.h"
 }
 
 #include "iupwinui_drv.h"
 
 #include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
+#include <winrt/Microsoft.UI.Xaml.Documents.h>
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
 using namespace Microsoft::UI::Xaml::Controls;
+using namespace Microsoft::UI::Xaml::Documents;
 using namespace Microsoft::UI::Xaml::Controls::Primitives;
 using namespace Microsoft::UI::Xaml::Media;
 using namespace Microsoft::UI::Xaml::Media::Imaging;
@@ -198,13 +201,24 @@ static void winuiToggleSetImageContent(Ihandle* ih, const char* name, int make_i
   winuiToggleSetImageTextContent(ih, tb, image, iupAttribGet(ih, "TITLE"));
 }
 
+static IInspectable winuiToggleMakeContent(Ihandle* ih, const char* value)
+{
+  if (iupAttribGetBoolean(ih, "MARKUP"))
+  {
+    TextBlock tb;
+    iupwinuiApplyMarkupToTextBlock(tb, value);
+    return tb;
+  }
+  return box_value(iupwinuiProcessMnemonic(value, NULL));
+}
+
 static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
   IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
   if (!aux)
     return 1;
 
-  hstring title = iupwinuiProcessMnemonic(value, NULL);
+  IInspectable content = winuiToggleMakeContent(ih, value);
 
   switch (aux->controlType)
   {
@@ -212,7 +226,7 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
     {
       ToggleSwitch ts = winuiGetHandle<ToggleSwitch>(ih);
       if (ts)
-        ts.Header(box_value(title));
+        ts.Header(content);
     }
     break;
   case IUPWINUI_TOGGLE_TOGGLEBUTTON:
@@ -227,7 +241,7 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
       {
         ToggleButton tb = winuiGetHandle<ToggleButton>(ih);
         if (tb)
-          tb.Content(box_value(title));
+          tb.Content(content);
       }
     }
     break;
@@ -235,7 +249,7 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
     {
       RadioButton rb = winuiGetHandle<RadioButton>(ih);
       if (rb)
-        rb.Content(box_value(title));
+        rb.Content(content);
     }
     break;
   case IUPWINUI_TOGGLE_CHECKBOX:
@@ -243,7 +257,9 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
     {
       CheckBox cb = winuiGetHandle<CheckBox>(ih);
       if (cb)
-        cb.Content(box_value(title));
+      {
+        cb.Content(content);
+      }
     }
     break;
   }
@@ -253,6 +269,9 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
 static char* winuiToggleGetTitleAttrib(Ihandle* ih)
 {
+  if (iupAttribGetBoolean(ih, "MARKUP"))
+    return iupAttribGet(ih, "TITLE");
+
   IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
   if (!aux)
     return NULL;
@@ -293,7 +312,13 @@ static char* winuiToggleGetTitleAttrib(Ihandle* ih)
   }
 
   if (content)
+  {
+    TextBlock tb = content.try_as<TextBlock>();
+    if (tb)
+      return iupwinuiHStringToString(tb.Text());
+
     return iupwinuiHStringToString(unbox_value<hstring>(content));
+  }
 
   return NULL;
 }
@@ -764,5 +789,5 @@ extern "C" void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, winuiToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }
