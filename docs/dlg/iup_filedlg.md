@@ -86,6 +86,7 @@ Supported in Windows (Win32), GTK 3, macOS and Qt.
 >   Also the attributes WID, HWND, XWINDOW and XDISPLAY are valid and are relative to the preview area.
 >
 > If the attribute PREVIEWGLCANVAS is defined, then it is used as the name of an existent **IupGLCanvas** control to be mapped internally to the preview canvas. Notice that this is not a fully implemented **IupGLCanvas** that inherits from **IupCanvas**. This does the minimum necessary so you can use **IupGLCanvas** auxiliary functions for the preview canvas and call OpenGL functions. No **IupCanvas** attributes or callbacks are available.
+> Supported in Windows (Win32), GTK 3, Motif, macOS and Qt (X11 only).
 
 **STATUS** (read-only): Indicates the status of the selection made:
 
