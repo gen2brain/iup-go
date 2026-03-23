@@ -17,7 +17,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_strmessage.h"
-#include "iup_table.h"
+#include "iup_hashtable.h"
 #include "iup_register.h"
 
 

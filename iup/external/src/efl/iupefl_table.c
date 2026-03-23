@@ -19,7 +19,7 @@
 #include "iup_drvfont.h"
 #include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
-#include "iup_tablecontrol.h"
+#include "iup_table.h"
 #include "iup_image.h"
 #include "iup_key.h"
 #include "iup_focus.h"

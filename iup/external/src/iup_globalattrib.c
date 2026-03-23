@@ -10,9 +10,8 @@
 
 #include "iup.h" 
 
-#include "iup_table.h"
+#include "iup_hashtable.h"
 #include "iup_globalattrib.h"
-#include "iup_table.h"
 #include "iup_class.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"

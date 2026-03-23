@@ -23,7 +23,7 @@
 #include "iup_image.h"
 
 #include "iupgtk4_drv.h"
-#include "iup_tablecontrol.h"
+#include "iup_table.h"
 
 
 /* ========================================================================= */

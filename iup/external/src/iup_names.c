@@ -10,7 +10,7 @@
 #include "iup.h"
 
 #include "iup_str.h"
-#include "iup_table.h"
+#include "iup_hashtable.h"
 #include "iup_names.h"
 #include "iup_object.h"
 #include "iup_class.h"

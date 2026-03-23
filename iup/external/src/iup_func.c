@@ -9,7 +9,7 @@
 #include "iup.h"
 
 #include "iup_str.h"
-#include "iup_table.h"
+#include "iup_hashtable.h"
 #include "iup_func.h"
 #include "iup_drv.h"
 #include "iup_assert.h"
