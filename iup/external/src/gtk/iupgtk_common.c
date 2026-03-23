@@ -30,6 +30,7 @@
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_assert.h"
+#include "iup_markup.h"
 
 #include "iupgtk_drv.h"
 
@@ -381,7 +382,11 @@ int iupgtkSetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value)
   else
   {
     if (iupAttribGetBoolean(ih, "MARKUP"))
-      gtk_label_set_markup(label, iupgtkStrConvertToSystem(str));
+    {
+      char* pango = iupMarkupToPango(str);
+      gtk_label_set_markup(label, iupgtkStrConvertToSystem(pango));
+      free(pango);
+    }
     else
       gtk_label_set_text(label, iupgtkStrConvertToSystem(str));
   }

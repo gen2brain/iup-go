@@ -20,6 +20,7 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_assert.h"
+#include "iup_markup.h"
 
 #include "iupgtk_drv.h"
 
@@ -198,11 +199,14 @@ static void gtkFontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescrip
 
   if (GTK_IS_LABEL(widget))
   {
-    PangoAttrList *attrs = pango_attr_list_new();
-    pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->strikethrough));
-    pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->underline));
-    gtk_label_set_attributes (GTK_LABEL(widget), attrs);
-    pango_attr_list_unref(attrs);
+    if (!(ih && iupAttribGetBoolean(ih, "MARKUP")))
+    {
+      PangoAttrList *attrs = pango_attr_list_new();
+      pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->strikethrough));
+      pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->underline));
+      gtk_label_set_attributes(GTK_LABEL(widget), attrs);
+      pango_attr_list_unref(attrs);
+    }
   }
 
   if (GTK_IS_ENTRY(widget))
@@ -395,10 +399,12 @@ static void gtkFontGetTextSize(Ihandle* ih, IgtkFont* gtkfont, const char* str, 
     int dummy_h;
     char* text = iupgtkStrConvertToSystemLen(str, &len);
 
-    if (iupAttribGetBoolean(ih, "MARKUP"))
+    if (ih && iupAttribGetBoolean(ih, "MARKUP"))
     {
+      char* pango = iupMarkupToPango(text);
       pango_layout_set_attributes(gtkfont->layout, NULL);
-      pango_layout_set_markup(gtkfont->layout, text, len);
+      pango_layout_set_markup(gtkfont->layout, pango, (int)strlen(pango));
+      free(pango);
     }
     else
       pango_layout_set_text(gtkfont->layout, text, len);
@@ -474,8 +480,10 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 
   if (iupAttribGetBoolean(ih, "MARKUP"))
   {
+    char* pango = iupMarkupToPango(text);
     pango_layout_set_attributes(gtkfont->layout, NULL);
-    pango_layout_set_markup(gtkfont->layout, text, len);
+    pango_layout_set_markup(gtkfont->layout, pango, (int)strlen(pango));
+    free(pango);
   }
   else
     pango_layout_set_text(gtkfont->layout, text, len);
