@@ -19,8 +19,9 @@
 #include <QStyleOptionButton>
 #include <QStyle>
 #include <QPainter>
+#include <QStylePainter>
+#include <QTextDocument>
 #include <QTimer>
-#include <QPalette>
 #include <QElapsedTimer>
 
 #include <cstdlib>
@@ -40,6 +41,7 @@ extern "C" {
 #include "iup_drvfont.h"
 #include "iup_key.h"
 #include "iup_toggle.h"
+#include "iup_markup.h"
 }
 
 #include "iupqt_drv.h"
@@ -58,9 +60,13 @@ class IupQtToggleBase : public BaseWidget
 protected:
   Ihandle* iup_handle;
   bool last_was_double_click;
+  QString markup_html;
 
 public:
   explicit IupQtToggleBase(Ihandle* ih) : BaseWidget(), iup_handle(ih), last_was_double_click(false) {}
+
+  void setMarkupHtml(const QString& html) { markup_html = html; }
+  void clearMarkupHtml() { markup_html.clear(); }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   void enterEvent(QEnterEvent* event) override
@@ -138,6 +144,62 @@ public:
   {
     last_was_double_click = false;
     BaseWidget::mousePressEvent(event);
+  }
+
+  void paintEvent(QPaintEvent* event) override
+  {
+    if constexpr (std::is_same_v<BaseWidget, QCheckBox> || std::is_same_v<BaseWidget, QRadioButton>)
+    {
+      if (markup_html.isEmpty())
+      {
+        BaseWidget::paintEvent(event);
+        return;
+      }
+
+      QStylePainter p(this);
+      QStyleOptionButton opt;
+      this->initStyleOption(&opt);
+
+      constexpr bool isRadio = std::is_same_v<BaseWidget, QRadioButton>;
+
+      /* Draw the indicator */
+      QStyleOptionButton subopt = opt;
+      subopt.rect = this->style()->subElementRect(
+        isRadio ? QStyle::SE_RadioButtonIndicator : QStyle::SE_CheckBoxIndicator, &opt, this);
+      p.drawPrimitive(
+        isRadio ? QStyle::PE_IndicatorRadioButton : QStyle::PE_IndicatorCheckBox, subopt);
+
+      /* Draw rich text in the contents rect */
+      QRect contentsRect = this->style()->subElementRect(
+        isRadio ? QStyle::SE_RadioButtonContents : QStyle::SE_CheckBoxContents, &opt, this);
+
+      QTextDocument doc;
+      doc.setHtml(markup_html);
+      doc.setDefaultFont(this->font());
+      doc.setTextWidth(contentsRect.width());
+
+      p.save();
+      p.translate(contentsRect.topLeft());
+      qreal textHeight = doc.size().height();
+      if (textHeight < contentsRect.height())
+        p.translate(0, (contentsRect.height() - textHeight) / 2.0);
+      doc.drawContents(&p);
+      p.restore();
+
+      /* Draw focus rect */
+      if (opt.state & QStyle::State_HasFocus)
+      {
+        QStyleOptionFocusRect fropt;
+        fropt.QStyleOption::operator=(opt);
+        fropt.rect = this->style()->subElementRect(
+          isRadio ? QStyle::SE_RadioButtonFocusRect : QStyle::SE_CheckBoxFocusRect, &opt, this);
+        p.drawPrimitive(QStyle::PE_FrameFocusRect, fropt);
+      }
+    }
+    else if constexpr (!std::is_same_v<BaseWidget, QAbstractButton>)
+    {
+      BaseWidget::paintEvent(event);
+    }
   }
 };
 
@@ -682,14 +744,34 @@ static int qtToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
     if (button)
     {
-      /* Check for MARKUP support */
       if (iupAttribGetBoolean(ih, "MARKUP"))
       {
-        /* Qt buttons automatically render HTML/rich text */
-        button->setText(QString::fromUtf8(value ? value : ""));
+        char* html = iupMarkupToHtml(value ? value : "");
+        char* stripped = iupMarkupStripTags(value ? value : "");
+
+        /* Set stripped text for correct sizeHint calculation */
+        button->setText(QString::fromUtf8(stripped));
+        free(stripped);
+
+        /* Store HTML for custom paintEvent rendering */
+        IupQtCheckBox* cb = dynamic_cast<IupQtCheckBox*>(button);
+        IupQtRadioButton* rb = dynamic_cast<IupQtRadioButton*>(button);
+        if (cb)
+          cb->setMarkupHtml(QString::fromUtf8(html));
+        else if (rb)
+          rb->setMarkupHtml(QString::fromUtf8(html));
+
+        free(html);
+        return 1;
       }
       else
       {
+        /* Clear markup rendering if switching from markup */
+        if (dynamic_cast<IupQtCheckBox*>(button))
+          static_cast<IupQtCheckBox*>(button)->clearMarkupHtml();
+        else if (dynamic_cast<IupQtRadioButton*>(button))
+          static_cast<IupQtRadioButton*>(button)->clearMarkupHtml();
+
         /* Process mnemonic and set text */
         char c = '&';
         char* str = iupStrProcessMnemonic(value, &c, 1);
