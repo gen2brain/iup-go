@@ -82,9 +82,6 @@ IUP_DRV_API void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id ih_wi
 IUP_DRV_API int iupcocoaCommonBaseSetContextMenuAttrib(Ihandle* ih, const char* value);
 IUP_DRV_API char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih);
 
-/* Send an action through the responder chain (e.g., "undo:", "copy:"). */
-IUP_DRV_API int iupcocoaCommonBaseSetSendActionAttrib(Ihandle* ih, const char* value);
-
 /* Helpers for keyboard events. */
 IUP_DRV_API bool iupcocoaKeyEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code, bool is_pressed);
 IUP_DRV_API bool iupcocoaModifierEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code);

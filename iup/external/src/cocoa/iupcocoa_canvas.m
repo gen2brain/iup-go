@@ -1585,7 +1585,6 @@ void iupdrvCanvasInitClass(Iclass* ic)
   /* Drag and drop */
   iupClassRegisterAttribute(ic, "DRAGINITIATE", NULL, cocoaCanvasSetBeginDragAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOBEGINDRAG", NULL, NULL, "NO", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SENDACTION", NULL, iupcocoaCommonBaseSetSendActionAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* Not Supported */
   iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
