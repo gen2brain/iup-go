@@ -297,6 +297,8 @@ void iupAttribUpdate(Ihandle* ih)
     return;
 
   name_array = (char**)malloc(count * sizeof(char*));
+  if (!name_array)
+    return;
 
   /* store the names before updating so we can add or remove attributes during the update */
   name = iupTableFirst(ih->attrib);

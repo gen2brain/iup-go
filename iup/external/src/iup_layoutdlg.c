@@ -763,6 +763,12 @@ static void iLayoutDialogLoad(Ihandle* dlg, iLayoutDialog* layoutdlg, int only_v
 
   dlg_list = (Ihandle**)malloc(count*sizeof(Ihandle*));
   dlg_list_str = (char**)malloc(count*sizeof(char*));
+  if (!dlg_list || !dlg_list_str)
+  {
+    if (dlg_list) free(dlg_list);
+    if (dlg_list_str) free(dlg_list_str);
+    return;
+  }
 
   i = iLayoutDialogGetDialogs(dlg_list, dlg_list_str, count, only_visible);
 

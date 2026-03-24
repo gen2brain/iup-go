@@ -436,8 +436,11 @@ IUP_SDK_API char *iupStrGetMemory(int size)
     }
     else if (buffers_sizes[buffers_index] < size+1)  /* reallocate if necessary */
     {
+      char* new_buf = (char*)realloc(buffers[buffers_index], size+1);
+      if (!new_buf)
+        return NULL;
+      buffers[buffers_index] = new_buf;
       buffers_sizes[buffers_index] = size+1;
-      buffers[buffers_index] = (char*)realloc(buffers[buffers_index], buffers_sizes[buffers_index]);
     }
 
     /* always clear memory before returning a new buffer */

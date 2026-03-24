@@ -116,6 +116,8 @@ void iupDlgListDestroyAll(void)
   int i, count = 0;
   Ihandle** ih_array = (Ihandle**)malloc(idlg_count * sizeof(Ihandle*));
   Idiallst *list;
+  if (!ih_array)
+    return;
   for (list = idlglist; list; list = list->next)
   {
     if (iupObjectCheck(list->ih))
@@ -139,6 +141,8 @@ IUP_SDK_API void iupDlgListDestroySelected(const char* name, void* value)
   int i, count = 0;
   Ihandle** ih_array = (Ihandle**)malloc(idlg_count * sizeof(Ihandle*));
   Idiallst *list;
+  if (!ih_array)
+    return;
   for (list = idlglist; list; list = list->next)
   {
     if (iupObjectCheck(list->ih) && ((value && iupAttribGet(list->ih, name) == value) || (!value && iupAttribGet(list->ih, name))))
