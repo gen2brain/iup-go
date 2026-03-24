@@ -152,9 +152,6 @@ IUP_API void IupVersionShow(void)
   IupSetAttribute(info, "APPEND", "");
   IupSetAttribute(info, "APPEND", "Iup Libraries Open:");
 
-  if (IupGetGlobal("_IUP_IMAGELIB_OPEN"))
-    IupSetAttribute(info, "APPEND", "   IupImageLibOpen");
-
   if (IupGetGlobal("_IUP_CONTROLS_OPEN"))
   {
     IupSetAttribute(info, "APPEND", "   IupControlsOpen");

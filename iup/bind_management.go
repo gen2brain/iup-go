@@ -182,7 +182,7 @@ func Redraw(ih Ihandle, children int) {
 
 // ConvertXYToPos converts a (x,y) coordinate in an item position.
 //
-// It can be used for Text and Scintilla (returns a position in the string), List (returns an item),
+// It can be used for Text (returns a position in the string), List (returns an item),
 // Tree (returns a node identifier) or Matrix (returns a cell position, where pos=lin*numcol + col).
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_convertxytopos.md

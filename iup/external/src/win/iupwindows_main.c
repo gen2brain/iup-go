@@ -11,14 +11,7 @@
 #include "iup.h"
               
               
-#ifdef __WATCOMC__     /* force Watcom to link this module, called from IupOpen */
-void iupwinMainDummy(void)
-{
-  return;
-}
-#else
 extern int main(int, char **);
-#endif
 
 /* save this handle in DllMain only, use to load resources from the DLL. */
 #ifndef IUP_STUB
@@ -47,22 +40,6 @@ int WINAPI WinMain (HINSTANCE hinst, HINSTANCE hprev, LPSTR cmdline, int ncmdsho
 
   /* WinMain is NOT called for Console applications */
   
-#ifdef __WATCOMC__
-  {
-    extern int _argc;
-    extern char** _argv;
-    return IupMain(_argc, _argv);
-  }              
-#else
-  {
-    /* this seems to work for all the compilers we tested, except Watcom compilers */
-    /* These are declared in <stdlib.h>, except for Cygwin. */
-#ifdef __CYGWIN__
-    extern int __argc;
-    extern char** __argv;
-#endif
-    return main(__argc, __argv);
-  }
-#endif
+  return main(__argc, __argv);
 }
 #endif

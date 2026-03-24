@@ -58,23 +58,6 @@
 #endif /* IUP_BUILD_LIBRARY */
 #endif /* IUP_DRV_API */
 
-/* Mark the IupImageLib function, it does not have a header of its own */
-#ifndef IUPIMGLIB_API
-#ifdef IUPIMGLIB_BUILD_LIBRARY
-  #ifdef __EMSCRIPTEN__
-    #include <emscripten.h>
-    #define IUPIMGLIB_API EMSCRIPTEN_KEEPALIVE
-  #elif WIN32
-    #define IUPIMGLIB_API __declspec(dllexport)
-  #elif defined(__GNUC__) && __GNUC__ >= 4
-    #define IUPIMGLIB_API __attribute__ ((visibility("default")))
-  #else
-    #define IUPIMGLIB_API
-  #endif
-#else
-  #define IUPIMGLIB_API
-#endif /* IUPIMGLIB_BUILD_LIBRARY */
-#endif /* IUPIMGLIB_API */
 
 /** @endcond DOXYGEN_SHOULD_IGNORE_THIS */
 #endif /* DOXYGEN_SHOULD_IGNORE_THIS */

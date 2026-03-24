@@ -206,10 +206,7 @@
 #define iup_XkeyAlt(_c)   ((_c) | 0x40000000)   /* Alt    */
 #define iup_XkeySys(_c)   ((_c) | 0x80000000)   /* Sys (Win or Apple) - notice that using "int" will display a negative value */
 
-/* These definitions are here for backward compatibility 
-   and to simplify some key combination usage.
-   But since IUP 3.9, modifiers can be combined with any key
-   and they can be mixed together. */
+/* Common key combinations using modifier macros above. */
 
 #define K_sHOME    iup_XkeyShift(K_HOME   )
 #define K_sUP      iup_XkeyShift(K_UP     )

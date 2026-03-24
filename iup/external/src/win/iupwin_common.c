@@ -372,11 +372,7 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
       break; 
     } 
   case WM_TOUCH:
-    /* TODO: 
-     - considering touch messages are greedy, one window got it all?
-     - how this work? only for the dialog, or also for the children?
-     - should a container forward to its children?
-    */
+    /* Touch messages are greedy, the top-level window receives them all. */
     if (LOWORD(wp))
       iupwinTouchProcessInput(ih, (int)LOWORD(wp), (void*)lp);
     break;
@@ -469,7 +465,7 @@ static int winCheckParent(Ihandle* child, Ihandle* ih)
     return 1;
   else
   {
-    /* TODO: this is weird... */
+    /* Check if child was reparented from this container */
     HWND oldParent = (HWND)iupAttribGet(child, "_IUPWIN_REPARENT");
     if (oldParent && oldParent==ih->handle)
       return 1;

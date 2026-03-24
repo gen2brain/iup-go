@@ -14,7 +14,7 @@ But it is only supported in custom controls drawn by IUP, example IupGauge, IupD
 It is never supported when using X11, GDI or GDK draw drivers.
 
 **Default**: It is the value of the DLGFGCOLOR or TXTFGCOLOR global attribute.
-TXTFGCOLOR is used on IupText, IupList, IupTree and IupScintilla.  Usually is "0 0 0" - black.
+TXTFGCOLOR is used on IupText, IupList, and IupTree.  Usually is "0 0 0" - black.
 
 Hexadecimal notation in the format "#RRGGBB" is also accepted in all color attributes.
 For example, "255 0 128" can also be written as "#FF0080".

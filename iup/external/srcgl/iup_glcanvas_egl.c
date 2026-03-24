@@ -279,7 +279,6 @@ static int eGLCanvasDefaultResize(Ihandle *ih, int width, int height)
 
   iupEGLBackendUpdateSubsurfacePosition(ih, gldata);
 
-
   if (gldata->context != EGL_NO_CONTEXT)
   {
     IupGLMakeCurrent(ih);
@@ -841,7 +840,7 @@ void IupGLMakeCurrent(Ihandle* ih)
   if (!gldata)
     return;
 
-  if (!gldata || gldata->display == EGL_NO_DISPLAY)
+  if (gldata->display == EGL_NO_DISPLAY)
     return;
 
   /* Lazy initialization: create native window + EGL surface + context on first call */
@@ -950,7 +949,6 @@ void IupGLMakeCurrent(Ihandle* ih)
   }
 #endif
 
-
   if (eglMakeCurrent(gldata->display, gldata->surface, gldata->surface, gldata->context) == EGL_FALSE)
   {
 
@@ -994,7 +992,6 @@ void IupGLSwapBuffers(Ihandle* ih)
   cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
   if (cb)
     cb(ih);
-
 
   iupEGLBackendPreSwapBuffers(ih, gldata);
   eglSwapBuffers(gldata->display, gldata->surface);
