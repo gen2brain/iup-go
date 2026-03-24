@@ -620,7 +620,7 @@ IUP_API Ihandle* IupDrawGetImage(Ihandle* ih)
   if (dc)
   {
     iupdrvDrawGetSize(dc, &w, &h);
-    if (w <= 0 || h <= 0)
+    if (w <= 0 || h <= 0 || w > 32767 || h > 32767)
       return NULL;
 
     data = (unsigned char*)malloc(w * h * 4);
@@ -636,7 +636,7 @@ IUP_API Ihandle* IupDrawGetImage(Ihandle* ih)
   else
   {
     IupGetIntInt(ih, "DRAWSIZE", &w, &h);
-    if (w <= 0 || h <= 0)
+    if (w <= 0 || h <= 0 || w > 32767 || h > 32767)
       return NULL;
 
     data = (unsigned char*)malloc(w * h * 4);

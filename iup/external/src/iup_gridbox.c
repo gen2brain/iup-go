@@ -1008,8 +1008,12 @@ static int iGridBoxGetLinHeight(Ihandle* ih, Ihandle** child_array, int lin)
 
 static Ihandle** iGridBoxGetChildArray(Ihandle* ih)
 {
-  Ihandle* *child_array = (Ihandle**)calloc(ih->data->num_lin * ih->data->num_col, sizeof(Ihandle*));
+  Ihandle* *child_array;
   Ihandle* child;
+  if (ih->data->num_lin <= 0 || ih->data->num_col <= 0 ||
+      ih->data->num_lin > 32767 || ih->data->num_col > 32767)
+    return NULL;
+  child_array = (Ihandle**)calloc(ih->data->num_lin * ih->data->num_col, sizeof(Ihandle*));
   if (!child_array) return NULL;
 
   int i = 0;

@@ -283,7 +283,11 @@ IUP_SDK_API char* iupLayoutGetElementTitle(Ihandle* ih)
   }
 
   if (ih->iclass->nativetype == IUP_TYPEIMAGE)
-    snprintf(str + strlen(str), 200 - strlen(str), " - %s", IupGetAttribute(ih, "RASTERSIZE"));
+  {
+    int cur_len = (int)strlen(str);
+    if (cur_len < 200)
+      snprintf(str + cur_len, 200 - cur_len, " - %.30s", IupGetAttribute(ih, "RASTERSIZE"));
+  }
 
   return str;
 }

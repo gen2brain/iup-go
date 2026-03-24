@@ -94,17 +94,17 @@ static int match_non_alphanum (const char *text, long j)
 
 static int match_word_boundary (const char *text, long j)
 {
-  if ((j == 0) && isalphanum (text[j]))
-    return IMASK_NO_CHAR_MATCH;
-
+  if (j == 0)
+  {
+    if (isalphanum (text[j]))
+      return IMASK_NO_CHAR_MATCH;
+  }
   else if (isalphanum (text[j - 1]) && !isalphanum (text[j]))
     return IMASK_NO_CHAR_MATCH;
-
   else if (isalphanum (text[j]) && !isalphanum (text[j - 1]))
     return IMASK_NO_CHAR_MATCH;
 
   return IMASK_NO_MATCH;
-
 }
 
 static ImaskMatchFunc imask_match_functions[] =
@@ -320,7 +320,7 @@ static long iMaskMatchRecursive (ImaskMatchVars * vars, long j, int state, Imask
     break;
 
   case IMASK_BEGIN_CMD:
-    if (!((vars->text[j - 1] == '\n') || (j == 0)))
+    if (!((j == 0) || (vars->text[j - 1] == '\n')))
       return IMASK_NOMATCH;
 
     break;
@@ -483,7 +483,7 @@ static long iMaskMatchLocal (const char *text, ImaskParsed * fsm, long start, ch
       }
       else if (fsm[state].command == IMASK_BEGIN_CMD)
       {
-        if (text[j - 1] == '\n' || j == 0)
+        if (j == 0 || text[j - 1] == '\n')
           iMaskPushStack (&now, fsm[state].next1);
       }
       else if (fsm[state].command == IMASK_END_CMD)

@@ -142,14 +142,14 @@ IUP_API int IupConfigLoad(Ihandle* ih)
     if (line_buffer[0] == '[')  /* group start */
     {
       group[0] = 0;
-      sscanf(line_buffer, "[%[^]]s]", group);
+      sscanf(line_buffer, "[%99[^]]s]", group);
     }
     else
     {
       const char* value;
 
       key[0] = 0;
-      sscanf(line_buffer, "%[^=]s", key);
+      sscanf(line_buffer, "%99[^=]s", key);
 
       value = strstr(line_buffer, "=");
       if (!value)                    

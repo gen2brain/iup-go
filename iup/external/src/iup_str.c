@@ -1946,12 +1946,6 @@ IUP_SDK_API int iupStrTmpFileName(char* filename, const char* prefix)
     return 0;
   if (GetTempFileNameA(tmpPath, prefix, 0, filename) == 0)
     return 0;
-#elif OLD_TMPFILENAME
-  char* tmp = tempnam(NULL, prefix);
-  if (!tmp)
-    return 0;
-  iupStrCopyN(filename, 10240, tmp);
-  free(tmp);
 #else
   char* dirname = getenv("TMPDIR");
   if (!dirname) dirname = "/tmp";

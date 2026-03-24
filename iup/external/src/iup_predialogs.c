@@ -97,12 +97,16 @@ IUP_API int IupListDialog (int type, const char *title, int size, const char** l
   }
   else if ((type == 2) && (marks != NULL))
   {
-    m=(char *)marks;
-    for (i=0;i<size;i++)
-      m[i] = marks[i] ? '+' : '-';
-    m[i]='\0';
-    IupSetAttribute(lst,"MULTIPLE","YES");
-    IupSetAttribute(lst,"VALUE",m);
+    m = (char*)malloc(size + 1);
+    if (m)
+    {
+      for (i=0;i<size;i++)
+        m[i] = marks[i] ? '+' : '-';
+      m[i]='\0';
+      IupSetAttribute(lst,"MULTIPLE","YES");
+      IupSetAttribute(lst,"VALUE",m);
+      free(m);
+    }
   }
 
   if (max_lin < 4) max_lin = 4;

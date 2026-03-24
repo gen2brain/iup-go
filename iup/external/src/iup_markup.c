@@ -93,6 +93,8 @@ static void iMarkupAddRun(ImarkupData* data, const char* text, int text_len, con
   memset(run, 0, sizeof(ImarkupRun));
 
   run->text = (char*)malloc(text_len + 1);
+  if (!run->text)
+    return;
   memcpy(run->text, text, text_len);
   run->text[text_len] = '\0';
 
@@ -428,6 +430,11 @@ IUP_SDK_API char* iupMarkupStripTags(const char* markup)
     total_len += (int)strlen(data->runs[i].text);
 
   result = (char*)malloc(total_len + 1);
+  if (!result)
+  {
+    iupMarkupFree(data);
+    return NULL;
+  }
   p = result;
 
   for (i = 0; i < data->count; i++)

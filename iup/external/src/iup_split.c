@@ -132,10 +132,13 @@ static int iSplitGetHeight2(Ihandle* ih, int height1)
 
 static void iSplitCalcVal(Ihandle* ih, int size1)
 {
+  int divisor;
   if (ih->data->orientation == ISPLIT_VERT)
-    ih->data->val = (size1 * 1000) / (ih->currentwidth - ih->data->barsize);
+    divisor = ih->currentwidth - ih->data->barsize;
   else
-    ih->data->val = (size1 * 1000) / (ih->currentheight - ih->data->barsize);
+    divisor = ih->currentheight - ih->data->barsize;
+  if (divisor > 0)
+    ih->data->val = (size1 * 1000) / divisor;
 }
 
 static void iSplitAdjustVal(Ihandle* ih)
