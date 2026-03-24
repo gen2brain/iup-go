@@ -601,7 +601,6 @@ static int eflDialogMapMethod(Ihandle* ih)
   if (content_box)
   {
     efl_content_set(win, content_box);
-    efl_gfx_entity_visible_set(content_box, EINA_TRUE);
     iupAttribSet(ih, "_IUP_EFL_INNER", (char*)content_box);
   }
   else

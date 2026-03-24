@@ -202,7 +202,6 @@ static int eflLabelReplaceWithImage(Ihandle* ih, const char* name, int make_inac
 
   iupeflBaseAddCallbacks(ih, image);
   iupeflAddToParent(ih);
-  efl_gfx_entity_visible_set(image, EINA_TRUE);
 
   return 1;
 }
@@ -369,9 +368,6 @@ static int eflLabelMapMethod(Ihandle* ih)
   iupeflAddToParent(ih);
 
   eflLabelApplyFont(ih);
-
-  if (ih->data->type == IUP_LABEL_TEXT || ih->data->type == IUP_LABEL_IMAGE)
-    efl_gfx_entity_visible_set(label, EINA_TRUE);
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
