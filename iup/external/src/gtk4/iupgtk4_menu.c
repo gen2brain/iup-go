@@ -122,13 +122,14 @@ static void gtk4MenuActionActivated(GSimpleAction* action, GVariant* parameter, 
 static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_group, int is_root)
 {
   GMenu* menu;
+  GMenu* section;
   Ihandle* child;
-
 
   if (!ih_menu)
     return NULL;
 
   menu = g_menu_new();
+  section = g_menu_new();
 
   for (child = ih_menu->firstchild; child; child = child->brother)
   {
@@ -148,14 +149,13 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
       /* Process mnemonic: convert & to _ for GTK */
       processed_title = iupStrProcessMnemonic(title, &c, 1);
 
-
       if (submenu_ih)
       {
         /* Submenus are never at root, so pass FALSE */
         submenu_model = gtk4BuildMenuModel(submenu_ih, action_group, FALSE);
         if (submenu_model)
         {
-          g_menu_append_submenu(menu, processed_title, G_MENU_MODEL(submenu_model));
+          g_menu_append_submenu(section, processed_title, G_MENU_MODEL(submenu_model));
           /* Store GMenu reference on the IUP menu handle for later access (e.g., recent files) */
           iupAttribSet(submenu_ih, "_IUP_RECENT_GMENU", (char*)submenu_model);
           /* Don't unref - we keep the reference for dynamic updates */
@@ -184,7 +184,6 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
       /* Create unique action name using ih pointer */
       snprintf(action_name, sizeof(action_name), "item-%p", (void*)child);
 
-
       /* Check if this is a checkable item (VALUE attribute present or HIDEMARK not set) */
       char* value_str = iupAttribGetStr(child, "VALUE");
 
@@ -203,7 +202,7 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
         GVariant* state = g_variant_new_boolean(is_checked);
         action = g_simple_action_new_stateful(action_name, NULL, state);
 
-        /* Store attributes needed for VALUE get/set - use SetStr to duplicate strings */
+        /* Store attributes needed for VALUE get/set, use SetStr to duplicate strings */
         iupAttribSetStr(child, "_IUPGTK4_CHECKABLE", "1");
         iupAttribSetStr(child, "_IUPGTK4_ACTION_NAME", action_name);
       }
@@ -227,15 +226,15 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
          * For root-level items, create a submenu with single unlabeled item.
          * Menu bar shows the title, clicking opens dropdown and immediately triggers the action. */
         GMenu* item_submenu = g_menu_new();
-        /* Add item without label - will just trigger the action */
+        /* Add item without label, will just trigger the action */
         g_menu_append(item_submenu, NULL, full_action_name);
-        g_menu_append_submenu(menu, processed_title, G_MENU_MODEL(item_submenu));
+        g_menu_append_submenu(section, processed_title, G_MENU_MODEL(item_submenu));
         g_object_unref(item_submenu);
       }
       else
       {
-        /* Regular submenu item - add directly */
-        g_menu_append(menu, processed_title, full_action_name);
+        /* Regular submenu item, add directly */
+        g_menu_append(section, processed_title, full_action_name);
       }
 
       /* Free processed title if it was allocated */
@@ -244,17 +243,19 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
     }
     else if (iupStrEqual(child->iclass->name, "separator"))
     {
-      if (is_root)
+      if (!is_root)
       {
-        /* Separators cannot be at root level in GtkPopoverMenuBar - skip */
-      }
-      else
-      {
-        /* Separator in submenu */
-        g_menu_append(menu, NULL, NULL);
+        /* GMenu uses sections for separators, finish the current section and start a new one */
+        g_menu_append_section(menu, NULL, G_MENU_MODEL(section));
+        g_object_unref(section);
+        section = g_menu_new();
       }
     }
   }
+
+  /* Append the final section */
+  g_menu_append_section(menu, NULL, G_MENU_MODEL(section));
+  g_object_unref(section);
 
   return menu;
 }
