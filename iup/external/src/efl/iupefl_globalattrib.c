@@ -200,6 +200,16 @@ int iupdrvSetGlobal(const char* name, const char* value)
     return 0;
   }
 
+  if (iupStrEqual(name, "EFLACCEL"))
+  {
+    if (value && value[0])
+    {
+      elm_config_accel_preference_set(value);
+      return 1;
+    }
+    return 0;
+  }
+
   if (iupStrEqual(name, "DEFAULTFONT"))
   {
     eflApplyGlobalFontOverlays(value);
@@ -289,6 +299,28 @@ char* iupdrvGetGlobal(const char* name)
     return NULL;
   }
 #endif
+  if (iupStrEqual(name, "EFLACCEL"))
+  {
+    const char* accel = elm_config_accel_preference_get();
+    if (accel)
+      return iupStrReturnStr(accel);
+    return NULL;
+  }
+  if (iupStrEqual(name, "EFLENGINE"))
+  {
+    Eo* win = iupeflGetMainWindow();
+    if (win)
+    {
+      Evas* evas = evas_object_evas_get(win);
+      if (evas)
+      {
+        Ecore_Evas* ee = ecore_evas_ecore_evas_get(evas);
+        if (ee)
+          return iupStrReturnStr(ecore_evas_engine_name_get(ee));
+      }
+    }
+    return NULL;
+  }
   if (iupStrEqual(name, "DARKMODE"))
   {
     return iupStrReturnBoolean(iupeflIsSystemDarkMode());

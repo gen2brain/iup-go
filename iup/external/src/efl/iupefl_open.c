@@ -350,6 +350,10 @@ int iupdrvOpen(int* argc, char*** argv)
   if (value && value[0])
     elm_theme_set(NULL, value);
 
+  value = getenv("IUP_EFLACCEL");
+  if (value && value[0])
+    elm_config_accel_preference_set(value);
+
   IupSetGlobal("DRIVER", "EFL");
 
   IupSetfAttribute(NULL, "EFLVERSION", "%d.%d.%d", ELM_VERSION_MAJOR, ELM_VERSION_MINOR, 0);

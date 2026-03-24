@@ -57,6 +57,8 @@ static iRegisteredGlobal global_attribs[] = {
   { "DLL_HINSTANCE", 1, 0, 0, 0, 0, 0, 0, 0, 1 },
   { "DRIVER", 1, 1, 1, 1, 1, 1, 1, 1, 1 },
   { "DWM_COMPOSITION", 1, 0, 0, 0, 0, 0, 1, 0, 1 },
+  { "EFLACCEL", 0, 0, 0, 0, 0, 0, 1, 0, 0 },
+  { "EFLENGINE", 0, 0, 0, 0, 0, 0, 1, 0, 1 },
   { "EFLTHEME", 0, 0, 0, 0, 0, 0, 1, 0, 0 },
   { "EFLTHEMEDATA", 0, 0, 0, 0, 0, 0, 1, 0, 0 },
   { "EFLTHEMEDATALEN", 0, 0, 0, 0, 0, 0, 1, 0, 0 },
