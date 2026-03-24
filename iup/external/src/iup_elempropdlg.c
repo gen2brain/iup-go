@@ -43,7 +43,10 @@ IUP_SDK_API void iupLayoutPropertiesUpdate(Ihandle* properties, Ihandle* ih)
 {
   int i, j, attr_count, cb_count, total_count = IupGetClassAttributes(ih->iclass->name, NULL, 0);
   char **attr_names = (char **)malloc(total_count * sizeof(char *));
-  Ihandle* list1 = (Ihandle*)iupAttribGet(properties, "_IUP_PROPLIST1");
+  Ihandle* list1;
+  if (!attr_names)
+    return;
+  list1 = (Ihandle*)iupAttribGet(properties, "_IUP_PROPLIST1");
   Ihandle* list2 = (Ihandle*)iupAttribGet(properties, "_IUP_PROPLIST2");
   Ihandle* list3 = (Ihandle*)iupAttribGet(properties, "_IUP_PROPLIST3");
 
@@ -75,7 +78,15 @@ IUP_SDK_API void iupLayoutPropertiesUpdate(Ihandle* properties, Ihandle* ih)
 
   attr_count = IupGetAllAttributes(ih, NULL, 0);
   if (attr_count > total_count)
-    attr_names = (char **)realloc(attr_names, attr_count * sizeof(char *));
+  {
+    char** new_attr_names = (char **)realloc(attr_names, attr_count * sizeof(char *));
+    if (!new_attr_names)
+    {
+      free(attr_names);
+      return;
+    }
+    attr_names = new_attr_names;
+  }
 
   attr_count = IupGetAllAttributes(ih, attr_names, attr_count);
   for (i = 0, j = 1; i < attr_count; i++)

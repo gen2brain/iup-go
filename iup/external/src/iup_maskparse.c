@@ -532,6 +532,8 @@ static void iMaskParseNewState (ImaskParseVars * vars)
   if (vars->state >= vars->num_states - 1)
   {
     ImaskParsed *new_fsm = (ImaskParsed*) realloc (vars->fsm, (vars->num_states + STATE_BLOCK) * sizeof (ImaskParsed));
+    if (!new_fsm)
+      return;
     memset(new_fsm + vars->num_states, 0, STATE_BLOCK*sizeof(ImaskParsed));
     vars->fsm = new_fsm;
     vars->num_states += STATE_BLOCK;

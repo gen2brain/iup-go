@@ -360,7 +360,6 @@ static int iPlayTimer_CB(Ihandle* timer)
     int cont = 1;
     int mode = IupGetInt(timer, "_IUP_PLAYMODE");
 
-/*    while (cont)    //did not work, menus do not receive the click, why? */
     {
       cont = iPlayAction(file, mode);
 

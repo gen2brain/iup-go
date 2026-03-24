@@ -80,8 +80,12 @@ static void iMarkupAddRun(ImarkupData* data, const char* text, int text_len, con
   if (data->count >= data->alloc)
   {
     int new_alloc = data->alloc * 2;
+    ImarkupRun* new_runs;
     if (new_alloc < 8) new_alloc = 8;
-    data->runs = (ImarkupRun*)realloc(data->runs, new_alloc * sizeof(ImarkupRun));
+    new_runs = (ImarkupRun*)realloc(data->runs, new_alloc * sizeof(ImarkupRun));
+    if (!new_runs)
+      return;
+    data->runs = new_runs;
     data->alloc = new_alloc;
   }
 
@@ -446,8 +450,12 @@ static void iMarkupAppendStr(char** buf, int* len, int* alloc, const char* str)
   if (*len + slen >= *alloc)
   {
     int new_alloc = (*alloc) * 2;
+    char* new_buf;
     if (new_alloc < *len + slen + 64) new_alloc = *len + slen + 64;
-    *buf = (char*)realloc(*buf, new_alloc);
+    new_buf = (char*)realloc(*buf, new_alloc);
+    if (!new_buf)
+      return;
+    *buf = new_buf;
     *alloc = new_alloc;
   }
   memcpy(*buf + *len, str, slen);
@@ -471,7 +479,10 @@ static void iMarkupAppendHtmlEscaped(char** buf, int* len, int* alloc, const cha
       if (*len + 1 >= *alloc)
       {
         int new_alloc = (*alloc) * 2;
-        *buf = (char*)realloc(*buf, new_alloc);
+        char* new_buf = (char*)realloc(*buf, new_alloc);
+        if (!new_buf)
+          return;
+        *buf = new_buf;
         *alloc = new_alloc;
       }
       (*buf)[*len] = *p;
@@ -694,8 +705,12 @@ IUP_SDK_API char* iupMarkupToPango(const char* markup)
     {
       if (result_len + 1 >= result_alloc)
       {
-        result_alloc *= 2;
-        result = (char*)realloc(result, result_alloc);
+        int new_alloc = result_alloc * 2;
+        char* new_result = (char*)realloc(result, new_alloc);
+        if (!new_result)
+          return result;
+        result = new_result;
+        result_alloc = new_alloc;
       }
       result[result_len++] = *p;
       result[result_len] = '\0';
@@ -723,7 +738,10 @@ static void iMarkupAppendEflEscaped(char** buf, int* len, int* alloc, const char
       if (*len + 1 >= *alloc)
       {
         int new_alloc = (*alloc) * 2;
-        *buf = (char*)realloc(*buf, new_alloc);
+        char* new_buf = (char*)realloc(*buf, new_alloc);
+        if (!new_buf)
+          return;
+        *buf = new_buf;
         *alloc = new_alloc;
       }
       (*buf)[*len] = *p;

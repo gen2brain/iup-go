@@ -54,9 +54,15 @@ static void iMdBufEnsure(iMdBuf* buf, int extra)
 {
   if (buf->len + extra + 1 > buf->alloc)
   {
-    while (buf->len + extra + 1 > buf->alloc)
-      buf->alloc *= 2;
-    buf->data = (char*)realloc(buf->data, buf->alloc);
+    int new_alloc = buf->alloc;
+    char* new_data;
+    while (buf->len + extra + 1 > new_alloc)
+      new_alloc *= 2;
+    new_data = (char*)realloc(buf->data, new_alloc);
+    if (!new_data)
+      return;
+    buf->data = new_data;
+    buf->alloc = new_alloc;
   }
 }
 

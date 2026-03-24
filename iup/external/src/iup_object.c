@@ -114,7 +114,11 @@ IUP_SDK_API void** iupObjectGetParamList(void* first, va_list arglist)
       max_count += INITIAL_NUMBER;
 
       new_params = (void **) realloc (params, sizeof (void *) * max_count);
-
+      if (!new_params)
+      {
+        free(params);
+        return NULL;
+      }
       params = new_params;
     }
 

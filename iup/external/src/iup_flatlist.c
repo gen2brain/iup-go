@@ -1402,6 +1402,8 @@ static char* iFlatListGetValueAttrib(Ihandle* ih)
   if (ih->data->is_multiple)
   {
     char *val = (char *)malloc((count + 1)*sizeof(char));
+    if (!val)
+      return NULL;
     for (i = 0; i < count; i++)
       val[i] = (items[i].selected) ? '+' : '-';
     val[i] = '\0';

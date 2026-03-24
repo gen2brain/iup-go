@@ -1079,10 +1079,11 @@ static int iImageSetReshapeAttrib(Ihandle *ih, const char* value)
 
     if (w*h > old_w*old_h)
     {
-      /* must allocate more memory */
       unsigned char* imgdata = (unsigned char*)iupAttribGet(ih, "WID");
-      imgdata = (unsigned char *)realloc(imgdata, sizeof(unsigned char)*w*h * 3);
-      iupAttribSet(ih, "WID", (char*)imgdata);
+      unsigned char* new_imgdata = (unsigned char *)realloc(imgdata, sizeof(unsigned char)*w*h * 3);
+      if (!new_imgdata)
+        return 0;
+      iupAttribSet(ih, "WID", (char*)new_imgdata);
     }
 
     ih->currentwidth = w;

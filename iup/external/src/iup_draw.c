@@ -725,9 +725,13 @@ static void iDrawGetImageRGBA(const char* name, int make_inactive, const char* b
     return;
 
   {
-    int i, count = img_w * img_h;
+    int i, count;
     unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
-    unsigned char* rgba = (unsigned char*)malloc(count * 4);
+    unsigned char* rgba;
+    if (img_w > 32767 || img_h > 32767)
+      return;
+    count = img_w * img_h;
+    rgba = (unsigned char*)malloc(count * 4);
     if (!rgba)
       return;
 
