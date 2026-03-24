@@ -1,4 +1,4 @@
-//go:build ctl
+//go:build ctrl
 
 package main
 

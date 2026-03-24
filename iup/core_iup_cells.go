@@ -1,8 +1,8 @@
-//go:build ctl
+//go:build ctrl
 
 package iup
 
 /*
-#include "external/srcctl/iup_cells.c"
+#include "external/srcctrl/iup_cells.c"
 */
 import "C"
