@@ -23,7 +23,7 @@
 #include "iup_tray.h"
 
 
-#if defined(IUP_USE_GTK3) || defined(IUP_USE_GTK4) || defined(IUP_USE_GTK2) || defined(IUP_USE_QT)
+#if defined(IUP_USE_GTK3) || defined(IUP_USE_GTK4) || defined(IUP_USE_GTK2) || defined(IUP_USE_QT) || defined(IUP_USE_EFL)
 #define IUPCOCOA_TRAY_USE_EXTERNAL_IMAGE
 
 static NSImage* cocoaTrayCreateImageFromPixels(int width, int height, unsigned char* pixels)
