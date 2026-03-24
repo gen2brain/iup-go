@@ -153,18 +153,7 @@ IUP_API void IupVersionShow(void)
   IupSetAttribute(info, "APPEND", "Iup Libraries Open:");
 
   if (IupGetGlobal("_IUP_CONTROLS_OPEN"))
-  {
     IupSetAttribute(info, "APPEND", "   IupControlsOpen");
-
-    IupSetStrf(info, "APPEND", "      CD %s - %s", IupGetGlobal("CD_VERSION"), IupGetGlobal("CD_VERSIONDATE"));
-  }
-
-  if (IupGetGlobal("_IUP_IM_OPEN"))
-  {
-    IupSetAttribute(info, "APPEND", "   IupImOpen");
-
-    IupSetStrf(info, "APPEND", "      IM %s - %s", IupGetGlobal("IM_VERSION"), IupGetGlobal("IM_VERSIONDATE"));
-  }
 
   if (IupGetGlobal("_IUP_GLCANVAS_OPEN"))
   {

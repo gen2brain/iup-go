@@ -143,7 +143,7 @@ Inside the canvas ACTION callback, the (x,y) offset for drawing is calculated as
 
     if (canvas_height < view_height)
     {
-      /* posy is top-bottom, CD and OpenGL are bottom-top.
+      /* posy is top-bottom, OpenGL is bottom-top.
          invert posy reference (YMAX-DY - POSY) */
       float dy = IupGetFloat(ih, "DY");
       posy = 1.0f - dy - posy;
