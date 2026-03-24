@@ -274,10 +274,10 @@ static int eGLCanvasDefaultResize(Ihandle *ih, int width, int height)
 
       gldata->egl_window_physical_width = resize_w;
       gldata->egl_window_physical_height = resize_h;
-
-      iupEGLBackendUpdateSubsurfacePosition(ih, gldata);
   }
 #endif
+
+  iupEGLBackendUpdateSubsurfacePosition(ih, gldata);
 
 
   if (gldata->context != EGL_NO_CONTEXT)
