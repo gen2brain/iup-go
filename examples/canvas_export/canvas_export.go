@@ -21,14 +21,30 @@ func main() {
 	canvas = iup.Canvas().SetAttributes("RASTERSIZE=600x400, BORDER=NO")
 	canvas.SetCallback("ACTION", iup.ActionFunc(redraw))
 
-	btnSavePng := iup.Button("Save as PNG...").SetAttributes("PADDING=10x4")
+	btnSavePng := iup.Button("Save as PNG (Go)").SetAttributes("PADDING=10x4")
 	btnSavePng.SetCallback("ACTION", iup.ActionFunc(onSavePng))
 
-	btnSaveSvg := iup.Button("Save as SVG...").SetAttributes("PADDING=10x4")
+	btnSaveSvg := iup.Button("Save as SVG").SetAttributes("PADDING=10x4")
 	btnSaveSvg.SetCallback("ACTION", iup.ActionFunc(onSaveSvg))
 
+	btnNativePng := iup.Button("Save as PNG (Native)").SetAttributes("PADDING=10x4")
+	btnNativePng.SetCallback("ACTION", iup.ActionFunc(onNativeSave("PNG")))
+
+	btnNativeJpeg := iup.Button("Save as JPEG (Native)").SetAttributes("PADDING=10x4")
+	btnNativeJpeg.SetCallback("ACTION", iup.ActionFunc(onNativeSave("JPEG")))
+
+	btnNativeBmp := iup.Button("Save as BMP (Native)").SetAttributes("PADDING=10x4")
+	btnNativeBmp.SetCallback("ACTION", iup.ActionFunc(onNativeSave("BMP")))
+
+	btnBufferTest := iup.Button("Buffer Round-Trip Test").SetAttributes("PADDING=10x4")
+	btnBufferTest.SetCallback("ACTION", iup.ActionFunc(onBufferTest))
+
 	dlg := iup.Dialog(
-		iup.Vbox(canvas, iup.Hbox(btnSavePng, btnSaveSvg).SetAttributes("GAP=8")).SetAttributes("MARGIN=10x10, GAP=8"),
+		iup.Vbox(
+			canvas,
+			iup.Hbox(btnSavePng, btnSaveSvg).SetAttributes("GAP=8"),
+			iup.Hbox(btnNativePng, btnNativeJpeg, btnNativeBmp, btnBufferTest).SetAttributes("GAP=8"),
+		).SetAttributes("MARGIN=10x10, GAP=8"),
 	).SetAttribute("TITLE", "Canvas Export")
 
 	iup.Show(dlg)
@@ -45,8 +61,87 @@ func redraw(ih iup.Ihandle) int {
 	return iup.DEFAULT
 }
 
+func captureCanvas() iup.Ihandle {
+	iup.DrawBegin(canvas)
+
+	w, h := iup.DrawGetSize(canvas)
+	drawScene(canvas, w, h)
+
+	img := iup.DrawGetImage(canvas)
+
+	iup.DrawEnd(canvas)
+
+	return img
+}
+
+func onNativeSave(format string) func(iup.Ihandle) int {
+	ext := strings.ToLower(format)
+	if ext == "jpeg" {
+		ext = "jpg"
+	}
+
+	return func(ih iup.Ihandle) int {
+		filter := fmt.Sprintf("*.%s", ext)
+		title := fmt.Sprintf("Save as %s (Native)", format)
+
+		filedlg := iup.FileDlg().SetAttributes(fmt.Sprintf(`DIALOGTYPE=SAVE, TITLE="%s", FILTER="%s", EXTDEFAULT="%s"`, title, filter, ext))
+		defer filedlg.Destroy()
+
+		iup.Popup(filedlg, iup.CENTER, iup.CENTER)
+
+		if filedlg.GetInt("STATUS") == -1 {
+			return iup.DEFAULT
+		}
+
+		filename := filedlg.GetAttribute("VALUE")
+
+		img := captureCanvas()
+		if img == 0 {
+			iup.Message("Error", "Failed to capture canvas image.")
+			return iup.DEFAULT
+		}
+		defer img.Destroy()
+
+		ret := iup.ImageSave(img, filename, format)
+		if ret == 0 {
+			iup.Message("Error", fmt.Sprintf("Failed to save %s file.", format))
+			return iup.DEFAULT
+		}
+
+		w := iup.GetInt(img, "WIDTH")
+		h := iup.GetInt(img, "HEIGHT")
+		iup.Message("Success", fmt.Sprintf("Native %s saved to:\n%s\n\nSize: %dx%d", format, filename, w, h))
+
+		return iup.DEFAULT
+	}
+}
+
+func onBufferTest(ih iup.Ihandle) int {
+	img := captureCanvas()
+	if img == 0 {
+		iup.Message("Error", "Failed to capture canvas image.")
+		return iup.DEFAULT
+	}
+	defer img.Destroy()
+
+	results := ""
+
+	for _, format := range []string{"PNG", "JPEG", "BMP"} {
+		buf := iup.ImageSaveToBuffer(img, format)
+		if buf == nil {
+			results += fmt.Sprintf("%s: FAILED\n", format)
+		} else {
+			results += fmt.Sprintf("%s: %d bytes\n", format, len(buf))
+		}
+	}
+
+	iup.Message("Buffer Round-Trip Results", results)
+
+	return iup.DEFAULT
+}
+
 func onSavePng(ih iup.Ihandle) int {
-	filedlg := iup.FileDlg().SetAttributes(`DIALOGTYPE=SAVE, TITLE="Save as PNG", FILTER="*.png", FILTERINFO="PNG Files", EXTDEFAULT="png"`)
+	filedlg := iup.FileDlg().SetAttributes(`DIALOGTYPE=SAVE, TITLE="Save as PNG (Go)", FILTER="*.png", FILTERINFO="PNG Files", EXTDEFAULT="png"`)
 	defer filedlg.Destroy()
 
 	iup.Popup(filedlg, iup.CENTER, iup.CENTER)
@@ -57,15 +152,7 @@ func onSavePng(ih iup.Ihandle) int {
 
 	filename := filedlg.GetAttribute("VALUE")
 
-	iup.DrawBegin(canvas)
-
-	w, h := iup.DrawGetSize(canvas)
-	drawScene(canvas, w, h)
-
-	img := iup.DrawGetImage(canvas)
-
-	iup.DrawEnd(canvas)
-
+	img := captureCanvas()
 	if img == 0 {
 		iup.Message("Error", "Failed to capture canvas image.")
 		return iup.DEFAULT
@@ -90,7 +177,7 @@ func onSavePng(ih iup.Ihandle) int {
 		return iup.DEFAULT
 	}
 
-	iup.Message("Success", fmt.Sprintf("Image saved to:\n%s\n\nSize: %dx%d", filename, goImg.Bounds().Dx(), goImg.Bounds().Dy()))
+	iup.Message("Success", fmt.Sprintf("Go PNG saved to:\n%s\n\nSize: %dx%d", filename, goImg.Bounds().Dx(), goImg.Bounds().Dy()))
 
 	return iup.DEFAULT
 }

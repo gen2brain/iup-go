@@ -83,7 +83,6 @@ func main() {
 	fmt.Printf("  DEFAULTFONT:     %s\n", g("DEFAULTFONT"))
 	fmt.Printf("  DEFAULTFONTFACE: %s\n", g("DEFAULTFONTFACE"))
 	fmt.Printf("  DEFAULTFONTSIZE: %s\n", g("DEFAULTFONTSIZE"))
-	fmt.Printf("  DEFAULTFONTSTYLE:%s\n", g("DEFAULTFONTSTYLE"))
 
 	fmt.Println("\nColors:")
 	fmt.Printf("  DLGBGCOLOR:      %s\n", g("DLGBGCOLOR"))
@@ -97,8 +96,6 @@ func main() {
 	fmt.Println("\nSettings:")
 	fmt.Printf("  UTF8MODE:        %s\n", g("UTF8MODE"))
 	fmt.Printf("  LANGUAGE:        %s\n", g("LANGUAGE"))
-	fmt.Printf("  DEFAULTDECIMALSYMBOL: %s\n", g("DEFAULTDECIMALSYMBOL"))
-	fmt.Printf("  DEFAULTBUTTONPADDING: %s\n", g("DEFAULTBUTTONPADDING"))
 
 	if driver == "Win32" || driver == "WinUI" {
 		fmt.Println("\nWindows:")
