@@ -414,7 +414,6 @@ enum {                          /* style */
  FONT_STRIKEOUT = 8
 };
 
-/* this code is shared between CD and IUP, must be updated on both libraries */
 static int iFontFindStyleName(const char *name, int len, int *style)
 {
 #define STYLE_NUM_NAMES 21
@@ -459,7 +458,6 @@ static int iFontFindStyleName(const char *name, int len, int *style)
 
 #define is_style_sep(_x) (_x == ' ' || _x == ',' || _x == '_')
 
-/* this code is shared between CD and IUP, must be updated on both libraries */
 static const char * iFontGetStyleWord(const char *str, const char *last, int *wordlen)
 {
   const char *result;
@@ -476,7 +474,6 @@ static const char * iFontGetStyleWord(const char *str, const char *last, int *wo
   return result;
 }
 
-/* this code is shared between CD and IUP, must be updated on both libraries */
 IUP_SDK_API int iupFontParsePango(const char *font, char *typeface, int *size, int *bold, int *italic, int *underline, int *strikeout)
 {
   const char *p, *last;
@@ -546,6 +543,7 @@ IUP_SDK_API int iupFontParsePango(const char *font, char *typeface, int *size, i
   if (font != last)
   {
     len = (int)(last - font);
+    if (len > 255) len = 255;
     strncpy(typeface, font, len);
     typeface[len] = 0;
     return 1;
@@ -554,7 +552,6 @@ IUP_SDK_API int iupFontParsePango(const char *font, char *typeface, int *size, i
     return 0;
 }
 
-/* this code is shared between CD and IUP, must be updated on both libraries */
 IUP_SDK_API int iupFontParseWin(const char *value, char *typeface, int *size, int *bold, int *italic, int *underline, int *strikeout)
 {
   int c;
@@ -571,6 +568,7 @@ IUP_SDK_API int iupFontParseWin(const char *value, char *typeface, int *size, in
   {
     c = (int)strcspn(value, ":");      /* extract typeface */
     if (c == 0) return 0;
+    if (c > 255) c = 255;
     strncpy(typeface, value, c);
     typeface[c] = '\0';
     value += c+1;  /* skip typeface and separator */
@@ -631,7 +629,6 @@ IUP_SDK_API int iupFontParseWin(const char *value, char *typeface, int *size, in
   return 1;
 }
 
-/* this code is shared between CD and IUP, must be updated on both libraries */
 IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int typeface_size, int *size, int *bold, int *italic, int *underline, int *strikeout)
 {
   char style1[30], style2[30];

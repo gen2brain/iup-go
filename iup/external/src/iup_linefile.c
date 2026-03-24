@@ -39,11 +39,22 @@ IUP_SDK_API IlineFile* iupLineFileOpen(const char* filename)
 
   {
     IlineFile* line_file = malloc(sizeof(IlineFile));
+    if (!line_file)
+    {
+      fclose(file);
+      return NULL;
+    }
     memset(line_file, 0, sizeof(IlineFile));
 
     line_file->file = file;
     line_file->buffer_maxsize = LINEFILE_STRING_BLOCK;
     line_file->line_buffer = (char*)malloc(line_file->buffer_maxsize);
+    if (!line_file->line_buffer)
+    {
+      fclose(file);
+      free(line_file);
+      return NULL;
+    }
 
     return line_file;
   }

@@ -179,6 +179,8 @@ static int iGlobalGetAppAttributes(char **names)
   int gcount, count, i;
 
   gnames = (char **)malloc(sizeof(char*)* total_count);
+  if (!gnames)
+    return 0;
 
   gcount = iupGetGlobalAttributes(gnames, total_count);
 

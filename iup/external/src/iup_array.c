@@ -26,6 +26,8 @@ struct _Iarray
 IUP_SDK_API Iarray* iupArrayCreate(int start_count, int elem_size)
 {
   Iarray* iarray = (Iarray*)malloc(sizeof(Iarray));
+  if (!iarray)
+    return NULL;
   iarray->count = 0;
   iarray->elem_size = elem_size;
   iarray->max_count = start_count;

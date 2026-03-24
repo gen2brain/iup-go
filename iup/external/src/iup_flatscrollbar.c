@@ -157,11 +157,17 @@ static int iFlatScrollBarCalcHandler(int size, int arrow_size, int max, int d, i
 
 static int iFlatScrollBarMoveHandler(int size, int arrow_size, int max, int d, int sb_size, int pos, int diff)
 {
-  int pos_p;
+  int pos_p, d_p;
   int range_p = size - 1 - 2 * arrow_size;
 
-  int d_p = (d * range_p) / max;
+  if (max == 0 || max <= d)
+    return 0;
+
+  d_p = (d * range_p) / max;
   if (d_p < sb_size) d_p = sb_size;
+
+  if (range_p == d_p)
+    return 0;
 
   pos_p = (pos * (range_p - d_p)) / (max - d);
   /* pos_p += arrow_size; */

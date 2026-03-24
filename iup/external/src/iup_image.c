@@ -118,8 +118,14 @@ static void iImageResize(Ihandle* ih, int new_width, int new_height)
   unsigned char* imgdata = (unsigned char*)iupAttribGet(ih, "WID");
   int channels = iupAttribGetInt(ih, "CHANNELS");
   int bpp = iupAttribGetInt(ih, "BPP");
-  int count = new_width*new_height*channels;
-  unsigned char* new_imgdata = (unsigned char *)malloc(count);
+  int count;
+  unsigned char* new_imgdata;
+  if (new_width <= 0 || new_height <= 0 || new_width > 32767 || new_height > 32767)
+    return;
+  count = new_width*new_height*channels;
+  new_imgdata = (unsigned char *)malloc(count);
+  if (!new_imgdata)
+    return;
 
   if (bpp == 8)
     iDataStretchMap(ih->currentwidth, ih->currentheight, imgdata, new_width, new_height, new_imgdata);
@@ -268,8 +274,8 @@ void iupImageStockGet(const char* name, Ihandle* *ih, const char* *native_name)
       {
         int new_height = stock_size;
         int new_width = stock_size;
-        if (istock->image->currentwidth != istock->image->currentheight)
-          new_width = (new_height * istock->image->currentwidth) / istock->image->currentheight; /* preserve height */
+        if (istock->image->currentwidth != istock->image->currentheight && istock->image->currentheight > 0)
+          new_width = (new_height * istock->image->currentwidth) / istock->image->currentheight;
 
         iupAttribSet(istock->image, "SCALED", "Yes");
         iupAttribSetStrf(istock->image, "ORIGINALSCALE", "%dx%d", istock->image->currentwidth, istock->image->currentheight);
@@ -529,7 +535,8 @@ Ihandle* iupImageGetImageFromName(const char* name)
         if (new_height < 24)
         {
           new_height = 24;
-          new_width = (new_height * ih->currentwidth) / ih->currentheight;
+          if (ih->currentheight > 0)
+            new_width = (new_height * ih->currentwidth) / ih->currentheight;
         }
 
         if (new_width != ih->currentwidth || new_height != ih->currentheight)
@@ -1077,6 +1084,8 @@ static int iImageSetReshapeAttrib(Ihandle *ih, const char* value)
     int old_w = ih->currentwidth;
     int old_h = ih->currentheight;
 
+    if (w <= 0 || h <= 0 || w > 32767 || h > 32767)
+      return 0;
     if (w*h > old_w*old_h)
     {
       unsigned char* imgdata = (unsigned char*)iupAttribGet(ih, "WID");
@@ -1168,7 +1177,7 @@ static int iImageCreate(Ihandle* ih, void** params, int bpp)
   iupASSERT(width > 0);
   iupASSERT(height > 0);
 
-  if (width <= 0 || height <= 0)
+  if (width <= 0 || height <= 0 || width > 32767 || height > 32767)
     return IUP_ERROR;
 
   ih->currentwidth = width;
@@ -1182,6 +1191,8 @@ static int iImageCreate(Ihandle* ih, void** params, int bpp)
 
   count = width*height*channels;
   imgdata = (unsigned char *)malloc(count);
+  if (!imgdata)
+    return IUP_ERROR;
 
   if (((intptr_t)(params[2]) == -1) || ((intptr_t)(params[3]) == -1)) /* NULL or compacted in one pointer */
   {

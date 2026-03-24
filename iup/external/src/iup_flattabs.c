@@ -172,7 +172,12 @@ static void iFlatTabsUpdateScrollPos(Ihandle* ih, Ihandle* child)
     else
       extra_size = iFlatTabsGetExtraHeight(ih, extra_buttons, img_position, horiz_padding, vert_padding, NULL);
 
+    if (child_pos >= count)
+      child_pos = count - 1;
+
     visible_width = calloc(count, sizeof(int));
+    if (!visible_width)
+      return;
 
     check_size = 0;
     for (pos = scroll_pos, child = ih->firstchild; child && pos <= child_pos; child = child->brother, pos++)
@@ -192,7 +197,6 @@ static void iFlatTabsUpdateScrollPos(Ihandle* ih, Ihandle* child)
     }
 
     size = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentwidth - extra_size : ih->currentheight - extra_size;
-
 
     while (check_size > size && scroll_pos < child_pos)
     {
