@@ -42,10 +42,12 @@ static int iThreadSetJoinAttrib(Ihandle* ih, const char* value)
 {
 #ifdef IUP_USE_GTK
   GThread* thread = (GThread*)iupAttribGet(ih, "THREAD");
-  g_thread_join(thread);
+  if (thread)
+    g_thread_join(thread);
 #elif defined(WIN32)
   HANDLE thread = (HANDLE)iupAttribGet(ih, "THREAD");
-  WaitForSingleObject(thread, INFINITE);
+  if (thread)
+    WaitForSingleObject(thread, INFINITE);
 #elif defined(__APPLE__) || defined(__unix__)
   pthread_t* thread = (pthread_t*)iupAttribGet(ih, "THREAD");
   if (thread)
@@ -77,10 +79,14 @@ static char* iThreadGetIsCurrentAttrib(Ihandle* ih)
 {
 #ifdef IUP_USE_GTK
   GThread* thread = (GThread*)iupAttribGet(ih, "THREAD");
-  return iupStrReturnBoolean(thread == g_thread_self());
+  if (thread)
+    return iupStrReturnBoolean(thread == g_thread_self());
+  return iupStrReturnBoolean(0);
 #elif defined(WIN32)
   HANDLE thread = (HANDLE)iupAttribGet(ih, "THREAD");
-  return iupStrReturnBoolean(thread == GetCurrentThread());
+  if (thread)
+    return iupStrReturnBoolean(thread == GetCurrentThread());
+  return iupStrReturnBoolean(0);
 #elif defined(__APPLE__) || defined(__unix__)
   pthread_t* thread = (pthread_t*)iupAttribGet(ih, "THREAD");
   if (thread)
@@ -116,32 +122,32 @@ static int iThreadSetLockAttrib(Ihandle* ih, const char* value)
   {
 #ifdef IUP_USE_GTK
     GMutex* mutex = (GMutex*)iupAttribGet(ih, "MUTEX");
-    g_mutex_lock(mutex);
+    if (mutex)
+      g_mutex_lock(mutex);
 #elif defined(WIN32)
     HANDLE mutex = (HANDLE)iupAttribGet(ih, "MUTEX");
-    WaitForSingleObject(mutex, INFINITE);
+    if (mutex)
+      WaitForSingleObject(mutex, INFINITE);
 #elif defined(__APPLE__) || defined(__unix__)
     pthread_mutex_t* mutex = (pthread_mutex_t*)iupAttribGet(ih, "MUTEX");
     if (mutex)
-    {
       pthread_mutex_lock(mutex);
-    }
 #endif
   }
   else
   {
 #ifdef IUP_USE_GTK
     GMutex* mutex = (GMutex*)iupAttribGet(ih, "MUTEX");
-    g_mutex_unlock(mutex);
+    if (mutex)
+      g_mutex_unlock(mutex);
 #elif defined(WIN32)
     HANDLE mutex = (HANDLE)iupAttribGet(ih, "MUTEX");
-    ReleaseMutex(mutex);
+    if (mutex)
+      ReleaseMutex(mutex);
 #elif defined(__APPLE__) || defined(__unix__)
     pthread_mutex_t* mutex = (pthread_mutex_t*)iupAttribGet(ih, "MUTEX");
     if (mutex)
-    {
       pthread_mutex_unlock(mutex);
-    }
 #endif
   }
 
@@ -231,7 +237,8 @@ static int iThreadCreateMethod(Ihandle* ih, void **params)
 
 #ifdef IUP_USE_GTK
 #ifndef OLD_GLIB
-  g_mutex_init(mutex);
+  if (mutex)
+    g_mutex_init(mutex);
 #endif
 #elif defined(WIN32)
   mutex = CreateMutexA(NULL, FALSE, "mutex");
