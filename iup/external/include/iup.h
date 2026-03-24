@@ -38,8 +38,6 @@ IUP_API int       IupOpen          (int *argc, char ***argv);
 IUP_API void      IupClose         (void);
 IUP_API int       IupIsOpened      (void);
 
-IUPIMGLIB_API void IupImageLibOpen(void);
-
 IUP_API int       IupMainLoop      (void);
 IUP_API int       IupLoopStep      (void);
 IUP_API int       IupLoopStepWait  (void);
@@ -294,14 +292,14 @@ IUP_API Ihandle* IupImageGetHandle(const char* name);
 IUP_API int IupImageSave(Ihandle* ih, const char* filename, const char* format);
 IUP_API unsigned char* IupImageSaveToBuffer(Ihandle* ih, const char* format, int* size);
 
-/* IupText and IupScintilla utilities */
+/* IupText utilities */
 IUP_API void  IupTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos);
 IUP_API void  IupTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col);
 
-/* IupText, IupList, IupTree, IupMatrix and IupScintilla utility */
+/* IupText, IupList, IupTree, and IupMatrix utility */
 IUP_API int   IupConvertXYToPos(Ihandle* ih, int x, int y);
 
-/* OLD names, kept for backward compatibility, will never be removed. */
+/* Legacy API names, still used internally */
 IUP_API void IupStoreGlobal(const char* name, const char* value);
 IUP_API void IupStoreAttribute(Ihandle* ih, const char* name, const char* value);
 IUP_API void IupSetfAttribute(Ihandle* ih, const char* name, const char* format, ...);
@@ -419,18 +417,6 @@ enum{IUP_SBUP,   IUP_SBDN,    IUP_SBPGUP,   IUP_SBPGDN,    IUP_SBPOSV, IUP_SBDRA
 #define iup_isbutton4(_s)  (_s[8]=='4')
 #define iup_isbutton5(_s)  (_s[9]=='5')
 
-/* Old definitions for backward compatibility */
-#define isshift     iup_isshift
-#define iscontrol   iup_iscontrol
-#define isbutton1   iup_isbutton1
-#define isbutton2   iup_isbutton2
-#define isbutton3   iup_isbutton3
-#define isdouble    iup_isdouble
-#define isalt       iup_isalt
-#define issys       iup_issys
-#define isbutton4   iup_isbutton4
-#define isbutton5   iup_isbutton5
-
 
 /************************************************************************/
 /*                      Pre-Defined Masks                               */
@@ -444,12 +430,6 @@ enum{IUP_SBUP,   IUP_SBDN,    IUP_SBPGUP,   IUP_SBPGDN,    IUP_SBPOSV, IUP_SBDRA
 #define IUP_MASK_INT          "[+/-]?/d+"
 #define IUP_MASK_UINT               "/d+"
 
-/* Old definitions for backward compatibility */
-#define IUPMASK_FLOAT     IUP_MASK_FLOAT
-#define IUPMASK_UFLOAT    IUP_MASK_UFLOAT
-#define IUPMASK_EFLOAT    IUP_MASK_EFLOAT
-#define IUPMASK_INT       IUP_MASK_INT
-#define IUPMASK_UINT      IUP_MASK_UINT
 
 
 /************************************************************************/
@@ -477,19 +457,6 @@ enum{IUP_SBUP,   IUP_SBDN,    IUP_SBPGUP,   IUP_SBPGDN,    IUP_SBPOSV, IUP_SBDRA
 enum {IUP_RECBINARY, IUP_RECTEXT};
 
 
-/************************************************************************/
-/*              Replacement for the WinMain in Windows,                 */
-/*        this allows the application to start from "main".             */
-/*        Used only for Watcom.                                         */
-/************************************************************************/
-#if defined (__WATCOMC__)
-#ifdef __cplusplus
-extern "C" {
-int IupMain (int argc, char** argv); /* In C++ we have to declare the prototype */
-}
-#endif
-#define main IupMain /* this is the trick for Watcom and MetroWerks */
-#endif
 
 /******************************************************************************
 * Copyright (C) 1994-2019 Tecgraf/PUC-Rio.

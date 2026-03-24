@@ -854,10 +854,8 @@ static int gtkListSetBgColorAttrib(Ihandle* ih, const char* value)
        there will be an invalid background outside the dropdown */
   }
 
-  /* TODO: this test is not necessary, 
-     but when dropdown=yes the color is not set for the popup menu, 
-     and the result is very weird. So we avoid setting it when dropdown=yes
-     until we figure out how to set for the popup menu. */
+  /* When dropdown=yes the color is not set for the popup menu,
+     so we avoid setting it to prevent inconsistent appearance. */
   if (!ih->data->is_dropdown)
   {
     GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER");
@@ -892,7 +890,7 @@ static int gtkListSetFgColorAttrib(Ihandle* ih, const char* value)
     iupgtkSetFgColor(entry, r, g, b);
   }
 
-  /* TODO: see comment in BGCOLOR */
+  /* Same dropdown limitation as BGCOLOR */
   if (!ih->data->is_dropdown)
   {
     GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER");
@@ -2307,7 +2305,7 @@ static int gtkListMapMethod(Ihandle* ih)
 
     gtk_tree_view_append_column(GTK_TREE_VIEW(ih->handle), column);
     gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(ih->handle), FALSE);
-    gtk_tree_view_set_enable_search(GTK_TREE_VIEW(ih->handle), FALSE);   /* TODO: check "start-interactive-search" signal */
+    gtk_tree_view_set_enable_search(GTK_TREE_VIEW(ih->handle), FALSE);
 
     gtk_container_add((GtkContainer*)scrolled_window, ih->handle);
     gtk_widget_show((GtkWidget*)scrolled_window);

@@ -15,7 +15,7 @@ If fails returns -1.
 
 ### Notes
 
-It can be used for **IupText** and **IupScintilla** (returns a position in the string), **IupList** (returns an item), **IupTree** (returns a node identifier) or **IupMatrix** (returns a cell position, where pos=lin*numcol + col).
+It can be used for **IupText** (returns a position in the string), **IupList** (returns an item), **IupTree** (returns a node identifier) or **IupMatrix** (returns a cell position, where pos=lin*numcol + col).
 
 ### See Also
 

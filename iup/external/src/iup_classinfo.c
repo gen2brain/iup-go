@@ -336,9 +336,7 @@ IUP_SDK_API void iupClassInfoShowHelp(const char* className)
   if (strstr(className, "dlg") || iupStrEqual(className, "dialog"))
     folder = "dlg";
   else if (iupStrEqualPartial(className, "matrix") ||
-            iupStrEqualPartial(className, "mgl") ||
             iupStrEqual(className, "plot") ||
-            iupStrEqual(className, "scintilla") ||
             iupStrEqual(className, "cells") ||
             iupStrEqual(className, "glbackgroundbox") ||
             iupStrEqual(className, "glcanvas") ||
@@ -349,9 +347,7 @@ IUP_SDK_API void iupClassInfoShowHelp(const char* className)
   else if (className[0] == 'g' && className[1] == 'l')
     folder = "gl";
 
-  if (iupStrEqualPartial(className, "mgl") ||
-      iupStrEqual(className, "plot") ||
-      iupStrEqual(className, "scintilla"))
+  if (iupStrEqual(className, "plot"))
       sep = "_";
 
   /* filename fixes */

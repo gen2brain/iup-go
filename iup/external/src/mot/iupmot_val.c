@@ -440,7 +440,7 @@ static int motValMapMethod(Ihandle* ih)
   XtAddCallback(ih->handle, XmNhelpCallback, (XtCallbackProc)iupmotHelpCallback, (XtPointer)ih);
 
   {
-    Widget sb = XtNameToWidget(ih->handle, "*Scrollbar");  /* TODO: Test this in other Motifs */
+    Widget sb = XtNameToWidget(ih->handle, "*Scrollbar");
     if (sb)
     {
       XtAddEventHandler(sb, FocusChangeMask, False, (XtEventHandler)motValFocusChangeEvent, (XtPointer)ih);
