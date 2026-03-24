@@ -86,7 +86,7 @@ func main() {
 
 	fr2 := iup.Frame(
 		iup.Vbox(
-			iup.Label("Label text"),
+			iup.Label("Label text").SetAttributes("SELECTABLE=YES"),
 			iup.Label("Bold Label").SetAttributes(`FONT="Sans, Bold 10"`),
 			iup.Label("Colored Label").SetAttributes(`FGCOLOR="0 0 255"`),
 			iup.Label("Monospace Font").SetAttributes(`FONT="Monospace, 10"`),
