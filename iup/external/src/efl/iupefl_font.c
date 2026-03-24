@@ -202,31 +202,47 @@ static void eflFontMeasure(const char* family, int size, int is_bold, int is_ita
     *descent = size / 4;
 }
 
-static void eflFontMeasureString(const char* family, int size, int is_bold, int is_italic, const char* str, int* w, int* h)
+static void eflFontMeasureString(const char* family, int size, int is_bold, int is_italic, const char* str, int len, int* w, int* h)
 {
   Eo* tb;
   Eina_Size2D sz;
 
-  if (!str || !str[0])
+  if (!str || !str[0] || len == 0)
   {
     if (w) *w = 0;
     if (h) *h = size;
     return;
   }
 
+  if (len < 0)
+    len = (int)strlen(str);
+
   tb = eflFontGetMeasureTextblock();
   if (!tb)
   {
-    if (w) *w = (int)strlen(str) * (size * 2 / 3);
+    if (w) *w = len * (size * 2 / 3);
     if (h) *h = size;
     return;
   }
 
   eflFontApplyStyle(tb, family, size, is_bold, is_italic);
-  efl_text_set(tb, str);
+
+  if (str[len] == '\0')
+  {
+    efl_text_set(tb, str);
+  }
+  else
+  {
+    char* tmp = (char*)malloc(len + 1);
+    memcpy(tmp, str, len);
+    tmp[len] = '\0';
+    efl_text_set(tb, tmp);
+    free(tmp);
+  }
+
   sz = efl_canvas_textblock_size_native_get(tb);
 
-  if (w) *w = sz.w > 0 ? sz.w : (int)strlen(str) * (size * 2 / 3);
+  if (w) *w = sz.w > 0 ? sz.w : len * (size * 2 / 3);
   if (h) *h = sz.h > 0 ? sz.h : size;
 }
 
@@ -327,9 +343,7 @@ void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int*
     {
       if (p > line_start)
       {
-        char* line = strndup(line_start, p - line_start);
-        eflFontMeasureString(family, size, is_bold, is_italic, line, &line_w, &line_h);
-        free(line);
+        eflFontMeasureString(family, size, is_bold, is_italic, line_start, (int)(p - line_start), &line_w, &line_h);
         if (line_w > max_w)
           max_w = line_w;
       }
@@ -341,7 +355,7 @@ void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int*
 
   if (p > line_start)
   {
-    eflFontMeasureString(family, size, is_bold, is_italic, line_start, &line_w, &line_h);
+    eflFontMeasureString(family, size, is_bold, is_italic, line_start, -1, &line_w, &line_h);
     if (line_w > max_w)
       max_w = line_w;
   }
@@ -370,7 +384,7 @@ int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
     is_italic = font->is_italic;
   }
 
-  eflFontMeasureString(family, size, is_bold, is_italic, str, &w, NULL);
+  eflFontMeasureString(family, size, is_bold, is_italic, str, -1, &w, NULL);
   return w;
 }
 
@@ -398,16 +412,10 @@ void iupdrvFontGetTextSize(const char* font_str, const char* str, int len, int* 
 {
   char family[100];
   int size, is_bold, is_italic, is_underline, is_strikeout;
-  char* text;
 
   eflFontParse(font_str, family, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
 
-  if (len < 0 || len > (int)strlen(str))
-    len = (int)strlen(str);
-
-  text = strndup(str, len);
-  eflFontMeasureString(family, size, is_bold, is_italic, text, w, h);
-  free(text);
+  eflFontMeasureString(family, size, is_bold, is_italic, str, len, w, h);
 }
 
 void iupdrvFontGetFontDim(const char* font_str, int* max_width, int* line_height, int* ascent, int* descent)

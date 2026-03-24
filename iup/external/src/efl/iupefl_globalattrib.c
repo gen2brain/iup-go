@@ -272,6 +272,7 @@ char* iupdrvGetGlobal(const char* name)
   {
     return "YES";
   }
+#ifndef _WIN32
   if (iupStrEqual(name, "EXEFILENAME"))
   {
     char* argv0 = IupGetGlobal("ARGV0");
@@ -287,6 +288,7 @@ char* iupdrvGetGlobal(const char* name)
     }
     return NULL;
   }
+#endif
   if (iupStrEqual(name, "DARKMODE"))
   {
     return iupStrReturnBoolean(iupeflIsSystemDarkMode());

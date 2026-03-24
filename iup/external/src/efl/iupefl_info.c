@@ -7,16 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <sys/utsname.h>
-#include <syslog.h>
-#include <pwd.h>
 
-#ifdef HAVE_ECORE_X
-#include <Ecore_X.h>
+#ifndef _WIN32
+#include <unistd.h>
+#include <pwd.h>
 #endif
 
 #include "iup.h"
@@ -26,57 +20,11 @@
 
 #include "iupefl_drv.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#undef interface
+#endif
 
-static void eflGetWidgetScreenPos(Ihandle* ih, int* widget_x, int* widget_y)
-{
-  Eo* widget = iupeflGetWidget(ih);
-  Eo* win;
-
-  *widget_x = 0;
-  *widget_y = 0;
-
-  if (!widget)
-    return;
-
-  {
-    Eina_Rect geometry = iupeflGetGeometry(widget);
-    *widget_x = geometry.x;
-    *widget_y = geometry.y;
-  }
-
-  win = iupeflGetMainWindow();
-  if (win)
-  {
-    Evas* evas = evas_object_evas_get(win);
-    if (evas)
-    {
-      Ecore_Evas* ee = ecore_evas_ecore_evas_get(evas);
-      if (ee)
-      {
-        int screen_x = 0, screen_y = 0;
-        ecore_evas_geometry_get(ee, &screen_x, &screen_y, NULL, NULL);
-        *widget_x += screen_x;
-        *widget_y += screen_y;
-      }
-    }
-  }
-}
-
-IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
-{
-  int wx, wy;
-  eflGetWidgetScreenPos(ih, &wx, &wy);
-  if (x) *x += wx;
-  if (y) *y += wy;
-}
-
-IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
-{
-  int wx, wy;
-  eflGetWidgetScreenPos(ih, &wx, &wy);
-  if (x) *x -= wx;
-  if (y) *y -= wy;
-}
 
 IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
 {
@@ -173,104 +121,33 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
     key[3] = 'Y';
 }
 
-IUP_SDK_API char* iupdrvGetSystemName(void)
-{
-  struct utsname un;
-  char* str = iupStrGetMemory(50);
-
-  uname(&un);
-  iupStrCopyN(str, 50, un.sysname);
-
-  return str;
-}
-
-IUP_SDK_API char* iupdrvGetSystemVersion(void)
-{
-  struct utsname un;
-  char* str = iupStrGetMemory(100);
-
-  uname(&un);
-  iupStrCopyN(str, 100, un.release);
-
-  return str;
-}
-
 IUP_SDK_API char* iupdrvGetComputerName(void)
 {
   char* str = iupStrGetMemory(100);
-
+#ifdef _WIN32
+  DWORD size = 100;
+  GetComputerNameA(str, &size);
+#else
   gethostname(str, 100);
-
+#endif
   return str;
 }
 
 IUP_SDK_API char* iupdrvGetUserName(void)
 {
-  char* str;
-  struct passwd* pwd = getpwuid(getuid());
-
-  if (!pwd)
-    return NULL;
-
-  str = iupStrGetMemory(100);
-  iupStrCopyN(str, 100, pwd->pw_name);
-
+  char* str = iupStrGetMemory(100);
+#ifdef _WIN32
+  DWORD size = 100;
+  GetUserNameA(str, &size);
+#else
+  {
+    struct passwd* pwd = getpwuid(getuid());
+    if (!pwd)
+      return NULL;
+    iupStrCopyN(str, 100, pwd->pw_name);
+  }
+#endif
   return str;
-}
-
-IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
-{
-  char* home;
-
-  (void)use_system;
-
-  home = getenv("HOME");
-  if (!home)
-    return 0;
-
-  snprintf(filename, PATH_MAX, "%s/.config/", home);
-
-  mkdir(filename, S_IRWXU);
-
-  if (app_name && app_name[0])
-  {
-    int len = (int)strlen(filename);
-    snprintf(filename + len, PATH_MAX - len, "%s/", app_name);
-    mkdir(filename, S_IRWXU);
-  }
-
-  return 1;
-}
-
-IUP_SDK_API char* iupdrvLocaleInfo(void)
-{
-  char* locale = getenv("LC_ALL");
-  if (!locale || !locale[0])
-    locale = getenv("LC_MESSAGES");
-  if (!locale || !locale[0])
-    locale = getenv("LANG");
-
-  if (locale && locale[0])
-  {
-    char* str = iupStrGetMemory(100);
-    iupStrCopyN(str, 100, locale);
-    return str;
-  }
-
-  return NULL;
-}
-
-IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
-{
-  return chdir(dir) == 0 ? 1 : 0;
-}
-
-IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
-{
-  char* str = iupStrGetMemory(PATH_MAX);
-  if (getcwd(str, PATH_MAX))
-    return str;
-  return NULL;
 }
 
 void* iupdrvGetDisplay(void)
@@ -327,76 +204,3 @@ IUP_SDK_API int iupdrvGetScrollbarSize(void)
   return cached_size;
 }
 
-IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
-{
-  int options = LOG_CONS | LOG_PID;
-  int priority = 0;
-
-  if (iupStrEqualNoCase(type, "DEBUG"))
-  {
-    priority = LOG_DEBUG;
-#ifdef LOG_PERROR
-    options |= LOG_PERROR;
-#endif
-  }
-  else if (iupStrEqualNoCase(type, "ERROR"))
-    priority = LOG_ERR;
-  else if (iupStrEqualNoCase(type, "WARNING"))
-    priority = LOG_WARNING;
-  else if (iupStrEqualNoCase(type, "INFO"))
-    priority = LOG_INFO;
-
-  openlog(NULL, options, LOG_USER);
-
-  vsyslog(priority, format, arglist);
-
-  closelog();
-}
-
-IUP_API void IupLog(const char* type, const char* format, ...)
-{
-  va_list arglist;
-  va_start(arglist, format);
-  IupLogV(type, format, arglist);
-  va_end(arglist);
-}
-
-IUP_SDK_API void iupdrvWarpPointer(int x, int y)
-{
-#ifdef HAVE_ECORE_X
-  if (iupeflIsX11())
-  {
-    Ecore_X_Window root = ecore_x_window_root_first_get();
-    if (root)
-    {
-      ecore_x_pointer_warp(root, x, y);
-      return;
-    }
-  }
-#endif
-  (void)x;
-  (void)y;
-}
-
-IUP_SDK_API void iupdrvSendKey(int key, int press)
-{
-  (void)key;
-  (void)press;
-}
-
-IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
-{
-  (void)x;
-  (void)y;
-  (void)bt;
-  (void)status;
-}
-
-IUP_SDK_API void iupdrvSleep(int time)
-{
-#ifdef WIN32
-  Sleep(time);
-#else
-  usleep((useconds_t)(time * 1000));
-#endif
-}

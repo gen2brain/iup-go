@@ -43,7 +43,12 @@ static Eina_Value eflClipboardTextResolveCb(void* data, const Eina_Value value, 
     {
       Eina_Slice slice = eina_content_data_get(content);
       if (slice.mem && slice.len > 0)
-        *result_ptr = strndup((const char*)slice.mem, slice.len);
+        *result_ptr = (char*)malloc(slice.len + 1);
+        if (*result_ptr)
+        {
+          memcpy(*result_ptr, slice.mem, slice.len);
+          (*result_ptr)[slice.len] = '\0';
+        }
       eina_content_free(content);
     }
   }
