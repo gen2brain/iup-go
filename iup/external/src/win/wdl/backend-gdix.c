@@ -24,12 +24,6 @@
 #include "backend-gdix.h"
 
 
-#ifdef _MSC_VER
-    /* warning C4996: 'GetVersionExW': was declared deprecated */
-    #pragma warning( disable : 4996 )
-#endif
-
-
 static HMODULE gdix_dll = NULL;
 
 static ULONG_PTR gdix_token;
@@ -51,9 +45,13 @@ gdix_init(void)
          * GDIPLUS.DLL packaged with the application as GDI+.DLL is not part
          * of vanilla system. (However it MAY be present. Some later updates,
          * versions of MSIE or other software by Microsoft install it.) */
-        OSVERSIONINFO version;
-        version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-        GetVersionEx(&version);
+        typedef LONG (WINAPI *PFN_RtlGetVersion)(OSVERSIONINFOW*);
+        HMODULE ntdll = GetModuleHandleA("ntdll.dll");
+        PFN_RtlGetVersion pRtlGetVersion = (PFN_RtlGetVersion)GetProcAddress(ntdll, "RtlGetVersion");
+        OSVERSIONINFOW version;
+        ZeroMemory(&version, sizeof(OSVERSIONINFOW));
+        version.dwOSVersionInfoSize = sizeof(OSVERSIONINFOW);
+        pRtlGetVersion(&version);
         if(version.dwMajorVersion == 5 && version.dwMinorVersion == 0) {
             gdix_dll = LoadLibrary(_T("GDIPLUS.DLL"));
             if(gdix_dll == NULL) {

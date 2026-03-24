@@ -15,6 +15,7 @@ extern "C" {
 int   iupwinGetComCtl32Version(void);
 char* iupwinGetSystemLanguage(void);
 int   iupwinCheckWindowsVersion(DWORD major, DWORD minor);
+DWORD iupwinGetBuildNumber(void);
 int   iupwinIsAppThemed(void);
 int   iupwinIsSystemDarkMode(void);
 int   iupwinIsVistaOrNew(void);
