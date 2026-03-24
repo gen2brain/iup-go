@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <wincodec.h>
+
 extern "C" {
 #include "iup.h"
 #include "iup_object.h"
@@ -535,4 +537,252 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
     break;
   }
   }
+}
+
+static IWICImagingFactory* iWinUIGetWicFactory(void)
+{
+  static IWICImagingFactory* factory = NULL;
+  if (!factory)
+  {
+    CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
+  }
+  return factory;
+}
+
+static const GUID* iWinUIImageGetContainerFormat(const char* format)
+{
+  if (iupStrEqualNoCase(format, "PNG"))  return &GUID_ContainerFormatPng;
+  if (iupStrEqualNoCase(format, "JPEG")) return &GUID_ContainerFormatJpeg;
+  if (iupStrEqualNoCase(format, "BMP"))  return &GUID_ContainerFormatBmp;
+  return NULL;
+}
+
+static unsigned char* iWinUIImageExpandPalette(unsigned char* imgdata, int width, int height, iupColor* colors, int colors_count)
+{
+  int i, count = width * height;
+  unsigned char* rgba = (unsigned char*)malloc(count * 4);
+  if (!rgba) return NULL;
+
+  (void)colors_count;
+
+  for (i = 0; i < count; i++)
+  {
+    int idx = imgdata[i];
+    rgba[i * 4]     = colors[idx].r;
+    rgba[i * 4 + 1] = colors[idx].g;
+    rgba[i * 4 + 2] = colors[idx].b;
+    rgba[i * 4 + 3] = colors[idx].a;
+  }
+
+  return rgba;
+}
+
+static int iWinUIImageSaveToStream(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, IStream* stream)
+{
+  IWICImagingFactory* factory = iWinUIGetWicFactory();
+  IWICBitmapEncoder* encoder = NULL;
+  IWICBitmapFrameEncode* frame = NULL;
+  IPropertyBag2* props = NULL;
+  const GUID* container;
+  HRESULT hr;
+  unsigned char* data = imgdata;
+  unsigned char* pixbuf = NULL;
+  int channels, dst_channels, stride, i;
+  int is_jpeg = iupStrEqualNoCase(format, "JPEG");
+  WICPixelFormatGUID pixelFormat;
+
+  if (!factory) return 0;
+
+  container = iWinUIImageGetContainerFormat(format);
+  if (!container) return 0;
+
+  if (bpp == 8)
+  {
+    data = iWinUIImageExpandPalette(imgdata, width, height, colors, colors_count);
+    if (!data) return 0;
+    bpp = 32;
+  }
+
+  channels = (bpp == 32) ? 4 : 3;
+  dst_channels = is_jpeg ? 3 : 4;
+  stride = width * dst_channels;
+
+  if (is_jpeg)
+    pixelFormat = GUID_WICPixelFormat24bppBGR;
+  else
+    pixelFormat = GUID_WICPixelFormat32bppBGRA;
+
+  pixbuf = (unsigned char*)malloc(width * height * dst_channels);
+  if (!pixbuf)
+  {
+    if (data != imgdata) free(data);
+    return 0;
+  }
+
+  for (i = 0; i < width * height; i++)
+  {
+    pixbuf[i * dst_channels]     = data[i * channels + 2];
+    pixbuf[i * dst_channels + 1] = data[i * channels + 1];
+    pixbuf[i * dst_channels + 2] = data[i * channels];
+    if (!is_jpeg)
+      pixbuf[i * 4 + 3] = (channels == 4) ? data[i * channels + 3] : 255;
+  }
+
+  if (data != imgdata) free(data);
+
+  hr = factory->CreateEncoder(*container, NULL, &encoder);
+  if (FAILED(hr)) { free(pixbuf); return 0; }
+
+  hr = encoder->Initialize(stream, WICBitmapEncoderNoCache);
+  if (FAILED(hr)) goto cleanup;
+
+  hr = encoder->CreateNewFrame(&frame, &props);
+  if (FAILED(hr)) goto cleanup;
+
+  if (is_jpeg && props)
+  {
+    PROPBAG2 option = {};
+    VARIANT varValue;
+    const char* q = IupGetGlobal("IMAGESAVEQUALITY");
+    float quality = 0.85f;
+    if (q) quality = (float)atof(q) / 100.0f;
+
+    option.pstrName = const_cast<LPOLESTR>(L"ImageQuality");
+    VariantInit(&varValue);
+    varValue.vt = VT_R4;
+    varValue.fltVal = quality;
+    props->Write(1, &option, &varValue);
+  }
+
+  hr = frame->Initialize(props);
+  if (FAILED(hr)) goto cleanup;
+
+  hr = frame->SetSize(width, height);
+  if (FAILED(hr)) goto cleanup;
+
+  hr = frame->SetPixelFormat(&pixelFormat);
+  if (FAILED(hr)) goto cleanup;
+
+  hr = frame->WritePixels(height, stride, stride * height, pixbuf);
+  if (FAILED(hr)) goto cleanup;
+
+  hr = frame->Commit();
+  if (FAILED(hr)) goto cleanup;
+
+  hr = encoder->Commit();
+
+cleanup:
+  free(pixbuf);
+  if (frame) frame->Release();
+  if (props) props->Release();
+  encoder->Release();
+
+  return SUCCEEDED(hr) ? 1 : 0;
+}
+
+extern "C" int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+{
+  IStream* stream = NULL;
+  HGLOBAL hGlobal;
+  STATSTG stat;
+  HANDLE hFile;
+  HRESULT hr;
+  int ret;
+  void* pData;
+  DWORD written;
+  wchar_t wfilename[4096];
+
+  hr = CreateStreamOnHGlobal(NULL, FALSE, &stream);
+  if (FAILED(hr)) return 0;
+
+  ret = iWinUIImageSaveToStream(imgdata, width, height, bpp, colors, colors_count, format, stream);
+  if (!ret)
+  {
+    stream->Release();
+    return 0;
+  }
+
+  hr = GetHGlobalFromStream(stream, &hGlobal);
+  if (FAILED(hr))
+  {
+    stream->Release();
+    return 0;
+  }
+
+  hr = stream->Stat(&stat, STATFLAG_NONAME);
+  if (FAILED(hr))
+  {
+    stream->Release();
+    GlobalFree(hGlobal);
+    return 0;
+  }
+
+  MultiByteToWideChar(CP_UTF8, 0, filename, -1, wfilename, 4096);
+  hFile = CreateFileW(wfilename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (hFile == INVALID_HANDLE_VALUE)
+  {
+    stream->Release();
+    GlobalFree(hGlobal);
+    return 0;
+  }
+
+  pData = GlobalLock(hGlobal);
+  WriteFile(hFile, pData, stat.cbSize.LowPart, &written, NULL);
+  GlobalUnlock(hGlobal);
+  CloseHandle(hFile);
+
+  stream->Release();
+  GlobalFree(hGlobal);
+  return (written == stat.cbSize.LowPart) ? 1 : 0;
+}
+
+extern "C" unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+{
+  IStream* stream = NULL;
+  HRESULT hr;
+  HGLOBAL hGlobal;
+  STATSTG stat;
+  unsigned char* result;
+  void* pData;
+
+  hr = CreateStreamOnHGlobal(NULL, FALSE, &stream);
+  if (FAILED(hr)) return NULL;
+
+  if (!iWinUIImageSaveToStream(imgdata, width, height, bpp, colors, colors_count, format, stream))
+  {
+    stream->Release();
+    return NULL;
+  }
+
+  hr = GetHGlobalFromStream(stream, &hGlobal);
+  if (FAILED(hr))
+  {
+    stream->Release();
+    return NULL;
+  }
+
+  hr = stream->Stat(&stat, STATFLAG_NONAME);
+  if (FAILED(hr))
+  {
+    stream->Release();
+    GlobalFree(hGlobal);
+    return NULL;
+  }
+
+  *size = (int)stat.cbSize.LowPart;
+  result = (unsigned char*)malloc(*size);
+  if (!result)
+  {
+    stream->Release();
+    GlobalFree(hGlobal);
+    return NULL;
+  }
+
+  pData = GlobalLock(hGlobal);
+  memcpy(result, pData, *size);
+  GlobalUnlock(hGlobal);
+
+  stream->Release();
+  GlobalFree(hGlobal);
+  return result;
 }

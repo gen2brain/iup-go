@@ -53,10 +53,8 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata);
 void iupImageSetHandleFromLoaded(const char* name, void* handle);
 Ihandle* iupImageGetImageFromName(const char* name);
 
-#if defined(FILE) || defined(_INC_STDIO) || defined(_STDIO_H_) || defined(_STDIO_H)
-IUP_SDK_API int iupImageExportToFile(Ihandle* ih, FILE* file, const char* format, const char* name);  /* Used only in IupView and IupVisualLED */
-#endif
-IUP_SDK_API int iupImageExportToString(Ihandle* ih, char **str, const char* format, const char* name);  /* Used only in IupVisualLED */
+int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format);
+unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size);
 
 void iupImageStockInit(void);
 void iupImageStockFinish(void);

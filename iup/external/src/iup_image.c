@@ -860,6 +860,88 @@ IUP_API Ihandle* IupImageGetHandle(const char* name)
   return NULL;
 }
 
+static const char* iImageGetFormatFromFilename(const char* filename)
+{
+  const char* ext;
+
+  if (!filename)
+    return NULL;
+
+  ext = strrchr(filename, '.');
+  if (!ext)
+    return NULL;
+
+  ext++;
+
+  if (iupStrEqualNoCase(ext, "png"))
+    return "PNG";
+  if (iupStrEqualNoCase(ext, "jpg") || iupStrEqualNoCase(ext, "jpeg"))
+    return "JPEG";
+  if (iupStrEqualNoCase(ext, "bmp"))
+    return "BMP";
+
+  return NULL;
+}
+
+IUP_API int IupImageSave(Ihandle* ih, const char* filename, const char* format)
+{
+  unsigned char* imgdata;
+  int width, height, bpp;
+  iupColor colors[256];
+  int colors_count = 0;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return 0;
+  if (!filename)
+    return 0;
+
+  width = ih->currentwidth;
+  height = ih->currentheight;
+  bpp = iupAttribGetInt(ih, "BPP");
+  imgdata = (unsigned char*)iupAttribGet(ih, "WID");
+  if (!imgdata)
+    return 0;
+
+  if (bpp == 8)
+    iupImageInitColorTable(ih, colors, &colors_count);
+
+  if (!format)
+    format = iImageGetFormatFromFilename(filename);
+  if (!format)
+    return 0;
+
+  return iupdrvImageSave(imgdata, width, height, bpp, colors, colors_count, filename, format);
+}
+
+IUP_API unsigned char* IupImageSaveToBuffer(Ihandle* ih, const char* format, int* size)
+{
+  unsigned char* imgdata;
+  int width, height, bpp;
+  iupColor colors[256];
+  int colors_count = 0;
+
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
+    return NULL;
+  if (!format)
+    return NULL;
+  if (!size)
+    return NULL;
+
+  width = ih->currentwidth;
+  height = ih->currentheight;
+  bpp = iupAttribGetInt(ih, "BPP");
+  imgdata = (unsigned char*)iupAttribGet(ih, "WID");
+  if (!imgdata)
+    return NULL;
+
+  if (bpp == 8)
+    iupImageInitColorTable(ih, colors, &colors_count);
+
+  return iupdrvImageSaveToBuffer(imgdata, width, height, bpp, colors, colors_count, format, size);
+}
+
 void iupImageRemoveFromCache(Ihandle* ih, void* handle)
 {
   char *name;

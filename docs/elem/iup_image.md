@@ -165,4 +165,4 @@ For example, if the biggest image index is 100, then all the colors from i=16 up
 
 ### See Also
 
-[IupLabel](iup_label.md), [IupButton](iup_button.md), [IupToggle](iup_toggle.md), [IupDestroy](../func/iup_destroy.md).
+[IupLabel](iup_label.md), [IupButton](iup_button.md), [IupToggle](iup_toggle.md), [IupDestroy](../func/iup_destroy.md), [IupImageGetHandle](../func/iup_imagegethandle.md), [IupImageSave](../func/iup_imagesave.md), [IupImageSaveToBuffer](../func/iup_imagesavetobuffer.md).

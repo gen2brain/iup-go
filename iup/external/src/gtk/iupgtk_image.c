@@ -526,3 +526,147 @@ IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
     g_object_unref(handle);
   (void)type;
 }
+
+static unsigned char* iGtkImageExpandPalette(unsigned char* imgdata, int width, int height, iupColor* colors, int colors_count)
+{
+  int i, count = width * height;
+  unsigned char* rgba = (unsigned char*)malloc(count * 4);
+  if (!rgba) return NULL;
+
+  (void)colors_count;
+
+  for (i = 0; i < count; i++)
+  {
+    int idx = imgdata[i];
+    rgba[i * 4]     = colors[idx].r;
+    rgba[i * 4 + 1] = colors[idx].g;
+    rgba[i * 4 + 2] = colors[idx].b;
+    rgba[i * 4 + 3] = colors[idx].a;
+  }
+
+  return rgba;
+}
+
+static GdkPixbuf* iGtkImageCreatePixbuf(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count)
+{
+  unsigned char* data = imgdata;
+  GdkPixbuf* pixbuf;
+  gboolean has_alpha = FALSE;
+  int channels = 3;
+
+  if (bpp == 8)
+  {
+    data = iGtkImageExpandPalette(imgdata, width, height, colors, colors_count);
+    if (!data) return NULL;
+    has_alpha = TRUE;
+    channels = 4;
+  }
+  else if (bpp == 32)
+  {
+    has_alpha = TRUE;
+    channels = 4;
+  }
+
+  pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, has_alpha, 8, width, height);
+  if (pixbuf)
+  {
+    guchar* pixdata = gdk_pixbuf_get_pixels(pixbuf);
+    int rowstride = gdk_pixbuf_get_rowstride(pixbuf);
+    int src_stride = width * channels;
+    int y;
+
+    for (y = 0; y < height; y++)
+      memcpy(pixdata + y * rowstride, data + y * src_stride, src_stride);
+  }
+
+  if (bpp == 8)
+    free(data);
+
+  return pixbuf;
+}
+
+static const char* iGtkImageGetType(const char* format)
+{
+  if (iupStrEqualNoCase(format, "PNG"))  return "png";
+  if (iupStrEqualNoCase(format, "JPEG")) return "jpeg";
+  if (iupStrEqualNoCase(format, "BMP"))  return "bmp";
+  return NULL;
+}
+
+int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+{
+  GdkPixbuf* pixbuf;
+  GError* error = NULL;
+  gboolean ret;
+  const char* type = iGtkImageGetType(format);
+  if (!type) return 0;
+
+  pixbuf = iGtkImageCreatePixbuf(imgdata, width, height, bpp, colors, colors_count);
+  if (!pixbuf) return 0;
+
+  if (iupStrEqualNoCase(format, "JPEG"))
+  {
+    char quality[16];
+    const char* q = IupGetGlobal("IMAGESAVEQUALITY");
+    if (!q) q = "85";
+    strncpy(quality, q, sizeof(quality) - 1);
+    quality[sizeof(quality) - 1] = 0;
+    ret = gdk_pixbuf_save(pixbuf, filename, type, &error, "quality", quality, NULL);
+  }
+  else
+    ret = gdk_pixbuf_save(pixbuf, filename, type, &error, NULL);
+
+  if (error) g_error_free(error);
+  g_object_unref(pixbuf);
+  return ret ? 1 : 0;
+}
+
+unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+{
+  GdkPixbuf* pixbuf;
+  GError* error = NULL;
+  gboolean ret;
+  gchar* buffer = NULL;
+  gsize buffer_size = 0;
+  unsigned char* result;
+  const char* type = iGtkImageGetType(format);
+  if (!type) return NULL;
+
+  pixbuf = iGtkImageCreatePixbuf(imgdata, width, height, bpp, colors, colors_count);
+  if (!pixbuf) return NULL;
+
+  if (iupStrEqualNoCase(format, "JPEG"))
+  {
+    char quality[16];
+    const char* q = IupGetGlobal("IMAGESAVEQUALITY");
+    if (!q) q = "85";
+    strncpy(quality, q, sizeof(quality) - 1);
+    quality[sizeof(quality) - 1] = 0;
+    ret = gdk_pixbuf_save_to_buffer(pixbuf, &buffer, &buffer_size, type, &error, "quality", quality, NULL);
+  }
+  else
+    ret = gdk_pixbuf_save_to_buffer(pixbuf, &buffer, &buffer_size, type, &error, NULL);
+
+  g_object_unref(pixbuf);
+
+  if (!ret || !buffer)
+  {
+    if (error) g_error_free(error);
+    return NULL;
+  }
+
+  if (error) g_error_free(error);
+
+  result = (unsigned char*)malloc(buffer_size);
+  if (!result)
+  {
+    g_free(buffer);
+    return NULL;
+  }
+
+  memcpy(result, buffer, buffer_size);
+  g_free(buffer);
+
+  *size = (int)buffer_size;
+  return result;
+}
