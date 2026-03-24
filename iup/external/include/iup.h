@@ -11,7 +11,6 @@
 #define __IUP_H
 
 #include "iupkey.h"
-#include "iupdef.h"
 #include "iup_export.h"
 
 #ifdef __cplusplus
