@@ -318,6 +318,11 @@ static void eflFileDlgDoneCallback(void* data, Evas_Object* obj, void* event_inf
   iupeflModalLoopQuit();
 }
 
+static void eflFileDlgActivatedCallback(void* data, Evas_Object* obj, void* event_info)
+{
+  eflFileDlgDoneCallback(data, obj, event_info);
+}
+
 static void eflFileDlgSelectedCallback(void* data, Evas_Object* obj, void* event_info)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -500,6 +505,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
     elm_fileselector_current_name_set(fileselector, file);
 
   evas_object_smart_callback_add(fileselector, "done", eflFileDlgDoneCallback, ih);
+  evas_object_smart_callback_add(fileselector, "activated", eflFileDlgActivatedCallback, ih);
   evas_object_smart_callback_add(fileselector, "selected", eflFileDlgSelectedCallback, ih);
 
   efl_gfx_hint_weight_set(fileselector, 1.0, 1.0);
@@ -712,6 +718,7 @@ static int eflFileDlgPopup(Ihandle* ih, int x, int y)
     file_cb(ih, NULL, "FINISH");
 
   evas_object_smart_callback_del(fileselector, "done", eflFileDlgDoneCallback);
+  evas_object_smart_callback_del(fileselector, "activated", eflFileDlgActivatedCallback);
   evas_object_smart_callback_del(fileselector, "selected", eflFileDlgSelectedCallback);
   efl_del(win);
   eflFileDlgFreePathList();
