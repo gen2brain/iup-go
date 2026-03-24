@@ -41,6 +41,13 @@ int iupwinCheckWindowsVersion(DWORD major, DWORD minor)
   return 0;
 }
 
+DWORD iupwinGetBuildNumber(void)
+{
+  OSVERSIONINFOW osvi;
+  iupwinGetVersionInfo(&osvi);
+  return osvi.dwBuildNumber;
+}
+
 int iupwinIsWinXPOrNew(void)
 {
   return iupwinCheckWindowsVersion(5, 1);

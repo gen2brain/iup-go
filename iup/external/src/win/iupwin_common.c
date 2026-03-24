@@ -1311,13 +1311,7 @@ void iupwinTitleBarThemeColor(HWND hwnd)
 
     if (iupwinCheckWindowsVersion(10, 0))
     {
-      DWORD build = 0;
-      OSVERSIONINFOEX osvi;
-      osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-      if (GetVersionEx((OSVERSIONINFO*)&osvi))
-        build = osvi.dwBuildNumber;
-
-      if (build >= 18985)
+      if (iupwinGetBuildNumber() >= 18985)
         attribute = 19;
     }
 
