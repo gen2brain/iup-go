@@ -1,5 +1,5 @@
 /** \file
- * \brief initializes dial, gauge, colorbrowser, colorbar controls.
+ * \brief Cells and Matrix controls.
  *
  * See Copyright Notice in "iup.h"
  */
@@ -18,10 +18,6 @@ Ihandle* IupCells(void);
 Ihandle* IupMatrix(const char *action);
 Ihandle* IupMatrixList(void);
 Ihandle* IupMatrixEx(void);
-
-/* available only when linking with "iupluamatrix" */
-void IupMatrixSetFormula(Ihandle* ih, int col, const char* formula, const char* init);
-void IupMatrixSetDynamic(Ihandle* ih, const char* init);
 
 
 #ifdef __cplusplus
