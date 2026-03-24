@@ -50,12 +50,12 @@ static int eflCalendarSetValueAttrib(Ihandle* ih, const char* value)
 
   if (iupStrEqualNoCase(value, "TODAY"))
   {
-    struct tm timeinfo;
+    struct tm* timeinfo;
     time_t timer;
     time(&timer);
-    localtime_r(&timer, &timeinfo);
+    timeinfo = localtime(&timer);
 
-    efl_ui_calendar_date_set(calendar, timeinfo);
+    efl_ui_calendar_date_set(calendar, *timeinfo);
   }
   else
   {
@@ -99,12 +99,12 @@ static char* eflCalendarGetValueAttrib(Ihandle* ih)
 
 static char* eflCalendarGetTodayAttrib(Ihandle* ih)
 {
-  struct tm timeinfo;
+  struct tm* timeinfo;
   time_t timer;
   (void)ih;
   time(&timer);
-  localtime_r(&timer, &timeinfo);
-  return iupStrReturnStrf("%d/%d/%d", timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday);
+  timeinfo = localtime(&timer);
+  return iupStrReturnStrf("%d/%d/%d", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday);
 }
 
 static void eflCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)

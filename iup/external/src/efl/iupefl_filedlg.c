@@ -8,8 +8,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+
+#ifdef _WIN32
+#include <io.h>
+#include <direct.h>
+#define access _access
+#define chdir _chdir
+#define F_OK 0
+#else
 #include <unistd.h>
-#include <fnmatch.h>
+#endif
+
+#include <ctype.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -82,6 +92,41 @@ static char* eflFileDlgGetNextStr(char* str)
   return str + len + 1;
 }
 
+static int eflGlobMatch(const char* str, const char* pattern)
+{
+  while (*pattern)
+  {
+    if (*pattern == '*')
+    {
+      pattern++;
+      if (!*pattern)
+        return 1;
+      while (*str)
+      {
+        if (eflGlobMatch(str, pattern))
+          return 1;
+        str++;
+      }
+      return 0;
+    }
+    else if (*pattern == '?')
+    {
+      if (!*str)
+        return 0;
+      str++;
+      pattern++;
+    }
+    else
+    {
+      if (tolower((unsigned char)*str) != tolower((unsigned char)*pattern))
+        return 0;
+      str++;
+      pattern++;
+    }
+  }
+  return *str == '\0';
+}
+
 static Eina_Bool eflFileDlgFilterFunc(const char* path, Eina_Bool dir, void* data)
 {
   EflFileFilterData* filter_data = (EflFileFilterData*)data;
@@ -99,7 +144,7 @@ static Eina_Bool eflFileDlgFilterFunc(const char* path, Eina_Bool dir, void* dat
 
   for (i = 0; i < filter_data->pattern_count; i++)
   {
-    if (fnmatch(filter_data->patterns[i], filename, 0) == 0)
+    if (eflGlobMatch(filename, filter_data->patterns[i]))
       return EINA_TRUE;
   }
 

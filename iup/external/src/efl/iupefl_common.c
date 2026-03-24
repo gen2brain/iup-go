@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef _WIN32
+#include <unistd.h>
+#endif
+
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_str.h"
@@ -24,6 +28,15 @@
 #include "iup_markup.h"
 
 #include "iupefl_drv.h"
+
+#ifdef HAVE_ECORE_X
+#include <Ecore_X.h>
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#undef interface
+#endif
 
 
 /****************************************************************************
@@ -870,4 +883,95 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   (void)ih;
   (void)title;
+}
+
+static void eflGetWidgetScreenPos(Ihandle* ih, int* widget_x, int* widget_y)
+{
+  Eo* widget = iupeflGetWidget(ih);
+  Eo* win;
+
+  *widget_x = 0;
+  *widget_y = 0;
+
+  if (!widget)
+    return;
+
+  {
+    Eina_Rect geometry = iupeflGetGeometry(widget);
+    *widget_x = geometry.x;
+    *widget_y = geometry.y;
+  }
+
+  win = iupeflGetMainWindow();
+  if (win)
+  {
+    Evas* evas = evas_object_evas_get(win);
+    if (evas)
+    {
+      Ecore_Evas* ee = ecore_evas_ecore_evas_get(evas);
+      if (ee)
+      {
+        int screen_x = 0, screen_y = 0;
+        ecore_evas_geometry_get(ee, &screen_x, &screen_y, NULL, NULL);
+        *widget_x += screen_x;
+        *widget_y += screen_y;
+      }
+    }
+  }
+}
+
+IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
+{
+  int wx, wy;
+  eflGetWidgetScreenPos(ih, &wx, &wy);
+  if (x) *x += wx;
+  if (y) *y += wy;
+}
+
+IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
+{
+  int wx, wy;
+  eflGetWidgetScreenPos(ih, &wx, &wy);
+  if (x) *x -= wx;
+  if (y) *y -= wy;
+}
+
+IUP_SDK_API void iupdrvWarpPointer(int x, int y)
+{
+#ifdef HAVE_ECORE_X
+  if (iupeflIsX11())
+  {
+    Ecore_X_Window root = ecore_x_window_root_first_get();
+    if (root)
+    {
+      ecore_x_pointer_warp(root, x, y);
+      return;
+    }
+  }
+#endif
+  (void)x;
+  (void)y;
+}
+
+IUP_SDK_API void iupdrvSendKey(int key, int press)
+{
+  (void)key;
+  (void)press;
+}
+
+IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
+{
+  (void)x;
+  (void)y;
+  (void)bt;
+  (void)status;
+}
+
+IUP_SDK_API void iupdrvSleep(int time)
+{
+#ifdef _WIN32
+  Sleep(time);
+#else
+  usleep((useconds_t)(time * 1000));
+#endif
 }

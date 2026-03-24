@@ -6,7 +6,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -17,6 +20,11 @@
 #include "iup_object.h"
 
 #include "iupefl_drv.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#undef interface
+#endif
 
 
 static int efl_mainloop = 0;
@@ -39,7 +47,16 @@ void iupeflMessagePendingFlush(Eo *loop)
   if (!efl_pending_flush_checked)
   {
     efl_pending_flush_checked = 1;
+#ifdef _WIN32
+    {
+      HMODULE hmod = GetModuleHandleA("efl");
+      if (!hmod) hmod = GetModuleHandleA("libefl");
+      if (hmod)
+        efl_pending_flush_func = (efl_loop_message_pending_flush_fn)GetProcAddress(hmod, "efl_loop_message_pending_flush");
+    }
+#else
     efl_pending_flush_func = (efl_loop_message_pending_flush_fn)dlsym(RTLD_DEFAULT, "efl_loop_message_pending_flush");
+#endif
   }
   if (efl_pending_flush_func)
     efl_pending_flush_func(loop);
