@@ -1,4 +1,4 @@
-//go:build efl
+//go:build efl && !windows
 
 package iup
 

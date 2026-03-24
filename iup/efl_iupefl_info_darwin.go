@@ -1,4 +1,4 @@
-//go:build efl && !windows && !darwin
+//go:build efl && darwin
 
 package iup
 

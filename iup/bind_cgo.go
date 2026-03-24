@@ -74,8 +74,12 @@ package iup
 #cgo darwin,gtk4,!nopkgconfig pkg-config: gtk4
 #cgo darwin,gtk4,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo efl CFLAGS: -Iexternal/src/efl -Iexternal/src/unix -DIUP_USE_EFL -DEFL_BETA_API_SUPPORT=1 -DEFL_EO_API_SUPPORT=1 -DHAVE_ECORE_X -DHAVE_ECORE_WL2
-#cgo efl,!nopkgconfig pkg-config: elementary ecore-x ecore-wl2
-#cgo efl,gl,!nopkgconfig pkg-config: wayland-egl egl gl
+#cgo efl CFLAGS: -Iexternal/src/efl -Iexternal/src/unix -DIUP_USE_EFL -DEFL_BETA_API_SUPPORT=1 -DEFL_EO_API_SUPPORT=1
+#cgo efl,!windows,!darwin CFLAGS: -DHAVE_ECORE_X -DHAVE_ECORE_WL2
+#cgo efl,!nopkgconfig pkg-config: elementary
+#cgo efl,!windows,!darwin,!nopkgconfig pkg-config: ecore-x ecore-wl2
+#cgo efl,windows,!nopkgconfig pkg-config: ecore-win32
+#cgo efl,darwin,!nopkgconfig pkg-config: ecore-cocoa
+#cgo efl,gl,!windows,!darwin,!nopkgconfig pkg-config: wayland-egl egl gl
 */
 import "C"
