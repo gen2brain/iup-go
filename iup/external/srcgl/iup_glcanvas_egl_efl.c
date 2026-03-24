@@ -33,6 +33,56 @@ static int eGLCanvasEflIsX11(Ecore_Evas* ee)
   return engine && (strstr(engine, "x11") != NULL);
 }
 
+static int eGLCanvasEflIsGLEngine(Ecore_Evas* ee)
+{
+  const char* engine = ecore_evas_engine_name_get(ee);
+  if (!engine)
+    return 0;
+  return (strstr(engine, "opengl") != NULL) || (strstr(engine, "egl") != NULL);
+}
+
+#ifdef HAVE_ECORE_X
+static void eGLCanvasEflGetCanvasGeometry(IGlControlData* gldata, int* x, int* y, int* w, int* h)
+{
+  Evas_Object* evas_obj = (Evas_Object*)gldata->backend_handle;
+  *x = 0;
+  *y = 0;
+  *w = 1;
+  *h = 1;
+
+  if (evas_obj)
+  {
+    Eina_Rect geom = efl_gfx_entity_geometry_get(evas_obj);
+    if (geom.w > 0 && geom.h > 0)
+    {
+      *x = geom.x;
+      *y = geom.y;
+      *w = geom.w;
+      *h = geom.h;
+    }
+  }
+}
+
+static Ecore_X_Window eGLCanvasEflCreateChildWindow(IGlControlData* gldata)
+{
+  Ecore_Evas* ee = (Ecore_Evas*)gldata->backend_handle2;
+  Ecore_X_Window parent_xwin = ecore_evas_window_get(ee);
+  Ecore_X_Window child;
+  int x, y, w, h;
+
+  if (!parent_xwin)
+    return 0;
+
+  eGLCanvasEflGetCanvasGeometry(gldata, &x, &y, &w, &h);
+
+  child = ecore_x_window_new(parent_xwin, x, y, w, h);
+  if (child)
+    ecore_x_window_show(child);
+
+  return child;
+}
+#endif
+
 static void iupEGLBackendGetScaleAndSize(Ihandle* ih, IGlControlData* gldata, int* scale, int* realized_w, int* realized_h)
 {
   Evas_Object* evas_obj = (Evas_Object*)gldata->backend_handle;
@@ -132,12 +182,6 @@ static EGLDisplay iupEGLBackendGetEGLDisplay(Ihandle* ih, IGlControlData* gldata
       if (display == EGL_NO_DISPLAY) {
         display = eglGetDisplay((EGLNativeDisplayType)x_display);
       }
-
-      {
-        Ecore_X_Window xwin = ecore_evas_window_get(ee);
-        if (xwin)
-          *native_window = (EGLNativeWindowType)xwin;
-      }
     }
   }
 #endif
@@ -160,7 +204,17 @@ static EGLNativeWindowType iupEGLBackendPostConfig(Ihandle* ih, IGlControlData* 
   }
 #endif
 
-  /* For X11, native_window was already obtained in GetEGLDisplay */
+#ifdef HAVE_ECORE_X
+  if (eGLCanvasEflIsX11(ee)) {
+    Ecore_X_Window child = eGLCanvasEflCreateChildWindow(gldata);
+    if (child)
+    {
+      iupAttribSet(ih, "_IUP_EGL_X11_CHILD", (char*)(uintptr_t)child);
+      return (EGLNativeWindowType)child;
+    }
+  }
+#endif
+
   (void)ih; (void)gldata;
   return (EGLNativeWindowType)NULL;
 }
@@ -292,19 +346,15 @@ static EGLNativeWindowType iupEGLBackendCheckSurfaceRecreation(Ihandle* ih, IGlC
 #ifdef HAVE_ECORE_X
   if (gldata->surface != EGL_NO_SURFACE && iupAttribGet(ih, "_IUP_EGL_SURFACE_1x1"))
   {
-    Ecore_Evas* ee = (Ecore_Evas*)gldata->backend_handle2;
-    if (ee && eGLCanvasEflIsX11(ee))
+    Ecore_X_Window child = (Ecore_X_Window)(uintptr_t)iupAttribGet(ih, "_IUP_EGL_X11_CHILD");
+    if (child)
     {
-      Ecore_X_Window xwin = ecore_evas_window_get(ee);
-      if (xwin)
+      int x, y, w, h;
+      ecore_x_window_geometry_get(child, &x, &y, &w, &h);
+      if (w > 1 && h > 1)
       {
-        int x, y, w, h;
-        ecore_x_window_geometry_get(xwin, &x, &y, &w, &h);
-        if (w > 1 && h > 1)
-        {
-          iupAttribSet(ih, "_IUP_EGL_SURFACE_1x1", NULL);
-          return (EGLNativeWindowType)xwin;
-        }
+        iupAttribSet(ih, "_IUP_EGL_SURFACE_1x1", NULL);
+        return (EGLNativeWindowType)child;
       }
     }
   }
@@ -342,11 +392,11 @@ static void iupEGLBackendPostSurfaceCreation(Ihandle* ih, IGlControlData* gldata
     Ecore_Evas* ee = (Ecore_Evas*)gldata->backend_handle2;
     if (ee && eGLCanvasEflIsX11(ee))
     {
-      Ecore_X_Window xwin = ecore_evas_window_get(ee);
-      if (xwin)
+      Ecore_X_Window child = (Ecore_X_Window)(uintptr_t)iupAttribGet(ih, "_IUP_EGL_X11_CHILD");
+      if (child)
       {
         int x, y, w, h;
-        ecore_x_window_geometry_get(xwin, &x, &y, &w, &h);
+        ecore_x_window_geometry_get(child, &x, &y, &w, &h);
         if (w <= 1 || h <= 1)
           iupAttribSet(ih, "_IUP_EGL_SURFACE_1x1", "1");
       }
@@ -363,6 +413,21 @@ static void iupEGLBackendPostSurfaceCreation(Ihandle* ih, IGlControlData* gldata
 
 static void iupEGLBackendUpdateSubsurfacePosition(Ihandle* ih, IGlControlData* gldata)
 {
+#ifdef HAVE_ECORE_X
+  {
+    Ecore_Evas* ee = (Ecore_Evas*)gldata->backend_handle2;
+    if (ee && eGLCanvasEflIsX11(ee))
+    {
+      Ecore_X_Window child = (Ecore_X_Window)(uintptr_t)iupAttribGet(ih, "_IUP_EGL_X11_CHILD");
+      if (child)
+      {
+        int x, y, w, h;
+        eGLCanvasEflGetCanvasGeometry(gldata, &x, &y, &w, &h);
+        ecore_x_window_move_resize(child, x, y, w, h);
+      }
+    }
+  }
+#endif
   (void)ih; (void)gldata;
 }
 
@@ -375,6 +440,15 @@ static void iupEGLBackendCleanup(Ihandle* ih, IGlControlData* gldata)
     {
       ecore_evas_callback_post_render_set(ee, NULL);
       ecore_evas_data_set(ee, "_IUP_EGL_CANVAS", NULL);
+    }
+  }
+
+  {
+    Ecore_X_Window child = (Ecore_X_Window)(uintptr_t)iupAttribGet(ih, "_IUP_EGL_X11_CHILD");
+    if (child)
+    {
+      ecore_x_window_free(child);
+      iupAttribSet(ih, "_IUP_EGL_X11_CHILD", NULL);
     }
   }
 #endif
@@ -405,20 +479,23 @@ static void iupEGLBackendPreSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 
 static void iupEGLBackendPostSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 {
+  Ecore_Evas* ee = (Ecore_Evas*)gldata->backend_handle2;
+
 #ifdef HAVE_ECORE_WL2
+  if (ee && eGLCanvasEflIsWayland(ee))
   {
-    Ecore_Evas* ee = (Ecore_Evas*)gldata->backend_handle2;
-    if (ee && eGLCanvasEflIsWayland(ee))
+    Ecore_Wl2_Window* wl2_win = ecore_evas_wayland2_window_get(ee);
+    if (wl2_win)
     {
-      Ecore_Wl2_Window* wl2_win = ecore_evas_wayland2_window_get(ee);
-      if (wl2_win)
-      {
-        Ecore_Wl2_Display* wl2_display = ecore_wl2_window_display_get(wl2_win);
-        if (wl2_display)
-          ecore_wl2_display_flush(wl2_display);
-      }
+      Ecore_Wl2_Display* wl2_display = ecore_wl2_window_display_get(wl2_win);
+      if (wl2_display)
+        ecore_wl2_display_flush(wl2_display);
     }
   }
 #endif
-  (void)ih; (void)gldata;
+
+  if (ee && eGLCanvasEflIsGLEngine(ee))
+    eglMakeCurrent(gldata->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
+  (void)ih;
 }
