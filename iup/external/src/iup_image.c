@@ -810,7 +810,7 @@ static Ihandle* iImageGetHandleFromImage(void* handle)
 
 IUP_API Ihandle* IupImageGetHandle(const char* name)
 {
-  /* Used in CD or OpenGL based controls where WID is mandatory - IupMatrix, IupGLControls and IupPlot */
+  /* Used in additional controls where WID is mandatory - IupMatrix, IupGLControls and IupPlot */
   Ihandle *ih;
   const char* native_name = NULL;
   void* handle;
@@ -1046,7 +1046,7 @@ static void iImageClearCache(Ihandle* ih)
     iupAttribSet(ih, "_IUPIMAGE_LOADED_WD_HANDLE", NULL);
   }
 
-  /* additional image buffer when an IupImage is converted to one (CD, OpenGL, etc) */
+  /* additional image buffer when an IupImage is converted to one (OpenGL, etc) */
   handle = iupAttribGet(ih, "_IUPIMAGE_BUFFER");
   if (handle)
   {

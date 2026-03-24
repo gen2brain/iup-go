@@ -125,7 +125,6 @@ static char* getCallbackParameters(const char* format)
       case 'd': fstr = "double"; break;
       case 's': fstr = "char*"; break;
       case 'V': fstr = "void*"; break;
-      case 'C': fstr = "cdCanvas*"; break;
       case 'n': fstr = "Ihandle*"; break;
       case '=': return str;
       }

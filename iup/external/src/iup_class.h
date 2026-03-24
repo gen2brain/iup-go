@@ -345,8 +345,7 @@ IUP_SDK_API void iupClassRegisterReplaceAttribFlags(Iclass* ic, const char* name
  * - "f" = (float) - real
  * - "d" = (double) - real
  * - "s" = (char*) - string 
- * - "V" = (void*) - generic pointer 
- * - "C" = (struct _cdCanvas*) - cdCanvas* structure, used along with the CD library
+ * - "V" = (void*) - generic pointer
  * - "n" = (Ihandle*) - element handle
  * The default return value for all callbacks is "i" (int), 
  * but a different return value can be specified using one of the above parameters, 
