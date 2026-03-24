@@ -1435,7 +1435,7 @@ func setValueEditFunc(ih Ihandle, f ValueEditFunc) {
 //--------------------
 
 //--------------------
-// MatrixList Control Callbacks (srcctl/iup_matrixlist.c)
+// MatrixList Control Callbacks (srcctrl/iup_matrixlist.c)
 //--------------------
 
 // MatrixListActionFunc for ACTION_CB and IMAGEVALUECHANGED_CB callbacks in MatrixList.

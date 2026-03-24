@@ -2,7 +2,7 @@ package iup
 
 /*
 #cgo CFLAGS: -Iexternal/include -Iexternal/src
-#cgo ctl CFLAGS: -Iexternal/srcctl
+#cgo ctrl CFLAGS: -Iexternal/srcctrl
 #cgo gl CFLAGS: -Iexternal/srcgl
 #cgo web CFLAGS: -Iexternal/srcweb
 
