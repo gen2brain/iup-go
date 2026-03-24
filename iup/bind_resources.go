@@ -115,6 +115,8 @@ func ImageGetHandle(name string) Ihandle {
 // ImageSave saves an IUP image to a file in the specified format.
 // Format can be "PNG", "JPEG", or "BMP". If empty, the format is detected from the filename extension.
 // Returns 1 on success, 0 on failure.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_imagesave.md
 func ImageSave(ih Ihandle, filename, format string) int {
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
@@ -131,6 +133,8 @@ func ImageSave(ih Ihandle, filename, format string) int {
 // ImageSaveToBuffer saves an IUP image to a byte slice in the specified format.
 // Format must be "PNG", "JPEG", or "BMP".
 // Returns nil if the operation fails.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_imagesavetobuffer.md
 func ImageSaveToBuffer(ih Ihandle, format string) []byte {
 	cFormat := C.CString(format)
 	defer C.free(unsafe.Pointer(cFormat))
