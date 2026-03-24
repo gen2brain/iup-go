@@ -124,7 +124,7 @@ API reference documentation for IUP (Portable User Interface).
 
 ## Resources
 
-[IupDraw](func/iup_draw.md), [IupImage](elem/iup_image.md), [IupImageGetHandle](func/iup_imagegethandle.md)
+[IupDraw](func/iup_draw.md), [IupImage](elem/iup_image.md), [IupImageGetHandle](func/iup_imagegethandle.md), [IupImageSave](func/iup_imagesave.md), [IupImageSaveToBuffer](func/iup_imagesavetobuffer.md)
 
 ### Keyboard
 

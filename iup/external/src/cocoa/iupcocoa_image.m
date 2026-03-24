@@ -640,3 +640,116 @@ IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
 
   [((__bridge id)handle) release];
 }
+
+static unsigned char* iCocoaImageExpandPalette(unsigned char* imgdata, int width, int height, iupColor* colors, int colors_count)
+{
+  int i, count = width * height;
+  unsigned char* rgba = (unsigned char*)malloc(count * 4);
+  if (!rgba) return NULL;
+
+  (void)colors_count;
+
+  for (i = 0; i < count; i++)
+  {
+    int idx = imgdata[i];
+    rgba[i * 4]     = colors[idx].r;
+    rgba[i * 4 + 1] = colors[idx].g;
+    rgba[i * 4 + 2] = colors[idx].b;
+    rgba[i * 4 + 3] = colors[idx].a;
+  }
+
+  return rgba;
+}
+
+static NSBitmapImageFileType iCocoaImageGetFileType(const char* format)
+{
+  if (iupStrEqualNoCase(format, "PNG"))  return NSBitmapImageFileTypePNG;
+  if (iupStrEqualNoCase(format, "JPEG")) return NSBitmapImageFileTypeJPEG;
+  if (iupStrEqualNoCase(format, "BMP"))  return NSBitmapImageFileTypeBMP;
+  return (NSBitmapImageFileType)-1;
+}
+
+static NSData* iCocoaImageEncode(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format)
+{
+  unsigned char* data = imgdata;
+  int channels, samplesPerPixel;
+  BOOL hasAlpha;
+  NSBitmapImageRep* bitmap;
+  NSDictionary* props = nil;
+  NSBitmapImageFileType fileType = iCocoaImageGetFileType(format);
+  NSData* result;
+
+  if ((int)fileType == -1) return nil;
+
+  if (bpp == 8)
+  {
+    data = iCocoaImageExpandPalette(imgdata, width, height, colors, colors_count);
+    if (!data) return nil;
+    bpp = 32;
+  }
+
+  channels = (bpp == 32) ? 4 : 3;
+  samplesPerPixel = channels;
+  hasAlpha = (channels == 4) ? YES : NO;
+
+  bitmap = [[NSBitmapImageRep alloc]
+    initWithBitmapDataPlanes:NULL
+    pixelsWide:width
+    pixelsHigh:height
+    bitsPerSample:8
+    samplesPerPixel:samplesPerPixel
+    hasAlpha:hasAlpha
+    isPlanar:NO
+    colorSpaceName:NSCalibratedRGBColorSpace
+    bytesPerRow:width * channels
+    bitsPerPixel:channels * 8];
+
+  if (bitmap)
+  {
+    unsigned char* bitmapData = [bitmap bitmapData];
+    memcpy(bitmapData, data, width * height * channels);
+
+    if (iupStrEqualNoCase(format, "JPEG"))
+    {
+      const char* q = IupGetGlobal("IMAGESAVEQUALITY");
+      float quality = 0.85f;
+      if (q) quality = (float)atof(q) / 100.0f;
+      props = @{NSImageCompressionFactor: @(quality)};
+    }
+
+    result = [bitmap representationUsingType:fileType properties:(props ? props : @{})];
+    [bitmap release];
+  }
+  else
+    result = nil;
+
+  if (data != imgdata) free(data);
+
+  return result;
+}
+
+int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+{
+  @autoreleasepool {
+    NSData* data = iCocoaImageEncode(imgdata, width, height, bpp, colors, colors_count, format);
+    if (!data) return 0;
+
+    NSString* path = [NSString stringWithUTF8String:filename];
+    return [data writeToFile:path atomically:YES] ? 1 : 0;
+  }
+}
+
+unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+{
+  @autoreleasepool {
+    NSData* data = iCocoaImageEncode(imgdata, width, height, bpp, colors, colors_count, format);
+    if (!data) return NULL;
+
+    *size = (int)[data length];
+    unsigned char* result = (unsigned char*)malloc(*size);
+    if (!result) return NULL;
+
+    memcpy(result, [data bytes], *size);
+    return result;
+  }
+}

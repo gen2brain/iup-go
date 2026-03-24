@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "iup.h"
 
@@ -544,5 +545,178 @@ Eo* iupeflImageGetImageForParent(const char* name, Ihandle* ih_parent, int make_
     bgcolor = IupGetAttribute(ih_parent, "BGCOLOR");
 
   return eflImageCreateFromIhandle(img_ih, parent, make_inactive, bgcolor);
+}
+
+static const char* iEflImageGetExtension(const char* format)
+{
+  if (iupStrEqualNoCase(format, "PNG"))  return ".png";
+  if (iupStrEqualNoCase(format, "JPEG")) return ".jpg";
+  if (iupStrEqualNoCase(format, "BMP"))  return ".bmp";
+  return NULL;
+}
+
+static Eo* iEflImageCreateTemp(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count)
+{
+  Evas_Object* win = iupeflGetMainWindow();
+  Eo* img;
+  unsigned int* pixels;
+  int x, y, count;
+
+  if (!win) return NULL;
+
+  img = efl_add_ref(EFL_CANVAS_IMAGE_CLASS, win);
+  if (!img) return NULL;
+
+  efl_gfx_entity_visible_set(img, EINA_FALSE);
+
+  count = width * height;
+  pixels = (unsigned int*)malloc(count * sizeof(unsigned int));
+  if (!pixels)
+  {
+    efl_unref(img);
+    return NULL;
+  }
+
+  if (bpp == 8)
+  {
+    (void)colors_count;
+    for (y = 0; y < height; y++)
+    {
+      unsigned char* line_data = imgdata + y * width;
+      unsigned int* pix_line = pixels + y * width;
+      for (x = 0; x < width; x++)
+      {
+        unsigned char index = line_data[x];
+        iupColor* c = &colors[index];
+        unsigned char pa = c->a;
+        unsigned char pr = (c->r * pa) / 255;
+        unsigned char pg = (c->g * pa) / 255;
+        unsigned char pb = (c->b * pa) / 255;
+        pix_line[x] = (pa << 24) | (pr << 16) | (pg << 8) | pb;
+      }
+    }
+  }
+  else if (bpp == 32)
+  {
+    for (y = 0; y < height; y++)
+    {
+      unsigned char* src = imgdata + y * width * 4;
+      unsigned int* pix_line = pixels + y * width;
+      for (x = 0; x < width; x++)
+      {
+        unsigned char r = src[x * 4];
+        unsigned char g = src[x * 4 + 1];
+        unsigned char b = src[x * 4 + 2];
+        unsigned char a = src[x * 4 + 3];
+        unsigned char pr = (r * a) / 255;
+        unsigned char pg = (g * a) / 255;
+        unsigned char pb = (b * a) / 255;
+        pix_line[x] = (a << 24) | (pr << 16) | (pg << 8) | pb;
+      }
+    }
+  }
+  else
+  {
+    for (y = 0; y < height; y++)
+    {
+      unsigned char* src = imgdata + y * width * 3;
+      unsigned int* pix_line = pixels + y * width;
+      for (x = 0; x < width; x++)
+        pix_line[x] = (0xFF << 24) | (src[x * 3] << 16) | (src[x * 3 + 1] << 8) | src[x * 3 + 2];
+    }
+  }
+
+  eflImageSetPixels(img, pixels, width, height, (bpp == 32 || bpp == 8) ? EINA_TRUE : EINA_FALSE);
+  free(pixels);
+
+  return img;
+}
+
+int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+{
+  Eo* img;
+  Eina_Bool ret;
+  Efl_File_Save_Info info = {0};
+
+  if (!iEflImageGetExtension(format)) return 0;
+
+  img = iEflImageCreateTemp(imgdata, width, height, bpp, colors, colors_count);
+  if (!img) return 0;
+
+  if (iupStrEqualNoCase(format, "JPEG"))
+  {
+    const char* q = IupGetGlobal("IMAGESAVEQUALITY");
+    info.quality = q ? (unsigned int)atoi(q) : 85;
+  }
+  else if (iupStrEqualNoCase(format, "PNG"))
+    info.compression = 6;
+
+  ret = efl_file_save(img, filename, NULL, &info);
+  efl_unref(img);
+  return ret ? 1 : 0;
+}
+
+unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+{
+  Eo* img;
+  char tmpname[] = "/tmp/iup_img_XXXXXX";
+  const char* ext;
+  char tmppath[256];
+  int fd;
+  FILE* f;
+  long fsize;
+  unsigned char* result;
+  Eina_Bool ret;
+  Efl_File_Save_Info info = {0};
+
+  ext = iEflImageGetExtension(format);
+  if (!ext) return NULL;
+
+  img = iEflImageCreateTemp(imgdata, width, height, bpp, colors, colors_count);
+  if (!img) return NULL;
+
+  fd = mkstemp(tmpname);
+  if (fd < 0) { efl_unref(img); return NULL; }
+  close(fd);
+
+  snprintf(tmppath, sizeof(tmppath), "%s%s", tmpname, ext);
+  rename(tmpname, tmppath);
+
+  if (iupStrEqualNoCase(format, "JPEG"))
+  {
+    const char* q = IupGetGlobal("IMAGESAVEQUALITY");
+    info.quality = q ? (unsigned int)atoi(q) : 85;
+  }
+  else if (iupStrEqualNoCase(format, "PNG"))
+    info.compression = 6;
+
+  ret = efl_file_save(img, tmppath, NULL, &info);
+  efl_unref(img);
+
+  if (!ret) { unlink(tmppath); return NULL; }
+
+  f = fopen(tmppath, "rb");
+  if (!f) { unlink(tmppath); return NULL; }
+
+  fseek(f, 0, SEEK_END);
+  fsize = ftell(f);
+  fseek(f, 0, SEEK_SET);
+
+  result = (unsigned char*)malloc(fsize);
+  if (!result) { fclose(f); unlink(tmppath); return NULL; }
+
+  if ((long)fread(result, 1, fsize, f) != fsize)
+  {
+    free(result);
+    fclose(f);
+    unlink(tmppath);
+    return NULL;
+  }
+
+  fclose(f);
+  unlink(tmppath);
+
+  *size = (int)fsize;
+  return result;
 }
 

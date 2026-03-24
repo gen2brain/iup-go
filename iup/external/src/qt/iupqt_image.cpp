@@ -12,6 +12,8 @@
 #include <QApplication>
 #include <QScreen>
 #include <QStyle>
+#include <QBuffer>
+#include <QByteArray>
 
 #include <cstdio>
 #include <cstdlib>
@@ -530,4 +532,72 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
 
     delete pixmap;
   }
+}
+
+static QImage iQtImageCreate(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count)
+{
+  if (bpp == 8)
+  {
+    QImage image(width, height, QImage::Format_RGBA8888);
+    for (int y = 0; y < height; y++)
+    {
+      unsigned char* line = image.scanLine(y);
+      for (int x = 0; x < width; x++)
+      {
+        int idx = imgdata[y * width + x];
+        line[x * 4]     = colors[idx].r;
+        line[x * 4 + 1] = colors[idx].g;
+        line[x * 4 + 2] = colors[idx].b;
+        line[x * 4 + 3] = colors[idx].a;
+      }
+    }
+    (void)colors_count;
+    return image;
+  }
+  else if (bpp == 32)
+    return QImage(imgdata, width, height, width * 4, QImage::Format_RGBA8888).copy();
+  else
+    return QImage(imgdata, width, height, width * 3, QImage::Format_RGB888).copy();
+}
+
+extern "C" int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+{
+  QImage image = iQtImageCreate(imgdata, width, height, bpp, colors, colors_count);
+  if (image.isNull()) return 0;
+
+  int quality = -1;
+  if (iupStrEqualNoCase(format, "JPEG"))
+  {
+    const char* q = IupGetGlobal("IMAGESAVEQUALITY");
+    quality = q ? atoi(q) : 85;
+  }
+
+  return image.save(QString::fromUtf8(filename), format, quality) ? 1 : 0;
+}
+
+extern "C" unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+{
+  QImage image = iQtImageCreate(imgdata, width, height, bpp, colors, colors_count);
+  if (image.isNull()) return NULL;
+
+  int quality = -1;
+  if (iupStrEqualNoCase(format, "JPEG"))
+  {
+    const char* q = IupGetGlobal("IMAGESAVEQUALITY");
+    quality = q ? atoi(q) : 85;
+  }
+
+  QByteArray ba;
+  QBuffer buffer(&ba);
+  buffer.open(QIODevice::WriteOnly);
+
+  if (!image.save(&buffer, format, quality))
+    return NULL;
+
+  *size = ba.size();
+  unsigned char* result = (unsigned char*)malloc(*size);
+  if (!result) return NULL;
+
+  memcpy(result, ba.constData(), *size);
+  return result;
 }

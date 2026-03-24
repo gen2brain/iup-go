@@ -291,6 +291,8 @@ IUP_API int IupStringCompare(const char* str1, const char* str2, int casesensiti
 
 /* IupImage utilities */
 IUP_API Ihandle* IupImageGetHandle(const char* name);
+IUP_API int IupImageSave(Ihandle* ih, const char* filename, const char* format);
+IUP_API unsigned char* IupImageSaveToBuffer(Ihandle* ih, const char* format, int* size);
 
 /* IupText and IupScintilla utilities */
 IUP_API void  IupTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos);

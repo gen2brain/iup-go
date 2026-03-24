@@ -112,6 +112,39 @@ func ImageGetHandle(name string) Ihandle {
 	return h
 }
 
+// ImageSave saves an IUP image to a file in the specified format.
+// Format can be "PNG", "JPEG", or "BMP". If empty, the format is detected from the filename extension.
+// Returns 1 on success, 0 on failure.
+func ImageSave(ih Ihandle, filename, format string) int {
+	cFilename := C.CString(filename)
+	defer C.free(unsafe.Pointer(cFilename))
+
+	var cFormat *C.char
+	if format != "" {
+		cFormat = C.CString(format)
+		defer C.free(unsafe.Pointer(cFormat))
+	}
+
+	return int(C.IupImageSave(ih.ptr(), cFilename, cFormat))
+}
+
+// ImageSaveToBuffer saves an IUP image to a byte slice in the specified format.
+// Format must be "PNG", "JPEG", or "BMP".
+// Returns nil if the operation fails.
+func ImageSaveToBuffer(ih Ihandle, format string) []byte {
+	cFormat := C.CString(format)
+	defer C.free(unsafe.Pointer(cFormat))
+
+	var size C.int
+	buf := C.IupImageSaveToBuffer(ih.ptr(), cFormat, &size)
+	if buf == nil {
+		return nil
+	}
+	defer C.free(unsafe.Pointer(buf))
+
+	return C.GoBytes(unsafe.Pointer(buf), size)
+}
+
 // NextField shifts the focus to the next element that can have the focus.
 // It is relative to the given element and does not depend on the element currently with the focus.
 //

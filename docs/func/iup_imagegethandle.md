@@ -33,4 +33,4 @@ In this case, the function returns a new image handle and associates the name wi
 
 ### See Also
 
-[IupImage](../elem/iup_image.md)
+[IupImage](../elem/iup_image.md), [IupImageSave](iup_imagesave.md), [IupImageSaveToBuffer](iup_imagesavetobuffer.md)
