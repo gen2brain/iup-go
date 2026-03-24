@@ -180,7 +180,7 @@ In Qt, QFileDialog automatically uses the XDG Desktop Portal through the Qt plat
 
 #### Native Implementations
 
-In Win32 uses GetOpenFileName/GetSaveFileName, in WinUI uses IFileOpenDialog/IFileSaveDialog (COM), in GTK 3 uses GtkFileChooserDialog, in GTK 4 uses GtkFileDialog, in macOS uses NSOpenPanel/NSSavePanel, in Qt uses QFileDialog, in EFL uses a custom file chooser, and in Motif uses XmFileSelectionDialog.
+In Win32 uses GetOpenFileName/GetSaveFileName, in WinUI uses IFileOpenDialog/IFileSaveDialog (COM), in GTK 3 uses GtkFileChooserDialog, in GTK 4 uses GtkFileDialog, in macOS uses NSOpenPanel/NSSavePanel, in Qt uses QFileDialog, in EFL uses Elm_Fileselector, and in Motif uses XmFileSelectionDialog.
 
 ### Examples
 

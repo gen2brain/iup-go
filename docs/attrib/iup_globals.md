@@ -339,6 +339,39 @@ Returns the name of the current Qt widget style.
 
 Returns the run time version of the EFL toolkit.
 
+### EFLTHEME [EFL Only]
+
+Sets the EFL theme. Must be set before creating any dialogs.
+Can also be set via the environment variable `IUP_EFLTHEME`.
+The value is a theme name or path as accepted by `elm_theme_set`.
+
+### EFLTHEMEDATA [EFL Only]
+
+Sets embedded theme data from memory. Used together with EFLTHEMEDATALEN to load a theme from a binary buffer instead of a file. Set EFLTHEMEDATALEN first, then set EFLTHEMEDATA to the pointer to the `.edj` data. Can only be set once.
+
+### EFLTHEMEDATALEN [EFL Only]
+
+Sets the byte length of the embedded theme data buffer. Must be set before EFLTHEMEDATA. Can only be set once.
+
+### EFLACCEL [EFL Only]
+
+Sets the acceleration preference for new EFL windows. Must be set before creating any dialogs, or via the environment variable `IUP_EFLACCEL`.
+
+Accepted values:
+- `"gl"`, `"opengl"` - use OpenGL acceleration
+- `"3d"` - use 3D acceleration
+- `"hw"`, `"hardware"`, `"accel"` - use any hardware acceleration (best available)
+- `"none"` - use software rendering
+
+Additional depth, stencil, and MSAA options can be appended with colon separators. For example: `"gl:depth24:stencil8:msaa_mid"`. MSAA options are `"msaa"`, `"msaa_low"`, `"msaa_mid"` and `"msaa_high"`.
+
+When read, returns the current acceleration preference string.
+
+### EFLENGINE (read-only) [EFL Only]
+
+Returns the name of the actual EFL rendering engine in use (e.g. `"opengl_x11"`, `"software_x11"`, `"wayland_egl"`, `"wayland_shm"`).
+Only available after a dialog has been created, since the engine is selected at window creation time.
+
 ### WINUIVERSION (read-only) [WinUI Only]
 
 Returns the WinUI version.
