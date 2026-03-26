@@ -372,12 +372,6 @@ void gtk4DialogSizeAllocate(GtkWidget* widget, int width, int height, int baseli
   (void)widget;
   (void)baseline;
 
-  if (ih->data->menu && ih->data->menu->handle)
-  {
-    /* Reset any previous size_request to allow natural sizing */
-    gtk_widget_set_size_request(ih->data->menu->handle, -1, -1);
-  }
-
   if (ih->data->ignore_resize)
     return;
 
