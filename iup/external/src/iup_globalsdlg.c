@@ -56,6 +56,7 @@ static iRegisteredGlobal global_attribs[] = {
   { "DLGFGCOLOR", 1, 1, 1, 1, 1, 1, 1, 1, 0 },
   { "DLL_HINSTANCE", 1, 0, 0, 0, 0, 0, 0, 0, 1 },
   { "DRIVER", 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+  { "GSKRENDERER", 0, 0, 0, 0, 0, 1, 0, 0, 0 },
   { "DWM_COMPOSITION", 1, 0, 0, 0, 0, 0, 1, 0, 1 },
   { "EFLACCEL", 0, 0, 0, 0, 0, 0, 1, 0, 0 },
   { "EFLENGINE", 0, 0, 0, 0, 0, 0, 1, 0, 1 },
