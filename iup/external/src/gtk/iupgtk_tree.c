@@ -664,7 +664,7 @@ int iupgtkGetColor(const char* value, GdkColor *color)
 /*****************************************************************************/
 /* ADDING ITEMS                                                              */
 /*****************************************************************************/
-void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
+IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
 {
   GtkTreeStore* store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle)));
   GtkTreeIter iterPrev, iterNewItem, iterParent;
@@ -827,7 +827,7 @@ static void gtkTreeChildCountRec(GtkTreeModel *model, GtkTreeIter *iterItem, int
   }
 }
 
-int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
+IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
 {
   int count = 0;
   GtkTreeIter iterItem;
@@ -837,7 +837,7 @@ int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
   return count;
 }
 
-InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
+IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
   GtkTreePath* path = NULL;
   gtk_tree_view_get_cursor(GTK_TREE_VIEW(ih->handle), &path, NULL);
@@ -2089,7 +2089,7 @@ static int gtkTreeSetShowRenameAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-void iupdrvTreeUpdateMarkMode(Ihandle *ih)
+IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)
 {
   GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(ih->handle));
   gtk_tree_selection_set_mode(selection, (ih->data->mark_mode==ITREE_MARK_SINGLE)? GTK_SELECTION_SINGLE: GTK_SELECTION_MULTIPLE);
@@ -2979,7 +2979,7 @@ static void gtkTreeDragDropCopyChildren(Ihandle* src, Ihandle* dst, GtkTreeIter 
   }
 }
 
-void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle *itemSrc, InodeHandle *itemDst)
+IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle *itemSrc, InodeHandle *itemDst)
 {
   int kind, position = 0;  /* insert after iterItemDst */
   int id_new, count, id_dst;
@@ -3260,7 +3260,7 @@ static void gtkTreeUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvTreeInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkTreeMapMethod;

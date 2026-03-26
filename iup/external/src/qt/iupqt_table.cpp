@@ -1065,7 +1065,7 @@ static void qtTableUnMapMethod(Ihandle* ih)
  * Driver Functions - Table Structure
  ****************************************************************************/
 
-void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
+IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   if (num_col < 0)
     num_col = 0;
@@ -1079,7 +1079,7 @@ void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   }
 }
 
-void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   if (num_lin < 0)
     num_lin = 0;
@@ -1093,7 +1093,7 @@ void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
 }
 
-void iupdrvTableAddCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1111,7 +1111,7 @@ void iupdrvTableAddCol(Ihandle* ih, int pos)
   ih->data->num_col++;
 }
 
-void iupdrvTableDelCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1125,7 +1125,7 @@ void iupdrvTableDelCol(Ihandle* ih, int pos)
   ih->data->num_col--;
 }
 
-void iupdrvTableAddLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1143,7 +1143,7 @@ void iupdrvTableAddLin(Ihandle* ih, int pos)
   ih->data->num_lin++;
 }
 
-void iupdrvTableDelLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1161,7 +1161,7 @@ void iupdrvTableDelLin(Ihandle* ih, int pos)
  * Driver Functions - Cell Operations
  ****************************************************************************/
 
-void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
+IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1197,7 +1197,7 @@ void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
   }
 }
 
-char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
+IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1222,7 +1222,7 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   return iupStrReturnStr(text.toUtf8().constData());
 }
 
-void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1272,7 +1272,7 @@ void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
  * Driver Functions - Column Operations
  ****************************************************************************/
 
-void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
+IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1287,7 +1287,7 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   table->setHorizontalHeaderItem(qt_col, headerItem);
 }
 
-char* iupdrvTableGetColTitle(Ihandle* ih, int col)
+IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1309,7 +1309,7 @@ char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return iupStrReturnStr(text.toUtf8().constData());
 }
 
-void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
+IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1338,7 +1338,7 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   }
 }
 
-int iupdrvTableGetColWidth(Ihandle* ih, int col)
+IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1356,7 +1356,7 @@ int iupdrvTableGetColWidth(Ihandle* ih, int col)
  * Driver Functions - Navigation and Display
  ****************************************************************************/
 
-void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1372,7 +1372,7 @@ void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   }
 }
 
-void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
+IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1386,7 +1386,7 @@ void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
   *col = table->currentColumn() + 1;  /* Convert to 1-based */
 }
 
-void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1407,7 +1407,7 @@ void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
   }
 }
 
-void iupdrvTableRedraw(Ihandle* ih)
+IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (table)
@@ -1453,7 +1453,7 @@ void iupdrvTableRedraw(Ihandle* ih)
   }
 }
 
-void iupdrvTableSetShowGrid(Ihandle* ih, int show)
+IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (table)
@@ -1580,7 +1580,7 @@ static int qtTableSetUserResizeAttrib(Ihandle* ih, const char* value)
 
 extern "C" {
 
-int iupdrvTableGetBorderWidth(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
   (void)ih;
   /* QTableView doesn't add extra border width */
@@ -1617,7 +1617,7 @@ static void qtTableMeasureRowMetrics(Ihandle* ih)
   (void)ih;
 }
 
-int iupdrvTableGetRowHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   QTableWidget* table = qtTableGetWidget(ih);
 
@@ -1634,7 +1634,7 @@ int iupdrvTableGetRowHeight(Ihandle* ih)
   return qt_table_row_height;
 }
 
-int iupdrvTableGetHeaderHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   QTableWidget* table = qtTableGetWidget(ih);
 
@@ -1650,7 +1650,7 @@ int iupdrvTableGetHeaderHeight(Ihandle* ih)
   return qt_table_header_height;
 }
 
-void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   QTableWidget* table = qtTableGetWidget(ih);
 
@@ -1672,7 +1672,7 @@ void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
     *h += sb_size;
 }
 
-void iupdrvTableInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = qtTableMapMethod;
   ic->UnMap = qtTableUnMapMethod;

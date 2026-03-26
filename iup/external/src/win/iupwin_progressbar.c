@@ -37,7 +37,7 @@
 #define IUP_PB_MAX 32000
 
 
-void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   /* Windows progress bar has no intrinsic size API */
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
@@ -253,7 +253,7 @@ static int winProgressBarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvProgressBarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winProgressBarMapMethod;

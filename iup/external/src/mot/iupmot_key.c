@@ -104,7 +104,7 @@ static Imot2iupkey other_remap[] = {
   { XK_dead_diaeresis,  K_diaeresis },
 };
 
-void iupdrvKeyEncode(int code, unsigned int *keycode, unsigned int *state)
+IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keycode, unsigned int *state)
 {
   KeySym motcode = (KeySym)iup_XkeyBase(code);
 

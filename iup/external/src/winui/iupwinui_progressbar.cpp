@@ -89,14 +89,14 @@ static void winuiProgressBarUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-extern "C" void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   *w = 100;
   *h = 16;
 }
 
-extern "C" void iupdrvProgressBarInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   ic->Map = winuiProgressBarMapMethod;
   ic->UnMap = winuiProgressBarUnMapMethod;

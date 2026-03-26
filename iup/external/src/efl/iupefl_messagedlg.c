@@ -360,7 +360,7 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-void iupdrvMessageDlgInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMessageDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = eflMessageDlgPopup;
 }

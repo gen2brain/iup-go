@@ -521,7 +521,7 @@ static int winuiTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
   return 1;
 }
 
-extern "C" int iupdrvTabsGetCurrentTab(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
   TabView tabView = winuiTabsGetTabView(ih);
   if (!tabView)
@@ -529,7 +529,7 @@ extern "C" int iupdrvTabsGetCurrentTab(Ihandle* ih)
   return tabView.SelectedIndex();
 }
 
-extern "C" void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
+extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   TabView tabView = winuiTabsGetTabView(ih);
   if (!tabView)
@@ -548,7 +548,7 @@ extern "C" void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
   }
 }
 
-extern "C" int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
+extern "C" IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
   (void)pos;
   TabViewItem item = winuiTabsGetTabViewItem(child);
@@ -557,24 +557,24 @@ extern "C" int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
   return 1;
 }
 
-extern "C" int iupdrvTabsExtraDecor(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-extern "C" int iupdrvTabsExtraMargin(void)
+extern "C" IUP_SDK_API int iupdrvTabsExtraMargin(void)
 {
   return 0;
 }
 
-extern "C" int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
 {
   (void)ih;
   return 1;
 }
 
-extern "C" void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
 {
   int w = 0, h = 0;
 
@@ -661,7 +661,7 @@ static int winuiTabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvTabsInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 {
   ic->Map = winuiTabsMapMethod;
   ic->UnMap = winuiTabsUnMapMethod;

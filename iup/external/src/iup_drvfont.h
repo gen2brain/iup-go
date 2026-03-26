@@ -20,8 +20,8 @@ extern "C" {
  * \ingroup drv */
 
 /* Called only from IupOpen/IupClose. */
-void iupdrvFontInit(void);
-void iupdrvFontFinish(void);
+IUP_SDK_API void iupdrvFontInit(void);
+IUP_SDK_API void iupdrvFontFinish(void);
 
 /** Retrieve the character size for the selected font.
  * Should be used only to calculate the SIZE attribute.

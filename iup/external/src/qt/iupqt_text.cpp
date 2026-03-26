@@ -421,7 +421,7 @@ protected:
  * Helper Functions
  ****************************************************************************/
 
-extern "C" void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
   static int spin_min_width = -1;
 
@@ -500,7 +500,7 @@ static void iupqtTextMeasureMultilineBorders(void)
   }
 }
 
-extern "C" void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
   if (iupAttribGetBoolean(ih, "_IUP_MULTILINE_TEXT"))
   {
@@ -516,14 +516,14 @@ extern "C" void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-extern "C" void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
 {
   (void)ih;
   (void)w;
   (void)h;
 }
 
-extern "C" void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
 {
   if (ih->data->is_multiline)
   {
@@ -550,7 +550,7 @@ extern "C" void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int 
     *pos = col - 1; /* single line, position is column */
 }
 
-extern "C" void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
 {
   if (ih->data->is_multiline)
   {
@@ -1845,7 +1845,7 @@ static int qtTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value);
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvTextInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtTextMapMethod;
@@ -2228,7 +2228,7 @@ static int qtTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-extern "C" void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+extern "C" IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   if (!ih->data->is_multiline)
     return NULL;
@@ -2243,7 +2243,7 @@ extern "C" void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
   return (void*)undo_enabled;
 }
 
-extern "C" void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
+extern "C" IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 {
   if (!ih->data->is_multiline || !state)
     return;
@@ -2257,7 +2257,7 @@ extern "C" void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
   delete undo_enabled;
 }
 
-extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
+extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   (void)bulk;
 

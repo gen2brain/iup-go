@@ -117,7 +117,7 @@ extern "C" void iupwinuiTipsDestroy(Ihandle* ih)
     ToolTipService::SetToolTip(elem, nullptr);
 }
 
-extern "C" int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return 0;
@@ -187,7 +187,7 @@ extern "C" int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return 0;
@@ -224,7 +224,7 @@ extern "C" int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-extern "C" char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
+extern "C" IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
   ToolTip tt = winuiTipGetToolTip(ih);
   if (tt)

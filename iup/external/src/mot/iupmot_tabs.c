@@ -79,24 +79,24 @@ static void motTabsInitializeClosePixmap(Widget parent)
 }
 
 
-int iupdrvTabsExtraMargin(void)
+IUP_SDK_API int iupdrvTabsExtraMargin(void)
 {
   return 0;
 }
 
-int iupdrvTabsExtraDecor(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
 {
   (void)ih;
   return 1;
 }
 
-int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
 {
   (void)ih;
   return 1;
 }
 
-void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   Ihandle* child = IupGetChild(ih, pos);
   Ihandle* curr_child = IupGetChild(ih, iupdrvTabsGetCurrentTab(ih));
@@ -108,14 +108,14 @@ void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
   XtVaSetValues(ih->handle, XmNcurrentPageNumber, pos, NULL);
 }
 
-int iupdrvTabsGetCurrentTab(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
   int pos;
   XtVaGetValues(ih->handle, XmNcurrentPageNumber, &pos, NULL);
   return pos;
 }
 
-void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
 {
   int width = 0;
   int height = 0;
@@ -473,7 +473,7 @@ static int motTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
   return 0;
 }
 
-int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
+IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
   Widget tab_button = (Widget)iupAttribGet(child, "_IUPMOT_TABBUTTON");
   XWindowAttributes wa;
@@ -963,7 +963,7 @@ static int motTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
   }
 }
 
-void iupdrvTabsInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motTabsMapMethod;

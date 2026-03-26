@@ -154,7 +154,7 @@ static int iupWinSICreateWindow(const WCHAR* nameW)
   return (si_hwnd != NULL);
 }
 
-int iupdrvSingleInstanceSet(const char* name)
+IUP_SDK_API int iupdrvSingleInstanceSet(const char* name)
 {
   WCHAR* nameW;
 
@@ -192,7 +192,7 @@ int iupdrvSingleInstanceSet(const char* name)
   return 0;
 }
 
-void iupdrvSingleInstanceClose(void)
+IUP_SDK_API void iupdrvSingleInstanceClose(void)
 {
   if (si_hwnd)
   {

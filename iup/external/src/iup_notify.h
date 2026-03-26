@@ -13,11 +13,11 @@ extern "C" {
 
 /** \addtogroup drv
  * @{ */
-void iupdrvNotifyInitClass(Iclass* ic);
-int iupdrvNotifyShow(Ihandle* ih);
-int iupdrvNotifyClose(Ihandle* ih);
-void iupdrvNotifyDestroy(Ihandle* ih);
-int iupdrvNotifyIsAvailable(void);
+IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic);
+IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih);
+IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih);
+IUP_SDK_API void iupdrvNotifyDestroy(Ihandle* ih);
+IUP_SDK_API int iupdrvNotifyIsAvailable(void);
 /** @} */
 
 #ifdef __cplusplus

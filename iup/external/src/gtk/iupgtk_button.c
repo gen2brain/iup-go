@@ -39,7 +39,7 @@ static GtkWidget* gtk_button_get_image(GtkButton *button)
 }
 #endif
 
-void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   /* Measure actual borders dynamically since they depend on theme */
@@ -1068,7 +1068,7 @@ static int gtkButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvButtonInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkButtonMapMethod;

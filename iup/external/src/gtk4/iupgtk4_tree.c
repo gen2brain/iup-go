@@ -1522,7 +1522,7 @@ iupgtk4TreeRebuildNodeCache(Ihandle *ih, int start_id, IupGtk4TreeNode *start_no
 /* ADDING ITEMS                                                              */
 /*****************************************************************************/
 
-void iupdrvTreeAddNode(Ihandle *ih, int id, int kind, const char *title, int add)
+IUP_SDK_API void iupdrvTreeAddNode(Ihandle *ih, int id, int kind, const char *title, int add)
 {
   GListStore *root_store = (GListStore*)iupAttribGet(ih, "_IUPGTK4_ROOT_STORE");
   IupGtk4TreeNode *new_node, *ref_node = NULL;
@@ -1649,13 +1649,13 @@ void iupdrvTreeAddNode(Ihandle *ih, int id, int kind, const char *title, int add
   g_object_unref(new_node);
 }
 
-int iupdrvTreeTotalChildCount(Ihandle *ih, InodeHandle *node_handle)
+IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle *ih, InodeHandle *node_handle)
 {
   IupGtk4TreeNode *node = (IupGtk4TreeNode*)node_handle;
   return iupgtk4TreeTotalChildCountRec(node);
 }
 
-InodeHandle* iupdrvTreeGetFocusNode(Ihandle *ih)
+IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle *ih)
 {
   /* In GTK4 ListView, we don't have a direct "cursor" concept. Return the first selected item instead */
   GtkSelectionModel *selection = GTK_SELECTION_MODEL(iupAttribGet(ih, "_IUPGTK4_SELECTION"));
@@ -1688,7 +1688,7 @@ InodeHandle* iupdrvTreeGetFocusNode(Ihandle *ih)
   return NULL;
 }
 
-void iupdrvTreeUpdateMarkMode(Ihandle *ih)
+IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)
 {
   GtkSelectionModel *old_selection = GTK_SELECTION_MODEL(iupAttribGet(ih, "_IUPGTK4_SELECTION"));
   GtkTreeListModel *tree_model = GTK_TREE_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_TREE_MODEL"));
@@ -3195,7 +3195,7 @@ static void iupgtk4TreeCrossTreeCopyNodeRec(Ihandle *dst, IupGtk4TreeNode *src_n
   g_object_unref(new_node);
 }
 
-void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHandle *itemSrc, InodeHandle *itemDst)
+IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHandle *itemSrc, InodeHandle *itemDst)
 {
   IupGtk4TreeNode *src_node = (IupGtk4TreeNode*)itemSrc;
   IupGtk4TreeNode *dst_node = (IupGtk4TreeNode*)itemDst;
@@ -3280,7 +3280,7 @@ void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHandle *itemSrc
 /* Class initialization                                                      */
 /*****************************************************************************/
 
-void iupdrvTreeInitClass(Iclass *ic)
+IUP_SDK_API void iupdrvTreeInitClass(Iclass *ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkTreeMapMethod;

@@ -25,7 +25,7 @@
 #include "iupgtk4_drv.h"
 
 
-void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   static int horiz_min_w = -1, horiz_min_h = -1;
   static int vert_min_w = -1, vert_min_h = -1;
@@ -157,7 +157,7 @@ static int gtk4ProgressBarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvProgressBarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   ic->Map = gtk4ProgressBarMapMethod;
 

@@ -255,7 +255,7 @@ static void qtPopoverChildAddedMethod(Ihandle* ih, Ihandle* child)
 
 extern "C" {
 
-void iupdrvPopoverInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 {
   ic->Map = qtPopoverMapMethod;
   ic->UnMap = qtPopoverUnMapMethod;

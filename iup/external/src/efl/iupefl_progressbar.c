@@ -176,7 +176,7 @@ static int eflProgressBarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   if (iupStrEqualNoCase(iupAttribGet(ih, "ORIENTATION"), "VERTICAL"))
   {
@@ -190,7 +190,7 @@ void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-void iupdrvProgressBarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   ic->Map = eflProgressBarMapMethod;
 

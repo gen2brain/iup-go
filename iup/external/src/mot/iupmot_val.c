@@ -33,7 +33,7 @@
 #include "iupmot_color.h"
 
 
-void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 {
   int ticks_size = 0;
   if (iupAttribGetInt(ih, "SHOWTICKS"))
@@ -469,7 +469,7 @@ static int motValMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvValInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motValMapMethod;

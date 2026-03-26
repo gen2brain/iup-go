@@ -36,7 +36,7 @@ static int winButtonGetBorder(void)
   return 4;
 }
 
-void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   int border_size = winButtonGetBorder() * 2;
@@ -782,7 +782,7 @@ static int winButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvButtonInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winButtonMapMethod;

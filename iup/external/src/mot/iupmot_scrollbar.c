@@ -34,7 +34,7 @@
 
 #define IMOT_SB_MAX 32767
 
-void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
 {
   int sb_size = 20;
 
@@ -255,7 +255,7 @@ static int motScrollbarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvScrollbarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
 {
   ic->Map = motScrollbarMapMethod;
 

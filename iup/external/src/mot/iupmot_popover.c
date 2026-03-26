@@ -352,7 +352,7 @@ static void* motPopoverGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle*
   return iupAttribGet(ih, "_IUP_MOT_INNER_PARENT");
 }
 
-void iupdrvPopoverInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 {
   ic->Map = motPopoverMapMethod;
   ic->UnMap = motPopoverUnMapMethod;

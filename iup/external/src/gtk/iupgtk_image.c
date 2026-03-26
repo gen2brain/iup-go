@@ -22,7 +22,7 @@
 #include "iupgtk_drv.h"
 
 
-void iupdrvImageGetData(void* handle, unsigned char* imgdata)
+IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   GdkPixbuf* pixbuf = (GdkPixbuf*)handle;
   int w, h, y, bpp;
@@ -161,7 +161,7 @@ IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupC
   return pixbuf;
 }
 
-void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
 {
   GdkPixbuf* pixbuf;
   guchar *pixdata, *pixline_data;
@@ -271,12 +271,12 @@ void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive
   return pixbuf;
 }
 
-void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
 {
   GdkCursor *cursor;
 
@@ -420,7 +420,7 @@ static GtkIconSize gtkImageGetRenderIconSize(int stock_size)
 }
 #endif /* GTK < 3.10 */
 
-void* iupdrvImageLoad(const char* name, int type)
+IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   if (type == IUPIMAGE_CURSOR)
 #if GTK_CHECK_VERSION(2, 8, 0)
@@ -493,7 +493,7 @@ void* iupdrvImageLoad(const char* name, int type)
   }
 }
 
-int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
 {
   GdkPixbuf* pixbuf = (GdkPixbuf*)handle;
   if (!GDK_IS_PIXBUF(pixbuf)) 
@@ -595,7 +595,7 @@ static const char* iGtkImageGetType(const char* format)
   return NULL;
 }
 
-int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
   GdkPixbuf* pixbuf;
   GError* error = NULL;
@@ -623,7 +623,7 @@ int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupC
   return ret ? 1 : 0;
 }
 
-unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   GdkPixbuf* pixbuf;
   GError* error = NULL;

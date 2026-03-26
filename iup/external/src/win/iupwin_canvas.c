@@ -808,7 +808,7 @@ static void winCanvasRelease(Iclass* ic)
     UnregisterClass(TEXT("IupCanvas"), iupwin_hinstance);
 }
 
-void iupdrvCanvasInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   if (!iupwinClassExist(TEXT("IupCanvas")))
     winCanvasRegisterClass();

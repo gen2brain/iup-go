@@ -1224,7 +1224,7 @@ static void winuiTextMeasureBorderMetrics(void)
   if (winui_border_y < 6) winui_border_y = 6;
 }
 
-extern "C" void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 {
   winuiTextMeasureBorderMetrics();
 
@@ -1256,7 +1256,7 @@ extern "C" void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
   }
 }
 
-extern "C" void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
+extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   (void)ih;
   (void)h;
@@ -1315,7 +1315,7 @@ static void winuiTextStringPosToLinCol(const wchar_t* text, int textLen, int pos
   *col = pos - lineStart + 1;
 }
 
-extern "C" void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
+extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
@@ -1352,7 +1352,7 @@ extern "C" void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int*
   }
 }
 
-extern "C" void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
+extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
@@ -1400,13 +1400,13 @@ extern "C" void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int
   }
 }
 
-extern "C" void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+extern "C" IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   (void)ih;
   return NULL;
 }
 
-extern "C" void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
+extern "C" IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 {
   (void)ih;
   (void)state;
@@ -1926,7 +1926,7 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
   free(rtf);
 }
 
-extern "C" void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
+extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isFormatted)
@@ -2164,7 +2164,7 @@ static void winuiTextMeasureSingleLineMetrics(void)
   if (winui_singleline_extra_h < 0) winui_singleline_extra_h = 0;
 }
 
-extern "C" void iupdrvTextAddExtraPadding(Ihandle* ih, int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   winuiTextMeasureSingleLineMetrics();
@@ -3279,7 +3279,7 @@ static int winuiTextSetFontAttrib(Ihandle* ih, const char* value)
   return iupdrvSetFontAttrib(ih, value);
 }
 
-extern "C" void iupdrvTextInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = winuiTextMapMethod;
   ic->UnMap = winuiTextUnMapMethod;

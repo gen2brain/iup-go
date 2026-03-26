@@ -358,7 +358,7 @@ static char* winuiMessageDlgGetAutoModalAttrib(Ihandle* ih)
   return iupStrReturnBoolean(automodal);
 }
 
-extern "C" void iupdrvMessageDlgInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvMessageDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = winuiMessageDlgPopup;
 

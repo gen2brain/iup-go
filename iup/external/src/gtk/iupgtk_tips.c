@@ -148,7 +148,7 @@ static GtkWidget* gtkTipGetWidget(Ihandle* ih)
   return widget;
 }
 
-int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   GtkWidget* widget = gtkTipGetWidget(ih);
 
@@ -168,7 +168,7 @@ int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
 #if GTK_CHECK_VERSION(2, 12, 0)
   GtkWindow* tip_window;
@@ -194,7 +194,7 @@ int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
+IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
 #if GTK_CHECK_VERSION(2, 12, 0)
   GtkWindow* tip_window;

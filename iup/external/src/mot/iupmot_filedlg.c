@@ -840,7 +840,7 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-void iupdrvFileDlgInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = motFileDlgPopup;
 

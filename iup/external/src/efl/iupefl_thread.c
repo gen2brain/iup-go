@@ -38,7 +38,7 @@ static void* iupefl_ThreadFunc(void* data, Eina_Thread t)
   return NULL;
 }
 
-void* iupdrvThreadStart(Ihandle* ih)
+IUP_SDK_API void* iupdrvThreadStart(Ihandle* ih)
 {
   IupEflThread* et = (IupEflThread*)calloc(1, sizeof(IupEflThread));
   if (!et)
@@ -59,14 +59,14 @@ void* iupdrvThreadStart(Ihandle* ih)
   return (void*)et;
 }
 
-void iupdrvThreadJoin(void* handle)
+IUP_SDK_API void iupdrvThreadJoin(void* handle)
 {
   IupEflThread* et = (IupEflThread*)handle;
   if (et && et->started)
     eina_thread_join(et->thread);
 }
 
-void iupdrvThreadYield(void)
+IUP_SDK_API void iupdrvThreadYield(void)
 {
 #ifdef _WIN32
   SwitchToThread();
@@ -75,7 +75,7 @@ void iupdrvThreadYield(void)
 #endif
 }
 
-int iupdrvThreadIsCurrent(void* handle)
+IUP_SDK_API int iupdrvThreadIsCurrent(void* handle)
 {
   IupEflThread* et = (IupEflThread*)handle;
   if (!et || !et->started)
@@ -83,7 +83,7 @@ int iupdrvThreadIsCurrent(void* handle)
   return eina_thread_equal(et->thread, eina_thread_self());
 }
 
-void iupdrvThreadExit(int code)
+IUP_SDK_API void iupdrvThreadExit(int code)
 {
 #ifdef _WIN32
   ExitThread((DWORD)code);
@@ -92,7 +92,7 @@ void iupdrvThreadExit(int code)
 #endif
 }
 
-void iupdrvThreadDestroy(void* handle)
+IUP_SDK_API void iupdrvThreadDestroy(void* handle)
 {
   if (handle)
   {
@@ -103,7 +103,7 @@ void iupdrvThreadDestroy(void* handle)
   }
 }
 
-void* iupdrvMutexCreate(void)
+IUP_SDK_API void* iupdrvMutexCreate(void)
 {
   Eina_Lock* lock = (Eina_Lock*)malloc(sizeof(Eina_Lock));
   if (lock)
@@ -111,17 +111,17 @@ void* iupdrvMutexCreate(void)
   return (void*)lock;
 }
 
-void iupdrvMutexLock(void* handle)
+IUP_SDK_API void iupdrvMutexLock(void* handle)
 {
   eina_lock_take((Eina_Lock*)handle);
 }
 
-void iupdrvMutexUnlock(void* handle)
+IUP_SDK_API void iupdrvMutexUnlock(void* handle)
 {
   eina_lock_release((Eina_Lock*)handle);
 }
 
-void iupdrvMutexDestroy(void* handle)
+IUP_SDK_API void iupdrvMutexDestroy(void* handle)
 {
   if (handle)
   {

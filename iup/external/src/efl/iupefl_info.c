@@ -150,7 +150,7 @@ IUP_SDK_API char* iupdrvGetUserName(void)
   return str;
 }
 
-void* iupdrvGetDisplay(void)
+IUP_SDK_API void* iupdrvGetDisplay(void)
 {
   return NULL;
 }

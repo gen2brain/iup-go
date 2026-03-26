@@ -30,7 +30,7 @@
 #include "iupmot_drv.h"
 
 
-void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
   int border_size = 2*5;
 
@@ -318,7 +318,7 @@ static int motButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvButtonInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motButtonMapMethod;

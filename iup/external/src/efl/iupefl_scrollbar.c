@@ -167,7 +167,7 @@ static void eflScrollbarUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   if (ih->data->orientation == ISCROLLBAR_VERTICAL)
   {
@@ -181,7 +181,7 @@ void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-void iupdrvScrollbarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
 {
   ic->Map = eflScrollbarMapMethod;
   ic->UnMap = eflScrollbarUnMapMethod;

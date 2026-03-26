@@ -928,7 +928,7 @@ static int winuiDialogSetIconAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   RECT rect;
   if (!handle)
@@ -938,7 +938,7 @@ extern "C" void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int*
   if (y) *y = rect.top;
 }
 
-extern "C" void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
+extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   int flags = SWP_NOSIZE;
   if (iupAttribGetBoolean(ih, "SHOWNOACTIVATE"))
@@ -946,7 +946,7 @@ extern "C" void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
   SetWindowPos((HWND)ih->handle, HWND_TOP, x, y, 0, 0, flags);
 }
 
-extern "C" void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   RECT rect;
   if (!handle)
@@ -956,7 +956,7 @@ extern "C" void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, 
   if (h) *h = rect.bottom - rect.top;
 }
 
-extern "C" void iupdrvDialogSetVisible(Ihandle* ih, int visible)
+extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   IupWinUIDialogAux* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
   if (aux)
@@ -992,7 +992,7 @@ extern "C" void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 }
 
-extern "C" int iupdrvDialogIsVisible(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
   if (ih->handle)
   {
@@ -1002,7 +1002,7 @@ extern "C" int iupdrvDialogIsVisible(Ihandle* ih)
   return 0;
 }
 
-extern "C" int iupdrvDialogSetPlacement(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   char* placement;
   int no_activate = iupAttribGetBoolean(ih, "SHOWNOACTIVATE");
@@ -1067,7 +1067,7 @@ extern "C" int iupdrvDialogSetPlacement(Ihandle* ih)
   return 1;
 }
 
-extern "C" void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
+extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
   if (!ih || !ih->handle)
     return;
@@ -1076,7 +1076,7 @@ extern "C" void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
   SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, (LONG_PTR)parent);
 }
 
-extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
+extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   if (ih->data->menu)
     *menu = iupdrvMenuGetMenuBarSize(ih->data->menu);
@@ -1451,7 +1451,7 @@ static int winuiDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvDialogInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 {
   ic->Map = winuiDialogMapMethod;
   ic->UnMap = winuiDialogUnMapMethod;

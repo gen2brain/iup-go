@@ -82,13 +82,13 @@
 #define WM_IUPCARET WM_APP+1   /* Custom IUP message */
 
 
-void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
   *w += h;
   (void)ih;  
 }
 
-void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
 {
   /* Used also by IupCalendar and IupDatePick in Windows */
   /* LAYOUT_DECORATION_ESTIMATE */
@@ -98,7 +98,7 @@ void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
   (void)ih;
 }
 
-void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
 {
   (void)ih;
   (void)w;
@@ -708,7 +708,7 @@ static void winTextSetSelection(Ihandle* ih, int start, int end)
   SendMessage(ih->handle, EM_SETSEL, (WPARAM)start, (LPARAM)end);
 }
 
-void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
 {
   int wpos = winTextSetLinColToPosition(ih, lin, col);
 
@@ -718,7 +718,7 @@ void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
     *pos = wpos;
 }
 
-void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
 {
   int wpos;
 
@@ -1450,7 +1450,7 @@ typedef struct
   CHARRANGE oldRange;
 } formatTagBulkState;
 
-void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   formatTagBulkState* state = (formatTagBulkState*) malloc(sizeof(formatTagBulkState));
 
@@ -1462,7 +1462,7 @@ void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
   return state;
 }
 
-void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* stateOpaque)
+IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* stateOpaque)
 {
   formatTagBulkState* state = (formatTagBulkState*) stateOpaque;
   DWORD line = (DWORD)SendMessage(ih->handle, EM_GETFIRSTVISIBLELINE, 0, 0);
@@ -1754,7 +1754,7 @@ static void winTextInsertImage(Ihandle* ih, const char* image_name, int img_w, i
   ((IDataObject*)pDataObj)->lpVtbl->Release((IDataObject*)pDataObj);
 }
 
-void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
+IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   int convert2twips, pixel2twips;
   char *selection, *units;
@@ -2712,7 +2712,7 @@ static int winTextMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvTextInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winTextMapMethod;

@@ -253,7 +253,7 @@ static void eflValUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   if (ih->data->orientation == IVAL_VERTICAL)
   {
@@ -267,7 +267,7 @@ void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-void iupdrvValInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 {
   ic->Map = eflValMapMethod;
   ic->UnMap = eflValUnMapMethod;

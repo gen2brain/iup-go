@@ -78,7 +78,7 @@ static Igtk2iupkey other_remap[] = {
   { GDK_KEY_dead_diaeresis,  K_diaeresis},
 };
 
-void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
+IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
 {
   *keyval = (unsigned int)iup_XkeyBase(code);
 

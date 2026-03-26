@@ -167,7 +167,7 @@ static QWidget* qtTipGetWidget(Ihandle* ih)
  * Attribute Functions
  ****************************************************************************/
 
-extern "C" int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   QWidget* widget = qtTipGetWidget(ih);
 
@@ -187,7 +187,7 @@ extern "C" int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
   QWidget* widget = qtTipGetWidget(ih);
 
@@ -213,7 +213,7 @@ extern "C" int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-extern "C" char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
+extern "C" IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
   (void)ih;
   return iupStrReturnBoolean(QToolTip::isVisible() ? 1 : 0);

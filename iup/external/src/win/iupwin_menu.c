@@ -237,7 +237,7 @@ static int iwinMenuGetPopupAlign(Ihandle* ih)
   return TPM_LEFTALIGN;
 }
 
-int iupdrvMenuPopup(Ihandle* ih, int x, int y)
+IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   HWND hWndActive = GetActiveWindow();
   int tray_menu = 0;
@@ -441,7 +441,7 @@ static int winMenuMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvMenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winMenuMapMethod;
@@ -639,7 +639,7 @@ static int winItemMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winItemMapMethod;
@@ -676,7 +676,7 @@ static int winSubmenuMapMethod(Ihandle* ih)
   return iupBaseTypeVoidMapMethod(ih);
 }
 
-void iupdrvSubmenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winSubmenuMapMethod;
@@ -727,7 +727,7 @@ static int winSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winSeparatorMapMethod;
@@ -780,7 +780,7 @@ static void iupwinMenuRecentItemProc(HMENU hMenu, int menuId)
     winRecentItemActivate(menu, index);
 }
 
-int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
   iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
@@ -788,7 +788,7 @@ int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
   return 0;
 }
 
-int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
 {
   HMENU hMenu;
   int max_recent, existing, i;

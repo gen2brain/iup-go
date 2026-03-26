@@ -1834,7 +1834,7 @@ static void gtk4TableUnMapMethod(Ihandle* ih)
 /* Driver Functions - Table Structure                                       */
 /* ========================================================================= */
 
-void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
+IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   if (num_col < 0)
     num_col = 0;
@@ -1842,7 +1842,7 @@ void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   ih->data->num_col = num_col;
 }
 
-void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -1878,18 +1878,18 @@ void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
 }
 
-void iupdrvTableAddCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
 }
 
-void iupdrvTableDelCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   if (ih->data->num_col > 0)
     iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
 }
 
-void iupdrvTableAddLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -1908,7 +1908,7 @@ void iupdrvTableAddLin(Ihandle* ih, int pos)
   ih->data->num_lin++;
 }
 
-void iupdrvTableDelLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -1928,7 +1928,7 @@ void iupdrvTableDelLin(Ihandle* ih, int pos)
 /* Driver Functions - Cell Operations                                       */
 /* ========================================================================= */
 
-void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
+IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -1951,7 +1951,7 @@ void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
   }
 }
 
-char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
+IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -1973,7 +1973,7 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   return NULL;
 }
 
-void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2056,7 +2056,7 @@ static int gtk4TableCalculateColumnWidth(Ihandle* ih, int col_index)
   return max_width;
 }
 
-void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
+IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2099,7 +2099,7 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   }
 }
 
-char* iupdrvTableGetColTitle(Ihandle* ih, int col)
+IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2119,7 +2119,7 @@ char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return NULL;
 }
 
-void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
+IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2137,7 +2137,7 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   }
 }
 
-int iupdrvTableGetColWidth(Ihandle* ih, int col)
+IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2161,7 +2161,7 @@ int iupdrvTableGetColWidth(Ihandle* ih, int col)
 /* Driver Functions - Selection                                             */
 /* ========================================================================= */
 
-void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2185,7 +2185,7 @@ void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   }
 }
 
-void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
+IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2204,7 +2204,7 @@ void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 /* Driver Functions - Scrolling                                             */
 /* ========================================================================= */
 
-void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2218,7 +2218,7 @@ void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 /* Driver Functions - Display                                               */
 /* ========================================================================= */
 
-void iupdrvTableRedraw(Ihandle* ih)
+IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2259,7 +2259,7 @@ void iupdrvTableRedraw(Ihandle* ih)
   }
 }
 
-void iupdrvTableSetShowGrid(Ihandle* ih, int show)
+IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2267,7 +2267,7 @@ void iupdrvTableSetShowGrid(Ihandle* ih, int show)
   gtk_column_view_set_show_row_separators(GTK_COLUMN_VIEW(gtk_data->column_view), show);
 }
 
-int iupdrvTableGetBorderWidth(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
   (void)ih;
   /* GtkScrolledWindow doesn't add extra border width */
@@ -2319,7 +2319,7 @@ static void gtk4TableMeasureRowMetrics(Ihandle* ih)
   (void)ih;
 }
 
-int iupdrvTableGetRowHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -2356,13 +2356,13 @@ int iupdrvTableGetRowHeight(Ihandle* ih)
   return gtk4_table_row_height;
 }
 
-int iupdrvTableGetHeaderHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   gtk4TableMeasureRowMetrics(ih);
   return gtk4_table_header_height;
 }
 
-void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   int sb_size = iupdrvGetScrollbarSize();
@@ -2466,7 +2466,7 @@ static int gtk4TableSetUserResizeAttrib(Ihandle* ih, const char* value)
 /* Driver Class Initialization                                              */
 /* ========================================================================= */
 
-void iupdrvTableInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = gtk4TableMapMethod;
   ic->UnMap = gtk4TableUnMapMethod;

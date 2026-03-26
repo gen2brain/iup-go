@@ -573,23 +573,23 @@ static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_
  ===============================================================================
  */
 
-int iupdrvTabsExtraDecor(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-int iupdrvTabsExtraMargin(void)
+IUP_SDK_API int iupdrvTabsExtraMargin(void)
 {
   return 0;
 }
 
-int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
 {
   return 1;
 }
 
-void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
   if (!tab_bar_view)
@@ -619,7 +619,7 @@ void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
   iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
 }
 
-int iupdrvTabsGetCurrentTab(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
   IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
   if (!tab_bar_view)
@@ -637,7 +637,7 @@ int iupdrvTabsGetCurrentTab(Ihandle* ih)
   return cocoaTabsPosFixFromNative(ih, native_pos);
 }
 
-void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
 {
   int width = 0;
   int height = kTabCellHeight;  /* Fixed height = 28 */
@@ -714,7 +714,7 @@ void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_im
   }
 }
 
-int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
+IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
   Ihandle* ih = IupGetParent(child);
   if (!ih) return 0;
@@ -1318,7 +1318,7 @@ static void cocoaTabsLayoutUpdateMethod(Ihandle* ih)
   }
 }
 
-void iupdrvTabsInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 {
   ic->Map = cocoaTabsMapMethod;
   ic->UnMap = cocoaTabsUnMapMethod;

@@ -41,9 +41,9 @@ char* iupDialogGetChildIdStr(Ihandle* ih);
 /** \addtogroup drvdialog
  * @{ */
 /** Returns the size of the decoration. */
-void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu);
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu);
 /** Changes the parent dialog (works only if already set at map). */
-void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* native_parent);
+IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* native_parent);
 /** @} */
 
 IUP_SDK_API InativeHandle* iupDialogGetNativeParent(Ihandle* ih);
@@ -89,19 +89,19 @@ struct _IcontrolData
 /** \addtogroup drvdialog
  * @{ */
 /** Registers platform-specific Dialog attributes and methods. */
-void iupdrvDialogInitClass(Iclass* iclass);
+IUP_SDK_API void iupdrvDialogInitClass(Iclass* iclass);
 /** Gets current dialog position (screen coordinates). */
-void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int *x, int *y);
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int *x, int *y);
 /** Shows or hides dialog. */
-void iupdrvDialogSetVisible(Ihandle* ih, int visible);
+IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible);
 /** Sets dialog placement (MINIMIZED, MAXIMIZED, FULLSCREEN, NORMAL). */
-int iupdrvDialogSetPlacement(Ihandle* ih);
+IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih);
 /** Sets dialog position (screen coordinates). */
-void iupdrvDialogSetPosition(Ihandle *ih, int x, int y);
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y);
 /** Gets current dialog size (including decorations). */
-void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h);
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h);
 /** Returns 1 if dialog is visible. */
-int iupdrvDialogIsVisible(Ihandle* ih);
+IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih);
 /** @} */
 int iupDialogSetClientSizeAttrib(Ihandle* ih, const char* value);
 char* iupDialogGetClientSizeAttrib(Ihandle *ih);

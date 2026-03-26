@@ -442,7 +442,7 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle *ih, int *charwidth, int *charhei
   if (charheight) *charheight = [iup_font charHeight];
 }
 
-void iupdrvFontInit(void)
+IUP_SDK_API void iupdrvFontInit(void)
 {
   if (nil == s_mapOfFonts)
   {
@@ -454,7 +454,7 @@ void iupdrvFontInit(void)
   }
 }
 
-void iupdrvFontFinish(void)
+IUP_SDK_API void iupdrvFontFinish(void)
 {
   /* This will release all the fonts we've allocated. */
   [s_mapOfFonts release];

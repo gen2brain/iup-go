@@ -24,14 +24,14 @@ void iupTabsCheckCurrentTab(Ihandle* ih, int pos, int removed);
 
 /** \addtogroup drvtabs
  * @{ */
-int iupdrvTabsIsTabVisible(Ihandle* child, int pos);
-int iupdrvTabsExtraDecor(Ihandle* ih);
-int iupdrvTabsExtraMargin(void);
-int iupdrvTabsGetLineCountAttrib(Ihandle* ih);
-void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos);
-int iupdrvTabsGetCurrentTab(Ihandle* ih);
-void iupdrvTabsInitClass(Iclass* ic);
-void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height);
+IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos);
+IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih);
+IUP_SDK_API int iupdrvTabsExtraMargin(void);
+IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih);
+IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos);
+IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih);
+IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height);
 /** @} */
 
 typedef enum

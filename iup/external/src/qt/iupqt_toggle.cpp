@@ -469,7 +469,7 @@ static void qtToggleMeasureBorders(void)
   if (qt_toggle_struct_y < 0) qt_toggle_struct_y = 0;
 }
 
-extern "C" void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
   int has_user_padding = 0;
 
@@ -497,7 +497,7 @@ extern "C" void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-extern "C" void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
 {
   static int switch_w = -1;
   static int switch_h = -1;
@@ -520,7 +520,7 @@ extern "C" void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* s
     (*x) += 8;
 }
 
-extern "C" void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
   int check_box = IUP_TOGGLE_BOX;
 
@@ -1178,7 +1178,7 @@ static int qtToggleMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvToggleInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtToggleMapMethod;

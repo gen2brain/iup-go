@@ -29,7 +29,7 @@
 #include "iupmot_color.h"
 
 
-void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   /* Motif XmScale has no intrinsic size API */
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
@@ -221,7 +221,7 @@ static int motProgressBarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvProgressBarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motProgressBarMapMethod;

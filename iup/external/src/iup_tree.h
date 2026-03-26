@@ -27,9 +27,9 @@ extern "C" {
 
 /** \addtogroup drvtree
  * @{ */
-void iupdrvTreeInitClass(Iclass* ic);
-void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add);
-void iupdrvTreeUpdateMarkMode(Ihandle *ih);
+IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add);
+IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih);
 /** @} */
 
 void iupTreeUpdateImages(Ihandle *ih);
@@ -61,9 +61,9 @@ int iupTreeFindNodeId(Ihandle* ih, InodeHandle* node_handle);
 
 /** \addtogroup drvtree
  * @{ */
-InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih);
-int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle);
-void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHandle *itemSrc, InodeHandle *itemDst);
+IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih);
+IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle);
+IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHandle *itemSrc, InodeHandle *itemDst);
 /** @} */
 
 void iupTreeSelectLastCollapsedBranch(Ihandle* ih, int *last_id);

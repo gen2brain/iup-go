@@ -2016,7 +2016,7 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
  * Node Operations
  ****************************************************************************/
 
-extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
+extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
 {
   TreeView treeView = winuiTreeGetTreeView(ih);
   if (!treeView)
@@ -2088,7 +2088,7 @@ extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* tit
     iupTreeAddToCache(ih, 0, 0, NULL, (InodeHandle*)nodePtr);
 }
 
-extern "C" InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
+extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
   TreeView treeView = winuiTreeGetTreeView(ih);
   if (!treeView)
@@ -2116,7 +2116,7 @@ static int winuiTreeCountChildrenRec(TreeViewNode const& node)
   return count;
 }
 
-extern "C" int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
+extern "C" IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
 {
   (void)ih;
 
@@ -2132,7 +2132,7 @@ extern "C" int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
   return winuiTreeCountChildrenRec(node);
 }
 
-extern "C" void iupdrvTreeUpdateMarkMode(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
 {
   TreeView treeView = winuiTreeGetTreeView(ih);
   if (!treeView)
@@ -2217,7 +2217,7 @@ static TreeViewNode winuiTreeCopyNodeRec(Ihandle* dst, TreeViewNode const& srcNo
   return newNode;
 }
 
-extern "C" void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* itemSrc, InodeHandle* itemDst)
+extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* itemSrc, InodeHandle* itemDst)
 {
   TreeView dstTreeView = winuiTreeGetTreeView(dst);
   if (!dstTreeView)
@@ -2511,7 +2511,7 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvTreeInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
   winuiTreeInitializeImages();
 

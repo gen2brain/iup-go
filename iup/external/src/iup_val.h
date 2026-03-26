@@ -33,8 +33,8 @@ char* iupValGetShowTicksAttrib(Ihandle* ih);
 
 /** \addtogroup drv
  * @{ */
-void iupdrvValInitClass(Iclass* ic);
-void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h);
+IUP_SDK_API void iupdrvValInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h);
 /** @} */
 
 

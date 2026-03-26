@@ -938,7 +938,7 @@ static void gtkCanvasUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvCanvasInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkCanvasMapMethod;

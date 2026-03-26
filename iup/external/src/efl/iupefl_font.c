@@ -246,7 +246,7 @@ static void eflFontMeasureString(const char* family, int size, int is_bold, int 
   if (h) *h = sz.h > 0 ? sz.h : size;
 }
 
-int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 {
   IeflFont* font = eflFontGet(ih);
   char family[100];
@@ -283,7 +283,7 @@ int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
+IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
   IeflFont* font = eflFontGet(ih);
   int max_w = 0;
@@ -364,7 +364,7 @@ void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int*
   if (h) *h = num_lines * charheight;
 }
 
-int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
+IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 {
   IeflFont* font = eflFontGet(ih);
   int w;
@@ -388,7 +388,7 @@ int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
   return w;
 }
 
-void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
+IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
 {
   IeflFont* font = eflFontGet(ih);
 
@@ -408,7 +408,7 @@ void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
   }
 }
 
-void iupdrvFontGetTextSize(const char* font_str, const char* str, int len, int* w, int* h)
+IUP_SDK_API void iupdrvFontGetTextSize(const char* font_str, const char* str, int len, int* w, int* h)
 {
   char family[100];
   int size, is_bold, is_italic, is_underline, is_strikeout;
@@ -418,7 +418,7 @@ void iupdrvFontGetTextSize(const char* font_str, const char* str, int len, int* 
   eflFontMeasureString(family, size, is_bold, is_italic, str, len, w, h);
 }
 
-void iupdrvFontGetFontDim(const char* font_str, int* max_width, int* line_height, int* ascent, int* descent)
+IUP_SDK_API void iupdrvFontGetFontDim(const char* font_str, int* max_width, int* line_height, int* ascent, int* descent)
 {
   char family[100];
   int size, is_bold, is_italic, is_underline, is_strikeout;
@@ -434,7 +434,7 @@ void iupdrvFontGetFontDim(const char* font_str, int* max_width, int* line_height
   if (descent) *descent = desc;
 }
 
-char* iupdrvGetSystemFont(void)
+IUP_SDK_API char* iupdrvGetSystemFont(void)
 {
   static char system_font[200] = "";
   const Eina_List* overlays;
@@ -465,13 +465,13 @@ char* iupdrvGetSystemFont(void)
   return system_font;
 }
 
-void iupdrvFontInit(void)
+IUP_SDK_API void iupdrvFontInit(void)
 {
   efl_font_measure_tb = NULL;
   efl_font_buffer_ee = ecore_evas_buffer_new(1, 1);
 }
 
-void iupdrvFontFinish(void)
+IUP_SDK_API void iupdrvFontFinish(void)
 {
   if (efl_font_measure_tb)
   {

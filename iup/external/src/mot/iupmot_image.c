@@ -23,7 +23,7 @@
 #include "iupmot_color.h"
 
 
-void iupdrvImageGetData(void* handle, unsigned char* imgdata)
+IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   Pixmap pixmap = (Pixmap)handle;
   int w, h, bpp;
@@ -150,7 +150,7 @@ IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupC
   return (void*)pixmap;
 }
 
-void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
 {
   int y, x, bpp, bgcolor_depend = 0,
       width = ih->currentwidth,
@@ -253,12 +253,12 @@ void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive
   return (void*)pixmap;
 }
 
-void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
 {
   int bpp,y,x,hx,hy,
       width = ih->currentwidth,
@@ -424,7 +424,7 @@ Pixmap iupmotImageGetMask(const char* name)
   return mask;
 }
 
-void* iupdrvImageLoad(const char* name, int type)
+IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   if (type == IUPIMAGE_CURSOR)
   {
@@ -449,7 +449,7 @@ void* iupdrvImageLoad(const char* name, int type)
   }
 }
 
-int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
 {
   Pixmap pixmap = (Pixmap)handle;
   Window root;
@@ -602,7 +602,7 @@ static unsigned char* iMotImageWriteBmp(unsigned char* imgdata, int width, int h
   return buffer;
 }
 
-int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
   int size;
   unsigned char* bmp_data;
@@ -629,7 +629,7 @@ int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupC
   return 1;
 }
 
-unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   if (!iupStrEqualNoCase(format, "BMP"))
     return NULL;

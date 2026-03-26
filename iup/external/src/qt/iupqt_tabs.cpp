@@ -459,24 +459,24 @@ static void qtTabsHandleTabMoved(int from, int to, Ihandle* ih)
  * Driver Functions
  ****************************************************************************/
 
-extern "C" int iupdrvTabsExtraDecor(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-extern "C" int iupdrvTabsExtraMargin(void)
+extern "C" IUP_SDK_API int iupdrvTabsExtraMargin(void)
 {
   return 0;
 }
 
-extern "C" int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
 {
   (void)ih;
   return 1;
 }
 
-extern "C" void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
+extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   IupQtTabWidget* tabs = (IupQtTabWidget*)ih->handle;
   if (!tabs)
@@ -488,7 +488,7 @@ extern "C" void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
   iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", nullptr);
 }
 
-extern "C" int iupdrvTabsGetCurrentTab(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
   QTabWidget* tabs = (QTabWidget*)ih->handle;
   if (!tabs)
@@ -497,7 +497,7 @@ extern "C" int iupdrvTabsGetCurrentTab(Ihandle* ih)
   return tabs->currentIndex();
 }
 
-extern "C" void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
 {
   int width = 0;
   int height = 0;
@@ -598,7 +598,7 @@ extern "C" void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const c
   if (tab_height) *tab_height = height;
 }
 
-extern "C" int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
+extern "C" IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
   Ihandle* ih = IupGetParent(child);
   if (!ih || !ih->handle)
@@ -1279,7 +1279,7 @@ static int qtTabsMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvTabsInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtTabsMapMethod;

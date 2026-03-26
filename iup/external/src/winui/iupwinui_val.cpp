@@ -272,7 +272,7 @@ static void winuiValUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-extern "C" void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   if (ih->data->orientation == IVAL_HORIZONTAL)
   {
@@ -286,7 +286,7 @@ extern "C" void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-extern "C" void iupdrvValInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 {
   ic->Map = winuiValMapMethod;
   ic->UnMap = winuiValUnMapMethod;

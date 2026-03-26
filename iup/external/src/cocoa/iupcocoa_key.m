@@ -515,7 +515,7 @@ int iupcocoaKeyDecode(CGEventRef event)
       (flags & kCGEventFlagMaskAlphaShift) != 0);
 }
 
-void iupdrvKeyEncode(int code, unsigned int *maccode, unsigned int *state)
+IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *maccode, unsigned int *state)
 {
   int i;
   int iup_base_key = iup_XkeyBase(code);

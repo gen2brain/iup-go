@@ -135,7 +135,7 @@ static Evas_Object* eflTipContentCb(void* data, Evas_Object* obj, Evas_Object* t
   return content;
 }
 
-int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   Evas_Object* widget;
 
@@ -162,7 +162,7 @@ int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
   Evas_Object* widget;
 
@@ -182,7 +182,7 @@ int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
+IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
   (void)ih;
   return NULL;

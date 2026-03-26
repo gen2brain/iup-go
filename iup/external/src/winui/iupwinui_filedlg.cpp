@@ -880,7 +880,7 @@ static int winuiFileDlgPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-extern "C" void iupdrvFileDlgInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = winuiFileDlgPopup;
 

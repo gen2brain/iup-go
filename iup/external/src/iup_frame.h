@@ -13,14 +13,14 @@ extern "C" {
 
 /** \addtogroup drv
  * @{ */
-int iupdrvFrameHasClientOffset(Ihandle* ih);
-void iupdrvFrameInitClass(Iclass* ic);
+IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih);
+IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic);
 /** Gets offset to client area. */
-void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y);
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y);
 /** Gets total decoration size. */
-int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h);
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h);
 /** Gets title area height. */
-int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h);
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h);
 /** @} */
 
 int iupFrameGetTitleHeight(Ihandle* ih);

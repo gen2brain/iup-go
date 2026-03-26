@@ -1545,7 +1545,7 @@ void iupeflTextGetBorder(int* border_x, int* border_y)
     *border_y = efl_text_border_y;
 }
 
-void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   eflTextMeasureBorders();
 
@@ -1570,7 +1570,7 @@ void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
   }
 }
 
-void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   (void)ih;
   (void)h;
@@ -1580,7 +1580,7 @@ void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
     *w = efl_spinner_width;
 }
 
-void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   Eo* entry = iupeflGetWidget(ih);
   const char* text;
@@ -1630,7 +1630,7 @@ void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
   *pos = current_pos + c;
 }
 
-void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   Eo* entry = iupeflGetWidget(ih);
   const char* text;
@@ -1677,13 +1677,13 @@ void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
   *col = current_col;
 }
 
-void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   (void)ih;
   return NULL;
 }
 
-void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
+IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 {
   (void)ih;
   (void)state;
@@ -2155,7 +2155,7 @@ static void eflTextBuildParagraphFormat(Ihandle* formattag, char* format, int fo
 #undef EFL_FMT_APPEND
 }
 
-void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
+IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   Eo* entry = iupeflGetWidget(ih);
   int start_pos, end_pos;
@@ -2403,7 +2403,7 @@ static int eflTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
   eflTextMeasureBorders();
@@ -2412,7 +2412,7 @@ void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
   if (h) *h += efl_text_border_y > 4 ? efl_text_border_y / 2 : 4;
 }
 
-void iupdrvTextInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = eflTextMapMethod;
   ic->UnMap = eflTextUnMapMethod;

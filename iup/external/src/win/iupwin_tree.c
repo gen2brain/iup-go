@@ -85,7 +85,7 @@ static void winTreeSetFocusNode(Ihandle* ih, HTREEITEM hItem);
 /* FINDING ITEMS                                                             */
 /*****************************************************************************/
 
-InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
+IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
   return (InodeHandle*)SendMessage(ih->handle, TVM_GETNEXTITEM, TVGN_CARET, 0);
 }
@@ -124,7 +124,7 @@ static void winTreeChildCountRec(Ihandle* ih, HTREEITEM hItem, int *count)
   }
 }
 
-int iupdrvTreeTotalChildCount(Ihandle* ih, HTREEITEM hItem)
+IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, HTREEITEM hItem)
 {
   int count = 0;
   winTreeChildCountRec(ih, hItem, &count);
@@ -162,7 +162,7 @@ static void winTreeRebuildNodeCache(Ihandle* ih, int id, HTREEITEM hItem)
 static void winTreeExpandItem(Ihandle* ih, HTREEITEM hItem, int expand);
 static void winTreeSelectNode(Ihandle* ih, HTREEITEM hItem, int select);
 
-void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
+IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
 {
   TVITEM item;
   TVINSERTSTRUCT tvins;
@@ -2121,7 +2121,7 @@ static int winTreeSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 } 
 
-void iupdrvTreeUpdateMarkMode(Ihandle *ih)
+IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)
 {
   /* does nothing, must handle single and multiple selection manually in Windows */
   (void)ih;
@@ -3036,7 +3036,7 @@ static void winTreeDragDropCopyChildren(Ihandle* src, Ihandle* dst, HTREEITEM hI
   }
 }
 
-void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle *itemSrc, InodeHandle *itemDst)
+IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle *itemSrc, InodeHandle *itemDst)
 {
   HTREEITEM hItemNew, hParent;
   TVITEM item;
@@ -3233,7 +3233,7 @@ static void winTreeUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvTreeInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winTreeMapMethod;

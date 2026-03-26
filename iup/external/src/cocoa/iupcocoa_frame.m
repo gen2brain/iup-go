@@ -27,7 +27,7 @@
 #include "iupcocoa_drv.h"
 
 
-void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
 {
   /* NSBox automatically positions its contentView to accommodate border and title.
      Children are laid out relative to contentView, so offset is (0,0). */
@@ -36,13 +36,13 @@ void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
   *y = 0;
 }
 
-int iupdrvFrameHasClientOffset(Ihandle* ih)
+IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
 {
   if (iupAttribGet(ih, "_IUPFRAME_HAS_TITLE") || iupAttribGet(ih, "TITLE"))
   {
@@ -72,7 +72,7 @@ int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
   return 1;
 }
 
-int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
 {
   NSBox* tempBox = [[[NSBox alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)] autorelease];
 
@@ -326,7 +326,7 @@ static int cocoaFrameMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvFrameInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 {
   ic->Map = cocoaFrameMapMethod;
   ic->GetInnerNativeContainerHandle = cocoaFrameGetInnerNativeContainerHandleMethod;

@@ -14,7 +14,7 @@ extern "C" {
 
 /** \addtogroup drv
  * @{ */
-void iupdrvPopoverInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic);
 /** @} */
 
 

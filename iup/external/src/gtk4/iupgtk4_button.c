@@ -170,7 +170,7 @@ static void gtk4ButtonMeasurePadding(void)
   gtk4_button_padding_measured = 1;
 }
 
-void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int button_type;
   int has_user_padding = 0;
@@ -823,7 +823,7 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvButtonInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = gtk4ButtonMapMethod;
 

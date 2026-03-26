@@ -420,14 +420,14 @@ static void iupgtkListMeasureItemMetrics(void)
   }
 }
 
-void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 {
   (void)ih;
   iupgtkListMeasureItemMetrics();
   *h += iupgtk_list_item_space;
 }
 
-void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   static int dropdown_border_x = -1;
@@ -658,13 +658,13 @@ static GtkTreeModel* gtkListGetModel(Ihandle* ih)
     return gtk_tree_view_get_model((GtkTreeView*)ih->handle);
 }
 
-int iupdrvListGetCount(Ihandle* ih)
+IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
   GtkTreeModel *model = gtkListGetModel(ih);
   return gtk_tree_model_iter_n_children(model, NULL);
 }
 
-void iupdrvListAppendItem(Ihandle* ih, const char* value)
+IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   GtkTreeModel *model = gtkListGetModel(ih);
   GtkTreeIter iter;
@@ -677,7 +677,7 @@ void iupdrvListAppendItem(Ihandle* ih, const char* value)
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 }
 
-void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
+IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
   GtkTreeModel *model = gtkListGetModel(ih);
   GtkTreeIter iter;
@@ -692,7 +692,7 @@ void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   iupListUpdateOldValue(ih, pos, 0);
 }
 
-void iupdrvListRemoveItem(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 {
   GtkTreeModel *model = gtkListGetModel(ih);
   GtkTreeIter iter;
@@ -727,7 +727,7 @@ void iupdrvListRemoveItem(Ihandle* ih, int pos)
   }
 }
 
-void iupdrvListRemoveAllItems(Ihandle* ih)
+IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 {
   GtkTreeModel *model = gtkListGetModel(ih);
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
@@ -1508,7 +1508,7 @@ static char* gtkListGetImageNativeHandleAttribId(Ihandle* ih, int id)
   return (char*)pixImage;
 }
 
-void* iupdrvListGetImageHandle(Ihandle* ih, int id)
+IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   GdkPixbuf* pixImage;
   GtkTreeModel* model = gtkListGetModel(ih);
@@ -1522,7 +1522,7 @@ void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   return pixImage;
 }
 
-int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
+IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
   GtkTreeModel* model = gtkListGetModel(ih);
   GtkTreeIter iter;
@@ -1533,7 +1533,7 @@ int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   return 0;
 }
 
-void iupdrvListSetItemCount(Ihandle* ih, int count)
+IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 {
   IupGtkVirtualListModel* model;
 
@@ -2424,7 +2424,7 @@ static void gtkListUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvListInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkListMapMethod;

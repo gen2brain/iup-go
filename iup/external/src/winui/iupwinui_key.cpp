@@ -320,7 +320,7 @@ extern "C" void iupwinuiButtonKeySetStatus(int keys, int button, char* status, i
   (void)button;
 }
 
-extern "C" void iupdrvKeyEncode(int code, unsigned int* wincode, unsigned int* state)
+extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* wincode, unsigned int* state)
 {
   int i, iupcode;
 

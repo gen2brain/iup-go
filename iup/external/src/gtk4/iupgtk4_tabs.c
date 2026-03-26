@@ -30,36 +30,36 @@
 #include "iupgtk4_drv.h"
 
 
-int iupdrvTabsExtraDecor(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-int iupdrvTabsExtraMargin(void)
+IUP_SDK_API int iupdrvTabsExtraMargin(void)
 {
   return 0;
 }
 
-int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
 {
   (void)ih;
   return 1;
 }
 
-void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   iupAttribSet(ih, "_IUPGTK4_IGNORE_CHANGE", "1");
   gtk_notebook_set_current_page((GtkNotebook*)ih->handle, pos);
   iupAttribSet(ih, "_IUPGTK4_IGNORE_CHANGE", NULL);
 }
 
-int iupdrvTabsGetCurrentTab(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
   return gtk_notebook_get_current_page((GtkNotebook*)ih->handle);
 }
 
-void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
 {
   int width = 0;
   int height = 0;
@@ -323,7 +323,7 @@ static int gtk4TabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
   return 0;
 }
 
-int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
+IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
   GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
   (void)pos;
@@ -910,7 +910,7 @@ static int gtk4TabsMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvTabsInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 {
   ic->Map = gtk4TabsMapMethod;
   ic->ChildAdded     = gtk4TabsChildAddedMethod;

@@ -248,7 +248,7 @@ static void winuiScrollbarUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-extern "C" void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
   {
@@ -262,7 +262,7 @@ extern "C" void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-extern "C" void iupdrvScrollbarInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
 {
   ic->Map = winuiScrollbarMapMethod;
   ic->UnMap = winuiScrollbarUnMapMethod;

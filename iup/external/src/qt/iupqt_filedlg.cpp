@@ -788,7 +788,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvFileDlgInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = qtFileDlgPopup;
 

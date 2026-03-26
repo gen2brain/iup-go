@@ -143,7 +143,7 @@ static Iqt2iupkey other_remap[] = {
  * Key Encoding (IUP to Qt)
  ****************************************************************************/
 
-extern "C" void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
+extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
 {
   *keyval = (unsigned int)iup_XkeyBase(code);
 

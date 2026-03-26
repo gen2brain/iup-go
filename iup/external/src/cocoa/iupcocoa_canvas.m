@@ -1507,7 +1507,7 @@ static void* cocoaCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle
   return ih->handle;
 }
 
-void iupdrvCanvasInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = cocoaCanvasMapMethod;

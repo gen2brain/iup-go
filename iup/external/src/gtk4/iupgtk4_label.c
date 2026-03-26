@@ -26,7 +26,7 @@
 
 #include "iupgtk4_drv.h"
 
-void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   /* GTK4 GtkLabel has internal padding beyond what Pango reports.
    * Testing shows GtkLabel requests 5px more width than Pango measures.
@@ -336,7 +336,7 @@ static int gtk4LabelMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvLabelInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 {
   ic->Map = gtk4LabelMapMethod;
 

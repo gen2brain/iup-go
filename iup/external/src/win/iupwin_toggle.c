@@ -202,12 +202,12 @@ static void winSwitchCustomDraw(Ihandle* ih, HDC hDC, RECT* rect, UINT itemState
   wdDestroyCanvas(canvas);
 }
 
-void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
   iupdrvButtonAddBorders(ih, x, y);
 }
 
-void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
 {
   int switch_w = SWITCH_TRACK_WIDTH;
   int switch_h = SWITCH_TRACK_HEIGHT;
@@ -223,7 +223,7 @@ void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
     (*x) += 8;
 }
 
-void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
   int check_box = 16;
   (void)ih;
@@ -1154,7 +1154,7 @@ regular_toggle:
   return IUP_NOERROR;
 }
 
-void iupdrvToggleInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winToggleMapMethod;

@@ -2587,7 +2587,7 @@ static void cocoaTreeInsertInCache(Ihandle* ih, int id, InodeHandle* node_handle
   ih->data->node_cache[id].userdata = NULL;
 }
 
-void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const char* title, int add)
+IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const char* title, int add)
 {
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
   IupCocoaTreeDelegate* data_source_delegate = (IupCocoaTreeDelegate*)[outline_view dataSource];
@@ -2699,7 +2699,7 @@ void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const char* title, in
 /* AUXILIAR FUNCTIONS                                                        */
 /*****************************************************************************/
 
-int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
+IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
 {
   IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)node_handle;
   NSUInteger number_of_items = Helper_RecursivelyCountItems(tree_item);
@@ -2711,7 +2711,7 @@ int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
   return (int)number_of_items;
 }
 
-InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
+IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
 
@@ -2720,7 +2720,7 @@ InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
   return (InodeHandle*)selected_item;
 }
 
-void iupdrvTreeUpdateMarkMode(Ihandle *ih)
+IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)
 {
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
 
@@ -2734,7 +2734,7 @@ void iupdrvTreeUpdateMarkMode(Ihandle *ih)
   }
 }
 
-void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* item_src, InodeHandle* item_dst)
+IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* item_src, InodeHandle* item_dst)
 {
   /* This function copies a node from one tree to another.
      The native Cocoa implementation handles this differently through
@@ -4545,7 +4545,7 @@ static void cocoaTreeUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-void iupdrvTreeInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = cocoaTreeMapMethod;

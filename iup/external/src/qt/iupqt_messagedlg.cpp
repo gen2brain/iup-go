@@ -206,7 +206,7 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvMessageDlgInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvMessageDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = qtMessageDlgPopup;
 

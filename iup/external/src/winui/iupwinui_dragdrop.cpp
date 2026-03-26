@@ -366,7 +366,7 @@ static int winuiSetDropTargetAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvRegisterDragDropAttrib(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "DROPFILES_CB", "siii");
 

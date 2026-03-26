@@ -752,12 +752,12 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charhei
     *charwidth = motfont->charwidth;
 }
 
-void iupdrvFontInit(void)
+IUP_SDK_API void iupdrvFontInit(void)
 {
   mot_fonts = iupArrayCreate(50, sizeof(ImotFont));
 }
 
-void iupdrvFontFinish(void)
+IUP_SDK_API void iupdrvFontFinish(void)
 {
   int i, count = iupArrayCount(mot_fonts);
   ImotFont* fonts = (ImotFont*)iupArrayGetData(mot_fonts);

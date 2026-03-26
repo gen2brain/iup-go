@@ -40,7 +40,7 @@ static void winuiImageSetPixelBGRA(uint8_t* pixels, int pos, uint8_t r, uint8_t 
   pixels[pos + 3] = a;
 }
 
-extern "C" void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
 {
   int width = ih->currentwidth;
   int height = ih->currentheight;
@@ -255,12 +255,12 @@ static HICON winuiImageCreateCursorIcon(Ihandle *ih, int is_cursor)
   return icon;
 }
 
-extern "C" void* iupdrvImageCreateIcon(Ihandle *ih)
+extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
 {
   return (void*)winuiImageCreateCursorIcon(ih, 0);
 }
 
-extern "C" void* iupdrvImageCreateCursor(Ihandle *ih)
+extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
 {
   return (void*)winuiImageCreateCursorIcon(ih, 1);
 }
@@ -346,7 +346,7 @@ static void* winuiLoadImageFile(const char* name)
   return handle;
 }
 
-extern "C" void* iupdrvImageLoad(const char* name, int type)
+extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   if (type == IUPIMAGE_IMAGE)
     return winuiLoadImageFile(name);
@@ -371,7 +371,7 @@ WriteableBitmap winuiGetBitmapFromHandle(void* handle)
   return obj.try_as<WriteableBitmap>();
 }
 
-extern "C" int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
 {
   WriteableBitmap bitmap = winuiGetBitmapFromHandle(handle);
   if (!bitmap)
@@ -388,7 +388,7 @@ extern "C" int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
   return 1;
 }
 
-extern "C" void iupdrvImageGetData(void* handle, unsigned char* imgdata)
+extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   if (!handle || !imgdata)
     return;
@@ -681,7 +681,7 @@ cleanup:
   return SUCCEEDED(hr) ? 1 : 0;
 }
 
-extern "C" int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
   IStream* stream = NULL;
   HGLOBAL hGlobal;
@@ -737,7 +737,7 @@ extern "C" int iupdrvImageSave(unsigned char* imgdata, int width, int height, in
   return (written == stat.cbSize.LowPart) ? 1 : 0;
 }
 
-extern "C" unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+extern "C" IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   IStream* stream = NULL;
   HRESULT hr;

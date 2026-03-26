@@ -225,7 +225,7 @@ static std::wstring winuiNotifySaveTempBMP(int width, int height, unsigned char*
  * Driver Interface
  ****************************************************************************/
 
-extern "C" int iupdrvNotifyShow(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 {
   const char* title;
   const char* body;
@@ -391,7 +391,7 @@ extern "C" int iupdrvNotifyShow(Ihandle* ih)
   }
 }
 
-extern "C" int iupdrvNotifyClose(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
 {
   IupWinUINotifyAux* aux = winuiGetAux<IupWinUINotifyAux>(ih, IUPWINUI_NOTIFY_AUX);
   if (!aux)
@@ -415,7 +415,7 @@ extern "C" int iupdrvNotifyClose(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvNotifyDestroy(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvNotifyDestroy(Ihandle* ih)
 {
   IupWinUINotifyAux* aux = winuiGetAux<IupWinUINotifyAux>(ih, IUPWINUI_NOTIFY_AUX);
   if (aux)
@@ -433,12 +433,12 @@ extern "C" void iupdrvNotifyDestroy(Ihandle* ih)
   }
 }
 
-extern "C" int iupdrvNotifyIsAvailable(void)
+extern "C" IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 {
   return 1;
 }
 
-extern "C" void iupdrvNotifyInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "TIMEOUT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

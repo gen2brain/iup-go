@@ -344,7 +344,7 @@ static void cocoaToggleDeselectRadio(Ihandle* radio, Ihandle* ih)
 @end
 
 
-void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
@@ -361,7 +361,7 @@ void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
 {
   static int switch_w = -1;
   static int switch_h = -1;
@@ -385,7 +385,7 @@ void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
     *x += 8;
 }
 
-void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
   static int check_w = -1;
   static int check_h = -1;
@@ -896,7 +896,7 @@ static void cocoaToggleUnMapMethod(Ihandle* ih)
 }
 
 
-void iupdrvToggleInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   ic->Map = cocoaToggleMapMethod;
   ic->UnMap = cocoaToggleUnMapMethod;

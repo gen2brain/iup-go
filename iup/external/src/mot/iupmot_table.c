@@ -1719,14 +1719,14 @@ static void motTableUnMapMethod(Ihandle* ih)
 /* Driver Functions - iupdrvTable* API                                      */
 /* ========================================================================= */
 
-void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   /* Not implemented - would require reallocation */
   (void)ih;
   (void)num_lin;
 }
 
-void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
+IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int old_num_col, i;
@@ -1771,7 +1771,7 @@ void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   motTableRedraw(ih);
 }
 
-void iupdrvTableAddLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int lin, new_num_lin;
@@ -1806,7 +1806,7 @@ void iupdrvTableAddLin(Ihandle* ih, int pos)
   motTableRedraw(ih);
 }
 
-void iupdrvTableDelLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int lin, col, new_num_lin;
@@ -1854,7 +1854,7 @@ void iupdrvTableDelLin(Ihandle* ih, int pos)
   motTableRedraw(ih);
 }
 
-void iupdrvTableAddCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int lin, col, new_num_col;
@@ -1913,7 +1913,7 @@ void iupdrvTableAddCol(Ihandle* ih, int pos)
   motTableRedraw(ih);
 }
 
-void iupdrvTableDelCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int lin, col, new_num_col;
@@ -2001,18 +2001,18 @@ void iupdrvTableDelCol(Ihandle* ih, int pos)
   motTableRedraw(ih);
 }
 
-void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
+IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   motTableSetCellValueInternal(ih, lin, col, value);
   motTableRedraw(ih);
 }
 
-char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
+IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 {
   return motTableGetCellValueInternal(ih, lin, col);
 }
 
-void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
   (void)ih;
   (void)lin;
@@ -2020,7 +2020,7 @@ void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
   (void)image;
 }
 
-void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
+IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
 
@@ -2034,7 +2034,7 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   motTableRedraw(ih);
 }
 
-char* iupdrvTableGetColTitle(Ihandle* ih, int col)
+IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
 
@@ -2044,7 +2044,7 @@ char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return mot_data->col_titles[col-1];
 }
 
-void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
+IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
 
@@ -2058,7 +2058,7 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   motTableRedraw(ih);
 }
 
-int iupdrvTableGetColWidth(Ihandle* ih, int col)
+IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
 
@@ -2068,7 +2068,7 @@ int iupdrvTableGetColWidth(Ihandle* ih, int col)
   return mot_data->col_widths[col-1];
 }
 
-void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
 
@@ -2086,7 +2086,7 @@ void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   }
 }
 
-void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
+IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
 
@@ -2097,7 +2097,7 @@ void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
   if (col) *col = mot_data->current_col;
 }
 
-void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   /* Not implemented */
   (void)ih;
@@ -2105,7 +2105,7 @@ void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
   (void)col;
 }
 
-void iupdrvTableRedraw(Ihandle* ih)
+IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   motTableRedraw(ih);
 }
@@ -2131,7 +2131,7 @@ static int motTableSetSortableAttrib(Ihandle* ih, const char* value)
   return 0;  /* Do not store in hash table */
 }
 
-void iupdrvTableSetShowGrid(Ihandle* ih, int show)
+IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
 
@@ -2142,7 +2142,7 @@ void iupdrvTableSetShowGrid(Ihandle* ih, int show)
   motTableRedraw(ih);
 }
 
-int iupdrvTableGetBorderWidth(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   Dimension border = 0;
@@ -2156,7 +2156,7 @@ int iupdrvTableGetBorderWidth(Ihandle* ih)
   return 0;
 }
 
-int iupdrvTableGetRowHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   if (mot_data && mot_data->row_height > 0)
@@ -2166,7 +2166,7 @@ int iupdrvTableGetRowHeight(Ihandle* ih)
   return MOT_TABLE_DEF_ROW_HEIGHT;
 }
 
-int iupdrvTableGetHeaderHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   if (mot_data && mot_data->header_height > 0)
@@ -2176,7 +2176,7 @@ int iupdrvTableGetHeaderHeight(Ihandle* ih)
   return MOT_TABLE_HEADER_HEIGHT;
 }
 
-void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
   int border = iupdrvTableGetBorderWidth(ih);
@@ -2211,7 +2211,7 @@ void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 /* Class Initialization                                                      */
 /* ========================================================================= */
 
-void iupdrvTableInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motTableMapMethod;

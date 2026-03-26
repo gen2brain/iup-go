@@ -108,7 +108,7 @@ static void iupCocoaSISendToFirst(CFStringRef port_name)
   free(cmdline);
 }
 
-int iupdrvSingleInstanceSet(const char* name)
+IUP_SDK_API int iupdrvSingleInstanceSet(const char* name)
 {
   CFStringRef port_name;
   Boolean should_free;
@@ -138,7 +138,7 @@ int iupdrvSingleInstanceSet(const char* name)
   return 0;
 }
 
-void iupdrvSingleInstanceClose(void)
+IUP_SDK_API void iupdrvSingleInstanceClose(void)
 {
   if (si_run_loop_source)
   {

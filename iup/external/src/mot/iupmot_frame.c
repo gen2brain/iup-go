@@ -32,27 +32,27 @@
 #include "iupmot_color.h"
 
 
-void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
 {
   (void)ih;
   *x = 2;
   *y = 2;
 }
 
-int iupdrvFrameHasClientOffset(Ihandle* ih)
+IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
 {
   (void)ih;
   (void)h;
   return 0;
 }
 
-int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
 {
   (void)ih;
   (void)w;
@@ -287,7 +287,7 @@ static int motFrameMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvFrameInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motFrameMapMethod;

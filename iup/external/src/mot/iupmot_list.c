@@ -45,14 +45,14 @@ static void motListComboBoxSelectionCallback(Widget w, Ihandle* ih, XmComboBoxCa
 /* Motif XmList does not support per-item images.
    IMAGE_CB callback is not supported for virtual mode.
    Use IupFlatList for image support on Motif. */
-void* iupdrvListGetImageHandle(Ihandle* ih, int id)
+IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   (void)ih;
   (void)id;
   return NULL;
 }
 
-int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
+IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
   (void)ih;
   (void)id;
@@ -60,7 +60,7 @@ int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   return 0;
 }
 
-void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 {
   if (ih->data->has_editbox)
     *h += 1;
@@ -68,7 +68,7 @@ void iupdrvListAddItemSpace(Ihandle* ih, int *h)
     *h += 3;
 }
 
-void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
   int border_size = 2*4;
   (*x) += border_size;
@@ -117,7 +117,7 @@ static int motListConvertXYToPos(Ihandle* ih, int x, int y)
     return pos;
 }
 
-int iupdrvListGetCount(Ihandle* ih)
+IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
   int count;
   XtVaGetValues(ih->handle, XmNitemCount, &count, NULL);
@@ -161,7 +161,7 @@ static void motListAddSortedItem(Ihandle* ih, const char *value)
   motListAddItem(ih, l_bound, value);
 }
 
-void iupdrvListAppendItem(Ihandle* ih, const char* value)
+IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SORT"))
     motListAddSortedItem(ih, value);
@@ -169,7 +169,7 @@ void iupdrvListAppendItem(Ihandle* ih, const char* value)
     motListAddItem(ih, -1, value);
 }
 
-void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
+IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SORT"))
     motListAddSortedItem(ih, value);
@@ -179,7 +179,7 @@ void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   iupListUpdateOldValue(ih, pos, 0);
 }
 
-void iupdrvListRemoveItem(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 {
   /* The utility functions use 0=last 1=first */
   if (ih->data->is_dropdown || ih->data->has_editbox)
@@ -207,7 +207,7 @@ void iupdrvListRemoveItem(Ihandle* ih, int pos)
   iupListUpdateOldValue(ih, pos, 1);
 }
 
-void iupdrvListRemoveAllItems(Ihandle* ih)
+IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 {
   if (ih->data->is_dropdown || ih->data->has_editbox)
   {
@@ -220,7 +220,7 @@ void iupdrvListRemoveAllItems(Ihandle* ih)
     XmListDeleteAllItems(ih->handle);
 }
 
-void iupdrvListSetItemCount(Ihandle* ih, int count)
+IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 {
   Widget list_widget;
   int i;
@@ -1647,7 +1647,7 @@ static int motListMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvListInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motListMapMethod;

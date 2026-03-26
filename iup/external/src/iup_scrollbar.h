@@ -33,8 +33,8 @@ char* iupScrollbarGetPageSizeAttrib(Ihandle* ih);
 
 /** \addtogroup drv
  * @{ */
-void iupdrvScrollbarInitClass(Iclass* ic);
-void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h);
+IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h);
 /** @} */
 
 

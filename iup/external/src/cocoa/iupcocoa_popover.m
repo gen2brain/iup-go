@@ -288,7 +288,7 @@ static void* cocoaPopoverGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandl
   return iupAttribGet(ih, "_IUP_COCOA_CONTENT_VIEW");
 }
 
-void iupdrvPopoverInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 {
   ic->Map = cocoaPopoverMapMethod;
   ic->UnMap = cocoaPopoverUnMapMethod;

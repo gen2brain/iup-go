@@ -632,7 +632,7 @@ static void winuiButtonUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int border_size = 8;
 
@@ -679,7 +679,7 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   *y += winui_button_padding_y;
 }
 
-extern "C" void iupdrvButtonInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = winuiButtonMapMethod;
   ic->UnMap = winuiButtonUnMapMethod;

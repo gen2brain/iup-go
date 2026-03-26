@@ -709,7 +709,7 @@ static LRESULT CALLBACK winTableHeaderWndProc(HWND hwnd, UINT msg, WPARAM wp, LP
  * Cell Operations
  ****************************************************************************/
 
-void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
+IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -738,7 +738,7 @@ void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
   ListView_SetItem(list_view, &item);
 }
 
-char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
+IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -765,7 +765,7 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   }
 }
 
-void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
   if (!ih->handle)
     return;
@@ -784,7 +784,7 @@ void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
  * Column Operations
  ****************************************************************************/
 
-void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
+IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -832,7 +832,7 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   ListView_SetColumn(list_view, col, &lvc);
 }
 
-char* iupdrvTableGetColTitle(Ihandle* ih, int col)
+IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
 
@@ -845,7 +845,7 @@ char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return data->col_titles[col-1];
 }
 
-void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
+IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -867,7 +867,7 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   winTableAdjustColumnWidths(ih);
 }
 
-int iupdrvTableGetColWidth(Ihandle* ih, int col)
+IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -895,7 +895,7 @@ static void winTableInvalidateCell(HWND list_view, int lin, int col)
   InvalidateRect(list_view, &rc, FALSE);
 }
 
-void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -937,7 +937,7 @@ void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   data->suppress_callbacks = 0;
 }
 
-void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
+IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -957,7 +957,7 @@ void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
  * Scrolling
  ****************************************************************************/
 
-void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   HWND list_view = winTableGetListView(ih);
 
@@ -974,14 +974,14 @@ void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
  * Display
  ****************************************************************************/
 
-void iupdrvTableRedraw(Ihandle* ih)
+IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   HWND list_view = winTableGetListView(ih);
   if (list_view)
     InvalidateRect(list_view, NULL, TRUE);
 }
 
-void iupdrvTableSetShowGrid(Ihandle* ih, int show)
+IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -995,7 +995,7 @@ void iupdrvTableSetShowGrid(Ihandle* ih, int show)
   InvalidateRect(list_view, NULL, TRUE);
 }
 
-int iupdrvTableGetBorderWidth(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
   (void)ih;
   /* ListView with WS_BORDER has 1px border on each side = 2px total */
@@ -1076,7 +1076,7 @@ static void winTableMeasureRowMetrics(Ihandle* ih)
   DestroyWindow(temp_list);
 }
 
-int iupdrvTableGetRowHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -1099,7 +1099,7 @@ int iupdrvTableGetRowHeight(Ihandle* ih)
   return win_table_row_height;
 }
 
-int iupdrvTableGetHeaderHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   HWND list_view = winTableGetListView(ih);
 
@@ -1120,7 +1120,7 @@ int iupdrvTableGetHeaderHeight(Ihandle* ih)
   return win_table_header_height;
 }
 
-void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
 
@@ -1143,7 +1143,7 @@ void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
  * Table Structure
  ****************************************************************************/
 
-void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -1222,7 +1222,7 @@ void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   ih->data->num_lin = num_lin;
 }
 
-void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
+IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -1323,7 +1323,7 @@ void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   }
 }
 
-void iupdrvTableAddLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -1389,7 +1389,7 @@ void iupdrvTableAddLin(Ihandle* ih, int pos)
   ih->data->num_lin++;
 }
 
-void iupdrvTableDelLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
   HWND list_view = winTableGetListView(ih);
@@ -1451,7 +1451,7 @@ void iupdrvTableDelLin(Ihandle* ih, int pos)
   ih->data->num_lin--;
 }
 
-void iupdrvTableAddCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   HWND list_view = winTableGetListView(ih);
 
@@ -1477,7 +1477,7 @@ void iupdrvTableAddCol(Ihandle* ih, int pos)
   iupdrvTableSetNumCol(ih, ih->data->num_col);
 }
 
-void iupdrvTableDelCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   HWND list_view = winTableGetListView(ih);
 
@@ -2899,7 +2899,7 @@ static void winTableUnMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-void iupdrvTableInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   /* Set Map/UnMap/LayoutUpdate methods */
   ic->Map = winTableMapMethod;

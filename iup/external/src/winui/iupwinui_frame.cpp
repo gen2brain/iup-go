@@ -369,20 +369,20 @@ static int winuiFrameSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" int iupdrvFrameHasClientOffset(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
   (void)ih;
   return 1;
 }
 
-extern "C" void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   *x = winui_frame_border_width + 4;
   *y = winui_frame_border_width + 4;
 }
 
-extern "C" int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
+extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   if (!winui_frame_measured)
     winuiFrameMeasureDecor();
@@ -398,7 +398,7 @@ extern "C" int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
   return 1;
 }
 
-extern "C" int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
+extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
   const char* title = iupAttribGet(ih, "TITLE");
   if (!title || !title[0])
@@ -414,7 +414,7 @@ extern "C" int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
   return 1;
 }
 
-extern "C" void iupdrvFrameInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 {
   ic->Map = winuiFrameMapMethod;
   ic->UnMap = winuiFrameUnMapMethod;

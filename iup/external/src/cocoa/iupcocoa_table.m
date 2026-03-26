@@ -2073,7 +2073,7 @@ static int cocoaTableSetReorderAttrib(Ihandle* ih, const char* value)
 /* Driver Functions - Table Structure                                       */
 /* ========================================================================= */
 
-void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
+IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   if (num_col < 0)
     num_col = 0;
@@ -2084,7 +2084,7 @@ void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     cocoaTableSetNumColAttrib(ih, iupStrReturnInt(num_col));
 }
 
-void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   if (num_lin < 0)
     num_lin = 0;
@@ -2095,23 +2095,23 @@ void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     cocoaTableSetNumLinAttrib(ih, iupStrReturnInt(num_lin));
 }
 
-void iupdrvTableAddCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
 }
 
-void iupdrvTableDelCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   if (ih->data->num_col > 0)
     iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
 }
 
-void iupdrvTableAddLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   iupdrvTableSetNumLin(ih, ih->data->num_lin + 1);
 }
 
-void iupdrvTableDelLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   if (ih->data->num_lin > 0)
     iupdrvTableSetNumLin(ih, ih->data->num_lin - 1);
@@ -2121,7 +2121,7 @@ void iupdrvTableDelLin(Ihandle* ih, int pos)
 /* Driver Functions - Cell Operations                                       */
 /* ========================================================================= */
 
-void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
+IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
   if (!table_data)
@@ -2143,7 +2143,7 @@ void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
   }
 }
 
-char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
+IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
   if (!table_data)
@@ -2162,7 +2162,7 @@ char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   return NULL;
 }
 
-void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
   IcocoaTableData* table_data = cocoaTableGetData(ih);
   if (!table_data)
@@ -2188,7 +2188,7 @@ void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 /* Driver Functions - Column Operations                                     */
 /* ========================================================================= */
 
-void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
+IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (!tableView)
@@ -2227,7 +2227,7 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   }
 }
 
-char* iupdrvTableGetColTitle(Ihandle* ih, int col)
+IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (!tableView)
@@ -2250,7 +2250,7 @@ char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return NULL;
 }
 
-void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
+IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (!tableView)
@@ -2276,7 +2276,7 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   }
 }
 
-int iupdrvTableGetColWidth(Ihandle* ih, int col)
+IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (!tableView)
@@ -2299,7 +2299,7 @@ int iupdrvTableGetColWidth(Ihandle* ih, int col)
 /* Driver Functions - Selection                                             */
 /* ========================================================================= */
 
-void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (!tableView)
@@ -2323,7 +2323,7 @@ void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
 }
 
-void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
+IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (!tableView)
@@ -2344,7 +2344,7 @@ void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 /* Driver Functions - Scrolling & Display                                   */
 /* ========================================================================= */
 
-void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (!tableView)
@@ -2360,7 +2360,7 @@ void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
   [tableView scrollColumnToVisible:column];
 }
 
-void iupdrvTableRedraw(Ihandle* ih)
+IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (tableView)
@@ -2369,7 +2369,7 @@ void iupdrvTableRedraw(Ihandle* ih)
   }
 }
 
-void iupdrvTableSetShowGrid(Ihandle* ih, int show)
+IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (!tableView)
@@ -2381,7 +2381,7 @@ void iupdrvTableSetShowGrid(Ihandle* ih, int show)
     [tableView setGridStyleMask:NSTableViewGridNone];
 }
 
-int iupdrvTableGetBorderWidth(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
   (void)ih;
   /* NSScrollView with NSBezelBorder has 1px border on each side */
@@ -2440,7 +2440,7 @@ static void cocoaTableMeasureRowMetrics(Ihandle* ih)
   [temp_table release];
 }
 
-int iupdrvTableGetRowHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   NSTableView* table_view = cocoaTableGetTableView(ih);
 
@@ -2456,7 +2456,7 @@ int iupdrvTableGetRowHeight(Ihandle* ih)
   return cocoa_table_row_height;
 }
 
-int iupdrvTableGetHeaderHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   NSTableView* table_view = cocoaTableGetTableView(ih);
 
@@ -2476,7 +2476,7 @@ int iupdrvTableGetHeaderHeight(Ihandle* ih)
   return cocoa_table_header_height;
 }
 
-void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   NSScrollView* scroll = cocoaTableGetScrollView(ih);
   int sb_size = iupdrvGetScrollbarSize();
@@ -2789,7 +2789,7 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
 /* Class Registration                                                        */
 /* ========================================================================= */
 
-void iupdrvTableInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   /* Driver Dependent Class methods */
   ic->Map = cocoaTableMapMethod;

@@ -213,7 +213,7 @@ static void gtk4PopoverUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-void iupdrvPopoverInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 {
   ic->Map = gtk4PopoverMapMethod;
   ic->UnMap = gtk4PopoverUnMapMethod;

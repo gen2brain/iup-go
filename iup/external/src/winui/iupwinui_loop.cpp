@@ -288,12 +288,12 @@ extern "C" void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void
   });
 }
 
-extern "C" void iupdrvSetIdleFunction(Icallback func)
+extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback func)
 {
   winui_idle_cb = (IFidle)func;
 }
 
-extern "C" void iupdrvSleep(int time)
+extern "C" IUP_SDK_API void iupdrvSleep(int time)
 {
   Sleep(time);
 }

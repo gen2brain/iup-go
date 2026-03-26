@@ -733,7 +733,7 @@ static void winuiToggleUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-extern "C" void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
@@ -746,7 +746,7 @@ extern "C" void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
   }
 }
 
-extern "C" void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
+extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   (void)ih;
   *x += 20;
@@ -757,7 +757,7 @@ extern "C" void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char*
     *x += 8;
 }
 
-extern "C" void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
+extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   (void)ih;
   *x += 44;
@@ -768,7 +768,7 @@ extern "C" void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* s
     *x += 10;
 }
 
-extern "C" void iupdrvToggleInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   ic->Map = winuiToggleMapMethod;
   ic->UnMap = winuiToggleUnMapMethod;

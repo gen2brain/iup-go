@@ -501,7 +501,7 @@ static void iupqtListMeasureItemMetrics(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 {
   iupqtListMeasureItemMetrics(ih);
   *h += iupqt_list_item_space;
@@ -580,7 +580,7 @@ static void iupqtListMeasureBorders(Ihandle* ih)
   (void)ih;
 }
 
-extern "C" void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
   iupqtListMeasureBorders(ih);
 
@@ -626,7 +626,7 @@ static QListWidget* qtListGetListWidget(Ihandle* ih)
   return nullptr;
 }
 
-extern "C" int iupdrvListGetCount(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
   if (ih->data->is_dropdown)
   {
@@ -648,7 +648,7 @@ extern "C" int iupdrvListGetCount(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvListAppendItem(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
 
@@ -673,7 +673,7 @@ extern "C" void iupdrvListAppendItem(Ihandle* ih, const char* value)
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 }
 
-extern "C" void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
+extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
 
@@ -700,7 +700,7 @@ extern "C" void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 }
 
 
-extern "C" void iupdrvListRemoveItem(Ihandle* ih, int pos)
+extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 {
   if (ih->data->is_dropdown)
   {
@@ -753,7 +753,7 @@ extern "C" void iupdrvListRemoveItem(Ihandle* ih, int pos)
   iupListUpdateOldValue(ih, pos, 1);
 }
 
-extern "C" void iupdrvListRemoveAllItems(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 {
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
 
@@ -778,7 +778,7 @@ extern "C" void iupdrvListRemoveAllItems(Ihandle* ih)
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 }
 
-extern "C" int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
+extern "C" IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
   QPixmap* pixmap = (QPixmap*)hImage;
 
@@ -815,7 +815,7 @@ extern "C" int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   return 1;
 }
 
-extern "C" void* iupdrvListGetImageHandle(Ihandle* ih, int id)
+extern "C" IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   if (ih->data->is_dropdown)
   {
@@ -859,7 +859,7 @@ extern "C" void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   return NULL;
 }
 
-extern "C" void iupdrvListSetItemCount(Ihandle* ih, int count)
+extern "C" IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 {
   if (!ih->data->is_virtual)
     return;
@@ -2061,7 +2061,7 @@ static int qtListMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvListInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtListMapMethod;

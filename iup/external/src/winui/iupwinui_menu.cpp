@@ -586,7 +586,7 @@ static int winuiSubmenuSetActiveAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-extern "C" int iupdrvMenuPopup(Ihandle* ih, int x, int y)
+extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   MenuFlyout flyout = winuiGetHandle<MenuFlyout>(ih);
   if (!flyout)
@@ -693,7 +693,7 @@ extern "C" int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-extern "C" int iupdrvMenuGetMenuBarSize(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
   MenuBar menuBar = winuiGetHandle<MenuBar>(ih);
   if (!menuBar)
@@ -737,7 +737,7 @@ static int winuiMenuSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvMenuInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   ic->Map = winuiMenuMapMethod;
   ic->UnMap = winuiMenuUnMapMethod;
@@ -772,7 +772,7 @@ static int winuiItemSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvItemInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
 {
   ic->Map = winuiItemMapMethod;
   ic->UnMap = winuiItemUnMapMethod;
@@ -812,7 +812,7 @@ static int winuiSubmenuSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvSubmenuInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 {
   ic->Map = winuiSubmenuMapMethod;
   ic->UnMap = winuiSubmenuUnMapMethod;
@@ -824,7 +824,7 @@ extern "C" void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiSubmenuSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 }
 
-extern "C" void iupdrvSeparatorInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
 {
   ic->Map = winuiSeparatorMapMethod;
   ic->UnMap = winuiSeparatorUnMapMethod;
@@ -861,7 +861,7 @@ static void winuiRecentItemActivate(Ihandle* menu, int index)
   }
 }
 
-extern "C" int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+extern "C" IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
   iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
@@ -869,7 +869,7 @@ extern "C" int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback rec
   return 0;
 }
 
-extern "C" int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
 {
   int max_recent, existing, i;
 

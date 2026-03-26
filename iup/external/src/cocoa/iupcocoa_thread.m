@@ -39,7 +39,7 @@
 
 @end
 
-void* iupdrvThreadStart(Ihandle* ih)
+IUP_SDK_API void* iupdrvThreadStart(Ihandle* ih)
 {
   IupCocoaThread* thread = [[IupCocoaThread alloc] initWithIhandle:ih];
 
@@ -51,29 +51,29 @@ void* iupdrvThreadStart(Ihandle* ih)
   return (void*)thread;
 }
 
-void iupdrvThreadJoin(void* handle)
+IUP_SDK_API void iupdrvThreadJoin(void* handle)
 {
   IupCocoaThread* thread = (IupCocoaThread*)handle;
   while (![thread isFinished])
     [NSThread sleepForTimeInterval:0.001];
 }
 
-void iupdrvThreadYield(void)
+IUP_SDK_API void iupdrvThreadYield(void)
 {
   [NSThread sleepForTimeInterval:0.0];
 }
 
-int iupdrvThreadIsCurrent(void* handle)
+IUP_SDK_API int iupdrvThreadIsCurrent(void* handle)
 {
   return (IupCocoaThread*)handle == [NSThread currentThread];
 }
 
-void iupdrvThreadExit(int code)
+IUP_SDK_API void iupdrvThreadExit(int code)
 {
   [NSThread exit];
 }
 
-void iupdrvThreadDestroy(void* handle)
+IUP_SDK_API void iupdrvThreadDestroy(void* handle)
 {
   if (handle)
   {
@@ -87,22 +87,22 @@ void iupdrvThreadDestroy(void* handle)
   }
 }
 
-void* iupdrvMutexCreate(void)
+IUP_SDK_API void* iupdrvMutexCreate(void)
 {
   return (void*)[[NSLock alloc] init];
 }
 
-void iupdrvMutexLock(void* handle)
+IUP_SDK_API void iupdrvMutexLock(void* handle)
 {
   [(NSLock*)handle lock];
 }
 
-void iupdrvMutexUnlock(void* handle)
+IUP_SDK_API void iupdrvMutexUnlock(void* handle)
 {
   [(NSLock*)handle unlock];
 }
 
-void iupdrvMutexDestroy(void* handle)
+IUP_SDK_API void iupdrvMutexDestroy(void* handle)
 {
   if (handle)
     [(NSLock*)handle release];

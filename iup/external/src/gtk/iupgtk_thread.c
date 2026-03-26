@@ -28,7 +28,7 @@ static void* iupgtk_ThreadFunc(void* obj)
   return NULL;
 }
 
-void* iupdrvThreadStart(Ihandle* ih)
+IUP_SDK_API void* iupdrvThreadStart(Ihandle* ih)
 {
   GThread* thread;
   char* name = iupAttribGet(ih, "THREADNAME");
@@ -43,27 +43,27 @@ void* iupdrvThreadStart(Ihandle* ih)
   return (void*)thread;
 }
 
-void iupdrvThreadJoin(void* handle)
+IUP_SDK_API void iupdrvThreadJoin(void* handle)
 {
   g_thread_join((GThread*)handle);
 }
 
-void iupdrvThreadYield(void)
+IUP_SDK_API void iupdrvThreadYield(void)
 {
   g_thread_yield();
 }
 
-int iupdrvThreadIsCurrent(void* handle)
+IUP_SDK_API int iupdrvThreadIsCurrent(void* handle)
 {
   return (GThread*)handle == g_thread_self();
 }
 
-void iupdrvThreadExit(int code)
+IUP_SDK_API void iupdrvThreadExit(int code)
 {
   g_thread_exit((gpointer)(intptr_t)code);
 }
 
-void iupdrvThreadDestroy(void* handle)
+IUP_SDK_API void iupdrvThreadDestroy(void* handle)
 {
 #ifndef OLD_GLIB
   if (handle)
@@ -73,7 +73,7 @@ void iupdrvThreadDestroy(void* handle)
 #endif
 }
 
-void* iupdrvMutexCreate(void)
+IUP_SDK_API void* iupdrvMutexCreate(void)
 {
 #ifdef OLD_GLIB
   return (void*)g_mutex_new();
@@ -85,17 +85,17 @@ void* iupdrvMutexCreate(void)
 #endif
 }
 
-void iupdrvMutexLock(void* handle)
+IUP_SDK_API void iupdrvMutexLock(void* handle)
 {
   g_mutex_lock((GMutex*)handle);
 }
 
-void iupdrvMutexUnlock(void* handle)
+IUP_SDK_API void iupdrvMutexUnlock(void* handle)
 {
   g_mutex_unlock((GMutex*)handle);
 }
 
-void iupdrvMutexDestroy(void* handle)
+IUP_SDK_API void iupdrvMutexDestroy(void* handle)
 {
   if (!handle)
     return;

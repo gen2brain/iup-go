@@ -121,7 +121,7 @@ static const void* IUP_COCOA_SCROLLBAR_RECEIVER_OBJ_KEY = "IUP_COCOA_SCROLLBAR_R
 @end
 
 
-void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
 {
   CGFloat sb_size = [NSScroller scrollerWidthForControlSize:NSControlSizeRegular scrollerStyle:NSScrollerStyleLegacy];
   int isb_size = (int)sb_size;
@@ -258,7 +258,7 @@ static void cocoaScrollbarUnMapMethod(Ihandle* ih)
   }
 }
 
-void iupdrvScrollbarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
 {
   ic->Map = cocoaScrollbarMapMethod;
   ic->UnMap = cocoaScrollbarUnMapMethod;

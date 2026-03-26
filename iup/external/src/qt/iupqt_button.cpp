@@ -379,7 +379,7 @@ static void qtButtonMeasurePadding(void)
   qt_button_padding_measured = 1;
 }
 
-extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
   int has_image = 0;
   int has_text = 0;
@@ -883,7 +883,7 @@ static int qtButtonMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvButtonInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = qtButtonMapMethod;
   ic->LayoutUpdate = qtButtonLayoutUpdateMethod;

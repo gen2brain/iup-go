@@ -37,7 +37,7 @@
 
 static int mot_menu_exitloop = 0;
 
-int iupdrvMenuPopup(Ihandle* ih, int x, int y)
+IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   char* value = iupAttribGet(ih, "POPUPALIGN");
   XButtonEvent ev;
@@ -227,7 +227,7 @@ static int motMenuMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvMenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motMenuMapMethod;
@@ -344,7 +344,7 @@ static void motRecentItemActivateCallback(Widget w, XtPointer client_data, XtPoi
   (void)call_data;
 }
 
-int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
   iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
@@ -352,7 +352,7 @@ int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
   return 0;
 }
 
-int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
 {
   Widget menu_widget;
   int max_recent, existing, i;
@@ -553,7 +553,7 @@ static int motSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motItemMapMethod;
@@ -575,7 +575,7 @@ void iupdrvItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED);
 }
 
-void iupdrvSubmenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motSubmenuMapMethod;
@@ -592,7 +592,7 @@ void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TITLE", NULL, motItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
 
-void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motSeparatorMapMethod;

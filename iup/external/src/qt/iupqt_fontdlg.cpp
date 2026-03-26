@@ -213,7 +213,7 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvFontDlgInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = qtFontDlgPopup;
 

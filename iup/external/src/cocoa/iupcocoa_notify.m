@@ -368,7 +368,7 @@ static int cocoaNotifySetRequestPermissionAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-int iupdrvNotifyShow(Ihandle* ih)
+IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 {
   IupCocoaNotify* notify;
   __block UNAuthorizationStatus authStatus = UNAuthorizationStatusNotDetermined;
@@ -570,7 +570,7 @@ int iupdrvNotifyShow(Ihandle* ih)
   return success ? 1 : 0;
 }
 
-int iupdrvNotifyClose(Ihandle* ih)
+IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
 {
   IupCocoaNotify* notify;
 
@@ -589,7 +589,7 @@ int iupdrvNotifyClose(Ihandle* ih)
   return 0;
 }
 
-void iupdrvNotifyDestroy(Ihandle* ih)
+IUP_SDK_API void iupdrvNotifyDestroy(Ihandle* ih)
 {
   IupCocoaNotify* notify = (IupCocoaNotify*)iupAttribGet(ih, "_IUPCOCOA_NOTIFY");
 
@@ -600,12 +600,12 @@ void iupdrvNotifyDestroy(Ihandle* ih)
   }
 }
 
-int iupdrvNotifyIsAvailable(void)
+IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 {
   return iupCocoaNotifyIsSupported();
 }
 
-void iupdrvNotifyInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "SUBTITLE", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PERMISSION", cocoaNotifyGetPermissionAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

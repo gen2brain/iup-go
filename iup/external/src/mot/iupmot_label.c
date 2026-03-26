@@ -29,7 +29,7 @@
 #include "iupmot_drv.h"
 
 
-void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
 {
   (void)ih;
   (void)x;
@@ -259,7 +259,7 @@ static int motLabelMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvLabelInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motLabelMapMethod;

@@ -61,7 +61,7 @@ static void winuiTimerProc(IupWinUITimer* timer_data)
   }
 }
 
-extern "C" void iupdrvTimerRun(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
   unsigned int time_ms;
 
@@ -100,7 +100,7 @@ extern "C" void iupdrvTimerRun(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvTimerStop(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   if (ih->serial > 0)
   {
@@ -123,7 +123,7 @@ extern "C" void iupdrvTimerStop(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvTimerInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 {
   (void)ic;
 }

@@ -31,7 +31,7 @@
 #include "iupgtk_drv.h"
 
 
-void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int horiz_min_w = -1, horiz_min_h = -1;
@@ -340,7 +340,7 @@ static int gtkValSetTicksPosAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-void iupdrvValInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkValMapMethod;

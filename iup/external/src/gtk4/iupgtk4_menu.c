@@ -319,7 +319,7 @@ void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu)
   ih_menu->handle = menubar_widget;
 }
 
-int iupdrvMenuGetMenuBarSize(Ihandle* ih_menu)
+IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih_menu)
 {
   GtkWidget* menubar_widget;
 
@@ -375,7 +375,7 @@ static void gtk4AnchorPopoverClosedCb(GtkPopover *popover, gpointer user_data)
   (void)popover;
 }
 
-int iupdrvMenuPopup(Ihandle* ih, int x, int y)
+IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   GtkWidget* popover;
   GtkWidget* parent_widget = NULL;
@@ -744,7 +744,7 @@ static void gtk4MenuUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-void iupdrvMenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   ic->Map = gtk4MenuMapMethod;
   ic->UnMap = gtk4MenuUnMapMethod;
@@ -879,7 +879,7 @@ static void gtk4RecentActionActivated(GSimpleAction* action, GVariant* parameter
   (void)parameter;
 }
 
-int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
   iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
@@ -887,7 +887,7 @@ int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
   return 0;
 }
 
-int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
 {
   GSimpleActionGroup* action_group;
   GMenu* recent_menu;
@@ -971,7 +971,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
 
 /*******************************************************************************************/
 
-void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
 {
   ic->Map = gtk4ItemMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
@@ -989,7 +989,7 @@ void iupdrvItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }
 
-void iupdrvSubmenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 {
   ic->Map = gtk4SubmenuMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
@@ -1002,7 +1002,7 @@ void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
 
-void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
 {
   ic->Map = gtk4SeparatorMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;

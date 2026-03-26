@@ -187,7 +187,7 @@ static void iupUnixSISendToFirst(const char* bus_name)
   free(cmdline);
 }
 
-int iupdrvSingleInstanceSet(const char* name)
+IUP_SDK_API int iupdrvSingleInstanceSet(const char* name)
 {
   DBusError error;
   char bus_name[256];
@@ -249,7 +249,7 @@ int iupdrvSingleInstanceSet(const char* name)
   return 1;
 }
 
-void iupdrvSingleInstanceClose(void)
+IUP_SDK_API void iupdrvSingleInstanceClose(void)
 {
   if (si_timer)
   {

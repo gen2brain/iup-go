@@ -70,7 +70,7 @@ static void gtkFrameMeasureDecor(int has_title, int* decor_w, int* decor_h, int*
 }
 #endif
 
-void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int measured = 0;
@@ -95,13 +95,13 @@ void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
 #endif
 }
 
-int iupdrvFrameHasClientOffset(Ihandle* ih)
+IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int measured = 0;
@@ -140,7 +140,7 @@ int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
 #endif
 }
 
-int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int titled_measured = 0, untitled_measured = 0;
@@ -311,7 +311,7 @@ static int gtkFrameMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvFrameInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkFrameMapMethod;

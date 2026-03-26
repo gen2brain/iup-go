@@ -364,7 +364,7 @@ static NSStatusItem* cocoaGetStatusItem(Ihandle* ih, int create)
 /* Driver Interface Implementation                                            */
 /******************************************************************************/
 
-int iupdrvTraySetVisible(Ihandle* ih, int visible)
+IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
 {
   NSStatusItem* status_item = cocoaGetStatusItem(ih, visible);
 
@@ -374,7 +374,7 @@ int iupdrvTraySetVisible(Ihandle* ih, int visible)
   return 1;
 }
 
-int iupdrvTraySetTip(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
 {
   NSStatusItem* status_item = cocoaGetStatusItem(ih, 1);
   if (!status_item) return 0;
@@ -387,7 +387,7 @@ int iupdrvTraySetTip(Ihandle* ih, const char* value)
   return 0;
 }
 
-int iupdrvTraySetImage(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
 {
   NSStatusItem* status_item = cocoaGetStatusItem(ih, 1);
   NSImage* user_image = nil;
@@ -419,7 +419,7 @@ int iupdrvTraySetImage(Ihandle* ih, const char* value)
   return 0;
 }
 
-int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
+IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
   NSStatusItem* status_item = cocoaGetStatusItem(ih, 1);
   if (!status_item) return 0;
@@ -456,7 +456,7 @@ int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
   return 1;
 }
 
-void iupdrvTrayDestroy(Ihandle* ih)
+IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 {
   NSStatusItem* status_item = (NSStatusItem*)iupAttribGet(ih, "_IUPCOCOA_STATUSITEM");
 
@@ -487,12 +487,12 @@ void iupdrvTrayDestroy(Ihandle* ih)
   }
 }
 
-int iupdrvTrayIsAvailable(void)
+IUP_SDK_API int iupdrvTrayIsAvailable(void)
 {
   return 1;
 }
 
-void iupdrvTrayInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "TIPBALLOON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TIPBALLOONTITLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
@@ -501,7 +501,7 @@ void iupdrvTrayInitClass(Iclass* ic)
 }
 
 #ifndef IUPCOCOA_TRAY_USE_EXTERNAL_IMAGE
-int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
   NSImage* image;
   NSBitmapImageRep* rep;

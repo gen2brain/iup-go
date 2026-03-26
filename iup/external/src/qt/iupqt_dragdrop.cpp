@@ -497,7 +497,7 @@ extern "C" void iupqtDragDropCleanup(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvRegisterDragDropAttrib(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "DROPFILES_CB", "siii");
 

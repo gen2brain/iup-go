@@ -30,7 +30,7 @@ void iupcocoaSetCanFocus(Ihandle* ih, int can)
     iupAttribSet(ih, "_IUPCOCOA_CANFOCUS", "NO");
 }
 
-void iupdrvSetFocus(Ihandle *ih)
+IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
 {
   if (!ih || !ih->handle)
   {

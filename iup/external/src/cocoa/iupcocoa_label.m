@@ -258,7 +258,7 @@ static NSImageView* cocoaLabelGetImageView(Ihandle* ih)
   return (NSImageView*)iupcocoaGetMainView(ih);
 }
 
-void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
 {
   (void)ih;
   (void)x;
@@ -1110,7 +1110,7 @@ static void cocoaLabelUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvLabelInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 {
   ic->Map = cocoaLabelMapMethod;
   ic->UnMap = cocoaLabelUnMapMethod;

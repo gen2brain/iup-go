@@ -24,18 +24,18 @@ typedef struct _iupColor {
 
 /** \addtogroup drvimage
  * @{ */
-void* iupdrvImageCreateIcon(Ihandle *ih);
-void* iupdrvImageCreateCursor(Ihandle *ih);
-void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive);
-void* iupdrvImageLoad(const char* name, int type);
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih);
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih);
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive);
+IUP_SDK_API void* iupdrvImageLoad(const char* name, int type);
 IUP_SDK_API void  iupdrvImageDestroy(void* handle, int type);
-int   iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp);
-void  iupdrvImageGetData(void* handle, unsigned char* imgdata);
+IUP_SDK_API int   iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp);
+IUP_SDK_API void  iupdrvImageGetData(void* handle, unsigned char* imgdata);
 IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
 IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count);
 IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata);
-int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format);
-unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size);
+IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format);
+IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size);
 /** @} */
 
 void* iupImageGetIcon(const char* name);

@@ -261,12 +261,12 @@ static void gtkSwitchDestroyCallback(GtkWidget* widget, Ihandle* ih)
 }
 #endif
 
-void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
   iupdrvButtonAddBorders(ih, x, y);
 }
 
-void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int switch_w = -1;
@@ -319,7 +319,7 @@ void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
 #endif
 }
 
-void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
   static int check_w = -1;
   static int check_h = -1;
@@ -1039,7 +1039,7 @@ static int gtkToggleMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvToggleInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkToggleMapMethod;

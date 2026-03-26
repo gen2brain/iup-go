@@ -59,7 +59,7 @@ static VOID CALLBACK winTimerFunc(HWND hwnd, UINT msg, UINT_PTR wid, DWORD time)
   }
 }
 
-void iupdrvTimerRun(Ihandle *ih)
+IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
 {
   unsigned int time_ms;
 
@@ -79,7 +79,7 @@ void iupdrvTimerRun(Ihandle *ih)
   }
 }
 
-void iupdrvTimerStop(Ihandle* ih)
+IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   if (ih->serial > 0)
   {
@@ -100,7 +100,7 @@ static void winTimerRelease(Iclass* ic)
   }
 }
 
-void iupdrvTimerInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 {
   ic->Release = winTimerRelease;
 

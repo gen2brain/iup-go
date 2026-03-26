@@ -321,7 +321,7 @@ void iupeflSetGlobalColors(void)
  * Driver Open/Close
  ****************************************************************************/
 
-int iupdrvOpen(int* argc, char*** argv)
+IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   char* value;
 
@@ -370,7 +370,7 @@ int iupdrvOpen(int* argc, char*** argv)
   return IUP_NOERROR;
 }
 
-void iupdrvClose(void)
+IUP_SDK_API void iupdrvClose(void)
 {
   if (efl_open_count == 0)
     return;

@@ -799,7 +799,7 @@ static void gtk4CanvasUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvCanvasInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   ic->Map = gtk4CanvasMapMethod;
   ic->UnMap = gtk4CanvasUnMapMethod;

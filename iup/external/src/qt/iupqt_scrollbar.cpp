@@ -322,7 +322,7 @@ static int qtScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
 /*********************************************************************************************/
 
 
-extern "C" void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
 {
   static int horiz_min_w = -1, horiz_min_h = -1;
   static int vert_min_w = -1, vert_min_h = -1;
@@ -406,7 +406,7 @@ static void qtScrollbarUnMapMethod(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvScrollbarInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
 {
   ic->Map = qtScrollbarMapMethod;
   ic->UnMap = qtScrollbarUnMapMethod;

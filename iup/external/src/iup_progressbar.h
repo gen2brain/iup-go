@@ -30,8 +30,8 @@ char* iProgressBarGetDashedAttrib(Ihandle* ih);
 
 /** \addtogroup drv
  * @{ */
-void iupdrvProgressBarInitClass(Iclass* ic);
-void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h);
+IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h);
 /** @} */
 
 #ifdef __cplusplus
