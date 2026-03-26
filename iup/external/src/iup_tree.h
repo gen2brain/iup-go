@@ -4,6 +4,9 @@
  * See Copyright Notice in iup.h
  */
 
+/** \defgroup drvtree Driver Tree Interface
+ * \ingroup drv */
+
 #ifndef __IUP_TREE_H 
 #define __IUP_TREE_H
 
@@ -22,11 +25,14 @@ extern "C" {
 #define ITREE_UPDATEIMAGE_COLLAPSED 2
 #define ITREE_UPDATEIMAGE_EXPANDED  3
 
+/** \addtogroup drvtree
+ * @{ */
 void iupdrvTreeInitClass(Iclass* ic);
-void iupTreeUpdateImages(Ihandle *ih);
 void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add);
 void iupdrvTreeUpdateMarkMode(Ihandle *ih);
+/** @} */
 
+void iupTreeUpdateImages(Ihandle *ih);
 char* iupTreeGetSpacingAttrib(Ihandle* ih);
 
 #if defined(GTK_MAJOR_VERSION)
@@ -53,17 +59,18 @@ InodeHandle* iupTreeGetNode(Ihandle* ih, int id);
 InodeHandle* iupTreeGetNodeFromString(Ihandle* ih, const char* name_id);
 int iupTreeFindNodeId(Ihandle* ih, InodeHandle* node_handle);
 
+/** \addtogroup drvtree
+ * @{ */
 InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih);
 int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle);
-void iupTreeSelectLastCollapsedBranch(Ihandle* ih, int *last_id);
+void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHandle *itemSrc, InodeHandle *itemDst);
+/** @} */
 
+void iupTreeSelectLastCollapsedBranch(Ihandle* ih, int *last_id);
 void iupTreeDelFromCache(Ihandle* ih, int id, int count);
-void iupTreeIncCacheMem(Ihandle* ih); /* needed for IupCocoa */
+void iupTreeIncCacheMem(Ihandle* ih);
 void iupTreeAddToCache(Ihandle* ih, int add, int kindPrev, InodeHandle* prevNode, InodeHandle* node_handle);
 void iupTreeCopyMoveCache(Ihandle* ih, int id_src, int id_new, int count, int is_copy);
-
-/* copy from one control to another control */
-void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHandle *itemSrc, InodeHandle *itemDst);
 
 /* Structure of the tree */
 struct _IcontrolData

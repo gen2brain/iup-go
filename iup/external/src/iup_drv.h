@@ -12,12 +12,12 @@ extern "C" {
 #endif
 
   
-/** \defgroup drv Driver Interface 
+/** \defgroup drv Driver Interface
  * \par
  * Each driver must export the symbols defined here.
  * \par
- * See \ref iup_drv.h 
- */
+ * See \ref iup_drv.h
+ * \ingroup cpi */
 
 
 /** Sets a global environment attribute. Called from IupSetGlobal and IupStoreGlobal.

@@ -2,14 +2,18 @@
  * \brief Dialog (not exported API)
  *
  * See Copyright Notice in "iup.h"
+ *
  */
- 
-#ifndef __IUP_DIALOG_H 
+
+#ifndef __IUP_DIALOG_H
 #define __IUP_DIALOG_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** \defgroup drvdialog Driver Dialog Interface
+ * \ingroup drv */
 
 
 /* PUBLIC */
@@ -34,14 +38,15 @@ void iupDialogHide(Ihandle* ih);
 int iupDialogGetChildId(Ihandle* ih);
 char* iupDialogGetChildIdStr(Ihandle* ih);
 
-/* Returns the size of the decoration */
+/** \addtogroup drvdialog
+ * @{ */
+/** Returns the size of the decoration. */
 void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu);
-
-/* Returns the native parent. Can be PARENTDIALOG or NATIVEPARENT attributes. Parent must be mapped. */
-IUP_SDK_API InativeHandle* iupDialogGetNativeParent(Ihandle* ih);
-
-/* Changes the parent dialog (works only if already set at map) */
+/** Changes the parent dialog (works only if already set at map). */
 void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* native_parent);
+/** @} */
+
+IUP_SDK_API InativeHandle* iupDialogGetNativeParent(Ihandle* ih);
 
 /* Updates the dialog initial position from internal attributes.
    Used mostly by the native pre-defined dialogs. */
@@ -81,14 +86,23 @@ struct _IcontrolData
 /* Driver dependent functions */
 /******************************/
 
+/** \addtogroup drvdialog
+ * @{ */
+/** Registers platform-specific Dialog attributes and methods. */
 void iupdrvDialogInitClass(Iclass* iclass);
-
+/** Gets current dialog position (screen coordinates). */
 void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int *x, int *y);
+/** Shows or hides dialog. */
 void iupdrvDialogSetVisible(Ihandle* ih, int visible);
+/** Sets dialog placement (MINIMIZED, MAXIMIZED, FULLSCREEN, NORMAL). */
 int iupdrvDialogSetPlacement(Ihandle* ih);
+/** Sets dialog position (screen coordinates). */
 void iupdrvDialogSetPosition(Ihandle *ih, int x, int y);
+/** Gets current dialog size (including decorations). */
 void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h);
+/** Returns 1 if dialog is visible. */
 int iupdrvDialogIsVisible(Ihandle* ih);
+/** @} */
 int iupDialogSetClientSizeAttrib(Ihandle* ih, const char* value);
 char* iupDialogGetClientSizeAttrib(Ihandle *ih);
 

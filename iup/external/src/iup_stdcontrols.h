@@ -2,6 +2,7 @@
  * \brief Standard Controls Class Initialization functions (not exported API)
  *
  * See Copyright Notice in "iup.h"
+ *
  */
  
 #ifndef __IUP_STDCONTROLS_H 
@@ -92,10 +93,13 @@ Iclass* iupClipboardNewClass(void);
 
 /*************************************************/
 
+/** \addtogroup drv
+ * @{ */
 void iupdrvMessageDlgInitClass(Iclass* ic);
 void iupdrvColorDlgInitClass(Iclass* ic);
 void iupdrvFontDlgInitClass(Iclass* ic);
 void iupdrvFileDlgInitClass(Iclass* ic);
+/** @} */
 
 /************************************************/
 

@@ -11,11 +11,14 @@
 extern "C" {
 #endif
 
+/** \addtogroup drv
+ * @{ */
 void iupdrvNotifyInitClass(Iclass* ic);
 int iupdrvNotifyShow(Ihandle* ih);
 int iupdrvNotifyClose(Ihandle* ih);
 void iupdrvNotifyDestroy(Ihandle* ih);
 int iupdrvNotifyIsAvailable(void);
+/** @} */
 
 #ifdef __cplusplus
 }

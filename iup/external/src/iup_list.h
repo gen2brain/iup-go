@@ -3,15 +3,17 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_LIST_H 
+
+#ifndef __IUP_LIST_H
 #define __IUP_LIST_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
+/** \defgroup drvlist Driver List Interface
+ * \ingroup drv
+ * @{ */
 void iupdrvListInitClass(Iclass* ic);
 void iupdrvListAddBorders(Ihandle* ih, int *w, int *h);
 void iupdrvListAddItemSpace(Ihandle* ih, int *h);
@@ -20,6 +22,10 @@ void iupdrvListAppendItem(Ihandle* ih, const char* value);
 void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value);
 void iupdrvListRemoveItem(Ihandle* ih, int pos);
 void iupdrvListRemoveAllItems(Ihandle* ih);
+void* iupdrvListGetImageHandle(Ihandle* ih, int id);
+int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage);
+void iupdrvListSetItemCount(Ihandle* ih, int count);
+/** @} */
 
 /* Used by List and Text, implemented in Text */
 int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void *mask, int nc, int remove_dir, int utf8);
@@ -37,8 +43,6 @@ int iupListCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl);
 
 void iupListSetInitialItems(Ihandle* ih);
 void iupListUpdateOldValue(Ihandle* ih, int pos, int removed);
-void* iupdrvListGetImageHandle(Ihandle* ih, int id);
-int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage);
 
 struct _IcontrolData
 {
@@ -60,12 +64,10 @@ struct _IcontrolData
   Imask* mask;
 };
 
-/* Virtual mode support */
 int iupListIsVirtual(Ihandle* ih);
 int iupListGetItemCount(Ihandle* ih);
 char* iupListGetItemValueCb(Ihandle* ih, int pos);
 char* iupListGetItemImageCb(Ihandle* ih, int pos);
-void iupdrvListSetItemCount(Ihandle* ih, int count);
 
 
 #ifdef __cplusplus

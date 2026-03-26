@@ -6,6 +6,7 @@
  * build an SVG string in memory that can be retrieved as text.
  *
  * See Copyright Notice in "iup.h"
+ *
  */
 
 #ifndef __IUP_DRAW_SVG_H

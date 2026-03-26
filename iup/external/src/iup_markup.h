@@ -11,6 +11,7 @@
  *   <span foreground="..." background="..." font_family="..." font_size="..." font_weight="..." font_style="...">
  *
  * See Copyright Notice in "iup.h"
+ *
  */
 
 #ifndef __IUP_MARKUP_H

@@ -2,6 +2,7 @@
  * \brief Abstract Layout Management (not exported API)
  *
  * See Copyright Notice in "iup.h"
+ *
  */
  
 #ifndef __IUP_LAYOUT_H 

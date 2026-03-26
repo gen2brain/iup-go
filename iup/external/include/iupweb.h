@@ -11,8 +11,6 @@
 extern "C" {
 #endif
 
-#ifndef DOXYGEN_SHOULD_IGNORE_THIS
-/** @cond DOXYGEN_SHOULD_IGNORE_THIS */
 #ifndef IUPWEB_API
 #ifdef IUPWEB_BUILD_LIBRARY
   #ifdef __EMSCRIPTEN__
@@ -29,8 +27,6 @@ extern "C" {
   #define IUPWEB_API
 #endif /* IUP_BUILD_LIBRARY */
 #endif /* IUPWEB_API */
-/** @endcond DOXYGEN_SHOULD_IGNORE_THIS */
-#endif /* DOXYGEN_SHOULD_IGNORE_THIS */
 
 
 IUPWEB_API int IupWebBrowserOpen(void);

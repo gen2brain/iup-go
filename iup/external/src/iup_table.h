@@ -11,6 +11,9 @@
 extern "C" {
 #endif
 
+/** \defgroup drvtable Driver Table Interface
+ * \ingroup drv */
+
 
 /* ========================================================================= */
 /* IupTable Data Structure                                                   */
@@ -47,6 +50,8 @@ char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
 /* Driver Functions                                                         */
 /* ========================================================================= */
 
+/** \addtogroup drvtable
+ * @{ */
 /* Class initialization */
 void iupdrvTableInitClass(Iclass* ic);
 
@@ -89,6 +94,7 @@ int iupdrvTableGetBorderWidth(Ihandle* ih);
 int iupdrvTableGetRowHeight(Ihandle* ih);
 int iupdrvTableGetHeaderHeight(Ihandle* ih);
 void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h);
+/** @} */
 
 
 #ifdef __cplusplus

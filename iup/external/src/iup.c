@@ -1,60 +1,31 @@
-/** \file
- * \brief miscelaneous functions
- *
- * See Copyright Notice in "iup.h"
- */
+/* See Copyright Notice in "iup.h" */
 
-/*! \mainpage IUP
- *
- * \section intro Introduction
- *
- * Internal SDK documentation of the IUP library, automatically generated using Doxygen (<A HREF="http://www.doxygen.org/">http://www.doxygen.org/</A>).
+/** \mainpage IUP Internal SDK
  *
  * \section codestd Code Standards
  *
- * \subsection func Function Names (prefix format)
+ * \subsection func Function Names
  *  - IupFunc - User API, implemented in the core
- *  - iupFunc - Internal Core API, implemented in the core, used in the core or in driver
- *  - iupxxxFunc - Windows Internal API, implemented in driver xxx, used in driver xxx
- *  - iupdrvFunc - Driver API, implemented in driver, used in the core or driver
- *  - xxxFunc - Driver xxx local functions
- * 
- * \subsection glob Global Variables (lower case format)
- *  - iupxxx_var
- *                    
- * \subsection loc Local Variables (lower case format, using module name)
- *  - iyyy_var
- *                    
+ *  - iupFunc - Internal Core API, used in the core or driver
+ *  - iupxxxFunc - Driver-specific internal API
+ *  - iupdrvFunc - Driver API, implemented in driver, used in core or driver
+ *  - xxxFunc - Driver local functions
+ *
  * \subsection fil File Names
  *  - iupyyy.h - public headers
  *  - iup_yyy.h/c - core
  *  - iupxxx_yyy.h/c - driver
- *   
- * \subsection strc Structures
- *  - Iyyy
- *   
- * \subsection com File Comments (at start)
- *  - Check an existent file for example.
- *    
- * \subsection def Defines
- *  - __IUPXXX_H   (for include file, same file name, upper case, "__" prefix and replace "." by "_")
- *  - IUP_XXX      (for global enumerations)
- *  - IXXX_YYY     (for local enumerations)
- *  - iupXXX       (for macros, complement with Function Names rules)
- *   
- * \subsection doc Documentation
- *  - In the header, using Doxygen commands.
- *  - Check an existent header for example.
  *
+ * \subsection def Defines
+ *  - IUP_XXX - global enumerations
+ *  - IXXX_YYY - local enumerations
+ *  - iupXXX - macros
  */
 
-/** \defgroup util Utilities
- */
-
-/** \defgroup cpi Control SDK
- * \par
- * <H3><A HREF="../en/cpi.html">Control Creation Guide</A></H3>
- */
+/** \defgroup util Utilities */
+/** \defgroup cpi Control SDK */
+/** \defgroup ctrl Controls
+ * \ingroup cpi */
 
 #include <stdlib.h>
 
