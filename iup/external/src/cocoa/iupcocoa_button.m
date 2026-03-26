@@ -507,11 +507,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
     img_position = ih->data->img_position;
 
-    int horiz_padding = 0, vert_padding = 0;
-    char* padding = IupGetAttribute(ih, "PADDING");
-    if (padding)
-      iupStrToIntInt(padding, &horiz_padding, &vert_padding, 'x');
-    has_user_padding = (horiz_padding > 0 || vert_padding > 0);
+    has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
   }
 
   if (has_bgcolor)
