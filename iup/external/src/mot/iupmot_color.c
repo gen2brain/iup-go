@@ -307,7 +307,7 @@ static void motColorMakeDirectCmap(Colormap cmap)
 unsigned long (* iupmotColorGetPixel)(unsigned char r, unsigned char g, unsigned char b) = 0; 
 void (* iupmotColorGetRGB)(unsigned long pixel, unsigned char* red, unsigned char* green, unsigned char* blue) = 0;
 
-void iupmotColorInit(void)
+IUP_DRV_API void iupmotColorInit(void)
 {
   int depth = iupdrvGetScreenDepth();
 
@@ -346,7 +346,7 @@ void iupmotColorInit(void)
   }
 }
 
-void iupmotColorFinish(void)
+IUP_DRV_API void iupmotColorFinish(void)
 {
   if (mot_color.colormap)
   {
@@ -365,12 +365,12 @@ void iupmotColorFinish(void)
   }
 }
 
-Colormap iupmotColorMap(void)
+IUP_DRV_API Colormap iupmotColorMap(void)
 {
   return mot_color.colormap;
 }
 
-unsigned long iupmotColorGetPixelStr(const char* color)
+IUP_DRV_API unsigned long iupmotColorGetPixelStr(const char* color)
 {
   unsigned char r, g, b;
   if (!iupStrToRGB(color, &r, &g, &b))

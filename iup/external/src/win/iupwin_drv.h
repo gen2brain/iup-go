@@ -25,49 +25,49 @@ extern HHOOK     iupwin_threadmsghook;  /* iupwin_open.c */
 /* open */
 IUP_DRV_API void iupwinShowLastError(void);
 IUP_DRV_API void iupwinSetInstance(HINSTANCE hInstance);
-void iupwinSetGlobalColors(void);
+IUP_DRV_API void iupwinSetGlobalColors(void);
 
 /* focus */
-void iupwinWmSetFocus(Ihandle *ih);
-int iupwinGetKeyBoardCues(void);
-void iupwinBringWindowToForeground(HWND hwnd);
+IUP_DRV_API void iupwinWmSetFocus(Ihandle *ih);
+IUP_DRV_API int iupwinGetKeyBoardCues(void);
+IUP_DRV_API void iupwinBringWindowToForeground(HWND hwnd);
 
 /* key */
-int iupwinKeyEvent(Ihandle* ih, int wincode, int press);
-void iupwinButtonKeySetStatus(WORD keys, char* status, int doubleclick);
-int iupwinKeyDecode(int wincode);
-void iupwinKeyInit(void);
+IUP_DRV_API int iupwinKeyEvent(Ihandle* ih, int wincode, int press);
+IUP_DRV_API void iupwinButtonKeySetStatus(WORD keys, char* status, int doubleclick);
+IUP_DRV_API int iupwinKeyDecode(int wincode);
+IUP_DRV_API void iupwinKeyInit(void);
 
 /* tips */
-void iupwinTipsGetDispInfo(LPARAM lp);
-void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd);
-void iupwinTipsDestroy(Ihandle* ih);
+IUP_DRV_API void iupwinTipsGetDispInfo(LPARAM lp);
+IUP_DRV_API void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd);
+IUP_DRV_API void iupwinTipsDestroy(Ihandle* ih);
 
 /* touch */
-void iupwinTouchInit(void);
-void iupwinTouchRegisterAttrib(Iclass* ic);
-void iupwinTouchProcessInput(Ihandle* ih, int count, void* lp);
+IUP_DRV_API void iupwinTouchInit(void);
+IUP_DRV_API void iupwinTouchRegisterAttrib(Iclass* ic);
+IUP_DRV_API void iupwinTouchProcessInput(Ihandle* ih, int count, void* lp);
 
 /* font */
-char* iupwinGetHFontAttrib(Ihandle *ih);
-HFONT iupwinGetHFont(const char* value);
-char* iupwinFindHFont(HFONT hFont);
+IUP_DRV_API char* iupwinGetHFontAttrib(Ihandle *ih);
+IUP_DRV_API HFONT iupwinGetHFont(const char* value);
+IUP_DRV_API char* iupwinFindHFont(HFONT hFont);
 
 /* DnD */
-int iupwinDragDetectStart(Ihandle* ih);
-void iupwinDropFiles(HDROP hDrop, Ihandle *ih);
-void iupwinDestroyDragDrop(Ihandle* ih);
+IUP_DRV_API int iupwinDragDetectStart(Ihandle* ih);
+IUP_DRV_API void iupwinDropFiles(HDROP hDrop, Ihandle *ih);
+IUP_DRV_API void iupwinDestroyDragDrop(Ihandle* ih);
 
 /* image */
-HBITMAP iupwinWdlLoadImageFile(const TCHAR* filename);
+IUP_DRV_API HBITMAP iupwinWdlLoadImageFile(const TCHAR* filename);
 
 /* menu */
-void iupwinMenuDialogProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp);
-Ihandle* iupwinMenuGetItemHandle(HMENU hmenu, int menuId);
-Ihandle* iupwinMenuGetHandle(HMENU hMenu);
+IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp);
+IUP_DRV_API Ihandle* iupwinMenuGetItemHandle(HMENU hmenu, int menuId);
+IUP_DRV_API Ihandle* iupwinMenuGetHandle(HMENU hMenu);
 
 /* loop */
-void iupwinSetCustomQuitMessage(int enable);
+IUP_DRV_API void iupwinSetCustomQuitMessage(int enable);
 
 
 /***************************/
@@ -100,23 +100,23 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
 
 /* Base IwinMsgProc callback used by native containers. 
    Handle messages that are sent to the parent Window.  */
-int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result);
+IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result);
 
 /* Base WinProc used by all native elements. Configure base message handling 
    and custom IwinMsgProc using "_IUPWIN_CTRLMSGPROC_CB" callback. */
 LRESULT CALLBACK iupwinBaseWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
-void iupwinChangeWndProc(Ihandle *ih, WNDPROC newProc);
+IUP_DRV_API void iupwinChangeWndProc(Ihandle *ih, WNDPROC newProc);
 
 IUP_DRV_API int iupwinButtonUp(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp);
 IUP_DRV_API int iupwinButtonDown(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp);
 IUP_DRV_API int iupwinMouseMove(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp);
-void iupwinTrackMouseLeave(Ihandle* ih);
-void iupwinRefreshCursor(Ihandle* ih);
+IUP_DRV_API void iupwinTrackMouseLeave(Ihandle* ih);
+IUP_DRV_API void iupwinRefreshCursor(Ihandle* ih);
 IUP_DRV_API void iupwinFlagButtonDown(Ihandle* ih, UINT msg);
 IUP_DRV_API int iupwinFlagButtonUp(Ihandle* ih, UINT msg);
 
-int iupwinListDND(Ihandle *ih, UINT uNotification, POINT pt);
+IUP_DRV_API int iupwinListDND(Ihandle *ih, UINT uNotification, POINT pt);
 
 #ifdef USE_WINHOOKPOST
 LRESULT CALLBACK iupwinPostMessageFilterProc(int code, WPARAM wParam, LPARAM lParam);
@@ -127,42 +127,42 @@ LRESULT CALLBACK iupwinPostMessageFilterProc(int code, WPARAM wParam, LPARAM lPa
 /* Window Management */
 /*********************/
 
-HWND iupwinCreateWindowEx(HWND hParent, LPCTSTR lpClassName, DWORD dwExStyle, DWORD dwStyle, int serial, void* clientdata);
+IUP_DRV_API HWND iupwinCreateWindowEx(HWND hParent, LPCTSTR lpClassName, DWORD dwExStyle, DWORD dwStyle, int serial, void* clientdata);
 
 /* Creates the Window with native parent and child ID, associate HWND with Ihandle*, 
    and replace the WinProc by iupwinBaseWndProc */
 IUP_DRV_API int iupwinCreateWindow(Ihandle* ih, LPCTSTR lpClassName, DWORD dwExStyle, DWORD dwStyle, void* clientdata);
 
-void iupwinGetNativeParentStyle(Ihandle* ih, DWORD *dwExStyle, DWORD *dwStyle);
-void iupwinMergeStyle(Ihandle* ih, DWORD old_mask, DWORD value);
-void iupwinSetStyle(Ihandle* ih, DWORD value, int set);
+IUP_DRV_API void iupwinGetNativeParentStyle(Ihandle* ih, DWORD *dwExStyle, DWORD *dwStyle);
+IUP_DRV_API void iupwinMergeStyle(Ihandle* ih, DWORD old_mask, DWORD value);
+IUP_DRV_API void iupwinSetStyle(Ihandle* ih, DWORD value, int set);
 
-void iupwinTitleBarThemeColor(HWND hwnd);
+IUP_DRV_API void iupwinTitleBarThemeColor(HWND hwnd);
 
-int iupwinClassExist(const TCHAR* name);
+IUP_DRV_API int iupwinClassExist(const TCHAR* name);
 
 
 /*********************/
 /*      Utilities    */
 /*********************/
 
-int iupwinIsScrollbarVisible(Ihandle* ih, int flag);
-char* iupwinGetScrollVisibleAttrib(Ihandle* ih);
-                                                
-int iupwinSetTitleAttrib(Ihandle* ih, const char* value);
-TCHAR* iupwinGetWindowText(HWND hWnd);
+IUP_DRV_API int iupwinIsScrollbarVisible(Ihandle* ih, int flag);
+IUP_DRV_API char* iupwinGetScrollVisibleAttrib(Ihandle* ih);
 
-HCURSOR iupwinGetCursor(Ihandle* ih, const char* name);
+IUP_DRV_API int iupwinSetTitleAttrib(Ihandle* ih, const char* value);
+IUP_DRV_API TCHAR* iupwinGetWindowText(HWND hWnd);
 
-int iupwinGetColorRef(Ihandle *ih, char *name, COLORREF *color);
-int iupwinGetParentBgColor(Ihandle* ih, COLORREF* cr);
+IUP_DRV_API HCURSOR iupwinGetCursor(Ihandle* ih, const char* name);
 
-int iupwinSetAutoRedrawAttrib(Ihandle* ih, const char* value);
-void iupwinSetMnemonicTitle(Ihandle *ih, int pos, const char* value);
+IUP_DRV_API int iupwinGetColorRef(Ihandle *ih, char *name, COLORREF *color);
+IUP_DRV_API int iupwinGetParentBgColor(Ihandle* ih, COLORREF* cr);
 
-void iupwinDrawFocusRect(HDC hDC, int x, int y, int w, int h);
+IUP_DRV_API int iupwinSetAutoRedrawAttrib(Ihandle* ih, const char* value);
+IUP_DRV_API void iupwinSetMnemonicTitle(Ihandle *ih, int pos, const char* value);
 
-int iupwinGetScreenRes(void);
+IUP_DRV_API void iupwinDrawFocusRect(HDC hDC, int x, int y, int w, int h);
+
+IUP_DRV_API int iupwinGetScreenRes(void);
 /* 1 point = 1/72 inch */
 /* pixel = (point/72)*(pixel/inch) */
 #define iupWIN_PT2PIXEL(_pt, _res)    MulDiv(_pt, _res, 72)     /* (((_pt)*(_res))/72)    */

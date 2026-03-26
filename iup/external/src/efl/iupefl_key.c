@@ -143,14 +143,14 @@ static int eflKeyApplyModifiers(int code, Efl_Input_Key* key_event)
   return code;
 }
 
-void iupeflKeyEncode(int key, const char** keyname, const char** keystr)
+IUP_DRV_API void iupeflKeyEncode(int key, const char** keyname, const char** keystr)
 {
   (void)key;
   *keyname = NULL;
   *keystr = NULL;
 }
 
-void iupeflButtonKeySetStatus(Evas_Modifier* modifiers, unsigned int button, char* status, int doubleclick)
+IUP_DRV_API void iupeflButtonKeySetStatus(Evas_Modifier* modifiers, unsigned int button, char* status, int doubleclick)
 {
   if (modifiers)
   {
@@ -179,7 +179,7 @@ void iupeflButtonKeySetStatus(Evas_Modifier* modifiers, unsigned int button, cha
     iupKEY_SETDOUBLE(status);
 }
 
-void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Key* key_event = ev->info;
@@ -235,7 +235,7 @@ void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
   }
 }
 
-void iupeflKeyUpEvent(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflKeyUpEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Key* key_event = ev->info;

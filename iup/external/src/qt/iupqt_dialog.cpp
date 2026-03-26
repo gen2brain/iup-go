@@ -297,7 +297,7 @@ protected:
  * Dialog Event Handlers
  ****************************************************************************/
 
-extern "C" int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
+IUP_DRV_API int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
 {
   Icallback cb;
   (void)widget;

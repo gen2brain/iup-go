@@ -49,7 +49,7 @@ static void eflMenuStoreMnemonic(Ihandle* menu_bar, char mnemonic, Elm_Object_It
   }
 }
 
-Elm_Object_Item* iupeflMenuFindMnemonic(Ihandle* ih, char key)
+IUP_DRV_API Elm_Object_Item* iupeflMenuFindMnemonic(Ihandle* ih, char key)
 {
   Ihandle* dialog;
   Ihandle* menu_bar;

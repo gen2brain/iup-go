@@ -29,7 +29,7 @@
 #include "iupwin_str.h"
 
 
-Ihandle* iupwinMenuGetHandle(HMENU hMenu)
+IUP_DRV_API Ihandle* iupwinMenuGetHandle(HMENU hMenu)
 {
   MENUINFO menuinfo;
   menuinfo.cbSize = sizeof(MENUINFO);
@@ -40,7 +40,7 @@ Ihandle* iupwinMenuGetHandle(HMENU hMenu)
     return NULL;
 }
 
-Ihandle* iupwinMenuGetItemHandle(HMENU hMenu, int menuId)
+IUP_DRV_API Ihandle* iupwinMenuGetItemHandle(HMENU hMenu, int menuId)
 {
   MENUITEMINFO menuiteminfo;
   menuiteminfo.cbSize = sizeof(MENUITEMINFO);
@@ -107,7 +107,7 @@ static void winItemCheckToggle(Ihandle* ih)
   }
 }
 
-void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, LPARAM lp)
+IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, LPARAM lp)
 {
   /* called only from winDialogBaseProc */
 

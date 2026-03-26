@@ -12,11 +12,11 @@ extern "C" {
 #endif
 
 /* returns a brush from the brush cache. */
-HBRUSH iupwinBrushGet(COLORREF c);
+IUP_DRV_API HBRUSH iupwinBrushGet(COLORREF c);
 
 /* initializes the brush cache */
-void iupwinBrushInit(void);
-void iupwinBrushFinish(void);
+IUP_DRV_API void iupwinBrushInit(void);
+IUP_DRV_API void iupwinBrushFinish(void);
 
 
 #ifdef __cplusplus

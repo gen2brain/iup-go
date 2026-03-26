@@ -1998,7 +1998,7 @@ static void iupgtkTableDetachVirtualModelsRecursive(Ihandle* ih)
   }
 }
 
-void iupgtkTableDetachVirtualModels(Ihandle* dialog)
+IUP_DRV_API void iupgtkTableDetachVirtualModels(Ihandle* dialog)
 {
   iupgtkTableDetachVirtualModelsRecursive(dialog);
 }

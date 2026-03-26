@@ -32,7 +32,7 @@ static int iupwin_utf8mode = 0;    /* default is NOT using UTF-8 */
 static int iupwin_utf8mode_file = 0;  
 
 
-void iupwinStrSetUTF8Mode(int utf8mode)
+IUP_DRV_API void iupwinStrSetUTF8Mode(int utf8mode)
 {
 #ifdef UNICODE   /* can not set if not Unicode */
   iupwin_utf8mode = utf8mode;
@@ -41,7 +41,7 @@ void iupwinStrSetUTF8Mode(int utf8mode)
 #endif
 }
 
-void iupwinStrSetUTF8ModeFile(int utf8mode)
+IUP_DRV_API void iupwinStrSetUTF8ModeFile(int utf8mode)
 {
 #ifdef UNICODE   /* can not set if not Unicode */
   iupwin_utf8mode_file = utf8mode;
@@ -50,12 +50,12 @@ void iupwinStrSetUTF8ModeFile(int utf8mode)
 #endif
 }
 
-int iupwinStrGetUTF8Mode(void)
+IUP_DRV_API int iupwinStrGetUTF8Mode(void)
 {
   return iupwin_utf8mode;
 }
 
-int iupwinStrGetUTF8ModeFile(void)
+IUP_DRV_API int iupwinStrGetUTF8ModeFile(void)
 {
   return iupwin_utf8mode_file;
 }
@@ -120,7 +120,7 @@ static void* winStrGetMemory(int size)
 #undef MAX_BUFFERS
 }
 
-void iupwinStrRelease(void)
+IUP_DRV_API void iupwinStrRelease(void)
 {
   winStrGetMemory(-1);
 }
@@ -185,7 +185,7 @@ IUP_DRV_API char* iupwinStrWide2Char(const WCHAR* wstr)
   return NULL;
 }
 
-void iupwinStrCopy(TCHAR* dst_wstr, const char* src_str, int max_size)
+IUP_DRV_API void iupwinStrCopy(TCHAR* dst_wstr, const char* src_str, int max_size)
 {
   if (src_str)
   {

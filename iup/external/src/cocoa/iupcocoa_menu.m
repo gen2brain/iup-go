@@ -629,7 +629,7 @@ static void cocoaMenuSynchronizeStandardMenus(NSMenu* menuBar)
 
 
 /* Ensures that a default application menu exists and is set if no other menu is active. */
-void iupcocoaEnsureDefaultApplicationMenu(void)
+IUP_DRV_API void iupcocoaEnsureDefaultApplicationMenu(void)
 {
   if (s_defaultApplicationMenu == nil)
   {
@@ -656,20 +656,20 @@ void iupcocoaEnsureDefaultApplicationMenu(void)
   }
 }
 
-Ihandle* iupcocoaMenuGetApplicationMenu(void)
+IUP_DRV_API Ihandle* iupcocoaMenuGetApplicationMenu(void)
 {
   return s_currentIupApplicationMenu;
 }
 
 /* Checks if the given Ihandle is the currently active application menu bar. */
-int iupcocoaMenuIsApplicationBar(Ihandle* ih)
+IUP_DRV_API int iupcocoaMenuIsApplicationBar(Ihandle* ih)
 {
   int result = (ih != NULL && ih == s_currentIupApplicationMenu);
   return result;
 }
 
 /* Called during iupdrvClose to clean up resources. */
-void iupcocoaMenuCleanupApplicationMenu(void)
+IUP_DRV_API void iupcocoaMenuCleanupApplicationMenu(void)
 {
   s_currentIupApplicationMenu = NULL;
 
@@ -686,7 +686,7 @@ void iupcocoaMenuCleanupApplicationMenu(void)
 
 /* Sets the given Ihandle (IupMenu) as the application's main menu bar.
    This is the central function for switching the application menu. */
-void iupcocoaMenuSetApplicationMenu(Ihandle* ih)
+IUP_DRV_API void iupcocoaMenuSetApplicationMenu(Ihandle* ih)
 {
   if (ih && s_currentIupApplicationMenu == ih) {
     return;

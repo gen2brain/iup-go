@@ -45,7 +45,7 @@ static bool cocoaGetByteRGBAFromNSColor(NSColor* ns_color, unsigned char* red, u
   }
 }
 
-void iupcocoaSetGlobalColors(void)
+IUP_DRV_API void iupcocoaSetGlobalColors(void)
 {
   unsigned char r, g, b, a;
 

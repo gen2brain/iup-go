@@ -197,7 +197,7 @@ static IwinuiFont* winuiFontGet(Ihandle* ih)
   return winfont;
 }
 
-extern "C" void iupwinuiFontInit(void)
+IUP_DRV_API void iupwinuiFontInit(void)
 {
   HRESULT hr = DWriteCreateFactory(
     DWRITE_FACTORY_TYPE_SHARED,
@@ -212,7 +212,7 @@ extern "C" void iupwinuiFontInit(void)
   ReleaseDC(NULL, hdc);
 }
 
-extern "C" void iupwinuiFontFinish(void)
+IUP_DRV_API void iupwinuiFontFinish(void)
 {
   for (size_t i = 0; i < winui_fonts.size(); i++)
   {
@@ -441,7 +441,7 @@ extern "C" IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_widt
     *descent = winfont->descent;
 }
 
-extern "C" float iupwinuiFontGetMultilineLineHeightF(Ihandle* ih)
+IUP_DRV_API float iupwinuiFontGetMultilineLineHeightF(Ihandle* ih)
 {
   IwinuiFont* winfont = winuiFontGet(ih);
   if (!winfont)
@@ -490,7 +490,7 @@ static bool winuiGetFontProps(Ihandle* ih, WinUIFontProps* props)
   return true;
 }
 
-void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Control control)
+IUP_DRV_API void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Control control)
 {
   if (!ih || !control)
     return;
@@ -513,7 +513,7 @@ void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls
     control.FontStyle(winrt::Windows::UI::Text::FontStyle::Normal);
 }
 
-void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock)
+IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock)
 {
   if (!ih || !textBlock)
     return;

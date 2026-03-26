@@ -69,7 +69,7 @@ static int winDrawThemeEnabled(void)
   return winThemeOpenData? 1: 0;
 }
 
-void iupwinDrawThemeInit(void)
+IUP_DRV_API void iupwinDrawThemeInit(void)
 {
   if (!winAlphaBlend)
   {
@@ -142,7 +142,7 @@ static int winDrawTheme3StateButton(HWND hWnd, HDC hDC, RECT *rect)
   return 1;
 }
 
-void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)
+IUP_DRV_API void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)
 {
   int iStateId = GBS_NORMAL;
   HTHEME hTheme;
@@ -162,7 +162,7 @@ void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)
   winThemeCloseData(hTheme);
 }
 
-int iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF *color)
+IUP_DRV_API int iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF *color)
 {
   HTHEME hTheme;
   HRESULT ret;
@@ -183,7 +183,7 @@ int iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF *color)
   return (ret == S_OK)? 1: 0;
 }
 
-int iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF *color)
+IUP_DRV_API int iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF *color)
 {
   HTHEME hTheme;
   HRESULT ret;
@@ -201,7 +201,7 @@ int iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF *color)
   return (ret == S_OK)? 1: 0;
 }
 
-int iupwinDrawGetThemeFrameFgColor(HWND hWnd, COLORREF *color)
+IUP_DRV_API int iupwinDrawGetThemeFrameFgColor(HWND hWnd, COLORREF *color)
 {
   HTHEME hTheme;
   HRESULT ret;
@@ -219,7 +219,7 @@ int iupwinDrawGetThemeFrameFgColor(HWND hWnd, COLORREF *color)
   return (ret == S_OK)? 1: 0;
 }
 
-void iupwinDrawRemoveTheme(HWND hwnd)
+IUP_DRV_API void iupwinDrawRemoveTheme(HWND hwnd)
 {
   typedef HRESULT (STDAPICALLTYPE *winSetWindowTheme)(HWND hwnd, LPCWSTR pszSubAppName, LPCWSTR pszSubIdList);
   static winSetWindowTheme mySetWindowTheme = NULL;
@@ -240,7 +240,7 @@ void iupwinDrawRemoveTheme(HWND hwnd)
 *******************************************************************************/
 
 
-void iupwinDrawText(HDC hDC, const char* text, int x, int y, int width, int height, HFONT hFont, COLORREF fgcolor, int style)
+IUP_DRV_API void iupwinDrawText(HDC hDC, const char* text, int x, int y, int width, int height, HFONT hFont, COLORREF fgcolor, int style)
 {
   COLORREF oldcolor;
   RECT rect;
@@ -262,7 +262,7 @@ void iupwinDrawText(HDC hDC, const char* text, int x, int y, int width, int heig
   SetBkMode(hDC, OPAQUE);
 }
 
-void iupwinDrawBitmap(HDC hDC, HBITMAP hBitmap, int x, int y, int w, int h, int img_w, int img_h, int bpp)
+IUP_DRV_API void iupwinDrawBitmap(HDC hDC, HBITMAP hBitmap, int x, int y, int w, int h, int img_w, int img_h, int bpp)
 {
   HDC hMemDC = CreateCompatibleDC(hDC);
   HBITMAP oldBitmap = (HBITMAP)SelectObject(hMemDC, hBitmap);
@@ -301,7 +301,7 @@ static int winDrawGetStateId(int itemState)
     return 0;   
 }
 
-void iupwinDrawButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)
+IUP_DRV_API void iupwinDrawButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)
 {
   if (!winDrawThemeButtonBorder(hWnd, hDC, rect, itemState))
   {
@@ -311,7 +311,7 @@ void iupwinDrawButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)
   }
 }
 
-void iupwinDraw3StateButton(HWND hWnd, HDC hDC, RECT *rect)
+IUP_DRV_API void iupwinDraw3StateButton(HWND hWnd, HDC hDC, RECT *rect)
 {
   if (!winDrawTheme3StateButton(hWnd, hDC, rect))
   {
@@ -324,7 +324,7 @@ void iupwinDraw3StateButton(HWND hWnd, HDC hDC, RECT *rect)
   }
 }
 
-void iupwinDrawParentBackground(Ihandle* ih, HDC hDC, RECT* rect)
+IUP_DRV_API void iupwinDrawParentBackground(Ihandle* ih, HDC hDC, RECT* rect)
 {
   char* color_str = iupBaseNativeParentGetBgColorAttrib(ih);
   long color = iupDrawStrToColor(color_str, 0);
@@ -332,7 +332,7 @@ void iupwinDrawParentBackground(Ihandle* ih, HDC hDC, RECT* rect)
   FillRect(hDC, rect, (HBRUSH)GetStockObject(DC_BRUSH));
 }
 
-HDC iupwinDrawCreateBitmapDC(iupwinBitmapDC *bmpDC, HDC hDC, int x, int y, int w, int h)
+IUP_DRV_API HDC iupwinDrawCreateBitmapDC(iupwinBitmapDC *bmpDC, HDC hDC, int x, int y, int w, int h)
 {
   bmpDC->x = x;
   bmpDC->y = y;
@@ -346,7 +346,7 @@ HDC iupwinDrawCreateBitmapDC(iupwinBitmapDC *bmpDC, HDC hDC, int x, int y, int w
   return bmpDC->hBitmapDC;
 }
 
-void iupwinDrawDestroyBitmapDC(iupwinBitmapDC *bmpDC)
+IUP_DRV_API void iupwinDrawDestroyBitmapDC(iupwinBitmapDC *bmpDC)
 {
   BitBlt(bmpDC->hDC, bmpDC->x, bmpDC->y, bmpDC->w, bmpDC->h, bmpDC->hBitmapDC, 0, 0, SRCCOPY);
   SelectObject(bmpDC->hBitmapDC, bmpDC->hOldBitmap);
@@ -354,7 +354,7 @@ void iupwinDrawDestroyBitmapDC(iupwinBitmapDC *bmpDC)
   DeleteDC(bmpDC->hBitmapDC);  /* to match CreateCompatibleDC */
 }
 
-int iupwinCustomDrawToDrawItem(Ihandle* ih, NMHDR* msg_info, int *result, IFdrawItem drawitem_cb)
+IUP_DRV_API int iupwinCustomDrawToDrawItem(Ihandle* ih, NMHDR* msg_info, int *result, IFdrawItem drawitem_cb)
 {
   NMCUSTOMDRAW *customdraw = (NMCUSTOMDRAW*)msg_info;
 

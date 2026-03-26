@@ -35,7 +35,7 @@ using namespace Windows::Foundation;
  * Color Management
  ****************************************************************************/
 
-extern "C" void iupwinuiSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
+IUP_DRV_API void iupwinuiSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
 {
   if (!handle)
     return;
@@ -54,7 +54,7 @@ extern "C" void iupwinuiSetBgColor(InativeHandle* handle, unsigned char r, unsig
   }
 }
 
-extern "C" void iupwinuiSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
+IUP_DRV_API void iupwinuiSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
 {
   if (!handle)
     return;
@@ -77,7 +77,7 @@ extern "C" void iupwinuiSetFgColor(InativeHandle* handle, unsigned char r, unsig
  * Widget Management
  ****************************************************************************/
 
-extern "C" void iupwinuiAddToParent(Ihandle* ih)
+IUP_DRV_API void iupwinuiAddToParent(Ihandle* ih)
 {
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return;
@@ -375,7 +375,7 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
   return 1;
 }
 
-void iupwinuiCanvasCallAction(Ihandle* ih)
+IUP_DRV_API void iupwinuiCanvasCallAction(Ihandle* ih)
 {
   IFn cb = (IFn)IupGetCallback(ih, "ACTION");
   if (cb && !(ih->data->inside_resize) && ih->currentwidth > 0 && ih->currentheight > 0)
@@ -845,7 +845,7 @@ extern "C" IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "TIPRECT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
 }
 
-Canvas iupwinuiGetParentCanvas(Ihandle* ih)
+IUP_DRV_API Canvas iupwinuiGetParentCanvas(Ihandle* ih)
 {
   Ihandle* parent = iupChildTreeGetNativeParent(ih);
   if (!parent || !parent->handle)
@@ -894,7 +894,7 @@ Canvas iupwinuiGetParentCanvas(Ihandle* ih)
  * String Conversion (UTF-8/UTF-16)
  ****************************************************************************/
 
-hstring iupwinuiStringToHString(const char* str)
+IUP_DRV_API hstring iupwinuiStringToHString(const char* str)
 {
   if (!str || !str[0])
     return hstring();
@@ -909,7 +909,7 @@ hstring iupwinuiStringToHString(const char* str)
   return hstring(wstr);
 }
 
-char* iupwinuiHStringToString(const hstring& str)
+IUP_DRV_API char* iupwinuiHStringToString(const hstring& str)
 {
   if (str.empty())
     return NULL;
@@ -924,7 +924,7 @@ char* iupwinuiHStringToString(const hstring& str)
   return buf;
 }
 
-std::wstring iupwinuiStringToWString(const char* str)
+IUP_DRV_API std::wstring iupwinuiStringToWString(const char* str)
 {
   if (!str || !str[0])
     return std::wstring();
@@ -939,7 +939,7 @@ std::wstring iupwinuiStringToWString(const char* str)
   return wstr;
 }
 
-hstring iupwinuiProcessMnemonic(const char* str, char* c)
+IUP_DRV_API hstring iupwinuiProcessMnemonic(const char* str, char* c)
 {
   if (c)
     *c = 0;

@@ -291,12 +291,12 @@ static int g_tray_last_dclick = 0;
 }
 @end
 
-int iupcocoaTrayGetLastButton(void)
+IUP_DRV_API int iupcocoaTrayGetLastButton(void)
 {
   return g_tray_last_button;
 }
 
-int iupcocoaTrayGetLastDclick(void)
+IUP_DRV_API int iupcocoaTrayGetLastDclick(void)
 {
   return g_tray_last_dclick;
 }

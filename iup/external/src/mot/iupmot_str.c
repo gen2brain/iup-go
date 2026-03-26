@@ -130,7 +130,7 @@ static char* motStrFromUTF8(const char* str, const char* charset)
 }
 #endif
 
-void iupmotStrSetUTF8Mode(int utf8mode)
+IUP_DRV_API void iupmotStrSetUTF8Mode(int utf8mode)
 {
   iupmot_utf8mode = utf8mode;
   if (utf8mode && !motStrIsLocaleUTF8())
@@ -147,22 +147,22 @@ void iupmotStrSetUTF8Mode(int utf8mode)
   }
 }
 
-void iupmotStrSetUTF8ModeFile(int utf8mode)
+IUP_DRV_API void iupmotStrSetUTF8ModeFile(int utf8mode)
 {
   iupmot_utf8mode_file = utf8mode;
 }
 
-int iupmotStrGetUTF8Mode(void)
+IUP_DRV_API int iupmotStrGetUTF8Mode(void)
 {
   return iupmot_utf8mode;
 }
 
-int iupmotStrGetUTF8ModeFile(void)
+IUP_DRV_API int iupmotStrGetUTF8ModeFile(void)
 {
   return iupmot_utf8mode_file;
 }
 
-void iupmotStrRelease(void)
+IUP_DRV_API void iupmotStrRelease(void)
 {
   if (motLastConvertUTF8)
   {
@@ -171,7 +171,7 @@ void iupmotStrRelease(void)
   }
 }
 
-char* iupmotStrConvertToSystem(const char* str)
+IUP_DRV_API char* iupmotStrConvertToSystem(const char* str)
 {
   const char* charset = NULL;
 
@@ -208,7 +208,7 @@ char* iupmotStrConvertToSystem(const char* str)
 #endif
 }
 
-char* iupmotStrConvertFromSystem(const char* str)
+IUP_DRV_API char* iupmotStrConvertFromSystem(const char* str)
 {
   const char* charset = NULL;
 
@@ -245,7 +245,7 @@ char* iupmotStrConvertFromSystem(const char* str)
 #endif
 }
 
-char* iupmotStrConvertToFilename(const char* str)
+IUP_DRV_API char* iupmotStrConvertToFilename(const char* str)
 {
   int old_mode = iupmot_utf8mode;
   char* result;
@@ -259,7 +259,7 @@ char* iupmotStrConvertToFilename(const char* str)
   return result;
 }
 
-char* iupmotStrConvertFromFilename(const char* str)
+IUP_DRV_API char* iupmotStrConvertFromFilename(const char* str)
 {
   int old_mode = iupmot_utf8mode;
   char* result;
@@ -273,7 +273,7 @@ char* iupmotStrConvertFromFilename(const char* str)
   return result;
 }
 
-void iupmotSetMnemonicTitle(Ihandle *ih, Widget w, int pos, const char* value)
+IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle *ih, Widget w, int pos, const char* value)
 {
   char c;
   char* str;
@@ -303,14 +303,14 @@ void iupmotSetMnemonicTitle(Ihandle *ih, Widget w, int pos, const char* value)
   }
 }
 
-void iupmotSetXmString(Widget w, const char *resource, const char* value)
+IUP_DRV_API void iupmotSetXmString(Widget w, const char *resource, const char* value)
 {
   XmString xm_str = iupmotStringCreate(value);
   XtVaSetValues(w, resource, xm_str, NULL);
   XmStringFree(xm_str);
 }
 
-char* iupmotGetXmString(XmString str)
+IUP_DRV_API char* iupmotGetXmString(XmString str)
 {
   char* text;
 
@@ -327,7 +327,7 @@ char* iupmotGetXmString(XmString str)
   return text;
 }
 
-char* iupmotReturnXmString(XmString str)
+IUP_DRV_API char* iupmotReturnXmString(XmString str)
 {
   char* text;
   char* converted;
@@ -359,7 +359,7 @@ char* iupmotReturnXmString(XmString str)
   return ret;
 }
 
-XmString iupmotStringCreate(const char *value)
+IUP_DRV_API XmString iupmotStringCreate(const char *value)
 {
   int use_utf8 = 0;
 
@@ -381,14 +381,14 @@ XmString iupmotStringCreate(const char *value)
   }
 }
 
-void iupmotSetTitle(Widget w, const char *value)
+IUP_DRV_API void iupmotSetTitle(Widget w, const char *value)
 {
   XtVaSetValues(w, XmNtitle, value, 
                    XmNiconName, value, 
                    NULL);
 }
 
-void iupmotTextSetString(Widget w, const char *value)
+IUP_DRV_API void iupmotTextSetString(Widget w, const char *value)
 {
   value = iupmotStrConvertToSystem(value);
   XmTextSetString(w, (char*)value);

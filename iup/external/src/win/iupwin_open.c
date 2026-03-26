@@ -83,7 +83,7 @@ static void winSetGlobalColor(int index, const char* name)
                                        (int)GetBValue(color));
 }
 
-void iupwinSetGlobalColors(void)
+IUP_DRV_API void iupwinSetGlobalColors(void)
 {
   winSetGlobalColor(COLOR_BTNFACE, "DLGBGCOLOR");
   winSetGlobalColor(COLOR_BTNTEXT, "DLGFGCOLOR");

@@ -225,13 +225,13 @@ static void gtkFontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescrip
   }
 }
 
-void iupgtkUpdateWidgetFont(Ihandle *ih, GtkWidget* widget)
+IUP_DRV_API void iupgtkUpdateWidgetFont(Ihandle *ih, GtkWidget* widget)
 {
   PangoFontDescription* fontdesc = (PangoFontDescription*)iupgtkGetPangoFontDescAttrib(ih);
   gtkFontUpdateWidget(ih, widget, fontdesc);
 }
 
-void iupgtkUpdateObjectFont(Ihandle* ih, gpointer object)
+IUP_DRV_API void iupgtkUpdateObjectFont(Ihandle* ih, gpointer object)
 {
   PangoAttrList *attrs;
 
@@ -298,7 +298,7 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
   return str;
 }
 
-PangoLayout* iupgtkGetPangoLayout(const char* value)
+IUP_DRV_API PangoLayout* iupgtkGetPangoLayout(const char* value)
 {
   IgtkFont *gtkfont = gtkFindFont(value);
   if (gtkfont)
@@ -307,7 +307,7 @@ PangoLayout* iupgtkGetPangoLayout(const char* value)
     return NULL;
 }
 
-char* iupgtkGetPangoLayoutAttrib(Ihandle *ih)
+IUP_DRV_API char* iupgtkGetPangoLayoutAttrib(Ihandle *ih)
 {
   IgtkFont* gtkfont = gtkFontGet(ih);
   if (gtkfont)
@@ -316,7 +316,7 @@ char* iupgtkGetPangoLayoutAttrib(Ihandle *ih)
     return NULL;
 }
 
-PangoFontDescription* iupgtkGetPangoFontDesc(const char* value)
+IUP_DRV_API PangoFontDescription* iupgtkGetPangoFontDesc(const char* value)
 {
   IgtkFont *gtkfont = gtkFindFont(value);
   if (gtkfont)
@@ -325,7 +325,7 @@ PangoFontDescription* iupgtkGetPangoFontDesc(const char* value)
     return NULL;
 }
 
-char* iupgtkGetPangoFontDescAttrib(Ihandle *ih)
+IUP_DRV_API char* iupgtkGetPangoFontDescAttrib(Ihandle *ih)
 {
   IgtkFont* gtkfont = gtkFontGet(ih);
   if (gtkfont)
@@ -334,7 +334,7 @@ char* iupgtkGetPangoFontDescAttrib(Ihandle *ih)
     return NULL;
 }
 
-char* iupgtkGetFontIdAttrib(Ihandle *ih)
+IUP_DRV_API char* iupgtkGetFontIdAttrib(Ihandle *ih)
 {
   /* Used by IupGLCanvas for IupGLUseFont */
   IgtkFont* gtkfont = gtkFontGet(ih);

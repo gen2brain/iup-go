@@ -98,7 +98,7 @@ static HTREEITEM winTreeFindNodeXY(Ihandle* ih, int x, int y)
   return (HTREEITEM)SendMessage(ih->handle, TVM_HITTEST, 0, (LPARAM)(LPTVHITTESTINFO)&info);
 }
 
-int iupwinGetColor(const char* value, COLORREF *color)
+IUP_DRV_API int iupwinGetColor(const char* value, COLORREF *color)
 {
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))

@@ -1535,7 +1535,7 @@ static void eflTextMeasureBorders(void)
   efl_del(temp_win);
 }
 
-void iupeflTextGetBorder(int* border_x, int* border_y)
+IUP_DRV_API void iupeflTextGetBorder(int* border_x, int* border_y)
 {
   eflTextMeasureBorders();
 

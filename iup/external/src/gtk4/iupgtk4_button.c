@@ -245,7 +245,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   }
 }
 
-void iupgtk4ButtonApplyImagePadding(GtkWidget* widget)
+IUP_DRV_API void iupgtk4ButtonApplyImagePadding(GtkWidget* widget)
 {
   if (!gtk4_button_padding_measured)
     gtk4ButtonMeasurePadding();

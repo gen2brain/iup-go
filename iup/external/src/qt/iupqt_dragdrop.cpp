@@ -474,7 +474,7 @@ static int qtDragDropSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
   return qtDragDropSetDropTargetAttrib(ih, value);
 }
 
-extern "C" void iupqtDragDropCleanup(Ihandle* ih)
+IUP_DRV_API void iupqtDragDropCleanup(Ihandle* ih)
 {
   IupQtDragDropData* dd_data = (IupQtDragDropData*)iupAttribGet(ih, "_IUPQT_DRAGDROP_DATA");
 

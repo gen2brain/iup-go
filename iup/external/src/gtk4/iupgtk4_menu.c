@@ -260,7 +260,7 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
   return menu;
 }
 
-void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu)
+IUP_DRV_API void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu)
 {
   GMenu* menubar_model;
   GSimpleActionGroup* action_group;

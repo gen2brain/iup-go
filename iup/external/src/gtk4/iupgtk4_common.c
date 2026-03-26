@@ -150,7 +150,7 @@ static void gtk4CssRebuildAndApply(void)
     gtk4_css_idle_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE, gtk4CssIdleRebuild, NULL, NULL);
 }
 
-void iupgtk4CssFlush(void)
+IUP_DRV_API void iupgtk4CssFlush(void)
 {
   if (gtk4_css_idle_id)
   {
@@ -189,7 +189,7 @@ static Igtk4WidgetStyle* gtk4CssGetOrCreateWidgetStyle(GtkWidget* widget)
   return style;
 }
 
-void iupgtk4CssManagerInit(void)
+IUP_DRV_API void iupgtk4CssManagerInit(void)
 {
   GdkDisplay* display;
 
@@ -208,7 +208,7 @@ void iupgtk4CssManagerInit(void)
   gtk_style_context_add_provider_for_display(display, GTK_STYLE_PROVIDER(gtk4_css_provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
 }
 
-void iupgtk4CssManagerFinish(void)
+IUP_DRV_API void iupgtk4CssManagerFinish(void)
 {
   if (gtk4_css_idle_id)
   {
@@ -245,7 +245,7 @@ void iupgtk4CssManagerFinish(void)
   }
 }
 
-void iupgtk4CssSetWidgetBgColor(GtkWidget* widget, unsigned char r, unsigned char g, unsigned char b, int is_text)
+IUP_DRV_API void iupgtk4CssSetWidgetBgColor(GtkWidget* widget, unsigned char r, unsigned char g, unsigned char b, int is_text)
 {
   Igtk4WidgetStyle* style;
   GdkRGBA rgba;
@@ -269,7 +269,7 @@ void iupgtk4CssSetWidgetBgColor(GtkWidget* widget, unsigned char r, unsigned cha
   gtk4CssRebuildAndApply();
 }
 
-void iupgtk4CssSetWidgetFgColor(GtkWidget* widget, unsigned char r, unsigned char g, unsigned char b)
+IUP_DRV_API void iupgtk4CssSetWidgetFgColor(GtkWidget* widget, unsigned char r, unsigned char g, unsigned char b)
 {
   Igtk4WidgetStyle* style;
   GdkRGBA rgba;
@@ -291,7 +291,7 @@ void iupgtk4CssSetWidgetFgColor(GtkWidget* widget, unsigned char r, unsigned cha
   gtk4CssRebuildAndApply();
 }
 
-void iupgtk4CssSetWidgetPadding(GtkWidget* widget, int horiz, int vert)
+IUP_DRV_API void iupgtk4CssSetWidgetPadding(GtkWidget* widget, int horiz, int vert)
 {
   Igtk4WidgetStyle* style;
 
@@ -306,7 +306,7 @@ void iupgtk4CssSetWidgetPadding(GtkWidget* widget, int horiz, int vert)
   gtk4CssRebuildAndApply();
 }
 
-void iupgtk4CssSetWidgetFont(GtkWidget* widget, const char* font_css)
+IUP_DRV_API void iupgtk4CssSetWidgetFont(GtkWidget* widget, const char* font_css)
 {
   Igtk4WidgetStyle* style;
 
@@ -321,7 +321,7 @@ void iupgtk4CssSetWidgetFont(GtkWidget* widget, const char* font_css)
   gtk4CssRebuildAndApply();
 }
 
-void iupgtk4CssSetWidgetCustom(GtkWidget* widget, const char* css_property, const char* css_value)
+IUP_DRV_API void iupgtk4CssSetWidgetCustom(GtkWidget* widget, const char* css_property, const char* css_value)
 {
   Igtk4WidgetStyle* style;
 
@@ -336,7 +336,7 @@ void iupgtk4CssSetWidgetCustom(GtkWidget* widget, const char* css_property, cons
   gtk4CssRebuildAndApply();
 }
 
-void iupgtk4CssClearWidgetStyle(GtkWidget* widget)
+IUP_DRV_API void iupgtk4CssClearWidgetStyle(GtkWidget* widget)
 {
   char* class_name;
 
@@ -353,7 +353,7 @@ void iupgtk4CssClearWidgetStyle(GtkWidget* widget)
   }
 }
 
-void iupgtk4CssResetWidgetPadding(GtkWidget* widget)
+IUP_DRV_API void iupgtk4CssResetWidgetPadding(GtkWidget* widget)
 {
   Igtk4WidgetStyle* style;
 
@@ -369,7 +369,7 @@ void iupgtk4CssResetWidgetPadding(GtkWidget* widget)
   }
 }
 
-void iupgtk4CssResetWidgetCustom(GtkWidget* widget)
+IUP_DRV_API void iupgtk4CssResetWidgetCustom(GtkWidget* widget)
 {
   Igtk4WidgetStyle* style;
 
@@ -385,7 +385,7 @@ void iupgtk4CssResetWidgetCustom(GtkWidget* widget)
   }
 }
 
-void iupgtk4CssAddStaticRule(const char* selector, const char* css_rules)
+IUP_DRV_API void iupgtk4CssAddStaticRule(const char* selector, const char* css_rules)
 {
   if (!gtk4_css_provider)
     iupgtk4CssManagerInit();
@@ -638,39 +638,39 @@ static void iup_gtk4_fixed_move(iupGtk4Fixed* fixed, GtkWidget* widget, int x, i
   gtk_widget_queue_allocate(GTK_WIDGET(fixed));
 }
 
-GtkWidget* iupgtk4NativeContainerNew(void)
+IUP_DRV_API GtkWidget* iupgtk4NativeContainerNew(void)
 {
   return g_object_new(iup_gtk4_fixed_get_type(), NULL);
 }
 
-void iupgtk4NativeContainerSetIhandle(GtkWidget* container, Ihandle* ih)
+IUP_DRV_API void iupgtk4NativeContainerSetIhandle(GtkWidget* container, Ihandle* ih)
 {
   iupGtk4Fixed* fixed = (iupGtk4Fixed*)container;
   fixed->ih = ih;
 }
 
-void iupgtk4NativeContainerAdd(GtkWidget* container, GtkWidget* widget)
+IUP_DRV_API void iupgtk4NativeContainerAdd(GtkWidget* container, GtkWidget* widget)
 {
   iup_gtk4_fixed_put((iupGtk4Fixed*)container, widget, 0, 0);
 }
 
-void iupgtk4NativeContainerMove(GtkWidget* container, GtkWidget* widget, int x, int y)
+IUP_DRV_API void iupgtk4NativeContainerMove(GtkWidget* container, GtkWidget* widget, int x, int y)
 {
   /* Call with width=0, height=0 which means use preferred size */
   iup_gtk4_fixed_move((iupGtk4Fixed*)container, widget, x, y, 0, 0);
 }
 
-void iupgtk4NativeContainerSetBounds(GtkWidget* container, GtkWidget* widget, int x, int y, int width, int height)
+IUP_DRV_API void iupgtk4NativeContainerSetBounds(GtkWidget* container, GtkWidget* widget, int x, int y, int width, int height)
 {
   iup_gtk4_fixed_move((iupGtk4Fixed*)container, widget, x, y, width, height);
 }
 
-void iupgtk4FixedMove(iupGtk4Fixed* fixed, GtkWidget* widget, int x, int y)
+IUP_DRV_API void iupgtk4FixedMove(iupGtk4Fixed* fixed, GtkWidget* widget, int x, int y)
 {
   iup_gtk4_fixed_move(fixed, widget, x, y, 0, 0);
 }
 
-void iupgtk4NativeContainerSetBorder(GtkWidget* container, int enable)
+IUP_DRV_API void iupgtk4NativeContainerSetBorder(GtkWidget* container, int enable)
 {
   if (G_TYPE_CHECK_INSTANCE_TYPE(container, iup_gtk4_fixed_get_type()))
   {
@@ -719,12 +719,12 @@ static GtkWidget* gtk4GetNativeParent(Ihandle* ih)
   return widget;
 }
 
-const char* iupgtk4GetWidgetClassName(GtkWidget* widget)
+IUP_DRV_API const char* iupgtk4GetWidgetClassName(GtkWidget* widget)
 {
   return G_OBJECT_TYPE_NAME(widget);
 }
 
-void iupgtk4UpdateMnemonic(Ihandle* ih)
+IUP_DRV_API void iupgtk4UpdateMnemonic(Ihandle* ih)
 {
   GtkLabel* label = (GtkLabel*)iupAttribGet(ih, "_IUPGTK4_LABELMNEMONIC");
   if (label) gtk_label_set_mnemonic_widget(label, ih->handle);
@@ -791,7 +791,7 @@ IUP_DRV_API void iupgtk4AddToParent(Ihandle* ih)
   iupgtk4NativeContainerAdd(parent, widget);
 }
 
-void iupgtk4SetPosSize(GtkWidget* parent, GtkWidget* widget, int x, int y, int width, int height)
+IUP_DRV_API void iupgtk4SetPosSize(GtkWidget* parent, GtkWidget* widget, int x, int y, int width, int height)
 {
   /* Store both position and size in the Fixed container's child info */
   if (width > 0 && height > 0)
@@ -920,7 +920,7 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
   }
 }
 
-int iupgtk4SetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value)
+IUP_DRV_API int iupgtk4SetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value)
 {
   char c = '_';
   char* str;
@@ -1016,7 +1016,7 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
   gtk_widget_set_sensitive(ih->handle, enable);
 }
 
-void iupgtk4ColorSetRGB(GdkRGBA* color, unsigned char r, unsigned char g, unsigned char b)
+IUP_DRV_API void iupgtk4ColorSetRGB(GdkRGBA* color, unsigned char r, unsigned char g, unsigned char b)
 {
   color->red = iupgtk4ColorToDouble(r);
   color->green = iupgtk4ColorToDouble(g);
@@ -1024,7 +1024,7 @@ void iupgtk4ColorSetRGB(GdkRGBA* color, unsigned char r, unsigned char g, unsign
   color->alpha = 1.0;
 }
 
-void iupgtk4SetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
+IUP_DRV_API void iupgtk4SetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
 {
   int is_txt = 0;
 
@@ -1034,7 +1034,7 @@ void iupgtk4SetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, 
   iupgtk4CssSetWidgetBgColor(handle, r, g, b, is_txt);
 }
 
-void iupgtk4SetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
+IUP_DRV_API void iupgtk4SetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
 {
   iupgtk4CssSetWidgetFgColor(handle, r, g, b);
 }
@@ -1198,17 +1198,17 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
   (void)status;
 }
 
-void iupgtk4ClearSizeStyleCSS(GtkWidget* widget)
+IUP_DRV_API void iupgtk4ClearSizeStyleCSS(GtkWidget* widget)
 {
   iupgtk4CssClearWidgetStyle(widget);
 }
 
-void iupgtk4SetMargin(GtkWidget* widget, int horiz_padding, int vert_padding)
+IUP_DRV_API void iupgtk4SetMargin(GtkWidget* widget, int horiz_padding, int vert_padding)
 {
   iupgtk4CssSetWidgetPadding(widget, horiz_padding, vert_padding);
 }
 
-GdkSurface* iupgtk4GetSurface(GtkWidget* widget)
+IUP_DRV_API GdkSurface* iupgtk4GetSurface(GtkWidget* widget)
 {
   GtkNative* native;
 
@@ -1222,7 +1222,7 @@ GdkSurface* iupgtk4GetSurface(GtkWidget* widget)
   return gtk_native_get_surface(native);
 }
 
-void iupgtk4SurfaceGetPointer(GdkSurface* surface, double* x, double* y, GdkModifierType* mask)
+IUP_DRV_API void iupgtk4SurfaceGetPointer(GdkSurface* surface, double* x, double* y, GdkModifierType* mask)
 {
   GdkDevice* device;
 
@@ -1233,7 +1233,7 @@ void iupgtk4SurfaceGetPointer(GdkSurface* surface, double* x, double* y, GdkModi
   gdk_surface_get_device_position(surface, device, x, y, mask);
 }
 
-int iupgtk4IsSystemDarkMode(void)
+IUP_DRV_API int iupgtk4IsSystemDarkMode(void)
 {
 #if GTK_CHECK_VERSION(4, 20, 0)
   /* GTK 4.20+ has gtk-interface-color-scheme which is the system-wide setting */
@@ -1295,7 +1295,7 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
     gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_LABEL, title, -1);
 }
 
-int iupgtk4IsVisible(GtkWidget* widget)
+IUP_DRV_API int iupgtk4IsVisible(GtkWidget* widget)
 {
   if (!widget || !GTK_IS_WIDGET(widget))
     return 0;
@@ -1331,7 +1331,7 @@ static void gtk4LeaveNotify(GtkEventControllerMotion* controller, Ihandle* ih)
     cb(ih);
 }
 
-void iupgtk4SetupEnterLeaveEvents(GtkWidget* widget, Ihandle* ih)
+IUP_DRV_API void iupgtk4SetupEnterLeaveEvents(GtkWidget* widget, Ihandle* ih)
 {
   GtkEventController* motion_controller = gtk_event_controller_motion_new();
   gtk_widget_add_controller(widget, motion_controller);
@@ -1399,7 +1399,7 @@ static void gtk4MotionNotify(GtkEventControllerMotion* controller, double x, dou
   }
 }
 
-void iupgtk4SetupButtonEvents(GtkWidget* widget, Ihandle* ih)
+IUP_DRV_API void iupgtk4SetupButtonEvents(GtkWidget* widget, Ihandle* ih)
 {
   GtkGesture* click_gesture = gtk_gesture_click_new();
   gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click_gesture), 0);  /* 0 = all buttons */
@@ -1409,7 +1409,7 @@ void iupgtk4SetupButtonEvents(GtkWidget* widget, Ihandle* ih)
   g_signal_connect(click_gesture, "released", G_CALLBACK(gtk4ButtonReleased), ih);
 }
 
-void iupgtk4SetupMotionEvents(GtkWidget* widget, Ihandle* ih)
+IUP_DRV_API void iupgtk4SetupMotionEvents(GtkWidget* widget, Ihandle* ih)
 {
   GtkEventController* motion = gtk_event_controller_motion_new();
   gtk_widget_add_controller(widget, motion);
@@ -1417,32 +1417,32 @@ void iupgtk4SetupMotionEvents(GtkWidget* widget, Ihandle* ih)
   g_signal_connect(motion, "motion", G_CALLBACK(gtk4MotionNotify), ih);
 }
 
-char* iupgtk4StrConvertToSystemLen(const char* str, int *len)
+IUP_DRV_API char* iupgtk4StrConvertToSystemLen(const char* str, int *len)
 {
   /* GTK4 uses UTF-8 like GTK3, no conversion needed */
   if (len) *len = (int)strlen(str);
   return (char*)str;
 }
 
-char* iupgtk4StrConvertFromFilename(const char* str)
+IUP_DRV_API char* iupgtk4StrConvertFromFilename(const char* str)
 {
   /* GTK4 file names are already in UTF-8 */
   return (char*)str;
 }
 
-char* iupgtk4StrConvertToFilename(const char* str)
+IUP_DRV_API char* iupgtk4StrConvertToFilename(const char* str)
 {
   /* GTK4 file names are already in UTF-8 */
   return (char*)str;
 }
 
-const char* iupgtk4GetNativeFontIdName(void)
+IUP_DRV_API const char* iupgtk4GetNativeFontIdName(void)
 {
   /* GTK4 uses Pango fonts like GTK3 */
   return "PANGOFONTDESC";
 }
 
-GtkWindow* iupgtk4GetTransientFor(Ihandle* ih)
+IUP_DRV_API GtkWindow* iupgtk4GetTransientFor(Ihandle* ih)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
   if (parent)
@@ -1522,7 +1522,7 @@ static int x11_load_functions(void)
   return 1;
 }
 
-int iupgtk4X11MoveWindow(void* xdisplay, unsigned long xwindow, int x, int y)
+IUP_DRV_API int iupgtk4X11MoveWindow(void* xdisplay, unsigned long xwindow, int x, int y)
 {
   XSizeHints hints;
 
@@ -1541,7 +1541,7 @@ int iupgtk4X11MoveWindow(void* xdisplay, unsigned long xwindow, int x, int y)
   return 1;
 }
 
-int iupgtk4X11Sync(void* xdisplay)
+IUP_DRV_API int iupgtk4X11Sync(void* xdisplay)
 {
   if (!x11_load_functions())
     return 0;
@@ -1550,7 +1550,7 @@ int iupgtk4X11Sync(void* xdisplay)
   return 1;
 }
 
-int iupgtk4X11HideFromTaskbar(void* xdisplay, unsigned long xwindow)
+IUP_DRV_API int iupgtk4X11HideFromTaskbar(void* xdisplay, unsigned long xwindow)
 {
   Atom net_wm_window_type, net_wm_window_type_popup_menu;
   Atom net_wm_state, net_wm_state_skip_taskbar, net_wm_state_skip_pager;
@@ -1579,28 +1579,28 @@ int iupgtk4X11HideFromTaskbar(void* xdisplay, unsigned long xwindow)
   return 1;
 }
 
-int iupgtk4X11GetDefaultScreen(void* xdisplay)
+IUP_DRV_API int iupgtk4X11GetDefaultScreen(void* xdisplay)
 {
   if (!x11_load_functions())
     return 0;
   return _XDefaultScreen((Display*)xdisplay);
 }
 
-char* iupgtk4X11GetServerVendor(void* xdisplay)
+IUP_DRV_API char* iupgtk4X11GetServerVendor(void* xdisplay)
 {
   if (!x11_load_functions())
     return NULL;
   return _XServerVendor((Display*)xdisplay);
 }
 
-int iupgtk4X11GetVendorRelease(void* xdisplay)
+IUP_DRV_API int iupgtk4X11GetVendorRelease(void* xdisplay)
 {
   if (!x11_load_functions())
     return 0;
   return _XVendorRelease((Display*)xdisplay);
 }
 
-int iupgtk4X11WarpPointer(void* xdisplay, int x, int y)
+IUP_DRV_API int iupgtk4X11WarpPointer(void* xdisplay, int x, int y)
 {
   int screen;
 
@@ -1613,7 +1613,7 @@ int iupgtk4X11WarpPointer(void* xdisplay, int x, int y)
   return 1;
 }
 
-void iupgtk4X11Cleanup(void)
+IUP_DRV_API void iupgtk4X11Cleanup(void)
 {
   if (x11_lib)
   {
@@ -1626,7 +1626,7 @@ void iupgtk4X11Cleanup(void)
 #ifdef GDK_WINDOWING_WIN32
 #include <gdk/win32/gdkwin32.h>
 
-int iupgtk4Win32MoveWindow(void* hwnd, int x, int y)
+IUP_DRV_API int iupgtk4Win32MoveWindow(void* hwnd, int x, int y)
 {
   if (!hwnd)
     return 0;
@@ -1635,7 +1635,7 @@ int iupgtk4Win32MoveWindow(void* hwnd, int x, int y)
   return 1;
 }
 
-int iupgtk4Win32HideFromTaskbar(void* hwnd)
+IUP_DRV_API int iupgtk4Win32HideFromTaskbar(void* hwnd)
 {
   LONG_PTR exstyle;
 
@@ -1660,7 +1660,7 @@ int iupgtk4Win32HideFromTaskbar(void* hwnd)
 typedef struct { double x; double y; } IupNSPoint;
 typedef struct { IupNSPoint origin; IupNSPoint size; } IupNSRect;
 
-int iupgtk4MacosMoveWindow(void* nswindow, int x, int y)
+IUP_DRV_API int iupgtk4MacosMoveWindow(void* nswindow, int x, int y)
 {
   SEL sel_setFrameOrigin;
   SEL sel_screen;
@@ -1693,7 +1693,7 @@ int iupgtk4MacosMoveWindow(void* nswindow, int x, int y)
   return 1;
 }
 
-int iupgtk4MacosHideFromTaskbar(void* nswindow)
+IUP_DRV_API int iupgtk4MacosHideFromTaskbar(void* nswindow)
 {
   SEL sel_setLevel;
   SEL sel_setCollectionBehavior;

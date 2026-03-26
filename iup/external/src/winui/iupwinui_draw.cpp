@@ -94,7 +94,7 @@ static com_ptr<ID2D1StrokeStyle> g_strokeDot;
 static com_ptr<ID2D1StrokeStyle> g_strokeDashDot;
 static com_ptr<ID2D1StrokeStyle> g_strokeDashDotDot;
 
-extern "C" void iupwinuiDrawCleanup(void)
+IUP_DRV_API void iupwinuiDrawCleanup(void)
 {
   g_strokeDash = nullptr;
   g_strokeDot = nullptr;

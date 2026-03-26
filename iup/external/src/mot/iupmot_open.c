@@ -35,7 +35,7 @@ IUP_SDK_API void* iupdrvGetDisplay(void)
   return iupmot_display;
 }
 
-void iupmotSetGlobalColorAttrib(Widget w, const char* xmname, const char* name)
+IUP_DRV_API void iupmotSetGlobalColorAttrib(Widget w, const char* xmname, const char* name)
 {
   unsigned char r, g, b;
   Pixel color;

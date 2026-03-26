@@ -223,7 +223,7 @@ extern "C" IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
  * Tooltip Destroy
  ****************************************************************************/
 
-extern "C" void iupqtTipsDestroy(Ihandle* ih)
+IUP_DRV_API void iupqtTipsDestroy(Ihandle* ih)
 {
   if (!ih)
     return;

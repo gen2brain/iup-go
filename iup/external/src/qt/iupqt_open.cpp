@@ -68,13 +68,13 @@ extern "C" {
 static QApplication* qt_application = NULL;
 static int qt_application_owned = 0;
 
-extern "C" void iupqtLoopCleanup(void);
+IUP_DRV_API void iupqtLoopCleanup(void);
 
 /****************************************************************************
  * Native Handle Access
  ****************************************************************************/
 
-extern "C" char* iupqtGetNativeWidgetHandle(QWidget *widget)
+IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget *widget)
 {
   if (!widget)
     return NULL;
@@ -138,7 +138,7 @@ extern "C" char* iupqtGetNativeWidgetHandle(QWidget *widget)
   return NULL;
 }
 
-extern "C" const char* iupqtGetNativeWindowHandleName(void)
+IUP_DRV_API const char* iupqtGetNativeWindowHandleName(void)
 {
   QByteArray platformUtf8 = QGuiApplication::platformName().toUtf8();
   const char* platform = platformUtf8.constData();
@@ -158,7 +158,7 @@ extern "C" const char* iupqtGetNativeWindowHandleName(void)
   return "UNKNOWN";
 }
 
-extern "C" const char* iupqtGetNativeFontIdName(void)
+IUP_DRV_API const char* iupqtGetNativeFontIdName(void)
 {
   QByteArray platformUtf8 = QGuiApplication::platformName().toUtf8();
   const char* platform = platformUtf8.constData();
@@ -173,7 +173,7 @@ extern "C" const char* iupqtGetNativeFontIdName(void)
   return NULL;
 }
 
-extern "C" char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih)
+IUP_DRV_API char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih)
 {
   return iupqtGetNativeWidgetHandle((QWidget*)ih->handle);
 }
@@ -182,17 +182,17 @@ extern "C" char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih)
  * String Conversion (UTF-8 handling)
  ****************************************************************************/
 
-extern "C" void iupqtStrRelease(void)
+IUP_DRV_API void iupqtStrRelease(void)
 {
 }
 
-extern "C" char* iupqtStrConvertToSystem(const char* str)
+IUP_DRV_API char* iupqtStrConvertToSystem(const char* str)
 {
   /* Qt uses UTF-8 internally, so no conversion needed */
   return (char*)str;
 }
 
-extern "C" char* iupqtStrConvertToSystemLen(const char* str, int *len)
+IUP_DRV_API char* iupqtStrConvertToSystemLen(const char* str, int *len)
 {
   /* Qt uses UTF-8 internally */
   if (len)
@@ -200,31 +200,31 @@ extern "C" char* iupqtStrConvertToSystemLen(const char* str, int *len)
   return (char*)str;
 }
 
-extern "C" char* iupqtStrConvertFromSystem(const char* str)
+IUP_DRV_API char* iupqtStrConvertFromSystem(const char* str)
 {
   /* Qt uses UTF-8 internally */
   return (char*)str;
 }
 
-extern "C" char* iupqtStrConvertFromFilename(const char* str)
+IUP_DRV_API char* iupqtStrConvertFromFilename(const char* str)
 {
   /* Qt handles filenames correctly across platforms */
   return (char*)str;
 }
 
-extern "C" char* iupqtStrConvertToFilename(const char* str)
+IUP_DRV_API char* iupqtStrConvertToFilename(const char* str)
 {
   /* Qt handles filenames correctly across platforms */
   return (char*)str;
 }
 
-extern "C" void iupqtStrSetUTF8Mode(int utf8mode)
+IUP_DRV_API void iupqtStrSetUTF8Mode(int utf8mode)
 {
   /* Qt is always UTF-8 */
   (void)utf8mode;
 }
 
-extern "C" int iupqtStrGetUTF8Mode(void)
+IUP_DRV_API int iupqtStrGetUTF8Mode(void)
 {
   /* Qt is always UTF-8 */
   return 1;
@@ -239,7 +239,7 @@ static void qtSetGlobalColorAttrib(const char* name, const QColor &color)
   iupGlobalSetDefaultColorAttrib(name, color.red(), color.green(), color.blue());
 }
 
-void iupqtSetGlobalColors(void)
+IUP_DRV_API void iupqtSetGlobalColors(void)
 {
   QWidget dialog;
   QPalette palette = dialog.palette();
@@ -350,7 +350,7 @@ static void qtSetGlobalAttrib(void)
  * Qt Application Management
  ****************************************************************************/
 
-extern "C" QApplication* iupqtGetApplication(void)
+IUP_DRV_API QApplication* iupqtGetApplication(void)
 {
   return qt_application;
 }
@@ -359,7 +359,7 @@ extern "C" QApplication* iupqtGetApplication(void)
  * System Theme Detection
  ****************************************************************************/
 
-extern "C" int iupqtIsSystemDarkMode(void)
+IUP_DRV_API int iupqtIsSystemDarkMode(void)
 {
   QPalette palette = QGuiApplication::palette();
   QColor bg = palette.color(QPalette::Window);

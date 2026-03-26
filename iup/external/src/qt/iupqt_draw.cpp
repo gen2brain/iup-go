@@ -37,7 +37,7 @@ extern "C" {
  ****************************************************************************/
 
 /* Forward declare canvas functions needed for draw canvas creation */
-extern "C" void* iupqtCanvasGetContext(Ihandle* ih);
+IUP_DRV_API void* iupqtCanvasGetContext(Ihandle* ih);
 
 /****************************************************************************
  * Draw Context Structure

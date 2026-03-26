@@ -47,7 +47,7 @@ static void winuiFlushXamlLayout(void)
   }
 }
 
-extern "C" void iupwinuiLoopCleanup(void)
+IUP_DRV_API void iupwinuiLoopCleanup(void)
 {
   winui_idle_cb = NULL;
   winui_exit_loop = 0;

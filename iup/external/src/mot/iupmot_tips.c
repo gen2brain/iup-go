@@ -186,7 +186,7 @@ IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
   return iupStrReturnBoolean (mot_tips.Visible); 
 }
 
-void iupmotTipEnterNotify(Ihandle *ih)
+IUP_DRV_API void iupmotTipEnterNotify(Ihandle *ih)
 {
   iupmotTipLeaveNotify();
 
@@ -207,7 +207,7 @@ void iupmotTipEnterNotify(Ihandle *ih)
     NULL);
 }
 
-void iupmotTipLeaveNotify(void)
+IUP_DRV_API void iupmotTipLeaveNotify(void)
 {
   if (mot_tips.ShowTimerId)
   {
@@ -226,7 +226,7 @@ void iupmotTipLeaveNotify(void)
   }
 }
 
-void iupmotTipsFinish(void)
+IUP_DRV_API void iupmotTipsFinish(void)
 {
   if (mot_tips.Dialog)
   {

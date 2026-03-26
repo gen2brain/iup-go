@@ -57,7 +57,7 @@ static const void* IUP_COCOA_TOOLTIP_OWNER_KEY = @"IUP_COCOA_TOOLTIP_OWNER_KEY";
 
 @end
 
-void iupcocoaTipsDestroy(Ihandle* ih)
+IUP_DRV_API void iupcocoaTipsDestroy(Ihandle* ih)
 {
   NSView* the_view = iupcocoaGetRootView(ih);
   if (!the_view) return;
@@ -112,7 +112,7 @@ static void iupCocoaTipsUpdateForView(NSView* the_view, IupCocoaToolTipOwner* ow
                                      userData:NULL];
 }
 
-void iupcocoaUpdateTip(Ihandle* ih)
+IUP_DRV_API void iupcocoaUpdateTip(Ihandle* ih)
 {
   if (!ih) return;
 

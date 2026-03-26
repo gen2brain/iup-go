@@ -107,7 +107,7 @@ static ToolTip winuiTipGetToolTip(Ihandle* ih)
 }
 
 
-extern "C" void iupwinuiTipsDestroy(Ihandle* ih)
+IUP_DRV_API void iupwinuiTipsDestroy(Ihandle* ih)
 {
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return;

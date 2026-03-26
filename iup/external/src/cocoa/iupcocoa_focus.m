@@ -18,7 +18,7 @@
 #include "iupcocoa_drv.h"
 
 
-void iupcocoaSetCanFocus(Ihandle* ih, int can)
+IUP_DRV_API void iupcocoaSetCanFocus(Ihandle* ih, int can)
 {
   if (!ih)
     return;
@@ -75,7 +75,7 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
   }
 }
 
-void iupcocoaFocusIn(Ihandle* ih)
+IUP_DRV_API void iupcocoaFocusIn(Ihandle* ih)
 {
   if (IupGetFocus() == ih)
   {
@@ -115,7 +115,7 @@ void iupcocoaFocusIn(Ihandle* ih)
   iupCallGetFocusCb(ih);
 }
 
-void iupcocoaFocusOut(Ihandle* ih)
+IUP_DRV_API void iupcocoaFocusOut(Ihandle* ih)
 {
   if (!iupObjectCheck(ih))
   {

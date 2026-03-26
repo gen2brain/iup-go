@@ -13,11 +13,11 @@ extern "C" {
 
 /* Returns the IUP handle given the Windows handle. */
 
-Ihandle* iupwinHandleGet(InativeHandle* handle);
-void iupwinHandleAdd(Ihandle *ih, InativeHandle* handle);
-void iupwinHandleRemove(InativeHandle* handle);
-void iupwinHandleInit(void);
-void iupwinHandleFinish(void);
+IUP_DRV_API Ihandle* iupwinHandleGet(InativeHandle* handle);
+IUP_DRV_API void iupwinHandleAdd(Ihandle *ih, InativeHandle* handle);
+IUP_DRV_API void iupwinHandleRemove(InativeHandle* handle);
+IUP_DRV_API void iupwinHandleInit(void);
+IUP_DRV_API void iupwinHandleFinish(void);
 
 
 #ifdef __cplusplus

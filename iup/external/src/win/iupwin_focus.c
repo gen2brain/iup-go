@@ -39,7 +39,7 @@
          Neither SystemParametersInfo(SPI_SETKEYBOARDCUES, TRUE) or SystemParametersInfo(SPI_SETKEYBOARDPREF, TRUE) worked.
 */
 
-int iupwinGetKeyBoardCues(void)
+IUP_DRV_API int iupwinGetKeyBoardCues(void)
 {
   BOOL cues = 0;
   SystemParametersInfo(SPI_GETKEYBOARDCUES, 0, &cues, 0);
@@ -50,7 +50,7 @@ int iupwinGetKeyBoardCues(void)
     return 0;
 }
 
-void iupwinBringWindowToForeground(HWND hwnd)
+IUP_DRV_API void iupwinBringWindowToForeground(HWND hwnd)
 {
   if (!hwnd)
     return;
@@ -77,7 +77,7 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
   SendMessage(ih->handle, WM_CHANGEUISTATE, UIS_CLEAR|UISF_HIDEFOCUS, 0);  /* clear+hidefocus=showfocus */
 }
 
-void iupwinWmSetFocus(Ihandle *ih)
+IUP_DRV_API void iupwinWmSetFocus(Ihandle *ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
   if (!dialog)

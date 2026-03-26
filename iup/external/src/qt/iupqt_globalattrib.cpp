@@ -37,7 +37,7 @@ extern "C" {
 
 #include "iupqt_drv.h"
 
-extern "C" int iupqtKeyDecode(QEvent *evt);
+IUP_DRV_API int iupqtKeyDecode(QEvent *evt);
 
 /****************************************************************************
  * Global Input Event Handler
@@ -347,7 +347,7 @@ extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
  * Key Decoding
  ****************************************************************************/
 
-extern "C" int iupqtKeyDecode(QEvent *evt)
+IUP_DRV_API int iupqtKeyDecode(QEvent *evt)
 {
   QKeyEvent* key_evt = static_cast<QKeyEvent*>(evt);
 

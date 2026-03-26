@@ -150,7 +150,7 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
   return str;
 }
 
-char* iupwinFindHFont(HFONT hFont)
+IUP_DRV_API char* iupwinFindHFont(HFONT hFont)
 {
   int i, count = iupArrayCount(win_fonts);
 
@@ -165,7 +165,7 @@ char* iupwinFindHFont(HFONT hFont)
   return NULL;
 }
 
-HFONT iupwinGetHFont(const char* value)
+IUP_DRV_API HFONT iupwinGetHFont(const char* value)
 {
   IwinFont* winfont = winFindFont(value);
   if (!winfont)
@@ -195,7 +195,7 @@ static IwinFont* winFontGet(Ihandle *ih)
   return winfont;
 }
 
-char* iupwinGetHFontAttrib(Ihandle *ih)
+IUP_DRV_API char* iupwinGetHFontAttrib(Ihandle *ih)
 {
   IwinFont* winfont = winFontGet(ih);
   if (!winfont)

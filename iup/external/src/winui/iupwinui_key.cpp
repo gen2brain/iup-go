@@ -176,7 +176,7 @@ static void winuiKeyInit(void)
   winui_key_initialized = 1;
 }
 
-extern "C" int iupwinuiKeyEvent(Ihandle* ih, int wincode, int press)
+IUP_DRV_API int iupwinuiKeyEvent(Ihandle* ih, int wincode, int press)
 {
   int result, code;
 
@@ -214,7 +214,7 @@ extern "C" int iupwinuiKeyEvent(Ihandle* ih, int wincode, int press)
   return 1;
 }
 
-extern "C" int iupwinuiKeyDecode(int wincode)
+IUP_DRV_API int iupwinuiKeyDecode(int wincode)
 {
   int iupcode;
   int has_shift, has_ctrl, has_alt, has_sys;
@@ -267,7 +267,7 @@ extern "C" int iupwinuiKeyDecode(int wincode)
   return iupcode;
 }
 
-extern "C" void iupwinuiButtonKeySetStatus(int keys, int button, char* status, int doubleclick)
+IUP_DRV_API void iupwinuiButtonKeySetStatus(int keys, int button, char* status, int doubleclick)
 {
   iupKEY_SETBUTTON1(status);
   iupKEY_SETBUTTON2(status);

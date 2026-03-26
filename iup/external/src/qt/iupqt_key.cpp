@@ -284,7 +284,7 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
     return 0;
 }
 
-extern "C" int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
+IUP_DRV_API int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
 {
   int result;
   int code = qtKeyDecode(evt);
@@ -353,7 +353,7 @@ extern "C" int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
   return 0;
 }
 
-extern "C" int iupqtKeyReleaseEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
+IUP_DRV_API int iupqtKeyReleaseEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih)
 {
   /* This is called only for canvas */
   int result;
@@ -378,7 +378,7 @@ extern "C" int iupqtKeyReleaseEvent(QWidget *widget, QKeyEvent *evt, Ihandle *ih
  * Button/Key Status String
  ****************************************************************************/
 
-extern "C" void iupqtButtonKeySetStatus(Qt::KeyboardModifiers modifiers, Qt::MouseButtons buttons, int button, char* status, int doubleclick)
+IUP_DRV_API void iupqtButtonKeySetStatus(Qt::KeyboardModifiers modifiers, Qt::MouseButtons buttons, int button, char* status, int doubleclick)
 {
   if (modifiers & Qt::ShiftModifier)
     iupKEY_SETSHIFT(status);

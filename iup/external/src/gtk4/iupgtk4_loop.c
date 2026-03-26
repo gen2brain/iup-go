@@ -197,7 +197,7 @@ IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p
   g_idle_add(gtkPostMessageCallback, user_data);
 }
 
-void iupgtk4LoopCleanup(void)
+IUP_DRV_API void iupgtk4LoopCleanup(void)
 {
   if (gtk_idle_cb)
   {

@@ -23,10 +23,6 @@
 #ifndef __IUPQT_DRV_H
 #define __IUPQT_DRV_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef __IUP_OBJECT_H
 #include "iup_object.h"  /* Defines InativeHandle and Ihandle */
 #endif
@@ -65,15 +61,15 @@ typedef struct _QMouseEvent QMouseEvent;
 
 /* Mouse and keyboard events */
 IUP_DRV_API int iupqtEnterLeaveEvent(QWidget *widget, QEvent *evt, Ihandle* ih);
-int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
+IUP_DRV_API int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
 IUP_DRV_API int iupqtMouseButtonEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
 
 /****************************************************************************
  * Text and Mnemonic Handling
  ****************************************************************************/
 
-int iupqtSetMnemonicTitle(Ihandle* ih, QWidget* widget, const char* value);
-void iupqtUpdateMnemonic(Ihandle* ih);
+IUP_DRV_API int iupqtSetMnemonicTitle(Ihandle* ih, QWidget* widget, const char* value);
+IUP_DRV_API void iupqtUpdateMnemonic(Ihandle* ih);
 
 /****************************************************************************
  * Color Management
@@ -85,29 +81,29 @@ void iupqtUpdateMnemonic(Ihandle* ih);
  ****************************************************************************/
 
 IUP_DRV_API void iupqtAddToParent(Ihandle* ih);
-void iupqtSetPosSize(QWidget* parent, QWidget* widget, int x, int y, int width, int height);
+IUP_DRV_API void iupqtSetPosSize(QWidget* parent, QWidget* widget, int x, int y, int width, int height);
 
 /****************************************************************************
  * Container Management
  ****************************************************************************/
 
-QWidget* iupqtNativeContainerNew(int has_window);
-void iupqtNativeContainerAdd(QWidget* container, QWidget* widget);
-void iupqtNativeContainerMove(QWidget* container, QWidget* widget, int x, int y);
+IUP_DRV_API QWidget* iupqtNativeContainerNew(int has_window);
+IUP_DRV_API void iupqtNativeContainerAdd(QWidget* container, QWidget* widget);
+IUP_DRV_API void iupqtNativeContainerMove(QWidget* container, QWidget* widget, int x, int y);
 
 /****************************************************************************
  * String Conversion (UTF-8 Handling)
  ****************************************************************************/
 
 /* Qt uses UTF-8 internally, so conversions are mostly pass-through */
-void iupqtStrRelease(void);
+IUP_DRV_API void iupqtStrRelease(void);
 IUP_DRV_API char* iupqtStrConvertToSystem(const char* str);
-char* iupqtStrConvertToSystemLen(const char* str, int *len);
-char* iupqtStrConvertFromSystem(const char* str);
-char* iupqtStrConvertFromFilename(const char* str);
-char* iupqtStrConvertToFilename(const char* str);
-void iupqtStrSetUTF8Mode(int utf8mode);
-int iupqtStrGetUTF8Mode(void);
+IUP_DRV_API char* iupqtStrConvertToSystemLen(const char* str, int *len);
+IUP_DRV_API char* iupqtStrConvertFromSystem(const char* str);
+IUP_DRV_API char* iupqtStrConvertFromFilename(const char* str);
+IUP_DRV_API char* iupqtStrConvertToFilename(const char* str);
+IUP_DRV_API void iupqtStrSetUTF8Mode(int utf8mode);
+IUP_DRV_API int iupqtStrGetUTF8Mode(void);
 
 /****************************************************************************
  * Focus Management
@@ -115,83 +111,79 @@ int iupqtStrGetUTF8Mode(void);
 
 IUP_DRV_API int iupqtFocusInOutEvent(QWidget *widget, QEvent *evt, Ihandle* ih);
 IUP_DRV_API void iupqtSetCanFocus(QWidget *widget, int can);
-void iupqtDialogSetFocus(Ihandle* ih);
+IUP_DRV_API void iupqtDialogSetFocus(Ihandle* ih);
 
 /****************************************************************************
  * Key Input Handling
  ****************************************************************************/
 
 IUP_DRV_API int iupqtKeyPressEvent(QWidget *widget, QKeyEvent *evt, Ihandle* ih);
-int iupqtKeyReleaseEvent(QWidget *widget, QKeyEvent *evt, Ihandle* ih);
+IUP_DRV_API int iupqtKeyReleaseEvent(QWidget *widget, QKeyEvent *evt, Ihandle* ih);
 
 #ifdef __cplusplus
-void iupqtButtonKeySetStatus(Qt::KeyboardModifiers modifiers, Qt::MouseButtons buttons, int button, char* status, int doubleclick);
+IUP_DRV_API void iupqtButtonKeySetStatus(Qt::KeyboardModifiers modifiers, Qt::MouseButtons buttons, int button, char* status, int doubleclick);
 #else
-void iupqtButtonKeySetStatus(int modifiers, int buttons, int button, char* status, int doubleclick);
+IUP_DRV_API void iupqtButtonKeySetStatus(int modifiers, int buttons, int button, char* status, int doubleclick);
 #endif
 
 /****************************************************************************
  * Font Management
  ****************************************************************************/
 
-QFont* iupqtGetQFont(const char* value);
-char* iupqtGetQFontAttrib(Ihandle *ih);
-void iupqtUpdateWidgetFont(Ihandle *ih, QWidget* widget);
+IUP_DRV_API QFont* iupqtGetQFont(const char* value);
+IUP_DRV_API char* iupqtGetQFontAttrib(Ihandle *ih);
+IUP_DRV_API void iupqtUpdateWidgetFont(Ihandle *ih, QWidget* widget);
 
 /****************************************************************************
  * Native Handle Access
  ****************************************************************************/
 
 /* Platform-specific native handles (X11, Wayland, Windows, macOS) */
-char* iupqtGetNativeWidgetHandle(QWidget *widget);
-char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih);
-const char* iupqtGetNativeWindowHandleName(void);
-const char* iupqtGetNativeFontIdName(void);
+IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget *widget);
+IUP_DRV_API char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih);
+IUP_DRV_API const char* iupqtGetNativeWindowHandleName(void);
+IUP_DRV_API const char* iupqtGetNativeFontIdName(void);
 
 /****************************************************************************
  * Dialog Management
  ****************************************************************************/
 
-int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
-QWidget* iupqtGetParentWidget(Ihandle* ih);
+IUP_DRV_API int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih);
+IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih);
 
 /****************************************************************************
  * System Tray Support
  ****************************************************************************/
 
-int iupqtSetTrayAttrib(Ihandle *ih, const char *value);
-int iupqtSetTrayTipAttrib(Ihandle *ih, const char *value);
-int iupqtSetTrayImageAttrib(Ihandle *ih, const char *value);
-int iupqtSetTrayMenuAttrib(Ihandle *ih, const char *value);
-void iupqtTrayCleanup(Ihandle *ih);
+IUP_DRV_API int iupqtSetTrayAttrib(Ihandle *ih, const char *value);
+IUP_DRV_API int iupqtSetTrayTipAttrib(Ihandle *ih, const char *value);
+IUP_DRV_API int iupqtSetTrayImageAttrib(Ihandle *ih, const char *value);
+IUP_DRV_API int iupqtSetTrayMenuAttrib(Ihandle *ih, const char *value);
+IUP_DRV_API void iupqtTrayCleanup(Ihandle *ih);
 
 /****************************************************************************
  * System Utilities
  ****************************************************************************/
 
 /* Dark mode detection */
-int iupqtIsSystemDarkMode(void);
-void iupqtSetGlobalColors(void);
+IUP_DRV_API int iupqtIsSystemDarkMode(void);
+IUP_DRV_API void iupqtSetGlobalColors(void);
 
 /* Qt application instance (singleton) */
-QApplication* iupqtGetApplication(void);
+IUP_DRV_API QApplication* iupqtGetApplication(void);
 
 /****************************************************************************
  * Canvas Support
  ****************************************************************************/
 
-QWidget* iupqtCanvasGetWidget(Ihandle* ih);
+IUP_DRV_API QWidget* iupqtCanvasGetWidget(Ihandle* ih);
 
 /****************************************************************************
  * Tooltip/Tips Management
  ****************************************************************************/
 
-void iupqtTipsDestroy(Ihandle* ih);
-void iupqtDragDropCleanup(Ihandle* ih);
+IUP_DRV_API void iupqtTipsDestroy(Ihandle* ih);
+IUP_DRV_API void iupqtDragDropCleanup(Ihandle* ih);
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -139,7 +139,7 @@ static int gtkKeyMap2Iup(guint keyval, int state)
   return code;
 }
 
-int iupgtkKeyDecode(GdkEventKey *evt)
+IUP_DRV_API int iupgtkKeyDecode(GdkEventKey *evt)
 {
   int i;
   guint keyval = evt->keyval;
@@ -258,7 +258,7 @@ IUP_DRV_API gboolean iupgtkKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ih
   return FALSE;
 }
 
-gboolean iupgtkKeyReleaseEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkKeyReleaseEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
 {
   /* this is called only for canvas */
   int result;
@@ -279,7 +279,7 @@ gboolean iupgtkKeyReleaseEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
   return FALSE;
 }
 
-void iupgtkButtonKeySetStatus(guint state, unsigned int but, char* status, int doubleclick)
+IUP_DRV_API void iupgtkButtonKeySetStatus(guint state, unsigned int but, char* status, int doubleclick)
 {
   if (state & GDK_SHIFT_MASK)
     iupKEY_SETSHIFT(status);
