@@ -31,8 +31,11 @@ char* iupValGetStepAttrib(Ihandle* ih);
 char* iupValGetPageStepAttrib(Ihandle* ih);
 char* iupValGetShowTicksAttrib(Ihandle* ih);
 
+/** \addtogroup drv
+ * @{ */
 void iupdrvValInitClass(Iclass* ic);
 void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h);
+/** @} */
 
 
 #ifdef __cplusplus

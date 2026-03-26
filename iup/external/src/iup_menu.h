@@ -17,11 +17,14 @@ extern "C" {
 */
 int iupMenuPopup(Ihandle* ih, int x, int y);
 
+/** \addtogroup drv
+ * @{ */
 int iupdrvMenuPopup(Ihandle* ih, int x, int y);
 void iupdrvSeparatorInitClass(Iclass* ic);
 void iupdrvItemInitClass(Iclass* ic);
 void iupdrvMenuInitClass(Iclass* ic);
 void iupdrvSubmenuInitClass(Iclass* ic);
+/** @} */
 
 char* iupMenuProcessTitle(Ihandle* ih, const char* title);
 int iupMenuGetChildId(Ihandle* ih);

@@ -29,9 +29,9 @@ typedef struct Ihandle_ Ihandle;
 typedef int (*Icallback)(Ihandle*);
 
 
-/************************************************************************/
-/*                        Main API                                      */
-/************************************************************************/
+/** \defgroup mainapi Main API
+ * \ingroup ctrl */
+/** @{ */
 
 IUP_API int       IupOpen          (int *argc, char ***argv);
 IUP_API void      IupClose         (void);
@@ -187,14 +187,13 @@ IUP_API int       IupClassMatch(Ihandle* ih, const char* classname);
 IUP_API Ihandle*  IupCreate (const char *classname);
 IUP_API Ihandle*  IupCreatev(const char *classname, void* *params);
 IUP_API Ihandle*  IupCreatep(const char *classname, void* first, ...);
+/** @} */
 
-/************************************************************************/
-/*                        Elements                                      */
-/************************************************************************/
-
+/** \defgroup containers Containers
+ * \ingroup ctrl */
+/** @{ */
 IUP_API Ihandle*  IupFill (void);
 IUP_API Ihandle*  IupSpace(void);
-
 IUP_API Ihandle*  IupRadio      (Ihandle* child);
 IUP_API Ihandle*  IupVbox       (Ihandle* child, ...);
 IUP_API Ihandle*  IupVboxv      (Ihandle* *children);
@@ -202,10 +201,8 @@ IUP_API Ihandle*  IupZbox       (Ihandle* child, ...);
 IUP_API Ihandle*  IupZboxv      (Ihandle* *children);
 IUP_API Ihandle*  IupHbox       (Ihandle* child, ...);
 IUP_API Ihandle*  IupHboxv      (Ihandle* *children);
-
 IUP_API Ihandle*  IupNormalizer (Ihandle* ih_first, ...);
 IUP_API Ihandle*  IupNormalizerv(Ihandle* *ih_list);
-
 IUP_API Ihandle*  IupCbox       (Ihandle* child, ...);
 IUP_API Ihandle*  IupCboxv      (Ihandle* *children);
 IUP_API Ihandle*  IupSbox       (Ihandle* child);
@@ -219,20 +216,33 @@ IUP_API Ihandle*  IupMultiBoxv  (Ihandle **children);
 IUP_API Ihandle*  IupExpander(Ihandle* child);
 IUP_API Ihandle*  IupDetachBox  (Ihandle* child);
 IUP_API Ihandle*  IupBackgroundBox(Ihandle* child);
-
 IUP_API Ihandle*  IupFrame      (Ihandle* child);
 IUP_API Ihandle*  IupFlatFrame  (Ihandle* child);
+IUP_API Ihandle*  IupDialog     (Ihandle* child);
+IUP_API Ihandle*  IupPopover    (Ihandle* child);
+/** @} */
 
+/** \defgroup images Image Resources
+ * \ingroup ctrl */
+/** @{ */
 IUP_API Ihandle*  IupImage      (int width, int height, const unsigned char* pixels);
 IUP_API Ihandle*  IupImageRGB   (int width, int height, const unsigned char* pixels);
 IUP_API Ihandle*  IupImageRGBA  (int width, int height, const unsigned char* pixels);
+/** @} */
 
+/** \defgroup menus Menus
+ * \ingroup ctrl */
+/** @{ */
 IUP_API Ihandle*  IupItem       (const char* title, const char* action);
 IUP_API Ihandle*  IupSubmenu    (const char* title, Ihandle* child);
 IUP_API Ihandle*  IupSeparator  (void);
 IUP_API Ihandle*  IupMenu       (Ihandle* child, ...);
 IUP_API Ihandle*  IupMenuv      (Ihandle* *children);
+/** @} */
 
+/** \defgroup controls Standard Controls
+ * \ingroup ctrl */
+/** @{ */
 IUP_API Ihandle*  IupButton     (const char* title, const char* action);
 IUP_API Ihandle*  IupFlatButton (const char* title);
 IUP_API Ihandle*  IupFlatToggle (const char* title);
@@ -240,7 +250,6 @@ IUP_API Ihandle*  IupDropButton (Ihandle* dropchild);
 IUP_API Ihandle*  IupFlatLabel  (const char* title);
 IUP_API Ihandle*  IupFlatSeparator(void);
 IUP_API Ihandle*  IupCanvas     (const char* action);
-IUP_API Ihandle*  IupDialog     (Ihandle* child);
 IUP_API Ihandle*  IupUser       (void);
 IUP_API Ihandle*  IupThread     (void);
 IUP_API Ihandle*  IupLabel      (const char* title);
@@ -268,20 +277,20 @@ IUP_API Ihandle*  IupLink       (const char* url, const char* title);
 IUP_API Ihandle*  IupAnimatedLabel(Ihandle* animation);
 IUP_API Ihandle*  IupDatePick   (void);
 IUP_API Ihandle*  IupCalendar   (void);
-IUP_API Ihandle*  IupPopover    (Ihandle* child);
 IUP_API Ihandle*  IupColorbar   (void);
 IUP_API Ihandle*  IupGauge      (void);
 IUP_API Ihandle*  IupDial       (const char* type);
 IUP_API Ihandle*  IupColorBrowser(void);
+/** @} */
 
 /* Old controls, use SPIN attribute of IupText */
 IUP_API Ihandle*  IupSpin       (void);
 IUP_API Ihandle*  IupSpinbox    (Ihandle* child);
 
 
-/************************************************************************/
-/*                      Utilities                                       */
-/************************************************************************/
+/** \defgroup utilities Utilities
+ * \ingroup ctrl */
+/** @{ */
 
 /* String compare utility */
 IUP_API int IupStringCompare(const char* str1, const char* str2, int casesensitive, int lexicographic);
@@ -312,12 +321,12 @@ IUP_API int   IupTreeSetUserId(Ihandle* ih, int id, void* userid);
 IUP_API void* IupTreeGetUserId(Ihandle* ih, int id);
 IUP_API int   IupTreeGetId(Ihandle* ih, void *userid);
 IUP_API void  IupTreeSetAttributeHandle(Ihandle* ih, const char* name, int id, Ihandle* ih_named); /* deprecated, use IupSetAttributeHandleId */
+/** @} */
 
 
-/************************************************************************/
-/*                      Pre-defined dialogs                           */
-/************************************************************************/
-
+/** \defgroup predefined Pre-defined Dialogs
+ * \ingroup ctrl */
+/** @{ */
 IUP_API Ihandle* IupFileDlg(void);
 IUP_API Ihandle* IupMessageDlg(void);
 IUP_API Ihandle* IupColorDlg(void);
@@ -345,15 +354,16 @@ IUP_API Ihandle* IupLayoutDialog(Ihandle* dialog);
 IUP_API Ihandle* IupElementPropertiesDialog(Ihandle* parent, Ihandle* elem);
 IUP_API Ihandle* IupGlobalsDialog(void);
 IUP_API Ihandle* IupClassInfoDialog(Ihandle* parent);
+/** @} */
 
 
 #ifdef __cplusplus
 }
 #endif
 
-/************************************************************************/
-/*                   Common Flags and Return Values                     */
-/************************************************************************/
+/** \defgroup constants Constants
+ * \ingroup ctrl */
+/** @{ */
 #define IUP_ERROR     1
 #define IUP_NOERROR   0
 #define IUP_OPENED   -1
@@ -454,7 +464,7 @@ enum{IUP_SBUP,   IUP_SBDN,    IUP_SBPGUP,   IUP_SBPGDN,    IUP_SBPOSV, IUP_SBDRA
 /*                   Record Input Modes                                 */
 /************************************************************************/
 enum {IUP_RECBINARY, IUP_RECTEXT};
-
+/** @} */
 
 
 /******************************************************************************

@@ -2,6 +2,7 @@
  * \brief Language Dependent String Messages 
  *
  * See Copyright Notice in "iup.h"
+ *
  */
 
  

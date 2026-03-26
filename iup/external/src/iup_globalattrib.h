@@ -2,6 +2,7 @@
  * \brief global attributes environment (not exported API)
  *
  * See Copyright Notice in "iup.h"
+ *
  */
  
 #ifndef __IUP_GLOBALATTRIB_H 

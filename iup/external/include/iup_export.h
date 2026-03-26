@@ -1,9 +1,6 @@
 #ifndef __IUP_EXPORT_H
 #define __IUP_EXPORT_H
 
-#ifndef DOXYGEN_SHOULD_IGNORE_THIS
-/** @cond DOXYGEN_SHOULD_IGNORE_THIS */
-
 /* Mark the official functions */
 #ifndef IUP_API
 #ifdef IUP_BUILD_LIBRARY
@@ -58,9 +55,6 @@
 #endif /* IUP_BUILD_LIBRARY */
 #endif /* IUP_DRV_API */
 
-
-/** @endcond DOXYGEN_SHOULD_IGNORE_THIS */
-#endif /* DOXYGEN_SHOULD_IGNORE_THIS */
 
 
 #endif /* __IUP_EXPORT_H */

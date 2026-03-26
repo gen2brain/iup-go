@@ -31,8 +31,11 @@ char* iupScrollbarGetLineStepAttrib(Ihandle* ih);
 char* iupScrollbarGetPageStepAttrib(Ihandle* ih);
 char* iupScrollbarGetPageSizeAttrib(Ihandle* ih);
 
+/** \addtogroup drv
+ * @{ */
 void iupdrvScrollbarInitClass(Iclass* ic);
 void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h);
+/** @} */
 
 
 #ifdef __cplusplus

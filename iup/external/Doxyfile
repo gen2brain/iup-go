@@ -1,0 +1,48 @@
+# IUP Internal SDK Documentation
+# Generated with Doxygen 1.15.0
+
+PROJECT_NAME           = "IUP Internal SDK"
+PROJECT_BRIEF          = "Internal SDK documentation for the IUP multi-platform GUI toolkit"
+OUTPUT_DIRECTORY       = doc
+
+# Input
+INPUT                  = src include
+RECURSIVE              = YES
+FILE_PATTERNS          = *.h *.c
+EXCLUDE                = include/iup_plus.h include/iup_class_cbs.hpp
+EXCLUDE_PATTERNS       = */winrt/*
+
+# Extraction
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+
+# C optimized
+OPTIMIZE_OUTPUT_FOR_C  = YES
+
+# Build
+SORT_MEMBER_DOCS       = YES
+GENERATE_TODOLIST      = NO
+GENERATE_BUGLIST       = NO
+
+# Source browsing
+SOURCE_BROWSER         = NO
+
+# HTML output
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_COLORSTYLE        = AUTO_LIGHT
+SEARCHENGINE           = YES
+
+# No LaTeX
+GENERATE_LATEX         = NO
+
+# Graphs
+HAVE_DOT               = NO
+
+# Warnings
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = NO

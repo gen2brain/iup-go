@@ -28,8 +28,11 @@ void  iProgressBarCropValue(Ihandle* ih);
 char* iProgressBarGetValueAttrib(Ihandle* ih);
 char* iProgressBarGetDashedAttrib(Ihandle* ih);
 
+/** \addtogroup drv
+ * @{ */
 void iupdrvProgressBarInitClass(Iclass* ic);
 void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h);
+/** @} */
 
 #ifdef __cplusplus
 }

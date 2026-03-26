@@ -12,8 +12,12 @@ extern "C" {
 #endif
 
 
+/** \addtogroup drv
+ * @{ */
 void iupdrvButtonInitClass(Iclass* ic);
+/** Adds platform button borders to size. */
 void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y);
+/** @} */
 
 char* iupButtonGetPaddingAttrib(Ihandle* ih);
 

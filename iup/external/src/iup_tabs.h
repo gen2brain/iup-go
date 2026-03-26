@@ -3,14 +3,16 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_TABS_H 
+
+#ifndef __IUP_TABS_H
 #define __IUP_TABS_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/** \defgroup drvtabs Driver Tabs Interface
+ * \ingroup drv */
 
 char* iupTabsGetTabOrientationAttrib(Ihandle* ih);
 char* iupTabsGetTabTypeAttrib(Ihandle* ih);
@@ -20,6 +22,8 @@ char* iupTabsGetTitleAttrib(Ihandle* ih, int pos);
 
 void iupTabsCheckCurrentTab(Ihandle* ih, int pos, int removed);
 
+/** \addtogroup drvtabs
+ * @{ */
 int iupdrvTabsIsTabVisible(Ihandle* child, int pos);
 int iupdrvTabsExtraDecor(Ihandle* ih);
 int iupdrvTabsExtraMargin(void);
@@ -28,6 +32,7 @@ void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos);
 int iupdrvTabsGetCurrentTab(Ihandle* ih);
 void iupdrvTabsInitClass(Iclass* ic);
 void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height);
+/** @} */
 
 typedef enum
 {
