@@ -832,7 +832,7 @@ void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, gtk4ButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtk4ButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtk4ButtonSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtk4ButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "TITLE", NULL, gtk4ButtonSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
