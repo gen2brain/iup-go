@@ -1,4 +1,4 @@
-//go:build (darwin && !gtk && !gtk4 && !qt && !efl) || motif || (efl && !windows)
+//go:build motif || (efl && !windows)
 
 package iup
 
