@@ -282,6 +282,9 @@ static int eflToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int eflToggleSetPaddingAttrib(Ihandle* ih, const char* value)
 {
+  if (iupStrEqual(value, "DEFAULTBUTTONPADDING"))
+    value = IupGetGlobal("DEFAULTBUTTONPADDING");
+
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
   return 0;
 }
