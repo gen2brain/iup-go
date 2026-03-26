@@ -15,7 +15,7 @@
 #include "iup_attrib.h"
 
 
-int IupControlsOpen(void)
+IUPCONTROLS_API int IupControlsOpen(void)
 {
   if (!IupIsOpened())
     return IUP_ERROR;

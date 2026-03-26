@@ -11,7 +11,24 @@
 extern "C" {
 #endif
 
-/* Attributes 
+#ifndef IUPGL_API
+#ifdef IUPGL_BUILD_LIBRARY
+  #ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+    #define IUPGL_API EMSCRIPTEN_KEEPALIVE
+  #elif defined(_WIN32)
+    #define IUPGL_API __declspec(dllexport)
+  #elif defined(__GNUC__) && __GNUC__ >= 4
+    #define IUPGL_API __attribute__ ((visibility("default")))
+  #else
+    #define IUPGL_API
+  #endif
+#else
+  #define IUPGL_API
+#endif /* IUPGL_BUILD_LIBRARY */
+#endif /* IUPGL_API */
+
+/* Attributes
 ** To set the appropriate visual (pixel format) the following
 ** attributes may be specified. Their values should be set
 ** before the canvas is mapped to the scrren.
@@ -78,17 +95,17 @@ extern "C" {
 #define IUP_NO    "NO"
 #endif
 
-void IupGLCanvasOpen(void);
+IUPGL_API void IupGLCanvasOpen(void);
 
-Ihandle *IupGLCanvas(const char *action);
-Ihandle* IupGLBackgroundBox(Ihandle* child);
+IUPGL_API Ihandle *IupGLCanvas(const char *action);
+IUPGL_API Ihandle* IupGLBackgroundBox(Ihandle* child);
 
-void IupGLMakeCurrent(Ihandle* ih);
-int IupGLIsCurrent(Ihandle* ih);
-void IupGLSwapBuffers(Ihandle* ih);
-void IupGLPalette(Ihandle* ih, int index, float r, float g, float b);
-void IupGLUseFont(Ihandle* ih, int first, int count, int list_base);
-void IupGLWait(int gl);
+IUPGL_API void IupGLMakeCurrent(Ihandle* ih);
+IUPGL_API int IupGLIsCurrent(Ihandle* ih);
+IUPGL_API void IupGLSwapBuffers(Ihandle* ih);
+IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b);
+IUPGL_API void IupGLUseFont(Ihandle* ih, int first, int count, int list_base);
+IUPGL_API void IupGLWait(int gl);
 
 #ifdef __cplusplus
 }

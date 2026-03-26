@@ -2327,7 +2327,7 @@ Iclass* iupMatrixNewClass(void)
 
 /*****************************************************************************************************/
 
-Ihandle* IupMatrix(const char* action)
+IUPCONTROLS_API Ihandle* IupMatrix(const char* action)
 {
   void *params[2];
   params[0] = (void*)action;
