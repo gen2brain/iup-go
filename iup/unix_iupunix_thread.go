@@ -1,4 +1,4 @@
-//go:build motif || (efl && !windows)
+//go:build motif
 
 package iup
 
