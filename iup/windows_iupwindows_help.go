@@ -1,4 +1,4 @@
-//go:build windows && !qt && !winui && !efl
+//go:build windows && !qt && !winui
 
 package iup
 

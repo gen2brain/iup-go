@@ -1,4 +1,4 @@
-//go:build windows && !gtk && !gtk4 && !qt && !winui && !efl
+//go:build windows && !gtk && !gtk4 && !winui
 
 package iup
 
