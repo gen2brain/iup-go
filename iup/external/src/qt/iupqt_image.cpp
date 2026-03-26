@@ -50,7 +50,7 @@ extern "C" void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 
   if (bpp == 8)
   {
-    memset(imgdata, 0, w * h * 3);
+    memset(imgdata, 0, (size_t)w * h * 3);
     return;
   }
 
@@ -89,7 +89,7 @@ extern "C" IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* i
     return;
 
   /* Planes are separated in imgdata */
-  int planesize = w * h;
+  size_t planesize = (size_t)w * h;
   unsigned char* r = imgdata;
   unsigned char* g = imgdata + planesize;
   unsigned char* b = imgdata + 2 * planesize;
@@ -157,7 +157,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, in
   else /* bpp == 24 or bpp == 32 */
   {
     /* Planes are separated in imgdata */
-    int planesize = width * height;
+    size_t planesize = (size_t)width * height;
     unsigned char* r = imgdata;
     unsigned char* g = imgdata + planesize;
     unsigned char* b = imgdata + 2 * planesize;

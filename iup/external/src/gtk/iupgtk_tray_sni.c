@@ -38,7 +38,7 @@ int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height,
   src = gdk_pixbuf_get_pixels(pixbuf);
   has_alpha = gdk_pixbuf_get_has_alpha(pixbuf);
 
-  dst = (unsigned char*)malloc(w * h * 4);
+  dst = (unsigned char*)malloc((size_t)w * h * 4);
   if (!dst)
     return 0;
 

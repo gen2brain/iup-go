@@ -390,6 +390,8 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 {
   Icallback callback_function;
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_sender, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih || !iupObjectCheck(ih))
+    return;
 
   callback_function = IupGetCallback(ih, "ACTION");
   if(callback_function)

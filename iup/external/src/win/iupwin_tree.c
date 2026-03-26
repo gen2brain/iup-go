@@ -1740,10 +1740,12 @@ static int winTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
   else if(iupStrEqualNoCase(value, "CHILDREN"))  /* children of the reference node */
   {
     HTREEITEM hItem = iupTreeGetNode(ih, id);
-    HTREEITEM hChildItem = (HTREEITEM)SendMessage(ih->handle, TVM_GETNEXTITEM, TVGN_CHILD, (LPARAM)hItem);
+    HTREEITEM hChildItem;
 
     if(!hItem)
       return 0;
+
+    hChildItem = (HTREEITEM)SendMessage(ih->handle, TVM_GETNEXTITEM, TVGN_CHILD, (LPARAM)hItem);
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
 

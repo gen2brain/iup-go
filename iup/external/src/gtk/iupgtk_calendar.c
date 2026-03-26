@@ -49,6 +49,8 @@ static int gtkCalendarSetValueAttrib(Ihandle* ih, const char* value)
     time_t timer;
     time(&timer);
     timeinfo = localtime(&timer);
+    if (!timeinfo)
+      return 0;
 
     gtk_calendar_select_month(GTK_CALENDAR(ih->handle), timeinfo->tm_mon, timeinfo->tm_year + 1900);
     gtk_calendar_select_day(GTK_CALENDAR(ih->handle), timeinfo->tm_mday);
@@ -83,9 +85,11 @@ static char* gtkCalendarGetTodayAttrib(Ihandle* ih)
 {
   struct tm * timeinfo;
   time_t timer;
-  time(&timer);  
+  time(&timer);
   timeinfo = localtime(&timer);
   (void)ih;
+  if (!timeinfo)
+    return NULL;
   return iupStrReturnStrf("%d/%d/%d", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday);
 }
 

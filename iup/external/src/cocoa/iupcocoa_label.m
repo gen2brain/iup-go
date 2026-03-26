@@ -132,49 +132,49 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 - (void)mouseDown:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
+  if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
     [super mouseDown:theEvent];
 }
 
 - (void)mouseUp:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
+  if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
     [super mouseUp:theEvent];
 }
 
 - (void)rightMouseDown:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
+  if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
     [super rightMouseDown:theEvent];
 }
 
 - (void)rightMouseUp:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
+  if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
     [super rightMouseUp:theEvent];
 }
 
 - (void)otherMouseDown:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
+  if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, true))
     [super otherMouseDown:theEvent];
 }
 
 - (void)otherMouseUp:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
+  if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, theEvent, self, false))
     [super otherMouseUp:theEvent];
 }
 
 - (void)mouseMoved:(NSEvent *)theEvent
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!iupcocoaCommonBaseHandleMouseMotionCallback(ih, theEvent, self))
+  if (!ih || !iupcocoaCommonBaseHandleMouseMotionCallback(ih, theEvent, self))
     [super mouseMoved:theEvent];
 }
 

@@ -98,6 +98,9 @@ static void gtkScrollbarUpdateAdjustment(Ihandle* ih)
   GtkAdjustment* adjustment;
   double range = ih->data->vmax - ih->data->vmin;
 
+  if (range == 0)
+    return;
+
   adjustment = gtk_range_get_adjustment(GTK_RANGE(ih->handle));
 
   gtk_adjustment_configure(adjustment,
@@ -140,6 +143,9 @@ static int gtkScrollbarSetValueAttrib(Ihandle* ih, const char* value)
     double range = ih->data->vmax - ih->data->vmin;
     double fval;
 
+    if (range == 0)
+      return 0;
+
     iupScrollbarCropValue(ih);
 
     fval = (ih->data->val - ih->data->vmin) / range;
@@ -160,17 +166,23 @@ static gboolean gtkScrollbarChangeValue(GtkRange *range, GtkScrollType scroll, d
   IFniff scroll_cb;
   int op = -1;
 
-  adj_page_size = ih->data->pagesize / (ih->data->vmax - ih->data->vmin);
+  {
+    double vrange = ih->data->vmax - ih->data->vmin;
+    if (vrange == 0)
+      return FALSE;
 
-  if (fval < 0.0)
-    fval = 0.0;
-  if (fval > 1.0 - adj_page_size)
-    fval = 1.0 - adj_page_size;
+    adj_page_size = ih->data->pagesize / vrange;
 
-  ih->data->val = fval * (ih->data->vmax - ih->data->vmin) + ih->data->vmin;
-  iupScrollbarCropValue(ih);
+    if (fval < 0.0)
+      fval = 0.0;
+    if (fval > 1.0 - adj_page_size)
+      fval = 1.0 - adj_page_size;
 
-  range_val = (ih->data->val - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
+    ih->data->val = fval * vrange + ih->data->vmin;
+    iupScrollbarCropValue(ih);
+
+    range_val = (ih->data->val - ih->data->vmin) / vrange;
+  }
   gtk_range_set_value(GTK_RANGE(ih->handle), range_val);
 
   if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
@@ -253,13 +265,23 @@ static gboolean gtkScrollbarKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, I
 static int gtkScrollbarMapMethod(Ihandle* ih)
 {
   double range = ih->data->vmax - ih->data->vmin;
-  GtkAdjustment* adjustment = GTK_ADJUSTMENT(gtk_adjustment_new(
+  double linestep = 0, pagestep = 0, pagesize = 0;
+  GtkAdjustment* adjustment;
+
+  if (range != 0)
+  {
+    linestep = ih->data->linestep / range;
+    pagestep = ih->data->pagestep / range;
+    pagesize = ih->data->pagesize / range;
+  }
+
+  adjustment = GTK_ADJUSTMENT(gtk_adjustment_new(
     0,                                   /* value */
     0,                                   /* lower */
     1.0,                                 /* upper */
-    ih->data->linestep / range,          /* step_increment */
-    ih->data->pagestep / range,          /* page_increment */
-    ih->data->pagesize / range));        /* page_size */
+    linestep,                            /* step_increment */
+    pagestep,                            /* page_increment */
+    pagesize));                          /* page_size */
 
   if (!adjustment)
     return IUP_ERROR;

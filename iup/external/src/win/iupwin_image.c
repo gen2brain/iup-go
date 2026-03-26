@@ -46,7 +46,8 @@ static int winDibNumColors(BITMAPINFOHEADER* bmih)
 
 void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
-  int x, y, w, h, bpp, bmp_line_size, bits_size, planesize;
+  int x, y, w, h, bpp;
+  size_t bmp_line_size, bits_size, planesize;
   BYTE* bits;
   HANDLE hHandle = (HANDLE)handle;
   void* dib = GlobalLock(hHandle);
@@ -56,9 +57,9 @@ void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   w = bmih->biWidth;
   h = abs(bmih->biHeight);
   bpp = iupImageNormBpp(bmih->biBitCount);
-  bmp_line_size = ((w * bmih->biBitCount + 31) / 32) * 4;    /* DWORD aligned, 4 bytes boundary in a N bpp image */
+  bmp_line_size = (((size_t)w * bmih->biBitCount + 31) / 32) * 4;    /* DWORD aligned, 4 bytes boundary in a N bpp image */
   bits_size = bmp_line_size*h;
-  planesize = w*h;
+  planesize = (size_t)w*h;
 
   bits = ((BYTE*)dib) + sizeof(BITMAPINFOHEADER) + winDibNumColors(bmih)*sizeof(RGBQUAD);
 
@@ -179,7 +180,8 @@ void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 
 IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
 {
-  int x, y, w, h, bpp, bmp_line_size, bits_size;
+  int x, y, w, h, bpp;
+  size_t bmp_line_size, bits_size;
   BYTE* bits;
   HANDLE hHandle = (HANDLE)handle;
   void* dib = GlobalLock(hHandle);
@@ -188,7 +190,7 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
   w = bmih->biWidth;
   h = abs(bmih->biHeight);
   bpp = iupImageNormBpp(bmih->biBitCount);
-  bmp_line_size = ((w * bmih->biBitCount + 31) / 32) * 4;    /* DWORD aligned, 4 bytes boundary in a N bpp image */
+  bmp_line_size = (((size_t)w * bmih->biBitCount + 31) / 32) * 4;    /* DWORD aligned, 4 bytes boundary in a N bpp image */
   bits_size = bmp_line_size*h;
 
   bits = ((BYTE*)dib) + sizeof(BITMAPINFOHEADER) + winDibNumColors(bmih)*sizeof(RGBQUAD);
@@ -305,13 +307,14 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
 
 IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
 {
-  int y,x,bmp_line_size,channels,bits_size,header_size;
+  int y,x,channels;
+  size_t bmp_line_size,bits_size,header_size;
   HANDLE hHandle;
   BYTE* bits;
   void* dib;
   BITMAPINFOHEADER* bmih;
 
-  bmp_line_size = ((width * bpp + 31) / 32) * 4;    /* DWORD aligned, 4 bytes boundary in a N bpp image */
+  bmp_line_size = (((size_t)width * bpp + 31) / 32) * 4;    /* DWORD aligned, 4 bytes boundary in a N bpp image */
   bits_size = bmp_line_size*height;
   header_size = sizeof(BITMAPINFOHEADER) + colors_count*sizeof(RGBQUAD);
 
@@ -902,7 +905,8 @@ static const GUID* iWinImageGetContainerFormat(const char* format)
 
 static unsigned char* iWinImageExpandPalette(unsigned char* imgdata, int width, int height, iupColor* colors, int colors_count)
 {
-  int i, count = width * height;
+  size_t count = (size_t)width * height;
+  int i;
   unsigned char* rgba = (unsigned char*)malloc(count * 4);
   if (!rgba) return NULL;
 
@@ -953,7 +957,7 @@ static int iWinImageSaveToStream(unsigned char* imgdata, int width, int height, 
   else
     pixelFormat = GUID_WICPixelFormat32bppBGRA;
 
-  pixbuf = (unsigned char*)malloc(width * height * dst_channels);
+  pixbuf = (unsigned char*)malloc((size_t)width * height * dst_channels);
   if (!pixbuf)
   {
     if (data != imgdata) free(data);

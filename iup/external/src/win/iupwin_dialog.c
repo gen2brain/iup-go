@@ -644,7 +644,7 @@ static int winDialogCustomFrameProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp,
     if (cb)
     {
       iupAttribSet(ih, "HDC_WMPAINT", (char*)hdc);
-      iupAttribSetStrf(ih, "CLIPRECT", "0 0 %d %d", 0, 0, ih->currentwidth, ih->currentheight);
+      iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", 0, 0, ih->currentwidth, ih->currentheight);
 
       cb(ih);
 
@@ -1588,10 +1588,10 @@ static char* winDialogGetMdiNextAttrib(Ihandle *ih)
       return NULL;
     }
 
-    child = iupwinHandleGet(hchild); 
+    child = iupwinHandleGet(hchild);
     if (iupObjectCheck(child))
     {
-      iupwin_mdinext = hchild;
+      iupwin_mdinext = GetWindow(hchild, GW_HWNDNEXT);
       return IupGetName(child);
     }
   }

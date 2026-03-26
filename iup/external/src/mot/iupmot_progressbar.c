@@ -89,7 +89,13 @@ static int motProgressBarSetValueAttrib(Ihandle* ih, const char* value)
 
   iProgressBarCropValue(ih);
 
-  XtVaSetValues(ih->handle, XmNvalue, (int)(SHRT_MAX * (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin)), NULL);
+  {
+    double range = ih->data->vmax - ih->data->vmin;
+    if (range != 0)
+      XtVaSetValues(ih->handle, XmNvalue, (int)(SHRT_MAX * (ih->data->value - ih->data->vmin) / range), NULL);
+    else
+      XtVaSetValues(ih->handle, XmNvalue, 0, NULL);
+  }
 
   return 0;
 }

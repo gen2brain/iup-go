@@ -39,16 +39,17 @@ void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   if (xi)
   {
     /* planes are packed and top-bottom in this imgdata */
-    int planesize = w*h;
+    int channels = (bpp == 32) ? 4 : 3;
+    int line_size = w * channels;
     unsigned char *line_data;
     int y, x;
 
     for (y = 0; y<h; y++)
     {
-      line_data = imgdata + y * planesize;
+      line_data = imgdata + y * line_size;
       for (x = 0; x<w; x++)
       {
-        iupmotColorGetRGB(XGetPixel(xi, x, y), line_data + x, line_data + x + 1, line_data + x + 2);
+        iupmotColorGetRGB(XGetPixel(xi, x, y), line_data + x * channels, line_data + x * channels + 1, line_data + x * channels + 2);
       }
     }
 
@@ -73,7 +74,7 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
   {
     /* planes are separated in imgdata */
     int y, x;
-    int planesize = w*h;
+    size_t planesize = (size_t)w*h;
     unsigned char *r = imgdata,
                   *g = imgdata+planesize,
                   *b = imgdata+2*planesize;

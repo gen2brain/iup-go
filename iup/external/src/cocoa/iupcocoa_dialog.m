@@ -916,7 +916,7 @@ void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 
   NSWindow* parent_window = (NSWindow*)parent;
   NSWindow* the_window = cocoaDialogGetWindow(ih);
-  if ([parent_window isKindOfClass:[NSWindow class]])
+  if (the_window && [parent_window isKindOfClass:[NSWindow class]])
   {
     [parent_window addChildWindow:the_window ordered:NSWindowAbove];
   }
@@ -1134,6 +1134,11 @@ static int cocoaDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       [the_window toggleFullScreen:nil];
 
       dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        if (!iupObjectCheck(ih))
+          return;
+        NSWindow* cur_window = cocoaDialogGetWindow(ih);
+        if (!cur_window)
+          return;
         int x = iupAttribGetInt(ih, "_IUPCOCOA_FS_X");
         int y = iupAttribGetInt(ih, "_IUPCOCOA_FS_Y");
         int w = IupGetInt(ih, "_IUPCOCOA_FS_SIZE");
@@ -1142,10 +1147,10 @@ static int cocoaDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
         if (w > 0 && h > 0)
         {
           iupdrvDialogSetPosition(ih, x, y);
-          NSRect frame = [the_window frame];
+          NSRect frame = [cur_window frame];
           frame.size.width = w;
           frame.size.height = h;
-          [the_window setFrame:frame display:YES];
+          [cur_window setFrame:frame display:YES];
         }
       });
 

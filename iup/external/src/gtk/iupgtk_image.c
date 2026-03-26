@@ -55,7 +55,8 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
   GdkPixbuf* pixbuf = (GdkPixbuf*)handle;
   int w, h, y, x, bpp;
   guchar *pixdata, *pixline_data;
-  int rowstride, channels, planesize;
+  int rowstride, channels;
+  size_t planesize;
   unsigned char *r, *g, *b, *a;
 
   if (!iupdrvImageGetInfo(handle, &w, &h, &bpp))
@@ -69,7 +70,7 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
   channels = gdk_pixbuf_get_n_channels(pixbuf);
 
   /* planes are separated in imgdata */
-  planesize = w*h;
+  planesize = (size_t)w*h;
   r = imgdata;
   g = imgdata+planesize;
   b = imgdata+2*planesize;
@@ -135,7 +136,7 @@ IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupC
   else /* bpp == 32 or bpp == 24 */
   {
     /* planes are separated in imgdata */
-    int planesize = width*height;
+    size_t planesize = (size_t)width*height;
     unsigned char *r = imgdata,
                   *g = imgdata+planesize,
                   *b = imgdata+2*planesize,
@@ -529,7 +530,8 @@ IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
 
 static unsigned char* iGtkImageExpandPalette(unsigned char* imgdata, int width, int height, iupColor* colors, int colors_count)
 {
-  int i, count = width * height;
+  size_t count = (size_t)width * height;
+  int i;
   unsigned char* rgba = (unsigned char*)malloc(count * 4);
   if (!rgba) return NULL;
 

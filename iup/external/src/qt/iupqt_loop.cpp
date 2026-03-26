@@ -17,6 +17,7 @@ extern "C" {
 #include "iupcbs.h"
 #include "iup_loop.h"
 #include "iup_str.h"
+#include "iup_object.h"
 }
 
 #include "iupqt_drv.h"
@@ -253,10 +254,11 @@ static void qtPostMessageExecute(qtPostMessageUserData* user_data)
   }
 
   Ihandle* ih = user_data->ih;
-  IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
-  if (cb)
+  if (iupObjectCheck(ih))
   {
-    cb(ih, user_data->s, user_data->i, user_data->d, user_data->p);
+    IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
+    if (cb)
+      cb(ih, user_data->s, user_data->i, user_data->d, user_data->p);
   }
 
   if (user_data->s)

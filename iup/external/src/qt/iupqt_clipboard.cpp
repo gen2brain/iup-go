@@ -331,7 +331,7 @@ static int qtClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
     return 0;
 
   int size = iupAttribGetInt(ih, "FORMATDATASIZE");
-  if (!size)
+  if (size <= 0)
     return 0;
 
   QMimeData *mimeData = new QMimeData();

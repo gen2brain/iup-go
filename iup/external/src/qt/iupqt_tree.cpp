@@ -1609,6 +1609,24 @@ static int qtTreeSetTopItemAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static bool qtTreeIsAncestorOf(QTreeWidgetItem* ancestor, QTreeWidgetItem* node)
+{
+  while (node)
+  {
+    if (node == ancestor)
+      return true;
+    node = node->parent();
+  }
+  return false;
+}
+
+static void qtTreeClearMarkStartIfNeeded(IupQtTree* tree, QTreeWidgetItem* deleted_item)
+{
+  QTreeWidgetItem* mark = tree->getMarkStartNode();
+  if (mark && qtTreeIsAncestorOf(deleted_item, mark))
+    tree->setMarkStartNode(nullptr);
+}
+
 static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 {
   if (!ih->handle)
@@ -1619,6 +1637,8 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
   if (iupStrEqualNoCase(value, "ALL"))
   {
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
+
+    tree->setMarkStartNode(nullptr);
 
     IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
     if (cb)
@@ -1659,6 +1679,8 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     }
 
     int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)item);
+
+    qtTreeClearMarkStartIfNeeded(tree, item);
 
     QTreeWidgetItem* parent = item->parent();
     if (parent)
@@ -1709,6 +1731,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       }
 
       int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)child);
+      qtTreeClearMarkStartIfNeeded(tree, child);
       item->removeChild(child);
       delete child;
       iupTreeDelFromCache(ih, child_id, count);
@@ -1725,22 +1748,38 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
   {
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
 
-    /* First, collect all selected items (not their IDs, the actual QTreeWidgetItem pointers) */
+    /* Collect selected items, filtering out descendants of other selected items
+       to avoid use-after-free when deleting a parent also frees its children */
     QList<QTreeWidgetItem*> items_to_delete;
+    QSet<QTreeWidgetItem*> selected_set;
     for (int i = 0; i < ih->data->node_count; i++)
     {
       QTreeWidgetItem* item = qtTreeFindNode(ih, i);
       if (item && item->isSelected())
+        selected_set.insert(item);
+    }
+
+    /* Keep only top-level selected items (those with no selected ancestor) */
+    for (QTreeWidgetItem* item : selected_set)
+    {
+      bool has_selected_ancestor = false;
+      QTreeWidgetItem* p = item->parent();
+      while (p)
+      {
+        if (selected_set.contains(p))
+        {
+          has_selected_ancestor = true;
+          break;
+        }
+        p = p->parent();
+      }
+      if (!has_selected_ancestor)
         items_to_delete.append(item);
     }
 
-    /* Now delete collected items */
+    /* Now delete collected items — no child will be in the list */
     for (QTreeWidgetItem* item : items_to_delete)
     {
-      /* Skip if item was already deleted as child of another deleted item */
-      if (!item->treeWidget())
-        continue;
-
       int item_id = qtTreeFindNodeId(ih, item);
       if (item_id == -1)
         continue;
@@ -1761,6 +1800,8 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       }
 
       int count = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)item);
+
+      qtTreeClearMarkStartIfNeeded(tree, item);
 
       QTreeWidgetItem* parent = item->parent();
       if (parent)

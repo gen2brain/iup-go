@@ -71,6 +71,9 @@ static void gtk4ScrollbarUpdateAdjustment(Ihandle* ih)
   GtkAdjustment* adjustment;
   double range = ih->data->vmax - ih->data->vmin;
 
+  if (range == 0)
+    return;
+
   adjustment = gtk_scrollbar_get_adjustment(GTK_SCROLLBAR(ih->handle));
 
   gtk_adjustment_configure(adjustment,
@@ -113,6 +116,9 @@ static int gtk4ScrollbarSetValueAttrib(Ihandle* ih, const char* value)
     GtkAdjustment* adjustment;
     double range = ih->data->vmax - ih->data->vmin;
     double fval;
+
+    if (range == 0)
+      return 0;
 
     iupScrollbarCropValue(ih);
 
@@ -204,14 +210,22 @@ static int gtk4ScrollbarMapMethod(Ihandle* ih)
 {
   GtkAdjustment* adjustment;
   double range = ih->data->vmax - ih->data->vmin;
+  double linestep = 0, pagestep = 0, pagesize = 0;
+
+  if (range != 0)
+  {
+    linestep = ih->data->linestep / range;
+    pagestep = ih->data->pagestep / range;
+    pagesize = ih->data->pagesize / range;
+  }
 
   adjustment = GTK_ADJUSTMENT(gtk_adjustment_new(
     0,
     0,
     1.0,
-    ih->data->linestep / range,
-    ih->data->pagestep / range,
-    ih->data->pagesize / range));
+    linestep,
+    pagestep,
+    pagesize));
 
   if (!adjustment)
     return IUP_ERROR;

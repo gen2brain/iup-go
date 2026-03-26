@@ -1167,7 +1167,12 @@ static char* gtkTextGetSelectedTextAttrib(Ihandle* ih)
     GtkTextIter start_iter, end_iter;
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
-      return iupStrReturnStr(iupgtkStrConvertFromSystem(gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE)));
+    {
+      char* buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+      char* value = iupStrReturnStr(iupgtkStrConvertFromSystem(buf_text));
+      g_free(buf_text);
+      return value;
+    }
   }
   else
   {
@@ -1358,7 +1363,11 @@ static char* gtkTextGetValueAttrib(Ihandle* ih)
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_start_iter(buffer, &start_iter);
     gtk_text_buffer_get_end_iter(buffer, &end_iter);
-    value = iupStrReturnStr(iupgtkStrConvertFromSystem(gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE)));
+    {
+      char* buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+      value = iupStrReturnStr(iupgtkStrConvertFromSystem(buf_text));
+      g_free(buf_text);
+    }
   }
   else
     value = iupStrReturnStr(iupgtkStrConvertFromSystem(gtk_entry_get_text(GTK_ENTRY(ih->handle))));
@@ -1367,20 +1376,25 @@ static char* gtkTextGetValueAttrib(Ihandle* ih)
 
   return value;
 }
-                       
+
 static char* gtkTextGetLineValueAttrib(Ihandle* ih)
 {
   if (ih->data->is_multiline)
   {
     GtkTextIter start_iter, end_iter, iter;
     int lin;
+    char* buf_text;
+    char* value;
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
     lin = gtk_text_iter_get_line(&iter);
     gtk_text_buffer_get_iter_at_line(buffer, &start_iter, lin);
     gtk_text_buffer_get_iter_at_line(buffer, &end_iter, lin);
     gtk_text_iter_forward_to_line_end(&end_iter);
-    return iupStrReturnStr(iupgtkStrConvertFromSystem(gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE)));
+    buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+    value = iupStrReturnStr(iupgtkStrConvertFromSystem(buf_text));
+    g_free(buf_text);
+    return value;
   }
   else
     return gtkTextGetValueAttrib(ih);

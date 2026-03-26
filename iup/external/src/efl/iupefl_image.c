@@ -146,7 +146,7 @@ IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupC
     return NULL;
   efl_gfx_entity_visible_set(img, EINA_FALSE);
 
-  pixels = (unsigned int*)malloc(width * height * sizeof(unsigned int));
+  pixels = (unsigned int*)malloc((size_t)width * height * sizeof(unsigned int));
   if (!pixels)
   {
     efl_unref(img);
@@ -312,7 +312,7 @@ void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive
     return NULL;
   efl_gfx_entity_visible_set(img, EINA_FALSE);
 
-  pixels = (unsigned int*)malloc(width * height * sizeof(unsigned int));
+  pixels = (unsigned int*)malloc((size_t)width * height * sizeof(unsigned int));
   if (!pixels)
   {
     efl_unref(img);
@@ -436,7 +436,7 @@ static Eo* eflImageCreateFromIhandle(Ihandle* img_ih, Evas_Object* parent, int m
     return NULL;
   efl_gfx_entity_visible_set(img, EINA_FALSE);
 
-  pixels = (unsigned int*)malloc(width * height * sizeof(unsigned int));
+  pixels = (unsigned int*)malloc((size_t)width * height * sizeof(unsigned int));
   if (!pixels)
   {
     efl_del(img);
@@ -476,7 +476,7 @@ static int eflImageUpdateFromIhandle(Eo* img, Ihandle* img_ih, int make_inactive
   else if (bpp == 32)
     has_alpha = 1;
 
-  pixels = (unsigned int*)malloc(width * height * sizeof(unsigned int));
+  pixels = (unsigned int*)malloc((size_t)width * height * sizeof(unsigned int));
   if (!pixels)
     return 0;
 
@@ -560,7 +560,8 @@ static Eo* iEflImageCreateTemp(unsigned char* imgdata, int width, int height, in
   Evas_Object* win = iupeflGetMainWindow();
   Eo* img;
   unsigned int* pixels;
-  int x, y, count;
+  int x, y;
+  size_t count;
 
   if (!win) return NULL;
 
@@ -569,7 +570,7 @@ static Eo* iEflImageCreateTemp(unsigned char* imgdata, int width, int height, in
 
   efl_gfx_entity_visible_set(img, EINA_FALSE);
 
-  count = width * height;
+  count = (size_t)width * height;
   pixels = (unsigned int*)malloc(count * sizeof(unsigned int));
   if (!pixels)
   {

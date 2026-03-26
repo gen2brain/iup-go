@@ -643,7 +643,8 @@ IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
 
 static unsigned char* iCocoaImageExpandPalette(unsigned char* imgdata, int width, int height, iupColor* colors, int colors_count)
 {
-  int i, count = width * height;
+  size_t count = (size_t)width * height;
+  int i;
   unsigned char* rgba = (unsigned char*)malloc(count * 4);
   if (!rgba) return NULL;
 

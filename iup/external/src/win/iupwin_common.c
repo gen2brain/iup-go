@@ -947,7 +947,7 @@ IUP_DRV_API int iupwinFlagButtonUp(Ihandle* ih, UINT msg)
 {
   /* return false if a match button down was NOT flagged */
 
-  if (msg == WM_XBUTTONDOWN)
+  if (msg == WM_XBUTTONUP)
   {
     if (!iupAttribGet(ih, "_IUP_WM_XBUTTONDOWN"))
       return 0;
@@ -961,14 +961,14 @@ IUP_DRV_API int iupwinFlagButtonUp(Ihandle* ih, UINT msg)
     else
       iupAttribSet(ih, "_IUP_WM_LBUTTONDOWN", NULL);
   }
-  else if (msg == WM_MBUTTONDOWN)
+  else if (msg == WM_MBUTTONUP)
   {
     if (!iupAttribGet(ih, "_IUP_WM_MBUTTONDOWN"))
       return 0;
     else
       iupAttribSet(ih, "_IUP_WM_MBUTTONDOWN", NULL);
   }
-  else if (msg == WM_RBUTTONDOWN)
+  else if (msg == WM_RBUTTONUP)
   {
     if (!iupAttribGet(ih, "_IUP_WM_RBUTTONDOWN"))
       return 0;

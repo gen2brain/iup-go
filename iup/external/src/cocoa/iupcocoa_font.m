@@ -376,6 +376,7 @@ IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle *ih, const char *str, 
         NSSize size = [attrStr size];
         if (w) *w = (int)ceil(size.width) + 4;
         if (h) *h = (int)ceil(size.height);
+        [attrStr release];
         return;
       }
     }

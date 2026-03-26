@@ -1093,6 +1093,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
 - (void)setCustomBackgroundColor:(NSColor*)color
 {
+  [customBackgroundColor release];
   customBackgroundColor = [color retain];
 }
 

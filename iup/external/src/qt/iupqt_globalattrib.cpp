@@ -261,9 +261,14 @@ extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
 
     for (int i = 0; i < monitors_count; i++)
     {
+      int remaining = monitors_count * entry_size - (int)(pstr - str);
+      if (remaining <= 0)
+        break;
       QRect geom = screens[i]->geometry();
-      int written = snprintf(pstr, entry_size, "%d %d %d %d\n",
+      int written = snprintf(pstr, remaining, "%d %d %d %d\n",
                              geom.x(), geom.y(), geom.width(), geom.height());
+      if (written >= remaining)
+        written = remaining - 1;
       pstr += written;
     }
 

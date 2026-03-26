@@ -86,7 +86,8 @@ static void winProgressBarDraw(Ihandle* ih, HDC hDC)
 
   if (!ih->data->marquee)
   {
-    factor = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
+    double range = ih->data->vmax - ih->data->vmin;
+    factor = (range != 0) ? (ih->data->value - ih->data->vmin) / range : 0;
 
     if (is_vertical)
     {
@@ -160,7 +161,8 @@ static int winProgressBarSetValueAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      double factor = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
+      double range = ih->data->vmax - ih->data->vmin;
+      double factor = (range != 0) ? (ih->data->value - ih->data->vmin) / range : 0;
       int val = (int)(IUP_PB_MAX * factor);
       SendMessage(ih->handle, PBM_SETPOS, (WPARAM)val, 0);
     }

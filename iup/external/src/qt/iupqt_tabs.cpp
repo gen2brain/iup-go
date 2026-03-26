@@ -177,10 +177,19 @@ protected:
       close_btn->setAutoRaise(true);
       close_btn->setFixedSize(16, 16);
 
-      /* Use lambda to avoid MOC - captures index and calls callback */
-      QObject::connect(close_btn, &QToolButton::clicked, [this, index]() {
+      /* Look up current tab index at click time (not capture time) to handle reordering */
+      QObject::connect(close_btn, &QToolButton::clicked, [this, close_btn]() {
         if (closeCallback)
-          closeCallback(index);
+        {
+          for (int i = 0; i < count(); i++)
+          {
+            if (tabButton(i, QTabBar::RightSide) == close_btn)
+            {
+              closeCallback(i);
+              break;
+            }
+          }
+        }
       });
 
       setTabButton(index, QTabBar::RightSide, close_btn);
@@ -940,9 +949,17 @@ static int qtTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
         close_btn->setAutoRaise(true);
         close_btn->setFixedSize(16, 16);
 
-        /* Use lambda to call static function - no MOC needed */
-        QObject::connect(close_btn, &QToolButton::clicked, [tabs, pos, ih]() {
-          qtTabsHandleTabCloseRequested(tabs, pos, ih);
+        /* Look up current tab index at click time to handle reordering */
+        QObject::connect(close_btn, &QToolButton::clicked, [tabs, close_btn, ih]() {
+          IupQtTabBar* bar = (IupQtTabBar*)tabs->tabBar();
+          for (int i = 0; i < bar->count(); i++)
+          {
+            if (bar->tabButton(i, QTabBar::RightSide) == close_btn)
+            {
+              qtTabsHandleTabCloseRequested(tabs, i, ih);
+              break;
+            }
+          }
         });
 
         tab_bar->setTabButton(pos, QTabBar::RightSide, close_btn);

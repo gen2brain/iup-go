@@ -452,7 +452,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
   NSTextField* text_field = [the_notification object];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
 
-  if (ih && !ih->data->disable_callbacks)
+  if (ih && iupObjectCheck(ih) && !ih->data->disable_callbacks)
     cocoaTextCallCaretCb(ih);
 }
 
@@ -3275,7 +3275,7 @@ static int cocoaTextSetFormattingAttrib(Ihandle* ih, const char* value)
 
           ih->data->disable_callbacks = 1;
           [text_view shouldChangeTextInRange:selection_range replacementString:nil];
-          [text_storage setAttributes:nil range:selection_range];
+          [text_storage setAttributes:@{} range:selection_range];
           ih->data->disable_callbacks = 0;
 
           IupCocoaFont* iup_font = iupcocoaGetFont(ih);
@@ -3333,7 +3333,7 @@ static int cocoaTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
 
   ih->data->disable_callbacks = 1;
   [text_view shouldChangeTextInRange:selection_range replacementString:nil];
-  [text_storage setAttributes:nil range:selection_range];
+  [text_storage setAttributes:@{} range:selection_range];
   ih->data->disable_callbacks = 0;
 
   [text_storage endEditing];

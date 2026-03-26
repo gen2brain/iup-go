@@ -72,6 +72,9 @@ static gboolean gtk4DropTargetDrop(GtkDropTarget *target, const GValue *value, d
   if (!type)
     return FALSE;
 
+  if (size > (gsize)INT_MAX)
+    return FALSE;
+
   /* Call the drop data callback with the data */
   cbDropData(ih, type, (void*)data, (int)size, (int)x, (int)y);
 

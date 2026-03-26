@@ -32,6 +32,8 @@ extern "C" {
 static int qtProgressBarTimeCb(Ihandle* timer)
 {
   Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUP_PROGRESSBAR");
+  if (!ih || !iupObjectCheck(ih))
+    return IUP_DEFAULT;
   QProgressBar* pbar = (QProgressBar*)ih->handle;
 
   if (pbar)
@@ -135,9 +137,15 @@ static int qtProgressBarSetValueAttrib(Ihandle* ih, const char* value)
   if (pbar)
   {
     /* Map value from [vmin, vmax] to [0, 1000] for precision */
-    double fraction = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
-    int int_value = (int)(fraction * 1000.0);
-    pbar->setValue(int_value);
+    double range = ih->data->vmax - ih->data->vmin;
+    if (range != 0)
+    {
+      double fraction = (ih->data->value - ih->data->vmin) / range;
+      int int_value = (int)(fraction * 1000.0);
+      pbar->setValue(int_value);
+    }
+    else
+      pbar->setValue(0);
   }
 
   return 0;

@@ -835,7 +835,7 @@ static int iDrawGetImageDataWindowFallback(IdrawCanvas* dc, unsigned char* data)
   bmi.biBitCount = 32;
   bmi.biCompression = BI_RGB;
 
-  temp = (unsigned char*)malloc(dc->w * dc->h * 4);
+  temp = (unsigned char*)malloc((size_t)dc->w * dc->h * 4);
   if (!temp)
   {
     SelectObject(hMemDC, hOld);
@@ -879,7 +879,7 @@ static int iDrawGetImageDataWindowFallback(IdrawCanvas* dc, unsigned char* data)
 
 IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
-  unsigned char* temp = (unsigned char*)malloc(dc->w * dc->h * 4);
+  unsigned char* temp = (unsigned char*)malloc((size_t)dc->w * dc->h * 4);
   if (!temp)
     return 0;
 
@@ -952,7 +952,7 @@ IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w
   bmi.biBitCount = 32;
   bmi.biCompression = BI_RGB;
 
-  temp = (unsigned char*)malloc(w * h * 4);
+  temp = (unsigned char*)malloc((size_t)w * h * 4);
   if (!temp)
   {
     SelectObject(hMemDC, hOld);

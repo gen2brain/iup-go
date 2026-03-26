@@ -906,6 +906,23 @@ static void cell_factory_unbind(GtkSignalListItemFactory* factory, GtkListItem* 
   {
     gtk_widget_remove_css_class(box, "iup-table-focus-rect");
     gtk_widget_remove_css_class(box, "iup-table-focus-rect-unfocused");
+
+    /* Clear global editing pointer if this list item contains the editing widget */
+    if (currently_editing_label)
+    {
+      GtkWidget* child = gtk_widget_get_first_child(box);
+      while (child)
+      {
+        if (child == currently_editing_label)
+        {
+          if (GTK_IS_EDITABLE_LABEL(child) && gtk_editable_label_get_editing(GTK_EDITABLE_LABEL(child)))
+            gtk_editable_label_stop_editing(GTK_EDITABLE_LABEL(child), TRUE);
+          currently_editing_label = NULL;
+          break;
+        }
+        child = gtk_widget_get_next_sibling(child);
+      }
+    }
   }
 
   gulong handler_id = GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(list_item), "update-handler"));
@@ -967,6 +984,8 @@ static void on_selection_changed(GtkSelectionModel* selection, guint position, g
       gtk_data->current_row = 0;
       gtk_data->current_col = 0;
     }
+    if (bitset)
+      gtk_bitset_unref(bitset);
   }
 
   if (old_row != gtk_data->current_row)
@@ -1482,8 +1501,9 @@ static void gtk4TableFocusLeave(GtkEventControllerFocus* controller, Ihandle* ih
 
 static int gtk4TableMapMethod(Ihandle* ih)
 {
-  Igtk4TableData* gtk_data = (Igtk4TableData*)malloc(sizeof(Igtk4TableData));
-  memset(gtk_data, 0, sizeof(Igtk4TableData));
+  Igtk4TableData* gtk_data = (Igtk4TableData*)calloc(1, sizeof(Igtk4TableData));
+  if (!gtk_data)
+    return IUP_ERROR;
   ih->data->native_data = gtk_data;
 
   gtk_data->is_virtual = iupAttribGetBoolean(ih, "VIRTUALMODE");

@@ -233,9 +233,12 @@ static void winProcessPostMessage(LPARAM lParam)
 {
   winPostMessageUserData* user_data = (winPostMessageUserData*)lParam;
   Ihandle* ih = user_data->ih;
-  IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
-  if (cb)
-    cb(ih, user_data->s, user_data->i, user_data->d, user_data->p);
+  if (iupObjectCheck(ih))
+  {
+    IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
+    if (cb)
+      cb(ih, user_data->s, user_data->i, user_data->d, user_data->p);
+  }
   if (user_data->s) free(user_data->s);
   free(user_data);
 }

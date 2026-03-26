@@ -1837,7 +1837,9 @@ static int cocoaTreeDropData_CB(Ihandle *ih, char* type, void* data, int len, in
   char key[5];
 
   Ihandle* ih_source;
-  memcpy((void*)&ih_source, data, len);
+  if (len != sizeof(Ihandle*))
+    return IUP_DEFAULT;
+  memcpy((void*)&ih_source, data, sizeof(Ihandle*));
 
   if (!IupClassMatch(ih_source, "tree"))
     return IUP_DEFAULT;
@@ -1998,6 +2000,8 @@ static void iupCocoaTreeMoveCache(Ihandle* ih, int flat_index_before, int flat_i
   {
     is_malloc = true;
     tmp_array = (InodeData*)malloc(count_of_nodes_to_move*sizeof(InodeData));
+    if (!tmp_array)
+      return;
   }
   else
   {
@@ -2377,7 +2381,7 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
 
     NSPasteboard* paste_board = [drag_info draggingPasteboard];
     NSData* data_value = [paste_board dataForType:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE];
-    if(nil == data_value)
+    if(nil == data_value || [data_value length] < sizeof(intptr_t))
     {
       return NO;
     }
@@ -2446,7 +2450,7 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
     /* Cross-tree drag and drop */
     NSPasteboard* paste_board = [drag_info draggingPasteboard];
     NSData* data_value = [paste_board dataForType:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE];
-    if(nil == data_value)
+    if(nil == data_value || [data_value length] < sizeof(intptr_t))
     {
       return NO;
     }

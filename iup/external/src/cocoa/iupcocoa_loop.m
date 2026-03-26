@@ -13,6 +13,7 @@
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_str.h"
+#include "iup_object.h"
 #include "iup_loop.h"
 #include "iupcocoa_drv.h"
 
@@ -193,12 +194,13 @@ void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
   char* s_copy = iupStrDup(s);
   dispatch_async(dispatch_get_main_queue(),
       ^{
-      IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
-      if (cb)
+      if (iupObjectCheck(ih))
       {
-        cb(ih, s_copy, i, d, p);
+        IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
+        if (cb)
+          cb(ih, s_copy, i, d, p);
       }
-        free(s_copy);
+      free(s_copy);
       }
       );
 }

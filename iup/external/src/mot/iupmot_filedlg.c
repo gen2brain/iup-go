@@ -248,7 +248,7 @@ static char* motFileCheckExt(Ihandle* ih, const char* filename)
   {
     int len = (int)strlen(filename);
     int ext_len = (int)strlen(ext);
-    if (filename[len - ext_len - 1] != '.')
+    if (len > ext_len + 1 && filename[len - ext_len - 1] != '.')
     {
       char* new_filename = XtMalloc(len + ext_len + 1 + 1);
       memcpy(new_filename, filename, len);

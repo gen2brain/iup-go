@@ -2232,11 +2232,16 @@ static int gtkTreeSetColorAttrib(Ihandle *ih, int id, const char *value)
 
 static char* gtkTreeGetTitleFontAttrib(Ihandle *ih, int id)
 {
+  char* fontname;
+  char* value;
   IupGtk4TreeNode *node = iupgtk4TreeGetNodeFromId(ih, id);
   if (!node || !node->font)
     return NULL;
 
-  return pango_font_description_to_string(node->font);
+  fontname = pango_font_description_to_string(node->font);
+  value = iupStrReturnStr(fontname);
+  g_free(fontname);
+  return value;
 }
 
 static int gtkTreeSetTitleFontAttrib(Ihandle *ih, int id, const char *value)
@@ -3036,9 +3041,35 @@ static int gtkTreeSetMoveNodeAttrib(Ihandle *ih, int id, const char *value)
   g_object_ref(src_node);
   g_list_store_remove(src_store, src_pos);
 
+  /* Adjust destination position if same parent and source was before destination */
+  if (src_store == dst_store && src_pos < dst_pos)
+    dst_pos--;
+
   /* Insert at new position */
   g_list_store_insert(dst_store, dst_pos, src_node);
   g_object_unref(src_node);
+
+  /* Rebuild the entire node cache after move */
+  {
+    GListStore *root_store_tmp = (GListStore*)iupAttribGet(ih, "_IUPGTK4_ROOT_STORE");
+    if (root_store_tmp)
+    {
+      guint n_roots = g_list_model_get_n_items(G_LIST_MODEL(root_store_tmp));
+      guint ri;
+      int cache_id = -1;
+      for (ri = 0; ri < n_roots; ri++)
+      {
+        IupGtk4TreeNode *rn = g_list_model_get_item(G_LIST_MODEL(root_store_tmp), ri);
+        if (rn)
+        {
+          cache_id++;
+          ih->data->node_cache[cache_id].node_handle = (InodeHandle*)rn;
+          iupgtk4TreeRebuildCacheRec(ih, rn, &cache_id);
+          g_object_unref(rn);
+        }
+      }
+    }
+  }
 
   return 0;
 }
@@ -3088,6 +3119,28 @@ static int gtkTreeSetCopyNodeAttrib(Ihandle *ih, int id, const char *value)
 
   /* Copy recursively */
   iupgtk4TreeCopyNodeRec(ih, src_node, dst_parent, dst_pos);
+
+  /* Rebuild the entire node cache after copy */
+  {
+    GListStore *root_store_tmp = (GListStore*)iupAttribGet(ih, "_IUPGTK4_ROOT_STORE");
+    if (root_store_tmp)
+    {
+      guint n_roots = g_list_model_get_n_items(G_LIST_MODEL(root_store_tmp));
+      guint ri;
+      int cache_id = -1;
+      for (ri = 0; ri < n_roots; ri++)
+      {
+        IupGtk4TreeNode *rn = g_list_model_get_item(G_LIST_MODEL(root_store_tmp), ri);
+        if (rn)
+        {
+          cache_id++;
+          ih->data->node_cache[cache_id].node_handle = (InodeHandle*)rn;
+          iupgtk4TreeRebuildCacheRec(ih, rn, &cache_id);
+          g_object_unref(rn);
+        }
+      }
+    }
+  }
 
   return 0;
 }

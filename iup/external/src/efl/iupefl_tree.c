@@ -2397,7 +2397,7 @@ static void eflTreeDropCb(void *data, const Efl_Event *ev)
   char key[5];
   IFniiii cb;
 
-  if (!ih || !efl_tree_drag_source)
+  if (!ih || !efl_tree_drag_source || !iupObjectCheck(efl_tree_drag_source))
     return;
 
   idDrop = eflTreeConvertXYToPos(ih, drop_ev->dnd.position.x, drop_ev->dnd.position.y);

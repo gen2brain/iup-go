@@ -587,6 +587,10 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     GtkWidget* old_popover = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_POPOVER");
     if (old_popover && GTK_IS_WIDGET(old_popover))
     {
+      GtkWidget* old_parent = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_POPOVER_PARENT");
+      if (old_parent && GTK_IS_WIDGET(old_parent))
+        g_signal_handlers_disconnect_by_func(old_parent, gtk4MenuParentDestroyCb, ih);
+
       GtkWidget* parent = gtk_widget_get_parent(old_popover);
       if (parent)
         gtk_widget_unparent(old_popover);

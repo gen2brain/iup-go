@@ -13,7 +13,7 @@
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_loop.h"
-
+#include "iup_object.h"
 #include "iup_str.h"
 
 /* local variables */
@@ -145,9 +145,12 @@ static gint gtkPostMessageCallback(void *cb_data)
 {
   gtkPostMessageUserData* user_data = (gtkPostMessageUserData*)cb_data;
   Ihandle* ih = user_data->ih;
-  IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
-  if (cb)
-    cb(ih, user_data->s, user_data->i, user_data->d, user_data->p);
+  if (iupObjectCheck(ih))
+  {
+    IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
+    if (cb)
+      cb(ih, user_data->s, user_data->i, user_data->d, user_data->p);
+  }
   if (user_data->s) free(user_data->s);
   free(user_data);
   return FALSE; /* call only once */

@@ -64,7 +64,7 @@ static int gtk4ClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
     return 0;
 
   size = iupAttribGetInt(ih, "FORMATDATASIZE");
-  if (!size)
+  if (size <= 0)
     return 0;
 
   data = malloc(size);
@@ -73,12 +73,19 @@ static int gtk4ClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   memcpy(data, value, size);
 
   clip_info = malloc(sizeof(gtk4ClipInfo));
+  if (!clip_info)
+  {
+    free(data);
+    return 0;
+  }
   clip_info->data = data;
   clip_info->size = size;
   clip_info->mime_type = mime_type;
 
   /* Use GdkContentProvider for custom formats */
-  GdkContentProvider *provider = gdk_content_provider_new_for_bytes(mime_type, g_bytes_new_with_free_func(data, size, gtk4ClipboardDataClearFunc, clip_info));
+  GBytes *bytes = g_bytes_new_with_free_func(data, size, gtk4ClipboardDataClearFunc, clip_info);
+  GdkContentProvider *provider = gdk_content_provider_new_for_bytes(mime_type, bytes);
+  g_bytes_unref(bytes);
 
   gdk_clipboard_set_content(clipboard, provider);
 
@@ -151,6 +158,12 @@ static char* gtk4ClipboardGetFormatDataAttrib(Ihandle *ih)
       if (size <= 0 || !mem_data)
         return NULL;
 
+      if (size > (gsize)INT_MAX)
+      {
+        g_free(mem_data);
+        return NULL;
+      }
+
       data = iupStrGetMemory((int)size + 1);
       memcpy(data, mem_data, size);
       g_free(mem_data);
@@ -210,6 +223,12 @@ static char* gtk4ClipboardGetFormatDataAttrib(Ihandle *ih)
 
       if (size <= 0 || !mem_data)
         return NULL;
+
+      if (size > (gsize)INT_MAX)
+      {
+        g_free(mem_data);
+        return NULL;
+      }
 
       data = iupStrGetMemory((int)size + 1);
       memcpy(data, mem_data, size);

@@ -508,7 +508,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   {
     unsigned char* old_buffer = (unsigned char*)iupAttribGet(dc->ih, "_IUP_EFL_CANVAS_BUFFER");
     unsigned char* buffer;
-    int size = dc->w * dc->h * 4;
+    size_t size = (size_t)dc->w * dc->h * 4;
 
     if (old_buffer)
     {
@@ -705,7 +705,7 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
       return;
     }
 
-    pixels = (unsigned int*)malloc(vis_w * vis_h * sizeof(unsigned int));
+    pixels = (unsigned int*)malloc((size_t)vis_w * vis_h * sizeof(unsigned int));
     if (!pixels)
     {
       efl_del(vg);
@@ -1145,7 +1145,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
       return;
     }
 
-    pixels = (unsigned int*)malloc(buf_w * buf_h * sizeof(unsigned int));
+    pixels = (unsigned int*)malloc((size_t)buf_w * buf_h * sizeof(unsigned int));
     if (!pixels)
     {
       efl_del(text_obj);
@@ -1184,7 +1184,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 
     if (vis_x != draw_x || vis_y != draw_y || vis_w != buf_w || vis_h != buf_h)
     {
-      unsigned int* clipped = (unsigned int*)malloc(vis_w * vis_h * sizeof(unsigned int));
+      unsigned int* clipped = (unsigned int*)malloc((size_t)vis_w * vis_h * sizeof(unsigned int));
       if (!clipped)
       {
         free(pixels);
@@ -1350,7 +1350,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   scale_x = (double)img_w / (double)w;
   scale_y = (double)img_h / (double)h;
 
-  pixels = (unsigned int*)malloc(vis_w * vis_h * sizeof(unsigned int));
+  pixels = (unsigned int*)malloc((size_t)vis_w * vis_h * sizeof(unsigned int));
   if (!pixels)
     return;
 

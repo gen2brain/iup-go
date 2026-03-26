@@ -48,6 +48,12 @@ static Eina_Bool eflDragEndIdleCb(void *data)
 {
   Ihandle* ih = (Ihandle*)data;
 
+  if (!iupObjectCheck(ih))
+  {
+    eflDragCleanup();
+    return ECORE_CALLBACK_CANCEL;
+  }
+
   if (iupAttribGet(ih, "_IUPEFL_DRAGEND_PENDING"))
   {
     IFni cbDragEnd = (IFni)IupGetCallback(ih, "DRAGEND_CB");
@@ -143,7 +149,7 @@ static void eflDropDroppedCb(void *data, const Efl_Event *ev)
   if (cbDropData)
     cbDropData(ih, efl_drag_type, efl_drag_data, efl_drag_data_size, drop_x, drop_y);
 
-  if (efl_drag_source_ih && iupAttribGet(efl_drag_source_ih, "_IUPEFL_DRAGEND_PENDING"))
+  if (efl_drag_source_ih && iupObjectCheck(efl_drag_source_ih) && iupAttribGet(efl_drag_source_ih, "_IUPEFL_DRAGEND_PENDING"))
   {
     IFni cbDragEnd = (IFni)IupGetCallback(efl_drag_source_ih, "DRAGEND_CB");
     int remove = efl_drag_is_move ? 1 : 0;

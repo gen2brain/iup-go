@@ -32,10 +32,10 @@ int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height,
 
   /* gdk_texture_download always returns CAIRO_FORMAT_ARGB32
    * which is native-endian ARGB, meaning BGRA in memory on little-endian systems */
-  src = (guchar*)g_malloc(w * h * 4);
-  gdk_texture_download(texture, src, w * 4);
+  src = (guchar*)g_malloc((gsize)w * h * 4);
+  gdk_texture_download(texture, src, (gsize)w * 4);
 
-  dst = (unsigned char*)malloc(w * h * 4);
+  dst = (unsigned char*)malloc((size_t)w * h * 4);
   if (!dst)
   {
     g_free(src);

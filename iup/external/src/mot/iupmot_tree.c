@@ -2424,13 +2424,15 @@ static void motTreeDragTransferProc(Widget drop_context, XtPointer client_data, 
     Ihandle* ih = NULL;
     int is_ctrl;
 
+    XtVaGetValues(XtParent(wItemDrag), XmNuserData, &ih, NULL);
+
     /* If Drag item is an ancestor or equal to Drop item then return */
     wParent = wItemDrop;
     while(wParent)
     {
       if (wParent == wItemDrag)
       {
-        if (!iupAttribGetBoolean(ih, "DROPEQUALDRAG"))
+        if (!ih || !iupAttribGetBoolean(ih, "DROPEQUALDRAG"))
           return;
 
         equal_nodes = 1;
@@ -2439,8 +2441,6 @@ static void motTreeDragTransferProc(Widget drop_context, XtPointer client_data, 
 
       XtVaGetValues(wParent, XmNentryParent, &wParent, NULL);
     }
-
-    XtVaGetValues(XtParent(wItemDrag), XmNuserData, &ih, NULL);
 
     if (motTreeCallDragDropCb(ih, wItemDrag, wItemDrop, &is_ctrl) == IUP_CONTINUE && !equal_nodes)
     {

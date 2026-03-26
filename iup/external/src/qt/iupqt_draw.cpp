@@ -1200,7 +1200,11 @@ extern "C" void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   if (!dc->buffer || dc->buffer->size() != new_size)
   {
     if (dc->buffer)
+    {
+      if (dc->ih)
+        iupAttribSet(dc->ih, "_IUPQT_CANVAS_BUFFER", NULL);
       delete dc->buffer;
+    }
 
     dc->buffer = new QPixmap(new_size);
     dc->buffer->fill(Qt::white);
@@ -1282,11 +1286,16 @@ extern "C" int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w,
 
   QImage img = buffer->toImage().convertToFormat(QImage::Format_RGBA8888);
 
+  if (w > img.width())
+    w = img.width();
+  if (h > img.height())
+    h = img.height();
+
   for (int y = 0; y < h; y++)
   {
     const unsigned char* src_line = img.constScanLine(y);
     unsigned char* dst_line = data + y * w * 4;
-    memcpy(dst_line, src_line, w * 4);
+    memcpy(dst_line, src_line, (size_t)w * 4);
   }
 
   return 1;

@@ -7,80 +7,88 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/wait.h>
+#include <spawn.h>
+#include <errno.h>
 
 #include "iup.h"
 
+extern char **environ;
 
-IUP_API int IupExecute(const char *filename, const char* parameters)
+static int iupCocoaSpawn(const char *filename, const char* parameters, int wait)
 {
-  char* cmd;
-  int ret;
+  char** argv = NULL;
+  int argc = 0, i;
+  pid_t pid;
+  int status;
 
   if (parameters && *parameters)
   {
-    /* Allocate for filename, parameters, and " & \0" */
-    size_t cmd_size = strlen(filename) + strlen(parameters) + 4;
-    cmd = (char*)malloc(cmd_size);
-    snprintf(cmd, cmd_size, "%s %s &", filename, parameters);
+    char* params_copy = strdup(parameters);
+    char* token;
+    char* rest = params_copy;
+
+    {
+      char* tmp = strdup(parameters);
+      char* tmp_rest = tmp;
+      while (strtok_r(tmp_rest, " \t", &tmp_rest))
+        argc++;
+      free(tmp);
+    }
+
+    argv = (char**)malloc(sizeof(char*) * (argc + 2));
+    argv[0] = (char*)filename;
+    i = 1;
+    while ((token = strtok_r(rest, " \t", &rest)) != NULL)
+      argv[i++] = token;
+    argv[i] = NULL;
+
+    status = posix_spawnp(&pid, filename, NULL, NULL, argv, environ);
+
+    free(argv);
+    free(params_copy);
   }
   else
   {
-    /* Allocate for filename and " &\0" */
-    size_t cmd_size = strlen(filename) + 3;
-    cmd = (char*)malloc(cmd_size);
-    snprintf(cmd, cmd_size, "%s &", filename);
+    argv = (char**)malloc(sizeof(char*) * 2);
+    argv[0] = (char*)filename;
+    argv[1] = NULL;
+
+    status = posix_spawnp(&pid, filename, NULL, NULL, argv, environ);
+
+    free(argv);
   }
 
-  ret = system(cmd);
-  free(cmd);
-
-  if (ret == -1)
+  if (status != 0)
+  {
+    if (status == ENOENT)
+      return -2;
     return -1;
+  }
 
-  /* The shell typically returns 127 if the command is not found. */
-  if (WIFEXITED(ret) && WEXITSTATUS(ret) == 127)
-    return -2;
+  if (wait)
+  {
+    if (waitpid(pid, &status, 0) == -1)
+      return -1;
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 127)
+      return -2;
+  }
 
   return 1;
+}
+
+IUP_API int IupExecute(const char *filename, const char* parameters)
+{
+  return iupCocoaSpawn(filename, parameters, 0);
 }
 
 IUP_API int IupExecuteWait(const char *filename, const char* parameters)
 {
-  char* cmd;
-  int ret;
-
-  if (parameters && *parameters)
-  {
-    /* Allocate for filename, parameters, and " \0" */
-    size_t cmd_size = strlen(filename) + strlen(parameters) + 2;
-    cmd = (char*)malloc(cmd_size);
-    snprintf(cmd, cmd_size, "%s %s", filename, parameters);
-  }
-  else
-  {
-    ret = system(filename);
-    if (ret == -1)
-      return -1;
-    if (WIFEXITED(ret) && WEXITSTATUS(ret) == 127)
-      return -2;
-    return 1;
-  }
-
-  ret = system(cmd);
-  free(cmd);
-
-  if (ret == -1)
-    return -1;
-
-  if (WIFEXITED(ret) && WEXITSTATUS(ret) == 127)
-    return -2;
-
-  return 1;
+  return iupCocoaSpawn(filename, parameters, 1);
 }
 
 IUP_API int IupHelp(const char* url)
 {
-  /* On macOS, the "open" command is the standard way to open a file or URL in the default application. */
   return IupExecute("open", url);
 }

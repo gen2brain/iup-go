@@ -55,6 +55,7 @@ static void gtkDragDataReceived(GtkWidget *widget, GdkDragContext *drag_context,
   if(size <= 0 || format != 8 ||
     (action != GDK_ACTION_MOVE && action != GDK_ACTION_COPY))
   {
+    g_free(type);
     gtk_drag_finish(drag_context, FALSE, FALSE, time);
     return;
   }
@@ -62,6 +63,7 @@ static void gtkDragDataReceived(GtkWidget *widget, GdkDragContext *drag_context,
   if (cbDropData)
     cbDropData(ih, type, targetData, size, x, y);
 
+  g_free(type);
   gtk_drag_finish(drag_context, TRUE, FALSE, time);
 
   (void)info;
@@ -92,11 +94,17 @@ static void gtkDragDataGet(GtkWidget *widget, GdkDragContext *drag_context, GtkS
     type = seldata->type;
 #endif
     if (action != GDK_ACTION_MOVE && action != GDK_ACTION_COPY)
+    {
+      g_free(type);
       return;
+    }
 
     size = cbDragDataSize(ih, type);
     if (size <= 0)
+    {
+      g_free(type);
       return;
+    }
 
     sourceData = malloc(size);
 
@@ -105,6 +113,7 @@ static void gtkDragDataGet(GtkWidget *widget, GdkDragContext *drag_context, GtkS
 
     gtk_selection_data_set(seldata, gdk_atom_intern(type, FALSE), 8, (guchar*)sourceData, size);
 
+    g_free(type);
     free(sourceData);
   }
 

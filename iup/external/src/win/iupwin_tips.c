@@ -218,10 +218,14 @@ void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
     value = iupAttribGet(ih, "TIPRECT");
     if (value)
     {
-      int x1, x2, y1, y2;
-      sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2);
-      ti.rect.left = x1; ti.rect.right = x2;
-      ti.rect.top = y1; ti.rect.bottom = y2;
+      int x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+      if (sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+      {
+        ti.rect.left = x1; ti.rect.right = x2;
+        ti.rect.top = y1; ti.rect.bottom = y2;
+      }
+      else
+        GetClientRect(ih->handle, &ti.rect);
     }
     else
       GetClientRect(ih->handle, &ti.rect);
