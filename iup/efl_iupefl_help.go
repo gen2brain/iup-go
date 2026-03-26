@@ -1,8 +1,8 @@
-//go:build efl && !windows
+//go:build efl && !windows && !darwin
 
 package iup
 
 /*
-#include "external/src/efl/iupefl_help.c"
+#include "external/src/unix/iupunix_help.c"
 */
 import "C"
