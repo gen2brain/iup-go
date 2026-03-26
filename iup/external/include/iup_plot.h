@@ -13,10 +13,7 @@ extern "C" {
 
 #ifndef IUPPLOT_API
 #ifdef IUPPLOT_BUILD_LIBRARY
-  #ifdef __EMSCRIPTEN__
-    #include <emscripten.h>
-    #define IUPPLOT_API EMSCRIPTEN_KEEPALIVE
-  #elif defined(_WIN32)
+  #if defined(_WIN32)
     #define IUPPLOT_API __declspec(dllexport)
   #elif defined(__GNUC__) && __GNUC__ >= 4
     #define IUPPLOT_API __attribute__ ((visibility("default")))
