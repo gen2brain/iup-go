@@ -784,11 +784,56 @@ IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
 
 IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
 {
+  static struct {
+    const char* iupname;
+    const char* sysname;
+  } table[] = {
+    { "NONE",           NULL},
+    { "NULL",           NULL},
+    { "ARROW",          "left_ptr"},
+    { "BUSY",           "watch"},
+    { "CROSS",          "crosshair"},
+    { "HAND",           "hand2"},
+    { "HELP",           "question_arrow"},
+    { "IUP",            "question_arrow"},
+    { "MOVE",           "fleur"},
+    { "PEN",            "pencil"},
+    { "RESIZE_N",       "top_side"},
+    { "RESIZE_S",       "bottom_side"},
+    { "RESIZE_NS",      "sb_v_double_arrow"},
+    { "SPLITTER_HORIZ", "sb_v_double_arrow"},
+    { "RESIZE_W",       "left_side"},
+    { "RESIZE_E",       "right_side"},
+    { "RESIZE_WE",      "sb_h_double_arrow"},
+    { "SPLITTER_VERT",  "sb_h_double_arrow"},
+    { "RESIZE_NE",      "top_right_corner"},
+    { "RESIZE_SE",      "bottom_right_corner"},
+    { "RESIZE_NW",      "top_left_corner"},
+    { "RESIZE_SW",      "bottom_left_corner"},
+    { "TEXT",           "xterm"},
+    { "UPARROW",        "center_ptr"}
+  };
+
   Eo* widget = iupeflGetWidget(ih);
-  (void)value;
+  int i, count = sizeof(table) / sizeof(table[0]);
 
   if (!widget)
     return 0;
+
+  if (!value)
+  {
+    efl_ui_widget_cursor_set(widget, NULL);
+    return 0;
+  }
+
+  for (i = 0; i < count; i++)
+  {
+    if (iupStrEqualNoCase(value, table[i].iupname))
+    {
+      efl_ui_widget_cursor_set(widget, table[i].sysname);
+      return 1;
+    }
+  }
 
   return 0;
 }
