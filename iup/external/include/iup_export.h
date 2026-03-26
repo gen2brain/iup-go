@@ -10,7 +10,7 @@
   #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
     #define IUP_API EMSCRIPTEN_KEEPALIVE
-  #elif WIN32
+  #elif defined(_WIN32)
     #define IUP_API __declspec(dllexport)
   #elif defined(__GNUC__) && __GNUC__ >= 4
     #define IUP_API __attribute__ ((visibility("default")))
@@ -28,7 +28,7 @@
   #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
     #define IUP_SDK_API EMSCRIPTEN_KEEPALIVE
-  #elif WIN32
+  #elif defined(_WIN32)
     #define IUP_SDK_API __declspec(dllexport)
   #elif defined(__GNUC__) && __GNUC__ >= 4
     #define IUP_SDK_API __attribute__ ((visibility("default")))
@@ -46,7 +46,7 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #define IUP_DRV_API EMSCRIPTEN_KEEPALIVE
-#elif WIN32
+#elif defined(_WIN32)
 #define IUP_DRV_API __declspec(dllexport)
 #elif defined(__GNUC__) && __GNUC__ >= 4
 #define IUP_DRV_API __attribute__ ((visibility("default")))
