@@ -200,13 +200,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     button_type = IUP_BUTTON_TEXT;
 
   if (ih)
-  {
-    int horiz_padding = 0, vert_padding = 0;
-    char* padding = IupGetAttribute(ih, "PADDING");
-    if (padding)
-      iupStrToIntInt(padding, &horiz_padding, &vert_padding, 'x');
-    has_user_padding = (horiz_padding > 0 || vert_padding > 0);
-  }
+    has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
 
   has_user_size = (ih && (ih->userwidth > 0 || ih->userheight > 0));
 
