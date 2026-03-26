@@ -428,7 +428,7 @@ static void xGLCanvasUnMapMethod(Ihandle* ih)
   memset(gldata, 0, sizeof(IGlControlData));
 }
 
-void iupdrvGlCanvasInitClass(Iclass* ic)
+void iupGlCanvasInitClass(Iclass* ic)
 {
   ic->Create = xGLCanvasCreateMethod;
   ic->Destroy = xGLCanvasDestroy;

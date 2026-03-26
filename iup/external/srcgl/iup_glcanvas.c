@@ -23,7 +23,7 @@
 #include "iup_drv.h"
 
 
-void iupdrvGlCanvasInitClass(Iclass* ic);
+void iupGlCanvasInitClass(Iclass* ic);
 
 static Iclass* iGlCanvasNewClass(void)
 {
@@ -52,7 +52,7 @@ static Iclass* iGlCanvasNewClass(void)
   iupClassRegisterAttribute(ic, "CONTEXTVERSION", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ARBCONTEXT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupdrvGlCanvasInitClass(ic);
+  iupGlCanvasInitClass(ic);
 
   return ic;
 }
