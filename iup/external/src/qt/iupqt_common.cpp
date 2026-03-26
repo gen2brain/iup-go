@@ -295,66 +295,44 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   ih->handle = nullptr;
 }
 
-/* Forward declaration for Canvas container structure */
-struct IupQtCanvasContainer
+static void qtRedrawInvalidateBuffer(Ihandle* ih)
 {
-  QWidget* container;
-  QWidget* canvas;  /* Actually IupQtCanvas*, but we only need QWidget* here */
-  void* sb_horiz;
-  void* sb_vert;
-};
+  QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
+  if (buffer)
+  {
+    delete buffer;
+    iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", NULL);
+  }
+}
 
 extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
 {
-  /* For Canvas, we need to call update() on the actual canvas widget, not the container */
-  void* canvas_data = iupAttribGet(ih, "_IUPQT_CANVAS_CONTAINER");
-  if (canvas_data)
+  QWidget* canvas = iupqtCanvasGetWidget(ih);
+  if (canvas)
   {
-    /* This is a Canvas - invalidate buffer so paintEvent will call ACTION callback. */
-    QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
-    if (buffer)
-    {
-      delete buffer;
-      iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", NULL);
-    }
-
-    /* Call update() on the actual canvas widget from container_data */
-    IupQtCanvasContainer* container = (IupQtCanvasContainer*)canvas_data;
-    if (container->canvas)
-      container->canvas->update();
+    qtRedrawInvalidateBuffer(ih);
+    canvas->update();
     return;
   }
 
-  /* For other widgets, call update() on ih->handle */
   QWidget* widget = (QWidget*)ih->handle;
   if (widget)
-    widget->update();  /* Schedule repaint */
+    widget->update();
 }
 
 extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
 {
-  /* For Canvas, we need to call repaint() on the actual canvas widget, not the container */
-  void* canvas_data = iupAttribGet(ih, "_IUPQT_CANVAS_CONTAINER");
-  if (canvas_data)
+  QWidget* canvas = iupqtCanvasGetWidget(ih);
+  if (canvas)
   {
-    /* Invalidate buffer so paintEvent will call ACTION callback */
-    QPixmap* buffer = (QPixmap*)iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER");
-    if (buffer)
-    {
-      delete buffer;
-      iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", NULL);
-    }
-
-    IupQtCanvasContainer* container = (IupQtCanvasContainer*)canvas_data;
-    if (container->canvas)
-      container->canvas->repaint();
+    qtRedrawInvalidateBuffer(ih);
+    canvas->repaint();
     return;
   }
 
-  /* For other widgets, call repaint() on ih->handle */
   QWidget* widget = (QWidget*)ih->handle;
   if (widget)
-    widget->repaint();  /* Immediate repaint */
+    widget->repaint();
 }
 
 /****************************************************************************

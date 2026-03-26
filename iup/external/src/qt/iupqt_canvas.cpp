@@ -454,6 +454,14 @@ static IupQtCanvasContainer* qtCanvasGetContainer(Ihandle* ih)
   return (IupQtCanvasContainer*)iupAttribGet(ih, "_IUPQT_CANVAS_CONTAINER");
 }
 
+QWidget* iupqtCanvasGetWidget(Ihandle* ih)
+{
+  IupQtCanvasContainer* container = qtCanvasGetContainer(ih);
+  if (container)
+    return container->canvas;
+  return NULL;
+}
+
 /****************************************************************************
  * Scrollbar Callbacks
  ****************************************************************************/
