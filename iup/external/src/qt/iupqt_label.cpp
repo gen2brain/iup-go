@@ -200,7 +200,6 @@ static int qtLabelSetTitleAttrib(Ihandle* ih, const char* value)
           char* html = iupMarkupToHtml(value);
           label->setTextFormat(Qt::RichText);
           label->setText(QString::fromUtf8(html));
-          label->adjustSize();
           free(html);
         }
         else
@@ -221,13 +220,11 @@ static int qtLabelSetTitleAttrib(Ihandle* ih, const char* value)
               text = text.left(idx) + "<u>" + text.mid(idx, 1) + "</u>" + text.mid(idx + 1);
               label->setTextFormat(Qt::RichText);
               label->setText(text);
-              label->adjustSize();
             }
             else
             {
               label->setTextFormat(Qt::PlainText);
               label->setText(text);
-              label->adjustSize();
             }
 
             free(str);
@@ -236,14 +233,12 @@ static int qtLabelSetTitleAttrib(Ihandle* ih, const char* value)
           {
             label->setTextFormat(Qt::PlainText);
             label->setText(QString::fromUtf8(value));
-            label->adjustSize();
           }
         }
       }
       else
       {
         label->setText(QString());
-        label->adjustSize();
       }
 
       return 1;
@@ -741,13 +736,11 @@ static int qtLabelMapMethod(Ihandle* ih)
             text = text.left(idx) + "<u>" + text.mid(idx, 1) + "</u>" + text.mid(idx + 1);
             label->setTextFormat(Qt::RichText);
             label->setText(text);
-            label->adjustSize();
           }
           else
           {
             label->setTextFormat(Qt::PlainText);
             label->setText(text);
-            label->adjustSize();
           }
 
           free(str);
@@ -756,13 +749,11 @@ static int qtLabelMapMethod(Ihandle* ih)
         {
           label->setTextFormat(Qt::PlainText);
           label->setText(QString::fromUtf8(title));
-          label->adjustSize();
         }
       }
       else
       {
         label->setText(QString());
-        label->adjustSize();
       }
     }
     inner_widget = label;
