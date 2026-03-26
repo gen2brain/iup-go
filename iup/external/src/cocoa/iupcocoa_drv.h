@@ -57,7 +57,7 @@ int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);
 int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height);
 
 /* Tooltip Functions */
-IUP_DRV_API void cocoaUpdateTip(Ihandle* ih);
+IUP_DRV_API void iupcocoaUpdateTip(Ihandle* ih);
 IUP_DRV_API void iupcocoaTipsDestroy(Ihandle* ih);
 
 /* Menu Functions */
@@ -109,21 +109,16 @@ IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char *iup_font_name);
 
 NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, const char* value);
 
-IUP_DRV_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y);
-
 /* Image conversion helpers. */
 int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel);
 NSBitmapImageRep* iupcocoaImageNSBitmapImageRepFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
 NSImage* iupcocoaImageNSImageFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
 
 /* Handles IUP_CLOSE for modal dialogs. */
-bool cocoaDialogExitModal(Ihandle* ih);
+bool iupcocoaDialogExitModal(Ihandle* ih);
 
 /* Get dialog window. */
-NSWindow* cocoaDialogGetWindow(Ihandle* ih);
-
-IUP_DRV_API void iupdrvDialogSetVisible(Ihandle* ih, int visible);
-IUP_DRV_API int iupdrvDialogIsVisible(Ihandle* ih);
+NSWindow* iupcocoaDialogGetWindow(Ihandle* ih);
 
 /* Focus control. */
 IUP_DRV_API void iupcocoaSetCanFocus(Ihandle* ih, int can);

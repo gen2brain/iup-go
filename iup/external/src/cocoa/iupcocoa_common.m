@@ -266,7 +266,7 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
 
   [child_view setFrame:child_rect];
 
-  cocoaUpdateTip(ih);
+  iupcocoaUpdateTip(ih);
 }
 
 IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
@@ -470,7 +470,7 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 
   if (ih->iclass->nativetype == IUP_TYPEDIALOG)
   {
-    NSWindow* window = cocoaDialogGetWindow(ih);
+    NSWindow* window = iupcocoaDialogGetWindow(ih);
     if (!window)
     {
         return;
@@ -1131,7 +1131,7 @@ char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih)
 }
 
 
-NSWindow* cocoaDialogGetWindow(Ihandle* ih)
+NSWindow* iupcocoaDialogGetWindow(Ihandle* ih)
 {
   if (!ih || !ih->handle) return nil;
   id root_object = (id)ih->handle;

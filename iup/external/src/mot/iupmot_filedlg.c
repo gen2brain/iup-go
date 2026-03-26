@@ -44,6 +44,37 @@
 enum {IUP_DIALOGOPEN, IUP_DIALOGSAVE, IUP_DIALOGDIR};
 
 
+static int iupmotIsFile(const char* name)
+{
+  struct stat status;
+  if (stat(name, &status) != 0)
+    return 0;
+  if (S_ISDIR(status.st_mode))
+    return 0;
+  return 1;
+}
+
+static int iupmotIsDirectory(const char* name)
+{
+  struct stat status;
+  if (stat(name, &status) != 0)
+    return 0;
+  if (S_ISDIR(status.st_mode))
+    return 1;
+  return 0;
+}
+
+static int iupmotMakeDirectory(const char* name)
+{
+  mode_t oldmask = umask((mode_t)0);
+  int fail = mkdir(name, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);
+  umask(oldmask);
+  if (fail)
+    return 0;
+  return 1;
+}
+
+
 static void motFileDlgAskUserCBclose(Widget w, XtPointer client_data, XtPointer call_data)
 {
   int *ret_code = (int*)client_data;
@@ -102,7 +133,7 @@ static int motFileDlgCheckValue(Ihandle* ih, Widget filebox)
 
   if (dialogtype == IUP_DIALOGDIR)
   {
-    if (!iupUnixIsDirectory(value))               /* if does not exist or not a directory */
+    if (!iupmotIsDirectory(value))               /* if does not exist or not a directory */
     {
       IupMessageError(ih, "IUP_INVALIDDIR");
       return 0;
@@ -110,12 +141,12 @@ static int motFileDlgCheckValue(Ihandle* ih, Widget filebox)
   }
   else if (!iupAttribGetBoolean(ih, "MULTIPLEFILES"))
   {
-    if (iupUnixIsDirectory(value))  /* selected a directory */
+    if (iupmotIsDirectory(value))  /* selected a directory */
     {
       IupMessageError(ih, "IUP_INVALIDDIR");
       return 0;
     }
-    else if (!iupUnixIsFile(value))      /* not a file == new file */
+    else if (!iupmotIsFile(value))      /* not a file == new file */
     {
       value = iupAttribGet(ih, "ALLOWNEW");
       if (!value)
@@ -328,7 +359,7 @@ static void motFileDlgCallback(Widget filebox, Ihandle* ih, XmFileSelectionBoxCa
         free(dir);
       }
 
-      if (iupUnixIsFile(filename))  /* check if file exists */
+      if (iupmotIsFile(filename))  /* check if file exists */
       {
         iupAttribSet(ih, "FILEEXIST", "YES");
         iupAttribSet(ih, "STATUS", "0");
@@ -439,7 +470,7 @@ static void motFileDlgNewFolderCallback(Widget w, Widget filebox, XtPointer call
     {
       char* dir;
       XmStringGetLtoR(xm_dir, XmSTRING_DEFAULT_CHARSET, &dir);
-      iupUnixMakeDirectory(dir);
+      iupmotMakeDirectory(dir);
       XtFree(dir);
     }
 
@@ -542,7 +573,7 @@ static void motFileDlgPreviewCanvasExposeCallback(Widget w, Ihandle *ih, XtPoint
 
   /* callback here always exists */
   cb = (IFnss)IupGetCallback(ih, "FILE_CB");
-  if (iupUnixIsFile(filename))
+  if (iupmotIsFile(filename))
     cb(ih, filename, "PAINT");
   else
     cb(ih, NULL, "PAINT");
@@ -561,7 +592,7 @@ static void motFileDlgBrowseSelectionCallback(Widget w, Ihandle* ih, XmListCallb
 
   /* callback here always exists */
   cb = (IFnss)IupGetCallback(ih, "FILE_CB");
-  if (iupUnixIsFile(filename))
+  if (iupmotIsFile(filename))
     cb(ih, filename, "SELECT");
   else
     cb(ih, filename, "OTHER");
