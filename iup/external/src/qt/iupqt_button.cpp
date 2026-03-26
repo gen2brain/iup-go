@@ -399,13 +399,7 @@ extern "C" void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     has_text = (title != NULL && *title != 0);
     has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
 
-    {
-      int horiz_padding = 0, vert_padding = 0;
-      char* padding = IupGetAttribute(ih, "PADDING");
-      if (padding)
-        iupStrToIntInt(padding, &horiz_padding, &vert_padding, 'x');
-      has_user_padding = (horiz_padding > 0 || vert_padding > 0);
-    }
+    has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
 
     has_user_size = (ih->userwidth > 0 || ih->userheight > 0);
   }
