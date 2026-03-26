@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"image/color"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -16,7 +18,67 @@ import (
 */
 import "C"
 
-var attrMu sync.RWMutex
+var attrMu reentrantRWMutex
+
+type reentrantRWMutex struct {
+	mu      sync.RWMutex
+	owner   atomic.Int64
+	recurse int32
+}
+
+func goroutineID() int64 {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	var id int64
+	for i := len("goroutine "); i < n; i++ {
+		if buf[i] < '0' || buf[i] > '9' {
+			break
+		}
+		id = id*10 + int64(buf[i]-'0')
+	}
+	return id
+}
+
+func (m *reentrantRWMutex) Lock() {
+	gid := goroutineID()
+	if m.owner.Load() == gid {
+		m.recurse++
+		return
+	}
+	m.mu.Lock()
+	m.owner.Store(gid)
+	m.recurse = 1
+}
+
+func (m *reentrantRWMutex) Unlock() {
+	m.recurse--
+	if m.recurse == 0 {
+		m.owner.Store(0)
+		m.mu.Unlock()
+	}
+}
+
+func (m *reentrantRWMutex) RLock() {
+	gid := goroutineID()
+	if m.owner.Load() == gid {
+		m.recurse++
+		return
+	}
+	m.mu.RLock()
+}
+
+func (m *reentrantRWMutex) RUnlock() {
+	gid := goroutineID()
+	if m.owner.Load() == gid {
+		m.recurse--
+		if m.recurse == 0 {
+			m.owner.Store(0)
+			m.mu.Unlock()
+		}
+		return
+	}
+	m.mu.RUnlock()
+}
 
 // SetAttribute sets an interface element attribute.
 //
