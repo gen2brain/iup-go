@@ -25,6 +25,13 @@
 
 IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
+  if (iupStrEqual(name, "GSKRENDERER"))
+  {
+    GdkDisplay* display = gdk_display_get_default();
+    if (display)
+      g_object_set_data_full(G_OBJECT(display), "gsk-renderer", g_strdup(value), g_free);
+    return 1;
+  }
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
     if (iupdrvSingleInstanceSet(value))
@@ -58,6 +65,17 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 
 IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
+  if (iupStrEqual(name, "GSKRENDERER"))
+  {
+    GdkDisplay* display = gdk_display_get_default();
+    if (display)
+    {
+      const char* renderer_name = (const char*)g_object_get_data(G_OBJECT(display), "gsk-renderer");
+      if (renderer_name)
+        return iupStrReturnStr(renderer_name);
+    }
+    return NULL;
+  }
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
     GdkDisplay* display = gdk_display_get_default();

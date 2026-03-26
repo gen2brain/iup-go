@@ -372,6 +372,14 @@ When read, returns the current acceleration preference string.
 Returns the name of the actual EFL rendering engine in use (e.g. `"opengl_x11"`, `"software_x11"`, `"wayland_egl"`, `"wayland_shm"`).
 Only available after a dialog has been created, since the engine is selected at window creation time.
 
+### GSKRENDERER [GTK4 Only]
+
+Sets the GSK renderer used by GTK4 for drawing. Must be set **before** any dialog is created (before `IupShow`). Can also be set via the `GSK_RENDERER` environment variable, but this attribute takes priority.
+
+Possible values: `"gl"` (or `"opengl"`), `"vulkan"`, `"cairo"`.
+
+When read, returns the renderer name that was set, or NULL if using the automatic default.
+
 ### WINUIVERSION (read-only) [WinUI Only]
 
 Returns the WinUI version.
