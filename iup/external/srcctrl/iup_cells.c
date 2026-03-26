@@ -10,6 +10,7 @@
 #include <math.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 #include "iupcbs.h"
 #include "iupkey.h"
 #include "iupdraw.h"
@@ -928,7 +929,7 @@ Iclass* iupCellsNewClass(void)
   return ic;
 }
 
-Ihandle* IupCells(void)
+IUPCONTROLS_API Ihandle* IupCells(void)
 {
   return IupCreate("cells");
 }

@@ -800,7 +800,7 @@ void iupdrvGlCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VISUAL", eGLCanvasGetVisualAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_STRING|IUPAF_NOT_MAPPED);
 }
 
-int IupGLIsCurrent(Ihandle* ih)
+IUPGL_API int IupGLIsCurrent(Ihandle* ih)
 {
   IGlControlData* gldata;
 
@@ -822,7 +822,7 @@ int IupGLIsCurrent(Ihandle* ih)
   return 0;
 }
 
-void IupGLMakeCurrent(Ihandle* ih)
+IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 {
   IGlControlData* gldata;
   int performed_resize = 0;
@@ -972,7 +972,7 @@ void IupGLMakeCurrent(Ihandle* ih)
   }
 }
 
-void IupGLSwapBuffers(Ihandle* ih)
+IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 {
   IGlControlData* gldata;
   Icallback cb;
@@ -998,7 +998,7 @@ void IupGLSwapBuffers(Ihandle* ih)
   iupEGLBackendPostSwapBuffers(ih, gldata);
 }
 
-void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
+IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
 {
   (void)ih;
   (void)index;
@@ -1007,7 +1007,7 @@ void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
   (void)b;
 }
 
-void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
+IUPGL_API void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
 {
   (void)ih;
   (void)first;
@@ -1015,7 +1015,7 @@ void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
   (void)list_base;
 }
 
-void IupGLWait(int gl)
+IUPGL_API void IupGLWait(int gl)
 {
   if (gl)
     eglWaitClient();

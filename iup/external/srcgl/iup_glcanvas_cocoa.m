@@ -651,7 +651,7 @@ void iupdrvGlCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VSYNC", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
 
-int IupGLIsCurrent(Ihandle* ih)
+IUPGL_API int IupGLIsCurrent(Ihandle* ih)
 {
   IGlControlData* gldata;
 
@@ -676,7 +676,7 @@ int IupGLIsCurrent(Ihandle* ih)
   return result;
 }
 
-void IupGLMakeCurrent(Ihandle* ih)
+IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 {
   IGlControlData* gldata;
 
@@ -725,7 +725,7 @@ void IupGLMakeCurrent(Ihandle* ih)
   [pool drain];
 }
 
-void IupGLSwapBuffers(Ihandle* ih)
+IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 {
   IGlControlData* gldata;
   Icallback cb;
@@ -752,7 +752,7 @@ void IupGLSwapBuffers(Ihandle* ih)
   [pool drain];
 }
 
-void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
+IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
 {
   /* Palette/indexed color mode is not supported on modern macOS/OpenGL */
   (void)ih;
@@ -762,7 +762,7 @@ void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
   (void)b;
 }
 
-void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
+IUPGL_API void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
 {
   /* Display list fonts are deprecated in modern OpenGL/macOS and not supported in Core Profile. */
   (void)ih;
@@ -771,7 +771,7 @@ void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
   (void)list_base;
 }
 
-void IupGLWait(int gl)
+IUPGL_API void IupGLWait(int gl)
 {
   if (gl)
     glFinish();

@@ -11,13 +11,30 @@
 extern "C" {
 #endif
 
+#ifndef IUPCONTROLS_API
+#ifdef IUPCONTROLS_BUILD_LIBRARY
+  #ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+    #define IUPCONTROLS_API EMSCRIPTEN_KEEPALIVE
+  #elif defined(_WIN32)
+    #define IUPCONTROLS_API __declspec(dllexport)
+  #elif defined(__GNUC__) && __GNUC__ >= 4
+    #define IUPCONTROLS_API __attribute__ ((visibility("default")))
+  #else
+    #define IUPCONTROLS_API
+  #endif
+#else
+  #define IUPCONTROLS_API
+#endif /* IUPCONTROLS_BUILD_LIBRARY */
+#endif /* IUPCONTROLS_API */
 
-int  IupControlsOpen(void);
 
-Ihandle* IupCells(void);
-Ihandle* IupMatrix(const char *action);
-Ihandle* IupMatrixList(void);
-Ihandle* IupMatrixEx(void);
+IUPCONTROLS_API int  IupControlsOpen(void);
+
+IUPCONTROLS_API Ihandle* IupCells(void);
+IUPCONTROLS_API Ihandle* IupMatrix(const char *action);
+IUPCONTROLS_API Ihandle* IupMatrixList(void);
+IUPCONTROLS_API Ihandle* IupMatrixEx(void);
 
 
 #ifdef __cplusplus

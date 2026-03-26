@@ -972,8 +972,6 @@ namespace Iup
 
     int LoadData(const char* filename, int strXdata) { return IupPlotLoadData(ih, filename, strXdata); }
 
-    int SetFormula(int sample_count, const char* formula, const char* init) { return IupPlotSetFormula(ih, sample_count, formula, init); }
-
     void Insert(int ds_index, int sample_index, double x, double y) { IupPlotInsert(ih, ds_index, sample_index, x, y); }
     void InsertStr(int ds_index, int sample_index, const char* x, double y) { IupPlotInsertStr(ih, ds_index, sample_index, x, y); }
     void InsertSegment(int ds_index, int sample_index, double x, double y) { IupPlotInsertSegment(ih, ds_index, sample_index, x, y); }

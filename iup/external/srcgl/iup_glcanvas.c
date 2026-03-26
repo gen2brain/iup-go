@@ -10,6 +10,7 @@
 #include <math.h>
 
 #include "iup.h"
+#include "iupgl.h"
 #include "iupcbs.h"
 #include "iupkey.h"
 
@@ -66,7 +67,7 @@ static Iclass* iGLBackgroundBoxNewClass(void)
   return ic;
 }
 
-Ihandle* IupGLBackgroundBox(Ihandle* child)
+IUPGL_API Ihandle* IupGLBackgroundBox(Ihandle* child)
 {
   void *children[2];
   children[0] = (void*)child;
@@ -74,7 +75,7 @@ Ihandle* IupGLBackgroundBox(Ihandle* child)
   return IupCreatev("glbackgroundbox", children);
 }
 
-Ihandle* IupGLCanvas(const char *action)
+IUPGL_API Ihandle* IupGLCanvas(const char *action)
 {
   void *params[2];
   params[0] = (void*)action;
@@ -82,7 +83,7 @@ Ihandle* IupGLCanvas(const char *action)
   return IupCreatev("glcanvas", params);
 }
 
-void IupGLCanvasOpen(void)
+IUPGL_API void IupGLCanvasOpen(void)
 {
   if (!IupIsOpened())
     return;

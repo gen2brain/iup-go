@@ -1492,7 +1492,7 @@ Iclass* iupMatrixListNewClass(void)
   return ic;
 }
 
-Ihandle* IupMatrixList(void)
+IUPCONTROLS_API Ihandle* IupMatrixList(void)
 {
   return IupCreate("matrixlist");
 }

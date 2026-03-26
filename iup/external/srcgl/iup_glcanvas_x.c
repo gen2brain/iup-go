@@ -442,7 +442,7 @@ void iupdrvGlCanvasInitClass(Iclass* ic)
 /******************************************* Exported functions */
 
 
-int IupGLIsCurrent(Ihandle* ih)
+IUPGL_API int IupGLIsCurrent(Ihandle* ih)
 {
   IGlControlData* gldata;
 
@@ -466,7 +466,7 @@ int IupGLIsCurrent(Ihandle* ih)
   return 0;
 }
 
-void IupGLMakeCurrent(Ihandle* ih)
+IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 {
   IGlControlData* gldata;
 
@@ -500,7 +500,7 @@ void IupGLMakeCurrent(Ihandle* ih)
   }
 }
 
-void IupGLSwapBuffers(Ihandle* ih)
+IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 {
   IGlControlData* gldata;
   Icallback cb;
@@ -535,7 +535,7 @@ static int xGLCanvasIgnoreError(Display *param1, XErrorEvent *param2)
 
 #define iglxColorScale(c)  (unsigned short)(c * 65535.0 + 0.5)
 
-void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
+IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
 {
   IGlControlData* gldata;
   XColor color;
@@ -598,7 +598,7 @@ void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
   XSetErrorHandler(old_handler);
 }
 
-void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
+IUPGL_API void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
 {
   IGlControlData* gldata;
   Font font;
@@ -622,7 +622,7 @@ void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
     glXUseXFont(font, first, count, list_base);
 }
 
-void IupGLWait(int gl)
+IUPGL_API void IupGLWait(int gl)
 {
   if (gl)
     glXWaitGL();

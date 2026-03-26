@@ -2036,7 +2036,7 @@ static int iPlotKeyPress_CB(Ihandle* ih, int c, int press)
 /************************************************************************************/
 
 
-void IupPlotBegin(Ihandle* ih, int strXdata)
+IUPPLOT_API void IupPlotBegin(Ihandle* ih, int strXdata)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2054,7 +2054,7 @@ void IupPlotBegin(Ihandle* ih, int strXdata)
   iupAttribSet(ih, "_IUP_PLOT_DATASET", (char*)theDataSet);
 }
 
-void IupPlotAdd(Ihandle* ih, double x, double y)
+IUPPLOT_API void IupPlotAdd(Ihandle* ih, double x, double y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2068,7 +2068,7 @@ void IupPlotAdd(Ihandle* ih, double x, double y)
   theDataSet->AddSample(x, y);
 }
 
-void IupPlotAddStr(Ihandle* ih, const char* x, double y)
+IUPPLOT_API void IupPlotAddStr(Ihandle* ih, const char* x, double y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2082,7 +2082,7 @@ void IupPlotAddStr(Ihandle* ih, const char* x, double y)
   theDataSet->AddSample(x, y);
 }
 
-void IupPlotAddSegment(Ihandle* ih, double x, double y)
+IUPPLOT_API void IupPlotAddSegment(Ihandle* ih, double x, double y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2096,7 +2096,7 @@ void IupPlotAddSegment(Ihandle* ih, double x, double y)
   theDataSet->AddSampleSegment(x, y, true);
 }
 
-int IupPlotEnd(Ihandle* ih)
+IUPPLOT_API int IupPlotEnd(Ihandle* ih)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2118,7 +2118,7 @@ int IupPlotEnd(Ihandle* ih)
   return ih->data->current_plot->mCurrentDataSet;
 }
 
-void IupPlotInsert(Ihandle* ih, int inIndex, int inSampleIndex, double inX, double inY)
+IUPPLOT_API void IupPlotInsert(Ihandle* ih, int inIndex, int inSampleIndex, double inX, double inY)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2135,7 +2135,7 @@ void IupPlotInsert(Ihandle* ih, int inIndex, int inSampleIndex, double inX, doub
   theDataSet->InsertSample(inSampleIndex, inX, inY);
 }
 
-void IupPlotInsertStr(Ihandle* ih, int inIndex, int inSampleIndex, const char* inX, double inY)
+IUPPLOT_API void IupPlotInsertStr(Ihandle* ih, int inIndex, int inSampleIndex, const char* inX, double inY)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2152,7 +2152,7 @@ void IupPlotInsertStr(Ihandle* ih, int inIndex, int inSampleIndex, const char* i
   theDataSet->InsertSample(inSampleIndex, inX, inY);
 }
 
-void IupPlotInsertSegment(Ihandle* ih, int inIndex, int inSampleIndex, double inX, double inY)
+IUPPLOT_API void IupPlotInsertSegment(Ihandle* ih, int inIndex, int inSampleIndex, double inX, double inY)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2169,7 +2169,7 @@ void IupPlotInsertSegment(Ihandle* ih, int inIndex, int inSampleIndex, double in
   theDataSet->InsertSampleSegment(inSampleIndex, inX, inY, true);
 }
 
-void IupPlotAddSamples(Ihandle* ih, int inIndex, double *x, double *y, int count)
+IUPPLOT_API void IupPlotAddSamples(Ihandle* ih, int inIndex, double *x, double *y, int count)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2187,7 +2187,7 @@ void IupPlotAddSamples(Ihandle* ih, int inIndex, double *x, double *y, int count
     theDataSet->AddSample(x[i], y[i]);
 }
 
-void IupPlotAddStrSamples(Ihandle* ih, int inIndex, const char** x, double* y, int count)
+IUPPLOT_API void IupPlotAddStrSamples(Ihandle* ih, int inIndex, const char** x, double* y, int count)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2205,7 +2205,7 @@ void IupPlotAddStrSamples(Ihandle* ih, int inIndex, const char** x, double* y, i
     theDataSet->AddSample(x[i], y[i]);
 }
 
-void IupPlotInsertStrSamples(Ihandle* ih, int inIndex, int inSampleIndex, const char** inX, double* inY, int count)
+IUPPLOT_API void IupPlotInsertStrSamples(Ihandle* ih, int inIndex, int inSampleIndex, const char** inX, double* inY, int count)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2224,7 +2224,7 @@ void IupPlotInsertStrSamples(Ihandle* ih, int inIndex, int inSampleIndex, const 
     theDataSet->InsertSample(inSampleIndex + i, inX[i], inY[i]);
 }
 
-void IupPlotInsertSamples(Ihandle* ih, int inIndex, int inSampleIndex, double *inX, double *inY, int count)
+IUPPLOT_API void IupPlotInsertSamples(Ihandle* ih, int inIndex, int inSampleIndex, double *inX, double *inY, int count)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2243,7 +2243,7 @@ void IupPlotInsertSamples(Ihandle* ih, int inIndex, int inSampleIndex, double *i
     theDataSet->InsertSample(inSampleIndex + i, inX[i], inY[i]);
 }
 
-void IupPlotGetSample(Ihandle* ih, int inIndex, int inSampleIndex, double *x, double *y)
+IUPPLOT_API void IupPlotGetSample(Ihandle* ih, int inIndex, int inSampleIndex, double *x, double *y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2260,7 +2260,7 @@ void IupPlotGetSample(Ihandle* ih, int inIndex, int inSampleIndex, double *x, do
   theDataSet->GetSample(inSampleIndex, x, y);
 }
 
-void IupPlotGetSampleStr(Ihandle* ih, int inIndex, int inSampleIndex, const char* *x, double *y)
+IUPPLOT_API void IupPlotGetSampleStr(Ihandle* ih, int inIndex, int inSampleIndex, const char* *x, double *y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2277,7 +2277,7 @@ void IupPlotGetSampleStr(Ihandle* ih, int inIndex, int inSampleIndex, const char
   theDataSet->GetSample(inSampleIndex, x, y);
 }
 
-int IupPlotGetSampleSelection(Ihandle* ih, int inIndex, int inSampleIndex)
+IUPPLOT_API int IupPlotGetSampleSelection(Ihandle* ih, int inIndex, int inSampleIndex)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2299,7 +2299,7 @@ int IupPlotGetSampleSelection(Ihandle* ih, int inIndex, int inSampleIndex)
   return theDataSet->GetSampleSelection(inSampleIndex);
 }
 
-double IupPlotGetSampleExtra(Ihandle* ih, int inIndex, int inSampleIndex)
+IUPPLOT_API double IupPlotGetSampleExtra(Ihandle* ih, int inIndex, int inSampleIndex)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2321,7 +2321,7 @@ double IupPlotGetSampleExtra(Ihandle* ih, int inIndex, int inSampleIndex)
   return theDataSet->GetSampleExtra(inSampleIndex);
 }
 
-void IupPlotSetSample(Ihandle* ih, int inIndex, int inSampleIndex, double x, double y)
+IUPPLOT_API void IupPlotSetSample(Ihandle* ih, int inIndex, int inSampleIndex, double x, double y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2338,7 +2338,7 @@ void IupPlotSetSample(Ihandle* ih, int inIndex, int inSampleIndex, double x, dou
   theDataSet->SetSample(inSampleIndex, x, y);
 }
 
-void IupPlotSetSampleStr(Ihandle* ih, int inIndex, int inSampleIndex, const char* x, double y)
+IUPPLOT_API void IupPlotSetSampleStr(Ihandle* ih, int inIndex, int inSampleIndex, const char* x, double y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2355,7 +2355,7 @@ void IupPlotSetSampleStr(Ihandle* ih, int inIndex, int inSampleIndex, const char
   theDataSet->SetSample(inSampleIndex, x, y);
 }
 
-void IupPlotSetSampleSelection(Ihandle* ih, int inIndex, int inSampleIndex, int inSelected)
+IUPPLOT_API void IupPlotSetSampleSelection(Ihandle* ih, int inIndex, int inSampleIndex, int inSelected)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2377,7 +2377,7 @@ void IupPlotSetSampleSelection(Ihandle* ih, int inIndex, int inSampleIndex, int 
   return theDataSet->SetSampleSelection(inSampleIndex, inSelected ? true : false);
 }
 
-void IupPlotSetSampleExtra(Ihandle* ih, int inIndex, int inSampleIndex, double inExtra)
+IUPPLOT_API void IupPlotSetSampleExtra(Ihandle* ih, int inIndex, int inSampleIndex, double inExtra)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2399,7 +2399,7 @@ void IupPlotSetSampleExtra(Ihandle* ih, int inIndex, int inSampleIndex, double i
   return theDataSet->SetSampleExtra(inSampleIndex, inExtra);
 }
 
-void IupPlotTransform(Ihandle* ih, double x, double y, double *cnv_x, double *cnv_y)
+IUPPLOT_API void IupPlotTransform(Ihandle* ih, double x, double y, double *cnv_x, double *cnv_y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2413,7 +2413,7 @@ void IupPlotTransform(Ihandle* ih, double x, double y, double *cnv_x, double *cn
   if (cnv_y) *cnv_y = ih->data->current_plot->mAxisY.mTrafo->Transform(y);
 }
 
-void IupPlotTransformTo(Ihandle* ih, double cnv_x, double cnv_y, double *x, double *y)
+IUPPLOT_API void IupPlotTransformTo(Ihandle* ih, double cnv_x, double cnv_y, double *x, double *y)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2577,7 +2577,7 @@ static int iPlotLoadDataFile(Ihandle* ih, IlineFile* line_file, int strXdata)
   return 1;
 }
 
-int IupPlotLoadData(Ihandle* ih, const char* filename, int strXdata)
+IUPPLOT_API int IupPlotLoadData(Ihandle* ih, const char* filename, int strXdata)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2601,7 +2601,7 @@ int IupPlotLoadData(Ihandle* ih, const char* filename, int strXdata)
   return error;
 }
 
-int IupPlotFindSample(Ihandle* ih, double cnv_x, double cnv_y, int *ds_index, int *sample_index)
+IUPPLOT_API int IupPlotFindSample(Ihandle* ih, double cnv_x, double cnv_y, int *ds_index, int *sample_index)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2625,7 +2625,7 @@ int IupPlotFindSample(Ihandle* ih, double cnv_x, double cnv_y, int *ds_index, in
   return 0;
 }
 
-int  IupPlotFindSegment(Ihandle* ih, double cnv_x, double cnv_y, int *ds_index, int *sample_index1, int *sample_index2)
+IUPPLOT_API int  IupPlotFindSegment(Ihandle* ih, double cnv_x, double cnv_y, int *ds_index, int *sample_index1, int *sample_index2)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
@@ -2823,12 +2823,12 @@ static Iclass* iPlotNewClass(void)
   return ic;
 }
 
-Ihandle* IupPlot(void)
+IUPPLOT_API Ihandle* IupPlot(void)
 {
   return IupCreate("plot");
 }
 
-void IupPlotOpen(void)
+IUPPLOT_API void IupPlotOpen(void)
 {
   if (!IupIsOpened())
     return;

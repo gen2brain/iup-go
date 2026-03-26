@@ -1178,7 +1178,7 @@ Iclass* iupMatrixExNewClass(void)
   return ic;
 }
 
-Ihandle* IupMatrixEx(void)
+IUPCONTROLS_API Ihandle* IupMatrixEx(void)
 {
   return IupCreate("matrixex");
 }
