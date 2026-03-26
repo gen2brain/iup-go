@@ -14,9 +14,9 @@ extern "C" {
 
 /** \addtogroup drv
  * @{ */
-void iupdrvButtonInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic);
 /** Adds platform button borders to size. */
-void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y);
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y);
 /** @} */
 
 char* iupButtonGetPaddingAttrib(Ihandle* ih);

@@ -134,7 +134,7 @@ static void winuiUpdateIslandClipRegion(Ihandle* ih)
   SetWindowRgn(aux->islandHwnd, rgn, TRUE);
 }
 
-extern "C" void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;
@@ -170,7 +170,7 @@ extern "C" void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvBaseUnMapMethod(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;
@@ -214,7 +214,7 @@ static int winuiGetDialogMenuHeight(Ihandle* dialog)
   return 0;
 }
 
-extern "C" void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
 {
   if (!ih || !ih->handle)
     return;
@@ -239,7 +239,7 @@ extern "C" void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
   *y = p.y;
 }
 
-extern "C" void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
 {
   if (!ih || !ih->handle)
     return;
@@ -267,7 +267,7 @@ extern "C" void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
   *y = p.y;
 }
 
-extern "C" int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
 {
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return 0;
@@ -291,7 +291,7 @@ extern "C" int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-extern "C" void iupdrvSetVisible(Ihandle* ih, int visible)
+extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
 {
   if (!ih || !ih->handle)
     return;
@@ -309,7 +309,7 @@ extern "C" void iupdrvSetVisible(Ihandle* ih, int visible)
     elem.Visibility(visible ? Visibility::Visible : Visibility::Collapsed);
 }
 
-extern "C" int iupdrvIsVisible(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return 0;
@@ -329,7 +329,7 @@ extern "C" int iupdrvIsVisible(Ihandle* ih)
   return 0;
 }
 
-extern "C" void iupdrvSetActive(Ihandle* ih, int active)
+extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int active)
 {
   if (!ih || !ih->handle)
     return;
@@ -355,7 +355,7 @@ extern "C" void iupdrvSetActive(Ihandle* ih, int active)
     ctrl.IsEnabled(active ? true : false);
 }
 
-extern "C" int iupdrvIsActive(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return 0;
@@ -386,7 +386,7 @@ void iupwinuiCanvasCallAction(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvPostRedraw(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;
@@ -438,7 +438,7 @@ extern "C" void iupdrvPostRedraw(Ihandle* ih)
     elem.InvalidateArrange();
 }
 
-extern "C" void iupdrvRedrawNow(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;
@@ -465,7 +465,7 @@ extern "C" void iupdrvRedrawNow(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvReparent(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;
@@ -503,7 +503,7 @@ extern "C" void iupdrvReparent(Ihandle* ih)
     newParent.Children().Append(elem);
 }
 
-extern "C" void iupdrvSendKey(int key, int press)
+extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
   unsigned int keyval, state;
   INPUT input[2];
@@ -579,7 +579,7 @@ extern "C" void iupdrvSendKey(int key, int press)
   }
 }
 
-extern "C" void iupdrvWarpPointer(int x, int y)
+extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
   SetCursorPos(x, y);
 }
@@ -611,7 +611,7 @@ static DWORD winuiGetButtonFlags(int bt, int pressed)
   return 0;
 }
 
-extern "C" void iupdrvSendMouse(int x, int y, int bt, int status)
+extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
   INPUT input;
   ZeroMemory(&input, sizeof(INPUT));
@@ -668,7 +668,7 @@ extern "C" void iupdrvSendMouse(int x, int y, int bt, int status)
   iupdrvWarpPointer(x, y);
 }
 
-extern "C" int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b))
@@ -679,7 +679,7 @@ extern "C" int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b))
@@ -777,7 +777,7 @@ static void winuiSetXamlCursor(Ihandle* ih, const char* name)
   }
 }
 
-extern "C" int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
 {
   if (!ih || !ih->handle || !value)
     return 0;
@@ -795,14 +795,14 @@ extern "C" int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" int iupdrvGetScrollbarSize(void)
+extern "C" IUP_SDK_API int iupdrvGetScrollbarSize(void)
 {
   int xv = GetSystemMetrics(SM_CXVSCROLL);
   int yh = GetSystemMetrics(SM_CYHSCROLL);
   return xv > yh ? xv : yh;
 }
 
-extern "C" void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
+extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   if (!ih || !ih->handle)
     return;
@@ -832,12 +832,12 @@ extern "C" void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
   }
 }
 
-extern "C" void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
   (void)ic;
 }
 
-extern "C" void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);

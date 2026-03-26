@@ -147,7 +147,7 @@ static void eflApplyGlobalFontOverlays(const char* font)
   elm_config_font_overlay_apply();
 }
 
-int iupdrvSetGlobal(const char* name, const char* value)
+IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
@@ -244,7 +244,7 @@ int iupdrvSetGlobal(const char* name, const char* value)
   return 1;
 }
 
-char* iupdrvGetGlobal(const char* name)
+IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
@@ -339,13 +339,13 @@ char* iupdrvGetGlobal(const char* name)
   return NULL;
 }
 
-int iupdrvSetGlobalAppIDAttrib(const char* value)
+IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
 {
   (void)value;
   return 1;
 }
 
-int iupdrvSetGlobalAppNameAttrib(const char* value)
+IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 {
   if (efl_app_name)
     free(efl_app_name);

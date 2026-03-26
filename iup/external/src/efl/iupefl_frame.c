@@ -115,7 +115,7 @@ static int eflFrameHasTitle(Ihandle* ih)
   return (title && title[0]);
 }
 
-void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
 {
   eflFrameEnsureMeasured();
   if (eflFrameHasTitle(ih))
@@ -130,20 +130,20 @@ void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
   }
 }
 
-int iupdrvFrameHasClientOffset(Ihandle* ih)
+IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
   (void)ih;
   return 1;
 }
 
-int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
 {
   (void)ih;
   *h = 0;
   return 1;
 }
 
-int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
 {
   eflFrameEnsureMeasured();
   if (eflFrameHasTitle(ih))
@@ -286,7 +286,7 @@ static void eflFrameUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvFrameInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 {
   ic->Map = eflFrameMapMethod;
   ic->UnMap = eflFrameUnMapMethod;

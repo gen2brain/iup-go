@@ -1046,7 +1046,7 @@ static void* qtCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* c
  * Canvas Driver Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvCanvasInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtCanvasMapMethod;

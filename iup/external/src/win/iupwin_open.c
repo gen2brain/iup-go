@@ -95,7 +95,7 @@ void iupwinSetGlobalColors(void)
   winSetGlobalColor(COLOR_MENUTEXT, "MENUFGCOLOR");
 }
 
-int iupdrvOpen(int *argc, char ***argv)
+IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 {
   (void)argc; /* unused in the Windows driver */
   (void)argv;
@@ -151,7 +151,7 @@ int iupdrvOpen(int *argc, char ***argv)
   return IUP_NOERROR;
 }
 
-int iupdrvSetGlobalAppIDAttrib(const char* value)
+IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
 {
   static int appid_set = 0;
   if (appid_set || !value || !value[0])
@@ -162,7 +162,7 @@ int iupdrvSetGlobalAppIDAttrib(const char* value)
   return 1;
 }
 
-int iupdrvSetGlobalAppNameAttrib(const char* value)
+IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 {
   static int appname_set = 0;
   if (appname_set || !value || !value[0])
@@ -180,7 +180,7 @@ int iupdrvSetGlobalAppNameAttrib(const char* value)
   return 0;
 }
 
-void iupdrvClose(void)
+IUP_SDK_API void iupdrvClose(void)
 {
   iupwinHandleFinish();
   iupwinBrushFinish();

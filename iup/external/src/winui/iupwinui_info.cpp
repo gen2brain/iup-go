@@ -31,7 +31,7 @@ static void iupwinuiGetVersionInfo(OSVERSIONINFOW* osvi)
   pRtlGetVersion(osvi);
 }
 
-extern "C" char* iupdrvGetSystemName(void)
+extern "C" IUP_SDK_API char* iupdrvGetSystemName(void)
 {
   OSVERSIONINFOW osvi;
   iupwinuiGetVersionInfo(&osvi);
@@ -70,7 +70,7 @@ extern "C" char* iupdrvGetSystemName(void)
   return (char*)"Windows";
 }
 
-extern "C" char* iupdrvGetSystemVersion(void)
+extern "C" IUP_SDK_API char* iupdrvGetSystemVersion(void)
 {
   static char version[50] = "";
   if (version[0] == 0)
@@ -86,7 +86,7 @@ extern "C" char* iupdrvGetSystemVersion(void)
   return version;
 }
 
-extern "C" char* iupdrvGetComputerName(void)
+extern "C" IUP_SDK_API char* iupdrvGetComputerName(void)
 {
   DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
   char* str = iupStrGetMemory(size);
@@ -94,7 +94,7 @@ extern "C" char* iupdrvGetComputerName(void)
   return str;
 }
 
-extern "C" char* iupdrvGetUserName(void)
+extern "C" IUP_SDK_API char* iupdrvGetUserName(void)
 {
   DWORD size = 256;
   char* str = iupStrGetMemory(size);
@@ -114,7 +114,7 @@ static int iupwinuiMakeDirectory(const char* path)
   return CreateDirectoryA(path, NULL) ? 1 : 0;
 }
 
-extern "C" int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
+extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
 {
   char* homedrive;
   char* homepath;
@@ -149,7 +149,7 @@ extern "C" int iupdrvGetPreferencePath(char* filename, const char* app_name, int
   return 0;
 }
 
-extern "C" void iupdrvGetScreenSize(int* width, int* height)
+extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
   RECT area;
   SystemParametersInfoA(SPI_GETWORKAREA, 0, &area, 0);
@@ -157,7 +157,7 @@ extern "C" void iupdrvGetScreenSize(int* width, int* height)
   *height = (int)(area.bottom - area.top);
 }
 
-extern "C" void iupdrvGetFullSize(int* width, int* height)
+extern "C" IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
 {
   RECT rect;
   GetWindowRect(GetDesktopWindow(), &rect);
@@ -165,7 +165,7 @@ extern "C" void iupdrvGetFullSize(int* width, int* height)
   *height = rect.bottom - rect.top;
 }
 
-extern "C" int iupdrvGetScreenDepth(void)
+extern "C" IUP_SDK_API int iupdrvGetScreenDepth(void)
 {
   int bpp;
   HDC hDCDisplay = GetDC(NULL);
@@ -174,7 +174,7 @@ extern "C" int iupdrvGetScreenDepth(void)
   return bpp;
 }
 
-extern "C" double iupdrvGetScreenDpi(void)
+extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
 {
   double dpi;
   HDC hDCDisplay = GetDC(NULL);
@@ -183,7 +183,7 @@ extern "C" double iupdrvGetScreenDpi(void)
   return dpi;
 }
 
-extern "C" void iupdrvGetCursorPos(int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   POINT cursorPoint;
   GetCursorPos(&cursorPoint);
@@ -193,7 +193,7 @@ extern "C" void iupdrvGetCursorPos(int* x, int* y)
   iupdrvAddScreenOffset(x, y, -1);
 }
 
-extern "C" void iupdrvGetKeyState(char* key)
+extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)
 {
   if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
     key[0] = 'S';
@@ -218,7 +218,7 @@ extern "C" void iupdrvGetKeyState(char* key)
   key[4] = 0;
 }
 
-extern "C" char* iupdrvLocaleInfo(void)
+extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
   static char locale[10] = "";
   if (locale[0] == 0)
@@ -231,7 +231,7 @@ extern "C" char* iupdrvLocaleInfo(void)
   return locale;
 }
 
-extern "C" void iupdrvAddScreenOffset(int* x, int* y, int add)
+extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   RECT area;
   SystemParametersInfoA(SPI_GETWORKAREA, 0, &area, 0);
@@ -247,12 +247,12 @@ extern "C" void iupdrvAddScreenOffset(int* x, int* y, int add)
   }
 }
 
-extern "C" void* iupdrvGetDisplay(void)
+extern "C" IUP_SDK_API void* iupdrvGetDisplay(void)
 {
   return NULL;
 }
 
-extern "C" char* iupdrvGetCurrentDirectory(void)
+extern "C" IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
   char* cur_dir = NULL;
 
@@ -267,7 +267,7 @@ extern "C" char* iupdrvGetCurrentDirectory(void)
   return cur_dir;
 }
 
-extern "C" int iupdrvSetCurrentDirectory(const char* path)
+extern "C" IUP_SDK_API int iupdrvSetCurrentDirectory(const char* path)
 {
   return SetCurrentDirectoryA(path);
 }

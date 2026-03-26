@@ -52,7 +52,7 @@ static int qtProgressBarTimeCb(Ihandle* timer)
  * Min Size Calculation
  ****************************************************************************/
 
-extern "C" void iupdrvProgressBarGetMinSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int *w, int *h)
 {
   static int horiz_min_w = -1, horiz_min_h = -1;
   static int vert_min_w = -1, vert_min_h = -1;
@@ -432,7 +432,7 @@ static void qtProgressBarUnMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvProgressBarInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtProgressBarMapMethod;

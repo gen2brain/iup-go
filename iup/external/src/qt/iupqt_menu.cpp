@@ -51,7 +51,7 @@ typedef struct _ImenuPos
  * Menu Popup
  ****************************************************************************/
 
-extern "C" int iupdrvMenuPopup(Ihandle* ih, int x, int y)
+extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   QMenu* menu = (QMenu*)ih->handle;
 
@@ -101,7 +101,7 @@ extern "C" int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-extern "C" int iupdrvMenuGetMenuBarSize(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
   int ch;
   iupdrvFontGetCharSize(ih, nullptr, &ch);
@@ -270,7 +270,7 @@ static void qtMenuUnMapMethod(Ihandle* ih)
  * Menu Attributes
  ****************************************************************************/
 
-extern "C" void iupdrvMenuInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtMenuMapMethod;
@@ -502,7 +502,7 @@ static void qtItemUnMapMethod(Ihandle* ih)
     delete action;
 }
 
-extern "C" void iupdrvItemInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtItemMapMethod;
@@ -656,7 +656,7 @@ static void qtSubmenuUnMapMethod(Ihandle* ih)
     delete action;
 }
 
-extern "C" void iupdrvSubmenuInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtSubmenuMapMethod;
@@ -717,7 +717,7 @@ static void qtSeparatorUnMapMethod(Ihandle* ih)
     delete action;
 }
 
-extern "C" void iupdrvSeparatorInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
 {
   ic->Map = qtSeparatorMapMethod;
   ic->UnMap = qtSeparatorUnMapMethod;
@@ -757,7 +757,7 @@ static void qtRecentItemTriggered(Ihandle* menu, int index)
   }
 }
 
-extern "C" int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+extern "C" IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
   iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
@@ -765,7 +765,7 @@ extern "C" int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback rec
   return 0;
 }
 
-extern "C" int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
 {
   QMenu* qmenu;
   int max_recent, existing, i;

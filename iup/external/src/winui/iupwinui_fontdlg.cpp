@@ -725,7 +725,7 @@ static int winuiFontDlgPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-extern "C" void iupdrvFontDlgInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = winuiFontDlgPopup;
 

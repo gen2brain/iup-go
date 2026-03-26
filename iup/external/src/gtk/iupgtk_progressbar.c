@@ -26,7 +26,7 @@
 #include "iupgtk_drv.h"
 
 
-void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int horiz_min_w = -1, horiz_min_h = -1;
@@ -219,7 +219,7 @@ static int gtkProgressBarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvProgressBarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkProgressBarMapMethod;

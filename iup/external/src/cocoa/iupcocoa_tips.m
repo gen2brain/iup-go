@@ -126,7 +126,7 @@ void cocoaUpdateTip(Ihandle* ih)
   }
 }
 
-int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   NSView* the_view = iupcocoaGetRootView(ih);
   if (!the_view)
@@ -156,14 +156,14 @@ int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
   return 0;
 }
 
-char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
+IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
   (void)ih;
   return NULL;

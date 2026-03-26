@@ -684,12 +684,12 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
  ******************* Driver Functions ***************************
  ****************************************************************/
 
-int iupdrvDialogIsVisible(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
   return iupdrvIsVisible(ih);
 }
 
-void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
 {
   NSWindow* the_window = handle ? (NSWindow*)handle : cocoaDialogGetWindow(ih);
   if (!the_window) return;
@@ -700,7 +700,7 @@ void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
   if (h) *h = iupROUND(frame_rect.size.height);
 }
 
-void iupdrvDialogSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   NSWindow* the_window = cocoaDialogGetWindow(ih);
   if (!the_window)
@@ -764,7 +764,7 @@ void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 }
 
-void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
 {
   NSWindow* the_window = handle ? (NSWindow*)handle : cocoaDialogGetWindow(ih);
   if (!the_window) return;
@@ -775,7 +775,7 @@ void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
   if (y) *y = iupcocoaComputeIupScreenHeightFromCartesian(the_rect.origin.y + the_rect.size.height);
 }
 
-void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
 {
   NSWindow* the_window = cocoaDialogGetWindow(ih);
   if (!the_window) return;
@@ -784,7 +784,7 @@ void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
   [the_window setFrameTopLeftPoint:NSMakePoint(x, inverted_y)];
 }
 
-void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
   *menu = 0; /* In Cocoa, the menu bar is not part of the window's decoration height. */
 
@@ -828,7 +828,7 @@ void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu
   }
 }
 
-int iupdrvDialogSetPlacement(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   id root_object = (id)ih->handle;
   if([root_object isKindOfClass:[NSStatusItem class]] || !root_object) return 0;
@@ -909,7 +909,7 @@ int iupdrvDialogSetPlacement(Ihandle* ih)
   return 1;
 }
 
-void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
+IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
   id root_object = (id)ih->handle;
   if([root_object isKindOfClass:[NSStatusItem class]]) return;
@@ -1756,7 +1756,7 @@ static int cocoaDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
  ******************** Class Registration ************************
  ****************************************************************/
 
-void iupdrvDialogInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 {
   ic->Map = cocoaDialogMapMethod;
   ic->UnMap = cocoaDialogUnMapMethod;

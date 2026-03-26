@@ -27,7 +27,7 @@ static void* iupunix_ThreadFunc(void* obj)
   return NULL;
 }
 
-void* iupdrvThreadStart(Ihandle* ih)
+IUP_SDK_API void* iupdrvThreadStart(Ihandle* ih)
 {
   pthread_t* thread = (pthread_t*)malloc(sizeof(pthread_t));
   if (thread)
@@ -45,32 +45,32 @@ void* iupdrvThreadStart(Ihandle* ih)
   return (void*)thread;
 }
 
-void iupdrvThreadJoin(void* handle)
+IUP_SDK_API void iupdrvThreadJoin(void* handle)
 {
   pthread_join(*(pthread_t*)handle, NULL);
 }
 
-void iupdrvThreadYield(void)
+IUP_SDK_API void iupdrvThreadYield(void)
 {
   sched_yield();
 }
 
-int iupdrvThreadIsCurrent(void* handle)
+IUP_SDK_API int iupdrvThreadIsCurrent(void* handle)
 {
   return pthread_equal(*(pthread_t*)handle, pthread_self());
 }
 
-void iupdrvThreadExit(int code)
+IUP_SDK_API void iupdrvThreadExit(int code)
 {
   pthread_exit((void*)(intptr_t)code);
 }
 
-void iupdrvThreadDestroy(void* handle)
+IUP_SDK_API void iupdrvThreadDestroy(void* handle)
 {
   free(handle);
 }
 
-void* iupdrvMutexCreate(void)
+IUP_SDK_API void* iupdrvMutexCreate(void)
 {
   pthread_mutex_t* mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
   if (mutex)
@@ -78,17 +78,17 @@ void* iupdrvMutexCreate(void)
   return (void*)mutex;
 }
 
-void iupdrvMutexLock(void* handle)
+IUP_SDK_API void iupdrvMutexLock(void* handle)
 {
   pthread_mutex_lock((pthread_mutex_t*)handle);
 }
 
-void iupdrvMutexUnlock(void* handle)
+IUP_SDK_API void iupdrvMutexUnlock(void* handle)
 {
   pthread_mutex_unlock((pthread_mutex_t*)handle);
 }
 
-void iupdrvMutexDestroy(void* handle)
+IUP_SDK_API void iupdrvMutexDestroy(void* handle)
 {
   if (!handle)
     return;

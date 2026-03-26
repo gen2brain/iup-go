@@ -137,7 +137,7 @@ int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height)
   return iupROUND(iup_y);
 }
 
-void iupdrvActivate(Ihandle* ih)
+IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 {
   id control = ih->handle;
   if ([control respondsToSelector:@selector(performClick:)])
@@ -146,7 +146,7 @@ void iupdrvActivate(Ihandle* ih)
   }
 }
 
-void iupdrvReparent(Ihandle* ih)
+IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 {
   NSView* child_view = iupcocoaCommonBaseLayoutGetChildView(ih);
   if (!child_view) return;
@@ -234,7 +234,7 @@ NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih)
   return the_view;
 }
 
-void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
+IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
 {
   NSView* parent_view = iupcocoaCommonBaseLayoutGetParentView(ih);
   if (!parent_view) return;
@@ -269,7 +269,7 @@ void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
   cocoaUpdateTip(ih);
 }
 
-void iupdrvBaseUnMapMethod(Ihandle* ih)
+IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 {
   if (!ih->handle) return;
 
@@ -320,7 +320,7 @@ static void iupCocoaDisplayUpdate(Ihandle *ih)
   }
 }
 
-void iupdrvRedrawNow(Ihandle *ih)
+IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
 {
   iupCocoaDisplayUpdate(ih);
   NSView* view = iupcocoaGetMainView(ih);
@@ -330,12 +330,12 @@ void iupdrvRedrawNow(Ihandle *ih)
   }
 }
 
-void iupdrvPostRedraw(Ihandle *ih)
+IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
 {
   iupCocoaDisplayUpdate(ih);
 }
 
-void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
 {
   NSRect main_screen = [[NSScreen mainScreen] frame];
   CGFloat main_screen_top = main_screen.origin.y + main_screen.size.height;
@@ -365,7 +365,7 @@ void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
   *y = iupROUND(view_point.y);
 }
 
-void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
 {
   NSView* main_view = iupcocoaGetMainView(ih);
   if (!main_view) return;
@@ -395,7 +395,7 @@ void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
   *y = main_screen_top - screen_rect.origin.y; /* convert from cocoa screen coords to IUP screen coords */
 }
 
-int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
 {
   NSView* child_view = iupcocoaGetMainView(ih);
   if (!child_view) return 0;
@@ -414,7 +414,7 @@ int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupdrvSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
 {
   id the_object = ih->handle;
   bool is_hidden = !(bool)visible;
@@ -429,7 +429,7 @@ void iupdrvSetVisible(Ihandle* ih, int visible)
   }
 }
 
-int iupdrvIsVisible(Ihandle* ih)
+IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 {
   id the_object = ih->handle;
   if([the_object isKindOfClass:[NSWindow class]])
@@ -451,7 +451,7 @@ int iupdrvIsVisible(Ihandle* ih)
 }
 
 
-int iupdrvIsActive(Ihandle *ih)
+IUP_SDK_API int iupdrvIsActive(Ihandle *ih)
 {
   char* value = iupAttribGet(ih, "_IUPCOCOA_ACTIVE");
   int result;
@@ -464,7 +464,7 @@ int iupdrvIsActive(Ihandle *ih)
   return result;
 }
 
-void iupdrvSetActive(Ihandle* ih, int enable)
+IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 {
   iupAttribSet(ih, "_IUPCOCOA_ACTIVE", iupStrReturnBoolean(enable));
 
@@ -509,7 +509,7 @@ void iupdrvSetActive(Ihandle* ih, int enable)
   }
 }
 
-int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   id the_object = ih->handle;
 
@@ -535,7 +535,7 @@ int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   id main_view = iupcocoaGetMainView(ih);
   if (!main_view)
@@ -643,7 +643,7 @@ static NSCursor* iupCocoaGetCursor(Ihandle* ih, const char* name)
   return iupImageGetCursor(name);
 }
 
-int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
 {
   NSView* main_view = iupcocoaGetMainView(ih);
   if (!main_view) return 0;
@@ -681,7 +681,7 @@ int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvGetScrollbarSize(void)
+IUP_SDK_API int iupdrvGetScrollbarSize(void)
 {
   return [NSScroller scrollerWidthForControlSize:NSControlSizeRegular scrollerStyle:NSScrollerStyleLegacy];
 }
@@ -703,11 +703,11 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
   }
 }
 
-void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
+IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
 }
 
-void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
+IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "TIPBGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TIPFGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
@@ -803,7 +803,7 @@ NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, cons
   return result;
 }
 
-void iupdrvSendKey(int key, int press)
+IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
   unsigned int maccode, state;
   iupdrvKeyEncode(key, &maccode, &state);
@@ -830,7 +830,7 @@ void iupdrvSendKey(int key, int press)
   CFRelease(source);
 }
 
-void iupdrvSendMouse(int x, int y, int bt, int status)
+IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
   iupdrvWarpPointer(x, y);
 
@@ -892,12 +892,12 @@ void iupdrvSendMouse(int x, int y, int bt, int status)
   }
 }
 
-void iupdrvSleep(int time)
+IUP_SDK_API void iupdrvSleep(int time)
 {
   usleep(time * 1000);
 }
 
-void iupdrvWarpPointer(int x, int y)
+IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
   CGPoint point = CGPointMake(x, y);
   CGWarpMouseCursorPosition(point);

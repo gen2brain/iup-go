@@ -41,7 +41,7 @@ static void eflImageSetPixels(Eo* img, unsigned int* pixels, int width, int heig
   efl_gfx_entity_size_set(img, EINA_SIZE2D(width, height));
 }
 
-void iupdrvImageGetData(void* handle, unsigned char* imgdata)
+IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   Eo* img = (Eo*)handle;
   int w, h, bpp, x, y;
@@ -285,7 +285,7 @@ static void eflImageFillPixels(unsigned int* pixels, unsigned char* imgdata, int
   }
 }
 
-void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
 {
   Eo* img;
   unsigned int* pixels;
@@ -332,17 +332,17 @@ void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive
   return img;
 }
 
-void* iupdrvImageCreateIcon(Ihandle* ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-void* iupdrvImageCreateCursor(Ihandle* ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-void iupdrvImageDestroy(void* handle, int type)
+IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
 {
   Eo* image = (Eo*)handle;
 
@@ -356,7 +356,7 @@ void iupdrvImageDestroy(void* handle, int type)
   }
 }
 
-int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
   Eo* img = (Eo*)handle;
   Eina_Size2D size;
@@ -383,7 +383,7 @@ IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iu
   return iupdrvImageGetInfo(handle, w, h, bpp);
 }
 
-void* iupdrvImageLoad(const char* name, int type)
+IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   Eo* img;
   Evas_Object* win;
@@ -633,7 +633,7 @@ static Eo* iEflImageCreateTemp(unsigned char* imgdata, int width, int height, in
   return img;
 }
 
-int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
   Eo* img;
   Eina_Bool ret;
@@ -657,7 +657,7 @@ int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupC
   return ret ? 1 : 0;
 }
 
-unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   Eo* img;
   char tmpname[] = "/tmp/iup_img_XXXXXX";

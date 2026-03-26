@@ -48,7 +48,7 @@ static void motTimerProc(XtPointer client_data, XtIntervalId *id)
   }
 }
 
-void iupdrvTimerRun(Ihandle *ih)
+IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
 {
   unsigned int time_ms;
 
@@ -67,7 +67,7 @@ void iupdrvTimerRun(Ihandle *ih)
   }
 }
 
-void iupdrvTimerStop(Ihandle* ih)
+IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   if (ih->serial > 0)
   {
@@ -76,7 +76,7 @@ void iupdrvTimerStop(Ihandle* ih)
   }
 }
 
-void iupdrvTimerInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 {
   (void)ic;
 }

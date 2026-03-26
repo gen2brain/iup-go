@@ -814,7 +814,7 @@ static void eflToggleComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
                      Driver Functions
 ****************************************************************/
 
-void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   static int check_w = -1;
   static int check_h = -1;
@@ -857,7 +857,7 @@ void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
     (*x) += 2;
 }
 
-void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   static int switch_w = -1;
   static int switch_h = -1;
@@ -913,14 +913,14 @@ void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
     (*x) += 8;
 }
 
-void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   *x += 4;
   *y += 4;
 }
 
-void iupdrvToggleInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   ic->Map = eflToggleMapMethod;
   ic->UnMap = eflToggleUnMapMethod;

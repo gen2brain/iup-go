@@ -14,8 +14,8 @@ extern "C" {
 
 /** \addtogroup drv
  * @{ */
-void iupdrvLabelInitClass(Iclass* ic);
-void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y);
+IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y);
 /** @} */
 
 char* iupLabelGetPaddingAttrib(Ihandle* ih);

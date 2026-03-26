@@ -326,7 +326,7 @@ extern "C" int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
  * Dialog Utilities
  ****************************************************************************/
 
-extern "C" void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
+extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
   IupQtDialog* dialog = (IupQtDialog*)ih->handle;
   if (!dialog)
@@ -347,12 +347,12 @@ extern "C" void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
   }
 }
 
-extern "C" int iupdrvDialogIsVisible(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
   return iupdrvIsVisible(ih);
 }
 
-extern "C" void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
 {
   QWidget* widget;
   int border = 0, caption = 0, menu = 0;
@@ -377,7 +377,7 @@ extern "C" void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, 
   }
 }
 
-extern "C" void iupdrvDialogSetVisible(Ihandle* ih, int visible)
+extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -401,7 +401,7 @@ extern "C" void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 }
 
-extern "C" void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
 {
   QWidget* widget;
 
@@ -424,7 +424,7 @@ extern "C" void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int 
   }
 }
 
-extern "C" void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
 {
   QWidget* widget = (QWidget*)ih->handle;
 
@@ -446,7 +446,7 @@ static int qtDialogGetMenuSize(Ihandle* ih)
     return 0;
 }
 
-extern "C" void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
 #ifdef Q_OS_MAC
   /* On macOS, Qt uses the native global menu bar */
@@ -547,7 +547,7 @@ static void qtDialogGetClientSize(Ihandle* ih, int *width, int *height)
   }
 }
 
-extern "C" int iupdrvDialogSetPlacement(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   QWidget* widget = (QWidget*)ih->handle;
   if (!widget)
@@ -1178,7 +1178,7 @@ static int qtDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvDialogInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 {
   /* Driver Dependent Class methods */
   ic->Map = qtDialogMapMethod;

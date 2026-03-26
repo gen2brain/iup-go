@@ -1673,7 +1673,7 @@ static int winuiListSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   int border = 2;
 
@@ -1694,7 +1694,7 @@ extern "C" void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
   }
 }
 
-extern "C" void iupdrvListAddItemSpace(Ihandle* ih, int* h)
+extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   if (ih->data->is_dropdown)
     *h += 5 + 7;
@@ -1702,7 +1702,7 @@ extern "C" void iupdrvListAddItemSpace(Ihandle* ih, int* h)
     *h += 2 + 2;
 }
 
-extern "C" int iupdrvListGetCount(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
   IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
   if (!aux)
@@ -1727,7 +1727,7 @@ extern "C" int iupdrvListGetCount(Ihandle* ih)
   return 0;
 }
 
-extern "C" void iupdrvListAppendItem(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
   if (!aux || aux->isVirtual)
@@ -1751,7 +1751,7 @@ extern "C" void iupdrvListAppendItem(Ihandle* ih, const char* value)
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 }
 
-extern "C" void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
+extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
   IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
   if (!aux || aux->isVirtual)
@@ -1777,7 +1777,7 @@ extern "C" void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   iupListUpdateOldValue(ih, pos, 0);
 }
 
-extern "C" void iupdrvListRemoveItem(Ihandle* ih, int pos)
+extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 {
   IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
   if (!aux || aux->isVirtual)
@@ -1803,7 +1803,7 @@ extern "C" void iupdrvListRemoveItem(Ihandle* ih, int pos)
   iupListUpdateOldValue(ih, pos, 1);
 }
 
-extern "C" void iupdrvListRemoveAllItems(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 {
   IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
   if (!aux || aux->isVirtual)
@@ -1827,7 +1827,7 @@ extern "C" void iupdrvListRemoveAllItems(Ihandle* ih)
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 }
 
-extern "C" void* iupdrvListGetImageHandle(Ihandle* ih, int id)
+extern "C" IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
   if (!aux)
@@ -1865,7 +1865,7 @@ extern "C" void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   return NULL;
 }
 
-extern "C" int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
+extern "C" IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
   IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
   if (!aux)
@@ -1897,7 +1897,7 @@ extern "C" int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   return 0;
 }
 
-extern "C" void iupdrvListSetItemCount(Ihandle* ih, int count)
+extern "C" IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 {
   IupWinUIListAux* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
   if (!aux || !aux->isVirtual)
@@ -2262,7 +2262,7 @@ static int winuiListSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvListInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = winuiListMapMethod;
   ic->UnMap = winuiListUnMapMethod;

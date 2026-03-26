@@ -171,13 +171,13 @@ static void winListUpdateShowImageItemHeight(Ihandle* ih, winListItemData* itemd
   SendMessage(ih->handle, WIN_SETITEMHEIGHT(ih), pos, height);
 }
 
-void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 {
   (void)ih;
   (void)h;
 }
 
-void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   int border_size = 2 * 4;
@@ -199,7 +199,7 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-int iupdrvListGetCount(Ihandle* ih)
+IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
   if (ih->data->is_virtual)
     return (int)SendMessage(ih->handle, LVM_GETITEMCOUNT, 0, 0);
@@ -290,20 +290,20 @@ static void winListUpdateScrollWidthItem(Ihandle* ih, int item_width, int add)
   }
 }
 
-void iupdrvListAppendItem(Ihandle* ih, const char* value)
+IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   int pos = (int)SendMessage(ih->handle, WIN_ADDSTRING(ih), 0, (LPARAM)iupwinStrToSystem(value));
   winListSetItemData(ih, pos, value, NULL);
 }
 
-void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
+IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
   SendMessage(ih->handle, WIN_INSERTSTRING(ih), pos, (LPARAM)iupwinStrToSystem(value));
   winListSetItemData(ih, pos, value, NULL);
   iupListUpdateOldValue(ih, pos, 0);
 }
 
-void iupdrvListRemoveItem(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 {
   int text_width;
 
@@ -340,7 +340,7 @@ static void winListRemoveAllItemData(Ihandle* ih)
     winListRemoveItemData(ih, pos);
 }
 
-void iupdrvListRemoveAllItems(Ihandle* ih)
+IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 {
   winListRemoveAllItemData(ih);
   SendMessage(ih->handle, WIN_RESETCONTENT(ih), 0, 0L);
@@ -378,7 +378,7 @@ static char* winListGetText(Ihandle* ih, int pos)
   return iupwinStrFromSystem(str);
 }
 
-void iupdrvListSetItemCount(Ihandle* ih, int count)
+IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 {
   if (!ih->data->is_virtual)
     return;
@@ -1045,7 +1045,7 @@ static char* winListGetImageNativeHandleAttribId(Ihandle* ih, int id)
     return NULL;
 }
 
-void* iupdrvListGetImageHandle(Ihandle* ih, int id)
+IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   winListItemData *itemdata = winListGetItemData(ih, id-1);
   if (!itemdata)
@@ -1053,7 +1053,7 @@ void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   return itemdata->hBitmap;
 }
 
-int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
+IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
   winListSetItemData(ih, id - 1, NULL, (HBITMAP)hImage);
   iupdrvRedrawNow(ih);
@@ -2306,7 +2306,7 @@ static int winListMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvListInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winListMapMethod;

@@ -422,7 +422,7 @@ static void gtkPopoverUnMapMethod(Ihandle* ih)
 
 #endif /* GTK >= 3.12 */
 
-void iupdrvPopoverInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 {
   ic->Map = gtkPopoverMapMethod;
   ic->UnMap = gtkPopoverUnMapMethod;

@@ -332,7 +332,7 @@ static IupWinTray* winGetTray(Ihandle* ih, int create)
 /* Driver Interface Implementation                                            */
 /******************************************************************************/
 
-int iupdrvTraySetVisible(Ihandle* ih, int visible)
+IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
 {
   IupWinTray* tray = winGetTray(ih, 1);
   if (!tray)
@@ -384,7 +384,7 @@ int iupdrvTraySetVisible(Ihandle* ih, int visible)
   return 1;
 }
 
-int iupdrvTraySetTip(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
 {
   IupWinTray* tray = winGetTray(ih, 1);
 
@@ -398,7 +398,7 @@ int iupdrvTraySetTip(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvTraySetImage(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
 {
   IupWinTray* tray = winGetTray(ih, 1);
   HICON hIcon = NULL;
@@ -429,14 +429,14 @@ int iupdrvTraySetImage(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
+IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
   /* Store the menu handle, it will be shown via IupPopup on right-click */
   iupAttribSet(ih, "_IUPWIN_TRAYMENU", (char*)menu);
   return 1;
 }
 
-void iupdrvTrayDestroy(Ihandle* ih)
+IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 {
   IupWinTray* tray = (IupWinTray*)iupAttribGet(ih, "_IUPWIN_TRAY");
 
@@ -457,13 +457,13 @@ void iupdrvTrayDestroy(Ihandle* ih)
   }
 }
 
-int iupdrvTrayIsAvailable(void)
+IUP_SDK_API int iupdrvTrayIsAvailable(void)
 {
   return 1;
 }
 
 #ifndef IUPWIN_TRAY_USE_EXTERNAL_IMAGE
-int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
   Ihandle* image;
   unsigned char* imgdata;
@@ -548,7 +548,7 @@ int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height,
 }
 #endif
 
-void iupdrvTrayInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "TIPBALLOON", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TIPBALLOONTITLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

@@ -32,7 +32,7 @@ IUP_DRV_API void iupgtkSetCanFocus(GtkWidget *widget, int can)
 #endif
 }
 
-void iupdrvSetFocus(Ihandle *ih)
+IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
   if (dialog && dialog->handle)

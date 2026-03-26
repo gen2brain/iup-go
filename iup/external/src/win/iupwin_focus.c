@@ -69,7 +69,7 @@ void iupwinBringWindowToForeground(HWND hwnd)
   }
 }
 
-void iupdrvSetFocus(Ihandle *ih)
+IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
 {
   SetFocus(ih->handle);
 

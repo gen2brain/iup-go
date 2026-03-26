@@ -2056,13 +2056,13 @@ static void cocoaListSortItems(Ihandle* ih)
   }
 }
 
-void iupdrvListAddItemSpace(Ihandle* ih, int* h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   (void)ih;
   *h += 2;
 }
 
-void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
 
@@ -2211,7 +2211,7 @@ void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-int iupdrvListGetCount(Ihandle* ih)
+IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
   if (ih->handle)
   {
@@ -2269,7 +2269,7 @@ int iupdrvListGetCount(Ihandle* ih)
   }
 }
 
-void iupdrvListAppendItem(Ihandle* ih, const char* value)
+IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
 
@@ -2341,7 +2341,7 @@ void iupdrvListAppendItem(Ihandle* ih, const char* value)
   }
 }
 
-void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
+IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
 
@@ -2410,7 +2410,7 @@ void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   iupListUpdateOldValue(ih, pos, 0);
 }
 
-void iupdrvListRemoveItem(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
   switch(sub_type)
@@ -2457,7 +2457,7 @@ void iupdrvListRemoveItem(Ihandle* ih, int pos)
   iupListUpdateOldValue(ih, pos, 1);
 }
 
-void iupdrvListRemoveAllItems(Ihandle* ih)
+IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
   switch(sub_type)
@@ -2509,7 +2509,7 @@ void iupdrvListRemoveAllItems(Ihandle* ih)
   }
 }
 
-void* iupdrvListGetImageHandle(Ihandle* ih, int id)
+IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
   int pos = id - 1;
@@ -2534,7 +2534,7 @@ void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   return NULL;
 }
 
-int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
+IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
   int pos = id - 1;
@@ -2579,7 +2579,7 @@ int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   return 0;
 }
 
-void iupdrvListSetItemCount(Ihandle* ih, int count)
+IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 {
   if (!ih->data->is_virtual)
     return;
@@ -3961,7 +3961,7 @@ static void cocoaListUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-void iupdrvListInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = cocoaListMapMethod;

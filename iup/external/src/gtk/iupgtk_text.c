@@ -35,7 +35,7 @@
 #endif
 
 
-void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
   static int spin_arrow_width = -1;
 
@@ -254,7 +254,7 @@ static void iupgtkTextMeasureMultilineMetrics(void)
   }
 }
 
-void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
   /* Used also by IupCalendar in GTK */
 
@@ -330,7 +330,7 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
 {
   (void)ih;
   iupgtkTextMeasureEntryBorders();
@@ -839,7 +839,7 @@ static int gtkTextGetCharSize(Ihandle* ih)
   return charwidth;
 }
 
-void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
 {
   GtkTextIter iter;
   GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
@@ -847,7 +847,7 @@ void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
   *pos = gtk_text_iter_get_offset(&iter);
 }
 
-void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
 {
   GtkTextIter iter;
   GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
@@ -1707,21 +1707,21 @@ static char* gtkTextGetOverwriteAttrib(Ihandle* ih)
   return iupStrReturnChecked(gtk_text_view_get_overwrite(GTK_TEXT_VIEW(ih->handle)));
 }
 
-void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
   gtk_text_buffer_begin_user_action(buffer);
   return NULL;
 }
 
-void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
+IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 {
   GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
   gtk_text_buffer_end_user_action(buffer);
   (void)state;
 }
 
-void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
+IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   GtkTextBuffer *buffer;
   GtkTextIter start_iter, end_iter;
@@ -2470,7 +2470,7 @@ static int gtkTextMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvTextInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkTextMapMethod;

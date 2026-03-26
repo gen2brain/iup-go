@@ -43,32 +43,32 @@
 #define XmNwrap "Nwrap"
 #endif
 
-void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   (void)ih;
   return NULL;
 }
 
-void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
+IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 {
   (void)ih;
   (void)state;
 }
 
-void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
+IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
  {
    (void)ih;
    (void)formattag;
    (void)bulk;
  }
 
-void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
   *w += h/2;
   (void)ih;
 }
 
-void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
 {
   int border_size = 2*5;
   (*w) += border_size;
@@ -76,7 +76,7 @@ void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
   (void)ih;
 }
 
-void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
 {
   (void)ih;
   (void)w;
@@ -141,14 +141,14 @@ static int motTextSetLinColToPosition(const char *str, int lin, int col)
   return pos;
 }
 
-void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
 {
   char* str = XmTextGetString(ih->handle);
   *pos = motTextSetLinColToPosition(str, lin, col);
   XtFree(str);
 }
 
-void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
 {
   char *str = XmTextGetString(ih->handle);
   motTextGetLinColFromPosition(str, pos, lin, col);
@@ -1229,7 +1229,7 @@ static int motTextMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvTextInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motTextMapMethod;

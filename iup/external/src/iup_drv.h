@@ -129,8 +129,8 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
 
 
 /* Called only from IupOpen/IupClose. */
-int iupdrvOpen(int *argc, char ***argv);
-void iupdrvClose(void);
+IUP_SDK_API int iupdrvOpen(int *argc, char ***argv);
+IUP_SDK_API void iupdrvClose(void);
 
 
 #ifdef __cplusplus

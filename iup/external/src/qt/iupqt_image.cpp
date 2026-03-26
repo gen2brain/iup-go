@@ -36,7 +36,7 @@ extern "C" {
  * Image Data Extraction
  ****************************************************************************/
 
-extern "C" void iupdrvImageGetData(void* handle, unsigned char* imgdata)
+extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   QPixmap* pixmap = (QPixmap*)handle;
 
@@ -194,7 +194,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, in
  * Image Creation from IUP Image
  ****************************************************************************/
 
-extern "C" void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
 {
   int bpp, colors_count = 0, has_alpha = 0;
   iupColor colors[256];
@@ -335,12 +335,12 @@ extern "C" void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int ma
   return pixmap;
 }
 
-extern "C" void* iupdrvImageCreateIcon(Ihandle *ih)
+extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
 {
   return iupdrvImageCreateImage(ih, NULL, 0);
 }
 
-extern "C" void* iupdrvImageCreateCursor(Ihandle *ih)
+extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
 {
   QPixmap* pixmap = (QPixmap*)iupdrvImageCreateImage(ih, NULL, 0);
 
@@ -368,7 +368,7 @@ extern "C" void* iupdrvImageCreateCursor(Ihandle *ih)
  * Image Loading
  ****************************************************************************/
 
-extern "C" void* iupdrvImageLoad(const char* name, int type)
+extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   if (!name)
     return NULL;
@@ -453,7 +453,7 @@ extern "C" void* iupdrvImageLoad(const char* name, int type)
  * Image Information
  ****************************************************************************/
 
-extern "C" int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
 {
   QPixmap* pixmap = (QPixmap*)handle;
 
@@ -560,7 +560,7 @@ static QImage iQtImageCreate(unsigned char* imgdata, int width, int height, int 
     return QImage(imgdata, width, height, width * 3, QImage::Format_RGB888).copy();
 }
 
-extern "C" int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
   QImage image = iQtImageCreate(imgdata, width, height, bpp, colors, colors_count);
   if (image.isNull()) return 0;
@@ -575,7 +575,7 @@ extern "C" int iupdrvImageSave(unsigned char* imgdata, int width, int height, in
   return image.save(QString::fromUtf8(filename), format, quality) ? 1 : 0;
 }
 
-extern "C" unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+extern "C" IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   QImage image = iQtImageCreate(imgdata, width, height, bpp, colors, colors_count);
   if (image.isNull()) return NULL;

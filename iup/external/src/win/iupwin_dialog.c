@@ -100,17 +100,17 @@ static int winDialogSetTaskBarProgressStateAttrib(Ihandle *ih, const char *value
                      Utilities
 ****************************************************************/
 
-void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
+IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
   SetParent(ih->handle, parent);
 }
 
-int iupdrvDialogIsVisible(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
   return iupdrvIsVisible(ih);
 }
 
-void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
 {
   RECT rect;
   if (!handle)
@@ -129,7 +129,7 @@ static void winDialogMaximizeAtParent(HWND hWnd, HWND hWndParent)
   SetWindowPos(hWnd, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top, 0, 0, SWP_NOSIZE);
 }
 
-void iupdrvDialogSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   if (visible && (ih->data->cmd_show == SW_MAXIMIZE || ih->data->cmd_show == SW_SHOWMAXIMIZED))
   {
@@ -153,7 +153,7 @@ void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     iupwinBringWindowToForeground(ih->handle);
 }
 
-void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
 {
   RECT rect;
   if (!handle)
@@ -165,7 +165,7 @@ void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
   iupdrvAddScreenOffset(x, y, -1);
 }
 
-void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
 {
   /* Only moves the window and places it at the top of the Z order. */
   int flags = SWP_NOSIZE;
@@ -215,7 +215,7 @@ static void winDialogGetWindowDecor(Ihandle* ih, int *border, int *caption, int 
   }
 }
 
-void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
   if (ih->data->menu)
     *menu = iupdrvMenuGetMenuBarSize(ih->data->menu);
@@ -277,7 +277,7 @@ void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu
   }
 }
 
-int iupdrvDialogSetPlacement(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   char* placement;
   int no_activate = iupAttribGetBoolean(ih, "SHOWNOACTIVATE");
@@ -1946,7 +1946,7 @@ static int winDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupdrvDialogInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 {
   if (!iupwinClassExist(TEXT("IupDialog")))
   {

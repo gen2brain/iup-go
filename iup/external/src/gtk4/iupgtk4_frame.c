@@ -55,7 +55,7 @@ static void gtk4FrameMeasureDecor(int has_title, int* decor_w, int* decor_h)
   g_object_unref(temp_frame);
 }
 
-void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
   static int measured = 0;
   static int offset_x = 0, offset_y = 0;
@@ -74,13 +74,13 @@ void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
   *y = offset_y;
 }
 
-int iupdrvFrameHasClientOffset(Ihandle* ih)
+IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
+IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 {
   const char* title = iupAttribGet(ih, "TITLE");
   if (!title || !*title)
@@ -118,7 +118,7 @@ int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
   return 1;
 }
 
-int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
+IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
   static int titled_measured = 0, untitled_measured = 0;
   static int titled_w = 0, titled_h = 0;
@@ -260,7 +260,7 @@ static int gtk4FrameMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvFrameInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 {
   ic->Map = gtk4FrameMapMethod;
   ic->GetInnerNativeContainerHandle = gtk4FrameGetInnerNativeContainerHandleMethod;

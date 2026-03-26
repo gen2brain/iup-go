@@ -56,7 +56,7 @@ static void sniPixelToRGB(unsigned long pixel, unsigned char* r, unsigned char* 
   *b = (unsigned char)(bv >> 8);
 }
 
-int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
   Pixmap icon, mask;
   Window root;

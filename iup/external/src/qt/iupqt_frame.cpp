@@ -73,7 +73,7 @@ static void qtFrameMeasureDecor(int has_title, int* decor_w, int* decor_h, int* 
   }
 }
 
-extern "C" void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
 {
   static int measured = 0;
   static int offset_x = 0, offset_y = 0;
@@ -90,13 +90,13 @@ extern "C" void iupdrvFrameGetDecorOffset(Ihandle* ih, int *x, int *y)
   *y = offset_y;
 }
 
-extern "C" int iupdrvFrameHasClientOffset(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-extern "C" int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
+extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
 {
   static int measured = 0;
   static int cached_title_h = 0;
@@ -130,7 +130,7 @@ extern "C" int iupdrvFrameGetTitleHeight(Ihandle* ih, int *h)
   return 0;
 }
 
-extern "C" int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
+extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
 {
   static int titled_measured = 0, untitled_measured = 0;
   static int titled_w = 0, titled_h = 0;
@@ -400,7 +400,7 @@ static int qtFrameMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvFrameInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 {
   ic->Map = qtFrameMapMethod;
   ic->GetInnerNativeContainerHandle = qtFrameGetInnerNativeContainerHandleMethod;

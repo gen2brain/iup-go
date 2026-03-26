@@ -248,7 +248,7 @@ extern "C" void iupqtUpdateWidgetFont(Ihandle* ih, QWidget* widget)
  * Driver Font Functions
  ****************************************************************************/
 
-extern "C" char* iupdrvGetSystemFont(void)
+extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
 {
   static char str[200]; /* must return a static string */
 
@@ -270,7 +270,7 @@ extern "C" char* iupdrvGetSystemFont(void)
   return str;
 }
 
-extern "C" int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 {
   IqtFont* qtfont = qtFontCreateNativeFont(ih, value);
   if (!qtfont)
@@ -372,21 +372,21 @@ static void qtFontGetTextSize(Ihandle* ih, IqtFont* qtfont, const char* str, int
   if (h) *h = qtfont->charheight * line_count;
 }
 
-extern "C" void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
   IqtFont* qtfont = qtFontGet(ih);
   if (qtfont)
     qtFontGetTextSize(ih, qtfont, str, str ? (int)strlen(str) : 0, w, h);
 }
 
-extern "C" void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
 {
   IqtFont* qtfont = qtFindFont(font);
   if (qtfont)
     qtFontGetTextSize(nullptr, qtfont, str, len, w, h);
 }
 
-extern "C" void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
+extern "C" IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
 {
   IqtFont* qtfont = qtFindFont(font);
   if (qtfont)
@@ -398,7 +398,7 @@ extern "C" void iupdrvFontGetFontDim(const char* font, int* max_width, int* line
   }
 }
 
-extern "C" int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
+extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 {
   IqtFont* qtfont;
   const char* line_end;
@@ -448,7 +448,7 @@ extern "C" int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
   return result;
 }
 
-extern "C" void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
+extern "C" IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
 {
   IqtFont* qtfont = qtFontGet(ih);
   if (!qtfont)
@@ -466,12 +466,12 @@ extern "C" void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheig
  * Font Initialization and Cleanup
  ****************************************************************************/
 
-extern "C" void iupdrvFontInit(void)
+extern "C" IUP_SDK_API void iupdrvFontInit(void)
 {
   qt_fonts = iupArrayCreate(50, sizeof(IqtFont));
 }
 
-extern "C" void iupdrvFontFinish(void)
+extern "C" IUP_SDK_API void iupdrvFontFinish(void)
 {
   if (!qt_fonts)
     return;

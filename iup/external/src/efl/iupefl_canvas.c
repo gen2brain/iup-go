@@ -769,7 +769,7 @@ static void* eflCanvasGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* 
   return iupeflGetParentWidget(ih);
 }
 
-void iupdrvCanvasInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   ic->Map = eflCanvasMapMethod;
   ic->UnMap = eflCanvasUnMapMethod;

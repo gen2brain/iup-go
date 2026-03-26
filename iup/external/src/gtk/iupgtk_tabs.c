@@ -30,13 +30,13 @@
 #include "iupgtk_drv.h"
 
 
-int iupdrvTabsExtraDecor(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
 {
   (void)ih;
   return 0;
 }
 
-int iupdrvTabsExtraMargin(void)
+IUP_SDK_API int iupdrvTabsExtraMargin(void)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   return 2;  /* notebook frame border + header border */
@@ -45,20 +45,20 @@ int iupdrvTabsExtraMargin(void)
 #endif
 }
 
-int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
 {
   (void)ih;
   return 1;
 }
 
-void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   iupAttribSet(ih, "_IUPGTK_IGNORE_CHANGE", "1");
   gtk_notebook_set_current_page((GtkNotebook*)ih->handle, pos);
   iupAttribSet(ih, "_IUPGTK_IGNORE_CHANGE", NULL);
 }
 
-int iupdrvTabsGetCurrentTab(Ihandle* ih)
+IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
   return gtk_notebook_get_current_page((GtkNotebook*)ih->handle);
 }
@@ -234,7 +234,7 @@ static int gtkTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
   return 0;
 }
 
-int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
+IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
   GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
   (void)pos;
@@ -695,7 +695,7 @@ static int gtkTabsGetCloseButtonSize(Ihandle* ih)
   return 0;
 }
 
-void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
+IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
 {
   int width = 0;
   int height = 0;
@@ -1075,7 +1075,7 @@ static int gtkTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
   }
 }
 
-void iupdrvTabsInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkTabsMapMethod;

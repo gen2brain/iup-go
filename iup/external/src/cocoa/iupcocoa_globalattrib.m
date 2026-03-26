@@ -173,7 +173,7 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
   return event;
 }
 
-int iupdrvSetGlobal(const char *name, const char *value)
+IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
 {
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
@@ -302,7 +302,7 @@ int iupdrvSetGlobal(const char *name, const char *value)
   return 1;
 }
 
-char *iupdrvGetGlobal(const char *name)
+IUP_SDK_API char *iupdrvGetGlobal(const char *name)
 {
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {

@@ -32,7 +32,7 @@ static BOOL CALLBACK winuiMonitorInfoEnum(HMONITOR handle, HDC handle_dc, LPRECT
   return TRUE;
 }
 
-extern "C" int iupdrvSetGlobal(const char* name, const char* value)
+extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "SINGLEINSTANCE"))
   {
@@ -57,7 +57,7 @@ extern "C" int iupdrvSetGlobal(const char* name, const char* value)
   return 1;
 }
 
-extern "C" char* iupdrvGetGlobal(const char* name)
+extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {

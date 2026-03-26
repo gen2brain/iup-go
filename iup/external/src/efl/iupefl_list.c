@@ -1942,7 +1942,7 @@ static void eflListUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
-int iupdrvListGetCount(Ihandle* ih)
+IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
   Evas_Object* list;
   int is_dropdown = ih->data->is_dropdown;
@@ -1966,7 +1966,7 @@ int iupdrvListGetCount(Ihandle* ih)
   return efl_content_count(list);
 }
 
-void iupdrvListAppendItem(Ihandle* ih, const char* value)
+IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   Eo* list;
   Eo* item;
@@ -1989,7 +1989,7 @@ void iupdrvListAppendItem(Ihandle* ih, const char* value)
   }
 }
 
-void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
+IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
   Eo* list;
   Eo* item;
@@ -2018,7 +2018,7 @@ void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   }
 }
 
-void iupdrvListRemoveItem(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 {
   Eo* list;
   Eo* item;
@@ -2047,7 +2047,7 @@ void iupdrvListRemoveItem(Ihandle* ih, int pos)
   }
 }
 
-void iupdrvListRemoveAllItems(Ihandle* ih)
+IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 {
   Eo* list;
   int is_dropdown = ih->data->is_dropdown;
@@ -2159,7 +2159,7 @@ static void eflListMeasureMetrics(void)
   if (efl_dropdown_border_h < 6) efl_dropdown_border_h = 6;
 }
 
-void iupdrvListAddBorders(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *w, int *h)
 {
   int is_dropdown = ih->data->is_dropdown;
 
@@ -2178,14 +2178,14 @@ void iupdrvListAddBorders(Ihandle* ih, int *w, int *h)
   }
 }
 
-void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 {
   (void)ih;
   eflListMeasureMetrics();
   *h += efl_list_item_space;
 }
 
-void* iupdrvListGetImageHandle(Ihandle* ih, int id)
+IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   Eo* list;
   Eo* item;
@@ -2209,7 +2209,7 @@ void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   return efl_content_get(efl_part(item, "icon"));
 }
 
-int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
+IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
   Eo* list;
   Eo* item;
@@ -2246,7 +2246,7 @@ int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   return 1;
 }
 
-void iupdrvListSetItemCount(Ihandle* ih, int count)
+IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 {
   Evas_Object* list;
   int i;
@@ -2309,7 +2309,7 @@ static char* eflListGetImageNativeHandleAttrib(Ihandle* ih, int id)
   return (char*)iupdrvListGetImageHandle(ih, id);
 }
 
-void iupdrvListInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = eflListMapMethod;
   ic->UnMap = eflListUnMapMethod;

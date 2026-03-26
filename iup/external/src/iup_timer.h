@@ -14,9 +14,9 @@ extern "C" {
 
 /** \addtogroup drv
  * @{ */
-void iupdrvTimerStop(Ihandle* ih);
-void iupdrvTimerRun(Ihandle* ih);
-void iupdrvTimerInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvTimerStop(Ihandle* ih);
+IUP_SDK_API void iupdrvTimerRun(Ihandle* ih);
+IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic);
 /** @} */
 
 long long iupTimerGetLongLong(Ihandle* ih, const char* name);

@@ -103,7 +103,7 @@ static void gtk4TextMeasureEntryBorders(void)
   }
 }
 
-void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
   static int spin_arrow_width = -1;
 
@@ -185,7 +185,7 @@ static void gtk4TextMeasureMultilineMetrics(void)
   }
 }
 
-void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
   gtk4TextMeasureEntryBorders();
 
@@ -250,7 +250,7 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
 {
   (void)ih;
   gtk4TextMeasureEntryBorders();
@@ -288,7 +288,7 @@ static void gtkTextGetLinColFromPosition(const GtkTextIter *iter, int *lin, int 
   (*col)++;
 }
 
-void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
 {
   if (ih->data->is_multiline)
   {
@@ -303,7 +303,7 @@ void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
   }
 }
 
-void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
 {
   if (ih->data->is_multiline)
   {
@@ -2169,21 +2169,21 @@ static void gtk4TextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
   }
 }
 
-void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
   gtk_text_buffer_begin_user_action(buffer);
   return NULL;
 }
 
-void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
+IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 {
   GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
   gtk_text_buffer_end_user_action(buffer);
   (void)state;
 }
 
-void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
+IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   GtkTextBuffer *buffer;
   GtkTextIter start_iter, end_iter;
@@ -2331,7 +2331,7 @@ static int gtk4TextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-void iupdrvTextInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = gtk4TextMapMethod;
 

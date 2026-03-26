@@ -380,7 +380,7 @@ static void eflLabelUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   int border_x, border_y;
 
@@ -412,7 +412,7 @@ static void eflLabelLayoutUpdateMethod(Ihandle* ih)
   iupeflSetPosSize(ih, ih->x, ih->y, width, height);
 }
 
-void iupdrvLabelInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 {
   ic->Map = eflLabelMapMethod;
   ic->UnMap = eflLabelUnMapMethod;

@@ -64,7 +64,7 @@ static gboolean gtkDialogChildDestroyEvent(GtkWidget *widget, Ihandle *ih)
   return FALSE;
 }
 
-void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
+IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
   GtkWindow* old_transient = gtk_window_get_transient_for((GtkWindow*)ih->handle);
   if (old_transient)
@@ -74,12 +74,12 @@ void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
   g_signal_connect(G_OBJECT(parent), "destroy", G_CALLBACK(gtkDialogChildDestroyEvent), ih);
 }
 
-int iupdrvDialogIsVisible(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
   return iupdrvIsVisible(ih);
 }
 
-void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
 {
   int width, height;
   int border = 0, caption = 0, menu;
@@ -107,7 +107,7 @@ void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
   if (h) *h = height + decorheight;
 }
 
-void iupdrvDialogSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   if (visible)
     gtk_widget_show(ih->handle);
@@ -115,7 +115,7 @@ void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     gtk_widget_hide(ih->handle);
 }
 
-void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
 {
   if (!handle)
     handle = ih->handle;
@@ -134,7 +134,7 @@ void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
   }
 }
 
-void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
 {
   gtk_window_move((GtkWindow*)ih->handle, x, y);
 }
@@ -227,7 +227,7 @@ static void gtkDialogGetWindowDecor(Ihandle* ih, int *win_border, int *win_capti
   }
 }
 
-void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
 #ifdef HILDON
   if (border)
@@ -325,7 +325,7 @@ void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu
 #endif
 }
 
-int iupdrvDialogSetPlacement(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   char* placement;
   int old_state = ih->data->show_state;
@@ -1370,7 +1370,7 @@ static int gtkDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 
 /****************************************************************************************************************/
 
-void iupdrvDialogInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 {
   /* Driver Dependent Class methods */
   ic->Map = gtkDialogMapMethod;

@@ -330,7 +330,7 @@ static char* eflPopoverGetVisibleAttrib(Ihandle* ih)
   return "NO";
 }
 
-void iupdrvPopoverInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 {
   ic->Map = eflPopoverMapMethod;
   ic->UnMap = eflPopoverUnMapMethod;

@@ -221,7 +221,7 @@ static bool winuiDrawBeginSession(IdrawCanvas* dc)
   return true;
 }
 
-extern "C" IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
+extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   if (!winuiDrawEnsureDevices())
     return nullptr;
@@ -260,7 +260,7 @@ extern "C" IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   return dc;
 }
 
-extern "C" void iupdrvDrawKillCanvas(IdrawCanvas* dc)
+extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (!dc)
     return;
@@ -285,7 +285,7 @@ extern "C" void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   delete dc;
 }
 
-extern "C" void iupdrvDrawUpdateSize(IdrawCanvas* dc)
+extern "C" IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 {
   if (!dc)
     return;
@@ -379,7 +379,7 @@ static void winuiDrawCopyToBuffer(IdrawCanvas* dc)
   iupAttribSet(dc->ih, "_IUPWINUI_CANVAS_BUFFER", (char*)stagingBitmap);
 }
 
-extern "C" void iupdrvDrawFlush(IdrawCanvas* dc)
+extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (!dc)
     return;
@@ -422,7 +422,7 @@ extern "C" void iupdrvDrawFlush(IdrawCanvas* dc)
   }
 }
 
-extern "C" void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
   if (dc)
   {
@@ -436,7 +436,7 @@ extern "C" void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
   }
 }
 
-extern "C" void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+extern "C" IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -460,7 +460,7 @@ extern "C" void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   }
 }
 
-extern "C" void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -487,7 +487,7 @@ extern "C" void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int
   }
 }
 
-extern "C" void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
+extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -577,7 +577,7 @@ extern "C" void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, d
   }
 }
 
-extern "C" void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+extern "C" IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -611,7 +611,7 @@ extern "C" void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y
   }
 }
 
-extern "C" void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
+extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   if (!dc || !dc->d2dContext || count < 2)
     return;
@@ -649,7 +649,7 @@ extern "C" void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long 
   }
 }
 
-extern "C" void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
+extern "C" IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -658,7 +658,7 @@ extern "C" void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
   dc->d2dContext->FillRectangle(D2D1::RectF((float)x, (float)y, (float)(x + 1), (float)(y + 1)), dc->solidBrush.get());
 }
 
-extern "C" void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int radius, long color, int style, int line_width)
+extern "C" IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int radius, long color, int style, int line_width)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -691,7 +691,7 @@ extern "C" void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int 
   }
 }
 
-extern "C" void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
+extern "C" IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -730,7 +730,7 @@ extern "C" void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2
   }
 }
 
-extern "C" void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
+extern "C" IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -768,7 +768,7 @@ extern "C" void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x
   }
 }
 
-extern "C" void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
+extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   if (!dc || !dc->d2dContext || !text)
     return;
@@ -913,7 +913,7 @@ extern "C" void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x
   free(wtext);
 }
 
-extern "C" void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
 {
   if (!dc || !dc->d2dContext || !name)
     return;
@@ -954,7 +954,7 @@ extern "C" void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inac
   dc->d2dContext->DrawBitmap(d2dBitmap.get(), destRect);
 }
 
-extern "C" void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+extern "C" IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -983,7 +983,7 @@ extern "C" void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, i
   dc->clip_y2 = y2;
 }
 
-extern "C" void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int radius)
+extern "C" IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int radius)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -1025,7 +1025,7 @@ extern "C" void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, in
   dc->clip_y2 = y2;
 }
 
-extern "C" void iupdrvDrawResetClip(IdrawCanvas* dc)
+extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -1042,7 +1042,7 @@ extern "C" void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y2 = 0;
 }
 
-extern "C" void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
+extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
 {
   if (dc)
   {
@@ -1060,7 +1060,7 @@ extern "C" void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2
   }
 }
 
-extern "C" void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+extern "C" IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -1080,7 +1080,7 @@ extern "C" void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, in
     dc->solidBrush.get());
 }
 
-extern "C" void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -1091,7 +1091,7 @@ extern "C" void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
 }
 
-extern "C" void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -1127,7 +1127,7 @@ extern "C" void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2
     brush.get());
 }
 
-extern "C" void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -1180,7 +1180,7 @@ static void iD2DCopyBgraPremulToRgba(unsigned char* dst, const unsigned char* sr
   }
 }
 
-extern "C" int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
   if (!dc || !dc->d2dContext)
     return 0;
@@ -1228,7 +1228,7 @@ extern "C" int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
   return 1;
 }
 
-extern "C" int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
+extern "C" IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
 {
   ID2D1Bitmap1* buffer = (ID2D1Bitmap1*)iupAttribGet(ih, "_IUPWINUI_CANVAS_BUFFER");
   if (!buffer)

@@ -569,7 +569,7 @@ static void eflButtonMeasurePadding(void)
   efl_del(temp_win);
 }
 
-void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   int has_border = 1;
 
@@ -600,7 +600,7 @@ void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   }
 }
 
-void iupdrvButtonInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = eflButtonMapMethod;
   ic->UnMap = eflButtonUnMapMethod;

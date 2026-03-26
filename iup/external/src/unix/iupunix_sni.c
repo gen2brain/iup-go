@@ -1561,12 +1561,12 @@ static void sniDestroy(Ihandle* ih)
 /* Driver Interface Implementation                                            */
 /******************************************************************************/
 
-void iupdrvTrayInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)
 {
   (void)ic;
 }
 
-int iupdrvTraySetVisible(Ihandle* ih, int visible)
+IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
 {
   IupUnixSNI* sni = (IupUnixSNI*)iupAttribGet(ih, "_IUPUNIX_SNI");
 
@@ -1601,7 +1601,7 @@ int iupdrvTraySetVisible(Ihandle* ih, int visible)
   return 1;
 }
 
-int iupdrvTraySetImage(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
 {
   IupUnixSNI* sni = (IupUnixSNI*)iupAttribGet(ih, "_IUPUNIX_SNI");
   int width, height;
@@ -1639,7 +1639,7 @@ int iupdrvTraySetImage(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvTraySetTip(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
 {
   IupUnixSNI* sni = (IupUnixSNI*)iupAttribGet(ih, "_IUPUNIX_SNI");
 
@@ -1662,7 +1662,7 @@ int iupdrvTraySetTip(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
+IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
   IupUnixSNI* sni = (IupUnixSNI*)iupAttribGet(ih, "_IUPUNIX_SNI");
 
@@ -1689,12 +1689,12 @@ int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
   return 1;
 }
 
-void iupdrvTrayDestroy(Ihandle* ih)
+IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 {
   sniDestroy(ih);
 }
 
-int iupdrvTrayIsAvailable(void)
+IUP_SDK_API int iupdrvTrayIsAvailable(void)
 {
 #ifdef IUPDBUS_USE_DLOPEN
   return iupDBusOpen() ? 1 : 0;

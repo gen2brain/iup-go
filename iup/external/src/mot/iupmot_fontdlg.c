@@ -345,7 +345,7 @@ static int motFontDlgCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-void iupdrvFontDlgInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic)
 {
   ic->Create = motFontDlgCreateMethod;
   ic->Map = motFontDlgMapMethod;

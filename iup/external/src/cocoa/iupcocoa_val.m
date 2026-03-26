@@ -200,7 +200,7 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
 
 @end
 
-void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 {
   int ticks_size = 0;
   if (iupAttribGetInt(ih, "SHOWTICKS") > 0)
@@ -449,7 +449,7 @@ static void cocoaValUnMapMethod(Ihandle* ih)
   }
 }
 
-void iupdrvValInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 {
   ic->Map = cocoaValMapMethod;
   ic->UnMap = cocoaValUnMapMethod;

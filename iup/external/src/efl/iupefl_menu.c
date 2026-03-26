@@ -409,7 +409,7 @@ static void eflItemUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
-void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
 {
   ic->Map = eflItemMapMethod;
   ic->UnMap = eflItemUnMapMethod;
@@ -468,7 +468,7 @@ static void eflSeparatorUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
-void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
 {
   ic->Map = eflSeparatorMapMethod;
   ic->UnMap = eflSeparatorUnMapMethod;
@@ -592,7 +592,7 @@ static void eflSubmenuUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
-void iupdrvSubmenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 {
   ic->Map = eflSubmenuMapMethod;
   ic->UnMap = eflSubmenuUnMapMethod;
@@ -649,7 +649,7 @@ static void eflRecentItemActivate(void* data, Evas_Object* obj, void* event_info
   }
 }
 
-int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
   iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
@@ -657,7 +657,7 @@ int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
   return 0;
 }
 
-int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
 {
   Evas_Object* elm_menu;
   Elm_Object_Item* parent_item;
@@ -751,7 +751,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
                      Menu Driver Functions
 ****************************************************************/
 
-int iupdrvMenuPopup(Ihandle* ih, int x, int y)
+IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   Evas_Object* menu = (Evas_Object*)ih->handle;
   Evas_Object* win;
@@ -898,7 +898,7 @@ static void eflMenuUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
-void iupdrvMenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   ic->Map = eflMenuMapMethod;
   ic->UnMap = eflMenuUnMapMethod;

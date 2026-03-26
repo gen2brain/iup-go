@@ -14,17 +14,17 @@ extern "C" {
 /** \defgroup drvtext Driver Text Interface
  * \ingroup drv
  * @{ */
-void iupdrvTextInitClass(Iclass* ic);
-void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h);
-void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h);
-void iupdrvTextAddSpin(Ihandle* ih, int *w, int h);
-void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih);
-void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state);
-void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk);
+IUP_SDK_API void iupdrvTextInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h);
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h);
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h);
+IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih);
+IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state);
+IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk);
 /** Converts line/col to char position. */
-void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos);
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos);
 /** Converts char position to line/col. */
-void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col);
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col);
 /** @} */
 
 /* Used by List and Text, implemented in Text */

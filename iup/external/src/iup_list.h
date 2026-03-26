@@ -14,17 +14,17 @@ extern "C" {
 /** \defgroup drvlist Driver List Interface
  * \ingroup drv
  * @{ */
-void iupdrvListInitClass(Iclass* ic);
-void iupdrvListAddBorders(Ihandle* ih, int *w, int *h);
-void iupdrvListAddItemSpace(Ihandle* ih, int *h);
-int iupdrvListGetCount(Ihandle* ih);
-void iupdrvListAppendItem(Ihandle* ih, const char* value);
-void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value);
-void iupdrvListRemoveItem(Ihandle* ih, int pos);
-void iupdrvListRemoveAllItems(Ihandle* ih);
-void* iupdrvListGetImageHandle(Ihandle* ih, int id);
-int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage);
-void iupdrvListSetItemCount(Ihandle* ih, int count);
+IUP_SDK_API void iupdrvListInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *w, int *h);
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h);
+IUP_SDK_API int iupdrvListGetCount(Ihandle* ih);
+IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value);
+IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value);
+IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos);
+IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih);
+IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id);
+IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage);
+IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count);
 /** @} */
 
 /* Used by List and Text, implemented in Text */

@@ -145,7 +145,7 @@ static GtkWidget* gtk4TipGetWidget(Ihandle* ih)
   return widget;
 }
 
-int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   GtkWidget* widget = gtk4TipGetWidget(ih);
 
@@ -160,7 +160,7 @@ int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
   GtkWidget* widget = gtk4TipGetWidget(ih);
 
@@ -178,7 +178,7 @@ int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
+IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
   /* Cannot determine if tooltip is currently visible.
      gtk_widget_get_tooltip_window was removed and tooltip internals are hidden. */

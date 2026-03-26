@@ -378,12 +378,12 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charhei
   if (charheight) *charheight = winfont->charheight;
 }
 
-void iupdrvFontInit(void)
+IUP_SDK_API void iupdrvFontInit(void)
 {
   win_fonts = iupArrayCreate(50, sizeof(IwinFont));
 }
 
-void iupdrvFontFinish(void)
+IUP_SDK_API void iupdrvFontFinish(void)
 {
   int i, count = iupArrayCount(win_fonts);
   IwinFont* fonts = (IwinFont*)iupArrayGetData(win_fonts);

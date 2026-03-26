@@ -477,7 +477,7 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charhei
     *charwidth = gtkfont->charwidth;
 }
 
-void iupdrvFontInit(void)
+IUP_SDK_API void iupdrvFontInit(void)
 {
   gtk4_fonts = iupArrayCreate(50, sizeof(Igtk4Font));
 
@@ -487,7 +487,7 @@ void iupdrvFontInit(void)
   pango_context_set_language(gtk4_fonts_context, gtk_get_default_language());
 }
 
-void iupdrvFontFinish(void)
+IUP_SDK_API void iupdrvFontFinish(void)
 {
   int i, count = iupArrayCount(gtk4_fonts);
   Igtk4Font* fonts = (Igtk4Font*)iupArrayGetData(gtk4_fonts);

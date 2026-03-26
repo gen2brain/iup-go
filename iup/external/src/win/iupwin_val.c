@@ -30,7 +30,7 @@
 #include "iupwin_str.h"
 
 
-void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   int ticks_size = 0;
@@ -350,7 +350,7 @@ static int winValMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvValInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = winValMapMethod;

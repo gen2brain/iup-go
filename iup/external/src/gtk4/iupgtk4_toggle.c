@@ -30,12 +30,12 @@
 
 #define IUP_TOGGLE_BOX 18
 
-void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   iupdrvButtonAddBorders(ih, x, y);
 }
 
-void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   static int switch_w = -1;
   static int switch_h = -1;
@@ -67,7 +67,7 @@ void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
     (*x) += 8;
 }
 
-void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   static int check_w = -1;
   static int check_h = -1;
@@ -669,7 +669,7 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvToggleInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   ic->Map = gtk4ToggleMapMethod;
 

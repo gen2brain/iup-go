@@ -23,55 +23,55 @@ static DWORD WINAPI iupwin_ThreadFunc(LPVOID obj)
   return 0;
 }
 
-void* iupdrvThreadStart(Ihandle* ih)
+IUP_SDK_API void* iupdrvThreadStart(Ihandle* ih)
 {
   DWORD threadId;
   HANDLE thread = CreateThread(0, 0, iupwin_ThreadFunc, ih, 0, &threadId);
   return (void*)thread;
 }
 
-void iupdrvThreadJoin(void* handle)
+IUP_SDK_API void iupdrvThreadJoin(void* handle)
 {
   WaitForSingleObject((HANDLE)handle, INFINITE);
 }
 
-void iupdrvThreadYield(void)
+IUP_SDK_API void iupdrvThreadYield(void)
 {
   SwitchToThread();
 }
 
-int iupdrvThreadIsCurrent(void* handle)
+IUP_SDK_API int iupdrvThreadIsCurrent(void* handle)
 {
   return (HANDLE)handle == GetCurrentThread();
 }
 
-void iupdrvThreadExit(int code)
+IUP_SDK_API void iupdrvThreadExit(int code)
 {
   ExitThread(code);
 }
 
-void iupdrvThreadDestroy(void* handle)
+IUP_SDK_API void iupdrvThreadDestroy(void* handle)
 {
   if (handle)
     CloseHandle((HANDLE)handle);
 }
 
-void* iupdrvMutexCreate(void)
+IUP_SDK_API void* iupdrvMutexCreate(void)
 {
   return (void*)CreateMutexA(NULL, FALSE, NULL);
 }
 
-void iupdrvMutexLock(void* handle)
+IUP_SDK_API void iupdrvMutexLock(void* handle)
 {
   WaitForSingleObject((HANDLE)handle, INFINITE);
 }
 
-void iupdrvMutexUnlock(void* handle)
+IUP_SDK_API void iupdrvMutexUnlock(void* handle)
 {
   ReleaseMutex((HANDLE)handle);
 }
 
-void iupdrvMutexDestroy(void* handle)
+IUP_SDK_API void iupdrvMutexDestroy(void* handle)
 {
   if (handle)
     CloseHandle((HANDLE)handle);

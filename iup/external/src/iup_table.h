@@ -53,47 +53,43 @@ char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
 /** \addtogroup drvtable
  * @{ */
 /* Class initialization */
-void iupdrvTableInitClass(Iclass* ic);
-
-/* Widget lifecycle */
-int iupdrvTableMapMethod(Ihandle* ih);
-void iupdrvTableUnMapMethod(Ihandle* ih);
+IUP_SDK_API void iupdrvTableInitClass(Iclass* ic);
 
 /* Table structure */
-void iupdrvTableSetNumLin(Ihandle* ih, int num_lin);
-void iupdrvTableSetNumCol(Ihandle* ih, int num_col);
-void iupdrvTableAddLin(Ihandle* ih, int pos);
-void iupdrvTableDelLin(Ihandle* ih, int pos);
-void iupdrvTableAddCol(Ihandle* ih, int pos);
-void iupdrvTableDelCol(Ihandle* ih, int pos);
+IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin);
+IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col);
+IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos);
+IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos);
+IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos);
+IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos);
 
 /* Cell operations */
-void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value);
-char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col);
-void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image);
+IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value);
+IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col);
+IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image);
 
 /* Column operations */
-void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title);
-char* iupdrvTableGetColTitle(Ihandle* ih, int col);
-void iupdrvTableSetColWidth(Ihandle* ih, int col, int width);
-int iupdrvTableGetColWidth(Ihandle* ih, int col);
+IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title);
+IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col);
+IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width);
+IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col);
 
 /* Selection */
-void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col);
-void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col);
+IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col);
+IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col);
 
 /* Scrolling */
-void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col);
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col);
 
 /* Display */
-void iupdrvTableRedraw(Ihandle* ih);
-void iupdrvTableSetShowGrid(Ihandle* ih, int show);
+IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih);
+IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show);
 
 /* Sizing */
-int iupdrvTableGetBorderWidth(Ihandle* ih);
-int iupdrvTableGetRowHeight(Ihandle* ih);
-int iupdrvTableGetHeaderHeight(Ihandle* ih);
-void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h);
+IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih);
+IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih);
+IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih);
+IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h);
 /** @} */
 
 

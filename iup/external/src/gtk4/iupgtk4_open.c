@@ -278,7 +278,7 @@ void iupgtk4SetGlobalColors(void)
   gtk_window_destroy(GTK_WINDOW(dialog));
 }
 
-int iupdrvOpen(int *argc, char ***argv)
+IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 {
   (void)argc;
   (void)argv;
@@ -313,7 +313,7 @@ int iupdrvOpen(int *argc, char ***argv)
   return IUP_NOERROR;
 }
 
-void iupdrvClose(void)
+IUP_SDK_API void iupdrvClose(void)
 {
   iupgtk4CssManagerFinish();
   iupgtk4StrRelease();
@@ -324,7 +324,7 @@ void iupdrvClose(void)
 #endif
 }
 
-int iupdrvSetGlobalAppIDAttrib(const char* value)
+IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
 {
   static int appid_set = 0;
   if (appid_set || !value || !value[0])
@@ -336,7 +336,7 @@ int iupdrvSetGlobalAppIDAttrib(const char* value)
   return 1;
 }
 
-int iupdrvSetGlobalAppNameAttrib(const char* value)
+IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 {
   static int appname_set = 0;
   if (appname_set || !value || !value[0])

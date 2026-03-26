@@ -624,7 +624,7 @@ static int unixNotifyClose(IupUnixNotify* notify)
  * Driver Interface
  ****************************************************************************/
 
-int iupdrvNotifyShow(Ihandle* ih)
+IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 {
   IupUnixNotify* notify = (IupUnixNotify*)iupAttribGet(ih, "_IUPUNIX_NOTIFY");
 
@@ -643,13 +643,13 @@ int iupdrvNotifyShow(Ihandle* ih)
   return unixNotifySend(notify);
 }
 
-int iupdrvNotifyClose(Ihandle* ih)
+IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
 {
   IupUnixNotify* notify = (IupUnixNotify*)iupAttribGet(ih, "_IUPUNIX_NOTIFY");
   return unixNotifyClose(notify);
 }
 
-void iupdrvNotifyDestroy(Ihandle* ih)
+IUP_SDK_API void iupdrvNotifyDestroy(Ihandle* ih)
 {
   IupUnixNotify* notify = (IupUnixNotify*)iupAttribGet(ih, "_IUPUNIX_NOTIFY");
 
@@ -660,7 +660,7 @@ void iupdrvNotifyDestroy(Ihandle* ih)
   }
 }
 
-int iupdrvNotifyIsAvailable(void)
+IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 {
   DBusConnection* connection;
   DBusError error;
@@ -686,7 +686,7 @@ int iupdrvNotifyIsAvailable(void)
   return available;
 }
 
-void iupdrvNotifyInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "URGENCY", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

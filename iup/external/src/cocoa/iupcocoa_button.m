@@ -488,7 +488,7 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
   [temp_button release];
 }
 
-void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
   int border_x = 0, border_y = 0;
   int has_image = 0;
@@ -1006,7 +1006,7 @@ static void cocoaButtonUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-void iupdrvButtonInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = cocoaButtonMapMethod;
   ic->UnMap = cocoaButtonUnMapMethod;

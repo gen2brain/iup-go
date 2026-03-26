@@ -705,7 +705,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
 
 @end
 
-void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
+IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
   static int spin_min_width = -1;
 
@@ -731,7 +731,7 @@ void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
     *w = spin_min_width;
 }
 
-void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 {
   static int cocoa_textfield_border_w = -1;
   static int cocoa_textfield_border_h = -1;
@@ -860,7 +860,7 @@ void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
-void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
 {
   static int cocoa_textfield_extra_w = -1;
   static int cocoa_textfield_extra_h = -1;
@@ -1840,7 +1840,7 @@ static bool cocoaTextComputeLineColumnFromRangeForTextView(NSTextView* text_view
   return true;
 }
 
-void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
+IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
 {
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
   switch(sub_type)
@@ -1947,7 +1947,7 @@ void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
   }
 }
 
-void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
+IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
 {
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
   switch(sub_type)
@@ -2060,7 +2060,7 @@ void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
   }
 }
 
-void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
+IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   NSTextView* text_view = cocoaTextGetTextView(ih);
   NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
@@ -2071,7 +2071,7 @@ void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
   return NULL;
 }
 
-void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
+IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 {
   NSTextView* text_view = cocoaTextGetTextView(ih);
   NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
@@ -3075,7 +3075,7 @@ static bool cocoaTextInsertImage(Ihandle* ih, NSTextView* text_view, Ihandle* fo
   return true;
 }
 
-void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
+IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bulk)
 {
   if(!ih->data->is_multiline)
   {
@@ -5458,7 +5458,7 @@ static int cocoaTextSetPaddingAttrib(Ihandle* ih, const char* value)
     return 1;
 }
 
-void iupdrvTextInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = cocoaTextMapMethod;
   ic->UnMap = cocoaTextUnMapMethod;

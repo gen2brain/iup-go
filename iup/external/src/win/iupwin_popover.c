@@ -311,7 +311,7 @@ static void* winPopoverGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle*
   return ih->handle;
 }
 
-void iupdrvPopoverInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 {
   ic->Map = winPopoverMapMethod;
   ic->UnMap = winPopoverUnMapMethod;

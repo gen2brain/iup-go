@@ -237,7 +237,7 @@ static int cocoaFontDlgPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-void iupdrvFontDlgInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = cocoaFontDlgPopup;
 

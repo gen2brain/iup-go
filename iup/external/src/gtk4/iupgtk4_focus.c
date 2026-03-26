@@ -23,7 +23,7 @@ IUP_DRV_API void iupgtk4SetCanFocus(GtkWidget *widget, int can)
   gtk_widget_set_can_focus(widget, can);
 }
 
-void iupdrvSetFocus(Ihandle *ih)
+IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
 

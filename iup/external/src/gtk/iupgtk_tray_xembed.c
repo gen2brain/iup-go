@@ -111,14 +111,14 @@ static GtkStatusIcon* gtkGetStatusIcon(Ihandle *ih)
 /* Driver Interface Implementation                                            */
 /******************************************************************************/
 
-int iupdrvTraySetVisible(Ihandle *ih, int visible)
+IUP_SDK_API int iupdrvTraySetVisible(Ihandle *ih, int visible)
 {
   GtkStatusIcon* status_icon = gtkGetStatusIcon(ih);
   gtk_status_icon_set_visible(status_icon, visible);
   return 1;
 }
 
-int iupdrvTraySetTip(Ihandle *ih, const char *value)
+IUP_SDK_API int iupdrvTraySetTip(Ihandle *ih, const char *value)
 {
   GtkStatusIcon* status_icon = gtkGetStatusIcon(ih);
 
@@ -140,7 +140,7 @@ int iupdrvTraySetTip(Ihandle *ih, const char *value)
   return 1;
 }
 
-int iupdrvTraySetImage(Ihandle *ih, const char *value)
+IUP_SDK_API int iupdrvTraySetImage(Ihandle *ih, const char *value)
 {
   GtkStatusIcon* status_icon = gtkGetStatusIcon(ih);
   GdkPixbuf* icon = (GdkPixbuf*)iupImageGetIcon(value);
@@ -148,7 +148,7 @@ int iupdrvTraySetImage(Ihandle *ih, const char *value)
   return 1;
 }
 
-int iupdrvTraySetMenu(Ihandle *ih, Ihandle *menu)
+IUP_SDK_API int iupdrvTraySetMenu(Ihandle *ih, Ihandle *menu)
 {
   /* XEmbed tray protocol doesn't support automatic menu popup via MENU attribute.
    * Applications should use TRAYCLICK_CB callback to show menu manually via IupPopup(). */
@@ -166,7 +166,7 @@ static gboolean gtkXEmbedDeferredExitLoop(gpointer data)
   return G_SOURCE_REMOVE;
 }
 
-void iupdrvTrayDestroy(Ihandle *ih)
+IUP_SDK_API void iupdrvTrayDestroy(Ihandle *ih)
 {
   GtkStatusIcon* status_icon = (GtkStatusIcon*)iupAttribGet(ih, "_IUPGTK_STATUSICON");
 
@@ -179,12 +179,12 @@ void iupdrvTrayDestroy(Ihandle *ih)
   }
 }
 
-int iupdrvTrayIsAvailable(void)
+IUP_SDK_API int iupdrvTrayIsAvailable(void)
 {
   return 1;
 }
 
-void iupdrvTrayInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
 

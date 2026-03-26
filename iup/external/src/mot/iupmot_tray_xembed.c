@@ -426,7 +426,7 @@ static IupmotTray* motGetTray(Ihandle* ih)
 /* Driver Interface Implementation                                            */
 /******************************************************************************/
 
-int iupdrvTraySetVisible(Ihandle* ih, int visible)
+IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
 {
   if (visible)
   {
@@ -457,7 +457,7 @@ int iupdrvTraySetVisible(Ihandle* ih, int visible)
   return 1;
 }
 
-int iupdrvTraySetTip(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
 {
   IupmotTray* tray = motGetTray(ih);
   if (!tray)
@@ -478,7 +478,7 @@ int iupdrvTraySetTip(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvTraySetImage(Ihandle* ih, const char* value)
+IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
 {
   IupmotTray* tray = motGetTray(ih);
   Pixmap icon, mask;
@@ -570,7 +570,7 @@ int iupdrvTraySetImage(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
+IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
   /* XEmbed tray protocol doesn't support automatic menu popup via MENU attribute.
    * The XEmbed protocol has no mechanism for the tray host to request context menu.
@@ -580,7 +580,7 @@ int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
   return 0;
 }
 
-void iupdrvTrayDestroy(Ihandle* ih)
+IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 {
   IupmotTray* tray = (IupmotTray*)iupAttribGet(ih, "_IUPMOT_TRAY");
 
@@ -619,12 +619,12 @@ void iupdrvTrayDestroy(Ihandle* ih)
   }
 }
 
-int iupdrvTrayIsAvailable(void)
+IUP_SDK_API int iupdrvTrayIsAvailable(void)
 {
   return 1;
 }
 
-void iupdrvTrayInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "MENU", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TIPBALLOON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);

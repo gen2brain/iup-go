@@ -46,17 +46,17 @@ static int motDialogSetBgColorAttrib(Ihandle* ih, const char* value);
                      Utilities
 ****************************************************************/
 
-void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
+IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
   XSetTransientForHint(iupmot_display, XtWindow(ih->handle), XtWindow(parent));
 }
 
-int iupdrvDialogIsVisible(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
   return iupdrvIsVisible(ih) || ih->data->show_state == IUP_MINIMIZE;
 }
 
-void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
 {
   Dimension width, height;
   int border=0, caption=0, menu;
@@ -84,7 +84,7 @@ void iupmotDialogResetVisual(Ihandle* ih)
   XtVaSetValues(dialog->handle, XmNvisual, iupmot_visual, NULL);
 }
 
-void iupdrvDialogSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   if (visible)
   {
@@ -107,7 +107,7 @@ void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 }
 
-void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
 {
   Position cur_x, cur_y;
   if (!handle)
@@ -129,7 +129,7 @@ void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
   if (y) *y = cur_y;
 }
 
-void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
 {
   /* no need to compensate decoration when setting */
   XtVaSetValues(ih->handle,
@@ -167,7 +167,7 @@ static int motDialogGetWindowDecor(Ihandle* ih, int *border, int *caption)
   return 0;
 }
 
-void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *caption, int *menu)
 {
   static int native_border = 0;
   static int native_caption = 0;
@@ -413,7 +413,7 @@ static int motDialogSetFullScreen(Ihandle* ih, int fullscreen)
   return 0;
 }
 
-int iupdrvDialogSetPlacement(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   char* placement;
   int old_state = ih->data->show_state;
@@ -1133,7 +1133,7 @@ static void motDialogLayoutUpdateMethod(Ihandle *ih)
 
 /***************************************************************/
 
-void iupdrvDialogInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 {
   /* Driver Dependent Class methods */
   ic->Map = motDialogMapMethod;

@@ -77,7 +77,7 @@ static void gtkMenuPositionFunc(GtkMenu *menu, gint *x, gint *y, gboolean *push_
   (void)menu;
 }
 
-int iupdrvMenuPopup(Ihandle* ih, int x, int y)
+IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
 #if GTK_CHECK_VERSION(3, 22, 0)
   GdkRectangle rect;
@@ -482,7 +482,7 @@ static void gtkMenuUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvMenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkMenuMapMethod;
@@ -664,7 +664,7 @@ static int gtkItemMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkItemMapMethod;
@@ -765,7 +765,7 @@ static int gtkSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkSeparatorMapMethod;
@@ -803,7 +803,7 @@ static void gtkRecentItemActivate(GtkWidget *widget, Ihandle* menu)
   }
 }
 
-int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
   iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
@@ -811,7 +811,7 @@ int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
   return 0;
 }
 
-int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
 {
   GtkMenuShell* gtk_menu;
   GtkWidget* empty_item;
@@ -894,7 +894,7 @@ int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Ica
   return 0;
 }
 
-void iupdrvSubmenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkSubmenuMapMethod;

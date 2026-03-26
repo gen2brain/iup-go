@@ -45,7 +45,7 @@ int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel)
 }
 
 /* The output format is packed RGB(A), top-down, matching the IUP image data format. */
-void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
+IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* out_img_data)
 {
   if (!handle)
     return;
@@ -478,7 +478,7 @@ static NSImage* iupCocoaCreateNSImage(Ihandle *ih, const char* bgcolor, int make
   return ns_image;
 }
 
-void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
 {
   NSImage* ns_image = iupCocoaCreateNSImage(ih, bgcolor, make_inactive);
 
@@ -492,7 +492,7 @@ void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive
   return ns_image;
 }
 
-void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
 {
   NSImage* ns_image = iupCocoaCreateNSImage(ih, NULL, 0);
 
@@ -506,7 +506,7 @@ void* iupdrvImageCreateIcon(Ihandle *ih)
   return ns_image;
 }
 
-void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
 {
   int hx=0, hy=0;
   iupStrToIntInt(iupAttribGet(ih, "HOTSPOT"), &hx, &hy, ':');
@@ -533,7 +533,7 @@ void* iupdrvImageCreateCursor(Ihandle *ih)
   return cursor;
 }
 
-void* iupdrvImageLoad(const char* name, int type)
+IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   if (!name || (name[0] == '\0'))
   {
@@ -587,7 +587,7 @@ void* iupdrvImageLoad(const char* name, int type)
   return (void*)the_image;
 }
 
-int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
 {
   if (w) *w = 0;
   if (h) *h = 0;
@@ -729,7 +729,7 @@ static NSData* iCocoaImageEncode(unsigned char* imgdata, int width, int height, 
   return result;
 }
 
-int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
   @autoreleasepool {
     NSData* data = iCocoaImageEncode(imgdata, width, height, bpp, colors, colors_count, format);
@@ -740,7 +740,7 @@ int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupC
   }
 }
 
-unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   @autoreleasepool {
     NSData* data = iCocoaImageEncode(imgdata, width, height, bpp, colors, colors_count, format);

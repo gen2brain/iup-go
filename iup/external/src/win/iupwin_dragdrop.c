@@ -1149,7 +1149,7 @@ void iupwinDestroyDragDrop(Ihandle* ih)
   }
 }
 
-void iupdrvRegisterDragDropAttrib(Iclass* ic)
+IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "DROPFILES_CB", "siii");
 

@@ -296,7 +296,7 @@ static void eflDialogParentDestroyCallback(void* data, const Efl_Event* ev)
     IupDestroy(ih);
 }
 
-void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
+IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
   Eo* win = iupeflGetWidget(ih);
   Eo* parent_win = (Eo*)parent;
@@ -354,7 +354,7 @@ void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
   efl_event_callback_add(parent_win, EFL_EVENT_DEL, eflDialogParentDestroyCallback, ih);
 }
 
-int iupdrvDialogIsVisible(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
   Eo* win = iupeflGetWidget(ih);
   if (!win)
@@ -362,7 +362,7 @@ int iupdrvDialogIsVisible(Ihandle* ih)
   return iupeflIsVisible(win);
 }
 
-void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
+IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   int width = 0, height = 0;
 
@@ -380,7 +380,7 @@ void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
   if (h) *h = height;
 }
 
-void iupdrvDialogSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   Eo* win = iupeflGetWidget(ih);
 
@@ -390,7 +390,7 @@ void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   iupeflSetVisible(win, visible ? EINA_TRUE : EINA_FALSE);
 }
 
-void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
+IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
   int gx = 0, gy = 0;
 
@@ -408,7 +408,7 @@ void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
   if (y) *y = gy;
 }
 
-void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
+IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
   Eo* win = iupeflGetWidget(ih);
   if (!win)
@@ -417,7 +417,7 @@ void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
   iupeflSetPosition(win, x, y);
 }
 
-void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
+IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   /* EFL windows handle decorations internally.
      Only menu bar height needs to be tracked since IUP positions content below it. */
@@ -426,7 +426,7 @@ void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu
   *caption = 0;
 }
 
-int iupdrvDialogSetPlacement(Ihandle* ih)
+IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   char* placement;
   int old_state = ih->data->show_state;
@@ -1252,7 +1252,7 @@ static int eflDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-void iupdrvDialogInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 {
   ic->Map = eflDialogMapMethod;
   ic->UnMap = eflDialogUnMapMethod;

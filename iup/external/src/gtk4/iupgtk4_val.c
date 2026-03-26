@@ -27,7 +27,7 @@
 #include "iupgtk4_drv.h"
 
 
-void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 {
   static int horiz_min_w = -1, horiz_min_h = -1;
   static int vert_min_w = -1, vert_min_h = -1;
@@ -288,7 +288,7 @@ static int gtk4ValSetTicksPosAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-void iupdrvValInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 {
   ic->Map = gtk4ValMapMethod;
 

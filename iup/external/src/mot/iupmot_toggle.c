@@ -45,12 +45,12 @@ typedef struct _IupMotSwitchData
 } IupMotSwitchData;
 
 
-void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
   iupdrvButtonAddBorders(ih, x, y);
 }
 
-void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
 {
   (void)ih;
 
@@ -64,7 +64,7 @@ void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
     (*x) += 8;
 }
 
-void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
+IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char* str)
 {
   int check_box = 15;
   (void)ih;
@@ -816,7 +816,7 @@ static void motToggleUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvToggleInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motToggleMapMethod;

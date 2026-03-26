@@ -993,7 +993,7 @@ static int motSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 
 /******************************************************************************************/
 
-void iupdrvRegisterDragDropAttrib(Iclass* ic)
+IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "DROPFILES_CB", "siii");
 

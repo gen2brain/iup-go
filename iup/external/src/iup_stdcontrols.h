@@ -95,10 +95,9 @@ Iclass* iupClipboardNewClass(void);
 
 /** \addtogroup drv
  * @{ */
-void iupdrvMessageDlgInitClass(Iclass* ic);
-void iupdrvColorDlgInitClass(Iclass* ic);
-void iupdrvFontDlgInitClass(Iclass* ic);
-void iupdrvFileDlgInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvMessageDlgInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic);
 /** @} */
 
 /************************************************/

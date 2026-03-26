@@ -383,7 +383,7 @@ static void gtk4ListSetFactory(Ihandle* ih, GtkListItemFactory* factory)
 static int gtk4_list_item_spacing = -1;
 static int gtk4_list_item_height = -1;
 
-void iupdrvListAddItemSpace(Ihandle* ih, int *h)
+IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int *h)
 {
   if (gtk4_list_item_spacing == -1)
   {
@@ -397,7 +397,7 @@ void iupdrvListAddItemSpace(Ihandle* ih, int *h)
   *h += gtk4_list_item_spacing;
 }
 
-void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 {
   static int editbox_border_x = -1, editbox_border_y = -1, editbox_entry_natural_height = -1;
   static int dropdown_border_x = -1, dropdown_border_y = -1, dropdown_natural_height = -1;
@@ -650,7 +650,7 @@ static int gtk4ListConvertXYToPos(Ihandle* ih, int x, int y)
   return -1;
 }
 
-int iupdrvListGetCount(Ihandle* ih)
+IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
   GListModel* model = gtk4ListGetListModel(ih);
   if (!model)
@@ -658,7 +658,7 @@ int iupdrvListGetCount(Ihandle* ih)
   return (int)g_list_model_get_n_items(model);
 }
 
-void iupdrvListAppendItem(Ihandle* ih, const char* value)
+IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   GListStore* store = gtk4ListGetGListStore(ih);
 
@@ -687,7 +687,7 @@ void iupdrvListAppendItem(Ihandle* ih, const char* value)
   }
 }
 
-void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
+IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
   GListStore* store = gtk4ListGetGListStore(ih);
 
@@ -717,7 +717,7 @@ void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   }
 }
 
-void iupdrvListRemoveItem(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 {
   GListStore* store = gtk4ListGetGListStore(ih);
 
@@ -753,7 +753,7 @@ void iupdrvListRemoveItem(Ihandle* ih, int pos)
   }
 }
 
-void iupdrvListRemoveAllItems(Ihandle* ih)
+IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 {
   GListStore* store = gtk4ListGetGListStore(ih);
   if (!store)
@@ -764,7 +764,7 @@ void iupdrvListRemoveAllItems(Ihandle* ih)
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 }
 
-void iupdrvListSetItemCount(Ihandle* ih, int count)
+IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 {
   IupGtk4VirtualListModel* model;
 
@@ -2477,7 +2477,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void* iupdrvListGetImageHandle(Ihandle* ih, int id)
+IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   GListStore* store = gtk4ListGetGListStore(ih);
 
@@ -2494,7 +2494,7 @@ void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   return NULL;
 }
 
-int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
+IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
   GListStore* store = gtk4ListGetGListStore(ih);
 
@@ -2543,7 +2543,7 @@ static void gtk4ListUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvListInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = gtk4ListMapMethod;
   ic->UnMap = gtk4ListUnMapMethod;

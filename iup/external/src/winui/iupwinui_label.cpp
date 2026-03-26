@@ -539,7 +539,7 @@ static int winuiLabelSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
+extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
   (void)x;
@@ -580,7 +580,7 @@ static int winuiLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-extern "C" void iupdrvLabelInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 {
   ic->Map = winuiLabelMapMethod;
   ic->UnMap = winuiLabelUnMapMethod;

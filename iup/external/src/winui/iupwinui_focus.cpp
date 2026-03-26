@@ -133,7 +133,7 @@ static void winuiSetFocusToIsland(Ihandle* dialog)
   }
 }
 
-extern "C" void iupdrvSetFocus(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;
@@ -166,7 +166,7 @@ extern "C" void iupdrvSetFocus(Ihandle* ih)
   iupSetCurrentFocus(ih);
 }
 
-extern "C" void iupdrvActivate(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;

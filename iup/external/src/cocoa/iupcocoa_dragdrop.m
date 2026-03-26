@@ -1254,7 +1254,7 @@ void iupCocoaDestroyDragDrop(Ihandle* ih)
   cocoaSourceDragDestroyAssociatedData(ih);
 }
 
-void iupdrvRegisterDragDropAttrib(Iclass* ic)
+IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "DRAGBEGIN_CB", "ii");
   iupClassRegisterCallback(ic, "DRAGDATA_CB", "sVi");

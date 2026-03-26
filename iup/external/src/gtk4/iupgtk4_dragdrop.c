@@ -619,7 +619,7 @@ static int gtk4SetDropFilesTargetAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupdrvRegisterDragDropAttrib(Iclass* ic)
+IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "DROPFILES_CB", "siii");
 

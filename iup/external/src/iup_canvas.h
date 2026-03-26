@@ -14,7 +14,7 @@ extern "C" {
 
 /** \addtogroup drv
  * @{ */
-void iupdrvCanvasInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic);
 /** @} */
 
 void iupCanvasCalcScrollIntPos(double min, double max, double page, double pos, int imin, int imax, int *ipage, int *ipos);

@@ -48,7 +48,7 @@ extern "C" IUP_DRV_API void iupqtSetCanFocus(QWidget* widget, int can)
  * Set Focus to Widget
  ****************************************************************************/
 
-extern "C" void iupdrvSetFocus(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
   QWidget* widget = (QWidget*)ih->handle;
 

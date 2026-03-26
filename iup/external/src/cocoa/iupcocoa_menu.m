@@ -443,7 +443,7 @@ static int cocoaMenuItemSetFontAttrib(Ihandle* ih, const char* value)
 /* Driver Functions                                                                        */
 /*******************************************************************************************/
 
-int iupdrvMenuPopup(Ihandle* ih, int x, int y)
+IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   NSMenu* menu = (NSMenu*)ih->handle;
   if (!menu) {
@@ -476,7 +476,7 @@ int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-int iupdrvMenuGetMenuBarSize(Ihandle* ih)
+IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
   (void)ih;
   /* Standard macOS menu bar height approximation. */
@@ -833,7 +833,7 @@ static void cocoaMenuUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-void iupdrvMenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   ic->Map = cocoaMenuMapMethod;
   ic->UnMap = cocoaMenuUnMapMethod;
@@ -883,7 +883,7 @@ static void cocoaSeparatorUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
 {
   ic->Map = cocoaSeparatorMapMethod;
   ic->UnMap = cocoaSeparatorUnMapMethod;
@@ -1130,7 +1130,7 @@ static void cocoaItemUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
 {
   ic->Map = cocoaItemMapMethod;
   ic->UnMap = cocoaItemUnMapMethod;
@@ -1223,7 +1223,7 @@ static void cocoaSubmenuUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-void iupdrvSubmenuInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 {
   ic->Map = cocoaSubmenuMapMethod;
   ic->UnMap = cocoaSubmenuUnMapMethod;
@@ -1307,7 +1307,7 @@ static const void* RECENT_MENU_ASSOCIATED_OBJ_KEY = &RECENT_MENU_ASSOCIATED_OBJ_
 
 @end
 
-int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
   iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
@@ -1315,7 +1315,7 @@ int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
   return 0;
 }
 
-int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
 {
   NSMenu* nsmenu;
   int max_recent, existing, i;

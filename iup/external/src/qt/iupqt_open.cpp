@@ -401,7 +401,7 @@ static void qtSetScreenInfo(void)
  * Driver Initialization
  ****************************************************************************/
 
-extern "C" int iupdrvOpen(int *argc, char ***argv)
+extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 {
   if (!QApplication::instance())
   {
@@ -490,7 +490,7 @@ extern "C" int iupdrvOpen(int *argc, char ***argv)
   return IUP_NOERROR;
 }
 
-extern "C" int iupdrvSetGlobalAppIDAttrib(const char* value)
+extern "C" IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
 {
   static int appid_set = 0;
   if (appid_set || !value || !value[0])
@@ -510,7 +510,7 @@ extern "C" int iupdrvSetGlobalAppIDAttrib(const char* value)
   return 1;
 }
 
-extern "C" int iupdrvSetGlobalAppNameAttrib(const char* value)
+extern "C" IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 {
   static int appname_set = 0;
   if (appname_set || !value || !value[0])
@@ -525,7 +525,7 @@ extern "C" int iupdrvSetGlobalAppNameAttrib(const char* value)
   return 1;
 }
 
-extern "C" void iupdrvClose(void)
+extern "C" IUP_SDK_API void iupdrvClose(void)
 {
   iupqtStrRelease();
   iupqtLoopCleanup();

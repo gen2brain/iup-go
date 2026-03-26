@@ -66,7 +66,7 @@ static void iupCocoaSetLineStyle(CGContextRef cg_context, int style)
   }
 }
 
-IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
+IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
   dc->ih = ih;
@@ -175,7 +175,7 @@ IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   return dc;
 }
 
-void iupdrvDrawKillCanvas(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 {
   if (!dc) return;
 
@@ -191,7 +191,7 @@ void iupdrvDrawKillCanvas(IdrawCanvas* dc)
   free(dc);
 }
 
-void iupdrvDrawUpdateSize(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
 {
   CGRect bounds_rect = [dc->canvasView bounds];
   CGFloat w = bounds_rect.size.width;
@@ -204,7 +204,7 @@ void iupdrvDrawUpdateSize(IdrawCanvas* dc)
   }
 }
 
-void iupdrvDrawFlush(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   if (dc->draw_focus)
   {
@@ -231,13 +231,13 @@ void iupdrvDrawFlush(IdrawCanvas* dc)
   }
 }
 
-void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
+IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int *w, int *h)
 {
   if (w) *w = iupROUND(dc->w);
   if (h) *h = iupROUND(dc->h);
 }
 
-void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
@@ -271,7 +271,7 @@ void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long c
   }
 }
 
-void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
@@ -311,7 +311,7 @@ void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color,
   CGContextStrokePath(cg_context);
 }
 
-void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
@@ -392,7 +392,7 @@ void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, d
   }
 }
 
-void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long color, int style, int line_width)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
@@ -423,7 +423,7 @@ void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int y2, long col
   }
 }
 
-void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
@@ -452,7 +452,7 @@ void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int 
     CGContextStrokePath(cg_context);
 }
 
-void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
+IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
@@ -461,7 +461,7 @@ void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
   CGContextFillRect(cg_context, CGRectMake((CGFloat)x, (CGFloat)y, 1.0, 1.0));
 }
 
-void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
@@ -501,7 +501,7 @@ void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
   CGPathRelease(path);
 }
 
-void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorRef the_color = iupCocoaDrawCreateColor(color);
@@ -531,7 +531,7 @@ void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, i
     CGContextStrokePath(cg_context);
 }
 
-void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
+IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
   /* Convert quadratic Bezier to cubic Bezier using the 2/3 formula:
    * Given quadratic: Q(t) with control points q0, q1, q2
@@ -554,7 +554,7 @@ void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
-void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
+IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
 {
   if (x1) *x1 = (int)dc->clip_x1;
   if (y1) *y1 = (int)dc->clip_y1;
@@ -562,7 +562,7 @@ void iupdrvDrawGetClipRect(IdrawCanvas* dc, int *x1, int *y1, int *x2, int *y2)
   if (y2) *y2 = (int)dc->clip_y2;
 }
 
-void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   if (x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0)
   {
@@ -587,7 +587,7 @@ void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   dc->clip_y2 = (CGFloat)y2;
 }
 
-void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
+IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
 {
   CGFloat radius = (CGFloat)corner_radius;
 
@@ -630,7 +630,7 @@ void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y
   dc->clip_y2 = (CGFloat)y2;
 }
 
-void iupdrvDrawResetClip(IdrawCanvas* dc)
+IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 {
   if (dc->clip_state == 1)
   {
@@ -644,7 +644,7 @@ void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y2 = 0;
 }
 
-void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
+IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   if (!text || (len == 0 && text[0] == '\0'))
     return;
@@ -752,7 +752,7 @@ void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, in
   }
 }
 
-void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
+IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, int x, int y, int w, int h)
 {
   NSImage* user_image = (NSImage*)iupImageGetImage(name, dc->ih, make_inactive, bgcolor);
   if (!user_image)
@@ -779,7 +779,7 @@ void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const
   }
 }
 
-void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -791,7 +791,7 @@ void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   CGContextFillRect(dc->cgContext, iup_rect);
 }
 
-void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
+IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -824,7 +824,7 @@ void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
   }
 }
 
-void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
@@ -869,7 +869,7 @@ void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, f
   CGColorSpaceRelease(colorSpace);
 }
 
-void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
+IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, long colorCenter, long colorEdge)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();

@@ -746,7 +746,7 @@ static void eflTreeEndRenameEdit(Ihandle* ih, int apply)
                      Driver Functions
 ****************************************************************/
 
-void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
+IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
 {
   Eo* tree = iupeflGetWidget(ih);
   IeflTreeNode* node;
@@ -844,7 +844,7 @@ void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add
   }
 }
 
-InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
+IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
   Eo* tree = iupeflGetWidget(ih);
 
@@ -854,7 +854,7 @@ InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
   return (InodeHandle*)elm_genlist_selected_item_get(tree);
 }
 
-int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
+IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)node_handle;
   int count = 0;
@@ -877,7 +877,7 @@ int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
   return count;
 }
 
-void iupdrvTreeUpdateMarkMode(Ihandle* ih)
+IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
 {
   Eo* tree = iupeflGetWidget(ih);
 
@@ -911,7 +911,7 @@ static void eflTreeRebuildNodeCache(Ihandle* ih, int id, Elm_Object_Item* item)
   eflTreeChildRebuildCacheRec(ih, item, &id);
 }
 
-void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* itemSrc, InodeHandle* itemDst)
+IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* itemSrc, InodeHandle* itemDst)
 {
   Eo* dst_tree = iupeflGetWidget(dst);
   Elm_Object_Item* src_item = (Elm_Object_Item*)itemSrc;
@@ -2606,7 +2606,7 @@ static void eflTreeUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
-void iupdrvTreeInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
   ic->Map = eflTreeMapMethod;
   ic->UnMap = eflTreeUnMapMethod;

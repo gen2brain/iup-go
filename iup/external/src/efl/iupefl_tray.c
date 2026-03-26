@@ -16,7 +16,7 @@
 #include "iup_image.h"
 
 
-int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
   Ihandle* image;
   unsigned char* imgdata;

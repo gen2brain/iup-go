@@ -228,7 +228,7 @@ extern "C" void iupwinuiFontFinish(void)
   }
 }
 
-extern "C" char* iupdrvGetSystemFont(void)
+extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
 {
   static char str[200];
   NONCLIENTMETRICSW ncm;
@@ -257,7 +257,7 @@ extern "C" char* iupdrvGetSystemFont(void)
   return str;
 }
 
-extern "C" int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
+extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
 {
   /* If value is NULL, get the effective font (inherited or default) */
   if (!value || !value[0])
@@ -284,7 +284,7 @@ extern "C" int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
+extern "C" IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
 {
   IwinuiFont* winfont = winuiFontGet(ih);
   if (!winfont)
@@ -300,7 +300,7 @@ extern "C" void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheig
     *charheight = winfont->charheight;
 }
 
-extern "C" int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
+extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 {
   if (!str || str[0] == 0)
     return 0;
@@ -322,7 +322,7 @@ extern "C" int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
   return (int)ceil(width);
 }
 
-extern "C" void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
   IwinuiFont* winfont = winuiFontGet(ih);
   if (!winfont)
@@ -382,7 +382,7 @@ extern "C" void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, i
   if (h) *h = winfont->charheight * line_count;
 }
 
-extern "C" void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
 {
   IwinuiFont* winfont = winuiFindFont(font);
   if (!winfont)
@@ -415,7 +415,7 @@ extern "C" void iupdrvFontGetTextSize(const char* font, const char* str, int len
   if (h) *h = winfont->charheight;
 }
 
-extern "C" void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
+extern "C" IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
 {
   IwinuiFont* winfont = winuiFindFont(font);
   if (!winfont)
@@ -536,12 +536,12 @@ void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Contro
     textBlock.FontStyle(winrt::Windows::UI::Text::FontStyle::Normal);
 }
 
-extern "C" void iupdrvFontInit(void)
+extern "C" IUP_SDK_API void iupdrvFontInit(void)
 {
   iupwinuiFontInit();
 }
 
-extern "C" void iupdrvFontFinish(void)
+extern "C" IUP_SDK_API void iupdrvFontFinish(void)
 {
   iupwinuiFontFinish();
 }

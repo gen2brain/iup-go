@@ -2382,7 +2382,7 @@ static void eflTableUpdateVisibleRows(Ihandle* ih)
  * Driver Interface
  ****************************************************************************/
 
-void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
+IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int old_num_col = ih->data->num_col;
@@ -2436,7 +2436,7 @@ void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   }
 }
 
-void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int old_num_lin = ih->data->num_lin;
@@ -2463,33 +2463,33 @@ void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   }
 }
 
-void iupdrvTableAddCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   (void)pos;
   iupdrvTableSetNumCol(ih, ih->data->num_col + 1);
 }
 
-void iupdrvTableDelCol(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   (void)pos;
   if (ih->data->num_col > 0)
     iupdrvTableSetNumCol(ih, ih->data->num_col - 1);
 }
 
-void iupdrvTableAddLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   (void)pos;
   iupdrvTableSetNumLin(ih, ih->data->num_lin + 1);
 }
 
-void iupdrvTableDelLin(Ihandle* ih, int pos)
+IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   (void)pos;
   if (ih->data->num_lin > 0)
     iupdrvTableSetNumLin(ih, ih->data->num_lin - 1);
 }
 
-void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
+IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   char name[50];
   snprintf(name, sizeof(name), "CELLVALUE%d:%d", lin, col);
@@ -2499,12 +2499,12 @@ void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
     eflTableUpdateCellLabel(ih, lin, col);
 }
 
-char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
+IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 {
   return eflTableGetCellText(ih, lin, col);
 }
 
-void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int num_col = ih->data->num_col;
@@ -2526,7 +2526,7 @@ void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
   }
 }
 
-void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
+IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   char name[50];
@@ -2549,14 +2549,14 @@ void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   }
 }
 
-char* iupdrvTableGetColTitle(Ihandle* ih, int col)
+IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   char name[50];
   snprintf(name, sizeof(name), "COLTITLE%d", col);
   return iupAttribGet(ih, name);
 }
 
-void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
+IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int lin;
@@ -2590,7 +2590,7 @@ void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   }
 }
 
-int iupdrvTableGetColWidth(Ihandle* ih, int col)
+IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
 
@@ -2603,7 +2603,7 @@ int iupdrvTableGetColWidth(Ihandle* ih, int col)
   return data->col_widths[col - 1];
 }
 
-void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int num_col = ih->data->num_col;
@@ -2650,7 +2650,7 @@ void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   iupdrvTableScrollToCell(ih, lin, col);
 }
 
-void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
+IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
 
@@ -2665,7 +2665,7 @@ void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
   *col = data->selected_col > 0 ? data->selected_col : 1;
 }
 
-void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int x, y, w, h;
@@ -2691,7 +2691,7 @@ void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
   elm_scroller_region_bring_in(data->scroller, x, y, w, h);
 }
 
-void iupdrvTableRedraw(Ihandle* ih)
+IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int lin, col;
@@ -2719,7 +2719,7 @@ void iupdrvTableRedraw(Ihandle* ih)
   }
 }
 
-void iupdrvTableSetShowGrid(Ihandle* ih, int show)
+IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
 
@@ -2733,25 +2733,25 @@ void iupdrvTableSetShowGrid(Ihandle* ih, int show)
     elm_table_padding_set(data->table, 0, 0);
 }
 
-int iupdrvTableGetBorderWidth(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
   (void)ih;
   return 1;
 }
 
-int iupdrvTableGetRowHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   return data ? data->row_height : DEFAULT_ROW_HEIGHT;
 }
 
-int iupdrvTableGetHeaderHeight(Ihandle* ih)
+IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   return data ? data->header_height : DEFAULT_HEADER_HEIGHT;
 }
 
-void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb = iupdrvGetScrollbarSize();
   int visiblelines;
@@ -3292,7 +3292,7 @@ static int eflTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupdrvTableInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = eflTableMapMethod;
   ic->UnMap = eflTableUnMapMethod;

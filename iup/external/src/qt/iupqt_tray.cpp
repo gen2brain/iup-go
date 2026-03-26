@@ -16,7 +16,7 @@ extern "C" {
 #include "iup_image.h"
 }
 
-extern "C" int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+extern "C" IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
   QPixmap* pixmap = nullptr;
   QImage image;

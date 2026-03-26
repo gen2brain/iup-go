@@ -22,7 +22,7 @@ static IFidle mac_idle_cb = NULL;
 static int mac_main_loop_should_quit = 0;
 static int mac_main_loop_level = 0;
 
-void iupdrvSetIdleFunction(Icallback f)
+IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
   mac_idle_cb = (IFidle)f;
 }

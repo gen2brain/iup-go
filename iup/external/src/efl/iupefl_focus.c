@@ -23,7 +23,7 @@ void iupeflSetCanFocus(Eo *widget, int can)
     efl_ui_widget_focus_allow_set(widget, can ? EINA_TRUE : EINA_FALSE);
 }
 
-void iupdrvSetFocus(Ihandle *ih)
+IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
 {
   Eo* widget = iupeflGetWidget(ih);
 

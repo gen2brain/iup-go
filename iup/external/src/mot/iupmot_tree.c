@@ -355,7 +355,7 @@ static void motTreeChildCountRec(Ihandle* ih, Widget wItem, int *count)
   if (itemChildList) XtFree((char*)itemChildList);
 }
 
-int iupdrvTreeTotalChildCount(Ihandle* ih, Widget wItem)
+IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, Widget wItem)
 {
   int count = 0;
   motTreeChildCountRec(ih, wItem, &count);
@@ -562,7 +562,7 @@ static void motTreeSetFocusNode(Ihandle* ih, Widget wItem)
   XmProcessTraversal(wItem, XmTRAVERSE_CURRENT);
 }
 
-Widget iupdrvTreeGetFocusNode(Ihandle* ih)
+IUP_SDK_API Widget iupdrvTreeGetFocusNode(Ihandle* ih)
 {
   Widget wItem = XmGetFocusWidget(ih->handle);  /* returns the focus in the dialog */
   if (wItem && XtParent(wItem) == ih->handle) /* is a node */
@@ -623,7 +623,7 @@ static void motTreeFocusChangeEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean 
   }
 }
 
-void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
+IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
 {
   Widget wItemPrev = iupTreeGetNode(ih, id);
   Widget wItemNew;
@@ -1717,7 +1717,7 @@ static int motTreeSetHlColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupdrvTreeUpdateMarkMode(Ihandle *ih)
+IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)
 {
   XtVaSetValues(ih->handle, XmNselectionPolicy, (ih->data->mark_mode==ITREE_MARK_SINGLE)? XmSINGLE_SELECT: XmEXTENDED_SELECT, NULL);
 }
@@ -2725,7 +2725,7 @@ static void motTreeDragDropCopyChildren(Ihandle* src, Ihandle* dst, Widget wItem
   if (wItemChildList) XtFree((char*)wItemChildList);
 }
 
-void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle *itemSrc, InodeHandle *itemDst)
+IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle *itemSrc, InodeHandle *itemDst)
 {
   Widget wItemNew, wParent, wItemSrc = itemSrc, wItemDst = itemDst;
   motTreeItemData *itemDataDst;
@@ -2972,7 +2972,7 @@ static void motTreeUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
-void iupdrvTreeInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motTreeMapMethod;

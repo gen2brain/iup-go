@@ -296,7 +296,7 @@ static void iupwinNotifyDestroy(IupWinNotify* notify)
   free(notify);
 }
 
-int iupdrvNotifyShow(Ihandle* ih)
+IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 {
   IupWinNotify* notify = (IupWinNotify*)iupAttribGet(ih, "_IUPWIN_NOTIFY");
   const char* title;
@@ -394,7 +394,7 @@ int iupdrvNotifyShow(Ihandle* ih)
   return 1;
 }
 
-int iupdrvNotifyClose(Ihandle* ih)
+IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
 {
   IupWinNotify* notify = (IupWinNotify*)iupAttribGet(ih, "_IUPWIN_NOTIFY");
 
@@ -410,7 +410,7 @@ int iupdrvNotifyClose(Ihandle* ih)
   return 1;
 }
 
-void iupdrvNotifyDestroy(Ihandle* ih)
+IUP_SDK_API void iupdrvNotifyDestroy(Ihandle* ih)
 {
   IupWinNotify* notify = (IupWinNotify*)iupAttribGet(ih, "_IUPWIN_NOTIFY");
 
@@ -421,12 +421,12 @@ void iupdrvNotifyDestroy(Ihandle* ih)
   }
 }
 
-int iupdrvNotifyIsAvailable(void)
+IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 {
   return 1;
 }
 
-void iupdrvNotifyInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "ACTION1", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTION2", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);

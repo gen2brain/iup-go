@@ -726,7 +726,7 @@ static int motCanvasMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvCanvasInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motCanvasMapMethod;

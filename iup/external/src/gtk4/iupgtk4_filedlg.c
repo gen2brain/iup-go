@@ -967,7 +967,7 @@ static int gtk4FileDlgPopup(Ihandle* ih, int x, int y)
   return gtk4FileDlgPopupDefault(ih, x, y);
 }
 
-void iupdrvFileDlgInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = gtk4FileDlgPopup;
 

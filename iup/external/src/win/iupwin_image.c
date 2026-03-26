@@ -44,7 +44,7 @@ static int winDibNumColors(BITMAPINFOHEADER* bmih)
   }
 }
 
-void iupdrvImageGetData(void* handle, unsigned char* imgdata)
+IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   int x, y, w, h, bpp;
   size_t bmp_line_size, bits_size, planesize;
@@ -778,7 +778,7 @@ static HICON winImageCreateCursorIcon(Ihandle *ih, int is_cursor)
   return icon;
 }
 
-void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
+IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive)
 {
   void* handle = winImageCreateBitmap(ih, bgcolor, make_inactive);
 
@@ -792,7 +792,7 @@ void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive
   return handle;
 }
 
-void* iupdrvImageCreateIcon(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle *ih)
 {
   void* handle = winImageCreateCursorIcon(ih, 0);
 
@@ -806,7 +806,7 @@ void* iupdrvImageCreateIcon(Ihandle *ih)
   return handle;
 }
 
-void* iupdrvImageCreateCursor(Ihandle *ih)
+IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
 {
   void* handle = winImageCreateCursorIcon(ih, 1);
 
@@ -820,7 +820,7 @@ void* iupdrvImageCreateCursor(Ihandle *ih)
   return handle;
 }
 
-void* iupdrvImageLoad(const char* name, int type)
+IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   int iup2win[3] = {IMAGE_BITMAP, IMAGE_ICON, IMAGE_CURSOR};
   HANDLE hImage = LoadImage(iupwin_hinstance, iupwinStrToSystem(name), iup2win[type], 0, 0, type == IUPIMAGE_IMAGE ? LR_CREATEDIBSECTION : 0);
@@ -844,7 +844,7 @@ void* iupdrvImageLoad(const char* name, int type)
   return hImage;
 }
 
-int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
+IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
 {
   BITMAP bm;
   if (!GetObject((HBITMAP)handle, sizeof(BITMAP), (LPSTR)&bm))
@@ -1029,7 +1029,7 @@ cleanup:
   return SUCCEEDED(hr) ? 1 : 0;
 }
 
-int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
   IStream* stream = NULL;
   HGLOBAL hGlobal;
@@ -1083,7 +1083,7 @@ int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupC
   return (written == stat.cbSize.LowPart) ? 1 : 0;
 }
 
-unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   IStream* stream = NULL;
   HRESULT hr;

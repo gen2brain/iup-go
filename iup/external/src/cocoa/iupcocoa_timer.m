@@ -63,7 +63,7 @@
 @end
 
 
-void iupdrvTimerRun(Ihandle* ih)
+IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 {
   if (ih->handle != nil)
     return;
@@ -96,7 +96,7 @@ void iupdrvTimerRun(Ihandle* ih)
   }
 }
 
-void iupdrvTimerStop(Ihandle* ih)
+IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   if (ih->handle != nil)
   {
@@ -133,7 +133,7 @@ static char* cocoaTimerGetWidAttrib(Ihandle *ih)
   return iupStrReturnInt((int)(intptr_t)ih->handle);
 }
 
-void iupdrvTimerInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 {
   ic->UnMap = iupdrvTimerStop;
 

@@ -1603,7 +1603,7 @@ static void winuiTableStartEdit(Ihandle* ih, int lin, int col)
  * Cell Operations
  ****************************************************************************/
 
-extern "C" void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
+extern "C" IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux)
@@ -1631,7 +1631,7 @@ extern "C" void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const cha
   }
 }
 
-extern "C" char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
+extern "C" IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux)
@@ -1655,7 +1655,7 @@ extern "C" char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   return NULL;
 }
 
-extern "C" void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
+extern "C" IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
 {
   if (!ih->handle)
     return;
@@ -1676,7 +1676,7 @@ extern "C" void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const cha
  * Column Operations
  ****************************************************************************/
 
-extern "C" void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
+extern "C" IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux || col < 1 || col > ih->data->num_col)
@@ -1707,7 +1707,7 @@ extern "C" void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   }
 }
 
-extern "C" char* iupdrvTableGetColTitle(Ihandle* ih, int col)
+extern "C" IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux || col < 1 || col > ih->data->num_col)
@@ -1716,7 +1716,7 @@ extern "C" char* iupdrvTableGetColTitle(Ihandle* ih, int col)
   return aux->col_titles[col - 1];
 }
 
-extern "C" void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
+extern "C" IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux || col < 1 || col > ih->data->num_col)
@@ -1736,7 +1736,7 @@ extern "C" void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   winuiTableAdjustColumnWidths(ih);
 }
 
-extern "C" int iupdrvTableGetColWidth(Ihandle* ih, int col)
+extern "C" IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux || col < 1 || col > ih->data->num_col)
@@ -1749,7 +1749,7 @@ extern "C" int iupdrvTableGetColWidth(Ihandle* ih, int col)
  * Selection and Focus
  ****************************************************************************/
 
-extern "C" void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
+extern "C" IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   ListView listView = winuiTableGetListView(ih);
@@ -1781,7 +1781,7 @@ extern "C" void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
   winuiTableSetFocusVisual(ih, lin, col);
 }
 
-extern "C" void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
+extern "C" IUP_SDK_API void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux)
@@ -1799,7 +1799,7 @@ extern "C" void iupdrvTableGetFocusCell(Ihandle* ih, int* lin, int* col)
  * Scrolling
  ****************************************************************************/
 
-extern "C" void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   (void)col;
   ListView listView = winuiTableGetListView(ih);
@@ -1816,7 +1816,7 @@ extern "C" void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
  * Display
  ****************************************************************************/
 
-extern "C" void iupdrvTableRedraw(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   ListView listView = winuiTableGetListView(ih);
@@ -1896,7 +1896,7 @@ void winuiTableRefreshThemeColors(Ihandle* ih)
   listView.UpdateLayout();
 }
 
-extern "C" void iupdrvTableSetShowGrid(Ihandle* ih, int show)
+extern "C" IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   if (!aux)
@@ -1942,7 +1942,7 @@ extern "C" void iupdrvTableSetShowGrid(Ihandle* ih, int show)
  * Sizing
  ****************************************************************************/
 
-extern "C" int iupdrvTableGetBorderWidth(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
 {
   (void)ih;
   return 2;
@@ -1957,7 +1957,7 @@ static int winuiTableMeasureTextHeight(Ihandle* ih)
   return (int)ceil(tb.DesiredSize().Height);
 }
 
-extern "C" int iupdrvTableGetRowHeight(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   int text_height = winuiTableMeasureTextHeight(ih);
   /* Cell Border: Padding(4,2,4,2) + BorderThickness(0,0,1,1) = 2 top + 2 bottom + 1 grid bottom = 5 */
@@ -1975,14 +1975,14 @@ extern "C" int iupdrvTableGetRowHeight(Ihandle* ih)
   return row_height;
 }
 
-extern "C" int iupdrvTableGetHeaderHeight(Ihandle* ih)
+extern "C" IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 {
   int text_height = winuiTableMeasureTextHeight(ih);
   /* Header Border: Padding(4,4,4,4) + BorderThickness(0,0,1,1) = 4 top + 4 bottom + 1 grid bottom = 9 */
   return text_height + 9;
 }
 
-extern "C" void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
+extern "C" IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
   *w += sb_size + 2;
@@ -1993,7 +1993,7 @@ extern "C" void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
  * Table Structure
  ****************************************************************************/
 
-extern "C" void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
+extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   ListView listView = winuiTableGetListView(ih);
@@ -2058,7 +2058,7 @@ extern "C" void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   ih->data->num_lin = num_lin;
 }
 
-extern "C" void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
+extern "C" IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   ListView listView = winuiTableGetListView(ih);
@@ -2201,7 +2201,7 @@ extern "C" void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
   }
 }
 
-extern "C" void iupdrvTableAddLin(Ihandle* ih, int pos)
+extern "C" IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   ListView listView = winuiTableGetListView(ih);
@@ -2257,7 +2257,7 @@ extern "C" void iupdrvTableAddLin(Ihandle* ih, int pos)
   ih->data->num_lin++;
 }
 
-extern "C" void iupdrvTableDelLin(Ihandle* ih, int pos)
+extern "C" IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   ListView listView = winuiTableGetListView(ih);
@@ -2311,7 +2311,7 @@ extern "C" void iupdrvTableDelLin(Ihandle* ih, int pos)
   ih->data->num_lin--;
 }
 
-extern "C" void iupdrvTableAddCol(Ihandle* ih, int pos)
+extern "C" IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
 {
   if (pos < 0)
     pos = ih->data->num_col;
@@ -2322,7 +2322,7 @@ extern "C" void iupdrvTableAddCol(Ihandle* ih, int pos)
   iupdrvTableSetNumCol(ih, ih->data->num_col);
 }
 
-extern "C" void iupdrvTableDelCol(Ihandle* ih, int pos)
+extern "C" IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 {
   if (pos < 1 || pos > ih->data->num_col)
     return;
@@ -3231,7 +3231,7 @@ static void winuiTableUnMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvTableInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = winuiTableMapMethod;
   ic->UnMap = winuiTableUnMapMethod;

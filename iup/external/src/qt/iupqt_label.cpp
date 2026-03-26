@@ -173,7 +173,7 @@ static void qtLabelSetPixmap(Ihandle* ih, const char* name, int make_inactive)
  * Border Size Calculation
  ****************************************************************************/
 
-extern "C" void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
+extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
 {
   (void)ih;
   (void)x;
@@ -798,7 +798,7 @@ static int qtLabelMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvLabelInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtLabelMapMethod;

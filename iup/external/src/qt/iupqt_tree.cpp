@@ -433,7 +433,7 @@ static QTreeWidgetItem* qtTreeGetPreviousItem(Ihandle* ih, QTreeWidgetItem* item
  * Driver Functions
  ****************************************************************************/
 
-extern "C" int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
+extern "C" IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
 {
   QTreeWidgetItem* item = (QTreeWidgetItem*)node_handle;
   if (!item)
@@ -452,7 +452,7 @@ extern "C" int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
   return count;
 }
 
-extern "C" void iupdrvTreeUpdateMarkMode(Ihandle* ih)
+extern "C" IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
 {
   IupQtTree* tree = (IupQtTree*)ih->handle;
 
@@ -471,7 +471,7 @@ extern "C" void iupdrvTreeUpdateMarkMode(Ihandle* ih)
  * Node Addition Functions
  ****************************************************************************/
 
-extern "C" void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
+extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add)
 {
   IupQtTree* tree = (IupQtTree*)ih->handle;
   QTreeWidgetItem* new_item = nullptr;
@@ -2162,7 +2162,7 @@ static void qtTreeUnMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
-extern "C" void iupdrvTreeInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = qtTreeMapMethod;
@@ -2230,7 +2230,7 @@ extern "C" void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtTreeGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }
 
-extern "C" InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
+extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
   if (!ih->handle)
     return nullptr;
@@ -2241,7 +2241,7 @@ extern "C" InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
   return (InodeHandle*)item;
 }
 
-extern "C" void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* itemSrc, InodeHandle* itemDst)
+extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* itemSrc, InodeHandle* itemDst)
 {
   if (!src || !dst || !itemSrc || !itemDst)
     return;

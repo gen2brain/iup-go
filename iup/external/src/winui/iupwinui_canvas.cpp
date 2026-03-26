@@ -1060,7 +1060,7 @@ static void winuiCanvasLayoutUpdateMethod(Ihandle* ih)
   }
 }
 
-extern "C" void iupdrvCanvasInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   ic->Map = winuiCanvasMapMethod;
   ic->UnMap = winuiCanvasUnMapMethod;

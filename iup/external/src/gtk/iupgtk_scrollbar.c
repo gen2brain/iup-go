@@ -31,7 +31,7 @@
 #include "iupgtk_drv.h"
 
 
-void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
+IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   static int horiz_min_w = -1, horiz_min_h = -1;
@@ -325,7 +325,7 @@ static int gtkScrollbarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-void iupdrvScrollbarInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
 {
   ic->Map = gtkScrollbarMapMethod;
 
