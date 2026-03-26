@@ -392,7 +392,7 @@ static int wGLCanvasSetRefreshContextAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-void iupdrvGlCanvasInitClass(Iclass* ic)
+void iupGlCanvasInitClass(Iclass* ic)
 {
   ic->Create = wGLCanvasCreateMethod;
   ic->Destroy = wGLCanvasDestroy;

@@ -790,7 +790,7 @@ static void eGLCanvasDestroy(Ihandle* ih)
   iupAttribSet(ih, "_IUP_GLCONTROLDATA", NULL);
 }
 
-void iupdrvGlCanvasInitClass(Iclass* ic)
+void iupGlCanvasInitClass(Iclass* ic)
 {
   ic->Create = eGLCanvasCreateMethod;
   ic->Destroy = eGLCanvasDestroy;

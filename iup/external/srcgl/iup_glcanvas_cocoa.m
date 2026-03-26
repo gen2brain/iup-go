@@ -641,7 +641,7 @@ static void cocoaGLCanvasDestroy(Ihandle* ih)
   iupAttribSet(ih, "_IUP_GLCONTROLDATA", NULL);
 }
 
-void iupdrvGlCanvasInitClass(Iclass* ic)
+void iupGlCanvasInitClass(Iclass* ic)
 {
   ic->Create = cocoaGLCanvasCreateMethod;
   ic->Destroy = cocoaGLCanvasDestroy;
