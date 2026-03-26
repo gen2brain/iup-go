@@ -112,7 +112,7 @@ static void iupCocoaTipsUpdateForView(NSView* the_view, IupCocoaToolTipOwner* ow
                                      userData:NULL];
 }
 
-void cocoaUpdateTip(Ihandle* ih)
+void iupcocoaUpdateTip(Ihandle* ih)
 {
   if (!ih) return;
 

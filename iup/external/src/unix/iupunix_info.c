@@ -83,36 +83,6 @@ IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 
 /**************************************************************************/
 
-int iupUnixIsFile(const char* name)
-{
-  struct stat status;
-  if (stat(name, &status) != 0)
-    return 0;
-  if (S_ISDIR(status.st_mode))
-    return 0;
-  return 1;
-}
-
-int iupUnixIsDirectory(const char* name)
-{
-  struct stat status;
-  if (stat(name, &status) != 0)
-    return 0;
-  if (S_ISDIR(status.st_mode))
-    return 1;
-  return 0;
-}            
-
-int iupUnixMakeDirectory(const char* name)
-{
-  mode_t oldmask = umask((mode_t)0);
-  int fail =  mkdir(name, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);
-  umask (oldmask);
-  if (fail)
-    return 0;
-  return 1;
-}
-
 static int iupUnixMakeDirectoryIfNeeded(const char* path)
 {
   struct stat st;
@@ -122,7 +92,14 @@ static int iupUnixMakeDirectoryIfNeeded(const char* path)
       return 1;
     return 0;
   }
-  return iupUnixMakeDirectory(path);
+  {
+    mode_t oldmask = umask((mode_t)0);
+    int fail = mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);
+    umask(oldmask);
+    if (fail)
+      return 0;
+    return 1;
+  }
 }
 
 IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)

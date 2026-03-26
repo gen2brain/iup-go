@@ -230,7 +230,7 @@ static NSWindowStyleMask cocoaDialogGetStyleMask(Ihandle* ih)
 
 static void cocoaDialogUpdateStyleMask(Ihandle* ih)
 {
-  NSWindow* window = cocoaDialogGetWindow(ih);
+  NSWindow* window = iupcocoaDialogGetWindow(ih);
   if (window)
   {
     NSWindowStyleMask new_mask = cocoaDialogGetStyleMask(ih);
@@ -304,7 +304,7 @@ static void cocoaDialogUpdateStyleMask(Ihandle* ih)
 - (void) applicationDidFinishLaunching:(NSNotification*)a_notification
 {
   Ihandle* ih = _ih;
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
 
   [NSApp activateIgnoringOtherApps:YES];
   [the_window makeKeyAndOrderFront:nil];
@@ -325,7 +325,7 @@ static void cocoaDialogUpdateStyleMask(Ihandle* ih)
 }
 @end
 
-bool cocoaDialogExitModal(Ihandle* modal_ih)
+bool iupcocoaDialogExitModal(Ihandle* modal_ih)
 {
   if(!iupObjectCheck(modal_ih))
   {
@@ -336,12 +336,12 @@ bool cocoaDialogExitModal(Ihandle* modal_ih)
   NSWindow* parent_window = nil;
   if(iupObjectCheck(parent_ih))
   {
-    parent_window = cocoaDialogGetWindow(parent_ih);
+    parent_window = iupcocoaDialogGetWindow(parent_ih);
   }
 
   if(!parent_window)
   {
-    NSWindow* the_window = cocoaDialogGetWindow(modal_ih);
+    NSWindow* the_window = iupcocoaDialogGetWindow(modal_ih);
     if(the_window)
     {
       parent_window = [the_window parentWindow];
@@ -378,7 +378,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
       {
         if (iupAttribGetBoolean(child_ih, "MODAL"))
         {
-          cocoaDialogExitModal(child_ih);
+          iupcocoaDialogExitModal(child_ih);
         }
       }
     }
@@ -424,7 +424,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
 
   if(iupAttribGetBoolean(ih, "MODAL"))
   {
-    cocoaDialogExitModal(ih);
+    iupcocoaDialogExitModal(ih);
   }
 }
 
@@ -691,7 +691,7 @@ IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 
 IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w, int *h)
 {
-  NSWindow* the_window = handle ? (NSWindow*)handle : cocoaDialogGetWindow(ih);
+  NSWindow* the_window = handle ? (NSWindow*)handle : iupcocoaDialogGetWindow(ih);
   if (!the_window) return;
 
   NSRect frame_rect = [the_window frame];
@@ -702,7 +702,7 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w,
 
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window)
   {
     return;
@@ -737,7 +737,7 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
     if (iupObjectCheck(parent_ih))
     {
-      parent_window = cocoaDialogGetWindow(parent_ih);
+      parent_window = iupcocoaDialogGetWindow(parent_ih);
     }
 
     if (!parent_window)
@@ -766,7 +766,7 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
 IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int *x, int *y)
 {
-  NSWindow* the_window = handle ? (NSWindow*)handle : cocoaDialogGetWindow(ih);
+  NSWindow* the_window = handle ? (NSWindow*)handle : iupcocoaDialogGetWindow(ih);
   if (!the_window) return;
 
   NSRect the_rect = [the_window frame];
@@ -777,7 +777,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int
 
 IUP_SDK_API void iupdrvDialogSetPosition(Ihandle *ih, int x, int y)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return;
 
   int inverted_y = iupcocoaComputeCartesianScreenHeightFromIup(y);
@@ -789,7 +789,7 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
   *menu = 0; /* In Cocoa, the menu bar is not part of the window's decoration height. */
 
   NSWindowStyleMask style_mask = 0;
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
 
   if (the_window)
     style_mask = [the_window styleMask];
@@ -833,7 +833,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   id root_object = (id)ih->handle;
   if([root_object isKindOfClass:[NSStatusItem class]] || !root_object) return 0;
 
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   char* placement;
   int old_state = ih->data->show_state;
 
@@ -915,7 +915,7 @@ IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
   if([root_object isKindOfClass:[NSStatusItem class]]) return;
 
   NSWindow* parent_window = (NSWindow*)parent;
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (the_window && [parent_window isKindOfClass:[NSWindow class]])
   {
     [parent_window addChildWindow:the_window ordered:NSWindowAbove];
@@ -940,7 +940,7 @@ static int cocoaDialogSetMenuAttrib(Ihandle* ih, const char* value)
 
 static void cocoaDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window)
     return;
 
@@ -991,7 +991,7 @@ static char* cocoaDialogGetClientSizeAttrib(Ihandle *ih)
 {
   if (ih->handle)
   {
-    NSWindow* the_window = cocoaDialogGetWindow(ih);
+    NSWindow* the_window = iupcocoaDialogGetWindow(ih);
     if (the_window)
     {
       NSRect content_rect = [[the_window contentView] bounds];
@@ -1034,7 +1034,7 @@ static char* cocoaDialogGetClientOffsetAttrib(Ihandle *ih)
 
 static char* cocoaDialogGetResizeAttrib(Ihandle* ih)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return iupAttribGet(ih, "RESIZE");
 
   NSWindowStyleMask style_mask = [the_window styleMask];
@@ -1073,7 +1073,7 @@ static int cocoaDialogSetBorderAttrib(Ihandle* ih, const char* value)
 
 static int cocoaDialogSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (the_window)
   {
     NSString* ns_string = value ? [NSString stringWithUTF8String:value] : @"";
@@ -1088,7 +1088,7 @@ static int cocoaDialogSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int cocoaDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return 0;
 
   if (iupStrBoolean(value))
@@ -1136,7 +1136,7 @@ static int cocoaDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         if (!iupObjectCheck(ih))
           return;
-        NSWindow* cur_window = cocoaDialogGetWindow(ih);
+        NSWindow* cur_window = iupcocoaDialogGetWindow(ih);
         if (!cur_window)
           return;
         int x = iupAttribGetInt(ih, "_IUPCOCOA_FS_X");
@@ -1177,7 +1177,7 @@ static char* cocoaDialogGetFullScreenAttrib(Ihandle* ih)
 
 static int cocoaDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return 0;
 
   if (iupStrBoolean(value))
@@ -1190,7 +1190,7 @@ static int cocoaDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
 
 static int cocoaDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
 {
-  NSWindow* window = cocoaDialogGetWindow(ih);
+  NSWindow* window = iupcocoaDialogGetWindow(ih);
   if (!window) return 0;
 
   BOOL hide = (BOOL)iupStrBoolean(value);
@@ -1211,7 +1211,7 @@ static int cocoaDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
 
 static char* cocoaDialogGetActiveWindowAttrib(Ihandle* ih)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window)
     return NULL;
 
@@ -1220,7 +1220,7 @@ static char* cocoaDialogGetActiveWindowAttrib(Ihandle* ih)
 
 static int cocoaDialogSetTopMostAttrib(Ihandle *ih, const char *value)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return 0;
 
   if (iupStrBoolean(value))
@@ -1234,7 +1234,7 @@ static int cocoaDialogSetBringFrontAttrib(Ihandle *ih, const char *value)
 {
   if (iupStrBoolean(value))
   {
-    NSWindow* the_window = cocoaDialogGetWindow(ih);
+    NSWindow* the_window = iupcocoaDialogGetWindow(ih);
     if (the_window)
     {
       [NSApp activateIgnoringOtherApps:YES];
@@ -1246,7 +1246,7 @@ static int cocoaDialogSetBringFrontAttrib(Ihandle *ih, const char *value)
 
 static int cocoaDialogSetOpacityAttrib(Ihandle *ih, const char *value)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return 0;
 
   int opacity;
@@ -1269,7 +1269,7 @@ static int cocoaDialogSetIconAttrib(Ihandle* ih, const char *value)
 
 static int cocoaDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return 0;
 
   unsigned char r, g, b;
@@ -1283,7 +1283,7 @@ static int cocoaDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static int cocoaDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return 0;
 
   unsigned char r, g, b;
@@ -1324,7 +1324,7 @@ static int cocoaDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 
 static int cocoaDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
 {
-  NSWindow* window = cocoaDialogGetWindow(ih);
+  NSWindow* window = iupcocoaDialogGetWindow(ih);
   if (!window) return 0;
 
   if (!value)
@@ -1364,7 +1364,7 @@ static int cocoaDialogSetOpacityImageAttrib(Ihandle *ih, const char *value)
 
 static int cocoaDialogSetCustomFrameAttrib(Ihandle *ih, const char *value)
 {
-  NSWindow* window = cocoaDialogGetWindow(ih);
+  NSWindow* window = iupcocoaDialogGetWindow(ih);
   if (!window) return 0;
 
   if (iupStrBoolean(value))
@@ -1396,7 +1396,7 @@ static char* cocoaDialogGetMaximizedAttrib(Ihandle *ih)
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE"))
     return iupAttribGet(ih, "MAXIMIZED");
 
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window)
     return NULL;
 
@@ -1405,7 +1405,7 @@ static char* cocoaDialogGetMaximizedAttrib(Ihandle *ih)
 
 static char* cocoaDialogGetMinimizedAttrib(Ihandle *ih)
 {
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window)
     return NULL;
 
@@ -1567,7 +1567,7 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
 
   ih->data->ignore_resize = 1;
 
-  NSWindow* the_window = cocoaDialogGetWindow(ih);
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
 
   if (!the_window)
   {

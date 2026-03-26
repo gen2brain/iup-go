@@ -94,11 +94,6 @@ char* iupmotGetXWindowAttrib(Ihandle *ih);
 
 #define iupMOT_SETARG(_a, _i, _n, _d) ((_a)[(_i)].name = (_n), (_a)[(_i)].value = (XtArgVal)(_d), (_i)++)
 
-/* Unix Info */
-int iupUnixIsFile(const char* name);
-int iupUnixIsDirectory(const char* name);
-int iupUnixMakeDirectory(const char* name);
-
 /* tray */
 int iupmotSetTrayAttrib(Ihandle* ih, const char* value);
 int iupmotSetTrayTipAttrib(Ihandle* ih, const char* value);

@@ -70,7 +70,7 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
   }
   else if (parent_ih)
   {
-    parentWindow = cocoaDialogGetWindow(parent_ih);
+    parentWindow = iupcocoaDialogGetWindow(parent_ih);
   }
 
   /* If no parent found, find the current key window that is an IUP dialog. */
