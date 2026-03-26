@@ -65,8 +65,13 @@ public:
 
   IupQtDialog(Ihandle* ih) : QMainWindow(nullptr), iup_handle(ih)
   {
-    /* Initialize with proper window flags */
     updateWindowFlags();
+  }
+
+  void ensureWindowHandle()
+  {
+    if (!testAttribute(Qt::WA_WState_Created))
+      create();
   }
 
   void updateWindowFlags()
@@ -74,7 +79,7 @@ public:
     if (!iup_handle)
       return;
 
-    Qt::WindowFlags flags = Qt::Window;
+    Qt::WindowFlags flags = iupDialogGetNativeParent(iup_handle) ? Qt::Dialog : Qt::Window;
 
     /* Check for BORDER/title bar */
     int has_titlebar = iupAttribGet(iup_handle, "TITLE") ||
@@ -323,19 +328,22 @@ extern "C" int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
 
 extern "C" void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
-  QWidget* dialog = (QWidget*)ih->handle;
-  QWidget* parent_widget = (QWidget*)parent;
+  IupQtDialog* dialog = (IupQtDialog*)ih->handle;
+  if (!dialog)
+    return;
 
-  if (dialog && parent_widget)
+  dialog->updateWindowFlags();
+
+  if (parent)
   {
-    /* Set transient relationship */
-    QWindow* dialog_window = dialog->windowHandle();
-    QWindow* parent_window = parent_widget->windowHandle();
+    QWidget* parent_widget = (QWidget*)parent;
 
-    if (dialog_window && parent_window)
-    {
-      dialog_window->setTransientParent(parent_window);
-    }
+    dialog->ensureWindowHandle();
+
+    QWindow* dw = dialog->windowHandle();
+    QWindow* pw = parent_widget->windowHandle();
+    if (dw && pw)
+      dw->setTransientParent(pw);
   }
 }
 
@@ -1054,7 +1062,6 @@ static void* qtDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* c
 
 extern "C" int qtDialogMapMethod(Ihandle* ih)
 {
-  /* Create Qt dialog widget */
   IupQtDialog* dialog = new IupQtDialog(ih);
 
   ih->handle = (InativeHandle*)dialog;
@@ -1087,7 +1094,7 @@ extern "C" int qtDialogMapMethod(Ihandle* ih)
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
-  /* Add to parent */
+  /* Set parent dialog */
   InativeHandle* parent = iupDialogGetNativeParent(ih);
   if (parent)
     iupdrvDialogSetParent(ih, parent);
