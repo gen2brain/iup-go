@@ -4,26 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-/* Define IUP_USE_GTK for any GTK version (GTK2, GTK3, or GTK4) */
-#if defined(IUP_USE_GTK2) || defined(IUP_USE_GTK3) || defined(IUP_USE_GTK4)
-#define IUP_USE_GTK
-#endif
-
-#ifdef IUP_USE_GTK
-#include <glib.h>
-#include <stdint.h>
-/* Check for old GLib (< 2.32) which requires deprecated thread APIs */
-#if !GLIB_CHECK_VERSION(2, 32, 0)
-#define OLD_GLIB
-#endif
-#elif defined(WIN32)
-#include <windows.h>
-#elif defined(__APPLE__) || defined(__unix__)
-#include <pthread.h>
-#include <sched.h>
-#include <stdint.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,25 +16,14 @@
 #include "iup_str.h"
 #include "iup_register.h"
 #include "iup_stdcontrols.h"
+#include "iup_thread.h"
 
 
 static int iThreadSetJoinAttrib(Ihandle* ih, const char* value)
 {
-#ifdef IUP_USE_GTK
-  GThread* thread = (GThread*)iupAttribGet(ih, "THREAD");
+  void* thread = iupAttribGet(ih, "THREAD");
   if (thread)
-    g_thread_join(thread);
-#elif defined(WIN32)
-  HANDLE thread = (HANDLE)iupAttribGet(ih, "THREAD");
-  if (thread)
-    WaitForSingleObject(thread, INFINITE);
-#elif defined(__APPLE__) || defined(__unix__)
-  pthread_t* thread = (pthread_t*)iupAttribGet(ih, "THREAD");
-  if (thread)
-  {
-    pthread_join(*thread, NULL);
-  }
-#endif
+    iupdrvThreadJoin(thread);
 
   (void)value;
   return 0;
@@ -64,53 +33,23 @@ static int iThreadSetYieldAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
-
-#ifdef IUP_USE_GTK
-  g_thread_yield();
-#elif defined(WIN32)
-  SwitchToThread();
-#elif defined(__APPLE__) || defined(__unix__)
-  sched_yield();
-#endif
+  iupdrvThreadYield();
   return 0;
 }
 
 static char* iThreadGetIsCurrentAttrib(Ihandle* ih)
 {
-#ifdef IUP_USE_GTK
-  GThread* thread = (GThread*)iupAttribGet(ih, "THREAD");
+  void* thread = iupAttribGet(ih, "THREAD");
   if (thread)
-    return iupStrReturnBoolean(thread == g_thread_self());
+    return iupStrReturnBoolean(iupdrvThreadIsCurrent(thread));
   return iupStrReturnBoolean(0);
-#elif defined(WIN32)
-  HANDLE thread = (HANDLE)iupAttribGet(ih, "THREAD");
-  if (thread)
-    return iupStrReturnBoolean(thread == GetCurrentThread());
-  return iupStrReturnBoolean(0);
-#elif defined(__APPLE__) || defined(__unix__)
-  pthread_t* thread = (pthread_t*)iupAttribGet(ih, "THREAD");
-  if (thread)
-  {
-    return iupStrReturnBoolean(pthread_equal(*thread, pthread_self()));
-  }
-  return iupStrReturnBoolean(0);
-#else
-  return NULL;
-#endif
 }
 
 static int iThreadSetExitAttrib(Ihandle* ih, const char* value)
 {
   int exit_code = 0;
   iupStrToInt(value, &exit_code);
-
-#ifdef IUP_USE_GTK
-  g_thread_exit((gpointer)(intptr_t)exit_code);
-#elif defined(WIN32)
-  ExitThread(exit_code);
-#elif defined(__APPLE__) || defined(__unix__)
-  pthread_exit((void*)(intptr_t)exit_code);
-#endif
+  iupdrvThreadExit(exit_code);
 
   (void)ih;
   return 0;
@@ -118,101 +57,30 @@ static int iThreadSetExitAttrib(Ihandle* ih, const char* value)
 
 static int iThreadSetLockAttrib(Ihandle* ih, const char* value)
 {
-  if (iupStrBoolean(value))
+  void* mutex = iupAttribGet(ih, "MUTEX");
+  if (mutex)
   {
-#ifdef IUP_USE_GTK
-    GMutex* mutex = (GMutex*)iupAttribGet(ih, "MUTEX");
-    if (mutex)
-      g_mutex_lock(mutex);
-#elif defined(WIN32)
-    HANDLE mutex = (HANDLE)iupAttribGet(ih, "MUTEX");
-    if (mutex)
-      WaitForSingleObject(mutex, INFINITE);
-#elif defined(__APPLE__) || defined(__unix__)
-    pthread_mutex_t* mutex = (pthread_mutex_t*)iupAttribGet(ih, "MUTEX");
-    if (mutex)
-      pthread_mutex_lock(mutex);
-#endif
-  }
-  else
-  {
-#ifdef IUP_USE_GTK
-    GMutex* mutex = (GMutex*)iupAttribGet(ih, "MUTEX");
-    if (mutex)
-      g_mutex_unlock(mutex);
-#elif defined(WIN32)
-    HANDLE mutex = (HANDLE)iupAttribGet(ih, "MUTEX");
-    if (mutex)
-      ReleaseMutex(mutex);
-#elif defined(__APPLE__) || defined(__unix__)
-    pthread_mutex_t* mutex = (pthread_mutex_t*)iupAttribGet(ih, "MUTEX");
-    if (mutex)
-      pthread_mutex_unlock(mutex);
-#endif
+    if (iupStrBoolean(value))
+      iupdrvMutexLock(mutex);
+    else
+      iupdrvMutexUnlock(mutex);
   }
 
   return 1;
-}
-
-#ifdef IUP_USE_GTK
-static void* ClientThreadFunc(void* obj)
-#elif defined(WIN32)
-static DWORD WINAPI ClientThreadFunc(LPVOID obj)
-#else
-static void* ClientThreadFunc(void* obj)
-#endif
-{
-  Ihandle* ih = (Ihandle*)obj;
-  Icallback cb = IupGetCallback(ih, "THREAD_CB");
-  if (cb)
-    cb(ih);
-  return 0;
 }
 
 static int iThreadSetStartAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
-#ifdef IUP_USE_GTK
-    GThread* thread, *old_thread;
-    char* name = iupAttribGet(ih, "THREADNAME");
-    if (!name) name = "IupThread";
-#ifdef OLD_GLIB
-    thread = g_thread_create(ClientThreadFunc, ih, FALSE, NULL);
-#else
-    thread = g_thread_new(name, ClientThreadFunc, ih);
-#endif
-    old_thread = (GThread*)iupAttribGet(ih, "THREAD");
-#ifndef OLD_GLIB
-    if (old_thread) g_thread_unref(old_thread);
-#endif
-    iupAttribSet(ih, "THREAD", (char*)thread);
-#elif defined(WIN32)
-    DWORD threadId;
-    HANDLE thread = CreateThread(0, 0, ClientThreadFunc, ih, 0, &threadId);
-    HANDLE old_thread = (HANDLE)iupAttribGet(ih, "THREAD");
-    if (old_thread) CloseHandle(old_thread);
-    iupAttribSet(ih, "THREAD", (char*)thread);
-#elif defined(__APPLE__) || defined(__unix__)
-    pthread_t* thread = (pthread_t*)malloc(sizeof(pthread_t));
-    pthread_t* old_thread = (pthread_t*)iupAttribGet(ih, "THREAD");
+    void* old_thread = iupAttribGet(ih, "THREAD");
+    void* thread = iupdrvThreadStart(ih);
     if (thread)
     {
-      if (pthread_create(thread, NULL, ClientThreadFunc, ih) == 0)
-      {
-        pthread_detach(*thread);
-        if (old_thread)
-        {
-          free(old_thread);
-        }
-        iupAttribSet(ih, "THREAD", (char*)thread);
-      }
-      else
-      {
-        free(thread);
-      }
+      if (old_thread)
+        iupdrvThreadDestroy(old_thread);
+      iupAttribSet(ih, "THREAD", (char*)thread);
     }
-#endif
   }
 
   return 0;
@@ -220,73 +88,22 @@ static int iThreadSetStartAttrib(Ihandle* ih, const char* value)
 
 static int iThreadCreateMethod(Ihandle* ih, void **params)
 {
-#ifdef IUP_USE_GTK
-#ifdef OLD_GLIB
-  GMutex* mutex = g_mutex_new();
-#else
-  GMutex* mutex = (GMutex*)malloc(sizeof(GMutex));
-#endif
-#elif defined(WIN32)
-  HANDLE mutex;
-#elif defined(__APPLE__) || defined(__unix__)
-  pthread_mutex_t* mutex;
-#else
-  void* mutex = NULL;
-#endif
-  (void)params;
-
-#ifdef IUP_USE_GTK
-#ifndef OLD_GLIB
-  if (mutex)
-    g_mutex_init(mutex);
-#endif
-#elif defined(WIN32)
-  mutex = CreateMutexA(NULL, FALSE, "mutex");
-#elif defined(__APPLE__) || defined(__unix__)
-  mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-  if (mutex)
-  {
-    pthread_mutex_init(mutex, NULL);
-  }
-#endif
-
+  void* mutex = iupdrvMutexCreate();
   iupAttribSet(ih, "MUTEX", (char*)mutex);
 
+  (void)params;
   return IUP_NOERROR;
 }
 
 static void iThreadDestroyMethod(Ihandle* ih)
 {
-#ifdef IUP_USE_GTK
-  GMutex* mutex = (GMutex*)iupAttribGet(ih, "MUTEX");
-  GThread* thread = (GThread*)iupAttribGet(ih, "THREAD");
-#ifdef OLD_GLIB
-  g_mutex_free(mutex);
-#else
-  g_mutex_clear(mutex);
-  free(mutex);
-#endif
-#ifndef OLD_GLIB
-  if (thread) g_thread_unref(thread);
-#endif
-#elif defined(WIN32)
-  HANDLE mutex = (HANDLE)iupAttribGet(ih, "MUTEX");
-  HANDLE thread = (HANDLE)iupAttribGet(ih, "THREAD");
-  CloseHandle(mutex);
-  if (thread) CloseHandle(thread);
-#elif defined(__APPLE__) || defined(__unix__)
-  pthread_mutex_t* mutex = (pthread_mutex_t*)iupAttribGet(ih, "MUTEX");
-  pthread_t* thread = (pthread_t*)iupAttribGet(ih, "THREAD");
+  void* mutex = iupAttribGet(ih, "MUTEX");
+  void* thread = iupAttribGet(ih, "THREAD");
+
   if (mutex)
-  {
-    pthread_mutex_destroy(mutex);
-    free(mutex);
-  }
+    iupdrvMutexDestroy(mutex);
   if (thread)
-  {
-    free(thread);
-  }
-#endif
+    iupdrvThreadDestroy(thread);
 }
 
 Iclass* iupThreadNewClass(void)
