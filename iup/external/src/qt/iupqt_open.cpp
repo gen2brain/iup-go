@@ -66,6 +66,7 @@ extern "C" {
 
 
 static QApplication* qt_application = NULL;
+static int qt_application_owned = 0;
 
 extern "C" void iupqtLoopCleanup(void);
 
@@ -434,11 +435,8 @@ extern "C" int iupdrvOpen(int *argc, char ***argv)
     }
 
     qt_application = new QApplication(*argc, *argv);
+    qt_application_owned = 1;
 
-    /* Disable automatic quit on last window close
-     * IUP manually controls quit via IupExitLoop() in processEvents loop
-     * NOTE: lastWindowClosed signal is NOT emitted when using processEvents(),
-     * only when using exec(), so signal-based approaches won't work */
     qt_application->setQuitOnLastWindowClosed(false);
   }
   else
@@ -532,9 +530,10 @@ extern "C" void iupdrvClose(void)
   iupqtStrRelease();
   iupqtLoopCleanup();
 
-  /* Note: We don't delete qt_application here because:
-   * - It might have been created by user code
-   * - QApplication should live for the entire program lifetime
-   * - Deleting it can cause issues with Qt's event loop
-   */
+  if (qt_application_owned)
+  {
+    delete qt_application;
+    qt_application = NULL;
+    qt_application_owned = 0;
+  }
 }
