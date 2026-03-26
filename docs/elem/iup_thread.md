@@ -5,7 +5,7 @@ It is a very simple support to create and manage threads in a multithread enviro
 
 It inherits from [IupUser](iup_user.md).
 
-In non Windows systems it uses the **pthreads** library.
+In Windows it uses the Win32 thread API. In GTK it uses the **GLib** thread API. In other Unix systems (Motif, Cocoa, EFL, Qt) it uses the **pthreads** library.
 
 ### Creation
 
