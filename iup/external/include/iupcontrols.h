@@ -13,10 +13,7 @@ extern "C" {
 
 #ifndef IUPCONTROLS_API
 #ifdef IUPCONTROLS_BUILD_LIBRARY
-  #ifdef __EMSCRIPTEN__
-    #include <emscripten.h>
-    #define IUPCONTROLS_API EMSCRIPTEN_KEEPALIVE
-  #elif defined(_WIN32)
+  #if defined(_WIN32)
     #define IUPCONTROLS_API __declspec(dllexport)
   #elif defined(__GNUC__) && __GNUC__ >= 4
     #define IUPCONTROLS_API __attribute__ ((visibility("default")))

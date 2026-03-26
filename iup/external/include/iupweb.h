@@ -13,10 +13,7 @@ extern "C" {
 
 #ifndef IUPWEB_API
 #ifdef IUPWEB_BUILD_LIBRARY
-  #ifdef __EMSCRIPTEN__
-    #include <emscripten.h>
-    #define IUPWEB_API EMSCRIPTEN_KEEPALIVE
-  #elif WIN32
+  #if defined(_WIN32)
     #define IUPWEB_API __declspec(dllexport)
   #elif defined(__GNUC__) && __GNUC__ >= 4
     #define IUPWEB_API __attribute__ ((visibility("default")))

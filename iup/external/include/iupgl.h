@@ -13,10 +13,7 @@ extern "C" {
 
 #ifndef IUPGL_API
 #ifdef IUPGL_BUILD_LIBRARY
-  #ifdef __EMSCRIPTEN__
-    #include <emscripten.h>
-    #define IUPGL_API EMSCRIPTEN_KEEPALIVE
-  #elif defined(_WIN32)
+  #if defined(_WIN32)
     #define IUPGL_API __declspec(dllexport)
   #elif defined(__GNUC__) && __GNUC__ >= 4
     #define IUPGL_API __attribute__ ((visibility("default")))
