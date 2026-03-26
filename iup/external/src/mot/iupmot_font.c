@@ -463,7 +463,7 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
   return str;
 }
 
-char* iupmotFindFontList(XmFontList fontlist)
+IUP_DRV_API char* iupmotFindFontList(XmFontList fontlist)
 {
   int i, count = iupArrayCount(mot_fonts);
   ImotFont* fonts = (ImotFont*)iupArrayGetData(mot_fonts);
@@ -478,7 +478,7 @@ char* iupmotFindFontList(XmFontList fontlist)
   return NULL;
 }
 
-XmFontList iupmotGetFontList(const char* foundry, const char* value)
+IUP_DRV_API XmFontList iupmotGetFontList(const char* foundry, const char* value)
 {
   ImotFont *motfont = motFindFont(foundry, value);
   if (!motfont) 
@@ -487,7 +487,7 @@ XmFontList iupmotGetFontList(const char* foundry, const char* value)
     return motfont->fontlist;
 }
 
-XFontStruct* iupmotGetFontStruct(const char* value)
+IUP_DRV_API XFontStruct* iupmotGetFontStruct(const char* value)
 {
   ImotFont *motfont = motFindFont(NULL, value);
   if (!motfont)
@@ -497,7 +497,7 @@ XFontStruct* iupmotGetFontStruct(const char* value)
 }
 
 #ifdef IUP_USE_XFT
-void* iupmotGetXftFont(const char* value)
+IUP_DRV_API void* iupmotGetXftFont(const char* value)
 {
   ImotFont *motfont = motFindFont(NULL, value);
   if (!motfont)
@@ -530,7 +530,7 @@ static ImotFont* motGetFont(Ihandle *ih)
   return motfont;
 }
 
-char* iupmotGetFontListAttrib(Ihandle *ih)
+IUP_DRV_API char* iupmotGetFontListAttrib(Ihandle *ih)
 {
   ImotFont* motfont = motGetFont(ih);
   if (!motfont)
@@ -539,7 +539,7 @@ char* iupmotGetFontListAttrib(Ihandle *ih)
     return (char*)motfont->fontlist;
 }
 
-char* iupmotGetFontStructAttrib(Ihandle *ih)
+IUP_DRV_API char* iupmotGetFontStructAttrib(Ihandle *ih)
 {
   ImotFont* motfont = motGetFont(ih);
   if (!motfont)
@@ -548,7 +548,7 @@ char* iupmotGetFontStructAttrib(Ihandle *ih)
     return (char*)motfont->fontstruct;
 }
 
-char* iupmotGetFontIdAttrib(Ihandle *ih)
+IUP_DRV_API char* iupmotGetFontIdAttrib(Ihandle *ih)
 {
   ImotFont* motfont = motGetFont(ih);
   if (!motfont)
@@ -563,7 +563,7 @@ char* iupmotGetFontIdAttrib(Ihandle *ih)
 }
 
 #ifdef IUP_USE_XFT
-void* iupmotGetXftFontAttrib(Ihandle *ih)
+IUP_DRV_API void* iupmotGetXftFontAttrib(Ihandle *ih)
 {
   ImotFont* motfont = motGetFont(ih);
   if (!motfont)

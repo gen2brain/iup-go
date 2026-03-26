@@ -92,7 +92,7 @@ static Application winui_app = nullptr;
  * System Theme Detection
  ****************************************************************************/
 
-extern "C" int iupwinuiIsSystemDarkMode(void)
+IUP_DRV_API int iupwinuiIsSystemDarkMode(void)
 {
   using namespace Windows::UI::ViewManagement;
 
@@ -107,7 +107,7 @@ extern "C" int iupwinuiIsSystemDarkMode(void)
  * Global Colors
  ****************************************************************************/
 
-extern "C" void iupwinuiSetGlobalColors(void)
+IUP_DRV_API void iupwinuiSetGlobalColors(void)
 {
   using namespace Windows::UI::ViewManagement;
 
@@ -138,7 +138,7 @@ extern "C" void iupwinuiSetGlobalColors(void)
  * Dispatcher Queue Access
  ****************************************************************************/
 
-extern "C" void* iupwinuiGetDispatcherQueue(void)
+IUP_DRV_API void* iupwinuiGetDispatcherQueue(void)
 {
   if (!winui_dispatcher_controller)
     return NULL;
@@ -217,7 +217,7 @@ static void iupwinuiFindContentPreTranslateMessage(void)
   }
 }
 
-extern "C" BOOL iupwinuiContentPreTranslateMessage(const MSG* msg)
+IUP_DRV_API BOOL iupwinuiContentPreTranslateMessage(const MSG* msg)
 {
   if (!winui_content_pretranslate)
   {
@@ -234,7 +234,7 @@ extern "C" BOOL iupwinuiContentPreTranslateMessage(const MSG* msg)
   return FALSE;
 }
 
-void iupwinuiProcessPendingMessages(void)
+IUP_DRV_API void iupwinuiProcessPendingMessages(void)
 {
   MSG msg;
   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -328,7 +328,7 @@ extern "C" IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
   return 0;
 }
 
-extern "C" void iupwinuiDrawCleanup(void);
+IUP_DRV_API void iupwinuiDrawCleanup(void);
 
 extern "C" IUP_SDK_API void iupdrvClose(void)
 {

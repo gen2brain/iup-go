@@ -29,7 +29,7 @@ static void iupwinGetVersionInfo(OSVERSIONINFOW* osvi)
   pRtlGetVersion(osvi);
 }
 
-int iupwinCheckWindowsVersion(DWORD major, DWORD minor)
+IUP_DRV_API int iupwinCheckWindowsVersion(DWORD major, DWORD minor)
 {
   OSVERSIONINFOW osvi;
   iupwinGetVersionInfo(&osvi);
@@ -41,34 +41,34 @@ int iupwinCheckWindowsVersion(DWORD major, DWORD minor)
   return 0;
 }
 
-DWORD iupwinGetBuildNumber(void)
+IUP_DRV_API DWORD iupwinGetBuildNumber(void)
 {
   OSVERSIONINFOW osvi;
   iupwinGetVersionInfo(&osvi);
   return osvi.dwBuildNumber;
 }
 
-int iupwinIsWinXPOrNew(void)
+IUP_DRV_API int iupwinIsWinXPOrNew(void)
 {
   return iupwinCheckWindowsVersion(5, 1);
 }
 
-int iupwinIsVistaOrNew(void)
+IUP_DRV_API int iupwinIsVistaOrNew(void)
 {
   return iupwinCheckWindowsVersion(6, 0);
 }
 
-int iupwinIsWin7OrNew(void)
+IUP_DRV_API int iupwinIsWin7OrNew(void)
 {
   return iupwinCheckWindowsVersion(6, 1);
 }
 
-int iupwinIsWin10OrNew(void)
+IUP_DRV_API int iupwinIsWin10OrNew(void)
 {
   return iupwinCheckWindowsVersion(6, 4);
 }
 
-char *iupwinGetSystemLanguage(void)
+IUP_DRV_API char *iupwinGetSystemLanguage(void)
 {
   LANGID id = GetSystemDefaultUILanguage();
   char *lang = NULL;
@@ -270,12 +270,12 @@ static DWORD winGetDllVersion(LPCTSTR lpszDllName)
   return dwVersion;
 }
 
-int iupwinGetComCtl32Version(void)
+IUP_DRV_API int iupwinGetComCtl32Version(void)
 {
   return winGetDllVersion(TEXT("comctl32.dll"));
 }
 
-int iupwinIsAppThemed(void)
+IUP_DRV_API int iupwinIsAppThemed(void)
 {
   typedef BOOL (STDAPICALLTYPE *winIsAppThemed)(void);
   static winIsAppThemed myIsAppThemed = NULL;
@@ -292,7 +292,7 @@ int iupwinIsAppThemed(void)
     return 0;
 }
 
-int iupwinIsSystemDarkMode(void)
+IUP_DRV_API int iupwinIsSystemDarkMode(void)
 {
   typedef HRESULT(STDAPICALLTYPE *PtrDwmGetWindowAttribute)(HWND, DWORD, PVOID, DWORD);
   static PtrDwmGetWindowAttribute dwmGetWindowAttribute = NULL;

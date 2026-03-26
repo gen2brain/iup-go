@@ -341,7 +341,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
                      Callbacks and Events
 ****************************************************************/
 
-gboolean iupgtk4DialogCloseRequest(GtkWindow* window, Ihandle* ih)
+IUP_DRV_API gboolean iupgtk4DialogCloseRequest(GtkWindow* window, Ihandle* ih)
 {
   Icallback cb;
   (void)window;

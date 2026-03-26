@@ -32,7 +32,7 @@ static Eo* iupefl_main_loop = NULL;
 static int iupefl_backend_x11 = -1;
 static int iupefl_backend_wayland = -1;
 
-Eo* iupeflGetLoop(void)
+IUP_DRV_API Eo* iupeflGetLoop(void)
 {
   return iupefl_main_loop;
 }
@@ -98,12 +98,12 @@ static void iupeflDetectBackend(void)
   efl_del(temp_win);
 }
 
-int iupeflIsWayland(void)
+IUP_DRV_API int iupeflIsWayland(void)
 {
   return iupefl_backend_wayland > 0;
 }
 
-int iupeflIsX11(void)
+IUP_DRV_API int iupeflIsX11(void)
 {
   return iupefl_backend_x11 > 0;
 }
@@ -112,7 +112,7 @@ int iupeflIsX11(void)
  * Native Handle Access
  ****************************************************************************/
 
-char* iupeflGetNativeWidgetHandle(Evas_Object* widget)
+IUP_DRV_API char* iupeflGetNativeWidgetHandle(Evas_Object* widget)
 {
   Evas* evas;
   Ecore_Evas* ee;
@@ -152,7 +152,7 @@ char* iupeflGetNativeWidgetHandle(Evas_Object* widget)
   return NULL;
 }
 
-const char* iupeflGetNativeWindowHandleName(void)
+IUP_DRV_API const char* iupeflGetNativeWindowHandleName(void)
 {
   if (iupeflIsX11())
     return "XWINDOW";
@@ -163,7 +163,7 @@ const char* iupeflGetNativeWindowHandleName(void)
   return "UNKNOWN";
 }
 
-char* iupeflGetNativeWindowHandleAttrib(Ihandle* ih)
+IUP_DRV_API char* iupeflGetNativeWindowHandleAttrib(Ihandle* ih)
 {
   return iupeflGetNativeWidgetHandle((Evas_Object*)ih->handle);
 }
@@ -200,7 +200,7 @@ static void eflSetGlobalAttrib(void)
 #endif
 }
 
-void iupeflSetGlobalColors(void)
+IUP_DRV_API void iupeflSetGlobalColors(void)
 {
   Eo* temp_win;
   Eo* widget;

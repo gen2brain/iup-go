@@ -454,7 +454,7 @@ static IupQtCanvasContainer* qtCanvasGetContainer(Ihandle* ih)
   return (IupQtCanvasContainer*)iupAttribGet(ih, "_IUPQT_CANVAS_CONTAINER");
 }
 
-QWidget* iupqtCanvasGetWidget(Ihandle* ih)
+IUP_DRV_API QWidget* iupqtCanvasGetWidget(Ihandle* ih)
 {
   IupQtCanvasContainer* container = qtCanvasGetContainer(ih);
   if (container)
@@ -836,7 +836,7 @@ void qtCanvasUpdate(Ihandle* ih)
  * Get Canvas Native Graphics Context
  ****************************************************************************/
 
-extern "C" void* iupqtCanvasGetContext(Ihandle* ih)
+IUP_DRV_API void* iupqtCanvasGetContext(Ihandle* ih)
 {
   /* Return the IupQtCanvas widget for both normal canvas and GLCanvas */
   IupQtCanvasContainer* container_data = qtCanvasGetContainer(ih);

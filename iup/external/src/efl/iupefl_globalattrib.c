@@ -25,7 +25,7 @@ static char* efl_theme_path = NULL;
 static const void* efl_theme_data = NULL;
 static size_t efl_theme_data_len = 0;
 
-int iupeflIsSystemDarkMode(void)
+IUP_DRV_API int iupeflIsSystemDarkMode(void)
 {
   Evas_Object* temp_win;
   Evas_Object* bg;

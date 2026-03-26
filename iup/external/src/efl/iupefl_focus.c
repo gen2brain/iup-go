@@ -17,7 +17,7 @@
 #include "iupefl_drv.h"
 
 
-void iupeflSetCanFocus(Eo *widget, int can)
+IUP_DRV_API void iupeflSetCanFocus(Eo *widget, int can)
 {
   if (efl_isa(widget, EFL_UI_WIDGET_CLASS))
     efl_ui_widget_focus_allow_set(widget, can ? EINA_TRUE : EINA_FALSE);
@@ -40,7 +40,7 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
   }
 }
 
-void iupeflFocusChangedEvent(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflFocusChangedEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Eina_Bool focused = *((Eina_Bool*)ev->info);
@@ -59,7 +59,7 @@ void iupeflFocusChangedEvent(void* data, const Efl_Event* ev)
     iupCallKillFocusCb(ih);
 }
 
-void iupeflManagerFocusChangedEvent(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflManagerFocusChangedEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Eina_Bool* prev_focused = (Eina_Bool*)iupAttribGet(ih, "_IUP_EFL_MANAGER_FOCUSED");
@@ -89,7 +89,7 @@ void iupeflManagerFocusChangedEvent(void* data, const Efl_Event* ev)
     iupCallKillFocusCb(ih);
 }
 
-void iupeflDialogSetFocus(Ihandle* ih)
+IUP_DRV_API void iupeflDialogSetFocus(Ihandle* ih)
 {
   Eo* widget = iupeflGetWidget(ih);
 

@@ -180,7 +180,7 @@ static IqtFont* qtFontGet(Ihandle* ih)
  * Qt-specific Font Functions
  ****************************************************************************/
 
-extern "C" QFont* iupqtGetQFont(const char* value)
+IUP_DRV_API QFont* iupqtGetQFont(const char* value)
 {
   IqtFont* qtfont = qtFindFont(value);
   if (qtfont)
@@ -189,7 +189,7 @@ extern "C" QFont* iupqtGetQFont(const char* value)
     return nullptr;
 }
 
-extern "C" char* iupqtGetQFontAttrib(Ihandle* ih)
+IUP_DRV_API char* iupqtGetQFontAttrib(Ihandle* ih)
 {
   IqtFont* qtfont = qtFontGet(ih);
   if (qtfont)
@@ -198,7 +198,7 @@ extern "C" char* iupqtGetQFontAttrib(Ihandle* ih)
     return nullptr;
 }
 
-extern "C" char* iupqtFindQFont(QFont* qfont)
+IUP_DRV_API char* iupqtFindQFont(QFont* qfont)
 {
   /* Find font string from QFont pointer (similar to Windows iupwinFindHFont) */
   if (!qt_fonts || !qfont)
@@ -216,7 +216,7 @@ extern "C" char* iupqtFindQFont(QFont* qfont)
   return nullptr;
 }
 
-extern "C" char* iupqtGetFontIdAttrib(Ihandle* ih)
+IUP_DRV_API char* iupqtGetFontIdAttrib(Ihandle* ih)
 {
   /* Used by IupGLCanvas for IupGLUseFont */
   /* Qt doesn't have a direct equivalent to X Font ID or HFONT */
@@ -235,7 +235,7 @@ extern "C" char* iupqtGetFontIdAttrib(Ihandle* ih)
  * Update Widget Font
  ****************************************************************************/
 
-extern "C" void iupqtUpdateWidgetFont(Ihandle* ih, QWidget* widget)
+IUP_DRV_API void iupqtUpdateWidgetFont(Ihandle* ih, QWidget* widget)
 {
   IqtFont* qtfont = qtFontGet(ih);
   if (!qtfont)

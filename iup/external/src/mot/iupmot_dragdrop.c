@@ -44,7 +44,7 @@ static void motDoNothing(Widget w, XEvent*  evt, String* params, Cardinal* num_p
   (void)num_params;
 }
 
-void iupmotDisableDragSource(Widget w)
+IUP_DRV_API void iupmotDisableDragSource(Widget w)
 {
   static XtTranslations drag_translations = NULL;
   static int do_nothing_rec = 0;

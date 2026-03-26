@@ -72,7 +72,7 @@ int IupMainLoopLevel(void)
   return mac_main_loop_level;
 }
 
-int iupcocoaMainLoopShouldQuit(void)
+IUP_DRV_API int iupcocoaMainLoopShouldQuit(void)
 {
   return mac_main_loop_should_quit;
 }

@@ -140,7 +140,7 @@ IUP_SDK_API char *iupdrvGetSystemFont(void)
   return (char *)system_font_cstr;
 }
 
-IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
+IUP_DRV_API IupCocoaFont *iupcocoaFindFont(const char *iup_font_name)
 {
   char type_face[50] = "";
   int font_size = 0;
@@ -284,7 +284,7 @@ static IupCocoaFont *cocoaFontGet(Ihandle *ih)
   return the_font;
 }
 
-IupCocoaFont *iupcocoaGetFont(Ihandle *ih)
+IUP_DRV_API IupCocoaFont *iupcocoaGetFont(Ihandle *ih)
 {
   return cocoaFontGet(ih);
 }

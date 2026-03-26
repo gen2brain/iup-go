@@ -38,7 +38,7 @@
 
 #include "iupgtk4_drv.h"
 
-char* iupgtk4GetNativeWidgetHandle(GtkWidget *widget)
+IUP_DRV_API char* iupgtk4GetNativeWidgetHandle(GtkWidget *widget)
 {
   if (!widget)
     return NULL;
@@ -82,7 +82,7 @@ char* iupgtk4GetNativeWidgetHandle(GtkWidget *widget)
   return NULL;
 }
 
-const char* iupgtk4GetNativeWindowHandleName(void)
+IUP_DRV_API const char* iupgtk4GetNativeWindowHandleName(void)
 {
   GdkDisplay* display = gdk_display_get_default();
   if (!display) return "NULL";
@@ -110,7 +110,7 @@ const char* iupgtk4GetNativeWindowHandleName(void)
   return "UNKNOWN";
 }
 
-char* iupgtk4GetNativeWindowHandleAttrib(Ihandle* ih)
+IUP_DRV_API char* iupgtk4GetNativeWindowHandleAttrib(Ihandle* ih)
 {
   return iupgtk4GetNativeWidgetHandle((GtkWidget*)ih->handle);
 }
@@ -125,17 +125,17 @@ IUP_SDK_API void* iupdrvGetDisplay(void)
   return NULL;
 }
 
-void iupgtk4StrRelease(void)
+IUP_DRV_API void iupgtk4StrRelease(void)
 {
   /* GTK4 uses UTF-8 internally, no conversion needed */
 }
 
-char* iupgtk4StrConvertToSystem(const char* str)
+IUP_DRV_API char* iupgtk4StrConvertToSystem(const char* str)
 {
   return (char*)str;
 }
 
-char* iupgtk4StrConvertFromSystem(const char* str)
+IUP_DRV_API char* iupgtk4StrConvertFromSystem(const char* str)
 {
   return (char*)str;
 }
@@ -266,7 +266,7 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
 }
 #pragma GCC diagnostic pop
 
-void iupgtk4SetGlobalColors(void)
+IUP_DRV_API void iupgtk4SetGlobalColors(void)
 {
   GtkWidget* dialog = gtk_window_new();
   GtkWidget* text = gtk_entry_new();

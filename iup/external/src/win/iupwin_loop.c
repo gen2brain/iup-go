@@ -28,7 +28,7 @@ static IFidle win_idle_cb = NULL;
 static int win_main_loop_level = 0;
 static UINT win_quit_message = WM_QUIT;
 
-void iupwinSetCustomQuitMessage(int enable)
+IUP_DRV_API void iupwinSetCustomQuitMessage(int enable)
 {
   if (enable)
     win_quit_message = RegisterWindowMessage(TEXT("IUP_QUIT_MESSAGE"));
@@ -247,7 +247,7 @@ static void winProcessPostMessage(LPARAM lParam)
 /* Based on Raymond Chen's discussion of PostThreadMessage
 https://blogs.msdn.microsoft.com/oldnewthing/20050428-00/?p=35753
 */
-LRESULT CALLBACK iupwinPostMessageFilterProc(int code, WPARAM wParam, LPARAM lParam)
+IUP_DRV_API LRESULT CALLBACK iupwinPostMessageFilterProc(int code, WPARAM wParam, LPARAM lParam)
 {
   MSG* msg = (MSG*)lParam;
   /* Interesting: Chen uses code >= 0 for a purpose.

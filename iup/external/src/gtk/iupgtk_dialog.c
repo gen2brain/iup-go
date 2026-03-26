@@ -404,7 +404,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
                      Callbacks and Events
 ****************************************************************/
 
-gboolean iupgtkDialogDeleteEvent(GtkWidget *widget, GdkEvent *evt, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkDialogDeleteEvent(GtkWidget *widget, GdkEvent *evt, Ihandle *ih)
 {
   Icallback cb;
   (void)widget;

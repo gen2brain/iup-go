@@ -23,7 +23,7 @@ typedef struct _IwinBrush
 
 static Iarray* win_brushes = NULL;
 
-HBRUSH iupwinBrushGet(COLORREF color)
+IUP_DRV_API HBRUSH iupwinBrushGet(COLORREF color)
 {
   int i, count = iupArrayCount(win_brushes);
 
@@ -44,12 +44,12 @@ HBRUSH iupwinBrushGet(COLORREF color)
   return brushes[i].hbrush;
 }
 
-void iupwinBrushInit(void)
+IUP_DRV_API void iupwinBrushInit(void)
 {
   win_brushes = iupArrayCreate(50, sizeof(IwinBrush));
 }
 
-void iupwinBrushFinish(void)
+IUP_DRV_API void iupwinBrushFinish(void)
 {
   int i, count = iupArrayCount(win_brushes);
   IwinBrush* brushes = (IwinBrush*)iupArrayGetData(win_brushes);

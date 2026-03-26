@@ -286,7 +286,7 @@ extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double
  * Loop Cleanup
  ****************************************************************************/
 
-extern "C" void iupqtLoopCleanup(void)
+IUP_DRV_API void iupqtLoopCleanup(void)
 {
   if (qt_idle_timer)
   {

@@ -60,7 +60,7 @@ static void gtk4FocusLeave(GtkEventControllerFocus* controller, Ihandle* ih)
   iupCallKillFocusCb(ih);
 }
 
-void iupgtk4SetupFocusEvents(GtkWidget* widget, Ihandle* ih)
+IUP_DRV_API void iupgtk4SetupFocusEvents(GtkWidget* widget, Ihandle* ih)
 {
   GtkEventController* focus_controller = gtk_event_controller_focus_new();
   gtk_widget_add_controller(widget, focus_controller);

@@ -67,7 +67,7 @@ static IeflFont* eflFontGet(Ihandle* ih)
   return (IeflFont*)iupAttribGet(ih, "_IUP_EFL_FONT");
 }
 
-void iupeflFontFree(Ihandle* ih)
+IUP_DRV_API void iupeflFontFree(Ihandle* ih)
 {
   IeflFont* font = eflFontGet(ih);
   if (font)
@@ -486,7 +486,7 @@ IUP_SDK_API void iupdrvFontFinish(void)
   }
 }
 
-void iupeflBuildTextStyle(Ihandle* ih, char* style, int style_size)
+IUP_DRV_API void iupeflBuildTextStyle(Ihandle* ih, char* style, int style_size)
 {
   IeflFont* font = eflFontGet(ih);
   char* fgcolor;
@@ -519,7 +519,7 @@ void iupeflBuildTextStyle(Ihandle* ih, char* style, int style_size)
            font_family, font_style, font_size, r, g, b);
 }
 
-void iupeflApplyTextStyle(Ihandle* ih, Eo* widget)
+IUP_DRV_API void iupeflApplyTextStyle(Ihandle* ih, Eo* widget)
 {
   Evas_Object* edje;
   Evas_Object* part_obj;
@@ -609,7 +609,7 @@ void iupeflApplyTextStyle(Ihandle* ih, Eo* widget)
   }
 }
 
-void iupeflUpdateWidgetFont(Ihandle* ih, Evas_Object* widget)
+IUP_DRV_API void iupeflUpdateWidgetFont(Ihandle* ih, Evas_Object* widget)
 {
   iupeflApplyTextStyle(ih, widget);
 }

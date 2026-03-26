@@ -638,7 +638,7 @@ static void gtkTreeExpandItem(Ihandle* ih, GtkTreePath* path, int expand)
 }
 
 #if GTK_CHECK_VERSION(3, 4, 0)
-int iupgtkGetColor(const char* value, GdkRGBA *rgba)
+IUP_DRV_API int iupgtkGetColor(const char* value, GdkRGBA *rgba)
 {
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))
@@ -649,7 +649,7 @@ int iupgtkGetColor(const char* value, GdkRGBA *rgba)
   return 0;
 }
 #else
-int iupgtkGetColor(const char* value, GdkColor *color)
+IUP_DRV_API int iupgtkGetColor(const char* value, GdkColor *color)
 {
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))

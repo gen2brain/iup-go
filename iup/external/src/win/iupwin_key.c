@@ -157,7 +157,7 @@ static void winKeySetCharMap(Iwin2iupkey* winkey_map, char c)
 
 static Iwin2iupkey winkey_map[256];
 
-void iupwinKeyInit(void)
+IUP_DRV_API void iupwinKeyInit(void)
 {
   int i;
 
@@ -296,7 +296,7 @@ static int winKeyAdjust(int wincode)
   }
 }
 
-int iupwinKeyDecode(int wincode)
+IUP_DRV_API int iupwinKeyDecode(int wincode)
 {
   int iupcode = winKeyAdjust(wincode);
   if (!iupcode)
@@ -305,7 +305,7 @@ int iupwinKeyDecode(int wincode)
   return winKeyMap2Iup(iupcode);
 }
 
-int iupwinKeyEvent(Ihandle* ih, int wincode, int press)
+IUP_DRV_API int iupwinKeyEvent(Ihandle* ih, int wincode, int press)
 {
   int result, code;
 
@@ -372,7 +372,7 @@ int iupwinKeyEvent(Ihandle* ih, int wincode, int press)
   return 1;
 }
 
-void iupwinButtonKeySetStatus(WORD keys, char* status, int doubleclick)
+IUP_DRV_API void iupwinButtonKeySetStatus(WORD keys, char* status, int doubleclick)
 {
   if (keys & MK_SHIFT)
     iupKEY_SETSHIFT(status);

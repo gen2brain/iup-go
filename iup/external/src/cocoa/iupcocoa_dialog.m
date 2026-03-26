@@ -325,7 +325,7 @@ static void cocoaDialogUpdateStyleMask(Ihandle* ih)
 }
 @end
 
-bool iupcocoaDialogExitModal(Ihandle* modal_ih)
+IUP_DRV_API bool iupcocoaDialogExitModal(Ihandle* modal_ih)
 {
   if(!iupObjectCheck(modal_ih))
   {

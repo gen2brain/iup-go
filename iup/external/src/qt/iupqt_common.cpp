@@ -64,7 +64,7 @@ extern "C" {
 
 /* Qt doesn't have a native "fixed" container like GTK, so we use QWidget with manual layout management */
 
-extern "C" QWidget* iupqtNativeContainerNew(int has_window)
+IUP_DRV_API QWidget* iupqtNativeContainerNew(int has_window)
 {
   QWidget* widget = new QWidget();
 
@@ -76,7 +76,7 @@ extern "C" QWidget* iupqtNativeContainerNew(int has_window)
   return widget;
 }
 
-extern "C" void iupqtNativeContainerAdd(QWidget* container, QWidget* widget)
+IUP_DRV_API void iupqtNativeContainerAdd(QWidget* container, QWidget* widget)
 {
   if (container && widget)
   {
@@ -85,7 +85,7 @@ extern "C" void iupqtNativeContainerAdd(QWidget* container, QWidget* widget)
   }
 }
 
-extern "C" void iupqtNativeContainerMove(QWidget* container, QWidget* widget, int x, int y)
+IUP_DRV_API void iupqtNativeContainerMove(QWidget* container, QWidget* widget, int x, int y)
 {
   (void)container;
 
@@ -105,7 +105,7 @@ static QWidget* qtGetNativeParent(Ihandle* ih)
   return (QWidget*)iupChildTreeGetNativeParentHandle(ih);
 }
 
-extern "C" QWidget* iupqtGetParentWidget(Ihandle* ih)
+IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
   if (parent)
@@ -136,7 +136,7 @@ extern "C" QWidget* iupqtGetParentWidget(Ihandle* ih)
   return nullptr;
 }
 
-extern "C" void iupqtUpdateMnemonic(Ihandle* ih)
+IUP_DRV_API void iupqtUpdateMnemonic(Ihandle* ih)
 {
   /* Qt handles mnemonics automatically through & in text */
   (void)ih;
@@ -188,7 +188,7 @@ extern "C" IUP_SDK_API void iupdrvReparent(Ihandle* ih)
   }
 }
 
-extern "C" IUP_DRV_API void iupqtAddToParent(Ihandle* ih)
+IUP_DRV_API void iupqtAddToParent(Ihandle* ih)
 {
   QWidget* parent = qtGetNativeParent(ih);
   QWidget* widget = (QWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
@@ -225,7 +225,7 @@ extern "C" IUP_DRV_API void iupqtAddToParent(Ihandle* ih)
   }
 }
 
-extern "C" void iupqtSetPosSize(QWidget* parent, QWidget* widget, int x, int y, int width, int height)
+IUP_DRV_API void iupqtSetPosSize(QWidget* parent, QWidget* widget, int x, int y, int width, int height)
 {
   (void)parent;
 
@@ -371,7 +371,7 @@ extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
  * Event Handlers
  ****************************************************************************/
 
-extern "C" IUP_DRV_API int iupqtEnterLeaveEvent(QWidget *widget, QEvent *evt, Ihandle* ih)
+IUP_DRV_API int iupqtEnterLeaveEvent(QWidget *widget, QEvent *evt, Ihandle* ih)
 {
   Icallback cb = NULL;
   (void)widget;
@@ -387,7 +387,7 @@ extern "C" IUP_DRV_API int iupqtEnterLeaveEvent(QWidget *widget, QEvent *evt, Ih
   return 0;
 }
 
-extern "C" int iupqtSetMnemonicTitle(Ihandle* ih, QWidget* widget, const char* value)
+IUP_DRV_API int iupqtSetMnemonicTitle(Ihandle* ih, QWidget* widget, const char* value)
 {
   char c = '&';
   char* str;
@@ -528,7 +528,7 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
  * Mouse Event Handlers
  ****************************************************************************/
 
-extern "C" IUP_DRV_API int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
+IUP_DRV_API int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
 {
   IFniis cb;
   (void)widget;
@@ -551,7 +551,7 @@ extern "C" IUP_DRV_API int iupqtMouseMoveEvent(QWidget *widget, QEvent *evt, Iha
   return 0;
 }
 
-extern "C" IUP_DRV_API int iupqtMouseButtonEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
+IUP_DRV_API int iupqtMouseButtonEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
 {
   IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
   if (cb)

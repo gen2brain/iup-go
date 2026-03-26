@@ -493,7 +493,7 @@ static int eflImageUpdateFromIhandle(Eo* img, Ihandle* img_ih, int make_inactive
   return 1;
 }
 
-int iupeflImageUpdateImage(Eo* img, const char* name, Ihandle* ih_parent, int make_inactive)
+IUP_DRV_API int iupeflImageUpdateImage(Eo* img, const char* name, Ihandle* ih_parent, int make_inactive)
 {
   Ihandle* img_ih;
   const char* bgcolor = NULL;
@@ -511,7 +511,7 @@ int iupeflImageUpdateImage(Eo* img, const char* name, Ihandle* ih_parent, int ma
   return eflImageUpdateFromIhandle(img, img_ih, make_inactive, bgcolor);
 }
 
-Eo* iupeflImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive)
+IUP_DRV_API Eo* iupeflImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive)
 {
   Ihandle* img_ih;
   const char* bgcolor = NULL;
@@ -529,7 +529,7 @@ Eo* iupeflImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive)
   return eflImageCreateFromIhandle(img_ih, iupeflGetMainWindow(), make_inactive, bgcolor);
 }
 
-Eo* iupeflImageGetImageForParent(const char* name, Ihandle* ih_parent, int make_inactive, Eo* parent)
+IUP_DRV_API Eo* iupeflImageGetImageForParent(const char* name, Ihandle* ih_parent, int make_inactive, Eo* parent)
 {
   Ihandle* img_ih;
   const char* bgcolor = NULL;

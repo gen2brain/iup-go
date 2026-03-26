@@ -72,13 +72,13 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w,
   if (h) *h = height + 2*border + caption;  /* menu is inside the dialog_manager */
 }
 
-void iupmotDialogSetVisual(Ihandle* ih, void* visual)
+IUP_DRV_API void iupmotDialogSetVisual(Ihandle* ih, void* visual)
 {
   Ihandle *dialog = IupGetDialog(ih);
   XtVaSetValues(dialog->handle, XmNvisual, visual, NULL);
 }
 
-void iupmotDialogResetVisual(Ihandle* ih)
+IUP_DRV_API void iupmotDialogResetVisual(Ihandle* ih)
 {
   Ihandle *dialog = IupGetDialog(ih);
   XtVaSetValues(dialog->handle, XmNvisual, iupmot_visual, NULL);

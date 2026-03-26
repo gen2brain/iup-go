@@ -21,12 +21,12 @@
 
 static int iupgtk_utf8mode = 0;
 
-void iupgtkStrSetUTF8Mode(int utf8mode)
+IUP_DRV_API void iupgtkStrSetUTF8Mode(int utf8mode)
 {
   iupgtk_utf8mode = utf8mode;
 }
 
-int iupgtkStrGetUTF8Mode(void)
+IUP_DRV_API int iupgtkStrGetUTF8Mode(void)
 {
   return iupgtk_utf8mode;
 }
@@ -43,13 +43,13 @@ static char* gtkStrFromUTF8(const char *str, const char* charset)
 
 static char* gtkLastConvertUTF8 = NULL;
 
-void iupgtkStrRelease(void)
+IUP_DRV_API void iupgtkStrRelease(void)
 {
   if (gtkLastConvertUTF8)
     g_free(gtkLastConvertUTF8);
 }
 
-char* iupgtkStrConvertToSystemLen(const char* str, int *len)  /* From IUP (current locale) to GTK */
+IUP_DRV_API char* iupgtkStrConvertToSystemLen(const char* str, int *len)  /* From IUP (current locale) to GTK */
 {
   const char *charset = NULL;
 
@@ -104,7 +104,7 @@ IUP_DRV_API char* iupgtkStrConvertToSystem(const char* str)  /* From IUP (curren
   return gtkLastConvertUTF8;
 }
 
-char* iupgtkStrConvertFromSystem(const char* str)  /* From GTK to IUP (current locale) */
+IUP_DRV_API char* iupgtkStrConvertFromSystem(const char* str)  /* From GTK to IUP (current locale) */
 {
   const gchar *charset = NULL;
 
@@ -146,7 +146,7 @@ static gboolean gtkGetFilenameCharset(const gchar **filename_charset)
   return is_utf8;
 }
 
-char* iupgtkStrConvertToFilename(const char* str)   /* From IUP (current locale) to Filename */
+IUP_DRV_API char* iupgtkStrConvertToFilename(const char* str)   /* From IUP (current locale) to Filename */
 {
   const gchar *charset = NULL;
 
@@ -173,7 +173,7 @@ char* iupgtkStrConvertToFilename(const char* str)   /* From IUP (current locale)
   return gtkLastConvertUTF8;
 }
 
-char* iupgtkStrConvertFromFilename(const char* str)   /* From Filename to IUP */
+IUP_DRV_API char* iupgtkStrConvertFromFilename(const char* str)   /* From Filename to IUP */
 {
   const char *charset = NULL;
 

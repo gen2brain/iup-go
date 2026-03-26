@@ -163,7 +163,7 @@ static int motKeyMap2Iup(KeySym motcode, unsigned int state)
   return code;
 }
 
-KeySym iupmotKeycodeToKeysym(XKeyEvent *evt)
+IUP_DRV_API KeySym iupmotKeycodeToKeysym(XKeyEvent *evt)
 {
   int i;
   Modifiers modifiers;
@@ -215,7 +215,7 @@ KeySym iupmotKeycodeToKeysym(XKeyEvent *evt)
   return motcode;
 }
 
-int iupmotKeyDecode(XKeyEvent *evt)
+IUP_DRV_API int iupmotKeyDecode(XKeyEvent *evt)
 {
   KeySym motcode = iupmotKeycodeToKeysym(evt);
 
@@ -233,7 +233,7 @@ int iupmotKeyDecode(XKeyEvent *evt)
   return motKeyMap2Iup(motcode, evt->state);
 }
 
-KeySym iupmotKeyCharToKeySym(char c)
+IUP_DRV_API KeySym iupmotKeyCharToKeySym(char c)
 {
   if (c > 0)
     return (KeySym)c;
@@ -268,7 +268,7 @@ static int motKeyDiscardKeypressRepeat(XEvent *evt)
 }
 
 /* this is called only for canvas */
-void iupmotCanvasKeyReleaseEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotCanvasKeyReleaseEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
 {
   if (motKeyDiscardKeypressRepeat(evt))
   {
@@ -295,7 +295,7 @@ void iupmotCanvasKeyReleaseEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *co
   }
 }
 
-void iupmotKeyPressEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotKeyPressEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
 {
   int result;
   int code = iupmotKeyDecode((XKeyEvent*)evt);
@@ -356,7 +356,7 @@ void iupmotKeyPressEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
   (void)w;
 }
 
-void iupmotButtonKeySetStatus(unsigned int state, unsigned int but, char* status, int doubleclick)
+IUP_DRV_API void iupmotButtonKeySetStatus(unsigned int state, unsigned int but, char* status, int doubleclick)
 {
   if (state & ShiftMask)
     iupKEY_SETSHIFT(status);

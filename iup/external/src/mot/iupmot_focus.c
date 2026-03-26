@@ -23,7 +23,7 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle *ih)
   XmProcessTraversal(ih->handle, XmTRAVERSE_CURRENT);
 }
 
-void iupmotFocusChangeEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotFocusChangeEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
 {
   (void)w;
   (void)cont;

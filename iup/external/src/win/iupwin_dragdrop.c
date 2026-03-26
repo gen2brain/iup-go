@@ -926,7 +926,7 @@ static int winDragStart(Ihandle* ih, int x, int y)
   return 0;
 }
 
-int iupwinDragDetectStart(Ihandle* ih)
+IUP_DRV_API int iupwinDragDetectStart(Ihandle* ih)
 {
   POINT pt;
   GetCursorPos(&pt);
@@ -1087,7 +1087,7 @@ static int winSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupwinDropFiles(HDROP hDrop, Ihandle *ih)
+IUP_DRV_API void iupwinDropFiles(HDROP hDrop, Ihandle *ih)
 {
   /* called for a WM_DROPFILES */
   TCHAR* filename;
@@ -1127,7 +1127,7 @@ void iupwinDropFiles(HDROP hDrop, Ihandle *ih)
 
 /******************************************************************************************/
 
-void iupwinDestroyDragDrop(Ihandle* ih)
+IUP_DRV_API void iupwinDestroyDragDrop(Ihandle* ih)
 {
   IwinDropTarget* pDropTarget;
 

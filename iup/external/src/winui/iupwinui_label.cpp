@@ -66,7 +66,7 @@ static Image winuiLabelGetImage(Ihandle* ih)
   return nullptr;
 }
 
-void iupwinuiApplyMarkupToTextBlock(TextBlock textBlock, const char* value)
+IUP_DRV_API void iupwinuiApplyMarkupToTextBlock(TextBlock textBlock, const char* value)
 {
   ImarkupData* data = iupMarkupParse(value);
   if (!data)
@@ -161,7 +161,7 @@ void iupwinuiApplyMarkupToTextBlock(TextBlock textBlock, const char* value)
   iupMarkupFree(data);
 }
 
-void iupwinuiMeasureMarkupText(const char* markup, int* w, int* h)
+IUP_DRV_API void iupwinuiMeasureMarkupText(const char* markup, int* w, int* h)
 {
   TextBlock tb;
   iupwinuiApplyMarkupToTextBlock(tb, markup);

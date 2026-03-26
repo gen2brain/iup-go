@@ -28,7 +28,7 @@ extern "C" {
  * Focus Policy Control
  ****************************************************************************/
 
-extern "C" IUP_DRV_API void iupqtSetCanFocus(QWidget* widget, int can)
+IUP_DRV_API void iupqtSetCanFocus(QWidget* widget, int can)
 {
   if (!widget)
     return;
@@ -86,7 +86,7 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
  * Focus Event Handler
  ****************************************************************************/
 
-extern "C" int iupqtFocusInOutEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
+IUP_DRV_API int iupqtFocusInOutEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
 {
   (void)widget;
 
@@ -120,7 +120,7 @@ extern "C" int iupqtFocusInOutEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
  ****************************************************************************/
 
 /* Called when dialog gets focus - restore focus to last focused control */
-extern "C" void iupqtDialogSetFocus(Ihandle* ih)
+IUP_DRV_API void iupqtDialogSetFocus(Ihandle* ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
 

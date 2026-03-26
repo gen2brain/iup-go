@@ -103,7 +103,7 @@ static inline XID x11_visual_id_from_visual(Visual* v) {
 }
 #endif
 
-char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
+IUP_DRV_API char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
 {
   GdkWindow* window = iupgtkGetWindow(widget);
   if (!window)
@@ -158,7 +158,7 @@ char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
   return NULL;
 }
 
-const char* iupgtkGetNativeWindowHandleName(void)
+IUP_DRV_API const char* iupgtkGetNativeWindowHandleName(void)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   GdkDisplay* display = gdk_display_get_default();
@@ -208,7 +208,7 @@ const char* iupgtkGetNativeWindowHandleName(void)
   return "UNKNOWN";
 }
 
-const char* iupgtkGetNativeFontIdName(void)
+IUP_DRV_API const char* iupgtkGetNativeFontIdName(void)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   GdkDisplay* display = gdk_display_get_default();
@@ -243,7 +243,7 @@ const char* iupgtkGetNativeFontIdName(void)
   return NULL;
 }
 
-void* iupgtkGetNativeGraphicsContext(GtkWidget* widget)
+IUP_DRV_API void* iupgtkGetNativeGraphicsContext(GtkWidget* widget)
 {
   GdkWindow* window = iupgtkGetWindow(widget);
   if (!window) return NULL;
@@ -296,7 +296,7 @@ void* iupgtkGetNativeGraphicsContext(GtkWidget* widget)
   return NULL;
 }
 
-void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
+IUP_DRV_API void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
 {
   if (!gc) return;
 
@@ -393,7 +393,7 @@ IUP_SDK_API void* iupdrvGetDisplay(void)
   return NULL;
 }
 
-void iupgtkPushVisualAndColormap(void* visual, void* colormap)
+IUP_DRV_API void iupgtkPushVisualAndColormap(void* visual, void* colormap)
 {
   /* This function is for X11 compatibility in GTK2.
      It is deprecated in GTK3 and irrelevant for Wayland/Win32/Quartz.
@@ -501,7 +501,7 @@ static void gtkSetGlobalAttrib(void)
 #endif /* GTK_CHECK_VERSION(3, 0, 0) */
 }
 
-char* iupgtkGetNativeWindowHandleAttrib(Ihandle* ih)
+IUP_DRV_API char* iupgtkGetNativeWindowHandleAttrib(Ihandle* ih)
 {
   /* Used only in Canvas and Dialog */
   return iupgtkGetNativeWidgetHandle(ih->handle);
@@ -615,7 +615,7 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
 }
 
-void iupgtkSetGlobalColors(void)
+IUP_DRV_API void iupgtkSetGlobalColors(void)
 {
   GtkWidget* dialog = gtk_offscreen_window_new();
   GtkWidget* text = gtk_entry_new();

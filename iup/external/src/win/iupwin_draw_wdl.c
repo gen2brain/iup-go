@@ -30,8 +30,8 @@
 #include "backend-gdix.h"
 
 /* From iupwin_image_wdl.c */
-void iupwinWdlImageInit(void);
-WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor);
+IUP_DRV_API void iupwinWdlImageInit(void);
+IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor);
 
 struct _IdrawCanvas{
   Ihandle* ih;
@@ -54,7 +54,7 @@ static WD_HSTROKESTYLE g_strokeDot = NULL;
 static WD_HSTROKESTYLE g_strokeDashDot = NULL;
 static WD_HSTROKESTYLE g_strokeDashDotDot = NULL;
 
-void iupwinDrawInit(void)
+IUP_DRV_API void iupwinDrawInit(void)
 {
   iupwinDrawThemeInit();
 
@@ -70,7 +70,7 @@ void iupwinDrawInit(void)
     gdix_init();  /* if WDL is using Direct2D must manually initialize GDI+ */
 }
 
-void iupwinDrawFinish(void)
+IUP_DRV_API void iupwinDrawFinish(void)
 {
   if (g_strokeDash) { wdDestroyStrokeStyle(g_strokeDash); g_strokeDash = NULL; }
   if (g_strokeDot) { wdDestroyStrokeStyle(g_strokeDot); g_strokeDot = NULL; }

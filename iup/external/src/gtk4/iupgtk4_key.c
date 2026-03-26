@@ -133,7 +133,7 @@ static int gtk4KeyMap2Iup(guint keyval, GdkModifierType state)
   return code;
 }
 
-int iupgtk4KeyDecode(guint keyval, GdkModifierType state)
+IUP_DRV_API int iupgtk4KeyDecode(guint keyval, GdkModifierType state)
 {
   int i;
 
@@ -254,7 +254,7 @@ IUP_DRV_API gboolean iupgtk4KeyPressEvent(GtkEventControllerKey *controller, gui
   return FALSE;
 }
 
-gboolean iupgtk4KeyReleaseEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
+IUP_DRV_API gboolean iupgtk4KeyReleaseEvent(GtkEventControllerKey *controller, guint keyval, guint keycode, GdkModifierType state, Ihandle *ih)
 {
   int result;
   int code = iupgtk4KeyDecode(keyval, state);
@@ -277,7 +277,7 @@ gboolean iupgtk4KeyReleaseEvent(GtkEventControllerKey *controller, guint keyval,
   return FALSE;
 }
 
-void iupgtk4ButtonKeySetStatus(GdkModifierType state, unsigned int but, char* status, int doubleclick)
+IUP_DRV_API void iupgtk4ButtonKeySetStatus(GdkModifierType state, unsigned int but, char* status, int doubleclick)
 {
   if (state & GDK_SHIFT_MASK)
     iupKEY_SETSHIFT(status);
@@ -330,7 +330,7 @@ void iupgtk4ButtonKeySetStatus(GdkModifierType state, unsigned int but, char* st
     iupKEY_SETDOUBLE(status);
 }
 
-void iupgtk4SetupKeyEvents(GtkWidget* widget, Ihandle* ih)
+IUP_DRV_API void iupgtk4SetupKeyEvents(GtkWidget* widget, Ihandle* ih)
 {
   GtkEventController* key_controller = gtk_event_controller_key_new();
   gtk_widget_add_controller(widget, key_controller);

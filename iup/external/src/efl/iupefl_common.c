@@ -43,7 +43,7 @@
  * Color Management
  ****************************************************************************/
 
-void iupeflColorSet(Eo* obj, unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+IUP_DRV_API void iupeflColorSet(Eo* obj, unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
   int pr = iupeflColorPremul(a, r);
   int pg = iupeflColorPremul(a, g);
@@ -52,7 +52,7 @@ void iupeflColorSet(Eo* obj, unsigned char r, unsigned char g, unsigned char b, 
   iupeflSetColor(obj, pr, pg, pb, a);
 }
 
-int iupeflSetBgColorAttrib(Ihandle* ih, const char* value)
+IUP_DRV_API int iupeflSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   Eo* widget = iupeflGetWidget(ih);
   Eo* bg_rect;
@@ -77,7 +77,7 @@ int iupeflSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-int iupeflSetFgColorAttrib(Ihandle* ih, const char* value)
+IUP_DRV_API int iupeflSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   (void)ih;
   (void)value;
@@ -88,7 +88,7 @@ int iupeflSetFgColorAttrib(Ihandle* ih, const char* value)
  * Widget Visibility
  ****************************************************************************/
 
-int iupeflBaseSetVisibleAttrib(Ihandle* ih, const char* value)
+IUP_DRV_API int iupeflBaseSetVisibleAttrib(Ihandle* ih, const char* value)
 {
   Eo* widget = iupeflGetWidget(ih);
 
@@ -104,7 +104,7 @@ int iupeflBaseSetVisibleAttrib(Ihandle* ih, const char* value)
  * Widget Active/Enabled State
  ****************************************************************************/
 
-int iupeflBaseSetActiveAttrib(Ihandle* ih, const char* value)
+IUP_DRV_API int iupeflBaseSetActiveAttrib(Ihandle* ih, const char* value)
 {
   Eo* widget = iupeflGetWidget(ih);
 
@@ -116,7 +116,7 @@ int iupeflBaseSetActiveAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-char* iupeflBaseGetActiveAttrib(Ihandle* ih)
+IUP_DRV_API char* iupeflBaseGetActiveAttrib(Ihandle* ih)
 {
   Eo* widget = iupeflGetWidget(ih);
 
@@ -136,7 +136,7 @@ char* iupeflBaseGetActiveAttrib(Ihandle* ih)
  * Position and Size
  ****************************************************************************/
 
-void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height)
+IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height)
 {
   Eo* widget = iupeflGetWidget(ih);
   Eo* bg_rect;
@@ -194,7 +194,7 @@ void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height)
  * Parent/Child Management
  ****************************************************************************/
 
-void iupeflAddToParent(Ihandle* ih)
+IUP_DRV_API void iupeflAddToParent(Ihandle* ih)
 {
   Eo* widget = iupeflGetWidget(ih);
 
@@ -202,7 +202,7 @@ void iupeflAddToParent(Ihandle* ih)
     return;
 }
 
-Eo* iupeflGetInnerContainer(Ihandle* ih)
+IUP_DRV_API Eo* iupeflGetInnerContainer(Ihandle* ih)
 {
   char* inner = iupAttribGet(ih, "_IUP_EFL_INNER");
   if (inner)
@@ -211,24 +211,24 @@ Eo* iupeflGetInnerContainer(Ihandle* ih)
   return NULL;
 }
 
-Eo* iupeflGetParentWidget(Ihandle* ih)
+IUP_DRV_API Eo* iupeflGetParentWidget(Ihandle* ih)
 {
   return (Eo*)iupChildTreeGetNativeParentHandle(ih);
 }
 
 static Eo* efl_main_window = NULL;
 
-void iupeflSetMainWindow(Eo* win)
+IUP_DRV_API void iupeflSetMainWindow(Eo* win)
 {
   efl_main_window = win;
 }
 
-Eo* iupeflGetMainWindow(void)
+IUP_DRV_API Eo* iupeflGetMainWindow(void)
 {
   return efl_main_window;
 }
 
-unsigned int iupeflGetDefaultSeat(Eo* widget)
+IUP_DRV_API unsigned int iupeflGetDefaultSeat(Eo* widget)
 {
   Eo* win = iupeflGetMainWindow();
   if (!win)
@@ -247,7 +247,7 @@ unsigned int iupeflGetDefaultSeat(Eo* widget)
  * Fixed Container (for absolute positioning)
  ****************************************************************************/
 
-Eo* iupeflFixedContainerNew(Eo* parent)
+IUP_DRV_API Eo* iupeflFixedContainerNew(Eo* parent)
 {
   Eo* box = efl_add(EFL_UI_BOX_CLASS, parent);
   if (!box)
@@ -259,13 +259,13 @@ Eo* iupeflFixedContainerNew(Eo* parent)
   return box;
 }
 
-void iupeflFixedContainerMove(Eo* container, Eo* child, int x, int y)
+IUP_DRV_API void iupeflFixedContainerMove(Eo* container, Eo* child, int x, int y)
 {
   (void)container;
   iupeflSetPosition(child, x, y);
 }
 
-Eo* iupeflNativeContainerNew(Eo* parent)
+IUP_DRV_API Eo* iupeflNativeContainerNew(Eo* parent)
 {
   Eo* box = efl_add(EFL_UI_BOX_CLASS, parent);
   if (!box)
@@ -281,7 +281,7 @@ Eo* iupeflNativeContainerNew(Eo* parent)
  * Mnemonic Handling
  ****************************************************************************/
 
-int iupeflSetMnemonicTitle(Ihandle* ih, Eo* widget, const char* value)
+IUP_DRV_API int iupeflSetMnemonicTitle(Ihandle* ih, Eo* widget, const char* value)
 {
   char* str;
   char* efl_markup = NULL;
@@ -330,7 +330,7 @@ int iupeflSetMnemonicTitle(Ihandle* ih, Eo* widget, const char* value)
   return 1;
 }
 
-void iupeflUpdateMnemonic(Ihandle* ih)
+IUP_DRV_API void iupeflUpdateMnemonic(Ihandle* ih)
 {
   (void)ih;
 }
@@ -339,7 +339,7 @@ void iupeflUpdateMnemonic(Ihandle* ih)
  * Base Callbacks Registration
  ****************************************************************************/
 
-void iupeflBaseAddCallbacks(Ihandle* ih, Eo* widget)
+IUP_DRV_API void iupeflBaseAddCallbacks(Ihandle* ih, Eo* widget)
 {
   efl_event_callback_add(widget, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
   efl_event_callback_add(widget, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
@@ -357,7 +357,7 @@ void iupeflBaseAddCallbacks(Ihandle* ih, Eo* widget)
   }
 }
 
-void iupeflBaseRemoveCallbacks(Ihandle* ih, Eo* widget)
+IUP_DRV_API void iupeflBaseRemoveCallbacks(Ihandle* ih, Eo* widget)
 {
   if (!widget)
     return;
@@ -382,7 +382,7 @@ void iupeflBaseRemoveCallbacks(Ihandle* ih, Eo* widget)
  * Event Handlers
  ****************************************************************************/
 
-void iupeflPointerDownEvent(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflPointerDownEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Pointer* pointer = ev->info;
@@ -430,7 +430,7 @@ void iupeflPointerDownEvent(void* data, const Efl_Event* ev)
   cb(ih, iup_button, 1, pos.x - widget_pos.x, pos.y - widget_pos.y, status);
 }
 
-void iupeflPointerUpEvent(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflPointerUpEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Pointer* pointer = ev->info;
@@ -475,7 +475,7 @@ void iupeflPointerUpEvent(void* data, const Efl_Event* ev)
   cb(ih, iup_button, 0, pos.x - widget_pos.x, pos.y - widget_pos.y, status);
 }
 
-void iupeflPointerMoveEvent(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflPointerMoveEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Pointer* pointer = ev->info;
@@ -516,7 +516,7 @@ void iupeflPointerMoveEvent(void* data, const Efl_Event* ev)
   }
 }
 
-void iupeflPointerWheelEvent(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflPointerWheelEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Pointer* pointer = ev->info;
@@ -551,7 +551,7 @@ void iupeflPointerWheelEvent(void* data, const Efl_Event* ev)
   }
 }
 
-void iupeflPointerInEvent(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflPointerInEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   IFn cb;
@@ -563,7 +563,7 @@ void iupeflPointerInEvent(void* data, const Efl_Event* ev)
     cb(ih);
 }
 
-void iupeflPointerOutEvent(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflPointerOutEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   IFn cb;
@@ -704,7 +704,7 @@ static void eflGetAbsolutePosition(Ihandle* ih, int* abs_x, int* abs_y)
   *abs_y = y;
 }
 
-int iupeflIsInsideTabs(Ihandle* ih)
+IUP_DRV_API int iupeflIsInsideTabs(Ihandle* ih)
 {
   Ihandle* parent = ih->parent;
   while (parent)

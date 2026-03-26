@@ -398,7 +398,7 @@ static Pixmap motImageCreateMask(Ihandle *ih)
   return mask;
 }
 
-Pixmap iupmotImageGetMask(const char* name)
+IUP_DRV_API Pixmap iupmotImageGetMask(const char* name)
 {
   Pixmap mask;
   Ihandle *ih;

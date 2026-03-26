@@ -38,7 +38,7 @@ const void* IHANDLE_ASSOCIATED_OBJ_KEY = @"IHANDLE_ASSOCIATED_OBJ_KEY";
 const void* MAINVIEW_ASSOCIATED_OBJ_KEY = @"MAINVIEW_ASSOCIATED_OBJ_KEY";
 const void* ROOTVIEW_ASSOCIATED_OBJ_KEY = @"ROOTVIEW_ASSOCIATED_OBJ_KEY";
 
-NSObject* iupcocoaGetRootObject(Ihandle* ih)
+IUP_DRV_API NSObject* iupcocoaGetRootObject(Ihandle* ih)
 {
   if(NULL == ih)
   {
@@ -64,17 +64,17 @@ static NSView* cocoaGetAssociatedView(Ihandle* ih, const void* key)
   return view;
 }
 
-NSView* iupcocoaGetRootView(Ihandle* ih)
+IUP_DRV_API NSView* iupcocoaGetRootView(Ihandle* ih)
 {
   return cocoaGetAssociatedView(ih, ROOTVIEW_ASSOCIATED_OBJ_KEY);
 }
 
-NSView* iupcocoaGetMainView(Ihandle* ih)
+IUP_DRV_API NSView* iupcocoaGetMainView(Ihandle* ih)
 {
   return cocoaGetAssociatedView(ih, MAINVIEW_ASSOCIATED_OBJ_KEY);
 }
 
-void iupcocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSView* root_view)
+IUP_DRV_API void iupcocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSView* root_view)
 {
   NSCAssert(ih->handle, @"Expected ih->handle to be set");
 
@@ -82,7 +82,7 @@ void iupcocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSView* root_vie
   objc_setAssociatedObject((id)ih->handle, ROOTVIEW_ASSOCIATED_OBJ_KEY, root_view, OBJC_ASSOCIATION_ASSIGN);
 }
 
-void iupcocoaAddToParent(Ihandle* ih)
+IUP_DRV_API void iupcocoaAddToParent(Ihandle* ih)
 {
   NSView* parent_view = iupcocoaCommonBaseLayoutGetParentView(ih);
 
@@ -94,7 +94,7 @@ void iupcocoaAddToParent(Ihandle* ih)
   [parent_view addSubview:child_view];
 }
 
-void iupcocoaRemoveFromParent(Ihandle* ih)
+IUP_DRV_API void iupcocoaRemoveFromParent(Ihandle* ih)
 {
   id child_handle = ih->handle;
   if([child_handle isKindOfClass:[NSView class]])
@@ -118,7 +118,7 @@ void iupcocoaRemoveFromParent(Ihandle* ih)
   }
 }
 
-int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height)
+IUP_DRV_API int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height)
 {
   /* This function converts from IUP's top-left based system to Cocoa's global bottom-left based system. */
   NSRect main_screen_frame = [[NSScreen mainScreen] frame];
@@ -127,7 +127,7 @@ int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height)
   return iupROUND(cartesian_y);
 }
 
-int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height)
+IUP_DRV_API int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height)
 {
   /* This function converts from Cocoa's global bottom-left coordinate system
      to IUP's top-left based system, where (0,0) is the top-left of the main screen. */
@@ -164,7 +164,7 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
   }
 }
 
-NSView* iupcocoaCommonBaseLayoutGetParentView(Ihandle* ih)
+IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetParentView(Ihandle* ih)
 {
   NSView* specific_container = (NSView*)iupAttribGet(ih, "_IUPTAB_CONTAINER");
   if (specific_container != NULL)
@@ -209,7 +209,7 @@ NSView* iupcocoaCommonBaseLayoutGetParentView(Ihandle* ih)
   return parent_view;
 }
 
-NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih)
+IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih)
 {
   id child_handle = ih->handle;
   NSView* the_view = nil;
@@ -717,7 +717,7 @@ IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "TIPVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
 
-NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, const char* value)
+IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, const char* value)
 {
   ImarkupData* data = iupMarkupParse(value);
   if (!data)
@@ -904,7 +904,7 @@ IUP_SDK_API void iupdrvWarpPointer(int x, int y)
   CGAssociateMouseAndMouseCursorPosition(true);
 }
 
-void iupcocoaCommonBaseAppendMenuItems(NSMenu* dst_menu, NSMenu* src_menu)
+IUP_DRV_API void iupcocoaCommonBaseAppendMenuItems(NSMenu* dst_menu, NSMenu* src_menu)
 {
   if((src_menu != nil) && ([src_menu numberOfItems] > 0))
   {
@@ -920,7 +920,7 @@ void iupcocoaCommonBaseAppendMenuItems(NSMenu* dst_menu, NSMenu* src_menu)
   }
 }
 
-void iupcocoaCommonBaseAppendDefaultMenuItemsForClassType(NSMenu* dst_menu, Class class_of_widget)
+IUP_DRV_API void iupcocoaCommonBaseAppendDefaultMenuItemsForClassType(NSMenu* dst_menu, Class class_of_widget)
 {
   if([class_of_widget respondsToSelector:@selector(defaultMenu)])
   {
@@ -929,7 +929,7 @@ void iupcocoaCommonBaseAppendDefaultMenuItemsForClassType(NSMenu* dst_menu, Clas
   }
 }
 
-void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id widget_to_attach_menu_to, Ihandle* menu_ih)
+IUP_DRV_API void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id widget_to_attach_menu_to, Ihandle* menu_ih)
 {
   /* Mark that the user has configured this attribute. This allows delegate methods
      to distinguish between "never set" (use default behavior) and "set to nil" (disable menu). */
@@ -963,7 +963,7 @@ void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id widget_to_attach_
   }
 }
 
-int iupcocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_button)
+IUP_DRV_API int iupcocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_button)
 {
   if(0 == which_cocoa_button) return IUP_BUTTON1;
   if(1 == which_cocoa_button) return IUP_BUTTON3;
@@ -973,7 +973,7 @@ int iupcocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_button)
   return (int)(which_cocoa_button + '0'); /* Other buttons */
 }
 
-bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed)
+IUP_DRV_API bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed)
 {
   IFniiiis callback_function;
   bool caller_should_propagate = true;
@@ -1044,7 +1044,7 @@ bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEvent* the_event
   return !caller_should_propagate;
 }
 
-bool iupcocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view)
+IUP_DRV_API bool iupcocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view)
 {
   bool caller_should_propagate = true;
   IFniis callback_function;
@@ -1071,7 +1071,7 @@ bool iupcocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEvent* the_event
   return !caller_should_propagate;
 }
 
-bool iupcocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view)
+IUP_DRV_API bool iupcocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view)
 {
   IFnfiis callback_function;
   bool caller_should_propagate = true;
@@ -1115,7 +1115,7 @@ bool iupcocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the_event, NSVi
   return !caller_should_propagate;
 }
 
-int iupcocoaCommonBaseSetContextMenuAttrib(Ihandle* ih, const char* value)
+IUP_DRV_API int iupcocoaCommonBaseSetContextMenuAttrib(Ihandle* ih, const char* value)
 {
   Ihandle* menu_ih = (Ihandle*)value;
   id widget_to_attach_menu_to = iupcocoaGetMainView(ih);
@@ -1125,13 +1125,13 @@ int iupcocoaCommonBaseSetContextMenuAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih)
+IUP_DRV_API char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih)
 {
   return (char*)iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
 }
 
 
-NSWindow* iupcocoaDialogGetWindow(Ihandle* ih)
+IUP_DRV_API NSWindow* iupcocoaDialogGetWindow(Ihandle* ih)
 {
   if (!ih || !ih->handle) return nil;
   id root_object = (id)ih->handle;
@@ -1142,7 +1142,7 @@ NSWindow* iupcocoaDialogGetWindow(Ihandle* ih)
   return nil;
 }
 
-int iupcocoaIsSystemDarkMode(void)
+IUP_DRV_API int iupcocoaIsSystemDarkMode(void)
 {
   NSAppearance *appearance = [NSApp effectiveAppearance];
   NSString *appearanceName = [appearance bestMatchFromAppearancesWithNames:@[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];

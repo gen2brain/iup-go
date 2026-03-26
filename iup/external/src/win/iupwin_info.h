@@ -12,16 +12,16 @@ extern "C" {
 #endif
 
 /* system */
-int   iupwinGetComCtl32Version(void);
-char* iupwinGetSystemLanguage(void);
-int   iupwinCheckWindowsVersion(DWORD major, DWORD minor);
-DWORD iupwinGetBuildNumber(void);
-int   iupwinIsAppThemed(void);
-int   iupwinIsSystemDarkMode(void);
-int   iupwinIsVistaOrNew(void);
-int   iupwinIsWinXPOrNew(void);
-int   iupwinIsWin7OrNew(void);
-int   iupwinIsWin10OrNew(void);
+IUP_DRV_API int   iupwinGetComCtl32Version(void);
+IUP_DRV_API char* iupwinGetSystemLanguage(void);
+IUP_DRV_API int   iupwinCheckWindowsVersion(DWORD major, DWORD minor);
+IUP_DRV_API DWORD iupwinGetBuildNumber(void);
+IUP_DRV_API int   iupwinIsAppThemed(void);
+IUP_DRV_API int   iupwinIsSystemDarkMode(void);
+IUP_DRV_API int   iupwinIsVistaOrNew(void);
+IUP_DRV_API int   iupwinIsWinXPOrNew(void);
+IUP_DRV_API int   iupwinIsWin7OrNew(void);
+IUP_DRV_API int   iupwinIsWin10OrNew(void);
 
 
 #ifdef __cplusplus

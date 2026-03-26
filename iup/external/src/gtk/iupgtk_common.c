@@ -97,7 +97,7 @@ static GtkWidget* iup_gtk_fixed_new(void)
 so theirs GdkWindow will NOT return a native window exclusive of that control,
 in fact it can return a base native window shared by many controls.
 IupCanvas is a special case that uses an exclusive native window. */
-GtkWidget* iupgtkNativeContainerNew(int has_window)
+IUP_DRV_API GtkWidget* iupgtkNativeContainerNew(int has_window)
 {
   GtkWidget* widget;
 
@@ -129,17 +129,17 @@ GtkWidget* iupgtkNativeContainerNew(int has_window)
   return widget;
 }
 
-void iupgtkNativeContainerSetGLCanvas(int is_gl)
+IUP_DRV_API void iupgtkNativeContainerSetGLCanvas(int is_gl)
 {
   iupGtkFixedIsGLCanvas = is_gl;
 }
 
-void iupgtkNativeContainerAdd(GtkWidget* container, GtkWidget* widget)
+IUP_DRV_API void iupgtkNativeContainerAdd(GtkWidget* container, GtkWidget* widget)
 {
   gtk_fixed_put(GTK_FIXED(container), widget, 0, 0);
 }
 
-void iupgtkNativeContainerMove(GtkWidget* container, GtkWidget* widget, int x, int y)
+IUP_DRV_API void iupgtkNativeContainerMove(GtkWidget* container, GtkWidget* widget, int x, int y)
 {
   gtk_fixed_move(GTK_FIXED(container), widget, x, y);
 }
@@ -155,13 +155,13 @@ static GtkWidget* gtkGetNativeParent(Ihandle* ih)
   return widget;
 }
 
-const char* iupgtkGetWidgetClassName(GtkWidget* widget)
+IUP_DRV_API const char* iupgtkGetWidgetClassName(GtkWidget* widget)
 {
   /* Used for debugging */
   return g_type_name(G_TYPE_FROM_CLASS(GTK_WIDGET_GET_CLASS(widget)));
 }
 
-void iupgtkUpdateMnemonic(Ihandle* ih)
+IUP_DRV_API void iupgtkUpdateMnemonic(Ihandle* ih)
 {
   GtkLabel* label = (GtkLabel*)iupAttribGet(ih, "_IUPGTK_LABELMNEMONIC");
   if (label) gtk_label_set_mnemonic_widget(label, ih->handle);
@@ -202,7 +202,7 @@ IUP_DRV_API void iupgtkAddToParent(Ihandle* ih)
   iupgtkNativeContainerAdd(parent, widget);
 }
 
-void iupgtkSetPosSize(GtkContainer* parent, GtkWidget* widget, int x, int y, int width, int height)
+IUP_DRV_API void iupgtkSetPosSize(GtkContainer* parent, GtkWidget* widget, int x, int y, int width, int height)
 {
   iupgtkNativeContainerMove((GtkWidget*)parent, widget, x, y);
 
@@ -364,7 +364,7 @@ IUP_DRV_API gboolean iupgtkEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing *
   return FALSE;
 }
 
-int iupgtkSetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value)
+IUP_DRV_API int iupgtkSetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value)
 {
   char c = '_';
   char* str;
@@ -422,7 +422,7 @@ IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
   }
 }
 
-int iupgtkIsVisible(GtkWidget* widget)
+IUP_DRV_API int iupgtkIsVisible(GtkWidget* widget)
 {
 #if GTK_CHECK_VERSION(2, 18, 0)
   return gtk_widget_get_visible(widget);
@@ -471,7 +471,7 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 }
 
 #if GTK_CHECK_VERSION(3, 0, 0)
-void iupgdkRGBASet(GdkRGBA* rgba, unsigned char r, unsigned char g, unsigned char b)
+IUP_DRV_API void iupgdkRGBASet(GdkRGBA* rgba, unsigned char r, unsigned char g, unsigned char b)
 {
   rgba->red = iupgtkColorToDouble(r);
   rgba->green = iupgtkColorToDouble(g);
@@ -558,7 +558,7 @@ static GdkRGBA gtkGetSelectedColorRGBA(void)
 #endif
 #endif
 
-void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
+IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   GdkRGBA rgba, light_rgba, dark_rgba;
@@ -649,7 +649,7 @@ void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, u
 #endif
 }
 
-void iupgtkSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
+IUP_DRV_API void iupgtkSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   GdkRGBA rgba;
@@ -818,7 +818,7 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-void iupgdkColorSetRGB(GdkColor* color, unsigned char r, unsigned char g, unsigned char b)
+IUP_DRV_API void iupgdkColorSetRGB(GdkColor* color, unsigned char r, unsigned char g, unsigned char b)
 {
   color->red = iupCOLOR8TO16(r);
   color->green = iupCOLOR8TO16(g);
@@ -865,7 +865,7 @@ IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
 }
 
-gboolean iupgtkMotionNotifyEvent(GtkWidget *widget, GdkEventMotion *evt, Ihandle *ih)
+IUP_DRV_API gboolean iupgtkMotionNotifyEvent(GtkWidget *widget, GdkEventMotion *evt, Ihandle *ih)
 {
   IFniis cb;
 
@@ -1077,7 +1077,7 @@ IUP_SDK_API void iupdrvSleep(int time)
   g_usleep(time*1000);  /* mili to micro */
 }
 
-GdkWindow* iupgtkGetWindow(GtkWidget *widget)
+IUP_DRV_API GdkWindow* iupgtkGetWindow(GtkWidget *widget)
 {
 #if GTK_CHECK_VERSION(2, 14, 0)
   return gtk_widget_get_window(widget);
@@ -1086,7 +1086,7 @@ GdkWindow* iupgtkGetWindow(GtkWidget *widget)
 #endif
 }
 
-void iupgtkWindowGetPointer(GdkWindow *window, int *x, int *y, GdkModifierType *mask)
+IUP_DRV_API void iupgtkWindowGetPointer(GdkWindow *window, int *x, int *y, GdkModifierType *mask)
 {
 #if GTK_CHECK_VERSION(3, 20, 0)
   GdkDisplay *display = gdk_window_get_display(window);
@@ -1103,7 +1103,7 @@ void iupgtkWindowGetPointer(GdkWindow *window, int *x, int *y, GdkModifierType *
 #endif
 }
 
-void iupgtkSetMargin(GtkWidget* widget, int horiz_padding, int vert_padding, int mandatory_gtk3)
+IUP_DRV_API void iupgtkSetMargin(GtkWidget* widget, int horiz_padding, int vert_padding, int mandatory_gtk3)
 {
 #if GTK_CHECK_VERSION(3, 12, 0)
   if (mandatory_gtk3)
@@ -1126,7 +1126,7 @@ void iupgtkSetMargin(GtkWidget* widget, int horiz_padding, int vert_padding, int
 }
 
 
-int iupgtkIsSystemDarkMode(void)
+IUP_DRV_API int iupgtkIsSystemDarkMode(void)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   GtkWidget* temp_window;

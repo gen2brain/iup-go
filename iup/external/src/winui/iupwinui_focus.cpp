@@ -87,7 +87,7 @@ static UIElement winuiGetFocusableElement(Ihandle* ih)
   return elem;
 }
 
-extern "C" void iupwinuiSetCanFocus(void* widget, int can)
+IUP_DRV_API void iupwinuiSetCanFocus(void* widget, int can)
 {
   if (!widget)
     return;
@@ -99,7 +99,7 @@ extern "C" void iupwinuiSetCanFocus(void* widget, int can)
     ctrl.IsTabStop(can ? true : false);
 }
 
-extern "C" void iupwinuiBringWindowToForeground(HWND hwnd)
+IUP_DRV_API void iupwinuiBringWindowToForeground(HWND hwnd)
 {
   if (!hwnd)
     return;

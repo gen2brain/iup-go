@@ -77,7 +77,7 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 
 extern void XtMoveWidget(Widget, _XtPosition, _XtPosition);
 
-void iupmotSetPosition(Widget widget, int x, int y)
+IUP_DRV_API void iupmotSetPosition(Widget widget, int x, int y)
 {
   /* avoid setting both at the same time,
      so if one is invalid all will fail */
@@ -188,7 +188,7 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
                                         *x, *y, x, y, &child);
 }
 
-void iupmotHelpCallback(Widget w, Ihandle *ih, XtPointer call_data)
+IUP_DRV_API void iupmotHelpCallback(Widget w, Ihandle *ih, XtPointer call_data)
 {
   Icallback cb = IupGetCallback(ih, "HELP_CB");
   if (cb && cb(ih) == IUP_CLOSE)
@@ -198,7 +198,7 @@ void iupmotHelpCallback(Widget w, Ihandle *ih, XtPointer call_data)
   (void)w;
 }
 
-void iupmotEnterLeaveWindowEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotEnterLeaveWindowEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
 {
   Icallback cb = NULL;
   (void)cont;
@@ -268,12 +268,12 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
   XtSetSensitive(widget, enable);
 }
 
-char* iupmotGetXWindowAttrib(Ihandle *ih)
+IUP_DRV_API char* iupmotGetXWindowAttrib(Ihandle *ih)
 {
   return (char*)XtWindow(ih->handle);
 }
 
-void iupmotSetBgColor(Widget w, Pixel color)
+IUP_DRV_API void iupmotSetBgColor(Widget w, Pixel color)
 {
   Pixel fgcolor = (Pixel)-1;
   XtVaGetValues(w, XmNforeground, &fgcolor, NULL);
@@ -293,7 +293,7 @@ IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-char* iupmotGetBgColorAttrib(Ihandle* ih)
+IUP_DRV_API char* iupmotGetBgColorAttrib(Ihandle* ih)
 {
   unsigned char r, g, b;
   Pixel color;
@@ -310,7 +310,7 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupmotGetWindowSize(Ihandle *ih, int *width, int *height)
+IUP_DRV_API void iupmotGetWindowSize(Ihandle *ih, int *width, int *height)
 {
   Dimension w, h;
   XtVaGetValues(ih->handle, XmNwidth, &w, 
@@ -440,7 +440,7 @@ IUP_SDK_API int iupdrvGetScrollbarSize(void)
   return 15;
 }
 
-void iupmotSetPixmap(Ihandle* ih, const char* name, const char* prop, int make_inactive)
+IUP_DRV_API void iupmotSetPixmap(Ihandle* ih, const char* name, const char* prop, int make_inactive)
 {
   if (name)
   {
@@ -458,7 +458,7 @@ void iupmotSetPixmap(Ihandle* ih, const char* name, const char* prop, int make_i
   XtVaSetValues(ih->handle, prop, XmUNSPECIFIED_PIXMAP, NULL);
 }
 
-void iupmotButtonPressReleaseEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
+IUP_DRV_API void iupmotButtonPressReleaseEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   IFniiiis cb;
 
@@ -499,7 +499,7 @@ void iupmotButtonPressReleaseEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* 
   (void)w;
 }
 
-void iupmotDummyPointerMotionEvent(Widget w, XtPointer *data, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotDummyPointerMotionEvent(Widget w, XtPointer *data, XEvent *evt, Boolean *cont)
 {
   /* Used only when global callbacks are enabled */
   (void)w;
@@ -508,7 +508,7 @@ void iupmotDummyPointerMotionEvent(Widget w, XtPointer *data, XEvent *evt, Boole
   (void)cont;
 }
 
-void iupmotPointerMotionEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotPointerMotionEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
 {
   IFniis cb = (IFniis)IupGetCallback(ih,"MOTION_CB");
   if (cb)
@@ -696,7 +696,7 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
   (void)ih;
 }
 
-int iupmotIsSystemDarkMode(void)
+IUP_DRV_API int iupmotIsSystemDarkMode(void)
 {
   unsigned char bg_r, bg_g, bg_b;
   unsigned char fg_r, fg_g, fg_b;
@@ -748,7 +748,7 @@ int iupmotIsSystemDarkMode(void)
   return (bg_lum < fg_lum) ? 1 : 0;
 }
 
-void iupmotScrolledWindowWheelEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
+IUP_DRV_API void iupmotScrolledWindowWheelEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)
 {
   XButtonEvent* but_evt = (XButtonEvent*)evt;
   Widget sb_win, sb;

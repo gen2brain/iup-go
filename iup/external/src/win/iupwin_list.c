@@ -1128,7 +1128,7 @@ static int winInClient(HWND hWnd, POINT pt)
   return PtInRect(&rect, pt);
 }
 
-int iupwinListDND(Ihandle *ih, UINT uNotification, POINT pt)
+IUP_DRV_API int iupwinListDND(Ihandle *ih, UINT uNotification, POINT pt)
 {
   switch(uNotification)
   {

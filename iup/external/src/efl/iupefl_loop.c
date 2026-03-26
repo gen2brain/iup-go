@@ -42,7 +42,7 @@ typedef void (*efl_loop_message_pending_flush_fn)(Eo *obj);
 static efl_loop_message_pending_flush_fn efl_pending_flush_func = NULL;
 static int efl_pending_flush_checked = 0;
 
-void iupeflMessagePendingFlush(Eo *loop)
+IUP_DRV_API void iupeflMessagePendingFlush(Eo *loop)
 {
   if (!efl_pending_flush_checked)
   {
@@ -206,7 +206,7 @@ IUP_SDK_API void IupFlush(void)
  * Modal Loop Support
  ****************************************************************************/
 
-void iupeflModalLoopRun(Eo* modal_win)
+IUP_DRV_API void iupeflModalLoopRun(Eo* modal_win)
 {
   int level, i;
   Eo *loop = efl_main_loop_get();
@@ -235,13 +235,13 @@ void iupeflModalLoopRun(Eo* modal_win)
   efl_modal_loop_level--;
 }
 
-void iupeflModalLoopQuit(void)
+IUP_DRV_API void iupeflModalLoopQuit(void)
 {
   if (efl_modal_loop_level > 0)
     efl_modal_loop_exit_flag[efl_modal_loop_level - 1] = 1;
 }
 
-void iupeflLoopCleanup(void)
+IUP_DRV_API void iupeflLoopCleanup(void)
 {
   if (efl_idler)
   {

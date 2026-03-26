@@ -40,7 +40,7 @@ static int wdlImageDestroy(Ihandle* ih)
   return 0;
 }
 
-void iupwinWdlImageInit(void)
+IUP_DRV_API void iupwinWdlImageInit(void)
 {
   IupSetFunction("_IUPIMAGE_WD_IMAGEDESTROY", wdlImageDestroy);
 }
@@ -321,7 +321,7 @@ static void wdlImageSetHandleFromLoaded(const char* name, void* handle)
   iupAttribSet(ih, "_IUPIMAGE_LOADED_WD_HANDLE", (char*)handle);
 }
 
-WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor)
+IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor)
 {
   char cache_name[100];
   int pos;
@@ -406,7 +406,7 @@ WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_
   return handle;
 }
 
-HBITMAP iupwinWdlLoadImageFile(const TCHAR* filename)
+IUP_DRV_API HBITMAP iupwinWdlLoadImageFile(const TCHAR* filename)
 {
   WD_HIMAGE hImage;
   HBITMAP hBitmap = NULL;

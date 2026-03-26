@@ -95,7 +95,7 @@ IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-void iupwinTipsDestroy(Ihandle* ih)
+IUP_DRV_API void iupwinTipsDestroy(Ihandle* ih)
 {
   HWND tips_hwnd = (HWND)iupAttribGet(ih, "_IUPWIN_TIPSWIN");
   if (tips_hwnd)
@@ -132,7 +132,7 @@ IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
   return iupStrReturnBoolean(IsWindowVisible(tips_hwnd)); 
 }
 
-void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
+IUP_DRV_API void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
 {
   COLORREF color, tip_color;
   char* value;
@@ -234,7 +234,7 @@ void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
   }
 }
 
-void iupwinTipsGetDispInfo(LPARAM lp)
+IUP_DRV_API void iupwinTipsGetDispInfo(LPARAM lp)
 {
   Ihandle* ih;
   HWND tips_hwnd;

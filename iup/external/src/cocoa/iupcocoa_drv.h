@@ -46,26 +46,26 @@ IUP_DRV_API void iupcocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSVi
 IUP_DRV_API void iupcocoaAddToParent(Ihandle* ih);
 IUP_DRV_API void iupcocoaRemoveFromParent(Ihandle* ih);
 
-NSView* iupcocoaCommonBaseLayoutGetParentView(Ihandle* ih);
-NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih);
+IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetParentView(Ihandle* ih);
+IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih);
 
-void iupcocoaCommonLoopCallExitCb(void);
-int iupcocoaMainLoopShouldQuit(void);
+IUP_DRV_API void iupcocoaCommonLoopCallExitCb(void);
+IUP_DRV_API int iupcocoaMainLoopShouldQuit(void);
 
 /* Coordinate conversion helpers: Cocoa uses Cartesian (y-up), IUP uses (y-down). */
-int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);
-int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height);
+IUP_DRV_API int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);
+IUP_DRV_API int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height);
 
 /* Tooltip Functions */
 IUP_DRV_API void iupcocoaUpdateTip(Ihandle* ih);
 IUP_DRV_API void iupcocoaTipsDestroy(Ihandle* ih);
 
 /* Menu Functions */
-int iupcocoaMenuIsApplicationBar(Ihandle* ih);
-void iupcocoaMenuSetApplicationMenu(Ihandle* ih);
-Ihandle* iupcocoaMenuGetApplicationMenu(void);
-void iupcocoaMenuCleanupApplicationMenu(void);
-void iupcocoaEnsureDefaultApplicationMenu(void);
+IUP_DRV_API int iupcocoaMenuIsApplicationBar(Ihandle* ih);
+IUP_DRV_API void iupcocoaMenuSetApplicationMenu(Ihandle* ih);
+IUP_DRV_API Ihandle* iupcocoaMenuGetApplicationMenu(void);
+IUP_DRV_API void iupcocoaMenuCleanupApplicationMenu(void);
+IUP_DRV_API void iupcocoaEnsureDefaultApplicationMenu(void);
 
 /* Helpers for mouse button and motion events. */
 IUP_DRV_API int iupcocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_button);
@@ -107,18 +107,18 @@ IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent* ns_event, char* out_status)
 IUP_DRV_API IupCocoaFont* iupcocoaGetFont(Ihandle* ih);
 IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char *iup_font_name);
 
-NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, const char* value);
+IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, const char* value);
 
 /* Image conversion helpers. */
-int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel);
-NSBitmapImageRep* iupcocoaImageNSBitmapImageRepFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
-NSImage* iupcocoaImageNSImageFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
+IUP_DRV_API int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel);
+IUP_DRV_API NSBitmapImageRep* iupcocoaImageNSBitmapImageRepFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
+IUP_DRV_API NSImage* iupcocoaImageNSImageFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
 
 /* Handles IUP_CLOSE for modal dialogs. */
-bool iupcocoaDialogExitModal(Ihandle* ih);
+IUP_DRV_API bool iupcocoaDialogExitModal(Ihandle* ih);
 
 /* Get dialog window. */
-NSWindow* iupcocoaDialogGetWindow(Ihandle* ih);
+IUP_DRV_API NSWindow* iupcocoaDialogGetWindow(Ihandle* ih);
 
 /* Focus control. */
 IUP_DRV_API void iupcocoaSetCanFocus(Ihandle* ih, int can);
@@ -127,11 +127,11 @@ IUP_DRV_API void iupcocoaFocusOut(Ihandle* ih);
 
 /* System information */
 IUP_DRV_API int iupcocoaIsSystemDarkMode(void);
-void iupcocoaSetGlobalColors(void);
+IUP_DRV_API void iupcocoaSetGlobalColors(void);
 
 /* Tray support */
-int iupcocoaTrayGetLastButton(void);
-int iupcocoaTrayGetLastDclick(void);
+IUP_DRV_API int iupcocoaTrayGetLastButton(void);
+IUP_DRV_API int iupcocoaTrayGetLastDclick(void);
 
 #ifdef __cplusplus
 }

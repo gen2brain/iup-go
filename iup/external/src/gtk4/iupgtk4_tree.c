@@ -36,7 +36,7 @@
 /* Helper functions                                                          */
 /*****************************************************************************/
 
-int iupgtk4GetColor(const char* value, GdkRGBA *color)
+IUP_DRV_API int iupgtk4GetColor(const char* value, GdkRGBA *color)
 {
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))

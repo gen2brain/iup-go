@@ -42,7 +42,7 @@ static BOOL (WINAPI *winRegisterTouchWindow)(HWND hwnd, ULONG ulFlags) = NULL;
 static BOOL (WINAPI *winUnregisterTouchWindow)(HWND hwnd) = NULL;
 static BOOL (WINAPI *winIsTouchWindow)(HWND hwnd, PULONG pulFlags) = NULL;
 
-void iupwinTouchInit(void)
+IUP_DRV_API void iupwinTouchInit(void)
 {
   HINSTANCE lib = LoadLibrary(TEXT("user32"));
   
@@ -92,7 +92,7 @@ static int winSetGestureAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-void iupwinTouchRegisterAttrib(Iclass* ic)
+IUP_DRV_API void iupwinTouchRegisterAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
   iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
@@ -101,7 +101,7 @@ void iupwinTouchRegisterAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "GESTURE", NULL, winSetGestureAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
 
-void iupwinTouchProcessInput(Ihandle* ih, int count, void* lp)
+IUP_DRV_API void iupwinTouchProcessInput(Ihandle* ih, int count, void* lp)
 {
   HTOUCHINPUT hTouchInput = (HTOUCHINPUT)lp;
   IFniIIII mcb = (IFniIIII)IupGetCallback(ih, "MULTITOUCH_CB");
