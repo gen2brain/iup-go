@@ -14,6 +14,7 @@
 #include "iupcbs.h"
 #include "iup_loop.h"
 #include "iup_str.h"
+#include "iup_object.h"
 
 
 static IFidle gtk_idle_cb = NULL;
@@ -116,16 +117,24 @@ IUP_API int IupMainLoop(void)
 IUP_API int IupLoopStepWait(void)
 {
   GMainContext *context = g_main_context_default();
-  if (g_main_context_iteration(context, TRUE))
+  g_main_context_iteration(context, TRUE);
+
+  if (gtk4_loop_level > 0 && gtk4_loop_stack[gtk4_loop_level - 1] &&
+      !g_main_loop_is_running(gtk4_loop_stack[gtk4_loop_level - 1]))
     return IUP_CLOSE;
+
   return IUP_DEFAULT;
 }
 
 IUP_API int IupLoopStep(void)
 {
   GMainContext *context = g_main_context_default();
-  if (g_main_context_iteration(context, FALSE))
+  g_main_context_iteration(context, FALSE);
+
+  if (gtk4_loop_level > 0 && gtk4_loop_stack[gtk4_loop_level - 1] &&
+      !g_main_loop_is_running(gtk4_loop_stack[gtk4_loop_level - 1]))
     return IUP_CLOSE;
+
   return IUP_DEFAULT;
 }
 
@@ -164,9 +173,12 @@ static gint gtkPostMessageCallback(void *cb_data)
 {
   gtkPostMessageUserData* user_data = (gtkPostMessageUserData*)cb_data;
   Ihandle* ih = user_data->ih;
-  IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
-  if (cb)
-    cb(ih, user_data->s, user_data->i, user_data->d, user_data->p);
+  if (iupObjectCheck(ih))
+  {
+    IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
+    if (cb)
+      cb(ih, user_data->s, user_data->i, user_data->d, user_data->p);
+  }
   if (user_data->s) free(user_data->s);
   free(user_data);
   return FALSE;
@@ -175,6 +187,8 @@ static gint gtkPostMessageCallback(void *cb_data)
 IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
 {
   gtkPostMessageUserData* user_data = (gtkPostMessageUserData*)malloc(sizeof(gtkPostMessageUserData));
+  if (!user_data)
+    return;
   user_data->ih = ih;
   user_data->s = iupStrDup(s);
   user_data->i = i;
@@ -194,10 +208,13 @@ void iupgtk4LoopCleanup(void)
   /* Exit all running loops in the stack. */
   while (gtk4_loop_level > 0)
   {
-    GMainLoop* current_loop = gtk4_loop_stack[gtk4_loop_level - 1];
-    if (current_loop && g_main_loop_is_running(current_loop))
-      g_main_loop_quit(current_loop);
     gtk4_loop_level--;
+    if (gtk4_loop_stack[gtk4_loop_level])
+    {
+      if (g_main_loop_is_running(gtk4_loop_stack[gtk4_loop_level]))
+        g_main_loop_quit(gtk4_loop_stack[gtk4_loop_level]);
+      gtk4_loop_stack[gtk4_loop_level] = NULL;
+    }
   }
 
   /* Process pending events to clean up any stale event sources */

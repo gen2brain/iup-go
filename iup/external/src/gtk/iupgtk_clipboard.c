@@ -71,7 +71,7 @@ static int gtkClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
     return 0;
 
   size = iupAttribGetInt(ih, "FORMATDATASIZE");
-  if (!size)
+  if (size <= 0)
     return 0;
 
   data = malloc(size);
@@ -84,6 +84,13 @@ static int gtkClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   targets = gtk_target_table_new_from_list (list, &n_targets);
 
   clip_info = malloc(sizeof(gtkClipInfo));
+  if (!clip_info)
+  {
+    free(data);
+    gtk_target_table_free(targets, n_targets);
+    gtk_target_list_unref(list);
+    return 0;
+  }
   clip_info->data = data;
   clip_info->size = size;
   clip_info->target = target;
@@ -125,10 +132,15 @@ static char* gtkClipboardGetFormatDataAttrib(Ihandle *ih)
 #endif
 
   if (size <= 0 || format != 8 || !clip_data)
+  {
+    gtk_selection_data_free(selection_data);
     return NULL;
+  }
 
   data = iupStrGetMemory(size+1); /* reserve room for terminator */
   memcpy(data, clip_data, size);
+
+  gtk_selection_data_free(selection_data);
 
   iupAttribSetInt(ih, "FORMATDATASIZE", size);
   return data;
@@ -174,8 +186,11 @@ static int gtkClipboardSetTextAttrib(Ihandle *ih, const char *value)
 static char* gtkClipboardGetTextAttrib(Ihandle *ih)
 {
   GtkClipboard *clipboard = gtk_clipboard_get(gdk_atom_intern("CLIPBOARD", FALSE));
+  gchar* text = gtk_clipboard_wait_for_text(clipboard);
+  char* value = iupStrReturnStr(iupgtkStrConvertFromSystem(text));
+  g_free(text);
   (void)ih;
-  return iupgtkStrConvertFromSystem(gtk_clipboard_wait_for_text(clipboard));
+  return value;
 }
 
 static int gtkClipboardSetImageAttrib(Ihandle *ih, const char *value)

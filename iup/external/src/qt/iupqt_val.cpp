@@ -274,12 +274,19 @@ static int qtValSetValueAttrib(Ihandle* ih, const char* value)
     IupQtSlider* slider = (IupQtSlider*)ih->handle;
     if (slider)
     {
-      double fval = (ih->data->val - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
+      double range = ih->data->vmax - ih->data->vmin;
+      double fval;
+      int ival;
+
+      if (range == 0)
+        return 0;
+
+      fval = (ih->data->val - ih->data->vmin) / range;
 
       if (fval < 0.0) fval = 0.0;
       if (fval > 1.0) fval = 1.0;
 
-      int ival = (int)(fval * IVAL_RANGE);
+      ival = (int)(fval * IVAL_RANGE);
 
       slider->blockSignals(true);
       slider->setValue(ival);
@@ -452,11 +459,16 @@ static int qtValMapMethod(Ihandle* ih)
   if (ipagestep < 1) ipagestep = 1;
   slider->setPageStep(ipagestep);
 
-  double fval = (ih->data->val - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
-  if (fval < 0.0) fval = 0.0;
-  if (fval > 1.0) fval = 1.0;
-  int ival = (int)(fval * IVAL_RANGE);
-  slider->setValue(ival);
+  {
+    double range = ih->data->vmax - ih->data->vmin;
+    if (range != 0)
+    {
+      double fval = (ih->data->val - ih->data->vmin) / range;
+      if (fval < 0.0) fval = 0.0;
+      if (fval > 1.0) fval = 1.0;
+      slider->setValue((int)(fval * IVAL_RANGE));
+    }
+  }
 
   int show_ticks = iupAttribGetInt(ih, "SHOWTICKS");
   if (show_ticks > 0)

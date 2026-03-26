@@ -278,14 +278,15 @@ protected:
     if (!event->text().isEmpty() && event->text().at(0).isPrint())
     {
       QTextCursor cursor = textCursor();
-      int start = cursor.position();
-      int end = start;
+      int pos = cursor.position();
+      int start = pos;
+      int end = pos;
 
       if (cursor.hasSelection())
       {
         int anchor = cursor.anchor();
-        start = qMin(start, anchor);
-        end = qMax(start, anchor);
+        start = qMin(pos, anchor);
+        end = qMax(pos, anchor);
       }
 
       /* Call mask validation (ACTION callback handled separately) */
@@ -1444,10 +1445,12 @@ static int qtTextSetFilterAttrib(Ihandle* ih, const char* value)
     for (const QString& item : items)
       filterList << item.trimmed();
 
+    QCompleter* old_completer = edit->completer();
     QCompleter* completer = new QCompleter(filterList, edit);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     completer->setCompletionMode(QCompleter::PopupCompletion);
     edit->setCompleter(completer);
+    delete old_completer;
   }
 
   return 1;

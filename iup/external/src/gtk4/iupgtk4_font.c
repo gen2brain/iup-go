@@ -227,10 +227,24 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
 
     if (size > 0)
     {
+      const char* safe_family = family ? family : "sans";
+      char escaped_family[256];
+      int fi = 0, fo = 0;
+
+      /* Escape quotes and backslashes in font family name to prevent CSS injection */
+      while (safe_family[fi] && fo < (int)sizeof(escaped_family) - 2)
+      {
+        char c = safe_family[fi++];
+        if (c == '"' || c == '\\' || c == ';' || c == '}' || c == '{')
+          escaped_family[fo++] = '\\';
+        escaped_family[fo++] = c;
+      }
+      escaped_family[fo] = 0;
+
       if (pango_font_description_get_size_is_absolute(fontdesc))
-        snprintf(css_font, sizeof(css_font), "font-family: %s; font-size: %dpx;", family ? family : "sans", size / PANGO_SCALE);
+        snprintf(css_font, sizeof(css_font), "font-family: \"%s\"; font-size: %dpx;", escaped_family, size / PANGO_SCALE);
       else
-        snprintf(css_font, sizeof(css_font), "font-family: %s; font-size: %dpt;", family ? family : "sans", size / PANGO_SCALE);
+        snprintf(css_font, sizeof(css_font), "font-family: \"%s\"; font-size: %dpt;", escaped_family, size / PANGO_SCALE);
 
       iupgtk4CssSetWidgetFont(widget, css_font);
     }

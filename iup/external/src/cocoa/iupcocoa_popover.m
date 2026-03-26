@@ -245,6 +245,7 @@ static int cocoaPopoverMapMethod(Ihandle* ih)
   delegate = [[IupCocoaPopoverDelegate alloc] initWithIhandle:ih];
   [popover setDelegate:delegate];
   objc_setAssociatedObject(popover, POPOVER_DELEGATE_KEY, delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  [delegate release];
 
   int show_arrow = iupAttribGetBoolean(ih, "ARROW");
   if (!show_arrow)
@@ -272,8 +273,7 @@ static void cocoaPopoverUnMapMethod(Ihandle* ih)
     if (delegate)
     {
       [popover setDelegate:nil];
-      objc_setAssociatedObject(popover, POPOVER_DELEGATE_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
-      [delegate release];
+      objc_setAssociatedObject(popover, POPOVER_DELEGATE_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
 
     [popover release];

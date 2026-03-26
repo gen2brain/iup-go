@@ -222,7 +222,7 @@ protected:
       int y = event->y();
 #endif
 
-      char status[IUPKEY_STATUS_SIZE];
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupqtButtonKeySetStatus(event->modifiers(), Qt::NoButton, 0, status, 0);
 
       cb(ih, (float)delta, x, y, status);
@@ -401,7 +401,7 @@ protected:
           int y = tp.pos().y();
 #endif
 
-          char status[IUPKEY_STATUS_SIZE];
+          char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
           iupqtButtonKeySetStatus(touchEvent->modifiers(), Qt::NoButton, 0, status, 0);
 
           /* Convert touch state to IUP state */

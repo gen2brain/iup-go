@@ -1366,6 +1366,29 @@ static int gtk4ListSetNCAttrib(Ihandle* ih, const char* value)
     return 1;
 }
 
+static void gtk4ListPasteReadyCb(GObject *source, GAsyncResult *result, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  GError* error = NULL;
+  char* text = gdk_clipboard_read_text_finish(GDK_CLIPBOARD(source), result, &error);
+  if (error)
+    g_error_free(error);
+  if (text)
+  {
+    if (iupObjectCheck(ih))
+    {
+      GtkEditable* entry = (GtkEditable*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
+      if (entry)
+      {
+        int pos = gtk_editable_get_position(entry);
+        gtk_editable_insert_text(entry, text, -1, &pos);
+        gtk_editable_set_position(entry, pos);
+      }
+    }
+    g_free(text);
+  }
+}
+
 static int gtk4ListSetClipboardAttrib(Ihandle *ih, const char *value)
 {
   GtkEntry* entry;
@@ -1404,7 +1427,7 @@ static int gtk4ListSetClipboardAttrib(Ihandle *ih, const char *value)
   else if (iupStrEqualNoCase(value, "PASTE"))
   {
     GdkClipboard* clipboard = gtk_widget_get_clipboard((GtkWidget*)entry);
-    gdk_clipboard_read_text_async(clipboard, NULL, NULL, NULL);
+    gdk_clipboard_read_text_async(clipboard, NULL, gtk4ListPasteReadyCb, ih);
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))
     gtk_editable_delete_selection(GTK_EDITABLE(entry));
@@ -1601,10 +1624,12 @@ static void gtk4ListEditInsertText(GtkEditable *editable, char *insert_value, in
     g_signal_stop_emission_by_name(editable, "insert_text");
   else if (ret != -1)
   {
-    insert_value[0] = (char)ret;
+    char new_insert[2];
+    new_insert[0] = (char)ret;
+    new_insert[1] = 0;
 
     iupAttribSet(ih, "_IUPGTK4_DISABLE_TEXT_CB", "1");
-    gtk_editable_insert_text(editable, insert_value, 1, pos);
+    gtk_editable_insert_text(editable, new_insert, 1, pos);
     iupAttribSet(ih, "_IUPGTK4_DISABLE_TEXT_CB", NULL);
 
     g_signal_stop_emission_by_name(editable, "insert_text");

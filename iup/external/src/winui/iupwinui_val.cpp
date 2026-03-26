@@ -102,7 +102,11 @@ static int winuiValSetValueAttrib(Ihandle* ih, const char* value)
 
       iupValCropValue(ih);
 
-      sliderVal = ((ih->data->val - ih->data->vmin) / (ih->data->vmax - ih->data->vmin)) * WINUI_VAL_MAX;
+      {
+        double range = ih->data->vmax - ih->data->vmin;
+        if (range == 0) return 0;
+        sliderVal = ((ih->data->val - ih->data->vmin) / range) * WINUI_VAL_MAX;
+      }
       if (ih->data->inverted)
         sliderVal = WINUI_VAL_MAX - sliderVal;
 

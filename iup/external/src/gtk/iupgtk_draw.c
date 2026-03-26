@@ -726,8 +726,12 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   cairo_set_source_rgba(dc->image_cr, iupgtkColorToDouble(iupDrawRed(color)), iupgtkColorToDouble(iupDrawGreen(color)), iupgtkColorToDouble(iupDrawBlue(color)), iupgtkColorToDouble(iupDrawAlpha(color)));
 
   if (flags & IUP_DRAW_CLIP)
-  {
     cairo_save(dc->image_cr);
+  else if (text_orientation)
+    cairo_save(dc->image_cr);
+
+  if (flags & IUP_DRAW_CLIP)
+  {
     cairo_new_path(dc->image_cr);
     cairo_rectangle(dc->image_cr, x, y, w, h);
     cairo_clip(dc->image_cr); /* intersect with the current clipping */
@@ -761,16 +765,16 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   {
     pango_layout_set_width(fontlayout, -1);
 #ifdef PANGO_VERSION_CHECK
-#if PANGO_VERSION_CHECK(1,2,0)  
+#if PANGO_VERSION_CHECK(1,2,0)
     pango_layout_set_height(fontlayout, -1);
 #endif
 #endif
   }
   if (flags & IUP_DRAW_ELLIPSIS)
     pango_layout_set_ellipsize(fontlayout, PANGO_ELLIPSIZE_NONE);
-  if (text_orientation)
-    cairo_identity_matrix(dc->image_cr);
-  if (flags & IUP_DRAW_CLIP)
+  pango_layout_set_alignment(fontlayout, PANGO_ALIGN_LEFT);
+
+  if ((flags & IUP_DRAW_CLIP) || text_orientation)
     cairo_restore(dc->image_cr);
 }
 
@@ -938,6 +942,11 @@ IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w
     return 0;
 
   stride = cairo_image_surface_get_stride(surface);
+
+  if (w > cairo_image_surface_get_width(surface))
+    w = cairo_image_surface_get_width(surface);
+  if (h > cairo_image_surface_get_height(surface))
+    h = cairo_image_surface_get_height(surface);
 
   iCairoCopyBgraPremulToRgba(data, src, w, h, stride);
   return 1;

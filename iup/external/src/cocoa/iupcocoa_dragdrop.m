@@ -142,6 +142,8 @@ static int cocoaDropCallbackWithImage(NSImage* ns_image, IFnsViii drop_data_call
   int bytes_per_row = iupcocoaImageCalculateBytesPerRow(w, bpp/8);
   size_t buffer_size = bytes_per_row * h;
   unsigned char* img_data = malloc(buffer_size);
+  if (!img_data)
+    return IUP_DEFAULT;
   iupdrvImageGetData(ns_image, img_data);
 
   char type_string[1024];

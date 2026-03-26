@@ -33,6 +33,8 @@ static const void* IUP_COCOA_CALENDAR_DELEGATE_OBJ_KEY = "IUP_COCOA_CALENDAR_DEL
 - (IBAction)myDatePickerAction:(id)the_sender
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_sender, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih || !iupObjectCheck(ih))
+    return;
   iupBaseCallValueChangedCb(ih);
 }
 

@@ -120,7 +120,11 @@ static int motValSetValueAttrib(Ihandle* ih, const char* value)
   {
     int ival;
     iupValCropValue(ih);
-    ival = (int)(((ih->data->val - ih->data->vmin) / (ih->data->vmax - ih->data->vmin))*SHRT_MAX);
+    {
+      double range = ih->data->vmax - ih->data->vmin;
+      if (range == 0) return 0;
+      ival = (int)(((ih->data->val - ih->data->vmin) / range)*SHRT_MAX);
+    }
     XtVaSetValues(ih->handle, XmNvalue, ival, NULL);
   }
 

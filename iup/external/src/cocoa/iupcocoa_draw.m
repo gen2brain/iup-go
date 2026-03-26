@@ -964,6 +964,11 @@ IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w
   if (!src)
     return 0;
 
+  if (w > (int)[buffer pixelsWide])
+    w = (int)[buffer pixelsWide];
+  if (h > (int)[buffer pixelsHigh])
+    h = (int)[buffer pixelsHigh];
+
   iCocoaCopyPremulToRgba(data, src, w, h, (int)[buffer bytesPerRow]);
   return 1;
 }

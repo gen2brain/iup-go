@@ -27,9 +27,10 @@ void iupdrvSetFocus(Ihandle *ih)
 {
   Ihandle* dialog = IupGetDialog(ih);
 
-  if (!gtk_window_is_active((GtkWindow*)dialog->handle))
+  if (dialog && dialog->handle)
   {
-    gtk_window_present(GTK_WINDOW(dialog->handle));
+    if (!gtk_window_is_active((GtkWindow*)dialog->handle))
+      gtk_window_present(GTK_WINDOW(dialog->handle));
   }
 
   gtk_widget_grab_focus(ih->handle);

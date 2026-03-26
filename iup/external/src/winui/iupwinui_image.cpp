@@ -338,7 +338,7 @@ static void* winuiLoadImageFile(const char* name)
 
   WriteableBitmap bitmap(width, height);
   IBuffer pixelBuffer = bitmap.PixelBuffer();
-  memcpy(pixelBuffer.data(), pixelArray.data(), width * height * 4);
+  memcpy(pixelBuffer.data(), pixelArray.data(), (size_t)width * height * 4);
   bitmap.Invalidate();
 
   winrt::copy_to_abi(bitmap, handle);
@@ -434,7 +434,7 @@ extern "C" IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* i
   IBuffer buffer = bitmap.PixelBuffer();
   uint8_t* pixels = buffer.data();
 
-  int planesize = width * height;
+  size_t planesize = (size_t)width * height;
   unsigned char* r = imgdata;
   unsigned char* g = imgdata + planesize;
   unsigned char* b = imgdata + 2 * planesize;
@@ -559,7 +559,8 @@ static const GUID* iWinUIImageGetContainerFormat(const char* format)
 
 static unsigned char* iWinUIImageExpandPalette(unsigned char* imgdata, int width, int height, iupColor* colors, int colors_count)
 {
-  int i, count = width * height;
+  size_t count = (size_t)width * height;
+  int i;
   unsigned char* rgba = (unsigned char*)malloc(count * 4);
   if (!rgba) return NULL;
 
@@ -612,7 +613,7 @@ static int iWinUIImageSaveToStream(unsigned char* imgdata, int width, int height
   else
     pixelFormat = GUID_WICPixelFormat32bppBGRA;
 
-  pixbuf = (unsigned char*)malloc(width * height * dst_channels);
+  pixbuf = (unsigned char*)malloc((size_t)width * height * dst_channels);
   if (!pixbuf)
   {
     if (data != imgdata) free(data);

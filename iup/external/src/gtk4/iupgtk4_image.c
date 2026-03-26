@@ -42,7 +42,7 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
   GdkTexture* texture = (GdkTexture*)handle;
   int w, h, y, x, bpp;
   guchar *pixdata;
-  int planesize;
+  size_t planesize;
   unsigned char *r, *g, *b, *a;
 
   if (!iupdrvImageGetInfo(handle, &w, &h, &bpp))
@@ -52,11 +52,11 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
     return;
 
   /* Download texture data (always RGBA) */
-  pixdata = g_malloc(w * h * 4);
-  gdk_texture_download(texture, pixdata, w * 4);
+  pixdata = g_malloc((gsize)w * h * 4);
+  gdk_texture_download(texture, pixdata, (gsize)w * 4);
 
   /* planes are separated in imgdata */
-  planesize = w * h;
+  planesize = (size_t)w * h;
   r = imgdata;
   g = imgdata + planesize;
   b = imgdata + 2 * planesize;
@@ -90,7 +90,7 @@ IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupC
   (void)colors_count;
 
   /* Create texture from memory */
-  pixdata = g_malloc(width * height * 4);
+  pixdata = g_malloc((gsize)width * height * 4);
 
   /* imgdata is bottom up, texture is top-bottom */
 
@@ -116,7 +116,7 @@ IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupC
   else /* bpp == 32 or bpp == 24 */
   {
     /* planes are separated in imgdata */
-    int planesize = width * height;
+    size_t planesize = (size_t)width * height;
     unsigned char *r = imgdata,
                   *g = imgdata + planesize,
                   *b = imgdata + 2 * planesize,
@@ -140,8 +140,8 @@ IUP_SDK_API void* iupdrvImageCreateImageRaw(int width, int height, int bpp, iupC
     }
   }
 
-  bytes = g_bytes_new_take(pixdata, width * height * 4);
-  texture = gdk_memory_texture_new(width, height, GDK_MEMORY_R8G8B8A8, bytes, width * 4);
+  bytes = g_bytes_new_take(pixdata, (gsize)width * height * 4);
+  texture = gdk_memory_texture_new(width, height, GDK_MEMORY_R8G8B8A8, bytes, (gsize)width * 4);
   g_bytes_unref(bytes);
 
   return texture;
@@ -163,7 +163,7 @@ void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive
   else if (bpp == 32)
     has_alpha = 1;
 
-  pixdata = g_malloc(ih->currentwidth * ih->currentheight * 4);
+  pixdata = g_malloc((gsize)ih->currentwidth * ih->currentheight * 4);
   imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
 
   if (make_inactive)
@@ -244,8 +244,8 @@ void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int make_inactive
     }
   }
 
-  bytes = g_bytes_new_take(pixdata, ih->currentwidth * ih->currentheight * 4);
-  texture = gdk_memory_texture_new(ih->currentwidth, ih->currentheight, GDK_MEMORY_R8G8B8A8, bytes, ih->currentwidth * 4);
+  bytes = g_bytes_new_take(pixdata, (gsize)ih->currentwidth * ih->currentheight * 4);
+  texture = gdk_memory_texture_new(ih->currentwidth, ih->currentheight, GDK_MEMORY_R8G8B8A8, bytes, (gsize)ih->currentwidth * 4);
   g_bytes_unref(bytes);
 
   return texture;
@@ -404,7 +404,8 @@ IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
 
 static unsigned char* iGtk4ImageExpandPalette(unsigned char* imgdata, int width, int height, iupColor* colors, int colors_count)
 {
-  int i, count = width * height;
+  size_t count = (size_t)width * height;
+  int i;
   unsigned char* rgba = (unsigned char*)malloc(count * 4);
   if (!rgba) return NULL;
 

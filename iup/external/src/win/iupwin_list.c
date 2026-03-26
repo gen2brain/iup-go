@@ -238,6 +238,7 @@ static int winListGetMaxWidth(Ihandle* ih)
   for (i=0; i<count; i++)
   { 
     winListItemData* itemdata = winListGetItemData(ih, i);
+    if (!itemdata) continue;
     item_w = itemdata->text_width;
     if (item_w > max_w)
       max_w = item_w;
@@ -1047,12 +1048,14 @@ static char* winListGetImageNativeHandleAttribId(Ihandle* ih, int id)
 void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   winListItemData *itemdata = winListGetItemData(ih, id-1);
+  if (!itemdata)
+    return NULL;
   return itemdata->hBitmap;
 }
 
 int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
-  winListSetItemData(ih, id, NULL, (HBITMAP)hImage);
+  winListSetItemData(ih, id - 1, NULL, (HBITMAP)hImage);
   iupdrvRedrawNow(ih);
   return 0;
 }

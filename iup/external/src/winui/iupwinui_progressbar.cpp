@@ -41,8 +41,11 @@ static int winuiProgressBarSetValueAttrib(Ihandle* ih, const char* value)
     ProgressBar pb = winuiGetHandle<ProgressBar>(ih);
     if (pb)
     {
-      double factor = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
-      pb.Value(factor * WINUI_PB_MAX);
+      double range = ih->data->vmax - ih->data->vmin;
+      if (range != 0)
+        pb.Value(((ih->data->value - ih->data->vmin) / range) * WINUI_PB_MAX);
+      else
+        pb.Value(0);
     }
   }
 

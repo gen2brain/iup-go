@@ -20,11 +20,19 @@ IUP_API int IupExecute(const char *filename, const char* parameters)
 {
   GError *error = NULL;
   int ret = 1;
-  size_t cmd_size = sizeof(char)*(strlen(filename) + strlen(parameters) + 3);
-  char* cmd = (char*)malloc(cmd_size);
-  snprintf(cmd, cmd_size, "%s %s", filename, parameters);
+  char** param_argv = NULL;
+  int param_argc = 0, i;
+  char** argv;
 
-  if (!g_spawn_command_line_async(cmd, &error))
+  if (parameters && parameters[0])
+    g_shell_parse_argv(parameters, &param_argc, &param_argv, NULL);
+
+  argv = g_new0(char*, param_argc + 2);
+  argv[0] = (char*)filename;
+  for (i = 0; i < param_argc; i++)
+    argv[i + 1] = param_argv[i];
+
+  if (!g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, &error))
   {
     if (error && error->code == G_FILE_ERROR_NOENT)
       ret = -2;
@@ -35,7 +43,8 @@ IUP_API int IupExecute(const char *filename, const char* parameters)
   if (error)
     g_error_free(error);
 
-  free(cmd);
+  g_free(argv);
+  g_strfreev(param_argv);
 
   return ret;
 }
@@ -44,11 +53,19 @@ IUP_API int IupExecuteWait(const char *filename, const char* parameters)
 {
   GError *error = NULL;
   int ret = 1;
-  size_t cmd_size = sizeof(char)*(strlen(filename) + strlen(parameters) + 3);
-  char* cmd = (char*)malloc(cmd_size);
-  snprintf(cmd, cmd_size, "%s %s", filename, parameters);
+  char** param_argv = NULL;
+  int param_argc = 0, i;
+  char** argv;
 
-  if (!g_spawn_command_line_sync(cmd, NULL, NULL, NULL, &error))
+  if (parameters && parameters[0])
+    g_shell_parse_argv(parameters, &param_argc, &param_argv, NULL);
+
+  argv = g_new0(char*, param_argc + 2);
+  argv[0] = (char*)filename;
+  for (i = 0; i < param_argc; i++)
+    argv[i + 1] = param_argv[i];
+
+  if (!g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL, NULL, &error))
   {
     if (error && error->code == G_FILE_ERROR_NOENT)
       ret = -2;
@@ -59,7 +76,8 @@ IUP_API int IupExecuteWait(const char *filename, const char* parameters)
   if (error)
     g_error_free(error);
 
-  free(cmd);
+  g_free(argv);
+  g_strfreev(param_argv);
 
   return ret;
 }

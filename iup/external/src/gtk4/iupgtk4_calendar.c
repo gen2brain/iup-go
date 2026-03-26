@@ -52,26 +52,35 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
     time_t timer;
     time(&timer);
     timeinfo = localtime(&timer);
-
-    GDateTime *dt = g_date_time_new_local(timeinfo->tm_year + 1900,
-                                           timeinfo->tm_mon + 1,
-                                           timeinfo->tm_mday, 0, 0, 0);
-    gtk4CalendarSetDate(GTK_CALENDAR(ih->handle), dt);
-    g_date_time_unref(dt);
+    if (timeinfo)
+    {
+      GDateTime *dt = g_date_time_new_local(timeinfo->tm_year + 1900,
+                                             timeinfo->tm_mon + 1,
+                                             timeinfo->tm_mday, 0, 0, 0);
+      if (dt)
+      {
+        gtk4CalendarSetDate(GTK_CALENDAR(ih->handle), dt);
+        g_date_time_unref(dt);
+      }
+    }
   }
   else
   {
     int year, month, day;
     if (sscanf(value, "%d/%d/%d", &year, &month, &day) == 3)
     {
+      GDateTime *dt;
       if (month < 1) month = 1;
       if (month > 12) month = 12;
       if (day < 1) day = 1;
       if (day > 31) day = 31;
 
-      GDateTime *dt = g_date_time_new_local(year, month, day, 0, 0, 0);
-      gtk4CalendarSetDate(GTK_CALENDAR(ih->handle), dt);
-      g_date_time_unref(dt);
+      dt = g_date_time_new_local(year, month, day, 0, 0, 0);
+      if (dt)
+      {
+        gtk4CalendarSetDate(GTK_CALENDAR(ih->handle), dt);
+        g_date_time_unref(dt);
+      }
     }
   }
   return 0; /* do not store value in hash table */
@@ -94,6 +103,8 @@ static char* gtk4CalendarGetTodayAttrib(Ihandle* ih)
   time(&timer);
   timeinfo = localtime(&timer);
   (void)ih;
+  if (!timeinfo)
+    return NULL;
   return iupStrReturnStrf("%d/%d/%d", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday);
 }
 

@@ -364,12 +364,24 @@ static int gtk4ToggleSetFontAttrib(Ihandle* ih, const char* value)
       {
         char css[512];
         const char* family = pango_font_description_get_family(fontdesc);
+        const char* safe_family = family ? family : "sans";
+        char escaped_family[256];
+        int fi = 0, fo = 0;
         int size = pango_font_description_get_size(fontdesc) / PANGO_SCALE;
         PangoWeight weight = pango_font_description_get_weight(fontdesc);
         PangoStyle style = pango_font_description_get_style(fontdesc);
 
+        while (safe_family[fi] && fo < (int)sizeof(escaped_family) - 2)
+        {
+          char c = safe_family[fi++];
+          if (c == '"' || c == '\\' || c == ';' || c == '}' || c == '{')
+            escaped_family[fo++] = '\\';
+          escaped_family[fo++] = c;
+        }
+        escaped_family[fo] = 0;
+
         snprintf(css, sizeof(css), "font-family: \"%s\"; font-size: %dpt; font-weight: %d; font-style: %s;",
-                family, size, weight,
+                escaped_family, size, weight,
                 (style == PANGO_STYLE_ITALIC) ? "italic" : "normal");
 
         iupgtk4CssSetWidgetFont(ih->handle, css);

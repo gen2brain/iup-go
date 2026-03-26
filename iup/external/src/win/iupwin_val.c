@@ -107,7 +107,11 @@ static int winValSetValueAttrib(Ihandle* ih, const char* value)
 
     iupValCropValue(ih);
 
-    ival = (int)(((ih->data->val - ih->data->vmin) / (ih->data->vmax - ih->data->vmin))*SHRT_MAX);
+    {
+      double range = ih->data->vmax - ih->data->vmin;
+      if (range == 0) return 0;
+      ival = (int)(((ih->data->val - ih->data->vmin) / range)*SHRT_MAX);
+    }
     if (ih->data->inverted)
       ival = SHRT_MAX - ival;
 

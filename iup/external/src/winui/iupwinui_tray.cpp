@@ -353,7 +353,7 @@ extern "C" int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, i
   if (w <= 0 || h <= 0)
     return 0;
 
-  dst = (unsigned char*)malloc(w * h * 4);
+  dst = (unsigned char*)malloc((size_t)w * h * 4);
   if (!dst)
     return 0;
 

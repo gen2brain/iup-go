@@ -557,7 +557,10 @@ static void gtkTableCellEditingCanceled(GtkCellRenderer* renderer, gpointer user
   gtk_tree_view_get_cursor(GTK_TREE_VIEW(gtk_data->tree_view), &path, &column);
 
   if (!path || !column)
+  {
+    if (path) gtk_tree_path_free(path);
     return;
+  }
 
   int* indices = gtk_tree_path_get_indices(path);
   int lin = indices[0] + 1;  /* 1-based */
@@ -622,7 +625,10 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
   {
     int ret = editend_cb(ih, lin, col, new_text, 1);  /* 1 = accepted */
     if (ret == IUP_IGNORE)
-      return;  /* Reject edit */
+    {
+      free(old_text);
+      return;
+    }
   }
 
   /* Call edition callback */
@@ -631,7 +637,10 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
   {
     int ret = cb(ih, lin, col, new_text);
     if (ret == IUP_IGNORE)
-      return;  /* Don't update cell */
+    {
+      free(old_text);
+      return;
+    }
   }
 
   /* Update cell value */
@@ -1200,6 +1209,9 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
         GtkTreeIter iter;
         gchar* value = NULL;
 
+        if (gtk_data->is_virtual)
+          break;
+
         if (gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(gtk_data->store), &iter, NULL, lin - 1))
         {
           gtk_tree_model_get(GTK_TREE_MODEL(gtk_data->store), &iter, gtkTableTextModelCol(ih, col - 1), &value, -1);
@@ -1232,15 +1244,21 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
 
         if (iupStrBoolean(editable))
         {
-          const char* text = IupGetGlobal("CLIPBOARD");
+          IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+          const char* text;
+
+          if (gtk_data->is_virtual)
+            break;
+
+          text = IupGetGlobal("CLIPBOARD");
           if (text && *text)
           {
+            GtkTreeIter iter;
+
             /* Set the cell value */
             iupAttribSetId2(ih, "", lin, col, text);
 
             /* Update the GTK model */
-            IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
-            GtkTreeIter iter;
             if (gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(gtk_data->store), &iter, NULL, lin - 1))
             {
               gtk_list_store_set(gtk_data->store, &iter, gtkTableTextModelCol(ih, col - 1), text, -1);

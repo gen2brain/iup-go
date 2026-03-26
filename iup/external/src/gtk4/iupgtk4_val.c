@@ -80,9 +80,12 @@ static int gtk4ValSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->val)))
   {
-    double fval;
-    fval = (ih->data->val - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
-    gtk_range_set_value(GTK_RANGE(ih->handle), fval);
+    double range = ih->data->vmax - ih->data->vmin;
+    if (range != 0)
+    {
+      double fval = (ih->data->val - ih->data->vmin) / range;
+      gtk_range_set_value(GTK_RANGE(ih->handle), fval);
+    }
   }
   return 0;
 }

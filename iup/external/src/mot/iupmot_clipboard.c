@@ -177,7 +177,7 @@ static int motClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   }
 
   size = iupAttribGetInt(ih, "FORMATDATASIZE");
-  if (!size)
+  if (size <= 0)
     return 0;
 
   format = iupAttribGetStr(ih, "FORMAT");

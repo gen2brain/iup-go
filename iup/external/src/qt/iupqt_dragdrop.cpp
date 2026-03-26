@@ -111,7 +111,7 @@ protected:
           dd_data->last_x = x;
           dd_data->last_y = y;
 
-          char status[IUPKEY_STATUS_SIZE];
+          char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
           qtDragDropGetModifiers(status);
 
           int ret = cb(ih, x, y, status);
@@ -146,7 +146,7 @@ protected:
           dd_data->last_x = x;
           dd_data->last_y = y;
 
-          char status[IUPKEY_STATUS_SIZE];
+          char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
           qtDragDropGetModifiers(status);
 
           int ret = cb(ih, x, y, status);

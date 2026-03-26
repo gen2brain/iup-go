@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <spawn.h>
+#include <errno.h>
 
 #include "iup.h"
 #include "iup_str.h"
@@ -15,24 +19,68 @@
 
 #include "iupunix_portal.h"
 
+extern char **environ;
+
+static int iupEflBuildArgv(const char *filename, const char *parameters, char*** out_argv, char** out_params_copy)
+{
+  int argc = 0, i;
+  char** argv;
+
+  *out_params_copy = NULL;
+
+  if (parameters && parameters[0])
+  {
+    char* params_copy = iupStrDup(parameters);
+    char* token;
+    char* rest = params_copy;
+
+    {
+      char* tmp = iupStrDup(parameters);
+      char* tmp_rest = tmp;
+      while (strtok_r(tmp_rest, " \t", &tmp_rest))
+        argc++;
+      free(tmp);
+    }
+
+    argv = (char**)malloc(sizeof(char*) * (argc + 2));
+    argv[0] = (char*)filename;
+    i = 1;
+    while ((token = strtok_r(rest, " \t", &rest)) != NULL)
+      argv[i++] = token;
+    argv[i] = NULL;
+
+    *out_argv = argv;
+    *out_params_copy = params_copy;
+    return argc + 1;
+  }
+  else
+  {
+    argv = (char**)malloc(sizeof(char*) * 2);
+    argv[0] = (char*)filename;
+    argv[1] = NULL;
+
+    *out_argv = argv;
+    return 1;
+  }
+}
 
 IUP_API int IupExecute(const char *filename, const char* parameters)
 {
   int ret = 1;
-  char* cmd;
-  Eina_Bool success;
+  char** argv;
+  char* params_copy;
+  pid_t pid;
+  int status;
 
-  {
-  int cmd_size = (int)(strlen(filename) + strlen(parameters) + 3);
-  cmd = (char*)malloc(sizeof(char)*cmd_size);
-  snprintf(cmd, cmd_size, "%s %s", filename, parameters);
-  }
+  iupEflBuildArgv(filename, parameters, &argv, &params_copy);
 
-  success = ecore_exe_run(cmd, NULL) != NULL;
-  if (!success)
-    ret = -1;
+  status = posix_spawnp(&pid, filename, NULL, NULL, argv, environ);
 
-  free(cmd);
+  free(argv);
+  free(params_copy);
+
+  if (status != 0)
+    return -1;
 
   return ret;
 }
@@ -40,22 +88,26 @@ IUP_API int IupExecute(const char *filename, const char* parameters)
 IUP_API int IupExecuteWait(const char *filename, const char* parameters)
 {
   int ret = 1;
-  char* cmd;
-  int exit_status;
+  char** argv;
+  char* params_copy;
+  pid_t pid;
+  int status;
 
-  {
-  int cmd_size = (int)(strlen(filename) + strlen(parameters) + 3);
-  cmd = (char*)malloc(sizeof(char)*cmd_size);
-  snprintf(cmd, cmd_size, "%s %s", filename, parameters);
-  }
+  iupEflBuildArgv(filename, parameters, &argv, &params_copy);
 
-  exit_status = system(cmd);
-  if (exit_status == -1)
+  status = posix_spawnp(&pid, filename, NULL, NULL, argv, environ);
+
+  free(argv);
+  free(params_copy);
+
+  if (status != 0)
+    return -1;
+
+  if (waitpid(pid, &status, 0) == -1)
+    return -1;
+
+  if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
     ret = -1;
-  else if (exit_status != 0)
-    ret = -1;
-
-  free(cmd);
 
   return ret;
 }

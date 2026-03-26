@@ -617,6 +617,15 @@ extern "C" void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
   }
 }
 
+static QListWidget* qtListGetListWidget(Ihandle* ih)
+{
+  if (ih->data->has_editbox && !ih->data->is_dropdown)
+    return (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST");
+  else if (!ih->data->is_dropdown)
+    return (QListWidget*)ih->handle;
+  return nullptr;
+}
+
 extern "C" int iupdrvListGetCount(Ihandle* ih)
 {
   if (ih->data->is_dropdown)
@@ -1361,7 +1370,9 @@ static char* qtListGetScrollVisibleAttrib(Ihandle* ih)
   if (ih->data->is_dropdown)
     return nullptr;
 
-  IupQtListWidget* list = (IupQtListWidget*)ih->handle;
+  QListWidget* list = qtListGetListWidget(ih);
+  if (!list)
+    return nullptr;
 
   int horiz_visible = 0, vert_visible = 0;
 
@@ -1448,9 +1459,15 @@ static int qtListSetSpacingAttrib(Ihandle* ih, const char* value)
       /* Update delegate to use new spacing */
       if (!ih->data->is_dropdown)
       {
-        QListWidget* list = (QListWidget*)ih->handle;
-        IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
-        list->setItemDelegate(delegate);
+        QListWidget* list = qtListGetListWidget(ih);
+        if (list)
+        {
+          QAbstractItemDelegate* old_delegate = list->itemDelegate();
+          IupQtListItemDelegate* delegate = new IupQtListItemDelegate(ih);
+          list->setItemDelegate(delegate);
+          if (old_delegate && old_delegate->parent() == list)
+            delete old_delegate;
+        }
       }
     }
     return 0;
@@ -1472,9 +1489,10 @@ static int qtListSetPaddingAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      QListWidget* list = (QListWidget*)ih->handle;
-      list->setContentsMargins(ih->data->horiz_padding, ih->data->vert_padding,
-                               ih->data->horiz_padding, ih->data->vert_padding);
+      QListWidget* list = qtListGetListWidget(ih);
+      if (list)
+        list->setContentsMargins(ih->data->horiz_padding, ih->data->vert_padding,
+                                 ih->data->horiz_padding, ih->data->vert_padding);
     }
     return 0;
   }
@@ -1520,10 +1538,13 @@ static int qtListSetBgColorAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    QListWidget* list = (QListWidget*)ih->handle;
-    QPalette palette = list->palette();
-    palette.setColor(QPalette::Base, QColor(r, g, b));
-    list->setPalette(palette);
+    QListWidget* list = qtListGetListWidget(ih);
+    if (list)
+    {
+      QPalette palette = list->palette();
+      palette.setColor(QPalette::Base, QColor(r, g, b));
+      list->setPalette(palette);
+    }
   }
 
   return 1;
@@ -1545,10 +1566,13 @@ static int qtListSetFgColorAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    QListWidget* list = (QListWidget*)ih->handle;
-    QPalette palette = list->palette();
-    palette.setColor(QPalette::Text, QColor(r, g, b));
-    list->setPalette(palette);
+    QListWidget* list = qtListGetListWidget(ih);
+    if (list)
+    {
+      QPalette palette = list->palette();
+      palette.setColor(QPalette::Text, QColor(r, g, b));
+      list->setPalette(palette);
+    }
   }
 
   return 1;
@@ -1568,8 +1592,9 @@ static int qtListSetFontAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      QListWidget* list = (QListWidget*)ih->handle;
-      iupqtUpdateWidgetFont(ih, list);
+      QListWidget* list = qtListGetListWidget(ih);
+      if (list)
+        iupqtUpdateWidgetFont(ih, list);
     }
   }
 
@@ -1672,12 +1697,15 @@ static int qtListConvertXYToPos(Ihandle* ih, int x, int y)
 {
   if (!ih->data->is_dropdown)
   {
-    QListWidget* list = (QListWidget*)ih->handle;
-    QListWidgetItem* item = list->itemAt(QPoint(x, y));
-    if (item)
+    QListWidget* list = qtListGetListWidget(ih);
+    if (list)
     {
-      int pos = list->row(item) + 1;  /* IUP starts at 1 */
-      return pos;
+      QListWidgetItem* item = list->itemAt(QPoint(x, y));
+      if (item)
+      {
+        int pos = list->row(item) + 1;  /* IUP starts at 1 */
+        return pos;
+      }
     }
   }
 

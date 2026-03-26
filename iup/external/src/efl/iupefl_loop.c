@@ -275,9 +275,12 @@ static void eflPostMessageCallback(void* data)
 {
   IeflPostMessage* msg = (IeflPostMessage*)data;
 
-  IFnsidv cb = (IFnsidv)IupGetCallback(msg->ih, "POSTMESSAGE_CB");
-  if (cb)
-    cb(msg->ih, msg->s, msg->i, msg->d, msg->p);
+  if (iupObjectCheck(msg->ih))
+  {
+    IFnsidv cb = (IFnsidv)IupGetCallback(msg->ih, "POSTMESSAGE_CB");
+    if (cb)
+      cb(msg->ih, msg->s, msg->i, msg->d, msg->p);
+  }
 
   if (msg->s)
     free(msg->s);

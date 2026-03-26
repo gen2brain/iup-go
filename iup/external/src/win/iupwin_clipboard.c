@@ -106,14 +106,14 @@ static int winClipboardSetSaveEMFAttrib(Ihandle *ih, const char *value)
   GetEnhMetaFileBits(Handle, dwSize, buffer);
   
   hFile = CreateFile(iupwinStrToSystemFilename(value), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
-  if (hFile)
+  if (hFile != INVALID_HANDLE_VALUE)
   {
     WriteFile(hFile, buffer, dwSize, &nBytesWrite, NULL);
     CloseHandle(hFile);
   }
-  
+
   free(buffer);
-  
+
   CloseClipboard();
   return 0;
 }
@@ -144,7 +144,7 @@ static int winClipboardSetSaveWMFAttrib(Ihandle *ih, const char *value)
   GetMetaFileBitsEx(lpMFP->hMF, dwSize, buffer);
   
   hFile = CreateFile(iupwinStrToSystemFilename(value), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
-  if (hFile)
+  if (hFile != INVALID_HANDLE_VALUE)
   {
     winWritePlacebleFile(hFile, buffer, dwSize, lpMFP->mm, lpMFP->xExt, lpMFP->yExt);
     CloseHandle(hFile);
@@ -189,13 +189,18 @@ static int winClipboardSetTextAttrib(Ihandle *ih, const char *value)
   if (dos_str != value) free(dos_str);
 
   size = (lstrlen(wstr)+1) * sizeof(TCHAR);
-  hHandle = GlobalAlloc(GMEM_MOVEABLE, size); 
+  hHandle = GlobalAlloc(GMEM_MOVEABLE, size);
   if (!hHandle)
+  {
+    CloseClipboard();
     return 0;
+  }
 
   clip_str = GlobalLock(hHandle);
   CopyMemory(clip_str, wstr, size);
   GlobalUnlock(hHandle);
+
+  EmptyClipboard();
 
 #ifdef UNICODE
   SetClipboardData(CF_UNICODETEXT, hHandle);
@@ -355,16 +360,25 @@ static int winClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   }
 
   size = iupAttribGetInt(ih, "FORMATDATASIZE");
-  if (!size)
+  if (size <= 0)
+  {
+    CloseClipboard();
     return 0;
+  }
 
   format_id = winClipboardGetFormatId(ih);
   if (format_id==0)
+  {
+    CloseClipboard();
     return 0;
+  }
 
-  hHandle = GlobalAlloc(GMEM_MOVEABLE, size); 
+  hHandle = GlobalAlloc(GMEM_MOVEABLE, size);
   if (!hHandle)
+  {
+    CloseClipboard();
     return 0;
+  }
 
   data = GlobalLock(hHandle);
   CopyMemory(data, value, size);
@@ -388,7 +402,10 @@ static char* winClipboardGetFormatDataAttrib(Ihandle *ih)
 
   format_id = winClipboardGetFormatId(ih);
   if (format_id == 0)
+  {
+    CloseClipboard();
     return NULL;
+  }
 
   hHandle = GetClipboardData(format_id);
   if (!hHandle)
@@ -407,8 +424,7 @@ static char* winClipboardGetFormatDataAttrib(Ihandle *ih)
 
   CopyMemory(data, (char*)GlobalLock(hHandle), size);
   GlobalUnlock(hHandle);
- 
-  GlobalUnlock(hHandle);
+
   CloseClipboard();
 
   iupAttribSetInt(ih, "FORMATDATASIZE", size);

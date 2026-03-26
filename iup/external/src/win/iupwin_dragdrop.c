@@ -777,9 +777,6 @@ static IwinDropTarget* winCreateDropTarget(CLIPFORMAT *pClipFormat, ULONG nNumFo
 static void winDestroyDropTarget(IwinDropTarget* pDropTarget)
 {
   ((IDropTarget*)pDropTarget)->lpVtbl->Release((IDropTarget*)pDropTarget);
-
-  free(pDropTarget->pClipFormat);
-  free(pDropTarget);
 }
 
 

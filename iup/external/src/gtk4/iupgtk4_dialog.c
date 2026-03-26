@@ -63,6 +63,10 @@ static void gtk4DialogChildDestroyEvent(GtkWindow* window, Ihandle* ih)
 
 void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
+  GtkWindow* old_transient = gtk_window_get_transient_for((GtkWindow*)ih->handle);
+  if (old_transient)
+    g_signal_handlers_disconnect_by_func(old_transient, gtk4DialogChildDestroyEvent, ih);
+
   gtk_window_set_transient_for((GtkWindow*)ih->handle, (GtkWindow*)parent);
 
   g_signal_connect(G_OBJECT(parent), "destroy", G_CALLBACK(gtk4DialogChildDestroyEvent), ih);
@@ -866,7 +870,7 @@ static char* gtk4DialogTextureToDataURI(GdkTexture* texture)
   gchar* base64_data = g_base64_encode((const guchar*)buffer, buffer_size);
   g_bytes_unref(bytes);
 
-  char* data_uri = iupStrReturnStrf("data:image/png;base64,%s", base64_data);
+  gchar* data_uri = g_strdup_printf("data:image/png;base64,%s", base64_data);
   g_free(base64_data);
 
   return data_uri;
@@ -896,18 +900,20 @@ static int gtk4DialogSetBackgroundAttrib(Ihandle* ih, const char* value)
     if (texture)
     {
       /* Use CSS with data: URI for background image */
-      char* data_uri = gtk4DialogTextureToDataURI(texture);
+      gchar* data_uri = gtk4DialogTextureToDataURI(texture);
       if (data_uri)
       {
-        char* css_value;
+        gchar* css_value;
         if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
-          css_value = iupStrReturnStrf("url(\"%s\"); background-size: 100%% 100%%; background-repeat: no-repeat", data_uri);
+          css_value = g_strdup_printf("url(\"%s\"); background-size: 100%% 100%%; background-repeat: no-repeat", data_uri);
         else
-          css_value = iupStrReturnStrf("url(\"%s\"); background-repeat: repeat", data_uri);
+          css_value = g_strdup_printf("url(\"%s\"); background-repeat: repeat", data_uri);
         iupgtk4CssSetWidgetCustom(ih->handle, "background-image", css_value);
         iupAttribSet(ih, "_IUPGTK4_HAS_BG_IMAGE", "1");
 
-        /* Force window to redraw */
+        g_free(css_value);
+        g_free(data_uri);
+
         gtk_widget_queue_draw(ih->handle);
 
         return 1;

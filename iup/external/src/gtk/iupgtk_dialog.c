@@ -66,6 +66,10 @@ static gboolean gtkDialogChildDestroyEvent(GtkWidget *widget, Ihandle *ih)
 
 void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
 {
+  GtkWindow* old_transient = gtk_window_get_transient_for((GtkWindow*)ih->handle);
+  if (old_transient)
+    g_signal_handlers_disconnect_by_func(old_transient, gtkDialogChildDestroyEvent, ih);
+
   gtk_window_set_transient_for((GtkWindow*)ih->handle, (GtkWindow*)parent);
   g_signal_connect(G_OBJECT(parent), "destroy", G_CALLBACK(gtkDialogChildDestroyEvent), ih);
 }

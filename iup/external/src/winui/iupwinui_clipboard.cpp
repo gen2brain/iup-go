@@ -401,7 +401,7 @@ static int winuiClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
   }
 
   size = iupAttribGetInt(ih, "FORMATDATASIZE");
-  if (!size)
+  if (size <= 0)
   {
     CloseClipboard();
     return 0;

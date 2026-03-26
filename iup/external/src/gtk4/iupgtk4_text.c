@@ -444,20 +444,17 @@ static void gtk4TextBufferDeleteRange(GtkTextBuffer *buffer, GtkTextIter *start,
 {
   if (!ih->data->disable_callbacks)
   {
-    int start_pos, end_pos;
     IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
     if (cb)
     {
       int ret;
-      char *text, *suffix;
+      int start_pos = gtk_text_iter_get_offset(start);
 
-      start_pos = gtk_text_iter_get_offset(start);
-      end_pos = gtk_text_iter_get_offset(end);
+      char *text = gtk_text_buffer_get_text(buffer, start, end, FALSE);
 
-      text = gtk_text_buffer_get_text(buffer, start, end, FALSE);
-
-      suffix = &text[end_pos - start_pos];
       ret = cb(ih, start_pos + 1, (char*)iupgtk4StrConvertFromSystem(text));
+      g_free(text);
+
       if (ret == IUP_IGNORE)
       {
         g_signal_stop_emission_by_name(buffer, "delete_range");
@@ -484,13 +481,12 @@ static void gtk4TextBufferInsertText(GtkTextBuffer *buffer, GtkTextIter *pos, gc
   start_pos = gtk_text_iter_get_offset(pos);
 
   if (len < 0)
-    insert_value = iupStrDup((char*)iupgtk4StrConvertFromSystem(text));
+    insert_value = iupStrDup(text);
   else
   {
-    insert_value = malloc(len + 1);
+    insert_value = (char*)malloc(len + 1);
     memcpy(insert_value, text, len);
     insert_value[len] = 0;
-    insert_value = (char*)iupgtk4StrConvertFromSystem(insert_value);
   }
 
   ret = iupEditCallActionCb(ih, cb, insert_value, start_pos, start_pos, ih->data->mask, ih->data->nc, 0, 1);  /* GTK4 is always UTF-8 */
@@ -597,17 +593,15 @@ static void gtk4TextEntryDeleteText(GtkEditable *editable, gint start_pos, gint 
     if (cb)
     {
       int ret;
-      char *text, *suffix;
+      char *text;
       const char* entry_text = gtk_editable_get_text(editable);
 
-      text = iupStrDup((char*)iupgtk4StrConvertFromSystem(entry_text));
+      text = iupStrDup(entry_text);
 
-      suffix = &text[end_pos];
       text[end_pos] = 0;
 
       ret = cb(ih, start_pos + 1, &text[start_pos]);
 
-      text[end_pos] = *suffix;
       free(text);
 
       if (ret == IUP_IGNORE)
@@ -633,13 +627,12 @@ static void gtk4TextEntryInsertText(GtkEditable *editable, const gchar *text, gi
   cb = (IFnis)IupGetCallback(ih, "ACTION");
 
   if (len < 0)
-    insert_value = iupStrDup((char*)iupgtk4StrConvertFromSystem(text));
+    insert_value = iupStrDup(text);
   else
   {
-    insert_value = malloc(len + 1);
+    insert_value = (char*)malloc(len + 1);
     memcpy(insert_value, text, len);
     insert_value[len] = 0;
-    insert_value = (char*)iupgtk4StrConvertFromSystem(insert_value);
   }
 
   ret = iupEditCallActionCb(ih, cb, insert_value, *pos, *pos, ih->data->mask, ih->data->nc, 0, 1);  /* GTK4 is always UTF-8 */
@@ -733,10 +726,13 @@ static char* gtk4TextGetValueAttrib(Ihandle* ih)
   {
     GtkTextIter start_iter;
     GtkTextIter end_iter;
+    char* buf_text;
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_start_iter(buffer, &start_iter);
     gtk_text_buffer_get_end_iter(buffer, &end_iter);
-    value = iupStrReturnStr(iupgtk4StrConvertFromSystem(gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE)));
+    buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+    value = iupStrReturnStr(iupgtk4StrConvertFromSystem(buf_text));
+    g_free(buf_text);
   }
   else
     value = iupStrReturnStr(iupgtk4StrConvertFromSystem(gtk_editable_get_text(GTK_EDITABLE(ih->handle))));
@@ -752,13 +748,18 @@ static char* gtk4TextGetLineValueAttrib(Ihandle* ih)
   {
     GtkTextIter start_iter, end_iter, iter;
     int lin;
+    char* buf_text;
+    char* value;
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
     lin = gtk_text_iter_get_line(&iter);
     gtk_text_buffer_get_iter_at_line(buffer, &start_iter, lin);
     gtk_text_buffer_get_iter_at_line(buffer, &end_iter, lin);
     gtk_text_iter_forward_to_line_end(&end_iter);
-    return iupStrReturnStr(iupgtk4StrConvertFromSystem(gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE)));
+    buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+    value = iupStrReturnStr(iupgtk4StrConvertFromSystem(buf_text));
+    g_free(buf_text);
+    return value;
   }
   else
     return gtk4TextGetValueAttrib(ih);
@@ -1047,7 +1048,12 @@ static char* gtk4TextGetSelectedTextAttrib(Ihandle* ih)
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
 
     if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
-      return iupStrReturnStr(iupgtk4StrConvertFromSystem(gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE)));
+    {
+      char* buf_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, TRUE);
+      char* value = iupStrReturnStr(iupgtk4StrConvertFromSystem(buf_text));
+      g_free(buf_text);
+      return value;
+    }
   }
   else
   {
@@ -1056,7 +1062,9 @@ static char* gtk4TextGetSelectedTextAttrib(Ihandle* ih)
     {
       char* selectedtext = iupStrDup(gtk_editable_get_text(GTK_EDITABLE(ih->handle)));
       selectedtext[end] = 0;
-      return iupStrReturnStr(iupgtk4StrConvertFromSystem(selectedtext + start));
+      char* value = iupStrReturnStr(iupgtk4StrConvertFromSystem(selectedtext + start));
+      free(selectedtext);
+      return value;
     }
   }
   return NULL;
@@ -1243,6 +1251,25 @@ static int gtk4TextSetNCAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void gtk4TextPasteReadyCb(GObject *source, GAsyncResult *result, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  GError* error = NULL;
+  char* text = gdk_clipboard_read_text_finish(GDK_CLIPBOARD(source), result, &error);
+  if (error)
+    g_error_free(error);
+  if (text)
+  {
+    if (iupObjectCheck(ih))
+    {
+      int pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+      gtk_editable_insert_text(GTK_EDITABLE(ih->handle), text, -1, &pos);
+      gtk_editable_set_position(GTK_EDITABLE(ih->handle), pos);
+    }
+    g_free(text);
+  }
+}
+
 static int gtk4TextSetClipboardAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqualNoCase(value, "COPY"))
@@ -1300,9 +1327,8 @@ static int gtk4TextSetClipboardAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      /* Paste is async in GTK4, just trigger async read */
       GdkClipboard* clipboard = gtk_widget_get_clipboard(ih->handle);
-      gdk_clipboard_read_text_async(clipboard, NULL, NULL, NULL);
+      gdk_clipboard_read_text_async(clipboard, NULL, gtk4TextPasteReadyCb, ih);
     }
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))

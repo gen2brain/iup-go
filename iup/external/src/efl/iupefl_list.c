@@ -1418,7 +1418,7 @@ static void eflListDropCb(void *data, const Efl_Event *ev)
   Evas_Modifier* modifiers;
   Evas* evas;
 
-  if (!ih || !efl_list_drag_source)
+  if (!ih || !efl_list_drag_source || !iupObjectCheck(efl_list_drag_source))
     return;
 
   evas = evas_object_evas_get(iupeflGetWidget(ih));

@@ -649,8 +649,12 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   cairo_set_source_rgba(dc->image_cr, iupgtk4ColorToDouble(iupDrawRed(color)), iupgtk4ColorToDouble(iupDrawGreen(color)), iupgtk4ColorToDouble(iupDrawBlue(color)), iupgtk4ColorToDouble(iupDrawAlpha(color)));
 
   if (flags & IUP_DRAW_CLIP)
-  {
     cairo_save(dc->image_cr);
+  else if (text_orientation)
+    cairo_save(dc->image_cr);
+
+  if (flags & IUP_DRAW_CLIP)
+  {
     cairo_new_path(dc->image_cr);
     cairo_rectangle(dc->image_cr, x, y, w, h);
     cairo_clip(dc->image_cr); /* intersect with the current clipping */
@@ -687,9 +691,9 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   }
   if (flags & IUP_DRAW_ELLIPSIS)
     pango_layout_set_ellipsize(fontlayout, PANGO_ELLIPSIZE_NONE);
-  if (text_orientation)
-    cairo_identity_matrix(dc->image_cr);
-  if (flags & IUP_DRAW_CLIP)
+  pango_layout_set_alignment(fontlayout, PANGO_ALIGN_LEFT);
+
+  if ((flags & IUP_DRAW_CLIP) || text_orientation)
     cairo_restore(dc->image_cr);
 }
 
@@ -712,7 +716,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
   /* Download texture data to create Cairo surface */
   stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, img_w);
-  pixels = g_malloc(stride * img_h);
+  pixels = g_malloc((gsize)stride * img_h);
   gdk_texture_download(texture, pixels, stride);
 
   /* Create Cairo surface from pixel data */
@@ -874,6 +878,11 @@ IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w
     return 0;
 
   stride = cairo_image_surface_get_stride(surface);
+
+  if (w > cairo_image_surface_get_width(surface))
+    w = cairo_image_surface_get_width(surface);
+  if (h > cairo_image_surface_get_height(surface))
+    h = cairo_image_surface_get_height(surface);
 
   iCairoCopyBgraPremulToRgba(data, src, w, h, stride);
   return 1;

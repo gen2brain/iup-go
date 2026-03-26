@@ -159,6 +159,16 @@ static void gtkTreeCopyItem(Ihandle* ih, GtkTreeModel* model, GtkTreeIter* iterI
                                           IUPGTK_NODE_3STATE, 0,
                                           IUPGTK_NODE_TOGGLEVISIBLE, 1,
                                           -1);
+
+  g_free(title);
+  if (image) g_object_unref(image);
+  if (image_expanded) g_object_unref(image_expanded);
+  if (font) pango_font_description_free(font);
+#if GTK_CHECK_VERSION(3, 4, 0)
+  if (rgba) gdk_rgba_free(rgba);
+#else
+  if (color) gdk_color_free(color);
+#endif
 }
 
 static void gtkTreeCopyChildren(Ihandle* ih, GtkTreeModel* model, GtkTreeIter *iterItemSrc, GtkTreeIter *iterItemDst)
@@ -1102,18 +1112,37 @@ static char* gtkTreeGetColorAttrib(Ihandle* ih, int id)
 {
   GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle));
   GtkTreeIter iterItem;
-  GdkColor *color;
 
   if (!gtkTreeFindNode(ih, id, &iterItem))
     return NULL;
 
-  gtk_tree_model_get(model, &iterItem, IUPGTK_NODE_COLOR, &color, -1);
-  if (!color)
-    return NULL;
-
-  return iupStrReturnStrf("%d %d %d", iupCOLOR16TO8(color->red),
-                                   iupCOLOR16TO8(color->green),
-                                   iupCOLOR16TO8(color->blue));
+#if GTK_CHECK_VERSION(3, 4, 0)
+  {
+    GdkRGBA *rgba = NULL;
+    char* value;
+    gtk_tree_model_get(model, &iterItem, IUPGTK_NODE_COLOR, &rgba, -1);
+    if (!rgba)
+      return NULL;
+    value = iupStrReturnStrf("%d %d %d", (int)(rgba->red * 255),
+                                         (int)(rgba->green * 255),
+                                         (int)(rgba->blue * 255));
+    gdk_rgba_free(rgba);
+    return value;
+  }
+#else
+  {
+    GdkColor *color = NULL;
+    char* value;
+    gtk_tree_model_get(model, &iterItem, IUPGTK_NODE_COLOR, &color, -1);
+    if (!color)
+      return NULL;
+    value = iupStrReturnStrf("%d %d %d", iupCOLOR16TO8(color->red),
+                                         iupCOLOR16TO8(color->green),
+                                         iupCOLOR16TO8(color->blue));
+    gdk_color_free(color);
+    return value;
+  }
+#endif
 }
 
 static int gtkTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
@@ -1378,7 +1407,11 @@ static char* gtkTreeGetTitleAttrib(Ihandle* ih, int id)
   if (!gtkTreeFindNode(ih, id, &iterItem))
     return NULL;
   gtk_tree_model_get(model, &iterItem, IUPGTK_NODE_TITLE, &title, -1);
-  return iupStrReturnStr(iupgtkStrConvertFromSystem(title));
+  {
+    char* value = iupStrReturnStr(iupgtkStrConvertFromSystem(title));
+    g_free(title);
+    return value;
+  }
 }
 
 static int gtkTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
@@ -1414,7 +1447,15 @@ static char* gtkTreeGetTitleFontAttrib(Ihandle* ih, int id)
   if (!gtkTreeFindNode(ih, id, &iterItem))
     return NULL;
   gtk_tree_model_get(model, &iterItem, IUPGTK_NODE_FONT, &fontdesc, -1);
-  return pango_font_description_to_string(fontdesc);
+  if (!fontdesc)
+    return NULL;
+  {
+    char* fontname = pango_font_description_to_string(fontdesc);
+    char* value = iupStrReturnStr(fontname);
+    g_free(fontname);
+    pango_font_description_free(fontdesc);
+    return value;
+  }
 }
 
 static char* gtkTreeGetValueAttrib(Ihandle* ih)
@@ -1504,6 +1545,8 @@ static int gtkTreeSetMarkAttrib(Ihandle* ih, const char* value)
     GtkTreeIter iterItem1, iterItem2;
     GtkTreePath* pathFocus;
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(ih->handle), &pathFocus, NULL);
+    if (!pathFocus)
+      return 0;
     gtk_tree_model_get_iter(model, &iterItem1, pathFocus);
     gtk_tree_path_free(pathFocus);
 
@@ -1563,6 +1606,7 @@ static int gtkTreeSetValueAttrib(Ihandle* ih, const char* value)
   {
     GtkTreePath* pathFocus;
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(ih->handle), &pathFocus, NULL);
+    if (!pathFocus) return 0;
     gtk_tree_model_get_iter(model, &iterItem, pathFocus);
     gtk_tree_path_free(pathFocus);
 
@@ -1572,6 +1616,7 @@ static int gtkTreeSetValueAttrib(Ihandle* ih, const char* value)
   {
     GtkTreePath* pathFocus;
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(ih->handle), &pathFocus, NULL);
+    if (!pathFocus) return 0;
     gtk_tree_model_get_iter(model, &iterItem, pathFocus);
     gtk_tree_path_free(pathFocus);
 
@@ -1581,6 +1626,7 @@ static int gtkTreeSetValueAttrib(Ihandle* ih, const char* value)
   {
     GtkTreePath* pathFocus;
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(ih->handle), &pathFocus, NULL);
+    if (!pathFocus) return 0;
     gtk_tree_model_get_iter(model, &iterItem, pathFocus);
     gtk_tree_path_free(pathFocus);
 
@@ -1590,6 +1636,7 @@ static int gtkTreeSetValueAttrib(Ihandle* ih, const char* value)
   {
     GtkTreePath* pathFocus;
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(ih->handle), &pathFocus, NULL);
+    if (!pathFocus) return 0;
     gtk_tree_model_get_iter(model, &iterItem, pathFocus);
     gtk_tree_path_free(pathFocus);
 
@@ -1599,6 +1646,7 @@ static int gtkTreeSetValueAttrib(Ihandle* ih, const char* value)
   {
     GtkTreePath* pathFocus;
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(ih->handle), &pathFocus, NULL);
+    if (!pathFocus) return 0;
     gtk_tree_model_get_iter(model, &iterItem, pathFocus);
     gtk_tree_path_free(pathFocus);
 
@@ -1763,6 +1811,9 @@ static int gtkTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 {
   if (!ih->handle)  /* do not do the action before map */
     return 0;
+
+  iupAttribSet(ih, "_IUPTREE_MARKSTART_NODE", NULL);
+
   if (iupStrEqualNoCase(value, "ALL"))
   {
     GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle));
@@ -2128,11 +2179,31 @@ static void gtkTreeCellTextEditingStarted(GtkCellRenderer *cell, GtkCellEditable
 #endif
   }
 
+#if GTK_CHECK_VERSION(3, 4, 0)
+  {
+    GdkRGBA *rgba = NULL;
+    gtk_tree_model_get(model, &iterItem, IUPGTK_NODE_COLOR, &rgba, -1);
+    if (rgba)
+    {
+      iupgtkSetFgColor(GTK_WIDGET(editable), (unsigned char)(rgba->red * 255),
+                                             (unsigned char)(rgba->green * 255),
+                                             (unsigned char)(rgba->blue * 255));
+      gdk_rgba_free(rgba);
+    }
+  }
+#else
   gtk_tree_model_get(model, &iterItem, IUPGTK_NODE_COLOR, &color, -1);
   if (color)
-    iupgtkSetFgColor(GTK_WIDGET(editable), iupgtkColorFromDouble(color->red), 
-                                               iupgtkColorFromDouble(color->green), 
-                                               iupgtkColorFromDouble(color->blue));
+  {
+    iupgtkSetFgColor(GTK_WIDGET(editable), iupgtkColorFromDouble(color->red),
+                                           iupgtkColorFromDouble(color->green),
+                                           iupgtkColorFromDouble(color->blue));
+    gdk_color_free(color);
+  }
+#endif
+
+  if (fontdesc)
+    pango_font_description_free(fontdesc);
 
   (void)cell;
 }
@@ -2831,7 +2902,11 @@ static void gtkTreeDragDropCopyItem(Ihandle* src, Ihandle* dst, GtkTreeIter* ite
   char* title;
   gboolean has_image, has_image_expanded;
   PangoFontDescription* font;
+#if GTK_CHECK_VERSION(3, 4, 0)
+  GdkRGBA *rgba;
+#else
   GdkColor *color;
+#endif
   GdkPixbuf* image, *image_expanded;
 
   gtk_tree_model_get(GTK_TREE_MODEL(storeSrc), iterItem, IUPGTK_NODE_IMAGE, &image,
@@ -2840,8 +2915,12 @@ static void gtkTreeDragDropCopyItem(Ihandle* src, Ihandle* dst, GtkTreeIter* ite
                                                          IUPGTK_NODE_HAS_IMAGE_EXPANDED, &has_image_expanded,
                                                          IUPGTK_NODE_TITLE, &title,
                                                          IUPGTK_NODE_KIND, &kind,
-                                                         IUPGTK_NODE_COLOR, &color, 
-                                                         IUPGTK_NODE_FONT, &font, 
+#if GTK_CHECK_VERSION(3, 4, 0)
+                                                         IUPGTK_NODE_COLOR, &rgba,
+#else
+                                                         IUPGTK_NODE_COLOR, &color,
+#endif
+                                                         IUPGTK_NODE_FONT, &font,
                                                          -1);
 
   /* Add the new node */
@@ -2859,13 +2938,27 @@ static void gtkTreeDragDropCopyItem(Ihandle* src, Ihandle* dst, GtkTreeIter* ite
                                              IUPGTK_NODE_HAS_IMAGE_EXPANDED, has_image_expanded,
                                              IUPGTK_NODE_TITLE, title,
                                              IUPGTK_NODE_KIND, kind,
-                                             IUPGTK_NODE_COLOR, color, 
+#if GTK_CHECK_VERSION(3, 4, 0)
+                                             IUPGTK_NODE_COLOR, rgba,
+#else
+                                             IUPGTK_NODE_COLOR, color,
+#endif
                                              IUPGTK_NODE_FONT, font,
                                              IUPGTK_NODE_SELECTED, 0,
                                              IUPGTK_NODE_CHECK, 0,
                                              IUPGTK_NODE_3STATE, 0,
                                              IUPGTK_NODE_TOGGLEVISIBLE, 1,
                                              -1);
+
+  g_free(title);
+  if (image) g_object_unref(image);
+  if (image_expanded) g_object_unref(image_expanded);
+  if (font) pango_font_description_free(font);
+#if GTK_CHECK_VERSION(3, 4, 0)
+  if (rgba) gdk_rgba_free(rgba);
+#else
+  if (color) gdk_color_free(color);
+#endif
 }
 
 static void gtkTreeDragDropCopyChildren(Ihandle* src, Ihandle* dst, GtkTreeIter *iterItemSrc, GtkTreeIter *iterItemDst)
