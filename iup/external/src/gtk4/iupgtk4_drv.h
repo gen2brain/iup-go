@@ -126,6 +126,8 @@ IUP_DRV_API void iupgtk4SetGlobalColors(void);
 IUP_DRV_API int iupgtk4X11MoveWindow(void* xdisplay, unsigned long xwindow, int x, int y);
 IUP_DRV_API int iupgtk4X11HideFromTaskbar(void* xdisplay, unsigned long xwindow);
 IUP_DRV_API int iupgtk4X11Sync(void* xdisplay);
+IUP_DRV_API int iupgtk4X11QueryPointer(void* xdisplay, int* x, int* y);
+IUP_DRV_API int iupgtk4X11GetWindowPosition(void* xdisplay, unsigned long xwindow, int* x, int* y);
 IUP_DRV_API int iupgtk4X11GetDefaultScreen(void* xdisplay);
 IUP_DRV_API char* iupgtk4X11GetServerVendor(void* xdisplay);
 IUP_DRV_API int iupgtk4X11GetVendorRelease(void* xdisplay);

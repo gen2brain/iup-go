@@ -106,16 +106,35 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
 
   if (handle && GTK_IS_WIDGET(handle) && gtk_widget_get_visible(handle))
   {
-    GdkSurface* surface = iupgtk4GetSurface(handle);
-    if (surface)
+#ifdef GDK_WINDOWING_X11
+    GdkDisplay* display = gdk_display_get_default();
+    if (display && GDK_IS_X11_DISPLAY(display))
     {
-      int gx, gy;
-      double dx, dy;
-      iupgtk4SurfaceGetPointer(surface, &dx, &dy, NULL);
-      gx = (int)dx;
-      gy = (int)dy;
-      if (x) *x = gx;
-      if (y) *y = gy;
+      GdkSurface* surface = iupgtk4GetSurface(handle);
+      if (surface && GDK_IS_X11_SURFACE(surface))
+      {
+        void* xdisplay = gdk_x11_display_get_xdisplay(display);
+        unsigned long xwindow = (unsigned long)gdk_x11_surface_get_xid(surface);
+        int gx = 0, gy = 0;
+        if (iupgtk4X11GetWindowPosition(xdisplay, xwindow, &gx, &gy))
+        {
+          if (x) *x = gx;
+          if (y) *y = gy;
+          return;
+        }
+      }
+    }
+#endif
+
+    {
+      GdkSurface* surface = iupgtk4GetSurface(handle);
+      if (surface)
+      {
+        double dx, dy;
+        iupgtk4SurfaceGetPointer(surface, &dx, &dy, NULL);
+        if (x) *x = (int)dx;
+        if (y) *y = (int)dy;
+      }
     }
   }
   else if (ih)
