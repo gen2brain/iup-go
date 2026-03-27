@@ -188,6 +188,19 @@ static void motButtonActivateCallback(Widget w, Ihandle* ih, XtPointer call_data
   (void)call_data;
 }
 
+static void motButtonKeyPressEvent(Widget w, Ihandle* ih, XEvent *evt, Boolean *cont)
+{
+  int code = iupmotKeyDecode((XKeyEvent*)evt);
+  if (code == K_CR)
+  {
+    iupdrvActivate(ih);
+    *cont = False;
+    return;
+  }
+
+  iupmotKeyPressEvent(w, ih, evt, cont);
+}
+
 static void motButtonEnterLeaveWindowEvent(Widget w, Ihandle* ih, XEvent *evt, Boolean *cont)
 {
   /* Used only when FLAT=Yes, to manage relief */
@@ -298,7 +311,7 @@ static int motButtonMapMethod(Ihandle* ih)
   }
 
   XtAddEventHandler(ih->handle, FocusChangeMask, False, (XtEventHandler)iupmotFocusChangeEvent, (XtPointer)ih);
-  XtAddEventHandler(ih->handle, KeyPressMask,    False, (XtEventHandler)iupmotKeyPressEvent,    (XtPointer)ih);
+  XtAddEventHandler(ih->handle, KeyPressMask,    False, (XtEventHandler)motButtonKeyPressEvent, (XtPointer)ih);
 
   XtAddCallback(ih->handle, XmNactivateCallback, (XtCallbackProc)motButtonActivateCallback, (XtPointer)ih);
   XtAddEventHandler(ih->handle, ButtonPressMask|ButtonReleaseMask, False, (XtEventHandler)iupmotButtonPressReleaseEvent, (XtPointer)ih);
