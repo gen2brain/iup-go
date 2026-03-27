@@ -196,9 +196,64 @@ Can only be set to ON if the toggle is inside a radio, it will automatically set
 
 **3STATE** (creation-only): Enable a three state toggle.
 Valid for toggles with text only and that do not belong to a radio. Can be "YES" or NO".
-Default: "NO".
+Default: "NO". Incompatible with SWITCH=YES.
 
-> 
+**SWITCH** (creation-only) (non-inheritable): displays the toggle as a switch control instead of a checkbox.
+Can be "YES" or "NO". Default: "NO". Incompatible with 3STATE.
+When SWITCH=YES, the check area draws a track with a sliding thumb instead of a checkbox or radio dot.
+The attributes CHECKSIZE, CHECKSPACING, CHECKRIGHT, CHECKALIGN, CHECKIMAGE and CHECKIMAGEON are reused for the switch.
+When SWITCH=YES and CHECKSIZE is not explicitly set, a larger default size is used: 20 (dpi <= 120) or 26 (dpi > 120), instead of the checkbox defaults of 16/24.
+The thumb grows slightly on mouse hover to provide visual feedback.
+
+**SWITCHTRACKWIDTH** (non-inheritable): width of the switch track in pixels.
+Default: effective CHECKSIZE * 2 (40 at standard DPI, 52 at high DPI). The track height is controlled by CHECKSIZE.
+
+**SWITCHOFFCOLOR** (non-inheritable): track fill color when VALUE=OFF. Default: "190 190 190".
+
+**SWITCHOFFHLCOLOR** (non-inheritable): track fill color when VALUE=OFF and highlighted.
+If not defined then SWITCHOFFCOLOR is used.
+
+**SWITCHOFFPSCOLOR** (non-inheritable): track fill color when VALUE=OFF and pressed.
+If not defined then SWITCHOFFCOLOR is used.
+
+**SWITCHONCOLOR** (non-inheritable): track fill color when VALUE=ON. Default: "0 120 215".
+
+**SWITCHONHLCOLOR** (non-inheritable): track fill color when VALUE=ON and highlighted.
+If not defined then SWITCHONCOLOR is used.
+
+**SWITCHONPSCOLOR** (non-inheritable): track fill color when VALUE=ON and pressed.
+If not defined then SWITCHONCOLOR is used.
+
+**SWITCHBORDERCOLOR** (non-inheritable): track border color.
+If not defined then FGCOLOR is used. Responds to CHECKHLCOLOR and CHECKPSCOLOR for state variants.
+
+**SWITCHCORNERRADIUS** (non-inheritable): corner radius for the switch track.
+Default: half of the track height (pill shape). Set to 0 for a square track.
+
+**SWITCHTRACKGRADIENT** (non-inheritable): gradient for the track, format "color1:color2".
+Default: NULL (solid color). Used as fallback for both OFF and ON states.
+
+**SWITCHTRACKONGRADIENT** (non-inheritable): gradient for the track when VALUE=ON, format "color1:color2".
+Default: NULL. If not defined, SWITCHTRACKGRADIENT is used when set.
+
+**SWITCHTRACKGRADIENTANGLE** (non-inheritable): gradient angle in degrees.
+Default: 90 (top to bottom).
+
+**SWITCHTHUMBCOLOR** (non-inheritable): thumb fill color. Default: "255 255 255" (white).
+
+**SWITCHTHUMBHLCOLOR** (non-inheritable): thumb color when highlighted.
+If not defined then SWITCHTHUMBCOLOR is used.
+
+**SWITCHTHUMBPSCOLOR** (non-inheritable): thumb color when pressed.
+If not defined then SWITCHTHUMBCOLOR is used.
+
+**SWITCHTHUMBSIZE** (non-inheritable): thumb diameter in pixels.
+Default: track height - 8 (4 pixel margin on each side).
+
+**SWITCHTHUMBCORNERRADIUS** (non-inheritable): corner radius for the thumb.
+Default: half of SWITCHTHUMBSIZE (circle). Set to 0 for a square thumb.
+
+>
 >
 > ------------------------------------------------------------------------
 

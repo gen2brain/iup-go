@@ -17,7 +17,7 @@ func main() {
 			iup.Label("Very Long Text Label").SetAttributes(`EXPAND=YES, ALIGNMENT=ACENTER`),
 			iup.Button("Quit").SetHandle("quitBtName").SetAttribute("PADDING", "DEFAULTBUTTONPADDING").SetCallback("ACTION", iup.ActionFunc(fn)),
 		).SetAttributes(`ALIGNMENT=ACENTER, MARGIN=10x10, GAP=10`),
-	).SetAttributes(`TITLE="Dialog", DEFAULTESC=quitBtName`)
+	).SetAttributes(`TITLE="Dialog", DEFAULTESC=quitBtName, DEFAULTENTER=quitBtName`)
 
 	iup.Show(dlg)
 	iup.MainLoop()

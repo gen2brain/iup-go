@@ -27,7 +27,7 @@ See also [IupImage](iup_image.md).
 **MENU** (non-inheritable): Context menu displayed on right-click.
 The value is a handle name associated with an [IupMenu](iup_menu.md) element.
 On Linux, MENU support depends on the tray protocol: it is supported when using SNI (StatusNotifierItem) via the dbusmenu protocol, but not supported when using the legacy XEmbed protocol (GTK 3 with `xembed` build tag, Motif with `xembed` build tag).
-When MENU is not supported, use the TRAYCLICK_CB callback to detect right-clicks and call [IupPopup](../dlg/iup_popup.md) manually to show a context menu.
+When MENU is not supported, use the TRAYCLICK_CB callback to detect right-clicks and call [IupPopup](../func/iup_popup.md) manually to show a context menu.
 
 **TITLE** (non-inheritable): Reserved for future use.
 
@@ -72,4 +72,4 @@ In Windows (Win32 and WinUI) uses Shell_NotifyIcon API, in macOS uses NSStatusIt
 
 ### See Also
 
-[IupMenu](iup_menu.md), [IupPopup](../dlg/iup_popup.md), [IupImage](iup_image.md)
+[IupMenu](iup_menu.md), [IupPopup](../func/iup_popup.md), [IupImage](iup_image.md)

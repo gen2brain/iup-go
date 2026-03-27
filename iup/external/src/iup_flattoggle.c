@@ -49,9 +49,228 @@ struct _IcontrolData
     pressed;
 };
 
-
 /****************************************************************/
 
+#define IFLATTOGGLE_SWITCH_SIZE 26
+
+static int iFlatToggleGetEffectiveCheckSize(Ihandle* ih)
+{
+  if (iupAttribGetBoolean(ih, "SWITCH") && !iupAttribGet(ih, "CHECKSIZE"))
+    return IFLATTOGGLE_SWITCH_SIZE;
+  return ih->data->check_size;
+}
+
+static int iFlatToggleGetSwitchTrackWidth(Ihandle* ih)
+{
+  int tw = iupAttribGetInt(ih, "SWITCHTRACKWIDTH");
+  if (tw > 0)
+    return tw;
+  return iFlatToggleGetEffectiveCheckSize(ih) * 2;
+}
+
+static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, char* bgcolor, int active)
+{
+  int selected = ih->data->value;
+  char* fgcolor = iupAttribGetStr(ih, "FGCOLOR");
+  int check_alig = iupFlatGetVerticalAlignment(iupAttribGetStr(ih, "CHECKALIGN"));
+  int effective_size = iFlatToggleGetEffectiveCheckSize(ih);
+  int track_width, track_height;
+  int track_xmin, track_ymin;
+  int corner_radius;
+  char* corner_str;
+
+  /* track dimensions */
+  track_height = effective_size - 2 * ITOGGLE_MARGIN;
+  track_width = iFlatToggleGetSwitchTrackWidth(ih) - 2 * ITOGGLE_MARGIN;
+
+  /* track position */
+  track_xmin = check_left + ITOGGLE_MARGIN;
+  if (check_alig == IUP_ALIGN_ABOTTOM)
+    track_ymin = ih->currentheight - ITOGGLE_MARGIN - track_height;
+  else if (check_alig == IUP_ALIGN_ATOP)
+    track_ymin = ITOGGLE_MARGIN;
+  else
+    track_ymin = (ih->currentheight - track_height) / 2;
+
+  /* track corner radius, default is pill shape (half height) */
+  corner_str = iupAttribGet(ih, "SWITCHCORNERRADIUS");
+  if (corner_str)
+    iupStrToInt(corner_str, &corner_radius);
+  else
+    corner_radius = track_height / 2;
+
+  /* resolve track fill color based on state */
+  {
+    char* track_color;
+    if (selected > 0)
+    {
+      track_color = iupAttribGetStr(ih, "SWITCHONCOLOR");
+      if (ih->data->pressed && ih->data->highlighted)
+      {
+        char* pscolor = iupAttribGet(ih, "SWITCHONPSCOLOR");
+        if (pscolor)
+          track_color = pscolor;
+      }
+      else if (ih->data->highlighted)
+      {
+        char* hlcolor = iupAttribGet(ih, "SWITCHONHLCOLOR");
+        if (hlcolor)
+          track_color = hlcolor;
+      }
+    }
+    else
+    {
+      track_color = iupAttribGetStr(ih, "SWITCHOFFCOLOR");
+      if (ih->data->pressed && ih->data->highlighted)
+      {
+        char* pscolor = iupAttribGet(ih, "SWITCHOFFPSCOLOR");
+        if (pscolor)
+          track_color = pscolor;
+      }
+      else if (ih->data->highlighted)
+      {
+        char* hlcolor = iupAttribGet(ih, "SWITCHOFFHLCOLOR");
+        if (hlcolor)
+          track_color = hlcolor;
+      }
+    }
+
+    /* draw track fill */
+    {
+      char* gradient = NULL;
+      if (selected > 0)
+        gradient = iupAttribGet(ih, "SWITCHTRACKONGRADIENT");
+      if (!gradient)
+        gradient = iupAttribGet(ih, "SWITCHTRACKGRADIENT");
+
+      if (gradient)
+      {
+        char color1[30], color2[30];
+        float angle = iupAttribGetFloat(ih, "SWITCHTRACKGRADIENTANGLE");
+        if (angle == 0) angle = 90;
+        if (iupStrToStrStr(gradient, color1, sizeof(color1), color2, sizeof(color2), ':'))
+          iupFlatDrawGradientBox(dc, track_xmin, track_xmin + track_width,
+                                 track_ymin, track_ymin + track_height,
+                                 corner_radius, angle, color1, color2, bgcolor, active);
+        else
+          iupFlatDrawGradientBox(dc, track_xmin, track_xmin + track_width,
+                                 track_ymin, track_ymin + track_height,
+                                 corner_radius, angle, gradient, track_color, bgcolor, active);
+      }
+      else if (corner_radius > 0)
+        iupFlatDrawRoundedBox(dc, track_xmin, track_xmin + track_width,
+                              track_ymin, track_ymin + track_height,
+                              corner_radius, track_color, bgcolor, active);
+      else
+        iupFlatDrawBox(dc, track_xmin, track_xmin + track_width,
+                       track_ymin, track_ymin + track_height,
+                       track_color, bgcolor, active);
+    }
+
+    /* draw track border on top */
+    {
+      char* border_color = iupAttribGet(ih, "SWITCHBORDERCOLOR");
+      if (!border_color)
+        border_color = fgcolor;
+
+      if (ih->data->pressed && ih->data->highlighted)
+      {
+        char* pscolor = iupAttribGet(ih, "CHECKPSCOLOR");
+        if (pscolor)
+          border_color = pscolor;
+      }
+      else if (ih->data->highlighted)
+      {
+        char* hlcolor = iupAttribGet(ih, "CHECKHLCOLOR");
+        if (hlcolor)
+          border_color = hlcolor;
+      }
+
+      if (corner_radius > 0)
+        iupFlatDrawRoundedBorder(dc, track_xmin, track_xmin + track_width,
+                                 track_ymin, track_ymin + track_height,
+                                 ITOGGLE_BORDER, corner_radius, border_color, bgcolor, active);
+      else
+        iupFlatDrawBorder(dc, track_xmin, track_xmin + track_width,
+                          track_ymin, track_ymin + track_height,
+                          ITOGGLE_BORDER, border_color, bgcolor, active);
+    }
+  }
+
+  /* draw thumb */
+  {
+    int thumb_size, thumb_grow = 2;
+    char* thumb_str = iupAttribGet(ih, "SWITCHTHUMBSIZE");
+    if (thumb_str)
+      iupStrToInt(thumb_str, &thumb_size);
+    else
+      thumb_size = track_height - 8;  /* 4px margin each side */
+    if (thumb_size < 2)
+      thumb_size = 2;
+
+    /* grow thumb on hover, must not exceed track minus border */
+    if (ih->data->highlighted && (thumb_size + thumb_grow) <= (track_height - 2 * ITOGGLE_BORDER))
+      thumb_size += thumb_grow;
+
+    {
+      int thumb_margin = (track_height - thumb_size) / 2;
+      int thumb_xc, thumb_yc;
+      int thumb_corner_radius;
+      char* thumb_color;
+      char* tcr_str;
+
+      if (selected > 0)
+        thumb_xc = track_xmin + track_width - thumb_margin - thumb_size / 2;
+      else
+        thumb_xc = track_xmin + thumb_margin + thumb_size / 2;
+      thumb_yc = track_ymin + track_height / 2;
+
+      /* thumb corner radius, default is circle */
+      tcr_str = iupAttribGet(ih, "SWITCHTHUMBCORNERRADIUS");
+      if (tcr_str)
+        iupStrToInt(tcr_str, &thumb_corner_radius);
+      else
+        thumb_corner_radius = thumb_size / 2;
+
+      /* resolve thumb color */
+      thumb_color = iupAttribGetStr(ih, "SWITCHTHUMBCOLOR");
+      if (ih->data->pressed && ih->data->highlighted)
+      {
+        char* pscolor = iupAttribGet(ih, "SWITCHTHUMBPSCOLOR");
+        if (pscolor)
+          thumb_color = pscolor;
+      }
+      else if (ih->data->highlighted)
+      {
+        char* hlcolor = iupAttribGet(ih, "SWITCHTHUMBHLCOLOR");
+        if (hlcolor)
+          thumb_color = hlcolor;
+      }
+
+      if (thumb_corner_radius >= thumb_size / 2)
+      {
+        int radius = thumb_size / 2;
+        iupFlatDrawDrawCircle(dc, thumb_xc, thumb_yc, radius, 1, 1, thumb_color, bgcolor, active);
+      }
+      else if (thumb_corner_radius > 0)
+      {
+        int txmin = thumb_xc - thumb_size / 2;
+        int tymin = thumb_yc - thumb_size / 2;
+        iupFlatDrawRoundedBox(dc, txmin, txmin + thumb_size,
+                              tymin, tymin + thumb_size,
+                              thumb_corner_radius, thumb_color, bgcolor, active);
+      }
+      else
+      {
+        int txmin = thumb_xc - thumb_size / 2;
+        int tymin = thumb_yc - thumb_size / 2;
+        iupFlatDrawBox(dc, txmin, txmin + thumb_size,
+                       tymin, tymin + thumb_size,
+                       thumb_color, bgcolor, active);
+      }
+    }
+  }
+}
 
 static int iFlatToggleRedraw_CB(Ihandle* ih)
 {
@@ -87,16 +306,18 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
 
   if (ih->data->check_size)
   {
+    int check_area_width = iupAttribGetBoolean(ih, "SWITCH") ? iFlatToggleGetSwitchTrackWidth(ih) : ih->data->check_size;
+
     check_left = 0;
-    icon_left = ih->data->check_size + ih->data->check_spacing;
+    icon_left = check_area_width + ih->data->check_spacing;
     icon_right = ih->currentwidth - 1;
     if (check_at_right)
     {
-      check_left = ih->currentwidth - ih->data->check_size;
+      check_left = ih->currentwidth - check_area_width;
       icon_left = 0;
-      icon_right = ih->currentwidth -1 - ih->data->check_size - ih->data->check_spacing;
+      icon_right = ih->currentwidth - 1 - check_area_width - ih->data->check_spacing;
     }
-    icon_width = ih->currentwidth - ih->data->check_size - ih->data->check_spacing;
+    icon_width = ih->currentwidth - check_area_width - ih->data->check_spacing;
   }
   else
   {
@@ -190,7 +411,7 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
     draw_image = iupFlatGetImageName(ih, "FRONTIMAGE", fgimage, image_pressed, ih->data->highlighted, active, &make_inactive);
     iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width + icon_left, -1, -1);
   }
-  else if (!image && !title)
+  else if (!image && !title && !iupAttribGetBoolean(ih, "SWITCH"))
   {
     int space = border_width + ITOGGLE_MARGIN;
     iupFlatDrawBorder(dc, space + icon_left, icon_right - space,
@@ -235,6 +456,10 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
         draw_image = iupFlatGetImageName(ih, "CHECKIMAGE", check_image, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
 
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, check_xmin, check_ymin, -1, -1);
+    }
+    else if (iupAttribGetBoolean(ih, "SWITCH"))
+    {
+      iFlatToggleDrawSwitch(dc, ih, check_left, bgcolor, active);
     }
     else
     {
@@ -380,7 +605,7 @@ static int iFlatToggleButton_CB(Ihandle* ih, int button, int pressed, int x, int
         if (!radio)
         {
           int tstate = iupAttribGetInt(ih, "3STATE");
-          if (tstate)
+          if (tstate && !iupAttribGetBoolean(ih, "SWITCH"))
             ih->data->value = -1;
           else
             ih->data->value = 0;
@@ -511,9 +736,7 @@ static int iFlatToggleLeaveWindow_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /***********************************************************************************************/
-
 
 static int iFlatToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
@@ -683,7 +906,7 @@ static int iFlatToggleSetValueAttrib(Ihandle* ih, const char* value)
     else
     {
       int tstate = iupAttribGetInt(ih, "3STATE");
-      if (tstate && iupStrEqualNoCase(value, "NOTDEF"))
+      if (tstate && !iupAttribGetBoolean(ih, "SWITCH") && iupStrEqualNoCase(value, "NOTDEF"))
         ih->data->value = -1;
       else
       {
@@ -731,7 +954,6 @@ static char* iFlatToggleGetHasFocusAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean(ih->data->has_focus);
 }
-
 
 /*****************************************************************************************/
 
@@ -811,10 +1033,21 @@ static void iFlatToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
     if (ih->data->check_size)
     {
-      *w += ih->data->check_size;
-      *w += ih->data->check_spacing;
-      if (ih->data->check_size > *h)
-        *h = ih->data->check_size;
+      if (iupAttribGetBoolean(ih, "SWITCH"))
+      {
+        int effective_size = iFlatToggleGetEffectiveCheckSize(ih);
+        *w += iFlatToggleGetSwitchTrackWidth(ih);
+        *w += ih->data->check_spacing;
+        if (effective_size > *h)
+          *h = effective_size;
+      }
+      else
+      {
+        *w += ih->data->check_size;
+        *w += ih->data->check_spacing;
+        if (ih->data->check_size > *h)
+          *h = ih->data->check_size;
+      }
     }
   }
 
@@ -824,9 +1057,7 @@ static void iFlatToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   (void)children_expand; /* unset if not a container */
 }
 
-
 /******************************************************************************/
-
 
 Iclass* iupFlatToggleNewClass(void)
 {
@@ -936,6 +1167,26 @@ Iclass* iupFlatToggleNewClass(void)
   iupClassRegisterAttribute(ic, "CHECKIMAGENOTDEFPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CHECKIMAGENOTDEFHIGHLIGHT", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CHECKIMAGENOTDEFINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+
+  /* Switch mode */
+  iupClassRegisterAttribute(ic, "SWITCH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHTRACKWIDTH", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHOFFCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "190 190 190", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHOFFHLCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHOFFPSCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHONCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "0 120 215", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHONHLCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHONPSCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHBORDERCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHCORNERRADIUS", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHTRACKGRADIENT", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHTRACKONGRADIENT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHTRACKGRADIENTANGLE", NULL, iFlatToggleSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "90", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHTHUMBCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHTHUMBHLCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHTHUMBPSCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHTHUMBSIZE", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHTHUMBCORNERRADIUS", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   return ic;
 }
