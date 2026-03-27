@@ -116,7 +116,16 @@ static int s_use_webkit6 = -1;
 #endif
 
 #ifdef IUPWEB_USE_DLOPEN
+#ifdef _WIN32
+#include <windows.h>
+#define dlopen(path, flags) ((void*)LoadLibraryA(path))
+#define dlsym(handle, name) ((void*)GetProcAddress((HMODULE)(handle), (name)))
+#define dlclose(handle) FreeLibrary((HMODULE)(handle))
+#define RTLD_LAZY  0
+#define RTLD_LOCAL 0
+#else
 #include <dlfcn.h>
+#endif
 
 static void* s_webKitLibrary = NULL;
 

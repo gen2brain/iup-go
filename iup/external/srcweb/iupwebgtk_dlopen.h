@@ -8,11 +8,20 @@ extern "C" {
 #include <gtk/gtk.h>
 
 #ifdef IUPWEB_USE_DLOPEN
+#ifdef _WIN32
+#include <windows.h>
+#define dlopen(path, flags) ((void*)LoadLibraryA(path))
+#define dlsym(handle, name) ((void*)GetProcAddress((HMODULE)(handle), (name)))
+#define dlclose(handle) FreeLibrary((HMODULE)(handle))
+#define RTLD_LAZY  0
+#define RTLD_LOCAL 0
+#else
 #include <dlfcn.h>
+#endif
 #endif
 
 /*
-  This file provides all necessary definitions for both WebKit1 and WebKit2
+  This file provides all necessary definitions for WebKit1, WebKit2, and WebKit6
   APIs to be loaded dynamically at runtime, without including system webkit headers.
 */
 

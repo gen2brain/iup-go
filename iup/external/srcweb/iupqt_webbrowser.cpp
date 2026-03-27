@@ -44,10 +44,11 @@ extern "C" {
 #include "iup_webbrowser.h"
 
 
+}
+
 /* Forward declare Qt driver function we need */
 /* This avoids including iupqt_drv.h and keeps web browser code independent */
 void iupqtAddToParent(Ihandle* ih);
-}
 
 /****************************************************************************
  * Control Data Structure
