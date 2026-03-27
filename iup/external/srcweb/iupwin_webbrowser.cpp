@@ -81,14 +81,14 @@ static std::wstring FindLatestWebView2Version(const std::wstring& basePath)
   std::wstring runtimePath = basePath + L"\\Microsoft\\EdgeWebView\\Application";
 
   if (GetFileAttributesW(runtimePath.c_str()) == INVALID_FILE_ATTRIBUTES)
-    return L"";
+    return {};
 
   WIN32_FIND_DATAW findData;
   std::wstring searchPath = runtimePath + L"\\*";
   HANDLE hFind = FindFirstFileW(searchPath.c_str(), &findData);
 
   if (hFind == INVALID_HANDLE_VALUE)
-    return L"";
+    return {};
 
   std::wstring latestVersion;
   ULONGLONG latestVersionNum = 0;
@@ -139,7 +139,7 @@ static std::wstring FindLatestWebView2Version(const std::wstring& basePath)
     return fullPath;
   }
 
-  return L"";
+  return {};
 }
 
 static std::wstring GetWebView2RuntimePath()
@@ -168,7 +168,7 @@ static std::wstring GetWebView2RuntimePath()
       return runtimePath;
   }
 
-  return L"";
+  return {};
 }
 
 static std::wstring GetWebView2UserDataFolder()
@@ -177,10 +177,10 @@ static std::wstring GetWebView2UserDataFolder()
   wchar_t exePath[MAX_PATH];
 
   if (GetEnvironmentVariableW(L"LOCALAPPDATA", localAppData, MAX_PATH) == 0)
-    return L"";
+    return {};
 
   if (GetModuleFileNameW(NULL, exePath, MAX_PATH) == 0)
-    return L"";
+    return {};
 
   std::wstring exePathStr = exePath;
   size_t lastSlash = exePathStr.find_last_of(L"\\/");
