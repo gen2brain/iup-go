@@ -17,8 +17,10 @@
 #endif
 
 #ifdef HAVE_ECORE_WIN32
-#include <Ecore_Win32.h>
+#include <winsock2.h>
 #include <windows.h>
+#undef interface
+#include <Ecore_Win32.h>
 #endif
 
 #ifdef HAVE_ECORE_COCOA

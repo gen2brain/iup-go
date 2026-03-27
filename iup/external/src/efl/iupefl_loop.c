@@ -214,6 +214,9 @@ IUP_DRV_API void iupeflModalLoopRun(Eo* modal_win)
   if (efl_modal_loop_level >= EFL_MODAL_LOOP_MAX_DEPTH)
     return;
 
+  if (!efl_pending_flush_func)
+    return;
+
   (void)modal_win;
 
   level = efl_modal_loop_level;

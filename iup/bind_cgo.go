@@ -76,6 +76,8 @@ package iup
 
 #cgo efl CFLAGS: -Iexternal/src/efl -Iexternal/src/unix -DIUP_USE_EFL -DEFL_BETA_API_SUPPORT=1 -DEFL_EO_API_SUPPORT=1
 #cgo efl,!windows,!darwin CFLAGS: -DHAVE_ECORE_X -DHAVE_ECORE_WL2
+#cgo efl,windows CFLAGS: -DHAVE_ECORE_WIN32
+#cgo efl,darwin CFLAGS: -DHAVE_ECORE_COCOA
 #cgo efl,!nopkgconfig pkg-config: elementary
 #cgo efl,!windows,!darwin,!nopkgconfig pkg-config: ecore-x ecore-wl2
 #cgo efl,windows,!nopkgconfig pkg-config: ecore-win32
