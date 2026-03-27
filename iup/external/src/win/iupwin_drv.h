@@ -104,7 +104,7 @@ IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPA
 
 /* Base WinProc used by all native elements. Configure base message handling 
    and custom IwinMsgProc using "_IUPWIN_CTRLMSGPROC_CB" callback. */
-LRESULT CALLBACK iupwinBaseWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
+IUP_DRV_API LRESULT CALLBACK iupwinBaseWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
 IUP_DRV_API void iupwinChangeWndProc(Ihandle *ih, WNDPROC newProc);
 
