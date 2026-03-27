@@ -6,10 +6,6 @@
 
 #include <gtk/gtk.h>
 
-#ifdef GDK_WINDOWING_X11
-#include <gdk/x11/gdkx.h>
-#endif
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

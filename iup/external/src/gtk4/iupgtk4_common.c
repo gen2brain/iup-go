@@ -31,6 +31,7 @@
 #include "iup_markup.h"
 
 #include "iupgtk4_drv.h"
+#include "iupgtk4_x11.h"
 
 
 /******************************************************************************
@@ -434,9 +435,7 @@ static void iup_gtk4_fixed_snapshot(GtkWidget* widget, GtkSnapshot* snapshot)
       GdkRGBA gray = {0.6f, 0.6f, 0.6f, 1.0f};
 
       border_color[0] = border_color[1] = border_color[2] = border_color[3] = gray;
-      gsk_rounded_rect_init_from_rect(&rect,
-                                      &GRAPHENE_RECT_INIT(0, 0, width, height),
-                                      0);
+      gsk_rounded_rect_init_from_rect(&rect, &GRAPHENE_RECT_INIT(0, 0, width, height), 0);
       gtk_snapshot_append_border(snapshot, &rect, border_width, border_color);
     }
   }
@@ -1171,12 +1170,8 @@ IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
 #ifdef GDK_WINDOWING_X11
-  void* xdisplay = iupdrvGetDisplay();
-  if (xdisplay)
-  {
-    iupgtk4X11WarpPointer(xdisplay, x, y);
+  if (iupgtk4X11IsBackend() && iupgtk4X11WarpPointer(x, y))
     return;
-  }
 #endif
   (void)x;
   (void)y;
@@ -1473,190 +1468,6 @@ IUP_DRV_API GtkWindow* iupgtk4GetTransientFor(Ihandle* ih)
   return NULL;
 }
 
-#ifdef GDK_WINDOWING_X11
-#include <gdk/x11/gdkx.h>
-#include <dlfcn.h>
-
-static void* x11_lib = NULL;
-static int (*_XDefaultScreen)(Display*) = NULL;
-static char* (*_XServerVendor)(Display*) = NULL;
-static int (*_XVendorRelease)(Display*) = NULL;
-static int (*_XMoveWindow)(Display*, Window, int, int) = NULL;
-static int (*_XSync)(Display*, int) = NULL;
-static Atom (*_XInternAtom)(Display*, const char*, int) = NULL;
-static int (*_XSetWMNormalHints)(Display*, Window, XSizeHints*) = NULL;
-static int (*_XChangeProperty)(Display*, Window, Atom, Atom, int, int, const unsigned char*, int) = NULL;
-static int (*_XWarpPointer)(Display*, Window, Window, int, int, unsigned int, unsigned int, int, int) = NULL;
-static Window (*_XRootWindow)(Display*, int) = NULL;
-static int (*_XQueryPointer)(Display*, Window, Window*, Window*, int*, int*, int*, int*, unsigned int*) = NULL;
-static int (*_XTranslateCoordinates)(Display*, Window, Window, int, int, int*, int*, Window*) = NULL;
-
-static int x11_load_functions(void)
-{
-  if (x11_lib)
-    return 1;
-
-  x11_lib = dlopen("libX11.so.6", RTLD_LAZY);
-  if (!x11_lib)
-    x11_lib = dlopen("libX11.so", RTLD_LAZY);
-
-  if (!x11_lib)
-    return 0;
-
-  _XDefaultScreen = (int (*)(Display*))dlsym(x11_lib, "XDefaultScreen");
-  _XServerVendor = (char* (*)(Display*))dlsym(x11_lib, "XServerVendor");
-  _XVendorRelease = (int (*)(Display*))dlsym(x11_lib, "XVendorRelease");
-  _XMoveWindow = (int (*)(Display*, Window, int, int))dlsym(x11_lib, "XMoveWindow");
-  _XSync = (int (*)(Display*, int))dlsym(x11_lib, "XSync");
-  _XInternAtom = (Atom (*)(Display*, const char*, int))dlsym(x11_lib, "XInternAtom");
-  _XSetWMNormalHints = (int (*)(Display*, Window, XSizeHints*))dlsym(x11_lib, "XSetWMNormalHints");
-  _XChangeProperty = (int (*)(Display*, Window, Atom, Atom, int, int, const unsigned char*, int))dlsym(x11_lib, "XChangeProperty");
-  _XWarpPointer = (int (*)(Display*, Window, Window, int, int, unsigned int, unsigned int, int, int))dlsym(x11_lib, "XWarpPointer");
-  _XRootWindow = (Window (*)(Display*, int))dlsym(x11_lib, "XRootWindow");
-  _XQueryPointer = (int (*)(Display*, Window, Window*, Window*, int*, int*, int*, int*, unsigned int*))dlsym(x11_lib, "XQueryPointer");
-  _XTranslateCoordinates = (int (*)(Display*, Window, Window, int, int, int*, int*, Window*))dlsym(x11_lib, "XTranslateCoordinates");
-
-  if (!_XDefaultScreen || !_XServerVendor || !_XVendorRelease || !_XMoveWindow || !_XSync || !_XSetWMNormalHints || !_XChangeProperty || !_XWarpPointer || !_XRootWindow || !_XQueryPointer || !_XTranslateCoordinates)
-  {
-    dlclose(x11_lib);
-    x11_lib = NULL;
-    return 0;
-  }
-
-  return 1;
-}
-
-IUP_DRV_API int iupgtk4X11MoveWindow(void* xdisplay, unsigned long xwindow, int x, int y)
-{
-  XSizeHints hints;
-
-  if (!x11_load_functions())
-    return 0;
-
-  memset(&hints, 0, sizeof(XSizeHints));
-  hints.flags = PPosition | USPosition;
-  hints.x = x;
-  hints.y = y;
-  _XSetWMNormalHints((Display*)xdisplay, (Window)xwindow, &hints);
-
-  _XMoveWindow((Display*)xdisplay, (Window)xwindow, x, y);
-
-  _XSync((Display*)xdisplay, 0);
-  return 1;
-}
-
-IUP_DRV_API int iupgtk4X11QueryPointer(void* xdisplay, int* x, int* y)
-{
-  Window root, child;
-  int root_x, root_y, win_x, win_y;
-  unsigned int mask;
-  int screen;
-
-  if (!x11_load_functions())
-    return 0;
-
-  screen = _XDefaultScreen((Display*)xdisplay);
-  _XQueryPointer((Display*)xdisplay, _XRootWindow((Display*)xdisplay, screen), &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
-
-  *x = root_x;
-  *y = root_y;
-  return 1;
-}
-
-IUP_DRV_API int iupgtk4X11GetWindowPosition(void* xdisplay, unsigned long xwindow, int* x, int* y)
-{
-  Window child;
-  int screen;
-
-  if (!x11_load_functions())
-    return 0;
-
-  screen = _XDefaultScreen((Display*)xdisplay);
-  _XTranslateCoordinates((Display*)xdisplay, (Window)xwindow, _XRootWindow((Display*)xdisplay, screen), 0, 0, x, y, &child);
-  return 1;
-}
-
-IUP_DRV_API int iupgtk4X11Sync(void* xdisplay)
-{
-  if (!x11_load_functions())
-    return 0;
-
-  _XSync((Display*)xdisplay, 0);
-  return 1;
-}
-
-IUP_DRV_API int iupgtk4X11HideFromTaskbar(void* xdisplay, unsigned long xwindow)
-{
-  Atom net_wm_window_type, net_wm_window_type_popup_menu;
-  Atom net_wm_state, net_wm_state_skip_taskbar, net_wm_state_skip_pager;
-  Atom states[2];
-
-  if (!x11_load_functions())
-    return 0;
-
-  /* Set window type to POPUP_MENU */
-  net_wm_window_type = _XInternAtom((Display*)xdisplay, "_NET_WM_WINDOW_TYPE", 0);
-  net_wm_window_type_popup_menu = _XInternAtom((Display*)xdisplay, "_NET_WM_WINDOW_TYPE_POPUP_MENU", 0);
-
-  _XChangeProperty((Display*)xdisplay, (Window)xwindow, net_wm_window_type, 4, 32, 0, (unsigned char*)&net_wm_window_type_popup_menu, 1);
-
-  /* Skip taskbar and pager */
-  net_wm_state = _XInternAtom((Display*)xdisplay, "_NET_WM_STATE", 0);
-  net_wm_state_skip_taskbar = _XInternAtom((Display*)xdisplay, "_NET_WM_STATE_SKIP_TASKBAR", 0);
-  net_wm_state_skip_pager = _XInternAtom((Display*)xdisplay, "_NET_WM_STATE_SKIP_PAGER", 0);
-
-  states[0] = net_wm_state_skip_taskbar;
-  states[1] = net_wm_state_skip_pager;
-
-  _XChangeProperty((Display*)xdisplay, (Window)xwindow, net_wm_state, 4, 32, 0, (unsigned char*)states, 2);
-
-  _XSync((Display*)xdisplay, 0);
-  return 1;
-}
-
-IUP_DRV_API int iupgtk4X11GetDefaultScreen(void* xdisplay)
-{
-  if (!x11_load_functions())
-    return 0;
-  return _XDefaultScreen((Display*)xdisplay);
-}
-
-IUP_DRV_API char* iupgtk4X11GetServerVendor(void* xdisplay)
-{
-  if (!x11_load_functions())
-    return NULL;
-  return _XServerVendor((Display*)xdisplay);
-}
-
-IUP_DRV_API int iupgtk4X11GetVendorRelease(void* xdisplay)
-{
-  if (!x11_load_functions())
-    return 0;
-  return _XVendorRelease((Display*)xdisplay);
-}
-
-IUP_DRV_API int iupgtk4X11WarpPointer(void* xdisplay, int x, int y)
-{
-  int screen;
-
-  if (!x11_load_functions())
-    return 0;
-
-  screen = _XDefaultScreen((Display*)xdisplay);
-  _XWarpPointer((Display*)xdisplay, None, _XRootWindow((Display*)xdisplay, screen), 0, 0, 0, 0, x, y);
-
-  return 1;
-}
-
-IUP_DRV_API void iupgtk4X11Cleanup(void)
-{
-  if (x11_lib)
-  {
-    dlclose(x11_lib);
-    x11_lib = NULL;
-  }
-}
-#endif
 
 #ifdef GDK_WINDOWING_WIN32
 #include <gdk/win32/gdkwin32.h>

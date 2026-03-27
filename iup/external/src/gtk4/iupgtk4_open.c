@@ -12,11 +12,6 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
-#ifdef GDK_WINDOWING_X11
-#include <gdk/x11/gdkx.h>
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
 #ifdef GDK_WINDOWING_WAYLAND
 #include <gdk/wayland/gdkwayland.h>
 #endif
@@ -37,6 +32,7 @@
 #include "iup_globalattrib.h"
 
 #include "iupgtk4_drv.h"
+#include "iupgtk4_x11.h"
 
 IUP_DRV_API char* iupgtk4GetNativeWidgetHandle(GtkWidget *widget)
 {
@@ -52,9 +48,9 @@ IUP_DRV_API char* iupgtk4GetNativeWidgetHandle(GtkWidget *widget)
     return NULL;
 
 #ifdef GDK_WINDOWING_X11
-  if (GDK_IS_X11_SURFACE(surface))
+  if (iupgtk4X11IsSurface(surface))
   {
-    return (char*)(uintptr_t)gdk_x11_surface_get_xid(surface);
+    return (char*)(uintptr_t)iupgtk4X11GetSurfaceXid(surface);
   }
 #endif
 
@@ -88,7 +84,7 @@ IUP_DRV_API const char* iupgtk4GetNativeWindowHandleName(void)
   if (!display) return "NULL";
 
 #ifdef GDK_WINDOWING_X11
-  if (GDK_IS_X11_DISPLAY(display))
+  if (iupgtk4X11IsBackend())
     return "XWINDOW";
 #endif
 
@@ -118,11 +114,10 @@ IUP_DRV_API char* iupgtk4GetNativeWindowHandleAttrib(Ihandle* ih)
 IUP_SDK_API void* iupdrvGetDisplay(void)
 {
 #ifdef GDK_WINDOWING_X11
-  GdkDisplay* display = gdk_display_get_default();
-  if (display && GDK_IS_X11_DISPLAY(display))
-    return gdk_x11_display_get_xdisplay(display);
-#endif
+  return iupgtk4X11GetDisplay();
+#else
   return NULL;
+#endif
 }
 
 IUP_DRV_API void iupgtk4StrRelease(void)
@@ -146,13 +141,12 @@ static void gtkSetGlobalAttrib(void)
   if (!display) return;
 
 #ifdef GDK_WINDOWING_X11
-  if (GDK_IS_X11_DISPLAY(display))
+  if (iupgtk4X11IsBackend())
   {
-    Display* xdisplay = gdk_x11_display_get_xdisplay(display);
-    IupSetGlobal("XDISPLAY", (char*)xdisplay);
-    IupSetGlobal("XSCREEN", (char*)(long)iupgtk4X11GetDefaultScreen(xdisplay));
-    IupSetGlobal("XSERVERVENDOR", iupgtk4X11GetServerVendor(xdisplay));
-    IupSetInt(NULL, "XVENDORRELEASE", iupgtk4X11GetVendorRelease(xdisplay));
+    IupSetGlobal("XDISPLAY", (char*)iupgtk4X11GetDisplay());
+    IupSetGlobal("XSCREEN", (char*)(long)iupgtk4X11GetDefaultScreen());
+    IupSetGlobal("XSERVERVENDOR", iupgtk4X11GetServerVendor());
+    IupSetInt(NULL, "XVENDORRELEASE", iupgtk4X11GetVendorRelease());
     IupSetGlobal("WINDOWING", "X11");
   }
 #endif
