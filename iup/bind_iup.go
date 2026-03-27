@@ -24,7 +24,27 @@ func init() {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_open.md
 func Open() int {
-	ret := int(C.IupOpen(nil, nil))
+	var ret int
+	if len(os.Args) > 0 {
+		argc := C.int(len(os.Args))
+		n := len(os.Args) + 1
+		cargv := (**C.char)(C.malloc(C.size_t(n) * C.size_t(unsafe.Sizeof((*C.char)(nil)))))
+		arr := unsafe.Slice(cargv, n)
+		for i, arg := range os.Args {
+			arr[i] = C.CString(arg)
+		}
+		arr[n-1] = nil
+
+		ret = int(C.IupOpen(&argc, &cargv))
+
+		for i := range os.Args {
+			C.free(unsafe.Pointer(arr[i]))
+		}
+		C.free(unsafe.Pointer(cargv))
+	} else {
+		ret = int(C.IupOpen(nil, nil))
+	}
+
 	SetGlobal("UTF8MODE", "YES")
 	SetGlobal("UTF8MODE_FILE", "YES")
 	if len(os.Args) > 0 {
