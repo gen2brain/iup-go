@@ -16,6 +16,7 @@ func main() {
 		return
 	}
 
+	//iup.SetGlobal("GSKRENDERER", "cairo")
 	//iup.SetGlobal("DEFAULTFONTSIZE", "13")
 	//iup.SetGlobal("EFLACCEL", "gl")
 	//iup.SetGlobal("EFLTHEME", "/tmp/Ice.edj")

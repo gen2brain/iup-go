@@ -312,7 +312,7 @@ Text is always left aligned.
 When the list has focus, use the arrow keys to move focus from one item to another.
 When DROPDOWN=Yes uses the Alt+Down key combination to show the dropdown list.
 While the dropdown is shown, the arrow key may change the current value depending on the system, on Windows will directly change the current value, on GTK will change the current value only if Enter is pressed.
-In all systems, the dropdown list is closed by using the Alt+Up key combination, or by pressing Enter or Esc keys (while the dropdown list is shown, the DEFAULTENTER and DEFAULTESC buttons will not be called (fixed in 3.14)).
+In all systems, the dropdown list is closed by using the Alt+Up key combination, or by pressing Enter or Esc keys. While the dropdown list is shown, the DEFAULTENTER and DEFAULTESC dialog buttons will not be activated.
 
 The [GETFOCUS_CB](../call/iup_getfocus_cb.md) and [KILLFOCUS_CB](../call/iup_killfocus_cb.md) callbacks behave differently depending on the list configuration and on the native system:
 
