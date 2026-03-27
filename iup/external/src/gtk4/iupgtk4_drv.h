@@ -122,18 +122,7 @@ IUP_DRV_API void iupgtk4CssFlush(void);
 IUP_DRV_API int iupgtk4IsSystemDarkMode(void);
 IUP_DRV_API void iupgtk4SetGlobalColors(void);
 
-#ifdef GDK_WINDOWING_X11
-IUP_DRV_API int iupgtk4X11MoveWindow(void* xdisplay, unsigned long xwindow, int x, int y);
-IUP_DRV_API int iupgtk4X11HideFromTaskbar(void* xdisplay, unsigned long xwindow);
-IUP_DRV_API int iupgtk4X11Sync(void* xdisplay);
-IUP_DRV_API int iupgtk4X11QueryPointer(void* xdisplay, int* x, int* y);
-IUP_DRV_API int iupgtk4X11GetWindowPosition(void* xdisplay, unsigned long xwindow, int* x, int* y);
-IUP_DRV_API int iupgtk4X11GetDefaultScreen(void* xdisplay);
-IUP_DRV_API char* iupgtk4X11GetServerVendor(void* xdisplay);
-IUP_DRV_API int iupgtk4X11GetVendorRelease(void* xdisplay);
-IUP_DRV_API int iupgtk4X11WarpPointer(void* xdisplay, int x, int y);
-IUP_DRV_API void iupgtk4X11Cleanup(void);
-#endif
+/* X11 declarations are in iupgtk4_x11.h */
 
 #ifdef GDK_WINDOWING_WIN32
 IUP_DRV_API int iupgtk4Win32MoveWindow(void* hwnd, int x, int y);

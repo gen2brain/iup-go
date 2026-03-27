@@ -6,11 +6,6 @@
 
 #include <gtk/gtk.h>
 
-#ifdef GDK_WINDOWING_X11
-#include <gdk/x11/gdkx.h>
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
 #ifdef GDK_WINDOWING_WAYLAND
 #include <gdk/wayland/gdkwayland.h>
 #endif
@@ -42,6 +37,7 @@
 #include "iup_assert.h"
 
 #include "iupgtk4_drv.h"
+#include "iupgtk4_x11.h"
 
 
 static void gtk4DialogSetTransientFor(GtkWindow* dialog, Ihandle* ih)
@@ -106,35 +102,27 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
 
   if (handle && GTK_IS_WIDGET(handle) && gtk_widget_get_visible(handle))
   {
+    GdkSurface* surface = iupgtk4GetSurface(handle);
+
 #ifdef GDK_WINDOWING_X11
-    GdkDisplay* display = gdk_display_get_default();
-    if (display && GDK_IS_X11_DISPLAY(display))
+    if (surface && iupgtk4X11IsBackend())
     {
-      GdkSurface* surface = iupgtk4GetSurface(handle);
-      if (surface && GDK_IS_X11_SURFACE(surface))
+      int gx = 0, gy = 0;
+      if (iupgtk4X11GetWindowPosition(surface, &gx, &gy))
       {
-        void* xdisplay = gdk_x11_display_get_xdisplay(display);
-        unsigned long xwindow = (unsigned long)gdk_x11_surface_get_xid(surface);
-        int gx = 0, gy = 0;
-        if (iupgtk4X11GetWindowPosition(xdisplay, xwindow, &gx, &gy))
-        {
-          if (x) *x = gx;
-          if (y) *y = gy;
-          return;
-        }
+        if (x) *x = gx;
+        if (y) *y = gy;
+        return;
       }
     }
 #endif
 
+    if (surface)
     {
-      GdkSurface* surface = iupgtk4GetSurface(handle);
-      if (surface)
-      {
-        double dx, dy;
-        iupgtk4SurfaceGetPointer(surface, &dx, &dy, NULL);
-        if (x) *x = (int)dx;
-        if (y) *y = (int)dy;
-      }
+      double dx, dy;
+      iupgtk4SurfaceGetPointer(surface, &dx, &dy, NULL);
+      if (x) *x = (int)dx;
+      if (y) *y = (int)dy;
     }
   }
   else if (ih)
@@ -147,18 +135,11 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
 IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
 #ifdef GDK_WINDOWING_X11
-  /* GTK4 removed gtk_window_move(), so we use X11 directly on X11 backend */
-  GdkDisplay* display = gdk_display_get_default();
-  if (display && GDK_IS_X11_DISPLAY(display))
+  if (iupgtk4X11IsBackend())
   {
     GdkSurface* surface = iupgtk4GetSurface(ih->handle);
-    if (surface && GDK_IS_X11_SURFACE(surface))
-    {
-      void* xdisplay = gdk_x11_display_get_xdisplay(display);
-      unsigned long xwindow = (unsigned long)gdk_x11_surface_get_xid(surface);
-      iupgtk4X11MoveWindow(xdisplay, xwindow, x, y);
+    if (surface && iupgtk4X11MoveWindow(surface, x, y))
       return;
-    }
   }
 #endif
 

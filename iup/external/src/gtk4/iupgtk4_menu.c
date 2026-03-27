@@ -25,11 +25,7 @@
 #include "iup_menu.h"
 
 #include "iupgtk4_drv.h"
-
-#ifdef GDK_WINDOWING_X11
-#include <gdk/x11/gdkx.h>
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
+#include "iupgtk4_x11.h"
 
 #ifdef GDK_WINDOWING_WIN32
 #include <gdk/win32/gdkwin32.h>
@@ -44,16 +40,6 @@ typedef struct _ImenuPos
   int x, y;
   Ihandle* ih;
 } ImenuPos;
-
-static int gtk4IsX11Backend(void)
-{
-#ifdef GDK_WINDOWING_X11
-  GdkDisplay *display = gdk_display_get_default();
-  return (display && GDK_IS_X11_DISPLAY(display));
-#else
-  return 0;
-#endif
-}
 
 static int gtk4IsWin32Backend(void)
 {
@@ -461,14 +447,8 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
         if (surface)
         {
 #ifdef GDK_WINDOWING_X11
-          if (gtk4IsX11Backend() && GDK_IS_X11_SURFACE(surface))
-          {
-            GdkDisplay *gdk_display = gdk_display_get_default();
-            Display *xdisplay = gdk_x11_display_get_xdisplay(gdk_display);
-            Window xwindow = gdk_x11_surface_get_xid(surface);
-            if (xdisplay && xwindow)
-              iupgtk4X11HideFromTaskbar(xdisplay, xwindow);
-          }
+          if (iupgtk4X11IsBackend())
+            iupgtk4X11HideFromTaskbar(surface);
 #endif
 #ifdef GDK_WINDOWING_WIN32
           if (gtk4IsWin32Backend() && GDK_IS_WIN32_SURFACE(surface))
@@ -502,14 +482,8 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
       if (surface)
       {
 #ifdef GDK_WINDOWING_X11
-        if (gtk4IsX11Backend() && GDK_IS_X11_SURFACE(surface))
-        {
-          GdkDisplay *gdk_display = gdk_display_get_default();
-          Display *xdisplay = gdk_x11_display_get_xdisplay(gdk_display);
-          Window xwindow = gdk_x11_surface_get_xid(surface);
-          if (xdisplay && xwindow)
-            iupgtk4X11MoveWindow(xdisplay, xwindow, x, y);
-        }
+        if (iupgtk4X11IsBackend())
+          iupgtk4X11MoveWindow(surface, x, y);
 #endif
 #ifdef GDK_WINDOWING_WIN32
         if (gtk4IsWin32Backend() && GDK_IS_WIN32_SURFACE(surface))

@@ -14,15 +14,11 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
-#ifdef GDK_WINDOWING_X11
-#include <gdk/x11/gdkx.h>
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-int iupgtk4X11QueryPointer(void* xdisplay, int* x, int* y);
-#endif
-
 #include "iup_export.h"
 #include "iup_str.h"
 #include "iup_drvinfo.h"
+
+#include "iupgtk4_x11.h"
 
 
 IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
@@ -98,13 +94,8 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
 IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
 {
 #ifdef GDK_WINDOWING_X11
-  GdkDisplay *display = gdk_display_get_default();
-  if (display && GDK_IS_X11_DISPLAY(display))
-  {
-    void* xdisplay = gdk_x11_display_get_xdisplay(display);
-    if (iupgtk4X11QueryPointer(xdisplay, x, y))
-      return;
-  }
+  if (iupgtk4X11IsBackend() && iupgtk4X11QueryPointer(x, y))
+    return;
 #endif
 
   {
