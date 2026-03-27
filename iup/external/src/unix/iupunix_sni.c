@@ -1697,9 +1697,80 @@ IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 
 IUP_SDK_API int iupdrvTrayIsAvailable(void)
 {
+  DBusConnection* connection;
+  DBusMessage* msg;
+  DBusMessage* reply;
+  DBusError error;
+  DBusMessageIter iter, variant_iter;
+  dbus_bool_t has_owner, host_registered = FALSE;
+  const char* interface_name = SNI_WATCHER_INTERFACE;
+  const char* property_name = "IsStatusNotifierHostRegistered";
+
 #ifdef IUPDBUS_USE_DLOPEN
-  return iupDBusOpen() ? 1 : 0;
-#else
-  return 1;
+  if (!iupDBusOpen())
+    return 0;
 #endif
+
+  dbus_error_init(&error);
+
+  connection = dbus_bus_get(DBUS_BUS_SESSION, &error);
+  if (dbus_error_is_set(&error))
+  {
+    dbus_error_free(&error);
+    return 0;
+  }
+  if (!connection)
+    return 0;
+
+  has_owner = dbus_bus_name_has_owner(connection, SNI_WATCHER_BUS_NAME, &error);
+  if (dbus_error_is_set(&error))
+  {
+    dbus_error_free(&error);
+    dbus_connection_unref(connection);
+    return 0;
+  }
+
+  if (!has_owner)
+  {
+    dbus_connection_unref(connection);
+    return 0;
+  }
+
+  msg = dbus_message_new_method_call(SNI_WATCHER_BUS_NAME, SNI_WATCHER_OBJECT_PATH,
+                                     "org.freedesktop.DBus.Properties", "Get");
+  if (!msg)
+  {
+    dbus_connection_unref(connection);
+    return 0;
+  }
+
+  dbus_message_append_args(msg,
+    DBUS_TYPE_STRING, &interface_name,
+    DBUS_TYPE_STRING, &property_name,
+    DBUS_TYPE_INVALID);
+
+  reply = dbus_connection_send_with_reply_and_block(connection, msg, 1000, &error);
+  dbus_message_unref(msg);
+
+  if (dbus_error_is_set(&error))
+  {
+    dbus_error_free(&error);
+    dbus_connection_unref(connection);
+    return 0;
+  }
+
+  if (reply)
+  {
+    if (dbus_message_iter_init(reply, &iter) &&
+        dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_VARIANT)
+    {
+      dbus_message_iter_recurse(&iter, &variant_iter);
+      if (dbus_message_iter_get_arg_type(&variant_iter) == DBUS_TYPE_BOOLEAN)
+        dbus_message_iter_get_basic(&variant_iter, &host_registered);
+    }
+    dbus_message_unref(reply);
+  }
+
+  dbus_connection_unref(connection);
+  return host_registered ? 1 : 0;
 }
