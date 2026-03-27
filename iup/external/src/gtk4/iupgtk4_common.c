@@ -1488,6 +1488,8 @@ static int (*_XSetWMNormalHints)(Display*, Window, XSizeHints*) = NULL;
 static int (*_XChangeProperty)(Display*, Window, Atom, Atom, int, int, const unsigned char*, int) = NULL;
 static int (*_XWarpPointer)(Display*, Window, Window, int, int, unsigned int, unsigned int, int, int) = NULL;
 static Window (*_XRootWindow)(Display*, int) = NULL;
+static int (*_XQueryPointer)(Display*, Window, Window*, Window*, int*, int*, int*, int*, unsigned int*) = NULL;
+static int (*_XTranslateCoordinates)(Display*, Window, Window, int, int, int*, int*, Window*) = NULL;
 
 static int x11_load_functions(void)
 {
@@ -1511,8 +1513,10 @@ static int x11_load_functions(void)
   _XChangeProperty = (int (*)(Display*, Window, Atom, Atom, int, int, const unsigned char*, int))dlsym(x11_lib, "XChangeProperty");
   _XWarpPointer = (int (*)(Display*, Window, Window, int, int, unsigned int, unsigned int, int, int))dlsym(x11_lib, "XWarpPointer");
   _XRootWindow = (Window (*)(Display*, int))dlsym(x11_lib, "XRootWindow");
+  _XQueryPointer = (int (*)(Display*, Window, Window*, Window*, int*, int*, int*, int*, unsigned int*))dlsym(x11_lib, "XQueryPointer");
+  _XTranslateCoordinates = (int (*)(Display*, Window, Window, int, int, int*, int*, Window*))dlsym(x11_lib, "XTranslateCoordinates");
 
-  if (!_XDefaultScreen || !_XServerVendor || !_XVendorRelease || !_XMoveWindow || !_XSync || !_XSetWMNormalHints || !_XChangeProperty || !_XWarpPointer || !_XRootWindow)
+  if (!_XDefaultScreen || !_XServerVendor || !_XVendorRelease || !_XMoveWindow || !_XSync || !_XSetWMNormalHints || !_XChangeProperty || !_XWarpPointer || !_XRootWindow || !_XQueryPointer || !_XTranslateCoordinates)
   {
     dlclose(x11_lib);
     x11_lib = NULL;
@@ -1538,6 +1542,37 @@ IUP_DRV_API int iupgtk4X11MoveWindow(void* xdisplay, unsigned long xwindow, int 
   _XMoveWindow((Display*)xdisplay, (Window)xwindow, x, y);
 
   _XSync((Display*)xdisplay, 0);
+  return 1;
+}
+
+IUP_DRV_API int iupgtk4X11QueryPointer(void* xdisplay, int* x, int* y)
+{
+  Window root, child;
+  int root_x, root_y, win_x, win_y;
+  unsigned int mask;
+  int screen;
+
+  if (!x11_load_functions())
+    return 0;
+
+  screen = _XDefaultScreen((Display*)xdisplay);
+  _XQueryPointer((Display*)xdisplay, _XRootWindow((Display*)xdisplay, screen), &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
+
+  *x = root_x;
+  *y = root_y;
+  return 1;
+}
+
+IUP_DRV_API int iupgtk4X11GetWindowPosition(void* xdisplay, unsigned long xwindow, int* x, int* y)
+{
+  Window child;
+  int screen;
+
+  if (!x11_load_functions())
+    return 0;
+
+  screen = _XDefaultScreen((Display*)xdisplay);
+  _XTranslateCoordinates((Display*)xdisplay, (Window)xwindow, _XRootWindow((Display*)xdisplay, screen), 0, 0, x, y, &child);
   return 1;
 }
 
