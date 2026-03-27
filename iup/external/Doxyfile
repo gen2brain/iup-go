@@ -9,7 +9,7 @@ OUTPUT_DIRECTORY       = doc
 INPUT                  = src include
 RECURSIVE              = YES
 FILE_PATTERNS          = *.h *.c
-EXCLUDE                = include/iup_plus.h include/iup_class_cbs.hpp
+EXCLUDE                = include/iup_plus.h include/iupcbs.hpp
 EXCLUDE_PATTERNS       = */winrt/*
 
 # Extraction

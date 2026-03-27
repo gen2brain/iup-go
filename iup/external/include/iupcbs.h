@@ -7,8 +7,6 @@
 #ifndef __IUPCBS_H 
 #define __IUPCBS_H
 
-struct _cdCanvas;
-
 typedef int  (*IFidle)(void);  /* idle */
 typedef void (*IFentry)(void);  /* entry */
 
@@ -25,8 +23,7 @@ typedef int (*IFni)(Ihandle*, int);   /* k_any, show_cb, toggle_action, spin_cb,
 typedef int (*IFnii)(Ihandle*, int, int);  /* resize_cb, caret_cb, matrix_mousemove_cb, enteritem_cb, leaveitem_cb, scrolltop_cb, dropcheck_cb, selection_cb, select_cb, switch_cb, scrolling_cb, vspan_cb, hspan_cb */
 typedef int (*IFniii)(Ihandle*, int, int, int); /* trayclick_cb, edition_cb */
 typedef int (*IFniiii)(Ihandle*, int, int, int, int); /* dragdrop_cb */
-typedef int (*IFniiiiiiC)(Ihandle*, int, int, int, int, int, int, struct _cdCanvas*);  /* draw_cb */
-typedef int (*IFniiiiii)(Ihandle*, int, int, int, int, int, int);  /* OLD draw_cb */
+typedef int (*IFniiiiii)(Ihandle*, int, int, int, int, int, int);  /* draw_cb */
 typedef int (*IFnsidv)(Ihandle*, char*, int, double, void*); /* postmessage_cb */
 
 typedef int (*IFnff)(Ihandle*, float, float);    /* canvas_action */
@@ -59,7 +56,6 @@ typedef int (*IFniinsii)(Ihandle*, int, int, Ihandle*, char*, int, int); /* drop
 typedef int (*IFnccc)(Ihandle*, unsigned char, unsigned char, unsigned char); /* drag_cb, change_cb */
 typedef int (*IFniIIII)(Ihandle*, int, int*, int*, int*, int*); /* multitouch_cb */
 
-typedef int (*IFnC)(Ihandle*, struct _cdCanvas*); /* postdraw_cb, predraw_cb */
 typedef int (*IFniidd)(Ihandle*, int, int, double, double); /* delete_cb */
 typedef int (*IFniiddi)(Ihandle*, int, int, double, double, int); /* select_cb */
 typedef int (*IFniiddiddi)(Ihandle*, int, int, double, double, int, double, double, int); /* clicksegment_cb */
