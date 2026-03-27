@@ -869,10 +869,9 @@ IUP_DRV_API int iupgtk4IsSystemDarkMode(void)
   GtkSettings* settings = gtk_settings_get_default();
   int color_scheme = 0;
   g_object_get(settings, "gtk-interface-color-scheme", &color_scheme, NULL);
-  /* GTK_INTERFACE_COLOR_SCHEME_DARK = 2 */
-  return (color_scheme == 2) ? 1 : 0;
-#elif GTK_CHECK_VERSION(4, 10, 0)
-  /* For GTK4 4.10-4.19, measure actual widget colors */
+  return (color_scheme == 2) ? 1 : 0;  /* GTK_INTERFACE_COLOR_SCHEME_DARK = 2 */
+#else
+  /* Measure foreground luminance, in dark themes, foreground is light */
   GtkWidget* temp_window;
   GdkRGBA fg;
   double fg_lum;
@@ -881,25 +880,15 @@ IUP_DRV_API int iupgtk4IsSystemDarkMode(void)
   temp_window = gtk_window_new();
   gtk_widget_realize(temp_window);
 
-  /* Get foreground color, in dark themes, foreground is light (high luminance) */
   gtk_widget_get_color(temp_window, &fg);
 
-  /* Calculate relative luminance using standard formula (ITU-R BT.709) */
+  /* Calculate relative luminance (ITU-R BT.709) */
   fg_lum = 0.2126 * fg.red + 0.7152 * fg.green + 0.0722 * fg.blue;
-
-  /* In dark mode, foreground text is light (high luminance, > 0.5) */
   is_dark = (fg_lum > 0.5) ? 1 : 0;
 
   gtk_window_destroy(GTK_WINDOW(temp_window));
 
   return is_dark;
-#else
-  /* GTK4 < 4.10: fallback to checking app preference (not ideal but best we can do)
-     gtk-application-prefer-dark-theme only indicates if the APP requested dark theme. */
-  GtkSettings* settings = gtk_settings_get_default();
-  gboolean dark = FALSE;
-  g_object_get(settings, "gtk-application-prefer-dark-theme", &dark, NULL);
-  return dark ? 1 : 0;
 #endif
 }
 
