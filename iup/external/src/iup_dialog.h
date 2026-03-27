@@ -57,31 +57,6 @@ void iupDialogLeaveModal(int popup_level);
 void iupDialogEnterModal(Ihandle* ih_popup, int popup_level);
 
 
-/*********************************************************************/
-                        /* PRIVATE */
-/*********************************************************************/
-
-#ifdef _IUPDLG_PRIVATE
-
-/* retrieve the decorations size that offsets the window size of the client size. */
-void iupDialogGetDecorSize(Ihandle* ih, int *decorwidth, int *decorheight);
-
-void iupDialogCustomFrameSimulateCheckCallbacks(Ihandle* ih);
-int  iupDialogCustomFrameRestore(Ihandle* ih);
-void iupDialogCustomFrameMaximize(Ihandle* ih);
-
-struct _IcontrolData 
-{
-  int show_state,     /* save the state to be used used in SHOW_CB */
-    first_show,     /* boolean flag to indicate that the dialog was shown for the first time */
-    ignore_resize,  /* flag to ignore the next resize */
-    popup_level,    /* popup level of the dialog if IupPopup used */
-    child_id,       /* serial number used by child controls */
-    cmd_show;       /* parameters for ShowWindow in Windows driver */
-  Ihandle* menu;
-};
-
-
 /******************************/
 /* Driver dependent functions */
 /******************************/
@@ -103,6 +78,32 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w,
 /** Returns 1 if dialog is visible. */
 IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih);
 /** @} */
+
+
+/*********************************************************************/
+                        /* PRIVATE */
+/*********************************************************************/
+
+#ifdef _IUPDLG_PRIVATE
+
+/* retrieve the decorations size that offsets the window size of the client size. */
+void iupDialogGetDecorSize(Ihandle* ih, int *decorwidth, int *decorheight);
+
+void iupDialogCustomFrameSimulateCheckCallbacks(Ihandle* ih);
+int  iupDialogCustomFrameRestore(Ihandle* ih);
+void iupDialogCustomFrameMaximize(Ihandle* ih);
+
+struct _IcontrolData
+{
+  int show_state,     /* save the state to be used used in SHOW_CB */
+    first_show,     /* boolean flag to indicate that the dialog was shown for the first time */
+    ignore_resize,  /* flag to ignore the next resize */
+    popup_level,    /* popup level of the dialog if IupPopup used */
+    child_id,       /* serial number used by child controls */
+    cmd_show;       /* parameters for ShowWindow in Windows driver */
+  Ihandle* menu;
+};
+
 int iupDialogSetClientSizeAttrib(Ihandle* ih, const char* value);
 char* iupDialogGetClientSizeAttrib(Ihandle *ih);
 

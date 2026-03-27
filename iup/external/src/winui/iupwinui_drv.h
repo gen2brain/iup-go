@@ -33,56 +33,56 @@ extern "C" {
  * Color Management
  ****************************************************************************/
 
-void iupwinuiSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b);
-void iupwinuiSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b);
+IUP_DRV_API void iupwinuiSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b);
+IUP_DRV_API void iupwinuiSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b);
 
 /****************************************************************************
  * Widget Management
  ****************************************************************************/
 
-void iupwinuiAddToParent(Ihandle* ih);
-void iupwinuiTipsDestroy(Ihandle* ih);
+IUP_DRV_API void iupwinuiAddToParent(Ihandle* ih);
+IUP_DRV_API void iupwinuiTipsDestroy(Ihandle* ih);
 
 /****************************************************************************
  * Focus Management
  ****************************************************************************/
 
-void iupwinuiSetCanFocus(void* widget, int can);
+IUP_DRV_API void iupwinuiSetCanFocus(void* widget, int can);
 
 /****************************************************************************
  * Key Input Handling
  ****************************************************************************/
 
-int iupwinuiKeyDecode(int keyval);
-int iupwinuiKeyEvent(Ihandle* ih, int wincode, int press);
-void iupwinuiButtonKeySetStatus(int modifiers, int button, char* status, int doubleclick);
+IUP_DRV_API int iupwinuiKeyDecode(int keyval);
+IUP_DRV_API int iupwinuiKeyEvent(Ihandle* ih, int wincode, int press);
+IUP_DRV_API void iupwinuiButtonKeySetStatus(int modifiers, int button, char* status, int doubleclick);
 
 /****************************************************************************
  * Font Management
  ****************************************************************************/
 
-void iupwinuiFontInit(void);
-void iupwinuiFontFinish(void);
-char* iupwinuiGetFontAttrib(Ihandle* ih);
-int iupwinuiSetFontAttrib(Ihandle* ih, const char* value);
-float iupwinuiFontGetMultilineLineHeightF(Ihandle* ih);
+IUP_DRV_API void iupwinuiFontInit(void);
+IUP_DRV_API void iupwinuiFontFinish(void);
+IUP_DRV_API char* iupwinuiGetFontAttrib(Ihandle* ih);
+IUP_DRV_API int iupwinuiSetFontAttrib(Ihandle* ih, const char* value);
+IUP_DRV_API float iupwinuiFontGetMultilineLineHeightF(Ihandle* ih);
 
 /****************************************************************************
  * System Utilities
  ****************************************************************************/
 
-int iupwinuiIsSystemDarkMode(void);
-void iupwinuiSetGlobalColors(void);
+IUP_DRV_API int iupwinuiIsSystemDarkMode(void);
+IUP_DRV_API void iupwinuiSetGlobalColors(void);
 
 /****************************************************************************
  * Application Management
  ****************************************************************************/
 
-void* iupwinuiGetDispatcherQueue(void);
-void iupwinuiLoopCleanup(void);
-BOOL iupwinuiContentPreTranslateMessage(const MSG* msg);
-void iupwinuiProcessPendingMessages(void);
-void iupwinuiBringWindowToForeground(HWND hwnd);
+IUP_DRV_API void* iupwinuiGetDispatcherQueue(void);
+IUP_DRV_API void iupwinuiLoopCleanup(void);
+IUP_DRV_API BOOL iupwinuiContentPreTranslateMessage(const MSG* msg);
+IUP_DRV_API void iupwinuiProcessPendingMessages(void);
+IUP_DRV_API void iupwinuiBringWindowToForeground(HWND hwnd);
 
 
 #ifdef __cplusplus
@@ -115,9 +115,9 @@ inline bool winuiHandleIsHWND(Ihandle* ih)
  * String Conversion Helpers (C++ only)
  ****************************************************************************/
 
-winrt::hstring iupwinuiStringToHString(const char* str);
-char* iupwinuiHStringToString(const winrt::hstring& str);
-std::wstring iupwinuiStringToWString(const char* str);
+IUP_DRV_API winrt::hstring iupwinuiStringToHString(const char* str);
+IUP_DRV_API char* iupwinuiHStringToString(const winrt::hstring& str);
+IUP_DRV_API std::wstring iupwinuiStringToWString(const char* str);
 
 /****************************************************************************
  * Mnemonic Processing Helper
@@ -127,25 +127,25 @@ std::wstring iupwinuiStringToWString(const char* str);
  * - Returns the mnemonic character if found (in c parameter)
  ****************************************************************************/
 
-winrt::hstring iupwinuiProcessMnemonic(const char* str, char* c);
+IUP_DRV_API winrt::hstring iupwinuiProcessMnemonic(const char* str, char* c);
 
 /****************************************************************************
  * Parent Canvas Helper
  ****************************************************************************/
 
-winrt::Microsoft::UI::Xaml::Controls::Canvas iupwinuiGetParentCanvas(Ihandle* ih);
+IUP_DRV_API winrt::Microsoft::UI::Xaml::Controls::Canvas iupwinuiGetParentCanvas(Ihandle* ih);
 
-void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Control control);
-void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock);
+IUP_DRV_API void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Control control);
+IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock);
 
-void iupwinuiApplyMarkupToTextBlock(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value);
-void iupwinuiMeasureMarkupText(const char* markup, int* w, int* h);
+IUP_DRV_API void iupwinuiApplyMarkupToTextBlock(winrt::Microsoft::UI::Xaml::Controls::TextBlock textBlock, const char* value);
+IUP_DRV_API void iupwinuiMeasureMarkupText(const char* markup, int* w, int* h);
 
 void winuiDialogSetMenuBar(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::MenuBar menuBar);
 
 winrt::Windows::Foundation::Collections::IVector<winrt::Microsoft::UI::Xaml::Controls::MenuFlyoutItemBase> winuiMenuGetItemsCollection(Ihandle* menu);
 
-void iupwinuiCanvasCallAction(Ihandle* ih);
+IUP_DRV_API void iupwinuiCanvasCallAction(Ihandle* ih);
 
 void winuiFrameUpdateBorderColor(Ihandle* ih);
 void winuiTableRefreshThemeColors(Ihandle* ih);
