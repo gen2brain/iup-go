@@ -95,13 +95,6 @@ IUP_DRV_API void iupgtk4ButtonApplyImagePadding(GtkWidget* widget);
 /* Menu */
 IUP_DRV_API void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu);
 
-/* Tray */
-IUP_DRV_API int iupgtk4SetTrayAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupgtk4SetTrayTipAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupgtk4SetTrayImageAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupgtk4SetTrayMenuAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupgtk4TrayCleanup(Ihandle *ih);
-
 /* Loop */
 IUP_DRV_API void iupgtk4LoopCleanup(void);
 

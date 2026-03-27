@@ -96,15 +96,6 @@ IUP_DRV_API void iupgtkReleaseNativeGraphicsContext(GtkWidget* widget, void* gc)
 /* dialog */
 IUP_DRV_API gboolean iupgtkDialogDeleteEvent(GtkWidget *widget, GdkEvent *evt, Ihandle *ih);
 
-/* tray */
-#if GTK_CHECK_VERSION(2, 10, 0)
-IUP_DRV_API int iupgtkSetTrayAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupgtkSetTrayTipAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupgtkSetTrayImageAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupgtkSetTrayMenuAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupgtkTrayCleanup(Ihandle *ih);
-#endif
-
 IUP_DRV_API int iupgtkIsSystemDarkMode(void);
 IUP_DRV_API void iupgtkSetGlobalColors(void);
 

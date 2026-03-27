@@ -28,6 +28,7 @@
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_childtree.h"
+#include "iup_image.h"
 #include "iup_tray.h"
 
 #define SNI_WATCHER_BUS_NAME "org.kde.StatusNotifierWatcher"
