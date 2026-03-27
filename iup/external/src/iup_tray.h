@@ -20,8 +20,6 @@ IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value);
 IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu);
 IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih);
 IUP_SDK_API int iupdrvTrayIsAvailable(void);
-/** Converts backend image format to ARGB pixels. Caller must free(*pixels). */
-IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels);
 /** @} */
 
 #ifdef __cplusplus

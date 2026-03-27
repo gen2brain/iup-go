@@ -152,16 +152,6 @@ IUP_DRV_API int iupqtDialogCloseEvent(QWidget *widget, QEvent *evt, Ihandle *ih)
 IUP_DRV_API QWidget* iupqtGetParentWidget(Ihandle* ih);
 
 /****************************************************************************
- * System Tray Support
- ****************************************************************************/
-
-IUP_DRV_API int iupqtSetTrayAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupqtSetTrayTipAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupqtSetTrayImageAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API int iupqtSetTrayMenuAttrib(Ihandle *ih, const char *value);
-IUP_DRV_API void iupqtTrayCleanup(Ihandle *ih);
-
-/****************************************************************************
  * System Utilities
  ****************************************************************************/
 

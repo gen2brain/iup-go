@@ -94,13 +94,6 @@ IUP_DRV_API char* iupmotGetXWindowAttrib(Ihandle *ih);
 
 #define iupMOT_SETARG(_a, _i, _n, _d) ((_a)[(_i)].name = (_n), (_a)[(_i)].value = (XtArgVal)(_d), (_i)++)
 
-/* tray */
-IUP_DRV_API int iupmotSetTrayAttrib(Ihandle* ih, const char* value);
-IUP_DRV_API int iupmotSetTrayTipAttrib(Ihandle* ih, const char* value);
-IUP_DRV_API int iupmotSetTrayImageAttrib(Ihandle* ih, const char* value);
-IUP_DRV_API int iupmotSetTrayMenuAttrib(Ihandle* ih, const char* value);
-IUP_DRV_API void iupmotTrayCleanup(Ihandle* ih);
-
 /* dark mode */
 IUP_DRV_API int iupmotIsSystemDarkMode(void);
 
