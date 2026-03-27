@@ -11,7 +11,7 @@
 #include "iup.h"
 #include "iupkey.h"
 #include "iupdraw.h"
-#include "iup_class_cbs.hpp"
+#include "iupcbs.hpp"
 #include "iupcontrols.h"
 #include "iupgl.h"
 #include "iup_config.h"
