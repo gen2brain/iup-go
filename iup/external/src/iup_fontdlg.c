@@ -36,7 +36,8 @@ Iclass* iupFontDlgNewClass(void)
 
   ic->New = iupFontDlgNewClass;
 
-  if (!iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Motif"))
+  if (!iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Motif") &&
+      !iupStrEqualNoCase(IupGetGlobal("DRIVER"), "FLTK"))
   {
     /* reset not used native dialog methods */
     ic->parent->LayoutUpdate = NULL;
