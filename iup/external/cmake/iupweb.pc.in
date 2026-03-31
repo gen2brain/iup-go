@@ -1,0 +1,13 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: IUP Web
+Description: IUP Web browser control (@IUP_BACKEND@ backend)
+Version: @_IUP_VERSION_RAW@
+Requires: iup
+Requires.private: @IUPWEB_PC_REQUIRES@
+Cflags: -I${includedir}
+Libs: -L${libdir} -liupweb
+Libs.private: @IUPWEB_PC_LIBS_PRIVATE@

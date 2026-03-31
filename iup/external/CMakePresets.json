@@ -1,0 +1,229 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default (platform native backend)",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "gtk3",
+      "displayName": "GTK3 backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "gtk3"
+      }
+    },
+    {
+      "name": "gtk4",
+      "displayName": "GTK4 backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "gtk4"
+      }
+    },
+    {
+      "name": "gtk2",
+      "displayName": "GTK2 backend (legacy)",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "gtk2"
+      }
+    },
+    {
+      "name": "win32",
+      "displayName": "Win32 backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "win32"
+      }
+    },
+    {
+      "name": "winui",
+      "displayName": "WinUI backend (requires Clang++)",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "winui",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "cocoa",
+      "displayName": "macOS Cocoa backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "cocoa"
+      }
+    },
+    {
+      "name": "motif",
+      "displayName": "Motif / X11 backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "motif"
+      }
+    },
+    {
+      "name": "qt6",
+      "displayName": "Qt6 backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "qt6"
+      }
+    },
+    {
+      "name": "qt5",
+      "displayName": "Qt5 backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "qt5"
+      }
+    },
+    {
+      "name": "efl",
+      "displayName": "EFL backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "efl"
+      }
+    },
+    {
+      "name": "fltk",
+      "displayName": "FLTK backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "fltk"
+      }
+    },
+    {
+      "name": "gtk3-full",
+      "displayName": "GTK3 with all optional libraries",
+      "inherits": "gtk3",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "gtk4-full",
+      "displayName": "GTK4 with all optional libraries",
+      "inherits": "gtk4",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "win32-full",
+      "displayName": "Win32 with all optional libraries",
+      "inherits": "win32",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "cocoa-full",
+      "displayName": "Cocoa with all optional libraries",
+      "inherits": "cocoa",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug build (platform native backend)",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    },
+    {
+      "name": "gtk3",
+      "configurePreset": "gtk3"
+    },
+    {
+      "name": "gtk4",
+      "configurePreset": "gtk4"
+    },
+    {
+      "name": "gtk2",
+      "configurePreset": "gtk2"
+    },
+    {
+      "name": "win32",
+      "configurePreset": "win32"
+    },
+    {
+      "name": "winui",
+      "configurePreset": "winui"
+    },
+    {
+      "name": "cocoa",
+      "configurePreset": "cocoa"
+    },
+    {
+      "name": "motif",
+      "configurePreset": "motif"
+    },
+    {
+      "name": "qt6",
+      "configurePreset": "qt6"
+    },
+    {
+      "name": "qt5",
+      "configurePreset": "qt5"
+    },
+    {
+      "name": "efl",
+      "configurePreset": "efl"
+    },
+    {
+      "name": "fltk",
+      "configurePreset": "fltk"
+    },
+    {
+      "name": "gtk3-full",
+      "configurePreset": "gtk3-full"
+    },
+    {
+      "name": "gtk4-full",
+      "configurePreset": "gtk4-full"
+    },
+    {
+      "name": "win32-full",
+      "configurePreset": "win32-full"
+    },
+    {
+      "name": "cocoa-full",
+      "configurePreset": "cocoa-full"
+    },
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    }
+  ]
+}

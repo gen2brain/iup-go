@@ -1,0 +1,32 @@
+# Win32 driver
+
+file(GLOB _WIN32_SOURCES
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_*.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwindows_*.c"
+)
+file(GLOB _WDL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/win/wdl/*.c")
+
+set(IUP_DRIVER_SOURCES ${_WIN32_SOURCES} ${_WDL_SOURCES})
+
+set(IUP_DRIVER_COMPILE_DEFINITIONS
+  _WIN32_WINNT=0x0601
+  WINVER=0x0601
+  COBJMACROS
+  NOTREEVIEW
+  UNICODE
+  _UNICODE
+)
+
+set(IUP_DRIVER_INCLUDE_DIRS
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/win"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/win/wdl"
+)
+
+set(IUP_DRIVER_LINK_LIBRARIES
+  gdi32 comdlg32 comctl32 uuid oleaut32 ole32
+)
+
+set(IUP_DRIVER_COMPILE_OPTIONS "")
+
+set(IUP_PC_REQUIRES "")
+set(IUP_PC_LIBS_PRIVATE "-lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32")

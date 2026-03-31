@@ -1,0 +1,12 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: IUP
+Description: IUP - Portable User Interface (@IUP_BACKEND@ backend)
+Version: @_IUP_VERSION_RAW@
+Requires.private: @IUP_PC_REQUIRES@
+Cflags: -I${includedir}
+Libs: -L${libdir} -liup
+Libs.private: @IUP_PC_LIBS_PRIVATE@

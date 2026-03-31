@@ -1,0 +1,25 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+set(_IUP_BACKEND "@IUP_BACKEND@")
+
+if(_IUP_BACKEND STREQUAL "gtk3")
+  find_dependency(PkgConfig)
+elseif(_IUP_BACKEND STREQUAL "gtk4")
+  find_dependency(PkgConfig)
+elseif(_IUP_BACKEND STREQUAL "gtk2")
+  find_dependency(PkgConfig)
+elseif(_IUP_BACKEND STREQUAL "qt6")
+  find_dependency(Qt6 COMPONENTS Core Gui Widgets)
+elseif(_IUP_BACKEND STREQUAL "qt5")
+  find_dependency(Qt5 COMPONENTS Core Gui Widgets)
+elseif(_IUP_BACKEND STREQUAL "motif")
+  find_dependency(PkgConfig)
+elseif(_IUP_BACKEND STREQUAL "efl")
+  find_dependency(PkgConfig)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/IUPTargets.cmake")
+
+check_required_components(IUP)
