@@ -1,4 +1,4 @@
-//go:build (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && gl && (motif || gtk2)
+//go:build (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && gl && (motif || gtk2) && !fltk
 
 package iup
 
