@@ -159,11 +159,11 @@ func FlatLabel(title string) Ihandle {
 	return h
 }
 
-// FlatSeparator creates an interface element that is a Separator, but it does not have native decorations.
+// Separator creates a separator interface element. It does not have native decorations.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatseparator.md
-func FlatSeparator() Ihandle {
-	h := mkih(C.IupFlatSeparator())
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_separator.md
+func Separator() Ihandle {
+	h := mkih(C.IupSeparator())
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }

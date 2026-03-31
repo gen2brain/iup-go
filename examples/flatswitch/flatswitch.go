@@ -142,7 +142,7 @@ func main() {
 	col1 := iup.Vbox(
 		iup.FlatLabel("Basic:").SetAttributes("FONTBOLD=YES"),
 		sw1, sw2, iup.Hbox(sw2a, sw2b).SetAttributes("GAP=5"), sw3,
-		iup.FlatSeparator(),
+		iup.Separator(),
 		iup.FlatLabel("Track Colors:").SetAttributes("FONTBOLD=YES"),
 		sw4, sw5, sw6, sw7,
 	).SetAttributes("GAP=4")
@@ -150,7 +150,7 @@ func main() {
 	col2 := iup.Vbox(
 		iup.FlatLabel("Sizes:").SetAttributes("FONTBOLD=YES"),
 		sw8, sw9, sw17,
-		iup.FlatSeparator(),
+		iup.Separator(),
 		iup.FlatLabel("Corner Radius:").SetAttributes("FONTBOLD=YES"),
 		sw10, sw11, sw12, sw12a, sw13,
 	).SetAttributes("GAP=4")
@@ -158,10 +158,10 @@ func main() {
 	col3 := iup.Vbox(
 		iup.FlatLabel("Gradients:").SetAttributes("FONTBOLD=YES"),
 		sw14, sw15, sw16,
-		iup.FlatSeparator(),
+		iup.Separator(),
 		iup.FlatLabel("States:").SetAttributes("FONTBOLD=YES"),
 		sw18, sw19, iup.Hbox(sw19a, sw19b).SetAttributes("GAP=5"),
-		iup.FlatSeparator(),
+		iup.Separator(),
 		iup.FlatLabel("Alignment & Custom:").SetAttributes("FONTBOLD=YES"),
 		sw20, sw21, sw22,
 	).SetAttributes("GAP=4")
@@ -170,7 +170,7 @@ func main() {
 
 	mainVbox := iup.Vbox(
 		iup.FlatLabel("FlatToggle SWITCH Examples").SetAttributes("FONTSIZE=14, FONTBOLD=YES, ALIGNMENT=ACENTER"),
-		iup.FlatSeparator(),
+		iup.Separator(),
 		hbox,
 	).SetAttributes("MARGIN=10x10, GAP=8")
 

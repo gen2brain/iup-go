@@ -19,9 +19,9 @@ func main() {
 
 	mainVbox := iup.Vbox(
 		iup.FlatLabel("IUP Flat Controls").SetAttributes("FONTSIZE=16, FONTBOLD=YES, ALIGNMENT=ACENTER"),
-		iup.FlatSeparator(),
+		iup.Separator(),
 		flatTabs,
-		iup.FlatSeparator(),
+		iup.Separator(),
 		statusText,
 	).SetAttributes("MARGIN=10x10, GAP=5")
 
@@ -174,7 +174,7 @@ func createButtonsAndTogglesTab() iup.Ihandle {
 		iup.FlatLabel("Combined (Rounded + Gradient):").SetAttributes("FONTBOLD=YES"),
 		iup.Hbox(flatBtnCombo1, flatBtnCombo2, flatBtnStates).SetAttributes("GAP=10"),
 		iup.Fill(),
-		iup.FlatSeparator(),
+		iup.Separator(),
 		iup.Fill(),
 		iup.FlatLabel("FlatToggle Examples:").SetAttributes("FONTBOLD=YES"),
 		flatToggle1,
@@ -218,7 +218,7 @@ func createListAndTreeTab() iup.Ihandle {
 		iup.FlatLabel("FlatList Example:").SetAttributes("FONTBOLD=YES"),
 		flatList,
 		iup.Fill(),
-		iup.FlatSeparator(),
+		iup.Separator(),
 		iup.Fill(),
 		iup.FlatLabel("FlatTree Example:").SetAttributes("FONTBOLD=YES"),
 		flatTree,
@@ -249,7 +249,7 @@ func createValAndOthersTab() iup.Ihandle {
 	flatLabel2 := iup.FlatLabel("FlatLabel with custom styling")
 	flatLabel2.SetAttributes(`BGCOLOR="100 180 255", FGCOLOR="255 255 255", PADDING=10x10, ALIGNMENT=ACENTER`)
 
-	separator1 := iup.FlatSeparator()
+	separator1 := iup.Separator()
 
 	vbox := iup.Vbox(
 		iup.FlatLabel("FlatVal Horizontal Example:").SetAttributes("FONTBOLD=YES"),
@@ -308,7 +308,7 @@ func createContainersTab() iup.Ihandle {
 		iup.FlatLabel("FlatFrame Container:").SetAttributes("FONTBOLD=YES"),
 		flatFrame,
 		iup.Fill(),
-		iup.FlatSeparator(),
+		iup.Separator(),
 		iup.Fill(),
 		iup.FlatLabel("FlatScrollBox Container:").SetAttributes("FONTBOLD=YES"),
 		flatScrollBox,

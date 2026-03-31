@@ -3,7 +3,7 @@
 Creates a void container that allows its child to be resized.
 Allows expanding and contracting the child **size** in one direction.
 
-It does not have a native representation, but it contains also a **IupFlatSeparator** to implement the bar handler.
+It does not have a native representation, but it contains also a **IupSeparator** to implement the bar handler.
 
 ### Creation
 
@@ -47,7 +47,7 @@ The controls that you want to be resized must have the EXPAND=YES attribute set.
 The control inside the sbox will not be resized with a size lesser than its **Natural** size.
 See the [Layout Guide](../layout.md) for mode details on sizes.
 
-The **IupFlatSeparator** bar handler is always the first child of the sbox.
+The **IupSeparator** bar handler is always the first child of the sbox.
 It can be obtained using **IupGetChild** or **IupGetNextChild**.
 
 **IupSbox** can make the layout to be resized larger than the dialog size, so some controls will be positioned outside the dialog area at right or bottom.

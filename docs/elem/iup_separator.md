@@ -1,4 +1,4 @@
-## IupFlatSeparator
+## IupSeparator
 
 Creates an interface element that is a Separator, but it does not have native decorations.
 
@@ -6,7 +6,7 @@ It inherits from [IupCanvas](http://webserver2.tecgraf.puc-rio.br/iup/en/elem/iu
 
 ### Creation
 
-    Ihandle* IupFlatSeparator();
+    Ihandle* IupSeparator();
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 
@@ -41,7 +41,7 @@ Inherits all callbacks of the [IupCanvas](../elem/iup_canvas.md), but redefines 
 
 ### Notes
 
-The **IupFlatSeparator** is used internally in [IupSplit](iup_split.md) and in [IupSbox](iup_sbox.md).
+The **IupSeparator** is used internally in [IupSplit](iup_split.md) and in [IupSbox](iup_sbox.md).
 
 ### Examples
 

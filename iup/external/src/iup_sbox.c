@@ -420,7 +420,7 @@ static int iSboxCreateMethod(Ihandle* ih, void** params)
   ih->data->w = -1;
   ih->data->layoutdrag = 1;
 
-  bar = IupFlatSeparator();
+  bar = IupSeparator();
   bar->flags |= IUP_INTERNAL;
   iupChildTreeAppend(ih, bar);  /* bar will always be the firstchild */
 

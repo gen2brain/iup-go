@@ -793,7 +793,7 @@ static int iSplitCreateMethod(Ihandle* ih, void** params)
   ih->data->min = 0; 
   ih->data->max = 1000;
 
-  bar = IupFlatSeparator();
+  bar = IupSeparator();
   iupChildTreeAppend(ih, bar);  /* bar will always be the firstchild */
   bar->flags |= IUP_INTERNAL;
 
