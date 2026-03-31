@@ -20,7 +20,6 @@
 #include <QStyle>
 #include <QString>
 #include <QGuiApplication>
-#include <QScreen>
 
 /* Qt6 native interface handling */
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -374,30 +373,6 @@ IUP_DRV_API int iupqtIsSystemDarkMode(void)
 }
 
 /****************************************************************************
- * Screen DPI Information
- ****************************************************************************/
-
-static void qtSetScreenInfo(void)
-{
-  QScreen* primary_screen = QGuiApplication::primaryScreen();
-  if (primary_screen)
-  {
-    qreal dpi_x = primary_screen->logicalDotsPerInchX();
-    qreal dpi_y = primary_screen->logicalDotsPerInchY();
-
-    IupSetfAttribute(NULL, "SCREENDPI", "%g", dpi_x);
-    IupSetfAttribute(NULL, "SCREENDPI_X", "%g", dpi_x);
-    IupSetfAttribute(NULL, "SCREENDPI_Y", "%g", dpi_y);
-
-    QSizeF physical_size = primary_screen->physicalSize();
-    IupSetfAttribute(NULL, "SCREENPHYSICALSIZE", "%gx%g", physical_size.width(), physical_size.height());
-
-    qreal pixel_density = primary_screen->devicePixelRatio();
-    IupSetfAttribute(NULL, "SCREENPIXELRATIO", "%g", pixel_density);
-  }
-}
-
-/****************************************************************************
  * Driver Initialization
  ****************************************************************************/
 
@@ -473,7 +448,6 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 
   qtSetGlobalAttrib();
   iupqtSetGlobalColors();
-  qtSetScreenInfo();
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
 
