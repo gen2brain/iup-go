@@ -22,8 +22,10 @@
   #define IUP_EGL_USE_QT
 #elif defined(IUP_USE_EFL)
   #define IUP_EGL_USE_EFL
+#elif defined(IUP_USE_FLTK)
+  #define IUP_EGL_USE_FLTK
 #else
-  #error "No backend defined for EGL: must define IUP_USE_GTK3, IUP_USE_GTK4, IUP_USE_QT, or IUP_USE_EFL"
+  #error "No backend defined for EGL: must define IUP_USE_GTK3, IUP_USE_GTK4, IUP_USE_QT, IUP_USE_EFL, or IUP_USE_FLTK"
 #endif
 
 #include "iup.h"
@@ -179,6 +181,8 @@ static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* phy
   #include "iup_glcanvas_egl_qt.c"
 #elif defined(IUP_EGL_USE_EFL)
   #include "iup_glcanvas_egl_efl.c"
+#elif defined(IUP_EGL_USE_FLTK)
+  #include "iup_glcanvas_egl_fltk.c"
 #endif
 
 /* ============================================================ */
@@ -951,7 +955,6 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 
   if (eglMakeCurrent(gldata->display, gldata->surface, gldata->surface, gldata->context) == EGL_FALSE)
   {
-
     iupAttribSetStrf(ih, "ERROR", "Failed to set new current context. Error: 0x%X", eglGetError());
   }
   else
