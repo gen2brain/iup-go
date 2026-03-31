@@ -56,7 +56,7 @@ func main() {
 	quitBt := iup.Button("Quit").SetCallback("ACTION", iup.ActionFunc(quitCb))
 	iup.SetHandle("quit", quitBt)
 
-	options := iup.Menu(iup.Item("Quit").SetCallback("ACTION", iup.ActionFunc(quitCb)))
+	options := iup.Menu(iup.MenuItem("Quit").SetCallback("ACTION", iup.ActionFunc(quitCb)))
 	submenu := iup.Submenu("File", options)
 	menu := iup.Menu(submenu)
 	iup.SetHandle("menu", menu)

@@ -1,10 +1,10 @@
-## IupItem
+## IupMenuItem
 
 Creates an item of the menu interface element. When selected, it generates an action.
 
 ### Creation
 
-    Ihandle* IupItem(const char *title, const char *action);
+    Ihandle* IupMenuItem(const char *title, const char *action);
 
 **title**: Text to be shown on the item. It can be NULL. It will set the TITLE attribute.\
 **action**: Name of the action generated when the item is selected. It can be NULL.
@@ -86,4 +86,4 @@ See the **IupMenu** element for screenshots.
 
 ### See Also
 
-[IupSeparator](iup_separator.md), [IupSubmenu](iup_submenu.md), [IupMenu](iup_menu.md).
+[IupMenuSeparator](iup_menuseparator.md), [IupSubmenu](iup_submenu.md), [IupMenu](iup_menu.md).

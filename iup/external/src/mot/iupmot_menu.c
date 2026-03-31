@@ -86,7 +86,7 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 /*******************************************************************************************/
 
 
-static void motItemActivateCallback(Widget w, Ihandle* ih, XtPointer call_data)
+static void motMenuItemActivateCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
   Icallback cb;
 
@@ -104,7 +104,7 @@ static void motItemActivateCallback(Widget w, Ihandle* ih, XtPointer call_data)
   (void)call_data;
 }
 
-static void motItemArmCallback(Widget w, Ihandle* ih, XtPointer call_data)
+static void motMenuItemArmCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
   Icallback cb = IupGetCallback(ih, "HIGHLIGHT_CB");
   if (cb)
@@ -243,14 +243,14 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 /*******************************************************************************************/
 
 
-static int motItemSetTitleImageAttrib(Ihandle* ih, const char* value)
+static int motMenuItemSetTitleImageAttrib(Ihandle* ih, const char* value)
 {
   if (XmIsToggleButton(ih->handle))
     iupmotSetPixmap(ih, value, XmNlabelPixmap, 0);
   return 1;
 }
 
-static int motItemSetTitleAttrib(Ihandle* ih, const char* value)
+static int motMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   char *str;
 
@@ -286,7 +286,7 @@ static int motItemSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int motItemSetValueAttrib(Ihandle* ih, const char* value)
+static int motMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (XmIsToggleButton(ih->handle))
   {
@@ -298,7 +298,7 @@ static int motItemSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* motItemGetValueAttrib(Ihandle* ih)
+static char* motMenuItemGetValueAttrib(Ihandle* ih)
 {
   return iupStrReturnChecked(XmIsToggleButton(ih->handle) && XmToggleButtonGetState(ih->handle));
 }
@@ -428,7 +428,7 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
 
 /*******************************************************************************************/
 
-static int motItemMapMethod(Ihandle* ih)
+static int motMenuItemMapMethod(Ihandle* ih)
 {
   int pos;
 
@@ -444,8 +444,8 @@ static int motItemMapMethod(Ihandle* ih)
                    ih->parent->handle,
                    NULL);
 
-    XtAddCallback(ih->handle, XmNactivateCallback, (XtCallbackProc)motItemActivateCallback, (XtPointer)ih);
-    XtAddCallback(ih->handle, XmNcascadingCallback, (XtCallbackProc)motItemArmCallback, (XtPointer)ih);
+    XtAddCallback(ih->handle, XmNactivateCallback, (XtCallbackProc)motMenuItemActivateCallback, (XtPointer)ih);
+    XtAddCallback(ih->handle, XmNcascadingCallback, (XtCallbackProc)motMenuItemArmCallback, (XtPointer)ih);
   }
   else
   {
@@ -476,8 +476,8 @@ static int motItemMapMethod(Ihandle* ih)
                    args,
                    num_args);
 
-    XtAddCallback(ih->handle, XmNvalueChangedCallback, (XtCallbackProc)motItemActivateCallback, (XtPointer)ih);
-    XtAddCallback(ih->handle, XmNarmCallback, (XtCallbackProc)motItemArmCallback, (XtPointer)ih);
+    XtAddCallback(ih->handle, XmNvalueChangedCallback, (XtCallbackProc)motMenuItemActivateCallback, (XtPointer)ih);
+    XtAddCallback(ih->handle, XmNarmCallback, (XtCallbackProc)motMenuItemArmCallback, (XtPointer)ih);
   }
 
   if (!ih->handle)
@@ -519,7 +519,7 @@ static int motSubmenuMapMethod(Ihandle* ih)
   pos = IupGetChildPos(ih->parent, ih);
   XtVaSetValues(ih->handle, XmNpositionIndex, pos, NULL);   /* RowColumn Constraint */
 
-  XtAddCallback(ih->handle, XmNcascadingCallback, (XtCallbackProc)motItemArmCallback, (XtPointer)ih);
+  XtAddCallback(ih->handle, XmNcascadingCallback, (XtCallbackProc)motMenuItemArmCallback, (XtPointer)ih);
 
   if (iupStrBoolean(IupGetGlobal("INPUTCALLBACKS")))
     XtAddEventHandler(ih->handle, PointerMotionMask, False, (XtEventHandler)iupmotDummyPointerMotionEvent, NULL);
@@ -529,7 +529,7 @@ static int motSubmenuMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static int motSeparatorMapMethod(Ihandle* ih)
+static int motMenuSeparatorMapMethod(Ihandle* ih)
 {
   int pos;
 
@@ -553,10 +553,10 @@ static int motSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
-  ic->Map = motItemMapMethod;
+  ic->Map = motMenuItemMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 
   /* Common */
@@ -566,12 +566,12 @@ IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  /* IupItem only */
-  iupClassRegisterAttribute(ic, "VALUE", motItemGetValueAttrib, motItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, motItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, motItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  /* IupMenuItem only */
+  iupClassRegisterAttribute(ic, "VALUE", motMenuItemGetValueAttrib, motMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, motMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, motMenuItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  /* IupItem Gtk and Motif only */
+  /* IupMenuItem Gtk and Motif only */
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED);
 }
 
@@ -589,13 +589,13 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* IupSubmenu only */
-  iupClassRegisterAttribute(ic, "TITLE", NULL, motItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, motMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
 
-IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
-  ic->Map = motSeparatorMapMethod;
+  ic->Map = motMenuSeparatorMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);

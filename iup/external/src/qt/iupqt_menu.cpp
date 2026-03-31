@@ -134,14 +134,14 @@ static void qtMenuAboutToHide(Ihandle* ih)
  * Item Callbacks
  ****************************************************************************/
 
-static void qtItemHighlight(Ihandle* ih)
+static void qtMenuItemHighlight(Ihandle* ih)
 {
   Icallback cb = (Icallback)IupGetCallback(ih, "HIGHLIGHT_CB");
   if (cb)
     cb(ih);
 }
 
-static void qtItemTriggered(Ihandle* ih)
+static void qtMenuItemTriggered(Ihandle* ih)
 {
   QAction* action = (QAction*)ih->handle;
 
@@ -175,7 +175,7 @@ static void qtItemTriggered(Ihandle* ih)
  * Helper Functions
  ****************************************************************************/
 
-static void qtItemUpdateImage(Ihandle* ih, const char* value, const char* image, const char* impress)
+static void qtMenuItemUpdateImage(Ihandle* ih, const char* value, const char* image, const char* impress)
 {
   QAction* action = (QAction*)ih->handle;
   QPixmap* pixbuf = nullptr;
@@ -286,7 +286,7 @@ extern "C" IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
  * Item Attribute Getters
  ****************************************************************************/
 
-static char* qtItemGetActiveAttrib(Ihandle* ih)
+static char* qtMenuItemGetActiveAttrib(Ihandle* ih)
 {
   QAction* action = (QAction*)ih->handle;
   if (!action)
@@ -295,7 +295,7 @@ static char* qtItemGetActiveAttrib(Ihandle* ih)
   return iupStrReturnBoolean(action->isEnabled());
 }
 
-static char* qtItemGetTitleAttrib(Ihandle* ih)
+static char* qtMenuItemGetTitleAttrib(Ihandle* ih)
 {
   QAction* action = (QAction*)ih->handle;
   if (!action)
@@ -312,25 +312,25 @@ static char* qtItemGetTitleAttrib(Ihandle* ih)
  * Item Attribute Setters
  ****************************************************************************/
 
-static int qtItemSetTitleImageAttrib(Ihandle* ih, const char* value)
+static int qtMenuItemSetTitleImageAttrib(Ihandle* ih, const char* value)
 {
-  qtItemUpdateImage(ih, nullptr, value, nullptr);
+  qtMenuItemUpdateImage(ih, nullptr, value, nullptr);
   return 1;
 }
 
-static int qtItemSetImageAttrib(Ihandle* ih, const char* value)
+static int qtMenuItemSetImageAttrib(Ihandle* ih, const char* value)
 {
-  qtItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), value, iupAttribGet(ih, "IMPRESS"));
+  qtMenuItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), value, iupAttribGet(ih, "IMPRESS"));
   return 1;
 }
 
-static int qtItemSetImpressAttrib(Ihandle* ih, const char* value)
+static int qtMenuItemSetImpressAttrib(Ihandle* ih, const char* value)
 {
-  qtItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), iupAttribGet(ih, "IMAGE"), value);
+  qtMenuItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), iupAttribGet(ih, "IMAGE"), value);
   return 1;
 }
 
-static int qtItemSetTitleAttrib(Ihandle* ih, const char* value)
+static int qtMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   QAction* action = (QAction*)ih->handle;
   char* str;
@@ -364,7 +364,7 @@ static int qtItemSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int qtItemSetValueAttrib(Ihandle* ih, const char* value)
+static int qtMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   QAction* action = (QAction*)ih->handle;
 
@@ -384,12 +384,12 @@ static int qtItemSetValueAttrib(Ihandle* ih, const char* value)
   else
   {
     /* Update image based on value */
-    qtItemUpdateImage(ih, value, iupAttribGet(ih, "IMAGE"), iupAttribGet(ih, "IMPRESS"));
+    qtMenuItemUpdateImage(ih, value, iupAttribGet(ih, "IMAGE"), iupAttribGet(ih, "IMPRESS"));
     return 1;
   }
 }
 
-static char* qtItemGetValueAttrib(Ihandle* ih)
+static char* qtMenuItemGetValueAttrib(Ihandle* ih)
 {
   QAction* action = (QAction*)ih->handle;
 
@@ -399,7 +399,7 @@ static char* qtItemGetValueAttrib(Ihandle* ih)
     return nullptr;
 }
 
-static int qtItemSetKeyAttrib(Ihandle* ih, const char* value)
+static int qtMenuItemSetKeyAttrib(Ihandle* ih, const char* value)
 {
   QAction* action = (QAction*)ih->handle;
 
@@ -422,7 +422,7 @@ static int qtItemSetKeyAttrib(Ihandle* ih, const char* value)
  * Item Map
  ****************************************************************************/
 
-static int qtItemMapMethod(Ihandle* ih)
+static int qtMenuItemMapMethod(Ihandle* ih)
 {
   if (!ih->parent)
     return IUP_ERROR;
@@ -467,11 +467,11 @@ static int qtItemMapMethod(Ihandle* ih)
 
   /* Connect signals */
   QObject::connect(action, &QAction::hovered, [ih]() {
-    qtItemHighlight(ih);
+    qtMenuItemHighlight(ih);
   });
 
   QObject::connect(action, &QAction::triggered, [ih]() {
-    qtItemTriggered(ih);
+    qtMenuItemTriggered(ih);
   });
 
   /* Add to parent menu */
@@ -495,35 +495,35 @@ static int qtItemMapMethod(Ihandle* ih)
  * Item Class Init
  ****************************************************************************/
 
-static void qtItemUnMapMethod(Ihandle* ih)
+static void qtMenuItemUnMapMethod(Ihandle* ih)
 {
   QAction* action = (QAction*)ih->handle;
   if (action)
     delete action;
 }
 
-extern "C" IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
-  ic->Map = qtItemMapMethod;
-  ic->UnMap = qtItemUnMapMethod;
+  ic->Map = qtMenuItemMapMethod;
+  ic->UnMap = qtMenuItemUnMapMethod;
 
   /* Common */
   iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "ACTIVE", qtItemGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACTIVE", qtMenuItemGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  /* IupItem only */
-  iupClassRegisterAttribute(ic, "VALUE", qtItemGetValueAttrib, qtItemSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", qtItemGetTitleAttrib, qtItemSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", nullptr, qtItemSetTitleImageAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", nullptr, qtItemSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, qtItemSetImpressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "KEY", nullptr, qtItemSetKeyAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  /* IupMenuItem only */
+  iupClassRegisterAttribute(ic, "VALUE", qtMenuItemGetValueAttrib, qtMenuItemSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", qtMenuItemGetTitleAttrib, qtMenuItemSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", nullptr, qtMenuItemSetTitleImageAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, qtMenuItemSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, qtMenuItemSetImpressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "KEY", nullptr, qtMenuItemSetKeyAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  /* IupItem specific */
+  /* IupMenuItem specific */
   iupClassRegisterAttribute(ic, "HIDEMARK", nullptr, nullptr, nullptr, nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "AUTOTOGGLE", nullptr, nullptr, nullptr, nullptr, IUPAF_DEFAULT);
 }
@@ -615,7 +615,7 @@ static int qtSubmenuMapMethod(Ihandle* ih)
 
   /* Connect highlight signal */
   QObject::connect(action, &QAction::hovered, [ih]() {
-    qtItemHighlight(ih);
+    qtMenuItemHighlight(ih);
   });
 
   /* Set initial title from TITLE attribute. */
@@ -679,7 +679,7 @@ extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
  * Separator Map
  ****************************************************************************/
 
-static int qtSeparatorMapMethod(Ihandle* ih)
+static int qtMenuSeparatorMapMethod(Ihandle* ih)
 {
   if (!ih->parent)
     return IUP_ERROR;
@@ -710,17 +710,17 @@ static int qtSeparatorMapMethod(Ihandle* ih)
  * Separator Class Init
  ****************************************************************************/
 
-static void qtSeparatorUnMapMethod(Ihandle* ih)
+static void qtMenuSeparatorUnMapMethod(Ihandle* ih)
 {
   QAction* action = (QAction*)ih->handle;
   if (action)
     delete action;
 }
 
-extern "C" IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
-  ic->Map = qtSeparatorMapMethod;
-  ic->UnMap = qtSeparatorUnMapMethod;
+  ic->Map = qtMenuSeparatorMapMethod;
+  ic->UnMap = qtMenuSeparatorUnMapMethod;
 }
 
 

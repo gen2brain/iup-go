@@ -58,4 +58,4 @@ See the **IupMenu** element for more screenshots.
 
 ### See Also
 
-[IupItem](iup_item.md), [IupSeparator](iup_separator.md), [IupMenu](iup_menu.md).
+[IupMenuItem](iup_menuitem.md), [IupMenuSeparator](iup_menuseparator.md), [IupMenu](iup_menu.md).

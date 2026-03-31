@@ -20,8 +20,8 @@ int iupMenuPopup(Ihandle* ih, int x, int y);
 /** \addtogroup drv
  * @{ */
 IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y);
-IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic);
-IUP_SDK_API void iupdrvItemInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic);
 IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic);
 IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic);
 /** @} */

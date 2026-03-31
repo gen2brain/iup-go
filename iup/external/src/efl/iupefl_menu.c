@@ -195,7 +195,7 @@ static void eflMenuShowCallback(void* data, Evas* e, Evas_Object* obj, void* eve
     cb(ih);
 }
 
-static void eflItemUpdateMark(Ihandle* ih)
+static void eflMenuItemUpdateMark(Ihandle* ih)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
   Evas_Object* icon;
@@ -237,7 +237,7 @@ static void eflItemUpdateMark(Ihandle* ih)
                      Callbacks
 ****************************************************************/
 
-static void eflMenuItemActivateCallback(void* data, Evas_Object* obj, void* event_info)
+static void eflMenuItemActivateCb(void* data, Evas_Object* obj, void* event_info)
 {
   Ihandle* ih = (Ihandle*)data;
   Icallback cb;
@@ -252,7 +252,7 @@ static void eflMenuItemActivateCallback(void* data, Evas_Object* obj, void* even
     else
       iupAttribSet(ih, "VALUE", "ON");
 
-    eflItemUpdateMark(ih);
+    eflMenuItemUpdateMark(ih);
   }
 
   cb = IupGetCallback(ih, "ACTION");
@@ -286,7 +286,7 @@ static void eflMenuDismissedCallback(void* data, Evas_Object* obj, void* event_i
                      Item Attributes
 ****************************************************************/
 
-static int eflItemSetTitleAttrib(Ihandle* ih, const char* value)
+static int eflMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
   char* display_title;
@@ -306,21 +306,21 @@ static int eflItemSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int eflItemSetValueAttrib(Ihandle* ih, const char* value)
+static int eflMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
 
-  eflItemUpdateMark(ih);
+  eflMenuItemUpdateMark(ih);
 
   return 1;
 }
 
-static char* eflItemGetValueAttrib(Ihandle* ih)
+static char* eflMenuItemGetValueAttrib(Ihandle* ih)
 {
   return iupAttribGet(ih, "VALUE");
 }
 
-static int eflItemSetImageAttrib(Ihandle* ih, const char* value)
+static int eflMenuItemSetImageAttrib(Ihandle* ih, const char* value)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
 
@@ -338,7 +338,7 @@ static int eflItemSetImageAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int eflItemSetActiveAttrib(Ihandle* ih, const char* value)
+static int eflMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
 
@@ -352,7 +352,7 @@ static int eflItemSetActiveAttrib(Ihandle* ih, const char* value)
                      Item Methods
 ****************************************************************/
 
-static int eflItemMapMethod(Ihandle* ih)
+static int eflMenuItemMapMethod(Ihandle* ih)
 {
   Evas_Object* menu;
   Elm_Object_Item* parent_item;
@@ -375,7 +375,7 @@ static int eflItemMapMethod(Ihandle* ih)
 
   display_title = eflMenuGetDisplayTitle(title);
 
-  item = elm_menu_item_add(menu, parent_item, NULL, display_title, eflMenuItemActivateCallback, ih);
+  item = elm_menu_item_add(menu, parent_item, NULL, display_title, eflMenuItemActivateCb, ih);
 
   if (display_title != title)
     free(display_title);
@@ -388,7 +388,7 @@ static int eflItemMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUP_EFL_ITEM", (char*)item);
 
   if (iupAttribGetBoolean(ih, "VALUE"))
-    eflItemUpdateMark(ih);
+    eflMenuItemUpdateMark(ih);
 
   if (!iupAttribGetBoolean(ih, "ACTIVE"))
     elm_object_item_disabled_set(item, EINA_TRUE);
@@ -396,7 +396,7 @@ static int eflItemMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void eflItemUnMapMethod(Ihandle* ih)
+static void eflMenuItemUnMapMethod(Ihandle* ih)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
 
@@ -409,18 +409,18 @@ static void eflItemUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
-IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
-  ic->Map = eflItemMapMethod;
-  ic->UnMap = eflItemUnMapMethod;
+  ic->Map = eflMenuItemMapMethod;
+  ic->UnMap = eflMenuItemUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, eflItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, eflMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", eflItemGetValueAttrib, eflItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, eflItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, eflItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", eflMenuItemGetValueAttrib, eflMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, eflMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, eflMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }
@@ -429,7 +429,7 @@ IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
                      Separator Methods
 ****************************************************************/
 
-static int eflSeparatorMapMethod(Ihandle* ih)
+static int eflMenuSeparatorMapMethod(Ihandle* ih)
 {
   Evas_Object* menu;
   Elm_Object_Item* parent_item;
@@ -455,7 +455,7 @@ static int eflSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void eflSeparatorUnMapMethod(Ihandle* ih)
+static void eflMenuSeparatorUnMapMethod(Ihandle* ih)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
 
@@ -468,10 +468,10 @@ static void eflSeparatorUnMapMethod(Ihandle* ih)
   iupeflFontFree(ih);
 }
 
-IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
-  ic->Map = eflSeparatorMapMethod;
-  ic->UnMap = eflSeparatorUnMapMethod;
+  ic->Map = eflMenuSeparatorMapMethod;
+  ic->UnMap = eflMenuSeparatorUnMapMethod;
 }
 
 /****************************************************************

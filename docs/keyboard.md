@@ -27,5 +27,5 @@ If the focus is at a button, then the Enter key will activate that button indepe
 Usually, the application will process keyboard input in the **IupCanvas** using the [KEYPRESS_CB](call/iup_keypress_cb.md) callback.
 But there is also the [K_ANY](call/iup_k_any.md) callback that can be used for all the controls, but it does not have control of the press state, it is called only when the key is pressed.
 Both callbacks use the key codification explained in [Keyboard Codes](attrib/iup_keyboard_codes.md).
-These codes are also used in the ACTION callbacks of **IupText** and **IupMultiline**, and in shortcuts using the KEY attribute of **IupItem** and **IupSubmenu**.
+These codes are also used in the ACTION callbacks of **IupText** and **IupMultiline**, and in shortcuts using the KEY attribute of **IupMenuItem** and **IupSubmenu**.
 Finally, all the keyboard codes can be used as callback names to implement application hot keys.

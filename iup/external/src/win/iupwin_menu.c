@@ -86,7 +86,7 @@ static void winMenuGetLastPos(Ihandle* ih, int *last_pos, int *pos)
   }
 }
 
-static void winItemCheckToggle(Ihandle* ih)
+static void winMenuItemCheckToggle(Ihandle* ih)
 {
   if (iupAttribGetBoolean(ih->parent, "RADIO"))
   {
@@ -184,7 +184,7 @@ IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, L
       if (!ih)
         break;
 
-      winItemCheckToggle(ih);
+      winMenuItemCheckToggle(ih);
 
       cb = IupGetCallback(ih, "ACTION");
       if (cb && cb(ih) == IUP_CLOSE)
@@ -294,7 +294,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     Ihandle* ih_item = iupwinMenuGetItemHandle((HMENU)ih->handle, menuId);
     if (!ih_item) return IUP_NOERROR;
 
-    winItemCheckToggle(ih_item);
+    winMenuItemCheckToggle(ih_item);
 
     cb = IupGetCallback(ih_item, "ACTION");
     if (cb && cb(ih_item) == IUP_CLOSE)
@@ -454,7 +454,7 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 /*******************************************************************************************/
 
 
-static int winItemSetImageAttrib(Ihandle* ih, const char* value)
+static int winMenuItemSetImageAttrib(Ihandle* ih, const char* value)
 {
   HBITMAP hBitmapUnchecked, hBitmapChecked;
   char* impress;
@@ -478,7 +478,7 @@ static int winItemSetImageAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int winItemSetImpressAttrib(Ihandle* ih, const char* value)
+static int winMenuItemSetImpressAttrib(Ihandle* ih, const char* value)
 {
   HBITMAP hBitmapUnchecked, hBitmapChecked;
 
@@ -497,7 +497,7 @@ static int winItemSetImpressAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int winItemSetTitleAttrib(Ihandle* ih, const char* value)
+static int winMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   char *str;
 
@@ -533,7 +533,7 @@ static int winItemSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int winItemSetTitleImageAttrib(Ihandle* ih, const char* value)
+static int winMenuItemSetTitleImageAttrib(Ihandle* ih, const char* value)
 {
   HBITMAP hBitmap;
 
@@ -556,7 +556,7 @@ static int winItemSetTitleImageAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int winItemSetActiveAttrib(Ihandle* ih, const char* value)
+static int winMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
 {
   /* check if the submenu handle was created in winSubmenuAddToParent */
   if (ih->handle == (InativeHandle*)-1)
@@ -572,7 +572,7 @@ static int winItemSetActiveAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* winItemGetActiveAttrib(Ihandle* ih)
+static char* winMenuItemGetActiveAttrib(Ihandle* ih)
 {
   /* check if the submenu handle was created in winSubmenuAddToParent */
   if (ih->handle == (InativeHandle*)-1)
@@ -581,7 +581,7 @@ static char* winItemGetActiveAttrib(Ihandle* ih)
   return iupStrReturnBoolean(!(GetMenuState((HMENU)ih->handle, (UINT)ih->serial, MF_BYCOMMAND) & MF_GRAYED));
 }
 
-static int winItemSetValueAttrib(Ihandle* ih, const char* value)
+static int winMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih->parent, "RADIO"))
   {
@@ -602,12 +602,12 @@ static int winItemSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* winItemGetValueAttrib(Ihandle* ih)
+static char* winMenuItemGetValueAttrib(Ihandle* ih)
 {
   return iupStrReturnChecked(GetMenuState((HMENU)ih->handle, (UINT)ih->serial, MF_BYCOMMAND) & MF_CHECKED);
 }
 
-static int winItemMapMethod(Ihandle* ih)
+static int winMenuItemMapMethod(Ihandle* ih)
 {
   int pos;
 
@@ -639,22 +639,22 @@ static int winItemMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
-  ic->Map = winItemMapMethod;
+  ic->Map = winMenuItemMapMethod;
   ic->UnMap = winMenuChildUnMapMethod;
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "ACTIVE", winItemGetActiveAttrib, winItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACTIVE", winMenuItemGetActiveAttrib, winMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);  /* used by IupImage */
 
-  /* IupItem only */
-  iupClassRegisterAttribute(ic, "VALUE", winItemGetValueAttrib, winItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, winItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, winItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, winItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, winItemSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  /* IupMenuItem only */
+  iupClassRegisterAttribute(ic, "VALUE", winMenuItemGetValueAttrib, winMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, winMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, winMenuItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, winMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", NULL, winMenuItemSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* necessary because transparent background does not work when not using visual styles */
   if (!iupwin_comctl32ver6)  /* Used by iupdrvImageCreateImage */
@@ -682,9 +682,9 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   ic->Map = winSubmenuMapMethod;
 
   /* IupSubmenu only */
-  iupClassRegisterAttribute(ic, "ACTIVE", winItemGetActiveAttrib, winItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, winItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, winItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVE", winMenuItemGetActiveAttrib, winMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, winMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, winMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);  /* used by IupImage */
 
   /* necessary because transparent background does not work when not using visual styles */
@@ -696,7 +696,7 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 /*******************************************************************************************/
 
 
-static int winSeparatorMapMethod(Ihandle* ih)
+static int winMenuSeparatorMapMethod(Ihandle* ih)
 {
   int pos;
 
@@ -727,10 +727,10 @@ static int winSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
-  ic->Map = winSeparatorMapMethod;
+  ic->Map = winMenuSeparatorMapMethod;
   ic->UnMap = winMenuChildUnMapMethod;
 }
 

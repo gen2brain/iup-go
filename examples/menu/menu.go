@@ -8,14 +8,14 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	itemOpen := iup.Item("Open").SetAttribute("KEY", "O")
-	itemSave := iup.Item("Save").SetAttribute("KEY", "S")
-	itemUndo := iup.Item("Undo").SetAttributes("KEY=U, ACTIVE=NO")
-	itemExit := iup.Item("Exit").SetAttribute("KEY", "x")
+	itemOpen := iup.MenuItem("Open").SetAttribute("KEY", "O")
+	itemSave := iup.MenuItem("Save").SetAttribute("KEY", "S")
+	itemUndo := iup.MenuItem("Undo").SetAttributes("KEY=U, ACTIVE=NO")
+	itemExit := iup.MenuItem("Exit").SetAttribute("KEY", "x")
 
 	itemExit.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int { return iup.CLOSE }))
 
-	fileMenu := iup.Menu(itemOpen, itemSave, iup.Separator(), itemUndo, itemExit)
+	fileMenu := iup.Menu(itemOpen, itemSave, iup.MenuSeparator(), itemUndo, itemExit)
 	subMenu := iup.Submenu("File", fileMenu)
 
 	menu := iup.Menu(subMenu)

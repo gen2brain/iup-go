@@ -26,4 +26,4 @@ Be careful not to misuse this attribute in relation to [K_ANY](../call/iup_k_any
 
 ### Affects
 
-[IupItem](../elem/iup_item.md), [IupSubMenu](../elem/iup_submenu.md).
+[IupMenuItem](../elem/iup_menuitem.md), [IupSubMenu](../elem/iup_submenu.md).

@@ -79,10 +79,10 @@ func kAnyCb(ih iup.Ihandle, c int) int {
 
 func rightClickCb(ih iup.Ihandle, id int) int {
 	popupMenu := iup.Menu(
-		iup.Item("Add Leaf").SetCallback("ACTION", iup.ActionFunc(addLeaf)),
-		iup.Item("Add Branch").SetCallback("ACTION", iup.ActionFunc(addBranch)),
-		iup.Item("Rename Node").SetCallback("ACTION", iup.ActionFunc(renameNode)),
-		iup.Item("Remove Node").SetCallback("ACTION", iup.ActionFunc(removeNode)),
+		iup.MenuItem("Add Leaf").SetCallback("ACTION", iup.ActionFunc(addLeaf)),
+		iup.MenuItem("Add Branch").SetCallback("ACTION", iup.ActionFunc(addBranch)),
+		iup.MenuItem("Rename Node").SetCallback("ACTION", iup.ActionFunc(renameNode)),
+		iup.MenuItem("Remove Node").SetCallback("ACTION", iup.ActionFunc(removeNode)),
 	)
 
 	iup.SetAttribute(ih, "VALUE", fmt.Sprintf("%d", id))

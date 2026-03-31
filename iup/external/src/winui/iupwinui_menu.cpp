@@ -57,7 +57,7 @@ static double winuiMenuGetIupFontSize(Ihandle* ih)
   return (double)size * dpi / 72.0;
 }
 
-static bool winuiItemIsCheckable(Ihandle* ih)
+static bool winuiMenuItemIsCheckable(Ihandle* ih)
 {
   char* value = iupAttribGet(ih, "VALUE");
   char* hidemark = iupAttribGet(ih, "HIDEMARK");
@@ -81,7 +81,7 @@ static hstring winuiMenuGetTitle(const char* title, wchar_t* accessKey)
   return result;
 }
 
-static void winuiItemClickHandler(Ihandle* ih)
+static void winuiMenuItemClickHandler(Ihandle* ih)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
 
@@ -217,7 +217,7 @@ static void winuiMenuUnMapMethod(Ihandle* ih)
   winuiFreeAux<IupWinUIMenuAux>(ih, IUPWINUI_MENU_AUX);
 }
 
-static int winuiItemMapMethod(Ihandle* ih)
+static int winuiMenuItemMapMethod(Ihandle* ih)
 {
   Ihandle* parent = ih->parent;
   if (!parent)
@@ -230,7 +230,7 @@ static int winuiItemMapMethod(Ihandle* ih)
   wchar_t accessKey = 0;
   hstring text = winuiMenuGetTitle(title, &accessKey);
 
-  aux->isCheckable = winuiItemIsCheckable(ih);
+  aux->isCheckable = winuiMenuItemIsCheckable(ih);
 
   if (aux->isCheckable)
   {
@@ -250,7 +250,7 @@ static int winuiItemMapMethod(Ihandle* ih)
       item.IsEnabled(false);
 
     aux->clickToken = item.Click([ih](IInspectable const&, RoutedEventArgs const&) {
-      winuiItemClickHandler(ih);
+      winuiMenuItemClickHandler(ih);
     });
 
     winuiMenuItemAddToParent(ih, item);
@@ -270,7 +270,7 @@ static int winuiItemMapMethod(Ihandle* ih)
       item.IsEnabled(false);
 
     aux->clickToken = item.Click([ih](IInspectable const&, RoutedEventArgs const&) {
-      winuiItemClickHandler(ih);
+      winuiMenuItemClickHandler(ih);
     });
 
     winuiMenuItemAddToParent(ih, item);
@@ -280,7 +280,7 @@ static int winuiItemMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void winuiItemUnMapMethod(Ihandle* ih)
+static void winuiMenuItemUnMapMethod(Ihandle* ih)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
 
@@ -363,7 +363,7 @@ static void winuiSubmenuUnMapMethod(Ihandle* ih)
     winuiReleaseHandle<MenuFlyoutSubItem>(ih);
 }
 
-static int winuiSeparatorMapMethod(Ihandle* ih)
+static int winuiMenuSeparatorMapMethod(Ihandle* ih)
 {
   Ihandle* parent = ih->parent;
   if (!parent || !IupClassMatch(parent, "menu"))
@@ -380,12 +380,12 @@ static int winuiSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void winuiSeparatorUnMapMethod(Ihandle* ih)
+static void winuiMenuSeparatorUnMapMethod(Ihandle* ih)
 {
   winuiReleaseHandle<MenuFlyoutSeparator>(ih);
 }
 
-static void winuiItemSetIcon(Ihandle* ih, const char* value)
+static void winuiMenuItemSetIcon(Ihandle* ih, const char* value)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux)
@@ -419,13 +419,13 @@ static void winuiItemSetIcon(Ihandle* ih, const char* value)
   }
 }
 
-static int winuiItemSetImageAttrib(Ihandle* ih, const char* value)
+static int winuiMenuItemSetImageAttrib(Ihandle* ih, const char* value)
 {
-  winuiItemSetIcon(ih, value);
+  winuiMenuItemSetIcon(ih, value);
   return 1;
 }
 
-static int winuiItemSetTitleAttrib(Ihandle* ih, const char* value)
+static int winuiMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux)
@@ -458,7 +458,7 @@ static int winuiItemSetTitleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* winuiItemGetTitleAttrib(Ihandle* ih)
+static char* winuiMenuItemGetTitleAttrib(Ihandle* ih)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux)
@@ -484,7 +484,7 @@ static char* winuiItemGetTitleAttrib(Ihandle* ih)
   return NULL;
 }
 
-static int winuiItemSetValueAttrib(Ihandle* ih, const char* value)
+static int winuiMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux || !aux->isCheckable)
@@ -497,7 +497,7 @@ static int winuiItemSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* winuiItemGetValueAttrib(Ihandle* ih)
+static char* winuiMenuItemGetValueAttrib(Ihandle* ih)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux || !aux->isCheckable)
@@ -510,7 +510,7 @@ static char* winuiItemGetValueAttrib(Ihandle* ih)
   return NULL;
 }
 
-static int winuiItemSetActiveAttrib(Ihandle* ih, const char* value)
+static int winuiMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux)
@@ -746,7 +746,7 @@ extern "C" IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiMenuSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
 }
 
-static int winuiItemSetFontAttrib(Ihandle* ih, const char* value)
+static int winuiMenuItemSetFontAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
 
@@ -772,20 +772,20 @@ static int winuiItemSetFontAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-extern "C" IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
-  ic->Map = winuiItemMapMethod;
-  ic->UnMap = winuiItemUnMapMethod;
+  ic->Map = winuiMenuItemMapMethod;
+  ic->UnMap = winuiMenuItemUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, winuiItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", NULL, winuiMenuItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "TITLE", winuiItemGetTitleAttrib, winuiItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", winuiItemGetValueAttrib, winuiItemSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, winuiItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", winuiMenuItemGetTitleAttrib, winuiMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", winuiMenuItemGetValueAttrib, winuiMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, winuiMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, winuiItemSetImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, winuiMenuItemSetImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
 
@@ -824,10 +824,10 @@ extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiSubmenuSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 }
 
-extern "C" IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
-  ic->Map = winuiSeparatorMapMethod;
-  ic->UnMap = winuiSeparatorUnMapMethod;
+  ic->Map = winuiMenuSeparatorMapMethod;
+  ic->UnMap = winuiMenuSeparatorUnMapMethod;
 }
 
 /****************************************************************************

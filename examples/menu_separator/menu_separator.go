@@ -13,14 +13,14 @@ func main() {
 	iup.Menu(
 		iup.Submenu("File",
 			iup.Menu(
-				iup.Item("New").SetCallback("ACTION", iup.ActionFunc(itemCb)),
-				iup.Item("Open").SetCallback("ACTION", iup.ActionFunc(itemCb)),
-				iup.Item("Close").SetCallback("ACTION", iup.ActionFunc(itemCb)),
-				iup.Separator(),
-				iup.Item("Page Setup").SetCallback("ACTION", iup.ActionFunc(itemCb)),
-				iup.Item("Print").SetCallback("ACTION", iup.ActionFunc(itemCb)),
-				iup.Separator(),
-				iup.Item("Exit").SetCallback("ACTION", iup.ActionFunc(itemExitCb)),
+				iup.MenuItem("New").SetCallback("ACTION", iup.ActionFunc(itemCb)),
+				iup.MenuItem("Open").SetCallback("ACTION", iup.ActionFunc(itemCb)),
+				iup.MenuItem("Close").SetCallback("ACTION", iup.ActionFunc(itemCb)),
+				iup.MenuSeparator(),
+				iup.MenuItem("Page Setup").SetCallback("ACTION", iup.ActionFunc(itemCb)),
+				iup.MenuItem("Print").SetCallback("ACTION", iup.ActionFunc(itemCb)),
+				iup.MenuSeparator(),
+				iup.MenuItem("Exit").SetCallback("ACTION", iup.ActionFunc(itemExitCb)),
 			),
 		),
 	).SetHandle("menu")

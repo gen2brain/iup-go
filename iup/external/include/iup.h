@@ -233,9 +233,9 @@ IUP_API Ihandle*  IupImageRGBA  (int width, int height, const unsigned char* pix
 /** \defgroup menus Menus
  * \ingroup ctrl */
 /** @{ */
-IUP_API Ihandle*  IupItem       (const char* title, const char* action);
+IUP_API Ihandle*  IupMenuItem       (const char* title, const char* action);
 IUP_API Ihandle*  IupSubmenu    (const char* title, Ihandle* child);
-IUP_API Ihandle*  IupSeparator  (void);
+IUP_API Ihandle*  IupMenuSeparator  (void);
 IUP_API Ihandle*  IupMenu       (Ihandle* child, ...);
 IUP_API Ihandle*  IupMenuv      (Ihandle* *children);
 /** @} */
