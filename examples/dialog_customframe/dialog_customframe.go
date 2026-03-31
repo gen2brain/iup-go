@@ -84,7 +84,7 @@ func main() {
 			titleBar,
 			content,
 		).SetAttribute("MARGIN", "0x0"),
-	).SetAttribute("CUSTOMFRAME", "YES")
+	).SetAttributes(`CUSTOMFRAME=YES, TITLE="Custom Frame Window"`)
 
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
 	iup.MainLoop()

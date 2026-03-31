@@ -1,12 +1,14 @@
-## iup-go
+## IUP-Go
 [![Build Status](https://github.com/gen2brain/iup-go/actions/workflows/build.yml/badge.svg)](https://github.com/gen2brain/iup-go/actions)
 [![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/iup-go.svg)](https://pkg.go.dev/github.com/gen2brain/iup-go/iup)
 
 Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
-IUP-Go provides system native UI controls for Windows (Win32 and WinUI), macOS (Cocoa), and Linux (GTK, Qt, EFL, and Motif).
+IUP-Go provides system native UI controls for Windows (Win32 and WinUI), macOS (Cocoa), and Linux (GTK, Qt, FLTK, EFL, and Motif).
 
 C/C++ source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
+
+To build the IUP C library standalone (without Go bindings), see [iup/external/README.md](iup/external/README.md) for CMake build instructions.
 
 ### Requirements
 
@@ -27,6 +29,7 @@ You can also build a binary in [MSYS2](https://msys2.github.io/) shell.
 * You can build for Qt, with the `qt` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-base`.
 * You can build for GTK3, with the `gtk` build tag. Install deps with `pacman -S mingw-w64-x86_64-gtk3`.
 * You can build for GTK4, with the `gtk4` build tag. Install deps with `pacman -S mingw-w64-x86_64-gtk4`.
+* You can build for FLTK, with the `fltk` build tag. Install deps with `pacman -S mingw-w64-x86_64-fltk`.
 
 [<img src="examples/sample/sample_win32.png" width="700"/>](examples/sample/sample_win32.png)
 
@@ -53,6 +56,7 @@ To create an `.app` bundle or `.dmg` image, check this [gist](https://gist.githu
 * You can build for Qt, with the `qt` build tag. Install deps with `brew install qt`.
 * You can build for GTK3, with the `gtk` build tag. Install deps with `brew install gtk+3`.
 * You can build for GTK4, with the `gtk4` build tag. Install deps with `brew install gtk4`.
+* You can build for FLTK, with the `fltk` build tag. Install deps with `brew install fltk`.
 
 [<img src="examples/sample/sample_cocoa.png" width="700"/>](examples/sample/sample_cocoa.png)
 
@@ -106,6 +110,17 @@ CGO_CXXFLAGS="-I/usr/include/qt6/QtCore/6.9.3 -I/usr/include/qt6/QtGui/6.9.3" go
 
 [<img src="examples/sample/sample_qt6.png" width="700"/>](examples/sample/sample_qt6.png)
 
+##### FLTK
+
+Requires FLTK 1.4.x.
+
+* Debian/Ubuntu: `apt-get install libfltk1.4-dev`
+* RedHat/Fedora: `dnf install fltk-devel`
+
+For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
+
+[<img src="examples/sample/sample_fltk.png" width="700"/>](examples/sample/sample_fltk.png)
+
 ##### EFL
 
 * Debian/Ubuntu: `apt-get install libefl-all-dev`
@@ -144,6 +159,7 @@ For the `GLCanvas` control, install `libgl-dev` or `libglvnd-devel`.
 * `gtk2` - build for GTK2 (Linux/Unix)
 * `qt` - build for the Qt framework
 * `qt5` - build for Qt5 version, default is Qt6 (used with `qt`)
+* `fltk` - build for FLTK (Fast Light Toolkit)
 * `efl` - build for EFL (Enlightenment Foundation Libraries)
 * `motif` - build for X11/Motif 2.x environment
 * `xft` - build with Xft support (X FreeType interface) (used with `motif`)
@@ -164,8 +180,9 @@ You can also point `PKG_CONFIG_LIBDIR` to some local directory with custom modif
 
 ### Documentation
 
-[IUP](https://www.tecgraf.puc-rio.br/iup/) documentation is a must for now; every Go function in the doc reference there.
+API reference documentation is available in the [docs](docs/) directory. Each Go function link to its corresponding documentation page.
 Also check [Go Reference](https://pkg.go.dev/github.com/gen2brain/iup-go/iup) and [Examples](https://github.com/gen2brain/iup-go/tree/main/examples).
+For the original IUP reference, visit [IUP's website](https://www.tecgraf.puc-rio.br/iup).
 
 ### Thread-Safety
 

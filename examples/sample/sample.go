@@ -20,6 +20,7 @@ func main() {
 	//iup.SetGlobal("DEFAULTFONTSIZE", "13")
 	//iup.SetGlobal("EFLACCEL", "gl")
 	//iup.SetGlobal("EFLTHEME", "/tmp/Ice.edj")
+	//iup.SetGlobal("FLTKTHEME", "oxy")
 
 	iup.ImageRGBA(32, 32, imgTecgraf).SetHandle("img1")
 
