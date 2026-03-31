@@ -110,7 +110,7 @@ static IgtkFont* gtkFindFont(const char *font)
       fontdesc = pango_font_description_from_string(font);
     else
     {
-      char new_font[1024];
+      char new_font[1536];
       if (size<0)
       {
 #if GTK_CHECK_VERSION(2, 10, 0)
