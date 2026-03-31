@@ -1,0 +1,64 @@
+# Motif / X11 driver
+
+find_package(PkgConfig REQUIRED)
+
+file(GLOB _MOT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/mot/iupmot_*.c")
+
+list(FILTER _MOT_SOURCES EXCLUDE REGEX "iupmot_tray_")
+
+if(IUP_USE_XEMBED)
+  list(APPEND _MOT_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/mot/iupmot_tray_xembed.c"
+  )
+else()
+  list(APPEND _MOT_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/iupunix_sni.c"
+  )
+endif()
+
+include(IUPUnixCommon)
+list(APPEND _MOT_SOURCES ${IUP_UNIX_COMMON_SOURCES})
+
+set(IUP_DRIVER_SOURCES ${_MOT_SOURCES})
+
+set(IUP_DRIVER_COMPILE_DEFINITIONS
+  IUP_USE_ICONV
+  IUPDBUS_USE_DLOPEN
+)
+
+set(IUP_DRIVER_INCLUDE_DIRS
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/mot"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/unix"
+)
+
+set(IUP_DRIVER_LINK_LIBRARIES Xm Xmu Xt Xext X11 dl m)
+
+pkg_check_modules(XFT IMPORTED_TARGET xft)
+pkg_check_modules(FREETYPE IMPORTED_TARGET freetype2)
+
+if(XFT_FOUND AND FREETYPE_FOUND)
+  list(APPEND IUP_DRIVER_COMPILE_DEFINITIONS IUP_USE_XFT)
+  list(APPEND IUP_DRIVER_LINK_LIBRARIES PkgConfig::XFT PkgConfig::FREETYPE)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  list(APPEND IUP_DRIVER_LINK_LIBRARIES Xpm)
+endif()
+
+if(APPLE)
+  list(APPEND IUP_DRIVER_LINK_LIBRARIES iconv)
+endif()
+
+set(IUP_DRIVER_COMPILE_OPTIONS "")
+
+set(IUP_PC_REQUIRES "")
+if(XFT_FOUND AND FREETYPE_FOUND)
+  set(IUP_PC_REQUIRES "xft freetype2")
+endif()
+set(IUP_PC_LIBS_PRIVATE "-lXm -lXmu -lXt -lXext -lX11 -ldl -lm")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  string(APPEND IUP_PC_LIBS_PRIVATE " -lXpm")
+endif()
+if(APPLE)
+  string(APPEND IUP_PC_LIBS_PRIVATE " -liconv")
+endif()
