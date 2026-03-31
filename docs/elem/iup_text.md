@@ -306,7 +306,7 @@ Internal Drag&Drop support is enabled by default.
 But in Windows the internal Drag&Drop is enabled only if FORMATTING=YES.
 In GTK the internal Drag&Drop cannot be disabled, so it will conflict with the [Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks.
 
-In GTK uses GtkTextView/GtkEntry/GtkSpinButton, in Windows uses RICHEDIT_CLASS (formatting)/WC_EDIT, in WinUI uses XAML RichEditBox/TextBox, in macOS uses NSTextView/NSTextField, in Qt uses QTextEdit/QLineEdit, in EFL uses Elm_Entry, and in Motif uses xmText/xmTextField.
+In GTK uses GtkTextView/GtkEntry/GtkSpinButton, in Windows uses RICHEDIT_CLASS (formatting)/WC_EDIT, in WinUI uses XAML RichEditBox/TextBox, in macOS uses NSTextView/NSTextField, in Qt uses QTextEdit/QLineEdit, in FLTK uses Fl_Text_Editor/Fl_Input/Fl_Spinner, in EFL uses Elm_Entry, and in Motif uses xmText/xmTextField.
 
 #### Navigation, Selection and Clipboard Keys
 

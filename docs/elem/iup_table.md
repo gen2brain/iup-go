@@ -274,7 +274,7 @@ When SORTABLE=YES, clicking a column header fires SORT_CB.
 The application must perform the actual sorting and update the table.
 Sort direction arrows are shown in the column header.
 
-In GTK uses GtkTreeView with GtkListStore, in GTK 4 uses GtkColumnView, in Windows uses ListView in Report mode, in WinUI uses a custom XAML Grid layout with ListView for data rows, in macOS uses NSTableView, in Qt uses QTableWidget, in EFL uses a custom table drawn on Elm_Scroller, and in Motif uses a custom table drawn on XmDrawingArea.
+In GTK uses GtkTreeView with GtkListStore, in GTK 4 uses GtkColumnView, in Windows uses ListView in Report mode, in WinUI uses a custom XAML Grid layout with ListView for data rows, in macOS uses NSTableView, in Qt uses QTableWidget, in FLTK uses Fl_Table_Row, in EFL uses a custom table drawn on Elm_Scroller, and in Motif uses a custom table drawn on XmDrawingArea.
 
 ### See Also
 

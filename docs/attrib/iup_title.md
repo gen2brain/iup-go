@@ -19,7 +19,7 @@ If a mnemonic is defined, then the character relative to it is underlined and a 
 In GTK, if you define a mnemonic using "&" and the string has an underscore, then make sure that the mnemonic comes before the underscore.
 
 If the MARKUP attribute is defined, then the title string can contain markup commands using a Pango-like subset (`<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, `<span>`).
-Works only if a mnemonic is NOT defined in the title. Not valid for menus. Not supported in Win32 and Motif (markup tags are stripped and plain text is displayed).
+Works only if a mnemonic is NOT defined in the title. Not valid for menus. Not supported in Win32, FLTK and Motif (markup tags are stripped and plain text is displayed).
 
 ### Affects
 

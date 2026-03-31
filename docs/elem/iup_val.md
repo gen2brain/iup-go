@@ -90,7 +90,7 @@ The BUTTON_RELEASE_CB callback is called only when the user release the mouse bu
 
 In Motif, after the user clicks the handler a KILLFOCUS will be ignored when the control loses its focus.
 
-In GTK uses GtkScale, in Windows uses TRACKBAR_CLASS, in WinUI uses XAML Slider, in macOS uses NSSlider, in Qt uses QSlider, in EFL uses Efl_Ui_Slider, and in Motif uses xmScale.
+In GTK uses GtkScale, in Windows uses TRACKBAR_CLASS, in WinUI uses XAML Slider, in macOS uses NSSlider, in Qt uses QSlider, in FLTK uses Fl_Slider, in EFL uses Efl_Ui_Slider, and in Motif uses xmScale.
 
 #### Keyboard Mapping
 

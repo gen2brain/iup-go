@@ -55,7 +55,7 @@ Set to NULL to allow the use of smaller values in the layout computation.
 
 ### Notes
 
-In GTK uses GtkProgressBar, in Windows uses PROGRESS_CLASS, in WinUI uses XAML ProgressBar, in macOS uses NSProgressIndicator, in Qt uses QProgressBar, in EFL uses Efl_Ui_Progressbar, and in Motif uses xmScale.
+In GTK uses GtkProgressBar, in Windows uses PROGRESS_CLASS, in WinUI uses XAML ProgressBar, in macOS uses NSProgressIndicator, in Qt uses QProgressBar, in FLTK uses Fl_Progress, in EFL uses Efl_Ui_Progressbar, and in Motif uses xmScale.
 
 ### Examples
 

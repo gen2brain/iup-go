@@ -53,7 +53,7 @@ If it is not defined but IMAGE is defined then for inactive toggles the colors w
 **MARKUP**: allows the title string to contain markup commands.
 Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes. GTK uses Pango markup natively; other drivers convert to their native format.
 Works only if a mnemonic is NOT defined in the title. Can be "YES" or "NO". Default: "NO".
-Not supported in Win32 and Motif (markup tags are stripped and plain text is displayed).
+Not supported in Win32, FLTK and Motif (markup tags are stripped and plain text is displayed).
 
 **PADDING**: internal margin when IMAGE is defined.
 Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
@@ -85,7 +85,7 @@ The toggle can be activated from any control in the dialog using the "Alt+key" c
 **SWITCH** (creation-only): displays the toggle as a switch control instead of a checkbox.
 Can be "YES" or "NO". Default: "NO".
 In GTK 3 and GTK 4 uses native GtkSwitch, in WinUI uses XAML ToggleSwitch, in macOS uses NSSwitch, in EFL uses Elm_Check with the "toggle" style.
-In Win32, Qt and Motif the switch is custom drawn.
+In Win32, Qt, FLTK and Motif the switch is custom drawn.
 
 **3STATE** (creation-only): Enable a three state toggle.
 Valid for toggles with text only, and that do not belong to a radio. Can be "YES" or NO".
@@ -133,7 +133,7 @@ If you need to dynamically remove toggles that belong to a radio in Windows, the
 
 A toggle that is a child of an **IupRadio** automatically receives a name when it is mapped into the native system.
 
-In GTK uses GtkRadioButton/GtkCheckButton/GtkToggleButton, in GTK 4 uses GtkCheckButton/GtkSwitch, in Windows uses WC_BUTTON, in WinUI uses XAML CheckBox/RadioButton/ToggleSwitch, in macOS uses NSButton/NSSwitch, in Qt uses QCheckBox/QRadioButton, in EFL uses Elm_Check, and in Motif uses xmToggleButton.
+In GTK uses GtkRadioButton/GtkCheckButton/GtkToggleButton, in GTK 4 uses GtkCheckButton/GtkSwitch, in Windows uses WC_BUTTON, in WinUI uses XAML CheckBox/RadioButton/ToggleSwitch, in macOS uses NSButton/NSSwitch, in Qt uses QCheckBox/QRadioButton, in FLTK uses Fl_Check_Button/Fl_Round_Button/Fl_Button, in EFL uses Elm_Check, and in Motif uses xmToggleButton.
 
 ### Examples
 

@@ -28,7 +28,7 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 
 **ELLIPSIS**: add an ellipsis: "..." to the text if there is not enough space to render the entire string.
 Can be "YES" or "NO". Default: "NO".
-Not supported in Motif.
+Not supported in FLTK and Motif.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute DLGFGCOLOR.
 
@@ -44,7 +44,7 @@ Not supported in Win32 and WinUI.
 **MARKUP**: allows the title string to contain markup commands.
 Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes. GTK uses Pango markup natively; other drivers convert to their native format.
 Works only if a mnemonic is NOT defined in the title. Can be "YES" or "NO". Default: "NO".
-Not supported in Win32 and Motif (markup tags are stripped and plain text is displayed).
+Not supported in Win32, FLTK and Motif (markup tags are stripped and plain text is displayed).
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
 Not used when SEPARATOR is used. Default value: "0x0".
@@ -96,7 +96,7 @@ Supported in GTK, GTK 4, Qt and macOS.
 Labels with images, texts or line separator cannot change its behavior after mapped.
 But after map, the image can be changed for another image, and the text for another text.
 
-In GTK uses GtkSeparator/GtkImage/GtkLabel, in GTK 4 uses GtkSeparator/GtkImage/GtkLabel, in Windows uses WC_STATIC, in WinUI uses XAML TextBlock/Image/Border, in macOS uses NSSeparator/NSImageView/NSTextField, in Qt uses QFrame/QLabel, in EFL uses Efl_Ui_Separator/Efl_Ui_Image/Elm_Label, and in Motif uses xmSeparator/xmLabel.
+In GTK uses GtkSeparator/GtkImage/GtkLabel, in GTK 4 uses GtkSeparator/GtkImage/GtkLabel, in Windows uses WC_STATIC, in WinUI uses XAML TextBlock/Image/Border, in macOS uses NSSeparator/NSImageView/NSTextField, in Qt uses QFrame/QLabel, in FLTK uses Fl_Box, in EFL uses Efl_Ui_Separator/Efl_Ui_Image/Elm_Label, and in Motif uses xmSeparator/xmLabel.
 
 ### Examples
 
