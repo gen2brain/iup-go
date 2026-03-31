@@ -132,7 +132,7 @@ API reference documentation for IUP (Portable User Interface).
 
 ### Menus
 
-[IupItem](elem/iup_item.md), [IupMenu](elem/iup_menu.md), [IupSeparator](elem/iup_separator.md), [IupSubmenu](elem/iup_submenu.md)
+[IupMenuItem](elem/iup_menuitem.md), [IupMenu](elem/iup_menu.md), [IupMenuSeparator](elem/iup_menuseparator.md), [IupSubmenu](elem/iup_submenu.md)
 
 ### Handle Names
 

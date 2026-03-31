@@ -52,8 +52,8 @@ Iclass* iupSpaceNewClass(void);
 Iclass* iupThreadNewClass(void);
 
 Iclass* iupMenuNewClass(void);
-Iclass* iupItemNewClass(void);
-Iclass* iupSeparatorNewClass(void);
+Iclass* iupMenuItemNewClass(void);
+Iclass* iupMenuSeparatorNewClass(void);
 Iclass* iupSubmenuNewClass(void);
 
 Iclass* iupFillNewClass(void);

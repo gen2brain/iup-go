@@ -185,14 +185,14 @@ func SetFocus(ih Ihandle) Ihandle {
 	return mkih(C.IupSetFocus(ih.ptr()))
 }
 
-// Item creates an item of the menu interface element. When selected, it generates an action.
+// MenuItem creates an item of the menu interface element. When selected, it generates an action.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_item.md
-func Item(title string) Ihandle {
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_menuitem.md
+func MenuItem(title string) Ihandle {
 	cTitle := C.CString(title)
 	defer C.free(unsafe.Pointer(cTitle))
 
-	h := mkih(C.IupItem(cTitle, nil))
+	h := mkih(C.IupMenuItem(cTitle, nil))
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
@@ -209,11 +209,11 @@ func Menu(children ...Ihandle) Ihandle {
 	return h
 }
 
-// Separator creates the separator interface element. It shows a line between two menu items.
+// MenuSeparator creates the separator interface element. It shows a line between two menu items.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_separator.md
-func Separator() Ihandle {
-	h := mkih(C.IupSeparator())
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_menuseparator.md
+func MenuSeparator() Ihandle {
+	h := mkih(C.IupMenuSeparator())
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }

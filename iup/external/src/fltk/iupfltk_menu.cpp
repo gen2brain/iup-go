@@ -40,7 +40,7 @@ extern "C" {
  * Callbacks
  ****************************************************************************/
 
-static void fltkMenuItemCallback(Fl_Widget* w, void* data)
+static void fltkMenuItemActionCb(Fl_Widget* w, void* data)
 {
   Ihandle* ih = (Ihandle*)data;
   (void)w;
@@ -138,7 +138,7 @@ static void fltkMenuAddItems(Fl_Menu_* menuwidget, Ihandle* ih_menu, const char*
       if (iupAttribGetBoolean(child, "VALUE"))
         flags |= FL_MENU_VALUE;
 
-      last_item_idx = menuwidget->add(path, 0, fltkMenuItemCallback, (void*)child, flags);
+      last_item_idx = menuwidget->add(path, 0, fltkMenuItemActionCb, (void*)child, flags);
     }
     else if (iupStrEqual(class_name, "separator"))
     {
@@ -351,7 +351,7 @@ extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** fi
     snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSetStr(menu, attr_name, filenames[i]);
 
-    Ihandle* item = IupItem(filenames[i], NULL);
+    Ihandle* item = IupMenuItem(filenames[i], NULL);
     iupAttribSet(item, "_IUP_RECENT_ITEM", "1");
     iupAttribSetInt(item, "_IUP_RECENT_INDEX", i);
     IupSetCallback(item, "ACTION", (Icallback)fltkRecentItemAction);
@@ -368,7 +368,7 @@ extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** fi
  * Item Class
  ****************************************************************************/
 
-static int fltkItemSetTitleAttrib(Ihandle* ih, const char* value)
+static int fltkMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (!value) value = "";
   iupAttribSetStr(ih, "TITLE", value);
@@ -376,31 +376,31 @@ static int fltkItemSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* fltkItemGetTitleAttrib(Ihandle* ih)
+static char* fltkMenuItemGetTitleAttrib(Ihandle* ih)
 {
   return iupAttribGet(ih, "TITLE");
 }
 
-static int fltkItemSetValueAttrib(Ihandle* ih, const char* value)
+static int fltkMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
   fltkMenuTriggerRebuild(ih);
   return 1;
 }
 
-static char* fltkItemGetValueAttrib(Ihandle* ih)
+static char* fltkMenuItemGetValueAttrib(Ihandle* ih)
 {
   return iupAttribGet(ih, "VALUE");
 }
 
-static int fltkItemSetActiveAttrib(Ihandle* ih, const char* value)
+static int fltkMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
 {
   iupBaseSetActiveAttrib(ih, value);
   fltkMenuTriggerRebuild(ih);
   return 0;
 }
 
-static int fltkItemMapMethod(Ihandle* ih)
+static int fltkMenuItemMapMethod(Ihandle* ih)
 {
   if (!ih->parent)
     return IUP_ERROR;
@@ -413,22 +413,22 @@ static int fltkItemMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void fltkItemUnMapMethod(Ihandle* ih)
+static void fltkMenuItemUnMapMethod(Ihandle* ih)
 {
   ih->handle = NULL;
 }
 
-extern "C" IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
-  ic->Map = fltkItemMapMethod;
-  ic->UnMap = fltkItemUnMapMethod;
+  ic->Map = fltkMenuItemMapMethod;
+  ic->UnMap = fltkMenuItemUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, fltkItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, fltkMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", fltkItemGetValueAttrib, fltkItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", fltkItemGetTitleAttrib, fltkItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", fltkMenuItemGetValueAttrib, fltkMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", fltkMenuItemGetTitleAttrib, fltkMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
@@ -441,7 +441,7 @@ extern "C" IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
  * Separator Class
  ****************************************************************************/
 
-static int fltkSeparatorMapMethod(Ihandle* ih)
+static int fltkMenuSeparatorMapMethod(Ihandle* ih)
 {
   if (!ih->parent)
     return IUP_ERROR;
@@ -454,15 +454,15 @@ static int fltkSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void fltkSeparatorUnMapMethod(Ihandle* ih)
+static void fltkMenuSeparatorUnMapMethod(Ihandle* ih)
 {
   ih->handle = NULL;
 }
 
-extern "C" IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
+extern "C" IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
-  ic->Map = fltkSeparatorMapMethod;
-  ic->UnMap = fltkSeparatorUnMapMethod;
+  ic->Map = fltkMenuSeparatorMapMethod;
+  ic->UnMap = fltkMenuSeparatorUnMapMethod;
 }
 
 /****************************************************************************
@@ -504,7 +504,7 @@ extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   ic->UnMap = fltkSubmenuUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, fltkItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, fltkMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "TITLE", fltkSubmenuGetTitleAttrib, fltkSubmenuSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);

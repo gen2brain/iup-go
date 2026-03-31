@@ -366,19 +366,19 @@ namespace Iup
     Notify(Ihandle* _ih) : Element(_ih) {}
     Notify(const Element& elem) : Element(elem.GetHandle()) {}
   };
-  class Separator : public Control
+  class MenuSeparator : public Control
   {
   public:
-    Separator() : Control(IupSeparator()) {}
-    Separator(Ihandle* _ih) : Control(_ih) {}
-    Separator(const Element& elem) : Control(elem.GetHandle()) {}
+    MenuSeparator() : Control(IupMenuSeparator()) {}
+    MenuSeparator(Ihandle* _ih) : Control(_ih) {}
+    MenuSeparator(const Element& elem) : Control(elem.GetHandle()) {}
   };
-  class Item : public Control
+  class MenuItem : public Control
   {
   public:
-    Item(const char* title = 0) : Control(IupItem(title, 0)) {}
-    Item(Ihandle* _ih) : Control(_ih) {}
-    Item(const Element& elem) : Control(elem.GetHandle()) {}
+    MenuItem(const char* title = 0) : Control(IupMenuItem(title, 0)) {}
+    MenuItem(Ihandle* _ih) : Control(_ih) {}
+    MenuItem(const Element& elem) : Control(elem.GetHandle()) {}
   };
   class Canvas : public Control
   {

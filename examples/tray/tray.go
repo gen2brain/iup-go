@@ -101,19 +101,19 @@ func main() {
 	).SetHandle("dlg")
 
 	// Menu items
-	itemShow := iup.Item("Show Dialog").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+	itemShow := iup.MenuItem("Show Dialog").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		appendLog("Menu: Show Dialog clicked")
 		dlg.SetAttribute("HIDETASKBAR", "NO")
 		return iup.DEFAULT
 	}))
 
-	itemHide := iup.Item("Hide Dialog").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+	itemHide := iup.MenuItem("Hide Dialog").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		appendLog("Menu: Hide Dialog clicked")
 		dlg.SetAttribute("HIDETASKBAR", "YES")
 		return iup.DEFAULT
 	}))
 
-	itemExit := iup.Item("Exit").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+	itemExit := iup.MenuItem("Exit").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		appendLog("Menu: Exit clicked")
 		tray := iup.GetHandle("tray")
 		tray.SetAttribute("VISIBLE", "NO")
@@ -122,7 +122,7 @@ func main() {
 		return iup.DEFAULT
 	}))
 
-	trayMenu := iup.Menu(itemShow, itemHide, iup.Separator(), itemExit)
+	trayMenu := iup.Menu(itemShow, itemHide, iup.MenuSeparator(), itemExit)
 	trayMenu.SetHandle("traymenu")
 
 	// Create tray

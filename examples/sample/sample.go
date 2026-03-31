@@ -35,11 +35,11 @@ func main() {
 
 	iup.Menu(
 		iup.Submenu("Submenu 1", iup.Menu(
-			iup.Item("Item 1 Checked").SetAttributes("VALUE=ON, AUTOTOGGLE=YES"),
-			iup.Item("Item 2 Disabled").SetAttributes("ACTIVE=NO"),
+			iup.MenuItem("Item 1 Checked").SetAttributes("VALUE=ON, AUTOTOGGLE=YES"),
+			iup.MenuItem("Item 2 Disabled").SetAttributes("ACTIVE=NO"),
 		)),
-		iup.Item("Item 3"),
-		iup.Item("Item 4"),
+		iup.MenuItem("Item 3"),
+		iup.MenuItem("Item 4"),
 	).SetHandle("menu")
 
 	fr1 := iup.Frame(

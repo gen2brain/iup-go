@@ -72,7 +72,7 @@ In GTK uses GtkMenuBar/GtkMenu, in GTK 4 uses GMenu/GtkPopoverMenuBar, in Window
 **GTK**
 ![](images/iupmenu_gtk.png)
 
-The **IupItem** check is affected by the RADIO attribute in **IupMenu**:
+The **IupMenuItem** check is affected by the RADIO attribute in **IupMenu**:
 
 **Windows Classic**
 ![](images/iupmenu_win2k_radio.png)
@@ -88,4 +88,4 @@ The **IupItem** check is affected by the RADIO attribute in **IupMenu**:
 
 ### See Also
 
-[IupDialog](../dlg/iup_dialog.md), [IupItem](iup_item.md), [IupSeparator](iup_separator.md), [IupSubmenu](iup_submenu.md), [IupPopup](../func/iup_popup.md), [IupDestroy](../func/iup_destroy.md)
+[IupDialog](../dlg/iup_dialog.md), [IupMenuItem](iup_menuitem.md), [IupMenuSeparator](iup_menuseparator.md), [IupSubmenu](iup_submenu.md), [IupPopup](../func/iup_popup.md), [IupDestroy](../func/iup_destroy.md)

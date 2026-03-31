@@ -133,8 +133,8 @@ void iupRegisterInternalClasses(void)
   iupRegisterClassInternal(iupDetachBoxNewClass());
 
   iupRegisterClassInternal(iupMenuNewClass());
-  iupRegisterClassInternal(iupItemNewClass());
-  iupRegisterClassInternal(iupSeparatorNewClass());
+  iupRegisterClassInternal(iupMenuItemNewClass());
+  iupRegisterClassInternal(iupMenuSeparatorNewClass());
   iupRegisterClassInternal(iupSubmenuNewClass());
 
   iupRegisterClassInternal(iupLabelNewClass());

@@ -12,34 +12,34 @@ func main() {
 
 	// Create popup menus
 	menu1 := iup.Menu(
-		iup.Item("New").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuItem("New").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			fmt.Println("New clicked")
 			return iup.DEFAULT
 		})),
-		iup.Item("Open").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuItem("Open").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			fmt.Println("Open clicked")
 			return iup.DEFAULT
 		})),
-		iup.Item("Save").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuItem("Save").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			fmt.Println("Save clicked")
 			return iup.DEFAULT
 		})),
-		iup.Separator(),
-		iup.Item("Exit").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuSeparator(),
+		iup.MenuItem("Exit").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			return iup.CLOSE
 		})),
 	)
 
 	menu2 := iup.Menu(
-		iup.Item("Cut").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuItem("Cut").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			fmt.Println("Cut clicked")
 			return iup.DEFAULT
 		})),
-		iup.Item("Copy").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuItem("Copy").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			fmt.Println("Copy clicked")
 			return iup.DEFAULT
 		})),
-		iup.Item("Paste").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuItem("Paste").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			fmt.Println("Paste clicked")
 			return iup.DEFAULT
 		})),
@@ -48,15 +48,15 @@ func main() {
 	menu3 := iup.Menu(
 		iup.Submenu("Colors",
 			iup.Menu(
-				iup.Item("Red").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+				iup.MenuItem("Red").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 					fmt.Println("Red selected")
 					return iup.DEFAULT
 				})),
-				iup.Item("Green").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+				iup.MenuItem("Green").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 					fmt.Println("Green selected")
 					return iup.DEFAULT
 				})),
-				iup.Item("Blue").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+				iup.MenuItem("Blue").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 					fmt.Println("Blue selected")
 					return iup.DEFAULT
 				})),
@@ -64,36 +64,36 @@ func main() {
 		),
 		iup.Submenu("Sizes",
 			iup.Menu(
-				iup.Item("Small").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+				iup.MenuItem("Small").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 					fmt.Println("Small selected")
 					return iup.DEFAULT
 				})),
-				iup.Item("Medium").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+				iup.MenuItem("Medium").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 					fmt.Println("Medium selected")
 					return iup.DEFAULT
 				})),
-				iup.Item("Large").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+				iup.MenuItem("Large").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 					fmt.Println("Large selected")
 					return iup.DEFAULT
 				})),
 			),
 		),
-		iup.Separator(),
-		iup.Item("About").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuSeparator(),
+		iup.MenuItem("About").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			iup.Message("About", "Popup Menu Example")
 			return iup.DEFAULT
 		})),
 	)
 
 	// Checkable menu
-	opt1 := iup.Item("Option 1").SetAttributes("VALUE=ON, AUTOTOGGLE=YES")
-	opt2 := iup.Item("Option 2").SetAttributes("VALUE=OFF, AUTOTOGGLE=YES")
-	opt3 := iup.Item("Option 3").SetAttributes("VALUE=ON, AUTOTOGGLE=YES")
+	opt1 := iup.MenuItem("Option 1").SetAttributes("VALUE=ON, AUTOTOGGLE=YES")
+	opt2 := iup.MenuItem("Option 2").SetAttributes("VALUE=OFF, AUTOTOGGLE=YES")
+	opt3 := iup.MenuItem("Option 3").SetAttributes("VALUE=ON, AUTOTOGGLE=YES")
 
 	menu4 := iup.Menu(
 		opt1, opt2, opt3,
-		iup.Separator(),
-		iup.Item("Show Status").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuSeparator(),
+		iup.MenuItem("Show Status").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			fmt.Printf("Option 1: %s\n", opt1.GetAttribute("VALUE"))
 			fmt.Printf("Option 2: %s\n", opt2.GetAttribute("VALUE"))
 			fmt.Printf("Option 3: %s\n", opt3.GetAttribute("VALUE"))
@@ -133,15 +133,15 @@ func main() {
 
 	// Canvas for right-click popup
 	canvasMenu := iup.Menu(
-		iup.Item("Canvas Cut").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuItem("Canvas Cut").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			fmt.Println("Canvas Cut clicked")
 			return iup.DEFAULT
 		})),
-		iup.Item("Canvas Copy").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuItem("Canvas Copy").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			fmt.Println("Canvas Copy clicked")
 			return iup.DEFAULT
 		})),
-		iup.Item("Canvas Paste").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		iup.MenuItem("Canvas Paste").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 			fmt.Println("Canvas Paste clicked")
 			return iup.DEFAULT
 		})),

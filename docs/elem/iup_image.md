@@ -133,7 +133,7 @@ In Motif, the X-Windows bitmap format is supported. For example:
 
 In Motif, the alpha channel in RGBA images is always composed with the control BGCOLOR by IUP prior to setting the image at the control.
 In Windows, GTK, GTK 4, macOS, Qt and EFL, the alpha channel is composed internally by the system.
-But in Windows for some controls, the alpha must be composed a priori also, it includes: **IupItem** and **IupSubmenu** always; and **IupToggle** when NOT using Visual Styles.
+But in Windows for some controls, the alpha must be composed a priori also, it includes: **IupMenuItem** and **IupSubmenu** always; and **IupToggle** when NOT using Visual Styles.
 This implies that if the control background is not uniform, then probably there will be a visible difference where it should be transparent.
 
 For **IupImage**, if a color is not set, then it is used a default color for the 16 first colors.

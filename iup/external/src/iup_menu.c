@@ -201,32 +201,32 @@ static int iMenuCreateMethod(Ihandle* ih, void** params)
 /******************************************************************************************/
 
 
-Iclass* iupSeparatorNewClass(void)
+Iclass* iupMenuSeparatorNewClass(void)
 {
   Iclass* ic = iupClassNew(NULL);
 
-  ic->name = "separator";
+  ic->name = "menuseparator";
   ic->format = NULL;  /* no parameters */
   ic->nativetype = IUP_TYPEMENU;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 0;
 
-  ic->New = iupSeparatorNewClass;
+  ic->New = iupMenuSeparatorNewClass;
 
   /* Common */
   iupClassRegisterAttribute(ic, "WID", iupBaseGetWidAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT|IUPAF_NO_STRING);
   iupClassRegisterAttribute(ic, "NAME", NULL, iupBaseSetNameAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupdrvSeparatorInitClass(ic);
+  iupdrvMenuSeparatorInitClass(ic);
 
   return ic;
 }
 
-Iclass* iupItemNewClass(void)
+Iclass* iupMenuItemNewClass(void)
 {
   Iclass* ic = iupClassNew(NULL);
 
-  ic->name = "item";
+  ic->name = "menuitem";
   ic->format = "sa";  /* one string and one ACTION callback name */
   ic->format_attr = "TITLE";
   ic->nativetype = IUP_TYPEMENU;
@@ -234,7 +234,7 @@ Iclass* iupItemNewClass(void)
   ic->is_interactive = 1;
 
   /* Class functions */
-  ic->New = iupItemNewClass;
+  ic->New = iupMenuItemNewClass;
   ic->Create = iItemCreateMethod;
 
   /* Callbacks */
@@ -255,7 +255,7 @@ Iclass* iupItemNewClass(void)
   iupClassRegisterAttribute(ic, "AUTOTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "KEY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupdrvItemInitClass(ic);
+  iupdrvMenuItemInitClass(ic);
 
   return ic;
 }
@@ -327,12 +327,12 @@ Iclass* iupMenuNewClass(void)
 
 /************************************************************************/
 
-IUP_API Ihandle* IupItem(const char* title, const char* action)
+IUP_API Ihandle* IupMenuItem(const char* title, const char* action)
 {
   void *params[2];
   params[0] = (void*)title;
   params[1] = (void*)action;
-  return IupCreatev("item", params);
+  return IupCreatev("menuitem", params);
 }
 
 IUP_API Ihandle* IupSubmenu(const char* title, Ihandle* child)
@@ -365,7 +365,7 @@ IUP_API Ihandle* IupMenu(Ihandle *child, ...)
   return ih;
 }
 
-IUP_API Ihandle* IupSeparator(void)
+IUP_API Ihandle* IupMenuSeparator(void)
 {
-  return IupCreate("separator");
+  return IupCreate("menuseparator");
 }

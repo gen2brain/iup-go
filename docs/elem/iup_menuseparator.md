@@ -1,10 +1,10 @@
-## IupSeparator
+## IupMenuSeparator
 
 Creates the separator interface element. It shows a line between two menu items.
 
 ### Creation
 
-    Ihandle* IupSeparator(void);
+    Ihandle* IupMenuSeparator(void);
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 
@@ -20,4 +20,4 @@ In GTK uses GtkSeparatorMenuItem, in GTK 4 uses GMenu separator section, in Wind
 
 ### See Also
 
-[IupItem](iup_item.md), [IupSubMenu](iup_submenu.md), [IupMenu](iup_menu.md).
+[IupMenuItem](iup_menuitem.md), [IupSubMenu](iup_submenu.md), [IupMenu](iup_menu.md).

@@ -70,13 +70,13 @@ func main() {
 	recentMenu := iup.Menu()
 	recentMenu.SetHandle("recentMenu")
 
-	itemOpen := iup.Item("Open...")
+	itemOpen := iup.MenuItem("Open...")
 	itemOpen.SetCallback("ACTION", iup.ActionFunc(openFile))
 
-	itemClearRecent := iup.Item("Clear Recent Files")
+	itemClearRecent := iup.MenuItem("Clear Recent Files")
 	itemClearRecent.SetCallback("ACTION", iup.ActionFunc(clearRecent))
 
-	itemExit := iup.Item("Exit")
+	itemExit := iup.MenuItem("Exit")
 	itemExit.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		return iup.CLOSE
 	}))
@@ -85,7 +85,7 @@ func main() {
 		itemOpen,
 		iup.Submenu("Recent Files", recentMenu),
 		itemClearRecent,
-		iup.Separator(),
+		iup.MenuSeparator(),
 		itemExit,
 	)
 

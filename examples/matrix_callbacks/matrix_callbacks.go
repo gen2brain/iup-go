@@ -317,14 +317,14 @@ func buttonCb(ih iup.Ihandle) int {
 func createMenu() {
 	menu := iup.Menu(
 		iup.Submenu("submenu", iup.Menu(
-			iup.Item("item1"),
-			iup.Item("item2"),
+			iup.MenuItem("item1"),
+			iup.MenuItem("item2"),
 		)),
-		iup.Item("remove line").SetCallback("ACTION", iup.ActionFunc(removeLineCb)),
-		iup.Item("add line").SetCallback("ACTION", iup.ActionFunc(addLineCb)),
-		iup.Item("remove col").SetCallback("ACTION", iup.ActionFunc(removeColCb)),
-		iup.Item("add col").SetCallback("ACTION", iup.ActionFunc(addColCb)),
-		iup.Item("redraw").SetCallback("ACTION", iup.ActionFunc(redrawCb)),
+		iup.MenuItem("remove line").SetCallback("ACTION", iup.ActionFunc(removeLineCb)),
+		iup.MenuItem("add line").SetCallback("ACTION", iup.ActionFunc(addLineCb)),
+		iup.MenuItem("remove col").SetCallback("ACTION", iup.ActionFunc(removeColCb)),
+		iup.MenuItem("add col").SetCallback("ACTION", iup.ActionFunc(addColCb)),
+		iup.MenuItem("redraw").SetCallback("ACTION", iup.ActionFunc(redrawCb)),
 	)
 	iup.SetHandle("mymenu", menu)
 }

@@ -1131,24 +1131,24 @@ static int iPlotDataSetProperties_CB(Ihandle* ih_item)
 static Ihandle* iPlotCreateMenuContext(Ihandle* ih, int x, int y)
 {
   Ihandle* menu = IupMenu(
-    IupSetCallbacks(IupItem("_@IUP_ZOOMINAC", NULL), "ACTION", iPlotZoomIn_CB, NULL),
-    IupSetCallbacks(IupItem("_@IUP_ZOOMOUTAC", NULL), "ACTION", iPlotZoomOut_CB, NULL),
-    IupSetCallbacks(IupItem("_@IUP_RESETZOOMAC", NULL), "ACTION", iPlotZoomReset_CB, NULL),
-    IupSeparator(),
-    IupSetCallbacks(IupItem("_@IUP_SHOWHIDELEGEND", NULL), "ACTION", iPlotShowLegend_CB, NULL),
-    IupSetCallbacks(IupItem("_@IUP_SHOWHIDEGRID", NULL), "ACTION", iPlotShowGrid_CB, NULL),
+    IupSetCallbacks(IupMenuItem("_@IUP_ZOOMINAC", NULL), "ACTION", iPlotZoomIn_CB, NULL),
+    IupSetCallbacks(IupMenuItem("_@IUP_ZOOMOUTAC", NULL), "ACTION", iPlotZoomOut_CB, NULL),
+    IupSetCallbacks(IupMenuItem("_@IUP_RESETZOOMAC", NULL), "ACTION", iPlotZoomReset_CB, NULL),
+    IupMenuSeparator(),
+    IupSetCallbacks(IupMenuItem("_@IUP_SHOWHIDELEGEND", NULL), "ACTION", iPlotShowLegend_CB, NULL),
+    IupSetCallbacks(IupMenuItem("_@IUP_SHOWHIDEGRID", NULL), "ACTION", iPlotShowGrid_CB, NULL),
     NULL);
 
   if (IupGetInt(ih, "MENUITEMPROPERTIES") || IupGetInt(ih, "MENUITEMVALUES"))
   {
     Ihandle* itemProp = NULL, *itemVal = NULL;
-    IupAppend(menu, IupSeparator());
+    IupAppend(menu, IupMenuSeparator());
     if (iupRegisterFindClass("matrixex") && !iupStrEqualNoCase(iupAttribGet(ih, "MENUITEMVALUES"), "HIDE"))
-      IupAppend(menu, IupSetCallbacks(itemVal = IupItem("_@IUP_DATASETVALUESDLG", NULL), "ACTION", iPlotDataSetValues_CB, NULL));
+      IupAppend(menu, IupSetCallbacks(itemVal = IupMenuItem("_@IUP_DATASETVALUESDLG", NULL), "ACTION", iPlotDataSetValues_CB, NULL));
     if (IupGetInt(ih, "MENUITEMPROPERTIES"))
     {
-      IupAppend(menu, IupSetCallbacks(itemProp = IupItem("_@IUP_DATASETPROPERTIESDLG", NULL), "ACTION", iPlotDataSetProperties_CB, NULL));
-      IupAppend(menu, IupSetCallbacks(IupItem("_@IUP_PROPERTIESDLG", NULL), "ACTION", iPlotProperties_CB, NULL));
+      IupAppend(menu, IupSetCallbacks(itemProp = IupMenuItem("_@IUP_DATASETPROPERTIESDLG", NULL), "ACTION", iPlotDataSetProperties_CB, NULL));
+      IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_PROPERTIESDLG", NULL), "ACTION", iPlotProperties_CB, NULL));
     }
 
     int ds = IupGetInt(ih, "CURRENT");

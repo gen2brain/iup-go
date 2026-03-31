@@ -38,12 +38,12 @@ static NSMenu* s_defaultApplicationMenu = NULL;
 
 static const void* MENUITEM_TARGET_ASSOCIATED_OBJ_KEY = &MENUITEM_TARGET_ASSOCIATED_OBJ_KEY;
 static const void* MENU_DELEGATE_ASSOCIATED_OBJ_KEY = &MENU_DELEGATE_ASSOCIATED_OBJ_KEY;
-/* Used when an IupItem is placed directly on the menu bar, which requires wrapping it in a submenu on macOS. */
+/* Used when an IupMenuItem is placed directly on the menu bar, which requires wrapping it in a submenu on macOS. */
 static const void* MENUBAR_ITEM_WRAPPER_KEY = &MENUBAR_ITEM_WRAPPER_KEY;
 
 static void cocoaMenuUpdateImage(Ihandle* ih);
-static void cocoaItemUpdateRadioGroup(Ihandle* ih);
-static char* cocoaItemGetActiveAttrib(Ihandle* ih);
+static void cocoaMenuItemUpdateRadioGroup(Ihandle* ih);
+static char* cocoaMenuItemGetActiveAttrib(Ihandle* ih);
 
 /*******************************************************************************************/
 /* Helper Objects                                                                          */
@@ -170,7 +170,7 @@ static char* cocoaItemGetActiveAttrib(Ihandle* ih);
 
   if (iupAttribGetBoolean(_ih->parent, "RADIO"))
   {
-    cocoaItemUpdateRadioGroup(_ih);
+    cocoaMenuItemUpdateRadioGroup(_ih);
   }
   else if (iupAttribGetBoolean(_ih, "AUTOTOGGLE"))
   {
@@ -192,7 +192,7 @@ static char* cocoaItemGetActiveAttrib(Ihandle* ih);
 {
   if (!_ih) return YES;
 
-  char* active = cocoaItemGetActiveAttrib(_ih);
+  char* active = cocoaMenuItemGetActiveAttrib(_ih);
   return (BOOL)iupStrBoolean(active);
 }
 
@@ -203,7 +203,7 @@ static char* cocoaItemGetActiveAttrib(Ihandle* ih);
 /* Helper Functions                                                                        */
 /*******************************************************************************************/
 
-static void cocoaItemUpdateRadioGroup(Ihandle* ih)
+static void cocoaMenuItemUpdateRadioGroup(Ihandle* ih)
 {
   if (!ih || !ih->parent) return;
   if (!iupAttribGetBoolean(ih->parent, "RADIO")) return;
@@ -254,7 +254,7 @@ static NSMenuItem* cocoaMenuFindTitledItem(NSMenu* menu, NSString* title)
   {
     NSString* itemTitle = [item title];
 
-    /* If the item title is empty (common for the App Menu wrapper at index 0, or IupItem wrappers), check the submenu title. */
+    /* If the item title is empty (common for the App Menu wrapper at index 0, or IupMenuItem wrappers), check the submenu title. */
     if ((!itemTitle || [itemTitle length] == 0) && [item submenu]) {
       itemTitle = [[item submenu] title];
     }
@@ -842,10 +842,10 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 }
 
 /*******************************************************************************************/
-/* SEPARATOR (IupSeparator)                                                                */
+/* SEPARATOR (IupMenuSeparator)                                                                */
 /*******************************************************************************************/
 
-static int cocoaSeparatorMapMethod(Ihandle* ih)
+static int cocoaMenuSeparatorMapMethod(Ihandle* ih)
 {
   if (!ih->parent || !ih->parent->handle)
     return IUP_ERROR;
@@ -871,7 +871,7 @@ static int cocoaSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void cocoaSeparatorUnMapMethod(Ihandle* ih)
+static void cocoaMenuSeparatorUnMapMethod(Ihandle* ih)
 {
   NSMenuItem* item = (NSMenuItem*)ih->handle;
   if (!item) return;
@@ -883,18 +883,18 @@ static void cocoaSeparatorUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
-  ic->Map = cocoaSeparatorMapMethod;
-  ic->UnMap = cocoaSeparatorUnMapMethod;
+  ic->Map = cocoaMenuSeparatorMapMethod;
+  ic->UnMap = cocoaMenuSeparatorUnMapMethod;
 }
 
 
 /*******************************************************************************************/
-/* ITEM (IupItem)                                                                          */
+/* ITEM (IupMenuItem)                                                                          */
 /*******************************************************************************************/
 
-static void cocoaItemSetShortcutFromString(NSMenuItem* item, const char* shortcut_string)
+static void cocoaMenuItemSetShortcutFromString(NSMenuItem* item, const char* shortcut_string)
 {
     if (!item) return;
 
@@ -950,7 +950,7 @@ static void cocoaItemSetShortcutFromString(NSMenuItem* item, const char* shortcu
     }
 }
 
-static int cocoaItemSetTitleAttrib(Ihandle* ih, const char* value)
+static int cocoaMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
     NSMenuItem* item = (NSMenuItem*)ih->handle;
     if (!item) return 0;
@@ -979,20 +979,20 @@ static int cocoaItemSetTitleAttrib(Ihandle* ih, const char* value)
 
     if (tab_pos)
     {
-        cocoaItemSetShortcutFromString(item, shortcut_part);
+        cocoaMenuItemSetShortcutFromString(item, shortcut_part);
     }
 
     return 1;
 }
 
-static int cocoaItemSetValueAttrib(Ihandle* ih, const char* value)
+static int cocoaMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   NSMenuItem* item = (NSMenuItem*)ih->handle;
   if (!item) return 0;
 
   if (iupAttribGetBoolean(ih->parent, "RADIO"))
   {
-    cocoaItemUpdateRadioGroup(ih);
+    cocoaMenuItemUpdateRadioGroup(ih);
   }
   else
   {
@@ -1006,14 +1006,14 @@ static int cocoaItemSetValueAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* cocoaItemGetValueAttrib(Ihandle* ih)
+static char* cocoaMenuItemGetValueAttrib(Ihandle* ih)
 {
   NSMenuItem* item = (NSMenuItem*)ih->handle;
   if (!item) return "OFF";
   return iupStrReturnBoolean([item state] == NSControlStateValueOn);
 }
 
-static int cocoaItemSetActiveAttrib(Ihandle* ih, const char* value)
+static int cocoaMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
 {
   NSMenuItem* item = (NSMenuItem*)ih->handle;
   if (!item) return 0;
@@ -1027,7 +1027,7 @@ static int cocoaItemSetActiveAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* cocoaItemGetActiveAttrib(Ihandle* ih)
+static char* cocoaMenuItemGetActiveAttrib(Ihandle* ih)
 {
   NSMenuItem* item = (NSMenuItem*)ih->handle;
   if (!item)
@@ -1036,31 +1036,31 @@ static char* cocoaItemGetActiveAttrib(Ihandle* ih)
   return iupStrReturnBoolean([item isEnabled]);
 }
 
-static int cocoaItemSetImageAttrib(Ihandle* ih, const char* value)
+static int cocoaMenuItemSetImageAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
   cocoaMenuUpdateImage(ih);
   return 1;
 }
 
-static int cocoaItemSetHideMarkAttrib(Ihandle* ih, const char* value)
+static int cocoaMenuItemSetHideMarkAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
   cocoaMenuUpdateImage(ih);
   return 1;
 }
 
-static int cocoaItemSetKeyAttrib(Ihandle* ih, const char* value)
+static int cocoaMenuItemSetKeyAttrib(Ihandle* ih, const char* value)
 {
   NSMenuItem* item = (NSMenuItem*)ih->handle;
   if (!item) return 0;
 
-  cocoaItemSetShortcutFromString(item, value);
+  cocoaMenuItemSetShortcutFromString(item, value);
 
   return 1;
 }
 
-static int cocoaItemMapMethod(Ihandle* ih)
+static int cocoaMenuItemMapMethod(Ihandle* ih)
 {
   if (!ih->parent || !ih->parent->handle) return IUP_ERROR;
   NSMenu* parent_menu = (NSMenu*)ih->parent->handle;
@@ -1106,7 +1106,7 @@ static int cocoaItemMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void cocoaItemUnMapMethod(Ihandle* ih)
+static void cocoaMenuItemUnMapMethod(Ihandle* ih)
 {
   NSMenuItem* item = (NSMenuItem*)ih->handle;
   if (!item) return;
@@ -1130,20 +1130,20 @@ static void cocoaItemUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
-IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
-  ic->Map = cocoaItemMapMethod;
-  ic->UnMap = cocoaItemUnMapMethod;
-  iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", cocoaItemGetValueAttrib, cocoaItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  ic->Map = cocoaMenuItemMapMethod;
+  ic->UnMap = cocoaMenuItemUnMapMethod;
+  iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", cocoaMenuItemGetValueAttrib, cocoaMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FONT", NULL, cocoaMenuItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "ACTIVE", cocoaItemGetActiveAttrib, cocoaItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACTIVE", cocoaMenuItemGetActiveAttrib, cocoaMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "KEY", NULL, cocoaItemSetKeyAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, cocoaItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDEMARK", NULL, cocoaItemSetHideMarkAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "KEY", NULL, cocoaMenuItemSetKeyAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", NULL, cocoaMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDEMARK", NULL, cocoaMenuItemSetHideMarkAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
 
@@ -1229,10 +1229,10 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   ic->UnMap = cocoaSubmenuUnMapMethod;
   iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaSubmenuSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FONT", NULL, cocoaMenuItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "ACTIVE", cocoaItemGetActiveAttrib, cocoaItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACTIVE", cocoaMenuItemGetActiveAttrib, cocoaMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
 
 

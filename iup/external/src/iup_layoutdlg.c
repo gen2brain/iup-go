@@ -2225,32 +2225,32 @@ static void iLayoutContextMenu(iLayoutDialog* layoutdlg, Ihandle* elem, Ihandle*
   }
 
   menu = IupMenu(
-    IupSetCallbacks(IupItem("Properties...", NULL), "ACTION", iLayoutContextMenuProperties_CB, NULL),
-    IupSetCallbacks(IupItem("Handle Name...", NULL), "ACTION", iLayoutContextMenuHandleName_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("Map", NULL), can_map ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuMap_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("Unmap", NULL), can_unmap ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuUnmap_CB, NULL),
-    IupSetCallbacks(IupItem("Refresh Children", NULL), "ACTION", iLayoutContextMenuRefreshChildren_CB, NULL),
-    IupSeparator(),
-    IupSetCallbacks(IupItem("Collapse All", NULL), "ACTION", iLayoutContextMenuCollapseAll_CB, NULL),
-    IupSetCallbacks(IupItem("Expand All", NULL), "ACTION", iLayoutContextMenuExpandAll_CB, NULL),
-    IupSetCallbacks(IupItem("Go to Parent\tLeft", NULL), "ACTION", iLayoutContextMenuGoToParent_CB, NULL),
-    IupSetCallbacks(IupItem("Go to Brother\tDown", NULL), "ACTION", iLayoutContextMenuGoToBrother_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("Blink", NULL), can_blink ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuBlink_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("Set Focus", NULL), can_focus ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuSetFocus_CB, NULL),
-    IupSeparator(),
-    IupSetCallbacks(IupSetAttributes(IupItem("Copy", NULL), can_copy ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuCopy_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("Cut", NULL), can_cut ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuCut_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("Paste Insert Child", NULL), can_paste && can_child && can_paste_cut ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuPasteInsertChild_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("Paste Insert at Cursor", NULL), can_paste && can_cursor && can_paste_cut_cursor ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuPasteCursor_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("Paste Append Child", NULL), can_paste && can_child && can_paste_cut ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuPasteAppendChild_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("Paste Insert Brother", NULL), can_paste && can_brother && can_paste_cut ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuPasteInsertBrother_CB, NULL),
-    IupSeparator(),
-    IupSetCallbacks(IupSetAttributes(IupItem("New Insert Child...", NULL), can_child ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuNewInsertChild_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("New Insert at Cursor...", NULL), can_cursor ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuNewInsertCursor_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("New Append Child...", NULL), can_child ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuNewAppendChild_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupItem("New Insert Brother...", NULL), can_brother ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuNewInsertBrother_CB, NULL),
-    IupSeparator(),
-    IupSetCallbacks(IupItem("Remove...\tDel", NULL), "ACTION", iLayoutContextMenuRemove_CB, NULL),
+    IupSetCallbacks(IupMenuItem("Properties...", NULL), "ACTION", iLayoutContextMenuProperties_CB, NULL),
+    IupSetCallbacks(IupMenuItem("Handle Name...", NULL), "ACTION", iLayoutContextMenuHandleName_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("Map", NULL), can_map ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuMap_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("Unmap", NULL), can_unmap ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuUnmap_CB, NULL),
+    IupSetCallbacks(IupMenuItem("Refresh Children", NULL), "ACTION", iLayoutContextMenuRefreshChildren_CB, NULL),
+    IupMenuSeparator(),
+    IupSetCallbacks(IupMenuItem("Collapse All", NULL), "ACTION", iLayoutContextMenuCollapseAll_CB, NULL),
+    IupSetCallbacks(IupMenuItem("Expand All", NULL), "ACTION", iLayoutContextMenuExpandAll_CB, NULL),
+    IupSetCallbacks(IupMenuItem("Go to Parent\tLeft", NULL), "ACTION", iLayoutContextMenuGoToParent_CB, NULL),
+    IupSetCallbacks(IupMenuItem("Go to Brother\tDown", NULL), "ACTION", iLayoutContextMenuGoToBrother_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("Blink", NULL), can_blink ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuBlink_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("Set Focus", NULL), can_focus ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuSetFocus_CB, NULL),
+    IupMenuSeparator(),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("Copy", NULL), can_copy ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuCopy_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("Cut", NULL), can_cut ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuCut_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("Paste Insert Child", NULL), can_paste && can_child && can_paste_cut ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuPasteInsertChild_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("Paste Insert at Cursor", NULL), can_paste && can_cursor && can_paste_cut_cursor ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuPasteCursor_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("Paste Append Child", NULL), can_paste && can_child && can_paste_cut ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuPasteAppendChild_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("Paste Insert Brother", NULL), can_paste && can_brother && can_paste_cut ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuPasteInsertBrother_CB, NULL),
+    IupMenuSeparator(),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("New Insert Child...", NULL), can_child ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuNewInsertChild_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("New Insert at Cursor...", NULL), can_cursor ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuNewInsertCursor_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("New Append Child...", NULL), can_child ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuNewAppendChild_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupMenuItem("New Insert Brother...", NULL), can_brother ? "ACTIVE=Yes" : "ACTIVE=No"), "ACTION", iLayoutContextMenuNewInsertBrother_CB, NULL),
+    IupMenuSeparator(),
+    IupSetCallbacks(IupMenuItem("Remove...\tDel", NULL), "ACTION", iLayoutContextMenuRemove_CB, NULL),
     NULL);
 
   if (can_cursor)
@@ -3265,35 +3265,35 @@ IUP_API Ihandle* IupLayoutDialog(Ihandle* dialog)
 
   menu = IupMenu(
     IupSubmenu("&Layout", IupMenu(
-      IupSetCallbacks(IupItem("Refresh\tF5", NULL), "ACTION", iLayoutMenuRefresh_CB, NULL),
-      IupSetCallbacks(IupSetAttributes(IupItem("Auto Redraw (Timer)", NULL), "AUTOTOGGLE=YES, VALUE=OFF"), "ACTION", iLayoutMenuAutoRedraw_CB, NULL),
-      IupSetCallbacks(IupSetAttributes(IupItem("Show Hidden", NULL), "AUTOTOGGLE=YES, VALUE=OFF"), "ACTION", iLayoutMenuShowHidden_CB, NULL),
-      IupSetCallbacks(IupSetAttributes(IupItem("Show Internal", NULL), "AUTOTOGGLE=YES, VALUE=OFF"), "ACTION", iLayoutMenuShowInternal_CB, NULL),
-      IupSeparator(),
-      IupSetCallbacks(IupSetAttributes(IupItem("&Show Tree", NULL), "AUTOTOGGLE=YES, VALUE=ON"), "ACTION", iLayoutMenuShowTree_CB, NULL),
-      IupSetCallbacks(IupItem("Rebuild Tree\tCtrl+F5", NULL), "ACTION", iLayoutMenuRebuildTree_CB, NULL),
-      IupSeparator(),
-      IupSetCallbacks(IupItem("Opacity\tCtrl+/Ctrl-", NULL), "ACTION", iLayoutMenuOpacity_CB, NULL),
-      IupSeparator(),
-      IupSetCallbacks(IupItem("Find Element...\tCtrl+F", NULL), "ACTION", iLayoutMenuFindElement_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Refresh\tF5", NULL), "ACTION", iLayoutMenuRefresh_CB, NULL),
+      IupSetCallbacks(IupSetAttributes(IupMenuItem("Auto Redraw (Timer)", NULL), "AUTOTOGGLE=YES, VALUE=OFF"), "ACTION", iLayoutMenuAutoRedraw_CB, NULL),
+      IupSetCallbacks(IupSetAttributes(IupMenuItem("Show Hidden", NULL), "AUTOTOGGLE=YES, VALUE=OFF"), "ACTION", iLayoutMenuShowHidden_CB, NULL),
+      IupSetCallbacks(IupSetAttributes(IupMenuItem("Show Internal", NULL), "AUTOTOGGLE=YES, VALUE=OFF"), "ACTION", iLayoutMenuShowInternal_CB, NULL),
+      IupMenuSeparator(),
+      IupSetCallbacks(IupSetAttributes(IupMenuItem("&Show Tree", NULL), "AUTOTOGGLE=YES, VALUE=ON"), "ACTION", iLayoutMenuShowTree_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Rebuild Tree\tCtrl+F5", NULL), "ACTION", iLayoutMenuRebuildTree_CB, NULL),
+      IupMenuSeparator(),
+      IupSetCallbacks(IupMenuItem("Opacity\tCtrl+/Ctrl-", NULL), "ACTION", iLayoutMenuOpacity_CB, NULL),
+      IupMenuSeparator(),
+      IupSetCallbacks(IupMenuItem("Find Element...\tCtrl+F", NULL), "ACTION", iLayoutMenuFindElement_CB, NULL),
       NULL)),
-    IupSetCallbacks(IupItem("Element", NULL), "ACTION", iLayoutItemShowContext_CB, NULL),
+    IupSetCallbacks(IupMenuItem("Element", NULL), "ACTION", iLayoutItemShowContext_CB, NULL),
     NULL);
 
   if (layoutdlg->destroy || !iupAttribGet(dialog, "_IUPLED_FILENAME"))
   {
     Ihandle* dlg_menu = IupSubmenu("&Dialog", IupMenu(
-      IupSetCallbacks(IupItem("New", NULL), "ACTION", iLayoutMenuNew_CB, NULL),
-      IupSetCallbacks(IupItem("Load...\tCtrl+O", NULL), "ACTION", iLayoutMenuLoad_CB, NULL),
-      IupSetCallbacks(IupItem("Load Visible...", NULL), "ACTION", iLayoutMenuLoadVisible_CB, NULL),
-      IupSeparator(),
-      IupSetCallbacks(IupItem("Reset Size", NULL), "ACTION", iLayoutMenuReset_CB, NULL),
-      IupSetCallbacks(IupItem("Redraw", NULL), "ACTION", iLayoutMenuRedraw_CB, NULL),
-      IupSetCallbacks(IupItem("Show", NULL), "ACTION", iLayoutMenuShow_CB, NULL),
-      IupSetCallbacks(IupItem("Hide", NULL), "ACTION", iLayoutMenuHide_CB, NULL),
-      IupSeparator(),
-      IupSetCallbacks(IupItem("&Globals...", NULL), "ACTION", iLayoutMenuGlobals_CB, NULL),
-      IupSetCallbacks(IupItem("&Close\tEsc", NULL), "ACTION", iLayoutMenuClose_CB, NULL),
+      IupSetCallbacks(IupMenuItem("New", NULL), "ACTION", iLayoutMenuNew_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Load...\tCtrl+O", NULL), "ACTION", iLayoutMenuLoad_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Load Visible...", NULL), "ACTION", iLayoutMenuLoadVisible_CB, NULL),
+      IupMenuSeparator(),
+      IupSetCallbacks(IupMenuItem("Reset Size", NULL), "ACTION", iLayoutMenuReset_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Redraw", NULL), "ACTION", iLayoutMenuRedraw_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Show", NULL), "ACTION", iLayoutMenuShow_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Hide", NULL), "ACTION", iLayoutMenuHide_CB, NULL),
+      IupMenuSeparator(),
+      IupSetCallbacks(IupMenuItem("&Globals...", NULL), "ACTION", iLayoutMenuGlobals_CB, NULL),
+      IupSetCallbacks(IupMenuItem("&Close\tEsc", NULL), "ACTION", iLayoutMenuClose_CB, NULL),
       NULL));
 
     IupInsert(menu, NULL, dlg_menu);
@@ -3301,10 +3301,10 @@ IUP_API Ihandle* IupLayoutDialog(Ihandle* dialog)
   else
   {
     Ihandle* dlg_menu = IupSubmenu("&Dialog", IupMenu(
-      IupSetCallbacks(IupItem("Reset Size", NULL), "ACTION", iLayoutMenuReset_CB, NULL),
-      IupSetCallbacks(IupItem("Redraw", NULL), "ACTION", iLayoutMenuRedraw_CB, NULL),
-      IupSetCallbacks(IupItem("Show", NULL), "ACTION", iLayoutMenuShow_CB, NULL),
-      IupSetCallbacks(IupItem("Hide", NULL), "ACTION", iLayoutMenuHide_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Reset Size", NULL), "ACTION", iLayoutMenuReset_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Redraw", NULL), "ACTION", iLayoutMenuRedraw_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Show", NULL), "ACTION", iLayoutMenuShow_CB, NULL),
+      IupSetCallbacks(IupMenuItem("Hide", NULL), "ACTION", iLayoutMenuHide_CB, NULL),
       NULL));
 
     IupInsert(menu, NULL, dlg_menu);

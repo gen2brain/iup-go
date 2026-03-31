@@ -11,9 +11,9 @@ func main() {
 	iup.Menu(
 		iup.Submenu("File",
 			iup.Menu(
-				iup.Item("Save\tCtrl+S").SetCallback("ACTION", iup.ActionFunc(itemSaveCb)),
-				iup.Item("&Auto Save").SetHandle("itemAutosave").SetAttributes(`VALUE=ON`).SetCallback("ACTION", iup.ActionFunc(itemAutosaveCb)),
-				iup.Item("Exit").SetAttributes(`KEY="x"`).SetCallback("ACTION", iup.ActionFunc(itemExitCb)),
+				iup.MenuItem("Save\tCtrl+S").SetCallback("ACTION", iup.ActionFunc(itemSaveCb)),
+				iup.MenuItem("&Auto Save").SetHandle("itemAutosave").SetAttributes(`VALUE=ON`).SetCallback("ACTION", iup.ActionFunc(itemAutosaveCb)),
+				iup.MenuItem("Exit").SetAttributes(`KEY="x"`).SetCallback("ACTION", iup.ActionFunc(itemExitCb)),
 			),
 		),
 	).SetHandle("menu")

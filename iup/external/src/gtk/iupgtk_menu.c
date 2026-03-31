@@ -151,14 +151,14 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 #if GTK_CHECK_VERSION(3, 10, 0)
 
 /* Check if menu item has our custom image box structure */
-static int gtkItemHasImageBox(Ihandle* ih)
+static int gtkMenuItemHasImageBox(Ihandle* ih)
 {
   GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
   return (child && GTK_IS_BOX(child));
 }
 
 /* Get the image widget from our box structure */
-static GtkWidget* gtkItemGetImageWidget(Ihandle* ih)
+static GtkWidget* gtkMenuItemGetImageWidget(Ihandle* ih)
 {
   GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
   if (child && GTK_IS_BOX(child))
@@ -181,7 +181,7 @@ static GtkWidget* gtkItemGetImageWidget(Ihandle* ih)
 }
 
 /* Get the label widget from menu item (handles both box and simple structures) */
-static GtkWidget* gtkItemGetLabelWidget(Ihandle* ih)
+static GtkWidget* gtkMenuItemGetLabelWidget(Ihandle* ih)
 {
   GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
   if (child && GTK_IS_BOX(child))
@@ -206,7 +206,7 @@ static GtkWidget* gtkItemGetLabelWidget(Ihandle* ih)
 }
 
 /* Set/update/remove image in menu item with box structure */
-static void gtkItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
+static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
 {
   GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
 
@@ -215,7 +215,7 @@ static void gtkItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
     /* Remove image if present */
     if (child && GTK_IS_BOX(child))
     {
-      GtkWidget* image = gtkItemGetImageWidget(ih);
+      GtkWidget* image = gtkMenuItemGetImageWidget(ih);
       if (image)
         gtk_widget_destroy(image);
     }
@@ -225,7 +225,7 @@ static void gtkItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
   if (child && GTK_IS_BOX(child))
   {
     /* Box exists, update or add image */
-    GtkWidget* image = gtkItemGetImageWidget(ih);
+    GtkWidget* image = gtkMenuItemGetImageWidget(ih);
     if (image)
     {
       gtk_image_set_from_pixbuf(GTK_IMAGE(image), pixbuf);
@@ -260,7 +260,7 @@ static void gtkItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
 }
 
 /* Create a menu item with box structure for image support */
-static GtkWidget* gtkMenuItemNewWithImageSupport(void)
+static GtkWidget* gtkMenuItemNewWithImageBox(void)
 {
   GtkWidget* menu_item = gtk_menu_item_new();
   GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
@@ -276,7 +276,7 @@ static GtkWidget* gtkMenuItemNewWithImageSupport(void)
   return menu_item;
 }
 
-static void gtkItemUpdateImage(Ihandle* ih, const char* value, const char* image, const char* impress)
+static void gtkMenuItemUpdateImage(Ihandle* ih, const char* value, const char* image, const char* impress)
 {
   GdkPixbuf* pixbuf;
 
@@ -285,12 +285,12 @@ static void gtkItemUpdateImage(Ihandle* ih, const char* value, const char* image
   else
     pixbuf = iupImageGetImage(impress, ih, 0, NULL);
 
-  gtkItemSetImageWidget(ih, pixbuf);
+  gtkMenuItemSetImageWidget(ih, pixbuf);
 }
 
 #else /* GTK < 3.10 - use GtkImageMenuItem */
 
-static void gtkItemUpdateImage(Ihandle* ih, const char* value, const char* image, const char* impress)
+static void gtkMenuItemUpdateImage(Ihandle* ih, const char* value, const char* image, const char* impress)
 {
   GdkPixbuf* pixbuf;
 
@@ -347,7 +347,7 @@ static void gtkPopupMenuUnMap(GtkWidget *widget, Ihandle* ih)
   gtk_main_quit();
 }
 
-static void gtkItemSelect(GtkWidget *widget, Ihandle* ih)
+static void gtkMenuItemSelect(GtkWidget *widget, Ihandle* ih)
 {
   Icallback cb = IupGetCallback(ih, "HIGHLIGHT_CB");
   if (cb)
@@ -360,20 +360,20 @@ static void gtkItemSelect(GtkWidget *widget, Ihandle* ih)
   (void)widget;
 }
 
-static void gtkItemActivate(GtkWidget *widget, Ihandle* ih)
+static void gtkMenuItemActivate(GtkWidget *widget, Ihandle* ih)
 {
   Icallback cb;
 
   if (GTK_IS_CHECK_MENU_ITEM(ih->handle) && !iupAttribGetBoolean(ih, "AUTOTOGGLE") && !iupAttribGetBoolean(ih->parent, "RADIO"))
   {
     /* GTK by default will do autotoggle */
-    g_signal_handlers_block_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkItemActivate), ih);
+    g_signal_handlers_block_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkMenuItemActivate), ih);
     gtk_check_menu_item_set_active((GtkCheckMenuItem*)ih->handle, !gtk_check_menu_item_get_active((GtkCheckMenuItem*)ih->handle));
-    g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkItemActivate), ih);
+    g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkMenuItemActivate), ih);
   }
 
 #if GTK_CHECK_VERSION(3, 10, 0)
-  if (gtkItemHasImageBox(ih))
+  if (gtkMenuItemHasImageBox(ih))
 #else
   if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
 #endif
@@ -385,7 +385,7 @@ static void gtkItemActivate(GtkWidget *widget, Ihandle* ih)
       else
         iupAttribSet(ih, "VALUE", "ON");
 
-      gtkItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), iupAttribGet(ih, "IMAGE"), iupAttribGet(ih, "IMPRESS"));
+      gtkMenuItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), iupAttribGet(ih, "IMAGE"), iupAttribGet(ih, "IMPRESS"));
     }
   }
 
@@ -497,52 +497,52 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 
 /*******************************************************************************************/
 
-static int gtkItemSetTitleImageAttrib(Ihandle* ih, const char* value)
+static int gtkMenuItemSetTitleImageAttrib(Ihandle* ih, const char* value)
 {
 #if GTK_CHECK_VERSION(3, 10, 0)
-  if (gtkItemHasImageBox(ih))
+  if (gtkMenuItemHasImageBox(ih))
 #else
   if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
 #endif
   {
-    gtkItemUpdateImage(ih, NULL, value, NULL);
+    gtkMenuItemUpdateImage(ih, NULL, value, NULL);
     return 1;
   }
   else
     return 0;
 }
 
-static int gtkItemSetImageAttrib(Ihandle* ih, const char* value)
+static int gtkMenuItemSetImageAttrib(Ihandle* ih, const char* value)
 {
 #if GTK_CHECK_VERSION(3, 10, 0)
-  if (gtkItemHasImageBox(ih))
+  if (gtkMenuItemHasImageBox(ih))
 #else
   if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
 #endif
   {
-    gtkItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), value, iupAttribGet(ih, "IMPRESS"));
+    gtkMenuItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), value, iupAttribGet(ih, "IMPRESS"));
     return 1;
   }
   else
     return 0;
 }
 
-static int gtkItemSetImpressAttrib(Ihandle* ih, const char* value)
+static int gtkMenuItemSetImpressAttrib(Ihandle* ih, const char* value)
 {
 #if GTK_CHECK_VERSION(3, 10, 0)
-  if (gtkItemHasImageBox(ih))
+  if (gtkMenuItemHasImageBox(ih))
 #else
   if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
 #endif
   {
-    gtkItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), iupAttribGet(ih, "IMAGE"), value);
+    gtkMenuItemUpdateImage(ih, iupAttribGet(ih, "VALUE"), iupAttribGet(ih, "IMAGE"), value);
     return 1;
   }
   else
     return 0;
 }
 
-static int gtkItemSetTitleAttrib(Ihandle* ih, const char* value)
+static int gtkMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
   char *str;
   GtkWidget* label;
@@ -556,7 +556,7 @@ static int gtkItemSetTitleAttrib(Ihandle* ih, const char* value)
     str = iupMenuProcessTitle(ih, value);
 
 #if GTK_CHECK_VERSION(3, 10, 0)
-  label = gtkItemGetLabelWidget(ih);
+  label = gtkMenuItemGetLabelWidget(ih);
 #else
   label = gtk_bin_get_child((GtkBin*)ih->handle);
 #endif
@@ -568,37 +568,37 @@ static int gtkItemSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int gtkItemSetValueAttrib(Ihandle* ih, const char* value)
+static int gtkMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (GTK_IS_CHECK_MENU_ITEM(ih->handle))
   {
     if (iupAttribGetBoolean(ih->parent, "RADIO"))
       value = "ON";
 
-    g_signal_handlers_block_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkItemActivate), ih);
+    g_signal_handlers_block_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkMenuItemActivate), ih);
     gtk_check_menu_item_set_active((GtkCheckMenuItem*)ih->handle, iupStrBoolean(value));
-    g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkItemActivate), ih);
+    g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkMenuItemActivate), ih);
     return 0;
   }
 #if GTK_CHECK_VERSION(3, 10, 0)
-  else if (gtkItemHasImageBox(ih))
+  else if (gtkMenuItemHasImageBox(ih))
 #else
   else if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
 #endif
   {
-    gtkItemUpdateImage(ih, value, iupAttribGet(ih, "IMAGE"), iupAttribGet(ih, "IMPRESS"));
+    gtkMenuItemUpdateImage(ih, value, iupAttribGet(ih, "IMAGE"), iupAttribGet(ih, "IMPRESS"));
     return 1;
   }
   else
     return 0;
 }
 
-static char* gtkItemGetValueAttrib(Ihandle* ih)
+static char* gtkMenuItemGetValueAttrib(Ihandle* ih)
 {
   return iupStrReturnChecked(GTK_IS_CHECK_MENU_ITEM(ih->handle) && gtk_check_menu_item_get_active((GtkCheckMenuItem*)ih->handle));
 }
 
-static int gtkItemMapMethod(Ihandle* ih)
+static int gtkMenuItemMapMethod(Ihandle* ih)
 {
   int pos;
 
@@ -614,7 +614,7 @@ static int gtkItemMapMethod(Ihandle* ih)
     if (iupAttribGet(ih, "IMAGE")||iupAttribGet(ih, "TITLEIMAGE"))
     {
 #if GTK_CHECK_VERSION(3, 10, 0)
-      ih->handle = gtkMenuItemNewWithImageSupport();
+      ih->handle = gtkMenuItemNewWithImageBox();
 #else
       ih->handle = gtk_image_menu_item_new_with_label("");
 #endif
@@ -652,8 +652,8 @@ static int gtkItemMapMethod(Ihandle* ih)
 
   ih->serial = iupMenuGetChildId(ih); 
 
-  g_signal_connect(G_OBJECT(ih->handle), "select", G_CALLBACK(gtkItemSelect), ih);
-  g_signal_connect(G_OBJECT(ih->handle), "activate", G_CALLBACK(gtkItemActivate), ih);
+  g_signal_connect(G_OBJECT(ih->handle), "select", G_CALLBACK(gtkMenuItemSelect), ih);
+  g_signal_connect(G_OBJECT(ih->handle), "activate", G_CALLBACK(gtkMenuItemActivate), ih);
 
   pos = IupGetChildPos(ih->parent, ih);
   gtk_menu_shell_insert((GtkMenuShell*)ih->parent->handle, ih->handle, pos);
@@ -664,10 +664,10 @@ static int gtkItemMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
-  ic->Map = gtkItemMapMethod;
+  ic->Map = gtkMenuItemMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 
   /* Common */
@@ -677,14 +677,14 @@ IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  /* IupItem only */
-  iupClassRegisterAttribute(ic, "VALUE", gtkItemGetValueAttrib, gtkItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, gtkItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, gtkItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, gtkItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, gtkItemSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  /* IupMenuItem only */
+  iupClassRegisterAttribute(ic, "VALUE", gtkMenuItemGetValueAttrib, gtkMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, gtkMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, gtkMenuItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, gtkMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", NULL, gtkMenuItemSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  /* IupItem GTK and Motif only */
+  /* IupMenuItem GTK and Motif only */
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }
 
@@ -695,12 +695,12 @@ IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
 static int gtkSubmenuSetImageAttrib(Ihandle* ih, const char* value)
 {
 #if GTK_CHECK_VERSION(3, 10, 0)
-  if (gtkItemHasImageBox(ih))
+  if (gtkMenuItemHasImageBox(ih))
 #else
   if (GTK_IS_IMAGE_MENU_ITEM(ih->handle))
 #endif
   {
-    gtkItemUpdateImage(ih, NULL, value, NULL);
+    gtkMenuItemUpdateImage(ih, NULL, value, NULL);
     return 1;
   }
   else
@@ -721,7 +721,7 @@ static int gtkSubmenuMapMethod(Ihandle* ih)
 #endif
   {
 #if GTK_CHECK_VERSION(3, 10, 0)
-    ih->handle = gtkMenuItemNewWithImageSupport();
+    ih->handle = gtkMenuItemNewWithImageBox();
 #else
     ih->handle = gtk_image_menu_item_new_with_label("");
 #endif
@@ -736,7 +736,7 @@ static int gtkSubmenuMapMethod(Ihandle* ih)
   gtk_menu_shell_insert((GtkMenuShell*)ih->parent->handle, ih->handle, pos);
   gtk_widget_show(ih->handle);
 
-  g_signal_connect(G_OBJECT(ih->handle), "select", G_CALLBACK(gtkItemSelect), ih);
+  g_signal_connect(G_OBJECT(ih->handle), "select", G_CALLBACK(gtkMenuItemSelect), ih);
 
   iupUpdateFontAttrib(ih);
 
@@ -745,7 +745,7 @@ static int gtkSubmenuMapMethod(Ihandle* ih)
 
 /*******************************************************************************************/
 
-static int gtkSeparatorMapMethod(Ihandle* ih)
+static int gtkMenuSeparatorMapMethod(Ihandle* ih)
 {
   int pos;
 
@@ -765,10 +765,10 @@ static int gtkSeparatorMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
-  ic->Map = gtkSeparatorMapMethod;
+  ic->Map = gtkMenuSeparatorMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 }
 
@@ -908,6 +908,6 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* IupSubmenu only */
-  iupClassRegisterAttribute(ic, "TITLE", NULL, gtkItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", NULL, gtkMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, gtkSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }

@@ -1,6 +1,6 @@
 ## HIGHLIGHT_CB
 
-Callback triggered every time the user selects an **IupItem** or **IupSubmenu**.
+Callback triggered every time the user selects an **IupMenuItem** or **IupSubmenu**.
 
 ### Callback
 
@@ -10,4 +10,4 @@ Callback triggered every time the user selects an **IupItem** or **IupSubmenu**.
 
 ### Affects
 
-[IupItem](../elem/iup_item.md), [IupSubmenu](../elem/iup_submenu.md)
+[IupMenuItem](../elem/iup_menuitem.md), [IupSubmenu](../elem/iup_submenu.md)

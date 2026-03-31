@@ -727,7 +727,7 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
 }
 
-static int gtk4ItemSetValueAttrib(Ihandle* ih, const char* value)
+static int gtk4MenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   /* GMenu-based system: check state is stored in GAction, not widget */
   char* action_name = (char*)iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
@@ -757,7 +757,7 @@ static int gtk4ItemSetValueAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* gtk4ItemGetValueAttrib(Ihandle* ih)
+static char* gtk4MenuItemGetValueAttrib(Ihandle* ih)
 {
   /* GMenu-based system: check state is stored in GAction, not widget */
   char* action_name = (char*)iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
@@ -786,7 +786,7 @@ static char* gtk4ItemGetValueAttrib(Ihandle* ih)
   return NULL;
 }
 
-static int gtk4ItemMapMethod(Ihandle* ih)
+static int gtk4MenuItemMapMethod(Ihandle* ih)
 {
   /* Native menu system handles items in gtk4BuildMenuModel() */
   /* Items don't need native widgets - they're represented in GMenuModel */
@@ -801,7 +801,7 @@ static int gtk4SubmenuMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static int gtk4SeparatorMapMethod(Ihandle* ih)
+static int gtk4MenuSeparatorMapMethod(Ihandle* ih)
 {
   /* Native menu system handles separators in gtk4BuildMenuModel() */
   (void)ih;
@@ -945,16 +945,16 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
 
 /*******************************************************************************************/
 
-IUP_SDK_API void iupdrvItemInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 {
-  ic->Map = gtk4ItemMapMethod;
+  ic->Map = gtk4MenuItemMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "VALUE", gtk4ItemGetValueAttrib, gtk4ItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT|IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "VALUE", gtk4MenuItemGetValueAttrib, gtk4MenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT|IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "TITLE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
@@ -976,8 +976,8 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
 
-IUP_SDK_API void iupdrvSeparatorInitClass(Iclass* ic)
+IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 {
-  ic->Map = gtk4SeparatorMapMethod;
+  ic->Map = gtk4MenuSeparatorMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 }
