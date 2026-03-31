@@ -3,7 +3,7 @@
 Creates a void container that splits its client area in two.
 It allows the provided controls to be enclosed in a box that allows expanding and contracting the element **size** in one direction, but when one is expanded the other is contracted.
 
-It does not have a native representation, but it contains also a **IupFlatSeparator** to implement the bar handler.
+It does not have a native representation, but it contains also a **IupSeparator** to implement the bar handler.
 
 ### Creation
 
@@ -67,7 +67,7 @@ See the [Layout Guide](../layout.md) for mode details on sizes.
 If you set the MINMAX attribute for a direct child, **IupSplit** will respect that size.
 Nested children will also have their size limits respected.
 
-The **IupFlatSeparator** bar handler is always the first child of the split.
+The **IupSeparator** bar handler is always the first child of the split.
 It can be obtained using **IupGetChild** or **IupGetNextChild**.
 
 The **IupSplit** control looks just like the **IupSbox**, but internally is very different.

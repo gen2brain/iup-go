@@ -50,7 +50,7 @@ static long iDrawGetDarkerColor(long color)
   return iupDrawColor(r, g, b, a);
 }
 
-static int iFlatSeparatorRedraw_CB(Ihandle* ih)
+static int iSeparatorRedraw_CB(Ihandle* ih)
 {
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
 
@@ -175,7 +175,7 @@ static int iFlatSeparatorRedraw_CB(Ihandle* ih)
 /***********************************************************************************************/
 
 
-static int iFlatSeparatorSetOrientationAttrib(Ihandle* ih, const char* value)
+static int iSeparatorSetOrientationAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqualNoCase(value, "HORIZONTAL"))
   {
@@ -191,19 +191,19 @@ static int iFlatSeparatorSetOrientationAttrib(Ihandle* ih, const char* value)
   return 0;  /* do not store value in hash table */
 }
 
-static char* iFlatSeparatorGetOrientationAttrib(Ihandle* ih)
+static char* iSeparatorGetOrientationAttrib(Ihandle* ih)
 {
   const char* orientation_str[] = { "VERTICAL", "HORIZONTAL" };
   return (char*)orientation_str[ih->data->orientation];
 }
 
-static char* iFlatSeparatorGetStyleAttrib(Ihandle* ih)
+static char* iSeparatorGetStyleAttrib(Ihandle* ih)
 {
   const char* style_str[] = { "FILL", "LINE", "SUNKENLINE", "DUALLINES", "GRIP", "EMPTY" };
   return (char*)style_str[ih->data->style];
 }
 
-static int iFlatSeparatorSetStyleAttrib(Ihandle* ih, const char* value)
+static int iSeparatorSetStyleAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqualNoCase(value, "FILL"))
     ih->data->style = ISEPARATOR_FILL;
@@ -221,14 +221,14 @@ static int iFlatSeparatorSetStyleAttrib(Ihandle* ih, const char* value)
   return 0; /* do not store value in hash table */
 }
 
-static int iFlatSeparatorSetBarSizeAttrib(Ihandle* ih, const char* value)
+static int iSeparatorSetBarSizeAttrib(Ihandle* ih, const char* value)
 {
   iupStrToInt(value, &ih->data->barsize);
   IupUpdate(ih);
   return 0; /* do not store value in hash table */
 }
 
-static char* iFlatSeparatorGetBarSizeAttrib(Ihandle* ih)
+static char* iSeparatorGetBarSizeAttrib(Ihandle* ih)
 {
   return iupStrReturnInt(ih->data->barsize);
 }
@@ -237,7 +237,7 @@ static char* iFlatSeparatorGetBarSizeAttrib(Ihandle* ih)
 /*****************************************************************************************/
 
 
-static int iFlatSeparatorCreateMethod(Ihandle* ih, void** params)
+static int iSeparatorCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 
@@ -255,12 +255,12 @@ static int iFlatSeparatorCreateMethod(Ihandle* ih, void** params)
   iupAttribSet(ih, "CANFOCUS", "NO");
 
   /* internal callbacks */
-  IupSetCallback(ih, "ACTION", (Icallback)iFlatSeparatorRedraw_CB);
+  IupSetCallback(ih, "ACTION", (Icallback)iSeparatorRedraw_CB);
 
   return IUP_NOERROR;
 }
 
-static void iFlatSeparatorComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+static void iSeparatorComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
   int natural_w = 0,
       natural_h = 0;
@@ -280,31 +280,31 @@ static void iFlatSeparatorComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, 
 /******************************************************************************/
 
 
-Iclass* iupFlatSeparatorNewClass(void)
+Iclass* iupSeparatorNewClass(void)
 {
   Iclass* ic = iupClassNew(iupRegisterFindClass("canvas"));
 
-  ic->name = "flatseparator";
-  ic->cons = "FlatSeparator";
+  ic->name = "separator";
+  ic->cons = "Separator";
   ic->format = NULL;  /* no parameters */
   ic->nativetype = IUP_TYPECANVAS;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 0;
 
   /* Class functions */
-  ic->New = iupFlatSeparatorNewClass;
-  ic->Create = iFlatSeparatorCreateMethod;
-  ic->ComputeNaturalSize = iFlatSeparatorComputeNaturalSizeMethod;
+  ic->New = iupSeparatorNewClass;
+  ic->Create = iSeparatorCreateMethod;
+  ic->ComputeNaturalSize = iSeparatorComputeNaturalSizeMethod;
 
-  iupClassRegisterAttribute(ic, "ORIENTATION", iFlatSeparatorGetOrientationAttrib, iFlatSeparatorSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "VERTICAL", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STYLE", iFlatSeparatorGetStyleAttrib, iFlatSeparatorSetStyleAttrib, IUPAF_SAMEASSYSTEM, "SUNKENLINE", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ORIENTATION", iSeparatorGetOrientationAttrib, iSeparatorSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "VERTICAL", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STYLE", iSeparatorGetStyleAttrib, iSeparatorSetStyleAttrib, IUPAF_SAMEASSYSTEM, "SUNKENLINE", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "160, 160, 160", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BARSIZE", iFlatSeparatorGetBarSizeAttrib, iFlatSeparatorSetBarSizeAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BARSIZE", iSeparatorGetBarSizeAttrib, iSeparatorSetBarSizeAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   return ic;
 }
 
-IUP_API Ihandle* IupFlatSeparator(void)
+IUP_API Ihandle* IupSeparator(void)
 {
-  return IupCreate("flatseparator");
+  return IupCreate("separator");
 }

@@ -248,7 +248,7 @@ IUP_API Ihandle*  IupFlatButton (const char* title);
 IUP_API Ihandle*  IupFlatToggle (const char* title);
 IUP_API Ihandle*  IupDropButton (Ihandle* dropchild);
 IUP_API Ihandle*  IupFlatLabel  (const char* title);
-IUP_API Ihandle*  IupFlatSeparator(void);
+IUP_API Ihandle*  IupSeparator(void);
 IUP_API Ihandle*  IupCanvas     (const char* action);
 IUP_API Ihandle*  IupUser       (void);
 IUP_API Ihandle*  IupThread     (void);

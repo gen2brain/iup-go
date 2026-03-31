@@ -28,7 +28,7 @@ The following names are known:
     "flatbutton"
     "flatlabel"
     "flatlist"
-    "flatseparator"
+    "separator"
     "flattoggle"
     "flattree"
     "flatval"

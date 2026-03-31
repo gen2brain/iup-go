@@ -731,7 +731,7 @@ static Ihandle* iGlobalsCreateDialog(void)
     IupSetCallbacks(IupSetAttributes(IupButton("Reset Value", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameReset_CB, NULL),
     IupSetCallbacks(IupSetAttributes(IupButton("Properties...", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameProperties_CB, NULL),
     IupSetCallbacks(IupSetAttributes(IupButton("Other Names...", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameFind_CB, NULL),
-    IupSetAttributes(IupFlatSeparator(), "ORIENTATION=HORIZONTAL"),
+    IupSetAttributes(IupSeparator(), "ORIENTATION=HORIZONTAL"),
     IupSetCallbacks(IupSetAttributes(IupToggle("Show Auto Names", NULL), "NAME=SHOWAUTO, TIP=\"Show Automatic Generated Names (_IUP_NAME*)\", NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", (Icallback)iGlobalsNamesShowAuto_CB, NULL),
     IupSetCallbacks(IupSetAttributes(IupButton("Check Handles...", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameCheckHandles_CB, NULL),
     NULL);

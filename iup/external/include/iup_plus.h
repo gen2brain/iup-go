@@ -450,12 +450,12 @@ namespace Iup
     FlatToggle(Ihandle* _ih) : Control(_ih) {}
     FlatToggle(const Element& elem) : Control(elem.GetHandle()) {}
   };
-  class FlatSeparator : public Control
+  class Separator : public Control
   {
   public:
-    FlatSeparator() : Control(IupFlatSeparator()) {}
-    FlatSeparator(Ihandle* _ih) : Control(_ih) {}
-    FlatSeparator(const Element& elem) : Control(elem.GetHandle()) {}
+    Separator() : Control(IupSeparator()) {}
+    Separator(Ihandle* _ih) : Control(_ih) {}
+    Separator(const Element& elem) : Control(elem.GetHandle()) {}
   };
   class Space : public Control
   {
