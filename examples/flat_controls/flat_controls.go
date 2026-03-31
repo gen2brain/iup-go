@@ -1,3 +1,5 @@
+//go:build ctrl
+
 package main
 
 import (
@@ -9,6 +11,7 @@ import (
 func main() {
 	iup.Open()
 	defer iup.Close()
+	iup.ControlsOpen()
 
 	statusText := iup.Text()
 	statusText.SetAttributes("READONLY=YES, EXPAND=HORIZONTAL, VALUE=Flat Controls")

@@ -2,7 +2,7 @@
 
 Creates an interface element that displays a list of items, but it does not have native decorations.
 
-It behaves like [IupList](iup_list.md) when DROPDOWN=NO and EDITBOX=NO.
+It behaves like [IupList](../elem/iup_list.md) when DROPDOWN=NO and EDITBOX=NO.
 
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
@@ -80,7 +80,7 @@ If BACKIMAGE is not defined will be ignored. Can be Yes or No. Default: No.
 
 **IMAGEid** (non-inheritable): image name to be used in the specified item, where id is the specified item starting at 1.
 The item must already exist. Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
-See also [IupImage](iup_image.md). Images don't need to have the same size.
+See also [IupImage](../elem/iup_image.md). Images don't need to have the same size.
 
 **IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
@@ -281,4 +281,4 @@ But these functions are faster than the traditional functions because they do no
 
 ### See Also
 
-[IupList](iup_list.md), [IupCanvas](../elem/iup_canvas.md)
+[IupList](../elem/iup_list.md), [IupCanvas](../elem/iup_canvas.md)

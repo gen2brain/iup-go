@@ -81,5 +81,5 @@ Notice that it is possible to use the **IupScrollBox** to overcome the internal 
 
 ### See Also
 
-[IupFlatScrollBox](iup_flatscrollbox.md)
+[IupFlatScrollBox](../ctrl/iup_flatscrollbox.md)
 

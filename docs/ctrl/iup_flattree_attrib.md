@@ -170,7 +170,7 @@ Default: 16 for standard resolution, 24 for high resolution display
 
 **IMAGEid** (write only): image name to be used in the specified node, where id is the specified node identifier.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
-See also [IupImage](iup_image.md). If node is a branch it is used when collapsed.
+See also [IupImage](../elem/iup_image.md). If node is a branch it is used when collapsed.
 All images do NOT need to have the same size, but it is recommended that a branch expanded and collapse images to have the same size.
 
 **IMAGEEXPANDEDid** (write-only): same as the IMAGE attribute but used for expanded branches.
@@ -298,10 +298,10 @@ The specified node is removed. User data and all node attributes are preserved.
 **RENAME** (write-only): Forces a rename action to take place. Valid only when SHOWRENAME=YES.
 
 RENAMECARET (write-only): the caret’s position of the text box when in-place renaming.
-Same as the CARET attribute for [IupText](iup_text.md), but here is used only once after SHOWRENAME_CB is called and before the text box is shown.
+Same as the CARET attribute for [IupText](../elem/iup_text.md), but here is used only once after SHOWRENAME_CB is called and before the text box is shown.
 
 RENAMESELECTION (write-only): the selection interval of the text box when in-place renaming.
-Same as the SELECTION attribute for [IupText](iup_text.md), but here is used only once after SHOWRENAME_CB is called and before the text box is shown.
+Same as the SELECTION attribute for [IupText](../elem/iup_text.md), but here is used only once after SHOWRENAME_CB is called and before the text box is shown.
 
 **SHOWRENAME** (non-inheritable): Allows the in place rename of a node. Default: "NO".
 F2 and clicking twice only starts to rename a node if SHOWRENAME=Yes.

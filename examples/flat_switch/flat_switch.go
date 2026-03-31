@@ -1,3 +1,5 @@
+//go:build ctrl
+
 package main
 
 import (
@@ -9,6 +11,7 @@ import (
 func main() {
 	iup.Open()
 	defer iup.Close()
+	iup.ControlsOpen()
 
 	// Default switch (pill shape, white thumb, blue ON, gray OFF)
 	sw1 := iup.FlatToggle("Default OFF")

@@ -137,4 +137,4 @@ But it is the same in all systems.
 
 ### See Also
 
-[IupFlatVal](iup_flatval.md), [IupScrollbar](iup_scrollbar.md), [IupDial](iup_dial.md)
+[IupFlatVal](../ctrl/iup_flatval.md), [IupScrollbar](iup_scrollbar.md), [IupDial](iup_dial.md)

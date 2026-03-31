@@ -47,7 +47,7 @@ The **IupSeparator** is used internally in [IupSplit](iup_split.md) and in [IupS
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupflatseparator.png)
+![](images/iupseparator.png)
 
 Styles: LINE, SUNKENLINE, DUALLINES, GRIP, FILLCOLOR="255 0 128".
 

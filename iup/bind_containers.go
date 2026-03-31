@@ -159,16 +159,6 @@ func Frame(child Ihandle) Ihandle {
 	return h
 }
 
-// FlatFrame creates a native container, which draws a frame with a title around its child.
-// The decorations are manually drawn. The control inherits from BackgroundBox.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatframe.md
-func FlatFrame(child Ihandle) Ihandle {
-	h := mkih(C.IupFlatFrame(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
-
 // Tabs creates a native container for composing elements in hidden layers with only one layer visible (just like Zbox),
 // but its visibility can be interactively controlled.
 // The interaction is done in a line of tabs with titles and arranged according to the tab type.
@@ -179,21 +169,6 @@ func Tabs(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
 	h := mkih(C.IupTabsv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
-
-// FlatTabs Creates a native container for composing elements in hidden layers with only one layer visible (just like Zbox),
-// but its visibility can be interactively controlled.
-// The interaction is done in a line of tabs with titles and arranged according to the tab type.
-// Also known as Notebook in native systems.
-// Identical to the Tabs control but the decorations and buttons are manually drawn.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flattabs.md
-func FlatTabs(children ...Ihandle) Ihandle {
-	children = append(children, Ihandle(0))
-
-	h := mkih(C.IupFlatTabsv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
@@ -213,16 +188,6 @@ func BackgroundBox(child Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_scrollbox.md
 func ScrollBox(child Ihandle) Ihandle {
 	h := mkih(C.IupScrollBox(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
-
-// FlatScrollBox Creates a native container that allows its child to be scrolled. It inherits from IupCanvas.
-// The difference from ScrollBox is that its scrollbars are drawn.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatscrollbox.md
-func FlatScrollBox(child Ihandle) Ihandle {
-	h := mkih(C.IupFlatScrollBox(child.ptr()))
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }

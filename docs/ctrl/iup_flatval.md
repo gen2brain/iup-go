@@ -3,7 +3,7 @@
 Creates a Valuator control, but it does not have native decorations. Selects a value in a limited interval.
 Also known as Scale or Trackbar in native systems.
 
-It behaves just like an [IupVal](iup_val.md), but since it is not a native control, it has more flexibility for additional options.
+It behaves just like an [IupVal](../elem/iup_val.md), but since it is not a native control, it has more flexibility for additional options.
 But ticks are NOT supported.
 
 It inherits from [IupCanvas](../elem/iup_canvas.md). 
@@ -175,4 +175,4 @@ This is the default mapping when ORIENTATION=VERTICAL.
 
 ### See Also
 
-[IupVal](iup_val.md), [IupScrollbar](iup_scrollbar.md)
+[IupVal](../elem/iup_val.md), [IupScrollbar](../elem/iup_scrollbar.md)

@@ -10,7 +10,7 @@ The leaves can generate an "executed" or "renamed" actions, branches can only ge
 
 The focus node is the node with the focus rectangle, marked nodes have their background inverted.
 
-It behaves like [IupTree](iup_tree.md), but it does not depend on the native system.
+It behaves like [IupTree](../elem/iup_tree.md), but it does not depend on the native system.
 
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
@@ -111,7 +111,7 @@ Branches can contain other branches or leaves. The first node always has id=0 an
 The tree nodes have a sequential identification number (id), starting by the first, with id=0, and increases for each node independent of the node depth.
 The following picture illustrates the numbering of the nodes in a tree.
 
-![](images/iuptree.png)\
+![](../elem/images/iuptree.png)\
 **Tree nodes and Ids**
 
 Since you have to add each node, the creation of this tree can be done in several ways because the action attributes ADD* and INSERT* use an existent node to position the new node.
@@ -320,5 +320,5 @@ But these functions are faster than the traditional functions because they do no
 
 ### See Also
 
-[IupTree](iup_tree.md), [IupList](iup_list.md)
+[IupTree](../elem/iup_tree.md), [IupList](../elem/iup_list.md)
 

@@ -66,7 +66,7 @@ IDEs automatically pick up both files.
 | `IUP_BACKEND`        | Platform default | GUI backend selection                                |
 | `IUP_BUILD_GL`       | `OFF`            | Build `iupgl` (OpenGL canvas)                        |
 | `IUP_BUILD_WEB`      | `OFF`            | Build `iupweb` (Web browser control)                 |
-| `IUP_BUILD_CTRL`     | `OFF`            | Build `iupctrl` (Matrix and advanced controls)       |
+| `IUP_BUILD_CTRL`     | `OFF`            | Build `iupctrl` (Matrix, Cells, and Flat* controls)  |
 | `IUP_BUILD_PLOT`     | `OFF`            | Build `iupplot` (Plot control)                       |
 | `IUP_BUILD_EXAMPLES` | `OFF`            | Build example programs (C and C++)                   |
 | `IUP_USE_XEMBED`     | `OFF`            | Use XEmbed tray protocol instead of SNI (GTK3/Motif) |
@@ -164,10 +164,10 @@ This produces `iup-<version>.tar.gz` and `iup-<version>.tar.xz` in the build dir
 
 ## Libraries
 
-| Library   | Description                 |
-|-----------|-----------------------------|
-| `iup`     | Core library (always built) |
-| `iupgl`   | OpenGL canvas control       |
-| `iupweb`  | Web browser control         |
-| `iupplot` | Plot/charting control       |
-| `iupctrl` | Matrix and Cells controls   |
+| Library   | Description                       |
+|-----------|-----------------------------------|
+| `iup`     | Core library (always built)       |
+| `iupgl`   | OpenGL canvas control             |
+| `iupweb`  | Web browser control               |
+| `iupplot` | Plot/charting control             |
+| `iupctrl` | Matrix, Cells, and Flat* controls |

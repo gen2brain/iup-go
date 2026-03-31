@@ -1,17 +1,16 @@
-## IupFlatButton
+## IupFlatToggle
 
-Creates an interface element that is a button, but it does not have native decorations.
+Creates an interface element that is a toggle, but it does not have native decorations.
 When selected, this element activates a function in the application.
 Its visual presentation can contain a text and/or an image.
 
-It behaves just like an [IupButton](iup_button.md), but since it is not a native control, it has more flexibility for additional options.
-It can also behave like an [IupToggle](iup_toggle.md) (without the checkmark).
+It behaves just like an [IupToggle](../elem/iup_toggle.md), but since it is not a native control it has more flexibility for additional options.
 
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 ### Creation
 
-    Ihandle* IupFlatButton(const char *title);
+    Ihandle* IupFlatToggle(const char *title);
 
 **title**: Text to be shown to the user. It can be NULL. It will set the TITLE attribute.
 
@@ -22,7 +21,7 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 Inherits all attributes and callbacks of the [IupCanvas](../elem/iup_canvas.md), but redefines a few attributes.
 
 **ALIGNMENT** (non-inheritable): horizontal and vertical alignment of the set image+text.
-Possible values: "ALEFT", "ACENTER" and "ARIGHT", combined to "ATOP", "ACENTER" and "ABOTTOM".
+Possible values: "ALEFT", "ACENTER" and "ARIGHT",  combined to "ATOP", "ACENTER" and "ABOTTOM".
 Default: "ACENTER:ACENTER". Partial values are also accepted, like "ARIGHT" or ":ATOP", the other value will be obtained from the default value.
 Alignment does not include the padding area.
 
@@ -39,7 +38,7 @@ If it is not defined then the BACKIMAGE is used and its colors will be replaced 
 **BACKIMAGEPRESS** (non-inheritable): background image name of the element in pressed state.
 If it is not defined then the BACKIMAGE is used.
 
-**BACKIMAGEZOOM** (non-inheritable): if set, the back image will be zoomed to occupy the full background.
+**BACKIMAGEZOOM** (non-inheritable): if set the back image will be zoomed to occupy the full background.
 Aspect ratio is NOT preserved. Can be Yes or No. Default: No.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color.
@@ -52,44 +51,58 @@ Can be set to NULL. If NULL, BGCOLOR will be used instead.
 **PSCOLOR**: background color used to indicate a press state. Pre-defined to "150 200 235".
 Can be set to NULL. If NULL, BGCOLOR will be used instead.
 
-**GRADIENT** (non-inheritable): gradient background colors in the format "color1:color2".
-When defined, the background is drawn as a linear gradient instead of a solid color.
-Can be set to NULL to disable.
-
-**GRADIENTHL** (non-inheritable): gradient colors used for highlight state.
-If not defined, GRADIENT will be used.
-
-**GRADIENTPS** (non-inheritable): gradient colors used for pressed state.
-If not defined, GRADIENT will be used.
-
-**GRADIENTANGLE** (non-inheritable): angle in degrees for the gradient direction.
-Default: "90" (top to bottom).
-
 **BORDER** (creation-only): the default value is "NO". This is the **IupCanvas** border.
 
 **BORDERCOLOR**: color used for borders. Default: "50 150 255".
-This is for the **IupFlatButton** drawn border.
+This is for the **IupFlatToggle** drawn border.
 
-**BORDERPSCOLOR**: color used for borders when pressed or selected.
-Default use BORDERCOLOR.
+**BORDERPSCOLOR**: color used for borders when pressed or selected. Default uses BORDERCOLOR.
 
 **BORDERHLCOLOR**: color used for borders when highlighted. Default uses BORDERCOLOR.
 
 **BORDERWIDTH**: line width used for borders. Default: "1".
-Any borders can be hidden by simply setting this value to 0.
-This is for the **IupFlatButton** drawn border.
-
-**CORNERRADIUS** (non-inheritable): radius of the rounded corners for the button background and border.
-Default: "0" (no rounding).
+Any borders can be hidden by simply setting this value to 0. This is for the **IupFlatToggle** drawn border.
+When the checkbox is shown the borders are not shown, and the background is not highlighted.
 
 **SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=Yes borders are always show.
 When SHOWBORDER=Yes and BGCOLOR is not defined, the actual BGCOLOR will be a darker version of the background color of the native parent.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-Default: YES.
+In Windows the button will respect CANFOCUS in opposite to the other controls. Default: YES.
 
 **FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be Yes or No.
 Default: Yes.
+
+**CHECKSIZE** (non-inheritable): size of the checkbox when visible.
+Default depends on the resolution: 16 (dpi <= 120), or 24 (dpi > 120). Set it to 0 to hide the check box.
+When the check box is shown the borders are not shown, and the background is not highlighted.
+
+**CHECKRIGHT** (non-inheritable): place the checkbox at the right. Can be "YES" or "NO".
+Default: "NO".
+
+**CHECKSPACING** (non-inheritable): spacing between the checkbox and the image+text.
+The space occupies the image+text area. Default: 5
+
+**CHECKALIGN** (non-inheritable): vertical alignment of the checkbox. Can be "ATOP", "ACENTER" and "ABOTTOM".
+Default: ACENTER.
+
+**CHECKIMAGE** (non-inheritable): image name to be used as check box when VALUE=OFF, be sure the image size is equal to CHECKSIZE-2.
+Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
+See also [IupImage](../elem/iup_image.md).
+If this attribute is defined the checkbox is not drawn, the images will be used instead.
+
+**CHECKIMAGEHIGHLIGHT** (non-inheritable): check box image name of the element in highlight state when VALUE=OFF.
+If it is not defined then the CHECKIMAGE is used.
+
+**CHECKIMAGEINACTIVE** (non-inheritable): check box image name of the element when inactive and VALUE=OFF.
+If it is not defined then the CHECKIMAGE is used and its colors will be replaced by a modified version creating the disabled effect.
+
+**CHECKIMAGEPRESS** (non-inheritable): check box image name of the element in pressed state when VALUE=OFF.
+If it is not defined then the CHECKIMAGE is used.
+
+**CHECKIMAGEON*** (non-inheritable): image names to be used as check box when VALUE=ON. (HIGHLIGHT, INACTIVE and PRESS included)
+
+**CHECKIMAGENOTDEF*** (non-inheritable): image names to be used as check box when VALUE=NOTDEF. (HIGHLIGHT, INACTIVE and PRESS included)
 
 **PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
@@ -151,43 +164,96 @@ It will actually set the PADDING attribute.
 **PRESSED** (read-only): returns the button state if pressed. Can be Yes or No.
 
 **RADIO** (read-only): returns if the toggle is inside a radio. Can be "YES" or "NO".
-Valid only after the element is mapped and TOGGLE=Yes, before returns NULL.
 
-**IGNORERADIO** (non-inheritable): when set, the toggle will not behave as a radio when inside an **IupRadio** hierarchy.
+**IGNORERADIO** (non-inheritable): when set the toggle will not behave as a radio when inside an **IupRadio** hierarchy.
+
+**SELECTEDNOTIFY** (non-inheritable): for a toggle inside a radio notify the selected toggle when pressed again.
 
 **SPACING** (non-inheritable): spacing between the image and the text. Default: "2".
 
 **CSPACING**: same as SPACING but using the units of the vertical part of the **SIZE** attribute.
 It will actually set the SPACING attribute.
 
-[TITLE](../attrib/iup_title.md) (non-inheritable): Label's text.
+[TITLE](../attrib/iup_title.md) (non-inheritable): toggle text.
 The '\n' character is accepted for line change.
-
-**TOGGLE**: enabled the toggle behavior. Default: NO.
 
 **TEXTALIGNMENT** (non-inheritable): Horizontal text alignment for multiple lines.
 Can be: ALEFT, ARIGHT or ACENTER. Default: ALEFT.
 
-**TEXTWRAP** (non-inheritable): For single line texts if the text is larger than its box the line will be automatically broken in multiple lines.
+**TEXTWRAP** (non-inheritable): For single line texts if the text is larger than its box, the line will be automatically broken in multiple lines.
 Notice that this is done internally by the system, the element natural size will still use only a single line.
-For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
+For the remaining lines to be visible the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
 It will be ignored when TEXTWRAP=Yes.
 
-**TEXTCLIP** (non-inheritable): If Yes, the text will be clipped to the button area. Default: No.
-
-**TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
+  **TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 
 **VALUE** (non-inheritable): Toggle's state. Values can be "ON", "OFF" or "TOGGLE".
-Default: "OFF". The TOGGLE option will invert the current state. Valid only when TOGGLE=Yes.
-Can only be set to ON for a toggle inside a radio, it will automatically set to OFF the previous toggle that was ON.
+If 3STATE=YES then can also be "NOTDEF". Default: "OFF". The TOGGLE option will invert the current state.
+Can only be set to ON if the toggle is inside a radio, it will automatically set to OFF the previous toggle that was ON in the radio.
 
-**SELECTED** (non-inheritable): Same as VALUE but ignore the TOGGLE attribute.
-Directly sets the selected state but does not depend on a TOGGLE behavior.
+**3STATE** (creation-only): Enable a three state toggle.
+Valid for toggles with text only and that do not belong to a radio. Can be "YES" or NO".
+Default: "NO". Incompatible with SWITCH=YES.
 
-> 
+**SWITCH** (creation-only) (non-inheritable): displays the toggle as a switch control instead of a checkbox.
+Can be "YES" or "NO". Default: "NO". Incompatible with 3STATE.
+When SWITCH=YES, the check area draws a track with a sliding thumb instead of a checkbox or radio dot.
+The attributes CHECKSIZE, CHECKSPACING, CHECKRIGHT, CHECKALIGN, CHECKIMAGE and CHECKIMAGEON are reused for the switch.
+When SWITCH=YES and CHECKSIZE is not explicitly set, a larger default size is used: 20 (dpi <= 120) or 26 (dpi > 120), instead of the checkbox defaults of 16/24.
+The thumb grows slightly on mouse hover to provide visual feedback.
+
+**SWITCHTRACKWIDTH** (non-inheritable): width of the switch track in pixels.
+Default: effective CHECKSIZE * 2 (40 at standard DPI, 52 at high DPI). The track height is controlled by CHECKSIZE.
+
+**SWITCHOFFCOLOR** (non-inheritable): track fill color when VALUE=OFF. Default: "190 190 190".
+
+**SWITCHOFFHLCOLOR** (non-inheritable): track fill color when VALUE=OFF and highlighted.
+If not defined then SWITCHOFFCOLOR is used.
+
+**SWITCHOFFPSCOLOR** (non-inheritable): track fill color when VALUE=OFF and pressed.
+If not defined then SWITCHOFFCOLOR is used.
+
+**SWITCHONCOLOR** (non-inheritable): track fill color when VALUE=ON. Default: "0 120 215".
+
+**SWITCHONHLCOLOR** (non-inheritable): track fill color when VALUE=ON and highlighted.
+If not defined then SWITCHONCOLOR is used.
+
+**SWITCHONPSCOLOR** (non-inheritable): track fill color when VALUE=ON and pressed.
+If not defined then SWITCHONCOLOR is used.
+
+**SWITCHBORDERCOLOR** (non-inheritable): track border color.
+If not defined then FGCOLOR is used. Responds to CHECKHLCOLOR and CHECKPSCOLOR for state variants.
+
+**SWITCHCORNERRADIUS** (non-inheritable): corner radius for the switch track.
+Default: half of the track height (pill shape). Set to 0 for a square track.
+
+**SWITCHTRACKGRADIENT** (non-inheritable): gradient for the track, format "color1:color2".
+Default: NULL (solid color). Used as fallback for both OFF and ON states.
+
+**SWITCHTRACKONGRADIENT** (non-inheritable): gradient for the track when VALUE=ON, format "color1:color2".
+Default: NULL. If not defined, SWITCHTRACKGRADIENT is used when set.
+
+**SWITCHTRACKGRADIENTANGLE** (non-inheritable): gradient angle in degrees.
+Default: 90 (top to bottom).
+
+**SWITCHTHUMBCOLOR** (non-inheritable): thumb fill color. Default: "255 255 255" (white).
+
+**SWITCHTHUMBHLCOLOR** (non-inheritable): thumb color when highlighted.
+If not defined then SWITCHTHUMBCOLOR is used.
+
+**SWITCHTHUMBPSCOLOR** (non-inheritable): thumb color when pressed.
+If not defined then SWITCHTHUMBCOLOR is used.
+
+**SWITCHTHUMBSIZE** (non-inheritable): thumb diameter in pixels.
+Default: track height - 8 (4 pixel margin on each side).
+
+**SWITCHTHUMBCORNERRADIUS** (non-inheritable): corner radius for the thumb.
+Default: half of SWITCHTHUMBSIZE (circle). Set to 0 for a square thumb.
+
+>
 >
 > ------------------------------------------------------------------------
 
@@ -197,20 +263,21 @@ Directly sets the selected state but does not depend on a TOGGLE behavior.
 
 Inherits all callbacks of the [IupCanvas](../elem/iup_canvas.md), but redefines a few of them.
 Including ACTION, BUTTON_CB, MOTION_CB, FOCUS_CB, LEAVEWINDOW_CB, and ENTERWINDOW_CB.
-To allow the application to use those callbacks, the same callbacks are exported with the "FLAT_" prefix using the same parameters, except the FLAT_ACTION callback that now mimics the **IupButton** ACTION.
+To allow the application to use those callbacks, the same callbacks are exported with the "FLAT_" prefix using the same parameters, except the FLAT_ACTION callback that now mimics the **IupToggle** ACTION.
 They are all called before the internal callbacks, and if they return IUP_IGNORE the internal callbacks are not processed.
 
 **FLAT_ACTION**: Action generated when the button 1 (usually left) is selected.
 This callback is called only after the mouse is released and when it is released inside the button area.
 
-    int function(Ihandle* ih);
+    int function(Ihandle* ih, int state);
 
-**ih**: identifier of the element that activated the event.
+**ih**: identifier of the element that activated the event.\
+**state**: 1 if the toggle's state was shifted to on; 0 if it was shifted to off.
 
 **Returns**: IUP_CLOSE will be processed.
 
 **VALUECHANGED_CB**: Called after the value was interactively changed by the user.
-Called only when TOGGLE=Yes. Called after the ACTION callback but under the same context.
+Called after the ACTION callback but under the same context.
 
     int function(Ihandle *ih);
 
@@ -222,47 +289,47 @@ Called only when TOGGLE=Yes. Called after the ACTION callback but under the same
 
 ### Notes
 
-The **IupFlatButton** can contain text and image simultaneously.
+The **IupFlatToggle** can contain the checkbox, text and image simultaneously.
 
-The natural size will be a combination of the size of the image and the title, if any, plus PADDING and SPACING (if both image and title are present).
+The natural size will be a combination of the size of the image and the title, if any, plus PADDING and SPACING (if both image and title are present), and the check box if visible.
 
 Borders are drawn only when the button is highlighted reproducing the behavior of the **IupButton** when FLAT=Yes.
+When the checkbox is shown, the borders are not shown, and the background is not highlighted.
 
 Buttons are activated using Enter or Space keys.
 
-When TOGGLE=Yes, to build a set of mutual exclusive toggles, insert them in a **IupRadio** container.
-Only the **IupFlatButton** controls inside the radio will be part of the exclusive group.
+To build a set of mutual exclusive toggles, insert them in a **IupRadio** container.
+Only the **IupFlatToggle** controls inside the radio will be part of the exclusive group.
 
-When TOGGLE=Yes, the button that is a child of an **IupRadio** automatically receives a name when its is mapped into the native system.
+The toggle that is a child of an **IupRadio** automatically receives a name when it is mapped into the native system.
 
-To replace a **IupButton** by a **IupFlatButton**, you must change the function call (**IupFlatButton** does not include the action callback in the constructor) and change the ACTION callback name to FLAT_ACTION.
+To replace a **IupToggle** by a **IupFlatToggle**, you must change the function call (**IupFlatToggle** does not include the action callback in the constructor) and change the ACTION callback name to FLAT_ACTION.
 
-To replace a **IupToggle** by a **IupFlatButton**, you must do the same, and set TOGGLE=Yes.
-But notice that there will be no check box nor radio button.
+Finally notice that the name of the secondary image attributes are different (for instance, IMINACTIVE is IMAGEINACTIVE, IMPRESS is IMAGEPRESS, and so on).
 
-Finally, notice that the name of the secondary image attributes are different (for instance, IMINACTIVE is IMAGEINACTIVE, IMPRESS is IMAGEPRESS, and so on).
-To define a button that only shows a color, do the same as in **IupButton** and don't define TITLE nor IMAGE, but instead of BGCOLOR use FGCOLOR to set the color of the button.
-
-When the **IupFlatButton** displays only a text it will look like a label, use SHOWBORDER=Yes to force the display of the borders all the time.
+When the **IupFlatToggle** displays only a text it will look like a label, use SHOWBORDER=Yes to force the display of the borders all the time.
 
 ### Examples
 
 [Browse for Example Files](../../examples/)
 
-The sample buttons have PADDING=5x5.
+Here are a few combinations:
 
-**Normal**
-![](images/iupflatbutton_normal.png)
+**Text+Check**
+![](images/iupflattoggle5.png)
 
-**Highlight**
-![](images/iupflatbutton_highlight.png)
+**Image+Check**
+![](images/iupflattoggle2.png)
 
-**Press**
-![](images/iupflatbutton_pressed.png)
+**3 State**
+![](images/iupflattoggle3.png)
 
-**Focus**
-![](images/iupflatbutton_focus.png)
+**Text Only**
+![](images/iupflattoggle4.png)
+
+**Inside a Radio**
+![](images/iupflattoggle1.png)
 
 ### See Also
 
-[IupImage](iup_image.md), [IupButton](iup_button.md), [IupToggle](iup_toggle.md), [IupLabel](iup_label.md)
+[IupImage](../elem/iup_image.md), [IupButton](../elem/iup_button.md), [IupToggle](../elem/iup_toggle.md), [IupLabel](../elem/iup_label.md), [IupRadio](../elem/iup_radio.md).

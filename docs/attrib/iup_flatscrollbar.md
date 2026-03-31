@@ -2,7 +2,7 @@
 
 Complementary attributes when a flat scrollbar is used (a drawn scrollbar).
 
-Used in [IupFlatScrollBox](../elem/iup_flatscrollbox.md), [IupFlatList](../elem/iup_flatlist.md), [IupFlatTree](../elem/iup_flattree.md) and in [IupMatrix](../ctrl/iup_matrix.md) when FLATSCROLLBAR=Yes is defined.
+Used in [IupFlatScrollBox](../ctrl/iup_flatscrollbox.md), [IupFlatList](../ctrl/iup_flatlist.md), [IupFlatTree](../ctrl/iup_flattree.md) and in [IupMatrix](../ctrl/iup_matrix.md) when FLATSCROLLBAR=Yes is defined.
 
 ### Attributes (non-inheritable)
 
@@ -49,7 +49,7 @@ If it is not defined then the IMAGE* is used.
 
 ### Affects
 
-[IupFlatScrollBox](../elem/iup_flatscrollbox.md), [IupMatrix](../ctrl/iup_matrix.md)
+[IupFlatScrollBox](../ctrl/iup_flatscrollbox.md), [IupMatrix](../ctrl/iup_matrix.md)
 
 ### Notes
 

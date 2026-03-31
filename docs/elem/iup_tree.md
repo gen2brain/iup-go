@@ -298,5 +298,5 @@ But these functions are faster than the traditional functions because they do no
 
 ### See Also
 
-[IupFlatTree](iup_flattree.md), [IupList](iup_list.md), [IupTable](iup_table.md)
+[IupFlatTree](../ctrl/iup_flattree.md), [IupList](iup_list.md), [IupTable](iup_table.md)
 

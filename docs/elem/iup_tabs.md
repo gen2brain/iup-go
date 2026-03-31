@@ -261,4 +261,4 @@ Motif does not supports vertical text.
 
 ### See Also
 
-[IupFlatTabs](iup_flattabs.md), [IupZbox](iup_zbox.md)
+[IupFlatTabs](../ctrl/iup_flattabs.md), [IupZbox](iup_zbox.md)

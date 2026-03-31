@@ -1,6 +1,8 @@
+//go:build ctrl
+
 package iup
 
 /*
-#include "external/src/iup_flatlabel.c"
+#include "external/srcctrl/iup_flatlabel.c"
 */
 import "C"

@@ -1,7 +1,7 @@
 ## IupFlatScrollBox
 
 Creates a native container that allows its child to be scrolled. It inherits from [IupCanvas](../elem/iup_canvas.md).
-The difference from [IupScrollBox](iup_scrollbox.md) is that its scrollbars are drawn.
+The difference from [IupScrollBox](../elem/iup_scrollbox.md) is that its scrollbars are drawn.
 
 ### Creation
 
@@ -89,5 +89,5 @@ Notice that it is possible to use the **IupFlatScrollBox** to overcome the inter
 
 ### See Also
 
-[IupScrollBox](iup_scrollbox.md)
+[IupScrollBox](../elem/iup_scrollbox.md)
 

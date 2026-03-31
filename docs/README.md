@@ -96,17 +96,19 @@ API reference documentation for IUP (Portable User Interface).
 
 ### Containers
 
-[IupFill](elem/iup_fill.md), [IupSpace](elem/iup_space.md), [IupCbox](elem/iup_cbox.md), [IupGridBox](elem/iup_gridbox.md), [IupMultiBox](elem/iup_multibox.md), [IupHbox](elem/iup_hbox.md), [IupVbox](elem/iup_vbox.md), [IupZbox](elem/iup_zbox.md), [IupRadio](elem/iup_radio.md), [IupNormalizer](elem/iup_normalizer.md), [IupFrame](elem/iup_frame.md), [IupFlatFrame](elem/iup_flatframe.md), [IupPopover](elem/iup_popover.md), [IupTabs](elem/iup_tabs.md), [IupFlatTabs](elem/iup_flattabs.md), [IupBackgroundBox](elem/iup_backgroundbox.md), [IupScrollBox](elem/iup_scrollbox.md), [IupFlatScrollBox](elem/iup_flatscrollbox.md), [IupDetachBox](elem/iup_detachbox.md), [IupExpander](elem/iup_expander.md), [IupSbox](elem/iup_sbox.md), [IupSplit](elem/iup_split.md)
+[IupFill](elem/iup_fill.md), [IupSpace](elem/iup_space.md), [IupCbox](elem/iup_cbox.md), [IupGridBox](elem/iup_gridbox.md), [IupMultiBox](elem/iup_multibox.md), [IupHbox](elem/iup_hbox.md), [IupVbox](elem/iup_vbox.md), [IupZbox](elem/iup_zbox.md), [IupRadio](elem/iup_radio.md), [IupNormalizer](elem/iup_normalizer.md), [IupFrame](elem/iup_frame.md), [IupFlatFrame](ctrl/iup_flatframe.md), [IupPopover](elem/iup_popover.md), [IupTabs](elem/iup_tabs.md), [IupFlatTabs](ctrl/iup_flattabs.md), [IupBackgroundBox](elem/iup_backgroundbox.md), [IupScrollBox](elem/iup_scrollbox.md), [IupFlatScrollBox](ctrl/iup_flatscrollbox.md), [IupDetachBox](elem/iup_detachbox.md), [IupExpander](elem/iup_expander.md), [IupSbox](elem/iup_sbox.md), [IupSplit](elem/iup_split.md)
 
 ### Standard
 
-[IupAnimatedLabel](elem/iup_animatedlabel.md), [IupButton](elem/iup_button.md), [IupFlatButton](elem/iup_flatbutton.md), [IupDropButton](elem/iup_dropbutton.md), [IupCalendar](elem/iup_calendar.md), [IupCanvas](elem/iup_canvas.md), [IupColorbar](elem/iup_colorbar.md), [IupColorBrowser](elem/iup_colorbrowser.md), [IupDatePick](elem/iup_datepick.md), [IupDial](elem/iup_dial.md), [IupGauge](elem/iup_gauge.md), [IupLabel](elem/iup_label.md), [IupFlatLabel](elem/iup_flatlabel.md), [IupSeparator](elem/iup_separator.md), [IupLink](elem/iup_link.md), [IupList](elem/iup_list.md), [IupFlatList](elem/iup_flatlist.md), [IupProgressBar](elem/iup_progressbar.md), [IupScrollbar](elem/iup_scrollbar.md), [IupSpin](elem/iup_spin.md), [IupTable](elem/iup_table.md), [IupText](elem/iup_text.md), [IupToggle](elem/iup_toggle.md), [IupFlatToggle](elem/iup_flattoggle.md), [IupTree](elem/iup_tree.md), [IupFlatTree](elem/iup_flattree.md), [IupVal](elem/iup_val.md), [IupFlatVal](elem/iup_flatval.md)
+[IupAnimatedLabel](elem/iup_animatedlabel.md), [IupButton](elem/iup_button.md), [IupDropButton](elem/iup_dropbutton.md), [IupCalendar](elem/iup_calendar.md), [IupCanvas](elem/iup_canvas.md), [IupColorbar](elem/iup_colorbar.md), [IupColorBrowser](elem/iup_colorbrowser.md), [IupDatePick](elem/iup_datepick.md), [IupDial](elem/iup_dial.md), [IupGauge](elem/iup_gauge.md), [IupLabel](elem/iup_label.md), [IupSeparator](elem/iup_separator.md), [IupLink](elem/iup_link.md), [IupList](elem/iup_list.md), [IupProgressBar](elem/iup_progressbar.md), [IupScrollbar](elem/iup_scrollbar.md), [IupSpin](elem/iup_spin.md), [IupTable](elem/iup_table.md), [IupText](elem/iup_text.md), [IupToggle](elem/iup_toggle.md), [IupTree](elem/iup_tree.md), [IupVal](elem/iup_val.md)
 
 ### Additional
 
 [IupGLCanvas](ctrl/iup_glcanvas.md), [IupGLBackgroundBox](ctrl/iup_glbackgroundbox.md), [IupPlot](ctrl/iup_plot.md), [IupWebBrowser](ctrl/iup_web.md)
 
 [IupMatrix](ctrl/iup_matrix.md) ([Attributes](ctrl/iup_matrix_attrib.md), [Callbacks](ctrl/iup_matrix_cb.md)), [IupMatrixEx](ctrl/iup_matrixex.md), [IupMatrixList](ctrl/iup_matrixlist.md), [IupCells](ctrl/iup_cells.md)
+
+[IupFlatButton](ctrl/iup_flatbutton.md), [IupFlatLabel](ctrl/iup_flatlabel.md), [IupFlatToggle](ctrl/iup_flattoggle.md), [IupFlatFrame](ctrl/iup_flatframe.md), [IupFlatTabs](ctrl/iup_flattabs.md), [IupFlatScrollBox](ctrl/iup_flatscrollbox.md), [IupFlatList](ctrl/iup_flatlist.md), [IupFlatTree](ctrl/iup_flattree.md) ([Attributes](ctrl/iup_flattree_attrib.md), [Callbacks](ctrl/iup_flattree_cb.md)), [IupFlatVal](ctrl/iup_flatval.md)
 
 ### Management
 

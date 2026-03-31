@@ -1,9 +1,9 @@
 ## IupFlatTabs
 
-Creates a native container for composing elements in hidden layers with only one layer visible (just like [IupZbox](iup_zbox.md)), but its visibility can be interactively controlled.
+Creates a native container for composing elements in hidden layers with only one layer visible (just like [IupZbox](../elem/iup_zbox.md)), but its visibility can be interactively controlled.
 The interaction is done in a line of tabs with titles and arranged according to the tab type.
 Also known as Notebook in native systems.
-Identical to the [IupTabs](iup_tabs.md) control but the decorations and buttons are manually drawn.
+Identical to the [IupTabs](../elem/iup_tabs.md) control but the decorations and buttons are manually drawn.
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 ### Creation
@@ -125,7 +125,7 @@ Partial values are also accepted, like "ARIGHT" or ":ATOP", the other value will
 
 **TABIMAGEn**: image name to be used in the respective tab.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. n starts at 0.
-See also [IupImage](iup_image.md).
+See also [IupImage](../elem/iup_image.md).
 
 **TABIMAGEHIGHTLIGHTn**: same as TABIMAGEn when in highlight state.
 If not defined TABIMAGEn is used.
@@ -159,7 +159,7 @@ If this value is NULL, it will remain empty.
 
 **CLOSEIMAGE**: image name to be used in the close button.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. n starts at 0.
-See also [IupImage](iup_image.md). Default: "IMGFLATCLOSE".
+See also [IupImage](../elem/iup_image.md). Default: "IMGFLATCLOSE".
 
 **CLOSEIMAGEPRESS**: image name to be used in the close button in pressed state.
 Default: "IMGFLATCLOSEPRESS".
@@ -210,7 +210,7 @@ Default: "200 225 245".
 
 **EXTRAIMAGE*****id***: image name to be used in the respective button.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. n starts at 0.
-See also [IupImage](iup_image.md).
+See also [IupImage](../elem/iup_image.md).
 
 **EXTRAIMAGEPRESS*****id***: same as EXTRAIMAGE*id* when in pressed state.
 If not defined EXTRAIMAGE*id* is used.
@@ -336,14 +336,14 @@ The Tabs can be created with no children and be dynamic filled using [IupAppend]
 Its children automatically receive a name when the child is appended or inserted into the tabs.
 
 **IMPORTANT**: Similar to **IupZbox**, **IupFlatTabs** does depends on the VISIBLE attribute.
-To proper functioning we strongly recommend using a [IupBackgroundBox](iup_backgroundbox.md) for each child.
+To proper functioning we strongly recommend using a [IupBackgroundBox](../elem/iup_backgroundbox.md) for each child.
 
 When you change the current tab, the focus is usually not changed.
 If you want to control the focus behavior, call **IupSetFocus** in the TABCHANGE_CB callback.
 
 When flattabs has the focus, the current tab can be changed using the left and right arrow keys.
 
-Main differences from [IupTabs](iup_tabs.md):
+Main differences from [IupTabs](../elem/iup_tabs.md):
 
 - Appearance can be controlled for global features and for individual tabs.
 - Child focus can be controlled without native problems.
@@ -395,4 +395,4 @@ But these functions are faster than the traditional functions because they do no
 
 ### See Also
 
-[IupTabs](iup_tabs.md), [IupZbox](iup_zbox.md)
+[IupTabs](../elem/iup_tabs.md), [IupZbox](../elem/iup_zbox.md)

@@ -1,3 +1,5 @@
+//go:build ctrl
+
 package main
 
 import (
@@ -7,6 +9,7 @@ import (
 func main() {
 	iup.Open()
 	defer iup.Close()
+	iup.ControlsOpen()
 
 	theme := iup.User()
 	theme.SetAttribute("BGCOLOR", "220 230 240")

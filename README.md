@@ -8,7 +8,7 @@ IUP-Go provides system native UI controls for Windows (Win32 and WinUI), macOS (
 C/C++ source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
 
-To build the IUP C library standalone (without Go bindings), see [iup/external/README.md](iup/external/README.md) for CMake build instructions.
+To build the IUP C library standalone (without Go bindings), see [iup/external](iup/external) for CMake build instructions.
 
 ### Requirements
 
@@ -153,7 +153,7 @@ For the `GLCanvas` control, install `libgl-dev` or `libglvnd-devel`.
 * `gl` - build with support for `GLCanvas` control
 * `web` - build with support for `WebBrowser` control
 * `plot` - build with support for `Plot` control
-* `ctrl` - build with support for `Matrix` and `Cells` controls
+* `ctrl` - build with support for `Matrix`, `Cells`, and `Flat*` controls
 * `gtk` - use GTK in macOS or Windows
 * `gtk4` - build for GTK4, default is GTK3
 * `gtk2` - build for GTK2 (Linux/Unix)

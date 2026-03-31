@@ -1,6 +1,8 @@
+//go:build ctrl
+
 package iup
 
 /*
-#include "external/src/iup_flatscrollbar.c"
+#include "external/srcctrl/iup_flatscrollbar.c"
 */
 import "C"

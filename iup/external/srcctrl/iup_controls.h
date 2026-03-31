@@ -18,6 +18,16 @@ Iclass* iupMatrixNewClass(void);
 Iclass* iupMatrixListNewClass(void);
 Iclass* iupMatrixExNewClass(void);
 
+Iclass* iupFlatButtonNewClass(void);
+Iclass* iupFlatLabelNewClass(void);
+Iclass* iupFlatToggleNewClass(void);
+Iclass* iupFlatFrameNewClass(void);
+Iclass* iupFlatListNewClass(void);
+Iclass* iupFlatTreeNewClass(void);
+Iclass* iupFlatValNewClass(void);
+Iclass* iupFlatTabsNewClass(void);
+Iclass* iupFlatScrollBoxNewClass(void);
+
 char *iupControlBaseGetParentBgColor (Ihandle* ih);
 char *iupControlBaseGetBgColorAttrib(Ihandle* ih);
 
