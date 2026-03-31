@@ -109,7 +109,7 @@ static Igtk4Font* gtk4FindFont(const char *font)
       fontdesc = pango_font_description_from_string(font);
     else
     {
-      char new_font[200];
+      char new_font[1536];
       if (size<0)
       {
         double res = 96.0;  /* default DPI */
