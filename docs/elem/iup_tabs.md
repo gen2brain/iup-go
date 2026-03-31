@@ -208,7 +208,7 @@ It is so because a disabled tab is a confusing interface situation.
 In Windows, when an **IupVal** is inside an **IupTabs**, the tabs disappear when the mouse moves over it after being used in the valuator.
 A workaround is to put the valuator inside an **IupFrame** and then inside the **IupTabs**, so the problem does not occur.
 
-In GTK uses GtkNotebook, in Windows uses WC_TABCONTROL, in WinUI uses XAML TabView, in macOS uses a custom NSView, in Qt uses QTabWidget, in EFL uses a custom tab control, and in Motif uses xmNotebook.
+In GTK uses GtkNotebook, in Windows uses WC_TABCONTROL, in WinUI uses XAML TabView, in macOS uses a custom NSView, in Qt uses QTabWidget, in FLTK uses Fl_Tabs, in EFL uses Efl_Ui_Tab_Pager, and in Motif uses xmNotebook.
 
 ### Utility Functions
 

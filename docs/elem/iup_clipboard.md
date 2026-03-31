@@ -15,6 +15,7 @@ Or you can simply create and destroy every time you need to copy or paste.
 **ADDFORMAT** (write-only): register a custom format for clipboard data given its name.
 The registration remains valid even after the element is destroyed.
 A new format must be added before used.
+Custom format attributes (ADDFORMAT, FORMAT, FORMATAVAILABLE, FORMATDATA, FORMATDATASTRING, FORMATDATASIZE) are not supported in FLTK.
 
 **EMFAVAILABLE** (read-only) [Windows Only]: informs if there is a Windows Enhanced Metafile available at the clipboard.
 
@@ -30,7 +31,7 @@ When set the FORMATDATASIZE attribute must be set before with the data size.
 When retrieved FORMATDATASIZE will be set and available after data is retrieved.
 
 **FORMATDATASTRING**: sets/gets FORMATDATA and FORMATDATASIZE considering data being a string in the system format.
-Not supported in Motif.
+Not supported in Motif and FLTK.
 
 **FORMATDATASIZE**: size of the data on the clipboard.
 Used by the FORMATDATA attribute processing.
@@ -49,6 +50,7 @@ In GTK 4 is a **GdkTexture***.
 In Motif is a **Pixmap**.
 In macOS is an **NSImage***.
 In Qt is a **QPixmap***.
+In FLTK is a **Fl_RGB_Image***.
 If set to NULL clears the clipboard data.
 The returned handle in a paste must be released after used.
 After copy, do NOT release the given handle.

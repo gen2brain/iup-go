@@ -60,7 +60,7 @@ To always use Visual Styles, set the title to "" before mapping, but be aware th
 
 The frame can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md). 
 
-In GTK uses GtkFrame, in Windows uses WC_BUTTON, in WinUI uses a custom emulation with XAML Canvas and Border, in macOS uses NSBox, in Qt uses QGroupBox, in EFL uses Elm_Frame, and in Motif uses xmFrame.
+In GTK uses GtkFrame, in Windows uses WC_BUTTON, in WinUI uses a custom emulation with XAML Canvas and Border, in macOS uses NSBox, in Qt uses QGroupBox, in FLTK uses Fl_Group, in EFL uses Elm_Frame, and in Motif uses xmFrame.
 
 ### Examples
 

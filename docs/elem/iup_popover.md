@@ -63,7 +63,7 @@ The ANCHOR attribute must be set before mapping, and the anchor element must alr
 When AUTOHIDE=YES, the popover behaves like a modal popup that closes on outside interaction.
 When AUTOHIDE=NO, the popover remains visible until explicitly hidden via VISIBLE=NO.
 
-In GTK 3 and GTK 4 uses GtkPopover, in Windows uses a custom popup window, in WinUI uses XAML Flyout, in macOS uses NSPopover, in Qt uses a custom QFrame popup, in EFL uses a borderless popup window, and in Motif uses a transient shell popup.
+In GTK 3 and GTK 4 uses GtkPopover, in Windows uses a custom popup window, in WinUI uses XAML Flyout, in macOS uses NSPopover, in Qt uses a custom QFrame popup, in FLTK uses a borderless Fl_Window popup, in EFL uses a borderless popup window, and in Motif uses a transient shell popup.
 
 ### See Also
 

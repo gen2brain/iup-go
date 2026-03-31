@@ -38,7 +38,7 @@ Not supported in WinUI and macOS.
 
 In Windows, the view is changed when the month of year is clicked, so the user can select the month of the year or a year among years.
 
-In GTK uses GtkCalendar, in Windows uses MONTHCAL_CLASS, in WinUI uses XAML CalendarView, in macOS uses NSDatePicker, in Qt uses QCalendarWidget, and in EFL uses a custom calendar control.
+In GTK uses GtkCalendar, in Windows uses MONTHCAL_CLASS, in WinUI uses XAML CalendarView, in macOS uses NSDatePicker, in Qt uses QCalendarWidget, and in FLTK and EFL uses a custom calendar control.
 
 ### Examples
 

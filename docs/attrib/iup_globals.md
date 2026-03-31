@@ -34,14 +34,14 @@ Returns the IUP's copyright.
 
 Informs the current driver being used.
 
-Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "EFL" and "Cocoa".
+Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "FLTK", "EFL" and "Cocoa".
 
 ### APPID
 
 Application identifier used by the desktop environment.
 In GTK/Wayland, it maps to the XDG desktop file ID.
 Also used by [IupConfig](../func/iup_config.md) as a last fallback when neither APP_NAME nor APPNAME is set.
-Supported in GTK, GTK 4, Qt, EFL and WinUI.
+Supported in GTK, GTK 4, Qt, FLTK, EFL and WinUI.
 
 ### APPNAME
 
@@ -237,7 +237,7 @@ See the [Keyboard Codes](iup_keyboard_codes.md) table for a list of the possible
 Sends a key press and a key release messages to the element with the focus. The value is a key code.
 See the [Keyboard Codes](iup_keyboard_codes.md) table for a list of the possible values.
 
-### AUTOREPEAT [Motif and EFL Only]
+### AUTOREPEAT [Motif, FLTK and EFL Only]
 
 Turns on/off ("YES" or "NO") the auto-repeat of keyboard keys in the whole system.
 May be used as an optimization in high performance applications.
@@ -335,9 +335,27 @@ This is the version at the time the IUP library was compiled.
 
 Returns the name of the current Qt widget style.
 
+### FLTKVERSION (read-only) [FLTK Only]
+
+Returns the run time version of the FLTK toolkit.
+
 ### EFLVERSION (read-only) [EFL Only]
 
 Returns the run time version of the EFL toolkit.
+
+### FLTKTHEME [FLTK Only]
+
+Sets the FLTK visual theme. Can be set before or after creating dialogs.
+Can also be set via the environment variable `IUP_FLTKTHEME`.
+
+Accepted values:
+- `"none"` or `"base"` - default FLTK appearance
+- `"gtk+"` - GTK+ like appearance
+- `"plastic"` - shiny plastic appearance
+- `"gleam"` - modern gradient appearance
+- `"oxy"` - oxygen-inspired appearance
+
+When read, returns the current theme name (returns `"none"` if using the default).
 
 ### EFLTHEME [EFL Only]
 
@@ -387,7 +405,7 @@ Returns the WinUI version.
 ### WL_DISPLAY (read-only) [Wayland Only]
 
 Returns the Wayland display (wl_display*).
-Available in GTK, GTK 4, Qt and EFL when running on Wayland.
+Available in GTK, GTK 4, Qt, FLTK and EFL when running on Wayland.
 
 ### COMPUTERNAME (read-only)
 
@@ -422,12 +440,12 @@ Available only after the first call to [IupGLMakeCurrent](../ctrl/iup_glcanvas.m
 ### XSERVERVENDOR (read-only) [X11 Only]
 
 X-Windows Server Vendor string.
-Available in GTK, GTK 4 and Motif.
+Available in GTK, GTK 4, FLTK and Motif.
 
 ### XVENDORRELEASE (read-only) [X11 Only]
 
 X-Windows Server Vendor release number.
-Available in GTK, GTK 4 and Motif.
+Available in GTK, GTK 4, FLTK and Motif.
 
 ## Screen Information
 
@@ -502,12 +520,12 @@ Also available in GTK and GTK 4.
 ### XDISPLAY (read-only) [X11 Only]
 
 Returns the X-Windows Display.
-Available in GTK, GTK 4, Motif and EFL.
+Available in GTK, GTK 4, Qt (Qt6 only), FLTK, EFL and Motif.
 
 ### XSCREEN (read-only) [X11 Only]
 
 Returns the X-Windows Screen.
-Available in GTK, GTK 4, Motif and EFL.
+Available in GTK, GTK 4, FLTK, EFL and Motif.
 
 ## Default Attributes
 

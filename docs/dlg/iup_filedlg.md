@@ -78,7 +78,7 @@ In GTK 4, the native GtkFileDialog already uses portals when appropriate.
 
 **SHOWPREVIEW**: A preview area is shown inside the file dialog. Can have values "YES" or "NO". Default: "NO".
 Valid only if the FILE_CB callback is defined, use it to retrieve the file name and the necessary attributes to paint the preview area.
-Supported in Windows (Win32), GTK 3, macOS and Qt.
+Supported in Windows (Win32), GTK 3, FLTK, macOS and Qt.
 
 > Read only attributes that are valid inside the FILE_CB callback when status="PAINT":\
 > **    PREVIEWDC**: Returns the Device Context (HDC in Windows and GC in Unix)\
@@ -174,13 +174,13 @@ This is useful for sandboxed applications (Flatpak, Snap) that need to access fi
 
 The portal is used automatically when the global attribute SANDBOX is set, or it can be forced by setting the PORTAL attribute to "YES" on the dialog before calling IupPopup.
 
-Portal support is available in GTK 3, Motif and EFL.
+Portal support is available in GTK 3, FLTK, Motif and EFL.
 In GTK 4, the native GtkFileDialog already integrates with portals when running in a sandboxed environment.
 In Qt, QFileDialog automatically uses the XDG Desktop Portal through the Qt platform integration when running in a sandboxed environment.
 
 #### Native Implementations
 
-In Win32 uses GetOpenFileName/GetSaveFileName, in WinUI uses IFileOpenDialog/IFileSaveDialog (COM), in GTK 3 uses GtkFileChooserDialog, in GTK 4 uses GtkFileDialog, in macOS uses NSOpenPanel/NSSavePanel, in Qt uses QFileDialog, in EFL uses Elm_Fileselector, and in Motif uses XmFileSelectionDialog.
+In Win32 uses GetOpenFileName/GetSaveFileName, in WinUI uses IFileOpenDialog/IFileSaveDialog (COM), in GTK 3 uses GtkFileChooserDialog, in GTK 4 uses GtkFileDialog, in macOS uses NSOpenPanel/NSSavePanel, in Qt uses QFileDialog, in FLTK uses Fl_File_Chooser, in EFL uses Elm_Fileselector, and in Motif uses XmFileSelectionDialog.
 
 ### Examples
 

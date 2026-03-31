@@ -421,7 +421,7 @@ For instance, the RESIZE_CB and the SHOW_CB are called in a different order in W
 
 In Windows, when all decorations are removed, the window icon is not displayed on the task bar; when minimized, a small rectangular window will be positioned above the task bar on the bottom-left corner of the desktop.
 
-In GTK uses GtkWindow, in Windows uses a custom window class called "IupDialog", in WinUI uses a Win32 window with XAML Islands, in macOS uses NSWindow, in Qt uses QMainWindow, in EFL uses Efl_Ui_Win, and in Motif uses topLevelShellWidgetClass.
+In GTK uses GtkWindow, in Windows uses a custom window class called "IupDialog", in WinUI uses a Win32 window with XAML Islands, in macOS uses NSWindow, in Qt uses QMainWindow, in FLTK uses Fl_Double_Window, in EFL uses Efl_Ui_Win, and in Motif uses topLevelShellWidgetClass.
 
 #### Windows MDI
 

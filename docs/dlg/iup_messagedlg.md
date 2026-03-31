@@ -52,7 +52,7 @@ In Windows, each different dialog type is always associated with a different bee
 
 In Windows, if PARENTDIALOG is specified, then it will be modal relative only to its parent.
 
-In GTK uses the gtk_message_dialog, in Windows uses MessageBox, and in Motif uses xmMessageBox.
+In GTK uses the gtk_message_dialog, in Windows uses MessageBox, in FLTK uses fl_message/fl_choice, and in Motif uses xmMessageBox.
 
 ### Examples
 

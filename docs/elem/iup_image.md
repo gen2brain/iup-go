@@ -93,7 +93,7 @@ Images that were associated with controls by names are automatically destroyed i
 
 Please observe the rules for creating cursor images: [CURSOR](../attrib/iup_cursor.md).
 
-In GTK uses GdkPixbuf/GdkCursor, in GTK 4 uses GdkTexture/GdkCursor, in Windows uses HBITMAP/HICON, in WinUI uses WriteableBitmap, in macOS uses NSImage, in Qt uses QPixmap, in EFL uses Evas_Object, and in Motif uses Pixmap/Cursor.
+In GTK uses GdkPixbuf/GdkCursor, in GTK 4 uses GdkTexture/GdkCursor, in Windows uses HBITMAP/HICON, in WinUI uses WriteableBitmap, in macOS uses NSImage, in Qt uses QPixmap, in FLTK uses Fl_RGB_Image, in EFL uses Evas_Object, and in Motif uses Pixmap/Cursor.
 
 #### Usage
 

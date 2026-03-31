@@ -218,7 +218,7 @@ When the canvas is resized, the ACTION callback is always called after the RESIZ
 The [IupDraw](../func/iup_draw.md) API can be used to draw in the canvas.
 But the ACTION callback function cannot be called manually from inside the application, it must be invoked by the system, so if you need to redraw then call [IupRedraw](../func/iup_redraw.md) or [IupUpdate](../func/iup_update.md).
 
-In GTK uses GtkFixed (with custom iupGtk4Fixed in GTK 4), in Windows uses a custom window class called "IupCanvas", in WinUI uses XAML Canvas, in macOS uses a custom NSView, in Qt uses a custom QWidget, in EFL uses Evas_Object, and in Motif uses xmDrawingArea.
+In GTK uses GtkFixed (with custom iupGtk4Fixed in GTK 4), in Windows uses a custom window class called "IupCanvas", in WinUI uses XAML Canvas, in macOS uses a custom NSView, in Qt uses a custom QWidget, in FLTK uses a custom Fl_Group, in EFL uses Evas_Object, and in Motif uses xmDrawingArea.
 
 ### Examples
 

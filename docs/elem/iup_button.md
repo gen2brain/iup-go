@@ -62,7 +62,7 @@ Not supported in Motif and EFL.
 **MARKUP**: allows the title string to contain markup commands.
 Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes. GTK uses Pango markup natively; other drivers convert to their native format.
 Works only if a mnemonic is NOT defined in the title. Can be "YES" or "NO". Default: "NO".
-Not supported in Win32 and Motif (markup tags are stripped and plain text is displayed).
+Not supported in Win32, FLTK and Motif (markup tags are stripped and plain text is displayed).
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
 Default value: "0x0". Value can be DEFAULTBUTTONPADDING, so the global attribute of this name will be used instead.
@@ -124,7 +124,7 @@ In this case in Windows TITLE can also be defined.
 
 Usually toolbar buttons have FLAT=Yes and CANFOCUS=NO.
 
-In GTK uses GtkButton, in Windows uses WC_BUTTON, in WinUI uses XAML Button, in macOS uses NSButton, in Qt uses QPushButton, in EFL uses Elm_Button, and in Motif uses xmPushButton.
+In GTK uses GtkButton, in Windows uses WC_BUTTON, in WinUI uses XAML Button, in macOS uses NSButton, in Qt uses QPushButton, in FLTK uses Fl_Button, in EFL uses Elm_Button, and in Motif uses xmPushButton.
 
 ### Examples
 

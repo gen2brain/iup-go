@@ -334,7 +334,7 @@ If the callback does not exist or if it returns IUP_CONTINUE then the item is mo
 If Ctrl is pressed then the node is copied instead of moved.
 Drag is performed with the left mouse button.
 
-In GTK uses GtkComboBox/GtkTreeView, in GTK 4 uses GtkDropDown/GtkListView, in Windows uses COMBOBOX/LISTBOX, in WinUI uses XAML ComboBox/ListView, in macOS uses NSPopUpButton/NSComboBox/NSTableView, in Qt uses QComboBox/QListWidget, in EFL uses Elm_List, and in Motif uses xmComboBox/xmList.
+In GTK uses GtkComboBox/GtkTreeView, in GTK 4 uses GtkDropDown/GtkListView, in Windows uses COMBOBOX/LISTBOX, in WinUI uses XAML ComboBox/ListView, in macOS uses NSPopUpButton/NSComboBox/NSTableView, in Qt uses QComboBox/QListWidget, in FLTK uses Fl_Choice/Fl_Input_Choice/Fl_Hold_Browser/Fl_Multi_Browser, in EFL uses Elm_List, and in Motif uses xmComboBox/xmList.
 
 ### Utility Functions
 

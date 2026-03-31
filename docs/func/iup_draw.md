@@ -11,6 +11,7 @@ Internally, IupDraw uses several drawing APIs depending on the platform:
 - **GTK 3 / GTK 4**: Cairo
 - **macOS**: CoreGraphics
 - **Qt**: QPainter
+- **FLTK**: FLTK offscreen drawing (fl_draw)
 - **EFL**: Efl.Canvas.VG (vector graphics)
 - **Motif**: X11 (Xlib)
 
