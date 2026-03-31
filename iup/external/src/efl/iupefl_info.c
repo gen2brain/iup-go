@@ -8,22 +8,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef _WIN32
-#include <unistd.h>
-#include <pwd.h>
-#endif
-
 #include "iup.h"
 #include "iup_export.h"
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 
 #include "iupefl_drv.h"
-
-#ifdef _WIN32
-#include <windows.h>
-#undef interface
-#endif
 
 
 IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
@@ -119,35 +109,6 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
   if (efl_input_modifier_enabled_get(win, EFL_INPUT_MODIFIER_META, NULL) ||
       efl_input_modifier_enabled_get(win, EFL_INPUT_MODIFIER_SUPER, NULL))
     key[3] = 'Y';
-}
-
-IUP_SDK_API char* iupdrvGetComputerName(void)
-{
-  char* str = iupStrGetMemory(100);
-#ifdef _WIN32
-  DWORD size = 100;
-  GetComputerNameA(str, &size);
-#else
-  gethostname(str, 100);
-#endif
-  return str;
-}
-
-IUP_SDK_API char* iupdrvGetUserName(void)
-{
-  char* str = iupStrGetMemory(100);
-#ifdef _WIN32
-  DWORD size = 100;
-  GetUserNameA(str, &size);
-#else
-  {
-    struct passwd* pwd = getpwuid(getuid());
-    if (!pwd)
-      return NULL;
-    iupStrCopyN(str, 100, pwd->pw_name);
-  }
-#endif
-  return str;
 }
 
 IUP_SDK_API void* iupdrvGetDisplay(void)

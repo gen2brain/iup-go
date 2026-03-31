@@ -102,6 +102,22 @@ static int iupUnixMakeDirectoryIfNeeded(const char* path)
   }
 }
 
+IUP_SDK_API char *iupdrvGetComputerName(void)
+{
+  static char hostname[256];
+  if (gethostname(hostname, sizeof(hostname)) == 0)
+    return iupStrReturnStr(hostname);
+  return iupStrReturnStr("unknown");
+}
+
+IUP_SDK_API char *iupdrvGetUserName(void)
+{
+  const char* username = getenv("USER");
+  if (!username)
+    username = getenv("USERNAME");
+  return iupStrReturnStr(username ? username : "unknown");
+}
+
 IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system)
 {
   char* home;

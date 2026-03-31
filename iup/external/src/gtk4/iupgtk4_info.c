@@ -157,12 +157,3 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
   key[4] = 0;
 }
 
-IUP_SDK_API char *iupdrvGetComputerName(void)
-{
-  return (char*)g_get_host_name();
-}
-
-IUP_SDK_API char *iupdrvGetUserName(void)
-{
-  return (char*)g_get_user_name();
-}

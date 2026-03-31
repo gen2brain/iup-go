@@ -163,6 +163,40 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
   return 0;
 }
 
+IUP_SDK_API char *iupdrvGetComputerName(void)
+{
+  DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
+  char* str = iupStrGetMemory(size);
+  GetComputerNameA((LPSTR)str, &size);
+  return str;
+}
+
+IUP_SDK_API char *iupdrvGetUserName(void)
+{
+  DWORD size = 256;
+  char* str = iupStrGetMemory(size);
+  GetUserNameA((LPSTR)str, &size);
+  return str;
+}
+
+IUP_SDK_API int iupdrvSetCurrentDirectory(const char* path)
+{
+  return SetCurrentDirectoryA(path);
+}
+
+IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
+{
+  int len = GetCurrentDirectoryA(0, NULL);
+  if (len == 0) return NULL;
+
+  char* cur_dir = iupStrGetMemory(len + 2);
+  GetCurrentDirectoryA(len + 1, cur_dir);
+  cur_dir[len] = '\\';
+  cur_dir[len + 1] = 0;
+
+  return cur_dir;
+}
+
 IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
 {
   HANDLE EventSource;
