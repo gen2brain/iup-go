@@ -145,9 +145,6 @@ void iupRegisterInternalClasses(void)
   iupRegisterClassInternal(iupTextNewClass());
   iupRegisterClassInternal(iupMultilineNewClass());
   iupRegisterClassInternal(iupListNewClass());
-  iupRegisterClassInternal(iupFlatLabelNewClass());
-  iupRegisterClassInternal(iupFlatButtonNewClass());
-  iupRegisterClassInternal(iupFlatToggleNewClass());
   iupRegisterClassInternal(iupSeparatorNewClass());
   iupRegisterClassInternal(iupDropButtonNewClass());
   iupRegisterClassInternal(iupCalendarNewClass());
@@ -168,15 +165,9 @@ void iupRegisterInternalClasses(void)
   iupRegisterClassInternal(iupLinkNewClass());
   iupRegisterClassInternal(iupGridBoxNewClass());
   iupRegisterClassInternal(iupAnimatedLabelNewClass());
-  iupRegisterClassInternal(iupFlatFrameNewClass());
-  iupRegisterClassInternal(iupFlatTabsNewClass());
-  iupRegisterClassInternal(iupFlatScrollBoxNewClass());
   iupRegisterClassInternal(iupDialNewClass());
   iupRegisterClassInternal(iupGaugeNewClass());
   iupRegisterClassInternal(iupColorbarNewClass());
   iupRegisterClassInternal(iupColorBrowserNewClass());
   iupRegisterClassInternal(iupMultiBoxNewClass());
-  iupRegisterClassInternal(iupFlatListNewClass());
-  iupRegisterClassInternal(iupFlatValNewClass());
-  iupRegisterClassInternal(iupFlatTreeNewClass());
 }

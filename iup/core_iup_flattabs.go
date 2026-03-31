@@ -1,6 +1,8 @@
+//go:build ctrl
+
 package iup
 
 /*
-#include "external/src/iup_flattabs.c"
+#include "external/srcctrl/iup_flattabs.c"
 */
 import "C"

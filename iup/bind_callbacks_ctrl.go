@@ -1466,3 +1466,88 @@ func setMatrixListActionFunc(ih Ihandle, name string, f MatrixListActionFunc) {
 	defer C.free(unsafe.Pointer(cName))
 	C.goIupSetMatrixListActionFunc(ih.ptr(), cName)
 }
+
+//--------------------
+
+// FlatActionFunc for FLAT_ACTION callback.
+// Action generated when the button 1 (usually left) is selected.
+type FlatActionFunc func(ih Ihandle) int
+
+//export goIupFlatActionCB
+func goIupFlatActionCB(ih unsafe.Pointer) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("FLAT_ACTION_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "FLAT_ACTION_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(FlatActionFunc)
+
+	return C.int(f((Ihandle)(ih)))
+}
+
+// setFlatActionFunc for FLAT_ACTION callback.
+func setFlatActionFunc(ih Ihandle, f FlatActionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("FLAT_ACTION_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetFlatActionFunc(ih.ptr())
+}
+
+//--------------------
+
+// FlatListActionFunc for FlatList FLAT_ACTION callback.
+// Action generated when the state of an item in the list is interactively changed.
+type FlatListActionFunc func(ih Ihandle, text string, item, state int) int
+
+//export goIupFlatListActionCB
+func goIupFlatListActionCB(ih, text unsafe.Pointer, item, state C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("FLAT_LIST_ACTION_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "FLAT_LIST_ACTION_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(FlatListActionFunc)
+
+	goText := C.GoString((*C.char)(text))
+	return C.int(f((Ihandle)(ih), goText, int(item), int(state)))
+}
+
+// setFlatListActionFunc for FlatList FLAT_ACTION callback.
+func setFlatListActionFunc(ih Ihandle, f FlatListActionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("FLAT_LIST_ACTION_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetFlatListActionFunc(ih.ptr())
+}
+
+//--------------------
+
+// FlatToggleActionFunc for FlatToggle FLAT_ACTION callback.
+// Action generated when the toggle's state (on/off) was changed.
+type FlatToggleActionFunc func(ih Ihandle, state int) int
+
+//export goIupFlatToggleActionCB
+func goIupFlatToggleActionCB(ih unsafe.Pointer, state C.int) C.int {
+	uuid := GetAttribute((Ihandle)(ih), "UUID")
+	h, ok := callbacks.Load("FLAT_TOGGLE_ACTION_" + uuid)
+	if !ok {
+		panic("cannot load callback " + "FLAT_TOGGLE_ACTION_" + uuid)
+	}
+
+	ch := h.(cgo.Handle)
+	f := ch.Value().(FlatToggleActionFunc)
+
+	return C.int(f((Ihandle)(ih), int(state)))
+}
+
+// setFlatToggleActionFunc for FlatToggle FLAT_ACTION.
+func setFlatToggleActionFunc(ih Ihandle, f FlatToggleActionFunc) {
+	ch := cgo.NewHandle(f)
+	callbacks.Store("FLAT_TOGGLE_ACTION_"+ih.GetAttribute("UUID"), ch)
+
+	C.goIupSetFlatToggleActionFunc(ih.ptr())
+}

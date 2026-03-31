@@ -3,7 +3,7 @@
 Creates an interface element that is a label, but it does not have native decorations.
 Its visual presentation can contain a text and/or an image.
 
-It behaves just like an [IupLabel](iup_label.md), but since it is not a native control, it has more flexibility for additional options.
+It behaves just like an [IupLabel](../elem/iup_label.md), but since it is not a native control, it has more flexibility for additional options.
 
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
@@ -116,4 +116,4 @@ ALIGNMENT = "ARIGHT" (32 bpp Image).
 
 ### See Also
 
-[IupImage](iup_image.md), [IupButton](iup_button.md), [IupToggle](iup_toggle.md), [IupLabel](iup_label.md)
+[IupImage](../elem/iup_image.md), [IupButton](../elem/iup_button.md), [IupToggle](../elem/iup_toggle.md), [IupLabel](../elem/iup_label.md)

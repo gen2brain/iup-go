@@ -1,7 +1,7 @@
 ## IupFlatFrame
 
 Creates a native container, which draws a frame with a title around its child. The decorations are manually drawn.
-The control inherits from [IupBackgroundBox](iup_backgroundbox.md).
+The control inherits from [IupBackgroundBox](../elem/iup_backgroundbox.md).
 
 ### Creation
 
@@ -13,7 +13,7 @@ The control inherits from [IupBackgroundBox](iup_backgroundbox.md).
 
 ### Attributes
 
-Inherits all attributes and callbacks of the [IupBackgroundBox](iup_backgroundbox.md), but redefines a few attributes.
+Inherits all attributes and callbacks of the [IupBackgroundBox](../elem/iup_backgroundbox.md), but redefines a few attributes.
 
 **DECORATION** [read-only] (non-inheritable): return Yes.
 
@@ -146,4 +146,4 @@ But the line cannot be positioned in the middle of the text like in IupFrame.
 
 ### See Also
 
-[IupFrame](iup_frame.md), [IupBackgroundBox](iup_backgroundbox.md)
+[IupFrame](../elem/iup_frame.md), [IupBackgroundBox](../elem/iup_backgroundbox.md)

@@ -63,8 +63,8 @@ func main() {
 }
 
 func createDropItem(text string) iup.Ihandle {
-	btn := iup.FlatButton(text).SetAttributes("EXPAND=HORIZONTAL, ALIGNMENT=ALEFT")
-	btn.SetCallback("FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+	btn := iup.Button(text).SetAttributes("EXPAND=HORIZONTAL, ALIGNMENT=ALEFT")
+	btn.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		dlg := iup.GetDialog(ih)
 		dropBtn := iup.GetAttributeHandle(dlg, "DROPBUTTON")
 		if dropBtn != 0 {
@@ -78,9 +78,8 @@ func createDropItem(text string) iup.Ihandle {
 }
 
 func createColorItem(text, color string) iup.Ihandle {
-	btn := iup.FlatButton(text).SetAttributes("EXPAND=HORIZONTAL")
-	btn.SetAttribute("BGCOLOR", color)
-	btn.SetCallback("FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
+	btn := iup.Button("").SetAttribute("BGCOLOR", color).SetAttribute("EXPAND", "HORIZONTAL")
+	btn.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		dlg := iup.GetDialog(ih)
 		dropBtn := iup.GetAttributeHandle(dlg, "DROPBUTTON")
 		if dropBtn != 0 {

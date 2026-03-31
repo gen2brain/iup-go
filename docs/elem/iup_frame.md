@@ -105,5 +105,5 @@ In GTK uses GtkFrame, in Windows uses WC_BUTTON, in WinUI uses a custom emulatio
 
 ### See Also
 
-[IupFlatFrame](iup_flatframe.md), [IupBackgroundBox](iup_backgroundbox.md)
+[IupFlatFrame](../ctrl/iup_flatframe.md), [IupBackgroundBox](iup_backgroundbox.md)
 

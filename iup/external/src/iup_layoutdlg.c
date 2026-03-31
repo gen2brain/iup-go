@@ -3205,57 +3205,57 @@ IUP_API Ihandle* IupLayoutDialog(Ihandle* dialog)
   {
     /* these images are available only in IupVisualLED */
     Ihandle* new_elem_box = IupVbox(
-      IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutArrowCursor, TIP=\"Select elements on layout.\nThe other options are only part of the IUP available classes,\nother classes can be selected at the dialog from the context menu\", NAME=TOGGLE_SELECT"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+      IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutArrowCursor, TIP=\"Select elements on layout.\nThe other options are only part of the IUP available classes,\nother classes can be selected at the dialog from the context menu\", NAME=TOGGLE_SELECT"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
       IupSetAttributes(IupSeparator(), "RASTERSIZE=x14, ORIENTATION=HORIZONTAL"),
       IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutHbox, TIP=\"Insert a Hbox at cursor when click at layout or double click at tree \", _IUP_CLASS=hbox"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutVbox, TIP=\"Insert a Vbox at cursor when click at layout or double click at tree \", _IUP_CLASS=vbox"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutHbox, TIP=\"Insert a Hbox at cursor when click at layout or double click at tree \", _IUP_CLASS=hbox"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutVbox, TIP=\"Insert a Vbox at cursor when click at layout or double click at tree \", _IUP_CLASS=vbox"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
         NULL),
       IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutZbox, TIP=\"Insert a Zbox at cursor when click at layout or double click at tree \", _IUP_CLASS=zbox"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutCbox, TIP=\"Insert a Cbox at cursor when click at layout or double click at tree \", _IUP_CLASS=cbox"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutZbox, TIP=\"Insert a Zbox at cursor when click at layout or double click at tree \", _IUP_CLASS=zbox"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutCbox, TIP=\"Insert a Cbox at cursor when click at layout or double click at tree \", _IUP_CLASS=cbox"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
         NULL),
       IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutGridBox, TIP=\"Insert a GridBox at cursor when click at layout or double click at tree .\nPress Shift to select a MultiBox\", _IUP_CLASS=gridbox, _IUP_CLASS_ALT=multibox"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutScrollBox, TIP=\"Insert a ScrollBox at cursor when click at layout or double click at tree .\nPress Shift to select a FlatScrollBox\", _IUP_CLASS=scrollbox, _IUP_CLASS_ALT=flatscrollbox"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutGridBox, TIP=\"Insert a GridBox at cursor when click at layout or double click at tree .\nPress Shift to select a MultiBox\", _IUP_CLASS=gridbox, _IUP_CLASS_ALT=multibox"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutScrollBox, TIP=\"Insert a ScrollBox at cursor when click at layout or double click at tree .\nPress Shift to select a FlatScrollBox\", _IUP_CLASS=scrollbox, _IUP_CLASS_ALT=flatscrollbox"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
         NULL),
       IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutSplit, TIP=\"Insert a Split at cursor when click at layout or double click at tree \", _IUP_CLASS=split"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutExpander, TIP=\"Insert a Expander at cursor when click at layout or double click at tree \", _IUP_CLASS=expander"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutSplit, TIP=\"Insert a Split at cursor when click at layout or double click at tree \", _IUP_CLASS=split"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutExpander, TIP=\"Insert a Expander at cursor when click at layout or double click at tree \", _IUP_CLASS=expander"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
         NULL),
       IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutFill, TIP=\"Insert a Fill at cursor when click at layout or double click at tree .\nPress Shift to select a Space\", _IUP_CLASS=fill, _IUP_CLASS_ALT=space"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutSeparator, TIP=\"Insert a Separator at cursor when click at layout or double click at tree \", _IUP_CLASS=separator"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutFill, TIP=\"Insert a Fill at cursor when click at layout or double click at tree .\nPress Shift to select a Space\", _IUP_CLASS=fill, _IUP_CLASS_ALT=space"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutSeparator, TIP=\"Insert a Separator at cursor when click at layout or double click at tree \", _IUP_CLASS=separator"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
         NULL),
       IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutFrame, TIP=\"Insert a Frame at cursor when click at layout or double click at tree .\nPress Shift to select a FlatFrame\", _IUP_CLASS=frame, _IUP_CLASS_ALT=flatframe"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutTabs, TIP=\"Insert a Tabs at cursor when click at layout or double click at tree .\nPress Shift to select a FlatTabs\", _IUP_CLASS=tabs, _IUP_CLASS_ALT=flattabs"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        NULL),
-      IupSetAttributes(IupSeparator(), "RASTERSIZE=x14, ORIENTATION=HORIZONTAL"),
-      IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutLabel, TIP=\"Insert a Label at cursor when click at layout or double click at tree .\nPress Shift to select a FlatLabel\", _IUP_CLASS=label, _IUP_CLASS_ALT=flatlabel"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutButton, TIP=\"Insert a Button at cursor when click at layout or double click at tree .\nPress Shift to select a FlatButton\", _IUP_CLASS=button, _IUP_CLASS_ALT=flatbutton"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        NULL),
-      IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutToggle, TIP=\"Insert a Toggle at cursor when click at layout or double click at tree .\nPress Shift to select a FlatToggle\", _IUP_CLASS=toggle, _IUP_CLASS_ALT=flattoggle"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutRadio, TIP=\"Insert a Radio at cursor when click at layout or double click at tree \", _IUP_CLASS=radio"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        NULL),
-      IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutList, TIP=\"Insert a List at cursor when click at layout or double click at tree .\nPress Shift to select a FlatList\", _IUP_CLASS=list, _IUP_CLASS_ALT=flatlist"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutTree, TIP=\"Insert a Tree at cursor when click at layout or double click at tree .\nPress Shift to select a FlatTree\", _IUP_CLASS=tree, _IUP_CLASS_ALT=flattree"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        NULL),
-      IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutVal, TIP=\"Insert a Val at cursor when click at layout or double click at tree .\nPress Shift to select a FlatVal\", _IUP_CLASS=val, _IUP_CLASS_ALT=flatval"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutProgressBar, TIP=\"Insert a ProgressBar at cursor when click at layout or double click at tree .\nPress Shift to select a Gauge\", _IUP_CLASS=progressbar, _IUP_CLASS_ALT=gauge"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        NULL),
-      IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutText, TIP=\"Insert a Text at cursor when click at layout or double click at tree .\nPress Shift to select a Multiline\", _IUP_CLASS=text, _IUP_CLASS_ALT=multiline"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutCanvas, TIP=\"Insert a Canvas at cursor when click at layout or double click at tree .\nPress Shift to select a GLCanvas\", _IUP_CLASS=canvas, _IUP_CLASS_ALT=glcanvas"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutFrame, TIP=\"Insert a Frame at cursor when click at layout or double click at tree .\nPress Shift to select a FlatFrame\", _IUP_CLASS=frame, _IUP_CLASS_ALT=flatframe"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutTabs, TIP=\"Insert a Tabs at cursor when click at layout or double click at tree .\nPress Shift to select a FlatTabs\", _IUP_CLASS=tabs, _IUP_CLASS_ALT=flattabs"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
         NULL),
       IupSetAttributes(IupSeparator(), "RASTERSIZE=x14, ORIENTATION=HORIZONTAL"),
       IupHbox(
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutMatrix, TIP=\"Insert a Matrix at cursor when click at layout or double click at tree .\nPress Shift to select a MatrixEx\", _IUP_CLASS=matrix, _IUP_CLASS_ALT=matrixex"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
-        IupSetCallbacks(IupSetAttributes(IupFlatToggle(NULL), "CHECKSIZE=0, IMAGE=IupLayoutPlot, TIP=\"Insert a Plot at cursor when click at layout or double click at tree \", _IUP_CLASS=plot"), "FLAT_ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutLabel, TIP=\"Insert a Label at cursor when click at layout or double click at tree .\nPress Shift to select a FlatLabel\", _IUP_CLASS=label, _IUP_CLASS_ALT=flatlabel"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutButton, TIP=\"Insert a Button at cursor when click at layout or double click at tree .\nPress Shift to select a FlatButton\", _IUP_CLASS=button, _IUP_CLASS_ALT=flatbutton"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        NULL),
+      IupHbox(
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutToggle, TIP=\"Insert a Toggle at cursor when click at layout or double click at tree .\nPress Shift to select a FlatToggle\", _IUP_CLASS=toggle, _IUP_CLASS_ALT=flattoggle"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutRadio, TIP=\"Insert a Radio at cursor when click at layout or double click at tree \", _IUP_CLASS=radio"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        NULL),
+      IupHbox(
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutList, TIP=\"Insert a List at cursor when click at layout or double click at tree .\nPress Shift to select a FlatList\", _IUP_CLASS=list, _IUP_CLASS_ALT=flatlist"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutTree, TIP=\"Insert a Tree at cursor when click at layout or double click at tree .\nPress Shift to select a FlatTree\", _IUP_CLASS=tree, _IUP_CLASS_ALT=flattree"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        NULL),
+      IupHbox(
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutVal, TIP=\"Insert a Val at cursor when click at layout or double click at tree .\nPress Shift to select a FlatVal\", _IUP_CLASS=val, _IUP_CLASS_ALT=flatval"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutProgressBar, TIP=\"Insert a ProgressBar at cursor when click at layout or double click at tree .\nPress Shift to select a Gauge\", _IUP_CLASS=progressbar, _IUP_CLASS_ALT=gauge"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        NULL),
+      IupHbox(
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutText, TIP=\"Insert a Text at cursor when click at layout or double click at tree .\nPress Shift to select a Multiline\", _IUP_CLASS=text, _IUP_CLASS_ALT=multiline"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutCanvas, TIP=\"Insert a Canvas at cursor when click at layout or double click at tree .\nPress Shift to select a GLCanvas\", _IUP_CLASS=canvas, _IUP_CLASS_ALT=glcanvas"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        NULL),
+      IupSetAttributes(IupSeparator(), "RASTERSIZE=x14, ORIENTATION=HORIZONTAL"),
+      IupHbox(
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutMatrix, TIP=\"Insert a Matrix at cursor when click at layout or double click at tree .\nPress Shift to select a MatrixEx\", _IUP_CLASS=matrix, _IUP_CLASS_ALT=matrixex"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
+        IupSetCallbacks(IupSetAttributes(IupToggle(NULL, NULL), "IMAGE=IupLayoutPlot, TIP=\"Insert a Plot at cursor when click at layout or double click at tree \", _IUP_CLASS=plot"), "ACTION", (Icallback)iLayoutElemOptionToggle_cb, NULL),
         NULL),
       NULL);
     IupSetAttribute(new_elem_box, "NMARGIN", "5x5");

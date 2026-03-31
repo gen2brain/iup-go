@@ -28,6 +28,16 @@ IUPCONTROLS_API int IupControlsOpen(void)
   iupRegisterClass(iupMatrixListNewClass());
   iupRegisterClass(iupMatrixExNewClass());
 
+  iupRegisterClass(iupFlatButtonNewClass());
+  iupRegisterClass(iupFlatLabelNewClass());
+  iupRegisterClass(iupFlatToggleNewClass());
+  iupRegisterClass(iupFlatFrameNewClass());
+  iupRegisterClass(iupFlatListNewClass());
+  iupRegisterClass(iupFlatTreeNewClass());
+  iupRegisterClass(iupFlatValNewClass());
+  iupRegisterClass(iupFlatTabsNewClass());
+  iupRegisterClass(iupFlatScrollBoxNewClass());
+
   IupSetGlobal("_IUP_CONTROLS_OPEN", "1");
 
   return IUP_NOERROR;

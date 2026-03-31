@@ -1,6 +1,8 @@
+//go:build ctrl
+
 package iup
 
 /*
-#include "external/src/iup_flattree.c"
+#include "external/srcctrl/iup_flattree.c"
 */
 import "C"

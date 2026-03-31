@@ -39,23 +39,6 @@ func Button(title string) Ihandle {
 	return h
 }
 
-// FlatButton creates an interface element that is a button, but it does not have native decorations.
-// When selected, this element activates a function in the application.
-// Its visual presentation can contain a text and/or an image.
-//
-// It behaves just like a Button, but since it is not a native control, it has more flexibility for additional options.
-// It can also behave like a Toggle (without the checkmark).
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatbutton.md
-func FlatButton(title string) Ihandle {
-	cTitle := cStrOrNull(title)
-	defer cStrFree(cTitle)
-
-	h := mkih(C.IupFlatButton(cTitle))
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
-
 // DropButton creates an interface element that is a button with a drop down arrow.
 // It can function as a button and as a dropdown. Its visual presentation can contain a text and/or an image.
 //
@@ -146,19 +129,6 @@ func Label(title string) Ihandle {
 	return h
 }
 
-// FlatLabel creates an interface element that is a label, but it does not have native decorations.
-// Its visual presentation can contain a text and/or an image.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatlabel.md
-func FlatLabel(title string) Ihandle {
-	cTitle := cStrOrNull(title)
-	defer cStrFree(cTitle)
-
-	h := mkih(C.IupFlatLabel(cTitle))
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
-
 // Separator creates a separator interface element. It does not have native decorations.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_separator.md
@@ -189,15 +159,6 @@ func Link(url, title string) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_list.md
 func List() Ihandle {
 	h := mkih(C.IupList(nil))
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
-
-// FlatList creates an interface element that displays a list of items, but it does not have native decorations.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatlist.md
-func FlatList() Ihandle {
-	h := mkih(C.IupFlatList())
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
@@ -285,19 +246,6 @@ func Toggle(title string) Ihandle {
 	return h
 }
 
-// FlatToggle creates an interface element that is a toggle, but it does not have native decorations.
-// When selected, this element activates a function in the application. Its visual presentation can contain a text and/or an image.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flattoggle.md
-func FlatToggle(title string) Ihandle {
-	cTitle := cStrOrNull(title)
-	defer cStrFree(cTitle)
-
-	h := mkih(C.IupFlatToggle(cTitle))
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
-
 // Tree creates a tree containing nodes of branches or leaves. Both branches and leaves can have an associated text and image.
 //
 // The branches can be expanded or collapsed. When a branch is expanded,
@@ -310,15 +258,6 @@ func FlatToggle(title string) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tree.md
 func Tree() Ihandle {
 	h := mkih(C.IupTree())
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
-
-// FlatTree creates a tree containing nodes of branches or leaves. Both branches and leaves can have an associated text and image.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flattree.md
-func FlatTree() Ihandle {
-	h := mkih(C.IupFlatTree())
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
@@ -394,19 +333,6 @@ func Scrollbar(orientation string) Ihandle {
 	defer cStrFree(cOrientation)
 
 	h := mkih(C.IupScrollbar(cOrientation))
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
-
-// FlatVal creates a Valuator control, but it does not have native decorations.
-// Selects a value in a limited interval. Also known as Scale or Trackbar in native systems.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_flatval.md
-func FlatVal(orientation string) Ihandle {
-	cOrientation := cStrOrNull(orientation)
-	defer cStrFree(cOrientation)
-
-	h := mkih(C.IupFlatVal(cOrientation))
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
