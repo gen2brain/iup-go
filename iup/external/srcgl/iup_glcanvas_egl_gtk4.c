@@ -18,39 +18,26 @@
 
 #ifdef GDK_WINDOWING_X11
   #include <gdk/x11/gdkx.h>
-  #include <dlfcn.h>
   #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  #ifdef IUPX11_USE_DLOPEN
+    #include "iupunix_x11.h"
+  #endif
 #endif
 
 #ifdef GDK_WINDOWING_X11
-
-typedef int (*PFN_XGetWindowAttributes)(Display*, Window, XWindowAttributes*);
-typedef VisualID (*PFN_XVisualIDFromVisual)(Visual*);
-
 static int iupEGLGetX11VisualID(Display* x_display, unsigned long window_handle)
 {
   int visual_id = 0;
-  void* libx11 = NULL;
-  PFN_XGetWindowAttributes ptr_XGetWindowAttributes = NULL;
-  PFN_XVisualIDFromVisual ptr_XVisualIDFromVisual = NULL;
+  XWindowAttributes attrs;
 
-  libx11 = dlopen("libX11.so.6", RTLD_LAZY);
-  if (!libx11) {
-    libx11 = dlopen("libX11.so", RTLD_LAZY);
-  }
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open())
+    return 0;
+#endif
 
-  if (libx11) {
-    ptr_XGetWindowAttributes = (PFN_XGetWindowAttributes)dlsym(libx11, "XGetWindowAttributes");
-    ptr_XVisualIDFromVisual = (PFN_XVisualIDFromVisual)dlsym(libx11, "XVisualIDFromVisual");
+  if (XGetWindowAttributes(x_display, (Window)window_handle, &attrs) != 0)
+    visual_id = (int)XVisualIDFromVisual(attrs.visual);
 
-    if (ptr_XGetWindowAttributes && ptr_XVisualIDFromVisual) {
-      XWindowAttributes attrs;
-      if (ptr_XGetWindowAttributes(x_display, (Window)window_handle, &attrs) != 0) {
-        visual_id = (int)ptr_XVisualIDFromVisual(attrs.visual);
-      }
-    }
-    dlclose(libx11);
-  }
   return visual_id;
 }
 #endif

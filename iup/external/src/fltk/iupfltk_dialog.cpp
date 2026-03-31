@@ -36,6 +36,10 @@ extern "C" {
 
 #include "iupfltk_drv.h"
 
+#ifdef IUPX11_USE_DLOPEN
+#include "iupunix_x11.h"
+#endif
+
 
 class IupFltkDialogInner : public Fl_Group
 {
@@ -172,36 +176,25 @@ IUP_DRV_API void iupfltkX11SetSkipTaskbar(Fl_Window* window)
 #if defined(FLTK_USE_X11)
   if (!window || !iupfltkIsX11() || !fl_xid(window))
     return;
-  if (!iupfltkX11Load() || !iupfltk_XInternAtom || !iupfltk_XSendEvent || !iupfltk_XRootWindow)
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open())
     return;
+#endif
 
-  unsigned long net_wm_state = iupfltk_XInternAtom(fl_display, "_NET_WM_STATE", 0);
-  unsigned long skip_taskbar = iupfltk_XInternAtom(fl_display, "_NET_WM_STATE_SKIP_TASKBAR", 0);
-  unsigned long root = iupfltk_XRootWindow(fl_display, fl_screen);
+  Atom net_wm_state = XInternAtom(fl_display, "_NET_WM_STATE", 0);
+  Atom skip_taskbar = XInternAtom(fl_display, "_NET_WM_STATE_SKIP_TASKBAR", 0);
+  Window root = XRootWindow(fl_display, fl_screen);
 
-  union {
-    struct {
-      int type;
-      unsigned long serial;
-      int send_event;
-      void* display;
-      unsigned long window;
-      unsigned long message_type;
-      int format;
-      long data[5];
-    } xclient;
-    char pad[192];
-  } xev;
-
+  XEvent xev;
   memset(&xev, 0, sizeof(xev));
-  xev.xclient.type = 33;
+  xev.xclient.type = ClientMessage;
   xev.xclient.window = fl_xid(window);
   xev.xclient.message_type = net_wm_state;
   xev.xclient.format = 32;
-  xev.xclient.data[0] = 1;
-  xev.xclient.data[1] = (long)skip_taskbar;
+  xev.xclient.data.l[0] = 1;
+  xev.xclient.data.l[1] = (long)skip_taskbar;
 
-  iupfltk_XSendEvent(fl_display, root, 0, (1L << 19) | (1L << 20), &xev);
+  XSendEvent(fl_display, root, 0, SubstructureNotifyMask | SubstructureRedirectMask, &xev);
 #else
   (void)window;
 #endif
@@ -307,14 +300,16 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     dialog->show();
 
 #if defined(FLTK_USE_X11)
-    if (iupfltkIsX11() && fl_xid(dialog) &&
-        iupfltkX11Load() && iupfltk_XInternAtom)
+    if (iupfltkIsX11() && fl_xid(dialog)
+#ifdef IUPX11_USE_DLOPEN
+        && iupX11Open()
+#endif
+        )
     {
-      if (iupAttribGetBoolean(ih, "CUSTOMFRAME") && !iupAttribGet(ih, "_IUPFLTK_CUSTOMFRAME_FIXED") &&
-          iupfltk_XDeleteProperty)
+      if (iupAttribGetBoolean(ih, "CUSTOMFRAME") && !iupAttribGet(ih, "_IUPFLTK_CUSTOMFRAME_FIXED"))
       {
-        unsigned long net_wm_state = iupfltk_XInternAtom(fl_display, "_NET_WM_STATE", 0);
-        iupfltk_XDeleteProperty(fl_display, fl_xid(dialog), net_wm_state);
+        Atom net_wm_state = XInternAtom(fl_display, "_NET_WM_STATE", 0);
+        XDeleteProperty(fl_display, fl_xid(dialog), net_wm_state);
         iupAttribSet(ih, "_IUPFLTK_CUSTOMFRAME_FIXED", "1");
       }
     }

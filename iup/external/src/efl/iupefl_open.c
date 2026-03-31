@@ -11,6 +11,11 @@
 
 #ifdef HAVE_ECORE_X
 #include <Ecore_X.h>
+#ifdef IUPX11_USE_DLOPEN
+#include "iupunix_x11.h"
+#else
+#include <X11/Xlib.h>
+#endif
 #endif
 
 #ifdef HAVE_ECORE_WL2
@@ -177,11 +182,18 @@ static void eflSetGlobalAttrib(void)
 #ifdef HAVE_ECORE_X
   if (iupeflIsX11())
   {
-    void* display = ecore_x_display_get();
-    if (display)
+    Display* xdisplay = (Display*)ecore_x_display_get();
+    if (xdisplay)
     {
-      IupSetGlobal("XDISPLAY", (char*)display);
-      IupSetGlobal("XSCREEN", "0");
+      IupSetGlobal("XDISPLAY", (char*)xdisplay);
+#ifdef IUPX11_USE_DLOPEN
+      if (iupX11Open())
+#endif
+      {
+        IupSetGlobal("XSCREEN", (char*)(long)XDefaultScreen(xdisplay));
+        IupSetGlobal("XSERVERVENDOR", XServerVendor(xdisplay));
+        IupSetInt(NULL, "XVENDORRELEASE", XVendorRelease(xdisplay));
+      }
     }
   }
 #endif
@@ -381,6 +393,10 @@ IUP_SDK_API void iupdrvClose(void)
     return;
 
   iupeflLoopCleanup();
+
+#ifdef IUPX11_USE_DLOPEN
+  iupX11Close();
+#endif
 
   iupefl_main_loop = NULL;
 }

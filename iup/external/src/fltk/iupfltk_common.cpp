@@ -37,6 +37,10 @@ extern "C" {
 
 #include "iupfltk_drv.h"
 
+#ifdef IUPX11_USE_DLOPEN
+#include "iupunix_x11.h"
+#endif
+
 
 /****************************************************************************
  * Native Container (for absolute positioning)
@@ -226,8 +230,12 @@ extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
 extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
 #if defined(FLTK_USE_X11)
-  if (iupfltkIsX11() && iupfltkX11Load() && iupfltk_XWarpPointer && iupfltk_XRootWindow)
-    iupfltk_XWarpPointer(fl_display, 0, iupfltk_XRootWindow(fl_display, fl_screen), 0, 0, 0, 0, x, y);
+  if (iupfltkIsX11()
+#ifdef IUPX11_USE_DLOPEN
+      && iupX11Open()
+#endif
+      )
+    XWarpPointer(fl_display, 0, XRootWindow(fl_display, fl_screen), 0, 0, 0, 0, x, y);
 #else
   (void)x;
   (void)y;

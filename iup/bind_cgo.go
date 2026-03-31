@@ -13,9 +13,10 @@ package iup
 #cgo linux LDFLAGS: -ldl
 #cgo !windows,!darwin LDFLAGS: -lm
 
-#cgo !windows,!darwin CFLAGS: -DIUPDBUS_USE_DLOPEN
+#cgo !windows,!darwin CFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
+#cgo !windows,!darwin CXXFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
 
-#cgo !windows,!darwin,!qt,!efl,!motif,!fltk CFLAGS: -Iexternal/src/unix -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
+#cgo !windows,!darwin,!qt,!efl,!motif,!fltk CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 #cgo gtk,gtk2,gtk4 CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 
 #cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!efl,!fltk CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
@@ -44,7 +45,7 @@ package iup
 #cgo motif,gl LDFLAGS: -lGL
 #cgo motif,xft CFLAGS: -DIUP_USE_XFT
 #cgo motif,xft,!nopkgconfig pkg-config: xft freetype2
-#cgo motif CFLAGS: -Iexternal/src/mot -Iexternal/src/unix -DIUP_USE_ICONV
+#cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_ICONV
 
 #cgo windows,!winui CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
 #cgo windows,!gtk,!gtk4,!qt,!winui,!efl,!fltk CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
@@ -54,7 +55,7 @@ package iup
 #cgo windows,gtk CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3
 #cgo windows,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
 
-#cgo windows,gtk4 CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
+#cgo windows,gtk4 CFLAGS: -Iexternal/src/gtk4 -Iexternal/src/unix -DIUP_USE_GTK4
 #cgo windows,gtk4,!nopkgconfig pkg-config: gtk4
 
 #cgo winui CFLAGS: -Iexternal/src/winui -DIUP_USE_WINUI -DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0A00 -DNTDDI_VERSION=0x0A000000
@@ -70,22 +71,22 @@ package iup
 #cgo darwin,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
 #cgo darwin,gtk,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo darwin,gtk4 CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4 -x objective-c
+#cgo darwin,gtk4 CFLAGS: -Iexternal/src/gtk4 -Iexternal/src/unix -DIUP_USE_GTK4 -x objective-c
 #cgo darwin,gtk4,!nopkgconfig pkg-config: gtk4
 #cgo darwin,gtk4,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo efl CFLAGS: -Iexternal/src/efl -Iexternal/src/unix -DIUP_USE_EFL -DEFL_BETA_API_SUPPORT=1 -DEFL_EO_API_SUPPORT=1
+#cgo efl CFLAGS: -Iexternal/src/efl -DIUP_USE_EFL -DEFL_BETA_API_SUPPORT=1 -DEFL_EO_API_SUPPORT=1
 #cgo efl,!windows,!darwin CFLAGS: -DHAVE_ECORE_X -DHAVE_ECORE_WL2
-#cgo efl,windows CFLAGS: -DHAVE_ECORE_WIN32
-#cgo efl,darwin CFLAGS: -DHAVE_ECORE_COCOA
+#cgo efl,windows CFLAGS: -Iexternal/src/unix -DHAVE_ECORE_WIN32
+#cgo efl,darwin CFLAGS: -Iexternal/src/unix -DHAVE_ECORE_COCOA
 #cgo efl,!nopkgconfig pkg-config: elementary
 #cgo efl,!windows,!darwin,!nopkgconfig pkg-config: ecore-x ecore-wl2
 #cgo efl,windows,!nopkgconfig pkg-config: ecore-win32
 #cgo efl,darwin,!nopkgconfig pkg-config: ecore-cocoa
 #cgo efl,gl,!windows,!darwin,!nopkgconfig pkg-config: wayland-egl egl gl
 
-#cgo fltk CFLAGS: -Iexternal/src/fltk -DIUP_USE_FLTK
-#cgo fltk CXXFLAGS: -Iexternal/src/fltk -DIUP_USE_FLTK -std=c++17
+#cgo fltk CFLAGS: -Iexternal/src/fltk -Iexternal/src/unix -DIUP_USE_FLTK
+#cgo fltk CXXFLAGS: -Iexternal/src/fltk -Iexternal/src/unix -DIUP_USE_FLTK -std=c++17
 #cgo fltk LDFLAGS: -lfltk -lfltk_images
 #cgo fltk,gl,!windows,!darwin,!nopkgconfig pkg-config: wayland-egl egl gl
 */
