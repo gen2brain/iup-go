@@ -208,17 +208,4 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
 /******************************************************************************/
 
 
-#include <unistd.h>
-
-IUP_SDK_API char *iupdrvGetComputerName(void)
-{
-  char* str = iupStrGetMemory(50);
-  gethostname(str, 50);
-  return str;
-}
-
-IUP_SDK_API char *iupdrvGetUserName(void)
-{
-  return (char*)getlogin();
-}
 

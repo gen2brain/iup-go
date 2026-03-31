@@ -411,39 +411,5 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
   key[4] = 0;
 }
 
-IUP_SDK_API char *iupdrvGetComputerName(void)
-{
-  DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
-  char* str = iupStrGetMemory(size);
-  GetComputerNameA((LPSTR)str, &size);
-  return str;
-}
 
-IUP_SDK_API char *iupdrvGetUserName(void)
-{
-  DWORD size = 256;
-  char* str = iupStrGetMemory(size);
-  GetUserNameA((LPSTR)str, &size);
-  return str;
-}
-
-IUP_SDK_API int iupdrvSetCurrentDirectory(const char* path)
-{
-  return SetCurrentDirectoryA(path);
-}
-
-IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
-{
-  char* cur_dir = NULL;
-
-  int len = GetCurrentDirectoryA(0, NULL);
-  if (len == 0) return NULL;
-
-  cur_dir = iupStrGetMemory(len + 2);
-  GetCurrentDirectoryA(len + 1, cur_dir);
-  cur_dir[len] = '\\';
-  cur_dir[len + 1] = 0;
-
-  return cur_dir;
-}
 
