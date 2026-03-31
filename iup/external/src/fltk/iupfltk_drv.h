@@ -125,20 +125,6 @@ IUP_DRV_API int iupfltkIsSystemDarkMode(void);
 IUP_DRV_API void iupfltkSetGlobalColors(void);
 
 /****************************************************************************
- * X11 Dynamic Loading (avoids link-time dependency on libX11)
- ****************************************************************************/
-
-IUP_DRV_API int iupfltkX11Load(void);
-IUP_DRV_API void iupfltkX11Release(void);
-
-extern int (*iupfltk_XWarpPointer)(void*, unsigned long, unsigned long, int, int, unsigned int, unsigned int, int, int);
-extern int (*iupfltk_XChangeKeyboardControl)(void*, unsigned long, void*);
-extern unsigned long (*iupfltk_XRootWindow)(void*, int);
-extern unsigned long (*iupfltk_XInternAtom)(void*, const char*, int);
-extern int (*iupfltk_XDeleteProperty)(void*, unsigned long, unsigned long);
-extern int (*iupfltk_XSendEvent)(void*, unsigned long, int, long, void*);
-
-/****************************************************************************
  * Cleanup
  ****************************************************************************/
 

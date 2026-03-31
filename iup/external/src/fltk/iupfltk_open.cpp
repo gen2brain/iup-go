@@ -29,62 +29,8 @@ extern "C" {
 
 #include "iupfltk_drv.h"
 
-#if !defined(_WIN32) && !defined(__APPLE__)
-#include <dlfcn.h>
-
-static void* x11_lib = NULL;
-
-char* (*iupfltk_XServerVendor)(void*) = NULL;
-int (*iupfltk_XVendorRelease)(void*) = NULL;
-int (*iupfltk_XWarpPointer)(void*, unsigned long, unsigned long, int, int, unsigned int, unsigned int, int, int) = NULL;
-int (*iupfltk_XChangeKeyboardControl)(void*, unsigned long, void*) = NULL;
-unsigned long (*iupfltk_XRootWindow)(void*, int) = NULL;
-unsigned long (*iupfltk_XInternAtom)(void*, const char*, int) = NULL;
-int (*iupfltk_XDeleteProperty)(void*, unsigned long, unsigned long) = NULL;
-int (*iupfltk_XSendEvent)(void*, unsigned long, int, long, void*) = NULL;
-
-IUP_DRV_API int iupfltkX11Load(void)
-{
-  if (x11_lib)
-    return 1;
-
-  x11_lib = dlopen("libX11.so.6", RTLD_LAZY);
-  if (!x11_lib)
-    x11_lib = dlopen("libX11.so", RTLD_LAZY);
-  if (!x11_lib)
-    return 0;
-
-  iupfltk_XServerVendor = (char* (*)(void*))dlsym(x11_lib, "XServerVendor");
-  iupfltk_XVendorRelease = (int (*)(void*))dlsym(x11_lib, "XVendorRelease");
-  iupfltk_XWarpPointer = (int (*)(void*, unsigned long, unsigned long, int, int, unsigned int, unsigned int, int, int))dlsym(x11_lib, "XWarpPointer");
-  iupfltk_XChangeKeyboardControl = (int (*)(void*, unsigned long, void*))dlsym(x11_lib, "XChangeKeyboardControl");
-  iupfltk_XRootWindow = (unsigned long (*)(void*, int))dlsym(x11_lib, "XRootWindow");
-  iupfltk_XInternAtom = (unsigned long (*)(void*, const char*, int))dlsym(x11_lib, "XInternAtom");
-  iupfltk_XDeleteProperty = (int (*)(void*, unsigned long, unsigned long))dlsym(x11_lib, "XDeleteProperty");
-  iupfltk_XSendEvent = (int (*)(void*, unsigned long, int, long, void*))dlsym(x11_lib, "XSendEvent");
-
-  return 1;
-}
-
-IUP_DRV_API void iupfltkX11Release(void)
-{
-  if (x11_lib)
-  {
-    dlclose(x11_lib);
-    x11_lib = NULL;
-  }
-  iupfltk_XServerVendor = NULL;
-  iupfltk_XVendorRelease = NULL;
-  iupfltk_XWarpPointer = NULL;
-  iupfltk_XChangeKeyboardControl = NULL;
-  iupfltk_XRootWindow = NULL;
-  iupfltk_XInternAtom = NULL;
-  iupfltk_XDeleteProperty = NULL;
-  iupfltk_XSendEvent = NULL;
-}
-#else
-IUP_DRV_API int iupfltkX11Load(void) { return 0; }
-IUP_DRV_API void iupfltkX11Release(void) {}
+#ifdef IUPX11_USE_DLOPEN
+#include "iupunix_x11.h"
 #endif
 
 IUP_DRV_API int iupfltkIsX11(void)
@@ -261,10 +207,12 @@ extern "C" IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
     IupSetGlobal("XDISPLAY", (char*)fl_display);
     IupSetGlobal("XSCREEN", (char*)(long)fl_screen);
 
-    if (iupfltkX11Load() && iupfltk_XServerVendor && iupfltk_XVendorRelease)
+#ifdef IUPX11_USE_DLOPEN
+    if (iupX11Open())
+#endif
     {
-      IupSetGlobal("XSERVERVENDOR", iupfltk_XServerVendor(fl_display));
-      IupSetInt(NULL, "XVENDORRELEASE", iupfltk_XVendorRelease(fl_display));
+      IupSetGlobal("XSERVERVENDOR", XServerVendor(fl_display));
+      IupSetInt(NULL, "XVENDORRELEASE", XVendorRelease(fl_display));
     }
   }
 #endif
@@ -319,5 +267,7 @@ extern "C" IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 extern "C" IUP_SDK_API void iupdrvClose(void)
 {
   iupfltkLoopCleanup();
-  iupfltkX11Release();
+#ifdef IUPX11_USE_DLOPEN
+  iupX11Close();
+#endif
 }

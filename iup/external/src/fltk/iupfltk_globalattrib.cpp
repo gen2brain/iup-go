@@ -28,6 +28,10 @@ extern "C" {
 
 #include "iupfltk_drv.h"
 
+#ifdef IUPX11_USE_DLOPEN
+#include "iupunix_x11.h"
+#endif
+
 
 extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
@@ -48,11 +52,16 @@ extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
   if (iupStrEqual(name, "AUTOREPEAT"))
   {
 #if defined(FLTK_USE_X11)
-    if (iupfltkIsX11() && iupfltkX11Load() && iupfltk_XChangeKeyboardControl)
+    if (iupfltkIsX11()
+#ifdef IUPX11_USE_DLOPEN
+        && iupX11Open()
+#endif
+        )
     {
-      struct { int auto_repeat_mode; } values;
-      values.auto_repeat_mode = iupStrBoolean(value) ? 1 : 0;
-      iupfltk_XChangeKeyboardControl(fl_display, (1L << 7), &values);
+      XKeyboardControl values;
+      memset(&values, 0, sizeof(values));
+      values.auto_repeat_mode = iupStrBoolean(value) ? AutoRepeatModeOn : AutoRepeatModeOff;
+      XChangeKeyboardControl(fl_display, KBAutoRepeatMode, &values);
     }
 #endif
     return 0;

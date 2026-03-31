@@ -63,6 +63,12 @@ extern "C" {
 
 #include "iupqt_drv.h"
 
+#ifdef IUPX11_USE_DLOPEN
+#include "iupunix_x11.h"
+#elif !defined(_WIN32) && !defined(__APPLE__)
+#include <X11/Xlib.h>
+#endif
+
 
 static QApplication* qt_application = NULL;
 static int qt_application_owned = 0;
@@ -264,18 +270,23 @@ static void qtSetGlobalAttrib(void)
   {
     IupSetGlobal("WINDOWING", "X11");
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && defined(Q_OS_LINUX)
-    /* Qt 6.2+: Use QX11Application native interface (Linux only) */
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS)
+    /* Qt 6.2+: Use QX11Application native interface */
     if (auto *x11App = qApp->nativeInterface<QNativeInterface::QX11Application>())
     {
-      /* Get X Display for use with Xlib */
-      void* xdisplay = x11App->display();
+      Display* xdisplay = (Display*)x11App->display();
       if (xdisplay)
       {
         IupSetGlobal("XDISPLAY", (char*)xdisplay);
+#ifdef IUPX11_USE_DLOPEN
+        if (iupX11Open())
+#endif
+        {
+          IupSetGlobal("XSCREEN", (char*)(long)XDefaultScreen(xdisplay));
+          IupSetGlobal("XSERVERVENDOR", XServerVendor(xdisplay));
+          IupSetInt(NULL, "XVENDORRELEASE", XVendorRelease(xdisplay));
+        }
       }
-
-      /* Also available: x11App->connection() returns xcb_connection_t* for XCB */
     }
 #endif
   }
@@ -283,7 +294,7 @@ static void qtSetGlobalAttrib(void)
   {
     IupSetGlobal("WINDOWING", "WAYLAND");
 
-#if defined(IUP_QT_HAS_WAYLAND_APP) && defined(Q_OS_LINUX)
+#if defined(IUP_QT_HAS_WAYLAND_APP) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS)
     /* Qt 6.5+: Use QWaylandApplication native interface (Linux only) */
     if (auto *waylandApp = qApp->nativeInterface<QNativeInterface::QWaylandApplication>())
     {
@@ -510,4 +521,8 @@ extern "C" IUP_SDK_API void iupdrvClose(void)
     qt_application = NULL;
     qt_application_owned = 0;
   }
+
+#ifdef IUPX11_USE_DLOPEN
+  iupX11Close();
+#endif
 }
