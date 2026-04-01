@@ -407,7 +407,7 @@ IUP_API Ihandle* IupClassInfoDialog(Ihandle* parent)
   IupSetAttribute(txtInfo, "EXPAND", "HORIZONTAL");
   IupSetAttribute(txtInfo, "NAME", "txtInfo");
 
-  ok_bt = IupButton("Close", NULL);
+  ok_bt = IupButton("_@IUP_CLOSE", NULL);
   IupSetStrAttribute(ok_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(ok_bt, "ACTION", (Icallback)button_ok_CB);
 

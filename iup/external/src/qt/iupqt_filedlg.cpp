@@ -553,7 +553,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
     QPushButton* help_button = dialog->findChild<QPushButton*>("qt_custom_help_button");
     if (!help_button)
     {
-      help_button = new QPushButton(QString::fromUtf8(IupGetLanguageString("IUP_HELP") ? IupGetLanguageString("IUP_HELP") : "Help"));
+      help_button = new QPushButton(QString::fromUtf8(IupGetLanguageString("IUP_HELP")));
       help_button->setObjectName("qt_custom_help_button");
 
       QObject::connect(help_button, &QPushButton::clicked, [ih, dialog]() {
@@ -681,8 +681,8 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       if (dir_exist)
       {
         /* File is actually a directory */
-        QMessageBox::critical(exec_dialog, QString::fromUtf8("Error"),
-                            QString::fromUtf8("The selected path is a directory, not a file."));
+        QMessageBox::critical(exec_dialog, QString::fromUtf8(IupGetLanguageString("IUP_ERROR")),
+                            QString::fromUtf8(IupGetLanguageString("IUP_FILEISDIR")));
         if (preview_dialog)
           delete preview_dialog;
         else
@@ -701,8 +701,8 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
 
         if (!iupStrBoolean(value))
         {
-          QMessageBox::critical(exec_dialog, QString::fromUtf8("Error"),
-                              QString::fromUtf8("The selected file does not exist."));
+          QMessageBox::critical(exec_dialog, QString::fromUtf8(IupGetLanguageString("IUP_ERROR")),
+                              QString::fromUtf8(IupGetLanguageString("IUP_FILENOTEXIST")));
           if (preview_dialog)
             delete preview_dialog;
           else

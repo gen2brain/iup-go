@@ -543,7 +543,7 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
   Ihandle *list1, *list2, *list3, *close, *dlg, *dlg_box, *button_box, *colorbut, *fontbut, *handlebut,
     *tabs, *box1, *box11, *box2, *box22, *box3, *box33, *set, *id_text, *id_label, *imagelbl;
 
-  close = IupButton("Close", NULL);
+  close = IupButton("_@IUP_CLOSE", NULL);
   IupSetStrAttribute(close, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(close, "ACTION", (Icallback)iLayoutPropertiesClose_CB);
 

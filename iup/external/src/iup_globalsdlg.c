@@ -617,7 +617,7 @@ static Ihandle* iGlobalsCreateDialog(void)
   Ihandle *list1, *list2, *list3, *list4, *close, *dlg, *dlg_box, *button_box, *colorbut1, *fontbut1, *colorbut2, *fontbut2,
     *tabs, *box1, *box11, *box12, *box13, *box14, *box2, *box3, *box4, *set1, *set2, *value1, *value2, *value3, *value4;
 
-  close = IupButton("Close", NULL);
+  close = IupButton("_@IUP_CLOSE", NULL);
   IupSetStrAttribute(close, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(close, "ACTION", (Icallback)iGlobalsClose_CB);
 

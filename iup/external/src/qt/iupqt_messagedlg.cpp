@@ -93,13 +93,6 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
   const char* retry_text = IupGetLanguageString("IUP_RETRY");
   const char* help_text = IupGetLanguageString("IUP_HELP");
 
-  if (!ok_text) ok_text = "OK";
-  if (!cancel_text) cancel_text = "Cancel";
-  if (!yes_text) yes_text = "Yes";
-  if (!no_text) no_text = "No";
-  if (!retry_text) retry_text = "Retry";
-  if (!help_text) help_text = "Help";
-
   buttons = iupAttribGetStr(ih, "BUTTONS");
   if (iupStrEqualNoCase(buttons, "OKCANCEL"))
   {
