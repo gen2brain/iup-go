@@ -76,10 +76,6 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   }
 
   widget->setFocus(Qt::OtherFocusReason);
-
-  /* Immediately update global focus tracking - don't wait for FocusIn event
-   * This ensures IupGetFocus() returns the correct value right away */
-  iupSetCurrentFocus(ih);
 }
 
 /****************************************************************************
@@ -98,8 +94,6 @@ IUP_DRV_API int iupqtFocusInOutEvent(QWidget* widget, QEvent* evt, Ihandle* ih)
     /* Even when ACTIVE=NO the widget might get this event */
     if (!iupdrvIsActive(ih))
       return 1;
-
-    iupSetCurrentFocus(ih);
 
     Ihandle* dialog = IupGetDialog(ih);
     if (dialog && ih != dialog)

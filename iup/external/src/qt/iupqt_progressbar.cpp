@@ -328,7 +328,6 @@ static int qtProgressBarMapMethod(Ihandle* ih)
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
     pbar->setOrientation(Qt::Vertical);
-    pbar->setInvertedAppearance(true); /* Bottom to top */
 
     /* Swap width/height if needed */
     if (ih->userheight < ih->userwidth)
