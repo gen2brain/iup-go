@@ -16,13 +16,11 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_key.h"
 #include "iup_toggle.h"
 
 #include "iupgtk4_drv.h"
@@ -30,9 +28,93 @@
 
 #define IUP_TOGGLE_BOX 18
 
+static int gtk4_toggle_border_x = -1, gtk4_toggle_border_y = -1;
+static int gtk4_toggle_struct_x = 0, gtk4_toggle_struct_y = 0;
+static int gtk4_toggle_min_w = 0, gtk4_toggle_min_h = 0;
+
+static void gtk4ToggleMeasureBorders(void)
+{
+  GtkWidget* temp_window;
+  GtkWidget* temp_toggle;
+  GtkWidget* temp_image;
+  GdkPaintable* temp_paintable;
+  GtkRequisition button_size, child_size;
+
+  temp_window = gtk_window_new();
+  temp_toggle = gtk_toggle_button_new();
+  gtk_widget_add_css_class(temp_toggle, "iup-measure-no-min");
+  temp_image = gtk_picture_new();
+  temp_paintable = gdk_paintable_new_empty(64, 64);
+  gtk_picture_set_paintable(GTK_PICTURE(temp_image), temp_paintable);
+  gtk_picture_set_can_shrink(GTK_PICTURE(temp_image), FALSE);
+  gtk_button_set_child(GTK_BUTTON(temp_toggle), temp_image);
+  gtk_window_set_child(GTK_WINDOW(temp_window), temp_toggle);
+
+  gtk_widget_get_preferred_size(temp_toggle, NULL, &button_size);
+  gtk_widget_get_preferred_size(temp_image, NULL, &child_size);
+
+  gtk4_toggle_border_x = button_size.width - child_size.width;
+  gtk4_toggle_border_y = button_size.height - child_size.height;
+  if (gtk4_toggle_border_x < 0) gtk4_toggle_border_x = 0;
+  if (gtk4_toggle_border_y < 0) gtk4_toggle_border_y = 0;
+
+  if (gtk4_toggle_border_x > gtk4_toggle_border_y)
+    gtk4_toggle_border_x = gtk4_toggle_border_y;
+
+  gtk_widget_add_css_class(temp_toggle, "iup-measure-zero-pad");
+  gtk_widget_queue_resize(temp_toggle);
+  gtk_widget_get_preferred_size(temp_toggle, NULL, &button_size);
+  gtk4_toggle_struct_x = button_size.width - child_size.width;
+  gtk4_toggle_struct_y = button_size.height - child_size.height;
+  if (gtk4_toggle_struct_x < 0) gtk4_toggle_struct_x = 0;
+  if (gtk4_toggle_struct_y < 0) gtk4_toggle_struct_y = 0;
+
+  {
+    GtkRequisition min_size;
+    gtk_widget_remove_css_class(temp_toggle, "iup-measure-no-min");
+    gtk_widget_remove_css_class(temp_toggle, "iup-measure-zero-pad");
+
+    GdkPaintable* empty_paintable = gdk_paintable_new_empty(1, 1);
+    gtk_picture_set_paintable(GTK_PICTURE(temp_image), empty_paintable);
+    gtk_widget_queue_resize(temp_toggle);
+    gtk_widget_get_preferred_size(temp_toggle, &min_size, NULL);
+    g_object_unref(empty_paintable);
+
+    gtk4_toggle_min_w = min_size.width;
+    gtk4_toggle_min_h = min_size.height;
+  }
+
+  g_object_unref(temp_paintable);
+  gtk_window_destroy(GTK_WINDOW(temp_window));
+}
+
 IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
-  iupdrvButtonAddBorders(ih, x, y);
+  int has_user_padding = 0;
+  int has_user_size = 0;
+
+  if (gtk4_toggle_border_x < 0)
+    gtk4ToggleMeasureBorders();
+
+  if (ih)
+  {
+    has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
+    has_user_size = (ih->userwidth > 0 || ih->userheight > 0);
+  }
+
+  if (has_user_padding || has_user_size)
+  {
+    (*x) += gtk4_toggle_struct_x;
+    (*y) += gtk4_toggle_struct_y;
+  }
+  else
+  {
+    (*x) += gtk4_toggle_border_x;
+    (*y) += gtk4_toggle_border_y;
+  }
+
+  if (*x < gtk4_toggle_min_w) *x = gtk4_toggle_min_w;
+  if (*y < gtk4_toggle_min_h) *y = gtk4_toggle_min_h;
 }
 
 IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
@@ -179,6 +261,25 @@ static void gtk4ToggleUpdateImage(Ihandle* ih, int active, int check)
   }
 }
 
+static void gtk4ToggleRadioDeactivatePrevious(Ihandle* radio, Ihandle* ih)
+{
+  Ihandle* last_ih = (Ihandle*)iupAttribGet(radio, "_IUPGTK4_RADIO_ACTIVE");
+  if (!last_ih || last_ih == ih || !iupObjectCheck(last_ih))
+    return;
+
+  iupAttribSet(last_ih, "_IUPGTK4_IGNORE_TOGGLE", "1");
+
+  if (GTK_IS_TOGGLE_BUTTON(last_ih->handle))
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(last_ih->handle), FALSE);
+  else if (GTK_IS_CHECK_BUTTON(last_ih->handle))
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(last_ih->handle), FALSE);
+
+  iupAttribSet(last_ih, "_IUPGTK4_IGNORE_TOGGLE", NULL);
+
+  if (last_ih->data->type == IUP_TOGGLE_IMAGE)
+    gtk4ToggleUpdateImage(last_ih, iupdrvIsActive(last_ih), 0);
+}
+
 static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)
@@ -203,6 +304,8 @@ static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
   if (GTK_IS_TOGGLE_BUTTON(ih->handle))
   {
     int check;
+    Ihandle* radio = iupRadioFindToggleParent(ih);
+
     iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", "1");
 
     if (iupStrEqualNoCase(value, "TOGGLE"))
@@ -210,10 +313,16 @@ static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
     else
       check = iupStrBoolean(value);
 
+    if (check && radio)
+      gtk4ToggleRadioDeactivatePrevious(radio, ih);
+
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ih->handle), check);
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
       gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), check);
+
+    if (radio && check)
+      iupAttribSet(radio, "_IUPGTK4_RADIO_ACTIVE", (char*)ih);
 
     iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", NULL);
     return 0;
@@ -227,17 +336,10 @@ static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
   else
   {
     int check;
-    Ihandle* last_ih = NULL;
     Ihandle* radio = iupRadioFindToggleParent(ih);
     gtk_check_button_set_inconsistent(GTK_CHECK_BUTTON(ih->handle), FALSE);
 
     iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", "1");
-    if (radio)
-    {
-      last_ih = (Ihandle*)IupGetAttribute(radio, "VALUE_HANDLE");
-      if (last_ih)
-        iupAttribSet(last_ih, "_IUPGTK4_IGNORE_TOGGLE", "1");
-    }
 
     if (iupStrEqualNoCase(value, "TOGGLE"))
     {
@@ -249,14 +351,18 @@ static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
     else
       check = iupStrBoolean(value);
 
+    if (check && radio)
+      gtk4ToggleRadioDeactivatePrevious(radio, ih);
+
     gtk_check_button_set_active(GTK_CHECK_BUTTON(ih->handle), check);
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
       gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), gtk4ToggleGetCheck(ih));
 
+    if (radio && check)
+      iupAttribSet(radio, "_IUPGTK4_RADIO_ACTIVE", (char*)ih);
+
     iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", NULL);
-    if (last_ih)
-      iupAttribSet(last_ih, "_IUPGTK4_IGNORE_TOGGLE", NULL);
   }
 
   return 0;
@@ -516,6 +622,16 @@ static void gtk4ToggleToggled(GtkCheckButton* widget, Ihandle* ih)
   if (iupAttribGet(ih, "_IUPGTK4_IGNORE_TOGGLE"))
     return;
 
+  if (ih->data->is_radio && check)
+  {
+    Ihandle* radio = iupRadioFindToggleParent(ih);
+    if (radio)
+    {
+      gtk4ToggleRadioDeactivatePrevious(radio, ih);
+      iupAttribSet(radio, "_IUPGTK4_RADIO_ACTIVE", (char*)ih);
+    }
+  }
+
   if (ih->data->type == IUP_TOGGLE_IMAGE)
     gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), check);
 
@@ -565,10 +681,10 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
 
   if (radio)
   {
-    /* Radio toggles with IMAGE should use GtkToggleButton, not GtkCheckButton */
+    int is_first = !iupAttribGet(radio, "_IUPGTK4_RADIO_ACTIVE");
+
     if (ih->data->type == IUP_TOGGLE_IMAGE)
     {
-      /* IMAGE toggles in radio group use GtkToggleButton */
       ih->handle = gtk_toggle_button_new();
     }
     else
@@ -578,13 +694,18 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
 
       if (last_tg)
         gtk_check_button_set_group(GTK_CHECK_BUTTON(ih->handle), last_tg);
-      else
-      {
-        /* First radio button in group should be active by default */
-        gtk_check_button_set_active(GTK_CHECK_BUTTON(ih->handle), TRUE);
-      }
 
       iupAttribSet(radio, "_IUPGTK4_LASTRADIOBUTTON", (char*)ih->handle);
+    }
+
+    if (is_first)
+    {
+      if (GTK_IS_TOGGLE_BUTTON(ih->handle))
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ih->handle), TRUE);
+      else
+        gtk_check_button_set_active(GTK_CHECK_BUTTON(ih->handle), TRUE);
+
+      iupAttribSet(radio, "_IUPGTK4_RADIO_ACTIVE", (char*)ih);
     }
 
     if (!iupAttribGetHandleName(ih))
