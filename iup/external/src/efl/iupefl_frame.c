@@ -294,8 +294,8 @@ IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "FONT", NULL, eflFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, iupeflSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, iupeflSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SUNKEN", NULL, eflFrameSetSunkenAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
