@@ -212,7 +212,7 @@ static void cocoaMenuItemUpdateRadioGroup(Ihandle* ih)
 
   for (child = ih->parent->firstchild; child; child = child->brother)
   {
-    if (iupStrEqual(child->iclass->name, "item") && child->handle)
+    if (iupStrEqual(child->iclass->name, "menuitem") && child->handle)
     {
       BOOL shouldBeOn = (child == ih);
       NSInteger desiredState = shouldBeOn ? NSControlStateValueOn : NSControlStateValueOff;
@@ -302,7 +302,7 @@ static void cocoaMenuUpdateImage(Ihandle* ih)
     }
   }
 
-  if (iupStrEqual(ih->iclass->name, "item"))
+  if (iupStrEqual(ih->iclass->name, "menuitem"))
   {
     char* image_off = iupAttribGet(ih, "IMAGE");
     char* image_on = iupAttribGet(ih, "IMPRESS");

@@ -152,7 +152,7 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
       if (processed_title != title)
         free(processed_title);
     }
-    else if (iupStrEqual(child->iclass->name, "item"))
+    else if (iupStrEqual(child->iclass->name, "menuitem"))
     {
       /* Menu item: create action and add to menu */
       GSimpleAction* action;
@@ -227,7 +227,7 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
       if (processed_title != title)
         free(processed_title);
     }
-    else if (iupStrEqual(child->iclass->name, "separator"))
+    else if (iupStrEqual(child->iclass->name, "menuseparator"))
     {
       if (!is_root)
       {
@@ -538,9 +538,19 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     if (native)
     {
       double native_x, native_y;
+      int win_x = 0, win_y = 0;
       gtk_native_get_surface_transform(native, &native_x, &native_y);
 
-      graphene_point_t point_in = {x - native_x, y - native_y};
+#ifdef GDK_WINDOWING_X11
+      if (iupgtk4X11IsBackend())
+      {
+        GdkSurface* surface = gtk_native_get_surface(native);
+        if (surface)
+          iupgtk4X11GetWindowPosition(surface, &win_x, &win_y);
+      }
+#endif
+
+      graphene_point_t point_in = {x - win_x - native_x, y - win_y - native_y};
       graphene_point_t point_out;
 
       if (gtk_widget_compute_point(GTK_WIDGET(native), parent_widget, &point_in, &point_out))
