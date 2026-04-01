@@ -117,7 +117,7 @@ static int eflProgressBarSetOrientationAttrib(Ihandle* ih, const char* value)
     return 0;
 
   if (iupStrEqualNoCase(value, "VERTICAL"))
-    efl_ui_layout_orientation_set(pbar, EFL_UI_LAYOUT_ORIENTATION_VERTICAL);
+    efl_ui_layout_orientation_set(pbar, EFL_UI_LAYOUT_ORIENTATION_VERTICAL | EFL_UI_LAYOUT_ORIENTATION_INVERTED);
   else
     efl_ui_layout_orientation_set(pbar, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL);
 
@@ -133,7 +133,7 @@ static char* eflProgressBarGetOrientationAttrib(Ihandle* ih)
     return "HORIZONTAL";
 
   orient = efl_ui_layout_orientation_get(pbar);
-  return (orient == EFL_UI_LAYOUT_ORIENTATION_VERTICAL) ? "VERTICAL" : "HORIZONTAL";
+  return ((orient & EFL_UI_LAYOUT_ORIENTATION_AXIS_BITMASK) == EFL_UI_LAYOUT_ORIENTATION_VERTICAL) ? "VERTICAL" : "HORIZONTAL";
 }
 
 static int eflProgressBarMapMethod(Ihandle* ih)
@@ -152,7 +152,7 @@ static int eflProgressBarMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)pbar;
 
   if (iupStrEqualNoCase(iupAttribGet(ih, "ORIENTATION"), "VERTICAL"))
-    efl_ui_layout_orientation_set(pbar, EFL_UI_LAYOUT_ORIENTATION_VERTICAL);
+    efl_ui_layout_orientation_set(pbar, EFL_UI_LAYOUT_ORIENTATION_VERTICAL | EFL_UI_LAYOUT_ORIENTATION_INVERTED);
   else
     efl_ui_layout_orientation_set(pbar, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL);
 

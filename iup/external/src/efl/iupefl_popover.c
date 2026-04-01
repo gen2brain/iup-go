@@ -15,11 +15,7 @@
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_childtree.h"
 #include "iup_class.h"
-#include "iup_register.h"
 #include "iup_drvinfo.h"
 #include "iup_popover.h"
 
@@ -81,19 +77,6 @@ static void eflPopoverFocusOutCb(void* data, const Efl_Event* ev)
     show_cb(ih, IUP_HIDE);
 }
 
-static void eflPopoverAnchorDelCb(void* data, const Efl_Event* ev)
-{
-  Ihandle* ih = (Ihandle*)data;
-
-  (void)ev;
-
-  if (ih->handle)
-  {
-    iupeflDelete(iupeflGetWidget(ih));
-    ih->handle = NULL;
-  }
-}
-
 static int eflPopoverMapMethod(Ihandle* ih)
 {
   Ihandle* anchor;
@@ -150,31 +133,16 @@ static int eflPopoverMapMethod(Ihandle* ih)
     efl_event_callback_add(popup_win, EFL_EVENT_FOCUS_OUT, eflPopoverFocusOutCb, ih);
   }
 
-  /* Track anchor deletion */
-  efl_event_callback_add(anchor_widget, EFL_EVENT_DEL, eflPopoverAnchorDelCb, ih);
-
   return IUP_NOERROR;
 }
 
 static void eflPopoverUnMapMethod(Ihandle* ih)
 {
   Eo* popup_win = iupeflGetWidget(ih);
-  Eo* frame = (Eo*)iupAttribGet(ih, "_IUP_EFL_FRAME");
-  Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
-
-  if (anchor && anchor->handle)
-  {
-    efl_event_callback_del(iupeflGetWidget(anchor), EFL_EVENT_DEL,
-                           eflPopoverAnchorDelCb, ih);
-  }
 
   if (popup_win)
   {
     efl_event_callback_del(popup_win, EFL_EVENT_FOCUS_OUT, eflPopoverFocusOutCb, ih);
-
-    if (frame)
-      efl_del(frame);
-
     iupeflDelete(popup_win);
   }
 
@@ -248,8 +216,15 @@ static int eflPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
       anchor_geom = efl_gfx_entity_geometry_get(anchor_widget);
 
-      /* Get anchor's parent window screen position */
+      /* Get anchor's parent window screen position.
+         Fall back to the IUP dialog handle. */
       anchor_win = efl_provider_find(anchor_widget, EFL_UI_WIN_CLASS);
+      if (!anchor_win)
+      {
+        Ihandle* dlg = IupGetDialog(anchor);
+        if (dlg && dlg->handle)
+          anchor_win = iupeflGetWidget(dlg);
+      }
       if (anchor_win)
         elm_win_screen_position_get(anchor_win, &win_x, &win_y);
 

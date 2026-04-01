@@ -12,14 +12,11 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_toggle.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_key.h"
 #include "iup_markup.h"
 
 #include "iupefl_drv.h"
@@ -101,6 +98,75 @@ static void eflToggleSelectedChangedCallback(void* data, const Efl_Event* ev)
   iupBaseCallValueChangedCb(ih);
 }
 
+static void eflRadioDeactivateImageToggle(Ihandle* radio, Ihandle* ih)
+{
+  Ihandle* prev = (Ihandle*)iupAttribGet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE");
+  if (prev && prev != ih && iupObjectCheck(prev) && prev->data->type == IUP_TOGGLE_IMAGE)
+  {
+    iupAttribSet(prev, "_IUP_EFL_IGNORE_TOGGLE", "1");
+    elm_check_state_set(iupeflGetWidget(prev), EINA_FALSE);
+    eflToggleUpdateImage(prev, 0);
+    iupAttribSet(prev, "_IUP_EFL_IGNORE_TOGGLE", NULL);
+  }
+}
+
+static void eflRadioDeactivateTextToggle(Ihandle* radio)
+{
+  Eo* radio_group = (Eo*)iupAttribGet(radio, "_IUP_EFL_RADIO_GROUP");
+  if (radio_group)
+  {
+    Eo* selected = efl_ui_selectable_last_selected_get(radio_group);
+    if (selected)
+    {
+      efl_ui_selectable_fallback_selection_set(radio_group, NULL);
+      efl_ui_selectable_selected_set(selected, EINA_FALSE);
+    }
+  }
+}
+
+static void eflImageToggleChangedCallback(void* data, Evas_Object* obj, void* event_info)
+{
+  Ihandle* ih = (Ihandle*)data;
+  IFni cb;
+  int check;
+
+  (void)event_info;
+
+  if (iupAttribGet(ih, "_IUP_EFL_IGNORE_TOGGLE"))
+    return;
+
+  check = elm_check_state_get(obj);
+
+  if (ih->data->is_radio && check)
+  {
+    Ihandle* radio = iupRadioFindToggleParent(ih);
+    if (radio)
+    {
+      eflRadioDeactivateImageToggle(radio, ih);
+      eflRadioDeactivateTextToggle(radio);
+      iupAttribSet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE", (char*)ih);
+    }
+  }
+  else if (ih->data->is_radio && !check)
+  {
+    /* Radio toggle: prevent unchecking by re-checking */
+    elm_check_state_set(obj, EINA_TRUE);
+    return;
+  }
+
+  eflToggleUpdateImage(ih, check);
+
+  cb = (IFni)IupGetCallback(ih, "ACTION");
+  if (cb)
+  {
+    int ret = cb(ih, check);
+    if (ret == IUP_CLOSE)
+      IupExitLoop();
+  }
+
+  iupBaseCallValueChangedCb(ih);
+}
+
 static void eflRadioGroupValueChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* radio_ih = (Ihandle*)data;
@@ -109,6 +175,8 @@ static void eflRadioGroupValueChangedCallback(void* data, const Efl_Event* ev)
 
   if (new_value < 0)
     return;
+
+  eflRadioDeactivateImageToggle(radio_ih, NULL);
 
   for (child = radio_ih->firstchild; child; child = child->brother)
   {
@@ -136,6 +204,7 @@ static void eflRadioGroupValueChangedCallback(void* data, const Efl_Event* ev)
       }
 
       iupBaseCallValueChangedCb(child);
+      iupAttribSet(radio_ih, "_IUP_EFL_RADIO_IMAGE_ACTIVE", (char*)child);
       break;
     }
     }
@@ -151,7 +220,6 @@ static int eflToggleSetValueAttrib(Ihandle* ih, const char* value)
   Eo* toggle = iupeflGetWidget(ih);
   Eo* check_widget;
   int check;
-  int is_radio_image = ih->data->is_radio && ih->data->type == IUP_TOGGLE_IMAGE;
 
   if (!toggle)
     return 0;
@@ -164,7 +232,7 @@ static int eflToggleSetValueAttrib(Ihandle* ih, const char* value)
 
   if (iupStrEqualNoCase(value, "TOGGLE"))
   {
-    if (ih->data->is_radio && !is_radio_image)
+    if (ih->data->is_radio && iupAttribGet(ih, "_IUP_EFL_RADIO_VALUE"))
     {
       Eo* radio_group = (Eo*)iupAttribGet(iupRadioFindToggleParent(ih), "_IUP_EFL_RADIO_GROUP");
       int radio_value = (intptr_t)iupAttribGet(ih, "_IUP_EFL_RADIO_VALUE");
@@ -181,18 +249,31 @@ static int eflToggleSetValueAttrib(Ihandle* ih, const char* value)
   else
     check = iupStrBoolean(value);
 
-  if (is_radio_image)
-  {
-    elm_check_state_set(check_widget, check ? EINA_TRUE : EINA_FALSE);
-    eflToggleUpdateImage(ih, check);
-  }
-  else if (ih->data->is_radio)
+  if (ih->data->is_radio && ih->data->type == IUP_TOGGLE_IMAGE)
   {
     if (check)
     {
-      Eo* radio_group = (Eo*)iupAttribGet(iupRadioFindToggleParent(ih), "_IUP_EFL_RADIO_GROUP");
+      Ihandle* radio = iupRadioFindToggleParent(ih);
+      if (radio)
+      {
+        eflRadioDeactivateImageToggle(radio, ih);
+        eflRadioDeactivateTextToggle(radio);
+        iupAttribSet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE", (char*)ih);
+      }
+    }
+    elm_check_state_set(check_widget, check ? EINA_TRUE : EINA_FALSE);
+    eflToggleUpdateImage(ih, check);
+  }
+  else if (ih->data->is_radio && iupAttribGet(ih, "_IUP_EFL_RADIO_VALUE"))
+  {
+    if (check)
+    {
+      Ihandle* radio = iupRadioFindToggleParent(ih);
+      Eo* radio_group = (Eo*)iupAttribGet(radio, "_IUP_EFL_RADIO_GROUP");
       int radio_value = (intptr_t)iupAttribGet(ih, "_IUP_EFL_RADIO_VALUE");
+      eflRadioDeactivateImageToggle(radio, ih);
       efl_ui_radio_group_selected_value_set(radio_group, radio_value);
+      iupAttribSet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE", (char*)ih);
     }
   }
   else if (ih->data->type == IUP_TOGGLE_IMAGE)
@@ -218,7 +299,6 @@ static char* eflToggleGetValueAttrib(Ihandle* ih)
 {
   Eo* toggle = iupeflGetWidget(ih);
   Eo* check_widget;
-  int is_radio_image = ih->data->is_radio && ih->data->type == IUP_TOGGLE_IMAGE;
 
   if (!toggle)
     return "OFF";
@@ -227,18 +307,18 @@ static char* eflToggleGetValueAttrib(Ihandle* ih)
   if (!check_widget)
     check_widget = toggle;
 
-  if (is_radio_image || ih->data->type == IUP_TOGGLE_IMAGE || iupAttribGetBoolean(ih, "SWITCH"))
-  {
-    if (elm_check_state_get(check_widget))
-      return "ON";
-    else
-      return "OFF";
-  }
-  else if (ih->data->is_radio)
+  if (ih->data->is_radio && iupAttribGet(ih, "_IUP_EFL_RADIO_VALUE"))
   {
     Eo* radio_group = (Eo*)iupAttribGet(iupRadioFindToggleParent(ih), "_IUP_EFL_RADIO_GROUP");
     int radio_value = (intptr_t)iupAttribGet(ih, "_IUP_EFL_RADIO_VALUE");
     if (efl_ui_radio_group_selected_value_get(radio_group) == radio_value)
+      return "ON";
+    else
+      return "OFF";
+  }
+  else if (ih->data->type == IUP_TOGGLE_IMAGE || iupAttribGetBoolean(ih, "SWITCH"))
+  {
+    if (elm_check_state_get(check_widget))
       return "ON";
     else
       return "OFF";
@@ -409,32 +489,6 @@ static int eflToggleSetFontAttrib(Ihandle* ih, const char* value)
                      Methods
 ****************************************************************/
 
-static void eflImageToggleChangedCallback(void* data, Evas_Object* obj, void* event_info)
-{
-  Ihandle* ih = (Ihandle*)data;
-  IFni cb;
-  int check;
-
-  (void)event_info;
-
-  if (iupAttribGet(ih, "_IUP_EFL_IGNORE_TOGGLE"))
-    return;
-
-  check = elm_check_state_get(obj);
-
-  eflToggleUpdateImage(ih, check);
-
-  cb = (IFni)IupGetCallback(ih, "ACTION");
-  if (cb)
-  {
-    int ret = cb(ih, check);
-    if (ret == IUP_CLOSE)
-      IupExitLoop();
-  }
-
-  iupBaseCallValueChangedCb(ih);
-}
-
 static void eflSwitchToggleChangedCallback(void* data, Evas_Object* obj, void* event_info)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -498,7 +552,6 @@ static int eflToggleMapMethod(Ihandle* ih)
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
     {
-      /* Image toggles in radio group use elm_check with icon style + manual radio behavior */
       toggle = elm_check_add(parent);
       if (!toggle)
         return IUP_ERROR;
@@ -507,9 +560,6 @@ static int eflToggleMapMethod(Ihandle* ih)
 
       if (!iupAttribGetHandleName(ih))
         iupAttribSetHandleName(ih);
-
-      /* Mark this as a radio image toggle for manual exclusive handling */
-      iupAttribSet(ih, "_IUP_EFL_RADIO_IMAGE", "1");
 
       evas_object_smart_callback_add(toggle, "changed", eflImageToggleChangedCallback, ih);
     }
@@ -551,7 +601,8 @@ static int eflToggleMapMethod(Ihandle* ih)
         radio_group = efl_new(EFL_UI_RADIO_GROUP_IMPL_CLASS, NULL);
         iupAttribSet(radio, "_IUP_EFL_RADIO_GROUP", (char*)radio_group);
         efl_ui_radio_group_register(radio_group, radio_btn);
-        efl_ui_selectable_fallback_selection_set(radio_group, radio_btn);
+        if (!iupAttribGet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE"))
+          efl_ui_selectable_fallback_selection_set(radio_group, radio_btn);
         efl_event_callback_add(radio_group, EFL_UI_RADIO_GROUP_EVENT_VALUE_CHANGED, eflRadioGroupValueChangedCallback, radio);
         is_first_radio = 1;
       }
@@ -563,8 +614,6 @@ static int eflToggleMapMethod(Ihandle* ih)
 
       if (title && title[0])
       {
-        Evas_Object* event_rect;
-
         label = efl_add(EFL_UI_TEXTBOX_CLASS, toggle,
                         efl_text_interactive_editable_set(efl_added, EINA_FALSE),
                         efl_text_interactive_selection_allowed_set(efl_added, EINA_FALSE),
@@ -575,8 +624,7 @@ static int eflToggleMapMethod(Ihandle* ih)
           efl_text_set(label, title);
           efl_pack_end(toggle, label);
           iupAttribSet(ih, "_IUP_EFL_LABEL", (char*)label);
-
-        efl_event_callback_add(label, EFL_EVENT_POINTER_UP, eflToggleLabelClickCallback, ih);
+          efl_event_callback_add(label, EFL_EVENT_POINTER_UP, eflToggleLabelClickCallback, ih);
         }
       }
     }
@@ -666,6 +714,8 @@ static int eflToggleMapMethod(Ihandle* ih)
     {
       elm_check_state_set(toggle, EINA_TRUE);
       eflToggleUpdateImage(ih, 1);
+      if (radio)
+        iupAttribSet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE", (char*)ih);
     }
     else if (ih->data->is_radio)
     {
@@ -689,11 +739,11 @@ static int eflToggleMapMethod(Ihandle* ih)
         efl_ui_selectable_selected_set(check_widget, EINA_TRUE);
     }
   }
-  else if (is_first_radio && ih->data->type != IUP_TOGGLE_IMAGE)
+  else if (radio && ih->data->type == IUP_TOGGLE_IMAGE && !iupAttribGet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE"))
   {
-    Eo* radio_group = (Eo*)iupAttribGet(radio, "_IUP_EFL_RADIO_GROUP");
-    int my_value = (intptr_t)iupAttribGet(ih, "_IUP_EFL_RADIO_VALUE");
-    efl_ui_radio_group_selected_value_set(radio_group, my_value);
+    elm_check_state_set(toggle, EINA_TRUE);
+    eflToggleUpdateImage(ih, 1);
+    iupAttribSet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE", (char*)ih);
   }
 
   {
