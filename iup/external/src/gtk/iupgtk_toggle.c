@@ -11,7 +11,6 @@
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
@@ -20,14 +19,11 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_image.h"
-#include "iup_key.h"
 #include "iup_toggle.h"
 
 #include "iupgtk_drv.h"
@@ -263,7 +259,82 @@ static void gtkSwitchDestroyCallback(GtkWidget* widget, Ihandle* ih)
 
 IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
+#if GTK_CHECK_VERSION(3, 0, 0)
+  static int toggle_border_x = -1, toggle_border_y = -1;
+  static int toggle_struct_x = 0, toggle_struct_y = 0;
+  static int toggle_min_w = 0, toggle_min_h = 0;
+  int has_user_padding = 0;
+  int has_user_size = 0;
+
+  if (toggle_border_x == -1)
+  {
+    GtkWidget* temp_window = gtk_offscreen_window_new();
+    GtkWidget* temp_toggle = gtk_toggle_button_new();
+
+    GdkPixbuf* pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, 64, 64);
+    GtkWidget* temp_image = gtk_image_new_from_pixbuf(pixbuf);
+    g_object_unref(pixbuf);
+
+    gtk_button_set_image(GTK_BUTTON(temp_toggle), temp_image);
+
+    gtk_container_add(GTK_CONTAINER(temp_window), temp_toggle);
+    gtk_widget_show_all(temp_window);
+
+    gint button_width, button_height;
+    gtk_widget_get_preferred_width(temp_toggle, NULL, &button_width);
+    gtk_widget_get_preferred_height(temp_toggle, NULL, &button_height);
+
+    toggle_border_x = button_width - 64;
+    toggle_border_y = button_height - 64;
+    if (toggle_border_x < 0) toggle_border_x = 0;
+    if (toggle_border_y < 0) toggle_border_y = 0;
+
+    {
+      GtkStyleContext* context = gtk_widget_get_style_context(temp_toggle);
+      GtkBorder css_padding;
+      gtk_style_context_get_padding(context, GTK_STATE_FLAG_NORMAL, &css_padding);
+      toggle_struct_x = toggle_border_x - (css_padding.left + css_padding.right);
+      toggle_struct_y = toggle_border_y - (css_padding.top + css_padding.bottom);
+      if (toggle_struct_x < 0) toggle_struct_x = 0;
+      if (toggle_struct_y < 0) toggle_struct_y = 0;
+    }
+
+    {
+      GtkStyleContext* context = gtk_widget_get_style_context(temp_toggle);
+      GtkStateFlags state = gtk_style_context_get_state(context);
+      int val = 0;
+      gtk_style_context_get(context, state, "min-height", &val, NULL);
+      toggle_min_h = val + toggle_border_y;
+      val = 0;
+      gtk_style_context_get(context, state, "min-width", &val, NULL);
+      toggle_min_w = val + toggle_border_x;
+    }
+
+    gtk_widget_destroy(temp_window);
+  }
+
+  if (ih)
+  {
+    has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
+    has_user_size = (ih->userwidth > 0 || ih->userheight > 0);
+  }
+
+  if (has_user_padding || has_user_size)
+  {
+    (*x) += toggle_struct_x;
+    (*y) += toggle_struct_y;
+  }
+  else
+  {
+    (*x) += toggle_border_x;
+    (*y) += toggle_border_y;
+  }
+
+  if (*x < toggle_min_w) *x = toggle_min_w;
+  if (*y < toggle_min_h) *y = toggle_min_h;
+#else
   iupdrvButtonAddBorders(ih, x, y);
+#endif
 }
 
 IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
