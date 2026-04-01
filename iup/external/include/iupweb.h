@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPWEB_H 
+
+#ifndef __IUPWEB_H
 #define __IUPWEB_H
 
 #ifdef __cplusplus
@@ -22,7 +22,7 @@ extern "C" {
   #endif
 #else
   #define IUPWEB_API
-#endif /* IUP_BUILD_LIBRARY */
+#endif /* IUPWEB_BUILD_LIBRARY */
 #endif /* IUPWEB_API */
 
 
