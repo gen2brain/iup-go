@@ -17,7 +17,6 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QWidget>
-#include <QThread>
 
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -215,52 +214,6 @@ extern "C" IUP_SDK_API char *iupdrvGetSystemVersion(void)
 /****************************************************************************
  * Keyboard/Mouse Input Simulation
  ****************************************************************************/
-
-extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
-{
-  /* Not supported */
-  (void)key;
-  (void)press;
-}
-
-extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
-{
-  /* Not supported */
-  (void)x;
-  (void)y;
-  (void)bt;
-  (void)status;
-}
-
-extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
-{
-  /* Move the mouse cursor to absolute screen coordinates */
-  QCursor::setPos(x, y);
-}
-
-/****************************************************************************
- * Sleep Function
- ****************************************************************************/
-
-extern "C" IUP_SDK_API void iupdrvSleep(int time)
-{
-  QThread::msleep(time);
-}
-
-/****************************************************************************
- * Accessibility
- ****************************************************************************/
-
-extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
-{
-  /* Set accessible title for screen readers */
-  QWidget* widget = (QWidget*)ih->handle;
-
-  if (widget && title)
-  {
-    widget->setAccessibleName(QString::fromUtf8(title));
-  }
-}
 
 /****************************************************************************
  * Directory and File Functions

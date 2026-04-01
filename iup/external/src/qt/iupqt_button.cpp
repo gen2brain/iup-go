@@ -72,9 +72,12 @@ protected:
     QPushButton::enterEvent(event);
     iupqtEnterLeaveEvent(this, event, iup_handle);
 
-    /* Handle FLAT mode - show relief on hover */
+    /* Handle FLAT mode, show relief on hover */
     if (iupAttribGetBoolean(iup_handle, "FLAT"))
-      setFlat(false);
+    {
+      if (!iupAttribGet(iup_handle, "IMPRESS") || iupAttribGetBoolean(iup_handle, "IMPRESSBORDER"))
+        setFlat(false);
+    }
   }
 
   void leaveEvent(QEvent* event) override
@@ -82,7 +85,7 @@ protected:
     QPushButton::leaveEvent(event);
     iupqtEnterLeaveEvent(this, event, iup_handle);
 
-    /* Handle FLAT mode - hide relief when not hovering */
+    /* Handle FLAT mode, hide relief when not hovering */
     if (iupAttribGetBoolean(iup_handle, "FLAT"))
       setFlat(true);
   }
@@ -187,11 +190,13 @@ protected:
       QStyleOptionButton option;
       initStyleOption(&option);
 
-      /* Draw button frame/border */
-      p.drawControl(QStyle::CE_PushButtonBevel, option);
+      /* For IMPRESS without IMPRESSBORDER, skip bevel entirely */
+      int impress_no_border = iupAttribGet(iup_handle, "IMPRESS") && !iupAttribGetBoolean(iup_handle, "IMPRESSBORDER");
+      if (!impress_no_border)
+        p.drawControl(QStyle::CE_PushButtonBevel, option);
 
       /* Get content rect inside the button */
-      QRect content_rect = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
+      QRect content_rect = impress_no_border ? rect() : style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
 
       /* Draw icon in content area respecting alignment */
       if (!icon().isNull())
@@ -227,7 +232,7 @@ protected:
           y = content_rect.y() + (content_rect.height() - pixmap.height()) / 2;
 
         /* Apply button shift when pressed */
-        if (option.state & (QStyle::State_On | QStyle::State_Sunken))
+        if (!impress_no_border && (option.state & (QStyle::State_On | QStyle::State_Sunken)))
         {
           x += style()->pixelMetric(QStyle::PM_ButtonShiftHorizontal, &option, this);
           y += style()->pixelMetric(QStyle::PM_ButtonShiftVertical, &option, this);
