@@ -124,7 +124,7 @@ static const void* TRAYMENU_ITEM_IHANDLE_KEY = @"TRAYMENU_ITEM_IHANDLE_KEY";
     Ihandle* child;
     for (child = _ih->parent->firstchild; child; child = child->brother)
     {
-      if (iupStrEqual(child->iclass->name, "item"))
+      if (iupStrEqual(child->iclass->name, "menuitem"))
       {
         iupAttribSet(child, "VALUE", (child == _ih) ? "ON" : "OFF");
       }
@@ -154,11 +154,11 @@ static void cocoaTrayBuildMenuItems(NSMenu* ns_menu, Ihandle* parent_ih, Ihandle
 
   for (child = parent_ih->firstchild; child; child = child->brother)
   {
-    if (iupStrEqual(child->iclass->name, "separator"))
+    if (iupStrEqual(child->iclass->name, "menuseparator"))
     {
       [ns_menu addItem:[NSMenuItem separatorItem]];
     }
-    else if (iupStrEqual(child->iclass->name, "item") || iupStrEqual(child->iclass->name, "submenu"))
+    else if (iupStrEqual(child->iclass->name, "menuitem") || iupStrEqual(child->iclass->name, "submenu"))
     {
       char* title = iupAttribGet(child, "TITLE");
       if (!title) title = "";
@@ -167,7 +167,7 @@ static void cocoaTrayBuildMenuItems(NSMenu* ns_menu, Ihandle* parent_ih, Ihandle
       NSString* ns_title = title_str ? [NSString stringWithUTF8String:title_str] : @"";
       if (title_str && title_str != title) free(title_str);
 
-      BOOL is_item = iupStrEqual(child->iclass->name, "item");
+      BOOL is_item = iupStrEqual(child->iclass->name, "menuitem");
       NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:ns_title
                                                     action:is_item ? @selector(onMenuItemAction:) : nil
                                              keyEquivalent:@""];

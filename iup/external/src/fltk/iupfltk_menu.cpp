@@ -102,7 +102,7 @@ static void fltkMenuAddItems(Fl_Menu_* menuwidget, Ihandle* ih_menu, const char*
       if (submenu_menu)
         fltkMenuAddItems(menuwidget, submenu_menu, path);
     }
-    else if (iupStrEqual(class_name, "item"))
+    else if (iupStrEqual(class_name, "menuitem"))
     {
       char* title = iupAttribGet(child, "TITLE");
       if (!title) title = (char*)"";
@@ -140,7 +140,7 @@ static void fltkMenuAddItems(Fl_Menu_* menuwidget, Ihandle* ih_menu, const char*
 
       last_item_idx = menuwidget->add(path, 0, fltkMenuItemActionCb, (void*)child, flags);
     }
-    else if (iupStrEqual(class_name, "separator"))
+    else if (iupStrEqual(class_name, "menuseparator"))
     {
       if (last_item_idx >= 0)
       {

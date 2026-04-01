@@ -550,6 +550,20 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
       *x = (int)(dest_point.x + native_x);
       *y = (int)(dest_point.y + native_y);
     }
+
+#ifdef GDK_WINDOWING_X11
+    if (iupgtk4X11IsBackend())
+    {
+      GdkSurface* surface = gtk_native_get_surface(native);
+      if (surface)
+      {
+        int win_x = 0, win_y = 0;
+        iupgtk4X11GetWindowPosition(surface, &win_x, &win_y);
+        *x += win_x;
+        *y += win_y;
+      }
+    }
+#endif
   }
 }
 

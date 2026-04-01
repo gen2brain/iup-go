@@ -366,7 +366,7 @@ static void sniAppendMenuItemProperties(DBusMessageIter* dict_iter, Ihandle* ite
   class_name = IupGetClassName(item);
 
   /* Check if separator */
-  if (iupStrEqual(class_name, "separator"))
+  if (iupStrEqual(class_name, "menuseparator"))
   {
     const char* prop_name = "type";
     const char* value = "separator";
@@ -521,7 +521,7 @@ static void sniAppendMenuChildren(DBusMessageIter* children_iter, IupUnixSNI* sn
       dbus_message_iter_close_container(&variant_iter, &child_struct_iter);
       dbus_message_iter_close_container(children_iter, &variant_iter);
     }
-    else if (iupStrEqual(class_name, "item") || iupStrEqual(class_name, "separator"))
+    else if (iupStrEqual(class_name, "menuitem") || iupStrEqual(class_name, "menuseparator"))
     {
       /* Regular item or separator */
       int item_id = sniAddMenuItem(sni, child);
