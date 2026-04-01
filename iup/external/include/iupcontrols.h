@@ -1,10 +1,10 @@
 /** \file
- * \brief Cells and Matrix controls.
+ * \brief Additional Controls API
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPCONTROLS_H 
+
+#ifndef __IUPCONTROLS_H
 #define __IUPCONTROLS_H
 
 #ifdef __cplusplus
@@ -26,12 +26,31 @@ extern "C" {
 #endif /* IUPCONTROLS_API */
 
 
-IUPCONTROLS_API int  IupControlsOpen(void);
+IUPCONTROLS_API int IupControlsOpen(void);
 
+/** \defgroup matrixcontrols Matrix Controls
+ * \ingroup ctrl */
+/** @{ */
 IUPCONTROLS_API Ihandle* IupCells(void);
-IUPCONTROLS_API Ihandle* IupMatrix(const char *action);
+IUPCONTROLS_API Ihandle* IupMatrix(const char* action);
 IUPCONTROLS_API Ihandle* IupMatrixList(void);
 IUPCONTROLS_API Ihandle* IupMatrixEx(void);
+/** @} */
+
+/** \defgroup flatcontrols Flat Controls
+ * \ingroup ctrl */
+/** @{ */
+IUPCONTROLS_API Ihandle* IupFlatButton(const char* title);
+IUPCONTROLS_API Ihandle* IupFlatLabel(const char* title);
+IUPCONTROLS_API Ihandle* IupFlatToggle(const char* title);
+IUPCONTROLS_API Ihandle* IupFlatFrame(Ihandle* child);
+IUPCONTROLS_API Ihandle* IupFlatTabs(Ihandle* first, ...);
+IUPCONTROLS_API Ihandle* IupFlatTabsv(Ihandle** children);
+IUPCONTROLS_API Ihandle* IupFlatScrollBox(Ihandle* child);
+IUPCONTROLS_API Ihandle* IupFlatList(void);
+IUPCONTROLS_API Ihandle* IupFlatTree(void);
+IUPCONTROLS_API Ihandle* IupFlatVal(const char* type);
+/** @} */
 
 
 #ifdef __cplusplus

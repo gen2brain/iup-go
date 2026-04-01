@@ -6,8 +6,8 @@
  *
  * See Copyright Notice at the end of this file
  */
- 
-#ifndef __IUP_H 
+
+#ifndef __IUP_H
 #define __IUP_H
 
 #include "iupkey.h"
@@ -33,139 +33,139 @@ typedef int (*Icallback)(Ihandle*);
  * \ingroup ctrl */
 /** @{ */
 
-IUP_API int       IupOpen          (int *argc, char ***argv);
-IUP_API void      IupClose         (void);
-IUP_API int       IupIsOpened      (void);
+IUP_API int       IupOpen(int *argc, char ***argv);
+IUP_API void      IupClose(void);
+IUP_API int       IupIsOpened(void);
 
-IUP_API int       IupMainLoop      (void);
-IUP_API int       IupLoopStep      (void);
-IUP_API int       IupLoopStepWait  (void);
-IUP_API int       IupMainLoopLevel (void);
-IUP_API void      IupFlush         (void);
-IUP_API void      IupExitLoop      (void);
-IUP_API void      IupPostMessage   (Ihandle* ih, const char* s, int i, double d, void* p);
+IUP_API int       IupMainLoop(void);
+IUP_API int       IupLoopStep(void);
+IUP_API int       IupLoopStepWait(void);
+IUP_API int       IupMainLoopLevel(void);
+IUP_API void      IupFlush(void);
+IUP_API void      IupExitLoop(void);
+IUP_API void      IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p);
 
 IUP_API int       IupRecordInput(const char* filename, int mode);
 IUP_API int       IupPlayInput(const char* filename);
 
-IUP_API void      IupUpdate        (Ihandle* ih);
+IUP_API void      IupUpdate(Ihandle* ih);
 IUP_API void      IupUpdateChildren(Ihandle* ih);
-IUP_API void      IupRedraw        (Ihandle* ih, int children);
-IUP_API void      IupRefresh       (Ihandle* ih);
+IUP_API void      IupRedraw(Ihandle* ih, int children);
+IUP_API void      IupRefresh(Ihandle* ih);
 IUP_API void      IupRefreshChildren(Ihandle* ih);
 
-IUP_API int       IupExecute(const char *filename, const char* parameters);
-IUP_API int       IupExecuteWait(const char *filename, const char* parameters);
+IUP_API int       IupExecute(const char* filename, const char* parameters);
+IUP_API int       IupExecuteWait(const char* filename, const char* parameters);
 IUP_API int       IupHelp(const char* url);
 IUP_API void      IupLog(const char* type, const char* format, ...);
 
-IUP_API char*     IupVersion       (void);
-IUP_API char*     IupVersionDate   (void);
-IUP_API int       IupVersionNumber (void);
-IUP_API void      IupVersionShow   (void);
+IUP_API char*     IupVersion(void);
+IUP_API char*     IupVersionDate(void);
+IUP_API int       IupVersionNumber(void);
+IUP_API void      IupVersionShow(void);
 
-IUP_API void      IupSetLanguage   (const char *lng);
-IUP_API char*     IupGetLanguage   (void);
+IUP_API void      IupSetLanguage(const char* lng);
+IUP_API char*     IupGetLanguage(void);
 IUP_API void      IupSetLanguageString(const char* name, const char* str);
 IUP_API void      IupStoreLanguageString(const char* name, const char* str);
 IUP_API char*     IupGetLanguageString(const char* name);
 IUP_API void      IupSetLanguagePack(Ihandle* ih);
 
-IUP_API void      IupDestroy      (Ihandle* ih);
-IUP_API void      IupDetach       (Ihandle* child);
-IUP_API Ihandle*  IupAppend       (Ihandle* ih, Ihandle* child);
-IUP_API Ihandle*  IupInsert       (Ihandle* ih, Ihandle* ref_child, Ihandle* child);
-IUP_API Ihandle*  IupGetChild     (Ihandle* ih, int pos);
-IUP_API int       IupGetChildPos  (Ihandle* ih, Ihandle* child);
+IUP_API void      IupDestroy(Ihandle* ih);
+IUP_API void      IupDetach(Ihandle* child);
+IUP_API Ihandle*  IupAppend(Ihandle* ih, Ihandle* child);
+IUP_API Ihandle*  IupInsert(Ihandle* ih, Ihandle* ref_child, Ihandle* child);
+IUP_API Ihandle*  IupGetChild(Ihandle* ih, int pos);
+IUP_API int       IupGetChildPos(Ihandle* ih, Ihandle* child);
 IUP_API int       IupGetChildCount(Ihandle* ih);
-IUP_API Ihandle*  IupGetNextChild (Ihandle* ih, Ihandle* child);
-IUP_API Ihandle*  IupGetBrother   (Ihandle* ih);
-IUP_API Ihandle*  IupGetParent    (Ihandle* ih);
-IUP_API Ihandle*  IupGetDialog    (Ihandle* ih);
+IUP_API Ihandle*  IupGetNextChild(Ihandle* ih, Ihandle* child);
+IUP_API Ihandle*  IupGetBrother(Ihandle* ih);
+IUP_API Ihandle*  IupGetParent(Ihandle* ih);
+IUP_API Ihandle*  IupGetDialog(Ihandle* ih);
 IUP_API Ihandle*  IupGetDialogChild(Ihandle* ih, const char* name);
-IUP_API int       IupReparent     (Ihandle* ih, Ihandle* new_parent, Ihandle* ref_child);
+IUP_API int       IupReparent(Ihandle* ih, Ihandle* new_parent, Ihandle* ref_child);
 
-IUP_API int       IupPopup         (Ihandle* ih, int x, int y);
-IUP_API int       IupShow          (Ihandle* ih);
-IUP_API int       IupShowXY        (Ihandle* ih, int x, int y);
-IUP_API int       IupHide          (Ihandle* ih);
-IUP_API int       IupMap           (Ihandle* ih);
-IUP_API void      IupUnmap         (Ihandle* ih);
+IUP_API int       IupPopup(Ihandle* ih, int x, int y);
+IUP_API int       IupShow(Ihandle* ih);
+IUP_API int       IupShowXY(Ihandle* ih, int x, int y);
+IUP_API int       IupHide(Ihandle* ih);
+IUP_API int       IupMap(Ihandle* ih);
+IUP_API void      IupUnmap(Ihandle* ih);
 
 IUP_API void      IupResetAttribute(Ihandle* ih, const char* name);
 IUP_API int       IupGetAllAttributes(Ihandle* ih, char** names, int n);
 IUP_API void      IupCopyAttributes(Ihandle* src_ih, Ihandle* dst_ih);
 IUP_API Ihandle*  IupSetAtt(const char* handle_name, Ihandle* ih, const char* name, ...);
-IUP_API Ihandle*  IupSetAttributes (Ihandle* ih, const char *str);
-IUP_API char*     IupGetAttributes (Ihandle* ih);
+IUP_API Ihandle*  IupSetAttributes(Ihandle* ih, const char* str);
+IUP_API char*     IupGetAttributes(Ihandle* ih);
 
-IUP_API void      IupSetAttribute   (Ihandle* ih, const char* name, const char* value);
+IUP_API void      IupSetAttribute(Ihandle* ih, const char* name, const char* value);
 IUP_API void      IupSetStrAttribute(Ihandle* ih, const char* name, const char* value);
-IUP_API void      IupSetStrf        (Ihandle* ih, const char* name, const char* format, ...);
-IUP_API void      IupSetInt         (Ihandle* ih, const char* name, int value);
-IUP_API void      IupSetFloat       (Ihandle* ih, const char* name, float value);
-IUP_API void      IupSetDouble      (Ihandle* ih, const char* name, double value);
-IUP_API void      IupSetRGB         (Ihandle* ih, const char* name, unsigned char r, unsigned char g, unsigned char b);
-IUP_API void      IupSetRGBA        (Ihandle* ih, const char* name, unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+IUP_API void      IupSetStrf(Ihandle* ih, const char* name, const char* format, ...);
+IUP_API void      IupSetInt(Ihandle* ih, const char* name, int value);
+IUP_API void      IupSetFloat(Ihandle* ih, const char* name, float value);
+IUP_API void      IupSetDouble(Ihandle* ih, const char* name, double value);
+IUP_API void      IupSetRGB(Ihandle* ih, const char* name, unsigned char r, unsigned char g, unsigned char b);
+IUP_API void      IupSetRGBA(Ihandle* ih, const char* name, unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 
 IUP_API char*     IupGetAttribute(Ihandle* ih, const char* name);
-IUP_API int       IupGetInt      (Ihandle* ih, const char* name);
-IUP_API int       IupGetInt2     (Ihandle* ih, const char* name);
-IUP_API int       IupGetIntInt   (Ihandle* ih, const char* name, int *i1, int *i2);
-IUP_API float     IupGetFloat    (Ihandle* ih, const char* name);
+IUP_API int       IupGetInt(Ihandle* ih, const char* name);
+IUP_API int       IupGetInt2(Ihandle* ih, const char* name);
+IUP_API int       IupGetIntInt(Ihandle* ih, const char* name, int* i1, int* i2);
+IUP_API float     IupGetFloat(Ihandle* ih, const char* name);
 IUP_API double    IupGetDouble(Ihandle* ih, const char* name);
-IUP_API void      IupGetRGB      (Ihandle* ih, const char* name, unsigned char *r, unsigned char *g, unsigned char *b);
-IUP_API void      IupGetRGBA     (Ihandle* ih, const char* name, unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a);
+IUP_API void      IupGetRGB(Ihandle* ih, const char* name, unsigned char* r, unsigned char* g, unsigned char* b);
+IUP_API void      IupGetRGBA(Ihandle* ih, const char* name, unsigned char* r, unsigned char* g, unsigned char* b, unsigned char* a);
 
-IUP_API void  IupSetAttributeId(Ihandle* ih, const char* name, int id, const char *value);
-IUP_API void  IupSetStrAttributeId(Ihandle* ih, const char* name, int id, const char *value);
-IUP_API void  IupSetStrfId(Ihandle* ih, const char* name, int id, const char* format, ...);
-IUP_API void  IupSetIntId(Ihandle* ih, const char* name, int id, int value);
-IUP_API void  IupSetFloatId(Ihandle* ih, const char* name, int id, float value);
-IUP_API void  IupSetDoubleId(Ihandle* ih, const char* name, int id, double value);
-IUP_API void  IupSetRGBId(Ihandle* ih, const char* name, int id, unsigned char r, unsigned char g, unsigned char b);
+IUP_API void      IupSetAttributeId(Ihandle* ih, const char* name, int id, const char* value);
+IUP_API void      IupSetStrAttributeId(Ihandle* ih, const char* name, int id, const char* value);
+IUP_API void      IupSetStrfId(Ihandle* ih, const char* name, int id, const char* format, ...);
+IUP_API void      IupSetIntId(Ihandle* ih, const char* name, int id, int value);
+IUP_API void      IupSetFloatId(Ihandle* ih, const char* name, int id, float value);
+IUP_API void      IupSetDoubleId(Ihandle* ih, const char* name, int id, double value);
+IUP_API void      IupSetRGBId(Ihandle* ih, const char* name, int id, unsigned char r, unsigned char g, unsigned char b);
 
-IUP_API char*  IupGetAttributeId(Ihandle* ih, const char* name, int id);
-IUP_API int    IupGetIntId(Ihandle* ih, const char* name, int id);
-IUP_API float  IupGetFloatId(Ihandle* ih, const char* name, int id);
-IUP_API double IupGetDoubleId(Ihandle* ih, const char* name, int id);
-IUP_API void   IupGetRGBId(Ihandle* ih, const char* name, int id, unsigned char *r, unsigned char *g, unsigned char *b);
+IUP_API char*     IupGetAttributeId(Ihandle* ih, const char* name, int id);
+IUP_API int       IupGetIntId(Ihandle* ih, const char* name, int id);
+IUP_API float     IupGetFloatId(Ihandle* ih, const char* name, int id);
+IUP_API double    IupGetDoubleId(Ihandle* ih, const char* name, int id);
+IUP_API void      IupGetRGBId(Ihandle* ih, const char* name, int id, unsigned char* r, unsigned char* g, unsigned char* b);
 
-IUP_API void  IupSetAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* value);
-IUP_API void  IupSetStrAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* value);
-IUP_API void  IupSetStrfId2(Ihandle* ih, const char* name, int lin, int col, const char* format, ...);
-IUP_API void  IupSetIntId2(Ihandle* ih, const char* name, int lin, int col, int value);
-IUP_API void  IupSetFloatId2(Ihandle* ih, const char* name, int lin, int col, float value);
-IUP_API void  IupSetDoubleId2(Ihandle* ih, const char* name, int lin, int col, double value);
-IUP_API void  IupSetRGBId2(Ihandle* ih, const char* name, int lin, int col, unsigned char r, unsigned char g, unsigned char b);
+IUP_API void      IupSetAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* value);
+IUP_API void      IupSetStrAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* value);
+IUP_API void      IupSetStrfId2(Ihandle* ih, const char* name, int lin, int col, const char* format, ...);
+IUP_API void      IupSetIntId2(Ihandle* ih, const char* name, int lin, int col, int value);
+IUP_API void      IupSetFloatId2(Ihandle* ih, const char* name, int lin, int col, float value);
+IUP_API void      IupSetDoubleId2(Ihandle* ih, const char* name, int lin, int col, double value);
+IUP_API void      IupSetRGBId2(Ihandle* ih, const char* name, int lin, int col, unsigned char r, unsigned char g, unsigned char b);
 
-IUP_API char*  IupGetAttributeId2(Ihandle* ih, const char* name, int lin, int col);
-IUP_API int    IupGetIntId2(Ihandle* ih, const char* name, int lin, int col);
-IUP_API float  IupGetFloatId2(Ihandle* ih, const char* name, int lin, int col);
-IUP_API double IupGetDoubleId2(Ihandle* ih, const char* name, int lin, int col);
-IUP_API void   IupGetRGBId2(Ihandle* ih, const char* name, int lin, int col, unsigned char *r, unsigned char *g, unsigned char *b);
+IUP_API char*     IupGetAttributeId2(Ihandle* ih, const char* name, int lin, int col);
+IUP_API int       IupGetIntId2(Ihandle* ih, const char* name, int lin, int col);
+IUP_API float     IupGetFloatId2(Ihandle* ih, const char* name, int lin, int col);
+IUP_API double    IupGetDoubleId2(Ihandle* ih, const char* name, int lin, int col);
+IUP_API void      IupGetRGBId2(Ihandle* ih, const char* name, int lin, int col, unsigned char* r, unsigned char* g, unsigned char* b);
 
-IUP_API void      IupSetGlobal  (const char* name, const char* value);
+IUP_API void      IupSetGlobal(const char* name, const char* value);
 IUP_API void      IupSetStrGlobal(const char* name, const char* value);
-IUP_API char*     IupGetGlobal  (const char* name);
+IUP_API char*     IupGetGlobal(const char* name);
 
-IUP_API Ihandle*  IupSetFocus     (Ihandle* ih);
-IUP_API Ihandle*  IupGetFocus     (void);
+IUP_API Ihandle*  IupSetFocus(Ihandle* ih);
+IUP_API Ihandle*  IupGetFocus(void);
 IUP_API Ihandle*  IupPreviousField(Ihandle* ih);
-IUP_API Ihandle*  IupNextField    (Ihandle* ih);
+IUP_API Ihandle*  IupNextField(Ihandle* ih);
 
-IUP_API Icallback IupGetCallback (Ihandle* ih, const char *name);
-IUP_API Icallback IupSetCallback (Ihandle* ih, const char *name, Icallback func);
-IUP_API Ihandle*  IupSetCallbacks(Ihandle* ih, const char *name, Icallback func, ...);
+IUP_API Icallback IupGetCallback(Ihandle* ih, const char* name);
+IUP_API Icallback IupSetCallback(Ihandle* ih, const char* name, Icallback func);
+IUP_API Ihandle*  IupSetCallbacks(Ihandle* ih, const char* name, Icallback func, ...);
 
-IUP_API Icallback IupGetFunction(const char *name);
-IUP_API Icallback IupSetFunction(const char *name, Icallback func);
+IUP_API Icallback IupGetFunction(const char* name);
+IUP_API Icallback IupSetFunction(const char* name, Icallback func);
 
-IUP_API Ihandle*  IupGetHandle    (const char *name);
-IUP_API Ihandle*  IupSetHandle    (const char *name, Ihandle* ih);
-IUP_API int       IupGetAllNames  (char** names, int n);
+IUP_API Ihandle*  IupGetHandle(const char* name);
+IUP_API Ihandle*  IupSetHandle(const char* name, Ihandle* ih);
+IUP_API int       IupGetAllNames(char** names, int n);
 IUP_API int       IupGetAllDialogs(char** names, int n);
-IUP_API char*     IupGetName      (Ihandle* ih);
+IUP_API char*     IupGetName(Ihandle* ih);
 
 IUP_API void      IupSetAttributeHandle(Ihandle* ih, const char* name, Ihandle* ih_named);
 IUP_API Ihandle*  IupGetAttributeHandle(Ihandle* ih, const char* name);
@@ -181,111 +181,101 @@ IUP_API int       IupGetClassAttributes(const char* classname, char** names, int
 IUP_API int       IupGetClassCallbacks(const char* classname, char** names, int n);
 IUP_API void      IupSaveClassAttributes(Ihandle* ih);
 IUP_API void      IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih);
-IUP_API void      IupSetClassDefaultAttribute(const char* classname, const char *name, const char* value);
+IUP_API void      IupSetClassDefaultAttribute(const char* classname, const char* name, const char* value);
 IUP_API int       IupClassMatch(Ihandle* ih, const char* classname);
 
-IUP_API Ihandle*  IupCreate (const char *classname);
-IUP_API Ihandle*  IupCreatev(const char *classname, void* *params);
-IUP_API Ihandle*  IupCreatep(const char *classname, void* first, ...);
+IUP_API Ihandle*  IupCreate(const char* classname);
+IUP_API Ihandle*  IupCreatev(const char* classname, void** params);
+IUP_API Ihandle*  IupCreatep(const char* classname, void* first, ...);
 /** @} */
 
 /** \defgroup containers Containers
  * \ingroup ctrl */
 /** @{ */
-IUP_API Ihandle*  IupFill (void);
+IUP_API Ihandle*  IupFill(void);
 IUP_API Ihandle*  IupSpace(void);
-IUP_API Ihandle*  IupRadio      (Ihandle* child);
-IUP_API Ihandle*  IupVbox       (Ihandle* child, ...);
-IUP_API Ihandle*  IupVboxv      (Ihandle* *children);
-IUP_API Ihandle*  IupZbox       (Ihandle* child, ...);
-IUP_API Ihandle*  IupZboxv      (Ihandle* *children);
-IUP_API Ihandle*  IupHbox       (Ihandle* child, ...);
-IUP_API Ihandle*  IupHboxv      (Ihandle* *children);
-IUP_API Ihandle*  IupNormalizer (Ihandle* ih_first, ...);
+IUP_API Ihandle*  IupRadio(Ihandle* child);
+IUP_API Ihandle*  IupVbox(Ihandle* child, ...);
+IUP_API Ihandle*  IupVboxv(Ihandle* *children);
+IUP_API Ihandle*  IupZbox(Ihandle* child, ...);
+IUP_API Ihandle*  IupZboxv(Ihandle* *children);
+IUP_API Ihandle*  IupHbox(Ihandle* child, ...);
+IUP_API Ihandle*  IupHboxv(Ihandle* *children);
+IUP_API Ihandle*  IupNormalizer(Ihandle* ih_first, ...);
 IUP_API Ihandle*  IupNormalizerv(Ihandle* *ih_list);
-IUP_API Ihandle*  IupCbox       (Ihandle* child, ...);
-IUP_API Ihandle*  IupCboxv      (Ihandle* *children);
-IUP_API Ihandle*  IupSbox       (Ihandle* child);
-IUP_API Ihandle*  IupSplit      (Ihandle* child1, Ihandle* child2);
-IUP_API Ihandle*  IupScrollBox  (Ihandle* child);
-IUP_API Ihandle*  IupFlatScrollBox(Ihandle* child);
-IUP_API Ihandle*  IupGridBox    (Ihandle* child, ...);
-IUP_API Ihandle*  IupGridBoxv   (Ihandle* *children);
-IUP_API Ihandle*  IupMultiBox   (Ihandle* child, ...);
-IUP_API Ihandle*  IupMultiBoxv  (Ihandle **children);
+IUP_API Ihandle*  IupCbox(Ihandle* child, ...);
+IUP_API Ihandle*  IupCboxv(Ihandle* *children);
+IUP_API Ihandle*  IupSbox(Ihandle* child);
+IUP_API Ihandle*  IupSplit(Ihandle* child1, Ihandle* child2);
+IUP_API Ihandle*  IupScrollBox(Ihandle* child);
+IUP_API Ihandle*  IupGridBox(Ihandle* child, ...);
+IUP_API Ihandle*  IupGridBoxv(Ihandle* *children);
+IUP_API Ihandle*  IupMultiBox(Ihandle* child, ...);
+IUP_API Ihandle*  IupMultiBoxv(Ihandle* *children);
 IUP_API Ihandle*  IupExpander(Ihandle* child);
-IUP_API Ihandle*  IupDetachBox  (Ihandle* child);
+IUP_API Ihandle*  IupDetachBox(Ihandle* child);
 IUP_API Ihandle*  IupBackgroundBox(Ihandle* child);
-IUP_API Ihandle*  IupFrame      (Ihandle* child);
-IUP_API Ihandle*  IupFlatFrame  (Ihandle* child);
-IUP_API Ihandle*  IupDialog     (Ihandle* child);
-IUP_API Ihandle*  IupPopover    (Ihandle* child);
+IUP_API Ihandle*  IupFrame(Ihandle* child);
+IUP_API Ihandle*  IupDialog(Ihandle* child);
+IUP_API Ihandle*  IupPopover(Ihandle* child);
 /** @} */
 
 /** \defgroup images Image Resources
  * \ingroup ctrl */
 /** @{ */
-IUP_API Ihandle*  IupImage      (int width, int height, const unsigned char* pixels);
-IUP_API Ihandle*  IupImageRGB   (int width, int height, const unsigned char* pixels);
-IUP_API Ihandle*  IupImageRGBA  (int width, int height, const unsigned char* pixels);
+IUP_API Ihandle*  IupImage(int width, int height, const unsigned char* pixels);
+IUP_API Ihandle*  IupImageRGB(int width, int height, const unsigned char* pixels);
+IUP_API Ihandle*  IupImageRGBA(int width, int height, const unsigned char* pixels);
 /** @} */
 
 /** \defgroup menus Menus
  * \ingroup ctrl */
 /** @{ */
-IUP_API Ihandle*  IupMenuItem       (const char* title, const char* action);
-IUP_API Ihandle*  IupSubmenu    (const char* title, Ihandle* child);
-IUP_API Ihandle*  IupMenuSeparator  (void);
-IUP_API Ihandle*  IupMenu       (Ihandle* child, ...);
-IUP_API Ihandle*  IupMenuv      (Ihandle* *children);
+IUP_API Ihandle*  IupMenuItem(const char* title, const char* action);
+IUP_API Ihandle*  IupSubmenu(const char* title, Ihandle* child);
+IUP_API Ihandle*  IupMenuSeparator(void);
+IUP_API Ihandle*  IupMenu(Ihandle* child, ...);
+IUP_API Ihandle*  IupMenuv(Ihandle* *children);
 /** @} */
 
 /** \defgroup controls Standard Controls
  * \ingroup ctrl */
 /** @{ */
-IUP_API Ihandle*  IupButton     (const char* title, const char* action);
-IUP_API Ihandle*  IupFlatButton (const char* title);
-IUP_API Ihandle*  IupFlatToggle (const char* title);
-IUP_API Ihandle*  IupDropButton (Ihandle* dropchild);
-IUP_API Ihandle*  IupFlatLabel  (const char* title);
+IUP_API Ihandle*  IupButton(const char* title, const char* action);
+IUP_API Ihandle*  IupDropButton(Ihandle* dropchild);
 IUP_API Ihandle*  IupSeparator(void);
-IUP_API Ihandle*  IupCanvas     (const char* action);
-IUP_API Ihandle*  IupUser       (void);
-IUP_API Ihandle*  IupThread     (void);
-IUP_API Ihandle*  IupLabel      (const char* title);
-IUP_API Ihandle*  IupList       (const char* action);
-IUP_API Ihandle*  IupFlatList   (void);
-IUP_API Ihandle*  IupText       (const char* action);
-IUP_API Ihandle*  IupMultiLine  (const char* action);
-IUP_API Ihandle*  IupToggle     (const char* title, const char* action);
-IUP_API Ihandle*  IupTimer      (void);
-IUP_API Ihandle*  IupTray       (void);
-IUP_API Ihandle*  IupNotify     (void);
-IUP_API Ihandle*  IupClipboard  (void);
+IUP_API Ihandle*  IupCanvas(const char* action);
+IUP_API Ihandle*  IupUser(void);
+IUP_API Ihandle*  IupThread(void);
+IUP_API Ihandle*  IupLabel(const char* title);
+IUP_API Ihandle*  IupList(const char* action);
+IUP_API Ihandle*  IupText(const char* action);
+IUP_API Ihandle*  IupMultiLine(const char* action);
+IUP_API Ihandle*  IupToggle(const char* title, const char* action);
+IUP_API Ihandle*  IupTimer(void);
+IUP_API Ihandle*  IupTray(void);
+IUP_API Ihandle*  IupNotify(void);
+IUP_API Ihandle*  IupClipboard(void);
 IUP_API Ihandle*  IupProgressBar(void);
-IUP_API Ihandle*  IupVal        (const char *type);
-IUP_API Ihandle*  IupFlatVal    (const char *type);
-IUP_API Ihandle*  IupScrollbar  (const char *type);
-IUP_API Ihandle*  IupFlatTree   (void);
-IUP_API Ihandle*  IupTabs       (Ihandle* child, ...);
-IUP_API Ihandle*  IupTabsv      (Ihandle* *children);
-IUP_API Ihandle*  IupFlatTabs   (Ihandle* first, ...);
-IUP_API Ihandle*  IupFlatTabsv  (Ihandle* *children);
-IUP_API Ihandle*  IupTree       (void);
-IUP_API Ihandle*  IupTable      (void);
-IUP_API Ihandle*  IupLink       (const char* url, const char* title);
+IUP_API Ihandle*  IupVal(const char* type);
+IUP_API Ihandle*  IupScrollbar(const char* type);
+IUP_API Ihandle*  IupTabs(Ihandle* child, ...);
+IUP_API Ihandle*  IupTabsv(Ihandle* *children);
+IUP_API Ihandle*  IupTree(void);
+IUP_API Ihandle*  IupTable(void);
+IUP_API Ihandle*  IupLink(const char* url, const char* title);
 IUP_API Ihandle*  IupAnimatedLabel(Ihandle* animation);
-IUP_API Ihandle*  IupDatePick   (void);
-IUP_API Ihandle*  IupCalendar   (void);
-IUP_API Ihandle*  IupColorbar   (void);
-IUP_API Ihandle*  IupGauge      (void);
-IUP_API Ihandle*  IupDial       (const char* type);
+IUP_API Ihandle*  IupDatePick(void);
+IUP_API Ihandle*  IupCalendar(void);
+IUP_API Ihandle*  IupColorbar(void);
+IUP_API Ihandle*  IupGauge(void);
+IUP_API Ihandle*  IupDial(const char* type);
 IUP_API Ihandle*  IupColorBrowser(void);
 /** @} */
 
 /* Old controls, use SPIN attribute of IupText */
-IUP_API Ihandle*  IupSpin       (void);
-IUP_API Ihandle*  IupSpinbox    (Ihandle* child);
+IUP_API Ihandle*  IupSpin(void);
+IUP_API Ihandle*  IupSpinbox(Ihandle* child);
 
 
 /** \defgroup utilities Utilities
@@ -293,67 +283,67 @@ IUP_API Ihandle*  IupSpinbox    (Ihandle* child);
 /** @{ */
 
 /* String compare utility */
-IUP_API int IupStringCompare(const char* str1, const char* str2, int casesensitive, int lexicographic);
-
-/* IupImage utilities */
-IUP_API Ihandle* IupImageGetHandle(const char* name);
-IUP_API int IupImageSave(Ihandle* ih, const char* filename, const char* format);
-IUP_API unsigned char* IupImageSaveToBuffer(Ihandle* ih, const char* format, int* size);
+IUP_API int       IupStringCompare(const char* str1, const char* str2, int casesensitive, int lexicographic);
 
 /* IupText utilities */
-IUP_API void  IupTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos);
-IUP_API void  IupTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col);
+IUP_API void      IupTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos);
+IUP_API void      IupTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col);
 
 /* IupText, IupList, IupTree, and IupMatrix utility */
-IUP_API int   IupConvertXYToPos(Ihandle* ih, int x, int y);
+IUP_API int       IupConvertXYToPos(Ihandle* ih, int x, int y);
 
 /* Legacy API names, still used internally */
-IUP_API void IupStoreGlobal(const char* name, const char* value);
-IUP_API void IupStoreAttribute(Ihandle* ih, const char* name, const char* value);
-IUP_API void IupSetfAttribute(Ihandle* ih, const char* name, const char* format, ...);
-IUP_API void IupStoreAttributeId(Ihandle* ih, const char* name, int id, const char *value);
-IUP_API void IupSetfAttributeId(Ihandle* ih, const char* name, int id, const char* f, ...);
-IUP_API void IupStoreAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* value);
-IUP_API void IupSetfAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* format, ...);
+IUP_API void      IupStoreGlobal(const char* name, const char* value);
+IUP_API void      IupStoreAttribute(Ihandle* ih, const char* name, const char* value);
+IUP_API void      IupSetfAttribute(Ihandle* ih, const char* name, const char* format, ...);
+IUP_API void      IupStoreAttributeId(Ihandle* ih, const char* name, int id, const char* value);
+IUP_API void      IupSetfAttributeId(Ihandle* ih, const char* name, int id, const char* f, ...);
+IUP_API void      IupStoreAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* value);
+IUP_API void      IupSetfAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* format, ...);
 
 /* IupTree and IupFlatTree utilities (work for both) */
-IUP_API int   IupTreeSetUserId(Ihandle* ih, int id, void* userid);
-IUP_API void* IupTreeGetUserId(Ihandle* ih, int id);
-IUP_API int   IupTreeGetId(Ihandle* ih, void *userid);
-IUP_API void  IupTreeSetAttributeHandle(Ihandle* ih, const char* name, int id, Ihandle* ih_named); /* deprecated, use IupSetAttributeHandleId */
+IUP_API int       IupTreeSetUserId(Ihandle* ih, int id, void* userid);
+IUP_API void*     IupTreeGetUserId(Ihandle* ih, int id);
+IUP_API int       IupTreeGetId(Ihandle* ih, void* userid);
+IUP_API void      IupTreeSetAttributeHandle(Ihandle* ih, const char* name, int id, Ihandle* ih_named); /* deprecated, use IupSetAttributeHandleId */
+
+/* IupImage utilities */
+IUP_API Ihandle*       IupImageGetHandle(const char* name);
+IUP_API int            IupImageSave(Ihandle* ih, const char* filename, const char* format);
+IUP_API unsigned char* IupImageSaveToBuffer(Ihandle* ih, const char* format, int* size);
 /** @} */
 
 
 /** \defgroup predefined Pre-defined Dialogs
  * \ingroup ctrl */
 /** @{ */
-IUP_API Ihandle* IupFileDlg(void);
-IUP_API Ihandle* IupMessageDlg(void);
-IUP_API Ihandle* IupColorDlg(void);
-IUP_API Ihandle* IupFontDlg(void);
-IUP_API Ihandle* IupProgressDlg(void);
+IUP_API Ihandle*  IupFileDlg(void);
+IUP_API Ihandle*  IupMessageDlg(void);
+IUP_API Ihandle*  IupColorDlg(void);
+IUP_API Ihandle*  IupFontDlg(void);
+IUP_API Ihandle*  IupProgressDlg(void);
 
-IUP_API int  IupGetFile(char *arq);
-IUP_API void IupMessage(const char *title, const char *msg);
-IUP_API void IupMessagef(const char *title, const char *format, ...);
-IUP_API void IupMessageError(Ihandle* parent, const char* message);
-IUP_API int IupMessageAlarm(Ihandle* parent, const char* title, const char *message, const char *buttons);
-IUP_API int  IupAlarm(const char *title, const char *msg, const char *b1, const char *b2, const char *b3);
-IUP_API int  IupListDialog(int type, const char *title, int size, const char** list, int op, int max_col, int max_lin, int* marks);
-IUP_API int  IupGetText(const char* title, char* text, int maxsize);
-IUP_API int  IupGetColor(int x, int y, unsigned char* r, unsigned char* g, unsigned char* b);
+IUP_API int       IupGetFile(char* arq);
+IUP_API void      IupMessage(const char* title, const char* msg);
+IUP_API void      IupMessagef(const char* title, const char* format, ...);
+IUP_API void      IupMessageError(Ihandle* parent, const char* message);
+IUP_API int       IupMessageAlarm(Ihandle* parent, const char* title, const char* message, const char* buttons);
+IUP_API int       IupAlarm(const char* title, const char* msg, const char* b1, const char* b2, const char* b3);
+IUP_API int       IupListDialog(int type, const char* title, int size, const char** list, int op, int max_col, int max_lin, int* marks);
+IUP_API int       IupGetText(const char* title, char* text, int maxsize);
+IUP_API int       IupGetColor(int x, int y, unsigned char* r, unsigned char* g, unsigned char* b);
 
 typedef int (*Iparamcb)(Ihandle* dialog, int param_index, void* user_data);
-IUP_API int IupGetParam(const char* title, Iparamcb action, void* user_data, const char* format,...);
-IUP_API int IupGetParamv(const char* title, Iparamcb action, void* user_data, const char* format, int param_count, int param_extra, void** param_data);
-IUP_API Ihandle* IupParam(const char* format);
+IUP_API int       IupGetParam(const char* title, Iparamcb action, void* user_data, const char* format, ...);
+IUP_API int       IupGetParamv(const char* title, Iparamcb action, void* user_data, const char* format, int param_count, int param_extra, void** param_data);
+IUP_API Ihandle*  IupParam(const char* format);
 IUP_API Ihandle*  IupParamBox(Ihandle* param, ...);
 IUP_API Ihandle*  IupParamBoxv(Ihandle* *param_array);
 
-IUP_API Ihandle* IupLayoutDialog(Ihandle* dialog);
-IUP_API Ihandle* IupElementPropertiesDialog(Ihandle* parent, Ihandle* elem);
-IUP_API Ihandle* IupGlobalsDialog(void);
-IUP_API Ihandle* IupClassInfoDialog(Ihandle* parent);
+IUP_API Ihandle*  IupLayoutDialog(Ihandle* dialog);
+IUP_API Ihandle*  IupElementPropertiesDialog(Ihandle* parent, Ihandle* elem);
+IUP_API Ihandle*  IupGlobalsDialog(void);
+IUP_API Ihandle*  IupClassInfoDialog(Ihandle* parent);
 /** @} */
 
 
@@ -403,7 +393,7 @@ enum{IUP_SHOW, IUP_RESTORE, IUP_MINIMIZE, IUP_MAXIMIZE, IUP_HIDE};
 /************************************************************************/
 /*               SCROLL_CB Callback Values                              */
 /************************************************************************/
-enum{IUP_SBUP,   IUP_SBDN,    IUP_SBPGUP,   IUP_SBPGDN,    IUP_SBPOSV, IUP_SBDRAGV, 
+enum{IUP_SBUP,   IUP_SBDN,    IUP_SBPGUP,   IUP_SBPGDN,    IUP_SBPOSV, IUP_SBDRAGV,
      IUP_SBLEFT, IUP_SBRIGHT, IUP_SBPGLEFT, IUP_SBPGRIGHT, IUP_SBPOSH, IUP_SBDRAGH};
 
 /************************************************************************/
@@ -430,14 +420,14 @@ enum{IUP_SBUP,   IUP_SBDN,    IUP_SBPGUP,   IUP_SBPGDN,    IUP_SBPOSV, IUP_SBDRA
 /************************************************************************/
 /*                      Pre-Defined Masks                               */
 /************************************************************************/
-#define IUP_MASK_FLOAT       "[+/-]?(/d+/.?/d*|/./d+)"
-#define IUP_MASK_UFLOAT            "(/d+/.?/d*|/./d+)"
-#define IUP_MASK_EFLOAT      "[+/-]?(/d+/.?/d*|/./d+)([eE][+/-]?/d+)?"
-#define IUP_MASK_UEFLOAT           "(/d+/.?/d*|/./d+)([eE][+/-]?/d+)?"
-#define IUP_MASK_FLOATCOMMA  "[+/-]?(/d+/,?/d*|/,/d+)"
-#define IUP_MASK_UFLOATCOMMA       "(/d+/,?/d*|/,/d+)"
+#define IUP_MASK_FLOAT        "[+/-]?(/d+/.?/d*|/./d+)"
+#define IUP_MASK_UFLOAT       "(/d+/.?/d*|/./d+)"
+#define IUP_MASK_EFLOAT       "[+/-]?(/d+/.?/d*|/./d+)([eE][+/-]?/d+)?"
+#define IUP_MASK_UEFLOAT      "(/d+/.?/d*|/./d+)([eE][+/-]?/d+)?"
+#define IUP_MASK_FLOATCOMMA   "[+/-]?(/d+/,?/d*|/,/d+)"
+#define IUP_MASK_UFLOATCOMMA  "(/d+/,?/d*|/,/d+)"
 #define IUP_MASK_INT          "[+/-]?/d+"
-#define IUP_MASK_UINT               "/d+"
+#define IUP_MASK_UINT         "/d+"
 
 
 
@@ -457,7 +447,7 @@ enum{IUP_SBUP,   IUP_SBDN,    IUP_SBPGUP,   IUP_SBPGDN,    IUP_SBPOSV, IUP_SBDRA
 /************************************************************************/
 /*                   Used by IupColorbar                                */
 /************************************************************************/
-#define IUP_PRIMARY -1
+#define IUP_PRIMARY   -1
 #define IUP_SECONDARY -2
 
 /************************************************************************/
