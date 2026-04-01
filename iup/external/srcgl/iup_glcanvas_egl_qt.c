@@ -47,9 +47,6 @@ extern int iupQtHasWaylandSupport(void);
   #include "iup_glcanvas_egl_wayland.c"
 #endif
 
-/* Qt canvas function from iupqt_canvas.cpp */
-extern void* iupqtCanvasGetContext(Ihandle* ih);
-
 #ifdef __cplusplus
 }
 #endif
@@ -78,7 +75,7 @@ static void iupEGLBackendGetScaleAndSize(Ihandle* ih, IGlControlData* gldata, in
 static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
 {
   QWindow* qwindow;
-  void* canvas_widget = iupqtCanvasGetContext(ih);
+  void* canvas_widget = iupAttribGet(ih, "_IUPQT_CANVAS_WIDGET");
 
   if (!canvas_widget)
   {
