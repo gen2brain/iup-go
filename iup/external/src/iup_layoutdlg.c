@@ -136,7 +136,7 @@ static int iLayoutFindDialogNext_CB(Ihandle* ih)
     IupSetAttribute(lbl_result, "TITLE", "");
   }
   else
-    IupSetAttribute(lbl_result, "TITLE", "Not Found!");
+    IupSetStrAttribute(lbl_result, "TITLE", "_@IUP_NOTFOUND");
 
   return IUP_DEFAULT;
 }
@@ -188,7 +188,7 @@ IUP_SDK_API Ihandle* iupLayoutFindElementDialog(Ihandle *tree, Ihandle* elem)
   bt_next = IupButton("Find Next", NULL);
   IupSetStrAttribute(bt_next, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(bt_next, "ACTION", (Icallback)iLayoutFindDialogNext_CB);
-  bt_close = IupButton("Close", NULL);
+  bt_close = IupButton("_@IUP_CLOSE", NULL);
   IupSetCallback(bt_close, "ACTION", (Icallback)iLayoutFindDialogClose_CB);
   IupSetStrAttribute(bt_close, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
 

@@ -664,11 +664,11 @@ static int winuiFontDlgPopup(Ihandle* ih, int x, int y)
   if (title)
     dialog.Title(box_value(iupwinuiStringToHString(title)));
   else
-    dialog.Title(box_value(L"Font"));
+    dialog.Title(box_value(iupwinuiStringToHString(IupGetLanguageString("IUP_FONTDLG"))));
 
   dialog.Content(content);
-  dialog.PrimaryButtonText(L"OK");
-  dialog.CloseButtonText(L"Cancel");
+  dialog.PrimaryButtonText(iupwinuiStringToHString(IupGetLanguageString("IUP_OK")));
+  dialog.CloseButtonText(iupwinuiStringToHString(IupGetLanguageString("IUP_CANCEL")));
   dialog.DefaultButton(ContentDialogButton::Primary);
 
   Ihandle* parent = winuiFontDlgFindParent(ih);
