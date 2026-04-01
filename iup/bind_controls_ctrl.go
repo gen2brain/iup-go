@@ -179,3 +179,13 @@ func FlatScrollBox(child Ihandle) Ihandle {
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
+
+// DropButton creates an interface element that is a button with a drop down arrow.
+// It can function as a button and as a dropdown. Its visual presentation can contain a text and/or an image.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_dropbutton.md
+func DropButton(dropchild Ihandle) Ihandle {
+	h := mkih(C.IupDropButton(dropchild.ptr()))
+	h.SetAttribute("UUID", uuid.NewString())
+	return h
+}

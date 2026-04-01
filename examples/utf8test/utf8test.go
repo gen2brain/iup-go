@@ -25,6 +25,7 @@ func main() {
 	labelArabic := iup.Label("Arabic: مرحبا بالعالم (Marhaban bialealim)")
 	labelGreek := iup.Label("Greek: Γεια σου κόσμε (Geia sou kosme)")
 	labelHebrew := iup.Label("Hebrew: שלום עולם (Shalom olam)")
+	labelSerbian := iup.Label("Serbian: Здраво свете (Zdravo svete)")
 	labelHindi := iup.Label("Hindi: नमस्ते दुनिया (Namaste duniya)")
 	labelThai := iup.Label("Thai: สวัสดีชาวโลก (S̄wạs̄dī chāw lok)")
 	labelEmoji := iup.Label("Emoji: 🌍🌎🌏 Hello 👋 World 🌟")
@@ -94,6 +95,7 @@ func main() {
 			labelArabic,
 			labelGreek,
 			labelHebrew,
+			labelSerbian,
 			labelHindi,
 			labelThai,
 			labelEmoji,

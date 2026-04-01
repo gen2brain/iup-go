@@ -1,3 +1,5 @@
+//go:build ctrl
+
 package main
 
 import (
@@ -11,6 +13,7 @@ var selectionLabel iup.Ihandle
 func main() {
 	iup.Open()
 	defer iup.Close()
+	iup.ControlsOpen()
 
 	selectionLabel = iup.Label("Selected: (none)").SetAttribute("SIZE", "200x")
 

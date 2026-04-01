@@ -242,7 +242,6 @@ IUP_API Ihandle*  IupMenuv(Ihandle* *children);
  * \ingroup ctrl */
 /** @{ */
 IUP_API Ihandle*  IupButton(const char* title, const char* action);
-IUP_API Ihandle*  IupDropButton(Ihandle* dropchild);
 IUP_API Ihandle*  IupSeparator(void);
 IUP_API Ihandle*  IupCanvas(const char* action);
 IUP_API Ihandle*  IupUser(void);

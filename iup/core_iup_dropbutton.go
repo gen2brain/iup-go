@@ -1,6 +1,8 @@
+//go:build ctrl
+
 package iup
 
 /*
-#include "external/src/iup_dropbutton.c"
+#include "external/srcctrl/iup_dropbutton.c"
 */
 import "C"
