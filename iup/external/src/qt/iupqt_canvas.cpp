@@ -677,6 +677,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
     canvas->setAttribute(Qt::WA_DontCreateNativeAncestors, true);
     canvas->setAttribute(Qt::WA_NoSystemBackground, true);
     canvas->setAttribute(Qt::WA_PaintOnScreen, true);
+    iupAttribSet(ih, "_IUPQT_CANVAS_WIDGET", (char*)canvas_widget);
   }
 
   /* Get scrollbar flags, required for DX/DY attribute setters */
