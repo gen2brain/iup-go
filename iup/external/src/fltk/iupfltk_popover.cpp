@@ -84,9 +84,12 @@ protected:
       {
         if (autohide_enabled)
         {
+          Fl_Widget* f = Fl::focus();
+          if (f && (f == this || contains(f)))
+            break;
+
           Ihandle* anchor = (Ihandle*)iupAttribGet(iup_handle, "_IUP_POPOVER_ANCHOR");
           Fl_Widget* below = Fl::belowmouse();
-
           if (anchor && anchor->handle && below == (Fl_Widget*)anchor->handle)
             break;
 
@@ -98,6 +101,7 @@ protected:
 
     return Fl_Window::handle(event);
   }
+
 };
 
 static int fltkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)

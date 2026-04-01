@@ -550,6 +550,17 @@ static int fltkToggleMapMethod(Ihandle* ih)
     IupFltkToggleButton* toggle = new IupFltkToggleButton(0, 0, 10, 10, ih);
     button = toggle;
 
+    if (is_radio)
+    {
+      toggle->type(FL_RADIO_BUTTON);
+      ih->data->is_radio = 1;
+
+      if (ih == IupGetHandle(IupGetAttribute(radio, "VALUE_HANDLE")))
+        toggle->value(1);
+      else if (!IupGetAttribute(radio, "VALUE_HANDLE"))
+        toggle->value(1);
+    }
+
     if (ih->data->flat)
       toggle->box(FL_FLAT_BOX);
   }
