@@ -37,6 +37,7 @@ IUPCONTROLS_API int IupControlsOpen(void)
   iupRegisterClass(iupFlatValNewClass());
   iupRegisterClass(iupFlatTabsNewClass());
   iupRegisterClass(iupFlatScrollBoxNewClass());
+  iupRegisterClass(iupDropButtonNewClass());
 
   IupSetGlobal("_IUP_CONTROLS_OPEN", "1");
 

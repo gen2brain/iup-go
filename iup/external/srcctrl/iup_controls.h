@@ -25,6 +25,7 @@ Iclass* iupFlatFrameNewClass(void);
 Iclass* iupFlatListNewClass(void);
 Iclass* iupFlatTreeNewClass(void);
 Iclass* iupFlatValNewClass(void);
+Iclass* iupDropButtonNewClass(void);
 Iclass* iupFlatTabsNewClass(void);
 Iclass* iupFlatScrollBoxNewClass(void);
 

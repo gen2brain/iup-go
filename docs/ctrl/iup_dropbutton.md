@@ -292,4 +292,4 @@ The following screenshots where taken while the button is highlighted or dropped
 
 ### See Also
 
-[IupImage](iup_image.md), [IupButton](iup_button.md), [IupToggle](iup_toggle.md), [IupLabel](iup_label.md), [IupList](iup_list.md)
+[IupImage](../elem/iup_image.md), [IupButton](../elem/iup_button.md), [IupToggle](../elem/iup_toggle.md), [IupLabel](../elem/iup_label.md), [IupList](../elem/iup_list.md)

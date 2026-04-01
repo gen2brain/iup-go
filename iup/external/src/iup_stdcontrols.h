@@ -37,7 +37,6 @@ Iclass* iupSpinboxNewClass(void);
 Iclass* iupListNewClass(void);
 Iclass* iupTreeNewClass(void);
 Iclass* iupLinkNewClass(void);
-Iclass* iupDropButtonNewClass(void);
 Iclass* iupSeparatorNewClass(void);
 Iclass* iupDialNewClass(void);
 Iclass* iupGaugeNewClass(void);
