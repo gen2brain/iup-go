@@ -91,16 +91,3 @@ extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)
   key[3] = (state & FL_META) ? 'Y' : ' ';
   key[4] = 0;
 }
-
-extern "C" IUP_SDK_API void iupdrvSleep(int time)
-{
-  Fl_Timestamp start = Fl::now();
-
-  while (Fl::seconds_since(start) * 1000.0 < (double)time)
-  {
-    double remaining = (time / 1000.0) - Fl::seconds_since(start);
-    if (remaining <= 0) break;
-    double wait = (remaining > 0.1) ? 0.1 : remaining;
-    Fl::wait(wait);
-  }
-}

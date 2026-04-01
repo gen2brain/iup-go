@@ -48,8 +48,7 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
       dialog_window->show();
   }
 
-  if (widget->take_focus())
-    iupSetCurrentFocus(ih);
+  widget->take_focus();
 }
 
 IUP_DRV_API int iupfltkFocusInOutEvent(Fl_Widget* widget, Ihandle* ih, int event)
