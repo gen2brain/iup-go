@@ -2,7 +2,6 @@
 
 Creates a month calendar interface element, where the user can select a date.
 
-Not available in Motif.
 
 ### Creation
 
@@ -38,7 +37,7 @@ Not supported in WinUI and macOS.
 
 In Windows, the view is changed when the month of year is clicked, so the user can select the month of the year or a year among years.
 
-In GTK uses GtkCalendar, in Windows uses MONTHCAL_CLASS, in WinUI uses XAML CalendarView, in macOS uses NSDatePicker, in Qt uses QCalendarWidget, and in FLTK and EFL uses a custom calendar control.
+In GTK uses GtkCalendar, in Windows uses MONTHCAL_CLASS, in WinUI uses XAML CalendarView, in macOS uses NSDatePicker, in Qt uses QCalendarWidget, in EFL uses EFL_UI_CALENDAR, and in FLTK and Motif uses a custom calendar control.
 
 ### Examples
 
