@@ -561,6 +561,8 @@ static int gtk4DialogMapMethod(Ihandle* ih)
 
   if (has_titlebar)
     gtk_window_set_title((GtkWindow*)ih->handle, "");
+  else if (!iupAttribGetBoolean(ih, "BORDER") && !iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+    gtk_window_set_decorated((GtkWindow*)ih->handle, FALSE);
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
