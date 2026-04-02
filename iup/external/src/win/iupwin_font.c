@@ -16,7 +16,6 @@
 #include "iup_array.h"
 #include "iup_attrib.h"
 #include "iup_object.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_assert.h"
 
@@ -376,6 +375,83 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charhei
 
   if (charwidth)  *charwidth = winfont->charwidth; 
   if (charheight) *charheight = winfont->charheight;
+}
+
+static int CALLBACK winFontFamilyEnumProc(const LOGFONTW* lf, const TEXTMETRICW* tm, DWORD fontType, LPARAM lParam)
+{
+  Iarray* arr = (Iarray*)lParam;
+  char** entry;
+  char name[256];
+  int len;
+
+  (void)tm;
+  (void)fontType;
+
+  len = WideCharToMultiByte(CP_UTF8, 0, lf->lfFaceName, -1, name, sizeof(name), NULL, NULL);
+  if (len <= 0)
+    return TRUE;
+
+  if (name[0] == '@')
+    return TRUE;
+
+  entry = (char**)iupArrayInc(arr);
+  entry[iupArrayCount(arr) - 1] = iupStrDup(name);
+
+  return TRUE;
+}
+
+static int winFontFamilyCompare(const void* a, const void* b)
+{
+  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
+}
+
+IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
+{
+  HDC hdc;
+  LOGFONTW lf;
+  Iarray* arr;
+  char** data;
+  int i, count;
+
+  arr = iupArrayCreate(256, sizeof(char*));
+
+  hdc = GetDC(NULL);
+  memset(&lf, 0, sizeof(lf));
+  lf.lfCharSet = DEFAULT_CHARSET;
+  lf.lfFaceName[0] = L'\0';
+  lf.lfPitchAndFamily = 0;
+  EnumFontFamiliesExW(hdc, &lf, (FONTENUMPROCW)winFontFamilyEnumProc, (LPARAM)arr, 0);
+  ReleaseDC(NULL, hdc);
+
+  count = iupArrayCount(arr);
+  if (count == 0)
+  {
+    iupArrayDestroy(arr);
+    *list = NULL;
+    return 0;
+  }
+
+  data = (char**)iupArrayReleaseData(arr);
+  iupArrayDestroy(arr);
+
+  qsort(data, count, sizeof(char*), winFontFamilyCompare);
+
+  /* remove duplicates */
+  {
+    int j = 0;
+    for (i = 1; i < count; i++)
+    {
+      if (iupStrEqualNoCase(data[j], data[i]))
+        free(data[i]);
+      else
+        data[++j] = data[i];
+    }
+    count = j + 1;
+  }
+
+  *list = (char**)realloc(data, count * sizeof(char*));
+
+  return count;
 }
 
 IUP_SDK_API void iupdrvFontInit(void)

@@ -55,6 +55,11 @@ IUP_SDK_API char* iupdrvGetSystemFont(void);
  * \ingroup drvfont */
 IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value);
 
+/** Retrieve a sorted list of available font family names.
+ * Returns the number of families. The list is an array of iupStrDup'd strings,
+ * caller must free each entry and the array itself.
+ * \ingroup drvfont */
+IUP_SDK_API int iupdrvFontGetFamilyList(char*** list);
 
 
 /** Compensates IupMatrix limitation in Get FONT.

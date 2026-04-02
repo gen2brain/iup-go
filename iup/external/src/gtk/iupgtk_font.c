@@ -17,7 +17,6 @@
 #include "iup_attrib.h"
 #include "iup_array.h"
 #include "iup_object.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_assert.h"
 #include "iup_markup.h"
@@ -507,6 +506,34 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charhei
 
   if (charwidth)
     *charwidth = gtkfont->charwidth;
+}
+
+static int gtkFontFamilyCompare(const void* a, const void* b)
+{
+  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
+}
+
+IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
+{
+  PangoFontFamily** families;
+  int i, n_families;
+
+  pango_context_list_families(gtk_fonts_context, &families, &n_families);
+  if (n_families == 0 || !families)
+  {
+    *list = NULL;
+    return 0;
+  }
+
+  *list = (char**)malloc(n_families * sizeof(char*));
+  for (i = 0; i < n_families; i++)
+    (*list)[i] = iupStrDup(pango_font_family_get_name(families[i]));
+
+  g_free(families);
+
+  qsort(*list, n_families, sizeof(char*), gtkFontFamilyCompare);
+
+  return n_families;
 }
 
 IUP_SDK_API void iupdrvFontInit(void)

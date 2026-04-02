@@ -406,6 +406,45 @@ extern "C" IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, i
   if (charheight) *charheight = fltkfont->charheight;
 }
 
+static int fltkFontFamilyCompare(const void* a, const void* b)
+{
+  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
+}
+
+extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
+{
+  Fl_Font total = Fl::set_fonts(NULL);
+  int i, count = 0;
+  char prev[256] = "";
+
+  char** temp = (char**)malloc(total * sizeof(char*));
+
+  for (i = 0; i < total; i++)
+  {
+    int attr = 0;
+    const char* name = Fl::get_font_name((Fl_Font)i, &attr);
+    if (!name || !name[0]) continue;
+    if (attr != 0) continue;
+    if (iupStrEqual(name, prev)) continue;
+
+    temp[count] = iupStrDup(name);
+    iupStrCopyN(prev, sizeof(prev), name);
+    count++;
+  }
+
+  if (count == 0)
+  {
+    free(temp);
+    *list = NULL;
+    return 0;
+  }
+
+  *list = (char**)realloc(temp, count * sizeof(char*));
+  qsort(*list, count, sizeof(char*), fltkFontFamilyCompare);
+
+  return count;
+}
+
 extern "C" IUP_SDK_API void iupdrvFontInit(void)
 {
   fltk_fonts = iupArrayCreate(50, sizeof(IfltkFont));
