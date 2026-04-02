@@ -311,8 +311,8 @@ protected:
       }
     }
 
-    /* Handle iupqt key press event for callbacks */
-    if (iupqtKeyPressEvent(this, event, ih))
+    /* Handle text key press event (includes ACTION callback) */
+    if (qtTextKeyPress(ih, event))
     {
       event->accept();
       return;
@@ -623,33 +623,39 @@ static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt)
     return 1;
   }
 
-  /* Call ACTION callback for single-line */
-  if (!ih->data->is_multiline)
+  /* Call ACTION callback */
   {
     IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
     if (cb)
     {
-      int key = evt->key();
       QString text = evt->text();
 
-      /* Only call ACTION for printable characters, not control characters
-       * Control characters (like backspace, delete, etc.) should be handled
-       * by K_ANY callback and default behavior, not by ACTION callback. */
       if (!text.isEmpty())
       {
         QChar ch = text.at(0);
-        /* Check if character is printable (not a control character) */
         if (ch.isPrint() && ch.unicode() >= 32)
         {
           int iup_key = ch.toLatin1();
-          IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
-          int pos = edit->cursorPosition();
+          const char* value;
+          QString value_str;
 
-          int result = cb(ih, iup_key, (char*)edit->text().toUtf8().constData());
+          if (ih->data->is_multiline)
+          {
+            IupQtTextEdit* edit = (IupQtTextEdit*)ih->handle;
+            value_str = edit->toPlainText();
+          }
+          else
+          {
+            IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
+            value_str = edit->text();
+          }
+          value = value_str.toUtf8().constData();
+
+          int result = cb(ih, iup_key, (char*)value);
 
           if (result == IUP_IGNORE)
           {
-            return 1;  /* Block the key */
+            return 1;
           }
           else if (result == IUP_CLOSE)
           {
@@ -658,22 +664,29 @@ static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt)
           }
           else if (result != IUP_DEFAULT && result > 0)
           {
-            /* Replace the typed character with the returned character
-             * (e.g., return K_asterisk to show '*' for password input) */
             QString replacement = QString(QChar(result));
 
-            /* Temporarily disable callbacks to prevent recursion */
             ih->data->disable_callbacks = 1;
 
-            /* Insert the replacement character at cursor position */
-            QString current = edit->text();
-            current.insert(pos, replacement);
-            edit->setText(current);
-            edit->setCursorPosition(pos + 1);
+            if (ih->data->is_multiline)
+            {
+              IupQtTextEdit* edit = (IupQtTextEdit*)ih->handle;
+              QTextCursor cursor = edit->textCursor();
+              cursor.insertText(replacement);
+            }
+            else
+            {
+              IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
+              int pos = edit->cursorPosition();
+              QString current = edit->text();
+              current.insert(pos, replacement);
+              edit->setText(current);
+              edit->setCursorPosition(pos + 1);
+            }
 
             ih->data->disable_callbacks = 0;
 
-            return 1;  /* Block the original key */
+            return 1;
           }
         }
       }
