@@ -502,6 +502,17 @@ static int fltkDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   return iupBaseSetMaxSizeAttrib(ih, value);
 }
 
+static int fltkDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrBoolean(value))
+  {
+    IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+    if (dialog)
+      dialog->show();
+  }
+  return 0;
+}
+
 static int fltkDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 {
   IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
@@ -813,6 +824,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, iupfltkGetNativeWindowHandleName(), iupfltkGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT | IUPAF_NO_STRING);
 
+  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, fltkDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, fltkDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
