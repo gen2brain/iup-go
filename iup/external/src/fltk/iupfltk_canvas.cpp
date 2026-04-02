@@ -51,6 +51,24 @@ public:
     : Fl_Group(x, y, w, h), iup_handle(ih) {}
 
 protected:
+  void draw() override
+  {
+    Fl_Widget* canvas = (Fl_Widget*)iup_handle->handle;
+    if (canvas)
+    {
+      fl_push_clip(canvas->x(), canvas->y(), canvas->w(), canvas->h());
+      Fl_Group::draw();
+      fl_pop_clip();
+
+      Fl_Scrollbar* sb_h = (Fl_Scrollbar*)iupAttribGet(iup_handle, "_IUPFLTK_SBHORIZ");
+      Fl_Scrollbar* sb_v = (Fl_Scrollbar*)iupAttribGet(iup_handle, "_IUPFLTK_SBVERT");
+      if (sb_h && sb_h->visible()) draw_child(*sb_h);
+      if (sb_v && sb_v->visible()) draw_child(*sb_v);
+    }
+    else
+      Fl_Group::draw();
+  }
+
   int handle(int event) override
   {
     if (event == FL_PUSH || event == FL_DRAG || event == FL_RELEASE ||
