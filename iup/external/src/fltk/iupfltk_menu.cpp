@@ -383,7 +383,7 @@ static char* fltkMenuItemGetTitleAttrib(Ihandle* ih)
 
 static int fltkMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
-  (void)value;
+  iupAttribSetStr(ih, "VALUE", value);
   fltkMenuTriggerRebuild(ih);
   return 1;
 }

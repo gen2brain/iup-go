@@ -145,7 +145,15 @@ static void qtMenuItemTriggered(Ihandle* ih)
 {
   QAction* action = (QAction*)ih->handle;
 
-  /* Handle AUTOTOGGLE for items with images */
+  /* Undo Qt's auto-toggle so user callback sees the original state */
+  if (action->isCheckable() && !iupAttribGetBoolean(ih, "AUTOTOGGLE") && !iupAttribGetBoolean(ih->parent, "RADIO"))
+  {
+    action->blockSignals(true);
+    action->setChecked(!action->isChecked());
+    action->blockSignals(false);
+  }
+
+  /* AUTOTOGGLE for non-checkable items with images */
   if (!action->isCheckable() && iupAttribGetBoolean(ih, "AUTOTOGGLE"))
   {
     if (iupAttribGetBoolean(ih, "VALUE"))
@@ -153,7 +161,6 @@ static void qtMenuItemTriggered(Ihandle* ih)
     else
       iupAttribSet(ih, "VALUE", "ON");
 
-    /* Update image if needed */
     QPixmap* pixbuf = (QPixmap*)iupImageGetImage(iupAttribGet(ih, "IMAGE"), ih, 0, nullptr);
     if (iupStrBoolean(iupAttribGet(ih, "VALUE")))
     {
@@ -163,6 +170,14 @@ static void qtMenuItemTriggered(Ihandle* ih)
     }
     if (pixbuf)
       action->setIcon(QIcon(*pixbuf));
+  }
+
+  /* AUTOTOGGLE for checkable items */
+  if (action->isCheckable() && iupAttribGetBoolean(ih, "AUTOTOGGLE"))
+  {
+    action->blockSignals(true);
+    action->setChecked(!action->isChecked());
+    action->blockSignals(false);
   }
 
   /* Call ACTION callback */
