@@ -59,8 +59,6 @@ static void winuiValUpdateValue(Ihandle* ih, bool button_release)
     return;
 
   double sliderVal = slider.Value();
-  if (ih->data->inverted)
-    sliderVal = WINUI_VAL_MAX - sliderVal;
 
   ih->data->val = (sliderVal / WINUI_VAL_MAX) * (ih->data->vmax - ih->data->vmin) + ih->data->vmin;
   iupValCropValue(ih);
@@ -107,9 +105,6 @@ static int winuiValSetValueAttrib(Ihandle* ih, const char* value)
         if (range == 0) return 0;
         sliderVal = ((ih->data->val - ih->data->vmin) / range) * WINUI_VAL_MAX;
       }
-      if (ih->data->inverted)
-        sliderVal = WINUI_VAL_MAX - sliderVal;
-
       if (aux) aux->ignore_changed = true;
       slider.Value(sliderVal);
       if (aux) aux->ignore_changed = false;
@@ -188,6 +183,20 @@ static int winuiValSetTicksPosAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int winuiValSetInvertedAttrib(Ihandle* ih, const char* value)
+{
+  ih->data->inverted = iupStrBoolean(value);
+
+  Slider slider = winuiGetHandle<Slider>(ih);
+  if (slider)
+  {
+    int reverse = (ih->data->orientation == IVAL_VERTICAL && !ih->data->inverted) ||
+                  (ih->data->orientation == IVAL_HORIZONTAL && ih->data->inverted);
+    slider.IsDirectionReversed(reverse ? true : false);
+  }
+  return 0;
+}
+
 static int winuiValMapMethod(Ihandle* ih)
 {
   IupWinUIValAux* aux = new IupWinUIValAux();
@@ -205,7 +214,9 @@ static int winuiValMapMethod(Ihandle* ih)
   else
     slider.Orientation(Orientation::Vertical);
 
-  if (ih->data->inverted)
+  if (ih->data->orientation == IVAL_VERTICAL && !ih->data->inverted)
+    slider.IsDirectionReversed(true);
+  else if (ih->data->orientation == IVAL_HORIZONTAL && ih->data->inverted)
     slider.IsDirectionReversed(true);
 
   double stepFreq = ih->data->step * WINUI_VAL_MAX;
@@ -292,6 +303,7 @@ extern "C" IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   ic->UnMap = winuiValUnMapMethod;
 
   iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, winuiValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INVERTED", NULL, winuiValSetInvertedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, winuiValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, winuiValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 

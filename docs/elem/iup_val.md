@@ -25,6 +25,7 @@ Default: NO.
 **INVERTED**: Invert the minimum and maximum positions on screen.
 When INVERTED=YES maximum is at top and left (minimum is bottom and right), when INVERTED=NO maximum is at bottom and right (minimum is top and left).
 The initial value depends on ORIENTATION passed as parameter on creation, if ORIENTATION=VERTICAL default is YES, if ORIENTATION=HORIZONTAL default is NO.
+On Cocoa, INVERTED is read-only for vertical orientation due to NSSlider limitations.
 
 **MAX**: Contains the maximum valuator value. Default is "1".
 When changed the display will not be updated until VALUE is set.

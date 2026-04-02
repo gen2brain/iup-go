@@ -83,8 +83,9 @@ protected:
 
   void keyPressEvent(QKeyEvent* event) override
   {
-    /* Handle inverted Home/End keys */
-    if (iup_handle->data->inverted)
+    /* Qt Home/End always go to min/max regardless of invertedControls.
+       For vertical+inverted, Qt has no inversion so we swap manually. */
+    if (iup_handle->data->orientation == IVAL_VERTICAL && iup_handle->data->inverted)
     {
       if (event->key() == Qt::Key_Home)
       {
@@ -388,6 +389,21 @@ static char* qtValGetStepOnTicksAttrib(Ihandle* ih)
   return iupAttribGet(ih, "STEPONTICKS");
 }
 
+static int qtValSetInvertedAttrib(Ihandle* ih, const char* value)
+{
+  ih->data->inverted = iupStrBoolean(value);
+
+  IupQtSlider* slider = (IupQtSlider*)ih->handle;
+  if (slider)
+  {
+    int invert_qt = (ih->data->orientation == IVAL_VERTICAL && !ih->data->inverted) ||
+                    (ih->data->orientation == IVAL_HORIZONTAL && ih->data->inverted);
+    slider->setInvertedAppearance(invert_qt);
+    slider->setInvertedControls(invert_qt);
+  }
+  return 0;
+}
+
 static int qtValSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
@@ -445,10 +461,15 @@ static int qtValMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)slider;
 
-  if (ih->data->inverted)
+  if (ih->data->orientation == IVAL_VERTICAL && !ih->data->inverted)
   {
     slider->setInvertedAppearance(true);
-    slider->setInvertedControls(true);  /* Also invert keyboard controls */
+    slider->setInvertedControls(true);
+  }
+  else if (ih->data->orientation == IVAL_HORIZONTAL && ih->data->inverted)
+  {
+    slider->setInvertedAppearance(true);
+    slider->setInvertedControls(true);
   }
 
   int istep = (int)(ih->data->step * IVAL_RANGE);
@@ -533,6 +554,7 @@ extern "C" IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 
   /* IupVal only */
   iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, qtValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INVERTED", NULL, qtValSetInvertedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, qtValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, qtValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 

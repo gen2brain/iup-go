@@ -115,7 +115,8 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
 
   if (keyCode == kVK_Home || keyCode == kVK_End)
   {
-    BOOL go_to_max = (keyCode == kVK_Home) ? ih->data->inverted : !ih->data->inverted;
+    BOOL inverted_sense = (ih->data->orientation == IVAL_VERTICAL) ? !ih->data->inverted : ih->data->inverted;
+    BOOL go_to_max = (keyCode == kVK_Home) ? inverted_sense : !inverted_sense;
     [self setDoubleValue:go_to_max ? ih->data->vmax : ih->data->vmin];
 
     IupCocoaSliderReceiver* receiver = (IupCocoaSliderReceiver*)objc_getAssociatedObject(self, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY);
@@ -151,7 +152,10 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
   double slider_val = [slider doubleValue];
   double old_iup_val = ih->data->val;
 
-  ih->data->val = ih->data->inverted ? (ih->data->vmax - slider_val) + ih->data->vmin : slider_val;
+  if (ih->data->orientation == IVAL_VERTICAL)
+    ih->data->val = ih->data->inverted ? slider_val : (ih->data->vmax - slider_val) + ih->data->vmin;
+  else
+    ih->data->val = ih->data->inverted ? (ih->data->vmax - slider_val) + ih->data->vmin : slider_val;
   iupValCropValue(ih);
 
   IFn valuechanged_cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
@@ -250,8 +254,11 @@ static int cocoaValSetValueAttrib(Ihandle* ih, const char* value)
 
   ih->data->val = new_iup_val;
 
-  /* If inverted, transform the IUP value to the native slider's coordinate space. */
-  double native_val = ih->data->inverted ? (ih->data->vmax - new_iup_val) + ih->data->vmin : new_iup_val;
+  double native_val;
+  if (ih->data->orientation == IVAL_VERTICAL)
+    native_val = ih->data->inverted ? new_iup_val : (ih->data->vmax - new_iup_val) + ih->data->vmin;
+  else
+    native_val = ih->data->inverted ? (ih->data->vmax - new_iup_val) + ih->data->vmin : new_iup_val;
   [slider setDoubleValue:native_val];
 
   return 0;
@@ -379,14 +386,6 @@ static char* cocoaValGetInvertedAttrib(Ihandle* ih)
   return iupStrReturnBoolean(ih->data->inverted);
 }
 
-static int cocoaValSetInvertedAttrib(Ihandle* ih, const char* value)
-{
-  ih->data->inverted = iupStrBoolean(value);
-  /* Re-apply the current value to reflect the inversion */
-  cocoaValSetValueAttrib(ih, iupValGetValueAttrib(ih));
-  return 0;
-}
-
 static int cocoaValMapMethod(Ihandle* ih)
 {
   IupCocoaValSlider* slider = [[IupCocoaValSlider alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
@@ -466,7 +465,7 @@ IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MIN", cocoaValGetMinAttrib, cocoaValSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, cocoaValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, cocoaValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INVERTED", cocoaValGetInvertedAttrib, cocoaValSetInvertedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INVERTED", cocoaValGetInvertedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
   /* Ticks */
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, cocoaValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);

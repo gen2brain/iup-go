@@ -172,9 +172,9 @@ static int eflValSetInvertedAttrib(Ihandle* ih, const char* value)
   if (ih->data->orientation == IVAL_VERTICAL)
   {
     if (ih->data->inverted)
-      dir = EFL_UI_LAYOUT_ORIENTATION_VERTICAL;
-    else
       dir = EFL_UI_LAYOUT_ORIENTATION_VERTICAL | EFL_UI_LAYOUT_ORIENTATION_INVERTED;
+    else
+      dir = EFL_UI_LAYOUT_ORIENTATION_VERTICAL;
   }
   else
   {
@@ -206,12 +206,10 @@ static int eflValMapMethod(Ihandle* ih)
 
   if (ih->data->orientation == IVAL_VERTICAL)
   {
-    /* EFL vertical default is top-to-bottom, IUP expects bottom-to-top */
-    /* So we invert EFL's default, unless ih->data->inverted is set */
     if (ih->data->inverted)
-      dir = EFL_UI_LAYOUT_ORIENTATION_VERTICAL;
-    else
       dir = EFL_UI_LAYOUT_ORIENTATION_VERTICAL | EFL_UI_LAYOUT_ORIENTATION_INVERTED;
+    else
+      dir = EFL_UI_LAYOUT_ORIENTATION_VERTICAL;
   }
   else
   {

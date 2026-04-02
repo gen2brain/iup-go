@@ -184,9 +184,33 @@ static int fltkValSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int fltkValSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+
+  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  if (slider)
+    slider->selection_color(fl_rgb_color(r, g, b));
+
+  return 1;
+}
+
 static int fltkValSetInvertedAttrib(Ihandle* ih, const char* value)
 {
   ih->data->inverted = iupStrBoolean(value);
+
+  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  if (slider)
+  {
+    if (ih->data->inverted)
+      slider->range(1.0, 0.0);
+    else
+      slider->range(0.0, 1.0);
+
+    fltkValSetValueAttrib(ih, iupValGetValueAttrib(ih));
+  }
   return 0;
 }
 
@@ -241,6 +265,7 @@ extern "C" IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, fltkValSetPageStepAttrib, IUPAF_SAMEASSYSTEM, "0.1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INVERTED", NULL, fltkValSetInvertedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkValSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkValSetFgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SHOWTICKS", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
