@@ -470,7 +470,11 @@ static int qtFontFamilyCompare(const void* a, const void* b)
 
 extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   QStringList families = QFontDatabase::families();
+#else
+  QStringList families = QFontDatabase().families();
+#endif
   int count = families.size();
 
   if (count == 0)
