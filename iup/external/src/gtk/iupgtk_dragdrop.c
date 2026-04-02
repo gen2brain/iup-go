@@ -4,10 +4,10 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>              
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>             
-#include <limits.h>             
+#include <string.h>
+#include <limits.h>
 
 #include <gtk/gtk.h>
 
@@ -18,15 +18,13 @@
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
-#include "iup_drv.h"
 #include "iup_key.h"
 #include "iup_image.h"
 
 #include "iupgtk_drv.h"
 
 
-static void gtkDragDataReceived(GtkWidget *widget, GdkDragContext *drag_context, gint x, gint y,
-                            GtkSelectionData *seldata, guint info, guint time, Ihandle *ih)
+static void gtkDragDataReceived(GtkWidget *widget, GdkDragContext *drag_context, gint x, gint y, GtkSelectionData *seldata, guint info, guint time, Ihandle *ih)
 {
   IFnsViii cbDropData = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
   void* targetData = NULL;
@@ -237,9 +235,7 @@ static GtkTargetList* gtkCreateTargetList(const char* value)
   return targetlist;
 }
 
-
 /******************************************************************************************/
-
 
 static int gtkSetDropTypesAttrib(Ihandle* ih, const char* value)
 {
@@ -329,18 +325,26 @@ static int gtkSetDragSourceAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-
 /******************************************************************************************/
 
-
-static void gtkDropFileDragDataReceived(GtkWidget* w, GdkDragContext* context, int x, int y,
-                                        GtkSelectionData* seldata, guint info, guint time, Ihandle* ih)
+static void gtkDropFileDragDataReceived(GtkWidget* w, GdkDragContext* context, int x, int y, GtkSelectionData* seldata, guint info, guint time, Ihandle* ih)
 {
   gchar **uris = NULL, *data = NULL;
   int i, count;
 
+  Ihandle* cb_ih = ih;
   IFnsiii cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
-  if (!cb) return; 
+  if (!cb)
+  {
+    Ihandle* dlg = IupGetDialog(ih);
+    if (dlg)
+    {
+      cb = (IFnsiii)IupGetCallback(dlg, "DROPFILES_CB");
+      if (cb)
+        cb_ih = dlg;
+    }
+  }
+  if (!cb) return;
 
 #if GTK_CHECK_VERSION(2, 6, 0)
 #if GTK_CHECK_VERSION(2, 14, 0)
@@ -367,7 +371,7 @@ static void gtkDropFileDragDataReceived(GtkWidget* w, GdkDragContext* context, i
       if (filename[2] == ':')  /* in Windows there is an extra '/' at the beginning. */
         filename++;
     }
-    if (cb(ih, filename, count-i-1, x, y) == IUP_IGNORE)
+    if (cb(cb_ih, filename, count-i-1, x, y) == IUP_IGNORE)
       break;
   }
 
@@ -378,24 +382,87 @@ static void gtkDropFileDragDataReceived(GtkWidget* w, GdkDragContext* context, i
   (void)context;
 }
 
+static gboolean gtkDropFilesHasUri(GdkDragContext* context)
+{
+  GdkAtom uri_atom = gdk_atom_intern("text/uri-list", FALSE);
+  GList* targets = gdk_drag_context_list_targets(context);
+  GList* l;
+
+  for (l = targets; l; l = l->next)
+  {
+    if ((GdkAtom)l->data == uri_atom)
+      return TRUE;
+  }
+  return FALSE;
+}
+
+static void gtkDropFilesInterceptDataReceived(GtkWidget* w, GdkDragContext* context, int x, int y, GtkSelectionData* seldata, guint info, guint time, Ihandle* ih)
+{
+  gtkDropFileDragDataReceived(w, context, x, y, seldata, info, time, ih);
+  (void)w;
+}
+
+static gboolean gtkDropFilesInterceptDragMotion(GtkWidget* widget, GdkDragContext* context, gint x, gint y, guint time, Ihandle* ih)
+{
+  if (gtkDropFilesHasUri(context))
+  {
+    gdk_drag_status(context, GDK_ACTION_COPY, time);
+    g_signal_stop_emission_by_name(widget, "drag-motion");
+    return TRUE;
+  }
+
+  (void)x;
+  (void)y;
+  (void)ih;
+  return FALSE;
+}
+
+static gboolean gtkDropFilesInterceptDragDrop(GtkWidget* widget, GdkDragContext* context, gint x, gint y, guint time, Ihandle* ih)
+{
+  if (gtkDropFilesHasUri(context))
+  {
+    GdkAtom uri_atom = gdk_atom_intern("text/uri-list", FALSE);
+    gtk_drag_get_data(widget, context, uri_atom, time);
+    g_signal_stop_emission_by_name(widget, "drag-drop");
+    return TRUE;
+  }
+
+  (void)x;
+  (void)y;
+  (void)ih;
+  return FALSE;
+}
+
 static int gtkSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
-    GtkTargetEntry dragtypes[] = { { "text/uri-list", 0, 0 } };
-    gtk_drag_dest_set(ih->handle, GTK_DEST_DEFAULT_ALL, dragtypes,
-                      sizeof(dragtypes) / sizeof(dragtypes[0]), GDK_ACTION_COPY);
-    g_signal_connect(G_OBJECT(ih->handle), "drag_data_received", G_CALLBACK(gtkDropFileDragDataReceived), ih);
+    if (iupAttribGet(ih, "_IUPGTK_DROPFILES_SET"))
+      return 0;
+
+    if (GTK_IS_TEXT_VIEW(ih->handle) || GTK_IS_ENTRY(ih->handle) || GTK_IS_TREE_VIEW(ih->handle))
+    {
+      gtk_drag_dest_add_uri_targets(ih->handle);
+      g_signal_connect(G_OBJECT(ih->handle), "drag-motion", G_CALLBACK(gtkDropFilesInterceptDragMotion), ih);
+      g_signal_connect(G_OBJECT(ih->handle), "drag-drop", G_CALLBACK(gtkDropFilesInterceptDragDrop), ih);
+      g_signal_connect(G_OBJECT(ih->handle), "drag-data-received", G_CALLBACK(gtkDropFilesInterceptDataReceived), ih);
+    }
+    else
+    {
+      GtkTargetEntry dragtypes[] = { { "text/uri-list", 0, 0 } };
+      gtk_drag_dest_set(ih->handle, GTK_DEST_DEFAULT_ALL, dragtypes, sizeof(dragtypes) / sizeof(dragtypes[0]), GDK_ACTION_COPY);
+      g_signal_connect(G_OBJECT(ih->handle), "drag_data_received", G_CALLBACK(gtkDropFileDragDataReceived), ih);
+    }
+
+    iupAttribSet(ih, "_IUPGTK_DROPFILES_SET", "1");
   }
   else
     gtk_drag_dest_unset(ih->handle);
 
-  return 1;
+  return 0;
 }
 
-
 /******************************************************************************************/
-
 
 IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
 {
@@ -419,8 +486,3 @@ IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
   iupClassRegisterAttribute(ic, "DRAGDROP", NULL, gtkSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPFILESTARGET", NULL, gtkSetDropFilesTargetAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
-
-/* The internal DND support in IupText (GtkTextView or GtkEntry) cannot be disabled.
-   Mixing the generic DND support from here and the internal gives unexpected results.
-   The application should use only the internal DND in this case.
-   The edit box in a IupList has the same limitation. */
