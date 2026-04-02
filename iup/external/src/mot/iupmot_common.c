@@ -5,18 +5,16 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
 
 #include <Xm/Xm.h>
 #include <Xm/ScrollBar.h>
-#include <Xm/ScrolledW.h>
 #include <X11/cursorfont.h>
+#include <X11/IntrinsicP.h>
 
 #include "iup.h"
-#include "iupkey.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
@@ -25,11 +23,8 @@
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
-#include "iup_focus.h"
-#include "iup_key.h"
 #include "iup_drv.h"
 #include "iup_image.h"
-#include "iup_drv.h"
 
 #include "iupmot_color.h"
 #include "iupmot_drv.h"
@@ -107,13 +102,10 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle *ih)
 
   if (ih->currentwidth > 0 && ih->currentheight > 0)
   {
-    XtVaSetValues(widget,
-                  XmNwidth, (XtArgVal)ih->currentwidth,
-                  XmNheight, (XtArgVal)ih->currentheight,
-                  NULL);
+    XtConfigureWidget(widget, (Position)ih->x, (Position)ih->y, (Dimension)ih->currentwidth, (Dimension)ih->currentheight, widget->core.border_width);
   }
-
-  iupmotSetPosition(widget, ih->x, ih->y);
+  else
+    iupmotSetPosition(widget, ih->x, ih->y);
 }
 
 IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
@@ -130,9 +122,7 @@ IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
   XExposeEvent evt;
   Dimension w, h;
 
-  XtVaGetValues(ih->handle, XmNwidth, &w, 
-                            XmNheight, &h, 
-                            NULL);
+  XtVaGetValues(ih->handle, XmNwidth, &w, XmNheight, &h, NULL);
 
   evt.type = Expose;
   evt.display = iupmot_display;
@@ -297,7 +287,7 @@ IUP_DRV_API char* iupmotGetBgColorAttrib(Ihandle* ih)
 {
   unsigned char r, g, b;
   Pixel color;
-  XtVaGetValues(ih->handle, XmNbackground, &color, NULL); 
+  XtVaGetValues(ih->handle, XmNbackground, &color, NULL);
   iupmotColorGetRGB(color, &r, &g, &b);
   return iupStrReturnStrf("%d %d %d", (int)r, (int)g, (int)b);
 }
@@ -313,9 +303,7 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
 IUP_DRV_API void iupmotGetWindowSize(Ihandle *ih, int *width, int *height)
 {
   Dimension w, h;
-  XtVaGetValues(ih->handle, XmNwidth, &w, 
-                            XmNheight, &h, 
-                            NULL);
+  XtVaGetValues(ih->handle, XmNwidth, &w, XmNheight, &h, NULL);
   *width = w;
   *height = h;
 }
@@ -351,8 +339,8 @@ static Cursor motGetCursor(Ihandle* ih, const char* name)
     const char* iupname;
     int         sysname;
   } table[] = {
-    { "NONE",      0}, 
-    { "NULL",      0}, 
+    { "NONE",      0},
+    { "NULL",      0},
     { "ARROW",     XC_left_ptr},
     { "BUSY",      XC_watch},
     { "CROSS",     XC_crosshair},
@@ -373,8 +361,8 @@ static Cursor motGetCursor(Ihandle* ih, const char* name)
     { "RESIZE_SE", XC_bottom_right_corner},
     { "RESIZE_NW", XC_top_left_corner},
     { "RESIZE_SW", XC_bottom_left_corner},
-    { "TEXT",      XC_xterm}, 
-    { "UPARROW",   XC_center_ptr} 
+    { "TEXT",      XC_xterm},
+    { "UPARROW",   XC_center_ptr}
   };
 
   Cursor cur;
@@ -390,7 +378,7 @@ static Cursor motGetCursor(Ihandle* ih, const char* name)
   /* check the pre-defined IUP names first */
   for (i = 0; i < count; i++)
   {
-    if (iupStrEqualNoCase(name, table[i].iupname)) 
+    if (iupStrEqualNoCase(name, table[i].iupname))
     {
       if (table[i].sysname)
         cur = XCreateFontCursor(iupmot_display, table[i].sysname);
@@ -446,7 +434,7 @@ IUP_DRV_API void iupmotSetPixmap(Ihandle* ih, const char* name, const char* prop
   {
     Pixmap old_pixmap;
     Pixmap pixmap = (Pixmap)iupImageGetImage(name, ih, make_inactive, NULL);
-    if (!pixmap) 
+    if (!pixmap)
       pixmap = XmUNSPECIFIED_PIXMAP;
     XtVaGetValues(ih->handle, prop, &old_pixmap, NULL);
     if (pixmap != old_pixmap)
@@ -467,7 +455,7 @@ IUP_DRV_API void iupmotButtonPressReleaseEvent(Widget w, Ihandle* ih, XEvent* ev
       but_evt->button!=Button2 &&
       but_evt->button!=Button3 &&
       but_evt->button!=Button4 &&
-      but_evt->button!=Button5) 
+      but_evt->button!=Button5)
     return;
 
   cb = (IFniiiis) IupGetCallback(ih,"BUTTON_CB");
@@ -494,7 +482,7 @@ IUP_DRV_API void iupmotButtonPressReleaseEvent(Widget w, Ihandle* ih, XEvent* ev
       IupExitLoop();
     else if (ret==IUP_IGNORE)
       *cont=False;
-  }         
+  }
 
   (void)w;
 }
@@ -526,14 +514,14 @@ IUP_DRV_API void iupmotPointerMotionEvent(Widget w, Ihandle *ih, XEvent *evt, Bo
 IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
   Window focus;
-	int revert_to;
+  int revert_to;
   XKeyEvent evt;
   memset(&evt, 0, sizeof(XKeyEvent));
   evt.display = iupmot_display;
   evt.send_event = True;
   evt.root = DefaultRootWindow(iupmot_display);
 
-	XGetInputFocus(iupmot_display, &focus, &revert_to);
+  XGetInputFocus(iupmot_display, &focus, &revert_to);
   evt.window = focus;
 
   iupdrvKeyEncode(key, &evt.keycode, &evt.state);
@@ -573,16 +561,16 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
     evt.display = iupmot_display;
     evt.send_event = True;
 
-	  XQueryPointer(iupmot_display, RootWindow(iupmot_display, DefaultScreen(iupmot_display)), 
+    XQueryPointer(iupmot_display, RootWindow(iupmot_display, DefaultScreen(iupmot_display)),
                   &evt.root, &evt.window, &evt.x_root, &evt.y_root, &evt.x, &evt.y, &evt.state);
-  	
-	  evt.subwindow = evt.window;
-	  while(evt.subwindow)
-	  {
-		  evt.window = evt.subwindow;
-		  XQueryPointer(iupmot_display, evt.window, &evt.root, &evt.subwindow, &evt.x_root, &evt.y_root, &evt.x, &evt.y, &evt.state);
-	  }
-	
+
+    evt.subwindow = evt.window;
+    while(evt.subwindow)
+    {
+      evt.window = evt.subwindow;
+      XQueryPointer(iupmot_display, evt.window, &evt.root, &evt.subwindow, &evt.x_root, &evt.y_root, &evt.x, &evt.y, &evt.state);
+    }
+
     evt.type = (status==0)? ButtonRelease: ButtonPress;
     evt.root = DefaultRootWindow(iupmot_display);
     evt.x = x;
@@ -627,53 +615,6 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
       XSendEvent(iupmot_display, (Window)PointerWindow, False, ButtonReleaseMask, (XEvent*)&evt);
     }
   }
-#if 0 /* kept for future reference */
-  else
-  {
-    XMotionEvent evt;
-    memset(&evt, 0, sizeof(XMotionEvent));
-    evt.display = iupmot_display;
-    evt.send_event = True;
-
-	  XQueryPointer(iupmot_display, RootWindow(iupmot_display, DefaultScreen(iupmot_display)), 
-                  &evt.root, &evt.window, &evt.x_root, &evt.y_root, &evt.x, &evt.y, &evt.state);
-  	
-	  evt.subwindow = evt.window;
-	  while(evt.subwindow)
-	  {
-		  evt.window = evt.subwindow;
-		  XQueryPointer(iupmot_display, evt.window, &evt.root, &evt.subwindow, &evt.x_root, &evt.y_root, &evt.x, &evt.y, &evt.state);
-	  }
-	
-    evt.type = MotionNotify;
-    evt.root = DefaultRootWindow(iupmot_display);
-    evt.x = x;
-    evt.y = y;
-
-    switch(bt)
-    {
-    case IUP_BUTTON1:
-      evt.state = Button1Mask;
-      break;
-    case IUP_BUTTON2:
-      evt.state = Button2Mask;
-      break;
-    case IUP_BUTTON3:
-      evt.state = Button3Mask;
-      break;
-    case IUP_BUTTON4:
-      evt.state = Button4Mask;
-      break;
-    case IUP_BUTTON5:
-      evt.state = Button5Mask;
-      break;
-    default:
-      return;
-    }
-
-    XSendEvent(iupmot_display, (Window)PointerWindow, False, PointerMotionMask, (XEvent*)&evt);
-  }
-#endif
 }
 
 #ifndef WIN32
