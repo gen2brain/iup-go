@@ -53,7 +53,11 @@ static int gtk4FontDlgPopup(Ihandle* ih, int x, int y)
   if (!dialog)
     return IUP_ERROR;
 
-  gtk_font_dialog_set_title(dialog, iupgtk4StrConvertToSystem(iupAttribGet(ih, "TITLE")));
+  {
+    const char* title = iupAttribGet(ih, "TITLE");
+    if (!title) title = "";
+    gtk_font_dialog_set_title(dialog, iupgtk4StrConvertToSystem(title));
+  }
   gtk_font_dialog_set_modal(dialog, TRUE);
 
   font = iupAttribGet(ih, "VALUE");
