@@ -211,7 +211,13 @@ extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
 {
   Fl_Widget* widget = (Fl_Widget*)ih->handle;
   if (widget)
-    widget->redraw();
+  {
+    Fl_Widget* parent = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+    if (parent)
+      parent->redraw();
+    else
+      widget->redraw();
+  }
 }
 
 extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
@@ -219,7 +225,11 @@ extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
   Fl_Widget* widget = (Fl_Widget*)ih->handle;
   if (widget)
   {
-    widget->redraw();
+    Fl_Widget* parent = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+    if (parent)
+      parent->redraw();
+    else
+      widget->redraw();
 
     Fl_Window* win = widget->as_window();
     if (!win) win = widget->window();
