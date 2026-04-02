@@ -141,10 +141,6 @@ Supported in GTK 3 and GTK 4.
 
 Flag indicating that GTK is using a global menu instead of a per window menu.
 
-### GLOBALLAYOUTDLGKEY
-
-Flag to enable the global keys Alt+Ctrl+Shift+L to display the **IupLayoutDialog**.
-
 ### GLOBALLAYOUTRESIZEKEY
 
 Flag to enable the global keys Ctrl+'+' and Ctrl+'-' that change the FONTSIZE and refresh the layout of the dialog.

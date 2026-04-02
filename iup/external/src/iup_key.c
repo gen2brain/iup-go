@@ -463,12 +463,6 @@ IUP_SDK_API int iupKeyProcessNavigation(Ihandle* ih, int code, int shift)
       }
     }
   }
-  else if (iup_isCtrlXkey(code) && iup_isShiftXkey(code) && iup_isAltXkey(code) && iup_XkeyBase(code) == K_L)
-  {
-    /* Ctrl+Shift+Alt+L */
-    if (iupStrBoolean(IupGetGlobal("GLOBALLAYOUTDLGKEY")))
-      IupShow(IupLayoutDialog(IupGetDialog(ih)));
-  }
   else if (iup_isCtrlXkey(code) && (iup_XkeyBase(code) == K_plus || iup_XkeyBase(code) == K_minus || iup_XkeyBase(code) == K_equal))
   {
     /* Ctrl+'+' */

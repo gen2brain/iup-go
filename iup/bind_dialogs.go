@@ -267,18 +267,6 @@ func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 	C.IupMessageAlarm(parent.ptr(), cTitle, cMsg, cButtons)
 }
 
-// LayoutDialog creates a Layout Dialog. It is a predefined dialog to visually edit the layout of another dialog in run time.
-// It is a standard Dialog constructed with other IUP elements.
-// The dialog can be shown with any of the show functions Show, ShowXY or Popup.
-//
-// This is a dialog intended for developers, so they can see and inspect their dialogs in other ways.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_layoutdialog.md
-func LayoutDialog(dialog Ihandle) Ihandle {
-	h := mkih(C.IupLayoutDialog(dialog.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
 
 // ElementPropertiesDialog creates an Element Properties Dialog.
 // It is a predefined dialog to edit the properties of an element in run time.

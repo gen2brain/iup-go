@@ -1,5 +1,5 @@
 /** \file
- * \brief IupLayoutDialog pre-defined dialog
+ * \brief IupElementPropertiesDialog pre-defined dialog
  *
  * See Copyright Notice in "iup.h"
  */
@@ -29,9 +29,83 @@
 #include "iup_drv.h"
 #include "iup_func.h"
 #include "iup_register.h"
+#include "iup_classbase.h"
 #include "iup_layout.h"
 
 
+
+static char* iLayoutGetName(Ihandle* ih)
+{
+  char* name = IupGetName(ih);
+  if (name && iupStrEqualPartial(name, "_IUP_NAME"))
+    name = NULL;
+  if (!name && ih->iclass->nativetype == IUP_TYPEDIALOG)
+    name = iupAttribGet(ih, "_IUP_DIALOG_NAME");
+  return name;
+}
+
+IUP_SDK_API char* iupLayoutGetElementTitle(Ihandle* ih)
+{
+  char* title = iupAttribGetLocal(ih, "TITLE");
+  char* name = iLayoutGetName(ih);
+  char* str = iupStrGetMemory(200);
+  if (title)
+  {
+    char buffer[51];
+
+    if (iupStrLineCount(title, (int)strlen(title)) > 1)
+    {
+      int len;
+      iupStrNextLine(title, &len);
+      if (len > 50) len = 50;
+      iupStrCopyN(buffer, len + 1, title);
+      title = &buffer[0];
+    }
+
+    if (name)
+      snprintf(str, 200, "[%s] \"%.50s\" (%.50s)", IupGetClassName(ih), title, name);
+    else
+      snprintf(str, 200, "[%s] \"%.50s\"", IupGetClassName(ih), title);
+  }
+  else
+  {
+    if (name)
+      snprintf(str, 200, "[%s] (%.50s)", IupGetClassName(ih), name);
+    else
+      snprintf(str, 200, "[%s]", IupGetClassName(ih));
+  }
+
+  return str;
+}
+
+IUP_SDK_API int iupLayoutAttributeHasChanged(Ihandle* ih, const char* name, const char* value, const char* def_value, int flags)
+{
+  if ((flags&IUPAF_NO_STRING) ||
+      (flags&IUPAF_HAS_ID) ||
+      (flags&(IUPAF_READONLY | IUPAF_WRITEONLY)))
+      return 0;
+
+  if (!value || value[0] == 0 || iupATTRIB_ISINTERNAL(value))
+    return 0;
+
+  if ((flags&IUPAF_NO_SAVE) && iupBaseNoSaveCheck(ih, name))
+    return 0;
+
+  if (def_value && iupStrEqualNoCase(def_value, value))
+    return 0;
+
+  if (!def_value && iupStrFalse(value))
+    return 0;
+
+  if (!(flags&IUPAF_NO_INHERIT) && ih->parent)
+  {
+    char* parent_value = iupAttribGetInherit(ih->parent, name);
+    if (parent_value && iupStrEqualNoCase(value, parent_value))
+      return 0;
+  }
+
+  return 1;
+}
 
 static int iLayoutPropertiesClose_CB(Ihandle* ih)
 {

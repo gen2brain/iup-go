@@ -48,4 +48,4 @@ The dialog is displayed next.
 
 ### See Also
 
-[IupDialog](iup_dialog.md), [IupShow](../func/iup_show.md), [IupShowXY](../func/iup_showxy.md), [IupPopup](../func/iup_popup.md), [IupLayoutDialog](iup_layoutdialog.md)
+[IupDialog](iup_dialog.md), [IupShow](../func/iup_show.md), [IupShowXY](../func/iup_showxy.md), [IupPopup](../func/iup_popup.md)

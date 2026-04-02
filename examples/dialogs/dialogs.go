@@ -229,9 +229,6 @@ func main() {
 	// Class Info Dialog
 	btnClassInfo := iup.Button("Class Info Dialog")
 
-	// Layout Dialog
-	btnLayout := iup.Button("Layout Dialog")
-
 	// Element Properties Dialog
 	btnElementProps := iup.Button("Element Properties Dialog")
 
@@ -266,7 +263,7 @@ func main() {
 			).SetAttribute("TITLE", "Other Dialogs"),
 			iup.Frame(
 				iup.Vbox(
-					iup.Hbox(btnGlobals, btnClassInfo, btnLayout, btnElementProps).SetAttributes("GAP=5"),
+					iup.Hbox(btnGlobals, btnClassInfo, btnElementProps).SetAttributes("GAP=5"),
 				).SetAttributes("MARGIN=5x5"),
 			).SetAttribute("TITLE", "Debug Dialogs"),
 			iup.Fill(),
@@ -275,13 +272,6 @@ func main() {
 
 	btnClassInfo.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		d := iup.ClassInfoDialog(dlg)
-		iup.Popup(d, iup.CENTERPARENT, iup.CENTERPARENT)
-		iup.Destroy(d)
-		return iup.DEFAULT
-	}))
-
-	btnLayout.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		d := iup.LayoutDialog(dlg)
 		iup.Popup(d, iup.CENTERPARENT, iup.CENTERPARENT)
 		iup.Destroy(d)
 		return iup.DEFAULT
