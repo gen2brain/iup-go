@@ -88,6 +88,16 @@ static Eina_Value eflClipboardFormatResolveCb(void* data, const Eina_Value value
   return value;
 }
 
+static int efl_clipboard_timed_out = 0;
+
+static Eina_Bool eflClipboardTimeoutCb(void* data)
+{
+  (void)data;
+  efl_clipboard_timed_out = 1;
+  iupeflModalLoopQuit();
+  return ECORE_CALLBACK_CANCEL;
+}
+
 static int eflClipboardSetTextAttrib(Ihandle* ih, const char* value)
 {
   Eo* win;
@@ -186,6 +196,9 @@ static int eflClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
   if (!value)
   {
     efl_ui_selection_clear(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win));
+    free(iupAttribGet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE"));
+    iupAttribSet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE", NULL);
+    iupAttribSetInt(ih, "_IUP_CLIPBOARD_FORMAT_CACHE_SIZE", 0);
     return 0;
   }
 
@@ -203,8 +216,23 @@ static int eflClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
   if (content)
     efl_ui_selection_set(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, content, eflClipboardGetSeatId(win));
 
+  /* Cache locally to avoid X11 self-selection deadlock */
+  {
+    char* old_cache = (char*)iupAttribGet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE");
+    char* cache = (char*)malloc(size);
+    if (cache)
+    {
+      memcpy(cache, value, size);
+      iupAttribSet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE", cache);
+      iupAttribSetInt(ih, "_IUP_CLIPBOARD_FORMAT_CACHE_SIZE", size);
+    }
+    free(old_cache);
+  }
+
   return 0;
 }
+
+static eflClipboardResult efl_clipboard_format_result;
 
 static char* eflClipboardGetFormatDataAttrib(Ihandle* ih)
 {
@@ -212,7 +240,10 @@ static char* eflClipboardGetFormatDataAttrib(Ihandle* ih)
   Eina_Future* future;
   Eina_Iterator* types;
   const char* mime_type;
-  eflClipboardResult result = {NULL, 0};
+  eflClipboardResult *result = &efl_clipboard_format_result;
+
+  result->data = NULL;
+  result->size = 0;
 
   win = iupeflGetMainWindow();
   if (!win)
@@ -222,21 +253,44 @@ static char* eflClipboardGetFormatDataAttrib(Ihandle* ih)
   if (!mime_type)
     return NULL;
 
-  types = eina_carray_iterator_new((void*[]){ (void*)mime_type, NULL });
-  future = efl_ui_selection_get(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win), types);
-  if (future)
+  /* Use local cache to avoid X11 self-selection deadlock */
   {
-    eina_future_then(future, eflClipboardFormatResolveCb, &result, NULL);
-    iupeflModalLoopRun(NULL);
+    const char* cached = iupAttribGet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE");
+    int cached_size = iupAttribGetInt(ih, "_IUP_CLIPBOARD_FORMAT_CACHE_SIZE");
+    if (cached && cached_size > 0)
+    {
+      result->data = malloc(cached_size);
+      if (result->data)
+      {
+        memcpy(result->data, cached, cached_size);
+        result->size = cached_size;
+      }
+    }
   }
 
-  if (result.data)
+  if (!result->data)
   {
-    void* ret = iupStrGetMemory((int)result.size + 1);
-    memcpy(ret, result.data, result.size);
-    ((char*)ret)[result.size] = 0;
-    free(result.data);
-    iupAttribSetInt(ih, "FORMATDATASIZE", (int)result.size);
+    types = eina_carray_iterator_new((void*[]){ (void*)mime_type, NULL });
+    future = efl_ui_selection_get(win, EFL_UI_CNP_BUFFER_COPY_AND_PASTE, eflClipboardGetSeatId(win), types);
+    if (future)
+    {
+      efl_clipboard_timed_out = 0;
+      Ecore_Timer* timeout = ecore_timer_add(2.0, eflClipboardTimeoutCb, NULL);
+      eina_future_then(future, eflClipboardFormatResolveCb, result, NULL);
+      iupeflModalLoopRun(NULL);
+      if (!efl_clipboard_timed_out && timeout)
+        ecore_timer_del(timeout);
+    }
+  }
+
+  if (result->data)
+  {
+    void* ret = iupStrGetMemory((int)result->size + 1);
+    memcpy(ret, result->data, result->size);
+    ((char*)ret)[result->size] = 0;
+    free(result->data);
+    result->data = NULL;
+    iupAttribSetInt(ih, "FORMATDATASIZE", (int)result->size);
     return ret;
   }
 
