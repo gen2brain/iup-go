@@ -39,6 +39,7 @@ typedef struct _IeflTableData
   Evas_Object** cell_images;   /* Image widgets per cell (only when show_image) */
   Evas_Object** cell_containers; /* Box containers per cell (only when show_image, packed into table) */
   Evas_Object* focus_rect;     /* Focus rectangle overlay */
+  Evas_Object* focus_clip;     /* Clip rectangle for focus rect */
   int focus_rect_lin;          /* Current focus rect position */
   int focus_rect_col;
   int header_height;           /* Height of header row */
@@ -247,6 +248,16 @@ static void eflTableUpdateFocusRect(Ihandle* ih)
     Eina_Rect geom = efl_gfx_entity_geometry_get(cell_widget);
     x = geom.x; y = geom.y; w = geom.w; h = geom.h;
   }
+
+  /* Update clip rectangle to match scroller viewport */
+  if (data->scroller && data->focus_clip)
+  {
+    int sv_x, sv_y, sv_w, sv_h;
+    evas_object_geometry_get(data->scroller, &sv_x, &sv_y, &sv_w, &sv_h);
+    efl_gfx_entity_position_set(data->focus_clip, EINA_POSITION2D(sv_x, sv_y));
+    efl_gfx_entity_size_set(data->focus_clip, EINA_SIZE2D(sv_w, sv_h));
+  }
+
   efl_gfx_entity_position_set(data->focus_rect, EINA_POSITION2D(x, y));
   efl_gfx_entity_size_set(data->focus_rect, EINA_SIZE2D(w, h));
 
@@ -1947,6 +1958,7 @@ static void eflTableScrollJobCallback(void* data)
     table_data->scroll_job = NULL;
 
   eflTableUpdateVisibleRows(ih);
+  eflTableUpdateFocusRect(ih);
 }
 
 static void eflTableVirtualScrollCallback(void* cb_data, Evas_Object* obj, void* event_info)
@@ -3074,8 +3086,13 @@ static int eflTableMapMethod(Ihandle* ih)
 
     elm_object_content_set(scroller, table);
 
+    data->focus_clip = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
+    efl_gfx_color_set(data->focus_clip, 255, 255, 255, 255);
+    efl_gfx_entity_visible_set(data->focus_clip, EINA_TRUE);
+
     data->focus_rect = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
     evas_object_pass_events_set(data->focus_rect, EINA_TRUE);
+    evas_object_clip_set(data->focus_rect, data->focus_clip);
     data->focus_rect_lin = 0;
     data->focus_rect_col = 0;
 
@@ -3113,6 +3130,7 @@ static int eflTableMapMethod(Ihandle* ih)
     efl_event_callback_add(scroller, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflTableResizeCallback, ih);
     evas_object_smart_callback_add(scroller, "focused", eflTableFocusInCallback, ih);
     evas_object_smart_callback_add(scroller, "unfocused", eflTableFocusOutCallback, ih);
+    evas_object_smart_callback_add(scroller, "scroll", eflTableVirtualScrollCallback, ih);
 
     data->scroller = scroller;
 
@@ -3140,8 +3158,13 @@ static int eflTableMapMethod(Ihandle* ih)
 
     elm_object_content_set(scroller, table);
 
+    data->focus_clip = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
+    efl_gfx_color_set(data->focus_clip, 255, 255, 255, 255);
+    efl_gfx_entity_visible_set(data->focus_clip, EINA_TRUE);
+
     data->focus_rect = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
     evas_object_pass_events_set(data->focus_rect, EINA_TRUE);
+    evas_object_clip_set(data->focus_rect, data->focus_clip);
     data->focus_rect_lin = 0;
     data->focus_rect_col = 0;
 
@@ -3216,6 +3239,11 @@ static void eflTableUnMapMethod(Ihandle* ih)
     {
       efl_del(data->focus_rect);
       data->focus_rect = NULL;
+    }
+    if (data->focus_clip)
+    {
+      efl_del(data->focus_clip);
+      data->focus_clip = NULL;
     }
 
     /* Free column widths */
