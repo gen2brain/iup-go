@@ -126,7 +126,8 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
     case FL_DND_ENTER:
     case FL_DND_DRAG:
     {
-      if (iupAttribGetBoolean(ih, "DROPTARGET"))
+      int accept = iupAttribGetBoolean(ih, "DROPTARGET") || IupGetCallback(ih, "DROPFILES_CB") || IupGetCallback(IupGetDialog(ih), "DROPFILES_CB");
+      if (accept)
       {
         fltk_drop_x = Fl::event_x() - widget->x();
         fltk_drop_y = Fl::event_y() - widget->y();
@@ -155,7 +156,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
     }
 
     case FL_DND_LEAVE:
-      if (iupAttribGetBoolean(ih, "DROPTARGET"))
+      if (iupAttribGetBoolean(ih, "DROPTARGET") || IupGetCallback(ih, "DROPFILES_CB") || IupGetCallback(IupGetDialog(ih), "DROPFILES_CB"))
       {
         iupAttribSet(ih, "_IUPFLTK_DND_TARGET_LINE", NULL);
         widget->redraw();
@@ -164,7 +165,7 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
       return 0;
 
     case FL_DND_RELEASE:
-      if (iupAttribGetBoolean(ih, "DROPTARGET"))
+      if (iupAttribGetBoolean(ih, "DROPTARGET") || IupGetCallback(ih, "DROPFILES_CB") || IupGetCallback(IupGetDialog(ih), "DROPFILES_CB"))
       {
         fltk_drop_x = Fl::event_x() - widget->x();
         fltk_drop_y = Fl::event_y() - widget->y();
@@ -204,9 +205,9 @@ IUP_DRV_API int iupfltkDragDropHandleEvent(Fl_Widget* widget, Ihandle* ih, int e
         }
       }
 
-      if (IupGetCallback(IupGetDialog(ih), "DROPFILES_CB"))
+      if (Fl::event_text() && strstr(Fl::event_text(), "file://"))
       {
-        if (Fl::event_text() && strstr(Fl::event_text(), "file://"))
+        if (IupGetCallback(ih, "DROPFILES_CB") || IupGetCallback(IupGetDialog(ih), "DROPFILES_CB"))
         {
           iupfltkHandleDropFiles(ih);
           return 1;

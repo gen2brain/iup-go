@@ -727,11 +727,18 @@ IUP_DRV_API int iupfltkHandleDropFiles(Ihandle* ih)
   if (!text || !strstr(text, "file://"))
     return 0;
 
-  Ihandle* dlg = IupGetDialog(ih);
-  if (!dlg)
-    return 0;
-
-  IFnsiii cb = (IFnsiii)IupGetCallback(dlg, "DROPFILES_CB");
+  Ihandle* cb_ih = ih;
+  IFnsiii cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+  if (!cb)
+  {
+    Ihandle* dlg = IupGetDialog(ih);
+    if (dlg)
+    {
+      cb = (IFnsiii)IupGetCallback(dlg, "DROPFILES_CB");
+      if (cb)
+        cb_ih = dlg;
+    }
+  }
   if (!cb)
     return 0;
 
@@ -748,7 +755,7 @@ IUP_DRV_API int iupfltkHandleDropFiles(Ihandle* ih)
       char* filename = line;
       if (strncmp(filename, "file://", 7) == 0)
         filename += 7;
-      cb(dlg, filename, count, x, y);
+      cb(cb_ih, filename, count, x, y);
       count++;
     }
     line = strtok(NULL, "\r\n");

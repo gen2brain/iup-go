@@ -121,6 +121,14 @@ protected:
         break;
       }
 
+      case FL_DND_ENTER:
+      case FL_DND_DRAG:
+      case FL_DND_LEAVE:
+      case FL_DND_RELEASE:
+      case FL_PASTE:
+        if (iupfltkDragDropHandleEvent(this, iup_handle, event))
+          return 1;
+        break;
     }
 
     return Fl_Double_Window::handle(event);
