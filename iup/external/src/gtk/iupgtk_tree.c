@@ -3225,7 +3225,7 @@ static int gtkTreeMapMethod(Ihandle* ih)
     iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
 
   /* configure for DROP of files */
-  if (IupGetCallback(ih, "DROPFILES_CB"))
+  if (IupGetCallback(ih, "DROPFILES_CB") || IupGetCallback(IupGetDialog(ih), "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)gtkTreeConvertXYToPos);

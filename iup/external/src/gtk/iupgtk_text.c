@@ -2456,7 +2456,7 @@ static int gtkTextMapMethod(Ihandle* ih)
   gtk_widget_realize(ih->handle);
 
   /* configure for DRAG&DROP */
-  if (IupGetCallback(ih, "DROPFILES_CB"))
+  if (IupGetCallback(ih, "DROPFILES_CB") || IupGetCallback(IupGetDialog(ih), "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
   /* update a mnemonic in a label if necessary */
