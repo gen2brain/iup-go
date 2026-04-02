@@ -198,9 +198,9 @@ static void eflMenuShowCallback(void* data, Evas* e, Evas_Object* obj, void* eve
 static void eflMenuItemUpdateMark(Ihandle* ih)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
-  Evas_Object* icon;
-  Evas_Object* layout;
+  char* title;
   char* hidemark;
+  char* display_title;
   int show_mark;
   int is_checked;
 
@@ -211,26 +211,25 @@ static void eflMenuItemUpdateMark(Ihandle* ih)
   show_mark = (hidemark == NULL || !iupStrEqualNoCase(hidemark, "YES"));
   is_checked = iupAttribGetBoolean(ih, "VALUE");
 
-  icon = elm_object_item_part_content_get(item, NULL);
-  layout = elm_menu_item_object_get(item);
+  title = iupAttribGet(ih, "TITLE");
+  if (!title) title = "";
 
-  if (!icon || !layout)
-    return;
+  display_title = eflMenuGetDisplayTitle(title);
 
-  if (show_mark && is_checked)
+  if (show_mark)
   {
-    if (!elm_icon_standard_set(icon, "object-select-symbolic"))
-      if (!elm_icon_standard_set(icon, "emblem-default"))
-        elm_icon_standard_set(icon, "emblem-ok");
-    efl_gfx_entity_visible_set(icon, EINA_TRUE);
-    elm_layout_signal_emit(layout, "elm,state,icon,visible", "elm");
+    char buf[512];
+    if (is_checked)
+      snprintf(buf, sizeof(buf), "\xe2\x98\x91 %s", display_title);
+    else
+      snprintf(buf, sizeof(buf), "\xe2\x98\x90 %s", display_title);
+    elm_object_item_text_set(item, buf);
   }
   else
-  {
-    efl_gfx_entity_visible_set(icon, EINA_FALSE);
-    elm_layout_signal_emit(layout, "elm,state,icon,hidden", "elm");
-  }
-  edje_object_message_signal_process(elm_layout_edje_get(layout));
+    elm_object_item_text_set(item, display_title);
+
+  if (display_title != title)
+    free(display_title);
 }
 
 /****************************************************************
@@ -308,10 +307,8 @@ static int eflMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int eflMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
-  (void)value;
-
+  iupAttribSetStr(ih, "VALUE", value);
   eflMenuItemUpdateMark(ih);
-
   return 1;
 }
 
