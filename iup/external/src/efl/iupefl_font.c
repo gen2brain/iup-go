@@ -13,7 +13,6 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
 #include "iup_markup.h"
@@ -465,25 +464,72 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
   return system_font;
 }
 
-IUP_SDK_API void iupdrvFontInit(void)
+static int eflFontFamilyCompare(const void* a, const void* b)
 {
-  efl_font_measure_tb = NULL;
-  efl_font_buffer_ee = ecore_evas_buffer_new(1, 1);
+  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
 }
 
-IUP_SDK_API void iupdrvFontFinish(void)
+IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
-  if (efl_font_measure_tb)
+  Evas* evas;
+  Eina_List* fonts_list;
+  Eina_Hash* fonts_hash;
+  Eina_Iterator* it;
+  const char* key;
+  int capacity = 256, count = 0;
+  char** temp;
+
+  evas = eflFontGetMeasureEvas();
+  if (!evas)
   {
-    efl_del(efl_font_measure_tb);
-    efl_font_measure_tb = NULL;
+    *list = NULL;
+    return 0;
   }
 
-  if (efl_font_buffer_ee)
+  fonts_list = evas_font_available_list(evas);
+  if (!fonts_list)
   {
-    ecore_evas_free(efl_font_buffer_ee);
-    efl_font_buffer_ee = NULL;
+    *list = NULL;
+    return 0;
   }
+
+  fonts_hash = elm_font_available_hash_add(fonts_list);
+  if (!fonts_hash)
+  {
+    evas_font_available_list_free(evas, fonts_list);
+    *list = NULL;
+    return 0;
+  }
+
+  temp = (char**)malloc(capacity * sizeof(char*));
+
+  it = eina_hash_iterator_key_new(fonts_hash);
+  EINA_ITERATOR_FOREACH(it, key)
+  {
+    if (count >= capacity)
+    {
+      capacity *= 2;
+      temp = (char**)realloc(temp, capacity * sizeof(char*));
+    }
+    temp[count] = iupStrDup(key);
+    count++;
+  }
+  eina_iterator_free(it);
+
+  elm_font_available_hash_del(fonts_hash);
+  evas_font_available_list_free(evas, fonts_list);
+
+  if (count == 0)
+  {
+    free(temp);
+    *list = NULL;
+    return 0;
+  }
+
+  *list = (char**)realloc(temp, count * sizeof(char*));
+  qsort(*list, count, sizeof(char*), eflFontFamilyCompare);
+
+  return count;
 }
 
 IUP_DRV_API void iupeflBuildTextStyle(Ihandle* ih, char* style, int style_size)
@@ -612,4 +658,25 @@ IUP_DRV_API void iupeflApplyTextStyle(Ihandle* ih, Eo* widget)
 IUP_DRV_API void iupeflUpdateWidgetFont(Ihandle* ih, Evas_Object* widget)
 {
   iupeflApplyTextStyle(ih, widget);
+}
+
+IUP_SDK_API void iupdrvFontInit(void)
+{
+  efl_font_measure_tb = NULL;
+  efl_font_buffer_ee = ecore_evas_buffer_new(1, 1);
+}
+
+IUP_SDK_API void iupdrvFontFinish(void)
+{
+  if (efl_font_measure_tb)
+  {
+    efl_del(efl_font_measure_tb);
+    efl_font_measure_tb = NULL;
+  }
+
+  if (efl_font_buffer_ee)
+  {
+    ecore_evas_free(efl_font_buffer_ee);
+    efl_font_buffer_ee = NULL;
+  }
 }

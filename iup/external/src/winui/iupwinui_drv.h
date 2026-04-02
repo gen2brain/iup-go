@@ -61,8 +61,6 @@ IUP_DRV_API void iupwinuiButtonKeySetStatus(int modifiers, int button, char* sta
  * Font Management
  ****************************************************************************/
 
-IUP_DRV_API void iupwinuiFontInit(void);
-IUP_DRV_API void iupwinuiFontFinish(void);
 IUP_DRV_API char* iupwinuiGetFontAttrib(Ihandle* ih);
 IUP_DRV_API int iupwinuiSetFontAttrib(Ihandle* ih, const char* value);
 IUP_DRV_API float iupwinuiFontGetMultilineLineHeightF(Ihandle* ih);

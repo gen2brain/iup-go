@@ -5,6 +5,7 @@
  */
 
 #include <QFont>
+#include <QFontDatabase>
 #include <QFontMetrics>
 #include <QFontInfo>
 #include <QApplication>
@@ -460,6 +461,31 @@ extern "C" IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, i
 
   if (charwidth)  *charwidth = qtfont->charwidth;
   if (charheight) *charheight = qtfont->charheight;
+}
+
+static int qtFontFamilyCompare(const void* a, const void* b)
+{
+  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
+}
+
+extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
+{
+  QStringList families = QFontDatabase::families();
+  int count = families.size();
+
+  if (count == 0)
+  {
+    *list = NULL;
+    return 0;
+  }
+
+  *list = (char**)malloc(count * sizeof(char*));
+  for (int i = 0; i < count; i++)
+    (*list)[i] = iupStrDup(families.at(i).toUtf8().constData());
+
+  qsort(*list, count, sizeof(char*), qtFontFamilyCompare);
+
+  return count;
 }
 
 /****************************************************************************

@@ -442,6 +442,33 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle *ih, int *charwidth, int *charhei
   if (charheight) *charheight = [iup_font charHeight];
 }
 
+static int cocoaFontFamilyCompare(const void* a, const void* b)
+{
+  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
+}
+
+IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
+{
+  @autoreleasepool {
+    NSArray<NSString*>* families = [[NSFontManager sharedFontManager] availableFontFamilies];
+    int count = (int)[families count];
+
+    if (count == 0)
+    {
+      *list = NULL;
+      return 0;
+    }
+
+    *list = (char**)malloc(count * sizeof(char*));
+    for (int i = 0; i < count; i++)
+      (*list)[i] = iupStrDup([[families objectAtIndex:i] UTF8String]);
+
+    qsort(*list, count, sizeof(char*), cocoaFontFamilyCompare);
+
+    return count;
+  }
+}
+
 IUP_SDK_API void iupdrvFontInit(void)
 {
   if (nil == s_mapOfFonts)

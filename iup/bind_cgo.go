@@ -44,7 +44,7 @@ package iup
 #cgo darwin,motif LDFLAGS: -liconv
 #cgo motif,gl LDFLAGS: -lGL
 #cgo motif,xft CFLAGS: -DIUP_USE_XFT
-#cgo motif,xft,!nopkgconfig pkg-config: xft freetype2
+#cgo motif,xft,!nopkgconfig pkg-config: xft freetype2 fontconfig
 #cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_ICONV
 
 #cgo windows,!winui CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl

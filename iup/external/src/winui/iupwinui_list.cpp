@@ -519,23 +519,11 @@ static int winuiListSetValueAttrib(Ihandle* ih, const char* value)
   }
   else if (aux->hasEditbox)
   {
-    if (value && !iupStrToInt(value, NULL))
+    TextBox tb = winuiListGetTextBox(ih);
+    if (tb)
     {
-      TextBox tb = winuiListGetTextBox(ih);
-      if (tb)
-        tb.Text(iupwinuiStringToHString(value));
-    }
-    else
-    {
-      ListBox listBox = winuiListGetListBox(ih);
-      if (listBox)
-      {
-        int pos = 0;
-        if (iupStrToInt(value, &pos) && pos > 0 && pos <= (int)listBox.Items().Size())
-          listBox.SelectedIndex(pos - 1);
-        else
-          listBox.SelectedIndex(-1);
-      }
+      if (!value) value = "";
+      tb.Text(iupwinuiStringToHString(value));
     }
   }
   else if (aux->isVirtual)

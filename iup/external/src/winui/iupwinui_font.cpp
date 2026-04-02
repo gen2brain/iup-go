@@ -197,36 +197,6 @@ static IwinuiFont* winuiFontGet(Ihandle* ih)
   return winfont;
 }
 
-IUP_DRV_API void iupwinuiFontInit(void)
-{
-  HRESULT hr = DWriteCreateFactory(
-    DWRITE_FACTORY_TYPE_SHARED,
-    __uuidof(IDWriteFactory),
-    reinterpret_cast<IUnknown**>(&winui_dwrite_factory));
-
-  if (FAILED(hr))
-    winui_dwrite_factory = NULL;
-
-  HDC hdc = GetDC(NULL);
-  winui_screen_dpi = (float)GetDeviceCaps(hdc, LOGPIXELSY);
-  ReleaseDC(NULL, hdc);
-}
-
-IUP_DRV_API void iupwinuiFontFinish(void)
-{
-  for (size_t i = 0; i < winui_fonts.size(); i++)
-  {
-    if (winui_fonts[i].textFormat)
-      winui_fonts[i].textFormat->Release();
-  }
-  winui_fonts.clear();
-
-  if (winui_dwrite_factory)
-  {
-    winui_dwrite_factory->Release();
-    winui_dwrite_factory = NULL;
-  }
-}
 
 extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
 {
@@ -536,12 +506,122 @@ IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::
     textBlock.FontStyle(winrt::Windows::UI::Text::FontStyle::Normal);
 }
 
+static int winuiFontFamilyCompare(const void* a, const void* b)
+{
+  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
+}
+
+extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
+{
+  IDWriteFontCollection* collection = NULL;
+  UINT32 i, family_count;
+  int count = 0;
+  char** temp;
+
+  if (!winui_dwrite_factory)
+  {
+    *list = NULL;
+    return 0;
+  }
+
+  winui_dwrite_factory->GetSystemFontCollection(&collection, FALSE);
+  if (!collection)
+  {
+    *list = NULL;
+    return 0;
+  }
+
+  family_count = collection->GetFontFamilyCount();
+  if (family_count == 0)
+  {
+    collection->Release();
+    *list = NULL;
+    return 0;
+  }
+
+  temp = (char**)malloc(family_count * sizeof(char*));
+
+  for (i = 0; i < family_count; i++)
+  {
+    IDWriteFontFamily* family = NULL;
+    collection->GetFontFamily(i, &family);
+    if (!family)
+      continue;
+
+    IDWriteLocalizedStrings* names = NULL;
+    family->GetFamilyNames(&names);
+    if (names)
+    {
+      UINT32 idx = 0;
+      BOOL exists = FALSE;
+      names->FindLocaleName(L"en-us", &idx, &exists);
+      if (!exists)
+        idx = 0;
+
+      UINT32 len = 0;
+      names->GetStringLength(idx, &len);
+      if (len > 0)
+      {
+        wchar_t* wname = (wchar_t*)malloc((len + 1) * sizeof(wchar_t));
+        names->GetString(idx, wname, len + 1);
+
+        char name[256];
+        int utf8_len = WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), NULL, NULL);
+        free(wname);
+
+        if (utf8_len > 0)
+        {
+          temp[count] = iupStrDup(name);
+          count++;
+        }
+      }
+      names->Release();
+    }
+    family->Release();
+  }
+
+  collection->Release();
+
+  if (count == 0)
+  {
+    free(temp);
+    *list = NULL;
+    return 0;
+  }
+
+  *list = (char**)realloc(temp, count * sizeof(char*));
+  qsort(*list, count, sizeof(char*), winuiFontFamilyCompare);
+
+  return count;
+}
+
 extern "C" IUP_SDK_API void iupdrvFontInit(void)
 {
-  iupwinuiFontInit();
+  HRESULT hr = DWriteCreateFactory(
+    DWRITE_FACTORY_TYPE_SHARED,
+    __uuidof(IDWriteFactory),
+    reinterpret_cast<IUnknown**>(&winui_dwrite_factory));
+
+  if (FAILED(hr))
+    winui_dwrite_factory = NULL;
+
+  HDC hdc = GetDC(NULL);
+  winui_screen_dpi = (float)GetDeviceCaps(hdc, LOGPIXELSY);
+  ReleaseDC(NULL, hdc);
 }
 
 extern "C" IUP_SDK_API void iupdrvFontFinish(void)
 {
-  iupwinuiFontFinish();
+  for (size_t i = 0; i < winui_fonts.size(); i++)
+  {
+    if (winui_fonts[i].textFormat)
+      winui_fonts[i].textFormat->Release();
+  }
+  winui_fonts.clear();
+
+  if (winui_dwrite_factory)
+  {
+    winui_dwrite_factory->Release();
+    winui_dwrite_factory = NULL;
+  }
 }

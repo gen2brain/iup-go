@@ -8,7 +8,6 @@
 #include <stdio.h>
 
 #include <Xm/Xm.h>
-#include <Xm/XmP.h>
 
 #ifdef IUP_USE_XFT
 #include <X11/Xft/Xft.h>
@@ -20,7 +19,6 @@
 #include "iup_attrib.h"
 #include "iup_array.h"
 #include "iup_object.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_assert.h"
 
@@ -751,6 +749,143 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charhei
   if (charwidth)
     *charwidth = motfont->charwidth;
 }
+
+static int motFontFamilyCompare(const void* a, const void* b)
+{
+  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
+}
+
+static void motFontGetFamilyFromXLFD(const char* xlfd, char* family, int family_size)
+{
+  const char* p;
+  int len;
+  xlfd++;  /* skip first '-' */
+  p = strchr(xlfd, '-');
+  if (!p) { family[0] = 0; return; }
+  p++;  /* skip foundry '-' */
+  len = (int)(strchr(p, '-') - p);
+  if (len <= 0 || len >= family_size) { family[0] = 0; return; }
+  memcpy(family, p, len);
+  family[len] = 0;
+}
+
+#ifdef IUP_USE_XFT
+IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
+{
+  FcPattern* pattern;
+  FcObjectSet* os;
+  FcFontSet* fs;
+  int i, count = 0;
+  char** temp;
+
+  pattern = FcPatternCreate();
+  os = FcObjectSetBuild(FC_FAMILY, (char*)NULL);
+  fs = FcFontList(NULL, pattern, os);
+
+  FcPatternDestroy(pattern);
+  FcObjectSetDestroy(os);
+
+  if (!fs || fs->nfont == 0)
+  {
+    if (fs) FcFontSetDestroy(fs);
+    *list = NULL;
+    return 0;
+  }
+
+  temp = (char**)malloc(fs->nfont * sizeof(char*));
+
+  for (i = 0; i < fs->nfont; i++)
+  {
+    FcChar8* family = NULL;
+    if (FcPatternGetString(fs->fonts[i], FC_FAMILY, 0, &family) == FcResultMatch && family)
+    {
+      temp[count] = iupStrDup((const char*)family);
+      count++;
+    }
+  }
+
+  FcFontSetDestroy(fs);
+
+  if (count == 0)
+  {
+    free(temp);
+    *list = NULL;
+    return 0;
+  }
+
+  qsort(temp, count, sizeof(char*), motFontFamilyCompare);
+
+  /* remove duplicates after sorting */
+  {
+    int j = 0;
+    for (i = 1; i < count; i++)
+    {
+      if (iupStrEqualNoCase(temp[j], temp[i]))
+        free(temp[i]);
+      else
+        temp[++j] = temp[i];
+    }
+    count = j + 1;
+  }
+
+  *list = (char**)realloc(temp, count * sizeof(char*));
+
+  return count;
+}
+#else
+IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
+{
+  int i, n = 0, count = 0;
+  char family[256];
+  char** font_names;
+  char** temp;
+
+  font_names = XListFonts(iupmot_display, "-*-*-medium-r-*-*-0-0-*-*-*-*-*-*", 32767, &n);
+  if (!font_names || n == 0)
+  {
+    *list = NULL;
+    return 0;
+  }
+
+  temp = (char**)malloc(n * sizeof(char*));
+
+  for (i = 0; i < n; i++)
+  {
+    motFontGetFamilyFromXLFD(font_names[i], family, sizeof(family));
+    if (!family[0]) continue;
+    temp[count] = iupStrDup(family);
+    count++;
+  }
+
+  XFreeFontNames(font_names);
+
+  if (count == 0)
+  {
+    free(temp);
+    *list = NULL;
+    return 0;
+  }
+
+  qsort(temp, count, sizeof(char*), motFontFamilyCompare);
+
+  /* remove duplicates after sorting */
+  {
+    int j = 0;
+    for (i = 1; i < count; i++)
+    {
+      if (iupStrEqualNoCase(temp[j], temp[i]))
+        free(temp[i]);
+      else
+        temp[++j] = temp[i];
+    }
+    count = j + 1;
+  }
+
+  *list = (char**)realloc(temp, count * sizeof(char*));
+
+  return count;
+}
+#endif
 
 IUP_SDK_API void iupdrvFontInit(void)
 {
