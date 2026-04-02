@@ -341,14 +341,14 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
     efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL),
     efl_gfx_arrangement_content_padding_set(efl_added, 5, 0),
     efl_gfx_hint_weight_set(efl_added, 1.0, 1.0),
-    efl_gfx_hint_fill_set(efl_added, EINA_TRUE, EINA_TRUE));
+    efl_gfx_hint_align_set(efl_added, -1.0, -1.0));
 
   /* Family column */
   family_box = efl_add(EFL_UI_BOX_CLASS, lists_box,
     efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_VERTICAL),
     efl_gfx_arrangement_content_padding_set(efl_added, 0, 2),
     efl_gfx_hint_weight_set(efl_added, 1.0, 1.0),
-    efl_gfx_hint_fill_set(efl_added, EINA_TRUE, EINA_TRUE));
+    efl_gfx_hint_align_set(efl_added, -1.0, -1.0));
 
   family_label = efl_add(EFL_UI_TEXTBOX_CLASS, family_box,
     efl_text_set(efl_added, IupGetLanguageString("IUP_FAMILY")),
@@ -358,7 +358,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
 
   dlg.family_list = efl_add(EFL_UI_LIST_CLASS, family_box);
   efl_gfx_hint_weight_set(dlg.family_list, 1.0, 1.0);
-  efl_gfx_hint_fill_set(dlg.family_list, EINA_TRUE, EINA_TRUE);
+  efl_gfx_hint_align_set(dlg.family_list, -1.0, -1.0);
 
   for (i = 0; i < dlg.family_count; i++)
     eflFontDlgAddItem(dlg.family_list, dlg.sorted_families[i]);
@@ -374,7 +374,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
     efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_VERTICAL),
     efl_gfx_arrangement_content_padding_set(efl_added, 0, 2),
     efl_gfx_hint_weight_set(efl_added, 0.4, 1.0),
-    efl_gfx_hint_fill_set(efl_added, EINA_TRUE, EINA_TRUE));
+    efl_gfx_hint_align_set(efl_added, -1.0, -1.0));
 
   style_label = efl_add(EFL_UI_TEXTBOX_CLASS, style_box,
     efl_text_set(efl_added, IupGetLanguageString("IUP_STYLE")),
@@ -384,7 +384,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
 
   dlg.style_list = efl_add(EFL_UI_LIST_CLASS, style_box);
   efl_gfx_hint_weight_set(dlg.style_list, 1.0, 1.0);
-  efl_gfx_hint_fill_set(dlg.style_list, EINA_TRUE, EINA_TRUE);
+  efl_gfx_hint_align_set(dlg.style_list, -1.0, -1.0);
 
   eflFontDlgAddItem(dlg.style_list, "Regular");
 
@@ -399,7 +399,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
     efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_VERTICAL),
     efl_gfx_arrangement_content_padding_set(efl_added, 0, 2),
     efl_gfx_hint_weight_set(efl_added, 0.3, 1.0),
-    efl_gfx_hint_fill_set(efl_added, EINA_TRUE, EINA_TRUE));
+    efl_gfx_hint_align_set(efl_added, -1.0, -1.0));
 
   size_label = efl_add(EFL_UI_TEXTBOX_CLASS, size_box,
     efl_text_set(efl_added, IupGetLanguageString("IUP_SIZE")),
@@ -409,7 +409,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
 
   dlg.size_list = efl_add(EFL_UI_LIST_CLASS, size_box);
   efl_gfx_hint_weight_set(dlg.size_list, 1.0, 1.0);
-  efl_gfx_hint_fill_set(dlg.size_list, EINA_TRUE, EINA_TRUE);
+  efl_gfx_hint_align_set(dlg.size_list, -1.0, -1.0);
 
   for (i = 0; i < (int)EFL_FONTDLG_SIZE_COUNT; i++)
   {
@@ -430,7 +430,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
   preview_box = efl_add(EFL_UI_BOX_CLASS, main_box,
     efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_VERTICAL),
     efl_gfx_hint_weight_set(efl_added, 1.0, 0.2),
-    efl_gfx_hint_fill_set(efl_added, EINA_TRUE, EINA_TRUE));
+    efl_gfx_hint_align_set(efl_added, -1.0, -1.0));
 
   dlg.preview_label = evas_object_textblock_add(evas);
   {
@@ -441,7 +441,7 @@ static int eflFontDlgPopup(Ihandle* ih, int x, int y)
   }
   evas_object_textblock_text_markup_set(dlg.preview_label, "AaBbYyZz 0123");
   efl_gfx_hint_weight_set(dlg.preview_label, 1.0, 1.0);
-  efl_gfx_hint_fill_set(dlg.preview_label, EINA_TRUE, EINA_TRUE);
+  efl_gfx_hint_align_set(dlg.preview_label, -1.0, -1.0);
   efl_gfx_entity_visible_set(dlg.preview_label, EINA_TRUE);
   efl_pack_end(preview_box, dlg.preview_label);
 
