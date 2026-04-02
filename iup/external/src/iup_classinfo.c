@@ -264,7 +264,7 @@ static int classesList_ActionCB (Ihandle *ih, char *className, int pos, int stat
     Ihandle* listCallbacks = IupGetDialogChild(ih, "listCallbacks");
     Ihandle* txtInfo = IupGetDialogChild(ih, "txtInfo");
     char **attr_names;
-    
+
     total_n = IupGetClassAttributes(className, NULL, -1); /* total include callbacks */
     attr_names = (char **)malloc(total_n * sizeof(char *));
     if (!attr_names) return IUP_DEFAULT;
@@ -330,7 +330,6 @@ IUP_SDK_API void iupClassInfoShowHelp(const char* className)
 {
   char url[1024];
   char* folder = "elem";
-  char* sep = "";
 
   if (strstr(className, "dlg") || iupStrEqual(className, "dialog"))
     folder = "dlg";
@@ -346,10 +345,6 @@ IUP_SDK_API void iupClassInfoShowHelp(const char* className)
   else if (className[0] == 'g' && className[1] == 'l')
     folder = "gl";
 
-  if (iupStrEqual(className, "plot"))
-      sep = "_";
-
-  /* filename fixes */
   if (iupStrEqualPartial(className, "imagergb"))
     className = "image";
   else if (iupStrEqual(className, "spinbox"))
@@ -361,8 +356,7 @@ IUP_SDK_API void iupClassInfoShowHelp(const char* className)
   else if (iupStrEqual(className, "webbrowser"))
     className = "web";
 
-  /* snprintf(url, sizeof(url), "http://www.tecgraf.puc-rio.br/iup/en/%s/iup%s%s.html", folder, sep, className); -- direct page version */
-  snprintf(url, sizeof(url), "http://www.tecgraf.puc-rio.br/iup/index.html?url=%s/iup%s%s.html", folder, sep, className);
+  snprintf(url, sizeof(url), "https://github.com/gen2brain/iup-go/blob/main/docs/%s/iup_%s.md", folder, className);
 
   IupHelp(url);
 }
@@ -387,7 +381,7 @@ static int button_ok_CB(Ihandle* ih)
 IUP_API Ihandle* IupClassInfoDialog(Ihandle* parent)
 {
   Ihandle *dialog, *box, *buttons, *listClasses, *listAttributes, *listCallbacks, *txtInfo, *ok_bt, *help_bt;
-  
+
   listClasses    = IupList(NULL);  /* list of registered classes */
   listAttributes = IupList(NULL);  /* list of attributes of the selected class */
   listCallbacks  = IupList(NULL);  /* list of  callbacks of the selected class */
@@ -431,14 +425,14 @@ IUP_API Ihandle* IupClassInfoDialog(Ihandle* parent)
             buttons,
             NULL);
 
-	IupSetAttributes(box,"MARGIN=8x8, GAP=4");
+  IupSetAttributes(box,"MARGIN=8x8, GAP=4");
 
   dialog = IupDialog(box);
   IupSetAttributeHandle(dialog, "DEFAULTENTER", ok_bt);
   IupSetAttributeHandle(dialog, "DEFAULTESC", ok_bt);
   if (parent) IupSetAttributeHandle(dialog, "PARENTDIALOG", parent);
 
-	IupSetAttribute(dialog, "TITLE", "Iup Classes Information");
+  IupSetAttribute(dialog, "TITLE", "Iup Classes Information");
 
   IupMap(dialog);
 
