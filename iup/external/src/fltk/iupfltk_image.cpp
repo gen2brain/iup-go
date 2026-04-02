@@ -425,108 +425,6 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
  * Image Save
  ****************************************************************************/
 
-static void fltkBmpWriteU16(unsigned char* p, unsigned short v)
-{
-  p[0] = (unsigned char)(v & 0xFF);
-  p[1] = (unsigned char)((v >> 8) & 0xFF);
-}
-
-static void fltkBmpWriteU32(unsigned char* p, unsigned int v)
-{
-  p[0] = (unsigned char)(v & 0xFF);
-  p[1] = (unsigned char)((v >> 8) & 0xFF);
-  p[2] = (unsigned char)((v >> 16) & 0xFF);
-  p[3] = (unsigned char)((v >> 24) & 0xFF);
-}
-
-#define FLTK_BMP_FILE_HEADER_SIZE 14
-#define FLTK_BMP_INFO_HEADER_SIZE 40
-
-static unsigned char* fltkImageWriteBmp(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, int* out_size)
-{
-  int has_palette = (bpp == 8);
-  int pixel_bytes = has_palette ? 1 : 3;
-  int palette_size = has_palette ? colors_count * 4 : 0;
-
-  int row_bytes = width * pixel_bytes;
-  int pad = (4 - (row_bytes % 4)) % 4;
-  row_bytes += pad;
-
-  unsigned int data_offset = FLTK_BMP_FILE_HEADER_SIZE + FLTK_BMP_INFO_HEADER_SIZE + palette_size;
-  unsigned int file_size = data_offset + row_bytes * height;
-
-  unsigned char* buffer = (unsigned char*)malloc(file_size);
-  if (!buffer) return NULL;
-
-  memset(buffer, 0, data_offset);
-
-  unsigned char* ptr = buffer;
-  fltkBmpWriteU16(ptr + 0, 0x4D42);
-  fltkBmpWriteU32(ptr + 2, file_size);
-  fltkBmpWriteU32(ptr + 10, data_offset);
-
-  ptr = buffer + FLTK_BMP_FILE_HEADER_SIZE;
-  fltkBmpWriteU32(ptr + 0, FLTK_BMP_INFO_HEADER_SIZE);
-  fltkBmpWriteU32(ptr + 4, (unsigned int)width);
-  fltkBmpWriteU32(ptr + 8, (unsigned int)height);
-  fltkBmpWriteU16(ptr + 12, 1);
-  fltkBmpWriteU16(ptr + 14, has_palette ? 8 : 24);
-  fltkBmpWriteU32(ptr + 20, row_bytes * height);
-  if (has_palette)
-    fltkBmpWriteU32(ptr + 32, colors_count);
-
-  if (has_palette)
-  {
-    unsigned char* pal = buffer + FLTK_BMP_FILE_HEADER_SIZE + FLTK_BMP_INFO_HEADER_SIZE;
-    for (int i = 0; i < colors_count; i++)
-    {
-      pal[i * 4]     = colors[i].b;
-      pal[i * 4 + 1] = colors[i].g;
-      pal[i * 4 + 2] = colors[i].r;
-      pal[i * 4 + 3] = 0;
-    }
-  }
-
-  ptr = buffer + data_offset;
-  for (int y = height - 1; y >= 0; y--)
-  {
-    if (has_palette)
-    {
-      unsigned char* src = imgdata + y * width;
-      memcpy(ptr, src, width);
-      memset(ptr + width, 0, pad);
-      ptr += width + pad;
-    }
-    else if (bpp == 24)
-    {
-      unsigned char* src = imgdata + y * width * 3;
-      for (int x = 0; x < width; x++)
-      {
-        ptr[x * 3]     = src[x * 3 + 2];
-        ptr[x * 3 + 1] = src[x * 3 + 1];
-        ptr[x * 3 + 2] = src[x * 3];
-      }
-      memset(ptr + width * 3, 0, pad);
-      ptr += width * 3 + pad;
-    }
-    else
-    {
-      unsigned char* src = imgdata + y * width * 4;
-      for (int x = 0; x < width; x++)
-      {
-        ptr[x * 3]     = src[x * 4 + 2];
-        ptr[x * 3 + 1] = src[x * 4 + 1];
-        ptr[x * 3 + 2] = src[x * 4];
-      }
-      memset(ptr + width * 3, 0, pad);
-      ptr += width * 3 + pad;
-    }
-  }
-
-  *out_size = (int)file_size;
-  return buffer;
-}
-
 static unsigned char* fltkImageToRGB(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, int* out_channels)
 {
   int channels;
@@ -580,7 +478,7 @@ extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, in
   if (iupStrEqualNoCase(format, "BMP"))
   {
     int size;
-    unsigned char* bmp_data = fltkImageWriteBmp(imgdata, width, height, bpp, colors, colors_count, &size);
+    unsigned char* bmp_data = iupImageWriteBMP(imgdata, width, height, bpp, colors, colors_count, &size);
     if (!bmp_data) return 0;
 
     FILE* f = fopen(filename, "wb");
@@ -598,7 +496,7 @@ extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, in
 extern "C" IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
   if (iupStrEqualNoCase(format, "BMP"))
-    return fltkImageWriteBmp(imgdata, width, height, bpp, colors, colors_count, size);
+    return iupImageWriteBMP(imgdata, width, height, bpp, colors, colors_count, size);
 
   return NULL;
 }
