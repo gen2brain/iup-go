@@ -50,7 +50,7 @@
 #define iupeflSetSizeHintMin(obj, w, h) efl_gfx_hint_size_min_set(obj, EINA_SIZE2D(w, h))
 #define iupeflSetSizeHintWeight(obj, x, y) efl_gfx_hint_weight_set(obj, x, y)
 #define iupeflSetSizeHintAlign(obj, x, y) efl_gfx_hint_align_set(obj, x, y)
-#define iupeflSetSizeHintFill(obj, x, y) efl_gfx_hint_fill_set(obj, x, y)
+#define iupeflSetSizeHintFill(obj, x, y) efl_gfx_hint_align_set(obj, (x) ? -1.0 : 0.5, (y) ? -1.0 : 0.5)
 
 /* EO text operations */
 #define iupeflSetText(obj, text) efl_text_set(obj, text)

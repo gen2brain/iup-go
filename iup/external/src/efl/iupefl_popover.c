@@ -116,7 +116,7 @@ static int eflPopoverMapMethod(Ihandle* ih)
     /* Hide frame title, just use for border effect */
     efl_text_set(frame, "");
     efl_gfx_hint_weight_set(frame, EFL_GFX_HINT_EXPAND, EFL_GFX_HINT_EXPAND);
-    efl_gfx_hint_fill_set(frame, EINA_TRUE, EINA_TRUE);
+    efl_gfx_hint_align_set(frame, -1.0, -1.0);
     efl_gfx_entity_visible_set(frame, EINA_TRUE);
     iupAttribSet(ih, "_IUP_EFL_FRAME", (char*)frame);
     iupAttribSet(ih, "_IUP_EFL_INNER", (char*)frame);

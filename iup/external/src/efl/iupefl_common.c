@@ -254,7 +254,7 @@ IUP_DRV_API Eo* iupeflFixedContainerNew(Eo* parent)
     return NULL;
 
   efl_gfx_hint_weight_set(box, EFL_GFX_HINT_EXPAND, EFL_GFX_HINT_EXPAND);
-  efl_gfx_hint_fill_set(box, EINA_TRUE, EINA_TRUE);
+  efl_gfx_hint_align_set(box, -1.0, -1.0);
 
   return box;
 }
@@ -272,7 +272,7 @@ IUP_DRV_API Eo* iupeflNativeContainerNew(Eo* parent)
     return NULL;
 
   efl_gfx_hint_weight_set(box, EFL_GFX_HINT_EXPAND, EFL_GFX_HINT_EXPAND);
-  efl_gfx_hint_fill_set(box, EINA_TRUE, EINA_TRUE);
+  efl_gfx_hint_align_set(box, -1.0, -1.0);
 
   return box;
 }

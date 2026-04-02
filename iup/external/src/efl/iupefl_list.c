@@ -1539,7 +1539,7 @@ static int eflListMapMethod(Ihandle* ih)
     entry = efl_add(EFL_UI_TEXTBOX_CLASS, hbox);
     efl_text_multiline_set(entry, EINA_FALSE);
     efl_gfx_hint_weight_set(entry, 1.0, 1.0);
-    efl_gfx_hint_fill_set(entry, EINA_TRUE, EINA_TRUE);
+    efl_gfx_hint_align_set(entry, -1.0, -1.0);
     efl_pack_end(hbox, entry);
 
     arrow_button = efl_add(EFL_UI_BUTTON_CLASS, hbox);
@@ -1555,7 +1555,7 @@ static int eflListMapMethod(Ihandle* ih)
       }
 
       efl_gfx_hint_weight_set(arrow_button, 0.0, 1.0);
-      efl_gfx_hint_fill_set(arrow_button, EINA_FALSE, EINA_TRUE);
+      efl_gfx_hint_align_set(arrow_button, 0.5, -1.0);
       efl_pack_end(hbox, arrow_button);
 
       efl_event_callback_add(arrow_button, EFL_INPUT_EVENT_CLICKED, eflDropdownButtonClickedCallback, ih);
@@ -1607,7 +1607,7 @@ static int eflListMapMethod(Ihandle* ih)
     entry = efl_add(EFL_UI_TEXTBOX_CLASS, box);
     efl_text_multiline_set(entry, EINA_FALSE);
     efl_gfx_hint_weight_set(entry, 1.0, 0.0);
-    efl_gfx_hint_fill_set(entry, EINA_TRUE, EINA_FALSE);
+    efl_gfx_hint_align_set(entry, -1.0, 0.5);
     efl_pack_end(box, entry);
 
     {
@@ -1628,7 +1628,7 @@ static int eflListMapMethod(Ihandle* ih)
     }
 
     efl_gfx_hint_weight_set(list, 1.0, 1.0);
-    efl_gfx_hint_fill_set(list, EINA_TRUE, EINA_TRUE);
+    efl_gfx_hint_align_set(list, -1.0, -1.0);
     efl_pack_end(box, list);
 
     efl_event_callback_add(list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflListSelectionChangedCallback, ih);
@@ -1677,7 +1677,6 @@ static int eflListMapMethod(Ihandle* ih)
       efl_text_interactive_editable_set(text_label, EINA_FALSE);
       efl_text_multiline_set(text_label, EINA_FALSE);
       efl_gfx_hint_weight_set(text_label, 1.0, 1.0);
-      efl_gfx_hint_fill_set(text_label, EINA_TRUE, EINA_TRUE);
       efl_gfx_hint_align_set(text_label, 0.0, 0.5);
       efl_pack_end(hbox, text_label);
 
@@ -1691,7 +1690,6 @@ static int eflListMapMethod(Ihandle* ih)
       efl_text_multiline_set(arrow_label, EINA_FALSE);
       efl_text_set(arrow_label, "\u25BC");
       efl_gfx_hint_weight_set(arrow_label, 0.0, 1.0);
-      efl_gfx_hint_fill_set(arrow_label, EINA_FALSE, EINA_TRUE);
       efl_gfx_hint_align_set(arrow_label, 1.0, 0.5);
       efl_pack_end(hbox, arrow_label);
 

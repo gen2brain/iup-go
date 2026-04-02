@@ -739,7 +739,7 @@ static void eflTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     if (content_box)
     {
       efl_gfx_hint_weight_set(content_box, 1.0, 1.0);
-      efl_gfx_hint_fill_set(content_box, EINA_TRUE, EINA_TRUE);
+      efl_gfx_hint_align_set(content_box, -1.0, -1.0);
       efl_content_set(page, content_box);
     }
 
