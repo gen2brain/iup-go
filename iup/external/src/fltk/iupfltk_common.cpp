@@ -313,6 +313,9 @@ IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget *widget, Ihandle* ih, int event
 {
   if (event == FL_ENTER)
   {
+    Icallback cb = IupGetCallback(ih, "ENTERWINDOW_CB");
+    if (cb) cb(ih);
+
     int cursor = iupAttribGetInt(ih, "_IUPFLTK_CURSOR");
     if (cursor)
     {
@@ -320,12 +323,12 @@ IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget *widget, Ihandle* ih, int event
       if (win)
         win->cursor((Fl_Cursor)cursor);
     }
-
-    Icallback cb = IupGetCallback(ih, "ENTERWINDOW_CB");
-    if (cb) cb(ih);
   }
   else if (event == FL_LEAVE)
   {
+    Icallback cb = IupGetCallback(ih, "LEAVEWINDOW_CB");
+    if (cb) cb(ih);
+
     int cursor = iupAttribGetInt(ih, "_IUPFLTK_CURSOR");
     if (cursor)
     {
@@ -333,9 +336,6 @@ IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget *widget, Ihandle* ih, int event
       if (win)
         win->cursor(FL_CURSOR_DEFAULT);
     }
-
-    Icallback cb = IupGetCallback(ih, "LEAVEWINDOW_CB");
-    if (cb) cb(ih);
   }
 
   return 0;

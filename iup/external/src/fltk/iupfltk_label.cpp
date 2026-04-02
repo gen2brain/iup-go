@@ -45,19 +45,9 @@ protected:
     switch (event)
     {
       case FL_ENTER:
-      {
-        IFn cb = (IFn)IupGetCallback(iup_handle, "ENTERWINDOW_CB");
-        if (cb)
-          cb(iup_handle);
-        return 1;
-      }
       case FL_LEAVE:
-      {
-        IFn cb = (IFn)IupGetCallback(iup_handle, "LEAVEWINDOW_CB");
-        if (cb)
-          cb(iup_handle);
+        iupfltkEnterLeaveEvent(this, iup_handle, event);
         return 1;
-      }
       case FL_PUSH:
       case FL_RELEASE:
       {
