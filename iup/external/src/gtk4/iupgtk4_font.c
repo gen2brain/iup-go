@@ -218,20 +218,21 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
     gtk_label_set_attributes(GTK_LABEL(widget), attrs);
     pango_attr_list_unref(attrs);
   }
-  else if (GTK_IS_EDITABLE(widget))
+  else if (GTK_IS_TEXT_VIEW(widget) || GTK_IS_EDITABLE(widget))
   {
-    /* GtkEntry is now GtkText under GtkEditable interface. For editable widgets, we need to use CSS */
     char css_font[512];
     const char *family = pango_font_description_get_family(fontdesc);
     int size = pango_font_description_get_size(fontdesc);
+    PangoWeight weight = pango_font_description_get_weight(fontdesc);
+    PangoStyle style = pango_font_description_get_style(fontdesc);
 
     if (size > 0)
     {
       const char* safe_family = family ? family : "sans";
       char escaped_family[256];
       int fi = 0, fo = 0;
+      int offset;
 
-      /* Escape quotes and backslashes in font family name to prevent CSS injection */
       while (safe_family[fi] && fo < (int)sizeof(escaped_family) - 2)
       {
         char c = safe_family[fi++];
@@ -242,9 +243,17 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
       escaped_family[fo] = 0;
 
       if (pango_font_description_get_size_is_absolute(fontdesc))
-        snprintf(css_font, sizeof(css_font), "font-family: \"%s\"; font-size: %dpx;", escaped_family, size / PANGO_SCALE);
+        offset = snprintf(css_font, sizeof(css_font), "font-family: \"%s\"; font-size: %dpx;", escaped_family, size / PANGO_SCALE);
       else
-        snprintf(css_font, sizeof(css_font), "font-family: \"%s\"; font-size: %dpt;", escaped_family, size / PANGO_SCALE);
+        offset = snprintf(css_font, sizeof(css_font), "font-family: \"%s\"; font-size: %dpt;", escaped_family, size / PANGO_SCALE);
+
+      if (weight != PANGO_WEIGHT_NORMAL)
+        offset += snprintf(css_font + offset, sizeof(css_font) - offset, " font-weight: %d;", (int)weight);
+
+      if (style == PANGO_STYLE_ITALIC)
+        offset += snprintf(css_font + offset, sizeof(css_font) - offset, " font-style: italic;");
+      else if (style == PANGO_STYLE_OBLIQUE)
+        offset += snprintf(css_font + offset, sizeof(css_font) - offset, " font-style: oblique;");
 
       iupgtk4CssSetWidgetFont(widget, css_font);
     }

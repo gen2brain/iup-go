@@ -144,7 +144,6 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
           g_menu_append_submenu(section, processed_title, G_MENU_MODEL(submenu_model));
           /* Store GMenu reference on the IUP menu handle for later access (e.g., recent files) */
           iupAttribSet(submenu_ih, "_IUP_RECENT_GMENU", (char*)submenu_model);
-          /* Don't unref - we keep the reference for dynamic updates */
         }
       }
 
@@ -246,6 +245,28 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
   return menu;
 }
 
+static void gtk4ApplyPendingRecentMenus(Ihandle* ih_menu)
+{
+  Ihandle* child;
+
+  for (child = ih_menu->firstchild; child; child = child->brother)
+  {
+    if (iupStrEqual(child->iclass->name, "submenu") && child->firstchild)
+    {
+      Ihandle* submenu_ih = child->firstchild;
+
+      if (iupAttribGet(submenu_ih, "_IUP_CONFIG") && iupAttribGet(submenu_ih, "_IUP_RECENT_GMENU"))
+      {
+        Icallback map_cb = IupGetCallback(submenu_ih, "MAP_CB");
+        if (map_cb)
+          map_cb(submenu_ih);
+      }
+
+      gtk4ApplyPendingRecentMenus(submenu_ih);
+    }
+  }
+}
+
 IUP_DRV_API void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu)
 {
   GMenu* menubar_model;
@@ -274,6 +295,9 @@ IUP_DRV_API void iupgtk4DialogSetMenuBar(Ihandle* ih_dialog, Ihandle* ih_menu)
   /* Insert action group into window with "menu" prefix */
   gtk_widget_insert_action_group(ih_dialog->handle, "menu", G_ACTION_GROUP(action_group));
   g_object_unref(action_group);  /* window takes ownership */
+
+  /* Apply pending recent files updates now that the action group is available */
+  gtk4ApplyPendingRecentMenus(ih_menu);
 
   /* Create GtkPopoverMenuBar widget from model */
   menubar_widget = gtk_popover_menu_bar_new_from_model(G_MENU_MODEL(menubar_model));
