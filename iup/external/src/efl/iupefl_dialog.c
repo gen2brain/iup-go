@@ -992,32 +992,6 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int eflDialogSetOpacityAttrib(Ihandle* ih, const char* value)
-{
-  Eo* win = iupeflGetWidget(ih);
-  Ecore_Evas* ee;
-  int opacity = 255;
-
-  if (!win)
-    return 0;
-
-  iupStrToInt(value, &opacity);
-  if (opacity < 0) opacity = 0;
-  if (opacity > 255) opacity = 255;
-
-  ee = ecore_evas_object_ecore_evas_get(win);
-  if (!ee)
-    return 0;
-
-  if (opacity < 255)
-    ecore_evas_alpha_set(ee, EINA_TRUE);
-  else
-    ecore_evas_alpha_set(ee, EINA_FALSE);
-
-  efl_gfx_color_set(win, opacity, opacity, opacity, opacity);
-  return 1;
-}
-
 static int eflDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
 {
   Eo* win = iupeflGetWidget(ih);
@@ -1285,7 +1259,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "OPACITY", NULL, eflDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, eflDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, eflDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTSIZE", eflDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
