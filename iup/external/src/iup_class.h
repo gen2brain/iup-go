@@ -470,7 +470,6 @@ void iupClassObjectEnsureDefaultAttributes(Ihandle* ih);
 /* Used in iupRegisterUpdateClasses */
 void iupClassUpdate(Iclass* ic);
 
-/* Used in IupLayoutDialog */
 int iupClassAttribIsRegistered(Iclass* ic, const char* name);
 void iupClassGetAttribNameInfo(Iclass* ic, const char* name, char* *def_value, int *flags);
 

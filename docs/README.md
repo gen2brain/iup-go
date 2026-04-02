@@ -74,7 +74,7 @@ API reference documentation for IUP (Portable User Interface).
 
 ### Debug
 
-[IupLayoutDialog](dlg/iup_layoutdialog.md), [IupElementPropertiesDialog](dlg/iup_elementpropdialog.md), [IupGlobalsDialog](dlg/iup_globalsdialog.md), [IupClassInfoDialog](dlg/iup_classinfodialog.md)
+[IupElementPropertiesDialog](dlg/iup_elementpropdialog.md), [IupGlobalsDialog](dlg/iup_globalsdialog.md), [IupClassInfoDialog](dlg/iup_classinfodialog.md)
 
 ---
 

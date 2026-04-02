@@ -212,7 +212,7 @@ IUP_SDK_API char* iupAttribGetInheritNativeParent(Ihandle* ih, const char* name)
 /** Returns the attribute from the hash table as a string, 
  * but if not defined then checks in the control implementation, 
  * if still not defined then returns the registered default value if any. \n
- * NO inheritance here. Used only in the IupLayoutDialog.
+ * NO inheritance here.
  * \ingroup attrib */
 IUP_SDK_API char* iupAttribGetLocal(Ihandle* ih, const char* name);
 

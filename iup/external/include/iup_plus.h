@@ -281,7 +281,6 @@ namespace Iup
   };
 
   inline Dialog Control::GetDialog() { return Dialog(IupGetDialog(ih)); }
-  inline Dialog LayoutDialog(const Dialog& dialog) { return Dialog(IupLayoutDialog(dialog.GetHandle())); }
   inline Dialog GlobalsDialog() { return Dialog(IupGlobalsDialog()); }
   inline Dialog ElementPropertiesDialog(const Dialog& parent, const Control& control) { return Dialog(IupElementPropertiesDialog(parent.GetHandle(), control.GetHandle())); }
   inline Dialog ElementPropertiesDialog(const Control& control) { return Dialog(IupElementPropertiesDialog(0, control.GetHandle())); }
