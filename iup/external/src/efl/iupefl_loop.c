@@ -31,7 +31,7 @@ static int efl_mainloop = 0;
 static int efl_exitmainloop = 0;
 
 static IFidle efl_idle_cb = NULL;
-static Ecore_Idle_Enterer* efl_idler = NULL;
+static Ecore_Idler* efl_idler = NULL;
 
 #define EFL_MODAL_LOOP_MAX_DEPTH 10
 static int efl_modal_loop_level = 0;
@@ -97,14 +97,14 @@ IUP_SDK_API void iupdrvSetIdleFunction(Icallback func)
 {
   if (efl_idler)
   {
-    ecore_idle_enterer_del(efl_idler);
+    ecore_idler_del(efl_idler);
     efl_idler = NULL;
   }
 
   efl_idle_cb = (IFidle)func;
 
   if (efl_idle_cb)
-    efl_idler = ecore_idle_enterer_add(eflIdlerCallback, NULL);
+    efl_idler = ecore_idler_add(eflIdlerCallback, NULL);
 }
 
 /****************************************************************************
@@ -214,8 +214,13 @@ IUP_DRV_API void iupeflModalLoopRun(Eo* modal_win)
   if (efl_modal_loop_level >= EFL_MODAL_LOOP_MAX_DEPTH)
     return;
 
+  iupeflMessagePendingFlush(loop);
+
   if (!efl_pending_flush_func)
+  {
+    fprintf(stderr, "IUP: efl_loop_message_pending_flush not found. Modal dialogs require patched EFL.\n");
     return;
+  }
 
   (void)modal_win;
 
@@ -248,7 +253,7 @@ IUP_DRV_API void iupeflLoopCleanup(void)
 {
   if (efl_idler)
   {
-    ecore_idle_enterer_del(efl_idler);
+    ecore_idler_del(efl_idler);
     efl_idler = NULL;
   }
   efl_idle_cb = NULL;
