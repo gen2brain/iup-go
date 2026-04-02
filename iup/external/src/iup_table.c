@@ -14,15 +14,11 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_register.h"
-#include "iup_assert.h"
 #include "iup_classbase.h"
 
 #include "iup_table.h"
-#include "iup_image.h"
 
 
 /* ========================================================================= */
@@ -809,6 +805,9 @@ Iclass* iupTableNewClass(void)
 
   /* Visual */
   iupBaseRegisterVisualAttrib(ic);
+
+  /* Drag & Drop */
+  iupdrvRegisterDragDropAttrib(ic);
 
   /* Common attributes */
   iupClassRegisterAttribute(ic, "NUMLIN", iTableGetNumLinAttrib, iTableSetNumLinAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
