@@ -161,10 +161,6 @@ protected:
     if (iup_handle->data->ignore_resize)
       return;
 
-    /* Skip resize events before dialog is visible, IUP controls sizing until then */
-    if (!isVisible())
-      return;
-
     /* Update IUP size tracking */
     int border = 0, caption = 0, menu = 0;
     iupdrvDialogGetDecoration(iup_handle, &border, &caption, &menu);
