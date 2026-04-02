@@ -19,7 +19,6 @@
 #include "iup_assert.h"
 #include "iup_stdcontrols.h"
 #include "iup_drvinfo.h"
-#include "iup_array.h"
 
 
 void iupImageResizeRGBA(int src_width, int src_height, unsigned char *src_map, int dst_width, int dst_height, unsigned char *dst_map, int depth)
@@ -1253,9 +1252,113 @@ static void iImageDestroyMethod(Ihandle* ih)
   iImageClearCache(ih);
 }
 
+/***************************************************************/
+
+static void iBmpWriteU16(unsigned char* p, unsigned short v)
+{
+  p[0] = (unsigned char)(v & 0xFF);
+  p[1] = (unsigned char)((v >> 8) & 0xFF);
+}
+
+static void iBmpWriteU32(unsigned char* p, unsigned int v)
+{
+  p[0] = (unsigned char)(v & 0xFF);
+  p[1] = (unsigned char)((v >> 8) & 0xFF);
+  p[2] = (unsigned char)((v >> 16) & 0xFF);
+  p[3] = (unsigned char)((v >> 24) & 0xFF);
+}
+
+#define BMP_FILE_HEADER_SIZE 14
+#define BMP_INFO_HEADER_SIZE 40
+
+IUP_SDK_API unsigned char* iupImageWriteBMP(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, int* out_size)
+{
+  int has_palette = (bpp == 8);
+  int pixel_bytes = has_palette ? 1 : 3;
+  int palette_size = has_palette ? colors_count * 4 : 0;
+  int row_bytes = width * pixel_bytes;
+  int pad = (4 - (row_bytes % 4)) % 4;
+  unsigned int data_offset, file_size;
+  unsigned char* buffer;
+  unsigned char* ptr;
+  int x, y;
+
+  row_bytes += pad;
+  data_offset = BMP_FILE_HEADER_SIZE + BMP_INFO_HEADER_SIZE + palette_size;
+  file_size = data_offset + row_bytes * height;
+
+  buffer = (unsigned char*)malloc(file_size);
+  if (!buffer) return NULL;
+  memset(buffer, 0, data_offset);
+
+  ptr = buffer;
+  iBmpWriteU16(ptr + 0, 0x4D42);
+  iBmpWriteU32(ptr + 2, file_size);
+  iBmpWriteU32(ptr + 10, data_offset);
+
+  ptr = buffer + BMP_FILE_HEADER_SIZE;
+  iBmpWriteU32(ptr + 0, BMP_INFO_HEADER_SIZE);
+  iBmpWriteU32(ptr + 4, (unsigned int)width);
+  iBmpWriteU32(ptr + 8, (unsigned int)height);
+  iBmpWriteU16(ptr + 12, 1);
+  iBmpWriteU16(ptr + 14, has_palette ? 8 : 24);
+  iBmpWriteU32(ptr + 20, row_bytes * height);
+  if (has_palette)
+    iBmpWriteU32(ptr + 32, colors_count);
+
+  if (has_palette)
+  {
+    unsigned char* pal = buffer + BMP_FILE_HEADER_SIZE + BMP_INFO_HEADER_SIZE;
+    for (x = 0; x < colors_count; x++)
+    {
+      pal[x * 4]     = colors[x].b;
+      pal[x * 4 + 1] = colors[x].g;
+      pal[x * 4 + 2] = colors[x].r;
+      pal[x * 4 + 3] = 0;
+    }
+  }
+
+  ptr = buffer + data_offset;
+  for (y = height - 1; y >= 0; y--)
+  {
+    if (has_palette)
+    {
+      unsigned char* src = imgdata + y * width;
+      memcpy(ptr, src, width);
+      memset(ptr + width, 0, pad);
+      ptr += width + pad;
+    }
+    else if (bpp == 24)
+    {
+      unsigned char* src = imgdata + y * width * 3;
+      for (x = 0; x < width; x++)
+      {
+        ptr[x * 3]     = src[x * 3 + 2];
+        ptr[x * 3 + 1] = src[x * 3 + 1];
+        ptr[x * 3 + 2] = src[x * 3];
+      }
+      memset(ptr + width * 3, 0, pad);
+      ptr += width * 3 + pad;
+    }
+    else
+    {
+      unsigned char* src = imgdata + y * width * 4;
+      for (x = 0; x < width; x++)
+      {
+        ptr[x * 3]     = src[x * 4 + 2];
+        ptr[x * 3 + 1] = src[x * 4 + 1];
+        ptr[x * 3 + 2] = src[x * 4];
+      }
+      memset(ptr + width * 3, 0, pad);
+      ptr += width * 3 + pad;
+    }
+  }
+
+  *out_size = (int)file_size;
+  return buffer;
+}
 
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupImage(int width, int height, const unsigned char *imgdata)
 {

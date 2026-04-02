@@ -16,7 +16,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
-#include "iup_drvinfo.h"
 
 #include "iupefl_drv.h"
 
@@ -641,6 +640,19 @@ IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, i
 
   if (!iEflImageGetExtension(format)) return 0;
 
+  if (iupStrEqualNoCase(format, "BMP"))
+  {
+    int size;
+    unsigned char* bmp_data = iupImageWriteBMP(imgdata, width, height, bpp, colors, colors_count, &size);
+    if (!bmp_data) return 0;
+    FILE* f = fopen(filename, "wb");
+    if (!f) { free(bmp_data); return 0; }
+    int written = (int)fwrite(bmp_data, 1, size, f);
+    fclose(f);
+    free(bmp_data);
+    return (written == size) ? 1 : 0;
+  }
+
   img = iEflImageCreateTemp(imgdata, width, height, bpp, colors, colors_count);
   if (!img) return 0;
 
@@ -672,6 +684,9 @@ IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int w
 
   ext = iEflImageGetExtension(format);
   if (!ext) return NULL;
+
+  if (iupStrEqualNoCase(format, "BMP"))
+    return iupImageWriteBMP(imgdata, width, height, bpp, colors, colors_count, size);
 
   img = iEflImageCreateTemp(imgdata, width, height, bpp, colors, colors_count);
   if (!img) return NULL;

@@ -7,8 +7,8 @@
 
 /** \defgroup drvimage Driver Image Interface
  * \ingroup drv */
- 
-#ifndef __IUP_IMAGE_H 
+
+#ifndef __IUP_IMAGE_H
 #define __IUP_IMAGE_H
 
 #ifdef __cplusplus
@@ -69,6 +69,8 @@ int iupImageStockGetSize(void);
 void iupImageStockGet(const char* name, Ihandle* *ih, const char* *native_name);
 
 int iupIsHighDpi(void);
+
+IUP_SDK_API unsigned char* iupImageWriteBMP(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, int* out_size);
 
 
 #ifdef __cplusplus

@@ -488,120 +488,6 @@ IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
   }
 }
 
-static void iMotBmpWriteU16(unsigned char* p, unsigned short v)
-{
-  p[0] = (unsigned char)(v & 0xFF);
-  p[1] = (unsigned char)((v >> 8) & 0xFF);
-}
-
-static void iMotBmpWriteU32(unsigned char* p, unsigned int v)
-{
-  p[0] = (unsigned char)(v & 0xFF);
-  p[1] = (unsigned char)((v >> 8) & 0xFF);
-  p[2] = (unsigned char)((v >> 16) & 0xFF);
-  p[3] = (unsigned char)((v >> 24) & 0xFF);
-}
-
-static void iMotBmpWriteI32(unsigned char* p, int v)
-{
-  iMotBmpWriteU32(p, (unsigned int)v);
-}
-
-#define BMP_FILE_HEADER_SIZE 14
-#define BMP_INFO_HEADER_SIZE 40
-
-static unsigned char* iMotImageWriteBmp(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, int* out_size)
-{
-  int row_bytes, pad, y, x;
-  int has_palette = (bpp == 8);
-  int pixel_bytes = has_palette ? 1 : 3;
-  int palette_size = has_palette ? colors_count * 4 : 0;
-  unsigned int data_offset, file_size;
-  unsigned char* buffer;
-  unsigned char* ptr;
-
-  row_bytes = width * pixel_bytes;
-  pad = (4 - (row_bytes % 4)) % 4;
-  row_bytes += pad;
-
-  data_offset = BMP_FILE_HEADER_SIZE + BMP_INFO_HEADER_SIZE + palette_size;
-  file_size = data_offset + row_bytes * height;
-
-  buffer = (unsigned char*)malloc(file_size);
-  if (!buffer) return NULL;
-
-  memset(buffer, 0, data_offset);
-
-  /* BMP file header (14 bytes) */
-  ptr = buffer;
-  iMotBmpWriteU16(ptr + 0, 0x4D42);        /* bfType = "BM" */
-  iMotBmpWriteU32(ptr + 2, file_size);      /* bfSize */
-  iMotBmpWriteU32(ptr + 10, data_offset);   /* bfOffBits */
-
-  /* BMP info header (40 bytes) */
-  ptr = buffer + BMP_FILE_HEADER_SIZE;
-  iMotBmpWriteU32(ptr + 0, BMP_INFO_HEADER_SIZE);  /* biSize */
-  iMotBmpWriteI32(ptr + 4, width);                  /* biWidth */
-  iMotBmpWriteI32(ptr + 8, height);                 /* biHeight */
-  iMotBmpWriteU16(ptr + 12, 1);                     /* biPlanes */
-  iMotBmpWriteU16(ptr + 14, has_palette ? 8 : 24);  /* biBitCount */
-  iMotBmpWriteU32(ptr + 20, row_bytes * height);    /* biSizeImage */
-  if (has_palette)
-    iMotBmpWriteU32(ptr + 32, colors_count);        /* biClrUsed */
-
-  if (has_palette)
-  {
-    unsigned char* pal = buffer + BMP_FILE_HEADER_SIZE + BMP_INFO_HEADER_SIZE;
-    int i;
-    for (i = 0; i < colors_count; i++)
-    {
-      pal[i * 4]     = colors[i].b;
-      pal[i * 4 + 1] = colors[i].g;
-      pal[i * 4 + 2] = colors[i].r;
-      pal[i * 4 + 3] = 0;
-    }
-  }
-
-  ptr = buffer + data_offset;
-  for (y = height - 1; y >= 0; y--)
-  {
-    if (has_palette)
-    {
-      unsigned char* src = imgdata + y * width;
-      memcpy(ptr, src, width);
-      memset(ptr + width, 0, pad);
-      ptr += width + pad;
-    }
-    else if (bpp == 24)
-    {
-      unsigned char* src = imgdata + y * width * 3;
-      for (x = 0; x < width; x++)
-      {
-        ptr[x * 3]     = src[x * 3 + 2];
-        ptr[x * 3 + 1] = src[x * 3 + 1];
-        ptr[x * 3 + 2] = src[x * 3];
-      }
-      memset(ptr + width * 3, 0, pad);
-      ptr += width * 3 + pad;
-    }
-    else
-    {
-      unsigned char* src = imgdata + y * width * 4;
-      for (x = 0; x < width; x++)
-      {
-        ptr[x * 3]     = src[x * 4 + 2];
-        ptr[x * 3 + 1] = src[x * 4 + 1];
-        ptr[x * 3 + 2] = src[x * 4];
-      }
-      memset(ptr + width * 3, 0, pad);
-      ptr += width * 3 + pad;
-    }
-  }
-
-  *out_size = (int)file_size;
-  return buffer;
-}
-
 IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
   int size;
@@ -611,7 +497,7 @@ IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, i
   if (!iupStrEqualNoCase(format, "BMP"))
     return 0;
 
-  bmp_data = iMotImageWriteBmp(imgdata, width, height, bpp, colors, colors_count, &size);
+  bmp_data = iupImageWriteBMP(imgdata, width, height, bpp, colors, colors_count, &size);
   if (!bmp_data) return 0;
 
   f = fopen(filename, "wb");
@@ -634,7 +520,7 @@ IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int w
   if (!iupStrEqualNoCase(format, "BMP"))
     return NULL;
 
-  return iMotImageWriteBmp(imgdata, width, height, bpp, colors, colors_count, size);
+  return iupImageWriteBMP(imgdata, width, height, bpp, colors, colors_count, size);
 }
 
 static int iMotHighBit(unsigned long ul)
