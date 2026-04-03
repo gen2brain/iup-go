@@ -391,11 +391,35 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
   if (!motfont)
   {
 #ifdef IUP_USE_XFT
-    font = "Sans, 10";
+    {
+      FcPattern* pat = FcNameParse((const FcChar8*)"sans-serif");
+      FcConfigSubstitute(NULL, pat, FcMatchPattern);
+      FcDefaultSubstitute(pat);
+      FcResult res;
+      FcPattern* match = FcFontMatch(NULL, pat, &res);
+      if (match)
+      {
+        FcChar8* family = NULL;
+        if (FcPatternGetString(match, FC_FAMILY, 0, &family) == FcResultMatch && family)
+        {
+          snprintf(str, sizeof(str), "%s, 10", (char*)family);
+          font = str;
+        }
+        FcPatternDestroy(match);
+      }
+      FcPatternDestroy(pat);
+      if (font == str)
+        motFindFont(NULL, font);
+      else
+      {
+        font = "Sans, 10";
+        motFindFont(NULL, font);
+      }
+    }
 #else
     font = "Fixed, 11";
-#endif
     motFindFont("misc", font);
+#endif
   }
 
   iupStrCopyN(str, sizeof(str), font);
