@@ -190,7 +190,6 @@ static int eflPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     Eo* anchor_widget;
     Eina_Rect anchor_geom;
     int x, y;
-    const char* pos;
 
     anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
     if (!anchor || !anchor->handle)
@@ -233,28 +232,10 @@ static int eflPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       anchor_geom.y += win_y;
     }
 
-    pos = iupAttribGetStr(ih, "POSITION");
-
-    if (iupStrEqualNoCase(pos, "TOP"))
-    {
-      x = anchor_geom.x;
-      y = anchor_geom.y - ih->currentheight;
-    }
-    else if (iupStrEqualNoCase(pos, "LEFT"))
-    {
-      x = anchor_geom.x - ih->currentwidth;
-      y = anchor_geom.y;
-    }
-    else if (iupStrEqualNoCase(pos, "RIGHT"))
-    {
-      x = anchor_geom.x + anchor_geom.w;
-      y = anchor_geom.y;
-    }
-    else
-    {
-      x = anchor_geom.x;
-      y = anchor_geom.y + anchor_geom.h;
-    }
+    iupPopoverCalcPosition(ih,
+      anchor_geom.x, anchor_geom.y, anchor_geom.w, anchor_geom.h,
+      ih->currentwidth, ih->currentheight,
+      &x, &y);
 
     /* Set window size and position */
     efl_gfx_entity_size_set(popup_win, EINA_SIZE2D(ih->currentwidth, ih->currentheight));

@@ -161,17 +161,51 @@ static int cocoaPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
     if (anchor_view)
     {
-      NSRectEdge edge = NSRectEdgeMaxY;
+      int position = iupPopoverGetPosition(ih);
+      NSRectEdge edge;
+      NSRect positioning_rect = [anchor_view bounds];
 
-      const char* pos = iupAttribGetStr(ih, "POSITION");
-      if (iupStrEqualNoCase(pos, "TOP"))
+      switch (position)
+      {
+      case IUP_POPOVER_TOP:
+      case IUP_POPOVER_TOPLEFT:
+      case IUP_POPOVER_TOPRIGHT:
         edge = NSRectEdgeMinY;
-      else if (iupStrEqualNoCase(pos, "LEFT"))
+        break;
+      case IUP_POPOVER_LEFT:
+      case IUP_POPOVER_LEFTTOP:
+      case IUP_POPOVER_LEFTBOTTOM:
         edge = NSRectEdgeMinX;
-      else if (iupStrEqualNoCase(pos, "RIGHT"))
+        break;
+      case IUP_POPOVER_RIGHT:
+      case IUP_POPOVER_RIGHTTOP:
+      case IUP_POPOVER_RIGHTBOTTOM:
         edge = NSRectEdgeMaxX;
-      else
+        break;
+      default:
         edge = NSRectEdgeMaxY;
+        break;
+      }
+
+      switch (position)
+      {
+      case IUP_POPOVER_BOTTOMLEFT:
+      case IUP_POPOVER_TOPLEFT:
+        positioning_rect = NSMakeRect(0, 0, 1, positioning_rect.size.height);
+        break;
+      case IUP_POPOVER_BOTTOMRIGHT:
+      case IUP_POPOVER_TOPRIGHT:
+        positioning_rect = NSMakeRect(positioning_rect.size.width - 1, 0, 1, positioning_rect.size.height);
+        break;
+      case IUP_POPOVER_LEFTTOP:
+      case IUP_POPOVER_RIGHTTOP:
+        positioning_rect = NSMakeRect(0, 0, positioning_rect.size.width, 1);
+        break;
+      case IUP_POPOVER_LEFTBOTTOM:
+      case IUP_POPOVER_RIGHTBOTTOM:
+        positioning_rect = NSMakeRect(0, positioning_rect.size.height - 1, positioning_rect.size.width, 1);
+        break;
+      }
 
       int autohide = iupAttribGetBoolean(ih, "AUTOHIDE");
       [popover setBehavior:autohide ? NSPopoverBehaviorTransient : NSPopoverBehaviorApplicationDefined];
@@ -192,7 +226,7 @@ static int cocoaPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
         iupLayoutUpdate(ih);
       }
 
-      [popover showRelativeToRect:[anchor_view bounds] ofView:anchor_view preferredEdge:edge];
+      [popover showRelativeToRect:positioning_rect ofView:anchor_view preferredEdge:edge];
     }
   }
   else
@@ -297,4 +331,7 @@ IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
 
   /* Override VISIBLE attribute, NOT_MAPPED because setter handles mapping */
   iupClassRegisterAttribute(ic, "VISIBLE", cocoaPopoverGetVisibleAttrib, cocoaPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "OFFSETX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OFFSETY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

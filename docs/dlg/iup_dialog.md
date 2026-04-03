@@ -212,12 +212,13 @@ Not supported in Motif.
 
 **OPACITY**: sets the dialog transparency alpha value.
 Valid values range from 0 (completely transparent) to 255 (opaque).
-In Windows must be set before map so the native window would be properly initialized when mapped.
-Not supported in Motif.
+In Windows (Win32) must be set before map so the native window would be properly initialized when mapped.
+In Motif requires a running compositor.
+Not supported in EFL and FLTK.
 
 **OPACITYIMAGE**: sets an RGBA image as the dialog background so it is possible to create a non rectangle window with transparency, but it can not have children.
 Used usually for splash screens. It must be set before map so the native window would be properly initialized when mapped.
-Not supported in GTK 4, Motif, and WinUI.
+Not supported in GTK 4, Motif, WinUI, and FLTK.
 
 **SHAPEIMAGE**: sets an RGBA image as the dialog shape, so it is possible to create a non rectangle window with children.
 Only the fully transparent pixels will be transparent.

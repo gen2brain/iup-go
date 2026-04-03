@@ -59,35 +59,18 @@ static int gtk4PopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
   if (iupStrBoolean(value))
   {
+    Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
+    if (!anchor || !anchor->handle)
+      return 0;
+
     /* Map if not yet mapped */
     if (!ih->handle)
     {
-      Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
-      if (!anchor || !anchor->handle)
-        return 0; /* anchor must be set and mapped first */
-
       if (IupMap(ih) == IUP_ERROR)
         return 0;
     }
 
     popover = (GtkPopover*)ih->handle;
-
-    /* Set position based on POSITION attribute */
-    {
-      const char* pos = iupAttribGetStr(ih, "POSITION");
-      GtkPositionType gtk_pos = GTK_POS_BOTTOM;
-
-      if (iupStrEqualNoCase(pos, "TOP"))
-        gtk_pos = GTK_POS_TOP;
-      else if (iupStrEqualNoCase(pos, "LEFT"))
-        gtk_pos = GTK_POS_LEFT;
-      else if (iupStrEqualNoCase(pos, "RIGHT"))
-        gtk_pos = GTK_POS_RIGHT;
-      else
-        gtk_pos = GTK_POS_BOTTOM;
-
-      gtk_popover_set_position(popover, gtk_pos);
-    }
 
     /* Set arrow visibility */
     {
@@ -95,11 +78,104 @@ static int gtk4PopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       gtk_popover_set_has_arrow(popover, show_arrow);
     }
 
-    /* Layout the child before showing */
+    /* Layout the child before computing offsets (need popover size) */
     if (ih->firstchild && ih->firstchild->handle)
     {
       iupLayoutCompute(ih);
       iupLayoutUpdate(ih->firstchild);
+    }
+
+    /* Set position based on POSITION attribute */
+    {
+      int position = iupPopoverGetPosition(ih);
+      GtkPositionType gtk_pos;
+      GdkRectangle pointing_to;
+      int use_pointing_to = 0;
+      GtkWidget* anchor_widget = (GtkWidget*)anchor->handle;
+      int aw = gtk_widget_get_width(anchor_widget);
+      int ah = gtk_widget_get_height(anchor_widget);
+
+      switch (position)
+      {
+      case IUP_POPOVER_TOP:
+      case IUP_POPOVER_TOPLEFT:
+      case IUP_POPOVER_TOPRIGHT:
+        gtk_pos = GTK_POS_TOP;
+        break;
+      case IUP_POPOVER_LEFT:
+      case IUP_POPOVER_LEFTTOP:
+      case IUP_POPOVER_LEFTBOTTOM:
+        gtk_pos = GTK_POS_LEFT;
+        break;
+      case IUP_POPOVER_RIGHT:
+      case IUP_POPOVER_RIGHTTOP:
+      case IUP_POPOVER_RIGHTBOTTOM:
+        gtk_pos = GTK_POS_RIGHT;
+        break;
+      default:
+        gtk_pos = GTK_POS_BOTTOM;
+        break;
+      }
+
+      switch (position)
+      {
+      case IUP_POPOVER_BOTTOMLEFT:
+      case IUP_POPOVER_TOPLEFT:
+        pointing_to.x = 0;
+        pointing_to.y = 0;
+        pointing_to.width = 1;
+        pointing_to.height = ah;
+        use_pointing_to = 1;
+        break;
+      case IUP_POPOVER_BOTTOMRIGHT:
+      case IUP_POPOVER_TOPRIGHT:
+        pointing_to.x = aw - 1;
+        pointing_to.y = 0;
+        pointing_to.width = 1;
+        pointing_to.height = ah;
+        use_pointing_to = 1;
+        break;
+      case IUP_POPOVER_LEFTTOP:
+      case IUP_POPOVER_RIGHTTOP:
+        pointing_to.x = 0;
+        pointing_to.y = 0;
+        pointing_to.width = aw;
+        pointing_to.height = 1;
+        use_pointing_to = 1;
+        break;
+      case IUP_POPOVER_LEFTBOTTOM:
+      case IUP_POPOVER_RIGHTBOTTOM:
+        pointing_to.x = 0;
+        pointing_to.y = ah - 1;
+        pointing_to.width = aw;
+        pointing_to.height = 1;
+        use_pointing_to = 1;
+        break;
+      }
+
+      {
+        int offsetx = iupAttribGetInt(ih, "OFFSETX");
+        int offsety = iupAttribGetInt(ih, "OFFSETY");
+        if (offsetx != 0 || offsety != 0)
+        {
+          if (!use_pointing_to)
+          {
+            pointing_to.x = 0;
+            pointing_to.y = 0;
+            pointing_to.width = aw;
+            pointing_to.height = ah;
+            use_pointing_to = 1;
+          }
+          pointing_to.x += offsetx;
+          pointing_to.y += offsety;
+        }
+      }
+
+      gtk_popover_set_position(popover, gtk_pos);
+      gtk_popover_set_offset(popover, 0, 0);
+
+      if (use_pointing_to)
+        gtk_popover_set_pointing_to(popover, &pointing_to);
     }
 
     gtk_popover_popup(popover);

@@ -26,7 +26,17 @@ Clicks on the anchor element do not trigger auto-hide.
 Can be "YES" or "NO". Default: "YES".
 
 **POSITION** (non-inheritable): The position of the popover relative to the anchor element.
-Can be "BOTTOM", "TOP", "LEFT" or "RIGHT". Default: "BOTTOM".
+Can be "BOTTOM", "TOP", "LEFT", "RIGHT", "BOTTOMLEFT", "BOTTOMRIGHT", "TOPLEFT", "TOPRIGHT", "LEFTBOTTOM", "LEFTTOP", "RIGHTBOTTOM" or "RIGHTTOP". Default: "BOTTOM".
+
+The basic values (BOTTOM, TOP, LEFT, RIGHT) center the popover along the anchor edge. The compound values specify both the edge and the alignment: the first word is the edge where the popover appears, the second word is the alignment along that edge. For example, "BOTTOMLEFT" places the popover below the anchor with left edges aligned, and "RIGHTTOP" places it to the right with top edges aligned.
+
+In WinUI all positions map directly to native FlyoutPlacementMode. In GTK 3 and GTK 4 the edge-aligned positions are approximated using the native popover positioning with offsets. In other systems the positions are calculated manually.
+
+**OFFSETX** (non-inheritable): Horizontal pixel offset added to the computed popover position. Can be positive or negative. Default: "0".
+Not supported in WinUI and macOS.
+
+**OFFSETY** (non-inheritable): Vertical pixel offset added to the computed popover position. Can be positive or negative. Default: "0".
+Not supported in WinUI and macOS.
 
 [VISIBLE](../attrib/iup_visible.md) (non-inheritable): Shows or hides the popover.
 The popover is mapped on the first time VISIBLE is set to "YES".

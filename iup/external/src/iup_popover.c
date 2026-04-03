@@ -7,24 +7,104 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_assert.h"
-#include "iup_register.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
-#include "iup_drv.h"
-#include "iup_childtree.h"
 #include "iup_class.h"
 
 #include "iup_popover.h"
 
+
+/*****************************************************************************\
+|* Shared Helpers                                                            *|
+\*****************************************************************************/
+
+IUP_API int iupPopoverGetPosition(Ihandle* ih)
+{
+  char* pos = iupAttribGetStr(ih, "POSITION");
+
+  if (iupStrEqualNoCase(pos, "TOP"))          return IUP_POPOVER_TOP;
+  if (iupStrEqualNoCase(pos, "LEFT"))         return IUP_POPOVER_LEFT;
+  if (iupStrEqualNoCase(pos, "RIGHT"))        return IUP_POPOVER_RIGHT;
+  if (iupStrEqualNoCase(pos, "BOTTOMLEFT"))   return IUP_POPOVER_BOTTOMLEFT;
+  if (iupStrEqualNoCase(pos, "BOTTOMRIGHT"))  return IUP_POPOVER_BOTTOMRIGHT;
+  if (iupStrEqualNoCase(pos, "TOPLEFT"))      return IUP_POPOVER_TOPLEFT;
+  if (iupStrEqualNoCase(pos, "TOPRIGHT"))     return IUP_POPOVER_TOPRIGHT;
+  if (iupStrEqualNoCase(pos, "LEFTBOTTOM"))   return IUP_POPOVER_LEFTBOTTOM;
+  if (iupStrEqualNoCase(pos, "LEFTTOP"))      return IUP_POPOVER_LEFTTOP;
+  if (iupStrEqualNoCase(pos, "RIGHTBOTTOM"))  return IUP_POPOVER_RIGHTBOTTOM;
+  if (iupStrEqualNoCase(pos, "RIGHTTOP"))     return IUP_POPOVER_RIGHTTOP;
+
+  return IUP_POPOVER_BOTTOM;
+}
+
+IUP_API void iupPopoverCalcPosition(Ihandle* ih,
+  int ax, int ay, int aw, int ah,
+  int pw, int ph,
+  int* x, int* y)
+{
+  int position = iupPopoverGetPosition(ih);
+
+  switch (position)
+  {
+  case IUP_POPOVER_TOP:
+    *x = ax + (aw - pw) / 2;
+    *y = ay - ph;
+    break;
+  case IUP_POPOVER_LEFT:
+    *x = ax - pw;
+    *y = ay + (ah - ph) / 2;
+    break;
+  case IUP_POPOVER_RIGHT:
+    *x = ax + aw;
+    *y = ay + (ah - ph) / 2;
+    break;
+  case IUP_POPOVER_BOTTOMLEFT:
+    *x = ax;
+    *y = ay + ah;
+    break;
+  case IUP_POPOVER_BOTTOMRIGHT:
+    *x = ax + aw - pw;
+    *y = ay + ah;
+    break;
+  case IUP_POPOVER_TOPLEFT:
+    *x = ax;
+    *y = ay - ph;
+    break;
+  case IUP_POPOVER_TOPRIGHT:
+    *x = ax + aw - pw;
+    *y = ay - ph;
+    break;
+  case IUP_POPOVER_LEFTBOTTOM:
+    *x = ax - pw;
+    *y = ay + ah - ph;
+    break;
+  case IUP_POPOVER_LEFTTOP:
+    *x = ax - pw;
+    *y = ay;
+    break;
+  case IUP_POPOVER_RIGHTBOTTOM:
+    *x = ax + aw;
+    *y = ay + ah - ph;
+    break;
+  case IUP_POPOVER_RIGHTTOP:
+    *x = ax + aw;
+    *y = ay;
+    break;
+  case IUP_POPOVER_BOTTOM:
+  default:
+    *x = ax + (aw - pw) / 2;
+    *y = ay + ah;
+    break;
+  }
+
+  *x += iupAttribGetInt(ih, "OFFSETX");
+  *y += iupAttribGetInt(ih, "OFFSETY");
+}
 
 /*****************************************************************************\
 |* Methods                                                                   *|
@@ -152,6 +232,8 @@ Iclass* iupPopoverNewClass(void)
   iupClassRegisterAttribute(ic, "POSITION", NULL, NULL, IUPAF_SAMEASSYSTEM, "BOTTOM", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ARROW", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOHIDE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OFFSETX", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OFFSETY", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
 
   return ic;
 }

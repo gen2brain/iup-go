@@ -10,41 +10,107 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	// Simple text content
-	btn1 := iup.Button("Info Popover")
-	popover1 := iup.Popover(
-		iup.Vbox(
-			iup.Label("This is an info popover"),
-			iup.Label("It contains simple text content."),
-		).SetAttributes("MARGIN=10x10, GAP=5"),
-	)
-	popover1.SetAttribute("POSITION", "BOTTOM")
-	iup.SetAttributeHandle(popover1, "ANCHOR", btn1)
-
-	btn1.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		visible := popover1.GetAttribute("VISIBLE")
-		if visible == "YES" {
-			popover1.SetAttribute("VISIBLE", "NO")
-		} else {
-			popover1.SetAttribute("VISIBLE", "YES")
+	// Toggle popover visibility on button click
+	togglePopover := func(p iup.Ihandle) iup.ActionFunc {
+		return func(ih iup.Ihandle) int {
+			if p.GetAttribute("VISIBLE") == "YES" {
+				p.SetAttribute("VISIBLE", "NO")
+			} else {
+				p.SetAttribute("VISIBLE", "YES")
+			}
+			return iup.DEFAULT
 		}
-		return iup.DEFAULT
-	}))
+	}
 
-	// Form with input fields
-	btn2 := iup.Button("Form Popover")
+	// Create a popover anchored to a button with given position
+	makePositionDemo := func(position string) iup.Ihandle {
+		btn := iup.Button(position).SetAttributes("EXPAND=HORIZONTAL, PADDING=8x4")
+		popover := iup.Popover(
+			iup.Vbox(
+				iup.Label(fmt.Sprintf("Position: %s", position)).SetAttributes("FONTSTYLE=Bold"),
+				iup.Label("Popover content here"),
+			).SetAttributes("MARGIN=10x8, GAP=4"),
+		)
+		popover.SetAttribute("POSITION", position)
+		iup.SetAttributeHandle(popover, "ANCHOR", btn)
+		btn.SetCallback("ACTION", togglePopover(popover))
+		return btn
+	}
+
+	// Left/Right edge positions
+	leftFrame := iup.Frame(
+		iup.Vbox(
+			iup.Hbox(makePositionDemo("LEFT"), makePositionDemo("LEFTTOP"), makePositionDemo("LEFTBOTTOM")).SetAttributes("GAP=8"),
+		).SetAttributes("MARGIN=10x10"),
+	).SetAttributes("TITLE=\"Left Edge\"")
+
+	rightFrame := iup.Frame(
+		iup.Vbox(
+			iup.Hbox(makePositionDemo("RIGHT"), makePositionDemo("RIGHTTOP"), makePositionDemo("RIGHTBOTTOM")).SetAttributes("GAP=8"),
+		).SetAttributes("MARGIN=10x10"),
+	).SetAttributes("TITLE=\"Right Edge\"")
+
+	// Centered positions
+	centeredFrame := iup.Frame(
+		iup.Vbox(
+			iup.Hbox(makePositionDemo("TOP"), makePositionDemo("BOTTOM"), makePositionDemo("RIGHT"), makePositionDemo("LEFT")).SetAttributes("GAP=8"),
+		).SetAttributes("MARGIN=10x10"),
+	).SetAttributes("TITLE=Centered")
+
+	// Bottom/Top edge variants
+	bottomFrame := iup.Frame(
+		iup.Vbox(
+			iup.Hbox(makePositionDemo("BOTTOM"), makePositionDemo("BOTTOMLEFT"), makePositionDemo("BOTTOMRIGHT")).SetAttributes("GAP=8"),
+		).SetAttributes("MARGIN=10x10"),
+	).SetAttributes("TITLE=\"Bottom Edge\"")
+
+	topFrame := iup.Frame(
+		iup.Vbox(
+			iup.Hbox(makePositionDemo("TOP"), makePositionDemo("TOPLEFT"), makePositionDemo("TOPRIGHT")).SetAttributes("GAP=8"),
+		).SetAttributes("MARGIN=10x10"),
+	).SetAttributes("TITLE=\"Top Edge\"")
+
+	// Practical: Dropdown menu (BOTTOMLEFT)
+	menuBtn := iup.Button("File").SetAttributes("PADDING=12x4")
+	var menuPopover iup.Ihandle
+
+	createMenuItem := func(name string) iup.Ihandle {
+		btn := iup.Button(name).SetAttributes("FLAT=YES, ALIGNMENT=ALEFT, EXPAND=HORIZONTAL")
+		btn.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+			fmt.Printf("Clicked: %s\n", name)
+			menuPopover.SetAttribute("VISIBLE", "NO")
+			return iup.DEFAULT
+		}))
+		return btn
+	}
+
+	menuPopover = iup.Popover(
+		iup.Vbox(
+			createMenuItem("New File"),
+			createMenuItem("Open File"),
+			createMenuItem("Save"),
+			iup.Label("").SetAttributes("SEPARATOR=HORIZONTAL"),
+			createMenuItem("Exit"),
+		).SetAttributes("MARGIN=4x4, GAP=1"),
+	)
+	menuPopover.SetAttribute("POSITION", "BOTTOMLEFT")
+	iup.SetAttributeHandle(menuPopover, "ANCHOR", menuBtn)
+	menuBtn.SetCallback("ACTION", togglePopover(menuPopover))
+
+	// Practical: Form popover (BOTTOMRIGHT)
+	formBtn := iup.Button("Quick Form").SetAttributes("PADDING=12x4")
 	nameText := iup.Text().SetAttributes("VISIBLECOLUMNS=15")
 	emailText := iup.Text().SetAttributes("VISIBLECOLUMNS=15")
-	var popover2 iup.Ihandle
+	var formPopover iup.Ihandle
 
 	submitBtn := iup.Button("Submit")
 	submitBtn.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		fmt.Printf("Name: %s, Email: %s\n", nameText.GetAttribute("VALUE"), emailText.GetAttribute("VALUE"))
-		popover2.SetAttribute("VISIBLE", "NO")
+		formPopover.SetAttribute("VISIBLE", "NO")
 		return iup.DEFAULT
 	}))
 
-	popover2 = iup.Popover(
+	formPopover = iup.Popover(
 		iup.Vbox(
 			iup.Label("Quick Form"),
 			iup.Hbox(iup.Label("Name:"), nameText).SetAttributes("GAP=5"),
@@ -52,21 +118,12 @@ func main() {
 			submitBtn,
 		).SetAttributes("MARGIN=10x10, GAP=8"),
 	)
-	popover2.SetAttribute("POSITION", "BOTTOM")
-	iup.SetAttributeHandle(popover2, "ANCHOR", btn2)
+	formPopover.SetAttribute("POSITION", "BOTTOMRIGHT")
+	iup.SetAttributeHandle(formPopover, "ANCHOR", formBtn)
+	formBtn.SetCallback("ACTION", togglePopover(formPopover))
 
-	btn2.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		visible := popover2.GetAttribute("VISIBLE")
-		if visible == "YES" {
-			popover2.SetAttribute("VISIBLE", "NO")
-		} else {
-			popover2.SetAttribute("VISIBLE", "YES")
-		}
-		return iup.DEFAULT
-	}))
-
-	// Color selection with toggle buttons
-	btn3 := iup.Button("Color Picker")
+	// Practical: Color picker (RIGHTTOP, no autohide)
+	colorBtn := iup.Button("Color Picker").SetAttributes("PADDING=12x4")
 	selectedColor := iup.Label("Selected: None")
 
 	createColorBtn := func(color, name string) iup.Ihandle {
@@ -78,7 +135,7 @@ func main() {
 		return btn
 	}
 
-	popover3 := iup.Popover(
+	colorPopover := iup.Popover(
 		iup.Vbox(
 			iup.Label("Pick a Color"),
 			iup.Hbox(
@@ -96,64 +153,62 @@ func main() {
 			selectedColor.SetAttribute("EXPAND", "HORIZONTAL"),
 		).SetAttributes("MARGIN=10x10, GAP=8"),
 	)
-	popover3.SetAttribute("POSITION", "RIGHT")
-	popover3.SetAttribute("AUTOHIDE", "NO")
-	iup.SetAttributeHandle(popover3, "ANCHOR", btn3)
+	colorPopover.SetAttribute("POSITION", "RIGHTTOP")
+	colorPopover.SetAttribute("AUTOHIDE", "NO")
+	iup.SetAttributeHandle(colorPopover, "ANCHOR", colorBtn)
+	colorBtn.SetCallback("ACTION", togglePopover(colorPopover))
 
-	btn3.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		visible := popover3.GetAttribute("VISIBLE")
-		if visible == "YES" {
-			popover3.SetAttribute("VISIBLE", "NO")
-		} else {
-			popover3.SetAttribute("VISIBLE", "YES")
-		}
-		return iup.DEFAULT
-	}))
-
-	// Menu-like list
-	btn4 := iup.Button("Menu Popover")
-	var popover4 iup.Ihandle
-
-	createMenuItem := func(name string) iup.Ihandle {
-		btn := iup.Button(name).SetAttributes("FLAT=YES, ALIGNMENT=ALEFT")
-		btn.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-			fmt.Printf("Menu item clicked: %s\n", name)
-			popover4.SetAttribute("VISIBLE", "NO")
-			return iup.DEFAULT
-		}))
-		return btn
-	}
-
-	popover4 = iup.Popover(
+	// Practical: Help tooltip (TOPLEFT)
+	infoBtn := iup.Button("?").SetAttributes("PADDING=4x4, FONTSTYLE=Bold")
+	infoPopover := iup.Popover(
 		iup.Vbox(
-			createMenuItem("New File"),
-			createMenuItem("Open File"),
-			createMenuItem("Save File"),
-			iup.Label("").SetAttributes("SEPARATOR=HORIZONTAL"),
-			createMenuItem("Exit"),
-		).SetAttributes("MARGIN=5x5, GAP=2"),
+			iup.Label("Help Information").SetAttributes("FONTSTYLE=Bold"),
+			iup.Label("This popover uses TOPLEFT position,"),
+			iup.Label("appearing above with left edges aligned."),
+		).SetAttributes("MARGIN=10x8, GAP=4"),
 	)
-	popover4.SetAttribute("POSITION", "BOTTOM")
-	iup.SetAttributeHandle(popover4, "ANCHOR", btn4)
+	infoPopover.SetAttribute("POSITION", "TOPLEFT")
+	iup.SetAttributeHandle(infoPopover, "ANCHOR", infoBtn)
+	infoBtn.SetCallback("ACTION", togglePopover(infoPopover))
 
-	btn4.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		visible := popover4.GetAttribute("VISIBLE")
-		if visible == "YES" {
-			popover4.SetAttribute("VISIBLE", "NO")
-		} else {
-			popover4.SetAttribute("VISIBLE", "YES")
-		}
-		return iup.DEFAULT
-	}))
+	// Practical: Offset demo (BOTTOM with gap)
+	offsetBtn := iup.Button("Offset Demo").SetAttributes("PADDING=12x4")
+	offsetPopover := iup.Popover(
+		iup.Vbox(
+			iup.Label("BOTTOM + OFFSETY=10").SetAttributes("FONTSTYLE=Bold"),
+			iup.Label("10px gap below anchor"),
+		).SetAttributes("MARGIN=10x8, GAP=4"),
+	)
+	offsetPopover.SetAttribute("POSITION", "BOTTOM")
+	offsetPopover.SetAttribute("OFFSETY", "10")
+	iup.SetAttributeHandle(offsetPopover, "ANCHOR", offsetBtn)
+	offsetBtn.SetCallback("ACTION", togglePopover(offsetPopover))
 
-	// Create the main dialog
+	useCasesFrame := iup.Frame(
+		iup.Vbox(
+			iup.Hbox(
+				iup.Label("Menu (BOTTOMLEFT):"), menuBtn,
+				iup.Fill(),
+				iup.Label("Form (BOTTOMRIGHT):"), formBtn,
+			).SetAttributes("GAP=5, ALIGNMENT=ACENTER"),
+			iup.Hbox(
+				iup.Label("Colors (RIGHTTOP):"), colorBtn,
+				iup.Fill(),
+				iup.Label("Help (TOPLEFT):"), infoBtn,
+				iup.Fill(),
+				iup.Label("Offset:"), offsetBtn,
+			).SetAttributes("GAP=5, ALIGNMENT=ACENTER"),
+		).SetAttributes("MARGIN=10x10, GAP=8"),
+	).SetAttributes("TITLE=\"Practical Examples\"")
+
 	dlg := iup.Dialog(
 		iup.Vbox(
-			iup.Label("Click buttons to show different popover types:"),
-			iup.Hbox(btn1, btn2, btn3, btn4).SetAttributes("GAP=10"),
-			iup.Fill(),
-		).SetAttributes("MARGIN=20x20, GAP=15"),
-	).SetAttributes("TITLE=Popover Examples, SIZE=450x150")
+			iup.Hbox(leftFrame, rightFrame).SetAttributes("GAP=8"),
+			centeredFrame,
+			iup.Hbox(bottomFrame, topFrame).SetAttributes("GAP=8"),
+			useCasesFrame.SetAttribute("EXPAND", "HORIZONTAL"),
+		).SetAttributes("MARGIN=15x15, GAP=8"),
+	).SetAttributes("TITLE=\"Popover Positions\", SIZE=640x350")
 
 	iup.Show(dlg)
 	iup.MainLoop()
