@@ -9,8 +9,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include <errno.h>
-
 #include <Xm/Xm.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/FileSB.h>
@@ -20,7 +18,6 @@
 #include <Xm/DrawingA.h>
 #include <Xm/PushB.h>
 #include <Xm/Frame.h>
-#include <Xm/List.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -30,10 +27,7 @@
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 #include "iup_dialog.h"
-#include "iup_strmessage.h"
-#include "iup_drvinfo.h"
 #include "iup_array.h"
-#include "iup_predialogs.h"
 #include "iup_key.h"
 
 #include "iupmot_drv.h"
@@ -112,7 +106,7 @@ static int motFileDlgAskUser(Widget parent, const char* message)
 
   XtAddCallback(questionbox, XmNokCallback, (XtCallbackProc)motFileDlgAskUserCallback, (XtPointer)&ret_code);
   XtAddCallback(questionbox, XmNcancelCallback, (XtCallbackProc)motFileDlgAskUserCallback, (XtPointer)&ret_code);
-  XtUnmanageChild(XmMessageBoxGetChild(questionbox, XmDIALOG_HELP_BUTTON));
+  XtUnmanageChild(XtNameToWidget(questionbox, "Help"));
   XtManageChild(questionbox);
 
   while (ret_code == 0)
@@ -186,11 +180,12 @@ static void motFileDlgCBclose(Widget w, XtPointer client_data, XtPointer call_da
 
 static int motFileDlgGetMultipleFiles(Ihandle* ih, const char* dir, Widget wList)
 {
-  int *pos, sel_count, dir_len;
+  int *pos, pos_count, dir_len;
   char *filename;
   XmString* items;
 
-  if (!XmListGetSelectedPos(wList, &pos, &sel_count))
+  XtVaGetValues(wList, XmNselectedPositions, &pos, XmNselectedPositionCount, &pos_count, NULL);
+  if (pos_count <= 0 || !pos)
     return 0;
 
   dir_len = (int)strlen(dir);
@@ -198,9 +193,9 @@ static int motFileDlgGetMultipleFiles(Ihandle* ih, const char* dir, Widget wList
   XtVaGetValues(wList, XmNitems, &items, NULL);
 
   /* check if just one file is selected */
-  if (sel_count == 1)
+  if (pos_count == 1)
   {
-    XmStringGetLtoR(items[pos[0] - 1], XmSTRING_DEFAULT_CHARSET, &filename);  /* XmListGetSelectedPos starts at 1 */
+    filename = XmStringUnparse(items[pos[0] - 1], NULL, XmCHARSET_TEXT, XmCHARSET_TEXT, NULL, 0, XmOUTPUT_ALL);  /* XmNselectedPositions starts at 1 */
     if (filename)
     {
       iupAttribSetStrId(ih, "MULTIVALUE", 0, dir);  /* same as directory, includes last separator */
@@ -236,9 +231,9 @@ static int motFileDlgGetMultipleFiles(Ihandle* ih, const char* dir, Widget wList
     if (iupAttribGetBoolean(ih, "MULTIVALUEPATH"))
       dir_len = 0;
 
-    for (i = 0; i < sel_count; i++)
+    for (i = 0; i < pos_count; i++)
     {
-      XmStringGetLtoR(items[pos[i] - 1], XmSTRING_DEFAULT_CHARSET, &filename);  /* XmListGetSelectedPos starts at 1 */
+      filename = XmStringUnparse(items[pos[i] - 1], NULL, XmCHARSET_TEXT, XmCHARSET_TEXT, NULL, 0, XmOUTPUT_ALL);  /* XmNselectedPositions starts at 1 */
       if (filename)
       {
         len = (int)strlen(filename) - dir_len;
@@ -268,7 +263,6 @@ static int motFileDlgGetMultipleFiles(Ihandle* ih, const char* dir, Widget wList
     iupArrayDestroy(names_array);
   }
 
-  XtFree((char*)pos);
   return 1;
 }
 
@@ -299,7 +293,7 @@ static void motFileDlgCallback(Widget filebox, Ihandle* ih, XmFileSelectionBoxCa
   {
     int dialogtype = iupAttribGetInt(ih, "_IUPDLG_DIALOGTYPE");
     char* filename;
-    XmStringGetLtoR(call_data->value, XmSTRING_DEFAULT_CHARSET, &filename);
+    filename = XmStringUnparse(call_data->value, NULL, XmCHARSET_TEXT, XmCHARSET_TEXT, NULL, 0, XmOUTPUT_ALL);
     filename = motFileCheckExt(ih, filename);
     iupAttribSetStr(ih, "VALUE", filename);  /* this will be replaced for multiple files */
     XtFree(filename);
@@ -314,7 +308,7 @@ static void motFileDlgCallback(Widget filebox, Ihandle* ih, XmFileSelectionBoxCa
     }
     else if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
     {
-      Widget wList = XmFileSelectionBoxGetChild(filebox, XmDIALOG_LIST);
+      Widget wList = XtNameToWidget(filebox, "ItemsList");
 
       /* here value obtained above contains exactly the directory */
       char* dir = iupAttribGet(ih, "VALUE");
@@ -377,7 +371,7 @@ static void motFileDlgCallback(Widget filebox, Ihandle* ih, XmFileSelectionBoxCa
       XmString xm_dir;
       char* dir;
       XtVaGetValues(filebox, XmNdirectory, &xm_dir, NULL);
-      XmStringGetLtoR(xm_dir, XmSTRING_DEFAULT_CHARSET, &dir);
+      dir = XmStringUnparse(xm_dir, NULL, XmCHARSET_TEXT, XmCHARSET_TEXT, NULL, 0, XmOUTPUT_ALL);
       iupdrvSetCurrentDirectory(dir);
       XtFree(dir);
     }
@@ -447,7 +441,7 @@ static XmString motFileDlgPrompt(Widget parent, const char* message)
 
   XtAddCallback(promptbox, XmNokCallback, (XtCallbackProc)motFileDlgPromptCallback, (XtPointer)&prompt);
   XtAddCallback(promptbox, XmNcancelCallback, (XtCallbackProc)motFileDlgPromptCallback, (XtPointer)&prompt);
-  XtUnmanageChild(XmSelectionBoxGetChild(promptbox, XmDIALOG_HELP_BUTTON));
+  XtUnmanageChild(XtNameToWidget(promptbox, "Help"));
   XtManageChild(promptbox);
 
   while (prompt.ret_code == 0)
@@ -469,7 +463,7 @@ static void motFileDlgNewFolderCallback(Widget w, Widget filebox, XtPointer call
 
     {
       char* dir;
-      XmStringGetLtoR(xm_dir, XmSTRING_DEFAULT_CHARSET, &dir);
+      dir = XmStringUnparse(xm_dir, NULL, XmCHARSET_TEXT, XmCHARSET_TEXT, NULL, 0, XmOUTPUT_ALL);
       iupmotMakeDirectory(dir);
       XtFree(dir);
     }
@@ -569,7 +563,7 @@ static void motFileDlgPreviewCanvasExposeCallback(Widget w, Ihandle *ih, XtPoint
     motFileDlgPreviewCanvasInit(ih, w);
 
   XtVaGetValues(filebox, XmNdirSpec, &xm_file, NULL);
-  XmStringGetLtoR(xm_file, XmSTRING_DEFAULT_CHARSET, &filename);
+  filename = XmStringUnparse(xm_file, NULL, XmCHARSET_TEXT, XmCHARSET_TEXT, NULL, 0, XmOUTPUT_ALL);
 
   /* callback here always exists */
   cb = (IFnss)IupGetCallback(ih, "FILE_CB");
@@ -588,7 +582,7 @@ static void motFileDlgBrowseSelectionCallback(Widget w, Ihandle* ih, XmListCallb
   char* filename;
   IFnss cb;
 
-  XmStringGetLtoR(list_data->item, XmSTRING_DEFAULT_CHARSET, &filename);
+  filename = XmStringUnparse(list_data->item, NULL, XmCHARSET_TEXT, XmCHARSET_TEXT, NULL, 0, XmOUTPUT_ALL);
 
   /* callback here always exists */
   cb = (IFnss)IupGetCallback(ih, "FILE_CB");
@@ -714,7 +708,7 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
   {
     char *filter = value;
     char *p = strchr(value, ';');
-    if (p) 
+    if (p)
     {
       /* Use only the first filter */
       int size = (int)(p-value);
@@ -760,7 +754,7 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
   }
 
   if (!IupGetCallback(ih, "HELP_CB"))
-    XtUnmanageChild(XmFileSelectionBoxGetChild(filebox, XmDIALOG_HELP_BUTTON));
+    XtUnmanageChild(XtNameToWidget(filebox, "Help"));
 
   XtAddCallback(filebox, XmNokCallback, (XtCallbackProc)motFileDlgCallback, (XtPointer)ih);
   XtAddCallback(filebox, XmNcancelCallback, (XtCallbackProc)motFileDlgCallback, (XtPointer)ih);
@@ -768,8 +762,8 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
 
   if (dialogtype == IUP_DIALOGDIR)
   {
-    Widget new_folder = XtVaCreateManagedWidget("new_folder", xmPushButtonWidgetClass, filebox, 
-                                                XmNlabelType, XmSTRING, 
+    Widget new_folder = XtVaCreateManagedWidget("new_folder", xmPushButtonWidgetClass, filebox,
+                                                XmNlabelType, XmSTRING,
                                                 NULL);
     iupmotSetXmString(new_folder, XmNlabelString, IupGetLanguageString("IUP_CREATEFOLDER"));
     XtAddCallback(new_folder, XmNactivateCallback, (XtCallbackProc)motFileDlgNewFolderCallback, (XtPointer)filebox);
@@ -779,18 +773,18 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
     file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
     if (file_cb)
     {
-      Widget list = XmFileSelectionBoxGetChild(filebox, XmDIALOG_LIST);
+      Widget list = XtNameToWidget(filebox, "ItemsList");
       XtAddCallback(list, XmNbrowseSelectionCallback, (XtCallbackProc)motFileDlgBrowseSelectionCallback, (XtPointer)ih);
-      list = XmFileSelectionBoxGetChild(filebox, XmDIALOG_DIR_LIST);
+      list = XtNameToWidget(filebox, "DirList");
       XtAddCallback(list, XmNbrowseSelectionCallback, (XtCallbackProc)motFileDlgBrowseSelectionCallback, (XtPointer)ih);
 
       if (iupAttribGetBoolean(ih, "SHOWPREVIEW"))
       {
-        Widget frame = XtVaCreateManagedWidget("preview_canvas", xmFrameWidgetClass, filebox, 
+        Widget frame = XtVaCreateManagedWidget("preview_canvas", xmFrameWidgetClass, filebox,
                                                         XmNshadowType, XmSHADOW_ETCHED_IN,
                                                         NULL);
 
-        preview_canvas = XtVaCreateManagedWidget("preview_canvas", xmDrawingAreaWidgetClass, frame, 
+        preview_canvas = XtVaCreateManagedWidget("preview_canvas", xmDrawingAreaWidgetClass, frame,
                                                         XmNwidth, 180, 
                                                         XmNheight, 150,
                                                         XmNresizePolicy, XmRESIZE_GROW,
@@ -807,7 +801,7 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
 
     if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
     {
-      Widget wList = XmFileSelectionBoxGetChild(filebox, XmDIALOG_LIST);
+      Widget wList = XtNameToWidget(filebox, "ItemsList");
       XtVaSetValues(wList, XmNselectionPolicy, XmEXTENDED_SELECT, NULL);
 
       if (file_cb)
