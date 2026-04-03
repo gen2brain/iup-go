@@ -164,30 +164,10 @@ static int motPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
     XtTranslateCoords(anchor_widget, 0, 0, &ax, &ay);
 
-    {
-      const char* pos = iupAttribGetStr(ih, "POSITION");
-
-      if (iupStrEqualNoCase(pos, "TOP"))
-      {
-        x = ax;
-        y = ay - height;
-      }
-      else if (iupStrEqualNoCase(pos, "LEFT"))
-      {
-        x = ax - width;
-        y = ay;
-      }
-      else if (iupStrEqualNoCase(pos, "RIGHT"))
-      {
-        x = ax + aw;
-        y = ay;
-      }
-      else
-      {
-        x = ax;
-        y = ay + ah;
-      }
-    }
+    iupPopoverCalcPosition(ih,
+      ax, ay, aw, ah,
+      width, height,
+      &x, &y);
 
     /* Set size and position on shell first */
     XtVaSetValues(shell,

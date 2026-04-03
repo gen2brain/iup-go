@@ -146,28 +146,11 @@ static int qtPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     }
 
     int x, y;
-    const char* pos = iupAttribGetStr(ih, "POSITION");
-
-    if (iupStrEqualNoCase(pos, "TOP"))
-    {
-      x = anchor_pos.x();
-      y = anchor_pos.y() - ih->currentheight;
-    }
-    else if (iupStrEqualNoCase(pos, "LEFT"))
-    {
-      x = anchor_pos.x() - ih->currentwidth;
-      y = anchor_pos.y();
-    }
-    else if (iupStrEqualNoCase(pos, "RIGHT"))
-    {
-      x = anchor_pos.x() + anchor_size.width();
-      y = anchor_pos.y();
-    }
-    else
-    {
-      x = anchor_pos.x();
-      y = anchor_pos.y() + anchor_size.height();
-    }
+    iupPopoverCalcPosition(ih,
+      anchor_pos.x(), anchor_pos.y(),
+      anchor_size.width(), anchor_size.height(),
+      ih->currentwidth, ih->currentheight,
+      &x, &y);
 
     popover->resize(ih->currentwidth, ih->currentheight);
     popover->move(x, y);

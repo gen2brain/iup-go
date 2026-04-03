@@ -179,30 +179,11 @@ static int winPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       iupLayoutUpdate(ih);
     }
 
-    {
-      const char* pos = iupAttribGetStr(ih, "POSITION");
-
-      if (iupStrEqualNoCase(pos, "TOP"))
-      {
-        x = anchor_rect.left;
-        y = anchor_rect.top - ih->currentheight;
-      }
-      else if (iupStrEqualNoCase(pos, "LEFT"))
-      {
-        x = anchor_rect.left - ih->currentwidth;
-        y = anchor_rect.top;
-      }
-      else if (iupStrEqualNoCase(pos, "RIGHT"))
-      {
-        x = anchor_rect.right;
-        y = anchor_rect.top;
-      }
-      else
-      {
-        x = anchor_rect.left;
-        y = anchor_rect.bottom;
-      }
-    }
+    iupPopoverCalcPosition(ih,
+      anchor_rect.left, anchor_rect.top,
+      anchor_rect.right - anchor_rect.left, anchor_rect.bottom - anchor_rect.top,
+      ih->currentwidth, ih->currentheight,
+      &x, &y);
 
     if (iupAttribGetBoolean(ih, "AUTOHIDE"))
     {

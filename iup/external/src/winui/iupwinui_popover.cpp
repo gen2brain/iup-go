@@ -32,14 +32,22 @@ using namespace Windows::Foundation;
 
 static FlyoutPlacementMode winuiPopoverGetPlacement(Ihandle* ih)
 {
-  char* position = iupAttribGet(ih, "POSITION");
-  if (iupStrEqualNoCase(position, "TOP"))
-    return FlyoutPlacementMode::Top;
-  if (iupStrEqualNoCase(position, "LEFT"))
-    return FlyoutPlacementMode::Left;
-  if (iupStrEqualNoCase(position, "RIGHT"))
-    return FlyoutPlacementMode::Right;
-  return FlyoutPlacementMode::Bottom;
+  int position = iupPopoverGetPosition(ih);
+  switch (position)
+  {
+  case IUP_POPOVER_TOP:           return FlyoutPlacementMode::Top;
+  case IUP_POPOVER_LEFT:          return FlyoutPlacementMode::Left;
+  case IUP_POPOVER_RIGHT:         return FlyoutPlacementMode::Right;
+  case IUP_POPOVER_BOTTOMLEFT:    return FlyoutPlacementMode::BottomEdgeAlignedLeft;
+  case IUP_POPOVER_BOTTOMRIGHT:   return FlyoutPlacementMode::BottomEdgeAlignedRight;
+  case IUP_POPOVER_TOPLEFT:       return FlyoutPlacementMode::TopEdgeAlignedLeft;
+  case IUP_POPOVER_TOPRIGHT:      return FlyoutPlacementMode::TopEdgeAlignedRight;
+  case IUP_POPOVER_LEFTBOTTOM:    return FlyoutPlacementMode::LeftEdgeAlignedBottom;
+  case IUP_POPOVER_LEFTTOP:       return FlyoutPlacementMode::LeftEdgeAlignedTop;
+  case IUP_POPOVER_RIGHTBOTTOM:   return FlyoutPlacementMode::RightEdgeAlignedBottom;
+  case IUP_POPOVER_RIGHTTOP:      return FlyoutPlacementMode::RightEdgeAlignedTop;
+  default:                        return FlyoutPlacementMode::Bottom;
+  }
 }
 
 static void winuiPopoverCallShowCB(Ihandle* ih, int state)
@@ -209,4 +217,7 @@ extern "C" IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   ic->GetInnerNativeContainerHandle = winuiPopoverGetInnerNativeContainerHandleMethod;
 
   iupClassRegisterAttribute(ic, "VISIBLE", winuiPopoverGetVisibleAttrib, winuiPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "OFFSETX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OFFSETY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

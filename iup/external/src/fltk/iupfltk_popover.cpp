@@ -154,28 +154,10 @@ static int fltkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
     }
 
     int x, y;
-    const char* pos = iupAttribGetStr(ih, "POSITION");
-
-    if (iupStrEqualNoCase(pos, "TOP"))
-    {
-      x = ax;
-      y = ay - ih->currentheight;
-    }
-    else if (iupStrEqualNoCase(pos, "LEFT"))
-    {
-      x = ax - ih->currentwidth;
-      y = ay;
-    }
-    else if (iupStrEqualNoCase(pos, "RIGHT"))
-    {
-      x = ax + anchor_widget->w();
-      y = ay;
-    }
-    else
-    {
-      x = ax;
-      y = ay + anchor_widget->h();
-    }
+    iupPopoverCalcPosition(ih,
+      ax, ay, anchor_widget->w(), anchor_widget->h(),
+      ih->currentwidth, ih->currentheight,
+      &x, &y);
 
     popover->resize(x, y, ih->currentwidth, ih->currentheight);
 
