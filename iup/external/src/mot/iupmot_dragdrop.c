@@ -574,8 +574,6 @@ typedef struct _IupmotXdndState {
   Widget shell;
 } IupmotXdndState;
 
-static Ihandle* mot_xdnd_target_ih = NULL;
-
 static void motXdndInitAtoms(void)
 {
   if (xdnd_atoms.initialized)
@@ -882,14 +880,12 @@ static void motXdndHandleLeave(Ihandle* ih)
   iupAttribSet(ih, "_IUPMOT_XDND_DROP_Y", NULL);
 }
 
-static void motXdndAction(Widget w, XEvent* event, String* params, Cardinal* num_params)
+static void motXdndEventHandler(Widget w, XtPointer client_data, XEvent* event, Boolean* cont)
 {
-  Ihandle* ih = mot_xdnd_target_ih;
+  Ihandle* ih = (Ihandle*)client_data;
   XClientMessageEvent* evt;
 
   if (!event || event->type != ClientMessage)
-    return;
-  if (!ih)
     return;
 
   evt = &event->xclient;
@@ -903,8 +899,7 @@ static void motXdndAction(Widget w, XEvent* event, String* params, Cardinal* num
   else if (evt->message_type == xdnd_atoms.XdndLeave)
     motXdndHandleLeave(ih);
 
-  (void)params;
-  (void)num_params;
+  (void)cont;
 }
 
 static int motSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
@@ -949,23 +944,7 @@ static int motSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
         XDeleteProperty(iupmot_display, xwin, motif_receiver);
     }
 
-    /* Register Xt action and translation table for XDND messages */
-    {
-      static int action_registered = 0;
-      if (!action_registered)
-      {
-        XtActionsRec rec = {"iupXdndAction", (XtActionProc)motXdndAction};
-        XtAppAddActions(iupmot_appcontext, &rec, 1);
-        action_registered = 1;
-      }
-    }
-    XtOverrideTranslations(shell, XtParseTranslationTable(
-      "<Message>XdndEnter:    iupXdndAction()\n"
-      "<Message>XdndPosition: iupXdndAction()\n"
-      "<Message>XdndLeave:    iupXdndAction()\n"
-      "<Message>XdndDrop:     iupXdndAction()"));
-
-    mot_xdnd_target_ih = ih;
+    XtAddEventHandler(shell, NoEventMask, True, motXdndEventHandler, (XtPointer)ih);
   }
   else
   {
@@ -982,9 +961,10 @@ static int motSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
           XDeleteProperty(iupmot_display, XtWindow(w), xdnd_atoms.XdndAware);
       }
 
+      XtRemoveEventHandler(shell, NoEventMask, True, motXdndEventHandler, (XtPointer)ih);
+
       free(state);
       iupAttribSet(ih, "_IUPMOT_XDND_STATE", NULL);
-      mot_xdnd_target_ih = NULL;
     }
   }
 

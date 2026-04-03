@@ -385,24 +385,22 @@ static char* motListGetValueAttrib(Ihandle* ih)
       int* positions = NULL;
       int pos_count = 0;
       XtVaGetValues(ih->handle, XmNselectedPositions, &positions, XmNselectedPositionCount, &pos_count, NULL);
-      if (pos_count > 0 && positions)
+      if (!ih->data->is_multiple)
       {
-        if (!ih->data->is_multiple)
-        {
+        if (pos_count > 0 && positions)
           return iupStrReturnInt(positions[0]);
-        }
-        else
-        {
-          int i, count;
-          char* str;
-          XtVaGetValues(ih->handle, XmNitemCount, &count, NULL);
-          str = iupStrGetMemory(count+1);
-          memset(str, '-', count);
-          str[count]=0;
-          for (i=0; i<pos_count; i++)
-            str[positions[i]-1] = '+';
-          return str;
-        }
+      }
+      else
+      {
+        int i, count;
+        char* str;
+        XtVaGetValues(ih->handle, XmNitemCount, &count, NULL);
+        str = iupStrGetMemory(count+1);
+        memset(str, '-', count);
+        str[count]=0;
+        for (i=0; i<pos_count; i++)
+          str[positions[i]-1] = '+';
+        return str;
       }
     }
   }
@@ -1198,6 +1196,7 @@ static void motListEnableDragDrop(Widget w)
   iupMOT_SETARG(args, num_args, XmNnumImportTargets, 1);
   iupMOT_SETARG(args, num_args, XmNdropSiteOperations, XmDROP_MOVE|XmDROP_COPY);
   iupMOT_SETARG(args, num_args, XmNdropProc, motListDropProc);
+  iupMOT_SETARG(args, num_args, XmNanimationStyle, XmDRAG_UNDER_NONE);
   XmDropSiteRegister(w, args, num_args);
 }
 
@@ -1639,10 +1638,20 @@ static int motListMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void motListUnMapMethod(Ihandle* ih)
+{
+  if ((ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple) ||
+      IupGetInt(ih, "DRAGDROPLIST"))
+    XmDropSiteUnregister(ih->handle);
+
+  iupdrvBaseUnMapMethod(ih);
+}
+
 IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motListMapMethod;
+  ic->UnMap = motListUnMapMethod;
 
   /* Driver Dependent Attribute functions */
 
