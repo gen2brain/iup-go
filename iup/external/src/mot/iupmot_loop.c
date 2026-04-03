@@ -14,6 +14,7 @@
 #include "iup_loop.h"
 #include "iup_object.h"
 #include "iup_str.h"
+#include "iup_thread.h"
 
 #include "iupmot_drv.h"
 
@@ -135,36 +136,75 @@ IUP_API void IupFlush(void)
 }
 
 
-typedef struct {
+typedef struct _motPostMessageNode {
   Ihandle* ih;
   char* s;
   int i;
   double d;
   char* p;
-} motPostMessageUserData;
+  struct _motPostMessageNode* next;
+} motPostMessageNode;
 
-static Boolean motPostMessagebWorkProc(XtPointer client_data)
+static motPostMessageNode* mot_postmsg_head = NULL;
+static motPostMessageNode* mot_postmsg_tail = NULL;
+static void* mot_postmsg_mutex = NULL;
+
+static Boolean motPostMessageWorkProc(XtPointer client_data)
 {
-  motPostMessageUserData* user_data = (motPostMessageUserData*)client_data;
-  Ihandle* ih = user_data->ih;
-  if (iupObjectCheck(ih))
+  motPostMessageNode* node;
+  int has_more;
+  (void)client_data;
+
+  iupdrvMutexLock(mot_postmsg_mutex);
+  node = mot_postmsg_head;
+  if (node)
   {
-    IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
-    if (cb)
-      cb(ih, user_data->s, user_data->i, user_data->d, user_data->p);
+    mot_postmsg_head = node->next;
+    if (!mot_postmsg_head)
+      mot_postmsg_tail = NULL;
   }
-  if (user_data->s) free(user_data->s);
-  free(user_data);
-  return True; /* removes the working procedure */
+  has_more = (mot_postmsg_head != NULL);
+  iupdrvMutexUnlock(mot_postmsg_mutex);
+
+  if (!node)
+    return True;
+
+  if (iupObjectCheck(node->ih))
+  {
+    IFnsidv cb = (IFnsidv)IupGetCallback(node->ih, "POSTMESSAGE_CB");
+    if (cb)
+      cb(node->ih, node->s, node->i, node->d, node->p);
+  }
+
+  if (node->s) free(node->s);
+  free(node);
+
+  return has_more ? False : True;
 }
 
 IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
 {
-  motPostMessageUserData* user_data = (motPostMessageUserData*)malloc(sizeof(motPostMessageUserData));
-  user_data->ih = ih;
-  user_data->s = iupStrDup(s);
-  user_data->i = i;
-  user_data->d = d;
-  user_data->p = p;
-  XtAppAddWorkProc(iupmot_appcontext, motPostMessagebWorkProc, user_data);
+  int was_empty;
+  motPostMessageNode* node = (motPostMessageNode*)malloc(sizeof(motPostMessageNode));
+  node->ih = ih;
+  node->s = iupStrDup(s);
+  node->i = i;
+  node->d = d;
+  node->p = p;
+  node->next = NULL;
+
+  if (!mot_postmsg_mutex)
+    mot_postmsg_mutex = iupdrvMutexCreate();
+
+  iupdrvMutexLock(mot_postmsg_mutex);
+  was_empty = (mot_postmsg_head == NULL);
+  if (mot_postmsg_tail)
+    mot_postmsg_tail->next = node;
+  else
+    mot_postmsg_head = node;
+  mot_postmsg_tail = node;
+  iupdrvMutexUnlock(mot_postmsg_mutex);
+
+  if (was_empty)
+    XtAppAddWorkProc(iupmot_appcontext, motPostMessageWorkProc, NULL);
 }
