@@ -18,9 +18,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drvinfo.h"
 #include "iup_dialog.h"
-#include "iup_strmessage.h"
 
 #include "iupmot_drv.h"
 
@@ -131,7 +129,7 @@ static int motMessageDlgPopup(Ihandle* ih, int x, int y)
   value = iupAttribGetStr(ih, "BUTTONS");
   if (iupStrEqualNoCase(value, "OK"))
   {
-    XtUnmanageChild(XmMessageBoxGetChild(msgbox, XmDIALOG_CANCEL_BUTTON));
+    XtUnmanageChild(XtNameToWidget(msgbox, "Cancel"));
     num_but = 1;
   }
   else if (iupStrEqualNoCase(value, "YESNO"))
@@ -141,7 +139,7 @@ static int motMessageDlgPopup(Ihandle* ih, int x, int y)
   }
 
   if (!IupGetCallback(ih, "HELP_CB"))
-    XtUnmanageChild(XmMessageBoxGetChild(msgbox, XmDIALOG_HELP_BUTTON));
+    XtUnmanageChild(XtNameToWidget(msgbox, "Help"));
 
   if (num_but == 2 && iupAttribGetInt(ih, "BUTTONDEFAULT") == 2)
     XtVaSetValues(msgbox, XmNdefaultButtonType, XmDIALOG_CANCEL_BUTTON, NULL);

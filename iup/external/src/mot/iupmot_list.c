@@ -9,7 +9,6 @@
 #include <Xm/ComboBox.h>
 #include <Xm/ScrolledW.h>
 #include <Xm/TextF.h>
-#include <Xm/Transfer.h>
 #include <Xm/DragDrop.h>
 #include <X11/keysym.h>
 
@@ -17,7 +16,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 #include <stdint.h>
 #include <time.h>
 #include <limits.h>
@@ -32,7 +30,6 @@
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_mask.h"
-#include "iup_key.h"
 #include "iup_list.h"
 
 #include "iupmot_drv.h"
@@ -145,7 +142,7 @@ static void motListAddSortedItem(Ihandle* ih, const char *value)
 
   u_bound--;
   /* perform binary search */
-  while (u_bound >= l_bound) 
+  while (u_bound >= l_bound)
   {
     int i = l_bound + (u_bound - l_bound)/2;
     text = (char*)XmStringUnparse(strlist[i], NULL, XmCHARSET_TEXT, XmCHARSET_TEXT, NULL, 0, XmOUTPUT_ALL);
@@ -375,7 +372,7 @@ static char* motListGetValueAttrib(Ihandle* ih)
     XtFree(xstr);
     return str;
   }
-  else 
+  else
   {
     if (ih->data->is_dropdown)
     {
@@ -385,14 +382,14 @@ static char* motListGetValueAttrib(Ihandle* ih)
     }
     else
     {
-      int *pos, sel_count;
-      if (XmListGetSelectedPos(ih->handle, &pos, &sel_count))  /* XmListGetSelectedPos starts at 1 */
+      int* positions = NULL;
+      int pos_count = 0;
+      XtVaGetValues(ih->handle, XmNselectedPositions, &positions, XmNselectedPositionCount, &pos_count, NULL);
+      if (pos_count > 0 && positions)
       {
         if (!ih->data->is_multiple)
         {
-          int ret = pos[0];  
-          XtFree((char*)pos);
-          return iupStrReturnInt(ret);
+          return iupStrReturnInt(positions[0]);
         }
         else
         {
@@ -402,9 +399,8 @@ static char* motListGetValueAttrib(Ihandle* ih)
           str = iupStrGetMemory(count+1);
           memset(str, '-', count);
           str[count]=0;
-          for (i=0; i<sel_count; i++)
-            str[pos[i]-1] = '+';
-          XtFree((char*)pos);
+          for (i=0; i<pos_count; i++)
+            str[positions[i]-1] = '+';
           return str;
         }
       }
@@ -428,7 +424,7 @@ static int motListSetValueAttrib(Ihandle* ih, const char* value)
 
     iupAttribSet(ih, "_IUPMOT_DISABLE_TEXT_CB", NULL);
   }
-  else 
+  else
   {
     if (ih->data->is_dropdown)
     {
@@ -462,7 +458,7 @@ static int motListSetValueAttrib(Ihandle* ih, const char* value)
       else
       {
         /* User has changed a multiple selection on a simple list. */
-	      int i, count, len;
+        int i, count, len;
 
         /* Clear all selections */
         XmListDeselectAllItems(ih->handle);
@@ -475,7 +471,7 @@ static int motListSetValueAttrib(Ihandle* ih, const char* value)
 
         XtVaGetValues(ih->handle, XmNitemCount, &count, NULL);
         len = strlen(value);
-        if (len < count) 
+        if (len < count)
           count = len;
 
         XtVaSetValues(ih->handle, XmNselectionPolicy, XmMULTIPLE_SELECT, NULL);
@@ -567,9 +563,9 @@ static int motListSetSpacingAttrib(Ihandle* ih, const char* value)
     if (ih->data->has_editbox)
       XtVaGetValues(ih->handle, XmNlist, &list, NULL);
 
-    XtVaSetValues(list, XmNlistSpacing, ih->data->spacing*2, 
-                        XmNlistMarginWidth, ih->data->spacing, 
-                        XmNlistMarginHeight, ih->data->spacing, 
+    XtVaSetValues(list, XmNlistSpacing, ih->data->spacing*2,
+                        XmNlistMarginWidth, ih->data->spacing,
+                        XmNlistMarginHeight, ih->data->spacing,
                         NULL);
     return 0;
   }
@@ -677,7 +673,7 @@ static char* motListGetSelectedTextAttrib(Ihandle* ih)
 
 static int motListSetAppendAttrib(Ihandle* ih, const char* value)
 {
-	if (value && ih->data->has_editbox)
+  if (value && ih->data->has_editbox)
   {
     XmTextPosition pos;
     Widget cbedit;
@@ -714,7 +710,7 @@ static int motListSetSelectionAttrib(Ihandle* ih, const char* value)
   if (iupStrToIntInt(value, &start, &end, ':')!=2) 
     return 0;
 
-  if(start<1 || end<1) 
+  if(start<1 || end<1)
     return 0;
 
   start--; /* IUP starts at 1 */
@@ -769,10 +765,10 @@ static int motListSetSelectionPosAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+  if (iupStrToIntInt(value, &start, &end, ':')!=2)
     return 0;
 
-  if(start<0 || end<0) 
+  if(start<0 || end<0)
     return 0;
 
   /* end is inside the selection, in IUP is outside */
@@ -989,7 +985,6 @@ static int motListSetClipboardAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-
 /*********************************************************************************/
 
 static void motListDragTransferProc(Widget drop_context, Ihandle* ih, Atom *seltype, Atom *type, XtPointer value, unsigned long *length, int format)
@@ -1013,7 +1008,7 @@ static void motListDragTransferProc(Widget drop_context, Ihandle* ih, Atom *selt
     {
       char* text = motListGetIdValueAttrib(ih, idDrag+1); /* starts at 1 */
       int count = iupdrvListGetCount(ih);
-        
+
       /* Copy the item to the idDrop position */
       if (idDrop >= 0 && idDrop < count) /* starts at 0 */
       {
@@ -1062,12 +1057,12 @@ static void motListDropProc(Widget w, XtPointer client_data, XmDropProcCallbackS
 
   /* retrieve the data targets */
   XtVaGetValues(drop_context, XmNexportTargets, &exportTargets,
-    XmNnumExportTargets, &numExportTargets, 
+    XmNnumExportTargets, &numExportTargets,
     NULL);
 
-  for (i = 0; i < (int)numExportTargets; i++) 
+  for (i = 0; i < (int)numExportTargets; i++)
   {
-    if (exportTargets[i] == atomListItem) 
+    if (exportTargets[i] == atomListItem)
     {
       found = True;
       break;
@@ -1079,7 +1074,7 @@ static void motListDropProc(Widget w, XtPointer client_data, XmDropProcCallbackS
     found = False;
 
   num_args = 0;
-  if ((!found) || (drop_data->dropAction != XmDROP) ||  (drop_data->operation != XmDROP_COPY && drop_data->operation != XmDROP_MOVE)) 
+  if ((!found) || (drop_data->dropAction != XmDROP) ||  (drop_data->operation != XmDROP_COPY && drop_data->operation != XmDROP_MOVE))
   {
     iupMOT_SETARG(args, num_args, XmNtransferStatus, XmTRANSFER_FAILURE);
     iupMOT_SETARG(args, num_args, XmNnumDropTransfers, 0);
@@ -1115,7 +1110,7 @@ static void motListDragMotionCallback(Widget drop_context, Ihandle *ih, XmDragMo
     int x = drag_motion->x;
     int y = drag_motion->y;
     iupdrvScreenToClient(ih, &x, &y);
-    
+
     idDrop = motListConvertXYToPos(ih, x, y);  /* starts at 1 */
     iupAttribSetInt(ih, "_IUPLIST_DROPITEM", idDrop);  /* starts at 1 */
 
@@ -1207,7 +1202,6 @@ static void motListEnableDragDrop(Widget w)
 }
 
 /*********************************************************************************/
-
 
 static void motListEditModifyVerifyCallback(Widget cbedit, Ihandle *ih, XmTextVerifyPtr text)
 {
@@ -1353,7 +1347,7 @@ static void motListDropDownPopdownCallback(Widget w, Ihandle* ih, XtPointer call
 }
 
 static void motListDefaultActionCallback(Widget w, Ihandle* ih, XmListCallbackStruct* call_data)
-{         
+{
   if (call_data->event->type == ButtonPress || call_data->event->type == ButtonRelease)
   {
     IFnis cb = (IFnis) IupGetCallback(ih, "DBLCLICK_CB");
@@ -1368,7 +1362,7 @@ static void motListDefaultActionCallback(Widget w, Ihandle* ih, XmListCallbackSt
 }
 
 static void motListComboBoxSelectionCallback(Widget w, Ihandle* ih, XmComboBoxCallbackStruct* call_data)
-{         
+{
   IFnsii cb = (IFnsii) IupGetCallback(ih, "ACTION");
   if (cb)
   {
@@ -1392,7 +1386,7 @@ static void motListComboBoxSelectionCallback(Widget w, Ihandle* ih, XmComboBoxCa
 }
 
 static void motListBrowseSelectionCallback(Widget w, Ihandle* ih, XmListCallbackStruct* call_data)
-{         
+{
   IFnsii cb = (IFnsii) IupGetCallback(ih, "ACTION");
   if (cb)
   {
@@ -1407,7 +1401,7 @@ static void motListBrowseSelectionCallback(Widget w, Ihandle* ih, XmListCallback
 }
 
 static void motListExtendedSelectionCallback(Widget w, Ihandle* ih, XmListCallbackStruct* call_data)
-{         
+{
   IFns multi_cb = (IFns)IupGetCallback(ih, "MULTISELECT_CB");
   IFnsii cb = (IFnsii) IupGetCallback(ih, "ACTION");
   if (multi_cb || cb)
@@ -1431,9 +1425,7 @@ static void motListExtendedSelectionCallback(Widget w, Ihandle* ih, XmListCallba
   (void)w;
 }
 
-
 /*********************************************************************************/
-
 
 static int motListMapMethod(Ihandle* ih)
 {
@@ -1494,7 +1486,7 @@ static int motListMapMethod(Ihandle* ih)
     iupMOT_SETARG(args, num_args, XmNspacing, 0); /* no space between scrollbars and text */
     iupMOT_SETARG(args, num_args, XmNborderWidth, 0);
     iupMOT_SETARG(args, num_args, XmNshadowThickness, 0);
-    
+
     sb_win = XtCreateManagedWidget(
       child_id,  /* child identifier */
       xmScrolledWindowWidgetClass, /* widget class */

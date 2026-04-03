@@ -7,14 +7,12 @@
 #include <Xm/Xm.h>
 #include <Xm/BulletinB.h>
 #include <Xm/MwmUtil.h>
-#include <Xm/AtomMgr.h>
 #include <Xm/Protocols.h>
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 #include <limits.h>
 
 #include "iup.h"
@@ -22,13 +20,9 @@
 
 #include "iup_class.h"
 #include "iup_object.h"
-#include "iup_childtree.h"
-#include "iup_dlglist.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_drvinfo.h"
-#include "iup_focus.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
@@ -94,7 +88,7 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
   else
   {
-    /* if iupdrvIsVisible reports hidden, then it should be minimized */ 
+    /* if iupdrvIsVisible reports hidden, then it should be minimized */
     if (!iupdrvIsVisible(ih))  /* can NOT hide a minimized window, so map it first. */
     {
       XtMapWidget(ih->handle);
@@ -175,7 +169,7 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
   int has_titlebar = iupAttribGetBoolean(ih, "RESIZE")  || /* GTK and Motif only */
                      iupAttribGetBoolean(ih, "MAXBOX")  ||
                      iupAttribGetBoolean(ih, "MINBOX")  ||
-                     iupAttribGetBoolean(ih, "MENUBOX") || 
+                     iupAttribGetBoolean(ih, "MENUBOX") ||
                      iupAttribGet(ih, "TITLE");
 
   int has_border = has_titlebar ||
@@ -238,7 +232,7 @@ static int motDialogQueryWMspecSupport(Atom feature)
   unsigned long after, natoms, i;
 
   if (!netsuppport)
-    netsuppport = XmInternAtom(iupmot_display, "_NET_SUPPORTED", False);
+    netsuppport = XInternAtom(iupmot_display, "_NET_SUPPORTED", False);
 
   /* get all the features */
   XGetWindowProperty(iupmot_display, RootWindow(iupmot_display, iupmot_screen),
@@ -269,7 +263,7 @@ static void motDialogSetWindowManagerStyle(Ihandle* ih)
   MwmHints hints;
   static Atom xwmhint = 0;
   if (!xwmhint)
-    xwmhint = XmInternAtom(iupmot_display, "_MOTIF_WM_HINTS", False);
+    xwmhint = XInternAtom(iupmot_display, "_MOTIF_WM_HINTS", False);
 
   hints.flags = (MWM_HINTS_FUNCTIONS | MWM_HINTS_DECORATIONS);
   hints.functions = 0;
@@ -316,7 +310,7 @@ static void motDialogChangeWMState(Ihandle* ih, Atom state1, Atom state2, int op
 {
   static Atom wmstate = 0;
   if (!wmstate)
-    wmstate = XmInternAtom(iupmot_display, "_NET_WM_STATE", False);
+    wmstate = XInternAtom(iupmot_display, "_NET_WM_STATE", False);
 
   if (iupdrvDialogIsVisible(ih))
   {
@@ -334,7 +328,7 @@ static void motDialogChangeWMState(Ihandle* ih, Atom state1, Atom state2, int op
     evt.xclient.data.l[2] = state2;
     evt.xclient.data.l[3] = 0;
     evt.xclient.data.l[4] = 0;
-    
+
     XSendEvent(iupmot_display, RootWindow(iupmot_display, iupmot_screen), False,
                SubstructureRedirectMask | SubstructureNotifyMask, &evt);
   }
@@ -399,7 +393,7 @@ static int motDialogSetFullScreen(Ihandle* ih, int fullscreen)
 
   static Atom xwmfs = 0;
   if (!xwmfs)
-    xwmfs = XmInternAtom(iupmot_display, "_NET_WM_STATE_FULLSCREEN", False);
+    xwmfs = XInternAtom(iupmot_display, "_NET_WM_STATE_FULLSCREEN", False);
 
   if (support_fullscreen == -1)
     support_fullscreen = motDialogQueryWMspecSupport(xwmfs);
@@ -421,7 +415,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 
   if (iupAttribGetBoolean(ih, "FULLSCREEN"))
     return 1;
-  
+
   placement = iupAttribGet(ih, "PLACEMENT");
   if (!placement)
   {
@@ -461,8 +455,8 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     static Atom maxatoms[2] = {0, 0};
     if (!(maxatoms[0]))
     {
-      maxatoms[0] = XmInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
-      maxatoms[1] = XmInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+      maxatoms[0] = XInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+      maxatoms[1] = XInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
     }
 
     motDialogChangeWMState(ih, maxatoms[0], maxatoms[1], 1);
@@ -501,11 +495,9 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   return 1;
 }
 
-
 /****************************************************************************
                                    Attributes
 ****************************************************************************/
-
 
 static int motDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
 {
@@ -587,7 +579,7 @@ static int motDialogSetBgColorAttrib(Ihandle* ih, const char* value)
     XtVaSetValues(dialog_manager, XmNbackgroundPixmap, XmUNSPECIFIED_PIXMAP, NULL);
     return 1;
   }
-  return 0; 
+  return 0;
 }
 
 static int motDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
@@ -608,7 +600,7 @@ static int motDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 }
 
 static int motDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
-{                       
+{
   if (iupStrBoolean(value))
   {
     if (!iupAttribGet(ih, "_IUPMOT_FS_STYLE"))
@@ -668,7 +660,7 @@ static int motDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 
         /* set position and size */
         XtVaSetValues(ih->handle, XmNwidth,  (XtArgVal)width,  /* client size */
-                                  XmNheight, (XtArgVal)height, 
+                                  XmNheight, (XtArgVal)height,
                                   XmNx,      (XtArgVal)0,
                                   XmNy,      (XtArgVal)0,
                                   NULL);
@@ -716,11 +708,11 @@ static int motDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
           y = iupAttribGetInt(ih, "_IUPMOT_FS_Y") - (border+caption+menu);
 
           /* restore position and size */
-          XtVaSetValues(ih->handle, 
-                      XmNx,      (XtArgVal)x, 
-                      XmNy,      (XtArgVal)y, 
-                      XmNwidth,  (XtArgVal)(IupGetInt(ih, "_IUPMOT_FS_SIZE") - (2*border)), 
-                      XmNheight, (XtArgVal)(IupGetInt2(ih, "_IUPMOT_FS_SIZE") - (2*border+caption)), 
+          XtVaSetValues(ih->handle,
+                      XmNx,      (XtArgVal)x,
+                      XmNy,      (XtArgVal)y,
+                      XmNwidth,  (XtArgVal)(IupGetInt(ih, "_IUPMOT_FS_SIZE") - (2*border)),
+                      XmNheight, (XtArgVal)(IupGetInt2(ih, "_IUPMOT_FS_SIZE") - (2*border+caption)),
                       NULL);
 
           /* layout will be updated in motDialogConfigureNotify */
@@ -767,7 +759,6 @@ static int motDialogSetIconAttrib(Ihandle* ih, const char *value)
                      Callbacks and Events
 ****************************************************************/
 
-
 static void motDialogCBclose(Widget w, XtPointer client_data, XtPointer call_data)
 {
   Icallback cb;
@@ -808,7 +799,7 @@ static void motDialogConfigureNotify(Widget w, XEvent *evt, String* s, Cardinal 
   if (ih->data->menu && ih->data->menu->handle)
     XtVaSetValues(ih->data->menu->handle, XmNwidth, (XtArgVal)(cevent->width), NULL);
 
-  if (ih->data->ignore_resize) return; 
+  if (ih->data->ignore_resize) return;
 
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
@@ -873,7 +864,6 @@ static void motDialogDestroyCallback(Widget w, Ihandle *ih, XtPointer call_data)
   (void)w;
   (void)call_data;
 }
-
 
 /****************************************************************
                      Idialog
@@ -948,7 +938,7 @@ static int motDialogMapMethod(Ihandle* ih)
   }
   if (has_titlebar)
     mwm_decor |= MWM_DECOR_TITLE;
-  if (iupAttribGetBoolean(ih, "BORDER") || has_titlebar)   
+  if (iupAttribGetBoolean(ih, "BORDER") || has_titlebar)
     mwm_decor |= MWM_DECOR_BORDER;  /* has_border */
 
   iupMOT_SETARG(args, num_args, XmNmappedWhenManaged, False);  /* so XtRealizeWidget will not show the dialog */
@@ -956,11 +946,11 @@ static int motDialogMapMethod(Ihandle* ih)
   iupMOT_SETARG(args, num_args, XmNallowShellResize, True); /* Used so the BulletinBoard can control the shell size */
   iupMOT_SETARG(args, num_args, XmNtitle, "");
   iupMOT_SETARG(args, num_args, XmNvisual, iupmot_visual);
-  
-  if (iupmotColorMap()) 
+
+  if (iupmotColorMap())
     iupMOT_SETARG(args, num_args, XmNcolormap, iupmotColorMap());
 
-  if (mwm_decor != 0x7E) 
+  if (mwm_decor != 0x7E)
     iupMOT_SETARG(args, num_args, XmNmwmDecorations, mwm_decor);
 
   if (iupAttribGetBoolean(ih, "SAVEUNDER"))
@@ -1150,7 +1140,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
     XtAppAddActions(iupmot_appcontext, &rec, 1);
 
     /* register atom to intercept the close button in the window frame */
-    iupmot_wm_deletewindow = XmInternAtom(iupmot_display, "WM_DELETE_WINDOW", False);
+    iupmot_wm_deletewindow = XInternAtom(iupmot_display, "WM_DELETE_WINDOW", False);
   }
 
   /* Driver Dependent Attribute functions */
