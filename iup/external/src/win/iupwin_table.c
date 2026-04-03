@@ -30,6 +30,16 @@
 #include "iupwin_str.h"
 
 
+static COLORREF winTableFocusRectColor(COLORREF bg_color)
+{
+  unsigned char r = GetRValue(bg_color);
+  unsigned char g = GetGValue(bg_color);
+  unsigned char b = GetBValue(bg_color);
+  int luminance = (r * 299 + g * 587 + b * 114) / 1000;
+  return (luminance > 127) ? RGB(0, 0, 0) : RGB(255, 255, 255);
+}
+
+
 /****************************************************************************
  * Data Structure
  ****************************************************************************/
@@ -1975,7 +1985,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
                 iupAttribGetBoolean(ih, "FOCUSRECT") &&
                 GetFocus() == data->list_view)
             {
-              HPEN hPen = CreatePen(PS_DOT, 1, GetSysColor(COLOR_GRAYTEXT));
+              HPEN hPen = CreatePen(PS_DOT, 1, winTableFocusRectColor(bg_color));
               HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
               HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
 
@@ -2086,12 +2096,15 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
               iupAttribGetBoolean(ih, "FOCUSRECT") &&
               GetFocus() == data->list_view)
           {
-            /* Create a dashed pen */
-            HPEN hPen = CreatePen(PS_DOT, 1, GetSysColor(COLOR_GRAYTEXT));
+            UINT itemState = ListView_GetItemState(data->list_view, lplvcd->nmcd.dwItemSpec, LVIS_SELECTED);
+            COLORREF focus_bg = (itemState & LVIS_SELECTED) ? GetSysColor(COLOR_HIGHLIGHT) : lplvcd->clrTextBk;
+            if (focus_bg == CLR_DEFAULT)
+              focus_bg = GetSysColor(COLOR_WINDOW);
+
+            HPEN hPen = CreatePen(PS_DOT, 1, winTableFocusRectColor(focus_bg));
             HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
             HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
 
-            /* Draw dashed rectangle with minimal inset */
             Rectangle(hdc, rc.left + 1, rc.top + 1, rc.right - 1, rc.bottom - 1);
 
             SelectObject(hdc, hOldBrush);
