@@ -3939,7 +3939,14 @@ static void helperReplaceDefaultImages(Ihandle* ih, IupCocoaOutlineView* outline
     leaf_image = (NSImage*)iupImageGetImage(leaf_img_name, ih, 0, NULL);
   else
   {
-    leaf_image = [NSImage imageNamed:NSImageNameIChatTheaterTemplate];
+#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 110000
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunguarded-availability-new"
+    leaf_image = [NSImage imageWithSystemSymbolName:@"doc.text" accessibilityDescription:nil];
+#pragma clang diagnostic pop
+#else
+    leaf_image = [NSImage imageNamed:NSImageNameMultipleDocuments];
+#endif
     [leaf_image setSize:NSMakeSize(16, 16)];
   }
   [outline_view setLeafImage:leaf_image];

@@ -166,6 +166,8 @@ IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
 
   if (x) *x = iupROUND(mouse_point.x);
   if (y) *y = iupROUND(inverted_y);
+
+  iupdrvAddScreenOffset(x, y, -1);
 }
 
 IUP_SDK_API void iupdrvGetKeyState(char* key)
