@@ -1538,8 +1538,7 @@ static int cocoaTextSetValueAttrib(Ihandle* ih, const char* value)
             current_number = min_value;
 
           [stepper_view setDoubleValue:current_number];
-          ns_string = [NSString stringWithFormat:@"%lf", current_number];
-          [text_field setStringValue:ns_string];
+          [text_field setIntegerValue:(NSInteger)current_number];
         }
 
         break;
