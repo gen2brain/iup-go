@@ -98,21 +98,13 @@ static IupCocoaFont *cocoaGetSystemFont()
     NSFont *ns_font;
 
 #if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 110000
-    /* Use modern API on macOS 11+ */
-    NSOperatingSystemVersion version = {11, 0, 0};
-    if ([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version])
-    {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunguarded-availability-new"
-      ns_font = [NSFont preferredFontForTextStyle:NSFontTextStyleBody options:@{}];
+    ns_font = [NSFont preferredFontForTextStyle:NSFontTextStyleBody options:@{}];
 #pragma clang diagnostic pop
-    }
-    else
+#else
+    ns_font = [NSFont messageFontOfSize:0];
 #endif
-    {
-      /* Fall back to legacy API (or when SDK doesn't have macOS 11+ APIs) */
-      ns_font = [NSFont messageFontOfSize:0];
-    }
 
     IupCocoaFont *iup_font = cocoaCreateIupCocoaFontFromNSFont(ns_font);
     s_systemFont = [iup_font retain];
