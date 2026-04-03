@@ -389,7 +389,7 @@ static void motDialogChangeWMState(Ihandle* ih, Atom state1, Atom state2, int op
 
 static int motDialogSetFullScreen(Ihandle* ih, int fullscreen)
 {
-  static int support_fullscreen = -1;  /* WARNING: The WM can be changed dinamically */
+  static int support_fullscreen = -1;  /* WARNING: The WM can be changed dynamically */
 
   static Atom xwmfs = 0;
   if (!xwmfs)
@@ -511,7 +511,7 @@ static int motDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
   if (min_w > decorwidth)
     XtVaSetValues(ih->handle, XmNminWidth, min_w-decorwidth, NULL);
   if (min_h > decorheight)
-    XtVaSetValues(ih->handle, XmNminHeight, min_h-decorheight, NULL);  
+    XtVaSetValues(ih->handle, XmNminHeight, min_h-decorheight, NULL);
 
   return iupBaseSetMinSizeAttrib(ih, value);
 }
@@ -526,9 +526,9 @@ static int motDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
 
   if (max_w > decorwidth)
-    XtVaSetValues(ih->handle, XmNmaxWidth, max_w-decorwidth, NULL);  
+    XtVaSetValues(ih->handle, XmNmaxWidth, max_w-decorwidth, NULL);
   if (max_h > decorheight)
-    XtVaSetValues(ih->handle, XmNmaxHeight, max_h-decorheight, NULL);  
+    XtVaSetValues(ih->handle, XmNmaxHeight, max_h-decorheight, NULL);
 
   return iupBaseSetMaxSizeAttrib(ih, value);
 }
@@ -737,6 +737,21 @@ static int motDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
     }
   }
   return 1;
+}
+
+static int motDialogSetOpacityAttrib(Ihandle* ih, const char* value)
+{
+  int opacity;
+  if (!iupStrToInt(value, &opacity))
+    return 0;
+
+  {
+    unsigned long val = (unsigned long)((double)opacity / 255.0 * 0xFFFFFFFF);
+    Atom atom = XInternAtom(iupmot_display, "_NET_WM_WINDOW_OPACITY", False);
+    XChangeProperty(iupmot_display, XtWindow(ih->handle), atom, XA_CARDINAL, 32, PropModeReplace, (unsigned char*)&val, 1);
+  }
+
+  return 0;
 }
 
 static int motDialogSetIconAttrib(Ihandle* ih, const char *value)
@@ -1167,8 +1182,9 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   /* IupDialog X Only */
   iupClassRegisterAttribute(ic, "XWINDOW", iupmotGetXWindowAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_NO_STRING);
 
+  iupClassRegisterAttribute(ic, "OPACITY", NULL, motDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
   /* Not Supported */
-  iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
