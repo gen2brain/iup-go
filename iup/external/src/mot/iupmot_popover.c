@@ -33,62 +33,33 @@
 
 
 static Ihandle* mot_popover_autohide = NULL;
+static Widget mot_popover_dialog_manager = NULL;
 
-static void motPopoverEventHandler(Widget w, XtPointer client_data, XEvent* evt, Boolean* cont)
+static void motPopoverClickHandler(Widget w, XtPointer client_data, XEvent* evt, Boolean* cont)
 {
   Ihandle* ih = mot_popover_autohide;
   Widget shell;
   Position sx, sy;
   Dimension sw, sh;
-  int x_root, y_root;
 
   (void)w;
   (void)client_data;
   (void)cont;
 
-  if (!ih || !ih->handle)
-    return;
-
-  if (evt->type != ButtonPress)
+  if (!ih || !ih->handle || evt->type != ButtonPress)
     return;
 
   shell = (Widget)ih->handle;
-  x_root = evt->xbutton.x_root;
-  y_root = evt->xbutton.y_root;
 
-  /* Get popover shell position and size */
   XtVaGetValues(shell,
-    XmNx, &sx,
-    XmNy, &sy,
-    XmNwidth, &sw,
-    XmNheight, &sh,
+    XmNx, &sx, XmNy, &sy,
+    XmNwidth, &sw, XmNheight, &sh,
     NULL);
 
-  /* Check if click is inside the popover */
-  if (x_root >= sx && x_root < sx + (int)sw && y_root >= sy && y_root < sy + (int)sh)
-    return; /* Click inside popover, ignore */
+  if (evt->xbutton.x_root >= sx && evt->xbutton.x_root < sx + (int)sw &&
+      evt->xbutton.y_root >= sy && evt->xbutton.y_root < sy + (int)sh)
+    return;
 
-  /* Check if click was on anchor, let anchor handle toggle */
-  {
-    Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
-    if (anchor && anchor->handle)
-    {
-      Widget anchor_widget = (Widget)anchor->handle;
-      Position ax, ay;
-      Dimension aw, ah;
-
-      XtVaGetValues(anchor_widget,
-        XmNwidth, &aw,
-        XmNheight, &ah,
-        NULL);
-      XtTranslateCoords(anchor_widget, 0, 0, &ax, &ay);
-
-      if (x_root >= ax && x_root < ax + (int)aw && y_root >= ay && y_root < ay + (int)ah)
-        return; /* Click on anchor, let it handle toggle */
-    }
-  }
-
-  /* Click outside, hide popover */
   IupSetAttribute(ih, "VISIBLE", "NO");
 }
 
@@ -96,24 +67,35 @@ static void motPopoverInstallGlobalHandler(Ihandle* ih)
 {
   Widget shell = (Widget)ih->handle;
   Window shell_win = XtWindow(shell);
-  int grab_result;
+  Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
 
   mot_popover_autohide = ih;
+  mot_popover_dialog_manager = NULL;
 
-  /* Add RAW event handler on the popover shell */
-  XtAddRawEventHandler(shell, ButtonPressMask | ButtonReleaseMask, False,
-    motPopoverEventHandler, NULL);
+  XtAddRawEventHandler(shell, ButtonPressMask, False,
+    motPopoverClickHandler, NULL);
 
-  /* Also select button events on the shell window directly */
-  XSelectInput(iupmot_display, shell_win,
-    XtBuildEventMask(shell) | ButtonPressMask | ButtonReleaseMask);
+  if (anchor)
+  {
+    Ihandle* dlg = IupGetDialog(anchor);
+    if (dlg && dlg->handle)
+    {
+      Widget dm = XtNameToWidget(dlg->handle, "*dialog_manager");
+      if (dm)
+      {
+        mot_popover_dialog_manager = dm;
+        XtAddEventHandler(dm, ButtonPressMask, False,
+          (XtEventHandler)motPopoverClickHandler, NULL);
+      }
+    }
+  }
 
-  /* Grab pointer - owner_events=False sends ALL events to grab window */
-  grab_result = XGrabPointer(iupmot_display, shell_win, False,
+  XGrabPointer(iupmot_display, shell_win, True,
     ButtonPressMask | ButtonReleaseMask,
     GrabModeAsync, GrabModeAsync,
     None, None, CurrentTime);
-  (void)grab_result;
+
+  XSetInputFocus(iupmot_display, shell_win, RevertToParent, CurrentTime);
 }
 
 static void motPopoverRemoveGlobalHandler(void)
@@ -125,8 +107,15 @@ static void motPopoverRemoveGlobalHandler(void)
     XUngrabPointer(iupmot_display, CurrentTime);
 
     if (shell)
-      XtRemoveRawEventHandler(shell, ButtonPressMask | ButtonReleaseMask, False,
-        motPopoverEventHandler, NULL);
+      XtRemoveRawEventHandler(shell, ButtonPressMask, False,
+        motPopoverClickHandler, NULL);
+
+    if (mot_popover_dialog_manager)
+    {
+      XtRemoveEventHandler(mot_popover_dialog_manager, ButtonPressMask, False,
+        (XtEventHandler)motPopoverClickHandler, NULL);
+      mot_popover_dialog_manager = NULL;
+    }
 
     mot_popover_autohide = NULL;
   }
