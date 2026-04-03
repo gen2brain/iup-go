@@ -335,7 +335,9 @@ protected:
       case FL_ENTER: case FL_LEAVE:
         iupfltkEnterLeaveEvent(this, iup_handle, event); break;
       case FL_KEYBOARD:
-        if (iupfltkKeyPressEvent(this, iup_handle)) return 1; break;
+        if (iupfltkKeyPressEvent(this, iup_handle)) return 1;
+        if (iupfltkEditCheckMask(iup_handle, this, event, "EDIT_CB", iup_handle->data->mask, iup_handle->data->nc)) return 1;
+        break;
     }
     return Fl_Input::handle(event);
   }

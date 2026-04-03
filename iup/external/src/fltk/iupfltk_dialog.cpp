@@ -136,6 +136,9 @@ protected:
 
   void resize(int x, int y, int w, int h) override
   {
+    int old_w = this->w();
+    int old_h = this->h();
+
     Fl_Double_Window::resize(x, y, w, h);
 
     if (!iup_handle)
@@ -155,6 +158,9 @@ protected:
       return;
 
     if (!visible())
+      return;
+
+    if (w == old_w && h == old_h)
       return;
 
     int border = 0, caption = 0, menu = 0;
