@@ -154,20 +154,23 @@ static int iFontDlgShow_CB(Ihandle* ih, int state)
 
     {
       const char* value = iupAttribGet(ih, "VALUE");
-      const char* fontface;
-      const char* fontstyle;
+      char fontface[256] = "";
+      char fontstyle[64] = "";
       int fontsize;
+      const char* tmp;
 
       if (!value)
         value = IupGetGlobal("DEFAULTFONT");
 
       IupStoreAttribute(sample, "FONT", value);
 
-      fontface = IupGetAttribute(sample, "FONTFACE");
-      fontstyle = IupGetAttribute(sample, "FONTSTYLE");
+      tmp = IupGetAttribute(sample, "FONTFACE");
+      if (tmp) iupStrCopyN(fontface, sizeof(fontface), tmp);
+      tmp = IupGetAttribute(sample, "FONTSTYLE");
+      if (tmp) iupStrCopyN(fontstyle, sizeof(fontstyle), tmp);
       fontsize = IupGetInt(sample, "FONTSIZE");
 
-      if (fontface)
+      if (fontface[0])
       {
         int i, count = IupGetInt(list1, "COUNT");
         IupStoreAttribute(list1, "VALUE", fontface);
@@ -182,7 +185,7 @@ static int iFontDlgShow_CB(Ihandle* ih, int state)
         }
       }
 
-      if (fontstyle)
+      if (fontstyle[0])
       {
         if (iupStrEqualNoCase(fontstyle, "Bold Italic"))
           IupSetAttribute(list2, "VALUE", "Bold Italic");
@@ -217,6 +220,7 @@ static int iFontDlgShow_CB(Ihandle* ih, int state)
       Ihandle* help_bt = IupGetDialogChild(ih, "HELPBUT");
       IupSetAttribute(help_bt, "VISIBLE", "NO");
     }
+
   }
   return IUP_DEFAULT;
 }
@@ -280,6 +284,7 @@ static int iFontDlgCreateMethod(Ihandle* ih, void** params)
   IupSetAttribute(list3, "VISIBLELINES", "5");
   IupSetAttribute(list3, "VISIBLECOLUMNS", "6");
   IupSetAttribute(list3, "NAME", "LIST3");
+  IupSetAttribute(list3, "MASKINT", "1:72");
 
   lin1 = IupHbox(
     IupSetAttributes(IupVbox(IupLabel("_@IUP_FAMILY"), list1, NULL), "GAP=0"),
@@ -295,7 +300,7 @@ static int iFontDlgCreateMethod(Ihandle* ih, void** params)
   IupSetAttribute(lin2, "NORMALIZESIZE", "HORIZONTAL");
 
   {
-    Ihandle* sample = IupSetAttributes(IupLabel(NULL), "NAME=SAMPLE, TITLE=\"The quick brown fox jumps over the lazy dog\", EXPAND=YES, RASTERSIZE=x60, ALIGNMENT=ACENTER:ACENTER");
+    Ihandle* sample = IupSetAttributes(IupLabel(NULL), "NAME=SAMPLE, TITLE=\"AaBbCcXxYyZz\", EXPAND=YES, RASTERSIZE=x60, ALIGNMENT=ACENTER:ACENTER");
     IupSetStrAttribute(sample, "BGCOLOR", IupGetGlobal("TXTBGCOLOR"));
 
     iupChildTreeAppend(ih, IupSetAttributes(IupVbox(lin1,
@@ -309,6 +314,7 @@ static int iFontDlgCreateMethod(Ihandle* ih, void** params)
   }
 
   IupSetCallback(ih, "SHOW_CB", (Icallback)iFontDlgShow_CB);
+  IupSetAttribute(ih, "SHRINK", "YES");
 
   (void)params;
   return IUP_NOERROR;
