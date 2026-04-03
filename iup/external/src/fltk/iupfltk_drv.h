@@ -25,10 +25,12 @@
 class Fl_Widget;
 class Fl_Group;
 class Fl_Window;
+class Fl_Input_;
 #else
 typedef struct _Fl_Widget Fl_Widget;
 typedef struct _Fl_Group Fl_Group;
 typedef struct _Fl_Window Fl_Window;
+typedef struct _Fl_Input_ Fl_Input_;
 #endif
 
 /****************************************************************************
@@ -36,6 +38,7 @@ typedef struct _Fl_Window Fl_Window;
  ****************************************************************************/
 
 IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget *widget, Ihandle* ih, int event);
+IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, const char* cb_name, void* mask, int nc);
 IUP_DRV_API int iupfltkMouseMoveEvent(Fl_Widget *widget, Ihandle *ih);
 IUP_DRV_API int iupfltkMouseButtonEvent(Fl_Widget *widget, Ihandle *ih, int event);
 

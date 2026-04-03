@@ -234,7 +234,7 @@ static int fltkButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
         align |= FL_ALIGN_TEXT_OVER_IMAGE;
     }
 
-    button->align(align | FL_ALIGN_INSIDE);
+    button->align(align | FL_ALIGN_INSIDE | FL_ALIGN_CLIP);
   }
 
   return 1;
@@ -413,7 +413,7 @@ static int fltkButtonMapMethod(Ihandle* ih)
 
     if (ih->data->type & IUP_BUTTON_TEXT)
     {
-      Fl_Align align = FL_ALIGN_IMAGE_NEXT_TO_TEXT | FL_ALIGN_INSIDE;
+      Fl_Align align = FL_ALIGN_IMAGE_NEXT_TO_TEXT | FL_ALIGN_INSIDE | FL_ALIGN_CLIP;
 
       switch (ih->data->img_position)
       {
@@ -421,10 +421,10 @@ static int fltkButtonMapMethod(Ihandle* ih)
           align |= FL_ALIGN_TEXT_OVER_IMAGE | FL_ALIGN_CENTER;
           break;
         case IUP_IMGPOS_TOP:
-          align = FL_ALIGN_IMAGE_OVER_TEXT | FL_ALIGN_INSIDE | FL_ALIGN_CENTER;
+          align = FL_ALIGN_IMAGE_OVER_TEXT | FL_ALIGN_INSIDE | FL_ALIGN_CENTER | FL_ALIGN_CLIP;
           break;
         case IUP_IMGPOS_BOTTOM:
-          align = FL_ALIGN_TEXT_OVER_IMAGE | FL_ALIGN_INSIDE | FL_ALIGN_CENTER;
+          align = FL_ALIGN_TEXT_OVER_IMAGE | FL_ALIGN_INSIDE | FL_ALIGN_CENTER | FL_ALIGN_CLIP;
           break;
         default:
           align |= FL_ALIGN_CENTER;

@@ -36,35 +36,29 @@ extern "C" {
 #include "iupfltk_drv.h"
 
 
-static int fltkTextActionCallback(Ihandle* ih, Fl_Input_* input, int event)
+IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, const char* cb_name, void* mask, int nc)
 {
   if (event != FL_KEYBOARD)
-    return 0;
-  if (ih->data->disable_callbacks)
     return 0;
 
   const char* text = Fl::event_text();
   if (!text || !text[0] || text[0] < 32)
     return 0;
 
-  IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
-  if (!cb && !ih->data->mask && ih->data->nc == 0)
+  IFnis cb = (IFnis)IupGetCallback(ih, cb_name);
+  if (!cb && !mask && nc == 0)
     return 0;
 
   int pos = input->insert_position();
-  int ret = iupEditCallActionCb(ih, cb, text, pos, pos, ih->data->mask, ih->data->nc, 0, 1);
+  int ret = iupEditCallActionCb(ih, cb, text, pos, pos, mask, nc, 0, 1);
 
   if (ret == 0)
     return 1;
 
   if (ret != -1)
   {
-    ih->data->disable_callbacks = 1;
-
     char replacement[2] = { (char)ret, '\0' };
     input->replace(pos, pos, replacement);
-
-    ih->data->disable_callbacks = 0;
     return 1;
   }
 
@@ -99,7 +93,7 @@ protected:
       case FL_KEYBOARD:
         if (iupfltkKeyPressEvent(this, iup_handle))
           return 1;
-        if (fltkTextActionCallback(iup_handle, this, event))
+        if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc))
           return 1;
         break;
     }
@@ -134,7 +128,7 @@ protected:
       case FL_KEYBOARD:
         if (iupfltkKeyPressEvent(this, iup_handle))
           return 1;
-        if (fltkTextActionCallback(iup_handle, this, event))
+        if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc))
           return 1;
         break;
     }

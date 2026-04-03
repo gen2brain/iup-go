@@ -155,7 +155,7 @@ static int fltkLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
     if (ih->data->vert_alignment == IUP_ALIGN_ATOP) align |= FL_ALIGN_TOP;
     else if (ih->data->vert_alignment == IUP_ALIGN_ABOTTOM) align |= FL_ALIGN_BOTTOM;
 
-    label->align(align | FL_ALIGN_INSIDE);
+    label->align(align | FL_ALIGN_INSIDE | FL_ALIGN_CLIP);
   }
 
   return 1;
@@ -343,7 +343,7 @@ static int fltkLabelMapMethod(Ihandle* ih)
   else if (ih->data->type == IUP_LABEL_TEXT)
   {
     label->box(FL_NO_BOX);
-    label->align(FL_ALIGN_LEFT | FL_ALIGN_INSIDE);
+    label->align(FL_ALIGN_LEFT | FL_ALIGN_INSIDE | FL_ALIGN_CLIP);
 
     char* title = iupAttribGet(ih, "TITLE");
     if (title)
