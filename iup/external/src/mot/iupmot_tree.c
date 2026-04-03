@@ -2640,6 +2640,7 @@ static void motTreeDragDropEnable(Widget w)
   iupMOT_SETARG(args, num_args, XmNnumImportTargets, 1);
   iupMOT_SETARG(args, num_args, XmNdropSiteOperations, XmDROP_MOVE|XmDROP_COPY);
   iupMOT_SETARG(args, num_args, XmNdropProc, motTreeDragDropProc);
+  iupMOT_SETARG(args, num_args, XmNanimationStyle, XmDRAG_UNDER_NONE);
   XmDropSiteUpdate(w, args, num_args);
 }
 

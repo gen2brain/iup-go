@@ -308,7 +308,7 @@ static void motFileDlgCallback(Widget filebox, Ihandle* ih, XmFileSelectionBoxCa
     }
     else if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
     {
-      Widget wList = XtNameToWidget(filebox, "ItemsList");
+      Widget wList = XtNameToWidget(filebox, "*ItemsList");
 
       /* here value obtained above contains exactly the directory */
       char* dir = iupAttribGet(ih, "VALUE");
@@ -773,9 +773,9 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
     file_cb = (IFnss)IupGetCallback(ih, "FILE_CB");
     if (file_cb)
     {
-      Widget list = XtNameToWidget(filebox, "ItemsList");
+      Widget list = XtNameToWidget(filebox, "*ItemsList");
       XtAddCallback(list, XmNbrowseSelectionCallback, (XtCallbackProc)motFileDlgBrowseSelectionCallback, (XtPointer)ih);
-      list = XtNameToWidget(filebox, "DirList");
+      list = XtNameToWidget(filebox, "*DirList");
       XtAddCallback(list, XmNbrowseSelectionCallback, (XtCallbackProc)motFileDlgBrowseSelectionCallback, (XtPointer)ih);
 
       if (iupAttribGetBoolean(ih, "SHOWPREVIEW"))
@@ -801,7 +801,7 @@ static int motFileDlgPopup(Ihandle* ih, int x, int y)
 
     if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
     {
-      Widget wList = XtNameToWidget(filebox, "ItemsList");
+      Widget wList = XtNameToWidget(filebox, "*ItemsList");
       XtVaSetValues(wList, XmNselectionPolicy, XmEXTENDED_SELECT, NULL);
 
       if (file_cb)
