@@ -24,13 +24,17 @@
 static Window motClipboardGetWindow(void)
 {
   Ihandle* focus = IupGetFocus();
-  Ihandle* dlg;
-  if (!focus) return (Window)NULL;
-  dlg = IupGetDialog(focus);
-  if (dlg)
-    return XtWindow(dlg->handle);
-  else
-    return (Window)NULL;
+  if (focus)
+  {
+    Ihandle* dlg = IupGetDialog(focus);
+    if (dlg && dlg->handle)
+    {
+      Window w = XtWindow(dlg->handle);
+      if (w) return w;
+    }
+  }
+
+  return XtWindow(iupmot_appshell);
 }
 
 static int motClipboardSetTextAttrib(Ihandle *ih, const char *value)
@@ -67,7 +71,7 @@ static char* motClipboardGetTextAttrib(Ihandle *ih)
   char* str;
   Window window = motClipboardGetWindow();
   (void)ih;
-  
+
   if (XmClipboardInquireLength(iupmot_display, window, "STRING", &size)!=ClipboardSuccess)
     return NULL;
 
@@ -148,7 +152,7 @@ static char* motClipboardGetNativeImageAttrib(Ihandle *ih)
   Pixmap pixmap;
   Window window = motClipboardGetWindow();
   (void)ih;
-  
+
   if (XmClipboardInquireLength(iupmot_display, window, "PIXMAP", &size)!=ClipboardSuccess)
     return NULL;
 
@@ -208,7 +212,7 @@ static char* motClipboardGetFormatDataAttrib(Ihandle *ih)
   char* format = iupAttribGetStr(ih, "FORMAT");
   if (!format)
     return 0;
-  
+
   /*  number of bytes of data */
   if (XmClipboardInquireLength(iupmot_display, window, format, &size)!=ClipboardSuccess)
     return NULL;
@@ -228,35 +232,35 @@ static int motClipboardIsAvailable(const char* format_name)
   int count, i;
   unsigned long max_length, length;
   char* str;
-                          
+
   /*  number of targets that exists on the clipboard */
-	if (XmClipboardInquireCount(iupmot_display, window, &count, &max_length) != ClipboardSuccess)
+  if (XmClipboardInquireCount(iupmot_display, window, &count, &max_length) != ClipboardSuccess)
     return 0;
 
   str = iupStrGetMemory(max_length+1);
-	
+
   for (i = 1; i<=count; i++)
   {
-  	if (XmClipboardInquireFormat(iupmot_display, window, i, str, max_length+1, &length)==ClipboardSuccess)
+    if (XmClipboardInquireFormat(iupmot_display, window, i, str, max_length+1, &length)==ClipboardSuccess)
     {
       if (iupStrEqualNoCase(str, format_name))
         return 1;
     }
   }
-	
+
   return 0;
 }
 
 static char* motClipboardGetTextAvailableAttrib(Ihandle *ih)
 {
   (void)ih;
-  return iupStrReturnBoolean (motClipboardIsAvailable("STRING")); 
+  return iupStrReturnBoolean (motClipboardIsAvailable("STRING"));
 }
 
 static char* motClipboardGetImageAvailableAttrib(Ihandle *ih)
 {
   (void)ih;
-  return iupStrReturnBoolean (motClipboardIsAvailable("PIXMAP")); 
+  return iupStrReturnBoolean (motClipboardIsAvailable("PIXMAP"));
 }
 
 static char* motClipboardGetFormatAvailableAttrib(Ihandle *ih)
@@ -265,7 +269,32 @@ static char* motClipboardGetFormatAvailableAttrib(Ihandle *ih)
   if (!format)
     return NULL;
 
-  return iupStrReturnBoolean (motClipboardIsAvailable(format)); 
+  return iupStrReturnBoolean (motClipboardIsAvailable(format));
+}
+
+static char* motClipboardGetFormatDataStringAttrib(Ihandle *ih)
+{
+  char* data = motClipboardGetFormatDataAttrib(ih);
+  if (!data)
+    return NULL;
+
+  {
+    int size = iupAttribGetInt(ih, "FORMATDATASIZE");
+    data[size] = 0;
+    return iupStrReturnStr(data);
+  }
+}
+
+static int motClipboardSetFormatDataStringAttrib(Ihandle *ih, const char *value)
+{
+  if (value)
+  {
+    int len = (int)strlen(value);
+    iupAttribSetInt(ih, "FORMATDATASIZE", len + 1);
+    return motClipboardSetFormatDataAttrib(ih, value);
+  }
+  else
+    return motClipboardSetFormatDataAttrib(ih, NULL);
 }
 
 static int motClipboardSetAddFormatAttrib(Ihandle *ih, const char *value)
@@ -277,9 +306,7 @@ static int motClipboardSetAddFormatAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupClipboard(void)
 {
@@ -310,6 +337,7 @@ Iclass* iupClipboardNewClass(void)
   iupClassRegisterAttribute(ic, "FORMAT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATAVAILABLE", motClipboardGetFormatAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATA", motClipboardGetFormatDataAttrib, motClipboardSetFormatDataAttrib, NULL, NULL, IUPAF_NO_STRING | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATDATASTRING", motClipboardGetFormatDataStringAttrib, motClipboardSetFormatDataStringAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATDATASIZE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   return ic;

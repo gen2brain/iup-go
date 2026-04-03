@@ -8,14 +8,12 @@
 #include <stdio.h>
 #include <locale.h>
 #include <string.h>
-#include <stdint.h>    
+#include <stdint.h>
 
 #include <Xm/Xm.h>
 
 #include "iup.h"
 
-#include "iup_object.h"
-#include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_globalattrib.h"
 
@@ -85,7 +83,7 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
 
   iupmot_appcontext = XtCreateApplicationContext();
 
-  iupmot_display = XtOpenDisplay(iupmot_appcontext, NULL, NULL, "Iup", NULL, 0, argc, *argv);   
+  iupmot_display = XtOpenDisplay(iupmot_appcontext, NULL, NULL, "Iup", NULL, 0, argc, *argv);
   if (!iupmot_display)
   {
     fprintf (stderr, "IUP error: cannot open display.\n");
@@ -98,6 +96,8 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
     fprintf(stderr, "IUP error: cannot create shell.\n");
     return IUP_ERROR;
   }
+  XtVaSetValues(iupmot_appshell, XmNmappedWhenManaged, False, XmNwidth, 1, XmNheight, 1, NULL);
+  XtRealizeWidget(iupmot_appshell);
   IupSetGlobal("APPSHELL", (char*)iupmot_appshell);
 
   IupStoreGlobal("SYSTEMLANGUAGE", setlocale(LC_ALL, NULL));
