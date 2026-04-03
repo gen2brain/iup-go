@@ -313,12 +313,7 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
 {
   static char str[200];
 
-  int fattr = 0;
-  const char* family = Fl::get_font_name(FL_HELVETICA, &fattr);
-  if (!family || !family[0])
-    family = "Sans";
-
-  snprintf(str, sizeof(str), "%s, 10", family);
+  snprintf(str, sizeof(str), "Sans, 10");
   return str;
 }
 
