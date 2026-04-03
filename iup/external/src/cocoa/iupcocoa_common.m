@@ -614,6 +614,8 @@ static NSCursor* iupCocoaGetCursor(Ihandle* ih, const char* name)
     {"RESIZE_W",  "_windowResizeWestCursor"},
     {"RESIZE_E",  "_windowResizeEastCursor"},
     {"RESIZE_WE", "resizeLeftRightCursor"},
+    {"SPLITTER_VERT",  "resizeLeftRightCursor"},
+    {"SPLITTER_HORIZ", "resizeUpDownCursor"},
     {"RESIZE_NE", "_windowResizeNorthEastCursor"},
     {"RESIZE_SE", "_windowResizeSouthEastCursor"},
     {"RESIZE_NW", "_windowResizeNorthWestCursor"},

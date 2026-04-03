@@ -203,6 +203,74 @@ typedef struct _IcocoaTableData {
 @end
 
 /* ========================================================================= */
+/* Custom NSTableHeaderCell for proper sort indicator handling               */
+/* ========================================================================= */
+
+@interface IupCocoaTableHeaderCell : NSTableHeaderCell
+@end
+
+@implementation IupCocoaTableHeaderCell
+
+- (void)drawInteriorWithFrame:(NSRect)cellFrame inView:(NSView*)controlView
+{
+  BOOL is_sorted = NO;
+  BOOL ascending = YES;
+
+  if ([controlView isKindOfClass:[NSTableHeaderView class]])
+  {
+    NSTableView* tableView = [(NSTableHeaderView*)controlView tableView];
+    NSArray* descriptors = [tableView sortDescriptors];
+    if ([descriptors count] > 0)
+    {
+      NSSortDescriptor* descriptor = [descriptors objectAtIndex:0];
+      NSString* sortKey = [descriptor key];
+
+      NSArray* columns = [tableView tableColumns];
+      for (NSTableColumn* col in columns)
+      {
+        if ([col headerCell] == self && [[col identifier] isEqualToString:sortKey])
+        {
+          is_sorted = YES;
+          ascending = [descriptor ascending];
+          break;
+        }
+      }
+    }
+  }
+
+  CGFloat arrow_space = 0;
+  if (is_sorted)
+  {
+    NSRect sortRect = [self sortIndicatorRectForBounds:cellFrame];
+    arrow_space = sortRect.size.width;
+  }
+
+  NSRect titleRect = cellFrame;
+  titleRect.origin.x += 4.0;
+  titleRect.size.width -= 8.0 + arrow_space;
+  if (titleRect.size.width < 0)
+    titleRect.size.width = 0;
+
+  NSMutableParagraphStyle* style = [[NSMutableParagraphStyle alloc] init];
+  [style setLineBreakMode:NSLineBreakByTruncatingTail];
+  [style setAlignment:[self alignment]];
+
+  NSDictionary* attrs = @{
+    NSFontAttributeName: [self font],
+    NSParagraphStyleAttributeName: style,
+    NSForegroundColorAttributeName: [NSColor headerTextColor]
+  };
+  [style release];
+
+  [[self stringValue] drawInRect:titleRect withAttributes:attrs];
+
+  if (is_sorted)
+    [self drawSortIndicatorWithFrame:cellFrame inView:controlView ascending:ascending priority:0];
+}
+
+@end
+
+/* ========================================================================= */
 /* Helper Functions                                                          */
 /* ========================================================================= */
 
@@ -315,7 +383,9 @@ static CGFloat cocoaTableCalculateColumnWidth(Ihandle* ih, int col_index, NSFont
       {
         NSDictionary* attrs = @{NSFontAttributeName: font};
         NSSize title_size = [title sizeWithAttributes:attrs];
-        CGFloat title_width = title_size.width + 20.0;  /* Padding for sort indicator */
+        CGFloat title_width = title_size.width + 8.0;
+        if (ih->data->sortable)
+          title_width += 12.0;
         if (title_width > max_width)
           max_width = title_width;
       }
@@ -1855,7 +1925,9 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
       NSString* identifier = [NSString stringWithFormat:@"%d", i];
       NSTableColumn* column = [[NSTableColumn alloc] initWithIdentifier:identifier];
 
-      [column.headerCell setStringValue:[NSString stringWithFormat:@"Col %d", i + 1]];
+      IupCocoaTableHeaderCell* headerCell = [[IupCocoaTableHeaderCell alloc] initTextCell:[NSString stringWithFormat:@"Col %d", i + 1]];
+      [column setHeaderCell:headerCell];
+      [headerCell release];
 
       /* Read ALIGNMENTn attribute to apply to entire column (header + cells) */
       char align_name[50];
@@ -1934,7 +2006,6 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
         [column sizeToFit];
       }
 
-      /* Set up sort descriptor for sorting support */
       if (ih->data->sortable)
       {
         NSSortDescriptor* sortDescriptor = [[NSSortDescriptor alloc] initWithKey:identifier ascending:YES];

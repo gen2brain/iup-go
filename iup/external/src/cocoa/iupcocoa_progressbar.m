@@ -5,7 +5,6 @@
  */
 
 #import <Cocoa/Cocoa.h>
-#import <QuartzCore/QuartzCore.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -69,47 +68,6 @@ IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-/*
-   NOTE: Vertical NSProgressIndicator has a rendering bug in Cocoa when simply rotated.
-   WORKAROUND: Use a hierarchy: root container → transform view (rotated) → progress bar.
-   This approach avoids the rendering bug without requiring layer-backed views.
-   The transform view is offset to compensate for coordinate system changes after rotation.
-*/
-
-/* The offset needed to position the rotated progress bar correctly within its container */
-#define VERTICAL_PROGRESSBAR_OFFSET 6.0
-
-static NSView* cocoaProgressBarGetRootView(Ihandle* ih)
-{
-  if (!ih || !ih->handle)
-    return nil;
-
-  NSView* root_container_view = (NSView*)ih->handle;
-  NSCAssert([root_container_view isKindOfClass:[NSView class]], @"Expected NSView");
-  return root_container_view;
-}
-
-static NSView* cocoaProgressBarGetTransformView(Ihandle* ih)
-{
-  if (!ih || !ih->handle)
-    return nil;
-
-  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
-  {
-    NSView* root_container_view = cocoaProgressBarGetRootView(ih);
-    if (!root_container_view)
-      return nil;
-
-    NSView* intermediate_transform_view = [[root_container_view subviews] firstObject];
-    NSCAssert([intermediate_transform_view isKindOfClass:[NSView class]], @"Expected NSView");
-    return intermediate_transform_view;
-  }
-  else
-  {
-    return cocoaProgressBarGetRootView(ih);
-  }
-}
-
 static NSProgressIndicator* cocoaProgressBarGetProgressIndicator(Ihandle* ih)
 {
   if (!ih || !ih->handle)
@@ -117,11 +75,8 @@ static NSProgressIndicator* cocoaProgressBarGetProgressIndicator(Ihandle* ih)
 
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
-    NSView* intermediate_transform_view = cocoaProgressBarGetTransformView(ih);
-    if (!intermediate_transform_view)
-      return nil;
-
-    NSProgressIndicator* progress_bar = [[intermediate_transform_view subviews] firstObject];
+    NSView* container_view = (NSView*)ih->handle;
+    NSProgressIndicator* progress_bar = (NSProgressIndicator*)[[container_view subviews] firstObject];
     NSCAssert([progress_bar isKindOfClass:[NSProgressIndicator class]], @"Expected NSProgressIndicator");
     return progress_bar;
   }
@@ -130,6 +85,38 @@ static NSProgressIndicator* cocoaProgressBarGetProgressIndicator(Ihandle* ih)
     NSProgressIndicator* progress_indicator = (NSProgressIndicator*)ih->handle;
     NSCAssert([progress_indicator isKindOfClass:[NSProgressIndicator class]], @"Expected NSProgressIndicator");
     return progress_indicator;
+  }
+}
+
+static void cocoaProgressBarUpdateVerticalLayout(NSView* container_view, NSProgressIndicator* progress_bar)
+{
+  NSRect container_bounds = [container_view bounds];
+  CGFloat container_w = container_bounds.size.width;
+  CGFloat container_h = container_bounds.size.height;
+
+  /* The progress indicator is horizontal but rotated -90 degrees via setFrameCenterRotation.
+     Set it with swapped dimensions, centered in the container.
+     After rotation the visual width becomes container_w and visual height becomes container_h. */
+  CGFloat indicator_w = container_h;
+  CGFloat indicator_h = container_w;
+  CGFloat x = (container_w - indicator_w) / 2.0;
+  CGFloat y = (container_h - indicator_h) / 2.0;
+
+  [progress_bar setFrameRotation:0];
+  [progress_bar setFrame:NSMakeRect(x, y, indicator_w, indicator_h)];
+  [progress_bar setFrameCenterRotation:90.0];
+}
+
+static void cocoaProgressBarLayoutUpdateMethod(Ihandle* ih)
+{
+  iupdrvBaseLayoutUpdateMethod(ih);
+
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  {
+    NSView* container_view = (NSView*)ih->handle;
+    NSProgressIndicator* progress_bar = cocoaProgressBarGetProgressIndicator(ih);
+    if (container_view && progress_bar)
+      cocoaProgressBarUpdateVerticalLayout(container_view, progress_bar);
   }
 }
 
@@ -187,7 +174,6 @@ static int cocoaProgressBarMapMethod(Ihandle* ih)
 
   NSRect initial_rect = NSMakeRect(0, 0, initial_width, initial_height);
   NSProgressIndicator* progress_indicator = [[NSProgressIndicator alloc] initWithFrame:initial_rect];
-  NSView* container_view = nil;
 
   [progress_indicator setUsesThreadedAnimation:YES];
 
@@ -204,21 +190,12 @@ static int cocoaProgressBarMapMethod(Ihandle* ih)
 
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
-    int max_dim = iupMAX(initial_width, initial_height);
-    NSRect container_rect = NSMakeRect(0, 0, max_dim, max_dim);
+    NSView* container_view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, initial_width, initial_height)];
 
-    container_view = [[NSView alloc] initWithFrame:container_rect];
-    NSView* transform_view = [[NSView alloc] initWithFrame:container_rect];
-
-    [container_view addSubview:transform_view];
-    [transform_view addSubview:progress_indicator];
-    [transform_view release];
+    [container_view addSubview:progress_indicator];
     [progress_indicator release];
 
-    NSSize widget_size = container_rect.size;
-
-    CGFloat x_offset = -container_rect.size.width + (initial_rect.size.height - VERTICAL_PROGRESSBAR_OFFSET);
-    [transform_view setFrame:NSMakeRect(x_offset, 0.0, widget_size.width, widget_size.height)];
+    cocoaProgressBarUpdateVerticalLayout(container_view, progress_indicator);
 
     if (ih->userheight < ih->userwidth)
     {
@@ -227,20 +204,21 @@ static int cocoaProgressBarMapMethod(Ihandle* ih)
       ih->userwidth = tmp;
     }
 
-    [transform_view setFrameCenterRotation:90.0];
+    ih->handle = container_view;
+    iupcocoaSetAssociatedViews(ih, progress_indicator, container_view);
 
     ih->expand = ih->expand & ~IUP_EXPAND_WIDTH;
   }
   else
   {
-    container_view = progress_indicator;
     [progress_indicator setAutoresizingMask:(NSViewWidthSizable)];
+
+    ih->handle = progress_indicator;
+    iupcocoaSetAssociatedViews(ih, progress_indicator, (NSView*)progress_indicator);
 
     ih->expand = ih->expand & ~IUP_EXPAND_HEIGHT;
   }
 
-  ih->handle = container_view;
-  iupcocoaSetAssociatedViews(ih, progress_indicator, container_view);
   iupcocoaAddToParent(ih);
 
   return IUP_NOERROR;
@@ -249,6 +227,7 @@ static int cocoaProgressBarMapMethod(Ihandle* ih)
 IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   ic->Map = cocoaProgressBarMapMethod;
+  ic->LayoutUpdate = cocoaProgressBarLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
