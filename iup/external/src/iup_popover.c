@@ -15,6 +15,7 @@
 #include "iup_str.h"
 #include "iup_stdcontrols.h"
 #include "iup_class.h"
+#include "iup_drvinfo.h"
 
 #include "iup_popover.h"
 
@@ -42,13 +43,11 @@ IUP_API int iupPopoverGetPosition(Ihandle* ih)
   return IUP_POPOVER_BOTTOM;
 }
 
-IUP_API void iupPopoverCalcPosition(Ihandle* ih,
+static void iPopoverCalcXY(int position,
   int ax, int ay, int aw, int ah,
   int pw, int ph,
   int* x, int* y)
 {
-  int position = iupPopoverGetPosition(ih);
-
   switch (position)
   {
   case IUP_POPOVER_TOP:
@@ -100,6 +99,70 @@ IUP_API void iupPopoverCalcPosition(Ihandle* ih,
     *x = ax + (aw - pw) / 2;
     *y = ay + ah;
     break;
+  }
+}
+
+static int iPopoverFlipPosition(int position)
+{
+  switch (position)
+  {
+  case IUP_POPOVER_BOTTOM:      return IUP_POPOVER_TOP;
+  case IUP_POPOVER_TOP:         return IUP_POPOVER_BOTTOM;
+  case IUP_POPOVER_LEFT:        return IUP_POPOVER_RIGHT;
+  case IUP_POPOVER_RIGHT:       return IUP_POPOVER_LEFT;
+  case IUP_POPOVER_BOTTOMLEFT:  return IUP_POPOVER_TOPLEFT;
+  case IUP_POPOVER_BOTTOMRIGHT: return IUP_POPOVER_TOPRIGHT;
+  case IUP_POPOVER_TOPLEFT:     return IUP_POPOVER_BOTTOMLEFT;
+  case IUP_POPOVER_TOPRIGHT:    return IUP_POPOVER_BOTTOMRIGHT;
+  case IUP_POPOVER_LEFTBOTTOM:  return IUP_POPOVER_RIGHTBOTTOM;
+  case IUP_POPOVER_LEFTTOP:     return IUP_POPOVER_RIGHTTOP;
+  case IUP_POPOVER_RIGHTBOTTOM: return IUP_POPOVER_LEFTBOTTOM;
+  case IUP_POPOVER_RIGHTTOP:    return IUP_POPOVER_LEFTTOP;
+  default:                      return IUP_POPOVER_TOP;
+  }
+}
+
+static int iPopoverCalcOverflow(int x, int y, int pw, int ph,
+  int bx, int by, int bw, int bh)
+{
+  int overflow = 0;
+  if (x < bx) overflow += bx - x;
+  if (y < by) overflow += by - y;
+  if (x + pw > bx + bw) overflow += (x + pw) - (bx + bw);
+  if (y + ph > by + bh) overflow += (y + ph) - (by + bh);
+  return overflow;
+}
+
+IUP_API void iupPopoverCalcPosition(Ihandle* ih,
+  int ax, int ay, int aw, int ah,
+  int pw, int ph,
+  int* x, int* y)
+{
+  int position = iupPopoverGetPosition(ih);
+
+  iPopoverCalcXY(position, ax, ay, aw, ah, pw, ph, x, y);
+
+  if (iupAttribGetBoolean(ih, "AUTOFLIP"))
+  {
+    int sw, sh;
+    iupdrvGetScreenSize(&sw, &sh);
+
+    {
+      int overflow = iPopoverCalcOverflow(*x, *y, pw, ph, 0, 0, sw, sh);
+      if (overflow > 0)
+      {
+        int flipped = iPopoverFlipPosition(position);
+        int fx, fy;
+
+        iPopoverCalcXY(flipped, ax, ay, aw, ah, pw, ph, &fx, &fy);
+
+        if (iPopoverCalcOverflow(fx, fy, pw, ph, 0, 0, sw, sh) < overflow)
+        {
+          *x = fx;
+          *y = fy;
+        }
+      }
+    }
   }
 
   *x += iupAttribGetInt(ih, "OFFSETX");
@@ -234,6 +297,7 @@ Iclass* iupPopoverNewClass(void)
   iupClassRegisterAttribute(ic, "AUTOHIDE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OFFSETX", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OFFSETY", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOFLIP", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   return ic;
 }

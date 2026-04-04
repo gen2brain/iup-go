@@ -38,6 +38,10 @@ Not supported in WinUI and macOS.
 **OFFSETY** (non-inheritable): Vertical pixel offset added to the computed popover position. Can be positive or negative. Default: "0".
 Not supported in WinUI and macOS.
 
+**AUTOFLIP** (non-inheritable): When enabled, the popover automatically flips to the opposite side if it would extend beyond the screen boundaries. The alignment is preserved when flipping (e.g. BOTTOMLEFT flips to TOPLEFT).
+Can be "YES" or "NO". Default: "YES".
+Only affects Win32, Qt, FLTK, EFL and Motif. In GTK 3 and WinUI the native popover flips at window boundaries. In GTK 4 and macOS the native popover flips at screen boundaries. In all native cases auto-flip is always enabled and this attribute has no effect.
+
 [VISIBLE](../attrib/iup_visible.md) (non-inheritable): Shows or hides the popover.
 The popover is mapped on the first time VISIBLE is set to "YES".
 The ANCHOR element must be set and mapped before showing the popover.
