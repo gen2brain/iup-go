@@ -27,7 +27,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_class.h"
-#include "iup_childtree.h"
 #include "iup_image.h"
 #include "iup_tray.h"
 

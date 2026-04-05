@@ -8,7 +8,6 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 
 #ifdef IUPDBUS_USE_DLOPEN
@@ -22,10 +21,8 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
 #include "iup_class.h"
 #include "iup_notify.h"
-#include "iup_tray.h"
 #include "iup_image.h"
 
 #define IUPUNIX_NOTIFY_MAX_ICON_SIZE 128

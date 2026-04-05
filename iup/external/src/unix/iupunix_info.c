@@ -5,12 +5,11 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h> 
-#include <string.h> 
-#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 
-/* This module should depend only on IUP core headers 
+/* This module should depend only on IUP core headers
    and UNIX system headers. NO Motif headers allowed. */
 
 #include <sys/utsname.h>
