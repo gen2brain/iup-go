@@ -27,10 +27,6 @@ else()
   list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_egl.c")
 
   if(IUP_BACKEND MATCHES "^qt")
-    list(APPEND _GL_SOURCES
-      "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_egl_qt.cpp"
-    )
-    # Qt GL EGL needs private headers for qplatformnativeinterface.h
     if(IUP_BACKEND STREQUAL "qt6")
       find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)
       set(_GL_QT_PRIVATE Qt6::GuiPrivate)
@@ -38,10 +34,6 @@ else()
       find_package(Qt5 REQUIRED COMPONENTS Gui)
       set(_GL_QT_PRIVATE Qt5::GuiPrivate)
     endif()
-  elseif(IUP_BACKEND STREQUAL "fltk")
-    list(APPEND _GL_SOURCES
-      "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_egl_fltk.cpp"
-    )
   endif()
 
   find_package(PkgConfig REQUIRED)
