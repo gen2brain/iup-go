@@ -19,13 +19,10 @@
 #endif
 
 #include "iup.h"
-#include "iupcbs.h"
 
-#include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_array.h"
-#include "iup_strmessage.h"
 
 #define PORTAL_BUS_NAME    "org.freedesktop.portal.Desktop"
 #define PORTAL_OBJECT_PATH "/org/freedesktop/portal/desktop"
