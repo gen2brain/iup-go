@@ -93,7 +93,7 @@ static void motTipsShow(void)
     if (fontlist)
       XtVaSetValues(mot_tips.Label, XmNfontList, fontlist, NULL);
   }
- 
+
   /* set label contents */
   value = iupAttribGet(mot_tips.ih, "TIP");
   iupmotSetXmString(mot_tips.Label, XmNlabelString, value);
@@ -105,7 +105,7 @@ static void motTipsShow(void)
 
     /* add room for margin */
     lw += 2*(2);
-    lh += 2*(2);  
+    lh += 2*(2);
 
     XtVaSetValues(mot_tips.Label,
       XmNwidth, (XtArgVal)lw,
@@ -116,10 +116,10 @@ static void motTipsShow(void)
       XmNheight, (XtArgVal)lh,
       NULL);
   }
-  
-  XtVaSetValues(mot_tips.Dialog, 
+
+  XtVaSetValues(mot_tips.Dialog,
     XmNx, (XtArgVal)(x+TIP_X_OFFSET),
-    XmNy, (XtArgVal)(y+TIP_Y_OFFSET), 
+    XmNy, (XtArgVal)(y+TIP_Y_OFFSET),
     NULL);
 
   if (mot_tips.Visible)
@@ -183,7 +183,7 @@ IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
   if (mot_tips.ih != ih)
     return NULL;
 
-  return iupStrReturnBoolean (mot_tips.Visible); 
+  return iupStrReturnBoolean (mot_tips.Visible);
 }
 
 IUP_DRV_API void iupmotTipEnterNotify(Ihandle *ih)

@@ -14,7 +14,6 @@
 
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_key.h"
 #include "iup_singleinstance.h"
 
@@ -86,7 +85,7 @@ static Boolean motButtonEventDispatchProc(XEvent* evt)
         evt_button->button!=Button2 &&
         evt_button->button!=Button3 &&
         evt_button->button!=Button4 &&
-        evt_button->button!=Button5) 
+        evt_button->button!=Button5)
     {
       if (evt->type==ButtonPress)
         return motButtonPressEventDispatchProc_OLD(evt);

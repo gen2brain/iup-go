@@ -7,7 +7,6 @@
 #include <Xm/Xm.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/Xatom.h>
 #include <X11/extensions/shape.h>
 
 #include <stdlib.h>
@@ -20,13 +19,11 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
 #include "iup_image.h"
 #include "iup_class.h"
 #include "iup_tray.h"
 
 #include "iupmot_drv.h"
-#include "iupmot_color.h"
 
 
 #define SYSTEM_TRAY_REQUEST_DOCK    0

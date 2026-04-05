@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 #include <limits.h>
 #include <stdint.h>
 
@@ -26,7 +25,6 @@
 #include "iup_dialog.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_canvas.h"
 #include "iup_key.h"
 
@@ -43,24 +41,24 @@ static void motCanvasScrollbarCallback(Widget w, XtPointer client_data, XtPointe
   (void)call_data;
 
   XtVaGetValues(w, XmNuserData, &ih, NULL);
-  if (!ih) 
+  if (!ih)
     return;
 
-  XtVaGetValues(w, 
-    XmNvalue, &ipos, 
+  XtVaGetValues(w,
+    XmNvalue, &ipos,
     XmNpageIncrement, &ipage,
     NULL);
 
   if (op > IUP_SBDRAGV)
   {
-    iupCanvasCalcScrollRealPos(iupAttribGetDouble(ih,"XMIN"), iupAttribGetDouble(ih,"XMAX"), &posx, 
+    iupCanvasCalcScrollRealPos(iupAttribGetDouble(ih,"XMIN"), iupAttribGetDouble(ih,"XMAX"), &posx,
                                IUP_SB_MIN, IUP_SB_MAX, ipage, &ipos);
     ih->data->posx = posx;
     posy = ih->data->posy;
   }
   else
   {
-    iupCanvasCalcScrollRealPos(iupAttribGetDouble(ih,"YMIN"), iupAttribGetDouble(ih,"YMAX"), &posy, 
+    iupCanvasCalcScrollRealPos(iupAttribGetDouble(ih,"YMIN"), iupAttribGetDouble(ih,"YMAX"), &posy,
                                IUP_SB_MIN, IUP_SB_MAX, ipage, &ipos);
     ih->data->posy = posy;
     posx = ih->data->posx;
@@ -91,7 +89,7 @@ static void motCanvasSetSize(Ihandle *ih, Widget sb_win, int setsize)
 
   /* IMPORTANT:
    The border, added by the Core, is NOT included in the Motif size.
-   So when setting the size, we must compensate the border, 
+   So when setting the size, we must compensate the border,
    so the actual size will be the size we expect. */
   XtVaGetValues(sb_win, XmNborderWidth, &border, NULL);
   width = ih->currentwidth - 2*border;
@@ -148,7 +146,7 @@ static void motCanvasResizeCallback(Widget w, Ihandle *ih, XtPointer call_data)
   IFnii cb;
   (void)call_data;
 
-  if (!XtWindow(w) || !ih) 
+  if (!XtWindow(w) || !ih)
     return;
 
   cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
@@ -209,7 +207,7 @@ static void motCanvasInputCallback(Widget w, Ihandle *ih, XtPointer call_data)
         return;
 
       if ((evt->type==ButtonPress) && (but_evt->button==Button4 || but_evt->button==Button5))
-      {                                             
+      {
         IFnfiis wcb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
 
         if (iupAttribGetBoolean(ih, "WHEELDROPFOCUS"))
@@ -275,7 +273,7 @@ static int motCanvasSetDXAttrib(Ihandle* ih, const char *value)
     xmax = iupAttribGetDouble(ih, "XMAX");
     posx = ih->data->posx;
 
-    iupCanvasCalcScrollIntPos(xmin, xmax, dx, posx, 
+    iupCanvasCalcScrollIntPos(xmin, xmax, dx, posx,
                               IUP_SB_MIN, IUP_SB_MAX, &ipagex, &iposx);
 
     if (!iupAttribGet(ih,"LINEX"))
@@ -288,7 +286,7 @@ static int motCanvasSetDXAttrib(Ihandle* ih, const char *value)
     {
       /* line and page conversions are the same */
       double linex = iupAttribGetDouble(ih,"LINEX");
-      iupCanvasCalcScrollIntPos(xmin, xmax, linex, 0, 
+      iupCanvasCalcScrollIntPos(xmin, xmax, linex, 0,
                                 IUP_SB_MIN, IUP_SB_MAX, &ilinex,  NULL);
     }
 
@@ -361,7 +359,7 @@ static int motCanvasSetPosXAttrib(Ihandle* ih, const char *value)
     if (posx > (xmax - dx)) posx = xmax - dx;
     ih->data->posx = posx;
 
-    iupCanvasCalcScrollIntPos(xmin, xmax, dx, posx, 
+    iupCanvasCalcScrollIntPos(xmin, xmax, dx, posx,
                               IUP_SB_MIN, IUP_SB_MAX, &ipagex, &iposx);
 
     XtVaSetValues(sb_horiz, XmNvalue, iposx, NULL);
@@ -388,7 +386,7 @@ static int motCanvasSetDYAttrib(Ihandle* ih, const char *value)
     ymax = iupAttribGetDouble(ih, "YMAX");
     posy = ih->data->posy;
 
-    iupCanvasCalcScrollIntPos(ymin, ymax, dy, posy, 
+    iupCanvasCalcScrollIntPos(ymin, ymax, dy, posy,
                               IUP_SB_MIN, IUP_SB_MAX, &ipagey, &iposy);
 
     if (!iupAttribGet(ih,"LINEY"))
@@ -401,7 +399,7 @@ static int motCanvasSetDYAttrib(Ihandle* ih, const char *value)
     {
       /* line and page conversions are the same */
       double liney = iupAttribGetDouble(ih,"LINEY");
-      iupCanvasCalcScrollIntPos(ymin, ymax, liney, 0, 
+      iupCanvasCalcScrollIntPos(ymin, ymax, liney, 0,
                                 IUP_SB_MIN, IUP_SB_MAX, &iliney,  NULL);
     }
 
@@ -474,7 +472,7 @@ static int motCanvasSetPosYAttrib(Ihandle* ih, const char *value)
     if (posy > (ymax - dy)) posy = ymax - dy;
     ih->data->posy = posy;
 
-    iupCanvasCalcScrollIntPos(ymin, ymax, dy, posy, 
+    iupCanvasCalcScrollIntPos(ymin, ymax, dy, posy,
                               IUP_SB_MIN, IUP_SB_MAX, &ipagey, &iposy);
 
     XtVaSetValues(sb_vert, XmNvalue, iposy, NULL);
@@ -503,7 +501,7 @@ static char* motCanvasGetDrawSizeAttrib(Ihandle *ih)
 {
   Dimension width, height;
   XtVaGetValues(ih->handle, XmNwidth,  &width,
-                            XmNheight, &height, 
+                            XmNheight, &height,
                             NULL);
 
   return iupStrReturnIntInt((int)width, (int)height, 'x');
@@ -531,7 +529,7 @@ static int motCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
     if (sb) iupmotSetBgColor(sb, color);
   }
 
-  if (!IupGetCallback(ih, "ACTION")) 
+  if (!IupGetCallback(ih, "ACTION"))
     iupdrvBaseSetBgColorAttrib(ih, value);  /* Use the given value only here */
   else
   {
@@ -583,7 +581,7 @@ static int motCanvasMapMethod(Ihandle* ih)
   }
   else
     iupMOT_SETARG(args, num_args, XmNborderWidth, 0);
-  
+
   sb_win = XtCreateManagedWidget(
     iupDialogGetChildIdStr(ih),  /* child identifier */
     xmBulletinBoardWidgetClass,     /* widget class */
@@ -736,7 +734,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, motCanvasSetBgColorAttrib, "255 255 255", NULL, IUPAF_DEFAULT);  /* force new default value */
-  
+
   /* IupCanvas only */
   iupClassRegisterAttribute(ic, "DRAWSIZE", motCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 

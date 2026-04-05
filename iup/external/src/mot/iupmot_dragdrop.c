@@ -8,28 +8,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <time.h>
 
 #include <Xm/Xm.h>
-#include <Xm/ScrollBar.h>
 #include <Xm/DragDrop.h>
-#include <X11/cursorfont.h>
 #include <X11/Xatom.h>
 
 #include "iup.h"
-#include "iupkey.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_childtree.h"
 #include "iup_key.h"
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
-#include "iup_focus.h"
-#include "iup_key.h"
-#include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_image.h"
 
 #include "iupmot_color.h"
@@ -72,7 +63,7 @@ static void motDropTransferProc(Widget dropTransfer, Ihandle* ih, Atom *selType,
     char* type = XGetAtomName(iupmot_display, *typeAtom);
     int x = iupAttribGetInt(ih, "_IUPMOT_DROP_X");
     int y = iupAttribGetInt(ih, "_IUPMOT_DROP_Y");
-    
+
     cbDropData(ih, type, (void*)targetData, (int)*length, x, y);
 
     iupAttribSet(ih, "_IUPMOT_DROP_X", NULL);
@@ -94,7 +85,7 @@ static void motDragProc(Widget dropTarget, XtPointer clientData, XmDragProcCallb
     int y = cbs->y;
     IFniis cbDropMotion;
 
-    XtVaGetValues(dropTarget, XmNuserData, &ih, NULL);  
+    XtVaGetValues(dropTarget, XmNuserData, &ih, NULL);
 
     cbDropMotion = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
 
@@ -121,11 +112,11 @@ static void motDropProc(Widget dropTarget, XtPointer clientData, XmDropProcCallb
   Widget dragContext, dropTransfer;
   Cardinal numDragTypes, numDropTypes;
   Atom *dragTypesList, *dropTypesList;
-  Atom atomItem;
+  Atom atomItem = 0;
   Boolean found = False;
   Ihandle *ih = NULL;
 
-  /* this is called before drag data is processed */ 
+  /* this is called before drag data is processed */
   dragContext = dropData->dragContext;
 
   /* Getting drop types */
@@ -143,10 +134,10 @@ static void motDropProc(Widget dropTarget, XtPointer clientData, XmDropProcCallb
   if(!numDragTypes)  /* no type registered */
     return;
 
-  /* Checking the type compatibility */ 
-  for (i = 0; i < (int)numDragTypes; i++) 
+  /* Checking the type compatibility */
+  for (i = 0; i < (int)numDragTypes; i++)
   {
-    for (j = 0; j < (int)numDropTypes; j++) 
+    for (j = 0; j < (int)numDropTypes; j++)
     {
       if(iupStrEqualNoCase(XGetAtomName(iupmot_display, dragTypesList[i]),
                            XGetAtomName(iupmot_display, dropTypesList[j])))
@@ -161,14 +152,14 @@ static void motDropProc(Widget dropTarget, XtPointer clientData, XmDropProcCallb
   }
 
   num_args = 0;
-  if ((!found) || 
-      (dropData->dropAction != XmDROP) ||  
-      (dropData->operation != XmDROP_COPY && dropData->operation != XmDROP_MOVE)) 
+  if ((!found) ||
+      (dropData->dropAction != XmDROP) ||
+      (dropData->operation != XmDROP_COPY && dropData->operation != XmDROP_MOVE))
   {
     iupMOT_SETARG(args, num_args, XmNtransferStatus, XmTRANSFER_FAILURE);
     iupMOT_SETARG(args, num_args, XmNnumDropTransfers, 0);
   }
-  else 
+  else
   {
     XtVaGetValues(dropTarget, XmNuserData, &ih, NULL);
 
@@ -216,7 +207,7 @@ static Boolean motDragConvertProc(Widget dragContext, Atom *selection, Atom *tar
       return False;
 
     sourceData = XtMalloc(size);  /* data will be released by the system */
-    
+
     /* fill data */
     cbDragData(ih, type, sourceData, size);
 
@@ -238,7 +229,7 @@ static void motDropFinishCallback(Widget dragContext, Ihandle *ih, XmDropFinishC
   if(cbDrag)
   {
     int remove = -1;
-    if (callData->dropAction==XmDROP && 
+    if (callData->dropAction==XmDROP &&
         callData->completionStatus==XmDROP_SUCCESS)
     {
       if (callData->operation==XmDROP_MOVE)

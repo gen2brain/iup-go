@@ -14,21 +14,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 #include <stdint.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"
 #include "iup_attrib.h"
-#include "iup_dialog.h"
 #include "iup_str.h"
-#include "iup_label.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_image.h"
 #include "iup_menu.h"
 
 #include "iupmot_drv.h"
@@ -50,7 +45,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     char value1[30], value2[30];
     iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
-    iupmotGetWindowSize(ih, &width, &height); /* Have to ideia if this is going to work */
+    iupmotGetWindowSize(ih, &width, &height); /* Have no idea if this is going to work */
 
     if (iupStrEqualNoCase(value1, "ARIGHT"))
       ev.x_root -= width;
@@ -82,9 +77,7 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
   return 5 + ch + 5;
 }
 
-
 /*******************************************************************************************/
-
 
 static void motMenuItemActivateCallback(Widget w, Ihandle* ih, XtPointer call_data)
 {
@@ -140,9 +133,7 @@ static void motPopupMenuUnmapCallback(Widget w, Ihandle* ih, XtPointer call_data
   mot_menu_exitloop = 1;
 }
 
-
 /*******************************************************************************************/
-
 
 static void motMenuUnMapMethod(Ihandle* ih)
 {
@@ -166,7 +157,7 @@ static int motMenuMapMethod(Ihandle* ih)
 
     ih->handle = XtVaCreateManagedWidget(
                    iupMenuGetChildIdStr(ih),
-                   xmRowColumnWidgetClass, 
+                   xmRowColumnWidgetClass,
                    iupChildTreeGetNativeParentHandle(ih),
                    XmNrowColumnType, XmMENU_BAR,
                    XmNmarginHeight, 0,
@@ -190,7 +181,7 @@ static int motMenuMapMethod(Ihandle* ih)
       }
 
       ih->handle = XmCreatePulldownMenu(
-                     ih->parent->handle, 
+                     ih->parent->handle,
                      iupMenuGetChildIdStr(ih),
                      args,
                      num_args);
@@ -198,7 +189,7 @@ static int motMenuMapMethod(Ihandle* ih)
         return IUP_ERROR;
 
       /* update the CascadeButton */
-      XtVaSetValues(ih->parent->handle, XmNsubMenuId, ih->handle, NULL);  
+      XtVaSetValues(ih->parent->handle, XmNsubMenuId, ih->handle, NULL);
 
       XtAddCallback(ih->handle, XmNmapCallback, (XtCallbackProc)motMenuMapCallback, (XtPointer)ih);
       XtAddCallback(ih->handle, XmNunmapCallback, (XtCallbackProc)motMenuUnmapCallback, (XtPointer)ih);
@@ -210,7 +201,7 @@ static int motMenuMapMethod(Ihandle* ih)
       iupMOT_SETARG(args, num_args, XmNpopupEnabled, XmPOPUP_AUTOMATIC);
 
       ih->handle = XmCreatePopupMenu(
-                     iupmot_appshell, 
+                     iupmot_appshell,
                      iupMenuGetChildIdStr(ih),
                      args,
                      num_args);
@@ -239,9 +230,7 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 }
 
-
 /*******************************************************************************************/
-
 
 static int motMenuItemSetTitleImageAttrib(Ihandle* ih, const char* value)
 {
@@ -440,7 +429,7 @@ static int motMenuItemMapMethod(Ihandle* ih)
   {
     ih->handle = XtVaCreateManagedWidget(
                    iupMenuGetChildIdStr(ih),
-                   xmCascadeButtonWidgetClass, 
+                   xmCascadeButtonWidgetClass,
                    ih->parent->handle,
                    NULL);
 
@@ -471,7 +460,7 @@ static int motMenuItemMapMethod(Ihandle* ih)
 
     ih->handle = XtCreateManagedWidget(
                    iupMenuGetChildIdStr(ih),
-                   xmToggleButtonWidgetClass, 
+                   xmToggleButtonWidgetClass,
                    ih->parent->handle,
                    args,
                    num_args);

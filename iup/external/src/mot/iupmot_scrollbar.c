@@ -6,15 +6,11 @@
 
 #include <Xm/Xm.h>
 #include <Xm/ScrollBar.h>
-#include <X11/keysym.h>
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include <memory.h>
-#include <stdarg.h>
-#include <limits.h>
 #include <stdint.h>
 
 #include "iup.h"
@@ -26,10 +22,8 @@
 #include "iup_dialog.h"
 #include "iup_str.h"
 #include "iup_scrollbar.h"
-#include "iup_drv.h"
 
 #include "iupmot_drv.h"
-#include "iupmot_color.h"
 
 
 #define IMOT_SB_MAX 32767
@@ -116,9 +110,7 @@ static int motScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-
 /*********************************************************************************************/
-
 
 static void motScrollbarCallback(Widget w, XtPointer client_data, XtPointer call_data)
 {
@@ -167,9 +159,7 @@ static void motScrollbarCallback(Widget w, XtPointer client_data, XtPointer call
   (void)call_data;
 }
 
-
 /*********************************************************************************************/
-
 
 static int motScrollbarMapMethod(Ihandle* ih)
 {

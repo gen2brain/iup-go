@@ -1,22 +1,22 @@
+/** \file
+ * \brief Motif Tree control
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
 #include <Xm/Xm.h>
-#include <Xm/Form.h>
 #include <Xm/Container.h>
 #include <Xm/IconG.h>
 #include <Xm/ScrolledW.h>
 #include <Xm/XmosP.h>
 #include <Xm/Text.h>
-#include <Xm/Transfer.h>
 #include <Xm/DragDrop.h>
 #include <X11/keysym.h>
 
 #include <sys/stat.h>
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <limits.h>
 #include <time.h>
 
 #include "iup.h"
@@ -25,14 +25,11 @@
 #include "iup_object.h"
 #include "iup_childtree.h"
 #include "iup_dialog.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
-#include "iup_key.h"
 #include "iup_image.h"
 #include "iup_array.h"
 #include "iup_tree.h"
@@ -82,7 +79,7 @@ static Widget motTreeCopyItem(Ihandle* ih, Widget wItem, Widget wParent, int pos
                                        NULL);
 
   /* Get values to copy */
-  XtVaGetValues(wItem, XmNsmallIconPixmap, &image, 
+  XtVaGetValues(wItem, XmNsmallIconPixmap, &image,
                           XmNsmallIconMask, &mask,
                                             NULL);
 
@@ -156,7 +153,7 @@ static void motTreeCopyChildren(Ihandle* ih, Widget wItemSrc, Widget wItemDst, i
     Widget wItemNew = motTreeCopyItem(ih, wItemChildList[i], wItemDst, i, is_copy);  /* Use the same order they were enumerated */
 
     /* Recursively transfer all the items */
-    motTreeCopyChildren(ih, wItemChildList[i], wItemNew, is_copy);  
+    motTreeCopyChildren(ih, wItemChildList[i], wItemNew, is_copy);
 
     /* Go to next sibling item */
     i++;
@@ -179,8 +176,8 @@ static Widget motTreeCopyMoveNode(Ihandle* ih, Widget wItemSrc, Widget wItemDst,
   id_dst = iupTreeFindNodeId(ih, wItemDst);
   id_new = id_dst+1; /* contains the position for a copy operation */
 
-  XtVaGetValues(wItemDst, XmNoutlineState, &stateDst, 
-                          XmNuserData, &itemDataDst, 
+  XtVaGetValues(wItemDst, XmNoutlineState, &stateDst,
+                          XmNuserData, &itemDataDst,
                           NULL);
 
   if (itemDataDst->kind == ITREE_BRANCH && stateDst == XmEXPANDED)
@@ -386,7 +383,7 @@ static void motTreeUpdateImages(Ihandle* ih, int mode)
     {
       unsigned char itemState;
       XtVaGetValues(wItem, XmNoutlineState,  &itemState, NULL);
-      
+
       if (itemState == XmEXPANDED)
       {
         if (mode == ITREE_UPDATEIMAGE_EXPANDED)
@@ -395,7 +392,7 @@ static void motTreeUpdateImages(Ihandle* ih, int mode)
           XtVaSetValues(wItem, XmNsmallIconMask, (itemData->image_expanded_mask!=XmUNSPECIFIED_PIXMAP)? itemData->image_expanded_mask: (Pixmap)ih->data->def_image_expanded_mask, NULL);
         }
       }
-      else 
+      else
       {
         if (mode == ITREE_UPDATEIMAGE_COLLAPSED)
         {
@@ -404,7 +401,7 @@ static void motTreeUpdateImages(Ihandle* ih, int mode)
         }
       }
     }
-    else 
+    else
     {
       if (mode == ITREE_UPDATEIMAGE_LEAF)
       {
@@ -492,7 +489,7 @@ void motTreeExpandCollapseAllNodes(Ihandle* ih, unsigned char itemState)
     Widget wItem = ih->data->node_cache[i].node_handle;
 
     XtVaGetValues(wItem, XmNuserData, &itemData, NULL);
-  
+
     /* Check whether we have child items */
     if (itemData->kind == ITREE_BRANCH)
       XtVaSetValues(wItem, XmNoutlineState, itemState, NULL);
@@ -505,7 +502,7 @@ static void motTreeDestroyItemData(Ihandle* ih, Widget wItem, int del_data, IFns
   XtVaGetValues(wItem, XmNuserData, &itemData, NULL);
   if (itemData)
   {
-    if (cb) 
+    if (cb)
       cb(ih, (char*)ih->data->node_cache[id].userdata);
 
     if (del_data)
@@ -576,8 +573,8 @@ static void motTreeEnterLeaveWindowEvent(Widget w, Ihandle *ih, XEvent *evt, Boo
   if (iupAttribGet(ih, "_IUPTREE_EDITFIELD"))
     return;
 
-  /* usually when one Gadget is selected different than the previous one,
-     leave/enter events are generated. But we could not find the exact condition, 
+  /* usually when one Gadget is selected different from the previous one,
+     leave/enter events are generated. But we could not find the exact condition,
      so this is a workaround. Some leave events will be lost. */
   if (evt->type == EnterNotify)
   {
@@ -786,14 +783,14 @@ static int motTreeSetImageExpandedAttrib(Ihandle* ih, int id, const char* value)
   {
     if (itemData->image_expanded == XmUNSPECIFIED_PIXMAP)
     {
-      XtVaSetValues(wItem, XmNsmallIconPixmap, (Pixmap)ih->data->def_image_expanded, 
-                            XmNsmallIconMask, (Pixmap)ih->data->def_image_expanded_mask, 
-                            NULL);        
+      XtVaSetValues(wItem, XmNsmallIconPixmap, (Pixmap)ih->data->def_image_expanded,
+                            XmNsmallIconMask, (Pixmap)ih->data->def_image_expanded_mask,
+                            NULL);
     }
     else
     {
-      XtVaSetValues(wItem, XmNsmallIconPixmap, itemData->image_expanded, 
-                            XmNsmallIconMask, itemData->image_expanded_mask, 
+      XtVaSetValues(wItem, XmNsmallIconPixmap, itemData->image_expanded,
+                            XmNsmallIconMask, itemData->image_expanded_mask,
                             NULL);
     }
   }
@@ -805,12 +802,12 @@ static int motTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
 {
   motTreeItemData *itemData;
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return 0;
 
   XtVaGetValues(wItem, XmNuserData, &itemData, NULL);
   itemData->image = (Pixmap)iupImageGetImage(value, ih, 0, NULL);
-  if (!itemData->image) 
+  if (!itemData->image)
   {
     itemData->image = XmUNSPECIFIED_PIXMAP;
     itemData->image_mask = XmUNSPECIFIED_PIXMAP;
@@ -829,14 +826,14 @@ static int motTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
     {
       if (itemData->image == XmUNSPECIFIED_PIXMAP)
       {
-        XtVaSetValues(wItem, XmNsmallIconPixmap, (Pixmap)ih->data->def_image_collapsed, 
-                              XmNsmallIconMask, (Pixmap)ih->data->def_image_collapsed_mask, 
+        XtVaSetValues(wItem, XmNsmallIconPixmap, (Pixmap)ih->data->def_image_collapsed,
+                              XmNsmallIconMask, (Pixmap)ih->data->def_image_collapsed_mask,
                               NULL);
       }
       else
       {
-        XtVaSetValues(wItem, XmNsmallIconPixmap, itemData->image, 
-                              XmNsmallIconMask, itemData->image_mask, 
+        XtVaSetValues(wItem, XmNsmallIconPixmap, itemData->image,
+                              XmNsmallIconMask, itemData->image_mask,
                               NULL);
       }
     }
@@ -845,14 +842,14 @@ static int motTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
   {
     if (itemData->image == XmUNSPECIFIED_PIXMAP)
     {
-      XtVaSetValues(wItem, XmNsmallIconPixmap, (Pixmap)ih->data->def_image_leaf, 
-                            XmNsmallIconMask, (Pixmap)ih->data->def_image_leaf_mask, 
+      XtVaSetValues(wItem, XmNsmallIconPixmap, (Pixmap)ih->data->def_image_leaf,
+                            XmNsmallIconMask, (Pixmap)ih->data->def_image_leaf_mask,
                             NULL);
     }
     else
     {
-      XtVaSetValues(wItem, XmNsmallIconPixmap, itemData->image, 
-                            XmNsmallIconMask, itemData->image_mask, 
+      XtVaSetValues(wItem, XmNsmallIconPixmap, itemData->image,
+                            XmNsmallIconMask, itemData->image_mask,
                             NULL);
     }
   }
@@ -863,7 +860,7 @@ static int motTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
 static int motTreeSetImageBranchExpandedAttrib(Ihandle* ih, const char* value)
 {
   ih->data->def_image_expanded = iupImageGetImage(value, ih, 0, NULL);
-  if (!ih->data->def_image_expanded) 
+  if (!ih->data->def_image_expanded)
   {
     ih->data->def_image_expanded = (void*)XmUNSPECIFIED_PIXMAP;
     ih->data->def_image_expanded_mask = (void*)XmUNSPECIFIED_PIXMAP;
@@ -873,7 +870,7 @@ static int motTreeSetImageBranchExpandedAttrib(Ihandle* ih, const char* value)
     ih->data->def_image_expanded_mask = (void*)iupmotImageGetMask(value);
     if (!ih->data->def_image_expanded_mask) ih->data->def_image_expanded_mask = (void*)XmUNSPECIFIED_PIXMAP;
   }
-    
+
   /* Update all images, starting at root node */
   motTreeUpdateImages(ih, ITREE_UPDATEIMAGE_EXPANDED);
 
@@ -883,7 +880,7 @@ static int motTreeSetImageBranchExpandedAttrib(Ihandle* ih, const char* value)
 static int motTreeSetImageBranchCollapsedAttrib(Ihandle* ih, const char* value)
 {
   ih->data->def_image_collapsed = iupImageGetImage(value, ih, 0, NULL);
-  if (!ih->data->def_image_collapsed) 
+  if (!ih->data->def_image_collapsed)
   {
     ih->data->def_image_collapsed = (void*)XmUNSPECIFIED_PIXMAP;
     ih->data->def_image_collapsed_mask = (void*)XmUNSPECIFIED_PIXMAP;
@@ -893,7 +890,7 @@ static int motTreeSetImageBranchCollapsedAttrib(Ihandle* ih, const char* value)
     ih->data->def_image_collapsed_mask = (void*)iupmotImageGetMask(value);
     if (!ih->data->def_image_collapsed_mask) ih->data->def_image_collapsed_mask = (void*)XmUNSPECIFIED_PIXMAP;
   }
-   
+
   /* Update all images, starting at root node */
   motTreeUpdateImages(ih, ITREE_UPDATEIMAGE_COLLAPSED);
 
@@ -903,7 +900,7 @@ static int motTreeSetImageBranchCollapsedAttrib(Ihandle* ih, const char* value)
 static int motTreeSetImageLeafAttrib(Ihandle* ih, const char* value)
 {
   ih->data->def_image_leaf = iupImageGetImage(value, ih, 0, NULL);
-  if (!ih->data->def_image_leaf) 
+  if (!ih->data->def_image_leaf)
   {
     ih->data->def_image_leaf = (void*)XmUNSPECIFIED_PIXMAP;
     ih->data->def_image_leaf_mask = (void*)XmUNSPECIFIED_PIXMAP;
@@ -913,7 +910,7 @@ static int motTreeSetImageLeafAttrib(Ihandle* ih, const char* value)
     ih->data->def_image_leaf_mask = (void*)iupmotImageGetMask(value);
     if (!ih->data->def_image_leaf_mask) ih->data->def_image_leaf_mask = (void*)XmUNSPECIFIED_PIXMAP;
   }
-    
+
   /* Update all images, starting at root node */
   motTreeUpdateImages(ih, ITREE_UPDATEIMAGE_LEAF);
 
@@ -925,12 +922,12 @@ static char* motTreeGetStateAttrib(Ihandle* ih, int id)
   int hasChildren;
   unsigned char itemState;
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return 0;
 
   XtVaGetValues(wItem, XmNnumChildren, &hasChildren, NULL);
   XtVaGetValues(wItem, XmNoutlineState, &itemState, NULL);
-  
+
   if (hasChildren)
   {
     if(itemState == XmEXPANDED)
@@ -955,7 +952,7 @@ static int motTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
     iupAttribSet(ih, "_IUP_IGNORE_BRANCH_CB", "1");
     if (iupStrEqualNoCase(value, "EXPANDED"))
       XtVaSetValues(wItem, XmNoutlineState, XmEXPANDED, NULL);
-    else 
+    else
       XtVaSetValues(wItem, XmNoutlineState, XmCOLLAPSED, NULL);
     iupAttribSet(ih, "_IUP_IGNORE_BRANCH_CB", NULL);
   }
@@ -967,11 +964,11 @@ static char* motTreeGetColorAttrib(Ihandle* ih, int id)
 {
   unsigned char r, g, b;
   Pixel color;
-  Widget wItem = iupTreeGetNode(ih, id);  
-  if (!wItem)  
+  Widget wItem = iupTreeGetNode(ih, id);
+  if (!wItem)
     return NULL;
 
-  XtVaGetValues(wItem, XmNforeground, &color, NULL); 
+  XtVaGetValues(wItem, XmNforeground, &color, NULL);
   iupmotColorGetRGB(color, &r, &g, &b);
 
   return iupStrReturnStrf("%d %d %d", (int)r, (int)g, (int)b);
@@ -980,21 +977,21 @@ static char* motTreeGetColorAttrib(Ihandle* ih, int id)
 static int motTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
 {
   Pixel color;
-  Widget wItem = iupTreeGetNode(ih, id);  
-  if (!wItem)  
+  Widget wItem = iupTreeGetNode(ih, id);
+  if (!wItem)
     return 0;
 
   color = iupmotColorGetPixelStr(value);
   if (color != (Pixel)-1)
     XtVaSetValues(wItem, XmNforeground, color, NULL);
-  return 0; 
+  return 0;
 }
 
 static char* motTreeGetDepthAttrib(Ihandle* ih, int id)
 {
   int depth = -1;
-  Widget wItem = iupTreeGetNode(ih, id);  
-  if (!wItem)  
+  Widget wItem = iupTreeGetNode(ih, id);
+  if (!wItem)
     return NULL;
 
   while(wItem != NULL)
@@ -1066,7 +1063,7 @@ static char* motTreeGetParentAttrib(Ihandle* ih, int id)
 {
   Widget wItemParent;
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return NULL;
 
   /* get the parent item */
@@ -1081,7 +1078,7 @@ static char* motTreeGetNextAttrib(Ihandle* ih, int id)
 {
   Widget wItemParent;
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return NULL;
 
   /* get the parent item, it will not work for root nodes */
@@ -1196,7 +1193,7 @@ static char* motTreeGetChildCountAttrib(Ihandle* ih, int id)
   int ret;
   WidgetList wList = NULL;
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return NULL;
 
   ret = XmContainerGetItemChildren(ih->handle, wItem, &wList);
@@ -1221,7 +1218,7 @@ static char* motTreeGetKindAttrib(Ihandle* ih, int id)
 {
   motTreeItemData *itemData;
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return NULL;
 
   XtVaGetValues(wItem, XmNuserData, &itemData, NULL);
@@ -1304,7 +1301,7 @@ static int motTreeSetMarkAttrib(Ihandle* ih, const char* value)
   else if(iupStrEqualPartial(value, "INVERT"))
   {
     Widget wItem = iupTreeGetNodeFromString(ih, &value[strlen("INVERT")]);
-    if (!wItem)  
+    if (!wItem)
       return 0;
 
     motTreeSelectNode(wItem, -1);
@@ -1325,17 +1322,17 @@ static int motTreeSetMarkAttrib(Ihandle* ih, const char* value)
       return 0;
 
     wItem1 = iupTreeGetNodeFromString(ih, str1);
-    if (!wItem1)  
+    if (!wItem1)
       return 0;
     wItem2 = iupTreeGetNodeFromString(ih, str2);
-    if (!wItem2)  
+    if (!wItem2)
       return 0;
 
     motTreeSelectRange(ih, wItem1, wItem2, 0);
   }
 
   return 1;
-} 
+}
 
 static int motTreeSetValueAttrib(Ihandle* ih, const char* value)
 {
@@ -1390,7 +1387,7 @@ static int motTreeSetValueAttrib(Ihandle* ih, const char* value)
   else
     wItem = iupTreeGetNodeFromString(ih, value);
 
-  if (!wItem)  
+  if (!wItem)
     return 0;
 
   /* select */
@@ -1418,12 +1415,12 @@ static int motTreeSetValueAttrib(Ihandle* ih, const char* value)
   iupAttribSetInt(ih, "_IUPTREE_OLDVALUE", iupTreeFindNodeId(ih, wItem));
 
   return 0;
-} 
+}
 
 static int motTreeSetMarkStartAttrib(Ihandle* ih, const char* value)
 {
   Widget wItem = iupTreeGetNodeFromString(ih, value);
-  if (!wItem)  
+  if (!wItem)
     return 0;
 
   iupAttribSet(ih, "_IUPTREE_MARKSTART_NODE", (char*)wItem);
@@ -1434,16 +1431,16 @@ static int motTreeSetMarkStartAttrib(Ihandle* ih, const char* value)
 static char* motTreeGetMarkedAttrib(Ihandle* ih, int id)
 {
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return NULL;
 
-  return iupStrReturnBoolean (motTreeIsNodeSelected(wItem)); 
+  return iupStrReturnBoolean (motTreeIsNodeSelected(wItem));
 }
 
 static int motTreeSetMarkedAttrib(Ihandle* ih, int id, const char* value)
 {
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return 0;
 
   if (iupStrBoolean(value))
@@ -1459,7 +1456,7 @@ static char* motTreeGetTitleAttrib(Ihandle* ih, int id)
   char *title;
   XmString itemTitle;
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return NULL;
   XtVaGetValues(wItem, XmNlabelString, &itemTitle, NULL);
   title = iupmotReturnXmString(itemTitle);
@@ -1470,7 +1467,7 @@ static char* motTreeGetTitleAttrib(Ihandle* ih, int id)
 static int motTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
 {
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return 0;
 
   if (!value)
@@ -1485,7 +1482,7 @@ static int motTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
 {
   XmFontList fontlist = NULL;
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return 0;
 
   if (value)
@@ -1500,7 +1497,7 @@ static char* motTreeGetTitleFontAttrib(Ihandle* ih, int id)
 {
   XmFontList fontlist;
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)  
+  if (!wItem)
     return NULL;
 
   XtVaGetValues(wItem, XmNrenderTable, &fontlist, NULL);
@@ -1508,7 +1505,7 @@ static char* motTreeGetTitleFontAttrib(Ihandle* ih, int id)
 }
 
 static int motTreeSetRenameAttrib(Ihandle* ih, const char* value)
-{  
+{
   if (ih->data->show_rename)
   {
     Widget wItemFocus = iupdrvTreeGetFocusNode(ih);
@@ -1742,10 +1739,10 @@ static void motTreeSetRenameSelectionPos(Widget cbEdit, const char* value)
 {
   int start = 1, end = 1;
 
-  if (iupStrToIntInt(value, &start, &end, ':') != 2) 
+  if (iupStrToIntInt(value, &start, &end, ':') != 2)
     return;
 
-  if(start < 1 || end < 1) 
+  if(start < 1 || end < 1)
     return;
 
   start--; /* IUP starts at 1 */
@@ -1773,7 +1770,7 @@ static int motTreeCallBranchCloseCb(Ihandle* ih, Widget wItem)
 static int motTreeCallBranchOpenCb(Ihandle* ih, Widget wItem)
 {
   IFni cbBranchOpen;
-  
+
   if (iupAttribGet(ih, "_IUP_IGNORE_BRANCH_CB"))
     return IUP_DEFAULT;
 
@@ -2025,14 +2022,14 @@ static void motTreeScrollbarOffset(Widget sb_win, Position *x, Position *y)
 {
   Widget sb_horiz, sb_vert;
   XtVaGetValues(sb_win, XmNhorizontalScrollBar, &sb_horiz, NULL);
-  if (sb_horiz) 
+  if (sb_horiz)
   {
     int pos;
     XtVaGetValues(sb_horiz, XmNvalue, &pos, NULL);
     *x = *x - (Position)pos;
   }
   XtVaGetValues(sb_win, XmNverticalScrollBar, &sb_vert, NULL);
-  if (sb_vert) 
+  if (sb_vert)
   {
     int pos;
     XtVaGetValues(sb_vert, XmNvalue, &pos, NULL);
@@ -2059,10 +2056,10 @@ static void motTreeShowEditField(Ihandle* ih, Widget wItem)
   if (cbShowRename && cbShowRename(ih, iupTreeFindNodeId(ih, wItem))==IUP_IGNORE)
     return;
 
-  XtVaGetValues(wItem, XmNx, &x, 
+  XtVaGetValues(wItem, XmNx, &x,
                        XmNy, &y,
-                       XmNwidth, &w, 
-                       XmNheight, &h, 
+                       XmNwidth, &w,
+                       XmNheight, &h,
                        XmNlabelString, &title,
                        XmNforeground, &color,
                        XmNrenderTable, &fontlist,
@@ -2117,7 +2114,7 @@ static void motTreeShowEditField(Ihandle* ih, Widget wItem)
   if (value)
     motTreeSetRenameSelectionPos(cbEdit, value);
 
-  /* the parents callbacks can be called while editing 
+  /* the parents callbacks can be called while editing
      so we must avoid their processing if _IUPTREE_EDITFIELD is defined. */
 }
 
@@ -2364,7 +2361,7 @@ static void motTreeButtonEvent(Widget w, Ihandle* ih, XButtonEvent* evt, Boolean
     return;
 
   if (evt->type==ButtonPress)
-  {   
+  {
     iupAttribSet(ih, "_IUPTREE_IGNORE_ENTERLEAVE", "1");
 
     if (evt->button==Button1)
@@ -2379,7 +2376,7 @@ static void motTreeButtonEvent(Widget w, Ihandle* ih, XButtonEvent* evt, Boolean
       /* stay away from double click and leave some room for single clicks */
       if (elapsed > (3*doubleclicktime)/2 && elapsed <= 3*doubleclicktime)
         clicktwice = 1;
-    
+
       if (clicktwice && wLastItem && wLastItem==wItem)
       {
         motTreeSetRenameAttrib(ih, NULL);
@@ -2387,7 +2384,7 @@ static void motTreeButtonEvent(Widget w, Ihandle* ih, XButtonEvent* evt, Boolean
       }
       wLastItem = wItem;
 
-      if (wItem && ih->data->mark_mode==ITREE_MARK_MULTIPLE && 
+      if (wItem && ih->data->mark_mode==ITREE_MARK_MULTIPLE &&
           !(evt->state & ShiftMask) &&
           !(evt->state & ControlMask))
       {
@@ -2402,7 +2399,7 @@ static void motTreeButtonEvent(Widget w, Ihandle* ih, XButtonEvent* evt, Boolean
       motTreeCallRightClickCb(ih, evt->x, evt->y);
   }
   else if (evt->type==ButtonRelease)
-  {   
+  {
     if (evt->button==Button1)
     {
       if (ih->data->mark_mode==ITREE_MARK_MULTIPLE && (evt->state & ShiftMask))
@@ -2482,12 +2479,12 @@ static void motTreeDragDropProc(Widget w, XtPointer client_data, XmDropProcCallb
 
   /* retrieve the data targets */
   XtVaGetValues(drop_context, XmNexportTargets, &exportTargets,
-                              XmNnumExportTargets, &numExportTargets, 
+                              XmNnumExportTargets, &numExportTargets,
                               NULL);
 
-  for (i = 0; i < (int)numExportTargets; i++) 
+  for (i = 0; i < (int)numExportTargets; i++)
   {
-    if (exportTargets[i] == atomTreeItem) 
+    if (exportTargets[i] == atomTreeItem)
     {
       found = True;
       break;
@@ -2499,12 +2496,12 @@ static void motTreeDragDropProc(Widget w, XtPointer client_data, XmDropProcCallb
     found = False;
 
   num_args = 0;
-  if ((!found) || (drop_data->dropAction != XmDROP) ||  (drop_data->operation != XmDROP_COPY && drop_data->operation != XmDROP_MOVE)) 
+  if ((!found) || (drop_data->dropAction != XmDROP) ||  (drop_data->operation != XmDROP_COPY && drop_data->operation != XmDROP_MOVE))
   {
     iupMOT_SETARG(args, num_args, XmNtransferStatus, XmTRANSFER_FAILURE);
     iupMOT_SETARG(args, num_args, XmNnumDropTransfers, 0);
   }
-  else 
+  else
   {
     /* set up transfer requests for drop site */
     transferList[0].target = atomTreeItem;
@@ -2588,8 +2585,8 @@ static void motTreeDragStart(Widget w, XButtonEvent* evt, String* params, Cardin
   XtVaGetValues(wItemDrag, XmNviewType, &typeWidget,
                            XmNbackground, &bg,
                            XmNforeground, &fg,
-                           XmNsmallIconPixmap, &pixmap, 
-                           XmNsmallIconMask, &mask, 
+                           XmNsmallIconPixmap, &pixmap,
+                           XmNsmallIconMask, &mask,
                            NULL);
 
   iupMOT_SETARG(args, num_args, XmNpixmap, pixmap);
@@ -2673,7 +2670,7 @@ static Widget motTreeDragDropCopyItem(Ihandle* src, Ihandle* dst, Widget wItem, 
                                        NULL);
 
   /* Get values to copy */
-  XtVaGetValues(wItem, XmNsmallIconPixmap, &image, 
+  XtVaGetValues(wItem, XmNsmallIconPixmap, &image,
                          XmNsmallIconMask, &mask,
                                            NULL);
 
@@ -2717,7 +2714,7 @@ static void motTreeDragDropCopyChildren(Ihandle* src, Ihandle* dst, Widget wItem
     Widget wItemNew = motTreeDragDropCopyItem(src, dst, wItemChildList[i], wItemDst, i);  /* Use the same order they were enumerated */
 
     /* Recursively transfer all the items */
-    motTreeDragDropCopyChildren(src, dst, wItemChildList[i], wItemNew);  
+    motTreeDragDropCopyChildren(src, dst, wItemChildList[i], wItemNew);
 
     /* Go to next sibling item */
     i++;
@@ -2738,8 +2735,8 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHan
   id_dst = iupTreeFindNodeId(dst, wItemDst);
   id_new = id_dst+1;  /* contains the position for a copy operation */
 
-  XtVaGetValues(wItemDst, XmNoutlineState, &stateDst, 
-                          XmNuserData, &itemDataDst, 
+  XtVaGetValues(wItemDst, XmNoutlineState, &stateDst,
+                          XmNuserData, &itemDataDst,
                           NULL);
 
   if (itemDataDst->kind == ITREE_BRANCH && stateDst == XmEXPANDED)
@@ -2788,7 +2785,7 @@ static int motTreeMapMethod(Ihandle* ih)
   /******************************/
   iupMOT_SETARG(args, num_args, XmNmappedWhenManaged, False);  /* not visible when managed */
   iupMOT_SETARG(args, num_args, XmNscrollingPolicy, XmAUTOMATIC);
-  iupMOT_SETARG(args, num_args, XmNvisualPolicy, XmVARIABLE); 
+  iupMOT_SETARG(args, num_args, XmNvisualPolicy, XmVARIABLE);
   iupMOT_SETARG(args, num_args, XmNscrollBarDisplayPolicy, XmAS_NEEDED);
   iupMOT_SETARG(args, num_args, XmNspacing, 0); /* no space between scrollbars and text */
   iupMOT_SETARG(args, num_args, XmNborderWidth, 0);
@@ -2809,7 +2806,7 @@ static int motTreeMapMethod(Ihandle* ih)
   child_id = "container";
 
   num_args = 0;
- 
+
   iupMOT_SETARG(args, num_args, XmNx, 0);  /* x-position */
   iupMOT_SETARG(args, num_args, XmNy, 0);  /* y-position */
   iupMOT_SETARG(args, num_args, XmNwidth, 10);  /* default width to avoid 0 */
@@ -2916,7 +2913,7 @@ static int motTreeMapMethod(Ihandle* ih)
 
   /* Initialize the default images */
   ih->data->def_image_leaf = iupImageGetImage(iupAttribGetStr(ih, "IMAGELEAF"), ih, 0, NULL);
-  if (!ih->data->def_image_leaf) 
+  if (!ih->data->def_image_leaf)
   {
     ih->data->def_image_leaf = (void*)XmUNSPECIFIED_PIXMAP;
     ih->data->def_image_leaf_mask = (void*)XmUNSPECIFIED_PIXMAP;
@@ -2928,7 +2925,7 @@ static int motTreeMapMethod(Ihandle* ih)
   }
 
   ih->data->def_image_collapsed = iupImageGetImage(iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED"), ih, 0, NULL);
-  if (!ih->data->def_image_collapsed) 
+  if (!ih->data->def_image_collapsed)
   {
     ih->data->def_image_collapsed = (void*)XmUNSPECIFIED_PIXMAP;
     ih->data->def_image_collapsed_mask = (void*)XmUNSPECIFIED_PIXMAP;
@@ -2940,7 +2937,7 @@ static int motTreeMapMethod(Ihandle* ih)
   }
 
   ih->data->def_image_expanded = iupImageGetImage(iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED"), ih, 0, NULL);
-  if (!ih->data->def_image_expanded) 
+  if (!ih->data->def_image_expanded)
   {
     ih->data->def_image_expanded = (void*)XmUNSPECIFIED_PIXMAP;
     ih->data->def_image_expanded_mask = (void*)XmUNSPECIFIED_PIXMAP;

@@ -30,7 +30,6 @@
 #include "iupmot_drv.h"
 
 
-
 IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 {
   XtCallActionProc(ih->handle, "ArmAndActivate", 0, 0, 0 );
@@ -52,7 +51,7 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
      XReparentWindow can NOT be used because will reparent only the X-Windows windows.
      So must unmap and map again to obtain the same effect. */
   Widget new_parent = iupChildTreeGetNativeParentHandle(ih);
-  Widget widget = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");  /* here is used as the native child because is the outmost component of the elemement */
+  Widget widget = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");  /* here is used as the native child because is the utmost component of the element */
   if (!widget) widget = ih->handle;
 
   if (XtParent(widget) != new_parent)
@@ -147,7 +146,7 @@ IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
   /* POST a Redraw */
   iupdrvPostRedraw(ih);
 
-  /* if this element has an inner native parent (like IupTabs), 
+  /* if this element has an inner native parent (like IupTabs),
      then redraw that native parent if different from the element. */
   w = (Widget)iupClassObjectGetInnerNativeContainerHandle(ih, (Ihandle*)IupGetAttribute(ih, "VALUE_HANDLE"));
   if (w && w != ih->handle)
@@ -621,13 +620,13 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 #include <unistd.h>
 IUP_SDK_API void iupdrvSleep(int time)
 {
-  usleep(time*1000);  /* mili to micro */
+  usleep(time*1000);  /* milli to micro */
 }
 #else
 IUP_SDK_API void iupdrvSleep(int time)
 {
   clock_t goal = (clock_t)(time*CLOCKS_PER_SEC)/1000 + clock();
-  while(goal > clock());     
+  while(goal > clock());
 }
 #endif
 

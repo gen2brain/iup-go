@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPMOT_COLOR_H 
+
+#ifndef __IUPMOT_COLOR_H
 #define __IUPMOT_COLOR_H
 
 #ifdef __cplusplus

@@ -11,11 +11,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 #include <limits.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"
@@ -23,7 +21,6 @@
 #include "iup_dialog.h"
 #include "iup_str.h"
 #include "iup_progressbar.h"
-#include "iup_drv.h"
 
 #include "iupmot_drv.h"
 #include "iupmot_color.h"
@@ -154,7 +151,7 @@ static int motProgressBarMapMethod(Ihandle* ih)
 {
   int num_args = 0;
   Arg args[30];
- 
+
   /* Core */
   iupMOT_SETARG(args, num_args, XmNmappedWhenManaged, False);  /* not visible when managed */
   iupMOT_SETARG(args, num_args, XmNx, 0);  /* x-position */
@@ -200,7 +197,7 @@ static int motProgressBarMapMethod(Ihandle* ih)
     iupMOT_SETARG(args, num_args, XmNslidingMode, XmTHERMOMETER);
     ih->data->marquee = 0;
   }
-  
+
   ih->handle = XtCreateManagedWidget(
     iupDialogGetChildIdStr(ih),  /* child identifier */
     xmScaleWidgetClass,          /* widget class */

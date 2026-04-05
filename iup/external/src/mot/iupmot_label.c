@@ -10,12 +10,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"
@@ -121,7 +118,7 @@ static int motLabelSetImageAttrib(Ihandle* ih, const char* value)
     {
       if (!iupAttribGet(ih, "IMINACTIVE"))
       {
-        /* if not active and IMINACTIVE is not defined 
+        /* if not active and IMINACTIVE is not defined
            then automatically create one based on IMAGE */
         iupmotSetPixmap(ih, value, XmNlabelInsensitivePixmap, 1); /* make_inactive */
       }
@@ -201,12 +198,12 @@ static int motLabelMapMethod(Ihandle* ih)
     if (value)
     {
       ih->data->type = IUP_LABEL_IMAGE;
-      iupMOT_SETARG(args, num_args, XmNlabelType, XmPIXMAP); 
+      iupMOT_SETARG(args, num_args, XmNlabelType, XmPIXMAP);
     }
     else
     {
       ih->data->type = IUP_LABEL_TEXT;
-      iupMOT_SETARG(args, num_args, XmNlabelType, XmSTRING); 
+      iupMOT_SETARG(args, num_args, XmNlabelType, XmSTRING);
     }
   }
 
@@ -227,7 +224,7 @@ static int motLabelMapMethod(Ihandle* ih)
   iupMOT_SETARG(args, num_args, XmNmarginLeft, 0);
   iupMOT_SETARG(args, num_args, XmNmarginBottom, 0);
   iupMOT_SETARG(args, num_args, XmNmarginRight, 0);
-  
+
   ih->handle = XtCreateManagedWidget(
     iupDialogGetChildIdStr(ih),  /* child identifier */
     widget_class,                /* widget class */

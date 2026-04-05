@@ -5,12 +5,12 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h> 
-#include <string.h> 
+#include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 #include <sys/stat.h>
 
-/* This module should depend only on IUP core headers 
+/* This module should depend only on IUP core headers
    and UNIX system headers. NO Motif headers allowed. */
 
 #include <X11/X.h>
@@ -19,7 +19,6 @@
 #include <X11/Xatom.h>
 
 #include "iup_export.h"
-#include "iup_str.h"
 #include "iup_drvinfo.h"
 
 
@@ -203,9 +202,3 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
 
   XFreeModifiermap(modMap);
 }
-
-
-/******************************************************************************/
-
-
-

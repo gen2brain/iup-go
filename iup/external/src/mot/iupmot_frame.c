@@ -11,9 +11,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 
@@ -24,9 +22,7 @@
 #include "iup_dialog.h"
 #include "iup_image.h"
 #include "iup_frame.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 
 #include "iupmot_drv.h"
 #include "iupmot_color.h"
@@ -83,7 +79,7 @@ static int motFrameSetBgColorAttrib(Ihandle* ih, const char* value)
       iupmotSetBgColor(child_manager, color);
 
       title_label = (Widget)iupAttribGet(ih, "_IUPMOT_FRAMELABEL");
-      if (title_label) 
+      if (title_label)
         iupmotSetBgColor(title_label, color);
     }
     else
@@ -93,7 +89,7 @@ static int motFrameSetBgColorAttrib(Ihandle* ih, const char* value)
     }
   }
 
-  return 0; 
+  return 0;
 }
 
 static int motFrameSetBackgroundAttrib(Ihandle* ih, const char* value)
@@ -147,7 +143,7 @@ static int motFrameSetFgColorAttrib(Ihandle* ih, const char* value)
     XtVaSetValues(title_label, XmNforeground, color, NULL);
     return 1;
   }
-  return 0; 
+  return 0;
 }
 
 static int motFrameSetFontAttrib(Ihandle* ih, const char* value)
@@ -231,7 +227,7 @@ static int motFrameMapMethod(Ihandle* ih)
   /* Frame */
   iupMOT_SETARG(args, num_args, XmNmarginHeight, 0);  /* no shadow margins */
   iupMOT_SETARG(args, num_args, XmNmarginWidth, 0);  /* no shadow margins */
-  
+
   ih->handle = XtCreateManagedWidget(
     iupDialogGetChildIdStr(ih),  /* child identifier */
     xmFrameWidgetClass,          /* widget class */
@@ -248,7 +244,7 @@ static int motFrameMapMethod(Ihandle* ih)
     Widget title_label;
     num_args = 0;
     /* Label */
-    iupMOT_SETARG(args, num_args, XmNlabelType, XmSTRING); 
+    iupMOT_SETARG(args, num_args, XmNlabelType, XmSTRING);
     iupMOT_SETARG(args, num_args, XmNmarginHeight, 0);  /* default padding */
     iupMOT_SETARG(args, num_args, XmNmarginWidth, 0);
     /* Frame Constraint */

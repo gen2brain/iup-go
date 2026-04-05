@@ -1,10 +1,10 @@
 /** \file
- * \brief Motif Driver 
+ * \brief Motif Driver
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPMOT_DRV_H 
+
+#ifndef __IUPMOT_DRV_H
 #define __IUPMOT_DRV_H
 
 #ifdef __cplusplus
@@ -13,10 +13,10 @@ extern "C" {
 
 
 /* global variables, declared in iupmot_open.c */
-extern Widget         iupmot_appshell;         
-extern Display*       iupmot_display;          
-extern int            iupmot_screen;           
-extern XtAppContext   iupmot_appcontext;       
+extern Widget         iupmot_appshell;
+extern Display*       iupmot_display;
+extern int            iupmot_screen;
+extern XtAppContext   iupmot_appcontext;
 extern Visual*        iupmot_visual;
 extern Atom           iupmot_wm_deletewindow;
 

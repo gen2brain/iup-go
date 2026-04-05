@@ -26,17 +26,13 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_hashtable.h"
 #include "iup_childtree.h"
 #include "iup_dialog.h"
-#include "iup_layout.h"
 
 #include "iupmot_drv.h"
 #include "iupmot_color.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
-#include "iup_key.h"
 #include "iup_table.h"
 
 
@@ -567,7 +563,7 @@ static void motTableDrawTable(Ihandle* ih)
   /* Auto-size columns on first draw (when data is accessible) */
   if (!mot_data->columns_autosized)
   {
-    int c, lin;
+    int c, lin1;
     int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;  /* Limit for performance */
 
     for (c = 0; c < ih->data->num_col; c++)
@@ -601,10 +597,10 @@ static void motTableDrawTable(Ihandle* ih)
       }
 
       /* Measure cell content (check first N rows for performance) */
-      for (lin = 0; lin < max_rows_to_check; lin++)
+      for (lin1 = 0; lin1 < max_rows_to_check; lin1++)
       {
         /* Use IupGetAttributeId2 to access cell values through the attribute system */
-        const char* cell_value = IupGetAttributeId2(ih, "", lin + 1, c + 1);
+        const char* cell_value = IupGetAttributeId2(ih, "", lin1 + 1, c + 1);
         if (cell_value && cell_value[0])
         {
 #ifdef IUP_USE_XFT
@@ -2230,5 +2226,4 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 
   /* Replace core SET handlers to update native widget */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, motTableSetSortableAttrib);
-
 }

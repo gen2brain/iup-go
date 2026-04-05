@@ -4,8 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdlib.h>    
-#include <stdio.h>    
+#include <stdlib.h>
+#include <stdio.h>
 
 #include <Xm/Xm.h>
 
@@ -116,7 +116,7 @@ IUP_API int IupLoopStepWait(void)
 
 IUP_API int IupLoopStep(void)
 {
-  if (!XtAppPending(iupmot_appcontext)) 
+  if (!XtAppPending(iupmot_appcontext))
     return IUP_DEFAULT;
 
   return motLoopProcessEvent();

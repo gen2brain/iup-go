@@ -14,9 +14,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -27,9 +25,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_dialog.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 #include "iup_tabs.h"
 #include "iup_image.h"
 
@@ -301,19 +297,19 @@ static int motTabsSetTabPaddingAttrib(Ihandle* ih, const char* value)
 static void motTabsUpdateTabType(Ihandle* ih)
 {
   if (ih->data->type == ITABS_LEFT)
-    XtVaSetValues(ih->handle, XmNbackPagePlacement, XmBOTTOM_LEFT, 
+    XtVaSetValues(ih->handle, XmNbackPagePlacement, XmBOTTOM_LEFT,
                               XmNorientation, XmHORIZONTAL,
                               NULL);
   else if(ih->data->type == ITABS_RIGHT)
-    XtVaSetValues(ih->handle, XmNbackPagePlacement, XmBOTTOM_RIGHT, 
+    XtVaSetValues(ih->handle, XmNbackPagePlacement, XmBOTTOM_RIGHT,
                               XmNorientation, XmHORIZONTAL,
                               NULL);
   else if(ih->data->type == ITABS_BOTTOM)
-    XtVaSetValues(ih->handle, XmNbackPagePlacement, XmBOTTOM_RIGHT, 
+    XtVaSetValues(ih->handle, XmNbackPagePlacement, XmBOTTOM_RIGHT,
                               XmNorientation, XmVERTICAL,
                               NULL);
   else /* "TOP" */
-    XtVaSetValues(ih->handle, XmNbackPagePlacement, XmTOP_RIGHT, 
+    XtVaSetValues(ih->handle, XmNbackPagePlacement, XmTOP_RIGHT,
                               XmNorientation, XmVERTICAL,
                               NULL);
 }
@@ -353,7 +349,7 @@ static int motTabsSetBgColorAttrib(Ihandle* ih, const char* value)
   if (color != (Pixel)-1)
     motTabsUpdateButtonsBgColor(ih, color);
 
-  return 1; 
+  return 1;
 }
 
 static int motTabsSetBackgroundAttrib(Ihandle* ih, const char* value)
@@ -390,7 +386,7 @@ static int motTabsSetFgColorAttrib(Ihandle* ih, const char* value)
     motTabsUpdateButtonsFgColor(ih, color);
     return 1;
   }
-  return 0; 
+  return 0;
 }
 
 static int motTabsSetFontAttrib(Ihandle* ih, const char* value)
@@ -514,7 +510,7 @@ static void motTabsPageChangedCallback(Widget w, Ihandle* ih, XmNotebookCallback
         cb2(ih, nptr->page_number, nptr->prev_page_number);
     }
   }
-  (void)w; 
+  (void)w;
 }
 
 static void motTabsButtonPressEvent(Widget w, Ihandle* child, XButtonEvent* evt, Boolean* cont)
@@ -581,9 +577,9 @@ static void motTabsCloseButtonActivate(Widget w, XtPointer client_data, XtPointe
 
 static void motTabsConfigureNotify(Widget w, XEvent *evt, String* s, Cardinal *card)
 {
-  /* Motif does not process the changed of position and/or size of children outside the parent's client area. 
+  /* Motif does not process the changed of position and/or size of children outside the parent's client area.
      Since Notebook pages are not resized until they are moved into the visible area,
-     we must update the children position and size when a tab page is resize. 
+     we must update the children position and size when a tab page is resize.
      Since tab pages are not hidden, they are moved outside the visible area,
      a resize occurs every time a tab is activated.
   */
@@ -642,7 +638,7 @@ static void motTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
                     XmNnotebookChildType, XmPAGE,
                     XmNpageNumber, pos,
                     XmNresizable, True,
-                    NULL);   
+                    NULL);
 
     XtOverrideTranslations(child_manager, XtParseTranslationTable("<Configure>: iupTabsConfigure()"));
 
@@ -803,7 +799,7 @@ static void motTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     XtVaSetValues(tab_button, XmNforeground, color, NULL);
 
     XtRealizeWidget(child_manager);
-    XtRealizeWidget(tab_button);   
+    XtRealizeWidget(tab_button);
 
     iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)child_manager);
     iupAttribSet(child, "_IUPMOT_TABBUTTON", (char*)tab_button);
@@ -878,7 +874,7 @@ static int motTabsMapMethod(Ihandle* ih)
 
   if (!ih->handle)
     return IUP_ERROR;
- 
+
   ih->serial = iupDialogGetChildId(ih); /* must be after using the string */
 
   /* Disable page scroller */
@@ -989,15 +985,16 @@ IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, motTabsSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, motTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, motTabsSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  
+
   /* IupTabs only */
-  iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, motTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);  
+  iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, motTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);  /* can not be set, always HORIZONTAL in Motif */
-  iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, motTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, motTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+
   iupClassRegisterAttributeId(ic, "TABTIP", NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, motTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, motTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, motTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, motTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, motTabsSetShowCloseAttrib, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* NOT supported */
