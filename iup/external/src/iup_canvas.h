@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_CANVAS_H 
+
+#ifndef __IUP_CANVAS_H
 #define __IUP_CANVAS_H
 
 #ifdef __cplusplus
@@ -26,7 +26,7 @@ char* iupCanvasGetPosYAttrib(Ihandle* ih);
 #define IUP_SB_MAX INT_MAX-1
 
 /* this must match the iupCanvas public definition in "iup_stdcontrols.h" */
-struct _IcontrolData 
+struct _IcontrolData
 {
   int sb;    /* scrollbar configuration, valid only after map, use iupBaseGetScrollbar before map */
   double posx, posy;

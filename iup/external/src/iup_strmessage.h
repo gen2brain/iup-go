@@ -1,12 +1,10 @@
 /** \file
- * \brief Language Dependent String Messages 
+ * \brief Language Dependent String Messages
  *
  * See Copyright Notice in "iup.h"
- *
  */
 
- 
-#ifndef __IUP_STRMESSAGE_H 
+#ifndef __IUP_STRMESSAGE_H
 #define __IUP_STRMESSAGE_H
 
 #ifdef __cplusplus

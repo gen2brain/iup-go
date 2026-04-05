@@ -11,7 +11,6 @@
 #include "iup.h"
 #include "iupcbs.h"
 
-#include "iup_assert.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -19,7 +18,6 @@
 #include "iup_drvfont.h"
 #include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_mask.h"
 #include "iup_image.h"
 #include "iup_list.h"
@@ -76,7 +74,7 @@ void iupListUpdateOldValue(Ihandle* ih, int pos, int removed)
       }
       else
       {
-        /* multiple selection on a non drop-down list. */
+        /* multiple selection on a non dropdown list. */
         char* value = IupGetAttribute(ih, "VALUE");
         iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", value);
       }
@@ -162,7 +160,7 @@ void iupListMultipleCallActionCb(Ihandle* ih, IFnsii cb, IFns multi_cb, int* pos
         if (str[i] == '+')
           iListCallActionCallback(ih, cb, i+1, 1);
       }
-      else if (str[i] != old_str[i])
+      else if (old_str && str[i] != old_str[i])
       {
         if (str[i] == '+')
           iListCallActionCallback(ih, cb, i+1, 1);
@@ -182,7 +180,7 @@ int iupListGetPosAttrib(Ihandle* ih, int pos)
 
   pos--; /* IUP items start at 1 */
 
-  if (pos < 0) 
+  if (pos < 0)
     return -1;
 
   count = iupdrvListGetCount(ih);
@@ -388,7 +386,7 @@ static int iListSetDropdownAttrib(Ihandle* ih, const char* value)
 
 static char* iListGetDropdownAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->is_dropdown); 
+  return iupStrReturnBoolean (ih->data->is_dropdown);
 }
 
 static int iListSetMultipleAttrib(Ihandle* ih, const char* value)
@@ -411,7 +409,7 @@ static int iListSetMultipleAttrib(Ihandle* ih, const char* value)
 
 static char* iListGetMultipleAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->is_multiple); 
+  return iupStrReturnBoolean (ih->data->is_multiple);
 }
 
 static int iListSetEditboxAttrib(Ihandle* ih, const char* value)
@@ -433,7 +431,7 @@ static int iListSetEditboxAttrib(Ihandle* ih, const char* value)
 
 static char* iListGetEditboxAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->has_editbox); 
+  return iupStrReturnBoolean (ih->data->has_editbox);
 }
 
 static int iListSetScrollbarAttrib(Ihandle* ih, const char* value)
@@ -766,7 +764,7 @@ int iupListCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int *is_ctrl)
 
 static char* iListGetShowDragDropAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->show_dragdrop); 
+  return iupStrReturnBoolean (ih->data->show_dragdrop);
 }
 
 static int iListSetShowDragDropAttrib(Ihandle* ih, const char* value)
@@ -783,9 +781,7 @@ static int iListSetShowDragDropAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-
 /*****************************************************************************************/
-
 
 static int iListDropData_CB(Ihandle *ih, char* type, void* data, int len, int x, int y)
 {
@@ -976,9 +972,7 @@ static int iListSetValueStringAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-
 /*****************************************************************************************/
-
 
 static int iListCreateMethod(Ihandle* ih, void** params)
 {
@@ -1127,13 +1121,13 @@ static void iListGetNaturalItemsSize(Ihandle *ih, int *w, int *h)
   /* compute height for multiple lines, dropdown is just 1 line */
   if (!ih->data->is_dropdown)
   {
-    int visiblelines, num_lines, 
+    int visiblelines, num_lines,
         edit_line_size = *h;  /* don't include the highest image */
 
     if (ih->data->show_image && max_h > *h)  /* use the highest image to compute the natural size */
       *h = max_h;
 
-    iupdrvListAddItemSpace(ih, h);  /* this is independent from spacing */
+    iupdrvListAddItemSpace(ih, h);  /* this is independent of spacing */
 
     *h += 2*ih->data->spacing;  /* this will be multiplied by the number of lines */
     *w += 2*ih->data->spacing;  /* include also horizontal spacing */
@@ -1148,7 +1142,7 @@ static void iListGetNaturalItemsSize(Ihandle *ih, int *w, int *h)
     *h = *h * num_lines;
 
     /* For dropdown editbox: entry is embedded in native control, add a line for it.
-       For plain editbox: entry is separate widget (GTK VBox, etc), driver manages it. */
+       For plain editbox: entry is separate widget (GTK VBox, etc.), driver manages it. */
     if (ih->data->has_editbox && ih->data->is_dropdown)
       *h += edit_line_size;
   }
@@ -1204,9 +1198,7 @@ static void iListDestroyMethod(Ihandle* ih)
     iupMaskDestroy(ih->data->mask);
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupList(const char* action)
 {

@@ -4,7 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdlib.h> 
+#include <stdlib.h>
 
 #include "iup.h"
 

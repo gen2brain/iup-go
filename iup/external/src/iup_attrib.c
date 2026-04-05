@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <limits.h>
 #include <stdarg.h>
 
 #include "iup.h"
@@ -21,7 +20,7 @@
 #include "iup_varg.h"
 
 
-#define iupATTRIB_LANGUAGE_STRING(_v)  (_v && _v[0] == '_' && _v[1] == '@') 
+#define iupATTRIB_LANGUAGE_STRING(_v)  (_v && _v[0] == '_' && _v[1] == '@')
 #define iupATTRIB_LANGUAGE_SHIFT 2
 
 #define iupATTRIB_GET_LANGUAGE_STRING(_v, _s)                              \
@@ -33,7 +32,6 @@
       _s = 0;  /* no need to store it again, already stored internally */  \
     }                                                                      \
   }
-
 
 void iupAttribSetTheme(Ihandle* ih, Ihandle* theme)
 {
@@ -96,47 +94,6 @@ IUP_API void IupCopyAttributes(Ihandle* src_ih, Ihandle* dst_ih)
 
     name = iupTableNext(src_ih->attrib);
   }
-}
-
-#define iupATTRIB_ISSAVED(_name) (_name[0]  == '_' && \
-                                  _name[1]  == 'I' && \
-                                  _name[2]  == 'U' && \
-                                  _name[3]  == 'P' && \
-                                  _name[4]  == 'L' && \
-                                  _name[5]  == 'E' && \
-                                  _name[6]  == 'D' && \
-                                  _name[7]  == '_' && \
-                                  _name[8]  == 'S' && \
-                                  _name[9]  == 'A' && \
-                                  _name[10] == 'V' && \
-                                  _name[11] == 'E' && \
-                                  _name[12] == 'D' && \
-                                  _name[13] == '_')  /* "_IUPLED_SAVED_" */
-
-IUP_SDK_API int iupAttribGetAllSaved(Ihandle* ih, char** names, int n)
-{
-  char *name;
-  int i = 0;
-
-  if (!names || n == 0 || n == -1)
-    return iupTableCount(ih->attrib);
-
-  name = iupTableFirst(ih->attrib);
-  while (name)
-  {
-    if (iupATTRIB_ISSAVED(name))
-    {
-      names[i] = name + sizeof("_IUPLED_SAVED_") - 1;
-      i++;
-
-      if (i == n)
-        break;
-    }
-
-    name = iupTableNext(ih->attrib);
-  }
-
-  return i;
 }
 
 IUP_API int IupGetAllAttributes(Ihandle* ih, char** names, int n)
@@ -1420,7 +1377,7 @@ IUP_SDK_API char* iupAttribGetInherit(Ihandle* ih, const char* name)
   value = iupAttribGet(ih, name);   /* Check on the element first */
   while (!value)
   {
-    ih = ih->parent;   /* iheritance here independs on the attribute */
+    ih = ih->parent;   /* inheritance here independents on the attribute */
     if (!ih)
       return NULL;
 
@@ -1499,7 +1456,7 @@ static int iAttribToken(char* env_buffer)
     case '\v':
       continue;
 
-    case '=':          /* attribuicao */
+    case '=':          /* assignment */
       return IATTRIB_TK_SET;
 
     case ',':
@@ -1521,7 +1478,7 @@ static int iAttribToken(char* env_buffer)
   }
 }
 
-IUP_SDK_API void iupAttribParse(Ihandle *ih, const char* str, int save_led_info)
+IUP_SDK_API void iupAttribParse(Ihandle *ih, const char* str)
 {
   char env_buffer[256];
   char* name=NULL;
@@ -1542,14 +1499,6 @@ IUP_SDK_API void iupAttribParse(Ihandle *ih, const char* str, int save_led_info)
       if (name)
       {
         IupStoreAttribute(ih, name, value);
-
-        if (save_led_info)
-        {
-          char led_name[200];
-          snprintf(led_name, sizeof(led_name), "_IUPLED_SAVED_%s", name);
-          iupAttribSet(ih, led_name, "1");
-        }
-
         free(name);
       }
       if (end)
@@ -1581,7 +1530,7 @@ IUP_API Ihandle* IupSetAttributes(Ihandle *ih, const char* str)
   if (!iupObjectCheck(ih))
     return ih;
   if (str)
-    iupAttribParse(ih, str, 0);
+    iupAttribParse(ih, str);
   return ih;
 }
 

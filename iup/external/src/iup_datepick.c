@@ -7,10 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include <memory.h>
-#include <stdarg.h>
-#include <limits.h>
 #include <time.h>
 
 #include "iup.h"
@@ -19,8 +16,6 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_register.h"
 #include "iup_childtree.h"
 #include "iup_mask.h"
@@ -230,9 +225,7 @@ static int iDatePickTextKAny_CB(Ihandle* ih_text, int key)
   return IUP_CONTINUE;
 }
 
-
 /*********************************************************************************************/
-
 
 static int iDatePickSetShowDropdownAttrib(Ihandle* ih, const char* value)
 {
@@ -438,9 +431,7 @@ static int iDatePickSetZeroprecedAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-
 /*********************************************************************************************/
-
 
 static Ihandle* iDatePickCreateText(void)
 {
@@ -457,7 +448,7 @@ static int iDatePickCreateMethod(Ihandle* ih, void** params)
 {
   Ihandle *box, *tgl;
   (void)params;
-  
+
   tgl = IupToggle(NULL, NULL);
   IupSetAttribute(tgl, "IMAGE", "IupArrowDown");
   IupSetAttribute(tgl, "EXPAND", "VERTICALFREE");
@@ -488,12 +479,8 @@ static int iDatePickCreateMethod(Ihandle* ih, void** params)
 
   iDatePickSetOrderAttrib(ih, "DMY");
   iDatePickSetValueAttrib(ih, iDatePickGetTodayAttrib(ih));
-  
-#if 1 /* GTK_CHECK_VERSION(3, 16, 0) */
-  IupSetAttribute(ih, "BACKCOLOR", IupGetGlobal("TXTBGCOLOR")); /* workaround */
-#else
-  IupSetAttribute(ih, "BGCOLOR", IupGetGlobal("TXTBGCOLOR")); /* NOT Working in GTK > 3.16 */
-#endif
+
+  IupSetAttribute(ih, "BACKCOLOR", IupGetGlobal("TXTBGCOLOR"));
 
   return IUP_NOERROR;
 }

@@ -8,15 +8,11 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_varg.h"
 
 
@@ -24,7 +20,7 @@ enum{IZBOX_ALIGN_NORTH, IZBOX_ALIGN_SOUTH, IZBOX_ALIGN_WEST, IZBOX_ALIGN_EAST,
      IZBOX_ALIGN_NE, IZBOX_ALIGN_SE, IZBOX_ALIGN_NW, IZBOX_ALIGN_SW,
      IZBOX_ALIGN_ACENTER};
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   int alignment;
   Ihandle* value_handle;
@@ -145,7 +141,7 @@ static int iZboxSetValueHandleAttrib(Ihandle* ih, const char* value)
       return 0;
     }
   }
- 
+
   return 0;
 }
 
@@ -170,7 +166,7 @@ static int iZboxSetValuePosAttrib(Ihandle* ih, const char* value)
       return 0;
     }
   }
- 
+
   return 0;
 }
 
@@ -323,16 +319,14 @@ static void iZboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
       }
       if (dx<0) dx = 0;
       if (dy<0) dy = 0;
-                     
+
       /* update child */
       iupBaseSetPosition(child, x+dx, y+dy);
     }
   }
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupZboxv(Ihandle **children)
 {

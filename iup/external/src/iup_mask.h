@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_MASK_H 
+
+#ifndef __IUP_MASK_H
 #define __IUP_MASK_H
 
 #ifdef __cplusplus
@@ -22,7 +22,7 @@ extern "C" {
 typedef struct _Imask Imask;
 
 /** Creates a mask given a string.  \n
- * If casei is true, will turn the mask case insensitive.
+ * If casei is true, will turn the mask case-insensitive.
  * \ingroup mask */
 IUP_SDK_API Imask* iupMaskCreate(const char* mask_str);
 
@@ -38,8 +38,8 @@ IUP_SDK_API Imask* iupMaskCreateFloat(float min, float max, const char* decimal_
 * \ingroup mask */
 IUP_SDK_API Imask* iupMaskCreateReal(int positive, const char* decimal_symbol);
 
-/** If casei is 1, will turn the mask case insensitive.
-* Default is case sensitive.
+/** If casei is 1, will turn the mask case-insensitive.
+* Default is case-sensitive.
 * \ingroup mask */
 IUP_SDK_API void iupMaskSetCaseI(Imask* mask, int casei);
 

@@ -17,12 +17,10 @@
 #include "iup_class.h"
 #include "iup_object.h"
 #include "iup_dlglist.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_drvfont.h"
-#include "iup_focus.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
@@ -102,7 +100,7 @@ static void iDialogAdjustPos(Ihandle *ih, int *x, int *y)
     iupdrvGetScreenSize(&screen_width, &screen_height);
 
   if (*x == IUP_CENTERPARENT || *y == IUP_CENTERPARENT ||
-      *x == IUP_LEFTPARENT   || *y == IUP_TOPPARENT    || 
+      *x == IUP_LEFTPARENT   || *y == IUP_TOPPARENT    ||
       *x == IUP_RIGHTPARENT  || *y == IUP_BOTTOMPARENT)
   {
     InativeHandle* parent = iupDialogGetNativeParent(ih);
@@ -129,7 +127,7 @@ static void iDialogAdjustPos(Ihandle *ih, int *x, int *y)
     if (client)
     {
       /* position is relative to mdi client */
-      parent_x = 0; 
+      parent_x = 0;
       parent_y = 0;
 
       /* screen/parent size is now the size of the mdi client */
@@ -314,7 +312,7 @@ static void iDialogComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
   int decorwidth, decorheight;
   Ihandle* child = ih->firstchild;
 
-  /* if does not have a menu, but the attribute is defined,
+  /* if it does not have a menu, but the attribute is defined,
      try to update the menu before retrieving the decoration. */
   char* value = iupAttribGet(ih, "MENU");
   if (!ih->data->menu && value)
@@ -429,7 +427,7 @@ static void iDialogAfterShow(Ihandle* ih)
         IupFlush();  /* again to update focus */
     }
 
-    /* do it only if show_cb did NOT changed the current focus */
+    /* do it only if show_cb did NOT change the current focus */
     if (old_focus == IupGetFocus() && !iupAttribGetBoolean(ih, "SHOWNOFOCUS"))
     {
       Ihandle *startfocus = IupGetAttributeHandle(ih, "STARTFOCUS");
@@ -578,7 +576,7 @@ int iupDialogPopup(Ihandle* ih, int x, int y)
 
 int iupDialogShowXY(Ihandle* ih, int x, int y)
 {
-  if (iupAttribGetBoolean(ih, "MODAL")) 
+  if (iupAttribGetBoolean(ih, "MODAL"))
   {
     /* is modal, just update visibility and return */
     iDialogUpdateVisibility(ih, &x, &y);
@@ -605,7 +603,7 @@ void iupDialogHide(Ihandle* ih)
   int was_modal = iupAttribGet(ih, "_IUPDLG_WAS_MODAL") != NULL;
 
   /* hidden at the system and marked hidden in IUP */
-  if (!iupdrvDialogIsVisible(ih) && ih->data->show_state == IUP_HIDE) 
+  if (!iupdrvDialogIsVisible(ih) && ih->data->show_state == IUP_HIDE)
     return;
 
   /* marked hidden in IUP */
@@ -628,7 +626,7 @@ void iupDialogHide(Ihandle* ih)
 
   /* decrement visible count */
   iupDlgListVisibleDec();
-    
+
   /* process flush and process show_cb */
   iDialogAfterHide(ih);
 
@@ -1068,7 +1066,7 @@ static int iDialogSetSizeAttrib(Ihandle* ih, const char* value)
       int wscale = iDialogSizeGetScale(sw);
       int hscale = iDialogSizeGetScale(sh);
 
-      int width = 0, height = 0; 
+      int width = 0, height = 0;
       iupStrToIntInt(value, &width, &height, 'x');
       if (width < 0) width = 0;
       if (height < 0) height = 0;
@@ -1416,7 +1414,7 @@ Iclass* iupDialogNewClass(void)
   /* the only case where VISIBLE default is NO, and must not be propagated to the dialog children */
   iupClassRegisterAttribute(ic, "VISIBLE", iupBaseGetVisibleAttrib, iDialogSetVisibleAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
 
-  /* X and Y here are at the top left corner of the window, not the client area. */
+  /* X and Y here are in the top left corner of the window, not the client area. */
   iupClassRegisterAttribute(ic, "X", iDialogGetXAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "Y", iDialogGetYAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCREENPOSITION", iDialogGetScreenPositionAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_READONLY|IUPAF_NO_INHERIT);
@@ -1431,7 +1429,7 @@ Iclass* iupDialogNewClass(void)
   iupClassRegisterAttribute(ic, "RESIZE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BORDERSIZE", iDialogGetBorderSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  
+
   iupClassRegisterAttribute(ic, "DEFAULTENTER", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DEFAULTESC",   NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGFRAME",  NULL, iDialogSetDialogFrameAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

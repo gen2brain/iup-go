@@ -8,15 +8,12 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_toggle.h"
 #include "iup_image.h"
 #include "iup_class.h"
@@ -37,7 +34,7 @@ static int iToggleSetFlatAttrib(Ihandle* ih, const char* value)
 
 static char* iToggleGetFlatAttrib(Ihandle *ih)
 {
-  return iupStrReturnBoolean (ih->data->flat); 
+  return iupStrReturnBoolean (ih->data->flat);
 }
 
 char* iupToggleGetPaddingAttrib(Ihandle* ih)
@@ -70,7 +67,7 @@ static int iToggleCreateMethod(Ihandle* ih, void** params)
 
 static void iToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
-  int natural_w = 0, 
+  int natural_w = 0,
       natural_h = 0,
       type = ih->data->type;
   (void)children_expand; /* unset if not a container */
@@ -114,9 +111,7 @@ static void iToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
   *h = natural_h;
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupToggle(const char* title, const char* action)
 {

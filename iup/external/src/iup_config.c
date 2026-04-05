@@ -9,7 +9,6 @@
 #include <string.h>
 
 #include <iup.h>
-#include <iupcbs.h>
 
 #include "iup_object.h"
 #include "iup_config.h"
@@ -87,7 +86,7 @@ static char* iConfigSetFilename(Ihandle* ih)
     if (!app_path)
       return NULL;
 
-#if defined(__ANDROID__) || defined(__APPLE__) || defined(WIN32) || defined(__EMSCRIPTEN__)
+#if defined(__ANDROID__) || defined(__APPLE__) || defined(WIN32)
     snprintf(filename, sizeof(filename), "%s%s.cfg", app_path, app_name);
 #else
     snprintf(filename, sizeof(filename), "%s.%s", app_path, app_name);
@@ -111,7 +110,7 @@ IUP_API int IupConfigLoad(Ihandle* ih)
   char group[GROUPKEYSIZE] = "";
   char key[GROUPKEYSIZE];
   IlineFile* line_file;
-  
+
   char* filename = iConfigSetFilename(ih);
   if (!filename)
     return -3;
@@ -152,7 +151,7 @@ IUP_API int IupConfigLoad(Ihandle* ih)
       sscanf(line_buffer, "%99[^=]s", key);
 
       value = strstr(line_buffer, "=");
-      if (!value)                    
+      if (!value)
         value = line_buffer;
       else
         value++;  /* Skip '=' */
@@ -171,7 +170,7 @@ IUP_API int IupConfigSave(Ihandle* ih)
   FILE* file;
   int i, count;
   char last_group[GROUPKEYSIZE] = "", group[GROUPKEYSIZE], *key;
-  
+
   char* filename = iConfigSetFilename(ih);
   if (!filename)
     return -3;
@@ -187,7 +186,7 @@ IUP_API int IupConfigSave(Ihandle* ih)
   for (i = 0; i<count; i++)
   {
     char* value;
-    
+
     key = strSetGroupKeyName(names[i], group);
     if (!key)
       continue;
@@ -210,14 +209,6 @@ IUP_API int IupConfigSave(Ihandle* ih)
   }
 
   fclose(file);
-#if defined(__EMSCRIPTEN__)
-  EM_ASM(
-	FS.syncfs(function(err) {
-        if(err) console.log('Error: FS.syncfs failed', err);
-	  }
-	);
-  );
-#endif
   return 0;
 }
 
@@ -675,7 +666,7 @@ IUP_API void IupConfigDialogShow(Ihandle* ih, Ihandle* dialog, const char* name)
     IupShow(dialog);
 
   if (set_size)
-    IupSetAttribute(dialog, "USERSIZE", NULL);  /* clear minimum restriction without reseting the current size */
+    IupSetAttribute(dialog, "USERSIZE", NULL);  /* clear minimum restriction without reset the current size */
 }
 
 IUP_API void IupConfigDialogClosed(Ihandle* ih, Ihandle* dialog, const char* name)

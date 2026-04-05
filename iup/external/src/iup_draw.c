@@ -929,9 +929,7 @@ IUP_API void IupDrawFocusRect(Ihandle* ih, int x1, int y1, int x2, int y2)
   iupdrvDrawFocusRect((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), x1, y1, x2, y2);
 }
 
-
 /************************************************************************************************/
-
 
 IUP_SDK_API long iupDrawColor(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
@@ -1070,7 +1068,6 @@ IUP_SDK_API void iupDrawParentBackground(IdrawCanvas* dc, Ihandle* ih)
   iupdrvDrawGetSize(dc, &w, &h);
   iupdrvDrawRectangle(dc, 0, 0, w - 1, h - 1, color, IUP_DRAW_FILL, 1);
 }
-
 
 /***********************************************************************************************/
 

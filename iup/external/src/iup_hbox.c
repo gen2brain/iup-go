@@ -8,15 +8,12 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_box.h"
 #include "iup_normalizer.h"
 #include "iup_varg.h"
@@ -33,7 +30,7 @@ static int iHboxSetRasterSizeAttrib(Ihandle* ih, const char* value)
   {
     int s = 0, d = 0;
     iupStrToIntInt(value, &s, &d, 'x');  /* second value will be ignored, can NOT set height */
-    if (s > 0) 
+    if (s > 0)
     {
       ih->userheight = 0;
       ih->userwidth = s;
@@ -54,7 +51,7 @@ static int iHboxSetSizeAttrib(Ihandle* ih, const char* value)
   {
     int s = 0, d = 0;
     iupStrToIntInt(value, &s, &d, 'x');  /* second value will be ignored, can NOT set height */
-    if (s > 0) 
+    if (s > 0)
     {
       int charwidth, charheight;
       iupdrvFontGetCharSize(ih, &charwidth, &charheight);
@@ -257,7 +254,7 @@ static void iHboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
       else  /* IUP_ALIGN_ATOP */
         dy = 0;
       if (dy<0) dy = 0;
-                      
+
       /* update child */
       iupBaseSetPosition(child, x, y+dy);
 
@@ -270,9 +267,7 @@ static void iHboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
   }
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupHboxv(Ihandle **children)
 {

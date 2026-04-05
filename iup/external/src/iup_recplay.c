@@ -4,17 +4,14 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdlib.h>      
-#include <stdio.h>      
-#include <string.h>      
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <time.h>
 
-#include "iup.h" 
-#include "iup_key.h"
+#include "iup.h"
 
 #include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_drvinfo.h"
 #include "iup_str.h"
 
 
@@ -24,7 +21,7 @@ static int irec_mode = 0;
 
 static int iRecClock(void)
 {
-  return (int)((clock()*1000)/CLOCKS_PER_SEC); /* time in miliseconds */
+  return (int)((clock()*1000)/CLOCKS_PER_SEC); /* time in milliseconds */
 }
 
 static void iRecWriteInt(FILE* file, int value, int mode)
@@ -176,9 +173,7 @@ IUP_API int IupRecordInput(const char* filename, int mode)
   return IUP_NOERROR;
 }
 
-
 /*************************************************************************************/
-
 
 static void iPlayReadInt(FILE* file, int *value, int mode)
 {
@@ -284,8 +279,8 @@ static int iPlayAction(FILE* file, int mode)
       iupdrvSendMouse(x, y, (int)button, (int)status);
 
       /* Process all messages between button press and release without interruption.
-         This will not work if two butons are pressed together. */
-/*      if (status == 1 || status == 2)
+         This will not work if two buttons are pressed together. */
+/*    if (status == 1 || status == 2)
         last_pressed = 1;
       else if (status == 0)
         last_pressed = 0; */

@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_CLASSBASE_H 
+
+#ifndef __IUP_CLASSBASE_H
 #define __IUP_CLASSBASE_H
 
 #ifdef __cplusplus
@@ -62,21 +62,21 @@ IUP_SDK_API void iupBaseContainerUpdateExpand(Ihandle* ih);
  * if a container then update the "expand" member from the EXPAND attribute, then
  * call \ref iupClassObjectComputeNaturalSize for containers if they have children or
  * call \ref iupClassObjectComputeNaturalSize for non-containers if user size is not defined.
- * Must be called for each children in the container. \n
+ * Must be called for each child in the container. \n
  * First call is in iupLayoutCompute.
  * \ingroup iclassbase */
 IUP_SDK_API void iupBaseComputeNaturalSize(Ihandle* ih);
 
 /** Update the current size from the available size, the natural size, expand and shrink.
  * Call \ref iupClassObjectSetChildrenCurrentSize for containers if they have children.
- * Must be called for each children in the container. \n
+ * Must be called for each child in the container. \n
  * First call is in iupLayoutCompute.
  * \ingroup iclassbase */
 IUP_SDK_API void iupBaseSetCurrentSize(Ihandle* ih, int w, int h, int shrink);
 
 /** Set the current position and update children position for containers.
  * Call \ref iupClassObjectSetChildrenPosition for containers if they have children.
- * Must be called for each children in the container. \n
+ * Must be called for each child in the container. \n
  * First call is in iupLayoutCompute.
  * \ingroup iclassbase */
 IUP_SDK_API void iupBaseSetPosition(Ihandle* ih, int x, int y);
@@ -158,9 +158,7 @@ IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic);
 /* util */
 IUP_SDK_API int iupBaseNoSaveCheck(Ihandle* ih, const char* name);
 
-
 /** @} */
-
 
 
 /** \defgroup iclassbaseutil Base Class Utilities
@@ -175,7 +173,7 @@ IUP_SDK_API int iupBaseNoSaveCheck(Ihandle* ih, const char* name);
 #define iupROUND(_x) ((int)((_x)>0? (_x)+0.5: (_x)-0.5))
 IUP_SDK_API int     iupRound(double x);
 
-#define iupCOLOR8TO16(_x) ((unsigned short)(_x*257))  
+#define iupCOLOR8TO16(_x) ((unsigned short)(_x*257))
 #define iupCOLOR16TO8(_x) ((unsigned char)(_x/257))   /* 65535/257 = 255 */
 
 #define iupBYTECROP(_x)   ((unsigned char)((_x)<0?0:((_x)>255)?255:(_x)))

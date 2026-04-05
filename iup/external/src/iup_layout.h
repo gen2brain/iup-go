@@ -4,8 +4,8 @@
  * See Copyright Notice in "iup.h"
  *
  */
- 
-#ifndef __IUP_LAYOUT_H 
+
+#ifndef __IUP_LAYOUT_H
 #define __IUP_LAYOUT_H
 
 #ifdef __cplusplus
@@ -18,7 +18,7 @@ IUP_SDK_API void iupLayoutUpdate(Ihandle* ih);   /* called after map */
 
 IUP_SDK_API void iupLayoutApplyMinMaxSize(Ihandle* ih, int *w, int *h);
 
-/* Other functions declared in <iup.h> and implemented here. 
+/* Other functions declared in <iup.h> and implemented here.
 IupRefresh
 */
 

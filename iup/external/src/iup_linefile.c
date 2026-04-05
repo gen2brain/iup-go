@@ -71,8 +71,8 @@ IUP_SDK_API int iupLineFileReadLine(IlineFile* line_file)
 {
   char char_buffer[1];
   int ret, count = 0;
-  
-  do 
+
+  do
   {
     ret = (int)fread(char_buffer, 1, 1, line_file->file);
     if (ret == 0)
@@ -104,4 +104,3 @@ IUP_SDK_API int iupLineFileReadLine(IlineFile* line_file)
   line_file->line_buffer[count] = 0;
   return count;
 }
-

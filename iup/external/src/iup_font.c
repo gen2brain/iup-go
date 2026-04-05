@@ -4,15 +4,14 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdlib.h> 
-#include <string.h> 
-#include <stdio.h> 
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "iup.h"
 
 #include "iup_str.h"
 #include "iup_drvfont.h"
-#include "iup_assert.h"
 #include "iup_attrib.h"
 #include "iup_class.h"
 #include "iup_object.h"
@@ -103,7 +102,7 @@ const char* iupFontGetMacName(const char* name)
       return ifont_name_map[i].mac;
     if (iupStrEqualNoCase(ifont_name_map[i].pango, name))
       return ifont_name_map[i].mac;
-	if (iupStrEqualNoCase(ifont_name_map[i].x, name))
+  if (iupStrEqualNoCase(ifont_name_map[i].x, name))
       return ifont_name_map[i].mac;
   }
 
@@ -134,11 +133,11 @@ IUP_SDK_API int iupGetFontInfo(const char* font, char *typeface, int *size, int 
 {
   *size = 0;
   *is_bold = 0;
-  *is_italic = 0; 
+  *is_italic = 0;
   *is_underline = 0;
   *is_strikeout = 0;
   *typeface = 0;
-  
+
   /* parse the old Windows format first */
   if (!iupFontParseWin(font, typeface, size, is_bold, is_italic, is_underline, is_strikeout))
   {
@@ -156,12 +155,12 @@ IUP_SDK_API char* iupGetFontFaceAttrib(Ihandle* ih)
 {
   int size = 0;
   int is_bold = 0,
-    is_italic = 0, 
+    is_italic = 0,
     is_underline = 0,
     is_strikeout = 0;
   char typeface[1024];
-  char* font; 
-  
+  char* font;
+
   font = iupGetFontValue(ih);
 
   if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
@@ -196,12 +195,12 @@ IUP_SDK_API char* iupGetFontSizeAttrib(Ihandle* ih)
 {
   int size = 0;
   int is_bold = 0,
-    is_italic = 0, 
+    is_italic = 0,
     is_underline = 0,
     is_strikeout = 0;
   char typeface[1024];
-  char* font; 
-  
+  char* font;
+
   font = iupGetFontValue(ih);
 
   if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
@@ -214,15 +213,15 @@ IUP_SDK_API int iupSetFontSizeAttrib(Ihandle* ih, const char* value)
 {
   int size = 0;
   int is_bold = 0,
-    is_italic = 0, 
+    is_italic = 0,
     is_underline = 0,
     is_strikeout = 0;
   char typeface[1024];
-  char* font; 
+  char* font;
 
   if (!value)
     return 0;
-  
+
   font = iupGetFontValue(ih);
 
   if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
@@ -271,9 +270,7 @@ IUP_SDK_API int iupSetFontStyleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-
 /**************************************************************************************/
-
 
 char* iupGetDefaultFontFaceGlobalAttrib(void)
 {
@@ -359,15 +356,15 @@ void iupSetDefaultFontSizeGlobalAttrib(const char* value)
 {
   int size = 0;
   int is_bold = 0,
-    is_italic = 0, 
+    is_italic = 0,
     is_underline = 0,
     is_strikeout = 0;
   char typeface[1024];
-  char* font; 
+  char* font;
 
   if (!value)
     return;
-  
+
   font = IupGetGlobal("DEFAULTFONT");
 
   if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
@@ -382,7 +379,7 @@ char* iupGetDefaultFontSizeGlobalAttrib(void)
 {
   int size = 0;
   int is_bold = 0,
-    is_italic = 0, 
+    is_italic = 0,
     is_underline = 0,
     is_strikeout = 0;
   char typeface[1024];
@@ -395,13 +392,12 @@ char* iupGetDefaultFontSizeGlobalAttrib(void)
   return iupStrReturnInt(size);
 }
 
-
 /**************************************************************/
 /* Native Font Format, compatible with Pango Font Description */
 /**************************************************************/
 
 /*
-The string contains the font name, the style and the size. 
+The string contains the font name, the style and the size.
 Style can be a free combination of some names separated by spaces.
 Font name can be a list of font family names separated by comma.
 */
@@ -461,7 +457,7 @@ static int iFontFindStyleName(const char *name, int len, int *style)
 static const char * iFontGetStyleWord(const char *str, const char *last, int *wordlen)
 {
   const char *result;
-  
+
   while (last > str && is_style_sep(*(last - 1)))
     last--;
 
@@ -470,7 +466,7 @@ static const char * iFontGetStyleWord(const char *str, const char *last, int *wo
     result--;
 
   *wordlen = (int)(last - result);
-  
+
   return result;
 }
 
@@ -587,7 +583,7 @@ IUP_SDK_API int iupFontParseWin(const char *value, char *typeface, int *size, in
     value++;       /* skip separator */
   else
   {
-    while (strlen(value)) /* extract style (bold/italic etc) */
+    while (strlen(value)) /* extract style (bold/italic etc.) */
     {
       char style[30];
 
@@ -599,13 +595,13 @@ IUP_SDK_API int iupFontParseWin(const char *value, char *typeface, int *size, in
       style[c] = '\0';
 
       if(iupStrEqual(style, "BOLD"))
-        *bold = 1; 
+        *bold = 1;
       else if(iupStrEqual(style,"ITALIC"))
-        *italic = 1; 
+        *italic = 1;
       else if(iupStrEqual(style,"UNDERLINE"))
-        *underline = 1; 
+        *underline = 1;
       else if(iupStrEqual(style,"STRIKEOUT"))
-        *strikeout = 1; 
+        *strikeout = 1;
 
       value += c; /* skip only the style */
 

@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_ATTRIB_H 
+
+#ifndef __IUP_ATTRIB_H
 #define __IUP_ATTRIB_H
 
 #ifdef __cplusplus
@@ -20,7 +20,7 @@ extern "C" {
  * - IupGetAttribute, IupSetAttribute, ... : when care about control implementation, hash table, inheritance and default value
  * - iupAttribGetStr,Int,Float: when care about inheritance, hash table and default value
  * - iupAttribGet,... : ONLY access the hash table
- * These different functions have very different performances and results. So use them wiselly.
+ * These different functions have very different performances and results. So use them wisely.
  * \par
  * See \ref iup_attrib.h 
  * \ingroup cpi */
@@ -90,7 +90,7 @@ IUP_SDK_API void iupAttribSetIntId(Ihandle *ih, const char* name, int id, int nu
  * \ingroup attrib */
 IUP_SDK_API void iupAttribSetIntId2(Ihandle *ih, const char* name, int lin, int col, int num);
 
-/** Sets an floating point attribute only in the hash table. \n
+/** Sets a floating point attribute only in the hash table. \n
  * It will be stored as a string. \n
  * It ignores children.
  * \ingroup attrib */
@@ -105,7 +105,7 @@ IUP_SDK_API void iupAttribSetFloatId(Ihandle *ih, const char* name, int id, floa
 IUP_SDK_API void iupAttribSetFloatId2(Ihandle *ih, const char* name, int lin, int col, float num);
 
 
-/** Sets an floating point attribute only in the hash table. \n
+/** Sets a floating point attribute only in the hash table. \n
 * It will be stored as a string. \n
 * It ignores children.
 * \ingroup attrib */
@@ -121,7 +121,7 @@ IUP_SDK_API void iupAttribSetDoubleId2(Ihandle *ih, const char* name, int lin, i
 
 
 /** Returns the attribute from the hash table only.  \n
- * NO inheritance, NO control implementation, NO defalt value here. \n
+ * NO inheritance, NO control implementation, NO default value here. \n
  * \ingroup attrib */
 IUP_SDK_API char* iupAttribGet(Ihandle* ih, const char* name);
 
@@ -147,11 +147,11 @@ IUP_SDK_API int iupAttribGetIntInt(Ihandle *ih, const char* name, int *i1, int *
  * \ingroup attrib */
 IUP_SDK_API int iupAttribGetBoolean(Ihandle* ih, const char* name);
 
-/** Same as \ref iupAttribGetStr but returns an floating point number.
+/** Same as \ref iupAttribGetStr but returns a floating point number.
  * \ingroup attrib */
 IUP_SDK_API float iupAttribGetFloat(Ihandle* ih, const char* name);
 
-/** Same as \ref iupAttribGetStr but returns an floating point number.
+/** Same as \ref iupAttribGetStr but returns a floating point number.
 * \ingroup attrib */
 IUP_SDK_API double iupAttribGetDouble(Ihandle* ih, const char* name);
 
@@ -175,7 +175,7 @@ IUP_SDK_API float iupAttribGetFloatId(Ihandle* ih, const char* name, int id);
 * \ingroup attrib */
 IUP_SDK_API double iupAttribGetDoubleId(Ihandle* ih, const char* name, int id);
 
-/** Same as \ref iupAttribGet but with an lin and col.
+/** Same as \ref iupAttribGet but with a lin and col.
  * \ingroup attrib */
 IUP_SDK_API char* iupAttribGetId2(Ihandle* ih, const char* name, int lin, int col);
 
@@ -193,12 +193,12 @@ IUP_SDK_API float iupAttribGetFloatId2(Ihandle* ih, const char* name, int lin, i
 
 /** Same as \ref iupAttribGetDouble but with lin and col.
 * \ingroup attrib */
-IUP_SDK_API double iupAttribGetDoubleId(Ihandle* ih, const char* name, int id);
+IUP_SDK_API double iupAttribGetDoubleId2(Ihandle* ih, const char* name, int lin, int col);
 
 
 /** Returns the attribute from the hash table only, 
  * but if not defined then checks in its parent tree. \n
- * NO control implementation, NO defalt value here. \n
+ * NO control implementation, NO default value here. \n
  * Used for EXPAND and internal attributes inside a dialog.
  * \ingroup attrib */
 IUP_SDK_API char* iupAttribGetInherit(Ihandle* ih, const char* name);
@@ -218,13 +218,7 @@ IUP_SDK_API char* iupAttribGetLocal(Ihandle* ih, const char* name);
 
 /** Parse a string of attributes.
  *\ingroup attrib */
-IUP_SDK_API void iupAttribParse(Ihandle *ih, const char* str, int save_led_info);
-
-/** Return all saved attributes.
- *\ingroup attrib */
-IUP_SDK_API int iupAttribGetAllSaved(Ihandle* ih, char** names, int n);
-
-
+IUP_SDK_API void iupAttribParse(Ihandle *ih, const char* str);
 
 /** Set an internal name to a handle.
  * \ingroup attrib */
@@ -233,8 +227,6 @@ IUP_SDK_API void iupAttribSetHandleName(Ihandle *ih);
 /** Returns the internal name if set.
  * \ingroup attrib */
 IUP_SDK_API char* iupAttribGetHandleName(Ihandle *ih);
-
-
 
 /** Sets the attribute only at the element. \n
  * If set method is not defined will not be set,
@@ -249,11 +241,9 @@ IUP_SDK_API char* iupAttribGetClassObject(Ihandle* ih, const char* name);
 IUP_SDK_API char* iupAttribGetClassObjectId(Ihandle* ih, const char* name, int id);
 IUP_SDK_API char* iupAttribGetClassObjectId2(Ihandle* ih, const char* name, int lin, int col);
 
-
-
 /* For all attributes in the environment, call the class SetAttribute only.
  * Called only after the element is mapped, but before the children are mapped. */
-void iupAttribUpdate(Ihandle* ih); 
+void iupAttribUpdate(Ihandle* ih);
 
 /* For all registered inherited attributes, checks the parent tree and 
  * call the class SetAttribute if the attribute is defined.

@@ -7,11 +7,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -21,23 +19,22 @@
 #include "iup_childtree.h"
 
 
-
 static int iSpinCallCB(Ihandle* ih, int dub, int ten, int sign)
 {
   IFni cb;
 
   /* get the callback on the spin or on the spinbox */
   Ihandle* spinbox = (Ihandle*)iupAttribGet(ih->parent, "_IUPSPIN_BOX");
-  if (spinbox) 
+  if (spinbox)
     ih = spinbox;
   else
     ih = ih->parent;
 
   cb = (IFni) IupGetCallback(ih, "SPIN_CB");
-  if (cb) 
+  if (cb)
   {
     return cb(ih, sign*(dub && ten ? 100 :
-                               ten ?  10 : 
+                               ten ?  10 :
                                dub ?   2 : 1));
   }
 
@@ -93,21 +90,21 @@ static void iSpinStopTimer(void)
 static int iSpinK_SP(Ihandle* ih)
 {
   int dir = iupAttribGetInt(ih, "_IUPSPIN_DIR");
-  
+
   return iSpinCallCB(ih, 0, 0, dir);
 }
 
 static int iSpinK_sSP(Ihandle* ih)
 {
   int dir = iupAttribGetInt(ih, "_IUPSPIN_DIR");
-  
+
   return iSpinCallCB(ih, 1, 0, dir);
 }
 
 static int iSpinK_cSP(Ihandle* ih)
 {
   int dir = iupAttribGetInt(ih, "_IUPSPIN_DIR");
-  
+
   return iSpinCallCB(ih, 0, 1, dir);
 }
 
@@ -115,18 +112,18 @@ static int iSpinButtonCB(Ihandle* ih, int but, int pressed, int x, int y, char* 
 {
   (void)x;
   (void)y;
- 
+
   if (pressed && but == IUP_BUTTON1 && !iup_isdouble(status))
   {
     int dir = iupAttribGetInt(ih, "_IUPSPIN_DIR");
-    
+
     iSpinRunTimer(ih, status, iupAttribGet(ih, "_IUPSPIN_DIR"));
-    
+
     return iSpinCallCB(ih, iup_isshift(status), iup_iscontrol(status), dir);
   }
   else if (!pressed && but == IUP_BUTTON1)
     iSpinStopTimer();
-  
+
   return IUP_DEFAULT;
 }
 
@@ -138,7 +135,7 @@ static int iSpinCreateMethod(Ihandle* ih, void** params)
 
   /* Button UP */
   bt_up = IupButton(NULL, NULL);
-  
+
   IupSetAttribute(bt_up, "EXPAND", "NO");
   IupSetAttribute(bt_up, "IMAGE",  "IupSpinUpImage");
   IupSetAttribute(bt_up, "_IUPSPIN_DIR", "1");
@@ -151,7 +148,7 @@ static int iSpinCreateMethod(Ihandle* ih, void** params)
 
   /* Button DOWN */
   bt_down = IupButton(NULL, NULL);
-  
+
   IupSetAttribute(bt_down, "EXPAND", "NO");
   IupSetAttribute(bt_down, "IMAGE",  "IupSpinDownImage");
   IupSetAttribute(bt_down, "_IUPSPIN_DIR", "-1");
@@ -167,7 +164,7 @@ static int iSpinCreateMethod(Ihandle* ih, void** params)
   bt_up->parent = ih;
   bt_up->brother = bt_down;
   bt_down->parent = ih;
-  
+
   /* avoid inheritance from parent */
   IupSetAttribute(ih, "GAP",    "0");
   IupSetAttribute(ih, "MARGIN", "0x0");
@@ -175,14 +172,13 @@ static int iSpinCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-
 static void iSpinLoadImages(void)
 {
   Ihandle* img;
 
   /* Spin UP image */
   unsigned char iupspin_up_img[] = {
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 0, 1, 1, 1, 1,
     1, 1, 1, 0, 0, 0, 1, 1, 1,
     1, 1, 0, 0, 0, 0, 0, 1, 1,
@@ -201,14 +197,14 @@ static void iSpinLoadImages(void)
   };
 
   img = IupImage(9, 6, iupspin_up_img);
-  IupSetAttribute(img, "0", "0 0 0"); 
-  IupSetAttribute(img, "1", "BGCOLOR"); 
-  IupSetHandle("IupSpinUpImage", img); 
+  IupSetAttribute(img, "0", "0 0 0");
+  IupSetAttribute(img, "1", "BGCOLOR");
+  IupSetHandle("IupSpinUpImage", img);
 
   img = IupImage(9, 6, iupspin_down_img);
-  IupSetAttribute(img, "0", "0 0 0"); 
-  IupSetAttribute(img, "1", "BGCOLOR"); 
-  IupSetHandle("IupSpinDownImage", img); 
+  IupSetAttribute(img, "0", "0 0 0");
+  IupSetAttribute(img, "1", "BGCOLOR");
+  IupSetHandle("IupSpinDownImage", img);
 }
 
 Iclass* iupSpinNewClass(void)
@@ -282,7 +278,7 @@ static void iSpinboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *c
 
 static void iSpinboxSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 {
-  /* bar */                            
+  /* bar */
   iupBaseSetCurrentSize(ih->firstchild, ih->firstchild->naturalwidth, ih->firstchild->naturalheight, shrink);
 
   if (ih->firstchild->brother)
@@ -297,7 +293,7 @@ static void iSpinboxSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 static void iSpinboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 {
   if (ih->firstchild->brother)
-  { 
+  {
     if (ih->firstchild->brother->currentheight < ih->firstchild->currentheight)
     {
       /* bar */
@@ -318,7 +314,7 @@ static void iSpinboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
       /* bar */
       iupBaseSetPosition(ih->firstchild, x+ih->firstchild->brother->currentwidth, y);
     }
-  } 
+  }
   else
   {
     /* bar */

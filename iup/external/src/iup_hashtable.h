@@ -4,7 +4,7 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
+
 #ifndef __IUP_HASHTABLE_H
 #define __IUP_HASHTABLE_H
 
@@ -15,7 +15,7 @@ extern "C"
 
 /** \defgroup table Hash Table
  * \par
- * The hash table can be indexed by strings or pointer address, 
+ * The hash table can be indexed by strings or pointer address,
  * and each value can contain strings, pointers or function pointers.
  * \par
  * See \ref iup_hashtable.h
@@ -88,7 +88,7 @@ IUP_SDK_API void iupTableSetFunc(Itable *it, const char *key, Ifunc func);
  * \ingroup table */
 IUP_SDK_API void *iupTableGet(Itable *it, const char *key);
 
-/** Retrieves a function pointer from the table. 
+/** Retrieves a function pointer from the table.
  * If not a function or not found returns NULL.
  * value always contains the element pointer.
  * \ingroup table */
@@ -122,7 +122,7 @@ IUP_SDK_API char *iupTableNext(Itable *it);
 /** Returns the value at the current position.  \n
  * The current context is an iterator
  * that is filled by iupTableNext().  \n
- * iupTableGetCur() is faster then iupTableGet(),
+ * iupTableGetCur() is faster than iupTableGet(),
  * so when you want to access an item stored
  * at a key returned by iupTableNext(),
  * use this function instead of iupTableGet().
@@ -150,4 +150,3 @@ IUP_SDK_API char *iupTableRemoveCurr(Itable *it);
 #endif
 
 #endif
-

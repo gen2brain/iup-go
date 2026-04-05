@@ -10,12 +10,9 @@
 
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 
@@ -29,7 +26,7 @@ static int iLinkButton_CB(Ihandle* ih, int button, int pressed, int x, int y, ch
     if (cb)
     {
       int ret = cb(ih, url);
-      if (ret == IUP_CLOSE) 
+      if (ret == IUP_CLOSE)
         IupExitLoop();
       else if (ret == IUP_DEFAULT && url)
         IupHelp(url);
@@ -74,7 +71,7 @@ static int iLinkCreateMethod(Ihandle* ih, void **params)
   IupSetCallback(ih, "ENTERWINDOW_CB", iLinkEnterWindow_CB);
   IupSetCallback(ih, "LEAVEWINDOW_CB", iLinkLeaveWindow_CB);
 
-  return IUP_NOERROR; 
+  return IUP_NOERROR;
 }
 
 Iclass* iupLinkNewClass(void)

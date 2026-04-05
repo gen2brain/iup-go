@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_str.h"
@@ -41,7 +40,7 @@ static int iTimerSetRunAttrib(Ihandle *ih, const char *value)
 
 static char* iTimerGetRunAttrib(Ihandle *ih)
 {
-  return iupStrReturnBoolean (ih->serial > 0); 
+  return iupStrReturnBoolean (ih->serial > 0);
 }
 
 static char* iTimerGetWidAttrib(Ihandle *ih)

@@ -2,10 +2,9 @@
  * \brief Normalizer Element (not exported API).
  *
  * See Copyright Notice in "iup.h"
- *
  */
- 
-#ifndef __IUP_NORMALIZER_H 
+
+#ifndef __IUP_NORMALIZER_H
 #define __IUP_NORMALIZER_H
 
 #ifdef __cplusplus

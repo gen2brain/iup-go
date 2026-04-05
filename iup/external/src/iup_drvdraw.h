@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_DRVDRAW_H 
+
+#ifndef __IUP_DRVDRAW_H
 #define __IUP_DRVDRAW_H
 
 #ifdef __cplusplus
@@ -33,7 +33,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih);
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc);
 
-/** Draws the ofscreen image on the screen.
+/** Draws the offscreen image on the screen.
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc);
 
@@ -155,4 +155,3 @@ IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w
 #endif
 
 #endif
-

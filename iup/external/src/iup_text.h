@@ -39,7 +39,7 @@ char* iupTextGetFormattingAttrib(Ihandle* ih);
 int iupTextSetAddFormatTagAttrib(Ihandle* ih, const char* value);
 int iupTextSetAddFormatTagHandleAttrib(Ihandle* ih, const char* value);
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   int is_multiline,
       has_formatting,

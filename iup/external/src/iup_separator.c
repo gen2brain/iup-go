@@ -7,23 +7,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
 #include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_image.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
-#include "iup_key.h"
 
 
 enum { ISEPARATOR_VERT, ISEPARATOR_HORIZ };
@@ -33,11 +27,10 @@ struct _IcontrolData
 {
   iupCanvas canvas;  /* from IupCanvas (must reserve it) */
 
-  int orientation, 
-      barsize, 
+  int orientation,
+      barsize,
       style;
 };
-
 
 /****************************************************************/
 
@@ -171,9 +164,7 @@ static int iSeparatorRedraw_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /***********************************************************************************************/
-
 
 static int iSeparatorSetOrientationAttrib(Ihandle* ih, const char* value)
 {
@@ -233,9 +224,7 @@ static char* iSeparatorGetBarSizeAttrib(Ihandle* ih)
   return iupStrReturnInt(ih->data->barsize);
 }
 
-
 /*****************************************************************************************/
-
 
 static int iSeparatorCreateMethod(Ihandle* ih, void** params)
 {
@@ -267,7 +256,7 @@ static void iSeparatorComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int 
 
   if (ih->data->orientation == ISEPARATOR_HORIZ)
     natural_h = ih->data->barsize;
-  else 
+  else
     natural_w = ih->data->barsize;
 
   *w = natural_w;
@@ -276,9 +265,7 @@ static void iSeparatorComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int 
   (void)children_expand; /* unset if not a container */
 }
 
-
 /******************************************************************************/
-
 
 Iclass* iupSeparatorNewClass(void)
 {

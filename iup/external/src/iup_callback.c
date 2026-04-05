@@ -4,7 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <stdarg.h>
 
 #include "iup.h"
@@ -13,7 +13,7 @@
 #include "iup_assert.h"
 #include "iup_varg.h"
 
-  
+
 char* iupGetCallbackName(Ihandle *ih, const char *name)
 {
   void* value;
@@ -38,7 +38,7 @@ IUP_API Icallback IupGetCallback(Ihandle *ih, const char *name)
     return NULL;
 
   iupASSERT(name!=NULL);
-  if (!name) 
+  if (!name)
     return NULL;
 
   func = (Icallback)iupTableGetFunc(ih->attrib, name, &value);
@@ -61,7 +61,7 @@ IUP_API Icallback IupSetCallback(Ihandle *ih, const char *name, Icallback func)
     return NULL;
 
   iupASSERT(name!=NULL);
-  if (!name) 
+  if (!name)
     return NULL;
 
   if (!func)

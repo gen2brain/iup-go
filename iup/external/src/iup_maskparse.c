@@ -14,31 +14,31 @@
 #include "iup_maskmatch.h"
 
 /*
- * Table of characters (customizaveis atraves de iupMaskSetChar)
+ * Table of characters (customizable through iupMaskSetChar)
  */
 
 static char* imask_parse_chars = "|*+()[]-^/.?^${}~";
 /*                                01234567890123456     */
 
-#define OR_CH        imask_parse_chars[0]  /* OR CHaracter      */
-#define CL_CH        imask_parse_chars[1]  /* CLosure CHaracter    */
-#define OOM_CH       imask_parse_chars[2]  /* One Or More CHaracter  */
-#define OPGR_CH      imask_parse_chars[3]  /* OPen  GRoup CHaracter  */
-#define CLGR_CH      imask_parse_chars[4]  /* CLose GRoup CHaracter  */
-#define OPCL_CH      imask_parse_chars[5]  /* OPen CLass CHaracter    */
-#define CLCL_CH      imask_parse_chars[6]  /* CLose CLass CHaracter  */
-#define SEPCL_CH     imask_parse_chars[7]  /* SEParate CLass CHaracter  */
-#define NEGCL_CH     imask_parse_chars[8]  /* NEGation CLass CHaracter  */
-#define SPC_CH       imask_parse_chars[9]  /* SPeCial function CHaracter  */
-#define ANY_CH       imask_parse_chars[10]  /* ANY CHaracter    */
-#define ONE_CH       imask_parse_chars[11]  /* ONE or no CHaracter    */
-#define BEGIN_CH     imask_parse_chars[12]  /* BEGINning of a line CHaracter*/
-#define END_CH       imask_parse_chars[13]  /* END of a line CHaracter  */
-#define CAP_OPEN_CH  imask_parse_chars[14]  /* CAPture OPEN CHaracter  */
-#define CAP_CLOSE_CH imask_parse_chars[15]  /* CAPture CLOSE CHaracter  */
-#define NEG_CH       imask_parse_chars[16]  /* NEGation CHaracter    */
+#define OR_CH        imask_parse_chars[0]   /* OR character */
+#define CL_CH        imask_parse_chars[1]   /* Closure character */
+#define OOM_CH       imask_parse_chars[2]   /* One Or More character */
+#define OPGR_CH      imask_parse_chars[3]   /* Open Group character */
+#define CLGR_CH      imask_parse_chars[4]   /* Close Group character */
+#define OPCL_CH      imask_parse_chars[5]   /* Open Class character */
+#define CLCL_CH      imask_parse_chars[6]   /* Close Class character */
+#define SEPCL_CH     imask_parse_chars[7]   /* Separate Class character */
+#define NEGCL_CH     imask_parse_chars[8]   /* Negation Class character */
+#define SPC_CH       imask_parse_chars[9]   /* Special function character */
+#define ANY_CH       imask_parse_chars[10]  /* Any character */
+#define ONE_CH       imask_parse_chars[11]  /* One or no character */
+#define BEGIN_CH     imask_parse_chars[12]  /* Beginning of a line character */
+#define END_CH       imask_parse_chars[13]  /* End of a line character */
+#define CAP_OPEN_CH  imask_parse_chars[14]  /* Capture Open character */
+#define CAP_CLOSE_CH imask_parse_chars[15]  /* Capture Close character */
+#define NEG_CH       imask_parse_chars[16]  /* Negation character */
 
-#define SPC2_CH  '\\'    /* SPeCial 2 CHaracter */
+#define SPC2_CH  '\\'    /* Special 2 character */
 
 #define isvalid(c) (c != 0 && c != OR_CH && c != OPGR_CH && c != CLGR_CH &&\
                          c != CL_CH && c != OPCL_CH && c != CLCL_CH &&\
@@ -75,8 +75,8 @@ int iupMaskSetChar (int char_number, char new_char)
 }
 
     /*
-     * Funcao de interface, recebe padrao e retorna array contendo as finite
-     * state machines (fsm) construidas a partir do padrao
+     * Interface function, receives a pattern and returns an array containing
+     * the finite state machines (fsm) built from the pattern.
      */
 
 int iupMaskParse(const char *text, ImaskParsed ** fsm)
@@ -84,7 +84,7 @@ int iupMaskParse(const char *text, ImaskParsed ** fsm)
   int t;
   ImaskParseVars vars;
 
-  /* inicializacao das variaveis */
+  /* initialize variables */
 
   vars.state = 1;
   vars.j = 0;
@@ -99,8 +99,8 @@ int iupMaskParse(const char *text, ImaskParsed ** fsm)
   memset(vars.fsm, 0, STATE_BLOCK*sizeof (ImaskParsed));
   vars.num_states = STATE_BLOCK;
 
-  /* a principio, nao ha captura. Se ocorrer uma, ele e setado
-     para IMASK_CAPTURE */
+  /* initially there is no capture. If one occurs, it is set
+     to IMASK_CAPTURE */
 
   vars.fsm[0].ch = IMASK_NOCAPTURE;
 
@@ -113,8 +113,8 @@ int iupMaskParse(const char *text, ImaskParsed ** fsm)
     return IMASK_PARSE_ERROR;
   }
 
-  /* seta os estados inicial e final, guardando no inicial
-     (fsm[0].next1) o tamanho da maquina */
+  /* set the initial and final states, storing the machine size
+     in the initial state (fsm[0].next1) */
 
   iMaskParseSetState (&vars, 0, vars.fsm[0].ch, IMASK_NULL_CMD, t, vars.state + 1);
   iMaskParseSetState (&vars, vars.state, 0, IMASK_NULL_CMD, 0, 0);
@@ -142,10 +142,10 @@ static int iMaskParseExpression (ImaskParseVars * vars)
     vars->j++;
     iMaskParseNewState (vars);
 
-    t3 = iMaskParseExpression (vars);  /* pega o 2o ramo do OR */
+    t3 = iMaskParseExpression (vars);  /* get the 2nd branch of the OR */
 
-    /* faz o primeiro state antes do OR apontar para o state de entrada
-     * do OR */
+    /* make the first state before the OR point to the entry state
+     * of the OR */
 
     if (vars->fsm[last_state].next1 == t1)
       vars->fsm[last_state].next1 = t2;
@@ -153,8 +153,8 @@ static int iMaskParseExpression (ImaskParseVars * vars)
     if (vars->fsm[last_state].next2 == t1)
       vars->fsm[last_state].next2 = t2;
 
-    /* faz o ultimo state do primeiro ramo do OR apontar para o
-     * state de saida do OR */
+    /* make the last state of the first OR branch point to the
+     * exit state of the OR */
 
     if (vars->fsm[t2 - 1].next1 == t2)
       vars->fsm[t2 - 1].next1 = vars->state;
@@ -213,7 +213,7 @@ static int iMaskParseFactor (ImaskParseVars * vars)
   else if (vars->string[vars->j] == CAP_OPEN_CH)
   {
     vars->fsm[0].ch = IMASK_CAPTURE;
-    iMaskParseSetState (vars, vars->state, vars->nextcap, 
+    iMaskParseSetState (vars, vars->state, vars->nextcap,
                  IMASK_CAP_OPEN_CMD, vars->state + 1, vars->state + 1);
     t2 = vars->state;
     iMaskParseNewState (vars);
@@ -275,7 +275,7 @@ static int iMaskParseFactor (ImaskParseVars * vars)
   else if (isvalid (vars->string[vars->j]) && (vars->string[vars->j]
   != SPC_CH) && (vars->string[vars->j] != ANY_CH))
   {
-    iMaskParseSetState (vars, vars->state, vars->string[vars->j], 
+    iMaskParseSetState (vars, vars->state, vars->string[vars->j],
                  IMASK_CHAR_CMD, vars->state + 1, vars->state + 1);
     t2 = vars->state;
     vars->j++;
@@ -404,7 +404,7 @@ static int iMaskParseFactor (ImaskParseVars * vars)
 
     vars->j++;
 
-    while (match_functions[loop1].ch != '\0' && 
+    while (match_functions[loop1].ch != '\0' &&
            match_functions[loop1].ch != vars->string[vars->j])
       loop1++;
 

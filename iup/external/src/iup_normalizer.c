@@ -20,7 +20,7 @@
 
 enum {NORMALIZE_NONE, NORMALIZE_WIDTH, NORMALIZE_HEIGHT};
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   Iarray* ih_array;
   int ret_control;  /* for first/next attributes */
@@ -52,11 +52,11 @@ void iupNormalizeSizeBoxChild(Ihandle *ih, int normalize, int children_natural_m
   Ihandle* child;
   for (child = ih->firstchild; child; child = child->brother)
   {
-    if (!(child->flags & IUP_FLOATING) && 
-        (child->iclass->nativetype != IUP_TYPEVOID || 
+    if (!(child->flags & IUP_FLOATING) &&
+        (child->iclass->nativetype != IUP_TYPEVOID ||
          !IupClassMatch(child, "fill")))
     {
-      if (normalize & NORMALIZE_WIDTH) 
+      if (normalize & NORMALIZE_WIDTH)
         child->naturalwidth = children_natural_maxwidth;
       if (normalize & NORMALIZE_HEIGHT)
         child->naturalheight = children_natural_maxheight;
@@ -88,8 +88,8 @@ static int iNormalizerSetNormalizeAttrib(Ihandle* ih, const char* value)
   for (i = 0; i < count; i++)
   {
     ih_control = ih_list[i];
-    if (!(ih_control->flags & IUP_FLOATING) && 
-        (ih_control->iclass->nativetype != IUP_TYPEVOID || 
+    if (!(ih_control->flags & IUP_FLOATING) &&
+        (ih_control->iclass->nativetype != IUP_TYPEVOID ||
          !IupClassMatch(ih_control, "fill")))
     {
       if (normalize & NORMALIZE_WIDTH)
@@ -169,7 +169,6 @@ static char* iNormalizerGetNextControlHandleAttrib(Ihandle* ih)
 
 /*******************************************************************************/
 
-
 static void iNormalizerComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
   (void)w;
@@ -188,7 +187,7 @@ static int iNormalizerCreateMethod(Ihandle* ih, void** params)
     Ihandle** iparams = (Ihandle**)params;
     Ihandle** ih_list;
     int i = 0;
-    while (*iparams) 
+    while (*iparams)
     {
       ih_list = (Ihandle**)iupArrayInc(ih->data->ih_array);
       ih_list[i] = *iparams;

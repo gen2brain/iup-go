@@ -2,7 +2,6 @@
  * \brief Image Resources (not exported API)
  *
  * See Copyright Notice in "iup.h"
- *
  */
 
 /** \defgroup drvimage Driver Image Interface
@@ -47,12 +46,10 @@ void iupImageRemoveFromCache(Ihandle* ih, void* handle);
 
 IUP_SDK_API int iupImageInitColorTable(Ihandle *ih, iupColor* colors, int *colors_count);
 void iupImageInitNonBgColors(Ihandle* ih, unsigned char *colors);
-IUP_SDK_API void iupImageColorMakeInactive(unsigned char *r, unsigned char *g, unsigned char *b,
-                               unsigned char bg_r, unsigned char bg_g, unsigned char bg_b);
+IUP_SDK_API void iupImageColorMakeInactive(unsigned char *r, unsigned char *g, unsigned char *b, unsigned char bg_r, unsigned char bg_g, unsigned char bg_b);
 int iupImageNormBpp(int bpp);
 
-void iupImageResizeRGBA(int src_width, int src_height, unsigned char *src_map,
-                        int dst_width, int dst_height, unsigned char *dst_map, int depth);
+void iupImageResizeRGBA(int src_width, int src_height, unsigned char *src_map, int dst_width, int dst_height, unsigned char *dst_map, int depth);
 
 #define iupALPHABLEND(_src,_dst,_alpha) (unsigned char)(((_src) * (_alpha) + (_dst) * (255 - (_alpha))) / 255)
 

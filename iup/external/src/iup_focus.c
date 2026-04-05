@@ -14,7 +14,6 @@
 #include "iup_class.h"
 #include "iup_assert.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_childtree.h"
 
@@ -49,7 +48,7 @@ IUP_SDK_API int iupFocusCanAccept(Ihandle *ih)
 
 static int iFocusCheckActiveRadio(Ihandle *ih)
 {
-  if (IupClassMatch(ih, "toggle") && 
+  if (IupClassMatch(ih, "toggle") &&
       IupGetInt(ih, "RADIO") &&
       !IupGetInt(ih, "VALUE"))
     return 0;
@@ -197,7 +196,7 @@ IUP_API Ihandle* IupPreviousField(Ihandle *ih)
 
   /* search from the dialog down to the element */
   iFocusFindPrevious(IupGetDialog(ih), &previous, ih, 1);
-  
+
   if (previous)
   {
     iupdrvSetFocus(previous);
@@ -213,7 +212,7 @@ void iupFocusPrevious(Ihandle *ih)
 
   /* search from the dialog down to the element */
   iFocusFindPrevious(IupGetDialog(ih), &previous, ih, 0);
-  
+
   if (previous)
     iupdrvSetFocus(previous);
 }
@@ -240,7 +239,7 @@ void iupSetCurrentFocus(Ihandle *ih)
     {
       IFni cb;
 
-      /* change it before calling the callbacks 
+      /* change it before calling the callbacks
          because focus can be changed again from inside the callbacks. */
       iup_current_dialog_focus = dialog;
 
@@ -272,10 +271,10 @@ IUP_API Ihandle *IupSetFocus(Ihandle *ih)
   if (!iupObjectCheck(ih))
     return old_focus;
 
-  /* Current focus is NOT set here, 
+  /* Current focus is NOT set here,
      only in the iupCallGetFocusCb */
 
-  if (iupFocusCanAccept(ih))  
+  if (iupFocusCanAccept(ih))
     iupdrvSetFocus(ih);
 
   return old_focus;

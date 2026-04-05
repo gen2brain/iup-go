@@ -46,7 +46,7 @@ struct _IcontrolData
 {
   iupCanvas canvas;  /* from IupCanvas (must reserve it) */
 
-  /* mouse interaction state */ 
+  /* mouse interaction state */
   int h_down,
       si_down;
 
@@ -64,7 +64,7 @@ struct _IcontrolData
 
   /* visual appearance control */
   int w, h;
-  int has_focus; 
+  int has_focus;
   long bgcolor;
 
   /* attributes */
@@ -75,7 +75,6 @@ struct _IcontrolData
 
   Ihandle *image;
 };
-
 
 static double iColorBrowserSXmax(Ihandle* ih, int y)
 {
@@ -114,14 +113,14 @@ static void iColorBrowserRotatePoints(double *x1, double *y1, double *x2, double
   static const double s60 = 0.8660254;
   static const double c60 = 0.5;
 
-  xt = *x1 - xc; 
+  xt = *x1 - xc;
   yt = *y1 - yc;
   nxt = xt * c60 - yt * s60;
   nyt = xt * s60 + yt * c60;
-  *x1 = nxt + xc; 
+  *x1 = nxt + xc;
   *y1 = nyt + yc;
 
-  xt = *x2 - xc; 
+  xt = *x2 - xc;
   yt = *y2 - yc;
   nxt = xt * c60 - yt * s60;
   nyt = xt * s60 + yt * c60;
@@ -146,7 +145,7 @@ static void iColorBrowserRenderImageHue(Ihandle* ih)
 
   for (y = 0; y < ih->data->h; y++)
   {
-    double sx_max = iColorBrowserSXmax(ih, y);   
+    double sx_max = iColorBrowserSXmax(ih, y);
 
     for (x = 0; x < ih->data->w; x++)
     {
@@ -346,7 +345,7 @@ static int iColorBrowserCheckInside(Ihandle* ih, int x, int y)
 
 static void iColorBrowserHSI2RGB(Ihandle* ih)
 {
-  iupColorHSI2RGB(ih->data->hue, ih->data->saturation, ih->data->intensity, 
+  iupColorHSI2RGB(ih->data->hue, ih->data->saturation, ih->data->intensity,
                       &(ih->data->red), &(ih->data->green), &(ih->data->blue));
 }
 
@@ -361,10 +360,10 @@ static void iColorBrowserCallChangeCb(Ihandle* ih)
   IFnccc change_cb = (IFnccc) IupGetCallback(ih, "CHANGE_CB");
   if (change_cb)
     change_cb(ih, ih->data->red, ih->data->green, ih->data->blue);
-  
+
   iupBaseCallValueChangedCb(ih);
 }
-  
+
 static void iColorBrowserCallDragCb(Ihandle* ih)
 {
   IFnccc drag_cb = (IFnccc) IupGetCallback(ih, "DRAG_CB");
@@ -406,9 +405,7 @@ static int iColorBrowserSImouse(Ihandle* ih, int x, int y, int drag)
   return IUP_DEFAULT;
 }
 
-
 /******************************************************************/
-
 
 static int iColorBrowserButton_CB(Ihandle* ih, int b, int press, int x, int y)
 {
@@ -425,13 +422,13 @@ static int iColorBrowserButton_CB(Ihandle* ih, int b, int press, int x, int y)
     {
       iColorBrowserHmouse(ih, x, y, 1);
       ih->data->h_down = 1;
-    } 
+    }
 
     if (!ih->data->si_down && inside==ICB_INSIDE_SI)
     {
       iColorBrowserSImouse(ih, x, y, 1);
       ih->data->si_down = 1;
-    } 
+    }
   }
   else
   {
@@ -649,13 +646,13 @@ static int iColorBrowserKeyPress_CB(Ihandle* ih, int c, int press)
   if (!press)
     return IUP_DEFAULT;
 
-  x = ih->data->si_x; 
-  y = ih->data->si_y; 
+  x = ih->data->si_x;
+  y = ih->data->si_y;
 
   switch (c)
   {
     case K_UP:
-      y++; 
+      y++;
       break;
     case K_DOWN:
       y--;
@@ -667,19 +664,19 @@ static int iColorBrowserKeyPress_CB(Ihandle* ih, int c, int press)
       x--;
       break;
     case K_PGUP:
-      ih->data->hue += 1.0; 
-      changing_hue = 1; 
+      ih->data->hue += 1.0;
+      changing_hue = 1;
       break;
     case K_PGDN:
-      ih->data->hue -= 1.0; 
+      ih->data->hue -= 1.0;
       changing_hue = 1; break;
     case K_HOME:
-      ih->data->hue = 0.0; 
-      changing_hue = 1; 
+      ih->data->hue = 0.0;
+      changing_hue = 1;
       break;
     case K_END:
-      ih->data->hue = 180.0; 
-      changing_hue = 1; 
+      ih->data->hue = 180.0;
+      changing_hue = 1;
       break;
     default:
       return IUP_DEFAULT;
@@ -705,9 +702,7 @@ static int iColorBrowserKeyPress_CB(Ihandle* ih, int c, int press)
   return IUP_IGNORE;  /* to avoid arrow keys being processed by the system */
 }
 
-
 /*********************************************************************************/
-
 
 static char* iColorBrowserGetHSIAttrib(Ihandle* ih)
 {
@@ -722,10 +717,10 @@ static int iColorBrowserSetHSIAttrib(Ihandle* ih, const char* value)
 
   if (!iupStrToHSI(value, &ih->data->hue, &ih->data->saturation, &ih->data->intensity))
     return 0;
-  
-  if (old_hue != ih->data->hue) 
+
+  if (old_hue != ih->data->hue)
     iColorBrowserUpdateCursorHue(ih);
-  if (old_saturation != ih->data->saturation || old_intensity != ih->data->intensity) 
+  if (old_saturation != ih->data->saturation || old_intensity != ih->data->intensity)
     iColorBrowserUpdateCursorSI(ih);
   iColorBrowserHSI2RGB(ih);
 
@@ -746,7 +741,7 @@ static int iColorBrowserSetRGBAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
-  
+
   ih->data->red = r;
   ih->data->green = g;
   ih->data->blue = b;
@@ -789,9 +784,7 @@ static int iColorBrowserSetActiveAttrib(Ihandle* ih, const char* value)
   return 0;  /* do not store value in hash table */
 }
 
-
 /****************************************************************************/
-
 
 static void iColorBrowserDestroyMethod(Ihandle* ih)
 {

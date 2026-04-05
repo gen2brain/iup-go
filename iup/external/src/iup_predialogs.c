@@ -7,17 +7,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <limits.h>
-#include <stdarg.h>
 #include <time.h>
 
-#include "iup.h" 
+#include "iup.h"
 
 #include "iup_predialogs.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_strmessage.h"
-               
+
 
 static int CB_button_OK (Ihandle* ih)
 {
@@ -70,7 +67,7 @@ IUP_API int IupListDialog (int type, const char *title, int size, const char** l
   IupSetCallback(cancel, "ACTION", (Icallback)CB_button_CANCEL);
 
   button_box = IupHbox(
-    IupFill(), 
+    IupFill(),
     ok,
     cancel,
     NULL);
@@ -254,7 +251,7 @@ IUP_API int IupGetFile(char* filename)
   if (ret != -1)
   {
     char* value = IupGetAttribute(dlg, "VALUE");
-    if (value) 
+    if (value)
     {
       iupStrCopyN(filename, 4096, value);
       iupStrFileNameSplit(filename, dir, sizeof(dir), NULL, 0);
@@ -357,4 +354,3 @@ IUP_API int IupGetColor(int x, int y, unsigned char *r, unsigned char *g, unsign
 
   return ret;
 }
-

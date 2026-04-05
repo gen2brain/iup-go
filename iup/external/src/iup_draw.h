@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_DRAW_H 
+
+#ifndef __IUP_DRAW_H
 #define __IUP_DRAW_H
 
 #ifdef __cplusplus
@@ -24,7 +24,7 @@ extern "C"
 #define IUP_FLAT_PRESSCOLOR  "150 200 235"
 #define IUP_FLAT_HIGHCOLOR   "200 225 245"
 #define IUP_FLAT_BACKCOLOR   "255 255 255"
-#define IUP_FLAT_FORECOLOR   "0 0 0" 
+#define IUP_FLAT_FORECOLOR   "0 0 0"
 
 /* Swap integer coordinates if c1 > c2. */
 #define iupDrawCheckSwapCoord(_c1, _c2) { if (_c1 > _c2) { int t = _c2; _c2 = _c1; _c1 = t; } }   /* make sure _c1 is smaller than _c2 */
@@ -49,9 +49,7 @@ IUP_SDK_API void iupDrawParentBackground(IdrawCanvas* dc, Ihandle* ih);
 IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* str, int len, int *w, int *h, double text_orientation);
 IUP_SDK_API int iupDrawGetTextFlags(Ihandle* ih, const char* align_name, const char* wrap_name, const char* ellipsis_name);
 
-
 /**********************************************************************************************************/
-
 
 enum{ IUP_IMGPOS_LEFT, IUP_IMGPOS_RIGHT, IUP_IMGPOS_TOP, IUP_IMGPOS_BOTTOM };
 
@@ -90,4 +88,3 @@ IUP_SDK_API void iupFlatDrawDrawCircle(IdrawCanvas* dc, int xc, int yc, int radi
 #endif
 
 #endif
-

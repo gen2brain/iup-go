@@ -4,17 +4,14 @@
  * See Copyright Notice in "iup.h"
  */
 
- 
-#include <string.h>  
-#include <stdlib.h>  
-#include <stdio.h>  
-#include <limits.h>  
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <stdarg.h>
 
 #include "iup.h"
 
 #include "iup_object.h"
-#include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_strmessage.h"
 #include "iup_hashtable.h"
@@ -86,7 +83,6 @@ IUP_API char *IupGetLanguage(void)
 {
   return IupGetGlobal("LANGUAGE");
 }
-
 
 /**********************************************************************************/
 

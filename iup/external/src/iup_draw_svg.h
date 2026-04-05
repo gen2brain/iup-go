@@ -1,7 +1,7 @@
 /** \file
  * \brief SVG Draw API.
  *
- * Provides a SVG drawing canvas that mirrors the IUP draw API.
+ * Provides an SVG drawing canvas that mirrors the IUP draw API.
  * Instead of rendering to a native widget, all drawing operations
  * build an SVG string in memory that can be retrieved as text.
  *

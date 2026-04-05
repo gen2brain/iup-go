@@ -15,15 +15,13 @@
 #include "iup_attrib.h"
 #include "iup_dialog.h"
 #include "iup_str.h"
-#include "iup_assert.h"
-#include "iup_key.h"
 #include "iup_stdcontrols.h"
 #include "iup_drvinfo.h"
 #include "iup_menu.h"
 #include "iup_varg.h"
 
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   int child_id;       /* serial number used by child controls */
 };
@@ -149,9 +147,7 @@ int iupMenuPopup(Ihandle* ih, int x, int y)
   return iupdrvMenuPopup(ih, x, y);
 }
 
-
 /******************************************************************/
-
 
 static int iItemCreateMethod(Ihandle* ih, void** params)
 {
@@ -168,7 +164,7 @@ static int iSubmenuCreateMethod(Ihandle* ih, void** params)
   if (params)
   {
     if (params[0]) iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
-    if (params[1]) 
+    if (params[1])
     {
       Ihandle* child = (Ihandle*)(params[1]);
       if (child->iclass->nativetype == IUP_TYPEMENU)
@@ -185,7 +181,7 @@ static int iMenuCreateMethod(Ihandle* ih, void** params)
   if (params)
   {
     Ihandle** iparams = (Ihandle**)params;
-    while (*iparams) 
+    while (*iparams)
     {
       Ihandle* child = (Ihandle*)(*iparams);
       if (child->iclass->nativetype == IUP_TYPEMENU)
@@ -197,9 +193,7 @@ static int iMenuCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-
 /******************************************************************************************/
-
 
 Iclass* iupMenuSeparatorNewClass(void)
 {

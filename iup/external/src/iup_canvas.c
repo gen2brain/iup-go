@@ -8,21 +8,17 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupdraw.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_canvas.h"
 
 
-void iupCanvasCalcScrollIntPos(double min, double max, double page, double pos, 
-                                 int imin,   int imax,  int *ipage,  int *ipos)
+void iupCanvasCalcScrollIntPos(double min, double max, double page, double pos, int imin, int imax, int *ipage,  int *ipos)
 {
   double range = max-min;
   int irange = imax-imin;
@@ -40,8 +36,7 @@ void iupCanvasCalcScrollIntPos(double min, double max, double page, double pos,
   }
 }
 
-void iupCanvasCalcScrollRealPos(double min, double max, double *pos, 
-                                 int imin,   int imax,  int ipage,  int *ipos)
+void iupCanvasCalcScrollRealPos(double min, double max, double *pos, int imin, int imax, int ipage, int *ipos)
 {
   double range = max-min;
   int irange = imax-imin;
@@ -90,7 +85,7 @@ static int iCanvasCreateMethod(Ihandle* ih, void** params)
 
   /* default EXPAND is YES */
   ih->expand = IUP_EXPAND_BOTH;
-  
+
   return IUP_NOERROR;
 }
 
@@ -106,9 +101,7 @@ static void iCanvasComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
   *h = natural_h;
 }
 
-
 /******************************************************************************/
-
 
 static char* iCanvasGetDrawImageAttrib(Ihandle* ih)
 {
@@ -136,7 +129,6 @@ static char* iCanvasGetDrawImageAttrib(Ihandle* ih)
 
   return name;
 }
-
 
 IUP_API Ihandle* IupCanvas(const char* action)
 {
@@ -229,4 +221,3 @@ Iclass* iupCanvasNewClass(void)
 
   return ic;
 }
-

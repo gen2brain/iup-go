@@ -8,13 +8,12 @@
 #include <stdio.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_str.h"
 #include "iup_stdcontrols.h"
 #include "iup_tray.h"
-#include "iup_attrib.h"
+
 
 static int iTraySetVisibleAttrib(Ihandle* ih, const char* value)
 {

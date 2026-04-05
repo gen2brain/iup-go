@@ -7,7 +7,7 @@
 /** \defgroup drvtree Driver Tree Interface
  * \ingroup drv */
 
-#ifndef __IUP_TREE_H 
+#ifndef __IUP_TREE_H
 #define __IUP_TREE_H
 
 #ifdef __cplusplus
@@ -88,8 +88,8 @@ struct _IcontrolData
   void* def_image_expanded;   /* Default image expanded */
 
   void* def_image_leaf_mask;       /* Motif Only */
-  void* def_image_collapsed_mask;  
-  void* def_image_expanded_mask;  
+  void* def_image_collapsed_mask;
+  void* def_image_expanded_mask;
 
   InodeData *node_cache;   /* given the id returns node native handle and user_data */
   int node_cache_max, node_count;

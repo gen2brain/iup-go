@@ -4,8 +4,8 @@
  * See Copyright Notice in "iup.h"
  *
  */
- 
-#ifndef __IUP_PREDIAL_H 
+
+#ifndef __IUP_PREDIAL_H
 #define __IUP_PREDIAL_H
 
 #ifdef __cplusplus

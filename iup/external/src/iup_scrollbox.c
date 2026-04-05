@@ -1,5 +1,5 @@
 /** \file
- * \brief iupscrollbox control
+ * \brief Scrollbox control
  *
  * See Copyright Notice in "iup.h"
  */
@@ -7,11 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
-#include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_register.h"
@@ -100,11 +97,9 @@ static int iScrollBoxMotion_CB(Ihandle *ih, int x, int y, char* status)
   return IUP_DEFAULT;
 }
 
-
 /*****************************************************************************\
-|* Atributes                                                                 *|
+|* Attributes                                                                *|
 \*****************************************************************************/
-
 
 static int iScrollBoxGetChildPosition(Ihandle* ih, Ihandle* child, int *posx, int *posy)
 {
@@ -177,7 +172,6 @@ static int iScrollBoxSetExpandAttrib(Ihandle* ih, const char* value)
     return 1;  /* store on the hash table */
 }
 
-
 /*****************************************************************************\
 |* Methods                                                                   *|
 \*****************************************************************************/
@@ -194,7 +188,7 @@ static void iScrollBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int 
 
   if (!iupAttribGetBoolean(ih, "CANVASBOX"))
   {
-    /* ScrollBox size does not depends on the child size,
+    /* ScrollBox size does not depend on the child size,
      its natural size must be 0 to be free of restrictions. */
     if (ih->currentwidth == 0 && ih->currentheight == 0 && child)
     {

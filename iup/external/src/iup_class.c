@@ -5,19 +5,14 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 
 #include "iup.h"
 
 #include "iup_object.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_str.h"
-#include "iup_attrib.h"
 #include "iup_assert.h"
-
 
 
 /*****************************************************************
@@ -161,11 +156,9 @@ static int iClassHasDlgPopup(Iclass* ic)
   return 0;
 }
 
-
 /*****************************************************************
                      Public Interface
 *****************************************************************/
-
 
 IUP_SDK_API int iupClassObjectCreate(Ihandle* ih, void** params)
 {
@@ -235,7 +228,6 @@ IUP_SDK_API int iupClassObjectHasDlgPopup(Ihandle* ih)
 /*****************************************************************
                         Class Definition
 *****************************************************************/
-
 
 static void iClassReleaseAttribFuncTable(Iclass* ic)
 {
@@ -308,7 +300,6 @@ IUP_SDK_API int iupClassMatch(Iclass* ic, const char* classname)
 /*****************************************************************
                         Main API
 *****************************************************************/
-
 
 IUP_API char* IupGetClassName(Ihandle *ih)
 {

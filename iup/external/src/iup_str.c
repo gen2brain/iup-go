@@ -2,19 +2,14 @@
  * \brief String Utilities
  *
  * See Copyright Notice in "iup.h"
- *
- * This file is in UTF-8 encoding with BOM, so he comments look right.
- *
  */
 
- 
-#include <string.h>  
-#include <stdlib.h>  
-#include <stdio.h>  
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <locale.h>
-#include <ctype.h>
 
 #include "iup_export.h"
 #include "iup_str.h"
@@ -25,7 +20,6 @@
 \r - Mac
 \r\n - DOS/Windows
 */
-
 
 #define IUP_STR_EQUAL(str1, str2)      \
 {                                      \
@@ -65,7 +59,7 @@ IUP_SDK_API int iupStrEqualPartial(const char* str1, const char* str2)
   IUP_STR_EQUAL(str1, str2);
 #undef SF
 #undef EXTRAINC
-  if (*str2 == 0) 
+  if (*str2 == 0)
     return 1;  /* if second string is at terminator, then it is partially equal */
   return 0;
 }
@@ -87,7 +81,7 @@ IUP_SDK_API int iupStrEqualNoCasePartial(const char* str1, const char* str2)
   IUP_STR_EQUAL(str1, str2);
 #undef SF
 #undef EXTRAINC
-  if (*str2 == 0) 
+  if (*str2 == 0)
     return 1;  /* if second string is at terminator, then it is partially equal */
   return 0;
 }
@@ -166,7 +160,7 @@ IUP_SDK_API const char* iupStrNextLine(const char* str, int *len)
 
   if (!str) return NULL;
 
-  while(*str!=0 && *str!='\n' && *str!='\r') 
+  while(*str!=0 && *str!='\n' && *str!='\r')
   {
     (*len)++;
     str++;
@@ -176,7 +170,7 @@ IUP_SDK_API const char* iupStrNextLine(const char* str, int *len)
     return str+2;
   else if (*str=='\n' || *str=='\r')   /* UNIX or MAC line end */
     return str+1;
-  else 
+  else
     return str;  /* no next line */
 }
 
@@ -204,7 +198,7 @@ IUP_SDK_API const char* iupStrNextValue(const char* str, int str_len, int *len, 
 
   if (*str==sep)
     return str+1;
-  else 
+  else
     return str;  /* no next value */
 }
 
@@ -276,7 +270,7 @@ IUP_SDK_API char* iupStrDupUntil(const char **str, char c)
     return NULL;
 
   p_str = strchr(*str,c);
-  if (!p_str) 
+  if (!p_str)
     return NULL;
   else
   {
@@ -304,11 +298,11 @@ static char *iStrDupUntilNoCase(char **str, char sep)
     return NULL;
 
   p_str=strchr(*str,sep); /* usually the lower case is enough */
-  if (!p_str && (iup_toupper(sep)!=sep)) 
+  if (!p_str && (iup_toupper(sep)!=sep))
     p_str=strchr(*str, iup_toupper(sep));  /* but check also for upper case */
 
   /* if both fail, then abort */
-  if (!p_str) 
+  if (!p_str)
     return NULL;
   else
   {
@@ -359,7 +353,7 @@ IUP_SDK_API char *iupStrGetLargeMem(int *size)
   if (size) *size = LARGE_SIZE;
   return ret_str;
 #undef LARGE_MAX_BUFFERS
-#undef LARGE_SIZE 
+#undef LARGE_SIZE
 }
 
 static char* iupStrGetSmallMem(void)
@@ -377,7 +371,7 @@ static char* iupStrGetSmallMem(void)
     /* clear all memory */
     for (i = 0; i<SMALL_MAX_BUFFERS; i++)
       memset(buffers[i], 0, sizeof(char)*SMALL_SIZE);
-    
+
     buffers_index = 0;
   }
 
@@ -391,7 +385,7 @@ static char* iupStrGetSmallMem(void)
 
   return ret_str;
 #undef SMALL_MAX_BUFFERS
-#undef SMALL_SIZE 
+#undef SMALL_SIZE
 }
 
 IUP_SDK_API char *iupStrGetMemory(int size)
@@ -407,7 +401,7 @@ IUP_SDK_API char *iupStrGetMemory(int size)
     buffers_index = -1;
     for (i = 0; i < MAX_BUFFERS; i++)
     {
-      if (buffers[i]) 
+      if (buffers[i])
       {
         free(buffers[i]);
         buffers[i] = NULL;
@@ -428,7 +422,7 @@ IUP_SDK_API char *iupStrGetMemory(int size)
       buffers_index = 0;
     }
 
-    /* first alocation */
+    /* first allocation */
     if (!(buffers[buffers_index]))
     {
       buffers_sizes[buffers_index] = size+1;
@@ -1044,7 +1038,7 @@ IUP_SDK_API int iupStrReplace(char* str, char src, char dst)
 
 static int iStrIsReserved(char c)
 {
-  /* can only has letters or numbers as characters, or underscore */
+  /* can only have letters or numbers as characters, or underscore */
   if (c < '0' ||
     (c > '9' && c < 'A') ||
       (c > 'Z' && c < 'a' && c != '_') ||
@@ -1074,7 +1068,7 @@ IUP_SDK_API void iupStrToUnix(char* str)
   char* p_str = str;
 
   if (!str) return;
-  
+
   while (*str)
   {
     if (*str == '\r')
@@ -1086,7 +1080,7 @@ IUP_SDK_API void iupStrToUnix(char* str)
     else
       *p_str++ = *str++;
   }
-  
+
   *p_str = *str;
 }
 
@@ -1095,7 +1089,7 @@ IUP_SDK_API void iupStrToMac(char* str)
   char* p_str = str;
 
   if (!str) return;
-  
+
   while (*str)
   {
     if (*str == '\r')
@@ -1112,14 +1106,14 @@ IUP_SDK_API void iupStrToMac(char* str)
     else
       *p_str++ = *str++;
   }
-  
+
   *p_str = *str;
 }
 
 IUP_SDK_API char* iupStrToDos(const char* str)
 {
-	char *auxstr, *newstr;
-	int line_count, len;
+  char *auxstr, *newstr;
+  int line_count, len;
 
   if (!str) return NULL;
 
@@ -1128,31 +1122,31 @@ IUP_SDK_API char* iupStrToDos(const char* str)
   if (line_count == 1)
     return (char*)str;
 
-	newstr = malloc(line_count + len + 1);
+  newstr = malloc(line_count + len + 1);
   auxstr = newstr;
-	while(*str)
-	{
-		if (*str == '\r' && *(str+1)=='\n')  /* DOS line end */
+  while(*str)
+  {
+    if (*str == '\r' && *(str+1)=='\n')  /* DOS line end */
     {
       *auxstr++ = *str++;
       *auxstr++ = *str++;
     }
     else if (*str == '\r')   /* MAC line end */
     {
-		  *auxstr++ = *str++;
-			*auxstr++ = '\n';
+      *auxstr++ = *str++;
+      *auxstr++ = '\n';
     }
     else if (*str == '\n')  /* UNIX line end */
     {
-			*auxstr++ = '\r';
-		  *auxstr++ = *str++;
+      *auxstr++ = '\r';
+      *auxstr++ = *str++;
     }
     else
-		  *auxstr++ = *str++;
-	}
-	*auxstr = 0;
+      *auxstr++ = *str++;
+  }
+  *auxstr = 0;
 
-	return newstr;	
+  return newstr;
 }
 
 #define IUP_ISRESERVED(_c) (_c=='\n' || _c=='\r' || _c=='\t' || _c=='\\')
@@ -1217,7 +1211,7 @@ IUP_SDK_API char* iupStrProcessMnemonic(const char* str, char *c, int action)
   int i = 0, found = 0;
   char* new_str, *orig_str = (char*)str;
 
-  if (!str) 
+  if (!str)
     return NULL;
 
   if (!strchr(str, '&'))
@@ -1268,7 +1262,7 @@ IUP_SDK_API int iupStrFindMnemonic(const char* str)
 {
   int c = 0, found = 0;
 
-  if (!str) 
+  if (!str)
     return 0;
 
   if (!strchr(str, '&'))
@@ -1362,7 +1356,7 @@ static char iStrUTF8toLatin1(const char* *s)
 {
   char c = **s;
 
-  if (c >= 0) 
+  if (c >= 0)
     return c;   /* ASCII */
 
   if ((c & 0x20) == 0)       /* Use 00100000 to detect 110XXXXX */
@@ -1380,7 +1374,7 @@ static char iStrUTF8toLatin1(const char* *s)
 
   /* only increment the pointer for the remaining codes */
   if ((c & 0x10) == 0)       /* Use 00010000 to detect 1110XXXX */
-    *s += 3-1;  
+    *s += 3-1;
   else if ((c & 0x08) == 0)  /* Use 00001000 to detect 11110XXX */
     *s += 4-1;
 
@@ -1390,7 +1384,7 @@ static char iStrUTF8toLatin1(const char* *s)
 static char* iStrLatin1toUTF8(char* s, char c)
 {
   unsigned char uc = (unsigned char)c;
-  if (uc < 128) 
+  if (uc < 128)
     *s = c; /* s not incremented */
   else
   {
@@ -1437,7 +1431,7 @@ freely, subject to the following restrictions:
 
 ***************************************************************************
 
-The following code is based on the "alphanum.hpp" code 
+The following code is based on the "alphanum.hpp" code
 downloaded from the Dave Koelle page and implemented by Dirk Jagdmann.
 
 It was modified to the C language and simplified to IUP needs.
@@ -1466,11 +1460,11 @@ IUP_SDK_API int iupStrCompare(const char *l, const char *r, int casesensitive, i
       while((*l) && (*r))
       {
         int diff;
-        char l_char = *l, 
+        char l_char = *l,
              r_char = *r;
 
-        /* check if this are digit characters */
-        int l_digit = iup_isdigit(l_char), 
+        /* check if these are digit characters */
+        int l_digit = iup_isdigit(l_char),
             r_digit = iup_isdigit(r_char);
 
         /* if both characters are digits, we continue in NUMBER mode */
@@ -1556,7 +1550,7 @@ IUP_SDK_API int iupStrCompareEqual(const char *l, const char *r, int casesensiti
   while(*l && *r)
   {
     int diff;
-    char l_char = *l, 
+    char l_char = *l,
          r_char = *r;
 
     if (utf8)
@@ -1572,7 +1566,7 @@ IUP_SDK_API int iupStrCompareEqual(const char *l, const char *r, int casesensiti
       diff = Latin1_map_nocase[(unsigned char)l_char] - Latin1_map_nocase[(unsigned char)r_char];
 
     /* if they differ we have a result */
-    if(diff != 0) 
+    if(diff != 0)
       return 0;
 
     /* otherwise process the next characters */
@@ -1581,10 +1575,10 @@ IUP_SDK_API int iupStrCompareEqual(const char *l, const char *r, int casesensiti
   }
 
   /* check also for terminator */
-  if (*l == *r) 
+  if (*l == *r)
     return 1;
 
-  if (partial && *r == 0) 
+  if (partial && *r == 0)
     return 1;  /* if second string is at terminator, then it is partially equal */
 
   return 0;
@@ -1594,7 +1588,7 @@ static char iStrToUpperLatin1(char c)
 {
   unsigned char uc = (unsigned char)c;
 
-  if (c >= 'a' && c <= 'z') 
+  if (c >= 'a' && c <= 'z')
     return (c - 'a') + 'A';
 
   if (uc == 154) return (char)(unsigned char)138; /* š / Š */
@@ -1709,11 +1703,11 @@ IUP_SDK_API void iupStrUtf8ToAnsi(char* dstr, const char* sstr)
 static int iStrIncUTF8(const char* str)
 {
   if (*str >= 0)      /* ASCII */
-    return 1;  
+    return 1;
   else if ((*str & 0x20) == 0)  /* Use 00100000 to detect 110XXXXX */
-    return 2;  
+    return 2;
   else if ((*str & 0x10) == 0)  /* Use 00010000 to detect 1110XXXX */
-    return 3;  
+    return 3;
   else if ((*str & 0x08) == 0)  /* Use 00001000 to detect 11110XXX */
     return 4;
   return 1;
@@ -1904,7 +1898,7 @@ IUP_SDK_API int iupStrToDoubleLocale(const char *str, double *d, const char* dec
   int ret, locale_set = 0;
   char* old_locale;
 
-  if (!str) 
+  if (!str)
     return 0;
 
   old_locale = iStrSetLocale(decimal_symbol);
@@ -1914,7 +1908,7 @@ IUP_SDK_API int iupStrToDoubleLocale(const char *str, double *d, const char* dec
 
   iStrResetLocale(old_locale);
 
-  if (ret != 1) 
+  if (ret != 1)
     return 0;
 
   if (locale_set)

@@ -5,7 +5,6 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <locale.h>
 
@@ -13,6 +12,7 @@
 #include "iup_maskparse.h"
 #include "iup_mask.h"
 #include "iup_str.h"
+
 
 /* redefine here to avoid include iup.h */
 #define IUP_MASK_FLOAT        "[+/-]?(/d+/.?/d*|/./d+)"
@@ -29,12 +29,11 @@ struct _Imask
   int casei;
   int noempty;
   char type;
-  float fmin, 
+  float fmin,
         fmax;
   int   imin,
         imax;
 };
-
 
 IUP_SDK_API int iupMaskCheck(Imask* mask, const char *val)
 {
@@ -198,9 +197,9 @@ IUP_SDK_API Imask* iupMaskCreateFloat(float min, float max, const char* decimal_
 
 IUP_SDK_API void iupMaskDestroy(Imask* mask)
 {
-  free(mask->mask_str); 
-  free(mask->fsm); 
-  free(mask); 
+  free(mask->mask_str);
+  free(mask->fsm);
+  free(mask);
 }
 
 IUP_SDK_API char* iupMaskGetStr(Imask* mask)

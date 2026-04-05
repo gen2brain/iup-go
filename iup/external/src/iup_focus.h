@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_FOCUS_H 
+
+#ifndef __IUP_FOCUS_H
 #define __IUP_FOCUS_H
 
 #ifdef __cplusplus
@@ -31,7 +31,7 @@ IUP_SDK_API void iupCallGetFocusCb(Ihandle *ih);
  * \ingroup focus */
 IUP_SDK_API void iupCallKillFocusCb(Ihandle *ih);
 
-/** Returns the next interactive brother. Independs if it can receive the focus.
+/** Returns the next interactive brother. Independent if it can receive the focus.
  * \ingroup focus */
 IUP_SDK_API Ihandle* iupFocusNextInteractive(Ihandle *ih);
 
@@ -42,7 +42,7 @@ void iupFocusPrevious(Ihandle *ih);
 void iupSetCurrentFocus(Ihandle *ih);
 void iupResetCurrentFocus(Ihandle *ih);
 
-/* Other functions declared in <iup.h> and implemented here. 
+/* Other functions declared in <iup.h> and implemented here.
 IupPreviousField
 IupNextField
 */

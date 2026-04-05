@@ -5,10 +5,8 @@
 */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 
@@ -95,7 +93,6 @@ void iupRegisterUpdateClasses(void)
     name = iupTableNext(iregister_table);
   }
 }
-
 
 /***************************************************************/
 

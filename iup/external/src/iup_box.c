@@ -8,15 +8,11 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_box.h"
 #include "iup_normalizer.h"
 
@@ -89,7 +85,7 @@ static int iBoxSetHomogeneousAttrib(Ihandle* ih, const char* value)
 
 static char* iBoxGetHomogeneousAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->is_homogeneous); 
+  return iupStrReturnBoolean (ih->data->is_homogeneous);
 }
 
 static int iBoxSetExpandChildrenAttrib(Ihandle* ih, const char* value)
@@ -108,7 +104,7 @@ static int iBoxSetExpandChildrenAttrib(Ihandle* ih, const char* value)
 
 static char* iBoxGetExpandChildrenAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->expand_children); 
+  return iupStrReturnBoolean (ih->data->expand_children);
 }
 
 static int iBoxSetNormalizeSizeAttrib(Ihandle* ih, const char* value)
@@ -169,7 +165,6 @@ static int iBoxUpdateAttribFromFont(Ihandle* ih)
 
   return 0;
 }
-
 
 /******************************************************************************/
 

@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_TOGGLE_H 
+
+#ifndef __IUP_TOGGLE_H
 #define __IUP_TOGGLE_H
 
 #ifdef __cplusplus
@@ -28,7 +28,7 @@ char* iupToggleGetPaddingAttrib(Ihandle* ih);
 
 enum {IUP_TOGGLE_IMAGE, IUP_TOGGLE_TEXT};
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   int type,                         /* the 2 toggle possibilities */
       is_radio,

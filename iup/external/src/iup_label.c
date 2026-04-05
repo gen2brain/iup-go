@@ -8,15 +8,12 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_label.h"
 #include "iup_image.h"
 #include "iup_class.h"
@@ -98,9 +95,7 @@ char* iupLabelGetPaddingAttrib(Ihandle* ih)
     return NULL;
 }
 
-
 /**************************************************************************************/
-
 
 static int iLabelCreateMethod(Ihandle* ih, void** params)
 {
@@ -128,8 +123,8 @@ static int iLabelCreateMethod(Ihandle* ih, void** params)
 
 static void iLabelComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
-  int natural_w = 0, 
-      natural_h = 0, 
+  int natural_w = 0,
+      natural_h = 0,
       type = iupLabelGetTypeBeforeMap(ih);
   (void)children_expand; /* unset if not a container */
 
@@ -162,9 +157,7 @@ static void iLabelComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chi
   *h = natural_h;
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupLabel(const char* title)
 {

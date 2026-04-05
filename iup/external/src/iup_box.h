@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_BOX_H 
+
+#ifndef __IUP_BOX_H
 #define __IUP_BOX_H
 
 #ifdef __cplusplus
@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   int alignment,
       expand_children,
