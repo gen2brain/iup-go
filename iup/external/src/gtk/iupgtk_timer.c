@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -14,8 +13,6 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
-#include "iup_assert.h"
 #include "iup_timer.h"
 
 
@@ -47,7 +44,7 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle *ih)
 
   if (ih->serial > 0) /* timer already started */
     return;
-  
+
   time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms > 0)
   {

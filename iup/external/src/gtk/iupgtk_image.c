@@ -6,7 +6,6 @@
 
 #include <gtk/gtk.h>
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
@@ -17,7 +16,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
-#include "iup_drvinfo.h"
 
 #include "iupgtk_drv.h"
 
@@ -27,7 +25,7 @@ IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
   GdkPixbuf* pixbuf = (GdkPixbuf*)handle;
   int w, h, y, bpp;
   guchar *pixdata, *pixline_data;
-  int rowstride, planesize;
+  int rowstride;
   unsigned char *line_data;
 
   if (!iupdrvImageGetInfo(handle, &w, &h, &bpp))
@@ -186,7 +184,7 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle *ih, const char* bgcolor, int m
   channels = gdk_pixbuf_get_n_channels(pixbuf);
   imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
 
-  if (make_inactive)  
+  if (make_inactive)
     iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
 
   if (bpp == 8)
@@ -326,7 +324,7 @@ IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
       sb += line_size;
       mb += line_size;
     }
-  
+
     source = gdk_bitmap_create_from_data(NULL, sbits, ih->currentwidth, ih->currentheight);
     mask = gdk_bitmap_create_from_data(NULL, mbits, ih->currentwidth, ih->currentheight);
 
@@ -462,7 +460,7 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
           int i;
           const char* old_names[IUP_GTK_STOCK_NAMES] = { "find", "sort-ascending", "sort-descending", "zoom-fit", "zoom-100", "media-play-rtl" };
           const char* new_names[IUP_GTK_STOCK_NAMES] = { "edit-find", "view-sort-ascending", "view-sort-descending", "zoom-fit-best", "zoom-original", "media-playback-start-rtl" };
-          
+
           for (i = 0; i < IUP_GTK_STOCK_NAMES; i++)
           {
             if (iupStrEqual(name+4, old_names[i]))
@@ -485,7 +483,7 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
     if (!pixbuf)
     {
       error = NULL;
-      pixbuf = gdk_pixbuf_new_from_file(iupgtkStrConvertToSystem(name), &error);  /* filename here is in UTF-8, do NOT use iupgtkStrConvertToFilename */ 
+      pixbuf = gdk_pixbuf_new_from_file(iupgtkStrConvertToSystem(name), &error);  /* filename here is in UTF-8, do NOT use iupgtkStrConvertToFilename */
       if (error) g_error_free(error);
     }
 
@@ -496,7 +494,7 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
 {
   GdkPixbuf* pixbuf = (GdkPixbuf*)handle;
-  if (!GDK_IS_PIXBUF(pixbuf)) 
+  if (!GDK_IS_PIXBUF(pixbuf))
   {
     if (w) *w = 0;
     if (h) *h = 0;

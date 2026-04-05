@@ -132,15 +132,15 @@ static int gtkMessageDlgPopup(Ihandle* ih, int x, int y)
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), IUP_RESPONSE_2);
   else
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), IUP_RESPONSE_1);
-  
+
   /* initialize the widget */
   gtk_widget_realize(dialog);
-  
+
   ih->handle = dialog;
   iupDialogUpdatePosition(ih);
   ih->handle = NULL;
 
-  do 
+  do
   {
     response = gtk_dialog_run(GTK_DIALOG(dialog));
 
@@ -166,7 +166,7 @@ static int gtkMessageDlgPopup(Ihandle* ih, int x, int y)
   else
     IupSetAttribute(ih, "BUTTONRESPONSE", "1");
 
-  gtk_widget_destroy(dialog);  
+  gtk_widget_destroy(dialog);
 
   return IUP_NOERROR;
 }

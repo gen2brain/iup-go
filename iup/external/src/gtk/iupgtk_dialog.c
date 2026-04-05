@@ -19,7 +19,6 @@
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
@@ -31,24 +30,18 @@
 
 #include "iup_class.h"
 #include "iup_object.h"
-#include "iup_layout.h"
-#include "iup_dlglist.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_drvinfo.h"
-#include "iup_focus.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
 #include "iup_image.h"
-#include "iup_assert.h"
 
 #include "iupgtk_drv.h"
 
 
 static void gtkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h);
-
 
 /****************************************************************
                      Utilities
@@ -647,7 +640,6 @@ static void gtkDialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Ihan
   if (cb)
     cb(ih, dark_mode);
 }
-
 
 /****************************************************************
                      Idialog Methods

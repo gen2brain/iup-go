@@ -76,15 +76,15 @@ static int gtkFontDlgPopup(Ihandle* ih, int x, int y)
 
     gtk_dialog_add_button(GTK_DIALOG(dialog), help, GTK_RESPONSE_HELP);
   }
-  
+
   /* initialize the widget */
   gtk_widget_realize(GTK_WIDGET(dialog));
-  
+
   ih->handle = GTK_WIDGET(dialog);
   iupDialogUpdatePosition(ih);
   ih->handle = NULL;
-                                    
-  do 
+
+  do
   {
     response = gtk_dialog_run(GTK_DIALOG(dialog));
 
@@ -113,7 +113,7 @@ static int gtkFontDlgPopup(Ihandle* ih, int x, int y)
     iupAttribSet(ih, "STATUS", NULL);
   }
 
-  gtk_widget_destroy(GTK_WIDGET(dialog));  
+  gtk_widget_destroy(GTK_WIDGET(dialog));
 
   return IUP_NOERROR;
 }

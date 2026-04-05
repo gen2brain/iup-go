@@ -5,13 +5,11 @@
  */
 
 #include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
 #if GTK_CHECK_VERSION(3, 0, 0)
 #include <gdk/gdkkeysyms-compat.h>
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
@@ -20,13 +18,9 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_scrollbar.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_key.h"
 
 #include "iupgtk_drv.h"
 
@@ -154,9 +148,7 @@ static int gtkScrollbarSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-
 /*********************************************************************************************/
-
 
 static gboolean gtkScrollbarChangeValue(GtkRange *range, GtkScrollType scroll, double fval, Ihandle *ih)
 {
@@ -258,9 +250,7 @@ static gboolean gtkScrollbarKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, I
   return FALSE;
 }
 
-
 /*********************************************************************************************/
-
 
 static int gtkScrollbarMapMethod(Ihandle* ih)
 {

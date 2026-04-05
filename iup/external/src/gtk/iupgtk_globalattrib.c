@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <gtk/gtk.h>
 
@@ -16,15 +15,13 @@
 #include "iup_object.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_key.h"
 #include "iup_singleinstance.h"
 
 #include "iupgtk_drv.h"
 
 
-
-static void iGdkEventFunc(GdkEvent *evt, gpointer	data)
+static void iGdkEventFunc(GdkEvent *evt, gpointer data)
 {
   switch(evt->type)
   {
@@ -58,8 +55,8 @@ static void iGdkEventFunc(GdkEvent *evt, gpointer	data)
 
         if (doubleclick)
         {
-          /* Must compensate the fact that in GTK there is an extra button press event 
-             when occurs a double click, we compensate that completing the event 
+          /* Must compensate the fact that in GTK there is an extra button press event
+             when occurs a double click, we compensate that completing the event
              with a button release before the double click. */
           status[5] = ' '; /* clear double click */
           cb(b, 0, x, y, status);  /* release */
@@ -128,7 +125,7 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
   {
     if (iupStrBoolean(value))
       gdk_event_handler_set(iGdkEventFunc, NULL, NULL);
-    else 
+    else
       gdk_event_handler_set((GdkEventFunc)gtk_main_do_event, NULL, NULL);
     return 1;
   }

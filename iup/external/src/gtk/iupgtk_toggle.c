@@ -5,7 +5,6 @@
  */
 
 #include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
 #if GTK_CHECK_VERSION(3, 0, 0)
 #include <gdk/gdkkeysyms-compat.h>
 #endif
@@ -516,9 +515,7 @@ static void gtkToggleUpdateImage(Ihandle* ih, int active, int check)
   }
 }
 
-
 /*************************************************************************/
-
 
 static int gtkToggleSetValueAttrib(Ihandle* ih, const char* value)
 {

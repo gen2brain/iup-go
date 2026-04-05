@@ -4,10 +4,10 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>              
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>             
-#include <limits.h>             
+#include <string.h>
+#include <limits.h>
 
 #include <gtk/gtk.h>
 
@@ -17,7 +17,6 @@
 
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"
@@ -25,11 +24,8 @@
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
-#include "iup_focus.h"
-#include "iup_key.h"
 #include "iup_image.h"
 #include "iup_drv.h"
-#include "iup_assert.h"
 #include "iup_markup.h"
 
 #include "iupgtk_drv.h"
@@ -305,7 +301,7 @@ static GtkWidget* gtkGetWindowedParent(GtkWidget* widget)
 #if GTK_CHECK_VERSION(2, 18, 0)
   while (widget && !gtk_widget_get_has_window(widget))
 #else
-	while (widget && GTK_WIDGET_NO_WINDOW(widget))
+  while (widget && GTK_WIDGET_NO_WINDOW(widget))
 #endif
     widget = gtk_widget_get_parent(widget);
   return widget;
@@ -342,7 +338,7 @@ IUP_DRV_API gboolean iupgtkShowHelp(GtkWidget *widget, GtkWidgetHelpType *arg1, 
   (void)arg1;
 
   cb = IupGetCallback(ih, "HELP_CB");
-  if (cb && cb(ih) == IUP_CLOSE) 
+  if (cb && cb(ih) == IUP_CLOSE)
     IupExitLoop();
 
   return FALSE;
@@ -358,7 +354,7 @@ IUP_DRV_API gboolean iupgtkEnterLeaveEvent(GtkWidget *widget, GdkEventCrossing *
   else  if (evt->type == GDK_LEAVE_NOTIFY)
     cb = IupGetCallback(ih, "LEAVEWINDOW_CB");
 
-  if (cb) 
+  if (cb)
     cb(ih);
 
   return FALSE;
@@ -369,7 +365,7 @@ IUP_DRV_API int iupgtkSetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char*
   char c = '_';
   char* str;
 
-  if (!value) 
+  if (!value)
     value = "";
 
   str = iupStrProcessMnemonic(value, &c, 1);  /* replace & by c, the returned value of c is ignored in GTK */
@@ -583,7 +579,7 @@ IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsign
     bg = gdk_rgba_to_string(&rgba);
     bg_light = gdk_rgba_to_string(&light_rgba);
     bg_dark = gdk_rgba_to_string(&dark_rgba);
-    
+
     /* style background color using CSS */
     provider = gtk_css_provider_new();
     if (is_txt)
@@ -597,7 +593,7 @@ IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsign
                             "*:disabled { background-color: %s; }",
                             bg, bg_light, bg_dark, selected, bg_light);
 
-      g_free(selected); 
+      g_free(selected);
     }
     else
     {
@@ -609,7 +605,7 @@ IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsign
     }
     gtk_style_context_add_provider(gtk_widget_get_style_context(handle), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
     gtk_css_provider_load_from_data(provider, css, -1, NULL);
-    
+
     g_free(bg); g_free(bg_light); g_free(bg_dark);
     g_free(css);
     g_object_unref(provider);
@@ -629,7 +625,7 @@ IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsign
     gtk_widget_override_background_color(handle, GTK_STATE_FLAG_INSENSITIVE, &rgba);  /* disabled */
 #endif
 #else  /* GTK 2.x */
-  GtkRcStyle *rc_style;  
+  GtkRcStyle *rc_style;
   GdkColor color;
 
   iupgdkColorSetRGB(&color, r, g, b);
@@ -663,12 +659,12 @@ IUP_DRV_API void iupgtkSetFgColor(InativeHandle* handle, unsigned char r, unsign
   gtk_widget_override_color(handle, GTK_STATE_FLAG_PRELIGHT, &rgba);
 #pragma GCC diagnostic pop
 #else
-  GtkRcStyle *rc_style;  
+  GtkRcStyle *rc_style;
   GdkColor color;
 
   iupgdkColorSetRGB(&color, r, g, b);
 
-  rc_style = gtk_widget_get_modifier_style(handle);  
+  rc_style = gtk_widget_get_modifier_style(handle);
 
   rc_style->fg[GTK_STATE_ACTIVE] = rc_style->fg[GTK_STATE_NORMAL] = rc_style->fg[GTK_STATE_PRELIGHT] = color;
   rc_style->text[GTK_STATE_ACTIVE] = rc_style->text[GTK_STATE_NORMAL] = rc_style->text[GTK_STATE_PRELIGHT] = color;
@@ -711,7 +707,7 @@ static GdkCursor* gtkEmptyCursor(Ihandle* ih)
 #if GTK_CHECK_VERSION(2, 16, 0)
   (void)ih;
   return gdk_cursor_new_for_display(gdk_display_get_default(), GDK_BLANK_CURSOR);
-#else  
+#else
   /* creates an empty cursor */
   GdkColor cursor_color = {0L,0,0,0};
   char bitsnull[1] = {0x00};
@@ -740,8 +736,8 @@ static GdkCursor* gtkGetCursor(Ihandle* ih, const char* name)
     const char* iupname;
     int         sysname;
   } table[] = {
-    { "NONE",      0}, 
-    { "NULL",      0}, 
+    { "NONE",      0},
+    { "NULL",      0},
     { "ARROW",     GDK_LEFT_PTR},
     { "BUSY",      GDK_WATCH},
     { "CROSS",     GDK_CROSSHAIR},
@@ -762,8 +758,8 @@ static GdkCursor* gtkGetCursor(Ihandle* ih, const char* name)
     { "RESIZE_SE", GDK_BOTTOM_RIGHT_CORNER},
     { "RESIZE_NW", GDK_TOP_LEFT_CORNER},
     { "RESIZE_SW", GDK_BOTTOM_LEFT_CORNER},
-    { "TEXT",      GDK_XTERM}, 
-    { "UPARROW",   GDK_CENTER_PTR} 
+    { "TEXT",      GDK_XTERM},
+    { "UPARROW",   GDK_CENTER_PTR}
   };
 
   GdkCursor* cur;
@@ -779,7 +775,7 @@ static GdkCursor* gtkGetCursor(Ihandle* ih, const char* name)
   /* check the pre-defined IUP names first */
   for (i = 0; i < count; i++)
   {
-    if (iupStrEqualNoCase(name, table[i].iupname)) 
+    if (iupStrEqualNoCase(name, table[i].iupname))
     {
       if (table[i].sysname)
         cur = gdk_cursor_new_for_display(gdk_display_get_default(), table[i].sysname);
@@ -907,8 +903,8 @@ IUP_DRV_API gboolean iupgtkButtonEvent(GtkWidget *widget, GdkEventButton *evt, I
 
     if (doubleclick)
     {
-      /* Must compensate the fact that in GTK there is an extra button press event 
-         when occurs a double click, we compensate that completing the event 
+      /* Must compensate the fact that in GTK there is an extra button press event
+         when occurs a double click, we compensate that completing the event
          with a button release before the double click. */
 
       status[5] = ' '; /* clear double click */
@@ -951,8 +947,8 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
   Ihandle* focus;
   guint keyval, state;
-  gint nkeys = 0; 
-  GdkKeymapKey *keys; 
+  gint nkeys = 0;
+  GdkKeymapKey *keys;
   GdkWindow* window;
 
   focus = IupGetFocus();
@@ -1027,7 +1023,7 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 #endif
 
     grab_widget = gtk_grab_get_current();
-    if (grab_widget) 
+    if (grab_widget)
       evt.window = iupgtkGetWindow(grab_widget);
     else
     {
@@ -1074,7 +1070,7 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 
 IUP_SDK_API void iupdrvSleep(int time)
 {
-  g_usleep(time*1000);  /* mili to micro */
+  g_usleep(time*1000);  /* milli to micro */
 }
 
 IUP_DRV_API GdkWindow* iupgtkGetWindow(GtkWidget *widget)

@@ -14,8 +14,6 @@
 
 #include "iup.h"
 #include "iup_attrib.h"
-#include "iup_class.h"
-#include "iup_str.h"
 #include "iup_object.h"
 #include "iup_image.h"
 #include "iup_drvdraw.h"
@@ -23,8 +21,6 @@
 
 #include "iupgtk_drv.h"
 
-/* This was build for GTK3 only, 
-   but since 3.25 work with GTK2 too. */
 
 struct _IdrawCanvas
 {
@@ -707,7 +703,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   {
     pango_layout_set_width(fontlayout, iupGTK_PIXELS2PANGOUNITS(layout_w));
 #ifdef PANGO_VERSION_CHECK
-#if PANGO_VERSION_CHECK(1,2,0)  
+#if PANGO_VERSION_CHECK(1,2,0)
     pango_layout_set_height(fontlayout, iupGTK_PIXELS2PANGOUNITS(layout_h));
 #endif
 #endif
@@ -716,13 +712,13 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   {
     pango_layout_set_width(fontlayout, iupGTK_PIXELS2PANGOUNITS(layout_w));
 #ifdef PANGO_VERSION_CHECK
-#if PANGO_VERSION_CHECK(1,2,0)  
+#if PANGO_VERSION_CHECK(1,2,0)
     pango_layout_set_height(fontlayout, iupGTK_PIXELS2PANGOUNITS(layout_h));
 #endif
 #endif
     pango_layout_set_ellipsize(fontlayout, PANGO_ELLIPSIZE_END);
   }
-  
+
   cairo_set_source_rgba(dc->image_cr, iupgtkColorToDouble(iupDrawRed(color)), iupgtkColorToDouble(iupDrawGreen(color)), iupgtkColorToDouble(iupDrawBlue(color)), iupgtkColorToDouble(iupDrawAlpha(color)));
 
   if (flags & IUP_DRAW_CLIP)

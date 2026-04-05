@@ -5,16 +5,11 @@
  */
 
 #include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
 #if GTK_CHECK_VERSION(3, 0, 0)
 #include <gdk/gdkkeysyms-compat.h>
 #endif
 
-#include <stdlib.h>      
-#include <stdio.h>      
-
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupkey.h"
 
 #include "iup_object.h"
@@ -119,11 +114,11 @@ static int gtkKeyMap2Iup(guint keyval, int state)
 
   if (state & GDK_SHIFT_MASK)  /* Shift */
   {
-    /* only add Shift modifiers for non-ASCii codes, except for K_SP and bellow, 
+    /* only add Shift modifiers for non-ASCii codes, except for K_SP and bellow,
        and except when other modifiers are used */
     if ((keyval < K_exclam || keyval > K_tilde) ||
         (state & (GDK_CONTROL_MASK|GDK_MOD1_MASK|GDK_MOD5_MASK|GDK_MOD4_MASK)))
-      code = iup_XkeyShift(code);  
+      code = iup_XkeyShift(code);
   }
 
   if (state & GDK_CONTROL_MASK)   /* Ctrl */
@@ -186,7 +181,7 @@ IUP_DRV_API int iupgtkKeyDecode(GdkEventKey *evt)
 
 static int iupObjectIsNativeContainer(Ihandle* ih)
 {
-  if (ih->iclass->childtype != IUP_CHILDNONE && 
+  if (ih->iclass->childtype != IUP_CHILDNONE &&
       ih->iclass->nativetype != IUP_TYPEVOID)
     return 1;
   else
@@ -197,7 +192,7 @@ IUP_DRV_API gboolean iupgtkKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ih
 {
   int result;
   int code = iupgtkKeyDecode(evt);
-  if (code == 0) 
+  if (code == 0)
     return FALSE;
 
   /* Avoid duplicate calls if a child of a native container contains the focus.
@@ -226,7 +221,7 @@ IUP_DRV_API gboolean iupgtkKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ih
   if (iupObjectCheck(ih))
   {
     /* this is called only for canvas */
-    if (ih->iclass->nativetype == IUP_TYPECANVAS) 
+    if (ih->iclass->nativetype == IUP_TYPECANVAS)
     {
       result = iupKeyCallKeyPressCb(ih, code, 1);
       if (result == IUP_CLOSE)
@@ -241,14 +236,14 @@ IUP_DRV_API gboolean iupgtkKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ih
     if (iupKeyProcessNavigation(ih, code, evt->state & GDK_SHIFT_MASK))
       return TRUE;
 
-    /* compensate the show-help limitation. 
+    /* compensate the show-help limitation.
      * It is not called on F1, only on Shift+F1 and Ctrl+F1. */
     if (code == K_F1)
     {
       Icallback cb = IupGetCallback(ih, "HELP_CB");
       if (cb)
       {
-        if (cb(ih) == IUP_CLOSE) 
+        if (cb(ih) == IUP_CLOSE)
           IupExitLoop();
       }
     }
@@ -263,7 +258,7 @@ IUP_DRV_API gboolean iupgtkKeyReleaseEvent(GtkWidget *widget, GdkEventKey *evt, 
   /* this is called only for canvas */
   int result;
   int code = iupgtkKeyDecode(evt);
-  if (code == 0) 
+  if (code == 0)
     return FALSE;
 
   result = iupKeyCallKeyPressCb(ih, code, 0);
@@ -285,7 +280,7 @@ IUP_DRV_API void iupgtkButtonKeySetStatus(guint state, unsigned int but, char* s
     iupKEY_SETSHIFT(status);
 
   if (state & GDK_CONTROL_MASK)
-    iupKEY_SETCONTROL(status); 
+    iupKEY_SETCONTROL(status);
 
   if ((state & GDK_BUTTON1_MASK) || but==1)
     iupKEY_SETBUTTON1(status);
@@ -311,4 +306,3 @@ IUP_DRV_API void iupgtkButtonKeySetStatus(guint state, unsigned int but, char* s
   if (doubleclick)
     iupKEY_SETDOUBLE(status);
 }
-

@@ -20,9 +20,7 @@
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 #include "iup_dialog.h"
-#include "iup_predialogs.h"
 #include "iup_array.h"
-#include "iup_drvinfo.h"
 #include "iup_dlglist.h"
 #include "iup_drv.h"
 
@@ -43,7 +41,7 @@ static int gtkIsDirectory(const char* name)
   if (!name)
     return 0;
   return g_file_test(name, G_FILE_TEST_IS_DIR);
-}            
+}
 
 static void iupStrRemoveChar(char* str, char c)
 {
@@ -63,7 +61,7 @@ static void iupStrRemoveChar(char* str, char c)
 
 static char* gtkFileDlgGetNextStr(char* str)
 {
-  /* after the 0 there is another string, 
+  /* after the 0 there is another string,
      must know a priori how many strings are before using this */
   int len = (int)strlen(str);
   return str+len+1;
@@ -104,7 +102,7 @@ static void gtkFileDlgGetMultipleFiles(Ihandle* ih, GSList* list)
     if (dir[dir_len - 1] == '/' || dir[dir_len - 1] == '\\') len--;  /* remove last '/' */
 
     all_names = iupArrayAdd(names_array, len + 1);
-    memcpy(all_names, dir, len);  /* does NOT includes last separator */
+    memcpy(all_names, dir, len);  /* does NOT include last separator */
     all_names[len] = '|';
 
     iupAttribSetStrId(ih, "MULTIVALUE", 0, dir);  /* same as directory, includes last separator */
@@ -216,7 +214,7 @@ static gboolean gtkFileDlgPreviewExposeEvent(GtkWidget *widget, GdkEventExpose *
 
   iupAttribSet(ih, "CAIRO_CR", NULL);
   g_free(filename);
- 
+
   (void)widget;
   return TRUE;  /* stop other handlers */
 }
@@ -242,7 +240,7 @@ static void gtkFileDlgUpdatePreview(GtkFileChooser *file_chooser, Ihandle* ih)
   if (preview_canvas)
     gtk_widget_queue_draw(preview_canvas);
 }
-  
+
 static char* gtkFileCheckExt(Ihandle* ih, const char* filename)
 {
   char* ext = iupAttribGet(ih, "EXTDEFAULT");
@@ -454,7 +452,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
 
     free(filters);
   }
-  else 
+  else
   {
     value = iupAttribGet(ih, "FILTER");
     if (value)
@@ -529,15 +527,15 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
       gtk_file_chooser_set_preview_widget(GTK_FILE_CHOOSER(dialog), frame);
     }
   }
-  
+
   /* initialize the widget */
   gtk_widget_realize(GTK_WIDGET(dialog));
-  
+
   ih->handle = GTK_WIDGET(dialog);
   iupDialogUpdatePosition(ih);
   ih->handle = NULL;  /* reset handle */
 
-  do 
+  do
   {
     response = gtk_dialog_run(GTK_DIALOG(dialog));
 
@@ -598,7 +596,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
           filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
           ret = file_cb(ih, iupgtkStrConvertFromFilename(filename), "OK");
           g_free(filename);
-          
+
           if (ret == IUP_IGNORE || ret == IUP_CONTINUE)
           {
             if (ret == IUP_CONTINUE)
@@ -701,7 +699,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
     {
       /* GtkFileChooser does not change the current directory */
       char* dir = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
-      if (dir) 
+      if (dir)
       {
         g_chdir(dir);
         g_free(dir);
@@ -716,7 +714,7 @@ static int gtkFileDlgPopup(Ihandle* ih, int x, int y)
     iupAttribSet(ih, "STATUS", "-1");
   }
 
-  gtk_widget_destroy(GTK_WIDGET(dialog));  
+  gtk_widget_destroy(GTK_WIDGET(dialog));
 
   return IUP_NOERROR;
 }

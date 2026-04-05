@@ -7,22 +7,18 @@
 #include <gtk/gtk.h>
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_label.h"
 #include "iup_drv.h"
-#include "iup_image.h"
 #include "iup_focus.h"
 
 #include "iupgtk_drv.h"
@@ -248,7 +244,7 @@ static int gtkLabelSetImageAttrib(Ihandle* ih, const char* value)
     {
       if (!iupAttribGet(ih, "IMINACTIVE"))
       {
-        /* if not active and IMINACTIVE is not defined 
+        /* if not active and IMINACTIVE is not defined
            then automatically create one based on IMAGE */
         gtkLabelSetPixbuf(ih, value, 1); /* make_inactive */
       }
@@ -361,7 +357,7 @@ static int gtkLabelMapMethod(Ihandle* ih)
     gtk_container_add((GtkContainer*)box, ih->handle);
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)box);
 
-    gtk_widget_add_events(box, 
+    gtk_widget_add_events(box,
       GDK_POINTER_MOTION_MASK| GDK_POINTER_MOTION_HINT_MASK|
       GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_BUTTON_MOTION_MASK|
       GDK_ENTER_NOTIFY_MASK|GDK_LEAVE_NOTIFY_MASK);

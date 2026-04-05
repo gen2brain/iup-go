@@ -14,12 +14,9 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
 #include "iup_image.h"
 #include "iup_class.h"
 #include "iup_tray.h"
-
-#include "iupgtk_drv.h"
 
 #if GTK_CHECK_VERSION(2, 10, 0)
 

@@ -5,7 +5,6 @@
  */
 
 #include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
 #if GTK_CHECK_VERSION(3, 0, 0)
 #include <gdk/gdkkeysyms-compat.h>
 #endif
@@ -21,14 +20,11 @@
 #include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"
 #include "iup_attrib.h"
-#include "iup_dialog.h"
 #include "iup_str.h"
-#include "iup_label.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
@@ -317,9 +313,7 @@ static void gtkMenuItemUpdateImage(Ihandle* ih, const char* value, const char* i
 
 #endif /* GTK_CHECK_VERSION(3, 10, 0) */
 
-
 /*******************************************************************************************/
-
 
 static void gtkMenuMap(GtkWidget *widget, Ihandle* ih)
 {
@@ -418,9 +412,7 @@ static gboolean gtkMenuKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ihandl
   return FALSE;
 }
 
-
 /*******************************************************************************************/
-
 
 static int gtkMenuMapMethod(Ihandle* ih)
 {
@@ -468,7 +460,7 @@ static int gtkMenuMapMethod(Ihandle* ih)
   gtk_widget_add_events(ih->handle, GDK_KEY_PRESS_MASK);
   g_signal_connect(G_OBJECT(ih->handle), "key-press-event", G_CALLBACK(gtkMenuKeyPressEvent), ih);
 
-  ih->serial = iupMenuGetChildId(ih); 
+  ih->serial = iupMenuGetChildId(ih);
   gtk_widget_show(ih->handle);
 
   return IUP_NOERROR;
@@ -493,7 +485,6 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
 }
-
 
 /*******************************************************************************************/
 
@@ -650,7 +641,7 @@ static int gtkMenuItemMapMethod(Ihandle* ih)
   if (!ih->handle)
     return IUP_ERROR;
 
-  ih->serial = iupMenuGetChildId(ih); 
+  ih->serial = iupMenuGetChildId(ih);
 
   g_signal_connect(G_OBJECT(ih->handle), "select", G_CALLBACK(gtkMenuItemSelect), ih);
   g_signal_connect(G_OBJECT(ih->handle), "activate", G_CALLBACK(gtkMenuItemActivate), ih);
@@ -688,9 +679,7 @@ IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }
 
-
 /*******************************************************************************************/
-
 
 static int gtkSubmenuSetImageAttrib(Ihandle* ih, const char* value)
 {

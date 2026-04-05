@@ -44,7 +44,7 @@ static void gtkFontUpdateLayout(IgtkFont* gtkfont, PangoLayout* layout)
   pango_layout_set_font_description(layout, gtkfont->fontdesc);
 
   attrs = pango_layout_get_attributes(layout);
-  if (!attrs) 
+  if (!attrs)
   {
     attrs = pango_attr_list_new();
     pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->strikethrough));
@@ -63,7 +63,7 @@ static IgtkFont* gtkFindFont(const char *font)
 {
   PangoFontMetrics* metrics;
   PangoFontDescription* fontdesc;
-  int i, 
+  int i,
       is_underline = 0,
       is_strikeout = 0,
       count = iupArrayCount(gtk_fonts);
@@ -115,11 +115,11 @@ static IgtkFont* gtkFindFont(const char *font)
 #if GTK_CHECK_VERSION(2, 10, 0)
         double res = gdk_screen_get_resolution(gdk_screen_get_default()); /* dpi */
 #else
-        double res = ((double)gdk_screen_get_width(gdk_screen_get_default()) / 
+        double res = ((double)gdk_screen_get_width(gdk_screen_get_default()) /
                       (double)gdk_screen_get_width_mm(gdk_screen_get_default())); /* pixels/mm */
         res *= 25.4; /* dpi */
 #endif
-        /* The default value is 96, meaning that a 10 point font will be 13 pixels high. 
+        /* The default value is 96, meaning that a 10 point font will be 13 pixels high.
            (10 * 96 / 72 = 13.3) */
         /* 1 point = 1/72 inch  */
         /* points = (pixels*72)/dpi */
@@ -132,7 +132,7 @@ static IgtkFont* gtkFindFont(const char *font)
     }
   }
 
-  if (!fontdesc) 
+  if (!fontdesc)
     return NULL;
 
   /* create room in the array */
@@ -151,7 +151,7 @@ static IgtkFont* gtkFindFont(const char *font)
   fonts[i].charheight = iupGTK_PANGOUNITS2PIXELS(fonts[i].charheight);
   fonts[i].charwidth = pango_font_metrics_get_approximate_char_width(metrics);
   fonts[i].charwidth = iupGTK_PANGOUNITS2PIXELS(fonts[i].charwidth);
-  pango_font_metrics_unref(metrics); 
+  pango_font_metrics_unref(metrics);
 
   gtkFontUpdateLayout(&(fonts[i]), fonts[i].layout);  /* for strikeout and underline */
 
@@ -364,8 +364,8 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   /* If FONT is changed, must update the SIZE attribute */
   iupBaseUpdateAttribFromFont(ih);
 
-  /* FONT attribute must be able to be set before mapping, 
-    so the font is enable for size calculation. */
+  /* FONT attribute must be able to be set before mapping,
+    so the font is enabled for size calculation. */
   if (ih->handle && (ih->iclass->nativetype != IUP_TYPEVOID))
     gtkFontUpdateWidget(ih, ih->handle, gtkfont->fontdesc);
 
@@ -501,7 +501,7 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charhei
     return;
   }
 
-  if (charheight) 
+  if (charheight)
     *charheight = gtkfont->charheight;
 
   if (charwidth)

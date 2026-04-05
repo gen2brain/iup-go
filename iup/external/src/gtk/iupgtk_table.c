@@ -5,7 +5,6 @@
  */
 
 #include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
 #if GTK_CHECK_VERSION(3, 0, 0)
 #include <gdk/gdkkeysyms-compat.h>
 #endif
@@ -18,12 +17,10 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 #include "iup_key.h"
 #include "iup_image.h"
 
@@ -2624,7 +2621,6 @@ IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
   if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
     *h += sb_size;
 }
-
 
 /* ========================================================================= */
 /* Attribute Handlers                                                        */
