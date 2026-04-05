@@ -22,6 +22,15 @@
 #include <Ecore_Wl2.h>
 #endif
 
+#ifdef _WIN32
+#include <Ecore_Win32.h>
+#endif
+
+#ifdef __APPLE__
+#include <objc/objc.h>
+#include <objc/message.h>
+#endif
+
 #include "iup.h"
 #include "iup_str.h"
 #include "iup_drv.h"
@@ -154,6 +163,25 @@ IUP_DRV_API char* iupeflGetNativeWidgetHandle(Evas_Object* widget)
   }
 #endif
 
+#ifdef _WIN32
+  {
+    Ecore_Window win = ecore_evas_window_get(ee);
+    if (win)
+      return (char*)ecore_win32_window_hwnd_get((Ecore_Win32_Window*)(uintptr_t)win);
+  }
+#endif
+
+#ifdef __APPLE__
+  {
+    Ecore_Window win = ecore_evas_window_get(ee);
+    if (win)
+    {
+      void* nsview = ((void* (*)(void*, void*))objc_msgSend)((void*)(uintptr_t)win, sel_getUid("contentView"));
+      return (char*)nsview;
+    }
+  }
+#endif
+
   return NULL;
 }
 
@@ -164,6 +192,12 @@ IUP_DRV_API const char* iupeflGetNativeWindowHandleName(void)
 
   if (iupeflIsWayland())
     return "WL_SURFACE";
+
+#ifdef _WIN32
+  return "HWND";
+#elif defined(__APPLE__)
+  return "NSVIEW";
+#endif
 
   return "UNKNOWN";
 }

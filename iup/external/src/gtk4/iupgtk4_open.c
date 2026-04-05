@@ -22,6 +22,8 @@
 
 #ifdef GDK_WINDOWING_MACOS
 #include <gdk/macos/gdkmacos.h>
+#include <objc/objc.h>
+#include <objc/message.h>
 #endif
 
 #include "iup.h"
@@ -71,7 +73,10 @@ IUP_DRV_API char* iupgtk4GetNativeWidgetHandle(GtkWidget *widget)
 #ifdef GDK_WINDOWING_MACOS
   if (GDK_IS_MACOS_SURFACE(surface))
   {
-    return (char*)surface;
+    void* nswindow = gdk_macos_surface_get_native_window((GdkMacosSurface*)surface);
+    if (nswindow)
+      return (char*)((void* (*)(void*, void*))objc_msgSend)(nswindow, sel_getUid("contentView"));
+    return NULL;
   }
 #endif
 
@@ -100,7 +105,7 @@ IUP_DRV_API const char* iupgtk4GetNativeWindowHandleName(void)
 
 #ifdef GDK_WINDOWING_MACOS
   if (GDK_IS_MACOS_DISPLAY(display))
-    return "GDKSURFACE";
+    return "NSVIEW";
 #endif
 
   return "UNKNOWN";

@@ -5,6 +5,9 @@
  * See Copyright Notice in "iup.h"
  */
 
+#ifndef __IUP_GLCANVAS_EGL_EFL_H
+#define __IUP_GLCANVAS_EGL_EFL_H
+
 #include <Ecore.h>
 #include <Ecore_Evas.h>
 #include <Evas.h>
@@ -12,9 +15,6 @@
 #ifdef HAVE_ECORE_WL2
   #define IUP_EGL_HAS_WAYLAND
   #include <Ecore_Wl2.h>
-  #include <wayland-egl.h>
-  #include <wayland-client.h>
-  #include "iup_glcanvas_egl_wayland.c"
 #endif
 
 #ifdef HAVE_ECORE_X
@@ -219,126 +219,69 @@ static EGLNativeWindowType iupEGLBackendPostConfig(Ihandle* ih, IGlControlData* 
   return (EGLNativeWindowType)NULL;
 }
 
-#ifdef HAVE_ECORE_WL2
-static EGLNativeWindowType eGLCanvasCreateEflWaylandSubsurface(Ihandle* ih, IGlControlData* gldata)
+static void eGLCanvasEflGetSubsurfacePosition(IGlControlData* gldata, int* x, int* y)
 {
-  EGLNativeWindowType native_window = (EGLNativeWindowType)NULL;
-  Ecore_Evas* ee = (Ecore_Evas*)gldata->backend_handle2;
-  Ecore_Wl2_Display* wl2_display;
-  Ecore_Wl2_Window* wl2_win;
-  struct wl_display* wl_display;
-  struct wl_surface* parent_surface;
-  int physical_width = 0, physical_height = 0;
-
-  if (!eGLCanvasEflIsWayland(ee))
-    return native_window;
-
-  wl2_win = ecore_evas_wayland2_window_get(ee);
-  if (!wl2_win)
-    return native_window;
-
-  wl2_display = ecore_wl2_window_display_get(wl2_win);
-  if (!wl2_display)
-    return native_window;
-
-  wl_display = ecore_wl2_display_get(wl2_display);
-  if (!wl_display)
-    return native_window;
-
-  parent_surface = ecore_wl2_window_surface_get(wl2_win);
-  if (!parent_surface)
-    return native_window;
-
-  gldata->parent_surface = parent_surface;
-
-  gldata->compositor = ecore_wl2_display_compositor_get(wl2_display);
-  if (!gldata->compositor)
-    return native_window;
-
-  gldata->subsurface_wl = wl_compositor_create_surface(gldata->compositor);
-  if (!gldata->subsurface_wl)
-    return native_window;
-
-  if (!gldata->subcompositor) {
-    gldata->subcompositor = eGLCanvasGetWaylandSubcompositor(wl_display, &gldata->event_queue, &gldata->registry_compositor, &gldata->registry);
-  }
-
-  if (!gldata->subcompositor) {
-    wl_surface_destroy(gldata->subsurface_wl);
-    gldata->subsurface_wl = NULL;
-    return native_window;
-  }
-
-  gldata->subsurface = wl_subcompositor_get_subsurface(
-      gldata->subcompositor,
-      gldata->subsurface_wl,
-      parent_surface);
-
-  if (!gldata->subsurface) {
-    wl_surface_destroy(gldata->subsurface_wl);
-    gldata->subsurface_wl = NULL;
-    return native_window;
-  }
-
-  wl_subsurface_set_desync(gldata->subsurface);
-
+  Evas_Object* evas_obj = (Evas_Object*)gldata->backend_handle;
+  *x = 0;
+  *y = 0;
+  if (evas_obj)
   {
-    Evas_Object* evas_obj = (Evas_Object*)gldata->backend_handle;
-    int subsurface_x = 0, subsurface_y = 0;
-    if (evas_obj)
-    {
-      Eina_Rect geom = efl_gfx_entity_geometry_get(evas_obj);
-      subsurface_x = geom.x;
-      subsurface_y = geom.y;
+    Eina_Rect geom = efl_gfx_entity_geometry_get(evas_obj);
+    *x = geom.x;
+    *y = geom.y;
 
-      {
-        Evas* evas = evas_object_evas_get(evas_obj);
-        if (evas) {
-          int fx = 0, fy = 0;
-          evas_output_framespace_get(evas, &fx, &fy, NULL, NULL);
-          subsurface_x += fx;
-          subsurface_y += fy;
-        }
+    {
+      Evas* evas = evas_object_evas_get(evas_obj);
+      if (evas) {
+        int fx = 0, fy = 0;
+        evas_output_framespace_get(evas, &fx, &fy, NULL, NULL);
+        *x += fx;
+        *y += fy;
       }
     }
-
-    wl_subsurface_set_position(gldata->subsurface, subsurface_x, subsurface_y);
   }
-
-  eGLCanvasGetActualSize(ih, gldata, &physical_width, &physical_height);
-  if (physical_width < 1) physical_width = 1;
-  if (physical_height < 1) physical_height = 1;
-
-  gldata->egl_window = wl_egl_window_create(gldata->subsurface_wl, physical_width, physical_height);
-
-  if (gldata->egl_window) {
-    native_window = (EGLNativeWindowType)gldata->egl_window;
-    gldata->egl_window_physical_width = physical_width;
-    gldata->egl_window_physical_height = physical_height;
-  }
-
-  return native_window;
 }
-#endif /* HAVE_ECORE_WL2 */
 
 static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* gldata, EGLNativeWindowType* native_window, EGLint* context_attribs, int max_attribs)
 {
   (void)max_attribs;
 
 #ifdef HAVE_ECORE_WL2
-  *native_window = eGLCanvasCreateEflWaylandSubsurface(ih, gldata);
+  {
+    Ecore_Evas* ee = (Ecore_Evas*)gldata->backend_handle2;
+    if (eGLCanvasEflIsWayland(ee))
+    {
+      Ecore_Wl2_Window* wl2_win = ecore_evas_wayland2_window_get(ee);
+      Ecore_Wl2_Display* wl2_display = wl2_win ? ecore_wl2_window_display_get(wl2_win) : NULL;
+      struct wl_display* wl_display = wl2_display ? ecore_wl2_display_get(wl2_display) : NULL;
+      struct wl_surface* parent_surface = wl2_win ? ecore_wl2_window_surface_get(wl2_win) : NULL;
 
-  if (*native_window == (EGLNativeWindowType)NULL) {
-    iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
-    return -1;
+      if (wl_display && parent_surface)
+      {
+        int x = 0, y = 0;
+        struct IGlWaylandSubsurface ws;
+
+        eGLCanvasEflGetSubsurfacePosition(gldata, &x, &y);
+
+        if (iupGLCreateWaylandSubsurface(wl_display, parent_surface,
+              x, y, ih->currentwidth, ih->currentheight, 1, &ws))
+        {
+          eGLCopyWaylandSubsurface(&ws, gldata, parent_surface);
+          *native_window = (EGLNativeWindowType)gldata->egl_window;
+
+          context_attribs[0] = EGL_NONE;
+          return 1;
+        }
+      }
+
+      iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
+      return -1;
+    }
   }
+#endif
 
-  context_attribs[0] = EGL_NONE;
-  return 1;
-#else
   (void)ih; (void)gldata; (void)native_window; (void)context_attribs;
   return -1;
-#endif
 }
 
 static EGLNativeWindowType iupEGLBackendCheckSurfaceRecreation(Ihandle* ih, IGlControlData* gldata)
@@ -499,3 +442,5 @@ static void iupEGLBackendPostSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 
   (void)ih;
 }
+
+#endif

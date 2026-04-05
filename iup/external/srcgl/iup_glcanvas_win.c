@@ -23,6 +23,8 @@
 #include "iup_assert.h"
 #include "iup_register.h"
 
+#include "iup_glcanvas_nativeinfo.h"
+
 typedef HGLRC (WINAPI *wglCreateContextAttribsARB_PROC) (HDC hDC, HGLRC hShareContext, const int *attribList);
 
 #ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
@@ -51,10 +53,18 @@ typedef struct _IGlControlData
   HGLRC context;
   HPALETTE palette;
   int is_owned_dc;
+  int owns_window;
+  int lazy_init;
 } IGlControlData;
+
+static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata);
 
 static int wGLCanvasDefaultResize_CB(Ihandle *ih, int width, int height)
 {
+  IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  if (gldata && gldata->lazy_init)
+    return IUP_DEFAULT;
+
   IupGLMakeCurrent(ih);
   glViewport(0,0,width,height);
   return IUP_DEFAULT;
@@ -178,7 +188,7 @@ static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
     iupAttribSet(ih, "ERROR", "No appropriate pixel format.");
     iupAttribSetStr(ih, "LASTERROR", IupGetGlobal("LASTERROR"));
     return IUP_NOERROR;
-  } 
+  }
   SetPixelFormat(gldata->device,pixelFormat,&pfd);
 
   ih_shared = IupGetAttributeHandle(ih, "SHAREDCONTEXT");
@@ -325,13 +335,48 @@ static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
 static int wGLCanvasMapMethod(Ihandle* ih)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  IGlNativeInfo info;
 
-  /* get a device context */
-  gldata->window = (HWND)iupAttribGet(ih, "HWND"); /* check first in the hash table, can be defined by the IupFileDlg */
+  if (iupGLGetNativeInfo(ih, &info))
+  {
+    if (info.has_own_window)
+    {
+      gldata->window = (HWND)info.canvas_window;
+      gldata->owns_window = 0;
+    }
+    else if (info.parent_window)
+    {
+      const char* driver = IupGetGlobal("DRIVER");
+
+      if (driver && strcmp(driver, "GTK4") == 0)
+      {
+        gldata->window = (HWND)info.parent_window;
+        gldata->owns_window = 0;
+      }
+      else
+      {
+        gldata->window = iupGLCreateChildWindow(info.parent_window, info.x, info.y, info.w, info.h);
+        gldata->owns_window = 1;
+      }
+    }
+    else
+    {
+      gldata->lazy_init = 1;
+      return IUP_NOERROR;
+    }
+  }
+  else
+  {
+    gldata->window = (HWND)iupAttribGet(ih, "HWND");
+    if (!gldata->window)
+      gldata->window = (HWND)IupGetAttribute(ih, "HWND");
+  }
+
   if (!gldata->window)
-    gldata->window = (HWND)IupGetAttribute(ih, "HWND");  /* works for Win32 and GTK, only after mapping the IupCanvas */
-  if (!gldata->window)
+  {
+    gldata->lazy_init = 1;
     return IUP_NOERROR;
+  }
 
   {
     LONG style = GetClassLong(gldata->window, GCL_STYLE);
@@ -339,6 +384,50 @@ static int wGLCanvasMapMethod(Ihandle* ih)
   }
 
   return wGLCreateContext(ih, gldata);
+}
+
+static int wGLCanvasLazyInit(Ihandle* ih, IGlControlData* gldata)
+{
+  IGlNativeInfo info;
+
+  if (!iupGLGetNativeInfo(ih, &info))
+    return 0;
+
+  if (info.has_own_window)
+  {
+    gldata->window = (HWND)info.canvas_window;
+    gldata->owns_window = 0;
+  }
+  else
+  {
+    const char* driver = IupGetGlobal("DRIVER");
+    int use_child = 1;
+
+    if (driver && strcmp(driver, "GTK4") == 0)
+      use_child = 0;
+
+    if (use_child)
+    {
+      gldata->window = iupGLCreateChildWindow(info.parent_window, info.x, info.y, info.w, info.h);
+      gldata->owns_window = 1;
+    }
+    else
+    {
+      gldata->window = (HWND)info.parent_window;
+      gldata->owns_window = 0;
+    }
+  }
+
+  if (!gldata->window)
+    return 0;
+
+  {
+    LONG style = GetClassLong(gldata->window, GCL_STYLE);
+    gldata->is_owned_dc = (int) ((style & CS_OWNDC) || (style & CS_CLASSDC));
+  }
+
+  gldata->lazy_init = 0;
+  return wGLCreateContext(ih, gldata) == IUP_NOERROR && gldata->context != NULL;
 }
 
 static void wGLReleaseContext(IGlControlData* gldata)
@@ -363,6 +452,9 @@ static void wGLCanvasUnMapMethod(Ihandle* ih)
 
   if (gldata->device)
     ReleaseDC(gldata->window, gldata->device);
+
+  if (gldata->owns_window && gldata->window)
+    iupGLDestroyChildWindow(gldata->window);
 
   memset(gldata, 0, sizeof(IGlControlData));
 }
@@ -441,14 +533,24 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     return;
 
   /* must be an IupGLCanvas */
-  if (ih->iclass->nativetype != IUP_TYPECANVAS || 
+  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return;
 
   /* must be mapped */
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+
+  if (gldata->lazy_init)
+  {
+    if (!wGLCanvasLazyInit(ih, gldata))
+      return;
+  }
+
   if (!gldata->window)
     return;
+
+  if (gldata->owns_window)
+    iupGLMoveChildWindow(gldata->window, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 
   if (wglMakeCurrent(gldata->device, gldata->context)==FALSE)
   {
