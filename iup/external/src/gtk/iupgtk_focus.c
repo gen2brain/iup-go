@@ -6,16 +6,11 @@
 
 #include <gtk/gtk.h>
 
-#include <stdio.h>
-
 #include "iup.h"
 
 #include "iup_object.h"
 #include "iup_focus.h"
-#include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_assert.h" 
-#include "iup_drv.h" 
 
 #include "iupgtk_drv.h"
 

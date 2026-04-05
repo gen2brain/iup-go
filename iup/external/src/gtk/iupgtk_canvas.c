@@ -11,7 +11,6 @@
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
@@ -21,13 +20,10 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
-#include "iup_dialog.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
-#include "iup_drvfont.h"
 #include "iup_canvas.h"
 #include "iup_key.h"
 
@@ -213,7 +209,7 @@ static void gtkCanvasAdjustVertValueChanged(GtkAdjustment *adjustment, Ihandle *
 }
 
 static gboolean gtkCanvasScrollEvent(GtkWidget *widget, GdkEventScroll *evt, Ihandle *ih)
-{    
+{
   /* occurs only for the mouse wheel. Not related to the scrollbars */
   IFnfiis wcb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
 
@@ -375,7 +371,7 @@ static gboolean gtkCanvasBorderExposeEvent(GtkWidget *widget, GdkEventExpose *ev
 #if GTK_CHECK_VERSION(3, 0, 0)
   GtkStyleContext* context = gtk_widget_get_style_context (widget);
   GtkAllocation allocation;
-  gtk_widget_get_allocation(widget, &allocation);  
+  gtk_widget_get_allocation(widget, &allocation);
   gtk_style_context_save (context);
   gtk_style_context_add_class(context, GTK_STYLE_CLASS_FRAME);
   gtk_render_frame (context, cr, 0, 0, allocation.width, allocation.height);
@@ -584,7 +580,7 @@ static int gtkCanvasSetDYAttrib(Ihandle* ih, const char *value)
           gtk_widget_hide(sb_vert);
           gtkCanvasUpdateChildLayout(ih, 1);
         }
-        
+
         iupAttribSet(ih, "YHIDDEN", "YES");
       }
       else
@@ -852,7 +848,7 @@ static int gtkCanvasMapMethod(Ihandle* ih)
   gtk_widget_add_events(ih->handle, GDK_EXPOSURE_MASK|
     GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|
     GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_BUTTON_MOTION_MASK|
-    GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK | 
+    GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
     GDK_SCROLL_MASK |  /* Added for GTK3, but it seems to work ok for GTK2 */
     GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK |
     GDK_FOCUS_CHANGE_MASK|GDK_STRUCTURE_MASK);

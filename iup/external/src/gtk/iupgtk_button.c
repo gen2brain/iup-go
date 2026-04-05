@@ -6,25 +6,19 @@
 
 #include <gtk/gtk.h>
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_button.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_image.h"
-#include "iup_key.h"
 
 #include "iupgtk_drv.h"
 
@@ -515,7 +509,7 @@ static int gtkButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
     if (label)
     {
       PangoLayout* layout = gtk_label_get_layout(label);
-      if (layout) 
+      if (layout)
         pango_layout_set_alignment(layout, alignment);
     }
   }
@@ -748,7 +742,7 @@ static int gtkButtonSetImageAttrib(Ihandle* ih, const char* value)
     {
       if (!iupAttribGet(ih, "IMINACTIVE"))
       {
-        /* if not active and IMINACTIVE is not defined 
+        /* if not active and IMINACTIVE is not defined
            then automatically create one based on IMAGE */
         gtkButtonSetPixbuf(ih, value, 1); /* make_inactive */
       }
@@ -828,7 +822,7 @@ static void gtkButtonClicked(GtkButton *widget, Ihandle* ih)
   Icallback cb = IupGetCallback(ih, "ACTION");
   if (cb)
   {
-    if (cb(ih) == IUP_CLOSE) 
+    if (cb(ih) == IUP_CLOSE)
       IupExitLoop();
   }
   (void)widget;
@@ -859,7 +853,7 @@ static gboolean gtkButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *
       Icallback cb = IupGetCallback(ih, "ACTION");
       if (cb)
       {
-        if (cb(ih) == IUP_CLOSE) 
+        if (cb(ih) == IUP_CLOSE)
           IupExitLoop();
       }
     }

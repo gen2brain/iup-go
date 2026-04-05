@@ -5,13 +5,11 @@
  */
 
 #include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
 #if GTK_CHECK_VERSION(3, 0, 0)
 #include <gdk/gdkkeysyms-compat.h>
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
@@ -20,13 +18,9 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_val.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_key.h"
 
 #include "iupgtk_drv.h"
 
@@ -128,9 +122,7 @@ static int gtkValSetValueAttrib(Ihandle* ih, const char* value)
   return 0; /* do not store value in hash table */
 }
 
-
 /*********************************************************************************************/
-
 
 static gboolean gtkValButtonReleaseEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
 {
@@ -158,7 +150,7 @@ static gboolean gtkValChangeValue(GtkRange *range, GtkScrollType scroll, double 
   {
     if (ih->data->val == old_val)
       return FALSE;
-      
+
     cb(ih);
   }
   else
@@ -218,7 +210,6 @@ static gboolean gtkValKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle
 }
 
 /*********************************************************************************************/
-
 
 static int gtkValMapMethod(Ihandle* ih)
 {
@@ -346,9 +337,9 @@ IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   ic->Map = gtkValMapMethod;
 
   /* Driver Dependent Attribute functions */
-  
+
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT); 
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* IupVal only */
   iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, gtkValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

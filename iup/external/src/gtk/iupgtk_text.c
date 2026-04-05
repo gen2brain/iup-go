@@ -16,15 +16,11 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_mask.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_image.h"
-#include "iup_key.h"
 #include "iup_array.h"
 #include "iup_text.h"
 
@@ -577,19 +573,19 @@ static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
   if (format)
   {
     if (iupStrEqualNoCase(format, "EXTRA_CONDENSED"))
-      val = PANGO_STRETCH_EXTRA_CONDENSED;  
+      val = PANGO_STRETCH_EXTRA_CONDENSED;
     else if (iupStrEqualNoCase(format, "CONDENSED"))
-      val = PANGO_STRETCH_CONDENSED;     
+      val = PANGO_STRETCH_CONDENSED;
     else if (iupStrEqualNoCase(format, "SEMI_CONDENSED"))
-      val = PANGO_STRETCH_SEMI_CONDENSED;  
+      val = PANGO_STRETCH_SEMI_CONDENSED;
     else if (iupStrEqualNoCase(format, "SEMI_EXPANDED"))
-      val = PANGO_STRETCH_SEMI_EXPANDED;      
+      val = PANGO_STRETCH_SEMI_EXPANDED;
     else if (iupStrEqualNoCase(format, "EXPANDED"))
-      val = PANGO_STRETCH_EXPANDED;  
+      val = PANGO_STRETCH_EXPANDED;
     else if (iupStrEqualNoCase(format, "EXTRA_EXPANDED"))
-      val = PANGO_STRETCH_EXTRA_EXPANDED;       
+      val = PANGO_STRETCH_EXTRA_EXPANDED;
     else /* "NORMAL" */
-      val = PANGO_STRETCH_NORMAL;   
+      val = PANGO_STRETCH_NORMAL;
 
     g_object_set(G_OBJECT(tag), "stretch", val, NULL);
   }
@@ -608,8 +604,8 @@ static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
     {
       g_object_set(G_OBJECT(tag), "scale", PANGO_SCALE_X_SMALL, NULL);
       val = -10;  /* 10 pixels down */
-    } 
-    else 
+    }
+    else
       iupStrToInt(format, &val);
 
     val = iupGTK_PIXELS2PANGOUNITS(val);
@@ -680,7 +676,7 @@ static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
       fval = PANGO_SCALE_X_LARGE;
     else if (iupStrEqualNoCase(format, "XX-LARGE"))
       fval = PANGO_SCALE_XX_LARGE;
-    else 
+    else
       iupStrToDouble(format, &fval);
 
     if (fval > 0)
@@ -751,19 +747,19 @@ static void gtkTextParseCharacterFormat(Ihandle* formattag, GtkTextTag* tag)
   if (format)
   {
     if (iupStrEqualNoCase(format, "EXTRALIGHT"))
-      val = PANGO_WEIGHT_ULTRALIGHT;  
+      val = PANGO_WEIGHT_ULTRALIGHT;
     else if (iupStrEqualNoCase(format, "LIGHT"))
-      val = PANGO_WEIGHT_LIGHT;     
+      val = PANGO_WEIGHT_LIGHT;
     else if (iupStrEqualNoCase(format, "SEMIBOLD"))
-      val = PANGO_WEIGHT_SEMIBOLD;  
+      val = PANGO_WEIGHT_SEMIBOLD;
     else if (iupStrEqualNoCase(format, "BOLD"))
-      val = PANGO_WEIGHT_BOLD;      
+      val = PANGO_WEIGHT_BOLD;
     else if (iupStrEqualNoCase(format, "EXTRABOLD"))
-      val = PANGO_WEIGHT_ULTRABOLD;  
+      val = PANGO_WEIGHT_ULTRABOLD;
     else if (iupStrEqualNoCase(format, "HEAVY"))
-      val = PANGO_WEIGHT_HEAVY;       
+      val = PANGO_WEIGHT_HEAVY;
     else /* "NORMAL" */
-      val = PANGO_WEIGHT_NORMAL;   
+      val = PANGO_WEIGHT_NORMAL;
 
     g_object_set(G_OBJECT(tag), "weight", val, NULL);
   }
@@ -870,7 +866,7 @@ static int gtkTextConvertXYToPos(Ihandle* ih, int x, int y)
 
     /* transform to Layout coordinates */
     gtk_entry_get_layout_offsets(GTK_ENTRY(ih->handle), &off_x, &off_y);
-    x = iupGTK_PIXELS2PANGOUNITS(x - off_x); 
+    x = iupGTK_PIXELS2PANGOUNITS(x - off_x);
     y = iupGTK_PIXELS2PANGOUNITS(y - off_y);
 
     pango_layout_xy_to_index(gtk_entry_get_layout(GTK_ENTRY(ih->handle)), x, y, &pos, &trailing);
@@ -911,10 +907,10 @@ static int gtkTextSelectionGetIter(Ihandle* ih, const char* value, GtkTextIter* 
     return 1;
   }
 
-  if (sscanf(value, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end)!=4) 
+  if (sscanf(value, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end)!=4)
     return 0;
 
-  if (lin_start<1 || col_start<1 || lin_end<1 || col_end<1) 
+  if (lin_start<1 || col_start<1 || lin_end<1 || col_end<1)
     return 0;
 
   gtkTextMoveIterToLinCol(buffer, start_iter, lin_start, col_start);
@@ -945,10 +941,10 @@ static int gtkTextSelectionPosGetIter(Ihandle* ih, const char* value, GtkTextIte
     return 1;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+  if (iupStrToIntInt(value, &start, &end, ':')!=2)
     return 0;
 
-  if(start<0 || end<0) 
+  if(start<0 || end<0)
     return 0;
 
   gtk_text_buffer_get_iter_at_offset(buffer, start_iter, start);
@@ -985,10 +981,10 @@ static int gtkTextSetSelectionAttrib(Ihandle* ih, const char* value)
     else
     {
       start=1, end=1;
-      if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+      if (iupStrToIntInt(value, &start, &end, ':')!=2)
         return 0;
 
-      if(start<1 || end<1) 
+      if(start<1 || end<1)
         return 0;
 
       start--; /* IUP starts at 1 */
@@ -1059,10 +1055,10 @@ static int gtkTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     else
     {
       start=0, end=0;
-      if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+      if (iupStrToIntInt(value, &start, &end, ':')!=2)
         return 0;
 
-      if(start<0 || end<0) 
+      if(start<0 || end<0)
         return 0;
     }
 
@@ -1597,7 +1593,7 @@ static char* gtkTextGetReadOnlyAttrib(Ihandle* ih)
     editable = gtk_text_view_get_editable(GTK_TEXT_VIEW(ih->handle));
   else
     editable = gtk_editable_get_editable(GTK_EDITABLE(ih->handle));
-  return iupStrReturnBoolean (!editable); 
+  return iupStrReturnBoolean (!editable);
 }
 
 #if GTK_CHECK_VERSION(3, 20, 0)
@@ -1871,7 +1867,7 @@ static void gtkTextSpinValueChanged(GtkSpinButton* spin, Ihandle* ih)
   ih->data->disable_callbacks = 0;  /* enable other text callbacks processing */
 
   cb = (IFni)IupGetCallback(ih, "SPIN_CB");
-  if (cb) 
+  if (cb)
   {
     int pos, ret;
     if (iupAttribGet(ih, "_IUPGTK_SPIN_NOAUTO"))
@@ -2192,7 +2188,7 @@ static void gtkTextEntryInsertText(GtkEditable *editable, char *insert_value, in
     gtk_editable_insert_text(editable, insert_value, 1, pos);
     ih->data->disable_callbacks = 0;
 
-    g_signal_stop_emission_by_name(editable, "insert_text"); 
+    g_signal_stop_emission_by_name(editable, "insert_text");
   }
 
   (void)len;
@@ -2236,7 +2232,7 @@ static void gtkTextBufferInsertText(GtkTextBuffer *textbuffer, GtkTextIter *pos_
     gtk_text_buffer_insert(textbuffer, pos_iter, insert_value, 1);
     ih->data->disable_callbacks = 0;
 
-    g_signal_stop_emission_by_name(textbuffer, "insert_text"); 
+    g_signal_stop_emission_by_name(textbuffer, "insert_text");
   }
 
   (void)len;
@@ -2314,7 +2310,7 @@ static int gtkTextMapMethod(Ihandle* ih)
     }
 
     if (iupAttribGetBoolean(ih, "BORDER"))
-      gtk_scrolled_window_set_shadow_type(scrolled_window, GTK_SHADOW_IN); 
+      gtk_scrolled_window_set_shadow_type(scrolled_window, GTK_SHADOW_IN);
     else
       gtk_scrolled_window_set_shadow_type(scrolled_window, GTK_SHADOW_NONE);
 

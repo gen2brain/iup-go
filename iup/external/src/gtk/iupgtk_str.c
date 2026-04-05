@@ -4,10 +4,10 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>              
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>             
-#include <limits.h>             
+#include <string.h>
+#include <limits.h>
 
 #include <gtk/gtk.h>
 
@@ -135,14 +135,14 @@ static gboolean gtkGetFilenameCharset(const gchar **filename_charset)
 {
   const gchar **charsets = NULL;
   gboolean is_utf8 = FALSE;
-  
+
 #if GTK_CHECK_VERSION(2, 6, 0)
   is_utf8 = g_get_filename_charsets(&charsets);
 #endif
 
   if (filename_charset && charsets)
     *filename_charset = charsets[0];
-  
+
   return is_utf8;
 }
 
@@ -260,4 +260,3 @@ IUP_SDK_API char* iupStrConvertToUTF8(const char* str, int len, char* utf8_buffe
 
   return utf8_buffer;
 }
-

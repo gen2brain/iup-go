@@ -12,10 +12,8 @@
 
 #include <gtk/gtk.h>
 #include <glib.h>
-#include <glib/gstdio.h>
 
 #include "iup_export.h"
-#include "iup_str.h"
 #include "iup_drvinfo.h"
 
 
@@ -150,4 +148,3 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
 
   key[4] = 0;
 }
-

@@ -7,7 +7,6 @@
 #include <gtk/gtk.h>
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <memory.h>
@@ -17,13 +16,9 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_dialog.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 #include "iup_image.h"
 #include "iup_tabs.h"
 
@@ -379,7 +374,7 @@ static gboolean gtkTabsButtonPressEvent(GtkWidget *widget, GdkEventButton *evt, 
 {
   Ihandle* ih = IupGetParent(child);
   IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
-  
+
   if (evt->type == GDK_BUTTON_PRESS && evt->button == 3 && cb)
   {
     GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
@@ -659,20 +654,6 @@ static void gtkTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   iupAttribSet(child, "_IUPTAB_PAGE", NULL);
 
   iupAttribSet(ih, "_IUPGTK_IGNORE_SWITCHPAGE", NULL);
-}
-
-static int gtkTabsGetTabOverlap(Ihandle* ih)
-{
-  if (!ih->handle)
-    return 0;
-
-  GtkNotebook* notebook = (GtkNotebook*)ih->handle;
-  gint tab_overlap = 0;
-
-  /* Query GTK style property for tab overlap (negative values mean spacing between tabs) */
-  gtk_widget_style_get(GTK_WIDGET(notebook), "tab-overlap", &tab_overlap, NULL);
-
-  return tab_overlap;
 }
 
 static int gtkTabsGetCloseButtonSize(Ihandle* ih)

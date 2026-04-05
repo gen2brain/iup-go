@@ -20,7 +20,6 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_mask.h"
 #include "iup_array.h"
@@ -66,7 +65,7 @@ static int gtkCalendarSetValueAttrib(Ihandle* ih, const char* value)
       if (day < 1) day = 1;
       if (day > 31) day = 31;
 
-      /*  month is zero-based (i.e it allowed values are 0-11) while selected_day is one-based (i.e. allowed values are 1-31). */
+      /*  month is zero-based (i.e., it allowed values are 0-11) while selected_day is one-based (i.e. allowed values are 1-31). */
       gtk_calendar_select_month(GTK_CALENDAR(ih->handle), month - 1, year);
       gtk_calendar_select_day(GTK_CALENDAR(ih->handle), day);
     }

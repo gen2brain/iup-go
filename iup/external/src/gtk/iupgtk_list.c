@@ -5,13 +5,11 @@
  */
 
 #include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
 #if GTK_CHECK_VERSION(3, 0, 0)
 #include <gdk/gdkkeysyms-compat.h>
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
@@ -20,13 +18,11 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_mask.h"
-#include "iup_key.h"
 #include "iup_image.h"
 #include "iup_list.h"
 #include "iup_childtree.h"
@@ -373,7 +369,6 @@ static void iupgtkListMeasureItemMetrics(void)
     int char_height;
     PangoContext *context;
     PangoLayout *layout;
-    int row1_y, row2_y;
 
     g_object_set(G_OBJECT(renderer), "xpad", 0, NULL);
     g_object_set(G_OBJECT(renderer), "ypad", 0, NULL);
@@ -397,8 +392,6 @@ static void iupgtkListMeasureItemMetrics(void)
       gtk_tree_view_get_background_area(GTK_TREE_VIEW(temp_tree), path0, column, &rect0);
       gtk_tree_view_get_background_area(GTK_TREE_VIEW(temp_tree), path1, column, &rect1);
 
-      row1_y = rect0.y;
-      row2_y = rect1.y;
       iupgtk_list_row_height = rect1.y - rect0.y;
 
       gtk_tree_path_free(path0);
@@ -704,9 +697,9 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
       int curpos = gtk_combo_box_get_active((GtkComboBox*)ih->handle);
       if (pos == curpos)
       {
-        if (curpos > 0) 
+        if (curpos > 0)
           curpos--;
-        else 
+        else
         {
           curpos=1;
           if (iupdrvListGetCount(ih)==1)
@@ -850,7 +843,7 @@ static int gtkListSetBgColorAttrib(Ihandle* ih, const char* value)
     c.red = r;
     gtk_container_forall(container, gtkComboBoxChildrenSetBgColor, &c);
 
-    /* do not set for the event_box or 
+    /* do not set for the event_box or
        there will be an invalid background outside the dropdown */
   }
 
@@ -918,7 +911,7 @@ static char* gtkListGetValueAttrib(Ihandle* ih)
     GtkEntry* entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK_ENTRY");
     return iupStrReturnStr(iupgtkStrConvertFromSystem(gtk_entry_get_text(entry)));
   }
-  else 
+  else
   {
     if (ih->data->is_dropdown)
     {
@@ -938,7 +931,7 @@ static char* gtkListGetValueAttrib(Ihandle* ih)
           int* indices = gtk_tree_path_get_indices(path);
           int ret = indices[0]+1;  /* IUP starts at 1 */
           gtk_tree_path_free (path);
-          return iupStrReturnInt(ret);  
+          return iupStrReturnInt(ret);
         }
       }
       else
@@ -974,7 +967,7 @@ static int gtkListSetValueAttrib(Ihandle* ih, const char* value)
     gtk_entry_set_text(entry, iupgtkStrConvertToSystem(value));
     iupAttribSet(ih, "_IUPGTK_DISABLE_TEXT_CB", NULL);
   }
-  else 
+  else
   {
     if (ih->data->is_dropdown)
     {
@@ -1018,7 +1011,7 @@ static int gtkListSetValueAttrib(Ihandle* ih, const char* value)
       else
       {
         /* User has changed a multiple selection on a simple list. */
-	      int i, len, count;
+        int i, len, count;
 
         iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
 
@@ -1031,9 +1024,9 @@ static int gtkListSetValueAttrib(Ihandle* ih, const char* value)
           return 0;
         }
 
-	      len = (int)strlen(value);
+        len = (int)strlen(value);
         count = iupdrvListGetCount(ih);
-        if (len < count) 
+        if (len < count)
           count = len;
 
         /* update selection list */
@@ -1060,9 +1053,9 @@ static int gtkListSetShowDropdownAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_dropdown)
   {
     if (iupStrBoolean(value))
-      gtk_combo_box_popup((GtkComboBox*)ih->handle); 
+      gtk_combo_box_popup((GtkComboBox*)ih->handle);
     else
-      gtk_combo_box_popdown((GtkComboBox*)ih->handle); 
+      gtk_combo_box_popdown((GtkComboBox*)ih->handle);
   }
   return 0;
 }
@@ -1094,8 +1087,8 @@ static int gtkListSetSpacingAttrib(Ihandle* ih, const char* value)
   {
     GtkCellRenderer* renderer = (GtkCellRenderer*)iupAttribGet(ih, "_IUPGTK_RENDERER");
     if (renderer)
-      g_object_set(G_OBJECT(renderer), "xpad", ih->data->spacing, 
-                                       "ypad", ih->data->spacing, 
+      g_object_set(G_OBJECT(renderer), "xpad", ih->data->spacing,
+                                       "ypad", ih->data->spacing,
                                        NULL);
     return 0;
   }
@@ -1148,10 +1141,10 @@ static int gtkListSetSelectionAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+  if (iupStrToIntInt(value, &start, &end, ':')!=2)
     return 0;
 
-  if(start<1 || end<1) 
+  if(start<1 || end<1)
     return 0;
 
   start--; /* IUP starts at 1 */
@@ -1200,10 +1193,10 @@ static int gtkListSetSelectionPosAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+  if (iupStrToIntInt(value, &start, &end, ':')!=2)
     return 0;
 
-  if(start<0 || end<0) 
+  if(start<0 || end<0)
     return 0;
 
   gtk_editable_select_region(GTK_EDITABLE(entry), start, end);
@@ -1451,7 +1444,7 @@ static char* gtkListGetReadOnlyAttrib(Ihandle* ih)
   if (!ih->data->has_editbox)
     return NULL;
   entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK_ENTRY");
-  return iupStrReturnBoolean (!gtk_editable_get_editable(GTK_EDITABLE(entry))); 
+  return iupStrReturnBoolean (!gtk_editable_get_editable(GTK_EDITABLE(entry)));
 }
 
 static int gtkListSetImageAttrib(Ihandle* ih, int id, const char* value)
@@ -1547,7 +1540,7 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 
 /*********************************************************************************/
 
-static void gtkListDragDataReceived(GtkWidget *widget, GdkDragContext *context, gint x, gint y, 
+static void gtkListDragDataReceived(GtkWidget *widget, GdkDragContext *context, gint x, gint y,
                                     GtkSelectionData *selection_data, guint info, guint time, Ihandle* ih)
 {
   int is_ctrl;
@@ -1570,7 +1563,7 @@ static void gtkListDragDataReceived(GtkWidget *widget, GdkDragContext *context, 
 
     /* Copy text and image of the dragged item */
     gtk_tree_model_iter_nth_child(model, &iterDrag, NULL, idDrag);  /* starts at 0 */
-    gtk_tree_model_get(model, &iterDrag, IUPGTK_LIST_TEXT, &text, 
+    gtk_tree_model_get(model, &iterDrag, IUPGTK_LIST_TEXT, &text,
                                          IUPGTK_LIST_IMAGE, &pixImage, -1);
 
     /* Copy the item to the idDrop position */
@@ -1834,7 +1827,7 @@ static void gtkListEditInsertText(GtkEditable *editable, char *insert_value, int
     gtk_editable_insert_text(editable, insert_value, 1, pos);
     iupAttribSet(ih, "_IUPGTK_DISABLE_TEXT_CB", NULL);
 
-    g_signal_stop_emission_by_name(editable, "insert_text"); 
+    g_signal_stop_emission_by_name(editable, "insert_text");
   }
 
   (void)len;
@@ -1916,12 +1909,12 @@ static void gtkListSelectionChanged(GtkTreeSelection* selection, Ihandle* ih)
     {
       GtkTreePath *path = gtk_tree_model_get_path(tree_model, &iter);
       char* value = NULL;
-            
+
       gtk_tree_model_get(tree_model, &iter, IUPGTK_LIST_TEXT, &value, -1);
       if (value)
       {
         GtkEntry* entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK_ENTRY");
-        gtk_entry_set_text(entry, value);        
+        gtk_entry_set_text(entry, value);
         g_free(value);
       }
 
@@ -2009,7 +2002,7 @@ static void gtkListScrolledWindowSizeAllocate(GtkWidget* widget, GdkRectangle* a
 
   gtk_widget_get_size_request(widget, &sw_req_w, &sw_req_h);
 
-  /* If VISIBLELINES is set and we have a size_request height, clamp allocation to it */
+  /* If VISIBLELINES is set, and we have a size_request height, clamp allocation to it */
   int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
   if (visiblelines > 0 && sw_req_h > 0 && allocation->height > sw_req_h)
   {

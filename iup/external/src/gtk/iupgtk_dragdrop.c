@@ -144,7 +144,7 @@ static gboolean gtkDragMotion(GtkWidget *widget, GdkDragContext *drag_context, g
       cbDropMotion(ih, x, y, status);
     }
 
-#if GTK_CHECK_VERSION(2, 22, 0)   
+#if GTK_CHECK_VERSION(2, 22, 0)
     gdk_drag_status(drag_context, gdk_drag_context_get_suggested_action(drag_context), time);
 #else
     gdk_drag_status(drag_context, drag_context->suggested_action, time);
@@ -310,7 +310,7 @@ static int gtkSetDragSourceAttrib(Ihandle* ih, const char* value)
 
     drag_types_entry = gtk_target_table_new_from_list(targetlist, &targetlist_count);
 
-    gtk_drag_source_set(ih->handle, GDK_BUTTON1_MASK, drag_types_entry, targetlist_count, 
+    gtk_drag_source_set(ih->handle, GDK_BUTTON1_MASK, drag_types_entry, targetlist_count,
                         iupAttribGetBoolean(ih, "DRAGSOURCEMOVE")? GDK_ACTION_MOVE|GDK_ACTION_COPY: GDK_ACTION_COPY);
 
     g_signal_connect(ih->handle, "drag_begin", G_CALLBACK(gtkDragBegin), ih);

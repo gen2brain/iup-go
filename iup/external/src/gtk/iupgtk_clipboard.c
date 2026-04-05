@@ -35,8 +35,7 @@ typedef struct {
   int size;
 } gtkClipInfo;
 
-static void gtkClipboardDataGetFunc(GtkClipboard *clipboard, GtkSelectionData *selection_data, 
-                                    guint info, gtkClipInfo* clip_info)
+static void gtkClipboardDataGetFunc(GtkClipboard *clipboard, GtkSelectionData *selection_data, guint info, gtkClipInfo* clip_info)
 {
   gtk_selection_data_set(selection_data, clip_info->target, 8, (guchar*)(clip_info->data), clip_info->size);
   (void)info;
@@ -80,7 +79,7 @@ static int gtkClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   memcpy(data, value, size);
 
   list = gtk_target_list_new (NULL, 0);
-  gtk_target_list_add (list, target, 0, 0);  
+  gtk_target_list_add (list, target, 0, 0);
   targets = gtk_target_table_new_from_list (list, &n_targets);
 
   clip_info = malloc(sizeof(gtkClipInfo));
@@ -95,10 +94,10 @@ static int gtkClipboardSetFormatDataAttrib(Ihandle *ih, const char *value)
   clip_info->size = size;
   clip_info->target = target;
 
-  gtk_clipboard_set_with_data (clipboard, 
-			       targets, n_targets,
-			       (GtkClipboardGetFunc)gtkClipboardDataGetFunc, (GtkClipboardClearFunc)gtkClipboardDataClearFunc,
-			       clip_info);
+  gtk_clipboard_set_with_data (clipboard,
+             targets, n_targets,
+             (GtkClipboardGetFunc)gtkClipboardDataGetFunc, (GtkClipboardClearFunc)gtkClipboardDataClearFunc,
+             clip_info);
   gtk_clipboard_store(clipboard);
 
   gtk_target_table_free (targets, n_targets);
@@ -243,7 +242,7 @@ static char* gtkClipboardGetTextAvailableAttrib(Ihandle *ih)
 {
   GtkClipboard *clipboard = gtk_clipboard_get (gdk_atom_intern("CLIPBOARD", FALSE));
   (void)ih;
-  return iupStrReturnBoolean (gtk_clipboard_wait_is_text_available(clipboard)); 
+  return iupStrReturnBoolean (gtk_clipboard_wait_is_text_available(clipboard));
 }
 
 static char* gtkClipboardGetImageAvailableAttrib(Ihandle *ih)
@@ -251,7 +250,7 @@ static char* gtkClipboardGetImageAvailableAttrib(Ihandle *ih)
 #if GTK_CHECK_VERSION(2, 6, 0)
   GtkClipboard *clipboard = gtk_clipboard_get (gdk_atom_intern("CLIPBOARD", FALSE));
   (void)ih;
-  return iupStrReturnBoolean (gtk_clipboard_wait_is_image_available(clipboard)); 
+  return iupStrReturnBoolean (gtk_clipboard_wait_is_image_available(clipboard));
 #else
   return NULL;
 #endif
@@ -265,7 +264,7 @@ static char* gtkClipboardGetFormatAvailableAttrib(Ihandle *ih)
   if (target==NULL)
     return NULL;
 
-  return iupStrReturnBoolean (gtk_clipboard_wait_is_target_available(clipboard, target)); 
+  return iupStrReturnBoolean (gtk_clipboard_wait_is_target_available(clipboard, target));
 #else
   return NULL;
 #endif

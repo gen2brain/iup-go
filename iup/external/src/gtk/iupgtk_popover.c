@@ -7,7 +7,6 @@
 #include <gtk/gtk.h>
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
@@ -20,14 +19,10 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_childtree.h"
 #include "iup_class.h"
-#include "iup_register.h"
+#include "iup_popover.h"
 
 #include "iupgtk_drv.h"
-
-#include "iup_popover.h"
 
 
 #if GTK_CHECK_VERSION(3, 12, 0)
