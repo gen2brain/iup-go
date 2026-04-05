@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
 #include <math.h>
 
 #include <Xm/Xm.h>
@@ -918,7 +917,7 @@ static long x11InterpolateColor(long color1, long color2, float t)
 IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, long color1, long color2)
 {
   int i, steps;
-  float t, dx, dy, length;
+  float frac, dx, dy, length;
   int px1, py1, px2, py2;
   unsigned long pixel;
 
@@ -939,8 +938,8 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   /* Draw gradient strips */
   for (i = 0; i < steps; i++)
   {
-    t = (float)i / (float)(steps - 1);
-    long color = x11InterpolateColor(color1, color2, t);
+    frac = (float)i / (float)(steps - 1);
+    long color = x11InterpolateColor(color1, color2, frac);
 
     pixel = iupmotColorGetPixel(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color));
     XSetForeground(iupmot_display, dc->pixmap_gc, pixel);
@@ -948,8 +947,8 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
     /* Calculate strip position */
     if (fabs(dx) > fabs(dy))  /* More horizontal */
     {
-      px1 = x1 + (int)(t * (x2 - x1));
-      px2 = x1 + (int)((t + 1.0f / steps) * (x2 - x1));
+      px1 = x1 + (int)(frac * (x2 - x1));
+      px2 = x1 + (int)((frac + 1.0f / steps) * (x2 - x1));
       py1 = y1;
       py2 = y2;
     }
@@ -957,8 +956,8 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
     {
       px1 = x1;
       px2 = x2;
-      py1 = y1 + (int)(t * (y2 - y1));
-      py2 = y1 + (int)((t + 1.0f / steps) * (y2 - y1));
+      py1 = y1 + (int)(frac * (y2 - y1));
+      py2 = y1 + (int)((frac + 1.0f / steps) * (y2 - y1));
     }
 
     XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, px1, py1, px2 - px1 + 1, py2 - py1 + 1);

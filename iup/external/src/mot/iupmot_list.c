@@ -77,7 +77,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
     {
       /* extra border for the editbox */
       int internal_border_size = 2*2;
-      (*x) += internal_border_size; 
+      (*x) += internal_border_size;
       (*y) += internal_border_size;
     }
   }
@@ -192,7 +192,7 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
         else curpos++;
 
         XtRemoveCallback(ih->handle, XmNselectionCallback, (XtCallbackProc)motListComboBoxSelectionCallback, (XtPointer)ih);
-        XtVaSetValues(ih->handle, XmNselectedPosition, curpos, NULL);  
+        XtVaSetValues(ih->handle, XmNselectedPosition, curpos, NULL);
         XtAddCallback(ih->handle, XmNselectionCallback, (XtCallbackProc)motListComboBoxSelectionCallback, (XtPointer)ih);
       }
     }
@@ -481,7 +481,7 @@ static int motListSetValueAttrib(Ihandle* ih, const char* value)
             XmListSelectPos(ih->handle, i+1, False);  /* XmListSelectPos starts at 1 */
         }
 
-        XtVaSetValues(ih->handle, XmNselectionPolicy, XmEXTENDED_SELECT, 
+        XtVaSetValues(ih->handle, XmNselectionPolicy, XmEXTENDED_SELECT,
                                   XmNselectionMode, XmNORMAL_MODE, NULL);  /* must also restore this */
         iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", value);
       }
@@ -519,7 +519,7 @@ static int motListSetShowDropdownAttrib(Ihandle* ih, const char* value)
       ev.state = Button1Mask;
       ev.button = Button1;
       ev.same_screen = True;
-      XtCallActionProc(ih->handle, "CBDropDownList", (XEvent*)&ev, 0, 0 ); 
+      XtCallActionProc(ih->handle, "CBDropDownList", (XEvent*)&ev, 0, 0 );
     }
     else
       XtCallActionProc(ih->handle, "CBDisarm", 0, 0, 0 );
@@ -705,7 +705,7 @@ static int motListSetSelectionAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+  if (iupStrToIntInt(value, &start, &end, ':')!=2)
     return 0;
 
   if(start<1 || end<1)
@@ -876,7 +876,7 @@ static int motListSetScrollToAttrib(Ihandle* ih, const char* value)
 
   iupStrToInt(value, &pos);
   if (pos < 1) pos = 1;
-  pos--;  /* return to Motif referece */
+  pos--;  /* return to Motif reference */
 
   XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
   XmTextFieldShowPosition(cbedit, (XmTextPosition)pos);
@@ -1077,7 +1077,7 @@ static void motListDropProc(Widget w, XtPointer client_data, XmDropProcCallbackS
     iupMOT_SETARG(args, num_args, XmNtransferStatus, XmTRANSFER_FAILURE);
     iupMOT_SETARG(args, num_args, XmNnumDropTransfers, 0);
   }
-  else 
+  else
   {
     transferList[0].target = atomListItem;
     transferList[0].client_data = (XtPointer)ih;
@@ -1368,7 +1368,7 @@ static void motListComboBoxSelectionCallback(Widget w, Ihandle* ih, XmComboBoxCa
     int pos = call_data->item_position;
     if (pos==0)
     {
-      /* must check if it is really checked or it is for the edit box */
+      /* must check if it is really checked, or it is for the edit box */
       XmString* items;
       XtVaGetValues(ih->handle, XmNitems, &items, NULL);
       if (!XmStringCompare(call_data->item_or_text, items[0]))
@@ -1463,7 +1463,7 @@ static int motListMapMethod(Ihandle* ih)
     else
       iupMOT_SETARG(args, num_args, XmNcomboBoxType, XmDROP_DOWN_LIST);   /* hidden-list */
 
-    /* XmComboBoxWidget inherits from XmManager, 
+    /* XmComboBoxWidget inherits from XmManager,
        so it is a container with the actual list inside */
 
     ih->handle = XtCreateManagedWidget(

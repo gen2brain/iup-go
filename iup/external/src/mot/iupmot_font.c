@@ -175,7 +175,7 @@ static XftFont* motLoadXftFont(const char* typeface, int size, int bold, int ita
 
   xftfont = XftFontOpenName(iupmot_display, iupmot_screen, font_name);
 
-  if (xftfont && pattern_out)
+  if (xftfont)
     iupStrCopyN(pattern_out, 1024, font_name);
 
   return xftfont;
@@ -339,7 +339,7 @@ static ImotFont* motFindFont(const char* foundry, const char *font)
 
   iupStrCopyN(fonts[i].font, sizeof(fonts[i].font), font);
 #ifdef IUP_USE_XFT
-  if (try_xft && xftfont)
+  if (try_xft)
   {
     iupStrCopyN(fonts[i].xft_pattern, sizeof(fonts[i].xft_pattern), xft_pattern);
     fonts[i].xftfont = xftfont;
@@ -476,7 +476,7 @@ static ImotFont* motFontCreateNativeFont(Ihandle* ih, const char* value)
   ImotFont *motfont = motFindFont(iupAttribGet(ih, "FOUNDRY"), value);
   if (!motfont)
   {
-    iupERROR1("Failed to create Font: %s", value); 
+    iupERROR1("Failed to create Font: %s", value);
     return NULL;
   }
 

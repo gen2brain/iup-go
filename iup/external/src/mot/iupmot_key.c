@@ -7,19 +7,16 @@
 #include <Xm/Xm.h>
 #include <X11/keysym.h>
 
-#include <stdlib.h>      
-#include <stdio.h>      
 #include <ctype.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_key.h"
 #include "iup_str.h"
-
 #include "iup_drv.h"
+
 #include "iupmot_drv.h"
 
 
@@ -68,28 +65,28 @@ static Imot2iupkey keypad_remap[] = {
 };
 
 static Imot2iupkey osfmotkey_remap[] = {
-  { 0x1004FF08, XK_BackSpace },  /*osfBackSpace*/ 
-  { 0x1004FF0B, XK_Clear     },  /*osfClear    */ 
-  { 0x1004FF1B, XK_Escape    },  /*osfEscape   */ 
-  { 0X1004FF41, XK_Prior     },  /*osfPageUp   */ 
-  { 0x1004FF42, XK_Next      },  /*osfPageDown */ 
-  { 0x1004FF44, XK_Return    },  /*osfActivate */ 
-  { 0x1004FF45, XK_F10       },  /*osfMenuBar  */ 
-  { 0x1004FF51, XK_Left      },  /*osfLeft     */ 
-  { 0x1004FF52, XK_Up        },  /*osfUp       */ 
-  { 0x1004FF53, XK_Right     },  /*osfRight    */ 
-  { 0x1004FF54, XK_Down      },  /*osfDown     */ 
-  { 0x1004FF55, XK_Prior     },  /*osfPrior    */ 
-  { 0x1004FF56, XK_Next      },  /*osfNext     */ 
-  { 0x1004FF57, XK_End       },  /*osfEndLine  */ 
-  { 0x1004FF58, XK_Home      },  /*osfBeginLine*/ 
-  { 0x1004FF60, XK_Select    },  /*osfSelect   */ 
-  { 0x1004FF63, XK_Insert    },  /*osfInsert   */ 
-  { 0x1004FF65, XK_Undo      },  /*osfUndo     */ 
-  { 0x1004FF67, XK_Menu      },  /*osfMenu     */ 
-  { 0x1004FF69, XK_Escape    },  /*osfCancel   */ 
-  { 0x1004FF6A, XK_F1        },  /*osfHelp     */ 
-  { 0x1004FFFF, XK_Delete    },  /*osfDelete   */ 
+  { 0x1004FF08, XK_BackSpace },  /*osfBackSpace*/
+  { 0x1004FF0B, XK_Clear     },  /*osfClear    */
+  { 0x1004FF1B, XK_Escape    },  /*osfEscape   */
+  { 0X1004FF41, XK_Prior     },  /*osfPageUp   */
+  { 0x1004FF42, XK_Next      },  /*osfPageDown */
+  { 0x1004FF44, XK_Return    },  /*osfActivate */
+  { 0x1004FF45, XK_F10       },  /*osfMenuBar  */
+  { 0x1004FF51, XK_Left      },  /*osfLeft     */
+  { 0x1004FF52, XK_Up        },  /*osfUp       */
+  { 0x1004FF53, XK_Right     },  /*osfRight    */
+  { 0x1004FF54, XK_Down      },  /*osfDown     */
+  { 0x1004FF55, XK_Prior     },  /*osfPrior    */
+  { 0x1004FF56, XK_Next      },  /*osfNext     */
+  { 0x1004FF57, XK_End       },  /*osfEndLine  */
+  { 0x1004FF58, XK_Home      },  /*osfBeginLine*/
+  { 0x1004FF60, XK_Select    },  /*osfSelect   */
+  { 0x1004FF63, XK_Insert    },  /*osfInsert   */
+  { 0x1004FF65, XK_Undo      },  /*osfUndo     */
+  { 0x1004FF67, XK_Menu      },  /*osfMenu     */
+  { 0x1004FF69, XK_Escape    },  /*osfCancel   */
+  { 0x1004FF6A, XK_F1        },  /*osfHelp     */
+  { 0x1004FFFF, XK_Delete    },  /*osfDelete   */
 };
 
 static Imot2iupkey other_remap[] = {
@@ -168,7 +165,7 @@ IUP_DRV_API KeySym iupmotKeycodeToKeysym(XKeyEvent *evt)
   int i;
   Modifiers modifiers;
   KeySym motcode;
-                   
+
   /* Other options:
      motcode = XLookupKeysym(evt, 0);     Ignore modifiers
      motcode = XKeycodeToKeysym(iupmot_display, evt->keycode, 0);   Don't use modifiers
@@ -240,11 +237,11 @@ IUP_DRV_API KeySym iupmotKeyCharToKeySym(char c)
   return 0;
 }
 
-/* Discards keyrepeat by removing the keypress event from the queue.
+/* Discards key repeat by removing the keypress event from the queue.
  * The pair keyrelease/keypress is always put together in the queue,
  * by removing the keypress, we only worry about keyrelease. In case
  * of a keyrelease, we ignore it if the next event is a keypress (which
- * means repetition. Otherwise it is a real keyrelease.
+ * means repetition). Otherwise, it is a real keyrelease.
  *
  * Returns 1 if the keypress is found in the queue and 0 otherwise.
  */
@@ -259,7 +256,7 @@ static int motKeyDiscardKeypressRepeat(XEvent *evt)
     {
       /* Pop off the repeated KeyPress and ignore */
       XNextEvent(iupmot_display, evt);
-      /* Ignore the auto repeated KeyRelease/KeyPress pair */
+      /* Ignore the auto-repeated KeyRelease/KeyPress pair */
       return 1;
     }
   }
@@ -279,7 +276,7 @@ IUP_DRV_API void iupmotCanvasKeyReleaseEvent(Widget w, Ihandle *ih, XEvent *evt,
   {
     int result;
     int code = iupmotKeyDecode((XKeyEvent*)evt);
-    if (code == 0) 
+    if (code == 0)
       return;
     result = iupKeyCallKeyPressCb(ih, code, 0);
     if (result == IUP_CLOSE)
@@ -299,7 +296,7 @@ IUP_DRV_API void iupmotKeyPressEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean
 {
   int result;
   int code = iupmotKeyDecode((XKeyEvent*)evt);
-  if (code == 0) 
+  if (code == 0)
       return;
 
   result = iupKeyCallKeyCb(ih, code);
@@ -318,7 +315,7 @@ IUP_DRV_API void iupmotKeyPressEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean
   if (iupObjectCheck(ih))
   {
     /* this is called only for canvas */
-    if (ih->iclass->nativetype==IUP_TYPECANVAS) 
+    if (ih->iclass->nativetype==IUP_TYPECANVAS)
     {
       result = iupKeyCallKeyPressCb(ih, code, 1);
       if (result == IUP_CLOSE)
@@ -362,7 +359,7 @@ IUP_DRV_API void iupmotButtonKeySetStatus(unsigned int state, unsigned int but, 
     iupKEY_SETSHIFT(status);
 
   if (state & ControlMask)
-    iupKEY_SETCONTROL(status); 
+    iupKEY_SETCONTROL(status);
 
   if ((state & Button1Mask) || but==Button1)
     iupKEY_SETBUTTON1(status);
@@ -388,4 +385,3 @@ IUP_DRV_API void iupmotButtonKeySetStatus(unsigned int state, unsigned int but, 
   if (doubleclick)
     iupKEY_SETDOUBLE(status);
 }
-

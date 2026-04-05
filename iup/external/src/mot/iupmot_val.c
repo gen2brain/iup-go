@@ -12,9 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include <memory.h>
-#include <stdarg.h>
 #include <limits.h>
 
 #include "iup.h"
@@ -27,7 +25,6 @@
 #include "iup_str.h"
 #include "iup_val.h"
 #include "iup_image.h"
-#include "iup_drv.h"
 
 #include "iupmot_drv.h"
 #include "iupmot_color.h"
@@ -58,19 +55,19 @@ static void motValRemoveOldTicks(Widget scale)
   Cardinal i;
   String name;
 
-  XtVaGetValues(scale, XmNchildren, &children, 
-                       XmNnumChildren, &num_children, 
+  XtVaGetValues(scale, XmNchildren, &children,
+                       XmNnumChildren, &num_children,
                        NULL);
 
-  for (i = 0; i < num_children; i++) 
+  for (i = 0; i < num_children; i++)
   {
-    if (XmIsSeparatorGadget(children[i])) 
+    if (XmIsSeparatorGadget(children[i]))
     {
-      if ((name = XtName(children[i])) != (String)0) 
+      if ((name = XtName(children[i])) != (String)0)
       {
         if (iupStrEqual(name, "BigTic") ||
             iupStrEqual(name, "MedTic") ||
-            iupStrEqual(name, "SmallTic")) 
+            iupStrEqual(name, "SmallTic"))
         {
           XtDestroyWidget(children[i]);
         }
@@ -175,12 +172,10 @@ static int motValSetBackgroundAttrib(Ihandle* ih, const char* value)
       return 1;
     }
   }
-  return 0; 
+  return 0;
 }
 
-
 /*********************************************************************************************/
-
 
 static void motValCallAction(Ihandle* ih, int ival, int cb_state)
 {
@@ -205,7 +200,7 @@ static void motValCallAction(Ihandle* ih, int ival, int cb_state)
       cb_old = (IFnd) IupGetCallback(ih, "MOUSEMOVE_CB");
     else if (cb_state == -1)
       cb_old = (IFnd) IupGetCallback(ih, "BUTTON_RELEASE_CB");
-    else 
+    else
       cb_old = (IFnd) IupGetCallback(ih, "BUTTON_PRESS_CB");
 
     if (cb_old)
@@ -337,7 +332,7 @@ static void motValValueChangedCallback(Widget w, Ihandle* ih, XmScaleCallbackStr
 
   motValCallAction(ih, cbs->value, cb_state);
 
-  (void)w;  
+  (void)w;
 }
 
 static void motValButtonPressReleaseEvent(Widget w, Ihandle* ih, XButtonEvent* evt, Boolean* cont)
@@ -346,7 +341,7 @@ static void motValButtonPressReleaseEvent(Widget w, Ihandle* ih, XButtonEvent* e
   (void)cont;
 
   /* When Button1 is pressed, the Scrollbar loses its focus to the scale,
-     So we avoid calling GETFOCUS/KILLFOCUS. 
+     So we avoid calling GETFOCUS/KILLFOCUS.
   */
 
   if (evt->type==ButtonPress && evt->button==Button1)
@@ -374,9 +369,7 @@ static void motValFocusChangeEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *
   iupmotFocusChangeEvent(w, ih, evt, cont);
 }
 
-
 /*********************************************************************************************/
-
 
 static int motValMapMethod(Ihandle* ih)
 {
@@ -458,7 +451,7 @@ static int motValMapMethod(Ihandle* ih)
   if (show_ticks)
   {
     if (show_ticks<2) show_ticks=2;
-    ih->data->show_ticks = show_ticks; /* non zero value, can be changed later, but not to zero */
+    ih->data->show_ticks = show_ticks; /* non-zero value, can be changed later, but not to zero */
   }
 
   ih->serial = iupDialogGetChildId(ih); /* must be after using the string */
@@ -481,7 +474,7 @@ IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, motValSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* IupVal only */
-  iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, motValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);  
+  iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, motValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, motValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, motValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, motValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);

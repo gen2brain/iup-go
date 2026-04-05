@@ -106,8 +106,8 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle *ih, InativeHandle* handle, int
   Position cur_x, cur_y;
   if (!handle)
     handle = ih->handle;
-  XtVaGetValues(handle, XmNx, &cur_x, 
-                        XmNy, &cur_y, 
+  XtVaGetValues(handle, XmNx, &cur_x,
+                        XmNy, &cur_y,
                         NULL);
 
   if (ih)
@@ -863,7 +863,7 @@ static void motDialogCBStructureNotifyEvent(Widget w, XtPointer data, XEvent *ev
     ih->data->show_state = state;
 
     cb = (IFni)IupGetCallback(ih, "SHOW_CB");
-    if (cb && cb(ih, state) == IUP_CLOSE) 
+    if (cb && cb(ih, state) == IUP_CLOSE)
       IupExitLoop();
   }
 }
@@ -884,7 +884,7 @@ static void motDialogDestroyCallback(Widget w, Ihandle *ih, XtPointer call_data)
                      Idialog
 ****************************************************************/
 
-/* replace the common dialog SetChildrenPosition method because of 
+/* replace the common dialog SetChildrenPosition method because of
    the menu that it is inside the dialog. */
 static void motDialogSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 {

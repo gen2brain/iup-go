@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 #include <limits.h>
 
 #include "iup.h"
@@ -27,7 +26,6 @@
 #include "iup_dialog.h"
 #include "iup_str.h"
 #include "iup_mask.h"
-#include "iup_drv.h"
 #include "iup_array.h"
 #include "iup_text.h"
 
@@ -36,7 +34,7 @@
 
 
 #ifndef XmIsSpinBox
-#define XmIsSpinBox(w)	XtIsSubclass(w, xmSpinBoxWidgetClass)
+#define XmIsSpinBox(w)  XtIsSubclass(w, xmSpinBoxWidgetClass)
 #endif
 
 #ifndef XmNwrap
@@ -124,7 +122,7 @@ static int motTextSetLinColToPosition(const char *str, int lin, int col)
     str++;
     pos++;
   }
-  
+
   /* find the column */
   cur_col=0;
   while (*str && cur_col<col)
@@ -187,7 +185,7 @@ static char* motTextGetReadOnlyAttrib(Ihandle* ih)
 {
   Boolean editable;
   XtVaGetValues(ih->handle, XmNeditable, &editable, NULL);
-  return iupStrReturnBoolean (!editable); 
+  return iupStrReturnBoolean (!editable);
 }
 
 static int motTextSetInsertAttrib(Ihandle* ih, const char* value)
@@ -263,7 +261,7 @@ static int motTextSetAppendAttrib(Ihandle* ih, const char* value)
     XmTextInsert(ih->handle, pos, "\n");
     pos++;
   }
-	if (value)
+  if (value)
     XmTextInsert(ih->handle, pos, (char*)value);
 
   /* Scroll to the end to make the appended text visible */
@@ -305,10 +303,10 @@ static int motTextSetSelectionAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+    if (iupStrToIntInt(value, &start, &end, ':')!=2)
       return 0;
 
-    if(start<1 || end<1) 
+    if(start<1 || end<1)
       return 0;
 
     start--; /* IUP starts at 1 */
@@ -362,10 +360,10 @@ static int motTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+  if (iupStrToIntInt(value, &start, &end, ':')!=2)
     return 0;
 
-  if(start<0 || end<0) 
+  if(start<0 || end<0)
     return 0;
 
   XmTextSetSelection(ih->handle, (XmTextPosition)start, (XmTextPosition)end, CurrentTime);
@@ -480,7 +478,7 @@ static int motTextSetScrollToAttrib(Ihandle* ih, const char* value)
   {
     iupStrToInt(value, &pos);
     if (pos < 1) pos = 1;
-    pos--;  /* return to Motif referece */
+    pos--;  /* return to Motif reference */
   }
 
   XmTextShowPosition(ih->handle, (XmTextPosition)pos);
@@ -521,7 +519,7 @@ static int motTextSetClipboardAttrib(Ihandle *ih, const char *value)
 {
   Boolean editable;
   XtVaGetValues(ih->handle, XmNeditable, &editable, NULL);
-  
+
   /* NOTE: the functions XmTextCopy, XmTextPaste and XmTextCut did not work as expected.
     But using IupClipboard does not catch selections made in a terminal. */
 
@@ -529,7 +527,7 @@ static int motTextSetClipboardAttrib(Ihandle *ih, const char *value)
   {
     Ihandle* clipboard;
     char *str = XmTextGetSelection(ih->handle);
-    if (!str) 
+    if (!str)
       return 0;
 
     clipboard = IupClipboard();
@@ -547,7 +545,7 @@ static int motTextSetClipboardAttrib(Ihandle *ih, const char *value)
       return 0;
 
     str = XmTextGetSelection(ih->handle);
-    if (!str) 
+    if (!str)
       return 0;
 
     clipboard = IupClipboard();
@@ -697,7 +695,7 @@ static int motTextSetSpinValueAttrib(Ihandle* ih, const char* value)
       char* text = NULL;
       int min, max;
       ih->data->disable_callbacks = 1;
-      XtVaGetValues(ih->handle, XmNminimumValue, &min, 
+      XtVaGetValues(ih->handle, XmNminimumValue, &min,
                                 XmNmaximumValue, &max, NULL);
       if (pos < min) pos = min;
       if (pos > max) pos = max;
@@ -760,7 +758,7 @@ static char* motTextGetValueAttrib(Ihandle* ih)
 
   return str;
 }
-                       
+
 static char* motTextGetLineValueAttrib(Ihandle* ih)
 {
   if (ih->data->is_multiline)
@@ -827,7 +825,7 @@ static void motTextModifyVerifyCallback(Widget w, Ihandle *ih, XmTextVerifyPtr t
     int has_alt = state & Mod1Mask || state & Mod5Mask;  /* Alt */
     int has_sys = state & Mod4Mask; /* Apple/Win */
 
-    /* only process when no modifiers are used */        
+    /* only process when no modifiers are used */
     /* except when Ctrl and Alt are pressed at the same time */
     if (has_sys ||
         (!has_ctrl && has_alt) ||
@@ -973,7 +971,7 @@ static void motTextKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean 
 
       ih->data->disable_callbacks = 0;
 
-      *cont = False; 
+      *cont = False;
       return;
     }
   }
@@ -984,11 +982,11 @@ static void motTextKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean 
     KeySym motcode = iupmotKeycodeToKeysym(evt);
     if (motcode == XK_Left || motcode == XK_Right)
     {
-      /* avoid spin increment using Left/Right arrows, 
+      /* avoid spin increment using Left/Right arrows,
          but must manually handle the new cursor position */
       XmTextPosition caret_pos = XmTextGetInsertionPosition(ih->handle);
       XmTextSetInsertionPosition(ih->handle, (motcode == XK_Left)? caret_pos-1: caret_pos+1);
-      *cont = False; 
+      *cont = False;
     }
   }
 }
@@ -1065,7 +1063,7 @@ static int motTextMapMethod(Ihandle* ih)
     iupMOT_SETARG(args, num_args, XmNspacing, 0); /* no space between scrollbars and text */
     iupMOT_SETARG(args, num_args, XmNborderWidth, 0);
     iupMOT_SETARG(args, num_args, XmNshadowThickness, 0);
-    
+
     sb_win = XtCreateManagedWidget(
       child_id,  /* child identifier */
       xmScrolledWindowWidgetClass, /* widget class */
@@ -1198,7 +1196,7 @@ static int motTextMapMethod(Ihandle* ih)
   {
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)parent);
     XtVaSetValues(parent, XmNworkWindow, ih->handle, NULL);
-  } 
+  }
   else if (spin)
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)parent);
 

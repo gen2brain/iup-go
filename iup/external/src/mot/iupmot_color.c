@@ -14,13 +14,11 @@
 #include "iup.h"
 
 #include "iup_object.h"
-#include "iup_attrib.h" 
-#include "iup_str.h" 
+#include "iup_str.h"
 #include "iup_drvinfo.h"
 
 #include "iupmot_drv.h"
 #include "iupmot_color.h"
-
 
 
 /* local variables */
@@ -40,7 +38,6 @@ typedef struct _Icolor
 
 static Icolor mot_color;
 
-
 /*******************************************
               NOT  TrueColor Functions
 *******************************************/
@@ -49,7 +46,7 @@ static int motColor8BppErrorHandler(Display* dpy, XErrorEvent *err)
 {
   char msg[80];
 
-  /* BadAcess in XFreeColors is OK */
+  /* BadAccess in XFreeColors is OK */
   if (err->request_code==X_FreeColors && err->error_code==BadAccess)
     return 0;
 
@@ -80,22 +77,22 @@ static unsigned long motColorNearestRGB(XColor* xc1)
 
     if (this_dist < min_dist)
     {
-      min_dist = this_dist;            
-      pos = i;                          
+      min_dist = this_dist;
+      pos = i;
     }
   }
 
-  /* verifico se a cor ainda esta alocada */
+  /* check if the color is still allocated */
   /* Try to allocate the closest match color.  This should only
      fail if the cell is read/write.  Otherwise, we're incrementing
-     the cell's reference count. (comentario extraido da biblioteca Mesa) */
+     the cell's reference count. (comment from the Mesa library) */
   if (!XAllocColor(iupmot_display, mot_color.colormap,
                    &(mot_color.color_table[pos])))
   {
-    /* nao esta, preciso atualizar a tabela e procurar novamente */
-    /* isto acontece porque a cor encontrada pode ter sido de uma aplicacao que nao existe mais */
-    /* uma vez atualizada, o problema nao ocorrera' na nova procura */
-    /* ou a celula e' read write */
+    /* not allocated, need to update the table and search again */
+    /* this happens because the found color may have been from an application that no longer exists */
+    /* once updated, the problem will not occur in the new search */
+    /* or the cell is read/write */
 
     if (nearest_try == 1)
     {
@@ -105,7 +102,7 @@ static unsigned long motColorNearestRGB(XColor* xc1)
 
     XQueryColors(iupmot_display, mot_color.colormap, mot_color.color_table, mot_color.num_colors);
 
-    nearest_try = 1; /* garante que so' vai tentar isso uma vez */
+    nearest_try = 1; /* ensures this is only attempted once */
     return motColorNearestRGB(xc1);
   }
 
@@ -121,16 +118,15 @@ static unsigned long motColorGetPixel_NotTrueColor(unsigned char cr, unsigned ch
   xc.blue = iupCOLOR8TO16(cb);
   xc.flags = DoRed | DoGreen | DoBlue;
 
-  /* verificamos se a nova cor ja' esta' disponivel */
+  /* check if the new color is already available */
   if (!XAllocColor(iupmot_display, mot_color.colormap, &xc))
   {
-    /* nao estava disponivel, procuro pela mais proxima na tabela de cores */
-    pixel = motColorNearestRGB(&xc); 
+    /* not available, search for the nearest color in the color table */
+    pixel = motColorNearestRGB(&xc);
   }
   else
   {
-    /* ja' estava disponivel */
-    /* atualizo a tabela de cores */
+    /* already available, update the color table */
     mot_color.color_table[xc.pixel] = xc;
     pixel = xc.pixel;
   }
@@ -167,11 +163,9 @@ static void motColorReserveColors(void)
   motColorGetPixel_NotTrueColor(r, g, b);
 }
 
-
 /*******************************************
               TrueColor Functions
 *******************************************/
-
 
 static void motColorGetRGB_TrueColor(unsigned long pixel, unsigned char* red, unsigned char* green, unsigned char* blue)
 {
@@ -195,19 +189,19 @@ static unsigned long motColorGetPixel_TrueColor(unsigned char cr, unsigned char 
   unsigned long g = iupCOLOR8TO16(cg);
   unsigned long b = iupCOLOR8TO16(cb);
 
-  if (mot_color.rshift<0) 
+  if (mot_color.rshift<0)
     r = r << (-mot_color.rshift);
-  else 
+  else
     r = r >> mot_color.rshift;
 
-  if (mot_color.gshift<0) 
+  if (mot_color.gshift<0)
     g = g << (-mot_color.gshift);
-  else 
+  else
     g = g >> mot_color.gshift;
 
-  if (mot_color.bshift<0) 
+  if (mot_color.bshift<0)
     b = b << (-mot_color.bshift);
-  else 
+  else
     b = b >> mot_color.bshift;
 
   r = r & iupmot_visual->red_mask;
@@ -262,7 +256,7 @@ static void motColorMakeDirectCmap(Colormap cmap)
 
   for (i=0; i<256; i++) {  origgot[i] = 0;  mot_color.direct_conv[i] = i; }
 
-  for (i=numgot=0; i<cmaplen; i++) 
+  for (i=numgot=0; i<cmaplen; i++)
   {
     c.red = c.green = c.blue = (unsigned short)((i * 0xffff) / (cmaplen - 1));
     c.red   = (unsigned short)(c.red   & rmask);
@@ -270,20 +264,20 @@ static void motColorMakeDirectCmap(Colormap cmap)
     c.blue  = (unsigned short)(c.blue  & bmask);
     c.flags = DoRed | DoGreen | DoBlue;
 
-    if (XAllocColor(iupmot_display, cmap, &c)) 
+    if (XAllocColor(iupmot_display, cmap, &c))
     {
       origgot[i] = 1;
       numgot++;
     }
   }
 
-  if (numgot == 0) 
+  if (numgot == 0)
     return;
 
   /* mot_color.direct_conv may or may not have holes in it. */
-  for (i=0; i<cmaplen; i++) 
+  for (i=0; i<cmaplen; i++)
   {
-    if (!origgot[i]) 
+    if (!origgot[i])
     {
       int numbak, numfwd;
       numbak = numfwd = 0;
@@ -299,12 +293,11 @@ static void motColorMakeDirectCmap(Colormap cmap)
   }
 }
 
-
 /*******************************************
               Exported Functions
 *******************************************/
 
-unsigned long (* iupmotColorGetPixel)(unsigned char r, unsigned char g, unsigned char b) = 0; 
+unsigned long (* iupmotColorGetPixel)(unsigned char r, unsigned char g, unsigned char b) = 0;
 void (* iupmotColorGetRGB)(unsigned long pixel, unsigned char* red, unsigned char* green, unsigned char* blue) = 0;
 
 IUP_DRV_API void iupmotColorInit(void)

@@ -7,14 +7,10 @@
 #include <Xm/Xm.h>
 #include <Xm/PushB.h>
 
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"
@@ -25,7 +21,6 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
-#include "iup_key.h"
 
 #include "iupmot_drv.h"
 
@@ -168,7 +163,7 @@ static int motButtonSetBackgroundAttrib(Ihandle* ih, const char* value)
       }
     }
   }
-  return 0; 
+  return 0;
 }
 
 static void motButtonActivateCallback(Widget w, Ihandle* ih, XtPointer call_data)
@@ -181,7 +176,7 @@ static void motButtonActivateCallback(Widget w, Ihandle* ih, XtPointer call_data
   cb = IupGetCallback(ih, "ACTION");
   if (cb)
   {
-    if (cb(ih) == IUP_CLOSE) 
+    if (cb(ih) == IUP_CLOSE)
       IupExitLoop();
   }
   (void)w;
@@ -274,7 +269,7 @@ static int motButtonMapMethod(Ihandle* ih)
     iupMOT_SETARG(args, num_args, XmNtraversalOn, False);
   iupMOT_SETARG(args, num_args, XmNhighlightThickness, 2);
   iupMOT_SETARG(args, num_args, XmNnavigationType, XmTAB_GROUP);
-  
+
   ih->handle = XtCreateManagedWidget(
     iupDialogGetChildIdStr(ih),  /* child identifier */
     xmPushButtonWidgetClass,     /* widget class */

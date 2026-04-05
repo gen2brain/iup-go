@@ -278,7 +278,7 @@ IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle *ih, Widget w, int pos, const ch
   char c;
   char* str;
 
-  if (!value) 
+  if (!value)
     value = "";
 
   if (!w)
@@ -383,8 +383,8 @@ IUP_DRV_API XmString iupmotStringCreate(const char *value)
 
 IUP_DRV_API void iupmotSetTitle(Widget w, const char *value)
 {
-  XtVaSetValues(w, XmNtitle, value, 
-                   XmNiconName, value, 
+  XtVaSetValues(w, XmNtitle, value,
+                   XmNiconName, value,
                    NULL);
 }
 
@@ -446,4 +446,3 @@ IUP_SDK_API char* iupStrConvertToUTF8(const char* str, int len, char* utf8_buffe
 
   return utf8_buffer;
 }
-

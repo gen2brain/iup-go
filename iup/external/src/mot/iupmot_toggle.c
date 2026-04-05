@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -25,7 +24,6 @@
 #include "iup_toggle.h"
 #include "iup_drv.h"
 #include "iup_image.h"
-#include "iup_key.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
 
@@ -212,7 +210,7 @@ static int motToggleSetBgColorAttrib(Ihandle* ih, const char* value)
     char* parent_value = iupAttribGetInheritNativeParent(ih, "BGCOLOR");
     if (!parent_value)
     {
-      /* if not defined at a native parent, 
+      /* if not defined at a native parent,
          then change the toggle button color to the given color instead using the default */
       if (iupdrvBaseSetBgColorAttrib(ih, value))  /* let XmChangeColor do its job */
       {
@@ -236,7 +234,7 @@ static int motToggleSetBgColorAttrib(Ihandle* ih, const char* value)
         return 1;
       }
     }
-    return 0; 
+    return 0;
   }
   else
   {
@@ -249,7 +247,7 @@ static int motToggleSetBgColorAttrib(Ihandle* ih, const char* value)
         return 1;
     }
 
-    return iupdrvBaseSetBgColorAttrib(ih, value); 
+    return iupdrvBaseSetBgColorAttrib(ih, value);
   }
 }
 
@@ -344,7 +342,7 @@ static int motToggleSetImageAttrib(Ihandle* ih, const char* value)
 
     if (!iupAttribGet(ih, "IMINACTIVE"))
     {
-      /* if not active and IMINACTIVE is not defined 
+      /* if not active and IMINACTIVE is not defined
          then automatically create one based on IMAGE */
       iupmotSetPixmap(ih, value, XmNlabelInsensitivePixmap, 1); /* make_inactive */
     }
@@ -411,7 +409,7 @@ static int motToggleSetValueAttrib(Ihandle* ih, const char* value)
   else
     check = XmUNSET;
 
-  /* This is necessary because Motif toggle does not have support for radio. 
+  /* This is necessary because Motif toggle does not have support for radio.
      It is implemented using an external RadioBox that we do not use. */
   radio = iupRadioFindToggleParent(ih);
   if (radio)
@@ -495,7 +493,7 @@ static char* motToggleGetSelectColorAttrib(Ihandle* ih)
 {
   unsigned char r, g, b;
   Pixel color;
-  XtVaGetValues(ih->handle, XmNselectColor, &color, NULL); 
+  XtVaGetValues(ih->handle, XmNselectColor, &color, NULL);
   iupmotColorGetRGB(color, &r, &g, &b);
   return iupStrReturnStrf("%d %d %d", (int)r, (int)g, (int)b);
 }
@@ -517,7 +515,7 @@ static void motToggleValueChangedCallback(Widget w, Ihandle* ih, XmToggleButtonC
   /* Must manually hide the tip if the toggle is pressed. */
   iupmotTipLeaveNotify();
 
-  /* This is necessary because Motif toggle does not have support for radio. 
+  /* This is necessary because Motif toggle does not have support for radio.
      It is implemented using an external RadioBox that we do not use. */
   radio = iupRadioFindToggleParent(ih);
   if (radio)
@@ -563,7 +561,7 @@ static void motToggleValueChangedCallback(Widget w, Ihandle* ih, XmToggleButtonC
     cb = (IFni)IupGetCallback(ih, "ACTION");
     if (cb)
     {
-      if (cb(ih, check) == IUP_CLOSE) 
+      if (cb(ih, check) == IUP_CLOSE)
         IupExitLoop();
     }
 
@@ -677,12 +675,12 @@ regular_toggle:
   if (value)
   {
     ih->data->type = IUP_TOGGLE_IMAGE;
-    iupMOT_SETARG(args, num_args, XmNlabelType, XmPIXMAP); 
+    iupMOT_SETARG(args, num_args, XmNlabelType, XmPIXMAP);
   }
   else
   {
     ih->data->type = IUP_TOGGLE_TEXT;
-    iupMOT_SETARG(args, num_args, XmNlabelType, XmSTRING); 
+    iupMOT_SETARG(args, num_args, XmNlabelType, XmSTRING);
   }
 
   /* Core */

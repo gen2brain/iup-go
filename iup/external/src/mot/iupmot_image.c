@@ -86,7 +86,7 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
         iupmotColorGetRGB(XGetPixel(xi, x, y), r + lineoffset+x, g + lineoffset+x, b + lineoffset+x);
       }
     }
-    
+
     XDestroyImage(xi);
   }
 }
@@ -318,10 +318,10 @@ IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle *ih)
   hx=0; hy=0;
   iupStrToIntInt(iupAttribGet(ih, "HOTSPOT"), &hx, &hy, ':');
 
-  source = XCreateBitmapFromData(iupmot_display, 
+  source = XCreateBitmapFromData(iupmot_display,
              RootWindow(iupmot_display,iupmot_screen),
              sbits, width, height);
-  mask   = XCreateBitmapFromData(iupmot_display, 
+  mask   = XCreateBitmapFromData(iupmot_display,
              RootWindow(iupmot_display,iupmot_screen),
              mbits, width, height);
 
@@ -437,15 +437,15 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   else /* IUPIMAGE_IMAGE or IUPIMAGE_ICON */
   {
     Screen* screen = ScreenOfDisplay(iupmot_display, iupmot_screen);
-  	Pixmap pixmap = XmGetPixmap(screen, (char*)name, BlackPixelOfScreen(screen), WhitePixelOfScreen(screen));
+    Pixmap pixmap = XmGetPixmap(screen, (char*)name, BlackPixelOfScreen(screen), WhitePixelOfScreen(screen));
     if (pixmap == XmUNSPECIFIED_PIXMAP)
     {
-	    unsigned int width, height;
-	    int hotx, hoty;
+      unsigned int width, height;
+      int hotx, hoty;
       pixmap = 0;
-    	XReadBitmapFile(iupmot_display, RootWindow(iupmot_display,iupmot_screen), name, &width, &height, &pixmap, &hotx, &hoty);
+      XReadBitmapFile(iupmot_display, RootWindow(iupmot_display,iupmot_screen), name, &width, &height, &pixmap, &hotx, &hoty);
     }
-  	return (void*)pixmap;
+    return (void*)pixmap;
   }
 }
 
@@ -470,7 +470,7 @@ IUP_SDK_API int iupdrvImageGetInfo(void* handle, int *w, int *h, int *bpp)
 
 IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iupColor* colors, int *colors_count)
 {
-  /* How to get the pallete? */
+  /* How to get the palette? */
   (void)colors;
   (void)colors_count;
   return iupdrvImageGetInfo(handle, w, h, bpp);
@@ -637,4 +637,3 @@ IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, 
 
   return 1;
 }
-
