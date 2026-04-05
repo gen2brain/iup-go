@@ -52,8 +52,15 @@ Available presets:
 | `efl`        | EFL / Elementary          |                      |
 | `gtk3-full`  | GTK3 + all optional libs  |                      |
 | `gtk4-full`  | GTK4 + all optional libs  |                      |
+| `gtk2-full`  | GTK2 + all optional libs  |                      |
 | `win32-full` | Win32 + all optional libs |                      |
+| `winui-full` | WinUI + all optional libs |                      |
 | `cocoa-full` | Cocoa + all optional libs |                      |
+| `motif-full` | Motif + all optional libs |                      |
+| `qt6-full`   | Qt6 + all optional libs   |                      |
+| `qt5-full`   | Qt5 + all optional libs   |                      |
+| `efl-full`   | EFL + all optional libs   |                      |
+| `fltk-full`  | FLTK + all optional libs  |                      |
 | `debug`      | Platform native, debug    |                      |
 
 You can create a `CMakeUserPresets.json` file for local overrides (e.g., toolchain or compiler paths) without modifying the tracked `CMakePresets.json`.

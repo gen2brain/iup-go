@@ -11,7 +11,8 @@
       "displayName": "Default (platform native backend)",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
@@ -126,9 +127,31 @@
       }
     },
     {
+      "name": "gtk2-full",
+      "displayName": "GTK2 with all optional libraries",
+      "inherits": "gtk2",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
       "name": "win32-full",
       "displayName": "Win32 with all optional libraries",
       "inherits": "win32",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "winui-full",
+      "displayName": "WinUI with all optional libraries",
+      "inherits": "winui",
       "cacheVariables": {
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",
@@ -148,82 +171,67 @@
       }
     },
     {
+      "name": "motif-full",
+      "displayName": "Motif with all optional libraries",
+      "inherits": "motif",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "qt6-full",
+      "displayName": "Qt6 with all optional libraries",
+      "inherits": "qt6",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "qt5-full",
+      "displayName": "Qt5 with all optional libraries",
+      "inherits": "qt5",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "efl-full",
+      "displayName": "EFL with all optional libraries",
+      "inherits": "efl",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "fltk-full",
+      "displayName": "FLTK with all optional libraries",
+      "inherits": "fltk",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
       "name": "debug",
       "displayName": "Debug build (platform native backend)",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "default",
-      "configurePreset": "default"
-    },
-    {
-      "name": "gtk3",
-      "configurePreset": "gtk3"
-    },
-    {
-      "name": "gtk4",
-      "configurePreset": "gtk4"
-    },
-    {
-      "name": "gtk2",
-      "configurePreset": "gtk2"
-    },
-    {
-      "name": "win32",
-      "configurePreset": "win32"
-    },
-    {
-      "name": "winui",
-      "configurePreset": "winui"
-    },
-    {
-      "name": "cocoa",
-      "configurePreset": "cocoa"
-    },
-    {
-      "name": "motif",
-      "configurePreset": "motif"
-    },
-    {
-      "name": "qt6",
-      "configurePreset": "qt6"
-    },
-    {
-      "name": "qt5",
-      "configurePreset": "qt5"
-    },
-    {
-      "name": "efl",
-      "configurePreset": "efl"
-    },
-    {
-      "name": "fltk",
-      "configurePreset": "fltk"
-    },
-    {
-      "name": "gtk3-full",
-      "configurePreset": "gtk3-full"
-    },
-    {
-      "name": "gtk4-full",
-      "configurePreset": "gtk4-full"
-    },
-    {
-      "name": "win32-full",
-      "configurePreset": "win32-full"
-    },
-    {
-      "name": "cocoa-full",
-      "configurePreset": "cocoa-full"
-    },
-    {
-      "name": "debug",
-      "configurePreset": "debug"
     }
   ]
 }
