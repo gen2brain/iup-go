@@ -81,15 +81,18 @@ static long iDialGetFgColor(Ihandle* ih, double a)
 
 static void iDialDrawVerticalShading(Ihandle* ih, int *ymin, int *ymax)
 {
-  int border = ih->data->flat ? 1 : 2;
-  double delta = (0.5 * M_PI - 0.0) / IDIAL_NCOLORS;
+  int i, border = ih->data->flat ? 1 : 2;
+  double delta = (0.5 * M_PI) / IDIAL_NCOLORS;
   double a, yc = ih->data->h / 2.0;
   *ymin = *ymax = ih->data->h / 2;
-  for (a = 0.0; a < 0.5 * M_PI; a += delta)
+  for (i = 0; i < IDIAL_NCOLORS; i++)
   {
-    int y0 = (int)(yc + ih->data->radius * cos(a + delta));
-    int y1 = (int)(yc + ih->data->radius * cos(a));
-    long fgcolor = iDialGetFgColor(ih, a);
+    int y0, y1;
+    long fgcolor;
+    a = i * delta;
+    y0 = (int)(yc + ih->data->radius * cos(a + delta));
+    y1 = (int)(yc + ih->data->radius * cos(a));
+    fgcolor = iDialGetFgColor(ih, a);
     iupAttribSet(ih, "DRAWSTYLE", "FILL");
     iupDrawSetColor(ih, "DRAWCOLOR", fgcolor);
     IupDrawRectangle(ih, IDIAL_SPACE + 1, y0, ih->data->w - 1 - IDIAL_SPACE - border, y1);
@@ -99,11 +102,14 @@ static void iDialDrawVerticalShading(Ihandle* ih, int *ymin, int *ymax)
     if (abs(y1 - y0) < 2)
       continue;
   }
-  for (a = 0.5 * M_PI; a < M_PI; a += delta)
+  for (i = 0; i < IDIAL_NCOLORS; i++)
   {
-    int y0 = (int)(yc - ih->data->radius * fabs(cos(a + delta)));
-    int y1 = (int)(yc - ih->data->radius * fabs(cos(a)));
-    long fgcolor = iDialGetFgColor(ih, a);
+    int y0, y1;
+    long fgcolor;
+    a = 0.5 * M_PI + i * delta;
+    y0 = (int)(yc - ih->data->radius * fabs(cos(a + delta)));
+    y1 = (int)(yc - ih->data->radius * fabs(cos(a)));
+    fgcolor = iDialGetFgColor(ih, a);
     iupAttribSet(ih, "DRAWSTYLE", "FILL");
     iupDrawSetColor(ih, "DRAWCOLOR", fgcolor);
     IupDrawRectangle(ih, IDIAL_SPACE + 1, y0, ih->data->w - 1 - IDIAL_SPACE - border, y1);
@@ -124,17 +130,9 @@ static void iDialDrawVertical(Ihandle* ih)
 
   ih->data->radius = (ih->data->h - 2 * IDIAL_SPACE - 1 - border) / 2.0;
 
-  if (ih->data->angle < 0.0)
-  {
-    for (a = ih->data->angle; a < 0.0; a += delta)
-      ;
-  }
-  else
-  {
-    for (a = ih->data->angle; a > 0.0; a -= delta)
-      ;
+  a = fmod(ih->data->angle, delta);
+  if (a <= 0.0)
     a += delta;
-  }
 
   iDialDrawVerticalShading(ih, &ymin, &ymax);
 
@@ -148,32 +146,37 @@ static void iDialDrawVertical(Ihandle* ih)
     iupDrawRaiseRect(ih, IDIAL_SPACE, ymin, ih->data->w - 1 - IDIAL_SPACE, ymax,
                      ih->data->light_shadow, ih->data->mid_shadow, ih->data->dark_shadow);
 
-  for (; a < M_PI; a += delta)    /* graduation */
+  while (a < M_PI)    /* graduation */
   {
     int y;
     if (a < 0.5 * M_PI) y = (int)(ih->data->h / 2.0 + ih->data->radius * cos(a));
     else                y = (int)(ih->data->h / 2.0 - ih->data->radius * fabs(cos(a)));
 
     if (abs(y - ymin) < 3 || abs(ymax - y) < 3)
+    {
+      a += delta;
       continue;
+    }
 
     iupDrawHorizSunkenMark(ih, IDIAL_SPACE + 1, ih->data->w - 1 - IDIAL_SPACE - border, y,
                            ih->data->light_shadow, ih->data->dark_shadow);
+    a += delta;
   }
 }
 
 static void iDialDrawHorizontalShading(Ihandle* ih, int *xmin, int *xmax)
 {
   long fgcolor;
-  int border = ih->data->flat ? 1 : 2;
-  double delta = (0.5 * M_PI - 0.0) / IDIAL_NCOLORS;
+  int i, border = ih->data->flat ? 1 : 2;
+  double delta = (0.5 * M_PI) / IDIAL_NCOLORS;
   double a, xc = ih->data->w / 2.0;
   *xmin = *xmax = ih->data->w / 2;
-  for (a = 0.0; a < 0.5 * M_PI; a += delta)
+  for (i = 0; i < IDIAL_NCOLORS; i++)
   {
-
-    int x0 = (int)(xc - ih->data->radius * cos(a));
-    int x1 = (int)(xc - ih->data->radius * cos(a + delta));  /* x1 is always bigger than x0 here (cos is decreasing) */
+    int x0, x1;
+    a = i * delta;
+    x0 = (int)(xc - ih->data->radius * cos(a));
+    x1 = (int)(xc - ih->data->radius * cos(a + delta));  /* x1 is always bigger than x0 here (cos is decreasing) */
     iupAttribSet(ih, "DRAWSTYLE", "FILL");
     fgcolor = iDialGetFgColor(ih, a);
     iupDrawSetColor(ih, "DRAWCOLOR", fgcolor);
@@ -184,10 +187,12 @@ static void iDialDrawHorizontalShading(Ihandle* ih, int *xmin, int *xmax)
     if (abs(x1 - x0) < 2)
       continue;
   }
-  for (a = 0.5 * M_PI; a < M_PI; a += delta)
+  for (i = 0; i < IDIAL_NCOLORS; i++)
   {
-    int x0 = (int)(xc + ih->data->radius * fabs(cos(a)));
-    int x1 = (int)(xc + ih->data->radius * fabs(cos(a + delta)));  /* x1 is always bigger than x0 here (abs(cos) is increasing) */
+    int x0, x1;
+    a = 0.5 * M_PI + i * delta;
+    x0 = (int)(xc + ih->data->radius * fabs(cos(a)));
+    x1 = (int)(xc + ih->data->radius * fabs(cos(a + delta)));  /* x1 is always bigger than x0 here (abs(cos) is increasing) */
     iupAttribSet(ih, "DRAWSTYLE", "FILL");
     fgcolor = iDialGetFgColor(ih, a);
     iupDrawSetColor(ih, "DRAWCOLOR", fgcolor);
@@ -209,17 +214,9 @@ static void iDialDrawHorizontal(Ihandle* ih)
 
   ih->data->radius = (ih->data->w - 2 * IDIAL_SPACE - 1 - border) / 2.0;
 
-  if (ih->data->angle < 0.0)
-  {
-    for (a = ih->data->angle; a < 0.0; a += delta)
-      ;
-  }
-  else
-  {
-    for (a = ih->data->angle; a > 0.0; a -= delta)
-      ;
+  a = fmod(ih->data->angle, delta);
+  if (a <= 0.0)
     a += delta;
-  }
 
   iDialDrawHorizontalShading(ih, &xmin, &xmax);
 
@@ -233,17 +230,21 @@ static void iDialDrawHorizontal(Ihandle* ih)
     iupDrawRaiseRect(ih, xmin, IDIAL_SPACE, xmax, ih->data->h - 1 - IDIAL_SPACE,
                      ih->data->light_shadow, ih->data->mid_shadow, ih->data->dark_shadow);
 
-  for (; a < M_PI; a += delta)
+  while (a < M_PI)
   {
     int x;
     if (a < 0.5 * M_PI) x = (int)(ih->data->w / 2.0 - ih->data->radius * cos(a));
     else                x = (int)(ih->data->w / 2.0 + ih->data->radius * fabs(cos(a)));
 
     if (abs(x - xmin) < 3 || abs(xmax - x) < 3)
+    {
+      a += delta;
       continue;
+    }
 
     iupDrawVertSunkenMark(ih, x, IDIAL_SPACE + 1, ih->data->h - 1 - IDIAL_SPACE - border,
                           ih->data->light_shadow, ih->data->dark_shadow);
+    a += delta;
   }
 }
 
@@ -275,7 +276,7 @@ static void iDialDrawCircular(Ihandle* ih)
   int border = ih->data->flat ? 1 : 2;
   double delta = 2.0 * M_PI / ih->data->num_div,
          a = ih->data->angle;
-  int i, xc = ih->data->w / 2, 
+  int i, xc = ih->data->w / 2,
          yc = ih->data->h / 2,
          r;
   int x1, y1, x2, y2;
@@ -426,9 +427,7 @@ static int iDialButtonRelease(Ihandle* ih, int button)
   return IUP_DEFAULT;
 }
 
-
 /******************************************************************/
-
 
 static int iDialMotionVertical_CB(Ihandle* ih, int x, int y, char *status)
 {
@@ -562,7 +561,7 @@ static int iDialResize_CB(Ihandle* ih, int w, int h)
 
   ih->data->num_div = (int)((total_size - 2 * IDIAL_SPACE - 1 - border) * ih->data->density);
 
-  if (ih->data->num_div < 3) 
+  if (ih->data->num_div < 3)
     ih->data->num_div = 3;
 
   return IUP_DEFAULT;
@@ -606,6 +605,8 @@ static int iDialKeyPress_CB(Ihandle* ih, int c, int press)
       case K_RIGHT:
       case K_UP:
         ih->data->angle += M_PI / 10.0;
+        break;
+      default:
         break;
     }
   }
@@ -672,9 +673,7 @@ static int iDialWheel_CB(Ihandle* ih, float delta)
   return IUP_DEFAULT;
 }
 
-
 /*********************************************************************************/
-
 
 static char* iDialGetValueAttrib(Ihandle* ih)
 {
@@ -810,9 +809,7 @@ static int iDialSetFlatColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-
 /****************************************************************************/
-
 
 static int iDialCreateMethod(Ihandle* ih, void **params)
 {

@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -16,9 +15,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_childtree.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
@@ -36,7 +33,6 @@ struct _IcontrolData
   int layoutdrag, barsize, showgrip;
   int orientation;     /* one of the types: IDBOX_VERT, IDBOX_HORIZ */
 };
-
 
 /*****************************************************************************\
 |* Attributes                                                                *|
@@ -220,7 +216,7 @@ static int iDetachBoxSetShowGripAttrib(Ihandle* ih, const char* value)
 
 static char* iDetachBoxGetShowGripAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->showgrip); 
+  return iupStrReturnBoolean (ih->data->showgrip);
 }
 
 static char* iDetachBoxGetOldParentHandleAttrib(Ihandle* ih)
@@ -321,7 +317,7 @@ static int iDetachBoxAction_CB(Ihandle* bar)
 
     iupdrvDrawRectangle(dc, x, y, x + w, y + h, color, IUP_DRAW_FILL, 1);
   }
-  
+
   iupdrvDrawFlush(dc);
 
   iupdrvDrawKillCanvas(dc);
@@ -339,7 +335,7 @@ static int iDetachBoxButton_CB(Ihandle* bar, int button, int pressed, int x, int
   if (!ih->data->is_holding && pressed)  /* DRAG BEGIN */
   {
     ih->data->is_holding = 1;
-    
+
     /* Change cursor */
     IupSetAttribute(bar, "CURSOR", "IupDetachBoxCursor");
   }
@@ -372,14 +368,13 @@ static int iDetachBoxFocus_CB(Ihandle* bar, int focus)
   return IUP_DEFAULT;
 }
 
-
 /*****************************************************************************\
 |* Methods                                                                   *|
 \*****************************************************************************/
 
 static void iDetachBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
-  int natural_w = 0, 
+  int natural_w = 0,
       natural_h = 0;
 
   /* bar */
@@ -483,7 +478,7 @@ static int iDetachBoxCreateMethod(Ihandle* ih, void** params)
 
   bar = IupCanvas(NULL);
   bar->flags |= IUP_INTERNAL;
-  iupChildTreeAppend(ih, bar);  /* bar will always be the firstchild */
+  iupChildTreeAppend(ih, bar);  /* bar will always be the first child */
 
   IupSetAttribute(bar, "CANFOCUS", "NO");
   IupSetAttribute(bar, "BORDER", "NO");
@@ -511,7 +506,7 @@ static int iDetachBoxCreateMethod(Ihandle* ih, void** params)
 static void iDetachBoxCreateCursor(void)
 {
   Ihandle *imgcursor;
-  unsigned char detach_img_cur[16*16] = 
+  unsigned char detach_img_cur[16*16] =
   {
     0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     0,0,1,4,4,4,4,4,4,4,4,4,4,4,4,1,
@@ -531,12 +526,12 @@ static void iDetachBoxCreateCursor(void)
   };
 
   imgcursor = IupImage(16, 16, detach_img_cur);
-  IupSetAttribute(imgcursor, "0", "BGCOLOR"); 
-  IupSetAttribute(imgcursor, "1", "0 0 0"); 
-  IupSetAttribute(imgcursor, "2", "110 150 255"); 
-  IupSetAttribute(imgcursor, "3", "255 255 255"); 
-  IupSetAttribute(imgcursor, "4", "64 92 255"); 
-  IupSetHandle("IupDetachBoxCursor", imgcursor); 
+  IupSetAttribute(imgcursor, "0", "BGCOLOR");
+  IupSetAttribute(imgcursor, "1", "0 0 0");
+  IupSetAttribute(imgcursor, "2", "110 150 255");
+  IupSetAttribute(imgcursor, "3", "255 255 255");
+  IupSetAttribute(imgcursor, "4", "64 92 255");
+  IupSetHandle("IupDetachBoxCursor", imgcursor);
 }
 
 Iclass* iupDetachBoxNewClass(void)

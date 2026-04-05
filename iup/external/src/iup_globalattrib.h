@@ -4,8 +4,8 @@
  * See Copyright Notice in "iup.h"
  *
  */
- 
-#ifndef __IUP_GLOBALATTRIB_H 
+
+#ifndef __IUP_GLOBALATTRIB_H
 #define __IUP_GLOBALATTRIB_H
 
 #ifdef __cplusplus
@@ -23,7 +23,7 @@ void iupGlobalSetDefaultColorAttrib(const char* name, int r, int g, int b);  /* 
 
 int iupGetGlobalAttributes(char** names, int n);
 
-/* Other functions declared in <iup.h> and implemented here. 
+/* Other functions declared in <iup.h> and implemented here.
 IupSetGlobal
 IupStoreGlobal
 IupGetGlobal

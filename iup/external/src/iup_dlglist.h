@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_DLGLIST_H 
+
+#ifndef __IUP_DLGLIST_H
 #define __IUP_DLGLIST_H
 
 #ifdef __cplusplus
@@ -30,7 +30,7 @@ IUP_SDK_API void iupDlgListRemove(Ihandle *ih);
  * \ingroup dlglist */
 IUP_SDK_API int iupDlgListCount(void);
 
-/** Starts a loop for all the created dialogs. 
+/** Starts a loop for all the created dialogs.
  * \ingroup dlglist */
 IUP_SDK_API Ihandle* iupDlgListFirst(void);
 
@@ -38,7 +38,7 @@ IUP_SDK_API Ihandle* iupDlgListFirst(void);
  * \ingroup dlglist */
 IUP_SDK_API Ihandle* iupDlgListNext(void);
 
-/** Increments the number of visible dialogs. 
+/** Increments the number of visible dialogs.
  * \ingroup dlglist */
 IUP_SDK_API void iupDlgListVisibleInc(void);
 

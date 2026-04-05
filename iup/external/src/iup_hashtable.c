@@ -1,6 +1,6 @@
 /** \file
  * \brief iupTable functions.
- * Implementation by Danny Reinhold and Antonio Scuri. 
+ * Implementation by Danny Reinhold and Antonio Scuri.
  *
  * See Copyright Notice in "iup.h"
  */
@@ -37,7 +37,7 @@ typedef struct _ItableContext
  * a keyindex as an integer.
  * To find a key in an item list we only have to
  * do integer comparisons.
- * Additionally the key itself is stored in
+ * Additionally, the key itself is stored in
  * keyStr. In a string indexed hashtable this is
  * a duplicated string, in a pointer indexed hash table
  * this is simply the pointer (in this case keyIndex
@@ -96,21 +96,16 @@ struct _Itable
 
 /* Prototypes of private functions */
 
-static void iTableFreeItemArray(Itable_IndexTypes indexType, unsigned int nextFreeIndex, 
-                                                            ItableItem *items);
+static void iTableFreeItemArray(Itable_IndexTypes indexType, unsigned int nextFreeIndex, ItableItem *items);
 static unsigned int iTableGetEntryIndex(Itable *it, const char *key, unsigned long *keyIndex);
-static unsigned int iTableFindItem(Itable *it, const char *key, ItableEntry **entry, 
-                                                          unsigned int *itemIndex,
-                                                          unsigned long *keyIndex);
+static unsigned int iTableFindItem(Itable *it, const char *key, ItableEntry **entry, unsigned int *itemIndex, unsigned long *keyIndex);
 static unsigned int iTableResize(Itable *it);
 static void iTableAdd(Itable *it, ItableKey *key, void *value, Itable_Types itemType);
-static void iTableUpdateArraySize(ItableEntry *entry);   
+static void iTableUpdateArraySize(ItableEntry *entry);
 
 #ifdef DEBUGTABLE
 static void iTableShowStatistics(Itable *it);
-static void iTableCheckDuplicated(ItableItem *item, unsigned int nextItemIndex, 
-                                              const char *key, 
-                                              unsigned long keyIndex);
+static void iTableCheckDuplicated(ItableItem *item, unsigned int nextItemIndex, const char *key, unsigned long keyIndex);
 #endif
 
 
@@ -118,7 +113,6 @@ IUP_SDK_API Itable *iupTableCreate(Itable_IndexTypes indexType)
 {
   return iupTableCreateSized(indexType, 1);  /* 101 shows to be a better start for IUP */
 }
-
 
 IUP_SDK_API Itable *iupTableCreateSized(Itable_IndexTypes indexType, unsigned int initialSizeIndex)
 {
@@ -384,7 +378,7 @@ IUP_SDK_API void* iupTableGetTyped(Itable *it, const char *key, Itable_Types *it
     ItableItem* item = &(entry->items[itemIndex]);
 
     value = item->value;
-    if (itemType) 
+    if (itemType)
       *itemType = item->itemType;
   }
 
@@ -546,11 +540,9 @@ IUP_SDK_API char *iupTableRemoveCurr(Itable *it)
   return 0;
 }
 
-
 /********************************************/
 /*           Private functions              */
 /********************************************/
-
 
 static void iTableFreeItemArray(Itable_IndexTypes indexType, unsigned int nextFreeIndex, ItableItem *items)
 {
@@ -596,7 +588,7 @@ static unsigned int iTableGetEntryIndex(Itable *it, const char *key, unsigned lo
 /*     Original version
     unsigned int i;
     for (i = 0; key[i]; i++)
-      checksum = checksum*31 + key[i];  
+      checksum = checksum*31 + key[i];
 */
 
     while (*key)
@@ -618,26 +610,21 @@ static unsigned int iTableGetEntryIndex(Itable *it, const char *key, unsigned lo
 }
 
 #ifdef DEBUGTABLE
-static void iTableCheckDuplicated(ItableItem *item, unsigned int nextItemIndex, const char *key, 
-                                                                          unsigned long keyIndex)
+static void iTableCheckDuplicated(ItableItem *item, unsigned int nextItemIndex, const char *key, unsigned long keyIndex)
 {
   unsigned int i;
   for (i = 0; i < nextItemIndex; i++, item++)
   {
-    if (!iupStrEqual((char*)item->key.keyStr, (char*)key) && 
+    if (!iupStrEqual((char*)item->key.keyStr, (char*)key) &&
         item->key.keyIndex == keyIndex)
     {
-      fprintf(stderr, "#ERROR# Duplicated key index (%ld): %s %s \n", keyIndex, 
-                                                                     (char*)item->key.keyStr, 
-                                                                     (char*)key);
+      fprintf(stderr, "#ERROR# Duplicated key index (%ld): %s %s \n", keyIndex, (char*)item->key.keyStr, (char*)key);
     }
   }
 }
 #endif
 
-static unsigned int iTableFindItem(Itable *it, const char *key, ItableEntry **entry, 
-                                                          unsigned int *itemIndex,
-                                                          unsigned long *keyIndex)
+static unsigned int iTableFindItem(Itable *it, const char *key, ItableEntry **entry, unsigned int *itemIndex, unsigned long *keyIndex)
 {
   unsigned int entryIndex,
                itemFound,
@@ -652,7 +639,7 @@ static unsigned int iTableFindItem(Itable *it, const char *key, ItableEntry **en
   for (i = 0; i < (*entry)->nextItemIndex; i++, item++)
   {
     if (it->indexType == IUPTABLE_STRINGINDEXED)
-      itemFound = item->key.keyIndex == *keyIndex; 
+      itemFound = item->key.keyIndex == *keyIndex;
 /*    itemFound = iupStrEqual(item->key.keyStr, key);  This is the original safe version */
     else
       itemFound = item->key.keyStr == key;
@@ -747,7 +734,7 @@ static unsigned int iTableResize(Itable *it)
       for (i = 0; i < entry->nextItemIndex; i++, item++)
       {
         iTableAdd(newTable, &(item->key), item->value, item->itemType);
-      }     
+      }
 
       free(entry->items);
       entry->items = NULL;

@@ -3,25 +3,25 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_DRVINFO_H 
+
+#ifndef __IUP_DRVINFO_H
 #define __IUP_DRVINFO_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** \defgroup drvinfo Driver Information Interface 
+/** \defgroup drvinfo Driver Information Interface
  * \par
- * Each driver must export the symbols defined here. 
+ * Each driver must export the symbols defined here.
  * But in this case the functions are shared by different drivers in the same system.
  * \par
- * For example, the GTK driver and the Windows driver share the same implementation 
- * of these functions when the GTK driver is compiled in Windows. 
- * The GTK driver and the Motif driver share the same implementation 
- * of these functions when the GTK driver is compiled in UNIX. 
+ * For example, the GTK driver and the Windows driver share the same implementation
+ * of these functions when the GTK driver is compiled in Windows.
+ * The GTK driver and the Motif driver share the same implementation
+ * of these functions when the GTK driver is compiled in UNIX.
  * \par
- * See \ref iup_drvinfo.h 
+ * See \ref iup_drvinfo.h
  * \ingroup drv */
 
 
@@ -59,7 +59,7 @@ IUP_SDK_API char* iupdrvGetSystemName(void);
  * \ingroup drvinfo */
 IUP_SDK_API char* iupdrvGetComputerName(void);
 
-/** Returns a string with the user name.
+/** Returns a string with the username.
  * \ingroup drvinfo */
 IUP_SDK_API char* iupdrvGetUserName(void);
 

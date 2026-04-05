@@ -5,15 +5,14 @@
  */
 
 #include <memory.h>
-#include <stdio.h> 
-#include <string.h> 
+#include <stdio.h>
+#include <string.h>
 
 #include "iup.h"
 #include "iupkey.h"
 #include "iupcbs.h"
 
 #include "iup_key.h"
-#include "iup_str.h"
 #include "iup_str.h"
 #include "iup_object.h"
 #include "iup_drv.h"
@@ -37,7 +36,7 @@ static IkeyMapASCII ikey_map_ascii[126-32+1] = {  /* from 32 to 126 (inclusive) 
   {"K_apostrophe",          2}, /* NO shift */
   {"K_parentleft",          2}, /* NO shift */
   {"K_parentright",         2}, /* NO shift */
-  {"K_asterisk",            0},                                 /* when in the numeric keypad have all the modifiers */
+  {"K_asterisk",            0}, /* when in the numeric keypad have all the modifiers */
   {"K_plus",                0},
   {"K_comma",               0},
   {"K_minus",               0},
@@ -145,7 +144,7 @@ void iupKeyInit(void)
   ikey_map_ext[0x61] = "K_Print";
   ikey_map_ext[0x63] = "K_INS";
   ikey_map_ext[0x67] = "K_Menu";
-  ikey_map_ext[0x7F] = "K_NUM";   
+  ikey_map_ext[0x7F] = "K_NUM";
 
   ikey_map_ext[0xBE] = "K_F1";
   ikey_map_ext[0xBF] = "K_F2";
@@ -158,15 +157,15 @@ void iupKeyInit(void)
   ikey_map_ext[0xC6] = "K_F9";
   ikey_map_ext[0xC7] = "K_F10";
   ikey_map_ext[0xC8] = "K_F11";
-  ikey_map_ext[0xC9] = "K_F12";       
+  ikey_map_ext[0xC9] = "K_F12";
 
   ikey_map_ext[0xE1] = "K_LSHIFT";
-  ikey_map_ext[0xE2] = "K_RSHIFT"; 
-  ikey_map_ext[0xE3] = "K_LCTRL";  
-  ikey_map_ext[0xE4] = "K_RCTRL"; 
-  ikey_map_ext[0xE5] = "K_CAPS"; 
-  ikey_map_ext[0xE9] = "K_LALT";   
-  ikey_map_ext[0xEA] = "K_RALT";      
+  ikey_map_ext[0xE2] = "K_RSHIFT";
+  ikey_map_ext[0xE3] = "K_LCTRL";
+  ikey_map_ext[0xE4] = "K_RCTRL";
+  ikey_map_ext[0xE5] = "K_CAPS";
+  ikey_map_ext[0xE9] = "K_LALT";
+  ikey_map_ext[0xEA] = "K_RALT";
 
   ikey_map_ext[0xFF] = "K_DEL";
 }
@@ -182,7 +181,7 @@ static const char* iKeyBaseCodeToName(int code, unsigned char *mod)
     return "K_CR";
   if (code < 32 || code==127)
     return NULL;
-  if (code >= 32 && code <= 126)
+  if (code <= 126)
   {
     *mod = ikey_map_ascii[code-32].mod;
     return ikey_map_ascii[code-32].name;
@@ -258,9 +257,9 @@ IUP_SDK_API char* iupKeyCodeToName(int code)
   if (mod==1)
     return (char*)base_name;
 
-  if (iup_isCtrlXkey(code)) 
+  if (iup_isCtrlXkey(code))
     iKeyReturnXName("K_c", base_name);
-  if (iup_isAltXkey(code))  
+  if (iup_isAltXkey(code))
     iKeyReturnXName("K_m", base_name);
   if (iup_isSysXkey(code))
     iKeyReturnXName("K_y", base_name);
@@ -280,7 +279,7 @@ static void iKeyCallFunc(void (*func)(const char *name, int code, void* user_dat
     func(mod_name, iup_XkeyShift(code), user_data);
   }
 
-  if (mod!=1) 
+  if (mod!=1)
   {
     iKeyMakeXName(mod_name, "K_c", name);
     func(mod_name, iup_XkeyCtrl(code), user_data);
@@ -362,7 +361,7 @@ static void iupKeyActivate(Ihandle* ih)
 
 static void iupSetFontSizeChildren(Ihandle *ih, int inc)
 {
-  /* if FONT is set at a child, 
+  /* if FONT is set at a child,
      then it will not inherit the value set at the dialog.
      Must be manually increased or decreased. */
   Ihandle* child = ih->firstchild;
@@ -398,7 +397,7 @@ static void iupSetFontSizeChildren(Ihandle *ih, int inc)
 
 IUP_SDK_API int iupKeyProcessNavigation(Ihandle* ih, int code, int shift)
 {
-  /* this is called after K_ANY is processed, 
+  /* this is called after K_ANY is processed,
      so the user may change its behavior */
 
   if (code == K_cTAB)
@@ -427,7 +426,7 @@ IUP_SDK_API int iupKeyProcessNavigation(Ihandle* ih, int code, int shift)
   }
   else if (code == K_UP || code == K_DOWN)
   {
-    int is_button = (IupClassMatch(ih, "button") || 
+    int is_button = (IupClassMatch(ih, "button") ||
                      IupClassMatch(ih, "flatbutton") ||
                      IupClassMatch(ih, "toggle"));
     if (is_button)
@@ -517,7 +516,7 @@ IUP_SDK_API int iupKeyProcessMnemonic(Ihandle* ih, int code)
       Ihandle* ih_next = iupFocusNextInteractive(ih_mnemonic);
       if (ih_next)
       {
-        if (IupClassMatch(ih_next, "button") || 
+        if (IupClassMatch(ih_next, "button") ||
             IupClassMatch(ih_next, "flatbutton") ||
             IupClassMatch(ih_next, "toggle"))
           iupKeyActivate(ih_next);

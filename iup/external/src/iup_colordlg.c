@@ -9,9 +9,6 @@
 #include <string.h>
 
 #include "iup.h"
-#include "iupcbs.h"
-#include "iupkey.h"
-#include "iupcontrols.h"
 
 #include "iupdraw.h"
 #include "iup_drvdraw.h"
@@ -20,15 +17,12 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_strmessage.h"
-#include "iup_drv.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
-#include "iup_image.h"
 #include "iup_colorhsi.h"
 #include "iup_childtree.h"
 
-       
+
 #define COLORTABLE_MAX 20
 
 static const char* default_colortable_cells[COLORTABLE_MAX] =
@@ -41,7 +35,7 @@ typedef struct _IcolorDlgData
 {
   int status;
 
-  long previous_color, 
+  long previous_color,
        color; /* same as (red,green,blue,alpha) */
 
   double hue, saturation, intensity;
@@ -117,7 +111,7 @@ static void iColorDlgColor_Update(IcolorDlgData* colordlg_data)
   }
 }
 
-static void iColorDlgHSIChanged(IcolorDlgData* colordlg_data) 
+static void iColorDlgHSIChanged(IcolorDlgData* colordlg_data)
 {
   iColorDlgHSI2RGB(colordlg_data);
   iColorDlgBrowserHSI_Update(colordlg_data);
@@ -126,7 +120,7 @@ static void iColorDlgHSIChanged(IcolorDlgData* colordlg_data)
   iColorDlgColor_Update(colordlg_data);
 }
 
-static void iColorDlgRGBChanged(IcolorDlgData* colordlg_data) 
+static void iColorDlgRGBChanged(IcolorDlgData* colordlg_data)
 {
   iColorDlgRGB2HSI(colordlg_data);
   iColorDlgBrowserRGB_Update(colordlg_data);
@@ -152,7 +146,7 @@ static void iColorDlgInit_Defaults(IcolorDlgData* colordlg_data)
   IupSetAttribute(colordlg_data->hue_txt,        "VALUE", "0");
   IupSetAttribute(colordlg_data->saturation_txt, "VALUE", "0");
   IupSetAttribute(colordlg_data->intensity_txt,  "VALUE", "0");
-  
+
   IupSetAttribute(colordlg_data->colorhex_txt, "VALUE", "#000000");
 
   colordlg_data->alpha = 255;
@@ -175,11 +169,9 @@ static void iColorDlgInit_Defaults(IcolorDlgData* colordlg_data)
     IupSetAttributeId(colordlg_data->colortable_cbar, "CELL", i, default_colortable_cells[i]);
 }
 
-
 /**************************************************************************************************************/
 /*                                 Internal Callbacks                                                         */
 /**************************************************************************************************************/
-
 
 static int iColorDlgButtonOK_CB(Ihandle* ih)
 {
@@ -290,7 +282,7 @@ static int iColorDlgColorCnvAction_CB(Ihandle* color_cnv)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgRedAction_CB(Ihandle* ih, int c, char *value) 
+static int iColorDlgRedAction_CB(Ihandle* ih, int c, char *value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -305,7 +297,7 @@ static int iColorDlgRedAction_CB(Ihandle* ih, int c, char *value)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgRedSpin_CB(Ihandle* ih, int vi) 
+static int iColorDlgRedSpin_CB(Ihandle* ih, int vi)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
 
@@ -315,7 +307,7 @@ static int iColorDlgRedSpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgGreenAction_CB(Ihandle* ih, int c, char *value) 
+static int iColorDlgGreenAction_CB(Ihandle* ih, int c, char *value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -330,7 +322,7 @@ static int iColorDlgGreenAction_CB(Ihandle* ih, int c, char *value)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgGreenSpin_CB(Ihandle* ih, int vi) 
+static int iColorDlgGreenSpin_CB(Ihandle* ih, int vi)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
 
@@ -340,7 +332,7 @@ static int iColorDlgGreenSpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgBlueAction_CB(Ihandle* ih, int c, char *value) 
+static int iColorDlgBlueAction_CB(Ihandle* ih, int c, char *value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -355,7 +347,7 @@ static int iColorDlgBlueAction_CB(Ihandle* ih, int c, char *value)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgBlueSpin_CB(Ihandle* ih, int vi) 
+static int iColorDlgBlueSpin_CB(Ihandle* ih, int vi)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
 
@@ -365,7 +357,7 @@ static int iColorDlgBlueSpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgHueAction_CB(Ihandle* ih, int c, char *value) 
+static int iColorDlgHueAction_CB(Ihandle* ih, int c, char *value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -380,7 +372,7 @@ static int iColorDlgHueAction_CB(Ihandle* ih, int c, char *value)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgHueSpin_CB(Ihandle* ih, int vi) 
+static int iColorDlgHueSpin_CB(Ihandle* ih, int vi)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
 
@@ -390,7 +382,7 @@ static int iColorDlgHueSpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgSaturationAction_CB(Ihandle* ih, int c, char *value) 
+static int iColorDlgSaturationAction_CB(Ihandle* ih, int c, char *value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -405,7 +397,7 @@ static int iColorDlgSaturationAction_CB(Ihandle* ih, int c, char *value)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgSaturationSpin_CB(Ihandle* ih, int vi) 
+static int iColorDlgSaturationSpin_CB(Ihandle* ih, int vi)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
 
@@ -415,7 +407,7 @@ static int iColorDlgSaturationSpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgIntensityAction_CB(Ihandle* ih, int c, char *value) 
+static int iColorDlgIntensityAction_CB(Ihandle* ih, int c, char *value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -430,7 +422,7 @@ static int iColorDlgIntensityAction_CB(Ihandle* ih, int c, char *value)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgIntensitySpin_CB(Ihandle* ih, int vi) 
+static int iColorDlgIntensitySpin_CB(Ihandle* ih, int vi)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
 
@@ -440,7 +432,7 @@ static int iColorDlgIntensitySpin_CB(Ihandle* ih, int vi)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgHexAction_CB(Ihandle* ih, int c, char* value) 
+static int iColorDlgHexAction_CB(Ihandle* ih, int c, char* value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
 
@@ -484,10 +476,10 @@ static int iColorDlgAlphaVal_CB(Ihandle* ih, double val)
 
   iColorDlgColor_Update(colordlg_data);
 
-  return IUP_DEFAULT;  
+  return IUP_DEFAULT;
 }
 
-static int iColorDlgAlphaAction_CB(Ihandle* ih, int c, char* value) 
+static int iColorDlgAlphaAction_CB(Ihandle* ih, int c, char* value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   int vi;
@@ -504,7 +496,7 @@ static int iColorDlgAlphaAction_CB(Ihandle* ih, int c, char* value)
   return IUP_DEFAULT;
 }
 
-static int iColorDlgAlphaSpin_CB(Ihandle* ih, int vi) 
+static int iColorDlgAlphaSpin_CB(Ihandle* ih, int vi)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
 
@@ -558,18 +550,16 @@ static int iColorDlgColorCnvButton_CB(Ihandle* ih, int b, int press, int x, int 
   return IUP_DEFAULT;
 }
 
-
 /**************************************************************************************************************/
 /*                                     Attributes                                                             */
 /**************************************************************************************************************/
 
-
 static char* iColorDlgGetStatusAttrib(Ihandle* ih)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
-  if (colordlg_data->status) 
+  if (colordlg_data->status)
     return "1";
-  else 
+  else
     return NULL;
 }
 
@@ -651,7 +641,7 @@ static int iColorDlgSetAlphaAttrib(Ihandle* ih, const char* value)
     if (!ih->handle)  /* do it only before map */
       IupSetAttribute(ih, "SHOWALPHA", "YES");
   }
- 
+
   return 1;
 }
 
@@ -693,7 +683,7 @@ static int iColorDlgSetValueAttrib(Ihandle* ih, const char* value)
   int ret = iStrToRGBA(value, &colordlg_data->red, &colordlg_data->green, &colordlg_data->blue, &colordlg_data->alpha);
   if (!ret)
     return 0;
-  
+
   colordlg_data->previous_color = iupDrawColor(colordlg_data->red, colordlg_data->green, colordlg_data->blue, colordlg_data->alpha);
 
   if (ret == 4)
@@ -740,14 +730,14 @@ static int iColorDlgSetValueHSIAttrib(Ihandle* ih, const char* value)
 
   if (!iupStrToHSI_Int(value, &hue, &saturation, &intensity))
     return 0;
-  
+
   colordlg_data->hue = (double)hue;
   colordlg_data->saturation = (double)saturation/100.0;
   colordlg_data->intensity = (double)intensity/100.0;
 
   iColorDlgHSI2RGB(colordlg_data);
   colordlg_data->previous_color = iupDrawColor(colordlg_data->red, colordlg_data->green, colordlg_data->blue, colordlg_data->alpha);
- 
+
   iColorDlgHSIChanged(colordlg_data);
   return 0;
 }
@@ -821,7 +811,6 @@ static int iColorDlgSetColorTableAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-
 /**************************************************************************************************************/
 /*                                     Methods                                                                */
 /**************************************************************************************************************/
@@ -874,7 +863,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   /* COLOR   =============================================================== */
   /* ======================================================================= */
   colordlg_data->color_browser = IupColorBrowser();
-  IupSetAttribute(colordlg_data->color_browser, "EXPAND", "YES");  
+  IupSetAttribute(colordlg_data->color_browser, "EXPAND", "YES");
   IupSetCallback(colordlg_data->color_browser, "DRAG_CB",   (Icallback)iColorDlgColorSelDrag_CB);
   IupSetCallback(colordlg_data->color_browser, "CHANGE_CB", (Icallback)iColorDlgColorSelDrag_CB);
 
@@ -918,7 +907,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   /* ======================================================================= */
   colordlg_data->colortable_cbar = IupColorbar();
   IupSetAttribute(colordlg_data->colortable_cbar, "ORIENTATION", "HORIZONTAL");
-  IupSetAttribute(colordlg_data->colortable_cbar, "NUM_PARTS", "2");  
+  IupSetAttribute(colordlg_data->colortable_cbar, "NUM_PARTS", "2");
   IupSetInt(colordlg_data->colortable_cbar, "NUM_CELLS", COLORTABLE_MAX);
   IupSetAttribute(colordlg_data->colortable_cbar, "SHOW_PREVIEW", "NO");
   IupSetAttribute(colordlg_data->colortable_cbar, "SIZE", "138x22");
@@ -998,37 +987,37 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
 
   col1 = IupVbox(colordlg_data->color_browser, IupSetAttributes(IupHbox(colordlg_data->color_cnv, NULL), "MARGIN=30x0"),NULL);
 
-  hsi_vb = IupVbox(IupSetAttributes(IupHbox(IupLabel("_@IUP_HUE"), 
-                                            colordlg_data->hue_txt, 
+  hsi_vb = IupVbox(IupSetAttributes(IupHbox(IupLabel("_@IUP_HUE"),
+                                            colordlg_data->hue_txt,
                                             NULL), "ALIGNMENT=ACENTER"),
-                   IupSetAttributes(IupHbox(IupLabel("_@IUP_SATURATION"), 
-                                            colordlg_data->saturation_txt, 
+                   IupSetAttributes(IupHbox(IupLabel("_@IUP_SATURATION"),
+                                            colordlg_data->saturation_txt,
                                             NULL), "ALIGNMENT=ACENTER"),
-                   IupSetAttributes(IupHbox(IupLabel("_@IUP_INTENSITY"), 
-                                            colordlg_data->intensity_txt, 
+                   IupSetAttributes(IupHbox(IupLabel("_@IUP_INTENSITY"),
+                                            colordlg_data->intensity_txt,
                                             NULL), "ALIGNMENT=ACENTER"),
                    NULL);
   IupSetAttribute(hsi_vb, "GAP", "5");
-  
-  rgb_vb = IupVbox(IupSetAttributes(IupHbox(IupLabel("_@IUP_RED"), 
-                                            colordlg_data->red_txt, 
+
+  rgb_vb = IupVbox(IupSetAttributes(IupHbox(IupLabel("_@IUP_RED"),
+                                            colordlg_data->red_txt,
                                             NULL), "ALIGNMENT=ACENTER"),
-                   IupSetAttributes(IupHbox(IupLabel("_@IUP_GREEN"), 
-                                            colordlg_data->green_txt, 
+                   IupSetAttributes(IupHbox(IupLabel("_@IUP_GREEN"),
+                                            colordlg_data->green_txt,
                                             NULL), "ALIGNMENT=ACENTER"),
-                   IupSetAttributes(IupHbox(IupLabel("_@IUP_BLUE"), 
-                                            colordlg_data->blue_txt, 
+                   IupSetAttributes(IupHbox(IupLabel("_@IUP_BLUE"),
+                                            colordlg_data->blue_txt,
                                             NULL), "ALIGNMENT=ACENTER"),
                    NULL);
   IupSetAttribute(rgb_vb, "GAP", "5");
-  
-  clr_vb = IupVbox(IupSetAttributes(IupHbox(IupLabel("_@IUP_OPACITY"), 
-                                            colordlg_data->alpha_txt, colordlg_data->alpha_val, 
+
+  clr_vb = IupVbox(IupSetAttributes(IupHbox(IupLabel("_@IUP_OPACITY"),
+                                            colordlg_data->alpha_txt, colordlg_data->alpha_val,
                                             NULL), "ALIGNMENT=ACENTER"),
-                   IupSetAttributes(IupHbox(IupLabel("He&xa:"), 
-                                            colordlg_data->colorhex_txt, 
+                   IupSetAttributes(IupHbox(IupLabel("He&xa:"),
+                                            colordlg_data->colorhex_txt,
                                             NULL), "ALIGNMENT=ACENTER"),
-                   IupSetAttributes(IupVbox(IupLabel("_@IUP_PALETTE"), 
+                   IupSetAttributes(IupVbox(IupLabel("_@IUP_PALETTE"),
                                             colordlg_data->colortable_cbar,
                                             NULL), "GAP=3"),
                    NULL);
@@ -1047,8 +1036,8 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
                                             IupGetChild(IupGetChild(rgb_vb, 2), 0),  /* Blue Label */
                                             NULL), "NORMALIZE=HORIZONTAL"));
 
-  col2 = IupVbox(IupSetAttributes(IupHbox(hsi_vb, IupFill(), rgb_vb, NULL), "EXPAND=YES"), 
-                 IupSetAttributes(IupLabel(NULL), "SEPARATOR=HORIZONTAL"), 
+  col2 = IupVbox(IupSetAttributes(IupHbox(hsi_vb, IupFill(), rgb_vb, NULL), "EXPAND=YES"),
+                 IupSetAttributes(IupLabel(NULL), "SEPARATOR=HORIZONTAL"),
                  clr_vb,
                  NULL);
   IupSetAttributes(col2, "EXPAND=NO, GAP=10");

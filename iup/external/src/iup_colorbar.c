@@ -21,7 +21,6 @@
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_stdcontrols.h"
-#include "iup_image.h"
 #include "iup_register.h"
 
 
@@ -66,12 +65,11 @@ static struct {
   unsigned int g;
   unsigned int b;
 } default_colors[ICOLORBAR_DEFAULT_NUM_CELLS] = {
-  {   0,   0,   0 }, { 128,   0,   0 }, {   0, 128,   0 }, { 128, 128,   0 },    
-  {   0,   0, 128 }, { 128,   0, 128 }, {   0, 128, 128 }, { 192, 192, 192 },    
+  {   0,   0,   0 }, { 128,   0,   0 }, {   0, 128,   0 }, { 128, 128,   0 },
+  {   0,   0, 128 }, { 128,   0, 128 }, {   0, 128, 128 }, { 192, 192, 192 },
   { 128, 128, 128 }, { 255,   0,   0 }, {   0, 255,   0 }, { 255, 255,   0 },
   {   0,   0, 255 }, { 255,   0, 255 }, {   0, 255, 255 }, { 255, 255, 255 }
 };
-
 
 /* This function is used to draw a box for a cell. */
 static void iColorbarDrawBox(Ihandle* ih, int xmin, int xmax, int ymin, int ymax, int idx)
@@ -81,7 +79,7 @@ static void iColorbarDrawBox(Ihandle* ih, int xmin, int xmax, int ymin, int ymax
   iupAttribSet(ih, "DRAWSTYLE", "FILL");
 
   if (color == ih->data->transparency)
-  { 
+  {
     int xm = (xmin+xmax)/2;
     int ym = (ymin+ymax)/2;
     iupDrawSetColor(ih, "DRAWCOLOR", iupDrawColor(238, 238, 238, 255));
@@ -108,20 +106,20 @@ static void iColorbarDrawBox(Ihandle* ih, int xmin, int xmax, int ymin, int ymax
 /* This function is used to get the largest square of a cell bounding box. */
 static void iColorbarFitSquare(int* xmin, int* xmax, int* ymin, int* ymax)
 {
-  int mx = (*xmax + *xmin) / 2; 
+  int mx = (*xmax + *xmin) / 2;
   int my = (*ymax + *ymin) / 2;
-  int dx = (*xmax - *xmin) / 2; 
+  int dx = (*xmax - *xmin) / 2;
   int dy = (*ymax - *ymin) / 2;
 
   if (dx < dy)
-  { 
-    *ymin = my - dx; 
-    *ymax = my + dx; 
+  {
+    *ymin = my - dx;
+    *ymax = my + dx;
   }
   else
-  { 
-    *xmin = mx - dy; 
-    *xmax = mx + dy; 
+  {
+    *xmin = mx - dy;
+    *xmax = mx + dy;
   }
 }
 
@@ -130,10 +128,10 @@ static void iColorbarGetPreviewLimit(Ihandle* ih, int* xmin, int* xmax, int* ymi
 {
   int num_itens = ih->data->num_cells / ih->data->num_parts + 1;  /* include space for preview area */
 
-  *xmin = 0; 
+  *xmin = 0;
 
   if (ih->data->vertical)
-  { 
+  {
     *xmax = ih->data->w - 1;
     *ymax = ih->data->h - 1;
     if (ih->data->preview_size > 0)
@@ -142,7 +140,7 @@ static void iColorbarGetPreviewLimit(Ihandle* ih, int* xmin, int* xmax, int* ymi
       *ymin = *ymax - ih->data->h / num_itens;
   }
   else
-  { 
+  {
     *ymin = 0;
     *ymax = ih->data->h - 1;
     if (ih->data->preview_size > 0)
@@ -173,13 +171,13 @@ static void iColorbarGetCellLimit(Ihandle* ih, int idx, int* xmin, int* xmax, in
   }
 
   if (ih->data->vertical)  /* Vertical orientation */
-  { 
+  {
     wcell = ih->data->w / ih->data->num_parts;
     hcell = (ih->data->h - preview_h) / num_itens;
     posx = idx / num_itens;
     posy = idx % num_itens;
     if (ih->data->squared)
-    { 
+    {
       wcell = wcell < hcell ? wcell : hcell;
       hcell = wcell;
     }
@@ -190,13 +188,13 @@ static void iColorbarGetCellLimit(Ihandle* ih, int idx, int* xmin, int* xmax, in
     *ymax = p_ymin - (posy + 0) * hcell;
   }
   else  /* Horizontal orientation */
-  {  
+  {
     hcell = ih->data->h / ih->data->num_parts;
     wcell = (ih->data->w - preview_w) / num_itens;
     posx = idx % num_itens;
     posy = idx / num_itens;
     if (ih->data->squared)
-    { 
+    {
       wcell = wcell < hcell ? wcell : hcell;
       hcell = wcell;
     }
@@ -216,7 +214,7 @@ static int iColorbarGetIndexColor(Ihandle* ih, int x, int y)
   int xmax, ymax;
 
   for (i = 0; i < ih->data->num_cells; i++)
-  { 
+  {
     iColorbarGetCellLimit(ih, i, &xmin, &xmax, &ymin, &ymax);
     if (x > xmin && x < xmax && y > ymin && y < ymax)
       return i;
@@ -242,15 +240,15 @@ static void iColorbarRenderPreview(Ihandle* ih)
 
   if (xmax-xmin < delta || ymax-ymin < delta)
     delta = 0;
-  
+
   if (ih->data->show_secondary)
-  { 
+  {
     xhalf = 2 * (xmax - xmin - 2 * delta) / 3 + delta;
     yhalf = 2 * (ymax - ymin - 2 * delta) / 3 + delta;
 
-    iColorbarDrawBox(ih, xmax - xhalf, xmax - delta, 
+    iColorbarDrawBox(ih, xmax - xhalf, xmax - delta,
                          ymax - yhalf, ymax - delta, bg);  /* secondary bellow */
-    iColorbarDrawBox(ih, xmin + delta, xmin + xhalf, 
+    iColorbarDrawBox(ih, xmin + delta, xmin + xhalf,
                          ymin + delta, ymin + yhalf, fg);  /* primary above */
   }
   else
@@ -279,9 +277,9 @@ static void iColorbarRenderCell(Ihandle* ih, int idx)
   xmax -= delta;
   ymin += delta;
   ymax -= delta;
-  
+
   iColorbarDrawBox(ih, xmin, xmax, ymin, ymax, idx);
-  
+
   if (ih->data->shadowed)
     iupDrawSunkenRect(ih, xmin, ymin, xmax, ymax, ih->data->light_shadow, ih->data->mid_shadow, ih->data->dark_shadow);
 }
@@ -307,22 +305,23 @@ static int iColorbarCheckPreview(Ihandle* ih, int x, int y)
   iColorbarGetPreviewLimit(ih, &xmin, &xmax, &ymin, &ymax);
 
   if (ih->data->show_secondary)
-  { 
+  {
     xhalf = 2 * (xmax - xmin - 2 * delta) / 3 + delta;
     yhalf = 2 * (ymax - ymin - 2 * delta) / 3 + delta;
 
-    if (x > xmin + delta && x < xmin + xhalf && 
+    if (x > xmin + delta && x < xmin + xhalf &&
         y > ymin + delta && y < ymin + yhalf)
       return ICOLORBAR_PRIMARY;
-    if (x > xmax - xhalf && x < xmax - delta && 
+    if (x > xmax - xhalf && x < xmax - delta &&
         y > ymax - yhalf && y < ymax - delta)
       return ICOLORBAR_SECONDARY;
     if (x > xmin && x < xmax && y > ymin && y < ymax)
       return 1;  /* switch */
   }
   else
-  { 
-    if (x > xmin + delta && x < xmax - delta && y > ymin + delta && y < ymax - delta)
+  {
+    if (x > xmin + delta && x < xmax - delta &&
+        y > ymin + delta && y < ymax - delta)
       return ICOLORBAR_PRIMARY;
   }
 
@@ -347,7 +346,7 @@ static int iColorbarSetPrimaryCellAttrib(Ihandle* ih, const char* value)
   if (iupStrToInt(value, &new_val))
   {
     if (new_val > 0 && new_val < ih->data->num_cells)
-    { 
+    {
       ih->data->fgcolor_idx = new_val;
       IupUpdate(ih);
     }
@@ -366,7 +365,7 @@ static int iColorbarSetSecondaryCellAttrib(Ihandle* ih, const char* value)
   if (iupStrToInt(value, &new_val))
   {
     if (new_val > 0 && new_val < ih->data->num_cells)
-    { 
+    {
       ih->data->bgcolor_idx = new_val;
       IupUpdate(ih);
     }
@@ -386,7 +385,7 @@ static int iColorbarSetNumCellsAttrib(Ihandle* ih, const char* value)
   if (iupStrToInt(value, &new_val))
   {
     if (new_val > 0 && new_val <= 256)
-    { 
+    {
       ih->data->num_cells = new_val;
 
       if (ih->data->fgcolor_idx >= ih->data->num_cells)
@@ -419,9 +418,9 @@ static int iColorbarSetOrientationAttrib(Ihandle* ih, const char* value)
 
 static char* iColorbarGetOrientationAttrib(Ihandle* ih)
 {
-  if (ih->data->vertical) 
+  if (ih->data->vertical)
     return "VERTICAL";
-  else 
+  else
     return "HORIZONTAL";
 }
 
@@ -498,7 +497,7 @@ static int iColorbarSetShowPreviewAttrib(Ihandle* ih, const char* value)
     ih->data->preview_size = -1;  /* reset to automatic */
   else
     ih->data->preview_size = 0;
-  
+
   IupUpdate(ih);
   return 1;
 }
@@ -519,14 +518,14 @@ static char* iColorbarGetPreviewSizeAttrib(Ihandle* ih)
 {
   if (ih->data->preview_size == -1)  /* automatic */
     return NULL;
-  else 
+  else
     return iupStrReturnInt(ih->data->preview_size);
 }
 
 static int iColorbarSetCellAttrib(Ihandle* ih, int id, const char* value)
 {
   if (id >= 0 || id < ih->data->num_cells)
-  { 
+  {
     ih->data->colors[id] = iupDrawStrToColor(value, ih->data->colors[id]);
     IupUpdate(ih);
   }
@@ -537,7 +536,7 @@ static int iColorbarSetCellAttrib(Ihandle* ih, int id, const char* value)
 static char* iColorbarGetCellAttrib(Ihandle* ih, int id)
 {
   long color;
-  
+
   if (id < 0 || id >= ih->data->num_cells)
     return NULL;
 
@@ -567,7 +566,7 @@ static int iColorbarSetBgColorAttrib(Ihandle* ih, const char* value)
 
   if (!iupdrvIsActive(ih))
     ih->data->light_shadow = ih->data->mid_shadow;
-  
+
   IupUpdate(ih);
   return 1;
 }
@@ -616,7 +615,7 @@ static int iColorbarFocus_CB(Ihandle* ih, int focus)
   return IUP_DEFAULT;
 }
 
-static void iColorbarCallExtentedCb(Ihandle* ih, int idx)
+static void iColorbarCallExtendedCb(Ihandle* ih, int idx)
 {
   IFni extended_cb = (IFni)IupGetCallback(ih, "EXTENDED_CB");
   if (!extended_cb)
@@ -627,9 +626,9 @@ static void iColorbarCallExtentedCb(Ihandle* ih, int idx)
 
   IupUpdate(ih);
 }
-    
+
 static void iColorbarCallSelectCb(Ihandle* ih, int idx, int type)
-{ 
+{
   IFnii select_cb;
 
   if (type == ICOLORBAR_SECONDARY && !ih->data->show_secondary)
@@ -655,7 +654,7 @@ static void iColorbarCallCellCb(Ihandle* ih, int idx)
     return;
 
   ret = cell_cb(ih, idx);  /* the application can change the color */
-  if (ret) 
+  if (ret)
   {
     ih->data->colors[idx] = iupDrawStrToColor(ret, ih->data->colors[idx]);
     IupUpdate(ih);
@@ -676,7 +675,7 @@ static int iColorbarKeyPress_CB(Ihandle* ih, int c, int press)
 
   old_focus_cell = ih->data->focus_cell;
 
-  switch(c)
+  switch (c)
   {
   case K_LEFT:
     if (ih->data->vertical)
@@ -746,8 +745,10 @@ static int iColorbarKeyPress_CB(Ihandle* ih, int c, int press)
     iColorbarCallSelectCb(ih, ih->data->focus_cell, ICOLORBAR_SECONDARY);
     return IUP_DEFAULT;
   case K_sSP:
-    iColorbarCallExtentedCb(ih, ih->data->focus_cell);
+    iColorbarCallExtendedCb(ih, ih->data->focus_cell);
     return IUP_DEFAULT;
+  default:
+    break;
   }
 
   if (old_focus_cell != ih->data->focus_cell && ih->data->focus_select)
@@ -764,10 +765,10 @@ static int iColorbarButton_CB(Ihandle* ih, int b, int m, int x, int y, char* r)
   if (m == 0)
     return IUP_DEFAULT;
 
-  if (b == IUP_BUTTON1 && iup_isdouble(r)) 
-  { 
-    idx = iColorbarGetIndexColor(ih, x, y); 
-    if (idx < 0  || idx >= ih->data->num_cells) 
+  if (b == IUP_BUTTON1 && iup_isdouble(r))
+  {
+    idx = iColorbarGetIndexColor(ih, x, y);
+    if (idx < 0  || idx >= ih->data->num_cells)
     {
       int ret = iColorbarCheckPreview(ih, x, y);
       if (ret)
@@ -779,7 +780,7 @@ static int iColorbarButton_CB(Ihandle* ih, int b, int m, int x, int y, char* r)
           if (!ih->data->show_secondary)
             return IUP_DEFAULT;
 
-          if (switch_cb && switch_cb(ih, ih->data->fgcolor_idx, ih->data->bgcolor_idx) == IUP_IGNORE) 
+          if (switch_cb && switch_cb(ih, ih->data->fgcolor_idx, ih->data->bgcolor_idx) == IUP_IGNORE)
             return IUP_DEFAULT;
 
           /* the application allow to switch the indices */
@@ -814,7 +815,7 @@ static int iColorbarButton_CB(Ihandle* ih, int b, int m, int x, int y, char* r)
     iColorbarCallCellCb(ih, idx);
   }
   else if (b == IUP_BUTTON1)
-  { 
+  {
     idx = iColorbarGetIndexColor(ih, x, y);
     if (idx < 0  || idx >= ih->data->num_cells)
       return IUP_DEFAULT;
@@ -826,17 +827,17 @@ static int iColorbarButton_CB(Ihandle* ih, int b, int m, int x, int y, char* r)
       iColorbarCallSelectCb(ih, idx, ICOLORBAR_PRIMARY);
     }
   }
-  else if (b == IUP_BUTTON3 && iup_isshift(r)) 
-  { 
-    idx = iColorbarGetIndexColor(ih, x, y); 
+  else if (b == IUP_BUTTON3 && iup_isshift(r))
+  {
+    idx = iColorbarGetIndexColor(ih, x, y);
     if (idx < 0  || idx >= ih->data->num_cells)
       return IUP_DEFAULT;
 
-    iColorbarCallExtentedCb(ih, idx);
+    iColorbarCallExtendedCb(ih, idx);
   }
-  else if (b == IUP_BUTTON3) 
-  { 
-    idx = iColorbarGetIndexColor(ih, x, y); 
+  else if (b == IUP_BUTTON3)
+  {
+    idx = iColorbarGetIndexColor(ih, x, y);
     if (idx < 0  || idx >= ih->data->num_cells)
       return IUP_DEFAULT;
 
@@ -846,9 +847,7 @@ static int iColorbarButton_CB(Ihandle* ih, int b, int m, int x, int y, char* r)
   return IUP_DEFAULT;
 }
 
-
 /****************************************************************************/
-
 
 static int iColorbarCreateMethod(Ihandle* ih, void **params)
 {
@@ -880,7 +879,7 @@ static int iColorbarCreateMethod(Ihandle* ih, void **params)
   {
     ih->data->colors[i] = iupDrawColor((unsigned char)default_colors[i].r,
                                        (unsigned char)default_colors[i].g,
-                                       (unsigned char)default_colors[i].b, 
+                                       (unsigned char)default_colors[i].b,
                                        255);
   }
 

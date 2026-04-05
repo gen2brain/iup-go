@@ -15,7 +15,6 @@ extern "C" {
 /** \defgroup drvdialog Driver Dialog Interface
  * \ingroup drv */
 
-
 /* PUBLIC */
 
 /* Shows the dialog in the given position and disable interaction with other dialogs.
@@ -56,7 +55,6 @@ void iupDialogUpdatePosition(Ihandle* ih);
 void iupDialogLeaveModal(int popup_level);
 void iupDialogEnterModal(Ihandle* ih_popup, int popup_level);
 
-
 /******************************/
 /* Driver dependent functions */
 /******************************/
@@ -79,7 +77,6 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int *w,
 IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih);
 /** @} */
 
-
 /*********************************************************************/
                         /* PRIVATE */
 /*********************************************************************/
@@ -95,7 +92,7 @@ void iupDialogCustomFrameMaximize(Ihandle* ih);
 
 struct _IcontrolData
 {
-  int show_state,     /* save the state to be used used in SHOW_CB */
+  int show_state,   /* save the state to be used in SHOW_CB */
     first_show,     /* boolean flag to indicate that the dialog was shown for the first time */
     ignore_resize,  /* flag to ignore the next resize */
     popup_level,    /* popup level of the dialog if IupPopup used */

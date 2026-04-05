@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_KEY_H 
+
+#ifndef __IUP_KEY_H
 #define __IUP_KEY_H
 
 #ifdef __cplusplus
@@ -17,7 +17,7 @@ extern "C" {
  * \ingroup cpi */
 
 
-/** Returns the key name from its code. 
+/** Returns the key name from its code.
  * Returns NULL if code not found.
  * \ingroup key */
 IUP_SDK_API char *iupKeyCodeToName(int code);
@@ -38,18 +38,18 @@ IUP_SDK_API int iupKeyCallKeyPressCb(Ihandle *ih, int code, int press);
 /** Process Tab, DEFAULTENTER and DEFAULTESC in key press events.
  * \ingroup key */
 IUP_SDK_API int iupKeyProcessNavigation(Ihandle* ih, int code, int shift);
-                             
+
 /** Process mnemonics (Used only in Windows and Motif).
  * \ingroup key */
 IUP_SDK_API int iupKeyProcessMnemonic(Ihandle* ih, int code);
-                    
+
 /** Set a mnemonic (Used only in Windows and Motif).
  * \ingroup key */
 IUP_SDK_API void iupKeySetMnemonic(Ihandle* ih, int code, int pos);
 
 /* Used only in IupOpen */
 void iupKeyInit(void);
-                        
+
 
 #define IUPKEY_STATUS_SIZE 11 /* 10 chars + null */
 #define IUPKEY_STATUS_INIT "          "  /* 10 spaces */

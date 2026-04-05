@@ -36,7 +36,7 @@
 #define IUP_VERSION_FIX_NUMBER 0
 /* #define IUP_VERSION_FIX_DATE "AAAA/MM/DD" */
 
-const char iup_ident[] = 
+const char iup_ident[] =
   "$IUP: " IUP_VERSION IUP_VERSION_FIX " " IUP_COPYRIGHT " $\n"
   "$URL: www.tecgraf.puc-rio.br/iup $\n";
 

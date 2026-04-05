@@ -7,18 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
-#include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
-#include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_scrollbar.h"
 
 
@@ -134,6 +128,8 @@ static int iScrollbarCreateMethod(Ihandle* ih, void **params)
     orientation = params[0];
 
   ih->data = iupALLOCCTRLDATA();
+  if (!ih->data)
+    return IUP_ERROR;
 
   iScrollbarSetOrientationAttrib(ih, orientation);
 

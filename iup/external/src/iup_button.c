@@ -8,15 +8,12 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_button.h"
 #include "iup_image.h"
 #include "iup_class.h"
@@ -68,9 +65,7 @@ static char* iButtonGetSpacingAttrib(Ihandle *ih)
   return iupStrReturnInt(ih->data->spacing);
 }
 
-
 /*****************************************************************************************/
-
 
 static int iButtonCreateMethod(Ihandle* ih, void** params)
 {
@@ -105,7 +100,7 @@ static void iButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
 {
   int has_border = 1;
   int natural_w = 0,
-      natural_h = 0, 
+      natural_h = 0,
       type = ih->data->type;
   (void)children_expand; /* unset if not a container */
 
@@ -172,9 +167,7 @@ static void iButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
   *h = natural_h;
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupButton(const char* title, const char* action)
 {

@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -18,7 +17,6 @@
 #include "iup_drvfont.h"
 #include "iup_str.h"
 #include "iup_attrib.h"
-#include "iup_layout.h"
 #include "iup_assert.h"
 
 
@@ -264,7 +262,7 @@ static char* iBaseGetScreenPositionAttrib(Ihandle *ih)
 
 IUP_SDK_API char* iupBaseGetActiveAttrib(Ihandle *ih)
 {
-  return iupStrReturnBoolean (iupdrvIsActive(ih)); 
+  return iupStrReturnBoolean (iupdrvIsActive(ih));
 }
 
 static int iBaseNativeParentIsActive(Ihandle* ih)
@@ -276,7 +274,7 @@ static int iBaseNativeParentIsActive(Ihandle* ih)
 
   if (parent->iclass->nativetype == IUP_TYPEVOID)
     return iBaseNativeParentIsActive(parent);
-  else 
+  else
     return iupdrvIsActive(parent);
 }
 
@@ -294,7 +292,7 @@ IUP_SDK_API int iupBaseSetActiveAttrib(Ihandle* ih, const char* value)
 
 IUP_SDK_API char* iupBaseGetVisibleAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (iupdrvIsVisible(ih)); 
+  return iupStrReturnBoolean (iupdrvIsVisible(ih));
 }
 
 IUP_SDK_API int iupBaseSetVisibleAttrib(Ihandle* ih, const char* value)
@@ -470,8 +468,8 @@ static char* iBaseGetFloatingAttrib(Ihandle* ih)
 {
   if (ih->flags & IUP_FLOATING_IGNORE)
     return "IGNORE";
-  else 
-    return iupStrReturnBoolean (ih->flags & IUP_FLOATING); 
+  else
+    return iupStrReturnBoolean (ih->flags & IUP_FLOATING);
 }
 
 IUP_SDK_API int iupBaseSetMaxSizeAttrib(Ihandle* ih, const char* value)
@@ -604,10 +602,6 @@ IUP_SDK_API char* iupBaseGetCPaddingAttrib(Ihandle* ih)
   return iupStrReturnIntInt(pad_horiz, pad_vert, 'x');
 }
 
-/*
-iupClassRegisterAttribute(ic, "CPADDING", iupBaseGetCPaddingAttrib, iupBaseSetCPaddingAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
-*/
-
 IUP_SDK_API int iupBaseSetCSpacingAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
@@ -637,10 +631,6 @@ IUP_SDK_API char* iupBaseGetCSpacingAttrib(Ihandle* ih)
 
   return iupStrReturnInt(spacing);
 }
-
-/*
-iupClassRegisterAttribute(ic, "CSPACING", iupBaseGetCSpacingAttrib, iupBaseSetCSpacingAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
-*/
 
 IUP_SDK_API void iupBaseRegisterCommonAttrib(Iclass* ic)
 {

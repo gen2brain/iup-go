@@ -8,15 +8,10 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 
 
 IUP_SDK_API Ihandle *iupRadioFindToggleParent(Ihandle* ih_toggle)
@@ -54,8 +49,7 @@ static int iRadioFindToggleChild(Ihandle* ih, Ihandle* ih_toggle)
 
 static int iRadioChildIsToggle(Ihandle* child)
 {
-  if (IupClassMatch(child, "toggle") || 
-      IupClassMatch(child, "gltoggle") ||
+  if (IupClassMatch(child, "toggle") ||
       IupClassMatch(child, "flattoggle") ||
       (IupClassMatch(child, "flatbutton") && iupAttribGetBoolean(child, "TOGGLE")))
     return 1;
@@ -83,7 +77,6 @@ static Ihandle* iRadioGetToggleChildOn(Ihandle* ih)
 
 /******************************************************************************/
 
-
 static int iRadioSetValueHandleAttrib(Ihandle* ih, const char* value)
 {
   Ihandle* ih_toggle = (Ihandle*)value;
@@ -95,7 +88,7 @@ static int iRadioSetValueHandleAttrib(Ihandle* ih, const char* value)
 
   if (iRadioFindToggleChild(ih->firstchild, ih_toggle))
     IupSetAttribute(ih_toggle, "VALUE", "ON");
- 
+
   return 0;
 }
 
@@ -126,7 +119,6 @@ static char* iRadioGetValueAttrib(Ihandle* ih)
 }
 
 /******************************************************************************/
-
 
 static int iRadioCreateMethod(Ihandle* ih, void** params)
 {
@@ -165,9 +157,7 @@ static void iRadioSetChildrenPositionMethod(Ihandle* ih, int x, int y)
     iupBaseSetPosition(ih->firstchild, x, y);
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupRadio(Ihandle* child)
 {

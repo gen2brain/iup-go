@@ -4,8 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
- 
-#ifndef __IUP_ASSERT_H 
+#ifndef __IUP_ASSERT_H
 #define __IUP_ASSERT_H
 
 #ifdef __cplusplus
@@ -29,8 +28,8 @@ IUP_SDK_API void iupAssert(const char* expr, const char* file, int line, const c
 IUP_SDK_API void iupError(const char* format, ...);
 
 /** \def iupASSERT
- * \brief If the expression if false, 
- * displays a message with information of the source code where the assert happen.
+ * \brief If the expression is false,
+ * displays a message with information of the source code where assert happen.
  *
  * \param _expr The evaluated expression.
  * \par
@@ -43,7 +42,7 @@ IUP_SDK_API void iupError(const char* format, ...);
  * It is a macro that calls a function only if IUP_ASSERT is defined.
  * \ingroup assert */
 
-#ifndef  IUP_ASSERT
+#ifndef IUP_ASSERT
 #define iupASSERT(_expr)  ((void)0)
 #define iupERROR(_msg)  ((void)0)
 #define iupERROR1(_msg, _p1)  ((void)0)

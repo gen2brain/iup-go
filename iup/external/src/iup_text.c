@@ -18,7 +18,6 @@
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
-#include "iup_layout.h"
 #include "iup_mask.h"
 #include "iup_array.h"
 #include "iup_text.h"
@@ -27,7 +26,7 @@
 
 
 /* Used by List and Text, implemented in Text
-   Can NOT use ih->data 
+   Can NOT use ih->data
 */
 int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void *mask, int nc, int remove_dir, int utf8)
 {
@@ -38,7 +37,7 @@ int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int sta
   if (!cb && !mask)
     return ret;
 
-  value = IupGetAttribute(ih, "VALUE");  /* it will return a non NULL internal buffer */
+  value = IupGetAttribute(ih, "VALUE");  /* it will return a non-NULL internal buffer */
 
   if (!insert_value)
   {
@@ -83,8 +82,7 @@ int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int sta
       IupExitLoop();
       ret = 0; /* abort */
     }
-    else if (cb_ret!=0 && key!=0 && 
-             cb_ret != IUP_DEFAULT && cb_ret != IUP_CONTINUE)  
+    else if (cb_ret!=0 && key!=0 && cb_ret != IUP_DEFAULT && cb_ret != IUP_CONTINUE)
       ret = cb_ret; /* replace key */
   }
 
@@ -94,7 +92,7 @@ int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int sta
 
 char* iupTextGetFormattingAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->has_formatting); 
+  return iupStrReturnBoolean (ih->data->has_formatting);
 }
 
 int iupTextSetFormattingAttrib(Ihandle* ih, const char* value)
@@ -437,7 +435,7 @@ static int iTextSetMultilineAttrib(Ihandle* ih, const char* value)
 
 static char* iTextGetMultilineAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->is_multiline); 
+  return iupStrReturnBoolean (ih->data->is_multiline);
 }
 
 static int iTextSetAppendNewlineAttrib(Ihandle* ih, const char* value)
@@ -451,7 +449,7 @@ static int iTextSetAppendNewlineAttrib(Ihandle* ih, const char* value)
 
 static char* iTextGetAppendNewlineAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->append_newline); 
+  return iupStrReturnBoolean (ih->data->append_newline);
 }
 
 static int iTextSetScrollbarAttrib(Ihandle* ih, const char* value)
@@ -493,9 +491,7 @@ char* iupTextGetPaddingAttrib(Ihandle* ih)
   return iupStrReturnIntInt(ih->data->horiz_padding, ih->data->vert_padding, 'x');
 }
 
-
 /********************************************************************/
-
 
 static int iTextCreateMethod(Ihandle* ih, void** params)
 {
@@ -566,7 +562,6 @@ static void iTextDestroyMethod(Ihandle* ih)
     iupMaskDestroy(ih->data->mask);
 }
 
-
 /******************************************************************************/
 
 typedef void (*Iconvertlincol2pos)(Ihandle* ih, int lin, int col, int *pos);
@@ -580,7 +575,7 @@ IUP_API void IupTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
 
   if (!ih->handle)
     return;
-    
+
   if (IupClassMatch(ih, "text"))
   {
     if (ih->data->is_multiline)
@@ -588,7 +583,7 @@ IUP_API void IupTextConvertLinColToPos(Ihandle* ih, int lin, int col, int *pos)
     else
       *pos = col - 1; /* IUP starts at 1 */
   }
-  else 
+  else
   {
     Iconvertlincol2pos convert = (Iconvertlincol2pos)IupGetCallback(ih, "_IUP_LINCOL2POS_CB");
     if (convert)
@@ -604,7 +599,7 @@ IUP_API void IupTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
 
   if (!ih->handle)
     return;
-    
+
   if (IupClassMatch(ih, "text"))
   {
     if (ih->data->is_multiline)
@@ -615,7 +610,7 @@ IUP_API void IupTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
       *lin = 1;
     }
   }
-  else 
+  else
   {
     Iconvertpos2lincol convert = (Iconvertpos2lincol)IupGetCallback(ih, "_IUP_POS2LINCOL_CB");
     if (convert)

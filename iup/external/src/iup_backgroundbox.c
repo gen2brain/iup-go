@@ -7,19 +7,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
-#include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_register.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
-#include "iup_drv.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
 
@@ -37,7 +32,7 @@ static char* iBackgroundBoxGetBgColorAttrib(Ihandle* ih)
 }
 
 static int iBackgroundBoxRedrawBackImage_CB(Ihandle* ih)
-{                    
+{
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
   char* bgcolor = iupAttribGet(ih, "BACKCOLOR");
   int backimage_zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");

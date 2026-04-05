@@ -4,11 +4,11 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdlib.h>      
-#include <stdio.h>      
-#include <string.h>      
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-#include "iup.h" 
+#include "iup.h"
 
 #include "iup_hashtable.h"
 #include "iup_globalattrib.h"
@@ -118,7 +118,7 @@ static void iGlobalSet(const char *name, const char *value, int store)
   if (iupStrEqual(name, "LANGUAGE"))
   {
     char* old_language = (char*)iupTableGet(iglobal_table, "LANGUAGE");
-    if (!iupStrEqualNoCase(old_language, value))  /* if different than the current */
+    if (!iupStrEqualNoCase(old_language, value))  /* if different from the current */
     {
       iGlobalTableSet(name, value, store);
       iupStrMessageUpdateLanguage(value);
@@ -176,9 +176,9 @@ IUP_API void IupSetStrGlobal(const char *name, const char *value)
 IUP_API char* IupGetGlobal(const char *name)
 {
   char* value;
-  
+
   iupASSERT(name!=NULL);
-  if (!name) 
+  if (!name)
     return NULL;
 
   if (iupStrEqual(name, "DEFAULTFONTSIZE"))

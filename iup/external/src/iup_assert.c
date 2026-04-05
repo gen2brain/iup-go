@@ -4,19 +4,15 @@
  * See Copyright Notice in "iup.h"
  */
 
- 
-#include <string.h>  
-#include <stdlib.h>  
-#include <stdio.h>  
-#include <limits.h>  
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <stdarg.h>
 
 #include "iup.h"
 
 #include "iup_assert.h"
-#include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_predialogs.h"
 
 
 IUP_SDK_API void iupError(const char* format, ...)
@@ -27,7 +23,7 @@ IUP_SDK_API void iupError(const char* format, ...)
   va_start(arglist, format);
   vsnprintf(msg, size, format, arglist);
   va_end(arglist);
-#if IUP_ASSERT_CONSOLE 
+#if IUP_ASSERT_CONSOLE
   fprintf(stderr, "%s", msg);
 #else
   if (IupIsOpened())
@@ -45,11 +41,11 @@ IUP_SDK_API void iupAssert(const char* expr, const char* file, int line, const c
     iupError("File: %s\n"
              "Line: %d\n"
              "Function: %s\n"
-             "Assertive: (%s)", 
+             "Assertive: (%s)",
              file, line, func, expr);
   else
     iupError("File: %s\n"
              "Line: %d\n"
-             "Assertive: (%s)", 
+             "Assertive: (%s)",
              file, line, expr);
 }

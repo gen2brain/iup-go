@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_DRVFONT_H 
+
+#ifndef __IUP_DRVFONT_H
 #define __IUP_DRVFONT_H
 
 #ifdef __cplusplus
@@ -12,11 +12,11 @@ extern "C" {
 #endif
 
 
-/** \defgroup drvfont Driver Font Interface 
+/** \defgroup drvfont Driver Font Interface
  * \par
  * Each driver must export the symbols defined here.
  * \par
- * See \ref iup_drvfont.h 
+ * See \ref iup_drvfont.h
  * \ingroup drv */
 
 /* Called only from IupOpen/IupClose. */
@@ -38,7 +38,7 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str);
  * \ingroup drvfont */
 IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int *w, int *h);
 
-/** Same as \ref iupdrvFontGetMultiLineStringSize but not associated with a control. 
+/** Same as \ref iupdrvFontGetMultiLineStringSize but not associated with a control.
  * Used in IupDraw.\n
  *\ingroup drvfont */
 IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int *w, int *h);
@@ -61,7 +61,6 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value);
  * \ingroup drvfont */
 IUP_SDK_API int iupdrvFontGetFamilyList(char*** list);
 
-
 /** Compensates IupMatrix limitation in Get FONT.
   * \ingroup drvfont */
 IUP_SDK_API char* iupGetFontValue(Ihandle* ih);
@@ -72,20 +71,19 @@ IUP_SDK_API char* iupGetFontValue(Ihandle* ih);
 IUP_SDK_API int iupGetFontInfo(const char* font, char* typeface, int *size, int *is_bold, int *is_italic, int *is_underline, int *is_strikeout);
 
 /** Parse the Pango font format description.
- * Returns a non zero value if successful.
+ * Returns a non-zero value if successful.
  * \ingroup drvfont */
 IUP_SDK_API int iupFontParsePango(const char *value, char* typeface, int *size, int *bold, int *italic, int *underline, int *strikeout);
 
 /** Parse the old IUP Windows font format description.
- * Returns a non zero value if successful.
+ * Returns a non-zero value if successful.
  * \ingroup drvfont */
 IUP_SDK_API int iupFontParseWin(const char *value, char* typeface, int *size, int *bold, int *italic, int *underline, int *strikeout);
 
 /** Parse the X-Windows font format description.
- * Returns a non zero value if successful.
+ * Returns a non-zero value if successful.
  * \ingroup drvfont */
 IUP_SDK_API int iupFontParseX(const char *value, char *typeface, int typeface_size, int *size, int *bold, int *italic, int *underline, int *strikeout);
-
 
 /** Changes the FONT style only.
  * \ingroup attribfunc */
@@ -119,7 +117,6 @@ char* iupGetDefaultFontStyleGlobalAttrib(void);
 int   iupSetDefaultFontFaceGlobalAttrib(const char* value);
 char* iupGetDefaultFontFaceGlobalAttrib(void);
 
-
 /* Updates the FONT attrib.
  * Called only from IupMap.
  */
@@ -130,7 +127,6 @@ const char* iupFontGetWinName(const char* typeface);
 const char* iupFontGetXName(const char* typeface);
 const char* iupFontGetPangoName(const char* typeface);
 const char* iupFontGetMacName(const char* typeface);
-
 
 
 #ifdef __cplusplus

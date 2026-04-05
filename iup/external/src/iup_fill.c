@@ -8,20 +8,17 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 
 
 enum {IUP_FILL_NONE, IUP_FILL_HORIZ, IUP_FILL_VERT};
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   int dir;
 };
@@ -81,7 +78,7 @@ static int iFillSetRasterSizeAttrib(Ihandle* ih, const char* value)
       if (d != 0) s = d;
     }
 
-    if (s > 0) 
+    if (s > 0)
     {
       if (iFillGetDir(ih) == IUP_FILL_HORIZ)
       {
@@ -123,7 +120,7 @@ static int iFillSetSizeAttrib(Ihandle* ih, const char* value)
       if (d != 0) s = d;
     }
 
-    if (s > 0) 
+    if (s > 0)
     {
       int charwidth, charheight;
       iupdrvFontGetCharSize(ih, &charwidth, &charheight);
@@ -166,14 +163,14 @@ static char* iFillGetExpandAttrib(Ihandle* ih)
 static void iFillUpdateSize(Ihandle* ih)
 {
   char* value = iupAttribGet(ih, "SIZE");
-  if (value) 
-  { 
+  if (value)
+  {
     iFillSetSizeAttrib(ih, value);
     iupAttribSet(ih, "SIZE", NULL);
   }
   value = iupAttribGet(ih, "RASTERSIZE");
-  if (value) 
-  { 
+  if (value)
+  {
     iFillSetRasterSizeAttrib(ih, value);
     iupAttribSet(ih, "RASTERSIZE", NULL);
   }

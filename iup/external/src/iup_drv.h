@@ -3,15 +3,15 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_DRV_H 
+
+#ifndef __IUP_DRV_H
 #define __IUP_DRV_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-  
+
 /** \defgroup drv Driver Interface
  * \par
  * Each driver must export the symbols defined here.
@@ -21,7 +21,7 @@ extern "C" {
 
 
 /** Sets a global environment attribute. Called from IupSetGlobal and IupStoreGlobal.
- * Must return 1 is process the attribute, or 0 is not. 
+ * Must return 1 is process the attribute, or 0 is not.
  * \ingroup drv */
 IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value);
 
@@ -53,12 +53,12 @@ IUP_SDK_API int iupdrvIsActive(Ihandle* ih);
  * \ingroup drv */
 IUP_SDK_API void iupdrvSetFocus(Ihandle* ih);
 
-/** Changes the visible state of an element. 
- * Not used for dialogs. 
+/** Changes the visible state of an element.
+ * Not used for dialogs.
  * \ingroup drv */
 IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable);
 
-/** Changes the active state of an element. 
+/** Changes the active state of an element.
  * \ingroup drv */
 IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable);
 

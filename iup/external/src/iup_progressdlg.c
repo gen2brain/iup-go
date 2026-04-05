@@ -10,22 +10,18 @@
 #include <time.h>
 
 #include "iup.h"
-#include "iupcbs.h"
-
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_strmessage.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 #include "iup_childtree.h"
 
 
-      
 typedef struct _IprogressDlgData
 {
-  Ihandle *progress, 
+  Ihandle *progress,
           *description;  /* label for the secondary description */
 
   int state,          /* flag indicating if it was interrupted */

@@ -245,6 +245,7 @@ IUP_SDK_API ImarkupData* iupMarkupParse(const char* markup)
     return NULL;
 
   data = (ImarkupData*)calloc(1, sizeof(ImarkupData));
+  if (!data) return NULL;
   stack.top = 0;
   iMarkupStyleInit(&current);
 
@@ -412,7 +413,6 @@ IUP_SDK_API void iupMarkupFree(ImarkupData* data)
 
   free(data);
 }
-
 
 IUP_SDK_API char* iupMarkupStripTags(const char* markup)
 {
@@ -795,7 +795,6 @@ IUP_SDK_API char* iupMarkupToEfl(const char* markup)
 
       if (run->fg_color)
       {
-        if (has_attr) iMarkupAppendStr(&efl, &efl_len, &efl_alloc, " ");
         snprintf(tmp, sizeof(tmp), "color=%s", run->fg_color);
         iMarkupAppendStr(&efl, &efl_len, &efl_alloc, tmp);
         has_attr = 1;
@@ -848,7 +847,6 @@ IUP_SDK_API char* iupMarkupToEfl(const char* markup)
       {
         if (has_attr) iMarkupAppendStr(&efl, &efl_len, &efl_alloc, " ");
         iMarkupAppendStr(&efl, &efl_len, &efl_alloc, "font_style=Italic");
-        has_attr = 1;
       }
 
       iMarkupAppendStr(&efl, &efl_len, &efl_alloc, ">");

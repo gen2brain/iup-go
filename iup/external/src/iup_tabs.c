@@ -1,5 +1,5 @@
 /** \file
-* \brief iuptabs control
+* \brief Tabs control
 *
 * See Copyright Notice in "iup.h"
 */
@@ -8,19 +8,14 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
-#include "iup_image.h"
 #include "iup_tabs.h"
 #include "iup_varg.h"
 
@@ -53,8 +48,8 @@ static void iTabsGetMaxTabSize(Ihandle* ih, int* max_width, int* max_height)
     if (height > max_h) max_h = height;
   }
 
-  if (max_width) *max_width = max_w;
-  if (max_height) *max_height = max_h;
+  *max_width = max_w;
+  *max_height = max_h;
 }
 
 static void iTabsGetDecorMargin(int *m, int *s)
@@ -209,7 +204,7 @@ void iupTabsCheckCurrentTab(Ihandle* ih, int pos, int removed)
   {
     int p;
 
-    /* if given tab is the current tab, 
+    /* if given tab is the current tab,
        then the current tab must be changed to a visible tab */
     Ihandle* child;
 
@@ -255,7 +250,6 @@ static void iTabsSetTab(Ihandle* ih, Ihandle* child, int pos)
   else
     iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", (char*)child);
 }
-
 
 /* ------------------------------------------------------------------------- */
 /* TABS - Sets and Gets - Attribs                                           */
@@ -328,7 +322,7 @@ static int iTabsSetValuePosAttrib(Ihandle* ih, const char* value)
   child = IupGetChild(ih, pos);
   if (child) /* found child */
     iTabsSetTab(ih, child, pos);
- 
+
   return 0;
 }
 
@@ -412,7 +406,7 @@ char* iupTabsGetTitleAttrib(Ihandle* ih, int pos)
 
 static char* iTabsGetShowCloseAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->show_close); 
+  return iupStrReturnBoolean (ih->data->show_close);
 }
 
 static int iTabsSetShowCloseAttrib(Ihandle* ih, const char* value)
@@ -637,7 +631,7 @@ static int iTabsCreateMethod(Ihandle* ih, void **params)
   if(params)
   {
     Ihandle** iparams = (Ihandle**)params;
-    while (*iparams) 
+    while (*iparams)
     {
       IupAppend(ih, *iparams);
       iparams++;

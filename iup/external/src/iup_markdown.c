@@ -200,7 +200,6 @@ static int iMdIsEscapable(char c)
 static int iMdFindClosingDelimiter(const char* text, int len, char delim, int count)
 {
   int i = 0;
-  int nesting = 0;
 
   while (i < len)
   {
@@ -234,13 +233,7 @@ static int iMdFindClosingDelimiter(const char* text, int len, char delim, int co
     {
       int dc = iMdCountLeadingChar(text + i, len - i, delim);
       if (dc >= count)
-      {
-        if (nesting == 0)
-          return i + count;
-        nesting--;
-        i += count;
-        continue;
-      }
+        return i + count;
       i += dc;
       continue;
     }

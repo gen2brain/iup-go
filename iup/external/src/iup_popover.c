@@ -122,8 +122,7 @@ static int iPopoverFlipPosition(int position)
   }
 }
 
-static int iPopoverCalcOverflow(int x, int y, int pw, int ph,
-  int bx, int by, int bw, int bh)
+static int iPopoverCalcOverflow(int x, int y, int pw, int ph, int bx, int by, int bw, int bh)
 {
   int overflow = 0;
   if (x < bx) overflow += bx - x;

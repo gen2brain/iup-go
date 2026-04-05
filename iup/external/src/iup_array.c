@@ -5,7 +5,6 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
 
@@ -48,7 +47,7 @@ IUP_SDK_API void iupArrayDestroy(Iarray* iarray)
   iupASSERT(iarray!=NULL);
   if (!iarray)
     return;
-  if (iarray->data) 
+  if (iarray->data)
   {
     memset(iarray->data, 0, iarray->elem_size*iarray->max_count);
     free(iarray->data);
@@ -72,7 +71,7 @@ IUP_SDK_API void* iupArrayReleaseData(Iarray* iarray)
     return NULL;
   data = iarray->data;
   iarray->data = NULL;
-  return data; 
+  return data;
 }
 
 IUP_SDK_API void* iupArrayInc(Iarray* iarray)
@@ -83,11 +82,16 @@ IUP_SDK_API void* iupArrayInc(Iarray* iarray)
   if (iarray->count >= iarray->max_count)
   {
     int old_count = iarray->max_count;
+    void* new_data;
     iarray->max_count += iarray->start_count;
-    iarray->data = realloc(iarray->data, iarray->elem_size*iarray->max_count);
-    iupASSERT(iarray->data!=NULL);
-    if (!iarray->data)
+    new_data = realloc(iarray->data, iarray->elem_size*iarray->max_count);
+    iupASSERT(new_data!=NULL);
+    if (!new_data)
+    {
+      iarray->max_count = old_count;
       return NULL;
+    }
+    iarray->data = new_data;
     memset((unsigned char*)iarray->data + iarray->elem_size*old_count, 0, iarray->elem_size*(iarray->max_count-old_count));
   }
   iarray->count++;
@@ -102,11 +106,16 @@ IUP_SDK_API void* iupArrayAdd(Iarray* iarray, int add_count)
   if (iarray->count+add_count > iarray->max_count)
   {
     int old_count = iarray->max_count;
+    void* new_data;
     iarray->max_count += add_count;
-    iarray->data = realloc(iarray->data, iarray->elem_size*iarray->max_count);
-    iupASSERT(iarray->data!=NULL);
-    if (!iarray->data)
+    new_data = realloc(iarray->data, iarray->elem_size*iarray->max_count);
+    iupASSERT(new_data!=NULL);
+    if (!new_data)
+    {
+      iarray->max_count = old_count;
       return NULL;
+    }
+    iarray->data = new_data;
     memset((unsigned char*)iarray->data + iarray->elem_size*old_count, 0, iarray->elem_size*(iarray->max_count-old_count));
   }
   iarray->count += add_count;
@@ -122,8 +131,8 @@ IUP_SDK_API void* iupArrayInsert(Iarray* iarray, int index, int insert_count)
     return NULL;
   iupArrayAdd(iarray, insert_count);
   if (index < iarray->count)  /* if equal, insert at the end, no need to move data */
-    memmove((unsigned char*)iarray->data + iarray->elem_size*(index + insert_count), 
-            (unsigned char*)iarray->data + iarray->elem_size*index, 
+    memmove((unsigned char*)iarray->data + iarray->elem_size*(index + insert_count),
+            (unsigned char*)iarray->data + iarray->elem_size*index,
             iarray->elem_size*(iarray->count - insert_count - index));
   /* clear new data */
   memset((unsigned char*)iarray->data + iarray->elem_size*index, 0, iarray->elem_size*insert_count);
@@ -138,8 +147,8 @@ IUP_SDK_API void iupArrayRemove(Iarray* iarray, int index, int remove_count)
   if (index < 0 || index+remove_count > iarray->count)
     return;
   if (index+remove_count < iarray->count)  /* if equal, remove at the end, no need to move data */
-    memmove((unsigned char*)iarray->data + iarray->elem_size*index, 
-            (unsigned char*)iarray->data + iarray->elem_size*(index + remove_count), 
+    memmove((unsigned char*)iarray->data + iarray->elem_size*index,
+            (unsigned char*)iarray->data + iarray->elem_size*(index + remove_count),
             iarray->elem_size*(iarray->count - remove_count - index));
   /* clear old data */
   memset((unsigned char*)iarray->data + iarray->elem_size*(iarray->count - remove_count), 0, iarray->elem_size*remove_count);

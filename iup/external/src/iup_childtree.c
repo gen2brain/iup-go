@@ -5,7 +5,7 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h> 
+#include <stdio.h>
 
 #include "iup.h"
 
@@ -13,10 +13,8 @@
 #include "iup_dlglist.h"
 #include "iup_childtree.h"
 #include "iup_class.h"
-#include "iup_attrib.h" 
-#include "iup_assert.h" 
-#include "iup_str.h" 
-#include "iup_drv.h" 
+#include "iup_assert.h"
+#include "iup_drv.h"
 
 
 IUP_API Ihandle* IupGetDialog(Ihandle* ih)
@@ -47,8 +45,7 @@ IUP_API Ihandle* IupGetDialog(Ihandle* ih)
 
 static void iChildTreeDetach(Ihandle* parent, Ihandle* child)
 {
-  Ihandle *c, 
-          *c_prev = NULL;
+  Ihandle *c, *c_prev = NULL;
 
   /* Removes the child entry inside the parent's child list */
   for (c = parent->firstchild; c; c = c->brother)
@@ -59,7 +56,7 @@ static void iChildTreeDetach(Ihandle* parent, Ihandle* child)
         parent->firstchild = child->brother;
       else
         c_prev->brother = child->brother;
-        
+
       child->brother = NULL;
       child->parent = NULL;
       return;
@@ -80,7 +77,7 @@ IUP_API void IupDetach(Ihandle *child)
 
   IupUnmap(child);
 
-  /* Not valid if does NOT has a parent */
+  /* Not valid if it does NOT have a parent */
   if (!child->parent)
     return;
 
@@ -108,8 +105,7 @@ static int iChildTreeFind(Ihandle* parent, Ihandle* child)
 
 static void iChildTreeInsert(Ihandle* parent, Ihandle* ref_child, Ihandle* child)
 {
-  Ihandle *c, 
-          *c_prev = NULL;
+  Ihandle *c, *c_prev = NULL;
 
   if (parent->firstchild == NULL)
   {
@@ -195,8 +191,7 @@ IUP_API Ihandle* IupInsert(Ihandle* parent, Ihandle* ref_child, Ihandle* child)
 
   if (parent->iclass->childtype == IUP_CHILDNONE)
     return NULL;
-  if (parent->iclass->childtype > IUP_CHILDMANY && 
-      iChildTreeCount(parent) == parent->iclass->childtype-IUP_CHILDMANY)
+  if (parent->iclass->childtype > IUP_CHILDMANY && iChildTreeCount(parent) == parent->iclass->childtype-IUP_CHILDMANY)
     return NULL;
 
 
@@ -261,10 +256,8 @@ IUP_API Ihandle* IupAppend(Ihandle* parent, Ihandle* child)
 
   if (parent->iclass->childtype == IUP_CHILDNONE)
     return NULL;
-  if (parent->iclass->childtype > IUP_CHILDMANY && 
-      iChildTreeCount(parent) == parent->iclass->childtype-IUP_CHILDMANY)
+  if (parent->iclass->childtype > IUP_CHILDMANY && iChildTreeCount(parent) == parent->iclass->childtype-IUP_CHILDMANY)
     return NULL;
-
 
   /* if already at the parent box, allow to move even if mapped */
   if (parent->iclass->nativetype == IUP_TYPEVOID && iChildTreeFind(parent, child))
@@ -325,22 +318,19 @@ IUP_API int IupReparent(Ihandle* child, Ihandle* parent, Ihandle* ref_child)
   if (parent == child->parent && (ref_child == child || (ref_child == NULL && child->brother == NULL)))
     return IUP_ERROR;
 
-  /* child can not be grand-parent of parent */
+  /* child can not be grandparent of parent */
   if (iupChildTreeIsParent(child, parent))
     return IUP_ERROR;
 
   if (parent->iclass->childtype == IUP_CHILDNONE)
     return IUP_ERROR;
-  if (parent->iclass->childtype > IUP_CHILDMANY && 
-      iChildTreeCount(parent) == parent->iclass->childtype-IUP_CHILDMANY)
+  if (parent->iclass->childtype > IUP_CHILDMANY && iChildTreeCount(parent) == parent->iclass->childtype-IUP_CHILDMANY)
     return IUP_ERROR;
-
 
   /* both must be already mapped or both unmapped */
   if ((!parent->handle &&  child->handle) ||
       ( parent->handle && !child->handle))
     return IUP_ERROR;
-
 
   /* detach from old parent */
   old_parent = child->parent;
@@ -350,14 +340,12 @@ IUP_API int IupReparent(Ihandle* child, Ihandle* parent, Ihandle* ref_child)
   iChildTreeDetach(old_parent, child);
   iupClassObjectChildRemoved(old_parent, child, pos);
 
- 
   /* attach to new parent */
   if (ref_child)
     iChildTreeInsert(parent, ref_child, child);
   else
     iupChildTreeAppend(parent, child);
   iupClassObjectChildAdded(parent, child);
-
 
   /* no need to remap, just notify the native system */
   if (child->handle && parent->handle)
@@ -464,7 +452,7 @@ IUP_API Ihandle* IupGetParent(Ihandle *ih)
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
     return NULL;
-    
+
   return ih->parent;
 }
 

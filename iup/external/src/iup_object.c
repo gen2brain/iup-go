@@ -4,9 +4,9 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>  
-#include <stdlib.h>  
-#include <memory.h>  
+#include <stdio.h>
+#include <stdlib.h>
+#include <memory.h>
 
 #include "iup.h"
 
@@ -48,7 +48,7 @@ IUP_SDK_API int iupObjectCheck(Ihandle* ih)
 {
   char* sig = (char*)ih;
 
-  if (!ih) return 0;  
+  if (!ih) return 0;
 
   if (sig[0] != 'I' ||
       sig[1] != 'U' ||
@@ -106,7 +106,7 @@ IUP_SDK_API void** iupObjectGetParamList(void* first, va_list arglist)
     params[count] = param;
     count++;
 
-    /* check if needs to allocate memory */
+    /* check if it needs to allocate memory */
     if (count >= max_count)
     {
       void **new_params = NULL;

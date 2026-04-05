@@ -4,9 +4,9 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdlib.h>  
-#include <stdio.h>  
-#include <stdarg.h>  
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #include "iup.h"
 
@@ -15,9 +15,9 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_layout.h"
-#include "iup_assert.h" 
+#include "iup_assert.h"
 
- 
+
 IUP_API void IupRefreshChildren(Ihandle* ih)
 {
   int shrink;
@@ -162,27 +162,27 @@ IUP_SDK_API void iupLayoutCompute(Ihandle* ih)
 
   int shrink = iupAttribGetBoolean(ih, "SHRINK");
 
-  /* Compute the natural size for all elements in the dialog,   
+  /* Compute the natural size for all elements in the dialog,
      using the minimum visible size and the defined user size.
      The minimum visible size is the size where all the controls can display
      all their contents.
      The defined user size is used to increase the value of the minimum visible size for containers,
      for standard controls will replace the minimum visible size.
-     So the native size will be the maximum value between 
+     So the native size will be the maximum value between
      minimum visible size and defined user size.
      Also calculates the expand configuration for each element, but expand is used only in SetChildrenCurrentSize.
      SEQUENCE: will first calculate the native size for the children, then for the element. */
   iupBaseComputeNaturalSize(ih);
 
   /* Set the current size (not reflected in the native element yet) based on
-     the natural size and the expand configuration. 
+     the natural size and the expand configuration.
      If shrink is 0 (default) the current size of containers can be only larger than the natural size,
      the result will depend on the EXPAND attribute.
      If shrink is 1 the containers can be resized to sizes smaller than the natural size.
      SEQUENCE: will first calculate the current size of the element, then for the children. */
   iupBaseSetCurrentSize(ih, 0, 0, shrink);
 
-  /* Now that the current size is known, set the position of the elements 
+  /* Now that the current size is known, set the position of the elements
      relative to the parent.
      SEQUENCE: will first set the position of the element, then for the children. */
   iupBaseSetPosition(ih, 0, 0);
@@ -215,7 +215,7 @@ void iupBaseComputeNaturalSize(Ihandle* ih)
   ih->naturalwidth = ih->userwidth;
   ih->naturalheight = ih->userheight;
 
-  if (ih->iclass->childtype != IUP_CHILDNONE || 
+  if (ih->iclass->childtype != IUP_CHILDNONE ||
       ih->iclass->nativetype == IUP_TYPEDIALOG)  /* pre-defined dialogs can restrict the number of children */
   {
     int w=0, h=0, children_expand=0;  /* if there is no children will not expand, when not a dialog */
@@ -231,9 +231,9 @@ void iupBaseComputeNaturalSize(Ihandle* ih)
     if (ih->iclass->nativetype == IUP_TYPEDIALOG)
     {
       /* only update the natural size if user size is not defined. */
-      /* IupDialog is the only container where this must be done */ 
+      /* IupDialog is the only container where this must be done */
       /* if the natural size is bigger than the actual dialog size then
-         the dialog will be resized, if smaller then the dialog remains with the same size. */
+         the dialog will be resized, if smaller than the dialog remains with the same size. */
       ih->expand |= children_expand;
       if (ih->naturalwidth <= 0) ih->naturalwidth = iupMAX(ih->currentwidth, w);
       if (ih->naturalheight <= 0) ih->naturalheight = iupMAX(ih->currentheight, h);
@@ -241,17 +241,17 @@ void iupBaseComputeNaturalSize(Ihandle* ih)
     else
     {
       /* combine to only expand if the children can expand */
-      ih->expand &= children_expand; 
+      ih->expand &= children_expand;
       ih->naturalwidth = iupMAX(ih->naturalwidth, w);
       ih->naturalheight = iupMAX(ih->naturalheight, h);
     }
   }
-  else 
+  else
   {
     /* for non-container only compute if user size is not defined */
     if (ih->naturalwidth <= 0 || ih->naturalheight <= 0)
     {
-      int w=0, h=0, 
+      int w=0, h=0,
           children_expand;  /* unused if not a container */
       iupClassObjectComputeNaturalSize(ih, &w, &h, &children_expand);
 

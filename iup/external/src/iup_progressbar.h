@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_PROGRESSBAR_H 
+
+#ifndef __IUP_PROGRESSBAR_H
 #define __IUP_PROGRESSBAR_H
 
 #ifdef __cplusplus
@@ -21,7 +21,7 @@ struct _IcontrolData
          vmin,
          vmax;
 
-  Ihandle* timer; /* used in GTK and MOtif */
+  Ihandle* timer; /* used in GTK and Motif */
 };
 
 void  iProgressBarCropValue(Ihandle* ih);

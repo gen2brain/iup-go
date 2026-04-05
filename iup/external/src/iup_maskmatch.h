@@ -2,10 +2,9 @@
  * \brief Mask match private definitions (not exported API)
  *
  * See Copyright Notice in "iup.h"
- *
  */
- 
-#ifndef __IUP_MASKMATCH_H 
+
+#ifndef __IUP_MASKMATCH_H
 #define __IUP_MASKMATCH_H
 
 #ifdef __cplusplus
@@ -34,10 +33,10 @@ enum
   IMASK_CLASS_CMD_CHAR=51
 };
 
-enum 
+enum
 {
-  IMASK_NORMAL_MATCH, 
-  IMASK_NO_CHAR_MATCH, 
+  IMASK_NORMAL_MATCH,
+  IMASK_NO_CHAR_MATCH,
   IMASK_NO_MATCH
 };
 

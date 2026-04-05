@@ -1,5 +1,5 @@
 /** \file
-* \brief IupGloabsDialog pre-defined dialog
+* \brief IupGlobalsDialog pre-defined dialog
 *
 * See Copyright Notice in "iup.h"
 */
@@ -605,7 +605,6 @@ static int iGlobalsNameCheckHandles_CB(Ihandle* bt)
   return IUP_DEFAULT;
 }
 
-
 static int iGlobalsClose_CB(Ihandle* ih)
 {
   IupHide(IupGetDialog(ih));
@@ -719,7 +718,7 @@ static Ihandle* iGlobalsCreateDialog(void)
 
   box13 = IupVbox(
     IupLabel("Value:"),
-    value3, 
+    value3,
     IupSetCallbacks(IupSetAttributes(IupButton("Reset Value", NULL), "PADDING=DEFAULTBUTTONPADDING"), "ACTION", iGlobalsFunctionReset_CB, NULL),
     NULL);
   IupSetAttribute(box13, "MARGIN", "0x0");
@@ -727,7 +726,7 @@ static Ihandle* iGlobalsCreateDialog(void)
 
   box14 = IupVbox(
     IupLabel("Value:"),
-    value4, 
+    value4,
     IupSetCallbacks(IupSetAttributes(IupButton("Reset Value", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameReset_CB, NULL),
     IupSetCallbacks(IupSetAttributes(IupButton("Properties...", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameProperties_CB, NULL),
     IupSetCallbacks(IupSetAttributes(IupButton("Other Names...", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameFind_CB, NULL),

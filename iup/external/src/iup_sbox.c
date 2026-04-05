@@ -1,5 +1,5 @@
 /** \file
- * \brief iupsbox control
+ * \brief Sbox control
  *
  * See Copyright Notice in "iup.h"
  */
@@ -7,20 +7,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
-#include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
-#include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_stdcontrols.h"
 #include "iup_layout.h"
 #include "iup_childtree.h"
-
 
 
 enum { ISBOX_NORTH, ISBOX_SOUTH, ISBOX_WEST, ISBOX_EAST };
@@ -35,7 +29,6 @@ struct _IcontrolData
   int direction;     /* one of the types: ISBOX_NORTH, ISBOX_SOUTH, ISBOX_WEST, ISBOX_EAST */
   int showgrip, layoutdrag;
 };
-
 
 static int iSboxGetYborder(Ihandle* ih, int bar_size)
 {
@@ -91,11 +84,9 @@ static void iSboxGetFinalSize(Ihandle* ih, int direction, int *w, int *h)
   *h = diff_y + ih->data->start_h;
 }
 
-
 /*****************************************************************************\
 |* Callbacks of canvas bar                                                   *|
 \*****************************************************************************/
-
 
 static int iSboxMotion_CB(Ihandle* bar, int x, int y, char *r)
 {
@@ -179,11 +170,9 @@ static int iSboxFocus_CB(Ihandle* bar, int focus)
   return IUP_DEFAULT;
 }
 
-
 /*****************************************************************************\
 |* Attributes                                                                *|
 \*****************************************************************************/
-
 
 static char* iSboxGetClientSizeAttrib(Ihandle* ih)
 {
@@ -292,22 +281,20 @@ static char* iSboxGetLayoutDragAttrib(Ihandle* ih)
   return iupStrReturnBoolean(ih->data->layoutdrag);
 }
 
-
 /*****************************************************************************\
 |* Methods                                                                   *|
 \*****************************************************************************/
 
-
 static void iSboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
-  int natural_w = ih->naturalwidth, 
+  int natural_w = ih->naturalwidth,
       natural_h = ih->naturalheight;
   int bar_size = IupGetInt(ih->firstchild, "BARSIZE");
 
   /* only allow expand in the opposite direction, complement iupBaseContainerUpdateExpand */
   if (ih->data->direction == ISBOX_EAST || ih->data->direction == ISBOX_WEST)
       ih->expand &= ~IUP_EXPAND_WIDTH;
-  else 
+  else
       ih->expand &= ~IUP_EXPAND_HEIGHT;
 
   /* always has at least one child, the bar */
@@ -403,10 +390,10 @@ static void iSboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
   /* child */
   if (ih->firstchild->brother)
-  {  
+  {
     iSboxAddDecorOffset(ih, &x, &y, bar_size);
     iupBaseSetPosition(ih->firstchild->brother, x, y);
-  } 
+  }
 }
 
 static int iSboxCreateMethod(Ihandle* ih, void** params)
@@ -457,12 +444,12 @@ Iclass* iupSboxNewClass(void)
 
   /* Class functions */
   ic->New = iupSboxNewClass;
-  ic->Create  = iSboxCreateMethod;
-  ic->Map     = iupBaseTypeVoidMapMethod;
+  ic->Create = iSboxCreateMethod;
+  ic->Map = iupBaseTypeVoidMapMethod;
 
   ic->ComputeNaturalSize = iSboxComputeNaturalSizeMethod;
-  ic->SetChildrenCurrentSize     = iSboxSetChildrenCurrentSizeMethod;
-  ic->SetChildrenPosition        = iSboxSetChildrenPositionMethod;
+  ic->SetChildrenCurrentSize = iSboxSetChildrenCurrentSizeMethod;
+  ic->SetChildrenPosition = iSboxSetChildrenPositionMethod;
 
   /* Base Callbacks */
   iupBaseRegisterBaseCallbacks(ic);

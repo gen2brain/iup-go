@@ -8,37 +8,31 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
-#include "iup_normalizer.h"
 #include "iup_varg.h"
 
 
 /* Orientation */
 enum {IMBOX_HORIZONTAL, IMBOX_VERTICAL};
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   int margin_horiz, margin_vert,
       gap_vert, gap_horiz,
-      orientation, 
+      orientation,
 
       /* calculated in SetChildrenCurrentSize */
-      num_lin, /* non zero only for horizontal orientation */
-      num_col, /* non zero only for vertical orientation */
+      num_lin, /* non-zero only for horizontal orientation */
+      num_col, /* non-zero only for vertical orientation */
       total_width, total_height;
 };
 
-
 /**********************************************************************************************/
-
 
 static char* iMultiBoxGetClientSizeAttrib(Ihandle* ih)
 {
@@ -186,7 +180,6 @@ static int iMultiBoxUpdateAttribFromFont(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /**********************************************************************************/
 
 static void iMultiBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
@@ -250,11 +243,11 @@ static void iMultiBoxSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
   {
     if (!(child->flags & IUP_FLOATING_IGNORE))
     {
-      /* child here can belong to the current line or column, 
+      /* child here can belong to the current line or column,
          OR can be placed in the next one */
 
       /* CHILDMAXSIZE affects child current size */
-      child_width = child->naturalwidth; 
+      child_width = child->naturalwidth;
       child_height = child->naturalheight;
       if (child_max_width != 0 && child_width > child_max_width)
         child_width = child_max_width;
@@ -388,7 +381,7 @@ static void iMultiBoxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
   int col_width = 0;
   int child_min_width = 0, child_min_height = 0;
   int child_width, child_height;
-  int dx = ih->data->margin_horiz; 
+  int dx = ih->data->margin_horiz;
   int dy = ih->data->margin_vert;
 
   iupAttribGetIntInt(ih, "CHILDMINSPACE", &child_min_width, &child_min_height, 'x');
@@ -465,7 +458,7 @@ static int iMultiBoxCreateMethod(Ihandle* ih, void** params)
   if (params)
   {
     Ihandle** iparams = (Ihandle**)params;
-    while (*iparams) 
+    while (*iparams)
     {
       IupAppend(ih, *iparams);
       iparams++;
@@ -477,9 +470,7 @@ static int iMultiBoxCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupMultiBoxv(Ihandle **children)
 {

@@ -9,7 +9,6 @@
 #include <string.h>
 #include <memory.h>
 #include <stdarg.h>
-#include <limits.h>
 
 #include "iup.h"
 

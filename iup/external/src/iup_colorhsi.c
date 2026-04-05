@@ -22,10 +22,10 @@ static const double rad2deg = 57.2957795131;
 
 static double iColorNormHue(double H)
 {
-  while (H < 0.0) 
+  while (H < 0.0)
     H += rad360;
 
-  if (H > rad360)  
+  if (H > rad360)
     H = fmod(H, rad360);
 
   return H;
@@ -35,8 +35,8 @@ static unsigned char iColorQuantize(double value)
 {
   if (value >= 1.0) return 255;
   if (value <= 0.0) return 0;
-  return (unsigned char)(value*256);  
-}                               
+  return (unsigned char)(value*256);
+}
 
 static double iColorReconstruct(unsigned char value)
 {
@@ -152,8 +152,8 @@ static double iColorHSI_ImaxS(double h, double cosH, double sinH)
 }
 
 static void iColorRGB2HSI(double r, double g, double b, double *h, double *s, double *i)
-{            
-  double v, u, ImaxS; 
+{
+  double v, u, ImaxS;
 
   /* Parametric equations */
   v = r - (g + b)/2.0;
@@ -161,7 +161,7 @@ static void iColorRGB2HSI(double r, double g, double b, double *h, double *s, do
 
   *i = (r + g + b) / 3.0;  /* already normalized to 0-1 */
 
-  *s = sqrt(v*v + u*u);  /* s is between 0-1, BUT it is linear in the cube and it is in u,v space. */
+  *s = sqrt(v*v + u*u);  /* s is between 0-1, BUT it is linear in the cube, and it is in u,v space. */
 
   if (*s == 0.0)
   {
@@ -205,7 +205,7 @@ static void iColorRGB2HSI(double r, double g, double b, double *h, double *s, do
 static void iColorHSI2RGB(double h, double s, double i, double *r, double *g, double *b)
 {
   double cosH, sinH, H, v, u;
-  double Smax, ImaxS; 
+  double Smax, ImaxS;
 
   if (i < 0.0) i = 0.0;
   else if (i > 1.0) i = 1.0;
@@ -252,7 +252,7 @@ static void iColorHSI2RGB(double h, double s, double i, double *r, double *g, do
   if (*r < 0.0) *r = 0.0;
   if (*g < 0.0) *g = 0.0;
   if (*b < 0.0) *b = 0.0;
-    
+
   if (*r > 1.0) *r = 1.0;
   if (*g > 1.0) *g = 1.0;
   if (*b > 1.0) *b = 1.0;
@@ -265,16 +265,16 @@ void iupColorRGB2HSI(unsigned char r, unsigned char g, unsigned char b, double *
   double fr = iColorReconstruct(r);
   double fg = iColorReconstruct(g);
   double fb = iColorReconstruct(b);
-  
+
   iColorRGB2HSI(fr, fg, fb, h, s, i);
 }
 
 void iupColorHSI2RGB(double h, double s, double i, unsigned char *r, unsigned char *g, unsigned char *b)
 {
   double fr, fg, fb;
-  
+
   iColorHSI2RGB(h, s, i, &fr, &fg, &fb);
-  
+
   *r = iColorQuantize(fr);
   *g = iColorQuantize(fg);
   *b = iColorQuantize(fb);

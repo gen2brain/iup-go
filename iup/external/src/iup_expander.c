@@ -1,5 +1,5 @@
 /** \file
- * \brief iupexpander control
+ * \brief Expander control
  *
  * See Copyright Notice in "iup.h"
  */
@@ -7,22 +7,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <time.h>
 
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
 #include "iup_layout.h"
 #include "iup_childtree.h"
-#include "iup_image.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
 
@@ -694,11 +690,9 @@ static void iExpanderUpdateBox(Ihandle* ih)
   iExpanderUpdateStateImage(ih);
 }
 
-
 /*****************************************************************************\
 |* Internal Callbacks                                                        *|
 \*****************************************************************************/
-
 
 static int iExpanderGlobalMotion_cb(int x, int y)
 {
@@ -747,10 +741,10 @@ static int iExpanderAutoShowTimer_cb(Ihandle* auto_show_timer)
   IupSetAttribute(auto_show_timer, "RUN", "NO");
 
   /* just show child on top,
-     that's why child must be a native container when using autoshow. */
+     that's why child must be a native container when using auto show. */
   iExpanderOpenCloseChild(ih, 0, 1, IEXPANDER_OPEN_FLOAT);
   IupRefreshChildren(ih);
-  IupSetAttribute(child, "ZORDER", "TOP"); 
+  IupSetAttribute(child, "ZORDER", "TOP");
 
   /* now monitor mouse move */
   IupSetGlobal("INPUTCALLBACKS", "Yes");
@@ -999,7 +993,6 @@ static int iExpanderBarRedraw_CB(Ihandle* bar)
 |* Attributes                                                                *|
 \*****************************************************************************/
 
-
 static char* iExpanderGetClientSizeAttrib(Ihandle* ih)
 {
   int width = ih->currentwidth;
@@ -1108,7 +1101,7 @@ static int iExpanderSetForeColorAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "FORECOLOR", value);
       iExpanderUpdateTitleState(ih);
     }
-    else 
+    else
     {
       Ihandle* box = ih->firstchild->firstchild;
       Ihandle* title_label = box->firstchild->brother;
@@ -1390,11 +1383,9 @@ static char* iExpanderGetExtraButtonsAttrib(Ihandle* ih)
   return iupStrReturnInt(ih->data->extra_buttons);
 }
 
-
 /*****************************************************************************\
 |* Methods                                                                   *|
 \*****************************************************************************/
-
 
 static void iExpanderComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {

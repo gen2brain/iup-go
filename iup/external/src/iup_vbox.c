@@ -8,15 +8,12 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_box.h"
 #include "iup_normalizer.h"
 #include "iup_varg.h"
@@ -34,7 +31,7 @@ static int iVboxSetRasterSizeAttrib(Ihandle* ih, const char* value)
     int s = 0, d = 0;
     iupStrToIntInt(value, &s, &d, 'x');  /* first value will be ignored if second defined, can NOT set width */
     if (d != 0) s = d;
-    if (s > 0) 
+    if (s > 0)
     {
       ih->userheight = s;
       ih->userwidth = 0;
@@ -56,7 +53,7 @@ static int iVboxSetSizeAttrib(Ihandle* ih, const char* value)
     int s = 0, d = 0;
     iupStrToIntInt(value, &s, &d, 'x');  /* first value will be ignored if second defined, can NOT set width */
     if (d != 0) s = d;
-    if (s > 0) 
+    if (s > 0)
     {
       int charwidth, charheight;
       iupdrvFontGetCharSize(ih, &charwidth, &charheight);
@@ -181,7 +178,7 @@ static int iVboxCalcEmptyHeight(Ihandle *ih, int expand)
     return 0;
 
   /* equal spaces for all expandable elements */
-  empty_height = (ih->currentheight - ih->data->total_natural_size)/expand_count;  
+  empty_height = (ih->currentheight - ih->data->total_natural_size)/expand_count;
   if (empty_height < 0) empty_height = 0;
   return empty_height;
 }
@@ -221,7 +218,7 @@ static void iVboxSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
         char* weight_str = iupAttribGet(child, "EXPANDWEIGHT");
         if (weight_str)
         {
-          double weight; 
+          double weight;
           if (iupStrToDouble(weight_str, &weight))
             empty = iupRound(empty * weight);
         }
@@ -258,7 +255,7 @@ static void iVboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
       else  /* IUP_ALIGN_ALEFT */
         dx = 0;
       if (dx<0) dx = 0;
-                      
+
       /* update child */
       iupBaseSetPosition(child, x+dx, y);
 
@@ -271,9 +268,7 @@ static void iVboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
   }
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupVboxv(Ihandle **children)
 {

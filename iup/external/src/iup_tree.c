@@ -7,22 +7,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_tree.h"
 #include "iup_assert.h"
-
 
 
 /************************************************************************************/
@@ -82,19 +77,17 @@ IUP_API void IupTreeSetAttributeHandle(Ihandle* ih, const char* a, int id, Ihand
   IupSetAttributeHandleId(ih, a, id, ih_named);
 }
 
-
 /************************************************************************************/
-
 
 static void iTreeInitializeImages(void)
 {
-  Ihandle *image_leaf, *image_blank, *image_paper;  
+  Ihandle *image_leaf, *image_blank, *image_paper;
   Ihandle *image_collapsed, *image_expanded, *image_empty;
 
 #define ITREE_IMG_WIDTH   16
 #define ITREE_IMG_HEIGHT  16
 
-  unsigned char img_leaf[ITREE_IMG_WIDTH*ITREE_IMG_HEIGHT] = 
+  unsigned char img_leaf[ITREE_IMG_WIDTH*ITREE_IMG_HEIGHT] =
   {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -116,47 +109,47 @@ static void iTreeInitializeImages(void)
 
   unsigned char img_collapsed[ITREE_IMG_WIDTH*ITREE_IMG_HEIGHT] =
   {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  
-    0, 0, 0, 0, 2, 2, 2, 2, 3, 0, 0, 0, 0, 0, 0, 0,  
-    0, 0, 0, 2, 6, 5, 5, 7, 2, 3, 0, 0, 0, 0, 0, 0, 
-    0, 0, 2, 4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 0, 
-    0, 0, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 7, 4, 3, 
-    0, 0, 2, 5, 7, 7, 7, 7, 7, 7, 7, 7, 7, 1, 4, 3, 
-    0, 0, 2, 5, 7, 7, 7, 7, 7, 7, 1, 7, 1, 7, 4, 3, 
-    0, 0, 2, 5, 7, 7, 7, 7, 7, 7, 7, 1, 7, 1, 4, 3, 
-    0, 0, 2, 5, 7, 7, 7, 7, 1, 7, 1, 7, 1, 7, 4, 3, 
-    0, 0, 2, 5, 7, 7, 7, 7, 7, 1, 7, 1, 7, 1, 4, 3, 
-    0, 0, 2, 5, 7, 7, 7, 7, 1, 7, 1, 7, 1, 1, 4, 3, 
-    0, 0, 2, 5, 1, 7, 1, 1, 7, 1, 7, 1, 1, 1, 4, 3, 
-    0, 0, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3,  
-    0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 2, 2, 2, 2, 3, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 2, 6, 5, 5, 7, 2, 3, 0, 0, 0, 0, 0, 0,
+    0, 0, 2, 4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 0,
+    0, 0, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 7, 4, 3,
+    0, 0, 2, 5, 7, 7, 7, 7, 7, 7, 7, 7, 7, 1, 4, 3,
+    0, 0, 2, 5, 7, 7, 7, 7, 7, 7, 1, 7, 1, 7, 4, 3,
+    0, 0, 2, 5, 7, 7, 7, 7, 7, 7, 7, 1, 7, 1, 4, 3,
+    0, 0, 2, 5, 7, 7, 7, 7, 1, 7, 1, 7, 1, 7, 4, 3,
+    0, 0, 2, 5, 7, 7, 7, 7, 7, 1, 7, 1, 7, 1, 4, 3,
+    0, 0, 2, 5, 7, 7, 7, 7, 1, 7, 1, 7, 1, 1, 4, 3,
+    0, 0, 2, 5, 1, 7, 1, 1, 7, 1, 7, 1, 1, 1, 4, 3,
+    0, 0, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3,
+    0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
   };
 
   unsigned char img_expanded[ITREE_IMG_WIDTH*ITREE_IMG_HEIGHT] =
   {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 2, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 2, 1, 3, 3, 3, 3, 1, 2, 2, 2, 2, 2, 2, 0, 
-    0, 0, 2, 1, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 6, 4, 
-    0, 0, 2, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 6, 4, 
-    0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6, 3, 6, 4, 
-    0, 2, 1, 3, 3, 3, 3, 3, 5, 3, 5, 6, 4, 6, 6, 4, 
-    0, 2, 1, 3, 3, 3, 3, 3, 3, 5, 3, 6, 4, 6, 6, 4, 
-    0, 0, 2, 0, 3, 3, 3, 3, 5, 3, 5, 5, 2, 4, 2, 4, 
-    0, 0, 2, 0, 3, 3, 5, 5, 3, 5, 5, 5, 6, 4, 2, 4, 
-    0, 0, 0, 2, 0, 5, 3, 3, 5, 5, 5, 5, 6, 2, 4, 4, 
-    0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 
-    0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 2, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 2, 1, 3, 3, 3, 3, 1, 2, 2, 2, 2, 2, 2, 0,
+    0, 0, 2, 1, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 6, 4,
+    0, 0, 2, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 6, 4,
+    0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6, 3, 6, 4,
+    0, 2, 1, 3, 3, 3, 3, 3, 5, 3, 5, 6, 4, 6, 6, 4,
+    0, 2, 1, 3, 3, 3, 3, 3, 3, 5, 3, 6, 4, 6, 6, 4,
+    0, 0, 2, 0, 3, 3, 3, 3, 5, 3, 5, 5, 2, 4, 2, 4,
+    0, 0, 2, 0, 3, 3, 5, 5, 3, 5, 5, 5, 6, 4, 2, 4,
+    0, 0, 0, 2, 0, 5, 3, 3, 5, 5, 5, 5, 6, 2, 4, 4,
+    0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4,
+    0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
   };
 
   unsigned char img_blank[ITREE_IMG_WIDTH*ITREE_IMG_HEIGHT] =
   {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 0, 0, 0, 0,
     0, 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 5, 4, 0, 0, 0,
     0, 0, 4, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1, 4, 0, 0,
@@ -176,7 +169,7 @@ static void iTreeInitializeImages(void)
 
   unsigned char img_paper[ITREE_IMG_WIDTH*ITREE_IMG_HEIGHT] =
   {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 0, 0, 0, 0,
     0, 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 5, 4, 0, 0, 0,
     0, 0, 4, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1, 4, 0, 0,
@@ -272,7 +265,7 @@ void iupTreeUpdateImages(Ihandle *ih)
 void iupTreeSelectLastCollapsedBranch(Ihandle* ih, int *last_id)
 {
   /* if last selected item is a branch, then select its children */
-  if (iupStrEqual(IupGetAttributeId(ih, "KIND", *last_id), "BRANCH") && 
+  if (iupStrEqual(IupGetAttributeId(ih, "KIND", *last_id), "BRANCH") &&
       iupStrEqual(IupGetAttributeId(ih, "STATE", *last_id), "COLLAPSED"))
   {
     int childcount = IupGetIntId(ih, "CHILDCOUNT", *last_id);
@@ -309,7 +302,7 @@ int iupTreeFindNodeId(Ihandle* ih, InodeHandle* node_handle)
   }
   */
   InodeData *node_cache = ih->data->node_cache;
-  while(node_cache->node_handle != node_handle && 
+  while(node_cache->node_handle != node_handle &&
         node_cache->node_handle != NULL)   /* the cache always have zeros at the end */
     node_cache++;
 
@@ -330,7 +323,7 @@ static int iTreeFindUserDataId(Ihandle* ih, void* userdata)
   }
   */
   InodeData *node_cache = ih->data->node_cache;
-  while(node_cache->userdata != userdata && 
+  while(node_cache->userdata != userdata &&
         node_cache->node_handle != NULL)   /* the cache always have zeros at the end */
     node_cache++;
 
@@ -429,8 +422,8 @@ void iupTreeDelFromCache(Ihandle* ih, int id, int count)
 {
   int remain_count, last_add_node;
 
-  /* id can be the last node, actually==node_count becase node_count is already updated */
-  iupASSERT(id >= 0 && id <= ih->data->node_count);  
+  /* id can be the last node, actually==node_count because node_count is already updated */
+  iupASSERT(id >= 0 && id <= ih->data->node_count);
   if (id < 0 || id > ih->data->node_count)
     return;
 
@@ -477,7 +470,7 @@ void iupTreeCopyMoveCache(Ihandle* ih, int id_src, int id_dst, int count, int is
   remain_count = ih->data->node_count - (id_dst + count);
   memmove(ih->data->node_cache + id_dst+count, ih->data->node_cache + id_dst, remain_count * sizeof(InodeData));
 
-  if (is_copy) 
+  if (is_copy)
   {
     /* during a copy, the userdata is not reused, so clear it */
     memset(ih->data->node_cache+id_dst, 0, count*sizeof(InodeData));
@@ -502,9 +495,7 @@ void iupTreeCopyMoveCache(Ihandle* ih, int id_src, int id_dst, int count, int is
   iupAttribSet(ih, "LASTADDNODE", NULL);
 }
 
-
 /*************************************************************************/
-
 
 char* iupTreeGetSpacingAttrib(Ihandle* ih)
 {
@@ -522,8 +513,8 @@ static char* iTreeGetMarkModeAttrib(Ihandle* ih)
 static int iTreeSetMarkModeAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqualNoCase(value, "MULTIPLE"))
-    ih->data->mark_mode = ITREE_MARK_MULTIPLE;    
-  else 
+    ih->data->mark_mode = ITREE_MARK_MULTIPLE;
+  else
     ih->data->mark_mode = ITREE_MARK_SINGLE;
 
   if (ih->handle)
@@ -552,7 +543,7 @@ static int iTreeSetCtrlAttrib(Ihandle* ih, const char* value)
 
 static char* iTreeGetShowRenameAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->show_rename); 
+  return iupStrReturnBoolean (ih->data->show_rename);
 }
 
 static int iTreeSetShowRenameAttrib(Ihandle* ih, const char* value)
@@ -592,7 +583,7 @@ static int iTreeSetShowToggleAttrib(Ihandle* ih, const char* value)
 
 static char* iTreeGetShowDragDropAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->show_dragdrop); 
+  return iupStrReturnBoolean (ih->data->show_dragdrop);
 }
 
 static int iTreeSetShowDragDropAttrib(Ihandle* ih, const char* value)
@@ -643,7 +634,7 @@ static int iTreeSetInsertBranchAttrib(Ihandle* ih, int id, const char* value)
 
 static char* iTreeGetAddExpandedAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->add_expanded); 
+  return iupStrReturnBoolean (ih->data->add_expanded);
 }
 
 static int iTreeSetAddExpandedAttrib(Ihandle* ih, const char* value)
@@ -698,9 +689,7 @@ static int iTreeSetUserDataAttrib(Ihandle* ih, int id, const char* value)
   return 0;
 }
 
-
 /*****************************************************************************************/
-
 
 static int iTreeDropData_CB(Ihandle *ih, char* type, void* data, int len, int x, int y)
 {
@@ -764,7 +753,7 @@ static int iTreeDragData_CB(Ihandle *ih, char* type, void *data, int len)
 
   /* Copy source handle */
   memcpy(data, (void*)&ih, len);
- 
+
   (void)type;
   return IUP_DEFAULT;
 }
@@ -902,9 +891,7 @@ static char* iTreeGetTitleFontSizeAttrib(Ihandle* ih, int id)
   return iupStrReturnInt(size);
 }
 
-
 /*************************************************************************/
-
 
 static int iTreeCreateMethod(Ihandle* ih, void **params)
 {
@@ -1025,4 +1012,3 @@ Iclass* iupTreeNewClass(void)
 
   return ic;
 }
-

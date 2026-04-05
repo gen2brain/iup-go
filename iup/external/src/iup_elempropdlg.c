@@ -8,9 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
-#include <limits.h>
-#include <ctype.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -18,20 +15,9 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_focus.h"
-#include "iup_dlglist.h"
-#include "iup_assert.h"
-#include "iup_drvdraw.h"
-#include "iup_draw.h"
-#include "iup_image.h"
-#include "iup_childtree.h"
-#include "iup_dialog.h"
-#include "iup_drv.h"
 #include "iup_func.h"
-#include "iup_register.h"
 #include "iup_classbase.h"
 #include "iup_layout.h"
-
 
 
 static char* iLayoutGetName(Ihandle* ih)
@@ -611,7 +597,6 @@ static int iLayoutPropertiesList3_CB(Ihandle *list3, char *text, int item, int s
   return IUP_DEFAULT;
 }
 
-
 static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
 {
   Ihandle *list1, *list2, *list3, *close, *dlg, *dlg_box, *button_box, *colorbut, *fontbut, *handlebut,
@@ -729,7 +714,7 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
       IupSetAttributes(IupVbox(IupLabel("Name:"), IupSetAttributes(IupText(NULL), "VISIBLECOLUMNS=9, NAME=NAME22"), NULL), "GAP=0, MARGIN=5x5"),
       IupSetAttributes(IupVbox(IupLabel("Value:"), IupSetAttributes(IupText(NULL), "EXPAND=HORIZONTAL, NAME=VALUE22"), NULL), "GAP=0, MARGIN=5x5"),
       IupSetAttributes(IupVbox(IupLabel(""), IupSetCallbacks(IupSetAttributes(IupButton("Set", NULL), "PADDING=3x0, TIP=\"Sets an attribute value. Actually can be any attribute, registered or custom.\""), "ACTION", iLayoutPropertiesSetStr_CB, NULL), NULL), "GAP=0, MARGIN=5x5"),
-      NULL), "ALIGNMENT=ACENTER")), "TITLE=\"Set Attribute\""), 
+      NULL), "ALIGNMENT=ACENTER")), "TITLE=\"Set Attribute\""),
     NULL), "MARGIN=0x0");
 
   tabs = IupTabs(box1, box2, box3, NULL);

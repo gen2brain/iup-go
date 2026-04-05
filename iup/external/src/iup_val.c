@@ -7,26 +7,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
-#include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
-#include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_val.h"
 
 
 void iupValCropValue(Ihandle* ih)
 {
-  if (ih->data->val > ih->data->vmax) 
+  if (ih->data->val > ih->data->vmax)
     ih->data->val = ih->data->vmax;
-  else if (ih->data->val < ih->data->vmin) 
+  else if (ih->data->val < ih->data->vmin)
     ih->data->val = ih->data->vmin;
 }
 
@@ -124,7 +118,7 @@ static int iValSetInvertedAttrib(Ihandle* ih, const char *value)
 
 static char* iValGetInvertedAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->inverted); 
+  return iupStrReturnBoolean (ih->data->inverted);
 }
 
 static int iValCreateMethod(Ihandle* ih, void **params)
@@ -143,7 +137,7 @@ static int iValCreateMethod(Ihandle* ih, void **params)
   ih->data->step = 0.01;
   ih->data->pagestep = 0.10;
 
-  return IUP_NOERROR; 
+  return IUP_NOERROR;
 }
 
 Iclass* iupValNewClass(void)

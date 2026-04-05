@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_ARRAY_H 
+
+#ifndef __IUP_ARRAY_H
 #define __IUP_ARRAY_H
 
 #ifdef __cplusplus

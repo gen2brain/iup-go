@@ -5,19 +5,15 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_image.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 
@@ -53,9 +49,7 @@ static int iAnimatedLabelTimer_CB(Ihandle* timer)
   return IUP_DEFAULT;
 }
 
-
 /***********************************************************************************************/
-
 
 static int iAnimatedLabelSetStartAttrib(Ihandle* ih, const char* value)
 {
@@ -77,7 +71,7 @@ static int iAnimatedLabelSetFrameTimeAttrib(Ihandle* ih, const char* value)
 {
   Ihandle* timer = (Ihandle*)iupAttribGet(ih, "_IUP_ANIMATEDLABEL_TIMER");
   IupSetStrAttribute(timer, "TIME", value);
-  return 0; 
+  return 0;
 }
 
 static char* iAnimatedLabelGetFrameTimeAttrib(Ihandle* ih)
@@ -154,9 +148,7 @@ static char* iAnimatedLabelGetFrameCountAttrib(Ihandle* ih)
   return iupStrReturnInt(IupGetChildCount(animation));
 }
 
-
 /*****************************************************************************************/
-
 
 static int iAnimatedLabelCreateMethod(Ihandle* ih, void** params)
 {
@@ -183,9 +175,7 @@ static void iAnimatedLabelDestroyMethod(Ihandle* ih)
   IupDestroy(timer);
 }
 
-
 /******************************************************************************/
-
 
 Iclass* iupAnimatedLabelNewClass(void)
 {

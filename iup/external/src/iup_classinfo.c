@@ -1,3 +1,9 @@
+/** \file
+ * \brief Class Info
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -207,7 +213,7 @@ static int attributesList_ActionCB (Ihandle *ih, char *attribName, int pos, int 
 
 static char* getNativeType(InativeType nativetype)
 {
-  char* str[] = { "void", "control", "canvas", "dialog", "image", "menu", "other" }; 
+  char* str[] = { "void", "control", "canvas", "dialog", "image", "menu", "other" };
   return str[nativetype];
 }
 
@@ -338,8 +344,6 @@ IUP_SDK_API void iupClassInfoShowHelp(const char* className)
             iupStrEqual(className, "cells") ||
             iupStrEqual(className, "glbackgroundbox") ||
             iupStrEqual(className, "glcanvas") ||
-            iupStrEqual(className, "olecontrol") ||
-            iupStrEqual(className, "tuioclient") ||
             iupStrEqual(className, "webbrowser"))
             folder = "ctrl";
   else if (className[0] == 'g' && className[1] == 'l')
@@ -349,10 +353,6 @@ IUP_SDK_API void iupClassInfoShowHelp(const char* className)
     className = "image";
   else if (iupStrEqual(className, "spinbox"))
     className = "spin";
-  else if (iupStrEqual(className, "olecontrol"))
-    className = "ole";
-  else if (iupStrEqual(className, "tuioclient"))
-    className = "tuio";
   else if (iupStrEqual(className, "webbrowser"))
     className = "web";
 

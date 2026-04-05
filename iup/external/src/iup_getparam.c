@@ -15,16 +15,13 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_assert.h"
-#include "iup_strmessage.h"
 #include "iup_layout.h"
 #include "iup_drvfont.h"
-#include "iup_register.h"
 #include "iup_stdcontrols.h"
 #include "iup_varg.h"
 
 
 #define IUP_RAD2DEG  57.295779513   /* radians to degrees (deg = IUP_RAD2DEG * rad) */
-
 
 static void iParamSetDoublePrec(Ihandle* ih, const char* name, double num, int prec)
 {
@@ -78,14 +75,12 @@ static int iParamButton3_CB(Ihandle* self)
 {
   Ihandle* param_box = (Ihandle*)iupAttribGetInherit(self, "PARAMBOX");
   Iparamcb cb = (Iparamcb)IupGetCallback(param_box, "PARAM_CB");
-  if (cb) 
+  if (cb)
     cb(param_box, IUP_GETPARAM_BUTTON3, (void*)iupAttribGet(param_box, "USERDATA"));
   return IUP_DEFAULT;
 }
 
-
 /***********************************************************************/
-
 
 static int iParamToggleAction_CB(Ihandle *self, int v)
 {
@@ -99,7 +94,7 @@ static int iParamToggleAction_CB(Ihandle *self, int v)
   else
     iupAttribSet(param, "VALUE", "0");
 
-  if (cb && !cb(param_box, iupAttribGetInt(param, "INDEX"), (void*)iupAttribGet(param_box, "USERDATA"))) 
+  if (cb && !cb(param_box, iupAttribGetInt(param, "INDEX"), (void*)iupAttribGet(param_box, "USERDATA")))
   {
     /* Undo */
     if (old_v == 1)
@@ -165,7 +160,7 @@ static int iParamTextAction_CB(Ihandle *self, int c, char *after)
     IupSetStrAttribute(self, "VALUE", after);
     ret = IUP_IGNORE;
   }
- 
+
   if (iupStrEqual(iupAttribGet(param, "TYPE"), "REAL"))
   {
     double val = 0;
@@ -177,7 +172,7 @@ static int iParamTextAction_CB(Ihandle *self, int c, char *after)
   else
     iupAttribSetStr(param, "VALUE", after);
 
-  if (cb && !cb(param_box, iupAttribGetInt(param, "INDEX"), (void*)iupAttribGet(param_box, "USERDATA"))) 
+  if (cb && !cb(param_box, iupAttribGetInt(param, "INDEX"), (void*)iupAttribGet(param_box, "USERDATA")))
   {
     /* Undo */
     iupAttribSetStr(param, "VALUE", IupGetAttribute(self, "VALUE"));
@@ -262,7 +257,7 @@ static int iParamValAction_CB(Ihandle *self)
     iupAttribSetDouble(param, "VALUE", val);
   }
 
-  if (cb && !cb(param_box, iupAttribGetInt(param, "INDEX"), (void*)iupAttribGet(param_box, "USERDATA"))) 
+  if (cb && !cb(param_box, iupAttribGetInt(param, "INDEX"), (void*)iupAttribGet(param_box, "USERDATA")))
   {
     /* Undo */
     iupAttribSetDouble(param, "VALUE", old_value);
@@ -314,7 +309,7 @@ static int iParamListAction_CB(Ihandle *self, char *t, int i, int v)
 
     iupAttribSetInt(param, "VALUE", i-1);
 
-    if (cb && !cb(param_box, iupAttribGetInt(param, "INDEX"), (void*)iupAttribGet(param_box, "USERDATA"))) 
+    if (cb && !cb(param_box, iupAttribGetInt(param, "INDEX"), (void*)iupAttribGet(param_box, "USERDATA")))
     {
       /* Undo */
       iupAttribSetInt(param, "VALUE", old_i);
@@ -340,7 +335,7 @@ static int iParamOptionsAction_CB(Ihandle *self, int v)
 
     iupAttribSetInt(param, "VALUE", new_v);
 
-    if (cb && !cb(param_box, iupAttribGetInt(param, "INDEX"), (void*)iupAttribGet(param_box, "USERDATA"))) 
+    if (cb && !cb(param_box, iupAttribGetInt(param, "INDEX"), (void*)iupAttribGet(param_box, "USERDATA")))
     {
       /* Undo */
       iupAttribSetInt(param, "VALUE", old_v);
@@ -495,7 +490,7 @@ static int iParamSpinReal_CB(Ihandle *self, int pos)
 
   iupAttribSetDouble(param, "VALUE", val);
 
-  if (cb) 
+  if (cb)
   {
     int ret;
     iupAttribSet(param_box, "SPINNING", "1");
@@ -535,7 +530,7 @@ static int iParamSpinInt_CB(Ihandle *self, int pos)
 
   iupAttribSetInt(param, "VALUE", pos);
 
-  if (cb) 
+  if (cb)
   {
     int ret;
     iupAttribSet(param_box, "SPINNING", "1");
@@ -799,7 +794,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
     iupAttribSet(aux, "CONTROL", (char*)ctrl);
     iupAttribSet(param, "AUXCONTROL", (char*)aux);
 
-    IupAppend(box, aux); 
+    IupAppend(box, aux);
   }
   else if (iupStrEqual(type, "FONT"))
   {
@@ -815,7 +810,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
 
     iupAttribSet(param, "TEXTEXPAND", "1");
     IupSetAttribute(box,"NORMALIZESIZE","VERTICAL");
-      
+
     aux = IupButton("F", NULL);
     IupStoreAttribute(aux, "FONT", "Times, Bold Italic 11");
     IupSetAttribute(aux, "SIZE", "16x");
@@ -825,7 +820,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
     iupAttribSet(aux, "CONTROL", (char*)ctrl);
     iupAttribSet(param, "AUXCONTROL", (char*)aux);
 
-    IupAppend(box, aux); 
+    IupAppend(box, aux);
   }
   else /* INTEGER, REAL */
   {
@@ -850,7 +845,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
         val = iupAttribGetDouble(param, "VALUE");
         if (step == 0) step = (max-min)/100.0;
         IupSetfAttribute(ctrl, "MASKFLOAT", IUP_DOUBLE2STR":"IUP_DOUBLE2STR, min, max);
-                             
+
         /* here spin is always [0-spinmax] converted to [min-max] */
 
         IupSetAttribute(ctrl, "SPIN", "YES");   /* spin only for intervals */
@@ -886,7 +881,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
       IupSetInt(ctrl, "VALUE", val);
 
       IupSetAttribute(ctrl, "SPIN", "YES");   /* spin always */
-      IupSetAttribute(ctrl, "SPINAUTO", "NO");  /* manually update spin so the callback can also updated it */
+      IupSetAttribute(ctrl, "SPINAUTO", "NO");  /* manually update spin so the callback can also update it */
       IupAppend(box, ctrl);
       IupSetCallback(ctrl, "SPIN_CB", (Icallback)iParamSpinInt_CB);
       iupAttribSet(ctrl, "_IUPGP_INCSTEP", "1");
@@ -918,7 +913,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
         IupSetInt(ctrl, "SPINMIN", min);
         IupSetAttribute(ctrl, "SPINMAX", "2147483647");
       }
-      else                             
+      else
       {
         IupSetAttribute(ctrl, "SPINMIN", "-2147483647");
         IupSetAttribute(ctrl, "SPINMAX", "2147483647");
@@ -1138,7 +1133,7 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
   button_2 = IupButton("_@IUP_RESET", NULL);
   IupSetStrAttribute(button_2, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(button_2, "ACTION", (Icallback)iParamButton2_CB);
-  
+
   ctrl_box = IupVbox(NULL);
 
   for (i = 0; i < count; i++)
@@ -1152,7 +1147,7 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
       value = iupAttribGet(params[i], "BUTTON2");
       if (value && *value) IupSetStrAttribute(button_2, "TITLE", value);
       value = iupAttribGet(params[i], "BUTTON3");
-      if (value && *value) 
+      if (value && *value)
       {
         button_3 = IupButton(value, NULL);
         IupSetStrAttribute(button_3, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
@@ -1284,7 +1279,7 @@ static void iParamStrSetInterval(char* extra, Ihandle* param)
 
   min = iParamStrGetNextItem(extra, ',', &count);  extra += count;
   max = iParamStrGetNextItem(extra, ',', &count);  extra += count;
-  step = iParamStrGetNextItem(extra, ',', &count);  
+  step = iParamStrGetNextItem(extra, ',', &count);
 
   if (max[0])
   {
@@ -1508,11 +1503,6 @@ static int iParamCreateMethod(Ihandle* param, void** params)
     iupAttribSetInt(param, "INDENT", indent);
   }
   iupAttribSetStr(param, "TITLE", title);
-  
-/**********************************************************************************
-  REMEMBER: if a new parameter type is added
-            then IupLua must be also updated.
- **********************************************************************************/
 
   switch(*type)
   {
@@ -1554,8 +1544,8 @@ static int iParamCreateMethod(Ihandle* param, void** params)
   case 's':
     iupAttribSet(param, "TYPE", "STRING");
     iupAttribSet(param, "DATATYPE", "STRING");
-    mask = iParamStrGetNextItem(line_ptr, '{', &count);  
-    if (*mask) 
+    mask = iParamStrGetNextItem(line_ptr, '{', &count);
+    if (*mask)
       iupAttribSetStr(param, "MASK", mask);
     line_ptr += count-1; /* ignore the fake separator */
     line_ptr[0] = '{';   /* restore possible separator */
@@ -1668,11 +1658,9 @@ IUP_SDK_API int iupGetParamCount(const char *format, int *param_extra)
   return param_count;
 }
 
-
 /*******************************************************************************************
                     Dialog Functions
 *******************************************************************************************/
-
 
 IUP_API int IupGetParamv(const char* title, Iparamcb action, void* user_data, const char* format, int param_count, int param_extra, void** param_data)
 {
@@ -1761,7 +1749,7 @@ IUP_API int IupGetParamv(const char* title, Iparamcb action, void* user_data, co
   if (!IupGetInt(param_box, "STATUS"))
   {
     IupDestroy(dlg);
-    free(params); 
+    free(params);
     return 0;
   }
   else
@@ -1845,9 +1833,7 @@ IUP_API int IupGetParam(const char* title, Iparamcb action, void* user_data, con
   return ret;
 }
 
-
 /*******************************************************************************/
-
 
 IUP_API Ihandle* IupParam(const char* format)
 {
@@ -1998,7 +1984,7 @@ Iclass* iupParamBoxNewClass(void)
   iupClassRegisterAttribute(ic, "LABELALIGN", NULL, iParamBoxSetLabelAlignAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MODIFIABLE", NULL, iParamBoxSetModifiableAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  /* ATTENTION: can NOT set IUPAF_READONLY if get is not defined when attribute is used before map. 
+  /* ATTENTION: can NOT set IUPAF_READONLY if get is not defined when attribute is used before map.
      In iupAttribUpdate (called by IupMap) store will be 0 for read-only attributes, then attribute will be removed from the hash table.
 
      The following are documented as read-only:

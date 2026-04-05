@@ -2,10 +2,9 @@
  * \brief Ihandle <-> Name table manager (not exported API).
  *
  * See Copyright Notice in "iup.h"
- *
  */
- 
-#ifndef __IUP_NAMES_H 
+
+#ifndef __IUP_NAMES_H
 #define __IUP_NAMES_H
 
 #ifdef __cplusplus

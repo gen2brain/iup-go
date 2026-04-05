@@ -33,16 +33,13 @@ typedef struct _ImaskMatchVars
   void *user;
 } ImaskMatchVars;
 
-
 typedef struct _ImaskStack
 {
   short *stack;
   short size;
 } ImaskStack;
 
-
 #define isalphanum(_x) (isalnum((int)(unsigned char)(_x)) || ((_x) == '_'))
-
 
 /* match functions corresponding to regular expressions */
 
@@ -172,15 +169,15 @@ static long iMaskMatchRecursive (ImaskMatchVars * vars, long j, int state, Imask
   switch (vars->fsm[state].command)
   {
   case IMASK_NULL_CMD:
-    if (vars->fsm[state].next1 == 0)    /*se chegou ao fim da maquina de estados */
+    if (vars->fsm[state].next1 == 0)    /* reached the end of the state machine */
     {
       if (vars->function != NULL)
-        iMaskMatchCaptureResult (vars, capture);         /* guarda capturas */
+        iMaskMatchCaptureResult (vars, capture);         /* store captures */
 
       return j;
     }
 
-    /* verifica o estado atual ja foi avaliado antes */
+    /* check if the current state has already been evaluated */
     {
       int count;
       for (count = 0; count < size; count++)
@@ -188,10 +185,10 @@ static long iMaskMatchRecursive (ImaskMatchVars * vars, long j, int state, Imask
           return IMASK_NOMATCH;
     }
 
-    vars->tested[size++] = (short)state;       /* indicada que o estado foi testado */
+    vars->tested[size++] = (short)state;       /* mark the state as tested */
 
-    /* se houverem dois ramos, chama a funcao recursivamente,
-    retornando com o primeiro que completar a maquina */
+    /* if there are two branches, call the function recursively,
+    returning with the first one that completes the state machine */
 
     if (vars->fsm[state].next1 != vars->fsm[state].next2)
     {
@@ -199,7 +196,7 @@ static long iMaskMatchRecursive (ImaskMatchVars * vars, long j, int state, Imask
 
       a = iMaskMatchRecursive (vars, j, vars->fsm[state].next2, capture, size);
 
-      if (a != IMASK_NOMATCH)         /* se deu match */
+      if (a != IMASK_NOMATCH)         /* if matched */
         return a;
 
       a = iMaskMatchRecursive (vars, j, vars->fsm[state].next1, capture, size);
@@ -222,7 +219,6 @@ static long iMaskMatchRecursive (ImaskMatchVars * vars, long j, int state, Imask
 
       return a;
     }
-    break;
 
   case IMASK_CAP_CLOSE_CMD:
     {
@@ -377,7 +373,7 @@ static long iMaskMatchLocal (const char *text, ImaskParsed * fsm, long start, ch
   int j = 0;
   int pos;
 
-  if (addchar) addchar[0] = 0;   
+  if (addchar) addchar[0] = 0;
 
   j = start;
 
@@ -523,7 +519,7 @@ static long iMaskMatchLocal (const char *text, ImaskParsed * fsm, long start, ch
               if (!iMaskInStack (&now, fsm[state].next1))
                 iMaskPushStack (&now, fsm[state].next1);
             }
-          }           
+          }
         }
 
         iMaskMoveStack (&now, &next);

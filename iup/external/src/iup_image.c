@@ -138,9 +138,7 @@ static void iImageResize(Ihandle* ih, int new_width, int new_height)
   iupAttribSet(ih, "WID", (char*)new_imgdata);
 }
 
-
 /**************************************************************************************************/
-
 
 typedef struct _IimageStock
 {
@@ -332,9 +330,7 @@ IUP_SDK_API void iupImageStockLoadAll(void)
   }
 }
 
-
 /**************************************************************************************************/
-
 
 int iupImageNormBpp(int bpp)
 {
@@ -465,9 +461,7 @@ IUP_SDK_API void iupImageColorMakeInactive(unsigned char *r, unsigned char *g, u
   }
 }
 
-
 /**************************************************************************************************/
-
 
 void iupImageSetHandleFromLoaded(const char* name, void* handle)
 {
@@ -794,14 +788,14 @@ static Ihandle* iImageGetHandleFromImage(void* handle)
 
     if (bpp <= 8 && colors_count)
     {
-	  int i;
+    int i;
       for (i = 0; i < colors_count; i++)
         IupSetRGBId(ih, "", i, colors[i].r, colors[i].g, colors[i].b);
     }
 
     imgdata = (unsigned char*)iupAttribGet(ih, "WID");
     iupdrvImageGetData(handle, imgdata);
-	return ih;
+    return ih;
   }
 
   return NULL;
@@ -869,9 +863,6 @@ IUP_API Ihandle* IupImageGetHandle(const char* name)
 static const char* iImageGetFormatFromFilename(const char* filename)
 {
   const char* ext;
-
-  if (!filename)
-    return NULL;
 
   ext = strrchr(filename, '.');
   if (!ext)
@@ -1045,7 +1036,7 @@ static void iImageClearCache(Ihandle* ih)
     iupAttribSet(ih, "_IUPIMAGE_LOADED_WD_HANDLE", NULL);
   }
 
-  /* additional image buffer when an IupImage is converted to one (OpenGL, etc) */
+  /* additional image buffer when an IupImage is converted to one (OpenGL, etc.) */
   handle = iupAttribGet(ih, "_IUPIMAGE_BUFFER");
   if (handle)
   {
@@ -1060,7 +1051,6 @@ static void iImageClearCache(Ihandle* ih)
     free(handle);
   }
 }
-
 
 /******************************************************************************/
 
@@ -1159,7 +1149,6 @@ static char* iImageGetIdValueAttrib(Ihandle *ih, int id)
 }
 
 /***************************************************************************************************/
-
 
 static int iImageCreate(Ihandle* ih, void** params, int bpp)
 {

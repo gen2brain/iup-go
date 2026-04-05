@@ -5,7 +5,6 @@
  */
 
 #include <stdlib.h>
-#include <stdarg.h>
 
 #include "iup.h"
 
@@ -16,8 +15,6 @@
 #include "iup_dialog.h"
 #include "iup_menu.h"
 #include "iup_assert.h"
-#include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 
 
@@ -80,7 +77,7 @@ IUP_API int IupMap(Ihandle* ih)
   /* parent must be mapped to map child */
   if (ih->parent && !(ih->parent->handle))
     return IUP_ERROR;
-    
+
   /* map to the native system */
   if (iupClassObjectMap(ih) == IUP_ERROR)
   {
@@ -98,7 +95,7 @@ IUP_API int IupMap(Ihandle* ih)
   iupClassObjectEnsureDefaultAttributes(ih);
 
   /* updates the defined attributes from the hash table (this) to the native system (this). */
-  iupAttribUpdate(ih); 
+  iupAttribUpdate(ih);
 
   /* updates inheritable attributes defined in the parent tree */
   iupAttribUpdateFromParent(ih);
@@ -146,7 +143,7 @@ IUP_API int IupPopup(Ihandle *ih, int x, int y)
   if (!iupObjectCheck(ih))
     return IUP_INVALID;
 
-  if (ih->iclass->nativetype != IUP_TYPEDIALOG && 
+  if (ih->iclass->nativetype != IUP_TYPEDIALOG &&
       ih->iclass->nativetype != IUP_TYPEMENU)
   {
     iupERROR("Must be a menu or dialog in IupPopup.");
@@ -154,7 +151,7 @@ IUP_API int IupPopup(Ihandle *ih, int x, int y)
   }
 
   ret = IupMap(ih);
-  if (ret == IUP_ERROR) 
+  if (ret == IUP_ERROR)
     return ret;
 
   if (ih->iclass->nativetype == IUP_TYPEDIALOG)
@@ -162,7 +159,7 @@ IUP_API int IupPopup(Ihandle *ih, int x, int y)
   else
     ret = iupMenuPopup(ih, x, y);
 
-  if (ret != IUP_NOERROR) 
+  if (ret != IUP_NOERROR)
   {
     iupERROR("Error during IupPopup.");
     return ret;
@@ -186,11 +183,11 @@ IUP_API int IupShowXY(Ihandle *ih, int x, int y)
   }
 
   ret = IupMap(ih);
-  if (ret == IUP_ERROR) 
+  if (ret == IUP_ERROR)
     return ret;
 
   ret = iupDialogShowXY(ih, x, y);
-  if (ret != IUP_NOERROR) 
+  if (ret != IUP_NOERROR)
   {
     iupERROR("Error during IupShowXY.");
     return ret;
@@ -207,14 +204,14 @@ IUP_API int IupShow(Ihandle* ih)
 
   if (ih->iclass->nativetype != IUP_TYPEDIALOG)
     IupSetAttribute(ih, "VISIBLE", "YES");
-  else   
+  else
   {
     int ret = IupMap(ih);
-    if (ret == IUP_ERROR) 
+    if (ret == IUP_ERROR)
       return ret;
-      
+
     ret = iupDialogShowXY(ih, IUP_CURRENT, IUP_CURRENT);
-    if (ret != IUP_NOERROR) 
+    if (ret != IUP_NOERROR)
     {
       iupERROR("Error during IupShow.");
       return ret;
@@ -228,7 +225,7 @@ IUP_API int IupHide(Ihandle* ih)
 {
   iupASSERT(iupObjectCheck(ih));
   if (!iupObjectCheck(ih))
-    return IUP_INVALID; 
+    return IUP_INVALID;
 
   if (ih->iclass->nativetype != IUP_TYPEDIALOG)
     IupSetAttribute(ih, "VISIBLE", "NO");

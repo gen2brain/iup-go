@@ -8,6 +8,8 @@
 #ifndef __IUP_SINGLEINSTANCE_H
 #define __IUP_SINGLEINSTANCE_H
 
+#include "iup_export.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

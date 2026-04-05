@@ -16,10 +16,9 @@
 #include "iup_class.h"
 #include "iup_assert.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
 
 
-/* An Ihandle* may have many different handle names. 
+/* An Ihandle* may have many different handle names.
    Do not confuse with the NAME attribute. */
 
 static Itable *inames_strtable = NULL;   /* table indexed by name containing Ihandle* address */
@@ -159,7 +158,7 @@ void iupRemoveNames(Ihandle* ih)
   /* clear also the NAME attribute */
   iupBaseSetNameAttrib(ih, NULL);
 
-  /* Do NOT search for other names, this would implying in checking in all store names.
+  /* Do NOT search for other names, this would imply in checking in all store names.
      So, some names may have left invalid on the handle names database. */
 }
 
@@ -215,9 +214,9 @@ IUP_API Ihandle* IupSetHandle(const char *name, Ihandle *ih)
   if (!name)
     return NULL;
 
-  /* ih here can be also an user pointer, not just an Ihandle* */
+  /* ih here can be also a user pointer, not just an Ihandle* */
 
-  /* we do not check if the handle already has names, it may has many different names */
+  /* we do not check if the handle already has names, it may have many different names */
 
   old_ih = iupTableGet(inames_strtable, name);
 
@@ -256,7 +255,7 @@ IUP_API char* IupGetName(Ihandle* ih)
   if (!ih) /* no iupASSERT needed here */
     return NULL;
 
-  /* ih here can be also an user pointer, not just an Ihandle* */
+  /* ih here can be also a user pointer, not just an Ihandle* */
 
   if (iupObjectCheck(ih)) /* if ih is an Ihandle* */
   {
@@ -330,4 +329,3 @@ IUP_API int IupGetAllDialogs(char** names, int n)
   }
   return i;
 }
-
