@@ -41,8 +41,8 @@ IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, 
 
 void* iupImageGetIcon(const char* name);
 void* iupImageGetCursor(const char* name);
-void* iupImageGetImage(const char* name, Ihandle* parent, int make_inactive, const char* bgcolor);
-void iupImageGetInfo(const char* name, int *w, int *h, int *bpp);
+IUP_SDK_API void* iupImageGetImage(const char* name, Ihandle* parent, int make_inactive, const char* bgcolor);
+IUP_SDK_API void iupImageGetInfo(const char* name, int *w, int *h, int *bpp);
 void iupImageRemoveFromCache(Ihandle* ih, void* handle);
 
 IUP_SDK_API int iupImageInitColorTable(Ihandle *ih, iupColor* colors, int *colors_count);
@@ -68,7 +68,7 @@ IUP_SDK_API void iupImageStockLoadAll(void);  /* Used only in IupView and IupVis
 int iupImageStockGetSize(void);
 void iupImageStockGet(const char* name, Ihandle* *ih, const char* *native_name);
 
-int iupIsHighDpi(void);
+IUP_SDK_API int iupIsHighDpi(void);
 
 IUP_SDK_API unsigned char* iupImageWriteBMP(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, int* out_size);
 
