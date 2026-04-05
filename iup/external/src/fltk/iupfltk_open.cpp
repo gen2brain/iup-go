@@ -18,6 +18,11 @@
 #include <FL/wayland.H>
 #endif
 
+#if defined(__APPLE__)
+#include <objc/objc.h>
+#include <objc/message.h>
+#endif
+
 extern "C" {
 #include "iup.h"
 #include "iup_str.h"
@@ -25,6 +30,8 @@ extern "C" {
 #include "iup_drvinfo.h"
 #include "iup_object.h"
 #include "iup_globalattrib.h"
+#define _IUPDLG_PRIVATE
+#include "iup_dialog.h"
 }
 
 #include "iupfltk_drv.h"
@@ -74,7 +81,19 @@ IUP_DRV_API char* iupfltkGetNativeWindowHandle(Fl_Window* window)
   }
 #endif
 
-#if defined(FLTK_USE_X11) || defined(_WIN32) || defined(__APPLE__)
+#if defined(__APPLE__)
+  {
+    void* xid = (void*)fl_xid(window);
+    if (xid)
+    {
+      /* fl_xid() on macOS returns FLWindow (NSWindow*), not NSView*.
+         Use the ObjC runtime to call [nswindow contentView]. */
+      void* nsview = ((void* (*)(void*, void*))objc_msgSend)(xid, sel_getUid("contentView"));
+      return (char*)nsview;
+    }
+    return NULL;
+  }
+#elif defined(FLTK_USE_X11) || defined(_WIN32)
   return (char*)(uintptr_t)fl_xid(window);
 #else
   return NULL;
@@ -90,6 +109,23 @@ IUP_DRV_API char* iupfltkGetNativeWindowHandleAttrib(Ihandle* ih)
   Fl_Window* window = widget->as_window();
   if (!window)
     window = widget->window();
+
+  if (window && !window->shown())
+  {
+    Ihandle* dialog = IupGetDialog(ih);
+    int old_x = window->x();
+    int old_y = window->y();
+
+    if (dialog && dialog->data)
+      dialog->data->ignore_resize = 1;
+
+    window->position(-32000, -32000);
+    window->show();
+    window->position(old_x, old_y);
+
+    if (dialog && dialog->data)
+      dialog->data->ignore_resize = 0;
+  }
 
   return iupfltkGetNativeWindowHandle(window);
 }

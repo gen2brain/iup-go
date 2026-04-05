@@ -58,6 +58,7 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_globalattrib.h"
 }
 
@@ -84,9 +85,17 @@ IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget *widget)
   if (!widget)
     return NULL;
 
+  if (!widget->windowHandle())
+  {
+    if (widget->isWindow() || widget->testAttribute(Qt::WA_NativeWindow))
+    {
+      widget->winId();
+    }
+  }
+
   QWindow* window = widget->windowHandle();
   if (!window)
-    return NULL;  /* Widget not yet realized */
+    return NULL;
 
   QString platform = QGuiApplication::platformName();
 
@@ -180,6 +189,12 @@ IUP_DRV_API const char* iupqtGetNativeFontIdName(void)
 
 IUP_DRV_API char* iupqtGetNativeWindowHandleAttrib(Ihandle* ih)
 {
+#ifndef __APPLE__
+  QWidget* gl_canvas = (QWidget*)iupAttribGet(ih, "_IUPQT_CANVAS_WIDGET");
+  if (gl_canvas)
+    return iupqtGetNativeWidgetHandle(gl_canvas);
+#endif
+
   return iupqtGetNativeWidgetHandle((QWidget*)ih->handle);
 }
 

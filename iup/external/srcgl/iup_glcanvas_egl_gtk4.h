@@ -5,15 +5,15 @@
  * See Copyright Notice in "iup.h"
  */
 
+#ifndef __IUP_GLCANVAS_EGL_GTK4_H
+#define __IUP_GLCANVAS_EGL_GTK4_H
+
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
 #ifdef GDK_WINDOWING_WAYLAND
   #define IUP_EGL_HAS_WAYLAND
   #include <gdk/wayland/gdkwayland.h>
-  #include <wayland-egl.h>
-  #include <wayland-client.h>
-  #include "iup_glcanvas_egl_wayland.c"
 #endif
 
 #ifdef GDK_WINDOWING_X11
@@ -221,132 +221,51 @@ static EGLNativeWindowType iupEGLBackendPostConfig(Ihandle* ih, IGlControlData* 
   return (EGLNativeWindowType)NULL;
 }
 
-#ifdef GDK_WINDOWING_WAYLAND
-static EGLNativeWindowType eGLCanvasCreateGtk4WaylandSubsurface(Ihandle* ih, IGlControlData* gldata)
+static void eGLCanvasGtk4GetSubsurfacePosition(Ihandle* ih, int* out_x, int* out_y)
 {
-  EGLNativeWindowType native_window = (EGLNativeWindowType)NULL;
-  GdkSurface* gdk_surface = (GdkSurface*)gldata->backend_handle;
-  struct wl_surface* parent_surface;
-  GdkDisplay* gdk_display;
-  struct wl_display* wl_display;
-  int physical_width = 0, physical_height = 0;
+  GtkWidget* widget = GTK_WIDGET(ih->handle);
+  int subsurface_x = 0, subsurface_y = 0;
 
-  if (!GDK_IS_WAYLAND_SURFACE(gdk_surface)) {
-    return native_window;
-  }
+  if (widget) {
+    GtkWidget* parent = gtk_widget_get_parent(widget);
+    graphene_rect_t bounds;
 
-  parent_surface = gdk_wayland_surface_get_wl_surface(gdk_surface);
+    if (parent && gtk_widget_compute_bounds(widget, parent, &bounds)) {
+      subsurface_x = (int)bounds.origin.x;
+      subsurface_y = (int)bounds.origin.y;
+    }
 
-  if (!parent_surface) {
-    return native_window;
-  }
+    {
+      GtkWidget* root = GTK_WIDGET(gtk_widget_get_root(widget));
+      gboolean has_csd = gtk_widget_has_css_class(root, "csd");
+      gboolean has_solid_csd = gtk_widget_has_css_class(root, "solid-csd");
 
-  gldata->parent_surface = parent_surface;
+      if (has_csd && !has_solid_csd) {
+        GdkSurface* gdk_surf = gtk_native_get_surface(GTK_NATIVE(root));
+        if (gdk_surf) {
+          Ihandle* dialog = IupGetDialog(ih);
+          int caption_height = 37;
+          if (dialog) {
+            int border, caption, menu;
+            iupdrvDialogGetDecoration(dialog, &border, &caption, &menu);
+            if (caption > 0)
+              caption_height = caption;
+          }
 
-  gdk_display = gdk_surface_get_display(gdk_surface);
-  wl_display = gdk_wayland_display_get_wl_display(gdk_display);
-
-  if (!wl_display) {
-    return native_window;
-  }
-
-  gldata->compositor = gdk_wayland_display_get_wl_compositor(gdk_display);
-
-  if (!gldata->compositor) {
-    return native_window;
-  }
-
-  gldata->subsurface_wl = wl_compositor_create_surface(gldata->compositor);
-
-  if (!gldata->subsurface_wl) {
-    return native_window;
-  }
-
-  if (!gldata->subcompositor) {
-    gldata->subcompositor = eGLCanvasGetWaylandSubcompositor(wl_display, &gldata->event_queue, &gldata->registry_compositor, &gldata->registry);
-  }
-
-  if (!gldata->subcompositor) {
-    wl_surface_destroy(gldata->subsurface_wl);
-    gldata->subsurface_wl = NULL;
-    return native_window;
-  }
-
-  gldata->subsurface = wl_subcompositor_get_subsurface(
-      gldata->subcompositor,
-      gldata->subsurface_wl,
-      parent_surface);
-
-  if (!gldata->subsurface) {
-    wl_surface_destroy(gldata->subsurface_wl);
-    gldata->subsurface_wl = NULL;
-    return native_window;
-  }
-
-  wl_subsurface_set_desync(gldata->subsurface);
-
-  /* Position the subsurface within the parent window */
-  {
-    GtkWidget* widget = GTK_WIDGET(ih->handle);
-    if (widget) {
-      GtkWidget* parent = gtk_widget_get_parent(widget);
-      graphene_rect_t bounds;
-      int subsurface_x = 0, subsurface_y = 0;
-
-      if (parent && gtk_widget_compute_bounds(widget, parent, &bounds)) {
-        subsurface_x = (int)bounds.origin.x;
-        subsurface_y = (int)bounds.origin.y;
-      }
-
-      /* Check if window has CSD with invisible borders */
-      {
-        GtkWidget* root = GTK_WIDGET(gtk_widget_get_root(widget));
-        gboolean has_csd = gtk_widget_has_css_class(root, "csd");
-        gboolean has_solid_csd = gtk_widget_has_css_class(root, "solid-csd");
-
-        if (has_csd && !has_solid_csd) {
-          GdkSurface* gdk_surf = gtk_native_get_surface(GTK_NATIVE(root));
-          if (gdk_surf) {
-            Ihandle* dialog = IupGetDialog(ih);
-            int caption_height = 37;
-            if (dialog) {
-              int border, caption, menu;
-              iupdrvDialogGetDecoration(dialog, &border, &caption, &menu);
-              if (caption > 0) {
-                caption_height = caption;
-              }
-            }
-
+          {
             double surface_x, surface_y;
             gtk_native_get_surface_transform(GTK_NATIVE(root), &surface_x, &surface_y);
-
             subsurface_x += (int)surface_x;
             subsurface_y += (int)surface_y + caption_height;
           }
         }
       }
-
-      wl_subsurface_set_position(gldata->subsurface, subsurface_x, subsurface_y);
-
-      if (gldata->parent_surface) {
-        wl_surface_commit(gldata->parent_surface);
-      }
     }
   }
 
-  eGLCanvasGetActualSize(ih, gldata, &physical_width, &physical_height);
-
-  gldata->egl_window = wl_egl_window_create(gldata->subsurface_wl, physical_width, physical_height);
-
-  if (gldata->egl_window) {
-    native_window = (EGLNativeWindowType)gldata->egl_window;
-    gldata->egl_window_physical_width = physical_width;
-    gldata->egl_window_physical_height = physical_height;
-  }
-
-  return native_window;
+  *out_x = subsurface_x;
+  *out_y = subsurface_y;
 }
-#endif /* GDK_WINDOWING_WAYLAND */
 
 static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* gldata, EGLNativeWindowType* native_window, EGLint* context_attribs, int max_attribs)
 {
@@ -354,16 +273,33 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
 
 #ifdef GDK_WINDOWING_WAYLAND
   if (GDK_IS_WAYLAND_SURFACE(gdk_surface)) {
-    *native_window = eGLCanvasCreateGtk4WaylandSubsurface(ih, gldata);
-    if (*native_window == (EGLNativeWindowType)NULL) {
-      iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
-      return -1;
+    GdkDisplay* gdk_display = gdk_surface_get_display(gdk_surface);
+    struct wl_surface* parent_surface = gdk_wayland_surface_get_wl_surface(gdk_surface);
+    struct wl_display* wl_display = gdk_wayland_display_get_wl_display(gdk_display);
+
+    if (wl_display && parent_surface)
+    {
+      int x = 0, y = 0;
+      int scale = gdk_surface_get_scale_factor(gdk_surface);
+      struct IGlWaylandSubsurface ws;
+
+      eGLCanvasGtk4GetSubsurfacePosition(ih, &x, &y);
+
+      if (iupGLCreateWaylandSubsurface(wl_display, parent_surface,
+            x, y, ih->currentwidth, ih->currentheight, scale, &ws))
+      {
+        eGLCopyWaylandSubsurface(&ws, gldata, parent_surface);
+        *native_window = (EGLNativeWindowType)gldata->egl_window;
+
+        context_attribs[0] = EGL_CONTEXT_CLIENT_VERSION;
+        context_attribs[1] = 2;
+        context_attribs[2] = EGL_NONE;
+        return 1;
+      }
     }
 
-    context_attribs[0] = EGL_CONTEXT_CLIENT_VERSION;
-    context_attribs[1] = 2;
-    context_attribs[2] = EGL_NONE;
-    return 1;
+    iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
+    return -1;
   }
 #endif
 
@@ -533,3 +469,5 @@ static void iupEGLBackendPostSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 {
   (void)ih; (void)gldata;
 }
+
+#endif

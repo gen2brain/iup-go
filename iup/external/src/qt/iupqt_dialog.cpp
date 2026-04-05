@@ -647,9 +647,9 @@ static void qtDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int 
     minSize.setHeight(min_h - decorheight);
 
   QSize maxSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
-  if (max_w > decorwidth && max_w > minSize.width())
+  if (max_w < 65535 && max_w > decorwidth && max_w > minSize.width())
     maxSize.setWidth(max_w - decorwidth);
-  if (max_h > decorheight && max_h > minSize.height())
+  if (max_h < 65535 && max_h > decorheight && max_h > minSize.height())
     maxSize.setHeight(max_h - decorheight);
 
   widget->setMinimumSize(minSize);

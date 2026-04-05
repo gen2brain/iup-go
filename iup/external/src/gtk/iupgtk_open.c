@@ -26,6 +26,7 @@
 
 #ifdef GDK_WINDOWING_QUARTZ
 #include <gdk/gdkquartz.h>
+void* gdk_quartz_window_get_nsview(GdkWindow *window);
 #endif
 
 #include "iup.h"
@@ -99,7 +100,7 @@ IUP_DRV_API char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
 #ifdef GDK_WINDOWING_QUARTZ
   if (GDK_IS_QUARTZ_WINDOW(window))
   {
-    return (char*)window;
+    return (char*)gdk_quartz_window_get_nsview(window);
   }
 #endif
 
@@ -111,7 +112,7 @@ IUP_DRV_API char* iupgtkGetNativeWidgetHandle(GtkWidget *widget)
 #elif defined(GDK_WINDOWING_WIN32)
   return (char*)IUPGTK_GDK_WINDOW_HWND(window);
 #elif defined(GDK_WINDOWING_QUARTZ)
-  return (char*)window;
+  return (char*)gdk_quartz_window_get_nsview(window);
 #endif
 
 #endif /* GTK_CHECK_VERSION(3, 0, 0) */
@@ -150,7 +151,7 @@ IUP_DRV_API const char* iupgtkGetNativeWindowHandleName(void)
 #ifdef GDK_WINDOWING_QUARTZ
   if (GDK_IS_QUARTZ_DISPLAY(display))
   {
-    return "GDKWINDOW";
+    return "NSVIEW";
   }
 #endif
 

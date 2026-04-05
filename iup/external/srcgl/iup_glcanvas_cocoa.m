@@ -28,6 +28,8 @@
 #include "iup_register.h"
 #include "iup_canvas.h"
 
+#include "iup_glcanvas_nativeinfo.h"
+
 @interface IupGLContext : NSOpenGLContext
 {
   int32_t dirty;
@@ -85,6 +87,7 @@ typedef struct _IGlControlData
   NSView* canvas_view;
   IupGLContext* context;
   NSOpenGLPixelFormat* pixel_format;
+  int owns_view;
 } IGlControlData;
 
 static int cocoaGLCanvasDefaultResize_CB(Ihandle *ih, int width, int height)
@@ -533,22 +536,39 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
 
   iupAttribSet(ih, "ERROR", NULL);
 
-  /* Get the canvas view that was already created by Canvas map */
-  gldata->canvas_view = (NSView*)iupAttribGet(ih, "NSVIEW");
-  if (!gldata->canvas_view)
-    gldata->canvas_view = (NSView*)IupGetAttribute(ih, "NSVIEW");
-
-  if (!gldata->canvas_view)
+  /* Get the canvas view, use generic shim to support all drivers.
+     On macOS, the view may not be available at map time (children map before dialog).
+     NSOpenGL context can be created without a view, so we proceed and set the view later. */
   {
-    iupAttribSet(ih, "ERROR", "Could not get native view handle.");
-    [pool drain];
-    return IUP_NOERROR;
+    IGlNativeInfo info;
+    if (iupGLGetNativeInfo(ih, &info))
+    {
+      if (info.has_own_window)
+      {
+        gldata->canvas_view = (NSView*)info.canvas_window;
+        gldata->owns_view = 0;
+      }
+      else if (info.parent_window)
+      {
+        gldata->canvas_view = iupGLCreateChildView((NSView*)info.parent_window, info.x, info.y, info.w, info.h);
+        gldata->owns_view = 1;
+      }
+    }
+
+    if (!gldata->canvas_view)
+    {
+      gldata->canvas_view = (NSView*)iupAttribGet(ih, "NSVIEW");
+      if (!gldata->canvas_view)
+        gldata->canvas_view = (NSView*)IupGetAttribute(ih, "NSVIEW");
+    }
   }
 
-  /* For Retina/HiDPI displays: ensure GL surface matches backing store resolution */
-  if ([gldata->canvas_view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+  if (gldata->canvas_view)
   {
-    [gldata->canvas_view setWantsBestResolutionOpenGLSurface:YES];
+    if ([gldata->canvas_view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+    {
+      [gldata->canvas_view setWantsBestResolutionOpenGLSurface:YES];
+    }
   }
 
   gldata->pixel_format = cocoaGLCreatePixelFormat(ih);
@@ -563,8 +583,9 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
     return IUP_NOERROR;
   }
 
-  /* Create OpenGL context and attach to canvas view */
+  /* Create OpenGL context — view may not be available yet, that's OK on macOS */
   gldata->context = [[IupGLContext alloc] initWithFormat:gldata->pixel_format shareContext:nil];
+
   if (!gldata->context)
   {
     iupAttribSet(ih, "ERROR", "Could not create OpenGL context.");
@@ -574,7 +595,10 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
     return IUP_NOERROR;
   }
 
-  /* Make context current for GL queries, but no drawable attached yet */
+  /* Attach context to view if available, then make current */
+  if (gldata->canvas_view)
+    [gldata->context setView:gldata->canvas_view];
+
   [gldata->context makeCurrentContext];
 
   /* Set vsync based on attribute, default to ON */
@@ -618,7 +642,10 @@ static void cocoaGLCanvasUnMapMethod(Ihandle* ih)
     gldata->pixel_format = nil;
   }
 
-  gldata->canvas_view = nil;  /* Don't release - owned by Canvas */
+  if (gldata->owns_view && gldata->canvas_view)
+    iupGLDestroyChildView(gldata->canvas_view);
+
+  gldata->canvas_view = nil;
 
   [pool drain];
 
@@ -688,17 +715,55 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     return;
 
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
-  if (!gldata || !gldata->context || !gldata->canvas_view)
+  if (!gldata || !gldata->context)
   {
     iupAttribSet(ih, "ERROR", "Context not available: canvas not mapped or context creation failed.");
     return;
   }
 
+  if (!gldata->canvas_view)
+  {
+    IGlNativeInfo info;
+    if (iupGLGetNativeInfo(ih, &info))
+    {
+      if (info.has_own_window)
+      {
+        gldata->canvas_view = (NSView*)info.canvas_window;
+        gldata->owns_view = 0;
+      }
+      else if (info.parent_window)
+      {
+        gldata->canvas_view = iupGLCreateChildView((NSView*)info.parent_window, info.x, info.y, info.w, info.h);
+        gldata->owns_view = 1;
+      }
+    }
+    if (!gldata->canvas_view)
+    {
+      gldata->canvas_view = (NSView*)IupGetAttribute(ih, "NSVIEW");
+    }
+    if (gldata->canvas_view)
+    {
+      if ([gldata->canvas_view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+        [gldata->canvas_view setWantsBestResolutionOpenGLSurface:YES];
+      [gldata->context setView:gldata->canvas_view];
+    }
+  }
+
+  if (!gldata->canvas_view)
+    return;
+
+  if (gldata->owns_view)
+  {
+    iupGLMoveChildView(gldata->canvas_view, ih->x, ih->y, ih->currentwidth, ih->currentheight);
+    [gldata->context clearDrawable];
+    [gldata->context setView:gldata->canvas_view];
+  }
+
+  [gldata->context update];
+
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
   [gldata->context makeCurrentContext];
-
-  NSOpenGLContext* verifyCtx = [NSOpenGLContext currentContext];
 
   if ([NSOpenGLContext currentContext] == gldata->context)
   {

@@ -29,18 +29,14 @@
 #endif
 
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupgl.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 #include "iup_assert.h"
-#include "iup_register.h"
-#include "iup_layout.h"
-#include "iup_canvas.h"
-#include "iup_dialog.h"
+
+#include "iup_glcanvas_nativeinfo.h"
 
 /* Definitions for platform specific EGL display acquisition (EGL 1.5 or extensions) */
 #ifndef EGL_PLATFORM_WAYLAND_KHR
@@ -155,6 +151,30 @@ typedef struct _IGlControlData
 /* Forward declaration of common function used by backends */
 static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* physical_width, int* physical_height);
 
+#ifdef IUP_GL_HAS_WAYLAND
+static void eGLCopyWaylandSubsurface(struct IGlWaylandSubsurface* ws, IGlControlData* gldata, struct wl_surface* parent_surface)
+{
+  gldata->subsurface_wl = ws->surface;
+  gldata->subsurface = ws->subsurface;
+  gldata->egl_window = ws->egl_window;
+  gldata->egl_window_physical_width = ws->physical_width;
+  gldata->egl_window_physical_height = ws->physical_height;
+  gldata->parent_surface = parent_surface;
+  gldata->compositor = ws->compositor;
+  gldata->subcompositor = ws->subcompositor;
+  gldata->registry = ws->registry;
+  gldata->event_queue = ws->event_queue;
+
+  ws->surface = NULL;
+  ws->subsurface = NULL;
+  ws->egl_window = NULL;
+  ws->compositor = NULL;
+  ws->subcompositor = NULL;
+  ws->registry = NULL;
+  ws->event_queue = NULL;
+}
+#endif
+
 /*
  * Include backend implementation.
  * Each backend defines IUP_EGL_HAS_WAYLAND if it supports Wayland,
@@ -174,15 +194,15 @@ static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* phy
  *   iupEGLBackendPostSwapBuffers          - Post-swap handling
  */
 #if defined(IUP_EGL_USE_GTK3)
-  #include "iup_glcanvas_egl_gtk.c"
+  #include "iup_glcanvas_egl_gtk.h"
 #elif defined(IUP_EGL_USE_GTK4)
-  #include "iup_glcanvas_egl_gtk4.c"
+  #include "iup_glcanvas_egl_gtk4.h"
 #elif defined(IUP_EGL_USE_QT)
-  #include "iup_glcanvas_egl_qt.c"
+  #include "iup_glcanvas_egl_qt.h"
 #elif defined(IUP_EGL_USE_EFL)
-  #include "iup_glcanvas_egl_efl.c"
+  #include "iup_glcanvas_egl_efl.h"
 #elif defined(IUP_EGL_USE_FLTK)
-  #include "iup_glcanvas_egl_fltk.c"
+  #include "iup_glcanvas_egl_fltk.h"
 #endif
 
 /* ============================================================ */

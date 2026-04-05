@@ -5,15 +5,15 @@
  * See Copyright Notice in "iup.h"
  */
 
+#ifndef __IUP_GLCANVAS_EGL_GTK_H
+#define __IUP_GLCANVAS_EGL_GTK_H
+
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
 #ifdef GDK_WINDOWING_WAYLAND
   #define IUP_EGL_HAS_WAYLAND
   #include <gdk/gdkwayland.h>
-  #include <wayland-egl.h>
-  #include <wayland-client.h>
-  #include "iup_glcanvas_egl_wayland.c"
 #endif
 
 #ifdef GDK_WINDOWING_X11
@@ -196,134 +196,64 @@ static EGLNativeWindowType iupEGLBackendPostConfig(Ihandle* ih, IGlControlData* 
   return (EGLNativeWindowType)NULL;
 }
 
-#ifdef GDK_WINDOWING_WAYLAND
-static EGLNativeWindowType eGLCanvasCreateGtk3WaylandSubsurface(Ihandle* ih, IGlControlData* gldata)
+static void eGLCanvasGtk3GetSubsurfacePosition(Ihandle* ih, int* x, int* y)
 {
-  EGLNativeWindowType native_window = (EGLNativeWindowType)NULL;
-  GdkWindow* window = (GdkWindow*)gldata->backend_handle;
-  GdkWindow* toplevel_window;
-  struct wl_surface* parent_surface;
-  GdkDisplay* gdk_display;
-  struct wl_display* wl_display;
-  int physical_width = 0, physical_height = 0;
-
-  if (!GDK_IS_WAYLAND_WINDOW(window)) {
-    return native_window;
-  }
-
-  toplevel_window = gdk_window_get_toplevel(window);
-
-  if (!toplevel_window || !GDK_IS_WAYLAND_WINDOW(toplevel_window)) {
-    return native_window;
-  }
-
-  parent_surface = gdk_wayland_window_get_wl_surface(toplevel_window);
-
-  if (!parent_surface) {
-    return native_window;
-  }
-
-  gldata->parent_surface = parent_surface;
-
-  gdk_display = gdk_window_get_display(window);
-  wl_display = gdk_wayland_display_get_wl_display(gdk_display);
-
-  if (!wl_display) {
-    return native_window;
-  }
-
-  gldata->compositor = gdk_wayland_display_get_wl_compositor(gdk_display);
-
-  if (!gldata->compositor) {
-    return native_window;
-  }
-
-  gldata->subsurface_wl = wl_compositor_create_surface(gldata->compositor);
-
-  if (!gldata->subsurface_wl) {
-    return native_window;
-  }
-
-  if (!gldata->subcompositor) {
-    gldata->subcompositor = eGLCanvasGetWaylandSubcompositor(wl_display, &gldata->event_queue, &gldata->registry_compositor, &gldata->registry);
-  }
-
-  if (!gldata->subcompositor) {
-    wl_surface_destroy(gldata->subsurface_wl);
-    gldata->subsurface_wl = NULL;
-    return native_window;
-  }
-
-  gldata->subsurface = wl_subcompositor_get_subsurface(
-      gldata->subcompositor,
-      gldata->subsurface_wl,
-      parent_surface);
-
-  if (!gldata->subsurface) {
-    wl_surface_destroy(gldata->subsurface_wl);
-    gldata->subsurface_wl = NULL;
-    return native_window;
-  }
-
-  wl_subsurface_set_desync(gldata->subsurface);
-
-  {
-    int subsurface_x = 0, subsurface_y = 0;
-
-    GtkWidget* widget = GTK_WIDGET(ih->handle);
-    if (widget && gtk_widget_get_realized(widget)) {
-      GtkWidget* parent = gtk_widget_get_parent(widget);
-      if (parent) {
-        gtk_widget_translate_coordinates(widget, gtk_widget_get_toplevel(widget), 0, 0, &subsurface_x, &subsurface_y);
-
-        if (subsurface_x < 0 || subsurface_y < 0) {
-          subsurface_x = 0;
-          subsurface_y = 0;
-        }
-      }
+  GtkWidget* widget = GTK_WIDGET(ih->handle);
+  *x = 0;
+  *y = 0;
+  if (widget && gtk_widget_get_realized(widget)) {
+    GtkWidget* parent = gtk_widget_get_parent(widget);
+    if (parent) {
+      gtk_widget_translate_coordinates(widget, gtk_widget_get_toplevel(widget), 0, 0, x, y);
+      if (*x < 0) *x = 0;
+      if (*y < 0) *y = 0;
     }
-
-    wl_subsurface_set_position(gldata->subsurface, subsurface_x, subsurface_y);
   }
-
-  if (gldata->parent_surface) {
-    wl_surface_commit(gldata->parent_surface);
-  }
-
-  eGLCanvasGetActualSize(ih, gldata, &physical_width, &physical_height);
-
-  gldata->egl_window = wl_egl_window_create(gldata->subsurface_wl, physical_width, physical_height);
-
-  if (gldata->egl_window) {
-    native_window = (EGLNativeWindowType)gldata->egl_window;
-    gldata->egl_window_physical_width = physical_width;
-    gldata->egl_window_physical_height = physical_height;
-  }
-
-  return native_window;
 }
-#endif /* GDK_WINDOWING_WAYLAND */
 
 static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* gldata, EGLNativeWindowType* native_window, EGLint* context_attribs, int max_attribs)
 {
   (void)max_attribs;
 
 #ifdef GDK_WINDOWING_WAYLAND
-  *native_window = eGLCanvasCreateGtk3WaylandSubsurface(ih, gldata);
-  if (*native_window == (EGLNativeWindowType)NULL)
   {
-    iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
-    return -1;
-  }
+    GdkWindow* window = (GdkWindow*)gldata->backend_handle;
+    if (GDK_IS_WAYLAND_WINDOW(window))
+    {
+      GdkWindow* toplevel_window = gdk_window_get_toplevel(window);
+      GdkDisplay* gdk_display = gdk_window_get_display(window);
+      struct wl_surface* parent_surface = toplevel_window ? gdk_wayland_window_get_wl_surface(toplevel_window) : NULL;
+      struct wl_display* wl_display = gdk_wayland_display_get_wl_display(gdk_display);
 
-  context_attribs[0] = EGL_CONTEXT_CLIENT_VERSION;
-  context_attribs[1] = 2;
-  context_attribs[2] = EGL_NONE;
-  return 1;
-#else
+      if (wl_display && parent_surface)
+      {
+        int x = 0, y = 0;
+        int scale = gdk_window_get_scale_factor(window);
+        struct IGlWaylandSubsurface ws;
+
+        eGLCanvasGtk3GetSubsurfacePosition(ih, &x, &y);
+
+        if (iupGLCreateWaylandSubsurface(wl_display, parent_surface,
+              x, y, ih->currentwidth, ih->currentheight, scale, &ws))
+        {
+          eGLCopyWaylandSubsurface(&ws, gldata, parent_surface);
+          *native_window = (EGLNativeWindowType)gldata->egl_window;
+
+          context_attribs[0] = EGL_CONTEXT_CLIENT_VERSION;
+          context_attribs[1] = 2;
+          context_attribs[2] = EGL_NONE;
+          return 1;
+        }
+      }
+
+      iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
+      return -1;
+    }
+  }
+#endif
+
   (void)ih; (void)gldata; (void)native_window; (void)context_attribs;
   return -1;
-#endif
 }
 
 static EGLNativeWindowType iupEGLBackendCheckSurfaceRecreation(Ihandle* ih, IGlControlData* gldata)
@@ -385,3 +315,5 @@ static void iupEGLBackendPostSwapBuffers(Ihandle* ih, IGlControlData* gldata)
 {
   (void)ih; (void)gldata;
 }
+
+#endif
