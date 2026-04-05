@@ -8,6 +8,8 @@
 #ifndef __IUP_GLCANVAS_EGL_EFL_H
 #define __IUP_GLCANVAS_EGL_EFL_H
 
+#include "iupcbs.h"
+
 #include <Ecore.h>
 #include <Ecore_Evas.h>
 #include <Evas.h>
