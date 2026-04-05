@@ -211,7 +211,7 @@ IUP_SDK_API void iupImageStockSetNoResize(const char *name, iupImageStockCreateF
   iupTableSet(istock_table, name, (void*)istock, IUPTABLE_POINTER);
 }
 
-int iupIsHighDpi(void)
+IUP_SDK_API int iupIsHighDpi(void)
 {
   int dpi = iupRound(iupdrvGetScreenDpi());
   if (dpi > 144)
@@ -640,7 +640,7 @@ void* iupImageGetCursor(const char* name)
   return cursor;
 }
 
-void* iupImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor)
+IUP_SDK_API void* iupImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor)
 {
   char cache_name[100];
   char* img_bgcolor;
@@ -731,7 +731,7 @@ void* iupImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, 
   return handle;
 }
 
-void iupImageGetInfo(const char* name, int *w, int *h, int *bpp)
+IUP_SDK_API void iupImageGetInfo(const char* name, int *w, int *h, int *bpp)
 {
   Ihandle *ih;
 

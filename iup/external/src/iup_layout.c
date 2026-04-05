@@ -156,7 +156,7 @@ IUP_SDK_API void iupLayoutUpdate(Ihandle* ih)
   }
 }
 
-void iupLayoutCompute(Ihandle* ih)
+IUP_SDK_API void iupLayoutCompute(Ihandle* ih)
 {
   /* usually called only for the dialog */
 

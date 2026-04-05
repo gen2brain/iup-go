@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 /* called from IupMap and IupRefresh */
-void iupLayoutCompute(Ihandle* ih);  /* can be called before map */
+IUP_SDK_API void iupLayoutCompute(Ihandle* ih);  /* can be called before map */
 IUP_SDK_API void iupLayoutUpdate(Ihandle* ih);   /* called after map */
 
 IUP_SDK_API void iupLayoutApplyMinMaxSize(Ihandle* ih, int *w, int *h);
