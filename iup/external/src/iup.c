@@ -58,7 +58,7 @@ IUP_API char* IupVersionDate(void)
   return IUP_VERSION_DATE;
 #endif
 }
- 
+
 IUP_API int IupVersionNumber(void)
 {
   return IUP_VERSION_NUMBER+IUP_VERSION_FIX_NUMBER;
@@ -116,6 +116,18 @@ IUP_API void IupVersionShow(void)
   value = IupGetGlobal("GTKVERSION");
   if (value) IupSetStrf(info, "APPEND", "   GTK Version: %s", value);
 
+  value = IupGetGlobal("QTVERSION");
+  if (value) IupSetStrf(info, "APPEND", "   Qt Version: %s", value);
+
+  value = IupGetGlobal("EFLVERSION");
+  if (value) IupSetStrf(info, "APPEND", "   EFL Version: %s", value);
+
+  value = IupGetGlobal("FLTKVERSION");
+  if (value) IupSetStrf(info, "APPEND", "   FLTK Version: %s", value);
+
+  value = IupGetGlobal("WINUIVERSION");
+  if (value) IupSetStrf(info, "APPEND", "   WinUI Version: %s", value);
+
   IupSetStrf(info, "APPEND", "   Screen Size: %s", IupGetGlobal("SCREENSIZE"));
   IupSetStrf(info, "APPEND", "   Screen DPI: %d", IupGetInt(NULL, "SCREENDPI"));
   IupSetStrf(info, "APPEND", "   Default Font: %s", IupGetGlobal("DEFAULTFONT"));
@@ -138,23 +150,11 @@ IUP_API void IupVersionShow(void)
     }
   }
 
-  if (IupGetGlobal("_IUP_GLCONTROLS_OPEN"))
-    IupSetAttribute(info, "APPEND", "   IupGLControlsOpen");
-
-  if (IupGetGlobal("_IUP_SCINTILLA_OPEN"))
-  {
-    IupSetAttribute(info, "APPEND", "   IupScintillaOpen");
-    IupSetStrf(info, "APPEND", "      Scintilla %s", IupGetGlobal("SCINTILLA_VERSION"));
-  }
-
   if (IupGetGlobal("_IUP_WEBBROWSER_OPEN"))
     IupSetAttribute(info, "APPEND", "   IupWebBrowserOpen");
 
   if (IupGetGlobal("_IUP_PLOT_OPEN"))
     IupSetAttribute(info, "APPEND", "   IupPlotOpen");
-
-  if (IupGetGlobal("_IUP_MGLPLOT_OPEN"))
-    IupSetAttribute(info, "APPEND", "   IupMglPlotOpen");
 
   IupPopup(dlg, IUP_CENTERPARENT, IUP_CENTERPARENT);
   IupDestroy(dlg);
