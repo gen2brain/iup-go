@@ -86,9 +86,10 @@ static void fltkLabelSetPixmap(Ihandle* ih, const char* name, int make_inactive)
 
 extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
 {
-  (void)ih;
-  (void)x;
   (void)y;
+
+  if (ih->data->type == IUP_LABEL_TEXT)
+    *x += 6;
 }
 
 static int fltkLabelSetTitleAttrib(Ihandle* ih, const char* value)
