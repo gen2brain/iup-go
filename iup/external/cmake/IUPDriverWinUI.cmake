@@ -7,20 +7,43 @@ if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   )
 endif()
 
-file(GLOB _WINUI_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/winui/iupwinui_*.cpp")
+file(GLOB _WINUI_CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/winui/iupwinui_*.cpp")
 
-# C++20 and libc++ apply only to the C++ driver sources, not C core files
-set_source_files_properties(${_WINUI_SOURCES}
-  PROPERTIES COMPILE_OPTIONS "-std=c++20;-stdlib=libc++"
+# Build WinUI C++ sources as an object library so we can attach a PCH.
+add_library(iup_winui_driver OBJECT ${_WINUI_CXX_SOURCES})
+
+target_compile_options(iup_winui_driver PRIVATE -std=c++20 -stdlib=libc++)
+
+target_compile_definitions(iup_winui_driver PRIVATE
+  IUP_BUILD_LIBRARY
+  IUP_USE_WINUI
+  UNICODE
+  _UNICODE
+  _WIN32_WINNT=0x0A00
+  NTDDI_VERSION=0x0A000000
 )
 
-# WinUI reuses Win32 singleinstance and thread implementations
-list(APPEND _WINUI_SOURCES
+target_include_directories(iup_winui_driver PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/winui"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/winui/winrt"
+)
+
+set_target_properties(iup_winui_driver PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+target_precompile_headers(iup_winui_driver PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/winui/pch.h"
+)
+
+# WinUI reuses Win32 singleinstance and thread implementations (plain C).
+# Use $<TARGET_OBJECTS:> to merge C++ objects directly into the iup target
+# so they share the same link unit and can resolve core IUP symbols.
+set(IUP_DRIVER_SOURCES
+  $<TARGET_OBJECTS:iup_winui_driver>
   "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_singleinstance.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_thread.c"
 )
-
-set(IUP_DRIVER_SOURCES ${_WINUI_SOURCES})
 
 set(IUP_DRIVER_COMPILE_DEFINITIONS
   IUP_USE_WINUI
