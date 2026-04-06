@@ -5,9 +5,7 @@
  */
 
 #include <FL/Fl.H>
-#include <FL/Fl_RGB_Image.H>
 #include <FL/Fl_Shared_Image.H>
-#include <FL/Fl_Pixmap.H>
 #include <FL/Fl_PNG_Image.H>
 
 #include <cstdio>
@@ -21,10 +19,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
-#include "iup_drvinfo.h"
 }
-
-#include "iupfltk_drv.h"
 
 
 /****************************************************************************

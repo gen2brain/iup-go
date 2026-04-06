@@ -4,11 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <FL/Fl.H>
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Window.H>
-
-#include <cstdio>
 
 extern "C" {
 #include "iup.h"
@@ -16,7 +13,6 @@ extern "C" {
 #include "iup_focus.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_assert.h"
 }
 
 #include "iupfltk_drv.h"

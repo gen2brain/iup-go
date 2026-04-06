@@ -8,16 +8,11 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 
-#include <cstdlib>
-#include <cstring>
-
 extern "C" {
 #include "iup.h"
-#include "iupcbs.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_dialog.h"
 }
 
 #include "iupfltk_drv.h"

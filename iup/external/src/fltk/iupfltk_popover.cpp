@@ -12,7 +12,6 @@
 #include <FL/Fl_Group.H>
 #include <FL/fl_draw.H>
 
-#include <cstdlib>
 #include <cstring>
 
 extern "C" {
@@ -22,15 +21,9 @@ extern "C" {
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_childtree.h"
 #include "iup_class.h"
-#include "iup_register.h"
 #include "iup_popover.h"
 }
-
-#include "iupfltk_drv.h"
 
 
 class IupFltkPopover : public Fl_Window
@@ -53,6 +46,7 @@ public:
     end();
   }
 
+protected:
   void draw() override
   {
     Fl_Window::draw();
@@ -61,7 +55,7 @@ public:
     fl_rect(0, 0, w(), h());
   }
 
-protected:
+public:
   int handle(int event) override
   {
     switch (event)

@@ -8,16 +8,9 @@
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Scrollbar.H>
-#include <FL/Fl_Box.H>
 #include <FL/fl_draw.H>
 #include <FL/platform.H>
 
-#if defined(FLTK_USE_WAYLAND)
-#include <FL/wayland.H>
-#endif
-
-#include <cstdlib>
-#include <cstdio>
 #include <cstring>
 #include <climits>
 
@@ -29,10 +22,8 @@ extern "C" {
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
-#include "iup_drvfont.h"
 #include "iup_canvas.h"
 #include "iup_key.h"
-#include "iup_childtree.h"
 }
 
 #include "iupfltk_drv.h"
@@ -69,6 +60,7 @@ protected:
       Fl_Group::draw();
   }
 
+public:
   int handle(int event) override
   {
     if (event == FL_PUSH || event == FL_DRAG || event == FL_RELEASE ||
@@ -113,7 +105,6 @@ public:
   {
   }
 
-protected:
   void draw() override
   {
     if (!ih)
@@ -148,6 +139,7 @@ protected:
     }
   }
 
+public:
   int handle(int event) override
   {
     if (!ih)

@@ -5,7 +5,6 @@
  */
 
 #include <cstdio>
-#include <cstring>
 #include <cstdlib>
 
 #include <FL/Fl.H>

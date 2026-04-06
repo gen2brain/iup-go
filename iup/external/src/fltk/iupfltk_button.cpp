@@ -6,18 +6,14 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Button.H>
-#include <FL/Fl_Box.H>
 #include <FL/fl_draw.H>
 
-#include <cstdlib>
-#include <cstdio>
 #include <cstring>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
@@ -55,7 +51,6 @@ public:
   {
   }
 
-protected:
   int handle(int event) override
   {
     switch (event)

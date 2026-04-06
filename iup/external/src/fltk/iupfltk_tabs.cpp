@@ -13,21 +13,15 @@
 #include <FL/Fl_Group.H>
 #include <FL/fl_draw.H>
 
-#include <cstdlib>
 #include <cstring>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_dialog.h"
-#include "iup_childtree.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 #include "iup_image.h"
 #include "iup_tabs.h"
 }
@@ -57,31 +51,6 @@ public:
     if (w)
       return find(w);
     return -1;
-  }
-
-  int findInsertPos(int ex)
-  {
-    int n = children();
-    for (int i = 0; i < n; i++)
-    {
-      Fl_Widget* c = child(i);
-      int tab_x = c->x();
-      int tab_w = c->w();
-
-      /* which() uses the tab label position, but child x/w is the page area.
-         We need tab label positions. Use tab_positions() via redraw trick. */
-    }
-
-    /* Approximate: use which() to find nearest tab, then compare to midpoint */
-    /* Try each child position and find the insertion point */
-    Fl_Widget* w = which(ex, Fl::event_y());
-    if (!w) return n;
-
-    int idx = find(w);
-    /* Check if mouse is in left or right half of the tab */
-    /* Since we don't have direct access to tab label x positions,
-       use the child widget's approximate position relative to other tabs */
-    return idx;
   }
 
 protected:
@@ -114,6 +83,7 @@ protected:
     }
   }
 
+public:
   int handle(int event) override
   {
     switch (event)

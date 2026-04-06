@@ -21,14 +21,10 @@ extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_image.h"
 #include "iup_mask.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_key.h"
 #include "iup_array.h"
 #include "iup_text.h"
 }
@@ -74,7 +70,6 @@ public:
   IupFltkInput(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Input(x, y, w, h), iup_handle(ih) {}
 
-protected:
   int handle(int event) override
   {
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
@@ -109,7 +104,6 @@ public:
   IupFltkSecretInput(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Secret_Input(x, y, w, h), iup_handle(ih) {}
 
-protected:
   int handle(int event) override
   {
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
@@ -156,7 +150,6 @@ public:
     delete text_buffer;
   }
 
-protected:
   int handle(int event) override
   {
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
@@ -281,7 +274,6 @@ public:
     saved_text[0] = '\0';
   }
 
-protected:
   int handle(int event) override
   {
     if (noauto && (event == FL_PUSH || event == FL_KEYBOARD))

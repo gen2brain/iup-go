@@ -10,21 +10,17 @@
 #include <FL/Fl_Button.H>
 #include <FL/fl_draw.H>
 
-#include <cstdlib>
-#include <cstdio>
 #include <cstring>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_key.h"
 #include "iup_toggle.h"
 }
 
@@ -45,7 +41,6 @@ public:
   IupFltkSwitch(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Widget(x, y, w, h), iup_handle(ih), checked(0) {}
 
-protected:
   void draw() override
   {
     int tx = x();
@@ -88,6 +83,7 @@ protected:
     }
   }
 
+public:
   int handle(int event) override
   {
     switch (event)
@@ -149,7 +145,6 @@ public:
   IupFltkCheckButton(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Check_Button(x, y, w, h), iup_handle(ih) {}
 
-protected:
   int handle(int event) override
   {
     switch (event)
@@ -190,7 +185,6 @@ public:
     type(FL_RADIO_BUTTON);
   }
 
-protected:
   int handle(int event) override
   {
     switch (event)
@@ -217,7 +211,6 @@ public:
     type(FL_TOGGLE_BUTTON);
   }
 
-protected:
   int handle(int event) override
   {
     switch (event)
