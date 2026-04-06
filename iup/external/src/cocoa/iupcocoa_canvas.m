@@ -4,34 +4,24 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 #include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
-#include "iup_dialog.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
-#include "iup_drvfont.h"
 #include "iup_canvas.h"
 #include "iup_key.h"
 #include "iup_class.h"
 #include "iup_focus.h"
 
-#include "iupcocoa_draw.h"
 #include "iupcocoa_drv.h"
+#include "iupcocoa_draw.h"
 #include "iupcocoa_dragdrop.h"
 
 
@@ -1223,14 +1213,6 @@ static int cocoaCanvasSetNativeFocusRingAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaCanvasSetContextMenuAttrib(Ihandle* ih, const char* value)
-{
-  Ihandle* menu_ih = (Ihandle*)value;
-  IupCocoaCanvasView* canvas_view = cocoaCanvasGetCanvasView(ih);
-  iupcocoaCommonBaseSetContextMenuForWidget(ih, canvas_view, menu_ih);
-  return 1;
-}
-
 static int cocoaCanvasMapMethod(Ihandle* ih)
 {
   /* Create extra parent for absolute positioning of IUP children */
@@ -1296,9 +1278,7 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
       [v_scroller setAction:@selector(scrollerAction:)];
     }
 
-    /* For logical scrolling, DON'T observe clip view frame changes
-       The clip view changes size when scrollbars appear/disappear,
-       which would cause RESIZE_CB to fire with inconsistent DX/DY values
+    /* For logical scrolling, DON'T observe clip view frame changes.
        Instead, observe the scroll view frame changes (window resize only) */
     [scroll_view setPostsFrameChangedNotifications:YES];
     [notification_center addObserver:canvas_view

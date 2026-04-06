@@ -4,13 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
-
 #include <stdlib.h>
 #include <string.h>
-#include <memory.h>
-#include <stdio.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -18,7 +13,6 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_dialog.h"
 #include "iup_drvinfo.h"
 #include "iup_key.h"
 
@@ -308,16 +302,6 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
     }
   }
   return YES;
-}
-
-- (void)panel:(id)sender userDidClickHelp:(id)help
-{
-  Ihandle* ih = [self ihandle];
-  Icallback cb = (Icallback)IupGetCallback(ih, "HELP_CB");
-  if (cb && cb(ih) == IUP_CLOSE)
-  {
-    [[NSApplication sharedApplication] stopModal];
-  }
 }
 
 @end

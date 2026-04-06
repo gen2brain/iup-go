@@ -408,7 +408,7 @@
 
 - (void)mouseUp:(NSEvent*)event
 {
-  if (self.allowsAddingTabsByDoubleClick && event.clickCount == 2) /* We capture user double click on tabbar view */
+  if (self.allowsAddingTabsByDoubleClick && event.clickCount == 2) /* We capture user double-click on tabbar view */
   {
     NSPoint p =[event locationInWindow];
     p = [self convertPoint:p fromView:[[self window] contentView]];

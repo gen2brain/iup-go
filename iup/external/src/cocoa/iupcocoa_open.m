@@ -4,9 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Cocoa/Cocoa.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "iup.h"
@@ -14,7 +11,6 @@
 #include "iup_drvinfo.h"
 #include "iup_globalattrib.h"
 #include "iup_object.h"
-#include "iup_str.h"
 
 #include "iupcocoa_drv.h"
 

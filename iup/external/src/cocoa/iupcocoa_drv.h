@@ -11,13 +11,13 @@
 extern "C" {
 #endif
 
-#include "iup_export.h"
-
 #include <os/log.h>
 
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
+#import <objc/runtime.h>
 
+#include "iup_export.h"
 #include "iup_image.h"
 
 
@@ -38,7 +38,6 @@ IUP_DRV_API extern const void* ROOTVIEW_ASSOCIATED_OBJ_KEY;
 
 #define iupcocoaNSLog(FORMAT, ...) os_log_info(OS_LOG_DEFAULT, "%{public}@", [NSString stringWithFormat:FORMAT, ##__VA_ARGS__])
 
-IUP_DRV_API NSObject* iupcocoaGetRootObject(Ihandle* ih);
 IUP_DRV_API NSView* iupcocoaGetRootView(Ihandle* ih);
 IUP_DRV_API NSView* iupcocoaGetMainView(Ihandle* ih);
 IUP_DRV_API void iupcocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSView* root_view);
@@ -48,9 +47,6 @@ IUP_DRV_API void iupcocoaRemoveFromParent(Ihandle* ih);
 
 IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetParentView(Ihandle* ih);
 IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih);
-
-IUP_DRV_API void iupcocoaCommonLoopCallExitCb(void);
-IUP_DRV_API int iupcocoaMainLoopShouldQuit(void);
 
 /* Coordinate conversion helpers: Cocoa uses Cartesian (y-up), IUP uses (y-down). */
 IUP_DRV_API int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);
@@ -111,8 +107,6 @@ IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihand
 
 /* Image conversion helpers. */
 IUP_DRV_API int iupcocoaImageCalculateBytesPerRow(int width, int bytes_per_pixel);
-IUP_DRV_API NSBitmapImageRep* iupcocoaImageNSBitmapImageRepFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
-IUP_DRV_API NSImage* iupcocoaImageNSImageFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata);
 
 /* Handles IUP_CLOSE for modal dialogs. */
 IUP_DRV_API bool iupcocoaDialogExitModal(Ihandle* ih);

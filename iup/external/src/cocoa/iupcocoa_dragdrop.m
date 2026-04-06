@@ -9,8 +9,6 @@
 #include <string.h>
 #include <limits.h>
 
-#import <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
 #import <CoreServices/CoreServices.h>
 
 #include "iup.h"
@@ -20,7 +18,6 @@
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
-#include "iup_drv.h"
 #include "iup_key.h"
 #include "iup_image.h"
 
@@ -30,7 +27,6 @@
 
 const void* IUPSOURCEDRAG_ASSOCIATED_OBJ_KEY = @"IUPSOURCEDRAG_ASSOCIATED_OBJ_KEY";
 const void* IUPTARGETDROP_ASSOCIATED_OBJ_KEY = @"IUPTARGETDROP_ASSOCIATED_OBJ_KEY";
-
 
 @implementation IupTargetDropAssociatedData
 
@@ -635,7 +631,6 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
     NSData* ns_data = [NSData dataWithBytes:data_buffer length:data_size];
     [pasteboard_item setData:ns_data forType:type_name];
   }
-
 }
 
 - (bool) usesFilePromise
@@ -658,12 +653,6 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
     }
   }
   return false;
-}
-
-- (bool) hasFilePromiseCallback
-{
-  Ihandle* ih = [self ihandle];
-  return (IupGetCallback(ih, "DRAGFILECREATE_CB") != NULL);
 }
 
 - (void) pasteboard:(NSPasteboard*)paste_board item:(NSPasteboardItem*)pasteboard_item provideDataForType:(NSPasteboardType)type_name
@@ -1232,26 +1221,6 @@ static int cocoaSourceDragSetDragStartAttrib(Ihandle* ih, const char* value)
   [main_view beginDraggingSessionWithItems:@[dragging_item] event:the_event source:drag_source_data];
 
   return 0;
-}
-
-void iupCocoaDestroyDragDrop(Ihandle* ih)
-{
-  if (!ih || !ih->handle)
-    return;
-
-  id the_object = ih->handle;
-
-  IupTargetDropAssociatedData* drop_data = cocoaTargetDropGetAssociatedData(ih);
-  if (drop_data && [drop_data isDropTargetEnabled])
-  {
-    if ([the_object respondsToSelector:@selector(unregisterDraggedTypes)])
-    {
-      [the_object unregisterDraggedTypes];
-    }
-  }
-
-  cocoaTargetDropDestroyAssociatedData(ih);
-  cocoaSourceDragDestroyAssociatedData(ih);
 }
 
 IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)

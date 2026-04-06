@@ -4,30 +4,19 @@
  * See Copyright Notice in iup.h
  */
 
-#import <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
-#import <QuartzCore/QuartzCore.h>
-
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
+
+#import <QuartzCore/QuartzCore.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
-#include "iup_key.h"
 #include "iup_image.h"
-#include "iup_array.h"
 #include "iup_tree.h"
-
 #include "iup_drvinfo.h"
 
 #include "iupcocoa_drv.h"
@@ -1980,15 +1969,15 @@ static NSArray<IupCocoaTreeItem*>* iupCocoaTreeCreateFlatItemArray(IupCocoaTreeI
 /* And NSOutlineView provides UI that does distinguish between sibling or child and the user has fine control over where it is dropped. */
 /* So I think the problem is that we cannot express this in terms of IUP. */
 /* Additionally, iupTreeCopyMoveCache seems to imply I copied the nodes, and then will delete. */
-/* But Cocoa directly moved, so there is another impedience mismatch. */
+/* But Cocoa directly moved, so there is another impedance mismatch. */
 /*  */
-/* (The bigger problem I think is we shouldn't have a node_cache. */
+/* The bigger problem I think is we shouldn't have a node_cache. */
 /* "The two biggest problems in computer science are naming things and cache invalidation." */
 /* Because Cocoa already has two representations (the NSOutlineView and the data source delegate), */
 /* with a different internal layout than the third IUP node_cache, it is really hard to keep these in sync. */
 /* But for now, we are stuck with the node_cache. */
 /* So I need to create my own variants of iupTreeCopyMoveCache to properly update the node_cache so it stays in sync with */
-/* how Cocoa allows the user to manipulate the NSOutlineView.) */
+/* how Cocoa allows the user to manipulate the NSOutlineView. */
 static void iupCocoaTreeMoveCache(Ihandle* ih, int flat_index_before, int flat_index_after, int count_of_nodes_to_move)
 {
   /* I need to rearrange the internal IUP node_cache array.
@@ -2554,39 +2543,6 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
 /* ADDING ITEMS                                                              */
 /*****************************************************************************/
 
-/* This replicates the functionality of the internal static iTreeAddToCache from iup_tree.c, */
-/* but allows specifying the exact insertion ID. */
-static void cocoaTreeInsertInCache(Ihandle* ih, int id, InodeHandle* node_handle)
-{
-  /* iupTreeIncCacheMem must have been called before, and node_count incremented. */
-
-  /* Ensure id is valid within the new count. */
-  if (id < 0 || id >= ih->data->node_count)
-  {
-    /* Should not happen if called correctly. */
-    return;
-  }
-
-  if (id < ih->data->node_count - 1) /* If not adding at the very end */
-  {
-    /* open space for the new id */
-    /* Calculate the number of existing elements that need to be moved. */
-    /* Old count was ih->data->node_count - 1. */
-    /* We move elements from index 'id' up to 'old_count - 1'. */
-    int remain_count = (ih->data->node_count - 1) - id;
-
-    if (remain_count > 0)
-    {
-      /* Shift existing elements to the right by one position. */
-      memmove(ih->data->node_cache+id+1, ih->data->node_cache+id, remain_count*sizeof(InodeData));
-    }
-  }
-
-  /* Insert the new node handle and clear userdata. */
-  ih->data->node_cache[id].node_handle = node_handle;
-  ih->data->node_cache[id].userdata = NULL;
-}
-
 IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const char* title, int add)
 {
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
@@ -2884,24 +2840,6 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
   }
 
   iupTreeDelFromCache(ih, start_id, old_count - ih->data->node_count);
-}
-
-static void cocoaTreeRemoveAllNodeData(Ihandle* ih, int call_cb)
-{
-  IFns cb = (IFns)IupGetCallback(ih, "NODEREMOVED_CB");
-  int i, old_count = ih->data->node_count;
-
-  if (cb)
-  {
-    for (i = 0; i < ih->data->node_count; i++)
-    {
-      cb(ih, (char*)ih->data->node_cache[i].userdata);
-    }
-  }
-
-  ih->data->node_count = 0;
-
-  iupTreeDelFromCache(ih, 0, old_count);
 }
 
 /*****************************************************************************/
@@ -4296,17 +4234,6 @@ static int cocoaTreeSetFgColorAttrib(Ihandle* ih, const char* value)
 
   [outline_view reloadData];
 
-  return 1;
-}
-
-static int cocoaTreeSetHlColorAttrib(Ihandle* ih, const char* value)
-{
-  (void)value;
-  if (ih->handle)
-  {
-    NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
-    [outline_view setNeedsDisplay:YES];
-  }
   return 1;
 }
 

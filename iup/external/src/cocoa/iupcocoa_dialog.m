@@ -4,25 +4,16 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_class.h"
 #include "iup_object.h"
-#include "iup_layout.h"
-#include "iup_dlglist.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
-#include "iup_focus.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
@@ -237,93 +228,6 @@ static void cocoaDialogUpdateStyleMask(Ihandle* ih)
     [window setStyleMask:new_mask];
   }
 }
-
-/****************************************************************
- ********************** Modal Loop ******************************
- ****************************************************************/
-
-@interface IupNonRunLoopModalAppDelegate : NSObject <NSApplicationDelegate>
-{
-  Ihandle* _ih;
-}
-- (instancetype) initWithIhandle:(Ihandle*)ih;
-- (Ihandle*) ih;
-@end
-
-@implementation IupNonRunLoopModalAppDelegate
-
-- (instancetype) initWithIhandle:(Ihandle*)ih
-{
-  self = [super init];
-  if(nil != self)
-  {
-    _ih = ih;
-  }
-  return self;
-}
-
-- (Ihandle*) ih
-{
-  return _ih;
-}
-
-- (void) applicationWillFinishLaunching:(NSNotification*)a_notification
-{
-  if ([NSApp activationPolicy] == NSApplicationActivationPolicyProhibited)
-  {
-    [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-  }
-
-  Ihandle* ih = _ih;
-  if (ih->data->menu)
-  {
-    if (!ih->data->menu->handle)
-      IupMap(ih->data->menu);
-
-    if (ih->data->menu->handle)
-      iupcocoaMenuSetApplicationMenu(ih->data->menu);
-  }
-  else
-  {
-    Ihandle* global_menu = (Ihandle*)IupGetGlobal("MENU");
-    if (global_menu)
-    {
-      if (!global_menu->handle)
-        IupMap(global_menu);
-
-      if (global_menu->handle)
-        iupcocoaMenuSetApplicationMenu(global_menu);
-    }
-    else
-    {
-      iupcocoaEnsureDefaultApplicationMenu();
-    }
-  }
-}
-
-- (void) applicationDidFinishLaunching:(NSNotification*)a_notification
-{
-  Ihandle* ih = _ih;
-  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
-
-  [NSApp activateIgnoringOtherApps:YES];
-  [the_window makeKeyAndOrderFront:nil];
-  [the_window makeMainWindow];
-
-  [NSApp runModalForWindow:the_window];
-
-  [NSApp performSelectorOnMainThread:@selector(stop:) withObject:NSApp waitUntilDone:NO];
-}
-
-- (void) applicationWillTerminate:(NSNotification*)a_notification
-{
-  IFentry exit_callback = (IFentry)IupGetFunction("EXIT_CB");
-  if(NULL != exit_callback)
-  {
-    exit_callback();
-  }
-}
-@end
 
 IUP_DRV_API bool iupcocoaDialogExitModal(Ihandle* modal_ih)
 {
@@ -679,7 +583,6 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
 
 @end
 
-
 /****************************************************************
  ******************* Driver Functions ***************************
  ****************************************************************/
@@ -921,7 +824,6 @@ IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* parent)
     [parent_window addChildWindow:the_window ordered:NSWindowAbove];
   }
 }
-
 
 /****************************************************************
  ********************** Attributes ******************************
@@ -1174,7 +1076,6 @@ static char* cocoaDialogGetFullScreenAttrib(Ihandle* ih)
   return iupAttribGet(ih, "_IUPCOCOA_FULLSCREEN");
 }
 
-
 static int cocoaDialogSetDialogHintAttrib(Ihandle* ih, const char* value)
 {
   NSWindow* the_window = iupcocoaDialogGetWindow(ih);
@@ -1411,7 +1312,6 @@ static char* cocoaDialogGetMinimizedAttrib(Ihandle *ih)
 
   return iupStrReturnBoolean([the_window isMiniaturized]);
 }
-
 
 /****************************************************************
  ********************** Class Methods ***************************
@@ -1660,7 +1560,6 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
     });
   }
 }
-
 
 /****************************************************************
  ******************** Other Attributes **************************

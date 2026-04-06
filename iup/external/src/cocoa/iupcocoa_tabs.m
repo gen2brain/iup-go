@@ -1,11 +1,12 @@
-/*
+/** \file
+ * \brief Tabs Control for Cocoa
+ *
  * This implementation uses the custom IupCocoaTabBarView library to provide the tab bar UI,
  * and a custom NSView (IupTabsRootView) to manage the content area.
  * This approach allows for customization of fonts, colors, images and close button.
+ *
+ * See Copyright Notice in "iup.h"
  */
-
-#import <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,7 +17,6 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_tabs.h"
 #include "iup_array.h"
@@ -31,7 +31,6 @@ static int cocoaTabsPosFixFromNative(Ihandle* ih, int native_pos);
 static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos);
 static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_native);
 static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
-
 
 /*
    ===============================================================================

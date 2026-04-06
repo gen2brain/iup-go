@@ -4,11 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-#import <Cocoa/Cocoa.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -70,11 +67,6 @@ static int macLoopProcessMessage(NSEvent* event)
 int IupMainLoopLevel(void)
 {
   return mac_main_loop_level;
-}
-
-IUP_DRV_API int iupcocoaMainLoopShouldQuit(void)
-{
-  return mac_main_loop_should_quit;
 }
 
 int IupMainLoop(void)

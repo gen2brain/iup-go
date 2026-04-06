@@ -4,28 +4,18 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
-
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_label.h"
 #include "iup_drv.h"
-#include "iup_focus.h"
-#include "iup_childtree.h"
-#include "iup_markup.h"
 
 #include "iupcocoa_drv.h"
 

@@ -18,17 +18,16 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Foundation/Foundation.h>
-#import <AppKit/AppKit.h>
-
 #include <stdlib.h>
 #include <string.h>
+
+#import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_dlglist.h"
 

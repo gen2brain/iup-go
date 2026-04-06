@@ -4,28 +4,21 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
 #include <ctype.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_childtree.h"
 #include "iup_attrib.h"
-#include "iup_dialog.h"
 #include "iup_str.h"
 #include "iup_label.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
-#include "iup_key.h"
 #include "iup_menu.h"
 
 #include "iupcocoa_drv.h"
@@ -197,7 +190,6 @@ static char* cocoaMenuItemGetActiveAttrib(Ihandle* ih);
 }
 
 @end
-
 
 /*******************************************************************************************/
 /* Helper Functions                                                                        */
@@ -483,7 +475,6 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
   return 24;
 }
 
-
 /*******************************************************************************************/
 /* Application Menu Functions                                                              */
 /*******************************************************************************************/
@@ -626,7 +617,6 @@ static void cocoaMenuSynchronizeStandardMenus(NSMenu* menuBar)
     [[NSApplication sharedApplication] setHelpMenu:nil];
   }
 }
-
 
 /* Ensures that a default application menu exists and is set if no other menu is active. */
 IUP_DRV_API void iupcocoaEnsureDefaultApplicationMenu(void)
@@ -888,7 +878,6 @@ IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
   ic->Map = cocoaMenuSeparatorMapMethod;
   ic->UnMap = cocoaMenuSeparatorUnMapMethod;
 }
-
 
 /*******************************************************************************************/
 /* ITEM (IupMenuItem)                                                                          */
@@ -1186,6 +1175,148 @@ static int cocoaSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+/*******************************************************************************************/
+/* Recent Menu Support                                                                     */
+/*******************************************************************************************/
+
+static const void* RECENT_MENU_ASSOCIATED_OBJ_KEY = &RECENT_MENU_ASSOCIATED_OBJ_KEY;
+
+@interface IupCocoaRecentMenuItemTarget : NSObject
+{
+    Ihandle* _menu;
+    int _index;
+}
+@property (nonatomic, assign) Ihandle* menu;
+@property (nonatomic, assign) int index;
+- (instancetype) initWithMenu:(Ihandle*)menu index:(int)index;
+- (void) onRecentItemAction:(id)sender;
+@end
+
+@implementation IupCocoaRecentMenuItemTarget
+@synthesize menu = _menu;
+@synthesize index = _index;
+
+- (instancetype) initWithMenu:(Ihandle*)menu index:(int)index
+{
+    self = [super init];
+    if (self)
+    {
+        _menu = menu;
+        _index = index;
+    }
+    return self;
+}
+
+- (void) dealloc
+{
+    _menu = NULL;
+    [super dealloc];
+}
+
+- (void) onRecentItemAction:(id)sender
+{
+    if (!_menu) return;
+
+    Icallback recent_cb = (Icallback)iupAttribGet(_menu, "_IUP_RECENT_CB");
+    Ihandle* config = (Ihandle*)iupAttribGet(_menu, "_IUP_CONFIG");
+
+    if (recent_cb && config)
+    {
+        char attr_name[32];
+        const char* filename;
+
+        snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", _index);
+        filename = iupAttribGet(_menu, attr_name);
+
+        if (filename)
+        {
+            IupSetStrAttribute(config, "RECENTFILENAME", filename);
+            IupSetStrAttribute(config, "TITLE", filename);
+            config->parent = _menu;
+
+            if (recent_cb(config) == IUP_CLOSE)
+                IupExitLoop();
+
+            config->parent = NULL;
+            IupSetAttribute(config, "RECENTFILENAME", NULL);
+            IupSetAttribute(config, "TITLE", NULL);
+        }
+    }
+}
+
+@end
+
+IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
+{
+    iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
+    iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+    iupAttribSetInt(menu, "_IUP_RECENT_COUNT", 0);
+    return 0;
+}
+
+IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
+{
+    NSMenu* nsmenu;
+    int max_recent, existing, i;
+
+    if (!menu || !menu->handle)
+        return -1;
+
+    nsmenu = (NSMenu*)menu->handle;
+    max_recent = iupAttribGetInt(menu, "_IUP_RECENT_MAX");
+    existing = iupAttribGetInt(menu, "_IUP_RECENT_COUNT");
+
+    if (count > max_recent)
+        count = max_recent;
+
+    iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+
+    for (i = 0; i < count; i++)
+    {
+        char attr_name[32];
+        NSString* title = [NSString stringWithUTF8String:filenames[i]];
+
+        snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
+        iupAttribSetStr(menu, attr_name, filenames[i]);
+
+        if (i < existing)
+        {
+            NSMenuItem* item = [nsmenu itemAtIndex:i];
+            [item setTitle:title];
+        }
+        else
+        {
+            IupCocoaRecentMenuItemTarget* target = [[IupCocoaRecentMenuItemTarget alloc] initWithMenu:menu index:i];
+            NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:title
+                                                          action:@selector(onRecentItemAction:)
+                                                   keyEquivalent:@""];
+            [item setTarget:target];
+            [item setTag:i];
+            objc_setAssociatedObject(item, RECENT_MENU_ASSOCIATED_OBJ_KEY, target, OBJC_ASSOCIATION_RETAIN);
+            [target release];
+
+            [nsmenu insertItem:item atIndex:i];
+            [item release];
+        }
+    }
+
+    while ([nsmenu numberOfItems] > count && existing > count)
+    {
+        NSMenuItem* item = [nsmenu itemAtIndex:count];
+        [item setTarget:nil];
+        objc_setAssociatedObject(item, RECENT_MENU_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+        [nsmenu removeItemAtIndex:count];
+        existing--;
+
+        char attr_name[32];
+        snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", existing);
+        iupAttribSet(menu, attr_name, NULL);
+    }
+
+    iupAttribSetInt(menu, "_IUP_RECENT_COUNT", count);
+    return 0;
+}
+
 static int cocoaSubmenuMapMethod(Ihandle* ih)
 {
   if (!ih->parent || !ih->parent->handle) return IUP_ERROR;
@@ -1233,147 +1364,4 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-}
-
-
-/*******************************************************************************************/
-/* Recent Menu Support                                                                     */
-/*******************************************************************************************/
-
-static const void* RECENT_MENU_ASSOCIATED_OBJ_KEY = &RECENT_MENU_ASSOCIATED_OBJ_KEY;
-
-@interface IupCocoaRecentMenuItemTarget : NSObject
-{
-  Ihandle* _menu;
-  int _index;
-}
-@property (nonatomic, assign) Ihandle* menu;
-@property (nonatomic, assign) int index;
-- (instancetype) initWithMenu:(Ihandle*)menu index:(int)index;
-- (void) onRecentItemAction:(id)sender;
-@end
-
-@implementation IupCocoaRecentMenuItemTarget
-@synthesize menu = _menu;
-@synthesize index = _index;
-
-- (instancetype) initWithMenu:(Ihandle*)menu index:(int)index
-{
-  self = [super init];
-  if (self)
-  {
-    _menu = menu;
-    _index = index;
-  }
-  return self;
-}
-
-- (void) dealloc
-{
-  _menu = NULL;
-  [super dealloc];
-}
-
-- (void) onRecentItemAction:(id)sender
-{
-  if (!_menu) return;
-
-  Icallback recent_cb = (Icallback)iupAttribGet(_menu, "_IUP_RECENT_CB");
-  Ihandle* config = (Ihandle*)iupAttribGet(_menu, "_IUP_CONFIG");
-
-  if (recent_cb && config)
-  {
-    char attr_name[32];
-    const char* filename;
-
-    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", _index);
-    filename = iupAttribGet(_menu, attr_name);
-
-    if (filename)
-    {
-      IupSetStrAttribute(config, "RECENTFILENAME", filename);
-      IupSetStrAttribute(config, "TITLE", filename);
-      config->parent = _menu;
-
-      if (recent_cb(config) == IUP_CLOSE)
-        IupExitLoop();
-
-      config->parent = NULL;
-      IupSetAttribute(config, "RECENTFILENAME", NULL);
-      IupSetAttribute(config, "TITLE", NULL);
-    }
-  }
-}
-
-@end
-
-IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
-{
-  iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
-  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
-  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", 0);
-  return 0;
-}
-
-IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
-{
-  NSMenu* nsmenu;
-  int max_recent, existing, i;
-
-  if (!menu || !menu->handle)
-    return -1;
-
-  nsmenu = (NSMenu*)menu->handle;
-  max_recent = iupAttribGetInt(menu, "_IUP_RECENT_MAX");
-  existing = iupAttribGetInt(menu, "_IUP_RECENT_COUNT");
-
-  if (count > max_recent)
-    count = max_recent;
-
-  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
-
-  for (i = 0; i < count; i++)
-  {
-    char attr_name[32];
-    NSString* title = [NSString stringWithUTF8String:filenames[i]];
-
-    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
-    iupAttribSetStr(menu, attr_name, filenames[i]);
-
-    if (i < existing)
-    {
-      NSMenuItem* item = [nsmenu itemAtIndex:i];
-      [item setTitle:title];
-    }
-    else
-    {
-      IupCocoaRecentMenuItemTarget* target = [[IupCocoaRecentMenuItemTarget alloc] initWithMenu:menu index:i];
-      NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:title
-                                                    action:@selector(onRecentItemAction:)
-                                             keyEquivalent:@""];
-      [item setTarget:target];
-      [item setTag:i];
-      objc_setAssociatedObject(item, RECENT_MENU_ASSOCIATED_OBJ_KEY, target, OBJC_ASSOCIATION_RETAIN);
-      [target release];
-
-      [nsmenu insertItem:item atIndex:i];
-      [item release];
-    }
-  }
-
-  while ([nsmenu numberOfItems] > count && existing > count)
-  {
-    NSMenuItem* item = [nsmenu itemAtIndex:count];
-    [item setTarget:nil];
-    objc_setAssociatedObject(item, RECENT_MENU_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
-    [nsmenu removeItemAtIndex:count];
-    existing--;
-
-    char attr_name[32];
-    snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", existing);
-    iupAttribSet(menu, attr_name, NULL);
-  }
-
-  iupAttribSetInt(menu, "_IUP_RECENT_COUNT", count);
-  return 0;
 }

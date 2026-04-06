@@ -15,13 +15,11 @@
 
 #include <sys/utsname.h>
 #include <unistd.h>
-#include <limits.h>
 #include <langinfo.h>
 
 #include "iup.h"
 #include "iup_varg.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_class.h"
 #include "iup_classbase.h"
@@ -38,51 +36,6 @@ IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
   NSString *path = [NSString stringWithUTF8String:dir];
   BOOL r = [[NSFileManager defaultManager] changeCurrentDirectoryPath:path];
   return (r ? 1 : 0);
-}
-
-int cocoaMakeDirectory(const char* name)
-{
-  NSString *path = [NSString stringWithUTF8String:name];
-  NSDictionary *dic = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithUnsignedInt:0775], NSFilePosixPermissions, nil];
-  BOOL r = [[NSFileManager defaultManager] createDirectoryAtPath:path withIntermediateDirectories:YES attributes:dic error:NULL];
-  return (r ? 1 : 0);
-}
-
-int cocoaIsFile(const char* name)
-{
-  NSString *path = [NSString stringWithUTF8String:name];
-  BOOL isDir;
-  BOOL r = [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir];
-  return (r && !isDir ? 1 : 0);
-}
-
-int cocoaIsDirectory(const char* name)
-{
-  NSString *path = [NSString stringWithUTF8String:name];
-  BOOL isDir;
-  BOOL r = [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir];
-  return (r && isDir ? 1 : 0);
-}
-
-int cocoaGetWindowDecor(void* wnd, int *border, int *caption)
-{
-  (void)wnd;
-
-  NSRect contentRect = NSMakeRect(0, 0, 200, 200);
-  NSWindowStyleMask style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable;
-
-  NSRect frameRect = [NSWindow frameRectForContentRect:contentRect styleMask:style];
-
-  if (border)
-  {
-    *border = iupROUND((frameRect.size.width - contentRect.size.width) / 2.0);
-  }
-  if (caption)
-  {
-    *caption = iupROUND(frameRect.size.height - contentRect.size.height);
-  }
-
-  return 1;
 }
 
 IUP_SDK_API void iupdrvAddScreenOffset(int *x, int *y, int add)
