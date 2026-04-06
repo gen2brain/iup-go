@@ -11,6 +11,8 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
+#include "iup_dialog.h"
+
 #ifdef GDK_WINDOWING_WAYLAND
   #define IUP_EGL_HAS_WAYLAND
   #include <gdk/wayland/gdkwayland.h>
