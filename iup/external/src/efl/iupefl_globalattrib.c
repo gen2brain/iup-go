@@ -10,7 +10,6 @@
 
 #include "iup.h"
 
-#include "iup_object.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
@@ -233,10 +232,6 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
     return 1;
   }
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
-  {
-    return 1;
-  }
-  if (iupStrEqual(name, "IABORTWITHWARNING"))
   {
     return 1;
   }

@@ -28,7 +28,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_dialog.h"
-#include "iup_predialogs.h"
 #include "iup_array.h"
 #include "iup_dlglist.h"
 #include "iup_drv.h"

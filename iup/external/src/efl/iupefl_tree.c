@@ -12,14 +12,10 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
-#include "iup_array.h"
 #include "iup_tree.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_drvinfo.h"
 
 #include "iupefl_drv.h"
@@ -599,10 +595,10 @@ static void eflTreeStartRenameEdit(Ihandle* ih, Elm_Object_Item* item)
   icon = elm_object_item_part_content_get(item, "elm.swallow.icon");
   if (icon)
   {
-    int iw, ih_icon;
+    int iw;
     Eina_Rect ig = efl_gfx_entity_geometry_get(icon);
     int icon_x = ig.x;
-    iw = ig.w; ih_icon = ig.h;
+    iw = ig.w;
     text_x = icon_x + iw + 4;
     text_w = w - (text_x - x);
   }
@@ -1506,7 +1502,6 @@ static int eflTreeSetMarkAttrib(Ihandle* ih, const char* value)
     InodeHandle* start_node = (InodeHandle*)iupAttribGet(ih, "_IUP_EFL_MARKSTART");
     if (start_node)
     {
-      Elm_Object_Item* start_item = (Elm_Object_Item*)start_node;
       Elm_Object_Item* end_item = elm_genlist_selected_item_get(tree);
       int start_id, end_id, i;
       int mark = 1;
@@ -1601,35 +1596,12 @@ static int eflTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void eflTreeCallNodeRemovedRec(Ihandle* ih, Elm_Object_Item* item, IFns cb, int* id)
-{
-  const Eina_List* subitems;
-  const Eina_List* l;
-  Elm_Object_Item* child;
-
-  subitems = elm_genlist_item_subitems_get(item);
-  EINA_LIST_FOREACH(subitems, l, child)
-  {
-    eflTreeCallNodeRemovedRec(ih, child, cb, id);
-  }
-
-  if (cb)
-  {
-    IeflTreeNode* node = (IeflTreeNode*)elm_object_item_data_get(item);
-    if (node && node->userdata)
-      cb(ih, (char*)node->userdata);
-  }
-
-  (*id)++;
-}
-
 static void eflTreeDelNodeRec(Ihandle* ih, Elm_Object_Item* item, IFns cb)
 {
   const Eina_List* subitems;
   Eina_List* subitems_copy = NULL;
   const Eina_List* l;
   Elm_Object_Item* child;
-  int id = 0;
 
   subitems = elm_genlist_item_subitems_get(item);
   EINA_LIST_FOREACH(subitems, l, child)
@@ -1916,7 +1888,6 @@ static int eflTreeSetCopyNodeAttrib(Ihandle* ih, int id, const char* value)
   Elm_Object_Item* new_item;
   Elm_Genlist_Item_Class* itc;
   int dst_id;
-  int position = 0;
 
   if (!tree || !ih->handle)
     return 0;
@@ -2010,7 +1981,6 @@ static int eflTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)
   Elm_Object_Item* new_item;
   Elm_Genlist_Item_Class* itc;
   int dst_id;
-  int src_count;
 
   if (!tree || !ih->handle)
     return 0;
@@ -2043,8 +2013,6 @@ static int eflTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)
       parent = elm_genlist_item_parent_get(parent);
     }
   }
-
-  src_count = iupdrvTreeTotalChildCount(ih, src_handle);
 
   itc = (src_node->kind == ITREE_BRANCH) ? efl_tree_branch_itc : efl_tree_leaf_itc;
 

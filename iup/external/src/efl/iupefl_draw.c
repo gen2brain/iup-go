@@ -75,28 +75,6 @@ static void iDrawGetColor(long color, int* r, int* g, int* b, int* a)
   *a = alpha;
 }
 
-static void iDrawClearChildren(Efl_VG* container)
-{
-  const Eina_List* children;
-  const Eina_List* l;
-  Efl_VG* child;
-  Eina_List* to_delete = NULL;
-
-  children = efl_canvas_vg_container_children_direct_get(container);
-  if (!children)
-    return;
-
-  EINA_LIST_FOREACH(children, l, child)
-  {
-    to_delete = eina_list_append(to_delete, child);
-  }
-
-  EINA_LIST_FREE(to_delete, child)
-  {
-    efl_del(child);
-  }
-}
-
 static void iDrawClearEvasObjects(Eina_List** list)
 {
   Eo* obj;
@@ -107,24 +85,6 @@ static void iDrawClearEvasObjects(Eina_List** list)
   EINA_LIST_FREE(*list, obj)
   {
     efl_del(obj);
-  }
-
-  *list = NULL;
-}
-
-static void iDrawClearVgImages(Eina_List** list)
-{
-  IeflVgImageData* data;
-
-  if (!list || !*list)
-    return;
-
-  EINA_LIST_FREE(*list, data)
-  {
-    if (data->node)
-      efl_del(data->node);
-    free(data->pixels);
-    free(data);
   }
 
   *list = NULL;
@@ -744,6 +704,12 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
     efl_canvas_vg_image_data_set(vg_image, pixels, EINA_SIZE2D(vis_w, vis_h));
 
     img_data = (IeflVgImageData*)malloc(sizeof(IeflVgImageData));
+    if (!img_data)
+    {
+      free(pixels);
+      efl_del(vg_image);
+      return;
+    }
     img_data->node = vg_image;
     img_data->pixels = pixels;
     img_data->w = vis_w;
@@ -1296,6 +1262,14 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   efl_canvas_vg_image_data_set(vg_image, pixels, EINA_SIZE2D(buf_w, buf_h));
 
   img_data = (IeflVgImageData*)malloc(sizeof(IeflVgImageData));
+  if (!img_data)
+  {
+    free(pixels);
+    efl_del(vg_image);
+    if (text_copy)
+      free(text_copy);
+    return;
+  }
   img_data->node = vg_image;
   img_data->pixels = pixels;
   img_data->w = buf_w;
@@ -1463,6 +1437,12 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   efl_canvas_vg_image_data_set(vg_image, pixels, EINA_SIZE2D(vis_w, vis_h));
 
   img_data = (IeflVgImageData*)malloc(sizeof(IeflVgImageData));
+  if (!img_data)
+  {
+    free(pixels);
+    efl_del(vg_image);
+    return;
+  }
   img_data->node = vg_image;
   img_data->pixels = pixels;
   img_data->w = vis_w;

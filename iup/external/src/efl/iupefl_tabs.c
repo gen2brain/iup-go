@@ -6,7 +6,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -18,7 +17,6 @@
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_tabs.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 
 #include "iupefl_drv.h"

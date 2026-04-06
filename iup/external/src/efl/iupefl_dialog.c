@@ -36,13 +36,9 @@
 
 #include "iup_class.h"
 #include "iup_object.h"
-#include "iup_layout.h"
-#include "iup_dlglist.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_drvinfo.h"
-#include "iup_focus.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
@@ -1097,7 +1093,6 @@ static int eflDialogSetOpacityImageAttrib(Ihandle* ih, const char* value)
     {
       Eo* old_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_OPACITY_IMAGE");
       Eo* bg_img;
-      unsigned int* pixels;
       int x, y;
 
       if (old_img)

@@ -8,8 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "iupefl_drv.h"
-
 #include "iup.h"
 #include "iupcbs.h"
 
@@ -17,8 +15,9 @@
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
-#include "iup_drv.h"
 #include "iup_key.h"
+
+#include "iupefl_drv.h"
 
 
 /*****************************************************************************
@@ -326,8 +325,6 @@ static void eflStartDrag(Ihandle* ih, int x, int y)
         {
           if (!drag_text)
             drag_text = typeStr;
-          if (!drag_text)
-            drag_text = "drag";
 
           drag_content = efl_add(EFL_UI_TEXTBOX_CLASS, drag_win,
                                  efl_text_interactive_editable_set(efl_added, EINA_FALSE),

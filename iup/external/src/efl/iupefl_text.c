@@ -13,16 +13,13 @@
 
 #include "iup_object.h"
 #include "iup_class.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_array.h"
 #include "iup_mask.h"
 #include "iup_text.h"
 #include "iup_image.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_key.h"
 
 #include "iupefl_drv.h"
 

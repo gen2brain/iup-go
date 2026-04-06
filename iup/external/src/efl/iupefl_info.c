@@ -5,12 +5,8 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include "iup.h"
 #include "iup_export.h"
-#include "iup_str.h"
 #include "iup_drvinfo.h"
 
 #include "iupefl_drv.h"
@@ -138,7 +134,7 @@ IUP_SDK_API int iupdrvGetScrollbarSize(void)
   if (scroller)
   {
     Evas_Object* content;
-    int sw = 0, sh = 0, cw = 0, ch = 0;
+    int sw = 0, cw = 0, ch = 0;
 
     content = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas);
     efl_gfx_entity_size_set(content, EINA_SIZE2D(500, 500));
@@ -150,7 +146,6 @@ IUP_SDK_API int iupdrvGetScrollbarSize(void)
 
     Eina_Rect scroller_geom = efl_gfx_entity_geometry_get(scroller);
     sw = scroller_geom.w;
-    sh = scroller_geom.h;
     elm_scroller_region_get(scroller, NULL, NULL, &cw, &ch);
 
     cached_size = sw - cw;
@@ -164,4 +159,3 @@ IUP_SDK_API int iupdrvGetScrollbarSize(void)
 
   return cached_size;
 }
-

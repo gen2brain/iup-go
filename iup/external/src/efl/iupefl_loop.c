@@ -5,7 +5,6 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 
 #ifndef _WIN32
 #include <dlfcn.h>
@@ -37,7 +36,7 @@ static Ecore_Idler* efl_idler = NULL;
 static int efl_modal_loop_level = 0;
 static int efl_modal_loop_exit_flag[EFL_MODAL_LOOP_MAX_DEPTH] = {0};
 
-/* Dynamic loading of efl_loop_message_pending_flush (requires patched EFL) */
+/* Dynamic loading of efl_loop_message_pending_flush (requires EFL to be patched) */
 typedef void (*efl_loop_message_pending_flush_fn)(Eo *obj);
 static efl_loop_message_pending_flush_fn efl_pending_flush_func = NULL;
 static int efl_pending_flush_checked = 0;

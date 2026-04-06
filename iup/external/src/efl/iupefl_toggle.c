@@ -6,7 +6,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -237,7 +236,7 @@ static int eflToggleSetValueAttrib(Ihandle* ih, const char* value)
       Eo* radio_group = (Eo*)iupAttribGet(iupRadioFindToggleParent(ih), "_IUP_EFL_RADIO_GROUP");
       int radio_value = (intptr_t)iupAttribGet(ih, "_IUP_EFL_RADIO_VALUE");
       int current = efl_ui_radio_group_selected_value_get(radio_group);
-      check = !(current == radio_value);
+      check = current != radio_value;
     }
     else if (ih->data->type == IUP_TOGGLE_IMAGE || iupAttribGetBoolean(ih, "SWITCH"))
     {
@@ -521,7 +520,6 @@ static int eflToggleMapMethod(Ihandle* ih)
   char* title;
   Ihandle* radio;
   static int radio_value_counter = 1;
-  int is_first_radio = 0;
   int is_switch = 0;
 
   parent = iupeflGetParentWidget(ih);
@@ -604,7 +602,6 @@ static int eflToggleMapMethod(Ihandle* ih)
         if (!iupAttribGet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE"))
           efl_ui_selectable_fallback_selection_set(radio_group, radio_btn);
         efl_event_callback_add(radio_group, EFL_UI_RADIO_GROUP_EVENT_VALUE_CHANGED, eflRadioGroupValueChangedCallback, radio);
-        is_first_radio = 1;
       }
 
       if (!iupAttribGetHandleName(ih))

@@ -508,8 +508,12 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
   {
     if (count >= capacity)
     {
+      char** new_temp;
       capacity *= 2;
-      temp = (char**)realloc(temp, capacity * sizeof(char*));
+      new_temp = (char**)realloc(temp, capacity * sizeof(char*));
+      if (!new_temp)
+        break;
+      temp = new_temp;
     }
     temp[count] = iupStrDup(key);
     count++;
