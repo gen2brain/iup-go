@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <gtk/gtk.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -13,12 +12,10 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 #include "iup_key.h"
 #include "iup_image.h"
 
@@ -37,7 +34,7 @@ struct _IupTableRow
 {
   GObject parent;
   gchar** values;  /* Array of string values (one per column) */
-  GdkPaintable** images;  /* Array of image paintables (one per column), NULL if no images */
+  GdkPaintable** images;  /* Array of image paintable (one per column), NULL if no images */
   gint num_cols;
   gint row_index;  /* 1-based row index for IUP callbacks */
   guint update_count;  /* Incremented whenever any value changes */
@@ -308,7 +305,7 @@ static gboolean on_text_key_pressed(GtkEventControllerKey* controller, guint key
   GtkWidget* label = GTK_WIDGET(user_data);
 
   if (keyval == GDK_KEY_Escape)
-    g_object_set_data(G_OBJECT(label), "edit_cancelled", GINT_TO_POINTER(1));
+    g_object_set_data(G_OBJECT(label), "edit_canceled", GINT_TO_POINTER(1));
 
   (void)controller;
   (void)keycode;
@@ -357,8 +354,8 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
     char* original_value = iupdrvTableGetCellValue(ih, lin, col + 1);
     g_object_set_data_full(object, "original_value", original_value ? g_strdup(original_value) : NULL, g_free);
 
-    /* Clear edit_cancelled flag - default is accepted unless Escape is pressed */
-    g_object_set_data(object, "edit_cancelled", GINT_TO_POINTER(0));
+    /* Clear edit_canceled flag - default is accepted unless Escape is pressed */
+    g_object_set_data(object, "edit_canceled", GINT_TO_POINTER(0));
 
     /* Connect to GtkText to monitor Escape key */
     GtkEditable* editable = GTK_EDITABLE(object);
@@ -400,9 +397,9 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
     /* Get original value that was stored when editing started */
     const char* old_text = g_object_get_data(object, "original_value");
 
-    /* Check if Escape was pressed - default is accepted (1) unless cancelled (0) */
-    int edit_cancelled = GPOINTER_TO_INT(g_object_get_data(object, "edit_cancelled"));
-    int apply = edit_cancelled ? 0 : 1;
+    /* Check if Escape was pressed - default is accepted (1) unless canceled (0) */
+    int edit_canceled = GPOINTER_TO_INT(g_object_get_data(object, "edit_canceled"));
+    int apply = edit_canceled ? 0 : 1;
 
     /* Remove key controller */
     GtkEventController* key_controller = g_object_get_data(object, "key_controller");
@@ -440,7 +437,7 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
     }
 
     /* Clean up stored data */
-    g_object_set_data(object, "edit_cancelled", NULL);
+    g_object_set_data(object, "edit_canceled", NULL);
     g_object_set_data(object, "original_value", NULL);
 
     /* Clear currently_editing_label if it's this widget */
@@ -607,21 +604,6 @@ static void gtk4TableNotifyRow(Igtk4TableData* gtk_data, int lin)
       g_object_notify_by_pspec(G_OBJECT(row), row_props[PROP_UPDATE]);
       g_object_unref(row);
     }
-  }
-}
-
-static void gtk4TableUpdateFocus(Ihandle* ih, int old_row, int old_col, int new_row, int new_col)
-{
-  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
-  gtk_data->current_row = new_row;
-  gtk_data->current_col = new_col;
-
-  if (old_row != new_row || old_col != new_col)
-  {
-    if (old_row >= 1)
-      gtk4TableNotifyRow(gtk_data, old_row);
-    if (new_row >= 1 && new_row != old_row)
-      gtk4TableNotifyRow(gtk_data, new_row);
   }
 }
 
@@ -1012,12 +994,10 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
     if (pos != GTK_INVALID_LIST_POSITION)
     {
       int old_row = gtk_data->current_row;
-      int old_col = gtk_data->current_col;
 
       gtk_data->current_row = pos + 1;
 
       GListModel* columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
-      guint n_columns = g_list_model_get_n_items(columns);
       double column_x = 0;
 
       for (guint i = 0; i < ih->data->num_col; i++)
@@ -1064,7 +1044,6 @@ static gboolean on_key_pressed(GtkEventControllerKey* controller, guint keyval, 
 
   if (keyval == GDK_KEY_Tab || keyval == GDK_KEY_ISO_Left_Tab)
   {
-    int old_col = gtk_data->current_col;
     int old_row = gtk_data->current_row;
 
     if (state & GDK_SHIFT_MASK)
@@ -2170,7 +2149,6 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 
   {
     int old_row = gtk_data->current_row;
-    int old_col = gtk_data->current_col;
 
     gtk_data->current_row = lin;
     gtk_data->current_col = col;

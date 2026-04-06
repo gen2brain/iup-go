@@ -4,13 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <gtk/gtk.h>
-
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 #include "iupcbs.h"

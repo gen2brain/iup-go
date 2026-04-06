@@ -5,11 +5,8 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <locale.h>
 
-#include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
 #ifdef GDK_WINDOWING_WAYLAND
@@ -27,7 +24,6 @@
 #endif
 
 #include "iup.h"
-#include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_object.h"

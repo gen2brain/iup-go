@@ -4,21 +4,18 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_key.h"
 #include "iup_str.h"
-
 #include "iup_drv.h"
+
 #include "iupgtk4_drv.h"
 
 

@@ -7,6 +7,8 @@
 #ifndef __IUPGTK4_DRV_H
 #define __IUPGTK4_DRV_H
 
+#include <gtk/gtk.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

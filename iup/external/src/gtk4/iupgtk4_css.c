@@ -6,8 +6,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <gtk/gtk.h>
-
 #include "iup.h"
 #include "iup_object.h"
 

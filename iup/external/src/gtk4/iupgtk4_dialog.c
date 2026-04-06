@@ -4,48 +4,29 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <gtk/gtk.h>
-
 #ifdef GDK_WINDOWING_WAYLAND
 #include <gdk/wayland/gdkwayland.h>
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 #include <limits.h>
-#include <time.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_class.h"
 #include "iup_object.h"
-#include "iup_layout.h"
-#include "iup_dlglist.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_drvinfo.h"
-#include "iup_focus.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
 #include "iup_image.h"
-#include "iup_assert.h"
 
 #include "iupgtk4_drv.h"
 #include "iupgtk4_x11.h"
 
-
-static void gtk4DialogSetTransientFor(GtkWindow* dialog, Ihandle* ih)
-{
-  GtkWindow* parent = iupgtk4GetTransientFor(ih);
-  if (parent)
-    gtk_window_set_transient_for(dialog, parent);
-}
 
 static void gtk4DialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int max_h);
 
@@ -465,9 +446,6 @@ static void gtk4DialogWindowStateChanged(GObject* window, GParamSpec* pspec, Iha
     state = IUP_RESTORE;
   }
 
-  if (state < 0)
-    return;
-
   if (ih->data->show_state != state)
   {
     IFni cb;
@@ -602,8 +580,6 @@ static int gtk4DialogMapMethod(Ihandle* ih)
 
 static void gtk4DialogUnMapMethod(Ihandle* ih)
 {
-  GtkWidget* inner_parent;
-
   if (ih->data->menu)
   {
     ih->data->menu->handle = NULL;
@@ -657,7 +633,6 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
 
   /* Check if we have CSD (Client-Side Decorations) */
   gboolean has_csd = gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "csd");
-  gboolean has_solid_csd = gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "solid-csd");
 
   width = ih->currentwidth - 2 * border;
 

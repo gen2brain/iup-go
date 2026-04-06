@@ -5,17 +5,12 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <limits.h>
-#include <sys/stat.h>
 
 #include <gtk/gtk.h>
 #include <glib.h>
-#include <glib/gstdio.h>
 
 #include "iup_export.h"
-#include "iup_str.h"
 #include "iup_drvinfo.h"
 
 #include "iupgtk4_x11.h"

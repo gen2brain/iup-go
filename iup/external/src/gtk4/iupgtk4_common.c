@@ -9,11 +9,8 @@
 #include <string.h>
 #include <limits.h>
 
-#include <gtk/gtk.h>
-
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"
@@ -21,11 +18,8 @@
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
-#include "iup_focus.h"
 #include "iup_image.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
-#include "iup_assert.h"
 #include "iup_dialog.h"
 #include "iup_dlglist.h"
 #include "iup_markup.h"
@@ -322,7 +316,6 @@ static int gtk4IsFixed(GtkWidget* widget)
 static GtkWidget* gtk4GetNativeParent(Ihandle* ih)
 {
   GtkWidget* widget = iupChildTreeGetNativeParentHandle(ih);
-  GtkWidget* original_widget = widget;
   int step = 0;
 
   /* Special case: If widget is the menu VBox wrapper, get inner_parent from dialog */
@@ -908,7 +901,7 @@ IUP_DRV_API int iupgtk4IsSystemDarkMode(void)
 
 IUP_SDK_API void iupdrvSleep(int time)
 {
-  g_usleep(time*1000);  /* mili to micro */
+  g_usleep(time*1000);  /* milli to micro */
 }
 
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)

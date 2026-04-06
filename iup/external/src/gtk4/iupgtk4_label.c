@@ -4,19 +4,11 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <gtk/gtk.h>
-
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
@@ -199,7 +191,7 @@ static void gtk4LabelSetPaintable(Ihandle* ih, const char* name, int make_inacti
       int pw = gdk_paintable_get_intrinsic_width(paintable);
       int ph = gdk_paintable_get_intrinsic_height(paintable);
 
-      /* Use GtkPicture which renders paintables at exact pixel size */
+      /* Use GtkPicture which renders paintable at exact pixel size */
       gtk_picture_set_paintable(picture, paintable);
 
       /* Set size request to ensure widget requests the image's size */

@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <gtk/gtk.h>
 #include <glib/gstdio.h>
 
 #include <stdlib.h>
@@ -18,10 +17,8 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drvinfo.h"
 #include "iup_dialog.h"
 #include "iup_dlglist.h"
-#include "iup_predialogs.h"
 #include "iup_array.h"
 #include "iup_drv.h"
 
@@ -89,7 +86,7 @@ static void gtk4FileDlgGetMultipleFiles(Ihandle* ih, GListModel* list)
     if (dir[dir_len - 1] == '/' || dir[dir_len - 1] == '\\') len--;  /* remove last '/' */
 
     all_names = iupArrayAdd(names_array, len + 1);
-    memcpy(all_names, dir, len);  /* does NOT includes last separator */
+    memcpy(all_names, dir, len);  /* does NOT include last separator */
     all_names[len] = '|';
 
     iupAttribSetStrId(ih, "MULTIVALUE", 0, dir);  /* same as directory, includes last separator */
@@ -794,7 +791,7 @@ static int gtk4FileDlgPopupLegacy(Ihandle* ih, int x, int y)
           continue;
         }
 
-        if (!file_exist)  /* if do not exist check ALLOWNEW */
+        if (!file_exist)  /* if it does not exist check ALLOWNEW */
         {
           value = iupAttribGet(ih, "ALLOWNEW");
           if (!value)

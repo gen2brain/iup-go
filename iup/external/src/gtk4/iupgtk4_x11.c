@@ -14,7 +14,6 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <gdk/x11/gdkx.h>
 
-#include <stdlib.h>
 #include <string.h>
 
 #include "iup_export.h"

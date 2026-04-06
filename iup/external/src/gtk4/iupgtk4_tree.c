@@ -4,31 +4,21 @@
  * See Copyright Notice in iup.h
  */
 
-#include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
-#include "iup_key.h"
 #include "iup_image.h"
-#include "iup_array.h"
 #include "iup_tree.h"
 
-#include "iup_drvinfo.h"
 #include "iupgtk4_drv.h"
 
 
@@ -523,45 +513,6 @@ iupgtk4TreeToggleGetCheck(IupGtk4TreeNode *node, int show_toggle)
     return -1;
   return node->check ? 1 : 0;
 }
-
-/* Get the GtkTreeListRow for a node at a given position */
-static GtkTreeListRow*
-iupgtk4TreeGetRowAtPosition(Ihandle *ih, int pos)
-{
-  GtkTreeListModel *tree_model = GTK_TREE_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_TREE_MODEL"));
-  return gtk_tree_list_model_get_row(tree_model, pos);
-}
-
-/* Check if a node is currently visible (all ancestors expanded) */
-static gboolean
-iupgtk4TreeIsNodeVisible(Ihandle *ih, IupGtk4TreeNode *node)
-{
-  GtkTreeListModel *tree_model = GTK_TREE_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_TREE_MODEL"));
-  IupGtk4TreeNode *current = node->parent;
-
-  while (current)
-  {
-    /* Find the row for this ancestor */
-    int pos = iupgtk4TreeGetVisiblePosition(ih, current);
-    if (pos < 0)
-      return FALSE;
-
-    GtkTreeListRow *row = gtk_tree_list_model_get_row(tree_model, pos);
-    if (!row)
-      return FALSE;
-
-    gboolean expanded = gtk_tree_list_row_get_expanded(row);
-    g_object_unref(row);
-
-    if (!expanded)
-      return FALSE;
-
-    current = current->parent;
-  }
-
-  return TRUE;
-}
-
 
 /*****************************************************************************/
 /* Item widget structure - used by factory callbacks and rename functions    */
