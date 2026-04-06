@@ -6,7 +6,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <clocale>
 #include <cstdint>
 
@@ -25,9 +24,7 @@
 
 extern "C" {
 #include "iup.h"
-#include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_object.h"
 #include "iup_globalattrib.h"
 #define _IUPDLG_PRIVATE

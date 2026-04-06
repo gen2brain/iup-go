@@ -10,7 +10,6 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Widget.H>
-#include <FL/Fl_RGB_Image.H>
 #include <FL/Fl_Copy_Surface.H>
 
 #include <cstdlib>
@@ -19,12 +18,9 @@
 extern "C" {
 #include "iup.h"
 #include "iup_object.h"
-#include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 }
-
-#include "iupfltk_drv.h"
 
 
 static char* fltk_clipboard_text = NULL;

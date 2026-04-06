@@ -8,20 +8,15 @@
 #include <FL/Fl_Slider.H>
 #include <FL/fl_draw.H>
 
-#include <cstdlib>
 #include <cstring>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_val.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_key.h"
 }
 
 #include "iupfltk_drv.h"
@@ -45,7 +40,6 @@ public:
     step(0.0);
   }
 
-protected:
   int handle(int event) override
   {
     switch (event)

@@ -11,8 +11,6 @@
 #include <FL/fl_draw.H>
 #include <FL/platform.H>
 
-#include <cstdlib>
-#include <cstdio>
 #include <cstring>
 #include <climits>
 
@@ -21,11 +19,8 @@ extern "C" {
 #include "iupcbs.h"
 #include "iup_class.h"
 #include "iup_object.h"
-#include "iup_layout.h"
-#include "iup_dlglist.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_drvinfo.h"
 #include "iup_focus.h"
 #include "iup_str.h"
@@ -50,6 +45,7 @@ public:
   IupFltkDialogInner(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Group(x, y, w, h), bg_image(NULL), iup_handle(ih) {}
 
+protected:
   void draw() override
   {
     if (bg_image)
@@ -96,7 +92,6 @@ public:
   {
   }
 
-protected:
   int handle(int event) override
   {
     switch (event)

@@ -6,8 +6,6 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_File_Chooser.H>
-#include <FL/Fl_File_Icon.H>
-#include <FL/Fl_Box.H>
 #include <FL/fl_draw.H>
 
 #include <cstdlib>
@@ -23,7 +21,6 @@ extern "C" {
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 #include "iup_dialog.h"
-#include "iup_predialogs.h"
 #include "iup_array.h"
 }
 
@@ -271,7 +268,6 @@ public:
     box(FL_DOWN_FRAME);
   }
 
-protected:
   void draw() override
   {
     draw_box();

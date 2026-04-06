@@ -17,7 +17,6 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_array.h"
 #include "iup_object.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_assert.h"
 }

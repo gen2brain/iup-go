@@ -22,16 +22,13 @@ extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_mask.h"
 #include "iup_key.h"
 #include "iup_image.h"
 #include "iup_list.h"
-#include "iup_childtree.h"
 }
 
 #include "iupfltk_drv.h"
@@ -148,6 +145,7 @@ protected:
     }
   }
 
+public:
   int handle(int event) override
   {
     switch (event)
@@ -264,7 +262,6 @@ public:
   IupFltkMultiBrowser(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Multi_Browser(x, y, w, h), iup_handle(ih) {}
 
-protected:
   int handle(int event) override
   {
     switch (event)
@@ -292,7 +289,6 @@ public:
   IupFltkChoice(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Choice(x, y, w, h), iup_handle(ih) {}
 
-protected:
   int handle(int event) override
   {
     switch (event)
@@ -325,7 +321,6 @@ public:
   IupFltkListInput(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Input(x, y, w, h), iup_handle(ih) {}
 
-protected:
   int handle(int event) override
   {
     switch (event)

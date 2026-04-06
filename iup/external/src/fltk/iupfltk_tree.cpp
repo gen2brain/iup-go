@@ -20,16 +20,9 @@ extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
-#include "iup_key.h"
 #include "iup_image.h"
-#include "iup_array.h"
-#include "iup_childtree.h"
 #include "iup_tree.h"
 }
 
@@ -173,7 +166,6 @@ public:
   IupFltkRenameInput(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Input(x, y, w, h), iup_handle(ih), active(0) {}
 
-protected:
   int handle(int event) override
   {
     if (event == FL_KEYBOARD)
@@ -301,6 +293,7 @@ protected:
     }
   }
 
+public:
   int handle(int event) override
   {
     switch (event)

@@ -16,12 +16,9 @@
 #endif
 
 #include <cstdlib>
-#include <cstring>
 
 extern "C" {
 #include "iup.h"
-#include "iup_str.h"
-#include "iup_object.h"
 #include "iup_drvinfo.h"
 }
 

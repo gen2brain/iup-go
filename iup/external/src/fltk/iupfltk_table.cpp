@@ -20,15 +20,12 @@ extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
-#include "iup_childtree.h"
 #include "iup_table.h"
-#include "iup_key.h"
 }
 
 #include "iupfltk_drv.h"
@@ -147,7 +144,6 @@ public:
   IupFltkTableInput(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Input(x, y, w, h), iup_handle(ih), active(0) {}
 
-protected:
   int handle(int event) override
   {
     if (event == FL_KEYBOARD)
@@ -1506,8 +1502,6 @@ extern "C" IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int co
   snprintf(name, sizeof(name), "_CELLIMAGE%d:%d", lin, col);
   iupAttribSetStr(ih, name, image);
 
-  int r = lin - 1;
-  int c = col - 1;
   table->redraw();
 }
 

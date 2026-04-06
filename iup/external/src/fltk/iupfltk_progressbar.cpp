@@ -13,13 +13,10 @@
 
 extern "C" {
 #include "iup.h"
-#include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_progressbar.h"
-#include "iup_drv.h"
 }
 
 #include "iupfltk_drv.h"
@@ -33,11 +30,8 @@ public:
   IupFltkVertProgress(int x, int y, int w, int h)
     : Fl_Widget(x, y, w, h), vmin(0), vmax(100), val(0) {}
 
-  void minimum(double v) { vmin = v; }
-  void maximum(double v) { vmax = v; }
   void value(double v) { val = v; redraw(); }
 
-protected:
   void draw() override
   {
     fl_draw_box(FL_DOWN_BOX, x(), y(), w(), h(), FL_BACKGROUND2_COLOR);

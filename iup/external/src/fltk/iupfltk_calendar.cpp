@@ -9,24 +9,17 @@
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Button.H>
-#include <FL/Fl_Repeat_Button.H>
 #include <FL/fl_draw.H>
 
-#include <cstdlib>
 #include <cstdio>
-#include <cstring>
 #include <ctime>
 
 extern "C" {
 #include "iup.h"
-#include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_register.h"
 }
 
 #include "iupfltk_drv.h"
@@ -347,7 +340,6 @@ public:
     rebuildGrid();
   }
 
-protected:
   int handle(int event) override
   {
     switch (event)

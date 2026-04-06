@@ -20,9 +20,6 @@ extern "C" {
 #include "iupcbs.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_key.h"
 }
 
