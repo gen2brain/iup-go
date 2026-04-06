@@ -62,20 +62,18 @@ enum Iexpand {
 
 /** A simple definition that do not depend on the native system,
    but helps a lot when writing native code. See \ref iup_object.h for definitions.
+   Uses IUP_USE_* compile definitions instead of toolkit header sniffing,
+   so include order does not matter.
  * \ingroup object */
-#if defined(GTK_MAJOR_VERSION)
+#if defined(IUP_USE_GTK2) || defined(IUP_USE_GTK3) || defined(IUP_USE_GTK4)
 typedef struct _GtkWidget InativeHandle;
-#elif defined(XmVERSION)
+#elif defined(IUP_USE_MOTIF)
 typedef struct _WidgetRec InativeHandle;
 #elif defined(WINVER)
 typedef struct HWND__ InativeHandle;
 #elif defined(__APPLE__)
-//#import <CoreFoundation/CoreFoundation.h>
-/* Both id and CFTypeRef are already pointers. */
 typedef void InativeHandle;
 #elif defined(__ANDROID__)
-//#include <jni.h>
-/* jobject already includes the pointer. Use _jobject instead. */
 struct _jobject;
 typedef struct _jobject InativeHandle;
 #else
@@ -108,7 +106,7 @@ struct Ihandle_
   Itable* attrib;        /**< attributes table */
   int serial;            /**< serial number used for controls that need a numeric id, initialized with -1 */
   InativeHandle* handle; /**< native handle. initialized when mapped. InativeHandle definition is system dependent. */
-  int expand;            /**< expand configuration, a combination of \ref Iexpand, for containers is a combination of the children expand's */
+  int expand;            /**< expand configuration, a combination of \ref Iexpand, for containers is a combination of the children expands */
   int flags;             /**< flags configuration, a combination of \ref Iflags */
   int x, y;              /**< upper-left corner relative to the native parent. always 0 for the dialog. */
   int userwidth, userheight;       /**< user defined size for the control using SIZE or RASTERSIZE */
