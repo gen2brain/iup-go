@@ -121,7 +121,7 @@ IUP_DRV_API std::wstring iupwinuiStringToWString(const char* str);
  * Mnemonic Processing Helper
  *
  * Processes mnemonic markers (&) in text:
- * - Strips & from the text (returns processed hstring)
+ * - Strips & from the text (returns processed string)
  * - Returns the mnemonic character if found (in c parameter)
  ****************************************************************************/
 

@@ -21,9 +21,7 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_dialog.h"
-#include "iup_register.h"
 }
 
 #include "iupwinui_drv.h"
@@ -280,7 +278,7 @@ static HRESULT winuiFileDlgShow(IFileDialog* pDialog, HWND parent, Ihandle* ih)
 class winuiFileDlgEventHandler : public IFileDialogEvents, public IFileDialogControlEvents
 {
 public:
-  IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv)
+  IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv) override
   {
     if (riid == IID_IUnknown || riid == IID_IFileDialogEvents)
     {
@@ -298,28 +296,28 @@ public:
     return E_NOINTERFACE;
   }
 
-  IFACEMETHODIMP_(ULONG) AddRef() { return InterlockedIncrement(&_cRef); }
-  IFACEMETHODIMP_(ULONG) Release()
+  IFACEMETHODIMP_(ULONG) AddRef() override { return InterlockedIncrement(&_cRef); }
+  IFACEMETHODIMP_(ULONG) Release() override
   {
     long cRef = InterlockedDecrement(&_cRef);
     if (!cRef) delete this;
     return cRef;
   }
 
-  IFACEMETHODIMP OnFileOk(IFileDialog* pfd);
-  IFACEMETHODIMP OnSelectionChange(IFileDialog* pfd);
-  IFACEMETHODIMP OnTypeChange(IFileDialog* pfd);
-  IFACEMETHODIMP OnFolderChange(IFileDialog*) { return S_OK; }
-  IFACEMETHODIMP OnFolderChanging(IFileDialog*, IShellItem*) { return S_OK; }
-  IFACEMETHODIMP OnShareViolation(IFileDialog*, IShellItem*, FDE_SHAREVIOLATION_RESPONSE*) { return S_OK; }
-  IFACEMETHODIMP OnOverwrite(IFileDialog*, IShellItem*, FDE_OVERWRITE_RESPONSE*) { return S_OK; }
+  IFACEMETHODIMP OnFileOk(IFileDialog* pfd) override;
+  IFACEMETHODIMP OnSelectionChange(IFileDialog* pfd) override;
+  IFACEMETHODIMP OnTypeChange(IFileDialog* pfd) override;
+  IFACEMETHODIMP OnFolderChange(IFileDialog*) override { return S_OK; }
+  IFACEMETHODIMP OnFolderChanging(IFileDialog*, IShellItem*) override { return S_OK; }
+  IFACEMETHODIMP OnShareViolation(IFileDialog*, IShellItem*, FDE_SHAREVIOLATION_RESPONSE*) override { return S_OK; }
+  IFACEMETHODIMP OnOverwrite(IFileDialog*, IShellItem*, FDE_OVERWRITE_RESPONSE*) override { return S_OK; }
 
-  IFACEMETHODIMP OnButtonClicked(IFileDialogCustomize*, DWORD dwIDCtl);
-  IFACEMETHODIMP OnItemSelected(IFileDialogCustomize*, DWORD, DWORD) { return S_OK; }
-  IFACEMETHODIMP OnCheckButtonToggled(IFileDialogCustomize*, DWORD, BOOL) { return S_OK; }
-  IFACEMETHODIMP OnControlActivating(IFileDialogCustomize*, DWORD) { return S_OK; }
+  IFACEMETHODIMP OnButtonClicked(IFileDialogCustomize*, DWORD dwIDCtl) override;
+  IFACEMETHODIMP OnItemSelected(IFileDialogCustomize*, DWORD, DWORD) override { return S_OK; }
+  IFACEMETHODIMP OnCheckButtonToggled(IFileDialogCustomize*, DWORD, BOOL) override { return S_OK; }
+  IFACEMETHODIMP OnControlActivating(IFileDialogCustomize*, DWORD) override { return S_OK; }
 
-  winuiFileDlgEventHandler(Ihandle* _ih) : _cRef(1), ih(_ih) {}
+  winuiFileDlgEventHandler(Ihandle* _ih) : ih(_ih), _cRef(1) {}
 
 private:
   ~winuiFileDlgEventHandler() {}

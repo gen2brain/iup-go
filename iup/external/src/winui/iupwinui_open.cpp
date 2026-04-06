@@ -4,8 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <cstdlib>
-#include <cstring>
 #include <clocale>
 #include "pch.h"
 #include <shobjidl.h>
@@ -45,8 +43,6 @@ static MddBootstrapShutdownFunc winui_bootstrap_shutdown = NULL;
 extern "C" {
 #include "iup.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
-#include "iup_object.h"
 #include "iup_globalattrib.h"
 }
 
@@ -185,7 +181,6 @@ static int iupwinuiInitBootstrap(void)
 
   /* Try Windows App SDK versions from newest to oldest */
   UINT32 versions[] = { 0x00010008, 0x00010007, 0x00010006, 0x00010005, 0x00010004, 0x00010003, 0x00010002, 0x00010001 };
-  HRESULT lastHr = S_OK;
   for (int i = 0; i < 8; i++)
   {
     HRESULT hr = initFunc(versions[i], NULL, minVersion);
@@ -193,7 +188,6 @@ static int iupwinuiInitBootstrap(void)
     {
       return 1;
     }
-    lastHr = hr;
   }
 
   FreeLibrary(winui_bootstrap_module);

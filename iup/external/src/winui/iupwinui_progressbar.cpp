@@ -12,9 +12,7 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_progressbar.h"
-#include "iup_register.h"
 }
 
 #include "iupwinui_drv.h"

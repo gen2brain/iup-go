@@ -20,14 +20,9 @@ extern "C" {
 #include "iup_classbase.h"
 #include "iup_button.h"
 #include "iup_key.h"
-#include "iup_register.h"
-#include "iup_childtree.h"
-#include "iup_markup.h"
 }
 
 #include "iupwinui_drv.h"
-
-#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;

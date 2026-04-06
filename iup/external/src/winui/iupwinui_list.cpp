@@ -7,7 +7,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <cstdlib>
 #include <cstring>
 #include <vector>
 
@@ -22,15 +21,12 @@ extern "C" {
 #include "iup_mask.h"
 #include "iup_image.h"
 #include "iup_list.h"
-#include "iup_key.h"
 #include "iup_focus.h"
 #include "iup_classbase.h"
-#include "iup_register.h"
 }
 
 #include "iupwinui_drv.h"
 
-#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 #include <winrt/Windows.ApplicationModel.DataTransfer.h>
 
 using namespace winrt;
@@ -1910,7 +1906,6 @@ static char* winuiListGetSelectedTextAttrib(Ihandle* ih)
   if (!tb)
     return NULL;
 
-  int start = tb.SelectionStart();
   int len = tb.SelectionLength();
   if (len == 0)
     return NULL;

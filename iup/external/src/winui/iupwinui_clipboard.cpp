@@ -11,13 +11,10 @@
 
 extern "C" {
 #include "iup.h"
-#include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_class.h"
 #include "iup_image.h"
-#include "iup_register.h"
 }
 
 #include "iupwinui_drv.h"
@@ -25,7 +22,6 @@ extern "C" {
 #include <winrt/Windows.ApplicationModel.DataTransfer.h>
 #include <winrt/Windows.Storage.Streams.h>
 #include <winrt/Windows.Graphics.Imaging.h>
-#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 
 using namespace winrt;
 using namespace Windows::ApplicationModel::DataTransfer;

@@ -15,15 +15,11 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_array.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_mask.h"
 #include "iup_text.h"
 #include "iup_image.h"
-#include "iup_register.h"
-#include "iup_childtree.h"
 #include "iup_focus.h"
-#include "iup_key.h"
 #include "iup_drvinfo.h"
 }
 
@@ -31,7 +27,6 @@ extern "C" {
 
 #include <winrt/Microsoft.UI.Text.h>
 #include <winrt/Windows.Storage.Streams.h>
-#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 #include <winrt/Windows.Graphics.Imaging.h>
 
 using namespace winrt;
@@ -2055,7 +2050,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
         int pos = snprintf(rtf, rtfBufSize, "{\\rtf1{\\pict\\pngblip\\picw%d\\pich%d\\picwgoal%d\\pichgoal%d ",
                           new_w, new_h, twips_w, twips_h);
 
-        static const char hexChars[] = "0123456789abcdef";
+        static constexpr char hexChars[] = "0123456789abcdef";
         for (uint32_t i = 0; i < pngSize; i++)
         {
           rtf[pos++] = hexChars[pngData[i] >> 4];

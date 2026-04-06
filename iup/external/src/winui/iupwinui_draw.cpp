@@ -4,16 +4,13 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <cstdlib>
 #include <cstring>
 #include <cmath>
-#include <cstdio>
 
 extern "C" {
 #include "iup.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
@@ -27,10 +24,9 @@ extern "C" {
 #include <d2d1_1.h>
 #include <d2d1helper.h>
 #include <d3d11.h>
-#include <dxgi.h>
 #include <dwrite.h>
+
 #include "winrt/microsoft.ui.xaml.media.dxinterop.h"
-#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 #include <winrt/Windows.Storage.Streams.h>
 
 using namespace winrt;
@@ -936,7 +932,6 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
 
   Windows::Storage::Streams::IBuffer pixelBuffer = wb.PixelBuffer();
   uint8_t* srcPixels = pixelBuffer.data();
-  uint32_t srcSize = pixelBuffer.Length();
 
   D2D1_BITMAP_PROPERTIES bitmapProps = D2D1::BitmapProperties(
     D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));

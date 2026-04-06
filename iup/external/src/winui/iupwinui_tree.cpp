@@ -15,18 +15,14 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_tree.h"
 #include "iup_image.h"
 #include "iup_key.h"
-#include "iup_register.h"
-#include "iup_childtree.h"
 }
 
 #include "iupwinui_drv.h"
 
-#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 #include <winrt/Windows.ApplicationModel.DataTransfer.h>
 
 using namespace winrt;

@@ -6,7 +6,6 @@
 
 #include <windows.h>
 #include <cstdlib>
-#include <cstring>
 #include <cstdio>
 
 extern "C" {
@@ -14,7 +13,6 @@ extern "C" {
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
-#include "iup_globalattrib.h"
 #include "iup_singleinstance.h"
 }
 

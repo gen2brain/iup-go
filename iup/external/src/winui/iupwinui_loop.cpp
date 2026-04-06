@@ -19,7 +19,6 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_loop.h"
 #include "iup_dlglist.h"
-#include "iup_class.h"
 }
 
 #include "iupwinui_drv.h"

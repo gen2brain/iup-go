@@ -18,15 +18,12 @@ extern "C" {
 #include "iup_image.h"
 #include "iup_label.h"
 #include "iup_key.h"
-#include "iup_register.h"
-#include "iup_childtree.h"
 #include "iup_classbase.h"
 #include "iup_markup.h"
 }
 
 #include "iupwinui_drv.h"
 
-#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 #include <winrt/Microsoft.UI.Xaml.Documents.h>
 
 using namespace winrt;

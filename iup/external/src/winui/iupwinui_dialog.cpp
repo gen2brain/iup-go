@@ -4,9 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
 #include <windowsx.h>
 #include <shobjidl.h>
 
@@ -19,12 +16,9 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_dialog.h"
-#include "iup_register.h"
 #include "iup_layout.h"
 #include "iup_focus.h"
-#include "iup_childtree.h"
 #include "iup_classbase.h"
 #include "iup_image.h"
 #include "iup_drvinfo.h"
@@ -32,7 +26,6 @@ extern "C" {
 
 #include "iupwinui_drv.h"
 
-#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 #include <winrt/Microsoft.UI.Composition.SystemBackdrops.h>
 
 using namespace winrt;
