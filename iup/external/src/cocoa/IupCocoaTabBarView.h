@@ -15,9 +15,7 @@
 #define kMaxTabCellWidth 180
 #define kMinTabCellWidth 80
 #define kTabCellHeight 28
-#define kBorderWidth 2
 #define kCloseButtonWidth 8
-#define kDeltaXfromLeftAndRight 2
 
 @protocol IupCocoaTabBarViewDelegate;
 @class IupCocoaTabCell;
@@ -120,9 +118,8 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
 @optional
 
 /*
- * Usually we store tabs (IupCocoaTabCell*) as a key in a NSDitionary,
- * And other object as a value to identify which tab in the foll-
- * owing events.
+ * Usually we store tabs (IupCocoaTabCell*) as a key in a NSDictionary,
+ * And other object as a value to identify which tab in the following events.
  * If you need to know the tab index(order), you can get it like
  * this:
  * NSInteger index = [[tabBarView tabs] indexOfObject:tab]];

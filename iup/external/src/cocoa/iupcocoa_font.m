@@ -4,21 +4,17 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Cocoa/Cocoa.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "iup.h"
 
-#include "iup_array.h"
 #include "iup_assert.h"
 #include "iup_attrib.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_drvinfo.h"
 #include "iup_object.h"
 #include "iup_str.h"
-#include "iup_markup.h"
 
 #include "iupcocoa_drv.h"
 
@@ -293,7 +289,7 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle *ih, const char *value)
   iupBaseUpdateAttribFromFont(ih);
 
   /* FONT attribute must be able to be set before mapping,
-     so the font is enable for size calculation. */
+     so the font is enabled for size calculation. */
   if (ih->handle && (ih->iclass->nativetype != IUP_TYPEVOID))
   {
     id the_widget = (id)ih->handle;

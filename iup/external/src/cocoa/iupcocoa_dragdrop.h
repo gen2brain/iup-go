@@ -28,7 +28,6 @@ extern const void* IUPTARGETDROP_ASSOCIATED_OBJ_KEY;
 @property(nonatomic, copy) NSArray<NSString*>* dragRegisteredTypes;
 @property(nonatomic, copy) NSString* defaultFilePromiseName; /* Used for when the user doesn't define a callback. */
 - (bool) usesFilePromise;
-- (bool) hasFilePromiseCallback;
 
 /* These must be weak references because we don't want to create a retain cycle back to the view we are operating on. */
 @property(nonatomic, assign) NSView* mainView;

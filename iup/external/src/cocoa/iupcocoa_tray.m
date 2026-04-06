@@ -6,24 +6,22 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Cocoa/Cocoa.h>
-#include <objc/runtime.h>
-
-#include <stdlib.h>
 #include <stdio.h>
+
+#import <Cocoa/Cocoa.h>
+#import <objc/runtime.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
 #include "iup_image.h"
 #include "iup_class.h"
 #include "iup_tray.h"
 
 
-#if defined(IUP_USE_GTK3) || defined(IUP_USE_GTK4) || defined(IUP_USE_GTK2) || defined(IUP_USE_QT) || defined(IUP_USE_EFL)
+#if defined(IUP_USE_GTK3) || defined(IUP_USE_GTK4) || defined(IUP_USE_QT) || defined(IUP_USE_FLTK) || defined(IUP_USE_EFL)
 #define IUPCOCOA_TRAY_USE_EXTERNAL_IMAGE
 
 static NSImage* cocoaTrayCreateImageFromPixels(int width, int height, unsigned char* pixels)
@@ -499,4 +497,3 @@ IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TIPBALLOONTITLEICON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TIPDELAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }
-

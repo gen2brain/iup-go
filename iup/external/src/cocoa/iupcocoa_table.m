@@ -4,9 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,14 +13,12 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_key.h"
 #include "iup_image.h"
-#include "iup_hashtable.h"
 #include "iup_table.h"
 
 #include "iupcocoa_drv.h"
@@ -1707,7 +1702,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 
       if (editBeginCalled && [editBeginCalled boolValue])
       {
-        /* Call EDITEND_CB with apply=0 (cancelled) */
+        /* Call EDITEND_CB with apply=0 (canceled) */
         IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
         if (editend_cb)
           editend_cb(ih, lin, col_1based, (char*)value, 0);
@@ -1847,7 +1842,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     }
   }
 
-  /* Only update cell if edit was accepted (not cancelled with ESC) */
+  /* Only update cell if edit was accepted (not canceled with ESC) */
   if (apply)
   {
     /* Get old value for comparison - must copy before it gets modified */
@@ -2105,7 +2100,7 @@ static int cocoaTableSetUserResizeAttrib(Ihandle* ih, const char* value)
   {
     NSTableColumn* column = [columns objectAtIndex:i];
 
-    /* Last column always has autoresizing for stretch */
+    /* Last column always has auto resizing for stretch */
     if (i == col_count - 1)
     {
       if (resizable)

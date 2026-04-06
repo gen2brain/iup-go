@@ -4,19 +4,13 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <limits.h>
+#include <unistd.h>
 
-#import <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
 #import <CoreGraphics/CoreGraphics.h>
-#import <unistd.h>
 
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"
@@ -24,11 +18,8 @@
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
-#include "iup_focus.h"
 #include "iup_image.h"
-#include "iup_loop.h"
 #include "iup_drv.h"
-#include "iup_menu.h"
 #include "iup_markup.h"
 
 #include "iupcocoa_drv.h"
@@ -37,15 +28,6 @@
 const void* IHANDLE_ASSOCIATED_OBJ_KEY = @"IHANDLE_ASSOCIATED_OBJ_KEY";
 const void* MAINVIEW_ASSOCIATED_OBJ_KEY = @"MAINVIEW_ASSOCIATED_OBJ_KEY";
 const void* ROOTVIEW_ASSOCIATED_OBJ_KEY = @"ROOTVIEW_ASSOCIATED_OBJ_KEY";
-
-IUP_DRV_API NSObject* iupcocoaGetRootObject(Ihandle* ih)
-{
-  if(NULL == ih)
-  {
-    return nil;
-  }
-  return (NSObject*)ih->handle;
-}
 
 static NSView* cocoaGetAssociatedView(Ihandle* ih, const void* key)
 {
@@ -449,7 +431,6 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
     return 1;
   }
 }
-
 
 IUP_SDK_API int iupdrvIsActive(Ihandle *ih)
 {

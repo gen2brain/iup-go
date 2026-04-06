@@ -6,9 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
-#import <Cocoa/Cocoa.h>
 #import <ApplicationServices/ApplicationServices.h>
 
 #include "iup.h"
@@ -18,11 +16,9 @@
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_key.h"
-#include "iup_strmessage.h"
 #include "iup_singleinstance.h"
 
 #include "iupcocoa_drv.h"
-#include "iupcocoa_keycodes.h"
 
 
 int utf8autoconvert = 1;

@@ -20,7 +20,6 @@
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_notify.h"
-#include "iup_tray.h"
 #include "iup_image.h"
 
 

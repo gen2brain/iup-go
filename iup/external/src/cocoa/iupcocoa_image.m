@@ -4,8 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Cocoa/Cocoa.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -262,66 +260,6 @@ static NSBitmapImageRep* iupCocoaImageNSBitmapImageRepFromRawData(int width, int
 static NSImage* iupCocoaImageNSImageFromRawData(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
 {
   NSBitmapImageRep* bitmap_image = iupCocoaImageNSBitmapImageRepFromRawData(width, height, bpp, colors, colors_count, imgdata);
-  return cocoaImageWrapBitmapRep(bitmap_image, width, height);
-}
-
-IUP_DRV_API NSBitmapImageRep* iupcocoaImageNSBitmapImageRepFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
-{
-  NSBitmapImageRep* bitmap_image = cocoaImageCreateBitmapRep(width, height, bpp);
-  if (!bitmap_image)
-    return NULL;
-
-  unsigned char *pixels = [bitmap_image bitmapData];
-  NSInteger bytesPerRow = [bitmap_image bytesPerRow];
-
-  if (bpp == 32 || bpp == 24)
-  {
-    int channels = (bpp == 32) ? 4 : 3;
-    int src_line_size = width * channels;
-
-    for (int y = 0; y < height; y++)
-    {
-      unsigned char* dest_line = pixels + y * bytesPerRow;
-      unsigned char* src_line = imgdata + y * src_line_size;
-      memcpy(dest_line, src_line, src_line_size);
-    }
-  }
-  else if (bpp == 8)
-  {
-    int has_alpha = 0;
-    for (int i = 0; i < colors_count; i++)
-    {
-      if (colors[i].a < 255)
-      {
-        has_alpha = 1;
-        break;
-      }
-    }
-
-    for (int y = 0; y < height; y++)
-    {
-      unsigned char* dest_line = pixels + y * bytesPerRow;
-      unsigned char* src_line = imgdata + y * width;
-
-      for (int x = 0; x < width; x++)
-      {
-        unsigned char* dest_pixel = dest_line + x * 4;
-        unsigned char index = src_line[x];
-        iupColor* c = &colors[index];
-        dest_pixel[0] = c->r;
-        dest_pixel[1] = c->g;
-        dest_pixel[2] = c->b;
-        dest_pixel[3] = has_alpha ? c->a : 255;
-      }
-    }
-  }
-
-  return bitmap_image;
-}
-
-IUP_DRV_API NSImage* iupcocoaImageNSImageFromPixels(int width, int height, int bpp, iupColor* colors, int colors_count, unsigned char *imgdata)
-{
-  NSBitmapImageRep* bitmap_image = iupcocoaImageNSBitmapImageRepFromPixels(width, height, bpp, colors, colors_count, imgdata);
   return cocoaImageWrapBitmapRep(bitmap_image, width, height);
 }
 

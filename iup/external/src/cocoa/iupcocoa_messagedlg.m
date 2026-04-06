@@ -4,18 +4,12 @@
  * See Copyright Notice in "iup.h"
  */
 
-#import <Cocoa/Cocoa.h>
-#import <objc/runtime.h>
-
 #include "iup.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_dialog.h"
-#include "iup_strmessage.h"
-#include "iup_drv.h"
-#include "iup_drvinfo.h"
 
 #include "iupcocoa_drv.h"
 

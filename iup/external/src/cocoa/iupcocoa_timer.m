@@ -4,18 +4,15 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <stdio.h>
+
 #import <Cocoa/Cocoa.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_assert.h"
 #include "iup_timer.h"
 
 

@@ -7,7 +7,6 @@
 #import <Foundation/Foundation.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
