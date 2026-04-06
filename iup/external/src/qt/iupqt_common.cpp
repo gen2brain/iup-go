@@ -6,35 +6,22 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <climits>
 
 #include <QWidget>
 #include <QLayout>
 #include <QWindow>
 #include <QApplication>
 #include <QPalette>
-#include <QStyle>
-#include <QStyleOption>
 #include <QCursor>
 #include <QThread>
-#include <QMouseEvent>
 #include <QLineEdit>
-#include <QTextEdit>
 #include <QListWidget>
-#include <QKeyEvent>
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-#include <QEnterEvent>
-#endif
 #include <QHelpEvent>
 #include <QString>
 #include <QColor>
 #include <QPushButton>
 #include <QAbstractButton>
 #include <QLabel>
-#include <QFont>
-#include <QCursor>
-#include <QMouseEvent>
 #include <QMenuBar>
 #include <QMainWindow>
 #include <QPixmap>
@@ -42,17 +29,13 @@
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupkey.h"
 #include "iup_object.h"
 #include "iup_childtree.h"
 #include "iup_key.h"
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
-#include "iup_focus.h"
-#include "iup_image.h"
 #include "iup_drv.h"
-#include "iup_assert.h"
 #include "iup_dialog.h"
 #include "iup_dlglist.h"
 }
@@ -242,8 +225,6 @@ IUP_DRV_API void iupqtSetPosSize(QWidget* parent, QWidget* widget, int x, int y,
       QListWidget* listWidget = qobject_cast<QListWidget*>(widget);
       if (listWidget)
       {
-        QSize viewport = listWidget->viewport()->size();
-        QRect contentsRect = listWidget->contentsRect();
         int contentHeight = 0;
         for (int i = 0; i < listWidget->count(); i++)
         {

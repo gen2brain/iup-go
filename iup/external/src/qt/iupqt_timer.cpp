@@ -7,15 +7,10 @@
 #include <QTimer>
 #include <QElapsedTimer>
 
-#include <cstdio>
-#include <cstdlib>
-
 extern "C" {
 #include "iup.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
-#include "iup_assert.h"
 #include "iup_timer.h"
 }
 

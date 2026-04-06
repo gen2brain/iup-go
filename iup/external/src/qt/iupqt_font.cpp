@@ -6,8 +6,6 @@
 
 #include <QFont>
 #include <QFontDatabase>
-#include <QFontMetrics>
-#include <QFontInfo>
 #include <QApplication>
 #include <QWidget>
 #include <QScreen>
@@ -25,7 +23,6 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_array.h"
 #include "iup_object.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_assert.h"
 #include "iup_markup.h"
@@ -120,9 +117,6 @@ static IqtFont* qtFindFont(const char* font)
     return nullptr;
 
   QFont* qfont = new QFont(QString::fromUtf8(typeface), point_size);
-  if (!qfont)
-    return nullptr;
-
   qfont->setBold(is_bold);
   qfont->setItalic(is_italic);
   qfont->setUnderline(is_underline);

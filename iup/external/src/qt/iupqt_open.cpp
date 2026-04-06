@@ -56,7 +56,6 @@ extern "C" {
 #include "iup.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_globalattrib.h"
@@ -141,7 +140,6 @@ IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget *widget)
    * - X11/XCB: returns XID (Window/xcb_window_t)
    * - Windows: returns HWND
    * - macOS: returns NSView*
-   * - Wayland: returns wl_surface* (may be limited)
    */
   WId native_id = window->winId();
   return (char*)(uintptr_t)native_id;

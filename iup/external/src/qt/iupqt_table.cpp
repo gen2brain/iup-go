@@ -10,29 +10,23 @@
 #include <QScrollBar>
 #include <QApplication>
 #include <QClipboard>
-#include <QKeyEvent>
 #include <QShowEvent>
-#include <QResizeEvent>
 #include <QPainter>
 #include <QStyledItemDelegate>
 #include <QStyleOptionFocusRect>
 #include <QFontMetrics>
 #include <QLineEdit>
 
-#include <cstdlib>
 #include <cstdio>
-#include <cstring>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_key.h"
 #include "iup_image.h"
 #include "iup_table.h"
 }
@@ -185,6 +179,7 @@ public:
     }
   }
 
+protected:
   bool eventFilter(QObject* object, QEvent* event) override
   {
     if (event->type() == QEvent::KeyPress)
@@ -192,7 +187,7 @@ public:
       QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
       if (keyEvent->key() == Qt::Key_Escape)
       {
-        /* ESC key pressed - editing cancelled */
+        /* ESC key pressed - editing canceled */
         QWidget* editor = qobject_cast<QWidget*>(object);
         if (editor)
         {
@@ -203,7 +198,7 @@ public:
           QVariant value = editor->property("text");
           QString current_text = value.toString();
 
-          /* Call EDITEND_CB with apply=0 (cancelled) */
+          /* Call EDITEND_CB with apply=0 (canceled) */
           IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
           if (editend_cb)
           {
@@ -215,6 +210,7 @@ public:
     return QStyledItemDelegate::eventFilter(object, event);
   }
 
+public:
   void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override
   {
     int lin = index.row() + 1;  /* 1-based */
@@ -612,25 +608,6 @@ static void qtTableEnsureItem(QTableWidget* table, int row, int col)
     QTableWidgetItem* item = new QTableWidgetItem();
     table->setItem(row, col, item);
   }
-}
-
-static QString qtTableGetVirtualValue(Ihandle* ih, int lin, int col)
-{
-  /* Check if virtual mode is enabled */
-  char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
-  if (!iupStrBoolean(virtualmode))
-    return QString();
-
-  /* Call VALUE_CB to get the cell value */
-  sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
-  if (value_cb)
-  {
-    char* value = value_cb(ih, lin, col);
-    if (value)
-      return QString::fromUtf8(value);
-  }
-
-  return QString();
 }
 
 static void qtTableApplyCellColors(Ihandle* ih, QTableWidgetItem* item, int lin, int col)
@@ -1513,12 +1490,9 @@ static int qtTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
   {
     QTableWidget* table = qtTableGetWidget(ih);
-    if (table)
-    {
-      QHeaderView* hHeader = table->horizontalHeader();
-      if (hHeader)
-        hHeader->setSectionsMovable(ih->data->allow_reorder);
-    }
+    QHeaderView* hHeader = table->horizontalHeader();
+    if (hHeader)
+      hHeader->setSectionsMovable(ih->data->allow_reorder);
   }
   return 0; /* do not store in hash table */
 }

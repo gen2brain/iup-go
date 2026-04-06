@@ -6,31 +6,21 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
 #include <QApplication>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QCursor>
 #include <QEvent>
-#include <QMouseEvent>
 #include <QWheelEvent>
-#include <QKeyEvent>
 #include <QString>
 #include <QRect>
-
-#ifndef _WIN32
-#include <climits>
-#include <cstdlib>
-#endif
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
-#include "iup_object.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_key.h"
 #include "iup_singleinstance.h"
 }
@@ -54,7 +44,6 @@ public:
     return filter;
   }
 
-protected:
   bool eventFilter(QObject *obj, QEvent *event) override
   {
     (void)obj;

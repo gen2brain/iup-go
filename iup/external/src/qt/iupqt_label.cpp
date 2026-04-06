@@ -8,21 +8,15 @@
 #include <QFrame>
 #include <QPixmap>
 #include <QString>
-#include <QEvent>
-#include <QMouseEvent>
 #include <QEnterEvent>
 #include <QWidget>
 #include <QPalette>
 
 #include <cstdlib>
-#include <cstdio>
-#include <cstring>
 
 extern "C" {
 #include "iup.h"
-#include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
@@ -658,11 +652,8 @@ static int qtLabelSetHtTransparentAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
   {
     IupQtEventWrapper* wrapper = (IupQtEventWrapper*)ih->handle;
-    if (wrapper)
-    {
-      wrapper->setHitTransparent(iupStrBoolean(value));
-      return 1;
-    }
+    wrapper->setHitTransparent(iupStrBoolean(value));
+    return 1;
   }
 
   return 0;

@@ -7,25 +7,16 @@
 #include <QCalendarWidget>
 #include <QDate>
 #include <QWidget>
-#include <QEvent>
-#include <QEnterEvent>
 #include <QFocusEvent>
-#include <QKeyEvent>
-#include <QMouseEvent>
 
-#include <cstdlib>
 #include <cstdio>
-#include <cstring>
-#include <ctime>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_array.h"
 #include "iup_mask.h"

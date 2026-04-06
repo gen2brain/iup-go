@@ -18,28 +18,23 @@
 #include <QFocusEvent>
 #include <QStyleOptionButton>
 #include <QStyle>
-#include <QPainter>
 #include <QStylePainter>
 #include <QTextDocument>
 #include <QTimer>
 #include <QElapsedTimer>
 
 #include <cstdlib>
-#include <cstdio>
-#include <cstring>
 #include <type_traits>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_key.h"
 #include "iup_toggle.h"
 #include "iup_markup.h"
 }
@@ -248,7 +243,7 @@ private:
   static constexpr int THUMB_MARGIN = 2;
 
   /* Easing function: Quad in-out */
-  qreal easeInOutQuad(qreal t) const
+  static qreal easeInOutQuad(qreal t)
   {
     if (t < 0.5)
       return 2.0 * t * t;
@@ -309,7 +304,7 @@ public:
     update();
   }
 
-  ~IupQtSwitch()
+  ~IupQtSwitch() override
   {
     if (animation_timer)
     {
@@ -335,7 +330,6 @@ public:
     return QSize(TRACK_WIDTH, TRACK_HEIGHT);
   }
 
-protected:
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   void enterEvent(QEnterEvent* event) override
 #else
@@ -1100,9 +1094,6 @@ static int qtToggleMapMethod(Ihandle* ih)
     }
   }
 
-  if (!button)
-    return IUP_ERROR;
-
   ih->handle = (InativeHandle*)button;
 
   /* Set initial title/image */
@@ -1167,8 +1158,7 @@ static int qtToggleMapMethod(Ihandle* ih)
   {
     /* Safe to static_cast since we know it's a switch widget based on SWITCH attribute */
     IupQtSwitch* switch_widget = static_cast<IupQtSwitch*>(button);
-    if (switch_widget)
-      switch_widget->initializeThumbPosition();
+    switch_widget->initializeThumbPosition();
   }
 
   return IUP_NOERROR;

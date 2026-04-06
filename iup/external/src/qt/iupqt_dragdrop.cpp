@@ -7,15 +7,10 @@
 #include <QWidget>
 #include <QDrag>
 #include <QMimeData>
-#include <QDragEnterEvent>
 #include <QDragMoveEvent>
-#include <QDragLeaveEvent>
-#include <QDropEvent>
 #include <QUrl>
 #include <QList>
-#include <QMouseEvent>
 #include <QApplication>
-#include <QAbstractItemView>
 #include <QTreeWidget>
 
 extern "C" {
@@ -24,8 +19,6 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_key.h"
 }
 
@@ -75,7 +68,6 @@ public:
 
   IupQtDragDropFilter(Ihandle* ih_param) : ih(ih_param) {}
 
-protected:
   bool eventFilter(QObject* obj, QEvent* event) override
   {
     if (!iupObjectCheck(ih))
@@ -347,8 +339,6 @@ protected:
 static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
 {
   IupQtDragDropData* dd_data = qtDragDropGetData(ih, 1);
-  if (!dd_data)
-    return 0;
 
   QWidget* widget = (QWidget*)ih->handle;
   if (!widget)
@@ -407,8 +397,6 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
 static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
 {
   IupQtDragDropData* dd_data = qtDragDropGetData(ih, 1);
-  if (!dd_data)
-    return 0;
 
   QWidget* widget = (QWidget*)ih->handle;
   if (!widget)

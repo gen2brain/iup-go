@@ -7,10 +7,7 @@
 #include <QWidget>
 #include <QWindow>
 #include <QEvent>
-#include <QApplication>
 #include <QGuiApplication>
-
-#include <cstdio>
 
 extern "C" {
 #include "iup.h"
@@ -18,7 +15,6 @@ extern "C" {
 #include "iup_focus.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_assert.h"
 }
 
 #include "iupqt_drv.h"

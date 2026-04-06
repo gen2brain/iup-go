@@ -13,7 +13,6 @@
 #include <QPixmap>
 #include <QIcon>
 #include <QString>
-#include <QEvent>
 #include <QMouseEvent>
 #include <QAbstractItemView>
 #include <QApplication>
@@ -28,23 +27,14 @@ extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
-#include "iup_key.h"
 #include "iup_image.h"
-#include "iup_array.h"
 #include "iup_tree.h"
 }
 
 #include "iupqt_drv.h"
 
-
-/* Tree add position constants (implementation-specific) */
-enum { ITREE_ADDROOT = 0, ITREE_ADDBRANCH = 1, ITREE_ADDLEAF = 2 };
 
 /* Forward declaration */
 static int qtTreeFindNodeId(Ihandle* ih, QTreeWidgetItem* item);
