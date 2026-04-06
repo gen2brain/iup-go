@@ -98,15 +98,6 @@ func Dial(orientation string) Ihandle {
 	return h
 }
 
-// Gauge creates a Gauge control. Shows a percent value that can be updated to simulate a progression.
-//
-// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_gauge.md
-func Gauge() Ihandle {
-	h := mkih(C.IupGauge())
-	h.SetAttribute("UUID", uuid.NewString())
-	return h
-}
-
 // Label creates a label interface element, which displays a separator, a text or an image.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_label.md

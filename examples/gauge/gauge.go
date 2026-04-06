@@ -1,3 +1,5 @@
+//go:build ctrl
+
 package main
 
 import (
@@ -7,6 +9,8 @@ import (
 func main() {
 	iup.Open()
 	defer iup.Close()
+
+	iup.ControlsOpen()
 
 	gauge := iup.Gauge().SetHandle("gauge").SetAttribute("SHOWTEXT", "YES")
 

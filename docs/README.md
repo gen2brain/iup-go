@@ -100,7 +100,7 @@ API reference documentation for IUP (Portable User Interface).
 
 ### Standard
 
-[IupAnimatedLabel](elem/iup_animatedlabel.md), [IupButton](elem/iup_button.md), [IupCalendar](elem/iup_calendar.md), [IupCanvas](elem/iup_canvas.md), [IupColorbar](elem/iup_colorbar.md), [IupColorBrowser](elem/iup_colorbrowser.md), [IupDatePick](elem/iup_datepick.md), [IupDial](elem/iup_dial.md), [IupGauge](elem/iup_gauge.md), [IupLabel](elem/iup_label.md), [IupSeparator](elem/iup_separator.md), [IupLink](elem/iup_link.md), [IupList](elem/iup_list.md), [IupProgressBar](elem/iup_progressbar.md), [IupScrollbar](elem/iup_scrollbar.md), [IupSpin](elem/iup_spin.md), [IupTable](elem/iup_table.md), [IupText](elem/iup_text.md), [IupToggle](elem/iup_toggle.md), [IupTree](elem/iup_tree.md), [IupVal](elem/iup_val.md)
+[IupAnimatedLabel](elem/iup_animatedlabel.md), [IupButton](elem/iup_button.md), [IupCalendar](elem/iup_calendar.md), [IupCanvas](elem/iup_canvas.md), [IupColorbar](elem/iup_colorbar.md), [IupColorBrowser](elem/iup_colorbrowser.md), [IupDatePick](elem/iup_datepick.md), [IupDial](elem/iup_dial.md), [IupLabel](elem/iup_label.md), [IupSeparator](elem/iup_separator.md), [IupLink](elem/iup_link.md), [IupList](elem/iup_list.md), [IupProgressBar](elem/iup_progressbar.md), [IupScrollbar](elem/iup_scrollbar.md), [IupSpin](elem/iup_spin.md), [IupTable](elem/iup_table.md), [IupText](elem/iup_text.md), [IupToggle](elem/iup_toggle.md), [IupTree](elem/iup_tree.md), [IupVal](elem/iup_val.md)
 
 ### Additional
 
@@ -108,7 +108,7 @@ API reference documentation for IUP (Portable User Interface).
 
 [IupMatrix](ctrl/iup_matrix.md) ([Attributes](ctrl/iup_matrix_attrib.md), [Callbacks](ctrl/iup_matrix_cb.md)), [IupMatrixEx](ctrl/iup_matrixex.md), [IupMatrixList](ctrl/iup_matrixlist.md), [IupCells](ctrl/iup_cells.md)
 
-[IupDropButton](ctrl/iup_dropbutton.md), [IupFlatButton](ctrl/iup_flatbutton.md), [IupFlatLabel](ctrl/iup_flatlabel.md), [IupFlatToggle](ctrl/iup_flattoggle.md), [IupFlatFrame](ctrl/iup_flatframe.md), [IupFlatTabs](ctrl/iup_flattabs.md), [IupFlatScrollBox](ctrl/iup_flatscrollbox.md), [IupFlatList](ctrl/iup_flatlist.md), [IupFlatTree](ctrl/iup_flattree.md) ([Attributes](ctrl/iup_flattree_attrib.md), [Callbacks](ctrl/iup_flattree_cb.md)), [IupFlatVal](ctrl/iup_flatval.md)
+[IupGauge](ctrl/iup_gauge.md), [IupDropButton](ctrl/iup_dropbutton.md), [IupFlatButton](ctrl/iup_flatbutton.md), [IupFlatLabel](ctrl/iup_flatlabel.md), [IupFlatToggle](ctrl/iup_flattoggle.md), [IupFlatFrame](ctrl/iup_flatframe.md), [IupFlatTabs](ctrl/iup_flattabs.md), [IupFlatScrollBox](ctrl/iup_flatscrollbox.md), [IupFlatList](ctrl/iup_flatlist.md), [IupFlatTree](ctrl/iup_flattree.md) ([Attributes](ctrl/iup_flattree_attrib.md), [Callbacks](ctrl/iup_flattree_cb.md)), [IupFlatVal](ctrl/iup_flatval.md)
 
 ### Management
 

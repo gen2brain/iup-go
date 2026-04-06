@@ -51,6 +51,7 @@ IUPCONTROLS_API Ihandle* IupFlatList(void);
 IUPCONTROLS_API Ihandle* IupFlatTree(void);
 IUPCONTROLS_API Ihandle* IupFlatVal(const char* type);
 IUPCONTROLS_API Ihandle* IupDropButton(Ihandle* dropchild);
+IUPCONTROLS_API Ihandle* IupGauge(void);
 /** @} */
 
 

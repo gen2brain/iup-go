@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcontrols.h"
 
 #include "iupdraw.h"
 #include "iup_drvdraw.h"
@@ -20,6 +21,7 @@
 #include "iup_drv.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
+#include "iup_controls.h"
 
 #define IGAUGE_DEFAULTCOLOR "0 120 220"
 #define IGAUGE_DEFAULTSIZE  "120x14"
@@ -478,7 +480,7 @@ Iclass* iupGaugeNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupGauge(void)
+IUPCONTROLS_API Ihandle* IupGauge(void)
 {
   return IupCreate("gauge");
 }

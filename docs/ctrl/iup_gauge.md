@@ -46,7 +46,7 @@ If the gauge is dashed the text is never shown. Possible values: "YES" or "NO". 
 [SIZE](../attrib/iup_size.md) (non-inheritable): The initial size is "120x14".
 Set to NULL to allow the automatic layout to use smaller values.
 
-**TEXT** (non-inheritable): Contains a text to be shown inside the Gauge when SHOW_TEXT=YES.
+**TEXT** (non-inheritable): Contains a text to be shown inside the Gauge when SHOWTEXT=YES.
 If it is NULL, the percentage calculated from VALUE will be used. If the gauge is dashed the text is never shown.
 When ORIENTATION=VERTICAL text is drawn in 90º.
 
@@ -75,4 +75,4 @@ The Two Types of Gauge
 
 ### See Also
 
-[IupCanvas](../elem/iup_canvas.md), [IupProgressBar](iup_progressbar.md)
+[IupCanvas](../elem/iup_canvas.md), [IupProgressBar](../elem/iup_progressbar.md)

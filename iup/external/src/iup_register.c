@@ -162,7 +162,6 @@ void iupRegisterInternalClasses(void)
   iupRegisterClassInternal(iupGridBoxNewClass());
   iupRegisterClassInternal(iupAnimatedLabelNewClass());
   iupRegisterClassInternal(iupDialNewClass());
-  iupRegisterClassInternal(iupGaugeNewClass());
   iupRegisterClassInternal(iupColorbarNewClass());
   iupRegisterClassInternal(iupColorBrowserNewClass());
   iupRegisterClassInternal(iupMultiBoxNewClass());
