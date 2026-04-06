@@ -9,14 +9,14 @@
 #include <windows.h>
 #include <commctrl.h>
 
-#include "iup.h" 
-#include "iupcbs.h" 
+#include "iup.h"
+#include "iupcbs.h"
 
-#include "iup_object.h" 
+#include "iup_object.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
-#include "iup_attrib.h" 
-#include "iup_str.h" 
+#include "iup_attrib.h"
+#include "iup_str.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
@@ -47,7 +47,7 @@ static HWND winTipsCreate(HWND hParent)
 {
   RECT rect = {1,1,1,1};
   HWND tips_hwnd = iupwinCreateWindowEx(hParent, TOOLTIPS_CLASS, WS_EX_TOPMOST, TTS_ALWAYSTIP|TTS_NOPREFIX, 0, NULL);
-  SendMessage(tips_hwnd, TTM_SETMAXTIPWIDTH, 0, (LPARAM)(INT)3000); 
+  SendMessage(tips_hwnd, TTM_SETMAXTIPWIDTH, 0, (LPARAM)(INT)3000);
   SendMessage(tips_hwnd, TTM_SETMARGIN, (WPARAM)0, (LPARAM)&rect);
   return tips_hwnd;
 }
@@ -62,9 +62,9 @@ static void winTipsSendMessage(Ihandle* ih, HWND tips_hwnd, UINT msg)
   else
     ti.cbSize = sizeof(TTTOOLINFO)-sizeof(void*);  /* fix for no visual styles and Unicode */
   ti.uFlags = TTF_SUBCLASS;
-  ti.hinst = iupwin_hinstance; 
-  ti.uId = 0; 
-  ti.hwnd = ih->handle; 
+  ti.hinst = iupwin_hinstance;
+  ti.uId = 0;
+  ti.hwnd = ih->handle;
   ti.lpszText = LPSTR_TEXTCALLBACK;
   ti.rect.right = 3000;
   ti.rect.bottom = 3000;
@@ -129,7 +129,7 @@ IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
   if (!tips_hwnd)
     return NULL;
 
-  return iupStrReturnBoolean(IsWindowVisible(tips_hwnd)); 
+  return iupStrReturnBoolean(IsWindowVisible(tips_hwnd));
 }
 
 IUP_DRV_API void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
@@ -177,7 +177,7 @@ IUP_DRV_API void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
   {
     int balloon = IupGetInt(ih, "TIPBALLOON");  /* must use IupGetInt to use inheritance */
     DWORD style = GetWindowLong(tips_hwnd, GWL_STYLE);
-    int tip_balloon = (style & TTS_BALLOON)? 1: 0; 
+    int tip_balloon = (style & TTS_BALLOON)? 1: 0;
     if (tip_balloon != balloon)
     {
       if (balloon)
@@ -241,7 +241,7 @@ IUP_DRV_API void iupwinTipsGetDispInfo(LPARAM lp)
   NMTTDISPINFO* tips_info;
   IFnii cb;
 
-  if (!lp) 
+  if (!lp)
     return;
 
   tips_info = (NMTTDISPINFO*)lp;
@@ -250,7 +250,7 @@ IUP_DRV_API void iupwinTipsGetDispInfo(LPARAM lp)
     return;
 
   tips_hwnd = (HWND)iupAttribGet(ih, "_IUPWIN_TIPSWIN");
-  if (tips_hwnd != tips_info->hdr.hwndFrom) 
+  if (tips_hwnd != tips_info->hdr.hwndFrom)
     return;
 
   tips_info->hinst = NULL;

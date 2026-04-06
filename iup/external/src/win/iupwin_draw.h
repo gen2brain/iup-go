@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPWIN_DRAW_H 
+
+#ifndef __IUPWIN_DRAW_H
 #define __IUPWIN_DRAW_H
 
 #ifdef __cplusplus
@@ -42,7 +42,7 @@ IUP_DRV_API void iupwinDrawDestroyBitmapDC(iupwinBitmapDC *bmpDC);
 IUP_DRV_API int iupwinCustomDrawToDrawItem(Ihandle* ih, NMHDR* msg_info, int *result, IFdrawItem drawitem_cb);
 
 /* Not defined for MingW and Cygwin */
-#ifndef ODS_HOTLIGHT     
+#ifndef ODS_HOTLIGHT
 #define ODS_HOTLIGHT        0x0040
 #endif
 #ifndef ODS_NOACCEL

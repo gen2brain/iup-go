@@ -27,7 +27,6 @@
 #include "iup_array.h"
 #include "iup_text.h"
 #include "iup_image.h"
-#include "iup_key.h"
 #include "iup_dialog.h"
 
 #include "iupwin_drv.h"
@@ -72,7 +71,7 @@
 #define	SES_LOWERCASE			1024
 #endif
 
-#ifndef EM_SETCUEBANNER 
+#ifndef EM_SETCUEBANNER
 #define ECM_FIRST               0x1500      /* Edit control messages */
 #define	EM_SETCUEBANNER	    (ECM_FIRST + 1)
 #endif
@@ -85,7 +84,7 @@
 IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int *w, int h)
 {
   *w += h;
-  (void)ih;  
+  (void)ih;
 }
 
 IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
@@ -146,10 +145,10 @@ static void winTextParseParagraphFormat(Ihandle* formattag, PARAFORMAT2 *parafor
         paraformat->wNumberingStyle = PFNS_PERIOD;
       else if (iupStrEqualNoCase(format, "NONUMBER"))
         paraformat->wNumberingStyle = PFNS_NONUMBER;
-      else 
+      else
         paraformat->wNumberingStyle = PFNS_PLAIN;  /* "NONE" */
     }
-   
+
     format = iupAttribGet(formattag, "NUMBERINGTAB");
     if (format && iupStrToInt(format, &val))
     {
@@ -169,7 +168,7 @@ static void winTextParseParagraphFormat(Ihandle* formattag, PARAFORMAT2 *parafor
       paraformat->dxRightIndent = val*convert2twips;
     else
       paraformat->dxRightIndent = paraformat->dxStartIndent;
-      
+
     format = iupAttribGet(formattag, "INDENTOFFSET");
     if (format && iupStrToInt(format, &val))
       paraformat->dxOffset = val*convert2twips;
@@ -290,7 +289,7 @@ static void winTextParseCharacterFormat(Ihandle* formattag, CHARFORMAT2 *charfor
     {
       charformat->dwMask |= CFM_SUBSCRIPT;
       charformat->dwEffects |= CFE_SUBSCRIPT;
-    } 
+    }
     else if (iupStrToInt(format, &val))
     {
       charformat->dwMask |= CFM_OFFSET;
@@ -351,7 +350,7 @@ static void winTextParseCharacterFormat(Ihandle* formattag, CHARFORMAT2 *charfor
       fval = 1.4399999999999;
     else if (iupStrEqualNoCase(format, "XX-LARGE"))
       fval = 1.728;
-    else 
+    else
       iupStrToDouble(format, &fval);
 
     if (fval > 0)
@@ -468,7 +467,7 @@ static void winTextUpdateFontFormat(CHARFORMAT2* charformat, const char* value)
 {
   int size = 0;
   int is_bold = 0,
-    is_italic = 0, 
+    is_italic = 0,
     is_underline = 0,
     is_strikeout = 0;
   char typeface[1024];
@@ -527,7 +526,7 @@ static int winTextSetLinColToPosition(Ihandle *ih, int lin, int col)
 
   lin--; /* IUP starts at 1 */
   col--;
-    
+
   linmax = (int)SendMessage(ih->handle, EM_GETLINECOUNT, 0, 0L);
   if (lin > linmax-1)
     lin = linmax-1;
@@ -561,7 +560,7 @@ static int winTextGetLastPosition(Ihandle *ih)
 
 static void winTextGetLinColFromPosition(Ihandle* ih, int wpos, int* lin, int* col)
 {
-  /* here "pos" must contains the extra chars if the case */
+  /* here "pos" must contain the extra chars if the case */
   /* pos here includes the line breaks in 1 or 2 configuration */
   int lineindex;
 
@@ -593,7 +592,7 @@ static int winTextAddExtraChars(Ihandle* ih, int pos)
   clin = (int)SendMessage(ih->handle, EM_LINEFROMCHAR, (WPARAM)pos, (LPARAM)0L);
 
   /* pos is smaller than the actual pos (missing the \r count),
-     so we must calculate the line until the returned value is the same as the expected. */ 
+     so we must calculate the line until the returned value is the same as the expected. */
   do
   {
     lin = clin;
@@ -611,7 +610,7 @@ static int winTextGetCaretPosition(Ihandle* ih)
 
   if (GetFocus() != ih->handle || !GetCaretPos(&point))
   {
-    /* if does not have the focus, or could not get caret position,
+    /* if it does not have the focus, or could not get caret position,
        then use the selection start position */
     SendMessage(ih->handle, EM_GETSEL, (WPARAM)&wpos, 0);
   }
@@ -779,7 +778,7 @@ static TCHAR* winTextStrConvertToSystem(Ihandle* ih, const char* str)
 #ifdef UNICODE
       wstr = iupwinStrToSystem(dos_str);
 #else
-      if (dos_str != str) 
+      if (dos_str != str)
         wstr = iupStrReturnStr(dos_str);
       else
         wstr = dos_str;
@@ -873,7 +872,7 @@ static int winTextSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* winTextGetValueAttrib(Ihandle* ih)
 {
-  char* str = iupStrReturnStr(iupwinStrFromSystem(iupwinGetWindowText(ih->handle)));  
+  char* str = iupStrReturnStr(iupwinStrFromSystem(iupwinGetWindowText(ih->handle)));
   if (str)
   {
     /* notice that GetWindowText always returns in DOS format */
@@ -912,7 +911,7 @@ static int winTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   if (value)
   {
     TCHAR* str;
-    
+
     if (!winTextHasSelection(ih))
       return 0;
 
@@ -929,7 +928,7 @@ static char* winTextGetSelectedTextAttrib(Ihandle* ih)
 {
   int start = 0, end = 0;
   TCHAR* tstr;
-    
+
   SendMessage(ih->handle, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
   if (start == end)
     return NULL;
@@ -941,7 +940,7 @@ static char* winTextGetSelectedTextAttrib(Ihandle* ih)
   }
   else
   {
-    tstr = iupwinGetWindowText(ih->handle);  
+    tstr = iupwinGetWindowText(ih->handle);
     if (!tstr)
       return NULL;
 
@@ -1003,7 +1002,7 @@ static char* winTextGetLineValueAttrib(Ihandle* ih)
     TCHAR* str = (TCHAR*)iupStrGetMemory(256*sizeof(TCHAR));
     WORD* wstr = (WORD*)str;
     *wstr = 256;
-    winTextGetCaret(ih, &lin, &col); 
+    winTextGetCaret(ih, &lin, &col);
     lin--; /* from IUP to Win */
     len = (int)SendMessage(ih->handle, EM_GETLINE, (WPARAM)lin, (LPARAM)str);
     str[len]=0;
@@ -1041,10 +1040,10 @@ static int winTextSetSelectionAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+    if (iupStrToIntInt(value, &start, &end, ':')!=2)
       return 0;
 
-    if(start<1 || end<1) 
+    if(start<1 || end<1)
       return 0;
 
     start--; /* IUP starts at 1 */
@@ -1095,10 +1094,10 @@ static int winTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+  if (iupStrToIntInt(value, &start, &end, ':')!=2)
     return 0;
 
-  if(start<0 || end<0) 
+  if(start<0 || end<0)
     return 0;
 
   winTextSetSelection(ih, start, end);
@@ -1136,7 +1135,7 @@ static int winTextSetAppendAttrib(Ihandle* ih, const char* value)
 
   if (!value) value = "";
   str = winTextStrConvertToSystem(ih, value);
-  
+
   wpos = GetWindowTextLength(ih->handle)+1;
   SendMessage(ih->handle, EM_SETSEL, (WPARAM)wpos, (LPARAM)wpos);
 
@@ -1165,7 +1164,7 @@ static int winTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
 static char* winTextGetReadOnlyAttrib(Ihandle* ih)
 {
   DWORD style = GetWindowLong(ih->handle, GWL_STYLE);
-  return iupStrReturnBoolean (style & ES_READONLY); 
+  return iupStrReturnBoolean (style & ES_READONLY);
 }
 
 static int winTextSetTabSizeAttrib(Ihandle* ih, const char* value)
@@ -1274,7 +1273,7 @@ static int winTextSetScrollToAttrib(Ihandle* ih, const char* value)
     if (lin < 1) lin = 1;
     if (col < 1) col = 1;
 
-    lin--;  /* return to Windows referece */
+    lin--;  /* return to Windows reference */
     col--;
 
     winTextScrollTo(ih, lin, col);
@@ -1307,7 +1306,7 @@ static int winTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
     int lin, col;
     iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
 
-    lin--;  /* return to Windows referece */
+    lin--;  /* return to Windows reference */
     col--;
 
     winTextScrollTo(ih, lin, col);
@@ -1403,7 +1402,7 @@ static int winTextSetCueBannerAttrib(Ihandle *ih, const char *value)
   if (!ih->data->is_multiline && iupwin_comctl32ver6)
   {
     WCHAR* wstr = iupwinStrChar2Wide(value);
-    SendMessage(ih->handle, EM_SETCUEBANNER, (WPARAM)FALSE, (LPARAM)wstr);  /* always an Unicode string here */
+    SendMessage(ih->handle, EM_SETCUEBANNER, (WPARAM)FALSE, (LPARAM)wstr);  /* always a Unicode string here */
     free(wstr);
     return 1;
   }
@@ -1779,7 +1778,7 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
   }
 
   /* save state here if not applying a bulk */
-  if (!bulk) 
+  if (!bulk)
     state = (formatTagBulkState*)iupdrvTextAddFormatTagStartBulk(ih);
 
   selection = iupAttribGet(formattag, "SELECTION");
@@ -1984,7 +1983,7 @@ static void winTextCropSpinValue(Ihandle* ih, HWND hSpin, int min, int max)
   /* refresh if internally cropped, but text still shows an invalid value */
   int pos = (int)SendMessage(hSpin, UDM_GETPOS32, 0, 0);
   ih->data->disable_callbacks = 1;
-  if (pos <= min)  
+  if (pos <= min)
     SendMessage(hSpin, UDM_SETPOS32, 0, min);
   if (pos >= max)
     SendMessage(hSpin, UDM_SETPOS32, 0, max);
@@ -2156,7 +2155,7 @@ static int winTextSpinWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
     if (pos != old_pos)
     {
       IFni cb = (IFni) IupGetCallback(ih, "SPIN_CB");
-      if (cb) 
+      if (cb)
       {
         int ret = cb(ih, pos);
         if (ret == IUP_IGNORE)
@@ -2167,7 +2166,7 @@ static int winTextSpinWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
       }
     }
   }
-  
+
   (void)result;
   return 0; /* result not used */
 }
@@ -2262,13 +2261,13 @@ static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
       }
 
       if (c == TEXT('\b'))
-      {              
+      {
         if (!winTextCallActionCb(ih, NULL, -1))  /* backspace */
           ret = 1;
       }
       else if (c == TEXT('\n') || c == TEXT('\r'))
       {
-        if (ih->data->is_multiline && 
+        if (ih->data->is_multiline &&
             !ih->data->has_formatting && !(GetKeyState(VK_CONTROL) & 0x8000)) /* when formatting is processed in WM_KEYDOWN */
         {
           char insert_value[2];
@@ -2299,11 +2298,11 @@ static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
 
       PostMessage(ih->handle, WM_IUPCARET, 0, 0L);
 
-      if (!ih->data->is_multiline && 
+      if (!ih->data->is_multiline &&
           (wp==VK_RETURN || wp==VK_ESCAPE || wp==VK_TAB))  /* the keys have the same definitions as the chars */
         ret = 1;  /* abort default processing to avoid beep */
 
-      if (ih->data->is_multiline && 
+      if (ih->data->is_multiline &&
           (c==TEXT('\n') && (GetKeyState(VK_CONTROL) & 0x8000)))
         ret = 1;  /* abort default processing to avoid inserting a new line */
 
@@ -2370,7 +2369,7 @@ static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
     }
   case WM_PASTE:
     {
-      if (IupGetCallback(ih,"ACTION") || ih->data->mask) /* test before to avoid alocate clipboard text memory */
+      if (IupGetCallback(ih,"ACTION") || ih->data->mask) /* test before to avoid allocate clipboard text memory */
       {
         Ihandle* clipboard = IupClipboard();
         char* insert_value = IupGetAttribute(clipboard, "TEXT");
@@ -2457,7 +2456,7 @@ static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
     {
       if (ih->data->has_formatting)
       {
-        /* fix weird behavior when dialog has COMPOSITE=YES, 
+        /* fix weird behavior when dialog has COMPOSITE=YES,
            scrollbars are not updated when dragging */
         if (LOWORD(wp) == SB_THUMBTRACK)
           SendMessage(ih->handle, EM_SHOWSCROLLBAR, msg==WM_VSCROLL? SB_VERT: SB_HORZ, TRUE);
@@ -2595,7 +2594,7 @@ static void winTextUnMapMethod(Ihandle* ih)
 
 static int winTextMapMethod(Ihandle* ih)
 {
-  DWORD dwStyle = WS_CHILD|WS_CLIPSIBLINGS, 
+  DWORD dwStyle = WS_CHILD|WS_CLIPSIBLINGS,
       dwExStyle = 0;
   char* value;
   TCHAR* winclass = WC_EDIT;
@@ -2625,11 +2624,11 @@ static int winTextMapMethod(Ihandle* ih)
     if (iupAttribGetBoolean(ih, "WORDWRAP"))
     {
       ih->data->sb &= ~IUP_SB_HORIZ;  /* must remove the horizontal scrollbar
-                                         and do not specify ES_AUTOHSCROLL, 
+                                         and do not specify ES_AUTOHSCROLL,
                                          the control automatically wraps words */
     }
-    else                           
-      dwStyle |= ES_AUTOHSCROLL;   
+    else
+      dwStyle |= ES_AUTOHSCROLL;
 
     if (ih->data->sb & IUP_SB_HORIZ)
       dwStyle |= WS_HSCROLL;
@@ -2724,12 +2723,12 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FONT", NULL, winTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);  /* inherited */
 
   /* Overwrite Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);  
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "VISIBLE", iupBaseGetVisibleAttrib, winTextSetVisibleAttrib, "YES", "NO", IUPAF_NO_SAVE);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, winTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
   /* Special */
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_NOT_MAPPED);  /* usually black */    
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_NOT_MAPPED);  /* usually black */
   iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, iupwinSetAutoRedrawAttrib, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   /* IupText only */

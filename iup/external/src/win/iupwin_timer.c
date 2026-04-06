@@ -11,12 +11,9 @@
 #include <stdint.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
-#include "iup_assert.h"
 #include "iup_timer.h"
 
 
@@ -29,7 +26,7 @@ static long long winTimerGetTickCount(void)
   /* both have 10 ms precision only */
   if (winTimerGetTickCount64)
     return (long long)winTimerGetTickCount64();
-  else 
+  else
     return (long long)GetTickCount();
 }
 

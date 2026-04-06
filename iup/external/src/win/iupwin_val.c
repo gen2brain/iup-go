@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <memory.h>
 #include <stdarg.h>
 #include <limits.h>
 
@@ -25,9 +24,7 @@
 #include "iup_drv.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
 #include "iupwin_draw.h"
-#include "iupwin_str.h"
 
 
 IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
@@ -39,7 +36,7 @@ IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
     char* tickspos = iupAttribGetStr(ih, "TICKSPOS");
     if(iupStrEqualNoCase(tickspos, "BOTH"))
       ticks_size = 2*8;
-    else 
+    else
       ticks_size = 8;
   }
 
@@ -120,9 +117,7 @@ static int winValSetValueAttrib(Ihandle* ih, const char* value)
   return 0; /* do not store value in hash table */
 }
 
-
 /*********************************************************************************************/
-
 
 static int winValCustomScroll(Ihandle* ih, int msg)
 {
@@ -229,7 +224,7 @@ static int winValMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *r
     {
       RECT rect;
       HDC hDC = (HDC)wp;
-      GetClientRect(ih->handle, &rect); 
+      GetClientRect(ih->handle, &rect);
       iupwinDrawParentBackground(ih, hDC, &rect);
       /* return non zero value */
       *result = 1;
@@ -281,9 +276,7 @@ static int winValBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-
 /*********************************************************************************************/
-
 
 static int winValMapMethod(Ihandle* ih)
 {
@@ -313,7 +306,7 @@ static int winValMapMethod(Ihandle* ih)
     char* tickspos;
 
     if (show_ticks<2) show_ticks=2;
-    ih->data->show_ticks = show_ticks; /* non zero value, can be changed later, but not to zero */
+    ih->data->show_ticks = show_ticks; /* non-zero value, can be changed later, but not to zero */
 
     /* Defines the position of tick marks */
     tickspos = iupAttribGetStr(ih, "TICKSPOS");
@@ -358,7 +351,7 @@ IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TIP", NULL, winValBaseSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupVal only */
-  iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, winValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);  
+  iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, winValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, winValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, winValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);  /* force new default value */
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, winValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);   /* force new default value */

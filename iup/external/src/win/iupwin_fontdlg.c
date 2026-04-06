@@ -17,7 +17,6 @@
 #include "iup_drvfont.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_info.h"
 #include "iupwin_str.h"
 
 
@@ -84,7 +83,7 @@ static int winFontDlgPopup(Ihandle* ih, int x, int y)
   char typeface[50] = "";
   int height = 8;
   int is_bold = 0,
-    is_italic = 0, 
+    is_italic = 0,
     is_underline = 0,
     is_strikeout = 0;
   int res = iupwinGetScreenRes();
@@ -152,7 +151,7 @@ static int winFontDlgPopup(Ihandle* ih, int x, int y)
 
   if (iupStrToRGB(iupAttribGet(ih, "COLOR"), &r, &g, &b))
     choosefont.rgbColors = RGB(r, g, b);
-  
+
   choosefont.hwndOwner = parent;
   choosefont.lpLogFont = &logfont;
   choosefont.Flags = CF_SCREENFONTS | CF_EFFECTS | CF_INITTOLOGFONTSTRUCT | CF_NOSCRIPTSEL;
@@ -172,13 +171,13 @@ static int winFontDlgPopup(Ihandle* ih, int x, int y)
   logfont.lfStrikeOut = (BYTE)is_strikeout;
 
   logfont.lfCharSet = DEFAULT_CHARSET;
-  logfont.lfEscapement = 0; 
+  logfont.lfEscapement = 0;
   logfont.lfOrientation = 0;
-  logfont.lfWidth = 0; 
-  logfont.lfOutPrecision = OUT_TT_PRECIS; 
-  logfont.lfClipPrecision = CLIP_DEFAULT_PRECIS; 
-  logfont.lfQuality = DEFAULT_QUALITY; 
-  logfont.lfPitchAndFamily = FF_DONTCARE|DEFAULT_PITCH; 
+  logfont.lfWidth = 0;
+  logfont.lfOutPrecision = OUT_TT_PRECIS;
+  logfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+  logfont.lfQuality = DEFAULT_QUALITY;
+  logfont.lfPitchAndFamily = FF_DONTCARE|DEFAULT_PITCH;
 
   if (!ChooseFont(&choosefont))
   {
@@ -199,11 +198,11 @@ static int winFontDlgPopup(Ihandle* ih, int x, int y)
   else
     height = iupWIN_PIXEL2PT(-height_pixels, res);   /* return in points */
 
-  iupAttribSetStrf(ih, "VALUE", "%s, %s%s%s%s %d", iupwinStrFromSystem(logfont.lfFaceName), 
-                                                    is_bold?"Bold ":"", 
-                                                    is_italic?"Italic ":"", 
-                                                    is_underline?"Underline ":"", 
-                                                    is_strikeout?"Strikeout ":"", 
+  iupAttribSetStrf(ih, "VALUE", "%s, %s%s%s%s %d", iupwinStrFromSystem(logfont.lfFaceName),
+                                                    is_bold?"Bold ":"",
+                                                    is_italic?"Italic ":"",
+                                                    is_underline?"Underline ":"",
+                                                    is_strikeout?"Strikeout ":"",
                                                     height);
 
   iupAttribSetStrf(ih, "COLOR", "%d %d %d", GetRValue(choosefont.rgbColors),

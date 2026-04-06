@@ -5,26 +5,24 @@
  */
 
 #include <windows.h>
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 
-#include "iupwin_drv.h"
 #include "iupwin_str.h"
 
 
 /* ATTENTION:
-  "If an application calls OpenClipboard with hwnd set to NULL, 
-   EmptyClipboard sets the clipboard owner to NULL; 
-   this causes SetClipboardData to fail." 
+  "If an application calls OpenClipboard with hwnd set to NULL,
+   EmptyClipboard sets the clipboard owner to NULL;
+   this causes SetClipboardData to fail."
   Because of this we use GetForegroundWindow() */
 
 typedef struct _APMFILEHEADER
@@ -44,29 +42,29 @@ static WORD winAPMChecksum(APMFILEHEADER* papm)
   WORD* pw = (WORD*)papm;
   WORD  wSum = 0;
   int   i;
-  
+
   /* The checksum in a Placeable Metafile header is calculated */
   /* by XOR-ing the first 10 words of the header.              */
-  
+
   for (i = 0; i < 10; i++)
     wSum ^= *pw++;
-  
+
   return wSum;
 }
 
-static void winWritePlacebleFile(HANDLE hFile, unsigned char* buffer, DWORD dwSize, LONG mm, LONG xExt, LONG yExt)
+static void winWritePlaceableFile(HANDLE hFile, unsigned char* buffer, DWORD dwSize, LONG mm, LONG xExt, LONG yExt)
 {
   DWORD nBytesWrite;
   APMFILEHEADER APMHeader;
   int w = xExt, h = yExt;
-  
+
   if (mm == MM_ANISOTROPIC || mm == MM_ISOTROPIC)
   {
     int res = 30;
     w = xExt / res;
     h = yExt / res;
   }
-  
+
   APMHeader.key1 = 0xCDD7;
   APMHeader.key2 = 0x9AC6;
   APMHeader.hmf = 0;
@@ -74,11 +72,11 @@ static void winWritePlacebleFile(HANDLE hFile, unsigned char* buffer, DWORD dwSi
   APMHeader.btop = 0;
   APMHeader.bright = (short)w;
   APMHeader.bbottom = (short)h;
-  APMHeader.inch = 100;  /* this number works fine in Word, etc.. */
+  APMHeader.inch = 100;  /* this number works fine in Word, etc. */
   APMHeader.reserved1 = 0;
   APMHeader.reserved2 = 0;
   APMHeader.checksum = winAPMChecksum(&APMHeader);
-  
+
   WriteFile(hFile, (LPSTR)&APMHeader, sizeof(APMFILEHEADER), &nBytesWrite, NULL);
   WriteFile(hFile, buffer, dwSize, &nBytesWrite, NULL);
 }
@@ -90,7 +88,7 @@ static int winClipboardSetSaveEMFAttrib(Ihandle *ih, const char *value)
   unsigned char* buffer;
   HANDLE hFile;
   (void)ih;
-  
+
   OpenClipboard(GetForegroundWindow());
   Handle = (HENHMETAFILE)GetClipboardData(CF_ENHMETAFILE);
   if (Handle == NULL)
@@ -98,13 +96,13 @@ static int winClipboardSetSaveEMFAttrib(Ihandle *ih, const char *value)
     CloseClipboard();
     return 0;
   }
-  
+
   dwSize = GetEnhMetaFileBits(Handle, 0, NULL);
-  
+
   buffer = (unsigned char*)malloc(dwSize);
-  
+
   GetEnhMetaFileBits(Handle, dwSize, buffer);
-  
+
   hFile = CreateFile(iupwinStrToSystemFilename(value), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
   if (hFile != INVALID_HANDLE_VALUE)
   {
@@ -126,7 +124,7 @@ static int winClipboardSetSaveWMFAttrib(Ihandle *ih, const char *value)
   HANDLE Handle;
   HANDLE hFile;
   (void)ih;
-  
+
   OpenClipboard(GetForegroundWindow());
   Handle = (HENHMETAFILE)GetClipboardData(CF_METAFILEPICT);
   if (Handle == NULL)
@@ -134,25 +132,25 @@ static int winClipboardSetSaveWMFAttrib(Ihandle *ih, const char *value)
     CloseClipboard();
     return 0;
   }
-  
+
   lpMFP = (METAFILEPICT*) GlobalLock(Handle);
-  
+
   dwSize = GetMetaFileBitsEx(lpMFP->hMF, 0, NULL);
-  
+
   buffer = (unsigned char*)malloc(dwSize);
-  
+
   GetMetaFileBitsEx(lpMFP->hMF, dwSize, buffer);
-  
+
   hFile = CreateFile(iupwinStrToSystemFilename(value), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
   if (hFile != INVALID_HANDLE_VALUE)
   {
-    winWritePlacebleFile(hFile, buffer, dwSize, lpMFP->mm, lpMFP->xExt, lpMFP->yExt);
+    winWritePlaceableFile(hFile, buffer, dwSize, lpMFP->mm, lpMFP->xExt, lpMFP->yExt);
     CloseHandle(hFile);
   }
-  
+
   GlobalUnlock(Handle);
   free(buffer);
-  
+
   CloseClipboard();
   return 0;
 }
@@ -181,7 +179,7 @@ static int winClipboardSetTextAttrib(Ihandle *ih, const char *value)
 #ifdef UNICODE
   wstr = iupwinStrToSystem(dos_str);
 #else
-  if (dos_str != value) 
+  if (dos_str != value)
     wstr = iupStrReturnStr(dos_str);
   else
     wstr = dos_str;
@@ -300,7 +298,7 @@ static HANDLE winCopyHandle(HANDLE hHandle)
   SIZE_T size = GlobalSize(hHandle);
   if (size == 0)
     return NULL;
-  hNewHandle = GlobalAlloc(GMEM_MOVEABLE, size); 
+  hNewHandle = GlobalAlloc(GMEM_MOVEABLE, size);
   if (!hNewHandle)
     return NULL;
 
@@ -329,7 +327,7 @@ static char* winClipboardGetNativeImageAttrib(Ihandle *ih)
 
   hHandle = winCopyHandle(hHandle);   /* must duplicate because CloseClipboard will invalidate the handle */
   CloseClipboard();
-  
+
   (void)ih;
   return (char*)hHandle;
 }
@@ -413,7 +411,7 @@ static char* winClipboardGetFormatDataAttrib(Ihandle *ih)
     CloseClipboard();
     return NULL;
   }
-  
+
   size = (int)GlobalSize(hHandle);
   if (size == 0)
   {
@@ -470,26 +468,26 @@ static char* winClipboardGetTextAvailableAttrib(Ihandle *ih)
 #ifdef UNICODE
   return iupStrReturnBoolean(winClipboardIsAvailable(CF_TEXT) || winClipboardIsAvailable(CF_UNICODETEXT));
 #else
-  return iupStrReturnBoolean (winClipboardIsAvailable(CF_TEXT)); 
+  return iupStrReturnBoolean (winClipboardIsAvailable(CF_TEXT));
 #endif
 }
 
 static char* winClipboardGetImageAvailableAttrib(Ihandle *ih)
 {
   (void)ih;
-  return iupStrReturnBoolean (winClipboardIsAvailable(CF_DIB)); 
+  return iupStrReturnBoolean (winClipboardIsAvailable(CF_DIB));
 }
 
 static char* winClipboardGetWMFAvailableAttrib(Ihandle *ih)
 {
   (void)ih;
-  return iupStrReturnBoolean (winClipboardIsAvailable(CF_METAFILEPICT)); 
+  return iupStrReturnBoolean (winClipboardIsAvailable(CF_METAFILEPICT));
 }
 
 static char* winClipboardGetEMFAvailableAttrib(Ihandle *ih)
 {
   (void)ih;
-  return iupStrReturnBoolean (winClipboardIsAvailable(CF_ENHMETAFILE)); 
+  return iupStrReturnBoolean (winClipboardIsAvailable(CF_ENHMETAFILE));
 }
 
 static char* winClipboardGetFormatAvailableAttrib(Ihandle *ih)
@@ -498,7 +496,7 @@ static char* winClipboardGetFormatAvailableAttrib(Ihandle *ih)
   if (format_id==0)
     return NULL;
 
-  return iupStrReturnBoolean (winClipboardIsAvailable(format_id)); 
+  return iupStrReturnBoolean (winClipboardIsAvailable(format_id));
 }
 
 static int winClipboardSetAddFormatAttrib(Ihandle *ih, const char *value)
@@ -551,5 +549,3 @@ Iclass* iupClipboardNewClass(void)
 
   return ic;
 }
-
-

@@ -11,11 +11,9 @@
 #include <memory.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_dialog.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_dlglist.h"
@@ -203,7 +201,7 @@ IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, L
     {
       /* Simulate WM_GETFOCUS when the menu interaction is stopped */
       Ihandle* lastfocus = (Ihandle*)iupAttribGet(ih_dialog, "_IUPWIN_LASTFOCUS");
-      if (iupObjectCheck(lastfocus)) 
+      if (iupObjectCheck(lastfocus))
         iupCallGetFocusCb(lastfocus);
       break;
     }
@@ -255,11 +253,11 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
         hWndActive = dlg->handle;  /* found a valid handle */
 
         /* if not a "TRAY" dialog, keep searching, because TRAY is a special case */
-        if (iupAttribGetBoolean(dlg, "TRAY")) 
+        if (iupAttribGetBoolean(dlg, "TRAY"))
           break;
       }
       dlg = iupDlgListNext();
-    } 
+    }
   }
 
   /* Necessary to avoid tray dialogs to lock popup menus (they get sticky after the 1st time) */
@@ -268,7 +266,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     Ihandle* dlg = iupwinHandleGet(hWndActive);
     if (iupObjectCheck(dlg) && iupAttribGetBoolean(dlg, "TRAY"))
     {
-      /* To display a context menu for a notification icon, 
+      /* To display a context menu for a notification icon,
          the current window must be the foreground window. */
       SetForegroundWindow(hWndActive);
       tray_menu = 1;
@@ -282,8 +280,8 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 
   if (tray_menu)
   {
-    /* You must force a task switch to the application that 
-       called TrackPopupMenu at some time in the near future. 
+    /* You must force a task switch to the application that
+       called TrackPopupMenu at some time in the near future.
        This is done by posting a benign message to the window. */
     PostMessage(hWndActive, WM_NULL, 0, 0);
   }
@@ -304,9 +302,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
-
 /*******************************************************************************************/
-
 
 static int winMenuSetBgColorAttrib(Ihandle* ih, const char* value)
 {
@@ -317,7 +313,7 @@ static int winMenuSetBgColorAttrib(Ihandle* ih, const char* value)
     MENUINFO menuinfo;
     menuinfo.cbSize = sizeof(MENUINFO);
     menuinfo.fMask = MIM_BACKGROUND;
-    menuinfo.hbrBack = iupwinBrushGet(RGB(r,g,b)); 
+    menuinfo.hbrBack = iupwinBrushGet(RGB(r,g,b));
     SetMenuInfo((HMENU)ih->handle, &menuinfo);
     winMenuUpdateBar(ih);
   }
@@ -334,12 +330,12 @@ static int winSubmenuAddToParent(Ihandle* ih)
   {
     MENUITEMINFO menuiteminfo;
 
-    menuiteminfo.cbSize = sizeof(MENUITEMINFO); 
-    menuiteminfo.fMask = MIIM_ID|MIIM_DATA|MIIM_SUBMENU|MIIM_STRING; 
+    menuiteminfo.cbSize = sizeof(MENUITEMINFO);
+    menuiteminfo.fMask = MIIM_ID|MIIM_DATA|MIIM_SUBMENU|MIIM_STRING;
     menuiteminfo.dwTypeData = TEXT(""); /* must set or it will be not possible to update */
     menuiteminfo.cch = 0;
     menuiteminfo.wID = (UINT)ih->serial;
-    menuiteminfo.dwItemData = (ULONG_PTR)ih; 
+    menuiteminfo.dwItemData = (ULONG_PTR)ih;
     menuiteminfo.hSubMenu = (HMENU)ih->firstchild->handle;  /* this is why the submenu is created only here with the child menu handle */
 
     if (!InsertMenuItem((HMENU)ih->parent->handle, pos, TRUE, &menuiteminfo))
@@ -352,7 +348,7 @@ static int winSubmenuAddToParent(Ihandle* ih)
   ih->handle = ih->parent->handle; /* gets the HMENU of the parent */
 
   /* must update attributes since submenu is actually created after it is mapped */
-  iupAttribUpdate(ih); 
+  iupAttribUpdate(ih);
   iupAttribUpdateFromParent(ih);
 
   winMenuUpdateBar(ih);
@@ -412,7 +408,7 @@ static int winMenuMapMethod(Ihandle* ih)
         return IUP_ERROR;
       }
     }
-    else  
+    else
     {
       /* top level menu used for IupPopup */
 
@@ -450,9 +446,7 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winMenuSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
 }
 
-
 /*******************************************************************************************/
-
 
 static int winMenuItemSetImageAttrib(Ihandle* ih, const char* value)
 {
@@ -460,7 +454,7 @@ static int winMenuItemSetImageAttrib(Ihandle* ih, const char* value)
   char* impress;
 
   /* check if the submenu handle was created in winSubmenuAddToParent */
-  if (ih->handle == (InativeHandle*)-1) 
+  if (ih->handle == (InativeHandle*)-1)
     return 1;
 
   hBitmapUnchecked = iupImageGetImage(value, ih, 0, NULL);
@@ -517,7 +511,7 @@ static int winMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
     TCHAR* tstr = iupwinStrToSystem(str);
     int len = lstrlen(tstr);
     MENUITEMINFO menuiteminfo;
-    menuiteminfo.cbSize = sizeof(MENUITEMINFO); 
+    menuiteminfo.cbSize = sizeof(MENUITEMINFO);
     menuiteminfo.fMask = MIIM_TYPE;
     menuiteminfo.fType = MFT_STRING;
     menuiteminfo.dwTypeData = tstr;
@@ -545,8 +539,8 @@ static int winMenuItemSetTitleImageAttrib(Ihandle* ih, const char* value)
 
   {
     MENUITEMINFO menuiteminfo;
-    menuiteminfo.cbSize = sizeof(MENUITEMINFO); 
-    menuiteminfo.fMask = MIIM_BITMAP; 
+    menuiteminfo.cbSize = sizeof(MENUITEMINFO);
+    menuiteminfo.fMask = MIIM_BITMAP;
     menuiteminfo.hbmpItem = hBitmap;
     SetMenuItemInfo((HMENU)ih->handle, (UINT)ih->serial, FALSE, &menuiteminfo);
   }
@@ -619,12 +613,12 @@ static int winMenuItemMapMethod(Ihandle* ih)
 
   {
     MENUITEMINFO menuiteminfo;
-    menuiteminfo.cbSize = sizeof(MENUITEMINFO); 
-    menuiteminfo.fMask = MIIM_ID|MIIM_DATA|MIIM_STRING; 
+    menuiteminfo.cbSize = sizeof(MENUITEMINFO);
+    menuiteminfo.fMask = MIIM_ID|MIIM_DATA|MIIM_STRING;
     menuiteminfo.dwTypeData = TEXT(""); /* must set or it will be not possible to update */
     menuiteminfo.cch = 0;
     menuiteminfo.wID = (UINT)ih->serial;
-    menuiteminfo.dwItemData = (ULONG_PTR)ih; 
+    menuiteminfo.dwItemData = (ULONG_PTR)ih;
 
     if (!InsertMenuItem((HMENU)ih->parent->handle, pos, TRUE, &menuiteminfo))
       return IUP_ERROR;
@@ -661,16 +655,14 @@ IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
     iupClassRegisterAttribute(ic, "FLAT_ALPHA", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 }
 
-
 /*******************************************************************************************/
-
 
 static int winSubmenuMapMethod(Ihandle* ih)
 {
   if (!ih->parent || !IsMenu((HMENU)ih->parent->handle))
     return IUP_ERROR;
 
-  /* will map as void here, but later when the "child" menu is mapped 
+  /* will map as void here, but later when the "child" menu is mapped
      the submenu handle receives the "parent" menu handle in winSubmenuAddToParent,
      because the submenu needs the child menu to be created in the native system. */
   return iupBaseTypeVoidMapMethod(ih);
@@ -692,9 +684,7 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
     iupClassRegisterAttribute(ic, "FLAT_ALPHA", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 }
 
-
 /*******************************************************************************************/
-
 
 static int winMenuSeparatorMapMethod(Ihandle* ih)
 {
@@ -708,11 +698,11 @@ static int winMenuSeparatorMapMethod(Ihandle* ih)
 
   {
     MENUITEMINFO menuiteminfo;
-    menuiteminfo.cbSize = sizeof(MENUITEMINFO); 
-    menuiteminfo.fMask = MIIM_FTYPE|MIIM_ID|MIIM_DATA; 
-    menuiteminfo.fType = MFT_SEPARATOR; 
+    menuiteminfo.cbSize = sizeof(MENUITEMINFO);
+    menuiteminfo.fMask = MIIM_FTYPE|MIIM_ID|MIIM_DATA;
+    menuiteminfo.fType = MFT_SEPARATOR;
     menuiteminfo.wID = (UINT)ih->serial;
-    menuiteminfo.dwItemData = (ULONG_PTR)ih; 
+    menuiteminfo.dwItemData = (ULONG_PTR)ih;
 
     if (!InsertMenuItem((HMENU)ih->parent->handle, pos, TRUE, &menuiteminfo))
       return IUP_ERROR;

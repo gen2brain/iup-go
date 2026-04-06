@@ -11,9 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <memory.h>
 #include <stdarg.h>
-#include <limits.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -28,7 +26,6 @@
 #include "iup_text.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
 #include "iupwin_str.h"
 #include "iupwin_info.h"
 
@@ -167,7 +164,6 @@ static int winDatePickSetShowDropdownAttrib(Ihandle* ih, const char* value)
 
 /*********************************************************************************************/
 
-
 static int winDatePickWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
 {
   if (msg_info->code == DTN_DATETIMECHANGE)
@@ -188,7 +184,6 @@ static int winDatePickWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
   (void)result;
   return 0; /* result not used */
 }
-
 
 /*********************************************************************************************/
 

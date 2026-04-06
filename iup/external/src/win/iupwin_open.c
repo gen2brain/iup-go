@@ -5,7 +5,6 @@
  */
 #include <windows.h>
 #include <commctrl.h>
-#include <ole2.h>
 #include <shobjidl.h>
 
 #include <stdio.h>
@@ -15,9 +14,7 @@
 #include "iup.h"
 
 #include "iup_object.h"
-#include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_drvinfo.h"
 #include "iup_globalattrib.h"
 
@@ -33,7 +30,7 @@
 #define ICC_LINK_CLASS         0x00008000
 #endif
 
-HINSTANCE iupwin_hinstance = 0;    
+HINSTANCE iupwin_hinstance = 0;
 int       iupwin_comctl32ver6 = 0;
 DWORD     iupwin_mainthreadid = 0;
 #ifdef USE_WINHOOKPOST
@@ -59,7 +56,7 @@ IUP_DRV_API void iupwinShowLastError(void)
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|
                   FORMAT_MESSAGE_FROM_SYSTEM|
                   FORMAT_MESSAGE_IGNORE_INSERTS,
-                  NULL, error, 0, 
+                  NULL, error, 0,
                   (LPTSTR)&lpMsgBuf, /* weird but that's correct */
                   0, NULL);
 
@@ -125,7 +122,7 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
     INITCOMMONCONTROLSEX InitCtrls;
     InitCtrls.dwSize = sizeof(INITCOMMONCONTROLSEX);
     InitCtrls.dwICC = ICC_WIN95_CLASSES | ICC_LINK_CLASS | ICC_DATE_CLASSES;  /* trackbar, tooltips, updown, tab, progress */
-    InitCommonControlsEx(&InitCtrls);  
+    InitCommonControlsEx(&InitCtrls);
   }
 
   iupwin_comctl32ver6 = (iupwinGetComCtl32Version() >= 0x060000)? 1: 0;

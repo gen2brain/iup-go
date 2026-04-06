@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPWIN_INFO_H 
+
+#ifndef __IUPWIN_INFO_H
 #define __IUPWIN_INFO_H
 
 #ifdef __cplusplus

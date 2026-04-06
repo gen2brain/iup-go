@@ -21,7 +21,6 @@
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_drvinfo.h"
 #include "iup_mask.h"
 #include "iup_focus.h"
 #include "iup_image.h"
@@ -34,7 +33,7 @@
 
 
 /* Not defined in Cygwin and MingW */
-#ifndef EM_SETCUEBANNER      
+#ifndef EM_SETCUEBANNER
 #define ECM_FIRST               0x1500      /* Edit control messages */
 #define  EM_SETCUEBANNER      (ECM_FIRST + 1)
 #endif
@@ -190,7 +189,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
     /* IMPORTANT: In Windows the DROPDOWN box is always sized by the system
        to have the height just right to include the borders and the text.
-       So the user height from RASTERSIZE or SIZE will be always ignored. */
+       So the user height from RASTERSIZE or SIZE will always be ignored. */
   }
   else
   {
@@ -236,7 +235,7 @@ static int winListGetMaxWidth(Ihandle* ih)
     count = (int)SendMessage(ih->handle, WIN_GETCOUNT(ih), 0, 0);
 
   for (i=0; i<count; i++)
-  { 
+  {
     winListItemData* itemdata = winListGetItemData(ih, i);
     if (!itemdata) continue;
     item_w = itemdata->text_width;
@@ -313,9 +312,9 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
     int curpos = (int)SendMessage(ih->handle, WIN_GETCURSEL(ih), 0, 0);
     if (pos == curpos)
     {
-      if (curpos > 0) 
+      if (curpos > 0)
         curpos--;
-      else 
+      else
       {
         curpos=1;
         if (iupdrvListGetCount(ih)==1)
@@ -357,7 +356,7 @@ static int winListGetCaretPos(HWND cbedit)
 
   if (GetFocus() != cbedit || !GetCaretPos(&point))
   {
-    /* if does not have the focus, or could not get caret position,
+    /* if it does not have the focus, or could not get caret position,
        then use the selection start position */
     SendMessage(cbedit, EM_GETSEL, (WPARAM)&pos, 0);
   }
@@ -392,7 +391,7 @@ static void winListUpdateItemWidth(Ihandle* ih)
 {
   int i, count = (int)SendMessage(ih->handle, WIN_GETCOUNT(ih), 0, 0);
   for (i=0; i<count; i++)
-  { 
+  {
     winListItemData* itemdata = winListGetItemData(ih, i);
     char* str = winListGetText(ih, i);
     itemdata->text_width = iupdrvFontGetStringWidth(ih, str);
@@ -557,7 +556,7 @@ static int winListSetValueAttrib(Ihandle* ih, const char* value)
 static int winListSetShowDropdownAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->is_dropdown)
-    SendMessage(ih->handle, CB_SHOWDROPDOWN, iupStrBoolean(value), 0); 
+    SendMessage(ih->handle, CB_SHOWDROPDOWN, iupStrBoolean(value), 0);
   return 0;
 }
 
@@ -590,7 +589,7 @@ static int winListSetSpacingAttrib(Ihandle* ih, const char* value)
     /* set for all items */
     if (!ih->data->show_image)
     {
-      /* since this is done once and affects all items, there is no need to do this 
+      /* since this is done once and affects all items, there is no need to do this
          every time a new item is added */
       int txt_h;
       iupdrvFontGetCharSize(ih, NULL, &txt_h);
@@ -604,7 +603,7 @@ static int winListSetSpacingAttrib(Ihandle* ih, const char* value)
       int i, count = (int)SendMessage(ih->handle, WIN_GETCOUNT(ih), 0, 0);
 
       for (i=0; i<count; i++)
-      { 
+      {
         winListItemData* itemdata = winListGetItemData(ih, i);
         winListUpdateShowImageItemHeight(ih, itemdata, i);
       }
@@ -664,7 +663,7 @@ static int winListSetCueBannerAttrib(Ihandle *ih, const char *value)
   {
     WCHAR* wstr = iupwinStrChar2Wide(value);
     HWND cbedit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
-    SendMessage(cbedit, EM_SETCUEBANNER, (WPARAM)FALSE, (LPARAM)wstr);  /* always an Unicode string here */
+    SendMessage(cbedit, EM_SETCUEBANNER, (WPARAM)FALSE, (LPARAM)wstr);  /* always a Unicode string here */
     free(wstr);
     return 1;
   }
@@ -735,7 +734,7 @@ static char* winListGetSelectedTextAttrib(Ihandle* ih)
   if (str)
   {
     int start = 0, end = 0;
-    
+
     SendMessage(cbedit, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
     if (start == end)
       return NULL;
@@ -788,10 +787,10 @@ static int winListSetSelectionAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+  if (iupStrToIntInt(value, &start, &end, ':')!=2)
     return 0;
 
-  if(start<1 || end<1) 
+  if(start<1 || end<1)
     return 0;
 
   start--; /* IUP starts at 1 */
@@ -841,10 +840,10 @@ static int winListSetSelectionPosAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':')!=2) 
+  if (iupStrToIntInt(value, &start, &end, ':')!=2)
     return 0;
 
-  if(start<0 || end<0) 
+  if(start<0 || end<0)
     return 0;
 
   cbedit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
@@ -886,7 +885,7 @@ static int winListSetAppendAttrib(Ihandle* ih, const char* value)
     return 0;
 
   if (!value) value = "";
-  
+
   cbedit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
   len = GetWindowTextLength(cbedit)+1;
   SendMessage(cbedit, EM_SETSEL, (WPARAM)len, (LPARAM)len);
@@ -915,7 +914,7 @@ static char* winListGetReadOnlyAttrib(Ihandle* ih)
 
   cbedit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
   style = GetWindowLong(cbedit, GWL_STYLE);
-  return iupStrReturnBoolean (style & ES_READONLY); 
+  return iupStrReturnBoolean (style & ES_READONLY);
 }
 
 static int winListSetCaretAttrib(Ihandle* ih, const char* value)
@@ -1090,7 +1089,7 @@ static void winListDrawRect(HWND hWnd, HDC hDC, int nIndex)
   else
     SendMessage(hWnd, LB_GETITEMRECT, (WPARAM)nIndex, (LPARAM)&rect);
 
-	PatBlt(hDC, rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top, PATINVERT);
+  PatBlt(hDC, rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top, PATINVERT);
 }
 
 static void winListDrawDropFeedback(Ihandle *ih, int nIndex)
@@ -1109,7 +1108,7 @@ static void winListDrawDropFeedback(Ihandle *ih, int nIndex)
     hDC = GetDC(hWnd);
 
     /* Prevent drawing outside of listbox.
-       This can happen at the top of the listbox since 
+       This can happen at the top of the listbox since
        the listbox's DC is the parent's DC */
     SelectClipRgn(hDC, rgn);
 
@@ -1286,7 +1285,7 @@ static int winListWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
         }
 
         /* the edit is not updated yet, so prepare to return correct VALUE during callback */
-        if (ih->data->has_editbox) 
+        if (ih->data->has_editbox)
           iupAttribSet(ih, "_IUPWIN_GETFROMLIST", "1");
 
         iupBaseCallValueChangedCb(ih);
@@ -1416,7 +1415,7 @@ static int winListEditProc(Ihandle* ih, HWND cbedit, UINT msg, WPARAM wp, LPARAM
       return 1;
     }
 
-    if (ret) 
+    if (ret)
     {
       iupAttribSet(ih, "_IUPWIN_IGNORE_CHAR", "1");
       *result = 0;
@@ -1440,7 +1439,7 @@ static int winListEditProc(Ihandle* ih, HWND cbedit, UINT msg, WPARAM wp, LPARAM
       }
 
       if (c == TEXT('\b'))
-      {              
+      {
         if (!winListCallEditCb(ih, cbedit, NULL, -1))
           ret = 1;
       }
@@ -1501,7 +1500,7 @@ static int winListEditProc(Ihandle* ih, HWND cbedit, UINT msg, WPARAM wp, LPARAM
     }
   case WM_PASTE:
     {
-      if (IupGetCallback(ih, "EDIT_CB") || ih->data->mask) /* test before to avoid alocate clipboard text memory */
+      if (IupGetCallback(ih, "EDIT_CB") || ih->data->mask) /* test before to avoid allocate clipboard text memory */
       {
         Ihandle* clipboard = IupClipboard();
         char* insert_value = IupGetAttribute(clipboard, "TEXT");
@@ -1568,13 +1567,13 @@ static int winListEditProc(Ihandle* ih, HWND cbedit, UINT msg, WPARAM wp, LPARAM
 }
 
 static LRESULT CALLBACK winListEditWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{   
+{
   int ret = 0;
   LRESULT result = 0;
   WNDPROC oldProc;
   Ihandle *ih;
 
-  ih = iupwinHandleGet(hwnd); 
+  ih = iupwinHandleGet(hwnd);
   if (!iupObjectCheck(ih))
     return DefWindowProc(hwnd, msg, wp, lp);  /* should never happen */
 
@@ -1637,13 +1636,13 @@ static int winListComboListProc(Ihandle* ih, HWND cblist, UINT msg, WPARAM wp, L
 }
 
 static LRESULT CALLBACK winListComboListWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{   
+{
   int ret = 0;
   LRESULT result = 0;
   WNDPROC oldProc;
   Ihandle *ih;
 
-  ih = iupwinHandleGet(hwnd); 
+  ih = iupwinHandleGet(hwnd);
   if (!iupObjectCheck(ih))
     return DefWindowProc(hwnd, msg, wp, lp);  /* should never happen */
 

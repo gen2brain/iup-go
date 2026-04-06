@@ -16,16 +16,14 @@
 #include "iup_str.h"
 
 #include "iup_drv.h"
-#include "iup_focus.h"
-#include "iup_attrib.h"
 #include "iupwin_drv.h"
 
-                   
+
 /* some older mingw-w64.sf.net headers are missing the following define */
 #ifndef MAPVK_VK_TO_CHAR
 #define MAPVK_VK_TO_CHAR    2
 #endif
-                  
+
 typedef struct _Iwin2iupkey
 {
   int iupcode;
@@ -53,7 +51,7 @@ static void winKeyInitXKey(Iwin2iupkey* map)
   map[VK_SHIFT].iupcode =   K_LSHIFT;
   map[VK_CONTROL].iupcode = K_LCTRL;
   map[VK_MENU].iupcode =    K_LALT;
-                         
+
   map[VK_HOME].iupcode =      K_HOME;
   map[VK_UP].iupcode =        K_UP;
   map[VK_PRIOR].iupcode =     K_PGUP;
@@ -114,7 +112,7 @@ static void winKeyInitXKey(Iwin2iupkey* map)
   map[VK_DECIMAL].iupcode =   winMapVirtualKeyToChar(VK_DECIMAL);
   map[VK_SEPARATOR].iupcode = winMapVirtualKeyToChar(VK_SEPARATOR);
 
-  /* 
+  /*
   if (!map[VK_OEM_1].iupcode) map[VK_OEM_1].iupcode = winMapVirtualKeyToChar(VK_OEM_1);
   if (!map[VK_OEM_2].iupcode) map[VK_OEM_2].iupcode = winMapVirtualKeyToChar(VK_OEM_2);
   if (!map[VK_OEM_3].iupcode) map[VK_OEM_3].iupcode = winMapVirtualKeyToChar(VK_OEM_3);
@@ -128,7 +126,7 @@ static void winKeyInitXKey(Iwin2iupkey* map)
   map[VK_OEM_102].iupcode = winMapVirtualKeyToChar(VK_OEM_102);  /*  "<>" or "\|" on RT 102-key kbd. */
 
   {
-    HKL k = GetKeyboardLayout(0);    
+    HKL k = GetKeyboardLayout(0);
     if ((int)HIWORD(k) == 0x0416)
     {
       /* ABNT extra definitions */
@@ -175,8 +173,8 @@ IUP_DRV_API void iupwinKeyInit(void)
 
   for (i=0; i<256; i++)
   {
-    if (!(winkey_map[i].iupcode))    
-    {  
+    if (!(winkey_map[i].iupcode))
+    {
       winkey_map[i].iupcode = winMapVirtualKeyToChar(i);
     }
   }
@@ -240,11 +238,11 @@ static int winKeyMap2Iup(int wincode)
 
   if (has_shift)  /* Shift */
   {
-    /* only add Shift modifiers for non-ASCii codes, except for K_SP and bellow, 
+    /* only add Shift modifiers for non-ASCii codes, except for K_SP and bellow,
        and except when other modifiers are used */
     if ((wincode < K_exclam || wincode > K_tilde) ||
         (has_ctrl || has_alt || has_sys))
-      code = iup_XkeyShift(code);  
+      code = iup_XkeyShift(code);
   }
 
   if (has_ctrl)   /* Ctrl */
@@ -331,7 +329,7 @@ IUP_DRV_API int iupwinKeyEvent(Ihandle* ih, int wincode, int press)
     if (iupObjectCheck(ih))
     {
       /* this is called only for canvas */
-      if (ih->iclass->nativetype == IUP_TYPECANVAS) 
+      if (ih->iclass->nativetype == IUP_TYPECANVAS)
       {
         result = iupKeyCallKeyPressCb(ih, code, 1);
         if (result == IUP_CLOSE)
@@ -378,7 +376,7 @@ IUP_DRV_API void iupwinButtonKeySetStatus(WORD keys, char* status, int doublecli
     iupKEY_SETSHIFT(status);
 
   if (keys & MK_CONTROL)
-    iupKEY_SETCONTROL(status); 
+    iupKEY_SETCONTROL(status);
 
   if (keys & MK_LBUTTON)
     iupKEY_SETBUTTON1(status);

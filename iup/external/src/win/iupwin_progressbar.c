@@ -14,7 +14,6 @@
 #include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -23,13 +22,11 @@
 #include "iup_drv.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
-#include "iupwin_str.h"
 #include "iupwin_draw.h"
 
 
 /* Not defined in Cygwin and MingW */
-#ifndef PBS_MARQUEE            
+#ifndef PBS_MARQUEE
 #define PBS_MARQUEE             0x08
 #define PBM_SETMARQUEE          (WM_USER+10)
 #endif

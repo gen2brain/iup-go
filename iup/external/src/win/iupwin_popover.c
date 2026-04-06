@@ -7,7 +7,6 @@
 #include <windows.h>
 #include <commctrl.h>
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
@@ -20,11 +19,7 @@
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_childtree.h"
 #include "iup_class.h"
-#include "iup_register.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
@@ -33,7 +28,6 @@
 
 
 #define IUPWIN_POPOVER_CLASS TEXT("IupPopover")
-
 
 static LRESULT CALLBACK winPopoverProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {

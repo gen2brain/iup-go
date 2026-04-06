@@ -4,22 +4,21 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h> 
+#include <string.h>
 
 #include <windows.h>
 
 #include "iup.h"
-#include "iupcbs.h"  
+#include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_loop.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
+
 
 /* This just needs to be a random unique number not used by the OS */
 #define IWIN_POSTMESSAGE_ID 0x4456
@@ -49,7 +48,7 @@ static int winLoopCallIdle(void)
     win_idle_cb = NULL;
     return IUP_CLOSE;
   }
-  if (ret == IUP_IGNORE) 
+  if (ret == IUP_IGNORE)
     win_idle_cb = NULL;
   return ret;
 }
@@ -204,7 +203,7 @@ IUP_API void IupFlush(void)
     }
   }
 
-  /* re post the quit message if still inside MainLoop */
+  /* re-post the quit message if still inside MainLoop */
   if (post_quit && win_main_loop_level>0)
     IupExitLoop();
 }

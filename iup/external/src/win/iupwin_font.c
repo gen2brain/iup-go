@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -41,7 +40,7 @@ static IwinFont* winFindFont(const char *font)
   char typeface[50] = "";
   int size = 8;
   int is_bold = 0,
-    is_italic = 0, 
+    is_italic = 0,
     is_underline = 0,
     is_strikeout = 0;
   int res = iupwinGetScreenRes();
@@ -65,7 +64,7 @@ static IwinFont* winFindFont(const char *font)
     iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
   /* get in pixels */
-  if (size < 0)  
+  if (size < 0)
     height_pixels = size;    /* already in pixels */
   else
     height_pixels = -iupWIN_PT2PIXEL(size, res);
@@ -99,7 +98,7 @@ static IwinFont* winFindFont(const char *font)
     /* NOTICE that this is different from CD.
        In IUP we need "average" width,
        in CD is "maximum" width. */
-    fonts[i].charwidth = tm.tmAveCharWidth; 
+    fonts[i].charwidth = tm.tmAveCharWidth;
     fonts[i].charheight = tm.tmHeight;
 
     fonts[i].max_width = tm.tmMaxCharWidth;
@@ -178,7 +177,7 @@ static IwinFont* winFontCreateNativeFont(Ihandle *ih, const char* value)
   IwinFont* winfont = winFindFont(value);
   if (!winfont)
   {
-    iupERROR1("Failed to create Font: %s", value); 
+    iupERROR1("Failed to create Font: %s", value);
     return NULL;
   }
 
@@ -212,8 +211,8 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   /* If FONT is changed, must update the SIZE attribute */
   iupBaseUpdateAttribFromFont(ih);
 
-  /* FONT attribute must be able to be set before mapping, 
-      so the font is enable for size calculation. */
+  /* FONT attribute must be able to be set before mapping,
+      so the font is enabled for size calculation. */
   if (ih->handle && (ih->iclass->nativetype != IUP_TYPEVOID))
     SendMessage(ih->handle, WM_SETFONT, (WPARAM)winfont->hFont, MAKELPARAM(TRUE,0));
 
@@ -336,7 +335,7 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
   HFONT oldhfont, hFont;
   SIZE size;
   int len;
-  char* line_end;  
+  char* line_end;
   TCHAR* wstr;
   if (!str || str[0]==0)
     return 0;
@@ -373,7 +372,7 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int *charwidth, int *charhei
     return;
   }
 
-  if (charwidth)  *charwidth = winfont->charwidth; 
+  if (charwidth)  *charwidth = winfont->charwidth;
   if (charheight) *charheight = winfont->charheight;
 }
 

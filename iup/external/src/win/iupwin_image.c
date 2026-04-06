@@ -220,7 +220,7 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
           break;
         }
       }
-    
+
       if (bmih->biHeight < 0)
         bits -= bmp_line_size;
       else
@@ -231,7 +231,7 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
   {
     int offset, planesize;
     unsigned short color;
-    unsigned int rmask = 0, gmask = 0, bmask = 0, 
+    unsigned int rmask = 0, gmask = 0, bmask = 0,
                   roff = 0, goff = 0, boff = 0; /* pixel bit mask control when reading 16 and 32 bpp images */
     unsigned char *red, *green, *blue, *alpha;
 
@@ -240,25 +240,25 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
     green = imgdata+planesize;
     blue = imgdata+2*planesize;
     alpha = imgdata+3*planesize;
-    
+
     if (bmih->biBitCount == 16)
       offset = bmp_line_size;  /* do not increment for each pixel, jump line */
     else
       offset = bmp_line_size - (w*bmih->biBitCount)/8;   /* increment for each pixel, jump pad */
-    
+
     if (bmih->biCompression == BI_BITFIELDS)
     {
       unsigned int Mask;
       unsigned int* palette = (unsigned int*)(((BYTE*)bmih) + sizeof(BITMAPINFOHEADER));
-      
+
       rmask = Mask = palette[0];
       while (!(Mask & 0x01))
       {Mask >>= 1; roff++;}
-      
+
       gmask = Mask = palette[1];
       while (!(Mask & 0x01))
       {Mask >>= 1; goff++;}
-      
+
       bmask = Mask = palette[2];
       while (!(Mask & 0x01))
       {Mask >>= 1; boff++;}
@@ -272,7 +272,7 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
       goff = 5;
       roff = 10;
     }
-    
+
     for (y = 0; y < h; y++)
     {
       for (x = 0; x < w; x++)
@@ -289,12 +289,12 @@ IUP_SDK_API void iupdrvImageGetRawData(void* handle, unsigned char* imgdata)
           *blue++ = *bits++;
           *green++ = *bits++;
           *red++ = *bits++;
-          
+
           if (bmih->biBitCount == 32)
             *alpha++ = *bits++;
         }
       }
-      
+
       bits += offset;
 
       if (bmih->biHeight < 0)
@@ -429,7 +429,7 @@ IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iu
   HANDLE hHandle = (HANDLE)handle;
   void* dib = GlobalLock(hHandle);
   BITMAPINFOHEADER* bmih = (BITMAPINFOHEADER*)dib;
-  
+
   if (w) *w = bmih->biWidth;
   if (h) *h = abs(bmih->biHeight);
   if (bpp) *bpp = iupImageNormBpp(bmih->biBitCount);
@@ -456,7 +456,7 @@ IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int *w, int *h, int *bpp, iu
   return 1;
 }
 
-static int winImageInitDibColors(iupColor* colors, RGBQUAD* bmpcolors, int colors_count, 
+static int winImageInitDibColors(iupColor* colors, RGBQUAD* bmpcolors, int colors_count,
                                  unsigned char bg_r, unsigned char bg_g, unsigned char bg_b, int make_inactive)
 {
   int i, ret = 0;
@@ -469,8 +469,8 @@ static int winImageInitDibColors(iupColor* colors, RGBQUAD* bmpcolors, int color
 
     if (colors[i].a == 0) /* full transparent alpha */
     {
-      bmpcolors[i].rgbBlue = bg_b; 
-      bmpcolors[i].rgbGreen = bg_g; 
+      bmpcolors[i].rgbBlue = bg_b;
+      bmpcolors[i].rgbGreen = bg_g;
       bmpcolors[i].rgbRed = bg_r;
       ret = 1;
     }
@@ -715,7 +715,7 @@ static HICON winImageCreateCursorIcon(Ihandle *ih, int is_cursor)
   HICON icon;
   char* color0 = NULL;
 
-  /* If cursor and no transparency defined, assume 0 if transparent. 
+  /* If cursor and no transparency defined, assume 0 if transparent.
      We do this only in Windows and because of backward compatibility. */
   if (is_cursor)
   {
@@ -731,9 +731,9 @@ static HICON winImageCreateCursorIcon(Ihandle *ih, int is_cursor)
       }
     }
   }
-   
+
   hBitmap = iupdrvImageCreateImage(ih, NULL, 0);
-  if (!hBitmap) 
+  if (!hBitmap)
   {
     if (color0) free(color0);
     return NULL;
@@ -747,7 +747,7 @@ static HICON winImageCreateCursorIcon(Ihandle *ih, int is_cursor)
     if (color0) free(color0);
     return NULL;
   }
- 
+
   /* destination = (destination AND bitmask) XOR bitmap */
   iconinfo.hbmMask = hBitmapMask;   /* AND */
   iconinfo.hbmColor = hBitmap;      /* XOR */
@@ -763,7 +763,7 @@ static HICON winImageCreateCursorIcon(Ihandle *ih, int is_cursor)
   }
   else
     iconinfo.fIcon = TRUE;
-  
+
   icon = CreateIconIndirect(&iconinfo);
 
   DeleteObject(hBitmap);
@@ -774,7 +774,7 @@ static HICON winImageCreateCursorIcon(Ihandle *ih, int is_cursor)
     iupAttribSetStr(ih, "0", color0);
     free(color0);
   }
-  
+
   return icon;
 }
 

@@ -19,13 +19,10 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_stdcontrols.h"
 #include "iup_frame.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
 #include "iupwin_draw.h"
-#include "iupwin_info.h"
 #include "iupwin_str.h"
 
 
@@ -105,9 +102,9 @@ static void winFrameDrawText(HDC hDC, const char* text, int x, int y, COLORREF f
 }
 
 static void winFrameDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
-{ 
+{
   iupwinBitmapDC bmpDC;
-  HDC hDC = iupwinDrawCreateBitmapDC(&bmpDC, drawitem->hDC, 0, 0, drawitem->rcItem.right-drawitem->rcItem.left, 
+  HDC hDC = iupwinDrawCreateBitmapDC(&bmpDC, drawitem->hDC, 0, 0, drawitem->rcItem.right-drawitem->rcItem.left,
                                                                   drawitem->rcItem.bottom-drawitem->rcItem.top);
 
   iupwinDrawParentBackground(ih, hDC, &drawitem->rcItem);
@@ -241,7 +238,7 @@ static int winFrameMapMethod(Ihandle* ih)
   IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winFrameMsgProc);
 
   /* Process WM_DRAWITEM */
-  IupSetCallback(ih, "_IUPWIN_DRAWITEM_CB", (Icallback)winFrameDrawItem);  
+  IupSetCallback(ih, "_IUPWIN_DRAWITEM_CB", (Icallback)winFrameDrawItem);
 
   return IUP_NOERROR;
 }
@@ -254,7 +251,7 @@ IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
   /* Driver Dependent Attribute functions */
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, winFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);  
+  iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, winFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* Special */
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);

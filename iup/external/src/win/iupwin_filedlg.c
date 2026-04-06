@@ -16,7 +16,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_dialog.h"
-#include "iup_drvinfo.h"
 #include "iup_key.h"
 
 #include "iupwin_drv.h"
@@ -106,7 +105,7 @@ static void winFileDlgGetFolder(Ihandle *ih)
 
   ZeroMemory(&browseinfo, sizeof(BROWSEINFO));
   browseinfo.lpszTitle = iupwinStrToSystem(iupAttribGet(ih, "TITLE"));
-  browseinfo.pszDisplayName = filename; 
+  browseinfo.pszDisplayName = filename;
   browseinfo.lpfn = winFileDlgBrowseCallback;
   browseinfo.lParam = (LPARAM)ih;
   browseinfo.ulFlags = IupGetGlobal("_IUPWIN_COINIT_MULTITHREADED")? 0: BIF_NEWDIALOGSTYLE;
@@ -145,7 +144,7 @@ static int winFileDlgGetSelectedFile(Ihandle* ih, HWND hWnd, TCHAR* filename)
     /* check if there are more than 1 files and return only the first one */
     int found = 0;
     while(*filename != 0)
-    {            
+    {
       if (*filename == TEXT('"'))
       {
         if (!found)
@@ -178,7 +177,7 @@ static int winFileDlgWmNotify(HWND hWnd, LPOFNOTIFY pofn)
       if (cb) cb(ih, NULL, "INIT");
 
       hWndPreview = GetDlgItem(hWnd, IUP_PREVIEWCANVAS);
-      if (hWndPreview) 
+      if (hWndPreview)
         RedrawWindow(hWndPreview, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
       break;
     }
@@ -208,9 +207,9 @@ static int winFileDlgWmNotify(HWND hWnd, LPOFNOTIFY pofn)
 
           ret = cb(ih, iupwinStrFromSystemFilename(filename), file_msg);
 
-          if (pofn->hdr.code == CDN_FILEOK && (ret == IUP_IGNORE || ret == IUP_CONTINUE)) 
+          if (pofn->hdr.code == CDN_FILEOK && (ret == IUP_IGNORE || ret == IUP_CONTINUE))
           {
-            if (ret == IUP_CONTINUE) 
+            if (ret == IUP_CONTINUE)
             {
               char* value = iupAttribGet(ih, "FILE");
               if (value)
@@ -228,7 +227,7 @@ static int winFileDlgWmNotify(HWND hWnd, LPOFNOTIFY pofn)
       }
 
       hWndPreview = GetDlgItem(hWnd, IUP_PREVIEWCANVAS);
-      if (pofn->hdr.code == CDN_SELCHANGE && hWndPreview) 
+      if (pofn->hdr.code == CDN_SELCHANGE && hWndPreview)
         RedrawWindow(hWndPreview, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
       break;
     }
@@ -258,7 +257,7 @@ static int winFileDlgWmNotify(HWND hWnd, LPOFNOTIFY pofn)
   case CDN_HELP:
     {
       Icallback cb = (Icallback) IupGetCallback(ih, "HELP_CB");
-      if (cb && cb(ih) == IUP_CLOSE) 
+      if (cb && cb(ih) == IUP_CLOSE)
         EndDialog(GetParent(hWnd), IDCANCEL);
       break;
     }
@@ -732,7 +731,7 @@ static TCHAR* winFileDlgStrReplaceSeparator(const TCHAR* name)
 
   /* replace symbols "|" by terminator "\0" */
 
-  while (*name) 
+  while (*name)
   {
     buffer[i] = *name;
 
@@ -810,7 +809,7 @@ static int winFileDlgPopup(Ihandle *ih, int x, int y)
     else
       openfilename.nFilterIndex = 1;
   }
-  else 
+  else
   {
     value = iupAttribGet(ih, "FILTER");
     if (value)
@@ -921,8 +920,8 @@ static int winFileDlgPopup(Ihandle *ih, int x, int y)
     if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
     {
       /* If there is more than one file, replace terminator by the separator */
-      if (openfilename.lpstrFile[openfilename.nFileOffset-1] == 0 && 
-          openfilename.nFileOffset>0) 
+      if (openfilename.lpstrFile[openfilename.nFileOffset-1] == 0 &&
+          openfilename.nFileOffset>0)
       {
         int i = 0;
         int count = 0;
@@ -970,7 +969,7 @@ static int winFileDlgPopup(Ihandle *ih, int x, int y)
       }
       else
       {
-        /* if there is only one file selected the returned value is different 
+        /* if there is only one file selected the returned value is different
            and includes just that file */
         char* filename = iupwinStrFromSystemFilename(openfilename.lpstrFile);
         char* dir = iupStrFileGetPath(filename);

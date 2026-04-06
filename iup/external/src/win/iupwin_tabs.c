@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <memory.h>
 #include <stdarg.h>
 
 #include "iup.h"
@@ -22,14 +21,10 @@
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 #include "iup_tabs.h"
 #include "iup_image.h"
 #include "iup_array.h"
 #include "iup_assert.h"
-#include "iup_drvdraw.h"
-#include "iup_draw.h"
-#include "iup_childtree.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
@@ -50,20 +45,20 @@ static void winTabsInitializeCloseImage(void)
 
   unsigned char img_close[ITABS_CLOSE_SIZE * ITABS_CLOSE_SIZE] =
   {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 
-    0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 
-    0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 
-    0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 
-    0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 
-    0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 
-    0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0,
+    0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0,
+    0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+    0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+    0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0,
+    0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   };
-  
+
   image_close = IupImage(ITABS_CLOSE_SIZE, ITABS_CLOSE_SIZE, img_close);
   IupSetAttribute(image_close, "0", "BGCOLOR");
   IupSetAttribute(image_close, "1", "0 0 0");
@@ -89,7 +84,7 @@ static void winTabsInitVisibleArray(Iarray* visible_array, int count)
     int pos;
     int* visible_array_array_data = (int*)iupArrayGetData(visible_array);
     for (pos = 0; pos < count; pos++)
-      visible_array_array_data[pos] = 1;  
+      visible_array_array_data[pos] = 1;
   }
 }
 
@@ -101,7 +96,7 @@ static Iarray* winTabsGetVisibleArray(Ihandle* ih)
   {
     int count = IupGetChildCount(ih);
 
-    /* create the array if does not exist */
+    /* create the array if it does not exist */
     visible_array = iupArrayCreate(50, sizeof(int));
     iupAttribSet(ih, "_IUPWIN_VISIBLEARRAY", (char*)visible_array);
 
@@ -110,22 +105,6 @@ static Iarray* winTabsGetVisibleArray(Ihandle* ih)
 
   return visible_array;
 }
-
-/* #define PRINT_VISIBLE_ARRAY 1 */
-#if PRINT_VISIBLE_ARRAY
-/* For debugging  */
-static void winTabsPrintVisibleArray(Ihandle* ih)
-{
-  Iarray* visible_array = winTabsGetVisibleArray(ih);
-  int i, count = iupArrayCount(visible_array);
-  int* visible_array_array_data = (int*)iupArrayGetData(visible_array);
-
-  for (i = 0; i < count; i++)
-    printf("%d=%d ", i, visible_array_array_data[i]);
-
-  printf("\n");
-}
-#endif
 
 static int winTabsHasInVisible(Iarray* visible_array)
 {
@@ -426,7 +405,7 @@ static int winTabsGetImageIndex(Ihandle* ih, const char* name)
   bmp_array = (Iarray*)iupAttribGet(ih, "_IUPWIN_BMPARRAY");
   if (!bmp_array)
   {
-    /* create the array if does not exist */
+    /* create the array if it does not exist */
     bmp_array = iupArrayCreate(50, sizeof(HBITMAP));
     iupAttribSet(ih, "_IUPWIN_BMPARRAY", (char*)bmp_array);
   }
@@ -439,7 +418,7 @@ static int winTabsGetImageIndex(Ihandle* ih, const char* name)
   image_list = (HIMAGELIST)SendMessage(ih->handle, TCM_GETIMAGELIST, 0, 0);
   if (!image_list)
   {
-    /* create the image list if does not exist */
+    /* create the image list if it does not exist */
     image_list = ImageList_Create(width, height, ILC_COLOR32, 0, 50);
     SendMessage(ih->handle, TCM_SETIMAGELIST, 0, (LPARAM)image_list);
   }
@@ -611,7 +590,7 @@ static HWND winTabsCreatePageWindow(Ihandle* ih)
   iupwinHandleAdd(ih, hWnd);
 
   return hWnd;
-} 
+}
 
 static void winTabsInsertItem(Ihandle* ih, Ihandle* child, int pos, HWND tab_container)
 {
@@ -621,14 +600,14 @@ static void winTabsInsertItem(Ihandle* ih, Ihandle* child, int pos, HWND tab_con
   RECT rect;
 
   tabtitle = iupAttribGet(child, "TABTITLE");
-  if (!tabtitle) 
+  if (!tabtitle)
   {
     tabtitle = iupAttribGetId(ih, "TABTITLE", pos);
     if (tabtitle)
       iupAttribSetStr(child, "TABTITLE", tabtitle);
   }
   tabimage = iupAttribGet(child, "TABIMAGE");
-  if (!tabimage) 
+  if (!tabimage)
   {
     tabimage = iupAttribGetId(ih, "TABIMAGE", pos);
     if (tabimage)
@@ -692,10 +671,6 @@ static void winTabsInsertItem(Ihandle* ih, Ihandle* child, int pos, HWND tab_con
 
     iupdrvRedrawNow(ih);
   }
-
-#if PRINT_VISIBLE_ARRAY
-  winTabsPrintVisibleArray(ih);
-#endif
 }
 
 static void winTabsDeleteItem(Ihandle* ih, int p, HWND tab_container)
@@ -723,10 +698,6 @@ static void winTabsDeleteItem(Ihandle* ih, int p, HWND tab_container)
 
     iupdrvRedrawNow(ih);
   }
-
-#if PRINT_VISIBLE_ARRAY
-  winTabsPrintVisibleArray(ih);
-#endif
 }
 
 /* ------------------------------------------------------------------------- */
@@ -767,7 +738,7 @@ static int winTabsSetMultilineAttrib(Ihandle* ih, const char* value)
 
 static char* winTabsGetMultilineAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean (ih->data->is_multiline); 
+  return iupStrReturnBoolean (ih->data->is_multiline);
 }
 
 static int winTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
@@ -994,7 +965,7 @@ static int winTabsIsInsideCloseButton(Ihandle* ih, int p)
 
   GetCursorPos(&pt);
   ScreenToClient(ih->handle, &pt);
-  
+
   /* Get tab rectangle and define start/end positions of the image */
   SendMessage(ih->handle, TCM_GETITEMRECT, (WPARAM)p, (LPARAM)&rect);
 
@@ -1139,7 +1110,7 @@ static int winTabsWmNotify(Ihandle* ih, NMHDR* msg_info, int *result)
 
       GetCursorPos(&ht.pt);
       ScreenToClient(ih->handle, &ht.pt);
-      
+
       p = (int)SendMessage(ih->handle, TCM_HITTEST, 0, (LPARAM)&ht);
       if (p >= 0)
       {
@@ -1452,19 +1423,19 @@ static void winTabsDrawTab(Ihandle* ih, HDC hDC, int p, int width, int height, C
 {
   HBITMAP hBitmapClose;
   HFONT hFont = (HFONT)iupwinGetHFontAttrib(ih);
-	TCHAR title[256] = TEXT("");
-	TCITEM tci;
+  TCHAR title[256] = TEXT("");
+  TCITEM tci;
   HIMAGELIST image_list = (HIMAGELIST)SendMessage(ih->handle, TCM_GETIMAGELIST, 0, 0);
-  int imgW = 0, imgH = 0, txtW = 0, txtH = 0, 
+  int imgW = 0, imgH = 0, txtW = 0, txtH = 0,
     bpp, style = 0, x = 0, y = 0, border = 4;
   char *str = NULL, *value = NULL;
   int high_p, press_p;
 
   tci.mask = TCIF_TEXT | TCIF_IMAGE;
-	tci.pszText = title;     
-	tci.cchTextMax = 255;
+  tci.pszText = title;
+  tci.cchTextMax = 255;
   SendMessage(ih->handle, TCM_GETITEM, (WPARAM)p, (LPARAM)(&tci));
-  
+
   if (title[0])
   {
     value = iupwinStrFromSystem(title);
@@ -1570,7 +1541,7 @@ static void winTabsDrawTab(Ihandle* ih, HDC hDC, int p, int width, int height, C
 }
 
 static void winTabsDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
-{ 
+{
   HDC hDC;
   iupwinBitmapDC bmpDC;
   RECT rect;
@@ -1724,7 +1695,7 @@ static int winTabsMapMethod(Ihandle* ih)
   if (ih->data->type == ITABS_BOTTOM)
     dwStyle |= TCS_BOTTOM;
   else if (ih->data->type == ITABS_RIGHT)
-    dwStyle |= TCS_VERTICAL|TCS_RIGHT;  
+    dwStyle |= TCS_VERTICAL|TCS_RIGHT;
   else if (ih->data->type == ITABS_LEFT)
     dwStyle |= TCS_VERTICAL;
 
@@ -1739,7 +1710,7 @@ static int winTabsMapMethod(Ihandle* ih)
   if (dwExStyle & WS_EX_COMPOSITED && !ih->data->is_multiline && iupwinIsVistaOrNew())
   {
     /* workaround for composite bug in Vista */
-    ih->data->is_multiline = 1;  
+    ih->data->is_multiline = 1;
     dwStyle |= TCS_MULTILINE;
   }
 
@@ -1757,7 +1728,7 @@ static int winTabsMapMethod(Ihandle* ih)
 
   if (ih->data->show_close)
   {
-    /* change tab width to draw an close image */
+    /* change tab width to draw a close image */
     SendMessage(ih->handle, TCM_SETPADDING, 0, MAKELPARAM(ITABS_CLOSE_SIZE, 0));
 
     iupAttribSetInt(ih, "_IUPTABS_CLOSEHIGH", -1);
@@ -1770,7 +1741,7 @@ static int winTabsMapMethod(Ihandle* ih)
   if (iupwin_comctl32ver6 && (ih->data->type != ITABS_TOP || ih->data->show_close))
   {
     /* XP Styles support only TABTYPE=TOP,
-       show_close ownerdraw will work only with classic style */ 
+       show_close ownerdraw will work only with classic style */
     iupwinDrawRemoveTheme(ih->handle);
   }
 
@@ -1778,7 +1749,7 @@ static int winTabsMapMethod(Ihandle* ih)
   if (winTabsUsingXPStyles(ih))
   {
     char* color = iupAttribGetInheritNativeParent(ih, "BGCOLOR");
-    if (!color) 
+    if (!color)
       color = iupAttribGetInheritNativeParent(ih, "BACKGROUND");
     if (!color)
     {

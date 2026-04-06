@@ -17,13 +17,9 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
-#include "iup_dlglist.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
-#include "iup_drvfont.h"
-#include "iup_focus.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
@@ -31,7 +27,6 @@
 
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
-#include "iupwin_brush.h"
 #include "iupwin_info.h"
 #include "iupwin_str.h"
 
@@ -52,8 +47,9 @@ static int winDialogSetBgColorAttrib(Ihandle* ih, const char* value);
 /****************************************************************
                      ITaskbarList3 resources
 ****************************************************************/
+
 #ifndef __MINGW32__
-#include "Shobjidl.h"
+#include "shobjidl.h"
 
 #ifdef __ITaskbarList3_FWD_DEFINED__  /* Only available since VC10 */
 
@@ -231,7 +227,7 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, int *captio
     int padded_border = 0;
     int has_titlebar = iupAttribGetBoolean(ih, "MAXBOX")  ||
                        iupAttribGetBoolean(ih, "MINBOX")  ||
-                       iupAttribGetBoolean(ih, "MENUBOX") || 
+                       iupAttribGetBoolean(ih, "MENUBOX") ||
                        iupAttribGet(ih, "TITLE");
 
     *caption = 0;
@@ -363,7 +359,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 
 static void winDialogMDIRefreshMenu(Ihandle* ih)
 {
-  /* We manually update the menu when a MDI child is added or removed. */
+  /* We manually update the menu when an MDI child is added or removed. */
   Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
   PostMessage(client->handle, WM_MDIREFRESHMENU, 0, 0);
 }
@@ -378,7 +374,7 @@ static int winDialogMDICloseChildren(Ihandle* ih)
     /* As long as the MDI client has a child, close it */
     while (hWndChild)
     {
-      Ihandle* child = iupwinHandleGet(hWndChild); 
+      Ihandle* child = iupwinHandleGet(hWndChild);
       if (iupObjectCheck(child) && iupAttribGetBoolean(child, "MDICHILD"))
       {
         Icallback cb = IupGetCallback(child, "CLOSE_CB");
@@ -400,11 +396,9 @@ static int winDialogMDICloseChildren(Ihandle* ih)
   return 1;
 }
 
-
 /****************************************************************************
                             WindowProc
 ****************************************************************************/
-
 
 static int winDialogCheckMinMaxInfo(Ihandle* ih, MINMAXINFO* minmax)
 {
@@ -540,7 +534,7 @@ static LRESULT winDialogCustomFrameHitTest(Ihandle* ih, LPARAM lp)
     {
       int caption_left = 0, caption_right = 0;
       char* value = iupAttribGet(ih, "CUSTOMFRAMECAPTIONLIMITS");
-      if (value) 
+      if (value)
         iupStrToIntInt(value, &caption_left, &caption_right, ':');
       else
       {
@@ -692,7 +686,7 @@ static int winDialogCustomFrameProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp,
         iupwinRefreshCursor(ih);
       }
 
-      break; /* let iupwinBaseMsgProc process enter/leavewin */
+      break; /* let iupwinBaseMsgProc process enter/leave win */
     }
   case WM_XBUTTONUP:
   case WM_LBUTTONUP:
@@ -788,9 +782,9 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
 
           if (iupAttribGetBoolean(ih, "MDICHILD"))
           {
-            /* WORKAROUND: when a child MDI dialog is maximized, 
+            /* WORKAROUND: when a child MDI dialog is maximized,
                its title is displayed inside the MDI client area.
-               So we force a MDI client size update */
+               So we force an MDI client size update */
             RECT rect;
             Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
             GetClientRect(client->handle, &rect);
@@ -815,7 +809,7 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
 
       if (iupAttribGetBoolean(ih, "MDIFRAME"))
       {
-        /* We are going to manually position the MDI client, 
+        /* We are going to manually position the MDI client,
            so abort MDI frame processing. */
         *result = 0;
         return 1;
@@ -855,7 +849,7 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
       *result = 0;
       return 1;
     }
-  case WM_COPYDATA:  
+  case WM_COPYDATA:
     {
       IFnsi cb = (IFnsi)IupGetCallback(ih, "COPYDATA_CB");
       if (cb)
@@ -872,7 +866,7 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
           cb(ih, data, (int)strlen(data)+1);
         }
       }
-      break; 
+      break;
     }
     case WM_LBUTTONDBLCLK:
     case WM_LBUTTONDOWN:
@@ -997,9 +991,9 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
 static Ihandle* winMinMaxHandle = NULL;
 
 static LRESULT CALLBACK winDialogWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{   
+{
   LRESULT result;
-  Ihandle *ih = iupwinHandleGet(hwnd); 
+  Ihandle *ih = iupwinHandleGet(hwnd);
   if (!iupObjectCheck(ih))
   {
     /* the first time WM_GETMINMAXINFO is called, Ihandle is not associated yet */
@@ -1019,9 +1013,9 @@ static LRESULT CALLBACK winDialogWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
 }
 
 static LRESULT CALLBACK winDialogMDIChildWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{   
+{
   LRESULT result;
-  Ihandle *ih = iupwinHandleGet(hwnd); 
+  Ihandle *ih = iupwinHandleGet(hwnd);
   if (!iupObjectCheck(ih))
   {
     /* the first time WM_GETMINMAXINFO is called, Ihandle is not associated yet */
@@ -1051,10 +1045,10 @@ static LRESULT CALLBACK winDialogMDIChildWndProc(HWND hwnd, UINT msg, WPARAM wp,
 }
 
 static LRESULT CALLBACK winDialogMDIFrameWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{   
+{
   LRESULT result;
   HWND hWndClient = NULL;
-  Ihandle *ih = iupwinHandleGet(hwnd); 
+  Ihandle *ih = iupwinHandleGet(hwnd);
   if (!iupObjectCheck(ih))
   {
     /* the first time WM_GETMINMAXINFO is called, Ihandle is not associated yet */
@@ -1105,7 +1099,7 @@ static void winDialogRegisterClass(int type)
   WNDCLASS wndclass;
   WNDPROC wndProc;
   ZeroMemory(&wndclass, sizeof(WNDCLASS));
-  
+
   if (type == IUPWIN_MDICHILD)
   {
     name = TEXT("IupDialogMDIChild");
@@ -1134,7 +1128,7 @@ static void winDialogRegisterClass(int type)
 
   /* To use a standard system color, must increase the background-color value by one */
   if (type == IUPWIN_MDIFRAME)
-    wndclass.hbrBackground  = (HBRUSH)(COLOR_APPWORKSPACE+1);  
+    wndclass.hbrBackground  = (HBRUSH)(COLOR_APPWORKSPACE+1);
   else
     wndclass.hbrBackground  = (HBRUSH)(COLOR_BTNFACE+1);
 
@@ -1143,8 +1137,8 @@ static void winDialogRegisterClass(int type)
 
   if (type == IUPWIN_DIALOGCONTROL)
     wndclass.style |=  CS_HREDRAW | CS_VREDRAW;
-    
-  RegisterClass(&wndclass); 
+
+  RegisterClass(&wndclass);
 }
 
 static void winDialogRelease(Iclass* ic)
@@ -1161,7 +1155,6 @@ static void winDialogRelease(Iclass* ic)
   }
 }
 
-
 /****************************************************************
                      dialog class functions
 ****************************************************************/
@@ -1169,7 +1162,7 @@ static void winDialogRelease(Iclass* ic)
 static int winDialogMapMethod(Ihandle* ih)
 {
   InativeHandle* native_parent;
-  DWORD dwStyle = WS_CLIPSIBLINGS, 
+  DWORD dwStyle = WS_CLIPSIBLINGS,
         dwExStyle = 0;
   int has_titlebar = 0,
       has_border = 0;
@@ -1179,7 +1172,7 @@ static int winDialogMapMethod(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE"))
     iupDialogCustomFrameSimulateCheckCallbacks(ih);
 
-  title = iupAttribGet(ih, "TITLE"); 
+  title = iupAttribGet(ih, "TITLE");
   if (title)
     has_titlebar = 1;
 
@@ -1262,22 +1255,22 @@ static int winDialogMapMethod(Ihandle* ih)
       {
         dwStyle |= WS_OVERLAPPED;
       }
-      else 
+      else
       {
         if (has_border)
           dwStyle |= WS_POPUP | WS_BORDER;
         else
           dwStyle |= WS_POPUP;
 
-        dwExStyle |= WS_EX_NOACTIVATE; /* this will hide it from the taskbar */ 
+        dwExStyle |= WS_EX_NOACTIVATE; /* this will hide it from the taskbar */
       }
     }
 
     if (iupAttribGetBoolean(ih, "MDIFRAME"))
     {
       COLORREF color = GetSysColor(COLOR_BTNFACE);
-      iupAttribSetStrf(ih, "_IUPWIN_BACKGROUND_COLOR", "%d %d %d", (int)GetRValue(color), 
-                                                                   (int)GetGValue(color), 
+      iupAttribSetStrf(ih, "_IUPWIN_BACKGROUND_COLOR", "%d %d %d", (int)GetRValue(color),
+                                                                   (int)GetGValue(color),
                                                                    (int)GetBValue(color));
       classname = TEXT("IupDialogMDIFrame");
     }
@@ -1300,7 +1293,7 @@ static int winDialogMapMethod(Ihandle* ih)
 
   if (iupAttribGet(ih, "OPACITY") || iupAttribGet(ih, "OPACITYIMAGE"))
   {
-    /* The window is a layered window. 
+    /* The window is a layered window.
        This style cannot be used if the window has a class style of either CS_OWNDC or CS_CLASSDC.
        Windows >= 8 toplevel and child. Windows < 8 toplevel only.
        IMPORTANT: IupCanvas uses CS_OWNDC. */
@@ -1312,7 +1305,7 @@ static int winDialogMapMethod(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "HELPBUTTON"))
     dwExStyle |= WS_EX_CONTEXTHELP;
 
-  if (iupAttribGetBoolean(ih, "CONTROL") && native_parent) 
+  if (iupAttribGetBoolean(ih, "CONTROL") && native_parent)
   {
     /* this is used to create embedded controls in COM or OLE */
     dwStyle = WS_CHILD | WS_TABSTOP | WS_CLIPCHILDREN;
@@ -1338,7 +1331,7 @@ static int winDialogMapMethod(Ihandle* ih)
 
   if (iupAttribGetBoolean(ih, "MDICHILD"))
   {
-    ih->handle = CreateMDIWindow(classname, 
+    ih->handle = CreateMDIWindow(classname,
                                 iupwinStrToSystem(title), /* title */
                                 dwStyle,            /* style */
                                 0,                  /* x-position */
@@ -1397,10 +1390,10 @@ static int winDialogMapMethod(Ihandle* ih)
 
 static void winDialogUnMapMethod(Ihandle* ih)
 {
-  if (ih->data->menu) 
+  if (ih->data->menu)
   {
     ih->data->menu->handle = NULL; /* the dialog will destroy the native menu */
-    IupDestroy(ih->data->menu);  
+    IupDestroy(ih->data->menu);
     ih->data->menu = NULL;
   }
 
@@ -1420,7 +1413,7 @@ static void winDialogUnMapMethod(Ihandle* ih)
   iupwinHandleRemove(ih->handle);
 
   /* Destroys the window, so we can destroy the class */
-  if (iupAttribGetBoolean(ih, "MDICHILD")) 
+  if (iupAttribGetBoolean(ih, "MDICHILD"))
   {
     /* for MDICHILDs must send WM_MDIDESTROY, instead of calling DestroyWindow */
     Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
@@ -1448,11 +1441,9 @@ static void winDialogLayoutUpdateMethod(Ihandle *ih)
   ih->data->ignore_resize = 0;
 }
 
-
 /****************************************************************************
                                    Attributes
 ****************************************************************************/
-
 
 static char* winDialogGetClientOffsetAttrib(Ihandle *ih)
 {
@@ -1556,7 +1547,7 @@ static char* winDialogGetMdiActiveAttrib(Ihandle *ih)
   if (client)
   {
     HWND hchild = (HWND)SendMessage(client->handle, WM_MDIGETACTIVE, 0, 0);
-    Ihandle* child = iupwinHandleGet(hchild); 
+    Ihandle* child = iupwinHandleGet(hchild);
     if (iupObjectCheck(child))
     {
       iupwin_mdinext = NULL;
@@ -1672,7 +1663,7 @@ static int winDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
       {
         if (imgdata[3] == 0 || x == w-1) /* fully transparent or last column */
         {
-          if (start_x != -1) /* this is the end of a non transparent line */
+          if (start_x != -1) /* this is the end of a non-transparent line */
           {
             hTmpRgn = CreateRectRgn(start_x, y, x, y + 1);
             CombineRgn(hRgn, hRgn, hTmpRgn, RGN_OR); /* Union */
@@ -1683,7 +1674,7 @@ static int winDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
         }
         else /* opaque */
         {
-          if (start_x == -1) /* this is the start of a non transparent line */
+          if (start_x == -1) /* this is the start of a non-transparent line */
             start_x = x;
         }
 
@@ -1717,7 +1708,7 @@ static int winDialogSetMdiArrangeAttrib(Ihandle *ih, const char *value)
     }
     else if (iupStrEqualNoCase(value, "CASCADE"))
       msg = WM_MDICASCADE;
-    else if (iupStrEqualNoCase(value, "ICON")) 
+    else if (iupStrEqualNoCase(value, "ICON"))
       msg = WM_MDIICONARRANGE;
 
     if (msg)
@@ -1783,8 +1774,8 @@ static char* winDialogGetActiveWindowAttrib(Ihandle* ih)
   WINDOWINFO wininfo;
   wininfo.cbSize = sizeof(WINDOWINFO);
   GetWindowInfo(ih->handle, &wininfo);
-  return iupStrReturnBoolean (wininfo.dwWindowStatus & WS_ACTIVECAPTION); 
-}    
+  return iupStrReturnBoolean (wininfo.dwWindowStatus & WS_ACTIVECAPTION);
+}
 
 static int winDialogSetTopMostAttrib(Ihandle *ih, const char *value)
 {
@@ -1853,7 +1844,7 @@ static int winDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       BOOL visible = ShowWindow (ih->handle, SW_HIDE);
 
       /* remove the decorations */
-      off_style = WS_BORDER | WS_THICKFRAME | WS_CAPTION | 
+      off_style = WS_BORDER | WS_THICKFRAME | WS_CAPTION |
                   WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU;
       new_style = GetWindowLong(ih->handle, GWL_STYLE);
       iupAttribSet(ih, "_IUPWIN_FS_STYLE", (char*)(intptr_t)new_style);
@@ -1910,10 +1901,10 @@ static int winDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       SetWindowLong(ih->handle, GWL_STYLE, style);
 
       /* restore position and size */
-      SetWindowPos(ih->handle, HWND_TOP, 
-                   iupAttribGetInt(ih, "_IUPWIN_FS_X"), 
-                   iupAttribGetInt(ih, "_IUPWIN_FS_Y"), 
-                   IupGetInt(ih, "_IUPWIN_FS_SIZE"), 
+      SetWindowPos(ih->handle, HWND_TOP,
+                   iupAttribGetInt(ih, "_IUPWIN_FS_X"),
+                   iupAttribGetInt(ih, "_IUPWIN_FS_Y"),
+                   IupGetInt(ih, "_IUPWIN_FS_SIZE"),
                    IupGetInt2(ih, "_IUPWIN_FS_SIZE"), 0);
 
       /* layout will be updated in WM_SIZE */
@@ -2046,4 +2037,3 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "CONTROLID", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
-

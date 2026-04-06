@@ -73,7 +73,7 @@ static LRESULT CALLBACK winHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM gm
         short delta = (short)HIWORD(wp);
 
         iupwinButtonKeySetStatus(LOWORD(wp), status, 0);
-        
+
         cb((float)delta / 120.0f, GET_X_LPARAM(lp), GET_Y_LPARAM(lp), status);
       }
       break;
@@ -115,29 +115,29 @@ static LRESULT CALLBACK winHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM gm
       if (msg==WM_LBUTTONDOWN || msg==WM_LBUTTONDBLCLK || msg==WM_NCLBUTTONDOWN || msg==WM_NCLBUTTONDBLCLK)
       {
         button = IUP_BUTTON1;
-        iupKEY_SETBUTTON1(status);  
+        iupKEY_SETBUTTON1(status);
       }
       else if (msg==WM_MBUTTONDOWN || msg==WM_MBUTTONDBLCLK || msg==WM_NCMBUTTONDOWN || msg==WM_NCMBUTTONDBLCLK)
       {
         button = IUP_BUTTON2;
-        iupKEY_SETBUTTON2(status);  
+        iupKEY_SETBUTTON2(status);
       }
       else if (msg==WM_RBUTTONDOWN || msg==WM_RBUTTONDBLCLK || msg==WM_NCRBUTTONDOWN || msg==WM_NCRBUTTONDBLCLK)
       {
         button = IUP_BUTTON3;
-        iupKEY_SETBUTTON3(status);  
+        iupKEY_SETBUTTON3(status);
       }
       else if (msg==WM_XBUTTONDOWN || msg==WM_XBUTTONDBLCLK || msg==WM_NCXBUTTONDOWN || msg==WM_NCXBUTTONDBLCLK)
       {
         if (HIWORD(wp) == XBUTTON1)
         {
           button = IUP_BUTTON4;
-          iupKEY_SETBUTTON4(status);  
+          iupKEY_SETBUTTON4(status);
         }
         else
         {
           button = IUP_BUTTON5;
-          iupKEY_SETBUTTON5(status);  
+          iupKEY_SETBUTTON5(status);
         }
       }
 
@@ -171,7 +171,7 @@ static LRESULT CALLBACK winHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM gm
       if (msg==WM_LBUTTONUP || msg==WM_NCLBUTTONUP)
       {
         button = IUP_BUTTON1;
-        iupKEY_SETBUTTON1(status);  
+        iupKEY_SETBUTTON1(status);
       }
       else if (msg==WM_MBUTTONUP || msg==WM_NCMBUTTONUP)
       {
@@ -248,11 +248,11 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
     if (iupStrBoolean(value))
     {
       if (!win_OldGetMessageHook)
-        win_OldGetMessageHook = SetWindowsHookEx(WH_GETMESSAGE, 
+        win_OldGetMessageHook = SetWindowsHookEx(WH_GETMESSAGE,
                                                  (HOOKPROC)winHookGetMessageProc,
                                                  NULL, GetCurrentThreadId());
     }
-    else 
+    else
     {
       if (win_OldGetMessageHook)
       {
@@ -315,9 +315,9 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
-    int x = GetSystemMetrics(SM_XVIRTUALSCREEN); 
+    int x = GetSystemMetrics(SM_XVIRTUALSCREEN);
     int y = GetSystemMetrics(SM_YVIRTUALSCREEN);
-    int w = GetSystemMetrics(SM_CXVIRTUALSCREEN); 
+    int w = GetSystemMetrics(SM_CXVIRTUALSCREEN);
     int h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
     return iupStrReturnStrf("%d %d %d %d", x, y, w, h);
   }
@@ -387,7 +387,7 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
       FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|
                     FORMAT_MESSAGE_FROM_SYSTEM|
                     FORMAT_MESSAGE_IGNORE_INSERTS,
-                    NULL, error, 0, 
+                    NULL, error, 0,
                     (LPTSTR)&lpMsgBuf,  /* weird but that's correct */
                     0, NULL);
       if (lpMsgBuf)
@@ -410,15 +410,15 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   {
     typedef HRESULT(STDAPICALLTYPE *PtrDwmIsCompositionEnabled)(BOOL*);
     static PtrDwmIsCompositionEnabled dwmIsCompositionEnabled = NULL;
-    if (dwmIsCompositionEnabled == NULL) 
+    if (dwmIsCompositionEnabled == NULL)
     {
       HMODULE dwmLibrary = LoadLibrary(TEXT("dwmapi.dll"));
       if (dwmLibrary)
         dwmIsCompositionEnabled = (PtrDwmIsCompositionEnabled)GetProcAddress(dwmLibrary, "DwmIsCompositionEnabled");
     }
-    if (dwmIsCompositionEnabled != NULL) 
+    if (dwmIsCompositionEnabled != NULL)
     {
-      /* windows vista or higher (has aero): see if disabled */
+      /* Windows vista or higher (has aero): see if disabled */
       BOOL enabled;
       dwmIsCompositionEnabled(&enabled);
       return iupStrReturnBoolean(enabled);

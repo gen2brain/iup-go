@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>  
+#include <string.h>
 
 #include <windows.h>
 
@@ -14,9 +14,9 @@
 
 #include "iup_object.h"
 #include "iup_hashtable.h"
-#include "iupcbs.h" 
+#include "iupcbs.h"
 
-#include "iupwin_handle.h"  
+#include "iupwin_handle.h"
 
 
 static Itable* winhandle_table; /* table indexed by HWND containing Ihandle* address */

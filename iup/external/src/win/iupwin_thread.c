@@ -8,10 +8,8 @@
 #include <stdint.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_attrib.h"
 #include "iup_thread.h"
 
 static DWORD WINAPI iupwin_ThreadFunc(LPVOID obj)
