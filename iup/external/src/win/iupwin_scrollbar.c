@@ -6,13 +6,9 @@
 
 #include <windows.h>
 
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <math.h>
-#include <memory.h>
 #include <stdarg.h>
-#include <limits.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -21,12 +17,8 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_scrollbar.h"
-#include "iup_drv.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
-#include "iupwin_draw.h"
-#include "iupwin_str.h"
 
 
 #define IWIN_SB_MAX 32767
@@ -105,9 +97,7 @@ static int winScrollbarSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-
 /*********************************************************************************************/
-
 
 static int winScrollbarProcessScroll(Ihandle* ih, int msg)
 {
@@ -261,9 +251,7 @@ static int winScrollbarCustomScroll(Ihandle* ih, int msg)
   return winScrollbarProcessScroll(ih, msg);
 }
 
-
 /*********************************************************************************************/
-
 
 static int winScrollbarMapMethod(Ihandle* ih)
 {

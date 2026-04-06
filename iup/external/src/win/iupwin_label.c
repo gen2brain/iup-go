@@ -14,7 +14,6 @@
 #include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -25,9 +24,7 @@
 #include "iup_image.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
 #include "iupwin_draw.h"
-#include "iupwin_str.h"
 
 
 /* Not defined in MingW and Cygwin */
@@ -47,7 +44,7 @@ IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int *x, int *y)
 
 static void winLabelDrawImage(Ihandle* ih, HDC hDC, int rect_width, int rect_height)
 {
-  int xpad = ih->data->horiz_padding, 
+  int xpad = ih->data->horiz_padding,
       ypad = ih->data->vert_padding;
   int x, y, width, height, bpp;
   HBITMAP hBitmap;
@@ -95,7 +92,7 @@ static void winLabelDrawImage(Ihandle* ih, HDC hDC, int rect_width, int rect_hei
 
 static void winLabelDrawText(Ihandle* ih, HDC hDC, int rect_width, int rect_height, UINT itemState)
 {
-  int xpad = ih->data->horiz_padding, 
+  int xpad = ih->data->horiz_padding,
       ypad = ih->data->vert_padding;
   int x, y, width, height, style;
   HFONT hFont = (HFONT)iupwinGetHFontAttrib(ih);
@@ -140,7 +137,7 @@ static void winLabelDrawText(Ihandle* ih, HDC hDC, int rect_width, int rect_heig
 }
 
 static void winLabelDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
-{ 
+{
   HDC hDC;
   iupwinBitmapDC bmpDC;
   int width, height;
@@ -347,7 +344,7 @@ static int winLabelMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT 
       iupwinRefreshCursor(ih);
     }
 
-    break; /* let iupwinBaseMsgProc process enter/leavewin */
+    break; /* let iupwinBaseMsgProc process enter/leave win */
   }
   case WM_NCCALCSIZE:
     {
@@ -435,7 +432,7 @@ IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
   /* Driver Dependent Attribute functions */
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, winLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);  
+  iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, winLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* Special */
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winLabelSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);    /* force new default value */

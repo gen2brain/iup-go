@@ -26,7 +26,6 @@
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
 #include "iupwin_draw.h"
-#include "iupwin_str.h"
 
 #include "wdl.h"
 
@@ -349,7 +348,7 @@ static void winToggleGetAlignment(Ihandle* ih, int *horiz_alignment, int *vert_a
 static void winToggleDrawImage(Ihandle* ih, HDC hDC, int rect_width, int rect_height, int border, UINT itemState)
 {
   /* called only when (ih->data->type==IUP_TOGGLE_IMAGE && (iupwin_comctl32ver6 || ih->data->flat)) */
-  int xpad = ih->data->horiz_padding + border, 
+  int xpad = ih->data->horiz_padding + border,
       ypad = ih->data->vert_padding + border;
   int horiz_alignment, vert_alignment;
   int x, y, width, height, bpp;
@@ -412,7 +411,7 @@ static void winToggleDrawImage(Ihandle* ih, HDC hDC, int rect_width, int rect_he
 }
 
 static void winToggleDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
-{ 
+{
   /* called only when (ih->data->type==IUP_TOGGLE_IMAGE && (iupwin_comctl32ver6 || ih->data->flat)) */
   int width, height, border = 4, check, draw_border;
   HDC hDC;
@@ -773,7 +772,7 @@ static int winToggleImageClassicMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM
   case WM_LBUTTONUP:
   case WM_ACTIVATE:
   case WM_SETFOCUS:
-    if (!winToggleIsActive(ih)) 
+    if (!winToggleIsActive(ih))
     {
       *result = 0;
       return 1;
@@ -1169,7 +1168,7 @@ IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", winToggleGetBgColorAttrib, winTogglePostRedrawSetAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
 
   /* Special */
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winTogglePostRedrawSetAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);  /* force the new default value */  
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winTogglePostRedrawSetAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);  /* force the new default value */
   iupClassRegisterAttribute(ic, "TITLE", NULL, winToggleSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupToggle only */

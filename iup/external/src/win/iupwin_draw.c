@@ -18,15 +18,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <memory.h>
-#include <math.h>
 
 #include "iup.h"
 
-#include "iup_attrib.h"
 #include "iup_class.h"
-#include "iup_str.h"
 #include "iup_object.h"
-#include "iup_image.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
 
@@ -40,11 +36,9 @@
 #define TABP_AEROWIZARDBODY  11  /* Not defined for MingW and Cygwin */
 #endif
 
-
 /******************************************************************************
                              Themes
 *******************************************************************************/
-
 
 typedef HTHEME  (STDAPICALLTYPE *_winThemeOpenData)(HWND hwnd, LPCWSTR pszClassList);
 typedef HRESULT (STDAPICALLTYPE *_winThemeCloseData)(HTHEME hTheme);
@@ -56,11 +50,11 @@ static _winThemeCloseData winThemeCloseData = NULL;
 static _winThemeDrawBackground winThemeDrawBackground = NULL;
 static _winThemeGetColor winThemeGetColor = NULL;
 
-typedef BOOL (CALLBACK* _winAlphaBlendFunc)( HDC hdcDest, 
-                             int xoriginDest, int yoriginDest, 
-                             int wDest, int hDest, HDC hdcSrc, 
-                             int xoriginSrc, int yoriginSrc, 
-                             int wSrc, int hSrc, 
+typedef BOOL (CALLBACK* _winAlphaBlendFunc)( HDC hdcDest,
+                             int xoriginDest, int yoriginDest,
+                             int wDest, int hDest, HDC hdcSrc,
+                             int xoriginSrc, int yoriginSrc,
+                             int wSrc, int hSrc,
                              BLENDFUNCTION ftn);
 static _winAlphaBlendFunc winAlphaBlend = NULL;
 
@@ -94,15 +88,15 @@ IUP_DRV_API void iupwinDrawThemeInit(void)
 static int winDrawGetThemeStateId(int itemState)
 {
   if (itemState & ODS_DISABLED)
-    return PBS_DISABLED; 
+    return PBS_DISABLED;
   else if (itemState & ODS_SELECTED)
-    return PBS_PRESSED;  
+    return PBS_PRESSED;
   else if (itemState & ODS_HOTLIGHT)
-    return PBS_HOT;      
+    return PBS_HOT;
   else if (itemState & ODS_DEFAULT)
     return PBS_DEFAULTED;
   else
-    return PBS_NORMAL;       
+    return PBS_NORMAL;
 }
 
 static int winDrawThemeButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)
@@ -110,11 +104,11 @@ static int winDrawThemeButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemSta
   int iStateId;
   HTHEME hTheme;
 
-  if (!winDrawThemeEnabled()) 
-    return 0; 
+  if (!winDrawThemeEnabled())
+    return 0;
 
   hTheme = winThemeOpenData(hWnd, L"BUTTON");
-  if (!hTheme) 
+  if (!hTheme)
     return 0;
 
   iStateId = winDrawGetThemeStateId(itemState);
@@ -129,11 +123,11 @@ static int winDrawTheme3StateButton(HWND hWnd, HDC hDC, RECT *rect)
 {
   HTHEME hTheme;
 
-  if (!winDrawThemeEnabled()) 
-    return 0; 
+  if (!winDrawThemeEnabled())
+    return 0;
 
   hTheme = winThemeOpenData(hWnd, L"BUTTON");
-  if (!hTheme) 
+  if (!hTheme)
     return 0;
 
   winThemeDrawBackground(hTheme, hDC, BP_CHECKBOX, CBS_MIXEDNORMAL, rect, NULL);
@@ -147,11 +141,11 @@ IUP_DRV_API void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT *rect, UINT
   int iStateId = GBS_NORMAL;
   HTHEME hTheme;
 
-  if (!winDrawThemeEnabled()) 
-    return; 
+  if (!winDrawThemeEnabled())
+    return;
 
   hTheme = winThemeOpenData(hWnd, L"BUTTON");
-  if (!hTheme) 
+  if (!hTheme)
     return;
 
   if (itemState & ODS_DISABLED)
@@ -167,11 +161,11 @@ IUP_DRV_API int iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF *color)
   HTHEME hTheme;
   HRESULT ret;
 
-  if (!winDrawThemeEnabled()) 
-    return 0; 
+  if (!winDrawThemeEnabled())
+    return 0;
 
   hTheme = winThemeOpenData(hWnd, L"TAB");
-  if (!hTheme) 
+  if (!hTheme)
     return 0;
 
   if (iupwinIsVistaOrNew())
@@ -188,11 +182,11 @@ IUP_DRV_API int iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF *color)
   HTHEME hTheme;
   HRESULT ret;
 
-  if (!winDrawThemeEnabled()) 
-    return 0; 
+  if (!winDrawThemeEnabled())
+    return 0;
 
   hTheme = winThemeOpenData(hWnd, L"BUTTON");
-  if (!hTheme) 
+  if (!hTheme)
     return 0;
 
   ret = winThemeGetColor(hTheme, BP_PUSHBUTTON, PBS_NORMAL, TMT_FILLCOLORHINT, color);
@@ -206,11 +200,11 @@ IUP_DRV_API int iupwinDrawGetThemeFrameFgColor(HWND hWnd, COLORREF *color)
   HTHEME hTheme;
   HRESULT ret;
 
-  if (!winDrawThemeEnabled()) 
-    return 0; 
+  if (!winDrawThemeEnabled())
+    return 0;
 
   hTheme = winThemeOpenData(hWnd, L"BUTTON");
-  if (!hTheme) 
+  if (!hTheme)
     return 0;
 
   ret = winThemeGetColor(hTheme, BP_GROUPBOX, GBS_NORMAL, TMT_TEXTCOLOR, color);
@@ -234,11 +228,9 @@ IUP_DRV_API void iupwinDrawRemoveTheme(HWND hwnd)
     mySetWindowTheme(hwnd, L"", L"");
 }
 
-
 /******************************************************************************
                              Utilities
 *******************************************************************************/
-
 
 IUP_DRV_API void iupwinDrawText(HDC hDC, const char* text, int x, int y, int width, int height, HFONT hFont, COLORREF fgcolor, int style)
 {
@@ -292,13 +284,13 @@ IUP_DRV_API void iupwinDrawBitmap(HDC hDC, HBITMAP hBitmap, int x, int y, int w,
 static int winDrawGetStateId(int itemState)
 {
   if (itemState & ODS_DISABLED)
-    return DFCS_INACTIVE; 
+    return DFCS_INACTIVE;
   else if (itemState & ODS_SELECTED)
-    return DFCS_PUSHED;  
+    return DFCS_PUSHED;
   else if (itemState & ODS_HOTLIGHT)
-    return DFCS_HOT;      
+    return DFCS_HOT;
   else
-    return 0;   
+    return 0;
 }
 
 IUP_DRV_API void iupwinDrawButtonBorder(HWND hWnd, HDC hDC, RECT *rect, UINT itemState)

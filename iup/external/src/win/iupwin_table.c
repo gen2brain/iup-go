@@ -15,7 +15,6 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
@@ -38,7 +37,6 @@ static COLORREF winTableFocusRectColor(COLORREF bg_color)
   int luminance = (r * 299 + g * 587 + b * 114) / 1000;
   return (luminance > 127) ? RGB(0, 0, 0) : RGB(255, 255, 255);
 }
-
 
 /****************************************************************************
  * Data Structure

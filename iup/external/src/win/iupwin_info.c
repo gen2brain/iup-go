@@ -5,15 +5,11 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 
 #include <windows.h>
-#include <uxtheme.h>
 
 #include "iup.h"
-
-#include "iup_str.h"
-#include "iup_drv.h"
 
 #include "iupwin_info.h"
 
@@ -225,10 +221,10 @@ IUP_DRV_API char *iupwinGetSystemLanguage(void)
 typedef struct _DLLVERSIONINFO
 {
   DWORD cbSize;
-  DWORD dwMajorVersion;                   
-  DWORD dwMinorVersion;                   
-  DWORD dwBuildNumber;                    
-  DWORD dwPlatformID;                     
+  DWORD dwMajorVersion;
+  DWORD dwMinorVersion;
+  DWORD dwBuildNumber;
+  DWORD dwPlatformID;
 } DLLVERSIONINFO;
 typedef HRESULT (CALLBACK* DLLGETVERSIONPROC)(DLLVERSIONINFO *);
 
@@ -238,7 +234,7 @@ static DWORD winGetDllVersion(LPCTSTR lpszDllName)
   DLLGETVERSIONPROC pDllGetVersion;
   HINSTANCE hinstDll;
 
-  /* For security purposes, LoadLibrary should be provided with a 
+  /* For security purposes, LoadLibrary should be provided with a
   fully-qualified path to the DLL. The lpszDllName variable should be
   tested to ensure that it is a fully qualified path before it is used. */
   hinstDll = LoadLibrary(lpszDllName);
@@ -248,7 +244,7 @@ static DWORD winGetDllVersion(LPCTSTR lpszDllName)
   pDllGetVersion = (DLLGETVERSIONPROC)GetProcAddress(hinstDll, "DllGetVersion");
 
   /* Because some DLLs might not implement this function, you
-  must test for it explicitly. Depending on the particular 
+  must test for it explicitly. Depending on the particular
   DLL, the lack of a DllGetVersion function can be a useful
   indicator of the version. */
 
@@ -410,6 +406,3 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
 
   key[4] = 0;
 }
-
-
-

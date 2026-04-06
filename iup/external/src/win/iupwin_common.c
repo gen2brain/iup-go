@@ -25,11 +25,9 @@
 #include "iup_dialog.h"
 #include "iup_drvinfo.h"
 #include "iup_drv.h"
-#include "iup_assert.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
-#include "iupwin_brush.h"
 #include "iupwin_info.h"
 #include "iupwin_str.h"
 
@@ -72,8 +70,8 @@ IUP_SDK_API void iupdrvActivate(Ihandle* ih)
   if (is_toggle)
     is_radio = IupGetInt(ih, "RADIO");
 
-  /* do not use BM_CLICK because it changes the focus 
-     and does not animates the button press */
+  /* do not use BM_CLICK because it changes the focus
+     and does not animate the button press */
 
   /* draw highlight */
   SendMessage(ih->handle, BM_SETSTATE, TRUE, 0);
@@ -164,8 +162,8 @@ IUP_SDK_API void iupdrvRedrawNow(Ihandle *ih)
 IUP_SDK_API void iupdrvPostRedraw(Ihandle *ih)
 {
   /* Post a REDRAW - IupUpdate */
-  /* can NOT use RDW_NOCHILDREN because IupList has internal children that needs to be redraw */
-  RedrawWindow(ih->handle,NULL,NULL,RDW_ERASE|RDW_INVALIDATE|RDW_INTERNALPAINT);  
+  /* can NOT use RDW_NOCHILDREN because IupList has internal children that needs to be redrawn */
+  RedrawWindow(ih->handle,NULL,NULL,RDW_ERASE|RDW_INVALIDATE|RDW_INTERNALPAINT);
 }
 
 IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int *x, int *y)
@@ -227,7 +225,7 @@ IUP_DRV_API void iupwinSetStyle(Ihandle* ih, DWORD value, int set)
 }
 
 IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
-{ 
+{
   switch (msg)
   {
   case WM_INPUTLANGCHANGE:
@@ -271,9 +269,9 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
       if (iupObjectCheck(child))
       {
         Icallback cb = (Icallback) IupGetCallback(child, "HELP_CB");
-        if (cb) 
+        if (cb)
         {
-          if (cb(child) == IUP_CLOSE) 
+          if (cb(child) == IUP_CLOSE)
             IupExitLoop();
 
           *result = 0;
@@ -351,26 +349,26 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
   case WM_KILLFOCUS:
     iupCallKillFocusCb(ih);
     break;
-  case WM_SETCURSOR: 
-    { 
+  case WM_SETCURSOR:
+    {
       if (ih->handle == (HWND)wp && LOWORD(lp)==HTCLIENT)
       {
         HCURSOR hCur = (HCURSOR)iupAttribGet(ih, "_IUPWIN_HCURSOR");
         if (hCur)
         {
-          SetCursor(hCur); 
+          SetCursor(hCur);
           *result = 1;
           return 1;
         }
         else if (iupAttribGet(ih, "CURSOR"))
         {
-          SetCursor(NULL); 
+          SetCursor(NULL);
           *result = 1;
           return 1;
         }
       }
-      break; 
-    } 
+      break;
+    }
   case WM_TOUCH:
     /* Touch messages are greedy, the top-level window receives them all. */
     if (LOWORD(wp))
@@ -400,14 +398,14 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
 }
 
 IUP_DRV_API LRESULT CALLBACK iupwinBaseWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{   
+{
   int ret;
   LRESULT result = 0;
   IwinMsgProc MsgProc;
   Ihandle *ih;
   WNDPROC oldProc;
 
-  ih = iupwinHandleGet(hwnd); 
+  ih = iupwinHandleGet(hwnd);
   if (!iupObjectCheck(ih))
     return DefWindowProc(hwnd, msg, wp, lp);  /* should never happen */
 
@@ -423,7 +421,7 @@ IUP_DRV_API LRESULT CALLBACK iupwinBaseWndProc(HWND hwnd, UINT msg, WPARAM wp, L
 
   if (ret)
     return result;
-  else 
+  else
     return CallWindowProc(oldProc, hwnd, msg, wp, lp);
 }
 
@@ -443,7 +441,7 @@ static Ihandle* winContainerWmCommandGetIhandle(Ihandle *ih, WPARAM wp, LPARAM l
     if (dlg_menu)
       child = iupwinMenuGetItemHandle((HMENU)dlg_menu->handle, LOWORD(wp));  /* menu */
   }
-  else 
+  else
   {
     if (lp==0)
       child = ih;                              /* native parent */
@@ -476,7 +474,7 @@ static int winCheckParent(Ihandle* child, Ihandle* ih)
 
 IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result)
 {
-  /* All messages here are sent to the parent Window, 
+  /* All messages here are sent to the parent Window,
      but they are useful for child controls.  */
 
   switch (msg)
@@ -519,7 +517,7 @@ IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPA
         child = iupwinMenuGetItemHandle((HMENU)drawitem->hwndItem, drawitem->itemID);
       else
       {
-        child = iupwinHandleGet(drawitem->hwndItem); 
+        child = iupwinHandleGet(drawitem->hwndItem);
         if (iupObjectCheck(child) && !winCheckParent(child, ih))
           child = NULL;
       }
@@ -527,7 +525,7 @@ IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPA
       if (child)
       {
         IFdrawItem cb = (IFdrawItem)IupGetCallback(child, "_IUPWIN_DRAWITEM_CB");
-        if (cb) 
+        if (cb)
         {
           cb(child, (void*)drawitem);
           *result = TRUE;
@@ -548,7 +546,7 @@ IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPA
       }
       break;
     }
-  case WM_NOTIFY:   /* Currently, the following controls support custom draw functionality: 
+  case WM_NOTIFY:   /* Currently, the following controls support custom draw functionality:
                        Header, List-view, Rebar, Toolbar, ToolTip, Trackbar, Tree-view.
                        And for Button if using Windows XP Style. */
     {
@@ -576,11 +574,11 @@ IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPA
     }
   case WM_MOUSEWHEEL:
   {
-    /* Notice that this message is sent to the focus window. Also it will be automatically propagated to the native parent. 
+    /* Notice that this message is sent to the focus window. Also, it will be automatically propagated to the native parent.
        But we want it to be sent to the canvas under the cursor.
-       If this is a canvas based container, the message was already processed. 
+       If this is a canvas based container, the message was already processed.
        So, if it is not a canvas based container, we will do the propagation to the canvas under the cursor, if any.
-       But this can potentially generate an infinite loop, so we use _IUP_WHEEL_PROPAGATING as a stop condition. 
+       But this can potentially generate an infinite loop, so we use _IUP_WHEEL_PROPAGATING as a stop condition.
        */
     if (!IupClassMatch(ih, "canvas"))
     {
@@ -682,10 +680,10 @@ IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
   if (IsWindowVisible(ih->handle))
   {
     if (iupStrEqualNoCase(value, "TOP"))
-      SetWindowPos(ih->handle, HWND_TOP, 0, 0, 0, 0, 
+      SetWindowPos(ih->handle, HWND_TOP, 0, 0, 0, 0,
                   SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE);
     else
-      SetWindowPos(ih->handle, HWND_BOTTOM, 0, 0, 0, 0, 
+      SetWindowPos(ih->handle, HWND_BOTTOM, 0, 0, 0, 0,
                   SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE);
   }
 
@@ -723,7 +721,7 @@ IUP_DRV_API int iupwinSetTitleAttrib(Ihandle* ih, const char* value)
 
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
 {
-  if (!title) 
+  if (!title)
     SetWindowText(ih->handle, TEXT(""));
   else
     SetWindowText(ih->handle, iupwinStrToSystem(title));
@@ -733,7 +731,7 @@ IUP_DRV_API void iupwinSetMnemonicTitle(Ihandle *ih, int pos, const char* value)
 {
   int c;
 
-  if (!value) 
+  if (!value)
     value = "";
 
   c = iupStrFindMnemonic(value);
@@ -761,7 +759,7 @@ IUP_DRV_API TCHAR* iupwinGetWindowText(HWND hWnd)
 #define IDC_HAND            MAKEINTRESOURCE(32649)
 #endif
 #ifndef IDC_APPSTARTING
-#define IDC_APPSTARTING     MAKEINTRESOURCE(32650) 
+#define IDC_APPSTARTING     MAKEINTRESOURCE(32650)
 #endif
 #ifndef IDC_HELP
 #define IDC_HELP            MAKEINTRESOURCE(32651)
@@ -785,8 +783,8 @@ IUP_DRV_API HCURSOR iupwinGetCursor(Ihandle* ih, const char* name)
     const char* iupname;
     const TCHAR* sysname;
   } table[] = {
-    {"NONE",      NULL}, 
-    {"NULL",      NULL}, 
+    {"NONE",      NULL},
+    {"NULL",      NULL},
     {"ARROW",     IDC_ARROW},
     {"BUSY",      IDC_WAIT},
     {"CROSS",     IDC_CROSS},
@@ -823,7 +821,7 @@ IUP_DRV_API HCURSOR iupwinGetCursor(Ihandle* ih, const char* name)
   /* check the pre-defined IUP names first */
   for (i = 0; i < count; i++)
   {
-    if (iupStrEqualNoCase(name, table[i].iupname)) 
+    if (iupStrEqualNoCase(name, table[i].iupname))
     {
       if (table[i].sysname)
         cur = LoadCursor(NULL, table[i].sysname);
@@ -841,7 +839,7 @@ IUP_DRV_API HCURSOR iupwinGetCursor(Ihandle* ih, const char* name)
     if (iupStrEqualNoCase(name, "PEN"))
       name = "CURSOR_PEN"; /* name in "iup.rc" */
 
-    /* check for an name defined cursor */
+    /* check for a name defined cursor */
     cur = iupImageGetCursor(name);
   }
 
@@ -992,7 +990,7 @@ IUP_DRV_API int iupwinButtonUp(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp)
   if (msg==WM_LBUTTONUP)
   {
     b = IUP_BUTTON1;
-    iupKEY_SETBUTTON1(status);  
+    iupKEY_SETBUTTON1(status);
   }
   else if (msg==WM_MBUTTONUP)
   {
@@ -1047,9 +1045,9 @@ IUP_DRV_API void iupwinGetNativeParentStyle(Ihandle* ih, DWORD *dwExStyle, DWORD
 
   if (iupAttribGetBoolean(IupGetDialog(ih), "COMPOSITED"))
   {
-    /* Paints all descendants of a window in bottom-to-top painting order using double-buffering. 
-       This cannot be used if the window has a class style of either CS_OWNDC or CS_CLASSDC. 
-       IMPORTANT: IupCanvas uses CS_OWNDC. 
+    /* Paints all descendants of a window in bottom-to-top painting order using double-buffering.
+       This cannot be used if the window has a class style of either CS_OWNDC or CS_CLASSDC.
+       IMPORTANT: IupCanvas uses CS_OWNDC.
        And CD can draw at any time in the canvas, it is incompatible with the flag, see:
        https://blogs.msdn.microsoft.com/oldnewthing/20171018-00/?p=97245 */
     *dwExStyle |= WS_EX_COMPOSITED;

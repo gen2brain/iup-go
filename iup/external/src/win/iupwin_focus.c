@@ -12,16 +12,14 @@
 #include "iup.h"
 #include "iup_object.h"
 #include "iup_focus.h"
-#include "iup_assert.h" 
-#include "iup_drv.h" 
-#include "iup_attrib.h" 
+#include "iup_drv.h"
+#include "iup_attrib.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
 
 
 /* Not defined for MingW and Cygwin */
-#ifndef UIS_CLEAR               
+#ifndef UIS_CLEAR
 #define UIS_CLEAR                       2
 #endif
 #ifndef UISF_HIDEFOCUS

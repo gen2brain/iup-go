@@ -14,7 +14,6 @@
 #include "iup_str.h"
 #include "iup_dialog.h"
 
-#include "iup_drv.h"
 #include "iupwin_drv.h"
 #include "iupwin_str.h"
 #include "iupwin_info.h"
@@ -260,6 +259,6 @@ IUP_SDK_API void iupdrvMessageDlgInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "AUTOMODAL", winMessageDlgGetAutoModalAttrib, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_INHERIT);
 }
 
-/* 
-In Windows it will always sound a beep. The beep is different for each dialog type.
+/*
+In Windows, it will always sound a beep. The beep is different for each dialog type.
 */

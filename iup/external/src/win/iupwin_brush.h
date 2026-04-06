@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPWIN_BRUSH_H 
+
+#ifndef __IUPWIN_BRUSH_H
 #define __IUPWIN_BRUSH_H
 
 #ifdef __cplusplus

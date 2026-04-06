@@ -20,8 +20,6 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_attrib.h"
-#include "iup_str.h"
 #include "iup_dlglist.h"
 
 #include "iup_singleinstance.h"
@@ -38,9 +36,6 @@ static WCHAR* iupWinSIStrToWide(const char* str)
 {
   int len;
   WCHAR* wstr;
-
-  if (!str)
-    return NULL;
 
   len = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
   if (len == 0)

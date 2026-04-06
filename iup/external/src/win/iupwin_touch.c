@@ -3,23 +3,21 @@
  *
  * See Copyright Notice in "iup.h"
  */
+
 #include <windows.h>
 #include <commctrl.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "iup.h" 
-#include "iupcbs.h" 
+#include "iup.h"
+#include "iupcbs.h"
 
-#include "iup_object.h" 
+#include "iup_object.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
-#include "iup_attrib.h" 
-#include "iup_str.h" 
+#include "iup_str.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
 
 
 #ifndef WM_TOUCH
@@ -45,13 +43,13 @@ static BOOL (WINAPI *winIsTouchWindow)(HWND hwnd, PULONG pulFlags) = NULL;
 IUP_DRV_API void iupwinTouchInit(void)
 {
   HINSTANCE lib = LoadLibrary(TEXT("user32"));
-  
+
   winGetTouchInputInfo = (BOOL (WINAPI *)(HTOUCHINPUT,UINT,TOUCHINPUT *,int))GetProcAddress(lib, "GetTouchInputInfo");
   winCloseTouchInputHandle = (BOOL (WINAPI *)(HTOUCHINPUT))GetProcAddress(lib, "CloseTouchInputHandle");
   winRegisterTouchWindow = (BOOL (WINAPI *)(HWND,ULONG))GetProcAddress(lib, "RegisterTouchWindow");
   winUnregisterTouchWindow = (BOOL (WINAPI *)(HWND))GetProcAddress(lib, "UnregisterTouchWindow");
   winIsTouchWindow = (BOOL (WINAPI *)(HWND,PULONG))GetProcAddress(lib, "IsTouchWindow");
-  
+
   if (winIsTouchWindow)
     win_touch_loaded = 1;
   else
@@ -73,7 +71,7 @@ static int winSetTouchAttrib(Ihandle *ih, const char *value)
 static char* winGetTouchAttrib(Ihandle* ih)
 {
   ULONG pulFlags = 0;
-  return iupStrReturnBoolean (win_touch_loaded && winIsTouchWindow(ih->handle, &pulFlags)); 
+  return iupStrReturnBoolean (win_touch_loaded && winIsTouchWindow(ih->handle, &pulFlags));
 }
 
 static int winSetGestureAttrib(Ihandle *ih, const char *value)

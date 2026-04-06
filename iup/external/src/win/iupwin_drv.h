@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPWIN_DRV_H 
+
+#ifndef __IUPWIN_DRV_H
 #define __IUPWIN_DRV_H
 
 #ifdef __cplusplus
@@ -69,7 +69,6 @@ IUP_DRV_API Ihandle* iupwinMenuGetHandle(HMENU hMenu);
 /* loop */
 IUP_DRV_API void iupwinSetCustomQuitMessage(int enable);
 
-
 /***************************/
 /* Procedures and Messages */
 /***************************/
@@ -77,11 +76,11 @@ IUP_DRV_API void iupwinSetCustomQuitMessage(int enable);
 /* Definition of a callback used to return the background brush of controls called "_IUPWIN_CTLCOLOR_CB". */
 typedef int (*IFctlColor)(Ihandle* ih, HDC hdc, LRESULT *result);
 
-/* Definition of a callback used to draw custom controls called "_IUPWIN_DRAWITEM_CB". 
+/* Definition of a callback used to draw custom controls called "_IUPWIN_DRAWITEM_CB".
   drawitem is a pointer to a DRAWITEMSTRUCT struct. */
 typedef void (*IFdrawItem)(Ihandle* ih, void* drawitem);
 
-/* Definition of a callback used to notify custom controls called "_IUPWIN_NOTIFY_CB". 
+/* Definition of a callback used to notify custom controls called "_IUPWIN_NOTIFY_CB".
   msg_info is a pointer to a NMHDR struct. */
 typedef int (*IFnotify)(Ihandle* ih, void* msg_info, int *result);
 
@@ -89,7 +88,7 @@ typedef int (*IFnotify)(Ihandle* ih, void* msg_info, int *result);
 typedef int (*IFwmCommand)(Ihandle* ih, WPARAM wp, LPARAM lp);
 
 /* Definition of callback used for custom Message Processing. Can return 0 or 1.
-   0 = do default processing. 
+   0 = do default processing.
    1 = ABORT default processing and the result value should be returned.
    NOT the same as a WndProc.
 */
@@ -98,11 +97,11 @@ typedef int (*IwinMsgProc)(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT 
 /* Base IwinMsgProc callback used by native controls. */
 IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result);
 
-/* Base IwinMsgProc callback used by native containers. 
+/* Base IwinMsgProc callback used by native containers.
    Handle messages that are sent to the parent Window.  */
 IUP_DRV_API int iupwinBaseContainerMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *result);
 
-/* Base WinProc used by all native elements. Configure base message handling 
+/* Base WinProc used by all native elements. Configure base message handling
    and custom IwinMsgProc using "_IUPWIN_CTRLMSGPROC_CB" callback. */
 IUP_DRV_API LRESULT CALLBACK iupwinBaseWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
@@ -122,14 +121,13 @@ IUP_DRV_API int iupwinListDND(Ihandle *ih, UINT uNotification, POINT pt);
 LRESULT CALLBACK iupwinPostMessageFilterProc(int code, WPARAM wParam, LPARAM lParam);
 #endif
 
-
 /*********************/
 /* Window Management */
 /*********************/
 
 IUP_DRV_API HWND iupwinCreateWindowEx(HWND hParent, LPCTSTR lpClassName, DWORD dwExStyle, DWORD dwStyle, int serial, void* clientdata);
 
-/* Creates the Window with native parent and child ID, associate HWND with Ihandle*, 
+/* Creates the Window with native parent and child ID, associate HWND with Ihandle*,
    and replace the WinProc by iupwinBaseWndProc */
 IUP_DRV_API int iupwinCreateWindow(Ihandle* ih, LPCTSTR lpClassName, DWORD dwExStyle, DWORD dwStyle, void* clientdata);
 
@@ -140,7 +138,6 @@ IUP_DRV_API void iupwinSetStyle(Ihandle* ih, DWORD value, int set);
 IUP_DRV_API void iupwinTitleBarThemeColor(HWND hwnd);
 
 IUP_DRV_API int iupwinClassExist(const TCHAR* name);
-
 
 /*********************/
 /*      Utilities    */

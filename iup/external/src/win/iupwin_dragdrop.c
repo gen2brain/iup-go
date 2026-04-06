@@ -4,35 +4,26 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>              
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>             
+#include <string.h>
 
 #include <windows.h>
 #include <commctrl.h>
-#include <ole2.h>
 #include <shlobj.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_childtree.h"
 #include "iup_key.h"
 #include "iup_str.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
-#include "iup_focus.h"
-#include "iup_image.h"
-#include "iup_dialog.h"
-#include "iup_drvinfo.h"
 #include "iup_drv.h"
 #include "iup_array.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
-#include "iupwin_brush.h"
-#include "iupwin_info.h"
 #include "iupwin_str.h"
 
 
@@ -73,7 +64,7 @@ static void winFormatEtcCopy(FORMATETC *dest, FORMATETC *source)
 {
   /* copy the source FORMATETC into dest */
   *dest = *source;
-  
+
   if(source->ptd)
   {
     /* allocate memory for the DVTARGETDEVICE if necessary */
@@ -135,7 +126,7 @@ static HRESULT STDMETHODCALLTYPE IwinEnumFORMATETC_Next (IwinEnumFORMATETC* pThi
     pThis->nIndex++;
   }
 
-  if (pCeltFetched != 0) 
+  if (pCeltFetched != 0)
     *pCeltFetched = nCeltCopied;
 
   return (nCeltCopied == nCelt) ? S_OK : S_FALSE;
@@ -184,7 +175,7 @@ static IwinEnumFORMATETC* winCreateEnumFORMATETC(ULONG nNumFormats, FORMATETC *p
   pEnumFormatEtc->nIndex = 0;
   pEnumFormatEtc->nNumFormats = nNumFormats;
   pEnumFormatEtc->pFormatEtc = malloc(sizeof(FORMATETC)*nNumFormats);
-  
+
   for(i = 0; i < nNumFormats; i++)
     winFormatEtcCopy(&pEnumFormatEtc->pFormatEtc[i], &pFormatEtc[i]);
 
@@ -192,9 +183,7 @@ static IwinEnumFORMATETC* winCreateEnumFORMATETC(ULONG nNumFormats, FORMATETC *p
 }
 #endif
 
-
 /******************************************************************************/
-
 
 typedef struct _IwinDropSource
 {
@@ -269,7 +258,7 @@ static HRESULT STDMETHODCALLTYPE IwinDropSource_GiveFeedback(IwinDropSource* pTh
     if (dwEffect & DROPEFFECT_COPY)
     {
       char* copy = iupAttribGet(pThis->ih, "DRAGCURSORCOPY");
-      if (copy) 
+      if (copy)
         hCur = iupwinGetCursor(pThis->ih, copy);
     }
 
@@ -308,9 +297,7 @@ static void winDestroyDropSource(IDropSource* pSrc)
   pSrc->lpVtbl->Release(pSrc);
 }
 
-
 /**********************************************************************************/
-
 
 typedef struct _IwinDataObject
 {
@@ -342,10 +329,10 @@ typedef struct _IwinDataObjectVtbl
 static ULONG winDataObjectLookupFormatEtc(IwinDataObject* pThis, FORMATETC *pFormatEtc)
 {
   ULONG i;
-  
+
   for(i = 0; i < pThis->nNumFormats; i++)
   {
-    if((pFormatEtc->tymed & pThis->pFormatEtc[i].tymed) && 
+    if((pFormatEtc->tymed & pThis->pFormatEtc[i].tymed) &&
        pFormatEtc->cfFormat == pThis->pFormatEtc[i].cfFormat &&
        pFormatEtc->dwAspect == pThis->pFormatEtc[i].dwAspect)
       return (int)i;
@@ -541,9 +528,7 @@ static void winDestroyDataObject(IDataObject* pObj)
   pObj->lpVtbl->Release(pObj);
 }
 
-
 /**********************************************************************************/
-
 
 typedef struct _IwinDropTarget
 {
@@ -572,8 +557,8 @@ static BOOL winQueryDataObject(IwinDropTarget* pDropTarget, IDataObject *pDataOb
 {
   ULONG i;
   FORMATETC fmtetc = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
-  
-  /* If there are more than one format, 
+
+  /* If there are more than one format,
      the first one accepted will be used */
   for(i = 0; i < pDropTarget->nNumFormats; i++)
   {
@@ -723,7 +708,7 @@ static HRESULT STDMETHODCALLTYPE IwinDropTarget_Drop(IwinDropTarget* pThis, IDat
   if (*pdwEffect == DROPEFFECT_NONE)
     return S_OK;
 
-  /* If there are more than one format, 
+  /* If there are more than one format,
      the first one accepted will be used */
   for(i = 0; i < pThis->nNumFormats; i++)
   {
@@ -778,7 +763,6 @@ static void winDestroyDropTarget(IwinDropTarget* pDropTarget)
 {
   ((IDropTarget*)pDropTarget)->lpVtbl->Release((IDropTarget*)pDropTarget);
 }
-
 
 /******************************************************************************************/
 
@@ -899,7 +883,7 @@ static int winRegisterProcessDrag(Ihandle *ih)
     return 1;
   else if (dwEffect == DROPEFFECT_COPY)
     return 0;
-  else 
+  else
     return -1;
 }
 
@@ -1074,9 +1058,7 @@ static int winSetDragStartAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-
 /******************************************************************************************/
-
 
 static int winSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
@@ -1096,15 +1078,15 @@ IUP_DRV_API void iupwinDropFiles(HDROP hDrop, Ihandle *ih)
   POINT point;
 
   IFnsiii cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
-  if (!cb) return; 
+  if (!cb) return;
 
   numFiles = DragQueryFile(hDrop, 0xFFFFFFFF, NULL, 0);
 
-  DragQueryPoint(hDrop, &point);  
+  DragQueryPoint(hDrop, &point);
   for (i = 0; i < numFiles; i++)
   {
     numchar = DragQueryFile(hDrop, i, NULL, 0);
-    filename = (TCHAR*)malloc((numchar+1)*sizeof(TCHAR)); 
+    filename = (TCHAR*)malloc((numchar+1)*sizeof(TCHAR));
     if (!filename)
       break;
 
@@ -1114,7 +1096,7 @@ IUP_DRV_API void iupwinDropFiles(HDROP hDrop, Ihandle *ih)
     memcpy(filename, str, strlen(str) + 1);
     str = (char*)filename;
 
-    ret = cb(ih, str, numFiles-i-1, (int) point.x, (int) point.y); 
+    ret = cb(ih, str, numFiles-i-1, (int) point.x, (int) point.y);
 
     free(filename);
 
@@ -1123,7 +1105,6 @@ IUP_DRV_API void iupwinDropFiles(HDROP hDrop, Ihandle *ih)
   }
   DragFinish(hDrop);
 }
-
 
 /******************************************************************************************/
 

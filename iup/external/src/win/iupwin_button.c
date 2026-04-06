@@ -13,7 +13,6 @@
 #include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -24,11 +23,8 @@
 #include "iup_image.h"
 
 #include "iupwin_drv.h"
-#include "iupwin_handle.h"
 #include "iupwin_draw.h"
 #include "iupwin_info.h"
-#include "iupwin_str.h"
-
 
 
 static int winButtonGetBorder(void)
@@ -126,7 +122,7 @@ static HBITMAP winButtonGetBitmap(Ihandle* ih, UINT itemState, int *shift, int *
     name = iupAttribGet(ih, "IMPRESS");
     if (itemState & ODS_SELECTED && name)
     {
-      if (shift && !iupAttribGetBoolean(ih, "IMPRESSBORDER")) 
+      if (shift && !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
         *shift = 0;
     }
     else
@@ -143,11 +139,11 @@ static HBITMAP winButtonGetBitmap(Ihandle* ih, UINT itemState, int *shift, int *
 
 static void winButtonDrawImageText(Ihandle* ih, HDC hDC, int rect_width, int rect_height, int border, UINT itemState)
 {
-  int xpad = ih->data->horiz_padding + border, 
+  int xpad = ih->data->horiz_padding + border,
       ypad = ih->data->vert_padding + border;
-  int x, y, width, height, 
-      txt_x, txt_y, txt_width, txt_height, 
-      img_x, img_y, img_width, img_height, 
+  int x, y, width, height,
+      txt_x, txt_y, txt_width, txt_height,
+      img_x, img_y, img_width, img_height,
       bpp, shift = 0, style = 0;
   HFONT hFont = (HFONT)iupwinGetHFontAttrib(ih);
   HBITMAP hBitmap;
@@ -259,7 +255,7 @@ static void winButtonDrawImageText(Ihandle* ih, HDC hDC, int rect_width, int rec
 
 static void winButtonDrawImage(Ihandle* ih, HDC hDC, int rect_width, int rect_height, int border, UINT itemState)
 {
-  int xpad = ih->data->horiz_padding + border, 
+  int xpad = ih->data->horiz_padding + border,
       ypad = ih->data->vert_padding + border;
   int x, y, width, height, bpp, shift = 0;
   HBITMAP hBitmap;
@@ -279,15 +275,15 @@ static void winButtonDrawImage(Ihandle* ih, HDC hDC, int rect_width, int rect_he
 
 static void winButtonDrawText(Ihandle* ih, HDC hDC, int rect_width, int rect_height, int border, UINT itemState)
 {
-  int xpad = ih->data->horiz_padding + border, 
+  int xpad = ih->data->horiz_padding + border,
       ypad = ih->data->vert_padding + border;
   char* title = iupAttribGet(ih, "TITLE");
 
   if (title)
   {
-	int x, y;
-	int width, height;
-	int shift = 0;
+    int x, y;
+    int width, height;
+    int shift = 0;
     int style = 0;
     COLORREF fgcolor;
     HFONT hFont = (HFONT)iupwinGetHFontAttrib(ih);
@@ -335,7 +331,7 @@ static void winButtonDrawText(Ihandle* ih, HDC hDC, int rect_width, int rect_hei
 }
 
 static void winButtonDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
-{ 
+{
   int has_border = 1;
   HDC hDC;
   iupwinBitmapDC bmpDC;
@@ -403,9 +399,7 @@ static void winButtonDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
   iupwinDrawDestroyBitmapDC(&bmpDC);
 }
 
-
 /***********************************************************************************************/
-
 
 static int winButtonSetImageAttrib(Ihandle* ih, const char* value)
 {
@@ -590,7 +584,7 @@ static int winButtonMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
 
       /* Process BUTTON_CB */
       (void)iupwinButtonUp(ih, msg, wp, lp); /* ignore return value */
-      
+
       if (!iupObjectCheck(ih))
       {
         *result = 0;
@@ -636,7 +630,7 @@ static int winButtonMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
       iupdrvActivate(ih);
 
       *result = 0;
-      return 1;   /* abort default processing, or the default button will be activated, 
+      return 1;   /* abort default processing, or the default button will be activated,
                      in this case even if there is a default button, this button must be activated instead. */
     }
     break;
@@ -697,7 +691,7 @@ static int winButtonWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
   case BN_DOUBLECLICKED:
   case BN_CLICKED:
     {
-      /* BN_CLICKED will NOT be notified when not receiving the focus, but sometimes it does, 
+      /* BN_CLICKED will NOT be notified when not receiving the focus, but sometimes it does,
          so we added a test here also */
       if (iupAttribGetBoolean(ih, "CANFOCUS"))
       {
@@ -705,7 +699,7 @@ static int winButtonWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
         if (cb)
         {
           /* to avoid double calls when pressing enter and a dialog is displayed */
-          if (!iupAttribGet(ih, "_IUPBUT_INSIDE_ACTION"))  
+          if (!iupAttribGet(ih, "_IUPBUT_INSIDE_ACTION"))
           {
             int ret;
             iupAttribSet(ih, "_IUPBUT_INSIDE_ACTION", "1");
@@ -735,12 +729,12 @@ static int winButtonMapMethod(Ihandle* ih)
   if (!ih->parent)
     return IUP_ERROR;
 
- /* Buttons with the BS_PUSHBUTTON style do NOT use the returned brush in WM_CTLCOLORBTN. 
+ /* Buttons with the BS_PUSHBUTTON style do NOT use the returned brush in WM_CTLCOLORBTN.
     Buttons with these styles are always drawn with the default system colors.
       So FGCOLOR and BGCOLOR do NOT work.
-    The BS_FLAT style does NOT completely remove the borders. With XP styles is ignored. 
+    The BS_FLAT style does NOT completely remove the borders. With XP styles is ignored.
       So FLAT do NOT work.
-    BCM_SETTEXTMARGIN is not working either. 
+    BCM_SETTEXTMARGIN is not working either.
     Buttons with images and with XP styles do NOT draw the focus feedback.
     Can NOT remove the borders when using IMPRESS.
     >>>> So IUP will draw its own button,
@@ -796,7 +790,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", winButtonGetBgColorAttrib, winButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
 
   /* Special */
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winButtonSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);  /* force the new default value */  
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winButtonSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);  /* force the new default value */
   iupClassRegisterAttribute(ic, "TITLE", NULL, winButtonSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupButton only */

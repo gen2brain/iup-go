@@ -7,7 +7,6 @@
 #include <windows.h>
 #include <shellapi.h>
 
-#include <stdlib.h>
 #include <stdio.h>
 
 #include "iup.h"

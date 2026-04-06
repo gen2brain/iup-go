@@ -6,9 +6,9 @@
 #include <windows.h>
 #include <commctrl.h>
 
-#include <stdio.h>              
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>             
+#include <string.h>
 
 #include "iup_export.h"
 #include "iupwin_str.h"
@@ -16,20 +16,20 @@
 
 
 /* From MSDN:
-- Internally, the ANSI version translates the string to Unicode. 
-- The ANSI versions are also less efficient, 
-  because the operating system must convert the ANSI strings to Unicode at run time. 
+- Internally, the ANSI version translates the string to Unicode.
+- The ANSI versions are also less efficient,
+  because the operating system must convert the ANSI strings to Unicode at run time.
 
-  So, there is no point in doing a lib that calls both ANSI and Unicode API. 
+  So, there is no point in doing a lib that calls both ANSI and Unicode API.
   In the simple and ideal world we need only the Unicode API and to handle the conversion when necessary.
   The same conversion would exist anyway if using the ANSI API.
 
-- The standard file I/O functions, like fopen, use ANSI file names. 
-  But if your files have Unicode names, then you may consider using UTF-8 
+- The standard file I/O functions, like fopen, use ANSI file names.
+  But if your files have Unicode names, then you may consider using UTF-8
   so later the application can recover the original Unicode version.
 */
 static int iupwin_utf8mode = 0;    /* default is NOT using UTF-8 */
-static int iupwin_utf8mode_file = 0;  
+static int iupwin_utf8mode_file = 0;
 
 
 IUP_DRV_API void iupwinStrSetUTF8Mode(int utf8mode)
@@ -74,7 +74,7 @@ static void* winStrGetMemory(int size)
     buffers_index = -1;
     for (i = 0; i < MAX_BUFFERS; i++)
     {
-      if (buffers[i]) 
+      if (buffers[i])
       {
         free(buffers[i]);
         buffers[i] = NULL;
@@ -129,10 +129,10 @@ static void winStrWide2Char(const WCHAR* wstr, char* str, int len)
 {
   /* cchWideChar is the wstr number of characters
      cbMultiByte is the size in bytes available in the buffer
-     Returns the number of bytes written to the buffer 
+     Returns the number of bytes written to the buffer
   */
   if (iupwin_utf8mode)
-    len = WideCharToMultiByte(CP_UTF8, 0, wstr, len, str, 3*len, NULL, NULL);  /* str must has a larger buffer */
+    len = WideCharToMultiByte(CP_UTF8, 0, wstr, len, str, 3*len, NULL, NULL);  /* str must have a larger buffer */
   else
     len = WideCharToMultiByte(CP_ACP,  0, wstr, len, str, 3*len, NULL, NULL);
 
@@ -177,7 +177,7 @@ IUP_DRV_API char* iupwinStrWide2Char(const WCHAR* wstr)
   if (wstr)
   {
     int len = (int)wcslen(wstr);
-    char* str = (char*)malloc((3*len+1) * sizeof(char));   /* str must has a larger buffer */
+    char* str = (char*)malloc((3*len+1) * sizeof(char));   /* str must have a larger buffer */
     winStrWide2Char(wstr, str, len);
     return str;
   }
@@ -240,7 +240,7 @@ IUP_DRV_API char* iupwinStrFromSystem(const TCHAR* wstr)
   if (wstr)
   {
     int len = (int)wcslen(wstr);
-    char* str = (char*)winStrGetMemory((3*len+1) * sizeof(char));    /* str must has a large buffer because the UTF-8 string can be larger than the original */
+    char* str = (char*)winStrGetMemory((3*len+1) * sizeof(char));    /* str must have a large buffer because the UTF-8 string can be larger than the original */
     winStrWide2Char(wstr, str, len);
     return str;
   }
@@ -326,4 +326,3 @@ IUP_SDK_API char* iupStrConvertToUTF8(const char* str, int len, char* utf8_buffe
 
   return utf8_buffer;
 }
-
