@@ -15,14 +15,12 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
-#include "iup_drvinfo.h"
 }
 
 #include "iupwinui_drv.h"
 
 #include <winrt/Windows.Storage.Streams.h>
 #include <winrt/Windows.Graphics.Imaging.h>
-#include <winrt/Microsoft.UI.Xaml.Media.Imaging.h>
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml::Media::Imaging;

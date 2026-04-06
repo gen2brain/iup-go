@@ -15,7 +15,6 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <cstdio>
 #include <string>
 
 extern "C" {
@@ -24,10 +23,8 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_class.h"
-#include "iup_key.h"
 }
 
 #include "iupwinui_drv.h"
@@ -176,7 +173,6 @@ void winuiDragSetInProcessData(const char* type, void* data, int size)
   strncpy(winui_drag_type, type, sizeof(winui_drag_type) - 1);
   winui_drag_type[sizeof(winui_drag_type) - 1] = '\0';
 }
-
 
 static void winuiDragStartingHandler(Ihandle* ih, DragStartingEventArgs const& e, UIElement const& posRelativeTo)
 {

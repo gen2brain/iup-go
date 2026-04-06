@@ -4,11 +4,9 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <cstdlib>
 #include <cstring>
 #include <cmath>
 #include <climits>
-#include <cstdio>
 
 extern "C" {
 #include "iup.h"
@@ -17,11 +15,9 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_canvas.h"
 #include "iup_key.h"
 #include "iup_classbase.h"
-#include "iup_register.h"
 }
 
 #include "iupwinui_drv.h"
@@ -44,13 +40,12 @@ static int winuiCanvasIsGLCanvas(Ihandle* ih)
   return iupAttribGet(ih, "_IUP_GLCONTROLDATA") != NULL;
 }
 
-
 /***********************************************************************************
  * GL Canvas - Win32 child HWND for OpenGL rendering
  *
  * When a Canvas is used as the base for a GLCanvas, we create a Win32 child HWND
  * (with CS_OWNDC) instead of a XAML Canvas. This HWND is a sibling to the XAML
- * Island HWND, rendered on top of XAML content (standard Win32 airspace behavior).
+ * Island HWND, rendered on top of XAML content.
  * The iup_glcanvas_win.c finds this HWND and creates the WGL context.
  ***********************************************************************************/
 

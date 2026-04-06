@@ -7,7 +7,6 @@
  */
 
 #include <windows.h>
-#include <cstdlib>
 #include <cstring>
 
 extern "C" {

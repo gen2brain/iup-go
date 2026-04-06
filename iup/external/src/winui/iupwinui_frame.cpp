@@ -19,7 +19,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <cstdlib>
 #include <cstring>
 #include <cmath>
 
@@ -28,12 +27,8 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_frame.h"
-#include "iup_register.h"
-#include "iup_childtree.h"
-#include "iup_classbase.h"
 #include "iup_layout.h"
 }
 

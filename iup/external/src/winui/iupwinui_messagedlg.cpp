@@ -7,18 +7,13 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <cstdlib>
-#include <cstring>
-
 extern "C" {
 #include "iup.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_class.h"
 #include "iup_dialog.h"
-#include "iup_register.h"
 }
 
 #include "iupwinui_drv.h"

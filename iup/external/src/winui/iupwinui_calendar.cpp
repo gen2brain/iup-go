@@ -7,18 +7,13 @@
 #include <windows.h>
 
 #include <cstdlib>
-#include <cstring>
-#include <cstdio>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_class.h"
-#include "iup_register.h"
 }
 
 #include "iupwinui_drv.h"

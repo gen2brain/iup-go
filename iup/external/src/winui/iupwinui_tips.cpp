@@ -8,7 +8,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
 extern "C" {
 #include "iup.h"
