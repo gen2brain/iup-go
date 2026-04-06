@@ -9,7 +9,6 @@
 #include <string.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupkey.h"
 
 #include "iup_object.h"

@@ -32,9 +32,7 @@
 #endif
 
 #include "iup.h"
-#include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_object.h"
 #include "iup_globalattrib.h"
 
@@ -404,7 +402,7 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 
   IupSetfAttribute(NULL, "EFLVERSION", "%d.%d.%d", ELM_VERSION_MAJOR, ELM_VERSION_MINOR, 0);
 
-  if (argv && *argv && (*argv)[0] && (*argv)[0][0] != 0)
+  if (*argv && (*argv)[0] && (*argv)[0][0] != 0)
     IupStoreGlobal("ARGV0", (*argv)[0]);
 
   eflSetGlobalAttrib();

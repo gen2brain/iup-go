@@ -10,7 +10,6 @@
 #include <ctype.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"
@@ -20,7 +19,6 @@
 #include "iup_dialog.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_image.h"
 #include "iup_menu.h"
 
 #include "iupefl_drv.h"

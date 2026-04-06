@@ -12,16 +12,13 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_drvinfo.h"
-#include "iup_stdcontrols.h"
 #include "iup_table.h"
 #include "iup_image.h"
-#include "iup_key.h"
 #include "iup_focus.h"
 
 #include "iupefl_drv.h"
@@ -1016,7 +1013,6 @@ static void eflTableResizeCallback(void* data, const Efl_Event* ev)
 
     if (vp_w > table_w && vp_w > 0)
       efl_gfx_entity_size_set(table_data->table, EINA_SIZE2D(vp_w, table_h));
-
   }
 
   /* Update focus rect position after layout */
@@ -1856,94 +1852,6 @@ static void eflTableRebuildCells(Ihandle* ih)
 /****************************************************************************
  * Virtual Mode
  ****************************************************************************/
-
-static void eflTableRebuildHeaders(Ihandle* ih)
-{
-  IeflTableData* data = IEFL_TABLE_DATA(ih);
-  int num_col = ih->data->num_col;
-  int col;
-  Evas_Object* label;
-  Evas_Object* bg;
-  char* text;
-  int col_width;
-
-  if (!data || !data->table || num_col <= 0)
-    return;
-
-  /* Allocate column widths array if needed */
-  if (!data->col_widths)
-  {
-    data->col_widths = (int*)calloc(num_col, sizeof(int));
-    data->alloc_num_col = num_col;
-    for (col = 0; col < num_col; col++)
-    {
-      if (eflTableColHasExplicitWidth(ih, col + 1))
-      {
-        char name[50];
-        char* width_str;
-        int width = DEFAULT_COL_WIDTH;
-
-        snprintf(name, sizeof(name), "RASTERWIDTH%d", col + 1);
-        width_str = iupAttribGet(ih, name);
-        if (!width_str)
-        {
-          snprintf(name, sizeof(name), "WIDTH%d", col + 1);
-          width_str = iupAttribGet(ih, name);
-        }
-
-        if (width_str && iupStrToInt(width_str, &width) && width > 0)
-          data->col_widths[col] = width;
-        else
-          data->col_widths[col] = DEFAULT_COL_WIDTH;
-      }
-      else
-        data->col_widths[col] = eflTableCalculateColumnWidth(ih, col + 1);
-    }
-  }
-
-  /* Allocate header labels */
-  if (!data->header_labels)
-    data->header_labels = (Evas_Object**)calloc(num_col, sizeof(Evas_Object*));
-
-  /* Create header row (row 0 in table) */
-  for (col = 0; col < num_col; col++)
-  {
-    char name[50];
-    unsigned char bg_r, bg_g, bg_b;
-    int is_last_col = (col == num_col - 1);
-    int should_stretch = is_last_col && ih->data->stretch_last && !eflTableColHasExplicitWidth(ih, col + 1);
-
-    snprintf(name, sizeof(name), "COLTITLE%d", col + 1);
-    text = iupAttribGet(ih, name);
-    if (!text)
-    {
-      snprintf(name, sizeof(name), "Col %d", col + 1);
-      text = name;
-    }
-
-    col_width = data->col_widths[col];
-
-    /* Create header background */
-    bg = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(data->table));
-    eflTableGetCellBgColor(ih, 0, col + 1, &bg_r, &bg_g, &bg_b);
-    efl_gfx_color_set(bg, bg_r, bg_g, bg_b, 255);
-    efl_gfx_hint_size_min_set(bg, EINA_SIZE2D(col_width, data->header_height));
-    efl_gfx_hint_weight_set(bg, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
-    efl_gfx_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
-    efl_gfx_entity_visible_set(bg, EINA_TRUE);
-    elm_table_pack(data->table, bg, col, 0, 1, 1);
-
-    /* Create header label on top */
-    label = eflTableCreateCellWidget(ih, data->table, text, 1, 0, col + 1);
-    efl_gfx_hint_size_min_set(label, EINA_SIZE2D(col_width, data->header_height));
-    efl_gfx_hint_weight_set(label, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
-    elm_table_pack(data->table, label, col, 0, 1, 1);
-    data->header_labels[col] = label;
-    efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableHeaderClickCallback, ih);
-    efl_event_callback_add(label, EFL_EVENT_POINTER_MOVE, eflTableDragPointerMove, ih);
-    efl_event_callback_add(label, EFL_EVENT_POINTER_UP, eflTableDragPointerUp, ih);
-  }
-}
 
 static void eflTableScrollJobCallback(void* data)
 {

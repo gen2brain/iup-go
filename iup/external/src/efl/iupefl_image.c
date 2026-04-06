@@ -465,7 +465,7 @@ static int eflImageUpdateFromIhandle(Eo* img, Ihandle* img_ih, int make_inactive
   int width = img_ih->currentwidth;
   int height = img_ih->currentheight;
 
-  if (!img || !efl_isa(img, EFL_CANVAS_IMAGE_INTERNAL_CLASS))
+  if (!efl_isa(img, EFL_CANVAS_IMAGE_INTERNAL_CLASS))
     return 0;
 
   bpp = iupAttribGetInt(img_ih, "BPP");

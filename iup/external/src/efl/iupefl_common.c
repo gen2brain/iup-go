@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -16,15 +15,11 @@
 #include "iupcbs.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_layout.h"
 #include "iup_class.h"
 #include "iup_key.h"
 #include "iup_childtree.h"
-#include "iup_canvas.h"
-#include "iup_dlglist.h"
 #include "iup_markup.h"
 
 #include "iupefl_drv.h"

@@ -7,21 +7,12 @@
 #ifndef __IUPEFL_DRV_H
 #define __IUPEFL_DRV_H
 
-#include <Efl.h>
 #include <Evas.h>
 #include <Ecore.h>
-
-#ifdef HAVE_ECORE_WL2
-#include <Ecore_Wl2.h>
-#endif
-
-#include <Ecore_Evas.h>
-#include <Edje.h>
 #include <Elementary.h>
 #include <Efl_Ui.h>
 
 #include "iup.h"
-#include "iup_object.h"
 
 
 /* Get the Eo object from an Ihandle */
