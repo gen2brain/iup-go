@@ -45,7 +45,7 @@ package iup
 #cgo motif,gl LDFLAGS: -lGL
 #cgo motif,xft CFLAGS: -DIUP_USE_XFT
 #cgo motif,xft,!nopkgconfig pkg-config: xft freetype2 fontconfig
-#cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_ICONV
+#cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_MOTIF -DIUP_USE_ICONV
 
 #cgo windows,!winui CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
 #cgo windows,!gtk,!gtk4,!qt,!winui,!efl,!fltk CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE

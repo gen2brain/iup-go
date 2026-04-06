@@ -63,6 +63,7 @@ set(IUP_DRIVER_LINK_LIBRARIES
 )
 
 set(IUP_DRIVER_COMPILE_OPTIONS "")
+set(IUP_DRIVER_LINK_OPTIONS -fuse-ld=lld)
 
 set(IUP_PC_REQUIRES "")
 set(IUP_PC_LIBS_PRIVATE "-lwindowsapp -lruntimeobject -ld2d1 -ldwrite -luuid -loleaut32 -lole32 -luser32 -lshell32 -lgdi32 -ladvapi32 -l:libc++.a -l:libc++abi.a")
