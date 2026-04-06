@@ -5,8 +5,8 @@
  */
 
 #include <gtk/gtk.h>
-#if GTK_CHECK_VERSION(3, 0, 0)
-#include <gdk/gdkkeysyms-compat.h>
+#if !GTK_CHECK_VERSION(3, 0, 0)
+#include <gdk/gdkkeysyms.h>
 #endif
 
 #include <stdlib.h>
@@ -2708,7 +2708,7 @@ static gboolean gtkTreeKeyReleaseEvent(GtkWidget *widget, GdkEventKey *evt, Ihan
 {
   if (ih->data->mark_mode==ITREE_MARK_MULTIPLE && (evt->state & GDK_SHIFT_MASK))
   {
-    if (evt->keyval == GDK_Up || evt->keyval == GDK_Down || evt->keyval == GDK_Home || evt->keyval == GDK_End)
+    if (evt->keyval == GDK_KEY_Up || evt->keyval == GDK_KEY_Down || evt->keyval == GDK_KEY_Home || evt->keyval == GDK_KEY_End)
       gtkTreeCallMultiSelectionCb(ih); /* Multi Selection Callback */
   }
 
@@ -2721,12 +2721,12 @@ static gboolean gtkTreeKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ihandl
   if (iupgtkKeyPressEvent(widget, evt, ih) == TRUE)
     return TRUE;
 
-  if (evt->keyval == GDK_F2)
+  if (evt->keyval == GDK_KEY_F2)
   {
     gtkTreeSetRenameAttrib(ih, NULL);
     return TRUE;
   }
-  else if (evt->keyval == GDK_Return || evt->keyval == GDK_KP_Enter)
+  else if (evt->keyval == GDK_KEY_Return || evt->keyval == GDK_KEY_KP_Enter)
   {
     gtkTreeOpenCloseEvent(ih);
     return TRUE;
@@ -2865,12 +2865,12 @@ static gboolean gtkTreeToggle3StateKeyEvent(GtkWidget *widget, GdkEventKey *evt,
 {
   if (evt->type == GDK_KEY_PRESS)
   {
-    if (evt->keyval == GDK_space || evt->keyval == GDK_Return)
+    if (evt->keyval == GDK_KEY_space || evt->keyval == GDK_KEY_Return)
       return TRUE; /* ignore message to avoid change toggle state */
   }
   else
   {
-    if (evt->keyval == GDK_space || evt->keyval == GDK_Return)
+    if (evt->keyval == GDK_KEY_space || evt->keyval == GDK_KEY_Return)
     {
       if (gtkTreeToggleUpdate3StateCheck(ih, 0, 0, 1))
         return TRUE; /* ignore message to avoid change toggle state */

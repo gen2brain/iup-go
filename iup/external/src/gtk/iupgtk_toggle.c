@@ -5,8 +5,8 @@
  */
 
 #include <gtk/gtk.h>
-#if GTK_CHECK_VERSION(3, 0, 0)
-#include <gdk/gdkkeysyms-compat.h>
+#if !GTK_CHECK_VERSION(3, 0, 0)
+#include <gdk/gdkkeysyms.h>
 #endif
 
 #include <stdlib.h>
@@ -888,12 +888,12 @@ static gboolean gtkToggleKeyEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *
 {
   if (evt->type == GDK_KEY_PRESS)
   {
-    if (evt->keyval == GDK_space || evt->keyval == GDK_Return)
+    if (evt->keyval == GDK_KEY_space || evt->keyval == GDK_KEY_Return)
       return TRUE; /* ignore message to avoid change toggle state */
   }
   else
   {
-    if (evt->keyval == GDK_space || evt->keyval == GDK_Return)
+    if (evt->keyval == GDK_KEY_space || evt->keyval == GDK_KEY_Return)
     {
       if (gtkToggleUpdate3StateCheck(ih, 1))
         return TRUE; /* ignore message to avoid change toggle state */
