@@ -10,8 +10,6 @@
 #include <memory.h>
 #include <string.h>
 
-#include <gtk/gtk.h>
-
 #include "iup.h"
 
 #include "iup_object.h"

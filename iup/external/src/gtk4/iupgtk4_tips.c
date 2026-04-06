@@ -6,8 +6,6 @@
 
 #include <stdio.h>
 
-#include <gtk/gtk.h>
-
 #include "iup.h"
 #include "iupcbs.h"
 
@@ -17,7 +15,6 @@
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
-#include "iup_drvfont.h"
 
 #include "iupgtk4_drv.h"
 

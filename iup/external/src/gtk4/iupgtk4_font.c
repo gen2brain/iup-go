@@ -8,8 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <gtk/gtk.h>
-
 #include "iup.h"
 
 #include "iup_str.h"
@@ -340,7 +338,7 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   /* If FONT is changed, must update the SIZE attribute */
   iupBaseUpdateAttribFromFont(ih);
 
-  /* FONT attribute must be able to be set before mapping, so the font is enable for size calculation. */
+  /* FONT attribute must be able to be set before mapping, so the font is enabled for size calculation. */
   if (ih->handle && (ih->iclass->nativetype != IUP_TYPEVOID))
     gtk4FontUpdateWidget(ih, ih->handle, gtkfont->fontdesc);
 
@@ -371,7 +369,6 @@ static void gtk4FontGetTextSize(Ihandle* ih, Igtk4Font* gtkfont, const char* str
   if (str[0])
   {
     int dummy_h;
-    int orig_len = len;
     char* text = iupgtk4StrConvertToSystemLen(str, &len);
 
     if (ih && iupAttribGetBoolean(ih, "MARKUP"))

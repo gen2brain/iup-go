@@ -4,26 +4,15 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <gtk/gtk.h>
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <memory.h>
 #include <stdarg.h>
-#include <limits.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
-#include "iup_dialog.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
-#include "iup_drvfont.h"
 #include "iup_canvas.h"
 #include "iup_key.h"
 
@@ -60,103 +49,6 @@ static void gtk4CanvasUpdateChildLayout(Ihandle *ih, int flush)
 
   if (flush)
     IupFlush();
-}
-
-static int gtk4CanvasScroll2Iup(GtkScrollType scroll, int vert)
-{
-  switch(scroll)
-  {
-    case GTK_SCROLL_STEP_UP:
-      return IUP_SBUP;
-    case GTK_SCROLL_STEP_DOWN:
-      return IUP_SBDN;
-    case GTK_SCROLL_PAGE_UP:
-      return IUP_SBPGUP;
-    case GTK_SCROLL_PAGE_DOWN:
-      return IUP_SBPGDN;
-    case GTK_SCROLL_STEP_LEFT:
-      return IUP_SBLEFT;
-    case GTK_SCROLL_STEP_RIGHT:
-      return IUP_SBRIGHT;
-    case GTK_SCROLL_PAGE_LEFT:
-      return IUP_SBPGLEFT;
-    case GTK_SCROLL_PAGE_RIGHT:
-      return IUP_SBPGRIGHT;
-    case GTK_SCROLL_STEP_BACKWARD:
-      return vert? IUP_SBUP: IUP_SBLEFT;
-    case GTK_SCROLL_STEP_FORWARD:
-      return vert? IUP_SBDN: IUP_SBRIGHT;
-    case GTK_SCROLL_PAGE_BACKWARD:
-      return vert? IUP_SBPGUP: IUP_SBPGLEFT;
-    case GTK_SCROLL_PAGE_FORWARD:
-      return vert? IUP_SBPGDN: IUP_SBPGRIGHT;
-    case GTK_SCROLL_JUMP:
-    case GTK_SCROLL_START:
-    case GTK_SCROLL_END:
-      return vert? IUP_SBPOSV: IUP_SBPOSH;
-    case GTK_SCROLL_NONE:
-      return -1;
-  }
-
-  return -1;
-}
-
-static gboolean gtk4CanvasScrollHorizChangeValue(GtkRange *range, GtkScrollType scroll, double value, Ihandle *ih)
-{
-  IFniff cb = (IFniff)IupGetCallback(ih,"SCROLL_CB");
-  int op = gtk4CanvasScroll2Iup(scroll, 0);
-  double posx, posy;
-
-  if (op == -1)
-    return FALSE;
-
-  if (iupAttribGet(ih, "_IUPGTK4_SETSBPOS"))
-    return FALSE;
-
-  posx = value;
-  ih->data->posx = (float)posx;
-  posy = ih->data->posy;
-
-  if (cb)
-    cb(ih, op, (float)posx, (float)posy);
-  else
-  {
-    IFn cb2 = (IFn)IupGetCallback(ih,"ACTION");
-    if (cb2)
-      iupdrvRedrawNow(ih);
-  }
-
-  (void)range;
-  return FALSE;
-}
-
-static gboolean gtk4CanvasScrollVertChangeValue(GtkRange *range, GtkScrollType scroll, double value, Ihandle *ih)
-{
-  IFniff cb = (IFniff)IupGetCallback(ih,"SCROLL_CB");
-  int op = gtk4CanvasScroll2Iup(scroll, 1);
-  double posx, posy;
-
-  if (op == -1)
-    return FALSE;
-
-  if (iupAttribGet(ih, "_IUPGTK4_SETSBPOS"))
-    return FALSE;
-
-  posy = value;
-  ih->data->posy = (float)posy;
-  posx = ih->data->posx;
-
-  if (cb)
-    cb(ih, op, (float)posx, (float)posy);
-  else
-  {
-    IFn cb2 = (IFn)IupGetCallback(ih,"ACTION");
-    if (cb2)
-      iupdrvRedrawNow(ih);
-  }
-
-  (void)range;
-  return FALSE;
 }
 
 static void gtk4CanvasAdjustmentSetValue(Ihandle* ih, GtkAdjustment* adjustment, double value)
@@ -627,16 +519,12 @@ static int gtk4CanvasSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static void gtk4CanvasLayoutUpdateMethod(Ihandle* ih)
 {
-  int border;
   int sb_vert_width = 0, sb_horiz_height = 0;
   int width, height;
 
   /* Validate handle before attempting to set size */
   if (!ih->handle || !GTK_IS_DRAWING_AREA(ih->handle))
     return;
-
-  /* Get border and scrollbar sizes */
-  border = iupAttribGetInt(ih, "_IUPGTK4_BORDER");
 
   if (ih->data->sb)
   {

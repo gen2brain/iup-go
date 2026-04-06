@@ -4,27 +4,18 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <gtk/gtk.h>
-
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_dialog.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 #include "iup_frame.h"
 
 #include "iupgtk4_drv.h"
+
 
 static void gtk4FrameMeasureDecor(int has_title, int* decor_w, int* decor_h)
 {

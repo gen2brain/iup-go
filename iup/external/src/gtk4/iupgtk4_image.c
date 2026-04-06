@@ -4,11 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <gtk/gtk.h>
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
 #include <string.h>
 
 #include "iup.h"
@@ -17,7 +14,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
-#include "iup_drvinfo.h"
 
 #include "iupgtk4_drv.h"
 

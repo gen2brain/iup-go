@@ -4,23 +4,14 @@
 * See Copyright Notice in "iup.h"
 */
 
-#include <gtk/gtk.h>
-
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_progressbar.h"
-#include "iup_drv.h"
 
 #include "iupgtk4_drv.h"
 
