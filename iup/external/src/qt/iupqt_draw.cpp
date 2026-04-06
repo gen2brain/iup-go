@@ -21,12 +21,10 @@ extern "C" {
 #include "iup.h"
 #include "iup_attrib.h"
 #include "iup_class.h"
-#include "iup_str.h"
 #include "iup_object.h"
 #include "iup_image.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
-#include "iup_drvfont.h"
 }
 
 #include "iupqt_drv.h"
@@ -842,7 +840,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   /* Handle wrap and ellipsis using QTextLayout for better control */
   if ((flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
   {
-    QTextLayout textLayout(qtext, *qfont);
+    QTextLayout textLayout(qtext, qfont ? *qfont : dc->painter->font());
     QTextOption option;
 
     if (flags & IUP_DRAW_WRAP)
@@ -856,7 +854,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     /* Begin layout */
     textLayout.beginLayout();
     qreal y_pos = 0;
-    while (1)
+    while (true)
     {
       QTextLine line = textLayout.createLine();
       if (!line.isValid())

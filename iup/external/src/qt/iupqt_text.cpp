@@ -8,21 +8,14 @@
 #include <QTextEdit>
 #include <QTextCursor>
 #include <QTextDocument>
-#include <QTextBlock>
 #include <QTextCharFormat>
-#include <QTextBlockFormat>
 #include <QTextOption>
 #include <QScrollBar>
-#include <QSpinBox>
 #include <QDoubleSpinBox>
-#include <QHBoxLayout>
 #include <QWidget>
 #include <QString>
 #include <QFont>
 #include <QColor>
-#include <QPalette>
-#include <QKeyEvent>
-#include <QClipboard>
 #include <QMimeData>
 #include <QUrl>
 #include <QCompleter>
@@ -37,14 +30,11 @@ extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_mask.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_key.h"
 #include "iup_array.h"
 #include "iup_text.h"
 }
@@ -73,8 +63,8 @@ public:
     setAcceptDrops(true);
   }
 
-  void setOverwriteMode(bool mode) { overwrite_mode = mode; }
-  bool isOverwriteMode() const { return overwrite_mode; }
+  void setIupOverwriteMode(bool mode) { overwrite_mode = mode; }
+  bool isIupOverwriteMode() const { return overwrite_mode; }
 
   /* Override sizeHint to return minimal size (like GTK's gtk_entry_set_width_chars(1))
    * This prevents Qt from using its default larger size hint, allowing IUP's
@@ -199,6 +189,17 @@ public:
 
   explicit IupQtSpinBox(Ihandle* ihandle) : QSpinBox(), ih(ihandle), spinauto(true) {}
 
+  void setDisplayText(const QString& text)
+  {
+    lineEdit()->setText(text);
+  }
+
+  QString displayText() const
+  {
+    return lineEdit()->text();
+  }
+
+protected:
   QString textFromValue(int value) const override
   {
     if (!spinauto)
@@ -212,7 +213,7 @@ public:
   int valueFromText(const QString& text) const override
   {
     if (!spinauto)
-      return value();
+      return this->value();
     return QSpinBox::valueFromText(text);
   }
 
@@ -223,17 +224,6 @@ public:
     return QSpinBox::validate(input, pos);
   }
 
-  void setDisplayText(const QString& text)
-  {
-    lineEdit()->setText(text);
-  }
-
-  QString displayText() const
-  {
-    return lineEdit()->text();
-  }
-
-protected:
   void keyPressEvent(QKeyEvent* event) override
   {
     if (ih && qtTextKeyPress(ih, event))
@@ -259,8 +249,8 @@ public:
     setMouseTracking(true);
   }
 
-  void setOverwriteMode(bool mode) { overwrite_mode = mode; }
-  bool isOverwriteMode() const { return overwrite_mode; }
+  void setIupOverwriteMode(bool mode) { overwrite_mode = mode; }
+  bool isIupOverwriteMode() const { return overwrite_mode; }
 
 protected:
   void keyPressEvent(QKeyEvent* event) override
@@ -1476,12 +1466,12 @@ static int qtTextSetOverwriteAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     IupQtTextEdit* text = (IupQtTextEdit*)ih->handle;
-    text->setOverwriteMode(overwrite);
+    text->setIupOverwriteMode(overwrite);
   }
   else
   {
     IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
-    edit->setOverwriteMode(overwrite);
+    edit->setIupOverwriteMode(overwrite);
   }
 
   return 0;
@@ -1494,12 +1484,12 @@ static char* qtTextGetOverwriteAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     IupQtTextEdit* text = (IupQtTextEdit*)ih->handle;
-    overwrite = text->isOverwriteMode();
+    overwrite = text->isIupOverwriteMode();
   }
   else
   {
     IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
-    overwrite = edit->isOverwriteMode();
+    overwrite = edit->isIupOverwriteMode();
   }
 
   return iupStrReturnBoolean(overwrite);

@@ -6,15 +6,12 @@
 
 #include <QClipboard>
 #include <QMimeData>
-#include <QImage>
 #include <QPixmap>
 #include <QGuiApplication>
 #include <QString>
 #include <QByteArray>
 #include <QFile>
 
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 
 extern "C" {
@@ -24,8 +21,6 @@ extern "C" {
 #include "iup_str.h"
 #include "iup_image.h"
 }
-
-#include "iupqt_drv.h"
 
 
 /****************************************************************************

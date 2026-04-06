@@ -7,52 +7,33 @@
 #include <QMainWindow>
 #include <QDialog>
 #include <QWindow>
-#include <QScreen>
 #include <QApplication>
-#include <QGuiApplication>
-#include <QCloseEvent>
-#include <QResizeEvent>
 #include <QMoveEvent>
-#include <QShowEvent>
 #include <QString>
-#include <QVBoxLayout>
-#include <QMenuBar>
 #include <QIcon>
 #include <QPixmap>
 #include <QBitmap>
 #include <QPainterPath>
-#include <QRegion>
-#include <QStyle>
-#include <QStyleHints>
 #include <QPalette>
-#include <QTimer>
 
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
 #include <cstdarg>
-#include <climits>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_class.h"
 #include "iup_object.h"
-#include "iup_layout.h"
-#include "iup_dlglist.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_drvinfo.h"
-#include "iup_focus.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
 #include "iup_image.h"
-#include "iup_assert.h"
 }
 
 #include "iupqt_drv.h"
+
 
 /****************************************************************************
  * Qt Dialog Widget with Event Handling
@@ -234,7 +215,7 @@ protected:
       else
         iup_state = IUP_RESTORE;
 
-      if (iup_state >= 0 && iup_handle->data->show_state != iup_state)
+      if (iup_handle->data->show_state != iup_state)
       {
         IFni cb = (IFni)IupGetCallback(iup_handle, "SHOW_CB");
         iup_handle->data->show_state = iup_state;
@@ -507,9 +488,9 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int *border, 
           *caption = has_titlebar ? win_caption : 0;
 
           /* Cache values for later use - only cache valid non-zero values */
-          if (win_border > 0 && win_border < 100)
+          if (win_border > 0)
             iupAttribSetInt(ih, "_IUPQT_NATIVE_BORDER", win_border);
-          if (win_caption > 0 && win_caption < 200)
+          if (win_caption > 0)
             iupAttribSetInt(ih, "_IUPQT_NATIVE_CAPTION", win_caption);
 
           return;
@@ -538,8 +519,8 @@ static void qtDialogGetClientSize(Ihandle* ih, int *width, int *height)
 
     int menu = qtDialogGetMenuSize(ih);
 
-    if (width)  *width = size.width();
-    if (height) *height = size.height() - menu;
+    *width = size.width();
+    *height = size.height() - menu;
   }
 }
 

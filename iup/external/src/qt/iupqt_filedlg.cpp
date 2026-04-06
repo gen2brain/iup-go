@@ -14,12 +14,10 @@
 #include <QPushButton>
 #include <QDialog>
 #include <QSplitter>
-#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPainter>
 #include <QPixmap>
 #include <QShowEvent>
-#include <QGuiApplication>
 
 #include <cstdlib>
 #include <cstdio>
@@ -31,9 +29,7 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drvinfo.h"
 #include "iup_dialog.h"
-#include "iup_predialogs.h"
 #include "iup_array.h"
 }
 
@@ -56,7 +52,7 @@ public:
     setAttribute(Qt::WA_OpaquePaintEvent);
   }
 
-  ~IupQtPreviewCanvas()
+  ~IupQtPreviewCanvas() override
   {
     if (m_buffer)
     {
@@ -117,11 +113,8 @@ protected:
     iupAttribSet(m_ih, "_IUPQT_PREVIEW_CANVAS", nullptr);
     iupAttribSet(m_ih, "_IUPQT_PREVIEW_BUFFER", nullptr);
 
-    if (m_buffer)
-    {
-      QPainter painter(this);
-      painter.drawPixmap(0, 0, *m_buffer);
-    }
+    QPainter painter(this);
+    painter.drawPixmap(0, 0, *m_buffer);
   }
 
 private:
@@ -496,7 +489,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
   value = iupAttribGet(ih, "EXTFILTER");
   if (value)
   {
-    /* Parse EXTFILTER format: "Description1|Pattern1;Pattern2|Description2|Pattern3|..." */
+    /* Parse EXTFILTER format: `Description1|Pattern1;Pattern2|Description2|Pattern3|...` */
     char* filters_str = iupStrDup(value);
     int filter_count = iupStrReplace(filters_str, '|', 0) / 2;
 
@@ -514,7 +507,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       /* Convert semicolons to spaces for Qt format */
       iupStrReplace(pattern, ';', ' ');
 
-      /* Build Qt filter string: "Description (*.ext1 *.ext2)" */
+      /* Build Qt filter string: `Description (*.ext1 *.ext2)` */
       QString filter = QString::fromUtf8(name) + " (" + QString::fromUtf8(pattern) + ")";
       filterList << filter;
 

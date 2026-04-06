@@ -12,7 +12,6 @@
 
 extern "C" {
 #include "iup.h"
-#include "iup_str.h"
 }
 
 
@@ -109,4 +108,3 @@ extern "C" IUP_API int IupHelp(const char* url)
   else
     return -1;
 }
-

@@ -6,8 +6,6 @@
 
 #include <QPixmap>
 #include <QImage>
-#include <QCursor>
-#include <QColor>
 #include <QString>
 #include <QApplication>
 #include <QScreen>
@@ -15,7 +13,6 @@
 #include <QBuffer>
 #include <QByteArray>
 
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -26,10 +23,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
-#include "iup_drvinfo.h"
 }
-
-#include "iupqt_drv.h"
 
 
 /****************************************************************************

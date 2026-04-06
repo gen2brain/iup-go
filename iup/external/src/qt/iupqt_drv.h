@@ -2,20 +2,14 @@
  * \brief Qt Driver - Common Function Declarations
  *
  * This header provides the interface for the Qt-based IUP driver.
- * All functions are MOC-free and use standard C linkage for compatibility.
  *
  * Minimum Requirements:
  * - Qt 5.0 or later (Qt 5.x and Qt 6.x supported)
  * - C++11 compiler (for lambda support)
- * - No MOC (Meta-Object Compiler) required
  *
  * Key features:
  * - MOC-free implementation (uses lambdas, no Q_OBJECT/signals/slots)
- * - UTF-8 string handling throughout
  * - Cross-platform Qt support (X11, Wayland, Windows, macOS)
- * - System icon theme support (FreeDesktop icons + Qt standard icons)
- * - Proper resource cleanup
- * - High-precision timer support (1ms resolution)
  *
  * See Copyright Notice in "iup.h"
  */

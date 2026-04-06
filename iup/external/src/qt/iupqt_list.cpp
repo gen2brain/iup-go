@@ -10,7 +10,6 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QString>
-#include <QStringList>
 #include <QAbstractItemView>
 #include <QScrollBar>
 #include <QCompleter>
@@ -18,32 +17,22 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QIcon>
-#include <QDrag>
 #include <QMimeData>
-#include <QMouseEvent>
 #include <QDragEnterEvent>
-#include <QDragMoveEvent>
-#include <QDropEvent>
 #include <QApplication>
-#include <QKeyEvent>
-#include <QFocusEvent>
 #include <QStyle>
 
-#include <cstdlib>
-#include <cstdio>
 #include <cstring>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_mask.h"
-#include "iup_key.h"
 #include "iup_image.h"
 #include "iup_list.h"
 }
@@ -54,27 +43,11 @@ extern "C" {
 /* Declare QPixmap* as a Qt metatype for Qt5 compatibility */
 Q_DECLARE_METATYPE(QPixmap*)
 
-/* Custom QComboBox that returns minimal sizeHint to let IUP control sizing */
-class IupQtComboBox : public QComboBox
-{
-public:
-  explicit IupQtComboBox(QWidget* parent = nullptr) : QComboBox(parent) {}
-
-  QSize sizeHint() const override
-  {
-    QFontMetrics fm(font());
-    int h = fm.height() + 8;  /* Minimal height for combo */
-    int w = fm.horizontalAdvance('X') * 5;  /* 5 character minimum width */
-    return QSize(w, h);
-  }
-};
-
 /* Custom QListWidget that returns minimal sizeHint and supports drag-and-drop */
 class IupQtListWidget : public QListWidget
 {
 private:
   Ihandle* ih;
-  QPoint drag_start_pos;
   int drag_item_id;  /* 1-based item id being dragged */
 
 public:
@@ -1483,7 +1456,6 @@ static int qtListSetPaddingAttrib(Ihandle* ih, const char* value)
   {
     if (ih->data->is_dropdown)
     {
-      QComboBox* combo = (QComboBox*)ih->handle;
       /* Qt doesn't have direct padding control for combo box */
       /* Could use style sheets */
     }
@@ -1773,7 +1745,7 @@ static int qtListMapMethod(Ihandle* ih)
   {
     /* EDITBOX without DROPDOWN (CBS_SIMPLE style)
      * Create a composite widget with QLineEdit on top and QListWidget below
-     * This matches GTK and Windows CBS_SIMPLE behavior */
+     * These matches GTK and Windows CBS_SIMPLE behavior */
 
     QWidget* container = new QWidget();
     QVBoxLayout* layout = new QVBoxLayout(container);

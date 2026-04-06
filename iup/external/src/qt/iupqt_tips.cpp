@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <QWidget>
 #include <QToolTip>
 #include <QHelpEvent>
 #include <QEvent>
@@ -16,7 +15,6 @@
 #include <QPalette>
 
 #include <cstdio>
-#include <cstdlib>
 
 extern "C" {
 #include "iup.h"
@@ -68,14 +66,13 @@ static void qtTipUpdateStyle(Ihandle* ih)
     QToolTip::setPalette(palette);
 }
 
-
 /****************************************************************************
  * Tooltip Event Filter
  ****************************************************************************/
 
 class IupQtTooltipFilter : public QObject
 {
-protected:
+public:
   bool eventFilter(QObject* obj, QEvent* event) override
   {
     if (event->type() == QEvent::ToolTip)

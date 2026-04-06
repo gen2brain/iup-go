@@ -6,11 +6,9 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
 #include <QScreen>
 #include <QGuiApplication>
-#include <QCursor>
 #include <QRect>
 #include <QString>
 #include <QSysInfo>
@@ -19,7 +17,6 @@
 #include <QWidget>
 
 #ifndef _WIN32
-#include <sys/stat.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <langinfo.h>
@@ -28,7 +25,6 @@
 #include "iup.h"
 #include "iup_export.h"
 #include "iup_str.h"
-#include "iup_object.h"
 #include "iup_drvinfo.h"
 #include "iup_varg.h"
 
@@ -98,7 +94,7 @@ extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
 
   if (screen)
   {
-    /* Use logical DPI (like GTK) instead of physical DPI.
+    /* Use logical DPI instead of physical DPI.
      * Qt's logicalDotsPerInch() returns the DPI setting (typically 96),
      * while physicalDotsPerInch() returns actual screen DPI (e.g., 264 on HiDPI).
      * IUP expects logical DPI for size calculations to match other platforms. */
@@ -210,10 +206,6 @@ extern "C" IUP_SDK_API char *iupdrvGetSystemVersion(void)
   QString os_version = QSysInfo::productVersion();
   return iupStrReturnStr(os_version.toUtf8().constData());
 }
-
-/****************************************************************************
- * Keyboard/Mouse Input Simulation
- ****************************************************************************/
 
 /****************************************************************************
  * Directory and File Functions

@@ -10,33 +10,24 @@
 #include <QPixmap>
 #include <QIcon>
 #include <QWidget>
-#include <QEvent>
-#include <QMouseEvent>
 #include <QKeyEvent>
-#include <QFocusEvent>
 #include <QString>
 #include <QStyleOption>
-#include <QPainter>
 #include <QStylePainter>
 #include <QFontMetrics>
 
 #include <cstdlib>
-#include <cstdio>
-#include <cstring>
 #include <cstdarg>
 
 extern "C" {
 #include "iup.h"
-#include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_button.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_key.h"
 #include "iup_markup.h"
 }
 

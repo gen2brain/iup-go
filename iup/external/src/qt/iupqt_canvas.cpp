@@ -7,19 +7,10 @@
 #include <QWidget>
 #include <QPainter>
 #include <QScrollBar>
-#include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QPaintEvent>
-#include <QMouseEvent>
 #include <QWheelEvent>
-#include <QKeyEvent>
-#include <QResizeEvent>
-#include <QFocusEvent>
-#include <QDragEnterEvent>
-#include <QDropEvent>
 #include <QMimeData>
 #include <QUrl>
-#include <QTouchEvent>
 
 extern "C" {
 #include "iup.h"
@@ -28,7 +19,6 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_canvas.h"
 #include "iup_key.h"
 }
@@ -468,9 +458,6 @@ IUP_DRV_API QWidget* iupqtCanvasGetWidget(Ihandle* ih)
 
 static void qtCanvasScrollCallback(Ihandle* ih, QScrollBar* scrollbar, int orientation, int op)
 {
-  if (!ih)
-    return;
-
   IFniff cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
   if (cb)
   {
@@ -742,7 +729,6 @@ static int qtCanvasMapMethod(Ihandle* ih)
     container_data->sb_horiz = nullptr;
     container_data->sb_vert = nullptr;
   }
-
 
   iupAttribSet(ih, "_IUPQT_CANVAS_CONTAINER", (char*)container_data);
 

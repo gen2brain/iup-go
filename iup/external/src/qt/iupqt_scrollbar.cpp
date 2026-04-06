@@ -6,11 +6,7 @@
 
 #include <QScrollBar>
 #include <QWidget>
-#include <QEvent>
-#include <QEnterEvent>
 #include <QMouseEvent>
-#include <QKeyEvent>
-#include <QFocusEvent>
 #include <QAbstractSlider>
 #include <QProxyStyle>
 #include <QStyleOptionSlider>
@@ -18,7 +14,6 @@
 #include <QApplication>
 #include <QPainter>
 
-#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 
@@ -26,13 +21,9 @@ extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_scrollbar.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_key.h"
 }
 
 #include "iupqt_drv.h"

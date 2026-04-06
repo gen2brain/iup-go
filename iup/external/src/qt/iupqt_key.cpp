@@ -8,12 +8,8 @@
 #include <QKeyEvent>
 #include <QApplication>
 
-#include <cstdlib>
-#include <cstdio>
-
 extern "C" {
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupkey.h"
 #include "iup_object.h"
 #include "iup_key.h"

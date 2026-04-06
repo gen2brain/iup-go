@@ -7,19 +7,12 @@
 #include <QProgressBar>
 #include <QWidget>
 
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
-
 extern "C" {
 #include "iup.h"
-#include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_progressbar.h"
-#include "iup_drv.h"
 }
 
 #include "iupqt_drv.h"

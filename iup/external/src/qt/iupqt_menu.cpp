@@ -12,7 +12,6 @@
 #include <QString>
 #include <QPixmap>
 #include <QKeySequence>
-#include <QCursor>
 #include <QPoint>
 #include <QApplication>
 #include <QGuiApplication>
@@ -21,17 +20,12 @@
 
 #include <cstdlib>
 #include <cstdio>
-#include <cstring>
 
 extern "C" {
 #include "iup.h"
-#include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_childtree.h"
 #include "iup_attrib.h"
-#include "iup_dialog.h"
 #include "iup_str.h"
-#include "iup_label.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
@@ -218,7 +212,7 @@ static int qtMenuMapMethod(Ihandle* ih)
     QMenuBar* menubar = new QMenuBar();
 
     /* Set size policy to expand horizontally to fill the window width.
-     * By default QMenuBar has a preferred size based on its contents, but
+     * By default, QMenuBar has a preferred size based on its contents, but
      * we want it to always span the full width of the QMainWindow. */
     menubar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 

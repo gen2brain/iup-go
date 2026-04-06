@@ -9,10 +9,6 @@
 #include <QWidget>
 #include <QString>
 
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
-
 extern "C" {
 #include "iup.h"
 #include "iup_object.h"

@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <QWidget>
 #include <QFrame>
 #include <QVBoxLayout>
 #include <QApplication>
@@ -12,9 +11,6 @@
 #include <QFocusEvent>
 #include <QPainter>
 
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
 
 extern "C" {
 #include "iup.h"
@@ -23,11 +19,7 @@ extern "C" {
 #include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_childtree.h"
 #include "iup_class.h"
-#include "iup_register.h"
 #include "iup_popover.h"
 }
 
@@ -58,6 +50,7 @@ public:
     setLayout(layout);
   }
 
+protected:
   void paintEvent(QPaintEvent* event) override
   {
     QFrame::paintEvent(event);
@@ -67,7 +60,6 @@ public:
     p.drawRect(0, 0, width() - 1, height() - 1);
   }
 
-protected:
   void hideEvent(QHideEvent* event) override
   {
     QFrame::hideEvent(event);

@@ -5,42 +5,31 @@
  */
 
 #include <QTabWidget>
-#include <QTabBar>
 #include <QWidget>
 #include <QLayout>
 #include <QHBoxLayout>
-#include <QVBoxLayout>
 #include <QLabel>
-#include <QPushButton>
 #include <QToolButton>
 #include <QIcon>
 #include <QPixmap>
 #include <QString>
 #include <QMouseEvent>
 #include <QEvent>
-#include <QStyle>
 #include <QProxyStyle>
 #include <QStyleOption>
 #include <QPainter>
 #include <QFontMetrics>
 #include <QApplication>
 
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
 #include <functional>
 
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_dialog.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 #include "iup_image.h"
 #include "iup_tabs.h"
 }
@@ -315,7 +304,6 @@ public:
   }
 
   void setPrevIndex(int index) { prev_index = index; }
-  int getPrevIndex() const { return prev_index; }
 
   void updateAllTabCloseButtons()
   {

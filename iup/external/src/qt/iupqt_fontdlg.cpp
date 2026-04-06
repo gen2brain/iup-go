@@ -17,13 +17,11 @@
 #include <QTextEdit>
 #include <QList>
 
-#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 
 extern "C" {
 #include "iup.h"
-#include "iupcbs.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -97,7 +95,6 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
     }
   }
 
-  /* If no valid font was set, use default */
   if (initial_font.family().isEmpty())
   {
     initial_font = QFont();
