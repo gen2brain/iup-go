@@ -189,3 +189,12 @@ func DropButton(dropchild Ihandle) Ihandle {
 	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
+
+// Gauge creates a Gauge control. Shows a percent value that can be updated to simulate a progression.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_gauge.md
+func Gauge() Ihandle {
+	h := mkih(C.IupGauge())
+	h.SetAttribute("UUID", uuid.NewString())
+	return h
+}

@@ -28,6 +28,7 @@ Iclass* iupFlatValNewClass(void);
 Iclass* iupDropButtonNewClass(void);
 Iclass* iupFlatTabsNewClass(void);
 Iclass* iupFlatScrollBoxNewClass(void);
+Iclass* iupGaugeNewClass(void);
 
 char *iupControlBaseGetParentBgColor (Ihandle* ih);
 char *iupControlBaseGetBgColorAttrib(Ihandle* ih);

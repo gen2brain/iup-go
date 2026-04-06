@@ -39,7 +39,6 @@ Iclass* iupTreeNewClass(void);
 Iclass* iupLinkNewClass(void);
 Iclass* iupSeparatorNewClass(void);
 Iclass* iupDialNewClass(void);
-Iclass* iupGaugeNewClass(void);
 Iclass* iupColorbarNewClass(void);
 Iclass* iupColorBrowserNewClass(void);
 Iclass* iupSpaceNewClass(void);

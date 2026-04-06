@@ -72,4 +72,4 @@ In GTK uses GtkProgressBar, in Windows uses PROGRESS_CLASS, in WinUI uses XAML P
 
 ### See Also
 
-[IupGauge](iup_gauge.md)
+[IupGauge](../ctrl/iup_gauge.md)
