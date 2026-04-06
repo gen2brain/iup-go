@@ -5,8 +5,8 @@
  */
 
 #include <gtk/gtk.h>
-#if GTK_CHECK_VERSION(3, 0, 0)
-#include <gdk/gdkkeysyms-compat.h>
+#if !GTK_CHECK_VERSION(3, 0, 0)
+#include <gdk/gdkkeysyms.h>
 #endif
 
 #ifdef HILDON
@@ -396,7 +396,7 @@ static void gtkMenuItemActivate(GtkWidget *widget, Ihandle* ih)
 
 static gboolean gtkMenuKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
 {
-  if (evt->keyval == GDK_F1)
+  if (evt->keyval == GDK_KEY_F1)
   {
     Ihandle* child;
     GtkWidget* active = gtk_menu_get_active((GtkMenu*)widget);

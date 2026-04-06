@@ -5,8 +5,8 @@
  */
 
 #include <gtk/gtk.h>
-#if GTK_CHECK_VERSION(3, 0, 0)
-#include <gdk/gdkkeysyms-compat.h>
+#if !GTK_CHECK_VERSION(3, 0, 0)
+#include <gdk/gdkkeysyms.h>
 #endif
 
 #include "iup.h"
@@ -27,53 +27,53 @@ typedef struct _Igtk2iupkey
 } Igtk2iupkey;
 
 static Igtk2iupkey keypad_remap[] = {
-  { GDK_KP_0,   K_0  },
-  { GDK_KP_1,   K_1  },
-  { GDK_KP_2,   K_2  },
-  { GDK_KP_3,   K_3  },
-  { GDK_KP_4,   K_4  },
-  { GDK_KP_5,   K_5  },
-  { GDK_KP_6,   K_6  },
-  { GDK_KP_7,   K_7  },
-  { GDK_KP_8,   K_8  },
-  { GDK_KP_9,   K_9  },
-  { GDK_KP_Multiply,  K_asterisk },
-  { GDK_KP_Add,       K_plus     },
-  { GDK_KP_Subtract,  K_minus    },
-  { GDK_KP_Decimal,   K_period   },
-  { GDK_KP_Divide,    K_slash    },
-  { GDK_KP_Separator, K_comma    },
-  { GDK_KP_F1,        K_F1   },
-  { GDK_KP_F2,        K_F2   },
-  { GDK_KP_F3,        K_F3   },
-  { GDK_KP_F4,        K_F4   },
-  { GDK_KP_Space,     K_SP   },
-  { GDK_KP_Tab,       K_TAB  },
-  { GDK_KP_Equal,     K_equal},
-  { GDK_KP_Enter,     K_CR   },
-  { GDK_KP_Home,      K_HOME },
-  { GDK_KP_Up,        K_UP   },
-  { GDK_KP_Page_Up,   K_PGUP },
-  { GDK_KP_Left,      K_LEFT },
-  { GDK_KP_Begin,     K_MIDDLE},
-  { GDK_KP_Right,     K_RIGHT},
-  { GDK_KP_End,       K_END  },
-  { GDK_KP_Down,      K_DOWN },
-  { GDK_KP_Page_Down, K_PGDN },
-  { GDK_KP_Insert,    K_INS  },
-  { GDK_KP_Delete,    K_DEL  },
+  { GDK_KEY_KP_0,         K_0        },
+  { GDK_KEY_KP_1,         K_1        },
+  { GDK_KEY_KP_2,         K_2        },
+  { GDK_KEY_KP_3,         K_3        },
+  { GDK_KEY_KP_4,         K_4        },
+  { GDK_KEY_KP_5,         K_5        },
+  { GDK_KEY_KP_6,         K_6        },
+  { GDK_KEY_KP_7,         K_7        },
+  { GDK_KEY_KP_8,         K_8        },
+  { GDK_KEY_KP_9,         K_9        },
+  { GDK_KEY_KP_Multiply,  K_asterisk },
+  { GDK_KEY_KP_Add,       K_plus     },
+  { GDK_KEY_KP_Subtract,  K_minus    },
+  { GDK_KEY_KP_Decimal,   K_period   },
+  { GDK_KEY_KP_Divide,    K_slash    },
+  { GDK_KEY_KP_Separator, K_comma    },
+  { GDK_KEY_KP_F1,        K_F1       },
+  { GDK_KEY_KP_F2,        K_F2       },
+  { GDK_KEY_KP_F3,        K_F3       },
+  { GDK_KEY_KP_F4,        K_F4       },
+  { GDK_KEY_KP_Space,     K_SP       },
+  { GDK_KEY_KP_Tab,       K_TAB      },
+  { GDK_KEY_KP_Equal,     K_equal    },
+  { GDK_KEY_KP_Enter,     K_CR       },
+  { GDK_KEY_KP_Home,      K_HOME     },
+  { GDK_KEY_KP_Up,        K_UP       },
+  { GDK_KEY_KP_Page_Up,   K_PGUP     },
+  { GDK_KEY_KP_Left,      K_LEFT     },
+  { GDK_KEY_KP_Begin,     K_MIDDLE   },
+  { GDK_KEY_KP_Right,     K_RIGHT    },
+  { GDK_KEY_KP_End,       K_END      },
+  { GDK_KEY_KP_Down,      K_DOWN     },
+  { GDK_KEY_KP_Page_Down, K_PGDN     },
+  { GDK_KEY_KP_Insert,    K_INS      },
+  { GDK_KEY_KP_Delete,    K_DEL      },
 };
 
 static Igtk2iupkey other_remap[] = {
-  { GDK_BackSpace, K_BS  },
-  { GDK_Tab,       K_TAB },
-  { GDK_Return,    K_CR  },
-  { 0xFE03,        K_RALT},
-  { GDK_dead_tilde,      K_tilde },
-  { GDK_dead_acute,      K_acute },
-  { GDK_dead_grave,      K_grave },
-  { GDK_dead_circumflex, K_circum},
-  { GDK_dead_diaeresis,  K_diaeresis},
+  { GDK_KEY_BackSpace,       K_BS        },
+  { GDK_KEY_Tab,             K_TAB       },
+  { GDK_KEY_Return,          K_CR        },
+  { 0xFE03,                  K_RALT      },
+  { GDK_KEY_dead_tilde,      K_tilde     },
+  { GDK_KEY_dead_acute,      K_acute     },
+  { GDK_KEY_dead_grave,      K_grave     },
+  { GDK_KEY_dead_circumflex, K_circum    },
+  { GDK_KEY_dead_diaeresis,  K_diaeresis },
 };
 
 IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *state)
@@ -81,9 +81,9 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *s
   *keyval = (unsigned int)iup_XkeyBase(code);
 
   /* Only need to un-remap these */
-  if (*keyval == K_BS)  *keyval = GDK_BackSpace;
-  if (*keyval == K_TAB) *keyval = GDK_Tab;
-  if (*keyval == K_CR)  *keyval = GDK_Return;
+  if (*keyval == K_BS)  *keyval = GDK_KEY_BackSpace;
+  if (*keyval == K_TAB) *keyval = GDK_KEY_Tab;
+  if (*keyval == K_CR)  *keyval = GDK_KEY_Return;
 
   *state = 0;
   if (iup_isCtrlXkey(code))
@@ -140,13 +140,12 @@ IUP_DRV_API int iupgtkKeyDecode(GdkEventKey *evt)
   guint keyval = evt->keyval;
 
   if ((evt->state & GDK_MOD2_MASK) && /* NumLock */
-      (keyval >= GDK_KP_Home) &&
-      (keyval <= GDK_KP_Delete))
+      (keyval >= GDK_KEY_KP_Home) &&
+      (keyval <= GDK_KEY_KP_Delete))
   {
     /* remap to numeric keys */
-                        /*  GDK_KP_Home,GDK_KP_Left,GDK_KP_Up,GDK_KP_Right,GDK_KP_Down,GDK_KP_Page_Up,GDK_KP_Page_Down,GDK_KP_End,GDK_KP_Begin,GDK_KP_Insert,GDK_KP_Delete */
-    guint remap_numkey[] = {GDK_KP_7,   GDK_KP_4,   GDK_KP_8, GDK_KP_6,    GDK_KP_2,   GDK_KP_9,      GDK_KP_3,        GDK_KP_1,  GDK_KP_5,    GDK_KP_0,     GDK_KP_Decimal};
-    keyval = remap_numkey[keyval-GDK_KP_Home];
+    guint remap_numkey[] = {GDK_KEY_KP_7, GDK_KEY_KP_4, GDK_KEY_KP_8, GDK_KEY_KP_6, GDK_KEY_KP_2, GDK_KEY_KP_9, GDK_KEY_KP_3, GDK_KEY_KP_1, GDK_KEY_KP_5, GDK_KEY_KP_0, GDK_KEY_KP_Decimal};
+    keyval = remap_numkey[keyval-GDK_KEY_KP_Home];
   }
 
   if (keyval >= 0xFF80 && keyval < 0xFFC0)

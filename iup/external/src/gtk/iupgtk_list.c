@@ -5,8 +5,8 @@
  */
 
 #include <gtk/gtk.h>
-#if GTK_CHECK_VERSION(3, 0, 0)
-#include <gdk/gdkkeysyms-compat.h>
+#if !GTK_CHECK_VERSION(3, 0, 0)
+#include <gdk/gdkkeysyms.h>
 #endif
 
 #include <stdlib.h>
@@ -1711,10 +1711,10 @@ static gboolean gtkListEditKeyPressEvent(GtkWidget* entry, GdkEventKey *evt, Iha
   if (iupgtkKeyPressEvent(entry, evt, ih) == TRUE)
     return TRUE;
 
-  if ((evt->keyval == GDK_Up || evt->keyval == GDK_KP_Up) ||
-      (evt->keyval == GDK_Prior || evt->keyval == GDK_KP_Page_Up) ||
-      (evt->keyval == GDK_Down || evt->keyval == GDK_KP_Down) ||
-      (evt->keyval == GDK_Next || evt->keyval == GDK_KP_Page_Down))
+  if ((evt->keyval == GDK_KEY_Up || evt->keyval == GDK_KEY_KP_Up) ||
+      (evt->keyval == GDK_KEY_Prior || evt->keyval == GDK_KEY_KP_Page_Up) ||
+      (evt->keyval == GDK_KEY_Down || evt->keyval == GDK_KEY_KP_Down) ||
+      (evt->keyval == GDK_KEY_Next || evt->keyval == GDK_KEY_KP_Page_Down))
   {
     int pos = -1;
     GtkTreeIter iter;
@@ -1730,23 +1730,23 @@ static gboolean gtkListEditKeyPressEvent(GtkWidget* entry, GdkEventKey *evt, Iha
 
     if (pos == -1)
       pos = 0;
-    else if (evt->keyval == GDK_Up || evt->keyval == GDK_KP_Up)
+    else if (evt->keyval == GDK_KEY_Up || evt->keyval == GDK_KEY_KP_Up)
     {
       pos--;
       if (pos < 0) pos = 0;
     }
-    else if (evt->keyval == GDK_Prior || evt->keyval == GDK_KP_Page_Up)
+    else if (evt->keyval == GDK_KEY_Prior || evt->keyval == GDK_KEY_KP_Page_Up)
     {
       pos -= 5;
       if (pos < 0) pos = 0;
     }
-    else if (evt->keyval == GDK_Down || evt->keyval == GDK_KP_Down)
+    else if (evt->keyval == GDK_KEY_Down || evt->keyval == GDK_KEY_KP_Down)
     {
       int count = gtk_tree_model_iter_n_children(model, NULL);
       pos++;
       if (pos > count-1) pos = count-1;
     }
-    else if (evt->keyval == GDK_Next || evt->keyval == GDK_KP_Page_Down)
+    else if (evt->keyval == GDK_KEY_Next || evt->keyval == GDK_KEY_KP_Page_Down)
     {
       int count = gtk_tree_model_iter_n_children(model, NULL);
       pos += 5;
@@ -1881,7 +1881,7 @@ static gboolean gtkListSimpleKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, 
   if (iupgtkKeyPressEvent(widget, evt, ih) == TRUE)
     return TRUE;
 
-  if (evt->keyval == GDK_Return || evt->keyval == GDK_KP_Enter)
+  if (evt->keyval == GDK_KEY_Return || evt->keyval == GDK_KEY_KP_Enter)
     return TRUE; /* used to avoid the call to DBLCLICK_CB in the default processing */
   return FALSE;
 }

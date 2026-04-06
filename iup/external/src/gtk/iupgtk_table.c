@@ -5,8 +5,8 @@
  */
 
 #include <gtk/gtk.h>
-#if GTK_CHECK_VERSION(3, 0, 0)
-#include <gdk/gdkkeysyms-compat.h>
+#if !GTK_CHECK_VERSION(3, 0, 0)
+#include <gdk/gdkkeysyms.h>
 #endif
 
 #include <stdlib.h>
@@ -1116,7 +1116,7 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
   /* Handle navigation keys */
   switch (event->keyval)
   {
-    case GDK_Left:
+    case GDK_KEY_Left:
       /* Move to previous column */
       if (col > 1)
       {
@@ -1129,7 +1129,7 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
       }
       break;
 
-    case GDK_Right:
+    case GDK_KEY_Right:
       /* Move to next column */
       if (col < ih->data->num_col)
       {
@@ -1142,7 +1142,7 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
       }
       break;
 
-    case GDK_Tab:
+    case GDK_KEY_Tab:
       /* Move to next cell (right, or next row if at end) */
       if (col < ih->data->num_col)
       {
@@ -1167,7 +1167,7 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
       }
       break;
 
-    case GDK_ISO_Left_Tab:  /* Shift+Tab */
+    case GDK_KEY_ISO_Left_Tab:  /* Shift+Tab */
       /* Move to previous cell (left, or previous row if at start) */
       if (col > 1)
       {
@@ -1192,12 +1192,12 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
       }
       break;
 
-    case GDK_Escape:
+    case GDK_KEY_Escape:
       /* Just let it propagate */
       break;
 
-    case GDK_c:
-    case GDK_C:
+    case GDK_KEY_c:
+    case GDK_KEY_C:
       /* Copy current cell to clipboard */
       if (event->state & GDK_CONTROL_MASK)
       {
@@ -1227,8 +1227,8 @@ static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Iha
       }
       break;
 
-    case GDK_v:
-    case GDK_V:
+    case GDK_KEY_v:
+    case GDK_KEY_V:
       /* Paste from clipboard to current cell */
       if (event->state & GDK_CONTROL_MASK)
       {

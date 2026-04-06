@@ -5,8 +5,8 @@
  */
 
 #include <gtk/gtk.h>
-#if GTK_CHECK_VERSION(3, 0, 0)
-#include <gdk/gdkkeysyms-compat.h>
+#if !GTK_CHECK_VERSION(3, 0, 0)
+#include <gdk/gdkkeysyms.h>
 #endif
 
 #include <stdlib.h>
@@ -232,14 +232,14 @@ static gboolean gtkScrollbarKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, I
 
   if (ih->data->inverted)
   {
-    if (evt->keyval == GDK_Home || evt->keyval == GDK_KP_Home)
+    if (evt->keyval == GDK_KEY_Home || evt->keyval == GDK_KEY_KP_Home)
     {
       double max_pos = (ih->data->vmax - ih->data->pagesize - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
       gtk_range_set_value(GTK_RANGE(ih->handle), max_pos);
       gtkScrollbarChangeValue(GTK_RANGE(ih->handle), GTK_SCROLL_START, max_pos, ih);
       return TRUE;
     }
-    if (evt->keyval == GDK_End || evt->keyval == GDK_KP_End)
+    if (evt->keyval == GDK_KEY_End || evt->keyval == GDK_KEY_KP_End)
     {
       gtk_range_set_value(GTK_RANGE(ih->handle), 0.0);
       gtkScrollbarChangeValue(GTK_RANGE(ih->handle), GTK_SCROLL_END, 0.0, ih);
