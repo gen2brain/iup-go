@@ -21,6 +21,7 @@ set(IUP_DRIVER_LINK_LIBRARIES
 )
 
 set(IUP_DRIVER_COMPILE_OPTIONS "")
+set(IUP_DRIVER_LINK_OPTIONS -fuse-ld=lld)
 
 set(IUP_PC_REQUIRES "")
 set(IUP_PC_LIBS_PRIVATE "-framework AppKit -framework QuartzCore -framework SystemConfiguration -framework UserNotifications")

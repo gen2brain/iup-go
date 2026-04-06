@@ -138,6 +138,10 @@ endif()
 
 target_link_libraries(iup PRIVATE ${IUP_DRIVER_LINK_LIBRARIES})
 
+if(IUP_DRIVER_LINK_OPTIONS)
+  target_link_options(iup PRIVATE ${IUP_DRIVER_LINK_OPTIONS})
+endif()
+
 set_target_properties(iup PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR}
