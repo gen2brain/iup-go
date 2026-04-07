@@ -7,11 +7,13 @@
 #ifndef __IUP_WEBBROWSER_H
 #define __IUP_WEBBROWSER_H
 
+#include "iup_class.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-  Iclass* iupWebBrowserNewClass(void);
+Iclass* iupWebBrowserNewClass(void);
 
 #ifdef __cplusplus
 }

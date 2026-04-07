@@ -69,9 +69,10 @@ const wchar_t* IupWebView2LoaderGetRuntimePath(void);
 #define INTERFACE ICoreWebView2NavigationStartingEventHandler
 DECLARE_INTERFACE_(ICoreWebView2NavigationStartingEventHandler, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2NavigationStartingEventHandler() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(Invoke)(THIS_ ICoreWebView2* sender, ICoreWebView2NavigationStartingEventArgs* args) PURE;
 };
 
@@ -79,9 +80,10 @@ DECLARE_INTERFACE_(ICoreWebView2NavigationStartingEventHandler, IUnknown)
 #define INTERFACE ICoreWebView2NavigationCompletedEventHandler
 DECLARE_INTERFACE_(ICoreWebView2NavigationCompletedEventHandler, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2NavigationCompletedEventHandler() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(Invoke)(THIS_ ICoreWebView2* sender, ICoreWebView2NavigationCompletedEventArgs* args) PURE;
 };
 
@@ -89,9 +91,10 @@ DECLARE_INTERFACE_(ICoreWebView2NavigationCompletedEventHandler, IUnknown)
 #define INTERFACE ICoreWebView2NewWindowRequestedEventHandler
 DECLARE_INTERFACE_(ICoreWebView2NewWindowRequestedEventHandler, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2NewWindowRequestedEventHandler() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(Invoke)(THIS_ ICoreWebView2* sender, ICoreWebView2NewWindowRequestedEventArgs* args) PURE;
 };
 
@@ -99,9 +102,10 @@ DECLARE_INTERFACE_(ICoreWebView2NewWindowRequestedEventHandler, IUnknown)
 #define INTERFACE ICoreWebView2HistoryChangedEventHandler
 DECLARE_INTERFACE_(ICoreWebView2HistoryChangedEventHandler, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2HistoryChangedEventHandler() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(Invoke)(THIS_ ICoreWebView2* sender, IUnknown* args) PURE;
 };
 
@@ -109,9 +113,10 @@ DECLARE_INTERFACE_(ICoreWebView2HistoryChangedEventHandler, IUnknown)
 #define INTERFACE ICoreWebView2WebMessageReceivedEventHandler
 DECLARE_INTERFACE_(ICoreWebView2WebMessageReceivedEventHandler, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2WebMessageReceivedEventHandler() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(Invoke)(THIS_ ICoreWebView2* sender, ICoreWebView2WebMessageReceivedEventArgs* args) PURE;
 };
 
@@ -119,9 +124,10 @@ DECLARE_INTERFACE_(ICoreWebView2WebMessageReceivedEventHandler, IUnknown)
 #define INTERFACE ICoreWebView2CreateCoreWebView2ControllerCompletedHandler
 DECLARE_INTERFACE_(ICoreWebView2CreateCoreWebView2ControllerCompletedHandler, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2CreateCoreWebView2ControllerCompletedHandler() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(Invoke)(THIS_ HRESULT errorCode, ICoreWebView2Controller* createdController) PURE;
 };
 
@@ -129,9 +135,10 @@ DECLARE_INTERFACE_(ICoreWebView2CreateCoreWebView2ControllerCompletedHandler, IU
 #define INTERFACE ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
 DECLARE_INTERFACE_(ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(Invoke)(THIS_ HRESULT errorCode, ICoreWebView2Environment* createdEnvironment) PURE;
 };
 
@@ -139,9 +146,10 @@ DECLARE_INTERFACE_(ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler, I
 #define INTERFACE ICoreWebView2ExecuteScriptCompletedHandler
 DECLARE_INTERFACE_(ICoreWebView2ExecuteScriptCompletedHandler, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2ExecuteScriptCompletedHandler() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(Invoke)(THIS_ HRESULT errorCode, LPCWSTR resultObjectAsJson) PURE;
 };
 
@@ -149,9 +157,10 @@ DECLARE_INTERFACE_(ICoreWebView2ExecuteScriptCompletedHandler, IUnknown)
 #define INTERFACE ICoreWebView2NavigationStartingEventArgs
 DECLARE_INTERFACE_(ICoreWebView2NavigationStartingEventArgs, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2NavigationStartingEventArgs() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(get_Uri)(THIS_ LPWSTR* uri) PURE;
   STDMETHOD(get_IsUserInitiated)(THIS_ BOOL* isUserInitiated) PURE;
   STDMETHOD(get_IsRedirected)(THIS_ BOOL* isRedirected) PURE;
@@ -165,9 +174,10 @@ DECLARE_INTERFACE_(ICoreWebView2NavigationStartingEventArgs, IUnknown)
 #define INTERFACE ICoreWebView2NavigationCompletedEventArgs
 DECLARE_INTERFACE_(ICoreWebView2NavigationCompletedEventArgs, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2NavigationCompletedEventArgs() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(get_IsSuccess)(THIS_ BOOL* isSuccess) PURE;
   STDMETHOD(get_WebErrorStatus)(THIS_ int* webErrorStatus) PURE;
   STDMETHOD(get_NavigationId)(THIS_ UINT64* navigationId) PURE;
@@ -177,9 +187,10 @@ DECLARE_INTERFACE_(ICoreWebView2NavigationCompletedEventArgs, IUnknown)
 #define INTERFACE ICoreWebView2NewWindowRequestedEventArgs
 DECLARE_INTERFACE_(ICoreWebView2NewWindowRequestedEventArgs, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2NewWindowRequestedEventArgs() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(get_Uri)(THIS_ LPWSTR* uri) PURE;
   STDMETHOD(put_NewWindow)(THIS_ ICoreWebView2* newWindow) PURE;
   STDMETHOD(get_NewWindow)(THIS_ ICoreWebView2** newWindow) PURE;
@@ -194,9 +205,10 @@ DECLARE_INTERFACE_(ICoreWebView2NewWindowRequestedEventArgs, IUnknown)
 #define INTERFACE ICoreWebView2WebMessageReceivedEventArgs
 DECLARE_INTERFACE_(ICoreWebView2WebMessageReceivedEventArgs, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2WebMessageReceivedEventArgs() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(get_Source)(THIS_ LPWSTR* source) PURE;
   STDMETHOD(get_WebMessageAsJson)(THIS_ LPWSTR* webMessageAsJson) PURE;
   STDMETHOD(TryGetWebMessageAsString)(THIS_ LPWSTR* webMessageAsString) PURE;
@@ -206,9 +218,10 @@ DECLARE_INTERFACE_(ICoreWebView2WebMessageReceivedEventArgs, IUnknown)
 #define INTERFACE ICoreWebView2Settings
 DECLARE_INTERFACE_(ICoreWebView2Settings, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2Settings() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(get_IsScriptEnabled)(THIS_ BOOL* isScriptEnabled) PURE;
   STDMETHOD(put_IsScriptEnabled)(THIS_ BOOL isScriptEnabled) PURE;
   STDMETHOD(get_IsWebMessageEnabled)(THIS_ BOOL* isWebMessageEnabled) PURE;
@@ -233,9 +246,10 @@ DECLARE_INTERFACE_(ICoreWebView2Settings, IUnknown)
 #define INTERFACE ICoreWebView2Controller
 DECLARE_INTERFACE_(ICoreWebView2Controller, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2Controller() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(get_IsVisible)(THIS_ BOOL* isVisible) PURE;
   STDMETHOD(put_IsVisible)(THIS_ BOOL isVisible) PURE;
   STDMETHOD(get_Bounds)(THIS_ RECT* bounds) PURE;
@@ -265,6 +279,7 @@ DECLARE_INTERFACE_(ICoreWebView2Controller, IUnknown)
 #define INTERFACE ICoreWebView2Controller2
 DECLARE_INTERFACE_(ICoreWebView2Controller2, ICoreWebView2Controller)
 {
+  ~ICoreWebView2Controller2() override = default;
   STDMETHOD(get_DefaultBackgroundColor)(THIS_ COLORREF* backgroundColor) PURE;
   STDMETHOD(put_DefaultBackgroundColor)(THIS_ COLORREF backgroundColor) PURE;
 };
@@ -273,9 +288,10 @@ DECLARE_INTERFACE_(ICoreWebView2Controller2, ICoreWebView2Controller)
 #define INTERFACE ICoreWebView2
 DECLARE_INTERFACE_(ICoreWebView2, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(get_Settings)(THIS_ ICoreWebView2Settings** settings) PURE;
   STDMETHOD(get_Source)(THIS_ LPWSTR* uri) PURE;
   STDMETHOD(Navigate)(THIS_ LPCWSTR uri) PURE;
@@ -340,9 +356,10 @@ DECLARE_INTERFACE_(ICoreWebView2, IUnknown)
 #define INTERFACE ICoreWebView2Environment
 DECLARE_INTERFACE_(ICoreWebView2Environment, IUnknown)
 {
-  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) PURE;
-  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
-  STDMETHOD_(ULONG, Release)(THIS) PURE;
+  virtual ~ICoreWebView2Environment() = default;
+  STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
+  STDMETHOD_(ULONG, Release)(THIS) override PURE;
   STDMETHOD(CreateCoreWebView2Controller)(THIS_ HWND parentWindow, ICoreWebView2CreateCoreWebView2ControllerCompletedHandler* handler) PURE;
   STDMETHOD(CreateWebResourceResponse)(THIS_ IStream* content, int statusCode, LPCWSTR reasonPhrase, LPCWSTR headers, void** response) PURE;
   STDMETHOD(get_BrowserVersionString)(THIS_ LPWSTR* versionInfo) PURE;
