@@ -10,25 +10,19 @@
 
 #include "iupPlot.h"
 
-#include "iup_plot.h"
-
 #include "iup_class.h"
-#include "iup_register.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 
 #include "iup_plot_ctrl.h"
-
 
 
 #ifndef M_E
 #define M_E 2.71828182846
 #endif
-
 
 static void iPlotCheckCurrentDataSet(Ihandle* ih)
 {
@@ -213,9 +207,7 @@ static int iPlotGetCDMarkStyle(const char* value)
     return IUP_PLOT_MARK_PLUS;
 }
 
-
 /**************************************************************************************/
-
 
 static int iPlotSetShowCrossHairAttrib(Ihandle* ih, const char* value)
 {
@@ -233,7 +225,6 @@ static char* iPlotGetShowCrossHairAttrib(Ihandle* ih)
   const char* cross_hair_str[3] = { "NONE", "VERTICAL", "HORIZONTAL" };
   return (char*)cross_hair_str[ih->data->show_cross_hair];
 }
-
 
 static int iPlotSetAntialiasAttrib(Ihandle* ih, const char* value)
 {
@@ -3786,4 +3777,3 @@ void iupPlotRegisterAttributes(Iclass* ic)
   iupClassRegisterAttribute(ic, "FORMULA_MAX", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMULA_PARAMETRIC", NULL, NULL, IUPAF_SAMEASSYSTEM, "No", IUPAF_NO_INHERIT);
 }
-

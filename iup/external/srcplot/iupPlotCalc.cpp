@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -8,11 +7,9 @@
 #include "iup_drvfont.h"
 
 
-
 const double kMajorTickXInitialFac = 2.0;
 const double kMajorTickYInitialFac = 3.0;
 const double kRangeVerySmall = (double)1.0e-3;
-
 
 void iupPlot::CalculateTitlePos()
 {
@@ -368,7 +365,6 @@ bool iupPlot::CheckRange(const iupPlotAxis &inAxis) const
   }
   return true;
 }
-
 
 bool iupPlot::CalculateXTransformation(const iupPlotRect &inRect)
 {

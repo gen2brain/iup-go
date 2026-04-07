@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -7,7 +6,7 @@
 #include "iupPlot.h"
 
 
-static inline bool iPlotCheckInsideBox(double x, double y, double boxMinX, double boxMaxX, double boxMinY, double boxMaxY)
+static bool iPlotCheckInsideBox(double x, double y, double boxMinX, double boxMaxX, double boxMinY, double boxMaxY)
 {
   if (x > boxMaxX || x < boxMinX || y > boxMaxY || y < boxMinY)
     return false;
@@ -15,9 +14,7 @@ static inline bool iPlotCheckInsideBox(double x, double y, double boxMinX, doubl
   return true;
 }
 
-
 /************************************************************************************************/
-
 
 bool iupPlotDataReal::CalculateRange(double &outMin, double &outMax) const
 {
@@ -69,9 +66,7 @@ bool iupPlotDataBool::CalculateRange(double &outMin, double &outMax) const
   return false;
 }
 
-
 /************************************************************************************************/
-
 
 iupPlotDataSet::iupPlotDataSet(bool strXdata)
 : mColor(iupDrawColor(0,0,0,255)), mLineStyle(IUP_PLOT_LINE_CONTINUOUS), mLineWidth(1), mAreaTransparency(255), mMarkStyle(IUP_PLOT_MARK_X), mMarkSize(7),
@@ -843,15 +838,12 @@ void iupPlotDataSet::SetSampleExtra(int inSampleIndex, double inExtra)
   mExtra->SetSample(inSampleIndex, inExtra);
 }
 
-
 /************************************************************************************/
-
 
 #define HIGHLIGHT_ALPHA 64
 #define HIGHLIGHT_OFFSET 12
 #define SELECT_ALPHA 128
 #define SELECT_OFFSET 8
-
 
 static void iPlotDrawHighlightedBar(iupPlotDrawContext* ctx, int x1, int y1, int x2, int y2, long color, int lineWidth)
 {
@@ -1587,4 +1579,3 @@ void iupPlotDataSet::DrawData(const iupPlotTrafo *inTrafoX, const iupPlotTrafo *
   if (mHasSelected)
     DrawSelection(inTrafoX, inTrafoY, ctx, inNotify);
 }
-

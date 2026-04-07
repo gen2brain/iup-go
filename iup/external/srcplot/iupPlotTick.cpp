@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -13,11 +12,9 @@ const double kLittleIncrease = 1.0001;
 const double kLittleDecrease = 0.9999;
 const double kEps = 1e-4;
 
-
 /***********************************************************************************/
 
-
-static double iPlotRoundSpan(double inSpan) 
+static double iPlotRoundSpan(double inSpan)
 {
   // round it to something producing readable tick labels
   // write it in the form inSpan = a*SafeExp10 (b)
@@ -27,9 +24,9 @@ static double iPlotRoundSpan(double inSpan)
 
   int thePow = 0;
   double theSpan = inSpan;
-  if (inSpan>1) 
+  if (inSpan>1)
   {
-    while (theSpan>10) 
+    while (theSpan>10)
     {
       theSpan/=10;
       if (theSpan == inSpan)  // not a number
@@ -37,18 +34,18 @@ static double iPlotRoundSpan(double inSpan)
       thePow++;
     }
   }
-  else 
+  else
   {
-    while (theSpan<1) 
+    while (theSpan<1)
     {
       theSpan*=10;
-      thePow--;      
+      thePow--;
     }
   }
 
   int theRoundedFirstDigit = iupPlotRound (theSpan);
   int thePreferredFirstDigit = 1;
-  switch (theRoundedFirstDigit) 
+  switch (theRoundedFirstDigit)
   {
   case 1:
     thePreferredFirstDigit = 1;
@@ -72,7 +69,6 @@ static double iPlotRoundSpan(double inSpan)
   default:
     // error
     return (double)-1.234567;
-    break;
   }
   double theRes = thePreferredFirstDigit*pow (10., thePow);
   return theRes;
@@ -106,7 +102,7 @@ static void iPlotMakeAutoFormatString(double inValue, char* outFormatString, boo
 {
   if (inValue < 0)
     inValue = -inValue;
-  
+
   if (inValue > kTickValueVeryBig || inValue < kTickValueVerySmall)
   {
     if (sign_space)
@@ -142,11 +138,9 @@ static void iPlotMakeAutoFormatString(double inValue, char* outFormatString, boo
   }
 }
 
-
 /***********************************************************************************/
 
-
-bool iupPlotTickIterLinear::Init() 
+bool iupPlotTickIterLinear::Init()
 {
   if (!mAxis)
     return false;
@@ -162,16 +156,16 @@ bool iupPlotTickIterLinear::Init()
 
 }
 
-bool iupPlotTickIterLinear::GetNextTick (double &outTick, bool &outIsMajorTick, char* outFormatString) 
+bool iupPlotTickIterLinear::GetNextTick (double &outTick, bool &outIsMajorTick, char* outFormatString)
 {
   (void)outFormatString; // unused here
 
   if (!mAxis)
     return false;
-  
+
   if (mCurrentTick>mAxis->mMax*kLittleIncrease)
     return false;
-  
+
   outTick = mCurrentTick;
   outIsMajorTick = (mCount%mAxis->mTick.mMinorDivision == 0);
 
@@ -180,11 +174,11 @@ bool iupPlotTickIterLinear::GetNextTick (double &outTick, bool &outIsMajorTick, 
   return true;
 }
 
-bool iupPlotTickIterLinear::CalculateSpacing (double inParRange, double inDivGuess, iupPlotTick &ioTick) const 
+bool iupPlotTickIterLinear::CalculateSpacing (double inParRange, double inDivGuess, iupPlotTick &ioTick) const
 {
   if (inDivGuess <= kFloatSmall)
     return false;
-  
+
   double thePreferredSpan = iPlotRoundSpan(inParRange / inDivGuess);
   if (thePreferredSpan < 0)
     return false;
@@ -204,11 +198,9 @@ bool iupPlotTickIterLinear::CalculateSpacing (double inParRange, double inDivGue
   return true;
 }
 
-
 /***********************************************************************************/
 
-
-bool iupPlotTickIterLog::Init () 
+bool iupPlotTickIterLog::Init ()
 {
   if (!mAxis)
     return false;
@@ -226,11 +218,11 @@ bool iupPlotTickIterLog::Init ()
 
   if (theMin<=0)
     return false;
-  else 
+  else
   {
     // walk forward
     double theNext = mCurrentTick+mDelta*iupPlotExp (thePowMin, theBase);
-    while (theNext<=theMin*kLittleDecrease) 
+    while (theNext<=theMin*kLittleDecrease)
     {
       mCurrentTick = theNext;
       theNext += mDelta*iupPlotExp(thePowMin,theBase);
@@ -240,7 +232,7 @@ bool iupPlotTickIterLog::Init ()
   return true;
 }
 
-bool iupPlotTickIterLog::CalculateSpacing (double, double inDivGuess, iupPlotTick &ioTick) const 
+bool iupPlotTickIterLog::CalculateSpacing (double, double inDivGuess, iupPlotTick &ioTick) const
 {
   if (inDivGuess<=kFloatSmall)
     return false;
@@ -254,11 +246,11 @@ bool iupPlotTickIterLog::CalculateSpacing (double, double inDivGuess, iupPlotTic
   return true;
 }
 
-bool iupPlotTickIterLog::GetNextTick (double &outTick, bool &outIsMajorTick, char* outFormatString) 
+bool iupPlotTickIterLog::GetNextTick (double &outTick, bool &outIsMajorTick, char* outFormatString)
 {
   if (!mAxis)
     return false;
-  
+
   if (mCurrentTick>mAxis->mMax*kLittleIncrease)
     return false;
 
@@ -266,7 +258,7 @@ bool iupPlotTickIterLog::GetNextTick (double &outTick, bool &outIsMajorTick, cha
   outIsMajorTick = (mCount%mAxis->mTick.mMinorDivision == 0);
 
   // Calculated in every iteration for Log scale
-  if (outFormatString && mAxis->mTick.mFormatAuto) 
+  if (outFormatString && mAxis->mTick.mFormatAuto)
     iPlotMakeAutoFormatString(outTick, outFormatString, mAxis->mVertical && mAxis->mReverseTicksLabel);
 
   double theBase = mAxis->mLogBase;
@@ -282,53 +274,51 @@ bool iupPlotTickIterLog::GetNextTick (double &outTick, bool &outIsMajorTick, cha
   return true;
 }
 
-bool iupPlotTickIterLog::AdjustRange (double &ioMin, double &ioMax) const 
+bool iupPlotTickIterLog::AdjustRange (double &ioMin, double &ioMax) const
 {
   double theBase = mAxis->mLogBase;
   if (mAxis->mMaxDecades > 0)
     ioMin = ioMax/iupPlotExp (mAxis->mMaxDecades, theBase);
 
-  if (ioMin == 0 && ioMax == 0) 
+  if (ioMin == 0 && ioMax == 0)
   {
     ioMin = kLogMinClipValue;
     ioMax = 1.0;
   }
   if (ioMin <= 0 || ioMax<=0)
     return false;
-  
+
   ioMin = RoundDown(ioMin*kLittleIncrease);
   ioMax = RoundUp(ioMax*kLittleDecrease);
 
   if (ioMin<kLogMinClipValue)
     ioMin = kLogMinClipValue;
-  
+
   if (mAxis->mMaxDecades > 0)
     ioMin = ioMax/iupPlotExp (mAxis->mMaxDecades, theBase);
-  
+
   return true;
 }
 
-double iupPlotTickIterLog::RoundUp (double inFloat) const 
+double iupPlotTickIterLog::RoundUp (double inFloat) const
 {
   double theBase = mAxis->mLogBase;
   int thePow = (int)ceil(iupPlotLog(inFloat, theBase));
   return pow (theBase, thePow);
 }
 
-double iupPlotTickIterLog::RoundDown (double inFloat) const 
+double iupPlotTickIterLog::RoundDown (double inFloat) const
 {
   double theBase = mAxis->mLogBase;
   int thePow = (int)floor(iupPlotLog(inFloat,theBase));
   return pow (theBase, thePow);
 }
 
-
 /***********************************************************************************/
 
-
-bool iupPlotTickIterNamed::GetNextTick (double &outTick, bool &outIsMajorTick, char* outFormatString) 
+bool iupPlotTickIterNamed::GetNextTick (double &outTick, bool &outIsMajorTick, char* outFormatString)
 {
-  if (iupPlotTickIterLinear::GetNextTick (outTick, outIsMajorTick, outFormatString)) 
+  if (iupPlotTickIterLinear::GetNextTick (outTick, outIsMajorTick, outFormatString))
   {
     int theSampleIndex = iupPlotRound(outTick);
 
@@ -348,13 +338,12 @@ bool iupPlotTickIterNamed::GetNextTick (double &outTick, bool &outIsMajorTick, c
   return false;
 }
 
-bool iupPlotTickIterNamed::CalculateSpacing (double inParRange, double inDivGuess, iupPlotTick &outTick) const 
+bool iupPlotTickIterNamed::CalculateSpacing (double inParRange, double inDivGuess, iupPlotTick &outTick) const
 {
-  if (iupPlotTickIterLinear::CalculateSpacing (inParRange, inDivGuess, outTick)) 
+  if (iupPlotTickIterLinear::CalculateSpacing (inParRange, inDivGuess, outTick))
   {
     outTick.mMinorDivision = 1;
     return true;
   }
   return false;
 }
-

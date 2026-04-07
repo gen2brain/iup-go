@@ -1,6 +1,8 @@
 #ifndef __IUP_PLOT_CTRL_H__
 #define __IUP_PLOT_CTRL_H__
 
+#include "iup_stdcontrols.h"
+
 
 #define IUP_PLOT_MAX_PLOTS 20
 

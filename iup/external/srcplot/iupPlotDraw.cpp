@@ -1,7 +1,4 @@
-
 #include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 #include <string.h>
 
 #include "iupPlot.h"
@@ -140,9 +137,7 @@ void iupPlotDrawAlignedText(iupPlotDrawContext* ctx, double refX, double refY,
   iupPlotDrawText(ctx->ih, text, len, drawX, drawY, w, h, color, font, IUP_DRAW_LEFT, orientation);
 }
 
-
 /************************************************************************************/
-
 
 void iupPlotBox::Draw(const iupPlotRect &inRect, iupPlotDrawContext* ctx) const
 {
@@ -213,9 +208,7 @@ bool iupPlotGrid::DrawY(iupPlotTickIter* inTickIter, iupPlotTrafo* inTrafo, cons
   return true;
 }
 
-
 /************************************************************************************************/
-
 
 void iupPlot::DrawCrossSamplesH(const iupPlotRect &inRect, const iupPlotData *inXData, const iupPlotData *inYData, iupPlotDrawContext* ctx) const
 {
