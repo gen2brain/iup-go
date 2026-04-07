@@ -10,20 +10,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupgl.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 #include "iup_assert.h"
-#include "iup_register.h"
 
 #include "iup_glcanvas_nativeinfo.h"
+
 
 typedef HGLRC (WINAPI *wglCreateContextAttribsARB_PROC) (HDC hDC, HGLRC hShareContext, const int *attribList);
 
@@ -39,10 +36,9 @@ typedef HGLRC (WINAPI *wglCreateContextAttribsARB_PROC) (HDC hDC, HGLRC hShareCo
 #endif
 
 #ifndef ERROR_INVALID_VERSION_ARB
-#define ERROR_INVALID_VERSION_ARB		0x2095
-#define ERROR_INVALID_PROFILE_ARB		0x2096
+#define ERROR_INVALID_VERSION_ARB   0x2095
+#define ERROR_INVALID_PROFILE_ARB   0x2096
 #endif
-
 
 /* Do NOT use _IcontrolData to make inheritance easy
    when parent class is glcanvas */
@@ -92,7 +88,7 @@ static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
   int isIndex = 0;
   int pixelFormat;
   PIXELFORMATDESCRIPTOR test_pfd;
-  PIXELFORMATDESCRIPTOR pfd = { 
+  PIXELFORMATDESCRIPTOR pfd = {
     sizeof(PIXELFORMATDESCRIPTOR),  /*  size of this pfd   */
       1,                     /* version number             */
       PFD_DRAW_TO_WINDOW |   /* support window             */
@@ -122,7 +118,7 @@ static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
   if (iupAttribGetBoolean(ih,"STEREO"))
     pfd.dwFlags |= PFD_STEREO;
 
-  /* rgba or index */ 
+  /* rgba or index */
   if (iupStrEqualNoCase(iupAttribGetStr(ih,"COLOR"), "INDEX"))
   {
     isIndex = 1;
@@ -496,9 +492,7 @@ void iupGlCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "REFRESHCONTEXT", NULL, wGLCanvasSetRefreshContextAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 }
 
-
 /******************************************* Exported functions */
-
 
 IUPGL_API int IupGLIsCurrent(Ihandle* ih)
 {
@@ -509,7 +503,7 @@ IUPGL_API int IupGLIsCurrent(Ihandle* ih)
     return 0;
 
   /* must be an IupGLCanvas */
-  if (ih->iclass->nativetype != IUP_TYPECANVAS || 
+  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return 0;
 
@@ -581,7 +575,7 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
     return;
 
   /* must be an IupGLCanvas */
-  if (ih->iclass->nativetype != IUP_TYPECANVAS || 
+  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return;
 
@@ -606,7 +600,7 @@ IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
     return;
 
   /* must be an IupGLCanvas */
-  if (ih->iclass->nativetype != IUP_TYPECANVAS || 
+  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return;
 
@@ -640,7 +634,7 @@ IUPGL_API void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
     return;
 
   /* must be an IupGLCanvas */
-  if (ih->iclass->nativetype != IUP_TYPECANVAS || 
+  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return;
 

@@ -13,20 +13,15 @@
 #include <memory.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupgl.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 #include "iup_assert.h"
-#include "iup_register.h"
 
 
-typedef GLXContext (*glXCreateContextAttribsARB_PROC)(Display *dpy, GLXFBConfig config,
-					       GLXContext share_list, Bool direct,
-					       const int *attrib_list);
+typedef GLXContext (*glXCreateContextAttribsARB_PROC)(Display *dpy, GLXFBConfig config, GLXContext share_list, Bool direct, const int *attrib_list);
 
 #ifndef GLX_CONTEXT_MAJOR_VERSION_ARB
 #define GLX_CONTEXT_MAJOR_VERSION_ARB 0x2091
@@ -423,7 +418,7 @@ static void xGLCanvasUnMapMethod(Ihandle* ih)
     XFreeColormap(gldata->display, gldata->colormap);
 
   if (gldata->vinfo)
-    XFree(gldata->vinfo); 
+    XFree(gldata->vinfo);
 
   memset(gldata, 0, sizeof(IGlControlData));
 }
@@ -438,9 +433,7 @@ void iupGlCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VISUAL", xGLCanvasGetVisualAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_STRING|IUPAF_NOT_MAPPED);
 }
 
-
 /******************************************* Exported functions */
-
 
 IUPGL_API int IupGLIsCurrent(Ihandle* ih)
 {
@@ -451,7 +444,7 @@ IUPGL_API int IupGLIsCurrent(Ihandle* ih)
     return 0;
 
   /* must be an IupGLCanvas */
-  if (ih->iclass->nativetype != IUP_TYPECANVAS || 
+  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return 0;
 
@@ -475,7 +468,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     return;
 
   /* must be an IupGLCanvas */
-  if (ih->iclass->nativetype != IUP_TYPECANVAS || 
+  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return;
 
@@ -510,7 +503,7 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
     return;
 
   /* must be an IupGLCanvas */
-  if (ih->iclass->nativetype != IUP_TYPECANVAS || 
+  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return;
 
@@ -548,7 +541,7 @@ IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
     return;
 
   /* must be an IupGLCanvas */
-  if (ih->iclass->nativetype != IUP_TYPECANVAS || 
+  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return;
 
@@ -565,7 +558,7 @@ IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
   old_handler = XSetErrorHandler(xGLCanvasIgnoreError);
 
   vinfo = gldata->vinfo;
-  switch (vinfo->class) 
+  switch (vinfo->class)
   {
   case DirectColor:
     rShift = ffs((unsigned int)vinfo->red_mask) - 1;
@@ -582,7 +575,7 @@ IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
     break;
   case GrayScale:
   case PseudoColor:
-    if (index < vinfo->colormap_size) 
+    if (index < vinfo->colormap_size)
     {
       color.pixel = index;
       color.red = iglxColorScale(r);
@@ -608,7 +601,7 @@ IUPGL_API void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
     return;
 
   /* must be an IupGLCanvas */
-  if (ih->iclass->nativetype != IUP_TYPECANVAS || 
+  if (ih->iclass->nativetype != IUP_TYPECANVAS ||
       !IupClassMatch(ih, "glcanvas"))
     return;
 

@@ -9,6 +9,9 @@
 #ifndef __IUP_GLCANVAS_EGL_FLTK_H
 #define __IUP_GLCANVAS_EGL_FLTK_H
 
+#include "iup.h"
+
+
 #define IUP_EGL_HAS_WAYLAND
 
 static int iupEGLBackendGetScale(void)
