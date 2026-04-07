@@ -1,7 +1,4 @@
-
 #include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 #include <string.h>
 
 #include "iupPlot.h"
@@ -79,9 +76,7 @@ static bool iPlotGetTickFormat(Ihandle* ih, IFnssds formatticknumber_cb, char* i
   return true;
 }
 
-
 /************************************************************************************************/
-
 
 double iupPlotTrafoLinear::Transform(double inValue) const
 {
@@ -124,9 +119,7 @@ bool iupPlotTrafoLinear::Calculate(int inBegin, int inEnd, const iupPlotAxis& in
   return true;
 }
 
-
 /************************************************************************************************/
-
 
 double iupPlotTrafoLog::Transform(double inValue) const
 {
@@ -166,9 +159,7 @@ bool iupPlotTrafoLog::Calculate(int inBegin, int inEnd, const iupPlotAxis& inAxi
   return true;
 }
 
-
 /************************************************************************************************/
-
 
 void iupPlotAxis::Init()
 {
@@ -375,9 +366,7 @@ bool iupPlotAxis::ScrollTo(double inMin)
   return true;
 }
 
-
 /************************************************************************************************/
-
 
 static void iPlotFillArrowI(iupPlotDrawContext* ctx, int inX1, int inY1, int inX2, int inY2, int inX3, int inY3, long color)
 {
@@ -473,9 +462,7 @@ int iupPlotAxis::GetArrowSize() const
   return mTick.mMinorSize + 2;  // to avoid too small sizes
 }
 
-
 /*****************************************************************************/
-
 
 double iupPlotAxisX::GetScreenYOriginX(const iupPlotAxis& inAxisY) const
 {
@@ -635,9 +622,7 @@ void iupPlotAxisX::DrawXTick(double inX, double inScreenY, bool inMajor, const c
   iupPlotDrawLine(ctx->ih, absX, absY1, absX, absY2, mColor, IUP_DRAW_STROKE, mLineWidth);
 }
 
-
 /*****************************************************************************/
-
 
 double iupPlotAxisY::GetScreenXOriginY(const iupPlotAxis& inAxisX) const
 {

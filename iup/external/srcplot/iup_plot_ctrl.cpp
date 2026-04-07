@@ -18,13 +18,8 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 #include "iup_assert.h"
-#include "iup_predialogs.h"
 #include "iup_linefile.h"
-#include "iup_image.h"
 
 #include "iup_plot_ctrl.h"
 
@@ -53,7 +48,6 @@ static int iPlotSelectFile(Ihandle* parent, char* filename, const char* title, c
   IupDestroy(filedlg);
   return 0;
 }
-
 
 static double iPlotDataSetValuesMatrixNumericGetValue_CB(Ihandle *ih_matrix, int lin, int col)
 {
@@ -1348,7 +1342,7 @@ static void iPlotRedrawInteract(Ihandle *ih)
 {
   // when interacting
   int flush = 0, // flush if necessary
-    only_current = 1, 
+    only_current = 1,
     reset_redraw = 0;  // render only if necessary
 
   if (ih->data->current_plot->mRedraw)
@@ -2032,9 +2026,7 @@ static int iPlotKeyPress_CB(Ihandle* ih, int c, int press)
   return IUP_DEFAULT;
 }
 
-
 /************************************************************************************/
-
 
 IUPPLOT_API void IupPlotBegin(Ihandle* ih, int strXdata)
 {
@@ -2650,9 +2642,7 @@ IUPPLOT_API int  IupPlotFindSegment(Ihandle* ih, double cnv_x, double cnv_y, int
   return 0;
 }
 
-
 /************************************************************************************/
-
 
 static int iPlotMapMethod(Ihandle* ih)
 {
