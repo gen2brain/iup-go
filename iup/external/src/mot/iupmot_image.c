@@ -5,6 +5,9 @@
  */
 
 #include <Xm/Xm.h>
+#if defined(XM_UTF8)
+#include <Xm/Cursor.h>
+#endif
 
 #include <stdio.h>
 #include <limits.h>
@@ -432,6 +435,13 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
     int id;
     if (iupStrToInt(name, &id))
       cursor = XCreateFontCursor(iupmot_display, id);
+#if defined(XM_UTF8)
+    if (!cursor)
+    {
+      Screen* screen = ScreenOfDisplay(iupmot_display, iupmot_screen);
+      cursor = XmeLoadCursor(iupmot_display, screen, name);
+    }
+#endif
     return (void*)cursor;
   }
   else /* IUPIMAGE_IMAGE or IUPIMAGE_ICON */

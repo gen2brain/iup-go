@@ -37,10 +37,14 @@ static int motStrCheckUTF8Support(void)
   if (iupmot_utf8_supported != -1)
     return iupmot_utf8_supported;
 
+#if defined(XM_UTF8)
+  iupmot_utf8_supported = XM_UTF8;
+#else
   if (XmVERSION > 2 || (XmVERSION == 2 && XmREVISION >= 3))
     iupmot_utf8_supported = 1;
   else
     iupmot_utf8_supported = 0;
+#endif
 
   return iupmot_utf8_supported;
 }
