@@ -6,26 +6,20 @@
 
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
+#include <stdlib.h>
+#include <string.h>
+
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/gl.h>
-#import <OpenGL/OpenGL.h>
 #import <OpenGL/CGLRenderers.h>
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <memory.h>
-
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupgl.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 #include "iup_assert.h"
-#include "iup_register.h"
 #include "iup_canvas.h"
 
 #include "iup_glcanvas_nativeinfo.h"
