@@ -42,7 +42,7 @@ In macOS, the predefined names map to NSCursor class methods.
 
 If it is not a pre-defined name, then will check for other system cursors.
 In Windows, the value will be used to load a cursor from the application resources.
-In Motif, the value will be used as a X-Windows cursor number, see definitions in the X11 header "cursorfont.h".
+In Motif, the value will be used as a X-Windows cursor number, see definitions in the X11 header "cursorfont.h". With Motif 2.4.0+, the value can also be an Xcursor name or cursor file, and predefined cursors will use the desktop cursor theme when available.
 In GTK, the value will be used as a cursor name, see the GDK documentation on Cursors.
 In Qt, the value will be used to try to load the cursor from the system theme.
 

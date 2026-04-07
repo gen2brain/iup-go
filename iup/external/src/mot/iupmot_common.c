@@ -12,6 +12,9 @@
 #include <Xm/Xm.h>
 #include <Xm/ScrollBar.h>
 #include <X11/cursorfont.h>
+#if defined(XM_UTF8)
+#include <Xm/Cursor.h>
+#endif
 #include <X11/IntrinsicP.h>
 
 #include "iup.h"
@@ -336,32 +339,33 @@ static Cursor motGetCursor(Ihandle* ih, const char* name)
 {
   static struct {
     const char* iupname;
+    const char* xcursorname;
     int         sysname;
   } table[] = {
-    { "NONE",      0},
-    { "NULL",      0},
-    { "ARROW",     XC_left_ptr},
-    { "BUSY",      XC_watch},
-    { "CROSS",     XC_crosshair},
-    { "HAND",      XC_hand2},
-    { "HELP",      XC_question_arrow},
-    { "IUP",       XC_question_arrow},
-    { "MOVE",      XC_fleur},
-    { "PEN",       XC_pencil},
-    { "RESIZE_N",  XC_top_side},
-    { "RESIZE_S",  XC_bottom_side},
-    { "RESIZE_NS", XC_sb_v_double_arrow},
-    { "SPLITTER_HORIZ", XC_sb_v_double_arrow},
-    { "RESIZE_W",  XC_left_side},
-    { "RESIZE_E",  XC_right_side},
-    { "RESIZE_WE", XC_sb_h_double_arrow},
-    { "SPLITTER_VERT", XC_sb_h_double_arrow},
-    { "RESIZE_NE", XC_top_right_corner},
-    { "RESIZE_SE", XC_bottom_right_corner},
-    { "RESIZE_NW", XC_top_left_corner},
-    { "RESIZE_SW", XC_bottom_left_corner},
-    { "TEXT",      XC_xterm},
-    { "UPARROW",   XC_center_ptr}
+    { "NONE",           NULL,                  0},
+    { "NULL",           NULL,                  0},
+    { "ARROW",          "left_ptr",            XC_left_ptr},
+    { "BUSY",           "watch",               XC_watch},
+    { "CROSS",          "crosshair",           XC_crosshair},
+    { "HAND",           "hand2",               XC_hand2},
+    { "HELP",           "question_arrow",      XC_question_arrow},
+    { "IUP",            "question_arrow",      XC_question_arrow},
+    { "MOVE",           "fleur",               XC_fleur},
+    { "PEN",            "pencil",              XC_pencil},
+    { "RESIZE_N",       "top_side",            XC_top_side},
+    { "RESIZE_S",       "bottom_side",         XC_bottom_side},
+    { "RESIZE_NS",      "sb_v_double_arrow",   XC_sb_v_double_arrow},
+    { "SPLITTER_HORIZ", "sb_v_double_arrow",   XC_sb_v_double_arrow},
+    { "RESIZE_W",       "left_side",           XC_left_side},
+    { "RESIZE_E",       "right_side",          XC_right_side},
+    { "RESIZE_WE",      "sb_h_double_arrow",   XC_sb_h_double_arrow},
+    { "SPLITTER_VERT",  "sb_h_double_arrow",   XC_sb_h_double_arrow},
+    { "RESIZE_NE",      "top_right_corner",    XC_top_right_corner},
+    { "RESIZE_SE",      "bottom_right_corner", XC_bottom_right_corner},
+    { "RESIZE_NW",      "top_left_corner",     XC_top_left_corner},
+    { "RESIZE_SW",      "bottom_left_corner",  XC_bottom_left_corner},
+    { "TEXT",           "xterm",               XC_xterm},
+    { "UPARROW",        "center_ptr",          XC_center_ptr}
   };
 
   Cursor cur;
@@ -380,7 +384,14 @@ static Cursor motGetCursor(Ihandle* ih, const char* name)
     if (iupStrEqualNoCase(name, table[i].iupname))
     {
       if (table[i].sysname)
-        cur = XCreateFontCursor(iupmot_display, table[i].sysname);
+      {
+#if defined(XM_UTF8)
+        Screen* screen = ScreenOfDisplay(iupmot_display, iupmot_screen);
+        cur = XmeLoadCursor(iupmot_display, screen, table[i].xcursorname);
+        if (!cur)
+#endif
+          cur = XCreateFontCursor(iupmot_display, table[i].sysname);
+      }
       else
         cur = motEmptyCursor(ih);
 
