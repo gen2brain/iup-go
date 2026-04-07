@@ -140,11 +140,14 @@ IUP_DRV_API int iupeflBaseSetVisibleAttrib(Ihandle* ih, const char* value);
 /* Get the inner container for adding children */
 IUP_DRV_API Eo* iupeflGetInnerContainer(Ihandle* ih);
 
+/* Concrete Efl.Ui.Widget subclass with no automatic layout */
+const Efl_Class* iupefl_fixed_class_get(void);
+
 /* Fixed positioning container */
 IUP_DRV_API Eo* iupeflFixedContainerNew(Eo* parent);
 IUP_DRV_API void iupeflFixedContainerMove(Eo* container, Eo* child, int x, int y);
 
-/* Native container using EFL_UI_BOX_CLASS */
+/* Native container for frame inner area */
 IUP_DRV_API Eo* iupeflNativeContainerNew(Eo* parent);
 
 /****************************************************************************

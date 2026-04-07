@@ -470,6 +470,20 @@ static void eflButtonComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
 
   (void)children_expand;
 
+  if (!ih->handle)
+  {
+    char* value = iupAttribGet(ih, "IMAGE");
+    if (value)
+    {
+      char* title = iupAttribGet(ih, "TITLE");
+      type = IUP_BUTTON_IMAGE;
+      if (title && *title != 0)
+        type |= IUP_BUTTON_TEXT;
+    }
+    else
+      type = IUP_BUTTON_TEXT;
+  }
+
   if (type & IUP_BUTTON_IMAGE)
   {
     iupImageGetInfo(iupAttribGet(ih, "IMAGE"), &natural_w, &natural_h, NULL);

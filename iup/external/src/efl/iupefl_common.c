@@ -133,8 +133,11 @@ IUP_DRV_API char* iupeflBaseGetActiveAttrib(Ihandle* ih)
 
 IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height)
 {
-  Eo* widget = iupeflGetWidget(ih);
+  Eo* widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   Eo* bg_rect;
+
+  if (!widget)
+    widget = iupeflGetWidget(ih);
   Ihandle* parent;
   int abs_x, abs_y;
 
@@ -240,18 +243,30 @@ IUP_DRV_API unsigned int iupeflGetDefaultSeat(Eo* widget)
 
 /****************************************************************************
  * Fixed Container (for absolute positioning)
+ *
+ * Concrete Efl.Ui.Widget subclass with no layout logic. Children stay
+ * exactly where IUP positions them, no automatic layout interference.
  ****************************************************************************/
+
+static const Efl_Class_Description _iup_fixed_class_desc = {
+  EO_VERSION,
+  "Iup.Fixed",
+  EFL_CLASS_TYPE_REGULAR,
+  0, NULL, NULL, NULL
+};
+
+EFL_DEFINE_CLASS(iupefl_fixed_class_get, &_iup_fixed_class_desc, EFL_UI_WIDGET_CLASS, NULL)
 
 IUP_DRV_API Eo* iupeflFixedContainerNew(Eo* parent)
 {
-  Eo* box = efl_add(EFL_UI_BOX_CLASS, parent);
-  if (!box)
+  Eo* fixed = efl_add(iupefl_fixed_class_get(), parent);
+  if (!fixed)
     return NULL;
 
-  efl_gfx_hint_weight_set(box, EFL_GFX_HINT_EXPAND, EFL_GFX_HINT_EXPAND);
-  efl_gfx_hint_align_set(box, -1.0, -1.0);
+  efl_gfx_hint_weight_set(fixed, EFL_GFX_HINT_EXPAND, EFL_GFX_HINT_EXPAND);
+  efl_gfx_hint_align_set(fixed, -1.0, -1.0);
 
-  return box;
+  return fixed;
 }
 
 IUP_DRV_API void iupeflFixedContainerMove(Eo* container, Eo* child, int x, int y)
@@ -262,14 +277,14 @@ IUP_DRV_API void iupeflFixedContainerMove(Eo* container, Eo* child, int x, int y
 
 IUP_DRV_API Eo* iupeflNativeContainerNew(Eo* parent)
 {
-  Eo* box = efl_add(EFL_UI_BOX_CLASS, parent);
-  if (!box)
+  Eo* fixed = efl_add(iupefl_fixed_class_get(), parent);
+  if (!fixed)
     return NULL;
 
-  efl_gfx_hint_weight_set(box, EFL_GFX_HINT_EXPAND, EFL_GFX_HINT_EXPAND);
-  efl_gfx_hint_align_set(box, -1.0, -1.0);
+  efl_gfx_hint_weight_set(fixed, EFL_GFX_HINT_EXPAND, EFL_GFX_HINT_EXPAND);
+  efl_gfx_hint_align_set(fixed, -1.0, -1.0);
 
-  return box;
+  return fixed;
 }
 
 /****************************************************************************
@@ -679,26 +694,6 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
   (void)ih;
 }
 
-static void eflGetAbsolutePosition(Ihandle* ih, int* abs_x, int* abs_y)
-{
-  int x = ih->x;
-  int y = ih->y;
-  Ihandle* parent = ih->parent;
-
-  while (parent)
-  {
-    if (parent->iclass->nativetype != IUP_TYPEVOID)
-    {
-      x += parent->x;
-      y += parent->y;
-    }
-    parent = parent->parent;
-  }
-
-  *abs_x = x;
-  *abs_y = y;
-}
-
 IUP_DRV_API int iupeflIsInsideTabs(Ihandle* ih)
 {
   Ihandle* parent = ih->parent;
@@ -715,31 +710,10 @@ IUP_DRV_API int iupeflIsInsideTabs(Ihandle* ih)
 
 IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
-  Eo* widget;
-  Eo* container = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-  int abs_x, abs_y;
-
-  widget = container ? container : iupeflGetWidget(ih);
-  if (!widget)
-    return;
-
   if (iupeflIsInsideTabs(ih))
     return;
 
-  eflGetAbsolutePosition(ih, &abs_x, &abs_y);
-
-  iupeflSetPosition(widget, abs_x, abs_y);
-  iupeflSetSize(widget, ih->currentwidth, ih->currentheight);
-
-  {
-    Eo* bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
-    if (bg_rect)
-    {
-      efl_gfx_entity_position_set(bg_rect, EINA_POSITION2D(abs_x, abs_y));
-      efl_gfx_entity_size_set(bg_rect, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
-      efl_gfx_stack_below(bg_rect, widget);
-    }
-  }
+  iupeflSetPosSize(ih, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 
 IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
