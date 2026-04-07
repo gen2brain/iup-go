@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-
 #include "iup.h"
 #include "iupcontrols.h"
 
@@ -61,4 +60,3 @@ char *iupControlBaseGetBgColorAttrib(Ihandle* ih)
 
   return color;
 }
-

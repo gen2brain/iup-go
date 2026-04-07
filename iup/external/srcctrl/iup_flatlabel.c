@@ -5,25 +5,20 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_image.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
-#include "iup_key.h"
+
 
 struct _IcontrolData
 {
@@ -32,12 +27,10 @@ struct _IcontrolData
   /* attributes */
   int horiz_padding, vert_padding;  /* button margin */
   int spacing, img_position;        /* used when both text and image are displayed */
-  int horiz_alignment, vert_alignment;  
+  int horiz_alignment, vert_alignment;
 };
 
-
 /****************************************************************/
-
 
 static int iFlatLabelRedraw_CB(Ihandle* ih)
 {
@@ -60,8 +53,7 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
 
   iupDrawParentBackground(dc, ih);
 
-  if (!bgcolor)
-    bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
+  bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
 
   if (bgimage) /* draw background */
   {
@@ -109,9 +101,7 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /***********************************************************************************************/
-
 
 static int iFlatLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
@@ -186,9 +176,7 @@ static char* iFlatLabelGetSpacingAttrib(Ihandle *ih)
   return iupStrReturnInt(ih->data->spacing);
 }
 
-
 /*****************************************************************************************/
-
 
 static int iFlatLabelCreateMethod(Ihandle* ih, void** params)
 {
@@ -196,7 +184,7 @@ static int iFlatLabelCreateMethod(Ihandle* ih, void** params)
   {
     iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
   }
-  
+
   /* free the data allocated by IupCanvas */
   free(ih->data);
   ih->data = iupALLOCCTRLDATA();
@@ -234,9 +222,7 @@ static void iFlatLabelComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int 
   (void)children_expand; /* unset if not a container */
 }
 
-
 /******************************************************************************/
-
 
 Iclass* iupFlatLabelNewClass(void)
 {
@@ -273,7 +259,7 @@ Iclass* iupFlatLabelNewClass(void)
 
   iupClassRegisterAttribute(ic, "IMAGE", NULL, iFlatLabelSetAttribPostRedraw, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  
+
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iFlatLabelGetImagePositionAttrib, iFlatLabelSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

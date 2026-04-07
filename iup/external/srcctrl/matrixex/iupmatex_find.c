@@ -6,13 +6,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
-#include "iup_array.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -102,7 +99,7 @@ static void iMatrixExFindCreateDialog(ImatExData* matex_data)
           *dlg, *close, *dlg_box, *button_box, *parent;
 
   text_box = IupSetAttributes(IupHbox(
-    IupLabel("_@IUP_FIND_WHAT"), 
+    IupLabel("_@IUP_FIND_WHAT"),
     IupSetAttributes(IupText(NULL), "EXPAND=HORIZONTAL, NAME=FINDTEXT"),
     NULL), "ALIGNMENT=ACENTER");
   IupSetAttribute(text_box,"MARGIN","0x0");
@@ -132,7 +129,7 @@ static void iMatrixExFindCreateDialog(ImatExData* matex_data)
   IupSetCallback(close, "ACTION", (Icallback)iMatrixExFindDialogClose_CB);
 
   button_box = IupHbox(
-    IupFill(), 
+    IupFill(),
     find_prev,
     find_next,
     close,
@@ -198,7 +195,7 @@ void iupMatrixExFindShowDialog(ImatExData* matex_data)
 {
   iMatrixExFindInitDialog(matex_data);
 
-  /* Only position the dialog at the first time, 
+  /* Only position the dialog at the first time,
      then let the user choose the dialog position on screen */
   if (!(matex_data->find_dlg->handle))
   {
@@ -249,7 +246,7 @@ static int iMatrixExSetFind(Ihandle *ih, const char* value, int inc, int flip, i
     pos = (*lin)*(num_col+1) + *col;
 
   start_pos = pos;
-  do 
+  do
   {
     pos += inc;
 

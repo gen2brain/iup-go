@@ -5,17 +5,12 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-
 
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupcontrols.h"
 
 #include "iup_object.h"
-#include "iup_childtree.h"
-#include "iup_register.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_assert.h"
@@ -42,7 +37,7 @@ static void iMatrixExBusyShowProgress(ImatExData* matex_data, int count, const c
 
     IupMap(matex_data->busy_progress_dlg); /* to compute dialog size */
   }
-  
+
   if (busyname)
   {
     char str[50];
@@ -175,7 +170,7 @@ static int iMatrixSetBusyAttrib(Ihandle* ih, const char* value)
 static char* iMatrixGetBusyAttrib(Ihandle* ih)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
-  return iupStrReturnBoolean (matex_data->busy); 
+  return iupStrReturnBoolean (matex_data->busy);
 }
 
 void iupMatrixExRegisterBusy(Iclass* ic)

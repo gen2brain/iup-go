@@ -5,20 +5,13 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-
 #include "iup.h"
-#include "iupcbs.h"
-#include "iupcontrols.h"
 
 #include "iup_object.h"
-#include "iup_childtree.h"
-#include "iup_register.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_assert.h"
 #include "iup_matrixex.h"
 
 
@@ -30,7 +23,7 @@ int iupMatrixExIsColumnVisible(Ihandle* ih, int col)
   if (col==0)
     return (IupGetIntId(ih, "RASTERWIDTH", 0) != 0);
 
-  /* to be invisible must exist the attribute and must be set to 0 (zero), 
+  /* to be invisible must exist the attribute and must be set to 0 (zero),
      or else is visible */
 
   value = iupAttribGetId(ih, "WIDTH", col);
@@ -77,12 +70,12 @@ int iupMatrixExIsLineVisible(Ihandle* ih, int lin)
 
 static char* iMatrixGetVisibleColAttribId(Ihandle *ih, int col)
 {
-  return iupStrReturnBoolean (iupMatrixExIsColumnVisible(ih, col)); 
+  return iupStrReturnBoolean (iupMatrixExIsColumnVisible(ih, col));
 }
 
 static char* iMatrixGetVisibleLinAttribId(Ihandle *ih, int lin)
 {
-  return iupStrReturnBoolean (iupMatrixExIsLineVisible(ih, lin)); 
+  return iupStrReturnBoolean (iupMatrixExIsLineVisible(ih, lin));
 }
 
 static int iMatrixSetVisibleColAttribId(Ihandle *ih, int col, const char* value)
@@ -106,7 +99,7 @@ static int iMatrixSetVisibleColAttribId(Ihandle *ih, int col, const char* value)
     old_width = iupAttribGetId(ih, "_IUP_SHOWCOL_WIDTH", col);
     if (old_width) IupSetStrAttributeId(ih, "WIDTH", col, old_width);
     else { old_width = iupAttribGetId(ih, "_IUP_SHOWCOL_RASTERWIDTH", col);
-         if (old_width) IupSetStrAttributeId(ih, "RASTERWIDTH", col, old_width); 
+         if (old_width) IupSetStrAttributeId(ih, "RASTERWIDTH", col, old_width);
          else IupSetAttributeId(ih, "RASTERWIDTH", col, NULL); }
   }
   return 0;
@@ -133,7 +126,7 @@ static int iMatrixSetVisibleLinAttribId(Ihandle *ih, int lin, const char* value)
     old_height = iupAttribGetId(ih, "_IUP_SHOWCOL_HEIGHT", lin);
     if (old_height) IupSetStrAttributeId(ih, "HEIGHT", lin, old_height);
     else { old_height = iupAttribGetId(ih, "_IUP_SHOWCOL_RASTERHEIGHT", lin);
-         if (old_height) IupSetStrAttributeId(ih, "RASTERHEIGHT", lin, old_height); 
+         if (old_height) IupSetStrAttributeId(ih, "RASTERHEIGHT", lin, old_height);
          else IupSetAttributeId(ih, "RASTERHEIGHT", lin, NULL); }
   }
   return 0;
@@ -144,4 +137,3 @@ void iupMatrixExRegisterVisible(Iclass* ic)
   iupClassRegisterAttributeId(ic, "VISIBLECOL", iMatrixGetVisibleColAttribId, iMatrixSetVisibleColAttribId, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "VISIBLELIN", iMatrixGetVisibleLinAttribId, iMatrixSetVisibleLinAttribId, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 }
-

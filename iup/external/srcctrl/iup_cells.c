@@ -7,18 +7,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
 #include "iupcontrols.h"
 #include "iupcbs.h"
-#include "iupkey.h"
 #include "iupdraw.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_stdcontrols.h"
 #include "iup_controls.h"
 #include "iup_register.h"
@@ -302,7 +299,7 @@ static void iCellsSetFullVisible(Ihandle* ih, int i, int j)
   /* Getting the cell's area limit */
   iCellsGetLimits(ih, i, j, &xmin, &xmax, &ymin, &ymax);
 
-  /* Adjusting the difference of the scrollbars' position (horizontal) */
+  /* Adjusting the difference of the scrollbars position (horizontal) */
   if (xmax > ih->data->w)
     dx = xmax - ih->data->w;
 
@@ -312,13 +309,13 @@ static void iCellsSetFullVisible(Ihandle* ih, int i, int j)
   if (xmin - dx < min_x)
     dx = - (min_x - xmin);
 
-  /* Adjusting the difference of the scrollbars' position (vertical) */
+  /* Adjusting the difference of the scrollbars position (vertical) */
   if (ymax > ih->data->h - min_y)
     dy = ymax - (ih->data->h - min_y);
   if (ymin < min_y)
     dy = ymin - min_y;
 
-  /* Adding the difference to scrollbars' position */
+  /* Adding the difference to scrollbars position */
   posx += dx;
   posy += dy;
 

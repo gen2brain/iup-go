@@ -4,8 +4,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPMAT_SCROLL_H 
+
+#ifndef __IUPMAT_SCROLL_H
 #define __IUPMAT_SCROLL_H
 
 #ifdef __cplusplus

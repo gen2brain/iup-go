@@ -11,9 +11,7 @@
 
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupkey.h"
 
-#include "iupdraw.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
 
@@ -51,7 +49,6 @@ struct _IcontrolData
       start_x, start_y,
       dragging;
 };
-
 
 static void iFlatValGetHandlerSize(Ihandle* ih, int is_horizontal, int *width, int *height)
 {

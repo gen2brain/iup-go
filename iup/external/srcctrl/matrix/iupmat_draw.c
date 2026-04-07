@@ -6,12 +6,10 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "iup.h"
 #include "iupcbs.h"
-
 #include "iupdraw.h"
 
 #include "iup_object.h"
@@ -19,8 +17,6 @@
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
-#include "iup_image.h"
 
 #include "iup_controls.h"
 
@@ -382,7 +378,7 @@ static void iMatrixDrawFrameRectTitle(Ihandle* ih, int lin, int col, int x1, int
   }
   else if (col == 1 && ih->data->columns.dt[0].size == 0)
   {
-    /* If does not have line titles then draw the left vertical line */
+    /* If it does not have line titles then draw the left vertical line */
     iMatrixDrawFrameVertLineCell(ih, lin, col - 1, x1, y1, y2, framecolor);
     x1++;
   }
@@ -405,7 +401,7 @@ static void iMatrixDrawFrameRectTitle(Ihandle* ih, int lin, int col, int x1, int
   }
   else if (lin == 1 && ih->data->lines.dt[0].size == 0)
   {
-    /* If does not have column titles then draw the top horizontal line */
+    /* If it does not have column titles then draw the top horizontal line */
     iMatrixDrawFrameHorizLineCell(ih, lin - 1, col, x1, x2 - 1, y1, framecolor);
     y1++;
   }
@@ -421,13 +417,13 @@ static void iMatrixDrawFrameRectCell(Ihandle* ih, int lin, int col, int x1, int 
 
   if (col == 1 && ih->data->columns.dt[0].size == 0)
   {
-    /* If does not have line titles then draw the >> left line << of the cell frame */
+    /* If it does not have line titles then draw the >> left line << of the cell frame */
     iMatrixDrawFrameVertLineCell(ih, lin, col - 1, x1, y1, y2 - 1, framecolor);
   }
 
   if (lin == 1 && ih->data->lines.dt[0].size == 0)
   {
-    /* If does not have column titles then draw the >> top line << of the cell frame */
+    /* If it does not have column titles then draw the >> top line << of the cell frame */
     iMatrixDrawFrameHorizLineCell(ih, lin - 1, col, x1, x2 - 1, y1, framecolor);
   }
 
@@ -593,7 +589,7 @@ static void iMatrixDrawText(Ihandle* ih, int x1, int x2, int y1, int y2, int col
     iMatrixDrawSetCellClipping(ih, x1, x2, y1, y2);
   }
 
-  /* Create an space between text and cell frame */
+  /* Create a space between text and cell frame */
   x1 += IMAT_PADDING_W / 2;       x2 -= IMAT_PADDING_W / 2;
   y1 += IMAT_PADDING_H / 2;       y2 -= IMAT_PADDING_H / 2;
 
@@ -727,7 +723,7 @@ static void iMatrixDrawFill(Ihandle* ih, int x1, int x2, int y1, int y2, int mar
   if (fill < 0) fill = 0;
   if (fill > 100) fill = 100;
 
-  /* Create an space between text and cell frame */
+  /* Create a space between text and cell frame */
   x1 += IMAT_PADDING_W / 2;       x2 -= IMAT_PADDING_W / 2;
   y1 += IMAT_PADDING_H / 2;       y2 -= IMAT_PADDING_H / 2;
 
@@ -768,7 +764,7 @@ static void iMatrixDrawImage(Ihandle* ih, int x1, int x2, int y1, int y2, int co
 
   iMatrixDrawSetCellClipping(ih, x1, x2, y1, y2);
 
-  /* Create an space between image and cell frame */
+  /* Create a space between image and cell frame */
   x1 += IMAT_PADDING_W / 2;       x2 -= IMAT_PADDING_W / 2;
   y1 += IMAT_PADDING_H / 2;       y2 -= IMAT_PADDING_H / 2;
 
@@ -1020,7 +1016,7 @@ static int iMatrixAdjustVisibleLinToMergedCells(Ihandle *ih, int *lin1, int col1
 }
 
 /* Draw the line titles, visible, between lin and lastlin, include it.
-   Line titles marked will be draw with the appropriate feedback.
+   Line titles marked will be drawn with the appropriate feedback.
    -> lin1 - First line to have its title drawn
    -> lin2 - Last line to have its title drawn */
 static void iMatrixDrawTitleLines(Ihandle* ih, int lin1, int lin2)
@@ -1135,7 +1131,7 @@ static void iMatrixDrawTitleLines(Ihandle* ih, int lin1, int lin2)
 }
 
 /* Draw the column titles, visible, between col and lastcol, include it.
-   Column titles marked will be draw with the appropriate feedback.
+   Column titles marked will be drawn with the appropriate feedback.
    -> col1 - First column to have its title drawn
    -> col2 - Last column to have its title drawn */
 static void iMatrixDrawTitleColumns(Ihandle* ih, int col1, int col2)
@@ -1379,7 +1375,7 @@ static void iMatrixDrawCells(Ihandle* ih, int lin1, int col1, int lin2, int col2
     iMatrixSetDrawColorStr(ih, emptyarea_color_str);
 
     /* If it was drawn until the last column and remains space in the right of it,
-       then delete this area with the the background color. */
+       then delete this area with the background color. */
     iupMATRIX_BOX(ih, x2, old_x2, old_y1, old_y2);
   }
 
@@ -1389,7 +1385,7 @@ static void iMatrixDrawCells(Ihandle* ih, int lin1, int col1, int lin2, int col2
     iMatrixSetDrawColorStr(ih, emptyarea_color_str);
 
     /* If it was drawn until the last line visible and remains space below it,
-       then delete this area with the the background color. */
+       then delete this area with the background color. */
     iupMATRIX_BOX(ih, 0, old_x2, y2, old_y2);
   }
 

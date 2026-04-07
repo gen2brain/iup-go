@@ -6,8 +6,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
-#include <stdarg.h>
 #include <string.h>
 
 #include "iup.h"
@@ -22,7 +20,6 @@
 #include "iup_stdcontrols.h"
 #include "iup_controls.h"
 #include "iup_register.h"
-#include "iup_assert.h"
 #include "iup_flatscrollbar.h"
 
 #include "iupmat_def.h"
@@ -33,7 +30,6 @@
 #include "iupmat_mouse.h"
 #include "iupmat_key.h"
 #include "iupmat_numlc.h"
-#include "iupmat_colres.h"
 #include "iupmat_mark.h"
 #include "iupmat_edit.h"
 #include "iupmat_draw.h"
@@ -79,7 +75,7 @@ static int iMatrixSetOriginAttrib(Ihandle* ih, const char* value)
   if (!iupMatrixCheckCellPos(ih, lin, col))
     return 0;
 
-  /* Can not be non scrollable cell */
+  /* Can not be non-scrollable cell */
   if ((lin < ih->data->lines.num_noscroll) || (col < ih->data->columns.num_noscroll))
     return 0;
   else
@@ -515,7 +511,7 @@ static void iMatrixFitLines(Ihandle* ih, int height)
        but also exists if some title text is defined in non callback mode. */
     line_height = iupMatrixGetLineHeight(ih, lin, lin == 0 ? 1 : 0);
 
-    /* the line does not exists */
+    /* the line does not exist */
     if (lin == 0 && !has_line_height && !line_height)
       empty = 0;  /* don't resize this line */
 
@@ -572,7 +568,7 @@ static void iMatrixFitColumns(Ihandle* ih, int width)
        but also exists if some title text is defined in non callback mode. */
     column_width = iupMatrixGetColumnWidth(ih, col, col == 0 ? 1 : 0);
 
-    /* the col does not exists */
+    /* the col does not exist */
     if (col == 0 && !has_col_width && !column_width)
       empty = 0;  /* don't resize this col */
 
@@ -1447,7 +1443,7 @@ static int iMatrixSetMergeAttrib(Ihandle* ih, int lin, int col, const char* valu
   if (iupStrToIntInt(value, &l, &c, ':') == 2)
   {
     /* merge of title cells can not include regular cells */
-    if (lin == 0 && l != 0) 
+    if (lin == 0 && l != 0)
       return 0;
 
     if (col == 0 && c != 0)
@@ -1837,7 +1833,7 @@ static int iMatrixCreateMethod(Ihandle* ih, void **params)
   /* Create the edit fields */
   iupMatrixEditCreate(ih);
 
-  /* defaults that are non zero */
+  /* defaults that are non-zero */
   ih->data->datah = ih->data->texth;
   ih->data->mark_continuous = 1;
   ih->data->columns.num = 1;
@@ -2334,4 +2330,3 @@ IUPCONTROLS_API Ihandle* IupMatrix(const char* action)
   params[1] = NULL;
   return IupCreatev("matrix", params);
 }
-

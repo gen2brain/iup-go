@@ -12,22 +12,16 @@
 #include "iup.h"
 #include "iupcbs.h"
 
-
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_drvfont.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
-#include "iup_childtree.h"
 #include "iup_image.h"
-#include "iup_assert.h"
 
 #include "iup_controls.h"
 
 #include "iupmat_def.h"
 #include "iupmat_getset.h"
-#include "iupmat_edit.h"
-#include "iupmat_draw.h"
 #include "iupmat_aux.h"
 
 

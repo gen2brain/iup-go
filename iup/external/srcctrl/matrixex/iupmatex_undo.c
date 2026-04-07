@@ -8,17 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #include "iup.h"
-#include "iupcbs.h"
-#include "iupcontrols.h"
 
 #include "iup_object.h"
-#include "iup_childtree.h"
-#include "iup_register.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_assert.h"
 #include "iup_matrixex.h"
 
 
@@ -97,7 +91,7 @@ static int iMatrixExUndoDataSwap(ImatExData* matex_data, IundoData* undo_data)
 
 static void iMatrixExUndoStackInit(ImatExData* matex_data)
 {
-  if (!matex_data->undo_stack) 
+  if (!matex_data->undo_stack)
     matex_data->undo_stack = iupArrayCreate(40, sizeof(IundoData));
 }
 
@@ -177,7 +171,7 @@ static char* iMatrixGetUndoCountAttrib(Ihandle* ih)
   int undo_stack_count = iupArrayCount(matex_data->undo_stack);
   if (matex_data->undo_stack && undo_stack_count)
     return iupStrReturnInt(undo_stack_count);
-  return NULL; 
+  return NULL;
 }
 
 static char* iMatrixGetUndoNameAttrib(Ihandle* ih, int id)
@@ -193,7 +187,7 @@ static char* iMatrixGetUndoNameAttrib(Ihandle* ih, int id)
 
     return iupStrReturnStr(undo_stack_data[id].name);
   }
-  return NULL; 
+  return NULL;
 }
 
 static int iMatrixSetUndoAttrib(Ihandle* ih, const char* value)
@@ -240,7 +234,7 @@ static char* iMatrixGetUndoAttrib(Ihandle* ih)
   int undo_stack_count = matex_data->undo_stack? iupArrayCount(matex_data->undo_stack): 0;
   if (undo_stack_count)
     return iupStrReturnBoolean(matex_data->undo_stack_pos>0);
-  return NULL; 
+  return NULL;
 }
 
 static char* iMatrixGetRedoAttrib(Ihandle* ih)
@@ -249,7 +243,7 @@ static char* iMatrixGetRedoAttrib(Ihandle* ih)
   int undo_stack_count = matex_data->undo_stack? iupArrayCount(matex_data->undo_stack): 0;
   if (undo_stack_count)
     return iupStrReturnBoolean(matex_data->undo_stack_pos<undo_stack_count);
-  return NULL; 
+  return NULL;
 }
 
 static int iMatrixSetRedoAttrib(Ihandle* ih, const char* value)

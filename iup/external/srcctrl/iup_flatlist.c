@@ -7,12 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
-#include "iup_assert.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -20,14 +18,12 @@
 #include "iup_drvfont.h"
 #include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_image.h"
 #include "iup_array.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
 #include "iup_register.h"
 #include "iup_flatscrollbar.h"
-
 
 
 typedef struct _iFlatListItem {
@@ -53,14 +49,13 @@ struct _IcontrolData
 
   /* attributes */
   int horiz_padding, vert_padding;  /* item internal margin */
-  int spacing, 
+  int spacing,
     icon_spacing, img_position;        /* used when both text and image are displayed */
   int horiz_alignment, vert_alignment;
   int border_width;
   int is_multiple;
   int show_dragdrop;
 };
-
 
 static int iFlatListGetScrollbar(Ihandle* ih)
 {
@@ -278,9 +273,7 @@ static void iFlatListUpdateScrollBar(Ihandle *ih)
   }
 }
 
-
 /*******************************************************************************************************/
-
 
 static int iFlatListRedraw_CB(Ihandle* ih)
 {
@@ -603,7 +596,7 @@ static int iFlatListButton_CB(Ihandle* ih, int button, int pressed, int x, int y
   {
     if (pos == -1)
     {
-      if (y < 0) 
+      if (y < 0)
         pos = 1;
       else
       {
@@ -892,9 +885,7 @@ static int iFlatListKPgDn_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /******************************************************************************************/
-
 
 static int iFlatListSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
@@ -1762,9 +1753,7 @@ static int iFlatListSetAttribPostRedraw(Ihandle* ih, const char* value)
   return 1;
 }
 
-
 /*****************************************************************************************/
-
 
 static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
 {
@@ -1893,7 +1882,7 @@ static int iFlatListCreateMethod(Ihandle* ih, void** params)
   free(ih->data);
   ih->data = iupALLOCCTRLDATA();
 
-  /* non zero default values */
+  /* non-zero default values */
   ih->data->img_position = IUP_IMGPOS_LEFT;
   ih->data->horiz_alignment = IUP_ALIGN_ALEFT;
   ih->data->vert_alignment = IUP_ALIGN_ACENTER;
@@ -1926,9 +1915,7 @@ static int iFlatListCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupFlatList(void)
 {

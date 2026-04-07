@@ -14,13 +14,10 @@
 #include <string.h>
 
 #include "iup.h"
-#include "iupcbs.h"
-
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 
 #include "iupmat_def.h"
 #include "iupmat_mem.h"
@@ -199,7 +196,7 @@ void iupMatrixMemReAllocLines(Ihandle* ih, int old_num, int num, int base)
     if (!ih->data->callback_mode)
     {
       int col;
-	  
+
       for(lin = base; lin < end; lin++)   /* all columns, base-end lines */
       {
         for (col = 0; col < ih->data->columns.num_alloc; col++)

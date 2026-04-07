@@ -8,20 +8,14 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_register.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
-#include "iup_image.h"
-
 
 
 static void iFlatFrameGetTitleSize(Ihandle* ih, int frame, int *width, int *height)
@@ -109,7 +103,7 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
       if (!titleimage_inactive)
         make_inactive = 1;
     }
-    
+
     IupGetIntInt(ih, "TITLEPADDING", &horiz_padding, &vert_padding);
 
     /* draw title background */
@@ -150,9 +144,7 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /*****************************************************************************************/
-
 
 static char* iFlatFrameGetDecorSizeAttrib(Ihandle* ih)
 {
@@ -213,9 +205,7 @@ static int iFlatFrameSetAttribPostRedraw(Ihandle* ih, const char* value)
   return 1;
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupFlatFrame(Ihandle* child)
 {

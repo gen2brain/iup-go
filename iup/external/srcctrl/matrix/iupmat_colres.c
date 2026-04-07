@@ -18,8 +18,6 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
-
 
 #include "iupmat_def.h"
 #include "iupmat_colres.h"
@@ -31,13 +29,13 @@
 
 static int iMatrixGetColResCheck(Ihandle* ih, int x, int y)
 {
-  if (ih->data->lines.dt[0].size && 
-      y < ih->data->lines.dt[0].size && 
+  if (ih->data->lines.dt[0].size &&
+      y < ih->data->lines.dt[0].size &&
       iupAttribGetBoolean(ih, "RESIZEMATRIX"))
   {
     int x_col = 0, col;
-   
-    /* Check if it is in the non scrollable columns */
+
+    /* Check if it is in the non-scrollable columns */
     for(col = 0; col < ih->data->columns.num_noscroll; col++)
     {
       x_col += ih->data->columns.dt[col].size;
@@ -136,7 +134,7 @@ void iupMatrixColResMove(Ihandle* ih, int x)
   y2 = iupMatrixGetHeight(ih) - 1;             /* to the bottom of the matrix */
 
   if (ih->data->colres_drag)
-  { 
+  {
     iupMatrixColResFinish(ih, x);
 
     iupMatrixDrawUpdate(ih);
