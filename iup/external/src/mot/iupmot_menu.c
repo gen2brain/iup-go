@@ -36,6 +36,9 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   char* value = iupAttribGet(ih, "POPUPALIGN");
   XButtonEvent ev;
+  memset(&ev, 0, sizeof(ev));
+  ev.type = ButtonPress;
+  ev.display = iupmot_display;
   ev.x_root = x;
   ev.y_root = y;
 
@@ -56,6 +59,22 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
       ev.y_root -= height;
     else if (iupStrEqualNoCase(value2, "ACENTER"))
       ev.y_root -= height / 2;
+  }
+
+  /* Wait for any active button release before showing the popup,
+     otherwise Motif's MenuShell dismisses on release. */
+  {
+    Window root_ret, child_ret;
+    int rx, ry, wx, wy;
+    unsigned int mask;
+    XQueryPointer(iupmot_display, DefaultRootWindow(iupmot_display),
+        &root_ret, &child_ret, &rx, &ry, &wx, &wy, &mask);
+    while (mask & (Button1Mask | Button2Mask | Button3Mask | Button4Mask | Button5Mask))
+    {
+      XtAppProcessEvent(iupmot_appcontext, XtIMAll);
+      XQueryPointer(iupmot_display, DefaultRootWindow(iupmot_display),
+          &root_ret, &child_ret, &rx, &ry, &wx, &wy, &mask);
+    }
   }
 
   XmMenuPosition(ih->handle, &ev);
