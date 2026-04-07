@@ -3,21 +3,23 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_FLATTREE_H 
+
+#ifndef __IUP_FLATTREE_H
 #define __IUP_FLATTREE_H
+
+#include "iup_mask.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   int sb,  /* scrollbar configuration, can be changed only before map */
       nc,
       spacing,
-      horiz_padding, 
+      horiz_padding,
       vert_padding,
       last_caret_pos,
       is_multiple,

@@ -5,14 +5,10 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <limits.h>
 #include <string.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
-#include "iup_array.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -28,7 +24,7 @@ static void iMatrixExStrCopyNoSepHTML(char* buffer, const char* str)
       *buffer = '<'; buffer++;
       *buffer = 'B'; buffer++;
       *buffer = 'R'; buffer++;
-      *buffer = '>'; 
+      *buffer = '>';
     }
     else
       *buffer = *str;
@@ -48,7 +44,7 @@ static void iMatrixExStrCopyNoSepLaTeX(char* buffer, const char* str)
     else if (*str=='%')
     {
       *buffer = '\\'; buffer++;
-      *buffer = '%'; 
+      *buffer = '%';
     }
     else
       *buffer = *str;
@@ -197,7 +193,7 @@ static char* iMatrixExGetCellFormat(Ihandle *ih, int lin, int col, char* format)
     }
 
     /* Leave this out for now:
-       font-size: %dpt; 
+       font-size: %dpt;
        font-family: %s; */
   }
 
@@ -246,7 +242,7 @@ static void iMatrixExCopyHTML(Ihandle *ih, FILE* file, int num_lin, int num_col,
       for (col = 0; col <= num_col; ++col)
       {
         if (iupMatrixExIsColumnVisible(ih, col))
-        {           
+        {
           if (lin==0||col==0)
             fprintf(file,"<TH%s%s>", th, add_format? iMatrixExGetCellFormat(ih, lin, col, f): "");
           else
@@ -330,7 +326,7 @@ static void iMatrixExCopyLaTeX(Ihandle *ih, FILE* file, int num_lin, int num_col
       for (col = 0; col <= num_col; ++col)
       {
         if (iupMatrixExIsColumnVisible(ih, col))
-        {    
+        {
           if (add_sep)
             fprintf(file,"& ");
 

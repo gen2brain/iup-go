@@ -4,8 +4,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPMAT_MEM_H 
+
+#ifndef __IUPMAT_MEM_H
 #define __IUPMAT_MEM_H
 
 #ifdef __cplusplus

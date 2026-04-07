@@ -5,19 +5,13 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "iup.h"
 #include "iupcbs.h"
 
 
 #include "iup_object.h"
 #include "iup_attrib.h"
-#include "iup_str.h"
-#include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
-#include "iup_drv.h"
 
 #include "iupmat_def.h"
 #include "iupmat_aux.h"
@@ -105,7 +99,7 @@ void iupMatrixAuxAdjustFirstFromLast(ImatLinColData* p)
     /* the "while" found an index for first */
     p->first = i;
 
-    /* position at the remaing space */
+    /* position at the remaining space */
     p->first_offset = sum - p->current_visible_size;
   }
 }
@@ -130,13 +124,13 @@ void iupMatrixAuxAdjustFirstFromScrollPos(ImatLinColData* p, int scroll_pos)
   {
     if (p->num == p->num_noscroll)
     {
-      /* did NOT go trough the "for" above */
+      /* did NOT go through the "for" above */
       offset = scroll_pos;
       index = p->num_noscroll; /* redundant, just for the record */
     }
     else
     {
-      /* go all the way trough the "for" above, but still sp < scroll_pos */
+      /* go all the way through the "for" above, but still sp < scroll_pos */
       offset = scroll_pos - sp;
       index = p->num-1;
     }
@@ -333,7 +327,7 @@ static int iMatrixAuxUpdateVisibleSize(Ihandle* ih, int m)
   for (i=0; i<p->num_noscroll; i++)
     fixed_size += p->dt[i].size;
 
-  /* Matrix useful area is the current size minus the non scrollable area */
+  /* Matrix useful area is the current size minus the non-scrollable area */
   p->current_visible_size = canvas_size - fixed_size;
   if (p->current_visible_size > p->total_visible_size)
     p->current_visible_size = p->total_visible_size;

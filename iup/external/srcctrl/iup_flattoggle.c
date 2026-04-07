@@ -13,13 +13,11 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_image.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
-#include "iup_drvinfo.h"
 #include "iup_key.h"
 
 
@@ -29,7 +27,6 @@
 
 /* from IupRadio implementation */
 IUP_SDK_API Ihandle *iupRadioFindToggleParent(Ihandle* ih_toggle);
-
 
 struct _IcontrolData
 {
@@ -390,7 +387,7 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
     else
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, -1, -1);
   }
-  else 
+  else
     iupFlatDrawBox(dc, border_width, ih->currentwidth - 1 - border_width,
                        border_width, ih->currentheight - 1 - border_width,
                        bgcolor, NULL, 1);  /* background is always active */
@@ -451,7 +448,7 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
         draw_image = iupFlatGetImageName(ih, "CHECKIMAGENOTDEF", NULL, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
       else if (selected)
         draw_image = iupFlatGetImageName(ih, "CHECKIMAGEON", NULL, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
-      
+
       if (!draw_image)
         draw_image = iupFlatGetImageName(ih, "CHECKIMAGE", check_image, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
 
@@ -972,7 +969,7 @@ static int iFlatToggleCreateMethod(Ihandle* ih, void** params)
   iupAttribSet(ih, "BORDER", "NO");
   ih->expand = IUP_EXPAND_NONE;
 
-  /* non zero default values */
+  /* non-zero default values */
   ih->data->spacing = 2;
   ih->data->border_width = 1;
   ih->data->horiz_alignment = IUP_ALIGN_ACENTER;

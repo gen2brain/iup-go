@@ -7,13 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <time.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
-#include "iup_assert.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -21,7 +19,6 @@
 #include "iup_drvfont.h"
 #include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
-#include "iup_layout.h"
 #include "iup_image.h"
 #include "iup_array.h"
 #include "iup_drvdraw.h"
@@ -29,6 +26,7 @@
 #include "iup_register.h"
 #include "iup_flatscrollbar.h"
 #include "iup_childtree.h"
+
 
 #define IFLATTREE_UP        0
 #define IFLATTREE_DOWN      1
@@ -43,7 +41,7 @@ enum { IFLATTREE_EXPANDED, IFLATTREE_COLLAPSED };  /* state */
 enum { IFLATTREE_BRANCH, IFLATTREE_LEAF };  /* kind */
 enum { IFLATTREE_MARK_SINGLE, IFLATTREE_MARK_MULTIPLE };  /* mark_mode */
 
-typedef struct _iFlatTreeNode 
+typedef struct _iFlatTreeNode
 {
   /* attributes */
   char* title;
@@ -63,7 +61,7 @@ typedef struct _iFlatTreeNode
 
   /* aux */
   int id, depth, expanded;
-  int height,  /* image+title height, does not includes spacing */
+  int height,  /* image+title height, does not include spacing */
       width,   /* image+title width, includes also indentation and toggle_size*/
       title_width;
 
@@ -104,9 +102,7 @@ struct _IcontrolData
   int extratext_move;
 };
 
-
 /********************** Additional images **********************/
-
 
 static Ihandle* load_image_plus(void)
 {
@@ -348,9 +344,7 @@ static void iFlatTreeInitializeImages(void)
   IupSetHandle("IMGPAPER24", load_image_imgpaper24());
 }
 
-
 /********************** Utilities **********************/
-
 
 static int iFlatTreeFindUserDataId(Ihandle* ih, void* userdata)
 {
@@ -406,9 +400,7 @@ static char *iFlatTreeGetNodeImage(Ihandle* ih, iFlatTreeNode *node, int check_s
   return image;
 }
 
-
 /********************** Node Hierarchy **********************/
-
 
 static void iFlatTreeUpdateNodeChildExpandedRec(iFlatTreeNode *node)
 {
@@ -518,7 +510,7 @@ static void iFlatTreeRebuildArray(Ihandle *ih, int num)
   iFlatTreeNode *node = ih->data->root_node->first_child;
   int id = 0;
   int depth = 0;
-  
+
   if (num > 0)
     iupArrayAdd(ih->data->node_array, num);  /* increment the array */
   else if (num < 0)
@@ -534,7 +526,7 @@ static void iFlatTreeRebuildArray(Ihandle *ih, int num)
       iupArrayRemove(ih->data->node_array, 0, count);  /* clear the array, memory is preserved */
     }
   }
-  
+
   iFlatTreeUpdateNodeIdRec(iupArrayGetData(ih->data->node_array), node, &id, depth);
 }
 
@@ -1005,9 +997,7 @@ static int iFlatTreeConvertIdToY(Ihandle *ih, int id, int *h)
   return node_y;
 }
 
-
 /***********************************   Scrollbar ************************************/
-
 
 static int iFlatTreeGetScrollbar(Ihandle* ih)
 {
@@ -1144,9 +1134,7 @@ static void iFlatTreeUpdateScrollBar(Ihandle *ih)
   }
 }
 
-
 /**************************************  Internal Callbacks  *****************************************/
-
 
 static void iupFlatDrawPlus(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, long line_rgba, int space)
 {
@@ -1264,7 +1252,7 @@ static int iFlatTreeDrawNodes(Ihandle *ih, IdrawCanvas* dc, iFlatTreeNode *node,
         py1 = y - ih->data->spacing;
         px2 = px1;   /* vertical line */
         py2 = node_y + node_h / 2;
-        if ((py1 >= 0 && py1 < ih->currentheight) || 
+        if ((py1 >= 0 && py1 < ih->currentheight) ||
             (py2 >= 0 && py2 < ih->currentheight) ||
             (py1 < 0 && py2 >= ih->currentheight))
           iupdrvDrawLine(dc, px1, py1, px2, py2, line_rgba, IUP_DRAW_STROKE_DOT, 1);
@@ -1344,11 +1332,11 @@ static int iFlatTreeDrawNodes(Ihandle *ih, IdrawCanvas* dc, iFlatTreeNode *node,
       if (ih->data->has_focus && ih->data->focus_id == node->id && focus_feedback)
         iupdrvDrawFocusRect(dc, title_x, node_y, title_x + node->title_width - 1, node_y + node_h - 1);
 
-  	  if (ih->data->extratext_width)
+      if (ih->data->extratext_width)
       {
-  	    int extra_x = ih->currentwidth - ih->data->extratext_width;
-  	  
-	      iupdrvDrawRectangle(dc, extra_x , node_y, ih->currentwidth, node_y + node_h , iupDrawStrToColor(bg_color, 0), IUP_DRAW_FILL, 1);
+        int extra_x = ih->currentwidth - ih->data->extratext_width;
+
+        iupdrvDrawRectangle(dc, extra_x , node_y, ih->currentwidth, node_y + node_h , iupDrawStrToColor(bg_color, 0), IUP_DRAW_FILL, 1);
 
         if (node->extratext)
         {
@@ -1356,7 +1344,7 @@ static int iFlatTreeDrawNodes(Ihandle *ih, IdrawCanvas* dc, iFlatTreeNode *node,
                           IUP_IMGPOS_LEFT, 10, IUP_ALIGN_ALEFT, IUP_ALIGN_ACENTER, 0, 0,
                           NULL, 0, node->extratext, text_flags, 0, fore_color, bg_color, active);
         }
-  	  }
+      }
     }
 
     /* next node */
@@ -1492,9 +1480,7 @@ static int iFlatTreeResize_CB(Ihandle* ih, int width, int height)
   return IUP_DEFAULT;
 }
 
-
 /********************************** Rename Node ************************************************/
-
 
 static void iFlatTreeGetTitlePos(Ihandle *ih, iFlatTreeNode *node, int *txt_x, int *txt_y)
 {
@@ -1667,9 +1653,7 @@ static int iFlatTreeKF2_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /*********************************  Selection ***************************************/
-
 
 static void iFlatTreeInvertSelection(Ihandle* ih)
 {
@@ -1951,9 +1935,7 @@ static void iFlatTreeSelectNodeInteract(Ihandle* ih, int id, int ctrlPressed, in
   }
 }
 
-
 /**************************************** Mouse *******************************************/
-
 
 static int iFlatTreeCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int is_ctrl, int is_shift)
 {
@@ -2051,14 +2033,14 @@ static int iFlatTreeButton_CB(Ihandle* ih, int button, int pressed, int x, int y
     return IUP_DEFAULT;
   }
 
-  if (button == IUP_BUTTON1 && pressed && ih->data->extratext_width) 
+  if (button == IUP_BUTTON1 && pressed && ih->data->extratext_width)
   {
-	  int extra_x = ih->currentwidth - ih->data->extratext_width;
-	  if (x >= extra_x - EXTRAWIDTH_SPACE && x <= extra_x + EXTRAWIDTH_SPACE) 
+    int extra_x = ih->currentwidth - ih->data->extratext_width;
+    if (x >= extra_x - EXTRAWIDTH_SPACE && x <= extra_x + EXTRAWIDTH_SPACE)
     {
-		  ih->data->extratext_move = x;
-		  return IUP_DEFAULT;
-	  }
+      ih->data->extratext_move = x;
+      return IUP_DEFAULT;
+    }
   }
 
   if (id == -1)
@@ -2149,7 +2131,7 @@ static int iFlatTreeButton_CB(Ihandle* ih, int button, int pressed, int x, int y
 
         node->toggle_value = check;
 
-        /* same as IupTree, it does not triggers a selection callback */
+        /* same as IupTree, it does not trigger a selection callback */
         if (iupAttribGetBoolean(ih, "MARKWHENTOGGLE"))
           IupSetAttributeId(ih, "MARKED", node->id, node->toggle_value > 0 ? "Yes" : "No");
 
@@ -2334,9 +2316,7 @@ static int iFlatTreeLeaveWindow_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /*********************************  Focus ************************************/
-
 
 static int iFlatTreeFocusPageDown(Ihandle *ih)
 {
@@ -2664,9 +2644,7 @@ static int iFlatTreeKPgDn_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /*********************************  Drag & Drop  ********************************/
-
 
 static void iFlatTreeDragDropCopyNode(Ihandle *ih_source, Ihandle *ih, iFlatTreeNode *srcNode, iFlatTreeNode *dstNode, int isControl)
 {
@@ -2792,7 +2770,6 @@ static int iFlatTreeDragBegin_CB(Ihandle* ih, int x, int y)
   iupAttribSetInt(ih, "_IUP_TREE_SOURCEID", id);  /* works for IupTree and IupFlatTree */
   return IUP_DEFAULT;
 }
-
 
 /*********************************  Attributes  ********************************/
 
@@ -3661,9 +3638,9 @@ static char* iFlatTreeGetMarkModeAttrib(Ihandle* ih)
 
 static int iFlatTreeSetMarkModeAttrib(Ihandle* ih, const char* value)
 {
-	if (iupStrEqualNoCase(value, "MULTIPLE"))
+  if (iupStrEqualNoCase(value, "MULTIPLE"))
   {
-		ih->data->mark_mode = IFLATTREE_MARK_MULTIPLE;
+    ih->data->mark_mode = IFLATTREE_MARK_MULTIPLE;
     ih->data->show_dragdrop = 0;
   }
   else
@@ -4001,7 +3978,7 @@ static int iFlatTreeSetAttribPostRedraw(Ihandle* ih, const char* value)
 {
   (void)value;
   if (ih->data->auto_redraw)
-    IupUpdate(ih); /* redraw after the atribute is saved on the hash table */
+    IupUpdate(ih); /* redraw after the attribute is saved on the hash table */
   return 1;
 }
 
@@ -4040,29 +4017,28 @@ static int iFlatTreeSetExtraTextWidthAttrib(Ihandle* ih, const char* value)
 }
 static char* iFlatTreeGetExtraTextAttrib(Ihandle* ih, int id)
 {
-	iFlatTreeNode *node = (iFlatTreeNode *)iFlatTreeGetNode(ih, id);
-	if (!node)
-		return NULL;
+  iFlatTreeNode *node = (iFlatTreeNode *)iFlatTreeGetNode(ih, id);
+  if (!node)
+    return NULL;
 
-	return node->extratext;
+  return node->extratext;
 }
 
-static int iFlatTreeSetExtraTextAttrib(Ihandle* ih, int id, const char* value) 
+static int iFlatTreeSetExtraTextAttrib(Ihandle* ih, int id, const char* value)
 {
-	iFlatTreeNode *node = (iFlatTreeNode *)iFlatTreeGetNode(ih, id);
-	if (!node)
-		return 0;
+  iFlatTreeNode *node = (iFlatTreeNode *)iFlatTreeGetNode(ih, id);
+  if (!node)
+    return 0;
 
   if (node->extratext)
     free(node->extratext);
-	node->extratext = iupStrDup(value);
+  node->extratext = iupStrDup(value);
 
-	iFlatTreeRedraw(ih, 0, 1);
-	return 0;
+  iFlatTreeRedraw(ih, 0, 1);
+  return 0;
 }
 
 /*********************************  Methods  ************************************/
-
 
 static void iFlatTreeSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 {
@@ -4126,7 +4102,7 @@ static int iFlatTreeCreateMethod(Ihandle* ih, void** params)
   IupSetAttribute(text, "VISIBLE", "NO");
   IupSetAttribute(text, "ACTIVE", "NO");
 
-  /* non zero default values */
+  /* non-zero default values */
   ih->data->auto_redraw = 1;
   ih->data->icon_spacing = 2;
   ih->data->add_expanded = 1;
@@ -4179,9 +4155,7 @@ static int iFlatTreeCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
-
 /******************************************************************************/
-
 
 IUP_API Ihandle* IupFlatTree(void)
 {

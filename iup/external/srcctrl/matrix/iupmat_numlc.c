@@ -11,17 +11,13 @@
 /**************************************************************************/
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "iup.h"
-#include "iupcbs.h"
-
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 
 #include "iupmat_def.h"
 #include "iupmat_edit.h"
@@ -32,7 +28,7 @@
 
 
 /* Always preserve these attributes here because they are actually stored in the hash table.
-   Some of there also have flags, but flags are only used to signal that an attribute was set 
+   Some of there also have flags, but flags are only used to signal that an attribute was set,
    and we must be consistent between flags and hash table.
 
    BGCOLOR
@@ -45,9 +41,9 @@
    MERGED
    SORTSIGN
    ALIGNMENT
-   RASTERWIDTH   
+   RASTERWIDTH
    WIDTH
-   RASTERHEIGHT  
+   RASTERHEIGHT
    HEIGHT
    NUMERICFORMAT
    NUMERICFORMATTITLE
@@ -72,7 +68,7 @@ static char* imatrix_lin_attrib[IMAT_NUM_ATTRIB_LINE] = {
 
 #define IMAT_NUM_ATTRIB_COL 12
 #define IMAT_NUM_ATTRIB_COL_ONLY 6
-static char* imatrix_col_attrib[IMAT_NUM_ATTRIB_COL] = { 
+static char* imatrix_col_attrib[IMAT_NUM_ATTRIB_COL] = {
   "NUMERICFORMAT",   /* only the column */
   "NUMERICFORMATTITLE",
   "SORTSIGN",
@@ -87,7 +83,7 @@ static char* imatrix_col_attrib[IMAT_NUM_ATTRIB_COL] = {
   "FRAMEHORIZCOLOR"};
 
 #define IMAT_NUM_ATTRIB_CELL 11
-static char* imatrix_cell_attrib[IMAT_NUM_ATTRIB_CELL] = { 
+static char* imatrix_cell_attrib[IMAT_NUM_ATTRIB_CELL] = {
   "BGCOLOR",   /* all use L:C */
   "FGCOLOR",
   "FONT",
@@ -388,7 +384,7 @@ int iupMatrixGetStartEnd(const char* value, int *base, int *count, int max, int 
   if (!value)
     return 0;
 
-  *base = 0; 
+  *base = 0;
   *count = 1;
 
   ret = iupStrToIntInt(value, base, count, '-');
@@ -423,11 +419,11 @@ int iupMatrixGetStartEnd(const char* value, int *base, int *count, int max, int 
     if (*base <= 0)  /* the first valid element is always 1 */
       *base = 1;
 
-    /* when add, base can be just after the last element but not more */
+    /* when added, base can be just after the last element but not more */
     if (*base > max)
       *base = max;
 
-    /* when add, count can be any positive value */
+    /* when added, count can be any positive value */
   }
 
   return 1;
@@ -619,13 +615,13 @@ int iupMatrixSetNumLinAttrib(Ihandle* ih, const char* value)
     {
       int base;  /* base is after the end */
       if (num >= ih->data->lines.num) /* add or alloc */
-        base = ih->data->lines.num;   
+        base = ih->data->lines.num;
       else
         base = num;
-      iupMatrixMemReAllocLines(ih, ih->data->lines.num, num, base);  
+      iupMatrixMemReAllocLines(ih, ih->data->lines.num, num, base);
     }
 
-    ih->data->lines.num = num;  
+    ih->data->lines.num = num;
     if (ih->data->lines.num_noscroll >= ih->data->lines.num)
       ih->data->lines.num_noscroll = ih->data->lines.num - 1;
     if (ih->data->lines.num_noscroll < 1)

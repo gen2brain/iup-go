@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -18,9 +17,7 @@
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_stdcontrols.h"
 #include "iup_layout.h"
-#include "iup_image.h"
 #include "iup_register.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
@@ -937,7 +934,7 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
       int selected = iupAttribGetIntId(ih, "EXTRAVALUE", i);
       int image_pressed;
 
-      extra_horiz_alignment = horiz_alignment; 
+      extra_horiz_alignment = horiz_alignment;
       extra_vert_alignment = vert_alignment;
       iFlatTabsGetAlignment(extra_alignment, &extra_horiz_alignment, &extra_vert_alignment);
 
@@ -1240,7 +1237,7 @@ static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, i
         else
           extra_size = iFlatTabsGetExtraHeightId(ih, i, img_position, horiz_padding, vert_padding, NULL);
 
-        if (curr2 > size - total_extra_size - extra_size && 
+        if (curr2 > size - total_extra_size - extra_size &&
             curr2 < size - total_extra_size)
           return ITABS_EXTRABUT2TABID(i);
 
@@ -1336,7 +1333,6 @@ static void iFlatTabsGetExtraButtonBox(Ihandle* ih, int tabType, int extra_butto
     total_extra_size += (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? extra_w : extra_h;
   }
 }
-
 
 /*****************************************************************************************/
 
@@ -1754,9 +1750,7 @@ static int iFlatTabsKRight_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /*****************************************************************************************/
-
 
 static int iFlatTabsSetValueHandleAttrib(Ihandle* ih, const char* value)
 {
@@ -2176,9 +2170,7 @@ static char* iFlatTabsGetExtraBoxAttrib(Ihandle* ih, int id)
   return NULL;
 }
 
-
 /*********************************************************************************/
-
 
 static int iFlatTabsConvertXYToPos(Ihandle* ih, int x, int y)
 {
@@ -2272,7 +2264,7 @@ static void iFlatTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
       iupAttribSetStrId(ih, flattabs_attrib_id[i], p, value);
       iupAttribSetId(ih, flattabs_attrib_id[i], p + 1, NULL);
     }
-  }   
+  }
 
   if (pos == count)
   {

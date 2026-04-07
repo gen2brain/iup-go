@@ -6,26 +6,19 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
-#include <stdarg.h>
 #include <string.h>
 
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupcontrols.h"
-
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 #include "iup_controls.h"
-#include "iup_register.h"
 
 #include "iupmat_def.h"
 #include "iupmat_getset.h"
 #include "iupmat_draw.h"
-#include "iupmat_aux.h"
 
 
 /* Exported to IupMatrixEx */
@@ -39,7 +32,7 @@ char* iupMatrixExGetCellValue(Ihandle* ih, int lin, int col, int display)
 
 /* Exported to IupMatrixEx */
 void iupMatrixExSetCellValue(Ihandle* ih, int lin, int col, const char* value)
-{  
+{
   iupMatrixModifyValue(ih, lin, col, value);
 }
 
@@ -280,7 +273,7 @@ static int iMatrixSetSortColumnAttrib(Ihandle* ih, int col, const char* value)
   if (lin2 < lin1) lin2 = lin1;
 
   ascending = iupStrEqualNoCase(iupAttribGetStr(ih, "SORTCOLUMNORDER"), "ASCENDING");
-  
+
   sort_cb = (IFniii)IupGetCallback(ih, "SORTCOLUMNCOMPARE_CB");
   if (sort_cb)
   {
@@ -374,14 +367,14 @@ static int iMatrixSetUndoRedoAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
     ih->data->undo_redo = 1;
-  else 
+  else
     ih->data->undo_redo = 0;
   return 0;
 }
 
 static char* iMatrixGetUndoRedoAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean(ih->data->undo_redo); 
+  return iupStrReturnBoolean(ih->data->undo_redo);
 }
 
 void iupMatrixRegisterEx(Iclass* ic)
@@ -414,4 +407,3 @@ void iupMatrixRegisterEx(Iclass* ic)
   /* IupMatrixEx Attributes - Undo/Redo */
   iupClassRegisterAttribute(ic, "UNDOREDO", iMatrixGetUndoRedoAttrib, iMatrixSetUndoRedoAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 }
-

@@ -5,24 +5,18 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
-#include "iup_register.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 #include "iup_layout.h"
 #include "iup_drv.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
-#include "iup_childtree.h"
 #include "iup_flatscrollbar.h"
 
 
@@ -179,9 +173,7 @@ static int iFlatScrollBarMoveHandler(int size, int arrow_size, int max, int d, i
   return pos;
 }
 
-
 /*************************************************************************/
-
 
 static void iFlatScrollBarDrawVertical(Ihandle* sb_vert, IdrawCanvas* dc, int active, const char* fgcolor, const char* bgcolor, int pressed,
                                        int highlight, int ymax, int dy, int sb_size, int has_horiz_scroll)
@@ -324,7 +316,7 @@ static void iFlatScrollBarDrawHorizontal(Ihandle* sb_horiz, IdrawCanvas* dc, int
     {
       int make_inactive;
       const char* image;
-      
+
       image = iupFlatGetImageName(sb_horiz->parent, "SB_IMAGELEFT", NULL, pressed != SB_NONE, highlight != SB_NONE, active, &make_inactive);
       iupdrvDrawImage(dc, image, make_inactive, bgcolor, 0, 0, -1, -1);
 
@@ -797,9 +789,7 @@ static int iFlatScrollBarFloatTimer_CB(Ihandle* timer)
   return IUP_DEFAULT;
 }
 
-
 /*****************************************************************************/
-
 
 static IattribSetFunc iupCanvasSetDXAttrib = NULL;
 static IattribSetFunc iupCanvasSetDYAttrib = NULL;
@@ -1032,9 +1022,7 @@ static int iFlatScrollBarSetShowTransparentAttrib(Ihandle* ih, const char *value
   return 1;
 }
 
-
 /*******************************************************************************************************/
-
 
 IUP_SDK_API void iupFlatScrollBarSetChildrenCurrentSize(Ihandle* ih, int shrink)
 {
@@ -1149,9 +1137,7 @@ IUP_SDK_API void iupFlatScrollBarMotionUpdate(Ihandle* ih, int x, int y)
   }
 }
 
-
 /******************************************************************************/
-
 
 IUP_SDK_API int iupFlatScrollBarGet(Ihandle* ih)
 {

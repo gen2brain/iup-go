@@ -4,8 +4,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPMAT_MOUSE_H 
+
+#ifndef __IUPMAT_MOUSE_H
 #define __IUPMAT_MOUSE_H
 
 #ifdef __cplusplus

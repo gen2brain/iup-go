@@ -15,11 +15,9 @@
 #include "iup.h"
 #include "iupcbs.h"
 
-
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 #include "iup_flatscrollbar.h"
 
 #include "iupmat_def.h"
@@ -157,7 +155,7 @@ static void iMatrixMouseLeftPress(Ihandle* ih, int lin, int col, int shift, int 
 
       iupMatrixAuxCallEnterCellCb(ih);
     }
-    
+
     ih->data->button1edit = 1; /* prepare for edit */
   }
   else /* single click */
@@ -192,7 +190,7 @@ static void iMatrixMouseLeftPress(Ihandle* ih, int lin, int col, int shift, int 
         }
         else if (ret == -1) /* toggle */
         {
-          int togglevalue;     
+          int togglevalue;
           IFniii togglevalue_cb;
 
           if (iupAttribGetBoolean(ih, "READONLY"))
@@ -213,7 +211,7 @@ static void iMatrixMouseLeftPress(Ihandle* ih, int lin, int col, int shift, int 
           }
 
           iupMatrixDrawCells(ih, lin, col, lin, col);
-          if (togglevalue_cb) 
+          if (togglevalue_cb)
             togglevalue_cb(ih, lin, col, togglevalue);
         }
       }
@@ -283,7 +281,7 @@ int iupMatrixMouseButton_CB(Ihandle* ih, int button, int press, int x, int y, ch
       if (iupMatrixColResStart(ih, x, y))
       {
         iupMatrixMarkBlockReset(ih);
-        return IUP_DEFAULT;  /* Resize of the width a of a column was started */
+        return IUP_DEFAULT;  /* Resize of the width of a column was started */
       }
 
       if (lin!=-1 && col!=-1)
@@ -382,7 +380,7 @@ int iupMatrixMouseMove_CB(Ihandle* ih, int x, int y, char *status)
     iMatrixMouseSetCursor(ih, "ARROW");
   else if (iupMatrixColResCheckChangeCursor(ih, x, y))
     iMatrixMouseSetCursor(ih, "RESIZE_W");
-  else 
+  else
     iMatrixMouseResetCursor(ih);
 
   if (has_lincol)

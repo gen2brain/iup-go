@@ -4,8 +4,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPMAT_GETSET_H 
+
+#ifndef __IUPMAT_GETSET_H
 #define __IUPMAT_GETSET_H
 
 #ifdef __cplusplus
@@ -20,7 +20,7 @@ char* iupMatrixGetValueDisplay(Ihandle* ih, int lin, int col);
 double iupMatrixGetValueNumeric(Ihandle* ih, int lin, int col);
 /* Used for getattribute, copy cell and undo (internal),
    also a string with maximum precision when numeric. */
-char* iupMatrixGetValue(Ihandle* ih, int lin, int col);  
+char* iupMatrixGetValue(Ihandle* ih, int lin, int col);
 
 void  iupMatrixSetValue(Ihandle* ih, int lin, int col, const char* value, int user_edited);
 void iupMatrixModifyValue(Ihandle* ih, int lin, int col, const char* value);

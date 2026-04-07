@@ -6,13 +6,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 
-#include "iup_array.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"

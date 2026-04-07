@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPMAT_DEF_H 
+
+#ifndef __IUPMAT_DEF_H
 #define __IUPMAT_DEF_H
 
 #ifdef __cplusplus
@@ -42,13 +42,13 @@ enum{IMAT_TYPE_TEXT,
      IMAT_TYPE_IMAGE,
      IMAT_TYPE_FILL};
 
-enum{IMAT_EDITNEXT_LIN, 
-     IMAT_EDITNEXT_COL, 
-     IMAT_EDITNEXT_LINCR, 
+enum{IMAT_EDITNEXT_LIN,
+     IMAT_EDITNEXT_COL,
+     IMAT_EDITNEXT_LINCR,
      IMAT_EDITNEXT_COLCR,
      IMAT_EDITNEXT_NONE};
 
-/* Text Alignment that will be draw. Used by iMatrixDrawCellValue */
+/* Text Alignment that will be drawn. Used by iMatrixDrawCellValue */
 #define IMAT_ALIGN_CENTER  0
 #define IMAT_ALIGN_START    1
 #define IMAT_ALIGN_END   2
@@ -74,19 +74,19 @@ typedef struct _ImatLinColData
 {
   ImatLinCol* dt;   /* columns/lines data (allocated after map)   */
 
-  int num;          /* Number of columns/lines, default/minimum=1, always includes the non scrollable cells */
+  int num;          /* Number of columns/lines, default/minimum=1, always includes the non-scrollable cells */
   int num_alloc;    /* Number of columns/lines allocated, default=5 */
-  int num_noscroll; /* Number of non scrollable columns/lines, default/minimum=1 */
+  int num_noscroll; /* Number of non-scrollable columns/lines, default/minimum=1 */
 
-  int first_offset; /* Scroll offset of the first visible column/line from right to left 
-                       (or the invisible part of the first visible cell) 
+  int first_offset; /* Scroll offset of the first visible column/line from right to left
+                       (or the invisible part of the first visible cell)
                        This is how the scrollbar controls scrolling of cells. */
   int first;        /* First visible column/line */
   int last;         /* Last visible column/line  */
 
   /* used to configure the scrollbar */
-  int total_visible_size;   /* Sum of the widths/heights of the columns/lines, not including the non scrollable cells */
-  int current_visible_size; /* Width/height of the visible window, not including the non scrollable cells */
+  int total_visible_size;   /* Sum of the widths/heights of the columns/lines, not including the non-scrollable cells */
+  int current_visible_size; /* Width/height of the visible window, not including the non-scrollable cells */
 
   int total_size;   /* Sum of the widths/heights of all columns/lines */
 
@@ -97,7 +97,7 @@ typedef struct _ImatNumericData
 {
   unsigned char quantity;
   unsigned char unit, unit_shown;
-  unsigned char flags;  
+  unsigned char flags;
 } ImatNumericData;
 
 typedef struct _ImatMergedData
@@ -124,7 +124,7 @@ struct _IcontrolData
 
   ImatLinColData lines;
   ImatLinColData columns;
-  int noscroll_as_title; /* Non scrollable columns/lines shown as title columns/lines, default=0 */
+  int noscroll_as_title; /* Non-scrollable columns/lines shown as title columns/lines, default=0 */
 
   /* State */
   int has_focus;
@@ -141,7 +141,7 @@ struct _IcontrolData
   int hidden_text_marks, editnext;
   int use_title_size;   /* use title contents when calculating cell size */
   int limit_expand; /* limit expand to maximum size */
-  int undo_redo, 
+  int undo_redo,
       flat,
       show_fill_value;
 

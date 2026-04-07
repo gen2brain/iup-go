@@ -9,11 +9,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 #include "iup.h"
-#include "iup_key.h"
 #include "iupcbs.h"
 #include "iupcontrols.h"
 
@@ -21,7 +19,6 @@
 #include "iup_object.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_stdcontrols.h"
 #include "iup_image.h"
 #include "iup_register.h"
 
@@ -42,7 +39,6 @@
 /* inactive line effect */
 #define IMAT_LIGHTER(_x)  (_x+192)/2
 
-
 typedef struct _ImatrixListData  /* Used only by the IupMatrixList control */
 {
   /* attributes */
@@ -50,7 +46,7 @@ typedef struct _ImatrixListData  /* Used only by the IupMatrixList control */
 
   /* internal variables */
   int label_col, color_col, image_col;  /* column order (0 means it is hidden) */
-  int last_click_lin, 
+  int last_click_lin,
       last_click_col;
 } ImatrixListData;
 
@@ -255,7 +251,7 @@ static void iMatrixListInitSize(Ihandle* ih, ImatrixListData* mtxList)
     num_col++;
   if (mtxList->image_col != 0)
     num_col++;
-  
+
   snprintf(str, sizeof(str), "%d", num_col);
   iupMatrixSetNumColAttrib(ih, str);  /* "NUMCOL" */
   IupSetStrAttribute(ih, "NUMCOL_VISIBLE", str);
@@ -739,7 +735,7 @@ static char* iMatrixListGetValueAttrib(Ihandle* ih)
 
   if (ih->data->editing)
     return iupMatrixEditGetValue(ih);
-  else 
+  else
     return iupMatrixGetValue(ih, ih->data->lines.focus_cell, mtxList->label_col);
 }
 
@@ -920,19 +916,13 @@ static int iMatrixListDrawColorCol(Ihandle *ih, int lin, int x1, int x2, int y1,
 static int iMatrixListDrawImageCol(Ihandle *ih, ImatrixListData* mtxList, int lin, int col, int x1, int x2, int y1, int y2)
 {
   char* image_name;
-  int make_inactive = 0, itemactive, imageactive, imagevalue, showdelete,
-      active = iupdrvIsActive(ih), linedelete;
+  int imagevalue, showdelete, linedelete;
   int lines_num = ih->data->lines.num;
   Ihandle* image;
 
-  itemactive = IupGetIntId(ih, "ITEMACTIVE", lin);
-  imageactive = IupGetIntId(ih, "IMAGEACTIVE", lin);
   imagevalue = IupGetIntId(ih, "IMAGEVALUE", lin);
   showdelete = IupGetInt(ih, "SHOWDELETE");
   linedelete = IupGetIntId(ih, "LINEDELETE", lin);
-
-  if (!active || !itemactive || !imageactive)
-    make_inactive = 1;
 
   image_name = iupAttribGetId(ih, "IMAGE", lin);
   if (!image_name)
@@ -971,7 +961,6 @@ static int iMatrixListDrawImageCol(Ihandle *ih, ImatrixListData* mtxList, int li
   {
     int width  = IupGetInt(image, "WIDTH");
     int height = IupGetInt(image, "HEIGHT");
-    const char* bgcolor_str = IupGetAttributeId2(ih, "CELLBGCOLOR", lin, col);
 
     /* Calc the image_name position - IupDraw uses top-down coordinates */
     int x = x2 - x1 - width;
@@ -1053,7 +1042,7 @@ static int iMatrixListEdition_CB(Ihandle *ih, int lin, int col, int mode, int up
     }
     else
     {
-      /* check if entered a non empty value */
+      /* check if entered a non-empty value */
       char* value = IupGetAttribute(ih, "VALUE");
       if (value && value[0]!=0)
       {
@@ -1073,7 +1062,7 @@ static int iMatrixListEdition_CB(Ihandle *ih, int lin, int col, int mode, int up
     }
   }
 
-  if (mode==0) 
+  if (mode==0)
   {
     if (!IupGetInt(ih, "SHOWDELETE"))
     {
@@ -1201,7 +1190,7 @@ static int iMatrixListRelease_CB(Ihandle *ih, int lin, int col, char *status)
 
       if (lin==0)
       {
-        if (mtxList->editable) 
+        if (mtxList->editable)
           lines_num--;
 
         for (lin=1; lin<lines_num; lin++)
@@ -1406,7 +1395,7 @@ static int iMatrixListCreateMethod(Ihandle* ih, void **params)
 Iclass* iupMatrixListNewClass(void)
 {
   Iclass* ic = iupClassNew(iupRegisterFindClass("matrix"));
-  
+
   ic->name = "matrixlist";
   ic->cons = "MatrixList";
   ic->format = NULL; /* no parameters */
@@ -1435,7 +1424,7 @@ Iclass* iupMatrixListNewClass(void)
 
   /* IupMatrixList Attributes */
 
-  /* IMPORTANT: this two will hide the IupMatrix VALUE and L:C attributes */
+  /* IMPORTANT: these two will hide the IupMatrix VALUE and L:C attributes */
   iupClassRegisterAttributeId(ic, "IDVALUE", iMatrixListGetIdValueAttrib, iMatrixListSetIdValueAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", iMatrixListGetValueAttrib, iMatrixListSetValueAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", iMatrixListGetTitleAttrib, iMatrixListSetTitleAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

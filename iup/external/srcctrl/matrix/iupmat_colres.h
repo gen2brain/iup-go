@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPMAT_COLRES_H 
+
+#ifndef __IUPMAT_COLRES_H
 #define __IUPMAT_COLRES_H
 
 #ifdef __cplusplus

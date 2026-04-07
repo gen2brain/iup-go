@@ -9,16 +9,11 @@
 /* Functions to control keys in the matrix and in the text edition        */
 /**************************************************************************/
 
-#include <stdlib.h>
-
 #include "iup.h"
 #include "iupcbs.h"
 #include "iupkey.h"
 
-
 #include "iup_object.h"
-#include "iup_attrib.h"
-#include "iup_stdcontrols.h"
 
 #include "iupmat_def.h"
 #include "iupmat_scroll.h"

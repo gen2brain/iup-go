@@ -9,18 +9,14 @@
 #include <string.h>
 #include <locale.h>
 
-
 #include "iup.h"
 #include "iupcbs.h"
 #include "iupcontrols.h"
 
 #include "iup_object.h"
-#include "iup_childtree.h"
 #include "iup_register.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_assert.h"
-#include "iup_predialogs.h"
 
 #include "iup_matrixex.h"
 
@@ -142,7 +138,7 @@ static int iMatrixExSetFreezeAttrib(Ihandle *ih, const char* value)
     char* fzcolor = IupGetAttribute(ih, "FREEZECOLOR");
 
     IupSetInt(ih,"NUMLIN_NOSCROLL",lin);
-    IupSetInt(ih,"NUMCOL_NOSCROLL",col);  
+    IupSetInt(ih,"NUMCOL_NOSCROLL",col);
 
     IupSetStrAttributeId2(ih,"FRAMEHORIZCOLOR", lin, IUP_INVALID_ID, fzcolor);
     IupSetStrAttributeId2(ih,"FRAMEVERTCOLOR",IUP_INVALID_ID, col, fzcolor);
@@ -764,10 +760,10 @@ static Ihandle* iMatrixExCreateMenuContext(Ihandle* ih, int lin, int col)
 
     IupAppend(menu, IupSubmenu("_@IUP_COPYTOSAMECOLUMN",
         IupMenu(
-          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_ALLLINES"      , NULL),  "COPYCOLTO=ALL"),      "ACTION", iMatrixExItemCopyColTo_CB, NULL),     
-          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_HERETOTOP"    , NULL),   "COPYCOLTO=TOP"),      "ACTION", iMatrixExItemCopyColTo_CB, NULL),     
-          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_HERETOBOTTOM" , NULL),   "COPYCOLTO=BOTTOM"),   "ACTION", iMatrixExItemCopyColTo_CB, NULL),     
-          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_INTERVALDLG"    , NULL), "COPYCOLTO=INTERVAL"), "ACTION", iMatrixExItemCopyColTo_CB, NULL),     
+          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_ALLLINES"      , NULL),  "COPYCOLTO=ALL"),      "ACTION", iMatrixExItemCopyColTo_CB, NULL),
+          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_HERETOTOP"    , NULL),   "COPYCOLTO=TOP"),      "ACTION", iMatrixExItemCopyColTo_CB, NULL),
+          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_HERETOBOTTOM" , NULL),   "COPYCOLTO=BOTTOM"),   "ACTION", iMatrixExItemCopyColTo_CB, NULL),
+          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_INTERVALDLG"    , NULL), "COPYCOLTO=INTERVAL"), "ACTION", iMatrixExItemCopyColTo_CB, NULL),
           IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_SELECTEDLINES" , NULL),  "COPYCOLTO=MARKED"),   "ACTION", iMatrixExItemCopyColTo_CB, NULL),
           NULL)));
   }
@@ -894,7 +890,7 @@ static int iMatrixExKeyPress_CB(Ihandle* ih, int c, int press)
   {
     switch (c)
     {
-    case K_cT: 
+    case K_cT:
       if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "PORTUGUESE"))
       {
         iMatrixExSelectAll(ih);
@@ -917,19 +913,19 @@ static int iMatrixExKeyPress_CB(Ihandle* ih, int c, int press)
       IupSetAttribute(ih, "PASTE", "FOCUS");
       iMatrixListShowLastError(ih);
       return IUP_IGNORE;
-    case K_cX: 
+    case K_cX:
       IupSetAttribute(ih, "COPY", "MARKED");
       iMatrixListShowLastError(ih);
       IupSetAttribute(ih, "CLEARVALUE", "MARKED");
       return IUP_IGNORE;
-    case K_cC: 
+    case K_cC:
       IupSetAttribute(ih, "COPY", "MARKED");
       iMatrixListShowLastError(ih);
       return IUP_IGNORE;
-    case K_cZ: 
+    case K_cZ:
       IupSetAttribute(ih, "UNDO", NULL);  /* 1 level */
       return IUP_IGNORE;
-    case K_cR: 
+    case K_cR:
       if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "PORTUGUESE"))
       {
         IupSetAttribute(ih, "REDO", NULL);  /* 1 level */
@@ -953,7 +949,7 @@ static int iMatrixExKeyPress_CB(Ihandle* ih, int c, int press)
         iMatrixExItemUndoList_CB(ih);
         return IUP_IGNORE;
       }
-    case K_F3: 
+    case K_F3:
       {
         char* find = IupGetAttribute(ih, "FIND");
         if (find)
@@ -969,7 +965,7 @@ static int iMatrixExKeyPress_CB(Ihandle* ih, int c, int press)
         }
         return IUP_IGNORE;
       }
-    case K_sF3: 
+    case K_sF3:
       {
         char* find = IupGetAttribute(ih, "FIND");
         if (find)
@@ -985,7 +981,7 @@ static int iMatrixExKeyPress_CB(Ihandle* ih, int c, int press)
         }
         return IUP_IGNORE;
       }
-    case K_cL: 
+    case K_cL:
       if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "PORTUGUESE"))
       {
         ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
@@ -999,7 +995,7 @@ static int iMatrixExKeyPress_CB(Ihandle* ih, int c, int press)
         return IUP_IGNORE;
       }
       break;
-    case K_cF: 
+    case K_cF:
       if (iupStrEqualNoCase(IupGetGlobal("LANGUAGE"), "ENGLISH"))
       {
         ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
@@ -1013,12 +1009,12 @@ static int iMatrixExKeyPress_CB(Ihandle* ih, int c, int press)
         iupMatrixExFindShowDialog(matex_data);
         return IUP_IGNORE;
       }
-    case K_cG: 
+    case K_cG:
       {
         iMatrixExItemGoTo_CB(ih);
         return IUP_IGNORE;
       }
-    case K_ESC: 
+    case K_ESC:
       {
         ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
         if (matex_data->find_dlg && IupGetInt(matex_data->find_dlg, "VISIBLE"))
@@ -1152,7 +1148,7 @@ Iclass* iupMatrixExNewClass(void)
   ic->New = iupMatrixExNewClass;
   ic->Create  = iMatrixExCreateMethod;
   ic->Destroy  = iMatrixExDestroyMethod;
-  
+
   iupClassRegisterAttribute(ic, "FREEZE", NULL, iMatrixExSetFreezeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FREEZECOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "0 0 255", IUPAF_NO_INHERIT);
 

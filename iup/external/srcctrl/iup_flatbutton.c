@@ -5,10 +5,7 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -17,7 +14,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvfont.h"
 #include "iup_image.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
@@ -30,14 +26,14 @@
 IUP_SDK_API Ihandle *iupRadioFindToggleParent(Ihandle* ih_toggle);
 
 
-struct _IcontrolData 
+struct _IcontrolData
 {
   iupCanvas canvas;  /* from IupCanvas (must reserve it) */
 
   /* attributes */
   int horiz_padding, vert_padding;  /* button margin */
   int spacing, img_position;        /* used when both text and image are displayed */
-  int horiz_alignment, vert_alignment;  
+  int horiz_alignment, vert_alignment;
   int border_width;
   int value;
 
@@ -323,8 +319,7 @@ static int iFlatButtonButton_CB(Ihandle* ih, int button, int pressed, int x, int
             if (iupObjectCheck(last_tg) && last_tg != ih)
             {
               last_tg->data->value = 0;
-              if (last_tg)
-                iupdrvRedrawNow(last_tg);
+              iupdrvRedrawNow(last_tg);
             }
             else
               last_tg = NULL;
@@ -438,9 +433,7 @@ static int iFlatButtonLeaveWindow_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-
 /***********************************************************************************************/
-
 
 static int iFlatButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
@@ -650,9 +643,7 @@ static char* iFlatButtonGetHasFocusAttrib(Ihandle* ih)
   return iupStrReturnBoolean(ih->data->has_focus);
 }
 
-
 /*****************************************************************************************/
-
 
 static int iFlatButtonCreateMethod(Ihandle* ih, void** params)
 {
@@ -660,7 +651,7 @@ static int iFlatButtonCreateMethod(Ihandle* ih, void** params)
   {
     iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
   }
-  
+
   /* free the data allocated by IupCanvas */
   free(ih->data);
   ih->data = iupALLOCCTRLDATA();
@@ -669,7 +660,7 @@ static int iFlatButtonCreateMethod(Ihandle* ih, void** params)
   iupAttribSet(ih, "BORDER", "NO");
   ih->expand = IUP_EXPAND_NONE;
 
-  /* non zero default values */
+  /* non-zero default values */
   ih->data->spacing = 2;
   ih->data->border_width = 1;
   ih->data->horiz_alignment = IUP_ALIGN_ACENTER;
@@ -735,9 +726,7 @@ static void iFlatButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   (void)children_expand; /* unset if not a container */
 }
 
-
 /******************************************************************************/
-
 
 Iclass* iupFlatButtonNewClass(void)
 {
@@ -804,7 +793,7 @@ Iclass* iupFlatButtonNewClass(void)
   iupClassRegisterAttribute(ic, "IMAGEPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEHIGHLIGHT", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  
+
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iFlatButtonGetImagePositionAttrib, iFlatButtonSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

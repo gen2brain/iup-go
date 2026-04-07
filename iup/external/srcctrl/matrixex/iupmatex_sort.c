@@ -6,14 +6,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
 
 #include "iup.h"
-#include "iupcbs.h"
 #include "iupcontrols.h"
 
-#include "iup_array.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
@@ -311,7 +308,7 @@ void iupMatrixExSortShowDialog(ImatExData* matex_data)
   int x, y, col, lin1, lin2, num_lin;
   Ihandle* ih_matrix;
   Ihandle* dlg_sort = iMatrixExSortCreateDialog(matex_data);
-           
+
   IupSetStrAttribute(IupGetDialogChild(dlg_sort, "CASESENSITIVE"), "VALUE", iupAttribGetStr(matex_data->ih, "SORTCOLUMNCASESENSITIVE"));
 
   if (iupStrEqualNoCase(iupAttribGetStr(matex_data->ih, "SORTCOLUMNORDER"), "DESCENDING"))
@@ -341,7 +338,7 @@ void iupMatrixExSortShowDialog(ImatExData* matex_data)
   IupSetIntId2(ih_matrix, "", 3, 1, lin1);
   IupSetIntId2(ih_matrix, "", 4, 1, lin2);
   iMatrixExSortUpdateSelection(matex_data, col, lin1, lin2);
-  
+
   iupMatrixExGetDialogPosition(matex_data, &x, &y);
   IupPopup(dlg_sort, x, y);
   IupDestroy(dlg_sort);

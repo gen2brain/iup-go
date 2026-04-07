@@ -3,8 +3,8 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUPMAT_MARK_H 
+
+#ifndef __IUPMAT_MARK_H
 #define __IUPMAT_MARK_H
 
 #ifdef __cplusplus

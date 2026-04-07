@@ -5,18 +5,14 @@
 * See Copyright Notice in "iup.h"
 */
 
-#include <stdlib.h>
 #include <string.h>
 
 #include "iup.h"
 #include "iupcbs.h"
-#include "iupcontrols.h"
-
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 #include "iup_childtree.h"
 #include "iup_drvfont.h"
 
@@ -141,7 +137,7 @@ static void iMatrixEditInitMenu(Ihandle* ih_menu)
   int i = 1;
   int v = IupGetInt(ih_menu, "VALUE");
 
-  do 
+  do
   {
     value = IupGetAttributeId(ih_menu, "", i);
     if (value)
@@ -236,7 +232,7 @@ static int iMatrixEditDropDownAction_CB(Ihandle* ih_list, char* t, int i, int v)
   {
     int ret = cb(ih, ih->data->edit_lin, ih->data->edit_col, ih_list, t, i, v);
 
-    /* If the user returns IUP_CONTINUE in a dropselect_cb 
+    /* If the user returns IUP_CONTINUE in a dropselect_cb
     the value is accepted and the matrix leaves edition mode. */
     if (ret == IUP_CONTINUE)
     {
@@ -272,9 +268,9 @@ static void iMatrixEditChooseElement(Ihandle* ih)
 
 static int iMatrixEditDropDown_CB(Ihandle* ih_list, int state)
 {
-  /* In Motif if DROPDOWN=YES then when the dropdown button is clicked 
-     the list looses its focus and when the dropped list is closed 
-     the list regain the focus, also when that happen if the list looses its focus 
+  /* In Motif if DROPDOWN=YES then when the dropdown button is clicked
+     the list looses its focus and when the dropped list is closed
+     the list regain the focus, also when that happen if the list looses its focus
      to another control the kill focus callback is not called. */
   Ihandle* ih = ih_list->parent;
   if (state == 1)
@@ -523,7 +519,7 @@ static int iMatrixEditTextAction_CB(Ihandle* ih_text, int c, char* after)
     return c;
   }
 
-  /* TODO: Latin characters, like � or �, are not processed by the ACTION_CB, 
+  /* TODO: Latin characters, like � or �, are not processed by the ACTION_CB,
            only the respective keys, like � and o, or ~ and a. */
 
   return IUP_DEFAULT;
@@ -549,10 +545,10 @@ static int iMatrixEditTextKeyAny_CB(Ihandle* ih_text, int c)
     case K_cUP:
     case K_cDOWN:
     case K_cLEFT:
-    case K_cRIGHT:     
+    case K_cRIGHT:
       if (iupMatrixEditConfirm(ih) == IUP_DEFAULT)
       {
-        iupMatrixProcessKeyPress(ih, c);  
+        iupMatrixProcessKeyPress(ih, c);
         return IUP_IGNORE;
       }
       break;
@@ -562,19 +558,19 @@ static int iMatrixEditTextKeyAny_CB(Ihandle* ih_text, int c)
         /* if at the first line of the text */
         if (iupMatrixEditConfirm(ih) == IUP_DEFAULT)
         {
-          iupMatrixProcessKeyPress(ih, c);  
+          iupMatrixProcessKeyPress(ih, c);
           return IUP_IGNORE;
         }
       }
       break;
     case K_DOWN:
-      { 
+      {
         /* if at the last line of the text */
         if (!IupGetInt(ih_text, "MULTILINE") || IupGetInt(ih_text, "LINECOUNT") == IupGetInt(ih_text, "CARET"))  /* if Multiline CARET will be "L,C" */
         {
           if (iupMatrixEditConfirm(ih) == IUP_DEFAULT)
           {
-            iupMatrixProcessKeyPress(ih, c);  
+            iupMatrixProcessKeyPress(ih, c);
             return IUP_IGNORE;
           }
         }
@@ -586,19 +582,19 @@ static int iMatrixEditTextKeyAny_CB(Ihandle* ih_text, int c)
         /* if at the first character */
         if (iupMatrixEditConfirm(ih) == IUP_DEFAULT)
         {
-          iupMatrixProcessKeyPress(ih, c);  
+          iupMatrixProcessKeyPress(ih, c);
           return IUP_IGNORE;
         }
       }
       break;
     case K_RIGHT:
-      { 
+      {
         /* if at the last character */
         if (IupGetInt(ih_text, "COUNT") == IupGetInt(ih_text, "CARETPOS"))
         {
           if (iupMatrixEditConfirm(ih) == IUP_DEFAULT)
           {
-            iupMatrixProcessKeyPress(ih, c);  
+            iupMatrixProcessKeyPress(ih, c);
             return IUP_IGNORE;
           }
         }

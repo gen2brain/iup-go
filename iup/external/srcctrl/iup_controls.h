@@ -3,9 +3,11 @@
  *
  * See Copyright Notice in "iup.h"
  */
- 
-#ifndef __IUP_CONTROLS_H 
+
+#ifndef __IUP_CONTROLS_H
 #define __IUP_CONTROLS_H
+
+#include "iup_class.h"
 
 
 #ifdef __cplusplus

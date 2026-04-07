@@ -9,19 +9,15 @@
 /*  Functions to cell selection (mark)                                    */
 /**************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <memory.h>
 #include <string.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
-
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 
 #include "iupmat_def.h"
 #include "iupmat_mark.h"
@@ -204,7 +200,7 @@ static void iMatrixMarkBlock(Ihandle* ih, int lin1, int col1, int lin2, int col2
 
 void iupMatrixMarkBlockInc(Ihandle* ih, int lin2, int col2)
 {
-  /* called only when "shift" is pressed or click and drag 
+  /* called only when "shift" is pressed or click and drag
      and MARKMULTIPLE=YES.
      Called many times for each selection increase. */
   IFniii markedit_cb = NULL;
@@ -219,14 +215,14 @@ void iupMatrixMarkBlockInc(Ihandle* ih, int lin2, int col2)
   /* If it was pointing for a column title... */
   else if (lin2 == 0 || (ih->data->noscroll_as_title && lin2 < ih->data->lines.num_noscroll))
   {
-    if ((ih->data->mark_mode == IMAT_MARK_CELL && ih->data->mark_multiple) || 
+    if ((ih->data->mark_mode == IMAT_MARK_CELL && ih->data->mark_multiple) ||
          ih->data->mark_mode & IMAT_MARK_COL)
       ih->data->mark_full2 = IMAT_PROCESS_COL;
   }
   /* If it was pointing for a line title... */
   else if (col2 == 0 || (ih->data->noscroll_as_title && col2 < ih->data->columns.num_noscroll))
   {
-    if ((ih->data->mark_mode == IMAT_MARK_CELL && ih->data->mark_multiple) || 
+    if ((ih->data->mark_mode == IMAT_MARK_CELL && ih->data->mark_multiple) ||
          ih->data->mark_mode & IMAT_MARK_LIN)
       ih->data->mark_full2 = IMAT_PROCESS_LIN;
   }
@@ -298,14 +294,14 @@ void iupMatrixMarkBlockSet(Ihandle* ih, int ctrl, int lin1, int col1)
   /* If it was pointing for a column title... */
   else if (lin1 == 0 || (ih->data->noscroll_as_title && lin1 < ih->data->lines.num_noscroll))
   {
-    if ((ih->data->mark_mode == IMAT_MARK_CELL && ih->data->mark_multiple) || 
+    if ((ih->data->mark_mode == IMAT_MARK_CELL && ih->data->mark_multiple) ||
          ih->data->mark_mode & IMAT_MARK_COL)
       ih->data->mark_full1 = IMAT_PROCESS_COL;
   }
   /* If it was pointing for a line title... */
   else if (col1 == 0 || (ih->data->noscroll_as_title && col1 < ih->data->columns.num_noscroll))
   {
-    if ((ih->data->mark_mode == IMAT_MARK_CELL && ih->data->mark_multiple) || 
+    if ((ih->data->mark_mode == IMAT_MARK_CELL && ih->data->mark_multiple) ||
          ih->data->mark_mode & IMAT_MARK_LIN)
       ih->data->mark_full1 = IMAT_PROCESS_LIN;
   }
@@ -367,7 +363,7 @@ static void iMatrixMarkAllLinCol(ImatLinColData *p, int mark)
 
 void iupMatrixMarkClearAll(Ihandle* ih, int check)
 {
-  /* "!check" is used to clear all marks independent from MARKMODE */
+  /* "!check" is used to clear all marks independent of MARKMODE */
 
   if (ih->data->mark_mode == IMAT_MARK_CELL || !check)
   {

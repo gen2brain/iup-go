@@ -9,7 +9,6 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_stdcontrols.h"
 
 #include "iupmat_def.h"
 #include "iupmat_scroll.h"
@@ -30,11 +29,11 @@
 
 static void iMatrixScrollToVisible(ImatLinColData* p, int index)
 {
-  /* The work here is just to position first and first_offset, 
+  /* The work here is just to position first and first_offset,
      so "index" is between "first" and "last". */
-     
-  /* It is called only for discrete scrolling, 
-     so first_offset usually will be set to 0. */
+
+  /* It is called only for discrete scrolling,
+     so first_offset will usually be set to 0. */
 
   /* already visible, change nothing */
   if (index > p->first && index < p->last)
@@ -64,7 +63,7 @@ static void iMatrixScrollToVisible(ImatLinColData* p, int index)
 static void iMatrixScrollCallScrollTopCb(Ihandle* ih)
 {
   IFnii cb = (IFnii)IupGetCallback(ih, "SCROLLTOP_CB");
-  if (cb) 
+  if (cb)
     cb(ih, ih->data->lines.first, ih->data->columns.first);
 }
 
@@ -402,7 +401,7 @@ void iupMatrixScrollCrFunc(Ihandle* ih, int unused_mode, int unused_m)
   if (ih->data->editnext == IMAT_EDITNEXT_NONE)
     return;
 
-  if (ih->data->editnext == IMAT_EDITNEXT_LIN || 
+  if (ih->data->editnext == IMAT_EDITNEXT_LIN ||
       ih->data->editnext == IMAT_EDITNEXT_LINCR)
     m = IMAT_PROCESS_LIN;
   else
@@ -421,11 +420,11 @@ void iupMatrixScrollCrFunc(Ihandle* ih, int unused_mode, int unused_m)
       /* next col, same line (stay at the last line) */
       iupMatrixScrollRightDownFunc(ih, IMAT_SCROLLKEY, IMAT_PROCESS_COL);
       break;
-    case IMAT_EDITNEXT_COL: 
+    case IMAT_EDITNEXT_COL:
       /* next line, same col (stay at the last col) */
       iupMatrixScrollRightDownFunc(ih, IMAT_SCROLLKEY, IMAT_PROCESS_LIN);
       break;
-    case IMAT_EDITNEXT_LINCR: 
+    case IMAT_EDITNEXT_LINCR:
       /* next col */
       iupMatrixScrollRightDownFunc(ih, IMAT_SCROLLKEY, IMAT_PROCESS_COL);
 
@@ -436,7 +435,7 @@ void iupMatrixScrollCrFunc(Ihandle* ih, int unused_mode, int unused_m)
         iMatrixScrollSetFocusScrollToVisibleLinCol(ih, IMAT_PROCESS_LIN, lin);
       }
       break;
-    case IMAT_EDITNEXT_COLCR: 
+    case IMAT_EDITNEXT_COLCR:
       /* next line */
       iupMatrixScrollRightDownFunc(ih, IMAT_SCROLLKEY, IMAT_PROCESS_LIN);
 

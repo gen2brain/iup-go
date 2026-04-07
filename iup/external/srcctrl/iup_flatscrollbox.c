@@ -5,23 +5,15 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
-#include "iupcbs.h"
-#include "iupkey.h"
 
 #include "iup_object.h"
 #include "iup_register.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_stdcontrols.h"
 #include "iup_layout.h"
-#include "iup_drv.h"
-#include "iup_drvdraw.h"
-#include "iup_draw.h"
 #include "iup_childtree.h"
 #include "iup_flatscrollbar.h"
 
@@ -100,7 +92,7 @@ static int iFlatScrollBoxFlatScroll_CB(Ihandle *ih)
 {
   Ihandle* child = iFlatScrollBoxGetChild(ih);
 
-  /* non interactive updates */
+  /* non-interactive updates */
 
   if (child)
   {
@@ -252,7 +244,7 @@ static void iFlatScrollBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, 
 
   if (!iupAttribGetBoolean(ih, "CANVASBOX"))
   {
-    /* ScrollBox size does not depends on the child size,
+    /* ScrollBox size does not depend on the child size,
      its natural size must be 0 to be free of restrictions. */
     if (ih->currentwidth == 0 && ih->currentheight == 0 && child)
     {
@@ -396,9 +388,7 @@ static void iFlatScrollBoxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
   (void)y;
 }
 
-
 /******************************************************************************/
-
 
 static int iFlatScrollBoxCreateMethod(Ihandle* ih, void** params)
 {

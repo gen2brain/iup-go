@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
 
 #include "iup.h"
@@ -351,9 +350,9 @@ static void iMatrixExCopyData(ImatExData* matex_data, Iarray* data, const char* 
       iMatrixExCopyGetDataMarkedCell(matex_data, data, marked, lin1, col1, lin2, col2, num_col, keep_struct, sep);
     }
   }
-  else 
+  else
   {
-    int lin1=1, lin2=num_lin, 
+    int lin1=1, lin2=num_lin,
         col1=1, col2=num_col;
 
     if (!iupStrEqualNoCase(value, "ALL"))
@@ -517,7 +516,7 @@ static void iMatrixExPasteSetData(Ihandle *ih, const char* data, int data_num_li
 
           if (!iupMatrixExBusyInc(matex_data))
           {
-            if (value) 
+            if (value)
               free(value);
             return;
           }

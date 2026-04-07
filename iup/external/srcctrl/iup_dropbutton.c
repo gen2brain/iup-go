@@ -5,10 +5,7 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <memory.h>
-#include <stdarg.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -22,27 +19,25 @@
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 #include "iup_drvdraw.h"
-#include "iup_drvinfo.h"
 #include "iup_draw.h"
 #include "iup_key.h"
 
 
-
-struct _IcontrolData 
+struct _IcontrolData
 {
   iupCanvas canvas;  /* from IupCanvas (must reserve it) */
 
   /* attributes */
   int horiz_padding, vert_padding;  /* button margin */
   int spacing, img_position;        /* used when both text and image are displayed */
-  int horiz_alignment, vert_alignment;  
+  int horiz_alignment, vert_alignment;
   int border_width;
   int arrow_size, arrow_padding;
 
   /* draw aux - state */
   int has_focus,
       highlighted,
-      pressed, 
+      pressed,
       over_arrow,
       dropped,
       close_on_focus;
@@ -253,7 +248,7 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
     char* arrow_color = iupAttribGet(ih, "ARROWCOLOR");
     if (!arrow_color)
       arrow_color = fgcolor;
-    
+
     iupFlatDrawArrow(dc, arrow_x, arrow_y, ih->data->arrow_size - 2 * ih->data->arrow_padding, arrow_color, bgcolor_arrow, arrow_active, IUPDRAW_ARROW_BOTTOM);
   }
 
@@ -807,7 +802,7 @@ static int iDropButtonCreateMethod(Ihandle* ih, void** params)
   {
     iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
   }
-  
+
   /* free the data allocated by IupCanvas */
   free(ih->data);
   ih->data = iupALLOCCTRLDATA();
@@ -816,7 +811,7 @@ static int iDropButtonCreateMethod(Ihandle* ih, void** params)
   iupAttribSet(ih, "BORDER", "NO");
   ih->expand = IUP_EXPAND_NONE;
 
-  /* non zero default values */
+  /* non-zero default values */
   ih->data->spacing = 2;
   ih->data->border_width = 1;
   ih->data->horiz_alignment = IUP_ALIGN_ALEFT;
@@ -887,9 +882,7 @@ static void iDropButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
   (void)children_expand; /* unset if not a container */
 }
 
-
 /******************************************************************************/
-
 
 Iclass* iupDropButtonNewClass(void)
 {
@@ -951,7 +944,7 @@ Iclass* iupDropButtonNewClass(void)
   iupClassRegisterAttribute(ic, "IMAGEPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEHIGHLIGHT", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  
+
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iDropButtonGetImagePositionAttrib, iDropButtonSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
@@ -963,7 +956,7 @@ Iclass* iupDropButtonNewClass(void)
   iupClassRegisterAttribute(ic, "BACKIMAGEPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKIMAGEHIGHLIGHT", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKIMAGEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  
+
   iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FITTOBACKIMAGE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
