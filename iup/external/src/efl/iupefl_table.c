@@ -68,6 +68,8 @@ typedef struct _IeflTableData
 #define DEFAULT_ROW_HEIGHT 24
 #define DEFAULT_HEADER_HEIGHT 28
 #define CELL_PADDING 4
+#define RESIZE_ZONE 5
+#define MIN_COL_WIDTH 20
 
 /* Forward declarations */
 static void eflTableUpdateVisibleRows(Ihandle* ih);
@@ -83,6 +85,7 @@ static void eflTableUpdateDragIndicator(Ihandle* ih, int target);
 static void eflTableHideDragIndicator(Ihandle* ih);
 static void eflTableDragPointerMove(void* cb_data, const Efl_Event* ev);
 static void eflTableDragPointerUp(void* cb_data, const Efl_Event* ev);
+static int eflTableIsNearColumnBorder(Ihandle* ih, int x);
 
 /* ========================================================================= */
 /* Helper Functions                                                          */
@@ -778,6 +781,30 @@ static int eflTableFindTargetColumn(Ihandle* ih, int x)
   return num_col;
 }
 
+static int eflTableIsNearColumnBorder(Ihandle* ih, int x)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int num_col = ih->data->num_col;
+  int col;
+
+  if (!data || !data->header_labels)
+    return 0;
+
+  for (col = 0; col < num_col; col++)
+  {
+    Evas_Object* label = data->header_labels[col];
+    if (label)
+    {
+      Eina_Rect geom = efl_gfx_entity_geometry_get(label);
+      int right_edge = geom.x + geom.w;
+      if (abs(x - right_edge) <= RESIZE_ZONE)
+        return col + 1;
+    }
+  }
+
+  return 0;
+}
+
 static void eflTableSwapAttrib(Ihandle* ih, const char* name1, const char* name2)
 {
   char* val1 = iupAttribGet(ih, name1);
@@ -912,11 +939,29 @@ static void eflTableDragPointerMove(void* cb_data, const Efl_Event* ev)
   Eina_Position2D pointer_pos;
   int start_x, start_y;
   int target, old_target;
+  int resize_col;
+
+  pointer_pos = efl_input_pointer_position_get(pointer);
+
+  resize_col = iupAttribGetInt(ih, "_IUPTABLE_RESIZE_COL");
+  if (resize_col > 0)
+  {
+    int delta = pointer_pos.x - iupAttribGetInt(ih, "_IUPTABLE_RESIZE_START_X");
+    int new_width = iupAttribGetInt(ih, "_IUPTABLE_RESIZE_START_WIDTH") + delta;
+    if (new_width < MIN_COL_WIDTH)
+      new_width = MIN_COL_WIDTH;
+    iupdrvTableSetColWidth(ih, resize_col, new_width);
+    return;
+  }
+
+  if (ih->data->user_resize && !iupAttribGet(ih, "_IUPTABLE_DRAG_SOURCE"))
+  {
+    int near_col = eflTableIsNearColumnBorder(ih, pointer_pos.x);
+    efl_ui_widget_cursor_set(ev->object, near_col > 0 ? "sb_h_double_arrow" : NULL);
+  }
 
   if (!iupAttribGet(ih, "_IUPTABLE_DRAG_SOURCE"))
     return;
-
-  pointer_pos = efl_input_pointer_position_get(pointer);
 
   if (!iupAttribGetInt(ih, "_IUPTABLE_DRAGGING"))
   {
@@ -946,8 +991,34 @@ static void eflTableDragPointerUp(void* cb_data, const Efl_Event* ev)
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int is_dragging;
   int source, target;
+  int resize_col;
 
   (void)ev;
+
+  resize_col = iupAttribGetInt(ih, "_IUPTABLE_RESIZE_COL");
+  if (resize_col > 0)
+  {
+    char name[50];
+    int final_width = data->col_widths[resize_col - 1];
+
+    snprintf(name, sizeof(name), "RASTERWIDTH%d", resize_col);
+    iupAttribSetInt(ih, name, final_width);
+
+    iupAttribSet(ih, "_IUPTABLE_RESIZE_COL", NULL);
+    iupAttribSet(ih, "_IUPTABLE_RESIZE_START_X", NULL);
+    iupAttribSet(ih, "_IUPTABLE_RESIZE_START_WIDTH", NULL);
+
+    if (data && data->header_labels)
+    {
+      int i;
+      for (i = 0; i < ih->data->num_col; i++)
+      {
+        if (data->header_labels[i])
+          efl_ui_widget_cursor_set(data->header_labels[i], NULL);
+      }
+    }
+    return;
+  }
 
   is_dragging = iupAttribGetInt(ih, "_IUPTABLE_DRAGGING");
   source = iupAttribGetInt(ih, "_IUPTABLE_DRAG_SOURCE");
@@ -1309,6 +1380,19 @@ static void eflTableHeaderClickCallback(void* cb_data, const Efl_Event* ev)
   }
   if (col == 0)
     return;
+
+  if (ih->data->user_resize && efl_input_pointer_button_get(pointer) == 1)
+  {
+    Eina_Position2D pointer_pos = efl_input_pointer_position_get(pointer);
+    int resize_col = eflTableIsNearColumnBorder(ih, pointer_pos.x);
+    if (resize_col > 0)
+    {
+      iupAttribSetInt(ih, "_IUPTABLE_RESIZE_COL", resize_col);
+      iupAttribSetInt(ih, "_IUPTABLE_RESIZE_START_X", pointer_pos.x);
+      iupAttribSetInt(ih, "_IUPTABLE_RESIZE_START_WIDTH", data->col_widths[resize_col - 1]);
+      return;
+    }
+  }
 
   /* If ALLOWREORDER is enabled, start drag tracking */
   if (iupAttribGetBoolean(ih, "ALLOWREORDER") && efl_input_pointer_button_get(pointer) == 1)
@@ -3228,6 +3312,29 @@ static int eflTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int eflTableSetUserResizeAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrBoolean(value))
+    ih->data->user_resize = 1;
+  else
+  {
+    IeflTableData* data = IEFL_TABLE_DATA(ih);
+
+    ih->data->user_resize = 0;
+
+    if (data && data->header_labels)
+    {
+      int i;
+      for (i = 0; i < ih->data->num_col; i++)
+      {
+        if (data->header_labels[i])
+          efl_ui_widget_cursor_set(data->header_labels[i], NULL);
+      }
+    }
+  }
+  return 0;
+}
+
 IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = eflTableMapMethod;
@@ -3245,5 +3352,5 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "EDITABLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "EDITABLE", NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "USERRESIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, eflTableSetUserResizeAttrib);
 }
