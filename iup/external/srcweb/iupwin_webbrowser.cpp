@@ -5,7 +5,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <windows.h>
@@ -16,19 +15,15 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_register.h"
 #include "iup_attrib.h"
 #include "iup_class.h"
 #include "iup_childtree.h"
-#include "iup_stdcontrols.h"
 #include "iup_str.h"
-#include "iup_layout.h"
-#include "iup_dialog.h"
 #include "iup_webbrowser.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 
 #include "iupwin_webbrowser.h"
+
 
 static WCHAR* iupwinStrChar2Wide(const char* str)
 {
@@ -929,9 +924,6 @@ static int winWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
 
 static char* winWebBrowserUnescapeJSON(const char* json_str)
 {
-  if (!json_str)
-    return NULL;
-
   size_t len = strlen(json_str);
   char* result = (char*)malloc(len + 1);
   if (!result)

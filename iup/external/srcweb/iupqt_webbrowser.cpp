@@ -8,9 +8,7 @@
 #include <QWebEnginePage>
 #include <QWebEngineProfile>
 #include <QWebEngineSettings>
-#include <QWebEngineHistory>
 #include <QWebEngineHistoryItem>
-#include <QWebEngineScript>
 #include <QWebEngineScriptCollection>
 #include <QWidget>
 #include <QUrl>
@@ -20,9 +18,7 @@
 #include <QPrinter>
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
-#include <QPageLayout>
 #include <QTimer>
-#include <QMutex>
 #include <QMutexLocker>
 #include <QEventLoop>
 #include <QElapsedTimer>
@@ -39,11 +35,8 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_webbrowser.h"
-
-
 }
 
 /* Forward declare Qt driver function we need */
@@ -185,18 +178,6 @@ static char* qtWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
   va_end(arglist);
 
   return qtWebBrowserExecJavaScriptSync(ih, js);
-}
-
-/****************************************************************************
- * Document Initialization Script
- ****************************************************************************/
-
-/* Initialize document with selection tracking and dirty flag support */
-static void qtWebBrowserInitializeDocument(Ihandle* ih)
-{
-  /* No longer needed - initialization script is now injected automatically via QWebEngineScript */
-  /* in qtWebBrowserMapMethod, and contentEditable is set in onLoadFinished */
-  (void)ih;
 }
 
 /****************************************************************************
@@ -791,9 +772,6 @@ static int qtWebBrowserExecCommandAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserExecCommandWithParamAttrib(Ihandle* ih, const char* cmd, const char* param)
 {
-  if (!cmd)
-    return 0;
-
   QWebEngineView* webview = (QWebEngineView*)ih->handle;
   if (!webview)
     return 0;
@@ -899,7 +877,6 @@ static char* qtWebBrowserGetFormatBlockAttrib(Ihandle* ih)
 
   return qtWebBrowserRunJavaScriptSync(ih, "%s", js);
 }
-
 
 /****************************************************************************
  * Text Style Commands
@@ -1125,7 +1102,6 @@ static char* qtWebBrowserGetBackColorAttrib(Ihandle* ih)
 
   return qtWebBrowserRunJavaScriptSync(ih, "%s", js);
 }
-
 
 /****************************************************************************
  * Command Query Attributes
@@ -1475,8 +1451,6 @@ static int qtWebBrowserMapMethod(Ihandle* ih)
 {
   /* Create WebBrowser widget */
   IupQtWebBrowser* webview = new IupQtWebBrowser(ih);
-  if (!webview)
-    return IUP_ERROR;
 
   /* Create custom page for new window handling */
   IupQtWebPage* page = new IupQtWebPage(QWebEngineProfile::defaultProfile(), ih);

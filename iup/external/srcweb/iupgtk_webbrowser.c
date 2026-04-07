@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-
 #ifndef IUPWEB_USE_DLOPEN
 #undef GTK_DISABLE_DEPRECATED
 #endif
@@ -25,14 +24,10 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
-#include "iup_layout.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_webbrowser.h"
-#include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_key.h"
-#include "iup_register.h"
 
 /* Include correct GTK driver header based on version */
 #if GTK_CHECK_VERSION(4, 0, 0)
