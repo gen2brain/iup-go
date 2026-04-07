@@ -376,6 +376,21 @@ static void gtk4AnchorPopoverClosedCb(GtkPopover *popover, gpointer user_data)
   (void)popover;
 }
 
+static void gtk4PopoverMenuSetVHomogeneous(GtkWidget* popover)
+{
+  GtkWidget* sw = gtk_popover_get_child(GTK_POPOVER(popover));
+  if (sw && GTK_IS_SCROLLED_WINDOW(sw))
+  {
+    GtkWidget* vp = gtk_scrolled_window_get_child(GTK_SCROLLED_WINDOW(sw));
+    if (vp && GTK_IS_VIEWPORT(vp))
+    {
+      GtkWidget* stack = gtk_viewport_get_child(GTK_VIEWPORT(vp));
+      if (stack && GTK_IS_STACK(stack))
+        gtk_stack_set_vhomogeneous(GTK_STACK(stack), TRUE);
+    }
+  }
+}
+
 IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
   GtkWidget* popover;
@@ -524,6 +539,8 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     if (!popover)
       return IUP_ERROR;
 
+    gtk4PopoverMenuSetVHomogeneous(popover);
+
     /* Insert action group into anchor window */
     gtk_widget_insert_action_group(anchor_window, "menu", G_ACTION_GROUP(action_group));
 
@@ -541,6 +558,10 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 
     /* Connect closed signal to hide anchor window */
     g_signal_connect(popover, "closed", G_CALLBACK(gtk4AnchorPopoverClosedCb), (gpointer)ih);
+
+    /* Flush pending idles so GTK's separator sync runs before sizing */
+    while (g_main_context_pending(NULL))
+      g_main_context_iteration(NULL, FALSE);
 
     gtk_popover_popup(GTK_POPOVER(popover));
 
@@ -609,6 +630,8 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     return IUP_ERROR;
   }
 
+  gtk4PopoverMenuSetVHomogeneous(popover);
+
   /* Connect closed signal to quit the nested main loop */
   g_signal_connect(popover, "closed", G_CALLBACK(gtk4PopoverClosedCb), (gpointer)loop);
 
@@ -635,6 +658,10 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     gtk_popover_set_pointing_to(GTK_POPOVER(popover), &pointing_rect);
   }
   gtk_popover_set_position(GTK_POPOVER(popover), GTK_POS_BOTTOM);
+
+  /* Flush pending idles so GTK's separator sync runs before sizing */
+  while (g_main_context_pending(NULL))
+    g_main_context_iteration(NULL, FALSE);
 
   /* Show the popover */
   gtk_popover_popup(GTK_POPOVER(popover));
