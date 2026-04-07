@@ -330,7 +330,7 @@ IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
 
 IUP_SDK_API int iupdrvTabsExtraMargin(void)
 {
-  return 0;
+  return 4;
 }
 
 IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
@@ -733,7 +733,7 @@ static void eflTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     if (!page)
       return;
 
-    content_box = efl_add(EFL_UI_BOX_CLASS, page);
+    content_box = efl_add(iupefl_fixed_class_get(), page);
     if (content_box)
     {
       efl_gfx_hint_weight_set(content_box, 1.0, 1.0);

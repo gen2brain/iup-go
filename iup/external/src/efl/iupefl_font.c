@@ -48,6 +48,10 @@ static Evas* eflFontGetMeasureEvas(void)
       return evas_object_evas_get(win);
   }
 
+  efl_font_buffer_ee = ecore_evas_buffer_new(1, 1);
+  if (efl_font_buffer_ee)
+    return ecore_evas_get(efl_font_buffer_ee);
+
   return NULL;
 }
 
@@ -59,23 +63,6 @@ static void eflFontApplyStyle(Eo* tb, const char* family, int size, int is_bold,
            is_bold ? "bold" : "normal",
            is_italic ? "italic" : "normal");
   efl_canvas_textblock_style_apply(tb, style);
-}
-
-static IeflFont* eflFontGet(Ihandle* ih)
-{
-  return (IeflFont*)iupAttribGet(ih, "_IUP_EFL_FONT");
-}
-
-IUP_DRV_API void iupeflFontFree(Ihandle* ih)
-{
-  IeflFont* font = eflFontGet(ih);
-  if (font)
-  {
-    if (font->font_name)
-      free(font->font_name);
-    free(font);
-    iupAttribSet(ih, "_IUP_EFL_FONT", NULL);
-  }
 }
 
 static void eflFontParse(const char* value, char* family, int* size, int* is_bold, int* is_italic, int* is_underline, int* is_strikeout)
@@ -243,6 +230,49 @@ static void eflFontMeasureString(const char* family, int size, int is_bold, int 
 
   if (w) *w = sz.w > 0 ? sz.w : len * (size * 2 / 3);
   if (h) *h = sz.h > 0 ? sz.h : size;
+}
+
+static IeflFont* eflFontGet(Ihandle* ih)
+{
+  IeflFont* font = (IeflFont*)iupAttribGet(ih, "_IUP_EFL_FONT");
+  if (!font && ih)
+  {
+    char* font_str = iupGetFontValue(ih);
+    if (!font_str)
+      font_str = IupGetGlobal("DEFAULTFONT");
+    if (font_str)
+    {
+      char family[100];
+      int size, is_bold, is_italic, is_underline, is_strikeout;
+
+      font = (IeflFont*)calloc(1, sizeof(IeflFont));
+      iupAttribSet(ih, "_IUP_EFL_FONT", (char*)font);
+
+      eflFontParse(font_str, family, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
+
+      font->font_name = strdup(family);
+      font->size = size;
+      font->is_bold = is_bold;
+      font->is_italic = is_italic;
+      font->is_underline = is_underline;
+      font->is_strikeout = is_strikeout;
+
+      eflFontMeasure(family, size, is_bold, is_italic, &font->charwidth, &font->charheight, &font->ascent, &font->descent);
+    }
+  }
+  return font;
+}
+
+IUP_DRV_API void iupeflFontFree(Ihandle* ih)
+{
+  IeflFont* font = (IeflFont*)iupAttribGet(ih, "_IUP_EFL_FONT");
+  if (font)
+  {
+    if (font->font_name)
+      free(font->font_name);
+    free(font);
+    iupAttribSet(ih, "_IUP_EFL_FONT", NULL);
+  }
 }
 
 IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
