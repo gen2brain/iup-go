@@ -260,7 +260,7 @@ static int motDialogQueryWMspecSupport(Atom feature)
 
 static void motDialogSetWindowManagerStyle(Ihandle* ih)
 {
-  MwmHints hints;
+  PropMwmHints hints;
   static Atom xwmhint = 0;
   if (!xwmhint)
     xwmhint = XInternAtom(iupmot_display, "_MOTIF_WM_HINTS", False);
@@ -268,7 +268,7 @@ static void motDialogSetWindowManagerStyle(Ihandle* ih)
   hints.flags = (MWM_HINTS_FUNCTIONS | MWM_HINTS_DECORATIONS);
   hints.functions = 0;
   hints.decorations = 0;
-  hints.input_mode = 0;
+  hints.inputMode = 0;
   hints.status = 0;
 
   if (iupAttribGet(ih, "TITLE")) {
