@@ -91,7 +91,7 @@ public:
   int grid_year[6][7];
 
   char title_buf[64];
-  char wk_bufs[6][8];
+  char wk_bufs[6][12];
   char day_bufs[6][7][8];
 
   IupFltkCalendar(int x, int y, int w, int h, Ihandle* ih)
