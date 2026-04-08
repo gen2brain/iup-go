@@ -16,7 +16,7 @@ jobs:
       run: go build
       working-directory: iup
 
-  linux-gtk3-ctl:
+  linux-gtk3-ctrl:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -179,6 +179,36 @@ jobs:
       run: sudo apt-get update -y && sudo apt-get install -y libefl-all-dev libgl1-mesa-dev
     - name: Build
       run: go build -tags efl,gl
+      working-directory: iup
+
+  linux-fltk:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y cmake libx11-dev libxft-dev libxext-dev libxrender-dev libxcursor-dev libxfixes-dev libxinerama-dev libpng-dev libjpeg-dev zlib1g-dev libwayland-dev wayland-protocols libxkbcommon-dev libdecor-0-dev libpango1.0-dev libcairo2-dev
+    - name: Build FLTK
+      run: |
+        git clone --depth 1 --branch release-1.4.4 https://github.com/fltk/fltk.git /tmp/fltk-src
+        cmake -S /tmp/fltk-src -B /tmp/fltk-build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DFLTK_BUILD_FLUID=OFF \
+          -DFLTK_BUILD_FLTK_OPTIONS=OFF \
+          -DFLTK_BUILD_TEST=OFF \
+          -DFLTK_BUILD_EXAMPLES=OFF \
+          -DFLTK_BUILD_FORMS=OFF \
+          -DFLTK_BUILD_GL=OFF
+        cmake --build /tmp/fltk-build --parallel
+        sudo cmake --install /tmp/fltk-build
+    - name: Build
+      run: go build -tags fltk
       working-directory: iup
 
   linux-gtk3-gl:
@@ -442,3 +472,52 @@ jobs:
     - name: Build
       run: go build -tags qt
       working-directory: iup
+
+  linux-cmake:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y cmake libgtk-3-dev libgtk-4-dev qt6-base-dev qt6-base-private-dev qt6-webengine-dev libmotif-dev libxmu-dev libxpm-dev libefl-all-dev libx11-dev libxft-dev libxext-dev libxrender-dev libxcursor-dev libxfixes-dev libxinerama-dev libpng-dev libjpeg-dev zlib1g-dev libwayland-dev wayland-protocols libxkbcommon-dev libdecor-0-dev libpango1.0-dev libcairo2-dev libgl1-mesa-dev libegl1-mesa-dev
+    - name: Build FLTK
+      run: |
+        git clone --depth 1 --branch release-1.4.4 https://github.com/fltk/fltk.git /tmp/fltk-src
+        cmake -S /tmp/fltk-src -B /tmp/fltk-build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -DFLTK_BUILD_FLUID=OFF \
+          -DFLTK_BUILD_FLTK_OPTIONS=OFF \
+          -DFLTK_BUILD_TEST=OFF \
+          -DFLTK_BUILD_EXAMPLES=OFF \
+          -DFLTK_BUILD_FORMS=OFF \
+          -DFLTK_BUILD_GL=OFF
+        cmake --build /tmp/fltk-build --parallel
+        sudo cmake --install /tmp/fltk-build
+    - name: CMake GTK3
+      run: |
+        cmake -S iup/external -B build/gtk3 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=gtk3 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake --build build/gtk3 --parallel
+    - name: CMake GTK4
+      run: |
+        cmake -S iup/external -B build/gtk4 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=gtk4 -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake --build build/gtk4 --parallel
+    - name: CMake Qt6
+      run: |
+        cmake -S iup/external -B build/qt6 -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=qt6 -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake --build build/qt6 --parallel
+    - name: CMake FLTK
+      run: |
+        cmake -S iup/external -B build/fltk -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=fltk -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake --build build/fltk --parallel
+    - name: CMake EFL
+      run: |
+        sudo mkdir -p /usr/include/ector-1
+        cmake -S iup/external -B build/efl -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=efl -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake --build build/efl --parallel
+    - name: CMake Motif
+      run: |
+        cmake -S iup/external -B build/motif -DBUILD_SHARED_LIBS=ON -DIUP_BACKEND=motif -DIUP_BUILD_GL=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON
+        cmake --build build/motif --parallel
