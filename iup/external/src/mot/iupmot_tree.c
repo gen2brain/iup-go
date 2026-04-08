@@ -1690,9 +1690,6 @@ static int motTreeSetBgColorAttrib(Ihandle* ih, const char* value)
 
   iupdrvBaseSetBgColorAttrib(ih, value);   /* use given value for contents */
 
-  /* update internal image cache */
-  iupTreeUpdateImages(ih);
-
   return 1;
 }
 
@@ -2770,6 +2767,224 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHan
   motTreeRebuildNodeCache(dst, 0, dst->data->node_cache[0].node_handle);
 }
 
+/****************************************************************************
+ * Motif Default Images (CDE-style, squared, simple geometric)
+ ****************************************************************************/
+
+#define ITREE_IMG_WIDTH   16
+#define ITREE_IMG_HEIGHT  16
+
+#define OO  0,0,0,0
+#define DE  80,80,80,255
+#define DW  240,240,240,255
+#define DS  160,160,160,255
+#define FE  100,75,20,255
+#define FH  220,200,140,255
+#define FL  205,185,120,255
+#define FB  190,170,100,255
+#define FD  165,145,75,255
+
+static unsigned char mot_img_leaf[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DS, DS, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DS, DE, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+static unsigned char mot_img_collapsed[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, FE, FE, FE, FE, FE, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, FE, FH, FH, FH, FH, FH, FE, OO, OO, OO, OO, OO, OO, OO, OO,
+  FE, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FE, OO, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO, OO,
+  FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+static unsigned char mot_img_expanded[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, FE, FE, FE, FE, FE, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, FE, FH, FH, FH, FH, FH, FE, OO, OO, OO, OO, OO, OO, OO, OO,
+  FE, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FE, OO, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO, OO,
+  FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, OO,
+  FE, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FE, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO,
+  FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+static unsigned char mot_img_blank[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+static unsigned char mot_img_paper[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DS, DS, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DS, DE, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DS, DS, DS, DS, DS, DS, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DS, DS, DS, DS, DS, DS, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DS, DS, DS, DS, DS, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+#undef OO
+#undef DE
+#undef DW
+#undef DS
+#undef FE
+#undef FH
+#undef FL
+#undef FB
+#undef FD
+
+static void motTreeInitializeImages(void)
+{
+  Ihandle *image_leaf, *image_collapsed, *image_expanded, *image_blank, *image_paper;
+
+  if (IupGetHandle("IMGLEAF_MOTIF"))
+    return;
+
+  image_leaf = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, mot_img_leaf);
+  image_collapsed = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, mot_img_collapsed);
+  image_expanded = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, mot_img_expanded);
+  image_blank = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, mot_img_blank);
+  image_paper = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, mot_img_paper);
+
+  IupSetHandle("IMGLEAF_MOTIF", image_leaf);
+  IupSetHandle("IMGCOLLAPSED_MOTIF", image_collapsed);
+  IupSetHandle("IMGEXPANDED_MOTIF", image_expanded);
+  IupSetHandle("IMGBLANK_MOTIF", image_blank);
+  IupSetHandle("IMGPAPER_MOTIF", image_paper);
+}
+
+#undef ITREE_IMG_WIDTH
+#undef ITREE_IMG_HEIGHT
+
+static void motTreeInitDefaultImages(Ihandle* ih)
+{
+  char* img_name;
+
+  img_name = iupAttribGetStr(ih, "IMAGELEAF");
+  if (img_name && !iupStrEqualNoCase(img_name, "IMGLEAF"))
+  {
+    ih->data->def_image_leaf = iupImageGetImage(img_name, ih, 0, NULL);
+    if (ih->data->def_image_leaf)
+      ih->data->def_image_leaf_mask = (void*)iupmotImageGetMask(img_name);
+  }
+  else
+  {
+    ih->data->def_image_leaf = iupImageGetImage("IMGLEAF_MOTIF", ih, 0, NULL);
+    if (ih->data->def_image_leaf)
+      ih->data->def_image_leaf_mask = (void*)iupmotImageGetMask("IMGLEAF_MOTIF");
+  }
+  if (!ih->data->def_image_leaf)
+  {
+    ih->data->def_image_leaf = (void*)XmUNSPECIFIED_PIXMAP;
+    ih->data->def_image_leaf_mask = (void*)XmUNSPECIFIED_PIXMAP;
+  }
+  else if (!ih->data->def_image_leaf_mask)
+    ih->data->def_image_leaf_mask = (void*)XmUNSPECIFIED_PIXMAP;
+
+  img_name = iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED");
+  if (img_name && !iupStrEqualNoCase(img_name, "IMGCOLLAPSED"))
+  {
+    ih->data->def_image_collapsed = iupImageGetImage(img_name, ih, 0, NULL);
+    if (ih->data->def_image_collapsed)
+      ih->data->def_image_collapsed_mask = (void*)iupmotImageGetMask(img_name);
+  }
+  else
+  {
+    ih->data->def_image_collapsed = iupImageGetImage("IMGCOLLAPSED_MOTIF", ih, 0, NULL);
+    if (ih->data->def_image_collapsed)
+      ih->data->def_image_collapsed_mask = (void*)iupmotImageGetMask("IMGCOLLAPSED_MOTIF");
+  }
+  if (!ih->data->def_image_collapsed)
+  {
+    ih->data->def_image_collapsed = (void*)XmUNSPECIFIED_PIXMAP;
+    ih->data->def_image_collapsed_mask = (void*)XmUNSPECIFIED_PIXMAP;
+  }
+  else if (!ih->data->def_image_collapsed_mask)
+    ih->data->def_image_collapsed_mask = (void*)XmUNSPECIFIED_PIXMAP;
+
+  img_name = iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED");
+  if (img_name && !iupStrEqualNoCase(img_name, "IMGEXPANDED"))
+  {
+    ih->data->def_image_expanded = iupImageGetImage(img_name, ih, 0, NULL);
+    if (ih->data->def_image_expanded)
+      ih->data->def_image_expanded_mask = (void*)iupmotImageGetMask(img_name);
+  }
+  else
+  {
+    ih->data->def_image_expanded = iupImageGetImage("IMGEXPANDED_MOTIF", ih, 0, NULL);
+    if (ih->data->def_image_expanded)
+      ih->data->def_image_expanded_mask = (void*)iupmotImageGetMask("IMGEXPANDED_MOTIF");
+  }
+  if (!ih->data->def_image_expanded)
+  {
+    ih->data->def_image_expanded = (void*)XmUNSPECIFIED_PIXMAP;
+    ih->data->def_image_expanded_mask = (void*)XmUNSPECIFIED_PIXMAP;
+  }
+  else if (!ih->data->def_image_expanded_mask)
+    ih->data->def_image_expanded_mask = (void*)XmUNSPECIFIED_PIXMAP;
+}
+
 /*******************************************************************************************/
 
 static int motTreeMapMethod(Ihandle* ih)
@@ -2912,41 +3127,7 @@ static int motTreeMapMethod(Ihandle* ih)
   }
 
   /* Initialize the default images */
-  ih->data->def_image_leaf = iupImageGetImage(iupAttribGetStr(ih, "IMAGELEAF"), ih, 0, NULL);
-  if (!ih->data->def_image_leaf)
-  {
-    ih->data->def_image_leaf = (void*)XmUNSPECIFIED_PIXMAP;
-    ih->data->def_image_leaf_mask = (void*)XmUNSPECIFIED_PIXMAP;
-  }
-  else
-  {
-    ih->data->def_image_leaf_mask = (void*)iupmotImageGetMask(iupAttribGetStr(ih, "IMAGELEAF"));
-    if (!ih->data->def_image_leaf_mask) ih->data->def_image_leaf_mask = (void*)XmUNSPECIFIED_PIXMAP;
-  }
-
-  ih->data->def_image_collapsed = iupImageGetImage(iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED"), ih, 0, NULL);
-  if (!ih->data->def_image_collapsed)
-  {
-    ih->data->def_image_collapsed = (void*)XmUNSPECIFIED_PIXMAP;
-    ih->data->def_image_collapsed_mask = (void*)XmUNSPECIFIED_PIXMAP;
-  }
-  else
-  {
-    ih->data->def_image_collapsed_mask = (void*)iupmotImageGetMask(iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED"));
-    if (!ih->data->def_image_collapsed_mask) ih->data->def_image_collapsed_mask = (void*)XmUNSPECIFIED_PIXMAP;
-  }
-
-  ih->data->def_image_expanded = iupImageGetImage(iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED"), ih, 0, NULL);
-  if (!ih->data->def_image_expanded)
-  {
-    ih->data->def_image_expanded = (void*)XmUNSPECIFIED_PIXMAP;
-    ih->data->def_image_expanded_mask = (void*)XmUNSPECIFIED_PIXMAP;
-  }
-  else
-  {
-    ih->data->def_image_expanded_mask = (void*)iupmotImageGetMask(iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED"));
-    if (!ih->data->def_image_expanded_mask) ih->data->def_image_expanded_mask = (void*)XmUNSPECIFIED_PIXMAP;
-  }
+  motTreeInitDefaultImages(ih);
 
   if (iupAttribGetInt(ih, "ADDROOT"))
     iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
@@ -2975,6 +3156,8 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   /* Driver Dependent Class functions */
   ic->Map = motTreeMapMethod;
   ic->UnMap = motTreeUnMapMethod;
+
+  motTreeInitializeImages();
 
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, motTreeSetBgColorAttrib, "TXTBGCOLOR", NULL, IUPAF_DEFAULT);
