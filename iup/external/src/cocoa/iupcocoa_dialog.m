@@ -1547,18 +1547,6 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
   }
 
   ih->data->ignore_resize = 0;
-
-  if (!iupAttribGetBoolean(ih, "_IUPCOCOA_FIRST_REFRESH"))
-  {
-    iupAttribSet(ih, "_IUPCOCOA_FIRST_REFRESH", "1");
-    dispatch_async(dispatch_get_main_queue(), ^{
-      if (!iupObjectCheck(ih)) return;
-      if (ih->data->ignore_resize) return;
-      ih->data->ignore_resize = 1;
-      IupRefresh(ih);
-      ih->data->ignore_resize = 0;
-    });
-  }
 }
 
 /****************************************************************
