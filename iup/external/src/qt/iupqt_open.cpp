@@ -28,21 +28,21 @@
     #include <QtGui/qguiapplication_platform.h>
   #endif
 
-  /* Qt6.7+: QWaylandWindow available in private headers */
+  /* Qt6.7+: Forward declare QWaylandWindow to avoid private header dependency.
+     Must be in QNativeInterface::Private and inherit QObject to match
+     the real vtable layout from qplatformwindow_p.h. */
   #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
     #define IUP_QT_HAS_WAYLAND_WINDOW 1
 
-    /* Forward declare wl_surface from Wayland client API */
     struct wl_surface;
 
-    /* Forward declare QWaylandWindow native interface to avoid private header */
     QT_BEGIN_NAMESPACE
-    namespace QNativeInterface {
-      struct Q_GUI_EXPORT QWaylandWindow {
+    namespace QNativeInterface { namespace Private {
+      struct Q_GUI_EXPORT QWaylandWindow : public QObject {
         QT_DECLARE_NATIVE_INTERFACE(QWaylandWindow, 1, QWindow)
         virtual struct wl_surface *surface() const = 0;
       };
-    }
+    }}
     QT_END_NAMESPACE
   #endif
 
@@ -110,15 +110,12 @@ IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget *widget)
   else if (platform == "wayland")
   {
 #ifdef IUP_QT_HAS_WAYLAND_WINDOW
-    /* Qt 6.7+: Use QNativeInterface::QWaylandWindow to get wl_surface */
-    auto *waylandWindow = window->nativeInterface<QNativeInterface::QWaylandWindow>();
-    if (waylandWindow)
     {
-      void* wl_surface = waylandWindow->surface();
-      return (char*)wl_surface;
+      auto *waylandWindow = window->nativeInterface<QNativeInterface::Private::QWaylandWindow>();
+      if (waylandWindow)
+        return (char*)waylandWindow->surface();
     }
 #endif
-    /* Fallback: Wayland native interface not available */
     return NULL;
   }
   else if (platform == "windows")
