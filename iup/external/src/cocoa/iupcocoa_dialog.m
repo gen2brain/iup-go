@@ -29,6 +29,37 @@ static const char IUPCocoaZoomRestoreFrameKey = 0;
 
 static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
 
+static void cocoaDialogRefreshControlsOnThemeChange(Ihandle* child)
+{
+  Ihandle* c;
+  for (c = child; c; c = c->brother)
+  {
+    if (c->handle && c->iclass && c->iclass->name)
+    {
+      if (iupStrEqual(c->iclass->name, "table") ||
+          iupStrEqual(c->iclass->name, "list"))
+      {
+        NSTableView* table_view = (NSTableView*)iupAttribGet(c, "_IUPCOCOA_TABLEVIEW");
+        if (table_view)
+          [table_view reloadData];
+      }
+      else if (iupStrEqual(c->iclass->name, "tree"))
+      {
+        NSScrollView* scroll_view = (NSScrollView*)c->handle;
+        if ([scroll_view isKindOfClass:[NSScrollView class]])
+        {
+          NSOutlineView* outline_view = (NSOutlineView*)[scroll_view documentView];
+          if ([outline_view isKindOfClass:[NSOutlineView class]])
+            [outline_view reloadData];
+        }
+      }
+    }
+
+    if (c->firstchild)
+      cocoaDialogRefreshControlsOnThemeChange(c->firstchild);
+  }
+}
+
 @interface IupCocoaWindowDelegate : NSObject <NSWindowDelegate>
 @end
 
@@ -555,10 +586,12 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
     if (cb)
     cb(ih, dark_mode);
 
+    if (ih->firstchild)
+      cocoaDialogRefreshControlsOnThemeChange(ih->firstchild);
+
     NSView* content_view = [the_window contentView];
     if (content_view)
     {
-    /* Recursively mark the content view and all subviews for redraw */
     NSMutableArray* view_stack = [NSMutableArray arrayWithObject:content_view];
     while ([view_stack count] > 0)
     {
@@ -1177,8 +1210,13 @@ static int cocoaDialogSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
-  [the_window setBackgroundColor:color];
+  if (iupStrEqual(value, IupGetGlobal("DLGBGCOLOR")))
+    [the_window setBackgroundColor:[NSColor windowBackgroundColor]];
+  else
+  {
+    NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+    [the_window setBackgroundColor:color];
+  }
   return 1;
 }
 
