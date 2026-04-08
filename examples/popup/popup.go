@@ -168,7 +168,7 @@ func main() {
 			canvas,
 			iup.Fill(),
 		).SetAttributes("MARGIN=20x20, GAP=10"),
-	).SetAttributes("TITLE=Popup Menu Examples, SIZE=500x300")
+	).SetAttributes("TITLE=Popup Menu Examples, SIZE=550x300")
 
 	iup.Show(dlg)
 	iup.MainLoop()

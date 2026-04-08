@@ -32,6 +32,7 @@ func main() {
 			).SetAttributes("MARGIN=10x8, GAP=4"),
 		)
 		popover.SetAttribute("POSITION", position)
+		popover.SetAttribute("ARROW", "NO")
 		iup.SetAttributeHandle(popover, "ANCHOR", btn)
 		btn.SetCallback("ACTION", togglePopover(popover))
 		return btn
