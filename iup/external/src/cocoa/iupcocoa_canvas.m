@@ -927,7 +927,7 @@ static int cocoaCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))
   {
-    NSColor* the_color = [NSColor colorWithCalibratedRed:(CGFloat)r/255.0 green:(CGFloat)g/255.0 blue:(CGFloat)b/255.0 alpha:1.0];
+    NSColor* the_color = [NSColor colorWithSRGBRed:(CGFloat)r/255.0 green:(CGFloat)g/255.0 blue:(CGFloat)b/255.0 alpha:1.0];
     [canvas_view setBackgroundColor:the_color];
     [canvas_view setNeedsDisplay:YES];
   }

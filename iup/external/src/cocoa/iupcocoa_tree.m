@@ -107,7 +107,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
       unsigned char r, g, b;
       if (iupStrToRGB(color_str, &r, &g, &b))
       {
-        NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+        NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
         [color set];
         NSRectFill(dirtyRect);
         return;

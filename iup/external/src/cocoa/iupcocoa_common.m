@@ -503,7 +503,7 @@ IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
       CGFloat green = g/255.0;
       CGFloat blue = b/255.0;
 
-      NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
+      NSColor* the_color = [NSColor colorWithSRGBRed:red green:green blue:blue alpha:1.0];
       [the_object setBackgroundColor:the_color];
     }
     else
@@ -529,7 +529,7 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
   CGFloat red = r/255.0;
   CGFloat green = g/255.0;
   CGFloat blue = b/255.0;
-  NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
+  NSColor* the_color = [NSColor colorWithSRGBRed:red green:green blue:blue alpha:1.0];
 
   /* For NSTextField, NSTextView, etc. */
   if ([main_view respondsToSelector:@selector(setTextColor:)])
@@ -751,7 +751,7 @@ IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihand
       unsigned char r, g, b;
       if (iupStrToRGB(run->fg_color, &r, &g, &b))
       {
-        NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+        NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
         [attrs setObject:color forKey:NSForegroundColorAttributeName];
       }
     }
@@ -761,7 +761,7 @@ IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihand
       unsigned char r, g, b;
       if (iupStrToRGB(run->bg_color, &r, &g, &b))
       {
-        NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+        NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
         [attrs setObject:color forKey:NSBackgroundColorAttributeName];
       }
     }

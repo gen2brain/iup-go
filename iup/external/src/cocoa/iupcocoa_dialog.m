@@ -1214,7 +1214,7 @@ static int cocoaDialogSetBgColorAttrib(Ihandle* ih, const char* value)
     [the_window setBackgroundColor:[NSColor windowBackgroundColor]];
   else
   {
-    NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+    NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
     [the_window setBackgroundColor:color];
   }
   return 1;
@@ -1228,7 +1228,7 @@ static int cocoaDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))
   {
-    NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+    NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
     [the_window setBackgroundColor:color];
     return 1;
   }

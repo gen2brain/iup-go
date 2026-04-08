@@ -666,7 +666,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     unsigned char g = iupDrawGreen(color);
     unsigned char b = iupDrawBlue(color);
     unsigned char a = iupDrawAlpha(color);
-    NSColor* ns_color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:a/255.0];
+    NSColor* ns_color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:a/255.0];
     [attributes setObject:ns_color forKey:NSForegroundColorAttributeName];
 
     NSMutableParagraphStyle* pStyle = [[[NSMutableParagraphStyle alloc] init] autorelease];

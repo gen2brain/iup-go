@@ -1454,13 +1454,13 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     char* color_str = iupAttribGet(ih, "BGCOLOR");
     if(iupStrToRGB(color_str, &r, &g, &b))
     {
-      [cell_view setCustomBackgroundColor:[NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0]];
+      [cell_view setCustomBackgroundColor:[NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0]];
     }
 
     color_str = iupAttribGet(ih, "FGCOLOR");
     if(iupStrToRGB(color_str, &r, &g, &b))
     {
-      [cell_view setCustomTextColor:[NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0]];
+      [cell_view setCustomTextColor:[NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0]];
     }
   }
   if (!font)
