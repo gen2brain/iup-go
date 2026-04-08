@@ -7,6 +7,8 @@
 #ifndef __IUP_MATRIXEX_H
 #define __IUP_MATRIXEX_H
 
+#include "iupcbs.h"
+
 #include "iup_array.h"
 
 #ifdef __cplusplus
