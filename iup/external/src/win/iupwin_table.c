@@ -35,7 +35,10 @@ static COLORREF winTableFocusRectColor(COLORREF bg_color)
   unsigned char g = GetGValue(bg_color);
   unsigned char b = GetBValue(bg_color);
   int luminance = (r * 299 + g * 587 + b * 114) / 1000;
-  return (luminance > 127) ? RGB(0, 0, 0) : RGB(255, 255, 255);
+  if (luminance > 127)
+    return RGB(r * 40 / 100, g * 40 / 100, b * 40 / 100);
+  else
+    return RGB(r + (255 - r) * 60 / 100, g + (255 - g) * 60 / 100, b + (255 - b) * 60 / 100);
 }
 
 /****************************************************************************
@@ -1780,7 +1783,8 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
           return 1;
 
         case CDDS_ITEMPREPAINT:
-          *result = CDRF_NOTIFYSUBITEMDRAW;
+          lplvcd->nmcd.uItemState &= ~CDIS_FOCUS;
+          *result = CDRF_NOTIFYSUBITEMDRAW | CDRF_NOTIFYPOSTPAINT;
           return 1;
 
         case CDDS_ITEMPREPAINT | CDDS_SUBITEM:
@@ -1978,22 +1982,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
               DeleteObject(hPen);
             }
 
-            /* Draw focus rectangle */
-            if (lin == data->current_row && col == data->current_col &&
-                iupAttribGetBoolean(ih, "FOCUSRECT") &&
-                GetFocus() == data->list_view)
-            {
-              HPEN hPen = CreatePen(PS_DOT, 1, winTableFocusRectColor(bg_color));
-              HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
-              HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
-
-              Rectangle(hdc, rc.left + 1, rc.top + 1, rc.right - 1, rc.bottom - 1);
-
-              SelectObject(hdc, hOldBrush);
-              SelectObject(hdc, hOldPen);
-              DeleteObject(hPen);
-            }
-
             *result = CDRF_SKIPDEFAULT;
             return 1;
           }
@@ -2033,11 +2021,9 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             }
           }
 
-          /* Need postpaint for grid lines, focused cell, or font restoration */
+          /* Need postpaint for grid lines or font restoration */
           int needs_postpaint = 0;
           if (data->show_grid)
-            needs_postpaint = 1;
-          else if (lin == data->current_row && col == data->current_col)
             needs_postpaint = 1;
           else if (font_changed)
             needs_postpaint = 1;
@@ -2089,32 +2075,66 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             DeleteObject(hPen);
           }
 
-          /* Draw focus rectangle if this is the focused cell and table has focus */
-          if (lin == data->current_row && col == data->current_col &&
-              iupAttribGetBoolean(ih, "FOCUSRECT") &&
-              GetFocus() == data->list_view)
-          {
-            UINT itemState = ListView_GetItemState(data->list_view, lplvcd->nmcd.dwItemSpec, LVIS_SELECTED);
-            COLORREF focus_bg = (itemState & LVIS_SELECTED) ? GetSysColor(COLOR_HIGHLIGHT) : lplvcd->clrTextBk;
-            if (focus_bg == CLR_DEFAULT)
-              focus_bg = GetSysColor(COLOR_WINDOW);
-
-            HPEN hPen = CreatePen(PS_DOT, 1, winTableFocusRectColor(focus_bg));
-            HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
-            HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
-
-            Rectangle(hdc, rc.left + 1, rc.top + 1, rc.right - 1, rc.bottom - 1);
-
-            SelectObject(hdc, hOldBrush);
-            SelectObject(hdc, hOldPen);
-            DeleteObject(hPen);
-          }
-
           /* Restore original font if it was changed */
           if (data->hfont)
           {
             SelectObject(hdc, data->hfont);
             data->hfont = NULL;
+          }
+
+          *result = CDRF_DODEFAULT;
+          return 1;
+        }
+
+        case CDDS_ITEMPOSTPAINT:
+        {
+          if (data->current_row > 0 && data->current_col > 0 &&
+              iupAttribGetBoolean(ih, "FOCUSRECT") &&
+              GetFocus() == data->list_view)
+          {
+            int lin = (int)lplvcd->nmcd.dwItemSpec + 1;
+            if (lin == data->current_row)
+            {
+              RECT rc;
+              rc.top = data->current_col;
+              rc.left = LVIR_BOUNDS;
+              SendMessage(data->list_view, LVM_GETSUBITEMRECT, (WPARAM)lplvcd->nmcd.dwItemSpec, (LPARAM)&rc);
+
+              UINT itemState = ListView_GetItemState(data->list_view, lplvcd->nmcd.dwItemSpec, LVIS_SELECTED);
+              COLORREF focus_bg;
+              if (itemState & LVIS_SELECTED)
+                focus_bg = GetSysColor(COLOR_HIGHLIGHT);
+              else
+              {
+                char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, data->current_col);
+                if (!bgcolor)
+                  bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, data->current_col);
+                if (!bgcolor)
+                  bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+
+                if (bgcolor && *bgcolor)
+                {
+                  unsigned char r, g, b;
+                  if (iupStrToRGB(bgcolor, &r, &g, &b))
+                    focus_bg = RGB(r, g, b);
+                  else
+                    focus_bg = GetSysColor(COLOR_WINDOW);
+                }
+                else
+                  focus_bg = GetSysColor(COLOR_WINDOW);
+              }
+
+              HDC hdc = lplvcd->nmcd.hdc;
+              HPEN hPen = CreatePen(PS_DOT, 1, winTableFocusRectColor(focus_bg));
+              HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+              HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+
+              Rectangle(hdc, rc.left + 1, rc.top + 1, rc.right - 2, rc.bottom - 2);
+
+              SelectObject(hdc, hOldBrush);
+              SelectObject(hdc, hOldPen);
+              DeleteObject(hPen);
+            }
           }
 
           *result = CDRF_DODEFAULT;
