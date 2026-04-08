@@ -354,22 +354,23 @@ static LRESULT CALLBACK WebBrowserWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-template <typename T>
-class EventHandler : public T
+template <typename TInterface, typename TDerived>
+class EventHandler : public TInterface
 {
 protected:
   ULONG refCount;
   Ihandle* ih;
 
+  ~EventHandler() {}
+
 public:
   EventHandler(Ihandle* handle) : refCount(1), ih(handle) {}
-  virtual ~EventHandler() {}
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) noexcept override
   {
-    if (riid == IID_IUnknown || riid == __mingw_uuidof<T>())
+    if (riid == IID_IUnknown || riid == iup_uuidof<TInterface>())
     {
-      *ppvObject = static_cast<T*>(this);
+      *ppvObject = static_cast<TInterface*>(this);
       AddRef();
       return S_OK;
     }
@@ -386,7 +387,7 @@ public:
   {
     ULONG count = InterlockedDecrement(&refCount);
     if (count == 0)
-      delete this;
+      delete static_cast<TDerived*>(this);
     return count;
   }
 };
@@ -426,7 +427,7 @@ static std::string winWebBrowserEscapeJavaScript(const char* str)
   return result;
 }
 
-class NavigationStartingHandler : public EventHandler<ICoreWebView2NavigationStartingEventHandler>
+class NavigationStartingHandler : public EventHandler<ICoreWebView2NavigationStartingEventHandler, NavigationStartingHandler>
 {
 public:
   NavigationStartingHandler(Ihandle* handle) : EventHandler(handle) {}
@@ -459,7 +460,7 @@ public:
   }
 };
 
-class NavigationCompletedHandler : public EventHandler<ICoreWebView2NavigationCompletedEventHandler>
+class NavigationCompletedHandler : public EventHandler<ICoreWebView2NavigationCompletedEventHandler, NavigationCompletedHandler>
 {
 public:
   NavigationCompletedHandler(Ihandle* handle) : EventHandler(handle) {}
@@ -467,7 +468,7 @@ public:
   HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NavigationCompletedEventArgs* args) noexcept override;
 };
 
-class NewWindowHandler : public EventHandler<ICoreWebView2NewWindowRequestedEventHandler>
+class NewWindowHandler : public EventHandler<ICoreWebView2NewWindowRequestedEventHandler, NewWindowHandler>
 {
 public:
   NewWindowHandler(Ihandle* handle) : EventHandler(handle) {}
@@ -492,7 +493,7 @@ public:
   }
 };
 
-class HistoryChangedHandler : public EventHandler<ICoreWebView2HistoryChangedEventHandler>
+class HistoryChangedHandler : public EventHandler<ICoreWebView2HistoryChangedEventHandler, HistoryChangedHandler>
 {
 public:
   HistoryChangedHandler(Ihandle* handle) : EventHandler(handle) {}
@@ -500,7 +501,7 @@ public:
   HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, IUnknown* args) noexcept override;
 };
 
-class WebMessageReceivedHandler : public EventHandler<ICoreWebView2WebMessageReceivedEventHandler>
+class WebMessageReceivedHandler : public EventHandler<ICoreWebView2WebMessageReceivedEventHandler, WebMessageReceivedHandler>
 {
 public:
   WebMessageReceivedHandler(Ihandle* handle) : EventHandler(handle) {}
@@ -530,7 +531,7 @@ public:
   }
 };
 
-class CreateWebViewHandler : public EventHandler<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>
+class CreateWebViewHandler : public EventHandler<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler, CreateWebViewHandler>
 {
 private:
   HWND hwnd;
@@ -541,7 +542,7 @@ public:
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Controller* controller) noexcept override;
 };
 
-class CreateEnvironmentHandler : public EventHandler<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>
+class CreateEnvironmentHandler : public EventHandler<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler, CreateEnvironmentHandler>
 {
 private:
   HWND hwnd;
@@ -672,7 +673,7 @@ HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* co
   controller->AddRef();
 
   ICoreWebView2Controller2* controller2 = NULL;
-  HRESULT hr = controller->QueryInterface(__mingw_uuidof<ICoreWebView2Controller2>(), (void**)&controller2);
+  HRESULT hr = controller->QueryInterface(iup_uuidof<ICoreWebView2Controller2>(), (void**)&controller2);
   if (SUCCEEDED(hr) && controller2)
   {
     controller2->put_DefaultBackgroundColor(RGB(255, 255, 255));
@@ -999,7 +1000,7 @@ static char* winWebBrowserGetHTMLAttrib(Ihandle* ih)
   char* result = NULL;
   int complete = 0;
 
-  class GetHTMLHandler : public EventHandler<ICoreWebView2ExecuteScriptCompletedHandler>
+  class GetHTMLHandler : public EventHandler<ICoreWebView2ExecuteScriptCompletedHandler, GetHTMLHandler>
   {
   private:
     char** result;
@@ -1185,7 +1186,7 @@ static void winWebBrowserExecuteJavascript(Ihandle* ih, const char* script)
   free(wscript);
 }
 
-class ExecuteScriptHandler : public EventHandler<ICoreWebView2ExecuteScriptCompletedHandler>
+class ExecuteScriptHandler : public EventHandler<ICoreWebView2ExecuteScriptCompletedHandler, ExecuteScriptHandler>
 {
 private:
   char** result;
