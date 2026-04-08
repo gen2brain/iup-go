@@ -5,7 +5,6 @@
  */
 
 #include <stdio.h>
-#include <stdbool.h>
 
 #include "iup.h"
 #include "iupkey.h"

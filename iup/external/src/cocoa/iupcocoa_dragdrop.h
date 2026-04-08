@@ -3,7 +3,6 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include <stdbool.h>
 #include "iup.h"
 
 
