@@ -32,7 +32,6 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* ti
 IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih);
 /** @} */
 
-void iupTreeUpdateImages(Ihandle *ih);
 char* iupTreeGetSpacingAttrib(Ihandle* ih);
 
 #if defined(GTK_MAJOR_VERSION)
