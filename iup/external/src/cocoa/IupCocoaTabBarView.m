@@ -908,21 +908,20 @@
   NSRect tabRect = [self frame];
   NSRect rect;
 
+  CGFloat buttonAreaSize = 20.0;
+  CGFloat maxX = NSMaxX(tabRect);
+  CGFloat midY = NSMidY(tabRect);
+
   if ([[self tabBarView] orientation] == IupCocoaTabBarHorizontal)
   {
-    CGFloat maxX = NSMaxX(tabRect);
-    CGFloat minY = NSMinY(tabRect);
-    rect = NSMakeRect(maxX - tabRect.size.height, minY, tabRect.size.height, tabRect.size.height);
+    rect = NSMakeRect(maxX - buttonAreaSize, midY - buttonAreaSize / 2.0, buttonAreaSize, buttonAreaSize);
   }
   else /* Vertical */
   {
-    CGFloat maxX = NSMaxX(tabRect);
-    CGFloat minY = NSMinY(tabRect);
-    CGFloat buttonSize = kTabCellHeight;
-    rect = NSMakeRect(maxX - buttonSize, minY, buttonSize, buttonSize);
+    rect = NSMakeRect(maxX - buttonAreaSize, midY - buttonAreaSize / 2.0, buttonAreaSize, buttonAreaSize);
   }
 
-  rect = CGRectInset(rect, kCloseButtonWidth + 2, kCloseButtonWidth + 2);
+  rect = CGRectInset(rect, (buttonAreaSize - kCloseButtonWidth) / 2.0, (buttonAreaSize - kCloseButtonWidth) / 2.0);
   return rect;
 }
 
@@ -1030,9 +1029,9 @@
 
     /* The layout *within* a tab is always horizontal (Image | Text | Close) */
     /* regardless of the tab bar's orientation. */
-    imageRect.origin.x = tabFrame.origin.x + 6.0;
+    imageRect.origin.x = tabFrame.origin.x + 4.0;
     imageRect.origin.y = tabFrame.origin.y + (tabFrame.size.height - imageSize) / 2.0;
-    leftOffset = 6.0 + imageSize + imagePadding;
+    leftOffset = 4.0 + imageSize + imagePadding;
 
     [self.image drawInRect:imageRect
                   fromRect:NSZeroRect
@@ -1104,18 +1103,16 @@
     titleRect.size.height = fontHeight;
     titleRect.origin.y += yOffset;
 
-    CGFloat leftInset = (leftOffset > 0.0) ? leftOffset : 8.0;
+    CGFloat leftInset = (leftOffset > 0.0) ? leftOffset : 6.0;
     CGFloat rightInset;
 
     if ([self hasCloseButton])
     {
-      /* Reserve a square on the right for the close button. */
-      /* The button rect is (width - height, y, height, height). */
-      rightInset = [self frame].size.height;
+      rightInset = 20.0;
     }
     else
     {
-      rightInset = 10.0;
+      rightInset = 6.0;
     }
 
     titleRect.origin.x += leftInset;

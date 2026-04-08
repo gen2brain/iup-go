@@ -364,8 +364,8 @@ IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* 
     NSSize size = [temp_switch intrinsicContentSize];
     [temp_switch release];
 
-    switch_w = (size.width > 0) ? (int)size.width : 38;
-    switch_h = (size.height > 0) ? (int)size.height : 21;
+    switch_w = (size.width > 0) ? (int)ceilf(size.width) : 38;
+    switch_h = (size.height > 0) ? (int)ceilf(size.height) : 21;
   }
 
   *x += 2 + switch_w + 2;
@@ -390,8 +390,8 @@ IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int *x, int *y, const char
     NSSize size = [temp_button intrinsicContentSize];
     [temp_button release];
 
-    check_w = (size.width > 0) ? (int)size.width : 18;
-    check_h = (size.height > 0) ? (int)size.height : 18;
+    check_w = (size.width > 0) ? (int)ceilf(size.width) : 18;
+    check_h = (size.height > 0) ? (int)ceilf(size.height) : 18;
   }
 
   *x += check_w;

@@ -13,7 +13,7 @@
 #define kWidthOfTabList 24
 #define kHeightOfTabList 28
 #define kMaxTabCellWidth 180
-#define kMinTabCellWidth 80
+#define kMinTabCellWidth 50
 #define kTabCellHeight 28
 #define kCloseButtonWidth 8
 
