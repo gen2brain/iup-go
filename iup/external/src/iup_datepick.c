@@ -120,7 +120,7 @@ static int iDatePickToggleAction_CB(Ihandle* ih_toggle, int state)
       IupSetAttributeHandle(popover, "ANCHOR", ih);
       IupSetAttribute(popover, "POSITION", "BOTTOM");
       IupSetAttribute(popover, "ARROW", "NO");
-      IupSetAttribute(popover, "AUTOHIDE", "NO");
+      IupSetAttribute(popover, "AUTOHIDE", "YES");
       IupSetCallback(popover, "SHOW_CB", (Icallback)iDatePickPopoverShow_CB);
       iupAttribSet(popover, "_IUP_DATEPICK_TOGGLE", (char*)ih_toggle);
       iupAttribSet(ih, "_IUP_POPOVER", (char*)popover);
@@ -459,15 +459,6 @@ static int iDatePickCreateMethod(Ihandle* ih, void** params)
   {
     Ihandle* lbl1 = IupLabel("/");
     Ihandle* lbl2 = IupLabel("/");
-    int extra_w = 0, extra_h = 0;
-    iupdrvTextAddExtraPadding(NULL, &extra_w, &extra_h);
-    if (extra_h > 0 || extra_w > 0)
-    {
-      int horiz_padding = extra_w / 2;
-      int vert_padding = extra_h / 2;
-      IupSetfAttribute(lbl1, "PADDING", "%dx%d", horiz_padding, vert_padding);
-      IupSetfAttribute(lbl2, "PADDING", "%dx%d", horiz_padding, vert_padding);
-    }
     box = IupHbox(iDatePickCreateText(), lbl1, iDatePickCreateText(), lbl2, iDatePickCreateText(), tgl, NULL);
     IupSetAttribute(box, "MARGIN", "0x0");
     IupSetAttribute(box, "GAP", "0");
