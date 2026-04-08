@@ -32,10 +32,10 @@ IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
     NSSize horiz_size = [temp_horiz fittingSize];
     NSSize vert_size = [temp_vert fittingSize];
 
-    horiz_min_w = (int)horiz_size.width;
-    horiz_min_h = (int)horiz_size.height;
-    vert_min_w = (int)vert_size.width;
-    vert_min_h = (int)vert_size.height;
+    horiz_min_w = (int)ceilf(horiz_size.width);
+    horiz_min_h = (int)ceilf(horiz_size.height);
+    vert_min_w = (int)ceilf(vert_size.width);
+    vert_min_h = (int)ceilf(vert_size.height);
 
     /* NSProgressIndicator has flexible width, so use reasonable defaults */
     if (horiz_min_w < 1) horiz_min_w = 100;

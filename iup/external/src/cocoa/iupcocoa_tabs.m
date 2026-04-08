@@ -677,22 +677,11 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     }
   }
 
-  /* Add horizontal padding based on tab content
-   *
-   * We add maximum expected padding (close button case) to ensure text is never clipped.
-   * The actual close button visibility is controlled by SHOWCLOSE attribute.
-   */
-  if (tab_image)
-  {
-    width += 10;
-  }
-  else
-  {
-    width += 8;
-  }
+  /* Add left padding */
+  width += 6;
 
-  /* Add right padding: assume close button may be present */
-  width += 28;
+  /* Add right padding: reserve space for close button if present */
+  width += 20;
 
   /* Clamp width between kMinTabCellWidth and kMaxTabCellWidth */
   if (width < kMinTabCellWidth)

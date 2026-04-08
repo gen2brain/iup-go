@@ -89,8 +89,7 @@ IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
     [tempBox setTitlePosition:NSNoTitle];
   }
 
-  /* Reduce content view margins to minimize padding */
-  [tempBox setContentViewMargins:NSMakeSize(2.0, 2.0)];
+  [tempBox layoutSubtreeIfNeeded];
 
   NSRect boxFrame = [tempBox frame];
   NSView* contentView = [tempBox contentView];
@@ -302,9 +301,6 @@ static int cocoaFrameMapMethod(Ihandle* ih)
     [the_frame setTitle:@""];
     [the_frame setTitlePosition:NSNoTitle];
   }
-
-  /* Reduce content view margins to minimize padding */
-  [the_frame setContentViewMargins:NSMakeSize(2.0, 2.0)];
 
   iupcocoaSetAssociatedViews(ih, [the_frame contentView], the_frame);
   iupcocoaAddToParent(ih);
