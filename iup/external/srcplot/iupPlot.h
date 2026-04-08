@@ -8,6 +8,9 @@
 #ifndef __IUPPLOT_H__
 #define __IUPPLOT_H__
 
+#include <cstdlib>
+#include <cmath>
+
 #include "iup.h"
 #include "iupcbs.h"
 
