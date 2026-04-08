@@ -82,7 +82,7 @@ func main() {
 		})
 		defer dlg.Destroy()
 
-		iup.Popup(dlg, iup.CENTER, iup.CENTER)
+		iup.Popup(dlg, iup.CENTERPARENT, iup.CENTERPARENT)
 
 		return iup.DEFAULT
 	}))
