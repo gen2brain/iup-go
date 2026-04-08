@@ -1111,8 +1111,6 @@ static int winTreeSetBgColorAttrib(Ihandle* ih, const char* value)
     COLORREF cr = RGB(r,g,b);
     SendMessage(ih->handle, TVM_SETBKCOLOR, 0, (LPARAM)cr);
 
-    /* update internal image cache */
-    iupTreeUpdateImages(ih);
   }
   return 0;
 }
@@ -3076,6 +3074,185 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHan
   winTreeRebuildNodeCache(dst, id_new, hItemNew);
 }
 
+/****************************************************************************
+ * Win32 Default Images (classic Windows style)
+ ****************************************************************************/
+
+#define ITREE_IMG_WIDTH   16
+#define ITREE_IMG_HEIGHT  16
+
+#define OO  0,0,0,0
+#define DE  96,96,96,255
+#define DW  255,255,255,255
+#define DS  176,176,176,255
+#define DB  0,80,160,255
+#define DL  100,150,210,255
+#define FE  140,105,10,255
+#define FH  255,235,140,255
+#define FL  255,220,90,255
+#define FB  245,200,50,255
+#define FM  230,180,30,255
+#define FD  210,160,15,255
+
+static unsigned char win32_img_leaf[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DL, DL, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DL, DB, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+static unsigned char win32_img_collapsed[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, FE, FE, FE, FE, FE, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, FE, FH, FH, FH, FH, FH, FE, OO, OO, OO, OO, OO, OO, OO, OO,
+  FE, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FE, OO, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FM, FM, FM, FM, FM, FM, FM, FM, FM, FM, FM, FM, FE, OO, OO,
+  FE, FM, FM, FM, FM, FM, FM, FM, FM, FM, FM, FM, FM, FE, OO, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO, OO,
+  FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+static unsigned char win32_img_expanded[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, FE, FE, FE, FE, FE, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, FE, FH, FH, FH, FH, FH, FE, OO, OO, OO, OO, OO, OO, OO, OO,
+  FE, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FE, OO, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO, OO,
+  FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, OO,
+  FE, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FE, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO,
+  FE, FM, FM, FM, FM, FM, FM, FM, FM, FM, FM, FM, FM, FM, FE, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO,
+  FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+static unsigned char win32_img_blank[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+static unsigned char win32_img_paper[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DL, DL, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DL, DB, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DS, DS, DS, DS, DS, DS, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DS, DS, DS, DS, DS, DS, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DS, DS, DS, DS, DS, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+#undef OO
+#undef DE
+#undef DW
+#undef DS
+#undef DB
+#undef DL
+#undef FE
+#undef FH
+#undef FL
+#undef FB
+#undef FM
+#undef FD
+
+static void winTreeInitializeImages(void)
+{
+  Ihandle *image_leaf, *image_collapsed, *image_expanded, *image_blank, *image_paper;
+
+  if (IupGetHandle("IMGLEAF_WIN32"))
+    return;
+
+  image_leaf = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, win32_img_leaf);
+  image_collapsed = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, win32_img_collapsed);
+  image_expanded = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, win32_img_expanded);
+  image_blank = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, win32_img_blank);
+  image_paper = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, win32_img_paper);
+
+  IupSetHandle("IMGLEAF_WIN32", image_leaf);
+  IupSetHandle("IMGCOLLAPSED_WIN32", image_collapsed);
+  IupSetHandle("IMGEXPANDED_WIN32", image_expanded);
+  IupSetHandle("IMGBLANK_WIN32", image_blank);
+  IupSetHandle("IMGPAPER_WIN32", image_paper);
+}
+
+#undef ITREE_IMG_WIDTH
+#undef ITREE_IMG_HEIGHT
+
+static void winTreeInitDefaultImages(Ihandle* ih)
+{
+  char* img_name;
+
+  img_name = iupAttribGetStr(ih, "IMAGELEAF");
+  if (img_name && !iupStrEqualNoCase(img_name, "IMGLEAF"))
+    ih->data->def_image_leaf = (void*)(intptr_t)winTreeGetImageIndex(ih, img_name);
+  else
+    ih->data->def_image_leaf = (void*)(intptr_t)winTreeGetImageIndex(ih, "IMGLEAF_WIN32");
+
+  img_name = iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED");
+  if (img_name && !iupStrEqualNoCase(img_name, "IMGCOLLAPSED"))
+    ih->data->def_image_collapsed = (void*)(intptr_t)winTreeGetImageIndex(ih, img_name);
+  else
+    ih->data->def_image_collapsed = (void*)(intptr_t)winTreeGetImageIndex(ih, "IMGCOLLAPSED_WIN32");
+
+  img_name = iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED");
+  if (img_name && !iupStrEqualNoCase(img_name, "IMGEXPANDED"))
+    ih->data->def_image_expanded = (void*)(intptr_t)winTreeGetImageIndex(ih, img_name);
+  else
+    ih->data->def_image_expanded = (void*)(intptr_t)winTreeGetImageIndex(ih, "IMGEXPANDED_WIN32");
+}
+
 /*******************************************************************************************/
 
 static int winTreeMapMethod(Ihandle* ih)
@@ -3139,9 +3316,7 @@ static int winTreeMapMethod(Ihandle* ih)
   }
 
   /* Initialize the default images */
-  ih->data->def_image_leaf = (void*)(intptr_t)winTreeGetImageIndex(ih, iupAttribGetStr(ih, "IMAGELEAF"));
-  ih->data->def_image_collapsed = (void*)(intptr_t)winTreeGetImageIndex(ih, iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED"));
-  ih->data->def_image_expanded = (void*)(intptr_t)winTreeGetImageIndex(ih, iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED"));
+  winTreeInitDefaultImages(ih);
 
   if (ih->data->show_toggle)
   {
@@ -3231,6 +3406,8 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   /* Driver Dependent Class functions */
   ic->Map = winTreeMapMethod;
   ic->UnMap = winTreeUnMapMethod;
+
+  winTreeInitializeImages();
 
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", winTreeGetBgColorAttrib, winTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_NO_SAVE);
