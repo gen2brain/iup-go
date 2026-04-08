@@ -602,6 +602,14 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
   Ihandle *list1, *list2, *list3, *close, *dlg, *dlg_box, *button_box, *colorbut, *fontbut, *handlebut,
     *tabs, *box1, *box11, *box2, *box22, *box3, *box33, *set, *id_text, *id_label, *imagelbl;
 
+  if (!IupGetHandle("IMGEMPTY"))
+  {
+    Ihandle* image_empty = IupImage(16, 16, NULL);
+    IupSetAttribute(image_empty, "0", "BGCOLOR");
+    IupSetAttribute(image_empty, "FLAT_ALPHA", "Yes");
+    IupSetHandle("IMGEMPTY", image_empty);
+  }
+
   close = IupButton("_@IUP_CLOSE", NULL);
   IupSetStrAttribute(close, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(close, "ACTION", (Icallback)iLayoutPropertiesClose_CB);
