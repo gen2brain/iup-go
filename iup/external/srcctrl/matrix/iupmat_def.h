@@ -7,6 +7,10 @@
 #ifndef __IUPMAT_DEF_H
 #define __IUPMAT_DEF_H
 
+#include "iupcbs.h"
+
+#include "iup_stdcontrols.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
