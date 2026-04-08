@@ -49,11 +49,10 @@
     },
     {
       "name": "winui",
-      "displayName": "WinUI backend (requires Clang++)",
+      "displayName": "WinUI backend",
       "inherits": "default",
       "cacheVariables": {
-        "IUP_BACKEND": "winui",
-        "CMAKE_CXX_COMPILER": "clang++"
+        "IUP_BACKEND": "winui"
       }
     },
     {

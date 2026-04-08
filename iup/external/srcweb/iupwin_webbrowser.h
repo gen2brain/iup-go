@@ -69,7 +69,6 @@ const wchar_t* IupWebView2LoaderGetRuntimePath(void);
 #define INTERFACE ICoreWebView2NavigationStartingEventHandler
 DECLARE_INTERFACE_(ICoreWebView2NavigationStartingEventHandler, IUnknown)
 {
-  virtual ~ICoreWebView2NavigationStartingEventHandler() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -80,7 +79,6 @@ DECLARE_INTERFACE_(ICoreWebView2NavigationStartingEventHandler, IUnknown)
 #define INTERFACE ICoreWebView2NavigationCompletedEventHandler
 DECLARE_INTERFACE_(ICoreWebView2NavigationCompletedEventHandler, IUnknown)
 {
-  virtual ~ICoreWebView2NavigationCompletedEventHandler() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -91,7 +89,6 @@ DECLARE_INTERFACE_(ICoreWebView2NavigationCompletedEventHandler, IUnknown)
 #define INTERFACE ICoreWebView2NewWindowRequestedEventHandler
 DECLARE_INTERFACE_(ICoreWebView2NewWindowRequestedEventHandler, IUnknown)
 {
-  virtual ~ICoreWebView2NewWindowRequestedEventHandler() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -102,7 +99,6 @@ DECLARE_INTERFACE_(ICoreWebView2NewWindowRequestedEventHandler, IUnknown)
 #define INTERFACE ICoreWebView2HistoryChangedEventHandler
 DECLARE_INTERFACE_(ICoreWebView2HistoryChangedEventHandler, IUnknown)
 {
-  virtual ~ICoreWebView2HistoryChangedEventHandler() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -113,7 +109,6 @@ DECLARE_INTERFACE_(ICoreWebView2HistoryChangedEventHandler, IUnknown)
 #define INTERFACE ICoreWebView2WebMessageReceivedEventHandler
 DECLARE_INTERFACE_(ICoreWebView2WebMessageReceivedEventHandler, IUnknown)
 {
-  virtual ~ICoreWebView2WebMessageReceivedEventHandler() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -124,7 +119,6 @@ DECLARE_INTERFACE_(ICoreWebView2WebMessageReceivedEventHandler, IUnknown)
 #define INTERFACE ICoreWebView2CreateCoreWebView2ControllerCompletedHandler
 DECLARE_INTERFACE_(ICoreWebView2CreateCoreWebView2ControllerCompletedHandler, IUnknown)
 {
-  virtual ~ICoreWebView2CreateCoreWebView2ControllerCompletedHandler() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -135,7 +129,6 @@ DECLARE_INTERFACE_(ICoreWebView2CreateCoreWebView2ControllerCompletedHandler, IU
 #define INTERFACE ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
 DECLARE_INTERFACE_(ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler, IUnknown)
 {
-  virtual ~ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -146,7 +139,6 @@ DECLARE_INTERFACE_(ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler, I
 #define INTERFACE ICoreWebView2ExecuteScriptCompletedHandler
 DECLARE_INTERFACE_(ICoreWebView2ExecuteScriptCompletedHandler, IUnknown)
 {
-  virtual ~ICoreWebView2ExecuteScriptCompletedHandler() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -157,7 +149,6 @@ DECLARE_INTERFACE_(ICoreWebView2ExecuteScriptCompletedHandler, IUnknown)
 #define INTERFACE ICoreWebView2NavigationStartingEventArgs
 DECLARE_INTERFACE_(ICoreWebView2NavigationStartingEventArgs, IUnknown)
 {
-  virtual ~ICoreWebView2NavigationStartingEventArgs() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -174,7 +165,6 @@ DECLARE_INTERFACE_(ICoreWebView2NavigationStartingEventArgs, IUnknown)
 #define INTERFACE ICoreWebView2NavigationCompletedEventArgs
 DECLARE_INTERFACE_(ICoreWebView2NavigationCompletedEventArgs, IUnknown)
 {
-  virtual ~ICoreWebView2NavigationCompletedEventArgs() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -187,7 +177,6 @@ DECLARE_INTERFACE_(ICoreWebView2NavigationCompletedEventArgs, IUnknown)
 #define INTERFACE ICoreWebView2NewWindowRequestedEventArgs
 DECLARE_INTERFACE_(ICoreWebView2NewWindowRequestedEventArgs, IUnknown)
 {
-  virtual ~ICoreWebView2NewWindowRequestedEventArgs() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -205,7 +194,6 @@ DECLARE_INTERFACE_(ICoreWebView2NewWindowRequestedEventArgs, IUnknown)
 #define INTERFACE ICoreWebView2WebMessageReceivedEventArgs
 DECLARE_INTERFACE_(ICoreWebView2WebMessageReceivedEventArgs, IUnknown)
 {
-  virtual ~ICoreWebView2WebMessageReceivedEventArgs() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -218,7 +206,6 @@ DECLARE_INTERFACE_(ICoreWebView2WebMessageReceivedEventArgs, IUnknown)
 #define INTERFACE ICoreWebView2Settings
 DECLARE_INTERFACE_(ICoreWebView2Settings, IUnknown)
 {
-  virtual ~ICoreWebView2Settings() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -246,7 +233,6 @@ DECLARE_INTERFACE_(ICoreWebView2Settings, IUnknown)
 #define INTERFACE ICoreWebView2Controller
 DECLARE_INTERFACE_(ICoreWebView2Controller, IUnknown)
 {
-  virtual ~ICoreWebView2Controller() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -279,7 +265,6 @@ DECLARE_INTERFACE_(ICoreWebView2Controller, IUnknown)
 #define INTERFACE ICoreWebView2Controller2
 DECLARE_INTERFACE_(ICoreWebView2Controller2, ICoreWebView2Controller)
 {
-  ~ICoreWebView2Controller2() override = default;
   STDMETHOD(get_DefaultBackgroundColor)(THIS_ COLORREF* backgroundColor) PURE;
   STDMETHOD(put_DefaultBackgroundColor)(THIS_ COLORREF backgroundColor) PURE;
 };
@@ -288,7 +273,6 @@ DECLARE_INTERFACE_(ICoreWebView2Controller2, ICoreWebView2Controller)
 #define INTERFACE ICoreWebView2
 DECLARE_INTERFACE_(ICoreWebView2, IUnknown)
 {
-  virtual ~ICoreWebView2() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -356,7 +340,6 @@ DECLARE_INTERFACE_(ICoreWebView2, IUnknown)
 #define INTERFACE ICoreWebView2Environment
 DECLARE_INTERFACE_(ICoreWebView2Environment, IUnknown)
 {
-  virtual ~ICoreWebView2Environment() = default;
   STDMETHOD(QueryInterface)(THIS_ REFIID riid, void** ppvObject) override PURE;
   STDMETHOD_(ULONG, AddRef)(THIS) override PURE;
   STDMETHOD_(ULONG, Release)(THIS) override PURE;
@@ -372,68 +355,70 @@ DECLARE_INTERFACE_(ICoreWebView2Environment, IUnknown)
 #ifdef __cplusplus
 extern "C++" {
 
+template<typename T> const GUID& iup_uuidof();
+
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2NavigationStartingEventHandler>() {
+inline const GUID& iup_uuidof<ICoreWebView2NavigationStartingEventHandler>() {
   static const GUID guid = {0x9adbe429, 0xf36d, 0x432b, {0x9d, 0xdc, 0xf8, 0x88, 0x1f, 0xbd, 0x76, 0xe3}};
   return guid;
 }
 
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2NavigationCompletedEventHandler>() {
+inline const GUID& iup_uuidof<ICoreWebView2NavigationCompletedEventHandler>() {
   static const GUID guid = {0xd33a35bf, 0x1c49, 0x4f98, {0x93, 0xab, 0x00, 0x6e, 0x05, 0x33, 0xfe, 0x1c}};
   return guid;
 }
 
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2NewWindowRequestedEventHandler>() {
+inline const GUID& iup_uuidof<ICoreWebView2NewWindowRequestedEventHandler>() {
   static const GUID guid = {0xd4c185fe, 0xc81c, 0x4989, {0x97, 0xaf, 0x2d, 0x3f, 0xa7, 0xab, 0x56, 0x51}};
   return guid;
 }
 
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2HistoryChangedEventHandler>() {
+inline const GUID& iup_uuidof<ICoreWebView2HistoryChangedEventHandler>() {
   static const GUID guid = {0xc79a0bba, 0x933a, 0x4319, {0x98, 0x47, 0x3b, 0x55, 0x30, 0x7d, 0x47, 0x96}};
   return guid;
 }
 
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2WebMessageReceivedEventHandler>() {
+inline const GUID& iup_uuidof<ICoreWebView2WebMessageReceivedEventHandler>() {
   static const GUID guid = {0x57213f19, 0x00e6, 0x49fa, {0x8e, 0x07, 0x89, 0x8e, 0xa0, 0x1e, 0xcb, 0xd2}};
   return guid;
 }
 
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>() {
+inline const GUID& iup_uuidof<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>() {
   static const GUID guid = {0x6c4819f3, 0xc9b7, 0x4260, {0x81, 0x27, 0xc9, 0xf5, 0xbd, 0xe7, 0xf6, 0x8c}};
   return guid;
 }
 
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>() {
+inline const GUID& iup_uuidof<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>() {
   static const GUID guid = {0x4e8a3389, 0xc9d8, 0x4bd2, {0xb6, 0xb5, 0x12, 0x4f, 0xee, 0x6c, 0xc1, 0x4d}};
   return guid;
 }
 
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2ExecuteScriptCompletedHandler>() {
+inline const GUID& iup_uuidof<ICoreWebView2ExecuteScriptCompletedHandler>() {
   static const GUID guid = {0x49511172, 0xcc67, 0x4bca, {0x99, 0x23, 0x13, 0x71, 0x12, 0xf4, 0xc4, 0xcc}};
   return guid;
 }
 
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2Settings>() {
+inline const GUID& iup_uuidof<ICoreWebView2Settings>() {
   static const GUID guid = {0x3C067F9F, 0x5388, 0x4772, {0x8B, 0x48, 0xED, 0xC4, 0x49, 0xB8, 0x67, 0x34}};
   return guid;
 }
 
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2Environment>() {
+inline const GUID& iup_uuidof<ICoreWebView2Environment>() {
   static const GUID guid = {0xB96D755E, 0x0319, 0x4E92, {0xA2, 0x96, 0x23, 0x43, 0xA3, 0x15, 0x63, 0x10}};
   return guid;
 }
 
 template<>
-inline const GUID& __mingw_uuidof<ICoreWebView2Controller2>() {
+inline const GUID& iup_uuidof<ICoreWebView2Controller2>() {
   static const GUID guid = {0xc979903e, 0xd4ca, 0x4228, {0x92, 0xeb, 0x47, 0xee, 0x3f, 0xa9, 0x6c, 0xab}};
   return guid;
 }

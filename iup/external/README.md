@@ -43,7 +43,7 @@ Available presets:
 | `gtk4`       | GTK4                      |                      |
 | `gtk2`       | GTK2                      | Legacy               |
 | `win32`      | Win32                     | Windows native       |
-| `winui`      | WinUI / XAML Islands      | Requires Clang++     |
+| `winui`      | WinUI / XAML Islands      |                      |
 | `cocoa`      | Cocoa                     | macOS native         |
 | `motif`      | Motif / X11               |                      |
 | `qt6`        | Qt6                       |                      |
@@ -133,7 +133,7 @@ FLTK does not provide pkg-config files, so `libfltk` and `libfltk_images` must b
 `motif-devel` or `libmotif-dev`. XFT and FreeType are auto-detected for font rendering.
 
 **WinUI** (Windows only):
-Requires Clang++ with C++20 and libc++ support. Use the `winui` preset or set `CMAKE_CXX_COMPILER=clang++`.
+Requires a C++20 compiler (MSVC or Clang++).
 At runtime, `Microsoft.WindowsAppRuntime.Bootstrap.dll` and `resources.pri` must be next to the `.exe` file.
 These files can be found in the `Microsoft.WindowsAppSDK` NuGet package.
 
