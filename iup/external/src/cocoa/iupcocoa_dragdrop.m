@@ -619,7 +619,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
 
     if(is_valid)
     {
-      NSColor* the_color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:a/255.0];
+      NSColor* the_color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:a/255.0];
       NSError* error = nil;
       NSData* ns_data = [NSKeyedArchiver archivedDataWithRootObject:the_color requiringSecureCoding:NO error:&error];
       if (ns_data)

@@ -566,7 +566,7 @@ static int cocoaButtonSetTitleAttrib(Ihandle* ih, const char* value)
       unsigned char r, g, b;
       if (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b))
       {
-        NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+        NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
         NSMutableAttributedString* attributed_title = [[NSMutableAttributedString alloc] initWithString:ns_string];
         NSRange range = NSMakeRange(0, [attributed_title length]);
         [attributed_title addAttribute:NSForegroundColorAttributeName value:color range:range];
@@ -692,7 +692,7 @@ static int cocoaButtonSetBgColorAttrib(Ihandle* ih, const char* value)
     return 0;
 
   [the_button setWantsLayer:YES];
-  [[the_button layer] setBackgroundColor:[[NSColor colorWithCalibratedRed:r/255.0
+  [[the_button layer] setBackgroundColor:[[NSColor colorWithSRGBRed:r/255.0
                                    green:g/255.0
                                     blue:b/255.0
                                    alpha:1.0] CGColor]];
@@ -708,7 +708,7 @@ static int cocoaButtonSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+  NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
   NSString* title = [the_button title];
 
   if (title && [title length] > 0)

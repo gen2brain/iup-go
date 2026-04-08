@@ -358,7 +358,7 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
 
     if (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b))
     {
-      NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+      NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
       NSRange range = NSMakeRange(0, [attr_str length]);
       [attr_str addAttribute:NSForegroundColorAttributeName value:color range:range];
     }
@@ -404,7 +404,7 @@ static int cocoaLabelSetActiveAttrib(Ihandle* ih, const char* value)
       {
         unsigned char r, g, b;
         if (iupStrToRGB(user_color, &r, &g, &b))
-          color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+          color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
         else
           color = [NSColor controlTextColor];
       }
@@ -797,7 +797,7 @@ static int cocoaLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+  NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
 
   if ([the_view isKindOfClass:[NSTextField class]])
   {
@@ -830,7 +830,7 @@ static int cocoaLabelSetFgColorAttrib(Ihandle* ih, const char* value)
           NSTextField* text_field = (NSTextField*)the_view;
           if (iupdrvIsActive(ih))
           {
-            NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+            NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
 
             NSAttributedString* current_attr_string = [text_field attributedStringValue];
             if (current_attr_string && [current_attr_string length] > 0)

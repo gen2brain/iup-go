@@ -1430,7 +1430,7 @@ static NSColor* cocoaTextColorFromStr(const char* value)
 {
   unsigned char r, g, b;
   if (iupStrToRGB(value, &r, &g, &b))
-    return [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+    return [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
   return nil;
 }
 
@@ -2878,7 +2878,7 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
 
     if(!iupAttribGet(formattag, "FGCOLOR"))
     {
-      NSColor* blue = [NSColor colorWithCalibratedRed:0.0 green:0.0 blue:1.0 alpha:1.0];
+      NSColor* blue = [NSColor colorWithSRGBRed:0.0 green:0.0 blue:1.0 alpha:1.0];
       [attribute_dict setValue:blue forKey:NSForegroundColorAttributeName];
       did_change_font_fgcolor = true;
       needs_add_font_fgcolor = true;

@@ -501,7 +501,7 @@ static NSColor* cocoaTableGetRowBackgroundColor(Ihandle* ih, int row)
     unsigned char r, g, b;
     if (iupStrToRGB(bgcolor, &r, &g, &b))
     {
-      return [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+      return [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
     }
   }
 
@@ -527,7 +527,7 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
       unsigned char r, g, b;
       if (iupStrToRGB(bgcolor, &r, &g, &b))
       {
-        NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+        NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
         [cellView setWantsLayer:YES];
         [[cellView layer] setBackgroundColor:[color CGColor]];
       }
@@ -562,7 +562,7 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
     unsigned char r, g, b;
     if (iupStrToRGB(fgcolor, &r, &g, &b))
     {
-      NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+      NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
       [textField setTextColor:color];
     }
   }

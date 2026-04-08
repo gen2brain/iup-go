@@ -950,7 +950,7 @@ static int cocoaTabsSetFgColorAttrib(Ihandle* ih, const char* value)
     CGFloat red = r/255.0;
     CGFloat green = g/255.0;
     CGFloat blue = b/255.0;
-    NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
+    NSColor* the_color = [NSColor colorWithSRGBRed:red green:green blue:blue alpha:1.0];
 
     [tab_bar_view setTabTitleColor:the_color];
     [tab_bar_view setTabActivedTitleColor:the_color];
@@ -1003,7 +1003,7 @@ static int cocoaTabsSetBgColorAttrib(Ihandle* ih, const char* value)
     CGFloat red = r/255.0;
     CGFloat green = g/255.0;
     CGFloat blue = b/255.0;
-    NSColor* the_color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
+    NSColor* the_color = [NSColor colorWithSRGBRed:red green:green blue:blue alpha:1.0];
 
     /* Set all three color properties for a consistent look */
     [tab_bar_view setBgColor:the_color];

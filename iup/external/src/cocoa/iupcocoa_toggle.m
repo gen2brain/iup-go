@@ -687,7 +687,7 @@ static int cocoaToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->type == IUP_TOGGLE_TEXT)
   {
-    NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+    NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
 
     NSMutableAttributedString* attrTitle = [[NSMutableAttributedString alloc]
       initWithString:[the_toggle title]];

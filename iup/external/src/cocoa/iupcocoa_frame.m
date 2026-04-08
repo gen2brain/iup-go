@@ -171,7 +171,7 @@ static int cocoaFrameSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!value || !iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+  NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
 
   [the_frame setBoxType:NSBoxCustom];
   [the_frame setFillColor:color];
@@ -207,7 +207,7 @@ static int cocoaFrameSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  NSColor* color = [NSColor colorWithCalibratedRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
+  NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
 
   NSTextFieldCell* title_cell = [the_frame titleCell];
   if (title_cell)
