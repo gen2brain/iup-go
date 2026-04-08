@@ -537,6 +537,29 @@ static gboolean gtkDialogConfigureEvent(GtkWidget *widget, GdkEventConfigure *ev
     {
       ih->data->ignore_resize = 1;
       IupRefresh(ih);
+
+      /* Decoration values may not be available on the first ConfigureEvent
+         after gtk_widget_show, causing GetDecoration to return estimates.
+         Re-check and correct current size if needed. */
+      {
+        int new_border, new_caption, new_menu;
+        iupdrvDialogGetDecoration(ih, &new_border, &new_caption, &new_menu);
+        if (new_border != border || new_caption != caption)
+        {
+          if (has_csd)
+          {
+            ih->currentwidth = client_width;
+            ih->currentheight = client_height + new_caption;
+          }
+          else
+          {
+            ih->currentwidth = client_width + 2*new_border;
+            ih->currentheight = client_height + 2*new_border + new_caption;
+          }
+          IupRefresh(ih);
+        }
+      }
+
       ih->data->ignore_resize = 0;
     }
 
