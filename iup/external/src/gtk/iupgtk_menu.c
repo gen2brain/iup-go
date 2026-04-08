@@ -9,6 +9,10 @@
 #include <gdk/gdkkeysyms.h>
 #endif
 
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#endif
+
 #ifdef HILDON
 #include <hildon/hildon-window.h>
 #endif
@@ -117,7 +121,39 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     }
   }
 
-  window = gdk_screen_get_root_window(gdk_screen_get_default());
+  window = NULL;
+
+#ifdef GDK_WINDOWING_WAYLAND
+  {
+    GdkDisplay* display = gdk_display_get_default();
+    if (GDK_IS_WAYLAND_DISPLAY(display))
+    {
+      GList* toplevels = gtk_window_list_toplevels();
+      GList* l;
+      for (l = toplevels; l != NULL; l = l->next)
+      {
+        GtkWindow* win = GTK_WINDOW(l->data);
+        if (gtk_widget_get_visible(GTK_WIDGET(win)))
+        {
+          window = iupgtkGetWindow(GTK_WIDGET(win));
+          if (window)
+          {
+            int win_x, win_y;
+            gdk_window_get_origin(window, &win_x, &win_y);
+            rect.x -= win_x;
+            rect.y -= win_y;
+            break;
+          }
+        }
+      }
+      g_list_free(toplevels);
+    }
+  }
+#endif
+
+  if (!window)
+    window = gdk_screen_get_root_window(gdk_screen_get_default());
+
   gtk_menu_popup_at_rect((GtkMenu*)ih->handle, window, &rect, rect_anchor, menu_anchor, NULL);
 #else
   ImenuPos menupos;
