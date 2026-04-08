@@ -438,7 +438,21 @@ static void fltkTreeCallback(Fl_Widget* w, void* data)
       if (cb)
       {
         if (cb(ih, id) == IUP_IGNORE)
+        {
           tree->close(item, 0);
+          break;
+        }
+      }
+
+      {
+        char* exp_name = iupAttribGetId(ih, "_IUPFLTK_IMGEXP", id);
+        if (exp_name)
+        {
+          Fl_Image* img = (Fl_Image*)iupImageGetImage(exp_name, ih, 0, NULL);
+          if (img) item->usericon(img);
+        }
+        else if (ih->data->def_image_expanded)
+          item->usericon((Fl_Image*)ih->data->def_image_expanded);
       }
       break;
     }
@@ -448,7 +462,21 @@ static void fltkTreeCallback(Fl_Widget* w, void* data)
       if (cb)
       {
         if (cb(ih, id) == IUP_IGNORE)
+        {
           tree->open(item, 0);
+          break;
+        }
+      }
+
+      {
+        char* img_name = iupAttribGetId(ih, "IMAGE", id);
+        if (img_name)
+        {
+          Fl_Image* img = (Fl_Image*)iupImageGetImage(img_name, ih, 0, NULL);
+          if (img) item->usericon(img);
+        }
+        else if (ih->data->def_image_collapsed)
+          item->usericon((Fl_Image*)ih->data->def_image_collapsed);
       }
       break;
     }
@@ -524,9 +552,22 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
   if (kind == ITREE_BRANCH)
   {
     if (ih->data->add_expanded)
+    {
       new_item->open();
+      if (ih->data->def_image_expanded)
+        new_item->usericon((Fl_Image*)ih->data->def_image_expanded);
+    }
     else
+    {
       new_item->close();
+      if (ih->data->def_image_collapsed)
+        new_item->usericon((Fl_Image*)ih->data->def_image_collapsed);
+    }
+  }
+  else
+  {
+    if (ih->data->def_image_leaf)
+      new_item->usericon((Fl_Image*)ih->data->def_image_leaf);
   }
 
   if (ih->data->node_count == 1)
@@ -751,9 +792,31 @@ static int fltkTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
   IupFltkTree* tree = (IupFltkTree*)ih->handle;
 
   if (iupStrEqualNoCase(value, "EXPANDED"))
+  {
     tree->open(item, 0);
+
+    char* exp_name = iupAttribGetId(ih, "_IUPFLTK_IMGEXP", id);
+    if (exp_name)
+    {
+      Fl_Image* img = (Fl_Image*)iupImageGetImage(exp_name, ih, 0, NULL);
+      if (img) item->usericon(img);
+    }
+    else if (ih->data->def_image_expanded)
+      item->usericon((Fl_Image*)ih->data->def_image_expanded);
+  }
   else
+  {
     tree->close(item, 0);
+
+    char* img_name = iupAttribGetId(ih, "IMAGE", id);
+    if (img_name)
+    {
+      Fl_Image* img = (Fl_Image*)iupImageGetImage(img_name, ih, 0, NULL);
+      if (img) item->usericon(img);
+    }
+    else if (ih->data->def_image_collapsed)
+      item->usericon((Fl_Image*)ih->data->def_image_collapsed);
+  }
 
   tree->redraw();
   return 0;
@@ -1413,7 +1476,11 @@ static int fltkTreeSetExpandAllAttrib(Ihandle* ih, const char* value)
     for (Fl_Tree_Item* item = tree->first(); item; item = tree->next(item))
     {
       if (fltkTreeGetNodeKind(item) == ITREE_BRANCH)
+      {
         tree->open(item, 0);
+        if (ih->data->def_image_expanded)
+          item->usericon((Fl_Image*)ih->data->def_image_expanded);
+      }
     }
   }
   else
@@ -1421,7 +1488,11 @@ static int fltkTreeSetExpandAllAttrib(Ihandle* ih, const char* value)
     for (Fl_Tree_Item* item = tree->first(); item; item = tree->next(item))
     {
       if (fltkTreeGetNodeKind(item) == ITREE_BRANCH)
+      {
         tree->close(item, 0);
+        if (ih->data->def_image_collapsed)
+          item->usericon((Fl_Image*)ih->data->def_image_collapsed);
+      }
     }
   }
 
@@ -1554,6 +1625,133 @@ static int fltkTreeSetTitleBgColorAttrib(Ihandle* ih, int id, const char* value)
 }
 
 /****************************************************************************
+ * FLTK Default Images (clean, lightweight style)
+ ****************************************************************************/
+
+#define ITREE_IMG_WIDTH   16
+#define ITREE_IMG_HEIGHT  16
+
+#define OO  0,0,0,0
+#define DE  112,112,112,255
+#define DW  248,248,248,255
+#define DS  184,184,184,255
+#define FE  160,120,20,255
+#define FH  240,220,120,255
+#define FL  230,205,90,255
+#define FB  220,190,60,255
+#define FD  200,170,40,255
+
+static unsigned char fltk_img_leaf[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DS, DS, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DS, DE, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DW, DW, DW, DW, DW, DW, DW, DW, DE, OO, OO, OO,
+  OO, OO, OO, DE, DE, DE, DE, DE, DE, DE, DE, DE, DE, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+static unsigned char fltk_img_collapsed[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, FE, FE, FE, FE, FE, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, FE, FH, FH, FH, FH, FH, FE, OO, OO, OO, OO, OO, OO, OO, OO,
+  FE, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FE, OO, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO, OO,
+  FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+static unsigned char fltk_img_expanded[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
+{
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, FE, FE, FE, FE, FE, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, FE, FH, FH, FH, FH, FH, FE, OO, OO, OO, OO, OO, OO, OO, OO,
+  FE, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FE, OO, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO, OO,
+  FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, OO,
+  FE, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FH, FE, OO,
+  FE, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FL, FE, OO,
+  FE, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FB, FE, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO,
+  FE, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FD, FE, OO,
+  FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, FE, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO,
+  OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO, OO
+};
+
+#undef OO
+#undef DE
+#undef DW
+#undef DS
+#undef FE
+#undef FH
+#undef FL
+#undef FB
+#undef FD
+
+static void fltkTreeInitializeImages(void)
+{
+  if (IupGetHandle("IMGLEAF_FLTK"))
+    return;
+
+  Ihandle* image_leaf = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, fltk_img_leaf);
+  Ihandle* image_collapsed = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, fltk_img_collapsed);
+  Ihandle* image_expanded = IupImageRGBA(ITREE_IMG_WIDTH, ITREE_IMG_HEIGHT, fltk_img_expanded);
+
+  IupSetHandle("IMGLEAF_FLTK", image_leaf);
+  IupSetHandle("IMGCOLLAPSED_FLTK", image_collapsed);
+  IupSetHandle("IMGEXPANDED_FLTK", image_expanded);
+}
+
+#undef ITREE_IMG_WIDTH
+#undef ITREE_IMG_HEIGHT
+
+static void fltkTreeInitDefaultImages(Ihandle* ih)
+{
+  char* img_name;
+
+  img_name = iupAttribGetStr(ih, "IMAGELEAF");
+  if (img_name && !iupStrEqualNoCase(img_name, "IMGLEAF"))
+    ih->data->def_image_leaf = iupImageGetImage(img_name, ih, 0, NULL);
+  else
+    ih->data->def_image_leaf = iupImageGetImage("IMGLEAF_FLTK", ih, 0, NULL);
+
+  img_name = iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED");
+  if (img_name && !iupStrEqualNoCase(img_name, "IMGCOLLAPSED"))
+    ih->data->def_image_collapsed = iupImageGetImage(img_name, ih, 0, NULL);
+  else
+    ih->data->def_image_collapsed = iupImageGetImage("IMGCOLLAPSED_FLTK", ih, 0, NULL);
+
+  img_name = iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED");
+  if (img_name && !iupStrEqualNoCase(img_name, "IMGEXPANDED"))
+    ih->data->def_image_expanded = iupImageGetImage(img_name, ih, 0, NULL);
+  else
+    ih->data->def_image_expanded = iupImageGetImage("IMGEXPANDED_FLTK", ih, 0, NULL);
+}
+
+/****************************************************************************
  * Map / UnMap
  ****************************************************************************/
 
@@ -1586,6 +1784,11 @@ static int fltkTreeMapMethod(Ihandle* ih)
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)fltkTreeConvertXYToPos);
 
+  fltkTreeInitDefaultImages(ih);
+
+  if (iupAttribGetInt(ih, "ADDROOT"))
+    iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
+
   return IUP_NOERROR;
 }
 
@@ -1615,6 +1818,8 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   ic->Map = fltkTreeMapMethod;
   ic->UnMap = fltkTreeUnMapMethod;
   ic->LayoutUpdate = fltkTreeLayoutUpdateMethod;
+
+  fltkTreeInitializeImages();
 
   /* Visual */
   iupClassRegisterAttribute(ic, "BGCOLOR", fltkTreeGetBgColorAttrib, fltkTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
@@ -1668,7 +1873,7 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", NULL, NULL, IUPAF_NO_INHERIT);
 
   /* IupTree Attributes - ACTION */
-  iupClassRegisterAttribute(ic, "ADDROOT", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDROOT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "DELNODE", NULL, fltkTreeSetDelNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "COPYNODE", NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "MOVENODE", NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
