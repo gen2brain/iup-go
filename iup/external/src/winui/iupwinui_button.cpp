@@ -444,6 +444,11 @@ static int winuiButtonMapMethod(Ihandle* ih)
   Button btn = Button();
   btn.HorizontalAlignment(HorizontalAlignment::Left);
   btn.VerticalAlignment(VerticalAlignment::Top);
+  btn.MinWidth(0);
+  btn.MinHeight(0);
+
+  if (ih->userwidth > 0 || ih->userheight > 0)
+    btn.Padding(Thickness{0, 0, 0, 0});
 
   char* impress = iupAttribGet(ih, "IMPRESS");
   if ((ih->data->type & IUP_BUTTON_IMAGE && impress && !iupAttribGetBoolean(ih, "IMPRESSBORDER")) || iupAttribGetBoolean(ih, "FLAT"))
@@ -639,6 +644,7 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     int has_image = (image != NULL);
     int has_text = (title != NULL && *title != 0);
     int has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
+    int has_user_size = (ih->userwidth > 0 || ih->userheight > 0);
 
     if (!has_image && !has_text && bgcolor != NULL)
     {
@@ -649,7 +655,7 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 
     if (has_image && !has_text)
     {
-      if (has_user_padding)
+      if (has_user_padding || has_user_size)
       {
         *x += winui_button_struct_x;
         *y += winui_button_struct_y;
@@ -662,7 +668,7 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
       return;
     }
 
-    if (has_user_padding)
+    if (has_user_padding || has_user_size)
     {
       *x += winui_button_struct_x;
       *y += winui_button_struct_y;
