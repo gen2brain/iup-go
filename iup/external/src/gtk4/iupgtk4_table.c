@@ -274,6 +274,9 @@ typedef struct _Igtk4TableData
   GtkWidget* column_view;
   GListModel* model;  /* IupTableVirtualModel or GListStore */
   GtkSelectionModel* selection_model;
+  GtkEventController* click_controller;
+  GtkEventController* key_controller;
+  GtkEventController* focus_controller;
   int is_virtual;
   int num_columns;  /* Number of GtkColumnViewColumn objects created */
   int current_row;  /* Current focused row (1-based row_index, 0=none) */
@@ -1708,21 +1711,19 @@ static int gtk4TableMapMethod(Ihandle* ih)
     g_signal_connect(columns_model, "items-changed", G_CALLBACK(gtk4TableColumnsChanged), ih);
   }
 
-  GtkGesture* click_gesture = gtk_gesture_click_new();
-  gtk_widget_add_controller(gtk_data->column_view, GTK_EVENT_CONTROLLER(click_gesture));
-  g_signal_connect(click_gesture, "pressed", G_CALLBACK(on_click), ih);
+  gtk_data->click_controller = GTK_EVENT_CONTROLLER(gtk_gesture_click_new());
+  gtk_widget_add_controller(gtk_data->column_view, gtk_data->click_controller);
+  g_signal_connect(gtk_data->click_controller, "pressed", G_CALLBACK(on_click), ih);
 
-  GtkEventController* key_controller = gtk_event_controller_key_new();
-  gtk_event_controller_set_propagation_phase(key_controller, GTK_PHASE_CAPTURE);
-  gtk_widget_add_controller(gtk_data->column_view, key_controller);
-  g_signal_connect(key_controller, "key-pressed", G_CALLBACK(on_key_pressed), ih);
+  gtk_data->key_controller = gtk_event_controller_key_new();
+  gtk_event_controller_set_propagation_phase(gtk_data->key_controller, GTK_PHASE_CAPTURE);
+  gtk_widget_add_controller(gtk_data->column_view, gtk_data->key_controller);
+  g_signal_connect(gtk_data->key_controller, "key-pressed", G_CALLBACK(on_key_pressed), ih);
 
-  {
-    GtkEventController* focus_controller = gtk_event_controller_focus_new();
-    gtk_widget_add_controller(gtk_data->column_view, focus_controller);
-    g_signal_connect(focus_controller, "enter", G_CALLBACK(gtk4TableFocusEnter), ih);
-    g_signal_connect(focus_controller, "leave", G_CALLBACK(gtk4TableFocusLeave), ih);
-  }
+  gtk_data->focus_controller = gtk_event_controller_focus_new();
+  gtk_widget_add_controller(gtk_data->column_view, gtk_data->focus_controller);
+  g_signal_connect(gtk_data->focus_controller, "enter", G_CALLBACK(gtk4TableFocusEnter), ih);
+  g_signal_connect(gtk_data->focus_controller, "leave", G_CALLBACK(gtk4TableFocusLeave), ih);
 
   for (int col = 1; col <= ih->data->num_col; col++)
   {
@@ -1791,6 +1792,15 @@ static void gtk4TableUnMapMethod(Ihandle* ih)
 
   if (gtk_data)
   {
+    if (gtk_data->focus_controller)
+      g_signal_handlers_disconnect_by_data(gtk_data->focus_controller, ih);
+    if (gtk_data->key_controller)
+      g_signal_handlers_disconnect_by_data(gtk_data->key_controller, ih);
+    if (gtk_data->click_controller)
+      g_signal_handlers_disconnect_by_data(gtk_data->click_controller, ih);
+    if (gtk_data->selection_model)
+      g_signal_handlers_disconnect_by_data(gtk_data->selection_model, ih);
+
     free(gtk_data);
     ih->data->native_data = NULL;
   }
