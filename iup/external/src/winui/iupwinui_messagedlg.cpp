@@ -240,20 +240,22 @@ static int winuiMsgDlgShowOnParent(Ihandle* ih, Ihandle* parent)
   return IUP_NOERROR;
 }
 
-static int winuiMsgDlgShowStandalone(Ihandle* ih)
+static int winuiMsgDlgShowStandalone(Ihandle* ih, HWND ownerHwnd)
 {
   winuiMsgDlgRegisterHostClass();
 
   int screenW = GetSystemMetrics(SM_CXSCREEN);
   int screenH = GetSystemMetrics(SM_CYSCREEN);
 
+  DWORD exStyle = WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
+
   HWND tempHwnd = CreateWindowExW(
-    WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+    exStyle,
     WINUI_MSGDLG_HOST_CLASS,
     L"",
     WS_POPUP,
     0, 0, screenW, screenH,
-    NULL, NULL, GetModuleHandle(NULL), NULL
+    ownerHwnd, NULL, GetModuleHandle(NULL), NULL
   );
 
   if (!tempHwnd)
@@ -286,11 +288,16 @@ static int winuiMsgDlgShowStandalone(Ihandle* ih)
   ShowWindow(tempHwnd, SW_SHOW);
   UpdateWindow(tempHwnd);
 
+  if (ownerHwnd)
+    EnableWindow(ownerHwnd, FALSE);
+
   iupwinuiProcessPendingMessages();
 
   XamlRoot xamlRoot = tempRoot.XamlRoot();
   if (!xamlRoot)
   {
+    if (ownerHwnd)
+      EnableWindow(ownerHwnd, TRUE);
     tempXamlSource.Close();
     DestroyWindow(tempHwnd);
     return IUP_ERROR;
@@ -324,9 +331,15 @@ static int winuiMsgDlgShowStandalone(Ihandle* ih)
 
   winuiMsgDlgSetResult(ih, dialogResult);
 
+  if (ownerHwnd)
+    EnableWindow(ownerHwnd, TRUE);
+
   SetWindowLongPtr(tempHwnd, GWLP_USERDATA, 0);
   tempXamlSource.Close();
   DestroyWindow(tempHwnd);
+
+  if (ownerHwnd)
+    SetForegroundWindow(ownerHwnd);
 
   return IUP_NOERROR;
 }
@@ -337,11 +350,17 @@ static int winuiMessageDlgPopup(Ihandle* ih, int x, int y)
   (void)y;
 
   Ihandle* parent = winuiMsgDlgFindParent(ih);
+  HWND ownerHwnd = parent ? (HWND)parent->handle : NULL;
 
   if (parent)
-    return winuiMsgDlgShowOnParent(ih, parent);
-  else
-    return winuiMsgDlgShowStandalone(ih);
+    iupAttribSet(parent, "_IUPWINUI_CONTENT_DIALOG_ACTIVE", "1");
+
+  int ret = winuiMsgDlgShowStandalone(ih, ownerHwnd);
+
+  if (parent)
+    iupAttribSet(parent, "_IUPWINUI_CONTENT_DIALOG_ACTIVE", NULL);
+
+  return ret;
 }
 
 static char* winuiMessageDlgGetAutoModalAttrib(Ihandle* ih)
