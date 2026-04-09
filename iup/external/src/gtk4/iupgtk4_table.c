@@ -276,7 +276,7 @@ typedef struct _Igtk4TableData
   GtkSelectionModel* selection_model;
   int is_virtual;
   int num_columns;  /* Number of GtkColumnViewColumn objects created */
-  int current_row;  /* Current focused row (1-based, 0=none) */
+  int current_row;  /* Current focused row (1-based row_index, 0=none) */
   int current_col;  /* Current focused column (1-based, 0=none) */
   int has_focus;    /* 1 if table control has keyboard focus */
 } Igtk4TableData;
@@ -702,6 +702,7 @@ static void cell_factory_bind(GtkSignalListItemFactory* factory, GtkListItem* li
   }
 
   g_object_set_data(G_OBJECT(box), "iup-factory-data", data);
+  g_object_set_data(G_OBJECT(box), "iup-row-index", GINT_TO_POINTER(row->row_index));
 
   gint lin = row->row_index;
   gboolean is_selected = gtk_list_item_get_selected(list_item);
@@ -938,10 +939,11 @@ static void on_selection_changed(GtkSelectionModel* selection, guint position, g
 
   if (GTK_IS_SINGLE_SELECTION(selection))
   {
-    guint pos = gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(selection));
-    if (pos != GTK_INVALID_LIST_POSITION)
+    GObject* item = gtk_single_selection_get_selected_item(GTK_SINGLE_SELECTION(selection));
+    if (item)
     {
-      gtk_data->current_row = pos + 1;
+      IupTableRow* row = IUP_TABLE_ROW(item);
+      gtk_data->current_row = row->row_index;
       if (gtk_data->current_col == 0)
         gtk_data->current_col = 1;
     }
@@ -953,21 +955,8 @@ static void on_selection_changed(GtkSelectionModel* selection, guint position, g
   }
   else if (GTK_IS_MULTI_SELECTION(selection))
   {
-    GtkBitset* bitset = gtk_selection_model_get_selection(selection);
-    if (bitset && gtk_bitset_get_size(bitset) > 0)
-    {
-      guint first = gtk_bitset_get_nth(bitset, 0);
-      gtk_data->current_row = first + 1;
-      if (gtk_data->current_col == 0)
-        gtk_data->current_col = 1;
-    }
-    else
-    {
-      gtk_data->current_row = 0;
-      gtk_data->current_col = 0;
-    }
-    if (bitset)
-      gtk_bitset_unref(bitset);
+    /* Focus cell is managed by on_click and on_key_pressed handlers */
+    return;
   }
 
   if (old_row != gtk_data->current_row)
@@ -983,58 +972,58 @@ static void on_selection_changed(GtkSelectionModel* selection, guint position, g
   }
 }
 
+static int gtk4TableFindClickedCell(Ihandle* ih, GtkWidget* column_view, double x, double y, int* out_row, int* out_col)
+{
+  GtkWidget* picked = gtk_widget_pick(column_view, x, y, GTK_PICK_DEFAULT);
+  if (!picked)
+    return 0;
+
+  /* Walk up from picked widget to find our cell box with factory data */
+  GtkWidget* w = picked;
+  while (w && w != column_view)
+  {
+    IupCellFactoryData* data = g_object_get_data(G_OBJECT(w), "iup-factory-data");
+    if (data)
+    {
+      *out_col = data->col_index + 1;
+      *out_row = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(w), "iup-row-index"));
+      return 1;
+    }
+    w = gtk_widget_get_parent(w);
+  }
+
+  return 0;
+}
+
 static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
   guint button = gtk_gesture_single_get_current_button(GTK_GESTURE_SINGLE(gesture));
 
-  if (GTK_IS_SINGLE_SELECTION(gtk_data->selection_model))
+  int clicked_row = 0, clicked_col = 0;
+  if (!gtk4TableFindClickedCell(ih, gtk_data->column_view, x, y, &clicked_row, &clicked_col))
+    return;
+
+  int old_row = gtk_data->current_row;
+  gtk_data->current_row = clicked_row;
+  gtk_data->current_col = clicked_col;
+
+  if (old_row != gtk_data->current_row && old_row >= 1)
+    gtk4TableNotifyRow(gtk_data, old_row);
+  gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
+
+  IFnii enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+  if (enter_cb)
+    enter_cb(ih, gtk_data->current_row, gtk_data->current_col);
+
+  IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+  if (click_cb)
   {
-    guint pos = gtk_single_selection_get_selected(GTK_SINGLE_SELECTION(gtk_data->selection_model));
-    if (pos != GTK_INVALID_LIST_POSITION)
-    {
-      int old_row = gtk_data->current_row;
+    char status[IUPKEY_STATUS_SIZE] = "";
+    GdkModifierType state = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(gesture));
+    iupgtk4ButtonKeySetStatus(state, button, status, 0);
 
-      gtk_data->current_row = pos + 1;
-
-      GListModel* columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(gtk_data->column_view));
-      double column_x = 0;
-
-      for (guint i = 0; i < ih->data->num_col; i++)
-      {
-        GtkColumnViewColumn* column = g_list_model_get_item(columns, i);
-        if (column)
-        {
-          int column_width = gtk_column_view_column_get_fixed_width(column);
-          if (column_width <= 0)
-            column_width = 100;
-
-          if (x >= column_x && x < column_x + column_width)
-          {
-            gtk_data->current_col = i + 1;
-            g_object_unref(column);
-            break;
-          }
-
-          column_x += column_width;
-          g_object_unref(column);
-        }
-      }
-
-      if (old_row != gtk_data->current_row && old_row >= 1)
-        gtk4TableNotifyRow(gtk_data, old_row);
-      gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
-
-      IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-      if (click_cb)
-      {
-        char status[IUPKEY_STATUS_SIZE] = "";
-        GdkModifierType state = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(gesture));
-        iupgtk4ButtonKeySetStatus(state, button, status, 0);
-
-        click_cb(ih, gtk_data->current_row, gtk_data->current_col, status);
-      }
-    }
+    click_cb(ih, gtk_data->current_row, gtk_data->current_col, status);
   }
 }
 
