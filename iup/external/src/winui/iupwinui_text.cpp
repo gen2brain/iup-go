@@ -287,8 +287,23 @@ static void winuiTextSpinValueChanged(Ihandle* ih, NumberBox const& nb, NumberBo
     return;
   }
 
-  int newValue = (int)args.NewValue();
-  int oldValue = (int)args.OldValue();
+  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+
+  int newValue, oldValue;
+  if (aux && !aux->spinauto && aux->spinStep > 0)
+  {
+    newValue = (int)round((args.NewValue() - aux->spinActualMin) / aux->spinStep);
+    oldValue = (int)round((args.OldValue() - aux->spinActualMin) / aux->spinStep);
+    int spinMin = iupAttribGetInt(ih, "_IUPWINUI_SPINMIN");
+    int spinMax = iupAttribGetInt(ih, "_IUPWINUI_SPINMAX");
+    if (newValue < spinMin) newValue = spinMin;
+    if (newValue > spinMax) newValue = spinMax;
+  }
+  else
+  {
+    newValue = (int)args.NewValue();
+    oldValue = (int)args.OldValue();
+  }
 
   IFni cb = (IFni)IupGetCallback(ih, "SPIN_CB");
   if (cb)
@@ -300,7 +315,7 @@ static void winuiTextSpinValueChanged(Ihandle* ih, NumberBox const& nb, NumberBo
       if (numberBox)
       {
         ih->data->disable_callbacks = 1;
-        numberBox.Value((double)oldValue);
+        numberBox.Value(args.OldValue());
         ih->data->disable_callbacks = 0;
       }
       return;
@@ -324,10 +339,20 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
     NumberBox nb = winuiGetHandle<NumberBox>(ih);
     if (nb)
     {
-      int val = 0;
-      if (value)
-        iupStrToInt(value, &val);
-      nb.Value((double)val);
+      if (!aux->spinauto && aux->spinStep > 0)
+      {
+        double dval = 0;
+        if (value)
+          iupStrToDouble(value, &dval);
+        nb.Value(dval);
+      }
+      else
+      {
+        int val = 0;
+        if (value)
+          iupStrToInt(value, &val);
+        nb.Value((double)val);
+      }
     }
   }
   else if (aux->isPassword)
@@ -377,7 +402,12 @@ static char* winuiTextGetValueAttrib(Ihandle* ih)
   {
     NumberBox nb = winuiGetHandle<NumberBox>(ih);
     if (nb)
-      return iupStrReturnInt((int)nb.Value());
+    {
+      if (!aux->spinauto && aux->spinStep > 0)
+        return iupStrReturnDouble(nb.Value());
+      else
+        return iupStrReturnInt((int)nb.Value());
+    }
   }
   else if (aux->isPassword)
   {
@@ -687,6 +717,7 @@ static int winuiTextMapMethod(Ihandle* ih)
   aux->isPassword = isPassword ? true : false;
   aux->isMultiline = isMultiline ? true : false;
   aux->isSpin = isSpin ? true : false;
+  aux->spinauto = iupAttribGetBoolean(ih, "SPINAUTO") ? true : false;
 
   const char* value = iupAttribGet(ih, "VALUE");
 
@@ -709,6 +740,47 @@ static int winuiTextMapMethod(Ihandle* ih)
     if (spinInc == 0)
       spinInc = 1;
 
+    if (!aux->spinauto)
+    {
+      double actualMin = iupAttribGetDouble(ih, "_IUPWINUI_MASKFLOAT_MIN");
+      double actualMax = iupAttribGetDouble(ih, "_IUPWINUI_MASKFLOAT_MAX");
+      if (actualMax > actualMin)
+      {
+
+        int spinRange = spinMax - spinMin;
+        if (spinRange <= 0) spinRange = 100;
+        double step = (actualMax - actualMin) / (double)spinRange * (double)spinInc;
+
+        aux->spinStep = step;
+        aux->spinActualMin = actualMin;
+
+        iupAttribSetInt(ih, "_IUPWINUI_SPINMIN", spinMin);
+        iupAttribSetInt(ih, "_IUPWINUI_SPINMAX", spinMax);
+
+        nb.Minimum(actualMin);
+        nb.Maximum(actualMax);
+        nb.SmallChange(step);
+        nb.LargeChange(step);
+
+        {
+          int precision = IupGetInt(NULL, "DEFAULTPRECISION");
+          if (precision <= 0) precision = 2;
+          using IFmtOpts = winrt::Windows::Globalization::NumberFormatting::INumberFormatterOptions;
+          auto opts = nb.NumberFormatter().as<IFmtOpts>();
+          reinterpret_cast<winrt::impl::abi<IFmtOpts>::type*>(winrt::get_abi(opts))->put_FractionDigits(precision);
+        }
+
+        double dval = 0;
+        if (value)
+          iupStrToDouble(value, &dval);
+        else
+          dval = (double)spinValue * step + actualMin;
+        nb.Value(dval);
+
+        goto spin_events;
+      }
+    }
+
     nb.Minimum((double)spinMin);
     nb.Maximum((double)spinMax);
     nb.SmallChange((double)spinInc);
@@ -721,9 +793,9 @@ static int winuiTextMapMethod(Ihandle* ih)
       nb.Value((double)val);
     }
     else
-    {
       nb.Value((double)spinValue);
-    }
+
+    spin_events:
 
     aux->valueChangedToken = nb.ValueChanged([ih](NumberBox const& sender, NumberBoxValueChangedEventArgs const& args) {
       winuiTextSpinValueChanged(ih, sender, args);
@@ -1105,9 +1177,14 @@ static int winuiTextSetSpinMinAttrib(Ihandle* ih, const char* value)
   int val = 0;
   iupStrToInt(value, &val);
 
-  NumberBox nb = winuiGetHandle<NumberBox>(ih);
-  if (nb)
-    nb.Minimum((double)val);
+  if (!aux->spinauto && aux->spinStep > 0)
+    iupAttribSetInt(ih, "_IUPWINUI_SPINMIN", val);
+  else
+  {
+    NumberBox nb = winuiGetHandle<NumberBox>(ih);
+    if (nb)
+      nb.Minimum((double)val);
+  }
 
   return 1;
 }
@@ -1121,9 +1198,14 @@ static int winuiTextSetSpinMaxAttrib(Ihandle* ih, const char* value)
   int val = 100;
   iupStrToInt(value, &val);
 
-  NumberBox nb = winuiGetHandle<NumberBox>(ih);
-  if (nb)
-    nb.Maximum((double)val);
+  if (!aux->spinauto && aux->spinStep > 0)
+    iupAttribSetInt(ih, "_IUPWINUI_SPINMAX", val);
+  else
+  {
+    NumberBox nb = winuiGetHandle<NumberBox>(ih);
+    if (nb)
+      nb.Maximum((double)val);
+  }
 
   return 1;
 }
@@ -1132,6 +1214,9 @@ static int winuiTextSetSpinIncAttrib(Ihandle* ih, const char* value)
 {
   IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux || !aux->isSpin)
+    return 1;
+
+  if (!aux->spinauto && aux->spinStep > 0)
     return 1;
 
   int val = 1;
@@ -1156,6 +1241,9 @@ static int winuiTextSetSpinValueAttrib(Ihandle* ih, const char* value)
   int val = 0;
   iupStrToInt(value, &val);
 
+  if (!aux->spinauto && aux->spinStep > 0)
+    return 1;
+
   NumberBox nb = winuiGetHandle<NumberBox>(ih);
   if (nb)
   {
@@ -1176,7 +1264,12 @@ static char* winuiTextGetSpinValueAttrib(Ihandle* ih)
 
   NumberBox nb = winuiGetHandle<NumberBox>(ih);
   if (nb)
-    return iupStrReturnInt((int)nb.Value());
+  {
+    if (!aux->spinauto && aux->spinStep > 0)
+      return iupStrReturnInt((int)round((nb.Value() - aux->spinActualMin) / aux->spinStep));
+    else
+      return iupStrReturnInt((int)nb.Value());
+  }
 
   return NULL;
 }
@@ -3274,6 +3367,45 @@ static int winuiTextSetFontAttrib(Ihandle* ih, const char* value)
   return iupdrvSetFontAttrib(ih, value);
 }
 
+static int winuiTextSetMaskFloatAttrib(Ihandle* ih, const char* value)
+{
+  if (!value)
+  {
+    if (ih->data->mask)
+    {
+      iupMaskDestroy(ih->data->mask);
+      ih->data->mask = NULL;
+    }
+  }
+  else
+  {
+    Imask* mask;
+    float min, max;
+    char* decimal_symbol = iupAttribGet(ih, "MASKDECIMALSYMBOL");
+    if (!decimal_symbol)
+      decimal_symbol = IupGetGlobal("DEFAULTDECIMALSYMBOL");
+
+    if (iupStrToFloatFloat(value, &min, &max, ':') != 2)
+      return 0;
+
+    iupAttribSetDouble(ih, "_IUPWINUI_MASKFLOAT_MIN", (double)min);
+    iupAttribSetDouble(ih, "_IUPWINUI_MASKFLOAT_MAX", (double)max);
+
+    mask = iupMaskCreateFloat(min, max, decimal_symbol);
+    if (mask)
+    {
+      int val = iupAttribGetInt(ih, "MASKNOEMPTY");
+      iupMaskSetNoEmpty(mask, val);
+
+      if (ih->data->mask)
+        iupMaskDestroy(ih->data->mask);
+
+      ih->data->mask = mask;
+    }
+  }
+  return 0;
+}
+
 extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = winuiTextMapMethod;
@@ -3291,6 +3423,8 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SPINMAX", NULL, winuiTextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPININC", NULL, winuiTextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINVALUE", winuiTextGetSpinValueAttrib, winuiTextSetSpinValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "MASKFLOAT", NULL, winuiTextSetMaskFloatAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
