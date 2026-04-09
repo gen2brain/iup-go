@@ -22,6 +22,7 @@ extern "C" {
 #include "iup_classbase.h"
 #include "iup_image.h"
 #include "iup_drvinfo.h"
+#include "iup_key.h"
 }
 
 #include "iupwinui_drv.h"
@@ -646,6 +647,20 @@ static int winuiDialogMapMethod(Ihandle* ih)
   aux->contentCanvas.VerticalAlignment(VerticalAlignment::Stretch);
 
   aux->rootPanel.Children().Append(aux->contentCanvas);
+
+  aux->rootPanel.KeyDown([ih](IInspectable const&, Microsoft::UI::Xaml::Input::KeyRoutedEventArgs const& args) {
+    if (args.Handled())
+      return;
+
+    int code = iupwinuiKeyDecode((int)args.Key());
+    if (code == K_ESC || code == K_CR)
+    {
+      Ihandle* focus = IupGetFocus();
+      Ihandle* nav_ih = (focus && iupObjectCheck(focus)) ? focus : ih;
+      if (iupKeyProcessNavigation(nav_ih, code, (GetKeyState(VK_SHIFT) & 0x8000)))
+        args.Handled(true);
+    }
+  });
 
   if (iupwinuiIsSystemDarkMode())
     aux->rootPanel.RequestedTheme(ElementTheme::Dark);
