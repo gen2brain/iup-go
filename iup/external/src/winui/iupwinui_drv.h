@@ -334,10 +334,14 @@ struct IupWinUITextAux
   bool isMultiline;
   bool isSpin;
   bool isFormatted;
+  bool spinauto;
+  double spinActualMin;
+  double spinStep;
 
   IupWinUITextAux() : beforeTextChangingToken{}, textChangedToken{}, gotFocusToken{}, lostFocusToken{},
                        valueChangedToken{}, keyDownToken{}, tappedToken{},
-                       isPassword(false), isMultiline(false), isSpin(false), isFormatted(false) {}
+                       isPassword(false), isMultiline(false), isSpin(false), isFormatted(false), spinauto(true),
+                       spinActualMin(0), spinStep(0) {}
 };
 
 struct IupWinUIFrameAux
