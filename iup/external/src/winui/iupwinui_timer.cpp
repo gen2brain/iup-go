@@ -28,21 +28,24 @@ struct IupWinUITimer
   event_token tickToken;
   std::chrono::steady_clock::time_point startTime;
   Ihandle* ih;
+  bool stopped;
 
-  IupWinUITimer() : timer(nullptr), tickToken{}, ih(nullptr) {}
+  IupWinUITimer() : timer(nullptr), tickToken{}, ih(nullptr), stopped(false) {}
 };
 
 #define IUPWINUI_TIMER_DATA "_IUPWINUI_TIMER_DATA"
 
 static void winuiTimerProc(IupWinUITimer* timer_data)
 {
+  if (timer_data->stopped)
+    return;
+
   Ihandle* ih = timer_data->ih;
-  Icallback cb;
 
   if (!iupObjectCheck(ih))
     return;
 
-  cb = IupGetCallback(ih, "ACTION_CB");
+  Icallback cb = IupGetCallback(ih, "ACTION_CB");
   if (cb)
   {
     auto now = std::chrono::steady_clock::now();
@@ -101,6 +104,8 @@ extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 
     if (timer_data)
     {
+      timer_data->stopped = true;
+
       if (timer_data->timer)
       {
         timer_data->timer.Stop();
@@ -108,7 +113,6 @@ extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
         timer_data->timer = nullptr;
       }
 
-      delete timer_data;
       iupAttribSet(ih, IUPWINUI_TIMER_DATA, nullptr);
     }
 
