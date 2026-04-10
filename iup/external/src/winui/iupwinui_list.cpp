@@ -711,7 +711,9 @@ static int winuiListSetShowDropdownAttrib(Ihandle* ih, const char* value)
 
   ComboBox comboBox = winuiGetHandle<ComboBox>(ih);
   if (comboBox)
+  {
     comboBox.IsDropDownOpen(iupStrBoolean(value));
+  }
 
   return 0;
 }
@@ -1217,11 +1219,14 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = comboBox.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupSetCurrentFocus(ih);
       iupCallGetFocusCb(ih);
     });
 
     aux->lostFocusToken = comboBox.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+      ComboBox cb = winuiGetHandle<ComboBox>(ih);
+      if (cb && cb.IsDropDownOpen())
+        return;
+
       iupCallKillFocusCb(ih);
     });
 
@@ -1294,7 +1299,6 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = grid.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupSetCurrentFocus(ih);
       iupCallGetFocusCb(ih);
     });
 
@@ -1419,7 +1423,6 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = listView.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupSetCurrentFocus(ih);
       iupCallGetFocusCb(ih);
     });
 
@@ -1461,7 +1464,6 @@ static int winuiListMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = listBox.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupSetCurrentFocus(ih);
       iupCallGetFocusCb(ih);
     });
 

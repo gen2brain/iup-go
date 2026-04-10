@@ -802,7 +802,6 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = nb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupSetCurrentFocus(ih);
       iupCallGetFocusCb(ih);
     });
 
@@ -848,7 +847,6 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = pb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupSetCurrentFocus(ih);
       iupCallGetFocusCb(ih);
     });
 
@@ -912,7 +910,6 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = reb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupSetCurrentFocus(ih);
       iupCallGetFocusCb(ih);
     });
 
@@ -1043,7 +1040,6 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->gotFocusToken = tb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-      iupSetCurrentFocus(ih);
       iupCallGetFocusCb(ih);
     });
 
