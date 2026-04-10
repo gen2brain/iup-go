@@ -150,25 +150,8 @@ static char* winuiToggleGetValueAttrib(Ihandle* ih)
 static void winuiToggleSetImageTextContent(Ihandle* ih, ToggleButton tb, Image image, const char* title)
 {
   (void)ih;
-  if (title && title[0])
-  {
-    StackPanel sp;
-    sp.Orientation(Orientation::Horizontal);
-
-    sp.Children().Append(image);
-
-    TextBlock txtBlock;
-    txtBlock.Text(iupwinuiStringToHString(title));
-    txtBlock.Margin(ThicknessHelper::FromLengths(4, 0, 0, 0));
-    txtBlock.VerticalAlignment(VerticalAlignment::Center);
-    sp.Children().Append(txtBlock);
-
-    tb.Content(sp);
-  }
-  else
-  {
-    tb.Content(image);
-  }
+  (void)title;
+  tb.Content(image);
 }
 
 static void winuiToggleSetImageContent(Ihandle* ih, const char* name, int make_inactive)
@@ -522,9 +505,9 @@ static int winuiToggleMapMethod(Ihandle* ih)
     ToggleButton tb;
     tb.HorizontalAlignment(HorizontalAlignment::Left);
     tb.VerticalAlignment(VerticalAlignment::Top);
-
-    if (!title)
-      tb.Padding(Thickness{0, 0, 0, 0});
+    tb.MinWidth(0);
+    tb.MinHeight(0);
+    tb.Padding(Thickness{0, 0, 0, 0});
 
     if (image)
     {
@@ -547,6 +530,23 @@ static int winuiToggleMapMethod(Ihandle* ih)
         auto isChecked = t.IsChecked();
         int checked = (isChecked && isChecked.Value()) ? 1 : 0;
 
+        if (ih->data->is_radio && checked)
+        {
+          Ihandle* radio = iupRadioFindToggleParent(ih);
+          if (radio)
+          {
+            Ihandle* last_ih = (Ihandle*)iupAttribGet(radio, "_IUPWINUI_RADIO_ACTIVE");
+            if (last_ih && last_ih != ih && iupObjectCheck(last_ih))
+            {
+              winuiToggleSetValueAttrib(last_ih, "OFF");
+              if (last_ih->data->type == IUP_TOGGLE_IMAGE)
+                winuiToggleCallAction(last_ih, 0);
+            }
+
+            iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", (char*)ih);
+          }
+        }
+
         char* impress = iupAttribGet(ih, "IMPRESS");
         if (impress)
         {
@@ -567,6 +567,19 @@ static int winuiToggleMapMethod(Ihandle* ih)
       if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
         args.Handled(true);
     });
+
+    if (ih->data->is_radio && radio)
+    {
+      if (!iupAttribGet(radio, "_IUPWINUI_LASTTOGGLE"))
+      {
+        tb.IsChecked(true);
+        iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", (char*)ih);
+      }
+      iupAttribSet(radio, "_IUPWINUI_LASTTOGGLE", (char*)ih);
+
+      if (!iupAttribGetHandleName(ih))
+        iupAttribSetHandleName(ih);
+    }
 
     Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
     if (parentCanvas)
@@ -591,7 +604,18 @@ static int winuiToggleMapMethod(Ihandle* ih)
     if (title)
       rb.Content(box_value(iupwinuiProcessMnemonic(title, NULL)));
 
-    aux->checkedToken = rb.Checked([ih](IInspectable const&, RoutedEventArgs const&) {
+    aux->checkedToken = rb.Checked([ih, radio](IInspectable const&, RoutedEventArgs const&) {
+      if (radio)
+      {
+        Ihandle* last_ih = (Ihandle*)iupAttribGet(radio, "_IUPWINUI_RADIO_ACTIVE");
+        if (last_ih && last_ih != ih && iupObjectCheck(last_ih) && last_ih->data->type == IUP_TOGGLE_IMAGE)
+        {
+          winuiToggleSetValueAttrib(last_ih, "OFF");
+          winuiToggleCallAction(last_ih, 0);
+        }
+
+        iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", (char*)ih);
+      }
       winuiToggleCallAction(ih, 1);
     });
 
@@ -607,6 +631,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     if (!iupAttribGet(radio, "_IUPWINUI_LASTTOGGLE"))
     {
       iupAttribSet(ih, "VALUE", "ON");
+      iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", (char*)ih);
     }
     iupAttribSet(radio, "_IUPWINUI_LASTTOGGLE", (char*)ih);
 

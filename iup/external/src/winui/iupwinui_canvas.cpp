@@ -400,6 +400,39 @@ static char* winuiCanvasGetDrawSizeAttrib(Ihandle* ih)
   return NULL;
 }
 
+static void winuiCanvasUpdateChildLayout(Ihandle* ih)
+{
+  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+  if (!aux)
+    return;
+
+  int width = ih->currentwidth;
+  int height = ih->currentheight;
+  int sb_size = iupdrvGetScrollbarSize();
+  int sb_vert_width = 0, sb_horiz_height = 0;
+
+  if (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible)
+    sb_vert_width = sb_size;
+  if (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible)
+    sb_horiz_height = sb_size;
+
+  if (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible)
+  {
+    Canvas::SetLeft(aux->sbVert, (double)(width - sb_vert_width));
+    Canvas::SetTop(aux->sbVert, 0.0);
+    aux->sbVert.Width((double)sb_vert_width);
+    aux->sbVert.Height((double)(height - sb_horiz_height));
+  }
+
+  if (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible)
+  {
+    Canvas::SetLeft(aux->sbHoriz, 0.0);
+    Canvas::SetTop(aux->sbHoriz, (double)(height - sb_horiz_height));
+    aux->sbHoriz.Width((double)(width - sb_vert_width));
+    aux->sbHoriz.Height((double)sb_horiz_height);
+  }
+}
+
 static int winuiCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
@@ -472,6 +505,9 @@ static int winuiCanvasSetDXAttrib(Ihandle* ih, const char* value)
       aux->sbHoriz.Value(iposx);
       ih->data->posx = posx;
     }
+
+    if (iupAttribGet(ih, "SB_RESIZE"))
+      winuiCanvasUpdateChildLayout(ih);
   }
   return 1;
 }
@@ -548,6 +584,9 @@ static int winuiCanvasSetDYAttrib(Ihandle* ih, const char* value)
       aux->sbVert.Value(iposy);
       ih->data->posy = posy;
     }
+
+    if (iupAttribGet(ih, "SB_RESIZE"))
+      winuiCanvasUpdateChildLayout(ih);
   }
   return 1;
 }
@@ -701,10 +740,14 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   }
 
   aux->pointerPressedToken = canvas.PointerPressed([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
+    Canvas c = winuiGetHandle<Canvas>(ih);
+    if (c)
+      c.CapturePointer(args.Pointer());
+
     IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
     if (cb)
     {
-      auto point = args.GetCurrentPoint(winuiGetHandle<Canvas>(ih));
+      auto point = args.GetCurrentPoint(c);
       auto props = point.Properties();
       int button = iupwinuiGetPointerButton(props);
       int x = (int)point.Position().X;
@@ -716,6 +759,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
         IupExitLoop();
       else if (ret == IUP_IGNORE)
       {
+        if (c) c.ReleasePointerCapture(args.Pointer());
         args.Handled(true);
         return;
       }
@@ -726,7 +770,6 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       Ihandle* dlg = IupGetDialog(ih);
       if (dlg && (HWND)dlg->handle == GetActiveWindow())
       {
-        Canvas c = winuiGetHandle<Canvas>(ih);
         if (c)
           c.Focus(FocusState::Pointer);
       }
@@ -736,10 +779,14 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->pointerReleasedToken = canvas.PointerReleased([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
+    Canvas c = winuiGetHandle<Canvas>(ih);
+    if (c)
+      c.ReleasePointerCapture(args.Pointer());
+
     IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
     if (cb)
     {
-      auto point = args.GetCurrentPoint(winuiGetHandle<Canvas>(ih));
+      auto point = args.GetCurrentPoint(c);
       auto props = point.Properties();
       int button = iupwinuiGetPointerReleasedButton(props);
       int x = (int)point.Position().X;
@@ -763,13 +810,20 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     IFniis cb = (IFniis)IupGetCallback(ih, "MOTION_CB");
     if (cb)
     {
-      auto point = args.GetCurrentPoint(winuiGetHandle<Canvas>(ih));
+      Canvas c = winuiGetHandle<Canvas>(ih);
+      auto point = args.GetCurrentPoint(c);
+      auto props = point.Properties();
       int x = (int)point.Position().X;
       int y = (int)point.Position().Y;
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), 0, status, 0);
+      int button = 0;
+      if (props.IsLeftButtonPressed()) button = IUP_BUTTON1;
+      else if (props.IsRightButtonPressed()) button = IUP_BUTTON3;
+      else if (props.IsMiddleButtonPressed()) button = IUP_BUTTON2;
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
       cb(ih, x, y, status);
     }
+    args.Handled(true);
   });
 
   aux->pointerEnteredToken = canvas.PointerEntered([ih](IInspectable const&, PointerRoutedEventArgs const&) {
@@ -977,39 +1031,6 @@ static void winuiCanvasUnMapMethod(Ihandle* ih)
     *aux->alive = false;
   winuiFreeAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
   ih->handle = NULL;
-}
-
-static void winuiCanvasUpdateChildLayout(Ihandle* ih)
-{
-  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
-  if (!aux)
-    return;
-
-  int width = ih->currentwidth;
-  int height = ih->currentheight;
-  int sb_size = iupdrvGetScrollbarSize();
-  int sb_vert_width = 0, sb_horiz_height = 0;
-
-  if (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible)
-    sb_vert_width = sb_size;
-  if (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible)
-    sb_horiz_height = sb_size;
-
-  if (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible)
-  {
-    Canvas::SetLeft(aux->sbVert, (double)(width - sb_vert_width));
-    Canvas::SetTop(aux->sbVert, 0.0);
-    aux->sbVert.Width((double)sb_vert_width);
-    aux->sbVert.Height((double)(height - sb_horiz_height));
-  }
-
-  if (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible)
-  {
-    Canvas::SetLeft(aux->sbHoriz, 0.0);
-    Canvas::SetTop(aux->sbHoriz, (double)(height - sb_horiz_height));
-    aux->sbHoriz.Width((double)(width - sb_vert_width));
-    aux->sbHoriz.Height((double)sb_horiz_height);
-  }
 }
 
 static void winuiCanvasLayoutUpdateMethod(Ihandle* ih)
