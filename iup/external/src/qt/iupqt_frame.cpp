@@ -254,6 +254,13 @@ static int qtFrameSetBgColorAttrib(Ihandle* ih, const char* value)
 
     QColor color(r, g, b);
 
+    if (groupbox)
+    {
+      QPalette palette = groupbox->palette();
+      palette.setColor(QPalette::Window, color);
+      groupbox->setPalette(palette);
+    }
+
     if (inner)
     {
       QPalette palette = inner->palette();

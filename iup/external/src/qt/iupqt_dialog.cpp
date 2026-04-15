@@ -39,6 +39,27 @@ extern "C" {
  * Qt Dialog Widget with Event Handling
  ****************************************************************************/
 
+/* Re-resolve SAMEASSYSTEM color defaults (now pointing at refreshed DLGFGCOLOR/DLGBGCOLOR)
+   for every widget that doesn't have a user-set color, so baked palette entries follow the new theme. */
+static void qtDialogRefreshThemeColors(Ihandle* ih)
+{
+  if (ih->handle)
+  {
+    int inherit;
+    if (!iupAttribGet(ih, "FGCOLOR"))
+      iupClassObjectSetAttribute(ih, "FGCOLOR", NULL, &inherit);
+    if (!iupAttribGet(ih, "BGCOLOR"))
+      iupClassObjectSetAttribute(ih, "BGCOLOR", NULL, &inherit);
+  }
+
+  Ihandle* child = ih->firstchild;
+  while (child)
+  {
+    qtDialogRefreshThemeColors(child);
+    child = child->brother;
+  }
+}
+
 class IupQtDialog : public QMainWindow
 {
 public:
@@ -252,8 +273,10 @@ protected:
 
   bool event(QEvent* event) override
   {
-    /* Monitor theme changes via palette change */
-    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::StyleChange)
+    /* StyleChange fires after qApp->palette() is swapped; PaletteChange arrives with the
+       stale palette and is kept as a fallback. User callback runs before the tree walk
+       so it can update per-control attributes (e.g. EVENROWCOLOR) first. */
+    if (event->type() == QEvent::StyleChange || event->type() == QEvent::PaletteChange)
     {
       if (iup_handle)
       {
@@ -263,6 +286,8 @@ protected:
         IFni cb = (IFni)IupGetCallback(iup_handle, "THEMECHANGED_CB");
         if (cb)
           cb(iup_handle, dark_mode);
+
+        qtDialogRefreshThemeColors(iup_handle);
       }
     }
 
