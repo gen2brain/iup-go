@@ -5,6 +5,7 @@
  */
 
 #include <QPushButton>
+#include <QToolButton>
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QPixmap>
@@ -12,9 +13,6 @@
 #include <QWidget>
 #include <QKeyEvent>
 #include <QString>
-#include <QStyleOption>
-#include <QStylePainter>
-#include <QFontMetrics>
 
 #include <cstdlib>
 #include <cstdarg>
@@ -34,24 +32,15 @@ extern "C" {
 #include "iupqt_drv.h"
 
 
-/****************************************************************************
- * Custom Qt Button with Event Handling
- ****************************************************************************/
+static void qtButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive);
 
 class IupQtButton : public QPushButton
 {
 public:
   Ihandle* iup_handle;
 
-  IupQtButton(const QString& text, Ihandle* ih)
-    : QPushButton(text), iup_handle(ih)
-  {
-  }
-
-  IupQtButton(Ihandle* ih)
-    : QPushButton(), iup_handle(ih)
-  {
-  }
+  IupQtButton(const QString& text, Ihandle* ih) : QPushButton(text), iup_handle(ih) {}
+  IupQtButton(Ihandle* ih) : QPushButton(), iup_handle(ih) {}
 
 protected:
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -59,228 +48,112 @@ protected:
 #else
   void enterEvent(QEvent* event) override
 #endif
-  {
-    QPushButton::enterEvent(event);
-    iupqtEnterLeaveEvent(this, event, iup_handle);
-
-    /* Handle FLAT mode, show relief on hover */
-    if (iupAttribGetBoolean(iup_handle, "FLAT"))
-    {
-      if (!iupAttribGet(iup_handle, "IMPRESS") || iupAttribGetBoolean(iup_handle, "IMPRESSBORDER"))
-        setFlat(false);
-    }
-  }
-
+  { QPushButton::enterEvent(event); iupqtEnterLeaveEvent(this, event, iup_handle); }
   void leaveEvent(QEvent* event) override
-  {
-    QPushButton::leaveEvent(event);
-    iupqtEnterLeaveEvent(this, event, iup_handle);
-
-    /* Handle FLAT mode, hide relief when not hovering */
-    if (iupAttribGetBoolean(iup_handle, "FLAT"))
-      setFlat(true);
-  }
-
+  { QPushButton::leaveEvent(event); iupqtEnterLeaveEvent(this, event, iup_handle); }
   void focusInEvent(QFocusEvent* event) override
-  {
-    QPushButton::focusInEvent(event);
-    iupqtFocusInOutEvent(this, event, iup_handle);
-  }
-
+  { QPushButton::focusInEvent(event); iupqtFocusInOutEvent(this, event, iup_handle); }
   void focusOutEvent(QFocusEvent* event) override
-  {
-    QPushButton::focusOutEvent(event);
-    iupqtFocusInOutEvent(this, event, iup_handle);
-  }
+  { QPushButton::focusOutEvent(event); iupqtFocusInOutEvent(this, event, iup_handle); }
 
   void keyPressEvent(QKeyEvent* event) override
   {
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
-    {
-      click();
-      event->accept();
-      return;
-    }
-
+    { click(); event->accept(); return; }
     if (iupqtKeyPressEvent(this, event, iup_handle))
-    {
-      event->accept();
-      return;
-    }
+    { event->accept(); return; }
     QPushButton::keyPressEvent(event);
   }
 
   void mousePressEvent(QMouseEvent* event) override
+  { QPushButton::mousePressEvent(event); iupqtMouseButtonEvent(this, event, iup_handle); }
+  void mouseReleaseEvent(QMouseEvent* event) override
+  { QPushButton::mouseReleaseEvent(event); iupqtMouseButtonEvent(this, event, iup_handle); }
+};
+
+class IupQtImageButton : public QToolButton
+{
+public:
+  Ihandle* iup_handle;
+
+  explicit IupQtImageButton(Ihandle* ih) : QToolButton(), iup_handle(ih) {}
+
+protected:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  void enterEvent(QEnterEvent* event) override
+#else
+  void enterEvent(QEvent* event) override
+#endif
+  { QToolButton::enterEvent(event); iupqtEnterLeaveEvent(this, event, iup_handle); }
+  void leaveEvent(QEvent* event) override
+  { QToolButton::leaveEvent(event); iupqtEnterLeaveEvent(this, event, iup_handle); }
+  void focusInEvent(QFocusEvent* event) override
+  { QToolButton::focusInEvent(event); iupqtFocusInOutEvent(this, event, iup_handle); }
+  void focusOutEvent(QFocusEvent* event) override
+  { QToolButton::focusOutEvent(event); iupqtFocusInOutEvent(this, event, iup_handle); }
+
+  void keyPressEvent(QKeyEvent* event) override
   {
-    QPushButton::mousePressEvent(event);
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+    { click(); event->accept(); return; }
+    if (iupqtKeyPressEvent(this, event, iup_handle))
+    { event->accept(); return; }
+    QToolButton::keyPressEvent(event);
+  }
 
-    if (iup_handle->data->type & IUP_BUTTON_IMAGE)
-    {
-      char* name = iupAttribGet(iup_handle, "IMPRESS");
-      if (name)
-        qtButtonSetPixmap(iup_handle, name, 0);
-    }
-
+  void mousePressEvent(QMouseEvent* event) override
+  {
+    QToolButton::mousePressEvent(event);
+    char* name = iupAttribGet(iup_handle, "IMPRESS");
+    if (name)
+      qtButtonSetPixmap(iup_handle, name, 0);
     iupqtMouseButtonEvent(this, event, iup_handle);
   }
 
   void mouseReleaseEvent(QMouseEvent* event) override
   {
-    QPushButton::mouseReleaseEvent(event);
-    if (iup_handle->data->type & IUP_BUTTON_IMAGE)
+    QToolButton::mouseReleaseEvent(event);
+    char* impress = iupAttribGet(iup_handle, "IMPRESS");
+    if (impress)
     {
-      char* name = iupAttribGet(iup_handle, "IMPRESS");
-      if (name)
-      {
-        name = iupAttribGet(iup_handle, "IMAGE");
-        if (name)
-          qtButtonSetPixmap(iup_handle, name, 0);
-      }
+      char* image = iupAttribGet(iup_handle, "IMAGE");
+      if (image)
+        qtButtonSetPixmap(iup_handle, image, 0);
     }
-
     iupqtMouseButtonEvent(this, event, iup_handle);
   }
-
-  void paintEvent(QPaintEvent* event) override
-  {
-    char* bgcolor = iupAttribGet(iup_handle, "BGCOLOR");
-    if (bgcolor && iup_handle->data->type == IUP_BUTTON_TEXT && !iupAttribGet(iup_handle, "TITLE"))
-    {
-      unsigned char r, g, b;
-      if (iupStrToRGB(bgcolor, &r, &g, &b))
-      {
-        QStylePainter p(this);
-        QStyleOptionButton option;
-        initStyleOption(&option);
-
-        /* Draw button frame/border */
-        p.drawControl(QStyle::CE_PushButtonBevel, option);
-
-        /* Get content rect inside the button */
-        QRect content_rect = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
-
-        /* Fill content area with background color */
-        p.fillRect(content_rect, QColor(r, g, b));
-
-        /* Draw focus rect if needed */
-        if (option.state & QStyle::State_HasFocus)
-        {
-          QStyleOptionFocusRect focus_opt;
-          focus_opt.QStyleOption::operator=(option);
-          focus_opt.rect = style()->subElementRect(QStyle::SE_PushButtonFocusRect, &option, this);
-          p.drawPrimitive(QStyle::PE_FrameFocusRect, focus_opt);
-        }
-        return;
-      }
-    }
-
-    /* For image-only buttons, draw icon centered manually to ensure cross-platform consistency */
-    if (iup_handle->data->type == IUP_BUTTON_IMAGE)
-    {
-      QStylePainter p(this);
-      QStyleOptionButton option;
-      initStyleOption(&option);
-
-      /* For IMPRESS without IMPRESSBORDER, skip bevel entirely */
-      int impress_no_border = iupAttribGet(iup_handle, "IMPRESS") && !iupAttribGetBoolean(iup_handle, "IMPRESSBORDER");
-      if (!impress_no_border)
-        p.drawControl(QStyle::CE_PushButtonBevel, option);
-
-      /* Get content rect inside the button */
-      QRect content_rect = impress_no_border ? rect() : style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
-
-      /* Draw icon in content area respecting alignment */
-      if (!icon().isNull())
-      {
-        QIcon::Mode mode = QIcon::Normal;
-        if (!(option.state & QStyle::State_Enabled))
-          mode = QIcon::Disabled;
-        else if (option.state & QStyle::State_MouseOver)
-          mode = QIcon::Active;
-
-        QIcon::State state = (option.state & QStyle::State_On) ? QIcon::On : QIcon::Off;
-
-        QSize icon_size = iconSize();
-        QPixmap pixmap = icon().pixmap(icon_size, mode, state);
-
-        int xpad = iup_handle->data->horiz_padding;
-        int ypad = iup_handle->data->vert_padding;
-
-        /* Calculate position based on alignment */
-        int x, y;
-        if (iup_handle->data->horiz_alignment == IUP_ALIGN_ARIGHT)
-          x = content_rect.right() - pixmap.width() - xpad;
-        else if (iup_handle->data->horiz_alignment == IUP_ALIGN_ALEFT)
-          x = content_rect.x() + xpad;
-        else /* ACENTER */
-          x = content_rect.x() + (content_rect.width() - pixmap.width()) / 2;
-
-        if (iup_handle->data->vert_alignment == IUP_ALIGN_ABOTTOM)
-          y = content_rect.bottom() - pixmap.height() - ypad;
-        else if (iup_handle->data->vert_alignment == IUP_ALIGN_ATOP)
-          y = content_rect.y() + ypad;
-        else /* ACENTER */
-          y = content_rect.y() + (content_rect.height() - pixmap.height()) / 2;
-
-        /* Apply button shift when pressed */
-        if (!impress_no_border && (option.state & (QStyle::State_On | QStyle::State_Sunken)))
-        {
-          x += style()->pixelMetric(QStyle::PM_ButtonShiftHorizontal, &option, this);
-          y += style()->pixelMetric(QStyle::PM_ButtonShiftVertical, &option, this);
-        }
-
-        p.drawPixmap(x, y, pixmap);
-      }
-
-      /* Draw focus rect if needed */
-      if (option.state & QStyle::State_HasFocus)
-      {
-        QStyleOptionFocusRect focus_opt;
-        focus_opt.QStyleOption::operator=(option);
-        focus_opt.rect = style()->subElementRect(QStyle::SE_PushButtonFocusRect, &option, this);
-        p.drawPrimitive(QStyle::PE_FrameFocusRect, focus_opt);
-      }
-      return;
-    }
-
-    QPushButton::paintEvent(event);
-  }
-
-public:
-  static void qtButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive);
 };
 
 /****************************************************************************
  * Helper Functions
  ****************************************************************************/
 
-void IupQtButton::qtButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive)
+static void qtButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive)
 {
   if (!name)
     return;
 
-  IupQtButton* button = (IupQtButton*)ih->handle;
+  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  if (!button)
+    return;
 
-  if (button)
+  const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
+  QPixmap* pixmap = (QPixmap*)iupImageGetImage(name, ih, make_inactive, bgcolor);
+
+  if (pixmap && !pixmap->isNull())
   {
-    const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-    QPixmap* pixmap = (QPixmap*)iupImageGetImage(name, ih, make_inactive, bgcolor);
-
-    if (pixmap && !pixmap->isNull())
-    {
-      button->setIcon(QIcon(*pixmap));
-      button->setIconSize(pixmap->size());
-    }
-    else
-    {
-      button->setIcon(QIcon());
-    }
+    button->setIcon(QIcon(*pixmap));
+    button->setIconSize(pixmap->size());
+  }
+  else
+  {
+    button->setIcon(QIcon());
   }
 }
 
 static void qtButtonUpdateLayout(Ihandle* ih)
 {
-  IupQtButton* button = (IupQtButton*)ih->handle;
+  QAbstractButton* button = (QAbstractButton*)ih->handle;
   if (!button)
     return;
 
@@ -305,128 +178,29 @@ static void qtButtonUpdateLayout(Ihandle* ih)
   }
 }
 
-/****************************************************************************
- * Border Size Calculation
- ****************************************************************************/
-
-static int qt_button_padding_text_x = -1;
-static int qt_button_padding_text_y = -1;
-static int qt_button_padding_image_x = -1;
-static int qt_button_padding_image_y = -1;
-static int qt_button_padding_both_x = -1;
-static int qt_button_padding_both_y = -1;
-static int qt_button_struct_x = 0;
-static int qt_button_struct_y = 0;
-static int qt_button_padding_measured = 0;
-
-static void qtButtonMeasurePadding(void)
-{
-  /* Measure text-only button padding.
-     Must use a long string to exceed Qt's minimum button width,
-     otherwise we measure the minimum width, not the actual padding. */
-  {
-    const char* test_text = "This is a long test string for measuring";
-    QPushButton temp_button(test_text);
-    QSize button_size = temp_button.sizeHint();
-    QFontMetrics fm(temp_button.font());
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
-    int text_w = fm.horizontalAdvance(test_text);
-#else
-    int text_w = fm.width(test_text);
-#endif
-    int text_h = fm.height();
-
-    qt_button_padding_text_x = button_size.width() - text_w;
-    qt_button_padding_text_y = button_size.height() - text_h;
-  }
-
-  /* Measure image-only button padding */
-  {
-    QPushButton temp_button;
-    QStyleOptionButton opt;
-    opt.initFrom(&temp_button);
-    QStyle* style = temp_button.style();
-    int margin = style->pixelMetric(QStyle::PM_ButtonMargin, &opt, &temp_button);
-    int frame = style->pixelMetric(QStyle::PM_DefaultFrameWidth, &opt, &temp_button);
-    qt_button_padding_image_x = margin + 2 * frame;
-    qt_button_padding_image_y = margin + 2 * frame;
-  }
-
-  /* Image+text button uses same padding as text-only */
-  qt_button_padding_both_x = qt_button_padding_text_x;
-  qt_button_padding_both_y = qt_button_padding_text_y;
-
-  /* Measure structural border (frame only, without theme padding).
-     Used when user sets explicit PADDING to replace theme padding. */
-  {
-    QPushButton temp_button;
-    QSize sz = temp_button.sizeHint();
-    QStyleOptionButton opt;
-    opt.initFrom(&temp_button);
-    opt.rect = QRect(0, 0, sz.width(), sz.height());
-    QStyle* style = temp_button.style();
-    QRect contentRect = style->subElementRect(QStyle::SE_PushButtonContents, &opt, &temp_button);
-    qt_button_struct_x = sz.width() - contentRect.width();
-    qt_button_struct_y = sz.height() - contentRect.height();
-    if (qt_button_struct_x < 0) qt_button_struct_x = 0;
-    if (qt_button_struct_y < 0) qt_button_struct_y = 0;
-  }
-
-  qt_button_padding_measured = 1;
-}
-
 extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
-  int has_image = 0;
-  int has_text = 0;
-  int has_bgcolor = 0;
-  int has_user_padding = 0;
-  int has_user_size = 0;
-
-  if (!qt_button_padding_measured)
-    qtButtonMeasurePadding();
+  int border_size = 8;
 
   if (ih)
   {
     char* image = iupAttribGet(ih, "IMAGE");
     char* title = iupAttribGet(ih, "TITLE");
     char* bgcolor = iupAttribGet(ih, "BGCOLOR");
-    has_image = (image != NULL);
-    has_text = (title != NULL && *title != 0);
-    has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
+    int has_image = (image != NULL);
+    int has_text = (title != NULL && *title != 0);
+    int has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
 
-    has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
-
-    has_user_size = (ih->userwidth > 0 || ih->userheight > 0);
-  }
-
-  if (has_bgcolor)
-  {
-    int charwidth, charheight;
-    iupdrvFontGetCharSize(ih, &charwidth, &charheight);
-    (*x) += charheight;
+    if (has_bgcolor)
+    {
+      int charwidth, charheight;
+      iupdrvFontGetCharSize(ih, &charwidth, &charheight);
+      (*x) += charheight;
+    }
   }
 
-  if (has_user_padding || has_user_size)
-  {
-    (*x) += qt_button_struct_x;
-    (*y) += qt_button_struct_y;
-  }
-  else if (has_image && has_text)
-  {
-    (*x) += qt_button_padding_both_x;
-    (*y) += qt_button_padding_both_y;
-  }
-  else if (has_image)
-  {
-    (*x) += qt_button_padding_image_x;
-    (*y) += qt_button_padding_image_y;
-  }
-  else
-  {
-    (*x) += qt_button_padding_text_x;
-    (*y) += qt_button_padding_text_y;
-  }
+  (*x) += border_size;
+  (*y) += border_size;
 }
 
 /****************************************************************************
@@ -437,7 +211,7 @@ static int qtButtonSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_TEXT)
   {
-    IupQtButton* button = (IupQtButton*)ih->handle;
+    QAbstractButton* button = (QAbstractButton*)ih->handle;
 
     if (button)
     {
@@ -573,25 +347,7 @@ static int qtButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
 
-  if (ih->handle)
-  {
-    IupQtButton* button = (IupQtButton*)ih->handle;
-
-    if (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0)
-    {
-      button->setStyleSheet(
-          QString("QPushButton { padding: %1px %2px; min-width: 0; min-height: 0; }")
-              .arg(ih->data->vert_padding)
-              .arg(ih->data->horiz_padding));
-    }
-    else
-    {
-      button->setStyleSheet(QString());
-    }
-    return 0;
-  }
-  else
-    return 1;
+  return 0;
 }
 
 static char* qtButtonGetBgColorAttrib(Ihandle* ih)
@@ -605,20 +361,17 @@ static char* qtButtonGetBgColorAttrib(Ihandle* ih)
 static int qtButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-
-  if (!value)
-  {
-    if (ih->handle)
-      iupdrvPostRedraw(ih);
-    return 1;
-  }
-
-  if (!iupStrToRGB(value, &r, &g, &b))
+  if (!value || !iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  if (ih->handle)
-    iupdrvPostRedraw(ih);
-
+  QAbstractButton* button = (QAbstractButton*)ih->handle;
+  if (button)
+  {
+    QPalette palette = button->palette();
+    palette.setColor(QPalette::Button, QColor(r, g, b));
+    button->setPalette(palette);
+    button->setAutoFillBackground(true);
+  }
   return 1;
 }
 
@@ -629,7 +382,7 @@ static int qtButtonSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupQtButton* button = (IupQtButton*)ih->handle;
+  QAbstractButton* button = (QAbstractButton*)ih->handle;
 
   if (button)
   {
@@ -649,7 +402,7 @@ static int qtButtonSetFontAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    IupQtButton* button = (IupQtButton*)ih->handle;
+    QAbstractButton* button = (QAbstractButton*)ih->handle;
     if (button)
       iupqtUpdateWidgetFont(ih, button);
   }
@@ -662,13 +415,13 @@ static int qtButtonSetImageAttrib(Ihandle* ih, const char* value)
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
     if (iupdrvIsActive(ih))
-      IupQtButton::qtButtonSetPixmap(ih, value, 0);
+      qtButtonSetPixmap(ih, value, 0);
     else
     {
       if (!iupAttribGet(ih, "IMINACTIVE"))
       {
         /* If not active and IMINACTIVE not defined, create inactive version */
-        IupQtButton::qtButtonSetPixmap(ih, value, 1);
+        qtButtonSetPixmap(ih, value, 1);
       }
     }
 
@@ -686,11 +439,11 @@ static int qtButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
     if (!iupdrvIsActive(ih))
     {
       if (value)
-        IupQtButton::qtButtonSetPixmap(ih, value, 0);
+        qtButtonSetPixmap(ih, value, 0);
       else
       {
         char* name = iupAttribGet(ih, "IMAGE");
-        IupQtButton::qtButtonSetPixmap(ih, name, 1);
+        qtButtonSetPixmap(ih, name, 1);
       }
     }
     return 1;
@@ -699,15 +452,21 @@ static int qtButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void qtButtonApplyFlat(Ihandle* ih, int flat)
+{
+  QPushButton* pb = dynamic_cast<QPushButton*>((QWidget*)ih->handle);
+  if (pb) { pb->setFlat(flat); return; }
+  QToolButton* tb = dynamic_cast<QToolButton*>((QWidget*)ih->handle);
+  if (tb) tb->setAutoRaise(flat);
+}
+
 static int qtButtonSetImPressAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
-    /* Update flat state if IMAGE+IMPRESS without IMPRESSBORDER */
     if (ih->handle)
     {
-      IupQtButton* button = (IupQtButton*)ih->handle;
       int should_be_flat = iupAttribGetBoolean(ih, "FLAT");
       if (!should_be_flat &&
           iupAttribGet(ih, "IMPRESS") &&
@@ -715,10 +474,9 @@ static int qtButtonSetImPressAttrib(Ihandle* ih, const char* value)
       {
         should_be_flat = 1;
       }
-      button->setFlat(should_be_flat);
+      qtButtonApplyFlat(ih, should_be_flat);
     }
 
-    /* Trigger redraw to update IMPRESS image */
     iupdrvPostRedraw(ih);
     return 1;
   }
@@ -734,17 +492,17 @@ static int qtButtonSetActiveAttrib(Ihandle* ih, const char* value)
     {
       char* name = iupAttribGet(ih, "IMINACTIVE");
       if (name)
-        IupQtButton::qtButtonSetPixmap(ih, name, 0);
+        qtButtonSetPixmap(ih, name, 0);
       else
       {
         name = iupAttribGet(ih, "IMAGE");
-        IupQtButton::qtButtonSetPixmap(ih, name, 1);
+        qtButtonSetPixmap(ih, name, 1);
       }
     }
     else
     {
       char* name = iupAttribGet(ih, "IMAGE");
-      IupQtButton::qtButtonSetPixmap(ih, name, 0);
+      qtButtonSetPixmap(ih, name, 0);
     }
   }
 
@@ -755,8 +513,6 @@ static int qtButtonSetFlatAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
   {
-    IupQtButton* button = (IupQtButton*)ih->handle;
-
     int should_be_flat = iupStrBoolean(value);
     if (!should_be_flat &&
         ih->data->type == IUP_BUTTON_IMAGE &&
@@ -765,8 +521,7 @@ static int qtButtonSetFlatAttrib(Ihandle* ih, const char* value)
     {
       should_be_flat = 1;
     }
-
-    button->setFlat(should_be_flat);
+    qtButtonApplyFlat(ih, should_be_flat);
     return 0;
   }
   return 1;
@@ -792,7 +547,7 @@ static void qtButtonClicked(Ihandle* ih)
 
 static void qtButtonLayoutUpdateMethod(Ihandle *ih)
 {
-  IupQtButton* button = (IupQtButton*)ih->handle;
+  QAbstractButton* button = (QAbstractButton*)ih->handle;
   if (!button)
     return;
 
@@ -802,7 +557,7 @@ static void qtButtonLayoutUpdateMethod(Ihandle *ih)
 
 static int qtButtonMapMethod(Ihandle* ih)
 {
-  IupQtButton* button;
+  QAbstractButton* button;
 
   char* value = iupAttribGet(ih, "IMAGE");
   if (value)
@@ -816,11 +571,16 @@ static int qtButtonMapMethod(Ihandle* ih)
   else
     ih->data->type = IUP_BUTTON_TEXT;
 
-  char* title = iupAttribGet(ih, "TITLE");
-  if (title)
-    button = new IupQtButton(QString::fromUtf8(title), ih);
+  if (ih->data->type == IUP_BUTTON_IMAGE)
+    button = new IupQtImageButton(ih);
   else
-    button = new IupQtButton(ih);
+  {
+    char* title = iupAttribGet(ih, "TITLE");
+    if (title)
+      button = new IupQtButton(QString::fromUtf8(title), ih);
+    else
+      button = new IupQtButton(ih);
+  }
 
   ih->handle = (InativeHandle*)button;
 
@@ -828,14 +588,11 @@ static int qtButtonMapMethod(Ihandle* ih)
   {
     char* image = iupAttribGet(ih, "IMAGE");
     if (image)
-      IupQtButton::qtButtonSetPixmap(ih, image, 0);
+      qtButtonSetPixmap(ih, image, 0);
   }
 
-  if (!title && iupAttribGet(ih, "BGCOLOR"))
-  {
-    char* bgcolor = iupAttribGet(ih, "BGCOLOR");
-    qtButtonSetBgColorAttrib(ih, bgcolor);
-  }
+  if (ih->data->type == IUP_BUTTON_TEXT && iupAttribGet(ih, "BGCOLOR") && !iupAttribGet(ih, "TITLE"))
+    qtButtonSetBgColorAttrib(ih, iupAttribGet(ih, "BGCOLOR"));
 
   iupqtAddToParent(ih);
 
@@ -843,17 +600,17 @@ static int qtButtonMapMethod(Ihandle* ih)
     iupqtSetCanFocus(button, 0);
 
   if (iupAttribGetBoolean(ih, "FLAT"))
-    button->setFlat(true);
+    qtButtonApplyFlat(ih, 1);
 
-  /* Also set flat for IMAGE+IMPRESS buttons without IMPRESSBORDER */
   if (ih->data->type == IUP_BUTTON_IMAGE &&
       iupAttribGet(ih, "IMPRESS") &&
       !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
   {
-    button->setFlat(true);
+    qtButtonApplyFlat(ih, 1);
+    button->setStyleSheet(QString("QToolButton { border: none; background: transparent; }"));
   }
 
-  QObject::connect(button, &QPushButton::clicked, [ih]() {
+  QObject::connect(button, &QAbstractButton::clicked, [ih]() {
     qtButtonClicked(ih);
   });
 

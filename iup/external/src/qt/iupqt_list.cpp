@@ -16,6 +16,7 @@
 #include <QStyledItemDelegate>
 #include <QPainter>
 #include <QPixmap>
+#include <QImage>
 #include <QIcon>
 #include <QMimeData>
 #include <QDragEnterEvent>
@@ -453,24 +454,20 @@ static void iupqtListMeasureItemMetrics(Ihandle* ih)
     int char_height;
     iupdrvFontGetCharSize(ih, NULL, &char_height);
 
-    QListWidget* temp_list = new QListWidget();
-    temp_list->setMinimumSize(0, 0);
-    temp_list->addItem("WWWWWWWWWW");  /* 10 W characters */
+    QListWidget temp_list;
+    temp_list.setMinimumSize(0, 0);
+    temp_list.addItem("WWWWWWWWWW");
 
-    int actual_item_width = temp_list->sizeHintForColumn(0);
+    int actual_item_width = temp_list.sizeHintForColumn(0);
 
-    QFontMetrics fm(temp_list->font());
+    QFontMetrics fm(temp_list.font());
     int text_width = fm.horizontalAdvance("WWWWWWWWWW");
 
-    /* Item padding = actual item width - text width */
     iupqt_list_item_padding_x = actual_item_width - text_width;
     if (iupqt_list_item_padding_x < 0) iupqt_list_item_padding_x = 0;
 
-    /* Use fixed 4px item spacing to match IupQtListItemDelegate::sizeHint(). */
     iupqt_list_item_space = 4;
     iupqt_list_row_height = char_height + iupqt_list_item_space;
-
-    delete temp_list;
   }
 }
 
@@ -491,63 +488,64 @@ static void iupqtListMeasureBorders(Ihandle* ih)
 {
   if (iupqt_list_border_x < 0)
   {
-    QListWidget* temp_list = new QListWidget();
-    temp_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    temp_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    /* Parent required so QMacStyle PM_DefaultFrameWidth is non-zero. */
+    QWidget temp_parent;
+    QListWidget temp_list(&temp_parent);
+    temp_list.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    temp_list.setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    int frame_width = temp_list->frameWidth();
+    int frame_width = temp_list.frameWidth();
 
-    /* List border = frame on both sides */
     iupqt_list_border_x = 2 * frame_width;
     iupqt_list_border_y = 2 * frame_width;
-
-    delete temp_list;
   }
 
   if (iupqt_dropdown_border_x < 0)
   {
-    QComboBox* temp_combo = new QComboBox();
-    temp_combo->addItem("X");
+    QWidget temp_parent;
+    QComboBox temp_combo(&temp_parent);
+    temp_combo.addItem("X");
 
-    QSize combo_size = temp_combo->sizeHint();
-    QFontMetrics fm(temp_combo->font());
+    QSize combo_size = temp_combo.sizeHint();
+    QFontMetrics fm(temp_combo.font());
     int text_height = fm.height();
 
-    /* Use QStyle::subControlRect to measure actual decoration.
-       The core adds sb_size for the arrow, so subtract it. */
     QStyleOptionComboBox opt;
-    opt.initFrom(temp_combo);
+    opt.initFrom(&temp_combo);
     opt.subControls = QStyle::SC_All;
     opt.editable = false;
     opt.rect = QRect(0, 0, combo_size.width(), combo_size.height());
 
-    QStyle* style = temp_combo->style();
-    QRect editRect = style->subControlRect(QStyle::CC_ComboBox, &opt, QStyle::SC_ComboBoxEditField, temp_combo);
+    QStyle* style = temp_combo.style();
+    QRect editRect = style->subControlRect(QStyle::CC_ComboBox, &opt, QStyle::SC_ComboBoxEditField, &temp_combo);
 
     int sb_size = iupdrvGetScrollbarSize();
     int total_decor = combo_size.width() - editRect.width();
 
-    /* The style draws text inside editRect with internal margins. Add 2*frame_width as text margin to prevent clipping. */
-    int frame_width = style->pixelMetric(QStyle::PM_ComboBoxFrameWidth, &opt, temp_combo);
+    iupqt_dropdown_border_x = total_decor - sb_size + fm.horizontalAdvance('X');
 
-    iupqt_dropdown_border_x = total_decor - sb_size + 2 * frame_width;
+    /* Windows11 style's CE_ComboBoxLabel shrinks the combo rect by 4px per side
+       (newOption.rect.adjust(4, 0, -4, 0)) before delegating to QCommonStyle,
+       which then applies its own 2px-per-side drawItemText adjustment. Neither
+       adjustment is captured by SC_ComboBoxEditField, so SC_remove under-reports
+       the real inset by 12px. See /tmp/qt/src/plugins/styles/modernwindows/qwindows11style.cpp. */
+    QString style_name = style->objectName();
+    if (style_name.compare(QLatin1String("windows11"), Qt::CaseInsensitive) == 0)
+    {
+      iupqt_dropdown_border_x += 12;
+    }
+
     if (iupqt_dropdown_border_x < 0) iupqt_dropdown_border_x = 0;
 
     iupqt_dropdown_border_y = combo_size.height() - text_height;
     if (iupqt_dropdown_border_y < 0) iupqt_dropdown_border_y = 0;
-
-    delete temp_combo;
   }
 
   if (iupqt_editbox_height < 0)
   {
-    QLineEdit* temp_edit = new QLineEdit();
-    temp_edit->setFrame(true);
-
-    QSize edit_size = temp_edit->sizeHint();
-    iupqt_editbox_height = edit_size.height();
-
-    delete temp_edit;
+    QLineEdit temp_edit;
+    temp_edit.setFrame(true);
+    iupqt_editbox_height = temp_edit.sizeHint().height();
   }
 
   (void)ih;
