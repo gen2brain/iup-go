@@ -158,7 +158,8 @@ static void qtMenuItemTriggered(Ihandle* ih)
     action->blockSignals(false);
   }
 
-  /* AUTOTOGGLE for non-checkable items with images */
+  /* Checkable items are auto-toggled by QAction::activate; only non-checkable
+     AUTOTOGGLE items need a manual VALUE flip and icon swap here. */
   if (!action->isCheckable() && iupAttribGetBoolean(ih, "AUTOTOGGLE"))
   {
     if (iupAttribGetBoolean(ih, "VALUE"))
@@ -175,14 +176,6 @@ static void qtMenuItemTriggered(Ihandle* ih)
     }
     if (pixbuf)
       action->setIcon(QIcon(*pixbuf));
-  }
-
-  /* AUTOTOGGLE for checkable items */
-  if (action->isCheckable() && iupAttribGetBoolean(ih, "AUTOTOGGLE"))
-  {
-    action->blockSignals(true);
-    action->setChecked(!action->isChecked());
-    action->blockSignals(false);
   }
 
   /* Call ACTION callback */
