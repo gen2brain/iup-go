@@ -23,6 +23,7 @@ extern "C" {
 #include "iup_list.h"
 #include "iup_focus.h"
 #include "iup_classbase.h"
+#include "iup_key.h"
 }
 
 #include "iupwinui_drv.h"
@@ -1162,6 +1163,104 @@ static int winuiListSetDragSourceAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+/* True when focus is currently on the widget or any of its descendants. */
+static bool winuiListFocusIsInside(UIElement const& widget)
+{
+  if (!widget)
+    return false;
+
+  XamlRoot xamlRoot = widget.XamlRoot();
+  if (!xamlRoot)
+    return false;
+
+  auto focused = FocusManager::GetFocusedElement(xamlRoot);
+  auto current = focused.try_as<DependencyObject>();
+  auto widgetDO = widget.as<DependencyObject>();
+
+  while (current)
+  {
+    if (current == widgetDO)
+      return true;
+    current = VisualTreeHelper::GetParent(current);
+  }
+  return false;
+}
+
+/* ListBox/ListView mark pointer events Handled; observe via AddHandler(..., true). */
+static void winuiListAttachPointerEvents(Ihandle* ih, UIElement const& widget, IupWinUIListAux* aux)
+{
+  aux->pointerPressedHandler = winrt::box_value(PointerEventHandler(
+    [ih](IInspectable const& sender, PointerRoutedEventArgs const& args) {
+      IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+      if (!cb)
+        return;
+
+      auto element = sender.as<UIElement>();
+      auto point = args.GetCurrentPoint(element);
+      auto props = point.Properties();
+      int button = iupwinuiGetPointerButton(props);
+      int x = (int)point.Position().X;
+      int y = (int)point.Position().Y;
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
+      int ret = cb(ih, button, 1, x, y, status);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+    }));
+  widget.AddHandler(UIElement::PointerPressedEvent(), aux->pointerPressedHandler, true);
+
+  aux->pointerReleasedHandler = winrt::box_value(PointerEventHandler(
+    [ih](IInspectable const& sender, PointerRoutedEventArgs const& args) {
+      IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+      if (!cb)
+        return;
+
+      auto element = sender.as<UIElement>();
+      auto point = args.GetCurrentPoint(element);
+      auto props = point.Properties();
+      int button = iupwinuiGetPointerReleasedButton(props);
+      int x = (int)point.Position().X;
+      int y = (int)point.Position().Y;
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
+      int ret = cb(ih, button, 0, x, y, status);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+    }));
+  widget.AddHandler(UIElement::PointerReleasedEvent(), aux->pointerReleasedHandler, true);
+
+  aux->pointerMovedHandler = winrt::box_value(PointerEventHandler(
+    [ih](IInspectable const& sender, PointerRoutedEventArgs const& args) {
+      IFniis cb = (IFniis)IupGetCallback(ih, "MOTION_CB");
+      if (!cb)
+        return;
+
+      auto element = sender.as<UIElement>();
+      auto point = args.GetCurrentPoint(element);
+      auto props = point.Properties();
+      int x = (int)point.Position().X;
+      int y = (int)point.Position().Y;
+      int button = 0;
+      if (props.IsLeftButtonPressed()) button = IUP_BUTTON1;
+      else if (props.IsRightButtonPressed()) button = IUP_BUTTON3;
+      else if (props.IsMiddleButtonPressed()) button = IUP_BUTTON2;
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
+      cb(ih, x, y, status);
+    }));
+  widget.AddHandler(UIElement::PointerMovedEvent(), aux->pointerMovedHandler, true);
+}
+
+static void winuiListDetachPointerEvents(UIElement const& widget, IupWinUIListAux* aux)
+{
+  if (aux->pointerPressedHandler)
+    widget.RemoveHandler(UIElement::PointerPressedEvent(), aux->pointerPressedHandler);
+  if (aux->pointerReleasedHandler)
+    widget.RemoveHandler(UIElement::PointerReleasedEvent(), aux->pointerReleasedHandler);
+  if (aux->pointerMovedHandler)
+    widget.RemoveHandler(UIElement::PointerMovedEvent(), aux->pointerMovedHandler);
+}
+
 static int winuiListMapMethod(Ihandle* ih)
 {
   IupWinUIListAux* aux = new IupWinUIListAux();
@@ -1197,6 +1296,16 @@ static int winuiListMapMethod(Ihandle* ih)
               }
             }
             iupBaseCallValueChangedCb(ih);
+          });
+
+          editBox.SelectionChanged([ih](IInspectable const& inner_sender, RoutedEventArgs const&) {
+            IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+            if (cb)
+            {
+              TextBox tb = inner_sender.as<TextBox>();
+              int pos = tb.SelectionStart();
+              cb(ih, 1, pos + 1, pos);
+            }
           });
         }
       });
@@ -1279,6 +1388,8 @@ static int winuiListMapMethod(Ihandle* ih)
       winuiListDoubleTapped(ih);
     });
 
+    winuiListAttachPointerEvents(ih, listBox, aux);
+
     aux->textChangedToken = textBox.TextChanged([ih](IInspectable const&, TextChangedEventArgs const&) {
       if (iupAttribGet(ih, "_IUPWINUI_DISABLE_TEXT_CB"))
         return;
@@ -1294,6 +1405,16 @@ static int winuiListMapMethod(Ihandle* ih)
       }
     });
 
+    aux->selectionChangedTextBoxToken = textBox.SelectionChanged([ih](IInspectable const& sender, RoutedEventArgs const&) {
+      IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+      if (cb)
+      {
+        TextBox tb = sender.as<TextBox>();
+        int pos = tb.SelectionStart();
+        cb(ih, 1, pos + 1, pos);
+      }
+    });
+
     aux->keyDownToken = grid.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
       if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
         args.Handled(true);
@@ -1303,7 +1424,9 @@ static int winuiListMapMethod(Ihandle* ih)
       iupCallGetFocusCb(ih);
     });
 
-    aux->lostFocusToken = grid.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+    aux->lostFocusToken = grid.LostFocus([ih](IInspectable const& sender, RoutedEventArgs const&) {
+      if (winuiListFocusIsInside(sender.try_as<UIElement>()))
+        return;
       iupCallKillFocusCb(ih);
     });
 
@@ -1427,9 +1550,13 @@ static int winuiListMapMethod(Ihandle* ih)
       iupCallGetFocusCb(ih);
     });
 
-    aux->lostFocusToken = listView.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+    aux->lostFocusToken = listView.LostFocus([ih](IInspectable const& sender, RoutedEventArgs const&) {
+      if (winuiListFocusIsInside(sender.try_as<UIElement>()))
+        return;
       iupCallKillFocusCb(ih);
     });
+
+    winuiListAttachPointerEvents(ih, listView, aux);
 
     Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
     if (parentCanvas)
@@ -1468,9 +1595,13 @@ static int winuiListMapMethod(Ihandle* ih)
       iupCallGetFocusCb(ih);
     });
 
-    aux->lostFocusToken = listBox.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+    aux->lostFocusToken = listBox.LostFocus([ih](IInspectable const& sender, RoutedEventArgs const&) {
+      if (winuiListFocusIsInside(sender.try_as<UIElement>()))
+        return;
       iupCallKillFocusCb(ih);
     });
+
+    winuiListAttachPointerEvents(ih, listBox, aux);
 
     Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
     if (parentCanvas)
@@ -1531,6 +1662,7 @@ static void winuiListUnMapMethod(Ihandle* ih)
           listBox.SelectionChanged(aux->selectionChangedToken);
         if (aux->doubleTappedToken)
           listBox.DoubleTapped(aux->doubleTappedToken);
+        winuiListDetachPointerEvents(listBox, aux);
       }
 
       TextBox textBox = winuiListGetTextBox(ih);
@@ -1538,6 +1670,8 @@ static void winuiListUnMapMethod(Ihandle* ih)
       {
         if (aux->textChangedToken)
           textBox.TextChanged(aux->textChangedToken);
+        if (aux->selectionChangedTextBoxToken)
+          textBox.SelectionChanged(aux->selectionChangedTextBoxToken);
       }
 
       {
@@ -1586,6 +1720,7 @@ static void winuiListUnMapMethod(Ihandle* ih)
           listView.GotFocus(aux->gotFocusToken);
         if (aux->lostFocusToken)
           listView.LostFocus(aux->lostFocusToken);
+        winuiListDetachPointerEvents(listView, aux);
       }
       winuiReleaseHandle<ListView>(ih);
     }
@@ -1604,6 +1739,7 @@ static void winuiListUnMapMethod(Ihandle* ih)
           listBox.GotFocus(aux->gotFocusToken);
         if (aux->lostFocusToken)
           listBox.LostFocus(aux->lostFocusToken);
+        winuiListDetachPointerEvents(listBox, aux);
       }
       winuiReleaseHandle<ListBox>(ih);
     }

@@ -1054,7 +1054,7 @@ IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 
 IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
-  winListSetItemData(ih, id - 1, NULL, (HBITMAP)hImage);
+  winListSetItemData(ih, id, NULL, (HBITMAP)hImage);
   iupdrvRedrawNow(ih);
   return 0;
 }
@@ -1211,7 +1211,16 @@ IUP_DRV_API int iupwinListDND(Ihandle *ih, UINT uNotification, POINT pt)
 
 static void winListEnableDragDrop(Ihandle* ih)
 {
+  /* Splice MakeDragList under iupwinBaseWndProc so BUTTON_CB still fires. */
+  WNDPROC iup_proc = (WNDPROC)GetWindowLongPtr(ih->handle, GWLP_WNDPROC);
+  WNDPROC listbox_proc = (WNDPROC)IupGetCallback(ih, "_IUPWIN_OLDWNDPROC_CB");
+
+  SetWindowLongPtr(ih->handle, GWLP_WNDPROC, (LONG_PTR)listbox_proc);
   MakeDragList(ih->handle);
+  WNDPROC drag_list_proc = (WNDPROC)GetWindowLongPtr(ih->handle, GWLP_WNDPROC);
+
+  SetWindowLongPtr(ih->handle, GWLP_WNDPROC, (LONG_PTR)iup_proc);
+  IupSetCallback(ih, "_IUPWIN_OLDWNDPROC_CB", (Icallback)drag_list_proc);
 }
 
 
@@ -1688,7 +1697,6 @@ static int winListMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
     case WM_LBUTTONDBLCLK:
     case WM_MBUTTONDBLCLK:
     case WM_RBUTTONDBLCLK:
-    case WM_LBUTTONDOWN:
     case WM_MBUTTONDOWN:
     case WM_RBUTTONDOWN:
       if (iupwinButtonDown(ih, msg, wp, lp)==-1)
@@ -1697,9 +1705,41 @@ static int winListMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT *
         return 1;
       }
       break;
+    case WM_LBUTTONDOWN:
+      if (iupwinButtonDown(ih, msg, wp, lp)==-1)
+      {
+        *result = 0;
+        return 1;
+      }
+      if (iupAttribGetBoolean(ih, "DRAGSOURCE"))
+      {
+        if (iupwinDragDetectStart(ih))
+        {
+          *result = 0;
+          return 1;
+        }
+        /* DragDetect ate WM_LBUTTONUP; fake one for BUTTON_CB and re-post for LISTBOX. */
+        iupwinButtonUp(ih, WM_LBUTTONUP, wp, lp);
+        iupAttribSet(ih, "_IUPLIST_SYNTH_UP", "1");
+        PostMessage(ih->handle, WM_LBUTTONUP, 0, lp);
+        *result = 0;
+        return 0;
+      }
+      break;
     case WM_MBUTTONUP:
     case WM_RBUTTONUP:
+      if (iupwinButtonUp(ih, msg, wp, lp)==-1)
+      {
+        *result = 0;
+        return 1;
+      }
+      break;
     case WM_LBUTTONUP:
+      if (iupAttribGet(ih, "_IUPLIST_SYNTH_UP"))
+      {
+        iupAttribSet(ih, "_IUPLIST_SYNTH_UP", NULL);
+        break;
+      }
       if (iupwinButtonUp(ih, msg, wp, lp)==-1)
       {
         *result = 0;

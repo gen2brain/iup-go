@@ -359,12 +359,16 @@ struct IupWinUIListAux
 {
   winrt::event_token selectionChangedToken;
   winrt::event_token textChangedToken;
+  winrt::event_token selectionChangedTextBoxToken;
   winrt::event_token dropDownOpenedToken;
   winrt::event_token dropDownClosedToken;
   winrt::event_token doubleTappedToken;
   winrt::event_token keyDownToken;
   winrt::event_token gotFocusToken;
   winrt::event_token lostFocusToken;
+  winrt::Windows::Foundation::IInspectable pointerPressedHandler;
+  winrt::Windows::Foundation::IInspectable pointerReleasedHandler;
+  winrt::Windows::Foundation::IInspectable pointerMovedHandler;
   winrt::event_token containerContentChangingToken;
   winrt::event_token dragItemsStartingToken;
   winrt::event_token dragItemsCompletedToken;
@@ -374,9 +378,11 @@ struct IupWinUIListAux
   bool isVirtual;
 
   IupWinUIListAux() : selectionChangedToken{}, textChangedToken{},
+                       selectionChangedTextBoxToken{},
                        dropDownOpenedToken{}, dropDownClosedToken{},
                        doubleTappedToken{}, keyDownToken{},
                        gotFocusToken{}, lostFocusToken{},
+                       pointerPressedHandler{nullptr}, pointerReleasedHandler{nullptr}, pointerMovedHandler{nullptr},
                        containerContentChangingToken{},
                        dragItemsStartingToken{}, dragItemsCompletedToken{},
                        isDropdown(false), hasEditbox(false), isMultiple(false),

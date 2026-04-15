@@ -2249,10 +2249,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
     {
       selection_model = GTK_SELECTION_MODEL(gtk_single_selection_new(list_model));
 
-      if (ih->data->has_editbox)
-      {
-        g_object_set(selection_model, "autoselect", FALSE, "can-unselect", TRUE, NULL);
-      }
+      g_object_set(selection_model, "autoselect", FALSE, "can-unselect", TRUE, NULL);
     }
 
     gtk4ListSetSelectionModel(ih, selection_model);

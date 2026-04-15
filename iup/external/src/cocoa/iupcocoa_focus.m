@@ -98,6 +98,9 @@ IUP_DRV_API void iupcocoaFocusIn(Ihandle* ih)
 
     if (iupObjectCheck(last_focus))
     {
+      if (IupGetFocus() == last_focus)
+        return;
+
       iupCallGetFocusCb(ih);
 
       if (!iupAttribGetBoolean(ih, "IGNORELASTFOCUS"))
