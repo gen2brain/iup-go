@@ -175,6 +175,16 @@ static int winuiMenuMapMethod(Ihandle* ih)
       box_value(L"ControlContentThemeFontSize"),
       box_value(fontSize));
 
+    menuBar.Resources().Insert(
+      box_value(L"MenuBarHeight"),
+      box_value(0.0));
+    menuBar.Resources().Insert(
+      box_value(L"MenuBarItemMargin"),
+      box_value(ThicknessHelper::FromLengths(0, 0, 0, 0)));
+    menuBar.Resources().Insert(
+      box_value(L"MenuBarItemButtonPadding"),
+      box_value(ThicknessHelper::FromLengths(8, 2, 8, 2)));
+
     winuiStoreHandle(ih, menuBar);
 
     Ihandle* dialog = ih->parent;

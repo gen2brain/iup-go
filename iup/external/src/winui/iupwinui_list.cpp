@@ -845,6 +845,7 @@ static ListBoxItem winuiListCreateItem(Ihandle* ih, const char* value)
 
   item.Padding(ThicknessHelper::FromLengths(4, 2, 4, 2));
   item.MinHeight(0);
+  item.MinWidth(0);
 
   if (iupStrBoolean(iupAttribGet(ih, "DRAGSOURCE")))
     winuiListSetItemDragSource(ih, item);
