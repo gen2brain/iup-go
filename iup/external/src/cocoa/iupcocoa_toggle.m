@@ -133,37 +133,6 @@ static void cocoaToggleCycle3State(Ihandle* ih, NSButton* button)
 @end
 
 
-static void cocoaToggleUpdateImageSize(Ihandle* ih)
-{
-  if (ih->data->type == IUP_TOGGLE_IMAGE)
-  {
-    NSButton* the_toggle = ih->handle;
-    NSImage* image = [the_toggle image];
-
-    if (image)
-    {
-      NSSize imageSize = [image size];
-
-      int width = (int)imageSize.width;
-      int height = (int)imageSize.height;
-
-      width += 2 * ih->data->horiz_padding;
-      height += 2 * ih->data->vert_padding;
-
-      if (!ih->data->flat)
-      {
-        width += 8;
-        height += 8;
-      }
-
-      NSRect frame = [the_toggle frame];
-      frame.size.width = width;
-      frame.size.height = height;
-      [the_toggle setFrame:frame];
-    }
-  }
-}
-
 static void cocoaToggleUpdateImage(Ihandle* ih, int active, int check)
 {
   if (ih->data->type == IUP_TOGGLE_IMAGE)
@@ -190,12 +159,14 @@ static void cocoaToggleUpdateImage(Ihandle* ih, int active, int check)
     {
       NSImage* the_bitmap = iupImageGetImage(name, ih, !active, NULL);
       [the_toggle setImage:the_bitmap];
-      cocoaToggleUpdateImageSize(ih);
     }
     else
     {
       [the_toggle setImage:nil];
     }
+
+    /* setState: on a PushOnPushOff button with no title silently resets imagePosition to NSImageOverlaps */
+    [[the_toggle cell] setImagePosition:NSImageOnly];
   }
 }
 
@@ -338,18 +309,7 @@ static void cocoaToggleDeselectRadio(Ihandle* radio, Ihandle* ih)
 IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
   if (ih->data->type == IUP_TOGGLE_IMAGE)
-  {
-    if (!ih->data->flat)
-    {
-      *x += 8;
-      *y += 8;
-    }
-    else
-    {
-      *x += 4;
-      *y += 4;
-    }
-  }
+    iupdrvButtonAddBorders(ih, x, y);
 }
 
 IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, const char* str)
@@ -661,14 +621,7 @@ static int cocoaToggleSetPaddingAttrib(Ihandle* ih, const char* value)
 
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
 
-  if (ih->data->type == IUP_TOGGLE_IMAGE)
-  {
-    NSButton* the_toggle = ih->handle;
-    [[the_toggle cell] setImageScaling:NSImageScaleProportionallyDown];
-    cocoaToggleUpdateImageSize(ih);
-  }
-
-  return 1;
+  return 0;
 }
 
 static int cocoaToggleSetFgColorAttrib(Ihandle* ih, const char* value)
@@ -718,7 +671,6 @@ static int cocoaToggleSetFlatAttrib(Ihandle* ih, const char* value)
       [the_toggle setBezelStyle:NSBezelStyleRegularSquare];
     }
 
-    cocoaToggleUpdateImageSize(ih);
     return 1;
   }
 

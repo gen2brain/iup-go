@@ -24,81 +24,12 @@
 
 static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY";
 
-@interface IupCocoaButtonCell : NSButtonCell
-{
-  CGFloat _horizPadding;
-  CGFloat _vertPadding;
-  BOOL _hasUserPadding;
-}
-- (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert;
-@end
-
-@implementation IupCocoaButtonCell
-
-- (instancetype)initTextCell:(NSString *)string
-{
-  self = [super initTextCell:string];
-  if (self)
-  {
-    _horizPadding = 0;
-    _vertPadding = 0;
-    _hasUserPadding = NO;
-  }
-  return self;
-}
-
-- (instancetype)initWithCoder:(NSCoder *)coder
-{
-  self = [super initWithCoder:coder];
-  if (self)
-  {
-    _horizPadding = 0;
-    _vertPadding = 0;
-    _hasUserPadding = NO;
-  }
-  return self;
-}
-
-- (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert
-{
-  _horizPadding = horiz;
-  _vertPadding = vert;
-  _hasUserPadding = YES;
-}
-
-- (NSRect)drawingRectForBounds:(NSRect)rect
-{
-  if (!_hasUserPadding)
-    return [super drawingRectForBounds:rect];
-
-  NSRect drawingRect = [super drawingRectForBounds:rect];
-
-  CGFloat currentInsetX = drawingRect.origin.x - rect.origin.x;
-  CGFloat adjustmentX = _horizPadding - currentInsetX;
-  drawingRect.origin.x += adjustmentX;
-  drawingRect.size.width -= (2.0 * adjustmentX);
-
-  CGFloat currentInsetY = drawingRect.origin.y - rect.origin.y;
-  CGFloat adjustmentY = _vertPadding - currentInsetY;
-  drawingRect.origin.y += adjustmentY;
-  drawingRect.size.height -= (2.0 * adjustmentY);
-
-  return drawingRect;
-}
-
-@end
-
 @interface IupCocoaFlatButton : NSButton
 @property (nonatomic, assign) BOOL isFlat;
 @property (nonatomic, assign) BOOL isHovering;
 @end
 
 @implementation IupCocoaFlatButton
-
-+ (Class)cellClass
-{
-  return [IupCocoaButtonCell class];
-}
 
 - (void)updateTrackingAreas
 {
@@ -442,7 +373,7 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
   *border_x = (int)lroundf(fitting_size.width - intrinsic_size.width);
   *border_y = (int)lroundf(fitting_size.height - intrinsic_size.height);
 
-  /* When intrinsic == fitting, calculate border using known content size */
+  /* Fallback: image-only horizontal is inflated by NSButton min-width, use vertical for both axes */
   if (*border_x == 0 && *border_y == 0)
   {
     if (has_image && has_text)
@@ -456,7 +387,14 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
       *border_x = (int)lroundf(fitting_size.width) - content_w;
       *border_y = (int)lroundf(fitting_size.height) - content_h;
     }
-    else if (!has_image)
+    else if (has_image)
+    {
+      int chrome = (int)lroundf(fitting_size.height) - 16;
+      if (chrome < 0) chrome = 0;
+      *border_x = chrome;
+      *border_y = chrome;
+    }
+    else
     {
       int iup_text_w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
       int iup_text_h;
@@ -669,18 +607,7 @@ static int cocoaButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
 
-  if (ih->handle)
-  {
-    NSButton* the_button = ih->handle;
-    IupCocoaButtonCell* cell = (IupCocoaButtonCell*)[the_button cell];
-    if (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0)
-      [cell setIupPaddingHoriz:ih->data->horiz_padding vert:ih->data->vert_padding];
-
-    [the_button setNeedsDisplay:YES];
-    return 0;
-  }
-
-  return 1;
+  return 0;
 }
 
 static int cocoaButtonSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -927,12 +854,6 @@ static int cocoaButtonMapMethod(Ihandle* ih)
 
   [the_button setFont:[NSFont systemFontOfSize:0]];
   [[the_button cell] setLineBreakMode:NSLineBreakByClipping];
-
-  if (ih->data->horiz_padding != 0 || ih->data->vert_padding != 0)
-  {
-    IupCocoaButtonCell* cell = (IupCocoaButtonCell*)[the_button cell];
-    [cell setIupPaddingHoriz:ih->data->horiz_padding vert:ih->data->vert_padding];
-  }
 
   ih->handle = the_button;
   iupcocoaSetAssociatedViews(ih, the_button, the_button);
