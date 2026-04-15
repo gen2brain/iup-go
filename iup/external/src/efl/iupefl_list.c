@@ -322,6 +322,23 @@ static void eflListEditChangedCallback(void* data, const Efl_Event* ev)
   iupBaseCallValueChangedCb(ih);
 }
 
+static void eflListEditCursorChangedCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  int pos;
+
+  if (!cb)
+    return;
+
+  pos = efl_text_cursor_object_position_get((Efl_Text_Cursor_Object*)ev->object);
+  if (pos == ih->data->last_caret_pos)
+    return;
+
+  ih->data->last_caret_pos = pos;
+  cb(ih, 1, pos + 1, pos);
+}
+
 /****************************************************************
                      Callbacks
 ****************************************************************/
@@ -1606,6 +1623,7 @@ static int eflListMapMethod(Ihandle* ih)
     list = dropdown_list;
 
     efl_event_callback_add(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflListEditChangedCallback, ih);
+    efl_event_callback_add(efl_text_interactive_main_cursor_get(entry), EFL_TEXT_CURSOR_OBJECT_EVENT_CHANGED, eflListEditCursorChangedCallback, ih);
     iupeflBaseAddCallbacks(ih, entry);
   }
   else if (ih->data->has_editbox)
@@ -1660,6 +1678,7 @@ static int eflListMapMethod(Ihandle* ih)
     ih->handle = (InativeHandle*)list;
 
     efl_event_callback_add(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflListEditChangedCallback, ih);
+    efl_event_callback_add(efl_text_interactive_main_cursor_get(entry), EFL_TEXT_CURSOR_OBJECT_EVENT_CHANGED, eflListEditCursorChangedCallback, ih);
     iupeflBaseAddCallbacks(ih, entry);
   }
   else if (is_dropdown)
@@ -1866,6 +1885,7 @@ static void eflListUnMapMethod(Ihandle* ih)
       if (entry)
       {
         efl_event_callback_del(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflListEditChangedCallback, ih);
+        efl_event_callback_del(efl_text_interactive_main_cursor_get(entry), EFL_TEXT_CURSOR_OBJECT_EVENT_CHANGED, eflListEditCursorChangedCallback, ih);
         iupeflBaseRemoveCallbacks(ih, entry);
       }
 
@@ -1885,6 +1905,7 @@ static void eflListUnMapMethod(Ihandle* ih)
       efl_event_callback_del(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
       efl_event_callback_del(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflListEditChangedCallback, ih);
+      efl_event_callback_del(efl_text_interactive_main_cursor_get(entry), EFL_TEXT_CURSOR_OBJECT_EVENT_CHANGED, eflListEditCursorChangedCallback, ih);
       iupeflBaseRemoveCallbacks(ih, entry);
       efl_pack_clear(list);
       iupeflDelete(list);
