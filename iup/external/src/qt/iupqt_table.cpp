@@ -100,16 +100,22 @@ public:
     /* Draw the item without Qt's default focus rectangle */
     QStyledItemDelegate::paint(painter, opt, index);
 
-    /* Draw native-style focus rectangle if FOCUSRECT=YES and item has focus */
     if (hasFocus && iupAttribGetBoolean(ih, "FOCUSRECT"))
     {
-      /* Use Qt's style system to draw a focus rectangle */
       QStyleOptionFocusRect focusOption;
       focusOption.rect = option.rect.adjusted(1, 1, -1, -1);
       focusOption.state = option.state | QStyle::State_KeyboardFocusChange;
       focusOption.backgroundColor = option.palette.color(QPalette::Highlight);
 
-      QApplication::style()->drawPrimitive(QStyle::PE_FrameFocusRect, &focusOption, painter);
+      QStyle* style = QApplication::style();
+      style->drawPrimitive(QStyle::PE_FrameFocusRect, &focusOption, painter);
+
+#ifdef __APPLE__
+      QPen oldPen = painter->pen();
+      painter->setPen(QPen(option.palette.color(QPalette::WindowText), 1, Qt::DotLine));
+      painter->drawRect(focusOption.rect);
+      painter->setPen(oldPen);
+#endif
     }
   }
 

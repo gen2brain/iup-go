@@ -465,6 +465,12 @@ static void qtToggleMeasureBorders(void)
 
 extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int *x, int *y)
 {
+  if (ih && ih->data->type == IUP_TOGGLE_IMAGE)
+  {
+    iupdrvButtonAddBorders(ih, x, y);
+    return;
+  }
+
   int has_user_padding = 0;
 
   if (qt_toggle_border_x < 0)

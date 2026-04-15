@@ -97,6 +97,17 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 
 extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
+  if (ih && ih->handle && iupMenuIsMenuBar(ih))
+  {
+    QMenuBar* menubar = (QMenuBar*)ih->handle;
+    int h = menubar->height();
+    if (h <= 0)
+      h = menubar->sizeHint().height();
+    if (h > 0)
+      return h;
+  }
+
+  /* Fallback estimate for when the menu bar is not yet mapped or has no size. */
   int ch;
   iupdrvFontGetCharSize(ih, nullptr, &ch);
   return 4 + ch + 4;
