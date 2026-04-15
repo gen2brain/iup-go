@@ -1550,7 +1550,7 @@ static void winuiTreeUpdateSpacingResources(Ihandle* ih, TreeView treeView)
 {
   int spacing = ih->data->spacing;
   double minHeight = spacing > 0 ? (double)(spacing * 2) : 0.0;
-  Thickness margin = {4, (double)spacing, 4, (double)spacing};
+  Thickness margin = {0, (double)spacing, 0, (double)spacing};
   Thickness padding = {0, 0, 0, 0};
 
   treeView.Resources().Insert(box_value(L"TreeViewItemMinHeight"), box_value(minHeight));

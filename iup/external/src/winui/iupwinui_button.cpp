@@ -32,10 +32,10 @@ using namespace Microsoft::UI::Xaml::Media::Imaging;
 using namespace Windows::Foundation;
 
 
-static int winui_button_padding_x = 25;
-static int winui_button_padding_y = 14;
-static int winui_button_struct_x = 2;
-static int winui_button_struct_y = 2;
+static int winui_button_padding_x = 10;
+static int winui_button_padding_y = 8;
+static int winui_button_struct_x = 10;
+static int winui_button_struct_y = 8;
 
 static void winuiButtonClickHandler(Ihandle* ih)
 {
@@ -334,13 +334,6 @@ static int winuiButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
 
-  if (ih->handle)
-  {
-    Button btn = winuiGetHandle<Button>(ih);
-    if (btn)
-      btn.Padding(ThicknessHelper::FromLengths(ih->data->horiz_padding, ih->data->vert_padding, ih->data->horiz_padding, ih->data->vert_padding));
-  }
-
   return 0;
 }
 
@@ -446,6 +439,7 @@ static int winuiButtonMapMethod(Ihandle* ih)
   btn.VerticalAlignment(VerticalAlignment::Top);
   btn.MinWidth(0);
   btn.MinHeight(0);
+  btn.Padding(ThicknessHelper::FromLengths(4, 3, 4, 3));
 
   if (ih->userwidth > 0 || ih->userheight > 0)
     btn.Padding(Thickness{0, 0, 0, 0});
@@ -634,7 +628,7 @@ static void winuiButtonUnMapMethod(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
-  int border_size = 8;
+  int border_size = 4;
 
   if (ih)
   {
