@@ -281,6 +281,22 @@ public:
   }
 };
 
+static bool fltkListIsDropdownTrigger(int event)
+{
+  if (event == FL_PUSH)
+    return true;
+  if (event == FL_KEYBOARD && Fl::event_key() == ' ' &&
+      !(Fl::event_state() & (FL_SHIFT | FL_CTRL | FL_ALT | FL_META)))
+    return true;
+  return false;
+}
+
+static void fltkListCallDropdownCb(Ihandle* ih, int show)
+{
+  IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
+  if (cb) cb(ih, show);
+}
+
 class IupFltkChoice : public Fl_Choice
 {
 public:
@@ -300,7 +316,13 @@ public:
       case FL_KEYBOARD:
         if (iupfltkKeyPressEvent(this, iup_handle)) return 1; break;
     }
-    return Fl_Choice::handle(event);
+
+    /* Fl_Choice::handle blocks inside pulldown() during FL_PUSH/space; wrap with DROPDOWN_CB. */
+    bool drop = fltkListIsDropdownTrigger(event) && menu() && menu()->text;
+    if (drop) fltkListCallDropdownCb(iup_handle, 1);
+    int ret = Fl_Choice::handle(event);
+    if (drop) fltkListCallDropdownCb(iup_handle, 0);
+    return ret;
   }
 };
 
@@ -311,6 +333,27 @@ public:
 
   IupFltkInputChoice(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Input_Choice(x, y, w, h), iup_handle(ih) {}
+
+  int handle(int event) override
+  {
+    /* InputMenuButton is private; intercept at group level when event targets the button child. */
+    Fl_Widget* mb = menubutton();
+    bool drop = false;
+    if (mb && mb->takesevents())
+    {
+      if (event == FL_PUSH && Fl::event_inside(mb))
+        drop = true;
+      else if (event == FL_KEYBOARD && Fl::focus() == mb &&
+               Fl::event_key() == ' ' &&
+               !(Fl::event_state() & (FL_SHIFT | FL_CTRL | FL_ALT | FL_META)))
+        drop = true;
+    }
+
+    if (drop) fltkListCallDropdownCb(iup_handle, 1);
+    int ret = Fl_Input_Choice::handle(event);
+    if (drop) fltkListCallDropdownCb(iup_handle, 0);
+    return ret;
+  }
 };
 
 class IupFltkListInput : public Fl_Input
