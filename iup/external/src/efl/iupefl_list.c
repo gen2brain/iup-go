@@ -234,6 +234,12 @@ static void eflDropdownListSelectionChangedCallback(void* data, const Efl_Event*
   int pos;
   const char* text;
 
+  if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
+  {
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+    return;
+  }
+
   item = efl_ui_selectable_last_selected_get(list);
   if (!item)
     return;
@@ -360,6 +366,12 @@ static void eflListSelectionChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Eo* list = ev->object;
+
+  if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
+  {
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+    return;
+  }
 
   if (ih->data->is_multiple)
   {
@@ -1109,7 +1121,10 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
     Eo* item = efl_pack_content_get(list, pos - 1);
     if (item)
     {
+      /* SELECTION_CHANGED is deferred via efl_loop_job; the callback clears the flag. */
+      iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
       efl_ui_selectable_selected_set(item, EINA_TRUE);
+
       iupAttribSetInt(ih, "_IUPEFL_LIST_VALUE", pos);
 
       if (is_dropdown)
@@ -1634,6 +1649,7 @@ static int eflListMapMethod(Ihandle* ih)
     efl_event_callback_add(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
+    efl_event_callback_add(list, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
     efl_event_callback_add(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
@@ -1769,6 +1785,7 @@ static int eflListMapMethod(Ihandle* ih)
     efl_event_callback_add(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
+    efl_event_callback_add(list, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
     efl_event_callback_add(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
@@ -1798,16 +1815,6 @@ static int eflListMapMethod(Ihandle* ih)
     char* value = iupAttribGet(ih, "VALUE");
     if (value)
       eflListSetValueAttrib(ih, value);
-  }
-  else if (!ih->data->is_multiple)
-  {
-    int count = efl_content_count(list);
-    if (count > 0)
-    {
-      Eo* item = efl_pack_content_get(list, 0);
-      if (item)
-        efl_ui_selectable_selected_set(item, EINA_TRUE);
-    }
   }
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)eflListConvertXYToPos);
@@ -1873,6 +1880,7 @@ static void eflListUnMapMethod(Ihandle* ih)
       efl_event_callback_del(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
       efl_event_callback_del(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
+      efl_event_callback_del(list, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
       efl_event_callback_del(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
@@ -1926,6 +1934,7 @@ static void eflListUnMapMethod(Ihandle* ih)
       efl_event_callback_del(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
       efl_event_callback_del(list, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
+      efl_event_callback_del(list, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
       efl_event_callback_del(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);

@@ -229,6 +229,32 @@ protected:
   }
 };
 
+class IupQtComboBox : public QComboBox
+{
+private:
+  Ihandle* ih;
+
+public:
+  explicit IupQtComboBox(Ihandle* ih_param, QWidget* parent = nullptr)
+    : QComboBox(parent), ih(ih_param) {}
+
+  void showPopup() override
+  {
+    QComboBox::showPopup();
+    IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
+    if (cb)
+      cb(ih, 1);
+  }
+
+  void hidePopup() override
+  {
+    QComboBox::hidePopup();
+    IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
+    if (cb)
+      cb(ih, 0);
+  }
+};
+
 /****************************************************************************
  * Custom Item Delegate for Image Support
  ****************************************************************************/
@@ -1628,21 +1654,15 @@ static void qtListEditTextChanged(QLineEdit* edit, Ihandle* ih)
 {
   if (iupAttribGet(ih, "_IUPQT_DISABLE_TEXT_CB"))
     return;
+  if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
+    return;
 
   IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
-  if (cb)
+  if (cb || ih->data->mask || ih->data->nc)
   {
-    QString text = edit->text();
-    int start = edit->cursorPosition();
-    int end = start;
-
-    if (edit->hasSelectedText())
-    {
-      start = edit->selectionStart();
-      end = start + edit->selectedText().length();
-    }
-
-    iupEditCallActionCb(ih, cb, (char*)text.toUtf8().constData(), start, end, ih->data->mask, ih->data->nc, 0, 1);
+    QByteArray utf8 = edit->text().toUtf8();
+    int byte_len = utf8.size();
+    iupEditCallActionCb(ih, cb, utf8.constData(), 0, byte_len, ih->data->mask, ih->data->nc, 0, 0);
   }
 
   iupBaseCallValueChangedCb(ih);
@@ -1691,7 +1711,7 @@ static int qtListMapMethod(Ihandle* ih)
   if (ih->data->is_dropdown)
   {
     /* Create ComboBox for dropdown lists */
-    QComboBox* combo = new QComboBox();
+    IupQtComboBox* combo = new IupQtComboBox(ih);
 
     ih->handle = (InativeHandle*)combo;
 
@@ -1737,7 +1757,9 @@ static int qtListMapMethod(Ihandle* ih)
 
     /* Qt automatically selects the first item when items are added to a ComboBox.
      * Windows/Motif ComboBox starts with no selection. Clear selection to match. */
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
     combo->setCurrentIndex(-1);
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
   }
   else if (ih->data->has_editbox)
   {

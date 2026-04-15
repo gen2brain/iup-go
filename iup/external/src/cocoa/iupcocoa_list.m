@@ -650,43 +650,75 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 - (void)mouseDown:(NSEvent *)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, true))
+  BOOL propagate = ih ? cocoaListHandleMouseButton(ih, event, self, true) : YES;
+  if (propagate)
+  {
     [super mouseDown:event];
-}
-
-- (void)mouseUp:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, false))
-    [super mouseUp:event];
+    if (ih)
+    {
+      NSEvent* up_event = [NSApp currentEvent];
+      if (up_event && [up_event type] == NSEventTypeLeftMouseUp)
+        cocoaListHandleMouseButton(ih, up_event, self, false);
+    }
+  }
 }
 
 - (void)rightMouseDown:(NSEvent *)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, true))
+  BOOL propagate = ih ? cocoaListHandleMouseButton(ih, event, self, true) : YES;
+  if (propagate)
+  {
     [super rightMouseDown:event];
-}
-
-- (void)rightMouseUp:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, false))
-    [super rightMouseUp:event];
+    if (ih)
+    {
+      NSEvent* up_event = [NSApp currentEvent];
+      if (up_event && [up_event type] == NSEventTypeRightMouseUp)
+        cocoaListHandleMouseButton(ih, up_event, self, false);
+    }
+  }
 }
 
 - (void)otherMouseDown:(NSEvent *)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, true))
+  BOOL propagate = ih ? cocoaListHandleMouseButton(ih, event, self, true) : YES;
+  if (propagate)
+  {
     [super otherMouseDown:event];
+    if (ih)
+    {
+      NSEvent* up_event = [NSApp currentEvent];
+      if (up_event && [up_event type] == NSEventTypeOtherMouseUp)
+        cocoaListHandleMouseButton(ih, up_event, self, false);
+    }
+  }
 }
 
-- (void)otherMouseUp:(NSEvent *)event
+- (void)updateTrackingAreas
 {
+  [super updateTrackingAreas];
+
+  for (NSTrackingArea* area in [self trackingAreas])
+    [self removeTrackingArea:area];
+
+  NSTrackingArea* tracking_area = [[NSTrackingArea alloc]
+    initWithRect:[self bounds]
+         options:(NSTrackingMouseMoved | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect)
+           owner:self
+        userInfo:nil];
+
+  [self addTrackingArea:tracking_area];
+  [tracking_area release];
+}
+
+- (void)mouseMoved:(NSEvent *)event
+{
+  [super mouseMoved:event];
+
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, false))
-    [super otherMouseUp:event];
+  if (ih)
+    iupcocoaCommonBaseHandleMouseMotionCallback(ih, event, self);
 }
 
 @end
@@ -800,97 +832,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     [super flagsChanged:event];
 }
 
-- (void)mouseDown:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, true))
-    [super mouseDown:event];
-}
-
-- (void)mouseUp:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, false))
-    [super mouseUp:event];
-}
-
-- (void)rightMouseDown:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, true))
-    [super rightMouseDown:event];
-}
-
-- (void)rightMouseUp:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, false))
-    [super rightMouseUp:event];
-}
-
-- (void)otherMouseDown:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, true))
-    [super otherMouseDown:event];
-}
-
-- (void)otherMouseUp:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, false))
-    [super otherMouseUp:event];
-}
-
-@end
-
-@interface IupCocoaListPopUpButton : NSPopUpButton
-@end
-
-@implementation IupCocoaListPopUpButton
-
-- (void)mouseDown:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, true))
-    [super mouseDown:event];
-}
-
-- (void)mouseUp:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, false))
-    [super mouseUp:event];
-}
-
-- (void)rightMouseDown:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, true))
-    [super rightMouseDown:event];
-}
-
-- (void)rightMouseUp:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, false))
-    [super rightMouseUp:event];
-}
-
-- (void)otherMouseDown:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, true))
-    [super otherMouseDown:event];
-}
-
-- (void)otherMouseUp:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih && cocoaListHandleMouseButton(ih, event, self, false))
-    [super otherMouseUp:event];
-}
-
 @end
 
 @interface IupCocoaListPopupButtonReceiver : NSObject
@@ -902,6 +843,9 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
             - (IBAction) onSelectionChanged:(id)the_sender;
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_sender, IHANDLE_ASSOCIATED_OBJ_KEY);
+
+  if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
+    return;
 
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
   switch(sub_type)
@@ -943,6 +887,9 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 {
   NSComboBox* combo_box = [the_notification object];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(combo_box, IHANDLE_ASSOCIATED_OBJ_KEY);
+
+  if (iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
+    return;
 
   IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
   if (cb)
@@ -1828,7 +1775,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     {
       iupdrvListInsertItem(ih, (int)row, [text UTF8String]);
       if (image)
-        iupdrvListSetImageHandle(ih, (int)row + 1, image);
+        iupdrvListSetImageHandle(ih, (int)row, image);
     }
     else
     {
@@ -1839,7 +1786,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
       iupdrvListRemoveItem(ih, (int)sourceRow);
       iupdrvListInsertItem(ih, (int)targetRow, [text UTF8String]);
       if (image)
-        iupdrvListSetImageHandle(ih, (int)targetRow + 1, image);
+        iupdrvListSetImageHandle(ih, (int)targetRow, image);
     }
 
     NSInteger finalRow = row;
@@ -1898,7 +1845,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
             {
               iupdrvListInsertItem(ih, drop_pos, item_text);
               if (hImage && hImage != (void*)[NSNull null])
-                iupdrvListSetImageHandle(ih, drop_pos + 1, hImage);
+                iupdrvListSetImageHandle(ih, drop_pos, hImage);
 
               drop_pos++;
 
@@ -1929,7 +1876,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
         {
           iupdrvListInsertItem(ih, drop_pos, item_text);
           if (hImage && hImage != (void*)[NSNull null])
-            iupdrvListSetImageHandle(ih, drop_pos + 1, hImage);
+            iupdrvListSetImageHandle(ih, drop_pos, hImage);
 
           if (is_move)
             IupSetInt(ih_source, "REMOVEITEM", src_pos_1based);
@@ -2531,7 +2478,7 @@ IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
-  int pos = id - 1;
+  int pos = id;
   NSImage* image = (NSImage*)hImage;
 
   if (sub_type == IUPCOCOALISTSUBTYPE_DROPDOWN)
@@ -2657,7 +2604,7 @@ static int cocoaListSetImageAttrib(Ihandle* ih, int id, const char* value)
     return 0;
 
   NSImage* image = (NSImage*)iupImageGetImage(value, ih, 0, NULL);
-  int result = iupdrvListSetImageHandle(ih, id, image);
+  int result = iupdrvListSetImageHandle(ih, pos, image);
 
   if (result)
     cocoaListUpdateColumnWidth(ih);
@@ -2733,6 +2680,9 @@ static char* cocoaListGetValueAttrib(Ihandle* ih)
 static int cocoaListSetValueAttrib(Ihandle* ih, const char* value)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
+
+  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
+
   switch(sub_type)
   {
     case IUPCOCOALISTSUBTYPE_DROPDOWN:
@@ -2832,6 +2782,8 @@ static int cocoaListSetValueAttrib(Ihandle* ih, const char* value)
     default:
       break;
   }
+
+  iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 
   return 0;
 }
@@ -3590,7 +3542,7 @@ static int cocoaListMapMethod(Ihandle* ih)
   {
     case IUPCOCOALISTSUBTYPE_DROPDOWN:
       {
-        NSPopUpButton* popup_button = [[IupCocoaListPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, kIupCocoaDefaultWidthNSPopUpButton, kIupCocoaDefaultHeightNSPopUpButton) pullsDown:NO];
+        NSPopUpButton* popup_button = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, kIupCocoaDefaultWidthNSPopUpButton, kIupCocoaDefaultHeightNSPopUpButton) pullsDown:NO];
         root_view = popup_button;
         main_view = root_view;
 

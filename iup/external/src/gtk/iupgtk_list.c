@@ -1640,15 +1640,13 @@ static void gtkListDragBegin(GtkWidget *widget, GdkDragContext *context, Ihandle
 
 static gboolean gtkListDragButtonEvent(GtkWidget *widget, GdkEventButton *evt, Ihandle *ih)
 {
-  if (iupgtkButtonEvent(widget, evt, ih) == TRUE)
-    return TRUE;
-
   if (evt->type == GDK_BUTTON_PRESS && evt->button == 1)  /* left single press */
   {
     iupAttribSetInt(ih, "_IUPLIST_DRAG_X", (int)evt->x);
     iupAttribSetInt(ih, "_IUPLIST_DRAG_Y", (int)evt->y);
   }
 
+  (void)widget;
   return FALSE;
 }
 
@@ -1874,6 +1872,32 @@ static void gtkListComboBoxChanged(GtkComboBox* widget, Ihandle* ih)
     iupBaseCallValueChangedCb(ih);
 
   (void)widget;
+}
+
+static gboolean gtkListSelectFunc(GtkTreeSelection* selection, GtkTreeModel* model, GtkTreePath* path, gboolean path_currently_selected, gpointer data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  (void)selection;
+  (void)model;
+  (void)path;
+  (void)path_currently_selected;
+
+  if (iupAttribGet(ih, "_IUPLIST_BLOCK_SELECT"))
+    return FALSE;
+
+  return TRUE;
+}
+
+static void gtkListTreeViewGrabFocus(GtkWidget* widget, Ihandle* ih)
+{
+  (void)widget;
+  iupAttribSet(ih, "_IUPLIST_BLOCK_SELECT", "1");
+}
+
+static void gtkListTreeViewGrabFocusAfter(GtkWidget* widget, Ihandle* ih)
+{
+  (void)widget;
+  iupAttribSet(ih, "_IUPLIST_BLOCK_SELECT", NULL);
 }
 
 static gboolean gtkListSimpleKeyPressEvent(GtkWidget *widget, GdkEventKey *evt, Ihandle *ih)
@@ -2362,11 +2386,16 @@ static int gtkListMapMethod(Ihandle* ih)
     else
       gtk_tree_selection_set_mode(selection, GTK_SELECTION_BROWSE);
 
+    gtk_tree_selection_set_select_function(selection, gtkListSelectFunc, ih, NULL);
+
     g_signal_connect(G_OBJECT(selection), "changed",  G_CALLBACK(gtkListSelectionChanged), ih);
     g_signal_connect(G_OBJECT(ih->handle), "row-activated", G_CALLBACK(gtkListRowActivated), ih);
     g_signal_connect(G_OBJECT(ih->handle), "motion-notify-event",G_CALLBACK(iupgtkMotionNotifyEvent), ih);
     g_signal_connect(G_OBJECT(ih->handle), "button-press-event", G_CALLBACK(iupgtkButtonEvent), ih);
     g_signal_connect(G_OBJECT(ih->handle), "button-release-event", G_CALLBACK(iupgtkButtonEvent), ih);
+
+    g_signal_connect(G_OBJECT(ih->handle), "grab-focus", G_CALLBACK(gtkListTreeViewGrabFocus), ih);
+    g_signal_connect_after(G_OBJECT(ih->handle), "grab-focus", G_CALLBACK(gtkListTreeViewGrabFocusAfter), ih);
   }
 
   /* Enable internal drag and drop support */
