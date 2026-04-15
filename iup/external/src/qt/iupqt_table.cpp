@@ -88,6 +88,44 @@ public:
     return value.toString();
   }
 
+  /* Read row/cell colors live so ALTERNATECOLOR/EVEN-ODDROWCOLOR/BGCOLOR/FGCOLOR changes
+     take effect without re-baking QTableWidgetItem brushes. */
+  void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const override
+  {
+    QStyledItemDelegate::initStyleOption(option, index);
+
+    int lin = index.row() + 1;
+    int col = index.column() + 1;
+
+    char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
+    if (!bgcolor)
+      bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
+    if (!bgcolor)
+      bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+    if (!bgcolor && iupStrBoolean(iupAttribGet(ih, "ALTERNATECOLOR")))
+      bgcolor = iupAttribGet(ih, (lin % 2 == 0) ? "EVENROWCOLOR" : "ODDROWCOLOR");
+
+    if (bgcolor && *bgcolor)
+    {
+      unsigned char r, g, b;
+      if (iupStrToRGB(bgcolor, &r, &g, &b))
+        option->backgroundBrush = QBrush(QColor(r, g, b));
+    }
+
+    char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
+    if (!fgcolor)
+      fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
+    if (!fgcolor)
+      fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+
+    if (fgcolor && *fgcolor)
+    {
+      unsigned char r, g, b;
+      if (iupStrToRGB(fgcolor, &r, &g, &b))
+        option->palette.setColor(QPalette::Text, QColor(r, g, b));
+    }
+  }
+
   void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
   {
     /* Check if this item has focus */
