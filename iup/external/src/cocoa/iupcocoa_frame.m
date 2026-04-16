@@ -140,25 +140,13 @@ static int cocoaFrameSetBgColorAttrib(Ihandle* ih, const char* value)
     return 1;
 
   NSBox* the_frame = (NSBox*)ih->handle;
-  NSView* content_view = [the_frame contentView];
   unsigned char r, g, b;
   BOOL has_custom_color = iupAttribGetBoolean(ih, "_IUPFRAME_HAS_BGCOLOR");
 
   if (!has_custom_color)
   {
-    /* No custom BGCOLOR set on this frame.
-       Use system defaults which are dynamic and theme-aware. */
     [the_frame setBoxType:NSBoxPrimary];
-
-    if (content_view)
-    {
-      if ([content_view wantsLayer])
-      {
-        /* Make the layer transparent so the NSBox background shows through */
-        [[content_view layer] setBackgroundColor:nil];
-      }
-    }
-    return 0; /* Not processed as a user attribute */
+    return 0;
   }
 
   /* has_custom_color is TRUE */
@@ -175,19 +163,6 @@ static int cocoaFrameSetBgColorAttrib(Ihandle* ih, const char* value)
 
   [the_frame setBoxType:NSBoxCustom];
   [the_frame setFillColor:color];
-
-  if (content_view)
-  {
-    if (![content_view wantsLayer])
-    {
-      [content_view setWantsLayer:YES];
-    }
-
-    if ([content_view layer])
-    {
-      [[content_view layer] setBackgroundColor:[color CGColor]];
-    }
-  }
 
   return 1;
 }

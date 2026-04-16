@@ -105,6 +105,7 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 {
 	NSTrackingArea* _mouseTrackingArea;
 }
+@property (nonatomic, retain) NSColor* customBackgroundColor;
 @end
 
 @implementation IUPCocoaLabelEventView
@@ -116,7 +117,18 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 		[self removeTrackingArea:_mouseTrackingArea];
 		[_mouseTrackingArea release];
 	}
+	[_customBackgroundColor release];
 	[super dealloc];
+}
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+	if (self.customBackgroundColor)
+	{
+		[self.customBackgroundColor setFill];
+		NSRectFill(self.bounds);
+	}
+	[super drawRect:dirtyRect];
 }
 
 - (void)mouseDown:(NSEvent *)theEvent
@@ -791,7 +803,7 @@ static int cocoaLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
 static int cocoaLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   NSView* the_view = iupcocoaGetMainView(ih);
-  NSView* root_view = iupcocoaGetRootView(ih);
+  IUPCocoaLabelEventView* root_view = (IUPCocoaLabelEventView*)iupcocoaGetRootView(ih);
   unsigned char r, g, b;
 
   if (!iupStrToRGB(value, &r, &g, &b))
@@ -806,8 +818,8 @@ static int cocoaLabelSetBgColorAttrib(Ihandle* ih, const char* value)
     [text_field setDrawsBackground:YES];
   }
 
-  [root_view setWantsLayer:YES];
-  [[root_view layer] setBackgroundColor:[color CGColor]];
+  root_view.customBackgroundColor = color;
+  [root_view setNeedsDisplay:YES];
 
   return 1;
 }

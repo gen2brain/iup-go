@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#import <QuartzCore/QuartzCore.h>
-
 #include "iup.h"
 #include "iupcbs.h"
 
@@ -2645,7 +2643,6 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const cha
   [outline_view endUpdates];
   [NSAnimationContext endGrouping];
 
-  [CATransaction flush];
   [outline_view layoutSubtreeIfNeeded];
 
   [tree_item_new release];
@@ -3059,7 +3056,6 @@ static int cocoaTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
 
     [NSAnimationContext endGrouping];
 
-    [CATransaction flush];
     [outline_view layoutSubtreeIfNeeded];
   }
 

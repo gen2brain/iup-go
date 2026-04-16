@@ -80,12 +80,20 @@ typedef struct _IcocoaTableData {
 }
 @property (nonatomic, assign) BOOL isFocusedCell;
 @property (nonatomic, assign) Ihandle* ih;
+@property (nonatomic, retain) NSColor* customBackgroundColor;
 @end
 
 @implementation IupCocoaTableCellView
 
 @synthesize isFocusedCell;
 @synthesize ih;
+@synthesize customBackgroundColor;
+
+- (void)dealloc
+{
+  [customBackgroundColor release];
+  [super dealloc];
+}
 
 - (void)layout
 {
@@ -143,6 +151,11 @@ typedef struct _IcocoaTableData {
 
 - (void)drawRect:(NSRect)dirtyRect
 {
+  if (self.customBackgroundColor)
+  {
+    [self.customBackgroundColor setFill];
+    NSRectFill(dirtyRect);
+  }
   [super drawRect:dirtyRect];
 
   /* Draw dashed focus rectangle if this is the focused cell and FOCUSRECT=YES */
@@ -514,6 +527,7 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
   NSTextField* textField = cellView.textField;
 
   /* Background color, only apply if row is NOT selected */
+  IupCocoaTableCellView* iupCellView = (IupCocoaTableCellView*)cellView;
   if (!isSelected)
   {
     /* Background color - hierarchy: L:C > :C > L:0 */
@@ -523,32 +537,22 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
 
     if (bgcolor && *bgcolor)
     {
-      /* Cell has specific background color */
       unsigned char r, g, b;
       if (iupStrToRGB(bgcolor, &r, &g, &b))
       {
-        NSColor* color = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
-        [cellView setWantsLayer:YES];
-        [[cellView layer] setBackgroundColor:[color CGColor]];
+        iupCellView.customBackgroundColor = [NSColor colorWithSRGBRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1.0];
       }
     }
     else
     {
-      /* No cell-specific color, clear layer background so row background shows through */
-      if ([cellView wantsLayer])
-      {
-        [[cellView layer] setBackgroundColor:nil];
-      }
+      iupCellView.customBackgroundColor = nil;
     }
   }
   else
   {
-    /* Row is selected, clear layer background so selection highlight shows */
-    if ([cellView wantsLayer])
-    {
-      [[cellView layer] setBackgroundColor:nil];
-    }
+    iupCellView.customBackgroundColor = nil;
   }
+  [iupCellView setNeedsDisplay:YES];
 
   /* Foreground color - hierarchy: L:C > :C > L:0 */
   char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
