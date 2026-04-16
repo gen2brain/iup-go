@@ -332,6 +332,7 @@ static int winuiTabsMapMethod(Ihandle* ih)
   tabView.IsAddTabButtonVisible(false);
   tabView.TabWidthMode(TabViewWidthMode::SizeToContent);
   tabView.CanReorderTabs(false);
+  tabView.KeyboardAccelerators().Clear();
 
   IupWinUITabsAux* aux = new IupWinUITabsAux();
 

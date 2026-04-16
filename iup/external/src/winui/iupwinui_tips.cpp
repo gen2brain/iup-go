@@ -106,6 +106,17 @@ static ToolTip winuiTipGetToolTip(Ihandle* ih)
 }
 
 
+static void winuiTipClose(DependencyObject elem)
+{
+  IInspectable obj = ToolTipService::GetToolTip(elem);
+  if (obj)
+  {
+    ToolTip tt = obj.try_as<ToolTip>();
+    if (tt && tt.IsOpen())
+      tt.IsOpen(false);
+  }
+}
+
 IUP_DRV_API void iupwinuiTipsDestroy(Ihandle* ih)
 {
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
@@ -113,7 +124,10 @@ IUP_DRV_API void iupwinuiTipsDestroy(Ihandle* ih)
 
   DependencyObject elem = winuiGetHandle<DependencyObject>(ih);
   if (elem)
+  {
+    winuiTipClose(elem);
     ToolTipService::SetToolTip(elem, nullptr);
+  }
 }
 
 extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
@@ -124,6 +138,8 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
   DependencyObject elem = winuiGetHandle<DependencyObject>(ih);
   if (!elem)
     return 0;
+
+  winuiTipClose(elem);
 
   if (value)
   {
@@ -199,7 +215,10 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char
   {
     const char* tip = iupAttribGet(ih, "TIP");
     if (!tip)
+    {
+      winuiTipClose(elem);
       return 0;
+    }
 
     IInspectable obj = ToolTipService::GetToolTip(elem);
     ToolTip tt = obj ? obj.try_as<ToolTip>() : nullptr;
@@ -211,13 +230,33 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char
       ToolTipService::SetToolTip(elem, tt);
     }
 
+    int sx, sy;
+    iupdrvGetCursorPos(&sx, &sy);
+
+    Ihandle* dialog = IupGetDialog(ih);
+    POINT pt;
+    pt.x = sx;
+    pt.y = sy;
+    ScreenToClient((HWND)dialog->handle, &pt);
+
+    UIElement uiElem = elem.try_as<UIElement>();
+    if (uiElem)
+    {
+      auto transform = uiElem.TransformToVisual(nullptr);
+      auto origin = transform.TransformPoint({0, 0});
+
+      float cx = (float)pt.x - origin.X;
+      float cy = (float)pt.y - origin.Y;
+
+      tt.PlacementRect(Windows::Foundation::Rect{cx, cy, 1.0f, 1.0f});
+      tt.Placement(Controls::Primitives::PlacementMode::Bottom);
+    }
+
     tt.IsOpen(true);
   }
   else
   {
-    ToolTip tt = winuiTipGetToolTip(ih);
-    if (tt)
-      tt.IsOpen(false);
+    winuiTipClose(elem);
   }
 
   return 0;
