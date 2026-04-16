@@ -1228,8 +1228,7 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
       iupStrEqual(ih->iclass->name, "flatscrollbox") ||
       iupStrEqual(ih->iclass->name, "scrollbox"))
   {
-    [extra_parent setWantsLayer:YES];
-    extra_parent.layer.masksToBounds = YES;
+    [extra_parent setClipsToBounds:YES];
   }
 
   NSNotificationCenter* notification_center = [NSNotificationCenter defaultCenter];

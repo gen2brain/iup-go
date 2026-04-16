@@ -24,6 +24,23 @@
 
 static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY";
 
+@interface IupCocoaButtonCell : NSButtonCell
+@end
+
+@implementation IupCocoaButtonCell
+
+- (void)drawWithFrame:(NSRect)cellFrame inView:(NSView*)controlView
+{
+  if (self.backgroundColor)
+  {
+    [self.backgroundColor setFill];
+    NSRectFill(cellFrame);
+  }
+  [super drawWithFrame:cellFrame inView:controlView];
+}
+
+@end
+
 @interface IupCocoaFlatButton : NSButton
 @property (nonatomic, assign) BOOL isFlat;
 @property (nonatomic, assign) BOOL isHovering;
@@ -613,16 +630,17 @@ static int cocoaButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 static int cocoaButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   NSButton* the_button = ih->handle;
+  NSButtonCell* cell = [the_button cell];
   unsigned char r, g, b;
 
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  [the_button setWantsLayer:YES];
-  [[the_button layer] setBackgroundColor:[[NSColor colorWithSRGBRed:r/255.0
-                                   green:g/255.0
-                                    blue:b/255.0
-                                   alpha:1.0] CGColor]];
+  [cell setBackgroundColor:[NSColor colorWithSRGBRed:r/255.0
+                                               green:g/255.0
+                                                blue:b/255.0
+                                               alpha:1.0]];
+  [the_button setNeedsDisplay:YES];
 
   return 1;
 }
@@ -803,6 +821,10 @@ static int cocoaButtonMapMethod(Ihandle* ih)
   the_button = [[IupCocoaFlatButton alloc] initWithFrame:NSZeroRect];
   [(IupCocoaFlatButton*)the_button setIsFlat:is_flat];
   [(IupCocoaFlatButton*)the_button setIsHovering:NO];
+
+  IupCocoaButtonCell* cell = [[IupCocoaButtonCell alloc] initTextCell:@""];
+  [the_button setCell:cell];
+  [cell release];
 
   [the_button setTitle:@""];
   [the_button setBezelStyle:NSBezelStyleRegularSquare];

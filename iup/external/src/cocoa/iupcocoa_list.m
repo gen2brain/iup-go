@@ -1175,13 +1175,21 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 @synthesize customBackgroundColor;
 @synthesize customTextColor;
 
+- (void)drawRect:(NSRect)dirtyRect
+{
+  if (self.customBackgroundColor)
+  {
+    [self.customBackgroundColor setFill];
+    NSRectFill(dirtyRect);
+  }
+  [super drawRect:dirtyRect];
+}
+
 - (instancetype) initWithFrame:(NSRect)frameRect
 {
   self = [super initWithFrame:frameRect];
   if (self)
   {
-    [self setWantsLayer:YES];
-
     /* Use standard NSImageView via superclass property.
        It must be set as non-editable so it does not interfere with dragging. */
     self.imageView = [[[NSImageView alloc] initWithFrame:NSZeroRect] autorelease];
@@ -1220,15 +1228,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
   if (backgroundStyle == NSBackgroundStyleNormal)
   {
-    if (self.customBackgroundColor)
-    {
-      self.layer.backgroundColor = [self.customBackgroundColor CGColor];
-    }
-    else
-    {
-      self.layer.backgroundColor = [[NSColor clearColor] CGColor];
-    }
-
     if (self.customTextColor)
     {
       [self.textField setTextColor:self.customTextColor];
@@ -1240,9 +1239,10 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   }
   else
   {
-    self.layer.backgroundColor = [[NSColor clearColor] CGColor]; /* Use system selection color */
     [self.textField setTextColor:[NSColor selectedControlTextColor]];
   }
+
+  [self setNeedsDisplay:YES];
 }
 
 - (void) updateLayoutWithPadding:(CGFloat)padding showImage:(BOOL)showImage
