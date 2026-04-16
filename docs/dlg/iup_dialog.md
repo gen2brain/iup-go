@@ -98,6 +98,7 @@ It is application responsibility to implement the minimize, maximize and close b
 
 **DEFAULTENTER**:  Name of the button activated when the user press Enter when focus is in another control of the dialog.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a button to a name.
+The referenced button automatically receives the [SHOWASDEFAULT](../elem/iup_button.md#attributes) visual emphasis so the user can identify which button responds to Enter.
 
 **DEFAULTESC**: Name of the button activated when the user presses Esc when focus is in another control of the dialog.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a button to a name.

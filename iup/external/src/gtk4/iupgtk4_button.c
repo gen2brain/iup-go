@@ -816,9 +816,45 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int gtk4ButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+
+  GtkWidget* root = GTK_WIDGET(gtk_widget_get_root(ih->handle));
+
+  if (iupStrBoolean(value))
+  {
+    if (root && GTK_IS_WINDOW(root))
+      gtk_window_set_default_widget(GTK_WINDOW(root), ih->handle);
+    gtk_widget_add_css_class(ih->handle, "suggested-action");
+  }
+  else
+  {
+    gtk_widget_remove_css_class(ih->handle, "suggested-action");
+    if (root && GTK_IS_WINDOW(root) && gtk_window_get_default_widget(GTK_WINDOW(root)) == ih->handle)
+      gtk_window_set_default_widget(GTK_WINDOW(root), NULL);
+  }
+  return 1;
+}
+
+static void gtk4ButtonUnMapMethod(Ihandle* ih)
+{
+  if (ih->handle && iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
+  {
+    GtkWidget* root = GTK_WIDGET(gtk_widget_get_root(ih->handle));
+    if (root && GTK_IS_WINDOW(root) && gtk_window_get_default_widget(GTK_WINDOW(root)) == ih->handle)
+      gtk_window_set_default_widget(GTK_WINDOW(root), NULL);
+    gtk_widget_remove_css_class(ih->handle, "suggested-action");
+  }
+
+  iupdrvBaseUnMapMethod(ih);
+}
+
 IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = gtk4ButtonMapMethod;
+  ic->UnMap = gtk4ButtonUnMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", NULL, gtk4ButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
@@ -838,4 +874,5 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, gtk4ButtonSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ACENTER:ACENTER", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", NULL, NULL, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, gtk4ButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

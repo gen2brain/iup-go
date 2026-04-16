@@ -76,6 +76,10 @@ Default: "2".
 **CSPACING**: same as SPACING but using the units of the vertical part of the **SIZE** attribute.
 It will actually set the SPACING attribute.
 
+**SHOWASDEFAULT** (non-inheritable): draws the button with the native "default button" visual emphasis. Can be "YES" or "NO". Default: "NO".
+Normally set automatically when the button is assigned to the parent dialog's [DEFAULTENTER](../dlg/iup_dialog.md) attribute, no manual action required. Can also be set directly for visual-only emphasis without wiring to DEFAULTENTER.
+The visual style depends on the platform and follows each toolkit's native convention for default buttons (e.g. highlighted border on Win32, accent color on WinUI and GTK4, pulsing appearance on Cocoa, return-arrow glyph on FLTK). Not supported in EFL (attribute is accepted but has no visual effect).
+
 [TITLE](../attrib/iup_title.md) (non-inheritable): Button's text.
 If IMAGE is not defined before map, then the default behavior is to contain only a text.
 The button behavior cannot be changed after map.

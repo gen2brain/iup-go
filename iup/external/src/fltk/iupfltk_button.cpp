@@ -143,6 +143,42 @@ public:
 
     return Fl_Button::handle(event);
   }
+
+  void draw() override
+  {
+    if (!iup_handle || !iupAttribGetBoolean(iup_handle, "SHOWASDEFAULT"))
+    {
+      Fl_Button::draw();
+      return;
+    }
+
+    /* draw() and arrow logic from FLTK src/Fl_Return_Button.cxx (fl_return_arrow) */
+    if (type() == FL_HIDDEN_BUTTON) return;
+    Fl_Boxtype bt = value() ? (down_box() ? down_box() : fl_down(box())) : box();
+    int dx = Fl::box_dx(bt);
+    draw_box(bt, value() ? selection_color() : color());
+    int W = h();
+    if (w() / 3 < W) W = w() / 3;
+    {
+      int ax = x() + w() - (W + dx), ay = y(), aw = W, ah = h();
+      int size = aw; if (ah < size) size = ah;
+      int d = (size + 2) / 4; if (d < 3) d = 3;
+      int t = (size + 9) / 12; if (t < 1) t = 1;
+      int x0 = ax + (aw - 2 * d - 2 * t - 1) / 2;
+      int x1 = x0 + d;
+      int y0 = ay + ah / 2;
+      fl_color(FL_LIGHT3);
+      fl_line(x0, y0, x1, y0 + d);
+      fl_yxline(x1, y0 + d, y0 + t, x1 + d + 2 * t, y0 - d);
+      fl_yxline(x1, y0 - t, y0 - d);
+      fl_color(fl_gray_ramp(0));
+      fl_line(x0, y0, x1, y0 - d);
+      fl_color(FL_DARK3);
+      fl_xyline(x1 + 1, y0 - t, x1 + d, y0 - d, x1 + d + 2 * t);
+    }
+    draw_label(x() + dx, y(), w() - (dx + W + dx), h());
+    if (Fl::focus() == this) draw_focus();
+  }
 };
 
 static void fltkButtonCallback(Fl_Widget* w, void* data)
@@ -174,6 +210,9 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
   (*x) += border_size;
   (*y) += border_size;
+
+  if (ih && iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
+    (*x) += (*y) + 2 * ih->data->vert_padding;
 }
 
 static int fltkButtonSetTitleAttrib(Ihandle* ih, const char* value)
@@ -448,6 +487,15 @@ static int fltkButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int fltkButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
+{
+  IupFltkButton* button = (IupFltkButton*)ih->handle;
+  if (button)
+    button->redraw();
+  (void)value;
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = fltkButtonMapMethod;
@@ -465,4 +513,5 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FLAT", NULL, fltkButtonSetFlatAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "IMPRESSBORDER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, fltkButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

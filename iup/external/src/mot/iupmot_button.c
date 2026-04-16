@@ -43,6 +43,13 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 
   (*x) += border_size;
   (*y) += border_size;
+
+  if (ih && iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
+  {
+    int increase = 2 * 1 + 2 + 1;
+    (*x) += increase * 2;
+    (*y) += increase * 2;
+  }
 }
 
 static int motButtonSetTitleAttrib(Ihandle* ih, const char* value)
@@ -326,6 +333,14 @@ static int motButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int motButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+  XtVaSetValues(ih->handle, XmNshowAsDefault, iupStrBoolean(value) ? 1 : 0, NULL);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -348,6 +363,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, motButtonSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, motButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, motButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* NOT supported */
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);

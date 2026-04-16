@@ -347,6 +347,9 @@ static void winButtonDrawItem(Ihandle* ih, DRAWITEMSTRUCT *drawitem)
   if ((drawitem->itemState & ODS_FOCUS) && !(drawitem->itemState & ODS_HOTLIGHT))
     drawitem->itemState |= ODS_DEFAULT;
 
+  if (iupAttribGetBoolean(ih, "SHOWASDEFAULT") && !(drawitem->itemState & ODS_HOTLIGHT))
+    drawitem->itemState |= ODS_DEFAULT;
+
   /* force selected state */
   if (iupAttribGet(ih, "_IUPWINBUT_SELECTED"))
     drawitem->itemState |= ODS_SELECTED;
@@ -720,6 +723,14 @@ static int winButtonWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
   return 0; /* not used */
 }
 
+static int winButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle)
+    iupdrvRedrawNow(ih);
+  (void)value;
+  return 1;
+}
+
 static int winButtonMapMethod(Ihandle* ih)
 {
   char* value;
@@ -800,6 +811,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, winButtonSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, winButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, winButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* NOT supported */
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);

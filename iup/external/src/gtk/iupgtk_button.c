@@ -1062,6 +1062,26 @@ static int gtkButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int gtkButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+
+  if (iupStrBoolean(value))
+  {
+    gtk_widget_set_can_default(ih->handle, TRUE);
+    gtk_widget_grab_default(ih->handle);
+  }
+  else
+  {
+    GtkWidget* toplevel = gtk_widget_get_toplevel(ih->handle);
+    if (toplevel && GTK_IS_WINDOW(toplevel) && gtk_window_get_default_widget(GTK_WINDOW(toplevel)) == ih->handle)
+      gtk_window_set_default(GTK_WINDOW(toplevel), NULL);
+    gtk_widget_set_can_default(ih->handle, FALSE);
+  }
+  return 1;
+}
+
 IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -1091,4 +1111,5 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, gtkButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, gtkButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
