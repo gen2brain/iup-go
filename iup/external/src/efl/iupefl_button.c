@@ -633,4 +633,5 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }

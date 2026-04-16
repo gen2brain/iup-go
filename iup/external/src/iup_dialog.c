@@ -1244,6 +1244,22 @@ static int iDialogSetSimulateModalAttrib(Ihandle *ih, const char *value)
   return 0;
 }
 
+static int iDialogSetDefaultEnterAttrib(Ihandle *ih, const char *value)
+{
+  Ihandle* old_bt = (Ihandle*)iupAttribGet(ih, "_IUP_DEFAULTENTER_BUTTON");
+  Ihandle* new_bt = value ? IupGetHandle(value) : NULL;
+
+  if (old_bt && old_bt != new_bt && iupObjectCheck(old_bt) && old_bt->handle && IupClassMatch(old_bt, "button"))
+    IupSetAttribute(old_bt, "SHOWASDEFAULT", NULL);
+
+  if (new_bt && iupObjectCheck(new_bt) && IupClassMatch(new_bt, "button"))
+    IupSetAttribute(new_bt, "SHOWASDEFAULT", "YES");
+
+  iupAttribSet(ih, "_IUP_DEFAULTENTER_BUTTON", (char*)new_bt);
+
+  return 1;
+}
+
 static int iDialogSetParentDialogAttrib(Ihandle *ih, const char *value)
 {
   Ihandle* parent = IupGetHandle(value);
@@ -1430,7 +1446,7 @@ Iclass* iupDialogNewClass(void)
   iupClassRegisterAttribute(ic, "BORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BORDERSIZE", iDialogGetBorderSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DEFAULTENTER", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DEFAULTENTER", NULL, iDialogSetDefaultEnterAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DEFAULTESC",   NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGFRAME",  NULL, iDialogSetDialogFrameAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PARENTDIALOG", NULL, iDialogSetParentDialogAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);

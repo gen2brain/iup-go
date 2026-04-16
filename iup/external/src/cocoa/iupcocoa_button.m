@@ -779,6 +779,20 @@ void cocoaButtonLayoutUpdateMethod(Ihandle *ih)
   [child_view setFrame:NSIntegralRect(child_rect)];
 }
 
+static int cocoaButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
+{
+  NSButton* btn = (NSButton*)ih->handle;
+  if (!btn)
+    return 1;
+
+  if (iupStrBoolean(value))
+    [btn setKeyEquivalent:@"\r"];
+  else
+    [btn setKeyEquivalent:@""];
+
+  return 1;
+}
+
 static int cocoaButtonMapMethod(Ihandle* ih)
 {
   char* value;
@@ -886,6 +900,9 @@ static int cocoaButtonMapMethod(Ihandle* ih)
   if (!iupAttribGetBoolean(ih, "ACTIVE"))
     [the_button setEnabled:NO];
 
+  if (iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
+    [the_button setKeyEquivalent:@"\r"];
+
   return IUP_NOERROR;
 }
 
@@ -932,4 +949,5 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, cocoaButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, cocoaButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

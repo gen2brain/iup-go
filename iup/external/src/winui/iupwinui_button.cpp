@@ -422,6 +422,36 @@ static void winuiButtonPointerReleased(Ihandle* ih)
   }
 }
 
+static void winuiButtonApplyShowAsDefault(Button& btn, int enable)
+{
+  if (enable)
+  {
+    try
+    {
+      auto res = Application::Current().Resources().Lookup(box_value(L"AccentButtonStyle"));
+      auto style = res.try_as<Microsoft::UI::Xaml::Style>();
+      if (style)
+        btn.Style(style);
+    }
+    catch (...) {}
+  }
+  else
+  {
+    btn.ClearValue(FrameworkElement::StyleProperty());
+  }
+}
+
+static int winuiButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle)
+  {
+    Button btn = winuiGetHandle<Button>(ih);
+    if (btn)
+      winuiButtonApplyShowAsDefault(btn, iupStrBoolean(value));
+  }
+  return 1;
+}
+
 static int winuiButtonMapMethod(Ihandle* ih)
 {
   const char* title = iupAttribGet(ih, "TITLE");
@@ -588,6 +618,13 @@ static int winuiButtonMapMethod(Ihandle* ih)
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
     iupwinuiSetCanFocus(ih->handle, 0);
 
+  if (iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
+  {
+    Button stored_btn = winuiGetHandle<Button>(ih);
+    if (stored_btn)
+      winuiButtonApplyShowAsDefault(stored_btn, 1);
+  }
+
   return IUP_NOERROR;
 }
 
@@ -694,4 +731,5 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, winuiButtonSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, winuiButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, winuiButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

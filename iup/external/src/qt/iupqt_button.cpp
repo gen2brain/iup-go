@@ -636,6 +636,17 @@ static int qtButtonMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
+static int qtButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
+{
+  QPushButton* pb = dynamic_cast<QPushButton*>((QWidget*)ih->handle);
+  if (!pb)
+    return 1;
+
+  pb->setAutoDefault(iupStrBoolean(value));
+  pb->setDefault(iupStrBoolean(value));
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = qtButtonMapMethod;
@@ -663,4 +674,5 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMPRESSBORDER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, qtButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
