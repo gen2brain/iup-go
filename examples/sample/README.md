@@ -69,5 +69,8 @@
 ### Motif Dark
 [<img src="sample_motif_dark.png" width="700" title="Motif Dark" alt="Motif Dark" />](sample_motif_dark.png)
 
-### GNUstep
+### GNUstep Themed
 [<img src="sample_gnustep.png" width="700" title="GNUstep" alt="GNUstep" />](sample_gnustep.png)
+
+### GNUstep Default
+[<img src="sample_gnustep_default.png" width="700" title="GNUstep Default" alt="GNUstep Default" />](sample_gnustep_default.png)
