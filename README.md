@@ -105,7 +105,8 @@ You must manually export the path to private header files.
 
 For example, check `pkg-config --modversion Qt6Core` and `pkg-config --cflags Qt6Core` and then based on that use:
 ```
-CGO_CXXFLAGS="-I/usr/include/qt6/QtCore/6.9.3 -I/usr/include/qt6/QtGui/6.9.3" go build -tags qt,gl
+CGO_CXXFLAGS="-I/usr/include/qt6/QtCore/6.9.3 -I/usr/include/qt6/QtGui/6.9.3" \
+go build -tags qt,gl
 ```
 
 [<img src="examples/sample/sample_qt6.png" width="700"/>](examples/sample/sample_qt6.png)
@@ -127,7 +128,7 @@ For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 * RedHat/Fedora: `dnf install efl`
 
 EFL needs this [patch](https://gist.github.com/gen2brain/8ed03d6eef620cc25007b5d7a5cc5779) applied.
-You can still compile with distro packages, but opening any modal window will freeze the app.
+You can still compile with distro packages, but you will not be able to open any modal window.
 
 For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 
@@ -136,6 +137,8 @@ For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 #### Other
 
 The library should work on other Unix-like systems, FreeBSD, NetBSD, OpenBSD, DragonFly, Solaris, Illumos, and AIX.
+
+##### Motif
 
 You can also compile for a time-tested [Motif](https://en.wikipedia.org/wiki/Motif_(software)) library if GTK or Qt are not available.
 
@@ -147,6 +150,40 @@ To compile with [Xft](https://en.wikipedia.org/wiki/Xft) support, install `libxf
 For the `GLCanvas` control, install `libgl-dev` or `libglvnd-devel`.
 
 [<img src="examples/sample/sample_motif.png" width="700"/>](examples/sample/sample_motif.png)
+
+##### GNUstep
+
+The `Cocoa` driver can also be compiled against [GNUstep](https://en.wikipedia.org/wiki/GNUstep) on Linux/BSD.
+This relies on the modern Objective-C stack, not the legacy GCC runtime.
+
+**Required combo**:
+
+* `Clang` as the compiler (`GCC` won't do)
+* `libobjc2` - the Apple-compatible Objective-C runtime, NOT the legacy `libobjc` from gcc.
+* `libdispatch` (GCD) - Apple's mainline `libdispatch`.
+* `libs-opal` - Apple CoreGraphics-compatible drawing layer built on Cairo.
+* `libs-corebase` - CoreFoundation.
+* `gnustep-base` + `gnustep-gui` 0.32+ (earlier versions are missing APIs the driver uses).
+
+Stock distro packages are currently insufficient.
+Also, several bugs in `gnustep-base`, `gnustep-gui`, `libs-opal` and `libs-corebase` must be patched.
+Tarball with the required patches is at [gnustep.tar.gz](https://gist.github.com/gen2brain/eaa0a38d0fb099d3601e6d1bc9d3b07d).
+
+`-fobjc-runtime=gnustep-2.2` - tells Clang to emit Objective-C 2 ABI metadata compatible with libobjc2.
+`gnustep-config --objc-flags` expands to this plus include paths; the Makefiles pick it up automatically, but CGo does not.
+
+CGo sanitizes compiler/linker flags by default, so you have to pass the flag and unblock it via the env vars:
+
+```
+CC=clang \
+CGO_CFLAGS='-fobjc-runtime=gnustep-2.2' \
+CGO_LDFLAGS='-fobjc-runtime=gnustep-2.2' \
+CGO_CFLAGS_ALLOW='-fobjc-runtime.*' \
+CGO_LDFLAGS_ALLOW='-fobjc-runtime.*' \
+go build -tags gnustep
+```
+
+[<img src="examples/sample/sample_gnustep.png" width="700"/>](examples/sample/sample_gnustep.png)
 
 ### Build tags
 
@@ -162,6 +199,7 @@ For the `GLCanvas` control, install `libgl-dev` or `libglvnd-devel`.
 * `fltk` - build for FLTK (Fast Light Toolkit)
 * `efl` - build for EFL (Enlightenment Foundation Libraries)
 * `motif` - build for X11/Motif 2.x environment
+* `gnustep` - build for GNUstep (Linux/BSD)
 * `xft` - build with Xft support (X FreeType interface) (used with `motif`)
 * `xembed` - use XEmbed tray protocol instead of SNI (GTK3/GTK2 and Motif)
 * `nomanifest` - do not include manifest in Windows build
