@@ -20,7 +20,11 @@ extern const void* IUPTARGETDROP_ASSOCIATED_OBJ_KEY;
 
 @end
 
+#ifdef GNUSTEP
+@interface IupSourceDragAssociatedData : NSObject <NSDraggingSource, NSPasteboardItemDataProvider>
+#else
 @interface IupSourceDragAssociatedData : NSObject <NSDraggingSource, NSPasteboardTypeOwner, NSPasteboardItemDataProvider, NSFilePromiseProviderDelegate>
+#endif
 @property(nonatomic, assign) Ihandle* ihandle;
 /* Used to distinguish between needing copy or if drag is actually enabled. Setting the types assumes copy is active. */
 @property(nonatomic, assign, getter=isDragSourceEnabled) bool dragSourceEnabled;
@@ -39,14 +43,18 @@ extern const void* IUPTARGETDROP_ASSOCIATED_OBJ_KEY;
 - (NSDragOperation) draggingSession:(NSDraggingSession*)dragging_session sourceOperationMaskForDraggingContext:(NSDraggingContext)dragging_context;
 
 
+#ifndef GNUSTEP
 - (NSDraggingItem*) defaultDraggingItem;
+#endif
 - (NSPasteboardItem*) defaultPasteboardItem;
 
 
+#ifndef GNUSTEP
 /* @protocol: NSFilePromiseProviderDelegate */
 - (NSString*) filePromiseProvider:(NSFilePromiseProvider*)file_promise_provider fileNameForType:(NSString*)file_type;
 /* @protocol: NSFilePromiseProviderDelegate */
 - (void) filePromiseProvider:(NSFilePromiseProvider*)file_promise_provider writePromiseToURL:(NSURL*)write_url completionHandler:(void (^)(NSError* errorOrNil))completion_handler;
+#endif
 
 - (void) draggingSession:(NSDraggingSession*)dragging_session willBeginAtPoint:(NSPoint)screen_point;
 - (void) draggingSession:(NSDraggingSession*)dragging_session endedAtPoint:(NSPoint)screen_point operation:(NSDragOperation)drag_operation;

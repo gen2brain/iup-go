@@ -10,8 +10,10 @@
 
 #import <Cocoa/Cocoa.h>
 #import <CoreGraphics/CoreGraphics.h>
+#ifndef GNUSTEP
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <os/log.h>
+#endif
 
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -136,6 +138,7 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
 
 IUP_SDK_API char *iupdrvGetSystemName(void)
 {
+#ifndef GNUSTEP
   NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
   const char* codename = NULL;
 
@@ -177,12 +180,19 @@ IUP_SDK_API char *iupdrvGetSystemName(void)
   }
 
   return iupStrReturnStr(buffer);
+#else
+  struct utsname systemInfo;
+  if (uname(&systemInfo) == 0)
+    return iupStrReturnStr(systemInfo.sysname);
+  return iupStrReturnStr("Linux");
+#endif
 }
 
 IUP_SDK_API char *iupdrvGetSystemVersion(void)
 {
   char* str = iupStrGetMemory(100);
 
+#ifndef GNUSTEP
   NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
   snprintf(str, 100, "%ld.%ld.%ld", (long)version.majorVersion, (long)version.minorVersion, (long)version.patchVersion);
 
@@ -192,17 +202,31 @@ IUP_SDK_API char *iupdrvGetSystemVersion(void)
   {
     snprintf(str + strlen(str), 100 - strlen(str), " (%s)", systemInfo.machine);
   }
+#else
+  struct utsname systemInfo;
+  if (uname(&systemInfo) == 0)
+    snprintf(str, 100, "%s (%s)", systemInfo.release, systemInfo.machine);
+  else
+    iupStrCopyN(str, 100, "unknown");
+#endif
 
   return str;
 }
 
 IUP_SDK_API char *iupdrvGetComputerName(void)
 {
+#ifndef GNUSTEP
   NSString* computer_name = [(NSString *)SCDynamicStoreCopyComputerName(NULL, NULL) autorelease];
   if (!computer_name)
     return NULL;
 
   return iupStrReturnStr([computer_name UTF8String]);
+#else
+  char hostname[256];
+  if (gethostname(hostname, sizeof(hostname)) == 0)
+    return iupStrReturnStr(hostname);
+  return NULL;
+#endif
 }
 
 IUP_SDK_API char *iupdrvGetUserName(void)
@@ -278,6 +302,7 @@ void IupLogV(const char* type, const char* format, va_list arglist)
   char buffer[2048];
   vsnprintf(buffer, sizeof(buffer), format, arglist);
 
+#ifndef GNUSTEP
   os_log_type_t log_type = OS_LOG_TYPE_DEFAULT;
   if (iupStrEqualNoCase(type, "DEBUG"))
     log_type = OS_LOG_TYPE_DEBUG;
@@ -292,6 +317,9 @@ void IupLogV(const char* type, const char* format, va_list arglist)
 
   /* os_log requires a static format string for privacy, so we must mark dynamic content as public. */
   os_log_with_type(OS_LOG_DEFAULT, log_type, "%{public}s", buffer);
+#else
+  fprintf(stderr, "[%s] %s\n", type ? type : "LOG", buffer);
+#endif
 }
 
 void IupLog(const char* type, const char* format, ...)

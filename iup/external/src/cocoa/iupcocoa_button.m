@@ -123,7 +123,15 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
   if (ih)
     iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
 
-  [self highlight:YES];
+  /* GNUstep -[NSButton highlight:] dives into drawWithFrame: without lockFocus; outside a
+     draw cycle there's no CGContext and Opal crashes. Wrap in lockFocus/unlockFocus. */
+#ifdef GNUSTEP
+#  define IUP_BUTTON_HIGHLIGHT(v, flag) do { [(v) lockFocus]; [(v) highlight:(flag)]; [(v) unlockFocus]; } while (0)
+#else
+#  define IUP_BUTTON_HIGHLIGHT(v, flag) [(v) highlight:(flag)]
+#endif
+
+  IUP_BUTTON_HIGHLIGHT(self, YES);
 
   BOOL keepTracking = YES;
   BOOL mouseIsInside = YES;
@@ -138,14 +146,14 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
       case NSEventTypeLeftMouseDragged:
         currentLocation = [self convertPoint:[nextEvent locationInWindow] fromView:nil];
         mouseIsInside = [self mouse:currentLocation inRect:[self bounds]];
-        [self highlight:mouseIsInside];
+        IUP_BUTTON_HIGHLIGHT(self, mouseIsInside);
         break;
 
       case NSEventTypeLeftMouseUp:
         currentLocation = [self convertPoint:[nextEvent locationInWindow] fromView:nil];
         mouseIsInside = [self mouse:currentLocation inRect:[self bounds]];
 
-        [self highlight:NO];
+        IUP_BUTTON_HIGHLIGHT(self, NO);
 
         if (ih)
           iupcocoaCommonBaseHandleMouseButtonCallback(ih, nextEvent, self, false);
@@ -160,6 +168,8 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
         break;
     }
   }
+
+#undef IUP_BUTTON_HIGHLIGHT
 }
 
 - (void)mouseUp:(NSEvent *)event

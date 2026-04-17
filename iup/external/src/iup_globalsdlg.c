@@ -76,6 +76,7 @@ static iRegisteredGlobal global_attribs[] = {
   { "GL_RENDERER",        1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
   { "GL_VENDOR",          1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
   { "GL_VERSION",         1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
+  { "GNUSTEPTHEME",       0,  0,  0,  1,  0,  0,  0,  0,  0,  0 },
   { "GSKRENDERER",        0,  0,  0,  0,  0,  1,  0,  0,  0,  0 },
   { "GTKDEVVERSION",      0,  0,  1,  0,  0,  1,  0,  0,  0,  1 },
   { "GTKVERSION",         0,  0,  1,  0,  0,  1,  0,  0,  0,  1 },

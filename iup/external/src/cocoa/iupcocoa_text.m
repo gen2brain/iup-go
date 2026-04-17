@@ -748,12 +748,19 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
 
           /* Get the content insets */
           NSSize content_size = [temp_scroll contentSize];
+#ifdef GNUSTEP
+          NSSize frame_size = [NSScrollView frameSizeForContentSize:content_size
+                                              hasHorizontalScroller:NO
+                                                hasVerticalScroller:YES
+                                                         borderType:NSBezelBorder];
+#else
           NSSize frame_size = [NSScrollView frameSizeForContentSize:content_size
                                             horizontalScrollerClass:nil
                                               verticalScrollerClass:[NSScroller class]
                                                          borderType:NSBezelBorder
                                                         controlSize:NSControlSizeRegular
                                                       scrollerStyle:NSScrollerStyleOverlay];
+#endif
 
           cocoa_scrollview_border_w = (int)lroundf(frame_size.width - content_size.width);
           cocoa_scrollview_border_h = (int)lroundf(frame_size.height - content_size.height);
@@ -2056,9 +2063,7 @@ IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
   NSTextView* text_view = cocoaTextGetTextView(ih);
   NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
   [undo_manager beginUndoGrouping];
-
-  NSTextStorage* text_storage = [text_view textStorage];
-  [text_storage beginEditing];
+  /* Each child parser does its own text-storage begin/endEditing. */
   return NULL;
 }
 
@@ -2066,9 +2071,6 @@ IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 {
   NSTextView* text_view = cocoaTextGetTextView(ih);
   NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
-
-  NSTextStorage* text_storage = [text_view textStorage];
-  [text_storage endEditing];
   [undo_manager endUndoGrouping];
 }
 
@@ -2224,6 +2226,11 @@ static bool cocoaTextParseParagraphFormat(Ihandle* ih, Ihandle* formattag, NSTex
   NSString* all_string = [text_storage string];
   __block bool did_change_attribute = false;
 
+  /* shouldChangeTextInRange: triggers layout — must be outside begin/endEditing. */
+  ih->data->disable_callbacks = 1;
+  [text_view shouldChangeTextInRange:selection_range replacementString:nil];
+  ih->data->disable_callbacks = 0;
+
   [text_storage beginEditing];
 
   [all_string enumerateSubstringsInRange:selection_range options:NSStringEnumerationByParagraphs usingBlock:
@@ -2252,9 +2259,6 @@ static bool cocoaTextParseParagraphFormat(Ihandle* ih, Ihandle* formattag, NSTex
       bool needs_paragraph_style = cocoaTextParseParagraphAttributes(paragraph_style, formattag);
       if(needs_paragraph_style)
       {
-        ih->data->disable_callbacks = 1;
-        [text_view shouldChangeTextInRange:paragraph_range replacementString:nil];
-        ih->data->disable_callbacks = 0;
         [text_storage addAttribute:NSParagraphStyleAttributeName value:paragraph_style range:paragraph_range];
         did_change_attribute = true;
       }
@@ -2902,8 +2906,11 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
 
     if(selection_range.location < [text_storage length])
     {
-      [text_storage beginEditing];
+      /* shouldChangeTextInRange: triggers layout — must be outside begin/endEditing. */
       ih->data->disable_callbacks = 1;
+      [text_view shouldChangeTextInRange:selection_range replacementString:nil];
+
+      [text_storage beginEditing];
 
       NSUInteger loc = selection_range.location;
       NSUInteger end = selection_range.length + loc;
@@ -2947,7 +2954,6 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
           [attribute_dict setObject:target_font forKey:NSFontAttributeName];
         }
         NSRange adjusted_range = { loc, attrib_range.length };
-        [text_view shouldChangeTextInRange:adjusted_range replacementString:nil];
         [text_storage addAttributes:attribute_dict range:adjusted_range];
 
         if(did_change_font_fgcolor && !needs_add_font_fgcolor)
@@ -3038,6 +3044,7 @@ static bool cocoaTextInsertImage(Ihandle* ih, NSTextView* text_view, Ihandle* fo
   if(attr) iupStrToInt(attr, &new_h);
 
   NSTextAttachment* attachment = [[[NSTextAttachment alloc] init] autorelease];
+#ifndef GNUSTEP
   attachment.image = ns_image;
 
   if((new_w > 0 && new_w != img_w) || (new_h > 0 && new_h != img_h))
@@ -3046,6 +3053,13 @@ static bool cocoaTextInsertImage(Ihandle* ih, NSTextView* text_view, Ihandle* fo
     if(new_h <= 0) new_h = img_h;
     attachment.bounds = CGRectMake(0, 0, new_w, new_h);
   }
+#else
+  (void)ns_image;
+  (void)new_w;
+  (void)new_h;
+  (void)img_w;
+  (void)img_h;
+#endif
 
   NSAttributedString* attr_str = [NSAttributedString attributedStringWithAttachment:attachment];
   NSTextStorage* text_storage = [text_view textStorage];
@@ -3196,19 +3210,14 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
   if(cocoaTextInsertImage(ih, text_view, formattag, native_selection_range))
     return;
 
-  NSTextStorage* text_storage = [text_view textStorage];
-
   NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
   [undo_manager beginUndoGrouping];
 
-  [text_storage beginEditing];
-
+  /* Each parser does its own begin/endEditing, don't nest. */
   cocoaTextParseBulletNumberListFormat(ih, formattag, text_view, native_selection_range);
   cocoaTextParseParagraphFormat(ih, formattag, text_view, native_selection_range);
   cocoaTextParseCharacterFormat(ih, formattag, text_view, native_selection_range);
 
-  [text_storage endEditing];
-  [text_view didChangeText];
   [undo_manager endUndoGrouping];
 }
 
@@ -3262,12 +3271,13 @@ static int cocoaTextSetFormattingAttrib(Ihandle* ih, const char* value)
           selection_range = NSMakeRange(0, [text_storage length]);
 
           NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
-          [text_storage beginEditing];
 
           ih->data->disable_callbacks = 1;
           [text_view shouldChangeTextInRange:selection_range replacementString:nil];
-          [text_storage setAttributes:@{} range:selection_range];
           ih->data->disable_callbacks = 0;
+
+          [text_storage beginEditing];
+          [text_storage setAttributes:@{} range:selection_range];
 
           IupCocoaFont* iup_font = iupcocoaGetFont(ih);
 

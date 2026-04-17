@@ -418,6 +418,7 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
 
   if ([the_toggle isKindOfClass:[NSSwitch class]])
   {
+    NSSwitch* the_switch = (NSSwitch*)the_toggle;
     if (iupStrEqualNoCase(value, "NOTDEF"))
     {
       /* NSSwitch does not support mixed state */
@@ -425,14 +426,14 @@ static int cocoaToggleSetValueAttrib(Ihandle* ih, const char* value)
     }
     else if (iupStrEqualNoCase(value, "TOGGLE"))
     {
-      NSControlStateValue current_state = [the_toggle state];
+      NSControlStateValue current_state = [the_switch state];
       NSControlStateValue new_state = (current_state == NSControlStateValueOff) ? NSControlStateValueOn : NSControlStateValueOff;
-      [the_toggle setState:new_state];
+      [the_switch setState:new_state];
     }
     else
     {
       int new_state = iupStrBoolean(value);
-      [the_toggle setState:new_state ? NSControlStateValueOn : NSControlStateValueOff];
+      [the_switch setState:new_state ? NSControlStateValueOn : NSControlStateValueOff];
     }
   }
   else
@@ -706,6 +707,11 @@ static int cocoaToggleMapMethod(Ihandle* ih)
   {
     the_toggle = [[NSSwitch alloc] initWithFrame:initialFrame];
     /* NSSwitch is only available on 10.10+ but that should be fine */
+#ifdef GNUSTEP
+    /* GNUstep NSSwitch has no initWithFrame: override, _enabled defaults to 0 and
+       mouseDown bails on !isEnabled, making the switch a static image. */
+    [the_toggle setEnabled:YES];
+#endif
   }
   else
   {

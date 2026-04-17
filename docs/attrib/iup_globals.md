@@ -386,6 +386,16 @@ When read, returns the current acceleration preference string.
 Returns the name of the actual EFL rendering engine in use (e.g. `"opengl_x11"`, `"software_x11"`, `"wayland_egl"`, `"wayland_shm"`).
 Only available after a dialog has been created, since the engine is selected at window creation time.
 
+### GNUSTEPTHEME [GNUstep Only]
+
+Sets the active GNUstep theme. Can be set before or after creating dialogs. Can also be set via the environment variable `IUP_GNUSTEPTHEME`. Only available when the Cocoa driver is built against GNUstep (Linux/BSD); on macOS the attribute is silently ignored.
+
+The value is a theme name (e.g. `"Silver"`, `"Neos"`), or an absolute path to a `.theme` bundle. Setting the value to `NULL` or empty reverts to the built-in GNUstep theme.
+
+Setting this attribute also refreshes the default color globals (`DLGBGCOLOR`, `DLGFGCOLOR`, etc.) from the newly activated theme, and writes the chosen name to the `GSTheme` key in the application's user defaults so the theme survives `NSUserDefaultsDidChangeNotification` (otherwise dragging a menu, resizing, or other operations that touch defaults would revert the theme to the built-in one).
+
+When read, returns the current theme name, or NULL if the default theme is active.
+
 ### GSKRENDERER [GTK4 Only]
 
 Sets the GSK renderer used by GTK4 for drawing. Must be set **before** any dialog is created (before `IupShow`). Can also be set via the `GSK_RENDERER` environment variable, but this attribute takes priority.

@@ -78,6 +78,7 @@ static char* cocoaMenuItemGetActiveAttrib(Ihandle* ih);
     IFniii tray_cb = (IFniii)IupGetCallback(tray_ih, "TRAYCLICK_CB");
     if (tray_cb)
     {
+#ifndef GNUSTEP
       int button = iupcocoaTrayGetLastButton();
       int dclick = iupcocoaTrayGetLastDclick();
       int ret = tray_cb(tray_ih, button, 1, dclick);
@@ -85,6 +86,7 @@ static char* cocoaMenuItemGetActiveAttrib(Ihandle* ih);
       {
         IupExitLoop();
       }
+#endif
     }
   }
 
@@ -492,7 +494,7 @@ static void cocoaMenuCreateAppMenu(NSMenu* main_menu)
 
   [app_menu addItem:[NSMenuItem separatorItem]];
 
-  NSMenuItem* services_item = [app_menu addItemWithTitle:@"Services" action:nil keyEquivalent:@""];
+  NSMenuItem* services_item = (NSMenuItem*)[app_menu addItemWithTitle:@"Services" action:nil keyEquivalent:@""];
   NSMenu* services_menu = [[NSMenu alloc] initWithTitle:@"Services"];
   [services_item setSubmenu:services_menu];
   [[NSApplication sharedApplication] setServicesMenu:services_menu];
@@ -502,7 +504,7 @@ static void cocoaMenuCreateAppMenu(NSMenu* main_menu)
 
   [app_menu addItemWithTitle:[NSString stringWithFormat:@"Hide %@", app_name] action:@selector(hide:) keyEquivalent:@"h"];
 
-  NSMenuItem* hide_others = [app_menu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"];
+  NSMenuItem* hide_others = (NSMenuItem*)[app_menu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"];
   [hide_others setKeyEquivalentModifierMask: NSEventModifierFlagCommand | NSEventModifierFlagOption];
 
   [app_menu addItemWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""];
@@ -724,6 +726,18 @@ IUP_DRV_API void iupcocoaMenuSetApplicationMenu(Ihandle* ih)
 
     [[NSApplication sharedApplication] setMainMenu:menu];
     s_currentIupApplicationMenu = ih;
+
+#ifdef GNUSTEP
+    /* On GNUstep menus are floating windows. -[NSMenu setMain:NO] only drops the
+       window level; it does not hide it. Order the fallback menu out explicitly
+       so the user only sees the active IUP menu. */
+    if (s_defaultApplicationMenu && s_defaultApplicationMenu != menu)
+    {
+      NSWindow* default_win = [s_defaultApplicationMenu window];
+      if ([default_win isVisible])
+        [default_win orderOut:nil];
+    }
+#endif
   }
   else {
     iupcocoaMenuSetApplicationMenu(NULL);
@@ -844,7 +858,7 @@ static int cocoaMenuSeparatorMapMethod(Ihandle* ih)
   if (![parent_menu isKindOfClass:[NSMenu class]])
     return IUP_ERROR;
 
-  NSMenuItem* item = [NSMenuItem separatorItem];
+  NSMenuItem* item = (NSMenuItem*)[NSMenuItem separatorItem];
   [item retain]; /* Retain it because ih->handle owns it. */
   ih->handle = item;
   ih->serial = iupMenuGetChildId(ih);

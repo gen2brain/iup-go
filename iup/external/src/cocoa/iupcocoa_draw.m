@@ -19,6 +19,33 @@
 #include "iupcocoa_drv.h"
 #include "iupcocoa_draw.h"
 
+#ifdef GNUSTEP
+/* Opal doesn't provide CGPathCreateWithRoundedRect; build it from four quarter-arcs. */
+static CGPathRef CGPathCreateWithRoundedRect(CGRect rect, CGFloat cornerWidth, CGFloat cornerHeight, const CGAffineTransform* transform)
+{
+  (void)transform;
+  CGMutablePathRef path = CGPathCreateMutable();
+  CGFloat rx = cornerWidth;
+  CGFloat ry = cornerHeight;
+  CGFloat x = rect.origin.x, y = rect.origin.y;
+  CGFloat w = rect.size.width, h = rect.size.height;
+
+  if (rx > w * 0.5) rx = w * 0.5;
+  if (ry > h * 0.5) ry = h * 0.5;
+
+  CGPathMoveToPoint(path, NULL, x + rx, y);
+  CGPathAddLineToPoint(path, NULL, x + w - rx, y);
+  CGPathAddQuadCurveToPoint(path, NULL, x + w, y, x + w, y + ry);
+  CGPathAddLineToPoint(path, NULL, x + w, y + h - ry);
+  CGPathAddQuadCurveToPoint(path, NULL, x + w, y + h, x + w - rx, y + h);
+  CGPathAddLineToPoint(path, NULL, x + rx, y + h);
+  CGPathAddQuadCurveToPoint(path, NULL, x, y + h, x, y + h - ry);
+  CGPathAddLineToPoint(path, NULL, x, y + ry);
+  CGPathAddQuadCurveToPoint(path, NULL, x, y, x + rx, y);
+  CGPathCloseSubpath(path);
+  return path;
+}
+#endif
 
 static CGColorRef iupCocoaDrawCreateColor(long color)
 {
@@ -31,6 +58,28 @@ static CGColorRef iupCocoaDrawCreateColor(long color)
   CGColorRef the_color = CGColorCreateGenericRGB(r*inv_byte, g*inv_byte, b*inv_byte, a*inv_byte);
   CFAutorelease(the_color);
   return the_color;
+}
+
+static void iupCocoaAddEllipseInRect(CGContextRef ctx, CGRect rect)
+{
+#ifdef GNUSTEP
+  /* Opal's CGContextAddEllipseInRect is a no-op stub. Approximate the ellipse with four cubic bezier curves. */
+  CGFloat rx = rect.size.width  / 2.0;
+  CGFloat ry = rect.size.height / 2.0;
+  CGFloat cx = rect.origin.x + rx;
+  CGFloat cy = rect.origin.y + ry;
+  const CGFloat k = 0.5522847498307933;
+  CGFloat kx = k * rx, ky = k * ry;
+
+  CGContextMoveToPoint(ctx, cx + rx, cy);
+  CGContextAddCurveToPoint(ctx, cx + rx, cy + ky, cx + kx, cy + ry, cx,       cy + ry);
+  CGContextAddCurveToPoint(ctx, cx - kx, cy + ry, cx - rx, cy + ky, cx - rx,  cy);
+  CGContextAddCurveToPoint(ctx, cx - rx, cy - ky, cx - kx, cy - ry, cx,       cy - ry);
+  CGContextAddCurveToPoint(ctx, cx + kx, cy - ry, cx + rx, cy - ky, cx + rx,  cy);
+  CGContextClosePath(ctx);
+#else
+  CGContextAddEllipseInRect(ctx, rect);
+#endif
 }
 
 static void iupCocoaSetLineStyle(CGContextRef cg_context, int style)
@@ -219,6 +268,12 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 
   CGContextFlush(dc->cgContext);
 
+#ifdef GNUSTEP
+  /* Opal's fast-path only applies to ARGB; our RGBA context makes cairo draw into its own
+     surface. CGBitmapContextGetData triggers the flush + color-convert into the user buffer. */
+  CGBitmapContextGetData(dc->cgContext);
+#endif
+
   if (!iupAttribGet(dc->ih, "CGCONTEXT"))
   {
     iupAttribSet(dc->ih, "_IUPCOCOA_BUFFER_PENDING", "1");
@@ -402,7 +457,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
   CGRect rect = CGRectMake((CGFloat)x1, (CGFloat)y1, w, h);
 
   CGContextBeginPath(cg_context);
-  CGContextAddEllipseInRect(cg_context, rect);
+  iupCocoaAddEllipseInRect(cg_context, rect);
 
   if (style == IUP_DRAW_FILL)
   {
@@ -723,6 +778,62 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
       [transform concat];
     }
 
+#ifdef GNUSTEP
+    /* Opal's NSLayoutManager path yields zero glyphs; use the Quartz text API directly
+       (CGContextShowText → cairo_show_text). */
+    {
+      CGFloat draw_x = x;
+      CGFloat draw_y = y;
+      if (text_orientation && layout_center)
+      {
+        draw_x = x + (w - layout_w) / 2.0;
+        draw_y = y + (h - layout_h) / 2.0;
+      }
+
+      CGFloat textWidth = 0;
+      if ([ns_string length] > 0)
+      {
+        NSTextFieldCell* measureCell = [[NSTextFieldCell alloc] initTextCell:ns_string];
+        [measureCell setFont:[iupFont nativeFont]];
+        textWidth = [measureCell cellSize].width;
+        [measureCell release];
+      }
+
+      if (!(flags & IUP_DRAW_WRAP))
+      {
+        if (flags & IUP_DRAW_RIGHT)
+          draw_x = draw_x + (layout_w - textWidth);
+        else if (flags & IUP_DRAW_CENTER)
+          draw_x = draw_x + (layout_w - textWidth) / 2.0;
+      }
+
+      CGFloat ascent = (CGFloat)[iupFont ascent];
+      if (ascent <= 0) ascent = (CGFloat)[iupFont fontSize] * 0.8;
+
+      NSString* face = [iupFont typeFace];
+      CGFloat size = (CGFloat)[iupFont fontSize];
+      if (size <= 0) size = 12;
+      const char* c_face = face ? [face UTF8String] : "Helvetica";
+
+      const char* cstr = [ns_string UTF8String];
+      if (cstr)
+      {
+        CGContextSaveGState(cg_context);
+        /* Undo Y-down CTM; place the baseline in Y-up space. */
+        CGContextScaleCTM(cg_context, 1.0, -1.0);
+        CGContextTranslateCTM(cg_context, 0.0, -(CGFloat)dc->h);
+
+        CGContextSelectFont(cg_context, c_face, size, kCGEncodingMacRoman);
+        CGContextSetRGBFillColor(cg_context, r/255.0, g/255.0, b/255.0, a/255.0);
+        CGContextSetTextDrawingMode(cg_context, kCGTextFill);
+
+        CGFloat baseline_y = (CGFloat)dc->h - (draw_y + ascent);
+        CGContextShowTextAtPoint(cg_context, draw_x, baseline_y, cstr, strlen(cstr));
+
+        CGContextRestoreGState(cg_context);
+      }
+    }
+#else
     if ((flags & IUP_DRAW_CLIP) || (flags & IUP_DRAW_WRAP) || (flags & IUP_DRAW_ELLIPSIS))
     {
       NSRect text_rect;
@@ -741,6 +852,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
         draw_point = NSMakePoint(x, y);
       [ns_string drawAtPoint:draw_point withAttributes:attributes];
     }
+#endif
 
     [NSGraphicsContext restoreGraphicsState];
     CGContextRestoreGState(cg_context);
@@ -759,6 +871,53 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
     if (h == -1 || h == 0) h = image_size.height;
 
     CGContextRef cg_context = dc->cgContext;
+
+#ifdef GNUSTEP
+    /* GNUstep's -[NSImage drawInRect:] caches into a window-backed NSCachedImageRep
+       and composites through Opal in a way that silently yields nothing on our
+       CGBitmapContext. Build a CGImage from the first NSBitmapImageRep and draw it
+       directly via CGContextDrawImage, which Opal handles reliably. */
+    {
+      NSBitmapImageRep* rep = nil;
+      for (NSImageRep* r in [user_image representations])
+      {
+        if ([r isKindOfClass:[NSBitmapImageRep class]]) { rep = (NSBitmapImageRep*)r; break; }
+      }
+      if (!rep) return;
+
+      NSInteger bpr = [rep bytesPerRow];
+      NSInteger bpp = [rep bitsPerPixel];
+      NSInteger bps = [rep bitsPerSample];
+      NSInteger spp = [rep samplesPerPixel];
+      unsigned char* data = [rep bitmapData];
+      if (!data) return;
+
+      CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+      CGBitmapInfo info;
+      if (spp == 4)
+        info = kCGImageAlphaLast | kCGBitmapByteOrder32Big;
+      else
+        info = kCGImageAlphaNone | kCGBitmapByteOrder32Big;
+
+      CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, data, bpr * [rep pixelsHigh], NULL);
+      CGImageRef cgimg = CGImageCreate([rep pixelsWide], [rep pixelsHigh], bps, bpp, bpr,
+                                        cs, info, provider, NULL, false, kCGRenderingIntentDefault);
+      CGDataProviderRelease(provider);
+      CGColorSpaceRelease(cs);
+
+      if (cgimg)
+      {
+        /* Our CTM is Y-down (IUP convention); CGContextDrawImage draws with the image's
+           top-left at rect origin on a Y-up context. Flip locally so the image lands upright. */
+        CGContextSaveGState(cg_context);
+        CGContextTranslateCTM(cg_context, x, y + h);
+        CGContextScaleCTM(cg_context, 1.0, -1.0);
+        CGContextDrawImage(cg_context, CGRectMake(0, 0, w, h), cgimg);
+        CGContextRestoreGState(cg_context);
+        CGImageRelease(cgimg);
+      }
+    }
+#else
     CGContextSaveGState(cg_context);
 
     /* Use flipped NSGraphicsContext to correctly draw image in y-down coordinate system */
@@ -771,6 +930,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
     [NSGraphicsContext restoreGraphicsState];
     CGContextRestoreGState(cg_context);
+#endif
   }
 }
 
@@ -843,12 +1003,50 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   /* IUP coordinates: use width + 1 and height + 1 */
   CGFloat w = (CGFloat)(x2 - x1 + 1);
   CGFloat h = (CGFloat)(y2 - y1 + 1);
-  CGFloat cx = x1 + w / 2.0f;
-  CGFloat cy = y1 + h / 2.0f;
+  CGFloat cx_ = x1 + w / 2.0f;
+  CGFloat cy_ = y1 + h / 2.0f;
 
-  CGPoint start = CGPointMake(cx - (w * cos(rad)) / 2.0f, cy - (h * sin(rad)) / 2.0f);
-  CGPoint end = CGPointMake(cx + (w * cos(rad)) / 2.0f, cy + (h * sin(rad)) / 2.0f);
+  CGPoint start = CGPointMake(cx_ - (w * cos(rad)) / 2.0f, cy_ - (h * sin(rad)) / 2.0f);
+  CGPoint end = CGPointMake(cx_ + (w * cos(rad)) / 2.0f, cy_ + (h * sin(rad)) / 2.0f);
 
+#ifdef GNUSTEP
+  /* Opal's CGContextDrawLinearGradient is cairo_paint, which fills the whole source with
+     the gradient pattern; the CGContextClipToRect does not restrict it, so the gradient leaks over the entire canvas.
+     Render into a rect-sized off-screen CGBitmapContext and composite the result as an image. */
+  {
+    int iw = (int)w, ih = (int)h;
+    if (iw > 0 && ih > 0)
+    {
+      size_t bpr = 4 * iw;
+      unsigned char* tmp = calloc((size_t)ih * bpr, 1);
+      if (tmp)
+      {
+        CGContextRef tctx = CGBitmapContextCreate(tmp, iw, ih, 8, bpr, colorSpace,
+                                                   kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+        if (tctx)
+        {
+          CGPoint tstart = CGPointMake(start.x - x1, start.y - y1);
+          CGPoint tend   = CGPointMake(end.x   - x1, end.y   - y1);
+          CGContextDrawLinearGradient(tctx, gradient, tstart, tend,
+                                       kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
+          CGImageRef img = CGBitmapContextCreateImage(tctx);
+          if (img)
+          {
+            /* Canvas CTM is Y-down; compensate so the bitmap lands upright. */
+            CGContextSaveGState(cg_context);
+            CGContextTranslateCTM(cg_context, x1, y1 + h);
+            CGContextScaleCTM(cg_context, 1.0, -1.0);
+            CGContextDrawImage(cg_context, CGRectMake(0, 0, w, h), img);
+            CGContextRestoreGState(cg_context);
+            CGImageRelease(img);
+          }
+          CGContextRelease(tctx);
+        }
+        free(tmp);
+      }
+    }
+  }
+#else
   /* Clip to rectangle */
   CGContextSaveGState(cg_context);
   CGContextClipToRect(cg_context, CGRectMake(x1, y1, w, h));
@@ -860,6 +1058,8 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   CGContextDrawLinearGradient(cg_context, gradient, start, end, kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);
 
   CGContextRestoreGState(cg_context);
+#endif
+
   CGGradientRelease(gradient);
   CGColorSpaceRelease(colorSpace);
 }
@@ -881,6 +1081,57 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   CGPoint center = CGPointMake(cx, cy);
   CGRect circleRect = CGRectMake(cx - radius, cy - radius, 2 * radius, 2 * radius);
 
+#ifdef GNUSTEP
+  /* See iupdrvDrawLinearGradient: Opal's cairo_paint under a CGContextDrawRadialGradient
+     bleeds the edge color across the whole surface. Render into a 2r x 2r off-screen buffer and composite. */
+  {
+    int iw = 2 * radius;
+    int ih = 2 * radius;
+    if (iw > 0 && ih > 0)
+    {
+      size_t bpr = 4 * iw;
+      unsigned char* tmp = calloc((size_t)ih * bpr, 1);
+      if (tmp)
+      {
+        CGContextRef tctx = CGBitmapContextCreate(tmp, iw, ih, 8, bpr, colorSpace,
+                                                   kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+        if (tctx)
+        {
+          CGRect localCircle = CGRectMake(0, 0, iw, ih);
+          CGPoint localCenter = CGPointMake(radius, radius);
+
+          CGContextBeginPath(tctx);
+          iupCocoaAddEllipseInRect(tctx, localCircle);
+          CGContextSetRGBFillColor(tctx,
+                                    iupDrawRed(colorEdge) / 255.0f,
+                                    iupDrawGreen(colorEdge) / 255.0f,
+                                    iupDrawBlue(colorEdge) / 255.0f,
+                                    iupDrawAlpha(colorEdge) / 255.0f);
+          CGContextFillPath(tctx);
+
+          /* Clip to the ellipse so the gradient's PAD-fill doesn't paint the corners. */
+          CGContextBeginPath(tctx);
+          iupCocoaAddEllipseInRect(tctx, localCircle);
+          CGContextClip(tctx);
+          CGContextDrawRadialGradient(tctx, gradient, localCenter, 0, localCenter, radius, 0);
+
+          CGImageRef img = CGBitmapContextCreateImage(tctx);
+          if (img)
+          {
+            CGContextSaveGState(cg_context);
+            CGContextTranslateCTM(cg_context, cx - radius, cy + radius);
+            CGContextScaleCTM(cg_context, 1.0, -1.0);
+            CGContextDrawImage(cg_context, CGRectMake(0, 0, iw, ih), img);
+            CGContextRestoreGState(cg_context);
+            CGImageRelease(img);
+          }
+          CGContextRelease(tctx);
+        }
+        free(tmp);
+      }
+    }
+  }
+#else
   CGContextSaveGState(cg_context);
 
   /* First draw the circle with solid fill to get anti-aliased edges
@@ -899,6 +1150,10 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   CGContextDrawRadialGradient(cg_context, gradient, center, 0, center, radius, 0);
 
   CGContextRestoreGState(cg_context);
+#endif
+
+  (void)circleRect;
+  (void)center;
 
   CGGradientRelease(gradient);
   CGColorSpaceRelease(colorSpace);

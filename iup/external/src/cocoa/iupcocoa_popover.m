@@ -95,6 +95,7 @@ static const void* POPOVER_DELEGATE_KEY = @"POPOVER_DELEGATE_KEY";
 @interface IupCocoaPopoverViewController : NSViewController
 {
   Ihandle* _ih;
+  BOOL _viewLoaded;
 }
 - (instancetype)initWithIhandle:(Ihandle*)ih;
 @end
@@ -113,6 +114,9 @@ static const void* POPOVER_DELEGATE_KEY = @"POPOVER_DELEGATE_KEY";
 
 - (void)loadView
 {
+  if (_viewLoaded)
+    return;
+  _viewLoaded = YES;
   IupCocoaPopoverContentView* content_view = [[IupCocoaPopoverContentView alloc] initWithIhandle:_ih];
   self.view = content_view;
   [content_view release];
@@ -271,7 +275,9 @@ static int cocoaPopoverMapMethod(Ihandle* ih)
   int show_arrow = iupAttribGetBoolean(ih, "ARROW");
   if (!show_arrow)
   {
+#ifndef GNUSTEP
     [popover setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameAqua]];
+#endif
   }
 
   ih->handle = popover;

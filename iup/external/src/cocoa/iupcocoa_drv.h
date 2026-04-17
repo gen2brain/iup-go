@@ -11,11 +11,17 @@
 extern "C" {
 #endif
 
+#ifndef GNUSTEP
 #include <os/log.h>
+#endif
 
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
 #import <objc/runtime.h>
+
+#ifdef GNUSTEP
+#include "iupcocoa_gnustep.h"
+#endif
 
 #include "iup_export.h"
 #include "iup_image.h"
@@ -28,6 +34,8 @@ IUP_DRV_API extern const void* MAINVIEW_ASSOCIATED_OBJ_KEY;
 /* The root view, in case the root object is not a view. */
 IUP_DRV_API extern const void* ROOTVIEW_ASSOCIATED_OBJ_KEY;
 
+#ifndef GNUSTEP
+/* Apple os_log macros; GNUstep uses NSLog-based replacements from iupcocoa_gnustep.h. */
 #define iupcocoaLog(...) os_log(OS_LOG_DEFAULT, __VA_ARGS__)
 #define iupcocoaLogDebug(...) os_log_debug(OS_LOG_DEFAULT, __VA_ARGS__)
 #define iupcocoaLogInfo(...) os_log_info(OS_LOG_DEFAULT, __VA_ARGS__)
@@ -35,8 +43,8 @@ IUP_DRV_API extern const void* ROOTVIEW_ASSOCIATED_OBJ_KEY;
 #define iupcocoaLogWarning(...) os_log_error(OS_LOG_DEFAULT, __VA_ARGS__)
 #define iupcocoaLogError(...) os_log_error(OS_LOG_DEFAULT, __VA_ARGS__)
 #define iupcocoaLogCritical(...) os_log_fault(OS_LOG_DEFAULT, __VA_ARGS__)
-
 #define iupcocoaNSLog(FORMAT, ...) os_log_info(OS_LOG_DEFAULT, "%{public}@", [NSString stringWithFormat:FORMAT, ##__VA_ARGS__])
+#endif /* !GNUSTEP */
 
 IUP_DRV_API NSView* iupcocoaGetRootView(Ihandle* ih);
 IUP_DRV_API NSView* iupcocoaGetMainView(Ihandle* ih);
@@ -81,8 +89,30 @@ IUP_DRV_API char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih);
 /* Helpers for keyboard events. */
 IUP_DRV_API bool iupcocoaKeyEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code, bool is_pressed);
 IUP_DRV_API bool iupcocoaModifierEvent(Ihandle *ih, NSEvent* ns_event, int mac_key_code);
+#ifndef GNUSTEP
 IUP_DRV_API int iupcocoaKeyDecode(CGEventRef event);
+#endif
 IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent* ns_event, char* out_status);
+
+#ifdef GNUSTEP
+/* Apply the handful of tweaks every NSTableView/NSOutlineView needs on GNUstep:
+   drawsGrid=NO (setGridStyleMask is a no-op and _drawsGrid defaults YES),
+   autoresizesAllColumnsToFit=YES (setColumnAutoresizingStyle is also a no-op). */
+IUP_DRV_API void iupcocoaGnustepConfigureTableView(NSTableView* tableView);
+/* Intrinsic content height with fallbacks (NSView -intrinsicContentSize is (-1,-1) on GNUstep):
+   prefer -sizeToFit, then font metrics, and never return below `minimum`. */
+IUP_DRV_API int iupcocoaGnustepIntrinsicHeight(NSControl* control, int minimum);
+/* Fill a cellView's background under GNUstep so its transparent textField doesn't stamp
+   text over prior pixels. */
+IUP_DRV_API void iupcocoaGnustepFillCellRect(NSView* cellView, NSRect dirtyRect, NSColor* customBackgroundColor);
+/* Clamp negative width/height to zero (Opal/cairo locks on zero-determinant CTMs). */
+static inline NSRect iupcocoaClampRect(NSRect r)
+{
+  if (r.size.width  < 0) r.size.width  = 0;
+  if (r.size.height < 0) r.size.height = 0;
+  return r;
+}
+#endif
 
 @interface IupCocoaFont : NSObject
 

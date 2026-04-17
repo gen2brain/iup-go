@@ -99,26 +99,35 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
   BOOL isVerticalText = (ih->data->orientation == ITABS_VERTICAL);
   CGFloat kVerticalTabBarWidth = isVerticalText ? kTabCellHeight : kMinTabCellWidth;
 
+  /* Clamp subtraction results to >= 0. At initial layout bounds may be smaller than the
+     tab bar thickness, and a negative frame dimension locks Opal/cairo into an error state. */
+  CGFloat bw = bounds.size.width;
+  CGFloat bh = bounds.size.height;
+  CGFloat content_h_top = bh - kTabBarViewHeight; if (content_h_top < 0) content_h_top = 0;
+  CGFloat content_w_side = bw - kVerticalTabBarWidth; if (content_w_side < 0) content_w_side = 0;
+  CGFloat tab_y_bottom = bh - kTabBarViewHeight; if (tab_y_bottom < 0) tab_y_bottom = 0;
+  CGFloat tab_x_right  = bw - kVerticalTabBarWidth; if (tab_x_right  < 0) tab_x_right  = 0;
+
   switch (ih->data->type) {
     case ITABS_BOTTOM:
-      tab_bar_frame = NSMakeRect(0, bounds.size.height - kTabBarViewHeight, bounds.size.width, kTabBarViewHeight);
-      content_frame = NSMakeRect(0, 0, bounds.size.width, bounds.size.height - kTabBarViewHeight);
+      tab_bar_frame = NSMakeRect(0, tab_y_bottom, bw, kTabBarViewHeight);
+      content_frame = NSMakeRect(0, 0, bw, content_h_top);
       [self.tabBarView setOrientation:IupCocoaTabBarHorizontal];
       break;
     case ITABS_LEFT:
-      tab_bar_frame = NSMakeRect(0, 0, kVerticalTabBarWidth, bounds.size.height);
-      content_frame = NSMakeRect(kVerticalTabBarWidth, 0, bounds.size.width - kVerticalTabBarWidth, bounds.size.height);
+      tab_bar_frame = NSMakeRect(0, 0, kVerticalTabBarWidth, bh);
+      content_frame = NSMakeRect(kVerticalTabBarWidth, 0, content_w_side, bh);
       [self.tabBarView setOrientation:IupCocoaTabBarVertical];
       break;
     case ITABS_RIGHT:
-      tab_bar_frame = NSMakeRect(bounds.size.width - kVerticalTabBarWidth, 0, kVerticalTabBarWidth, bounds.size.height);
-      content_frame = NSMakeRect(0, 0, bounds.size.width - kVerticalTabBarWidth, bounds.size.height);
+      tab_bar_frame = NSMakeRect(tab_x_right, 0, kVerticalTabBarWidth, bh);
+      content_frame = NSMakeRect(0, 0, content_w_side, bh);
       [self.tabBarView setOrientation:IupCocoaTabBarVertical];
       break;
     case ITABS_TOP:
     default:
-      tab_bar_frame = NSMakeRect(0, 0, bounds.size.width, kTabBarViewHeight);
-      content_frame = NSMakeRect(0, kTabBarViewHeight, bounds.size.width, bounds.size.height - kTabBarViewHeight);
+      tab_bar_frame = NSMakeRect(0, 0, bw, kTabBarViewHeight);
+      content_frame = NSMakeRect(0, kTabBarViewHeight, bw, content_h_top);
       [self.tabBarView setOrientation:IupCocoaTabBarHorizontal];
       break;
   }

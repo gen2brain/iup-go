@@ -8,6 +8,8 @@
  */
 
 #include "IupCocoaTabBarView.h"
+#include "iup.h"
+#include "iupcocoa_drv.h"
 
 @implementation IupCocoaTabBarView (Expose)
   - (NSRect)tabRectFromIndex:(NSUInteger)index
@@ -411,7 +413,7 @@
   if (self.allowsAddingTabsByDoubleClick && event.clickCount == 2) /* We capture user double-click on tabbar view */
   {
     NSPoint p =[event locationInWindow];
-    p = [self convertPoint:p fromView:[[self window] contentView]];
+    p = [self convertPoint:p fromView:nil];
     if ([self isBlankAreaOfTabBarViewInPoint:p])
     {
       IupCocoaTabCell *tab = [self addTabViewWithTitle:@"Untitled"];
@@ -544,7 +546,7 @@
 - (void)mouseDown:(NSEvent *)theEvent
 {
   NSPoint p = [theEvent locationInWindow];
-  p = [self convertPoint:p fromView:[[self window] contentView]];
+  p = [self convertPoint:p fromView:nil];
 
   /* Check if tabs list control clicked */
   if (self.allowsTabListMenu)
@@ -588,7 +590,7 @@
 - (void)mouseMoved:(NSEvent *)theEvent
 {
   NSPoint p = [theEvent locationInWindow];
-  p = [self convertPoint:p fromView:[[self window] contentView]];
+  p = [self convertPoint:p fromView:nil];
 
   /* Switch active tab */
   NSUInteger index = 0;
@@ -637,8 +639,16 @@
     return;
   }
 
+#ifdef GNUSTEP
+  /* GNUstep lacks -beginDraggingSessionWithItems: and the draggedImage: callbacks that
+     reorder the tabs. Without them the tab is removed from the array but never
+     re-inserted, so it disappears. Skip until we wire a manual tracking loop. */
+  (void)theEvent;
+  return;
+#endif
+
   NSPoint p = [theEvent locationInWindow];
-  p = [self convertPoint:p fromView:[[self window] contentView]];
+  p = [self convertPoint:p fromView:nil];
   if (!isDragging)
   {
     [draggingTab release];
@@ -673,6 +683,7 @@
   p.x -= (draggingTab.frame.size.width / 2);
   p.y -= (draggingTab.frame.size.height / 2);
 
+#ifndef GNUSTEP
   /* Use modern dragging API (beginDraggingSessionWithItems:event:source:) */
   NSPasteboardItem *pbItem = [[[NSPasteboardItem alloc] init] autorelease];
   [pbItem setData:[NSData data] forType:NSPasteboardTypeString];
@@ -682,6 +693,7 @@
   [dragItem setDraggingFrame:dragFrame contents:draggingImage];
 
   [self beginDraggingSessionWithItems:@[dragItem] event:theEvent source:self];
+#endif
 }
 
 #pragma mark - NSDraggingSource

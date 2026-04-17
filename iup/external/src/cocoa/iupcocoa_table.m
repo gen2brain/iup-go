@@ -130,6 +130,10 @@ typedef struct _IcocoaTableData {
   if (self.textField)
   {
     CGFloat textHeight = [self.textField intrinsicContentSize].height;
+#ifdef GNUSTEP
+    /* GNUstep NSTextField inherits NSView's (-1,-1) intrinsicContentSize; fill the cell. */
+    if (textHeight <= 0 || textHeight > cellHeight) textHeight = cellHeight;
+#endif
     CGFloat yOffset = floor((cellHeight - textHeight) / 2.0);
 
     BOOL hasImage = (self.imageView && ![self.imageView isHidden]);
@@ -138,24 +142,42 @@ typedef struct _IcocoaTableData {
 
     if (!hasImage && alignment == NSTextAlignmentCenter)
     {
-      textFrame = NSMakeRect(0.0, yOffset, cellWidth, textHeight);
+      CGFloat tw = cellWidth; if (tw < 0) tw = 0;
+      textFrame = NSMakeRect(0.0, yOffset, tw, textHeight);
     }
     else
     {
-      textFrame = NSMakeRect(xStart, yOffset, cellWidth - xStart - 4.0, textHeight);
+      CGFloat tw = cellWidth - xStart - 4.0; if (tw < 0) tw = 0;
+      textFrame = NSMakeRect(xStart, yOffset, tw, textHeight);
     }
 
     [self.textField setFrame:textFrame];
   }
 }
 
+#ifdef GNUSTEP
+/* NSView -layout never fires without Auto Layout; drive it from setFrame. */
+- (void) setFrame:(NSRect)frame
+{
+  frame = iupcocoaClampRect(frame);
+  if ([[self superview] isKindOfClass:[NSTableRowView class]])
+    frame.origin.y = 0;
+  [super setFrame:frame];
+  [self layout];
+}
+#endif
+
 - (void)drawRect:(NSRect)dirtyRect
 {
+#ifdef GNUSTEP
+  iupcocoaGnustepFillCellRect(self, dirtyRect, self.customBackgroundColor);
+#else
   if (self.customBackgroundColor)
   {
     [self.customBackgroundColor setFill];
     NSRectFill(dirtyRect);
   }
+#endif
   [super drawRect:dirtyRect];
 
   /* Draw dashed focus rectangle if this is the focused cell and FOCUSRECT=YES */
@@ -183,7 +205,7 @@ typedef struct _IcocoaTableData {
       {
         /* Check if first responder is a field editor (NSText) with delegate inside table */
         NSText* text = (NSText*)firstResp;
-        id<NSTextDelegate> textDelegate = [text delegate];
+        id textDelegate = [text delegate];
         if (textDelegate && [textDelegate isKindOfClass:[NSView class]])
         {
           if ([(NSView*)textDelegate isDescendantOf:tableView])
@@ -1181,12 +1203,12 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 - (void)drawBackgroundInRect:(NSRect)dirtyRect
 {
   /* Only draw custom background if row is NOT selected */
-  if (customBackgroundColor && !self.selected)
+  if (customBackgroundColor && ![self isSelected])
   {
     [customBackgroundColor setFill];
     NSRectFill(dirtyRect);
   }
-  else if (!self.selected)
+  else if (![self isSelected])
   {
     /* Not selected, no custom color - use default */
     [super drawBackgroundInRect:dirtyRect];
@@ -1278,6 +1300,11 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
     [textField setBezeled:NO];
     [[textField cell] setLineBreakMode:NSLineBreakByTruncatingTail];
     [textField setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+#ifdef GNUSTEP
+    /* GNUstep NSTextField mouseDown: swallows clicks (becomes first responder) when selectable;
+       NSTableView then never sees them for row selection. Keep non-selectable. */
+    [textField setSelectable:NO];
+#endif
 
     [cellView setTextField:textField];
     [cellView addSubview:textField];
@@ -1407,16 +1434,21 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
   }
 
   CGFloat textHeight = [cellView.textField intrinsicContentSize].height;
+#ifdef GNUSTEP
+  if (textHeight <= 0 || textHeight > cellFrame.size.height) textHeight = cellFrame.size.height;
+#endif
   CGFloat yOffset = floor((cellFrame.size.height - textHeight) / 2.0);
   NSRect textFrame;
 
   if (!hasImage && alignment == NSTextAlignmentCenter)
   {
-    textFrame = NSMakeRect(0.0, yOffset, cellFrame.size.width, textHeight);
+    CGFloat tw = cellFrame.size.width; if (tw < 0) tw = 0;
+    textFrame = NSMakeRect(0.0, yOffset, tw, textHeight);
   }
   else
   {
-    textFrame = NSMakeRect(xStart, yOffset, cellFrame.size.width - xStart - 4.0, textHeight);
+    CGFloat tw = cellFrame.size.width - xStart - 4.0; if (tw < 0) tw = 0;
+    textFrame = NSMakeRect(xStart, yOffset, tw, textHeight);
   }
 
   [cellView.textField setFrame:textFrame];
@@ -2449,6 +2481,11 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
     [tableView setGridStyleMask:(NSTableViewSolidVerticalGridLineMask | NSTableViewSolidHorizontalGridLineMask)];
   else
     [tableView setGridStyleMask:NSTableViewGridNone];
+
+#ifdef GNUSTEP
+  /* GNUstep -setGridStyleMask: is a no-op and _drawsGrid defaults to YES; drive directly. */
+  [tableView setDrawsGrid:(show ? YES : NO)];
+#endif
 }
 
 IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
@@ -2611,11 +2648,21 @@ static int cocoaTableMapMethod(Ihandle* ih)
 
   /* Set custom header view to eliminate empty space at end of headers */
   IupNarrowTableHeaderView* headerView = [[IupNarrowTableHeaderView alloc] init];
+#ifdef GNUSTEP
+  /* GNUstep -[NSTableView setHeaderView:] doesn't size a custom header (only the default one gets
+     22pt). Without a non-zero height NSScrollView tiles the header clip view at 0 tall. */
+  [headerView setFrameSize:NSMakeSize(0, 22)];
+#endif
   [tableView setHeaderView:headerView];
   [headerView release];
 
   /* Remove intercell spacing */
   [tableView setIntercellSpacing:NSMakeSize(0, 0)];
+#ifdef GNUSTEP
+  /* Table has per-column widths, so autoresizesAllColumnsToFit would override them.
+     iupdrvTableSetShowGrid re-enables drawsGrid if the user asks. */
+  [tableView setDrawsGrid:NO];
+#endif
 
   /* Configure table view */
   /* Only use native alternating row colors if ALTERNATECOLOR=YES and no custom colors are set */
