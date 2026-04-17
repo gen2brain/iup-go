@@ -117,7 +117,11 @@ static const void* IUP_COCOA_SCROLLBAR_RECEIVER_OBJ_KEY = "IUP_COCOA_SCROLLBAR_R
 
 IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int *w, int *h)
 {
+#ifdef GNUSTEP
+  CGFloat sb_size = [NSScroller scrollerWidth];
+#else
   CGFloat sb_size = [NSScroller scrollerWidthForControlSize:NSControlSizeRegular scrollerStyle:NSScrollerStyleLegacy];
+#endif
   int isb_size = (int)sb_size;
   if (isb_size < 15) isb_size = 15;
 
@@ -191,7 +195,11 @@ static int cocoaScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
 
 static int cocoaScrollbarMapMethod(Ihandle* ih)
 {
+#ifdef GNUSTEP
+  CGFloat sb_size = [NSScroller scrollerWidth];
+#else
   CGFloat sb_size = [NSScroller scrollerWidthForControlSize:NSControlSizeRegular scrollerStyle:NSScrollerStyleLegacy];
+#endif
   if (sb_size < 15) sb_size = 15;
 
   NSRect initial_frame;

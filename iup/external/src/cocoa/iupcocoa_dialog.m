@@ -1127,6 +1127,7 @@ static int cocoaDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
   NSWindow* window = iupcocoaDialogGetWindow(ih);
   if (!window) return 0;
 
+#ifndef GNUSTEP
   BOOL hide = (BOOL)iupStrBoolean(value);
   if (hide)
   {
@@ -1140,6 +1141,9 @@ static int cocoaDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
     window.titlebarAppearsTransparent = NO;
     window.titleVisibility = NSWindowTitleVisible;
   }
+#else
+  (void)value;
+#endif
   return 1;
 }
 
@@ -1306,6 +1310,7 @@ static int cocoaDialogSetCustomFrameAttrib(Ihandle *ih, const char *value)
   NSWindow* window = iupcocoaDialogGetWindow(ih);
   if (!window) return 0;
 
+#ifndef GNUSTEP
   if (iupStrBoolean(value))
   {
     iupDialogCustomFrameSimulateCheckCallbacks(ih);
@@ -1327,6 +1332,9 @@ static int cocoaDialogSetCustomFrameAttrib(Ihandle *ih, const char *value)
     [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:NO];
     [[window standardWindowButton:NSWindowZoomButton] setHidden:NO];
   }
+#else
+  (void)value;
+#endif
   return 1;
 }
 
@@ -1419,6 +1427,7 @@ static int cocoaDialogMapMethod(Ihandle* ih)
                   options:NSKeyValueObservingOptionNew
                   context:IupCocoaAppearanceContext];
 
+#ifndef GNUSTEP
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
   {
     iupDialogCustomFrameSimulateCheckCallbacks(ih);
@@ -1430,6 +1439,7 @@ static int cocoaDialogMapMethod(Ihandle* ih)
     [[the_window standardWindowButton:NSWindowZoomButton] setHidden:YES];
     [the_window setHasShadow:YES];
   }
+#endif
 
   NSView* content_view = [the_window contentView];
   cocoaTargetDropCreateAssociatedData(ih, content_view, content_view);

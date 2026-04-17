@@ -6,6 +6,17 @@
 
 #include <stdio.h>
 
+#ifdef GNUSTEP
+#include <time.h>
+static inline double CACurrentMediaTime(void) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
+}
+#else
+#import <QuartzCore/QuartzCore.h>
+#endif
+
 #import <Cocoa/Cocoa.h>
 
 #include "iup.h"
@@ -14,6 +25,8 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_timer.h"
+
+#include "iupcocoa_drv.h"
 
 
 @interface IupCocoaTimerController : NSObject
@@ -84,7 +97,13 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
       [ns_timer setTolerance:(NSTimeInterval)tolerance];
     }
 
+#ifdef GNUSTEP
+    /* GNUstep treats NSRunLoopCommonModes as a literal mode name, not
+       a set; timers there never fire from the default-mode main loop. */
+    [[NSRunLoop currentRunLoop] addTimer:ns_timer forMode:NSDefaultRunLoopMode];
+#else
     [[NSRunLoop currentRunLoop] addTimer:ns_timer forMode:NSRunLoopCommonModes];
+#endif
 
     [timer_controller setNsTimer:ns_timer];
     [timer_controller setStartTime:start_time];

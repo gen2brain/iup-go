@@ -7,7 +7,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef GNUSTEP
 #import <ApplicationServices/ApplicationServices.h>
+#else
+#import <GNUstepGUI/GSTheme.h>
+#endif
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -22,8 +26,10 @@
 
 
 int utf8autoconvert = 1;
+#ifndef GNUSTEP
 static CFMachPortRef eventTap = NULL;
 static CFRunLoopSourceRef runLoopSource = NULL;
+#endif
 
 static NSRect iupCocoaGetVirtualScreenRect(void)
 {
@@ -42,6 +48,7 @@ static NSRect iupCocoaGetVirtualScreenRect(void)
   return virtualRect;
 }
 
+#ifndef GNUSTEP
 static void cocoaGlobalBuildStatus(CGEventFlags flags, char* status)
 {
   if (flags & kCGEventFlagMaskShift)
@@ -168,6 +175,7 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
   (void)refcon;
   return event;
 }
+#endif /* !GNUSTEP */
 
 IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
 {
@@ -180,6 +188,7 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
   }
   if (iupStrEqual(name, "INPUTCALLBACKS"))
   {
+#ifndef GNUSTEP
     if (iupStrBoolean(value))
     {
       if (!eventTap)
@@ -234,6 +243,10 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
       }
     }
     return 1;
+#else
+    (void)value;
+    return 0;
+#endif
   }
   if (iupStrEqual(name, "UTF8MODE"))
   {
@@ -267,6 +280,32 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
     }
     return 1;
   }
+#ifdef GNUSTEP
+  if (iupStrEqual(name, "GNUSTEPTHEME"))
+  {
+    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+    if (value && value[0])
+    {
+      NSString* theme_name = [NSString stringWithUTF8String:value];
+      GSTheme* theme = [GSTheme loadThemeNamed:theme_name];
+      if (theme)
+      {
+        /* Persist under the GSTheme defaults key so +[GSTheme defaultsDidChange:]
+           keeps our selection when NSUserDefaultsDidChangeNotification fires
+           (e.g. when the user drags a floating menu, which writes NSMenuLocations). */
+        [defaults setObject:theme_name forKey:@"GSTheme"];
+        [GSTheme setTheme:theme];
+        iupcocoaSetGlobalColors();
+        return 1;
+      }
+      return 0;
+    }
+    [defaults removeObjectForKey:@"GSTheme"];
+    [GSTheme setTheme:nil];
+    iupcocoaSetGlobalColors();
+    return 1;
+  }
+#endif
   if (iupStrEqual(name, "ACTIVATIONPOLICY"))
   {
     NSApplicationActivationPolicy old_policy = [[NSApplication sharedApplication] activationPolicy];
@@ -376,6 +415,19 @@ IUP_SDK_API char *iupdrvGetGlobal(const char *name)
   {
     return iupStrReturnBoolean(iupcocoaIsSystemDarkMode());
   }
+#ifdef GNUSTEP
+  if (iupStrEqual(name, "GNUSTEPTHEME"))
+  {
+    GSTheme* theme = [GSTheme theme];
+    if (theme)
+    {
+      NSString* theme_name = [theme name];
+      if (theme_name)
+        return iupStrReturnStr([theme_name UTF8String]);
+    }
+    return NULL;
+  }
+#endif
 
   return NULL;
 }

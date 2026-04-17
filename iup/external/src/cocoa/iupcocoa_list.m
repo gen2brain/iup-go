@@ -298,8 +298,12 @@ static CGFloat cocoaListGetScrollbarSize(void)
   /* Get the width of a standard vertical scrollbar */
   NSScroller* scroller = [[NSScroller alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)];
   [scroller setScrollerStyle:NSScrollerStyleLegacy];
+#ifdef GNUSTEP
+  CGFloat width = [NSScroller scrollerWidth];
+#else
   CGFloat width = [NSScroller scrollerWidthForControlSize:NSControlSizeRegular
                                              scrollerStyle:[scroller scrollerStyle]];
+#endif
   [scroller release];
 
   if (width < 15.0)
@@ -540,6 +544,65 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
   return YES;
 }
+
+#ifdef GNUSTEP
+/* Replaces NSStackView for EDITBOX on GNUstep, NSStackView's _layoutViewsWithOrientation
+   mutates its own frame and never sizes children, so subviews stay at NSZeroRect. */
+@interface IupCocoaListEditBoxContainer : NSView
+@property (nonatomic, retain) NSTextField* topTextField;
+@property (nonatomic, retain) NSScrollView* bottomScrollView;
+@property (nonatomic, assign) CGFloat topTextHeight;
+@property (nonatomic, assign) CGFloat stackSpacing;
+@end
+
+@implementation IupCocoaListEditBoxContainer
+@synthesize topTextField = _topTextField;
+@synthesize bottomScrollView = _bottomScrollView;
+@synthesize topTextHeight = _topTextHeight;
+@synthesize stackSpacing = _stackSpacing;
+
+- (void) dealloc
+{
+  [_topTextField release];
+  [_bottomScrollView release];
+  [super dealloc];
+}
+
+- (BOOL) isFlipped
+{
+  return YES;
+}
+
+- (void) layout
+{
+  NSRect b = [self bounds];
+  CGFloat w = b.size.width  < 0 ? 0 : b.size.width;
+  CGFloat h = b.size.height < 0 ? 0 : b.size.height;
+  CGFloat text_h = _topTextHeight > 0 ? _topTextHeight : 22;
+  CGFloat spacing = _stackSpacing > 0 ? _stackSpacing : 3;
+
+  if (_topTextField)
+  {
+    CGFloat fh = text_h;
+    if (fh > h) fh = h;
+    [_topTextField setFrame:NSMakeRect(0, 0, w, fh)];
+  }
+  if (_bottomScrollView)
+  {
+    CGFloat sv_y = text_h + spacing;
+    CGFloat sv_h = h - sv_y;
+    if (sv_h < 0) sv_h = 0;
+    [_bottomScrollView setFrame:NSMakeRect(0, sv_y, w, sv_h)];
+  }
+}
+
+- (void) setFrame:(NSRect)frame
+{
+  [super setFrame:iupcocoaClampRect(frame)];
+  [self layout];
+}
+@end
+#endif
 
 @interface IupCocoaListTableView : NSTableView
 @end
@@ -1177,11 +1240,15 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 
 - (void)drawRect:(NSRect)dirtyRect
 {
+#ifdef GNUSTEP
+  iupcocoaGnustepFillCellRect(self, dirtyRect, self.customBackgroundColor);
+#else
   if (self.customBackgroundColor)
   {
     [self.customBackgroundColor setFill];
     NSRectFill(dirtyRect);
   }
+#endif
   [super drawRect:dirtyRect];
 }
 
@@ -1197,8 +1264,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     [self.imageView setImageAlignment:NSImageAlignCenter];
     [self.imageView setImageScaling:NSImageScaleProportionallyDown];
     [self.imageView setEditable:NO];
-    [self.imageView setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [self addSubview:self.imageView];
 
     /* Use custom NSTextField with controlled text insets.
        It must be non-editable and non-selectable so it does not interfere with dragging. */
@@ -1208,12 +1273,71 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     [textField setEditable:NO];
     [textField setSelectable:NO];
     [textField setLineBreakMode:NSLineBreakByClipping];
+
+#ifdef GNUSTEP
+    /* Auto Layout on view-based NSTableCellView leaves subviews at zero frame on GNUstep;
+       use frame + autoresizing masks (-layout override does the real work). */
+    [self.imageView setTranslatesAutoresizingMaskIntoConstraints:YES];
+    [self.imageView setAutoresizingMask:NSViewMaxXMargin | NSViewHeightSizable];
+    [self addSubview:self.imageView];
+
+    [textField setTranslatesAutoresizingMaskIntoConstraints:YES];
+    [textField setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [self addSubview:textField];
+    [self setTextField:textField];
+#else
+    [self.imageView setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [self addSubview:self.imageView];
+
     [textField setTranslatesAutoresizingMaskIntoConstraints:NO];
     [self addSubview:textField];
     [self setTextField:textField];
+#endif
   }
   return self;
 }
+
+#ifdef GNUSTEP
+/* Mirrors H:|-padding-[imageView(16)]-4-[textField]-padding-|. All sizes clamped ≥ 0 ,
+   a negative frame triggers an NSView warning and feeds cairo/Opal a zero-determinant CTM
+   that locks it in a permanent error state. */
+- (void) layout
+{
+  NSRect b = [self bounds];
+  CGFloat padding = lastPadding > 0 ? lastPadding : 2.0;
+  CGFloat h = b.size.height < 0 ? 0 : b.size.height;
+  CGFloat w = b.size.width  < 0 ? 0 : b.size.width;
+
+  if (lastShowImage && ![self.imageView isHidden])
+  {
+    CGFloat imgSize = 16;
+    CGFloat imgY = (h - imgSize) / 2;
+    CGFloat tx = padding + imgSize + 4;
+    CGFloat tw = w - tx - padding;
+    if (tw < 0) tw = 0;
+    [self.imageView setFrame:NSMakeRect(padding, imgY, imgSize, imgSize)];
+    [[self textField] setFrame:NSMakeRect(tx, 0, tw, h)];
+  }
+  else
+  {
+    CGFloat tw = w - 2 * padding;
+    if (tw < 0) tw = 0;
+    [self.imageView setFrame:NSZeroRect];
+    [[self textField] setFrame:NSMakeRect(padding, 0, tw, h)];
+  }
+}
+
+/* -[NSTableView viewAtColumn:row:] passes tableView-absolute Y; _drawCellViewRow only
+   zeroes it for newly-added views, so cached cellViews drift off the rowView on redraw. */
+- (void) setFrame:(NSRect)frame
+{
+  frame = iupcocoaClampRect(frame);
+  if ([[self superview] isKindOfClass:[NSTableRowView class]])
+    frame.origin.y = 0;
+  [super setFrame:frame];
+  [self layout];
+}
+#endif
 
 - (void) dealloc
 {
@@ -1239,7 +1363,18 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   }
   else
   {
+#ifdef GNUSTEP
+    if (self.customTextColor)
+    {
+      [self.textField setTextColor:self.customTextColor];
+    }
+    else
+    {
+      [self.textField setTextColor:[NSColor controlTextColor]];
+    }
+#else
     [self.textField setTextColor:[NSColor selectedControlTextColor]];
+#endif
   }
 
   [self setNeedsDisplay:YES];
@@ -1250,6 +1385,15 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   if (constraintsApplied && padding == lastPadding && showImage == lastShowImage)
     return;
 
+#ifdef GNUSTEP
+  /* Frame-based path, our -layout override reads these ivars. */
+  lastPadding = padding;
+  lastShowImage = showImage;
+  constraintsApplied = YES;
+  [self setNeedsLayout:YES];
+  [self layout];
+  [self setNeedsDisplay:YES];
+#else
   NSMutableArray* constraintsToRemove = [NSMutableArray array];
   for (NSLayoutConstraint* constraint in [self constraints])
   {
@@ -1306,6 +1450,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   lastPadding = padding;
   lastShowImage = showImage;
   constraintsApplied = YES;
+#endif
 }
 @end
 
@@ -2034,6 +2179,18 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
           popup_decor_w = (int)lroundf(intrinsic_size.width) - text_width - sb_size;
           if (popup_decor_w < 0) popup_decor_w = 0;
 
+#ifdef GNUSTEP
+          /* intrinsicContentSize is (-1,-1) on GNUstep; fall back to sizeToFit. */
+          if (popup_decor_h <= 0 || (int)intrinsic_size.width <= 0)
+          {
+            [tempButton sizeToFit];
+            popup_decor_w = (int)lroundf([tempButton frame].size.width) - text_width;
+            if (popup_decor_w < 0) popup_decor_w = 0;
+          }
+          popup_decor_h = iupcocoaGnustepIntrinsicHeight(tempButton, 22);
+          if (popup_decor_w < 22) popup_decor_w = 22;
+#endif
+
           [tempButton release];
         }
 
@@ -2068,6 +2225,17 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
           int sb_size = iupdrvGetScrollbarSize();
           combo_decor_w = (int)lroundf(intrinsic_size.width) - text_width - sb_size;
           if (combo_decor_w < 0) combo_decor_w = 0;
+
+#ifdef GNUSTEP
+          if (combo_decor_h <= 0 || (int)intrinsic_size.width <= 0)
+          {
+            [tempComboBox sizeToFit];
+            combo_decor_w = (int)lroundf([tempComboBox frame].size.width) - text_width;
+            if (combo_decor_w < 0) combo_decor_w = 0;
+          }
+          combo_decor_h = iupcocoaGnustepIntrinsicHeight(tempComboBox, 22);
+          if (combo_decor_w < 22) combo_decor_w = 22;
+#endif
 
           [tempComboBox release];
         }
@@ -2134,8 +2302,11 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int *x, int *y)
 
             /* Add text entry natural height (measured from NSTextField) */
             NSTextField* temp_text = [[NSTextField alloc] initWithFrame:NSZeroRect];
-            NSSize text_intrinsic = [temp_text intrinsicContentSize];
-            int text_height = (int)lroundf(text_intrinsic.height);
+#ifdef GNUSTEP
+            int text_height = iupcocoaGnustepIntrinsicHeight(temp_text, 22);
+#else
+            int text_height = (int)lroundf([temp_text intrinsicContentSize].height);
+#endif
             [temp_text release];
 
             *y += text_height;
@@ -2458,7 +2629,7 @@ IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   if (sub_type == IUPCOCOALISTSUBTYPE_DROPDOWN)
   {
     NSPopUpButton* popup_button = (NSPopUpButton*)cocoaListGetBaseWidget(ih);
-    NSMenuItem *menu_item = [popup_button itemAtIndex:pos];
+    NSMenuItem *menu_item = (NSMenuItem*)[popup_button itemAtIndex:pos];
     return [menu_item image];
   }
   else if(sub_type >= IUPCOCOALISTSUBTYPE_EDITBOX)
@@ -2484,7 +2655,7 @@ IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
   if (sub_type == IUPCOCOALISTSUBTYPE_DROPDOWN)
   {
     NSPopUpButton* popup_button = (NSPopUpButton*)cocoaListGetBaseWidget(ih);
-    NSMenuItem *menu_item = [popup_button itemAtIndex:pos];
+    NSMenuItem *menu_item = (NSMenuItem*)[popup_button itemAtIndex:pos];
 
     if (image)
     {
@@ -3603,11 +3774,16 @@ static int cocoaListMapMethod(Ihandle* ih)
       }
     case IUPCOCOALISTSUBTYPE_EDITBOX:
       {
+#ifdef GNUSTEP
+        IupCocoaListEditBoxContainer* stack_view = [[IupCocoaListEditBoxContainer alloc] initWithFrame:NSZeroRect];
+        [stack_view setStackSpacing:3];
+#else
         NSStackView* stack_view = [[NSStackView alloc] initWithFrame:NSZeroRect];
         [stack_view setOrientation:NSUserInterfaceLayoutOrientationVertical];
         [stack_view setAlignment:NSLayoutAttributeLeading];
         [stack_view setSpacing:3];
         [stack_view setDistribution:NSStackViewDistributionFill];
+#endif
 
         NSTextField* text_field = [[IupCocoaListTextField alloc] initWithFrame:NSZeroRect];
         objc_setAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
@@ -3630,6 +3806,9 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         [table_view setHeaderView:nil];
         [table_view setAllowsMultipleSelection:NO];
+#ifdef GNUSTEP
+        iupcocoaGnustepConfigureTableView(table_view);
+#endif
         [table_view setColumnAutoresizingStyle:NSTableViewUniformColumnAutoresizingStyle];
 
         IupCocoaListTableViewReceiver* list_receiver = [[IupCocoaListTableViewReceiver alloc] init];
@@ -3659,6 +3838,15 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         [scroll_view setBorderType:NSBezelBorder];
 
+#ifdef GNUSTEP
+        [stack_view addSubview:text_field];
+        [stack_view addSubview:scroll_view];
+        [stack_view setTopTextField:text_field];
+        [stack_view setBottomScrollView:scroll_view];
+        [stack_view setTopTextHeight:iupcocoaGnustepIntrinsicHeight(text_field, 22)];
+        [text_field release];
+        [scroll_view release];
+#else
         [stack_view addArrangedSubview:text_field];
         [stack_view addArrangedSubview:scroll_view];
         [text_field release];
@@ -3666,6 +3854,7 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         [[text_field.widthAnchor constraintEqualToAnchor:stack_view.widthAnchor] setActive:YES];
         [[scroll_view.widthAnchor constraintEqualToAnchor:stack_view.widthAnchor] setActive:YES];
+#endif
 
         /* Set height constraint for scroll_view based on VISIBLELINES */
         int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
@@ -3684,7 +3873,9 @@ static int cocoaListMapMethod(Ihandle* ih)
           /* Add borders (NSBezelBorder is 2px total: 1px top + 1px bottom) */
           int list_total_height = list_content_height + 2;
 
+#ifndef GNUSTEP
           [[scroll_view.heightAnchor constraintEqualToConstant:list_total_height] setActive:YES];
+#endif
         }
         else
         {
@@ -3721,6 +3912,9 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         [table_view setHeaderView:nil];
         [table_view setIntercellSpacing:NSMakeSize(0, 0)];
+#ifdef GNUSTEP
+        iupcocoaGnustepConfigureTableView(table_view);
+#endif
         [table_view setColumnAutoresizingStyle:NSTableViewUniformColumnAutoresizingStyle];
         [table_view setAutoresizesSubviews:YES];
         [table_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];

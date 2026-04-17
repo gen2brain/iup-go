@@ -9,7 +9,9 @@
 #include <string.h>
 #include <limits.h>
 
+#ifndef GNUSTEP
 #import <CoreServices/CoreServices.h>
+#endif
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -79,12 +81,14 @@ NSDragOperation cocoaTargetDropBaseDraggingUpdated(Ihandle* ih, id<NSDraggingInf
     if (modifier_flags & NSEventModifierFlagCommand)
       iupKEY_SETSYS(status);
 
+#ifndef GNUSTEP
     if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonLeft))
       iupKEY_SETBUTTON1(status);
     if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonRight))
       iupKEY_SETBUTTON3(status);
     if (CGEventSourceButtonState(kCGEventSourceStateHIDSystemState, kCGMouseButtonCenter))
       iupKEY_SETBUTTON2(status);
+#endif
 
     cbDropMotion(ih, (int)view_point.x, (int)view_point.y, status);
 
@@ -642,6 +646,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
   }
 
   NSArray* registered_types = [self dragRegisteredTypes];
+#ifndef GNUSTEP
   NSArray* file_promise_types = [NSFilePromiseReceiver readableDraggedTypes];
   NSSet* file_promise_set = [NSSet setWithArray:file_promise_types];
 
@@ -652,6 +657,9 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
       return true;
     }
   }
+#else
+  (void)registered_types;
+#endif
   return false;
 }
 
@@ -719,8 +727,9 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
 
   if([registered_types count] > 0)
   {
-    bool wants_file_promise = [self usesFilePromise];
     id return_item = nil;
+#ifndef GNUSTEP
+    bool wants_file_promise = [self usesFilePromise];
     if(wants_file_promise)
     {
 #pragma clang diagnostic push
@@ -731,6 +740,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
       return_item = promise_provider;
     }
     else
+#endif
     {
       NSPasteboardItem* pasteboard_item = [[NSPasteboardItem alloc] init];
       [pasteboard_item autorelease];
@@ -742,6 +752,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
   return nil;
 }
 
+#ifndef GNUSTEP
 - (NSDraggingItem*) defaultDraggingItem
 {
   NSView* main_view = [self mainView];
@@ -893,6 +904,7 @@ static bool cocoaSourceDragDoDefaultFileCreate(NSFilePromiseProvider* file_promi
 
   completion_handler(nil);
 }
+#endif /* !GNUSTEP */
 
 - (void) draggingSession:(NSDraggingSession*)dragging_session willBeginAtPoint:(NSPoint)screen_point
 {
@@ -1141,8 +1153,10 @@ static int cocoaSourceDragSetDragTypesAttrib(Ihandle* ih, const char* value)
     if (idx != NSNotFound)
     {
       [array_of_types removeObjectAtIndex:idx];
+#ifndef GNUSTEP
       NSArray* file_promise_types = [NSFilePromiseReceiver readableDraggedTypes];
       [array_of_types addObjectsFromArray:file_promise_types];
+#endif
     }
 
     if ([array_of_types count] > 0)
@@ -1179,6 +1193,7 @@ static int cocoaSourceDragSetDragStartAttrib(Ihandle* ih, const char* value)
       return 0;
   }
 
+#ifndef GNUSTEP
   NSDraggingItem* dragging_item = [drag_source_data defaultDraggingItem];
   if (!dragging_item)
     return 0;
@@ -1219,6 +1234,11 @@ static int cocoaSourceDragSetDragStartAttrib(Ihandle* ih, const char* value)
   }
 
   [main_view beginDraggingSessionWithItems:@[dragging_item] event:the_event source:drag_source_data];
+#else
+  (void)main_view;
+  (void)x;
+  (void)y;
+#endif
 
   return 0;
 }

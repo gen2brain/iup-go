@@ -462,6 +462,22 @@ IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent *ns_event, char *out_status)
       iupKEY_SETDOUBLE(out_status);
   }
 
+#ifdef GNUSTEP
+  /* +[NSEvent pressedMouseButtons] is a stub on GNUstep that returns 0, so motion
+     handlers that gate on iup_isbutton1(status) never enter the drag branch. Infer the
+     pressed button from the event type, NSLeftMouseDragged etc. encode it. */
+  if (event_type == NSEventTypeLeftMouseDown || event_type == NSEventTypeLeftMouseDragged)
+    iupKEY_SETBUTTON1(out_status);
+  else if (event_type == NSEventTypeRightMouseDown || event_type == NSEventTypeRightMouseDragged)
+    iupKEY_SETBUTTON3(out_status);
+  else if (event_type == NSEventTypeOtherMouseDown || event_type == NSEventTypeOtherMouseDragged)
+  {
+    NSInteger btn = [ns_event buttonNumber];
+    if (btn == 2)      iupKEY_SETBUTTON2(out_status);
+    else if (btn == 4) iupKEY_SETBUTTON4(out_status);
+    else if (btn == 5) iupKEY_SETBUTTON5(out_status);
+  }
+#else
   /* Get current state of pressed mouse buttons */
   NSUInteger pressed_buttons = [NSEvent pressedMouseButtons];
 
@@ -475,8 +491,10 @@ IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent *ns_event, char *out_status)
     iupKEY_SETBUTTON4(out_status);
   if (pressed_buttons & (1 << 4))
     iupKEY_SETBUTTON5(out_status);
+#endif
 }
 
+#ifndef GNUSTEP
 IUP_DRV_API int iupcocoaKeyDecode(CGEventRef event)
 {
   CGKeyCode mac_key_code = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
@@ -508,6 +526,7 @@ IUP_DRV_API int iupcocoaKeyDecode(CGEventRef event)
       (flags & kCGEventFlagMaskCommand) != 0,
       (flags & kCGEventFlagMaskAlphaShift) != 0);
 }
+#endif /* !GNUSTEP */
 
 IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *maccode, unsigned int *state)
 {

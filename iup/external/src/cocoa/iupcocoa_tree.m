@@ -39,6 +39,46 @@
   [super dealloc];
 }
 
+#ifdef GNUSTEP
+/* Frame-based layout replacing Auto Layout on GNUstep. Mirrors the Apple constraint
+   layout, vertically centered. */
+- (void) layout
+{
+  NSRect b = [self bounds];
+  CGFloat w = b.size.width  < 0 ? 0 : b.size.width;
+  CGFloat h = b.size.height < 0 ? 0 : b.size.height;
+  CGFloat imgSize = 16, leading = 2, trailing = 2, gap = 5;
+  CGFloat imgY = (h - imgSize) / 2;
+
+  if (self.imageView)
+    [self.imageView setFrame:NSMakeRect(leading, imgY, imgSize, imgSize)];
+  if (self.textField)
+  {
+    CGFloat tx = leading + imgSize + gap;
+    CGFloat tw = w - tx - trailing;
+    if (tw < 0) tw = 0;
+    [self.textField setFrame:NSMakeRect(tx, 0, tw, h)];
+  }
+}
+
+/* GNUstep NSView -layout doesn't fire without Auto Layout; drive it from setFrame.
+   Also clamp Y=0 to undo tableView-absolute Y leaking through on cached cellViews. */
+- (void) setFrame:(NSRect)frame
+{
+  frame = iupcocoaClampRect(frame);
+  if ([[self superview] isKindOfClass:[NSTableRowView class]])
+    frame.origin.y = 0;
+  [super setFrame:frame];
+  [self layout];
+}
+
+- (void) drawRect:(NSRect)dirtyRect
+{
+  iupcocoaGnustepFillCellRect(self, dirtyRect, nil);
+  [super drawRect:dirtyRect];
+}
+#endif
+
 @end
 
 @interface IupCocoaTreeToggleTableCellView : NSTableCellView
@@ -63,6 +103,50 @@
   [_itemFont release];
   [super dealloc];
 }
+
+#ifdef GNUSTEP
+/* Mirrors |-6-[checkBox]-2-[imageView(16)]-5-[textField]-2-|, vertically centered. */
+- (void) layout
+{
+  NSRect b = [self bounds];
+  CGFloat w = b.size.width  < 0 ? 0 : b.size.width;
+  CGFloat h = b.size.height < 0 ? 0 : b.size.height;
+  CGFloat cbSize = 16, imgSize = 16, leading = 6, trailing = 2, gap1 = 2, gap2 = 5;
+  CGFloat cbY = (h - cbSize) / 2, imgY = (h - imgSize) / 2;
+  CGFloat x = leading;
+  if (_checkBox && ![_checkBox isHidden])
+  {
+    [_checkBox setFrame:NSMakeRect(x, cbY, cbSize, cbSize)];
+    x += cbSize + gap1;
+  }
+  if (self.imageView)
+  {
+    [self.imageView setFrame:NSMakeRect(x, imgY, imgSize, imgSize)];
+    x += imgSize + gap2;
+  }
+  if (self.textField)
+  {
+    CGFloat tw = w - x - trailing;
+    if (tw < 0) tw = 0;
+    [self.textField setFrame:NSMakeRect(x, 0, tw, h)];
+  }
+}
+
+- (void) setFrame:(NSRect)frame
+{
+  frame = iupcocoaClampRect(frame);
+  if ([[self superview] isKindOfClass:[NSTableRowView class]])
+    frame.origin.y = 0;
+  [super setFrame:frame];
+  [self layout];
+}
+
+- (void) drawRect:(NSRect)dirtyRect
+{
+  iupcocoaGnustepFillCellRect(self, dirtyRect, nil);
+  [super drawRect:dirtyRect];
+}
+#endif
 
 @end
 
@@ -314,6 +398,17 @@ static void cocoaTreeReloadItem(IupCocoaTreeItem* tree_item, NSOutlineView* outl
   [collapsedImage release];
   [super dealloc];
 }
+
+#ifdef GNUSTEP
+/* GNUstep -[NSOutlineView setDelegate:] overrides NSTableView's version without calling super,
+   so the _viewBased probe never runs, the outline falls back to cell-based drawing (empty
+   rows). Force YES; our delegate always implements outlineView:viewForTableColumn:item:. */
+- (void) setDelegate:(id)anObject
+{
+  [super setDelegate:anObject];
+  _viewBased = YES;
+}
+#endif
 
 - (NSMenu *)menuForEvent:(NSEvent *)event
 {
@@ -1095,14 +1190,24 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [new_check_box setButtonType:NSButtonTypeSwitch];
       [new_check_box setTitle:@""];
       [new_check_box setControlSize:NSControlSizeSmall];
+#ifdef GNUSTEP
+      [new_check_box setTranslatesAutoresizingMaskIntoConstraints:YES];
+      [new_check_box setAutoresizingMask:NSViewMaxXMargin | NSViewHeightSizable];
+#else
       [new_check_box setTranslatesAutoresizingMaskIntoConstraints:NO];
+#endif
       [table_cell_view addSubview:new_check_box];
       [(IupCocoaTreeToggleTableCellView*)table_cell_view setCheckBox:new_check_box];
       [new_check_box release];
 
       NSImageView* new_image_view = [[NSImageView alloc] initWithFrame:NSZeroRect];
       [new_image_view setImageScaling:NSImageScaleProportionallyUpOrDown];
+#ifdef GNUSTEP
+      [new_image_view setTranslatesAutoresizingMaskIntoConstraints:YES];
+      [new_image_view setAutoresizingMask:NSViewMaxXMargin | NSViewHeightSizable];
+#else
       [new_image_view setTranslatesAutoresizingMaskIntoConstraints:NO];
+#endif
       [table_cell_view addSubview:new_image_view];
       [table_cell_view setImageView:new_image_view];
       [new_image_view release];
@@ -1111,13 +1216,21 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [new_text_field setBezeled:NO];
       [new_text_field setDrawsBackground:NO];
       [new_text_field setEditable:NO];
+#ifdef GNUSTEP
+      /* Selectable textField swallows clicks (mouseDown → first responder) on GNUstep. */
+      [new_text_field setSelectable:NO];
+      [new_text_field setTranslatesAutoresizingMaskIntoConstraints:YES];
+      [new_text_field setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+#else
       [new_text_field setSelectable:YES];
       [new_text_field setTranslatesAutoresizingMaskIntoConstraints:NO];
       [new_text_field setContentCompressionResistancePriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationHorizontal];
+#endif
       [table_cell_view addSubview:new_text_field];
       [table_cell_view setTextField:new_text_field];
       [new_text_field release];
 
+#ifndef GNUSTEP
       [NSLayoutConstraint constraintWithItem:new_check_box attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
       [NSLayoutConstraint constraintWithItem:new_image_view attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
       [NSLayoutConstraint constraintWithItem:new_text_field attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
@@ -1129,6 +1242,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [NSLayoutConstraint constraintWithItem:new_image_view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:new_check_box attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:2.0].active = YES;
       [NSLayoutConstraint constraintWithItem:new_text_field attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:new_image_view attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:5.0].active = YES;
       [NSLayoutConstraint constraintWithItem:new_text_field attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:-2.0].active = YES;
+#endif
     }
     IupCocoaTreeToggleTableCellView* toggle_cell_view = (IupCocoaTreeToggleTableCellView*)table_cell_view;
 
@@ -1157,7 +1271,12 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       /* Initialize ImageView */
       NSImageView* image_view = [[NSImageView alloc] initWithFrame:NSZeroRect];
       [image_view setImageScaling:NSImageScaleProportionallyUpOrDown];
+#ifdef GNUSTEP
+      [image_view setTranslatesAutoresizingMaskIntoConstraints:YES];
+      [image_view setAutoresizingMask:NSViewMaxXMargin | NSViewHeightSizable];
+#else
       [image_view setTranslatesAutoresizingMaskIntoConstraints:NO];
+#endif
       [table_cell_view addSubview:image_view];
       [table_cell_view setImageView:image_view];
       [image_view release]; /* Retained by superview and property */
@@ -1167,16 +1286,24 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [text_field setBezeled:NO];
       [text_field setDrawsBackground:NO];
       [text_field setEditable:NO];
+#ifdef GNUSTEP
+      /* See IupCocoaTreeToggleTableCellView, selectable textField swallows clicks. */
+      [text_field setSelectable:NO];
+      [text_field setTranslatesAutoresizingMaskIntoConstraints:YES];
+      [text_field setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+#else
       [text_field setSelectable:YES]; /* Good practice for standard cells */
       [text_field setTranslatesAutoresizingMaskIntoConstraints:NO];
 
       /* Increase compression resistance to prevent the text field from collapsing when space is tight. */
       [text_field setContentCompressionResistancePriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationHorizontal];
+#endif
 
       [table_cell_view addSubview:text_field];
       [table_cell_view setTextField:text_field];
       [text_field release]; /* Retained by superview and property */
 
+#ifndef GNUSTEP
       /* Center vertically */
       [NSLayoutConstraint constraintWithItem:image_view attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
       [NSLayoutConstraint constraintWithItem:text_field attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0].active = YES;
@@ -1189,6 +1316,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [NSLayoutConstraint constraintWithItem:image_view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeLeading multiplier:1.0 constant:2.0].active = YES;
       [NSLayoutConstraint constraintWithItem:text_field attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:image_view attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:5.0].active = YES;
       [NSLayoutConstraint constraintWithItem:text_field attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:table_cell_view attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:-2.0].active = YES;
+#endif
     }
   }
 
@@ -1202,6 +1330,13 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 
     [text_field setStringValue:string_item];
 
+#ifdef GNUSTEP
+    /* GNUstep NSCell -isSelectable returns is_selectable || is_editable, so setEditable:YES
+       re-enables click swallowing (I-beam cursor stuck). Keep editable off on GNUstep;
+       in-place rename needs a separate trigger. */
+    [text_field setEditable:NO];
+    [text_field setDelegate:nil];
+#else
     [text_field setEditable:(BOOL)ih->data->show_rename];
     if (ih->data->show_rename)
     {
@@ -1213,6 +1348,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       /* Clear delegate when recycling a view if rename is off. */
       [text_field setDelegate:nil];
     }
+#endif
 
     IupCocoaFont* item_iup_font = [tree_item font];
     NSFont* item_native_font = [item_iup_font nativeFont];
@@ -4386,6 +4522,9 @@ static int cocoaTreeMapMethod(Ihandle* ih)
   [outline_view setIndentationPerLevel:16];
   [outline_view setAutoresizesOutlineColumn:YES];
   [outline_view setIntercellSpacing:NSMakeSize(3, 2)];
+#ifdef GNUSTEP
+  iupcocoaGnustepConfigureTableView(outline_view);
+#endif
 
   NSTableColumn* table_column = [[NSTableColumn alloc] initWithIdentifier:@"IupCocoaTreeColumn"];
   [table_column setWidth:235];

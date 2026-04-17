@@ -24,6 +24,178 @@
 
 #include "iupcocoa_drv.h"
 
+#ifdef GNUSTEP
+/* No-op category stubs for AppKit methods GNUstep doesn't implement. Degradation is
+   "feature does nothing" rather than a crash. */
+
+@implementation NSControl (IupGnustepShimImpl)
+- (void)setUsesSingleLineMode:(BOOL)flag       { (void)flag; }
+- (void)setLineBreakMode:(NSLineBreakMode)mode { (void)mode; }
+- (void)setTruncatesLastVisibleLine:(BOOL)flag { (void)flag; }
+- (void)setControlSize:(NSInteger)size         { (void)size; }
+@end
+
+/* NSCell base doesn't declare setTextColor: (only subclasses do). Some call sites
+   get a plain NSCell (e.g. NSBox titleCell); no-op keeps them safe. */
+@implementation NSCell (IupGnustepShimImpl)
+- (void)setTextColor:(NSColor*)color { (void)color; }
+@end
+
+@implementation NSSlider (IupGnustepShimImpl)
+/* GNUstep derives orientation from cell bounds; nothing to store. */
+- (void)setVertical:(BOOL)flag { (void)flag; }
+@end
+
+@implementation NSView (IupGnustepShimImpl)
+- (void)setClipsToBounds:(BOOL)flag { (void)flag; }
+- (void)setAccessibilityLabel:(NSString*)label { (void)label; }
+/* fittingSize: callers size the temp widget first, so returning -frame is fine. */
+- (NSSize)fittingSize { return [self frame].size; }
+- (NSRect)convertRectToBacking:(NSRect)rect { return rect; }
+/* Tracking areas: accepted but not wired on GNUstep; empty array + no-ops keep
+   remove-then-add call patterns safe. */
+- (void)updateTrackingAreas { }
+- (NSArray*)trackingAreas { return @[]; }
+- (void)addTrackingArea:(NSTrackingArea*)area { (void)area; }
+- (void)removeTrackingArea:(NSTrackingArea*)area { (void)area; }
+/* viewWillDraw is a 10.5+ hook GNUstep doesn't invoke; subclasses call super. */
+- (void)viewWillDraw { }
+/* NSLayoutAnchor/constraints absent; empty array so iterators find nothing to remove. */
+- (NSArray*)constraints { return @[]; }
+- (void)removeConstraints:(NSArray*)constraints { (void)constraints; }
+@end
+
+@implementation NSApplication (IupGnustepShimImpl)
+- (void)setHelpMenu:(NSMenu*)menu    { (void)menu; }
+- (NSInteger)activationPolicy        { return 0; /* NSApplicationActivationPolicyRegular */ }
+- (BOOL)setActivationPolicy:(NSInteger)policy { (void)policy; return YES; }
+- (id)effectiveAppearance            { return nil; }
+- (id)dockTile                       { return nil; }
+@end
+
+@implementation NSColor (IupGnustepShimImpl)
++ (NSColor*)linkColor                         { return [NSColor blueColor]; }
++ (NSColor*)selectedContentBackgroundColor    { return [NSColor selectedTextBackgroundColor]; }
++ (NSColor*)underPageBackgroundColor          { return [NSColor windowBackgroundColor]; }
++ (NSColor*)separatorColor                    { return [NSColor gridColor]; }
+@end
+
+@implementation NSTimer (IupGnustepShimImpl)
+- (void)setTolerance:(NSTimeInterval)tolerance { (void)tolerance; }
+@end
+
+@implementation NSOutlineView (IupGnustepShimImpl)
+- (void)setDraggingDestinationFeedbackStyle:(NSInteger)s { (void)s; }
+- (void)setAllowsExpansionToolTips:(BOOL)flag { (void)flag; }
+/* Batch animated insert/remove/move (10.7+) not available; fall back to -reloadData. */
+- (void)insertItemsAtIndexes:(NSIndexSet*)indexes inParent:(id)parent withAnimation:(NSUInteger)options
+{
+  (void)indexes; (void)parent; (void)options;
+  [self reloadData];
+}
+- (void)removeItemsAtIndexes:(NSIndexSet*)indexes inParent:(id)parent withAnimation:(NSUInteger)options
+{
+  (void)indexes; (void)parent; (void)options;
+  [self reloadData];
+}
+- (void)moveItemAtIndex:(NSInteger)fromIndex inParent:(id)oldParent toIndex:(NSInteger)toIndex inParent:(id)newParent
+{
+  (void)fromIndex; (void)toIndex; (void)oldParent; (void)newParent;
+  [self reloadData];
+}
+@end
+
+@implementation NSTableView (IupGnustepShimImpl)
+- (void)setDraggingDestinationFeedbackStyle:(NSInteger)s { (void)s; }
+- (void)setRowSizeStyle:(NSInteger)style { (void)style; }
+@end
+
+@implementation NSWindow (IupGnustepShimImpl)
+- (void)setStyleMask:(NSUInteger)mask   { (void)mask; }
+- (void)toggleFullScreen:(id)sender     { (void)sender; }
++ (void)setAllowsAutomaticWindowTabbing:(BOOL)flag { (void)flag; }
+@end
+
+@implementation NSMenu (IupGnustepShimImpl)
+- (void)setMinimumWidth:(CGFloat)width  { (void)width; }
+@end
+
+@implementation NSFontManager (IupGnustepShimImpl)
+- (void)setTarget:(id)target { (void)target; }
+@end
+
+/* NSPasteboard 10.6+ convenience API not on GNUstep; forward to legacy equivalents. */
+@implementation NSPasteboard (IupGnustepShimImpl)
+- (NSInteger)clearContents
+{
+  [self declareTypes:[NSArray array] owner:nil];
+  return [self changeCount];
+}
+- (BOOL)writeObjects:(NSArray*)objects
+{
+  BOOL ok = YES;
+  for (id obj in objects)
+  {
+    if ([obj isKindOfClass:[NSString class]])
+    {
+      NSString* s = (NSString*)obj;
+      [self declareTypes:@[NSStringPboardType] owner:nil];
+      if (![self setString:s forType:NSStringPboardType]) ok = NO;
+    }
+    else if ([obj isKindOfClass:[NSURL class]])
+    {
+      NSURL* u = (NSURL*)obj;
+      [self declareTypes:@[NSURLPboardType] owner:nil];
+      if (![self setString:[u absoluteString] forType:NSURLPboardType]) ok = NO;
+    }
+    else if ([obj respondsToSelector:@selector(writableTypesForPasteboard:)])
+    {
+      NSArray* types = [obj writableTypesForPasteboard:self];
+      [self declareTypes:types owner:nil];
+      for (NSString* t in types)
+      {
+        id data = [obj pasteboardPropertyListForType:t];
+        if ([data isKindOfClass:[NSData class]])
+          [self setData:data forType:t];
+        else if ([data isKindOfClass:[NSString class]])
+          [self setString:data forType:t];
+      }
+    }
+  }
+  return ok;
+}
+- (NSArray*)readObjectsForClasses:(NSArray*)classArray options:(NSDictionary*)options
+{
+  (void)options;
+  NSMutableArray* result = [NSMutableArray array];
+  for (Class cls in classArray)
+  {
+    if (cls == [NSString class])
+    {
+      NSString* s = [self stringForType:NSStringPboardType];
+      if (s) [result addObject:s];
+    }
+    else if (cls == [NSURL class])
+    {
+      NSString* s = [self stringForType:NSURLPboardType];
+      if (s) [result addObject:[NSURL URLWithString:s]];
+    }
+  }
+  return result;
+}
+- (BOOL)canReadObjectForClasses:(NSArray*)classArray options:(NSDictionary*)options
+{
+  (void)options;
+  NSArray* available = [self types];
+  for (Class cls in classArray)
+  {
+    if (cls == [NSString class] && [available containsObject:NSStringPboardType]) return YES;
+    if (cls == [NSURL class] && [available containsObject:NSURLPboardType]) return YES;
+  }
+  return NO;
+}
+@end
+#endif
 
 const void* IHANDLE_ASSOCIATED_OBJ_KEY = @"IHANDLE_ASSOCIATED_OBJ_KEY";
 const void* MAINVIEW_ASSOCIATED_OBJ_KEY = @"MAINVIEW_ASSOCIATED_OBJ_KEY";
@@ -666,8 +838,69 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
 
 IUP_SDK_API int iupdrvGetScrollbarSize(void)
 {
+#ifdef GNUSTEP
+  return (int)[NSScroller scrollerWidth];
+#else
   return [NSScroller scrollerWidthForControlSize:NSControlSizeRegular scrollerStyle:NSScrollerStyleLegacy];
+#endif
 }
+
+#ifdef GNUSTEP
+IUP_DRV_API void iupcocoaGnustepConfigureTableView(NSTableView* tableView)
+{
+  [tableView setDrawsGrid:NO];
+  [tableView setAutoresizesAllColumnsToFit:YES];
+}
+
+IUP_DRV_API int iupcocoaGnustepIntrinsicHeight(NSControl* control, int minimum)
+{
+  NSSize intrinsic = [control intrinsicContentSize];
+  int h = (int)lroundf(intrinsic.height);
+  if (h <= 0)
+  {
+    [control sizeToFit];
+    h = (int)lroundf([control frame].size.height);
+  }
+  if (h <= 0)
+  {
+    NSFont* f = [control font];
+    if (!f) f = [NSFont systemFontOfSize:0];
+    h = (int)ceil([f ascender] - [f descender] + [f leading]) + 8;
+  }
+  if (h < minimum) h = minimum;
+  return h;
+}
+
+IUP_DRV_API void iupcocoaGnustepFillCellRect(NSView* cellView, NSRect dirtyRect, NSColor* customBackgroundColor)
+{
+  NSTableRowView* rowView = nil;
+  NSTableView* tableView = nil;
+  if ([[cellView superview] isKindOfClass:[NSTableRowView class]])
+  {
+    rowView = (NSTableRowView*)[cellView superview];
+    if ([[rowView superview] isKindOfClass:[NSTableView class]])
+      tableView = (NSTableView*)[rowView superview];
+  }
+  NSColor* fill = nil;
+  if (rowView && [rowView isSelected])
+    fill = [NSColor selectedControlColor];
+  else if (customBackgroundColor)
+    fill = customBackgroundColor;
+  else if (tableView && [tableView usesAlternatingRowBackgroundColors])
+  {
+    NSInteger row = [tableView rowForView:cellView];
+    if (row >= 0)
+    {
+      NSArray* alt = [NSColor controlAlternatingRowBackgroundColors];
+      if ([alt count] > 0) fill = [alt objectAtIndex:(row % [alt count])];
+    }
+  }
+  if (!fill && tableView) fill = [tableView backgroundColor];
+  if (!fill) fill = [NSColor controlBackgroundColor];
+  [fill setFill];
+  NSRectFill(dirtyRect);
+}
+#endif
 
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)
 {
@@ -788,6 +1021,7 @@ IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihand
 
 IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
+#ifndef GNUSTEP
   unsigned int maccode, state;
   iupdrvKeyEncode(key, &maccode, &state);
   if (!maccode) return;
@@ -811,12 +1045,17 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
   }
 
   CFRelease(source);
+#else
+  (void)key;
+  (void)press;
+#endif
 }
 
 IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
   iupdrvWarpPointer(x, y);
 
+#ifndef GNUSTEP
   if (status != -1)
   {
     CGPoint point = CGPointMake(x, y);
@@ -873,6 +1112,10 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
       CFRelease(event_up2);
     }
   }
+#else
+  (void)bt;
+  (void)status;
+#endif
 }
 
 IUP_SDK_API void iupdrvSleep(int time)
@@ -882,9 +1125,14 @@ IUP_SDK_API void iupdrvSleep(int time)
 
 IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
+#ifndef GNUSTEP
   CGPoint point = CGPointMake(x, y);
   CGWarpMouseCursorPosition(point);
   CGAssociateMouseAndMouseCursorPosition(true);
+#else
+  (void)x;
+  (void)y;
+#endif
 }
 
 IUP_DRV_API void iupcocoaCommonBaseAppendMenuItems(NSMenu* dst_menu, NSMenu* src_menu)
@@ -948,11 +1196,20 @@ IUP_DRV_API void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id widge
 
 IUP_DRV_API int iupcocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_button)
 {
+#ifdef GNUSTEP
+  /* GNUstep-back follows X11: 1=left, 2=middle, 3=right, 4/5=wheel. */
+  if(1 == which_cocoa_button) return IUP_BUTTON1;
+  if(2 == which_cocoa_button) return IUP_BUTTON2;
+  if(3 == which_cocoa_button) return IUP_BUTTON3;
+  if(4 == which_cocoa_button) return IUP_BUTTON4;
+  if(5 == which_cocoa_button) return IUP_BUTTON5;
+#else
   if(0 == which_cocoa_button) return IUP_BUTTON1;
   if(1 == which_cocoa_button) return IUP_BUTTON3;
   if(2 == which_cocoa_button) return IUP_BUTTON2;
   if(3 == which_cocoa_button) return IUP_BUTTON4;
   if(4 == which_cocoa_button) return IUP_BUTTON5;
+#endif
   return (int)(which_cocoa_button + '0'); /* Other buttons */
 }
 
