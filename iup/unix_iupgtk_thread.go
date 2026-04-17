@@ -1,4 +1,4 @@
-//go:build (!windows && !darwin && !motif && !qt && !gtk4 && !efl && !fltk) || (gtk && (windows || darwin))
+//go:build (!windows && !darwin && !motif && !qt && !gtk4 && !efl && !fltk && !gnustep) || (gtk && (windows || darwin))
 
 package iup
 

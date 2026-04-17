@@ -16,23 +16,23 @@ package iup
 #cgo !windows,!darwin CFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
 #cgo !windows,!darwin CXXFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
 
-#cgo !windows,!darwin,!qt,!efl,!motif,!fltk CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
+#cgo !windows,!darwin,!qt,!efl,!motif,!fltk,!gnustep CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 #cgo gtk,gtk2,gtk4 CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 
-#cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!efl,!fltk CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
-#cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!efl,!fltk CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
-#cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4,!efl,!fltk CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
+#cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
+#cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
+#cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
 
 #cgo qt CFLAGS: -Iexternal/src/qt -DIUP_USE_QT
 #cgo qt CXXFLAGS: -Iexternal/src/qt -DIUP_USE_QT -std=c++17
 
-#cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
-#cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
-#cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
-#cgo !windows,!darwin,!motif,!qt,!efl,!fltk,web CFLAGS: -DIUPWEB_USE_DLOPEN
+#cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
+#cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
+#cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
+#cgo !windows,!darwin,!motif,!qt,!efl,!fltk,!gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo !windows,!darwin,!motif,!gtk2,!efl,!fltk,gl,!nopkgconfig pkg-config: wayland-egl egl gl
-#cgo !windows,!darwin,!motif,!qt,gtk2,!efl,!fltk,gl,!nopkgconfig pkg-config: gl
+#cgo !windows,!darwin,!motif,!gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: wayland-egl egl gl
+#cgo !windows,!darwin,!motif,!qt,gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: gl
 
 #cgo qt,!qt5,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Widgets
 #cgo qt,qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets
@@ -89,5 +89,9 @@ package iup
 #cgo fltk CXXFLAGS: -Iexternal/src/fltk -Iexternal/src/unix -DIUP_USE_FLTK -std=c++17
 #cgo fltk LDFLAGS: -lfltk -lfltk_images
 #cgo fltk,gl,!windows,!darwin,!nopkgconfig pkg-config: wayland-egl egl gl
+
+#cgo gnustep CFLAGS: -Iexternal/src/cocoa -Iexternal/src/unix -x objective-c -DIUP_USE_COCOA -DGNUSTEP
+#cgo gnustep CFLAGS: -fno-strict-aliasing -fPIC -fblocks -Wno-import -Wno-incompatible-pointer-types -Wno-protocol
+#cgo gnustep LDFLAGS: -lgnustep-gui -lgnustep-base -l:libobjc.so -lBlocksRuntime -ldispatch -lopal -lgnustep-corebase
 */
 import "C"
