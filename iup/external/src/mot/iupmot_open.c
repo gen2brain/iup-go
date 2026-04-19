@@ -148,6 +148,7 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
     iupmotSetGlobalColorFromXrm("*background", "*Background", "TXTBGCOLOR", 255, 255, 255);
     iupmotSetGlobalColorFromXrm("*foreground", "*Foreground", "TXTFGCOLOR", 0, 0, 0);
     iupmotSetGlobalColorFromXrm("*highlightColor", "*HighlightColor", "TXTHLCOLOR", 128, 128, 128);
+    iupmotSetGlobalColorFromXrm("*highlightColor", "*HighlightColor", "ACCENTCOLOR", 128, 128, 128);
 
     /* Link color - typically blue, but can be themed */
     iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);

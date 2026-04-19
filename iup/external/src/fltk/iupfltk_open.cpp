@@ -175,6 +175,7 @@ IUP_DRV_API void iupfltkSetGlobalColors(void)
 
   Fl::get_color(FL_SELECTION_COLOR, r, g, b);
   iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", r, g, b);
+  iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", r, g, b);
 
   Fl::get_color(FL_BACKGROUND_COLOR, r, g, b);
   iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", r, g, b);

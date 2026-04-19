@@ -575,6 +575,15 @@ But it can be used for drawing selected areas in custom controls.
 
 The default foreground color for linked text. In GTK and Motif is "0 0 238".
 
+### ACCENTCOLOR
+
+The system accent color (read-only). This is the user-selected theme accent color
+used for primary buttons, toggles, progress bars, focus indicators, and similar
+UI elements. Unlike TXTHLCOLOR (which is the text selection background), this
+reflects the toolkit's notion of the platform accent.
+
+On some platforms this value coincides with TXTHLCOLOR because the toolkit derives text selection from the same source.
+
 ### DEFAULTFONT
 
 The default font used by all elements, except for menus.

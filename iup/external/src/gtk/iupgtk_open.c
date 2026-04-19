@@ -545,6 +545,18 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
     gtkSetGlobalColorAttrib("TXTHLCOLOR", &color);
   }
 
+  if (gtk_style_context_lookup_color(context, "accent_bg_color", &color) ||
+      gtk_style_context_lookup_color(context, "accent_color", &color) ||
+      gtk_style_context_lookup_color(context, "theme_selected_bg_color", &color))
+  {
+    gtkSetGlobalColorAttrib("ACCENTCOLOR", &color);
+  }
+  else
+  {
+    color.red = 0.2; color.green = 0.4; color.blue = 0.8; color.alpha = 1.0;
+    gtkSetGlobalColorAttrib("ACCENTCOLOR", &color);
+  }
+
   context = gtk_widget_get_style_context(dialog);
 
   gtk_style_context_get_color(context, GTK_STATE_FLAG_NORMAL, &color);
@@ -579,6 +591,7 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
 
   color = style->base[GTK_STATE_SELECTED];
   gtkSetGlobalColorAttrib("TXTHLCOLOR", &color);
+  gtkSetGlobalColorAttrib("ACCENTCOLOR", &color);
 
   color = style->fg[GTK_STATE_NORMAL];
   gtkSetGlobalColorAttrib("MENUFGCOLOR", &color);
