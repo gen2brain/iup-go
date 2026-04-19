@@ -115,7 +115,6 @@ No external dependencies.
 
 **Qt6**:
 `qt6-base-dev` or `qt6-qtbase-devel`.
-For GL: also `qt6-base-private-dev` or `qt6-qtbase-private-devel` (CMake finds private headers automatically).
 For Web: also `qt6-webengine-dev` or `qt6-qtwebengine-devel`.
 
 **Qt5**:

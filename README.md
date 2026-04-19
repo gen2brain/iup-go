@@ -100,15 +100,6 @@ For the `WebBrowser` control, install `qt6-webengine-dev` or `qt6-qtwebengine-de
 
 For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 
-Qt6 also needs private headers for a Wayland EGL driver; install `qt6-base-private-dev` or `qt6-qtbase-private-devel`.
-You must manually export the path to private header files.
-
-For example, check `pkg-config --modversion Qt6Core` and `pkg-config --cflags Qt6Core` and then based on that use:
-```
-CGO_CXXFLAGS="-I/usr/include/qt6/QtCore/6.9.3 -I/usr/include/qt6/QtGui/6.9.3" \
-go build -tags qt,gl
-```
-
 [<img src="examples/sample/sample_qt6.png" width="700"/>](examples/sample/sample_qt6.png)
 
 ##### FLTK

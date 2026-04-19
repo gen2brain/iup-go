@@ -7,6 +7,12 @@
  * - Qt 5.0 or later (Qt 5.x and Qt 6.x supported)
  * - C++11 compiler (for lambda support)
  *
+ * Platform notes:
+ * - XDISPLAY global attribute requires Qt 6.2+ (QX11Application)
+ * - WL_DISPLAY global attribute requires Qt 6.5+ (QWaylandApplication)
+ * - Wayland wl_surface retrieval requires Qt 6.9+ (winId() returns wl_surface);
+ *   older Qt versions have undefined behaviour and return NULL
+ *
  * Key features:
  * - MOC-free implementation (uses lambdas, no Q_OBJECT/signals/slots)
  * - Cross-platform Qt support (X11, Wayland, Windows, macOS)

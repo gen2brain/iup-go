@@ -21,35 +21,16 @@
 #include <QString>
 #include <QGuiApplication>
 
-/* Qt6 native interface handling */
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-  /* Qt6: Native interface via qguiapplication_platform.h */
-  #if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
-    #include <QtGui/qguiapplication_platform.h>
-  #endif
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
+  #include <QtGui/qguiapplication_platform.h>
+#endif
 
-  /* Qt6.7+: Forward declare QWaylandWindow to avoid private header dependency.
-     Must be in QNativeInterface::Private and inherit QObject to match
-     the real vtable layout from qplatformwindow_p.h. */
-  #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
-    #define IUP_QT_HAS_WAYLAND_WINDOW 1
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+  #define IUP_QT_HAS_WAYLAND_APP 1
+#endif
 
-    struct wl_surface;
-
-    QT_BEGIN_NAMESPACE
-    namespace QNativeInterface { namespace Private {
-      struct Q_GUI_EXPORT QWaylandWindow : public QObject {
-        QT_DECLARE_NATIVE_INTERFACE(QWaylandWindow, 1, QWindow)
-        virtual struct wl_surface *surface() const = 0;
-      };
-    }}
-    QT_END_NAMESPACE
-  #endif
-
-  /* Qt6.5+: QWaylandApplication available */
-  #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-    #define IUP_QT_HAS_WAYLAND_APP 1
-  #endif
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+  #define IUP_QT_HAS_WAYLAND_WINID 1
 #endif
 
 extern "C" {
@@ -98,53 +79,21 @@ IUP_DRV_API char* iupqtGetNativeWidgetHandle(QWidget *widget)
 
   QString platform = QGuiApplication::platformName();
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-  /* ========== Qt6 Implementation using QNativeInterface ========== */
-
-  if (platform == "xcb")
-  {
-    /* X11/XCB: winId() returns the X Window ID (XID) */
-    WId xid = window->winId();
-    return (char*)(uintptr_t)xid;
-  }
-  else if (platform == "wayland")
-  {
-#ifdef IUP_QT_HAS_WAYLAND_WINDOW
-    {
-      auto *waylandWindow = window->nativeInterface<QNativeInterface::Private::QWaylandWindow>();
-      if (waylandWindow)
-        return (char*)waylandWindow->surface();
-    }
-#endif
-    return NULL;
-  }
-  else if (platform == "windows")
-  {
-    /* Windows: winId() returns HWND */
-    WId hwnd = window->winId();
-    return (char*)(void*)(uintptr_t)hwnd;
-  }
-  else if (platform == "cocoa")
-  {
-    /* macOS: winId() returns NSView* wrapped in WId */
-    WId nsview = window->winId();
-    return (char*)(uintptr_t)nsview;
-  }
-
-#else
-  /* ========== Qt5 Implementation using winId() ========== */
-  /* Qt5: winId() returns platform-specific native handle (public API)
-   * - X11/XCB: returns XID (Window/xcb_window_t)
-   * - Windows: returns HWND
-   * - macOS: returns NSView*
+  /* winId() returns the platform-native handle:
+   *   xcb     -> X Window ID (XID)
+   *   windows -> HWND
+   *   cocoa   -> NSView*
+   *   wayland -> wl_surface* (Qt 6.9+; undefined before that)
    */
+  if (platform == "wayland")
+  {
+#ifndef IUP_QT_HAS_WAYLAND_WINID
+    return NULL;
+#endif
+  }
+
   WId native_id = window->winId();
   return (char*)(uintptr_t)native_id;
-
-#endif  /* Qt version check */
-
-  /* Unknown platform */
-  return NULL;
 }
 
 IUP_DRV_API const char* iupqtGetNativeWindowHandleName(void)
@@ -278,15 +227,11 @@ static void qtSetGlobalAttrib(void)
 {
   QString platform = QGuiApplication::platformName();
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-  /* ========== Qt6 Implementation using QNativeInterface ========== */
-
   if (platform == "xcb")
   {
     IupSetGlobal("WINDOWING", "X11");
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS)
-    /* Qt 6.2+: Use QX11Application native interface */
     if (auto *x11App = qApp->nativeInterface<QNativeInterface::QX11Application>())
     {
       Display* xdisplay = (Display*)x11App->display();
@@ -310,15 +255,11 @@ static void qtSetGlobalAttrib(void)
     IupSetGlobal("WINDOWING", "WAYLAND");
 
 #if defined(IUP_QT_HAS_WAYLAND_APP) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS)
-    /* Qt 6.5+: Use QWaylandApplication native interface (Linux only) */
     if (auto *waylandApp = qApp->nativeInterface<QNativeInterface::QWaylandApplication>())
     {
-      /* Get Wayland display (wl_display*) */
       void* wl_display = waylandApp->display();
       if (wl_display)
-      {
         IupSetGlobal("WL_DISPLAY", (char*)wl_display);
-      }
     }
 #endif
   }
@@ -332,43 +273,8 @@ static void qtSetGlobalAttrib(void)
   }
   else
   {
-    /* Unknown platform - set platform name as-is */
     IupStoreGlobal("WINDOWING", platform.toUtf8().constData());
   }
-
-#else
-  /* ========== Qt5 Implementation ========== */
-  /* Qt5: Limited native interface support
-   * QPlatformNativeInterface exists but requires qpa private headers which are
-   * not included in standard pkg-config paths. Qt6 provides proper public API.
-   */
-
-  if (platform == "xcb")
-  {
-    IupSetGlobal("WINDOWING", "X11");
-    /* Note: XDISPLAY not set in Qt5 - QPlatformNativeInterface requires private headers.
-     * Applications can manually set XDISPLAY if needed using platform-specific code. */
-  }
-  else if (platform == "wayland")
-  {
-    IupSetGlobal("WINDOWING", "WAYLAND");
-    /* Note: WL_DISPLAY not set in Qt5 (would require private headers) */
-  }
-  else if (platform == "windows")
-  {
-    IupSetGlobal("WINDOWING", "DWM");
-  }
-  else if (platform == "cocoa")
-  {
-    IupSetGlobal("WINDOWING", "QUARTZ");
-  }
-  else
-  {
-    /* Unknown platform - set platform name as-is */
-    IupStoreGlobal("WINDOWING", platform.toUtf8().constData());
-  }
-
-#endif  /* Qt version check */
 }
 
 /****************************************************************************
