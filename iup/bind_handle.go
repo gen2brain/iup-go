@@ -271,6 +271,23 @@ func (ih Ihandle) GetBool(name string, ids ...interface{}) bool {
 	}
 }
 
+// SetBool sets a boolean attribute value. Writes "YES" or "NO".
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+func (ih Ihandle) SetBool(name string, value bool, ids ...interface{}) Ihandle {
+	switch len(ids) {
+	case 0:
+		SetBool(ih, name, value)
+	case 1:
+		SetBoolId(ih, name, ids[0].(int), value)
+	case 2:
+		SetBoolId2(ih, name, ids[0].(int), ids[1].(int), value)
+	default:
+		panic("bad arguments passed to SetBool")
+	}
+	return ih
+}
+
 // GetPtr .
 func (ih Ihandle) GetPtr(name string, ids ...interface{}) uintptr {
 	switch len(ids) {

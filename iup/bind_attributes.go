@@ -101,6 +101,14 @@ func SetAttribute(ih Ihandle, name string, value interface{}) {
 		cValue := cStrOrNull(val)
 		defer cStrFree(cValue)
 		C.IupSetStrAttribute(ih.ptr(), cName, cValue)
+	case bool:
+		s := "NO"
+		if val {
+			s = "YES"
+		}
+		cValue := C.CString(s)
+		defer C.free(unsafe.Pointer(cValue))
+		C.IupSetStrAttribute(ih.ptr(), cName, cValue)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		C.IupSetInt(ih.ptr(), cName, C.int(reflect.ValueOf(value).Int()))
 	case float32:
@@ -326,6 +334,14 @@ func SetAttributeId(ih Ihandle, name string, id int, value interface{}) {
 		cValue := cStrOrNull(val)
 		defer cStrFree(cValue)
 		C.IupSetStrAttributeId(ih.ptr(), cName, C.int(id), cValue)
+	case bool:
+		s := "NO"
+		if val {
+			s = "YES"
+		}
+		cValue := C.CString(s)
+		defer C.free(unsafe.Pointer(cValue))
+		C.IupSetStrAttributeId(ih.ptr(), cName, C.int(id), cValue)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		C.IupSetIntId(ih.ptr(), cName, C.int(id), C.int(reflect.ValueOf(value).Int()))
 	case float32:
@@ -372,6 +388,14 @@ func SetAttributeId2(ih Ihandle, name string, lin, col int, value interface{}) {
 	case string:
 		cValue := cStrOrNull(val)
 		defer cStrFree(cValue)
+		C.IupSetStrAttributeId2(ih.ptr(), cName, C.int(lin), C.int(col), cValue)
+	case bool:
+		s := "NO"
+		if val {
+			s = "YES"
+		}
+		cValue := C.CString(s)
+		defer C.free(unsafe.Pointer(cValue))
 		C.IupSetStrAttributeId2(ih.ptr(), cName, C.int(lin), C.int(col), cValue)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		C.IupSetIntId2(ih.ptr(), cName, C.int(lin), C.int(col), C.int(reflect.ValueOf(value).Int()))
@@ -569,6 +593,27 @@ func GetInt2(ih Ihandle, name string) (count, i1, i2 int) { // count = 0, 1 or 2
 func GetBool(ih Ihandle, name string) bool {
 	val := strings.ToUpper(GetAttribute(ih, name))
 	return val == "YES" || val == "ON" || val == "TRUE" || val == "1"
+}
+
+// SetBool sets a boolean attribute value. Writes "YES" or "NO".
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+func SetBool(ih Ihandle, name string, value bool) {
+	SetAttribute(ih, name, value)
+}
+
+// SetBoolId sets a boolean attribute value for an id.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+func SetBoolId(ih Ihandle, name string, id int, value bool) {
+	SetAttributeId(ih, name, id, value)
+}
+
+// SetBoolId2 sets a boolean attribute value for a (lin, col) position.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setattribute.md
+func SetBoolId2(ih Ihandle, name string, lin, col int, value bool) {
+	SetAttributeId2(ih, name, lin, col, value)
 }
 
 // GetFloat returns the name of an interface element attribute.

@@ -243,6 +243,13 @@ func Message(title, msg string) {
 	C.IupMessage(cTitle, cMsg)
 }
 
+// VersionShow shows a modal dialog with IUP version, driver, and system information.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_version.md
+func VersionShow() {
+	C.IupVersionShow()
+}
+
 // MessageError shows a modal dialog containing an error message.
 // It simply creates and popup a MessageDlg with DIALOGTYPE=ERROR.
 //
