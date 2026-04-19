@@ -61,6 +61,16 @@ IUP_DRV_API void iupcocoaSetGlobalColors(void)
   if (cocoaGetByteRGBAFromNSColor([NSColor selectedTextBackgroundColor], &r, &g, &b, &a))
     iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", r, g, b);
 
+  {
+    NSColor* accent = nil;
+    if ([NSColor respondsToSelector:@selector(controlAccentColor)])
+      accent = [NSColor performSelector:@selector(controlAccentColor)];
+    if (!accent)
+      accent = [NSColor selectedControlColor];
+    if (cocoaGetByteRGBAFromNSColor(accent, &r, &g, &b, &a))
+      iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", r, g, b);
+  }
+
   if (cocoaGetByteRGBAFromNSColor([NSColor linkColor], &r, &g, &b, &a))
     iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", r, g, b);
 

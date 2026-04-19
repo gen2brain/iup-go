@@ -265,6 +265,7 @@ IUP_DRV_API void iupeflSetGlobalColors(void)
     iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", txt_bg_r, txt_bg_g, txt_bg_b);
     iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", fg_r, fg_g, fg_b);
     iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", hl_r, hl_g, hl_b);
+    iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", hl_r, hl_g, hl_b);
     iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", bg_r, bg_g, bg_b);
     iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", fg_r, fg_g, fg_b);
     iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
@@ -356,6 +357,7 @@ IUP_DRV_API void iupeflSetGlobalColors(void)
   iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", txt_bg_r, txt_bg_g, txt_bg_b);
   iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", fg_r, fg_g, fg_b);
   iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", hl_r, hl_g, hl_b);
+  iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", hl_r, hl_g, hl_b);
   iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", bg_r, bg_g, bg_b);
   iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", fg_r, fg_g, fg_b);
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);

@@ -234,6 +234,18 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
     gtkSetGlobalColorAttrib("TXTHLCOLOR", &color);
   }
 
+  if (gtk_style_context_lookup_color(context, "accent_bg_color", &color) ||
+      gtk_style_context_lookup_color(context, "accent_color", &color) ||
+      gtk_style_context_lookup_color(context, "theme_selected_bg_color", &color))
+  {
+    gtkSetGlobalColorAttrib("ACCENTCOLOR", &color);
+  }
+  else
+  {
+    color.red = 0.2; color.green = 0.4; color.blue = 0.8; color.alpha = 1.0;
+    gtkSetGlobalColorAttrib("ACCENTCOLOR", &color);
+  }
+
   if (gtk_style_context_lookup_color(context, "link_color", &color) ||
       gtk_style_context_lookup_color(context, "theme_link_color", &color))
   {

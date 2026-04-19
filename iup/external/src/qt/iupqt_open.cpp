@@ -264,6 +264,11 @@ IUP_DRV_API void iupqtSetGlobalColors(void)
   qtSetGlobalColorAttrib("TXTBGCOLOR", palette.color(QPalette::Base));
   qtSetGlobalColorAttrib("TXTFGCOLOR", palette.color(QPalette::Text));
   qtSetGlobalColorAttrib("TXTHLCOLOR", palette.color(QPalette::Highlight));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+  qtSetGlobalColorAttrib("ACCENTCOLOR", palette.color(QPalette::Accent));
+#else
+  qtSetGlobalColorAttrib("ACCENTCOLOR", palette.color(QPalette::Highlight));
+#endif
   qtSetGlobalColorAttrib("MENUBGCOLOR", palette.color(QPalette::Window));
   qtSetGlobalColorAttrib("MENUFGCOLOR", palette.color(QPalette::WindowText));
   qtSetGlobalColorAttrib("LINKFGCOLOR", palette.color(QPalette::Link));

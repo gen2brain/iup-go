@@ -87,6 +87,7 @@ IUP_DRV_API void iupwinSetGlobalColors(void)
   winSetGlobalColor(COLOR_WINDOW, "TXTBGCOLOR");
   winSetGlobalColor(COLOR_WINDOWTEXT, "TXTFGCOLOR");
   winSetGlobalColor(COLOR_HIGHLIGHT, "TXTHLCOLOR");
+  winSetGlobalColor(COLOR_HIGHLIGHT, "ACCENTCOLOR");
   winSetGlobalColor(COLOR_HOTLIGHT, "LINKFGCOLOR");
   winSetGlobalColor(COLOR_MENU, "MENUBGCOLOR");
   winSetGlobalColor(COLOR_MENUTEXT, "MENUFGCOLOR");

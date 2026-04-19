@@ -125,6 +125,7 @@ IUP_DRV_API void iupwinuiSetGlobalColors(void)
 
   iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", fg.R, fg.G, fg.B);
   iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", accent.R, accent.G, accent.B);
+  iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", accent.R, accent.G, accent.B);
   iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", bg.R, bg.G, bg.B);
   iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", fg.R, fg.G, fg.B);
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", accent.R, accent.G, accent.B);

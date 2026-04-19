@@ -34,6 +34,7 @@ typedef struct _iRegisteredGlobal {
 
 /*                        win mot gtk coc qt  g4  efl wui flt ro   sorted alphabetically */
 static iRegisteredGlobal global_attribs[] = {
+  { "ACCENTCOLOR",        1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
   { "APPID",              0,  0,  1,  0,  1,  1,  1,  1,  0,  0 },
   { "APPNAME",            1,  0,  0,  1,  1,  0,  1,  1,  1,  0 },
   { "APPSHELL",           0,  1,  1,  0,  0,  1,  0,  0,  0,  1 },
