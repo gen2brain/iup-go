@@ -249,6 +249,46 @@ static void eflTextChangedCallback(void* data, const Efl_Event* ev)
     value_cb(ih);
 }
 
+static void eflTextCursorChangedCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  IFniii cb;
+  Eo* entry;
+  Efl_Text_Cursor_Object* cursor = (Efl_Text_Cursor_Object*)ev->object;
+  Efl_Text_Cursor_Object* line_cursor;
+  int pos, lin, col, line_start_pos;
+
+  if (ih->data->disable_callbacks)
+    return;
+
+  cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  if (!cb) return;
+
+  entry = iupeflGetWidget(ih);
+  if (!entry || !cursor) return;
+
+  pos = efl_text_cursor_object_position_get(cursor);
+  if (pos == ih->data->last_caret_pos)
+    return;
+  ih->data->last_caret_pos = pos;
+
+  lin = efl_text_cursor_object_line_number_get(cursor) + 1;
+  col = 1;
+
+  line_cursor = efl_ui_textbox_cursor_create(entry);
+  if (line_cursor)
+  {
+    efl_text_cursor_object_line_number_set(line_cursor, lin - 1);
+    efl_text_cursor_object_move(line_cursor, EFL_TEXT_CURSOR_MOVE_TYPE_LINE_START);
+    line_start_pos = efl_text_cursor_object_position_get(line_cursor);
+    col = pos - line_start_pos + 1;
+    efl_del(line_cursor);
+  }
+
+  if (cb(ih, lin, col, pos) == IUP_CLOSE)
+    IupExitLoop();
+}
+
 static void eflSpinChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -1364,6 +1404,12 @@ static int eflTextMapMethod(Ihandle* ih)
 
     /* EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER only fires for user-initiated changes, not programmatic style changes. */
     efl_event_callback_add(widget, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflTextChangedCallback, ih);
+
+    {
+      Efl_Text_Cursor_Object* main_cur = efl_text_interactive_main_cursor_get(widget);
+      if (main_cur)
+        efl_event_callback_add(main_cur, EFL_TEXT_CURSOR_OBJECT_EVENT_CHANGED, eflTextCursorChangedCallback, ih);
+    }
   }
 
   ih->handle = (InativeHandle*)widget;
