@@ -62,6 +62,40 @@ IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, c
 }
 
 
+static void fltkTextCallCaretCb(Ihandle* ih)
+{
+  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  if (!cb) return;
+
+  int lin = 1, col = 1, pos = 0;
+
+  if (ih->data->is_multiline)
+  {
+    Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
+    Fl_Text_Buffer* buf = editor ? editor->buffer() : NULL;
+    if (!editor || !buf) return;
+
+    pos = editor->insert_position();
+    lin = buf->count_lines(0, pos) + 1;
+    col = pos - buf->line_start(pos) + 1;
+  }
+  else
+  {
+    Fl_Input* input = (Fl_Input*)ih->handle;
+    if (!input) return;
+
+    pos = input->insert_position();
+    col = pos + 1;
+  }
+
+  if (pos != ih->data->last_caret_pos)
+  {
+    ih->data->last_caret_pos = pos;
+    if (cb(ih, lin, col, pos) == IUP_CLOSE)
+      IupExitLoop();
+  }
+}
+
 class IupFltkInput : public Fl_Input
 {
 public:
@@ -92,7 +126,9 @@ public:
           return 1;
         break;
     }
-    return Fl_Input::handle(event);
+    int ret = Fl_Input::handle(event);
+    fltkTextCallCaretCb(iup_handle);
+    return ret;
   }
 };
 
@@ -228,6 +264,7 @@ public:
         window()->cursor(FL_CURSOR_HAND);
     }
 
+    fltkTextCallCaretCb(iup_handle);
     return ret;
   }
 };
