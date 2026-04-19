@@ -32,6 +32,34 @@ extern "C" {
 
 
 /****************************************************************************
+ * Title helpers
+ *
+ * FLTK's Fl_Menu_ natively understands `&X` as an Alt+X mnemonic (same as
+ * Win32), and uses `/` as the submenu path separator. Escape `/` and drop
+ * the `\tShortcut` tail used by IUP — FLTK shortcuts are set via shortcut(int).
+ ****************************************************************************/
+
+static char* fltkMenuBuildLabel(const char* title)
+{
+  if (!title) title = "";
+
+  const char* tab = strchr(title, '\t');
+  size_t len = tab ? (size_t)(tab - title) : strlen(title);
+
+  /* Worst case: every char needs escaping */
+  char* out = (char*)malloc(len * 2 + 1);
+  size_t j = 0;
+  for (size_t i = 0; i < len; i++)
+  {
+    if (title[i] == '/')
+      out[j++] = '\\';
+    out[j++] = title[i];
+  }
+  out[j] = 0;
+  return out;
+}
+
+/****************************************************************************
  * Callbacks
  ****************************************************************************/
 
@@ -73,18 +101,15 @@ static void fltkMenuAddItems(Fl_Menu_* menuwidget, Ihandle* ih_menu, const char*
     if (iupStrEqual(class_name, "submenu"))
     {
       char* title = iupAttribGet(child, "TITLE");
-      if (!title) title = (char*)"";
-
-      char c;
-      char* clean_title = iupStrProcessMnemonic(title, &c, -1);
+      char* label = fltkMenuBuildLabel(title);
 
       char path[512];
       if (path_prefix && *path_prefix)
-        snprintf(path, sizeof(path), "%s/%s", path_prefix, clean_title);
+        snprintf(path, sizeof(path), "%s/%s", path_prefix, label);
       else
-        snprintf(path, sizeof(path), "%s", clean_title);
+        snprintf(path, sizeof(path), "%s", label);
 
-      if (clean_title != title) free(clean_title);
+      free(label);
 
       int flags = FL_SUBMENU;
 
@@ -100,18 +125,15 @@ static void fltkMenuAddItems(Fl_Menu_* menuwidget, Ihandle* ih_menu, const char*
     else if (iupStrEqual(class_name, "menuitem"))
     {
       char* title = iupAttribGet(child, "TITLE");
-      if (!title) title = (char*)"";
-
-      char c;
-      char* clean_title = iupStrProcessMnemonic(title, &c, -1);
+      char* label = fltkMenuBuildLabel(title);
 
       char path[512];
       if (path_prefix && *path_prefix)
-        snprintf(path, sizeof(path), "%s/%s", path_prefix, clean_title);
+        snprintf(path, sizeof(path), "%s/%s", path_prefix, label);
       else
-        snprintf(path, sizeof(path), "%s", clean_title);
+        snprintf(path, sizeof(path), "%s", label);
 
-      if (clean_title != title) free(clean_title);
+      free(label);
 
       int flags = 0;
 
