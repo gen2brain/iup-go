@@ -34,6 +34,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_assert.h"
+#include "iup_dialog.h"
 
 #include "iup_glcanvas_nativeinfo.h"
 
@@ -141,7 +142,6 @@ typedef struct _IGlControlData
   struct wl_subsurface* subsurface;
   struct wl_surface* parent_surface;
   struct wl_compositor* compositor;
-  struct wl_compositor* registry_compositor;
   struct wl_subcompositor* subcompositor;
   struct wl_registry* registry;
   struct wl_event_queue* event_queue;
@@ -292,6 +292,14 @@ static int eGLCanvasDefaultResize(Ihandle *ih, int width, int height)
   if (gldata->egl_window) {
       int resize_w = physical_width < 1 ? 1 : physical_width;
       int resize_h = physical_height < 1 ? 1 : physical_height;
+      int max_pw = 0, max_ph = 0;
+
+      /* Clamp to toplevel bounds; Wayland doesn't clip subsurfaces. */
+      iupEGLBackendGetWaylandMaxPhysicalSize(ih, gldata, &max_pw, &max_ph);
+      if (max_pw > 0 && resize_w > max_pw) resize_w = max_pw;
+      if (max_ph > 0 && resize_h > max_ph) resize_h = max_ph;
+      if (resize_w < 1) resize_w = 1;
+      if (resize_h < 1) resize_h = 1;
 
       wl_egl_window_resize(gldata->egl_window, resize_w, resize_h, 0, 0);
 
@@ -771,16 +779,16 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
     gldata->subsurface_wl = NULL;
   }
 
-  if (gldata->registry_compositor)
-  {
-    wl_compositor_destroy(gldata->registry_compositor);
-    gldata->registry_compositor = NULL;
-  }
-
   if (gldata->subcompositor)
   {
     wl_subcompositor_destroy(gldata->subcompositor);
     gldata->subcompositor = NULL;
+  }
+
+  if (gldata->compositor)
+  {
+    wl_compositor_destroy(gldata->compositor);
+    gldata->compositor = NULL;
   }
 
   if (gldata->registry)
@@ -794,8 +802,6 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
     wl_event_queue_destroy(gldata->event_queue);
     gldata->event_queue = NULL;
   }
-
-  gldata->compositor = NULL;
 #endif
 
   iupEGLBackendCleanup(ih, gldata);
@@ -938,6 +944,10 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
         surface_attribs[1] = EGL_SINGLE_BUFFER;
       }
 
+      if (eglGetCurrentSurface(EGL_DRAW) == gldata->surface ||
+          eglGetCurrentSurface(EGL_READ) == gldata->surface)
+        eglMakeCurrent(gldata->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
       eglDestroySurface(gldata->display, gldata->surface);
 
       gldata->surface = eglCreateWindowSurface(gldata->display, gldata->config, recreate_window, surface_attribs);
@@ -958,8 +968,15 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   /* Check if Wayland EGL window needs resize */
 #ifdef IUP_EGL_HAS_WAYLAND
   if (gldata->egl_window) {
+    int max_pw = 0, max_ph = 0;
 
     eGLCanvasGetActualSize(ih, gldata, &physical_width, &physical_height);
+
+    iupEGLBackendGetWaylandMaxPhysicalSize(ih, gldata, &max_pw, &max_ph);
+    if (max_pw > 0 && physical_width  > max_pw) physical_width  = max_pw;
+    if (max_ph > 0 && physical_height > max_ph) physical_height = max_ph;
+    if (physical_width  < 1) physical_width  = 1;
+    if (physical_height < 1) physical_height = 1;
 
     if (physical_width != gldata->egl_window_physical_width ||
         physical_height != gldata->egl_window_physical_height)

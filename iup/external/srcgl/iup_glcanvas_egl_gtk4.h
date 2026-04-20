@@ -227,47 +227,23 @@ static EGLNativeWindowType iupEGLBackendPostConfig(Ihandle* ih, IGlControlData* 
 static void eGLCanvasGtk4GetSubsurfacePosition(Ihandle* ih, int* out_x, int* out_y)
 {
   GtkWidget* widget = GTK_WIDGET(ih->handle);
-  int subsurface_x = 0, subsurface_y = 0;
+  GtkWidget* root = widget ? GTK_WIDGET(gtk_widget_get_root(widget)) : NULL;
+  graphene_rect_t bounds = { 0 };
+  double surface_x = 0, surface_y = 0;
 
-  if (widget) {
-    GtkWidget* parent = gtk_widget_get_parent(widget);
-    graphene_rect_t bounds;
+  *out_x = 0;
+  *out_y = 0;
 
-    if (parent && gtk_widget_compute_bounds(widget, parent, &bounds)) {
-      subsurface_x = (int)bounds.origin.x;
-      subsurface_y = (int)bounds.origin.y;
-    }
+  if (!root)
+    return;
 
-    {
-      GtkWidget* root = GTK_WIDGET(gtk_widget_get_root(widget));
-      gboolean has_csd = gtk_widget_has_css_class(root, "csd");
-      gboolean has_solid_csd = gtk_widget_has_css_class(root, "solid-csd");
+  if (!gtk_widget_compute_bounds(widget, root, &bounds))
+    return;
 
-      if (has_csd && !has_solid_csd) {
-        GdkSurface* gdk_surf = gtk_native_get_surface(GTK_NATIVE(root));
-        if (gdk_surf) {
-          Ihandle* dialog = IupGetDialog(ih);
-          int caption_height = 37;
-          if (dialog) {
-            int border, caption, menu;
-            iupdrvDialogGetDecoration(dialog, &border, &caption, &menu);
-            if (caption > 0)
-              caption_height = caption;
-          }
+  gtk_native_get_surface_transform(GTK_NATIVE(root), &surface_x, &surface_y);
 
-          {
-            double surface_x, surface_y;
-            gtk_native_get_surface_transform(GTK_NATIVE(root), &surface_x, &surface_y);
-            subsurface_x += (int)surface_x;
-            subsurface_y += (int)surface_y + caption_height;
-          }
-        }
-      }
-    }
-  }
-
-  *out_x = subsurface_x;
-  *out_y = subsurface_y;
+  *out_x = (int)bounds.origin.x + (int)surface_x;
+  *out_y = (int)bounds.origin.y + (int)surface_y;
 }
 
 static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* gldata, EGLNativeWindowType* native_window, EGLint* context_attribs, int max_attribs)
@@ -293,6 +269,9 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
       {
         eGLCopyWaylandSubsurface(&ws, gldata, parent_surface);
         *native_window = (EGLNativeWindowType)gldata->egl_window;
+
+        if (ih->currentwidth <= 1 || ih->currentheight <= 1)
+          iupAttribSet(ih, "_IUP_EGL_SURFACE_1x1", "1");
 
         context_attribs[0] = EGL_CONTEXT_CLIENT_VERSION;
         context_attribs[1] = 2;
@@ -371,8 +350,18 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
 
 static EGLNativeWindowType iupEGLBackendCheckSurfaceRecreation(Ihandle* ih, IGlControlData* gldata)
 {
+  if (gldata->surface == EGL_NO_SURFACE || !iupAttribGet(ih, "_IUP_EGL_SURFACE_1x1"))
+    return (EGLNativeWindowType)NULL;
+
+#ifdef GDK_WINDOWING_WAYLAND
+  if (gldata->egl_window && gldata->egl_window_physical_width > 1 && gldata->egl_window_physical_height > 1)
+  {
+    iupAttribSet(ih, "_IUP_EGL_SURFACE_1x1", NULL);
+    return (EGLNativeWindowType)gldata->egl_window;
+  }
+#endif
+
 #ifdef GDK_WINDOWING_X11
-  if (gldata->surface != EGL_NO_SURFACE && iupAttribGet(ih, "_IUP_EGL_SURFACE_1x1"))
   {
     GdkSurface* gdk_surface = (GdkSurface*)gldata->backend_handle;
     int surf_w = 0, surf_h = 0;
@@ -387,9 +376,9 @@ static EGLNativeWindowType iupEGLBackendCheckSurfaceRecreation(Ihandle* ih, IGlC
       return (EGLNativeWindowType)gdk_x11_surface_get_xid(gdk_surface);
     }
   }
-#else
-  (void)ih; (void)gldata;
 #endif
+
+  (void)ih; (void)gldata;
   return (EGLNativeWindowType)NULL;
 }
 
@@ -402,44 +391,41 @@ static void iupEGLBackendUpdateSubsurfacePosition(Ihandle* ih, IGlControlData* g
 {
 #ifdef GDK_WINDOWING_WAYLAND
   if (gldata->subsurface && ih->handle && GTK_IS_WIDGET(ih->handle)) {
-    GtkWidget* widget = (GtkWidget*)ih->handle;
-    GtkWidget* parent = gtk_widget_get_parent(widget);
-    graphene_rect_t bounds;
     int subsurface_x = 0, subsurface_y = 0;
-
-    if (parent && gtk_widget_compute_bounds(widget, parent, &bounds)) {
-      subsurface_x = (int)bounds.origin.x;
-      subsurface_y = (int)bounds.origin.y;
-    }
-
-    {
-      Ihandle* dialog = IupGetDialog(ih);
-      GtkWidget* root = GTK_WIDGET(gtk_widget_get_root((GtkWidget*)ih->handle));
-      gboolean has_csd = gtk_widget_has_css_class(root, "csd");
-      gboolean has_solid_csd = gtk_widget_has_css_class(root, "solid-csd");
-
-      if (has_csd && !has_solid_csd) {
-        GdkSurface* gdk_surf = gtk_native_get_surface(GTK_NATIVE(root));
-        if (gdk_surf) {
-          int caption_height = 37;
-          if (dialog) {
-            int border, caption, menu;
-            iupdrvDialogGetDecoration(dialog, &border, &caption, &menu);
-            if (caption > 0) {
-              caption_height = caption;
-            }
-          }
-
-          double surface_x, surface_y;
-          gtk_native_get_surface_transform(GTK_NATIVE(root), &surface_x, &surface_y);
-
-          subsurface_x += (int)surface_x;
-          subsurface_y += (int)surface_y + caption_height;
-        }
-      }
-    }
-
+    eGLCanvasGtk4GetSubsurfacePosition(ih, &subsurface_x, &subsurface_y);
     wl_subsurface_set_position(gldata->subsurface, subsurface_x, subsurface_y);
+  }
+#else
+  (void)ih; (void)gldata;
+#endif
+}
+
+static void iupEGLBackendGetWaylandMaxPhysicalSize(Ihandle* ih, IGlControlData* gldata, int* max_pw, int* max_ph)
+{
+  *max_pw = 0; *max_ph = 0;
+#ifdef GDK_WINDOWING_WAYLAND
+  if (gldata->subsurface && ih->handle && GTK_IS_WIDGET(ih->handle)) {
+    GtkWidget* widget = (GtkWidget*)ih->handle;
+    GtkWidget* root = GTK_WIDGET(gtk_widget_get_root(widget));
+    if (root) {
+      GdkSurface* gdk_surf = gtk_native_get_surface(GTK_NATIVE(root));
+      graphene_rect_t bounds;
+      int w = 0, h = 0, x = 0, y = 0, scale = 1;
+      if (gdk_surf)
+        scale = gdk_surface_get_scale_factor(gdk_surf);
+      if (scale < 1) scale = 1;
+      /* Root widget size = window content (excludes GTK4's shadow area). */
+      w = gtk_widget_get_width(root);
+      h = gtk_widget_get_height(root);
+      if (gtk_widget_compute_bounds(widget, root, &bounds)) {
+        x = (int)bounds.origin.x;
+        y = (int)bounds.origin.y;
+      }
+      if (x < 0) x = 0;
+      if (y < 0) y = 0;
+      if (w > x) *max_pw = (w - x) * scale;
+      if (h > y) *max_ph = (h - y) * scale;
+    }
   }
 #else
   (void)ih; (void)gldata;

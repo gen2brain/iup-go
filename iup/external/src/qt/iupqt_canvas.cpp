@@ -660,10 +660,15 @@ static int qtCanvasMapMethod(Ihandle* ih)
 
   if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
   {
-    canvas->setAttribute(Qt::WA_NativeWindow, true);
-    canvas->setAttribute(Qt::WA_DontCreateNativeAncestors, true);
-    canvas->setAttribute(Qt::WA_NoSystemBackground, true);
-    canvas->setAttribute(Qt::WA_PaintOnScreen, true);
+    /* Wayland: our GL renders into a subsurface on the dialog's wl_surface, not a canvas-owned one. */
+    const char* windowing = IupGetGlobal("WINDOWING");
+    if (!(windowing && strcmp(windowing, "WAYLAND") == 0))
+    {
+      canvas->setAttribute(Qt::WA_NativeWindow, true);
+      canvas->setAttribute(Qt::WA_DontCreateNativeAncestors, true);
+      canvas->setAttribute(Qt::WA_NoSystemBackground, true);
+      canvas->setAttribute(Qt::WA_PaintOnScreen, true);
+    }
     iupAttribSet(ih, "_IUPQT_CANVAS_WIDGET", (char*)canvas_widget);
   }
 
