@@ -286,6 +286,31 @@ static void iupEGLBackendUpdateSubsurfacePosition(Ihandle* ih, IGlControlData* g
 #endif
 }
 
+static void iupEGLBackendGetWaylandMaxPhysicalSize(Ihandle* ih, IGlControlData* gldata, int* max_pw, int* max_ph)
+{
+  *max_pw = 0; *max_ph = 0;
+#ifdef GDK_WINDOWING_WAYLAND
+  if (gldata->subsurface && ih->handle && GTK_IS_WIDGET(ih->handle)) {
+    GtkWidget* widget = GTK_WIDGET(ih->handle);
+    GtkWidget* toplevel = gtk_widget_get_toplevel(widget);
+    if (toplevel && gtk_widget_get_realized(widget)) {
+      GtkAllocation alloc;
+      int x = 0, y = 0;
+      int scale = gdk_window_get_scale_factor(gtk_widget_get_window(widget));
+      if (scale < 1) scale = 1;
+      gtk_widget_get_allocation(toplevel, &alloc);
+      gtk_widget_translate_coordinates(widget, toplevel, 0, 0, &x, &y);
+      if (x < 0) x = 0;
+      if (y < 0) y = 0;
+      if (alloc.width  > x) *max_pw = (alloc.width  - x) * scale;
+      if (alloc.height > y) *max_ph = (alloc.height - y) * scale;
+    }
+  }
+#else
+  (void)ih; (void)gldata;
+#endif
+}
+
 static void iupEGLBackendCleanup(Ihandle* ih, IGlControlData* gldata)
 {
   (void)ih;

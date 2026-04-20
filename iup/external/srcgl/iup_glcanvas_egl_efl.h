@@ -258,6 +258,12 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
       struct wl_display* wl_display = wl2_display ? ecore_wl2_display_get(wl2_display) : NULL;
       struct wl_surface* parent_surface = wl2_win ? ecore_wl2_window_surface_get(wl2_win) : NULL;
 
+      if (wl2_win)
+        ecore_wl2_window_show(wl2_win);
+
+      if (wl_display)
+        wl_display_dispatch_pending(wl_display);
+
       if (wl_display && parent_surface)
       {
         int x = 0, y = 0;
@@ -373,7 +379,23 @@ static void iupEGLBackendUpdateSubsurfacePosition(Ihandle* ih, IGlControlData* g
     }
   }
 #endif
+
+#ifdef HAVE_ECORE_WL2
+  if (gldata->subsurface)
+  {
+    int x = 0, y = 0;
+    eGLCanvasEflGetSubsurfacePosition(gldata, &x, &y);
+    wl_subsurface_set_position(gldata->subsurface, x, y);
+  }
+#endif
+
   (void)ih; (void)gldata;
+}
+
+static void iupEGLBackendGetWaylandMaxPhysicalSize(Ihandle* ih, IGlControlData* gldata, int* max_pw, int* max_ph)
+{
+  (void)ih; (void)gldata;
+  *max_pw = 0; *max_ph = 0;
 }
 
 static void iupEGLBackendCleanup(Ihandle* ih, IGlControlData* gldata)

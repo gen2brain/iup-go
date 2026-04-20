@@ -316,7 +316,6 @@ static int iupGLCreateWaylandSubsurface(struct wl_display* wl_display, struct wl
 
   wl_subsurface_set_desync(out->subsurface);
   wl_subsurface_set_position(out->subsurface, x, y);
-  wl_surface_commit(parent_surface);
 
   if (scale < 1) scale = 1;
   out->physical_width = w * scale;

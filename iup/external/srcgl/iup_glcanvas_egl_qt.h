@@ -214,6 +214,34 @@ static void iupEGLBackendUpdateSubsurfacePosition(Ihandle* ih, IGlControlData* g
   }
 }
 
+static void iupEGLBackendGetWaylandMaxPhysicalSize(Ihandle* ih, IGlControlData* gldata, int* max_pw, int* max_ph)
+{
+  Ihandle* dialog;
+  int client_w, client_h, x, y, scale;
+  int border = 0, caption = 0, menu = 0;
+  (void)gldata;
+
+  *max_pw = 0; *max_ph = 0;
+
+  dialog = IupGetDialog(ih);
+  if (!dialog)
+    return;
+
+  iupdrvDialogGetDecoration(dialog, &border, &caption, &menu);
+
+  client_w = dialog->currentwidth  - 2 * border;
+  client_h = dialog->currentheight - 2 * border - caption;
+  x = ih->x;
+  y = ih->y;
+  scale = iupEGLBackendGetScale();
+  if (scale < 1) scale = 1;
+
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+  if (client_w > x) *max_pw = (client_w - x) * scale;
+  if (client_h > y) *max_ph = (client_h - y) * scale;
+}
+
 static void iupEGLBackendCleanup(Ihandle* ih, IGlControlData* gldata)
 {
   (void)ih;
