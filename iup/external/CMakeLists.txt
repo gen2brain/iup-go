@@ -43,7 +43,9 @@ endif()
 
 # --- Options ---
 
-if(APPLE)
+if(ANDROID)
+  set(_IUP_BACKEND_DEFAULT "android")
+elseif(APPLE)
   set(_IUP_BACKEND_DEFAULT "cocoa")
 elseif(WIN32)
   set(_IUP_BACKEND_DEFAULT "win32")
@@ -52,16 +54,18 @@ else()
 endif()
 
 set(IUP_BACKEND "${_IUP_BACKEND_DEFAULT}" CACHE STRING
-  "GUI backend: gtk3, gtk4, gtk2, win32, winui, cocoa, motif, qt6, qt5, efl, fltk")
+  "GUI backend: gtk3, gtk4, gtk2, win32, winui, cocoa, cocoatouch, motif, qt6, qt5, efl, fltk, android")
 set_property(CACHE IUP_BACKEND PROPERTY STRINGS
-  gtk3 gtk4 gtk2 win32 winui cocoa motif qt6 qt5 efl fltk)
+  gtk3 gtk4 gtk2 win32 winui cocoa cocoatouch motif qt6 qt5 efl fltk android)
 
-option(IUP_BUILD_GL       "Build iupgl (OpenGL canvas)"     OFF)
-option(IUP_BUILD_WEB      "Build iupweb (Web browser)"      OFF)
-option(IUP_BUILD_PLOT     "Build iupplot (Plot control)"    OFF)
-option(IUP_BUILD_CTRL     "Build iupctrl (Matrix/Controls)" OFF)
-option(IUP_BUILD_EXAMPLES "Build example programs"          OFF)
-option(IUP_USE_XEMBED     "Use XEmbed tray protocol instead of SNI (GTK3/Motif on Linux)" OFF)
+option(IUP_BUILD_GL        "Build iupgl (OpenGL canvas)"     OFF)
+option(IUP_BUILD_WEB       "Build iupweb (Web browser)"      OFF)
+option(IUP_BUILD_PLOT      "Build iupplot (Plot control)"    OFF)
+option(IUP_BUILD_CTRL      "Build iupctrl (Matrix/Controls)" OFF)
+option(IUP_BUILD_EXAMPLES  "Build example programs"          OFF)
+option(IUP_USE_XEMBED      "Use XEmbed tray protocol instead of SNI (GTK3/Motif on Linux)" OFF)
+option(IUP_BUILD_FRAMEWORK "Build iup as a .framework bundle (requires IUP_BACKEND=cocoatouch)" OFF)
+set(IUP_FRAMEWORK_BUILD "1" CACHE STRING "CFBundleVersion for the framework bundle")
 
 if(APPLE)
   enable_language(OBJC)
@@ -72,8 +76,8 @@ endif()
 file(GLOB IUP_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/iup_*.c")
 list(APPEND IUP_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/iup.c")
 
-# iup_datepick.c is a core fallback, Win32 and Qt drivers provide their own
-if(IUP_BACKEND STREQUAL "win32" OR IUP_BACKEND MATCHES "^qt")
+# iup_datepick.c is a core fallback; Win32, Qt, Android and iOS provide their own
+if(IUP_BACKEND STREQUAL "win32" OR IUP_BACKEND MATCHES "^qt" OR IUP_BACKEND STREQUAL "android" OR IUP_BACKEND STREQUAL "cocoatouch")
   list(REMOVE_ITEM IUP_CORE_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/iup_datepick.c"
   )
@@ -97,6 +101,8 @@ elseif(IUP_BACKEND STREQUAL "winui")
   include(IUPDriverWinUI)
 elseif(IUP_BACKEND STREQUAL "cocoa")
   include(IUPDriverCocoa)
+elseif(IUP_BACKEND STREQUAL "cocoatouch")
+  include(IUPDriverCocoaTouch)
 elseif(IUP_BACKEND STREQUAL "motif")
   include(IUPDriverMotif)
 elseif(IUP_BACKEND STREQUAL "qt6" OR IUP_BACKEND STREQUAL "qt5")
@@ -105,13 +111,21 @@ elseif(IUP_BACKEND STREQUAL "efl")
   include(IUPDriverEFL)
 elseif(IUP_BACKEND STREQUAL "fltk")
   include(IUPDriverFLTK)
+elseif(IUP_BACKEND STREQUAL "android")
+  include(IUPDriverAndroid)
 else()
   message(FATAL_ERROR "Unknown IUP_BACKEND: ${IUP_BACKEND}")
 endif()
 
 # --- Build iup library ---
 
-add_library(iup
+if(IUP_BUILD_FRAMEWORK)
+  set(_IUP_LIB_TYPE SHARED)
+else()
+  set(_IUP_LIB_TYPE "")
+endif()
+
+add_library(iup ${_IUP_LIB_TYPE}
   ${IUP_CORE_SOURCES}
   ${IUP_DRIVER_SOURCES}
 )
@@ -120,7 +134,7 @@ add_library(IUP::iup ALIAS iup)
 target_include_directories(iup
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:include/iup>
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${IUP_DRIVER_INCLUDE_DIRS}
@@ -147,6 +161,72 @@ set_target_properties(iup PROPERTIES
   SOVERSION ${PROJECT_VERSION_MAJOR}
   POSITION_INDEPENDENT_CODE ON
 )
+
+# --- iOS .framework bundle ---
+
+if(IUP_BUILD_FRAMEWORK)
+  if(NOT IUP_BACKEND STREQUAL "cocoatouch")
+    message(FATAL_ERROR "IUP_BUILD_FRAMEWORK requires IUP_BACKEND=cocoatouch")
+  endif()
+
+  set(IUP_FRAMEWORK_VERSION "${PROJECT_VERSION}")
+  if(CMAKE_OSX_SYSROOT MATCHES "[Ss]imulator")
+    set(IUP_FRAMEWORK_PLATFORM "iPhoneSimulator")
+  else()
+    set(IUP_FRAMEWORK_PLATFORM "iPhoneOS")
+  endif()
+  if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "15.0")
+  endif()
+  set(IUP_FRAMEWORK_MIN_IOS "${CMAKE_OSX_DEPLOYMENT_TARGET}")
+
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/ios/library/Info.plist.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/IUP-Info.plist"
+    @ONLY
+  )
+
+  set(IUP_FRAMEWORK_PUBLIC_HEADERS
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iup.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iupcbs.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iupcbs.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iupkey.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_export.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_plus.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_varg.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iupdraw.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_config.h"
+  )
+  if(IUP_BUILD_GL)
+    list(APPEND IUP_FRAMEWORK_PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/iupgl.h")
+  endif()
+  if(IUP_BUILD_WEB)
+    list(APPEND IUP_FRAMEWORK_PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/iupweb.h")
+  endif()
+  if(IUP_BUILD_CTRL)
+    list(APPEND IUP_FRAMEWORK_PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/iupcontrols.h")
+  endif()
+  if(IUP_BUILD_PLOT)
+    list(APPEND IUP_FRAMEWORK_PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_plot.h")
+  endif()
+
+  set_target_properties(iup PROPERTIES
+    FRAMEWORK TRUE
+    FRAMEWORK_VERSION A
+    OUTPUT_NAME IUP
+    MACOSX_FRAMEWORK_IDENTIFIER io.github.gen2brain.iup
+    MACOSX_FRAMEWORK_INFO_PLIST "${CMAKE_CURRENT_BINARY_DIR}/IUP-Info.plist"
+    PUBLIC_HEADER "${IUP_FRAMEWORK_PUBLIC_HEADERS}"
+    XCODE_ATTRIBUTE_DEFINES_MODULE YES
+  )
+
+  add_custom_command(TARGET iup POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:iup>/Modules
+    COMMAND ${CMAKE_COMMAND} -E copy
+      "${CMAKE_CURRENT_SOURCE_DIR}/ios/library/module.modulemap"
+      $<TARGET_FILE_DIR:iup>/Modules/module.modulemap
+  )
+endif()
 
 get_target_property(_iup_type iup TYPE)
 if(_iup_type STREQUAL "SHARED_LIBRARY")
@@ -179,6 +259,11 @@ if(IUP_BUILD_PLOT)
   include(IUPOptionalPlot)
 endif()
 
+# Framework mode is consumed via build-framework.sh -> xcodebuild -create-xcframework, not cmake --install.
+if(IUP_BUILD_FRAMEWORK)
+  return()
+endif()
+
 # --- Examples ---
 
 if(IUP_BUILD_EXAMPLES)
@@ -208,7 +293,7 @@ install(TARGETS ${_IUP_INSTALL_TARGETS}
 )
 
 install(DIRECTORY include/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iup
   FILES_MATCHING
     PATTERN "*.h"
     PATTERN "*.hpp"

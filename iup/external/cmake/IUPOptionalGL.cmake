@@ -8,6 +8,14 @@ if(WIN32)
   list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_win.c")
   set(_GL_LIBS opengl32)
 
+elseif(APPLE AND IUP_BACKEND STREQUAL "cocoatouch")
+  list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_cocoatouch.m")
+  set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_cocoatouch.m"
+    PROPERTIES LANGUAGE OBJC
+  )
+  set(_GL_LIBS "-framework QuartzCore" "-framework" "OpenGLES")
+
 elseif(APPLE)
   list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_cocoa.m")
   set_source_files_properties(
@@ -20,6 +28,13 @@ elseif(IUP_BACKEND STREQUAL "gtk2" OR IUP_BACKEND STREQUAL "motif")
   list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_x.c")
   find_package(OpenGL REQUIRED)
   set(_GL_LIBS OpenGL::GL)
+
+elseif(IUP_BACKEND STREQUAL "android")
+  list(APPEND _GL_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_android.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_android_jni.c"
+  )
+  set(_GL_LIBS EGL GLESv3 android)
 
 else()
   # EGL path: GTK3, GTK4, Qt, EFL (Unix/Linux only)
@@ -46,13 +61,21 @@ else()
   endif()
 endif()
 
+if(IUP_BUILD_FRAMEWORK)
+  target_sources(iup PRIVATE ${_GL_SOURCES})
+  target_compile_definitions(iup PRIVATE IUPGL_BUILD_LIBRARY ${_GL_DEFS})
+  target_include_directories(iup PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/srcgl)
+  target_link_libraries(iup PRIVATE ${_GL_LIBS})
+  return()
+endif()
+
 add_library(iupgl ${_GL_SOURCES})
 add_library(IUP::iupgl ALIAS iupgl)
 
 target_include_directories(iupgl
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:include/iup>
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/srcgl
@@ -85,10 +108,14 @@ set(IUPGL_PC_REQUIRES "")
 set(IUPGL_PC_LIBS_PRIVATE "")
 if(WIN32)
   set(IUPGL_PC_LIBS_PRIVATE "-lopengl32")
+elseif(APPLE AND IUP_BACKEND STREQUAL "cocoatouch")
+  set(IUPGL_PC_LIBS_PRIVATE "-framework QuartzCore -framework OpenGLES")
 elseif(APPLE)
   set(IUPGL_PC_LIBS_PRIVATE "-framework OpenGL")
 elseif(IUP_BACKEND STREQUAL "gtk2" OR IUP_BACKEND STREQUAL "motif")
   set(IUPGL_PC_LIBS_PRIVATE "-lGL")
+elseif(IUP_BACKEND STREQUAL "android")
+  set(IUPGL_PC_LIBS_PRIVATE "-lEGL -lGLESv3 -landroid")
 else()
   set(IUPGL_PC_REQUIRES "egl gl")
   if(WAYLAND_EGL_FOUND)

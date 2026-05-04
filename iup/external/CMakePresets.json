@@ -64,6 +64,50 @@
       }
     },
     {
+      "name": "cocoatouch",
+      "displayName": "iOS UIKit backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "cocoatouch"
+      }
+    },
+    {
+      "name": "cocoatouch-framework-device",
+      "displayName": "iOS framework, device (arm64)",
+      "inherits": "cocoatouch",
+      "cacheVariables": {
+        "IUP_BUILD_FRAMEWORK": "ON",
+        "CMAKE_SYSTEM_NAME": "iOS",
+        "CMAKE_OSX_SYSROOT": "iphoneos",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0"
+      }
+    },
+    {
+      "name": "cocoatouch-framework-simulator-arm64",
+      "displayName": "iOS framework, simulator (arm64)",
+      "inherits": "cocoatouch",
+      "cacheVariables": {
+        "IUP_BUILD_FRAMEWORK": "ON",
+        "CMAKE_SYSTEM_NAME": "iOS",
+        "CMAKE_OSX_SYSROOT": "iphonesimulator",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0"
+      }
+    },
+    {
+      "name": "cocoatouch-framework-simulator-x86_64",
+      "displayName": "iOS framework, simulator (x86_64)",
+      "inherits": "cocoatouch",
+      "cacheVariables": {
+        "IUP_BUILD_FRAMEWORK": "ON",
+        "CMAKE_SYSTEM_NAME": "iOS",
+        "CMAKE_OSX_SYSROOT": "iphonesimulator",
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0"
+      }
+    },
+    {
       "name": "motif",
       "displayName": "Motif / X11 backend",
       "inherits": "default",
@@ -170,6 +214,50 @@
       }
     },
     {
+      "name": "cocoatouch-full",
+      "displayName": "CocoaTouch / iOS with all optional libraries",
+      "inherits": "cocoatouch",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "cocoatouch-framework-device-full",
+      "displayName": "iOS framework, device (arm64), all optional libraries",
+      "inherits": "cocoatouch-framework-device",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "cocoatouch-framework-simulator-arm64-full",
+      "displayName": "iOS framework, simulator (arm64), all optional libraries",
+      "inherits": "cocoatouch-framework-simulator-arm64",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "cocoatouch-framework-simulator-x86_64-full",
+      "displayName": "iOS framework, simulator (x86_64), all optional libraries",
+      "inherits": "cocoatouch-framework-simulator-x86_64",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
       "name": "motif-full",
       "displayName": "Motif with all optional libraries",
       "inherits": "motif",
@@ -222,6 +310,27 @@
         "IUP_BUILD_WEB": "ON",
         "IUP_BUILD_CTRL": "ON",
         "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
+      "name": "android",
+      "displayName": "Android backend (arm64-v8a)",
+      "inherits": "default",
+      "toolchainFile": "$env{ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake",
+      "cacheVariables": {
+        "IUP_BACKEND": "android",
+        "ANDROID_ABI": "arm64-v8a",
+        "ANDROID_PLATFORM": "android-22",
+        "BUILD_SHARED_LIBS": "ON"
+      }
+    },
+    {
+      "name": "android-full",
+      "displayName": "Android with GL and Web optional libraries",
+      "inherits": "android",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON"
       }
     },
     {

@@ -7,5 +7,5 @@ Name: IUP Plot
 Description: IUP Plot/charting control
 Version: @_IUP_VERSION_RAW@
 Requires: iup
-Cflags: -I${includedir}
+Cflags: -I${includedir}/iup
 Libs: -L${libdir} -liupplot

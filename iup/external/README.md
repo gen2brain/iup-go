@@ -3,7 +3,7 @@
 IUP is a multi-platform toolkit for building graphical user interfaces.
 It uses native interface elements for high performance and platform-consistent look and feel.
 
-This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, GTK4, Qt, FLTK, EFL) and features.
+This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, GTK4, FLTK, EFL, Android, CocoaTouch) and features.
 
 API reference documentation is available in the [docs](https://github.com/gen2brain/iup-go/tree/main/docs) directory.
 For the original IUP documentation, visit [IUP's website](https://www.tecgraf.puc-rio.br/iup).
@@ -36,32 +36,36 @@ cmake --build build/gtk4
 
 Available presets:
 
-| Preset       | Backend                   | Notes                |
-|--------------|---------------------------|----------------------|
-| `default`    | Platform native           | GTK3 / Win32 / Cocoa |
-| `gtk3`       | GTK3                      |                      |
-| `gtk4`       | GTK4                      |                      |
-| `gtk2`       | GTK2                      | Legacy               |
-| `win32`      | Win32                     | Windows native       |
-| `winui`      | WinUI / XAML Islands      |                      |
-| `cocoa`      | Cocoa                     | macOS native         |
-| `motif`      | Motif / X11               |                      |
-| `qt6`        | Qt6                       |                      |
-| `qt5`        | Qt5                       |                      |
-| `fltk`       | FLTK                      |                      |
-| `efl`        | EFL / Elementary          |                      |
-| `gtk3-full`  | GTK3 + all optional libs  |                      |
-| `gtk4-full`  | GTK4 + all optional libs  |                      |
-| `gtk2-full`  | GTK2 + all optional libs  |                      |
-| `win32-full` | Win32 + all optional libs |                      |
-| `winui-full` | WinUI + all optional libs |                      |
-| `cocoa-full` | Cocoa + all optional libs |                      |
-| `motif-full` | Motif + all optional libs |                      |
-| `qt6-full`   | Qt6 + all optional libs   |                      |
-| `qt5-full`   | Qt5 + all optional libs   |                      |
-| `efl-full`   | EFL + all optional libs   |                      |
-| `fltk-full`  | FLTK + all optional libs  |                      |
-| `debug`      | Platform native, debug    |                      |
+| Preset            | Backend                        | Notes                |
+|-------------------|--------------------------------|----------------------|
+| `default`         | Platform native                | GTK3 / Win32 / Cocoa |
+| `gtk3`            | GTK3                           |                      |
+| `gtk4`            | GTK4                           |                      |
+| `gtk2`            | GTK2                           | Legacy               |
+| `win32`           | Win32                          | Windows native       |
+| `winui`           | WinUI / XAML Islands           |                      |
+| `cocoa`           | Cocoa / AppKit                 | macOS native         |
+| `cocoatouch`      | CocoaTouch / UIKit             | iOS                  |
+| `motif`           | Motif / X11                    |                      |
+| `qt6`             | Qt6                            |                      |
+| `qt5`             | Qt5                            |                      |
+| `fltk`            | FLTK                           |                      |
+| `efl`             | EFL / Elementary               |                      |
+| `android`         | Android (arm64-v8a)            | Requires NDK         |
+| `gtk3-full`       | GTK3 + all optional libs       |                      |
+| `gtk4-full`       | GTK4 + all optional libs       |                      |
+| `gtk2-full`       | GTK2 + all optional libs       |                      |
+| `win32-full`      | Win32 + all optional libs      |                      |
+| `winui-full`      | WinUI + all optional libs      |                      |
+| `cocoa-full`      | Cocoa + all optional libs      |                      |
+| `cocoatouch-full` | CocoaTouch + all optional libs |                      |
+| `motif-full`      | Motif + all optional libs      |                      |
+| `qt6-full`        | Qt6 + all optional libs        |                      |
+| `qt5-full`        | Qt5 + all optional libs        |                      |
+| `efl-full`        | EFL + all optional libs        |                      |
+| `fltk-full`       | FLTK + all optional libs       |                      |
+| `android-full`    | Android + GL + Web             | Requires NDK         |
+| `debug`           | Platform native, debug         |                      |
 
 You can create a `CMakeUserPresets.json` file for local overrides (e.g., toolchain or compiler paths) without modifying the tracked `CMakePresets.json`.
 IDEs automatically pick up both files.
@@ -136,10 +140,23 @@ Requires a C++20 compiler (MSVC or Clang++).
 At runtime, `Microsoft.WindowsAppRuntime.Bootstrap.dll` and `resources.pri` must be next to the `.exe` file.
 These files can be found in the `Microsoft.WindowsAppSDK` NuGet package.
 
+**Android**:
+Requires the Android NDK (r23 or newer). Set `ANDROID_NDK_HOME` and use the `android` preset, or pass
+`-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake -DANDROID_ABI=<abi> -DANDROID_PLATFORM=android-22 -DIUP_BACKEND=android -DBUILD_SHARED_LIBS=ON` directly.
+Valid `ANDROID_ABI` values: `arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`.
+The Gradle project under `android/` wraps this build (see [android/README.md](android/README.md)); Android consumers can drive CMake through Gradle rather than invoking it directly.
+
+**CocoaTouch** (iOS):
+Requires Xcode (or the Command Line Tools) for the iOS SDK and Apple Clang.
+Use the `cocoatouch` preset together with an iOS toolchain file to target device or simulator.
+The app-bundle build (sign + install + log) is wrapped by helper scripts under `ios/`; see [ios/README.md](ios/README.md).
+
 **OpenGL** (`IUP_BUILD_GL`):
 GTK3/GTK4/Qt/EFL/FLTK use EGL on Linux: `libegl-dev libgl-dev` or `libglvnd-devel`.
 Motif/GTK2 use GLX: `libgl-dev` or `libglvnd-devel`.
 Windows uses WGL, macOS uses OpenGL framework (no extra deps).
+Android uses EGL + GLES v3 from the NDK (no extra deps).
+iOS uses EAGL + CAEAGLLayer from OpenGLES framework (no extra deps).
 
 ### Using IUP from CMake
 

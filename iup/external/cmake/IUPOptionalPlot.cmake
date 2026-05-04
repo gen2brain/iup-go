@@ -2,13 +2,20 @@
 
 file(GLOB _PLOT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcplot/*.cpp")
 
+if(IUP_BUILD_FRAMEWORK)
+  target_sources(iup PRIVATE ${_PLOT_SOURCES})
+  target_compile_definitions(iup PRIVATE IUPPLOT_BUILD_LIBRARY)
+  target_include_directories(iup PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/srcplot)
+  return()
+endif()
+
 add_library(iupplot ${_PLOT_SOURCES})
 add_library(IUP::iupplot ALIAS iupplot)
 
 target_include_directories(iupplot
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:include/iup>
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/srcplot

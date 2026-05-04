@@ -6,13 +6,24 @@ file(GLOB _CTRL_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/srcctrl/matrixex/*.c"
 )
 
+if(IUP_BUILD_FRAMEWORK)
+  target_sources(iup PRIVATE ${_CTRL_SOURCES})
+  target_compile_definitions(iup PRIVATE IUPCONTROLS_BUILD_LIBRARY)
+  target_include_directories(iup PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/srcctrl
+    ${CMAKE_CURRENT_SOURCE_DIR}/srcctrl/matrix
+    ${CMAKE_CURRENT_SOURCE_DIR}/srcctrl/matrixex
+  )
+  return()
+endif()
+
 add_library(iupctrl ${_CTRL_SOURCES})
 add_library(IUP::iupctrl ALIAS iupctrl)
 
 target_include_directories(iupctrl
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:include/iup>
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/srcctrl
