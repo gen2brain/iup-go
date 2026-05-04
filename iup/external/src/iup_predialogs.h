@@ -20,6 +20,12 @@ IupGetFile
 IupGetText
 */
 
+enum {
+  IUP_BUTTON_ORDER_OK_FIRST = 0,    /* primary leftmost: Windows HIG */
+  IUP_BUTTON_ORDER_CANCEL_FIRST = 1 /* primary rightmost: macOS / iOS / Linux DEs / Android HIG */
+};
+int iupDialogButtonOrder(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -25,6 +25,9 @@ A button is not shown if its parameter is NULL. This is valid only for **b2** an
 Button 1 is set as the "DEFAULTENTER" and "DEFAULTESC". If Button 2 exists, it is set as the "DEFAULTESC".
 If Button 3 exists, it is set as the "DEFAULTESC".
 
+Callers must pass the primary action as **b1** and the cancel/destructive action as the last present button.
+IUP reorders the buttons visually per host platform's HIG; the return value and the DEFAULTENTER/DEFAULTESC bindings stay the same.
+
 The dialog uses a global attribute called "PARENTDIALOG" as the parent dialog if it is defined.
 It also uses a global attribute called "ICON" as the dialog icon if it is defined.
 

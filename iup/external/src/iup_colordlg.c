@@ -17,6 +17,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_predialogs.h"
 #include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
@@ -739,7 +740,10 @@ static int iColorDlgSetShowCompactAttrib(Ihandle* ih, const char* value)
   IupSetAttribute(col1, "ALIGNMENT", "ACENTER");
   IupSetAttribute(col1, "EXPAND", "HORIZONTAL");
 
-  lin2c = IupHbox(IupFill(), ok_bt, cancel_bt, IupFill(), NULL);
+  if (iupDialogButtonOrder() == IUP_BUTTON_ORDER_CANCEL_FIRST)
+    lin2c = IupHbox(IupFill(), cancel_bt, ok_bt, IupFill(), NULL);
+  else
+    lin2c = IupHbox(IupFill(), ok_bt, cancel_bt, IupFill(), NULL);
   IupSetAttribute(lin2c, "GAP", "5");
   IupSetAttribute(lin2c, "MARGIN", "0x0");
   IupSetAttribute(lin2c, "NORMALIZESIZE", "HORIZONTAL");
@@ -1190,7 +1194,10 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   /* 2nd line = Buttons */
   /* ================== */
 
-  lin2 = IupHbox(IupFill(), ok_bt, cancel_bt, colordlg_data->help_bt, NULL);
+  if (iupDialogButtonOrder() == IUP_BUTTON_ORDER_CANCEL_FIRST)
+    lin2 = IupHbox(IupFill(), colordlg_data->help_bt, cancel_bt, ok_bt, NULL);
+  else
+    lin2 = IupHbox(IupFill(), ok_bt, cancel_bt, colordlg_data->help_bt, NULL);
   IupSetAttribute(lin2, "GAP", "5");
   IupSetAttribute(lin2, "MARGIN", "0x0");
   IupSetAttribute(lin2, "NORMALIZESIZE", "HORIZONTAL");
