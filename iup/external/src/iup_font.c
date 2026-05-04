@@ -21,20 +21,21 @@ typedef struct _IfontNameMap {
   const char* pango;
   const char* x;
   const char* win;
-  const char* mac; /* not sure if GNUStep uses same names as Apple. Mac & iOS are close, but may have slight differences. */
+  const char* mac;     /* iOS shares Mac column; both ship the same family names */
+  const char* android; /* Typeface.create only knows monospace/serif/sans-serif */
 } IfontNameMap;
 
 #define IFONT_NAME_MAP_SIZE 7
 
 static IfontNameMap ifont_name_map[IFONT_NAME_MAP_SIZE] = {
-/*  pango        X11                      Windows                Mac  */
-  {"sans",      "helvetica",              "arial",               "Helvetica Neue"},
-  {NULL,        "new century schoolbook", "century schoolbook",  "BiauKai"}, /* Century Schoolbook seems to be private/hidden on Mac. Trying BiauKai as substitute. */
-  {"monospace", "courier",                "courier new",         "Courier New"},
-  {NULL,        "lucida",                 "lucida sans unicode", "Lucida Grande"},
-  {NULL,        "lucidabright",           "lucida bright",       "Lucida Grande"},
-  {NULL,        "lucidatypewriter",       "lucida console",      "Menlo"},
-  {"serif",     "times",                  "times new roman",     "Times New Roman"}
+/*  pango        X11                      Windows                Mac                 Android       */
+  {"sans",      "helvetica",              "arial",               "Helvetica Neue",   "sans-serif"},
+  {NULL,        "new century schoolbook", "century schoolbook",  "BiauKai",          "serif"},      /* Century Schoolbook is private on Mac; BiauKai substitute. */
+  {"monospace", "courier",                "courier new",         "Courier New",      "monospace"},
+  {NULL,        "lucida",                 "lucida sans unicode", "Lucida Grande",    "sans-serif"},
+  {NULL,        "lucidabright",           "lucida bright",       "Lucida Grande",    "serif"},
+  {NULL,        "lucidatypewriter",       "lucida console",      "Menlo",            "monospace"},
+  {"serif",     "times",                  "times new roman",     "Times New Roman",  "serif"}
 };
 
 const char* iupFontGetPangoName(const char* name)
@@ -104,6 +105,26 @@ const char* iupFontGetMacName(const char* name)
       return ifont_name_map[i].mac;
   if (iupStrEqualNoCase(ifont_name_map[i].x, name))
       return ifont_name_map[i].mac;
+  }
+
+  return NULL;
+}
+
+const char* iupFontGetAndroidName(const char* name)
+{
+  int i;
+  if (!name)
+    return NULL;
+  for (i=0; i<IFONT_NAME_MAP_SIZE; i++)
+  {
+    if (iupStrEqualNoCase(ifont_name_map[i].pango, name))
+      return ifont_name_map[i].android;
+    if (iupStrEqualNoCase(ifont_name_map[i].x, name))
+      return ifont_name_map[i].android;
+    if (iupStrEqualNoCase(ifont_name_map[i].win, name))
+      return ifont_name_map[i].android;
+    if (iupStrEqualNoCase(ifont_name_map[i].mac, name))
+      return ifont_name_map[i].android;
   }
 
   return NULL;

@@ -82,6 +82,14 @@ static int iProgressBarSetOrientationAttrib(Ihandle* ih, const char* value)
   return 0; /* do not store value in hash table */
 }
 
+static int iProgressBarSetCircularAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->handle) return 0;
+  if (iupStrBoolean(value))
+    IupSetAttribute(ih, "RASTERSIZE", "48x48");
+  return 1;
+}
+
 static int iProgressBarCreateMethod(Ihandle* ih, void **params)
 {
   (void)params;
@@ -138,6 +146,7 @@ Iclass* iupProgressBarNewClass(void)
   iupClassRegisterAttribute(ic, "MAX", iProgressBarGetMaxAttrib, iProgressBarSetMaxAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ORIENTATION", NULL, iProgressBarSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CIRCULAR", NULL, iProgressBarSetCircularAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupdrvProgressBarInitClass(ic);
 

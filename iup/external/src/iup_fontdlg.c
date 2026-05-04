@@ -225,13 +225,6 @@ static int iFontDlgShow_CB(Ihandle* ih, int state)
   return IUP_DEFAULT;
 }
 
-static int iFontDlgMapMethod(Ihandle* ih)
-{
-  iFontDlgInitFamilyList(ih);
-  iFontDlgInitSizeList(ih);
-  return IUP_NOERROR;
-}
-
 static int iFontDlgCreateMethod(Ihandle* ih, void** params)
 {
   Ihandle *ok_bt, *cancel_bt, *help_bt;
@@ -255,20 +248,18 @@ static int iFontDlgCreateMethod(Ihandle* ih, void** params)
   list1 = IupList(NULL);
   IupSetAttribute(list1, "EDITBOX", "YES");
   IupSetAttribute(list1, "READONLY", "YES");
-  IupSetAttribute(list1, "EXPAND", "YES");
+  IupSetAttribute(list1, "EXPAND", "HORIZONTAL");
   IupSetCallback(list1, "ACTION", (Icallback)iFontDlgList1_CB);
   IupSetAttribute(list1, "VISIBLELINES", "5");
-  IupSetAttribute(list1, "VISIBLECOLUMNS", "20");
   IupSetAttribute(list1, "NAME", "LIST1");
   IupSetAttribute(list1, "SORT", "YES");
 
   list2 = IupList(NULL);
   IupSetAttribute(list2, "EDITBOX", "YES");
   IupSetAttribute(list2, "READONLY", "YES");
-  IupSetAttribute(list2, "EXPAND", "VERTICAL");
+  IupSetAttribute(list2, "EXPAND", "HORIZONTAL");
   IupSetCallback(list2, "ACTION", (Icallback)iFontDlgList2_CB);
   IupSetAttribute(list2, "VISIBLELINES", "5");
-  IupSetAttribute(list2, "VISIBLECOLUMNS", "11");
   IupSetAttribute(list2, "NAME", "LIST2");
   IupSetAttribute(list2, "1", "Normal");
   IupSetAttribute(list2, "2", "Bold");
@@ -278,18 +269,17 @@ static int iFontDlgCreateMethod(Ihandle* ih, void** params)
 
   list3 = IupList(NULL);
   IupSetAttribute(list3, "EDITBOX", "YES");
-  IupSetAttribute(list3, "EXPAND", "VERTICAL");
+  IupSetAttribute(list3, "EXPAND", "HORIZONTAL");
   IupSetCallback(list3, "ACTION", (Icallback)iFontDlgList3_CB);
   IupSetCallback(list3, "EDIT_CB", (Icallback)iFontDlgSizeEdit_CB);
   IupSetAttribute(list3, "VISIBLELINES", "5");
-  IupSetAttribute(list3, "VISIBLECOLUMNS", "6");
   IupSetAttribute(list3, "NAME", "LIST3");
   IupSetAttribute(list3, "MASKINT", "1:72");
 
   lin1 = IupHbox(
-    IupSetAttributes(IupVbox(IupLabel("_@IUP_FAMILY"), list1, NULL), "GAP=0"),
-    IupSetAttributes(IupVbox(IupLabel("_@IUP_STYLE"), list2, NULL), "GAP=0"),
-    IupSetAttributes(IupVbox(IupLabel("_@IUP_SIZE"), list3, NULL), "GAP=0"),
+    IupSetAttributes(IupVbox(IupLabel("_@IUP_FAMILY"), list1, NULL), "GAP=0, EXPANDWEIGHT=1.5"),
+    IupSetAttributes(IupVbox(IupLabel("_@IUP_STYLE"), list2, NULL), "GAP=0, EXPANDWEIGHT=1"),
+    IupSetAttributes(IupVbox(IupLabel("_@IUP_SIZE"), list3, NULL), "GAP=0, EXPANDWEIGHT=0.5"),
     NULL);
   IupSetAttribute(lin1, "GAP", "10");
   IupSetAttribute(lin1, "MARGIN", "0x0");
@@ -300,7 +290,7 @@ static int iFontDlgCreateMethod(Ihandle* ih, void** params)
   IupSetAttribute(lin2, "NORMALIZESIZE", "HORIZONTAL");
 
   {
-    Ihandle* sample = IupSetAttributes(IupLabel(NULL), "NAME=SAMPLE, TITLE=\"AaBbCcXxYyZz\", EXPAND=YES, RASTERSIZE=x60, ALIGNMENT=ACENTER:ACENTER");
+    Ihandle* sample = IupSetAttributes(IupLabel(NULL), "NAME=SAMPLE, TITLE=\"AaBbCcXxYyZz\", EXPAND=HORIZONTAL, RASTERSIZE=x60, ALIGNMENT=ACENTER:ACENTER");
     IupSetStrAttribute(sample, "BGCOLOR", IupGetGlobal("TXTBGCOLOR"));
 
     iupChildTreeAppend(ih, IupSetAttributes(IupVbox(lin1,
@@ -315,6 +305,10 @@ static int iFontDlgCreateMethod(Ihandle* ih, void** params)
 
   IupSetCallback(ih, "SHOW_CB", (Icallback)iFontDlgShow_CB);
   IupSetAttribute(ih, "SHRINK", "YES");
+
+  /* Populate before layout so list natural widths fit actual items. */
+  iFontDlgInitFamilyList(ih);
+  iFontDlgInitSizeList(ih);
 
   (void)params;
   return IUP_NOERROR;
@@ -338,10 +332,10 @@ Iclass* iupFontDlgNewClass(void)
   if (iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Motif") ||
       iupStrEqualNoCase(IupGetGlobal("DRIVER"), "FLTK") ||
       iupStrEqualNoCase(IupGetGlobal("DRIVER"), "EFL") ||
-      iupStrEqualNoCase(IupGetGlobal("DRIVER"), "WinUI"))
+      iupStrEqualNoCase(IupGetGlobal("DRIVER"), "WinUI") ||
+      iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Android"))
   {
     ic->Create = iFontDlgCreateMethod;
-    ic->Map = iFontDlgMapMethod;
 
     iupClassRegisterAttribute(ic, "PREVIEWTEXT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   }

@@ -127,6 +127,7 @@ const char* iupFontGetWinName(const char* typeface);
 const char* iupFontGetXName(const char* typeface);
 const char* iupFontGetPangoName(const char* typeface);
 const char* iupFontGetMacName(const char* typeface);
+const char* iupFontGetAndroidName(const char* typeface);
 
 
 #ifdef __cplusplus
