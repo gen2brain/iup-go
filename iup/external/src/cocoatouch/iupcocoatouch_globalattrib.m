@@ -21,17 +21,24 @@
 
 static int s_cocoatouch_utf8_autoconvert = 1;
 
+/* APPID/APPNAME are read-only; baked into Info.plist at build time */
 IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
 {
-	/* Bundle ID lives in Info.plist; no runtime override path */
 	(void)value;
-	return 1;
+	return 0;
 }
 
 IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 {
 	(void)value;
-	return 1;
+	return 0;
+}
+
+static char* cocoaTouchInfoPlistString(NSString* key)
+{
+	NSString* s = [[[NSBundle mainBundle] infoDictionary] objectForKey:key];
+	if (!s.length) return NULL;
+	return iupStrReturnStr([s UTF8String]);
 }
 
 IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
@@ -58,6 +65,13 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 		iupdrvGetCursorPos(&x, &y);
 		snprintf(str, 50, "%dx%d", x, y);
 		return str;
+	}
+	if (iupStrEqual(name, "APPID"))
+		return cocoaTouchInfoPlistString(@"CFBundleIdentifier");
+	if (iupStrEqual(name, "APPNAME"))
+	{
+		char* s = cocoaTouchInfoPlistString(@"CFBundleDisplayName");
+		return s ? s : cocoaTouchInfoPlistString(@"CFBundleName");
 	}
 	if (iupStrEqual(name, "SHIFTKEY") || iupStrEqual(name, "CONTROLKEY"))
 	{
