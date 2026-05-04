@@ -99,6 +99,12 @@ func main() {
 	fmt.Printf("  UTF8MODE:        %s\n", g("UTF8MODE"))
 	fmt.Printf("  LANGUAGE:        %s\n", g("LANGUAGE"))
 
+	fmt.Println("\nDirectories:")
+	fmt.Printf("  CACHEDIR:        %s\n", g("CACHEDIR"))
+	fmt.Printf("  DATADIR:         %s\n", g("DATADIR"))
+	fmt.Printf("  CONFIGDIR:       %s\n", g("CONFIGDIR"))
+	fmt.Printf("  TMPDIR:          %s\n", g("TMPDIR"))
+
 	if driver == "Win32" || driver == "WinUI" {
 		fmt.Println("\nWindows:")
 		if v := g("COMCTL32VER6"); v != "" {

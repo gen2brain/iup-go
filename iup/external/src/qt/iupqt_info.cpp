@@ -240,20 +240,13 @@ extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *a
 
   if (use_system)
   {
-    /* Use GenericConfigLocation for system config path:
-     * - Linux: ~/.config/appname/config
-     * - Windows: C:/Users/<USER>/AppData/Local/appname/config.cfg
-     * - macOS: ~/Library/Application Support/appname/config */
-    QString config_dir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
-    if (config_dir.isEmpty())
+    char root[10240];
+    if (!iupdrvGetUserDir(root, sizeof(root), IUP_USER_DIR_CONFIG))
     {
       filename[0] = '\0';
       return 0;
     }
-
-    QString app_dir = config_dir + "/" + QString::fromUtf8(app_name);
-
-    /* Create app directory if needed */
+    QString app_dir = QString::fromUtf8(root) + "/" + QString::fromUtf8(app_name);
     QDir dir(app_dir);
     if (!dir.exists())
       dir.mkpath(".");
@@ -268,26 +261,46 @@ extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *a
     iupStrCopyN(filename, 10240, path_bytes.constData());
     return 1;
   }
-  else
+
+  QString home_dir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+  if (home_dir.isEmpty())
   {
-    /* Legacy: home directory */
-    QString home_dir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-    if (home_dir.isEmpty())
-    {
-      filename[0] = '\0';
-      return 0;
-    }
+    filename[0] = '\0';
+    return 0;
+  }
 
 #ifdef _WIN32
-    QString config_file = home_dir + "/" + QString::fromUtf8(app_name) + ".cfg";
+  QString config_file = home_dir + "/" + QString::fromUtf8(app_name) + ".cfg";
 #else
-    QString config_file = home_dir + "/." + QString::fromUtf8(app_name);
+  QString config_file = home_dir + "/." + QString::fromUtf8(app_name);
 #endif
 
-    QByteArray path_bytes = config_file.toUtf8();
-    iupStrCopyN(filename, 10240, path_bytes.constData());
-    return 1;
+  QByteArray path_bytes = config_file.toUtf8();
+  iupStrCopyN(filename, 10240, path_bytes.constData());
+  return 1;
+}
+
+extern "C" IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
+{
+  if (!path || size <= 0) return 0;
+  path[0] = '\0';
+
+  QStandardPaths::StandardLocation loc;
+  switch (kind)
+  {
+    case IUP_USER_DIR_CACHE:  loc = QStandardPaths::GenericCacheLocation; break;
+    case IUP_USER_DIR_DATA:   loc = QStandardPaths::GenericDataLocation; break;
+    case IUP_USER_DIR_CONFIG: loc = QStandardPaths::GenericConfigLocation; break;
+    case IUP_USER_DIR_TEMP:   loc = QStandardPaths::TempLocation; break;
+    default: return 0;
   }
+
+  QString root = QStandardPaths::writableLocation(loc);
+  if (root.isEmpty()) return 0;
+
+  QByteArray bytes = root.toUtf8();
+  iupStrCopyN(path, size, bytes.constData());
+  return 1;
 }
 
 /****************************************************************************

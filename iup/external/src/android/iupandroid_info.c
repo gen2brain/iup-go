@@ -166,65 +166,73 @@ char* iupdrvGetUserName(void)
 
 int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
 {
-  JNIEnv* jni_env;
-  jmethodID method_id;
-  jclass java_class;
-  jobject context_object;
-  jobject file_object;
-  jstring j_path_string;
-  const char* c_path_string = NULL;
-
   filename[0] = '\0';
 
   if (!app_name || !app_name[0])
     return 0;
 
-  jni_env = iupAndroid_GetEnvThreadSafe();
-
-  /* Application object doubles as a Context. */
-  context_object = iupAndroid_GetApplication(jni_env);
-
-  java_class = (*jni_env)->GetObjectClass(jni_env, context_object);
-
-  method_id = (*jni_env)->GetMethodID(jni_env, java_class, "getFilesDir", "()Ljava/io/File;");
-  file_object = (*jni_env)->CallObjectMethod(jni_env, context_object, method_id);
-  if (file_object == NULL)
-  {
-    __android_log_print(ANDROID_LOG_ERROR, "Iup", "iupdrvGetPreferencePath: context.getFilesDir() failed");
-    (*jni_env)->DeleteLocalRef(jni_env, java_class);
-    (*jni_env)->DeleteLocalRef(jni_env, context_object);
+  char root[10240];
+  if (!iupdrvGetUserDir(root, sizeof(root), IUP_USER_DIR_CONFIG))
     return 0;
-  }
 
-  (*jni_env)->DeleteLocalRef(jni_env, java_class);
-  java_class = (*jni_env)->GetObjectClass(jni_env, file_object);
-
-  method_id = (*jni_env)->GetMethodID(jni_env, java_class, "getAbsolutePath", "()Ljava/lang/String;");
-  j_path_string = (jstring)(*jni_env)->CallObjectMethod(jni_env, file_object, method_id);
-
-  c_path_string = (*jni_env)->GetStringUTFChars(jni_env, j_path_string, NULL);
-
-  /* use_system: <files>/app_name/config ; legacy: <files>/.app_name */
-  int ok = 1;
   if (use_system)
   {
-    if (snprintf(filename, 10240, "%s/%s", c_path_string, app_name) >= 10240) ok = 0;
-    if (ok) mkdir(filename, 0755);
-    if (ok && snprintf(filename + strlen(filename), 10240 - strlen(filename), "/config") >= (int)(10240 - strlen(filename))) ok = 0;
+    snprintf(filename, 10240, "%s/%s", root, app_name);
+    mkdir(filename, 0755);
+    snprintf(filename + strlen(filename), 10240 - strlen(filename), "/config");
   }
   else
   {
-    if (snprintf(filename, 10240, "%s/.%s", c_path_string, app_name) >= 10240) ok = 0;
+    snprintf(filename, 10240, "%s/.%s", root, app_name);
+  }
+  return 1;
+}
+
+int iupdrvGetUserDir(char* path, int size, int kind)
+{
+  if (!path || size <= 0) return 0;
+  path[0] = '\0';
+
+  const char* method_name;
+  switch (kind)
+  {
+    case IUP_USER_DIR_CACHE:
+    case IUP_USER_DIR_TEMP:   method_name = "getCacheDir"; break;
+    case IUP_USER_DIR_DATA:
+    case IUP_USER_DIR_CONFIG: method_name = "getFilesDir"; break;
+    default: return 0;
   }
 
-  if (!ok) filename[0] = '\0';
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  /* Application object doubles as a Context. */
+  jobject ctx = iupAndroid_GetApplication(env);
+  jclass ctx_cls = (*env)->GetObjectClass(env, ctx);
+  jmethodID m = (*env)->GetMethodID(env, ctx_cls, method_name, "()Ljava/io/File;");
+  jobject file_obj = (*env)->CallObjectMethod(env, ctx, m);
+  iupAndroid_CheckException(env, method_name);
+  (*env)->DeleteLocalRef(env, ctx_cls);
+  (*env)->DeleteLocalRef(env, ctx);
+  if (!file_obj) return 0;
 
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_path_string, c_path_string);
-  (*jni_env)->DeleteLocalRef(jni_env, j_path_string);
-  (*jni_env)->DeleteLocalRef(jni_env, file_object);
-  (*jni_env)->DeleteLocalRef(jni_env, java_class);
-  (*jni_env)->DeleteLocalRef(jni_env, context_object);
+  jclass file_cls = (*env)->GetObjectClass(env, file_obj);
+  jmethodID m_path = (*env)->GetMethodID(env, file_cls, "getAbsolutePath", "()Ljava/lang/String;");
+  jstring j_path = (jstring)(*env)->CallObjectMethod(env, file_obj, m_path);
+  iupAndroid_CheckException(env, "File.getAbsolutePath");
 
+  int ok = 0;
+  if (j_path)
+  {
+    const char* c_path = (*env)->GetStringUTFChars(env, j_path, NULL);
+    if (c_path)
+    {
+      iupStrCopyN(path, size, c_path);
+      (*env)->ReleaseStringUTFChars(env, j_path, c_path);
+      ok = path[0] ? 1 : 0;
+    }
+    (*env)->DeleteLocalRef(env, j_path);
+  }
+  (*env)->DeleteLocalRef(env, file_obj);
+  (*env)->DeleteLocalRef(env, file_cls);
   return ok;
 }
 

@@ -48,19 +48,17 @@ In this case, APP_FILENAME must **not** be defined.
 If APP_NAME is not set, the global [APPNAME](../attrib/iup_globals.md#appname) attribute is used as a fallback, and if that is also not set, the global [APPID](../attrib/iup_globals.md#appid) attribute is used.
 The file name creation will depend on the system and on its usage.
 
-There are two defined usages. First, for a **User Configuration File,** it will be stored on the user Home folder.
-Second, as an **Application Configuration File,** it will be stored in the same folder of the executable.
-The Home folder is always preferred, but you may need to just load a configuration file saved by the installation for instance.
+There are two defined usages. The default is the **User Configuration File** stored under the per-user system folder.
+The alternative is the **Application Configuration File** stored next to the executable, used when loading a configuration shipped by the installer.
 
-The **User Configuration File** is the most common usage.
-In UNIX, the filename will be "<HOME>/.<APP_NAME>", where "<HOME>" is replaced by the "HOME" environment variable contents, and <APP_NAME> replaced by the APP_NAME attribute value.
-In Windows, the filename will be "<HOMEDRIVE><HOMEPATH>\\APP_NAME>.cfg", where HOMEDRIVE and HOMEPATH are also obtained from environment variables.
-If the attribute APP_SYSTEMPATH is set to Yes, then it will use the system defined folder for application files, in Windows will be the same folder given by the environment variables with "Application Data\\ or "AppData\Roaming\\ appended.
+The **User Configuration File** is the most common usage. By default the filename is "<CONFIGDIR>/<APP_NAME>/config" on UNIX, macOS and Android, or "<CONFIGDIR>\\<APP_NAME>\\config.cfg" on Windows, where <CONFIGDIR> is the platform per-user configuration root: see [CONFIGDIR](../attrib/iup_globals.md#cachedir-datadir-configdir-tmpdir).
 
-The **Application Configuration File** is defined by setting the attribute APP_CONFIG to Yes (default is No).
-In this case the attribute APP_PATH must also be set.
-In UNIX, the filename will be "<APP_PATH>.<APP_NAME>",  and in Windows will be "<APP_PATH><APP_NAME>.cfg".
-Notice that the attribute APP_PATH must contain a folder separator "/" at the end.
+If APP_SYSTEMPATH is set to NO, a legacy home-folder path is used instead:
+"<HOME>/.<APP_NAME>" on UNIX and macOS, "<HOMEDRIVE><HOMEPATH>\\<APP_NAME>.cfg" on Windows.
+On iOS the value is ignored and the system path is always used.
+
+The **Application Configuration File** is defined by setting APP_CONFIG to Yes (default No).
+APP_PATH must also be set, with a trailing folder separator. The filename will be "<APP_PATH>.<APP_NAME>" on UNIX, "<APP_PATH><APP_NAME>.cfg" on Windows, macOS and Android.
 
 After the functions are called the attribute FILENAME is set reflecting the constructed filename.
 

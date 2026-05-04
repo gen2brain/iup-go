@@ -124,14 +124,15 @@ extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* a
 
   if (use_system)
   {
-    if (SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, filename) == S_OK)
+    if (!iupdrvGetUserDir(filename, 10240, IUP_USER_DIR_CONFIG))
     {
-      snprintf(filename + strlen(filename), 10240 - strlen(filename), "\\%s", app_name);
-      iupwinuiMakeDirectory(filename);
-
-      snprintf(filename + strlen(filename), 10240 - strlen(filename), "\\config.cfg");
-      return 1;
+      filename[0] = '\0';
+      return 0;
     }
+    snprintf(filename + strlen(filename), 10240 - strlen(filename), "\\%s", app_name);
+    iupwinuiMakeDirectory(filename);
+    snprintf(filename + strlen(filename), 10240 - strlen(filename), "\\config.cfg");
+    return 1;
   }
 
   homedrive = getenv("HOMEDRIVE");
@@ -144,6 +145,25 @@ extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* a
 
   filename[0] = '\0';
   return 0;
+}
+
+extern "C" IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
+{
+  if (!path || size <= 0) return 0;
+  path[0] = '\0';
+
+  if (kind == IUP_USER_DIR_TEMP)
+  {
+    DWORD n = GetTempPathA((DWORD)size, path);
+    if (n == 0 || n >= (DWORD)size) return 0;
+    if (n >= 1 && (path[n - 1] == '\\' || path[n - 1] == '/'))
+      path[n - 1] = '\0';
+    return 1;
+  }
+
+  if (SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, SHGFP_TYPE_CURRENT, path) != S_OK)
+    return 0;
+  return 1;
 }
 
 extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)

@@ -19,25 +19,6 @@
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 
-static NSString* cocoaTouchAppSupportPath(NSString* app_name)
-{
-	NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-	if ([paths count] == 0)
-	{
-		return nil;
-	}
-	NSString* sub = app_name;
-	if (sub.length == 0)
-	{
-		sub = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIdentifier"];
-	}
-	if (sub.length == 0)
-	{
-		sub = @"IUP";
-	}
-	return [[paths objectAtIndex:0] stringByAppendingPathComponent:sub];
-}
-
 IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
 	(void)x; (void)y; (void)add;
@@ -134,26 +115,56 @@ IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, in
 	(void)use_system;
 	filename[0] = '\0';
 
-	NSString* ns_name = app_name ? [NSString stringWithUTF8String:app_name] : @"";
-	NSString* dir = cocoaTouchAppSupportPath(ns_name);
-	if (!dir)
-	{
+	if (!app_name || !app_name[0])
 		return 0;
-	}
 
-	NSError* err = nil;
-	if (![[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:&err])
-	{
+	char root[10240];
+	if (!iupdrvGetUserDir(root, sizeof(root), IUP_USER_DIR_CONFIG))
 		return 0;
-	}
 
-	NSString* file = [dir stringByAppendingPathComponent:@"config"];
-	const char* c_path = [file fileSystemRepresentation];
+	NSString* dir = [[NSString stringWithUTF8String:root] stringByAppendingPathComponent:[NSString stringWithUTF8String:app_name]];
+	if (![[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil])
+		return 0;
+
+	const char* c_path = [[dir stringByAppendingPathComponent:@"config"] fileSystemRepresentation];
 	if (!c_path)
-	{
 		return 0;
-	}
 	iupStrCopyN(filename, 10240, c_path);
+	return 1;
+}
+
+IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
+{
+	if (!path || size <= 0)
+		return 0;
+	path[0] = '\0';
+
+	if (kind == IUP_USER_DIR_TEMP)
+	{
+		NSString* tmp = NSTemporaryDirectory();
+		if (!tmp) return 0;
+		NSString* trimmed = [tmp hasSuffix:@"/"] ? [tmp substringToIndex:tmp.length - 1] : tmp;
+		const char* c_path = [trimmed fileSystemRepresentation];
+		if (!c_path) return 0;
+		iupStrCopyN(path, size, c_path);
+		return 1;
+	}
+
+	NSSearchPathDirectory base_dir;
+	switch (kind)
+	{
+		case IUP_USER_DIR_CACHE:  base_dir = NSCachesDirectory; break;
+		case IUP_USER_DIR_DATA:
+		case IUP_USER_DIR_CONFIG: base_dir = NSApplicationSupportDirectory; break;
+		default: return 0;
+	}
+
+	NSArray* roots = NSSearchPathForDirectoriesInDomains(base_dir, NSUserDomainMask, YES);
+	if ([roots count] == 0) return 0;
+
+	const char* c_path = [[roots objectAtIndex:0] fileSystemRepresentation];
+	if (!c_path) return 0;
+	iupStrCopyN(path, size, c_path);
 	return 1;
 }
 
