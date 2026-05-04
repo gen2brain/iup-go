@@ -129,46 +129,69 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
 
   if (use_system)
   {
-    /* XDG Base Directory Specification: ~/.config/appname/config */
-    char* xdg_config = getenv("XDG_CONFIG_HOME");
-    if (xdg_config && xdg_config[0])
-    {
-      iupStrCopyN(filename, 10240, xdg_config);
-    }
-    else
-    {
-      home = getenv("HOME");
-      if (!home)
-      {
-        filename[0] = '\0';
-        return 0;
-      }
-      snprintf(filename, 10240, "%s/.config", home);
-    }
-
-    /* Ensure base config directory exists */
-    iupUnixMakeDirectoryIfNeeded(filename);
-
-    /* Add app directory */
-    snprintf(filename + strlen(filename), 10240 - strlen(filename), "/%s", app_name);
-    iupUnixMakeDirectoryIfNeeded(filename);
-
-    /* Add config filename */
-    snprintf(filename + strlen(filename), 10240 - strlen(filename), "/config");
-    return 1;
-  }
-  else
-  {
-    /* Legacy format: ~/.appname */
-    home = getenv("HOME");
-    if (!home)
+    if (!iupdrvGetUserDir(filename, 10240, IUP_USER_DIR_CONFIG))
     {
       filename[0] = '\0';
       return 0;
     }
-    snprintf(filename, 10240, "%s/.%s", home, app_name);
+    snprintf(filename + strlen(filename), 10240 - strlen(filename), "/%s", app_name);
+    iupUnixMakeDirectoryIfNeeded(filename);
+    snprintf(filename + strlen(filename), 10240 - strlen(filename), "/config");
     return 1;
   }
+
+  home = getenv("HOME");
+  if (!home)
+  {
+    filename[0] = '\0';
+    return 0;
+  }
+  snprintf(filename, 10240, "%s/.%s", home, app_name);
+  return 1;
+}
+
+IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
+{
+  const char* xdg_var;
+  const char* fallback_subdir;
+  char* xdg;
+  char* home;
+
+  if (!path || size <= 0)
+    return 0;
+  path[0] = '\0';
+
+  if (kind == IUP_USER_DIR_TEMP)
+  {
+    char* tmp = getenv("TMPDIR");
+    if (!tmp || !tmp[0]) tmp = getenv("TMP");
+    if (!tmp || !tmp[0]) tmp = "/tmp";
+    iupStrCopyN(path, size, tmp);
+    return path[0] ? 1 : 0;
+  }
+
+  switch (kind)
+  {
+    case IUP_USER_DIR_CACHE:  xdg_var = "XDG_CACHE_HOME";  fallback_subdir = ".cache";       break;
+    case IUP_USER_DIR_DATA:   xdg_var = "XDG_DATA_HOME";   fallback_subdir = ".local/share"; break;
+    case IUP_USER_DIR_CONFIG: xdg_var = "XDG_CONFIG_HOME"; fallback_subdir = ".config";      break;
+    default: return 0;
+  }
+
+  xdg = getenv(xdg_var);
+  if (xdg && xdg[0])
+  {
+    iupStrCopyN(path, size, xdg);
+  }
+  else
+  {
+    home = getenv("HOME");
+    if (!home || !home[0])
+      return 0;
+    snprintf(path, size, "%s/%s", home, fallback_subdir);
+  }
+
+  return 1;
 }
 
 /**************************************************************************/

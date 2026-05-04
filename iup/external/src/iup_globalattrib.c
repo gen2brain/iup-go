@@ -238,6 +238,21 @@ IUP_API char* IupGetGlobal(const char *name)
   if (iupStrEqual(name, "SCROLLBARSIZE"))
     return iupStrReturnInt(iupdrvGetScrollbarSize());
 
+  {
+    int kind = -1;
+    if (iupStrEqual(name, "CACHEDIR"))       kind = IUP_USER_DIR_CACHE;
+    else if (iupStrEqual(name, "DATADIR"))   kind = IUP_USER_DIR_DATA;
+    else if (iupStrEqual(name, "CONFIGDIR")) kind = IUP_USER_DIR_CONFIG;
+    else if (iupStrEqual(name, "TMPDIR"))    kind = IUP_USER_DIR_TEMP;
+    if (kind != -1)
+    {
+      char buffer[10240];
+      if (iupdrvGetUserDir(buffer, (int)sizeof(buffer), kind))
+        return iupStrReturnStr(buffer);
+      return NULL;
+    }
+  }
+
   value = iupdrvGetGlobal(name);
 
   if (!value)

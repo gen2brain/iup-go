@@ -109,7 +109,7 @@ func main() {
 }
 
 func fetchRemoteImages(md string) string {
-	tmpDir := os.TempDir()
+	tmpDir := iup.GetGlobal("CACHEDIR")
 
 	return imagePattern.ReplaceAllStringFunc(md, func(match string) string {
 		parts := imagePattern.FindStringSubmatch(match)

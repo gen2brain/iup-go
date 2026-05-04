@@ -43,7 +43,7 @@ In GTK/Wayland, it maps to the XDG desktop file ID.
 Also used by [IupConfig](../func/iup_config.md) as a last fallback when neither APP_NAME nor APPNAME is set.
 Supported in GTK, GTK 4, Qt, FLTK, EFL and WinUI.
 On Android it is read-only and reflects the app's manifest application id.
-On iOS it is read-only and reflects `CFBundleIdentifier` from the app's Info.plist.
+On iOS, it is read-only and reflects `CFBundleIdentifier` from the app's Info.plist.
 
 ### APPNAME
 
@@ -52,7 +52,7 @@ In Windows, it is used for the taskbar and tray. In macOS, it is used for the do
 Also used by [IupConfig](../func/iup_config.md) as a fallback when APP_NAME is not set (APPNAME is checked first, then APPID).
 Supported in Windows, macOS, Qt, EFL and WinUI.
 On Android it is read-only and reflects the app's manifest label.
-On iOS it is read-only and reflects `CFBundleDisplayName` (or `CFBundleName` if not set) from the app's Info.plist.
+On iOS, it is read-only and reflects `CFBundleDisplayName` (or `CFBundleName` if not set) from the app's Info.plist.
 
 ## System Control
 
@@ -240,7 +240,7 @@ See the [Keyboard Codes](iup_keyboard_codes.md) table for a list of the possible
 ### AUTOREPEAT [Motif, FLTK and EFL Only]
 
 Turns on/off ("YES" or "NO") the auto-repeat of keyboard keys in the whole system.
-May be used as an optimization in high performance applications.
+It May be used as an optimization in high performance applications.
 
 ### INPUTCALLBACKS
 
@@ -275,7 +275,7 @@ Informs the current operating system. On UNIX, it is equivalent to the command "
 
 Informs the current operating system version number.
 
-On UNIX, it is equivalent to the command  "uname -r" (release).
+On UNIX, it is equivalent to the command "uname -r" (release).
 On Windows, it identifies the system version number and service pack version.
 On macOS is system version.
 
@@ -436,6 +436,22 @@ Returns the user logged in.
 Returns the filename of the executable with full path.
 Depending on how the program is executed the argv[0] not always has the full executable path.
 
+### CACHEDIR, DATADIR, CONFIGDIR, TMPDIR (read-only)
+
+Per-user standard directories. The returned path is absolute and has no
+trailing separator.
+
+CACHEDIR is clearable storage; DATADIR is persistent; CONFIGDIR holds settings; TMPDIR is scratch space.
+
+| Driver                       | CACHEDIR                | DATADIR                         | CONFIGDIR               | TMPDIR                   |
+|------------------------------|-------------------------|---------------------------------|-------------------------|--------------------------|
+| Win32, WinUI                 | `%LOCALAPPDATA%`        | `%LOCALAPPDATA%`                | `%LOCALAPPDATA%`        | `GetTempPathA`           |
+| GTK, GTK 4, Motif, EFL, FLTK | `$XDG_CACHE_HOME`       | `$XDG_DATA_HOME`                | `$XDG_CONFIG_HOME`      | `$TMPDIR`, else `/tmp`   |
+| Qt                           | `GenericCacheLocation`  | `GenericDataLocation`           | `GenericConfigLocation` | `TempLocation`           |
+| Cocoa                        | `~/Library/Caches`      | `~/Library/Application Support` | same as DATADIR         | `NSTemporaryDirectory()` |
+| CocoaTouch                   | `Library/Caches`        | `Library/Application Support`   | same as DATADIR         | `NSTemporaryDirectory()` |
+| Android                      | `Context.getCacheDir()` | `Context.getFilesDir()`         | same as DATADIR         | `Context.getCacheDir()`  |
+
 ### GL_VERSION (read-only)
 
 Returns the OpenGL version. Available only after the first call to [IupGLMakeCurrent](../ctrl/iup_glcanvas.md).
@@ -588,7 +604,7 @@ used for primary buttons, toggles, progress bars, focus indicators, and similar
 UI elements. Unlike TXTHLCOLOR (which is the text selection background), this
 reflects the toolkit's notion of the platform accent.
 
-On some platforms this value coincides with TXTHLCOLOR because the toolkit derives text selection from the same source.
+On some platforms, this value coincides with TXTHLCOLOR because the toolkit derives text selection from the same source.
 
 ### DEFAULTFONT
 

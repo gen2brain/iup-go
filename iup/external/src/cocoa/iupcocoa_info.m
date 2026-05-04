@@ -253,48 +253,74 @@ IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, in
 
   if (use_system)
   {
-    /* macOS Application Support: ~/Library/Application Support/appname/config */
-    NSArray* support_paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-    if ([support_paths count] > 0)
+    char root[10240];
+    if (!iupdrvGetUserDir(root, sizeof(root), IUP_USER_DIR_CONFIG))
     {
-      NSString* ns_app_name = [NSString stringWithUTF8String:app_name];
-      NSString* ns_path = [[support_paths objectAtIndex:0] stringByAppendingPathComponent:ns_app_name];
-
-      /* Create app directory if needed */
-      BOOL is_dir = NO;
-      if (![[NSFileManager defaultManager] fileExistsAtPath:ns_path isDirectory:&is_dir])
-      {
-        [[NSFileManager defaultManager] createDirectoryAtPath:ns_path withIntermediateDirectories:YES attributes:nil error:nil];
-      }
-
-      NSString* ns_config_path = [ns_path stringByAppendingPathComponent:@"config"];
-      const char* c_path = [ns_config_path fileSystemRepresentation];
-      if (c_path != NULL)
-      {
-        iupStrCopyN(filename, 10240, c_path);
-        return 1;
-      }
+      filename[0] = '\0';
+      return 0;
     }
-  }
-  else
-  {
-    /* Legacy: ~/.appname */
-    NSString* home_path = NSHomeDirectory();
-    if (home_path)
+    NSString* ns_path = [[NSString stringWithUTF8String:root] stringByAppendingPathComponent:[NSString stringWithUTF8String:app_name]];
+    [[NSFileManager defaultManager] createDirectoryAtPath:ns_path withIntermediateDirectories:YES attributes:nil error:nil];
+    NSString* ns_config_path = [ns_path stringByAppendingPathComponent:@"config"];
+    const char* c_path = [ns_config_path fileSystemRepresentation];
+    if (!c_path)
     {
-      NSString* hidden_name = [NSString stringWithFormat:@".%s", app_name];
-      NSString* ns_path = [home_path stringByAppendingPathComponent:hidden_name];
-      const char* c_path = [ns_path fileSystemRepresentation];
-      if (c_path != NULL)
-      {
-        iupStrCopyN(filename, 10240, c_path);
-        return 1;
-      }
+      filename[0] = '\0';
+      return 0;
+    }
+    iupStrCopyN(filename, 10240, c_path);
+    return 1;
+  }
+
+  NSString* home_path = NSHomeDirectory();
+  if (home_path)
+  {
+    NSString* ns_path = [home_path stringByAppendingPathComponent:[NSString stringWithFormat:@".%s", app_name]];
+    const char* c_path = [ns_path fileSystemRepresentation];
+    if (c_path)
+    {
+      iupStrCopyN(filename, 10240, c_path);
+      return 1;
     }
   }
 
   filename[0] = '\0';
   return 0;
+}
+
+IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
+{
+  NSSearchPathDirectory dir;
+
+  if (!path || size <= 0)
+    return 0;
+  path[0] = '\0';
+
+  if (kind == IUP_USER_DIR_TEMP)
+  {
+    NSString* tmp = NSTemporaryDirectory();
+    if (!tmp) return 0;
+    NSString* trimmed = [tmp hasSuffix:@"/"] ? [tmp substringToIndex:tmp.length - 1] : tmp;
+    const char* c_path = [trimmed fileSystemRepresentation];
+    if (!c_path) return 0;
+    iupStrCopyN(path, size, c_path);
+    return 1;
+  }
+
+  switch (kind)
+  {
+    case IUP_USER_DIR_CACHE:  dir = NSCachesDirectory; break;
+    case IUP_USER_DIR_DATA:
+    case IUP_USER_DIR_CONFIG: dir = NSApplicationSupportDirectory; break;
+    default: return 0;
+  }
+
+  NSArray* roots = NSSearchPathForDirectoriesInDomains(dir, NSUserDomainMask, YES);
+  if ([roots count] == 0) return 0;
+  const char* c_path = [[roots objectAtIndex:0] fileSystemRepresentation];
+  if (!c_path) return 0;
+  iupStrCopyN(path, size, c_path);
+  return 1;
 }
 
 IUP_SDK_API char* iupdrvLocaleInfo(void)

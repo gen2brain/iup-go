@@ -92,6 +92,19 @@ IUP_SDK_API char* iupdrvLocaleInfo(void);
  * \ingroup drvinfo */
 IUP_SDK_API int iupdrvGetPreferencePath(char *filename, const char *app_name, int use_system);
 
+/** Per-user directory kinds for \ref iupdrvGetUserDir. \ingroup drvinfo */
+enum {
+  IUP_USER_DIR_CACHE  = 0,
+  IUP_USER_DIR_DATA   = 1,
+  IUP_USER_DIR_CONFIG = 2,
+  IUP_USER_DIR_TEMP   = 3
+};
+
+/** Writes the per-user standard directory for the requested kind into \p path
+ * (NUL-terminated, no trailing separator). Returns 1 on success, 0 otherwise.
+ * \ingroup drvinfo */
+IUP_SDK_API int iupdrvGetUserDir(char *path, int size, int kind);
+
 /** Changes the current directory.
 * \ingroup drvinfo */
 IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir);
