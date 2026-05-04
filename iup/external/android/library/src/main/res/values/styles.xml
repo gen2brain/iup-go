@@ -1,0 +1,12 @@
+<resources>
+
+	<!-- Default IUP theme; apps override AppTheme in their own styles.xml. -->
+	<style name="AppTheme" parent="Theme.Material3.DayNight"/>
+
+	<!-- IupActivity owns its toolbar so it can rebuild on Day/Night flips. -->
+	<style name="IupActivityTheme" parent="AppTheme">
+		<item name="windowActionBar">false</item>
+		<item name="windowNoTitle">true</item>
+	</style>
+
+</resources>

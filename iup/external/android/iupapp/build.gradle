@@ -1,0 +1,78 @@
+plugins {
+	id 'com.android.application'
+}
+
+android {
+	namespace = 'com.example.iupapp'
+	compileSdk = rootProject.ext.compileSdk
+	ndkVersion = rootProject.ext.ndkVersion
+
+	defaultConfig {
+		applicationId = "com.example.iupapp"
+		minSdk = rootProject.ext.minSdk
+		targetSdk = rootProject.ext.targetSdk
+		versionCode = rootProject.ext.versionCode
+		versionName = rootProject.ext.versionName
+
+		/* App label substituted into AndroidManifest's android:label="${appName}". */
+		manifestPlaceholders = [appName: project.findProperty("appName") ?: "IupApp"]
+
+		ndk {
+			//noinspection ChromeOsAbiSupport
+			abiFilters.addAll(rootProject.ext.abiFilters as List)
+		}
+
+		/* C flow only; builds iup + iupapp targets so both land in the APK. */
+		if (rootProject.hasProperty('iup.buildC'))
+		{
+			externalNativeBuild {
+				cmake {
+					arguments "-DIUP_BACKEND=android", "-DIUP_BUILD_EXAMPLES=ON", "-DBUILD_SHARED_LIBS=ON"
+					targets "iup", "iupapp"
+				}
+			}
+		}
+	}
+
+	compileOptions {
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
+	}
+
+	signingConfigs {
+		if (project.hasProperty('androidKeystore'))
+		{
+			release {
+				storeFile = file(project.property('androidKeystore'))
+				storePassword = project.property('androidKeystorePass')
+				keyAlias = project.property('androidKeyAlias')
+				keyPassword = project.findProperty('androidKeyPass') ?: project.property('androidKeystorePass')
+			}
+		}
+	}
+
+	buildTypes {
+		release {
+			minifyEnabled = true
+			shrinkResources = true
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+			/* Real release key when -PandroidKeystore=... is forwarded; debug key otherwise. */
+			signingConfig = project.hasProperty('androidKeystore') ? signingConfigs.release : signingConfigs.debug
+		}
+	}
+
+	if (rootProject.hasProperty('iup.buildC'))
+	{
+		externalNativeBuild {
+			cmake {
+				path "../../CMakeLists.txt"
+			}
+		}
+	}
+}
+
+dependencies {
+	implementation project(':library')
+	implementation fileTree(dir: 'libs', include: ['*.jar'])
+	/* AppCompat + Material inherited transitively from :library. */
+}

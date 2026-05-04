@@ -1,0 +1,64 @@
+plugins {
+	id 'com.android.library'
+}
+
+android {
+	namespace = 'io.github.gen2brain.iupgo'
+	compileSdk = rootProject.ext.compileSdk
+	ndkVersion = rootProject.ext.ndkVersion
+
+	defaultConfig {
+		minSdk = rootProject.ext.minSdk
+
+        consumerProguardFiles 'proguard-rules.pro'
+
+		ndk {
+			//noinspection ChromeOsAbiSupport
+			abiFilters.addAll(rootProject.ext.abiFilters as List)
+		}
+
+		/* C flow only; Go flow drops a pre-built c-shared .so into src/main/jniLibs/<abi>/. */
+		if (rootProject.hasProperty('iup.buildC'))
+		{
+			externalNativeBuild {
+				cmake {
+					arguments "-DIUP_BACKEND=android", "-DBUILD_SHARED_LIBS=ON"
+					targets "iup"
+				}
+			}
+		}
+	}
+
+	compileOptions {
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
+	}
+
+	tasks.withType(JavaCompile).configureEach {
+		options.compilerArgs += ['-Xlint:deprecation']
+	}
+
+	buildTypes {
+		release {
+			minifyEnabled = false
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+		}
+	}
+
+	if (rootProject.hasProperty('iup.buildC'))
+	{
+		externalNativeBuild {
+			cmake {
+				path "../../CMakeLists.txt"
+			}
+		}
+	}
+}
+
+dependencies {
+	implementation fileTree(dir: 'libs', include: ['*.jar'])
+	/* api so AAR consumers inherit these; widget helpers reference them directly. */
+	api rootProject.ext.appCompat
+	api rootProject.ext.material
+	api rootProject.ext.recyclerView
+}

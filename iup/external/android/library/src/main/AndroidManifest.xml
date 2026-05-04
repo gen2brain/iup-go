@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<!-- API 30+ package visibility for IupHelp/IupExecute -->
+	<queries>
+		<intent>
+			<action android:name="android.intent.action.VIEW"/>
+			<data android:scheme="http"/>
+		</intent>
+		<intent>
+			<action android:name="android.intent.action.VIEW"/>
+			<data android:scheme="https"/>
+		</intent>
+		<intent>
+			<action android:name="android.intent.action.VIEW"/>
+			<data android:scheme="mailto"/>
+		</intent>
+		<intent>
+			<action android:name="android.intent.action.VIEW"/>
+			<data android:scheme="tel"/>
+		</intent>
+	</queries>
+
+	<application android:supportsRtl="true">
+		<activity
+			android:name="io.github.gen2brain.iupgo.IupLaunchActivity"
+			android:configChanges="orientation|keyboardHidden|screenSize"
+			android:noHistory="true"
+			android:exported="false"/>
+		<activity
+			android:name="io.github.gen2brain.iupgo.IupActivity"
+			android:configChanges="orientation|keyboardHidden|screenSize|uiMode"
+			android:theme="@style/IupActivityTheme"
+			android:exported="false"/>
+		<receiver
+			android:name="io.github.gen2brain.iupgo.IupNotifyReceiver"
+			android:exported="false"/>
+	</application>
+
+</manifest>
