@@ -1,4 +1,4 @@
-//go:build fltk && !windows && !darwin
+//go:build fltk && !windows && !darwin && !android
 
 package iup
 

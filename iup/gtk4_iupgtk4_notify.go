@@ -1,4 +1,4 @@
-//go:build gtk4 && !windows && !darwin
+//go:build gtk4 && !windows && !darwin && !android
 
 package iup
 

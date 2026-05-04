@@ -1,4 +1,4 @@
-//go:build darwin && !motif
+//go:build darwin && !ios && !motif
 
 package iup
 

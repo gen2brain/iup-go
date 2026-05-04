@@ -1,4 +1,4 @@
-//go:build (!windows && !qt) || ((windows || darwin) && (gtk || gtk4)) || motif || winui || efl || fltk
+//go:build (!windows && !qt && !android && !ios) || ((windows || darwin) && (gtk || gtk4)) || motif || winui || efl || fltk
 
 package iup
 

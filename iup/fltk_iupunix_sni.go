@@ -1,4 +1,4 @@
-//go:build fltk && (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos)
+//go:build fltk && (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && !android
 
 package iup
 

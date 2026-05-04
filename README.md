@@ -3,9 +3,10 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/iup-go.svg)](https://pkg.go.dev/github.com/gen2brain/iup-go/iup)
 
 Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
-IUP-Go provides system native UI controls for Windows (Win32 and WinUI), macOS (Cocoa), and Linux (GTK, Qt, FLTK, EFL, and Motif).
 
-C/C++ source code is included and compiled together with bindings.
+IUP-Go provides system native UI controls for Windows (Win32, WinUI), macOS (Cocoa), Linux (GTK, Qt, FLTK, EFL, Motif, GNUstep), Android, and iOS (CocoaTouch).
+
+C/C++/Obj-C source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
 
 To build the IUP C library standalone (without Go bindings), see [iup/external](iup/external) for CMake build instructions.
@@ -176,6 +177,35 @@ go build -tags gnustep
 
 [<img src="examples/sample/sample_gnustep.png" width="700"/>](examples/sample/sample_gnustep.png)
 
+#### Mobile
+
+The same `main()` compiles as a desktop binary, an Android shared library, and an iOS executable. Every example under [examples/](examples/) builds unchanged on all three.
+Most examples are laid out for desktop windows and will overflow a phone screen though; production mobile apps need a layout tuned for small screens.
+See [examples/mobile_sample](examples/mobile_sample) and [examples/mobile_hello](examples/mobile_hello) for examples designed for mobile.
+
+`iup.EntryPoint(main)` registers `main` as the callback the platform fires after launch; on desktop it is a no-op and the Go runtime calls `main` directly.
+`iup.Close()` and `iup.MainLoop()` are no-ops on mobile (the host platform owns the lifecycle), so avoid scheduling cleanup after `iup.MainLoop()`.
+
+Examples without a top-level `Dialog` (e.g. `alarm`, `message`) will not run on mobile, the host platform requires a real Dialog as the root.
+
+##### Android
+
+Builds the Go program as a `c-shared` `.so` consumed by a Gradle library.
+
+See [iup/external/android/README.md](iup/external/android/README.md) for prerequisites, build flow, permissions, and packaging.
+
+[<img src="examples/mobile_sample/mobile_sample_android1.png" width="300"/>](examples/mobile_sample/mobile_sample_android1.png)
+[<img src="examples/mobile_sample/mobile_sample_android2.png" width="300"/>](examples/mobile_sample/mobile_sample_android2.png)
+
+##### iOS
+
+The Go binary IS the iOS executable; the CocoaTouch driver calls `UIApplicationMain` itself.
+
+See [iup/external/ios/README.md](iup/external/ios/README.md) for prerequisites, signing, and distribution.
+
+[<img src="examples/mobile_sample/mobile_sample_ios1.png" width="300"/>](examples/mobile_sample/mobile_sample_ios1.png)
+[<img src="examples/mobile_sample/mobile_sample_ios2.png" width="300"/>](examples/mobile_sample/mobile_sample_ios2.png)
+
 ### Build tags
 
 * `gl` - build with support for `GLCanvas` control
@@ -210,17 +240,16 @@ You can also point `PKG_CONFIG_LIBDIR` to some local directory with custom modif
 ### Documentation
 
 API reference documentation is available in the [docs](docs/) directory. Each Go function link to its corresponding documentation page.
-Also check [Go Reference](https://pkg.go.dev/github.com/gen2brain/iup-go/iup) and [Examples](https://github.com/gen2brain/iup-go/tree/main/examples).
+Also check [Go Reference](https://pkg.go.dev/github.com/gen2brain/iup-go/iup) and [Examples](examples/).
 For the original IUP reference, visit [IUP's website](https://www.tecgraf.puc-rio.br/iup).
 
 ### Thread-Safety
 
-User interfaces (and OpenGL) are usually not thread-safe, and IUP is not either. Some platforms enforce running UI on the main thread.
-Note that a goroutine can arbitrarily and randomly be scheduled or rescheduled on different running threads.
+User interfaces (and OpenGL) are usually not thread-safe, and IUP is not either. Most platforms enforce running UI on the main thread.
 
-The secondary threads (goroutine) should not directly update the UI; instead, use `PostMessage`, which is expected to be thread-safe.
-See [example](https://github.com/gen2brain/iup-go/tree/main/examples/postmessage/postmessage.go) that sends data to an element, which will be received by a callback when the main loop regains control.
-You can also use the `IdleFunc` and `Timer`.
+The secondary threads (goroutines) should not directly update the UI; instead, use [PostMessage](docs/func/iup_postmessage.md), which is expected to be thread-safe.
+See [example](examples/postmessage/postmessage.go) that uses `PostMessage` to send data to an element, which will be received by a callback when the main loop regains control.
+You can also use [Idle](docs/call/iup_idle_action.md) and [Timer](docs/elem/iup_timer.md).
 
 ### Cross-compile (Linux)
 

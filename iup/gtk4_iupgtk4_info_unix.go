@@ -1,4 +1,4 @@
-//go:build (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && gtk4
+//go:build (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && gtk4 && !android
 
 package iup
 
