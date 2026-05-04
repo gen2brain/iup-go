@@ -27,7 +27,7 @@ extern "C"
 #define IUP_FLAT_FORECOLOR   "0 0 0"
 
 /* Swap integer coordinates if c1 > c2. */
-#define iupDrawCheckSwapCoord(_c1, _c2) { if (_c1 > _c2) { int t = _c2; _c2 = _c1; _c1 = t; } }   /* make sure _c1 is smaller than _c2 */
+#define iupDrawCheckSwapCoord(_c1, _c2) do { if (_c1 > _c2) { int t = _c2; _c2 = _c1; _c1 = t; } } while (0)
 
 IUP_SDK_API long iupDrawStrToColor(const char* str, long c_def);
 IUP_SDK_API long iupDrawColor(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
