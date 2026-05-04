@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+int   iupMatrixAuxCanvasPx(int hw);  /* HW px -> canvas-coord; identity on non-density-scaled drivers. */
+
 int   iupMatrixAuxIsFullVisibleLast(ImatLinColData *p);
 int   iupMatrixAuxIsCellStartVisible(Ihandle* ih, int lin, int col);
 int   iupMatrixAuxIsCellVisible(Ihandle* ih, int lin, int col);

@@ -15,6 +15,7 @@
 #include "iup_str.h"
 #include "iup_childtree.h"
 #include "iup_drvfont.h"
+#include "iup_drvinfo.h"
 
 #include "iupmat_def.h"
 #include "iupmat_scroll.h"
@@ -331,11 +332,11 @@ void iupMatrixEditUpdatePos(Ihandle* ih)
   if (!visible && !ih->data->edit_hide_onfocus)
     IupSetAttribute(ih->data->datah, "VISIBLE", "NO");
 
-  ih->data->datah->x = x;
-  ih->data->datah->y = y;
-
-  ih->data->datah->currentwidth = w;
-  ih->data->datah->currentheight = h;
+  /* Cell dim is canvas-coord; native edit widget needs HW px. */
+  ih->data->datah->x = iupdrvScaleNaturalPx(x);
+  ih->data->datah->y = iupdrvScaleNaturalPx(y);
+  ih->data->datah->currentwidth  = iupdrvScaleNaturalPx(w);
+  ih->data->datah->currentheight = iupdrvScaleNaturalPx(h);
 
   if (ih->data->datah==ih->data->texth && iupAttribGetBoolean(ih, "EDITFITVALUE"))
   {

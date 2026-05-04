@@ -234,12 +234,7 @@ static void iPopoverSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 static void iPopoverSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 {
   if (ih->firstchild)
-  {
-    /* Child is at origin of popover content area */
-    (void)x;
-    (void)y;
-    iupBaseSetPosition(ih->firstchild, 0, 0);
-  }
+    iupBaseSetPosition(ih->firstchild, x, y);
 }
 
 static int iPopoverCreateMethod(Ihandle* ih, void** params)

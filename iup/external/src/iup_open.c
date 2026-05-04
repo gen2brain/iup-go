@@ -4,7 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>             
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "iup.h"
@@ -49,7 +49,7 @@ IUP_API int IupOpen(int *argc, char ***argv)
   iupNamesInit();
   iupFuncInit();
   iupStrMessageInit();
-  iupGlobalAttribInit(); 
+  iupGlobalAttribInit();
   iupRegisterInit();
   iupKeyInit();
   iupImageStockInit();

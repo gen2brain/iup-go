@@ -12,6 +12,7 @@
 
 #include "iup_object.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_layout.h"
@@ -195,6 +196,8 @@ IUP_SDK_API void iupLayoutApplyMinMaxSize(Ihandle* ih, int *w, int *h)
     char* value = iupAttribGet(ih, "MINSIZE");
     int min_w = 0, min_h = 0;          /* MINSIZE default value */
     iupStrToIntInt(value, &min_w, &min_h, 'x');
+    min_w = iupdrvScaleNaturalPx(min_w);
+    min_h = iupdrvScaleNaturalPx(min_h);
     if (w && *w < min_w) *w = min_w;
     if (h && *h < min_h) *h = min_h;
   }
@@ -204,6 +207,8 @@ IUP_SDK_API void iupLayoutApplyMinMaxSize(Ihandle* ih, int *w, int *h)
     char* value = iupAttribGet(ih, "MAXSIZE");
     int max_w = 65535, max_h = 65535;  /* MAXSIZE default value */
     iupStrToIntInt(value, &max_w, &max_h, 'x');
+    max_w = iupdrvScaleNaturalPx(max_w);
+    max_h = iupdrvScaleNaturalPx(max_h);
     if (w && *w > max_w) *w = max_w;
     if (h && *h > max_h) *h = max_h;
   }

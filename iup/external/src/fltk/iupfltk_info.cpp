@@ -60,6 +60,11 @@ extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
   return (double)((h + v) / 2.0f);
 }
 
+extern "C" IUP_SDK_API int iupdrvScaleNaturalPx(int px)
+{
+  return px;
+}
+
 extern "C" IUP_SDK_API void* iupdrvGetDisplay(void)
 {
 #if defined(FLTK_USE_WAYLAND)

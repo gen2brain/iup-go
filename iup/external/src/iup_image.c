@@ -764,8 +764,8 @@ IUP_SDK_API void iupImageGetInfo(const char* name, int *w, int *h, int *bpp)
       return;
   }
 
-  if (w) *w = ih->currentwidth;
-  if (h) *h = ih->currentheight;
+  if (w) *w = iupdrvScaleNaturalPx(ih->currentwidth);   /* logical -> HW */
+  if (h) *h = iupdrvScaleNaturalPx(ih->currentheight);
   if (bpp) *bpp = IupGetInt(ih, "BPP");
 }
 

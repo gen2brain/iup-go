@@ -13,6 +13,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drvfont.h"
+#include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_box.h"
 #include "iup_normalizer.h"
@@ -33,7 +34,7 @@ static int iVboxSetRasterSizeAttrib(Ihandle* ih, const char* value)
     if (d != 0) s = d;
     if (s > 0)
     {
-      ih->userheight = s;
+      ih->userheight = iupdrvScaleNaturalPx(s);
       ih->userwidth = 0;
     }
   }

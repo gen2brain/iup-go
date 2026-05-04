@@ -19,6 +19,7 @@
 #include "iup_childtree.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
+#include "iup_drvinfo.h"
 
 
 enum { IDBOX_VERT, IDBOX_HORIZ };
@@ -31,6 +32,7 @@ struct _IcontrolData
 
   /* attributes */
   int layoutdrag, barsize, showgrip;
+  int barsize_hw;      /* barsize scaled to HW pixels; cached at set-time so layout math reads raw. */
   int orientation;     /* one of the types: IDBOX_VERT, IDBOX_HORIZ */
 };
 
@@ -46,9 +48,9 @@ static char* iDetachBoxGetClientSizeAttrib(Ihandle* ih)
   if (IupGetInt(ih->firstchild, "VISIBLE"))
   {
     if (ih->data->orientation == IDBOX_VERT)
-      width -= ih->data->barsize;
+      width -= ih->data->barsize_hw;
     else
-      height -= ih->data->barsize;
+      height -= ih->data->barsize_hw;
   }
 
   if (width < 0) width = 0;
@@ -80,6 +82,7 @@ static int iDetachBoxSetBarSizeAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToInt(value, &ih->data->barsize))
   {
+    ih->data->barsize_hw = iupdrvScaleNaturalPx(ih->data->barsize);
     if (ih->data->barsize == 0)
       IupSetAttribute(ih->firstchild, "VISIBLE", "No");
 
@@ -266,14 +269,14 @@ static int iDetachBoxAction_CB(Ihandle* bar)
 
     if (ih->data->orientation == IDBOX_VERT)
     {
-      x = ih->data->barsize/2-1;
+      x = ih->data->barsize_hw/2-1;
       y = 2;
       count = (h-2)/4;
     }
     else
     {
       x = 2;
-      y = ih->data->barsize/2-1;
+      y = ih->data->barsize_hw/2-1;
       count = (w-2)/4;
     }
 
@@ -306,13 +309,13 @@ static int iDetachBoxAction_CB(Ihandle* bar)
 
     if (ih->data->orientation == IDBOX_VERT)
     {
-      x = ih->data->barsize/2-1;
+      x = ih->data->barsize_hw/2-1;
       y = 2;
     }
     else
     {
       x = 2;
-      y = ih->data->barsize/2-1;
+      y = ih->data->barsize_hw/2-1;
     }
 
     iupdrvDrawRectangle(dc, x, y, x + w, y + h, color, IUP_DRAW_FILL, 1);
@@ -381,9 +384,9 @@ static void iDetachBoxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int 
   if (IupGetInt(ih->firstchild, "VISIBLE"))
   {
     if (ih->data->orientation == IDBOX_VERT)
-      natural_w += ih->data->barsize;
+      natural_w += ih->data->barsize_hw;
     else
-      natural_h += ih->data->barsize;
+      natural_h += ih->data->barsize_hw;
   }
 
   if (ih->firstchild->brother)
@@ -416,13 +419,13 @@ static void iDetachBoxSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
   /* bar */
   if (ih->data->orientation == IDBOX_VERT)
   {
-    ih->firstchild->currentwidth  = ih->data->barsize;
+    ih->firstchild->currentwidth  = ih->data->barsize_hw;
     ih->firstchild->currentheight = ih->currentheight;
   }
   else  /* IDBOX_HORIZ */
   {
     ih->firstchild->currentwidth  = ih->currentwidth;
-    ih->firstchild->currentheight = ih->data->barsize;
+    ih->firstchild->currentheight = ih->data->barsize_hw;
   }
 
   /* child */
@@ -434,9 +437,9 @@ static void iDetachBoxSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
     if (IupGetInt(ih->firstchild, "VISIBLE"))
     {
       if (ih->data->orientation == IDBOX_VERT)
-        width -= ih->data->barsize;
+        width -= ih->data->barsize_hw;
       else
-        height -= ih->data->barsize;
+        height -= ih->data->barsize_hw;
     }
 
     if (width < 0) width = 0;
@@ -455,13 +458,13 @@ static void iDetachBoxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
   if (ih->data->orientation == IDBOX_VERT)
   {
     if (IupGetInt(ih->firstchild, "VISIBLE"))
-      x += ih->data->barsize;
+      x += ih->data->barsize_hw;
     iupBaseSetPosition(ih->firstchild->brother, x, y);
   }
   else  /* IDBOX_HORIZ */
   {
     if (IupGetInt(ih->firstchild, "VISIBLE"))
-      y += ih->data->barsize;
+      y += ih->data->barsize_hw;
     iupBaseSetPosition(ih->firstchild->brother, x, y);
   }
 }
@@ -474,6 +477,7 @@ static int iDetachBoxCreateMethod(Ihandle* ih, void** params)
 
   ih->data->orientation = IDBOX_VERT;
   ih->data->barsize = 10;
+  ih->data->barsize_hw = iupdrvScaleNaturalPx(10);
   ih->data->showgrip = 1;
 
   bar = IupCanvas(NULL);

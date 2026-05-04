@@ -12,11 +12,18 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_stdcontrols.h"
+#include "iup_controls.h"
 
 #include "iupmat_def.h"
 #include "iupmat_aux.h"
 #include "iupmat_getset.h"
 #include "iupmat_numlc.h"
+
+
+int iupMatrixAuxCanvasPx(int hw)
+{
+  return iupControlBaseCanvasPx(hw);
+}
 
 
 int iupMatrixAuxIsFullVisibleLast(ImatLinColData *p)

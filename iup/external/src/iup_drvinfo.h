@@ -47,6 +47,10 @@ IUP_SDK_API int iupdrvGetScreenDepth(void);
  * \ingroup drvinfo */
 IUP_SDK_API double iupdrvGetScreenDpi(void);
 
+/** Scales a desktop-pixel literal to the driver's logical unit (dp on Android).
+ * \ingroup drvinfo */
+IUP_SDK_API int iupdrvScaleNaturalPx(int px);
+
 /** Returns a string with the system version number.
  * \ingroup drvinfo */
 IUP_SDK_API char *iupdrvGetSystemVersion(void);

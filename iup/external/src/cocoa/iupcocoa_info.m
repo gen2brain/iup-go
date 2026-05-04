@@ -110,6 +110,11 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return 72.0;
 }
 
+IUP_SDK_API int iupdrvScaleNaturalPx(int px)
+{
+  return px;
+}
+
 IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
 {
   /* [NSEvent mouseLocation] origin is bottom-left of the primary screen. */
@@ -297,7 +302,7 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
   return iupStrReturnStr(nl_langinfo(CODESET));
 }
 
-void IupLogV(const char* type, const char* format, va_list arglist)
+IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
 {
   char buffer[2048];
   vsnprintf(buffer, sizeof(buffer), format, arglist);
@@ -322,7 +327,7 @@ void IupLogV(const char* type, const char* format, va_list arglist)
 #endif
 }
 
-void IupLog(const char* type, const char* format, ...)
+IUP_API void IupLog(const char* type, const char* format, ...)
 {
   va_list arglist;
   va_start(arglist, format);

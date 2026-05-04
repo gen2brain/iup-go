@@ -14,6 +14,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_image.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
@@ -67,6 +68,9 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
   int make_inactive = 0;
   int focus_feedback = iupAttribGetBoolean(ih, "FOCUSFEEDBACK");
+  int draw_w, draw_h;
+
+  iupdrvDrawGetSize(dc, &draw_w, &draw_h);
 
   iupDrawParentBackground(dc, ih);
 
@@ -123,12 +127,12 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
     }
 
     if (corner_radius > 0)
-      iupFlatDrawRoundedBorder(dc, 0, ih->currentwidth - 1,
-                                0, ih->currentheight - 1,
+      iupFlatDrawRoundedBorder(dc, 0, draw_w - 1,
+                                0, draw_h - 1,
                                 border_width, corner_radius, bordercolor, bgcolor, active);
     else
-      iupFlatDrawBorder(dc, 0, ih->currentwidth - 1,
-                            0, ih->currentheight - 1,
+      iupFlatDrawBorder(dc, 0, draw_w - 1,
+                            0, draw_h - 1,
                             border_width, bordercolor, bgcolor, active);
   }
 
@@ -143,7 +147,7 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
     int backimage_zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
     draw_image = iupFlatGetImageName(ih, "BACKIMAGE", bgimage, image_pressed, ih->data->highlighted, 1, &make_inactive);
     if (backimage_zoom)
-      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, ih->currentwidth - border_width, ih->currentheight - border_width);
+      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, draw_w - border_width, draw_h - border_width);
     else
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, -1, -1);
   }
@@ -171,21 +175,21 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
       float angle = iupAttribGetFloat(ih, "GRADIENTANGLE");
       if (angle == 0) angle = 90;  /* default is top to bottom */
       if (iupStrToStrStr(gradient, color1, sizeof(color1), color2, sizeof(color2), ':'))
-        iupFlatDrawGradientBox(dc, border_width, ih->currentwidth - 1 - border_width,
-                                border_width, ih->currentheight - 1 - border_width,
+        iupFlatDrawGradientBox(dc, border_width, draw_w - 1 - border_width,
+                                border_width, draw_h - 1 - border_width,
                                 corner_radius, angle, color1, color2, bgcolor, 1);  /* background is always active */
       else
-        iupFlatDrawGradientBox(dc, border_width, ih->currentwidth - 1 - border_width,
-                                border_width, ih->currentheight - 1 - border_width,
+        iupFlatDrawGradientBox(dc, border_width, draw_w - 1 - border_width,
+                                border_width, draw_h - 1 - border_width,
                                 corner_radius, angle, gradient, bgcolor, bgcolor, 1);
     }
     else if (corner_radius > 0)
-      iupFlatDrawRoundedBox(dc, border_width, ih->currentwidth - 1 - border_width,
-                             border_width, ih->currentheight - 1 - border_width,
+      iupFlatDrawRoundedBox(dc, border_width, draw_w - 1 - border_width,
+                             border_width, draw_h - 1 - border_width,
                              corner_radius, bgcolor, NULL, 1);  /* background is always active */
     else
-      iupFlatDrawBox(dc, border_width, ih->currentwidth - 1 - border_width,
-                         border_width, ih->currentheight - 1 - border_width,
+      iupFlatDrawBox(dc, border_width, draw_w - 1 - border_width,
+                         border_width, draw_h - 1 - border_width,
                          bgcolor, NULL, 1);  /* background is always active */
   }
 
@@ -196,7 +200,7 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   /* draw icon */
   draw_image = iupFlatGetImageName(ih, "IMAGE", image, image_pressed, ih->data->highlighted, active, &make_inactive);
   iupFlatDrawIcon(ih, dc, border_width, border_width,
-                          ih->currentwidth - 2 * border_width, ih->currentheight - 2 * border_width,
+                          draw_w - 2 * border_width, draw_h - 2 * border_width,
                           ih->data->img_position, ih->data->spacing, ih->data->horiz_alignment, ih->data->vert_alignment, ih->data->horiz_padding, ih->data->vert_padding,
                           draw_image, make_inactive, title, text_flags, text_orientation, fgcolor, bgcolor, active);
 
@@ -208,12 +212,12 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   else if (!image && !title)  /* color only button */
   {
     int space = border_width + 2;
-    iupFlatDrawBorder(dc, space, ih->currentwidth - 1 - space,
-                              space, ih->currentheight - 1 - space,
+    iupFlatDrawBorder(dc, space, draw_w - 1 - space,
+                              space, draw_h - 1 - space,
                               1, "0 0 0", bgcolor, active);
     space++;
-    iupFlatDrawBox(dc, space, ih->currentwidth - 1 - space,
-                           space, ih->currentheight - 1 - space,
+    iupFlatDrawBox(dc, space, draw_w - 1 - space,
+                           space, draw_h - 1 - space,
                            fgcolor, bgcolor, active);
   }
 
@@ -221,7 +225,7 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   if (ih->data->has_focus && focus_feedback)
   {
     border_width--;
-    iupdrvDrawFocusRect(dc, border_width, border_width, ih->currentwidth - 1 - border_width, ih->currentheight - 1 - border_width);
+    iupdrvDrawFocusRect(dc, border_width, border_width, draw_w - 1 - border_width, draw_h - 1 - border_width);
   }
 
   iupdrvDrawFlush(dc);
@@ -261,9 +265,11 @@ static void iFlatButtonNotify(Ihandle* ih, int is_toggle)
 
 static int iFlatButtonUpdateHighlighted(Ihandle* ih, int x, int y)
 {
-  /* handle when mouse is pressed and moved to/from inside the canvas */
-  if (x < 0 || x > ih->currentwidth - 1 ||
-      y < 0 || y > ih->currentheight - 1)
+  /* mouse coords are in canvas units (DRAWSIZE), not widget-frame px. */
+  int draw_w = 0, draw_h = 0;
+  IupGetIntInt(ih, "DRAWSIZE", &draw_w, &draw_h);
+  if (x < 0 || x > draw_w - 1 ||
+      y < 0 || y > draw_h - 1)
   {
     if (ih->data->highlighted)
     {
@@ -722,6 +728,10 @@ static void iFlatButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
   *w += 2 * ih->data->border_width;
   *h += 2 * ih->data->border_width;
+
+  /* canvas-coord -> HW px (uses float density for HiDPI canvas drivers). */
+  *w = iupdrvScaleNaturalPx(*w);
+  *h = iupdrvScaleNaturalPx(*h);
 
   (void)children_expand; /* unset if not a container */
 }

@@ -1767,7 +1767,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         items_to_delete.append(item);
     }
 
-    /* Now delete collected items — no child will be in the list */
+    /* Now delete collected items; no child will be in the list. */
     for (QTreeWidgetItem* item : items_to_delete)
     {
       int item_id = qtTreeFindNodeId(ih, item);

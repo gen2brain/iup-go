@@ -13,6 +13,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_image.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
@@ -75,6 +76,9 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
   int track_xmin, track_ymin;
   int corner_radius;
   char* corner_str;
+  int draw_h;
+
+  iupdrvDrawGetSize(dc, NULL, &draw_h);
 
   /* track dimensions */
   track_height = effective_size - 2 * ITOGGLE_MARGIN;
@@ -83,11 +87,11 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
   /* track position */
   track_xmin = check_left + ITOGGLE_MARGIN;
   if (check_alig == IUP_ALIGN_ABOTTOM)
-    track_ymin = ih->currentheight - ITOGGLE_MARGIN - track_height;
+    track_ymin = draw_h - ITOGGLE_MARGIN - track_height;
   else if (check_alig == IUP_ALIGN_ATOP)
     track_ymin = ITOGGLE_MARGIN;
   else
-    track_ymin = (ih->currentheight - track_height) / 2;
+    track_ymin = (draw_h - track_height) / 2;
 
   /* track corner radius, default is pill shape (half height) */
   corner_str = iupAttribGet(ih, "SWITCHCORNERRADIUS");
@@ -290,6 +294,9 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
   int image_pressed, icon_left, check_left, icon_width, icon_right;
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
   int make_inactive = 0;
+  int draw_w, draw_h;
+
+  iupdrvDrawGetSize(dc, &draw_w, &draw_h);
 
   iupDrawParentBackground(dc, ih);
 
@@ -307,14 +314,14 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
 
     check_left = 0;
     icon_left = check_area_width + ih->data->check_spacing;
-    icon_right = ih->currentwidth - 1;
+    icon_right = draw_w - 1;
     if (check_at_right)
     {
-      check_left = ih->currentwidth - check_area_width;
+      check_left = draw_w - check_area_width;
       icon_left = 0;
-      icon_right = ih->currentwidth - 1 - check_area_width - ih->data->check_spacing;
+      icon_right = draw_w - 1 - check_area_width - ih->data->check_spacing;
     }
-    icon_width = ih->currentwidth - check_area_width - ih->data->check_spacing;
+    icon_width = draw_w - check_area_width - ih->data->check_spacing;
   }
   else
   {
@@ -345,8 +352,8 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
 
     check_left = 0;
     icon_left = 0;
-    icon_right = ih->currentwidth - 1;
-    icon_width = ih->currentwidth;
+    icon_right = draw_w - 1;
+    icon_width = draw_w;
   }
 
   /* draw border - can still be disabled setting border_width=0 */
@@ -367,8 +374,8 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
         bordercolor = hlcolor;
     }
 
-    iupFlatDrawBorder(dc, 0, ih->currentwidth - 1,
-                          0, ih->currentheight - 1,
+    iupFlatDrawBorder(dc, 0, draw_w - 1,
+                          0, draw_h - 1,
                           border_width, bordercolor, bgcolor, active);
   }
 
@@ -383,13 +390,13 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
     int backimage_zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
     draw_image = iupFlatGetImageName(ih, "BACKIMAGE", bgimage, image_pressed, ih->data->highlighted, 1, &make_inactive);
     if (backimage_zoom)
-      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, ih->currentwidth - border_width, ih->currentheight - border_width);
+      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, draw_w - border_width, draw_h - border_width);
     else
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, border_width, border_width, -1, -1);
   }
   else
-    iupFlatDrawBox(dc, border_width, ih->currentwidth - 1 - border_width,
-                       border_width, ih->currentheight - 1 - border_width,
+    iupFlatDrawBox(dc, border_width, draw_w - 1 - border_width,
+                       border_width, draw_h - 1 - border_width,
                        bgcolor, NULL, 1);  /* background is always active */
 
   /* reserve space for focus feedback (after background draw) */
@@ -399,7 +406,7 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
   /* draw icon */
   draw_image = iupFlatGetImageName(ih, "IMAGE", image, image_pressed, ih->data->highlighted, active, &make_inactive);
   iupFlatDrawIcon(ih, dc, border_width + icon_left, border_width,
-                          icon_width - 2 * border_width, ih->currentheight - 2 * border_width,
+                          icon_width - 2 * border_width, draw_h - 2 * border_width,
                           ih->data->img_position, ih->data->spacing, ih->data->horiz_alignment, ih->data->vert_alignment, ih->data->horiz_padding, ih->data->vert_padding,
                           draw_image, make_inactive, title, text_flags, text_orientation, fgcolor, bgcolor, active);
 
@@ -412,11 +419,11 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
   {
     int space = border_width + ITOGGLE_MARGIN;
     iupFlatDrawBorder(dc, space + icon_left, icon_right - space,
-                          space, ih->currentheight - 1 - space,
+                          space, draw_h - 1 - space,
                           1, "0 0 0", bgcolor, active);
     space++;
     iupFlatDrawBox(dc, space + icon_left, icon_right - space,
-                       space, ih->currentheight - 1 - space,
+                       space, draw_h - 1 - space,
                        fgcolor, bgcolor, active);
   }
 
@@ -424,17 +431,17 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
   {
     int check_alig = iupFlatGetVerticalAlignment(iupAttribGetStr(ih, "CHECKALIGN"));
     int xc = check_left + ih->data->check_size / 2;
-    int yc = ih->currentheight / 2;
+    int yc = draw_h / 2;
     int radius = ih->data->check_size / 2 - ITOGGLE_MARGIN;
     int check_xmin = check_left + ITOGGLE_MARGIN;
-    int check_ymin = (ih->currentheight - ih->data->check_size) / 2 + ITOGGLE_MARGIN;
+    int check_ymin = (draw_h - ih->data->check_size) / 2 + ITOGGLE_MARGIN;
     int check_size = ih->data->check_size - 2 * ITOGGLE_MARGIN;
     char* check_image = iupAttribGet(ih, "CHECKIMAGE");
 
     if (check_alig == IUP_ALIGN_ABOTTOM)
     {
-      check_ymin = ih->currentheight - 1 - ITOGGLE_MARGIN;
-      yc = ih->currentheight - 1 - ITOGGLE_MARGIN - ih->data->check_size / 2;
+      check_ymin = draw_h - 1 - ITOGGLE_MARGIN;
+      yc = draw_h - 1 - ITOGGLE_MARGIN - ih->data->check_size / 2;
     }
     else if (check_alig == IUP_ALIGN_ATOP)
     {
@@ -530,7 +537,7 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
   {
     border_width--;
     iupdrvDrawFocusRect(dc, border_width + icon_left, border_width,
-                        icon_right - border_width, ih->currentheight - 1 - border_width);
+                        icon_right - border_width, draw_h - 1 - border_width);
   }
 
   iupdrvDrawFlush(dc);
@@ -556,9 +563,11 @@ static void iFlatToggleNotify(Ihandle* ih)
 
 static int iFlatToggleUpdateHighlighted(Ihandle* ih, int x, int y)
 {
-  /* handle when mouse is pressed and moved to/from inside the canvas */
-  if (x < 0 || x > ih->currentwidth - 1 ||
-      y < 0 || y > ih->currentheight - 1)
+  /* mouse coords are in canvas units (DRAWSIZE), not widget-frame px. */
+  int draw_w = 0, draw_h = 0;
+  IupGetIntInt(ih, "DRAWSIZE", &draw_w, &draw_h);
+  if (x < 0 || x > draw_w - 1 ||
+      y < 0 || y > draw_h - 1)
   {
     if (ih->data->highlighted)
     {
@@ -1050,6 +1059,10 @@ static void iFlatToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int
 
   *w += 2 * ih->data->border_width;
   *h += 2 * ih->data->border_width;
+
+  /* canvas-coord -> HW px (uses float density for HiDPI canvas drivers). */
+  *w = iupdrvScaleNaturalPx(*w);
+  *h = iupdrvScaleNaturalPx(*h);
 
   (void)children_expand; /* unset if not a container */
 }

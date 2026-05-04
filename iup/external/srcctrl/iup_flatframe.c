@@ -13,6 +13,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_register.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
@@ -55,13 +56,16 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
   double text_orientation = iupAttribGetDouble(ih, "TITLETEXTORIENTATION");
   int active = IupGetInt(ih, "ACTIVE");
   int title_w, title_h;
+  int draw_w, draw_h;
+
+  iupdrvDrawGetSize(dc, &draw_w, &draw_h);
 
   if (!backcolor)
     backcolor = iupBaseNativeParentGetBgColorAttrib(ih);
 
   /* draw background */
-  iupFlatDrawBox(dc, 0, ih->currentwidth - 1,
-                 0, ih->currentheight - 1, backcolor, NULL, 1);  /* background is always active */
+  iupFlatDrawBox(dc, 0, draw_w - 1,
+                 0, draw_h - 1, backcolor, NULL, 1);  /* background is always active */
 
   iFlatFrameGetTitleSize(ih, frame, &title_w, &title_h);
 
@@ -74,8 +78,8 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
     if (frame == 2 && title_h)
       frame_top = frame_width + title_h/2;
 
-    iupFlatDrawBorder(dc, 0,         ih->currentwidth - 1,
-                          frame_top, ih->currentheight - 1,
+    iupFlatDrawBorder(dc, 0,         draw_w - 1,
+                          frame_top, draw_h - 1,
                           frame_width, frame_color, NULL, active);
   }
   else
@@ -115,7 +119,7 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
                          frame_width, frame_width + title_h - 1 - title_line, backcolor, NULL, 1); /* background is always active */
     }
     else if (titlebgcolor)
-      iupFlatDrawBox(dc, frame_width, ih->currentwidth - 1 - frame_width,
+      iupFlatDrawBox(dc, frame_width, draw_w - 1 - frame_width,
                          frame_width, frame_width + title_h - 1 - title_line, titlebgcolor, NULL, 1); /* background is always active */
 
     if (frame != 2 && iupAttribGetBoolean(ih, "TITLELINE"))
@@ -127,12 +131,12 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
       /* don't use DRAWLINEWIDTH so we can control spacing */
       for (i = 0; i < title_line; i++)
         iupdrvDrawLine(dc, frame_width, frame_width + title_h - 1 - i,
-                           ih->currentwidth - 1 - frame_width, frame_width + title_h - 1 - i,
+                           draw_w - 1 - frame_width, frame_width + title_h - 1 - i,
                            color, IUP_DRAW_STROKE, 1);
     }
 
     iupFlatDrawIcon(ih, dc, frame_width + x_off, frame_width,
-                    ih->currentwidth - 2 * frame_width, title_h - title_line,
+                    draw_w - 2 * frame_width, title_h - title_line,
                     img_position, spacing, title_alignment, IUP_ALIGN_ATOP, horiz_padding, vert_padding,
                     titleimage, make_inactive, title, text_flags, text_orientation, titlecolor, backcolor, active);
   }
@@ -163,7 +167,8 @@ static char* iFlatFrameGetDecorSizeAttrib(Ihandle* ih)
   }
 
   iFlatFrameGetTitleSize(ih, frame, &title_w, &title_h);
-  height += title_h;
+  /* canvas-coord -> HW px. */
+  height += iupdrvScaleNaturalPx(title_h);
 
   return iupStrReturnIntInt(width, height, 'x');
 }
@@ -185,7 +190,7 @@ static char* iFlatFrameGetDecorOffsetAttrib(Ihandle* ih)
   }
 
   iFlatFrameGetTitleSize(ih, frame, &title_w, &title_h);
-  dy += title_h;
+  dy += iupdrvScaleNaturalPx(title_h);
 
   return iupStrReturnIntInt(dx, dy, 'x');
 }

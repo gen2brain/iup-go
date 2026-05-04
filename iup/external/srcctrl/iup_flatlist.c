@@ -16,6 +16,7 @@
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
+#include "iup_controls.h"
 #include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_image.h"
@@ -170,6 +171,7 @@ static void iFlatListCalcItemMaxSize(Ihandle *ih, iFlatListItem* items, int coun
   *max_h = 0;
 
   iupdrvFontGetCharSize(ih, NULL, max_h);
+  *max_h = iupControlBaseCanvasPx(*max_h);
 
   for (i = 0; i < count; i++)
   {
@@ -1786,7 +1788,7 @@ static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *
 
   if (visiblecolumns)
   {
-    *w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
+    *w = iupControlBaseCanvasPx(iupdrvFontGetStringWidth(ih, "WWWWWWWWWW"));
     *w = (visiblecolumns*(*w)) / 10;
   }
   else
@@ -1798,7 +1800,10 @@ static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *
     num_lines = count;
 
   if (max_h == 0)
+  {
     iupdrvFontGetCharSize(ih, NULL, &max_h);
+    max_h = iupControlBaseCanvasPx(max_h);
+  }
 
   *h = max_h * num_lines;
   *h += (num_lines - 1) * ih->data->spacing;
@@ -1823,6 +1828,10 @@ static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *
     *w += 2;
     *h += 2;
   }
+
+  /* canvas-coord -> HW px (uses float density for HiDPI canvas drivers). */
+  *w = iupdrvScaleNaturalPx(*w);
+  *h = iupdrvScaleNaturalPx(*h);
 }
 
 static void iFlatListSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)

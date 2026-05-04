@@ -57,6 +57,11 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return 96.0;
 }
 
+IUP_SDK_API int iupdrvScaleNaturalPx(int px)
+{
+  return px;
+}
+
 IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
 {
   Eo* win = iupeflGetMainWindow();

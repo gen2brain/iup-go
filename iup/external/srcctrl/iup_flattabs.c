@@ -16,6 +16,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_drvfont.h"
 #include "iup_layout.h"
 #include "iup_register.h"
@@ -193,7 +194,11 @@ static void iFlatTabsUpdateScrollPos(Ihandle* ih, Ihandle* child)
       }
     }
 
-    size = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentwidth - extra_size : ih->currentheight - extra_size;
+    {
+      int draw_w = 0, draw_h = 0;
+      IupGetIntInt(ih, "DRAWSIZE", &draw_w, &draw_h);
+      size = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? draw_w - extra_size : draw_h - extra_size;
+    }
 
     while (check_size > size && scroll_pos < child_pos)
     {
@@ -580,19 +585,22 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
   int tabType = iupAttribGetInt(ih, "_IUPTAB_TYPE");
   int child_x_pos, child_y_pos, child_height, child_width, title_x_pos, title_y_pos,
       title_xmax, title_ymax, scroll_pos, scroll_size, button_gap;
+  int draw_w, draw_h;
 
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
+
+  iupdrvDrawGetSize(dc, &draw_w, &draw_h);
 
   scroll_size = iFlatTabsGetTitleSize(ih, &title_width, &title_height, 1);
 
   child_x_pos = (tabType == ITABS_LEFT) ? title_width : 0;
   child_y_pos = (tabType == ITABS_TOP) ? title_height : 0;
-  child_height = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentheight - title_height : ih->currentheight;
-  child_width = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentwidth : ih->currentwidth - title_width;
-  title_x_pos = (tabType == ITABS_RIGHT) ? ih->currentwidth - title_width : 0;
-  title_y_pos = (tabType == ITABS_BOTTOM) ? ih->currentheight - title_height : 0;
-  title_xmax = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentwidth - 1 : title_x_pos + title_width -1;
-  title_ymax = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? title_y_pos + title_height - 1 : ih->currentheight - 1;
+  child_height = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? draw_h - title_height : draw_h;
+  child_width = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? draw_w : draw_w - title_width;
+  title_x_pos = (tabType == ITABS_RIGHT) ? draw_w - title_width : 0;
+  title_y_pos = (tabType == ITABS_BOTTOM) ? draw_h - title_height : 0;
+  title_xmax = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? draw_w - 1 : title_x_pos + title_width -1;
+  title_ymax = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? title_y_pos + title_height - 1 : draw_h - 1;
   scroll_pos = iupAttribGetInt(ih, "_IUPFTABS_SCROLLPOS");
   button_gap = (scroll_pos  > 0) ? scroll_size : 0;
 
@@ -623,13 +631,13 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
     {
       /* tab bottom horizontal and top children horizontal */
       int height = (tabType == ITABS_TOP) ? title_height - 1 : child_height;
-      iupdrvDrawLine(dc, 0, height, ih->currentwidth - 1, height, line_color, IUP_DRAW_STROKE, 1);
+      iupdrvDrawLine(dc, 0, height, draw_w - 1, height, line_color, IUP_DRAW_STROKE, 1);
     }
     else
     {
       /* tab bottom horizontal and top children horizontal */
       int width = (tabType == ITABS_LEFT) ? title_xmax - 1 : child_width;
-      iupdrvDrawLine(dc, width, 0, width, ih->currentheight - 1, line_color, IUP_DRAW_STROKE, 1);
+      iupdrvDrawLine(dc, width, 0, width, draw_h - 1, line_color, IUP_DRAW_STROKE, 1);
     }
   }
 
@@ -730,19 +738,19 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
       }
 
       reset_clip = 0;
-      if ((tabType == ITABS_TOP || tabType == ITABS_BOTTOM) && title_width > ih->currentwidth - extra_size - button_gap) /* has right scroll button */
+      if ((tabType == ITABS_TOP || tabType == ITABS_BOTTOM) && title_width > draw_w - extra_size - button_gap) /* has right scroll button */
       {
-        if (tab_x + tab_w > ih->currentwidth - extra_size - scroll_size)
+        if (tab_x + tab_w > draw_w - extra_size - scroll_size)
         {
-          iupdrvDrawSetClipRect(dc, tab_x, title_y_pos, ih->currentwidth - extra_size - scroll_size, title_y_pos + title_height);
+          iupdrvDrawSetClipRect(dc, tab_x, title_y_pos, draw_w - extra_size - scroll_size, title_y_pos + title_height);
           reset_clip = 1;
         }
       }
-      else if ((tabType == ITABS_LEFT || tabType == ITABS_RIGHT) && title_height > ih->currentheight - extra_size - button_gap) /* has right scroll button */
+      else if ((tabType == ITABS_LEFT || tabType == ITABS_RIGHT) && title_height > draw_h - extra_size - button_gap) /* has right scroll button */
       {
-        if (tab_y + tab_h > ih->currentheight - extra_size - scroll_size)
+        if (tab_y + tab_h > draw_h - extra_size - scroll_size)
         {
-          iupdrvDrawSetClipRect(dc, title_x_pos, tab_y, title_x_pos + title_width, ih->currentheight - extra_size - scroll_size);
+          iupdrvDrawSetClipRect(dc, title_x_pos, tab_y, title_x_pos + title_width, draw_h - extra_size - scroll_size);
           reset_clip = 1;
         }
       }
@@ -895,8 +903,8 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
       iFlatTabsDrawScrollTopButton(dc, tabs_bgcolor, foreground_color, active, title_x_pos, title_width, scroll_size);
   }
 
-  if (((tabType == ITABS_TOP || tabType == ITABS_BOTTOM) && title_width > ih->currentwidth - extra_size - button_gap) ||
-      ((tabType == ITABS_LEFT || tabType == ITABS_RIGHT) && title_height > ih->currentheight - extra_size - button_gap))
+  if (((tabType == ITABS_TOP || tabType == ITABS_BOTTOM) && title_width > draw_w - extra_size - button_gap) ||
+      ((tabType == ITABS_LEFT || tabType == ITABS_RIGHT) && title_height > draw_h - extra_size - button_gap))
   {
     char* foreground_color = tabs_forecolor;
     if (tab_highlighted == ITABS_SB_RIGHT)
@@ -908,9 +916,9 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
     }
 
     if (tabType == ITABS_TOP || tabType == ITABS_BOTTOM)
-      iFlatTabsDrawScrollRightButton(dc, tabs_bgcolor, foreground_color, active, title_y_pos, title_height, ih->currentwidth - extra_size, scroll_size);
+      iFlatTabsDrawScrollRightButton(dc, tabs_bgcolor, foreground_color, active, title_y_pos, title_height, draw_w - extra_size, scroll_size);
     else
-      iFlatTabsDrawScrollBottomButton(dc, tabs_bgcolor, foreground_color, active, title_x_pos, title_width, ih->currentheight - extra_size, scroll_size);
+      iFlatTabsDrawScrollBottomButton(dc, tabs_bgcolor, foreground_color, active, title_x_pos, title_width, draw_h - extra_size, scroll_size);
   }
 
   if (extra_buttons)
@@ -952,7 +960,7 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
       {
         extra_w = iFlatTabsGetExtraWidthId(ih, i, img_position, horiz_padding, vert_padding, NULL);  /* this will also set any id based font */
         extra_h = title_height;
-        extra_x = ih->currentwidth - total_extra_size - extra_w;
+        extra_x = draw_w - total_extra_size - extra_w;
         extra_y = title_y_pos;
         xmin = extra_x + horiz_padding / 2;
         xmax = extra_x + extra_w - horiz_padding / 2;
@@ -963,7 +971,7 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
       {
         extra_h = iFlatTabsGetExtraHeightId(ih, i, img_position, horiz_padding, vert_padding, NULL);  /* this will also set any id based font */
         extra_w = title_width;
-        extra_y = ih->currentheight - total_extra_size - extra_h;
+        extra_y = draw_h - total_extra_size - extra_h;
         extra_x = title_x_pos;
         xmin = title_x_pos + horiz_padding / 2;
         xmax = title_x_pos + title_width - 1 - horiz_padding / 2;
@@ -1159,6 +1167,9 @@ static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, i
   int title_width, title_height;
   int tabType = iupAttribGetInt(ih, "_IUPTAB_TYPE");
   int title_pos, title_size, curr, curr2;
+  int draw_w = 0, draw_h = 0;
+
+  IupGetIntInt(ih, "DRAWSIZE", &draw_w, &draw_h);
 
   int scroll_size = iFlatTabsGetTitleSize(ih, &title_width, &title_height, 1);
 
@@ -1171,7 +1182,7 @@ static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, i
     curr2 = cur_x;
     break;
   case ITABS_BOTTOM:
-    title_pos = ih->currentheight - title_height;
+    title_pos = draw_h - title_height;
     title_size = title_height;
     curr = cur_y;
     curr2 = cur_x;
@@ -1183,7 +1194,7 @@ static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, i
     curr2 = cur_y;
     break;
   case ITABS_RIGHT:
-    title_pos = ih->currentwidth - title_width;
+    title_pos = draw_w - title_width;
     title_size = title_width;
     curr = cur_x;
     curr2 = cur_y;
@@ -1201,7 +1212,7 @@ static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, i
     double text_orientation = iupAttribGetDouble(ih, "TABSTEXTORIENTATION");
     int tab_space, extra_size;
     int extra_buttons = iupAttribGetInt(ih, "EXTRABUTTONS");
-    int size = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentwidth : ih->currentheight;
+    int size = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? draw_w : draw_h;
     int scroll_pos = iupAttribGetInt(ih, "_IUPFTABS_SCROLLPOS");
     int button_gap = (scroll_pos  > 0) ? scroll_size : 0;
 
@@ -1210,7 +1221,7 @@ static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, i
       extra_size = iFlatTabsGetExtraWidth(ih, extra_buttons, img_position, horiz_padding, vert_padding, NULL);
     else
       extra_size = iFlatTabsGetExtraHeight(ih, extra_buttons, img_position, horiz_padding, vert_padding, NULL);
-    tab_space = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentwidth - extra_size : ih->currentheight - extra_size;
+    tab_space = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? draw_w - extra_size : draw_h - extra_size;
 
     if (scroll_pos > 0)
     {
@@ -1220,8 +1231,8 @@ static int iFlatTabsFindTab(Ihandle* ih, int cur_x, int cur_y, int show_close, i
       tab_pos += scroll_size;
     }
 
-    if (((tabType == ITABS_TOP || tabType == ITABS_BOTTOM) && title_width > ih->currentwidth - extra_size - button_gap) ||
-        ((tabType == ITABS_LEFT || tabType == ITABS_RIGHT) && title_height > ih->currentheight - extra_size - button_gap))
+    if (((tabType == ITABS_TOP || tabType == ITABS_BOTTOM) && title_width > draw_w - extra_size - button_gap) ||
+        ((tabType == ITABS_LEFT || tabType == ITABS_RIGHT) && title_height > draw_h - extra_size - button_gap))
     {
       if (curr2 > tab_space - scroll_size && curr2 < tab_space)
         return ITABS_SB_RIGHT;
@@ -1294,6 +1305,9 @@ static void iFlatTabsGetExtraButtonBox(Ihandle* ih, int tabType, int extra_butto
 {
   int i, total_extra_size = 0;
   int extra_x, extra_y, extra_w, extra_h;
+  int draw_w = 0, draw_h = 0;
+
+  IupGetIntInt(ih, "DRAWSIZE", &draw_w, &draw_h);
 
   for (i = 1; i <= extra_buttons; i++)
   {
@@ -1304,7 +1318,7 @@ static void iFlatTabsGetExtraButtonBox(Ihandle* ih, int tabType, int extra_butto
 
       if (i == id)
       {
-        extra_x = ih->currentwidth - total_extra_size - extra_w;
+        extra_x = draw_w - total_extra_size - extra_w;
         extra_y = title_y_pos;
         *xmin = extra_x + horiz_padding / 2;
         *xmax = extra_x + extra_w - horiz_padding / 2;
@@ -1320,7 +1334,7 @@ static void iFlatTabsGetExtraButtonBox(Ihandle* ih, int tabType, int extra_butto
 
       if (i == id)
       {
-        extra_y = ih->currentheight - total_extra_size - extra_h;
+        extra_y = draw_h - total_extra_size - extra_h;
         extra_x = title_x_pos;
         *xmin = title_x_pos + horiz_padding / 2;
         *xmax = title_x_pos + title_width - 1 - horiz_padding / 2;
@@ -1855,6 +1869,9 @@ static char* iFlatTabsGetClientSizeAttrib(Ihandle* ih)
   int tabType = iupAttribGetInt(ih, "_IUPTAB_TYPE");
 
   iFlatTabsGetTitleSize(ih, &title_width, &title_height, 0);
+  /* canvas-coord -> HW px. */
+  title_width  = iupdrvScaleNaturalPx(title_width);
+  title_height = iupdrvScaleNaturalPx(title_height);
 
   if (tabType == ITABS_TOP || tabType == ITABS_BOTTOM)
     height -= title_height;
@@ -2157,8 +2174,12 @@ static char* iFlatTabsGetExtraBoxAttrib(Ihandle* ih, int id)
     iupAttribGetIntInt(ih, "TABSPADDING", &horiz_padding, &vert_padding, 'x');
     iFlatTabsGetTitleSize(ih, &title_width, &title_height, 1);
 
-    title_x_pos = (tabType == ITABS_RIGHT) ? ih->currentwidth - title_width : 0;
-    title_y_pos = (tabType == ITABS_BOTTOM) ? ih->currentheight - title_height : 0;
+    {
+      int draw_w = 0, draw_h = 0;
+      IupGetIntInt(ih, "DRAWSIZE", &draw_w, &draw_h);
+      title_x_pos = (tabType == ITABS_RIGHT) ? draw_w - title_width : 0;
+      title_y_pos = (tabType == ITABS_BOTTOM) ? draw_h - title_height : 0;
+    }
 
     iFlatTabsGetExtraButtonBox(ih, tabType, extra_buttons, img_position, horiz_padding, vert_padding,
                                title_x_pos, title_y_pos, title_height, title_width,
@@ -2313,6 +2334,9 @@ static void iFlatTabsComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *
   }
 
   iFlatTabsGetTitleSize(ih, &width, &height, 0);
+  /* canvas-coord -> HW px. */
+  width  = iupdrvScaleNaturalPx(width);
+  height = iupdrvScaleNaturalPx(height);
 
   *w = children_naturalwidth;
   *h = children_naturalheight;
@@ -2337,6 +2361,9 @@ static void iFlatTabsSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
   int width, height;
 
   iFlatTabsGetTitleSize(ih, &title_width, &title_height, 0);
+  /* canvas-coord -> HW px. */
+  title_width  = iupdrvScaleNaturalPx(title_width);
+  title_height = iupdrvScaleNaturalPx(title_height);
 
   width = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentwidth : ih->currentwidth - title_width;
   height = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentheight - title_height : ih->currentheight;
@@ -2379,6 +2406,9 @@ static void iFlatTabsSetChildrenPositionMethod(Ihandle* ih, int x, int y)
   if (offset) iupStrToIntInt(offset, &x, &y, 'x');
 
   iFlatTabsGetTitleSize(ih, &title_width, &title_height, 0);
+  /* canvas-coord -> HW px. */
+  title_width  = iupdrvScaleNaturalPx(title_width);
+  title_height = iupdrvScaleNaturalPx(title_height);
 
   if (tabType == ITABS_TOP)
     y += title_height;
