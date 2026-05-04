@@ -17,6 +17,13 @@
 #include "iup_object.h"
 
 
+#ifdef _WIN32
+#define iupStrtokR strtok_s
+#else
+#define iupStrtokR strtok_r
+#endif
+
+
 typedef struct _IfontNameMap {
   const char* pango;
   const char* x;
@@ -650,6 +657,7 @@ IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int typeface_siz
 {
   char style1[30], style2[30];
   char* token;
+  char* save;
   char xfont[1024];
 
   if (font[0] != '-')
@@ -663,37 +671,37 @@ IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int typeface_siz
   *strikeout = 0;
 
   /* fndry */
-  token = strtok(xfont, "-");
+  token = iupStrtokR(xfont, "-", &save);
   if (!token) return 0;
 
   /* fmly */
-  token = strtok(NULL, "-");
+  token = iupStrtokR(NULL, "-", &save);
   if (!token) return 0;
   iupStrCopyN(typeface, typeface_size, token);
 
   /* wght */
-  token = strtok(NULL, "-");
+  token = iupStrtokR(NULL, "-", &save);
   if (!token) return 0;
   iupStrCopyN(style1, sizeof(style1), token);
   if (strstr("bold", style1))
     *bold = 1;
 
   /* slant */
-  token = strtok(NULL, "-");
+  token = iupStrtokR(NULL, "-", &save);
   if (!token) return 0;
   iupStrCopyN(style2, sizeof(style2), token);
   if (*style2 == 'i' || *style2 == 'o')
     *italic = 1;
 
   /* sWdth */
-  token = strtok(NULL, "-");
+  token = iupStrtokR(NULL, "-", &save);
   if (!token) return 0;
   /* adstyl */
-  token = strtok(NULL, "-");
+  token = iupStrtokR(NULL, "-", &save);
   if (!token) return 0;
 
   /* pxlsz */
-  token = strtok(NULL, "-");
+  token = iupStrtokR(NULL, "-", &save);
   if (!token) return 0;
   { int tmp = 0; iupStrToInt(token, &tmp); *size = -tmp; } /* size in pixels */
 
@@ -701,7 +709,7 @@ IUP_SDK_API int iupFontParseX(const char *font, char *typeface, int typeface_siz
     return 1;
 
   /* ptSz */
-  token = strtok(NULL, "-");
+  token = iupStrtokR(NULL, "-", &save);
   if (!token) return 0;
   { int tmp = 0; iupStrToInt(token, &tmp); *size = tmp/10; } /* size in deci-points */
 
