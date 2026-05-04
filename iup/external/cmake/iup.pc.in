@@ -7,6 +7,6 @@ Name: IUP
 Description: IUP - Portable User Interface (@IUP_BACKEND@ backend)
 Version: @_IUP_VERSION_RAW@
 Requires.private: @IUP_PC_REQUIRES@
-Cflags: -I${includedir}
+Cflags: -I${includedir}/iup
 Libs: -L${libdir} -liup
 Libs.private: @IUP_PC_LIBS_PRIVATE@

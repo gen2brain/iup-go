@@ -8,6 +8,6 @@ Description: IUP Web browser control (@IUP_BACKEND@ backend)
 Version: @_IUP_VERSION_RAW@
 Requires: iup
 Requires.private: @IUPWEB_PC_REQUIRES@
-Cflags: -I${includedir}
+Cflags: -I${includedir}/iup
 Libs: -L${libdir} -liupweb
 Libs.private: @IUPWEB_PC_LIBS_PRIVATE@

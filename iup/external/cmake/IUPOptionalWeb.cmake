@@ -16,6 +16,14 @@ elseif(IUP_BACKEND STREQUAL "cocoa")
   )
   list(APPEND _WEB_LIBS "-framework WebKit")
 
+elseif(IUP_BACKEND STREQUAL "cocoatouch")
+  list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupcocoatouch_webbrowser.m")
+  set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupcocoatouch_webbrowser.m"
+    PROPERTIES LANGUAGE OBJC
+  )
+  list(APPEND _WEB_LIBS "-framework WebKit")
+
 elseif(IUP_BACKEND STREQUAL "win32" OR IUP_BACKEND STREQUAL "winui")
   list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupwin_webbrowser.cpp")
 
@@ -28,6 +36,20 @@ elseif(IUP_BACKEND MATCHES "^qt")
     find_package(Qt5 REQUIRED COMPONENTS WebEngineCore WebEngineWidgets)
     list(APPEND _WEB_LIBS Qt5::WebEngineCore Qt5::WebEngineWidgets)
   endif()
+
+elseif(IUP_BACKEND STREQUAL "android")
+  list(APPEND _WEB_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupandroid_webbrowser.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupandroid_webbrowser_jni.c"
+  )
+endif()
+
+if(IUP_BUILD_FRAMEWORK)
+  target_sources(iup PRIVATE ${_WEB_SOURCES})
+  target_compile_definitions(iup PRIVATE IUPWEB_BUILD_LIBRARY ${_WEB_DEFS})
+  target_include_directories(iup PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/srcweb)
+  target_link_libraries(iup PRIVATE ${_WEB_LIBS})
+  return()
 endif()
 
 add_library(iupweb ${_WEB_SOURCES})
@@ -36,7 +58,7 @@ add_library(IUP::iupweb ALIAS iupweb)
 target_include_directories(iupweb
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:include/iup>
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/srcweb
@@ -63,7 +85,7 @@ endif()
 # pkg-config
 set(IUPWEB_PC_REQUIRES "")
 set(IUPWEB_PC_LIBS_PRIVATE "")
-if(IUP_BACKEND STREQUAL "cocoa")
+if(IUP_BACKEND STREQUAL "cocoa" OR IUP_BACKEND STREQUAL "cocoatouch")
   set(IUPWEB_PC_LIBS_PRIVATE "-framework WebKit")
 elseif(IUP_BACKEND STREQUAL "qt6")
   set(IUPWEB_PC_REQUIRES "Qt6WebEngineCore Qt6WebEngineWidgets")
