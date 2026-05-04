@@ -577,7 +577,7 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
     return IUP_NOERROR;
   }
 
-  /* Create OpenGL context — view may not be available yet, that's OK on macOS */
+  /* Create OpenGL context; view may not be available yet, that's OK on macOS. */
   gldata->context = [[IupGLContext alloc] initWithFormat:gldata->pixel_format shareContext:nil];
 
   if (!gldata->context)
