@@ -16,6 +16,7 @@
 #include "iup_str.h"
 #include "iup_assert.h"
 #include "iup_layout.h"
+#include "iup_predialogs.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
 #include "iup_varg.h"
@@ -1175,12 +1176,15 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
       iupAttribSet(param_box, "TEXTEXPAND", "Yes");
   }
 
-  button_box = IupHbox(
-    IupFill(),
-    button_1,
-    button_2,
-    button_3,
-    NULL);
+  if (iupDialogButtonOrder() == IUP_BUTTON_ORDER_CANCEL_FIRST)
+  {
+    if (button_3)
+      button_box = IupHbox(IupFill(), button_3, button_2, button_1, NULL);
+    else
+      button_box = IupHbox(IupFill(), button_2, button_1, NULL);
+  }
+  else
+    button_box = IupHbox(IupFill(), button_1, button_2, button_3, NULL);
   IupSetAttribute(button_box,"MARGIN","0x0");
   IupSetAttribute(button_box, "NORMALIZESIZE", "HORIZONTAL");
 

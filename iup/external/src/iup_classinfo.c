@@ -14,6 +14,7 @@
 #include "iup_class.h"
 #include "iup_register.h"
 #include "iup_str.h"
+#include "iup_predialogs.h"
 
 
 static int compare_names(const void *a, const void *b)
@@ -409,7 +410,10 @@ IUP_API Ihandle* IupClassInfoDialog(Ihandle* parent)
   IupSetStrAttribute(help_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(help_bt, "ACTION", (Icallback)button_help_CB);
 
-  buttons = IupHbox(IupFill(), ok_bt, help_bt, NULL);
+  if (iupDialogButtonOrder() == IUP_BUTTON_ORDER_CANCEL_FIRST)
+    buttons = IupHbox(IupFill(), help_bt, ok_bt, NULL);
+  else
+    buttons = IupHbox(IupFill(), ok_bt, help_bt, NULL);
   IupSetAttribute(buttons, "MARGIN", "0x0");
   IupSetAttribute(buttons, "NORMALIZESIZE", "HORIZONTAL");
 

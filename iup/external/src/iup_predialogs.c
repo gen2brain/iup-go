@@ -16,6 +16,14 @@
 #include "iup_str.h"
 
 
+int iupDialogButtonOrder(void)
+{
+  const char* sys = IupGetGlobal("SYSTEM");
+  if (sys && iupStrEqualNoCasePartial(sys, "Win"))
+    return IUP_BUTTON_ORDER_OK_FIRST;
+  return IUP_BUTTON_ORDER_CANCEL_FIRST;
+}
+
 static int CB_button_OK (Ihandle* ih)
 {
   iupAttribSet(IupGetDialog(ih), "STATUS", "1");
@@ -66,11 +74,10 @@ IUP_API int IupListDialog (int type, const char *title, int size, const char** l
   IupSetStrAttribute(cancel, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(cancel, "ACTION", (Icallback)CB_button_CANCEL);
 
-  button_box = IupHbox(
-    IupFill(),
-    ok,
-    cancel,
-    NULL);
+  if (iupDialogButtonOrder() == IUP_BUTTON_ORDER_CANCEL_FIRST)
+    button_box = IupHbox(IupFill(), cancel, ok, NULL);
+  else
+    button_box = IupHbox(IupFill(), ok, cancel, NULL);
   IupSetAttribute(button_box,"MARGIN","0x0");
   IupSetAttribute(button_box, "NORMALIZESIZE", "HORIZONTAL");
 
@@ -154,8 +161,8 @@ static int iAlarmButtonAction_CB(Ihandle *ih)
 
 IUP_API int IupAlarm(const char *title, const char *msg, const char *b1, const char *b2, const char *b3)
 {
-  Ihandle  *dlg, *dlg_box, *button_box, *button, *default_esc, *default_enter;
-  int bt;
+  Ihandle  *dlg, *dlg_box, *button_box, *buttons[3], *default_esc, *default_enter;
+  int i, count, bt;
 
   msg = msg? msg: "";
 
@@ -165,37 +172,40 @@ IUP_API int IupAlarm(const char *title, const char *msg, const char *b1, const c
   button_box = IupHbox(NULL);
   IupSetAttribute(button_box, "NORMALIZESIZE", "HORIZONTAL");
   IupSetAttribute(button_box,"MARGIN","0x0");
-  IupAppend(button_box, IupFill()); /* to center the buttons */
+  IupAppend(button_box, IupFill());
 
-  button = IupButton(b1, NULL);
-  iupAttribSet(button, "_IUP_BUTTON_NUMBER", "1");
-  IupSetStrAttribute(button, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
-  IupAppend(button_box, button);
-  IupSetCallback (button, "ACTION", (Icallback)iAlarmButtonAction_CB);
-  default_enter = button;
-  default_esc = button;
+  count = 1;
+  buttons[0] = IupButton(b1, NULL);
+  iupAttribSet(buttons[0], "_IUP_BUTTON_NUMBER", "1");
+  IupSetStrAttribute(buttons[0], "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
+  IupSetCallback(buttons[0], "ACTION", (Icallback)iAlarmButtonAction_CB);
 
   if (b2 != NULL)
   {
-    button = IupButton(b2, NULL);
-    iupAttribSet(button, "_IUP_BUTTON_NUMBER", "2");
-    IupSetStrAttribute(button, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
-    IupAppend(button_box, button);
-    IupSetCallback (button, "ACTION", (Icallback)iAlarmButtonAction_CB);
-    default_esc = button;
+    buttons[count] = IupButton(b2, NULL);
+    iupAttribSet(buttons[count], "_IUP_BUTTON_NUMBER", "2");
+    IupSetStrAttribute(buttons[count], "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
+    IupSetCallback(buttons[count], "ACTION", (Icallback)iAlarmButtonAction_CB);
+    count++;
   }
-
   if (b3 != NULL)
   {
-    button = IupButton(b3, NULL);
-    iupAttribSet(button, "_IUP_BUTTON_NUMBER", "3");
-    IupSetStrAttribute(button, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
-    IupAppend(button_box, button);
-    IupSetCallback (button, "ACTION", (Icallback)iAlarmButtonAction_CB);
-    default_esc = button;
+    buttons[count] = IupButton(b3, NULL);
+    iupAttribSet(buttons[count], "_IUP_BUTTON_NUMBER", "3");
+    IupSetStrAttribute(buttons[count], "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
+    IupSetCallback(buttons[count], "ACTION", (Icallback)iAlarmButtonAction_CB);
+    count++;
   }
 
-  IupAppend(button_box, IupFill()); /* to center the buttons */
+  default_enter = buttons[0];
+  default_esc = buttons[count - 1];
+
+  if (iupDialogButtonOrder() == IUP_BUTTON_ORDER_CANCEL_FIRST)
+    for (i = count - 1; i >= 0; i--) IupAppend(button_box, buttons[i]);
+  else
+    for (i = 0; i < count; i++) IupAppend(button_box, buttons[i]);
+
+  IupAppend(button_box, IupFill());
 
   dlg_box = IupVbox(
     IupLabel(msg),
@@ -290,11 +300,10 @@ IUP_API int IupGetText(const char* title, char* text, int maxsize)
     IupSetCallback(cancel, "ACTION", (Icallback)CB_button_CANCEL);
   }
 
-  button_box = IupHbox(
-    IupFill(),
-    ok,
-    cancel,
-    NULL);
+  if (cancel && iupDialogButtonOrder() == IUP_BUTTON_ORDER_CANCEL_FIRST)
+    button_box = IupHbox(IupFill(), cancel, ok, NULL);
+  else
+    button_box = IupHbox(IupFill(), ok, cancel, NULL);
   IupSetAttribute(button_box,"MARGIN","0x0");
   IupSetAttribute(button_box, "NORMALIZESIZE", "HORIZONTAL");
 
