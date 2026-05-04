@@ -17,7 +17,7 @@ Creates a month calendar interface element, where the user can select a date.
 Can be set to "TODAY". Default value is the today date.
 
 **WEEKNUMBERS**: Shows the number of the week along the year. Default: NO.
-Not supported in WinUI and macOS.
+Not supported in WinUI, macOS, Android and iOS.
 
 ### Callbacks
 
@@ -37,7 +37,7 @@ Not supported in WinUI and macOS.
 
 In Windows, the view is changed when the month of year is clicked, so the user can select the month of the year or a year among years.
 
-In GTK uses GtkCalendar, in Windows uses MONTHCAL_CLASS, in WinUI uses XAML CalendarView, in macOS uses NSDatePicker, in Qt uses QCalendarWidget, in EFL uses EFL_UI_CALENDAR, and in FLTK and Motif uses a custom calendar control.
+In GTK uses GtkCalendar, in Windows uses MONTHCAL_CLASS, in WinUI uses XAML CalendarView, in macOS uses NSDatePicker, in Qt uses QCalendarWidget, in EFL uses EFL_UI_CALENDAR, in Android uses android.widget.CalendarView, in iOS uses UIDatePicker, and in FLTK and Motif uses a custom calendar control.
 
 ### Examples
 

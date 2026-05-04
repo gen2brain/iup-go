@@ -109,6 +109,8 @@ Supported in Windows, Qt and macOS.
 Default: "NO". Works only if DROPDOWN=NO and MULTIPLE=NO.
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes are NOT used.
 
+**FASTSCROLL** [Android Only] (non-inheritable): shows a draggable scroll thumb on the right edge for jumping through long lists. Default: "NO", auto-promoted to "YES" when VIRTUALMODE=YES. Ignored when DROPDOWN=YES.
+
 **SHOWDROPDOWN** (write-only): opens or closes the dropdown list. Can be "YES" or "NO".
 Valid only when DROPDOWN=YES. Ignored if set before map.
 

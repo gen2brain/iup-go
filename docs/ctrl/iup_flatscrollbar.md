@@ -2,7 +2,7 @@
 
 Complementary attributes when a flat scrollbar is used (a drawn scrollbar).
 
-Used in [IupFlatScrollBox](../ctrl/iup_flatscrollbox.md), [IupFlatList](../ctrl/iup_flatlist.md), [IupFlatTree](../ctrl/iup_flattree.md) and in [IupMatrix](../ctrl/iup_matrix.md) when FLATSCROLLBAR=Yes is defined.
+Used in [IupFlatScrollBox](iup_flatscrollbox.md), [IupFlatList](iup_flatlist.md), [IupFlatTree](iup_flattree.md) and in [IupMatrix](iup_matrix.md) when FLATSCROLLBAR=Yes is defined.
 
 ### Attributes (non-inheritable)
 
@@ -49,7 +49,7 @@ If it is not defined then the IMAGE* is used.
 
 ### Affects
 
-[IupFlatScrollBox](../ctrl/iup_flatscrollbox.md), [IupMatrix](../ctrl/iup_matrix.md)
+[IupFlatScrollBox](iup_flatscrollbox.md), [IupMatrix](iup_matrix.md)
 
 ### Notes
 
@@ -63,4 +63,4 @@ Also, all numeric attributes are integer numbers.
 
 ### See Also
 
-[SCROLLBAR](iup_scrollbar.md), [POSX](iup_posx.md), [XMAX](iup_xmax.md), [DX](iup_dx.md), [POSY](iup_posy.md), [YMAX](iup_ymax.md), [DY](iup_dy.md)
+[SCROLLBAR](../attrib/iup_scrollbar.md), [POSX](../attrib/iup_posx.md), [XMAX](../attrib/iup_xmax.md), [DX](../attrib/iup_dx.md), [POSY](../attrib/iup_posy.md), [YMAX](../attrib/iup_ymax.md), [DY](../attrib/iup_dy.md)

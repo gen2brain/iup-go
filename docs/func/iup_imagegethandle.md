@@ -22,9 +22,12 @@ The available file formats supported are system-dependent:
 - **GTK 3**: formats supported by GDK-PixBuf, such as BMP, GIF, JPEG, PNG, TIFF and many others
 - **GTK 4**: formats supported by GdkTexture, such as PNG, JPEG, TIFF and others via GdkPixbuf
 - **macOS**: formats supported by NSImage, such as BMP, GIF, JPEG, PNG, TIFF, PDF, EPS and others
+- **iOS**: formats supported by UIImage, such as PNG, JPEG, GIF, BMP, TIFF and HEIC; asset-catalog names and SF Symbols are also resolved
 - **Qt**: formats supported by QPixmap, such as BMP, GIF, JPEG, PNG, PBM, PGM, PPM, XBM, XPM and SVG
+- **FLTK**: formats supported by Fl_Shared_Image, such as BMP, GIF, JPEG, PNG, XBM and XPM
 - **EFL**: formats supported by Evas image loaders, such as BMP, GIF, JPEG, PNG, TIFF, WebP and others
 - **Motif**: XBM and XPM. With Motif 2.4.0+: also JPEG, PNG and SVG via XmGetPixmap
+- **Android**: formats supported by BitmapFactory, such as PNG, JPEG, GIF, BMP and WebP
 
 In this case, the function returns a new image handle and associates the name with that handle, so in the next call it will return the existing handle.
 

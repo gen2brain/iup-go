@@ -20,6 +20,10 @@ Default: "1".
 **BUTTONS**: Buttons configuration. Can have values: "OK", "OKCANCEL", "RETRYCANCEL", "YESNO", or "YESNOCANCEL".
 Default: "OK". Additionally, the "Help" button is displayed if the HELP_CB callback is defined.
 
+**BUTTONSTYLE** [Android, iOS]: visual style applied to all buttons. Same values as [IupButton](../elem/iup_button.md)'s BUTTONSTYLE ("FILLED", "TONAL", "OUTLINED", "ELEVATED", "TEXT"). When unset, the default action gets a filled look and the rest a gray look (matching the platform's native alert).
+
+**CORNERSTYLE** [Android, iOS]: corner shape applied to all buttons. Same values as [IupButton](../elem/iup_button.md)'s CORNERSTYLE ("SMALL", "MEDIUM", "LARGE", "CAPSULE"). When unset, the platform's stock default is used (capsule on modern Material 3 / iOS 26 Liquid Glass).
+
 **DIALOGTYPE**: Type of dialog defines which icon will be displayed beside the message text.
 Can have values: "MESSAGE" (No Icon), "ERROR" (Stop-sign), "WARNING" (Exclamation-point), "QUESTION" (Question-mark) or "INFORMATION" (Letter "i").
 Default: "MESSAGE".

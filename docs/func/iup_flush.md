@@ -14,3 +14,5 @@ For this update to occur faster than usual, call **IupFlush** after the attribut
 *Important*: A call to this function may cause other callbacks to be processed before it returns.
 
 In Motif, if the X server sent an event which is not yet in the event queue, after a call to **IupFlush** the queue might not be empty.
+
+On Android and iOS, drains messages currently queued on the main thread (same mechanism as [IupLoopStep](iup_loopstep.md)).

@@ -6,6 +6,9 @@ It is a synchronous operation, i.e., the function will wait the command to termi
 
 In Windows, there is no need to add the ".exe" file extension.
 
+On iOS, behaves the same as [IupExecute](iup_execute.md); the platform exposes no way to wait for another app to exit.
+On Android, returns -1; intents are fire-and-forget.
+
 ### Parameters/Return
 
     int IupExecuteWait(const char* filename, const char* parameters);

@@ -104,8 +104,6 @@ The range of the scrollbar is defined by MIN and MAX.
 The PAGESIZE defines the size of the thumb indicator relative to the total range.
 The actual usable range for VALUE is from MIN to MAX-PAGESIZE.
 
-In GTK uses GtkScrollbar, in Windows uses the SCROLLBAR window class, in WinUI uses XAML ScrollBar, in macOS uses NSScroller, in Qt uses QScrollBar, in FLTK uses Fl_Scrollbar, in EFL uses Efl_Ui_Slider, and in Motif uses XmScrollBar.
-
 ### See Also
 
 [IupVal](iup_val.md), [IupCanvas SCROLLBAR](../attrib/iup_scrollbar.md)

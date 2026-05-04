@@ -115,6 +115,10 @@ VALUE0 contains the path (same value returned in DIRECTORY), and VALUE1, VALUE2,
 **MULTIVALUEPATH**: force a full path in MULTIVALUE and VALUE attributes when MULTIPLEFILES=Yes (id=0 will still contain the path of the first file).
 In Windows and Motif, only files in the same folder may be selected, but in GTK when using the "Recent Files" files from different folders can be selected.
 
+**VALUE_URI** [Android Only] (read-only) (non-inheritable): SAF `content://` URI of the last successful pick.
+VALUE keeps a cache-staged path for fopen compatibility; VALUE_URI is the stable identifier to persist for recent-files (`IupConfigRecentUpdate`).
+The driver calls `takePersistableUriPermission` on the URI so it survives app restarts, no manifest permission needed.
+
 ### Callbacks
 
 **FILE_CB**: Action generated when a file is selected. Not called when DIALOGTYPE=DIR.
@@ -180,7 +184,9 @@ In Qt, QFileDialog automatically uses the XDG Desktop Portal through the Qt plat
 
 #### Native Implementations
 
-In Win32 uses GetOpenFileName/GetSaveFileName, in WinUI uses IFileOpenDialog/IFileSaveDialog (COM), in GTK 3 uses GtkFileChooserDialog, in GTK 4 uses GtkFileDialog, in macOS uses NSOpenPanel/NSSavePanel, in Qt uses QFileDialog, in FLTK uses Fl_File_Chooser, in EFL uses Elm_Fileselector, and in Motif uses XmFileSelectionDialog.
+In Win32 uses GetOpenFileName/GetSaveFileName, in WinUI uses IFileOpenDialog/IFileSaveDialog (COM), in GTK 3 uses GtkFileChooserDialog, in GTK 4 uses GtkFileDialog, in macOS uses NSOpenPanel/NSSavePanel, in Qt uses QFileDialog, in FLTK uses Fl_File_Chooser, in EFL uses Elm_Fileselector, in Motif uses XmFileSelectionDialog, and in Android uses Storage Access Framework (`ACTION_OPEN_DOCUMENT` / `ACTION_CREATE_DOCUMENT`).
+
+On Android, SAF returns `content://` URIs rather than filesystem paths. The driver stages the picked URI into the app's `getCacheDir()` so VALUE stays fopen-able for the session, and in SAVE mode the cache file is flushed back to the URI when the FileDlg is destroyed. VALUE_URI exposes the raw SAF URI for persistent use (recent-files). DIALOGTYPE=DIR is not supported (SAF tree URIs are not filesystem paths). EXTFILTER and FILTER are mapped to MIME types for the Intent; only the first pattern is used.
 
 ### Examples
 

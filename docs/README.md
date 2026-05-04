@@ -36,7 +36,7 @@ API reference documentation for IUP (Portable User Interface).
 
 ### Other
 
-[CURSOR](attrib/iup_cursor.md), [FLATSCROLLBAR](attrib/iup_flatscrollbar.md), [FORMATTING](attrib/iup_formatting.md), [ICON](attrib/iup_icon.md), [KEY](attrib/iup_key.md), [MASK](attrib/iup_mask.md), [PARENTDIALOG](attrib/iup_parentdialog.md), [SCROLLBAR](attrib/iup_scrollbar.md), [SHRINK](attrib/iup_shrink.md)
+[CURSOR](attrib/iup_cursor.md), [FORMATTING](attrib/iup_formatting.md), [ICON](attrib/iup_icon.md), [KEY](attrib/iup_key.md), [MASK](attrib/iup_mask.md), [PARENTDIALOG](attrib/iup_parentdialog.md), [SCROLLBAR](attrib/iup_scrollbar.md), [SHRINK](attrib/iup_shrink.md)
 
 [DX](attrib/iup_dx.md), [DY](attrib/iup_dy.md), [POSX](attrib/iup_posx.md), [POSY](attrib/iup_posy.md), [XMIN](attrib/iup_xmin.md), [XMAX](attrib/iup_xmax.md), [YMIN](attrib/iup_ymin.md), [YMAX](attrib/iup_ymax.md)
 

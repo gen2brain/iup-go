@@ -161,13 +161,14 @@ If RESIZE=NO then MAXBOX will be set to NO.
 In Motif the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
 
 [SHRINK](../attrib/iup_shrink.md): Allows changing the elements’ distribution when the dialog is smaller than the minimum size.
-Default: NO.
+Default: NO. Android and iOS default to YES.
 
 **STARTFOCUS**: Name of the element that must receive the focus right after the dialog is shown using **IupShow** or **IupPopup**.
 If not defined then the first control than can receive the focus is selected (same effect of calling [IupNextField](../func/iup_nextfield.md) for the dialog).
 Updated after SHOW_CB is called and only if the focus was not changed during the callback.
 
 **SHOWNOFOCUS**: do not set focus after show.
+On Android and iOS defaults to YES; touch UIs don't autofocus controls on launch.
 
 #### Exclusive [System Dependent]
 
@@ -264,13 +265,13 @@ Possible values: YES, NO. Default: NO.
 **TOOLBOX** [Windows Only] (creation-only): makes the dialog look like a toolbox with a smaller title bar.
 It is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined. Default: NO.
 
-#### Exclusive [GTK, Qt and macOS Only]
+#### Exclusive [GTK, Qt, macOS and iOS]
 
 **DIALOGHINT** (creation-only): if enabled, set the window type hint to a dialog hint.
 Supported in GTK, GTK 4, Qt, macOS, and EFL.
 
 **HIDETITLEBAR** (non-inheritable): hides the title bar with all its elements.
-Supported in GTK, GTK 4, Qt, and macOS.
+Supported in GTK, GTK 4, Qt, macOS, and iOS.
 
 #### Exclusive Taskbar [Windows Only]
 
@@ -329,6 +330,18 @@ The system will automatically add the list of MDI child windows there.
 ***--- For the MDI Children ---* MDICHILD** (creation-only) [Windows Only]: Configure this dialog to be an MDI child.
 Can be YES or NO. The PARENTDIALOG attribute must also be defined.
 Each MDI child is automatically named if it does not have one. Default: NO.
+
+#### Exclusive [Android and iOS]
+
+**ORIENTATION** (non-inheritable): requested orientation. Values: "PORTRAIT", "LANDSCAPE", "SENSOR", "LOCKED", "UNSPECIFIED" (default).
+
+**DRAWER** (non-inheritable): name of a [IupMenu](../elem/iup_menu.md) to render as a navigation drawer. Independent of MENU; a hamburger button toggles it.
+
+**TITLECENTERED** [Android Only] (non-inheritable): "YES" centers the toolbar title. Default: "NO". On iOS the title is always centered.
+
+**TITLEBARSTYLE** (non-inheritable): toolbar tonal style. Values: "FLAT" (default), "LIFTED", "PRIMARY".
+
+Not supported: MAXBOX, MINBOX, MENUBOX, RESIZE, BORDER, DIALOGFRAME, CUSTOMFRAME, CUSTOMFRAMESIMULATE, HIDETASKBAR, TASKBARPROGRESS, HELPBUTTON, TOOLBOX, SAVEUNDER, COMPOSITED, TOPMOST, OPACITYIMAGE, SHAPEIMAGE.
 
 ### Callbacks
 
@@ -399,8 +412,7 @@ If returns IUP_IGNORE the dialog layout is NOT recalculated.
 **ih**: identifier of the element that activated the event.\
 **dark_mode**: is non-zero if the system is now in dark mode, zero if in light mode.
 
-Supported in Windows (Win32 and WinUI), GTK 3, GTK 4, Qt, EFL and macOS.
-Not supported in Motif.
+Not supported in Motif and FLTK.
 
 >
 >
@@ -423,7 +435,7 @@ For instance, the RESIZE_CB and the SHOW_CB are called in a different order in W
 
 In Windows, when all decorations are removed, the window icon is not displayed on the task bar; when minimized, a small rectangular window will be positioned above the task bar on the bottom-left corner of the desktop.
 
-In GTK uses GtkWindow, in Windows uses a custom window class called "IupDialog", in WinUI uses a Win32 window with XAML Islands, in macOS uses NSWindow, in Qt uses QMainWindow, in FLTK uses Fl_Double_Window, in EFL uses Efl_Ui_Win, and in Motif uses topLevelShellWidgetClass.
+In GTK and GTK 4 uses GtkWindow, in Windows uses a custom window class called "IupDialog", in WinUI uses a Win32 window with XAML Islands, in macOS uses NSWindow, in Qt uses QMainWindow, in FLTK uses Fl_Double_Window, in EFL uses Efl_Ui_Win, in Motif uses topLevelShellWidgetClass, in Android uses an Activity, and in iOS uses a UIViewController.
 
 #### Windows MDI
 

@@ -121,6 +121,8 @@ The same macros used for [BUTTON_CB](../call/iup_button_cb.md) can be used for t
 Drag and Drop support can be set independently.
 A control can have a drop without drag support and vice versa.
 
+On Android and iOS a drag is initiated by a long-press on the source. DRAGCURSOR is honoured on Android only; DRAGCURSORCOPY is unsupported on both, since the system fixes the drag preview at start. Touch drags carry no keyboard modifiers, so DROPMOTION_CB's `status` only reports the pointer position.
+
 Here are some common Drag&Drop types defined by existing applications:
 
 - "TEXT" used for regular text without formatting. Automatically translated to CF_TEXT in Windows.

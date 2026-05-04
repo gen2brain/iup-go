@@ -60,7 +60,7 @@ Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
 Not supported in Motif and EFL.
 
 **MARKUP**: allows the title string to contain markup commands.
-Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes. GTK uses Pango markup natively; other drivers convert to their native format.
+Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes.
 Works only if a mnemonic is NOT defined in the title. Can be "YES" or "NO". Default: "NO".
 Not supported in Win32, FLTK and Motif (markup tags are stripped and plain text is displayed).
 
@@ -76,9 +76,16 @@ Default: "2".
 **CSPACING**: same as SPACING but using the units of the vertical part of the **SIZE** attribute.
 It will actually set the SPACING attribute.
 
-**SHOWASDEFAULT** (non-inheritable): draws the button with the native "default button" visual emphasis. Can be "YES" or "NO". Default: "NO".
+**SHOWASDEFAULT** (non-inheritable): draws the button with the platform's native "default button" emphasis. Can be "YES" or "NO". Default: "NO".
 Normally set automatically when the button is assigned to the parent dialog's [DEFAULTENTER](../dlg/iup_dialog.md) attribute, no manual action required. Can also be set directly for visual-only emphasis without wiring to DEFAULTENTER.
-The visual style depends on the platform and follows each toolkit's native convention for default buttons (e.g. highlighted border on Win32, accent color on WinUI and GTK4, pulsing appearance on Cocoa, return-arrow glyph on FLTK). Not supported in EFL (attribute is accepted but has no visual effect).
+Not supported in EFL (the attribute is accepted but has no visual effect).
+
+**BUTTONSTYLE** [Android and iOS Only] (non-inheritable): button visual style.
+Values: "FILLED" (default), "TONAL", "OUTLINED", "ELEVATED", "TEXT".
+When set, takes precedence over FLAT and SHOWASDEFAULT.
+
+**CORNERSTYLE** [Android and iOS Only] (non-inheritable): button corner shape.
+Values: "SMALL", "MEDIUM", "LARGE", "CAPSULE". When unset, the platform's stock default is used. Independent of BUTTONSTYLE.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Button's text.
 If IMAGE is not defined before map, then the default behavior is to contain only a text.
@@ -128,7 +135,7 @@ In this case in Windows TITLE can also be defined.
 
 Usually toolbar buttons have FLAT=Yes and CANFOCUS=NO.
 
-In GTK uses GtkButton, in Windows uses WC_BUTTON, in WinUI uses XAML Button, in macOS uses NSButton, in Qt uses QPushButton, in FLTK uses Fl_Button, in EFL uses Elm_Button, and in Motif uses xmPushButton.
+In GTK uses GtkButton, in Windows uses WC_BUTTON, in WinUI uses XAML Button, in macOS uses NSButton, in Qt uses QPushButton, in FLTK uses Fl_Button, in EFL uses Elm_Button, in Motif uses xmPushButton, in Android uses MaterialButton, and in iOS uses UIButton.
 
 ### Examples
 

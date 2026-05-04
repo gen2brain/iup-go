@@ -6,6 +6,9 @@ It is a non-synchronous operation, i.e., the function will return just after exe
 
 In Windows, there is no need to add the ".exe" file extension.
 
+On iOS, **filename** must be a URL (the platform forbids launching arbitrary executables).
+On Android, **filename** can be a URL or an installed app's package name.
+
 Used by the [IupHelp](iup_help.md) function.
 
 ### Parameters/Return

@@ -18,11 +18,11 @@ Default: the global attribute DLGBGCOLOR.
 
 **DASHED** (creation-only in Windows): Changes the style of the progress bar for a dashed pattern.
 Default is "NO". In Windows, it is not supported when using Visual Styles.
-Not supported in macOS.
+Not supported in macOS and Android.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Controls the bar color.
 Default: the global attribute DLGFGCOLOR.
-Supported in Windows Classic, Motif and Qt.
+Supported in Windows Classic, Motif, Qt and Android.
 
 **MARQUEE** (creation): displays an undefined state. Default: NO.
 You can set the attribute after map but only to start or stop the animation.
@@ -37,6 +37,8 @@ The control display is not updated, must set VALUE attribute to update.
 **ORIENTATION** (creation-only): can be "VERTICAL" or "HORIZONTAL". Default: "HORIZONTAL".
 Horizontal goes from left to right, and vertical from bottom to top.
 Not supported in WinUI.
+
+**CIRCULAR** [Android, iOS] (creation-only): when "YES", renders the indicator as a circular spinner instead of a linear bar. On Android uses Material `CircularProgressIndicator` (supports both determinate and indeterminate via MARQUEE). On iOS uses `UIActivityIndicatorView` (always indeterminate; VALUE / MAX / MIN / DASHED / ORIENTATION are ignored). Default: "NO". Ignored on desktop drivers.
 
 [RASTERSIZE](../attrib/iup_rastersize.md): The initial size is defined as "200x30".
 Set to NULL to allow the use of smaller values in the layout computation.
@@ -55,7 +57,7 @@ Set to NULL to allow the use of smaller values in the layout computation.
 
 ### Notes
 
-In GTK uses GtkProgressBar, in Windows uses PROGRESS_CLASS, in WinUI uses XAML ProgressBar, in macOS uses NSProgressIndicator, in Qt uses QProgressBar, in FLTK uses Fl_Progress, in EFL uses Efl_Ui_Progressbar, and in Motif uses xmScale.
+In GTK uses GtkProgressBar, in Windows uses PROGRESS_CLASS, in WinUI uses XAML ProgressBar, in macOS uses NSProgressIndicator, in Qt uses QProgressBar, in FLTK uses Fl_Progress, in EFL uses Efl_Ui_Progressbar, in Motif uses xmScale, and in Android uses Material 3 `LinearProgressIndicator` / `CircularProgressIndicator`.
 
 ### Examples
 

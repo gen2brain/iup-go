@@ -135,6 +135,12 @@ But also inside the callback, the IupConfig will inherit attributes from the men
 The recent file list is stored by default in the group "Recent" in the configuration file.
 To change the default set the internal attribute RECENTNAME, when set all other internal attributes will be stored with this value as a prefix.
 
+On Android, [IupFileDlg](../dlg/iup_filedlg.md)'s VALUE is a cache path that does not survive across restarts. Apps that want persistent recent-files should pass VALUE_URI (the SAF URI) to **IupConfigRecentUpdate** instead. The driver re-stages the URI on dispatch so RECENT_CB still receives an fopen-able path. Cross-platform fallback:
+
+    const char* key = IupGetAttribute(dlg, "VALUE_URI");
+    if (!key) key = IupGetAttribute(dlg, "VALUE");
+    IupConfigRecentUpdate(config, key);
+
 ### Dialog Position and Size
 
     void IupConfigDialogShow(Ihandle* ih, Ihandle* dialog, const char* name);

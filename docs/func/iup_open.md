@@ -36,6 +36,10 @@ Returns IUP_ERROR if a QApplication cannot be obtained.
 
 In **EFL**, elm_init is called with argc/argv.
 
+In **Android**, the hosting Activity loads the shared library and calls IupOpen before the user-registered entry point (`IupSetFunction("ENTRY_POINT", ...)`); the user's `IupOpen` call is then a safe second call.
+
+In **iOS**, the UIApplication shared instance is initialized.
+
 In all drivers, the C numeric locale is reset to "C" after toolkit initialization to ensure consistent number formatting.
 
 #### Environment Variables

@@ -9,11 +9,9 @@ It will also automatically destroy all dialogs and all elements that have names.
 
 ### Notes
 
-In Windows, the CoUninitialize function is called.
-
-In Motif, the XtDestroyApplicationContext function is called.
-
 This function is usually called by the application to match the call to **IupOpen**.
+
+On Android and iOS it is a no-op; the host platform owns process teardown.
 
 ### See Also
 

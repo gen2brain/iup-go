@@ -4,7 +4,6 @@ When enabled, allows the use of text formatting attributes.
 In GTK is always enabled, but only when MULTILINE=YES.
 Default: NO.
 
-Supported in Windows (Win32 and WinUI), GTK 3, GTK 4, Qt, macOS and EFL.
 Not supported in Motif.
 
 ### Value

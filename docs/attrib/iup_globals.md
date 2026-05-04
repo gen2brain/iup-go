@@ -34,7 +34,7 @@ Returns the IUP's copyright.
 
 Informs the current driver being used.
 
-Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "FLTK", "EFL" and "Cocoa".
+Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "FLTK", "EFL", "Cocoa", "CocoaTouch" and "Android".
 
 ### APPID
 
@@ -42,6 +42,8 @@ Application identifier used by the desktop environment.
 In GTK/Wayland, it maps to the XDG desktop file ID.
 Also used by [IupConfig](../func/iup_config.md) as a last fallback when neither APP_NAME nor APPNAME is set.
 Supported in GTK, GTK 4, Qt, FLTK, EFL and WinUI.
+On Android it is read-only and reflects the app's manifest application id.
+On iOS it is read-only and reflects `CFBundleIdentifier` from the app's Info.plist.
 
 ### APPNAME
 
@@ -49,6 +51,8 @@ Application name used by the system.
 In Windows, it is used for the taskbar and tray. In macOS, it is used for the dock.
 Also used by [IupConfig](../func/iup_config.md) as a fallback when APP_NAME is not set (APPNAME is checked first, then APPID).
 Supported in Windows, macOS, Qt, EFL and WinUI.
+On Android it is read-only and reflects the app's manifest label.
+On iOS it is read-only and reflects `CFBundleDisplayName` (or `CFBundleName` if not set) from the app's Info.plist.
 
 ## System Control
 
@@ -251,19 +255,21 @@ Their parameters are the same as the standard callbacks, but without the **Ihand
 Informs the current operating system. On UNIX, it is equivalent to the command "uname -s" (sysname). Some known names:
 
 > - "macOS"
+> - "iOS"
+> - "Android"
 > - "FreeBSD"
 > - "Linux"
 > - "SunOS"
 > - "Solaris"
-> - "IRIX"
 > - "AIX"
 > - "HP-UX"
-> - "Win2K"
 > - "WinXP"
 > - "Vista"
 > - "Win7"
 > - "Win8"
+> - "Win81"
 > - "Win10"
+> - "Win11"
 
 ### SYSTEMVERSION (read-only)
 
@@ -296,7 +302,7 @@ Returns "1" if the system is currently in dark mode, "0" otherwise.
 ### WINDOWING (read-only)
 
 Returns the native windowing system in use.
-Can be: "DWM", "X11", "WAYLAND" or "QUARTZ".
+Can be: "DWM", "X11", "WAYLAND", "QUARTZ" or "ANDROID".
 
 ### GTKVERSION (read-only) [GTK Only]
 

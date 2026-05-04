@@ -2,8 +2,7 @@
 
 Creates a date editing interface element, which can displays a calendar for selecting a date.
 
-In Windows and Qt is a native element. In GTK, GTK 4, macOS, EFL and Motif is a custom element built with IUP controls.
-In Motif the calendar dropdown is not available because the IupCalendar control is not supported.
+In Windows, Qt, Android and iOS is a native element. In GTK, GTK 4, macOS, EFL and Motif is a custom element built with IUP controls.
 
 ### Creation
 
@@ -14,14 +13,16 @@ In Motif the calendar dropdown is not available because the IupCalendar control 
 ### Attributes
 
 **CALENDARWEEKNUMBERS**: Shows the number of the week along the year in the calendar. Default: NO.
+Not supported in Android.
 
-**FORMAT** [Windows and Qt Only]: Flexible format for the date.
+**FORMAT** [Windows, Qt and Android Only]: Flexible format for the date.
 In Windows, for more information see "About Date and Time Picker Control" in the Windows SDK.
 The control was configured to display date only without any time options.
 In Qt, uses QDateEdit display format.
+Android uses the same pattern letters as Windows/Qt.
 Default: "d'/'M'/'yyyy". See Notes below.
 
-**MONTHSHORTNAMES** [Windows and Qt Only]: Month display will use a short name instead of numbers.
+**MONTHSHORTNAMES** [Windows, Qt and Android Only]: Month display will use a short name instead of numbers.
 Must be set before ORDER. Default: NO. Names will be in the language of the system.
 
 **ORDER**: Day, month and year order. Can be any combination of "D", "M" and "Y" without repetition, and with all three letters.
@@ -59,7 +60,9 @@ Default: No.
 
 ### Notes
 
-In Windows uses DATETIMEPICK_CLASS, in Qt uses QDateEdit, and in GTK, GTK 4, macOS, EFL and Motif uses a custom control built with IUP elements.
+In Windows uses DATETIMEPICK_CLASS, in Qt uses QDateEdit, in Android uses MaterialDatePicker, in iOS uses UIDatePicker (compact style), and in GTK, GTK 4, macOS, EFL and Motif uses a custom control built with IUP elements.
+
+In iOS, the label uses the system locale's date format; ORDER, SEPARATOR, ZEROPRECED, MONTHSHORTNAMES and FORMAT are not supported.
 
 In Windows, when the user navigates to other pages in the calendar, the date is not changed until the user actually selects a day.
 

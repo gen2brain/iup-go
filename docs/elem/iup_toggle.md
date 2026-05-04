@@ -64,7 +64,7 @@ Valid only after the element is mapped, before returns NULL.
 
 **IGNORERADIO** (non-inheritable): when set, the toggle will not behave as a radio when inside an **IupRadio** hierarchy.
 
-**RIGHTBUTTON** (Windows Only) (creation-only): place the check button at the right of the text.
+**RIGHTBUTTON** (Windows and Android Only) (creation-only): place the check button at the right of the text.
 Can be "YES" or "NO". Default: "NO".
 
 **VALUE** (non-inheritable): Toggle's state. Values can be "ON", "OFF" or "TOGGLE".
