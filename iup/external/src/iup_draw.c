@@ -496,6 +496,13 @@ IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* text, int len, int
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
+  if (!text)
+  {
+    if (w) *w = 0;
+    if (h) *h = 0;
+    return font;
+  }
+
   if (len == 0 || len == -1)
     len = (int)strlen(text);
 
