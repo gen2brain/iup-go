@@ -182,6 +182,11 @@ IUP_API void IupDestroy(Ihandle *ih)
   if (!iupObjectCheck(ih))
     return;
 
+  /* Mobile drivers set this while an async presentation is in flight; they re-invoke IupDestroy after teardown. */
+  if (ih->iclass->nativetype == IUP_TYPEDIALOG &&
+      iupAttribGet(ih, "_IUP_DIALOG_DEFER_DESTROY"))
+    return;
+
   /* Hide before destroy to avoid children redraw */
   if (ih->iclass->nativetype == IUP_TYPEDIALOG)
     IupHide(ih);

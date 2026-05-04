@@ -145,7 +145,7 @@ static int iGaugeRedraw_CB(Ihandle* ih)
     if (ih->data->orientation == IGAUGE_HORIZONTAL)
       IupDrawRectangle(ih, xstart, ystart, xend, yend);
     else
-      IupDrawRectangle(ih, xstart, ih->currentheight - ystart, xend, ih->currentheight - yend);
+      IupDrawRectangle(ih, xstart, h - ystart, xend, h - yend);
   }
 
   xstart++;

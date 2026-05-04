@@ -557,11 +557,13 @@ static void iMatrixDrawText(Ihandle* ih, int x1, int x2, int y1, int y2, int col
   int charheight, x, y, hidden_text_marks = 0;
 
   iupdrvFontGetCharSize(ih, NULL, &charheight);
+  charheight = iupMatrixAuxCanvasPx(charheight);
 
   if (lin == 0 || ih->data->hidden_text_marks)
   {
     int text_w;
     iupdrvFontGetMultiLineStringSize(ih, text, &text_w, NULL);
+    text_w = iupMatrixAuxCanvasPx(text_w);
     if (text_w > x2 - x1 + 1 - IMAT_PADDING_W - IMAT_FRAME_W)
     {
       if (lin == 0)
@@ -581,7 +583,7 @@ static void iMatrixDrawText(Ihandle* ih, int x1, int x2, int y1, int y2, int col
   /* Set the clip area to the cell region informed, the text maybe greater than the cell */
   if (hidden_text_marks)
   {
-    int crop = iupdrvFontGetStringWidth(ih, "...") + 2;
+    int crop = iupMatrixAuxCanvasPx(iupdrvFontGetStringWidth(ih, "...")) + 2;
     iMatrixDrawSetCellClipping(ih, x1, x2 - crop, y1, y2);
   }
   else
@@ -660,6 +662,8 @@ static void iMatrixDrawText(Ihandle* ih, int x1, int x2, int y1, int y2, int col
   /* Get actual text size to properly center it within the cell, avoiding clipping */
   int text_w, text_h;
   iupdrvFontGetMultiLineStringSize(ih, text, &text_w, &text_h);
+  text_w = iupMatrixAuxCanvasPx(text_w);
+  text_h = iupMatrixAuxCanvasPx(text_h);
 
   /* Adjust position based on alignment and actual text size */
   if (col_alignment == IMAT_ALIGN_CENTER)

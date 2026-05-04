@@ -108,6 +108,11 @@ extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
   return 96.0;  /* Fallback */
 }
 
+extern "C" IUP_SDK_API int iupdrvScaleNaturalPx(int px)
+{
+  return px;
+}
+
 /****************************************************************************
  * Cursor and Keyboard State
  ****************************************************************************/

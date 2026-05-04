@@ -97,6 +97,11 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return gdk_screen_get_resolution(gdk_screen_get_default());
 }
 
+IUP_SDK_API int iupdrvScaleNaturalPx(int px)
+{
+  return px;
+}
+
 IUP_SDK_API void iupdrvGetCursorPos(int *x, int *y)
 {
 #if GTK_CHECK_VERSION(3, 20, 0)

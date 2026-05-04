@@ -16,6 +16,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
 #include "iup_controls.h"
@@ -625,6 +626,9 @@ static int iMatrixSetFitToSizeAttrib(Ihandle* ih, const char* value)
     border = 1;
 
   IupGetIntInt(ih, "RASTERSIZE", &w, &h);
+  /* RASTERSIZE is HW px; fit functions distribute canvas-coord widths. */
+  w = iupMatrixAuxCanvasPx(w);
+  h = iupMatrixAuxCanvasPx(h);
 
   if (iupStrEqualNoCase(value, "LINES"))
     iMatrixFitLines(ih, h - sb_h - 2 * border);
@@ -654,6 +658,7 @@ static void iMatrixFitColText(Ihandle* ih, int col)
     {
       int w;
       iupdrvFontGetMultiLineStringSize(ih, title_value, &w, NULL);
+      w = iupMatrixAuxCanvasPx(w);
       if (w > max_width)
         max_width = w;
     }
@@ -678,6 +683,7 @@ static void iMatrixFitLineText(Ihandle* ih, int line)
     {
       int h;
       iupdrvFontGetMultiLineStringSize(ih, title_value, NULL, &h);
+      h = iupMatrixAuxCanvasPx(h);
       if (h > max_height)
         max_height = h;
     }
@@ -2054,6 +2060,10 @@ static void iMatrixComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
 
   *w += sb_w + 2 * border;
   *h += sb_h + 2 * border;
+
+  /* canvas-coord -> HW px (uses float density for HiDPI canvas drivers). */
+  *w = iupdrvScaleNaturalPx(*w);
+  *h = iupdrvScaleNaturalPx(*h);
 }
 
 static void iMatrixSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)

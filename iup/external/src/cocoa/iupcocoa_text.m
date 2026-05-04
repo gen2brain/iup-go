@@ -2226,7 +2226,7 @@ static bool cocoaTextParseParagraphFormat(Ihandle* ih, Ihandle* formattag, NSTex
   NSString* all_string = [text_storage string];
   __block bool did_change_attribute = false;
 
-  /* shouldChangeTextInRange: triggers layout — must be outside begin/endEditing. */
+  /* shouldChangeTextInRange: triggers layout; must be outside begin/endEditing. */
   ih->data->disable_callbacks = 1;
   [text_view shouldChangeTextInRange:selection_range replacementString:nil];
   ih->data->disable_callbacks = 0;
@@ -2906,7 +2906,7 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
 
     if(selection_range.location < [text_storage length])
     {
-      /* shouldChangeTextInRange: triggers layout — must be outside begin/endEditing. */
+      /* shouldChangeTextInRange: triggers layout; must be outside begin/endEditing. */
       ih->data->disable_callbacks = 1;
       [text_view shouldChangeTextInRange:selection_range replacementString:nil];
 

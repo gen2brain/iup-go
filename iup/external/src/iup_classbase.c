@@ -113,8 +113,8 @@ IUP_SDK_API int iupBaseSetRasterSizeAttrib(Ihandle* ih, const char* value)
     iupStrToIntInt(value, &w, &h, 'x');
     if (w < 0) w = 0;
     if (h < 0) h = 0;
-    ih->userwidth = w;
-    ih->userheight = h;
+    ih->userwidth = iupdrvScaleNaturalPx(w);   /* logical -> HW */
+    ih->userheight = iupdrvScaleNaturalPx(h);
   }
   iupAttribSet(ih, "SIZE", NULL); /* clear SIZE in hash table */
   return 0;
@@ -546,7 +546,7 @@ IUP_SDK_API void iupBaseContainerUpdateExpand(Ihandle* ih)
 }
 
 /* EXPAND is registered with IUP_NO_INHERIT because it is not inheritable,
-   but it is inheritable for containers. 
+   but it is inheritable for containers.
    So if you set at a container it will not affect its children,
    but children that are containers will get the same value. */
 IUP_SDK_API char* iupBaseContainerGetExpandAttrib(Ihandle* ih)

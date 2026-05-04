@@ -374,7 +374,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
       evas_sync(evas);
   }
 
-  /* Free old scene graph data — render thread is done with it. */
+  /* Free old scene graph data; render thread is done with it. */
   {
     Efl_VG* old_root = (Efl_VG*)iupAttribGet(ih, "_IUP_EFL_VG_ROOT");
     Eina_List* old_vg_images = (Eina_List*)iupAttribGet(ih, "_IUP_EFL_VG_IMAGES");

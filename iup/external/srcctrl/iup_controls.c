@@ -12,6 +12,7 @@
 #include "iup_register.h"
 #include "iup_controls.h"
 #include "iup_attrib.h"
+#include "iup_drvinfo.h"
 
 
 IUPCONTROLS_API int IupControlsOpen(void)
@@ -59,4 +60,11 @@ char *iupControlBaseGetBgColorAttrib(Ihandle* ih)
     color = iupControlBaseGetParentBgColor(ih);
 
   return color;
+}
+
+int iupControlBaseCanvasPx(int hw_px)
+{
+  int s100 = iupdrvScaleNaturalPx(100);
+  if (s100 <= 100) return hw_px;
+  return (hw_px * 100 + s100 / 2) / s100;
 }

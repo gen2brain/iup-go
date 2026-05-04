@@ -36,7 +36,7 @@ extern "C" {
  *
  * FLTK's Fl_Menu_ natively understands `&X` as an Alt+X mnemonic (same as
  * Win32), and uses `/` as the submenu path separator. Escape `/` and drop
- * the `\tShortcut` tail used by IUP — FLTK shortcuts are set via shortcut(int).
+ * the `\tShortcut` tail used by IUP; FLTK shortcuts are set via shortcut(int).
  ****************************************************************************/
 
 static char* fltkMenuBuildLabel(const char* title)

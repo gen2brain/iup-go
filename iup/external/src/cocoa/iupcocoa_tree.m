@@ -152,7 +152,7 @@
 
 static const void* IUP_COCOA_TREE_DELEGATE_OBJ_KEY = "IUP_COCOA_TREE_DELEGATE_OBJ_KEY";
 static const void* IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY = "IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY";
-static NSString* const IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE = @"br.puc-rio.tecgraf.iup.outlineview.dragdrop";
+static NSString* const IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE = @"io.github.gen2brain.iupgo.outlineview.dragdrop";
 
 static void cocoaTreeUpdateDragDrop(Ihandle* ih);
 

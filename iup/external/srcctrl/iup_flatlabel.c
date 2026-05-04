@@ -13,6 +13,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_image.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
@@ -47,9 +48,13 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
   IdrawCanvas* dc;
   int make_inactive = 0;
 
+  int draw_w, draw_h;
+
   dc = iupdrvDrawCreateCanvas(ih);
   if (!dc)
     return IUP_DEFAULT;
+
+  iupdrvDrawGetSize(dc, &draw_w, &draw_h);
 
   iupDrawParentBackground(dc, ih);
 
@@ -60,20 +65,20 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
     int backimage_zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
     draw_image = iupFlatGetImageName(ih, "BACKIMAGE", bgimage, 0, 0, 1, &make_inactive);
     if (backimage_zoom)
-      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, 0, 0, ih->currentwidth, ih->currentheight);
+      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, 0, 0, draw_w, draw_h);
     else
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, 0, 0, -1, -1);
   }
   else
   {
-    iupFlatDrawBox(dc, 0, ih->currentwidth - 1,
-                           0, ih->currentheight - 1,
+    iupFlatDrawBox(dc, 0, draw_w - 1,
+                           0, draw_h - 1,
                            bgcolor, NULL, 1);  /* background is always active */
   }
 
   draw_image = iupFlatGetImageName(ih, "IMAGE", image, 0, 0, active, &make_inactive);
   iupFlatDrawIcon(ih, dc, 0, 0,
-                  ih->currentwidth, ih->currentheight,
+                  draw_w, draw_h,
                   ih->data->img_position, ih->data->spacing, ih->data->horiz_alignment, ih->data->vert_alignment, ih->data->horiz_padding, ih->data->vert_padding,
                   draw_image, make_inactive, title, text_flags, text_orientation, fgcolor, bgcolor, active);
 
@@ -85,12 +90,12 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
   else if (!image && !title)
   {
     int space = 2;
-    iupFlatDrawBorder(dc, space, ih->currentwidth - 1 - space,
-                              space, ih->currentheight - 1 - space,
+    iupFlatDrawBorder(dc, space, draw_w - 1 - space,
+                              space, draw_h - 1 - space,
                               1, "0 0 0", bgcolor, active);
     space++;
-    iupFlatDrawBox(dc, space, ih->currentwidth - 1 - space,
-                           space, ih->currentheight - 1 - space,
+    iupFlatDrawBox(dc, space, draw_w - 1 - space,
+                           space, draw_h - 1 - space,
                            fgcolor, bgcolor, active);
   }
 
@@ -218,6 +223,10 @@ static void iFlatLabelComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int 
 
     iupFlatDrawGetIconSize(ih, ih->data->img_position, ih->data->spacing, ih->data->horiz_padding, ih->data->vert_padding, imagename, title, w, h, text_orientation);
   }
+
+  /* canvas-coord -> HW px (uses float density for HiDPI canvas drivers). */
+  *w = iupdrvScaleNaturalPx(*w);
+  *h = iupdrvScaleNaturalPx(*h);
 
   (void)children_expand; /* unset if not a container */
 }

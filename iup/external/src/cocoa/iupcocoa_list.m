@@ -26,10 +26,10 @@
 
 /* Pasteboard type for internal list reordering (SHOWDRAGDROP=YES). */
 /* It must be a valid UTI string, preferably in reverse-DNS format. */
-static NSPasteboardType const IupListPasteboardType = @"br.puc-rio.tecgraf.iup.list";
+static NSPasteboardType const IupListPasteboardType = @"io.github.gen2brain.iupgo.list";
 
 /* Pasteboard type for cross-list DND (DRAGDROPLIST=YES), carrying Ihandle pointer. */
-static NSPasteboardType const IupInternalDndType = @"br.puc-rio.tecgraf.iup.dnd.internal.handle";
+static NSPasteboardType const IupInternalDndType = @"io.github.gen2brain.iupgo.dnd.internal.handle";
 
 static const CGFloat kIupCocoaDefaultWidthNSPopUpButton = 100.0;
 static const CGFloat kIupCocoaDefaultHeightNSPopUpButton = 26.0;

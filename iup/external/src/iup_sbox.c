@@ -15,6 +15,7 @@
 #include "iup_stdcontrols.h"
 #include "iup_layout.h"
 #include "iup_childtree.h"
+#include "iup_drvinfo.h"
 
 
 enum { ISBOX_NORTH, ISBOX_SOUTH, ISBOX_WEST, ISBOX_EAST };
@@ -176,7 +177,7 @@ static int iSboxFocus_CB(Ihandle* bar, int focus)
 
 static char* iSboxGetClientSizeAttrib(Ihandle* ih)
 {
-  int bar_size = IupGetInt(ih->firstchild, "BARSIZE");
+  int bar_size = iupdrvScaleNaturalPx(IupGetInt(ih->firstchild, "BARSIZE"));
   int width = ih->currentwidth - iSboxGetXborder(ih, bar_size);
   int height = ih->currentheight - iSboxGetYborder(ih, bar_size);
   if (width < 0) width = 0;
@@ -289,7 +290,7 @@ static void iSboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
 {
   int natural_w = ih->naturalwidth,
       natural_h = ih->naturalheight;
-  int bar_size = IupGetInt(ih->firstchild, "BARSIZE");
+  int bar_size = iupdrvScaleNaturalPx(IupGetInt(ih->firstchild, "BARSIZE"));
 
   /* only allow expand in the opposite direction, complement iupBaseContainerUpdateExpand */
   if (ih->data->direction == ISBOX_EAST || ih->data->direction == ISBOX_WEST)
@@ -343,7 +344,7 @@ static void iSboxComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *chil
 
 static void iSboxSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 {
-  int bar_size = IupGetInt(ih->firstchild, "BARSIZE");
+  int bar_size = iupdrvScaleNaturalPx(IupGetInt(ih->firstchild, "BARSIZE"));
 
   /* bar */
   if ((ih->data->direction == ISBOX_NORTH || ih->data->direction == ISBOX_SOUTH))
@@ -372,7 +373,7 @@ static void iSboxSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 static void iSboxSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 {
   int posx = 0, posy = 0;
-  int bar_size = IupGetInt(ih->firstchild, "BARSIZE");
+  int bar_size = iupdrvScaleNaturalPx(IupGetInt(ih->firstchild, "BARSIZE"));
 
   /* bar */
   if (ih->data->direction == ISBOX_EAST)

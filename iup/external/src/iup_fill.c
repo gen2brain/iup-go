@@ -13,6 +13,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drvfont.h"
+#include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 
 
@@ -80,6 +81,7 @@ static int iFillSetRasterSizeAttrib(Ihandle* ih, const char* value)
 
     if (s > 0)
     {
+      s = iupdrvScaleNaturalPx(s);
       if (iFillGetDir(ih) == IUP_FILL_HORIZ)
       {
         ih->userwidth = s;  /* inside HBOX */

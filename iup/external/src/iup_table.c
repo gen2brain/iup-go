@@ -15,6 +15,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drvfont.h"
+#include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_classbase.h"
 
@@ -306,6 +307,7 @@ static int iTableSetWidthIdAttrib(Ihandle* ih, int col, const char* value)
 {
   int width;
   char name[50];
+  char scaled_str[32];
 
   if (col < 1 || col > ih->data->num_col)
   {
@@ -320,9 +322,11 @@ static int iTableSetWidthIdAttrib(Ihandle* ih, int col, const char* value)
   if (width < 0)
     width = 0;
 
-  /* Always store in hash table for natural size calculation */
+  width = iupdrvScaleNaturalPx(width);        /* logical -> HW */
+  snprintf(scaled_str, sizeof(scaled_str), "%d", width);
+
   snprintf(name, sizeof(name), "WIDTH%d", col);
-  iupAttribSetStr(ih, name, value);
+  iupAttribSetStr(ih, name, scaled_str);
 
   /* If mapped, also apply to native widget */
   if (ih->handle)

@@ -17,8 +17,10 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_controls.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_drvfont.h"
 #include "iup_register.h"
@@ -50,7 +52,7 @@ struct _IcontrolData
       dragging;
 };
 
-static void iFlatValGetHandlerSize(Ihandle* ih, int is_horizontal, int *width, int *height)
+static void iFlatValGetHandlerSize(Ihandle* ih, int is_horizontal, int draw_w, int draw_h, int *width, int *height)
 {
   char *image = iupAttribGet(ih, "IMAGE");
   if (image)
@@ -66,31 +68,31 @@ static void iFlatValGetHandlerSize(Ihandle* ih, int is_horizontal, int *width, i
     if (is_horizontal)
     {
       if (handler_size == 0)
-        handler_size = (ih->currentheight - 2 * ih->data->focus_width) / 2;
+        handler_size = (draw_h - 2 * ih->data->focus_width) / 2;
 
       *width = handler_size;
-      *height = ih->currentheight;
+      *height = draw_h;
     }
     else
     {
       if (handler_size == 0)
-        handler_size = (ih->currentwidth - 2 * ih->data->focus_width) / 2;
+        handler_size = (draw_w - 2 * ih->data->focus_width) / 2;
 
-      *width = ih->currentwidth;
+      *width = draw_w;
       *height = handler_size;
     }
   }
 }
 
-static int iFlatValGetSliderInfo(Ihandle* ih, int dx, int dy, int is_horizontal, int *p, int *p1, int *p2, int *handler_op_size)
+static int iFlatValGetSliderInfo(Ihandle* ih, int dx, int dy, int is_horizontal, int draw_w, int draw_h, int *p, int *p1, int *p2, int *handler_op_size)
 {
   int handler_width, handler_height;
-  iFlatValGetHandlerSize(ih, is_horizontal, &handler_width, &handler_height);
+  iFlatValGetHandlerSize(ih, is_horizontal, draw_w, draw_h, &handler_width, &handler_height);
 
   if (is_horizontal)
   {
     *p1 = handler_width / 2;
-    *p2 = (ih->currentwidth - 2 * ih->data->focus_width) - 1 - handler_width / 2;
+    *p2 = (draw_w - 2 * ih->data->focus_width) - 1 - handler_width / 2;
     *p = dx;
     if (handler_op_size) *handler_op_size = handler_height;
     return handler_width;
@@ -98,34 +100,42 @@ static int iFlatValGetSliderInfo(Ihandle* ih, int dx, int dy, int is_horizontal,
   else
   {
     *p1 = handler_height / 2;
-    *p2 = (ih->currentheight - 2 * ih->data->focus_width) - 1 - handler_height / 2;
+    *p2 = (draw_h - 2 * ih->data->focus_width) - 1 - handler_height / 2;
     *p = dy;
     if (handler_op_size) *handler_op_size = handler_width;
     return handler_height;
   }
 }
 
-static void iFlatValGetSliderOpositeInfo(Ihandle* ih, int dx, int dy, int is_horizontal, int *q, int *op_size)
+static void iFlatValGetSliderOpositeInfo(Ihandle* ih, int dx, int dy, int is_horizontal, int draw_w, int draw_h, int *q, int *op_size)
 {
   if (is_horizontal)
   {
-    *op_size = ih->currentheight - 2 * ih->data->focus_width;
+    *op_size = draw_h - 2 * ih->data->focus_width;
     *q = dy;
   }
   else
   {
-    *op_size = ih->currentwidth - 2 * ih->data->focus_width;
+    *op_size = draw_w - 2 * ih->data->focus_width;
     *q = dx;
   }
+}
+
+static void iFlatValGetCanvasSize(Ihandle* ih, int *w, int *h)
+{
+  IupGetIntInt(ih, "DRAWSIZE", w, h);
+  if (*w <= 0) *w = ih->currentwidth;
+  if (*h <= 0) *h = ih->currentheight;
 }
 
 static int iFlatValMoveHandler(Ihandle* ih, int dx, int dy)
 {
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
   double percent, old_percent, delta;
-  int dp, p1, p2;
+  int dp, p1, p2, draw_w, draw_h;
 
-  iFlatValGetSliderInfo(ih, dx, dy, is_horizontal, &dp, &p1, &p2, NULL);
+  iFlatValGetCanvasSize(ih, &draw_w, &draw_h);
+  iFlatValGetSliderInfo(ih, dx, dy, is_horizontal, draw_w, draw_h, &dp, &p1, &p2, NULL);
 
   if (dp == 0)
     return 0;
@@ -150,13 +160,15 @@ static int iFlatValIsInsideHandler(Ihandle* ih, int x, int y)
 {
   int handler_size, is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
   double percent;
-  int p, p1, p2, pmid, handler_op_size;
+  int p, p1, p2, pmid, handler_op_size, draw_w, draw_h;
 
-  if (x < 0 || x > ih->currentwidth - 1 ||
-      y < 0 || y > ih->currentheight - 1)
+  iFlatValGetCanvasSize(ih, &draw_w, &draw_h);
+
+  if (x < 0 || x > draw_w - 1 ||
+      y < 0 || y > draw_h - 1)
     return 0;
 
-  handler_size = iFlatValGetSliderInfo(ih, x, y, is_horizontal, &p, &p1, &p2, &handler_op_size);
+  handler_size = iFlatValGetSliderInfo(ih, x, y, is_horizontal, draw_w, draw_h, &p, &p1, &p2, &handler_op_size);
 
   percent = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
   if (!is_horizontal)
@@ -170,7 +182,7 @@ static int iFlatValIsInsideHandler(Ihandle* ih, int x, int y)
   {
     int q, q1, q2, qmid, op_size;
 
-    iFlatValGetSliderOpositeInfo(ih, x, y, is_horizontal, &q, &op_size);
+    iFlatValGetSliderOpositeInfo(ih, x, y, is_horizontal, draw_w, draw_h, &q, &op_size);
 
     qmid = op_size / 2;
     q1 = qmid - handler_op_size / 2;
@@ -189,9 +201,10 @@ static int iFlatValHandlerPos(Ihandle *ih)
 {
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
   double percent = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
-  int p, p1, p2, handler_op_size;
+  int p, p1, p2, handler_op_size, draw_w, draw_h;
 
-  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, &p, &p1, &p2, &handler_op_size);
+  iFlatValGetCanvasSize(ih, &draw_w, &draw_h);
+  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, draw_w, draw_h, &p, &p1, &p2, &handler_op_size);
 
   if (!is_horizontal)
     percent = 1.0 - percent;
@@ -215,13 +228,17 @@ static int iFlatValRedraw_CB(Ihandle* ih)
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
   double percent = (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
-  int currentwidth = ih->currentwidth - (2 * ih->data->focus_width);
-  int currentheight = ih->currentheight - (2 * ih->data->focus_width);
+  int draw_w, draw_h;
+  int currentwidth, currentheight;
   int x1, y1, x2, y2;
+
+  iupdrvDrawGetSize(dc, &draw_w, &draw_h);
+  currentwidth = draw_w - (2 * ih->data->focus_width);
+  currentheight = draw_h - (2 * ih->data->focus_width);
 
   iupDrawParentBackground(dc, ih);
 
-  iFlatValGetHandlerSize(ih, is_horizontal, &handler_width, &handler_height);
+  iFlatValGetHandlerSize(ih, is_horizontal, draw_w, draw_h, &handler_width, &handler_height);
 
   if (is_horizontal)
   {
@@ -244,7 +261,7 @@ static int iFlatValRedraw_CB(Ihandle* ih)
     int backimage_zoom = iupAttribGetBoolean(ih, "BACKIMAGEZOOM");
     const char* draw_image = iupFlatGetImageName(ih, "BACKIMAGE", bgimage, 0, 0, 1, &make_inactive);
     if (backimage_zoom)
-      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, 0, 0, ih->currentwidth, ih->currentheight);
+      iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, 0, 0, draw_w, draw_h);
     else
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, 0, 0, -1, -1);
   }
@@ -328,7 +345,7 @@ static int iFlatValRedraw_CB(Ihandle* ih)
   }
 
   if (ih->data->has_focus && focus_feedback)
-    iupdrvDrawFocusRect(dc, 0, 0, ih->currentwidth - 1, ih->currentheight - 1);
+    iupdrvDrawFocusRect(dc, 0, 0, draw_w - 1, draw_h - 1);
 
   iupdrvDrawFlush(dc);
 
@@ -404,9 +421,10 @@ static int iFlatValButton_CB(Ihandle* ih, int button, int pressed, int x, int y,
       else if (!ih->data->pressed) /* click outside the handler */
       {
         int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
-        int p, p1, p2, dx, dy, handler_op_size, pginc, handPos;
+        int p, p1, p2, dx, dy, handler_op_size, pginc, handPos, draw_w, draw_h;
 
-        iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, &p, &p1, &p2, &handler_op_size);
+        iFlatValGetCanvasSize(ih, &draw_w, &draw_h);
+        iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, draw_w, draw_h, &p, &p1, &p2, &handler_op_size);
         pginc = (int)ceil(ih->data->pageStep * (p2 - p1));
 
         handPos = iFlatValHandlerPos(ih);
@@ -531,9 +549,10 @@ static void iFlatValCropValue(Ihandle* ih)
 static int iFlatValKUp_CB(Ihandle* ih)
 {
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
-  int inc, p, p1, p2, handler_op_size, dx, dy;
+  int inc, p, p1, p2, handler_op_size, dx, dy, draw_w, draw_h;
 
-  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, &p, &p1, &p2, &handler_op_size);
+  iFlatValGetCanvasSize(ih, &draw_w, &draw_h);
+  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, draw_w, draw_h, &p, &p1, &p2, &handler_op_size);
   inc = (int)ceil(ih->data->step * (p2 - p1));
 
   dx = (is_horizontal) ? inc : 0;
@@ -550,9 +569,10 @@ static int iFlatValKUp_CB(Ihandle* ih)
 static int iFlatValKDown_CB(Ihandle* ih)
 {
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
-  int inc, p, p1, p2, handler_op_size, dx, dy;
+  int inc, p, p1, p2, handler_op_size, dx, dy, draw_w, draw_h;
 
-  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, &p, &p1, &p2, &handler_op_size);
+  iFlatValGetCanvasSize(ih, &draw_w, &draw_h);
+  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, draw_w, draw_h, &p, &p1, &p2, &handler_op_size);
   inc = (int)ceil(ih->data->step * (p2 - p1));
 
   dx = (is_horizontal) ? -inc : 0;
@@ -586,9 +606,10 @@ static int iFlatValWheel_CB(Ihandle* ih, float delta, int x, int y, char* status
 static int iFlatValKHome_CB(Ihandle* ih)
 {
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
-  int p, p1, p2, dx, dy, handler_op_size, handPos;
+  int p, p1, p2, dx, dy, handler_op_size, handPos, draw_w, draw_h;
 
-  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, &p, &p1, &p2, &handler_op_size);
+  iFlatValGetCanvasSize(ih, &draw_w, &draw_h);
+  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, draw_w, draw_h, &p, &p1, &p2, &handler_op_size);
 
   handPos = iFlatValHandlerPos(ih);
 
@@ -606,9 +627,10 @@ static int iFlatValKHome_CB(Ihandle* ih)
 static int iFlatValKEnd_CB(Ihandle* ih)
 {
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
-  int p, p1, p2, dx, dy, handler_op_size, handPos;
+  int p, p1, p2, dx, dy, handler_op_size, handPos, draw_w, draw_h;
 
-  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, &p, &p1, &p2, &handler_op_size);
+  iFlatValGetCanvasSize(ih, &draw_w, &draw_h);
+  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, draw_w, draw_h, &p, &p1, &p2, &handler_op_size);
 
   handPos = iFlatValHandlerPos(ih);
 
@@ -626,9 +648,10 @@ static int iFlatValKEnd_CB(Ihandle* ih)
 static int iFlatValKPgUp_CB(Ihandle* ih)
 {
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
-  int p, p1, p2, dx, dy, handler_op_size, pginc;
+  int p, p1, p2, dx, dy, handler_op_size, pginc, draw_w, draw_h;
 
-  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, &p, &p1, &p2, &handler_op_size);
+  iFlatValGetCanvasSize(ih, &draw_w, &draw_h);
+  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, draw_w, draw_h, &p, &p1, &p2, &handler_op_size);
   pginc = (int)ceil(ih->data->pageStep * (p2 - p1));
 
   dx = (is_horizontal) ? pginc : 0;
@@ -645,9 +668,10 @@ static int iFlatValKPgUp_CB(Ihandle* ih)
 static int iFlatValKPgDn_CB(Ihandle* ih)
 {
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
-  int p, p1, p2, dx, dy, handler_op_size, pginc;
+  int p, p1, p2, dx, dy, handler_op_size, pginc, draw_w, draw_h;
 
-  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, &p, &p1, &p2, &handler_op_size);
+  iFlatValGetCanvasSize(ih, &draw_w, &draw_h);
+  iFlatValGetSliderInfo(ih, 0, 0, is_horizontal, draw_w, draw_h, &p, &p1, &p2, &handler_op_size);
   pginc = (int)ceil(ih->data->pageStep * (p2 - p1));
 
   dx = (is_horizontal) ? -pginc : 0;
@@ -796,6 +820,8 @@ static void iFlatValComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *c
     int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
 
     iupdrvFontGetCharSize(ih, &charwidth, &charheight);
+    charwidth  = iupControlBaseCanvasPx(charwidth);
+    charheight = iupControlBaseCanvasPx(charheight);
 
     if (is_horizontal)
     {
@@ -813,6 +839,9 @@ static void iFlatValComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *c
 
   *w = natural_w + 2 * ih->data->focus_width;
   *h = natural_h + 2 * ih->data->focus_width;
+
+  *w = iupdrvScaleNaturalPx(*w);
+  *h = iupdrvScaleNaturalPx(*h);
 
   (void)children_expand; /* unset if not a container */
 }
