@@ -771,7 +771,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->LayoutUpdate = eflCanvasLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = eflCanvasGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflCanvasSetBgColorAttrib, "255 255 255", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "DRAWABLE", eflCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWSIZE", eflCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);

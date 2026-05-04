@@ -1082,7 +1082,7 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->UnMap = winuiCanvasUnMapMethod;
   ic->LayoutUpdate = winuiCanvasLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiCanvasSetBgColorAttrib, "255 255 255", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "DRAWSIZE", winuiCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 

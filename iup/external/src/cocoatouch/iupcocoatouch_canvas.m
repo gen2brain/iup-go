@@ -569,7 +569,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 	ic->Map   = cocoaTouchCanvasMapMethod;
 	ic->UnMap = cocoaTouchCanvasUnMapMethod;
 
-	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTouchCanvasSetBgColorAttrib, "255 255 255", NULL, IUPAF_DEFAULT);
+	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTouchCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "BORDER", NULL, cocoaTouchCanvasSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "DRAWSIZE", cocoaTouchCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);

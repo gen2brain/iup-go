@@ -699,7 +699,7 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->LayoutUpdate = fltkCanvasLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = fltkCanvasGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkCanvasSetBgColorAttrib, "255 255 255", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "DRAWSIZE", fltkCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWABLE", fltkCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, iupfltkGetNativeWindowHandleName(), iupfltkGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_NO_INHERIT);

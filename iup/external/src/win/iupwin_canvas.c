@@ -816,7 +816,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   /* Driver Dependent Attribute functions */
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winCanvasSetBgColorAttrib, "255 255 255", NULL, IUPAF_DEFAULT);   /* force new default value */
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* IupCanvas only */
   iupClassRegisterAttribute(ic, "DRAWSIZE", winCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);

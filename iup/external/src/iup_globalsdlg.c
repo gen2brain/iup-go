@@ -72,7 +72,6 @@ static iRegisteredGlobal global_attribs[] = {
   { "EXITLOOP",           1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
   { "FLTKTHEME",          0,  0,  0,  0,  0,  0,  0,  0,  1,  0 },
   { "FLTKVERSION",        0,  0,  0,  0,  0,  0,  0,  0,  1,  1 },
-  { "FREETYPEFONTS_DIR",  1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
   { "FULLSIZE",           1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
   { "GLOBALLAYOUTDLGKEY", 1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
   { "GLOBALLAYOUTRESIZEKEY",1, 1,  1,  1,  1,  1,  1,  1,  1,  0 },

@@ -18,7 +18,7 @@ Creates an interface element that is a canvas - a drawing area for your applicat
 The background is painted only if the ACTION callback is not defined.
 If the callback is defined the application must draw all the canvas contents.
 In GTK or Motif if you set the ACTION callback after map then you should also set BGCOLOR to any value just after setting the callback or the first redraw will be lost.
-Default: "255 255 255".
+Default: same as [DLGBGCOLOR](../attrib/iup_globals.md#dlgbgcolor) (system dialog background, follows the active theme including dark mode).
 
 **BORDER** (creation-only): Shows a border around the canvas. Default: "YES".
 

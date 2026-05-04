@@ -1047,7 +1047,7 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->GetInnerNativeContainerHandle = qtCanvasGetInnerNativeContainerHandleMethod;
 
   /* Canvas specific */
-  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, qtCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, qtCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BORDER", nullptr, qtCanvasSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "DRAWSIZE", qtCanvasGetDrawSizeAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAWABLE", qtCanvasGetDrawableAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
