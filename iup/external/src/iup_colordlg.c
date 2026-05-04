@@ -17,6 +17,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 #include "iup_colorhsi.h"
@@ -624,6 +625,145 @@ static int iColorDlgSetShowAlphaAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+/* Compact (mobile) layout: rebuild as a single column. */
+static int iColorDlgSetShowCompactAttrib(Ihandle* ih, const char* value)
+{
+  IcolorDlgData* d = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
+  Ihandle* lin2;
+  Ihandle* ok_bt = NULL;
+  Ihandle* cancel_bt = NULL;
+  Ihandle* c;
+  Ihandle* opacity_label;
+  Ihandle* hex_label;
+  Ihandle* red_label;
+  Ihandle* green_label;
+  Ihandle* blue_label;
+  Ihandle* spin_row;
+  Ihandle* alpha_stack;
+  Ihandle* hex_row;
+  Ihandle* palette_box;
+  Ihandle* red_row;
+  Ihandle* green_row;
+  Ihandle* blue_row;
+  Ihandle* col1;
+  Ihandle* lin2c;
+  Ihandle* hidden;
+  static const char* compact_cells[10] = {
+    "255 255 255", "192 192 192", "128 128 128", "64 64 64",  "0 0 0",
+    "255 0 0",     "0 255 0",     "0 0 255",     "255 255 0", "255 0 255"
+  };
+  int i;
+
+  if (ih->handle) return 1;
+  if (!iupStrBoolean(value)) return 1;
+
+  /* lin2 = Hbox(Fill, ok, cancel, help). */
+  lin2 = IupGetParent(d->help_bt);
+  for (c = lin2->firstchild; c; c = c->brother)
+  {
+    if (c == d->help_bt) continue;
+    if (IupClassMatch(c, "fill")) continue;
+    if (!ok_bt) ok_bt = c;
+    else if (!cancel_bt) cancel_bt = c;
+  }
+
+  /* Detach leaves we reuse, then destroy the desktop tree. */
+  IupDetach(d->color_browser);
+  IupDetach(d->color_cnv);
+  IupDetach(d->colorhex_txt);
+  IupDetach(d->alpha_val);
+  IupDetach(d->alpha_txt);
+  IupDetach(d->colortable_cbar);
+  IupDetach(d->red_txt);
+  IupDetach(d->green_txt);
+  IupDetach(d->blue_txt);
+  IupDetach(d->hue_txt);
+  IupDetach(d->saturation_txt);
+  IupDetach(d->intensity_txt);
+  IupDetach(ok_bt);
+  IupDetach(cancel_bt);
+  IupDetach(d->help_bt);
+
+  IupDestroy(ih->firstchild);
+
+  /* Touch sizing: square wheel; clear slider SIZE to use the driver's natural height. */
+  IupSetAttribute(d->color_browser, "RASTERSIZE", "220x220");
+  IupSetAttribute(d->color_browser, "EXPAND", "NO");
+  IupSetAttribute(d->alpha_val, "SIZE", NULL);
+
+  /* Palette: 5x2 grayscale + primaries, taller cells for touch. */
+  IupSetAttribute(d->colortable_cbar, "NUM_CELLS", "10");
+  IupSetAttribute(d->colortable_cbar, "SIZE", NULL);
+  IupSetAttribute(d->colortable_cbar, "RASTERSIZE", "x60");
+  IupSetAttribute(d->colortable_cbar, "EXPAND", "HORIZONTAL");
+  for (i = 0; i < 10; i++)
+    IupSetAttributeId(d->colortable_cbar, "CELL", i, compact_cells[i]);
+
+  opacity_label = IupLabel("_@IUP_OPACITY");
+  hex_label     = IupLabel("He&xa:");
+  red_label     = IupLabel("_@IUP_RED");
+  green_label   = IupLabel("_@IUP_GREEN");
+  blue_label    = IupLabel("_@IUP_BLUE");
+
+  /* Opt-in rows start FLOATING; SHOWALPHA/SHOWHEX/SHOWCOLORTABLE un-float them. */
+  spin_row = IupSetAttributes(IupHbox(opacity_label, d->alpha_txt, NULL), "ALIGNMENT=ACENTER, EXPAND=NO");
+  alpha_stack = IupVbox(spin_row, d->alpha_val, NULL);
+  IupSetAttribute(alpha_stack, "GAP", "5");
+  IupSetAttribute(alpha_stack, "ALIGNMENT", "ACENTER");
+  IupSetAttribute(alpha_stack, "EXPAND", "HORIZONTAL");
+  IupSetAttribute(alpha_stack, "FLOATING", "YES");
+  IupSetAttribute(alpha_stack, "VISIBLE", "NO");
+
+  hex_row = IupSetAttributes(IupHbox(hex_label, d->colorhex_txt, NULL), "ALIGNMENT=ACENTER, EXPAND=NO");
+  IupSetAttribute(hex_row, "FLOATING", "YES");
+  IupSetAttribute(hex_row, "VISIBLE", "NO");
+
+  palette_box = IupSetAttributes(IupVbox(IupLabel("_@IUP_PALETTE"), d->colortable_cbar, NULL), "GAP=3");
+  IupSetAttribute(palette_box, "FLOATING", "YES");
+  IupSetAttribute(palette_box, "VISIBLE", "NO");
+
+  red_row   = IupSetAttributes(IupHbox(red_label,   d->red_txt,   NULL), "ALIGNMENT=ACENTER, EXPAND=NO");
+  green_row = IupSetAttributes(IupHbox(green_label, d->green_txt, NULL), "ALIGNMENT=ACENTER, EXPAND=NO");
+  blue_row  = IupSetAttributes(IupHbox(blue_label,  d->blue_txt,  NULL), "ALIGNMENT=ACENTER, EXPAND=NO");
+
+  IupDestroy(IupSetAttributes(IupNormalizer(red_label, green_label, blue_label,
+                                            opacity_label, hex_label,
+                                            NULL), "NORMALIZE=HORIZONTAL"));
+
+  col1 = IupVbox(d->color_browser,
+                 IupSetAttributes(IupHbox(d->color_cnv, NULL), "NMARGIN=30x0"),
+                 red_row, green_row, blue_row,
+                 alpha_stack, hex_row, palette_box,
+                 NULL);
+  IupSetAttribute(col1, "NGAP", "10");
+  IupSetAttribute(col1, "ALIGNMENT", "ACENTER");
+  IupSetAttribute(col1, "EXPAND", "HORIZONTAL");
+
+  lin2c = IupHbox(IupFill(), ok_bt, cancel_bt, IupFill(), NULL);
+  IupSetAttribute(lin2c, "GAP", "5");
+  IupSetAttribute(lin2c, "MARGIN", "0x0");
+  IupSetAttribute(lin2c, "NORMALIZESIZE", "HORIZONTAL");
+
+  /* Park unused widgets so they aren't leaked. */
+  hidden = IupVbox(d->hue_txt, d->saturation_txt, d->intensity_txt, d->help_bt, NULL);
+  IupSetAttribute(hidden, "FLOATING", "YES");
+  IupSetAttribute(hidden, "VISIBLE", "NO");
+
+  iupChildTreeAppend(ih, IupSetAttributes(IupVbox(col1,
+                                                  IupSetAttributes(IupLabel(NULL), "SEPARATOR=HORIZONTAL"),
+                                                  lin2c,
+                                                  hidden,
+                                                  NULL),
+                                          "NMARGIN=10x10, NGAP=10"));
+
+  /* Replay opt-in toggles set before SHOWCOMPACT. */
+  if (iupAttribGetBoolean(ih, "SHOWALPHA"))      iColorDlgSetShowAlphaAttrib(ih, "YES");
+  if (iupAttribGetBoolean(ih, "SHOWHEX"))        iColorDlgSetShowHexAttrib(ih, "YES");
+  if (iupAttribGetBoolean(ih, "SHOWCOLORTABLE")) iColorDlgSetShowColorTableAttrib(ih, "YES");
+
+  return 1;
+}
+
 static int iColorDlgSetAlphaAttrib(Ihandle* ih, const char* value)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
@@ -1062,7 +1202,10 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
 
   if (colordlg_data->color_browser->currentwidth < colordlg_data->color_browser->currentheight)
   {
-    IupSetStrf(colordlg_data->color_browser, "RASTERSIZE", "%dx%d", colordlg_data->color_browser->currentheight, colordlg_data->color_browser->currentheight);
+    /* currentheight is HW px; divide back to logical so the RASTERSIZE setter doesn't scale twice. */
+    int scale = iupdrvScaleNaturalPx(1); if (scale < 1) scale = 1;
+    int side = colordlg_data->color_browser->currentheight / scale;
+    IupSetStrf(colordlg_data->color_browser, "RASTERSIZE", "%dx%d", side, side);
     IupSetAttribute(ih, "RASTERSIZE", NULL);
   }
 
@@ -1097,6 +1240,7 @@ Iclass* iupColorDlgNewClass(void)
   iupClassRegisterAttribute(ic, "VALUEHEX", iColorDlgGetValueHexAttrib, iColorDlgSetValueHexAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWALPHA", NULL, iColorDlgSetShowAlphaAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWCOLORTABLE", NULL, iColorDlgSetShowColorTableAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWCOMPACT", NULL, iColorDlgSetShowCompactAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWHEX", NULL, iColorDlgSetShowHexAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWHELP", NULL, iColorDlgSetShowHelpAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
