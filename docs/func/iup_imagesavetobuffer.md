@@ -16,21 +16,9 @@ Encodes an **IupImage** to a memory buffer using native driver image encoding.
 
 ### Notes
 
-The image is encoded using the native GUI toolkit, with no external library dependencies. Supported formats are platform-dependent:
-- **Windows (Win32)**: PNG, JPEG, BMP via WIC (Windows Imaging Component)
-- **Windows (WinUI)**: PNG, JPEG, BMP via WIC
-- **GTK 3**: PNG, JPEG, BMP via GDK-PixBuf
-- **GTK 4**: PNG, JPEG, BMP via GDK-PixBuf
-- **macOS**: PNG, JPEG, BMP via NSBitmapImageRep
-- **Qt**: PNG, JPEG, BMP via QImage
-- **EFL**: PNG, JPEG, BMP via Evas image savers
-- **Motif**: BMP only (pure C implementation)
-
 Unlike **IupImageSave**, the **format** parameter is required since there is no filename to detect the format from.
 
-JPEG quality defaults to 85 and can be configured with `IupSetGlobal("IMAGESAVEQUALITY", "90")`, where the value is 0-100.
-
-All image types are supported: 8-bit indexed (palette is expanded), 24-bit RGB, and 32-bit RGBA.
+See [IupImageSave](iup_imagesave.md) for the per-driver supported formats, JPEG quality control, and accepted image types.
 
 ### See Also
 

@@ -14,7 +14,7 @@ Default: "1:1".
 
 **FLAT**: removes the 3D appearance from the matrix.
 
-[FLATSCROLLBAR](../attrib/iup_flatscrollbar.md): enable the flat scrollbars. Can be set only before map.
+[FLATSCROLLBAR](iup_flatscrollbar.md): enable the flat scrollbars. Can be set only before map.
 SCROLLBAR is set to NO. Can be Yes, Vertical or Horizontal. Default: not defined.
 
 **HIDEFOCUS**: do not show the focus mark when drawing the matrix. Default is NO.

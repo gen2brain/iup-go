@@ -53,6 +53,8 @@ The main screen area does not include additional monitors.
 When called for an already visible dialog (MODAL or not) it will update its position and [PLACEMENT](../dlg/iup_dialog.md).
 If the already visible dialog is not modal, but it was disabled by one (a call to **IupPopup** for another dialog, after this one was shown), then it will be now enabled for interaction.
 
+On Wayland, Android and iOS the **x** and **y** values are ignored: clients cannot position their own windows on Wayland, Android Activities fill the screen, and iOS dialogs present as system-positioned sheets.
+
 ### See Also
 
 [IupShow](iup_show.md), [IupHide](iup_hide.md), [IupPopup](iup_popup.md), [IupMap](iup_map.md), [IupDialog](../dlg/iup_dialog.md)

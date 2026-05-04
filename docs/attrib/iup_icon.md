@@ -24,8 +24,7 @@ The icon name should match a theme icon installed on the system.
 
 In Qt, the icon is set using QIcon on the window.
 
-In Motif, it only works with some window managers, like *mwm* and *gnome*.
-Icon colors can have the BGCOLOR values, but it works better if it is at index 0.
+In Android and iOS, the icon is shown in the title bar next to the title.
 
 #### Wayland and .desktop Files
 

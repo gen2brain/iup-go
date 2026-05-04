@@ -21,6 +21,8 @@ The process will have to be interrupted by the system.
 When the last visible dialog is hidden, the **IupExitLoop** function is automatically called, causing the **IupMainLoop** to return.
 To avoid that, set LOCKLOOP=YES before hiding the last dialog.
 
+On Android and iOS the host platform owns the event loop. IupMainLoop returns immediately on Android and never returns on iOS, so cleanup placed after it cannot be relied upon, use [CLOSE_CB](../call/iup_close_cb.md) instead. IupClose is a no-op on both.
+
 ### See Also
 
 [IupOpen](iup_open.md), [IupClose](iup_close.md), [IupLoopStep](iup_loopstep.md), [IupExitLoop](iup_exitloop.md), [IDLE_ACTION](../call/iup_idle_action.md), [LOCKLOOP](../attrib/iup_globals.md).

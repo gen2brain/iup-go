@@ -26,6 +26,8 @@ This dialog will always be in front of the parent dialog.
 
 **SHOWCOLORTABLE**: if enabled will display the color table, regardless if **COLORTABLE** is defined or not.
 
+**SHOWCOMPACT**: if enabled hides the HSI (Hue/Saturation/Intensity) column, leaving the wheel + preview + RGB + OK/Cancel. Intended for narrow dialogs (mobile screens).
+
 **SHOWHEX**: if enabled will display the Hexadecimal notation of the color.
 
 **SHOWHELP**: if enabled will display the Help button.

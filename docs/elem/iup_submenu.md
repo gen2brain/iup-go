@@ -34,6 +34,10 @@ Use "&&" to show the "&" character instead on defining a mnemonic.
 
 [ACTIVE](../attrib/iup_active.md), [THEME](../attrib/iup_theme.md): also accepted.
 
+**EXPANDABLE** [Android Only] (non-inheritable): Set to "YES" to render this submenu as a collapsible section in the navigation drawer (see [DRAWER](../dlg/iup_dialog.md) on IupDialog). Default: "NO".
+
+**STATE** [Android Only] (non-inheritable): Initial state of an expandable section. Values: "OPEN", "CLOSE". Default: "CLOSE". Ignored when EXPANDABLE is not set.
+
 ### Callbacks
 
 [HIGHLIGHT_CB](../call/iup_highlight_cb.md): Action generated when the submenu is highlighted.

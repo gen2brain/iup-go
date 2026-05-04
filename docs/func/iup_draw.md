@@ -10,17 +10,19 @@ Internally, IupDraw uses several drawing APIs depending on the platform:
 - **Windows (WinUI)**: Direct2D
 - **GTK 3 / GTK 4**: Cairo
 - **macOS**: CoreGraphics
+- **iOS**: CoreGraphics
 - **Qt**: QPainter
 - **FLTK**: FLTK offscreen drawing (fl_draw)
 - **EFL**: Efl.Canvas.VG (vector graphics)
 - **Motif**: X11 (Xlib)
+- **Android**: android.graphics.Canvas
 
 All drivers are double buffered, so drawing occurs off-screen and the final result is displayed when **IupDrawEnd** is called only.
 
 In Windows, Direct2D and GDI+ are accessed using the [WinDrawLib](https://github.com/mity/windrawlib) library by Martin Mitáš.
 This library is embedded in IUP source code and uses run-time dynamic linking, so no extra libraries need to be linked by the application.
 
-The canvas has a read-only attribute called **DRAWDRIVER** that returns the active backend: D2D, GDI+, CAIRO, COCOA, QT, EFL_VG or X11.
+The canvas has a read-only attribute called **DRAWDRIVER** that returns the active backend: D2D, GDI+, CAIRO, COCOA, COCOATOUCH, QT, EFL_VG, X11 or ANDROID.
 
 IMPORTANT: all functions can be used only in **IupCanvas** or **IupBackgroundBox** and inside the ACTION callback.
 To force a redraw anytime, use the functions [IupUpdate](../func/iup_update.md) or [IupRedraw](iup_draw.md).

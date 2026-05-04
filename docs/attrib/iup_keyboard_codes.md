@@ -19,8 +19,6 @@ The **iup_isXkey(key)** macro informs if a given key is an extended code.
 The **iup_isShiftXkey(key)** macro informs if a given key is an extended code using the Shift modifier, the **iup_isCtrlXkey(key)** macro for the Ctrl modifier, the **iup_isAltXkey(key)** macro for the Alt modifier, and the **iup_isSysXkey(key)** macro for the Sys modifier.
 To obtain a key code for a generic combination you can start with the base key from the table and combine it repeated times using the macros **iup_XkeyShift(key)**, **iup_XkeyCtrl(key)**, **iup_XkeyAlt(key)** and **iup_XkeySys(key)**.
 
-Note: GTK in Windows does not generate the Win modifier key, the K_Print and the K_Pause keys (up to GTK version 2.8.18).
-
 |          Key | Code / Callback |
 |-------------:|-----------------|
 |        Space | K_SP            |

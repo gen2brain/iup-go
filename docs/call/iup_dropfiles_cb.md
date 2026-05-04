@@ -6,6 +6,7 @@ When several files are dropped at once, the callback is called several times, on
 If defined after the element is mapped then the attribute DROPFILESTARGET must be set to YES.
 
 In Motif, file drops from external applications are received via the XDND protocol.
+On Android, file drops from external applications are supported via the system drag-and-drop framework.
 
 ### Callback
 

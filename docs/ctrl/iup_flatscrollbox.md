@@ -47,14 +47,14 @@ The child must be contained in the Scrollbox hierarchy.
 
 **SCROLLTOCHILD_HANDLE** (write-only): same as SCROLLTOCHILD but directly using the child handle.
 
-[FLATSCROLLBAR](../attrib/iup_flatscrollbar.md): Can be Yes, Vertical or Horizontal.
+[FLATSCROLLBAR](iup_flatscrollbar.md): Can be Yes, Vertical or Horizontal.
 Can be set only before map. Default: Yes.
 
 **WHEELDROPFOCUS:** set to Yes.
 
 ### Scrollbars Appearance Attributes
 
-See [FLATSCROLLBAR](../attrib/iup_flatscrollbar.md).
+See [FLATSCROLLBAR](iup_flatscrollbar.md).
 
 > 
 >

@@ -16,9 +16,10 @@ All elements that are containers, except menus.
 
 ### Notes
 
-In GTK and Motif, for the **IupDialog**, the dy value is negative when there is a menu.
+In GTK 3, Motif and EFL, for the **IupDialog**, the dy value is negative when there is a menu.
 This occurs because in those systems the menu is placed inside the Client Area and all children must be placed below the menu.
-In Windows, it will return 0x0, except when CUSTOMFRAMEDRAW is used.
+In Windows and macOS, it will return 0x0, except when CUSTOMFRAMEDRAW is used.
+In GTK 4, returns positive border on dx and border+caption+menu on dy.
 
 In Windows, for the **IupFrame**, the value is always "0x0" the position of the child is still relative to the top-left corner of the frame.
 This is automatically compensated in calculation of the POSITION attribute.

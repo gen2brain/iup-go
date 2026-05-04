@@ -133,7 +133,7 @@ If value is NULL or "ALL" removes all the items. Different from IupList, can be 
 [SCROLLBAR](../attrib/iup_scrollbar.md) (read-only): is always "NO". So the IupCanvas native scrollbars are hidden.
 See the FLATSCROLLBAR attribute below. YAUTOHIDE and XAUTOHIDE will always be Yes.
 
-[FLATSCROLLBAR](../attrib/iup_flatscrollbar.md): Can be Yes, Vertical or Horizontal.
+[FLATSCROLLBAR](iup_flatscrollbar.md): Can be Yes, Vertical or Horizontal.
 Can be set only before map. Default: Yes.
 
 **SHOWDRAGDROP** (creation-only) (non-inheritable): enables the internal drag and drop of items in the same list, and enables the **DRAGDROP_CB** callback.

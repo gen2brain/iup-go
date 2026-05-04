@@ -13,7 +13,7 @@ The dialog can be shown with the **IupPopup** function only.
 
 **PREVIEWTEXT**: the text shown in the preview area.
 If not defined, the system will provide a default text.
-Supported in GTK 3, Motif and Qt.
+Supported in GTK 3, Qt, Motif, FLTK, EFL, WinUI and Android.
 
 **COLOR**: The initial color value and the returned selected value if the user pressed the Ok button.
 Must set SHOWCOLOR=Yes to enable this option.
@@ -43,7 +43,7 @@ The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
 In Windows, the dialog will be modal relative only to its parent or to the active dialog.
 
-In Win32 uses ChooseFont, in WinUI uses a custom dialog, in GTK 3 uses GtkFontChooser, in GTK 4 uses GtkFontDialog, in macOS uses NSFontPanel, in Qt uses QFontDialog, in EFL and Motif uses a custom dialog implemented using IUP controls.
+In Win32 uses ChooseFont, in GTK 3 uses GtkFontChooser, in GTK 4 uses GtkFontDialog, in macOS uses NSFontPanel, in Qt uses QFontDialog, in iOS uses UIFontPickerViewController, and in WinUI, Motif, FLTK, EFL and Android uses a custom dialog implemented using IUP controls.
 
 ### Examples
 

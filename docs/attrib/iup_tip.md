@@ -1,6 +1,7 @@
 ## TIP (non-inheritable)
 
 Text to be shown when the mouse lies over the element.
+On touch platforms (Android, iOS) the tip is shown after a long-press on the element.
 
 ### Value
 

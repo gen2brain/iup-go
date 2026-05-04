@@ -87,8 +87,8 @@ Shown only when BARPOSITION=TOP.
 **TITLEIMAGEHIGHLIGHT**: image name used when mouse is over the title image and STATE=CLOSE.\
 **TITLEIMAGEOPENHIGHLIGHT**: image name used when mouse is over the title image and STATE=OPEN.
 
-**TITLEEXPAND** (non-inheritable): enable the expand/collapse action also at the tile.
-Default: NO.
+**TITLEEXPAND** (non-inheritable): enable the expand/collapse action also at the title.
+Default: NO. On Android and iOS the default is YES so the whole title bar is the tap target instead of just the small chevron.
 
 **WID** (read-only): returns -1 if mapped.
 

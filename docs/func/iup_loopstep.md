@@ -28,6 +28,8 @@ This way, this function replaces old mechanisms implemented using the Idle callb
 
 Note that this function does not replace **IupMainLoop**.
 
+On Android and iOS, both **IupLoopStep** and **IupLoopStepWait** drain messages already queued on the main thread and then return; they never block indefinitely.
+
 ### See Also
 
 [IupOpen](iup_open.md), [IupClose](iup_close.md), [IupMainLoop](iup_mainloop.md), [IupExitLoop](iup_exitloop.md), [IDLE_ACTION](../call/iup_idle_action.md)

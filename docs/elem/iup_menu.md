@@ -54,7 +54,9 @@ It is not necessary to call **IupGetDialog**.
 
 The menu can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md). 
 
-In GTK uses GtkMenuBar/GtkMenu, in GTK 4 uses GMenu/GtkPopoverMenuBar, in Windows uses CreateMenu/CreatePopupMenu, in WinUI uses XAML MenuBar/MenuFlyout, in macOS uses NSMenu, in Qt uses QMenuBar/QMenu, in FLTK uses Fl_Menu_Bar/Fl_Menu_Button, in EFL uses Elm_Menu, and in Motif uses xmRowColumn/xmPulldownMenu/xmPopupMenu.
+In GTK uses GtkMenuBar/GtkMenu, in GTK 4 uses GMenu/GtkPopoverMenuBar, in Windows uses CreateMenu/CreatePopupMenu, in WinUI uses XAML MenuBar/MenuFlyout, in macOS uses NSMenu, in Qt uses QMenuBar/QMenu, in FLTK uses Fl_Menu_Bar/Fl_Menu_Button, in EFL uses Elm_Menu, in Motif uses xmRowColumn/xmPulldownMenu/xmPopupMenu, in Android uses android.view.Menu, and in iOS uses UIMenu.
+
+On Android, an optional NavigationDrawer can be attached alongside the menu via the [DRAWER](../dlg/iup_dialog.md) attribute on IupDialog. Independent of MENU; a dialog may set either, both, or neither.
 
 ### Examples
 
