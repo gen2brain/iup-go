@@ -389,13 +389,10 @@ func canvasDraw(ih iup.Ihandle) int {
 	w, h := iup.DrawGetSize(ih)
 
 	dark := iup.GetGlobal("DARKMODE") == "YES"
-	bg, base, baseline, title := "250 250 252", "230 230 235", "120 120 140", "60 60 100"
+	base, baseline, title := "230 230 235", "120 120 140", "60 60 100"
 	if dark {
-		bg, base, baseline, title = "30 30 36", "60 60 70", "180 180 200", "220 220 240"
+		base, baseline, title = "60 60 70", "180 180 200", "220 220 240"
 	}
-
-	ih.SetAttributes(`DRAWCOLOR="` + bg + `", DRAWSTYLE=FILL`)
-	iup.DrawRectangle(ih, 0, 0, w-1, h-1)
 
 	_ = base
 	colors := []string{"230 60 60", "230 150 60", "230 220 60", "60 180 80", "60 140 220"}

@@ -1496,7 +1496,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   ic->GetInnerNativeContainerHandle = cocoaCanvasGetInnerNativeContainerHandleMethod;
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaCanvasSetBgColorAttrib, "232 232 232", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* IupCanvas only */
   iupClassRegisterAttribute(ic, "DRAWSIZE", cocoaCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
