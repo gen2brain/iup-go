@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<!-- Required by examples that hit the network (postmessage, web_*, etc.). -->
+	<uses-permission android:name="android.permission.INTERNET"/>
+	<!-- Required by examples that use IupNotify STYLE=NOTIFICATION on API 33+. -->
+	<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+	<application
+		android:allowBackup="true"
+		android:icon="@mipmap/ic_launcher"
+		android:label="${appName}"
+		android:supportsRtl="true"
+		android:theme="@style/AppTheme"
+		android:hardwareAccelerated="true"
+		android:largeHeap="true"
+		android:isGame="false"
+		android:name=".MyIupApplication">
+
+		<activity
+			android:name=".MyIupLaunchActivity"
+			android:theme="@android:style/Theme.Translucent.NoTitleBar"
+			android:configChanges="orientation|keyboardHidden|screenSize"
+			android:noHistory="true"
+			android:exported="true">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN"/>
+				<category android:name="android.intent.category.LAUNCHER"/>
+			</intent-filter>
+		</activity>
+
+		<!-- Optional C symbol name used as dlsym fallback by the JNI bridge. -->
+		<meta-data android:name="ENTRY_POINT" android:value="IupEntryPoint"/>
+	</application>
+
+</manifest>
