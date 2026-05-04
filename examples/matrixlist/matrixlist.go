@@ -36,6 +36,8 @@ func listEditionCb(ih iup.Ihandle, lin, col, mode, update int) int {
 	return iup.DEFAULT
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	iup.ControlsOpen()

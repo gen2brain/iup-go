@@ -20,6 +20,8 @@ var pixmap = []byte{
 	2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -40,7 +42,7 @@ func main() {
 	dlg := iup.Dialog(
 		iup.Vbox(
 			lbl,
-			iup.Hbox(lblExplain, lblStar),
+			iup.Hbox(lblExplain, lblStar).SetAttribute("ALIGNMENT", "ACENTER"),
 		),
 	)
 	dlg.SetAttribute("TITLE", "Label")

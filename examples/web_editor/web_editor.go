@@ -420,6 +420,8 @@ func webBrowserEditorTest() {
 	iup.Show(dlg)
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

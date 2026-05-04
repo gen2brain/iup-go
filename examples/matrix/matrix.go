@@ -277,6 +277,8 @@ func createMatrix() iup.Ihandle {
 	return mat
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	iup.ControlsOpen()

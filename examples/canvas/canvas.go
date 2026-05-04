@@ -4,11 +4,13 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
 
-	cv := iup.Canvas().SetAttribute("SIZE", "300x300")
+	cv := iup.Canvas().SetAttribute("RASTERSIZE", "300x300")
 	cv.SetCallback("ACTION", iup.ActionFunc(actionCb))
 
 	dlg := iup.Dialog(

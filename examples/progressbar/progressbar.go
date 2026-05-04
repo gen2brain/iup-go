@@ -6,299 +6,151 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
-var (
-	increment    float32 = 0.01
-	progressbar1 iup.Ihandle
-	progressbar2 iup.Ihandle
-	btnPause     iup.Ihandle
-	timer        iup.Ihandle
-)
+var increment float32 = 0.01
 
-func createImages() {
-	imgRestart := iup.Image(22, 22, pixmapRestart)
-	imgPlay := iup.Image(22, 22, pixmapPlay)
-	imgForward := iup.Image(22, 22, pixmapForward)
-	imgRewind := iup.Image(22, 22, pixmapRewind)
-	imgPause := iup.Image(22, 22, pixmapPause)
-
-	iup.SetHandle("img_restart", imgRestart)
-	iup.SetHandle("img_play", imgPlay)
-	iup.SetHandle("img_forward", imgForward)
-	iup.SetHandle("img_rewind", imgRewind)
-	iup.SetHandle("img_pause", imgPause)
-
-	imgRestart.SetAttribute("1", "0 0 0")
-	imgRestart.SetAttribute("2", "BGCOLOR")
-	imgPlay.SetAttribute("1", "0 0 0")
-	imgPlay.SetAttribute("2", "BGCOLOR")
-	imgForward.SetAttribute("1", "0 0 0")
-	imgForward.SetAttribute("2", "BGCOLOR")
-	imgRewind.SetAttribute("1", "0 0 0")
-	imgRewind.SetAttribute("2", "BGCOLOR")
-	imgPause.SetAttribute("1", "0 0 0")
-	imgPause.SetAttribute("2", "BGCOLOR")
+func setBars(value float32) {
+	v := fmt.Sprintf("%g", value)
+	iup.GetHandle("progContin").SetAttribute("VALUE", v)
+	iup.GetHandle("progDashed").SetAttribute("VALUE", v)
+	iup.GetHandle("progColored").SetAttribute("VALUE", v)
+	iup.GetHandle("progVert").SetAttribute("VALUE", fmt.Sprintf("%g", value*50))
 }
 
 func timeCb(ih iup.Ihandle) int {
-	value := progressbar1.GetFloat("VALUE")
-	value += increment
-	if value > 1 {
-		value = 0 // start over
+	v := iup.GetHandle("progContin").GetFloat("VALUE") + increment
+	if v > 1 {
+		v = 0
 	}
-	progressbar1.SetAttribute("VALUE", fmt.Sprintf("%g", value))
-
-	value2 := progressbar2.GetFloat("VALUE")
-	value2 += increment * 50
-	if value2 > 50 {
-		value2 = 0 // start over
-	}
-	progressbar2.SetAttribute("VALUE", fmt.Sprintf("%g", value2))
-
+	setBars(v)
 	return iup.DEFAULT
 }
 
 func btnPauseCb(ih iup.Ihandle) int {
-	if timer.GetInt("RUN") == 0 {
-		timer.SetAttribute("RUN", "YES")
-		btnPause.SetAttribute("IMAGE", "img_pause")
-	} else {
+	timer := iup.GetHandle("timer")
+	btn := iup.GetHandle("btnPause")
+	if timer.GetInt("RUN") != 0 {
 		timer.SetAttribute("RUN", "NO")
-		btnPause.SetAttribute("IMAGE", "img_play")
-	}
-	return iup.DEFAULT
-}
-
-func btnRestartCb(ih iup.Ihandle) int {
-	progressbar1.SetAttribute("VALUE", "0")
-	progressbar2.SetAttribute("VALUE", "0")
-	return iup.DEFAULT
-}
-
-func btnAccelerateCb(ih iup.Ihandle) int {
-	increment *= 2
-	return iup.DEFAULT
-}
-
-func btnDecelerateCb(ih iup.Ihandle) int {
-	increment /= 2
-	return iup.DEFAULT
-}
-
-func btnShow1Cb(ih iup.Ihandle) int {
-	if progressbar1.GetInt("DASHED") == 0 {
-		progressbar1.SetAttribute("DASHED", "YES")
+		btn.SetAttribute("TITLE", "Resume")
 	} else {
-		progressbar1.SetAttribute("DASHED", "NO")
+		timer.SetAttribute("RUN", "YES")
+		btn.SetAttribute("TITLE", "Pause")
 	}
 	return iup.DEFAULT
 }
 
-func btnShow2Cb(ih iup.Ihandle) int {
-	if progressbar1.GetInt("MARQUEE") == 0 {
-		progressbar1.SetAttribute("MARQUEE", "YES")
-	} else {
-		progressbar1.SetAttribute("MARQUEE", "NO")
-	}
-	return iup.DEFAULT
-}
+func btnRestartCb(ih iup.Ihandle) int { setBars(0); return iup.DEFAULT }
+func btnFasterCb(ih iup.Ihandle) int  { increment *= 2; return iup.DEFAULT }
+func btnSlowerCb(ih iup.Ihandle) int  { increment /= 2; return iup.DEFAULT }
+
+func init() { iup.EntryPoint(main) }
 
 func main() {
 	iup.Open()
 	defer iup.Close()
 
-	timer = iup.Timer()
-	timer.SetCallback("ACTION_CB", iup.TimerActionFunc(timeCb))
-	timer.SetAttribute("TIME", "100")
+	iup.Timer().
+		SetHandle("timer").
+		SetAttribute("TIME", "100").
+		SetCallback("ACTION_CB", iup.TimerActionFunc(timeCb))
 
-	progressbar1 = iup.ProgressBar()
-	progressbar2 = iup.ProgressBar()
+	/* Default continuous bar. */
+	iup.ProgressBar().
+		SetHandle("progContin").
+		SetAttribute("EXPAND", "HORIZONTAL")
 
-	progressbar1.SetAttribute("EXPAND", "YES")
-	progressbar1.SetAttribute("DASHED", "YES")
+	/* DASHED is creation-only on Windows, so we configure the variant up front. */
+	iup.ProgressBar().
+		SetHandle("progDashed").
+		SetAttribute("EXPAND", "HORIZONTAL").
+		SetAttribute("DASHED", "YES")
 
-	progressbar2.SetAttribute("ORIENTATION", "VERTICAL")
-	progressbar2.SetAttribute("BGCOLOR", "255 0 128")
-	progressbar2.SetAttribute("FGCOLOR", "0 128 0")
-	progressbar2.SetAttribute("RASTERSIZE", "30x100")
-	progressbar2.SetAttribute("MAX", "50")
-	progressbar2.SetAttribute("VALUE", "25")
+	/* MARQUEE is also creation-only; once enabled the bar self-animates. */
+	iup.ProgressBar().
+		SetHandle("progMarquee").
+		SetAttribute("EXPAND", "HORIZONTAL").
+		SetAttribute("MARQUEE", "YES")
 
-	btnRestart := iup.Button("")
-	btnPause = iup.Button("")
-	btnAccelerate := iup.Button("")
-	btnDecelerate := iup.Button("")
-	btnShow1 := iup.Button("Dashed")
-	btnShow2 := iup.Button("Marquee")
+	/* BGCOLOR and FGCOLOR support varies by driver (Win Classic, Motif, Qt, Android, iOS toast). */
+	iup.ProgressBar().
+		SetHandle("progColored").
+		SetAttribute("EXPAND", "HORIZONTAL").
+		SetAttribute("BGCOLOR", "230 230 230").
+		SetAttribute("FGCOLOR", "60 160 80")
 
-	createImages()
+	/* ORIENTATION is creation-only. */
+	iup.ProgressBar().
+		SetHandle("progVert").
+		SetAttribute("ORIENTATION", "VERTICAL").
+		SetAttribute("RASTERSIZE", "40x").
+		SetAttribute("EXPAND", "VERTICAL").
+		SetAttribute("MIN", "0").
+		SetAttribute("MAX", "50").
+		SetAttribute("VALUE", "0")
 
-	btnRestart.SetAttribute("IMAGE", "img_restart")
-	btnRestart.SetAttribute("TIP", "Restart")
-	btnPause.SetAttribute("IMAGE", "img_pause")
-	btnPause.SetAttribute("TIP", "Play/Pause")
-	btnAccelerate.SetAttribute("IMAGE", "img_forward")
-	btnAccelerate.SetAttribute("TIP", "Accelerate")
-	btnDecelerate.SetAttribute("IMAGE", "img_rewind")
-	btnDecelerate.SetAttribute("TIP", "Decelerate")
-	btnShow1.SetAttribute("TIP", "Dashed or Continuous")
-	btnShow2.SetAttribute("TIP", "Marquee or Defined")
+	/* CIRCULAR is honored only on Android (Material CircularProgressIndicator) and iOS (UIActivityIndicatorView). */
+	driver := iup.GetGlobal("DRIVER")
+	hasCircular := driver == "Android" || driver == "CocoaTouch"
+	if hasCircular {
+		iup.ProgressBar().
+			SetHandle("progCircular").
+			SetAttribute("CIRCULAR", "YES").
+			SetAttribute("MARQUEE", "YES")
+	}
 
-	hbox := iup.Hbox(
-		iup.Fill(),
-		btnPause,
-		btnRestart,
-		btnDecelerate,
-		btnAccelerate,
-		btnShow1,
-		btnShow2,
-		iup.Fill(),
+	iup.Button("Pause").
+		SetHandle("btnPause").
+		SetCallback("ACTION", iup.ActionFunc(btnPauseCb)).
+		SetAttribute("EXPAND", "HORIZONTAL")
+	iup.Button("Restart").
+		SetHandle("btnRestart").
+		SetCallback("ACTION", iup.ActionFunc(btnRestartCb)).
+		SetAttribute("EXPAND", "HORIZONTAL")
+	iup.Button("Faster").
+		SetHandle("btnFaster").
+		SetCallback("ACTION", iup.ActionFunc(btnFasterCb)).
+		SetAttribute("EXPAND", "HORIZONTAL")
+	iup.Button("Slower").
+		SetHandle("btnSlower").
+		SetCallback("ACTION", iup.ActionFunc(btnSlowerCb)).
+		SetAttribute("EXPAND", "HORIZONTAL")
+
+	wrap := func(title string, name string) iup.Ihandle {
+		return iup.Frame(
+			iup.Vbox(iup.GetHandle(name)).SetAttributes("NMARGIN=10x10"),
+		).SetAttribute("TITLE", title)
+	}
+
+	horizontalChildren := []iup.Ihandle{
+		wrap("Continuous", "progContin"),
+		wrap("Dashed", "progDashed"),
+		wrap("Marquee", "progMarquee"),
+		wrap("Colored (MIN/MAX/FGCOLOR/BGCOLOR)", "progColored"),
+	}
+	if hasCircular {
+		horizontalChildren = append(horizontalChildren, wrap("Circular", "progCircular"))
+	}
+	horizontalStack := iup.Vbox(horizontalChildren...).SetAttributes("NGAP=10")
+
+	controlsFrame := iup.Frame(
+		iup.Vbox(
+			iup.Hbox(iup.GetHandle("btnPause"), iup.GetHandle("btnRestart")).SetAttributes("NGAP=10"),
+			iup.Hbox(iup.GetHandle("btnSlower"), iup.GetHandle("btnFaster")).SetAttributes("NGAP=10"),
+		).SetAttributes("NMARGIN=10x10, NGAP=10"),
+	).SetAttribute("TITLE", "Controls")
+
+	verticalFrame := iup.Frame(
+		iup.Vbox(iup.GetHandle("progVert")).SetAttributes("ALIGNMENT=ACENTER, NMARGIN=10x10"),
+	).SetAttribute("TITLE", "Vertical")
+
+	dlg := iup.Dialog(
+		iup.Vbox(
+			horizontalStack,
+			iup.Hbox(controlsFrame, verticalFrame).SetAttributes("NGAP=10"),
+		).SetAttributes("NMARGIN=10x10, NGAP=10"),
 	)
-
-	vbox := iup.Hbox(
-		iup.Vbox(progressbar1, hbox),
-		progressbar2,
-	)
-	vbox.SetAttribute("MARGIN", "10x10")
-	vbox.SetAttribute("GAP", "5")
-
-	dlg := iup.Dialog(vbox)
-	dlg.SetAttribute("TITLE", "IupProgressBar Test")
-
-	btnPause.SetCallback("ACTION", iup.ActionFunc(btnPauseCb))
-	btnRestart.SetCallback("ACTION", iup.ActionFunc(btnRestartCb))
-	btnAccelerate.SetCallback("ACTION", iup.ActionFunc(btnAccelerateCb))
-	btnDecelerate.SetCallback("ACTION", iup.ActionFunc(btnDecelerateCb))
-	btnShow1.SetCallback("ACTION", iup.ActionFunc(btnShow1Cb))
-	btnShow2.SetCallback("ACTION", iup.ActionFunc(btnShow2Cb))
+	dlg.SetAttributes("TITLE=IupProgressBar Test, RASTERSIZE=460x")
 
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
-
-	timer.SetAttribute("RUN", "YES")
-
+	iup.GetHandle("timer").SetAttribute("RUN", "YES")
 	iup.MainLoop()
-}
-
-var pixmapPlay = []byte{
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-}
-
-var pixmapRestart = []byte{
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-}
-
-var pixmapRewind = []byte{
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-}
-
-var pixmapForward = []byte{
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-}
-
-var pixmapPause = []byte{
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 }

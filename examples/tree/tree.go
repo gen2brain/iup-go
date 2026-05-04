@@ -146,6 +146,8 @@ func initTreeAttributes() {
 	iup.SetAttribute(tree, "VALUE", "6")
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

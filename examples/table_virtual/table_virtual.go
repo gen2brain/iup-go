@@ -15,6 +15,8 @@ var dataset [][]string
 var sortColumn int = 0        // 0 = unsorted, 1-4 = column number
 var sortAscending bool = true // true = ascending, false = descending
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

@@ -54,6 +54,8 @@ func createCounter(title string, initialValue int) *Counter {
 	return c
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

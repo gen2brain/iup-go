@@ -186,6 +186,8 @@ func switchTheme(idx int) {
 	dlg.SetAttribute("TITLE", fmt.Sprintf("Flat Theme - %s", t.name))
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

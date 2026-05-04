@@ -4,6 +4,8 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -11,7 +13,7 @@ func main() {
 	lblH := iup.Label("0").SetHandle("lblH").SetAttributes("ALIGNMENT=ACENTER, SIZE=100x10")
 	lblV := iup.Label("0").SetHandle("lblV").SetAttributes("ALIGNMENT=ACENTER, SIZE=100x10")
 
-	dialV := iup.Dial("VERTICAL").SetAttributes("SIZE=100x100")
+	dialV := iup.Dial("VERTICAL").SetAttributes("RASTERSIZE=100x100")
 	dialH := iup.Dial("HORIZONTAL").SetAttributes("DENSITY=0.3")
 
 	dialV.SetCallback("MOUSEMOVE_CB", iup.MouseMoveFunc(dialVCb))

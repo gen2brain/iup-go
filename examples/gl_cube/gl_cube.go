@@ -14,6 +14,8 @@ import (
 var initialized bool
 var rotationAngle float32
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

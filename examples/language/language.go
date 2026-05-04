@@ -104,6 +104,8 @@ func updateUI(dlg, lblGreeting, lblMessage, btnEn, btnEs, btnFr, btnDe, btnClose
 	iup.Refresh(dlg)
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

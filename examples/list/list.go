@@ -6,6 +6,8 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 func listMultipleCb(ih iup.Ihandle, t string, i, v int) int {
 	fmt.Printf("Item %d - %s - %s\n", i, t, map[int]string{0: "deselected", 1: "selected"}[v])
 	return iup.DEFAULT

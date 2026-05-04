@@ -500,6 +500,8 @@ func tabsTabChangeCB(self iup.Ihandle, newTab, oldTab iup.Ihandle) int {
 	return iup.DEFAULT
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -640,7 +642,7 @@ func main() {
 
 	tabsTabChangeCB(tabs, vboxr[0], 0)
 
-	dlg.SetAttribute("SIZE", "x400")
+	dlg.SetAttribute("RASTERSIZE", "x400")
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
 
 	iup.MainLoop()

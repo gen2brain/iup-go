@@ -128,18 +128,19 @@ func webBrowserTest() {
 	btReload := iup.Button("Reload")
 	btStop := iup.Button("Stop")
 
-	// Create horizontal box with controls
-	var hbox iup.Ihandle
+	// URL on its own row so it has full width on narrow (phone) layouts.
+	urlRow := iup.Hbox(txt)
+	var btnRow iup.Ihandle
 	if runtime.GOOS != "windows" {
 		history := iup.Button("History")
-		hbox = iup.Hbox(btBack, btForward, txt, btLoad, btReload, btStop, history)
+		btnRow = iup.Hbox(btBack, btForward, btLoad, btReload, btStop, history)
 		history.SetCallback("ACTION", historyCallback)
 	} else {
-		hbox = iup.Hbox(btBack, btForward, txt, btLoad, btReload, btStop)
+		btnRow = iup.Hbox(btBack, btForward, btLoad, btReload, btStop)
 	}
 
 	// Create dialog with vertical layout
-	vbox := iup.Vbox(hbox, web)
+	vbox := iup.Vbox(btnRow, urlRow, web)
 	dlg := iup.Dialog(vbox)
 
 	// Set dialog attributes
@@ -162,7 +163,7 @@ func webBrowserTest() {
 
 	// Set initial URL
 	//web.SetAttribute("HTML", "<html><body><b>Hello</b>World!</body></html>")
-	txt.SetAttribute("VALUE", "http://www.tecgraf.puc-rio.br/iup")
+	txt.SetAttribute("VALUE", "https://github.com/gen2brain/iup-go")
 	web.SetAttribute("VALUE", txt.GetAttribute("VALUE"))
 	dlg.SetAttribute("DEFAULTENTER", "btLoad")
 
@@ -185,6 +186,8 @@ func webBrowserTest() {
 	// Show dialog
 	iup.Show(dlg)
 }
+
+func init() { iup.EntryPoint(main) }
 
 func main() {
 	iup.Open()

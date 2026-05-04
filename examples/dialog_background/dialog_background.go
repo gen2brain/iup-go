@@ -42,6 +42,8 @@ func createGradientImage(w, h int) iup.Ihandle {
 	return iup.ImageRGBA(w, h, pixels)
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

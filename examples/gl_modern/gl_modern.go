@@ -24,6 +24,8 @@ var (
 	firstResize               bool = true
 )
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

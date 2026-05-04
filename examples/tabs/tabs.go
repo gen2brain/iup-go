@@ -16,6 +16,8 @@ func logMsg(msg string) {
 	fmt.Println(msg)
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -145,7 +147,10 @@ func main() {
 
 		logMsg(fmt.Sprintf("TABCLOSE_CB (%s): closing tab %d ('%s')", tabsName, pos, title))
 
-		// Return DEFAULT to allow closing, or IGNORE to prevent
+		// Return DEFAULT to hide the tab, CONTINUE to destroy it, or IGNORE to keep it.
+		if pos == 1 {
+			return iup.DEFAULT
+		}
 		return iup.IGNORE
 	}
 

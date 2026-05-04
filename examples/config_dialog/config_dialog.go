@@ -9,6 +9,8 @@ import (
 var config iup.Ihandle
 var mainDlg iup.Ihandle
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

@@ -43,12 +43,16 @@ func updateStatus() {
 	status.SetAttribute("TITLE", statusText)
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
 
 	clipboard = iup.Clipboard()
-	defer clipboard.Destroy()
+	if runtime.GOOS != "android" && runtime.GOOS != "ios" {
+		defer clipboard.Destroy()
+	}
 
 	// Text input/output
 	txtInput := iup.Text()

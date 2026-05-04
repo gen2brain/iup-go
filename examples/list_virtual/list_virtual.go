@@ -10,6 +10,8 @@ import (
 var dataset []string
 var images []string
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
