@@ -582,6 +582,13 @@ IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
   {
     [[UNUserNotificationCenter currentNotificationCenter]
         removeDeliveredNotificationsWithIdentifiers:@[notify->identifier]];
+
+    IFni cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
+    if (cb)
+    {
+      int ret = cb(ih, 3);
+      if (ret == IUP_CLOSE) IupExitLoop();
+    }
     return 1;
   }
 
