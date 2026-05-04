@@ -170,17 +170,17 @@ IUP_SDK_API char* iupStrReturnInt(int i);
 * \ingroup str */
 IUP_SDK_API char* iupStrReturnUInt(unsigned int i);
 
-/** maximum float precision
+/** round-trip safe float precision; drops trailing zeros via %g
 * \ingroup str */
-#define IUP_FLOAT2STR "%.9f"
+#define IUP_FLOAT2STR "%.9g"
 
 /** Returns a float value in a string using \ref iupStrGetMemory.
  * \ingroup str */
 IUP_SDK_API char* iupStrReturnFloat(float f);
 
-/** maximum double precision
+/** round-trip safe double precision; drops trailing zeros via %g
  * \ingroup str */
-#define IUP_DOUBLE2STR "%.18f"
+#define IUP_DOUBLE2STR "%.17g"
 
 /** Returns a double value in a string using \ref iupStrGetMemory.
  * \ingroup str */
