@@ -106,7 +106,7 @@ static EGLNativeWindowType iupEGLBackendPostConfig(Ihandle* ih, IGlControlData* 
     return (EGLNativeWindowType)NULL;
   }
 
-  /* X11: use lazy init — at map time the surface may be 1x1 */
+  /* X11: use lazy init; at map time the surface may be 1x1. */
   iupAttribSet(ih, "_IUP_EGL_LAZY_INIT", "1");
 
   (void)gldata;
