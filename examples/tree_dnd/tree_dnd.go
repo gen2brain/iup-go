@@ -54,6 +54,8 @@ func initTree1Attributes() {
 	tree1.SetAttribute("TITLEFONT6", "Courier, 12")
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

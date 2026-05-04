@@ -37,6 +37,8 @@ func drawCb(ih iup.Ihandle, i, j, xmin, xmax, ymin, ymax int) int {
 	return iup.DEFAULT
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	iup.ControlsOpen()

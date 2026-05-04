@@ -12,6 +12,8 @@ import (
 
 var initialized bool
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

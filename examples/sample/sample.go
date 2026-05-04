@@ -4,6 +4,8 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -23,16 +25,21 @@ func main() {
 	//iup.SetGlobal("FLTKTHEME", "oxy")
 	//iup.SetGlobal("GNUSTEPTHEME", "Rik")
 
-	iup.ImageRGBA(32, 32, imgTecgraf).SetHandle("img1")
+	iup.Image(imgDiamondSize, imgDiamondSize, imgDiamond).SetAttributes(map[string]string{
+		"0": "BGCOLOR",
+		"1": "40 40 120",
+		"2": "80 100 200",
+		"3": "180 210 255",
+	}).SetHandle("img1")
 
-	img := iup.Image(32, 32, imgBits).SetHandle("img2")
-	iup.SetAttribute(img, "0", "0 0 0")
-	iup.SetAttribute(img, "1", "0 255 0")
-	iup.SetAttribute(img, "2", "BGCOLOR")
-	iup.SetAttribute(img, "3", "255 0 0")
+	iup.Image(imgDiamondSize, imgDiamondSize, imgDiamond).SetAttributes(map[string]string{
+		"0": "BGCOLOR",
+		"1": "40 110 40",
+		"2": "80 180 80",
+		"3": "210 255 180",
+	}).SetHandle("img2")
 
-	iup.ImageRGBA(16, 16, imgLogoTecgraf).SetHandle("img3")
-	iup.ImageRGBA(32, 32, imgGopher).SetHandle("img4")
+	iup.ImageRGBA(32, 32, imgGopher).SetHandle("img3")
 
 	iup.Menu(
 		iup.Submenu("Submenu 1", iup.Menu(
@@ -91,12 +98,12 @@ func main() {
 	fr2 := iup.Frame(
 		iup.Vbox(
 			iup.Label("Label text").SetAttributes("SELECTABLE=YES"),
-			iup.Label("Bold Label").SetAttributes(`FONT="Sans, Bold 10"`),
+			iup.Label("Bold Label").SetAttributes(`FONTFACE="Sans", FONTSTYLE="Bold"`),
 			iup.Label("Colored Label").SetAttributes(`FGCOLOR="0 0 255"`),
-			iup.Label("Monospace Font").SetAttributes(`FONT="Monospace, 10"`),
+			iup.Label("Monospace Font").SetAttributes(`FONTFACE="Monospace"`),
 			iup.Label("Highlighted").SetAttributes(`FGCOLOR="50 50 50", BGCOLOR="255 235 200"`),
 			iup.Label("").SetAttributes("SEPARATOR=HORIZONTAL"),
-			iup.Label("").SetAttributes(`IMAGE=img4, TIP="Label with image"`),
+			iup.Label("").SetAttributes(`IMAGE=img3, TIP="Label with image"`),
 		).SetAttribute("GAP", "5"),
 	).SetAttribute("TITLE", "Label")
 
@@ -105,7 +112,7 @@ func main() {
 			iup.Toggle("Toggle Text").SetAttributes("VALUE=ON"),
 			iup.Hbox(
 				iup.Toggle("").SetAttributes("VALUE=ON, SWITCH=YES"),
-				iup.Toggle("").SetAttributes("VALUE=ON, IMAGE=img1"),
+				iup.Toggle("").SetAttributes("VALUE=ON, IMAGE=img2"),
 			).SetAttribute("ALIGNMENT", "ACENTER"),
 			iup.Radio(
 				iup.Vbox(
@@ -187,7 +194,7 @@ func main() {
 		iup.Vbox(iup.Label("")),
 		iup.Vbox(iup.Label("")),
 	).SetAttributes(map[string]interface{}{
-		"TABIMAGE1":    "img3",
+		"TABIMAGE1":    "img1",
 		"TABTITLE0":    "Tab Title 0",
 		"TABTITLE1":    "Tab Title 1",
 		"TABTITLE2":    "Tab Title 2",

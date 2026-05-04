@@ -6,6 +6,8 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -16,6 +18,7 @@ func main() {
 	iup.SetAttribute(mltline, "FORMATTING", "YES")
 	iup.SetAttribute(mltline, "SIZE", "300x200")
 	iup.SetAttribute(mltline, "EXPAND", "YES")
+	iup.SetAttribute(mltline, "READONLY", "YES")
 
 	iup.SetAttribute(mltline, "VALUE",
 		"Rich Text Formatting\n"+

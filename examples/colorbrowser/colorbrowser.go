@@ -6,6 +6,8 @@ import (
 
 var textRed, textGreen, textBlue iup.Ihandle
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

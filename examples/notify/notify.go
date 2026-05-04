@@ -8,6 +8,8 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -17,10 +19,25 @@ func main() {
 	iconImage := iup.ImageRGBA(32, 32, imgTecgraf)
 	iup.SetHandle("NOTIFY_ICON", iconImage)
 
+	const contentSize = 256
+	contentBytes := make([]byte, contentSize*contentSize*4)
+	for y := 0; y < contentSize; y++ {
+		for x := 0; x < contentSize; x++ {
+			i := (y*contentSize + x) * 4
+			contentBytes[i+0] = byte(x)
+			contentBytes[i+1] = byte(y)
+			contentBytes[i+2] = 200
+			contentBytes[i+3] = 255
+		}
+	}
+	contentImage := iup.ImageRGBA(contentSize, contentSize, contentBytes)
+	iup.SetHandle("NOTIFY_IMAGE", contentImage)
+
 	var notify iup.Ihandle
 
-	// macOS requires explicit permission for notifications
-	if strings.HasPrefix(iup.GetGlobal("SYSTEM"), "macOS") {
+	// macOS and iOS require explicit user permission for notifications
+	sys := iup.GetGlobal("SYSTEM")
+	if strings.HasPrefix(sys, "macOS") || strings.HasPrefix(sys, "iOS") {
 		permNotify := iup.Notify()
 		permission := permNotify.GetAttribute("PERMISSION")
 		if permission == "NOTDETERMINED" {
@@ -38,7 +55,7 @@ func main() {
 		"=====================================\n"+
 		"macOS: Requires a signed .app bundle.\n"+
 		"  codesign --force --deep --sign - MyApp.app\n"+
-		"Windows: Action buttons are not supported.\n"+
+		"Win32: Action buttons are not supported (WinUI: supported).\n"+
 		"---\n")
 	iup.SetHandle("log", txtLog)
 
@@ -170,6 +187,23 @@ func main() {
 		return iup.DEFAULT
 	}))
 
+	btnWithImage := iup.Button("Send Notification with Image (iOS)")
+	btnWithImage.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		notify = iup.Notify()
+		notify.SetAttribute("TITLE", "Photo Ready")
+		notify.SetAttribute("BODY", "Your image is ready to view.")
+		notify.SetAttribute("IMAGE", "NOTIFY_IMAGE")
+
+		notify.SetCallback("CLOSE_CB", iup.NotifyCloseFunc(func(ih iup.Ihandle, reason int) int {
+			appendLog(fmt.Sprintf("Image notification closed. Reason: %d", reason))
+			return iup.DEFAULT
+		}))
+
+		notify.SetAttribute("SHOW", "YES")
+		appendLog("Sent notification with content image")
+		return iup.DEFAULT
+	}))
+
 	btnClose := iup.Button("Close Last Notification")
 	btnClose.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		if notify != 0 {
@@ -195,6 +229,7 @@ func main() {
 			btnSimple,
 			btnActions,
 			btnWithIcon,
+			btnWithImage,
 			btnSilent,
 			btnUrgent,
 			btnClose,
@@ -212,7 +247,7 @@ func main() {
 			).SetAttributes("GAP=10"),
 		).SetAttributes("GAP=10, MARGIN=10x10"),
 	)
-	dlg.SetAttributes("TITLE=IupNotify Example, SIZE=500x400")
+	dlg.SetAttributes("TITLE=IupNotify Example, RASTERSIZE=700x")
 
 	iup.Show(dlg)
 	iup.MainLoop()

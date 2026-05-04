@@ -329,6 +329,8 @@ func createMenu() {
 	iup.SetHandle("mymenu", menu)
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	iup.ControlsOpen()

@@ -6,6 +6,8 @@ import (
 
 var timer1, timer2 iup.Ihandle
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -21,9 +23,12 @@ func main() {
 
 	iup.MainLoop()
 
-	// Timers are NOT automatically destroyed, must be manually done
-	iup.Destroy(timer1)
-	iup.Destroy(timer2)
+	// Timers are NOT automatically destroyed, must be done manually; Android and iOS skip this since MainLoop returns immediately inside ENTRY_POINT.
+	driver := iup.GetGlobal("DRIVER")
+	if driver != "Android" && driver != "CocoaTouch" {
+		iup.Destroy(timer1)
+		iup.Destroy(timer2)
+	}
 }
 
 func timerCb(ih iup.Ihandle) int {

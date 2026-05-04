@@ -1,24 +1,25 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"fmt"
 	"image/gif"
 	"log"
-	"os"
 
 	"github.com/gen2brain/iup-go/iup"
 )
+
+//go:embed loading.gif
+var loadingGIF []byte
+
+func init() { iup.EntryPoint(main) }
 
 func main() {
 	iup.Open()
 	defer iup.Close()
 
-	file, err := os.Open("loading.gif")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	img, err := gif.DecodeAll(file)
+	img, err := gif.DecodeAll(bytes.NewReader(loadingGIF))
 	if err != nil {
 		log.Fatalln(err)
 	}

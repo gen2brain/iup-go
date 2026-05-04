@@ -58,6 +58,8 @@ func clearRecent(ih iup.Ihandle) int {
 	return iup.DEFAULT
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -120,7 +122,4 @@ func main() {
 
 	iup.Show(dlg)
 	iup.MainLoop()
-
-	dlg.Destroy()
-	config.Destroy()
 }

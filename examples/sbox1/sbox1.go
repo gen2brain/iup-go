@@ -4,13 +4,15 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
 
 	btn := iup.Button("Button").SetAttribute("EXPAND", "YES")
 
-	box := iup.Sbox(btn).SetAttribute("DIRECTION", "SOUTH")
+	box := iup.Sbox(btn).SetAttributes("DIRECTION=SOUTH")
 
 	ml := iup.MultiLine().SetAttributes("EXPAND=YES, VISIBLELINES=5")
 

@@ -9,6 +9,8 @@ import (
 
 var startTime time.Time
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
@@ -50,8 +52,12 @@ func main() {
 	timer.SetAttribute("RUN", "YES")
 	iup.MainLoop()
 
-	iup.Destroy(timer)
-	iup.Destroy(thread)
+	// Android and iOS run user main inside ENTRY_POINT, so MainLoop returns immediately; destroying timer/thread here would kill them before Start.
+	driver := iup.GetGlobal("DRIVER")
+	if driver != "Android" && driver != "CocoaTouch" {
+		iup.Destroy(timer)
+		iup.Destroy(thread)
+	}
 }
 
 func threadCb(ih iup.Ihandle) int {

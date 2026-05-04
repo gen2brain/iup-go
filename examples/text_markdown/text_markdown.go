@@ -59,6 +59,8 @@ Final paragraph with **nested *bold and italic* text** to show combined formatti
 
 var imagePattern = regexp.MustCompile(`!\[([^\]]*)\]\((https?://[^)]+)\)`)
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

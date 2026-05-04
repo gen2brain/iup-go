@@ -9,11 +9,13 @@ import (
 // tm is used as a phase shift to animate the waves.
 var tm float64
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
 
-	cv := iup.Canvas().SetAttributes("SIZE=500x200")
+	cv := iup.Canvas().SetAttributes("RASTERSIZE=500x200")
 	cv.SetCallback("ACTION", iup.ActionFunc(actionCb))
 
 	// Set up a timer to periodically redraw the canvas, creating the animation.

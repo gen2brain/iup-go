@@ -14,6 +14,8 @@ import (
 
 var plot iup.Ihandle
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

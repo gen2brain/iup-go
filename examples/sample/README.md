@@ -74,3 +74,11 @@
 
 ### GNUstep Default
 [<img src="sample_gnustep_default.png" width="700" title="GNUstep Default" alt="GNUstep Default" />](sample_gnustep_default.png)
+
+### Android
+[<img src="../mobile_sample/mobile_sample_android1.png" width="300" title="Android 1" alt="Android 1" />](../mobile_sample/mobile_sample_android1.png)
+[<img src="../mobile_sample/mobile_sample_android2.png" width="300" title="Android 2" alt="Android 2" />](../mobile_sample/mobile_sample_android2.png)
+
+### iOS
+[<img src="../mobile_sample/mobile_sample_ios1.png" width="300" title="iOS 1" alt="iOS 1" />](../mobile_sample/mobile_sample_ios1.png)
+[<img src="../mobile_sample/mobile_sample_ios2.png" width="300" title="iOS 2" alt="iOS 2" />](../mobile_sample/mobile_sample_ios2.png)

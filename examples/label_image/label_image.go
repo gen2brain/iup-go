@@ -1,23 +1,24 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"image/png"
 	"log"
-	"os"
 
 	"github.com/gen2brain/iup-go/iup"
 )
+
+//go:embed gopher.png
+var gopherPNG []byte
+
+func init() { iup.EntryPoint(main) }
 
 func main() {
 	iup.Open()
 	defer iup.Close()
 
-	file, err := os.Open("gopher.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	image, err := png.Decode(file)
+	image, err := png.Decode(bytes.NewReader(gopherPNG))
 	if err != nil {
 		log.Fatalln(err)
 	}

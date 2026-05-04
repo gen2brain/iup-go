@@ -14,6 +14,8 @@ func appendLog(msg string) {
 	fmt.Printf("[%s] %s\n", timestamp, msg)
 }
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()

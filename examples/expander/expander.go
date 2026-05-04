@@ -4,12 +4,14 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+func init() { iup.EntryPoint(main) }
+
 func main() {
 	iup.Open()
 	defer iup.Close()
 
 	bt := iup.Button("Button ONE")
-	bt.SetAttributes(`EXPAND=YES, MINSIZE=30x, RASTERSIZE=30x`)
+	bt.SetAttributes(`EXPAND=HORIZONTAL, MINSIZE=30x, RASTERSIZE=30x`)
 
 	exp := iup.Expander(bt)
 	exp.SetAttribute("TITLE", "Expander Title")
