@@ -1587,6 +1587,14 @@ static void iExpanderDestroyMethod(Ihandle* ih)
     IupDestroy(ih->data->animate_timer);
 }
 
+static const char* iExpanderTitleExpandDefault(void)
+{
+  const char* driver = IupGetGlobal("DRIVER");
+  if (iupStrEqualNoCase(driver, "Android") || iupStrEqualNoCase(driver, "CocoaTouch"))
+    return "YES";
+  return "NO";
+}
+
 Iclass* iupExpanderNewClass(void)
 {
   Iclass* ic = iupClassNew(NULL);
@@ -1637,7 +1645,7 @@ Iclass* iupExpanderNewClass(void)
   iupClassRegisterAttribute(ic, "TITLEIMAGEOPEN", NULL, iExpanderSetTitleImageOpenAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGEHIGHLIGHT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGEOPENHIGHLIGHT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEEXPAND", iExpanderGetTitleExpandAttrib, iExpanderSetTitleExpandAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEEXPAND", iExpanderGetTitleExpandAttrib, iExpanderSetTitleExpandAttrib, iExpanderTitleExpandDefault(), "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOSHOW", iExpanderGetAutoShowAttrib, iExpanderSetAutoShowAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EXTRABUTTONS", iExpanderGetExtraButtonsAttrib, iExpanderSetExtraButtonsAttrib, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ANIMATION", iExpanderGetAnimationAttrib, iExpanderSetAnimationAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
