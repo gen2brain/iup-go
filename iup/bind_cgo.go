@@ -10,29 +10,29 @@ package iup
 #cgo plot CXXFLAGS: -Iexternal/srcplot
 #cgo web CXXFLAGS: -Iexternal/srcweb
 
-#cgo linux LDFLAGS: -ldl
-#cgo !windows,!darwin LDFLAGS: -lm
+#cgo linux,!android LDFLAGS: -ldl
+#cgo !windows,!darwin,!android LDFLAGS: -lm
 
-#cgo !windows,!darwin CFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
-#cgo !windows,!darwin CXXFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
+#cgo !windows,!darwin,!android CFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
+#cgo !windows,!darwin,!android CXXFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
 
-#cgo !windows,!darwin,!qt,!efl,!motif,!fltk,!gnustep CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
+#cgo !windows,!darwin,!android,!qt,!efl,!motif,!fltk,!gnustep CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 #cgo gtk,gtk2,gtk4 CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 
-#cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
-#cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
-#cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
+#cgo !windows,!darwin,!android,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
+#cgo !windows,!darwin,!android,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
+#cgo !windows,!darwin,!android,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
 
 #cgo qt CFLAGS: -Iexternal/src/qt -DIUP_USE_QT
 #cgo qt CXXFLAGS: -Iexternal/src/qt -DIUP_USE_QT -std=c++17
 
-#cgo !windows,!darwin,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
-#cgo !windows,!darwin,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
-#cgo !windows,!darwin,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
-#cgo !windows,!darwin,!motif,!qt,!efl,!fltk,!gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN
+#cgo !windows,!darwin,!android,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
+#cgo !windows,!darwin,!android,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
+#cgo !windows,!darwin,!android,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
+#cgo !windows,!darwin,!android,!motif,!qt,!efl,!fltk,!gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo !windows,!darwin,!motif,!gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: wayland-egl egl gl
-#cgo !windows,!darwin,!motif,!qt,gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: gl
+#cgo !windows,!darwin,!android,!motif,!gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: wayland-egl egl gl
+#cgo !windows,!darwin,!android,!motif,!qt,gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: gl
 
 #cgo qt,!qt5,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Widgets
 #cgo qt,qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets
@@ -40,7 +40,7 @@ package iup
 #cgo qt,qt5,web,!nopkgconfig pkg-config: Qt5WebEngineCore  Qt5WebEngineWidgets
 
 #cgo motif LDFLAGS: -lXm -lXmu -lXt -lXext -lX11
-#cgo linux,motif LDFLAGS: -lXpm
+#cgo linux,!android,motif LDFLAGS: -lXpm
 #cgo darwin,motif LDFLAGS: -liconv
 #cgo motif,gl LDFLAGS: -lGL
 #cgo motif,xft CFLAGS: -DIUP_USE_XFT
@@ -62,36 +62,47 @@ package iup
 #cgo winui CXXFLAGS: -Iexternal/src/winui -DIUP_USE_WINUI -D_WIN32_WINNT=0x0A00 -DNTDDI_VERSION=0x0A000000 -DUNICODE -D_UNICODE -std=c++20 -stdlib=libc++
 #cgo winui LDFLAGS: -lwindowsapp -lruntimeobject -ld2d1 -ldwrite -luuid -loleaut32 -lole32 -luser32 -lshell32 -lgdi32 -ladvapi32 -l:libc++.a -l:libc++abi.a
 
-#cgo darwin CFLAGS: -Iexternal/src/cocoa -x objective-c
-#cgo darwin LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications
-#cgo darwin,gl LDFLAGS: -framework OpenGL
-#cgo darwin,!gtk,!gtk4,!qt,web LDFLAGS: -framework WebKit
+#cgo darwin,!ios CFLAGS: -Iexternal/src/cocoa -x objective-c
+#cgo darwin,!ios LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications
+#cgo darwin,!ios,gl LDFLAGS: -framework OpenGL
+#cgo darwin,!ios,!gtk,!gtk4,!qt,web LDFLAGS: -framework WebKit
 
-#cgo darwin,gtk CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3 -x objective-c
-#cgo darwin,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
-#cgo darwin,gtk,web CFLAGS: -DIUPWEB_USE_DLOPEN
+#cgo darwin,!ios,gtk CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3 -x objective-c
+#cgo darwin,!ios,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
+#cgo darwin,!ios,gtk,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo darwin,gtk4 CFLAGS: -Iexternal/src/gtk4 -Iexternal/src/unix -DIUP_USE_GTK4 -x objective-c
-#cgo darwin,gtk4,!nopkgconfig pkg-config: gtk4
-#cgo darwin,gtk4,web CFLAGS: -DIUPWEB_USE_DLOPEN
+#cgo darwin,!ios,gtk4 CFLAGS: -Iexternal/src/gtk4 -Iexternal/src/unix -DIUP_USE_GTK4 -x objective-c
+#cgo darwin,!ios,gtk4,!nopkgconfig pkg-config: gtk4
+#cgo darwin,!ios,gtk4,web CFLAGS: -DIUPWEB_USE_DLOPEN
+
+#cgo ios CFLAGS: -Iexternal/src/cocoatouch -x objective-c -DIUP_USE_COCOATOUCH
+#cgo ios LDFLAGS: -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText -framework QuartzCore -framework ImageIO -framework UserNotifications -framework UniformTypeIdentifiers
+#cgo ios,web LDFLAGS: -framework WebKit
+#cgo ios,gl LDFLAGS: -framework OpenGLES
 
 #cgo efl CFLAGS: -Iexternal/src/efl -DIUP_USE_EFL -DEFL_BETA_API_SUPPORT=1 -DEFL_EO_API_SUPPORT=1
-#cgo efl,!windows,!darwin CFLAGS: -DHAVE_ECORE_X -DHAVE_ECORE_WL2
+#cgo efl,!windows,!darwin,!android CFLAGS: -DHAVE_ECORE_X -DHAVE_ECORE_WL2
 #cgo efl,windows CFLAGS: -Iexternal/src/unix -DHAVE_ECORE_WIN32
 #cgo efl,darwin CFLAGS: -Iexternal/src/unix -DHAVE_ECORE_COCOA
 #cgo efl,!nopkgconfig pkg-config: elementary
-#cgo efl,!windows,!darwin,!nopkgconfig pkg-config: ecore-x ecore-wl2
+#cgo efl,!windows,!darwin,!android,!nopkgconfig pkg-config: ecore-x ecore-wl2
 #cgo efl,windows,!nopkgconfig pkg-config: ecore-win32
 #cgo efl,darwin,!nopkgconfig pkg-config: ecore-cocoa
-#cgo efl,gl,!windows,!darwin,!nopkgconfig pkg-config: wayland-egl egl gl
+#cgo efl,gl,!windows,!darwin,!android,!nopkgconfig pkg-config: wayland-egl egl gl
 
 #cgo fltk CFLAGS: -Iexternal/src/fltk -Iexternal/src/unix -DIUP_USE_FLTK
 #cgo fltk CXXFLAGS: -Iexternal/src/fltk -Iexternal/src/unix -DIUP_USE_FLTK -std=c++17
 #cgo fltk LDFLAGS: -lfltk -lfltk_images
-#cgo fltk,gl,!windows,!darwin,!nopkgconfig pkg-config: wayland-egl egl gl
+#cgo fltk,gl,!windows,!darwin,!android,!nopkgconfig pkg-config: wayland-egl egl gl
 
 #cgo gnustep CFLAGS: -Iexternal/src/cocoa -Iexternal/src/unix -x objective-c -DIUP_USE_COCOA -DGNUSTEP
 #cgo gnustep CFLAGS: -fno-strict-aliasing -fPIC -fblocks -Wno-import -Wno-incompatible-pointer-types -Wno-protocol
 #cgo gnustep LDFLAGS: -lgnustep-gui -lgnustep-base -l:libobjc.so -lBlocksRuntime -ldispatch -lopal -lgnustep-corebase
+
+#cgo android CFLAGS: -Iexternal/src/android -DIUP_USE_ANDROID
+#cgo android CXXFLAGS: -Iexternal/src/android -DIUP_USE_ANDROID
+#cgo android LDFLAGS: -llog -ljnigraphics -ldl -lm
+#cgo android,gl LDFLAGS: -lEGL -lGLESv3 -landroid
+#cgo android,plot LDFLAGS: -static-libstdc++
 */
 import "C"

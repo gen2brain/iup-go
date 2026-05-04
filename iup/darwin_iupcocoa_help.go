@@ -1,4 +1,4 @@
-//go:build darwin && !qt
+//go:build darwin && !ios && !qt
 
 package iup
 

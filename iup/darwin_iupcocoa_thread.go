@@ -1,4 +1,4 @@
-//go:build (darwin && !gtk && !gtk4 && !qt && !efl) || gnustep
+//go:build (darwin && !ios && !gtk && !gtk4 && !qt && !efl) || gnustep
 
 package iup
 

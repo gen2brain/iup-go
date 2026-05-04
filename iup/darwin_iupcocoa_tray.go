@@ -1,4 +1,4 @@
-//go:build darwin && !gtk && !gtk4 && !efl
+//go:build darwin && !ios && !gtk && !gtk4 && !efl
 
 package iup
 

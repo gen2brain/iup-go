@@ -1,4 +1,4 @@
-//go:build qt && (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos)
+//go:build qt && (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && !android
 
 package iup
 
