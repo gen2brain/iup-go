@@ -422,14 +422,14 @@ If set to Yes, then the title lines/columns are used as indices to locate the ce
 
 #### Dialogs
 
-![](images/iupmatrixex_find.png)
-![](images/iupmatrixex_goto.png)
-![](images/iupmatrixex_sort.png)
-![](images/iupmatrixex_copyto.png)
-![](images/iupmatrixex_undo.png)
-![](images/iupmatrixex_units.png)
-![](images/iupmatrixex_settings.png)
-![](images/iupmatrixex_decimals.png)
+![](../images/iupmatrixex_find.png)
+![](../images/iupmatrixex_goto.png)
+![](../images/iupmatrixex_sort.png)
+![](../images/iupmatrixex_copyto.png)
+![](../images/iupmatrixex_undo.png)
+![](../images/iupmatrixex_units.png)
+![](../images/iupmatrixex_settings.png)
+![](../images/iupmatrixex_decimals.png)
 
 #### Shortcut Keys
 

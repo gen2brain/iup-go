@@ -55,7 +55,7 @@ The scrollbar allows you to create a virtual space associated to the element.
 In the image below, such space is marked in **red**, as well as the attributes that affect the composition of this space.
 In **green** you can see how these attributes are reflected on the scrollbar.
 
-![](images/scrollbar.gif)
+![](../images/scrollbar.gif)
 
 Hence, you can clearly deduce that POSX is limited to XMIN and XMAX-DX, or  **XMIN<=POSX<=XMAX-DX**.
 

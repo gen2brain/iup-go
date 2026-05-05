@@ -77,7 +77,7 @@ Notice that it is possible to use the **IupScrollBox** to overcome the internal 
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupscrollbox.png)
+![](../images/iupscrollbox.png)
 
 ### See Also
 

@@ -84,16 +84,16 @@ In Windows and Qt, FORMAT can have the following values, but other text in the f
 ### Examples
 
 **Windows Classic**
-![](images/iupdatepick_win2k.png)
-![](images/iupdatepick_win2k_open.png)
+![](../images/iupdatepick_win2k.png)
+![](../images/iupdatepick_win2k_open.png)
 
 **Windows w/ Styles**
-![](images/iupdatepick_winxp.png)
-![](images/iupdatepick_winxp_open.png)
+![](../images/iupdatepick_winxp.png)
+![](../images/iupdatepick_winxp_open.png)
 
 **GTK**
-![](images/iupdatepick_gtk.png)
-![](images/iupdatepick_gtk_open.png)
+![](../images/iupdatepick_gtk.png)
+![](../images/iupdatepick_gtk_open.png)
 
 [Browse for Example Files](../../examples/)
 

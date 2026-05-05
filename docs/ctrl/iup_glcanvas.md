@@ -177,7 +177,7 @@ Possible ERROR strings during **IupMap**:
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupglcanvas.png)
+![](../images/iupglcanvas.png)
 
 ### See Also
 

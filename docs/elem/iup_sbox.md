@@ -60,15 +60,15 @@ The box can be created with no elements and be dynamic filled using [IupAppend](
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupsbox1.png)
+![](../images/iupsbox1.png)
 Natural Size
 
-![](images/iupsbox2.png)
+![](../images/iupsbox2.png)
 After Expanding the Sbox
 
-![](images/iupsbox3.png)
+![](../images/iupsbox3.png)
 Expanding the Dialog
 
-![](images/iupsbox4.png)
+![](../images/iupsbox4.png)
 After Expanding the Sbox
 

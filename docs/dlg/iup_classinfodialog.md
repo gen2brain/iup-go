@@ -29,7 +29,7 @@ Check the [IupDialog](iup_dialog.md) callbacks.
 
 The dialog is displayed next. The Help button shows the Iup class documentation page on the Tecgraf web site.
 
-![](images/classinfodialog.png)
+![](../images/classinfodialog.png)
 
 ### See Also
 

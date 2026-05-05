@@ -100,7 +100,7 @@ In GTK uses GtkSeparator/GtkImage/GtkLabel, in GTK 4 uses GtkSeparator/GtkImage/
 
 ### Examples
 
-![](images/iuplabel.png)
+![](../images/iuplabel.png)
 
 Normal Text Label: FGCOLOR = "0 0 255" ALIGNMENT="ALEFT:ATOP",
 FONT = "Helvetica, 14" ALIGNMENT = "ACENTER:ACENTER",

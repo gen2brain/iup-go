@@ -909,18 +909,18 @@ Use [IupDraw](../func/iup_draw.md) functions to draw, and **IupPlotTransform** t
 
 [Browse for Example Files](../../examples/)
 
-![](images/iup_plot0.png)
-![](images/iup_plot1.png)
-![](images/iup_plot2.png)
-![](images/iup_plot3.png)
-![](images/iup_plot4.png)
-![](images/iup_plot5.png)
-![](images/iup_plot6.png)
-![](images/iup_plot7.png)
-![](images/iup_plot8.png)
-![](images/iup_plot9.png)
-![](images/iup_plot10.png)
-![](images/iup_plot11.png)
+![](../images/iup_plot0.png)
+![](../images/iup_plot1.png)
+![](../images/iup_plot2.png)
+![](../images/iup_plot3.png)
+![](../images/iup_plot4.png)
+![](../images/iup_plot5.png)
+![](../images/iup_plot6.png)
+![](../images/iup_plot7.png)
+![](../images/iup_plot8.png)
+![](../images/iup_plot9.png)
+![](../images/iup_plot10.png)
+![](../images/iup_plot11.png)
 
 ### See Also
 

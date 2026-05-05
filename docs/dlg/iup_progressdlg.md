@@ -123,7 +123,7 @@ The dialog is **not** automatically closed, the application must do that manuall
       return 1;
     }
 
-![](images/progressdlg.png)
+![](../images/progressdlg.png)
 
 ### See Also
 

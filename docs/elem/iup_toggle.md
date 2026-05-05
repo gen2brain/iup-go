@@ -139,13 +139,13 @@ In GTK uses GtkRadioButton/GtkCheckButton/GtkToggleButton, in GTK 4 uses GtkChec
 
 [Browse for Example Files](../../examples/)
 
-|                                      |                                        |                                        |                                      |
-|--------------------------------------|----------------------------------------|----------------------------------------|--------------------------------------|
-| Motif                                | Windows Classic                        | Windows w/ Styles                      | GTK                                  |
-| ![](images/iuptoggle_mot_image.png)  | ![](images/iuptoggle_win2k_image.png)  | ![](images/iuptoggle_winxp_image.png)  | ![](images/iuptoggle_gtk_image.png)  |
-| ![](images/iuptoggle_mot_text.png)   | ![](images/iuptoggle_win2k_text.png)   | ![](images/iuptoggle_winxp_text.png)   | ![](images/iuptoggle_gtk_text.png)   |
-| ![](images/iuptoggle_mot_3state.png) | ![](images/iuptoggle_win2k_3state.png) | ![](images/iuptoggle_winxp_3state.png) | ![](images/iuptoggle_gtk_3state.png) |
-| ![](images/iuptoggle_mot_radio.png)  | ![](images/iuptoggle_win2k_radio.png)  | ![](images/iuptoggle_winxp_radio.png)  | ![](images/iuptoggle_gtk_radio.png)  |
+|                                         |                                           |                                           |                                         |
+|-----------------------------------------|-------------------------------------------|-------------------------------------------|-----------------------------------------|
+| Motif                                   | Windows Classic                           | Windows w/ Styles                         | GTK                                     |
+| ![](../images/iuptoggle_mot_image.png)  | ![](../images/iuptoggle_win2k_image.png)  | ![](../images/iuptoggle_winxp_image.png)  | ![](../images/iuptoggle_gtk_image.png)  |
+| ![](../images/iuptoggle_mot_text.png)   | ![](../images/iuptoggle_win2k_text.png)   | ![](../images/iuptoggle_winxp_text.png)   | ![](../images/iuptoggle_gtk_text.png)   |
+| ![](../images/iuptoggle_mot_3state.png) | ![](../images/iuptoggle_win2k_3state.png) | ![](../images/iuptoggle_winxp_3state.png) | ![](../images/iuptoggle_gtk_3state.png) |
+| ![](../images/iuptoggle_mot_radio.png)  | ![](../images/iuptoggle_win2k_radio.png)  | ![](../images/iuptoggle_winxp_radio.png)  | ![](../images/iuptoggle_gtk_radio.png)  |
 
  
 

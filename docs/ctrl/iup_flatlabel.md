@@ -104,7 +104,7 @@ Mnemonics are not supported.
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupflatlabel.png)
+![](../images/iupflatlabel.png)
 
 Normal Text Label: FGCOLOR = "0 0 255" ALIGNMENT="ALEFT:ATOP",
 FONT = "Helvetica, 14" ALIGNMENT = "ACENTER:ACENTER" TEXTALIGNMENT = "ACENTER",

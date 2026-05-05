@@ -85,7 +85,7 @@ Notice that it is possible to use the **IupFlatScrollBox** to overcome the inter
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupflatscrollbox.png)
+![](../images/iupflatscrollbox.png)
 
 ### See Also
 

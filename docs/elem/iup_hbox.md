@@ -82,15 +82,15 @@ Also, the **h**box will not reduce its children beyond their **horizontal** natu
 
 [Browse for Example Files](../../examples/)
 
-![](images/iuphbox_align.png)
+![](../images/iuphbox_align.png)
 
-![](images/iuphbox.png)
+![](../images/iuphbox.png)
 
 **HOMOGENEOUS=YES**
-![](images/iuphbox_homogeneous.png)
+![](../images/iuphbox_homogeneous.png)
 
 **EXPANDCHILDREN=YES**
-![](images/iuphbox_expandchildren.png)
+![](../images/iuphbox_expandchildren.png)
 
 ### See Also
 

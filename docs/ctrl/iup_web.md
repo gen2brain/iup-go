@@ -202,4 +202,4 @@ Used only when EDITABLE=Yes.
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupwebbrowser.png)
+![](../images/iupwebbrowser.png)

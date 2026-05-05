@@ -90,9 +90,9 @@ The same for elements in a column when ORIENTATION=VERTICAL.
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupmultibox1.png)
+![](../images/iupmultibox1.png)
 
-![](images/iupmultibox2.png)
+![](../images/iupmultibox2.png)
 
 ### See Also
 

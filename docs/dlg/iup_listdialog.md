@@ -28,7 +28,7 @@ It also uses a global attribute called "ICON" as the dialog icon if it is define
 
 [Browse for Example Files](../../examples/)
 
-![](images/listdialog.png)
+![](../images/listdialog.png)
 
 ### See Also
 

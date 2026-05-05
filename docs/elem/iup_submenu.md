@@ -56,7 +56,7 @@ In GTK uses GtkMenuItem, in GTK 4 uses GMenu submenu, in Windows uses InsertMenu
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupsubmenu.png)
+![](../images/iupsubmenu.png)
 
 See the **IupMenu** element for more screenshots.
 

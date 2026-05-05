@@ -169,9 +169,7 @@ This is the default mapping when ORIENTATION=VERTICAL.
 
 [Browse for Example Files](../../examples/)
 
-|                            |
-|----------------------------|
-| ![](images/iupflatval.png) |
+![](../images/iupflatval.png)
 
 ### See Also
 

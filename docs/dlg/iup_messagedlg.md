@@ -75,13 +75,13 @@ In GTK uses the gtk_message_dialog, in Windows uses MessageBox, in FLTK uses fl_
     IupDestroy(dlg);  
 
 **Windows XP**
-![](images/messagedlg_win.png)
+![](../images/messagedlg_win.png)
 
 **Motif/Mwm**
-![](images/messagedlg_mot.png)
+![](../images/messagedlg_mot.png)
 
 **GTK/GNOME**
-![](images/messagedlg_gtk.png)
+![](../images/messagedlg_gtk.png)
 
 ### See Also
 

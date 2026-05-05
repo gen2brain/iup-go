@@ -133,7 +133,7 @@ Use the arrow keys to move from cell to cell, **Home** goes to the first cell, *
 
 Creates a Colorbar for selection of two colors.
 
-![](images/iupcolorbar.gif)
+![](../images/iupcolorbar.gif)
 
 ### See Also
 
