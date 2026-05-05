@@ -1,10 +1,13 @@
 # IUP Documentation
 
-API reference documentation for IUP (Portable User Interface).
+API reference for IUP (Portable User Interface).
 
 ## Guides
 
-[Attributes](attrib.md) | [Events and Callbacks](call.md) | [Layout](layout.md) | [Keyboard](keyboard.md)
+- [Attributes](attrib.md) - attribute concept, inheritance, replay rules
+- [Events and Callbacks](call.md) - callback dispatch model and main loop
+- [Layout](layout.md) - abstract layout, natural size, EXPAND
+- [Keyboard](keyboard.md) - focus traversal, mnemonics, accelerators
 
 ---
 
@@ -24,15 +27,11 @@ API reference documentation for IUP (Portable User Interface).
 
 [IupSetGlobal](func/iup_setglobal.md), [IupGetGlobal](func/iup_getglobal.md)
 
-[IupStringCompare](func/iup_stringcompare.md)
-
 ### Common
 
 [ACTIVE](attrib/iup_active.md), [BGCOLOR](attrib/iup_bgcolor.md), [FGCOLOR](attrib/iup_fgcolor.md), [FONT](attrib/iup_font.md), [THEME](attrib/iup_theme.md), [VISIBLE](attrib/iup_visible.md), [CLIENTSIZE](attrib/iup_clientsize.md), [CLIENTOFFSET](attrib/iup_clientoffset.md), [EXPAND](attrib/iup_expand.md), [MAXSIZE](attrib/iup_maxsize.md), [MINSIZE](attrib/iup_minsize.md), [NATURALSIZE](attrib/iup_naturalsize.md), [RASTERSIZE](attrib/iup_rastersize.md), [SIZE](attrib/iup_size.md), [FLOATING](attrib/iup_floating.md), [POSITION](attrib/iup_position.md), [SCREENPOSITION](attrib/iup_screenposition.md), [NAME](attrib/iup_name.md), [TIP](attrib/iup_tip.md), [TITLE](attrib/iup_title.md), [VALUE](attrib/iup_value.md), [WID](attrib/iup_wid.md), [ZORDER](attrib/iup_zorder.md)
 
-[Drag & Drop](attrib/iup_dragdrop.md)
-
-[Globals](attrib/iup_globals.md)
+[Drag & Drop](attrib/iup_dragdrop.md), [Globals](attrib/iup_globals.md)
 
 ### Other
 
@@ -70,11 +69,30 @@ API reference documentation for IUP (Portable User Interface).
 
 ### Predefined
 
-[IupFileDlg](dlg/iup_filedlg.md), [IupMessageDlg](dlg/iup_messagedlg.md), [IupColorDlg](dlg/iup_colordlg.md), [IupFontDlg](dlg/iup_fontdlg.md), [IupProgressDlg](dlg/iup_progressdlg.md), [IupAlarm](dlg/iup_alarm.md), [IupGetFile](dlg/iup_getfile.md), [IupGetColor](dlg/iup_getcolor.md), [IupGetParam](dlg/iup_getparam.md), [IupGetText](dlg/iup_gettext.md), [IupListDialog](dlg/iup_listdialog.md), [IupMessage](dlg/iup_message.md), [IupMessageError](dlg/iup_messageerror.md), [IupMessageAlarm](dlg/iup_messagealarm.md)
+| Dialog                                     | Description                                     |
+|--------------------------------------------|-------------------------------------------------|
+| [IupFileDlg](dlg/iup_filedlg.md)           | File or directory chooser                       |
+| [IupMessageDlg](dlg/iup_messagedlg.md)     | Message dialog (info, warning, error, question) |
+| [IupColorDlg](dlg/iup_colordlg.md)         | Color picker                                    |
+| [IupFontDlg](dlg/iup_fontdlg.md)           | Font picker                                     |
+| [IupProgressDlg](dlg/iup_progressdlg.md)   | Progress dialog for long-running operations     |
+| [IupAlarm](dlg/iup_alarm.md)               | Modal message with up to three buttons          |
+| [IupGetFile](dlg/iup_getfile.md)           | Convenience wrapper around IupFileDlg           |
+| [IupGetColor](dlg/iup_getcolor.md)         | Convenience wrapper around IupColorDlg          |
+| [IupGetParam](dlg/iup_getparam.md)         | Modal dialog capturing typed parameter values   |
+| [IupGetText](dlg/iup_gettext.md)           | Modal multi-line text editor                    |
+| [IupListDialog](dlg/iup_listdialog.md)     | Modal single or multi selection list            |
+| [IupMessage](dlg/iup_message.md)           | Convenience wrapper around IupMessageDlg        |
+| [IupMessageError](dlg/iup_messageerror.md) | IupMessage with DIALOGTYPE=ERROR                |
+| [IupMessageAlarm](dlg/iup_messagealarm.md) | Question-style IupMessage with custom buttons   |
 
 ### Debug
 
-[IupElementPropertiesDialog](dlg/iup_elementpropdialog.md), [IupGlobalsDialog](dlg/iup_globalsdialog.md), [IupClassInfoDialog](dlg/iup_classinfodialog.md)
+| Dialog                                                     | Description                                           |
+|------------------------------------------------------------|-------------------------------------------------------|
+| [IupElementPropertiesDialog](dlg/iup_elementpropdialog.md) | Run-time editor for an element's attributes           |
+| [IupGlobalsDialog](dlg/iup_globalsdialog.md)               | Browser for global attributes, functions, names       |
+| [IupClassInfoDialog](dlg/iup_classinfodialog.md)           | Browser for registered classes, attributes, callbacks |
 
 ---
 
@@ -96,19 +114,76 @@ API reference documentation for IUP (Portable User Interface).
 
 ### Containers
 
-[IupFill](elem/iup_fill.md), [IupSpace](elem/iup_space.md), [IupCbox](elem/iup_cbox.md), [IupGridBox](elem/iup_gridbox.md), [IupMultiBox](elem/iup_multibox.md), [IupHbox](elem/iup_hbox.md), [IupVbox](elem/iup_vbox.md), [IupZbox](elem/iup_zbox.md), [IupRadio](elem/iup_radio.md), [IupNormalizer](elem/iup_normalizer.md), [IupFrame](elem/iup_frame.md), [IupPopover](elem/iup_popover.md), [IupTabs](elem/iup_tabs.md), [IupBackgroundBox](elem/iup_backgroundbox.md), [IupScrollBox](elem/iup_scrollbox.md), [IupDetachBox](elem/iup_detachbox.md), [IupExpander](elem/iup_expander.md), [IupSbox](elem/iup_sbox.md), [IupSplit](elem/iup_split.md)
+| Element                                       | Description                                         |
+|-----------------------------------------------|-----------------------------------------------------|
+| [IupFill](elem/iup_fill.md)                   | Empty space that expands to fill the remaining area |
+| [IupSpace](elem/iup_space.md)                 | Empty space with a fixed size                       |
+| [IupCbox](elem/iup_cbox.md)                   | Absolute-positioned container (CX/CY coordinates)   |
+| [IupGridBox](elem/iup_gridbox.md)             | Regular grid arranging children in lines or columns |
+| [IupMultiBox](elem/iup_multibox.md)           | Irregular grid container                            |
+| [IupHbox](elem/iup_hbox.md)                   | Arranges children horizontally                      |
+| [IupVbox](elem/iup_vbox.md)                   | Arranges children vertically                        |
+| [IupZbox](elem/iup_zbox.md)                   | Stack of layers; only one child visible at a time   |
+| [IupRadio](elem/iup_radio.md)                 | Groups mutually exclusive toggles                   |
+| [IupNormalizer](elem/iup_normalizer.md)       | Equalizes natural sizes across a list of controls   |
+| [IupFrame](elem/iup_frame.md)                 | Bordered container with an optional title           |
+| [IupPopover](elem/iup_popover.md)             | Floating container anchored to another element      |
+| [IupTabs](elem/iup_tabs.md)                   | Tabbed container (notebook)                         |
+| [IupBackgroundBox](elem/iup_backgroundbox.md) | Plain native container with no decorations          |
+| [IupScrollBox](elem/iup_scrollbox.md)         | Scrollable container                                |
+| [IupDetachBox](elem/iup_detachbox.md)         | Detachable container; drag opens it in a new dialog |
+| [IupExpander](elem/iup_expander.md)           | Collapsible container with a header bar             |
+| [IupSbox](elem/iup_sbox.md)                   | Resizable container in one direction                |
+| [IupSplit](elem/iup_split.md)                 | Splits the client area into two resizable panes     |
 
 ### Standard
 
-[IupAnimatedLabel](elem/iup_animatedlabel.md), [IupButton](elem/iup_button.md), [IupCalendar](elem/iup_calendar.md), [IupCanvas](elem/iup_canvas.md), [IupColorbar](elem/iup_colorbar.md), [IupColorBrowser](elem/iup_colorbrowser.md), [IupDatePick](elem/iup_datepick.md), [IupDial](elem/iup_dial.md), [IupLabel](elem/iup_label.md), [IupSeparator](elem/iup_separator.md), [IupLink](elem/iup_link.md), [IupList](elem/iup_list.md), [IupProgressBar](elem/iup_progressbar.md), [IupScrollbar](elem/iup_scrollbar.md), [IupSpin](elem/iup_spin.md), [IupTable](elem/iup_table.md), [IupText](elem/iup_text.md), [IupToggle](elem/iup_toggle.md), [IupTree](elem/iup_tree.md), [IupVal](elem/iup_val.md)
+| Element                                       | Description                                                  |
+|-----------------------------------------------|--------------------------------------------------------------|
+| [IupAnimatedLabel](elem/iup_animatedlabel.md) | Label cycling through frames of an animation                 |
+| [IupButton](elem/iup_button.md)               | Push button with text and/or image                           |
+| [IupCalendar](elem/iup_calendar.md)           | Month calendar for date selection                            |
+| [IupCanvas](elem/iup_canvas.md)               | Drawing area                                                 |
+| [IupColorbar](elem/iup_colorbar.md)           | Palette of color cells with primary/secondary selection      |
+| [IupColorBrowser](elem/iup_colorbrowser.md)   | HSI color picker on a cylindrical projection of the RGB cube |
+| [IupDatePick](elem/iup_datepick.md)           | Date editor with a drop-down calendar                        |
+| [IupDial](elem/iup_dial.md)                   | Rotary dial for angular values                               |
+| [IupLabel](elem/iup_label.md)                 | Static text, image, or separator                             |
+| [IupSeparator](elem/iup_separator.md)         | Visual separator line                                        |
+| [IupLink](elem/iup_link.md)                   | Underlined clickable text (URL)                              |
+| [IupList](elem/iup_list.md)                   | List, drop-down or combo box with optional edit field        |
+| [IupProgressBar](elem/iup_progressbar.md)     | Native progress indicator                                    |
+| [IupScrollbar](elem/iup_scrollbar.md)         | Standalone scrollbar control                                 |
+| [IupSpin](elem/iup_spin.md)                   | Up/down arrow buttons; IupSpinBox wraps any element          |
+| [IupTable](elem/iup_table.md)                 | Native table widget for tabular data                         |
+| [IupText](elem/iup_text.md)                   | Single or multi-line editable text                           |
+| [IupToggle](elem/iup_toggle.md)               | Two-state on/off button or switch                            |
+| [IupTree](elem/iup_tree.md)                   | Hierarchical view of branches and leaves                     |
+| [IupVal](elem/iup_val.md)                     | Slider/trackbar selecting a value in a range                 |
 
 ### Additional
 
-[IupGLCanvas](ctrl/iup_glcanvas.md), [IupGLBackgroundBox](ctrl/iup_glbackgroundbox.md), [IupPlot](ctrl/iup_plot.md), [IupWebBrowser](ctrl/iup_web.md)
-
-[IupMatrix](ctrl/iup_matrix.md) ([Attributes](ctrl/iup_matrix_attrib.md), [Callbacks](ctrl/iup_matrix_cb.md)), [IupMatrixEx](ctrl/iup_matrixex.md), [IupMatrixList](ctrl/iup_matrixlist.md), [IupCells](ctrl/iup_cells.md)
-
-[IupGauge](ctrl/iup_gauge.md), [IupDropButton](ctrl/iup_dropbutton.md), [IupFlatButton](ctrl/iup_flatbutton.md), [IupFlatLabel](ctrl/iup_flatlabel.md), [IupFlatToggle](ctrl/iup_flattoggle.md), [IupFlatFrame](ctrl/iup_flatframe.md), [IupFlatTabs](ctrl/iup_flattabs.md), [IupFlatScrollBox](ctrl/iup_flatscrollbox.md), [IupFlatList](ctrl/iup_flatlist.md), [IupFlatTree](ctrl/iup_flattree.md) ([Attributes](ctrl/iup_flattree_attrib.md), [Callbacks](ctrl/iup_flattree_cb.md)), [IupFlatVal](ctrl/iup_flatval.md)
+| Element                                                                                                               | Description                                             |
+|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
+| [IupGLCanvas](ctrl/iup_glcanvas.md)                                                                                   | OpenGL drawing surface                                  |
+| [IupGLBackgroundBox](ctrl/iup_glbackgroundbox.md)                                                                     | Background container with OpenGL enabled                |
+| [IupPlot](ctrl/iup_plot.md)                                                                                           | 2D plot of one or more data sets                        |
+| [IupWebBrowser](ctrl/iup_web.md)                                                                                      | Embedded web browser view                               |
+| [IupMatrix](ctrl/iup_matrix.md) ([Attributes](ctrl/iup_matrix_attrib.md), [Callbacks](ctrl/iup_matrix_cb.md))         | Custom-drawn matrix of alphanumeric cells               |
+| [IupMatrixEx](ctrl/iup_matrixex.md)                                                                                   | IupMatrix extension (clipboard, undo, find, sort, ...)  |
+| [IupMatrixList](ctrl/iup_matrixlist.md)                                                                               | List built on IupMatrix; adds color and check boxes     |
+| [IupCells](ctrl/iup_cells.md)                                                                                         | Application-driven cell grid for custom drawing         |
+| [IupGauge](ctrl/iup_gauge.md)                                                                                         | Custom-drawn percent gauge                              |
+| [IupDropButton](ctrl/iup_dropbutton.md)                                                                               | Button with a drop-down area hosting arbitrary children |
+| [IupFlatButton](ctrl/iup_flatbutton.md)                                                                               | Custom-drawn button without native decorations          |
+| [IupFlatLabel](ctrl/iup_flatlabel.md)                                                                                 | Custom-drawn label without native decorations           |
+| [IupFlatToggle](ctrl/iup_flattoggle.md)                                                                               | Custom-drawn toggle without native decorations          |
+| [IupFlatFrame](ctrl/iup_flatframe.md)                                                                                 | Custom-drawn frame with title                           |
+| [IupFlatTabs](ctrl/iup_flattabs.md)                                                                                   | Custom-drawn IupTabs equivalent                         |
+| [IupFlatScrollBox](ctrl/iup_flatscrollbox.md)                                                                         | IupScrollBox with custom-drawn scrollbars               |
+| [IupFlatList](ctrl/iup_flatlist.md)                                                                                   | Custom-drawn IupList equivalent                         |
+| [IupFlatTree](ctrl/iup_flattree.md) ([Attributes](ctrl/iup_flattree_attrib.md), [Callbacks](ctrl/iup_flattree_cb.md)) | Custom-drawn IupTree equivalent                         |
+| [IupFlatVal](ctrl/iup_flatval.md)                                                                                     | Custom-drawn IupVal equivalent                          |
 
 ### Management
 
@@ -126,7 +201,15 @@ API reference documentation for IUP (Portable User Interface).
 
 ## Resources
 
-[IupDraw](func/iup_draw.md), [IupImage](elem/iup_image.md), [IupImageGetHandle](func/iup_imagegethandle.md), [IupImageSave](func/iup_imagesave.md), [IupImageSaveToBuffer](func/iup_imagesavetobuffer.md)
+### Drawing and Images
+
+| Element / Function                                    | Description                                                |
+|-------------------------------------------------------|------------------------------------------------------------|
+| [IupImage](elem/iup_image.md)                         | In-memory bitmap image (also IupImageRGB and IupImageRGBA) |
+| [IupDraw](func/iup_draw.md)                           | Cross-driver immediate-mode drawing API on IupCanvas       |
+| [IupImageGetHandle](func/iup_imagegethandle.md)       | Decodes raw image data into an IupImage                    |
+| [IupImageSave](func/iup_imagesave.md)                 | Writes an IupImage to a file                               |
+| [IupImageSaveToBuffer](func/iup_imagesavetobuffer.md) | Writes an IupImage to memory                               |
 
 ### Keyboard
 
@@ -134,18 +217,42 @@ API reference documentation for IUP (Portable User Interface).
 
 ### Menus
 
-[IupMenuItem](elem/iup_menuitem.md), [IupMenu](elem/iup_menu.md), [IupMenuSeparator](elem/iup_menuseparator.md), [IupSubmenu](elem/iup_submenu.md)
+[IupMenu](elem/iup_menu.md), [IupMenuItem](elem/iup_menuitem.md), [IupMenuSeparator](elem/iup_menuseparator.md), [IupSubmenu](elem/iup_submenu.md)
 
 ### Handle Names
 
 [IupSetHandle](func/iup_sethandle.md), [IupGetHandle](func/iup_gethandle.md), [IupGetName](func/iup_getname.md), [IupGetAllNames](func/iup_getallnames.md), [IupGetAllDialogs](func/iup_getalldialogs.md)
 
-### String Names
+### Language
 
 [IupSetLanguage](func/iup_setlanguage.md), [IupGetLanguage](func/iup_getlanguage.md), [IupSetLanguageString](func/iup_setlanguagestring.md), [IupGetLanguageString](func/iup_getlanguagestring.md), [IupSetLanguagePack](func/iup_setlanguagepack.md)
 
-### Other
+### Non-Visual Elements
 
-[IupClipboard](elem/iup_clipboard.md), [IupNotify](elem/iup_notify.md), [IupTimer](elem/iup_timer.md), [IupThread](elem/iup_thread.md), [IupTray](elem/iup_tray.md), [IupUser](elem/iup_user.md), [IupParam](elem/iup_param.md), [IupParamBox](elem/iup_parambox.md)
+| Element                               | Description                                            |
+|---------------------------------------|--------------------------------------------------------|
+| [IupClipboard](elem/iup_clipboard.md) | System clipboard access                                |
+| [IupNotify](elem/iup_notify.md)       | Desktop / system notification                          |
+| [IupTimer](elem/iup_timer.md)         | Periodic timer firing on the main thread               |
+| [IupThread](elem/iup_thread.md)       | Background thread element                              |
+| [IupTray](elem/iup_tray.md)           | System tray / status icon                              |
+| [IupUser](elem/iup_user.md)           | Plain element holder for user data or external widgets |
+| [IupParam](elem/iup_param.md)         | Single typed parameter for IupParamBox / IupGetParam   |
+| [IupParamBox](elem/iup_parambox.md)   | Container composing a set of IupParam elements         |
 
-[IupConfig](func/iup_config.md), [IupExecute](func/iup_execute.md), [IupExecuteWait](func/iup_executewait.md), [IupHelp](func/iup_help.md), [IupLog](func/iup_log.md), [IupMapFont](func/iup_mapfont.md), [IupUnMapFont](func/iup_unmapfont.md)
+### Configuration
+
+[IupConfig](func/iup_config.md) creates a configuration database.
+
+| Function                                                                                        | Description                                                               |
+|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| [IupConfigLoad / IupConfigSave](func/iup_config.md#file-storage)                                | Load or save the configuration file (path derived from APP_NAME)          |
+| [IupConfigCopy](func/iup_config.md#variables)                                                   | Copy variables between two databases, optionally excluding a group prefix |
+| [IupConfigSetVariableStr / Int / Double (and *Id variants)](func/iup_config.md#variables)       | Store a typed variable under a group/key                                  |
+| [IupConfigGetVariableStr / Int / Double (and *Id, *Def variants)](func/iup_config.md#variables) | Read a typed variable, with an optional default value                     |
+| [IupConfigRecentInit / IupConfigRecentUpdate](func/iup_config.md#recent-file-menulist)          | Initialize and update a Recent Files menu or list                         |
+| [IupConfigDialogShow / IupConfigDialogClosed](func/iup_config.md#dialog-position-and-size)      | Persist a dialog's last position and size across runs                     |
+
+### Utilities
+
+[IupExecute](func/iup_execute.md), [IupExecuteWait](func/iup_executewait.md), [IupHelp](func/iup_help.md), [IupLog](func/iup_log.md), [IupMapFont](func/iup_mapfont.md), [IupUnMapFont](func/iup_unmapfont.md), [IupStringCompare](func/iup_stringcompare.md)
