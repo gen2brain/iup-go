@@ -21,7 +21,7 @@ The theme can contain a specialized subtheme for the element class.
 The element class name will be used with a "IUP" prefix to identify the subtheme.
 For instance, if the element is a label, then an attribute called "IUPLABEL" can point to another theme name to be applied at the element additionally to the already applied attributes.
 
-The global attribute [DEFAULTTHEME](iup_globals.md) can be applied to all elements during creation.
+The global attribute [DEFAULTTHEME](iup_globals.md#defaulttheme) can be applied to all elements during creation.
 
 ### Affects
 

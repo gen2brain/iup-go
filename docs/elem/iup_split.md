@@ -62,7 +62,7 @@ It is an integer between 0 and 1000. If not defined or set to NULL, the Native s
 ### Notes
 
 The controls that you want to be resized must have the EXPAND=YES attribute set.
-See the [Layout Guide](../layout.md) for mode details on sizes.
+See the [Layout Guide](../layout.md#layout-guide) for mode details on sizes.
 
 If you set the MINMAX attribute for a direct child, **IupSplit** will respect that size.
 Nested children will also have their size limits respected.

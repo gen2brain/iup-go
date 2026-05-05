@@ -18,7 +18,7 @@ The focus node is the node with the focus rectangle, marked nodes have their bac
 
 ### Attributes
 
-#### [General](iup_tree_attrib.md)
+#### [General](iup_tree_attrib.md#general)
 
 AUTOREDRAW, BGCOLOR, COUNT, EXPAND, FGCOLOR, INDENTATION, RASTERSIZE, SPACING, TOPITEM
 
@@ -38,11 +38,11 @@ SHOWTOGGLE, EMPTYAS3STATE, TOGGLEVALUE, TOGGLEVISIBLE
 
 IMAGE, IMAGEEXPANDED, IMAGELEAF, IMAGEBRANCHCOLLAPSED, IMAGEBRANCHEXPANDED
 
-#### [Focus](iup_tree_attrib.md)
+#### [Focus](iup_tree_attrib.md#focus)
 
 VALUE, CANFOCUS, PROPAGATEFOCUS
 
-#### [Marks](iup_tree_attrib.md)
+#### [Marks](iup_tree_attrib.md#marks)
 
 MARK, MARKED, MARKEDNODES, MARKMODE, MARKSTART, MARKWHENTOGGLE
 
@@ -50,11 +50,11 @@ MARK, MARKED, MARKEDNODES, MARKMODE, MARKSTART, MARKWHENTOGGLE
 
 ADDEXPANDED, ADDROOT, ADDLEAF, ADDBRANCH, COPYNODE, DELNODE, EXPANDALL, INSERTLEAF, INSERTBRANCH, MOVENODE
 
-#### [Editing](iup_tree_attrib.md)
+#### [Editing](iup_tree_attrib.md#editing)
 
 RENAME, RENAMECARET, RENAMESELECTION, SHOWRENAME
 
-#### [Drag&Drop](iup_tree_attrib.md)
+#### [Drag&Drop](iup_tree_attrib.md#dragdrop)
 
 DRAGDROPTREE, DROPFILESTARGET, DROPEQUALDRAG, SHOWDRAGDROP
 

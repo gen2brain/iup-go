@@ -1,6 +1,6 @@
 ## CLIENTOFFSET (read-only) (non-inheritable)
 
-Returns the native container internal offset to the **Client** area, see the [Layout Guide](../layout.md).
+Returns the native container internal offset to the **Client** area, see the [Layout Guide](../layout.md#layout-guide).
 Useful for **IupFrame**, **IupTabs** and **IupDialog** that have decorations.
 It can also be consulted in other containers, it will simply return "0x0".
 

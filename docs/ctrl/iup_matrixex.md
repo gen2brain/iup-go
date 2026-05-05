@@ -204,7 +204,7 @@ Numeric columns are enabled when the NUMERICQUANTITY*id* attribute is set.
 To define a numeric column without using units, simply set NUMERICQUANTITY*id* to "None".
 
 **NUMERICDECIMALSYMBOL**: symbol used for decimal separator in numeric values. Can be "." or "," only.
-If not defined will try the [DEFAULTDECIMALSYMBOL](../attrib/iup_globals.md) global attribute.
+If not defined will try the [DEFAULTDECIMALSYMBOL](../attrib/iup_globals.md#defaultdecimalsymbol) global attribute.
 
 **NUMERICFORMAT*id***: format to convert the numeric data into strings at the given column (id).
 If not defined the NUMERICFORMATDEF attribute will be used.
@@ -216,7 +216,7 @@ It is just a simple form to set the format attribute.
 If id is not used it will affect the NUMERICFORMATDEF attribute. (no redraw)
 
 **NUMERICFORMATDEF**: default value used when NUMERICFORMATid is not specified.
-If not defined it will use the [DEFAULTPRECISION](../attrib/iup_globals.md) global attribute to build one (for instance, "%.2f" if the DEFAULTPRECISION is 2).
+If not defined it will use the [DEFAULTPRECISION](../attrib/iup_globals.md#defaultprecision) global attribute to build one (for instance, "%.2f" if the DEFAULTPRECISION is 2).
 
 **NUMERICFORMATTITLE*id***: format of the title at the given column (id).
 Uses the same format specification of the **sprintf** function in C.

@@ -2,7 +2,7 @@
 
 Specifies the element **User** size, and returns the **Current** size, in units proportional to the size of a character.
 
-See the [Layout Guide](../layout.md) for more details on sizes.
+See the [Layout Guide](../layout.md#layout-guide) for more details on sizes.
 
 ### Value
 
@@ -48,7 +48,7 @@ The element is NOT immediately repositioned. Call **IupRefresh** to update the d
 
 **IupMap** also updates the dialog layout even if it is already mapped, so calling it or calling **IupShow**, **IupShowXY** or **IupPopup** (they all call **IupMap**) will also update the dialog layout.
 
-See the [Layout Guide](../layout.md) for mode details on sizes.
+See the [Layout Guide](../layout.md#layout-guide) for mode details on sizes.
 
 ### Affects
 

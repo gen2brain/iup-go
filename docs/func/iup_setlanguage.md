@@ -85,4 +85,4 @@ Here is a list of the pre-defined string names:
 
 ### See Also
 
-[IupGetLanguage](iup_getlanguage.md), [IupSetLanguageString](iup_setlanguagestring.md), [LANGUAGE](../attrib/iup_globals.md)
+[IupGetLanguage](iup_getlanguage.md), [IupSetLanguageString](iup_setlanguagestring.md), [LANGUAGE](../attrib/iup_globals.md#language)

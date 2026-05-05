@@ -2,7 +2,7 @@
 
 Specifies the element minimum size in pixels during the layout process.
 
-See the [Layout Guide](../layout.md) for more details on sizes.
+See the [Layout Guide](../layout.md#layout-guide) for more details on sizes.
 
 ### Value
 
@@ -26,7 +26,7 @@ If the element can be expanded, then its empty space will NOT be occupied by oth
 
 The **IupDialog** will also limit the interactive resize of the dialog.
 
-See the [Layout Guide](../layout.md) for mode details on sizes.
+See the [Layout Guide](../layout.md#layout-guide) for mode details on sizes.
 
 ### See Also
 

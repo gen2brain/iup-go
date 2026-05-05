@@ -205,7 +205,7 @@ Must set TOUCH=Yes to receive this event.
 Note that some keys might remove the focus from the canvas.
 To avoid this, return IGNORE in the [K_ANY](../call/iup_k_any.md) callback.
 
-The mouse cursor position can be programmatically controlled using the global attribute [CURSORPOS](../attrib/iup_globals.md).
+The mouse cursor position can be programmatically controlled using the global attribute [CURSORPOS](../attrib/iup_globals.md#cursorpos).
 
 When the canvas is displayed for the first time, the callback call order is always:
 
