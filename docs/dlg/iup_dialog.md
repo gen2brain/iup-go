@@ -294,43 +294,6 @@ The value must be between 0 and 100.
 **TASKBARBUTTON** [Windows Only]: If set to SHOW force the application button to be shown on the taskbar even if the dialog does not have decorations.
 If set to HIDE force the application button to be hidden from the taskbar, but also in this case the system menu, the maximize and minimize buttons will be hidden.
 
-#### Exclusive MDI [Windows Only]
-
-***--- For the MDI Frame ---* MDIFRAME** (creation-only) [Windows Only] (non-inheritable): Configure this dialog as a MDI frame.
-Can be YES or NO. Default: NO.
-
-**MDIACTIVE** [Windows Only] (read-only): Returns the name of the current active MDI child.
-Use IupGetAttributeHandle to directly retrieve the child handle.
-
-**MDIACTIVATE** [Windows Only] (write-only): Name of an MDI child window to be activated.
-If value is "NEXT" will activate the next window after the current active window.
-If value is "PREVIOUS" will activate the previous one.
-
-**MDIARRANGE** [Windows Only] (write-only): Action to arrange MDI child windows.
-Possible values: TILEHORIZONTAL, TILEVERTICAL, CASCADE and ICON (arrange the minimized icons).
-
-**MDICLOSEALL** [Windows Only] (write-only): Action to close and destroy all MDI child windows.
-The CLOSE_CB callback will be called for each child.
-
-IMPORTANT: When an MDI child window is closed, it is automatically destroyed.
-The application can override this returning IUP_IGNORE in CLOSE_CB.
-
-**MDINEXT** [Windows Only] (read-only): Returns the name of the next available MDI child.
-Use IupGetAttributeHandle to directly retrieve the child handle. Must use MDIACTIVE to retrieve the first child.
-If the application is going to destroy the child retrieve the next child before destroying the current.
-
-***--- For the MDI Client *** (a IupCanvas) ***---* MDICLIENT** (creation-only) [Windows Only] (non-inheritable): Configure the canvas as an MDI client.
-Can be YES or NO. No callbacks will be called.
-This canvas will be used internally only by the MDI Frame and its MDI Children.
-The MDI frame must have one and only one MDI client. Default: NO.
-
-**MDIMENU** (creation-only) [Windows Only]: Name of a IupMenu to be used as the Window list of an MDI frame.
-The system will automatically add the list of MDI child windows there.
-
-***--- For the MDI Children ---* MDICHILD** (creation-only) [Windows Only]: Configure this dialog to be an MDI child.
-Can be YES or NO. The PARENTDIALOG attribute must also be defined.
-Each MDI child is automatically named if it does not have one. Default: NO.
-
 #### Exclusive [Android and iOS]
 
 **ORIENTATION** (non-inheritable): requested orientation. Values: "PORTRAIT", "LANDSCAPE", "SENSOR", "LOCKED", "UNSPECIFIED" (default).
@@ -384,14 +347,6 @@ It is called after the common callbacks GETFOCUS_CB and KILL_FOCUS_CB.
 **ih**: identifier of the element that activated the event.\
 **focus**: is non-zero if the dialog or any of its children is getting the focus, is zero if it is losing the focus.
 
-**MDIACTIVATE_CB** [Windows Only]: Called when an MDI child window is activated.
-Only the MDI child receives this message.
-It is not called when the child is shown for the first time.
-
-    int function(Ihandle *ih);
-
-> **ih**: identifier of the element that activated the event.
-
 **MOVE_CB**: Called after the dialog was moved on screen.
 The coordinates are the same as the [SCREENPOSITION](../attrib/iup_screenposition.md) attribute.
 
@@ -436,14 +391,6 @@ For instance, the RESIZE_CB and the SHOW_CB are called in a different order in W
 In Windows, when all decorations are removed, the window icon is not displayed on the task bar; when minimized, a small rectangular window will be positioned above the task bar on the bottom-left corner of the desktop.
 
 In GTK and GTK 4 uses GtkWindow, in Windows uses a custom window class called "IupDialog", in WinUI uses a Win32 window with XAML Islands, in macOS uses NSWindow, in Qt uses QMainWindow, in FLTK uses Fl_Double_Window, in EFL uses Efl_Ui_Win, in Motif uses topLevelShellWidgetClass, in Android uses an Activity, and in iOS uses a UIViewController.
-
-#### Windows MDI
-
-The MDI support is composed of 3 components: the MDI frame window (IupDialog), the MDI client window (IupCanvas) and the MDI children (IupDialog).
-Although the MDI client is a IupCanvas it is not used directly by the application, but it must be created and included in the dialog that will be the MDI frame, other controls can also be available in the same dialog, like buttons and other canvases composing toolbars and status area.
-The following picture illustrates the e components:
-
-![](images/mdi.gif)
 
 #### Custom Frame
 

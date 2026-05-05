@@ -478,14 +478,8 @@ static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
         ih->data->inside_resize = 0;
       }
 
-      if (!iupAttribGetBoolean(ih, "MDICLIENT"))
-      {
-        /* If an MDI client, let the DefMDIChildProc do its work. */
-        *result = 0;
-        return 1;
-      }
-
-      break;
+      *result = 0;
+      return 1;
     }
   case WM_GETDLGCODE:
     /* avoid beeps when keys are pressed */
@@ -624,8 +618,8 @@ static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
     ReleaseCapture();
     break;
   case WM_VSCROLL:
-    /* only process the scrollbar if not an MDI client AND a standard scrollbar */
-    if (!iupAttribGetBoolean(ih, "MDICLIENT") && lp == 0)
+    /* only process a standard scrollbar */
+    if (lp == 0)
     {
       winCanvasProcessVerScroll(ih, LOWORD(wp));
       *result = 0;
@@ -633,8 +627,8 @@ static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
     }
     break;
   case WM_HSCROLL:
-    /* only process the scrollbar if not an MDI client AND a standard scrollbar */
-    if (!iupAttribGetBoolean(ih, "MDICLIENT") && lp == 0)
+    /* only process a standard scrollbar */
+    if (lp == 0)
     {
       winCanvasProcessHorScroll(ih, LOWORD(wp));
       *result = 0;
@@ -670,9 +664,6 @@ static int winCanvasMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT
 
 static int winCanvasMapMethod(Ihandle* ih)
 {
-  CLIENTCREATESTRUCT clientstruct;
-  void *clientdata = NULL;
-  TCHAR *classname;
   DWORD dwStyle = WS_CHILD|WS_CLIPSIBLINGS,
       dwExStyle = 0;
 
@@ -697,33 +688,7 @@ static int winCanvasMapMethod(Ihandle* ih)
   if (ih->data->sb & IUP_SB_VERT)
     dwStyle |= WS_VSCROLL;
 
-  if (iupAttribGetBoolean(ih, "MDICLIENT"))
-  {
-    /* creating an MDI Client that will be inside the MDI Frame,
-       it will work as parent of all MDI children */
-    Ihandle *winmenu = IupGetAttributeHandle(ih, "MDIMENU");
-
-    classname = TEXT("mdiclient");
-    dwStyle = WS_CHILD|WS_CLIPCHILDREN|WS_VSCROLL|WS_HSCROLL|MDIS_ALLCHILDSTYLES;
-    dwExStyle = WS_EX_CLIENTEDGE;
-
-    iupAttribSet(ih, "BORDER", "NO");
-
-    iupAttribSet(IupGetDialog(ih), "MDICLIENT_HANDLE", (char*)ih);
-
-    clientdata = &clientstruct;
-    clientstruct.hWindowMenu = winmenu? winmenu->handle: NULL;
-
-    /* The system increments the identifier
-       for each additional MDI child window the application creates,
-       and reassigns identifiers when the application
-       destroys a window to keep the range of identifiers contiguous. */
-    clientstruct.idFirstChild = IUP_MDI_FIRSTCHILD;
-  }
-  else
-    classname = TEXT("IupCanvas");
-
-  if (!iupwinCreateWindow(ih, classname, dwExStyle, dwStyle, clientdata))
+  if (!iupwinCreateWindow(ih, TEXT("IupCanvas"), dwExStyle, dwStyle, NULL))
     return IUP_ERROR;
 
   IupSetCallback(ih, "_IUPWIN_CTRLMSGPROC_CB", (Icallback)winCanvasMsgProc);
@@ -738,37 +703,8 @@ static int winCanvasMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void winCanvasMDICloseChildren(Ihandle* client)
-{
-  HWND hWndChild = (HWND)SendMessage(client->handle, WM_MDIGETACTIVE, 0, 0);
-
-  /* As long as the MDI client has a child, close it */
-  while (hWndChild)
-  {
-    Ihandle* child = iupwinHandleGet(hWndChild);
-    if (iupObjectCheck(child) && iupAttribGetBoolean(child, "MDICHILD"))
-      IupDestroy(child);
-
-    hWndChild = (HWND)SendMessage(client->handle, WM_MDIGETACTIVE, 0, 0);
-  }
-}
-
 static void winCanvasUnMapMethod(Ihandle* ih)
 {
-  if (iupAttribGetBoolean(ih, "MDICLIENT"))
-  {
-    /* hide the MDI client window to avoid multiple re-paints */
-    ShowWindow(ih->handle, SW_HIDE);
-
-    /* must destroy all MDI Children */
-    winCanvasMDICloseChildren(ih);
-
-    DestroyWindow(ih->handle);
-
-    /* mdiclient class is not a IUP class, must return here */
-    return;
-  }
-
   iupwinTipsDestroy(ih);
   iupwinDestroyDragDrop(ih);
 

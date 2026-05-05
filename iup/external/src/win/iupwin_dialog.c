@@ -357,45 +357,6 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   return 1;
 }
 
-static void winDialogMDIRefreshMenu(Ihandle* ih)
-{
-  /* We manually update the menu when an MDI child is added or removed. */
-  Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
-  PostMessage(client->handle, WM_MDIREFRESHMENU, 0, 0);
-}
-
-static int winDialogMDICloseChildren(Ihandle* ih)
-{
-  Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
-  if (iupObjectCheck(client))
-  {
-    HWND hWndChild = (HWND)SendMessage(client->handle, WM_MDIGETACTIVE, 0, 0);
-
-    /* As long as the MDI client has a child, close it */
-    while (hWndChild)
-    {
-      Ihandle* child = iupwinHandleGet(hWndChild);
-      if (iupObjectCheck(child) && iupAttribGetBoolean(child, "MDICHILD"))
-      {
-        Icallback cb = IupGetCallback(child, "CLOSE_CB");
-        if (cb)
-        {
-          int ret = cb(child);
-          if (ret == IUP_IGNORE)
-            return 0;
-          if (ret == IUP_CLOSE)
-            IupExitLoop();
-        }
-
-        IupDestroy(child);
-      }
-
-      hWndChild = (HWND)SendMessage(client->handle, WM_MDIGETACTIVE, 0, 0);
-    }
-  }
-  return 1;
-}
-
 /****************************************************************************
                             WindowProc
 ****************************************************************************/
@@ -779,17 +740,6 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
           }
 
           winDialogResize(ih, LOWORD(lp), HIWORD(lp));
-
-          if (iupAttribGetBoolean(ih, "MDICHILD"))
-          {
-            /* WORKAROUND: when a child MDI dialog is maximized,
-               its title is displayed inside the MDI client area.
-               So we force an MDI client size update */
-            RECT rect;
-            Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
-            GetClientRect(client->handle, &rect);
-            PostMessage(client->handle, WM_SIZE, (WPARAM)SIZE_RESTORED, MAKELPARAM(rect.right-rect.left, rect.bottom-rect.top));
-          }
           break;
         }
       case SIZE_RESTORED:
@@ -807,15 +757,7 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
         }
       }
 
-      if (iupAttribGetBoolean(ih, "MDIFRAME"))
-      {
-        /* We are going to manually position the MDI client,
-           so abort MDI frame processing. */
-        *result = 0;
-        return 1;
-      }
-      else
-        break;
+      break;
     }
   case WM_CLOSE:
     {
@@ -832,19 +774,7 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
           IupExitLoop();
       }
 
-      /* child mdi is automatically destroyed */
-      if (iupAttribGetBoolean(ih, "MDICHILD"))
-        IupDestroy(ih);
-      else
-      {
-        if (!winDialogMDICloseChildren(ih))
-        {
-          *result = 0;
-          return 1;
-        }
-
-        IupHide(ih); /* IUP default processing */
-      }
+      IupHide(ih); /* IUP default processing */
 
       *result = 0;
       return 1;
@@ -1012,125 +942,26 @@ static LRESULT CALLBACK winDialogWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
   return DefWindowProc(hwnd, msg, wp, lp);
 }
 
-static LRESULT CALLBACK winDialogMDIChildWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{
-  LRESULT result;
-  Ihandle *ih = iupwinHandleGet(hwnd);
-  if (!iupObjectCheck(ih))
-  {
-    /* the first time WM_GETMINMAXINFO is called, Ihandle is not associated yet */
-    if (msg == WM_GETMINMAXINFO && winMinMaxHandle)
-    {
-      if (winDialogCheckMinMaxInfo(winMinMaxHandle, (MINMAXINFO*)lp))
-        return 0;
-    }
-
-    return DefMDIChildProc(hwnd, msg, wp, lp);
-  }
-
-  if (msg == WM_MDIACTIVATE)
-  {
-    HWND hNewActive = (HWND)lp;
-    if (hNewActive == ih->handle)
-    {
-      Icallback cb = (Icallback)IupGetCallback(ih, "MDIACTIVATE_CB");
-      if (cb) cb(ih);
-    }
-  }
-
-  if (winDialogBaseProc(ih, msg, wp, lp, &result))
-    return result;
-
-  return DefMDIChildProc(hwnd, msg, wp, lp);
-}
-
-static LRESULT CALLBACK winDialogMDIFrameWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{
-  LRESULT result;
-  HWND hWndClient = NULL;
-  Ihandle *ih = iupwinHandleGet(hwnd);
-  if (!iupObjectCheck(ih))
-  {
-    /* the first time WM_GETMINMAXINFO is called, Ihandle is not associated yet */
-    if (msg == WM_GETMINMAXINFO && winMinMaxHandle)
-    {
-      if (winDialogCheckMinMaxInfo(winMinMaxHandle, (MINMAXINFO*)lp))
-        return 0;
-    }
-
-    return DefFrameProc(hwnd, hWndClient, msg, wp, lp);
-  }
-
-  {
-    Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
-    if (client) hWndClient = client->handle;
-  }
-
-  if (winDialogBaseProc(ih, msg, wp, lp, &result))
-    return result;
-
-  if (msg == WM_MENUCOMMAND)
-  {
-    int menuId = GetMenuItemID((HMENU)lp, (int)wp);
-    if (menuId >= IUP_MDI_FIRSTCHILD && hWndClient)
-    {
-      /* we manually activate the MDI child when its menu item is selected. */
-      HWND hChild = GetDlgItem(hWndClient, menuId);
-      if (hChild)
-        SendMessage(hWndClient, WM_MDIACTIVATE, (WPARAM)hChild, 0);
-    }
-    else if (menuId >= SC_SIZE && menuId <= SC_CONTEXTHELP)
-    {
-      /* we manually forward the message to the MDI child */
-      HWND hChild = (HWND)SendMessage(hWndClient, WM_MDIGETACTIVE, 0, 0);
-      if (hChild)
-        SendMessage(hChild, WM_SYSCOMMAND, (WPARAM)menuId, 0);
-    }
-  }
-
-  return DefFrameProc(hwnd, hWndClient, msg, wp, lp);
-}
-
-enum { IUPWIN_DIALOG, IUPWIN_DIALOGCONTROL, IUPWIN_MDIFRAME, IUPWIN_MDICHILD, IUPWIN_DIALOG_SAVEBITS };
+enum { IUPWIN_DIALOG, IUPWIN_DIALOGCONTROL, IUPWIN_DIALOG_SAVEBITS };
 
 static void winDialogRegisterClass(int type)
 {
   TCHAR* name;
   WNDCLASS wndclass;
-  WNDPROC wndProc;
   ZeroMemory(&wndclass, sizeof(WNDCLASS));
 
-  if (type == IUPWIN_MDICHILD)
-  {
-    name = TEXT("IupDialogMDIChild");
-    wndProc = (WNDPROC)winDialogMDIChildWndProc;
-  }
-  else if (type == IUPWIN_MDIFRAME)
-  {
-    name = TEXT("IupDialogMDIFrame");
-    wndProc = (WNDPROC)winDialogMDIFrameWndProc;
-  }
+  if (type == IUPWIN_DIALOGCONTROL)
+    name = TEXT("IupDialogControl");
+  else if (type == IUPWIN_DIALOG_SAVEBITS)
+    name = TEXT("IupDialogSaveBits");
   else
-  {
-    if (type == IUPWIN_DIALOGCONTROL)
-      name = TEXT("IupDialogControl");
-    else if (type == IUPWIN_DIALOG_SAVEBITS)
-      name = TEXT("IupDialogSaveBits");
-    else
-      name = TEXT("IupDialog");
-    wndProc = (WNDPROC)winDialogWndProc;
-  }
+    name = TEXT("IupDialog");
 
   wndclass.hInstance      = iupwin_hinstance;
   wndclass.lpszClassName  = name;
-  wndclass.lpfnWndProc    = (WNDPROC)wndProc;
+  wndclass.lpfnWndProc    = (WNDPROC)winDialogWndProc;
   wndclass.hCursor        = LoadCursor(NULL, IDC_ARROW);
-
-  /* To use a standard system color, must increase the background-color value by one */
-  if (type == IUPWIN_MDIFRAME)
-    wndclass.hbrBackground  = (HBRUSH)(COLOR_APPWORKSPACE+1);
-  else
-    wndclass.hbrBackground  = (HBRUSH)(COLOR_BTNFACE+1);
+  wndclass.hbrBackground  = (HBRUSH)(COLOR_BTNFACE+1);  /* +1 to use a standard system color */
 
   if (type == IUPWIN_DIALOG_SAVEBITS)
     wndclass.style |= CS_SAVEBITS;
@@ -1147,8 +978,6 @@ static void winDialogRelease(Iclass* ic)
 
   if (iupwinClassExist(TEXT("IupDialog")))
   {
-    UnregisterClass(TEXT("IupDialogMDIChild"), iupwin_hinstance);
-    UnregisterClass(TEXT("IupDialogMDIFrame"), iupwin_hinstance);
     UnregisterClass(TEXT("IupDialogControl"), iupwin_hinstance);
     UnregisterClass(TEXT("IupDialogSaveBits"), iupwin_hinstance);
     UnregisterClass(TEXT("IupDialog"), iupwin_hinstance);
@@ -1201,78 +1030,34 @@ static int winDialogMapMethod(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "BORDER") || has_titlebar)
     has_border = 1;
 
-  if (iupAttribGetBoolean(ih, "MDICHILD"))
+  native_parent = iupDialogGetNativeParent(ih);
+
+  if (native_parent)
   {
-    Ihandle *client;
+    if (iupAttribGetBoolean(ih, "SAVEUNDER"))
+      classname = TEXT("IupDialogSaveBits");
 
-    /* must have a parent dialog (the mdi frame) */
-    Ihandle* parent = IupGetAttributeHandle(ih, "PARENTDIALOG");
-    if (!parent || !parent->handle)
-      return IUP_ERROR;
+    dwStyle |= WS_POPUP;
 
-    /* set when the mdi client is mapped */
-    client = (Ihandle*)iupAttribGet(parent, "MDICLIENT_HANDLE");
-    if (!client)
-      return IUP_ERROR;
-
-    /* store the mdi client handle in each mdi child also */
-    iupAttribSet(ih, "MDICLIENT_HANDLE", (char*)client);
-
-    classname = TEXT("IupDialogMDIChild");
-
-    /* The actual parent is the mdi client */
-    native_parent = client->handle;
-
-    dwStyle |= WS_CHILD;
     if (has_titlebar)
       dwStyle |= WS_CAPTION;
     else if (has_border)
       dwStyle |= WS_BORDER;
-
-    /* make sure it has at least one name */
-    if (!iupAttribGetHandleName(ih))
-      iupAttribSetHandleName(ih);
   }
   else
   {
-    native_parent = iupDialogGetNativeParent(ih);
-
-    if (native_parent)
+    if (has_titlebar)
     {
-      if (iupAttribGetBoolean(ih, "SAVEUNDER"))
-        classname = TEXT("IupDialogSaveBits");
-
-      dwStyle |= WS_POPUP;
-
-      if (has_titlebar)
-        dwStyle |= WS_CAPTION;
-      else if (has_border)
-        dwStyle |= WS_BORDER;
+      dwStyle |= WS_OVERLAPPED;
     }
     else
     {
-      if (has_titlebar)
-      {
-        dwStyle |= WS_OVERLAPPED;
-      }
+      if (has_border)
+        dwStyle |= WS_POPUP | WS_BORDER;
       else
-      {
-        if (has_border)
-          dwStyle |= WS_POPUP | WS_BORDER;
-        else
-          dwStyle |= WS_POPUP;
+        dwStyle |= WS_POPUP;
 
-        dwExStyle |= WS_EX_NOACTIVATE; /* this will hide it from the taskbar */
-      }
-    }
-
-    if (iupAttribGetBoolean(ih, "MDIFRAME"))
-    {
-      COLORREF color = GetSysColor(COLOR_BTNFACE);
-      iupAttribSetStrf(ih, "_IUPWIN_BACKGROUND_COLOR", "%d %d %d", (int)GetRValue(color),
-                                                                   (int)GetGValue(color),
-                                                                   (int)GetBValue(color));
-      classname = TEXT("IupDialogMDIFrame");
+      dwExStyle |= WS_EX_NOACTIVATE; /* this will hide it from the taskbar */
     }
   }
 
@@ -1329,34 +1114,18 @@ static int winDialogMapMethod(Ihandle* ih)
   /* size will be updated in IupRefresh -> winDialogLayoutUpdate */
   /* position will be updated in iupDialogShowXY              */
 
-  if (iupAttribGetBoolean(ih, "MDICHILD"))
-  {
-    ih->handle = CreateMDIWindow(classname,
-                                iupwinStrToSystem(title), /* title */
-                                dwStyle,            /* style */
-                                0,                  /* x-position */
-                                0,                  /* y-position */
-                                100,                /* horizontal size - set this to avoid size calculation problems */
-                                100,                /* vertical size */
-                                native_parent,      /* owner window */
-                                iupwin_hinstance,   /* instance of app. */
-                                0);                 /* no creation parameters */
-  }
-  else
-  {
-      ih->handle = CreateWindowEx(dwExStyle,          /* extended styles */
-                                classname,          /* class */
-                                iupwinStrToSystem(title), /* title */
-                                dwStyle,            /* style */
-                                0,                  /* x-position */
-                                0,                  /* y-position */
-                                100,                /* horizontal size - set this to avoid size calculation problems */
-                                100,                /* vertical size */
-                                native_parent,      /* owner window */
-                                (HMENU)0,           /* Menu or child-window identifier */
-                                iupwin_hinstance,   /* instance of app. */
-                                NULL);              /* no creation parameters */
-  }
+  ih->handle = CreateWindowEx(dwExStyle,          /* extended styles */
+                              classname,          /* class */
+                              iupwinStrToSystem(title), /* title */
+                              dwStyle,            /* style */
+                              0,                  /* x-position */
+                              0,                  /* y-position */
+                              100,                /* horizontal size - set this to avoid size calculation problems */
+                              100,                /* vertical size */
+                              native_parent,      /* owner window */
+                              (HMENU)0,           /* Menu or child-window identifier */
+                              iupwin_hinstance,   /* instance of app. */
+                              NULL);              /* no creation parameters */
 
   /* clear handle right after CreateWindowEx */
   winMinMaxHandle = NULL;
@@ -1369,9 +1138,6 @@ static int winDialogMapMethod(Ihandle* ih)
   /* associate HWND with Ihandle*, all Win32 controls must call this. */
   iupwinHandleAdd(ih, ih->handle);
 
-  if (iupAttribGetBoolean(ih, "MDICHILD"))  /* hides the mdi child */
-    ShowWindow(ih->handle, SW_HIDE);
-
   /* configure for DROP of files */
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
@@ -1381,9 +1147,6 @@ static int winDialogMapMethod(Ihandle* ih)
 
   /* Set the default CmdShow for ShowWindow */
   ih->data->cmd_show = SW_SHOWNORMAL;
-
-  if (iupAttribGetBoolean(ih, "MDICHILD"))
-    winDialogMDIRefreshMenu(ih);
 
   return IUP_NOERROR;
 }
@@ -1412,19 +1175,9 @@ static void winDialogUnMapMethod(Ihandle* ih)
   /* remove the association before destroying */
   iupwinHandleRemove(ih->handle);
 
-  /* Destroys the window, so we can destroy the class */
-  if (iupAttribGetBoolean(ih, "MDICHILD"))
-  {
-    /* for MDICHILDs must send WM_MDIDESTROY, instead of calling DestroyWindow */
-    Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
-    SendMessage(client->handle, WM_MDIDESTROY, (WPARAM)ih->handle, 0);
-
-    winDialogMDIRefreshMenu(ih);
-  }
-  else
-    DestroyWindow(ih->handle); /* this will destroy the Windows children also. */
-                               /* but IupDestroy already destroyed the IUP children */
-                               /* so it is safe to call DestroyWindow */
+  /* this will destroy the Windows children also.
+     IupDestroy already destroyed the IUP children so it is safe to call DestroyWindow */
+  DestroyWindow(ih->handle);
 }
 
 static void winDialogLayoutUpdateMethod(Ihandle *ih)
@@ -1538,59 +1291,6 @@ static int winDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static HWND iupwin_mdifirst = NULL;
-static HWND iupwin_mdinext = NULL;
-
-static char* winDialogGetMdiActiveAttrib(Ihandle *ih)
-{
-  Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
-  if (client)
-  {
-    HWND hchild = (HWND)SendMessage(client->handle, WM_MDIGETACTIVE, 0, 0);
-    Ihandle* child = iupwinHandleGet(hchild);
-    if (iupObjectCheck(child))
-    {
-      iupwin_mdinext = NULL;
-      iupwin_mdifirst = hchild;
-      return IupGetName(child);
-    }
-  }
-
-  iupwin_mdifirst = NULL;
-  iupwin_mdinext = NULL;
-  return NULL;
-}
-
-static char* winDialogGetMdiNextAttrib(Ihandle *ih)
-{
-  Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
-  if (client)
-  {
-    Ihandle* child;
-    HWND hchild = iupwin_mdinext? iupwin_mdinext: iupwin_mdifirst;
-
-    /* Skip the icon title windows */
-    while (hchild && GetWindow (hchild, GW_OWNER))
-      hchild = GetWindow(hchild, GW_HWNDNEXT);
-
-    if (!hchild || hchild == iupwin_mdifirst)
-    {
-      iupwin_mdinext = NULL;
-      return NULL;
-    }
-
-    child = iupwinHandleGet(hchild);
-    if (iupObjectCheck(child))
-    {
-      iupwin_mdinext = GetWindow(hchild, GW_HWNDNEXT);
-      return IupGetName(child);
-    }
-  }
-
-  iupwin_mdinext = NULL;
-  return NULL;
-}
-
 static int winDialogSetOpacityAttrib(Ihandle *ih, const char *value)
 {
   int opacity;
@@ -1686,62 +1386,6 @@ static int winDialogSetShapeImageAttrib(Ihandle *ih, const char *value)
 
     return 1;
   }
-}
-
-static int winDialogSetMdiArrangeAttrib(Ihandle *ih, const char *value)
-{
-  Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
-  if (client)
-  {
-    UINT msg = 0;
-    WPARAM wp = 0;
-
-    if (iupStrEqualNoCase(value, "TILEHORIZONTAL"))
-    {
-      msg = WM_MDITILE;
-      wp = MDITILE_HORIZONTAL;
-    }
-    else if (iupStrEqualNoCase(value, "TILEVERTICAL"))
-    {
-      msg = WM_MDITILE;
-      wp = MDITILE_VERTICAL;
-    }
-    else if (iupStrEqualNoCase(value, "CASCADE"))
-      msg = WM_MDICASCADE;
-    else if (iupStrEqualNoCase(value, "ICON"))
-      msg = WM_MDIICONARRANGE;
-
-    if (msg)
-      SendMessage(client->handle, msg, wp, 0);
-  }
-  return 0;
-}
-
-static int winDialogSetMdiActivateAttrib(Ihandle *ih, const char *value)
-{
-  Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
-  if (client)
-  {
-    Ihandle* child = IupGetHandle(value);
-    if (child)
-      SendMessage(client->handle, WM_MDIACTIVATE, (WPARAM)child->handle, 0);
-    else
-    {
-      HWND hchild = (HWND)SendMessage(client->handle, WM_MDIGETACTIVE, 0, 0);
-      if (iupStrEqualNoCase(value, "NEXT"))
-        SendMessage(client->handle, WM_MDINEXT, (WPARAM)hchild, TRUE);
-      else if (iupStrEqualNoCase(value, "PREVIOUS"))
-        SendMessage(client->handle, WM_MDINEXT, (WPARAM)hchild, FALSE);
-    }
-  }
-  return 0;
-}
-
-static int winDialogSetMdiCloseAllAttrib(Ihandle *ih, const char *value)
-{
-  (void)value;
-  winDialogMDICloseChildren(ih);
-  return 0;
 }
 
 static char* winDialogGetMaximizedAttrib(Ihandle *ih)
@@ -1943,8 +1587,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   {
     winDialogRegisterClass(IUPWIN_DIALOG);
     winDialogRegisterClass(IUPWIN_DIALOGCONTROL);
-    winDialogRegisterClass(IUPWIN_MDIFRAME);
-    winDialogRegisterClass(IUPWIN_MDICHILD);
     winDialogRegisterClass(IUPWIN_DIALOG_SAVEBITS);
 
     WM_HELPMSG = RegisterWindowMessage(HELPMSGSTRING);
@@ -1957,7 +1599,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->Release = winDialogRelease;
 
   /* Callback Windows Only*/
-  iupClassRegisterCallback(ic, "MDIACTIVATE_CB", "");
   iupClassRegisterCallback(ic, "CUSTOMFRAMEDRAW_CB", "");
   iupClassRegisterCallback(ic, "CUSTOMFRAMEACTIVATE_CB", "i");
   iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
@@ -1985,11 +1626,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   /* IupDialog Windows Only */
   iupClassRegisterAttribute(ic, "HWND", iupBaseGetWidAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDIARRANGE", NULL, winDialogSetMdiArrangeAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDIACTIVATE", NULL, winDialogSetMdiActivateAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDICLOSEALL", NULL, winDialogSetMdiCloseAllAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDIACTIVE", winDialogGetMdiActiveAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDINEXT", winDialogGetMdiNextAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITY", NULL, winDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, winDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, winDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
@@ -2008,10 +1644,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDIFRAME", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDICLIENT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDIMENU", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MDICHILD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* IupDialog Windows and GTK Only */
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", winDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
