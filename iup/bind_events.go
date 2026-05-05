@@ -1,13 +1,14 @@
 package iup
 
 import (
-	"fmt"
+	"runtime/cgo"
 	"unsafe"
 )
 
 /*
 #include <stdlib.h>
 #include "iup.h"
+#include "bind_callbacks.h"
 */
 import "C"
 
@@ -65,10 +66,12 @@ func PostMessage(ih Ihandle, s string, i int, p any) {
 	cS := C.CString(s)
 	defer C.free(unsafe.Pointer(cS))
 
-	count := messages.Add(1)
-	callbacks.Store(fmt.Sprintf("POSTMESSAGE_MSG_%s_%d", ih.GetAttribute("UUID"), count), p)
+	var h C.uintptr_t
+	if p != nil {
+		h = C.uintptr_t(cgo.NewHandle(p))
+	}
 
-	C.IupPostMessage(ih.ptr(), cS, C.int(i), C.double(count), nil)
+	C.goIupPostMessageHandle(ih.ptr(), cS, C.int(i), h)
 }
 
 // Flush processes all pending messages in the message queue.
@@ -99,10 +102,7 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		cName := C.CString(name)
 		defer C.free(unsafe.Pointer(cName))
 
-		_, ok := callbacks.Load(name + "_" + ih.GetAttribute("UUID"))
-		if ok {
-			callbacks.Delete(name)
-		}
+		clearCallback(ih, "_IUPGO_"+name)
 
 		C.IupSetCallback(ih.ptr(), cName, nil)
 		return
@@ -535,9 +535,13 @@ func SetFunction(name string, fn interface{}) {
 		cName := C.CString(name)
 		defer C.free(unsafe.Pointer(cName))
 
-		_, ok := callbacks.Load(name)
-		if ok {
-			callbacks.Delete(name)
+		switch name {
+		case "IDLE_ACTION":
+			clearGlobalHandle(&globalIdleHandle)
+		case "ENTRY_POINT":
+			clearGlobalHandle(&globalEntryHandle)
+		case "EXIT_CB":
+			clearGlobalHandle(&globalExitHandle)
 		}
 
 		C.IupSetFunction(cName, nil)

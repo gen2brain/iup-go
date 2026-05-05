@@ -3,7 +3,6 @@ package iup
 import (
 	"unsafe"
 
-	"github.com/google/uuid"
 )
 
 /*
@@ -19,7 +18,6 @@ import "C"
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func Config() Ihandle {
 	h := mkih(C.IupConfig())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -278,7 +276,7 @@ func ConfigDialogClosed(ih, dialog Ihandle, name string) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigRecentInit(ih, menuOrList Ihandle, recentCb ActionFunc, maxRecent int) {
-	setRecentFunc(ih, menuOrList, recentCb)
+	setRecentFunc(ih, recentCb)
 	C.IupConfigRecentInit(ih.ptr(), menuOrList.ptr(), (C.Icallback)(C.goIupRecentCB), C.int(maxRecent))
 }
 

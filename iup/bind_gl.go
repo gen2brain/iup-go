@@ -3,15 +3,10 @@
 package iup
 
 /*
-#include <stdlib.h>
 #include "iup.h"
 #include "iupgl.h"
 */
 import "C"
-
-import (
-	"github.com/google/uuid"
-)
 
 // GLCanvasOpen must be called after Open, so that the control can be used.
 //
@@ -25,7 +20,6 @@ func GLCanvasOpen() {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
 func GLCanvas() Ihandle {
 	h := mkih(C.IupGLCanvas(nil))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -81,6 +75,5 @@ func GLWait(gl int) {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glbackgroundbox.md
 func GLBackgroundBox(child Ihandle) Ihandle {
 	h := mkih(C.IupGLBackgroundBox(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }

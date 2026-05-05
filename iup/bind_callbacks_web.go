@@ -1,7 +1,6 @@
 package iup
 
 import (
-	"runtime/cgo"
 	"unsafe"
 )
 
@@ -16,14 +15,7 @@ type CompletedFunc func(ih Ihandle, url string) int
 
 //export goIupCompletedCB
 func goIupCompletedCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("COMPLETED_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "COMPLETED_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(CompletedFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_COMPLETED_CB").Value().(CompletedFunc)
 
 	goUrl := C.GoString((*C.char)(url))
 	return C.int(f((Ihandle)(ih), goUrl))
@@ -31,8 +23,7 @@ func goIupCompletedCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
 
 // setCompletedFunc for COMPLETED_CB.
 func setCompletedFunc(ih Ihandle, f CompletedFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("COMPLETED_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_COMPLETED_CB", f)
 
 	C.goIupSetCompletedFunc(ih.ptr())
 }
@@ -45,14 +36,7 @@ type ErrorFunc func(ih Ihandle, url string) int
 
 //export goIupErrorCB
 func goIupErrorCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("ERROR_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "ERROR_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ErrorFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_ERROR_CB").Value().(ErrorFunc)
 
 	goUrl := C.GoString((*C.char)(url))
 	return C.int(f((Ihandle)(ih), goUrl))
@@ -60,8 +44,7 @@ func goIupErrorCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
 
 // setErrorFunc for ERROR_CB.
 func setErrorFunc(ih Ihandle, f ErrorFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("ERROR_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_ERROR_CB", f)
 
 	C.goIupSetErrorFunc(ih.ptr())
 }
@@ -74,14 +57,7 @@ type NavigateFunc func(ih Ihandle, url string) int
 
 //export goIupNavigateCB
 func goIupNavigateCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("NAVIGATE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "NAVIGATE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(NavigateFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_NAVIGATE_CB").Value().(NavigateFunc)
 
 	goUrl := C.GoString((*C.char)(url))
 	return C.int(f((Ihandle)(ih), goUrl))
@@ -89,8 +65,7 @@ func goIupNavigateCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
 
 // setNavigateFunc for NAVIGATE_CB.
 func setNavigateFunc(ih Ihandle, f NavigateFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("NAVIGATE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_NAVIGATE_CB", f)
 
 	C.goIupSetNavigateFunc(ih.ptr())
 }
@@ -103,14 +78,7 @@ type NewWindowFunc func(ih Ihandle, url string) int
 
 //export goIupNewWindowCB
 func goIupNewWindowCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("NEWWINDOW_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "NEWWINDOW_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(NewWindowFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_NEWWINDOW_CB").Value().(NewWindowFunc)
 
 	goUrl := C.GoString((*C.char)(url))
 	return C.int(f((Ihandle)(ih), goUrl))
@@ -118,8 +86,7 @@ func goIupNewWindowCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
 
 // setNewWindowFunc for NEWWINDOW_CB.
 func setNewWindowFunc(ih Ihandle, f NewWindowFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("NEWWINDOW_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_NEWWINDOW_CB", f)
 
 	C.goIupSetNewWindowFunc(ih.ptr())
 }

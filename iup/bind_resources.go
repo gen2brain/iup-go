@@ -5,7 +5,6 @@ import (
 	"image/draw"
 	"unsafe"
 
-	"github.com/google/uuid"
 )
 
 /*
@@ -23,7 +22,6 @@ import "C"
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
 func Image(width, height int, pixMap []byte) Ihandle {
 	h := mkih(C.IupImage(C.int(width), C.int(height), (*C.uchar)(unsafe.Pointer(&pixMap[0]))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -32,7 +30,6 @@ func Image(width, height int, pixMap []byte) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
 func ImageRGB(width, height int, pixMap []byte) Ihandle {
 	h := mkih(C.IupImageRGB(C.int(width), C.int(height), (*C.uchar)(unsafe.Pointer(&pixMap[0]))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -41,7 +38,6 @@ func ImageRGB(width, height int, pixMap []byte) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_image.md
 func ImageRGBA(width, height int, pixMap []byte) Ihandle {
 	h := mkih(C.IupImageRGBA(C.int(width), C.int(height), (*C.uchar)(unsafe.Pointer(&pixMap[0]))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -49,7 +45,6 @@ func ImageRGBA(width, height int, pixMap []byte) Ihandle {
 func ImageFromImage(i image.Image) Ihandle {
 	if img, ok := i.(*image.RGBA); ok {
 		h := mkih(C.IupImageRGBA(C.int(img.Bounds().Dx()), C.int(img.Bounds().Dy()), (*C.uchar)(unsafe.Pointer(&img.Pix[0]))))
-		h.SetAttribute("UUID", uuid.NewString())
 		return h
 	}
 
@@ -58,7 +53,6 @@ func ImageFromImage(i image.Image) Ihandle {
 	draw.Draw(dst, dst.Bounds(), i, b.Min, draw.Src)
 
 	h := mkih(C.IupImageRGBA(C.int(dst.Bounds().Dx()), C.int(dst.Bounds().Dy()), (*C.uchar)(unsafe.Pointer(&dst.Pix[0]))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -193,7 +187,6 @@ func MenuItem(title string) Ihandle {
 	defer C.free(unsafe.Pointer(cTitle))
 
 	h := mkih(C.IupMenuItem(cTitle, nil))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -205,7 +198,6 @@ func Menu(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
 	h := mkih(C.IupMenuv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -214,7 +206,6 @@ func Menu(children ...Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_menuseparator.md
 func MenuSeparator() Ihandle {
 	h := mkih(C.IupMenuSeparator())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -226,7 +217,6 @@ func Submenu(title string, child Ihandle) Ihandle {
 	defer C.free(unsafe.Pointer(cTitle))
 
 	h := mkih(C.IupSubmenu(cTitle, child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -349,7 +339,6 @@ func SetLanguagePack(ih Ihandle) {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_clipboard.md
 func Clipboard() Ihandle {
 	h := mkih(C.IupClipboard())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -359,7 +348,6 @@ func Clipboard() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_timer.md
 func Timer() Ihandle {
 	h := mkih(C.IupTimer())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -369,7 +357,6 @@ func Timer() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_thread.md
 func Thread() Ihandle {
 	h := mkih(C.IupThread())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -377,7 +364,6 @@ func Thread() Ihandle {
 // It allows placing an icon in the system notification area (system tray).
 func Tray() Ihandle {
 	h := mkih(C.IupTray())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -387,7 +373,6 @@ func Tray() Ihandle {
 // and can include a title, body text, icon, and action buttons.
 func Notify() Ihandle {
 	h := mkih(C.IupNotify())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -400,7 +385,6 @@ func Notify() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_user.md
 func User() Ihandle {
 	h := mkih(C.IupUser())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 

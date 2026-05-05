@@ -536,6 +536,15 @@ static int goIupCallGetParamvNoAction(const char *title, const char *format, int
 	return IupGetParamv(title, NULL, NULL, format, param_count, param_extra, param_data);
 }
 
+CGO_EXPORT extern int goIupLDestroyCB(void *);
+static void goIupSetLDestroyFunc(Ihandle *ih) {
+	IupSetCallback(ih, "LDESTROY_CB", (Icallback) goIupLDestroyCB);
+}
+
+static void goIupPostMessageHandle(Ihandle *ih, const char *s, int i, uintptr_t handle) {
+	IupPostMessage(ih, s, i, 0.0, (void *)handle);
+}
+
 // ============================================================================
 // CTL CALLBACKS (Cells, Matrix, MatrixList, MatrixEx)
 // ============================================================================

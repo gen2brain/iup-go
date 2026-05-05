@@ -4,8 +4,6 @@ package iup
 
 import (
 	"unsafe"
-
-	"github.com/google/uuid"
 )
 
 /*
@@ -30,7 +28,6 @@ func ControlsOpen() int {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_cells.md
 func Cells() Ihandle {
 	h := mkih(C.IupCells())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -45,7 +42,6 @@ func Matrix(action string) Ihandle {
 	defer cStrFree(cAction)
 
 	h := mkih(C.IupMatrix(cAction))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -56,7 +52,6 @@ func Matrix(action string) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_matrixlist.md
 func MatrixList() Ihandle {
 	h := mkih(C.IupMatrixList())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -67,7 +62,6 @@ func MatrixList() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_matrixex.md
 func MatrixEx() Ihandle {
 	h := mkih(C.IupMatrixEx())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -84,7 +78,6 @@ func FlatButton(title string) Ihandle {
 	defer cStrFree(cTitle)
 
 	h := mkih(C.IupFlatButton(cTitle))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -97,7 +90,6 @@ func FlatLabel(title string) Ihandle {
 	defer cStrFree(cTitle)
 
 	h := mkih(C.IupFlatLabel(cTitle))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -110,7 +102,6 @@ func FlatToggle(title string) Ihandle {
 	defer cStrFree(cTitle)
 
 	h := mkih(C.IupFlatToggle(cTitle))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -119,7 +110,6 @@ func FlatToggle(title string) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flatlist.md
 func FlatList() Ihandle {
 	h := mkih(C.IupFlatList())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -128,7 +118,6 @@ func FlatList() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flattree.md
 func FlatTree() Ihandle {
 	h := mkih(C.IupFlatTree())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -141,7 +130,6 @@ func FlatVal(orientation string) Ihandle {
 	defer cStrFree(cOrientation)
 
 	h := mkih(C.IupFlatVal(cOrientation))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -151,7 +139,6 @@ func FlatVal(orientation string) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flatframe.md
 func FlatFrame(child Ihandle) Ihandle {
 	h := mkih(C.IupFlatFrame(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -166,7 +153,6 @@ func FlatTabs(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
 	h := mkih(C.IupFlatTabsv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -176,17 +162,15 @@ func FlatTabs(children ...Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_flatscrollbox.md
 func FlatScrollBox(child Ihandle) Ihandle {
 	h := mkih(C.IupFlatScrollBox(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
-// DropButton creates an interface element that is a button with a drop down arrow.
+// DropButton creates an interface element that is a button with a drop-down arrow.
 // It can function as a button and as a dropdown. Its visual presentation can contain a text and/or an image.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_dropbutton.md
-func DropButton(dropchild Ihandle) Ihandle {
-	h := mkih(C.IupDropButton(dropchild.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
+func DropButton(dropChild Ihandle) Ihandle {
+	h := mkih(C.IupDropButton(dropChild.ptr()))
 	return h
 }
 
@@ -195,6 +179,5 @@ func DropButton(dropchild Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_gauge.md
 func Gauge() Ihandle {
 	h := mkih(C.IupGauge())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }

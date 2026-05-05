@@ -4,8 +4,6 @@ package iup
 
 import (
 	"unsafe"
-
-	"github.com/google/uuid"
 )
 
 /*
@@ -28,7 +26,6 @@ func PlotOpen() {
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_plot.md
 func Plot() Ihandle {
 	h := mkih(C.IupPlot())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 

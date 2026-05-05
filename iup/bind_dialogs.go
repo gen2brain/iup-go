@@ -7,8 +7,6 @@ import (
 	"runtime/cgo"
 	"strings"
 	"unsafe"
-
-	"github.com/google/uuid"
 )
 
 /*
@@ -25,22 +23,21 @@ import "C"
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_dialog.md
 func Dialog(child Ihandle) Ihandle {
 	h := mkih(C.IupDialog(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
 // Popup shows a dialog or menu and restricts user interaction only to the specified element.
-// It is equivalent of creating a Modal dialog is some toolkits.
+// It is the equivalent of creating a Modal dialog is some toolkits.
 //
 // If another dialog is shown after Popup using Show, then its interaction will not be inhibited.
-// Every Popup call creates a new popup level that inhibits all previous dialogs interactions, but does not disable new ones
+// Every Popup call creates a new popup level that inhibits all previous dialog interactions, but does not disable new ones
 // (even if they were disabled by the Popup, calling Show will re-enable the dialog because it will change its popup level).
 // IMPORTANT: The popup levels must be closed in the reverse order they were created or unpredictable results will occur.
 //
 // For a dialog, this function will only return the control to the application
 // after a callback returns CLOSE, ExitLoop is called, or when the popup dialog is hidden, for example, using Hide.
 // For a menu it returns automatically after a menu item is selected.
-// IMPORTANT: If a menu item callback returns CLOSE, it will also ends the current popup level dialog.
+// IMPORTANT: If a menu item callback returns CLOSE, it will also end the current popup level dialog.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_popup.md
 func Popup(ih Ihandle, x, y int) int {
@@ -75,7 +72,6 @@ func Hide(ih Ihandle) int {
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_filedlg.md
 func FileDlg() Ihandle {
 	h := mkih(C.IupFileDlg())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -85,7 +81,6 @@ func FileDlg() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagedlg.md
 func MessageDlg() Ihandle {
 	h := mkih(C.IupMessageDlg())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -96,7 +91,6 @@ func MessageDlg() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_colordlg.md
 func ColorDlg() Ihandle {
 	h := mkih(C.IupColorDlg())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -106,7 +100,6 @@ func ColorDlg() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_fontdlg.md
 func FontDlg() Ihandle {
 	h := mkih(C.IupFontDlg())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -116,7 +109,6 @@ func FontDlg() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_progressdlg.md
 func ProgressDlg() Ihandle {
 	h := mkih(C.IupProgressDlg())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -251,7 +243,7 @@ func VersionShow() {
 }
 
 // MessageError shows a modal dialog containing an error message.
-// It simply creates and popup a MessageDlg with DIALOGTYPE=ERROR.
+// It simply creates and popups a MessageDlg with DIALOGTYPE=ERROR.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messageerror.md
 func MessageError(parent Ihandle, msg string) {
@@ -262,7 +254,7 @@ func MessageError(parent Ihandle, msg string) {
 }
 
 // MessageAlarm shows a modal dialog containing a question message, similar to Alarm.
-// It simply creates and popup a MessageDlg with DIALOGTYPE=QUESTION.
+// It simply creates and popups a MessageDlg with DIALOGTYPE=QUESTION.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagealarm.md
 func MessageAlarm(parent Ihandle, title, msg, buttons string) {
@@ -274,7 +266,6 @@ func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 	C.IupMessageAlarm(parent.ptr(), cTitle, cMsg, cButtons)
 }
 
-
 // ElementPropertiesDialog creates an Element Properties Dialog.
 // It is a predefined dialog to edit the properties of an element in run time.
 // It is a standard Dialog constructed with other IUP elements.
@@ -285,11 +276,10 @@ func MessageAlarm(parent Ihandle, title, msg, buttons string) {
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_elementpropdialog.md
 func ElementPropertiesDialog(parent, elem Ihandle) Ihandle {
 	h := mkih(C.IupElementPropertiesDialog(parent.ptr(), elem.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
-// GlobalsDialog creates an Globals Dialog.
+// GlobalsDialog creates a Globals Dialog.
 // It is a predefined dialog to check and edit global attributes, functions (read-only) and names (read-only) in run time.
 // It is a standard Dialog constructed with other IUP elements.
 // The dialog can be shown with any of the show functions Show, ShowXY or Popup.
@@ -299,7 +289,6 @@ func ElementPropertiesDialog(parent, elem Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_globalsdialog.md
 func GlobalsDialog() Ihandle {
 	h := mkih(C.IupGlobalsDialog())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -313,7 +302,6 @@ func GlobalsDialog() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_classinfodialog.md
 func ClassInfoDialog(dialog Ihandle) Ihandle {
 	h := mkih(C.IupClassInfoDialog(dialog.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -484,11 +472,9 @@ func GetParam(title string, action GetParamFunc, format string, data ...interfac
 	if action != nil {
 		ch := cgo.NewHandle(action)
 		defer ch.Delete()
-		ret = C.goIupCallGetParamv(cTitle, C.uintptr_t(ch), cFormat,
-			C.int(paramCount), C.int(paramExtra), (*unsafe.Pointer)(unsafe.Pointer(paramDataPtr)))
+		ret = C.goIupCallGetParamv(cTitle, C.uintptr_t(ch), cFormat, C.int(paramCount), C.int(paramExtra), paramDataPtr)
 	} else {
-		ret = C.goIupCallGetParamvNoAction(cTitle, cFormat,
-			C.int(paramCount), C.int(paramExtra), (*unsafe.Pointer)(unsafe.Pointer(paramDataPtr)))
+		ret = C.goIupCallGetParamvNoAction(cTitle, cFormat, C.int(paramCount), C.int(paramExtra), paramDataPtr)
 	}
 
 	if ret == 1 {

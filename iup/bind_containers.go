@@ -2,8 +2,6 @@ package iup
 
 import (
 	"unsafe"
-
-	"github.com/google/uuid"
 )
 
 /*
@@ -12,8 +10,8 @@ import (
 */
 import "C"
 
-// Fill creates void element, which dynamically occupies empty spaces always trying to expand itself.
-// Its parent should be an Hbox, an Vbox or a GridBox, or else this type of expansion will not work.
+// Fill creates a void element, which dynamically occupies empty spaces always trying to expand itself.
+// Its parent should be Hbox, Vbox, or a GridBox, or else this type of expansion will not work.
 // If an EXPAND is set on at least one of the other children of the box, then the fill expansion is ignored.
 //
 // It does not have a native representation.
@@ -21,11 +19,10 @@ import "C"
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_fill.md
 func Fill() Ihandle {
 	h := mkih(C.IupFill())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
-// Space creates void element, which occupies an empty space.
+// Space creates a void element, which occupies an empty space.
 // It will simply occupy a space in the layout. It does not have a natural size, it is 0x0 by default.
 // It can be expandable or not, EXPAND will work as a regular element.
 //
@@ -34,7 +31,6 @@ func Fill() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_space.md
 func Space() Ihandle {
 	h := mkih(C.IupSpace())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -50,7 +46,6 @@ func Cbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
 	h := mkih(C.IupCboxv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -65,13 +60,12 @@ func GridBox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
 	h := mkih(C.IupGridBoxv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
-// MultiBox creates a void container for composing elements in a irregular grid.
+// MultiBox creates a void container for composing elements in an irregular grid.
 // It is a box that arranges the elements it contains from top to bottom and from left to right,
-// by distributing the elements in lines or in columns. But its EXPAND attribute does not behave as a regular container,
+// by distributing the elements in lines or in columns. But its EXPAND attribute does not behave as a regular container;
 // instead it behaves as a regular element expanding into the available space.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_multibox.md
@@ -79,7 +73,6 @@ func MultiBox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
 	h := mkih(C.IupMultiBoxv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -93,7 +86,6 @@ func Hbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
 	h := mkih(C.IupHboxv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -107,12 +99,11 @@ func Vbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
 	h := mkih(C.IupVboxv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
 // Zbox Creates a void container for composing elements in hidden layers with only one layer visible.
-// It is a box that piles up the children it contains, only the one child is visible.
+// It is a box that piles up the children it contains; only the one child is visible.
 //
 // It does not have a native representation.
 //
@@ -121,7 +112,6 @@ func Zbox(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
 	h := mkih(C.IupZboxv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -134,19 +124,17 @@ func Zbox(children ...Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_radio.md
 func Radio(child Ihandle) Ihandle {
 	h := mkih(C.IupRadio(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
 // Normalizer creates a void container that does not affect the dialog layout.
-// It acts by normalizing all the controls in a list so their natural size becomes the biggest natural size amongst them.
+// It acts by normalizing all the controls in a list, so their natural size becomes the biggest natural size amongst them.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_normalizer.md
 func Normalizer(ihList ...Ihandle) Ihandle {
 	ihList = append(ihList, Ihandle(0))
 
 	h := mkih(C.IupNormalizerv((**C.Ihandle)(unsafe.Pointer(&(ihList[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -155,7 +143,6 @@ func Normalizer(ihList ...Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_frame.md
 func Frame(child Ihandle) Ihandle {
 	h := mkih(C.IupFrame(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -169,7 +156,6 @@ func Tabs(children ...Ihandle) Ihandle {
 	children = append(children, Ihandle(0))
 
 	h := mkih(C.IupTabsv((**C.Ihandle)(unsafe.Pointer(&(children[0])))))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -179,7 +165,6 @@ func Tabs(children ...Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_backgroundbox.md
 func BackgroundBox(child Ihandle) Ihandle {
 	h := mkih(C.IupBackgroundBox(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -188,7 +173,6 @@ func BackgroundBox(child Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_scrollbox.md
 func ScrollBox(child Ihandle) Ihandle {
 	h := mkih(C.IupScrollBox(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -203,7 +187,6 @@ func ScrollBox(child Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_detachbox.md
 func DetachBox(child Ihandle) Ihandle {
 	h := mkih(C.IupDetachBox(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -214,31 +197,28 @@ func DetachBox(child Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_expander.md
 func Expander(child Ihandle) Ihandle {
 	h := mkih(C.IupExpander(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
 // Sbox creates a void container that allows its child to be resized.
 // Allows expanding and contracting the child size in one direction.
 //
-// It does not have a native representation but it contains also a Canvas to implement the bar handler.
+// It does not have a native representation, but it contains also a Canvas to implement the bar handler.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_sbox.md
 func Sbox(child Ihandle) Ihandle {
 	h := mkih(C.IupSbox(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
 // Split creates a void container that split its client area in two.
 // Allows the provided controls to be enclosed in a box that allows expanding
-// and contracting the element size in one direction, but when one is expanded the other is contracted.
+// and contracting the element size in one direction, but when one is expanded, the other is contracted.
 //
 // It does not have a native representation, but it contains also a Canvas to implement the bar handler.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_split.md
 func Split(child1, child2 Ihandle) Ihandle {
 	h := mkih(C.IupSplit(child1.ptr(), child2.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
