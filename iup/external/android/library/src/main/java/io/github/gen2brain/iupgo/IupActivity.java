@@ -75,7 +75,37 @@ public class IupActivity extends AppCompatActivity
             sLastTouchX = (int) ev.getRawX();
             sLastTouchY = (int) ev.getRawY();
         }
+        if (IupCommon.inputCallbacksEnabled)
+        {
+            int x = (int) ev.getRawX();
+            int y = (int) ev.getRawY();
+            int meta = ev.getMetaState();
+            switch (action)
+            {
+                case MotionEvent.ACTION_DOWN:
+                    IupCommon.dispatchGlobalButton('1', 1, x, y, meta);
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    IupCommon.dispatchGlobalButton('1', 0, x, y, meta);
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    IupCommon.dispatchGlobalMotion(x, y, meta, 1);
+                    break;
+            }
+        }
         return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent ev)
+    {
+        if (IupCommon.inputCallbacksEnabled)
+        {
+            int press = (ev.getAction() == android.view.KeyEvent.ACTION_DOWN) ? 1 : 0;
+            IupCommon.dispatchGlobalKey(ev.getKeyCode(), ev.getMetaState(), press);
+        }
+        return super.dispatchKeyEvent(ev);
     }
 
 

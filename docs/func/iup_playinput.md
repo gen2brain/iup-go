@@ -1,6 +1,6 @@
 ## IupPlayInput
 
-Reproduces all mouse and keyboard inputs from a given file.
+Reproduce all mouse and keyboard inputs from a given file.
 
 ### Parameters/Return
 
@@ -23,8 +23,18 @@ If the file ends, all internal memory used to play the file will be automaticall
 It uses the MOUSEBUTTON global attribute to reproduce the events.
 **IMPORTANT**: See the documentation of the [MOUSEBUTTON](../attrib/iup_globals.md) attribute for further details and current limitations.
 
-The file must had been generated in the same operating system.
-Screen size differences can exist, but if different themes are used then mouse precision will be affected.
+The file must have been generated in the same operating system.
+Screen size differences can exist, but if different themes are used, then mouse precision will be affected.
+
+### Driver Support
+
+| Driver                          | Playback | Cursor moves   |
+|---------------------------------|----------|----------------|
+| Win32, WinUI, Cocoa, GTK, Motif | Yes      | Yes (OS-level) |
+| Qt, FLTK, Android               | Yes      | No (app-local) |
+| GTK4, EFL, CocoaTouch           | No       | -              |
+
+Both flavors fire the application's normal IUP callbacks. On unsupported drivers `IupPlayInput` returns IUP_NOERROR but events have no effect.
 
 ### See Also
 

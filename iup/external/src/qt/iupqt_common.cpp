@@ -732,20 +732,69 @@ extern "C" IUP_SDK_API void iupdrvSleep(int time)
   QThread::msleep(time);
 }
 
+/* App-local synthesis via QCoreApplication::postEvent: events fire IUP callbacks but the OS cursor is not moved. */
+
 extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
-  /* Not supported */
-  (void)key;
-  (void)press;
+  unsigned int keyval = 0, state = 0;
+  iupdrvKeyEncode(key, &keyval, &state);
+  if (!keyval) return;
+
+  QWidget* receiver = QApplication::focusWidget();
+  if (!receiver) receiver = QApplication::activeWindow();
+  if (!receiver) return;
+
+  Qt::KeyboardModifiers mods((int)state);
+  if (press & 0x01)
+    QCoreApplication::postEvent(receiver, new QKeyEvent(QEvent::KeyPress, (int)keyval, mods));
+  if (press & 0x02)
+    QCoreApplication::postEvent(receiver, new QKeyEvent(QEvent::KeyRelease, (int)keyval, mods));
 }
 
 extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
-  /* Not supported */
-  (void)x;
-  (void)y;
-  (void)bt;
-  (void)status;
+  QPoint global(x, y);
+  QWidget* receiver = QApplication::widgetAt(global);
+  if (!receiver) return;
+  QPoint local = receiver->mapFromGlobal(global);
+
+  if (bt == 'W')
+  {
+    QPoint angle(0, status * 120);
+    QCoreApplication::postEvent(receiver,
+                                new QWheelEvent(QPointF(local), QPointF(global), QPoint(), angle,
+                                  Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false));
+    return;
+  }
+
+  Qt::MouseButton button = Qt::NoButton;
+  switch (bt)
+  {
+    case IUP_BUTTON1: button = Qt::LeftButton;   break;
+    case IUP_BUTTON2: button = Qt::MiddleButton; break;
+    case IUP_BUTTON3: button = Qt::RightButton;  break;
+    default: return;
+  }
+
+  QEvent::Type type;
+  Qt::MouseButtons buttons = Qt::NoButton;
+  if (status == -1)
+  {
+    type = QEvent::MouseMove;
+  }
+  else if (status == 0)
+  {
+    type = QEvent::MouseButtonRelease;
+  }
+  else
+  {
+    type = (status == 2) ? QEvent::MouseButtonDblClick : QEvent::MouseButtonPress;
+    buttons = button;
+  }
+
+  QCoreApplication::postEvent(receiver,
+                              new QMouseEvent(type, QPointF(local), QPointF(global),
+                                              button, buttons, Qt::NoModifier));
 }
 
 extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle *ih, const char* title)

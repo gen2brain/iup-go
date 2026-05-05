@@ -213,6 +213,7 @@ IUP_DRV_API unsigned int iupeflGetDefaultSeat(Eo* widget);
 
 IUP_DRV_API void iupeflKeyEncode(int key, const char** keyname, const char** keystr);
 IUP_DRV_API void iupeflButtonKeySetStatus(Evas_Modifier* modifiers, unsigned int button, char* status, int doubleclick);
+IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keystr);
 
 /****************************************************************************
  * Menu Mnemonic Support

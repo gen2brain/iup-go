@@ -141,7 +141,7 @@ static int fltkKeyMap2Iup(int key, int state)
  * Key Decoding (FLTK event to IUP code)
  ****************************************************************************/
 
-static int fltkKeyDecode(void)
+IUP_DRV_API int iupfltkKeyDecode(void)
 {
   int key = Fl::event_key();
   int state = Fl::event_state();
@@ -189,7 +189,7 @@ static int iupObjectIsNativeContainer(Ihandle* ih)
 IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget *widget, Ihandle *ih)
 {
   int result;
-  int code = fltkKeyDecode();
+  int code = iupfltkKeyDecode();
   if (code == 0)
     return 0;
 
@@ -250,7 +250,7 @@ IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget *widget, Ihandle *ih)
 IUP_DRV_API int iupfltkKeyReleaseEvent(Fl_Widget *widget, Ihandle *ih)
 {
   int result;
-  int code = fltkKeyDecode();
+  int code = iupfltkKeyDecode();
   if (code == 0)
     return 0;
 
@@ -299,16 +299,79 @@ extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsi
  * Input Simulation
  ****************************************************************************/
 
+#include <FL/Fl_Window.H>
+
+/* App-local synthesis via Fl::handle: events fire IUP callbacks but the OS cursor is not moved. */
+
+static Fl_Window* fltkFindWindowAt(int sx, int sy)
+{
+  for (Fl_Window* w = Fl::first_window(); w; w = Fl::next_window(w))
+  {
+    if (!w->shown() || !w->visible()) continue;
+    if (sx >= w->x() && sx < w->x() + w->w() &&
+        sy >= w->y() && sy < w->y() + w->h())
+      return w;
+  }
+  return Fl::first_window();
+}
+
 extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
-  (void)key;
-  (void)press;
+  unsigned int keyval = 0, state = 0;
+  iupdrvKeyEncode(key, &keyval, &state);
+  if (!keyval) return;
+
+  Fl_Window* win = Fl::focus() ? Fl::focus()->window() : Fl::first_window();
+  if (!win) return;
+
+  Fl::e_keysym = (int)keyval;
+  Fl::e_state = (int)state;
+  Fl::e_text = (char*)"";
+  Fl::e_length = 0;
+
+  if (press & 0x01) Fl::handle(FL_KEYDOWN, win);
+  if (press & 0x02) Fl::handle(FL_KEYUP, win);
 }
 
 extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
-  (void)x;
-  (void)y;
-  (void)bt;
-  (void)status;
+  Fl_Window* win = fltkFindWindowAt(x, y);
+  if (!win) return;
+
+  Fl::e_x_root = x;
+  Fl::e_y_root = y;
+  Fl::e_x = x - win->x();
+  Fl::e_y = y - win->y();
+
+  if (bt == 'W')
+  {
+    Fl::e_dy = -status;
+    Fl::e_dx = 0;
+    Fl::handle(FL_MOUSEWHEEL, win);
+    return;
+  }
+
+  int fl_btn = 0;
+  switch (bt)
+  {
+    case IUP_BUTTON1: fl_btn = FL_LEFT_MOUSE;   break;
+    case IUP_BUTTON2: fl_btn = FL_MIDDLE_MOUSE; break;
+    case IUP_BUTTON3: fl_btn = FL_RIGHT_MOUSE;  break;
+    default: break;
+  }
+  Fl::e_keysym = FL_Button + fl_btn;
+
+  if (status == -1)
+  {
+    Fl::handle(FL_MOVE, win);
+  }
+  else if (status == 1 || status == 2)
+  {
+    Fl::e_clicks = (status == 2) ? 1 : 0;
+    Fl::handle(FL_PUSH, win);
+  }
+  else
+  {
+    Fl::handle(FL_RELEASE, win);
+  }
 }

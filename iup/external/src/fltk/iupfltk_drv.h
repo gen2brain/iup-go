@@ -76,6 +76,7 @@ IUP_DRV_API void iupfltkSetCanFocus(Fl_Widget *widget, int can);
 
 IUP_DRV_API int iupfltkKeyPressEvent(Fl_Widget *widget, Ihandle* ih);
 IUP_DRV_API int iupfltkKeyReleaseEvent(Fl_Widget *widget, Ihandle* ih);
+IUP_DRV_API int iupfltkKeyDecode(void);
 IUP_DRV_API void iupfltkButtonKeySetStatus(int state, int button, char* status, int doubleclick);
 
 /****************************************************************************

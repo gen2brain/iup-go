@@ -5,6 +5,7 @@
  */
 
 #include <FL/Fl.H>
+#include <FL/Fl_Window.H>
 #include <FL/platform.H>
 
 #include <cstdio>
@@ -13,8 +14,11 @@
 
 extern "C" {
 #include "iup.h"
+#include "iupcbs.h"
+#include "iupkey.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_key.h"
 #include "iup_singleinstance.h"
 }
 
@@ -25,11 +29,107 @@ extern "C" {
 #endif
 
 
+static int fltkGlobalButton(int b)
+{
+  switch (b)
+  {
+    case FL_LEFT_MOUSE:   return IUP_BUTTON1;
+    case FL_MIDDLE_MOUSE: return IUP_BUTTON2;
+    case FL_RIGHT_MOUSE:  return IUP_BUTTON3;
+    default:              return 0;
+  }
+}
+
+/* Returning 0 lets FLTK continue its normal widget-tree dispatch. */
+static int fltkGlobalEventHandler(int event)
+{
+  switch (event)
+  {
+  case FL_PUSH:
+  case FL_RELEASE:
+    {
+      IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
+      if (cb)
+      {
+        int button = fltkGlobalButton(Fl::event_button());
+        if (!button) break;
+        int pressed = (event == FL_PUSH) ? 1 : 0;
+        int doubleclick = (event == FL_PUSH && Fl::event_clicks() > 0) ? 1 : 0;
+        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+        iupfltkButtonKeySetStatus(Fl::event_state(), button, status, doubleclick);
+        cb(button, pressed, Fl::event_x_root(), Fl::event_y_root(), status);
+      }
+      break;
+    }
+  case FL_MOVE:
+  case FL_DRAG:
+    {
+      IFiis cb = (IFiis)IupGetFunction("GLOBALMOTION_CB");
+      if (cb)
+      {
+        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+        iupfltkButtonKeySetStatus(Fl::event_state(), 0, status, 0);
+        cb(Fl::event_x_root(), Fl::event_y_root(), status);
+      }
+      break;
+    }
+  case FL_MOUSEWHEEL:
+    {
+      IFfiis cb = (IFfiis)IupGetFunction("GLOBALWHEEL_CB");
+      if (cb)
+      {
+        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+        iupfltkButtonKeySetStatus(Fl::event_state(), 0, status, 0);
+        cb((float)-Fl::event_dy(), Fl::event_x_root(), Fl::event_y_root(), status);
+      }
+      break;
+    }
+  case FL_KEYDOWN:
+  case FL_KEYUP:
+    {
+      IFii cb = (IFii)IupGetFunction("GLOBALKEYPRESS_CB");
+      if (cb)
+      {
+        int code = iupfltkKeyDecode();
+        if (code != 0)
+          cb(code, (event == FL_KEYDOWN) ? 1 : 0);
+      }
+      break;
+    }
+  default:
+    break;
+  }
+  return 0;
+}
+
+static int fltk_global_handler_installed = 0;
+
 extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "FLTKTHEME"))
   {
     Fl::scheme(value);
+    return 1;
+  }
+
+  if (iupStrEqual(name, "INPUTCALLBACKS"))
+  {
+    if (iupStrBoolean(value))
+    {
+      if (!fltk_global_handler_installed)
+      {
+        Fl::add_handler(fltkGlobalEventHandler);
+        fltk_global_handler_installed = 1;
+      }
+    }
+    else
+    {
+      if (fltk_global_handler_installed)
+      {
+        Fl::remove_handler(fltkGlobalEventHandler);
+        fltk_global_handler_installed = 0;
+      }
+    }
     return 1;
   }
 

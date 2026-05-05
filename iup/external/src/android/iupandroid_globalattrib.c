@@ -76,6 +76,17 @@ static char* androidGetVirtualScreen(void)
 }
 
 
+static void androidSetInputCallbacks(int enabled)
+{
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = (*env)->FindClass(env, "io/github/gen2brain/iupgo/IupCommon");
+  if (!cls) return;
+  jfieldID fld = (*env)->GetStaticFieldID(env, cls, "inputCallbacksEnabled", "Z");
+  if (fld) (*env)->SetStaticBooleanField(env, cls, fld, enabled ? JNI_TRUE : JNI_FALSE);
+  iupAndroid_CheckException(env, "IupCommon.inputCallbacksEnabled");
+  (*env)->DeleteLocalRef(env, cls);
+}
+
 int iupdrvSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "LANGUAGE"))
@@ -89,6 +100,11 @@ int iupdrvSetGlobal(const char* name, const char* value)
       return 0;
     else
       return 1;
+  }
+  if (iupStrEqual(name, "INPUTCALLBACKS"))
+  {
+    androidSetInputCallbacks(iupStrBoolean(value));
+    return 1;
   }
   return 1;
 }

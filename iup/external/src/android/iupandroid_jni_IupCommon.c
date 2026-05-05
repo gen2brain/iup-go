@@ -6,6 +6,7 @@
 
 #include <jni.h>
 #include <stdint.h>
+#include <string.h>
 #include <math.h>
 
 #include "iup.h"
@@ -14,8 +15,58 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_drvinfo.h"
+#include "iup_key.h"
 
 #include "iupandroid_drv.h"
+
+/* AMETA_* mirrors android.view.KeyEvent meta flags. */
+#define AMETA_SHIFT_ON  0x0001
+#define AMETA_ALT_ON    0x0002
+#define AMETA_CTRL_ON   0x1000
+#define AMETA_META_ON   0x10000
+
+static void androidGlobalFillStatus(char* status, int meta_state, int button_state)
+{
+  memcpy(status, IUPKEY_STATUS_INIT, IUPKEY_STATUS_SIZE);
+  if (meta_state & AMETA_SHIFT_ON) iupKEY_SETSHIFT(status);
+  if (meta_state & AMETA_CTRL_ON)  iupKEY_SETCONTROL(status);
+  if (meta_state & AMETA_ALT_ON)   iupKEY_SETALT(status);
+  if (meta_state & AMETA_META_ON)  iupKEY_SETSYS(status);
+  if (button_state & 1)  iupKEY_SETBUTTON1(status);
+  if (button_state & 2)  iupKEY_SETBUTTON2(status);
+  if (button_state & 4)  iupKEY_SETBUTTON3(status);
+  if (button_state & 8)  iupKEY_SETBUTTON4(status);
+  if (button_state & 16) iupKEY_SETBUTTON5(status);
+}
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchGlobalButton(JNIEnv* env, jclass cls, jint button, jint pressed, jint x, jint y, jint meta_state)
+{
+  (void)env; (void)cls;
+  IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
+  if (!cb) return;
+  char status[IUPKEY_STATUS_SIZE];
+  androidGlobalFillStatus(status, meta_state, pressed ? (1 << (button - IUP_BUTTON1)) : 0);
+  cb(button, pressed, x, y, status);
+}
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchGlobalMotion(JNIEnv* env, jclass cls, jint x, jint y, jint meta_state, jint button_state)
+{
+  (void)env; (void)cls;
+  IFiis cb = (IFiis)IupGetFunction("GLOBALMOTION_CB");
+  if (!cb) return;
+  char status[IUPKEY_STATUS_SIZE];
+  androidGlobalFillStatus(status, meta_state, button_state);
+  cb(x, y, status);
+}
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchGlobalKey(JNIEnv* env, jclass cls, jint keycode, jint meta_state, jint pressed)
+{
+  (void)env; (void)cls;
+  IFii cb = (IFii)IupGetFunction("GLOBALKEYPRESS_CB");
+  if (!cb) return;
+  int code = iupandroidKeyDecode(keycode, meta_state);
+  if (code != 0) cb(code, pressed);
+}
 
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_RetainIhandle(JNIEnv* jni_env, jclass cls, jobject the_widget, jlong ihandle_ptr)
