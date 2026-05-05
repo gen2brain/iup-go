@@ -570,8 +570,17 @@ static LRESULT CALLBACK winTabsPageWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARA
   case WM_HSCROLL:
   case WM_NOTIFY:
   case WM_VSCROLL:
-    /* Forward the container messages to its parent. */
-    return SendMessage(GetParent(hWnd), msg, wp, lp);
+    {
+      /* Dispatch directly; forwarding to the tab control corrupts the tab strip. */
+      Ihandle* ih = iupwinHandleGet(hWnd);
+      if (iupObjectCheck(ih))
+      {
+        LRESULT result = 0;
+        if (iupwinBaseContainerMsgProc(ih, msg, wp, lp, &result))
+          return result;
+      }
+      break;
+    }
   }
 
   return DefWindowProc(hWnd, msg, wp, lp);
