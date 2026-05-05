@@ -113,11 +113,12 @@ func ProgressDlg() Ihandle {
 }
 
 // Alarm shows a modal dialog containing a message and up to three buttons.
+// Empty title falls back to the default localized title.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_alarm.md
 func Alarm(title, msg, b1, b2, b3 string) int {
-	cTitle, cMsg, cB1, cB2, cB3 := C.CString(title), C.CString(msg), C.CString(b1), cStrOrNull(b2), cStrOrNull(b3)
-	defer C.free(unsafe.Pointer(cTitle))
+	cTitle, cMsg, cB1, cB2, cB3 := cStrOrNull(title), C.CString(msg), C.CString(b1), cStrOrNull(b2), cStrOrNull(b3)
+	defer cStrFree(cTitle)
 	defer C.free(unsafe.Pointer(cMsg))
 	defer C.free(unsafe.Pointer(cB1))
 	defer cStrFree(cB2)
@@ -161,8 +162,8 @@ func GetColor(x, y int) (col color.RGBA, ret int) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_gettext.md
 func GetText(title, text string, maxSize int) (string, int) {
-	cTitle := C.CString(title)
-	defer C.free(unsafe.Pointer(cTitle))
+	cTitle := cStrOrNull(title)
+	defer cStrFree(cTitle)
 
 	bufSize := maxSize
 	if maxSize == 0 {
@@ -191,8 +192,8 @@ func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, 
 		panic("bad parameter passed to ListDialog")
 	}
 
-	cTitle := C.CString(title)
-	defer C.free(unsafe.Pointer(cTitle))
+	cTitle := cStrOrNull(title)
+	defer cStrFree(cTitle)
 
 	pList := make([]*C.char, len(list))
 	for i := 0; i < len(list); i++ {
@@ -228,9 +229,9 @@ func ListDialog(_type int, title string, list []string, op, maxCol, maxLin int, 
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_message.md
 func Message(title, msg string) {
-	cTitle, cMsg := C.CString(title), C.CString(msg)
-	defer C.free(unsafe.Pointer(cTitle))
-	defer C.free(unsafe.Pointer(cMsg))
+	cTitle, cMsg := cStrOrNull(title), cStrOrNull(msg)
+	defer cStrFree(cTitle)
+	defer cStrFree(cMsg)
 
 	C.IupMessage(cTitle, cMsg)
 }
@@ -247,8 +248,8 @@ func VersionShow() {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messageerror.md
 func MessageError(parent Ihandle, msg string) {
-	cMsg := C.CString(msg)
-	defer C.free(unsafe.Pointer(cMsg))
+	cMsg := cStrOrNull(msg)
+	defer cStrFree(cMsg)
 
 	C.IupMessageError(parent.ptr(), cMsg)
 }
@@ -258,10 +259,10 @@ func MessageError(parent Ihandle, msg string) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_messagealarm.md
 func MessageAlarm(parent Ihandle, title, msg, buttons string) {
-	cTitle, cMsg, cButtons := C.CString(title), C.CString(msg), C.CString(buttons)
-	defer C.free(unsafe.Pointer(cTitle))
-	defer C.free(unsafe.Pointer(cMsg))
-	defer C.free(unsafe.Pointer(cButtons))
+	cTitle, cMsg, cButtons := cStrOrNull(title), cStrOrNull(msg), cStrOrNull(buttons)
+	defer cStrFree(cTitle)
+	defer cStrFree(cMsg)
+	defer cStrFree(cButtons)
 
 	C.IupMessageAlarm(parent.ptr(), cTitle, cMsg, cButtons)
 }
@@ -370,8 +371,8 @@ func getParamInfo(format string) (paramCount, paramExtra int, types []byte) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/dlg/iup_getparam.md
 func GetParam(title string, action GetParamFunc, format string, data ...interface{}) int {
-	cTitle := C.CString(title)
-	defer C.free(unsafe.Pointer(cTitle))
+	cTitle := cStrOrNull(title)
+	defer cStrFree(cTitle)
 	cFormat := C.CString(format)
 	defer C.free(unsafe.Pointer(cFormat))
 

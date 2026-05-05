@@ -151,10 +151,10 @@ func CopyClassAttributes(srcIh, dstIh Ihandle) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setclassdefaultattribute.md
 func SetClassDefaultAttribute(className, name, value string) {
-	cClassName, cName, cValue := C.CString(className), C.CString(name), C.CString(value)
+	cClassName, cName, cValue := C.CString(className), C.CString(name), cStrOrNull(value)
 	defer C.free(unsafe.Pointer(cClassName))
 	defer C.free(unsafe.Pointer(cName))
-	defer C.free(unsafe.Pointer(cValue))
+	defer cStrFree(cValue)
 
 	C.IupSetClassDefaultAttribute(cClassName, cName, cValue)
 }

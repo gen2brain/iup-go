@@ -286,8 +286,8 @@ func GetAllDialogs() (names []string) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setlanguage.md
 func SetLanguage(lng string) {
-	cLng := C.CString(lng)
-	defer C.free(unsafe.Pointer(cLng))
+	cLng := cStrOrNull(lng)
+	defer cStrFree(cLng)
 
 	C.IupSetLanguage(cLng)
 }
@@ -304,9 +304,9 @@ func GetLanguage() string {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_setlanguagestring.md
 func SetLanguageString(name, str string) {
-	cName, cStr := C.CString(name), C.CString(str)
+	cName, cStr := C.CString(name), cStrOrNull(str)
 	defer C.free(unsafe.Pointer(cName))
-	defer C.free(unsafe.Pointer(cStr))
+	defer cStrFree(cStr)
 
 	C.IupStoreLanguageString(cName, cStr) //NOTE string always duplicated
 }
