@@ -2,8 +2,6 @@ package iup
 
 import (
 	"unsafe"
-
-	"github.com/google/uuid"
 )
 
 /*
@@ -14,14 +12,13 @@ import "C"
 
 // AnimatedLabel creates an animated label interface element, which displays an image that is changed periodically.
 //
-// It uses an animation that is simply a User with several Image as children.
+// It uses an animation that is simply a User with several Image objects as children.
 //
 // It inherits from Label.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_animatedlabel.md
 func AnimatedLabel(animation Ihandle) Ihandle {
 	h := mkih(C.IupAnimatedLabel(animation.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -35,7 +32,6 @@ func Button(title string) Ihandle {
 	defer cStrFree(cTitle)
 
 	h := mkih(C.IupButton(cTitle, nil))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -44,7 +40,6 @@ func Button(title string) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_calendar.md
 func Calendar() Ihandle {
 	h := mkih(C.IupCalendar())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -53,7 +48,6 @@ func Calendar() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_canvas.md
 func Canvas() Ihandle {
 	h := mkih(C.IupCanvas(nil))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -63,7 +57,6 @@ func Canvas() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_colorbar.md
 func ColorBar() Ihandle {
 	h := mkih(C.IupColorbar())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -73,7 +66,6 @@ func ColorBar() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_colorbrowser.md
 func ColorBrowser() Ihandle {
 	h := mkih(C.IupColorBrowser())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -82,7 +74,6 @@ func ColorBrowser() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_datepick.md
 func DatePick() Ihandle {
 	h := mkih(C.IupDatePick())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -94,7 +85,6 @@ func Dial(orientation string) Ihandle {
 	defer cStrFree(cOrientation)
 
 	h := mkih(C.IupDial(cOrientation))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -106,7 +96,6 @@ func Label(title string) Ihandle {
 	defer cStrFree(cTitle)
 
 	h := mkih(C.IupLabel(cTitle))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -115,7 +104,6 @@ func Label(title string) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_separator.md
 func Separator() Ihandle {
 	h := mkih(C.IupSeparator())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -129,18 +117,16 @@ func Link(url, title string) Ihandle {
 	defer cStrFree(cTitle)
 
 	h := mkih(C.IupLink(cUrl, cTitle))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
 // List Creates an interface element that displays a list of items.
 // The list can be visible or can be dropped down. It also can have an edit box for text input. So it is a 4 in 1 element.
-// In native systems the dropped down case is called Combo Box.
+// In native systems, the dropped-down case is called Combo Box.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_list.md
 func List() Ihandle {
 	h := mkih(C.IupList(nil))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -151,7 +137,6 @@ func List() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_progressbar.md
 func ProgressBar() Ihandle {
 	h := mkih(C.IupProgressBar())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -161,7 +146,6 @@ func ProgressBar() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_spin.md
 func Spin() Ihandle {
 	h := mkih(C.IupSpin())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -170,7 +154,6 @@ func Spin() Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_spin.md
 func SpinBox(child Ihandle) Ihandle {
 	h := mkih(C.IupSpinbox(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -179,12 +162,11 @@ func SpinBox(child Ihandle) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_text.md
 func Text() Ihandle {
 	h := mkih(C.IupText(nil))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
 // TextConvertLinColToPos converts a (lin, col) character positioning into an absolute position.
-// lin and col starts at 1, pos starts at 0. For single line controls pos is always "col-1".
+// lin and col start at 1, pos starts at 0. For single line controls pos is always "col-1".
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_text.md
 func TextConvertLinColToPos(ih Ihandle, lin, col int) (pos int) {
@@ -193,7 +175,7 @@ func TextConvertLinColToPos(ih Ihandle, lin, col int) (pos int) {
 }
 
 // TextConvertPosToLinCol Converts an absolute position into a (lin, col) character positioning.
-// lin and col starts at 1, pos starts at 0. For single line controls lin is always 1, and col is always "pos+1".
+// lin and col start at 1, pos starts at 0. For single line controls lin is always 1, and col is always "pos+1".
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_text.md
 func TextConvertPosToLinCol(ih Ihandle, pos int) (lin, col int) {
@@ -204,12 +186,11 @@ func TextConvertPosToLinCol(ih Ihandle, pos int) (lin, col int) {
 // MultiLine creates an editable field with one or more lines.
 //
 // Text has support for multiple lines when the MULTILINE attribute is set to YES.
-// Now when a Multiline element is created in fact a Text element with MULTILINE=YES is created.
+// Now when a Multiline element is created, in fact, a Text element with MULTILINE=YES is created.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_multiline.md
 func MultiLine() Ihandle {
 	h := mkih(C.IupMultiLine(nil))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -223,7 +204,6 @@ func Toggle(title string) Ihandle {
 	defer cStrFree(cTitle)
 
 	h := mkih(C.IupToggle(cTitle, nil))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -239,17 +219,15 @@ func Toggle(title string) Ihandle {
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_tree.md
 func Tree() Ihandle {
 	h := mkih(C.IupTree())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
 // Table creates a table with multiple columns and rows for displaying tabular data.
-// Uses native table widgets on each platform for best performance.
+// Uses native table widgets on each platform.
 //
-// See IUPTABLE_DESIGN.md for complete API documentation.
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_table.md
 func Table() Ihandle {
 	h := mkih(C.IupTable())
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -302,7 +280,6 @@ func Val(_type string) Ihandle {
 	defer cStrFree(cType)
 
 	h := mkih(C.IupVal(cType))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -314,7 +291,6 @@ func Scrollbar(orientation string) Ihandle {
 	defer cStrFree(cOrientation)
 
 	h := mkih(C.IupScrollbar(cOrientation))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }
 
@@ -330,6 +306,5 @@ func Scrollbar(orientation string) Ihandle {
 //   - SHOW_CB: called when popover visibility changes (state: SHOW=0, HIDE=4)
 func Popover(child Ihandle) Ihandle {
 	h := mkih(C.IupPopover(child.ptr()))
-	h.SetAttribute("UUID", uuid.NewString())
 	return h
 }

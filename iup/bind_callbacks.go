@@ -1,10 +1,9 @@
 package iup
 
 import (
-	"fmt"
 	"runtime/cgo"
-	"sync"
-	"sync/atomic"
+	"strconv"
+	"strings"
 	"unsafe"
 )
 
@@ -14,9 +13,84 @@ import (
 import "C"
 
 var (
-	callbacks sync.Map
-	messages  atomic.Int64
+	globalIdleHandle  cgo.Handle
+	globalEntryHandle cgo.Handle
+	globalExitHandle  cgo.Handle
 )
+
+// Tracks which _IUPGO_* keys are set on an Ihandle. _IUP* names are skipped
+// by IupGetAllAttributes, so we can't iterate them at destroy time without this list.
+const iupgoRegistryAttr = "_IUPGO_REGISTRY"
+
+func handleToStr(ch cgo.Handle) string {
+	return strconv.FormatUint(uint64(ch), 36)
+}
+
+func strToHandle(s string) cgo.Handle {
+	if s == "" {
+		return 0
+	}
+	n, err := strconv.ParseUint(s, 36, 64)
+	if err != nil {
+		return 0
+	}
+	return cgo.Handle(uintptr(n))
+}
+
+func storeCallback(ih Ihandle, key string, f any) {
+	if old := strToHandle(ih.GetAttribute(key)); old != 0 {
+		old.Delete()
+	} else {
+		list := ih.GetAttribute(iupgoRegistryAttr)
+		if list == "" {
+			ih.SetAttribute(iupgoRegistryAttr, key)
+			C.goIupSetLDestroyFunc(ih.ptr())
+		} else {
+			ih.SetAttribute(iupgoRegistryAttr, list+","+key)
+		}
+	}
+	ih.SetAttribute(key, handleToStr(cgo.NewHandle(f)))
+}
+
+func loadCallback(ih Ihandle, key string) cgo.Handle {
+	return strToHandle(ih.GetAttribute(key))
+}
+
+func clearCallback(ih Ihandle, key string) {
+	if old := strToHandle(ih.GetAttribute(key)); old != 0 {
+		old.Delete()
+		ih.SetAttribute(key, "")
+	}
+}
+
+func setGlobalHandle(slot *cgo.Handle, f any) {
+	if *slot != 0 {
+		slot.Delete()
+	}
+	*slot = cgo.NewHandle(f)
+}
+
+func clearGlobalHandle(slot *cgo.Handle) {
+	if *slot != 0 {
+		slot.Delete()
+		*slot = 0
+	}
+}
+
+//export goIupLDestroyCB
+func goIupLDestroyCB(ih unsafe.Pointer) C.int {
+	h := (Ihandle)(ih)
+	list := h.GetAttribute(iupgoRegistryAttr)
+	if list == "" {
+		return 0
+	}
+	for _, key := range strings.Split(list, ",") {
+		if ch := strToHandle(h.GetAttribute(key)); ch != 0 {
+			ch.Delete()
+		}
+	}
+	return 0
+}
 
 //--------------------
 
@@ -28,22 +102,13 @@ type IdleFunc func() int
 
 //export goIupIdleCB
 func goIupIdleCB() C.int {
-	h, ok := callbacks.Load("IDLE_ACTION")
-	if !ok {
-		panic("cannot load callback " + "IDLE_ACTION")
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(IdleFunc)
-
+	f := globalIdleHandle.Value().(IdleFunc)
 	return C.int(f())
 }
 
 // setIdleFunc for IDLE_ACTION.
 func setIdleFunc(f IdleFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("IDLE_ACTION", ch)
-
+	setGlobalHandle(&globalIdleHandle, f)
 	C.goIupSetIdleFunc()
 }
 
@@ -57,22 +122,13 @@ type EntryPointFunc func()
 
 //export goIupEntryPointCB
 func goIupEntryPointCB() {
-	h, ok := callbacks.Load("ENTRY_POINT")
-	if !ok {
-		panic("cannot load callback " + "ENTRY_POINT")
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(EntryPointFunc)
-
+	f := globalEntryHandle.Value().(EntryPointFunc)
 	f()
 }
 
 // setEntryPointFunc for ENTRY_POINT.
 func setEntryPointFunc(f EntryPointFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("ENTRY_POINT", ch)
-
+	setGlobalHandle(&globalEntryHandle, f)
 	C.goIupSetEntryPointFunc()
 }
 
@@ -86,22 +142,13 @@ type ExitFunc func()
 
 //export goIupExitCB
 func goIupExitCB() {
-	h, ok := callbacks.Load("EXIT_CB")
-	if !ok {
-		panic("cannot load callback " + "EXIT_CB")
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ExitFunc)
-
+	f := globalExitHandle.Value().(ExitFunc)
 	f()
 }
 
 // setExitFunc for EXIT_CB.
 func setExitFunc(f ExitFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("EXIT_CB", ch)
-
+	setGlobalHandle(&globalExitHandle, f)
 	C.goIupSetExitFunc()
 }
 
@@ -116,14 +163,7 @@ type MapFunc func(Ihandle) int
 
 //export goIupMapCB
 func goIupMapCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("MAP_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "MAP_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(MapFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_MAP_CB").Value().(MapFunc)
 
 	return C.int(f((Ihandle)(ih)))
 
@@ -131,8 +171,7 @@ func goIupMapCB(ih unsafe.Pointer) C.int {
 
 // setMapFunc for MAP_CB.
 func setMapFunc(ih Ihandle, f MapFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("MAP_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_MAP_CB", f)
 
 	C.goIupSetMapFunc(ih.ptr())
 }
@@ -147,22 +186,14 @@ type UnmapFunc func(Ihandle) int
 
 //export goIupUnmapCB
 func goIupUnmapCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("UNMAP_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "UNMAP_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(UnmapFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_UNMAP_CB").Value().(UnmapFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setUnmapFunc for UNMAP_CB.
 func setUnmapFunc(ih Ihandle, f UnmapFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("UNMAP_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_UNMAP_CB", f)
 
 	C.goIupSetUnmapFunc(ih.ptr())
 }
@@ -177,22 +208,14 @@ type DestroyFunc func(Ihandle) int
 
 //export goIupDestroyCB
 func goIupDestroyCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DESTROY_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "DESTROY_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(DestroyFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_DESTROY_CB").Value().(DestroyFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setDestroyFunc for DESTROY_CB.
 func setDestroyFunc(ih Ihandle, f DestroyFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DESTROY_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DESTROY_CB", f)
 
 	C.goIupSetDestroyFunc(ih.ptr())
 }
@@ -207,22 +230,14 @@ type GetFocusFunc func(Ihandle) int
 
 //export goIupGetFocusCB
 func goIupGetFocusCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("GETFOCUS_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "GETFOCUS_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(GetFocusFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_GETFOCUS_CB").Value().(GetFocusFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setGetFocusFunc for GETFOCUS_CB.
 func setGetFocusFunc(ih Ihandle, f GetFocusFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("GETFOCUS_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_GETFOCUS_CB", f)
 
 	C.goIupSetGetFocusFunc(ih.ptr())
 }
@@ -237,22 +252,14 @@ type KillFocusFunc func(Ihandle) int
 
 //export goIupKillFocusCB
 func goIupKillFocusCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("KILLFOCUS_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "KILLFOCUS_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(KillFocusFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_KILLFOCUS_CB").Value().(KillFocusFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setKillFocusFunc for KILLFOCUS_CB.
 func setKillFocusFunc(ih Ihandle, f KillFocusFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("KILLFOCUS_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_KILLFOCUS_CB", f)
 
 	C.goIupSetKillFocusFunc(ih.ptr())
 }
@@ -267,22 +274,14 @@ type EnterWindowFunc func(Ihandle) int
 
 //export goIupEnterWindowCB
 func goIupEnterWindowCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("ENTERWINDOW_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "ENTERWINDOW_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(EnterWindowFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_ENTERWINDOW_CB").Value().(EnterWindowFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setEnterWindowFunc for ENTERWINDOW_CB.
 func setEnterWindowFunc(ih Ihandle, f EnterWindowFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("ENTERWINDOW_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_ENTERWINDOW_CB", f)
 
 	C.goIupSetEnterWindowFunc(ih.ptr())
 }
@@ -297,22 +296,14 @@ type LeaveWindowFunc func(Ihandle) int
 
 //export goIupLeaveWindowCB
 func goIupLeaveWindowCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("LEAVEWINDOW_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "LEAVEWINDOW_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(LeaveWindowFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_LEAVEWINDOW_CB").Value().(LeaveWindowFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setLeaveWindowFunc for LEAVEWINDOW_CB.
 func setLeaveWindowFunc(ih Ihandle, f LeaveWindowFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("LEAVEWINDOW_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_LEAVEWINDOW_CB", f)
 
 	C.goIupSetLeaveWindowFunc(ih.ptr())
 }
@@ -327,22 +318,14 @@ type KAnyFunc func(Ihandle, int) int
 
 //export goIupKAnyCB
 func goIupKAnyCB(ih unsafe.Pointer, c C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("K_ANY_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "K_ANY_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(KAnyFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_K_ANY").Value().(KAnyFunc)
 
 	return C.int(f((Ihandle)(ih), int(c)))
 }
 
 // setKAnyFunc for K_ANY.
 func setKAnyFunc(ih Ihandle, f KAnyFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("K_ANY_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_K_ANY", f)
 
 	C.goIupSetKAnyFunc(ih.ptr())
 }
@@ -350,29 +333,21 @@ func setKAnyFunc(ih Ihandle, f KAnyFunc) {
 //--------------------
 
 // HelpFunc for HELP_CB callback.
-// Action generated when the user press F1 at a control.
+// Action generated when the user presses F1 at a control.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_help_cb.md
 type HelpFunc func(Ihandle) int
 
 //export goIupHelpCB
 func goIupHelpCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("HELP_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "HELP_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(HelpFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_HELP_CB").Value().(HelpFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setHelpFunc for HELP_CB.
 func setHelpFunc(ih Ihandle, f HelpFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("HELP_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_HELP_CB", f)
 
 	C.goIupSetHelpFunc(ih.ptr())
 }
@@ -387,22 +362,14 @@ type ActionFunc func(Ihandle) int
 
 //export goIupActionCB
 func goIupActionCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("ACTION_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "ACTION_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ActionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_ACTION").Value().(ActionFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setActionFunc for ACTION.
 func setActionFunc(ih Ihandle, f ActionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("ACTION_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_ACTION", f)
 
 	C.goIupSetActionFunc(ih.ptr())
 }
@@ -417,14 +384,7 @@ type ButtonFunc func(Ihandle, int, int, int, int, string) int
 
 //export goIupButtonCB
 func goIupButtonCB(ih unsafe.Pointer, button, pressed, x, y C.int, status unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("BUTTON_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "BUTTON_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ButtonFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_BUTTON_CB").Value().(ButtonFunc)
 
 	goStatus := C.GoString((*C.char)(status))
 	return C.int(f((Ihandle)(ih), int(button), int(pressed), int(x), int(y), goStatus))
@@ -432,8 +392,7 @@ func goIupButtonCB(ih unsafe.Pointer, button, pressed, x, y C.int, status unsafe
 
 // setButtonFunc for BUTTON_CB.
 func setButtonFunc(ih Ihandle, f ButtonFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("BUTTON_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_BUTTON_CB", f)
 
 	C.goIupSetButtonFunc(ih.ptr())
 }
@@ -441,21 +400,14 @@ func setButtonFunc(ih Ihandle, f ButtonFunc) {
 //--------------------
 
 // DropFilesFunc for DROPFILES_CB callback.
-// Action called when a file is "dropped" into the control.
+// Action called when a file is "dropped" into control.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_dropfiles_cb.md
 type DropFilesFunc func(Ihandle, string, int, int, int) int
 
 //export goIupDropFilesCB
 func goIupDropFilesCB(ih, filename unsafe.Pointer, num, x, y C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DROPFILES_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "DROPFILES_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(DropFilesFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_DROPFILES_CB").Value().(DropFilesFunc)
 
 	goFilename := C.GoString((*C.char)(filename))
 	return C.int(f((Ihandle)(ih), goFilename, int(num), int(x), int(y)))
@@ -463,8 +415,7 @@ func goIupDropFilesCB(ih, filename unsafe.Pointer, num, x, y C.int) C.int {
 
 // setDropFilesFunc for DROPFILE_CB.
 func setDropFilesFunc(ih Ihandle, f DropFilesFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DROPFILES_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DROPFILES_CB", f)
 
 	C.goIupSetDropFilesFunc(ih.ptr())
 }
@@ -477,14 +428,7 @@ type ListActionFunc func(ih Ihandle, text string, item, state int) int
 
 //export goIupListActionCB
 func goIupListActionCB(ih, text unsafe.Pointer, item, state C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("LIST_ACTION_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "LIST_ACTION_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ListActionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_LIST_ACTION").Value().(ListActionFunc)
 
 	goText := C.GoString((*C.char)(text))
 	return C.int(f((Ihandle)(ih), goText, int(item), int(state)))
@@ -492,8 +436,7 @@ func goIupListActionCB(ih, text unsafe.Pointer, item, state C.int) C.int {
 
 // setListActionFunc for List ACTION callback.
 func setListActionFunc(ih Ihandle, f ListActionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("LIST_ACTION_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_LIST_ACTION", f)
 
 	C.goIupSetListActionFunc(ih.ptr())
 }
@@ -508,12 +451,10 @@ type ListValueFunc func(ih Ihandle, pos int) string
 
 //export goIupListValueCB
 func goIupListValueCB(ih unsafe.Pointer, pos C.int) *C.char {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("LIST_VALUE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "LIST_VALUE_CB_" + uuid)
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_LIST_VALUE_CB")
+	if ch == 0 {
+		return nil
 	}
-	ch := h.(cgo.Handle)
 	f := ch.Value().(ListValueFunc)
 	result := f((Ihandle)(ih), int(pos))
 	if result == "" {
@@ -524,8 +465,7 @@ func goIupListValueCB(ih unsafe.Pointer, pos C.int) *C.char {
 
 // setListValueFunc for List VALUE_CB callback.
 func setListValueFunc(ih Ihandle, f ListValueFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("LIST_VALUE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_LIST_VALUE_CB", f)
 	C.goIupSetListValueFunc(ih.ptr())
 }
 
@@ -538,12 +478,10 @@ type ListImageFunc func(ih Ihandle, pos int) string
 
 //export goIupListImageCB
 func goIupListImageCB(ih unsafe.Pointer, pos C.int) *C.char {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("LIST_IMAGE_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_LIST_IMAGE_CB")
+	if ch == 0 {
 		return nil
 	}
-	ch := h.(cgo.Handle)
 	f := ch.Value().(ListImageFunc)
 	result := f((Ihandle)(ih), int(pos))
 	if result == "" {
@@ -554,8 +492,7 @@ func goIupListImageCB(ih unsafe.Pointer, pos C.int) *C.char {
 
 // setListImageFunc for List IMAGE_CB callback.
 func setListImageFunc(ih Ihandle, f ListImageFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("LIST_IMAGE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_LIST_IMAGE_CB", f)
 	C.goIupSetListImageFunc(ih.ptr())
 }
 
@@ -567,22 +504,14 @@ type CaretFunc func(ih Ihandle, lin, col, pos int) int
 
 //export goIupCaretCB
 func goIupCaretCB(ih unsafe.Pointer, lin, col, pos C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("CARET_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "CARET_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(CaretFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_CARET_CB").Value().(CaretFunc)
 
 	return C.int(f((Ihandle)(ih), int(lin), int(col), int(pos)))
 }
 
 // setCaretFunc for CARET_CB.
 func setCaretFunc(ih Ihandle, f CaretFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("CARET_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_CARET_CB", f)
 
 	C.goIupSetCaretFunc(ih.ptr())
 }
@@ -595,14 +524,7 @@ type DblclickFunc func(ih Ihandle, item int, text string) int
 
 //export goIupDblclickCB
 func goIupDblclickCB(ih unsafe.Pointer, item C.int, text unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DBLCLICK_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "DBLCLICK_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(DblclickFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_DBLCLICK_CB").Value().(DblclickFunc)
 
 	goText := C.GoString((*C.char)(text))
 	return C.int(f((Ihandle)(ih), int(item), goText))
@@ -610,8 +532,7 @@ func goIupDblclickCB(ih unsafe.Pointer, item C.int, text unsafe.Pointer) C.int {
 
 // setDblclickFunc for DBLCLICK_CB.
 func setDblclickFunc(ih Ihandle, f DblclickFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DBLCLICK_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DBLCLICK_CB", f)
 
 	C.goIupSetDblclickFunc(ih.ptr())
 }
@@ -624,14 +545,7 @@ type EditFunc func(ih Ihandle, item int, text string) int
 
 //export goIupEditCB
 func goIupEditCB(ih unsafe.Pointer, item C.int, text unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("EDIT_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "EDIT_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(EditFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_EDIT_CB").Value().(EditFunc)
 
 	goText := C.GoString((*C.char)(text))
 	return C.int(f((Ihandle)(ih), int(item), goText))
@@ -639,8 +553,7 @@ func goIupEditCB(ih unsafe.Pointer, item C.int, text unsafe.Pointer) C.int {
 
 // setEditFunc for EDIT_CB.
 func setEditFunc(ih Ihandle, f EditFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("EDIT_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_EDIT_CB", f)
 
 	C.goIupSetEditFunc(ih.ptr())
 }
@@ -653,14 +566,7 @@ type MotionFunc func(ih Ihandle, x, y int, status string) int
 
 //export goIupMotionCB
 func goIupMotionCB(ih unsafe.Pointer, x, y C.int, status unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("MOTION_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "MOTION_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(MotionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_MOTION_CB").Value().(MotionFunc)
 
 	goStatus := C.GoString((*C.char)(status))
 	return C.int(f((Ihandle)(ih), int(x), int(y), goStatus))
@@ -668,8 +574,7 @@ func goIupMotionCB(ih unsafe.Pointer, x, y C.int, status unsafe.Pointer) C.int {
 
 // setMotionFunc for MOTION_CB.
 func setMotionFunc(ih Ihandle, f MotionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("MOTION_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_MOTION_CB", f)
 
 	C.goIupSetMotionFunc(ih.ptr())
 }
@@ -682,14 +587,7 @@ type MultiselectFunc func(ih Ihandle, text string) int
 
 //export goIupMultiselectCB
 func goIupMultiselectCB(ih, text unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("MULTISELECT_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "MULTISELECT_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(MultiselectFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_MULTISELECT_CB").Value().(MultiselectFunc)
 
 	goText := C.GoString((*C.char)(text))
 	return C.int(f((Ihandle)(ih), goText))
@@ -697,8 +595,7 @@ func goIupMultiselectCB(ih, text unsafe.Pointer) C.int {
 
 // setMultiselectFunc for MULTISELECT_CB.
 func setMultiselectFunc(ih Ihandle, f MultiselectFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("MULTISELECT_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_MULTISELECT_CB", f)
 
 	C.goIupSetMultiselectFunc(ih.ptr())
 }
@@ -711,22 +608,14 @@ type ValueChangedFunc func(ih Ihandle) int
 
 //export goIupValueChangedCB
 func goIupValueChangedCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("VALUECHANGED_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "VALUECHANGED_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ValueChangedFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_VALUECHANGED_CB").Value().(ValueChangedFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setValueChangedFunc for VALUECHANGED_CB.
 func setValueChangedFunc(ih Ihandle, f ValueChangedFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("VALUECHANGED_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_VALUECHANGED_CB", f)
 
 	C.goIupSetValueChangedFunc(ih.ptr())
 }
@@ -739,14 +628,7 @@ type TextActionFunc func(ih Ihandle, ch int, newValue string) int
 
 //export goIupTextActionCB
 func goIupTextActionCB(ih unsafe.Pointer, c C.int, newValue unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("TEXT_ACTION_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "TEXT_ACTION_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(TextActionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TEXT_ACTION").Value().(TextActionFunc)
 
 	goNewValue := C.GoString((*C.char)(newValue))
 	return C.int(f((Ihandle)(ih), int(c), goNewValue))
@@ -754,8 +636,7 @@ func goIupTextActionCB(ih unsafe.Pointer, c C.int, newValue unsafe.Pointer) C.in
 
 // setTextActionFunc for Text ACTION.
 func setTextActionFunc(ih Ihandle, f TextActionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("TEXT_ACTION_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_TEXT_ACTION", f)
 
 	C.goIupSetTextActionFunc(ih.ptr())
 }
@@ -768,22 +649,14 @@ type ToggleActionFunc func(ih Ihandle, state int) int
 
 //export goIupToggleActionCB
 func goIupToggleActionCB(ih unsafe.Pointer, state C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("TOGGLE_ACTION_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "TOGGLE_ACTION_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ToggleActionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TOGGLE_ACTION").Value().(ToggleActionFunc)
 
 	return C.int(f((Ihandle)(ih), int(state)))
 }
 
 // setToggleActionFunc for Toggle ACTION.
 func setToggleActionFunc(ih Ihandle, f ToggleActionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("TOGGLE_ACTION_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_TOGGLE_ACTION", f)
 
 	C.goIupSetToggleActionFunc(ih.ptr())
 }
@@ -791,26 +664,18 @@ func setToggleActionFunc(ih Ihandle, f ToggleActionFunc) {
 //--------------------
 
 // TabChangeFunc for TABCHANGE_CB callback.
-type TabChangeFunc func(ih, new_tab, old_tab Ihandle) int
+type TabChangeFunc func(ih, newTab, oldTab Ihandle) int
 
 //export goIupTabChangeCB
-func goIupTabChangeCB(ih, new_tab, old_tab unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("TABCHANGE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "TABCHANGE_CB_" + uuid)
-	}
+func goIupTabChangeCB(ih, newTab, oldTab unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TABCHANGE_CB").Value().(TabChangeFunc)
 
-	ch := h.(cgo.Handle)
-	f := ch.Value().(TabChangeFunc)
-
-	return C.int(f((Ihandle)(ih), (Ihandle)(new_tab), (Ihandle)(old_tab)))
+	return C.int(f((Ihandle)(ih), (Ihandle)(newTab), (Ihandle)(oldTab)))
 }
 
 // setTabChangeFunc for TABCHANGE_CB.
 func setTabChangeFunc(ih Ihandle, f TabChangeFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("TABCHANGE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_TABCHANGE_CB", f)
 
 	C.goIupSetTabChangeFunc(ih.ptr())
 }
@@ -818,26 +683,18 @@ func setTabChangeFunc(ih Ihandle, f TabChangeFunc) {
 //--------------------
 
 // TabChangePosFunc for TABCHANGEPOS_CB callback.
-type TabChangePosFunc func(ih Ihandle, new_pos, old_pos int) int
+type TabChangePosFunc func(ih Ihandle, newPos, oldPos int) int
 
 //export goIupTabChangePosCB
-func goIupTabChangePosCB(ih unsafe.Pointer, new_pos, old_pos C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("TABCHANGEPOS_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "TABCHANGEPOS_CB_" + uuid)
-	}
+func goIupTabChangePosCB(ih unsafe.Pointer, newPos, oldPos C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TABCHANGEPOS_CB").Value().(TabChangePosFunc)
 
-	ch := h.(cgo.Handle)
-	f := ch.Value().(TabChangePosFunc)
-
-	return C.int(f((Ihandle)(ih), int(new_pos), int(old_pos)))
+	return C.int(f((Ihandle)(ih), int(newPos), int(oldPos)))
 }
 
 // setTabChangePosFunc for TABCHANGEPOS_CB.
 func setTabChangePosFunc(ih Ihandle, f TabChangePosFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("TABCHANGEPOS_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_TABCHANGEPOS_CB", f)
 
 	C.goIupSetTabChangePosFunc(ih.ptr())
 }
@@ -845,26 +702,18 @@ func setTabChangePosFunc(ih Ihandle, f TabChangePosFunc) {
 //--------------------
 
 // ReorderFunc for REORDER_CB callback.
-type ReorderFunc func(ih Ihandle, old_pos, new_pos int) int
+type ReorderFunc func(ih Ihandle, oldPos, newPos int) int
 
 //export goIupReorderCB
-func goIupReorderCB(ih unsafe.Pointer, old_pos, new_pos C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("REORDER_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "REORDER_CB_" + uuid)
-	}
+func goIupReorderCB(ih unsafe.Pointer, oldPos, newPos C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_REORDER_CB").Value().(ReorderFunc)
 
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ReorderFunc)
-
-	return C.int(f((Ihandle)(ih), int(old_pos), int(new_pos)))
+	return C.int(f((Ihandle)(ih), int(oldPos), int(newPos)))
 }
 
 // setReorderFunc for REORDER_CB.
 func setReorderFunc(ih Ihandle, f ReorderFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("REORDER_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_REORDER_CB", f)
 
 	C.goIupSetReorderFunc(ih.ptr())
 }
@@ -876,22 +725,14 @@ type SpinFunc func(ih Ihandle, inc int) int
 
 //export goIupSpinCB
 func goIupSpinCB(ih unsafe.Pointer, inc C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("SPIN_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "SPIN_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(SpinFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_SPIN_CB").Value().(SpinFunc)
 
 	return C.int(f((Ihandle)(ih), int(inc)))
 }
 
 // setSpinFunc for SPIN_CB.
 func setSpinFunc(ih Ihandle, f SpinFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("SPIN_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_SPIN_CB", f)
 
 	C.goIupSetSpinFunc(ih.ptr())
 }
@@ -903,27 +744,22 @@ type PostMessageFunc func(Ihandle, string, int, any) int
 
 //export goIupPostMessageCB
 func goIupPostMessageCB(ih unsafe.Pointer, s unsafe.Pointer, i C.int, d C.double, p unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("POSTMESSAGE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "POSTMESSAGE_CB_" + uuid)
+	_ = d
+	f := loadCallback((Ihandle)(ih), "_IUPGO_POSTMESSAGE_CB").Value().(PostMessageFunc)
+
+	var payload any
+	if p != nil {
+		ph := cgo.Handle(uintptr(p))
+		payload = ph.Value()
+		ph.Delete()
 	}
 
-	ch := h.(cgo.Handle)
-	f := ch.Value().(PostMessageFunc)
-
-	m, ok := callbacks.LoadAndDelete(fmt.Sprintf("POSTMESSAGE_MSG_%s_%d", uuid, int(d)))
-	if !ok {
-		panic("cannot load and delete message " + fmt.Sprintf("POSTMESSAGE_MSG_%s_%d", uuid, int(d)))
-	}
-
-	return C.int(f((Ihandle)(ih), C.GoString((*C.char)(s)), int(i), m))
+	return C.int(f((Ihandle)(ih), C.GoString((*C.char)(s)), int(i), payload))
 }
 
 // setPostMessageFunc for POSTMESSAGE_CB.
 func setPostMessageFunc(ih Ihandle, f PostMessageFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("POSTMESSAGE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_POSTMESSAGE_CB", f)
 
 	C.goIupSetPostMessageFunc(ih.ptr())
 }
@@ -937,22 +773,14 @@ type CloseFunc func(Ihandle) int
 
 //export goIupCloseCB
 func goIupCloseCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("CLOSE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "CLOSE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(CloseFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_CLOSE_CB").Value().(CloseFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setCloseFunc for CLOSE_CB.
 func setCloseFunc(ih Ihandle, f CloseFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("CLOSE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_CLOSE_CB", f)
 
 	C.goIupSetCloseFunc(ih.ptr())
 }
@@ -966,22 +794,14 @@ type FocusFunc func(Ihandle, int) int
 
 //export goIupFocusCB
 func goIupFocusCB(ih unsafe.Pointer, c C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("FOCUS_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "FOCUS_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(FocusFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_FOCUS_CB").Value().(FocusFunc)
 
 	return C.int(f((Ihandle)(ih), int(c)))
 }
 
 // setFocusFunc for FOCUS_CB.
 func setFocusFunc(ih Ihandle, f FocusFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("FOCUS_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_FOCUS_CB", f)
 
 	C.goIupSetFocusFunc(ih.ptr())
 }
@@ -994,22 +814,14 @@ type MoveFunc func(ih Ihandle, x, y int) int
 
 //export goIupMoveCB
 func goIupMoveCB(ih unsafe.Pointer, x, y C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("MOVE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "MOVE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(MoveFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_MOVE_CB").Value().(MoveFunc)
 
 	return C.int(f((Ihandle)(ih), int(x), int(y)))
 }
 
 // setMoveFunc for MOVE_CB.
 func setMoveFunc(ih Ihandle, f MoveFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("MOVE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_MOVE_CB", f)
 
 	C.goIupSetMoveFunc(ih.ptr())
 }
@@ -1022,22 +834,14 @@ type ResizeFunc func(ih Ihandle, width, height int) int
 
 //export goIupResizeCB
 func goIupResizeCB(ih unsafe.Pointer, width, height C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("RESIZE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "RESIZE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ResizeFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_RESIZE_CB").Value().(ResizeFunc)
 
 	return C.int(f((Ihandle)(ih), int(width), int(height)))
 }
 
 // setResizeFunc for RESIZE_CB.
 func setResizeFunc(ih Ihandle, f ResizeFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("RESIZE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_RESIZE_CB", f)
 
 	C.goIupSetResizeFunc(ih.ptr())
 }
@@ -1045,27 +849,19 @@ func setResizeFunc(ih Ihandle, f ResizeFunc) {
 //--------------------
 
 // ShowFunc for SHOW_CB callback.
-// Called right after the dialog is showed, hidden, maximized, minimized or restored from minimized/maximized.
+// Called right after the dialog is shown, hidden, maximized, minimized or restored from minimized/maximized.
 type ShowFunc func(ih Ihandle, state int) int
 
 //export goIupShowCB
 func goIupShowCB(ih unsafe.Pointer, inc C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("SHOW_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "SHOW_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ShowFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_SHOW_CB").Value().(ShowFunc)
 
 	return C.int(f((Ihandle)(ih), int(inc)))
 }
 
 // setShowFunc for SHOW_CB.
 func setShowFunc(ih Ihandle, f ShowFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("SHOW_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_SHOW_CB", f)
 
 	C.goIupSetShowFunc(ih.ptr())
 }
@@ -1078,22 +874,14 @@ type ChangeFunc func(ih Ihandle, r, g, b uint8) int
 
 //export goIupChangeCB
 func goIupChangeCB(ih unsafe.Pointer, r, g, b C.uchar) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("CHANGE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "CHANGE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ChangeFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_CHANGE_CB").Value().(ChangeFunc)
 
 	return C.int(f((Ihandle)(ih), uint8(r), uint8(g), uint8(b)))
 }
 
 // setChangeFunc for CHANGE_CB.
 func setChangeFunc(ih Ihandle, f ChangeFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("CHANGE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_CHANGE_CB", f)
 
 	C.goIupSetChangeFunc(ih.ptr())
 }
@@ -1106,22 +894,14 @@ type DragFunc func(ih Ihandle, r, g, b uint8) int
 
 //export goIupDragCB
 func goIupDragCB(ih unsafe.Pointer, r, g, b C.uchar) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DRAG_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "DRAG_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(DragFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_DRAG_CB").Value().(DragFunc)
 
 	return C.int(f((Ihandle)(ih), uint8(r), uint8(g), uint8(b)))
 }
 
 // setDragFunc for DRAG_CB.
 func setDragFunc(ih Ihandle, f DragFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DRAG_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DRAG_CB", f)
 
 	C.goIupSetDragFunc(ih.ptr())
 }
@@ -1133,22 +913,14 @@ type DetachedFunc func(Ihandle, Ihandle, int, int) int
 
 //export goIupDetachedCB
 func goIupDetachedCB(ih, newParent unsafe.Pointer, x, y C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DETACHED_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "DETACHED_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(DetachedFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_DETACHED_CB").Value().(DetachedFunc)
 
 	return C.int(f((Ihandle)(ih), (Ihandle)(newParent), int(x), int(y)))
 }
 
 // setDetachedFunc for DETACHED_CB.
 func setDetachedFunc(ih Ihandle, f DetachedFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DETACHED_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DETACHED_CB", f)
 
 	C.goIupSetDetachedFunc(ih.ptr())
 }
@@ -1161,22 +933,14 @@ type RestoredFunc func(Ihandle, Ihandle, int, int) int
 
 //export goIupRestoredCB
 func goIupRestoredCB(ih, oldParent unsafe.Pointer, x, y C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("RESTORED_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "RESTORED_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(RestoredFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_RESTORED_CB").Value().(RestoredFunc)
 
 	return C.int(f((Ihandle)(ih), (Ihandle)(oldParent), int(x), int(y)))
 }
 
 // setRestoredFunc for RESTORED_CB.
 func setRestoredFunc(ih Ihandle, f RestoredFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("RESTORED_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_RESTORED_CB", f)
 
 	C.goIupSetRestoredFunc(ih.ptr())
 }
@@ -1189,22 +953,14 @@ type SwapBuffersFunc func(Ihandle) int
 
 //export goIupSwapBuffersCB
 func goIupSwapBuffersCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("SWAPBUFFERS_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "SWAPBUFFERS_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(SwapBuffersFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_SWAPBUFFERS_CB").Value().(SwapBuffersFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setSwapBuffersFunc for SWAPBUFFERS_CB.
 func setSwapBuffersFunc(ih Ihandle, f SwapBuffersFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("SWAPBUFFERS_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_SWAPBUFFERS_CB", f)
 
 	C.goIupSetSwapBuffersFunc(ih.ptr())
 }
@@ -1217,22 +973,14 @@ type CancelFunc func(Ihandle) int
 
 //export goIupCancelCB
 func goIupCancelCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("CANCEL_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "CANCEL_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(CancelFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_CANCEL_CB").Value().(CancelFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setCancelFunc for CANCEL_CB.
 func setCancelFunc(ih Ihandle, f CancelFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("CANCEL_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_CANCEL_CB", f)
 
 	C.goIupSetCancelFunc(ih.ptr())
 }
@@ -1241,27 +989,19 @@ func setCancelFunc(ih Ihandle, f CancelFunc) {
 
 // TimerActionFunc for ACTION_CB callback.
 // Called every time the defined time interval is reached.
-// To stop the callback from being called simply stop the timer with RUN=NO.
+// To stop the callback from being called, stop the timer with RUN=NO.
 type TimerActionFunc func(ih Ihandle) int
 
 //export goIupTimerActionCB
 func goIupTimerActionCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("TIMER_ACTION_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "TIMER_ACTION_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(TimerActionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TIMER_ACTION").Value().(TimerActionFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setTimerActionFunc for ACTION_CB callback.
 func setTimerActionFunc(ih Ihandle, f TimerActionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("TIMER_ACTION_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_TIMER_ACTION", f)
 
 	C.goIupSetTimerActionFunc(ih.ptr())
 }
@@ -1270,27 +1010,19 @@ func setTimerActionFunc(ih Ihandle, f TimerActionFunc) {
 
 // ThreadFunc for THREAD_CB callback.
 // Action generated when the thread is started.
-// If this callback returns or does not exist the thread is terminated.
+// If this callback returns or does not exist, the thread is terminated.
 type ThreadFunc func(ih Ihandle) int
 
 //export goIupThreadCB
 func goIupThreadCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("THREAD_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "THREAD_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ThreadFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_THREAD_CB").Value().(ThreadFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setThreadFunc for THREAD_CB callback.
 func setThreadFunc(ih Ihandle, f ThreadFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("THREAD_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_THREAD_CB", f)
 
 	C.goIupSetThreadFunc(ih.ptr())
 }
@@ -1303,22 +1035,14 @@ type ScrollFunc func(ih Ihandle, op int, posx, posy float64) int
 
 //export goIupScrollCB
 func goIupScrollCB(ih unsafe.Pointer, op C.int, posx, posy C.float) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("SCROLL_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "SCROLL_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ScrollFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_SCROLL_CB").Value().(ScrollFunc)
 
 	return C.int(f((Ihandle)(ih), int(op), float64(posx), float64(posy)))
 }
 
 // setScrollFunc for SCROLL_CB callback.
 func setScrollFunc(ih Ihandle, f ScrollFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("SCROLL_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_SCROLL_CB", f)
 
 	C.goIupSetScrollFunc(ih.ptr())
 }
@@ -1331,22 +1055,14 @@ type TrayClickFunc func(Ihandle, int, int, int) int
 
 //export goIupTrayClickCB
 func goIupTrayClickCB(ih unsafe.Pointer, but, pressed, dclick C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("TRAYCLICK_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "TRAYCLICK_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(TrayClickFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TRAYCLICK_CB").Value().(TrayClickFunc)
 
 	return C.int(f((Ihandle)(ih), int(but), int(pressed), int(dclick)))
 }
 
 // setTrayClickFunc for TRAYCLICK_CB.
 func setTrayClickFunc(ih Ihandle, f TrayClickFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("TRAYCLICK_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_TRAYCLICK_CB", f)
 
 	C.goIupSetTrayClickFunc(ih.ptr())
 }
@@ -1359,22 +1075,14 @@ type TabCloseFunc func(Ihandle, int) int
 
 //export goIupTabCloseCB
 func goIupTabCloseCB(ih unsafe.Pointer, pos C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("TABCLOSE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "TABCLOSE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(TabCloseFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TABCLOSE_CB").Value().(TabCloseFunc)
 
 	return C.int(f((Ihandle)(ih), int(pos)))
 }
 
 // setTabCloseFunc for TABCLOSE_CB.
 func setTabCloseFunc(ih Ihandle, f TabCloseFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("TABCLOSE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_TABCLOSE_CB", f)
 
 	C.goIupSetTabCloseFunc(ih.ptr())
 }
@@ -1387,22 +1095,14 @@ type RightClickFunc func(Ihandle, int) int
 
 //export goIupRightClickCB
 func goIupRightClickCB(ih unsafe.Pointer, pos C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("RIGHTCLICK_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "RIGHTCLICK_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(RightClickFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_RIGHTCLICK_CB").Value().(RightClickFunc)
 
 	return C.int(f((Ihandle)(ih), int(pos)))
 }
 
 // setRightClickFunc for RIGHTCLICK_CB.
 func setRightClickFunc(ih Ihandle, f RightClickFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("RIGHTCLICK_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_RIGHTCLICK_CB", f)
 
 	C.goIupSetRightClickFunc(ih.ptr())
 }
@@ -1415,22 +1115,14 @@ type ExtraButtonFunc func(Ihandle, int, int) int
 
 //export goIupExtraButtonCB
 func goIupExtraButtonCB(ih unsafe.Pointer, button, pressed C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("EXTRABUTTON_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "EXTRABUTTON_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ExtraButtonFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_EXTRABUTTON_CB").Value().(ExtraButtonFunc)
 
 	return C.int(f((Ihandle)(ih), int(button), int(pressed)))
 }
 
 // setExtraButtonFunc for EXTRABUTTON_CB.
 func setExtraButtonFunc(ih Ihandle, f ExtraButtonFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("EXTRABUTTON_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_EXTRABUTTON_CB", f)
 
 	C.goIupSetExtraButtonFunc(ih.ptr())
 }
@@ -1443,22 +1135,14 @@ type OpenCloseFunc func(ih Ihandle, state int) int
 
 //export goIupOpenCloseCB
 func goIupOpenCloseCB(ih unsafe.Pointer, state C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("OPENCLOSE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "OPENCLOSE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(OpenCloseFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_OPENCLOSE_CB").Value().(OpenCloseFunc)
 
 	return C.int(f((Ihandle)(ih), int(state)))
 }
 
 // setOpenCloseFunc for OPENCLOSE_CB.
 func setOpenCloseFunc(ih Ihandle, f OpenCloseFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("OPENCLOSE_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_OPENCLOSE", f)
 
 	C.goIupSetOpenCloseFunc(ih.ptr())
 }
@@ -1471,22 +1155,14 @@ type ValueChangingFunc func(ih Ihandle, start int) int
 
 //export goIupValueChangingCB
 func goIupValueChangingCB(ih unsafe.Pointer, start C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("VALUECHANGING_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "VALUECHANGING_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ValueChangingFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_VALUECHANGING_CB").Value().(ValueChangingFunc)
 
 	return C.int(f((Ihandle)(ih), int(start)))
 }
 
 // setValueChangingFunc for VALUECHANGING_CB.
 func setValueChangingFunc(ih Ihandle, f ValueChangingFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("VALUECHANGING_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_VALUECHANGING_CB", f)
 
 	C.goIupSetValueChangingFunc(ih.ptr())
 }
@@ -1499,22 +1175,14 @@ type DropDownFunc func(ih Ihandle, state int) int
 
 //export goIupDropDownCB
 func goIupDropDownCB(ih unsafe.Pointer, state C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DROPDOWN_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "DROPDOWN_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(DropDownFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_DROPDOWN_CB").Value().(DropDownFunc)
 
 	return C.int(f((Ihandle)(ih), int(state)))
 }
 
 // setDropDownFunc for DROPDOWN_CB.
 func setDropDownFunc(ih Ihandle, f DropDownFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DROPDOWN_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DROPDOWN_CB", f)
 
 	C.goIupSetDropDownFunc(ih.ptr())
 }
@@ -1527,22 +1195,14 @@ type DropShowFunc func(ih Ihandle, state int) int
 
 //export goIupDropShowCB
 func goIupDropShowCB(ih unsafe.Pointer, state C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DROPSHOW_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "DROPSHOW_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(DropShowFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_DROPSHOW_CB").Value().(DropShowFunc)
 
 	return C.int(f((Ihandle)(ih), int(state)))
 }
 
 // setDropShowFunc for DROPSHOW_CB.
 func setDropShowFunc(ih Ihandle, f DropShowFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DROPSHOW_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DROPSHOW_CB", f)
 
 	C.goIupSetDropShowFunc(ih.ptr())
 }
@@ -1555,22 +1215,14 @@ type ButtonPressFunc func(ih Ihandle, angle float64) int
 
 //export goIupButtonPressCB
 func goIupButtonPressCB(ih unsafe.Pointer, angle C.double) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("BUTTON_PRESS_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "BUTTON_PRESS_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ButtonPressFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_BUTTON_PRESS_CB").Value().(ButtonPressFunc)
 
 	return C.int(f((Ihandle)(ih), float64(angle)))
 }
 
 // setButtonPressFunc for BUTTON_PRESS_CB.
 func setButtonPressFunc(ih Ihandle, f ButtonPressFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("BUTTON_PRESS_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_BUTTON_PRESS_CB", f)
 
 	C.goIupSetButtonPressFunc(ih.ptr())
 }
@@ -1583,22 +1235,14 @@ type ButtonReleaseFunc func(ih Ihandle, angle float64) int
 
 //export goIupButtonReleaseCB
 func goIupButtonReleaseCB(ih unsafe.Pointer, angle C.double) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("BUTTON_RELEASE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "BUTTON_RELEASE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ButtonReleaseFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_BUTTON_RELEASE_CB").Value().(ButtonReleaseFunc)
 
 	return C.int(f((Ihandle)(ih), float64(angle)))
 }
 
 // setButtonReleaseFunc for BUTTON_RELEASE_CB.
 func setButtonReleaseFunc(ih Ihandle, f ButtonReleaseFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("BUTTON_RELEASE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_BUTTON_RELEASE_CB", f)
 
 	C.goIupSetButtonReleaseFunc(ih.ptr())
 }
@@ -1610,22 +1254,14 @@ type MouseMoveFunc func(ih Ihandle, angle float64) int
 
 //export goIupMouseMoveCB
 func goIupMouseMoveCB(ih unsafe.Pointer, angle C.double) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("MOUSEMOVE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "MOUSEMOVE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(MouseMoveFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_MOUSEMOVE_CB").Value().(MouseMoveFunc)
 
 	return C.int(f((Ihandle)(ih), float64(angle)))
 }
 
 // setMouseMoveFunc for MOUSEMOVE_CB.
 func setMouseMoveFunc(ih Ihandle, f MouseMoveFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("MOUSEMOVE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_MOUSEMOVE_CB", f)
 
 	C.goIupSetMouseMoveFunc(ih.ptr())
 }
@@ -1638,22 +1274,14 @@ type KeyPressFunc func(ih Ihandle, c, press int) int
 
 //export goIupKeyPressCB
 func goIupKeyPressCB(ih unsafe.Pointer, c, press C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("KEYPRESS_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "KEYPRESS_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(KeyPressFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_KEYPRESS_CB").Value().(KeyPressFunc)
 
 	return C.int(f((Ihandle)(ih), int(c), int(press)))
 }
 
 // setKeyPressFunc for KEYPRESS_CB.
 func setKeyPressFunc(ih Ihandle, f KeyPressFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("KEYPRESS_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_KEYPRESS_CB", f)
 
 	C.goIupSetKeyPressFunc(ih.ptr())
 }
@@ -1666,22 +1294,14 @@ type CellFunc func(ih Ihandle, cell int) int
 
 //export goIupCellCB
 func goIupCellCB(ih unsafe.Pointer, cell C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("CELL_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "CELL_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(CellFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_CELL_CB").Value().(CellFunc)
 
 	return C.int(f((Ihandle)(ih), int(cell)))
 }
 
 // setCellFunc for CELL_CB.
 func setCellFunc(ih Ihandle, f CellFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("CELL_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_CELL_CB", f)
 
 	C.goIupSetCellFunc(ih.ptr())
 }
@@ -1694,22 +1314,14 @@ type ExtendedFunc func(ih Ihandle, cell int) int
 
 //export goIupExtendedCB
 func goIupExtendedCB(ih unsafe.Pointer, cell C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("EXTENDED_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "EXTENDED_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ExtendedFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_EXTENDED_CB").Value().(ExtendedFunc)
 
 	return C.int(f((Ihandle)(ih), int(cell)))
 }
 
 // setExtendedFunc for EXTENDED_CB.
 func setExtendedFunc(ih Ihandle, f ExtendedFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("EXTENDED_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_EXTENDED_CB", f)
 
 	C.goIupSetExtendedFunc(ih.ptr())
 }
@@ -1722,22 +1334,14 @@ type SelectFunc func(ih Ihandle, cell, _type int) int
 
 //export goIupSelectCB
 func goIupSelectCB(ih unsafe.Pointer, cell, _type C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("SELECT_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "SELECT_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(SelectFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_SELECT_CB").Value().(SelectFunc)
 
 	return C.int(f((Ihandle)(ih), int(cell), int(_type)))
 }
 
 // setSelectFunc for SELECT_CB.
 func setSelectFunc(ih Ihandle, f SelectFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("SELECT_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_SELECT_CB", f)
 
 	C.goIupSetSelectFunc(ih.ptr())
 }
@@ -1751,22 +1355,14 @@ type SwitchFunc func(ih Ihandle, primCell, secCell int) int
 
 //export goIupSwitchCB
 func goIupSwitchCB(ih unsafe.Pointer, primCell, secCell C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("SWITCH_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "SWITCH_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(SwitchFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_SWITCH_CB").Value().(SwitchFunc)
 
 	return C.int(f((Ihandle)(ih), int(primCell), int(secCell)))
 }
 
 // setSwitchFunc for SWITCH_CB.
 func setSwitchFunc(ih Ihandle, f SwitchFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("SWITCH_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_SWITCH_CB", f)
 
 	C.goIupSetSwitchFunc(ih.ptr())
 }
@@ -1778,14 +1374,7 @@ type LinkActionFunc func(ih Ihandle, url string) int
 
 //export goIupLinkActionCB
 func goIupLinkActionCB(ih, url unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("LINK_ACTION_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "LINK_ACTION_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(LinkActionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_LINK_ACTION").Value().(LinkActionFunc)
 
 	goUrl := C.GoString((*C.char)(url))
 	return C.int(f((Ihandle)(ih), goUrl))
@@ -1793,8 +1382,7 @@ func goIupLinkActionCB(ih, url unsafe.Pointer) C.int {
 
 // setLinkActionFunc for Link ACTION callback.
 func setLinkActionFunc(ih Ihandle, f LinkActionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("LINK_ACTION_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_LINK_ACTION", f)
 
 	C.goIupSetLinkActionFunc(ih.ptr())
 }
@@ -1807,22 +1395,14 @@ type TextLinkFunc func(ih Ihandle, url string) int
 
 //export goIupTextLinkCB
 func goIupTextLinkCB(ih, url unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("LINK_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "LINK_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(TextLinkFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_LINK_CB").Value().(TextLinkFunc)
 
 	goUrl := C.GoString((*C.char)(url))
 	return C.int(f((Ihandle)(ih), goUrl))
 }
 
 func setTextLinkFunc(ih Ihandle, f TextLinkFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("LINK_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_LINK_CB", f)
 
 	C.goIupSetTextLinkFunc(ih.ptr())
 }
@@ -1835,14 +1415,7 @@ type WheelFunc func(ih Ihandle, delta float64, x, y int, status string) int
 
 //export goIupWheelCB
 func goIupWheelCB(ih unsafe.Pointer, delta C.float, x, y C.int, status unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("WHEEL_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "WHEEL_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(WheelFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_WHEEL_CB").Value().(WheelFunc)
 
 	goStatus := C.GoString((*C.char)(status))
 	return C.int(f((Ihandle)(ih), float64(delta), int(x), int(y), goStatus))
@@ -1850,8 +1423,7 @@ func goIupWheelCB(ih unsafe.Pointer, delta C.float, x, y C.int, status unsafe.Po
 
 // setWheelFunc for WHEEL_CB callback.
 func setWheelFunc(ih Ihandle, f WheelFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("WHEEL_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_WHEEL_CB", f)
 
 	C.goIupSetWheelFunc(ih.ptr())
 }
@@ -1864,22 +1436,14 @@ type DragDropFunc func(ih Ihandle, dragId, dropId, isShift, isControl int) int
 
 //export goIupDragDropCB
 func goIupDragDropCB(ih unsafe.Pointer, dragId, dropId, isShift, isControl C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DRAGDROP_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "DRAGDROP_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(DragDropFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_DRAGDROP_CB").Value().(DragDropFunc)
 
 	return C.int(f((Ihandle)(ih), int(dragId), int(dropId), int(isShift), int(isControl)))
 }
 
 // setDragDropFunc for DRAGDROP_CB.
 func setDragDropFunc(ih Ihandle, f DragDropFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DRAGDROP_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DRAGDROP_CB", f)
 
 	C.goIupSetDragDropFunc(ih.ptr())
 }
@@ -1892,21 +1456,19 @@ type DragBeginFunc func(ih Ihandle, x, y int) int
 
 //export goIupDragBeginCB
 func goIupDragBeginCB(ih unsafe.Pointer, x, y C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DRAGBEGIN_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAGBEGIN_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(DragBeginFunc)
+	f := ch.Value().(DragBeginFunc)
 
 	return C.int(f((Ihandle)(ih), int(x), int(y)))
 }
 
 // setDragBeginFunc for DRAGBEGIN_CB.
 func setDragBeginFunc(ih Ihandle, f DragBeginFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DRAGBEGIN_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DRAGBEGIN_CB", f)
 
 	C.goIupSetDragBeginFunc(ih.ptr())
 }
@@ -1919,21 +1481,19 @@ type DragDataSizeFunc func(ih Ihandle, dragType string) int
 
 //export goIupDragDataSizeCB
 func goIupDragDataSizeCB(ih unsafe.Pointer, dragType *C.char) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DRAGDATASIZE_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAGDATASIZE_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(DragDataSizeFunc)
+	f := ch.Value().(DragDataSizeFunc)
 
 	return C.int(f((Ihandle)(ih), C.GoString(dragType)))
 }
 
 // setDragDataSizeFunc for DRAGDATASIZE_CB.
 func setDragDataSizeFunc(ih Ihandle, f DragDataSizeFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DRAGDATASIZE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DRAGDATASIZE_CB", f)
 
 	C.goIupSetDragDataSizeFunc(ih.ptr())
 }
@@ -1946,21 +1506,19 @@ type DragDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size in
 
 //export goIupDragDataCB
 func goIupDragDataCB(ih unsafe.Pointer, dragType *C.char, data unsafe.Pointer, size C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DRAGDATA_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAGDATA_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(DragDataFunc)
+	f := ch.Value().(DragDataFunc)
 
 	return C.int(f((Ihandle)(ih), C.GoString(dragType), data, int(size)))
 }
 
 // setDragDataFunc for DRAGDATA_CB.
 func setDragDataFunc(ih Ihandle, f DragDataFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DRAGDATA_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DRAGDATA_CB", f)
 
 	C.goIupSetDragDataFunc(ih.ptr())
 }
@@ -1973,21 +1531,19 @@ type DragEndFunc func(ih Ihandle, action int) int
 
 //export goIupDragEndCB
 func goIupDragEndCB(ih unsafe.Pointer, action C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DRAGEND_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAGEND_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(DragEndFunc)
+	f := ch.Value().(DragEndFunc)
 
 	return C.int(f((Ihandle)(ih), int(action)))
 }
 
 // setDragEndFunc for DRAGEND_CB.
 func setDragEndFunc(ih Ihandle, f DragEndFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DRAGEND_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DRAGEND_CB", f)
 
 	C.goIupSetDragEndFunc(ih.ptr())
 }
@@ -2000,21 +1556,19 @@ type DropDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size, x
 
 //export goIupDropDataCB
 func goIupDropDataCB(ih unsafe.Pointer, dragType *C.char, data unsafe.Pointer, size, x, y C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DROPDATA_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_DROPDATA_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(DropDataFunc)
+	f := ch.Value().(DropDataFunc)
 
 	return C.int(f((Ihandle)(ih), C.GoString(dragType), data, int(size), int(x), int(y)))
 }
 
 // setDropDataFunc for DROPDATA_CB.
 func setDropDataFunc(ih Ihandle, f DropDataFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DROPDATA_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DROPDATA_CB", f)
 
 	C.goIupSetDropDataFunc(ih.ptr())
 }
@@ -2027,21 +1581,19 @@ type DropMotionFunc func(ih Ihandle, x, y int, status string) int
 
 //export goIupDropMotionCB
 func goIupDropMotionCB(ih unsafe.Pointer, x, y C.int, status *C.char) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("DROPMOTION_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_DROPMOTION_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(DropMotionFunc)
+	f := ch.Value().(DropMotionFunc)
 
 	return C.int(f((Ihandle)(ih), int(x), int(y), C.GoString(status)))
 }
 
 // setDropMotionFunc for DROPMOTION_CB.
 func setDropMotionFunc(ih Ihandle, f DropMotionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("DROPMOTION_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_DROPMOTION_CB", f)
 
 	C.goIupSetDropMotionFunc(ih.ptr())
 }
@@ -2054,22 +1606,14 @@ type SelectionFunc func(ih Ihandle, id, status int) int
 
 //export goIupSelectionCB
 func goIupSelectionCB(ih unsafe.Pointer, id, status C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("SELECTION_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "SELECTION_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(SelectionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_SELECTION_CB").Value().(SelectionFunc)
 
 	return C.int(f((Ihandle)(ih), int(id), int(status)))
 }
 
 // setSelectionFunc for SELECTION_CB.
 func setSelectionFunc(ih Ihandle, f SelectionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("SELECTION_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_SELECTION_CB", f)
 
 	C.goIupSetSelectionFunc(ih.ptr())
 }
@@ -2082,22 +1626,14 @@ type BranchOpenFunc func(ih Ihandle, id int) int
 
 //export goIupBranchOpenCB
 func goIupBranchOpenCB(ih unsafe.Pointer, id C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("BRANCHOPEN_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "BRANCHOPEN_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(BranchOpenFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_BRANCHOPEN_CB").Value().(BranchOpenFunc)
 
 	return C.int(f((Ihandle)(ih), int(id)))
 }
 
 // setBranchOpenFunc for BRANCHOPEN_CB.
 func setBranchOpenFunc(ih Ihandle, f BranchOpenFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("BRANCHOPEN_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_BRANCHOPEN_CB", f)
 
 	C.goIupSetBranchOpenFunc(ih.ptr())
 }
@@ -2110,22 +1646,14 @@ type BranchCloseFunc func(ih Ihandle, id int) int
 
 //export goIupBranchCloseCB
 func goIupBranchCloseCB(ih unsafe.Pointer, id C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("BRANCHCLOSE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "BRANCHCLOSE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(BranchCloseFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_BRANCHCLOSE_CB").Value().(BranchCloseFunc)
 
 	return C.int(f((Ihandle)(ih), int(id)))
 }
 
 // setBranchCloseFunc for BRANCHCLOSE_CB.
 func setBranchCloseFunc(ih Ihandle, f BranchCloseFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("BRANCHCLOSE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_BRANCHCLOSE_CB", f)
 
 	C.goIupSetBranchCloseFunc(ih.ptr())
 }
@@ -2138,22 +1666,14 @@ type ExecuteLeafFunc func(ih Ihandle, id int) int
 
 //export goIupExecuteLeafCB
 func goIupExecuteLeafCB(ih unsafe.Pointer, id C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("EXECUTELEAF_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "EXECUTELEAF_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ExecuteLeafFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_EXECUTELEAF_CB").Value().(ExecuteLeafFunc)
 
 	return C.int(f((Ihandle)(ih), int(id)))
 }
 
 // setExecuteLeafFunc for EXECUTELEAF_CB.
 func setExecuteLeafFunc(ih Ihandle, f ExecuteLeafFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("EXECUTELEAF_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_EXECUTELEAF_CB", f)
 
 	C.goIupSetExecuteLeafFunc(ih.ptr())
 }
@@ -2166,22 +1686,14 @@ type ExecuteBranchFunc func(ih Ihandle, id int) int
 
 //export goIupExecuteBranchCB
 func goIupExecuteBranchCB(ih unsafe.Pointer, id C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("EXECUTEBRANCH_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "EXECUTEBRANCH_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ExecuteBranchFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_EXECUTEBRANCH_CB").Value().(ExecuteBranchFunc)
 
 	return C.int(f((Ihandle)(ih), int(id)))
 }
 
 // setExecuteBranchFunc for EXECUTEBRANCH_CB.
 func setExecuteBranchFunc(ih Ihandle, f ExecuteBranchFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("EXECUTEBRANCH_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_EXECUTEBRANCH_CB", f)
 
 	C.goIupSetExecuteBranchFunc(ih.ptr())
 }
@@ -2194,22 +1706,14 @@ type ShowRenameFunc func(ih Ihandle, id int) int
 
 //export goIupShowRenameCB
 func goIupShowRenameCB(ih unsafe.Pointer, id C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("SHOWRENAME_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "SHOWRENAME_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ShowRenameFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_SHOWRENAME_CB").Value().(ShowRenameFunc)
 
 	return C.int(f((Ihandle)(ih), int(id)))
 }
 
 // setShowRenameFunc for SHOWRENAME_CB.
 func setShowRenameFunc(ih Ihandle, f ShowRenameFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("SHOWRENAME_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_SHOWRENAME_CB", f)
 
 	C.goIupSetShowRenameFunc(ih.ptr())
 }
@@ -2222,14 +1726,7 @@ type RenameFunc func(ih Ihandle, id int, title string) int
 
 //export goIupRenameCB
 func goIupRenameCB(ih unsafe.Pointer, id C.int, title unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("RENAME_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "RENAME_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(RenameFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_RENAME_CB").Value().(RenameFunc)
 
 	goTitle := C.GoString((*C.char)(title))
 	return C.int(f((Ihandle)(ih), int(id), goTitle))
@@ -2237,8 +1734,7 @@ func goIupRenameCB(ih unsafe.Pointer, id C.int, title unsafe.Pointer) C.int {
 
 // setRenameFunc for RENAME_CB.
 func setRenameFunc(ih Ihandle, f RenameFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("RENAME_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_RENAME_CB", f)
 
 	C.goIupSetRenameFunc(ih.ptr())
 }
@@ -2251,49 +1747,35 @@ type ToggleValueFunc func(ih Ihandle, id, state int) int
 
 //export goIupToggleValueCB
 func goIupToggleValueCB(ih unsafe.Pointer, id, state C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("TOGGLEVALUE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "TOGGLEVALUE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ToggleValueFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TOGGLEVALUE_CB").Value().(ToggleValueFunc)
 
 	return C.int(f((Ihandle)(ih), int(id), int(state)))
 }
 
 // setToggleValueFunc for TOGGLEVALUE_CB.
 func setToggleValueFunc(ih Ihandle, f ToggleValueFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("TOGGLEVALUE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_TOGGLEVALUE_CB", f)
 
 	C.goIupSetToggleValueFunc(ih.ptr())
 }
 
 //--------------------
 
-// NodeRemovedFunc for NODEREMOVED_CB callback.
-type NodeRemovedFunc func(ih Ihandle) int
+// NodeRemovedFunc for NODEREMOVED_CB callback. userId is the USERDATA pointer
+// that was set on the node via TreeSetUserId; useful for releasing whatever it
+// pointed at (e.g. cgo.Handle(userId).Delete()).
+type NodeRemovedFunc func(ih Ihandle, userId uintptr) int
 
 //export goIupNodeRemovedCB
 func goIupNodeRemovedCB(ih, userData unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("NODEREMOVED_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "NODEREMOVED_CB_" + uuid)
-	}
+	f := loadCallback((Ihandle)(ih), "_IUPGO_NODEREMOVED_CB").Value().(NodeRemovedFunc)
 
-	ch := h.(cgo.Handle)
-	f := ch.Value().(NodeRemovedFunc)
-
-	return C.int(f((Ihandle)(ih)))
+	return C.int(f((Ihandle)(ih), uintptr(userData)))
 }
 
 // setNodeRemovedFunc for NODEREMOVED_CB callback.
 func setNodeRemovedFunc(ih Ihandle, f NodeRemovedFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("NODEREMOVED_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_NODEREMOVED_CB", f)
 
 	C.goIupSetNodeRemovedFunc(ih.ptr())
 }
@@ -2306,14 +1788,7 @@ type MultiSelectionFunc func(ih Ihandle, ids []int, n int) int
 
 //export goIupMultiSelectionCB
 func goIupMultiSelectionCB(ih unsafe.Pointer, ids *C.int, n C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("MULTISELECTION_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "MULTISELECTION_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(MultiSelectionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_MULTISELECTION_CB").Value().(MultiSelectionFunc)
 
 	goIds := unsafe.Slice((*int)(unsafe.Pointer(ids)), n)
 
@@ -2322,8 +1797,7 @@ func goIupMultiSelectionCB(ih unsafe.Pointer, ids *C.int, n C.int) C.int {
 
 // setMultiSelectionFunc for MULTISELECTION_CB.
 func setMultiSelectionFunc(ih Ihandle, f MultiSelectionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("MULTISELECTION_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_MULTISELECTION_CB", f)
 
 	C.goIupSetMultiSelectionFunc(ih.ptr())
 }
@@ -2336,14 +1810,7 @@ type MultiUnselectionFunc func(ih Ihandle, ids []int, n int) int
 
 //export goIupMultiUnselectionCB
 func goIupMultiUnselectionCB(ih unsafe.Pointer, ids *C.int, n C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("MULTIUNSELECTION_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "MULTIUNSELECTION_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(MultiUnselectionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_MULTIUNSELECTION_CB").Value().(MultiUnselectionFunc)
 
 	goIds := unsafe.Slice((*int)(unsafe.Pointer(ids)), n)
 
@@ -2352,8 +1819,7 @@ func goIupMultiUnselectionCB(ih unsafe.Pointer, ids *C.int, n C.int) C.int {
 
 // setMultiUnselectionFunc for MULTIUNSELECTION_CB.
 func setMultiUnselectionFunc(ih Ihandle, f MultiUnselectionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("MULTIUNSELECTION_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_MULTIUNSELECTION_CB", f)
 
 	C.goIupSetMultiUnselectionFunc(ih.ptr())
 }
@@ -2368,22 +1834,14 @@ type MenuOpenFunc func(ih Ihandle) int
 
 //export goIupMenuOpenCB
 func goIupMenuOpenCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("OPEN_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "OPEN_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(MenuOpenFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_OPEN_CB").Value().(MenuOpenFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setMenuOpenFunc for OPEN_CB.
 func setMenuOpenFunc(ih Ihandle, f MenuOpenFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("OPEN_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_OPEN_CB", f)
 
 	C.goIupSetMenuOpenFunc(ih.ptr())
 }
@@ -2396,22 +1854,14 @@ type ThemeChangedFunc func(ih Ihandle, darkMode int) int
 
 //export goIupThemeChangedCB
 func goIupThemeChangedCB(ih unsafe.Pointer, darkMode C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("THEMECHANGED_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "THEMECHANGED_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(ThemeChangedFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_THEMECHANGED_CB").Value().(ThemeChangedFunc)
 
 	return C.int(f((Ihandle)(ih), int(darkMode)))
 }
 
 // setThemeChangedFunc for THEMECHANGED_CB callback.
 func setThemeChangedFunc(ih Ihandle, f ThemeChangedFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("THEMECHANGED_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_THEMECHANGED_CB", f)
 
 	C.goIupSetThemeChangedFunc(ih.ptr())
 }
@@ -2426,22 +1876,14 @@ type UpdateFunc func(ih Ihandle) int
 
 //export goIupUpdateCB
 func goIupUpdateCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("UPDATE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "UPDATE_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(UpdateFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_UPDATE_CB").Value().(UpdateFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setUpdateFunc for UPDATE_CB.
 func setUpdateFunc(ih Ihandle, f UpdateFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("UPDATE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_UPDATE_CB", f)
 
 	C.goIupSetUpdateFunc(ih.ptr())
 }
@@ -2455,22 +1897,14 @@ type TableEditionFunc func(ih Ihandle, lin, col int, update string) int
 
 //export goIupTableEditionCB
 func goIupTableEditionCB(ih unsafe.Pointer, lin, col C.int, update *C.char) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("EDITION_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "EDITION_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(TableEditionFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_EDITION_CB").Value().(TableEditionFunc)
 
 	return C.int(f((Ihandle)(ih), int(lin), int(col), C.GoString(update)))
 }
 
 // setTableEditionFunc for EDITION_CB (Table version).
 func setTableEditionFunc(ih Ihandle, f TableEditionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("EDITION_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_EDITION_CB", f)
 	C.goIupSetTableEditionFunc(ih.ptr())
 }
 
@@ -2483,22 +1917,14 @@ type TableValueChangedFunc func(ih Ihandle, lin, col int) int
 
 //export goIupTableValueChangedCB
 func goIupTableValueChangedCB(ih unsafe.Pointer, lin, col C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("TABLEVALUECHANGED_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "TABLEVALUECHANGED_CB_" + uuid)
-	}
-
-	ch := h.(cgo.Handle)
-	f := ch.Value().(TableValueChangedFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TABLEVALUECHANGED_CB").Value().(TableValueChangedFunc)
 
 	return C.int(f((Ihandle)(ih), int(lin), int(col)))
 }
 
 // setTableValueChangedFunc for VALUECHANGED_CB (Table version).
 func setTableValueChangedFunc(ih Ihandle, f TableValueChangedFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("TABLEVALUECHANGED_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_TABLEVALUECHANGED_CB", f)
 	C.goIupSetTableValueChangedFunc(ih.ptr())
 }
 
@@ -2511,12 +1937,10 @@ type TableValueFunc func(ih Ihandle, lin, col int) string
 
 //export goIupTableValueCB
 func goIupTableValueCB(ih unsafe.Pointer, lin, col C.int) *C.char {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("VALUE_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "VALUE_CB_" + uuid)
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_VALUE_CB")
+	if ch == 0 {
+		return nil
 	}
-	ch := h.(cgo.Handle)
 	f := ch.Value().(TableValueFunc)
 	result := f((Ihandle)(ih), int(lin), int(col))
 	if result == "" {
@@ -2527,8 +1951,7 @@ func goIupTableValueCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 
 // setTableValueFunc for VALUE_CB (Table version).
 func setTableValueFunc(ih Ihandle, f TableValueFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("VALUE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_VALUE_CB", f)
 	C.goIupSetTableValueFunc(ih.ptr())
 }
 
@@ -2541,12 +1964,10 @@ type TableImageFunc func(ih Ihandle, lin, col int) string
 
 //export goIupTableImageCB
 func goIupTableImageCB(ih unsafe.Pointer, lin, col C.int) *C.char {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("TABLE_IMAGE_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_TABLE_IMAGE_CB")
+	if ch == 0 {
 		return nil
 	}
-	ch := h.(cgo.Handle)
 	f := ch.Value().(TableImageFunc)
 	result := f((Ihandle)(ih), int(lin), int(col))
 	if result == "" {
@@ -2556,8 +1977,7 @@ func goIupTableImageCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 }
 
 func setTableImageFunc(ih Ihandle, f TableImageFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("TABLE_IMAGE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_TABLE_IMAGE_CB", f)
 	C.goIupSetTableImageFunc(ih.ptr())
 }
 
@@ -2568,12 +1988,10 @@ type TableSortFunc func(ih Ihandle, col int) int
 
 //export goIupTableSortCB
 func goIupTableSortCB(ih unsafe.Pointer, col C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("SORT_CB_" + uuid)
-	if !ok {
-		panic("cannot load callback " + "SORT_CB_" + uuid)
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_SORT_CB")
+	if ch == 0 {
+		return C.int(DEFAULT)
 	}
-	ch := h.(cgo.Handle)
 	f := ch.Value().(TableSortFunc)
 
 	return C.int(f((Ihandle)(ih), int(col)))
@@ -2581,8 +1999,7 @@ func goIupTableSortCB(ih unsafe.Pointer, col C.int) C.int {
 
 // setTableSortFunc for SORT_CB (Table version).
 func setTableSortFunc(ih Ihandle, f TableSortFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("SORT_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_SORT_CB", f)
 	C.goIupSetTableSortFunc(ih.ptr())
 }
 
@@ -2595,21 +2012,19 @@ type FileFunc func(ih Ihandle, filename, status string) int
 
 //export goIupFileCB
 func goIupFileCB(ih unsafe.Pointer, filename, status *C.char) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("FILE_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_FILE_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(FileFunc)
+	f := ch.Value().(FileFunc)
 
 	return C.int(f((Ihandle)(ih), C.GoString(filename), C.GoString(status)))
 }
 
 // setFileFunc for FILE_CB.
 func setFileFunc(ih Ihandle, f FileFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("FILE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_FILE_CB", f)
 
 	C.goIupSetFileFunc(ih.ptr())
 }
@@ -2622,21 +2037,19 @@ type LayoutUpdateFunc func(ih Ihandle) int
 
 //export goIupLayoutUpdateCB
 func goIupLayoutUpdateCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("LAYOUTUPDATE_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_LAYOUTUPDATE_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(LayoutUpdateFunc)
+	f := ch.Value().(LayoutUpdateFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setLayoutUpdateFunc for LAYOUTUPDATE_CB.
 func setLayoutUpdateFunc(ih Ihandle, f LayoutUpdateFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("LAYOUTUPDATE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_LAYOUTUPDATE_CB", f)
 
 	C.goIupSetLayoutUpdateFunc(ih.ptr())
 }
@@ -2649,21 +2062,19 @@ type HighlightFunc func(ih Ihandle) int
 
 //export goIupHighlightCB
 func goIupHighlightCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("HIGHLIGHT_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_HIGHLIGHT_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(HighlightFunc)
+	f := ch.Value().(HighlightFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setHighlightFunc for HIGHLIGHT_CB.
 func setHighlightFunc(ih Ihandle, f HighlightFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("HIGHLIGHT_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_HIGHLIGHT_CB", f)
 
 	C.goIupSetHighlightFunc(ih.ptr())
 }
@@ -2676,21 +2087,19 @@ type MenuCloseFunc func(ih Ihandle) int
 
 //export goIupMenuCloseCB
 func goIupMenuCloseCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("MENUCLOSE_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_MENUCLOSE_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(MenuCloseFunc)
+	f := ch.Value().(MenuCloseFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setMenuCloseFunc for MENUCLOSE_CB.
 func setMenuCloseFunc(ih Ihandle, f MenuCloseFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("MENUCLOSE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_MENUCLOSE_CB", f)
 
 	C.goIupSetMenuCloseFunc(ih.ptr())
 }
@@ -2703,21 +2112,19 @@ type ColorUpdateFunc func(ih Ihandle) int
 
 //export goIupColorUpdateCB
 func goIupColorUpdateCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("COLORUPDATE_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_COLORUPDATE_CB")
+	if ch == 0 {
 		return C.IUP_DEFAULT
 	}
 
-	f := cgo.Handle(h.(cgo.Handle)).Value().(ColorUpdateFunc)
+	f := ch.Value().(ColorUpdateFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setColorUpdateFunc for COLORUPDATE_CB.
 func setColorUpdateFunc(ih Ihandle, f ColorUpdateFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("COLORUPDATE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_COLORUPDATE_CB", f)
 
 	C.goIupSetColorUpdateFunc(ih.ptr())
 }
@@ -2726,21 +2133,18 @@ func setColorUpdateFunc(ih Ihandle, f ColorUpdateFunc) {
 
 //export goIupRecentCB
 func goIupRecentCB(ih unsafe.Pointer) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("RECENT_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_RECENT_CB")
+	if ch == 0 {
 		return C.int(DEFAULT)
 	}
-	ch := h.(cgo.Handle)
 	f := ch.Value().(ActionFunc)
 	return C.int(f((Ihandle)(ih)))
 }
 
 // setRecentFunc stores the callback for recent file selection.
-// The callback is stored using the config handle's UUID.
-func setRecentFunc(config, menuOrList Ihandle, f ActionFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("RECENT_CB_"+config.GetAttribute("UUID"), ch)
+// The callback is stored on the config handle.
+func setRecentFunc(config Ihandle, f ActionFunc) {
+	storeCallback(config, "_IUPGO_RECENT_CB", f)
 }
 
 //--------------------
@@ -2752,20 +2156,17 @@ type NotifyFunc func(ih Ihandle, actionId int) int
 
 //export goIupNotifyCB
 func goIupNotifyCB(ih unsafe.Pointer, actionId C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("NOTIFY_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_NOTIFY_CB")
+	if ch == 0 {
 		return C.int(DEFAULT)
 	}
-	ch := h.(cgo.Handle)
 	f := ch.Value().(NotifyFunc)
 	return C.int(f((Ihandle)(ih), int(actionId)))
 }
 
 // setNotifyFunc for NOTIFY_CB.
 func setNotifyFunc(ih Ihandle, f NotifyFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("NOTIFY_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_NOTIFY_CB", f)
 	C.goIupSetNotifyFunc(ih.ptr())
 }
 
@@ -2778,20 +2179,17 @@ type NotifyCloseFunc func(ih Ihandle, reason int) int
 
 //export goIupNotifyCloseCB
 func goIupNotifyCloseCB(ih unsafe.Pointer, reason C.int) C.int {
-	uuid := GetAttribute((Ihandle)(ih), "UUID")
-	h, ok := callbacks.Load("NOTIFY_CLOSE_CB_" + uuid)
-	if !ok {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_NOTIFY_CLOSE_CB")
+	if ch == 0 {
 		return C.int(DEFAULT)
 	}
-	ch := h.(cgo.Handle)
 	f := ch.Value().(NotifyCloseFunc)
 	return C.int(f((Ihandle)(ih), int(reason)))
 }
 
 // setNotifyCloseFunc for CLOSE_CB on notifications.
 func setNotifyCloseFunc(ih Ihandle, f NotifyCloseFunc) {
-	ch := cgo.NewHandle(f)
-	callbacks.Store("NOTIFY_CLOSE_CB_"+ih.GetAttribute("UUID"), ch)
+	storeCallback(ih, "_IUPGO_NOTIFY_CLOSE_CB", f)
 	C.goIupSetNotifyCloseFunc(ih.ptr())
 }
 
