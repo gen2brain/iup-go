@@ -121,24 +121,6 @@ static void iDialogAdjustPos(Ihandle *ih, int *x, int *y)
   if (*x == IUP_MOUSEPOS || *y == IUP_MOUSEPOS)
     iupdrvGetCursorPos(&cursor_x, &cursor_y);
 
-  if (iupAttribGetBoolean(ih, "MDICHILD"))
-  {
-    Ihandle* client = (Ihandle*)iupAttribGet(ih, "MDICLIENT_HANDLE");
-    if (client)
-    {
-      /* position is relative to mdi client */
-      parent_x = 0;
-      parent_y = 0;
-
-      /* screen/parent size is now the size of the mdi client */
-      parent_width = screen_width = client->currentwidth;
-      parent_height = screen_height = client->currentheight;
-
-      iupdrvScreenToClient(client, &current_x, &current_y);
-      iupdrvScreenToClient(client, &cursor_x, &cursor_y);
-    }
-  }
-
   switch (*x)
   {
   case IUP_CENTERPARENT:

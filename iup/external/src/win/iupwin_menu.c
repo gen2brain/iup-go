@@ -169,9 +169,6 @@ IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, L
       Icallback cb;
       Ihandle* ih;
 
-      if (menuId >= IUP_MDI_FIRSTCHILD)
-        break;
-
       if (iupwinMenuIsRecentItem(menuId))
       {
         iupwinMenuRecentItemProc((HMENU)lp, menuId);

@@ -165,10 +165,6 @@ IUP_DRV_API int iupwinGetScreenRes(void);
 #define iupWIN_PT2PIXEL(_pt, _res)    MulDiv(_pt, _res, 72)     /* (((_pt)*(_res))/72)    */
 #define iupWIN_PIXEL2PT(_pixel, _res) MulDiv(_pixel, 72, _res)  /* (((_pixel)*72)/(_res)) */
 
-/* child window identifier of the first MDI child window created,
-   should not conflict with any other command identifiers. */
-#define IUP_MDI_FIRSTCHILD 100000000
-
 #ifndef GET_X_LPARAM
 /* Do not use the LOWORD or HIWORD for coordinates, because of
    incorrect results on systems with multiple monitors */
