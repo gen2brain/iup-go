@@ -11,7 +11,7 @@ import (
 /*
 #include <stdlib.h>
 #include "iup.h"
-#include "iup_plot.h"
+#include "iupplot.h"
 */
 import "C"
 

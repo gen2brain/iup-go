@@ -4,8 +4,8 @@
  * See Copyright Notice in iup.h
  */
 
-#ifndef __IUP_PLUS_H
-#define __IUP_PLUS_H
+#ifndef __IUPPLUS_H
+#define __IUPPLUS_H
 
 
 #include "iup.h"
@@ -15,7 +15,7 @@
 #include "iupcontrols.h"
 #include "iupgl.h"
 #include "iup_config.h"
-#include "iup_plot.h"
+#include "iupplot.h"
 #include "iupweb.h"
 
 
@@ -25,7 +25,7 @@
  * \par
  * Defines wrapper classes for all C structures.
  *
- * See \ref iup_plus.h
+ * See \ref iupplus.h
  */
 namespace Iup
 {
