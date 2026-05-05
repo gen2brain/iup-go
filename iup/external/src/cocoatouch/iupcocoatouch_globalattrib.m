@@ -21,19 +21,6 @@
 
 static int s_cocoatouch_utf8_autoconvert = 1;
 
-/* APPID/APPNAME are read-only; baked into Info.plist at build time */
-IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
-{
-	(void)value;
-	return 0;
-}
-
-IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
-{
-	(void)value;
-	return 0;
-}
-
 static char* cocoaTouchInfoPlistString(NSString* key)
 {
 	NSString* s = [[[NSBundle mainBundle] infoDictionary] objectForKey:key];

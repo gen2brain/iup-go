@@ -239,6 +239,18 @@ int iupdrvOpen(int *argc, char ***argv)
   return IUP_NOERROR;
 }
 
+int iupdrvSetGlobalAppIDAttrib(const char* value)
+{
+  (void)value;
+  return 0;
+}
+
+int iupdrvSetGlobalAppNameAttrib(const char* value)
+{
+  (void)value;
+  return 0;
+}
+
 void iupdrvClose(void)
 {
 }

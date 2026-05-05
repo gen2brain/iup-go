@@ -416,6 +416,27 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   return IUP_NOERROR;
 }
 
+static char* efl_app_name = NULL;
+
+IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
+{
+  (void)value;
+  return 1;
+}
+
+IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
+{
+  if (efl_app_name)
+    free(efl_app_name);
+
+  if (value)
+    efl_app_name = strdup(value);
+  else
+    efl_app_name = NULL;
+
+  return 0;
+}
+
 IUP_SDK_API void iupdrvClose(void)
 {
   if (efl_open_count == 0)

@@ -19,7 +19,6 @@
 #include "iupefl_drv.h"
 
 
-static char* efl_app_name = NULL;
 static char* efl_theme_path = NULL;
 static const void* efl_theme_data = NULL;
 static size_t efl_theme_data_len = 0;
@@ -334,21 +333,3 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   return NULL;
 }
 
-IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
-{
-  (void)value;
-  return 1;
-}
-
-IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
-{
-  if (efl_app_name)
-    free(efl_app_name);
-
-  if (value)
-    efl_app_name = strdup(value);
-  else
-    efl_app_name = NULL;
-
-  return 0;
-}

@@ -550,18 +550,6 @@ void iupdrvWarpPointer(int x, int y)
   (void)y;
 }
 
-int iupdrvSetGlobalAppIDAttrib(const char* value)
-{
-  (void)value;
-  return 0;
-}
-
-int iupdrvSetGlobalAppNameAttrib(const char* value)
-{
-  (void)value;
-  return 0;
-}
-
 /* Lives here (not iupandroid_loop.c) so the class pre-cache in JNI_OnLoad is unconditional. */
 void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
 {
