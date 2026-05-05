@@ -67,6 +67,7 @@ IUP_DRV_API gboolean iupgtk4KeyReleaseEvent(GtkEventControllerKey *controller, g
 IUP_DRV_API void iupgtk4SetupKeyEvents(GtkWidget *widget, Ihandle* ih);
 IUP_DRV_API void iupgtk4ButtonKeySetStatus(GdkModifierType state, unsigned int but, char* status, int doubleclick);
 IUP_DRV_API int iupgtk4KeyDecode(guint keyval, GdkModifierType state);
+IUP_DRV_API void iupgtk4InstallGlobalInputController(GtkWidget* window);
 
 /* Font */
 IUP_DRV_API PangoFontDescription* iupgtk4GetPangoFontDesc(const char* value);

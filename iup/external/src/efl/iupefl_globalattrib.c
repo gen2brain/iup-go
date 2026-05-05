@@ -8,15 +8,152 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <Ecore_Input.h>
+
 #include "iup.h"
+#include "iupcbs.h"
+#include "iupkey.h"
 
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_drvfont.h"
+#include "iup_key.h"
 #include "iup_singleinstance.h"
 
 #include "iupefl_drv.h"
+
+
+static Ecore_Event_Handler* efl_h_key_down = NULL;
+static Ecore_Event_Handler* efl_h_key_up = NULL;
+static Ecore_Event_Handler* efl_h_btn_down = NULL;
+static Ecore_Event_Handler* efl_h_btn_up = NULL;
+static Ecore_Event_Handler* efl_h_move = NULL;
+static Ecore_Event_Handler* efl_h_wheel = NULL;
+
+static void eflGlobalFillStatus(unsigned int mods, unsigned int button, char* status, int doubleclick)
+{
+  if (mods & ECORE_EVENT_MODIFIER_SHIFT) iupKEY_SETSHIFT(status);
+  if (mods & ECORE_EVENT_MODIFIER_CTRL)  iupKEY_SETCONTROL(status);
+  if (mods & ECORE_EVENT_MODIFIER_ALT)   iupKEY_SETALT(status);
+  if (mods & ECORE_EVENT_MODIFIER_WIN)   iupKEY_SETSYS(status);
+  if (button == 1) iupKEY_SETBUTTON1(status);
+  if (button == 2) iupKEY_SETBUTTON2(status);
+  if (button == 3) iupKEY_SETBUTTON3(status);
+  if (button == 4) iupKEY_SETBUTTON4(status);
+  if (button == 5) iupKEY_SETBUTTON5(status);
+  if (doubleclick) iupKEY_SETDOUBLE(status);
+}
+
+static int eflApplyMods(int code, unsigned int mods)
+{
+  if (mods & (ECORE_EVENT_MODIFIER_CTRL | ECORE_EVENT_MODIFIER_ALT | ECORE_EVENT_MODIFIER_WIN))
+  {
+    if (code >= K_a && code <= K_z) code = iup_toupper(code);
+    else if (code == K_ccedilla)    code = K_Ccedilla;
+  }
+  if (mods & ECORE_EVENT_MODIFIER_SHIFT)
+  {
+    if ((code < K_exclam || code > K_tilde) ||
+        (mods & (ECORE_EVENT_MODIFIER_CTRL | ECORE_EVENT_MODIFIER_ALT | ECORE_EVENT_MODIFIER_WIN)))
+      code = iup_XkeyShift(code);
+  }
+  if (mods & ECORE_EVENT_MODIFIER_CTRL) code = iup_XkeyCtrl(code);
+  if (mods & ECORE_EVENT_MODIFIER_ALT)  code = iup_XkeyAlt(code);
+  if (mods & ECORE_EVENT_MODIFIER_WIN)  code = iup_XkeySys(code);
+  return code;
+}
+
+static Eina_Bool eflGlobalKey(void* data, int type, void* event)
+{
+  (void)data;
+  IFii cb = (IFii)IupGetFunction("GLOBALKEYPRESS_CB");
+  if (cb)
+  {
+    Ecore_Event_Key* k = (Ecore_Event_Key*)event;
+    int code = iupeflKeyDecodeFromName(k->keyname, k->string);
+    if (code != 0)
+    {
+      code = eflApplyMods(code, k->modifiers);
+      cb(code, type == ECORE_EVENT_KEY_DOWN ? 1 : 0);
+    }
+  }
+  return ECORE_CALLBACK_PASS_ON;
+}
+
+static Eina_Bool eflGlobalButton(void* data, int type, void* event)
+{
+  (void)data;
+  IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
+  if (cb)
+  {
+    Ecore_Event_Mouse_Button* b = (Ecore_Event_Mouse_Button*)event;
+    int button = 0;
+    switch (b->buttons)
+    {
+      case 1: button = IUP_BUTTON1; break;
+      case 2: button = IUP_BUTTON2; break;
+      case 3: button = IUP_BUTTON3; break;
+      case 4: button = IUP_BUTTON4; break;
+      case 5: button = IUP_BUTTON5; break;
+      default: return ECORE_CALLBACK_PASS_ON;
+    }
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    eflGlobalFillStatus(b->modifiers, button, status, b->double_click);
+    cb(button, type == ECORE_EVENT_MOUSE_BUTTON_DOWN ? 1 : 0, b->root.x, b->root.y, status);
+  }
+  return ECORE_CALLBACK_PASS_ON;
+}
+
+static Eina_Bool eflGlobalMove(void* data, int type, void* event)
+{
+  (void)data; (void)type;
+  IFiis cb = (IFiis)IupGetFunction("GLOBALMOTION_CB");
+  if (cb)
+  {
+    Ecore_Event_Mouse_Move* m = (Ecore_Event_Mouse_Move*)event;
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    eflGlobalFillStatus(m->modifiers, 0, status, 0);
+    cb(m->root.x, m->root.y, status);
+  }
+  return ECORE_CALLBACK_PASS_ON;
+}
+
+static Eina_Bool eflGlobalWheel(void* data, int type, void* event)
+{
+  (void)data; (void)type;
+  IFfiis cb = (IFfiis)IupGetFunction("GLOBALWHEEL_CB");
+  if (cb)
+  {
+    Ecore_Event_Mouse_Wheel* w = (Ecore_Event_Mouse_Wheel*)event;
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    eflGlobalFillStatus(w->modifiers, 0, status, 0);
+    cb((float)-w->z, w->root.x, w->root.y, status);
+  }
+  return ECORE_CALLBACK_PASS_ON;
+}
+
+static void eflToggleGlobalInput(int enabled)
+{
+  if (enabled)
+  {
+    if (!efl_h_key_down) efl_h_key_down = ecore_event_handler_add(ECORE_EVENT_KEY_DOWN,         eflGlobalKey,    NULL);
+    if (!efl_h_key_up)   efl_h_key_up   = ecore_event_handler_add(ECORE_EVENT_KEY_UP,           eflGlobalKey,    NULL);
+    if (!efl_h_btn_down) efl_h_btn_down = ecore_event_handler_add(ECORE_EVENT_MOUSE_BUTTON_DOWN, eflGlobalButton, NULL);
+    if (!efl_h_btn_up)   efl_h_btn_up   = ecore_event_handler_add(ECORE_EVENT_MOUSE_BUTTON_UP,   eflGlobalButton, NULL);
+    if (!efl_h_move)     efl_h_move     = ecore_event_handler_add(ECORE_EVENT_MOUSE_MOVE,        eflGlobalMove,   NULL);
+    if (!efl_h_wheel)    efl_h_wheel    = ecore_event_handler_add(ECORE_EVENT_MOUSE_WHEEL,       eflGlobalWheel,  NULL);
+  }
+  else
+  {
+    if (efl_h_key_down) { ecore_event_handler_del(efl_h_key_down); efl_h_key_down = NULL; }
+    if (efl_h_key_up)   { ecore_event_handler_del(efl_h_key_up);   efl_h_key_up   = NULL; }
+    if (efl_h_btn_down) { ecore_event_handler_del(efl_h_btn_down); efl_h_btn_down = NULL; }
+    if (efl_h_btn_up)   { ecore_event_handler_del(efl_h_btn_up);   efl_h_btn_up   = NULL; }
+    if (efl_h_move)     { ecore_event_handler_del(efl_h_move);     efl_h_move     = NULL; }
+    if (efl_h_wheel)    { ecore_event_handler_del(efl_h_wheel);    efl_h_wheel    = NULL; }
+  }
+}
 
 
 static char* efl_theme_path = NULL;
@@ -214,6 +351,11 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
     return 1;
   }
 
+  if (iupStrEqual(name, "INPUTCALLBACKS"))
+  {
+    eflToggleGlobalInput(iupStrBoolean(value));
+    return 1;
+  }
   if (iupStrEqual(name, "LANGUAGE"))
   {
     return 1;

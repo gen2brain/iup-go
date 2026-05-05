@@ -94,3 +94,50 @@ void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
   if (keyval) *keyval = kv;
   if (state)  *state = s;
 }
+
+int iupandroidKeyDecode(int keycode, int meta_state)
+{
+  int code = 0;
+
+  if (keycode >= AKEYCODE_A && keycode < AKEYCODE_A + 26)
+    code = K_a + (keycode - AKEYCODE_A);
+  else if (keycode >= AKEYCODE_0 && keycode < AKEYCODE_0 + 10)
+    code = K_0 + (keycode - AKEYCODE_0);
+  else if (keycode >= AKEYCODE_F1 && keycode < AKEYCODE_F1 + 12)
+    code = K_F1 + (keycode - AKEYCODE_F1);
+  else
+  {
+    switch (keycode)
+    {
+      case AKEYCODE_SPACE:        code = K_SP;     break;
+      case AKEYCODE_DEL:          code = K_BS;     break;
+      case AKEYCODE_TAB:          code = K_TAB;    break;
+      case AKEYCODE_ENTER:        code = K_CR;     break;
+      case AKEYCODE_ESCAPE:       code = K_ESC;    break;
+      case AKEYCODE_MOVE_HOME:    code = K_HOME;   break;
+      case AKEYCODE_MOVE_END:     code = K_END;    break;
+      case AKEYCODE_DPAD_LEFT:    code = K_LEFT;   break;
+      case AKEYCODE_DPAD_UP:      code = K_UP;     break;
+      case AKEYCODE_DPAD_RIGHT:   code = K_RIGHT;  break;
+      case AKEYCODE_DPAD_DOWN:    code = K_DOWN;   break;
+      case AKEYCODE_PAGE_UP:      code = K_PGUP;   break;
+      case AKEYCODE_PAGE_DOWN:    code = K_PGDN;   break;
+      case AKEYCODE_INSERT:       code = K_INS;    break;
+      case AKEYCODE_FORWARD_DEL:  code = K_DEL;    break;
+      case AKEYCODE_BREAK:        code = K_PAUSE;  break;
+      case AKEYCODE_SYSRQ:        code = K_Print;  break;
+      case AKEYCODE_MENU:         code = K_Menu;   break;
+      case AKEYCODE_NUM_LOCK:     code = K_NUM;    break;
+      case AKEYCODE_CAPS_LOCK:    code = K_CAPS;   break;
+      case AKEYCODE_SCROLL_LOCK:  code = K_SCROLL; break;
+      default:                    return 0;
+    }
+  }
+
+  if (meta_state & AMETA_SHIFT_ON) code = iup_XkeyShift(code);
+  if (meta_state & AMETA_CTRL_ON)  code = iup_XkeyCtrl(code);
+  if (meta_state & AMETA_ALT_ON)   code = iup_XkeyAlt(code);
+  if (meta_state & AMETA_META_ON)  code = iup_XkeySys(code);
+
+  return code;
+}

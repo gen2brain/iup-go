@@ -19,9 +19,13 @@ Must stop recording before exiting the application.
 
 It uses the global callbacks enabled by the INPUTCALLBACKS global attribute.
 
-Mouse position is relative to the top left corner of the screen, and it is independent from the controls and dialogs being manipulated.
+Mouse position is relative to the top left corner of the screen, and it is independent of the controls and dialogs being manipulated.
 
-The generated file can be used by **IupPlayInput** to reproduce the same events.
+**IupPlayInput** can use the generated file to reproduce the same events.
+
+### Driver Support
+
+Implemented on every driver. Playback support is more restricted, see [IupPlayInput](iup_playinput.md).
 
 ### See Also
 

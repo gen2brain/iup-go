@@ -25,7 +25,7 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int *keyval, unsigned int *s
   *state = 0;
 }
 
-static int eflKeyDecodeFromName(const char* keyname, const char* keystr)
+IUP_DRV_API int iupeflKeyDecodeFromName(const char* keyname, const char* keystr)
 {
   if (!keyname)
     return 0;
@@ -188,7 +188,7 @@ IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
   int result;
   int has_shift;
 
-  code = eflKeyDecodeFromName(keyname, keystr);
+  code = iupeflKeyDecodeFromName(keyname, keystr);
   if (code == 0)
     return;
 
@@ -243,7 +243,7 @@ IUP_DRV_API void iupeflKeyUpEvent(void* data, const Efl_Event* ev)
   {
     const char* keyname = efl_input_key_name_get(key_event);
     const char* keystr = efl_input_key_string_get(key_event);
-    int code = eflKeyDecodeFromName(keyname, keystr);
+    int code = iupeflKeyDecodeFromName(keyname, keystr);
     if (code != 0)
     {
       code = eflKeyApplyModifiers(code, key_event);

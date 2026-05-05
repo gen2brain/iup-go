@@ -63,6 +63,12 @@ public final class IupCommon
     public native static int nativeIupAttribGetInt(long ihandlePtr, String key);
     public native static void nativeIupAttribSetInt(long ihandlePtr, String key, int value);
 
+    public native static void dispatchGlobalButton(int button, int pressed, int x, int y, int metaState);
+    public native static void dispatchGlobalMotion(int x, int y, int metaState, int buttonState);
+    public native static void dispatchGlobalKey(int keyCode, int metaState, int pressed);
+
+    public static volatile boolean inputCallbacksEnabled = false;
+
     public static String iupAttribGet(long ihandlePtr, String key)
     {
         return nativeIupAttribGet(ihandlePtr, key);

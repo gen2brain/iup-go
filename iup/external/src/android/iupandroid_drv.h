@@ -42,6 +42,8 @@ IUP_SDK_API char* iupAndroid_JStringToReturnStr(JNIEnv* jni_env, jstring j_strin
 /* re-seeds DLG/TXT/MENU color defaults from the current UI_MODE_NIGHT flag */
 IUP_SDK_API void iupAndroidUpdateGlobalColors(void);
 
+IUP_SDK_API int iupandroidKeyDecode(int keycode, int meta_state);
+
 /* replays Android-only Dialog attributes once the Activity exists; called from IupActivity.onCreate */
 IUP_SDK_API void iupAndroid_DialogActivityCreated(Ihandle* ih);
 
