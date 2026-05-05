@@ -142,7 +142,7 @@ But the line cannot be positioned in the middle of the text like in IupFrame.
       IupSetAttribute(frame3, "TITLELINE", "No");
       IupSetAttribute(frame3, "TITLEBGCOLOR", "64 128 255");
 
-![](images/iupflatframe.png)\
+![](../images/iupflatframe.png)\
 
 ### See Also
 

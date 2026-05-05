@@ -63,14 +63,14 @@ In GTK uses GtkProgressBar, in Windows uses PROGRESS_CLASS, in WinUI uses XAML P
 
 [Browse for Example Files](../../examples/)
 
-|                   |                                                 |                                           |                                              |
-|-------------------|-------------------------------------------------|-------------------------------------------|----------------------------------------------|
-|                   | DASHED=NO                                       | DASHED=YES                                | MARQUEE=YES                                  |
-| Motif             | ![](images/iupprogressbar_mot_continuous.png)   | (same as DASHED=NO)                       | ![](images/iupprogressbar_mot_marquee.png)   |
-| Windows Classic   | ![](images/iupprogressbar_win2k_continuous.png) | ![](images/iupprogressbar_win2k_dash.png) | (same as DASHED)                             |
-| Windows w/ Styles | (same as DASHED=YES)                            | ![](images/iupprogressbar_winxp_dash.png) | ![](images/iupprogressbar_winxp_marquee.png) |
-| Windows Vista     | ![](images/iupprogressbar_vista_continuous.png) | (same as DASHED=NO)                       | ![](images/iupprogressbar_vista_marquee.png) |
-| GTK               | ![](images/iupprogressbar_gtk_continuous.png)   | ![](images/iupprogressbar_gtk_dashed.png) | ![](images/iupprogressbar_gtk_marquee.png)   |
+|                   |                                                    |                                              |                                                 |
+|-------------------|----------------------------------------------------|----------------------------------------------|-------------------------------------------------|
+|                   | DASHED=NO                                          | DASHED=YES                                   | MARQUEE=YES                                     |
+| Motif             | ![](../images/iupprogressbar_mot_continuous.png)   | (same as DASHED=NO)                          | ![](../images/iupprogressbar_mot_marquee.png)   |
+| Windows Classic   | ![](../images/iupprogressbar_win2k_continuous.png) | ![](../images/iupprogressbar_win2k_dash.png) | (same as DASHED)                                |
+| Windows w/ Styles | (same as DASHED=YES)                               | ![](../images/iupprogressbar_winxp_dash.png) | ![](../images/iupprogressbar_winxp_marquee.png) |
+| Windows Vista     | ![](../images/iupprogressbar_vista_continuous.png) | (same as DASHED=NO)                          | ![](../images/iupprogressbar_vista_marquee.png) |
+| GTK               | ![](../images/iupprogressbar_gtk_continuous.png)   | ![](../images/iupprogressbar_gtk_dashed.png) | ![](../images/iupprogressbar_gtk_marquee.png)   |
 
 ### See Also
 

@@ -101,10 +101,10 @@ Press the Home key in the circular dial to reset to 0.
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupdial.png)\
+![](../images/iupdial.png)\
 Regular
 
-![](images/iupdial2.png)\
+![](../images/iupdial2.png)\
 Flat=Yes and fgcolor
 
 ### See Also

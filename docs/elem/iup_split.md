@@ -82,9 +82,9 @@ The container can be created with no elements and be dynamic filled using [IupAp
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupsplit1.png)
+![](../images/iupsplit1.png)
 Natural Size
 
-![](images/iupsplit2.png)
+![](../images/iupsplit2.png)
 After Moving the Split Bar
 

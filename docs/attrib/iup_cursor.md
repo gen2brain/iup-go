@@ -8,31 +8,31 @@ Name of a cursor.
 
 It will check first for the following predefined names:
 
-|        ![](images/win_logo.png)        |    ![](images/x-win_logo.gif)     | Name |
-|:--------------------------------------:|:---------------------------------:|----|
-|                                        |                                   | "NONE" or "NULL" |
-|  ![](images/wcursor_appstarting.gif)   |                ---                | "APPSTARTING" (Windows Only) |
-|     ![](images/wcursor_arrow.gif)      |   ![](images/xcursor_arrow.gif)   | "ARROW" |
-|      ![](images/wcursor_busy.gif)      |   ![](images/xcursor_busy.gif)    | "BUSY" |
-|     ![](images/wcursor_cross.gif)      |   ![](images/xcursor_cross.gif)   | "CROSS" |
-|      ![](images/wcursor_hand.gif)      |   ![](images/xcursor_hand.gif)    | "HAND" |
-|      ![](images/wcursor_help.gif)      |   ![](images/xcursor_help.gif)    | "HELP" |
-|      ![](images/wcursor_move.gif)      |   ![](images/xcursor_move.gif)    | "MOVE" |
-|       ![](images/wcursor_no.gif)       |                ---                | "NO" (Windows and macOS) |
-|   ![](images/wcursor_resize_ns.gif)    | ![](images/xcursor_resize_n.gif)  | "RESIZE_N" |
-|   ![](images/wcursor_resize_ns.gif)    | ![](images/xcursor_resize_s.gif)  | "RESIZE_S" |
-|   ![](images/wcursor_resize_ns.gif)    | ![](images/xcursor_resize_ns.gif) | "RESIZE_NS" |
-|   ![](images/wcursor_resize_we.gif)    | ![](images/xcursor_resize_w.gif)  | "RESIZE_W" |
-|   ![](images/wcursor_resize_we.gif)    | ![](images/xcursor_resize_e.gif)  | "RESIZE_E" |
-|   ![](images/wcursor_resize_we.gif)    | ![](images/xcursor_resize_we.gif) | "RESIZE_WE" |
-|  ![](images/wcursor_resize_nesw.gif)   | ![](images/xcursor_resize_ne.gif) | "RESIZE_NE" |
-|  ![](images/wcursor_resize_nesw.gif)   | ![](images/xcursor_resize_sw.gif) | "RESIZE_SW" |
-|  ![](images/wcursor_resize_nwse.gif)   | ![](images/xcursor_resize_nw.gif) | "RESIZE_NW" |
-|  ![](images/wcursor_resize_nwse.gif)   | ![](images/xcursor_resize_se.gif) | "RESIZE_SE" |
-| ![](images/wcursor_splitter_horiz.gif) | ![](images/xcursor_resize_we.gif) | "SPLITTER_HORIZ" |
-| ![](images/wcursor_splitter_vert.gif)  | ![](images/xcursor_resize_ns.gif) | "SPLITTER_VERT" |
-|      ![](images/wcursor_text.gif)      |   ![](images/xcursor_text.gif)    | "TEXT" |
-|    ![](images/wcursor_uparrow.gif)     |  ![](images/xcursor_uparrow.gif)  | "UPARROW" |
+|        ![](../images/win_logo.png)        |    ![](../images/x-win_logo.gif)     | Name                         |
+|:-----------------------------------------:|:------------------------------------:|------------------------------|
+|                                           |                                      | "NONE" or "NULL"             |
+|  ![](../images/wcursor_appstarting.gif)   |                 ---                  | "APPSTARTING" (Windows Only) |
+|     ![](../images/wcursor_arrow.gif)      |   ![](../images/xcursor_arrow.gif)   | "ARROW"                      |
+|      ![](../images/wcursor_busy.gif)      |   ![](../images/xcursor_busy.gif)    | "BUSY"                       |
+|     ![](../images/wcursor_cross.gif)      |   ![](../images/xcursor_cross.gif)   | "CROSS"                      |
+|      ![](../images/wcursor_hand.gif)      |   ![](../images/xcursor_hand.gif)    | "HAND"                       |
+|      ![](../images/wcursor_help.gif)      |   ![](../images/xcursor_help.gif)    | "HELP"                       |
+|      ![](../images/wcursor_move.gif)      |   ![](../images/xcursor_move.gif)    | "MOVE"                       |
+|       ![](../images/wcursor_no.gif)       |                 ---                  | "NO" (Windows and macOS)     |
+|   ![](../images/wcursor_resize_ns.gif)    | ![](../images/xcursor_resize_n.gif)  | "RESIZE_N"                   |
+|   ![](../images/wcursor_resize_ns.gif)    | ![](../images/xcursor_resize_s.gif)  | "RESIZE_S"                   |
+|   ![](../images/wcursor_resize_ns.gif)    | ![](../images/xcursor_resize_ns.gif) | "RESIZE_NS"                  |
+|   ![](../images/wcursor_resize_we.gif)    | ![](../images/xcursor_resize_w.gif)  | "RESIZE_W"                   |
+|   ![](../images/wcursor_resize_we.gif)    | ![](../images/xcursor_resize_e.gif)  | "RESIZE_E"                   |
+|   ![](../images/wcursor_resize_we.gif)    | ![](../images/xcursor_resize_we.gif) | "RESIZE_WE"                  |
+|  ![](../images/wcursor_resize_nesw.gif)   | ![](../images/xcursor_resize_ne.gif) | "RESIZE_NE"                  |
+|  ![](../images/wcursor_resize_nesw.gif)   | ![](../images/xcursor_resize_sw.gif) | "RESIZE_SW"                  |
+|  ![](../images/wcursor_resize_nwse.gif)   | ![](../images/xcursor_resize_nw.gif) | "RESIZE_NW"                  |
+|  ![](../images/wcursor_resize_nwse.gif)   | ![](../images/xcursor_resize_se.gif) | "RESIZE_SE"                  |
+| ![](../images/wcursor_splitter_horiz.gif) | ![](../images/xcursor_resize_we.gif) | "SPLITTER_HORIZ"             |
+| ![](../images/wcursor_splitter_vert.gif)  | ![](../images/xcursor_resize_ns.gif) | "SPLITTER_VERT"              |
+|      ![](../images/wcursor_text.gif)      |   ![](../images/xcursor_text.gif)    | "TEXT"                       |
+|    ![](../images/wcursor_uparrow.gif)     |  ![](../images/xcursor_uparrow.gif)  | "UPARROW"                    |
 
 Default: "ARROW"
 

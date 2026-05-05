@@ -210,13 +210,13 @@ On Android, SAF returns `content://` URIs rather than filesystem paths. The driv
     IupDestroy(dlg);
 
 **Windows XP**
-![](images/filedlg_win.png)
+![](../images/filedlg_win.png)
 
 **Motif/Mwm**
-![](images/filedlg_mot.png)
+![](../images/filedlg_mot.png)
 
 **GTK/GNOME**
-![](images/filedlg_gtk.png)
+![](../images/filedlg_gtk.png)
 
 [Browse for Example Files](../../examples/)
 

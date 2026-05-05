@@ -219,9 +219,9 @@ For more features, like Import/Export, Clipboard, Undo/Redo, Search, Sort, Colum
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupmatrix1.png)
+![](../images/iupmatrix1.png)
 
-![](images/iupmatrix2.png)
+![](../images/iupmatrix2.png)
 
 ### See Also
 

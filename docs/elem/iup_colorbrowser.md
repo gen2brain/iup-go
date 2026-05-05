@@ -85,7 +85,7 @@ This non linearity was introduced so a simple triangle could be used to represen
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupcolorbrowser.png)
+![](../images/iupcolorbrowser.png)
 
 ### See Also
 

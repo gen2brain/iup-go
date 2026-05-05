@@ -63,30 +63,30 @@ On Android, an optional NavigationDrawer can be attached alongside the menu via 
 [Browse for Example Files](../../examples/)
 
 **Windows Classic**
-![](images/iupmenu_win2k.png)
+![](../images/iupmenu_win2k.png)
 
 **Windows w/ Styles**
-![](images/iupmenu_winxp.png)
+![](../images/iupmenu_winxp.png)
 
 **Motif**
-![](images/iupmenu_mot.png)
+![](../images/iupmenu_mot.png)
 
 **GTK**
-![](images/iupmenu_gtk.png)
+![](../images/iupmenu_gtk.png)
 
 The **IupMenuItem** check is affected by the RADIO attribute in **IupMenu**:
 
 **Windows Classic**
-![](images/iupmenu_win2k_radio.png)
+![](../images/iupmenu_win2k_radio.png)
 
 **Windows XP Style**
-![](images/iupmenu_winxp_radio.png)
+![](../images/iupmenu_winxp_radio.png)
 
 **Motif**
-![](images/iupmenu_mot_radio.png)
+![](../images/iupmenu_mot_radio.png)
 
 **GTK**
-![](images/iupmenu_gtk_radio.png)
+![](../images/iupmenu_gtk_radio.png)
 
 ### See Also
 

@@ -277,7 +277,7 @@ But these functions are faster than the traditional functions because they do no
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupflatlist.png)
+![](../images/iupflatlist.png)
 
 ### See Also
 

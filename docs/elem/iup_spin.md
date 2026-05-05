@@ -36,7 +36,7 @@ The spinbox can be created with no elements and be dynamic filled using [IupAppe
 
     Ihandle* spinbox = IupSpinbox(IupText(NULL));
 
-![](images/iupspin.png)
+![](../images/iupspin.png)
 
 ### See Also
 

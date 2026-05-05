@@ -23,7 +23,7 @@ It also uses a global attribute called "ICON" as the dialog icon if it is define
 
 ### Examples
 
-![](images/gettext.png)
+![](../images/gettext.png)
 
 ### See Also
 

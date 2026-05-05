@@ -380,7 +380,7 @@ But these functions are faster than the traditional functions because they do no
     IupSetAttribute(ih, "SHOWCLOSE", "Yes");
     IupSetAttribute(ih, "TABFONTSTYLE4", "Bold");
 
-![](images/iupflattabs1.png)
+![](../images/iupflattabs1.png)
 
     IupSetAttribute(ih, "FORECOLOR", "192 0 0");
     IupSetAttribute(ih, "TABSBACKCOLOR", "192 0 0");
@@ -391,7 +391,7 @@ But these functions are faster than the traditional functions because they do no
     IupSetAttribute(ih, "SHOWCLOSE", "NO");
     IupSetAttribute(ih, "EXPANDBUTTON", "Yes");
 
-![](images/iupflattabs2.png)
+![](../images/iupflattabs2.png)
 
 ### See Also
 

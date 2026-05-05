@@ -93,9 +93,9 @@ The box can be created with no elements and be dynamic filled using [IupAppend](
 
 [Browse for Example Files](../../examples/)
 
-![](images/iupdbox_vertical.png)
+![](../images/iupdbox_vertical.png)
 IupDetachBox (ORIENTATION = VERTICAL)
 
-![](images/iupdbox_detached.png)
+![](../images/iupdbox_detached.png)
 New dialog created after the detach action
 

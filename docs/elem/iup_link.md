@@ -45,7 +45,7 @@ The **IupLabel** callbacks BUTTON_CB, ENTERWINDOW_CB and LEAVEWINDOW_CB are used
 
 [Browse for Example Files](../../examples/)
 
-![](images/iuplink.png)
+![](../images/iuplink.png)
 
 ### See Also
 

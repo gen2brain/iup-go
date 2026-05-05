@@ -336,23 +336,23 @@ Here is a list of the common keys for all drivers. Other keys are available depe
 
 [Browse for Example Files](../../examples/)
 
-|                             |                               |                               |                             |
-|-----------------------------|-------------------------------|-------------------------------|-----------------------------|
-| Motif                       | Windows Classic               | Windows w/ Styles             | GTK                         |
-| ![](images/iuptext_mot.png) | ![](images/iuptext_win2k.png) | ![](images/iuptext_winxp.png) | ![](images/iuptext_gtk.png) |
+|                                |                                  |                                  |                                |
+|--------------------------------|----------------------------------|----------------------------------|--------------------------------|
+| Motif                          | Windows Classic                  | Windows w/ Styles                | GTK                            |
+| ![](../images/iuptext_mot.png) | ![](../images/iuptext_win2k.png) | ![](../images/iuptext_winxp.png) | ![](../images/iuptext_gtk.png) |
 
 When FORMATTING=YES in Windows or GTK (formatting attributes are set to a formatag object that it is a **IupUser**):
 
-| Code                                                                                                                                                                                                                                                                                                                    | Result                             |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------|
-| `"ALIGNMENT" = "CENTER"` `"SPACEAFTER" = "10"` `"FONTSIZE" = "24"` `"SELECTION" = "3,1:3,50"` `"ADDFORMATTAG"` `"BGCOLOR" = "255 128 64"` `"UNDERLINE" = "SINGLE"` `"WEIGHT" = "BOLD"` `"SELECTION" = "3,7:3,11"` `"ADDFORMATTAG"` `"ITALIC" = "YES"` `"STRIKEOUT" = "YES"` `"SELECTION" = "2,1:2,12"` `"ADDFORMATTAG"` | ![](images/iuptext_formatting.png) |
+| Code                                                                                                                                                                                                                                                                                                                    | Result                                |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|
+| `"ALIGNMENT" = "CENTER"` `"SPACEAFTER" = "10"` `"FONTSIZE" = "24"` `"SELECTION" = "3,1:3,50"` `"ADDFORMATTAG"` `"BGCOLOR" = "255 128 64"` `"UNDERLINE" = "SINGLE"` `"WEIGHT" = "BOLD"` `"SELECTION" = "3,7:3,11"` `"ADDFORMATTAG"` `"ITALIC" = "YES"` `"STRIKEOUT" = "YES"` `"SELECTION" = "2,1:2,12"` `"ADDFORMATTAG"` | ![](../images/iuptext_formatting.png) |
 
 When SPIN=YES:
 
-|                                  |                                    |                                    |                                  |
-|----------------------------------|------------------------------------|------------------------------------|----------------------------------|
-| Motif                            | Windows Classic                    | Windows w/ Styles                  | GTK                              |
-| ![](images/iuptext_mot_spin.png) | ![](images/iuptext_win2k_spin.png) | ![](images/iuptext_winxp_spin.png) | ![](images/iuptext_gtk_spin.png) |
+|                                     |                                       |                                       |                                     |
+|-------------------------------------|---------------------------------------|---------------------------------------|-------------------------------------|
+| Motif                               | Windows Classic                       | Windows w/ Styles                     | GTK                                 |
+| ![](../images/iuptext_mot_spin.png) | ![](../images/iuptext_win2k_spin.png) | ![](../images/iuptext_winxp_spin.png) | ![](../images/iuptext_gtk_spin.png) |
 
 ### See Also
 

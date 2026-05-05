@@ -80,7 +80,7 @@ We show only one for each type, but you can have as many parameters of the same 
                        &poptions, &plist, file_name, pcolor, pfont, pstring2, NULL))
         return;
 
-![](images/getparam.png)
+![](../images/getparam.png)
 
 ### See Also
 

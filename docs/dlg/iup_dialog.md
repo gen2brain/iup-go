@@ -452,7 +452,7 @@ Very simple dialog with a label and a button. The application is closed when the
       return 0;
     }
 
-![](images/iupdialog.gif)
+![](../images/iupdialog.gif)
 
 [Browse for Example Files](../../examples/)
 

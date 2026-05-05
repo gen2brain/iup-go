@@ -144,13 +144,13 @@ In GTK uses GtkButton, in Windows uses WC_BUTTON, in WinUI uses XAML Button, in 
 The buttons with image and text simultaneous have PADDING=5x5, the other buttons have no padding.
 The buttons with no text and BGCOLOR defined have their RASTERSIZE set.
 
-|                                         |                                           |                                           |                                         |
-|-----------------------------------------|-------------------------------------------|-------------------------------------------|-----------------------------------------|
-| Motif                                   | Windows Classic                           | Windows w/ Styles                         | GTK                                     |
-| ![](images/iupbutton_mot_imagetext.png) | ![](images/iupbutton_win2k_imagetext.png) | ![](images/iupbutton_winxp_imagetext.png) | ![](images/iupbutton_gtk_imagetext.png) |
-| ![](images/iupbutton_mot_text.png)      | ![](images/iupbutton_win2k_text.png)      | ![](images/iupbutton_winxp_text.png)      | ![](images/iupbutton_gtk_text.png)      |
-| ![](images/iupbutton_mot_image.png)     | ![](images/iupbutton_win2k_image.png)     | ![](images/iupbutton_winxp_image.png)     | ![](images/iupbutton_gtk_image.png)     |
-| ![](images/iupbutton_mot_bgcolor.png)   | ![](images/iupbutton_win2k_bgcolor.png)   | ![](images/iupbutton_winxp_bgcolor.png)   | ![](images/iupbutton_gtk_bgcolor.png)   |
+|                                            |                                              |                                              |                                            |
+|--------------------------------------------|----------------------------------------------|----------------------------------------------|--------------------------------------------|
+| Motif                                      | Windows Classic                              | Windows w/ Styles                            | GTK                                        |
+| ![](../images/iupbutton_mot_imagetext.png) | ![](../images/iupbutton_win2k_imagetext.png) | ![](../images/iupbutton_winxp_imagetext.png) | ![](../images/iupbutton_gtk_imagetext.png) |
+| ![](../images/iupbutton_mot_text.png)      | ![](../images/iupbutton_win2k_text.png)      | ![](../images/iupbutton_winxp_text.png)      | ![](../images/iupbutton_gtk_text.png)      |
+| ![](../images/iupbutton_mot_image.png)     | ![](../images/iupbutton_win2k_image.png)     | ![](../images/iupbutton_winxp_image.png)     | ![](../images/iupbutton_gtk_image.png)     |
+| ![](../images/iupbutton_mot_bgcolor.png)   | ![](../images/iupbutton_win2k_bgcolor.png)   | ![](../images/iupbutton_winxp_bgcolor.png)   | ![](../images/iupbutton_gtk_bgcolor.png)   |
 
 ### See Also
 

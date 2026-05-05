@@ -70,7 +70,7 @@ To replace a **IupProgressBar** by a **IupGauge**, you should set RASTERSIZE=200
 
 [Browse for Example Files](../../examples/)
 
-![iupgauge.png](images/iupgauge.png)\
+![iupgauge.png](../images/iupgauge.png)\
 The Two Types of Gauge
 
 ### See Also

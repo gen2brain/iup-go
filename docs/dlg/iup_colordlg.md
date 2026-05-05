@@ -90,7 +90,7 @@ It is a regular **IupDialog** that can be shown with [IupShow](../func/iup_show.
 
     IupDestroy(dlg);  
 
-![](images/colordlg_cb.png)
+![](../images/colordlg_cb.png)
 
 ### See Also
 

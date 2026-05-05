@@ -111,7 +111,7 @@ Branches can contain other branches or leaves. The first node always has id=0 an
 The tree nodes have a sequential identification number (id), starting by the first, with id=0, and increases for each node independent of the node depth.
 The following picture illustrates the numbering of the nodes in a tree.
 
-![](../elem/images/iuptree.png)\
+![](../images/iuptree.png)\
 **Tree nodes and Ids**
 
 Since you have to add each node, the creation of this tree can be done in several ways because the action attributes ADD* and INSERT* use an existent node to position the new node.
@@ -307,16 +307,16 @@ But these functions are faster than the traditional functions because they do no
 [Browse for Example Files](../../examples/)
 
 **Regular Tree**
-![](images/iupflattree1.png)
+![](../images/iupflattree1.png)
 
 **Tree with Toggle**
-![](images/iupflattree2.png)
+![](../images/iupflattree2.png)
 
 **Tree without lines and expander buttons**
-![](images/iupflattree3.png)
+![](../images/iupflattree3.png)
 
 **Tree with extra text area**
-![](images/iupflattree4.png)
+![](../images/iupflattree4.png)
 
 ### See Also
 
