@@ -28,4 +28,4 @@ Several controls have transparent parts that are not affected by the BGCOLOR.
 
 ### See Also
 
-[FGCOLOR](iup_fgcolor.md), [DLGBGCOLOR](iup_globals.md)
+[FGCOLOR](iup_fgcolor.md), [DLGBGCOLOR](iup_globals.md#dlgbgcolor)

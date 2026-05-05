@@ -25,4 +25,4 @@ The generated file can be used by **IupPlayInput** to reproduce the same events.
 
 ### See Also
 
-[INPUTCALLBACKS](../attrib/iup_globals.md), [IupPlayInput](iup_playinput.md)
+[INPUTCALLBACKS](../attrib/iup_globals.md#inputcallbacks), [IupPlayInput](iup_playinput.md)

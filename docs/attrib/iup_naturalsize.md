@@ -3,7 +3,7 @@
 Returns the element last computed **Natural** size in pixels.
 If both values are 0, then NULL is returned.
 
-See the [Layout Guide](../layout.md) for more details on sizes.
+See the [Layout Guide](../layout.md#layout-guide) for more details on sizes.
 
 ### Value
 

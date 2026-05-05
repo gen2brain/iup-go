@@ -27,7 +27,7 @@ Inherits all attributes and callbacks of the [IupCanvas](../elem/iup_canvas.md),
 Different from the IupTree, all attributes are functional before map.
 The attributes marked with <sup>(*)</sup> are exclusive to the IupFlatTree and are NOT supported in the regular IupTree.
 
-#### [General](iup_flattree_attrib.md)
+#### [General](iup_flattree_attrib.md#general)
 
 AUTOREDRAW, BGCOLOR, BORDERCOLOR<sup>(*)</sup>, BORDERWIDTH<sup>(*)</sup>, COUNT, EXPAND, EXTRATEXTWIDTH<sup>(*)</sup>, FGCOLOR, HLCOLOR<sup>(*)</sup>, HLCOLORALPHA<sup>(*)</sup>, PSCOLOR<sup>(*)</sup>, TEXTPSCOLOR<sup>(*)</sup>, ICONSPACING<sup>(*)</sup>, INDENTATION, RASTERSIZE, SPACING, TOPITEM
 
@@ -47,11 +47,11 @@ SHOWTOGGLE, EMPTYTOGGLE<sup>(*)</sup>, TOGGLEVALUE, TOGGLEVISIBLE, TOGGLEBGCOLOR
 
 IMAGE, IMAGEEXPANDED, IMAGELEAF, IMAGEBRANCHCOLLAPSED, IMAGEBRANCHEXPANDED, BACKIMAGE<sup>(*)</sup>, BACKIMAGEZOOM<sup>(*)</sup>
 
-#### [Focus](iup_flattree_attrib.md)
+#### [Focus](iup_flattree_attrib.md#focus)
 
 VALUE, CANFOCUS, PROPAGATEFOCUS, FOCUSFEEDBACK<sup>(*)</sup>, HASFOCUS<sup>(*)</sup>
 
-#### [Marks](iup_flattree_attrib.md)
+#### [Marks](iup_flattree_attrib.md#marks)
 
 MARK, MARKED, MARKEDNODES, MARKMODE, MARKSTART, MARKWHENTOGGLE
 
@@ -59,11 +59,11 @@ MARK, MARKED, MARKEDNODES, MARKMODE, MARKSTART, MARKWHENTOGGLE
 
 ADDEXPANDED, ADDLEAF, ADDBRANCH, COPYNODE, DELNODE, EXPANDALL, INSERTLEAF, INSERTBRANCH, MOVENODE
 
-#### [Editing](iup_flattree_attrib.md)
+#### [Editing](iup_flattree_attrib.md#editing)
 
 RENAME, RENAMECARET, RENAMESELECTION, SHOWRENAME
 
-#### [Drag&Drop](iup_flattree_attrib.md)
+#### [Drag&Drop](iup_flattree_attrib.md#dragdrop)
 
 DRAGDROPTREE, DROPFILESTARGET, DROPEQUALDRAG, SHOWDRAGDROP
 

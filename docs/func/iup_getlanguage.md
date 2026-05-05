@@ -11,4 +11,4 @@ Returns the same value as the LANGUAGE global attribute.
 
 ### See Also
 
-[IupSetLanguage](iup_setlanguage.md), [LANGUAGE](../attrib/iup_globals.md).
+[IupSetLanguage](iup_setlanguage.md), [LANGUAGE](../attrib/iup_globals.md#language).

@@ -14,7 +14,7 @@ In the sense that a container can only expand if its children can expand too in 
 The HORIZONTALFREE and VERTICALFREE values will not behave as normal expansion.
 These values will NOT affect the expansion of the container when set at its children, the children will simply expand to the available free space at the container.
 
-See the [Layout Guide](../layout.md) for more details on sizes.
+See the [Layout Guide](../layout.md#layout-guide) for more details on sizes.
 
 ### Value
 

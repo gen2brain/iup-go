@@ -40,7 +40,7 @@ But for **IupImageRGB** and **IupImageRGBA** in fact will be one value for each 
 > Used only for images created with **IupImage**.
 
 **AUTOSCALE**: automatically scale the image by a given real factor. Can be "DPI" or a scale factor.
-If not defined the global attribute [IMAGEAUTOSCALE](../attrib/iup_globals.md) will be used.
+If not defined the global attribute [IMAGEAUTOSCALE](../attrib/iup_globals.md#imageautoscale) will be used.
 Values are the same of the global attribute.
 The minimum resulted size when automatically resized is 24 pixels height.
 
@@ -56,7 +56,7 @@ Images created with **IupImage** returns 8, with **IupImageRGB** returns 24 and 
 Images created with **IupImage** returns 1, with **IupImageRGB** returns 3 and with **IupImageRGBA** returns 4.
 
 **DPI**: resolution expected for display. Used when AUTOSCALE=DPI.
-If not defined the global attribute [IMAGESDPI](../attrib/iup_globals.md) will be used.
+If not defined the global attribute [IMAGESDPI](../attrib/iup_globals.md#imagesdpi) will be used.
 
 **HEIGHT** (read-only): Image height in pixels.
 

@@ -1,7 +1,7 @@
 ## CLIENTSIZE (read-only) (non-inheritable)
 
 Returns the client area size of a container.
-It is the space available for positioning and sizing children, see the [Layout Guide](../layout.md).
+It is the space available for positioning and sizing children, see the [Layout Guide](../layout.md#layout-guide).
 It is the container **Current** size excluding the decorations (if any).
 
 ### Value

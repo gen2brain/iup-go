@@ -35,7 +35,7 @@ To ensure your application icon is displayed correctly on Wayland:
 
 1. Create a `.desktop` file (e.g., `com.example.myapp.desktop`) and install it in the appropriate location (typically `~/.local/share/applications/` or `/usr/share/applications/`).
 2. Set the `Icon=` field in the `.desktop` file to the name of an icon installed in the icon theme or to an absolute path.
-3. Set the global attribute [APPID](iup_globals.md) to match the `.desktop` file name (without the `.desktop` extension) before creating any dialogs:
+3. Set the global attribute [APPID](iup_globals.md#appid) to match the `.desktop` file name (without the `.desktop` extension) before creating any dialogs:
 
 ```
 IupSetGlobal("APPID", "com.example.myapp");

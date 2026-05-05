@@ -51,7 +51,7 @@ The file name creation will depend on the system and on its usage.
 There are two defined usages. The default is the **User Configuration File** stored under the per-user system folder.
 The alternative is the **Application Configuration File** stored next to the executable, used when loading a configuration shipped by the installer.
 
-The **User Configuration File** is the most common usage. By default the filename is "<CONFIGDIR>/<APP_NAME>/config" on UNIX, macOS and Android, or "<CONFIGDIR>\\<APP_NAME>\\config.cfg" on Windows, where <CONFIGDIR> is the platform per-user configuration root: see [CONFIGDIR](../attrib/iup_globals.md#cachedir-datadir-configdir-tmpdir).
+The **User Configuration File** is the most common usage. By default the filename is "<CONFIGDIR>/<APP_NAME>/config" on UNIX, macOS and Android, or "<CONFIGDIR>\\<APP_NAME>\\config.cfg" on Windows, where <CONFIGDIR> is the platform per-user configuration root: see [CONFIGDIR](../attrib/iup_globals.md#cachedir-datadir-configdir-tmpdir-read-only).
 
 If APP_SYSTEMPATH is set to NO, a legacy home-folder path is used instead:
 "<HOME>/.<APP_NAME>" on UNIX and macOS, "<HOMEDRIVE><HOMEPATH>\\<APP_NAME>.cfg" on Windows.

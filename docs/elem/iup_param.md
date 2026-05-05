@@ -136,10 +136,10 @@ A integer parameter always has a spin attached to the text to increment and decr
 A real parameter only has a spin if a full interval is defined (min and max), in this case, the default step is (max-min)/100.
 When the callback is called because a spin was activated, then the attribute "**SPINNING**" of the element will be defined to a non-NULL and non-zero value.
 
-The default precision for real value display is given by the global attribute [DEFAULTPRECISION](../attrib/iup_globals.md).
+The default precision for real value display is given by the global attribute [DEFAULTPRECISION](../attrib/iup_globals.md#defaultprecision).
 But inside the callback, the application can set the param attribute "**PRECISION**" to use another value.
 It will work only during interactive changes.
-The decimal symbol will use the [DEFAULTDECIMALSYMBOL](../attrib/iup_globals.md) global attribute.
+The decimal symbol will use the [DEFAULTDECIMALSYMBOL](../attrib/iup_globals.md#defaultdecimalsymbol) global attribute.
 
 There are no extra parameters for the color string.
 The mask is automatically set to capture 3 or 4 unsigned integers from 0 to 255 (R G B) or (R G B A) (alpha is optional).

@@ -49,7 +49,7 @@ It will call **IupMap** for the element.
 
 The **x** and **y** values are the same as returned by the [SCREENPOSITION](../attrib/iup_screenposition.md) attribute.
 
- IUP_MOUSEPOS position is the same as returned by the [CURSORPOS](../attrib/iup_globals.md) global attribute.
+ IUP_MOUSEPOS position is the same as returned by the [CURSORPOS](../attrib/iup_globals.md#cursorpos) global attribute.
 
 See the [PLACEMENT](../dlg/iup_dialog.md) attribute for other position and show options.
 

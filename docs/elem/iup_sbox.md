@@ -45,7 +45,7 @@ If set to "LINES" then instead of the traditional grip appearance, it will be tw
 
 The controls that you want to be resized must have the EXPAND=YES attribute set.
 The control inside the sbox will not be resized with a size lesser than its **Natural** size.
-See the [Layout Guide](../layout.md) for mode details on sizes.
+See the [Layout Guide](../layout.md#layout-guide) for mode details on sizes.
 
 The **IupSeparator** bar handler is always the first child of the sbox.
 It can be obtained using **IupGetChild** or **IupGetNextChild**.

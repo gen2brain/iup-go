@@ -54,7 +54,7 @@ But notice that its contents will still be limited by the **Natural** size, to a
 To only change the **User** size in pixels, without resetting the **Current** size, set the USERSIZE attribute.
 
 Notice that the dialog size includes its decoration (it is the **Window** size), the area available for controls are returned by the dialog [CLIENTSIZE](../attrib/iup_clientsize.md).
-For more information see [Layout Guide](../layout.md).
+For more information see [Layout Guide](../layout.md#layout-guide).
 
 **SIMULATEMODAL** (write-only): disable all other visible dialogs, just like when the dialog is made modal.
 
