@@ -39,10 +39,10 @@ func ConfigSave(ih Ihandle) int {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSetVariableStr(ih Ihandle, group, key string, value string) {
-	cGroup, cKey, cValue := C.CString(group), C.CString(key), C.CString(value)
+	cGroup, cKey, cValue := C.CString(group), C.CString(key), cStrOrNull(value)
 	defer C.free(unsafe.Pointer(cGroup))
 	defer C.free(unsafe.Pointer(cKey))
-	defer C.free(unsafe.Pointer(cValue))
+	defer cStrFree(cValue)
 
 	C.IupConfigSetVariableStr(ih.ptr(), cGroup, cKey, cValue)
 }
@@ -51,10 +51,10 @@ func ConfigSetVariableStr(ih Ihandle, group, key string, value string) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSetVariableStrId(ih Ihandle, group, key string, id int, value string) {
-	cGroup, cKey, cValue := C.CString(group), C.CString(key), C.CString(value)
+	cGroup, cKey, cValue := C.CString(group), C.CString(key), cStrOrNull(value)
 	defer C.free(unsafe.Pointer(cGroup))
 	defer C.free(unsafe.Pointer(cKey))
-	defer C.free(unsafe.Pointer(cValue))
+	defer cStrFree(cValue)
 
 	C.IupConfigSetVariableStrId(ih.ptr(), cGroup, cKey, C.int(id), cValue)
 }
@@ -241,10 +241,10 @@ func ConfigGetVariableDoubleIdDef(ih Ihandle, group, key string, id int, def flo
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_config.md
 func ConfigSetListVariable(ih Ihandle, group, key, value string, add int) {
-	cGroup, cKey, cValue := C.CString(group), C.CString(key), C.CString(value)
+	cGroup, cKey, cValue := C.CString(group), C.CString(key), cStrOrNull(value)
 	defer C.free(unsafe.Pointer(cGroup))
 	defer C.free(unsafe.Pointer(cKey))
-	defer C.free(unsafe.Pointer(cValue))
+	defer cStrFree(cValue)
 
 	C.IupConfigSetListVariable(ih.ptr(), cGroup, cKey, cValue, C.int(add))
 }

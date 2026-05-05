@@ -561,24 +561,25 @@ func SetFunction(name string, fn interface{}) {
 // RecordInput records all mouse and keyboard input in a file for later reproduction.
 //
 // Any existing file will be replaced. Must stop recording before exiting the application.
-// If fileName is nil it will stop recording.
+// An empty fileName stops recording.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_recordinput.md
 func RecordInput(fileName string, mode int) int {
-	cFileName := C.CString(fileName)
-	defer C.free(unsafe.Pointer(cFileName))
+	cFileName := cStrOrNull(fileName)
+	defer cStrFree(cFileName)
 
 	return int(C.IupRecordInput(cFileName, C.int(mode)))
 }
 
 // PlayInput reproduces all mouse and keyboard input from a given file.
 //
-// The file must had been saved using the RecordInput function. Record mode will be automatically detected.
+// The file must had been saved using the RecordInput function. Record mode will be
+// automatically detected. An empty fileName stops playing.
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_playinput.md
 func PlayInput(fileName string) int {
-	cFileName := C.CString(fileName)
-	defer C.free(unsafe.Pointer(cFileName))
+	cFileName := cStrOrNull(fileName)
+	defer cStrFree(cFileName)
 
 	return int(C.IupPlayInput(cFileName))
 }
