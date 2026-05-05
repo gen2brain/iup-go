@@ -68,6 +68,7 @@ static void eflFontApplyStyle(Eo* tb, const char* family, int size, int is_bold,
 static void eflFontParse(const char* value, char* family, int* size, int* is_bold, int* is_italic, int* is_underline, int* is_strikeout)
 {
   const char* p;
+  const char* mapped_name;
 
   iupStrCopyN(family, 100, "Sans");
   *size = 12;
@@ -127,6 +128,10 @@ static void eflFontParse(const char* value, char* family, int* size, int* is_bol
   {
     iupStrCopyN(family, 100, value);
   }
+
+  mapped_name = iupFontGetPangoName(family);
+  if (mapped_name)
+    iupStrCopyN(family, 100, mapped_name);
 }
 
 static Eo* eflFontGetMeasureTextblock(void)
