@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include "iup_plus.h"
+#include "iupplus.h"
 
 static int quit_cb(Ihandle *self)
 {

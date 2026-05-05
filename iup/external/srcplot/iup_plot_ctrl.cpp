@@ -10,7 +10,7 @@
 
 #include "iupPlot.h"
 
-#include "iup_plot.h"
+#include "iupplot.h"
 #include "iupkey.h"
 
 #include "iup_class.h"

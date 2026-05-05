@@ -190,12 +190,12 @@ if(IUP_BUILD_FRAMEWORK)
     "${CMAKE_CURRENT_SOURCE_DIR}/include/iup.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/iupcbs.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/iupcbs.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/iupkey.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_export.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_plus.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_varg.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/iupdraw.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iupkey.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iupplus.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_config.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_export.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_varg.h"
   )
   if(IUP_BUILD_GL)
     list(APPEND IUP_FRAMEWORK_PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/iupgl.h")
@@ -207,7 +207,7 @@ if(IUP_BUILD_FRAMEWORK)
     list(APPEND IUP_FRAMEWORK_PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/iupcontrols.h")
   endif()
   if(IUP_BUILD_PLOT)
-    list(APPEND IUP_FRAMEWORK_PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/iup_plot.h")
+    list(APPEND IUP_FRAMEWORK_PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/iupplot.h")
   endif()
 
   set_target_properties(iup PROPERTIES

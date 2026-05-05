@@ -13,7 +13,7 @@ We also would like to thank Marian Trifon for the first IupPPlot implementation 
 ### Initialization and Usage
 
 The **IupPlotOpen** function must be called after a **IupOpen**, so that the control can be used.
-The "iup_plot.h" file must also be included in the source code.
+The "iupplot.h" file must also be included in the source code.
 The program must be linked to the controls library (iup_plot).
 
 ### Guide
