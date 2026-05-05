@@ -214,6 +214,19 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 	return IUP_NOERROR;
 }
 
+/* APPID/APPNAME are read-only; baked into Info.plist at build time */
+IUP_SDK_API int iupdrvSetGlobalAppIDAttrib(const char* value)
+{
+	(void)value;
+	return 0;
+}
+
+IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
+{
+	(void)value;
+	return 0;
+}
+
 IUP_SDK_API void iupdrvClose(void)
 {
 	iupdrvFontFinish();
