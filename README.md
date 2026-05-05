@@ -4,7 +4,7 @@
 
 Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
 
-IUP-Go provides system native UI controls for Windows (Win32, WinUI), macOS (Cocoa), Linux (GTK, Qt, FLTK, EFL, Motif, GNUstep), Android, and iOS (CocoaTouch).
+IUP-Go provides system native UI controls for Windows ([Win32](#win32), [WinUI](#winui)), macOS ([Cocoa](#macos)), Linux ([GTK](#gtk), [Qt](#qt), [FLTK](#fltk), [EFL](#efl), [Motif](#motif), [GNUstep](#gnustep)), [Android](#android), and iOS ([CocoaTouch](#ios)).
 
 C/C++/Obj-C source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
@@ -44,7 +44,9 @@ then install `pacman -S mingw-w64-clang-x86_64-go mingw-w64-clang-x86_64-clang` 
 You can also use [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw).
 
 The requirement is to have `Microsoft.WindowsAppRuntime.Bootstrap.dll` and `resources.pri` files next to the `.exe` file.
-You can find those files in `Microsoft.WindowsAppSDK` that you can install with `NuGet`.
+You can find those files in `Microsoft.WindowsAppSDK` that you can install with `nuget install Microsoft.WindowsAppSDK`.
+
+Add `-ldflags "-s -w"` to strip symbols and DWARF info; the C++/WinRT headers generate huge amounts of debug info, dropping it shrinks a typical `.exe` from ~30 MB to ~4 MB.
 
 [<img src="examples/sample/sample_winui.png" width="700"/>](examples/sample/sample_winui.png)
 
