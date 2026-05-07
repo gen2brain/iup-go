@@ -17,6 +17,7 @@ typedef struct {
   char* padding_css; /* padding CSS or NULL */
   char* font_css;    /* font CSS or NULL */
   char* custom_css;  /* custom CSS properties or NULL */
+  GHashTable* sub_rules; /* sub_selector -> css_decl, both g_strdup */
 } Igtk4WidgetStyle;
 
 static GtkCssProvider* gtk4_css_provider = NULL;
@@ -34,6 +35,8 @@ static void gtk4CssWidgetStyleFree(gpointer data)
     g_free(style->padding_css);
     g_free(style->font_css);
     g_free(style->custom_css);
+    if (style->sub_rules)
+      g_hash_table_destroy(style->sub_rules);
     g_free(style);
   }
 }
@@ -99,6 +102,15 @@ static void gtk4CssDoRebuild(void)
     {
       g_string_append_printf(gtk4_css_buffer, ".%s:hover { %s }\n", class_name, style->fg_css);
       g_string_append_printf(gtk4_css_buffer, ".%s:active { %s }\n", class_name, style->fg_css);
+    }
+
+    if (style->sub_rules)
+    {
+      GHashTableIter sub_iter;
+      gpointer sub_key, sub_val;
+      g_hash_table_iter_init(&sub_iter, style->sub_rules);
+      while (g_hash_table_iter_next(&sub_iter, &sub_key, &sub_val))
+        g_string_append_printf(gtk4_css_buffer, ".%s%s { %s }\n", class_name, (char*)sub_key, (char*)sub_val);
     }
 
     g_free(class_name);
@@ -306,6 +318,26 @@ IUP_DRV_API void iupgtk4CssSetWidgetCustom(GtkWidget* widget, const char* css_pr
 
   g_free(style->custom_css);
   style->custom_css = g_strdup_printf("%s: %s;", css_property, css_value);
+
+  gtk4CssRebuildAndApply();
+}
+
+IUP_DRV_API void iupgtk4CssSetWidgetSubRule(GtkWidget* widget, const char* sub_selector, const char* css_decl)
+{
+  Igtk4WidgetStyle* style;
+
+  if (!gtk4_css_provider)
+    iupgtk4CssManagerInit();
+
+  style = gtk4CssGetOrCreateWidgetStyle(widget);
+
+  if (!style->sub_rules)
+    style->sub_rules = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+
+  if (css_decl)
+    g_hash_table_insert(style->sub_rules, g_strdup(sub_selector), g_strdup(css_decl));
+  else
+    g_hash_table_remove(style->sub_rules, sub_selector);
 
   gtk4CssRebuildAndApply();
 }

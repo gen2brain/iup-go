@@ -102,6 +102,32 @@ static int gtk4ProgressBarSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int gtk4ProgressBarSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  char css_decl[64];
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+  if (!ih->handle)
+    return 1;
+  g_snprintf(css_decl, sizeof(css_decl), "background-color: rgb(%d,%d,%d);", r, g, b);
+  iupgtk4CssSetWidgetSubRule(ih->handle, " > trough", css_decl);
+  return 1;
+}
+
+static int gtk4ProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  char css_decl[64];
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+  if (!ih->handle)
+    return 1;
+  g_snprintf(css_decl, sizeof(css_decl), "background-color: rgb(%d,%d,%d);", r, g, b);
+  iupgtk4CssSetWidgetSubRule(ih->handle, " > trough > progress", css_decl);
+  return 1;
+}
+
 static int gtk4ProgressBarMapMethod(Ihandle* ih)
 {
   ih->handle = gtk_progress_bar_new();
@@ -152,9 +178,9 @@ IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   ic->Map = gtk4ProgressBarMapMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtk4ProgressBarSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtk4ProgressBarSetFgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, gtk4ProgressBarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIENTATION", NULL, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NO_INHERIT);

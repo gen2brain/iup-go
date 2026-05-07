@@ -318,7 +318,9 @@ IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
   GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
   (void)pos;
-  return iupgtk4IsVisible(tab_page);
+  if (!tab_page || !GTK_IS_WIDGET(tab_page))
+    return 0;
+  return gtk_widget_get_visible(tab_page);
 }
 
 static int gtk4TabsSetFontAttrib(Ihandle* ih, const char* value)
