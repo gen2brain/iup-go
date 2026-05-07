@@ -1244,30 +1244,93 @@ static char* eflListGetValueAttrib(Ihandle* ih)
   return "0";
 }
 
+static Eina_Bool eflListTopItemAnimatorCallback(void* data);
+
+static void eflListTopItemDoScroll(Ihandle* ih)
+{
+  Eo* list = iupeflGetWidget(ih);
+  int pos = iupAttribGetInt(ih, "_IUPEFL_LIST_TOPITEM_PENDING");
+  Eo* item, *first;
+  Eina_Size2D first_size, last_size;
+  int retry;
+
+  if (!list || pos <= 0) return;
+
+  if (ih->data->is_virtual)
+  {
+    Elm_Object_Item* eitem = elm_genlist_nth_item_get(list, pos - 1);
+    if (eitem)
+      elm_genlist_item_show(eitem, ELM_GENLIST_ITEM_SCROLLTO_TOP);
+    return;
+  }
+
+  item = efl_pack_content_get(list, pos - 1);
+  first = efl_pack_content_get(list, 0);
+  if (!item) return;
+
+  /* efl_ui_collection_item_scroll NULL-derefs in EFL 1.28 when called before
+     items have non-zero size; force layout, then defer to the next frame if not yet measured */
+  efl_canvas_group_calculate(list);
+  efl_canvas_group_calculate(item);
+  if (first) efl_canvas_group_calculate(first);
+
+  first_size = first ? efl_gfx_hint_size_combined_min_get(first) : EINA_SIZE2D(0, 0);
+  last_size = efl_gfx_hint_size_combined_min_get(item);
+  if (first_size.w == 0 && first_size.h == 0 && last_size.w == 0 && last_size.h == 0)
+  {
+    retry = iupAttribGetInt(ih, "_IUPEFL_LIST_TOPITEM_RETRY");
+    if (retry < 5)
+    {
+      iupAttribSetInt(ih, "_IUPEFL_LIST_TOPITEM_RETRY", retry + 1);
+      iupAttribSet(ih, "_IUPEFL_LIST_TOPITEM_ANIM",
+                   (char*)ecore_animator_add(eflListTopItemAnimatorCallback, ih));
+    }
+    return;
+  }
+
+  iupAttribSet(ih, "_IUPEFL_LIST_TOPITEM_RETRY", NULL);
+  efl_ui_collection_item_scroll(list, item, EINA_FALSE);
+}
+
+static void eflListTopItemJobCallback(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  if (!ih || !iupObjectCheck(ih)) return;
+  iupAttribSet(ih, "_IUPEFL_LIST_TOPITEM_JOB", NULL);
+  eflListTopItemDoScroll(ih);
+}
+
+static Eina_Bool eflListTopItemAnimatorCallback(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  if (!ih || !iupObjectCheck(ih)) return EINA_FALSE;
+  iupAttribSet(ih, "_IUPEFL_LIST_TOPITEM_ANIM", NULL);
+  eflListTopItemDoScroll(ih);
+  return EINA_FALSE;
+}
+
 static int eflListSetTopItemAttrib(Ihandle* ih, const char* value)
 {
-  Evas_Object* list = iupeflGetWidget(ih);
+  Ecore_Job* prev_job;
+  Ecore_Animator* prev_anim;
   int pos;
 
-  if (!list || !value || ih->data->is_dropdown)
+  if (!iupeflGetWidget(ih) || !value || ih->data->is_dropdown)
     return 0;
 
   pos = 0; iupStrToInt(value, &pos);
-  if (pos > 0)
-  {
-    if (ih->data->is_virtual)
-    {
-      Elm_Object_Item* item = elm_genlist_nth_item_get(list, pos - 1);
-      if (item)
-        elm_genlist_item_show(item, ELM_GENLIST_ITEM_SCROLLTO_TOP);
-    }
-    else
-    {
-      Eo* item = efl_pack_content_get(list, pos - 1);
-      if (item)
-        efl_ui_collection_item_scroll(list, item, EINA_FALSE);
-    }
-  }
+  if (pos <= 0) return 0;
+
+  iupAttribSetInt(ih, "_IUPEFL_LIST_TOPITEM_PENDING", pos);
+  iupAttribSet(ih, "_IUPEFL_LIST_TOPITEM_RETRY", NULL);
+
+  prev_job = (Ecore_Job*)iupAttribGet(ih, "_IUPEFL_LIST_TOPITEM_JOB");
+  if (prev_job) ecore_job_del(prev_job);
+  prev_anim = (Ecore_Animator*)iupAttribGet(ih, "_IUPEFL_LIST_TOPITEM_ANIM");
+  if (prev_anim) ecore_animator_del(prev_anim);
+  iupAttribSet(ih, "_IUPEFL_LIST_TOPITEM_ANIM", NULL);
+
+  iupAttribSet(ih, "_IUPEFL_LIST_TOPITEM_JOB", (char*)ecore_job_add(eflListTopItemJobCallback, ih));
 
   return 0;
 }
@@ -1852,6 +1915,19 @@ static void eflListUnMapMethod(Ihandle* ih)
   Eo* list = iupeflGetWidget(ih);
   int is_dropdown = ih->data->is_dropdown;
   Eina_Bool* prev_focused = (Eina_Bool*)iupAttribGet(ih, "_IUP_EFL_MANAGER_FOCUSED");
+  Ecore_Job* topitem_job = (Ecore_Job*)iupAttribGet(ih, "_IUPEFL_LIST_TOPITEM_JOB");
+  Ecore_Animator* topitem_anim = (Ecore_Animator*)iupAttribGet(ih, "_IUPEFL_LIST_TOPITEM_ANIM");
+
+  if (topitem_job)
+  {
+    ecore_job_del(topitem_job);
+    iupAttribSet(ih, "_IUPEFL_LIST_TOPITEM_JOB", NULL);
+  }
+  if (topitem_anim)
+  {
+    ecore_animator_del(topitem_anim);
+    iupAttribSet(ih, "_IUPEFL_LIST_TOPITEM_ANIM", NULL);
+  }
 
   if (prev_focused)
   {
