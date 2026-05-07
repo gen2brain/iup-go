@@ -167,7 +167,7 @@ extern "C" IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
   ic->LayoutUpdate = winuiProgressBarLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, winuiProgressBarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIENTATION", NULL, winuiProgressBarSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
