@@ -16,6 +16,7 @@
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_tree.h"
+#include "iup_drv.h"
 #include "iup_drvinfo.h"
 
 #include "iupefl_drv.h"
@@ -2572,6 +2573,16 @@ static void eflTreeUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 
   iupeflFontFree(ih);
+}
+
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+{
+  int border = 2 * 2;
+  int sb = iupdrvGetScrollbarSize();
+  int indent_icon = 16 + 22;  /* expander arrow + 1 indent step (Genlist) */
+  (void)ih;
+  *w += border + sb + indent_icon;
+  *h += border;
 }
 
 IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)

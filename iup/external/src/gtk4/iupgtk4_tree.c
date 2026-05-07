@@ -17,6 +17,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
+#include "iup_drv.h"
 #include "iup_tree.h"
 
 #include "iupgtk4_drv.h"
@@ -3230,6 +3231,16 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle *src, Ihandle *dst, InodeHan
 /*****************************************************************************/
 /* Class initialization                                                      */
 /*****************************************************************************/
+
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+{
+  int border = 2 * 2;
+  int sb = iupdrvGetScrollbarSize();
+  int indent_icon = 16 + 18;  /* expander column + 1 indent step */
+  (void)ih;
+  *w += border + sb + indent_icon;
+  *h += border;
+}
 
 IUP_SDK_API void iupdrvTreeInitClass(Iclass *ic)
 {

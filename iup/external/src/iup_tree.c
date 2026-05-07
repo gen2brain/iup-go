@@ -716,7 +716,6 @@ static int iTreeCreateMethod(Ihandle* ih, void **params)
 
   ih->data = iupALLOCCTRLDATA();
 
-  IupSetAttribute(ih, "RASTERSIZE", "400x200");
   IupSetAttribute(ih, "EXPAND", "YES");
 
   IupSetCallback(ih, "_IUPTREE_FIND_USERDATA_CB", (Icallback)iTreeFindUserDataId);
@@ -726,6 +725,27 @@ static int iTreeCreateMethod(Ihandle* ih, void **params)
   ih->data->node_cache = calloc(ih->data->node_cache_max, sizeof(InodeData));
 
   return IUP_NOERROR;
+}
+
+static void iTreeComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *children_expand)
+{
+  int natural_w, natural_h, char_w, char_h, visiblecolumns, visiblelines;
+  (void)children_expand;
+
+  iupdrvFontGetCharSize(ih, &char_w, &char_h);
+
+  visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  if (visiblecolumns <= 0) visiblecolumns = 20;
+  natural_w = (visiblecolumns * iupdrvFontGetStringWidth(ih, "WWWWWWWWWW")) / 10;
+
+  visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+  if (visiblelines <= 0) visiblelines = 8;
+  natural_h = visiblelines * char_h;
+
+  iupdrvTreeAddBorders(ih, &natural_w, &natural_h);
+
+  *w = natural_w;
+  *h = natural_h;
 }
 
 static void iTreeDestroyMethod(Ihandle* ih)
@@ -756,6 +776,7 @@ Iclass* iupTreeNewClass(void)
   ic->New = iupTreeNewClass;
   ic->Create = iTreeCreateMethod;
   ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
+  ic->ComputeNaturalSize = iTreeComputeNaturalSizeMethod;
   ic->Destroy = iTreeDestroyMethod;
 
   /* Callbacks */
@@ -803,6 +824,8 @@ Iclass* iupTreeNewClass(void)
   iupClassRegisterAttribute(ic, "RENAMESELECTION", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CPADDING", iupBaseGetCPaddingAttrib, iupBaseSetCPaddingAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "CSPACING", iupBaseGetCSpacingAttrib, iupBaseSetCSpacingAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "VISIBLECOLUMNS", NULL, NULL, IUPAF_SAMEASSYSTEM, "20", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VISIBLELINES",   NULL, NULL, IUPAF_SAMEASSYSTEM, "8",  IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* IupTree Attributes - MARKS */
   iupClassRegisterAttribute(ic, "CTRL",  NULL, iTreeSetCtrlAttrib,  NULL, NULL, IUPAF_NOT_MAPPED);

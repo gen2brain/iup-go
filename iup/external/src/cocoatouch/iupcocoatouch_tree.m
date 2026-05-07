@@ -1440,36 +1440,15 @@ static void cocoaTouchTreeUnMapMethod(Ihandle* ih)
 	ih->handle = NULL;
 }
 
-static int cocoaTouchTreeFindUserDataId(Ihandle* ih, void* userdata)
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
 {
-	InodeData* nc = ih->data->node_cache;
-	while (nc->userdata != userdata && nc->node_handle != NULL) nc++;
-	return (nc->node_handle != NULL) ? (int)(nc - ih->data->node_cache) : -1;
-}
-
-static int cocoaTouchTreeCreateMethod(Ihandle* ih, void** params)
-{
-	(void)params;
-	ih->data = iupALLOCCTRLDATA();
-	IupSetAttribute(ih, "EXPAND", "YES");
-	IupSetCallback(ih, "_IUPTREE_FIND_USERDATA_CB", (Icallback)cocoaTouchTreeFindUserDataId);
-	ih->data->add_expanded = 1;
-	ih->data->node_cache_max = 20;
-	ih->data->node_cache = calloc(ih->data->node_cache_max, sizeof(InodeData));
-	return IUP_NOERROR;
-}
-
-static void cocoaTouchTreeComputeNaturalSize(Ihandle* ih, int* w, int* h, int* children_expand)
-{
-	(void)ih; (void)children_expand;
-	*w = iupdrvScaleNaturalPx(220);
-	*h = iupdrvScaleNaturalPx(180);
+	(void)ih;
+	*w += 40;  /* disclosure indicator + 1 indent step */
+	*h += 4;
 }
 
 IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
-	ic->Create = cocoaTouchTreeCreateMethod;
-	ic->ComputeNaturalSize = cocoaTouchTreeComputeNaturalSize;
 	ic->Map = cocoaTouchTreeMapMethod;
 	ic->UnMap = cocoaTouchTreeUnMapMethod;
 	ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;

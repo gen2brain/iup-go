@@ -3151,6 +3151,16 @@ static void motTreeUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+{
+  int border = 2 * 2;
+  int sb = iupdrvGetScrollbarSize();
+  int indent_icon = 16 + 16;  /* expander glyph + 1 indent step */
+  (void)ih;
+  *w += border + sb + indent_icon;
+  *h += border;
+}
+
 IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
