@@ -4178,18 +4178,14 @@ static int cocoaTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       return 0;
 
     IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)inode_handle;
+    NSArray* children_snapshot = [NSArray arrayWithArray:[tree_item childrenArray]];
+
+    for (IupCocoaTreeItem* child_item in children_snapshot)
+      cocoaTreeCallNodeRemoved(ih, tree_delegate, child_item);
+
     NSIndexSet* removed_indexes = [tree_delegate removeAllChildrenForItem:tree_item];
-
     if (removed_indexes)
-    {
       [outline_view removeItemsAtIndexes:removed_indexes inParent:tree_item withAnimation:NSTableViewAnimationEffectFade];
-
-      NSMutableArray* children_array = [tree_item childrenArray];
-      for (IupCocoaTreeItem* child_item in children_array)
-      {
-        cocoaTreeCallNodeRemoved(ih, tree_delegate, child_item);
-      }
-    }
   }
   else if (iupStrEqualNoCase(value, "MARKED"))
   {
