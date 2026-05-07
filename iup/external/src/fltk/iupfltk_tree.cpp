@@ -733,7 +733,7 @@ extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* ds
 
 static int fltkTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
 {
-  Fl_Tree_Item* item = fltkTreeGetItemFromId(ih, id);
+  Fl_Tree_Item* item = (Fl_Tree_Item*)iupTreeGetNode(ih, id);
 
   if (!item && id == 0 && ih->data->node_count == 0)
   {
@@ -777,7 +777,7 @@ static int fltkTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
 
 static char* fltkTreeGetTitleAttrib(Ihandle* ih, int id)
 {
-  Fl_Tree_Item* item = fltkTreeGetItemFromId(ih, id);
+  Fl_Tree_Item* item = (Fl_Tree_Item*)iupTreeGetNode(ih, id);
   if (!item)
     return NULL;
 
@@ -1372,6 +1372,7 @@ static int fltkTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     }
 
     tree->remove(item);
+    ih->data->node_count -= count;
     iupTreeDelFromCache(ih, id, count);
     fltkTreeRebuildEntireCache(ih);
 
@@ -1414,6 +1415,7 @@ static int fltkTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       }
 
       tree->remove(child);
+      ih->data->node_count -= count;
       iupTreeDelFromCache(ih, child_id, count);
     }
 
@@ -1454,6 +1456,7 @@ static int fltkTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         }
 
         tree->remove(item);
+        ih->data->node_count -= count;
         iupTreeDelFromCache(ih, i, count);
       }
     }
