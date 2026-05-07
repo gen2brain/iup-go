@@ -548,9 +548,9 @@ static int eflCanvasMapMethod(Ihandle* ih)
   {
     if (iupStrEqual(ih->iclass->name, "scrollbox") || iupStrEqual(ih->iclass->name, "flatscrollbox"))
     {
-      Evas* evas = evas_object_evas_get(scroller);
-      Eo* clip = evas_object_rectangle_add(evas);
-      evas_object_show(clip);
+      Eo* canvas = evas_object_evas_get(scroller);
+      Eo* clip = efl_add(EFL_CANVAS_RECTANGLE_CLASS, canvas);
+      iupeflSetVisible(clip, EINA_TRUE);
       iupAttribSet(ih, "_IUP_EFL_CANVAS_CLIP", (char*)clip);
     }
 

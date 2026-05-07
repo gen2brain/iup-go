@@ -388,11 +388,8 @@ IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 
 IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
-  Eo* page = (Eo*)iupAttribGet(child, "_IUPTAB_PAGE");
   (void)pos;
-  if (page)
-    return efl_gfx_entity_visible_get(page);
-  return 0;
+  return iupAttribGetInt(child, "_IUPEFL_TAB_HIDDEN") ? 0 : 1;
 }
 
 /****************************************************************
@@ -596,12 +593,13 @@ static int eflTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
   if (child)
   {
     Eo* page = (Eo*)iupAttribGet(child, "_IUPTAB_PAGE");
+    int hide = iupStrBoolean(value) ? 0 : 1;
+    iupAttribSetInt(child, "_IUPEFL_TAB_HIDDEN", hide);
     if (page)
     {
-      if (iupStrBoolean(value))
-        efl_gfx_entity_visible_set(page, EINA_TRUE);
-      else
-        efl_gfx_entity_visible_set(page, EINA_FALSE);
+      Eo* tab_item = efl_ui_tab_page_tab_bar_item_get(page);
+      if (tab_item)
+        efl_gfx_entity_visible_set(tab_item, hide ? EINA_FALSE : EINA_TRUE);
     }
   }
 
