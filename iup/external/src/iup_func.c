@@ -64,28 +64,64 @@ IUP_API Icallback IupSetFunction(const char *name, Icallback func)
   return old_func;
 }
 
-int iupGetFunctions(char** names, int n)
-{
-  int count = iupTableCount(ifunc_table);
-  char * name;
-  int i = 0;
+/* Well-known names IUP itself dispatches through the function table. */
+static const char* known_functions[] = {
+  "ENTRY_POINT",
+  "IDLE_ACTION",
+  "GLOBALCTRLFUNC_CB",
+  "GLOBALKEYPRESS_CB",
+  "GLOBALBUTTON_CB",
+  "GLOBALMOTION_CB",
+  "GLOBALWHEEL_CB"
+};
+#define KNOWN_FUNCTIONS_COUNT ((int)(sizeof(known_functions)/sizeof(known_functions[0])))
 
-  if (n == 0 || n == -1)
-    return count;
+static int iFuncIsKnown(const char* name)
+{
+  int i;
+  for (i = 0; i < KNOWN_FUNCTIONS_COUNT; i++)
+    if (iupStrEqual(name, known_functions[i]))
+      return 1;
+  return 0;
+}
+
+IUP_API int IupGetAllFunctions(char** names, int n)
+{
+  int total = KNOWN_FUNCTIONS_COUNT;
+  char* name;
+  int written;
 
   name = iupTableFirst(ifunc_table);
   while (name)
   {
-    if (!iupATTRIB_ISINTERNAL(name))
-    {
-      names[i] = name;
-      i++;
-      if (i == n)
-        break;
-    }
-
+    if (!iupATTRIB_ISINTERNAL(name) && !iFuncIsKnown(name))
+      total++;
     name = iupTableNext(ifunc_table);
   }
 
-  return i;
+  if (!names || n == 0 || n == -1)
+    return total;
+
+  written = 0;
+  while (written < KNOWN_FUNCTIONS_COUNT && written < n)
+  {
+    names[written] = (char*)known_functions[written];
+    written++;
+  }
+  name = iupTableFirst(ifunc_table);
+  while (name && written < n)
+  {
+    if (!iupATTRIB_ISINTERNAL(name) && !iFuncIsKnown(name))
+    {
+      names[written] = name;
+      written++;
+    }
+    name = iupTableNext(ifunc_table);
+  }
+  return written;
+}
+
+int iupGetFunctions(char** names, int n)
+{
+  return IupGetAllFunctions(names, n);
 }

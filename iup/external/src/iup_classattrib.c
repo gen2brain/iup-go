@@ -763,6 +763,103 @@ IUP_API int IupGetClassCallbacks(const char* classname, char** names, int n)
   return i;
 }
 
+IUP_API int IupGetClassAttributeInfo(const char* classname, const char* name, char** default_value, char** system_default, int* flags)
+{
+  Iclass* ic;
+  IattribFunc* afunc;
+
+  iupASSERT(classname != NULL);
+  if (!classname)
+    return -1;
+
+  iupASSERT(name != NULL);
+  if (!name)
+    return -1;
+
+  ic = iupRegisterFindClass(classname);
+  if (!ic)
+    return -1;
+
+  afunc = (IattribFunc*)iupTableGet(ic->attrib_func, name);
+  if (!afunc)
+  {
+    if (default_value) *default_value = NULL;
+    if (system_default) *system_default = NULL;
+    if (flags) *flags = 0;
+    return 0;
+  }
+
+  if (default_value) *default_value = (char*)afunc->default_value;
+  if (system_default) *system_default = (char*)afunc->system_default;
+  if (flags) *flags = afunc->flags;
+  return 1;
+}
+
+IUP_API char* IupGetClassCallbackFormat(const char* classname, const char* name)
+{
+  Iclass* ic;
+
+  iupASSERT(classname != NULL);
+  if (!classname)
+    return NULL;
+
+  iupASSERT(name != NULL);
+  if (!name)
+    return NULL;
+
+  ic = iupRegisterFindClass(classname);
+  if (!ic)
+    return NULL;
+
+  return iupClassCallbackGetFormat(ic, name);
+}
+
+IUP_API int IupGetClassInfo(const char* classname, char** parent, char** native_type, int* child_type, int* is_interactive, int* has_attrib_id)
+{
+  static const char* type2str[] = { "void", "control", "canvas", "dialog", "image", "menu", "other" };
+  Iclass* ic;
+
+  iupASSERT(classname != NULL);
+  if (!classname)
+    return -1;
+
+  ic = iupRegisterFindClass(classname);
+  if (!ic)
+    return -1;
+
+  if (parent) *parent = ic->parent ? (char*)ic->parent->name : NULL;
+  if (native_type) *native_type = (char*)type2str[ic->nativetype];
+  if (child_type)
+  {
+    if (ic->childtype == IUP_CHILDNONE)
+      *child_type = 0;
+    else if (ic->childtype == IUP_CHILDMANY)
+      *child_type = -1;
+    else
+      *child_type = ic->childtype - IUP_CHILDMANY;
+  }
+  if (is_interactive) *is_interactive = ic->is_interactive;
+  if (has_attrib_id) *has_attrib_id = ic->has_attrib_id;
+  return 0;
+}
+
+IUP_API int IupGetClassConstructor(const char* classname, char** format, char** format_attr)
+{
+  Iclass* ic;
+
+  iupASSERT(classname != NULL);
+  if (!classname)
+    return -1;
+
+  ic = iupRegisterFindClass(classname);
+  if (!ic)
+    return -1;
+
+  if (format)      *format      = (char*)ic->format;
+  if (format_attr) *format_attr = (char*)ic->format_attr;
+  return ic->format ? 1 : 0;
+}
+
 IUP_API void IupSetClassDefaultAttribute(const char* classname, const char *name, const char* default_value)
 {
   Iclass* ic;
