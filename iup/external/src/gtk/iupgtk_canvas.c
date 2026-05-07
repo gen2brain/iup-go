@@ -147,7 +147,6 @@ static void gtkCanvasAdjustHorizValueChanged(GtkAdjustment *adjustment, Ihandle 
     {
       /* REDRAW Now (since 3.24) - to allow a full native redraw process */
       iupdrvRedrawNow(ih);
-      /* cb(ih, (float)posx, (float)posy); - OLD method */
     }
   }
 }
@@ -203,7 +202,6 @@ static void gtkCanvasAdjustVertValueChanged(GtkAdjustment *adjustment, Ihandle *
     {
       /* REDRAW Now (since 3.24) - to allow a full native redraw process */
       iupdrvRedrawNow(ih);
-      /* cb(ih, (float)posx, (float)posy); - OLD method */
     }
   }
 }

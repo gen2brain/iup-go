@@ -164,19 +164,16 @@ static BOOL cocoaTouchCanvasIsDragHandle(Ihandle* ih)
 
 	CGContextRef view_ctx = UIGraphicsGetCurrentContext();
 
-	IFnff cb = (IFnff)IupGetCallback(_ihandle, "ACTION");
+	IFn cb = (IFn)IupGetCallback(_ihandle, "ACTION");
 	if (cb)
 	{
-		double posx = _ihandle->data->posx;
-		double posy = _ihandle->data->posy;
-
 		iupAttribSetStrf(_ihandle, "CLIPRECT", "%.0f %.0f %.0f %.0f",
 			(double)rect.origin.x,
 			(double)rect.origin.y,
 			(double)(rect.origin.x + rect.size.width  - 1),
 			(double)(rect.origin.y + rect.size.height - 1));
 
-		if (cb(_ihandle, (float)posx, (float)posy) == IUP_CLOSE)
+		if (cb(_ihandle) == IUP_CLOSE)
 		{
 			IupExitLoop();
 		}
