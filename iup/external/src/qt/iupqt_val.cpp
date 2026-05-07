@@ -190,8 +190,8 @@ extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
     QSlider temp_horiz(Qt::Horizontal);
     QSlider temp_vert(Qt::Vertical);
 
-    QSize horiz_hint = temp_horiz.minimumSizeHint();
-    QSize vert_hint = temp_vert.minimumSizeHint();
+    QSize horiz_hint = temp_horiz.sizeHint();
+    QSize vert_hint = temp_vert.sizeHint();
 
     horiz_min_w = horiz_hint.width();
     horiz_min_h = horiz_hint.height();

@@ -20,7 +20,7 @@ The focus node is the node with the focus rectangle, marked nodes have their bac
 
 #### [General](iup_tree_attrib.md#general)
 
-AUTOREDRAW, BGCOLOR, COUNT, EXPAND, FGCOLOR, INDENTATION, RASTERSIZE, SPACING, TOPITEM
+AUTOREDRAW, BGCOLOR, COUNT, EXPAND, FGCOLOR, INDENTATION, RASTERSIZE, SPACING, TOPITEM, VISIBLECOLUMNS, VISIBLELINES
 
 #### [Expanders](iup_tree_attrib.md)
 

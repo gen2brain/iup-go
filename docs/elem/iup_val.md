@@ -24,6 +24,7 @@ Default: NO.
 
 **INVERTED**: Invert the minimum and maximum positions on screen.
 When INVERTED=YES maximum is at top and left (minimum is bottom and right), when INVERTED=NO maximum is at bottom and right (minimum is top and left).
+On EFL, the thumb position respects INVERTED but the trough fill direction is theme-driven; some themes render the fill from a fixed origin regardless of the inverted flag.
 The initial value depends on ORIENTATION passed as parameter on creation, if ORIENTATION=VERTICAL default is YES, if ORIENTATION=HORIZONTAL default is NO.
 On Cocoa, INVERTED is read-only for vertical orientation due to NSSlider limitations.
 
@@ -36,23 +37,22 @@ When changed the display will not be updated until VALUE is set.
 **PAGESTEP**: Controls the increment for PgDn and PgUp keys. It is not the size of the increment.
 The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1. Default is "0.1".
 
-[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): The initial size is 100 pixels along the major axis, and the handler normal size on the minor axis.
+[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): The initial size is the native widget's natural size on both axes.
 If there are ticks then they are added to the natural size on the minor axis.
-The handler can be smaller than the normal size.
 Set to NULL to allow the automatic layout to use smaller values.
 
 **SHOWTICKS**: The number of tick marks along the valuator trail.
 Minimum value is "2". Default is "0", in this case the ticks are not shown.
-It cannot be changed to 0 from a non-zero value, or vice versa, after the control is mapped.
-Not supported in GTK 3 and EFL.
+In Win32 and Motif it cannot be changed to 0 from a non-zero value, or vice versa, after the control is mapped.
+Not supported in EFL.
 
 **STEP**: Controls the increment for keyboard control and the mouse wheel. It is not the size of the increment.
 The increment size is "step*(max-min)", so it must be 0<step<1. Default is "0.01".
 
 **TICKSPOS** (creation-only): Allows to position the ticks in both sides (BOTH) or in the reverse side (REVERSE).
 Default: NORMAL. The normal position for horizontal orientation is at the top of the control, and for vertical orientation is at the left of the control.
-In Motif, the ticks position is always normal.
-Not supported in GTK 3 and EFL.
+In Motif and Android the ticks position is fixed and TICKSPOS is ignored.
+Not supported in EFL.
 
 **ORIENTATION** (creation-only) (non-inheritable):  Informs whether the valuator is "VERTICAL" or "HORIZONTAL".
 Vertical valuators are bottom to up, and horizontal valuators are left to right variations of min to max (but can be inverted using INVERTED).

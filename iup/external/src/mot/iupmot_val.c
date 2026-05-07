@@ -38,13 +38,13 @@ IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 
   if (ih->data->orientation == IVAL_HORIZONTAL)
   {
-    *w = 30;
+    *w = 100;
     *h = 20+ticks_size;
   }
   else
   {
     *w = 20+ticks_size;
-    *h = 30;
+    *h = 100;
   }
 }
 
