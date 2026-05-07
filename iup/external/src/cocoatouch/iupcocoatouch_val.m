@@ -32,6 +32,7 @@ static const void* IUP_COCOATOUCH_VAL_TARGET_OBJ_KEY = "IUP_COCOATOUCH_VAL_TARGE
 @property(nonatomic, assign) BOOL vertical;
 @property(nonatomic, assign) BOOL inverted;
 @property(nonatomic, assign) int showTicks;
+@property(nonatomic, assign) int ticksPos;  /* 0=NORMAL, 1=REVERSE, 2=BOTH */
 @property(nonatomic, retain) NSMutableArray<UIView*>* tickViews;
 - (void)refreshTicks;
 @end
@@ -79,17 +80,32 @@ static const void* IUP_COCOATOUCH_VAL_TARGET_OBJ_KEY = "IUP_COCOATOUCH_VAL_TARGE
 	CGRect track = [self trackRectForBounds:self.bounds];
 	CGFloat tick_len = 6.0;
 	UIColor* color = [UIColor labelColor];
+	BOOL below = (_ticksPos != 1);  /* NORMAL or BOTH */
+	BOOL above = (_ticksPos == 1) || (_ticksPos == 2);  /* REVERSE or BOTH */
 	for (int i = 0; i < n; i++)
 	{
 		CGFloat t = (CGFloat)i / (CGFloat)(n - 1);
 		CGFloat cx = track.origin.x + t * track.size.width;
-		CGRect r = CGRectMake(cx - 0.5, CGRectGetMaxY(track) + 2, 1.0, tick_len);
-		UIView* tick = [[UIView alloc] initWithFrame:r];
-		tick.backgroundColor = color;
-		tick.userInteractionEnabled = NO;
-		[self addSubview:tick];
-		[_tickViews addObject:tick];
-		[tick release];
+		if (below)
+		{
+			CGRect r = CGRectMake(cx - 0.5, CGRectGetMaxY(track) + 2, 1.0, tick_len);
+			UIView* tick = [[UIView alloc] initWithFrame:r];
+			tick.backgroundColor = color;
+			tick.userInteractionEnabled = NO;
+			[self addSubview:tick];
+			[_tickViews addObject:tick];
+			[tick release];
+		}
+		if (above)
+		{
+			CGRect r = CGRectMake(cx - 0.5, track.origin.y - 2 - tick_len, 1.0, tick_len);
+			UIView* tick = [[UIView alloc] initWithFrame:r];
+			tick.backgroundColor = color;
+			tick.userInteractionEnabled = NO;
+			[self addSubview:tick];
+			[_tickViews addObject:tick];
+			[tick release];
+		}
 	}
 }
 
@@ -237,7 +253,11 @@ IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
 	int major = 180;
 	int minor = 31;
-	if (iupAttribGetInt(ih, "SHOWTICKS") > 0) minor += 10;
+	if (iupAttribGetInt(ih, "SHOWTICKS") > 0)
+	{
+		char* tickspos = iupAttribGetStr(ih, "TICKSPOS");
+		minor += iupStrEqualNoCase(tickspos, "BOTH") ? 2 * 10 : 10;
+	}
 	if (ih->data->orientation == IVAL_HORIZONTAL)
 	{
 		*w = major; *h = minor;
@@ -246,34 +266,6 @@ IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 	{
 		*w = minor; *h = major;
 	}
-}
-
-static int cocoaTouchValCreateMethod(Ihandle* ih, void** params)
-{
-	const char* orientation = (params && params[0]) ? (const char*)params[0] : "HORIZONTAL";
-
-	ih->data = iupALLOCCTRLDATA();
-	if (iupStrEqualNoCase(orientation, "VERTICAL"))
-	{
-		ih->data->orientation = IVAL_VERTICAL;
-		ih->data->inverted = 1;
-	}
-	else
-		ih->data->orientation = IVAL_HORIZONTAL;
-
-	ih->data->vmax = 1.00;
-	ih->data->step = 0.01;
-	ih->data->pagestep = 0.10;
-	return IUP_NOERROR;
-}
-
-static void cocoaTouchValComputeNaturalSize(Ihandle* ih, int* w, int* h, int* children_expand)
-{
-	int min_w = 0, min_h = 0;
-	iupdrvValGetMinSize(ih, &min_w, &min_h);
-	*w = iupdrvScaleNaturalPx(min_w);
-	*h = iupdrvScaleNaturalPx(min_h);
-	(void)children_expand;
 }
 
 static int cocoaTouchValSetShowTicksAttrib(Ihandle* ih, const char* value)
@@ -291,6 +283,25 @@ static int cocoaTouchValSetShowTicksAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
+static int cocoaTouchValTicksPosFromString(const char* value)
+{
+	if (iupStrEqualNoCase(value, "REVERSE")) return 1;
+	if (iupStrEqualNoCase(value, "BOTH"))    return 2;
+	return 0;  /* NORMAL */
+}
+
+static int cocoaTouchValSetTicksPosAttrib(Ihandle* ih, const char* value)
+{
+	int pos = cocoaTouchValTicksPosFromString(value);
+	IupCocoaTouchValSlider* slider = cocoaTouchValGet(ih);
+	if (slider)
+	{
+		slider.ticksPos = pos;
+		[slider refreshTicks];
+	}
+	return 1;
+}
+
 static int cocoaTouchValMapMethod(Ihandle* ih)
 {
 	IupCocoaTouchValSlider* slider = [[IupCocoaTouchValSlider alloc] initWithFrame:CGRectZero];
@@ -298,6 +309,7 @@ static int cocoaTouchValMapMethod(Ihandle* ih)
 	slider.vertical = (ih->data->orientation == IVAL_VERTICAL) ? YES : NO;
 	slider.inverted = ih->data->inverted ? YES : NO;
 	slider.showTicks = ih->data->show_ticks;
+	slider.ticksPos = cocoaTouchValTicksPosFromString(iupAttribGetStr(ih, "TICKSPOS"));
 
 	[slider applyOrientationTransform];
 
@@ -339,8 +351,6 @@ static void cocoaTouchValUnMapMethod(Ihandle* ih)
 
 IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 {
-	ic->Create = cocoaTouchValCreateMethod;
-	ic->ComputeNaturalSize = cocoaTouchValComputeNaturalSize;
 	ic->Map   = cocoaTouchValMapMethod;
 	ic->UnMap = cocoaTouchValUnMapMethod;
 
@@ -358,6 +368,6 @@ IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "INVERTED", NULL, cocoaTouchValSetInvertedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, cocoaTouchValSetShowTicksAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "TICKSPOS", NULL, cocoaTouchValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_NO_INHERIT);
 
 }

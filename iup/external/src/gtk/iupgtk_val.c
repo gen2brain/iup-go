@@ -58,10 +58,11 @@ IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
     vert_min_w = vert_req.width;
     vert_min_h = vert_req.height;
 
-    if (horiz_min_w < 20) horiz_min_w = 20;
-    if (horiz_min_h < 20) horiz_min_h = 20;
-    if (vert_min_w < 20) vert_min_w = 20;
-    if (vert_min_h < 20) vert_min_h = 20;
+    /* GtkScale's natural long-axis is just the thumb size; widen to a usable default */
+    if (horiz_min_w < 100) horiz_min_w = 100;
+    if (horiz_min_h < 20)  horiz_min_h = 20;
+    if (vert_min_w < 20)   vert_min_w = 20;
+    if (vert_min_h < 100)  vert_min_h = 100;
 
     gtk_widget_destroy(temp_window);
   }
@@ -267,36 +268,34 @@ static int gtkValMapMethod(Ihandle* ih)
 
 static void gtkValUpdateTicks(Ihandle* ih, int num_ticks)
 {
-  int i;
-  GtkPositionType pos;
+  int i, both = 0;
+  GtkPositionType pos, pos2 = GTK_POS_BOTTOM;
+  char* tickspos;
 
   gtk_scale_clear_marks(GTK_SCALE(ih->handle));
 
   if (num_ticks < 2)
     return;
 
+  tickspos = iupAttribGet(ih, "TICKSPOS");
+  both = iupStrEqualNoCase(tickspos, "BOTH");
+  if (ih->data->orientation == IVAL_HORIZONTAL)
   {
-    char* tickspos = iupAttribGet(ih, "TICKSPOS");
-    if (ih->data->orientation == IVAL_HORIZONTAL)
-    {
-      if (iupStrEqualNoCase(tickspos, "REVERSE"))
-        pos = GTK_POS_TOP;
-      else
-        pos = GTK_POS_BOTTOM;
-    }
-    else
-    {
-      if (iupStrEqualNoCase(tickspos, "REVERSE"))
-        pos = GTK_POS_LEFT;
-      else
-        pos = GTK_POS_RIGHT;
-    }
+    pos  = (iupStrEqualNoCase(tickspos, "REVERSE")) ? GTK_POS_TOP : GTK_POS_BOTTOM;
+    pos2 = GTK_POS_TOP;
+  }
+  else
+  {
+    pos  = (iupStrEqualNoCase(tickspos, "REVERSE")) ? GTK_POS_LEFT : GTK_POS_RIGHT;
+    pos2 = GTK_POS_LEFT;
   }
 
   for (i = 0; i < num_ticks; i++)
   {
     double fval = (double)i / (double)(num_ticks - 1);
     gtk_scale_add_mark(GTK_SCALE(ih->handle), fval, pos, NULL);
+    if (both)
+      gtk_scale_add_mark(GTK_SCALE(ih->handle), fval, pos2, NULL);
   }
 }
 

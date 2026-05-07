@@ -27,9 +27,11 @@ class IupFltkSlider : public Fl_Slider
 public:
   Ihandle* iup_handle;
   int button_pressed;
+  int show_ticks;     /* 0 = none, otherwise number of ticks (>=2) */
+  int ticks_pos;      /* 0=NORMAL, 1=REVERSE, 2=BOTH */
 
   IupFltkSlider(int x, int y, int w, int h, Ihandle* ih, int horizontal)
-    : Fl_Slider(x, y, w, h), iup_handle(ih), button_pressed(0)
+    : Fl_Slider(x, y, w, h), iup_handle(ih), button_pressed(0), show_ticks(0), ticks_pos(0)
   {
     if (horizontal)
       type(FL_HOR_NICE_SLIDER);
@@ -64,6 +66,44 @@ public:
         break;
     }
     return Fl_Slider::handle(event);
+  }
+
+  void draw() override
+  {
+    Fl_Slider::draw();
+    if (show_ticks < 2) return;
+
+    int horizontal = (type() == FL_HOR_NICE_SLIDER);
+    int tick_len = 5;
+    int n = show_ticks;
+    fl_color(fl_contrast(FL_FOREGROUND_COLOR, color()));
+
+    if (horizontal)
+    {
+      int x_track = x() + tick_len;
+      int track_len = w() - 2 * tick_len;
+      int y_top = y();
+      int y_bot = y() + h() - 1;
+      for (int i = 0; i < n; i++)
+      {
+        int xi = x_track + (i * track_len) / (n - 1);
+        if (ticks_pos != 1) fl_yxline(xi, y_bot, y_bot - tick_len);    /* NORMAL or BOTH */
+        if (ticks_pos == 1 || ticks_pos == 2) fl_yxline(xi, y_top, y_top + tick_len);  /* REVERSE or BOTH */
+      }
+    }
+    else
+    {
+      int y_track = y() + tick_len;
+      int track_len = h() - 2 * tick_len;
+      int x_left = x();
+      int x_right = x() + w() - 1;
+      for (int i = 0; i < n; i++)
+      {
+        int yi = y_track + (i * track_len) / (n - 1);
+        if (ticks_pos != 1) fl_xyline(x_left, yi, x_left + tick_len);     /* NORMAL or BOTH */
+        if (ticks_pos == 1 || ticks_pos == 2) fl_xyline(x_right, yi, x_right - tick_len);  /* REVERSE or BOTH */
+      }
+    }
   }
 };
 
@@ -111,14 +151,21 @@ static void fltkValCallback(Fl_Widget* w, void* data)
 
 extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)
 {
+  int ticks_size = 0;
+  if (iupAttribGetInt(ih, "SHOWTICKS"))
+  {
+    char* tickspos = iupAttribGetStr(ih, "TICKSPOS");
+    ticks_size = iupStrEqualNoCase(tickspos, "BOTH") ? 2 * 6 : 6;
+  }
+
   if (ih->data->orientation == IVAL_HORIZONTAL)
   {
     *w = 100;
-    *h = 20;
+    *h = 20 + ticks_size;
   }
   else
   {
-    *w = 20;
+    *w = 20 + ticks_size;
     *h = 100;
   }
 }
@@ -191,6 +238,42 @@ static int fltkValSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int fltkValTicksPosFromString(const char* value)
+{
+  if (iupStrEqualNoCase(value, "REVERSE")) return 1;
+  if (iupStrEqualNoCase(value, "BOTH"))    return 2;
+  return 0;
+}
+
+static int fltkValSetShowTicksAttrib(Ihandle* ih, const char* value)
+{
+  int n = 0;
+  if (value) iupStrToInt(value, &n);
+  if (n < 0) n = 0;
+  if (n > 0 && n < 2) n = 2;
+  ih->data->show_ticks = n;
+
+  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  if (slider)
+  {
+    slider->show_ticks = n;
+    slider->redraw();
+  }
+  return 1;
+}
+
+static int fltkValSetTicksPosAttrib(Ihandle* ih, const char* value)
+{
+  int pos = fltkValTicksPosFromString(value);
+  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  if (slider)
+  {
+    slider->ticks_pos = pos;
+    slider->redraw();
+  }
+  return 1;
+}
+
 static int fltkValSetInvertedAttrib(Ihandle* ih, const char* value)
 {
   ih->data->inverted = iupStrBoolean(value);
@@ -214,6 +297,9 @@ static int fltkValMapMethod(Ihandle* ih)
 
   IupFltkSlider* slider = new IupFltkSlider(0, 0, 10, 10, ih, horizontal);
   ih->handle = (InativeHandle*)slider;
+
+  slider->show_ticks = ih->data->show_ticks;
+  slider->ticks_pos = fltkValTicksPosFromString(iupAttribGetStr(ih, "TICKSPOS"));
 
   if (ih->data->inverted)
     slider->range(1.0, 0.0);
@@ -261,6 +347,6 @@ extern "C" IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkValSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkValSetFgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SHOWTICKS", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, fltkValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, fltkValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
 }

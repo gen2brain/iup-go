@@ -31,8 +31,13 @@ In Windows is limited to a minimum of 5 pixels.
 This is the default behavior for TIPs in native tree controls in Windows, if set to No then it will use the regular TIP behavior.
 Default: Yes.
 
-[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): the initial size is "400x200".
-Set to NULL to allow the automatic layout use smaller values.
+[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): the initial size is computed from VISIBLELINES and VISIBLECOLUMNS.
+Set to NULL after map to use it as an initial value.
+
+**VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
+It uses a wider character size than the one used for the SIZE attribute, so strings will fit better without the need of extra columns. Default: 20
+
+**VISIBLELINES**: Defines the number of visible lines for the **Natural Size**, this means that will act also as minimum number of visible lines. Default: 8
 
 **SCROLLVISIBLE** (read-only) [Windows Only]: Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.

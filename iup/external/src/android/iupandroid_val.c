@@ -38,34 +38,6 @@ void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
   }
 }
 
-static int androidValCreateMethod(Ihandle* ih, void** params)
-{
-  const char* orientation = (params && params[0]) ? (const char*)params[0] : "HORIZONTAL";
-
-  ih->data = iupALLOCCTRLDATA();
-  if (iupStrEqualNoCase(orientation, "VERTICAL"))
-  {
-    ih->data->orientation = IVAL_VERTICAL;
-    ih->data->inverted = 1;
-  }
-  else
-    ih->data->orientation = IVAL_HORIZONTAL;
-
-  ih->data->vmax = 1.00;
-  ih->data->step = 0.01;
-  ih->data->pagestep = 0.10;
-  return IUP_NOERROR;
-}
-
-static void androidValComputeNaturalSize(Ihandle* ih, int* w, int* h, int* children_expand)
-{
-  int min_w = 0, min_h = 0;
-  iupdrvValGetMinSize(ih, &min_w, &min_h);
-  *w = iupdrvScaleNaturalPx(min_w);
-  *h = iupdrvScaleNaturalPx(min_h);
-  (void)children_expand;
-}
-
 static int androidValSetValueAttrib(Ihandle* ih, const char* value)
 {
   double d;
@@ -192,8 +164,6 @@ static int androidValMapMethod(Ihandle* ih)
 
 void iupdrvValInitClass(Iclass* ic)
 {
-  ic->Create = androidValCreateMethod;
-  ic->ComputeNaturalSize = androidValComputeNaturalSize;
   ic->Map = androidValMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 
