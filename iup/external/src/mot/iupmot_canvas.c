@@ -74,7 +74,6 @@ static void motCanvasScrollbarCallback(Widget w, XtPointer client_data, XtPointe
     {
       /* REDRAW Now (since 3.24) - to allow a full native redraw process */
       iupdrvRedrawNow(ih);
-      /* action_cb(ih, (float)posx, (float)posy); - OLD method */
     }
   }
 }

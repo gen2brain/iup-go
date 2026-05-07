@@ -130,13 +130,11 @@ Available in GTK, GTK 4, Qt and EFL on Wayland.
 
 [ACTION](../call/iup_action.md): Action generated when the canvas needs to be redrawn.
 
-    int function(Ihandle *ih, float posx, float posy);
+    int function(Ihandle *ih);
 
-**ih**: identifier of the element that activated the event.\
-**posx**: thumb position in the horizontal scrollbar. The POSX attribute value.
-Old parameter in float format, use POSX attribute to get the value in double format.\
-**posy**: thumb position in the vertical scrollbar. The POSY attribute value.
-Old parameter in float format, use POSX attribute to get the value in double format.
+**ih**: identifier of the element that activated the event.
+
+Use the [POSX](../attrib/iup_posx.md) and [POSY](../attrib/iup_posy.md) attributes to read the current scroll thumb position from inside the callback. Earlier IUP versions passed `posx`/`posy` as `float` parameters; that signature was removed in IUP 3.24 in favor of the native redraw flow.
 
 [BUTTON_CB](../call/iup_button_cb.md): Action generated when any mouse button is pressed or released.
 

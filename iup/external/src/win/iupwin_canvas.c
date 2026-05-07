@@ -261,12 +261,11 @@ static void winCanvasCallScrollCallback(Ihandle* ih, int op)
     scroll_cb(ih, op, (float)ih->data->posx, (float)ih->data->posy);
   else
   {
-    IFnff cb = (IFnff)IupGetCallback(ih, "ACTION");
+    IFn cb = (IFn)IupGetCallback(ih, "ACTION");
     if (cb)
     {
       /* REDRAW Now (since 3.24) - to allow a full native redraw process */
       iupdrvRedrawNow(ih);
-      /* cb(ih, (float)ih->data->posx, (float)ih->data->posy); - OLD method */
     }
   }
 }

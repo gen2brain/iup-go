@@ -163,7 +163,7 @@ Iclass* iupCanvasNewClass(void)
   iupClassRegisterCallback(ic, "BUTTON_CB", "iiiis");
   iupClassRegisterCallback(ic, "MOTION_CB", "iis");
   iupClassRegisterCallback(ic, "KEYPRESS_CB", "ii");
-  iupClassRegisterCallback(ic, "ACTION", "ff");
+  iupClassRegisterCallback(ic, "ACTION", "");
   iupClassRegisterCallback(ic, "SCROLL_CB", "iff");
   iupClassRegisterCallback(ic, "WHEEL_CB", "fiis");
 
