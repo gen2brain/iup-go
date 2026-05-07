@@ -23,6 +23,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
+#include "iup_drv.h"
 #include "iup_tree.h"
 }
 
@@ -1812,6 +1813,16 @@ static void fltkTreeLayoutUpdateMethod(Ihandle* ih)
 /****************************************************************************
  * Class Registration
  ****************************************************************************/
+
+extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+{
+  int border = 2 * 2;
+  int sb = iupdrvGetScrollbarSize();
+  int indent_icon = 16 + 16;  /* connector/open glyph + 1 indent step */
+  (void)ih;
+  *w += border + sb + indent_icon;
+  *h += border;
+}
 
 extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {

@@ -30,6 +30,7 @@ extern "C" {
 IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic);
 IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* title, int add);
 IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih);
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h);
 /** @} */
 
 char* iupTreeGetSpacingAttrib(Ihandle* ih);

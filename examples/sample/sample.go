@@ -55,7 +55,7 @@ func main() {
 			iup.Button("Button Text").SetAttributes("PADDING=5x5").SetHandle("button1"),
 			iup.Button("Text").SetAttributes("IMAGE=img1, PADDING=5x5").SetHandle("button2"),
 			iup.Hbox(
-				iup.Button("").SetAttributes("IMAGE=img1, IMPRESS=img2"),
+				iup.Button("").SetAttributes("IMAGE=img2, IMPRESS=img1"),
 				iup.Button("").SetAttributes("IMAGE=img1"),
 			).SetAttribute("ALIGNMENT", "ACENTER"),
 		).SetAttribute("ALIGNMENT", "ACENTER"),
@@ -312,7 +312,7 @@ func main() {
 		iup.Hbox(
 			iup.Frame(iup.Hbox(canvas)).SetAttributes(`TITLE=Canvas`),
 			iup.Frame(iup.Hbox(tree)).SetAttributes(`TITLE=Tree`),
-		).SetAttribute("GAP", "5"),
+		).SetAttributes(`GAP=5, HOMOGENEOUS=YES`),
 	).SetAttributes("MARGIN=5x5, GAP=5").SetHandle("vbox1")
 
 	dlg := iup.Dialog(vbox1).SetAttributes(`TITLE="Sample", MENU=menu, ICON=img1`)

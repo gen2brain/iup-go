@@ -15,6 +15,7 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_tree.h"
 #include "iup_image.h"
@@ -2506,6 +2507,16 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
 /****************************************************************************
  * Class Initialization
  ****************************************************************************/
+
+extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+{
+  int border = 2 * 2;
+  int sb = iupdrvGetScrollbarSize();
+  int indent_icon = 20 + 24;  /* expander glyph + 1 indent step (XAML defaults are larger) */
+  (void)ih;
+  *w += border + sb + indent_icon;
+  *h += border;
+}
 
 extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {

@@ -15,6 +15,7 @@
 #include "iup_str.h"
 #include "iup_image.h"
 #include "iup_tree.h"
+#include "iup_drv.h"
 #include "iup_drvinfo.h"
 
 #include "iupcocoa_drv.h"
@@ -4612,6 +4613,16 @@ static void cocoaTreeUnMapMethod(Ihandle* ih)
   iupcocoaRemoveFromParent(ih);
   [root_view release];
   ih->handle = NULL;
+}
+
+IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
+{
+  int border = 2 * 2;
+  int sb = iupdrvGetScrollbarSize();
+  int indent_icon = 16 + 16;  /* disclosure triangle + 1 indent step */
+  (void)ih;
+  *w += border + sb + indent_icon;
+  *h += border;
 }
 
 IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
