@@ -215,6 +215,65 @@ static int gtkProgressBarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static void gtkProgressBarApplyColors(Ihandle* ih)
+{
+  unsigned char r, g, b;
+  char* bg = iupAttribGet(ih, "BGCOLOR");
+  char* fg = iupAttribGet(ih, "FGCOLOR");
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+  GtkCssProvider* provider;
+  GString* css = g_string_new(NULL);
+
+  if (bg && iupStrToRGB(bg, &r, &g, &b))
+    g_string_append_printf(css, "trough { background-image: none; background-color: rgb(%d,%d,%d); }\n", r, g, b);
+  if (fg && iupStrToRGB(fg, &r, &g, &b))
+    g_string_append_printf(css, "progress { background-image: none; background-color: rgb(%d,%d,%d); }\n", r, g, b);
+
+  provider = (GtkCssProvider*)g_object_get_data(G_OBJECT(ih->handle), "_IUPGTK_PBAR_CSS");
+  if (!provider)
+  {
+    provider = gtk_css_provider_new();
+    gtk_style_context_add_provider(gtk_widget_get_style_context(ih->handle), GTK_STYLE_PROVIDER(provider),GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_object_set_data_full(G_OBJECT(ih->handle), "_IUPGTK_PBAR_CSS", provider, g_object_unref);
+  }
+  gtk_css_provider_load_from_data(provider, css->str, -1, NULL);
+  g_string_free(css, TRUE);
+#else
+  GdkColor color;
+  if (bg && iupStrToRGB(bg, &r, &g, &b))
+  {
+    iupgdkColorSetRGB(&color, r, g, b);
+    gtk_widget_modify_bg(ih->handle, GTK_STATE_NORMAL, &color);
+  }
+  if (fg && iupStrToRGB(fg, &r, &g, &b))
+  {
+    iupgdkColorSetRGB(&color, r, g, b);
+    gtk_widget_modify_bg(ih->handle, GTK_STATE_PRELIGHT, &color);
+  }
+#endif
+}
+
+static int gtkProgressBarSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+  iupAttribSetStr(ih, "BGCOLOR", value);
+  if (ih->handle) gtkProgressBarApplyColors(ih);
+  return 1;
+}
+
+static int gtkProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  if (!iupStrToRGB(value, &r, &g, &b))
+    return 0;
+  iupAttribSetStr(ih, "FGCOLOR", value);
+  if (ih->handle) gtkProgressBarApplyColors(ih);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -223,10 +282,8 @@ IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
   /* Driver Dependent Attribute functions */
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-
-  /* Special */
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtkProgressBarSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtkProgressBarSetFgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
 
   /* IupProgressBar only */
   iupClassRegisterAttribute(ic, "VALUE",  iProgressBarGetValueAttrib,  gtkProgressBarSetValueAttrib,  NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
