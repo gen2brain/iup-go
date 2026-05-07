@@ -12,6 +12,7 @@
 
 #include "iup_hashtable.h"
 #include "iup_globalattrib.h"
+#include "iup_globalreg.h"
 #include "iup_class.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
@@ -263,29 +264,8 @@ IUP_API char* IupGetGlobal(const char *name)
 
 IUP_SDK_API int iupGlobalIsPointer(const char* name)
 {
-  static struct {
-    const char *name;
-  } ptr_table[] = {
-    {"HINSTANCE"},
-    {"DLL_HINSTANCE"},
-    {"XDISPLAY"},
-    {"XSCREEN"},
-    {"APPSHELL"},
-    {"WL_DISPLAY"},
-  };
-#define PTR_TABLE_SIZE ((sizeof ptr_table)/(sizeof ptr_table[0]))
-
-  if (name)
-  {
-    int i;
-    for (i = 0; i < PTR_TABLE_SIZE; i++)
-    {
-      if (iupStrEqualNoCase(name, ptr_table[i].name))
-        return 1;
-    }
-  }
-
-  return 0;
+  const iGlobalRegEntry* e = iupGlobalRegFind(name);
+  return (e && (e->flags & IUPGF_POINTER)) ? 1 : 0;
 }
 
 int iupGetGlobalAttributes(char** names, int n)

@@ -179,10 +179,58 @@ IUP_API char*     IupGetClassType(Ihandle* ih);
 IUP_API int       IupGetAllClasses(char** names, int n);
 IUP_API int       IupGetClassAttributes(const char* classname, char** names, int n);
 IUP_API int       IupGetClassCallbacks(const char* classname, char** names, int n);
+IUP_API int       IupGetClassAttributeInfo(const char* classname, const char* name, char** default_value, char** system_default, int* flags);
+IUP_API char*     IupGetClassCallbackFormat(const char* classname, const char* name);
+IUP_API int       IupGetClassInfo(const char* classname, char** parent, char** native_type, int* child_type, int* is_interactive, int* has_attrib_id);
+IUP_API int       IupGetClassConstructor(const char* classname, char** format, char** format_attr);
+IUP_API int       IupGetAllGlobals(char** names, int n);
+IUP_API int       IupGetGlobalInfo(const char* name, int* flags, int* drivers);
+IUP_API int       IupGetAllFunctions(char** names, int n);
 IUP_API void      IupSaveClassAttributes(Ihandle* ih);
 IUP_API void      IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih);
 IUP_API void      IupSetClassDefaultAttribute(const char* classname, const char* name, const char* value);
 IUP_API int       IupClassMatch(Ihandle* ih, const char* classname);
+
+/** Attribute flags.
+ * Used by \ref iupClassRegisterAttribute and returned by IupGetClassAttributeInfo. */
+enum {
+  IUPAF_DEFAULT         = 0,    /**< inheritable, can have a default value, is a string, can call the set/get functions only if mapped, no ID (to be used alone when there are no other flags) */
+  IUPAF_NO_INHERIT      = 1,    /**< is not inheritable */
+  IUPAF_NO_DEFAULTVALUE = 2,    /**< can not have a default value */
+  IUPAF_NO_STRING       = 4,    /**< is not a string */
+  IUPAF_NOT_MAPPED      = 8,    /**< will call the set/get functions also when not mapped */
+  IUPAF_HAS_ID          = 16,   /**< can have an ID at the end of the name, automatically set by \ref iupClassRegisterAttributeId */
+  IUPAF_READONLY        = 32,   /**< is read-only, can not be changed (except when using internal functions), get is optional, set will never be used */
+  IUPAF_WRITEONLY       = 64,   /**< is write-only, usually an action, set must exist, get will never be used */
+  IUPAF_HAS_ID2         = 128,  /**< can have two IDs at the end of the name, automatically set by \ref iupClassRegisterAttributeId2 */
+  IUPAF_CALLBACK        = 256,  /**< is a callback, not an attribute */
+  IUPAF_NO_SAVE         = 512,  /**< can NOT be directly saved, should have at least manual processing */
+  IUPAF_NOT_SUPPORTED   = 1024, /**< not supported in that driver */
+  IUPAF_IHANDLENAME     = 2048, /**< is an Ihandle* name, associated with IupSetHandle */
+  IUPAF_IHANDLE         = 4096  /**< is an Ihandle* */
+};
+
+#define IUPAF_SAMEASSYSTEM ((char*)-1)  /**< means that the default value is the same as the system default value, used only in \ref iupClassRegisterAttribute */
+
+/* Flag bits and driver mask returned by IupGetGlobalInfo. */
+enum {
+  IUPGF_NORMAL   = 0,
+  IUPGF_READONLY = 1,
+  IUPGF_POINTER  = 2
+};
+enum {
+  IUPDRV_WIN        = 1,
+  IUPDRV_MOTIF      = 2,
+  IUPDRV_GTK        = 4,
+  IUPDRV_COCOA      = 8,
+  IUPDRV_QT         = 16,
+  IUPDRV_GTK4       = 32,
+  IUPDRV_EFL        = 64,
+  IUPDRV_WINUI      = 128,
+  IUPDRV_FLTK       = 256,
+  IUPDRV_ANDROID    = 512,
+  IUPDRV_COCOATOUCH = 1024
+};
 
 IUP_API Ihandle*  IupCreate(const char* classname);
 IUP_API Ihandle*  IupCreatev(const char* classname, void** params);

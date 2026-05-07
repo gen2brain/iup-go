@@ -100,14 +100,17 @@ func GetClassAttributes(className string) (names []string) {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
 
-	n := int(C.IupGetClassAttributes(cClassName, nil, 0))
-	if n > 0 {
-		names = make([]string, n)
-		pNames := make([]*C.char, n)
-		C.IupGetClassAttributes(cClassName, (**C.char)(unsafe.Pointer(&pNames[0])), C.int(n))
-		for i := 0; i < n; i++ {
-			names[i] = C.GoString(pNames[i])
-		}
+	// The probing call counts both attributes and callbacks (shared table).
+	// The filling call returns the real attribute count.
+	max := int(C.IupGetClassAttributes(cClassName, nil, 0))
+	if max <= 0 {
+		return
+	}
+	pNames := make([]*C.char, max)
+	n := int(C.IupGetClassAttributes(cClassName, (**C.char)(unsafe.Pointer(&pNames[0])), C.int(max)))
+	names = make([]string, n)
+	for i := 0; i < n; i++ {
+		names[i] = C.GoString(pNames[i])
 	}
 	return
 }
@@ -119,15 +122,225 @@ func GetClassCallbacks(className string) (names []string) {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
 
-	n := int(C.IupGetClassCallbacks(cClassName, nil, 0))
-	if n > 0 {
-		names = make([]string, n)
-		pNames := make([]*C.char, n)
-		C.IupGetClassCallbacks(cClassName, (**C.char)(unsafe.Pointer(&pNames[0])), C.int(n))
-		for i := 0; i < n; i++ {
-			names[i] = C.GoString(pNames[i])
-		}
+	max := int(C.IupGetClassCallbacks(cClassName, nil, 0))
+	if max <= 0 {
+		return
 	}
+	pNames := make([]*C.char, max)
+	n := int(C.IupGetClassCallbacks(cClassName, (**C.char)(unsafe.Pointer(&pNames[0])), C.int(max)))
+	names = make([]string, n)
+	for i := 0; i < n; i++ {
+		names[i] = C.GoString(pNames[i])
+	}
+	return
+}
+
+// Attribute flag bits returned by [GetClassAttributeInfo].
+const (
+	AttribDefault        = 0
+	AttribNoInherit      = 1
+	AttribNoDefaultValue = 2
+	AttribNoString       = 4
+	AttribNotMapped      = 8
+	AttribHasID          = 16
+	AttribReadOnly       = 32
+	AttribWriteOnly      = 64
+	AttribHasID2         = 128
+	AttribCallback       = 256
+	AttribNoSave         = 512
+	AttribNotSupported   = 1024
+	AttribIhandleName    = 2048
+	AttribIhandle        = 4096
+)
+
+// ClassAttributeInfo is the metadata returned by [GetClassAttributeInfo].
+type ClassAttributeInfo struct {
+	DefaultValue  string
+	SystemDefault string
+	Flags         int
+}
+
+// GetClassAttributeInfo returns the default value, system default and flag bits
+// of a registered attribute. ok is false when the class or attribute is not
+// registered.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclassattributeinfo.md
+func GetClassAttributeInfo(className, name string) (info ClassAttributeInfo, ok bool) {
+	cClassName := C.CString(className)
+	defer C.free(unsafe.Pointer(cClassName))
+
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	var def, sysDef *C.char
+	var flags C.int
+
+	if C.IupGetClassAttributeInfo(cClassName, cName, &def, &sysDef, &flags) != 1 {
+		return
+	}
+
+	info.DefaultValue = C.GoString(def)
+	info.SystemDefault = C.GoString(sysDef)
+	info.Flags = int(flags)
+	ok = true
+	return
+}
+
+// GetClassCallbackFormat returns the parameter format of a registered callback,
+// or "" if the class or callback is not registered.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclasscallbackformat.md
+func GetClassCallbackFormat(className, name string) string {
+	cClassName := C.CString(className)
+	defer C.free(unsafe.Pointer(cClassName))
+
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	return C.GoString(C.IupGetClassCallbackFormat(cClassName, cName))
+}
+
+// ClassInfo is the metadata returned by [GetClassInfo].
+type ClassInfo struct {
+	Parent        string
+	NativeType    string
+	ChildType     int
+	IsInteractive bool
+	HasAttribID   int
+}
+
+// GetClassInfo returns class-level metadata: parent class, native type, child
+// constraints, focus interactivity and id-attribute support. ok is false when
+// the class is not registered.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclassinfo.md
+func GetClassInfo(className string) (info ClassInfo, ok bool) {
+	cClassName := C.CString(className)
+	defer C.free(unsafe.Pointer(cClassName))
+
+	var parent, nativeType *C.char
+	var childType, isInteractive, hasAttribID C.int
+
+	if C.IupGetClassInfo(cClassName, &parent, &nativeType, &childType, &isInteractive, &hasAttribID) != 0 {
+		return
+	}
+
+	info.Parent = C.GoString(parent)
+	info.NativeType = C.GoString(nativeType)
+	info.ChildType = int(childType)
+	info.IsInteractive = isInteractive != 0
+	info.HasAttribID = int(hasAttribID)
+	ok = true
+	return
+}
+
+// ClassConstructor is the metadata returned by [GetClassConstructor].
+type ClassConstructor struct {
+	Format     string // creation parameter format ("h", "g", "s", "i" + "c", ...) or "" if NULL
+	FormatAttr string // attribute name receiving the first parameter when Format starts with "s" or "a"
+}
+
+// GetClassConstructor returns the parameter format that IupCreate accepts for
+// the class. ok is false when the class is not registered.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getclassconstructor.md
+func GetClassConstructor(className string) (info ClassConstructor, ok bool) {
+	cClassName := C.CString(className)
+	defer C.free(unsafe.Pointer(cClassName))
+
+	var format, formatAttr *C.char
+	rc := C.IupGetClassConstructor(cClassName, &format, &formatAttr)
+	if rc < 0 {
+		return
+	}
+	info.Format = C.GoString(format)
+	info.FormatAttr = C.GoString(formatAttr)
+	ok = true
+	return
+}
+
+// GetAllFunctions returns the well-known function-namespace names IUP
+// dispatches itself (ENTRY_POINT, IDLE_ACTION, GLOBALCTRLFUNC_CB,
+// GLOBAL{KEYPRESS,BUTTON,MOTION,WHEEL}_CB), plus any extras the application
+// has bound. Use [GetFunction] to test whether a given name is currently bound.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallfunctions.md
+func GetAllFunctions() (names []string) {
+	max := int(C.IupGetAllFunctions(nil, 0))
+	if max <= 0 {
+		return
+	}
+	pNames := make([]*C.char, max)
+	n := int(C.IupGetAllFunctions((**C.char)(unsafe.Pointer(&pNames[0])), C.int(max)))
+	names = make([]string, n)
+	for i := 0; i < n; i++ {
+		names[i] = C.GoString(pNames[i])
+	}
+	return
+}
+
+// Flag bits returned by [GetGlobalInfo].
+const (
+	GlobalNormal   = 0
+	GlobalReadOnly = 1
+	GlobalPointer  = 2
+)
+
+// Driver bits returned by [GetGlobalInfo].
+const (
+	DriverWin        = 1
+	DriverMotif      = 2
+	DriverGTK        = 4
+	DriverCocoa      = 8
+	DriverQt         = 16
+	DriverGTK4       = 32
+	DriverEFL        = 64
+	DriverWinUI      = 128
+	DriverFLTK       = 256
+	DriverAndroid    = 512
+	DriverCocoaTouch = 1024
+)
+
+// GlobalInfo is the metadata returned by [GetGlobalInfo].
+type GlobalInfo struct {
+	Flags   int // OR of Global* flag bits
+	Drivers int // OR of Driver* driver bits
+}
+
+// GetAllGlobals returns the union of registered globals and any user-set
+// globals not already in the registry.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getallglobals.md
+func GetAllGlobals() (names []string) {
+	max := int(C.IupGetAllGlobals(nil, 0))
+	if max <= 0 {
+		return
+	}
+	pNames := make([]*C.char, max)
+	n := int(C.IupGetAllGlobals((**C.char)(unsafe.Pointer(&pNames[0])), C.int(max)))
+	names = make([]string, n)
+	for i := 0; i < n; i++ {
+		names[i] = C.GoString(pNames[i])
+	}
+	return
+}
+
+// GetGlobalInfo returns the flag bits and driver-support mask for a registered
+// global. ok is false when the name is not in the registry (e.g. an ad-hoc
+// user-set global); flags and drivers are then zero.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/func/iup_getglobalinfo.md
+func GetGlobalInfo(name string) (info GlobalInfo, ok bool) {
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	var flags, drivers C.int
+	if C.IupGetGlobalInfo(cName, &flags, &drivers) != 1 {
+		return
+	}
+	info.Flags = int(flags)
+	info.Drivers = int(drivers)
+	ok = true
 	return
 }
 

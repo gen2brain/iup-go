@@ -12,159 +12,29 @@
 
 #include "iup_object.h"
 #include "iup_globalattrib.h"
+#include "iup_globalreg.h"
 #include "iup_func.h"
 #include "iup_str.h"
 #include "iup_attrib.h"
 #include "iup_names.h"
 
 
-typedef struct _iRegisteredGlobal {
-  char *name;
-  int windows;
-  int motif;
-  int gtk;
-  int cocoa;
-  int qt;
-  int gtk4;
-  int efl;
-  int winui;
-  int fltk;
-  int readonly;
-} iRegisteredGlobal;
-
-/*                        win mot gtk coc qt  g4  efl wui flt ro   sorted alphabetically */
-static iRegisteredGlobal global_attribs[] = {
-  { "ACCENTCOLOR",        1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "APPID",              0,  0,  1,  0,  1,  1,  1,  1,  0,  0 },
-  { "APPNAME",            1,  0,  0,  1,  1,  0,  1,  1,  1,  0 },
-  { "APPSHELL",           0,  1,  1,  0,  0,  1,  0,  0,  0,  1 },
-  { "ARGV0",              0,  0,  1,  0,  1,  1,  1,  1,  1,  0 },
-  { "AUTOREPEAT",         0,  1,  0,  0,  0,  0,  1,  0,  1,  0 },
-  { "CACHEDIR",           1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "COMCTL32VER6",       1,  0,  0,  0,  0,  0,  0,  0,  0,  1 },
-  { "COMPUTERNAME",       1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "CONFIGDIR",          1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "CONTROLKEY",         1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "COPYRIGHT",          1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "CURSORPOS",          1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DARKMODE",           1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "DATADIR",            1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "DEFAULTBUTTONPADDING",1, 1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DEFAULTDECIMALSYMBOL",1, 1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DEFAULTFONT",        1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DEFAULTFONTFACE",    1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DEFAULTFONTSIZE",    1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DEFAULTFONTSTYLE",   1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DEFAULTPRECISION",   1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DEFAULTTHEME",       1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DLGBGCOLOR",         1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DLGFGCOLOR",         1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "DLL_HINSTANCE",      1,  0,  0,  0,  0,  0,  0,  0,  0,  1 },
-  { "DRIVER",             1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "DWM_COMPOSITION",    1,  0,  0,  0,  0,  0,  1,  0,  0,  1 },
-  { "EFLACCEL",           0,  0,  0,  0,  0,  0,  1,  0,  0,  0 },
-  { "EFLENGINE",          0,  0,  0,  0,  0,  0,  1,  0,  0,  1 },
-  { "EFLTHEME",           0,  0,  0,  0,  0,  0,  1,  0,  0,  0 },
-  { "EFLTHEMEDATA",       0,  0,  0,  0,  0,  0,  1,  0,  0,  0 },
-  { "EFLTHEMEDATALEN",    0,  0,  0,  0,  0,  0,  1,  0,  0,  0 },
-  { "EFLVERSION",         0,  0,  0,  0,  0,  0,  1,  0,  0,  1 },
-  { "EXEFILENAME",        1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "EXITLOOP",           1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "FLTKTHEME",          0,  0,  0,  0,  0,  0,  0,  0,  1,  0 },
-  { "FLTKVERSION",        0,  0,  0,  0,  0,  0,  0,  0,  1,  1 },
-  { "FULLSIZE",           1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "GLOBALLAYOUTDLGKEY", 1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "GLOBALLAYOUTRESIZEKEY",1, 1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "GLOBALMENU",         0,  0,  1,  0,  0,  0,  0,  0,  0,  0 },
-  { "GL_RENDERER",        1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "GL_VENDOR",          1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "GL_VERSION",         1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "GNUSTEPTHEME",       0,  0,  0,  1,  0,  0,  0,  0,  0,  0 },
-  { "GSKRENDERER",        0,  0,  0,  0,  0,  1,  0,  0,  0,  0 },
-  { "GTKDEVVERSION",      0,  0,  1,  0,  0,  1,  0,  0,  0,  1 },
-  { "GTKVERSION",         0,  0,  1,  0,  0,  1,  0,  0,  0,  1 },
-  { "HELPAPP",            0,  1,  1,  0,  0,  1,  1,  0,  1,  0 },
-  { "HINSTANCE",          1,  0,  0,  0,  0,  0,  0,  0,  0,  1 },
-  { "ICON",               1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "IMAGEAUTOSCALE",     1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "IMAGEEXPORT_STATIC", 1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "IMAGESDPI",          1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "IMAGESTOCKAUTOSCALE",1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "IMAGESTOCKSIZE",     1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "INPUTCALLBACKS",     1,  1,  1,  1,  1,  0,  0,  0,  0,  0 },
-  { "KEY",                1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "KEYPRESS",           1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "KEYRELEASE",         1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "LANGUAGE",           1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "LASTERROR",          1,  0,  0,  0,  0,  0,  0,  1,  0,  0 },
-  { "LINKFGCOLOR",        1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "LOCKLOOP",           1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "MENUBGCOLOR",        1,  0,  0,  1,  1,  0,  1,  1,  1,  0 },
-  { "MENUFGCOLOR",        1,  0,  0,  1,  1,  0,  1,  1,  1,  1 },
-  { "MODKEYSTATE",        1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "MONITORSCOUNT",      1,  0,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "MONITORSINFO",       1,  0,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "MOTIFNUMBER",        0,  1,  0,  0,  0,  0,  0,  0,  0,  1 },
-  { "MOTIFVERSION",       0,  1,  0,  0,  0,  0,  0,  0,  0,  1 },
-  { "MOUSEBUTTON",        1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "OVERLAYSCROLLBAR",   0,  0,  1,  0,  0,  1,  0,  0,  0,  0 },
-  { "PARENTDIALOG",       1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "QTBUILDTYPE",        0,  0,  0,  0,  1,  0,  0,  0,  0,  1 },
-  { "QTDEVVERSION",       0,  0,  0,  0,  1,  0,  0,  0,  0,  1 },
-  { "QTSTYLE",            0,  0,  0,  0,  1,  0,  0,  0,  0,  1 },
-  { "QTVERSION",          0,  0,  0,  0,  1,  0,  0,  0,  0,  1 },
-  { "SANDBOX",            0,  0,  1,  0,  1,  1,  0,  0,  1,  1 },
-  { "SB_BGCOLOR",         0,  1,  1,  0,  0,  1,  0,  0,  0,  0 },
-  { "SCREENDEPTH",        1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "SCREENDPI",          1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "SCREENSIZE",         1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "SCROLLBARSIZE",      1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "SHIFTKEY",           1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "SHOWMENUIMAGES",     0,  0,  1,  0,  1,  1,  1,  1,  1,  0 },
-  { "SINGLEINSTANCE",     1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "SYSTEM",             1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "SYSTEMLANGUAGE",     1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "SYSTEMLOCALE",       1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "SYSTEMVERSION",      1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "TMPDIR",             1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "TREEIMAGE24",        1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "TRUECOLORCANVAS",    1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "TXTBGCOLOR",         1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "TXTFGCOLOR",         1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "TXTHLCOLOR",         1,  1,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "USERNAME",           1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "UTF8MODE",           1,  0,  1,  1,  1,  1,  1,  1,  1,  0 },
-  { "UTF8MODE_FILE",      1,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
-  { "VERSION",            1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "VIRTUALSCREEN",      1,  0,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "WINDOWING",          1,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
-  { "WINUIVERSION",       0,  0,  0,  0,  0,  0,  0,  1,  0,  1 },
-  { "WL_DISPLAY",         0,  0,  1,  0,  1,  1,  1,  0,  1,  1 },
-  { "XDISPLAY",           0,  1,  1,  0,  0,  1,  1,  0,  1,  1 },
-  { "XSCREEN",            0,  1,  1,  0,  0,  1,  1,  0,  1,  1 },
-  { "XSERVERVENDOR",      0,  1,  1,  0,  0,  1,  0,  0,  1,  1 },
-  { "XVENDORRELEASE",     0,  1,  1,  0,  0,  1,  0,  0,  1,  1 },
-  { NULL,                 0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }
-};
-
-static int iGlobalGetRegisteredAttributesCount(void)
+/* Map IupGetGlobal("DRIVER") to its IUPDRV_* bit. */
+static int iGlobalsCurrentDriverBit(void)
 {
-  int count = 0;
-  while (global_attribs[count].name != NULL)
-    count++;
-  return count;
-}
-
-static int iGlobalIsRegistered(char *name)
-{
-  int i;
-
-  for (i = 0; global_attribs[i].name != NULL; i++)
-  {
-    if (iupStrEqual(global_attribs[i].name, name))
-      return 1;
-  }
-
+  const char* drv = IupGetGlobal("DRIVER");
+  if (!drv) return 0;
+  if (iupStrEqualNoCase(drv, "Win32"))      return IUPDRV_WIN;
+  if (iupStrEqualNoCase(drv, "Motif"))      return IUPDRV_MOTIF;
+  if (iupStrEqualNoCase(drv, "GTK"))        return IUPDRV_GTK;
+  if (iupStrEqualNoCase(drv, "Cocoa"))      return IUPDRV_COCOA;
+  if (iupStrEqualNoCase(drv, "Qt"))         return IUPDRV_QT;
+  if (iupStrEqualNoCase(drv, "GTK4"))       return IUPDRV_GTK4;
+  if (iupStrEqualNoCase(drv, "EFL"))        return IUPDRV_EFL;
+  if (iupStrEqualNoCase(drv, "WinUI"))      return IUPDRV_WINUI;
+  if (iupStrEqualNoCase(drv, "FLTK"))       return IUPDRV_FLTK;
+  if (iupStrEqualNoCase(drv, "Android"))    return IUPDRV_ANDROID;
+  if (iupStrEqualNoCase(drv, "CocoaTouch")) return IUPDRV_COCOATOUCH;
   return 0;
 }
 
@@ -175,6 +45,7 @@ static int iGlobalsCompareNames(const void* i1, const void* i2)
   return strcmp(name1, name2);
 }
 
+/* Returns user-set globals not present in the registry. */
 static int iGlobalGetAppAttributes(char **names)
 {
   int total_count = iupGetGlobalAttributes(NULL, 0);
@@ -190,7 +61,7 @@ static int iGlobalGetAppAttributes(char **names)
   count = 0;
   for (i = 0; i < gcount; i++)
   {
-    if (iGlobalIsRegistered(gnames[i]))
+    if (iupGlobalRegFind(gnames[i]))
       continue;
     if (names != NULL)
       names[count] = gnames[i];
@@ -254,27 +125,19 @@ static void iGlobalsUpdate(Ihandle* dlg)
     free(attr_names);
   }
 
-  total_count = iGlobalGetRegisteredAttributesCount();
-
-  j = 0;
-  for (i = 0; i < total_count; i++)
+  total_count = iupGlobalRegCount();
   {
-    if (!(iupStrEqualNoCase(IupGetGlobal("DRIVER"), "GTK") && global_attribs[i].gtk) &&
-        !(iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Motif") && global_attribs[i].motif) &&
-        !(iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Win32") && global_attribs[i].windows) &&
-        !(iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Cocoa") && global_attribs[i].cocoa) &&
-        !(iupStrEqualNoCase(IupGetGlobal("DRIVER"), "Qt") && global_attribs[i].qt) &&
-        !(iupStrEqualNoCase(IupGetGlobal("DRIVER"), "GTK4") && global_attribs[i].gtk4) &&
-        !(iupStrEqualNoCase(IupGetGlobal("DRIVER"), "EFL") && global_attribs[i].efl) &&
-        !(iupStrEqualNoCase(IupGetGlobal("DRIVER"), "WinUI") && global_attribs[i].winui) &&
-        !(iupStrEqualNoCase(IupGetGlobal("DRIVER"), "FLTK") && global_attribs[i].fltk))
+    int driver_bit = iGlobalsCurrentDriverBit();
+    j = 0;
+    for (i = 0; i < total_count; i++)
     {
+      const iGlobalRegEntry* e = iupGlobalRegAt(i);
+      if (driver_bit && !(e->drivers & driver_bit))
         continue;
+      IupSetAttributeId(list1, "", j + 1, e->name);
+      IupSetIntId(list1, "_IUP_READONLY", j + 1, (e->flags & IUPGF_READONLY) ? 1 : 0);
+      j++;
     }
-
-    IupSetAttributeId(list1, "", j + 1, global_attribs[i].name);
-    IupSetIntId(list1, "_IUP_READONLY", j + 1, global_attribs[i].readonly);
-    j++;
   }
 
   total_count = iupGetFunctions(NULL, 0);
