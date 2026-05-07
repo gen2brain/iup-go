@@ -25,7 +25,7 @@ API reference for IUP (Portable User Interface).
 
 [IupGetAttribute](func/iup_getattribute.md), [IupGetAllAttributes](func/iup_getallattributes.md), [IupGetAttributes](func/iup_getattributes.md), [IupCopyAttributes](func/iup_copyattributes.md), [IupGetAttributeHandle](func/iup_getattributehandle.md)
 
-[IupSetGlobal](func/iup_setglobal.md), [IupGetGlobal](func/iup_getglobal.md)
+[IupSetGlobal](func/iup_setglobal.md), [IupGetGlobal](func/iup_getglobal.md), [IupGetAllGlobals](func/iup_getallglobals.md), [IupGetGlobalInfo](func/iup_getglobalinfo.md)
 
 ### Common
 
@@ -47,7 +47,7 @@ API reference for IUP (Portable User Interface).
 
 [IupMainLoop](func/iup_mainloop.md), [IupMainLoopLevel](func/iup_mainlooplevel.md), [IupLoopStep](func/iup_loopstep.md), [IupExitLoop](func/iup_exitloop.md), [IupPostMessage](func/iup_postmessage.md), [IupFlush](func/iup_flush.md)
 
-[IupGetCallback](func/iup_getcallback.md), [IupSetCallback](func/iup_setcallback.md), [IupSetCallbacks](func/iup_setcallbacks.md), [IupGetFunction](func/iup_getfunction.md), [IupSetFunction](func/iup_setfunction.md)
+[IupGetCallback](func/iup_getcallback.md), [IupSetCallback](func/iup_setcallback.md), [IupSetCallbacks](func/iup_setcallbacks.md), [IupGetFunction](func/iup_getfunction.md), [IupSetFunction](func/iup_setfunction.md), [IupGetAllFunctions](func/iup_getallfunctions.md)
 
 [IupRecordInput](func/iup_recordinput.md), [IupPlayInput](func/iup_playinput.md)
 
@@ -191,7 +191,7 @@ API reference for IUP (Portable User Interface).
 
 [IupCreate](func/iup_create.md), [IupDestroy](func/iup_destroy.md)
 
-[IupGetAllClasses](func/iup_getallclasses.md), [IupGetClassName](func/iup_getclassname.md), [IupGetClassType](func/iup_getclasstype.md), [IupClassMatch](func/iup_classmatch.md), [IupGetClassAttributes](func/iup_getclassattributes.md), [IupGetClassCallbacks](func/iup_getclasscallbacks.md), [IupSaveClassAttributes](func/iup_saveclassattributes.md), [IupCopyClassAttributes](func/iup_copyclassattributes.md), [IupSetClassDefaultAttribute](func/iup_setclassdefaultattribute.md)
+[IupGetAllClasses](func/iup_getallclasses.md), [IupGetClassName](func/iup_getclassname.md), [IupGetClassType](func/iup_getclasstype.md), [IupClassMatch](func/iup_classmatch.md), [IupGetClassAttributes](func/iup_getclassattributes.md), [IupGetClassCallbacks](func/iup_getclasscallbacks.md), [IupGetClassAttributeInfo](func/iup_getclassattributeinfo.md), [IupGetClassCallbackFormat](func/iup_getclasscallbackformat.md), [IupGetClassInfo](func/iup_getclassinfo.md), [IupGetClassConstructor](func/iup_getclassconstructor.md), [IupSaveClassAttributes](func/iup_saveclassattributes.md), [IupCopyClassAttributes](func/iup_copyclassattributes.md), [IupSetClassDefaultAttribute](func/iup_setclassdefaultattribute.md)
 
 [IupUpdate](func/iup_update.md), [IupRedraw](func/iup_redraw.md)
 
