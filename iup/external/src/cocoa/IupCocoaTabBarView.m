@@ -1177,6 +1177,7 @@
     [[[self tabBarView] delegate] tabDidActived:self];
   }
   [[self tabBarView] setSelectedTab:self];
+  [[self tabBarView] setNeedsDisplay:YES];
 }
 
 - (void)mouseDown:(NSEvent *)theEvent
