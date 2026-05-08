@@ -7,6 +7,8 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 extern "C" {
 #include "iup.h"
@@ -22,6 +24,116 @@ extern "C" {
 
 static int winui_monitor_index = 0;
 static HHOOK winui_OldGetMessageHook = NULL;
+static HHOOK winui_LowLevelMouseHook = NULL;
+
+static void winuiBuildMouseStatus(char* status)
+{
+  memcpy(status, IUPKEY_STATUS_INIT, IUPKEY_STATUS_SIZE);
+  if (GetKeyState(VK_SHIFT) & 0x8000)   iupKEY_SETSHIFT(status);
+  if (GetKeyState(VK_CONTROL) & 0x8000) iupKEY_SETCONTROL(status);
+  if (GetKeyState(VK_MENU) & 0x8000)    iupKEY_SETALT(status);
+  if (GetKeyState(VK_LBUTTON) & 0x8000) iupKEY_SETBUTTON1(status);
+  if (GetKeyState(VK_RBUTTON) & 0x8000) iupKEY_SETBUTTON3(status);
+  if (GetKeyState(VK_MBUTTON) & 0x8000) iupKEY_SETBUTTON2(status);
+  if (GetKeyState(VK_XBUTTON1) & 0x8000) iupKEY_SETBUTTON4(status);
+  if (GetKeyState(VK_XBUTTON2) & 0x8000) iupKEY_SETBUTTON5(status);
+}
+
+static LRESULT CALLBACK winuiHookLowLevelMouseProc(int nCode, WPARAM wp, LPARAM lp)
+{
+  static int last_button = 0;
+  static int last_pressed = 0;
+  static DWORD last_click_time = 0;
+  static int last_click_x = 0, last_click_y = 0;
+  static int last_click_button = 0;
+
+  if (nCode != HC_ACTION)
+    return CallNextHookEx(NULL, nCode, wp, lp);
+
+  MSLLHOOKSTRUCT* m = (MSLLHOOKSTRUCT*)lp;
+
+  if (m->flags & LLMHF_INJECTED)
+    return CallNextHookEx(NULL, nCode, wp, lp);
+
+  HWND under = WindowFromPoint(m->pt);
+  DWORD owner_pid = 0;
+  if (under)
+    GetWindowThreadProcessId(under, &owner_pid);
+  if (owner_pid != GetCurrentProcessId())
+    return CallNextHookEx(NULL, nCode, wp, lp);
+
+  char status[IUPKEY_STATUS_SIZE];
+  winuiBuildMouseStatus(status);
+
+  switch (wp)
+  {
+  case WM_MOUSEMOVE:
+    {
+      IFiis cb = (IFiis)IupGetFunction("GLOBALMOTION_CB");
+      if (cb)
+        cb((int)m->pt.x, (int)m->pt.y, status);
+      break;
+    }
+  case WM_LBUTTONDOWN: case WM_LBUTTONUP:
+  case WM_RBUTTONDOWN: case WM_RBUTTONUP:
+  case WM_MBUTTONDOWN: case WM_MBUTTONUP:
+  case WM_XBUTTONDOWN: case WM_XBUTTONUP:
+    {
+      IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
+      if (!cb) break;
+
+      int button = 0, pressed = 0;
+      switch (wp)
+      {
+      case WM_LBUTTONDOWN: button = IUP_BUTTON1; pressed = 1; break;
+      case WM_LBUTTONUP:   button = IUP_BUTTON1; pressed = 0; break;
+      case WM_RBUTTONDOWN: button = IUP_BUTTON3; pressed = 1; break;
+      case WM_RBUTTONUP:   button = IUP_BUTTON3; pressed = 0; break;
+      case WM_MBUTTONDOWN: button = IUP_BUTTON2; pressed = 1; break;
+      case WM_MBUTTONUP:   button = IUP_BUTTON2; pressed = 0; break;
+      case WM_XBUTTONDOWN: button = (HIWORD(m->mouseData) == XBUTTON1) ? IUP_BUTTON4 : IUP_BUTTON5; pressed = 1; break;
+      case WM_XBUTTONUP:   button = (HIWORD(m->mouseData) == XBUTTON1) ? IUP_BUTTON4 : IUP_BUTTON5; pressed = 0; break;
+      }
+
+      if (last_button == button && last_pressed == pressed)
+        break;
+
+      if (pressed)
+      {
+        DWORD now = GetTickCount();
+        DWORD dbl_time = GetDoubleClickTime();
+        int dbl_dx = GetSystemMetrics(SM_CXDOUBLECLK);
+        int dbl_dy = GetSystemMetrics(SM_CYDOUBLECLK);
+        if (last_click_button == button && (now - last_click_time) <= dbl_time &&
+            abs((int)m->pt.x - last_click_x) <= dbl_dx && abs((int)m->pt.y - last_click_y) <= dbl_dy)
+        {
+          iupKEY_SETDOUBLE(status);
+        }
+        last_click_time = now;
+        last_click_x = (int)m->pt.x;
+        last_click_y = (int)m->pt.y;
+        last_click_button = button;
+      }
+
+      cb(button, pressed, (int)m->pt.x, (int)m->pt.y, status);
+      last_button = button;
+      last_pressed = pressed;
+      break;
+    }
+  case WM_MOUSEWHEEL:
+    {
+      IFfiis cb = (IFfiis)IupGetFunction("GLOBALWHEEL_CB");
+      if (cb)
+      {
+        short delta = (short)HIWORD(m->mouseData);
+        cb((float)delta / 120.0f, (int)m->pt.x, (int)m->pt.y, status);
+      }
+      break;
+    }
+  }
+
+  return CallNextHookEx(NULL, nCode, wp, lp);
+}
 
 static LRESULT CALLBACK winuiHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM gm_lp)
 {
@@ -160,6 +272,8 @@ extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
     {
       if (!winui_OldGetMessageHook)
         winui_OldGetMessageHook = SetWindowsHookEx(WH_GETMESSAGE, winuiHookGetMessageProc,NULL, GetCurrentThreadId());
+      if (!winui_LowLevelMouseHook)
+        winui_LowLevelMouseHook = SetWindowsHookEx(WH_MOUSE_LL, winuiHookLowLevelMouseProc, GetModuleHandle(NULL), 0);
     }
     else
     {
@@ -167,6 +281,11 @@ extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
       {
         UnhookWindowsHookEx(winui_OldGetMessageHook);
         winui_OldGetMessageHook = NULL;
+      }
+      if (winui_LowLevelMouseHook)
+      {
+        UnhookWindowsHookEx(winui_LowLevelMouseHook);
+        winui_LowLevelMouseHook = NULL;
       }
     }
     return 1;
