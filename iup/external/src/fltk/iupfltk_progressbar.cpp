@@ -215,6 +215,13 @@ static int fltkProgressBarMapMethod(Ihandle* ih)
 {
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
+    if (ih->userheight < ih->userwidth)
+    {
+      int tmp = ih->userheight;
+      ih->userheight = ih->userwidth;
+      ih->userwidth = tmp;
+    }
+
     IupFltkVertProgress* pbar = new IupFltkVertProgress(0, 0, 20, 100);
     ih->handle = (InativeHandle*)pbar;
     pbar->selection_color(FL_SELECTION_COLOR);
@@ -228,6 +235,9 @@ static int fltkProgressBarMapMethod(Ihandle* ih)
     pbar->value(0);
     pbar->selection_color(FL_SELECTION_COLOR);
   }
+
+  if (iupAttribGetBoolean(ih, "MARQUEE"))
+    ih->data->marquee = 1;
 
   iupfltkAddToParent(ih);
 
