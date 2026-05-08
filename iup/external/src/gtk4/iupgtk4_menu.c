@@ -94,6 +94,41 @@ static void gtk4MenuActionActivated(GSimpleAction* action, GVariant* parameter, 
   (void)parameter;
 }
 
+static void gtk4MenuRadioActivated(GSimpleAction* action, GVariant* parameter, gpointer user_data)
+{
+  Ihandle* parent_menu = (Ihandle*)user_data;
+  const char* target;
+  Ihandle* picked = NULL;
+  Ihandle* child;
+  Icallback cb;
+
+  if (!parameter || !parent_menu)
+    return;
+
+  g_simple_action_set_state(action, parameter);
+
+  target = g_variant_get_string(parameter, NULL);
+  for (child = parent_menu->firstchild; child; child = child->brother)
+  {
+    if (!iupStrEqual(child->iclass->name, "menuitem"))
+      continue;
+    const char* item_target = iupAttribGet(child, "_IUPGTK4_RADIO_TARGET");
+    if (item_target && strcmp(item_target, target) == 0)
+    {
+      picked = child;
+      iupAttribSet(child, "VALUE", "ON");
+    }
+    else
+      iupAttribSet(child, "VALUE", "OFF");
+  }
+
+  if (!picked)
+    return;
+  cb = IupGetCallback(picked, "ACTION");
+  if (cb && cb(picked) == IUP_CLOSE)
+    IupExitLoop();
+}
+
 /* Recursively build GMenu model from IUP menu hierarchy
  * is_root: TRUE if this is the root menu bar level (requires submenus only), FALSE if this is inside a submenu */
 static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_group, int is_root)
@@ -107,6 +142,36 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
 
   menu = g_menu_new();
   section = g_menu_new();
+
+  gboolean is_radio_menu = !is_root && iupAttribGetBoolean(ih_menu, "RADIO");
+  char radio_action_name[64] = {0};
+  Ihandle* radio_initial = NULL;
+
+  if (is_radio_menu)
+  {
+    Ihandle* c;
+    for (c = ih_menu->firstchild; c; c = c->brother)
+    {
+      if (!iupStrEqual(c->iclass->name, "menuitem"))
+        continue;
+      if (!radio_initial) radio_initial = c;
+      if (iupAttribGetBoolean(c, "VALUE")) { radio_initial = c; break; }
+    }
+
+    snprintf(radio_action_name, sizeof(radio_action_name), "radio-%p", (void*)ih_menu);
+
+    char init_target[32] = {0};
+    if (radio_initial)
+      snprintf(init_target, sizeof(init_target), "%p", (void*)radio_initial);
+
+    GSimpleAction* radio_action = g_simple_action_new_stateful(
+        radio_action_name, G_VARIANT_TYPE_STRING, g_variant_new_string(init_target));
+    g_signal_connect(radio_action, "activate", G_CALLBACK(gtk4MenuRadioActivated), ih_menu);
+    g_action_map_add_action(G_ACTION_MAP(action_group), G_ACTION(radio_action));
+    g_object_unref(radio_action);
+
+    iupAttribSetStr(ih_menu, "_IUPGTK4_RADIO_ACTION_NAME", radio_action_name);
+  }
 
   for (child = ih_menu->firstchild; child; child = child->brother)
   {
@@ -156,6 +221,27 @@ static GMenu* gtk4BuildMenuModel(Ihandle* ih_menu, GSimpleActionGroup* action_gr
 
       /* Process mnemonic: convert & to _ for GTK */
       processed_title = iupStrProcessMnemonic(title, &c, 1);
+
+      if (is_radio_menu)
+      {
+        char target[32];
+        snprintf(target, sizeof(target), "%p", (void*)child);
+        iupAttribSetStr(child, "_IUPGTK4_RADIO_TARGET", target);
+        iupAttribSetStr(child, "_IUPGTK4_RADIO_ACTION_NAME", radio_action_name);
+        iupAttribSet(child, "VALUE", child == radio_initial ? "ON" : "OFF");
+
+        char full_action_name[96];
+        snprintf(full_action_name, sizeof(full_action_name), "menu.%s", radio_action_name);
+
+        GMenuItem* mitem = g_menu_item_new(processed_title, NULL);
+        g_menu_item_set_action_and_target(mitem, full_action_name, "s", target);
+        g_menu_append_item(section, mitem);
+        g_object_unref(mitem);
+
+        if (processed_title != title)
+          free(processed_title);
+        continue;
+      }
 
       /* Create unique action name using ih pointer */
       snprintf(action_name, sizeof(action_name), "item-%p", (void*)child);
@@ -781,6 +867,24 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 
 static int gtk4MenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
+  char* radio_action_name = (char*)iupAttribGet(ih, "_IUPGTK4_RADIO_ACTION_NAME");
+  if (radio_action_name)
+  {
+    if (iupStrBoolean(value))
+    {
+      const char* target = iupAttribGet(ih, "_IUPGTK4_RADIO_TARGET");
+      Ihandle* dialog = IupGetDialog(ih);
+      GSimpleActionGroup* action_group = (GSimpleActionGroup*)iupAttribGet(dialog, "_IUPGTK4_MENU_ACTION_GROUP");
+      if (target && action_group)
+      {
+        GAction* action = g_action_map_lookup_action(G_ACTION_MAP(action_group), radio_action_name);
+        if (action)
+          g_simple_action_set_state(G_SIMPLE_ACTION(action), g_variant_new_string(target));
+      }
+    }
+    return 1;
+  }
+
   /* GMenu-based system: check state is stored in GAction, not widget */
   char* action_name = (char*)iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
 
@@ -811,6 +915,30 @@ static int gtk4MenuItemSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* gtk4MenuItemGetValueAttrib(Ihandle* ih)
 {
+  char* radio_action_name = (char*)iupAttribGet(ih, "_IUPGTK4_RADIO_ACTION_NAME");
+  if (radio_action_name)
+  {
+    const char* target = iupAttribGet(ih, "_IUPGTK4_RADIO_TARGET");
+    Ihandle* dialog = IupGetDialog(ih);
+    GSimpleActionGroup* action_group = (GSimpleActionGroup*)iupAttribGet(dialog, "_IUPGTK4_MENU_ACTION_GROUP");
+    if (target && action_group)
+    {
+      GAction* action = g_action_map_lookup_action(G_ACTION_MAP(action_group), radio_action_name);
+      if (action)
+      {
+        GVariant* state = g_action_get_state(action);
+        if (state)
+        {
+          const char* current = g_variant_get_string(state, NULL);
+          int match = (strcmp(current, target) == 0);
+          g_variant_unref(state);
+          return iupStrReturnChecked(match);
+        }
+      }
+    }
+    return NULL;
+  }
+
   /* GMenu-based system: check state is stored in GAction, not widget */
   char* action_name = (char*)iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
 
@@ -1008,9 +1136,9 @@ IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "VALUE", gtk4MenuItemGetValueAttrib, gtk4MenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT|IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "TITLE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }
@@ -1025,7 +1153,7 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "TITLE", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 }
 
 IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)

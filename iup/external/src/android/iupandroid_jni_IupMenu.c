@@ -133,17 +133,31 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeGet
   return result;
 }
 
-/* IMAGE attribute resolved to a Bitmap jobject via the shared button pipeline. */
+/* IMPRESS-when-VALUE > IMAGE > TITLEIMAGE. */
 JNIEXPORT jobject JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeGetImage(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
 {
   (void)jni_env;
   (void)cls;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
+  const char* name = NULL;
   if (!ih) return NULL;
-  const char* image_name = iupAttribGet(ih, "IMAGE");
-  if (!image_name || !*image_name) return NULL;
-  return (jobject)iupImageGetImage(image_name, ih, 0, NULL);
+  if (iupAttribGetBoolean(ih, "VALUE"))
+    name = iupAttribGet(ih, "IMPRESS");
+  if (!name) name = iupAttribGet(ih, "IMAGE");
+  if (!name) name = iupAttribGet(ih, "TITLEIMAGE");
+  if (!name || !*name) return NULL;
+  return (jobject)iupImageGetImage(name, ih, 0, NULL);
+}
+
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeIsParentRadio(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
+{
+  (void)jni_env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih || !ih->parent) return JNI_FALSE;
+  return iupAttribGetBoolean(ih->parent, "RADIO") ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeDispatchAction(
@@ -162,13 +176,13 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeDispat
     {
       Ihandle* sib = IupGetChild(parent_menu, i);
       if (sib && sib->iclass && iupStrEqual(sib->iclass->name, "menuitem"))
-        iupAttribSetStr(sib, "VALUE", sib == ih ? "ON" : "OFF");
+        IupSetStrAttribute(sib, "VALUE", sib == ih ? "ON" : "OFF");
     }
   }
   else if (iupAttribGetBoolean(ih, "AUTOTOGGLE"))
   {
     const char* cur = iupAttribGet(ih, "VALUE");
-    iupAttribSetStr(ih, "VALUE", iupStrEqualNoCase(cur, "ON") ? "OFF" : "ON");
+    IupSetStrAttribute(ih, "VALUE", iupStrEqualNoCase(cur, "ON") ? "OFF" : "ON");
   }
 
   Icallback cb = IupGetCallback(ih, "ACTION");

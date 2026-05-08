@@ -108,6 +108,10 @@ static void motMenuItemActivateCallback(Widget w, Ihandle* ih, XtPointer call_da
     XmToggleButtonSetState(ih->handle, !XmToggleButtonGetState(ih->handle),0);
   }
 
+  if (ih->parent && iupAttribGetBoolean(ih->parent, "RADIO") &&
+      XmIsToggleButton(ih->handle) && !XmToggleButtonGetState(ih->handle))
+    return;
+
   cb = IupGetCallback(ih, "ACTION");
   if (cb && cb(ih)==IUP_CLOSE)
     IupExitLoop();
@@ -250,13 +254,6 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 }
 
 /*******************************************************************************************/
-
-static int motMenuItemSetTitleImageAttrib(Ihandle* ih, const char* value)
-{
-  if (XmIsToggleButton(ih->handle))
-    iupmotSetPixmap(ih, value, XmNlabelPixmap, 0);
-  return 1;
-}
 
 static int motMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
@@ -474,7 +471,6 @@ static int motMenuItemMapMethod(Ihandle* ih)
         iupMOT_SETARG(args, num_args, XmNindicatorOn, XmINDICATOR_NONE);
       else
         iupMOT_SETARG(args, num_args, XmNindicatorOn, XmINDICATOR_CHECK);
-      iupMOT_SETARG(args, num_args, XmNlabelType, iupAttribGet(ih, "TITLEIMAGE")? XmPIXMAP: XmSTRING);
     }
 
     ih->handle = XtCreateManagedWidget(
@@ -577,7 +573,9 @@ IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
   /* IupMenuItem only */
   iupClassRegisterAttribute(ic, "VALUE", motMenuItemGetValueAttrib, motMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", NULL, motMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, motMenuItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 
   /* IupMenuItem Gtk and Motif only */
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED);
@@ -598,6 +596,7 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 
   /* IupSubmenu only */
   iupClassRegisterAttribute(ic, "TITLE", NULL, motMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 }
 
 IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)

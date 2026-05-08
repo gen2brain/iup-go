@@ -181,9 +181,12 @@ void iupdrvMenuItemInitClass(Iclass* ic)
   ic->Map = androidMenuItemMapMethod;
   ic->UnMap = androidMenuUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "TITLE",  NULL, androidMenuItemRefreshAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE",  NULL, androidMenuItemRefreshAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ACTIVE", NULL, androidMenuItemRefreshAttrib, "YES", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE",      NULL, androidMenuItemRefreshAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE",      NULL, androidMenuItemRefreshAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVE",     NULL, androidMenuItemRefreshAttrib, "YES", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE",      NULL, androidMenuItemRefreshAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS",    NULL, androidMenuItemRefreshAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, androidMenuItemRefreshAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 }
 
 void iupdrvSubmenuInitClass(Iclass* ic)
@@ -191,6 +194,7 @@ void iupdrvSubmenuInitClass(Iclass* ic)
   ic->Map = androidSubmenuMapMethod;
   ic->UnMap = androidMenuUnMapMethod;
 
+  iupClassRegisterAttribute(ic, "IMAGE",      NULL, androidMenuItemRefreshAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EXPANDABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STATE",      NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }

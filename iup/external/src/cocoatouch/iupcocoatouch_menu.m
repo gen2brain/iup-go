@@ -66,9 +66,9 @@ static void cocoaTouchMenuApplyRadioGroup(Ihandle* item_ih)
 		Ihandle* sib = IupGetChild(menu, i);
 		if (sib == item_ih || !sib || !sib->iclass) continue;
 		if (!iupStrEqual(sib->iclass->name, "menuitem")) continue;
-		iupAttribSetStr(sib, "VALUE", "OFF");
+		IupSetStrAttribute(sib, "VALUE", "OFF");
 	}
-	iupAttribSetStr(item_ih, "VALUE", "ON");
+	IupSetStrAttribute(item_ih, "VALUE", "ON");
 }
 
 
@@ -145,7 +145,10 @@ static UIViewController* cocoaTouchMenuHostViewController(Ihandle* menu_ih)
 
 static UIImage* cocoaTouchMenuResolveImage(Ihandle* item_ih)
 {
-	const char* name = iupAttribGet(item_ih, "IMAGE");
+	const char* name = NULL;
+	if (iupAttribGetBoolean(item_ih, "VALUE"))
+		name = iupAttribGet(item_ih, "IMPRESS");
+	if (!name) name = iupAttribGet(item_ih, "IMAGE");
 	if (!name) name = iupAttribGet(item_ih, "TITLEIMAGE");
 	if (!name) return nil;
 	return (UIImage*)iupImageGetImage(name, item_ih, 0, NULL);
@@ -735,6 +738,27 @@ static int cocoaTouchMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
+static int cocoaTouchMenuItemSetImageAttrib(Ihandle* ih, const char* value)
+{
+	iupAttribSetStr(ih, "IMAGE", value);
+	cocoaTouchMenuInvalidateAncestor(ih);
+	return 1;
+}
+
+static int cocoaTouchMenuItemSetImpressAttrib(Ihandle* ih, const char* value)
+{
+	iupAttribSetStr(ih, "IMPRESS", value);
+	cocoaTouchMenuInvalidateAncestor(ih);
+	return 1;
+}
+
+static int cocoaTouchMenuItemSetTitleImageAttrib(Ihandle* ih, const char* value)
+{
+	iupAttribSetStr(ih, "TITLEIMAGE", value);
+	cocoaTouchMenuInvalidateAncestor(ih);
+	return 1;
+}
+
 static int cocoaTouchMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
 {
 	iupBaseSetActiveAttrib(ih, value);
@@ -805,9 +829,9 @@ IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, cocoaTouchMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "AUTOTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaTouchMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "IMPRESS", NULL, cocoaTouchMenuItemSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, cocoaTouchMenuItemSetTitleImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "KEY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
 
@@ -817,7 +841,7 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 	ic->UnMap = iupdrvBaseUnMapMethod;
 
 	iupClassRegisterAttribute(ic, "TITLE", NULL, cocoaTouchMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "IMAGE", NULL, cocoaTouchMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, cocoaTouchMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "KEY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }

@@ -419,6 +419,11 @@ static void gtkMenuItemActivate(GtkWidget *widget, Ihandle* ih)
     }
   }
 
+  if (ih->parent && iupAttribGetBoolean(ih->parent, "RADIO") &&
+      GTK_IS_CHECK_MENU_ITEM(ih->handle) &&
+      !gtk_check_menu_item_get_active((GtkCheckMenuItem*)ih->handle))
+    return;
+
   cb = IupGetCallback(ih, "ACTION");
   if (cb)
   {
@@ -622,7 +627,9 @@ static int gtkMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* gtkMenuItemGetValueAttrib(Ihandle* ih)
 {
-  return iupStrReturnChecked(GTK_IS_CHECK_MENU_ITEM(ih->handle) && gtk_check_menu_item_get_active((GtkCheckMenuItem*)ih->handle));
+  if (GTK_IS_CHECK_MENU_ITEM(ih->handle))
+    return iupStrReturnChecked(gtk_check_menu_item_get_active((GtkCheckMenuItem*)ih->handle));
+  return NULL;
 }
 
 static int gtkMenuItemMapMethod(Ihandle* ih)
