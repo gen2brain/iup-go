@@ -610,12 +610,20 @@ static DWORD winuiGetButtonFlags(int bt, int pressed)
 extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
   INPUT input;
-  ZeroMemory(&input, sizeof(INPUT));
+  int vx = GetSystemMetrics(SM_XVIRTUALSCREEN);
+  int vy = GetSystemMetrics(SM_YVIRTUALSCREEN);
+  int vw = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+  int vh = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+  if (vw <= 0) vw = 1;
+  if (vh <= 0) vh = 1;
 
+  SetCursorPos(x, y);
+
+  ZeroMemory(&input, sizeof(INPUT));
   input.type = INPUT_MOUSE;
-  input.mi.dx = x;
-  input.mi.dy = y;
-  input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE;
+  input.mi.dx = (LONG)(((LONGLONG)(x - vx) * 65535 + vw / 2) / vw);
+  input.mi.dy = (LONG)(((LONGLONG)(y - vy) * 65535 + vh / 2) / vh);
+  input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
   input.mi.dwExtraInfo = GetMessageExtraInfo();
 
   if (bt != 'W' && status == -1)
@@ -646,22 +654,20 @@ extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
   {
     SendInput(1, &input, sizeof(INPUT));
 
-    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE;
+    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
     input.mi.dwFlags |= winuiGetButtonFlags(bt, 0);
     SendInput(1, &input, sizeof(INPUT));
 
-    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE;
+    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
     input.mi.dwFlags |= winuiGetButtonFlags(bt, 1);
     SendInput(1, &input, sizeof(INPUT));
 
-    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE;
+    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
     input.mi.dwFlags |= winuiGetButtonFlags(bt, 0);
     SendInput(1, &input, sizeof(INPUT));
   }
   else
     SendInput(1, &input, sizeof(INPUT));
-
-  iupdrvWarpPointer(x, y);
 }
 
 extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)

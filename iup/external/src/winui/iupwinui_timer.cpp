@@ -29,15 +29,16 @@ struct IupWinUITimer
   std::chrono::steady_clock::time_point startTime;
   Ihandle* ih;
   bool stopped;
+  bool in_tick;  /* IupFlush() inside ACTION_CB pumps the dispatcher queue and can re-enter Tick */
 
-  IupWinUITimer() : timer(nullptr), tickToken{}, ih(nullptr), stopped(false) {}
+  IupWinUITimer() : timer(nullptr), tickToken{}, ih(nullptr), stopped(false), in_tick(false) {}
 };
 
 #define IUPWINUI_TIMER_DATA "_IUPWINUI_TIMER_DATA"
 
 static void winuiTimerProc(IupWinUITimer* timer_data)
 {
-  if (timer_data->stopped)
+  if (timer_data->stopped || timer_data->in_tick)
     return;
 
   Ihandle* ih = timer_data->ih;
@@ -52,7 +53,11 @@ static void winuiTimerProc(IupWinUITimer* timer_data)
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - timer_data->startTime).count();
     iupAttribSetInt(ih, "ELAPSEDTIME", (int)elapsed);
 
-    if (cb(ih) == IUP_CLOSE)
+    timer_data->in_tick = true;
+    int ret = cb(ih);
+    timer_data->in_tick = false;
+
+    if (ret == IUP_CLOSE)
       IupExitLoop();
   }
 }
