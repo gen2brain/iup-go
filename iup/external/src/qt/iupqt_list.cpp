@@ -19,6 +19,7 @@
 #include <QImage>
 #include <QIcon>
 #include <QMimeData>
+#include <QDrag>
 #include <QDragEnterEvent>
 #include <QApplication>
 #include <QStyle>
@@ -49,11 +50,11 @@ class IupQtListWidget : public QListWidget
 {
 private:
   Ihandle* ih;
-  int drag_item_id;  /* 1-based item id being dragged */
+  QPoint press_pos;  /* drag hotspot, viewport-relative */
 
 public:
   explicit IupQtListWidget(Ihandle* ih_param, QWidget* parent = nullptr)
-    : QListWidget(parent), ih(ih_param), drag_item_id(-1) {}
+    : QListWidget(parent), ih(ih_param) {}
 
   QSize sizeHint() const override
   {
@@ -68,7 +69,7 @@ public:
     setDragEnabled(true);
     setAcceptDrops(true);
     setDropIndicatorShown(true);
-    setDragDropMode(QAbstractItemView::InternalMove);
+    setDragDropMode(QAbstractItemView::DragDrop);
     setDefaultDropAction(Qt::MoveAction);
   }
 
@@ -87,6 +88,14 @@ protected:
 
   void mousePressEvent(QMouseEvent* event) override
   {
+    if (event->button() == Qt::LeftButton)
+    {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      press_pos = event->position().toPoint();
+#else
+      press_pos = event->pos();
+#endif
+    }
     iupqtMouseButtonEvent(this, event, ih);
     QListWidget::mousePressEvent(event);
   }
@@ -114,6 +123,36 @@ protected:
     }
   }
 
+  void startDrag(Qt::DropActions /*supportedActions*/) override
+  {
+    int row = currentRow();
+    if (row < 0)
+      return;
+
+    iupAttribSetInt(ih, "_IUPLIST_DRAGITEM", row + 1);  /* 1-based for the drop side */
+
+    QMimeData* data = new QMimeData();
+    data->setData("application/x-iup-list-item", QByteArray::number(row));
+
+    QDrag* drag = new QDrag(this);
+    drag->setMimeData(data);
+
+    QListWidgetItem* drag_item = item(row);
+    if (drag_item)
+    {
+      QRect rect = visualItemRect(drag_item);
+      if (!rect.isEmpty())
+      {
+        drag->setPixmap(viewport()->grab(rect));
+        drag->setHotSpot(press_pos - rect.topLeft());
+      }
+    }
+
+    drag->exec(Qt::CopyAction | Qt::MoveAction, Qt::MoveAction);
+
+    iupAttribSet(ih, "_IUPLIST_DRAGITEM", NULL);
+  }
+
   void dropEvent(QDropEvent *event) override
   {
     /* Get the dragged item id from IUP attribute */
@@ -132,14 +171,19 @@ protected:
 
     /* Get the drop position */
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    QListWidgetItem* drop_item = itemAt(event->position().toPoint());
+    QPoint drop_pos = event->position().toPoint();
 #else
-    QListWidgetItem* drop_item = itemAt(event->pos());
+    QPoint drop_pos = event->pos();
 #endif
+    QListWidgetItem* drop_item = itemAt(drop_pos);
     int drop_id;
     if (drop_item)
     {
       drop_id = row(drop_item) + 1;  /* 1-based */
+      /* Lower half of the hit row means insert AFTER it. */
+      QRect rect = visualItemRect(drop_item);
+      if (drop_pos.y() > rect.top() + rect.height() / 2)
+        drop_id++;
     }
     else
     {

@@ -1365,13 +1365,25 @@ static Ihandle* efl_list_drag_source = NULL;
 static int efl_list_drag_source_pos = 0;
 static Eina_Bool efl_list_drag_active = EINA_FALSE;
 
-static void eflListDragFinishedCb(void *data, const Efl_Event *ev)
+static Eina_Bool eflListDragEndIdleCb(void *data)
 {
   (void)data;
-  (void)ev;
   efl_list_drag_active = EINA_FALSE;
   efl_list_drag_source = NULL;
   efl_list_drag_source_pos = 0;
+  return ECORE_CALLBACK_CANCEL;
+}
+
+static void eflListDragFinishedCb(void *data, const Efl_Event *ev)
+{
+  Eo* win = iupeflGetMainWindow();
+  (void)ev;
+
+  if (win)
+    efl_event_callback_del(win, EFL_UI_DND_EVENT_DRAG_FINISHED, eflListDragFinishedCb, data);
+
+  /* Defer state clear: DROP_DROPPED runs synchronously and needs source/pos. */
+  ecore_idler_add(eflListDragEndIdleCb, NULL);
 }
 
 static void eflListDragPointerDownCb(void *data, const Efl_Event *ev)
@@ -1504,42 +1516,62 @@ static void eflListDropCb(void *data, const Efl_Event *ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Ui_Drop_Dropped_Event* drop_ev = ev->info;
-  int idDrop;
   Ihandle* ih_source;
-  int idDrag;
-  int is_shift, is_ctrl;
-  IFniiii cb;
-  Evas_Modifier* modifiers;
-  Evas* evas;
+  int idDrag, idDrop, count, is_ctrl;
+  int drop_x, drop_y;
+  char* text_dup;
 
   if (!ih || !efl_list_drag_source || !iupObjectCheck(efl_list_drag_source))
     return;
 
-  evas = evas_object_evas_get(iupeflGetWidget(ih));
-  modifiers = evas ? (Evas_Modifier*)evas_key_modifier_get(evas) : NULL;
-  is_shift = (modifiers && evas_key_modifier_is_set(modifiers, "Shift")) ? 1 : 0;
-  is_ctrl = (modifiers && evas_key_modifier_is_set(modifiers, "Control")) ? 1 : 0;
-
-  idDrop = eflListConvertXYToPos(ih, drop_ev->dnd.position.x, drop_ev->dnd.position.y);
-  if (idDrop <= 0)
-    idDrop = iupdrvListGetCount(ih) + 1;
-
   ih_source = efl_list_drag_source;
-  idDrag = efl_list_drag_source_pos;
+  idDrag = efl_list_drag_source_pos;  /* 1-based */
 
-  cb = (IFniiii)IupGetCallback(ih, "DRAGDROP_CB");
-  if (cb && cb(ih_source, idDrag, idDrop, is_shift, is_ctrl) == IUP_CONTINUE)
+  drop_x = drop_ev->dnd.position.x;
+  drop_y = drop_ev->dnd.position.y;
+  idDrop = eflListConvertXYToPos(ih, drop_x, drop_y);  /* 1-based or -1 */
+
+  /* Lower half of the hit row means insert AFTER it. */
+  if (idDrop > 0 && !ih->data->is_virtual)
   {
-    char* sourceText = IupGetAttributeId(ih_source, "", idDrag);
-
-    if (idDrag < idDrop && ih_source == ih)
-      idDrop--;
-
-    if (sourceText)
-      IupSetAttributeId(ih, "INSERTITEM", idDrop, sourceText);
-
-    IupSetAttributeId(ih_source, "REMOVEITEM", idDrag, NULL);
+    Eo* list = iupeflGetWidget(ih);
+    Eo* row = list ? efl_pack_content_get(list, idDrop - 1) : NULL;
+    if (row)
+    {
+      Eina_Rect geom = efl_gfx_entity_geometry_get(row);
+      if (geom.h > 0 && drop_y > geom.y + geom.h / 2)
+        idDrop++;
+    }
   }
+
+  /* shift to 0-based for the callback */
+  idDrag--;
+  idDrop--;
+
+  is_ctrl = 0;
+  if (iupListCallDragDropCb(ih, idDrag, idDrop, &is_ctrl) != IUP_CONTINUE)
+    return;
+
+  text_dup = IupGetAttributeId(ih_source, "", idDrag + 1);  /* IUP API is 1-based */
+  text_dup = text_dup ? strdup(text_dup) : NULL;
+
+  count = iupdrvListGetCount(ih);
+  if (idDrop >= 0 && idDrop < count)
+  {
+    iupdrvListInsertItem(ih, idDrop, text_dup ? text_dup : "");
+    if (idDrag > idDrop)
+      idDrag++;
+  }
+  else
+  {
+    iupdrvListAppendItem(ih, text_dup ? text_dup : "");
+  }
+
+  if (!is_ctrl && ih_source == ih)
+    iupdrvListRemoveItem(ih, idDrag);
+
+  if (text_dup)
+    free(text_dup);
 }
 
 static void eflListEnableDragDrop(Ihandle* ih)
@@ -1553,7 +1585,6 @@ static void eflListEnableDragDrop(Ihandle* ih)
   efl_event_callback_add(list, EFL_EVENT_POINTER_MOVE, eflListDragPointerMoveCb, ih);
   efl_event_callback_add(list, EFL_EVENT_POINTER_UP, eflListDragPointerUpCb, ih);
   efl_event_callback_add(list, EFL_UI_DND_EVENT_DROP_DROPPED, eflListDropCb, ih);
-  efl_event_callback_add(list, EFL_UI_DND_EVENT_DRAG_FINISHED, eflListDragFinishedCb, ih);
 }
 
 /****************************************************************
@@ -2025,7 +2056,6 @@ static void eflListUnMapMethod(Ihandle* ih)
         efl_event_callback_del(list, EFL_EVENT_POINTER_MOVE, eflListDragPointerMoveCb, ih);
         efl_event_callback_del(list, EFL_EVENT_POINTER_UP, eflListDragPointerUpCb, ih);
         efl_event_callback_del(list, EFL_UI_DND_EVENT_DROP_DROPPED, eflListDropCb, ih);
-        efl_event_callback_del(list, EFL_UI_DND_EVENT_DRAG_FINISHED, eflListDragFinishedCb, ih);
       }
       efl_event_callback_del(list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflListSelectionChangedCallback, ih);
       efl_event_callback_del(list, EFL_UI_EVENT_ITEM_CLICKED, eflListItemClickedCallback, ih);
