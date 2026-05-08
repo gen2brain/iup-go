@@ -1019,103 +1019,166 @@ IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihand
   return result;
 }
 
+static NSEvent* g_iupcocoa_pending_mousedown = nil;
+static NSMutableArray<NSEvent*>* g_iupcocoa_pending_drag = nil;
+
+static NSPoint iupcocoaQuartzToCocoaScreen(int x, int y)
+{
+  CGFloat primary_h = NSMaxY([[[NSScreen screens] firstObject] frame]);
+  return NSMakePoint(x, primary_h - y);
+}
+
+static NSWindow* iupcocoaFindWindowAtScreenPoint(NSPoint screen_pt)
+{
+  for (NSWindow* win in [NSApp orderedWindows])
+  {
+    if (![win isVisible]) continue;
+    if (NSPointInRect(screen_pt, [win frame]))
+      return win;
+  }
+  return nil;
+}
+
 IUP_SDK_API void iupdrvSendKey(int key, int press)
 {
-#ifndef GNUSTEP
   unsigned int maccode, state;
   iupdrvKeyEncode(key, &maccode, &state);
   if (!maccode) return;
 
-  CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState);
+  NSWindow* win = [NSApp keyWindow];
+  if (!win) win = [NSApp mainWindow];
+  if (!win) return;
 
-  if (press & 0x01) /* Press */
+  NSTimeInterval ts = [[NSProcessInfo processInfo] systemUptime];
+  NSEventModifierFlags mods = (NSEventModifierFlags)state;
+  NSInteger win_num = [win windowNumber];
+
+  if (press & 0x01)
   {
-    CGEventRef event = CGEventCreateKeyboardEvent(source, (CGKeyCode)maccode, true);
-    if (state != 0) CGEventSetFlags(event, (CGEventFlags)state);
-    CGEventPost(kCGHIDEventTap, event);
-    CFRelease(event);
+    NSEvent* ev = [NSEvent keyEventWithType:NSEventTypeKeyDown location:NSZeroPoint
+                              modifierFlags:mods timestamp:ts windowNumber:win_num context:nil
+                                 characters:@"" charactersIgnoringModifiers:@""
+                                  isARepeat:NO keyCode:(unsigned short)maccode];
+    if (ev) [NSApp postEvent:ev atStart:NO];
   }
-
-  if (press & 0x02) /* Release */
+  if (press & 0x02)
   {
-    CGEventRef event = CGEventCreateKeyboardEvent(source, (CGKeyCode)maccode, false);
-    if (state != 0) CGEventSetFlags(event, (CGEventFlags)state);
-    CGEventPost(kCGHIDEventTap, event);
-    CFRelease(event);
+    NSEvent* ev = [NSEvent keyEventWithType:NSEventTypeKeyUp location:NSZeroPoint
+                              modifierFlags:mods timestamp:ts windowNumber:win_num context:nil
+                                 characters:@"" charactersIgnoringModifiers:@""
+                                  isARepeat:NO keyCode:(unsigned short)maccode];
+    if (ev) [NSApp postEvent:ev atStart:NO];
   }
-
-  CFRelease(source);
-#else
-  (void)key;
-  (void)press;
-#endif
 }
 
 IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
   iupdrvWarpPointer(x, y);
 
+  NSPoint screen_pt = iupcocoaQuartzToCocoaScreen(x, y);
+  NSWindow* win = iupcocoaFindWindowAtScreenPoint(screen_pt);
+  if (!win) return;
+
+  NSPoint local_pt;
 #ifndef GNUSTEP
-  if (status != -1)
+  if ([win respondsToSelector:@selector(convertPointFromScreen:)])
+    local_pt = [win convertPointFromScreen:screen_pt];
+  else
+#endif
+    local_pt = [win convertRectFromScreen:NSMakeRect(screen_pt.x, screen_pt.y, 0, 0)].origin;
+
+  NSTimeInterval ts = [[NSProcessInfo processInfo] systemUptime];
+  NSInteger win_num = [win windowNumber];
+
+  if (bt == 'W')
   {
-    CGPoint point = CGPointMake(x, y);
-    CGEventType press_type, release_type;
-    CGMouseButton button;
-
-    switch(bt)
+#ifndef GNUSTEP
+    CGEventRef wheel = CGEventCreateScrollWheelEvent(NULL, kCGScrollEventUnitLine, 1, status);
+    if (wheel)
     {
-      case IUP_BUTTON1: press_type=kCGEventLeftMouseDown; release_type=kCGEventLeftMouseUp; button=kCGMouseButtonLeft; break;
-      case IUP_BUTTON2: press_type=kCGEventOtherMouseDown; release_type=kCGEventOtherMouseUp; button=kCGMouseButtonCenter; break;
-      case IUP_BUTTON3: press_type=kCGEventRightMouseDown; release_type=kCGEventRightMouseUp; button=kCGMouseButtonRight; break;
-      default: return;
+      NSEvent* ev = [NSEvent eventWithCGEvent:wheel];
+      if (ev) [NSApp postEvent:ev atStart:NO];
+      CFRelease(wheel);
     }
+#endif
+    return;
+  }
 
-    /* IUP Spec: status: 1 (press), 0 (release), -1 (move), 2 (double-click). */
-
-    if (status == 1) /* Press */
+  if (status == -1)
+  {
+    NSEventType move_type = NSEventTypeMouseMoved;
+    int drag_click_count = 0;
+    switch (bt)
     {
-      CGEventRef event = CGEventCreateMouseEvent(NULL, press_type, point, button);
-      CGEventSetIntegerValueField(event, kCGMouseEventClickState, 1);
-      CGEventPost(kCGHIDEventTap, event);
-      CFRelease(event);
+      case IUP_BUTTON1: move_type = NSEventTypeLeftMouseDragged;  drag_click_count = 1; break;
+      case IUP_BUTTON2: move_type = NSEventTypeOtherMouseDragged; drag_click_count = 1; break;
+      case IUP_BUTTON3: move_type = NSEventTypeRightMouseDragged; drag_click_count = 1; break;
     }
-    else if (status == 0) /* Release */
+    NSEvent* ev = [NSEvent mouseEventWithType:move_type location:local_pt
+                                modifierFlags:0 timestamp:ts windowNumber:win_num context:nil
+                                  eventNumber:0 clickCount:drag_click_count pressure:(bt=='0'?0:1.0f)];
+    if (!ev) return;
+    if (g_iupcocoa_pending_drag && bt != '0')
+      [g_iupcocoa_pending_drag addObject:ev];
+    else
+      [NSApp postEvent:ev atStart:NO];
+    return;
+  }
+
+  NSEventType type;
+  int click_count = 1;
+  switch (bt)
+  {
+    case IUP_BUTTON1:
+      type = (status == 0) ? NSEventTypeLeftMouseUp  : NSEventTypeLeftMouseDown;  break;
+    case IUP_BUTTON2:
+      type = (status == 0) ? NSEventTypeOtherMouseUp : NSEventTypeOtherMouseDown; break;
+    case IUP_BUTTON3:
+      type = (status == 0) ? NSEventTypeRightMouseUp : NSEventTypeRightMouseDown; break;
+    default: return;
+  }
+  if (status == 2) click_count = 2;
+
+  NSEvent* ev = [NSEvent mouseEventWithType:type location:local_pt modifierFlags:0
+                                  timestamp:ts windowNumber:win_num context:nil
+                                eventNumber:0 clickCount:click_count
+                                   pressure:(status == 0 ? 0 : 1.0f)];
+  if (!ev) return;
+
+  if (status == 1 || status == 2)
+  {
+    [g_iupcocoa_pending_mousedown release];
+    g_iupcocoa_pending_mousedown = [ev retain];
+    [g_iupcocoa_pending_drag release];
+    g_iupcocoa_pending_drag = [[NSMutableArray alloc] init];
+    if (status == 2)
     {
-      CGEventRef event = CGEventCreateMouseEvent(NULL, release_type, point, button);
-      CGEventSetIntegerValueField(event, kCGMouseEventClickState, 1);
-      CGEventPost(kCGHIDEventTap, event);
-      CFRelease(event);
-    }
-    else if (status == 2) /* Double-click (Generate full sequence) */
-    {
-      /* Click 1 (Count 1) */
-      CGEventRef event_down1 = CGEventCreateMouseEvent(NULL, press_type, point, button);
-      CGEventSetIntegerValueField(event_down1, kCGMouseEventClickState, 1);
-      CGEventPost(kCGHIDEventTap, event_down1);
-
-      CGEventRef event_up1 = CGEventCreateMouseEvent(NULL, release_type, point, button);
-      CGEventSetIntegerValueField(event_up1, kCGMouseEventClickState, 1);
-      CGEventPost(kCGHIDEventTap, event_up1);
-
-      /* Click 2 (Count 2) */
-      CGEventRef event_down2 = CGEventCreateMouseEvent(NULL, press_type, point, button);
-      CGEventSetIntegerValueField(event_down2, kCGMouseEventClickState, 2);
-      CGEventPost(kCGHIDEventTap, event_down2);
-
-      CGEventRef event_up2 = CGEventCreateMouseEvent(NULL, release_type, point, button);
-      CGEventSetIntegerValueField(event_up2, kCGMouseEventClickState, 2);
-      CGEventPost(kCGHIDEventTap, event_up2);
-
-      CFRelease(event_down1);
-      CFRelease(event_up1);
-      CFRelease(event_down2);
-      CFRelease(event_up2);
+      NSEvent* up_ev = [NSEvent mouseEventWithType:(bt==IUP_BUTTON1?NSEventTypeLeftMouseUp:bt==IUP_BUTTON2?NSEventTypeOtherMouseUp:NSEventTypeRightMouseUp)
+                                          location:local_pt modifierFlags:0 timestamp:ts windowNumber:win_num
+                                           context:nil eventNumber:0 clickCount:click_count pressure:0];
+      if (up_ev) [g_iupcocoa_pending_drag addObject:up_ev];
+      for (NSEvent* e in g_iupcocoa_pending_drag) [NSApp postEvent:e atStart:NO];
+      [NSApp sendEvent:g_iupcocoa_pending_mousedown];
+      [g_iupcocoa_pending_mousedown release];
+      g_iupcocoa_pending_mousedown = nil;
+      [g_iupcocoa_pending_drag release];
+      g_iupcocoa_pending_drag = nil;
     }
   }
-#else
-  (void)bt;
-  (void)status;
-#endif
+  else if (g_iupcocoa_pending_mousedown)
+  {
+    [g_iupcocoa_pending_drag addObject:ev];
+    for (NSEvent* e in g_iupcocoa_pending_drag) [NSApp postEvent:e atStart:NO];
+    [NSApp sendEvent:g_iupcocoa_pending_mousedown];
+    [g_iupcocoa_pending_mousedown release];
+    g_iupcocoa_pending_mousedown = nil;
+    [g_iupcocoa_pending_drag release];
+    g_iupcocoa_pending_drag = nil;
+  }
+  else
+  {
+    [NSApp postEvent:ev atStart:NO];
+  }
 }
 
 IUP_SDK_API void iupdrvSleep(int time)

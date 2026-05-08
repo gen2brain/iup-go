@@ -78,9 +78,6 @@ static int cocoaGlobalMapButton(int64_t button_number)
 
 static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon)
 {
-  NSRect main_screen_frame = [[NSScreen mainScreen] frame];
-  CGFloat main_screen_top = main_screen_frame.origin.y + main_screen_frame.size.height;
-
   /* Handle event tap being disabled by the system due to timeout */
   if (type == kCGEventTapDisabledByTimeout)
   {
@@ -115,7 +112,7 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
             iupKEY_SETDOUBLE(status);
         }
 
-        int iup_y = (int)(main_screen_top - location.y);
+        int iup_y = (int)location.y;
         cb(cocoaGlobalMapButton(button_number), pressed, (int)location.x, iup_y, status);
       }
       break;
@@ -133,7 +130,7 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
 
         cocoaGlobalBuildStatus(CGEventGetFlags(event), status);
 
-        int iup_y = (int)(main_screen_top - location.y);
+        int iup_y = (int)location.y;
         cb((int)location.x, iup_y, status);
       }
       break;
@@ -149,7 +146,7 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
 
         cocoaGlobalBuildStatus(CGEventGetFlags(event), status);
 
-        int iup_y = (int)(main_screen_top - location.y);
+        int iup_y = (int)location.y;
         cb((float)(-delta), (int)location.x, iup_y, status);
       }
       break;
@@ -201,28 +198,24 @@ IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
                            (1 << kCGEventScrollWheel) |
                            (1 << kCGEventKeyDown) | (1 << kCGEventKeyUp);
 
-        eventTap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap,
-                                             kCGEventTapOptionDefault, mask,
+        eventTap = CGEventTapCreate(kCGAnnotatedSessionEventTap, kCGHeadInsertEventTap,
+                                             kCGEventTapOptionListenOnly, mask,
                                              iupCocoaGlobalEventCallback, NULL);
-        if (eventTap)
+        if (!eventTap)
         {
-          runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0);
-          if (runLoopSource)
-          {
-            CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
-            CGEventTapEnable(eventTap, true);
-          }
-          else
-          {
-            CFRelease(eventTap);
-            eventTap = NULL;
-            return 0;
-          }
-        }
-        else
-        {
+          NSLog(@"IUP: CGEventTapCreate failed; check Privacy & Security > Input Monitoring");
           return 0;
         }
+
+        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0);
+        if (!runLoopSource)
+        {
+          CFRelease(eventTap);
+          eventTap = NULL;
+          return 0;
+        }
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
+        CGEventTapEnable(eventTap, true);
       }
     }
     else
