@@ -585,43 +585,36 @@ static int gtk4ListConvertXYToPos(Ihandle* ih, int x, int y)
       GtkWidget *picked = gtk_widget_pick(ih->handle, x, y, GTK_PICK_DEFAULT);
       if (picked)
       {
-        /* Walk up widget hierarchy to find GtkListItemWidget or GtkBox with position data */
+        /* Live position via the box's GtkListItem; cached position+1 would go stale on model shifts. */
         GtkWidget *current = picked;
         int depth = 0;
         while (current && current != ih->handle)
         {
           const char *type_name = G_OBJECT_TYPE_NAME(current);
+          GtkWidget *box = NULL;
 
-          /* Check for GtkListItemWidget first - this is the container for list items */
           if (strcmp(type_name, "GtkListItemWidget") == 0)
           {
-            /* Get the first child of GtkListItemWidget, which should be our GtkBox */
             GtkWidget *child = gtk_widget_get_first_child(current);
             if (child && strcmp(G_OBJECT_TYPE_NAME(child), "GtkBox") == 0)
-            {
-              gpointer data = g_object_get_data(G_OBJECT(child), "iup-list-position");
-              if (data)
-              {
-                guint position = GPOINTER_TO_UINT(data) - 1;  /* Stored as position+1 to avoid NULL */
-                if (position != GTK_INVALID_LIST_POSITION)
-                  return (int)position + 1;  /* IUP uses 1-based indexing */
-              }
-            }
-            /* Found GtkListItemWidget but no valid position */
-            break;
+              box = child;
+          }
+          else if (strcmp(type_name, "GtkBox") == 0)
+          {
+            box = current;
           }
 
-          /* Also check if current widget itself is our GtkBox with position data */
-          if (strcmp(type_name, "GtkBox") == 0)
+          if (box)
           {
-            gpointer data = g_object_get_data(G_OBJECT(current), "iup-list-position");
-            if (data)
+            GtkListItem *list_item = (GtkListItem*)g_object_get_data(G_OBJECT(box), "iup-list-item");
+            if (list_item)
             {
-              guint position = GPOINTER_TO_UINT(data) - 1;  /* Stored as position+1 to avoid NULL */
+              guint position = gtk_list_item_get_position(list_item);
               if (position != GTK_INVALID_LIST_POSITION)
                 return (int)position + 1;  /* IUP uses 1-based indexing */
             }
-            /* This GtkBox doesn't have position data, keep searching up for GtkListItemWidget */
+            if (strcmp(type_name, "GtkListItemWidget") == 0)
+              break;
           }
 
           current = gtk_widget_get_parent(current);
@@ -1644,8 +1637,165 @@ static gboolean gtk4ListSimpleKeyPressEvent(GtkEventControllerKey *controller, g
   return FALSE;
 }
 
+static GdkContentProvider* gtk4ListDragPrepare(GtkDragSource* source, double x, double y, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  GtkWidget* row_box = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(source));
+  GtkListItem* list_item;
+  GdkPaintable* paintable;
+  guint position;
+
+  if (!row_box)
+    return NULL;
+
+  list_item = (GtkListItem*)g_object_get_data(G_OBJECT(row_box), "iup-list-item");
+  if (!list_item)
+    return NULL;
+
+  position = gtk_list_item_get_position(list_item);
+  if (position == GTK_INVALID_LIST_POSITION)
+    return NULL;
+
+  iupAttribSetInt(ih, "_IUPLIST_DRAGITEM", (int)position + 1);  /* 1-based for the drop side */
+
+  /* Snapshot the row container; the inner box has no selection background. */
+  {
+    GtkWidget* row_widget = gtk_widget_get_parent(row_box);
+    GtkWidget* preview = (row_widget && strcmp(G_OBJECT_TYPE_NAME(row_widget), "GtkListItemWidget") == 0)
+                         ? row_widget : row_box;
+    paintable = gtk_widget_paintable_new(preview);
+    if (paintable)
+    {
+      graphene_point_t in_pt = GRAPHENE_POINT_INIT((float)x, (float)y);
+      graphene_point_t out_pt = in_pt;
+      if (preview != row_box && !gtk_widget_compute_point(row_box, preview, &in_pt, &out_pt))
+        out_pt = in_pt;
+      gtk_drag_source_set_icon(source, paintable, (int)out_pt.x, (int)out_pt.y);
+      g_object_unref(paintable);
+    }
+  }
+
+  return gdk_content_provider_new_typed(G_TYPE_UINT, position + 1);
+}
+
+static gboolean gtk4ListDragDrop(GtkDropTarget* target, const GValue* value, double x, double y, gpointer user_data)
+{
+  Ihandle* ih = (Ihandle*)user_data;
+  GListStore* store;
+  GListModel* model;
+  IupListItem* drag_item;
+  char* text_dup;
+  GdkTexture* image;
+  int idDrag, idDrop, count, is_ctrl;
+
+  (void)target;
+  (void)value;
+
+  idDrag = iupAttribGetInt(ih, "_IUPLIST_DRAGITEM");
+  if (idDrag < 1)
+    return FALSE;
+
+  idDrop = gtk4ListConvertXYToPos(ih, (int)x, (int)y);  /* 1-based, -1 if past end */
+
+  /* Lower half of the hit row means insert AFTER it. */
+  if (idDrop > 0)
+  {
+    GtkWidget* picked = gtk_widget_pick(ih->handle, x, y, GTK_PICK_DEFAULT);
+    GtkWidget* row_widget = NULL;
+    int depth = 0;
+    while (picked && picked != ih->handle)
+    {
+      if (strcmp(G_OBJECT_TYPE_NAME(picked), "GtkListItemWidget") == 0)
+      {
+        row_widget = picked;
+        break;
+      }
+      picked = gtk_widget_get_parent(picked);
+      if (++depth > 20) break;
+    }
+    if (row_widget)
+    {
+      graphene_rect_t bounds;
+      if (gtk_widget_compute_bounds(row_widget, ih->handle, &bounds))
+      {
+        double mid_y = bounds.origin.y + bounds.size.height / 2.0;
+        if (y > mid_y)
+          idDrop++;
+      }
+    }
+  }
+
+  /* shift to 0-based for the callback */
+  idDrag--;
+  idDrop--;
+
+  is_ctrl = 0;
+  if (iupListCallDragDropCb(ih, idDrag, idDrop, &is_ctrl) != IUP_CONTINUE)
+  {
+    iupAttribSet(ih, "_IUPLIST_DRAGITEM", NULL);
+    return FALSE;
+  }
+
+  store = gtk4ListGetGListStore(ih);
+  if (!store)
+  {
+    iupAttribSet(ih, "_IUPLIST_DRAGITEM", NULL);
+    return FALSE;
+  }
+
+  model = G_LIST_MODEL(store);
+  count = (int)g_list_model_get_n_items(model);
+
+  drag_item = (IupListItem*)g_list_model_get_item(model, idDrag);
+  if (!drag_item)
+  {
+    iupAttribSet(ih, "_IUPLIST_DRAGITEM", NULL);
+    return FALSE;
+  }
+
+  text_dup = g_strdup(iup_list_item_get_text(drag_item));
+  image = iup_list_item_get_image(drag_item);
+  if (image)
+    g_object_ref(image);
+  g_object_unref(drag_item);
+
+  if (idDrop >= 0 && idDrop < count)
+  {
+    iupdrvListInsertItem(ih, idDrop, "");
+    if (idDrag > idDrop)
+      idDrag++;
+  }
+  else
+  {
+    iupdrvListAppendItem(ih, "");
+    idDrop = count;
+  }
+
+  {
+    IupListItem* dropped = (IupListItem*)g_list_model_get_item(model, idDrop);
+    if (dropped)
+    {
+      iup_list_item_set_text(dropped, text_dup);
+      if (image)
+        iup_list_item_set_image(dropped, image);
+      g_object_unref(dropped);
+    }
+  }
+
+  g_free(text_dup);
+  if (image)
+    g_object_unref(image);
+
+  if (!is_ctrl)
+    iupdrvListRemoveItem(ih, idDrag);
+
+  iupAttribSet(ih, "_IUPLIST_DRAGITEM", NULL);
+  return TRUE;
+}
+
 static void gtk4ListFactory_setup(GtkListItemFactory* factory, GtkListItem* list_item, gpointer user_data)
 {
+  Ihandle* ih = (Ihandle*)user_data;
   GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
   GtkWidget* picture = gtk_picture_new();
   GtkWidget* label = gtk_label_new("");
@@ -1661,8 +1811,15 @@ static void gtk4ListFactory_setup(GtkListItemFactory* factory, GtkListItem* list
 
   gtk_list_item_set_child(list_item, box);
 
+  if (ih && ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple)
+  {
+    GtkDragSource* drag_source = gtk_drag_source_new();
+    gtk_drag_source_set_actions(drag_source, GDK_ACTION_MOVE | GDK_ACTION_COPY);
+    g_signal_connect(drag_source, "prepare", G_CALLBACK(gtk4ListDragPrepare), ih);
+    gtk_widget_add_controller(box, GTK_EVENT_CONTROLLER(drag_source));
+  }
+
   (void)factory;
-  (void)user_data;
 }
 
 static void gtk4ListItem_onPropertyUpdate(GObject* object, GParamSpec* pspec, gpointer user_data)
@@ -1738,10 +1895,7 @@ static void gtk4ListFactory_bind(GtkListItemFactory* factory, GtkListItem* list_
   gboolean enabled = iup_list_item_get_enabled(item);
   gtk_widget_set_sensitive(box, enabled);
 
-  /* Store position on the box widget for drag-drop XY-to-position conversion
-     Store position+1 to avoid storing 0 (NULL pointer) which would fail in retrieval checks */
-  guint position = gtk_list_item_get_position(list_item);
-  g_object_set_data(G_OBJECT(box), "iup-list-position", GUINT_TO_POINTER(position + 1));
+  g_object_set_data(G_OBJECT(box), "iup-list-item", list_item);
 
   /* Connect to item's property update signal to handle dynamic changes */
   gulong handler_id = g_signal_connect(item, "notify::update", G_CALLBACK(gtk4ListItem_onPropertyUpdate), list_item);
@@ -2261,6 +2415,13 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
     gtk_list_view_set_show_separators(GTK_LIST_VIEW(ih->handle), FALSE);
     gtk_list_view_set_single_click_activate(GTK_LIST_VIEW(ih->handle), FALSE);
+
+    if (ih->data->show_dragdrop && !ih->data->is_multiple)
+    {
+      GtkDropTarget* drop_target = gtk_drop_target_new(G_TYPE_UINT, GDK_ACTION_MOVE | GDK_ACTION_COPY);
+      g_signal_connect(drop_target, "drop", G_CALLBACK(gtk4ListDragDrop), ih);
+      gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(drop_target));
+    }
 
     scrolled_window = (GtkScrolledWindow*)gtk_scrolled_window_new();
 

@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <limits.h>
 
 #include "iup.h"
@@ -96,6 +97,76 @@ static GdkDragAction gtk4DropTargetMotion(GtkDropTarget *target, double x, doubl
   return GDK_ACTION_COPY;
 }
 
+/* For list/column views, snapshot just the row under (x,y) so the preview is not the whole view. */
+static GdkPaintable* gtk4DragPreviewPaintable(GtkWidget* source_widget, double x, double y)
+{
+  if (GTK_IS_LIST_VIEW(source_widget) || GTK_IS_COLUMN_VIEW(source_widget))
+  {
+    GtkWidget* picked = gtk_widget_pick(source_widget, x, y, GTK_PICK_DEFAULT);
+    GtkWidget* current = picked;
+    int depth = 0;
+    while (current && current != source_widget)
+    {
+      const char* type_name = G_OBJECT_TYPE_NAME(current);
+      if (strcmp(type_name, "GtkListItemWidget") == 0 ||
+          strcmp(type_name, "GtkColumnViewRowWidget") == 0)
+        return gtk_widget_paintable_new(current);
+      current = gtk_widget_get_parent(current);
+      depth++;
+      if (depth > 20) break;
+    }
+  }
+  return gtk_widget_paintable_new(source_widget);
+}
+
+static void gtk4DragSourceSetIcon(GtkDragSource* source, Ihandle* ih, double x, double y)
+{
+  char* cursor_image = iupAttribGet(ih, "DRAGCURSOR");
+  if (cursor_image)
+  {
+    GdkTexture* texture = iupImageGetImage(cursor_image, ih, 0, NULL);
+    if (texture)
+    {
+      gtk_drag_source_set_icon(source, GDK_PAINTABLE(texture), 0, 0);
+      return;
+    }
+  }
+
+  if (ih->handle)
+  {
+    GdkPaintable* paintable = gtk4DragPreviewPaintable(ih->handle, x, y);
+    if (paintable)
+    {
+      graphene_point_t in_pt = GRAPHENE_POINT_INIT((float)x, (float)y);
+      graphene_point_t out_pt = in_pt;
+      GtkWidget* picked = gtk_widget_pick(ih->handle, x, y, GTK_PICK_DEFAULT);
+      GtkWidget* row = NULL;
+      if (picked)
+      {
+        GtkWidget* current = picked;
+        int depth = 0;
+        while (current && current != ih->handle)
+        {
+          const char* type_name = G_OBJECT_TYPE_NAME(current);
+          if (strcmp(type_name, "GtkListItemWidget") == 0 ||
+              strcmp(type_name, "GtkColumnViewRowWidget") == 0)
+          {
+            row = current;
+            break;
+          }
+          current = gtk_widget_get_parent(current);
+          depth++;
+          if (depth > 20) break;
+        }
+      }
+      if (row && !gtk_widget_compute_point(ih->handle, row, &in_pt, &out_pt))
+        out_pt = in_pt;
+      gtk_drag_source_set_icon(source, paintable, (int)out_pt.x, (int)out_pt.y);
+      g_object_unref(paintable);
+    }
+  }
+}
+
 static GdkContentProvider* gtk4DragSourcePrepare(GtkDragSource *source, double x, double y, Ihandle *ih)
 {
   IFnii cbDragBegin = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
@@ -106,8 +177,6 @@ static GdkContentProvider* gtk4DragSourcePrepare(GtkDragSource *source, double x
   void* sourceData;
   GBytes *bytes;
   GdkContentProvider *provider;
-
-  (void)source;
 
   if (cbDragBegin)
   {
@@ -140,6 +209,8 @@ static GdkContentProvider* gtk4DragSourcePrepare(GtkDragSource *source, double x
   provider = gdk_content_provider_new_for_bytes(type, bytes);
   g_bytes_unref(bytes);
 
+  gtk4DragSourceSetIcon(source, ih, x, y);
+
   return provider;
 }
 
@@ -154,20 +225,6 @@ static void gtk4DragSourceDragEnd(GtkDragSource *source, GdkDrag *drag, gboolean
   {
     int remove = delete_data ? 1 : 0;
     cbDrag(ih, remove);
-  }
-}
-
-static void gtk4DragSourceDragBegin(GtkDragSource *source, GdkDrag *drag, Ihandle *ih)
-{
-  char* value = iupAttribGet(ih, "DRAGCURSOR");
-
-  (void)source;
-
-  if (value)
-  {
-    GdkTexture* texture = iupImageGetImage(value, ih, 0, NULL);
-    if (texture)
-      gtk_drag_source_set_icon(source, GDK_PAINTABLE(texture), 0, 0);
   }
 }
 
@@ -381,7 +438,6 @@ static int gtk4SetDragSourceAttrib(Ihandle* ih, const char* value)
     gtk_drag_source_set_content(drag_source, NULL);  /* Set in prepare callback */
 
     g_signal_connect(drag_source, "prepare", G_CALLBACK(gtk4DragSourcePrepare), ih);
-    g_signal_connect(drag_source, "drag-begin", G_CALLBACK(gtk4DragSourceDragBegin), ih);
     g_signal_connect(drag_source, "drag-end", G_CALLBACK(gtk4DragSourceDragEnd), ih);
 
     gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(drag_source));

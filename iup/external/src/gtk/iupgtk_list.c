@@ -1545,7 +1545,22 @@ static void gtkListDragDataReceived(GtkWidget *widget, GdkDragContext *context, 
 {
   int is_ctrl;
   int idDrag = iupAttribGetInt(ih, "_IUPLIST_DRAGITEM");  /* starts at 1 */
-  int idDrop = gtkListConvertXYToPos(ih, x, y); /* starts at 1 */
+  int idDrop;
+  GtkTreePath* drop_path = NULL;
+  GtkTreeViewDropPosition drop_pos;
+
+  /* match the indicator: BEFORE keeps the hit row, AFTER lands past it. */
+  if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(ih->handle), x, y, &drop_path, &drop_pos))
+  {
+    idDrop = gtk_tree_path_get_indices(drop_path)[0] + 1;  /* 1-based */
+    if (drop_pos == GTK_TREE_VIEW_DROP_AFTER || drop_pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER)
+      idDrop++;
+    gtk_tree_path_free(drop_path);
+  }
+  else
+  {
+    idDrop = -1;
+  }
 
   /* shift to start at 0 */
   idDrag--;
