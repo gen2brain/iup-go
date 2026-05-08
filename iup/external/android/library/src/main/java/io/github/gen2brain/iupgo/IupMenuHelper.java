@@ -2,10 +2,14 @@ package io.github.gen2brain.iupgo;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.PathShape;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -317,10 +321,7 @@ public final class IupMenuHelper
             final boolean isEnabled = nativeIsActive(childIh);
 
             TextView row = new TextView(a);
-            /* Dynamic menu title from the Ihandle + Unicode submenu indicator. */
-            @android.annotation.SuppressLint("SetTextI18n")
-            String label = (title != null ? title : "") + (isSubmenu ? "   ▸" : "");
-            row.setText(label);
+            row.setText(title != null ? title : "");
             row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
             row.setTextColor(isEnabled
                 ? fgColor
@@ -340,7 +341,17 @@ public final class IupMenuHelper
             {
                 int iconSize = Math.round(20 * density);
                 icon.setBounds(0, 0, iconSize, iconSize);
-                row.setCompoundDrawables(icon, null, null, null);
+            }
+            Drawable chevron = null;
+            if (isSubmenu)
+            {
+                int chevronSize = Math.round(18 * density);
+                chevron = makeChevronRight(isEnabled ? fgColor : IupCommon.blendColor(bgColor, fgColor, 0.45f), chevronSize);
+                chevron.setBounds(0, 0, chevronSize, chevronSize);
+            }
+            if (icon != null || chevron != null)
+            {
+                row.setCompoundDrawables(icon, null, chevron, null);
                 row.setCompoundDrawablePadding(padH);
             }
 
@@ -389,6 +400,23 @@ public final class IupMenuHelper
             row.setBackgroundResource(tv.resourceId);
     }
 
+    private static Drawable makeChevronRight(int color, int sizePx)
+    {
+        Path p = new Path();
+        p.moveTo(9f, 6f);
+        p.lineTo(15f, 12f);
+        p.lineTo(9f, 18f);
+        p.close();
+        ShapeDrawable sd = new ShapeDrawable(new PathShape(p, 24f, 24f));
+        Paint paint = sd.getPaint();
+        paint.setColor(color);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setAntiAlias(true);
+        sd.setIntrinsicWidth(sizePx);
+        sd.setIntrinsicHeight(sizePx);
+        return sd;
+    }
+
 
     private static void addItem(Menu androidMenu, final long itemIh)
     {
@@ -406,12 +434,13 @@ public final class IupMenuHelper
             Drawable icon = resolveItemIcon(itemIh, a);
             if (icon != null) mi.setIcon(icon);
         }
-        /* VALUE present (ON/OFF) marks the item as a toggle; HIDEMARK suppresses the indicator. */
+        /* RADIO members are always checkable so all radios render the indicator from the start. */
         String value = nativeGetStringAttribute(itemIh, "VALUE");
-        if (value != null && !nativeGetBoolAttribute(itemIh, "HIDEMARK"))
+        boolean isRadio = nativeIsParentRadio(itemIh);
+        if (isRadio || (value != null && !nativeGetBoolAttribute(itemIh, "HIDEMARK")))
         {
             mi.setCheckable(true);
-            mi.setChecked(value.equalsIgnoreCase("ON"));
+            mi.setChecked("ON".equalsIgnoreCase(value));
         }
         mi.setOnMenuItemClickListener(m -> {
             if (pickedSlot != null)
@@ -466,7 +495,12 @@ public final class IupMenuHelper
             return;
         }
 
-        MenuItem mi = androidMenu.add(Menu.NONE, ID_BASE, Menu.NONE, title != null ? title : "");
+        /* TabStopSpan pushes ▶ to the right edge; framework's submenuarrow needs a real SubMenu attached. */
+        String t = title != null ? title : "";
+        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(t + "\t▶");
+        sb.setSpan(new android.text.style.TabStopSpan.Standard(Math.round(192 * IupCommon.getDisplayDensity())),
+                   0, sb.length(), android.text.Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        MenuItem mi = androidMenu.add(Menu.NONE, ID_BASE, Menu.NONE, sb);
         mi.setEnabled(nativeIsActive(submenuIh));
         if (actx != null)
         {
@@ -809,6 +843,7 @@ public final class IupMenuHelper
     public static native boolean nativeIsActive(long ih);
     public static native boolean nativeGetBoolAttribute(long ih, String name);
     public static native String nativeGetStringAttribute(long ih, String name);
+    public static native boolean nativeIsParentRadio(long ih);
     public static native Bitmap nativeGetImage(long ih);
     public static native void nativeDispatchAction(long ih);
     public static native int nativeGetRecentCount(long ih);

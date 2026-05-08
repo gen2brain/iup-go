@@ -62,6 +62,8 @@ static bool winuiMenuItemIsCheckable(Ihandle* ih)
     return true;
   if (hidemark && !iupStrBoolean(hidemark))
     return true;
+  if (ih->parent && iupAttribGetBoolean(ih->parent, "RADIO"))
+    return true;
 
   return false;
 }
@@ -77,11 +79,63 @@ static hstring winuiMenuGetTitle(const char* title, wchar_t* accessKey)
   return result;
 }
 
+static const char* winuiMenuItemPickImageName(Ihandle* ih)
+{
+  if (iupAttribGetBoolean(ih, "VALUE"))
+  {
+    const char* impress = iupAttribGet(ih, "IMPRESS");
+    if (impress) return impress;
+  }
+  const char* name = iupAttribGet(ih, "IMAGE");
+  if (name) return name;
+  return iupAttribGet(ih, "TITLEIMAGE");
+}
+
+static void winuiMenuItemApplyIcon(Ihandle* ih, const char* name)
+{
+  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
+  if (!aux)
+    return;
+
+  IconElement icon{nullptr};
+
+  if (name)
+  {
+    void* imghandle = iupImageGetImage(name, ih, 0, NULL);
+    WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
+    if (bitmap)
+    {
+      ImageIcon imageIcon;
+      imageIcon.Source(bitmap);
+      icon = imageIcon;
+    }
+  }
+
+  if (aux->isCheckable)
+  {
+    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+    if (item)
+      item.Icon(icon);
+  }
+  else
+  {
+    MenuFlyoutItem item = winuiGetHandle<MenuFlyoutItem>(ih);
+    if (item)
+      item.Icon(icon);
+  }
+}
+
+static void winuiMenuItemUpdateIcon(Ihandle* ih)
+{
+  winuiMenuItemApplyIcon(ih, winuiMenuItemPickImageName(ih));
+}
+
 static void winuiMenuItemClickHandler(Ihandle* ih)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
+  bool is_radio = ih->parent && iupAttribGetBoolean(ih->parent, "RADIO");
 
-  if (aux && aux->isCheckable)
+  if (aux && aux->isCheckable && !is_radio)
   {
     ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
     if (item)
@@ -90,6 +144,26 @@ static void winuiMenuItemClickHandler(Ihandle* ih)
         iupAttribSet(ih, "VALUE", item.IsChecked() ? "ON" : "OFF");
       else
         item.IsChecked(!item.IsChecked());
+
+      if (iupAttribGet(ih, "IMPRESS"))
+        winuiMenuItemUpdateIcon(ih);
+    }
+  }
+  else if (is_radio)
+  {
+    Ihandle* sib;
+    for (sib = ih->parent->firstchild; sib; sib = sib->brother)
+    {
+      if (!sib->iclass || !iupStrEqual(sib->iclass->name, "menuitem"))
+        continue;
+      iupAttribSet(sib, "VALUE", sib == ih ? "ON" : "OFF");
+      IupWinUIItemAux* sib_aux = winuiGetAux<IupWinUIItemAux>(sib, IUPWINUI_ITEM_AUX);
+      if (sib_aux && sib_aux->isCheckable)
+      {
+        ToggleMenuFlyoutItem sib_item = winuiGetHandle<ToggleMenuFlyoutItem>(sib);
+        if (sib_item)
+          sib_item.IsChecked(sib == ih);
+      }
     }
   }
 
@@ -391,45 +465,6 @@ static void winuiMenuSeparatorUnMapMethod(Ihandle* ih)
   winuiReleaseHandle<MenuFlyoutSeparator>(ih);
 }
 
-static void winuiMenuItemSetIcon(Ihandle* ih, const char* value)
-{
-  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
-  if (!aux)
-    return;
-
-  IconElement icon{nullptr};
-
-  if (value)
-  {
-    void* imghandle = iupImageGetImage(value, ih, 0, NULL);
-    WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
-    if (bitmap)
-    {
-      ImageIcon imageIcon;
-      imageIcon.Source(bitmap);
-      icon = imageIcon;
-    }
-  }
-
-  if (aux->isCheckable)
-  {
-    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
-    if (item)
-      item.Icon(icon);
-  }
-  else
-  {
-    MenuFlyoutItem item = winuiGetHandle<MenuFlyoutItem>(ih);
-    if (item)
-      item.Icon(icon);
-  }
-}
-
-static int winuiMenuItemSetImageAttrib(Ihandle* ih, const char* value)
-{
-  winuiMenuItemSetIcon(ih, value);
-  return 1;
-}
 
 static int winuiMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
@@ -490,15 +525,44 @@ static char* winuiMenuItemGetTitleAttrib(Ihandle* ih)
   return NULL;
 }
 
+static int winuiMenuItemSetImageAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "IMAGE", value);
+  winuiMenuItemUpdateIcon(ih);
+  return 1;
+}
+
+static int winuiMenuItemSetImpressAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "IMPRESS", value);
+  winuiMenuItemUpdateIcon(ih);
+  return 1;
+}
+
+static int winuiMenuItemSetTitleImageAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "TITLEIMAGE", value);
+  winuiMenuItemUpdateIcon(ih);
+  return 1;
+}
+
 static int winuiMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
-  if (!aux || !aux->isCheckable)
-    return 0;
+  if (!aux)
+    return 1;
 
-  ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
-  if (item)
-    item.IsChecked(iupStrEqualNoCase(value, "ON"));
+  iupAttribSet(ih, "VALUE", iupStrBoolean(value) ? "ON" : "OFF");
+
+  if (aux->isCheckable)
+  {
+    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+    if (item)
+      item.IsChecked(iupStrBoolean(value));
+  }
+
+  if (iupAttribGet(ih, "IMPRESS"))
+    winuiMenuItemUpdateIcon(ih);
 
   return 0;
 }
@@ -506,14 +570,13 @@ static int winuiMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 static char* winuiMenuItemGetValueAttrib(Ihandle* ih)
 {
   IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
-  if (!aux || !aux->isCheckable)
-    return NULL;
-
-  ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
-  if (item)
-    return item.IsChecked() ? (char*)"ON" : (char*)"OFF";
-
-  return NULL;
+  if (aux && aux->isCheckable)
+  {
+    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+    if (item)
+      return item.IsChecked() ? (char*)"ON" : (char*)"OFF";
+  }
+  return NULL;  /* fall back to hash for non-checkable items */
 }
 
 static int winuiMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
@@ -538,6 +601,32 @@ static int winuiMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
   }
 
   return 0;
+}
+
+static int winuiSubmenuSetImageAttrib(Ihandle* ih, const char* value)
+{
+  Ihandle* parent = ih->parent;
+  if (parent && iupMenuIsMenuBar(parent))
+    return 1;  /* MenuBarItem has no Icon property */
+
+  MenuFlyoutSubItem subItem = winuiGetHandle<MenuFlyoutSubItem>(ih);
+  if (!subItem)
+    return 1;
+
+  IconElement icon{nullptr};
+  if (value)
+  {
+    void* imghandle = iupImageGetImage(value, ih, 0, NULL);
+    WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
+    if (bitmap)
+    {
+      ImageIcon imageIcon;
+      imageIcon.Source(bitmap);
+      icon = imageIcon;
+    }
+  }
+  subItem.Icon(icon);
+  return 1;
 }
 
 static int winuiSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
@@ -790,8 +879,8 @@ extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", winuiMenuItemGetValueAttrib, winuiMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, winuiMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, winuiMenuItemSetImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", NULL, winuiMenuItemSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, winuiMenuItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
 
@@ -827,6 +916,7 @@ extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "TITLE", NULL, winuiSubmenuSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, winuiSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiSubmenuSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 }
 

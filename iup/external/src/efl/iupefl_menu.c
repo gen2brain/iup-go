@@ -193,10 +193,10 @@ static void eflMenuShowCallback(void* data, Evas* e, Evas_Object* obj, void* eve
     cb(ih);
 }
 
-static void eflMenuItemUpdateMark(Ihandle* ih)
+static void eflMenuItemUpdateMark(Ihandle* ih, const char* title_override)
 {
   Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
-  char* title;
+  const char* title;
   char* hidemark;
   char* display_title;
   int show_mark;
@@ -206,10 +206,14 @@ static void eflMenuItemUpdateMark(Ihandle* ih)
     return;
 
   hidemark = iupAttribGet(ih, "HIDEMARK");
-  show_mark = (hidemark == NULL || !iupStrEqualNoCase(hidemark, "YES"));
+  if (hidemark)
+    show_mark = !iupStrEqualNoCase(hidemark, "YES");
+  else
+    show_mark = iupAttribGet(ih, "VALUE") != NULL ||
+                (ih->parent && iupAttribGetBoolean(ih->parent, "RADIO"));
   is_checked = iupAttribGetBoolean(ih, "VALUE");
 
-  title = iupAttribGet(ih, "TITLE");
+  title = title_override ? title_override : iupAttribGet(ih, "TITLE");
   if (!title) title = "";
 
   display_title = eflMenuGetDisplayTitle(title);
@@ -249,7 +253,18 @@ static void eflMenuItemActivateCb(void* data, Evas_Object* obj, void* event_info
     else
       iupAttribSet(ih, "VALUE", "ON");
 
-    eflMenuItemUpdateMark(ih);
+    eflMenuItemUpdateMark(ih, NULL);
+  }
+  else if (ih->parent && iupAttribGetBoolean(ih->parent, "RADIO"))
+  {
+    Ihandle* sib;
+    for (sib = ih->parent->firstchild; sib; sib = sib->brother)
+    {
+      if (!sib->iclass || !iupStrEqual(sib->iclass->name, "menuitem"))
+        continue;
+      iupAttribSet(sib, "VALUE", sib == ih ? "ON" : "OFF");
+      eflMenuItemUpdateMark(sib, NULL);
+    }
   }
 
   cb = IupGetCallback(ih, "ACTION");
@@ -285,52 +300,20 @@ static void eflMenuDismissedCallback(void* data, Evas_Object* obj, void* event_i
 
 static int eflMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
-  char* display_title;
-
-  if (!item)
-    return 1;
-
-  if (!value)
-    value = "";
-
-  display_title = eflMenuGetDisplayTitle(value);
-  elm_object_item_text_set(item, display_title);
-
-  if (display_title != value)
-    free(display_title);
-
+  eflMenuItemUpdateMark(ih, value);
   return 1;
 }
 
 static int eflMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "VALUE", value);
-  eflMenuItemUpdateMark(ih);
-  return 1;
+  iupAttribSet(ih, "VALUE", iupStrBoolean(value) ? "ON" : "OFF");
+  eflMenuItemUpdateMark(ih, NULL);
+  return 0;
 }
 
 static char* eflMenuItemGetValueAttrib(Ihandle* ih)
 {
   return iupAttribGet(ih, "VALUE");
-}
-
-static int eflMenuItemSetImageAttrib(Ihandle* ih, const char* value)
-{
-  Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
-
-  if (item && value)
-  {
-    Evas_Object* menu = eflMenuGetRootMenu(ih);
-    if (menu)
-    {
-      Evas_Object* image = iupeflImageGetImageForParent(value, ih, 0, menu);
-      if (image)
-        elm_object_item_part_content_set(item, "icon", image);
-    }
-  }
-
-  return 1;
 }
 
 static int eflMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
@@ -382,8 +365,7 @@ static int eflMenuItemMapMethod(Ihandle* ih)
   ih->serial = iupMenuGetChildId(ih);
   iupAttribSet(ih, "_IUP_EFL_ITEM", (char*)item);
 
-  if (iupAttribGetBoolean(ih, "VALUE"))
-    eflMenuItemUpdateMark(ih);
+  eflMenuItemUpdateMark(ih, NULL);
 
   if (!iupAttribGetBoolean(ih, "ACTIVE"))
     elm_object_item_disabled_set(item, EINA_TRUE);
@@ -415,7 +397,9 @@ IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "VALUE", eflMenuItemGetValueAttrib, eflMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", NULL, eflMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, eflMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }
@@ -489,24 +473,6 @@ static int eflSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
 
   if (display_title != value)
     free(display_title);
-
-  return 1;
-}
-
-static int eflSubmenuSetImageAttrib(Ihandle* ih, const char* value)
-{
-  Elm_Object_Item* item = (Elm_Object_Item*)iupAttribGet(ih, "_IUP_EFL_ITEM");
-
-  if (item && value)
-  {
-    Evas_Object* menu = eflMenuGetRootMenu(ih);
-    if (menu)
-    {
-      Evas_Object* image = iupeflImageGetImageForParent(value, ih, 0, menu);
-      if (image)
-        elm_object_item_part_content_set(item, "icon", image);
-    }
-  }
 
   return 1;
 }
@@ -597,7 +563,7 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "TITLE", NULL, eflSubmenuSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, eflSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 }
 
 /****************************************************************

@@ -383,15 +383,10 @@ static int qtMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 
   if (action->isCheckable())
   {
-    /* For radio items, always set to ON */
     if (iupAttribGetBoolean(ih->parent, "RADIO"))
       value = "ON";
 
-    /* Block signals to prevent triggering callback */
-    action->blockSignals(true);
     action->setChecked(iupStrBoolean(value));
-    action->blockSignals(false);
-
     return 0;
   }
   else
