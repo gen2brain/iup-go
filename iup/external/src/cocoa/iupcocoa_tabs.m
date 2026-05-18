@@ -645,6 +645,26 @@ IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
   return cocoaTabsPosFixFromNative(ih, native_pos);
 }
 
+static NSImage* cocoaTabsScaledTabImage(Ihandle* ih, const char* image_name)
+{
+  if (!image_name) return nil;
+  NSImage* src = iupImageGetImage(image_name, ih, 0, NULL);
+  if (!src) return nil;
+
+  int raw_w = 0, raw_h = 0;
+  iupdrvImageGetInfo(src, &raw_w, &raw_h, NULL);
+  if (raw_w <= 0 || raw_h <= 0) return src;
+
+  int dst_w = raw_w, dst_h = raw_h;
+  iupTabsScaleImageSize(ih, raw_w, raw_h, &dst_w, &dst_h);
+  if (dst_w == raw_w && dst_h == raw_h)
+    return src;
+
+  NSImage* copy = [src copy];
+  [copy setSize:NSMakeSize(dst_w, dst_h)];
+  return [copy autorelease];
+}
+
 IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
 {
   int width = 0;
@@ -675,8 +695,9 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     {
       int img_w, img_h;
       iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
 
-      width += 16;
+      width += img_w;
       if (tab_title)
         width += 4;  /* Spacing between image and text */
 
@@ -881,7 +902,7 @@ static int cocoaTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
   if (!tab_bar_view || (NSUInteger)native_pos >= [[tab_bar_view tabs] count]) return 1;
 
   IupCocoaTabCell* tab_cell = [[tab_bar_view tabs] objectAtIndex:native_pos];
-  NSImage* bitmap_image = value ? iupImageGetImage(value, ih, 0, NULL) : nil;
+  NSImage* bitmap_image = cocoaTabsScaledTabImage(ih, value);
   [tab_cell setImage:bitmap_image];
 
   [tab_bar_view redraw];
@@ -1052,7 +1073,7 @@ static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos
     if (stripped_str && stripped_str != title) free(stripped_str);
   }
 
-  NSImage* ns_image = image_name ? iupImageGetImage(image_name, ih, 0, NULL) : nil;
+  NSImage* ns_image = cocoaTabsScaledTabImage(ih, image_name);
 
   IupCocoaTabCell *tab_cell = [IupCocoaTabCell tabCellWithTabBarView:tab_bar_view title:ns_title image:ns_image];
 

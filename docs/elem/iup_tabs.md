@@ -80,6 +80,10 @@ See also [IupImage](iup_image.md). In Motif, the image is shown only if **TABTIT
 In Windows and Motif set the BGCOLOR attribute before setting the image.
 When set after map will update the TABIMAGE attribute on the respective child.
 
+**TABIMAGESIZE** (non-inheritable): target size for tab icons, as "WxH",
+"N" (NxN), or "NATIVE" to keep the source size. Default is font-derived.
+Images larger than the box are downscaled with aspect preserved.
+
 **TABVISIBLEn** (non-inheritable): Allows to hide a tab. n starts at 0.
 When a tab is hidden the tabs indices are not changed. Can be Yes or No. Default: Yes.
 

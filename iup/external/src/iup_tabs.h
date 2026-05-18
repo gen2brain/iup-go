@@ -22,6 +22,9 @@ char* iupTabsGetTitleAttrib(Ihandle* ih, int pos);
 
 void iupTabsCheckCurrentTab(Ihandle* ih, int pos, int removed);
 
+IUP_SDK_API void iupTabsGetImageBoxSize(Ihandle* ih, int* target_w, int* target_h);
+IUP_SDK_API void iupTabsScaleImageSize(Ihandle* ih, int raw_w, int raw_h, int* out_w, int* out_h);
+
 /** \addtogroup drvtabs
  * @{ */
 IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos);

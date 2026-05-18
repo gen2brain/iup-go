@@ -25,6 +25,76 @@ char* iupTabsGetTabPaddingAttrib(Ihandle* ih)
   return iupStrReturnIntInt(ih->data->horiz_padding, ih->data->vert_padding, 'x');
 }
 
+IUP_SDK_API void iupTabsGetImageBoxSize(Ihandle* ih, int* target_w, int* target_h)
+{
+  char* size = iupAttribGet(ih, "TABIMAGESIZE");
+  int tw = 0, th = 0;
+
+  if (size)
+  {
+    if (iupStrEqualNoCase(size, "NATIVE"))
+    {
+      *target_w = 0;
+      *target_h = 0;
+      return;
+    }
+    if (iupStrToIntInt(size, &tw, &th, 'x') == 1)
+      th = tw;
+  }
+
+  if (tw <= 0 || th <= 0)
+  {
+    int charheight = 0;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    if (charheight <= 0) charheight = 12;
+    tw = th = (charheight * 3) / 2;
+    if (tw < 16) tw = th = 16;
+    if (tw > 64) tw = th = 64;
+  }
+
+  *target_w = tw;
+  *target_h = th;
+}
+
+IUP_SDK_API void iupTabsScaleImageSize(Ihandle* ih, int raw_w, int raw_h, int* out_w, int* out_h)
+{
+  int box_w, box_h;
+
+  if (raw_w <= 0 || raw_h <= 0)
+  {
+    *out_w = raw_w;
+    *out_h = raw_h;
+    return;
+  }
+
+  iupTabsGetImageBoxSize(ih, &box_w, &box_h);
+  if (box_w <= 0 || box_h <= 0)
+  {
+    *out_w = raw_w;
+    *out_h = raw_h;
+    return;
+  }
+
+  if (raw_w <= box_w && raw_h <= box_h)
+  {
+    *out_w = raw_w;
+    *out_h = raw_h;
+    return;
+  }
+
+  {
+    double sx = (double)box_w / (double)raw_w;
+    double sy = (double)box_h / (double)raw_h;
+    double s = sx < sy ? sx : sy;
+    int w = (int)(raw_w * s + 0.5);
+    int h = (int)(raw_h * s + 0.5);
+    if (w < 1) w = 1;
+    if (h < 1) h = 1;
+    *out_w = w;
+    *out_h = h;
+  }
+}
+
 static void iTabsGetMaxTabSize(Ihandle* ih, int* max_width, int* max_height)
 {
   int width, height, pos;
@@ -686,6 +756,7 @@ Iclass* iupTabsNewClass(void)
   iupClassRegisterAttribute(ic, "COUNT", iTabsGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWCLOSE", iTabsGetShowCloseAttrib, iTabsSetShowCloseAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CHILDSIZEALL", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABIMAGESIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* Base Container */
   iupClassRegisterAttribute(ic, "CLIENTSIZE", iTabsGetClientSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

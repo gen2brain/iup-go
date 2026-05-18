@@ -127,6 +127,7 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
       {
         int img_w, img_h;
         iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+        iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
         width += img_w;
         if (tab_title)
           width += 2;
@@ -278,6 +279,34 @@ static int gtk4TabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
   return 0;
 }
 
+static void gtk4TabsApplyTabImage(Ihandle* ih, GtkImage* tab_image, GdkPaintable* paintable)
+{
+  if (!paintable)
+  {
+    gtk_image_set_from_paintable(tab_image, NULL);
+    gtk_image_set_pixel_size(tab_image, -1);
+    return;
+  }
+
+  {
+    int raw_w = gdk_paintable_get_intrinsic_width(paintable);
+    int raw_h = gdk_paintable_get_intrinsic_height(paintable);
+    int box_w, box_h, side;
+    if (raw_w <= 0 || raw_h <= 0)
+    {
+      gtk_image_set_from_paintable(tab_image, paintable);
+      return;
+    }
+    iupTabsScaleImageSize(ih, raw_w, raw_h, &box_w, &box_h);
+    side = box_w > box_h ? box_w : box_h;
+    gtk_image_set_from_paintable(tab_image, paintable);
+    if (side != raw_w || side != raw_h)
+      gtk_image_set_pixel_size(tab_image, side);
+    else
+      gtk_image_set_pixel_size(tab_image, -1);
+  }
+}
+
 static int gtk4TabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 {
   Ihandle* child = IupGetChild(ih, pos);
@@ -293,11 +322,10 @@ static int gtk4TabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
       if (value)
       {
         GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(value, ih, 0, NULL);
-        if (paintable)
-          gtk_image_set_from_paintable((GtkImage*)tab_image, paintable);
+        gtk4TabsApplyTabImage(ih, (GtkImage*)tab_image, paintable);
       }
       else
-        gtk_image_set_from_paintable((GtkImage*)tab_image, NULL);
+        gtk4TabsApplyTabImage(ih, (GtkImage*)tab_image, NULL);
     }
   }
   return 1;
@@ -697,7 +725,7 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       tab_image = gtk_image_new();
 
       if (paintable)
-        gtk_image_set_from_paintable((GtkImage*)tab_image, paintable);
+        gtk4TabsApplyTabImage(ih, (GtkImage*)tab_image, paintable);
     }
 
     if(ih->data->show_close)

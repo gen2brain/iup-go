@@ -249,7 +249,26 @@ static int fltkTabsGetTabHeight(Ihandle* ih)
 {
   int ch;
   iupdrvFontGetCharSize(ih, NULL, &ch);
-  return ch + 8;
+  int h = ch;
+
+  int has_image = 0;
+  for (Ihandle* child = ih->firstchild; child; child = child->brother)
+  {
+    int pos = IupGetChildPos(ih, child);
+    if (iupAttribGetId(ih, "TABIMAGE", pos) || iupAttribGet(child, "TABIMAGE"))
+    {
+      has_image = 1;
+      break;
+    }
+  }
+  if (has_image)
+  {
+    int box_w = 0, box_h = 0;
+    iupTabsGetImageBoxSize(ih, &box_w, &box_h);
+    if (box_h > h) h = box_h;
+  }
+
+  return h + 8;
 }
 
 /****************************************************************************
@@ -296,9 +315,12 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
     if (img)
     {
       Fl_Image* fl_img = (Fl_Image*)img;
-      w += fl_img->w() + 4;
-      if (fl_img->h() + 8 > h)
-        h = fl_img->h() + 8;
+      int iw = fl_img->w();
+      int ih_img = fl_img->h();
+      iupTabsScaleImageSize(ih, iw, ih_img, &iw, &ih_img);
+      w += iw + 4;
+      if (ih_img + 8 > h)
+        h = ih_img + 8;
     }
   }
 
@@ -378,6 +400,38 @@ static int fltkTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
   return 0;
 }
 
+static void fltkTabsAssignTabImage(Ihandle* ih, Ihandle* child, Fl_Widget* page, Fl_Image* src)
+{
+  Fl_Image* prev = (Fl_Image*)iupAttribGet(child, "_IUPFLTK_TABIMAGE_OWNED");
+  iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", NULL);
+
+  if (!src)
+  {
+    page->image(NULL);
+    if (prev) delete prev;
+    return;
+  }
+
+  int raw_w = src->w();
+  int raw_h = src->h();
+  int dst_w = raw_w, dst_h = raw_h;
+  iupTabsScaleImageSize(ih, raw_w, raw_h, &dst_w, &dst_h);
+  if (dst_w == raw_w && dst_h == raw_h)
+  {
+    page->image(src);
+  }
+  else
+  {
+    Fl_RGB_Scaling prev = Fl_Image::RGB_scaling();
+    Fl_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
+    Fl_Image* scaled = src->copy(dst_w, dst_h);
+    Fl_Image::RGB_scaling(prev);
+    page->image(scaled);
+    iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", (char*)scaled);
+  }
+  if (prev) delete prev;
+}
+
 static int fltkTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 {
   IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
@@ -395,13 +449,13 @@ static int fltkTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
       Fl_Image* image = (Fl_Image*)iupImageGetImage(value, ih, 0, bgcolor);
       if (image)
       {
-        page->image(image);
+        fltkTabsAssignTabImage(ih, child, page, image);
         tabs->tab_align(FL_ALIGN_IMAGE_NEXT_TO_TEXT);
       }
     }
     else
     {
-      page->image(NULL);
+      fltkTabsAssignTabImage(ih, child, page, NULL);
     }
     tabs->redraw();
   }
@@ -637,7 +691,7 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       Fl_Image* img = (Fl_Image*)iupImageGetImage(tabimage, ih, 0, bgcolor);
       if (img)
       {
-        page->image(img);
+        fltkTabsAssignTabImage(ih, child, page, img);
         tabs->tab_align(FL_ALIGN_IMAGE_NEXT_TO_TEXT);
       }
     }
@@ -684,8 +738,15 @@ static void fltkTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
     if (page)
     {
+      page->image(NULL);
       tabs->remove(page);
       delete page;
+    }
+
+    {
+      Fl_Image* owned = (Fl_Image*)iupAttribGet(child, "_IUPFLTK_TABIMAGE_OWNED");
+      if (owned) delete owned;
+      iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", NULL);
     }
 
     iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
@@ -768,6 +829,18 @@ static int fltkTabsMapMethod(Ihandle* ih)
 
 static void fltkTabsUnMapMethod(Ihandle* ih)
 {
+  for (Ihandle* child = ih->firstchild; child; child = child->brother)
+  {
+    Fl_Image* owned = (Fl_Image*)iupAttribGet(child, "_IUPFLTK_TABIMAGE_OWNED");
+    if (owned)
+    {
+      Fl_Widget* page = (Fl_Widget*)iupAttribGet(child, "_IUPTAB_PAGE");
+      if (page) page->image(NULL);
+      delete owned;
+      iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", NULL);
+    }
+  }
+
   IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
   if (tabs)
   {

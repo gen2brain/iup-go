@@ -190,6 +190,30 @@ static int gtkTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
   return 0;
 }
 
+static void gtkTabsApplyTabImage(Ihandle* ih, GtkImage* tab_image, GdkPixbuf* pixbuf)
+{
+  if (!pixbuf)
+  {
+    gtk_image_set_from_pixbuf(tab_image, NULL);
+    return;
+  }
+
+  {
+    int raw_w = gdk_pixbuf_get_width(pixbuf);
+    int raw_h = gdk_pixbuf_get_height(pixbuf);
+    int box_w, box_h;
+    iupTabsScaleImageSize(ih, raw_w, raw_h, &box_w, &box_h);
+    if (box_w != raw_w || box_h != raw_h)
+    {
+      GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixbuf, box_w, box_h, GDK_INTERP_BILINEAR);
+      gtk_image_set_from_pixbuf(tab_image, scaled);
+      if (scaled) g_object_unref(scaled);
+    }
+    else
+      gtk_image_set_from_pixbuf(tab_image, pixbuf);
+  }
+}
+
 static int gtkTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 {
   Ihandle* child = IupGetChild(ih, pos);
@@ -205,8 +229,7 @@ static int gtkTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
       if (value)
       {
         GdkPixbuf* pixbuf = iupImageGetImage(value, ih, 0, NULL);
-        if (pixbuf)
-          gtk_image_set_from_pixbuf((GtkImage*)tab_image, pixbuf);
+        gtkTabsApplyTabImage(ih, (GtkImage*)tab_image, pixbuf);
       }
       else
         gtk_image_set_from_pixbuf((GtkImage*)tab_image, NULL);
@@ -484,7 +507,7 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       tab_image = gtk_image_new();
 
       if (pixbuf)
-        gtk_image_set_from_pixbuf((GtkImage*)tab_image, pixbuf);
+        gtkTabsApplyTabImage(ih, (GtkImage*)tab_image, pixbuf);
     }
 
     if(ih->data->show_close)
@@ -698,6 +721,7 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     {
       int img_w, img_h;
       iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
       width += img_w;
       if (tab_title)
         width += 2;

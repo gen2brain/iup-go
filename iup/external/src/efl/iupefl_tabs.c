@@ -310,13 +310,27 @@ static int eflTabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
 static void eflTabsSetItemIcon(Eo* item, const char* tabimage, Ihandle* ih)
 {
   Eo* efl_img;
+  int raw_w = 0, raw_h = 0, dst_w, dst_h;
 
   if (!item || !tabimage)
     return;
 
+  iupImageGetInfo(tabimage, &raw_w, &raw_h, NULL);
+  dst_w = raw_w;
+  dst_h = raw_h;
+  if (raw_w > 0 && raw_h > 0)
+    iupTabsScaleImageSize(ih, raw_w, raw_h, &dst_w, &dst_h);
+
   efl_img = iupeflImageGetImage(tabimage, ih, 0);
   if (efl_img)
   {
+    if (dst_w > 0 && dst_h > 0 && (dst_w != raw_w || dst_h != raw_h))
+    {
+      evas_object_image_smooth_scale_set(efl_img, EINA_TRUE);
+      efl_gfx_hint_size_min_set(efl_img, EINA_SIZE2D(dst_w, dst_h));
+      efl_gfx_hint_size_max_set(efl_img, EINA_SIZE2D(dst_w, dst_h));
+      efl_gfx_entity_size_set(efl_img, EINA_SIZE2D(dst_w, dst_h));
+    }
     efl_gfx_entity_visible_set(efl_img, EINA_TRUE);
     efl_content_set(efl_part(item, "icon"), efl_img);
   }
@@ -688,6 +702,7 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     {
       int img_w, img_h;
       iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
 
       width += img_w;
       if (tab_title)
