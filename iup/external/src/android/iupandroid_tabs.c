@@ -88,11 +88,11 @@ void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_im
   int w = 0, h = 0;
   if (tab_title)
     iupdrvFontGetMultiLineStringSize(ih, tab_title, &w, &h);
-  /* Inline layout: icon 24dp at text left, 8dp gap between. */
   if (tab_image)
   {
     int iw = 0, ih_img = 0;
     iupImageGetInfo(tab_image, &iw, &ih_img, NULL);
+    iupTabsScaleImageSize(ih, iw, ih_img, &iw, &ih_img);
     w += iw + iupAndroid_DpToPx(8.0f);
     if (ih_img > h) h = ih_img;
   }
@@ -100,11 +100,19 @@ void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_im
   if (tab_height) *tab_height = h + iupAndroid_DpToPx(16.0f);
 }
 
+static int androidTabsIconSizePx(Ihandle* ih)
+{
+  int box_w = 0, box_h = 0;
+  iupTabsGetImageBoxSize(ih, &box_w, &box_h);
+  int side = box_w > box_h ? box_w : box_h;
+  return side > 0 ? side : 0;
+}
+
 static int androidTabsAppendChild(Ihandle* ih, Ihandle* child, int pos)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidTabsFindHelper(jni_env);
-  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "addTab", "(Landroid/view/View;ILjava/lang/String;Landroid/graphics/Bitmap;)Landroid/view/View;");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "addTab", "(Landroid/view/View;ILjava/lang/String;Landroid/graphics/Bitmap;I)Landroid/view/View;");
 
   const char* title = iupAttribGetId(ih, "TABTITLE", pos);
   if (!title) title = iupAttribGet(child, "TABTITLE");
@@ -114,8 +122,9 @@ static int androidTabsAppendChild(Ihandle* ih, Ihandle* child, int pos)
   const char* image = iupAttribGetId(ih, "TABIMAGE", pos);
   if (!image) image = iupAttribGet(child, "TABIMAGE");
   jobject j_bitmap = image ? (jobject)iupImageGetImage(image, ih, 0, NULL) : NULL;
+  jint icon_size = (jint)androidTabsIconSizePx(ih);
 
-  jobject page = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jobject)ih->handle, (jint)pos, j_title, j_bitmap);
+  jobject page = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jobject)ih->handle, (jint)pos, j_title, j_bitmap, icon_size);
   iupAndroid_CheckException(jni_env, "IupTabsHelper.addTab");
 
   if (j_title) (*jni_env)->DeleteLocalRef(jni_env, j_title);
@@ -239,8 +248,9 @@ static int androidTabsSetTabImageAttribId(Ihandle* ih, int pos, const char* valu
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTabsFindHelper(jni_env);
-  jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setTabIcon", "(Landroid/view/View;ILandroid/graphics/Bitmap;)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, (jint)pos, bitmap);
+  jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setTabIcon", "(Landroid/view/View;ILandroid/graphics/Bitmap;I)V");
+  jint icon_size = (jint)androidTabsIconSizePx(ih);
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, (jint)pos, bitmap, icon_size);
   iupAndroid_CheckException(jni_env, "IupTabsHelper.setTabIcon");
   (*jni_env)->DeleteLocalRef(jni_env, cls);
   return 1;

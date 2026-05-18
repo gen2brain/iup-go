@@ -246,6 +246,25 @@ static BOOL cocoaTouchTabsShouldShowClose(Ihandle* ih, int iup_pos);
 @end
 
 
+static UIImage* cocoaTouchTabsScaledImage(Ihandle* ih, UIImage* src)
+{
+	if (!src) return nil;
+	int raw_w = (int)src.size.width;
+	int raw_h = (int)src.size.height;
+	if (raw_w <= 0 || raw_h <= 0) return src;
+	int dst_w = raw_w, dst_h = raw_h;
+	iupTabsScaleImageSize(ih, raw_w, raw_h, &dst_w, &dst_h);
+	if (dst_w == raw_w && dst_h == raw_h) return src;
+
+	CGSize target = CGSizeMake(dst_w, dst_h);
+	UIGraphicsImageRenderer* renderer = [[[UIGraphicsImageRenderer alloc] initWithSize:target] autorelease];
+	UIImage* scaled = [renderer imageWithActions:^(UIGraphicsImageRendererContext* ctx) {
+		(void)ctx;
+		[src drawInRect:CGRectMake(0, 0, target.width, target.height)];
+	}];
+	return [scaled imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+}
+
 /* segments are title-OR-image only; composite [icon][text] into one UIImage when both are set */
 static UIImage* cocoaTouchTabsBuildComposite(UISegmentedControl* sc, UIImage* image, NSString* title)
 {
@@ -309,7 +328,7 @@ static int cocoaTouchTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iu
 	{
 		void* img = iupImageGetImage(image_name, ih, 0, NULL);
 		if (img && [(id)img isKindOfClass:[UIImage class]])
-			ns_image = (UIImage*)img;
+			ns_image = cocoaTouchTabsScaledImage(ih, (UIImage*)img);
 	}
 
 	iupAttribSet(ih, "_IUPCOCOATOUCH_IGNORE_CHANGE", "1");
@@ -444,6 +463,7 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
 	{
 		int iw = 0, ih_img = 0;
 		iupImageGetInfo(tab_image, &iw, &ih_img, NULL);
+		iupTabsScaleImageSize(ih, iw, ih_img, &iw, &ih_img);
 		text_w += iw + (tab_title ? 4 : 0);
 		if (ih_img > text_h) text_h = ih_img;
 	}
@@ -509,7 +529,7 @@ static void cocoaTouchTabsApplyTitleImage(Ihandle* ih, int pos)
 	if (image_name)
 	{
 		void* raw = iupImageGetImage(image_name, ih, 0, NULL);
-		if (raw && [(id)raw isKindOfClass:[UIImage class]]) img = (UIImage*)raw;
+		if (raw && [(id)raw isKindOfClass:[UIImage class]]) img = cocoaTouchTabsScaledImage(ih, (UIImage*)raw);
 	}
 	NSString* ns_title = cocoaTouchTabsStrippedTitle(title);
 

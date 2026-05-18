@@ -230,6 +230,17 @@ public final class IupTabsHelper
             }
         }
 
+        void setIconSizePx(int sizePx)
+        {
+            if (sizePx <= 0) return;
+            LayoutParams lp = (LayoutParams)icon.getLayoutParams();
+            if (lp == null) return;
+            lp.width = sizePx;
+            lp.height = sizePx;
+            icon.setLayoutParams(lp);
+            icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        }
+
         void setShowClose(boolean show)
         {
             closeBtn.setVisibility(show ? VISIBLE : GONE);
@@ -245,7 +256,7 @@ public final class IupTabsHelper
 
     /* Returns the IupAndroidFixed page IUP children get parented into. */
     @Keep
-    public static View addTab(View tabs, int pos, String title, Bitmap icon)
+    public static View addTab(View tabs, int pos, String title, Bitmap icon, int iconSizePx)
     {
         if (!(tabs instanceof IupAndroidTabs t)) return null;
 
@@ -258,6 +269,7 @@ public final class IupTabsHelper
 
         final TabContent tc = new TabContent(t.getContext());
         tc.setTitleText(title);
+        tc.setIconSizePx(iconSizePx);
         tc.setIconBitmap(icon);
         if (t.showClose) tc.setShowClose(true);
         tc.closeBtn.setOnClickListener(v -> {
@@ -380,11 +392,15 @@ public final class IupTabsHelper
     }
 
     @Keep
-    public static void setTabIcon(View tabs, int pos, Bitmap bmp)
+    public static void setTabIcon(View tabs, int pos, Bitmap bmp, int iconSizePx)
     {
         if (!(tabs instanceof IupAndroidTabs t)) return;
         TabContent tc = contentOf(t.tabLayout.getTabAt(pos));
-        if (tc != null) tc.setIconBitmap(bmp);
+        if (tc != null)
+        {
+            tc.setIconSizePx(iconSizePx);
+            tc.setIconBitmap(bmp);
+        }
     }
 
     /* Hides the tab cell (and its page); indices stay stable per IUP semantics. */

@@ -135,7 +135,24 @@ static void winuiTabsSetItemIcon(Ihandle* child, const char* tabimage, Ihandle* 
   if (!bitmap)
     return;
 
+  int raw_w = 0, raw_h = 0;
+  iupdrvImageGetInfo(imghandle, &raw_w, &raw_h, NULL);
+  int dst_w = raw_w, dst_h = raw_h;
+  iupTabsScaleImageSize(ih, raw_w, raw_h, &dst_w, &dst_h);
+
   img.Source(bitmap);
+  if (dst_w > 0 && dst_h > 0 && (dst_w != raw_w || dst_h != raw_h))
+  {
+    img.Width(dst_w);
+    img.Height(dst_h);
+    img.Stretch(Stretch::Uniform);
+  }
+  else
+  {
+    img.ClearValue(FrameworkElement::WidthProperty());
+    img.ClearValue(FrameworkElement::HeightProperty());
+    img.Stretch(Stretch::None);
+  }
   img.Visibility(Visibility::Visible);
 }
 
@@ -584,6 +601,7 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
     {
       int img_w = 0, img_h = 0;
       iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
       w += img_w;
       if (img_h > h) h = img_h;
     }

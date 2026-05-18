@@ -550,6 +550,7 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
     {
       int img_w, img_h;
       iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
       width += img_w;
       width += 4;  /* Qt adds 4px padding when icon is present */
       if (img_h > height)
@@ -1207,6 +1208,13 @@ static int qtTabsMapMethod(Ihandle* ih)
 
   /* Set tab position */
   qtTabsUpdateTabType(ih);
+
+  {
+    int icon_w, icon_h;
+    iupTabsGetImageBoxSize(ih, &icon_w, &icon_h);
+    if (icon_w > 0 && icon_h > 0)
+      tabs->setIconSize(QSize(icon_w, icon_h));
+  }
 
   /* Set multiline behavior (limited support in Qt) */
   /* Qt doesn't have traditional multiline tabs, but we can control scroll buttons */

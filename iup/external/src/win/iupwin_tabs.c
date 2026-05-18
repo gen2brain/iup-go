@@ -353,6 +353,7 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     {
       int img_w, img_h;
       iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
 
       if (is_vertical)
       {
@@ -390,43 +391,84 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
   if (tab_height) *tab_height = height;
 }
 
+static HBITMAP winTabsCreateScaledBitmap(HBITMAP src, int src_w, int src_h, int dst_w, int dst_h)
+{
+  HDC screen = GetDC(NULL);
+  HDC src_dc = CreateCompatibleDC(screen);
+  HDC dst_dc = CreateCompatibleDC(screen);
+  BITMAPINFO bmi;
+  void* bits = NULL;
+  HBITMAP dst;
+  HGDIOBJ old_src, old_dst;
+
+  ZeroMemory(&bmi, sizeof(bmi));
+  bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  bmi.bmiHeader.biWidth = dst_w;
+  bmi.bmiHeader.biHeight = -dst_h;
+  bmi.bmiHeader.biPlanes = 1;
+  bmi.bmiHeader.biBitCount = 32;
+  bmi.bmiHeader.biCompression = BI_RGB;
+  dst = CreateDIBSection(screen, &bmi, DIB_RGB_COLORS, &bits, NULL, 0);
+
+  old_src = SelectObject(src_dc, src);
+  old_dst = SelectObject(dst_dc, dst);
+
+  SetStretchBltMode(dst_dc, HALFTONE);
+  SetBrushOrgEx(dst_dc, 0, 0, NULL);
+  StretchBlt(dst_dc, 0, 0, dst_w, dst_h, src_dc, 0, 0, src_w, src_h, SRCCOPY);
+
+  SelectObject(src_dc, old_src);
+  SelectObject(dst_dc, old_dst);
+  DeleteDC(src_dc);
+  DeleteDC(dst_dc);
+  ReleaseDC(NULL, screen);
+
+  return dst;
+}
+
 static int winTabsGetImageIndex(Ihandle* ih, const char* name)
 {
   HIMAGELIST image_list;
   int count, i, ret;
-  int width, height;
+  int img_w, img_h, dst_w, dst_h;
   Iarray* bmp_array;
   HBITMAP *bmp_array_data;
+  Iarray* scaled_array;
+  HBITMAP *scaled_array_data;
   HBITMAP bmp = iupImageGetImage(name, ih, 0, NULL);
   if (!bmp)
     return -1;
 
-  /* the array is used to avoid adding the same bitmap twice */
   bmp_array = (Iarray*)iupAttribGet(ih, "_IUPWIN_BMPARRAY");
   if (!bmp_array)
   {
-    /* create the array if it does not exist */
     bmp_array = iupArrayCreate(50, sizeof(HBITMAP));
     iupAttribSet(ih, "_IUPWIN_BMPARRAY", (char*)bmp_array);
   }
 
   bmp_array_data = iupArrayGetData(bmp_array);
 
-  /* must use this info, since image can be a driver image loaded from resources */
-  iupdrvImageGetInfo(bmp, &width, &height, NULL);
+  iupdrvImageGetInfo(bmp, &img_w, &img_h, NULL);
+  iupTabsScaleImageSize(ih, img_w, img_h, &dst_w, &dst_h);
 
   image_list = (HIMAGELIST)SendMessage(ih->handle, TCM_GETIMAGELIST, 0, 0);
   if (!image_list)
   {
-    /* create the image list if it does not exist */
-    image_list = ImageList_Create(width, height, ILC_COLOR32, 0, 50);
+    int cell_w, cell_h;
+    iupTabsGetImageBoxSize(ih, &cell_w, &cell_h);
+    if (cell_w <= 0 || cell_h <= 0)
+    {
+      cell_w = img_w;
+      cell_h = img_h;
+    }
+    if (cell_w < dst_w) cell_w = dst_w;
+    if (cell_h < dst_h) cell_h = dst_h;
+    image_list = ImageList_Create(cell_w, cell_h, ILC_COLOR32, 0, 50);
     SendMessage(ih->handle, TCM_SETIMAGELIST, 0, (LPARAM)image_list);
   }
 
-  /* check if that bitmap is already added to the list,
-     but we can not compare with the actual bitmap at the list since it is a copy */
   count = ImageList_GetImageCount(image_list);
-  for (i=0; i<count; i++)
+  for (i = 0; i < count; i++)
   {
     if (bmp_array_data[i] == bmp)
       return i;
@@ -434,7 +476,26 @@ static int winTabsGetImageIndex(Ihandle* ih, const char* name)
 
   bmp_array_data = iupArrayInc(bmp_array);
   bmp_array_data[i] = bmp;
-  ret = ImageList_Add(image_list, bmp, NULL);  /* the bmp is duplicated at the list */
+
+  scaled_array = (Iarray*)iupAttribGet(ih, "_IUPWIN_SCALED_BMPARRAY");
+  if (!scaled_array)
+  {
+    scaled_array = iupArrayCreate(50, sizeof(HBITMAP));
+    iupAttribSet(ih, "_IUPWIN_SCALED_BMPARRAY", (char*)scaled_array);
+  }
+  scaled_array_data = iupArrayInc(scaled_array);
+
+  if (dst_w != img_w || dst_h != img_h)
+  {
+    HBITMAP scaled = winTabsCreateScaledBitmap(bmp, img_w, img_h, dst_w, dst_h);
+    scaled_array_data[i] = scaled;
+    ret = ImageList_Add(image_list, scaled, NULL);
+  }
+  else
+  {
+    scaled_array_data[i] = NULL;
+    ret = ImageList_Add(image_list, bmp, NULL);
+  }
   return ret;
 }
 
@@ -1818,6 +1879,18 @@ static void winTabsUnMapMethod(Ihandle* ih)
   if (iarray)
   {
     iupAttribSet(ih, "_IUPWIN_BMPARRAY", NULL);
+    iupArrayDestroy(iarray);
+  }
+
+  iarray = (Iarray*)iupAttribGet(ih, "_IUPWIN_SCALED_BMPARRAY");
+  if (iarray)
+  {
+    HBITMAP* data = (HBITMAP*)iupArrayGetData(iarray);
+    int n = iupArrayCount(iarray);
+    int k;
+    for (k = 0; k < n; k++)
+      if (data[k]) DeleteObject(data[k]);
+    iupAttribSet(ih, "_IUPWIN_SCALED_BMPARRAY", NULL);
     iupArrayDestroy(iarray);
   }
 
