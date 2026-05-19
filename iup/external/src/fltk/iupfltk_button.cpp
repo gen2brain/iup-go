@@ -194,7 +194,7 @@ static void fltkButtonCallback(Fl_Widget* w, void* data)
 
 extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
-  int border_size = 2 * 5;
+  int has_user_padding = 0;
 
   if (ih)
   {
@@ -206,10 +206,20 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
       iupdrvFontGetCharSize(ih, &charwidth, &charheight);
       (*x) += charheight;
     }
+    has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
   }
 
-  (*x) += border_size;
-  (*y) += border_size;
+  /* user PADDING replaces theme padding; keep only the box edge (frame) */
+  if (has_user_padding)
+  {
+    (*x) += Fl::box_dw(FL_UP_BOX);
+    (*y) += Fl::box_dh(FL_UP_BOX);
+  }
+  else
+  {
+    (*x) += 2 * 5;
+    (*y) += 2 * 5;
+  }
 
   if (ih && iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
     (*x) += (*y) + 2 * ih->data->vert_padding;

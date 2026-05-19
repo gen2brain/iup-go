@@ -151,6 +151,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   dc->offscreen = fl_create_offscreen(dc->w, dc->h);
   iupAttribSet(ih, "_IUP_FLTK_OFFSCREEN", (char*)(size_t)dc->offscreen);
+  iupAttribSet(ih, "DRAWDRIVER", "FLTK");
 
   fl_begin_offscreen(dc->offscreen);
   dc->in_offscreen = 1;
