@@ -11,28 +11,28 @@ package iup
 #cgo web CXXFLAGS: -Iexternal/srcweb
 
 #cgo linux,!android LDFLAGS: -ldl
-#cgo !windows,!darwin,!android LDFLAGS: -lm
+#cgo !windows,!darwin,!android,!haiku LDFLAGS: -lm
 
-#cgo !windows,!darwin,!android CFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
-#cgo !windows,!darwin,!android CXXFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
+#cgo !windows,!darwin,!android,!haiku CFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
+#cgo !windows,!darwin,!android,!haiku CXXFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
 
-#cgo !windows,!darwin,!android,!qt,!efl,!motif,!fltk,!gnustep CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
+#cgo !windows,!darwin,!android,!haiku,!qt,!efl,!motif,!fltk,!gnustep CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 #cgo gtk,gtk2,gtk4 CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 
-#cgo !windows,!darwin,!android,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
-#cgo !windows,!darwin,!android,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
-#cgo !windows,!darwin,!android,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
 
 #cgo qt CFLAGS: -Iexternal/src/qt -DIUP_USE_QT
 #cgo qt CXXFLAGS: -Iexternal/src/qt -DIUP_USE_QT -std=c++17
 
-#cgo !windows,!darwin,!android,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
-#cgo !windows,!darwin,!android,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
-#cgo !windows,!darwin,!android,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
-#cgo !windows,!darwin,!android,!motif,!qt,!efl,!fltk,!gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!gtk2,gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt,gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!efl,!fltk,!gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo !windows,!darwin,!android,!motif,!gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: wayland-egl egl gl
-#cgo !windows,!darwin,!android,!motif,!qt,gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: gl
+#cgo !windows,!darwin,!android,!haiku,!motif,!gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: wayland-egl egl gl
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt,gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: gl
 
 #cgo qt,!qt5,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Widgets
 #cgo qt,qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets
@@ -104,5 +104,13 @@ package iup
 #cgo android LDFLAGS: -llog -ljnigraphics -ldl -lm
 #cgo android,gl LDFLAGS: -lEGL -lGLESv3 -landroid
 #cgo android,plot LDFLAGS: -static-libstdc++
+
+#cgo haiku LDFLAGS: -lbe -ltracker
+#cgo haiku,!qt CFLAGS: -Iexternal/src/haiku -DIUP_USE_HAIKU -I/boot/system/develop/headers/private/shared -I/boot/system/develop/headers/private/interface
+#cgo haiku,!qt CXXFLAGS: -Iexternal/src/haiku -DIUP_USE_HAIKU -std=c++17 -I/boot/system/develop/headers/private/shared -I/boot/system/develop/headers/private/interface
+#cgo haiku,!qt LDFLAGS: -ltranslation -lshared -lcolumnlistview
+#cgo haiku,!qt,gl LDFLAGS: -lGL
+#cgo haiku,!qt,web CXXFLAGS: -I/boot/system/develop/headers/private/netservices
+#cgo haiku,!qt,web LDFLAGS: -lWebKitLegacy -lJavaScriptCore
 */
 import "C"

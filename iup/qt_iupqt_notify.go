@@ -1,4 +1,4 @@
-//go:build qt && !windows && !darwin && !android
+//go:build qt && !windows && !darwin && !android && !haiku
 
 package iup
 

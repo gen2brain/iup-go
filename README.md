@@ -4,7 +4,8 @@
 
 Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
 
-IUP-Go provides system native UI controls for Windows ([Win32](#win32), [WinUI](#winui)), macOS ([Cocoa](#macos)), Linux ([GTK](#gtk), [Qt](#qt), [FLTK](#fltk), [EFL](#efl), [Motif](#motif), [GNUstep](#gnustep)), [Android](#android), and iOS ([CocoaTouch](#ios)).
+IUP-Go provides system native UI controls for Windows ([Win32](#win32), [WinUI](#winui)), macOS ([Cocoa](#macos)), 
+Linux/BSD ([GTK](#gtk), [Qt](#qt), [FLTK](#fltk), [EFL](#efl), [Motif](#motif), [GNUstep](#gnustep)), Haiku ([Interface Kit](#haiku)), Android ([Android](#android)), and iOS ([CocoaTouch](#ios)).
 
 C/C++/Obj-C source code is included and compiled together with bindings.
 Note that the first build can take a few minutes.
@@ -178,6 +179,17 @@ go build -tags gnustep
 ```
 
 [<img src="examples/sample/sample_gnustep.png" width="700"/>](examples/sample/sample_gnustep.png)
+
+#### Haiku
+
+Native `Interface Kit` driver. Requires a Haiku nightly (or `beta6` once released). `haiku_devel` ships with a stock Haiku install, no extra packages needed.
+
+* For `WebBrowser`, install `haikuwebkit_devel` via `pkgman install haikuwebkit_devel`.
+* You can also build for Qt, with the `qt` build tag. Install deps with `pkgman install qt6_base_devel`.
+
+Tested with the [gen2brain/go](https://github.com/gen2brain/go) Haiku port of the Go toolchain.
+
+[<img src="examples/sample/sample_haiku.png" width="700"/>](examples/sample/sample_haiku.png)
 
 #### Mobile
 
