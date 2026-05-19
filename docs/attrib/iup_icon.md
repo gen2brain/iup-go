@@ -15,6 +15,8 @@ Icon sizes are usually less than or equal to 32x32.
 In Windows, the SDK recommends that cursors and icons should be implemented as resources rather than created at run time.
 We suggest using an icon with at least 3 images: 16x16 32bpp, 32x32 32 bpp and 48x48 32 bpp.
 
+In WinUI, the icon is set via WM_SETICON on the XAML Islands host HWND (same as Win32).
+
 In macOS, the icon is set as the application icon via NSApp setApplicationIconImage.
 
 In GTK 3, the icon is set using gdk_pixbuf on the window.
@@ -22,9 +24,17 @@ In GTK 3, the icon is set using gdk_pixbuf on the window.
 In GTK 4, only named theme icons are supported for window icons (via gtk_window_set_icon_name).
 The icon name should match a theme icon installed on the system.
 
+In Motif, the icon is set via the X11 ICCCM `XmNiconPixmap` resource on the shell window.
+
 In Qt, the icon is set using QIcon on the window.
 
+In FLTK, the icon is set via `Fl_Window::icon(Fl_RGB_Image*)`.
+
+In EFL, the icon is set via `efl_ui_win_icon_object_set` on the window.
+
 In Android and iOS, the icon is shown in the title bar next to the title.
+
+In Haiku, BWindow has no per-window icon. ICON writes the running executable's `BAppFileInfo` icon (large + mini sizes) and signals Deskbar to refresh its team entry; the result is visible in Deskbar and the Twitcher. Effect is process-wide: setting ICON on multiple dialogs replaces the previous one.
 
 #### Wayland and .desktop Files
 

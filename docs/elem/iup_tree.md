@@ -288,12 +288,15 @@ But these functions are faster than the traditional functions because they do no
 [Browse for Example Files](../../examples/)
 
 **Windows**
+
 ![](../images/iuptree_win.png)
 
 **Motif**
+
 ![](../images/iuptree_mot.png)
 
 **GTK**
+
 ![](../images/iuptree_gtk.png)
 
 ### See Also

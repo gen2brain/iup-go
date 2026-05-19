@@ -15,6 +15,7 @@ The native handle type depends on the driver:
 - **FLTK**: returns the **Fl_Widget*** handle.
 - **EFL**: returns the **Evas_Object*** (Eo*) handle.
 - **Android**: returns a JNI **GlobalRef** to the Java widget (as void*).
+- **Haiku**: returns the **BView*** handle for controls, **BWindow*** for dialogs (as void*).
 
 ### Notes
 

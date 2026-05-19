@@ -67,12 +67,15 @@ In Win32 uses ChooseFont, in GTK 3 uses GtkFontChooser, in GTK 4 uses GtkFontDia
     IupDestroy(dlg);
 
 **Windows XP**
+
 ![](../images/fontdlg_win.png)
 
 **GTK/GNOME**
+
 ![](../images/fontdlg_gtk.png)
 
 **Motif/MWM**
+
 ![](../images/fontdlg_mot.png)
 
 ### See Also

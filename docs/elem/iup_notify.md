@@ -31,13 +31,14 @@ On Android, TITLE and BODY are reused as the expanded title and summary.
 #### Action Buttons
 
 **ACTION1**, **ACTION2**, **ACTION3**, **ACTION4** (non-inheritable): Labels for up to four action buttons displayed in the notification.
-Not supported in Windows (Win32), but supported in WinUI.
+Not supported in Win32 and Haiku.
 
 #### Behavior
 
 **TIMEOUT** (non-inheritable): Auto-dismiss timeout in milliseconds.
 Default: "-1" (use the system default).
-Supported on Linux/Unix, Android, and on iOS with STYLE=TOAST. Not supported in Windows (Win32), WinUI, or macOS.
+Not supported in Win32, WinUI and macOS.
+On iOS only honored with STYLE=TOAST.
 
 **SILENT** (non-inheritable): Suppress the notification sound.
 
@@ -113,13 +114,18 @@ IupNotify does not create a visible IUP element. It is a non-interactive control
 All content attributes should be set before calling SHOW.
 The notification is displayed asynchronously and callbacks are dispatched through the IUP event loop.
 
-On Linux/Unix, notifications are sent via D-Bus (org.freedesktop.Notifications). The running notification daemon decides which features are supported (action buttons, persistence, etc.).
+The underlying native service per driver:
 
-In Windows (Win32) uses Shell Notification balloon, in WinUI uses AppNotificationManager, in macOS and iOS uses UNUserNotificationCenter, and in Android uses NotificationManager.
+- **Win32**: Shell Notification balloon (no action buttons).
+- **WinUI**: AppNotificationManager.
+- **Linux/Unix** (GTK, GTK 4, Qt, FLTK, EFL, Motif): `org.freedesktop.Notifications` over D-Bus; supported features depend on the running notification daemon.
+- **Cocoa**, **CocoaTouch**: UNUserNotificationCenter (requires permission and a valid bundle identifier).
+- **Android**: NotificationManager (requires `android.permission.POST_NOTIFICATIONS` on API 33+ for STYLE=NOTIFICATION).
+- **Haiku**: BNotification.
 
-On macOS and iOS, the application must have a valid bundle identifier and the user must grant notification permission. Use REQUESTPERMISSION to prompt and PERMISSION to check.
+On macOS and iOS, use REQUESTPERMISSION to prompt and PERMISSION to check the notification permission state.
 
-On Android, apps that use STYLE="NOTIFICATION" must declare `android.permission.POST_NOTIFICATIONS` in their own manifest (API 33+). STYLE="TOAST" needs no permission.
+On Android, STYLE="TOAST" needs no permission.
 
 ### See Also
 

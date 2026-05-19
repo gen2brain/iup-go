@@ -307,15 +307,19 @@ But these functions are faster than the traditional functions because they do no
 [Browse for Example Files](../../examples/)
 
 **Regular Tree**
+
 ![](../images/iupflattree1.png)
 
 **Tree with Toggle**
+
 ![](../images/iupflattree2.png)
 
 **Tree without lines and expander buttons**
+
 ![](../images/iupflattree3.png)
 
 **Tree with extra text area**
+
 ![](../images/iupflattree4.png)
 
 ### See Also

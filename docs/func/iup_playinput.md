@@ -31,7 +31,7 @@ Screen size differences can exist, but if different themes are used, then mouse 
 | Driver                          | Playback |
 |---------------------------------|----------|
 | Win32, WinUI, GTK, Motif        | Yes      |
-| Cocoa, Qt, FLTK, Android        | Yes      |
+| Cocoa, Qt, FLTK, Android, Haiku | Yes      |
 | GTK4, EFL, CocoaTouch           | No       |
 
 ### See Also

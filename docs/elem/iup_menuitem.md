@@ -78,8 +78,6 @@ In Motif and GTK, the text font will be affected by the dialog font when the men
 
 To have a menu item that can be marked, you must set the VALUE attribute to ON or OFF, or set HIDEMARK=NO, before mapping the control.
 
-In GTK uses GtkMenuItem/GtkCheckMenuItem, in GTK 4 uses GMenu/GSimpleAction, in Windows uses InsertMenuItem, in WinUI uses XAML MenuFlyoutItem, in macOS uses NSMenuItem, in Qt uses QAction, in EFL uses Elm_Menu_Item, and in Motif uses xmCascadeButton/xmToggleButton.
-
 ### Examples
 
 [Browse for Example Files](../../examples/)

@@ -34,14 +34,15 @@ Returns the IUP's copyright.
 
 Informs the current driver being used.
 
-Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "FLTK", "EFL", "Cocoa", "CocoaTouch" and "Android".
+Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "FLTK", "EFL", "Cocoa", "CocoaTouch", "Android" and "Haiku".
 
 ### APPID
 
 Application identifier used by the desktop environment.
 In GTK/Wayland, it maps to the XDG desktop file ID.
+On Haiku, it becomes the `BApplication` MIME signature.
 Also used by [IupConfig](../func/iup_config.md) as a last fallback when neither APP_NAME nor APPNAME is set.
-Supported in GTK, GTK 4, Qt, FLTK, EFL and WinUI.
+Supported in GTK, GTK 4, Qt, FLTK, EFL, WinUI and Haiku.
 On Android it is read-only and reflects the app's manifest application id.
 On iOS, it is read-only and reflects `CFBundleIdentifier` from the app's Info.plist.
 
@@ -274,6 +275,7 @@ Informs the current operating system. On UNIX, it is equivalent to the command "
 > - "Win81"
 > - "Win10"
 > - "Win11"
+> - "Haiku"
 
 ### SYSTEMVERSION (read-only)
 
