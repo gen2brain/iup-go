@@ -81,7 +81,6 @@ func main() {
 	iup.ProgressBar().
 		SetHandle("progVert").
 		SetAttribute("ORIENTATION", "VERTICAL").
-		SetAttribute("RASTERSIZE", "40x").
 		SetAttribute("EXPAND", "VERTICAL").
 		SetAttribute("MIN", "0").
 		SetAttribute("MAX", "50").
@@ -139,7 +138,7 @@ func main() {
 	).SetAttribute("TITLE", "Controls")
 
 	verticalFrame := iup.Frame(
-		iup.Vbox(iup.GetHandle("progVert")).SetAttributes("ALIGNMENT=ACENTER, NMARGIN=10x10"),
+		iup.Vbox(iup.GetHandle("progVert")).SetAttributes("ALIGNMENT=ACENTER, NMARGIN=30x10"),
 	).SetAttribute("TITLE", "Vertical")
 
 	dlg := iup.Dialog(

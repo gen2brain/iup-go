@@ -1,14 +1,18 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"fmt"
 	"image/png"
 	"log"
-	"os"
 	"time"
 
 	"github.com/gen2brain/iup-go/iup"
 )
+
+//go:embed icon.png
+var iconPNG []byte
 
 func appendLog(msg string) {
 	logText := iup.GetHandle("log")
@@ -23,12 +27,7 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	file, err := os.Open("icon.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	image, err := png.Decode(file)
+	image, err := png.Decode(bytes.NewReader(iconPNG))
 	if err != nil {
 		log.Fatalln(err)
 	}

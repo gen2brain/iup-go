@@ -34,23 +34,54 @@ func main() {
 	iup.SetHandle("log", txtLog)
 
 	// Create tabs 1 (top)
+	btnA := iup.Button("Button A")
+	btnA.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		logMsg("Button A: ACTION")
+		return iup.DEFAULT
+	}))
+	textA := iup.Text().SetAttributes("EXPAND=HORIZONTAL")
+	textA.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
+		logMsg(fmt.Sprintf("Text A: VALUECHANGED_CB value=%q", ih.GetAttribute("VALUE")))
+		return iup.DEFAULT
+	}))
+	valA := iup.Val("HORIZONTAL").SetAttribute("EXPAND", "HORIZONTAL")
+	valA.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
+		logMsg(fmt.Sprintf("Val A: VALUECHANGED_CB value=%.2f", ih.GetFloat("VALUE")))
+		return iup.DEFAULT
+	}))
 	vbox1 := iup.Vbox(
 		iup.Label("Inside Tab A"),
-		iup.Button("Button A"),
-		iup.Text().SetAttributes("EXPAND=HORIZONTAL"),
+		btnA,
+		textA,
+		valA,
 	).SetAttributes("MARGIN=10x10, GAP=5")
 	vbox1.SetAttribute("TABTITLE", "Tab A")
 
+	btnB := iup.Button("Button B")
+	btnB.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		logMsg("Button B: ACTION")
+		return iup.DEFAULT
+	}))
+	toggleB := iup.Toggle("Toggle B")
+	toggleB.SetCallback("ACTION", iup.ToggleActionFunc(func(ih iup.Ihandle, state int) int {
+		logMsg(fmt.Sprintf("Toggle B: ACTION state=%d", state))
+		return iup.DEFAULT
+	}))
 	vbox2 := iup.Vbox(
 		iup.Label("Inside Tab B"),
-		iup.Button("Button B"),
-		iup.Toggle("Toggle B"),
+		btnB,
+		toggleB,
 	).SetAttributes("MARGIN=10x10, GAP=5")
 	vbox2.SetAttribute("TABTITLE", "Tab B")
 
+	listC := iup.List().SetAttributes("1=Item 1, 2=Item 2, 3=Item 3")
+	listC.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
+		logMsg(fmt.Sprintf("List C: VALUECHANGED_CB value=%s", ih.GetAttribute("VALUE")))
+		return iup.DEFAULT
+	}))
 	vbox3 := iup.Vbox(
 		iup.Label("Inside Tab C"),
-		iup.List().SetAttributes("1=Item 1, 2=Item 2, 3=Item 3"),
+		listC,
 	).SetAttributes("MARGIN=10x10, GAP=5")
 	vbox3.SetAttribute("TABTITLE", "Tab C")
 

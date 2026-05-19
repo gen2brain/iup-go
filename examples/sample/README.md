@@ -75,6 +75,9 @@
 ### GNUstep Default
 [<img src="sample_gnustep_default.png" width="700" title="GNUstep Default" alt="GNUstep Default" />](sample_gnustep_default.png)
 
+### Haiku
+[<img src="sample_haiku.png" width="700" title="Haiku" alt="Haiku" />](sample_haiku.png)
+
 ### Android
 [<img src="../mobile_sample/mobile_sample_android1.png" width="300" title="Android 1" alt="Android 1" />](../mobile_sample/mobile_sample_android1.png)
 [<img src="../mobile_sample/mobile_sample_android2.png" width="300" title="Android 2" alt="Android 2" />](../mobile_sample/mobile_sample_android2.png)
