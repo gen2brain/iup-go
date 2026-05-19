@@ -271,7 +271,7 @@ It is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined. 
 Supported in GTK, GTK 4, Qt, macOS, and EFL.
 
 **HIDETITLEBAR** (non-inheritable): hides the title bar with all its elements.
-Not supported in Win32, WinUI and Motif.
+In Motif the result depends on the window manager honoring `_MOTIF_WM_HINTS` (most modern WMs do).
 
 #### Exclusive Taskbar
 

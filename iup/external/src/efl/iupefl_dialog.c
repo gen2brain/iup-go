@@ -538,6 +538,15 @@ static void eflDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int
     ecore_evas_size_max_set(ee, max_w, max_h);
 }
 
+static int eflDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
+{
+  Eo* win = iupeflGetWidget(ih);
+  if (!win)
+    return 1;
+  efl_ui_win_borderless_set(win, iupStrBoolean(value) ? EINA_TRUE : EINA_FALSE);
+  return 1;
+}
+
 static int eflDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
 {
   int min_w = 1, min_h = 1;
@@ -1253,6 +1262,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, eflDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, eflDialogSetOpacityImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);

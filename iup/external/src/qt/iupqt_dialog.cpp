@@ -118,9 +118,11 @@ public:
     if (iupAttribGetBoolean(iup_handle, "HIDETITLEBAR"))
       flags |= Qt::FramelessWindowHint;
 
-    /* Use overrideWindowFlags if widget is not yet visible to avoid side effects */
     if (isVisible())
+    {
       setWindowFlags(flags);
+      show();
+    }
     else
       overrideWindowFlags(flags);
   }
@@ -860,6 +862,7 @@ static int qtDialogSetToolBoxAttrib(Ihandle *ih, const char *value)
 
 static int qtDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
 {
+  iupAttribSetStr(ih, "HIDETITLEBAR", value);
   if (ih->handle)
   {
     IupQtDialog* dialog = (IupQtDialog*)ih->handle;

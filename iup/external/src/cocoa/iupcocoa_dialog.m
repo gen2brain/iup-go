@@ -1134,12 +1134,18 @@ static int cocoaDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
     window.styleMask |= NSWindowStyleMaskFullSizeContentView;
     window.titlebarAppearsTransparent = YES;
     window.titleVisibility = NSWindowTitleHidden;
+    [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
+    [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+    [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
   }
   else
   {
     window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
     window.titlebarAppearsTransparent = NO;
     window.titleVisibility = NSWindowTitleVisible;
+    [[window standardWindowButton:NSWindowCloseButton] setHidden:NO];
+    [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:NO];
+    [[window standardWindowButton:NSWindowZoomButton] setHidden:NO];
   }
 #else
   (void)value;

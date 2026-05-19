@@ -533,6 +533,26 @@ static int motDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   return iupBaseSetMaxSizeAttrib(ih, value);
 }
 
+static int motDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
+{
+  PropMwmHints hints;
+  static Atom xwmhint = 0;
+  if (!xwmhint)
+    xwmhint = XInternAtom(iupmot_display, "_MOTIF_WM_HINTS", False);
+
+  memset(&hints, 0, sizeof(hints));
+  hints.flags = MWM_HINTS_DECORATIONS;
+  if (iupStrBoolean(value))
+    hints.decorations = 0;
+  else
+    hints.decorations = MWM_DECOR_ALL;
+
+  XChangeProperty(iupmot_display, XtWindow(ih->handle),
+      xwmhint, xwmhint, 32, PropModeReplace,
+      (const unsigned char *)&hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
+  return 1;
+}
+
 static int motDialogSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
@@ -951,6 +971,11 @@ static int motDialogMapMethod(Ihandle* ih)
     mwm_decor |= MWM_DECOR_MINIMIZE;
     has_titlebar = 1;
   }
+  if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+  {
+    mwm_decor &= ~(MWM_DECOR_TITLE | MWM_DECOR_MENU | MWM_DECOR_MINIMIZE | MWM_DECOR_MAXIMIZE);
+    has_titlebar = 0;
+  }
   if (has_titlebar)
     mwm_decor |= MWM_DECOR_TITLE;
   if (iupAttribGetBoolean(ih, "BORDER") || has_titlebar)
@@ -1183,6 +1208,8 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "XWINDOW", iupmotGetXWindowAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_NO_STRING);
 
   iupClassRegisterAttribute(ic, "OPACITY", NULL, motDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, motDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Not Supported */
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
