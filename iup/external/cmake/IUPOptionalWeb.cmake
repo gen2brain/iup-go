@@ -42,6 +42,10 @@ elseif(IUP_BACKEND STREQUAL "android")
     "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupandroid_webbrowser.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupandroid_webbrowser_jni.c"
   )
+
+elseif(IUP_BACKEND STREQUAL "haiku")
+  list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iuphaiku_webbrowser.cpp")
+  list(APPEND _WEB_LIBS WebKitLegacy JavaScriptCore)
 endif()
 
 if(IUP_BUILD_FRAMEWORK)
@@ -91,6 +95,8 @@ elseif(IUP_BACKEND STREQUAL "qt6")
   set(IUPWEB_PC_REQUIRES "Qt6WebEngineCore Qt6WebEngineWidgets")
 elseif(IUP_BACKEND STREQUAL "qt5")
   set(IUPWEB_PC_REQUIRES "Qt5WebEngineCore Qt5WebEngineWidgets")
+elseif(IUP_BACKEND STREQUAL "haiku")
+  set(IUPWEB_PC_LIBS_PRIVATE "-lWebKitLegacy -lJavaScriptCore")
 endif()
 
 configure_file(
