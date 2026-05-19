@@ -1355,13 +1355,11 @@ static int gtkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-#if GTK_CHECK_VERSION(3, 4, 0)
 static int gtkDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
 {
-  gtk_window_set_hide_titlebar_when_maximized(GTK_WINDOW(ih->handle), iupStrBoolean(value));
+  gtk_window_set_decorated(GTK_WINDOW(ih->handle), !iupStrBoolean(value));
   return 1;
 }
-#endif
 
 static int gtkDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
 {
@@ -1430,9 +1428,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_DEFAULT);
 
-#if GTK_CHECK_VERSION(3, 4, 0)
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, gtkDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-#endif
 
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, gtkDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 

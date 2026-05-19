@@ -511,6 +511,21 @@ static int fltkDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   return iupBaseSetMaxSizeAttrib(ih, value);
 }
 
+static int fltkDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
+{
+  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  if (!dialog)
+    return 1;
+  int visible = dialog->visible();
+  dialog->border(iupStrBoolean(value) ? 0 : 1);
+  if (visible)
+  {
+    dialog->hide();
+    dialog->show();
+  }
+  return 1;
+}
+
 static int fltkDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
@@ -838,7 +853,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, fltkDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);

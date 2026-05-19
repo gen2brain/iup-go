@@ -526,6 +526,9 @@ static int winuiDialogMapMethod(Ihandle* ih)
     if (iupAttribGetBoolean(ih, "BORDER") || has_titlebar)
       has_border = 1;
 
+    if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+      has_titlebar = 0;
+
     InativeHandle* native_parent = iupDialogGetNativeParent(ih);
 
     if (native_parent)
@@ -863,6 +866,21 @@ static int winuiDialogSetTopMostAttrib(Ihandle* ih, const char* value)
     else
       SetWindowPos((HWND)ih->handle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
   }
+  return 1;
+}
+
+static int winuiDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+  HWND hwnd = (HWND)ih->handle;
+  LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
+  if (iupStrBoolean(value))
+    style &= ~WS_CAPTION;
+  else
+    style |= WS_CAPTION;
+  SetWindowLongPtr(hwnd, GWL_STYLE, style);
+  SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
   return 1;
 }
 
@@ -1490,6 +1508,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "HWND", iupBaseGetWidAttrib, NULL, NULL, NULL, IUPAF_NO_STRING | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, winuiDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAMECAPTIONHEIGHT", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, winuiDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);

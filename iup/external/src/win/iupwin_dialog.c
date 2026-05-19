@@ -1030,6 +1030,9 @@ static int winDialogMapMethod(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "BORDER") || has_titlebar)
     has_border = 1;
 
+  if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
+    has_titlebar = 0;
+
   native_parent = iupDialogGetNativeParent(ih);
 
   if (native_parent)
@@ -1430,6 +1433,20 @@ static int winDialogSetTopMostAttrib(Ihandle *ih, const char *value)
   return 1;
 }
 
+static int winDialogSetHideTitleBarAttrib(Ihandle *ih, const char *value)
+{
+  if (!ih->handle)
+    return 1;
+  LONG_PTR style = GetWindowLongPtr(ih->handle, GWL_STYLE);
+  if (iupStrBoolean(value))
+    style &= ~WS_CAPTION;
+  else
+    style |= WS_CAPTION;
+  SetWindowLongPtr(ih->handle, GWL_STYLE, style);
+  SetWindowPos(ih->handle, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+  return 1;
+}
+
 static HICON winDialogLoadIcon(const char* name, int size)
 {
   int w = (size == ICON_SMALL) ? GetSystemMetrics(SM_CXSMICON) : GetSystemMetrics(SM_CXICON);
@@ -1650,6 +1667,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, winDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, winDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, winDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* IupDialog Windows Only */
   iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
