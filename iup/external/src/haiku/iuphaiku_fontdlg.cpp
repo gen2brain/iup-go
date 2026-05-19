@@ -1,0 +1,16 @@
+/** \file
+ * \brief Haiku FontDlg Stub
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
+extern "C" {
+#include "iup.h"
+#include "iup_class.h"
+}
+
+
+extern "C" IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic)
+{
+  (void)ic;
+}
