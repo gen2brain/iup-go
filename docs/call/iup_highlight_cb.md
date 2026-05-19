@@ -11,3 +11,5 @@ Callback triggered every time the user selects an **IupMenuItem** or **IupSubmen
 ### Affects
 
 [IupMenuItem](../elem/iup_menuitem.md), [IupSubmenu](../elem/iup_submenu.md)
+
+Not fired in FLTK and GTK 4.

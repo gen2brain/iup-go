@@ -27,8 +27,10 @@ Default: NO.
 In Windows, an item in a menu bar cannot have a check mark. Ignored if item in a menu bar.
 A recommended size would be 16x16 to fit the image in the menu item.
 In Windows, if larger than the check mark area it will be cropped.
+Not supported in GTK 4, Motif, EFL.
 
 **IMPRESS** (non-inheritable): Image name of the check mark image when VALUE=ON.
+Not supported in GTK 4, Motif, EFL.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Item text.
 The "&" character can be used to define a mnemonic, the next character will be used as key.
@@ -41,8 +43,8 @@ To implement a shortcut, use the K_* callbacks in the dialog.
 
 **TITLEIMAGE** (non-inheritable): Image name of the title image.
 In Windows, it appears before of the title text and after the check mark area (so both title and title image can be visible).
-In Motif, it replaces the text, and only images will be possible to set (TITLE will be hidden).
-In GTK, it will appear on the check mark area.
+In GTK 3, it will appear on the check mark area.
+Not supported in GTK 4, Motif, EFL.
 
 **VALUE** (non-inheritable): Indicates the item's state.
 When the value is ON, a mark will be displayed to the left of the item. Default: OFF.

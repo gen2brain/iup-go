@@ -9,6 +9,8 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 **macOS:** The implementation uses NSOpenGLContext (Cocoa OpenGL) for all backends (Cocoa, GTK3, Qt, FLTK).
 
+**Haiku:** The implementation uses BGLView (Haiku's Mesa-based GL kit).
+
 ### Initialization and Usage
 
 The **IupGLCanvasOpen** function must be called after a **IupOpen**, so that the control can be used.
@@ -19,6 +21,7 @@ To link with the OpenGL libraries in Windows, add: opengl32.lib.
 In Linux/Unix with EGL (GTK3, GTK4, Qt, EFL, FLTK), add: -lEGL -lGL.
 In Linux/Unix with GLX (Motif, GTK2), add: -lGL.
 In macOS add: -framework OpenGL.
+On Haiku, add: -lGL.
 
 ### Creation
 
@@ -56,7 +59,7 @@ Default: NO. On EGL and macOS, setting CONTEXTVERSION, CONTEXTPROFILE, or CONTEX
 The system default is 8 (256-color palette).
 
 **COLOR**: Indicates the color model to be adopted: "INDEX" or "RGBA". Default is "RGBA".
-Indexed color mode is not supported on macOS and EGL; RGBA will be used instead.
+Indexed color mode is not supported on macOS, EGL, and Haiku; RGBA will be used instead.
 
 **COLORMAP** (read-only): Returns the platform colormap handle, if COLOR=INDEX.
 
@@ -97,8 +100,8 @@ That canvas must be mapped before this canvas.
 
 **VISUAL** (read-only): Returns the platform visual handle.
 
-**VSYNC** [macOS Only] (creation-only): Enable or disable vertical synchronization.
-Can be "YES" or "NO". Default: "YES".
+**VSYNC** [macOS and Haiku Only]: Enable or disable vertical synchronization.
+Can be "YES" or "NO". Default: "YES". On macOS this is creation-only; on Haiku it may be changed at runtime and affects subsequent `IupGLSwapBuffers` calls.
 
 ### Callbacks
 
@@ -140,19 +143,20 @@ Makes the BACK buffer visible. This function is necessary when a double buffer i
     void IupGLPalette(Ihandle* ih, int index, float r, float g, float b);
 
 Defines a color in the color palette. This function is necessary when INDEX color is used.
-Not available on EGL and macOS (indexed color mode not supported).
+Not available on EGL, macOS, and Haiku (indexed color mode not supported).
 
     void IupGLUseFont(Ihandle* ih, int first, int count, int list_base);
 
 Creates a bitmap display list from the current FONT attribute.
 See the documentation of the wglUseFontBitmaps (Windows) and glXUseXFont (GLX) functions.
-Not available on EGL. On macOS, this function uses Core Text to rasterize glyphs into bitmaps.
+Not available on EGL or Haiku. On macOS, this function uses Core Text to rasterize glyphs into bitmaps.
 
     void IupGLWait(int gl)
 
 If gl is non-zero it will call glFinish or glXWaitGL, else will call GdiFlush or glXWaitX.
 On EGL, calls eglWaitClient or eglWaitNative respectively.
 On macOS, calls glFinish or flushGraphics respectively.
+On Haiku, calls glFinish when gl is non-zero; the else branch is a no-op (no app-server side flush equivalent).
 
 ### Notes
 

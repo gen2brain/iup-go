@@ -27,6 +27,8 @@ Mouse position is relative to the top left corner of the screen, and it is indep
 
 Implemented on every driver. Playback support is more restricted, see [IupPlayInput](iup_playinput.md).
 
+**[macOS]** Must run as a `.app` bundle. Requires Privacy & Security > **Input Monitoring** permission, prompted on first record.
+
 ### See Also
 
 [INPUTCALLBACKS](../attrib/iup_globals.md#inputcallbacks), [IupPlayInput](iup_playinput.md)

@@ -242,6 +242,10 @@ See the [Keyboard Codes](iup_keyboard_codes.md) table for a list of the possible
 Turns on/off ("YES" or "NO") the auto-repeat of keyboard keys in the whole system.
 It May be used as an optimization in high performance applications.
 
+### SHORTCUTKEY [Haiku Only] (read-only)
+
+Primary shortcut modifier from the active Haiku keymap: "CTRL" (Windows-style) or "ALT" (BeOS default).
+
 ### INPUTCALLBACKS
 
 Turn on/off ("YES" or "NO") the global callbacks used to intercept global mouse and keyboard events.
@@ -302,7 +306,7 @@ Returns "1" if the system is currently in dark mode, "0" otherwise.
 ### WINDOWING (read-only)
 
 Returns the native windowing system in use.
-Can be: "DWM", "X11", "WAYLAND", "QUARTZ" or "ANDROID".
+Can be: "DWM", "X11", "WAYLAND", "QUARTZ", "ANDROID" or "HAIKU".
 
 ### GTKVERSION (read-only) [GTK Only]
 

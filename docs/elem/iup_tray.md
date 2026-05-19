@@ -70,6 +70,8 @@ On Linux/Unix, two tray protocols are supported depending on the build configura
 
 In Windows (Win32 and WinUI) uses Shell_NotifyIcon API, in macOS uses NSStatusItem, in GTK 3 uses GtkStatusIcon (XEmbed) or SNI via D-Bus, in GTK 4, Qt and EFL uses SNI via D-Bus, and in Motif uses XEmbed protocol or SNI via D-Bus.
 
+On Haiku the tray uses a Deskbar replicant. The executable must export its Instantiate symbol; link with `-Wl,-soname,_APP_` so Deskbar can `dlopen` the team and resolve the replicant constructor.
+
 ### See Also
 
 [IupMenu](iup_menu.md), [IupPopup](../func/iup_popup.md), [IupImage](iup_image.md)
