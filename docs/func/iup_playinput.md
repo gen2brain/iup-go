@@ -28,13 +28,11 @@ Screen size differences can exist, but if different themes are used, then mouse 
 
 ### Driver Support
 
-| Driver                          | Playback | Cursor moves   |
-|---------------------------------|----------|----------------|
-| Win32, WinUI, Cocoa, GTK, Motif | Yes      | Yes (OS-level) |
-| Qt, FLTK, Android               | Yes      | No (app-local) |
-| GTK4, EFL, CocoaTouch           | No       | -              |
-
-Both flavors fire the application's normal IUP callbacks. On unsupported drivers `IupPlayInput` returns IUP_NOERROR but events have no effect.
+| Driver                          | Playback |
+|---------------------------------|----------|
+| Win32, WinUI, GTK, Motif        | Yes      |
+| Cocoa, Qt, FLTK, Android        | Yes      |
+| GTK4, EFL, CocoaTouch           | No       |
 
 ### See Also
 

@@ -11,3 +11,5 @@ Called just after the menu is closed.
 ### Affects
 
 [IupMenu](../elem/iup_menu.md)
+
+Not fired in FLTK and GTK 4.

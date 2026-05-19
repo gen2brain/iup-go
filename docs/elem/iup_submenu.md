@@ -18,6 +18,7 @@ It will set the TITLE attribute.\
 In Windows, an item in a menu bar cannot have a check mark. Ignored if submenu in a menu bar.
 A recommended size would be 16x16 to fit the image in the menu item.
 In Windows, if larger than the check mark area it will be cropped.
+Not supported in GTK 4, Motif, EFL.
 
 [KEY](../attrib/iup_key.md) (non-inheritable): Underlines a key character in the submenu title.
 It is updated only when TITLE is updated.  Deprecated**, use the mnemonic support directly in the TITLE attribute.**

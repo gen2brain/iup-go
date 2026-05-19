@@ -271,7 +271,7 @@ It is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined. 
 Supported in GTK, GTK 4, Qt, macOS, and EFL.
 
 **HIDETITLEBAR** (non-inheritable): hides the title bar with all its elements.
-Supported in GTK, GTK 4, Qt, macOS, and iOS.
+Supported in GTK, GTK 4, Qt, macOS, iOS, and Haiku.
 
 #### Exclusive Taskbar [Windows Only]
 
@@ -293,6 +293,13 @@ The value must be between 0 and 100.
 
 **TASKBARBUTTON** [Windows Only]: If set to SHOW force the application button to be shown on the taskbar even if the dialog does not have decorations.
 If set to HIDE force the application button to be hidden from the taskbar, but also in this case the system menu, the maximize and minimize buttons will be hidden.
+
+#### Exclusive [Haiku Only]
+
+**WORKSPACES** (non-inheritable): which Haiku workspace(s) the dialog appears in. Values:
+- `"ALL"`: visible on every workspace (`B_ALL_WORKSPACES`).
+- `"CURRENT"`: pinned to the workspace the dialog is currently on.
+- Comma-separated 0-based indices (e.g. `"0,2,5"`): a custom workspace mask.
 
 #### Exclusive [Android and iOS]
 

@@ -16,6 +16,8 @@ In macOS, the implementation uses WKWebView from the WebKit framework.
 
 In Qt, the implementation uses QWebEngineView from QtWebEngine (Chromium-based).
 
+In Haiku, the implementation uses BWebView from the system Legacy WebKit library (libWebKitLegacy).
+
 ### Initialization and Usage
 
 The **IupWebBrowserOpen** function must be called after **IupOpen**.

@@ -22,7 +22,7 @@ Not supported in macOS and Android.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Controls the bar color.
 Default: the global attribute DLGFGCOLOR.
-Supported in Windows Classic, Motif, Qt and Android.
+Not supported in macOS and EFL.
 
 **MARQUEE** (creation): displays an undefined state. Default: NO.
 You can set the attribute after map but only to start or stop the animation.
