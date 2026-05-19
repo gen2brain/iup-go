@@ -68,6 +68,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   IdrawCanvas* dc = (IdrawCanvas*)calloc(1, sizeof(IdrawCanvas));
   dc->ih = ih;
   iupdrvDrawUpdateSize(dc);
+  iupAttribSet(ih, "DRAWDRIVER", "HAIKU");
   return dc;
 }
 

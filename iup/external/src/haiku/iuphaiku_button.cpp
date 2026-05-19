@@ -493,13 +493,23 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
   if (!be_control_look) { if (x) *x += 24; if (y) *y += 12; return; }
 
   int is_default = ih && iupAttribGetBoolean(ih, "SHOWASDEFAULT");
-  float left, top, right, bottom;
-  be_control_look->GetInsets(BControlLook::B_BUTTON_FRAME,
-                             BControlLook::B_BUTTON_BACKGROUND,
-                             is_default ? BControlLook::B_DEFAULT_BUTTON : 0,
-                             left, top, right, bottom);
-  float spacing = be_control_look->DefaultLabelSpacing();
+  uint32 flags = is_default ? BControlLook::B_DEFAULT_BUTTON : 0;
+  int has_user_padding = ih && (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
 
+  float left, top, right, bottom;
+  if (has_user_padding)
+    be_control_look->GetFrameInsets(BControlLook::B_BUTTON_FRAME, flags, left, top, right, bottom);
+  else
+    be_control_look->GetInsets(BControlLook::B_BUTTON_FRAME, BControlLook::B_BUTTON_BACKGROUND, flags, left, top, right, bottom);
+
+  if (has_user_padding)
+  {
+    if (x) *x += (int)(left + right + 0.5f);
+    if (y) *y += (int)(top + bottom + 0.5f);
+    return;
+  }
+
+  float spacing = be_control_look->DefaultLabelSpacing();
   float insets_w = left + right + spacing - 1;
   int has_label = ih && (ih->data->type & IUP_BUTTON_TEXT);
   float chrome_w = has_label ? fmaxf(insets_w, ceilf(spacing * 3.3f)) : insets_w;

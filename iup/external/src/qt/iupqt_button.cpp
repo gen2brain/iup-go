@@ -4,6 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <QApplication>
 #include <QPushButton>
 #include <QToolButton>
 #include <QLabel>
@@ -13,6 +14,9 @@
 #include <QWidget>
 #include <QKeyEvent>
 #include <QString>
+#include <QStyle>
+#include <QStyleOptionButton>
+#include <QStyleOptionToolButton>
 
 #include <cstdlib>
 #include <cstdarg>
@@ -180,16 +184,20 @@ static void qtButtonUpdateLayout(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
-  int border_size = 8;
+  int has_image = 0;
+  int has_text = 0;
+  int has_bgcolor = 0;
+  int has_user_padding = 0;
 
   if (ih)
   {
     char* image = iupAttribGet(ih, "IMAGE");
     char* title = iupAttribGet(ih, "TITLE");
     char* bgcolor = iupAttribGet(ih, "BGCOLOR");
-    int has_image = (image != NULL);
-    int has_text = (title != NULL && *title != 0);
-    int has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
+    has_image = (image != NULL);
+    has_text = (title != NULL && *title != 0);
+    has_bgcolor = (!has_image && !has_text && bgcolor != NULL);
+    has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
 
     if (has_bgcolor)
     {
@@ -199,8 +207,48 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
     }
   }
 
-  (*x) += border_size;
-  (*y) += border_size;
+  QStyle* style = QApplication::style();
+  if (!style)
+  {
+    (*x) += 8;
+    (*y) += 8;
+    return;
+  }
+
+  /* user PADDING replaces the theme's content padding; keep only the bare frame */
+  if (has_user_padding)
+  {
+    int frame = style->pixelMetric(QStyle::PM_DefaultFrameWidth) * 2;
+    (*x) += frame;
+    (*y) += frame;
+    return;
+  }
+
+  QSize content(*x, *y);
+  QSize total;
+
+  if (has_image && !has_text)
+  {
+    QStyleOptionToolButton opt;
+    opt.toolButtonStyle = Qt::ToolButtonIconOnly;
+    opt.iconSize = content;
+    total = style->sizeFromContents(QStyle::CT_ToolButton, &opt, content, nullptr);
+  }
+  else
+  {
+    QStyleOptionButton opt;
+    if (has_text)
+      opt.text = QString::fromUtf8(iupAttribGet(ih, "TITLE"));
+    if (has_image)
+    {
+      opt.icon = QIcon(QPixmap(16, 16));
+      opt.iconSize = QSize(16, 16);
+    }
+    total = style->sizeFromContents(QStyle::CT_PushButton, &opt, content, nullptr);
+  }
+
+  *x = total.width();
+  *y = total.height();
 }
 
 /****************************************************************************

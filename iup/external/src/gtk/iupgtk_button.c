@@ -33,10 +33,27 @@ static GtkWidget* gtk_button_get_image(GtkButton *button)
 }
 #endif
 
+#if GTK_CHECK_VERSION(3, 0, 0)
+static void gtkButtonEnsureNoMinCss(void)
+{
+  static int installed = 0;
+  if (installed)
+    return;
+  GdkScreen* screen = gdk_screen_get_default();
+  if (!screen)
+    return;
+  GtkCssProvider* provider = gtk_css_provider_new();
+  gtk_css_provider_load_from_data(provider, ".iup-no-min{min-width:0;min-height:0;}", -1, NULL);
+  gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  g_object_unref(provider);
+  installed = 1;
+}
+#endif
+
 IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
-  /* Measure actual borders dynamically since they depend on theme */
+  /* Measure border deltas using preferred (not allocated) child size */
   static int text_border_x = -1, text_border_y = -1;
   static int image_text_border_x = -1, image_text_border_y = -1;
   static int image_border_x = -1, image_border_y = -1;
@@ -86,19 +103,18 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
       gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
       gtk_widget_show_all(temp_window);
 
-      /* Get button's preferred size */
       gint button_width, button_height;
       gtk_widget_get_preferred_width(temp_button, NULL, &button_width);
       gtk_widget_get_preferred_height(temp_button, NULL, &button_height);
 
-      /* Get child allocation */
       GtkWidget* child = gtk_bin_get_child(GTK_BIN(temp_button));
-      GtkAllocation child_alloc;
       if (child)
       {
-        gtk_widget_get_allocation(child, &child_alloc);
-        image_text_border_x = button_width - child_alloc.width;
-        image_text_border_y = button_height - child_alloc.height;
+        gint child_nat_w, child_nat_h;
+        gtk_widget_get_preferred_width(child, NULL, &child_nat_w);
+        gtk_widget_get_preferred_height(child, NULL, &child_nat_h);
+        image_text_border_x = button_width - child_nat_w;
+        image_text_border_y = button_height - child_nat_h;
       }
       else
       {
@@ -137,24 +153,25 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
       GtkWidget* temp_button = gtk_button_new();
       GtkWidget* temp_image = gtk_image_new_from_icon_name("document-open", GTK_ICON_SIZE_BUTTON);
 
+      gtkButtonEnsureNoMinCss();
+      gtk_style_context_add_class(gtk_widget_get_style_context(temp_button), "iup-no-min");
       gtk_button_set_image(GTK_BUTTON(temp_button), temp_image);
 
       gtk_container_add(GTK_CONTAINER(temp_window), temp_button);
       gtk_widget_show_all(temp_window);
 
-      /* Get button's preferred size */
       gint button_width, button_height;
       gtk_widget_get_preferred_width(temp_button, NULL, &button_width);
       gtk_widget_get_preferred_height(temp_button, NULL, &button_height);
 
-      /* Get child allocation */
       GtkWidget* child = gtk_bin_get_child(GTK_BIN(temp_button));
-      GtkAllocation child_alloc;
       if (child)
       {
-        gtk_widget_get_allocation(child, &child_alloc);
-        image_border_x = button_width - child_alloc.width;
-        image_border_y = button_height - child_alloc.height;
+        gint child_nat_w, child_nat_h;
+        gtk_widget_get_preferred_width(child, NULL, &child_nat_w);
+        gtk_widget_get_preferred_height(child, NULL, &child_nat_h);
+        image_border_x = button_width - child_nat_w;
+        image_border_y = button_height - child_nat_h;
       }
       else
       {
@@ -867,6 +884,7 @@ static void gtkButtonLayoutUpdateMethod(Ihandle *ih)
   iupdrvBaseLayoutUpdateMethod(ih);
 }
 
+
 static int gtkButtonMapMethod(Ihandle* ih)
 {
   int has_border = 1;
@@ -930,10 +948,18 @@ static int gtkButtonMapMethod(Ihandle* ih)
   if (!ih->handle)
     return IUP_ERROR;
 
+
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
     if (has_border)
     {
+#if GTK_CHECK_VERSION(3, 0, 0)
+      if (!(ih->data->type & IUP_BUTTON_TEXT))
+      {
+        gtkButtonEnsureNoMinCss();
+        gtk_style_context_add_class(gtk_widget_get_style_context(ih->handle), "iup-no-min");
+      }
+#endif
       gtk_button_set_image((GtkButton*)ih->handle, gtk_image_new());
 
       if (ih->data->type & IUP_BUTTON_TEXT)
@@ -1055,6 +1081,7 @@ static int gtkButtonMapMethod(Ihandle* ih)
 
   /* Fix vertical alignment for image+text buttons */
   gtkButtonFixVerticalAlignment(ih);
+
 
   /* update a mnemonic in a label if necessary */
   iupgtkUpdateMnemonic(ih);

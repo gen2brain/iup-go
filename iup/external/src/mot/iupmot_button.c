@@ -27,7 +27,7 @@
 
 IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
 {
-  int border_size = 2*5;
+  int has_user_padding = 0;
 
   if (ih)
   {
@@ -39,10 +39,20 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int *x, int *y)
       iupdrvFontGetCharSize(ih, &charwidth, &charheight);
       (*x) += charheight;
     }
+    has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
   }
 
-  (*x) += border_size;
-  (*y) += border_size;
+  /* user PADDING replaces theme padding; keep only the shadow+highlight frame */
+  if (has_user_padding)
+  {
+    (*x) += 2 * (2 + 2);
+    (*y) += 2 * (2 + 2);
+  }
+  else
+  {
+    (*x) += 2 * 5;
+    (*y) += 2 * 5;
+  }
 
   if (ih && iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
   {
