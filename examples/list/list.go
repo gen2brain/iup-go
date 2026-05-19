@@ -13,25 +13,19 @@ func listMultipleCb(ih iup.Ihandle, t string, i, v int) int {
 	return iup.DEFAULT
 }
 
-func dragdropCb(ih iup.Ihandle, dragId, dropId, shift, control int) int {
-	fmt.Printf("DRAGDROP_CB (%d)->(%d) shift=%d ctrl=%d\n", dragId, dropId, shift, control)
-	return iup.CONTINUE
-}
-
 func main() {
 	iup.Open()
 	defer iup.Close()
 
 	list := iup.List()
 	iup.SetAttributes(list, "1=Gold, 2=Silver, 3=Bronze, 4=Tecgraf, 5=None,"+
-		"SHOWIMAGE=YES, SHOWDRAGDROP=YES, XXX_SPACING=4, VALUE=4")
+		"SHOWIMAGE=YES, XXX_SPACING=4, VALUE=4")
 
 	loadMedalImages()
 	iup.SetAttribute(list, "IMAGE1", "IMGGOLD")
 	iup.SetAttribute(list, "IMAGE2", "IMGSILVER")
 	iup.SetAttribute(list, "IMAGE3", "IMGBRONZE")
 	iup.SetAttributeHandle(list, "IMAGE4", loadImageTecgraf())
-	iup.SetCallback(list, "DRAGDROP_CB", iup.DragDropFunc(dragdropCb))
 
 	frmMedal := iup.Frame(list)
 	iup.SetAttribute(frmMedal, "TITLE", "Best medal")
