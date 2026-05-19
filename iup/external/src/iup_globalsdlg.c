@@ -35,6 +35,7 @@ static int iGlobalsCurrentDriverBit(void)
   if (iupStrEqualNoCase(drv, "FLTK"))       return IUPDRV_FLTK;
   if (iupStrEqualNoCase(drv, "Android"))    return IUPDRV_ANDROID;
   if (iupStrEqualNoCase(drv, "CocoaTouch")) return IUPDRV_COCOATOUCH;
+  if (iupStrEqualNoCase(drv, "Haiku"))      return IUPDRV_HAIKU;
   return 0;
 }
 

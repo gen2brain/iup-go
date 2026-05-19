@@ -3,7 +3,7 @@
 IUP is a multi-platform toolkit for building graphical user interfaces.
 It uses native interface elements for high performance and platform-consistent look and feel.
 
-This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, GTK4, FLTK, EFL, Android, CocoaTouch) and features.
+This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, GTK4, FLTK, EFL, Android, CocoaTouch, Haiku) and features.
 
 API reference documentation is available in the [docs](https://github.com/gen2brain/iup-go/tree/main/docs) directory.
 For the original IUP documentation, visit [IUP's website](https://www.tecgraf.puc-rio.br/iup).
@@ -52,6 +52,7 @@ Available presets:
 | `fltk`            | FLTK                           |                      |
 | `efl`             | EFL / Elementary               |                      |
 | `android`         | Android (arm64-v8a)            | Requires NDK         |
+| `haiku`           | Haiku / Be API                 |                      |
 | `gtk3-full`       | GTK3 + all optional libs       |                      |
 | `gtk4-full`       | GTK4 + all optional libs       |                      |
 | `gtk2-full`       | GTK2 + all optional libs       |                      |
@@ -65,6 +66,7 @@ Available presets:
 | `efl-full`        | EFL + all optional libs        |                      |
 | `fltk-full`       | FLTK + all optional libs       |                      |
 | `android-full`    | Android + GL + Web             | Requires NDK         |
+| `haiku-full`      | Haiku + all optional libs      |                      |
 | `debug`           | Platform native, debug         |                      |
 
 You can create a `CMakeUserPresets.json` file for local overrides (e.g., toolchain or compiler paths) without modifying the tracked `CMakePresets.json`.
@@ -151,12 +153,17 @@ Requires Xcode (or the Command Line Tools) for the iOS SDK and Apple Clang.
 Use the `cocoatouch` preset together with an iOS toolchain file to target device or simulator.
 The app-bundle build (sign + install + log) is wrapped by helper scripts under `ios/`; see [ios/README.md](ios/README.md).
 
+**Haiku** (default on Haiku):
+No external dependencies.
+For Web: `pkgman install haikuwebkit_devel`.
+
 **OpenGL** (`IUP_BUILD_GL`):
 GTK3/GTK4/Qt/EFL/FLTK use EGL on Linux: `libegl-dev libgl-dev` or `libglvnd-devel`.
 Motif/GTK2 use GLX: `libgl-dev` or `libglvnd-devel`.
 Windows uses WGL, macOS uses OpenGL framework (no extra deps).
 Android uses EGL + GLES v3 from the NDK (no extra deps).
 iOS uses EAGL + CAEAGLLayer from OpenGLES framework (no extra deps).
+Haiku uses BGLView from `libGL` (ships with the OS).
 
 ### Using IUP from CMake
 

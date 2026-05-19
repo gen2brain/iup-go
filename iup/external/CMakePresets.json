@@ -334,6 +334,25 @@
       }
     },
     {
+      "name": "haiku",
+      "displayName": "Haiku backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "haiku"
+      }
+    },
+    {
+      "name": "haiku-full",
+      "displayName": "Haiku with all optional libraries",
+      "inherits": "haiku",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON"
+      }
+    },
+    {
       "name": "debug",
       "displayName": "Debug build (platform native backend)",
       "binaryDir": "${sourceDir}/build/${presetName}",

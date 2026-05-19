@@ -14,13 +14,20 @@ set(IUP_DRIVER_COMPILE_DEFINITIONS IUP_USE_QT)
 set(IUP_DRIVER_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/qt")
 set(IUP_DRIVER_LINK_LIBRARIES ${_QT_LIBS})
 
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT HAIKU)
   include(IUPUnixCommon)
   list(APPEND _QT_SOURCES ${IUP_UNIX_COMMON_SOURCES})
   list(APPEND _QT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/iupunix_sni.c")
   list(APPEND IUP_DRIVER_COMPILE_DEFINITIONS IUPDBUS_USE_DLOPEN IUPX11_USE_DLOPEN)
   list(APPEND IUP_DRIVER_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/unix")
   list(APPEND IUP_DRIVER_LINK_LIBRARIES dl m)
+elseif(HAIKU)
+  list(APPEND _QT_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_notify.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_tray.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_singleinstance.cpp"
+  )
+  list(APPEND IUP_DRIVER_LINK_LIBRARIES be tracker)
 elseif(APPLE)
   list(APPEND _QT_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_tray.m"
@@ -52,8 +59,10 @@ else()
   set(IUP_PC_REQUIRES "Qt5Core Qt5Gui Qt5Widgets")
 endif()
 set(IUP_PC_LIBS_PRIVATE "")
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT HAIKU)
   set(IUP_PC_LIBS_PRIVATE "-ldl -lm")
+elseif(HAIKU)
+  set(IUP_PC_LIBS_PRIVATE "-lbe -ltracker")
 elseif(APPLE)
   list(APPEND IUP_DRIVER_LINK_LIBRARIES
     "-framework AppKit"

@@ -26,8 +26,9 @@
 #define F   IUPDRV_FLTK
 #define A   IUPDRV_ANDROID
 #define CT  IUPDRV_COCOATOUCH
-#define ALL  (W|M|G|C|Q|G4|E|WU|F|A|CT)
-#define UNIX (M|G|C|Q|G4|E|F)
+#define HK  IUPDRV_HAIKU
+#define ALL  (W|M|G|C|Q|G4|E|WU|F|A|CT|HK)
+#define UNIX (M|G|C|Q|G4|E|F|HK)
 #define MOB  (A|CT)
 #define R  IUPGF_READONLY
 #define P  IUPGF_POINTER
@@ -35,10 +36,10 @@
 /* Sorted alphabetically; keep in sync when a driver adds a global. */
 static const iGlobalRegEntry registry[] = {
   { "ACCENTCOLOR",            0,    ALL },
-  { "APPID",                  0,    G|Q|G4|E|WU|A|CT },
+  { "APPID",                  0,    G|Q|G4|E|WU|A|CT|HK },
   { "APPNAME",                0,    W|C|Q|E|WU|F|A|CT },
   { "APPSHELL",               R|P,  M|G|G4 },
-  { "ARGV0",                  0,    G|Q|G4|E|WU|F },
+  { "ARGV0",                  0,    G|Q|G4|E|WU|F|HK },
   { "AUTOREPEAT",             0,    M|E|F },
   { "CACHEDIR",               R,    ALL },
   { "COMCTL32VER6",           R,    W },
@@ -83,7 +84,7 @@ static const iGlobalRegEntry registry[] = {
   { "GSKRENDERER",            0,    G4 },
   { "GTKDEVVERSION",          R,    G|G4 },
   { "GTKVERSION",             R,    G|G4 },
-  { "HELPAPP",                0,    M|G|G4|E|F },
+  { "HELPAPP",                0,    M|G|G4|E|F|HK },
   { "HINSTANCE",              R|P,  W },
   { "ICON",                   0,    ALL },
   { "IMAGEAUTOSCALE",         0,    ALL },
@@ -91,7 +92,7 @@ static const iGlobalRegEntry registry[] = {
   { "IMAGESDPI",              0,    ALL },
   { "IMAGESTOCKAUTOSCALE",    0,    ALL },
   { "IMAGESTOCKSIZE",         0,    ALL },
-  { "INPUTCALLBACKS",         0,    W|M|G|C|Q|A },
+  { "INPUTCALLBACKS",         0,    W|M|G|C|Q|A|HK },
   { "KEY",                    R,    ALL },
   { "KEYPRESS",               R,    ALL },
   { "KEYRELEASE",             R,    ALL },
@@ -99,11 +100,11 @@ static const iGlobalRegEntry registry[] = {
   { "LASTERROR",              0,    W|WU },
   { "LINKFGCOLOR",            0,    ALL },
   { "LOCKLOOP",               0,    ALL },
-  { "MENUBGCOLOR",            0,    W|C|Q|E|WU|F },
-  { "MENUFGCOLOR",            R,    W|C|Q|E|WU|F },
+  { "MENUBGCOLOR",            0,    W|C|Q|E|WU|F|HK },
+  { "MENUFGCOLOR",            R,    W|C|Q|E|WU|F|HK },
   { "MODKEYSTATE",            R,    ALL },
-  { "MONITORSCOUNT",          R,    W|G|C|Q|G4|E|WU|F|A|CT },
-  { "MONITORSINFO",           R,    W|G|C|Q|G4|E|WU|F|A|CT },
+  { "MONITORSCOUNT",          R,    W|G|C|Q|G4|E|WU|F|A|CT|HK },
+  { "MONITORSINFO",           R,    W|G|C|Q|G4|E|WU|F|A|CT|HK },
   { "MOTIFNUMBER",            R,    M },
   { "MOTIFVERSION",           R,    M },
   { "MOUSEBUTTON",            R,    ALL },
@@ -120,7 +121,8 @@ static const iGlobalRegEntry registry[] = {
   { "SCREENSIZE",             R,    ALL },
   { "SCROLLBARSIZE",          R,    ALL },
   { "SHIFTKEY",               R,    ALL },
-  { "SHOWMENUIMAGES",         0,    G|Q|G4|E|WU|F },
+  { "SHORTCUTKEY",            R,    HK },
+  { "SHOWMENUIMAGES",         0,    G|Q|G4|E|WU|F|HK },
   { "SINGLEINSTANCE",         0,    ALL },
   { "SYSTEM",                 R,    ALL },
   { "SYSTEMLANGUAGE",         R,    ALL },
@@ -133,10 +135,11 @@ static const iGlobalRegEntry registry[] = {
   { "TXTFGCOLOR",             0,    ALL },
   { "TXTHLCOLOR",             0,    ALL },
   { "USERNAME",               R,    ALL },
-  { "UTF8MODE",               0,    W|G|C|Q|G4|E|WU|F|A },
+  { "UTF8AUTOCONVERT",        0,    G|C|Q|G4|WU|F|CT|HK },
+  { "UTF8MODE",               0,    W|G|C|Q|G4|E|WU|F|A|HK },
   { "UTF8MODE_FILE",          0,    W },
   { "VERSION",                R,    ALL },
-  { "VIRTUALSCREEN",          R,    W|G|C|Q|G4|E|WU|F|A|CT },
+  { "VIRTUALSCREEN",          R,    W|G|C|Q|G4|E|WU|F|A|CT|HK },
   { "WINDOWING",              R,    ALL },
   { "WINUIVERSION",           R,    WU },
   { "WL_DISPLAY",             R|P,  G|Q|G4|E|F },
