@@ -25,11 +25,11 @@
   #include <QtGui/qguiapplication_platform.h>
 #endif
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS) && !defined(Q_OS_HAIKU)
   #define IUP_QT_HAS_WAYLAND_APP 1
 #endif
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS) && !defined(Q_OS_HAIKU)
   #define IUP_QT_HAS_WAYLAND_WINID 1
 #endif
 
@@ -46,7 +46,7 @@ extern "C" {
 
 #ifdef IUPX11_USE_DLOPEN
 #include "iupunix_x11.h"
-#elif !defined(_WIN32) && !defined(__APPLE__)
+#elif !defined(_WIN32) && !defined(__APPLE__) && !defined(__HAIKU__)
 #include <X11/Xlib.h>
 #endif
 
@@ -231,7 +231,7 @@ static void qtSetGlobalAttrib(void)
   {
     IupSetGlobal("WINDOWING", "X11");
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS) && !defined(Q_OS_HAIKU)
     if (auto *x11App = qApp->nativeInterface<QNativeInterface::QX11Application>())
     {
       Display* xdisplay = (Display*)x11App->display();
