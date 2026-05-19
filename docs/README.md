@@ -246,7 +246,7 @@ API reference for IUP (Portable User Interface).
 
 | Function                                                                                        | Description                                                               |
 |-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
-| [IupConfigLoad / IupConfigSave](func/iup_config.md#file-storage)                                | Load or save the configuration file (path derived from APP_NAME)          |
+| [IupConfigLoad / IupConfigSave](func/iup_config.md#file-storage)                                | Load or save the configuration file                                       |
 | [IupConfigCopy](func/iup_config.md#variables)                                                   | Copy variables between two databases, optionally excluding a group prefix |
 | [IupConfigSetVariableStr / Int / Double (and *Id variants)](func/iup_config.md#variables)       | Store a typed variable under a group/key                                  |
 | [IupConfigGetVariableStr / Int / Double (and *Id, *Def variants)](func/iup_config.md#variables) | Read a typed variable, with an optional default value                     |

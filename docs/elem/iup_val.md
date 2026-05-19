@@ -36,6 +36,7 @@ When changed the display will not be updated until VALUE is set.
 
 **PAGESTEP**: Controls the increment for PgDn and PgUp keys. It is not the size of the increment.
 The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1. Default is "0.1".
+Not supported in Android.
 
 [RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): The initial size is the native widget's natural size on both axes.
 If there are ticks then they are added to the natural size on the minor axis.
@@ -51,8 +52,7 @@ The increment size is "step*(max-min)", so it must be 0<step<1. Default is "0.01
 
 **TICKSPOS** (creation-only): Allows to position the ticks in both sides (BOTH) or in the reverse side (REVERSE).
 Default: NORMAL. The normal position for horizontal orientation is at the top of the control, and for vertical orientation is at the left of the control.
-In Motif and Android the ticks position is fixed and TICKSPOS is ignored.
-Not supported in EFL.
+Not supported in EFL, Motif and Android. In Motif and Android the ticks position is fixed.
 
 **ORIENTATION** (creation-only) (non-inheritable):  Informs whether the valuator is "VERTICAL" or "HORIZONTAL".
 Vertical valuators are bottom to up, and horizontal valuators are left to right variations of min to max (but can be inverted using INVERTED).
@@ -90,8 +90,6 @@ The BUTTON_PRESS_CB callback is called only when the user press a key that chang
 The BUTTON_RELEASE_CB callback is called only when the user release the mouse button after moving the handler.
 
 In Motif, after the user clicks the handler a KILLFOCUS will be ignored when the control loses its focus.
-
-In GTK uses GtkScale, in Windows uses TRACKBAR_CLASS, in WinUI uses XAML Slider, in macOS uses NSSlider, in Qt uses QSlider, in FLTK uses Fl_Slider, in EFL uses Efl_Ui_Slider, and in Motif uses xmScale.
 
 #### Keyboard Mapping
 

@@ -78,7 +78,7 @@ In GTK 4, the native GtkFileDialog already uses portals when appropriate.
 
 **SHOWPREVIEW**: A preview area is shown inside the file dialog. Can have values "YES" or "NO". Default: "NO".
 Valid only if the FILE_CB callback is defined, use it to retrieve the file name and the necessary attributes to paint the preview area.
-Supported in Windows (Win32), GTK 3, FLTK, macOS and Qt.
+Supported in Win32, GTK 3, Motif, FLTK, macOS and Qt.
 
 > Read only attributes that are valid inside the FILE_CB callback when status="PAINT":\
 > **    PREVIEWDC**: Returns the Device Context (HDC in Windows and GC in Unix)\
@@ -141,6 +141,7 @@ When MULTIPLEFILES=YES it is called only for one file.
 >   FILTERUSED attribute will be updated to reflect the change. If returns IUP_CONTINUE, the FILE attribute if defined will update the current filename.
 
 [HELP_CB](../call/iup_help_cb.md): Action generated when the Help button is pressed.
+Not supported in CocoaTouch, FLTK, EFL, Android and Haiku.
 
 [BUTTON_CB](../call/iup_button_cb.md): Action generated when any mouse button is pressed or released over the preview canvas.
 
@@ -184,7 +185,20 @@ In Qt, QFileDialog automatically uses the XDG Desktop Portal through the Qt plat
 
 #### Native Implementations
 
-In Win32 uses GetOpenFileName/GetSaveFileName, in WinUI uses IFileOpenDialog/IFileSaveDialog (COM), in GTK 3 uses GtkFileChooserDialog, in GTK 4 uses GtkFileDialog, in macOS uses NSOpenPanel/NSSavePanel, in Qt uses QFileDialog, in FLTK uses Fl_File_Chooser, in EFL uses Elm_Fileselector, in Motif uses XmFileSelectionDialog, and in Android uses Storage Access Framework (`ACTION_OPEN_DOCUMENT` / `ACTION_CREATE_DOCUMENT`).
+The underlying native widget per driver:
+
+- **Win32**: GetOpenFileName / GetSaveFileName (and IFileDialog for DIALOGTYPE=DIR).
+- **WinUI**: IFileOpenDialog / IFileSaveDialog (COM).
+- **GTK 3**: GtkFileChooserDialog.
+- **GTK 4**: GtkFileDialog.
+- **Motif**: XmFileSelectionDialog.
+- **Cocoa**: NSOpenPanel / NSSavePanel.
+- **CocoaTouch**: UIDocumentPickerViewController.
+- **Qt**: QFileDialog.
+- **FLTK**: Fl_File_Chooser.
+- **EFL**: elm_fileselector.
+- **Android**: Storage Access Framework (`ACTION_OPEN_DOCUMENT` / `ACTION_CREATE_DOCUMENT`).
+- **Haiku**: BFilePanel.
 
 On Android, SAF returns `content://` URIs rather than filesystem paths. The driver stages the picked URI into the app's `getCacheDir()` so VALUE stays fopen-able for the session, and in SAVE mode the cache file is flushed back to the URI when the FileDlg is destroyed. VALUE_URI exposes the raw SAF URI for persistent use (recent-files). DIALOGTYPE=DIR is not supported (SAF tree URIs are not filesystem paths). EXTFILTER and FILTER are mapped to MIME types for the Intent; only the first pattern is used.
 
@@ -210,12 +224,15 @@ On Android, SAF returns `content://` URIs rather than filesystem paths. The driv
     IupDestroy(dlg);
 
 **Windows XP**
+
 ![](../images/filedlg_win.png)
 
 **Motif/Mwm**
+
 ![](../images/filedlg_mot.png)
 
 **GTK/GNOME**
+
 ![](../images/filedlg_gtk.png)
 
 [Browse for Example Files](../../examples/)

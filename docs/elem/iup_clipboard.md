@@ -15,7 +15,7 @@ Or you can simply create and destroy every time you need to copy or paste.
 **ADDFORMAT** (write-only): register a custom format for clipboard data given its name.
 The registration remains valid even after the element is destroyed.
 A new format must be added before used.
-Custom format attributes (ADDFORMAT, FORMAT, FORMATAVAILABLE, FORMATDATA, FORMATDATASTRING, FORMATDATASIZE) are not supported in FLTK.
+Custom format attributes (ADDFORMAT, FORMAT, FORMATAVAILABLE, FORMATDATA, FORMATDATASTRING, FORMATDATASIZE) are not supported in FLTK and Android.
 
 **EMFAVAILABLE** (read-only) [Windows Only]: informs if there is a Windows Enhanced Metafile available at the clipboard.
 
@@ -31,17 +31,17 @@ When set the FORMATDATASIZE attribute must be set before with the data size.
 When retrieved FORMATDATASIZE will be set and available after data is retrieved.
 
 **FORMATDATASTRING**: sets/gets FORMATDATA and FORMATDATASIZE considering data being a string in the system format.
-Not supported in Motif and FLTK.
+Not supported in Motif, FLTK and Android.
 
 **FORMATDATASIZE**: size of the data on the clipboard.
 Used by the FORMATDATA attribute processing.
 
 **IMAGE** (write-only): name of an image to copy to the clipboard.
 If set to NULL clears the clipboard data.
-Not supported in EFL.
+Not supported in EFL and Android.
 
 **IMAGEAVAILABLE** (read-only): informs if there is an image available at the clipboard.
-Not supported in EFL.
+Not supported in EFL and Android.
 
 **NATIVEIMAGE**: native handle of an image to copy or paste, to or from the clipboard.
 In Win32 and WinUI is a **HANDLE** of a DIB.
@@ -49,12 +49,14 @@ In GTK is a **GdkPixbuf***.
 In GTK 4 is a **GdkTexture***.
 In Motif is a **Pixmap**.
 In macOS is an **NSImage***.
+In iOS is a **UIImage***.
 In Qt is a **QPixmap***.
 In FLTK is a **Fl_RGB_Image***.
+In Haiku is a **BBitmap***.
 If set to NULL clears the clipboard data.
 The returned handle in a paste must be released after used.
 After copy, do NOT release the given handle.
-Not supported in EFL.
+Not supported in EFL and Android.
 
 **SAVEEMF** (write-only) [Windows Only]: saves the EMF from the clipboard to the given filename.
 Available in Win32 and WinUI.

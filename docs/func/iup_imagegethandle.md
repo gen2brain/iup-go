@@ -28,11 +28,20 @@ The available file formats supported are system-dependent:
 - **EFL**: formats supported by Evas image loaders, such as BMP, GIF, JPEG, PNG, TIFF, WebP and others
 - **Motif**: XBM and XPM. With Motif 2.4.0+: also JPEG, PNG and SVG via XmGetPixmap
 - **Android**: formats supported by BitmapFactory, such as PNG, JPEG, GIF, BMP and WebP
+- **Haiku**: formats supported by the Translation Kit (BTranslatorRoster / BTranslationUtils), such as BMP, GIF, JPEG, PNG, TGA, TIFF and WebP
 
 In this case, the function returns a new image handle and associates the name with that handle, so in the next call it will return the existing handle.
 
-Name can also be the name of a resource image defined in a RC file in Windows.
-In this case, the function returns a new image handle and associates the name with that handle, so in the next call it will return the existing handle.
+Name can also be a system-specific stock / named image:
+
+- **Win32**: names of resources in RC files linked with the application.
+- **GTK 3**: names of GTK Stock Items.
+- **GTK 4**: names of icon theme icons.
+- **Qt**: names of Qt standard pixmaps (`QStyle::StandardPixmap`).
+- **CocoaTouch**: asset-catalog names via `[UIImage imageNamed:]` and SF Symbol names via `[UIImage systemImageNamed:]`.
+- **Motif**: names of bitmaps installed on the system.
+
+In all cases, the function returns a new image handle and associates the name with that handle, so in the next call it will return the existing handle.
 
 ### See Also
 

@@ -363,15 +363,19 @@ But these functions are faster than the traditional functions because they do no
 [Browse for Example Files](../../examples/)
 
 **Windows Classic**
+
 ![](../images/iuplist_win2k.png)
 
 **Windows w/ Styles**
+
 ![](../images/iuplist_winxp.png)
 
 **Motif**
+
 ![](../images/iuplist_mot.png)
 
 **GTK**
+
 ![](../images/iuplist_gtk.png)
 
 ### See Also

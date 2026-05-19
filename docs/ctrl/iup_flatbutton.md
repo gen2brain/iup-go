@@ -252,15 +252,19 @@ When the **IupFlatButton** displays only a text it will look like a label, use S
 The sample buttons have PADDING=5x5.
 
 **Normal**
+
 ![](../images/iupflatbutton_normal.png)
 
 **Highlight**
+
 ![](../images/iupflatbutton_highlight.png)
 
 **Press**
+
 ![](../images/iupflatbutton_pressed.png)
 
 **Focus**
+
 ![](../images/iupflatbutton_focus.png)
 
 ### See Also

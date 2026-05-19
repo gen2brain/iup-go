@@ -66,7 +66,7 @@ In Windows UNDO is also available, and REDO is available when FORMATTING=YES.
 **CUEBANNER** (non-inheritable): a text that is displayed when there is no text at the control.
 It works as a textual cue, or tip to prompt the user for input.
 Valid only for MULTILINE=NO. In Windows, works only when Visual Styles are enabled.
-Supported in Windows, GTK, GTK 4 and Qt.
+Not supported in Motif, FLTK and Haiku.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
@@ -74,7 +74,7 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute TXTFGCOLOR.
 
 **FILTER** (non-inheritable): allows a custom filter to process the characters: Can be LOWERCASE, UPPERCASE or NUMBER (only numbers allowed).
-Supported in Windows, Qt and macOS.
+Supported in Win32, Qt, macOS, iOS and Android.
 
 [FORMATTING](../attrib/iup_formatting.md) (non-inheritable): When enabled allows the use of text formatting attributes.
 In GTK is always enabled, but only when MULTILINE=YES. Default: NO.
@@ -109,7 +109,7 @@ Default: Yes.
 
 **OVERWRITE** (non-inheritable): turns the overwrite mode ON or OFF.
 Works only when FORMATTING=YES.
-Supported in Windows, GTK, GTK 4, Qt and macOS.
+Supported in Win32, GTK, GTK 4, Qt, macOS and Haiku.
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
 Default value: "0x0". In Windows, only the horizontal value is used.
@@ -142,7 +142,7 @@ It uses the same format and reference of the CARETPOS attribute ("pos" starting 
 
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
-Supported in Windows and Qt.
+Supported in Win32, Qt and macOS.
 
 **SELECTEDTEXT** (non-inheritable): Selection text. Returns NULL if there is no selection.
 When changed replaces the current selection.
@@ -305,8 +305,6 @@ This also applies to Windows if FORMATTING=YES depending on the Windows codepage
 Internal Drag&Drop support is enabled by default.
 But in Windows the internal Drag&Drop is enabled only if FORMATTING=YES.
 In GTK the internal Drag&Drop cannot be disabled, so it will conflict with the [Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks.
-
-In GTK uses GtkTextView/GtkEntry/GtkSpinButton, in Windows uses RICHEDIT_CLASS (formatting)/WC_EDIT, in WinUI uses XAML RichEditBox/TextBox, in macOS uses NSTextView/NSTextField, in Qt uses QTextEdit/QLineEdit, in FLTK uses Fl_Text_Editor/Fl_Input/Fl_Spinner, in EFL uses Elm_Entry, and in Motif uses xmText/xmTextField.
 
 #### Navigation, Selection and Clipboard Keys
 

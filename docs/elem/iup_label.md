@@ -44,7 +44,7 @@ Not supported in Win32 and WinUI.
 **MARKUP**: allows the title string to contain markup commands.
 Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes. GTK uses Pango markup natively; other drivers convert to their native format.
 Works only if a mnemonic is NOT defined in the title. Can be "YES" or "NO". Default: "NO".
-Not supported in Win32, FLTK and Motif (markup tags are stripped and plain text is displayed).
+Not supported in Win32, FLTK, Motif and Haiku (markup tags are stripped and plain text is displayed).
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
 Not used when SEPARATOR is used. Default value: "0x0".
@@ -67,11 +67,11 @@ The next control from the label will be activated from any control in the dialog
 
 **WORDWRAP**: enables or disable the wrapping of lines that does not fit in the label.
 Can be "YES" or "NO". Default: "NO". Can only set WORDWRAP=YES if ALIGNMENT=ALEFT.
-Not supported in Motif.
+Not supported in Motif and Haiku.
 
 **SELECTABLE** (non-inheritable): Makes the label text selectable by the user for copy/paste.
 Can be "YES" or "NO". Default: "NO".
-Supported in GTK, GTK 4, Qt and macOS.
+Supported in GTK, GTK 4, Qt, macOS and iOS.
 
 >
 >
@@ -95,8 +95,6 @@ Supported in GTK, GTK 4, Qt and macOS.
 
 Labels with images, texts or line separator cannot change its behavior after mapped.
 But after map, the image can be changed for another image, and the text for another text.
-
-In GTK uses GtkSeparator/GtkImage/GtkLabel, in GTK 4 uses GtkSeparator/GtkImage/GtkLabel, in Windows uses WC_STATIC, in WinUI uses XAML TextBlock/Image/Border, in macOS uses NSSeparator/NSImageView/NSTextField, in Qt uses QFrame/QLabel, in FLTK uses Fl_Box, in EFL uses Efl_Ui_Separator/Efl_Ui_Image/Elm_Label, and in Motif uses xmSeparator/xmLabel.
 
 ### Examples
 

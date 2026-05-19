@@ -42,12 +42,15 @@ In GTK uses GtkCalendar, in Windows uses MONTHCAL_CLASS, in WinUI uses XAML Cale
 ### Examples
 
 **Windows Classic**
+
 ![](../images/iupcalendar_win2k.png)
 
 **Windows w/ Styles**
+
 ![](../images/iupcalendar_winxp.png)
 
 **GTK**
+
 ![](../images/iupcalendar_gtk.png)
 
 [Browse for Example Files](../../examples/)

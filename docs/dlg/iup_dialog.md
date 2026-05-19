@@ -271,15 +271,16 @@ It is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined. 
 Supported in GTK, GTK 4, Qt, macOS, and EFL.
 
 **HIDETITLEBAR** (non-inheritable): hides the title bar with all its elements.
-Supported in GTK, GTK 4, Qt, macOS, iOS, and Haiku.
+Not supported in Win32, WinUI and Motif.
 
-#### Exclusive Taskbar [Windows Only]
+#### Exclusive Taskbar
 
 **HIDETASKBAR** (write-only): Action attribute that when set to "YES", hides the dialog, but does not decrement the visible dialog count, does not call SHOW_CB and does not mark the dialog as hidden inside IUP.
 It is usually used to hide the dialog and keep the tray icon working without closing the main loop.
 It has the same effect as setting LOCKLOOP=Yes and normally hiding the dialog.
 IMPORTANT: when you hide using HIDETASKBAR, you must show using HIDETASKBAR also.
 Possible values: YES, NO.
+Not supported in Android and iOS.
 
 **TASKBARPROGRESS** [Windows Only] (write-only): enables the use of a progress bar on a taskbar button.
 Default: NO.
@@ -397,7 +398,20 @@ For instance, the RESIZE_CB and the SHOW_CB are called in a different order in W
 
 In Windows, when all decorations are removed, the window icon is not displayed on the task bar; when minimized, a small rectangular window will be positioned above the task bar on the bottom-left corner of the desktop.
 
-In GTK and GTK 4 uses GtkWindow, in Windows uses a custom window class called "IupDialog", in WinUI uses a Win32 window with XAML Islands, in macOS uses NSWindow, in Qt uses QMainWindow, in FLTK uses Fl_Double_Window, in EFL uses Efl_Ui_Win, in Motif uses topLevelShellWidgetClass, in Android uses an Activity, and in iOS uses a UIViewController.
+The underlying native widget per driver:
+
+- **Win32**: custom window class "IupDialog".
+- **WinUI**: Win32 window hosting XAML Islands.
+- **GTK 3**: GtkWindow.
+- **GTK 4**: GtkWindow.
+- **Motif**: topLevelShellWidgetClass.
+- **Cocoa**: NSWindow.
+- **CocoaTouch**: UIViewController hosted by the main UIWindow.
+- **Qt**: QMainWindow.
+- **FLTK**: Fl_Double_Window.
+- **EFL**: Efl_Ui_Win.
+- **Android**: Activity.
+- **Haiku**: BWindow.
 
 #### Custom Frame
 

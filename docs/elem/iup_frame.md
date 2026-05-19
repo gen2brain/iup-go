@@ -92,15 +92,19 @@ In GTK uses GtkFrame, in Windows uses WC_BUTTON, in WinUI uses a custom emulatio
       IupSetAttribute(frame2, "SUNKEN", "YES");
 
 **Windows Classic**
+
 ![](../images/iupframe_win2k.png)
 
 **Windows w/ Styles**
+
 ![](../images/iupframe_winxp.png)
 
 **Motif**
+
 ![](../images/iupframe_mot.png)
 
 **GTK**
+
 ![](../images/iupframe_gtk.png)
 
 ### See Also

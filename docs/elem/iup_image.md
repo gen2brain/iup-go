@@ -93,7 +93,20 @@ Images that were associated with controls by names are automatically destroyed i
 
 Please observe the rules for creating cursor images: [CURSOR](../attrib/iup_cursor.md).
 
-In GTK uses GdkPixbuf/GdkCursor, in GTK 4 uses GdkTexture/GdkCursor, in Windows uses HBITMAP/HICON, in WinUI uses WriteableBitmap, in macOS uses NSImage, in Qt uses QPixmap, in FLTK uses Fl_RGB_Image, in EFL uses Evas_Object, and in Motif uses Pixmap/Cursor.
+The underlying native image type per driver:
+
+- **Win32**: HBITMAP / HICON.
+- **WinUI**: WriteableBitmap.
+- **GTK 3**: GdkPixbuf / GdkCursor.
+- **GTK 4**: GdkTexture / GdkCursor.
+- **Motif**: Pixmap / Cursor.
+- **Cocoa**: NSImage.
+- **CocoaTouch**: UIImage.
+- **Qt**: QPixmap.
+- **FLTK**: Fl_RGB_Image.
+- **EFL**: Evas_Object.
+- **Android**: android.graphics.Bitmap.
+- **Haiku**: BBitmap.
 
 #### Usage
 
@@ -108,26 +121,11 @@ For example:
     or
     IupSetAttributeHandle(label, "IMAGE", image); // an automatic name will be created internally
 
-In Windows, names of resources in RC files linked with the application are also accepted.
-In GTK, names of GTK Stock Items are also accepted.
-In GTK 4, names of icon theme icons are also accepted.
-In Qt, names of Qt standard pixmaps (QStyle::StandardPixmap) are also accepted for stock icons.
-In Motif, names of bitmaps installed on the system are also accepted. For example:
+In all drivers, a path to a file name, or a system-specific stock / named image, can also be used as the attribute value. See [IupImageGetHandle](../func/iup_imagegethandle.md) for the per-driver list of accepted file formats and named lookups.
 
-    IupSetAttribute(label, "IMAGE", "TECGRAF_BITMAP");  // available in the "etc/iup.rc" file
-    or
-    IupSetAttribute(label, "IMAGE", "gtk-open");  // available in the GTK Stock Items
-
-In all drivers, a path to a file name can also be used as the attribute value.
-The available file formats supported are system-dependent.
-In Windows, BMP, ICO and CUR are supported via LoadImage, plus BMP, GIF, JPEG, PNG, TIFF and others via WIC.
-In GTK, the formats supported by GDK-PixBuf are available, such as BMP, GIF, JPEG, PNG, TIFF and many others.
-In macOS, the formats supported by NSImage are available, such as BMP, GIF, JPEG, PNG, TIFF and others.
-In Qt, the formats supported by QPixmap are available, such as BMP, GIF, JPEG, PNG and others.
-In EFL, the formats supported by Evas image loaders are available, such as BMP, GIF, JPEG, PNG, TIFF and others.
-In Motif, the X-Windows bitmap format is supported. For example:
-
-    IupSetAttribute(label, "IMAGE", "../etc/tecgraf.bmp");
+    IupSetAttribute(label, "IMAGE", "TECGRAF_BITMAP");      // a resource in the linked "etc/iup.rc" file (Win32)
+    IupSetAttribute(label, "IMAGE", "gtk-open");            // a GTK Stock Item (GTK 3)
+    IupSetAttribute(label, "IMAGE", "../etc/tecgraf.bmp");  // a file path (all drivers)
 
 #### Colors
 

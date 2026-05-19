@@ -149,8 +149,10 @@ After the mouse is move away from the child, then it is automatically hidden.
 [Browse for Example Files](../../examples/)
 
 ![](../images/iupexpander_open.png)
+
 Container Expanded (STATE = "OPEN")
 
 ![](../images/iupexpander_close.png)
+
 Container Collapsed (STATE = "CLOSE")
 

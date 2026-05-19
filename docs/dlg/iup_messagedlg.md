@@ -27,6 +27,7 @@ Default: "OK". Additionally, the "Help" button is displayed if the HELP_CB callb
 **DIALOGTYPE**: Type of dialog defines which icon will be displayed beside the message text.
 Can have values: "MESSAGE" (No Icon), "ERROR" (Stop-sign), "WARNING" (Exclamation-point), "QUESTION" (Question-mark) or "INFORMATION" (Letter "i").
 Default: "MESSAGE".
+The icon is not displayed in GTK 4.
 
 [PARENTDIALOG](../attrib/iup_parentdialog.md) (creation-only): Name of a dialog to be used as parent.
 This dialog will always be in front of the parent dialog.
@@ -39,6 +40,7 @@ If not defined in Motif the dialog could not be modal.
 ### Callbacks
 
 [HELP_CB](../call/iup_help_cb.md): Action generated when the Help button is pressed.
+Not supported in WinUI, GTK 4, FLTK and Haiku.
 
 ### Notes
 
@@ -48,15 +50,26 @@ To show the dialog, use function **IupPopup**.
 
 The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
-In Windows, the position (x,y) used in **IupPopup** is ignored and the dialog is always centered on the screen.
-
 The **IupMessage** function simply creates and popups a **IupMessageDlg**.
 
-In Windows, each different dialog type is always associated with a different beep sound.
+In Win32, each different DIALOGTYPE plays a different system beep, and PARENTDIALOG makes the dialog modal relative only to its parent.
 
-In Windows, if PARENTDIALOG is specified, then it will be modal relative only to its parent.
+The underlying native widget per driver:
 
-In GTK uses the gtk_message_dialog, in Windows uses MessageBox, in FLTK uses fl_message/fl_choice, and in Motif uses xmMessageBox.
+- **Win32**: MessageBoxIndirect.
+- **WinUI**: ContentDialog hosted on the parent dialog's XamlRoot.
+- **GTK 3**: gtk_message_dialog (gtk_dialog_run).
+- **GTK 4**: GtkAlertDialog (4.10+).
+- **Motif**: XmCreateMessageDialog / XmCreateMessageBox.
+- **Cocoa**: NSAlert.
+- **CocoaTouch**: custom UIView.
+- **Qt**: QMessageBox.
+- **FLTK**: fl_message / fl_choice_n.
+- **EFL**: custom dialog window (efl_ui_win).
+- **Android**: MaterialAlertDialogBuilder.
+- **Haiku**: BAlert.
+
+The (x,y) position from IupPopup is ignored by the native widget on all drivers except Qt, which honors it only when there is no parent.
 
 ### Examples
 
@@ -75,12 +88,15 @@ In GTK uses the gtk_message_dialog, in Windows uses MessageBox, in FLTK uses fl_
     IupDestroy(dlg);  
 
 **Windows XP**
+
 ![](../images/messagedlg_win.png)
 
 **Motif/Mwm**
+
 ![](../images/messagedlg_mot.png)
 
 **GTK/GNOME**
+
 ![](../images/messagedlg_gtk.png)
 
 ### See Also

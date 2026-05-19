@@ -29,6 +29,12 @@ The DEFAULTFONT is retrieved from the System Settings (see below), if this faile
 
 The native handle can be obtained using the "**HFONT**" attribute.
 
+#### WinUI
+
+The DEFAULTFONT is retrieved from the Windows System Settings, "Segoe UI Variable, 9" is assumed otherwise.
+
+XAML Islands render text via DirectWrite. The native handle can be obtained using the "**HFONT**" attribute (used for IUP layout metrics).
+
 #### Motif
 
 The DEFAULTFONT is retrieved from the user resource file (see below), if failed, then "Fixed, 11" is assumed.
@@ -60,12 +66,24 @@ Those values can be used only when the string is a full Pango compliant font, i.
 
 In GNOME, go to the "Appearance Preferences" tool, then in the Fonts tab change the Applications Font to affect the default font.
 
+#### GTK 4
+
+Same model as GTK: DEFAULTFONT is retrieved from the GNOME style, "Sans, 10" assumed otherwise.
+
+The native handle can be obtained using the "**PANGOFONTDESC**" attribute.
+
 #### macOS
 
 The DEFAULTFONT is retrieved from the system font (NSFont systemFontOfSize).
 The default is typically "Helvetica Neue" or "San Francisco" depending on the macOS version.
 
 Uses CoreText for font rendering with full Unicode/UTF-8 support.
+
+#### CocoaTouch
+
+The DEFAULTFONT is `[UIFont systemFontOfSize: [UIFont labelFontSize]]` (system font at the platform's standard label size, typically 17pt).
+
+Uses CoreText for rendering. The native handle can be obtained using the "**UIFONT**" attribute.
 
 #### Qt
 
@@ -79,6 +97,24 @@ Supports all fonts available to the Qt platform.
 The DEFAULTFONT is retrieved from the Elementary font overlay configuration, if failed "Sans, 10" is assumed.
 
 Uses the EFL/Evas text rendering engine.
+
+#### FLTK
+
+FLTK uses an internal `Fl_Font` enum; there is no system-derived DEFAULTFONT. Defaults to FL_HELVETICA at the size of the system menu font.
+
+The face names `Helvetica`, `Courier` and `Times` map to `FL_HELVETICA`, `FL_COURIER` and `FL_TIMES`; other names fall back to FL_HELVETICA.
+
+#### Android
+
+The DEFAULTFONT reflects the Material theme's default body font (Roboto on stock Android).
+
+Uses `android.graphics.Typeface`. `Helvetica`, `Courier` and `Times` map to `Typeface.SANS_SERIF`, `Typeface.MONOSPACE` and `Typeface.SERIF`.
+
+#### Haiku
+
+The DEFAULTFONT is `be_plain_font` from the Interface Kit (typically "Noto Sans" on stock Haiku R1).
+
+Uses `BFont`. The native handle can be obtained using the "**BFONT**" attribute.
 
 #### Examples:
 
@@ -149,8 +185,8 @@ The advantage is that any charset can be used, and localization is usually done 
 
 IUP supports UTF-8 (ISO10646-1) encoding in all drivers.
 To specify a string in UTF-8 encoding set the global attribute "[UTF8MODE](iup_globals.md#utf8mode)" to "Yes".
-In GTK, GTK 4, macOS, Qt and EFL, UTF-8 is the native encoding.
-In Windows and Motif (with XFT), UTF-8 strings are converted to the native encoding as needed.
+In GTK, GTK 4, macOS, CocoaTouch, Qt, EFL, FLTK, Android and Haiku, UTF-8 is the native encoding.
+In Windows, WinUI and Motif (with XFT), UTF-8 strings are converted to the native encoding as needed.
 
 #### ISO8859-1 and Windows-1252 Displayable Characters
 

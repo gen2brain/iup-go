@@ -28,6 +28,7 @@ The image is encoded using the native GUI toolkit, with no external library depe
 - **EFL**: PNG, JPEG, BMP via Evas image savers
 - **Motif**: BMP only (pure C implementation)
 - **Android**: PNG, JPEG, BMP, WebP via Bitmap.compress
+- **Haiku**: PNG, JPEG, BMP via the Translation Kit (BTranslatorRoster); also accepts GIF, TIFF, TGA and PPM format strings
 
 If **format** is NULL, the format is detected from the filename extension (`.png`, `.jpg`/`.jpeg`, `.bmp`).
 

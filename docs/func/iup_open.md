@@ -36,9 +36,13 @@ Returns IUP_ERROR if a QApplication cannot be obtained.
 
 In **EFL**, elm_init is called with argc/argv.
 
+In **FLTK**, Fl::visual(FL_DOUBLE|FL_RGB), Fl::args, fl_open_display and Fl::lock are called.
+
 In **Android**, the hosting Activity loads the shared library and calls IupOpen before the user-registered entry point (`IupSetFunction("ENTRY_POINT", ...)`); the user's `IupOpen` call is then a safe second call.
 
 In **iOS**, the UIApplication shared instance is initialized.
+
+In **Haiku**, a BApplication subclass (IupHaikuApp) is created using the APPID as its MIME signature; the executable's BAppFileInfo signature is updated and the MIME entry is registered/promoted as the preferred app for that signature. If an existing BApplication is detected, it is reused.
 
 In all drivers, the C numeric locale is reset to "C" after toolkit initialization to ensure consistent number formatting.
 

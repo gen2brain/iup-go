@@ -188,9 +188,11 @@ These functions are faster than the traditional functions because they do not ne
 [Browse for Example Files](../../examples/)
 
 **Checkerboard Pattern**
+
 ![](../images/iupcells_chess.jpg)
 
 **Numbering Cells**
+
 ![](../images/iupcells_num.jpg)
 
 ### See Also
