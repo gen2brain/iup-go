@@ -452,6 +452,20 @@ static char* iTextGetAppendNewlineAttrib(Ihandle* ih)
   return iupStrReturnBoolean (ih->data->append_newline);
 }
 
+static int iTextSetAppendScrollAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrBoolean(value))
+    ih->data->append_scroll = 1;
+  else
+    ih->data->append_scroll = 0;
+  return 0;
+}
+
+static char* iTextGetAppendScrollAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean (ih->data->append_scroll);
+}
+
 static int iTextSetScrollbarAttrib(Ihandle* ih, const char* value)
 {
   /* valid only before map */
@@ -501,6 +515,7 @@ static int iTextCreateMethod(Ihandle* ih, void** params)
   }
   ih->data = iupALLOCCTRLDATA();
   ih->data->append_newline = 1;
+  ih->data->append_scroll = 1;
   return IUP_NOERROR;
 }
 
@@ -679,6 +694,7 @@ Iclass* iupTextNewClass(void)
   iupClassRegisterAttribute(ic, "AUTOHIDE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MULTILINE", iTextGetMultilineAttrib, iTextSetMultilineAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPENDNEWLINE", iTextGetAppendNewlineAttrib, iTextSetAppendNewlineAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPENDSCROLL", iTextGetAppendScrollAttrib, iTextSetAppendScrollAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CPADDING", iupBaseGetCPaddingAttrib, iupBaseSetCPaddingAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "VALUEMASKED", NULL, iTextSetValueMaskedAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);

@@ -1071,7 +1071,8 @@ static int haikuTextSetAppendAttrib(Ihandle* ih, const char* value)
     tv->Insert(end, full, strlen(full));
     ih->data->disable_callbacks = 0;
     free(full);
-    tv->ScrollToOffset(tv->TextLength());
+    if (ih->data->append_scroll)
+      tv->ScrollToOffset(tv->TextLength());
   }
   else
   {

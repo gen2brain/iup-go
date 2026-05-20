@@ -18,6 +18,7 @@ Not supported in Motif and FLTK.
 
 **APPEND** (write-only): Inserts a text at the end of the current text.
 In the Multiline, if APPENDNEWLINE=YES, a "\n" character is automatically inserted before the appended text if the current text is not empty(APPENDNEWLINE default is YES).
+If APPENDSCROLL=YES, after the insert the view scrolls so the appended text is visible (APPENDSCROLL default is YES).
 Ignored if set before map.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the text. Default: the global attribute TXTBGCOLOR.
@@ -135,9 +136,9 @@ Navigation keys are still available. Possible values: "YES", "NO". Default: NO.
 Associates an automatic horizontal and/or vertical scrollbar to the multiline.
 Can be: "VERTICAL", "HORIZONTAL", "YES" (both) or "NO" (none). Default: "YES".
 For all systems, when SCROLLBAR!=NO the natural size will always include its size even if the native system hides the scrollbar.
-If **AUTOHIDE**=YES scrollbars are visible only if they are necessary, by default AUTOHIDE=NO.
-In Windows when FORMATTING=NO, AUTOHIDE is not supported.
-In Motif AUTOHIDE is not supported.
+If **AUTOHIDE**=YES scrollbars are visible only if they are necessary, by default AUTOHIDE=YES.
+Not supported in Motif, Haiku, FLTK, and iOS.
+In Windows not supported when FORMATTING=NO.
 
 **SCROLLTO** (non-inheritable, write-only): Scroll the text to make the given **character** position visible.
 It uses the same format and reference of the CARET attribute ("lin,col" or "col" starting at 1).

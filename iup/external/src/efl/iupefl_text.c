@@ -817,10 +817,9 @@ static int eflTextSetAppendAttrib(Ihandle* ih, const char* value)
     if (value)
       efl_text_cursor_object_text_insert(cur, value);
 
-    efl_text_cursor_object_move(cur, EFL_TEXT_CURSOR_MOVE_TYPE_LAST);
-
-    if (ih->data->is_multiline)
+    if (ih->data->is_multiline && ih->data->append_scroll)
     {
+      efl_text_cursor_object_move(cur, EFL_TEXT_CURSOR_MOVE_TYPE_LAST);
       Eina_Rect rect = efl_text_cursor_object_cursor_geometry_get(cur, EFL_TEXT_CURSOR_TYPE_BEFORE);
       efl_ui_scrollable_scroll(entry, rect, EINA_FALSE);
     }
@@ -1583,6 +1582,12 @@ static int eflTextMapMethod(Ihandle* ih)
       }
       else
         efl_text_wrap_set(widget, EFL_TEXT_FORMAT_WRAP_NONE);
+
+      Elm_Scroller_Policy on_policy = iupAttribGetBoolean(ih, "AUTOHIDE")
+        ? ELM_SCROLLER_POLICY_AUTO : ELM_SCROLLER_POLICY_ON;
+      Elm_Scroller_Policy hp = (ih->data->sb & IUP_SB_HORIZ) ? on_policy : ELM_SCROLLER_POLICY_OFF;
+      Elm_Scroller_Policy vp = (ih->data->sb & IUP_SB_VERT)  ? on_policy : ELM_SCROLLER_POLICY_OFF;
+      elm_interface_scrollable_policy_set(widget, hp, vp);
     }
     else
     {

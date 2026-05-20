@@ -4587,9 +4587,11 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
     [text_view didChangeText];
     [undo_manager endUndoGrouping];
 
-    /* Scroll to end to show the appended text */
-    NSRange end_range = NSMakeRange([[text_view string] length], 0);
-    [text_view scrollRangeToVisible:end_range];
+    if (ih->data->append_scroll)
+    {
+      NSRange end_range = NSMakeRange([[text_view string] length], 0);
+      [text_view scrollRangeToVisible:end_range];
+    }
   }
   else
   {
@@ -5208,6 +5210,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
 
     [scroll_view setHasHorizontalScroller:(ih->data->sb & IUP_SB_HORIZ) ? YES : NO];
     [scroll_view setHasVerticalScroller:(ih->data->sb & IUP_SB_VERT) ? YES : NO];
+    [scroll_view setAutohidesScrollers:iupAttribGetBoolean(ih, "AUTOHIDE") ? YES : NO];
 
     IupCocoaFont* iup_font = iupcocoaGetFont(ih);
     if (iup_font)

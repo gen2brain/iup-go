@@ -1137,6 +1137,16 @@ static int winTextSetAppendAttrib(Ihandle* ih, const char* value)
   str = winTextStrConvertToSystem(ih, value);
 
   wpos = GetWindowTextLength(ih->handle)+1;
+
+  /* APPENDSCROLL=NO: snapshot caret/selection + first visible line; restore after the insert. */
+  int saved_start = 0, saved_end = 0, saved_first_line = 0;
+  int restore_view = ih->data->is_multiline && !ih->data->append_scroll;
+  if (restore_view)
+  {
+    SendMessage(ih->handle, EM_GETSEL, (WPARAM)&saved_start, (LPARAM)&saved_end);
+    saved_first_line = (int)SendMessage(ih->handle, EM_GETFIRSTVISIBLELINE, 0, 0);
+  }
+
   SendMessage(ih->handle, EM_SETSEL, (WPARAM)wpos, (LPARAM)wpos);
 
   ih->data->disable_callbacks = 1;
@@ -1149,6 +1159,14 @@ static int winTextSetAppendAttrib(Ihandle* ih, const char* value)
       SendMessage(ih->handle, EM_REPLACESEL, (WPARAM)FALSE, (LPARAM)TEXT("\r\n"));
   }
   SendMessage(ih->handle, EM_REPLACESEL, (WPARAM)TRUE, (LPARAM)str);
+
+  if (restore_view)
+  {
+    SendMessage(ih->handle, EM_SETSEL, (WPARAM)saved_start, (LPARAM)saved_end);
+    int delta = saved_first_line - (int)SendMessage(ih->handle, EM_GETFIRSTVISIBLELINE, 0, 0);
+    if (delta != 0)
+      SendMessage(ih->handle, EM_LINESCROLL, 0, (LPARAM)delta);
+  }
 
   ih->data->disable_callbacks = 0;
 

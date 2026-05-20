@@ -174,7 +174,7 @@ public final class IupTextHelper
     }
 
     @Keep
-    public static View createMultiLineText(final long ihandlePtr, boolean wordWrap)
+    public static View createMultiLineText(final long ihandlePtr, boolean wordWrap, boolean autoHide)
     {
         IupEditText tv = newEditText(ihandlePtr, 0, false);
         tv.setInputType(InputType.TYPE_CLASS_TEXT
@@ -193,6 +193,7 @@ public final class IupTextHelper
         NestedScrollView sv = new NestedScrollView(tv.getContext());
         sv.setFillViewport(true);
         sv.setVerticalScrollBarEnabled(true);
+        sv.setScrollbarFadingEnabled(autoHide);
 
         if (wordWrap)
         {
@@ -205,6 +206,7 @@ public final class IupTextHelper
             HorizontalScrollView hsv = new HorizontalScrollView(tv.getContext());
             hsv.setFillViewport(true);
             hsv.setHorizontalScrollBarEnabled(true);
+            hsv.setScrollbarFadingEnabled(autoHide);
             hsv.addView(tv, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -700,7 +702,7 @@ public final class IupTextHelper
     }
 
     @Keep
-    public static void appendText(final long ihandlePtr, View v, String text, boolean multilineNewline)
+    public static void appendText(final long ihandlePtr, View v, String text, boolean multilineNewline, boolean scrollEnd)
     {
         IupEditText tv = resolve(v);
         if (tv == null || text == null) return;
@@ -713,10 +715,12 @@ public final class IupTextHelper
         buf.append(text);
         tv.suppressVC = false;
         tv.setFilters(filters);
-        tv.setSelection(buf.length());
-        /* multiline is wrapped in NestedScrollView; scroll after layout to show the new tail */
-        if (v instanceof NestedScrollView nsv)
-            nsv.post(() -> nsv.fullScroll(View.FOCUS_DOWN));
+        if (scrollEnd)
+        {
+            tv.setSelection(buf.length());
+            if (v instanceof NestedScrollView nsv)
+                nsv.post(() -> nsv.fullScroll(View.FOCUS_DOWN));
+        }
     }
 
     /* TIL hint doubles as the floating label; multi-line/spin keep the hint on the EditText. */

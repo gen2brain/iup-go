@@ -425,11 +425,13 @@ static int androidTextSetAppendAttrib(Ihandle* ih, const char* value)
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
-  jmethodID method_id = IUPJNI_GetStaticMethodID(IupTextHelper_appendText, jni_env, java_class, "appendText", "(JLandroid/view/View;Ljava/lang/String;Z)V");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupTextHelper_appendText, jni_env, java_class, "appendText", "(JLandroid/view/View;Ljava/lang/String;ZZ)V");
 
   int multi_newline = ih->data->is_multiline && ih->data->append_newline;
   jstring j_string = (*jni_env)->NewStringUTF(jni_env, value);
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle, j_string, multi_newline ? JNI_TRUE : JNI_FALSE);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle, j_string,
+    multi_newline ? JNI_TRUE : JNI_FALSE,
+    ih->data->append_scroll ? JNI_TRUE : JNI_FALSE);
   iupAndroid_CheckException(jni_env, "IupTextHelper.appendText");
   (*jni_env)->DeleteLocalRef(jni_env, j_string);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
@@ -1103,10 +1105,11 @@ static int androidTextMapMethod(Ihandle* ih)
 
   if (ih->data->is_multiline)
   {
-    method_id = IUPJNI_GetStaticMethodID(IupTextHelper_createMultiLineText, jni_env, java_class, "createMultiLineText", "(JZ)Landroid/view/View;");
+    method_id = IUPJNI_GetStaticMethodID(IupTextHelper_createMultiLineText, jni_env, java_class, "createMultiLineText", "(JZZ)Landroid/view/View;");
     jboolean word_wrap = iupAttribGetBoolean(ih, "WORDWRAP") ? JNI_TRUE : JNI_FALSE;
+    jboolean auto_hide = iupAttribGetBoolean(ih, "AUTOHIDE") ? JNI_TRUE : JNI_FALSE;
     if (word_wrap) ih->data->sb &= ~IUP_SB_HORIZ;
-    java_widget = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, word_wrap);
+    java_widget = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, word_wrap, auto_hide);
   }
   else
   {
