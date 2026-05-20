@@ -1003,6 +1003,14 @@ static int gtk4TextSetSelectionAttrib(Ihandle* ih, const char* value)
     GtkTextIter start_iter, end_iter;
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
 
+    if (iupStrEqualNoCase(value, "NONE"))
+    {
+      GtkTextIter ins;
+      gtk_text_buffer_get_iter_at_mark(buffer, &ins, gtk_text_buffer_get_insert(buffer));
+      gtk_text_buffer_place_cursor(buffer, &ins);
+      return 0;
+    }
+
     if (iupStrEqualNoCase(value, "ALL"))
     {
       gtk_text_buffer_get_start_iter(buffer, &start_iter);
@@ -1022,6 +1030,13 @@ static int gtk4TextSetSelectionAttrib(Ihandle* ih, const char* value)
   else
   {
     int start = 1, end = 1;
+
+    if (iupStrEqualNoCase(value, "NONE"))
+    {
+      int pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+      gtk_editable_select_region(GTK_EDITABLE(ih->handle), pos, pos);
+      return 0;
+    }
 
     if (iupStrEqualNoCase(value, "ALL"))
     {

@@ -668,13 +668,35 @@ static int eflTextSetSelectionAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
+  if (iupStrEqualNoCase(value, "NONE"))
+  {
+    efl_text_interactive_all_unselect(entry);
+    return 0;
+  }
+
   if (iupStrEqualNoCase(value, "ALL"))
   {
     efl_text_interactive_all_select(entry);
     return 0;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':'))
+  if (ih->data->is_multiline)
+  {
+    int lin1 = 1, col1 = 1, lin2 = 1, col2 = 1;
+    if (sscanf(value, "%d,%d:%d,%d", &lin1, &col1, &lin2, &col2) != 4)
+      return 0;
+    iupdrvTextConvertLinColToPos(ih, lin1, col1, &start);
+    iupdrvTextConvertLinColToPos(ih, lin2, col2, &end);
+  }
+  else
+  {
+    if (iupStrToIntInt(value, &start, &end, ':') != 2)
+      return 0;
+    if (start < 1) start = 1;
+    if (end < 1) end = 1;
+    start--; end--;
+  }
+
   {
     Efl_Text_Cursor_Object* cur = efl_ui_textbox_cursor_create(entry);
     Efl_Text_Cursor_Object* cur2 = efl_ui_textbox_cursor_create(entry);
@@ -709,7 +731,14 @@ static char* eflTextGetSelectionAttrib(Ihandle* ih)
   start = efl_text_cursor_object_position_get(sel_start);
   end = efl_text_cursor_object_position_get(sel_end);
 
-  return iupStrReturnIntInt(start, end, ':');
+  if (ih->data->is_multiline)
+  {
+    int lin1, col1, lin2, col2;
+    iupdrvTextConvertPosToLinCol(ih, start, &lin1, &col1);
+    iupdrvTextConvertPosToLinCol(ih, end, &lin2, &col2);
+    return iupStrReturnStrf("%d,%d:%d,%d", lin1, col1, lin2, col2);
+  }
+  return iupStrReturnIntInt(start + 1, end + 1, ':');
 }
 
 static char* eflTextGetSelectedTextAttrib(Ihandle* ih)
@@ -870,10 +899,23 @@ static int eflTextSetScrollToAttrib(Ihandle* ih, const char* value)
   Eo* entry = iupeflGetWidget(ih);
   int pos = 0;
 
-  if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
+  if (!entry || !value || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
     return 0;
 
-  iupStrToInt(value, &pos);
+  if (ih->data->is_multiline)
+  {
+    int lin = 1, col = 1;
+    if (iupStrToIntInt(value, &lin, &col, ',') < 1) return 0;
+    if (lin < 1) lin = 1;
+    if (col < 1) col = 1;
+    iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
+  }
+  else
+  {
+    if (!iupStrToInt(value, &pos)) return 0;
+    pos--;
+    if (pos < 0) pos = 0;
+  }
 
   Efl_Text_Cursor_Object* cur = efl_text_interactive_main_cursor_get(entry);
   if (cur)
@@ -884,7 +926,20 @@ static int eflTextSetScrollToAttrib(Ihandle* ih, const char* value)
 
 static int eflTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 {
-  return eflTextSetScrollToAttrib(ih, value);
+  Eo* entry = iupeflGetWidget(ih);
+  int pos = 0;
+
+  if (!entry || !value || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
+    return 0;
+
+  iupStrToInt(value, &pos);
+  if (pos < 0) pos = 0;
+
+  Efl_Text_Cursor_Object* cur = efl_text_interactive_main_cursor_get(entry);
+  if (cur)
+    efl_text_cursor_object_position_set(cur, pos);
+
+  return 0;
 }
 
 static int eflTextSetAlignmentAttrib(Ihandle* ih, const char* value)
