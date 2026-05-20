@@ -1329,18 +1329,14 @@ static int gtk4TextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 
 static int gtk4TextSetNCAttrib(Ihandle* ih, const char* value)
 {
+  if (!iupStrToInt(value, &ih->data->nc))
+    ih->data->nc = 0;
+
   if (!ih->handle)
     return 0;
 
   if (!ih->data->is_multiline)
-  {
-    int nc = 0;
-    iupStrToInt(value, &nc);
-    if (nc > 0)
-      gtk_entry_set_max_length(GTK_ENTRY(ih->handle), nc);
-    else
-      gtk_entry_set_max_length(GTK_ENTRY(ih->handle), 0);
-  }
+    gtk_entry_set_max_length(GTK_ENTRY(ih->handle), ih->data->nc > 0 ? ih->data->nc : 0);
 
   return 0;
 }

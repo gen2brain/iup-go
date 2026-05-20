@@ -1247,14 +1247,13 @@ static char* qtTextGetReadOnlyAttrib(Ihandle* ih)
 
 static int qtTextSetNCAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->is_multiline)
+  if (!iupStrToInt(value, &ih->data->nc))
+    ih->data->nc = 0;
+
+  if (ih->handle && !ih->data->is_multiline)
   {
-    int max;
-    if (iupStrToInt(value, &max))
-    {
-      IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
-      edit->setMaxLength(max);
-    }
+    IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
+    edit->setMaxLength(ih->data->nc > 0 ? ih->data->nc : 32767);
   }
 
   return 0;
