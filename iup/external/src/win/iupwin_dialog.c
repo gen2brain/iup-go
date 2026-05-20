@@ -48,14 +48,38 @@ static int winDialogSetBgColorAttrib(Ihandle* ih, const char* value);
                      ITaskbarList3 resources
 ****************************************************************/
 
-#ifndef __MINGW32__
 #include "shobjidl.h"
 
-#ifdef __ITaskbarList3_FWD_DEFINED__  /* Only available since VC10 */
+#ifdef __ITaskbarList3_FWD_DEFINED__
+
+static ITaskbarList3* winDialogEnsureTaskBar(Ihandle *ih)
+{
+  ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWIN_TASKBARLIST");
+  if (!tbl && ih->handle)
+  {
+    CoCreateInstance(&CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, &IID_ITaskbarList3, (void**)&tbl);
+    if (tbl)
+      iupAttribSet(ih, "_IUPWIN_TASKBARLIST", (char*)tbl);
+  }
+  return tbl;
+}
+
+static int winDialogSetTaskBarProgressAttrib(Ihandle *ih, const char *value)
+{
+  if (iupStrBoolean(value))
+    winDialogEnsureTaskBar(ih);
+  else
+  {
+    ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWIN_TASKBARLIST");
+    if (tbl && ih->handle)
+      tbl->lpVtbl->SetProgressState(tbl, ih->handle, TBPF_NOPROGRESS);
+  }
+  return 1;
+}
 
 static int winDialogSetTaskBarProgressValueAttrib(Ihandle *ih, const char *value)
 {
-  ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWIN_TASKBARLIST");
+  ITaskbarList3* tbl = winDialogEnsureTaskBar(ih);
   if(tbl)
   {
     int perc;
@@ -71,7 +95,7 @@ static int winDialogSetTaskBarProgressValueAttrib(Ihandle *ih, const char *value
 
 static int winDialogSetTaskBarProgressStateAttrib(Ihandle *ih, const char *value)
 {
-  ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWIN_TASKBARLIST");
+  ITaskbarList3* tbl = winDialogEnsureTaskBar(ih);
   if(tbl)
   {
     if(iupStrEqualNoCase(value, "NOPROGRESS"))
@@ -90,7 +114,6 @@ static int winDialogSetTaskBarProgressStateAttrib(Ihandle *ih, const char *value
 }
 
 #endif  /* __ITaskbarList3_FWD_DEFINED__ */
-#endif
 
 /****************************************************************
                      Utilities
@@ -1104,13 +1127,13 @@ static int winDialogMapMethod(Ihandle* ih)
   if (iupAttribGet(ih, "MINSIZE") || iupAttribGet(ih, "MAXSIZE"))
     winMinMaxHandle = ih;
 
-  /* Windows 7 Taskbar */
 #ifdef __ITaskbarList3_FWD_DEFINED__
   if (iupAttribGetInt(ih, "TASKBARPROGRESS"))
   {
-    ITaskbarList3* tbl;
-    CoCreateInstance(&CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, &IID_ITaskbarList3, &tbl);
-    iupAttribSet(ih, "_IUPWIN_TASKBARLIST", (char*)((ITaskbarList3*)tbl));
+    ITaskbarList3* tbl = NULL;
+    CoCreateInstance(&CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, &IID_ITaskbarList3, (void**)&tbl);
+    if (tbl)
+      iupAttribSet(ih, "_IUPWIN_TASKBARLIST", (char*)tbl);
   }
 #endif
 
@@ -1677,7 +1700,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUSTOMFRAMECAPTIONLIMITS", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
 
 #ifdef __ITaskbarList3_FWD_DEFINED__
-  iupClassRegisterAttribute(ic, "TASKBARPROGRESS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARPROGRESS", NULL, winDialogSetTaskBarProgressAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARPROGRESSSTATE", NULL, winDialogSetTaskBarProgressStateAttrib, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARPROGRESSVALUE", NULL, winDialogSetTaskBarProgressValueAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 #endif
