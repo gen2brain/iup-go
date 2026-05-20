@@ -802,19 +802,24 @@ static int qtTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
 static char* qtTextGetSelectedTextAttrib(Ihandle* ih)
 {
   QString value;
+  bool has_selection;
 
   if (ih->data->is_multiline)
   {
     IupQtTextEdit* text = (IupQtTextEdit*)ih->handle;
     QTextCursor cursor = text->textCursor();
+    has_selection = cursor.hasSelection();
     value = cursor.selectedText();
   }
   else
   {
     IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
+    has_selection = edit->hasSelectedText();
     value = edit->selectedText();
   }
 
+  if (!has_selection)
+    return nullptr;
   return iupStrReturnStr(value.toUtf8().constData());
 }
 

@@ -1146,8 +1146,12 @@ static int gtk4TextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
-    gtk_text_buffer_delete_selection(buffer, TRUE, TRUE);
-    gtk_text_buffer_insert_at_cursor(buffer, iupgtk4StrConvertToSystem(value), -1);
+    GtkTextIter start_iter, end_iter;
+    if (gtk_text_buffer_get_selection_bounds(buffer, &start_iter, &end_iter))
+    {
+      gtk_text_buffer_delete(buffer, &start_iter, &end_iter);
+      gtk_text_buffer_insert(buffer, &start_iter, iupgtk4StrConvertToSystem(value), -1);
+    }
   }
   else
   {

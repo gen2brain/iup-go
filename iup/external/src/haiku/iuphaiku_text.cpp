@@ -966,6 +966,22 @@ static char* haikuTextGetSelectedTextAttrib(Ihandle* ih)
   return buf;
 }
 
+static int haikuTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
+{
+  if (!value || !ih->handle) return 0;
+  BTextView* tv = haikuTextGetEditor(ih);
+  if (!tv) return 0;
+  LooperLockGuard guard(haikuTextGetLooper(ih));
+  int32 s = 0, e = 0;
+  tv->GetSelection(&s, &e);
+  if (s == e) return 0;
+  tv->Delete(s, e);
+  int vlen = (int)strlen(value);
+  tv->Insert(s, value, vlen);
+  tv->Select(s + vlen, s + vlen);
+  return 0;
+}
+
 static int haikuTextSetCaretPosAttrib(Ihandle* ih, const char* value)
 {
   BTextView* tv = haikuTextGetEditor(ih);
@@ -1770,7 +1786,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "SELECTION", haikuTextGetSelectionAttrib, haikuTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTIONPOS", haikuTextGetSelectionPosAttrib, haikuTextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", haikuTextGetSelectedTextAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", haikuTextGetSelectedTextAttrib, haikuTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CARET", haikuTextGetCaretAttrib, haikuTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARETPOS", haikuTextGetCaretPosAttrib, haikuTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
