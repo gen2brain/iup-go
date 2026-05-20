@@ -110,11 +110,25 @@ public final class IupTextHelper
         boolean suppressVC;
         /* FILTER mode: 0=none, 1=LOWERCASE, 2=UPPERCASE, 3=NUMBER. */
         int filterMode;
+        boolean overwrite;
 
         public IupEditText(Context ctx, long ih)
         {
             super(ctx);
             ihandlePtr = ih;
+        }
+
+        @Override
+        public boolean dispatchKeyEvent(android.view.KeyEvent event)
+        {
+            if (event.getKeyCode() == android.view.KeyEvent.KEYCODE_INSERT
+                && event.getAction() == android.view.KeyEvent.ACTION_DOWN
+                && !event.isCtrlPressed() && !event.isAltPressed() && !event.isShiftPressed())
+            {
+                overwrite = !overwrite;
+                return true;
+            }
+            return super.dispatchKeyEvent(event);
         }
     }
 
@@ -593,6 +607,21 @@ public final class IupTextHelper
         tv.filterMode = mode;
     }
 
+    @Keep
+    public static void setOverwrite(View v, boolean enable)
+    {
+        IupEditText tv = resolve(v);
+        if (tv == null) return;
+        tv.overwrite = enable;
+    }
+
+    @Keep
+    public static boolean getOverwrite(View v)
+    {
+        IupEditText tv = resolve(v);
+        return tv != null && tv.overwrite;
+    }
+
     private static CharSequence applyFilterMode(CharSequence s, int mode)
     {
         StringBuilder sb = new StringBuilder(s.length());
@@ -775,8 +804,18 @@ public final class IupTextHelper
 
         tv.addTextChangedListener(new TextWatcher()
         {
+            int overwriteDelPos = -1;
+
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after)
+            {
+                overwriteDelPos = -1;
+                if (tv.overwrite && !tv.suppressVC && count == 0 && after == 1
+                    && start < s.length() && s.charAt(start) != '\n')
+                {
+                    overwriteDelPos = start + 1;
+                }
+            }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
@@ -785,6 +824,14 @@ public final class IupTextHelper
             public void afterTextChanged(Editable s)
             {
                 if (tv.suppressVC) return;
+                if (overwriteDelPos >= 0 && overwriteDelPos < s.length() && s.charAt(overwriteDelPos) != '\n')
+                {
+                    int del = overwriteDelPos;
+                    overwriteDelPos = -1;
+                    tv.suppressVC = true;
+                    s.delete(del, del + 1);
+                    tv.suppressVC = false;
+                }
                 dispatchValueChanged(tv.ihandlePtr);
             }
         });

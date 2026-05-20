@@ -243,6 +243,37 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
     }
   }
 
+  if (iupAttribGetBoolean(ih, "OVERWRITE"))
+  {
+    IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+    if (aux)
+    {
+      hstring newH = args.NewText();
+      std::wstring oldStr = aux->savedText;
+      std::wstring newStr(newH.c_str());
+      if (newStr.size() == oldStr.size() + 1)
+      {
+        size_t ipos = 0;
+        while (ipos < oldStr.size() && oldStr[ipos] == newStr[ipos]) ipos++;
+        if (ipos < oldStr.size() && oldStr[ipos] != L'\n' && newStr[ipos] != L'\n')
+        {
+          std::wstring desired = oldStr;
+          desired[ipos] = newStr[ipos];
+          TextBox tb = const_cast<TextBox&>(sender);
+          ih->data->disable_callbacks = 1;
+          iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
+          tb.Text(hstring(desired));
+          tb.SelectionStart((int)(ipos + 1));
+          tb.SelectionLength(0);
+          aux->savedText = desired;
+          ih->data->disable_callbacks = 0;
+          args.Cancel(true);
+          return;
+        }
+      }
+    }
+  }
+
   IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
   if (!cb && !ih->data->mask && !ih->data->nc)
     return;
@@ -999,6 +1030,52 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = reb.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
+      if (args.Key() == Windows::System::VirtualKey::Insert)
+      {
+        bool cur = iupAttribGetBoolean(ih, "OVERWRITE");
+        iupAttribSet(ih, "OVERWRITE", cur ? "NO" : "YES");
+        RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+        if (reb)
+        {
+          auto sel = reb.Document().Selection();
+          if (!cur)
+          {
+            int32_t pos = sel.StartPosition();
+            auto range = reb.Document().GetRange(pos, pos + 1);
+            hstring rt;
+            range.GetText(Microsoft::UI::Text::TextGetOptions::None, rt);
+            if (rt.size() > 0 && rt[0] != L'\n')
+              sel.SetRange(pos, pos + 1);
+          }
+        }
+        args.Handled(true);
+        return;
+      }
+      if (iupAttribGetBoolean(ih, "OVERWRITE"))
+      {
+        RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+        if (reb)
+        {
+          auto sel = reb.Document().Selection();
+          if (sel.Length() == 0)
+          {
+            int32_t pos = sel.StartPosition();
+            auto range = reb.Document().GetRange(pos, pos + 1);
+            hstring rt;
+            range.GetText(Microsoft::UI::Text::TextGetOptions::None, rt);
+            if (rt.size() > 0 && rt[0] != L'\n' && rt[0] != L'\r')
+            {
+              auto k = args.Key();
+              bool is_text_key =
+                (k >= Windows::System::VirtualKey::Number0 && k <= Windows::System::VirtualKey::Z) ||
+                (k >= Windows::System::VirtualKey::NumberPad0 && k <= Windows::System::VirtualKey::Divide) ||
+                ((int)k >= 0xBA && (int)k <= 0xE2);
+              if (is_text_key)
+                sel.SetRange(pos, pos + 1);
+            }
+          }
+        }
+      }
       if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
         args.Handled(true);
     });
@@ -1129,6 +1206,13 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = tb.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
+      if (args.Key() == Windows::System::VirtualKey::Insert)
+      {
+        bool cur = iupAttribGetBoolean(ih, "OVERWRITE");
+        iupAttribSet(ih, "OVERWRITE", cur ? "NO" : "YES");
+        args.Handled(true);
+        return;
+      }
       if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
         args.Handled(true);
     });
@@ -3555,7 +3639,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PASSWORD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPENDNEWLINE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

@@ -911,6 +911,34 @@ static void androidTextSetFilterModeImpl(Ihandle* ih, int mode)
   (*jni_env)->DeleteLocalRef(jni_env, cls);
 }
 
+static int androidTextSetOverwriteAttrib(Ihandle* ih, const char* value)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_setOverwrite);
+  if (!ih->handle) return 1;
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
+  jmethodID m = IUPJNI_GetStaticMethodID(IupTextHelper_setOverwrite, jni_env, cls,
+      "setOverwrite", "(Landroid/view/View;Z)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, (jboolean)iupStrBoolean(value));
+  iupAndroid_CheckException(jni_env, "IupTextHelper.setOverwrite");
+  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  return 1;
+}
+
+static char* androidTextGetOverwriteAttrib(Ihandle* ih)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getOverwrite);
+  if (!ih->handle) return NULL;
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
+  jmethodID m = IUPJNI_GetStaticMethodID(IupTextHelper_getOverwrite, jni_env, cls,
+      "getOverwrite", "(Landroid/view/View;)Z");
+  jboolean r = (*jni_env)->CallStaticBooleanMethod(jni_env, cls, m, (jobject)ih->handle);
+  iupAndroid_CheckException(jni_env, "IupTextHelper.getOverwrite");
+  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  return iupStrReturnBoolean(r ? 1 : 0);
+}
+
 static char* androidTextGetCountAttrib(Ihandle* ih)
 {
   if (!ih->handle) return NULL;
@@ -1117,6 +1145,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, androidTextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, androidTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", NULL, androidTextSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", androidTextGetOverwriteAttrib, androidTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

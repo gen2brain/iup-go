@@ -836,6 +836,31 @@ static void motTextModifyVerifyCallback(Widget w, Ihandle *ih, XmTextVerifyPtr t
     }
 
     motcode = iupmotKeycodeToKeysym((XKeyEvent*)(text->event));
+
+    if (motcode == XK_Insert && !has_ctrl && !has_alt)
+    {
+      int cur_overwrite = iupAttribGetBoolean(ih, "OVERWRITE");
+      iupAttribSet(ih, "OVERWRITE", cur_overwrite ? "NO" : "YES");
+      text->doit = False;
+      return;
+    }
+  }
+
+  if (text->startPos == text->endPos && text->text && text->text->ptr &&
+      text->text->length == 1 && text->text->ptr[0] != '\n' &&
+      iupAttribGetBoolean(ih, "OVERWRITE"))
+  {
+    XmTextPosition last = XmTextGetLastPosition(ih->handle);
+    if ((XmTextPosition)text->startPos < last)
+    {
+      char* full = XmTextGetString(ih->handle);
+      if (full)
+      {
+        if (full[text->startPos] != '\n')
+          text->endPos = text->startPos + 1;
+        XtFree(full);
+      }
+    }
   }
 
   if (text->text && text->text->ptr && text->text->length > 0)
@@ -1300,13 +1325,13 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "LINECOUNT", motTextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Not Supported */
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATTING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKDOWNVALUE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
