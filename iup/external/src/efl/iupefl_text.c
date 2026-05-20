@@ -150,6 +150,71 @@ static void eflTextChangedCallback(void* data, const Efl_Event* ev)
   if (ih->data->disable_callbacks)
     return;
 
+  if (info->type == EFL_TEXT_CHANGE_TYPE_INSERT && info->content && info->length > 0)
+  {
+    const char* filter = iupAttribGet(ih, "FILTER");
+    if (filter)
+    {
+      Eo* entry = ev->object;
+      Eina_Bool reject = EINA_FALSE;
+      char* xform = NULL;
+
+      if (iupStrEqualNoCase(filter, "NUMBER"))
+      {
+        const char* p = info->content;
+        while (*p)
+        {
+          if (*p < '0' || *p > '9') { reject = EINA_TRUE; break; }
+          p++;
+        }
+      }
+      else if (iupStrEqualNoCase(filter, "UPPERCASE") || iupStrEqualNoCase(filter, "LOWERCASE"))
+      {
+        Eina_Bool to_upper = iupStrEqualNoCase(filter, "UPPERCASE");
+        Eina_Bool changed = EINA_FALSE;
+        size_t n = strlen(info->content);
+        xform = (char*)malloc(n + 1);
+        if (xform)
+        {
+          for (size_t i = 0; i < n; i++)
+          {
+            xform[i] = (char)(to_upper ? iup_toupper(info->content[i]) : iup_tolower(info->content[i]));
+            if (xform[i] != info->content[i]) changed = EINA_TRUE;
+          }
+          xform[n] = 0;
+          if (!changed) { free(xform); xform = NULL; }
+        }
+      }
+
+      if (reject || xform)
+      {
+        ih->data->disable_callbacks = 1;
+        Efl_Text_Cursor_Object* cur_start = efl_ui_textbox_cursor_create(entry);
+        Efl_Text_Cursor_Object* cur_end = efl_ui_textbox_cursor_create(entry);
+        if (cur_start && cur_end)
+        {
+          efl_text_cursor_object_position_set(cur_start, (int)info->position);
+          efl_text_cursor_object_position_set(cur_end, (int)(info->position + info->length));
+          efl_text_cursor_object_range_delete(cur_start, cur_end);
+          if (xform)
+          {
+            efl_text_cursor_object_position_set(cur_start, (int)info->position);
+            efl_text_cursor_object_text_insert(cur_start, xform);
+            Efl_Text_Cursor_Object* main_cur = efl_text_interactive_main_cursor_get(entry);
+            if (main_cur)
+              efl_text_cursor_object_position_set(main_cur, (int)info->position + (int)strlen(xform));
+          }
+        }
+        if (cur_start) efl_del(cur_start);
+        if (cur_end) efl_del(cur_end);
+        ih->data->disable_callbacks = 0;
+        free(xform);
+        if (reject)
+          return;
+      }
+    }
+  }
+
   action_cb = (IFnis)IupGetCallback(ih, "ACTION");
 
   if (action_cb || ih->data->mask || ih->data->nc)
@@ -2517,6 +2582,6 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, eflTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

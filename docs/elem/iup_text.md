@@ -76,7 +76,8 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute TXTFGCOLOR.
 
 **FILTER** (non-inheritable): allows a custom filter to process the characters: Can be LOWERCASE, UPPERCASE or NUMBER (only numbers allowed).
-Supported in Win32, Qt, macOS, iOS and Android.
+Supported on all drivers. In Haiku, single-line filtering is keyboard-only (paste is not filtered).
+In WinUI with FORMATTING=YES, NUMBER is not enforced.
 
 [FORMATTING](../attrib/iup_formatting.md) (non-inheritable): When enabled allows the use of text formatting attributes.
 In GTK is always enabled, but only when MULTILINE=YES. Default: NO.

@@ -838,6 +838,39 @@ static void motTextModifyVerifyCallback(Widget w, Ihandle *ih, XmTextVerifyPtr t
     motcode = iupmotKeycodeToKeysym((XKeyEvent*)(text->event));
   }
 
+  if (text->text && text->text->ptr && text->text->length > 0)
+  {
+    const char* filter = iupAttribGet(ih, "FILTER");
+    if (filter)
+    {
+      if (iupStrEqualNoCase(filter, "NUMBER"))
+      {
+        int i;
+        for (i = 0; i < text->text->length; i++)
+        {
+          char c = text->text->ptr[i];
+          if (c < '0' || c > '9')
+          {
+            text->doit = False;
+            return;
+          }
+        }
+      }
+      else if (iupStrEqualNoCase(filter, "UPPERCASE"))
+      {
+        int i;
+        for (i = 0; i < text->text->length; i++)
+          text->text->ptr[i] = (char)iup_toupper(text->text->ptr[i]);
+      }
+      else if (iupStrEqualNoCase(filter, "LOWERCASE"))
+      {
+        int i;
+        for (i = 0; i < text->text->length; i++)
+          text->text->ptr[i] = (char)iup_tolower(text->text->ptr[i]);
+      }
+    }
+  }
+
   cb = (IFnis)IupGetCallback(ih, "ACTION");
 
   start = text->startPos;
@@ -1266,10 +1299,11 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "COUNT", motTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINECOUNT", motTextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+
   /* Not Supported */
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATTING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKDOWNVALUE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

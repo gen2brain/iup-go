@@ -739,6 +739,14 @@ static NSString* cocoaTouchTextApplyFilter(Ihandle* ih, NSString* text)
 /* returns the replacement to actually apply (NC+MASK filtered), or nil to block */
 static NSString* cocoaTouchTextValidateEdit(Ihandle* ih, NSString* current, NSRange range, NSString* replacement)
 {
+	const char* filter = iupAttribGet(ih, "FILTER");
+	if (filter && replacement.length > 0 && iupStrEqualNoCase(filter, "NUMBER"))
+	{
+		NSCharacterSet* non_digit = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+		if ([replacement rangeOfCharacterFromSet:non_digit].location != NSNotFound)
+			return nil;
+	}
+
 	NSString* filtered = cocoaTouchTextApplyFilter(ih, replacement);
 
 	if (ih->data->nc > 0)

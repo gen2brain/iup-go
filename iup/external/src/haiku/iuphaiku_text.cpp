@@ -106,6 +106,37 @@ public:
     int copy = char_len < 7 ? char_len : 7;
     memcpy(tmp, bytes, copy);
 
+    const char* filter = iupAttribGet(fIhandle, "FILTER");
+    if (filter)
+    {
+      if (iupStrEqualNoCase(filter, "NUMBER"))
+      {
+        for (int i = 0; i < copy; i++)
+          if (tmp[i] < '0' || tmp[i] > '9')
+            return B_SKIP_MESSAGE;
+      }
+      else if (iupStrEqualNoCase(filter, "UPPERCASE") || iupStrEqualNoCase(filter, "LOWERCASE"))
+      {
+        bool to_upper = iupStrEqualNoCase(filter, "UPPERCASE");
+        bool changed = false;
+        for (int i = 0; i < copy; i++)
+        {
+          char c = (char)(to_upper ? iup_toupper(tmp[i]) : iup_tolower(tmp[i]));
+          if (c != tmp[i]) { tmp[i] = c; changed = true; }
+        }
+        if (changed)
+        {
+          msg->ReplaceData("bytes", B_STRING_TYPE, tmp, copy + 1);
+          if (copy == 1)
+          {
+            int8 raw = (int8)tmp[0];
+            if (msg->HasInt8("byte")) msg->ReplaceInt8("byte", raw);
+            else                       msg->AddInt8("byte", raw);
+          }
+        }
+      }
+    }
+
     int ret = iupEditCallActionCb(fIhandle, action_cb, tmp, sel_s, sel_e,
                                   fIhandle->data->mask,
                                   fIhandle->data->nc, 0, 1);
@@ -384,6 +415,28 @@ protected:
       }
     }
 
+    const char* filter = iupAttribGet(fIhandle, "FILTER");
+    char* filter_buf = NULL;
+    if (filter && text && length > 0)
+    {
+      if (iupStrEqualNoCase(filter, "NUMBER"))
+      {
+        for (int32 i = 0; i < length; i++)
+          if (text[i] < '0' || text[i] > '9') return;
+      }
+      else if (iupStrEqualNoCase(filter, "UPPERCASE") || iupStrEqualNoCase(filter, "LOWERCASE"))
+      {
+        bool to_upper = iupStrEqualNoCase(filter, "UPPERCASE");
+        filter_buf = (char*)malloc(length);
+        if (filter_buf)
+        {
+          for (int32 i = 0; i < length; i++)
+            filter_buf[i] = (char)(to_upper ? iup_toupper(text[i]) : iup_tolower(text[i]));
+          text = filter_buf;
+        }
+      }
+    }
+
     IFnis action_cb = (IFnis)IupGetCallback(fIhandle, "ACTION");
     if (action_cb || fIhandle->data->mask || fIhandle->data->nc > 0)
     {
@@ -401,13 +454,14 @@ protected:
                                     fIhandle->data->nc, 0, 1);
       free(tmp);
 
-      if (ret == 0) return;
+      if (ret == 0) { free(filter_buf); return; }
       if (ret != -1 && length == 1)
       {
         char rep = (char)ret;
         BTextView::InsertText(&rep, 1, offset, runs);
         ShiftImageRanges(offset + 1, 1);
         fireValueChanged();
+        free(filter_buf);
         return;
       }
     }
@@ -415,6 +469,7 @@ protected:
     BTextView::InsertText(text, length, offset, runs);
     ShiftImageRanges(offset + 1, length);
     fireValueChanged();
+    free(filter_buf);
   }
 
   void DeleteText(int32 fromOffset, int32 toOffset) override
@@ -1716,6 +1771,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "PASSWORD", NULL, haikuTextSetPasswordAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, haikuTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, haikuTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

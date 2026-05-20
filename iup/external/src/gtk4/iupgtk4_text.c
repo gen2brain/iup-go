@@ -459,6 +459,80 @@ static void gtk4TextBufferDeleteRange(GtkTextBuffer *buffer, GtkTextIter *start,
   (void)buffer;
 }
 
+static void gtk4TextFilterInsertEntry(GtkEditable *editable, const gchar *text, gint length, gint *position, Ihandle* ih)
+{
+  const char* filter = iupAttribGet(ih, "FILTER");
+  if (!filter) return;
+
+  if (iupStrEqualNoCase(filter, "NUMBER"))
+  {
+    gint i;
+    for (i = 0; i < length; i++)
+    {
+      if (!g_ascii_isdigit(text[i]))
+      {
+        g_signal_stop_emission_by_name(editable, "insert_text");
+        return;
+      }
+    }
+  }
+  else if (iupStrEqualNoCase(filter, "UPPERCASE"))
+  {
+    gchar* upper = g_utf8_strup(text, length);
+    g_signal_handlers_block_by_func(editable, (gpointer)gtk4TextFilterInsertEntry, ih);
+    gtk_editable_insert_text(editable, upper, (int)strlen(upper), position);
+    g_signal_handlers_unblock_by_func(editable, (gpointer)gtk4TextFilterInsertEntry, ih);
+    g_signal_stop_emission_by_name(editable, "insert_text");
+    g_free(upper);
+  }
+  else if (iupStrEqualNoCase(filter, "LOWERCASE"))
+  {
+    gchar* lower = g_utf8_strdown(text, length);
+    g_signal_handlers_block_by_func(editable, (gpointer)gtk4TextFilterInsertEntry, ih);
+    gtk_editable_insert_text(editable, lower, (int)strlen(lower), position);
+    g_signal_handlers_unblock_by_func(editable, (gpointer)gtk4TextFilterInsertEntry, ih);
+    g_signal_stop_emission_by_name(editable, "insert_text");
+    g_free(lower);
+  }
+}
+
+static void gtk4TextFilterInsertBuffer(GtkTextBuffer *buffer, GtkTextIter *pos, gchar *text, gint length, Ihandle* ih)
+{
+  const char* filter = iupAttribGet(ih, "FILTER");
+  if (!filter) return;
+
+  if (iupStrEqualNoCase(filter, "NUMBER"))
+  {
+    gint i;
+    for (i = 0; i < length; i++)
+    {
+      if (!g_ascii_isdigit(text[i]))
+      {
+        g_signal_stop_emission_by_name(buffer, "insert-text");
+        return;
+      }
+    }
+  }
+  else if (iupStrEqualNoCase(filter, "UPPERCASE"))
+  {
+    gchar* upper = g_utf8_strup(text, length);
+    g_signal_handlers_block_by_func(buffer, (gpointer)gtk4TextFilterInsertBuffer, ih);
+    gtk_text_buffer_insert(buffer, pos, upper, -1);
+    g_signal_handlers_unblock_by_func(buffer, (gpointer)gtk4TextFilterInsertBuffer, ih);
+    g_signal_stop_emission_by_name(buffer, "insert-text");
+    g_free(upper);
+  }
+  else if (iupStrEqualNoCase(filter, "LOWERCASE"))
+  {
+    gchar* lower = g_utf8_strdown(text, length);
+    g_signal_handlers_block_by_func(buffer, (gpointer)gtk4TextFilterInsertBuffer, ih);
+    gtk_text_buffer_insert(buffer, pos, lower, -1);
+    g_signal_handlers_unblock_by_func(buffer, (gpointer)gtk4TextFilterInsertBuffer, ih);
+    g_signal_stop_emission_by_name(buffer, "insert-text");
+    g_free(lower);
+  }
+}
+
 static void gtk4TextBufferInsertText(GtkTextBuffer *buffer, GtkTextIter *pos, gchar *text, gint len, Ihandle* ih)
 {
   IFnis cb;
@@ -1724,6 +1798,7 @@ static int gtk4TextMapMethod(Ihandle* ih)
   {
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     g_signal_connect(G_OBJECT(buffer), "delete-range", G_CALLBACK(gtk4TextBufferDeleteRange), ih);
+    g_signal_connect(G_OBJECT(buffer), "insert-text", G_CALLBACK(gtk4TextFilterInsertBuffer), ih);
     g_signal_connect(G_OBJECT(buffer), "insert-text", G_CALLBACK(gtk4TextBufferInsertText), ih);
     g_signal_connect(G_OBJECT(buffer), "changed", G_CALLBACK(gtk4TextChanged), ih);
 
@@ -1742,6 +1817,7 @@ static int gtk4TextMapMethod(Ihandle* ih)
     /* GtkEntry uses a delegate for text editing. We need to connect signals to the delegate, not the entry itself */
     GtkEditable *editable_delegate = gtk_editable_get_delegate(GTK_EDITABLE(ih->handle));
     g_signal_connect(G_OBJECT(editable_delegate), "delete-text", G_CALLBACK(gtk4TextEntryDeleteText), ih);
+    g_signal_connect(G_OBJECT(editable_delegate), "insert-text", G_CALLBACK(gtk4TextFilterInsertEntry), ih);
     g_signal_connect(G_OBJECT(editable_delegate), "insert-text", G_CALLBACK(gtk4TextEntryInsertText), ih);
     g_signal_connect(G_OBJECT(ih->handle), "changed", G_CALLBACK(gtk4TextChanged), ih);
   }
@@ -2405,6 +2481,6 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, gtk4TextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Not Supported */
-  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
