@@ -115,17 +115,50 @@ static int gtk4ProgressBarSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static void gtk4ProgressBarApplyProgressStyle(Ihandle* ih)
+{
+  char decl[256];
+  decl[0] = 0;
+  unsigned char r, g, b;
+  char* fg = iupAttribGet(ih, "FGCOLOR");
+  if (fg && iupStrToRGB(fg, &r, &g, &b))
+    g_snprintf(decl, sizeof(decl), "background-color: rgb(%d,%d,%d);", r, g, b);
+  if (ih->data->dashed)
+  {
+    char extra[200];
+    g_snprintf(extra, sizeof(extra),
+      "background-image: repeating-linear-gradient(to right,"
+      " currentColor 0, currentColor 8px, transparent 8px, transparent 10px);"
+      "background-color: transparent;");
+    g_strlcat(decl, extra, sizeof(decl));
+  }
+  if (decl[0])
+    iupgtk4CssSetWidgetSubRule(ih->handle, " > trough > progress", decl);
+  else
+    iupgtk4CssSetWidgetSubRule(ih->handle, " > trough > progress", NULL);
+}
+
 static int gtk4ProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  char css_decl[64];
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
   if (!ih->handle)
     return 1;
-  g_snprintf(css_decl, sizeof(css_decl), "background-color: rgb(%d,%d,%d);", r, g, b);
-  iupgtk4CssSetWidgetSubRule(ih->handle, " > trough > progress", css_decl);
+  iupAttribSetStr(ih, "FGCOLOR", value);
+  gtk4ProgressBarApplyProgressStyle(ih);
   return 1;
+}
+
+static int gtk4ProgressBarSetDashedAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->marquee)
+    return 0;
+  ih->data->dashed = iupStrBoolean(value) ? 1 : 0;
+  if (!ih->handle)
+    return 0;
+  gtk4ProgressBarApplyProgressStyle(ih);
+  return 0;
 }
 
 static int gtk4ProgressBarMapMethod(Ihandle* ih)
@@ -185,5 +218,5 @@ IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, gtk4ProgressBarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIENTATION", NULL, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARQUEE", NULL, gtk4ProgressBarSetMarqueeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DASHED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DASHED", iProgressBarGetDashedAttrib, gtk4ProgressBarSetDashedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

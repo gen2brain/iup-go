@@ -87,6 +87,49 @@ IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 #endif
 }
 
+static void gtkProgressBarApplyColors(Ihandle* ih)
+{
+  unsigned char r, g, b;
+  char* bg = iupAttribGet(ih, "BGCOLOR");
+  char* fg = iupAttribGet(ih, "FGCOLOR");
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+  GtkCssProvider* provider;
+  GString* css = g_string_new(NULL);
+
+  if (bg && iupStrToRGB(bg, &r, &g, &b))
+    g_string_append_printf(css, "trough { background-image: none; background-color: rgb(%d,%d,%d); }\n", r, g, b);
+  if (ih->data->dashed)
+    g_string_append(css,
+      "progress { background-color: transparent; background-image:"
+      " repeating-linear-gradient(to right, currentColor 0, currentColor 8px, transparent 8px, transparent 10px); }\n");
+  else if (fg && iupStrToRGB(fg, &r, &g, &b))
+    g_string_append_printf(css, "progress { background-image: none; background-color: rgb(%d,%d,%d); }\n", r, g, b);
+
+  provider = (GtkCssProvider*)g_object_get_data(G_OBJECT(ih->handle), "_IUPGTK_PBAR_CSS");
+  if (!provider)
+  {
+    provider = gtk_css_provider_new();
+    gtk_style_context_add_provider(gtk_widget_get_style_context(ih->handle), GTK_STYLE_PROVIDER(provider),GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_object_set_data_full(G_OBJECT(ih->handle), "_IUPGTK_PBAR_CSS", provider, g_object_unref);
+  }
+  gtk_css_provider_load_from_data(provider, css->str, -1, NULL);
+  g_string_free(css, TRUE);
+#else
+  GdkColor color;
+  if (bg && iupStrToRGB(bg, &r, &g, &b))
+  {
+    iupgdkColorSetRGB(&color, r, g, b);
+    gtk_widget_modify_bg(ih->handle, GTK_STATE_NORMAL, &color);
+  }
+  if (fg && iupStrToRGB(fg, &r, &g, &b))
+  {
+    iupgdkColorSetRGB(&color, r, g, b);
+    gtk_widget_modify_bg(ih->handle, GTK_STATE_PRELIGHT, &color);
+  }
+#endif
+}
+
 static int gtkProgressBarTimeCb(Ihandle* timer)
 {
   Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUP_PROGRESSBAR");
@@ -132,7 +175,16 @@ static int gtkProgressBarSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-#if !GTK_CHECK_VERSION(3, 0, 0)
+#if GTK_CHECK_VERSION(3, 0, 0)
+static int gtkProgressBarSetDashedAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->marquee)
+    return 0;
+  ih->data->dashed = iupStrBoolean(value) ? 1 : 0;
+  if (ih->handle) gtkProgressBarApplyColors(ih);
+  return 0;
+}
+#else
 static int gtkProgressBarSetDashedAttrib(Ihandle* ih, const char* value)
 {
   GtkProgressBar* pbar = (GtkProgressBar*)ih->handle;
@@ -215,45 +267,6 @@ static int gtkProgressBarMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static void gtkProgressBarApplyColors(Ihandle* ih)
-{
-  unsigned char r, g, b;
-  char* bg = iupAttribGet(ih, "BGCOLOR");
-  char* fg = iupAttribGet(ih, "FGCOLOR");
-
-#if GTK_CHECK_VERSION(3, 0, 0)
-  GtkCssProvider* provider;
-  GString* css = g_string_new(NULL);
-
-  if (bg && iupStrToRGB(bg, &r, &g, &b))
-    g_string_append_printf(css, "trough { background-image: none; background-color: rgb(%d,%d,%d); }\n", r, g, b);
-  if (fg && iupStrToRGB(fg, &r, &g, &b))
-    g_string_append_printf(css, "progress { background-image: none; background-color: rgb(%d,%d,%d); }\n", r, g, b);
-
-  provider = (GtkCssProvider*)g_object_get_data(G_OBJECT(ih->handle), "_IUPGTK_PBAR_CSS");
-  if (!provider)
-  {
-    provider = gtk_css_provider_new();
-    gtk_style_context_add_provider(gtk_widget_get_style_context(ih->handle), GTK_STYLE_PROVIDER(provider),GTK_STYLE_PROVIDER_PRIORITY_USER);
-    g_object_set_data_full(G_OBJECT(ih->handle), "_IUPGTK_PBAR_CSS", provider, g_object_unref);
-  }
-  gtk_css_provider_load_from_data(provider, css->str, -1, NULL);
-  g_string_free(css, TRUE);
-#else
-  GdkColor color;
-  if (bg && iupStrToRGB(bg, &r, &g, &b))
-  {
-    iupgdkColorSetRGB(&color, r, g, b);
-    gtk_widget_modify_bg(ih->handle, GTK_STATE_NORMAL, &color);
-  }
-  if (fg && iupStrToRGB(fg, &r, &g, &b))
-  {
-    iupgdkColorSetRGB(&color, r, g, b);
-    gtk_widget_modify_bg(ih->handle, GTK_STATE_PRELIGHT, &color);
-  }
-#endif
-}
-
 static int gtkProgressBarSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
@@ -287,10 +300,7 @@ IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 
   /* IupProgressBar only */
   iupClassRegisterAttribute(ic, "VALUE",  iProgressBarGetValueAttrib,  gtkProgressBarSetValueAttrib,  NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-#if !GTK_CHECK_VERSION(3, 0, 0)
-  iupClassRegisterAttribute(ic, "DASHED", iProgressBarGetDashedAttrib, gtkProgressBarSetDashedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-#endif
   iupClassRegisterAttribute(ic, "ORIENTATION", NULL, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARQUEE",     NULL, gtkProgressBarSetMarqueeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DASHED",      NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DASHED", iProgressBarGetDashedAttrib, gtkProgressBarSetDashedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
