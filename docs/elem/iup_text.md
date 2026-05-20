@@ -148,7 +148,7 @@ It uses the same format and reference of the CARETPOS attribute ("pos" starting 
 
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
-Supported in Win32, Qt and macOS.
+Returns NO when MULTILINE=NO.
 
 **SELECTEDTEXT** (non-inheritable): Selection text. Returns NULL if there is no selection.
 When changed replaces the current selection.

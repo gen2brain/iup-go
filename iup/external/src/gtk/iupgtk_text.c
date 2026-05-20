@@ -1596,6 +1596,28 @@ static char* gtkTextGetReadOnlyAttrib(Ihandle* ih)
   return iupStrReturnBoolean (!editable);
 }
 
+static char* gtkTextGetScrollVisibleAttrib(Ihandle* ih)
+{
+  GtkScrolledWindow* sw;
+  GtkWidget* hbar;
+  GtkWidget* vbar;
+  int sb_h, sb_v;
+
+  if (!ih->data->is_multiline)
+    return "NO";
+  sw = (GtkScrolledWindow*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (!sw)
+    return "NO";
+  hbar = gtk_scrolled_window_get_hscrollbar(sw);
+  vbar = gtk_scrolled_window_get_vscrollbar(sw);
+  sb_h = hbar && gtk_widget_get_visible(hbar) && gtk_widget_get_mapped(hbar);
+  sb_v = vbar && gtk_widget_get_visible(vbar) && gtk_widget_get_mapped(vbar);
+  if (sb_h && sb_v) return "YES";
+  if (sb_h) return "HORIZONTAL";
+  if (sb_v) return "VERTICAL";
+  return "NO";
+}
+
 static int gtkTextSetPasswordAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->is_multiline)
@@ -2529,5 +2551,5 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, gtkTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", gtkTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

@@ -948,6 +948,25 @@ static int androidTextSetPaddingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static char* androidTextGetScrollVisibleAttrib(Ihandle* ih)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getScrollVisibleBits);
+  if (!ih->data->is_multiline || !ih->handle) return (char*)"NO";
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
+  jmethodID m = IUPJNI_GetStaticMethodID(IupTextHelper_getScrollVisibleBits, jni_env, cls,
+      "getScrollVisibleBits", "(Landroid/view/View;)I");
+  jint bits = (*jni_env)->CallStaticIntMethod(jni_env, cls, m, (jobject)ih->handle);
+  iupAndroid_CheckException(jni_env, "IupTextHelper.getScrollVisibleBits");
+  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  int sb_h = (bits & 1) ? 1 : 0;
+  int sb_v = (bits & 2) ? 1 : 0;
+  if (sb_h && sb_v) return (char*)"YES";
+  if (sb_h) return (char*)"HORIZONTAL";
+  if (sb_v) return (char*)"VERTICAL";
+  return (char*)"NO";
+}
+
 static char* androidTextGetOverwriteAttrib(Ihandle* ih)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getOverwrite);
@@ -1170,6 +1189,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FILTER", NULL, androidTextSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", androidTextGetOverwriteAttrib, androidTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, androidTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", androidTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

@@ -626,6 +626,24 @@ public final class IupTextHelper
         return tv != null && tv.overwrite;
     }
 
+    /* Bit 0 = horizontal scrollable, Bit 1 = vertical scrollable, both queried via TextView/NestedScrollView. */
+    @Keep
+    public static int getScrollVisibleBits(View v)
+    {
+        int bits = 0;
+        if (v instanceof NestedScrollView nsv)
+        {
+            if (nsv.canScrollVertically(-1) || nsv.canScrollVertically(1)) bits |= 2;
+            if (nsv.canScrollHorizontally(-1) || nsv.canScrollHorizontally(1)) bits |= 1;
+        }
+        IupEditText tv = resolve(v);
+        if (tv != null)
+        {
+            if (tv.canScrollHorizontally(-1) || tv.canScrollHorizontally(1)) bits |= 1;
+        }
+        return bits;
+    }
+
     private static CharSequence applyFilterMode(CharSequence s, int mode)
     {
         StringBuilder sb = new StringBuilder(s.length());

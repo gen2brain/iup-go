@@ -831,6 +831,21 @@ static char* haikuTextGetReadOnlyAttrib(Ihandle* ih)
   return iupStrReturnBoolean(!tv->IsEditable());
 }
 
+static char* haikuTextGetScrollVisibleAttrib(Ihandle* ih)
+{
+  if (!ih->data->is_multiline || !ih->handle) return (char*)"NO";
+  BScrollView* sv = (BScrollView*)ih->handle;
+  LooperLockGuard guard(haikuTextGetLooper(ih));
+  BScrollBar* hb = sv->ScrollBar(B_HORIZONTAL);
+  BScrollBar* vb = sv->ScrollBar(B_VERTICAL);
+  int sb_h = (hb && !hb->IsHidden()) ? 1 : 0;
+  int sb_v = (vb && !vb->IsHidden()) ? 1 : 0;
+  if (sb_h && sb_v) return (char*)"YES";
+  if (sb_h) return (char*)"HORIZONTAL";
+  if (sb_v) return (char*)"VERTICAL";
+  return (char*)"NO";
+}
+
 static int haikuTextSetActiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
@@ -1749,6 +1764,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "COUNT", haikuTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINECOUNT", haikuTextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", haikuTextGetReadOnlyAttrib, haikuTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", haikuTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, haikuTextSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, haikuTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 

@@ -647,6 +647,35 @@ static int winuiTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static char* winuiTextGetScrollVisibleAttrib(Ihandle* ih)
+{
+  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || aux->isPassword || aux->isSpin)
+    return (char*)"NO";
+  if (!ih->data->is_multiline)
+    return (char*)"NO";
+
+  ScrollViewer sv = nullptr;
+  if (aux->isFormatted)
+  {
+    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    if (reb) sv = winuiTextFindScrollViewer(reb);
+  }
+  else
+  {
+    TextBox tb = winuiGetHandle<TextBox>(ih);
+    if (tb) sv = winuiTextFindScrollViewer(tb);
+  }
+  if (!sv) return (char*)"NO";
+
+  int sb_h = (sv.ComputedHorizontalScrollBarVisibility() == Visibility::Visible) ? 1 : 0;
+  int sb_v = (sv.ComputedVerticalScrollBarVisibility()   == Visibility::Visible) ? 1 : 0;
+  if (sb_h && sb_v) return (char*)"YES";
+  if (sb_h) return (char*)"HORIZONTAL";
+  if (sb_v) return (char*)"VERTICAL";
+  return (char*)"NO";
+}
+
 static char* winuiTextGetReadOnlyAttrib(Ihandle* ih)
 {
   IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
@@ -3641,5 +3670,5 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winuiTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

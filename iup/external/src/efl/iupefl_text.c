@@ -585,6 +585,31 @@ static char* eflTextGetReadOnlyAttrib(Ihandle* ih)
   return efl_text_interactive_editable_get(entry) ? "NO" : "YES";
 }
 
+static char* eflTextGetScrollVisibleAttrib(Ihandle* ih)
+{
+  Eo* entry = iupeflGetWidget(ih);
+  Evas_Object* tb;
+  Evas_Coord wx, wy, ww, wh;
+  Evas_Coord fw, fh;
+  int sb_h = 0, sb_v = 0;
+
+  if (!ih->data->is_multiline || !entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
+    return "NO";
+  if (!efl_ui_textbox_scrollable_get(entry))
+    return "NO";
+  tb = (Evas_Object*)iupAttribGet(ih, "_IUP_EFL_TEXTBLOCK");
+  if (!tb)
+    return "NO";
+  evas_object_geometry_get(entry, &wx, &wy, &ww, &wh);
+  evas_object_textblock_size_formatted_get(tb, &fw, &fh);
+  if (ih->data->sb & IUP_SB_HORIZ) sb_h = (fw > ww);
+  if (ih->data->sb & IUP_SB_VERT)  sb_v = (fh > wh);
+  if (sb_h && sb_v) return "YES";
+  if (sb_h) return "HORIZONTAL";
+  if (sb_v) return "VERTICAL";
+  return "NO";
+}
+
 static int eflTextSetPasswordAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry = iupeflGetWidget(ih);
@@ -2614,5 +2639,5 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, eflTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", eflTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 }
