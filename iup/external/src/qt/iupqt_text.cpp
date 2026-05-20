@@ -582,7 +582,7 @@ static void qtTextValueChanged(Ihandle* ih)
 
 static void qtTextCursorPositionChanged(Ihandle* ih)
 {
-  IFnii cb = (IFnii)IupGetCallback(ih, "CARET_CB");
+  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
   if (cb)
   {
     int lin, col, pos;
@@ -600,7 +600,7 @@ static void qtTextCursorPositionChanged(Ihandle* ih)
     }
 
     iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
-    cb(ih, lin, col);
+    cb(ih, lin, col, pos);
   }
 }
 
