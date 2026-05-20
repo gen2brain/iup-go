@@ -14,7 +14,7 @@ Creates an editable text field.
 
 **ALIGNMENT** (non-inheritable): horizontal text alignment.
 Possible values: "ALEFT", "ARIGHT", "ACENTER". Default: "ALEFT".
-Not supported in Motif.
+Not supported in Motif and FLTK.
 
 **APPEND** (write-only): Inserts a text at the end of the current text.
 In the Multiline, if APPENDNEWLINE=YES, a "\n" character is automatically inserted before the appended text if the current text is not empty(APPENDNEWLINE default is YES).

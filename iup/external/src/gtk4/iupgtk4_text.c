@@ -1604,7 +1604,7 @@ static char* gtk4TextGetCountAttrib(Ihandle* ih)
   else
   {
     const char* value = gtk_editable_get_text(GTK_EDITABLE(ih->handle));
-    count = (int)strlen(value);
+    count = (int)g_utf8_strlen(value, -1);
   }
   return iupStrReturnInt(count);
 }

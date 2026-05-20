@@ -1551,7 +1551,13 @@ static int cocoaTouchTextMapMethod(Ihandle* ih)
 		tv.font = [UIFont systemFontOfSize:[UIFont systemFontSize]];
 		tv.textContainerInset = UIEdgeInsetsZero;
 		ih->data->has_formatting = 1;
-		if (iupAttribGetBoolean(ih, "WORDWRAP")) ih->data->sb &= ~IUP_SB_HORIZ;
+		if (iupAttribGetBoolean(ih, "WORDWRAP"))
+			ih->data->sb &= ~IUP_SB_HORIZ;
+		else
+		{
+			tv.textContainer.size = CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX);
+			tv.textContainer.widthTracksTextView = NO;
+		}
 		cocoaTouchTextWireViewDelegate(tv, ih);
 		view = tv;
 	}

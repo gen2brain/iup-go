@@ -1103,18 +1103,19 @@ static int androidTextMapMethod(Ihandle* ih)
 
   if (ih->data->is_multiline)
   {
-    method_id = IUPJNI_GetStaticMethodID(IupTextHelper_createMultiLineText, jni_env, java_class, "createMultiLineText", "(J)Landroid/view/View;");
-  }
-  else if (iupAttribGetBoolean(ih, "SPIN"))
-  {
-    method_id = IUPJNI_GetStaticMethodID(IupTextHelper_createSpinnerText, jni_env, java_class, "createSpinnerText", "(J)Landroid/view/View;");
+    method_id = IUPJNI_GetStaticMethodID(IupTextHelper_createMultiLineText, jni_env, java_class, "createMultiLineText", "(JZ)Landroid/view/View;");
+    jboolean word_wrap = iupAttribGetBoolean(ih, "WORDWRAP") ? JNI_TRUE : JNI_FALSE;
+    if (word_wrap) ih->data->sb &= ~IUP_SB_HORIZ;
+    java_widget = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, word_wrap);
   }
   else
   {
-    method_id = IUPJNI_GetStaticMethodID(IupTextHelper_createSingleLineText, jni_env, java_class, "createSingleLineText", "(J)Landroid/view/View;");
+    if (iupAttribGetBoolean(ih, "SPIN"))
+      method_id = IUPJNI_GetStaticMethodID(IupTextHelper_createSpinnerText, jni_env, java_class, "createSpinnerText", "(J)Landroid/view/View;");
+    else
+      method_id = IUPJNI_GetStaticMethodID(IupTextHelper_createSingleLineText, jni_env, java_class, "createSingleLineText", "(J)Landroid/view/View;");
+    java_widget = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih);
   }
-
-  java_widget = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih);
   iupAndroid_CheckException(jni_env, "IupTextHelper.createText");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
