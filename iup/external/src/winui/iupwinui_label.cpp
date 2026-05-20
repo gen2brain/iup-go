@@ -543,6 +543,17 @@ extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int*
   (void)y;
 }
 
+static int winuiLabelSetSelectableAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type == IUP_LABEL_TEXT)
+  {
+    TextBlock textBlock = winuiLabelGetTextBlock(ih);
+    if (textBlock)
+      textBlock.IsTextSelectionEnabled(iupStrBoolean(value) ? true : false);
+  }
+  return 1;
+}
+
 static int winuiLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
@@ -594,6 +605,7 @@ extern "C" IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FONT", NULL, winuiLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, winuiLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SELECTABLE", NULL, winuiLabelSetSelectableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, winuiLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }
