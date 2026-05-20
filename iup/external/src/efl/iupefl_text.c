@@ -803,35 +803,46 @@ static int eflTextSetCaretAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry = iupeflGetWidget(ih);
   Efl_Text_Cursor_Object* cursor;
-  Efl_Text_Cursor_Object* line_cursor;
-  int lin = 1, col = 1;
-  int line_start_pos;
 
   if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
     return 0;
-
   if (!value)
     return 0;
-
-  iupStrToIntInt(value, &lin, &col, ',');
-  if (lin < 1) lin = 1;
-  if (col < 1) col = 1;
 
   cursor = efl_text_interactive_main_cursor_get(entry);
   if (!cursor)
     return 0;
 
-  line_cursor = efl_ui_textbox_cursor_create(entry);
-  if (!line_cursor)
-    return 0;
+  if (ih->data->is_multiline)
+  {
+    int lin = 1, col = 1;
+    int line_start_pos;
+    Efl_Text_Cursor_Object* line_cursor;
 
-  efl_text_cursor_object_line_number_set(line_cursor, lin - 1);
-  efl_text_cursor_object_move(line_cursor, EFL_TEXT_CURSOR_MOVE_TYPE_LINE_START);
-  line_start_pos = efl_text_cursor_object_position_get(line_cursor);
+    iupStrToIntInt(value, &lin, &col, ',');
+    if (lin < 1) lin = 1;
+    if (col < 1) col = 1;
 
-  efl_text_cursor_object_position_set(cursor, line_start_pos + col - 1);
+    line_cursor = efl_ui_textbox_cursor_create(entry);
+    if (!line_cursor)
+      return 0;
 
-  efl_del(line_cursor);
+    efl_text_cursor_object_line_number_set(line_cursor, lin - 1);
+    efl_text_cursor_object_move(line_cursor, EFL_TEXT_CURSOR_MOVE_TYPE_LINE_START);
+    line_start_pos = efl_text_cursor_object_position_get(line_cursor);
+
+    efl_text_cursor_object_position_set(cursor, line_start_pos + col - 1);
+
+    efl_del(line_cursor);
+  }
+  else
+  {
+    int pos = 1;
+    iupStrToInt(value, &pos);
+    pos--;
+    if (pos < 0) pos = 0;
+    efl_text_cursor_object_position_set(cursor, pos);
+  }
 
   return 0;
 }
@@ -840,9 +851,6 @@ static char* eflTextGetCaretAttrib(Ihandle* ih)
 {
   Eo* entry = iupeflGetWidget(ih);
   Efl_Text_Cursor_Object* cursor;
-  Efl_Text_Cursor_Object* line_cursor;
-  int lin, col;
-  int line_start_pos, cursor_pos;
 
   if (!entry || iupAttribGet(ih, "_IUP_EFL_IS_SPINNER"))
     return NULL;
@@ -851,21 +859,30 @@ static char* eflTextGetCaretAttrib(Ihandle* ih)
   if (!cursor)
     return NULL;
 
-  lin = efl_text_cursor_object_line_number_get(cursor) + 1;
+  if (!ih->data->is_multiline)
+    return iupStrReturnInt(efl_text_cursor_object_position_get(cursor) + 1);
 
-  line_cursor = efl_ui_textbox_cursor_create(entry);
-  if (!line_cursor)
-    return iupStrReturnIntInt(lin, 1, ',');
+  {
+    Efl_Text_Cursor_Object* line_cursor;
+    int lin, col;
+    int line_start_pos, cursor_pos;
 
-  efl_text_cursor_object_line_number_set(line_cursor, lin - 1);
-  efl_text_cursor_object_move(line_cursor, EFL_TEXT_CURSOR_MOVE_TYPE_LINE_START);
-  line_start_pos = efl_text_cursor_object_position_get(line_cursor);
-  cursor_pos = efl_text_cursor_object_position_get(cursor);
-  col = cursor_pos - line_start_pos + 1;
+    lin = efl_text_cursor_object_line_number_get(cursor) + 1;
 
-  efl_del(line_cursor);
+    line_cursor = efl_ui_textbox_cursor_create(entry);
+    if (!line_cursor)
+      return iupStrReturnIntInt(lin, 1, ',');
 
-  return iupStrReturnIntInt(lin, col, ',');
+    efl_text_cursor_object_line_number_set(line_cursor, lin - 1);
+    efl_text_cursor_object_move(line_cursor, EFL_TEXT_CURSOR_MOVE_TYPE_LINE_START);
+    line_start_pos = efl_text_cursor_object_position_get(line_cursor);
+    cursor_pos = efl_text_cursor_object_position_get(cursor);
+    col = cursor_pos - line_start_pos + 1;
+
+    efl_del(line_cursor);
+
+    return iupStrReturnIntInt(lin, col, ',');
+  }
 }
 
 static int eflTextSetClipboardAttrib(Ihandle* ih, const char* value)
@@ -1376,10 +1393,12 @@ static int eflTextMapMethod(Ihandle* ih)
       }
     }
 
+    Eina_Bool has_border = iupAttribGetBoolean(ih, "BORDER") ? EINA_TRUE : EINA_FALSE;
+
     if (ih->data->is_multiline)
     {
       efl_text_multiline_set(widget, EINA_TRUE);
-      efl_ui_textbox_scrollable_set(widget, EINA_TRUE);
+      efl_ui_textbox_scrollable_set(widget, has_border);
 
       if (iupAttribGetBoolean(ih, "WORDWRAP"))
       {
@@ -1392,7 +1411,7 @@ static int eflTextMapMethod(Ihandle* ih)
     else
     {
       efl_text_multiline_set(widget, EINA_FALSE);
-      efl_ui_textbox_scrollable_set(widget, EINA_TRUE);
+      efl_ui_textbox_scrollable_set(widget, has_border);
     }
 
     if (iupAttribGetBoolean(ih, "PASSWORD"))

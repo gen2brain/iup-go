@@ -18,6 +18,7 @@
 #include <ControlLook.h>
 #include <Cursor.h>
 #include <Font.h>
+#include <GraphicsDefs.h>
 #include <InterfaceDefs.h>
 #include <Looper.h>
 #include <Message.h>
@@ -134,6 +135,7 @@ public:
       fIhandle(ih), fKeyFilter(NULL), fMute(false)
   {
     BTextControl::SetDivider(0);
+    SetFlags(Flags() | B_DRAW_ON_CHILDREN);
   }
 
   ~IupHaikuTextControl() override
@@ -186,6 +188,32 @@ public:
       return;
     }
     BTextControl::MessageReceived(msg);
+  }
+
+  void DrawAfterChildren(BRect updateRect) override
+  {
+    if (!fIhandle) return;
+    const char* cue = iupAttribGet(fIhandle, "CUEBANNER");
+    if (!cue || !cue[0]) return;
+    if (TextLength() != 0) return;
+    BTextView* tv = TextView();
+    if (!tv || tv->IsFocus()) return;
+
+    BRect tf = tv->Frame();
+    if (!tf.Intersects(updateRect)) return;
+
+    BFont font;
+    rgb_color text_color;
+    tv->GetFontAndColor(0, &font, &text_color);
+    SetFont(&font);
+    SetHighColor(mix_color(text_color, tv->ViewColor(), 128));
+    SetLowColor(B_TRANSPARENT_COLOR);
+
+    font_height fh;
+    font.GetHeight(&fh);
+    BPoint p(tf.left + ceilf(be_control_look->DefaultLabelSpacing() / 2.0f),
+             tf.top + ceilf((tf.Height() + 1 - fh.ascent - fh.descent) / 2.0f) + fh.ascent);
+    DrawString(cue, p);
   }
 
   /* Clear modification message around programmatic SetText so the queued
@@ -893,7 +921,14 @@ static char* haikuTextGetCaretPosAttrib(Ihandle* ih)
 
 static int haikuTextSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->is_multiline) return haikuTextSetCaretPosAttrib(ih, value);
+  if (!ih->data->is_multiline)
+  {
+    int col = 1;
+    iupStrToInt(value, &col);
+    col--;
+    if (col < 0) col = 0;
+    return haikuTextSetCaretPosAttrib(ih, iupStrReturnInt(col));
+  }
   int lin = 1, col = 1;
   if (iupStrToIntInt(value, &lin, &col, ',') != 2) return 0;
   int pos = 0;
@@ -907,7 +942,7 @@ static char* haikuTextGetCaretAttrib(Ihandle* ih)
   if (!tv) return NULL;
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
-  if (!ih->data->is_multiline) return iupStrReturnInt(s);
+  if (!ih->data->is_multiline) return iupStrReturnInt((int)s + 1);
   int lin = 1, col = 1;
   iupdrvTextConvertPosToLinCol(ih, s, &lin, &col);
   return iupStrReturnIntInt(lin, col, ',');
@@ -1008,7 +1043,15 @@ static int haikuTextSetClipboardAttrib(Ihandle* ih, const char* value)
   else if (iupStrEqualNoCase(value, "CUT"))   tv->Cut(be_clipboard);
   else if (iupStrEqualNoCase(value, "PASTE")) tv->Paste(be_clipboard);
   else if (iupStrEqualNoCase(value, "CLEAR")) tv->Clear();
-  else if (iupStrEqualNoCase(value, "UNDO"))  tv->Undo(be_clipboard);
+  else if (iupStrEqualNoCase(value, "UNDO") || iupStrEqualNoCase(value, "REDO"))
+  {
+    /* BTextView::Undo toggles direction; UndoState(isRedo) reports which way the next call goes */
+    bool is_redo = false;
+    undo_state st = tv->UndoState(&is_redo);
+    if (st == B_UNDO_UNAVAILABLE) return 0;
+    bool want_redo = iupStrEqualNoCase(value, "REDO") ? true : false;
+    if (is_redo == want_redo) tv->Undo(be_clipboard);
+  }
   return 0;
 }
 
@@ -1028,6 +1071,20 @@ static int haikuTextSetPasswordAttrib(Ihandle* ih, const char* value)
   if (!tv) return 1;
   LooperLockGuard guard(haikuTextGetLooper(ih));
   tv->HideTyping(iupStrBoolean(value) ? true : false);
+  return 1;
+}
+
+static int haikuTextSetCueBannerAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  if (ih->data->is_multiline)
+    return 0;
+  IupHaikuTextControl* tc = (IupHaikuTextControl*)ih->handle;
+  if (tc)
+  {
+    LooperLockGuard guard(haikuTextGetLooper(ih));
+    tc->Invalidate();
+  }
   return 1;
 }
 
@@ -1658,6 +1715,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "OVERWRITE", NULL, haikuTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "PASSWORD", NULL, haikuTextSetPasswordAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUEBANNER", NULL, haikuTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, haikuTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
