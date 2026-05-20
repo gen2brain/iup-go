@@ -155,6 +155,73 @@ static void fltkTextCallCaretCb(Ihandle* ih)
   }
 }
 
+static void fltkOverwriteToggleOnInsertKey(Ihandle* ih)
+{
+  if (Fl::event() == FL_KEYBOARD && Fl::event_key() == FL_Insert && Fl::event_state() == 0)
+  {
+    bool cur = iupAttribGetBoolean(ih, "OVERWRITE");
+    iupAttribSet(ih, "OVERWRITE", cur ? "NO" : "YES");
+  }
+}
+
+static void fltkInputOverwriteHook(Ihandle* ih, Fl_Input_* input)
+{
+  if (!iupAttribGetBoolean(ih, "OVERWRITE"))
+    return;
+  if (Fl::event() != FL_KEYBOARD)
+    return;
+  const char* text = Fl::event_text();
+  if (!text || !text[0] || (unsigned char)text[0] < 32 || text[0] == '\n')
+    return;
+  if (strlen(text) != 1)
+    return;
+  int pos = input->insert_position();
+  int mark = input->mark();
+  if (pos != mark)
+    return;
+  if (pos >= input->size())
+    return;
+  const char* current = input->value();
+  if (current && current[pos] == '\n')
+    return;
+  input->replace(pos, pos + 1, NULL);
+}
+
+static void fltkEditorOverwriteHook(Ihandle* ih, Fl_Text_Editor* editor)
+{
+  if (!iupAttribGetBoolean(ih, "OVERWRITE"))
+    return;
+  if (Fl::event() != FL_KEYBOARD)
+    return;
+  const char* text = Fl::event_text();
+  if (!text || !text[0] || (unsigned char)text[0] < 32 || text[0] == '\n')
+    return;
+  if (strlen(text) != 1)
+    return;
+  Fl_Text_Buffer* buf = editor->buffer();
+  if (!buf) return;
+  int pos = editor->insert_position();
+  if (buf->primary_selection()->selected())
+    return;
+  if (pos >= buf->length())
+    return;
+  if (buf->byte_at(pos) == '\n')
+    return;
+  buf->remove(pos, pos + 1);
+}
+
+static int fltkTextSetOverwriteAttrib(Ihandle* ih, const char* value)
+{
+  (void)ih;
+  (void)value;
+  return 1;
+}
+
+static char* fltkTextGetOverwriteAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(iupAttribGetBoolean(ih, "OVERWRITE"));
+}
+
 static void fltkInputDrawCue(Fl_Input* input, Ihandle* ih)
 {
   if (input->size() != 0 || Fl::focus() == input) return;
@@ -208,6 +275,8 @@ public:
       case FL_KEYBOARD:
         if (iupfltkKeyPressEvent(this, iup_handle))
           return 1;
+        fltkOverwriteToggleOnInsertKey(iup_handle);
+        fltkInputOverwriteHook(iup_handle, this);
         if (fltkApplyFilter(iup_handle, this, Fl::event_text()))
           return 1;
         if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc))
@@ -252,6 +321,8 @@ public:
       case FL_KEYBOARD:
         if (iupfltkKeyPressEvent(this, iup_handle))
           return 1;
+        fltkOverwriteToggleOnInsertKey(iup_handle);
+        fltkInputOverwriteHook(iup_handle, this);
         if (fltkApplyFilter(iup_handle, this, Fl::event_text()))
           return 1;
         if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc))
@@ -323,6 +394,8 @@ public:
           return 1;
         if (is_readonly)
           return Fl_Text_Display::handle(event);
+        fltkOverwriteToggleOnInsertKey(iup_handle);
+        fltkEditorOverwriteHook(iup_handle, this);
         if (fltkApplyFilterEditor(iup_handle, this, Fl::event_text()))
           return 1;
         {
@@ -1660,7 +1733,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, iupfltkFormatSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", fltkTextGetOverwriteAttrib, fltkTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, fltkTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, fltkTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

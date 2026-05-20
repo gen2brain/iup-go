@@ -736,6 +736,19 @@ static NSString* cocoaTouchTextApplyFilter(Ihandle* ih, NSString* text)
 	return text;
 }
 
+static NSRange cocoaTouchOverwriteRange(Ihandle* ih, NSString* current, NSRange range, NSString* replacement)
+{
+	if (!iupAttribGetBoolean(ih, "OVERWRITE")) return range;
+	if (range.length != 0) return range;
+	if (replacement.length != 1) return range;
+	unichar ch = [replacement characterAtIndex:0];
+	if (ch == '\n' || ch == '\r') return range;
+	if (range.location >= current.length) return range;
+	unichar next = [current characterAtIndex:range.location];
+	if (next == '\n' || next == '\r') return range;
+	return NSMakeRange(range.location, 1);
+}
+
 /* returns the replacement to actually apply (NC+MASK filtered), or nil to block */
 static NSString* cocoaTouchTextValidateEdit(Ihandle* ih, NSString* current, NSRange range, NSString* replacement)
 {
@@ -771,14 +784,15 @@ static NSString* cocoaTouchTextValidateEdit(Ihandle* ih, NSString* current, NSRa
 	if (!_ihandle) return YES;
 
 	NSString* current = textField.text ? textField.text : @"";
-	NSString* applied = cocoaTouchTextValidateEdit(_ihandle, current, range, replacement);
+	NSRange effective = cocoaTouchOverwriteRange(_ihandle, current, range, replacement);
+	NSString* applied = cocoaTouchTextValidateEdit(_ihandle, current, effective, replacement);
 	if (!applied) return NO;
 
-	if (![applied isEqualToString:replacement])
+	if (effective.length != range.length || ![applied isEqualToString:replacement])
 	{
-		NSString* new_text = [current stringByReplacingCharactersInRange:range withString:applied];
+		NSString* new_text = [current stringByReplacingCharactersInRange:effective withString:applied];
 		textField.text = new_text;
-		cocoaTouchTextFieldSetSelection(textField, range.location + applied.length, range.location + applied.length);
+		cocoaTouchTextFieldSetSelection(textField, effective.location + applied.length, effective.location + applied.length);
 		return NO;
 	}
 
@@ -853,14 +867,15 @@ static NSString* cocoaTouchTextValidateEdit(Ihandle* ih, NSString* current, NSRa
 {
 	if (!_ihandle) return YES;
 	NSString* current = textView.text ? textView.text : @"";
-	NSString* applied = cocoaTouchTextValidateEdit(_ihandle, current, range, replacement);
+	NSRange effective = cocoaTouchOverwriteRange(_ihandle, current, range, replacement);
+	NSString* applied = cocoaTouchTextValidateEdit(_ihandle, current, effective, replacement);
 	if (!applied) return NO;
 
-	if (![applied isEqualToString:replacement])
+	if (effective.length != range.length || ![applied isEqualToString:replacement])
 	{
-		NSString* new_text = [current stringByReplacingCharactersInRange:range withString:applied];
+		NSString* new_text = [current stringByReplacingCharactersInRange:effective withString:applied];
 		textView.text = new_text;
-		[textView setSelectedRange:NSMakeRange(range.location + applied.length, 0)];
+		[textView setSelectedRange:NSMakeRange(effective.location + applied.length, 0)];
 		return NO;
 	}
 
@@ -1628,5 +1643,5 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, cocoaTouchTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
 	/* UITextField / UITextView have no overwrite mode. */
-	iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }

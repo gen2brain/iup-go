@@ -150,6 +150,31 @@ static void eflTextChangedCallback(void* data, const Efl_Event* ev)
   if (ih->data->disable_callbacks)
     return;
 
+  if (info->type == EFL_TEXT_CHANGE_TYPE_INSERT && info->content && info->length == 1 &&
+      info->content[0] != '\n' && iupAttribGetBoolean(ih, "OVERWRITE"))
+  {
+    Eo* entry = ev->object;
+    int total_len = 0;
+    const char* full = efl_text_get(entry);
+    if (full) total_len = (int)strlen(full);
+    if ((int)(info->position + info->length) < total_len)
+    {
+      Efl_Text_Cursor_Object* del_start = efl_ui_textbox_cursor_create(entry);
+      Efl_Text_Cursor_Object* del_end = efl_ui_textbox_cursor_create(entry);
+      if (del_start && del_end)
+      {
+        int del_pos = (int)(info->position + info->length);
+        efl_text_cursor_object_position_set(del_start, del_pos);
+        efl_text_cursor_object_position_set(del_end, del_pos + 1);
+        ih->data->disable_callbacks = 1;
+        efl_text_cursor_object_range_delete(del_start, del_end);
+        ih->data->disable_callbacks = 0;
+      }
+      if (del_start) efl_del(del_start);
+      if (del_end) efl_del(del_end);
+    }
+  }
+
   if (info->type == EFL_TEXT_CHANGE_TYPE_INSERT && info->content && info->length > 0)
   {
     const char* filter = iupAttribGet(ih, "FILTER");
@@ -2576,7 +2601,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUEBANNER", eflTextGetCueBannerAttrib, eflTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", eflTextGetTabSizeAttrib, eflTextSetTabSizeAttrib, "8", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "PADDING", eflTextGetPaddingAttrib, eflTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SPINVALUE", eflTextGetSpinValueAttrib, eflTextSetSpinValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMIN", NULL, eflTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
