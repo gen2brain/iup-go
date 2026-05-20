@@ -3887,24 +3887,32 @@ static int cocoaTextSetCaretAttrib(Ihandle* ih, const char* value)
 
   NSRange cursor_range = NSMakeRange(0, 0);
 
-  int start_int = 0;
-  int end_int = 0;
-
-  if(iupStrToIntInt(value, &start_int, &end_int, ':')!=2)
+  if (sub_type == IUPCOCOATEXTSUBTYPE_VIEW)
   {
-    return 0;
+    int lin_int = 1, col_int = 1;
+    iupStrToIntInt(value, &lin_int, &col_int, ',');
+    if (lin_int < 1) lin_int = 1;
+    if (col_int < 1) col_int = 1;
+    NSUInteger lin_start = (NSUInteger)lin_int;
+    NSUInteger col_start = (NSUInteger)col_int;
+    NSUInteger lin_end = lin_start;
+    NSUInteger col_end = col_start;
+    bool did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin_start, col_start, lin_end, col_end, &cursor_range);
+    if (did_find_range)
+    {
+      [text_view setSelectedRange:cursor_range affinity:NSSelectionAffinityDownstream stillSelecting:NO];
+      [text_view scrollRangeToVisible:cursor_range];
+    }
   }
-  if(start_int<0 || end_int<0)
+  else
   {
-    return 0;
-  }
-  NSUInteger lin_start=start_int;
-  NSUInteger col_start=end_int;
-  NSUInteger lin_end=start_int;
-  NSUInteger col_end=end_int;
-  bool did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin_start, col_start, lin_end, col_end, &cursor_range);
-  if(did_find_range)
-  {
+    int pos = 1;
+    iupStrToInt(value, &pos);
+    pos--;
+    if (pos < 0) pos = 0;
+    NSUInteger len = [[text_view string] length];
+    if ((NSUInteger)pos > len) pos = (int)len;
+    cursor_range = NSMakeRange((NSUInteger)pos, 0);
     [text_view setSelectedRange:cursor_range affinity:NSSelectionAffinityDownstream stillSelecting:NO];
     [text_view scrollRangeToVisible:cursor_range];
   }
@@ -3969,7 +3977,7 @@ static char* cocoaTextGetCaretAttrib(Ihandle* ih)
   {
     case IUPCOCOATEXTSUBTYPE_VIEW:
       {
-        return iupStrReturnIntInt((int)lin_start, (int)col_start, ':');
+        return iupStrReturnIntInt((int)lin_start, (int)col_start, ',');
         break;
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:

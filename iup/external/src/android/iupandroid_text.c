@@ -993,6 +993,8 @@ static int androidTextSetClipboardAttrib(Ihandle* ih, const char* value)
   else if (iupStrEqualNoCase(value, "CUT"))   op = 1;
   else if (iupStrEqualNoCase(value, "PASTE")) op = 2;
   else if (iupStrEqualNoCase(value, "CLEAR")) op = 3;
+  else if (iupStrEqualNoCase(value, "UNDO"))  op = 4;
+  else if (iupStrEqualNoCase(value, "REDO"))  op = 5;
   else return 0;
   androidTextClipboardImpl(ih, op);
   return 0;

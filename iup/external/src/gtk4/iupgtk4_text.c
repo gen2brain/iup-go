@@ -1104,29 +1104,34 @@ static char* gtk4TextGetCaretAttrib(Ihandle* ih)
   else
   {
     int pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
-    return iupStrReturnIntInt(1, pos + 1, ',');
+    return iupStrReturnInt(pos + 1);
   }
 }
 
 static int gtk4TextSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  int lin = 1, col = 1;
-  iupStrToIntInt(value, &lin, &col, ',');
-  if (lin < 1) lin = 1;
-  if (col < 1) col = 1;
+  if (!value)
+    return 0;
 
   if (ih->data->is_multiline)
   {
+    int lin = 1, col = 1;
     GtkTextIter iter;
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    iupStrToIntInt(value, &lin, &col, ',');
+    if (lin < 1) lin = 1;
+    if (col < 1) col = 1;
     gtkTextMoveIterToLinCol(buffer, &iter, lin, col);
     gtk_text_buffer_place_cursor(buffer, &iter);
     gtkTextScrollToVisible(ih);
   }
   else
   {
-    col--;
-    gtk_editable_set_position(GTK_EDITABLE(ih->handle), col);
+    int pos = 1;
+    iupStrToInt(value, &pos);
+    pos--;
+    if (pos < 0) pos = 0;
+    gtk_editable_set_position(GTK_EDITABLE(ih->handle), pos);
   }
 
   return 0;
@@ -1333,6 +1338,20 @@ static int gtk4TextSetClipboardAttrib(Ihandle* ih, const char* value)
     }
     else
       gtk_editable_delete_selection(GTK_EDITABLE(ih->handle));
+  }
+  else if (iupStrEqualNoCase(value, "UNDO"))
+  {
+    if (ih->data->is_multiline)
+      gtk_text_buffer_undo(gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle)));
+    else
+      gtk_widget_activate_action(ih->handle, "text.undo", NULL);
+  }
+  else if (iupStrEqualNoCase(value, "REDO"))
+  {
+    if (ih->data->is_multiline)
+      gtk_text_buffer_redo(gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle)));
+    else
+      gtk_widget_activate_action(ih->handle, "text.redo", NULL);
   }
   return 0;
 }

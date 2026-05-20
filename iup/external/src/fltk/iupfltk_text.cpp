@@ -96,6 +96,27 @@ static void fltkTextCallCaretCb(Ihandle* ih)
   }
 }
 
+static void fltkInputDrawCue(Fl_Input* input, Ihandle* ih)
+{
+  if (input->size() != 0 || Fl::focus() == input) return;
+  const char* cue = iupAttribGet(ih, "CUEBANNER");
+  if (!cue || !cue[0]) return;
+
+  int dx = Fl::box_dx(input->box());
+  int dy = Fl::box_dy(input->box());
+  int dw = Fl::box_dw(input->box());
+  int dh = Fl::box_dh(input->box());
+
+  fl_push_clip(input->x() + dx, input->y() + dy, input->w() - dw, input->h() - dh);
+  fl_font(input->textfont(), input->textsize());
+  fl_color(fl_inactive(input->textcolor()));
+  fl_draw(cue,
+          input->x() + dx + 2, input->y() + dy,
+          input->w() - dw - 2, input->h() - dh,
+          (Fl_Align)((input->align() & FL_ALIGN_CENTER ? FL_ALIGN_CENTER : FL_ALIGN_LEFT) | FL_ALIGN_INSIDE | FL_ALIGN_CLIP));
+  fl_pop_clip();
+}
+
 class IupFltkInput : public Fl_Input
 {
 public:
@@ -103,6 +124,12 @@ public:
 
   IupFltkInput(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Input(x, y, w, h), iup_handle(ih) {}
+
+  void draw() override
+  {
+    Fl_Input::draw();
+    fltkInputDrawCue(this, iup_handle);
+  }
 
   int handle(int event) override
   {
@@ -139,6 +166,12 @@ public:
 
   IupFltkSecretInput(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Secret_Input(x, y, w, h), iup_handle(ih) {}
+
+  void draw() override
+  {
+    Fl_Secret_Input::draw();
+    fltkInputDrawCue(this, iup_handle);
+  }
 
   int handle(int event) override
   {
@@ -451,13 +484,17 @@ static char* fltkTextGetReadOnlyAttrib(Ihandle* ih)
 
 static int fltkTextSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  int lin = 1, col = 1;
-  iupStrToIntInt(value, &lin, &col, ',');
+  if (!value)
+    return 0;
 
   if (ih->data->is_multiline)
   {
+    int lin = 1, col = 1;
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
     IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+    iupStrToIntInt(value, &lin, &col, ',');
+    if (lin < 1) lin = 1;
+    if (col < 1) col = 1;
     if (buf && editor)
     {
       int pos = buf->skip_lines(0, lin - 1);
@@ -469,7 +506,13 @@ static int fltkTextSetCaretAttrib(Ihandle* ih, const char* value)
   {
     Fl_Input* input = fltkTextGetInputWidget(ih);
     if (input)
-      input->insert_position(col - 1);
+    {
+      int pos = 1;
+      iupStrToInt(value, &pos);
+      pos--;
+      if (pos < 0) pos = 0;
+      input->insert_position(pos);
+    }
   }
 
   return 0;
@@ -496,7 +539,7 @@ static char* fltkTextGetCaretAttrib(Ihandle* ih)
     if (input)
     {
       int pos = input->insert_position();
-      return iupStrReturnIntInt(1, pos + 1, ',');
+      return iupStrReturnInt(pos + 1);
     }
   }
   return NULL;
@@ -1400,6 +1443,8 @@ extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *
 
 static int fltkTextMapMethod(Ihandle* ih)
 {
+  int has_border = iupAttribGetBoolean(ih, "BORDER");
+
   if (ih->data->is_multiline)
   {
     IupFltkTextEditor* editor = new IupFltkTextEditor(0, 0, 10, 10, ih);
@@ -1409,6 +1454,9 @@ static int fltkTextMapMethod(Ihandle* ih)
 
     if (iupAttribGetBoolean(ih, "WORDWRAP") || !(ih->data->sb & IUP_SB_HORIZ))
       editor->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
+
+    if (!has_border)
+      editor->box(FL_FLAT_BOX);
 
     char* value = iupAttribGet(ih, "VALUE");
     if (value)
@@ -1440,6 +1488,13 @@ static int fltkTextMapMethod(Ihandle* ih)
     if (!iupAttribGetBoolean(ih, "SPINAUTO"))
       spinner->noauto = 1;
 
+    if (!has_border)
+    {
+      Fl_Input* inp = (Fl_Input*)spinner->child(0);
+      if (inp) inp->box(FL_FLAT_BOX);
+      spinner->box(FL_FLAT_BOX);
+    }
+
     spinner->callback(fltkSpinCallback, (void*)ih);
 
     iupfltkAddToParent(ih);
@@ -1448,6 +1503,9 @@ static int fltkTextMapMethod(Ihandle* ih)
   {
     IupFltkSecretInput* input = new IupFltkSecretInput(0, 0, 10, 10, ih);
     ih->handle = (InativeHandle*)input;
+
+    if (!has_border)
+      input->box(FL_FLAT_BOX);
 
     char* value = iupAttribGet(ih, "VALUE");
     if (value)
@@ -1462,6 +1520,9 @@ static int fltkTextMapMethod(Ihandle* ih)
   {
     IupFltkInput* input = new IupFltkInput(0, 0, 10, 10, ih);
     ih->handle = (InativeHandle*)input;
+
+    if (!has_border)
+      input->box(FL_FLAT_BOX);
 
     char* value = iupAttribGet(ih, "VALUE");
     if (value)
@@ -1483,6 +1544,17 @@ static int fltkTextMapMethod(Ihandle* ih)
   }
 
   return IUP_NOERROR;
+}
+
+static int fltkTextSetCueBannerAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  if (ih->data->is_multiline)
+    return 0;
+  Fl_Input* input = fltkTextGetInputWidget(ih);
+  if (input)
+    input->redraw();
+  return 1;
 }
 
 static void fltkTextUnMapMethod(Ihandle* ih)
@@ -1532,6 +1604,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, iupfltkFormatSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, fltkTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "CUEBANNER", NULL, fltkTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Spin */
   iupClassRegisterAttribute(ic, "SPINMIN", NULL, fltkTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);

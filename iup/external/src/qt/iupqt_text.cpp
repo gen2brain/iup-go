@@ -990,13 +990,14 @@ static char* qtTextGetSelectionPosAttrib(Ihandle* ih)
 
 static int qtTextSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  int lin = 1, col = 1, pos;
-
-  iupStrToIntInt(value, &lin, &col, ',');
-  iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
+  if (!value)
+    return 0;
 
   if (ih->data->is_multiline)
   {
+    int lin = 1, col = 1, pos;
+    iupStrToIntInt(value, &lin, &col, ',');
+    iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
     IupQtTextEdit* text = (IupQtTextEdit*)ih->handle;
     QTextCursor cursor = text->textCursor();
     cursor.setPosition(pos);
@@ -1004,6 +1005,10 @@ static int qtTextSetCaretAttrib(Ihandle* ih, const char* value)
   }
   else
   {
+    int pos = 1;
+    iupStrToInt(value, &pos);
+    pos--;
+    if (pos < 0) pos = 0;
     IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
     edit->setCursorPosition(pos);
   }
@@ -1013,22 +1018,19 @@ static int qtTextSetCaretAttrib(Ihandle* ih, const char* value)
 
 static char* qtTextGetCaretAttrib(Ihandle* ih)
 {
-  int lin, col, pos;
-
   if (ih->data->is_multiline)
   {
     IupQtTextEdit* text = (IupQtTextEdit*)ih->handle;
     QTextCursor cursor = text->textCursor();
-    pos = cursor.position();
+    int lin, col;
+    iupdrvTextConvertPosToLinCol(ih, cursor.position(), &lin, &col);
+    return iupStrReturnIntInt(lin, col, ',');
   }
   else
   {
     IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
-    pos = edit->cursorPosition();
+    return iupStrReturnInt(edit->cursorPosition() + 1);
   }
-
-  iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
-  return iupStrReturnStrf("%d,%d", lin, col);
 }
 
 static int qtTextSetCaretPosAttrib(Ihandle* ih, const char* value)
@@ -1310,6 +1312,20 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
       else
         edit->clear();
     }
+  }
+  else if (iupStrEqualNoCase(value, "UNDO"))
+  {
+    if (ih->data->is_multiline)
+      ((IupQtTextEdit*)ih->handle)->undo();
+    else
+      ((IupQtLineEdit*)ih->handle)->undo();
+  }
+  else if (iupStrEqualNoCase(value, "REDO"))
+  {
+    if (ih->data->is_multiline)
+      ((IupQtTextEdit*)ih->handle)->redo();
+    else
+      ((IupQtLineEdit*)ih->handle)->redo();
   }
 
   return 0;

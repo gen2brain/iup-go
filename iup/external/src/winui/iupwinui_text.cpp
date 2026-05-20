@@ -2597,7 +2597,7 @@ static char* winuiTextGetCaretAttrib(Ihandle* ih)
     return iupStrReturnIntInt(lin, col, ',');
   }
   else
-    return iupStrReturnIntInt(1, pos + 1, ',');
+    return iupStrReturnInt(pos + 1);
 }
 
 static int winuiTextSetCaretAttrib(Ihandle* ih, const char* value)
@@ -2608,16 +2608,22 @@ static int winuiTextSetCaretAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  int lin = 1, col = 1;
-  iupStrToIntInt(value, &lin, &col, ',');
-  if (lin < 1) lin = 1;
-  if (col < 1) col = 1;
-
   int pos;
   if (ih->data->is_multiline)
+  {
+    int lin = 1, col = 1;
+    iupStrToIntInt(value, &lin, &col, ',');
+    if (lin < 1) lin = 1;
+    if (col < 1) col = 1;
     iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
+  }
   else
-    pos = col - 1;
+  {
+    pos = 1;
+    iupStrToInt(value, &pos);
+    pos--;
+    if (pos < 0) pos = 0;
+  }
 
   if (aux->isFormatted)
   {

@@ -1359,6 +1359,21 @@ static int cocoaTouchTextSetClipboardAttrib(Ihandle* ih, const char* value)
 	{
 		cocoaTouchTextSetSelectedTextAttrib(ih, "");
 	}
+	else if (iupStrEqualNoCase(value, "UNDO") || iupStrEqualNoCase(value, "REDO"))
+	{
+		UIResponder* responder = (UIResponder*)cocoaTouchTextView(ih);
+		if (!responder) responder = (UIResponder*)cocoaTouchTextField(ih);
+		NSUndoManager* mgr = responder ? responder.undoManager : nil;
+		if (!mgr) return 0;
+		if (iupStrEqualNoCase(value, "UNDO"))
+		{
+			if ([mgr canUndo]) [mgr undo];
+		}
+		else
+		{
+			if ([mgr canRedo]) [mgr redo];
+		}
+	}
 	return 0;
 }
 

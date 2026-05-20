@@ -428,7 +428,7 @@ public final class IupTextHelper
         tv.setFilters(saved);
     }
 
-    /* op: 0=COPY, 1=CUT, 2=PASTE, 3=CLEAR. */
+    /* op: 0=COPY, 1=CUT, 2=PASTE, 3=CLEAR, 4=UNDO, 5=REDO. */
     @Keep
     public static void clipboardOp(View v, int op)
     {
@@ -491,6 +491,12 @@ public final class IupTextHelper
                     tv.suppressVC = false;
                     tv.setFilters(saved);
                 }
+                break;
+            case 4:
+                tv.onTextContextMenuItem(android.R.id.undo);
+                break;
+            case 5:
+                tv.onTextContextMenuItem(android.R.id.redo);
                 break;
         }
     }
