@@ -1176,15 +1176,30 @@ static int qtTextSetAppendAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     IupQtTextEdit* text = (IupQtTextEdit*)ih->handle;
-
+    QString to_insert = QString::fromUtf8(value);
     if (ih->data->append_newline && !text->toPlainText().isEmpty())
-      text->append("\n" + QString::fromUtf8(value));
-    else
-      text->append(QString::fromUtf8(value));
+      to_insert.prepend('\n');
 
-    /* Scroll to the end to make the appended text visible */
-    text->moveCursor(QTextCursor::End);
-    text->ensureCursorVisible();
+    if (ih->data->append_scroll)
+    {
+      QTextCursor end_cursor(text->document());
+      end_cursor.movePosition(QTextCursor::End);
+      end_cursor.insertText(to_insert);
+      text->setTextCursor(end_cursor);
+      text->ensureCursorVisible();
+    }
+    else
+    {
+      QTextCursor saved_cursor = text->textCursor();
+      int saved_v = text->verticalScrollBar()->value();
+      int saved_h = text->horizontalScrollBar()->value();
+      QTextCursor end_cursor(text->document());
+      end_cursor.movePosition(QTextCursor::End);
+      end_cursor.insertText(to_insert);
+      text->setTextCursor(saved_cursor);
+      text->verticalScrollBar()->setValue(saved_v);
+      text->horizontalScrollBar()->setValue(saved_h);
+    }
   }
   else
   {
@@ -1778,15 +1793,16 @@ static int qtTextMapMethod(Ihandle* ih)
       text->setLineWrapMode(QTextEdit::NoWrap);
     text->setTabStopDistance(40);
 
-    /* Vertical scrollbar */
+    Qt::ScrollBarPolicy on_policy = iupAttribGetBoolean(ih, "AUTOHIDE")
+      ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOn;
+
     if (ih->data->sb & IUP_SB_VERT)
-      text->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+      text->setVerticalScrollBarPolicy(on_policy);
     else
       text->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    /* Horizontal scrollbar */
     if (ih->data->sb & IUP_SB_HORIZ)
-      text->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+      text->setHorizontalScrollBarPolicy(on_policy);
     else
       text->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 

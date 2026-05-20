@@ -44,6 +44,7 @@ struct _IcontrolData
   int is_multiline,
       has_formatting,
       append_newline,
+      append_scroll,
       disable_callbacks,
       nc,
       sb,                           /* scrollbar configuration, can be changed only before map */

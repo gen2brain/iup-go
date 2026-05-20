@@ -9,6 +9,9 @@
 #include <cmath>
 #include <algorithm>
 #include <cwctype>
+#include <fstream>
+#include <iterator>
+#include <string>
 
 extern "C" {
 #include "iup.h"
@@ -592,10 +595,13 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
       auto range = reb.Document().GetRange(endPos, endPos);
       range.SetText(TextSetOptions::None, hstring(appendStr));
 
-      reb.UpdateLayout();
-      ScrollViewer sv = winuiTextFindScrollViewer(reb);
-      if (sv)
-        sv.ChangeView(nullptr, sv.ScrollableHeight(), nullptr);
+      if (ih->data->append_scroll)
+      {
+        reb.UpdateLayout();
+        ScrollViewer sv = winuiTextFindScrollViewer(reb);
+        if (sv)
+          sv.ChangeView(nullptr, sv.ScrollableHeight(), nullptr);
+      }
     }
   }
   else
@@ -611,7 +617,7 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
       newText += iupwinuiStringToHString(value).c_str();
       tb.Text(hstring(newText));
 
-      if (aux->isMultiline)
+      if (aux->isMultiline && ih->data->append_scroll)
       {
         tb.UpdateLayout();
         ScrollViewer sv = winuiTextFindScrollViewer(tb);

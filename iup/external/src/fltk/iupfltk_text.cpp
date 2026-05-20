@@ -935,9 +935,12 @@ static int fltkTextSetAppendAttrib(Ihandle* ih, const char* value)
         buf->append("\n");
       buf->append(value);
 
-      int end = buf->length();
-      editor->insert_position(end);
-      editor->show_insert_position();
+      if (ih->data->append_scroll)
+      {
+        int end = buf->length();
+        editor->insert_position(end);
+        editor->show_insert_position();
+      }
     }
   }
   else

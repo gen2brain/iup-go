@@ -283,9 +283,11 @@ static int motTextSetAppendAttrib(Ihandle* ih, const char* value)
   if (value)
     XmTextInsert(ih->handle, pos, (char*)value);
 
-  /* Scroll to the end to make the appended text visible */
-  pos = XmTextGetLastPosition(ih->handle);
-  XmTextShowPosition(ih->handle, pos);
+  if (ih->data->append_scroll)
+  {
+    pos = XmTextGetLastPosition(ih->handle);
+    XmTextShowPosition(ih->handle, pos);
+  }
 
   ih->data->disable_callbacks = 0;
   return 0;

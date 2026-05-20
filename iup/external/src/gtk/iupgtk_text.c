@@ -1435,10 +1435,12 @@ static int gtkTextSetAppendAttrib(Ihandle* ih, const char* value)
       gtk_text_buffer_insert(buffer, &iter, "\n", 1);
     gtk_text_buffer_insert(buffer, &iter, iupgtkStrConvertToSystem(value), -1);
 
-    /* Move cursor to end and scroll to show it */
-    gtk_text_buffer_get_end_iter(buffer, &iter);
-    gtk_text_buffer_place_cursor(buffer, &iter);
-    gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(ih->handle), gtk_text_buffer_get_insert(buffer));
+    if (ih->data->append_scroll)
+    {
+      gtk_text_buffer_get_end_iter(buffer, &iter);
+      gtk_text_buffer_place_cursor(buffer, &iter);
+      gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(ih->handle), gtk_text_buffer_get_insert(buffer));
+    }
   }
   else
   {

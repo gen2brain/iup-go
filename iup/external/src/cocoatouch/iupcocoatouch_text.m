@@ -1336,16 +1336,29 @@ static int cocoaTouchTextSetInsertAttrib(Ihandle* ih, const char* value)
 static int cocoaTouchTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
 	if (!value) return 0;
-	NSString* current = cocoaTouchTextGetString(ih);
 	NSString* append = [NSString stringWithUTF8String:value];
-	NSString* sep = @"";
-	if (current.length > 0 && ih->data->is_multiline && ih->data->append_newline)
-		sep = @"\n";
-	NSString* new_text = [[current stringByAppendingString:sep] stringByAppendingString:append];
-	cocoaTouchTextSetString(ih, new_text);
 
-	UITextView* v = cocoaTouchTextView(ih);
-	if (v) [v scrollRangeToVisible:NSMakeRange(new_text.length, 0)];
+	UITextView* tv = cocoaTouchTextView(ih);
+	if (tv)
+	{
+		NSString* sep = @"";
+		if (tv.text.length > 0 && ih->data->is_multiline && ih->data->append_newline)
+			sep = @"\n";
+		NSAttributedString* tail = [[NSAttributedString alloc] initWithString:[sep stringByAppendingString:append]
+			attributes:tv.typingAttributes];
+		[tv.textStorage appendAttributedString:tail];
+		[tail release];
+		if (ih->data->append_scroll)
+			[tv scrollRangeToVisible:NSMakeRange(tv.textStorage.length, 0)];
+		return 0;
+	}
+
+	UITextField* f = cocoaTouchTextField(ih);
+	if (f)
+	{
+		NSString* current = f.text ? f.text : @"";
+		f.text = [current stringByAppendingString:append];
+	}
 	return 0;
 }
 
