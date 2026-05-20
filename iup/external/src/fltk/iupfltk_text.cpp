@@ -446,6 +446,7 @@ public:
 static void fltkTextInputCallback(Fl_Widget* w, void* data)
 {
   Ihandle* ih = (Ihandle*)data;
+  if (ih->data->disable_callbacks) return;
   IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
   {
@@ -463,6 +464,7 @@ static void fltkTextEditorModifyCallback(int pos, int nInserted, int nDeleted, i
 
   if (nInserted == 0 && nDeleted == 0)
     return;
+  if (ih->data->disable_callbacks) return;
 
   IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
@@ -554,6 +556,7 @@ static int fltkTextSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (!value) value = "";
 
+  ih->data->disable_callbacks = 1;
   if (ih->data->is_multiline)
   {
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
@@ -564,10 +567,9 @@ static int fltkTextSetValueAttrib(Ihandle* ih, const char* value)
   {
     Fl_Input* input = fltkTextGetInputWidget(ih);
     if (input)
-    {
       input->value(value);
-    }
   }
+  ih->data->disable_callbacks = 0;
 
   return 0;
 }
@@ -1637,6 +1639,9 @@ static int fltkTextMapMethod(Ihandle* ih)
     spinner->callback(fltkSpinCallback, (void*)ih);
 
     iupfltkAddToParent(ih);
+
+    if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+      spinner->visible_focus(0);
   }
   else if (iupAttribGetBoolean(ih, "PASSWORD"))
   {
@@ -1654,6 +1659,9 @@ static int fltkTextMapMethod(Ihandle* ih)
     input->callback(fltkTextInputCallback, (void*)ih);
 
     iupfltkAddToParent(ih);
+
+    if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+      input->visible_focus(0);
   }
   else
   {

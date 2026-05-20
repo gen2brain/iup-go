@@ -1265,6 +1265,9 @@ static int winuiTextMapMethod(Ihandle* ih)
 
   iupTextUpdateFormatTags(ih);
 
+  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+    iupwinuiSetCanFocus(ih->handle, 0);
+
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 

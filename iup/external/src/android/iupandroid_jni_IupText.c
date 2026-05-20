@@ -157,6 +157,9 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchSpin
     if (ret == IUP_CLOSE) { IupExitLoop(); return 0x80000000; }
   }
 
+  /* SPINAUTO=NO: SPIN_CB owns the text; suppress auto-write. */
+  if (!iupAttribGetBoolean(ih, "SPINAUTO")) return 0x80000000;
+
   iupAttribSetInt(ih, "_IUPANDROID_SPIN_VALUE", next);
   return next;
 }

@@ -246,6 +246,18 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
   return the_menu;
 }
 
+- (BOOL)acceptsFirstResponder
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih)
+  {
+    if (iupAttribGet(ih, "_IUPCOCOA_CANFOCUS"))
+      return iupAttribGetBoolean(ih, "_IUPCOCOA_CANFOCUS");
+    return iupAttribGetBoolean(ih, "CANFOCUS");
+  }
+  return [super acceptsFirstResponder];
+}
+
 @end
 
 /* Custom secure text field cell to control text insets */
@@ -339,6 +351,38 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
       return nil;
   }
   return the_menu;
+}
+
+- (BOOL)acceptsFirstResponder
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih)
+  {
+    if (iupAttribGet(ih, "_IUPCOCOA_CANFOCUS"))
+      return iupAttribGetBoolean(ih, "_IUPCOCOA_CANFOCUS");
+    return iupAttribGetBoolean(ih, "CANFOCUS");
+  }
+  return [super acceptsFirstResponder];
+}
+
+@end
+
+
+@interface IupCocoaTextView : NSTextView
+@end
+
+@implementation IupCocoaTextView
+
+- (BOOL)acceptsFirstResponder
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih)
+  {
+    if (iupAttribGet(ih, "_IUPCOCOA_CANFOCUS"))
+      return iupAttribGetBoolean(ih, "_IUPCOCOA_CANFOCUS");
+    return iupAttribGetBoolean(ih, "CANFOCUS");
+  }
+  return [super acceptsFirstResponder];
 }
 
 @end
@@ -5122,7 +5166,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
 
     [scroll_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
-    text_view = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0,
+    text_view = [[IupCocoaTextView alloc] initWithFrame:NSMakeRect(0, 0,
         scrollview_content_size.width, scrollview_content_size.height)];
 
     [text_view setMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
@@ -5303,6 +5347,9 @@ static int cocoaTextMapMethod(Ihandle* ih)
     NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
     [undo_manager removeAllActions];
   }
+
+  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+    iupcocoaSetCanFocus(ih, 0);
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");

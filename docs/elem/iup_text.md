@@ -140,7 +140,7 @@ In Windows when FORMATTING=NO, AUTOHIDE is not supported.
 In Motif AUTOHIDE is not supported.
 
 **SCROLLTO** (non-inheritable, write-only): Scroll the text to make the given **character** position visible.
-It uses the same format and reference of the CARET attribute ("lin:col" or "col" starting at 1).
+It uses the same format and reference of the CARET attribute ("lin,col" or "col" starting at 1).
 In Windows, when FORMATTING=Yes "col" is ignored.
 
 **SCROLLTOPOS** (non-inheritable, write-only): Scroll the text to make the given **character** position visible.
@@ -197,7 +197,7 @@ In GTK, the increment change is progressively accelerated when a spin button is 
 
 **TABSIZE**: Valid only when MULTILINE=YES. Controls the number of characters for a tab stop.
 Default: 8.
-Not supported in Motif.
+Not supported in Motif and Android.
 
 **VALUE** (non-inheritable): Text entered by the user.
 The '\n' character indicates a new line, valid only when MULTILINE=YES.

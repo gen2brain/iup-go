@@ -1624,6 +1624,9 @@ static int eflTextMapMethod(Ihandle* ih)
   if (ih->data->formattags)
     iupTextUpdateFormatTags(ih);
 
+  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+    iupeflSetCanFocus(widget, 0);
+
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
