@@ -33,6 +33,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 
 import androidx.annotation.Keep;
@@ -173,7 +174,7 @@ public final class IupTextHelper
     }
 
     @Keep
-    public static View createMultiLineText(final long ihandlePtr)
+    public static View createMultiLineText(final long ihandlePtr, boolean wordWrap)
     {
         IupEditText tv = newEditText(ihandlePtr, 0, false);
         tv.setInputType(InputType.TYPE_CLASS_TEXT
@@ -181,7 +182,7 @@ public final class IupTextHelper
             | InputType.TYPE_TEXT_FLAG_MULTI_LINE
             | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         tv.setSingleLine(false);
-        tv.setHorizontallyScrolling(false);
+        tv.setHorizontallyScrolling(!wordWrap);
         /* TIET inherits M3 bodyLarge metrics through the appcompat editTextStyle chain; reset to classic. */
         tv.setLineSpacing(0f, 1.0f);
         tv.setIncludeFontPadding(false);
@@ -192,9 +193,25 @@ public final class IupTextHelper
         NestedScrollView sv = new NestedScrollView(tv.getContext());
         sv.setFillViewport(true);
         sv.setVerticalScrollBarEnabled(true);
-        sv.addView(tv, new ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        if (wordWrap)
+        {
+            sv.addView(tv, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
+        else
+        {
+            HorizontalScrollView hsv = new HorizontalScrollView(tv.getContext());
+            hsv.setFillViewport(true);
+            hsv.setHorizontalScrollBarEnabled(true);
+            hsv.addView(tv, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+            sv.addView(hsv, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         sv.setTag(tv);
         return sv;
     }
