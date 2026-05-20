@@ -859,17 +859,13 @@ static int qtTextSetSelectionAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  if (iupStrToIntInt(value, &start, &end, ':') != 2)
-    return 0;
-
-  if (start < 1) start = 1;
-  if (end < 1) end = 1;
-
-  start--; /* IUP starts at 1 */
-  end--;
-
   if (ih->data->is_multiline)
   {
+    int lin1 = 1, col1 = 1, lin2 = 1, col2 = 1;
+    if (sscanf(value, "%d,%d:%d,%d", &lin1, &col1, &lin2, &col2) != 4)
+      return 0;
+    iupdrvTextConvertLinColToPos(ih, lin1, col1, &start);
+    iupdrvTextConvertLinColToPos(ih, lin2, col2, &end);
     IupQtTextEdit* text = (IupQtTextEdit*)ih->handle;
     QTextCursor cursor = text->textCursor();
     cursor.setPosition(start);
@@ -878,6 +874,12 @@ static int qtTextSetSelectionAttrib(Ihandle* ih, const char* value)
   }
   else
   {
+    if (iupStrToIntInt(value, &start, &end, ':') != 2)
+      return 0;
+    if (start < 1) start = 1;
+    if (end < 1) end = 1;
+    start--;
+    end--;
     IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
     edit->setSelection(start, end - start);
   }
@@ -893,22 +895,22 @@ static char* qtTextGetSelectionAttrib(Ihandle* ih)
   {
     IupQtTextEdit* text = (IupQtTextEdit*)ih->handle;
     QTextCursor cursor = text->textCursor();
+    if (!cursor.hasSelection())
+      return nullptr;
     start = cursor.selectionStart();
     end = cursor.selectionEnd();
-  }
-  else
-  {
-    IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
-    start = edit->selectionStart();
-    if (start < 0)
-      return nullptr;
-    end = start + edit->selectedText().length();
+    int lin1, col1, lin2, col2;
+    iupdrvTextConvertPosToLinCol(ih, start, &lin1, &col1);
+    iupdrvTextConvertPosToLinCol(ih, end, &lin2, &col2);
+    return iupStrReturnStrf("%d,%d:%d,%d", lin1, col1, lin2, col2);
   }
 
-  start++; /* IUP starts at 1 */
-  end++;
-
-  return iupStrReturnStrf("%d:%d", start, end);
+  IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
+  start = edit->selectionStart();
+  if (start < 0)
+    return nullptr;
+  end = start + edit->selectedText().length();
+  return iupStrReturnStrf("%d:%d", start + 1, end + 1);
 }
 
 static int qtTextSetSelectionPosAttrib(Ihandle* ih, const char* value)

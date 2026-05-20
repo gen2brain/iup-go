@@ -903,6 +903,18 @@ static int haikuTextSetSelectionAttrib(Ihandle* ih, const char* value)
     return 0;
   }
   int32 s = 0, e = 0;
+  if (ih->data->is_multiline)
+  {
+    int lin1 = 1, col1 = 1, lin2 = 1, col2 = 1;
+    if (sscanf(value, "%d,%d:%d,%d", &lin1, &col1, &lin2, &col2) != 4)
+      return 0;
+    int ps = 0, pe = 0;
+    iupdrvTextConvertLinColToPos(ih, lin1, col1, &ps);
+    iupdrvTextConvertLinColToPos(ih, lin2, col2, &pe);
+    s = ps; e = pe;
+    tv->Select(s, e);
+    return 0;
+  }
   if (haikuTextParseRange(tv, value, true /*1-based*/, &s, &e))
     tv->Select(s, e);
   return 0;
@@ -939,7 +951,14 @@ static char* haikuTextGetSelectionAttrib(Ihandle* ih)
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
   if (s == e) return NULL;
-  return iupStrReturnStrf("%d:%d", s + 1, e + 1);
+  if (ih->data->is_multiline)
+  {
+    int lin1, col1, lin2, col2;
+    iupdrvTextConvertPosToLinCol(ih, (int)s, &lin1, &col1);
+    iupdrvTextConvertPosToLinCol(ih, (int)e, &lin2, &col2);
+    return iupStrReturnStrf("%d,%d:%d,%d", lin1, col1, lin2, col2);
+  }
+  return iupStrReturnStrf("%d:%d", (int)s + 1, (int)e + 1);
 }
 
 static char* haikuTextGetSelectionPosAttrib(Ihandle* ih)
@@ -1106,6 +1125,8 @@ static int haikuTextSetScrollToAttrib(Ihandle* ih, const char* value)
   {
     int pos = 0;
     if (!iupStrToInt(value, &pos)) return 0;
+    pos--;
+    if (pos < 0) pos = 0;
     tv->ScrollToOffset(pos);
   }
   return 0;
