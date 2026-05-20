@@ -1177,6 +1177,23 @@ static int cocoaTouchTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
 	return 0;
 }
 
+static char* cocoaTouchTextGetScrollVisibleAttrib(Ihandle* ih)
+{
+	if (!ih->data->is_multiline) return "NO";
+	UITextView* v = cocoaTouchTextView(ih);
+	if (!v) return "NO";
+	if (!v.scrollEnabled) return "NO";
+	CGSize content = v.contentSize;
+	CGSize frame = v.bounds.size;
+	int sb_h = 0, sb_v = 0;
+	if (v.showsHorizontalScrollIndicator && content.width  > frame.width)  sb_h = 1;
+	if (v.showsVerticalScrollIndicator   && content.height > frame.height) sb_v = 1;
+	if (sb_h && sb_v) return "YES";
+	if (sb_h) return "HORIZONTAL";
+	if (sb_v) return "VERTICAL";
+	return "NO";
+}
+
 static char* cocoaTouchTextGetSelectionAttrib(Ihandle* ih)
 {
 	NSRange r = cocoaTouchTextSelection(ih);
@@ -1615,6 +1632,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 
 	iupClassRegisterAttribute(ic, "COUNT", cocoaTouchTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "LINECOUNT", cocoaTouchTextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SCROLLVISIBLE", cocoaTouchTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "LINEVALUE", cocoaTouchTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "SELECTEDTEXT",cocoaTouchTextGetSelectedTextAttrib, cocoaTouchTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

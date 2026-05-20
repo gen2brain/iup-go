@@ -347,6 +347,9 @@ public:
     buffer(text_buffer);
   }
 
+  bool hScrollVisible() const { return mHScrollBar && mHScrollBar->visible() != 0; }
+  bool vScrollVisible() const { return mVScrollBar && mVScrollBar->visible() != 0; }
+
   ~IupFltkTextEditor() override
   {
     buffer(NULL);
@@ -584,6 +587,19 @@ static char* fltkTextGetValueAttrib(Ihandle* ih)
       return iupStrReturnStr(input->value());
   }
   return NULL;
+}
+
+static char* fltkTextGetScrollVisibleAttrib(Ihandle* ih)
+{
+  if (!ih->data->is_multiline) return (char*)"NO";
+  IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
+  if (!editor) return (char*)"NO";
+  bool sb_h = editor->hScrollVisible();
+  bool sb_v = editor->vScrollVisible();
+  if (sb_h && sb_v) return (char*)"YES";
+  if (sb_h) return (char*)"HORIZONTAL";
+  if (sb_v) return (char*)"VERTICAL";
+  return (char*)"NO";
 }
 
 static int fltkTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
@@ -1720,6 +1736,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CARET", fltkTextGetCaretAttrib, fltkTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARETPOS", fltkTextGetCaretPosAttrib, fltkTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", fltkTextGetReadOnlyAttrib, fltkTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", fltkTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, fltkTextSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, fltkTextSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTO", NULL, fltkTextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);

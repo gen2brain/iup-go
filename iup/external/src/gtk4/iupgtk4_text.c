@@ -1461,6 +1461,34 @@ static int gtk4TextSetReadOnlyAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static char* gtk4TextGetScrollVisibleAttrib(Ihandle* ih)
+{
+  GtkScrolledWindow* sw;
+  GtkPolicyType hp, vp;
+  GtkAdjustment* hadj;
+  GtkAdjustment* vadj;
+  int sb_h = 0, sb_v = 0;
+
+  if (!ih->data->is_multiline)
+    return "NO";
+  sw = (GtkScrolledWindow*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (!sw)
+    return "NO";
+  gtk_scrolled_window_get_policy(sw, &hp, &vp);
+  hadj = gtk_scrolled_window_get_hadjustment(sw);
+  vadj = gtk_scrolled_window_get_vadjustment(sw);
+  if (hadj && hp != GTK_POLICY_NEVER && hp != GTK_POLICY_EXTERNAL &&
+      gtk_adjustment_get_upper(hadj) > gtk_adjustment_get_page_size(hadj))
+    sb_h = 1;
+  if (vadj && vp != GTK_POLICY_NEVER && vp != GTK_POLICY_EXTERNAL &&
+      gtk_adjustment_get_upper(vadj) > gtk_adjustment_get_page_size(vadj))
+    sb_v = 1;
+  if (sb_h && sb_v) return "YES";
+  if (sb_h) return "HORIZONTAL";
+  if (sb_v) return "VERTICAL";
+  return "NO";
+}
+
 static int gtk4TextSetPasswordAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->is_multiline)
@@ -2497,5 +2525,5 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 
   /* Not Supported */
   iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", gtk4TextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

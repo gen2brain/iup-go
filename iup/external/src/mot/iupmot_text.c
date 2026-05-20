@@ -188,6 +188,25 @@ static char* motTextGetReadOnlyAttrib(Ihandle* ih)
   return iupStrReturnBoolean (!editable);
 }
 
+static char* motTextGetScrollVisibleAttrib(Ihandle* ih)
+{
+  Widget sb_win;
+  Widget hbar = NULL, vbar = NULL;
+  int sb_h = 0, sb_v = 0;
+  if (!ih->data->is_multiline)
+    return "NO";
+  sb_win = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  if (!sb_win)
+    return "NO";
+  XtVaGetValues(sb_win, XmNhorizontalScrollBar, &hbar, XmNverticalScrollBar, &vbar, NULL);
+  if (hbar && XtIsManaged(hbar)) sb_h = 1;
+  if (vbar && XtIsManaged(vbar)) sb_v = 1;
+  if (sb_h && sb_v) return "YES";
+  if (sb_h) return "HORIZONTAL";
+  if (sb_v) return "VERTICAL";
+  return "NO";
+}
+
 static int motTextSetInsertAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)  /* do not do the action before map */
@@ -1333,5 +1352,5 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FORMATTING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKDOWNVALUE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", motTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }
