@@ -3559,6 +3559,90 @@ static int winuiTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int winuiTextSetLoadRtfAttrib(Ihandle* ih, const char* value)
+{
+  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || !aux->isFormatted)
+  {
+    iupAttribSet(ih, "LOADRTFSTATUS", "FAILED");
+    return 0;
+  }
+  if (!value)
+    return 0;
+
+  std::ifstream f(value, std::ios::binary);
+  if (!f.is_open())
+  {
+    iupAttribSet(ih, "LOADRTFSTATUS", "FAILED");
+    return 0;
+  }
+  std::string bytes((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+  std::wstring wide(bytes.begin(), bytes.end());  /* RTF is 7-bit ASCII; widen byte-for-byte */
+
+  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  if (!reb)
+  {
+    iupAttribSet(ih, "LOADRTFSTATUS", "FAILED");
+    return 0;
+  }
+
+  bool wasReadOnly = reb.IsReadOnly();
+  if (wasReadOnly) reb.IsReadOnly(false);
+  try
+  {
+    reb.Document().SetText(TextSetOptions::FormatRtf, hstring(wide));
+    iupAttribSet(ih, "LOADRTFSTATUS", "OK");
+  }
+  catch (...)
+  {
+    iupAttribSet(ih, "LOADRTFSTATUS", "FAILED");
+  }
+  if (wasReadOnly) reb.IsReadOnly(true);
+  return 0;
+}
+
+static int winuiTextSetSaveRtfAttrib(Ihandle* ih, const char* value)
+{
+  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || !aux->isFormatted)
+  {
+    iupAttribSet(ih, "SAVERTFSTATUS", "FAILED");
+    return 0;
+  }
+  if (!value)
+    return 0;
+
+  RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+  if (!reb)
+  {
+    iupAttribSet(ih, "SAVERTFSTATUS", "FAILED");
+    return 0;
+  }
+
+  hstring rtf_text;
+  try
+  {
+    reb.Document().GetText(TextGetOptions::FormatRtf, rtf_text);
+  }
+  catch (...)
+  {
+    iupAttribSet(ih, "SAVERTFSTATUS", "FAILED");
+    return 0;
+  }
+
+  std::ofstream f(value, std::ios::binary);
+  if (!f.is_open())
+  {
+    iupAttribSet(ih, "SAVERTFSTATUS", "FAILED");
+    return 0;
+  }
+  std::wstring_view wv{rtf_text};
+  std::string narrow(wv.begin(), wv.end());  /* RTF body is 7-bit ASCII */
+  f.write(narrow.data(), narrow.size());
+  iupAttribSet(ih, "SAVERTFSTATUS", "OK");
+  return 0;
+}
+
 static int winuiTextSetFontAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->has_formatting && ih->handle)
@@ -3674,6 +3758,8 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, winuiTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, winuiTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, winuiTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LOADRTF", NULL, winuiTextSetLoadRtfAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVERTF", NULL, winuiTextSetSaveRtfAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PASSWORD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPENDNEWLINE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 

@@ -93,10 +93,13 @@ When MULTILINE=NO returns always "1".
 **LINEVALUE** (read-only): returns the text of the line where the caret is. It does not include the "\n" character.
 When MULTILINE=NO returns the same as VALUE.
 
-**LOADRTF** (write-only) [Windows Only]: loads formatted text from a Rich Text Format file given its filename.
+**LOADRTF** (write-only) [Win32, WinUI Only]: loads formatted text from a Rich Text Format file given its filename.
 The attribute LOADRTFSTATUS is set to OK or FAILED after the file is loaded.
+Requires FORMATTING=YES.
 
-**SAVERTF** (write-only) [Windows Only]: saves formatted text to a Rich Text Format file given its filename.  The attribute SAVERTFSTATUS is set to OK or FAILED after the file is saved.
+**SAVERTF** (write-only) [Win32, WinUI Only]: saves formatted text to a Rich Text Format file given its filename.
+The attribute SAVERTFSTATUS is set to OK or FAILED after the file is saved.
+Requires FORMATTING=YES.
 
 [MASK](../attrib/iup_mask.md) (non-inheritable): Defines a mask that will filter interactive text input.
 
@@ -218,15 +221,15 @@ As for SIZE you can set to NULL after map to use it as an initial value. Default
 If enabled will force a word wrap of lines that are greater than the width of the control, and the horizontal scrollbar will be removed.
 Default: NO.
 
+**CONTEXTMENU** [macOS Only] (non-inheritable): Sets a custom context (right-click) menu for the control. The value is an IUP menu handle.
+Set to a menu handle to replace the default system context menu, or set to NULL to disable the context menu entirely.
+If never set, the default system context menu (Cut/Copy/Paste) is shown.
+
 > 
 >
 > ------------------------------------------------------------------------
 
 [ACTIVE](../attrib/iup_active.md), [FONT](../attrib/iup_font.md), [EXPAND](../attrib/iup_expand.md), [SCREENPOSITION](../attrib/iup_screenposition.md), [POSITION](../attrib/iup_position.md), [MINSIZE](../attrib/iup_minsize.md), [MAXSIZE](../attrib/iup_maxsize.md), [WID](../attrib/iup_wid.md), [TIP](../attrib/iup_tip.md), [RASTERSIZE](../attrib/iup_rastersize.md), [ZORDER](../attrib/iup_zorder.md), [VISIBLE](../attrib/iup_visible.md), [THEME](../attrib/iup_theme.md): also accepted.
-
-**CONTEXTMENU** [macOS Only] (non-inheritable): Sets a custom context (right-click) menu for the control. The value is an IUP menu handle.
-Set to a menu handle to replace the default system context menu, or set to NULL to disable the context menu entirely.
-If never set, the default system context menu (Cut/Copy/Paste) is shown.
 
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes are supported. See Notes below.
 
@@ -348,9 +351,26 @@ Here is a list of the common keys for all drivers. Other keys are available depe
 
 When FORMATTING=YES in Windows or GTK (formatting attributes are set to a formatag object that it is a **IupUser**):
 
-| Code                                                                                                                                                                                                                                                                                                                    | Result                                |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|
-| `"ALIGNMENT" = "CENTER"` `"SPACEAFTER" = "10"` `"FONTSIZE" = "24"` `"SELECTION" = "3,1:3,50"` `"ADDFORMATTAG"` `"BGCOLOR" = "255 128 64"` `"UNDERLINE" = "SINGLE"` `"WEIGHT" = "BOLD"` `"SELECTION" = "3,7:3,11"` `"ADDFORMATTAG"` `"ITALIC" = "YES"` `"STRIKEOUT" = "YES"` `"SELECTION" = "2,1:2,12"` `"ADDFORMATTAG"` | ![](../images/iuptext_formatting.png) |
+```
+"ALIGNMENT"   = "CENTER"
+"SPACEAFTER"  = "10"
+"FONTSIZE"    = "24"
+"SELECTION"   = "3,1:3,50"
+"ADDFORMATTAG"
+
+"BGCOLOR"     = "255 128 64"
+"UNDERLINE"   = "SINGLE"
+"WEIGHT"      = "BOLD"
+"SELECTION"   = "3,7:3,11"
+"ADDFORMATTAG"
+
+"ITALIC"      = "YES"
+"STRIKEOUT"   = "YES"
+"SELECTION"   = "2,1:2,12"
+"ADDFORMATTAG"
+```
+
+![](../images/iuptext_formatting.png)
 
 When SPIN=YES:
 
