@@ -19,29 +19,6 @@ extern "C" {
 
 
 /****************************************************************************
- * Timer Callback for Marquee Mode
- ****************************************************************************/
-
-static int qtProgressBarTimeCb(Ihandle* timer)
-{
-  Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUP_PROGRESSBAR");
-  if (!ih || !iupObjectCheck(ih))
-    return IUP_DEFAULT;
-  QProgressBar* pbar = (QProgressBar*)ih->handle;
-
-  if (pbar)
-  {
-    int value = pbar->value();
-    if (value >= pbar->maximum())
-      pbar->setValue(pbar->minimum());
-    else
-      pbar->setValue(value + 1);
-  }
-
-  return IUP_DEFAULT;
-}
-
-/****************************************************************************
  * Min Size Calculation
  ****************************************************************************/
 
@@ -98,16 +75,11 @@ static int qtProgressBarSetMarqueeAttrib(Ihandle* ih, const char* value)
     return 0;
 
   if (iupStrBoolean(value))
-  {
-    if (ih->data->timer)
-      IupSetAttribute(ih->data->timer, "RUN", "YES");
-  }
+    pbar->setRange(0, 0);
   else
   {
-    if (ih->data->timer)
-      IupSetAttribute(ih->data->timer, "RUN", "NO");
-
-    pbar->setValue(pbar->minimum());
+    pbar->setRange(0, 1000);
+    pbar->setValue(0);
   }
 
   return 1;
@@ -172,32 +144,42 @@ static char* qtProgressBarGetMaxAttrib(Ihandle* ih)
   return iupStrReturnDouble(ih->data->vmax);
 }
 
-static int qtProgressBarSetDashedAttrib(Ihandle* ih, const char* value)
+static void qtProgressBarApplyChunkStyle(Ihandle* ih)
 {
   QProgressBar* pbar = (QProgressBar*)ih->handle;
+  if (!pbar)
+    return;
 
+  QString rules;
+  unsigned char r, g, b;
+  char* fg = iupAttribGet(ih, "FGCOLOR");
+  int has_fg = fg && iupStrToRGB(fg, &r, &g, &b);
+  if (has_fg)
+    rules += QString("background-color: rgb(%1,%2,%3); ").arg(r).arg(g).arg(b);
+  if (ih->data->dashed)
+  {
+    /* QStyleSheetStyle skips chunked drawing unless ::chunk has hasDrawable() true */
+    if (!has_fg)
+    {
+      QColor hl = pbar->palette().color(QPalette::Highlight);
+      rules += QString("background-color: rgb(%1,%2,%3); ").arg(hl.red()).arg(hl.green()).arg(hl.blue());
+    }
+    rules += QString("width: 10px; margin: 1px; ");
+  }
+
+  if (rules.isEmpty())
+    pbar->setStyleSheet(QString());
+  else
+    pbar->setStyleSheet(QString("QProgressBar::chunk { %1}").arg(rules));
+}
+
+static int qtProgressBarSetDashedAttrib(Ihandle* ih, const char* value)
+{
   if (ih->data->marquee)
     return 0;
 
-  if (pbar)
-  {
-    if (iupStrBoolean(value))
-    {
-      ih->data->dashed = 1;
-      /* Qt doesn't have a direct "dashed" mode, but we can use text format */
-      pbar->setTextVisible(true);
-      pbar->setFormat("%p%");
-    }
-    else /* Default */
-    {
-      ih->data->dashed = 0;
-
-      /* Check SHOWTEXT attribute */
-      if (!iupAttribGetBoolean(ih, "SHOWTEXT"))
-        pbar->setTextVisible(false);
-    }
-  }
-
+  ih->data->dashed = iupStrBoolean(value) ? 1 : 0;
+  qtProgressBarApplyChunkStyle(ih);
   return 0;
 }
 
@@ -290,18 +272,12 @@ static int qtProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  QProgressBar* pbar = (QProgressBar*)ih->handle;
-
-  if (pbar)
-  {
-    /* Set the progress bar fill color via stylesheet */
-    QString style = QString("QProgressBar::chunk { background-color: rgb(%1,%2,%3); }")
-                      .arg(r).arg(g).arg(b);
-    pbar->setStyleSheet(style);
+  if (!ih->handle)
     return 1;
-  }
 
-  return 0;
+  iupAttribSetStr(ih, "FGCOLOR", value);
+  qtProgressBarApplyChunkStyle(ih);
+  return 1;
 }
 
 /****************************************************************************
@@ -341,20 +317,10 @@ static int qtProgressBarMapMethod(Ihandle* ih)
     ih->expand = ih->expand & ~IUP_EXPAND_HEIGHT;
   }
 
-  /* Setup marquee mode if requested */
   if (iupAttribGetBoolean(ih, "MARQUEE"))
   {
     ih->data->marquee = 1;
-
-    /* Create timer for animation */
-    ih->data->timer = IupTimer();
-    IupSetCallback(ih->data->timer, "ACTION_CB", (Icallback)qtProgressBarTimeCb);
-    IupSetAttribute(ih->data->timer, "TIME", "100");
-    iupAttribSet(ih->data->timer, "_IUP_PROGRESSBAR", (char*)ih);
-
-    /* For Qt marquee, we'll use a range and animate manually */
-    pbar->setRange(0, 100);
-    pbar->setValue(0);
+    pbar->setRange(0, 0);
     pbar->setTextVisible(false);
   }
   else
@@ -379,15 +345,14 @@ static int qtProgressBarMapMethod(Ihandle* ih)
       else
         pbar->setFormat("%p%");
     }
-    else if (ih->data->dashed)
-    {
-      pbar->setTextVisible(true);
-      pbar->setFormat("%p%");
-    }
     else
     {
       pbar->setTextVisible(false);
     }
+
+    if (iupAttribGetBoolean(ih, "DASHED"))
+      ih->data->dashed = 1;
+    qtProgressBarApplyChunkStyle(ih);
   }
 
   return IUP_NOERROR;
@@ -402,19 +367,7 @@ static void qtProgressBarUnMapMethod(Ihandle* ih)
   if (ih->handle)
   {
     QProgressBar* pbar = (QProgressBar*)ih->handle;
-
-    /* Stop and destroy timer if in marquee mode */
-    if (ih->data->marquee && ih->data->timer)
-    {
-      IupSetAttribute(ih->data->timer, "RUN", "NO");
-      IupDestroy(ih->data->timer);
-      ih->data->timer = nullptr;
-    }
-
-    /* Destroy tooltip if any */
     iupqtTipsDestroy(ih);
-
-    /* Delete the widget */
     delete pbar;
     ih->handle = nullptr;
   }

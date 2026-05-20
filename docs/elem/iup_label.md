@@ -71,7 +71,7 @@ Not supported in Motif and Haiku.
 
 **SELECTABLE** (non-inheritable): Makes the label text selectable by the user for copy/paste.
 Can be "YES" or "NO". Default: "NO".
-Supported in GTK, GTK 4, Qt, macOS and iOS.
+Supported in GTK, GTK 4, Qt, macOS, iOS, WinUI and Android.
 
 >
 >
