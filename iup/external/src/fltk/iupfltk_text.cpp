@@ -406,7 +406,7 @@ public:
           if (text && text[0] && text[0] >= 32 && !iup_handle->data->disable_callbacks)
           {
             IFnis cb = (IFnis)IupGetCallback(iup_handle, "ACTION");
-            if (cb || iup_handle->data->mask)
+            if (cb || iup_handle->data->mask || iup_handle->data->nc > 0)
             {
               int pos = insert_position();
               int ret = iupEditCallActionCb(iup_handle, cb, text, pos, pos,
