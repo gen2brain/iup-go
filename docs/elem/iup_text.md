@@ -101,6 +101,13 @@ Requires FORMATTING=YES.
 The attribute SAVERTFSTATUS is set to OK or FAILED after the file is saved.
 Requires FORMATTING=YES.
 
+**LOADMARKDOWN** (write-only): loads text from a Markdown file given its filename and converts it into formatted text via the same rules as MARKDOWNVALUE.
+The attribute LOADMARKDOWNSTATUS is set to OK or FAILED after the file is loaded.
+Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
+
+**MARKDOWNVALUE** (write-only): sets the text from a Markdown string, interpreting headings, emphasis, lists, code blocks, blockquotes, links, images, and HTML `<img>` tags as IUP format tags.
+Requires FORMATTING=YES and MULTILINE=YES. Not supported in Motif.
+
 [MASK](../attrib/iup_mask.md) (non-inheritable): Defines a mask that will filter interactive text input.
 
 **MULTILINE** (creation-only) (non-inheritable): allows the edition of multiple lines.

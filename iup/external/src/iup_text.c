@@ -650,6 +650,60 @@ static int iTextSetMarkdownValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int iTextSetLoadMarkdownAttrib(Ihandle* ih, const char* value)
+{
+  FILE* f;
+  long size;
+  char* buf;
+
+  if (!value || !ih->data->has_formatting || !ih->data->is_multiline)
+  {
+    iupAttribSet(ih, "LOADMARKDOWNSTATUS", "FAILED");
+    return 0;
+  }
+
+  f = fopen(value, "rb");
+  if (!f)
+  {
+    iupAttribSet(ih, "LOADMARKDOWNSTATUS", "FAILED");
+    return 0;
+  }
+
+  fseek(f, 0, SEEK_END);
+  size = ftell(f);
+  fseek(f, 0, SEEK_SET);
+  if (size < 0)
+  {
+    fclose(f);
+    iupAttribSet(ih, "LOADMARKDOWNSTATUS", "FAILED");
+    return 0;
+  }
+
+  buf = (char*)malloc((size_t)size + 1);
+  if (!buf)
+  {
+    fclose(f);
+    iupAttribSet(ih, "LOADMARKDOWNSTATUS", "FAILED");
+    return 0;
+  }
+
+  if (fread(buf, 1, (size_t)size, f) != (size_t)size)
+  {
+    free(buf);
+    fclose(f);
+    iupAttribSet(ih, "LOADMARKDOWNSTATUS", "FAILED");
+    return 0;
+  }
+  buf[size] = 0;
+  fclose(f);
+
+  iupMarkdownSetValue(ih, buf);
+  free(buf);
+
+  iupAttribSet(ih, "LOADMARKDOWNSTATUS", "OK");
+  return 0;
+}
+
 Iclass* iupTextNewClass(void)
 {
   Iclass* ic = iupClassNew(NULL);
@@ -716,6 +770,7 @@ Iclass* iupTextNewClass(void)
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CHANGECASE", NULL, iTextSetChangeCaseAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKDOWNVALUE", NULL, iTextSetMarkdownValueAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LOADMARKDOWN", NULL, iTextSetLoadMarkdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupdrvTextInitClass(ic);
 
