@@ -1461,6 +1461,21 @@ static int gtk4TextSetReadOnlyAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int gtk4TextSetPasswordAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->is_multiline)
+    return 0;
+  gtk_entry_set_visibility(GTK_ENTRY(ih->handle), !iupStrBoolean(value));
+  return 0;
+}
+
+static char* gtk4TextGetPasswordAttrib(Ihandle* ih)
+{
+  if (ih->data->is_multiline)
+    return NULL;
+  return iupStrReturnBoolean(!gtk_entry_get_visibility(GTK_ENTRY(ih->handle)));
+}
+
 static int gtk4TextSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
   gfloat xalign;
@@ -2477,7 +2492,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CANFOCUS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, gtk4TextSetTabSizeAttrib, "8", NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "PASSWORD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PASSWORD", gtk4TextGetPasswordAttrib, gtk4TextSetPasswordAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, gtk4TextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Not Supported */

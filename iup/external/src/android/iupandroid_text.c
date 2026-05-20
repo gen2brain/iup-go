@@ -21,6 +21,8 @@
 #include "iup_mask.h"
 #include "iup_array.h"
 #include "iup_text.h"
+#include "iup_drv.h"
+#include "iup_drvinfo.h"
 
 #include "iupandroid_drv.h"
 #include "iupandroid_jnimacros.h"
@@ -925,6 +927,27 @@ static int androidTextSetOverwriteAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int androidTextSetPaddingAttrib(Ihandle* ih, const char* value)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_setPadding);
+
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
+  ih->data->horiz_padding = iupdrvScaleNaturalPx(ih->data->horiz_padding);
+  ih->data->vert_padding  = iupdrvScaleNaturalPx(ih->data->vert_padding);
+
+  if (!ih->handle) return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
+  jmethodID m = IUPJNI_GetStaticMethodID(IupTextHelper_setPadding, jni_env, cls,
+      "setPadding", "(Landroid/view/View;II)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle,
+      (jint)ih->data->horiz_padding, (jint)ih->data->vert_padding);
+  iupAndroid_CheckException(jni_env, "IupTextHelper.setPadding");
+  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  return 0;
+}
+
 static char* androidTextGetOverwriteAttrib(Ihandle* ih)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getOverwrite);
@@ -1146,6 +1169,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, androidTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", NULL, androidTextSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", androidTextGetOverwriteAttrib, androidTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, androidTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

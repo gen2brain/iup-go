@@ -111,8 +111,10 @@ Default: maximum.
 Default: Yes.
 
 **OVERWRITE** (non-inheritable): turns the overwrite mode ON or OFF.
-Works only when FORMATTING=YES.
-Supported in Win32, GTK, GTK 4, Qt, macOS and Haiku.
+Pressing the Insert key toggles the value.
+In Win32, requires FORMATTING=YES.
+In GTK, GTK 4, macOS and Haiku, requires MULTILINE=YES.
+In Qt, WinUI, Motif, FLTK, EFL, Android and iOS, works in both single-line and multiline.
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
 Default value: "0x0". In Windows, only the horizontal value is used.
@@ -120,8 +122,9 @@ Default value: "0x0". In Windows, only the horizontal value is used.
 **CPADDING**: same as PADDING but using the units of the **SIZE** attribute.
 It will actually set the PADDING attribute.
 
-**PASSWORD** (creation-only) (non-inheritable): Hide the typed character using an "*".
+**PASSWORD** (non-inheritable): Hide the typed character using an "*".
 Default: "NO".
+Creation-only in Win32, WinUI, macOS and FLTK. Runtime toggle is supported in GTK, GTK 4, Qt, iOS, EFL, Android and Haiku.
 Not supported in Motif.
 
 **READONLY**: Allows the user only to read the contents, without changing it.

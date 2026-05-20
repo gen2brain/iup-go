@@ -164,8 +164,6 @@ public final class IupTextHelper
         til.setBoxCollapsedPaddingTop(0);
         tv.setMinHeight(0);
         tv.setMinimumHeight(0);
-        int padV = (int)(8f * IupCommon.getDisplayDensity());
-        tv.setPadding(tv.getPaddingLeft(), padV, tv.getPaddingRight(), padV);
         til.addView(tv, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -219,8 +217,6 @@ public final class IupTextHelper
         til.setBoxCollapsedPaddingTop(0);
         tv.setMinHeight(0);
         tv.setMinimumHeight(0);
-        int padV = (int)(8f * IupCommon.getDisplayDensity());
-        tv.setPadding(tv.getPaddingLeft(), padV, tv.getPaddingRight(), padV);
         til.addView(tv, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         til.setTag(tv);
@@ -613,6 +609,14 @@ public final class IupTextHelper
         IupEditText tv = resolve(v);
         if (tv == null) return;
         tv.overwrite = enable;
+    }
+
+    @Keep
+    public static void setPadding(View v, int h, int vp)
+    {
+        IupEditText tv = resolve(v);
+        if (tv == null) return;
+        tv.setPadding(h, vp, h, vp);
     }
 
     @Keep
