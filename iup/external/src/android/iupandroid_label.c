@@ -220,6 +220,21 @@ static int androidLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int androidLabelSetSelectableAttrib(Ihandle* ih, const char* value)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupLabelHelper_setSelectable);
+  if (androidLabelGetSubType(ih) != IUPANDROIDLABELSUBTYPE_TEXT) return 0;
+  if (!ih->handle) return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupLabelHelper, jni_env, "io/github/gen2brain/iupgo/IupLabelHelper");
+  jmethodID m = IUPJNI_GetStaticMethodID(IupLabelHelper_setSelectable, jni_env, cls, "setSelectable", "(Landroid/widget/TextView;Z)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, iupStrBoolean(value) ? JNI_TRUE : JNI_FALSE);
+  iupAndroid_CheckException(jni_env, "IupLabelHelper.setSelectable");
+  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  return 1;
+}
+
 static int androidLabelSetPaddingAttrib(Ihandle* ih, const char* value)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupLabelHelper_setPadding);
@@ -316,6 +331,7 @@ void iupdrvLabelInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, androidLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, androidLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SELECTABLE", NULL, androidLabelSetSelectableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, androidLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, androidLabelSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, androidLabelSetMarkupAttrib, NULL, NULL, IUPAF_DEFAULT);

@@ -126,6 +126,14 @@ public final class IupLabelHelper
         textView.setHorizontallyScrolling(!enable);
     }
 
+    @Keep
+    public static void setSelectable(TextView textView, boolean enable)
+    {
+        if (enable)
+            textView.setOnTouchListener(null);
+        textView.setTextIsSelectable(enable);
+    }
+
     /* h and v are device pixels (already scaled by iupdrvScaleNaturalPx). */
     @Keep
     public static void setPadding(View view, int h, int v)
