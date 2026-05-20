@@ -1367,6 +1367,8 @@ static int winTextSetClipboardAttrib(Ihandle *ih, const char *value)
     msg = WM_UNDO;
   else if (ih->data->has_formatting && iupStrEqualNoCase(value, "REDO"))
     msg = EM_REDO;
+  else if (iupStrEqualNoCase(value, "CLEARUNDO"))
+    msg = EM_EMPTYUNDOBUFFER;
 
   if (msg)
     SendMessage(ih->handle, msg, 0, 0);

@@ -1353,6 +1353,20 @@ static int gtk4TextSetClipboardAttrib(Ihandle* ih, const char* value)
     else
       gtk_widget_activate_action(ih->handle, "text.redo", NULL);
   }
+  else if (iupStrEqualNoCase(value, "CLEARUNDO"))
+  {
+    if (ih->data->is_multiline)
+    {
+      GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+      gtk_text_buffer_set_enable_undo(buffer, FALSE);
+      gtk_text_buffer_set_enable_undo(buffer, TRUE);
+    }
+    else
+    {
+      g_object_set(ih->handle, "enable-undo", FALSE, NULL);
+      g_object_set(ih->handle, "enable-undo", TRUE, NULL);
+    }
+  }
   return 0;
 }
 

@@ -1327,6 +1327,11 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
     else
       ((IupQtLineEdit*)ih->handle)->redo();
   }
+  else if (iupStrEqualNoCase(value, "CLEARUNDO"))
+  {
+    if (ih->data->is_multiline)
+      ((IupQtTextEdit*)ih->handle)->document()->clearUndoRedoStacks();
+  }
 
   return 0;
 }
