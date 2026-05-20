@@ -3007,6 +3007,20 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
         reb.Document().Redo();
     }
   }
+  else if (iupStrEqualNoCase(value, "CLEARUNDO"))
+  {
+    if (aux->isFormatted)
+    {
+      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      if (reb)
+      {
+        auto doc = reb.Document();
+        int32_t saved = doc.UndoLimit();
+        doc.UndoLimit(0);
+        doc.UndoLimit(saved ? saved : 100);
+      }
+    }
+  }
 
   return 0;
 }

@@ -58,15 +58,17 @@ Supports Latin-1 encoding only, even when using UTF-8.
 Does not depend on current locale.
 
 **CLIPBOARD** (write-only): clear, cut, copy or paste the selection to or from the clipboard.
-Values: "CLEAR", "CUT", "COPY" or "PASTE".
-In Windows UNDO is also available, and REDO is available when FORMATTING=YES.
+Values: "CLEAR", "CUT", "COPY", "PASTE", "UNDO", "REDO", "CLEARUNDO".
+UNDO and REDO are not supported in GTK 2, GTK 3, Motif and EFL. In Win32 REDO requires FORMATTING=YES.
+CLEARUNDO empties the undo and redo history; only in Win32, WinUI, GTK 4, Qt, macOS and iOS.
+WinUI CLEARUNDO requires FORMATTING=YES. Qt CLEARUNDO requires MULTILINE=YES.
 
 **COUNT** (read-only): returns the number of **characters** in the text, including the line breaks.
 
 **CUEBANNER** (non-inheritable): a text that is displayed when there is no text at the control.
 It works as a textual cue, or tip to prompt the user for input.
 Valid only for MULTILINE=NO. In Windows, works only when Visual Styles are enabled.
-Not supported in Motif, FLTK and Haiku.
+Not supported in Motif.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
