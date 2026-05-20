@@ -461,6 +461,10 @@ static int androidTextSetSpinValueAttrib(Ihandle* ih, const char* value)
 
   int v = 0;
   iupStrToInt(value, &v);
+  int min = iupAttribGet(ih, "SPINMIN") ? iupAttribGetInt(ih, "SPINMIN") : 0;
+  int max = iupAttribGet(ih, "SPINMAX") ? iupAttribGetInt(ih, "SPINMAX") : 100;
+  if (v < min) v = min;
+  if (v > max) v = max;
   iupAttribSetInt(ih, "_IUPANDROID_SPIN_VALUE", v);
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -1171,6 +1175,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SPINMAX", NULL, NULL, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPININC", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINAUTO", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINALIGN", NULL, NULL, IUPAF_SAMEASSYSTEM, "RIGHT", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CARET", androidTextGetCaretAttrib, androidTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
@@ -1190,6 +1195,7 @@ void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "OVERWRITE", androidTextGetOverwriteAttrib, androidTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, androidTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", androidTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABSIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

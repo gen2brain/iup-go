@@ -1572,6 +1572,14 @@ static int haikuTextMapMethod(Ihandle* ih)
   if (ih->data->is_multiline && ih->data->formattags)
     iupTextUpdateFormatTags(ih);
 
+  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+  {
+    BView* focus_view = ih->data->is_multiline
+      ? (BView*)iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER")
+      : (BView*)ih->handle;
+    iuphaikuSetCanFocus(focus_view, 0);
+  }
+
   return IUP_NOERROR;
 }
 

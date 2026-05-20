@@ -1867,6 +1867,9 @@ static int qtTextMapMethod(Ihandle* ih)
 
   iupqtAddToParent(ih);
 
+  if (!iupAttribGetBoolean(ih, "CANFOCUS"))
+    iupqtSetCanFocus(widget, 0);
+
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 

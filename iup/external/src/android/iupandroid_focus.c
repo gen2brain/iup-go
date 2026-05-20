@@ -10,6 +10,7 @@
 
 #include "iup.h"
 #include "iup_drv.h"
+#include "iup_attrib.h"
 
 #include "iupandroid_drv.h"
 #include "iupandroid_jnimacros.h"
@@ -18,6 +19,8 @@
 
 void iupdrvSetFocus(Ihandle* ih)
 {
+  if (!iupAttribGetBoolean(ih, "CANFOCUS")) return;
+
   jobject widget = iupAndroid_RealNativeHandle(ih);
   if (!widget) return;
 

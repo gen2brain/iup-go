@@ -51,9 +51,7 @@ static Ihandle* cocoaTouchFocusFirstFocusable(Ihandle* ih)
 			continue;
 		}
 
-		const char* can = iupAttribGet(child, "_IUPCOCOATOUCH_CANFOCUS");
-		if (can && !iupStrBoolean(can)) { /* CANFOCUS=NO */ }
-		else
+		if (iupAttribGetBoolean(child, "CANFOCUS"))
 		{
 			UIView* v = cocoaTouchFocusViewFromHandle(child);
 			if (v && [v canBecomeFirstResponder]) return child;
@@ -72,8 +70,7 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 	UIView* view = cocoaTouchFocusViewFromHandle(ih);
 	if (!view) return;
 
-	if (iupAttribGet(ih, "_IUPCOCOATOUCH_CANFOCUS")
-	    && !iupAttribGetBoolean(ih, "_IUPCOCOATOUCH_CANFOCUS"))
+	if (!iupAttribGetBoolean(ih, "CANFOCUS"))
 		return;
 
 	if ([view isFirstResponder]) return;
