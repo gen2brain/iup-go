@@ -1166,6 +1166,7 @@ static char* cocoaTouchTextGetSelectedTextAttrib(Ihandle* ih)
 static int cocoaTouchTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
 {
 	NSRange r = cocoaTouchTextSelection(ih);
+	if (r.length == 0) return 0;
 	NSString* current = cocoaTouchTextGetString(ih);
 	NSString* replacement = value ? [NSString stringWithUTF8String:value] : @"";
 	if (r.location > current.length) r.location = current.length;

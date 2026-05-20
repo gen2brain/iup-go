@@ -866,19 +866,13 @@ static int fltkTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
-    IupFltkTextEditor* editor = (IupFltkTextEditor*)ih->handle;
-    if (buf && editor)
+    if (buf)
     {
       int start, end;
       if (buf->selection_position(&start, &end))
       {
         buf->replace(start, end, value);
         buf->select(start, start + (int)strlen(value));
-      }
-      else
-      {
-        int pos = editor->insert_position();
-        buf->insert(pos, value);
       }
     }
   }
@@ -895,8 +889,6 @@ static int fltkTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
         int end = mark > pos ? mark : pos;
         input->replace(start, end, value);
       }
-      else
-        input->insert(value);
     }
   }
 
