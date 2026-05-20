@@ -131,6 +131,14 @@ public final class IupTextHelper
             }
             return super.dispatchKeyEvent(event);
         }
+
+        @Override
+        protected void onSelectionChanged(int selStart, int selEnd)
+        {
+            super.onSelectionChanged(selStart, selEnd);
+            if (suppressVC) return;
+            dispatchCaret(ihandlePtr, selStart);
+        }
     }
 
 
@@ -954,6 +962,7 @@ public final class IupTextHelper
     public static native int dispatchAction(long ihandlePtr, int key, String newValue);
     public static native void dispatchValueChanged(long ihandlePtr);
     public static native boolean dispatchKAny(long ihandlePtr, int androidKeyCode, int metaState);
+    public static native void dispatchCaret(long ihandlePtr, int pos);
 
     /** Applies SPININC/MIN/MAX/WRAP, fires SPIN_CB, returns new value or Integer.MIN_VALUE if rejected. */
     public static native int dispatchSpin(long ihandlePtr, int current, int direction);

@@ -329,6 +329,7 @@ struct IupWinUITextAux
   winrt::event_token valueChangedToken;
   winrt::event_token keyDownToken;
   winrt::event_token tappedToken;
+  winrt::event_token selectionChangedToken;
   std::wstring savedText;
   bool isPassword;
   bool isMultiline;
@@ -339,7 +340,7 @@ struct IupWinUITextAux
   double spinStep;
 
   IupWinUITextAux() : beforeTextChangingToken{}, textChangedToken{}, gotFocusToken{}, lostFocusToken{},
-                       valueChangedToken{}, keyDownToken{}, tappedToken{},
+                       valueChangedToken{}, keyDownToken{}, tappedToken{}, selectionChangedToken{},
                        isPassword(false), isMultiline(false), isSpin(false), isFormatted(false), spinauto(true),
                        spinActualMin(0), spinStep(0) {}
 };

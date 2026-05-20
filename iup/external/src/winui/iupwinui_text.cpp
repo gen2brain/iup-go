@@ -1056,6 +1056,19 @@ static int winuiTextMapMethod(Ihandle* ih)
       winuiTextCallValueChanged(ih);
     });
 
+    aux->selectionChangedToken = reb.SelectionChanged([ih](IInspectable const&, RoutedEventArgs const&) {
+      if (ih->data->disable_callbacks) return;
+      IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+      if (!cb) return;
+      RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+      if (!reb) return;
+      auto sel = reb.Document().Selection();
+      int pos = sel.StartPosition();
+      int lin, col;
+      iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
+      if (cb(ih, lin, col, pos) == IUP_CLOSE) IupExitLoop();
+    });
+
     aux->gotFocusToken = reb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
       iupCallGetFocusCb(ih);
     });
@@ -1232,6 +1245,18 @@ static int winuiTextMapMethod(Ihandle* ih)
       winuiTextBoxTextChanged(ih);
     });
 
+    aux->selectionChangedToken = tb.SelectionChanged([ih](IInspectable const&, RoutedEventArgs const&) {
+      if (ih->data->disable_callbacks) return;
+      IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+      if (!cb) return;
+      TextBox tb = winuiGetHandle<TextBox>(ih);
+      if (!tb) return;
+      int pos = tb.SelectionStart();
+      int lin, col;
+      iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
+      if (cb(ih, lin, col, pos) == IUP_CLOSE) IupExitLoop();
+    });
+
     aux->gotFocusToken = tb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
       iupCallGetFocusCb(ih);
     });
@@ -1323,6 +1348,8 @@ static void winuiTextUnMapMethod(Ihandle* ih)
       {
         if (aux->textChangedToken)
           reb.TextChanged(aux->textChangedToken);
+        if (aux->selectionChangedToken)
+          reb.SelectionChanged(aux->selectionChangedToken);
         if (aux->gotFocusToken)
           reb.GotFocus(aux->gotFocusToken);
         if (aux->lostFocusToken)
@@ -1342,6 +1369,8 @@ static void winuiTextUnMapMethod(Ihandle* ih)
           tb.BeforeTextChanging(aux->beforeTextChangingToken);
         if (aux->textChangedToken)
           tb.TextChanged(aux->textChangedToken);
+        if (aux->selectionChangedToken)
+          tb.SelectionChanged(aux->selectionChangedToken);
         if (aux->gotFocusToken)
           tb.GotFocus(aux->gotFocusToken);
         if (aux->lostFocusToken)

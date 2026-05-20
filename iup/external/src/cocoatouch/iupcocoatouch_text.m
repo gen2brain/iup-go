@@ -854,13 +854,13 @@ static NSString* cocoaTouchTextValidateEdit(Ihandle* ih, NSString* current, NSRa
 - (void)textFieldDidChangeSelection:(UITextField*)textField
 {
 	if (!_ihandle) return;
-	IFnii cb = (IFnii)IupGetCallback(_ihandle, "CARET_CB");
+	IFniii cb = (IFniii)IupGetCallback(_ihandle, "CARET_CB");
 	if (!cb) return;
 	NSRange sel = cocoaTouchTextFieldSelection(textField);
 	int pos = (int)sel.location;
 	int lin, col;
 	iupdrvTextConvertPosToLinCol(_ihandle, pos, &lin, &col);
-	if (cb(_ihandle, lin, col) == IUP_CLOSE) IupExitLoop();
+	if (cb(_ihandle, lin, col, pos) == IUP_CLOSE) IupExitLoop();
 }
 
 - (BOOL)textView:(UITextView*)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString*)replacement
@@ -924,12 +924,13 @@ static NSString* cocoaTouchTextValidateEdit(Ihandle* ih, NSString* current, NSRa
 - (void)textViewDidChangeSelection:(UITextView*)textView
 {
 	if (!_ihandle) return;
-	IFnii cb = (IFnii)IupGetCallback(_ihandle, "CARET_CB");
+	IFniii cb = (IFniii)IupGetCallback(_ihandle, "CARET_CB");
 	if (!cb) return;
 	NSRange sel = textView.selectedRange;
+	int pos = (int)sel.location;
 	int lin, col;
-	iupdrvTextConvertPosToLinCol(_ihandle, (int)sel.location, &lin, &col);
-	if (cb(_ihandle, lin, col) == IUP_CLOSE) IupExitLoop();
+	iupdrvTextConvertPosToLinCol(_ihandle, pos, &lin, &col);
+	if (cb(_ihandle, lin, col, pos) == IUP_CLOSE) IupExitLoop();
 }
 
 - (void)onStepperChanged:(UIStepper*)stepper

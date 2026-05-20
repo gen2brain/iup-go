@@ -181,3 +181,20 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchLink
   }
   (*jni_env)->ReleaseStringUTFChars(jni_env, url, utf);
 }
+
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchCaret(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint pos)
+{
+  (void)jni_env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih || !iupObjectCheck(ih)) return;
+
+  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  if (!cb) return;
+
+  int lin, col;
+  IupTextConvertPosToLinCol(ih, (int)pos, &lin, &col);
+  if (cb(ih, lin, col, (int)pos) == IUP_CLOSE) IupExitLoop();
+}
