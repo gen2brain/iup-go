@@ -1410,9 +1410,34 @@ static int winuiDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int winuiDialogSetTaskBarProgressValueAttrib(Ihandle* ih, const char* value)
+static ITaskbarList3* winuiDialogEnsureTaskBar(Ihandle* ih)
 {
   ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWINUI_TASKBARLIST");
+  if (!tbl && ih->handle)
+  {
+    CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&tbl));
+    if (tbl)
+      iupAttribSet(ih, "_IUPWINUI_TASKBARLIST", (char*)tbl);
+  }
+  return tbl;
+}
+
+static int winuiDialogSetTaskBarProgressAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrBoolean(value))
+    winuiDialogEnsureTaskBar(ih);
+  else
+  {
+    ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWINUI_TASKBARLIST");
+    if (tbl && ih->handle)
+      tbl->SetProgressState((HWND)ih->handle, TBPF_NOPROGRESS);
+  }
+  return 1;
+}
+
+static int winuiDialogSetTaskBarProgressValueAttrib(Ihandle* ih, const char* value)
+{
+  ITaskbarList3* tbl = winuiDialogEnsureTaskBar(ih);
   if (tbl)
   {
     int perc;
@@ -1428,7 +1453,7 @@ static int winuiDialogSetTaskBarProgressValueAttrib(Ihandle* ih, const char* val
 
 static int winuiDialogSetTaskBarProgressStateAttrib(Ihandle* ih, const char* value)
 {
-  ITaskbarList3* tbl = (ITaskbarList3*)iupAttribGet(ih, "_IUPWINUI_TASKBARLIST");
+  ITaskbarList3* tbl = winuiDialogEnsureTaskBar(ih);
   if (tbl)
   {
     if (iupStrEqualNoCase(value, "NOPROGRESS"))
@@ -1523,7 +1548,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "BACKDROP", NULL, winuiDialogSetBackdropAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "TASKBARPROGRESS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARPROGRESS", NULL, winuiDialogSetTaskBarProgressAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARPROGRESSSTATE", NULL, winuiDialogSetTaskBarProgressStateAttrib, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARPROGRESSVALUE", NULL, winuiDialogSetTaskBarProgressValueAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 

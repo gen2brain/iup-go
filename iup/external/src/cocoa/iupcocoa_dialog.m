@@ -1607,18 +1607,167 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle *ih)
  ******************** Other Attributes **************************
  ****************************************************************/
 
+/* Accent-colored bar across the bottom of the app icon; NSDockTile is per-app singleton. */
+
+typedef enum { IUP_DOCK_NORMAL, IUP_DOCK_PAUSED, IUP_DOCK_ERROR, IUP_DOCK_INDETERMINATE } IupDockState;
+
+@interface IupDockProgressView : NSView
+{
+  double _percent;            /* 0..1, ignored when INDETERMINATE */
+  IupDockState _state;
+  CGFloat _marqueeOffset;     /* 0..1, INDETERMINATE animation phase */
+  NSTimer* _timer;
+}
+- (void)setPercent:(double)p;
+- (void)setState:(IupDockState)s;
+- (void)stopAnimation;
+@end
+
+@implementation IupDockProgressView
+
+- (instancetype)init
+{
+  self = [super initWithFrame:NSMakeRect(0, 0, 128, 128)];
+  if (self)
+  {
+    _percent = 0.0;
+    _state = IUP_DOCK_NORMAL;
+    _marqueeOffset = 0.0;
+    _timer = nil;
+  }
+  return self;
+}
+
+- (void)dealloc
+{
+  [self stopAnimation];
+  [super dealloc];
+}
+
+- (void)setPercent:(double)p
+{
+  if (p < 0.0) p = 0.0;
+  if (p > 1.0) p = 1.0;
+  _percent = p;
+  [self setNeedsDisplay:YES];
+  [[NSApp dockTile] display];
+}
+
+- (void)setState:(IupDockState)s
+{
+  _state = s;
+  if (s == IUP_DOCK_INDETERMINATE)
+  {
+    if (!_timer)
+    {
+      _timer = [[NSTimer scheduledTimerWithTimeInterval:0.05 target:self
+        selector:@selector(advanceMarquee:) userInfo:nil repeats:YES] retain];
+    }
+  }
+  else
+  {
+    [self stopAnimation];
+  }
+  [self setNeedsDisplay:YES];
+  [[NSApp dockTile] display];
+}
+
+- (void)stopAnimation
+{
+  if (_timer) { [_timer invalidate]; [_timer release]; _timer = nil; }
+}
+
+- (void)advanceMarquee:(NSTimer*)t
+{
+  (void)t;
+  _marqueeOffset += 0.04;
+  if (_marqueeOffset > 1.0) _marqueeOffset -= 1.0;
+  [self setNeedsDisplay:YES];
+  [[NSApp dockTile] display];
+}
+
+- (NSColor*)accentColor
+{
+  if ([NSColor respondsToSelector:@selector(controlAccentColor)])
+    return [NSColor performSelector:@selector(controlAccentColor)];
+  return [NSColor colorWithCalibratedRed:0.0 green:0.48 blue:1.0 alpha:1.0];
+}
+
+- (void)drawRect:(NSRect)dirty
+{
+  (void)dirty;
+  NSRect bounds = self.bounds;
+
+  NSImage* icon = [NSApp applicationIconImage];
+  if (icon)
+    [icon drawInRect:bounds fromRect:NSZeroRect operation:NSCompositingOperationCopy fraction:1.0];
+
+  /* Geometry matches the Finder/App Store look: ~10% icon height, bottom-anchored, narrow margins. */
+  CGFloat bar_h = bounds.size.height * 0.10;
+  CGFloat margin_x = bounds.size.width * 0.10;
+  CGFloat margin_y = bounds.size.height * 0.06;
+  NSRect track = NSMakeRect(margin_x, margin_y, bounds.size.width - 2 * margin_x, bar_h);
+  CGFloat radius = bar_h * 0.5;
+
+  [[NSColor colorWithCalibratedWhite:0.0 alpha:0.45] set];
+  [[NSBezierPath bezierPathWithRoundedRect:track xRadius:radius yRadius:radius] fill];
+
+  NSColor* fill_color = nil;
+  switch (_state)
+  {
+    case IUP_DOCK_PAUSED: fill_color = [[self accentColor] colorWithAlphaComponent:0.45]; break;
+    case IUP_DOCK_ERROR:  fill_color = [NSColor systemRedColor]; break;
+    default:              fill_color = [self accentColor]; break;
+  }
+  [fill_color set];
+
+  NSRect fill = NSInsetRect(track, 1.0, 1.0);
+  CGFloat fill_radius = radius - 1.0;
+
+  if (_state == IUP_DOCK_INDETERMINATE)
+  {
+    CGFloat block_w = fill.size.width * 0.30;
+    CGFloat travel = fill.size.width + block_w;
+    CGFloat x = fill.origin.x - block_w + _marqueeOffset * travel;
+    NSRect block = NSMakeRect(x, fill.origin.y, block_w, fill.size.height);
+    NSRect clip = NSIntersectionRect(block, fill);
+    if (!NSIsEmptyRect(clip))
+      [[NSBezierPath bezierPathWithRoundedRect:clip xRadius:fill_radius yRadius:fill_radius] fill];
+  }
+  else
+  {
+    fill.size.width *= _percent;
+    if (fill.size.width >= 1.0)
+      [[NSBezierPath bezierPathWithRoundedRect:fill xRadius:fill_radius yRadius:fill_radius] fill];
+  }
+}
+
+@end
+
+static IupDockProgressView* cocoaDockProgressView(Ihandle *ih)
+{
+  return (IupDockProgressView*)objc_getAssociatedObject((id)ih->handle, DOCKPROGRESS_ASSOCIATED_OBJ_KEY);
+}
+
 static int cocoaDialogSetTaskBarProgressAttrib(Ihandle *ih, const char *value)
 {
   if (iupStrBoolean(value))
   {
-    NSProgress* progress = [NSProgress progressWithTotalUnitCount:100];
-    progress.completedUnitCount = 0;
-    [[NSApp dockTile] setBadgeLabel:nil];
-    objc_setAssociatedObject((id)ih->handle, DOCKPROGRESS_ASSOCIATED_OBJ_KEY, progress, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    IupDockProgressView* view = cocoaDockProgressView(ih);
+    if (!view)
+    {
+      view = [[[IupDockProgressView alloc] init] autorelease];
+      objc_setAssociatedObject((id)ih->handle, DOCKPROGRESS_ASSOCIATED_OBJ_KEY, view, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    [[NSApp dockTile] setContentView:view];
+    [[NSApp dockTile] display];
   }
   else
   {
-    [[NSApp dockTile] setBadgeLabel:nil];
+    IupDockProgressView* view = cocoaDockProgressView(ih);
+    if (view) [view stopAnimation];
+    [[NSApp dockTile] setContentView:nil];
+    [[NSApp dockTile] display];
     objc_setAssociatedObject((id)ih->handle, DOCKPROGRESS_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   }
   return 1;
@@ -1626,59 +1775,35 @@ static int cocoaDialogSetTaskBarProgressAttrib(Ihandle *ih, const char *value)
 
 static int cocoaDialogSetTaskBarProgressStateAttrib(Ihandle *ih, const char *value)
 {
-  NSProgress* progress = objc_getAssociatedObject((id)ih->handle, DOCKPROGRESS_ASSOCIATED_OBJ_KEY);
-  if (progress)
-  {
-    if (iupStrEqualNoCase(value, "NOPROGRESS"))
-    {
-      cocoaDialogSetTaskBarProgressAttrib(ih, "NO");
-    }
-    else if (iupStrEqualNoCase(value, "INDETERMINATE"))
-    {
-      progress.totalUnitCount = -1;
-      [[NSApp dockTile] setBadgeLabel:@"◉"];
-    }
-    else if (iupStrEqualNoCase(value, "PAUSED"))
-    {
-      if (progress.totalUnitCount < 0)
-        progress.totalUnitCount = 100;
-      [progress pause];
-    }
-    else
-    {
-      if (progress.totalUnitCount < 0)
-        progress.totalUnitCount = 100;
-      [progress resume];
-      [[NSApp dockTile] setBadgeLabel:nil];
-    }
-  }
+  IupDockProgressView* view = cocoaDockProgressView(ih);
+  if (!view) return 1;
+
+  if (iupStrEqualNoCase(value, "NOPROGRESS"))
+    cocoaDialogSetTaskBarProgressAttrib(ih, "NO");
+  else if (iupStrEqualNoCase(value, "INDETERMINATE"))
+    [view setState:IUP_DOCK_INDETERMINATE];
+  else if (iupStrEqualNoCase(value, "PAUSED"))
+    [view setState:IUP_DOCK_PAUSED];
+  else if (iupStrEqualNoCase(value, "ERROR"))
+    [view setState:IUP_DOCK_ERROR];
+  else
+    [view setState:IUP_DOCK_NORMAL];
   return 1;
 }
 
 static int cocoaDialogSetTaskBarProgressValueAttrib(Ihandle *ih, const char *value)
 {
-  NSProgress* progress = objc_getAssociatedObject((id)ih->handle, DOCKPROGRESS_ASSOCIATED_OBJ_KEY);
-  if (progress)
+  IupDockProgressView* view = cocoaDockProgressView(ih);
+  if (!view) return 1;
+
+  int int_value;
+  if (iupStrToInt(value, &int_value))
   {
-    int int_value;
-    if (iupStrToInt(value, &int_value))
-    {
-      if (int_value < 0) int_value = 0;
-      if (int_value > 100) int_value = 100;
-
-      progress.completedUnitCount = int_value;
-
-      if (int_value > 0 && int_value < 100)
-      {
-        NSString* badge_label = [NSString stringWithFormat:@"%d%%", int_value];
-        [[NSApp dockTile] setBadgeLabel:badge_label];
-      }
-      else if (int_value >= 100)
-      {
-        [[NSApp dockTile] setBadgeLabel:nil];
-        cocoaDialogSetTaskBarProgressAttrib(ih, "NO");
-      }
-    }
+    if (int_value < 0) int_value = 0;
+    if (int_value > 100) int_value = 100;
+    [view setPercent:(double)int_value / 100.0];
+    if (int_value >= 100)
+      cocoaDialogSetTaskBarProgressAttrib(ih, "NO");
   }
   return 1;
 }

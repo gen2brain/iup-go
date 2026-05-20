@@ -282,17 +282,15 @@ IMPORTANT: when you hide using HIDETASKBAR, you must show using HIDETASKBAR also
 Possible values: YES, NO.
 Not supported in Android and iOS.
 
-**TASKBARPROGRESS** [Windows Only] (write-only): enables the use of a progress bar on a taskbar button.
+**TASKBARPROGRESS** [Win32, WinUI, Cocoa Only] (write-only): enables a progress bar drawn on the application's taskbar/Dock button.
 Default: NO.
 
-**TASKBARPROGRESSSTATE** [Windows Only] (write-only): sets the type and state of the progress indicator displayed on a taskbar button.
-Possible values: NORMAL (a green bar), PAUSED (a yellow bar), ERROR (a red bar), INDETERMINATE (a green marquee) and NOPROGRESS (no bar).
-Default: NORMAL.
+**TASKBARPROGRESSSTATE** [Win32, WinUI, Cocoa Only] (write-only): sets the type and state of the progress indicator.
+Possible values: NORMAL, PAUSED, ERROR, INDETERMINATE, NOPROGRESS. Default: NORMAL.
 
-**TASKBARPROGRESSVALUE** [Windows Only] (write-only): updates a progress bar hosted in a taskbar button to show the specific percentage completed of the full operation.
-The value must be between 0 and 100.
+**TASKBARPROGRESSVALUE** [Win32, WinUI, Cocoa Only] (write-only): updates the progress bar to the given percentage. The value must be between 0 and 100.
 
-**TASKBARBUTTON** [Windows Only]: If set to SHOW force the application button to be shown on the taskbar even if the dialog does not have decorations.
+**TASKBARBUTTON** [Win32, WinUI Only]: If set to SHOW force the application button to be shown on the taskbar even if the dialog does not have decorations.
 If set to HIDE force the application button to be hidden from the taskbar, but also in this case the system menu, the maximize and minimize buttons will be hidden.
 
 #### Exclusive [Haiku Only]
