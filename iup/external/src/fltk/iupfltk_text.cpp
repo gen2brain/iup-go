@@ -893,17 +893,10 @@ static int fltkTextSetInsertAttrib(Ihandle* ih, const char* value)
     Fl_Input* input = fltkTextGetInputWidget(ih);
     if (input)
     {
-      int pos = input->insert_position();
-      const char* old_val = input->value();
-      int old_len = (int)strlen(old_val);
-      int ins_len = (int)strlen(value);
-      char* new_val = (char*)malloc(old_len + ins_len + 1);
-      memcpy(new_val, old_val, pos);
-      memcpy(new_val + pos, value, ins_len);
-      memcpy(new_val + pos + ins_len, old_val + pos, old_len - pos + 1);
-      input->value(new_val);
-      input->insert_position(pos + ins_len);
-      free(new_val);
+      int sel_start = input->insert_position();
+      int sel_end = input->mark();
+      if (sel_start > sel_end) { int t = sel_start; sel_start = sel_end; sel_end = t; }
+      input->replace(sel_start, sel_end, value);
     }
   }
   return 0;
@@ -1221,7 +1214,7 @@ static char* fltkTextGetLineCountAttrib(Ihandle* ih)
     if (buf)
       return iupStrReturnInt(buf->count_lines(0, buf->length()) + 1);
   }
-  return NULL;
+  return iupStrReturnInt(1);
 }
 
 static int fltkTextSetClipboardAttrib(Ihandle* ih, const char* value)

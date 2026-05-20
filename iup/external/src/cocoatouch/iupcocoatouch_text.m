@@ -1124,6 +1124,20 @@ static char* cocoaTouchTextGetLineCountAttrib(Ihandle* ih)
 	return iupStrReturnInt(count);
 }
 
+static char* cocoaTouchTextGetLineValueAttrib(Ihandle* ih)
+{
+	NSString* s = cocoaTouchTextGetString(ih);
+	if (!ih->data->is_multiline) return iupStrReturnStr([s UTF8String]);
+	NSRange r = cocoaTouchTextSelection(ih);
+	NSUInteger caret = r.location;
+	if (caret > s.length) caret = s.length;
+	NSRange line = [s lineRangeForRange:NSMakeRange(caret, 0)];
+	if (line.length > 0 && [s characterAtIndex:line.location + line.length - 1] == '\n')
+		line.length--;
+	NSString* sub = [s substringWithRange:line];
+	return iupStrReturnStr([sub UTF8String]);
+}
+
 static char* cocoaTouchTextGetSelectedTextAttrib(Ihandle* ih)
 {
 	NSRange r = cocoaTouchTextSelection(ih);
@@ -1586,6 +1600,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 
 	iupClassRegisterAttribute(ic, "COUNT", cocoaTouchTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "LINECOUNT", cocoaTouchTextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "LINEVALUE", cocoaTouchTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "SELECTEDTEXT",cocoaTouchTextGetSelectedTextAttrib, cocoaTouchTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "SELECTION", cocoaTouchTextGetSelectionAttrib, cocoaTouchTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
