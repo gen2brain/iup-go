@@ -1050,7 +1050,9 @@ static int haikuTextSetInsertAttrib(Ihandle* ih, const char* value)
   LooperLockGuard guard(haikuTextGetLooper(ih));
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
+  if (s != e) tv->Delete(s, e);
   tv->Insert(s, value, strlen(value));
+  tv->Select(s + (int32)strlen(value), s + (int32)strlen(value));
   return 0;
 }
 
