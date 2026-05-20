@@ -1596,6 +1596,21 @@ static char* gtkTextGetReadOnlyAttrib(Ihandle* ih)
   return iupStrReturnBoolean (!editable);
 }
 
+static int gtkTextSetPasswordAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->is_multiline)
+    return 0;
+  gtk_entry_set_visibility(GTK_ENTRY(ih->handle), !iupStrBoolean(value));
+  return 0;
+}
+
+static char* gtkTextGetPasswordAttrib(Ihandle* ih)
+{
+  if (ih->data->is_multiline)
+    return NULL;
+  return iupStrReturnBoolean(!gtk_entry_get_visibility(GTK_ENTRY(ih->handle)));
+}
+
 #if GTK_CHECK_VERSION(3, 20, 0)
 #endif
 
@@ -2510,7 +2525,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "OVERWRITE", gtkTextGetOverwriteAttrib, gtkTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, gtkTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, gtkTextSetTabSizeAttrib, "8", NULL, IUPAF_DEFAULT);  /* force new default value */
-  iupClassRegisterAttribute(ic, "PASSWORD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PASSWORD", gtkTextGetPasswordAttrib, gtkTextSetPasswordAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, gtkTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
