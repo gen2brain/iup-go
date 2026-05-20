@@ -339,9 +339,14 @@ Returns the run time version of the Qt toolkit.
 Returns the development version of the Qt toolkit.
 This is the version at the time the IUP library was compiled.
 
-### QTSTYLE (read-only) [Qt Only]
+### QTSTYLE [Qt Only]
 
-Returns the name of the current Qt widget style.
+Sets the Qt widget style. Can be set before or after creating dialogs.
+Value is any key from `QStyleFactory::keys()`, e.g. `"Fusion"` or an
+installed style plugin. Unknown values are ignored.
+Can also be set via the environment variable `QT_STYLE_OVERRIDE`.
+
+When read, returns the name of the active style.
 
 ### FLTKVERSION (read-only) [FLTK Only]
 

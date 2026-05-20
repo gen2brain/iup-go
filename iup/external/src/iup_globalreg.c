@@ -112,7 +112,7 @@ static const iGlobalRegEntry registry[] = {
   { "PARENTDIALOG",           0,    ALL },
   { "QTBUILDTYPE",            R,    Q },
   { "QTDEVVERSION",           R,    Q },
-  { "QTSTYLE",                R,    Q },
+  { "QTSTYLE",                0,    Q },
   { "QTVERSION",              R,    Q },
   { "SANDBOX",                R,    G|Q|G4|F },
   { "SB_BGCOLOR",             0,    M|G|G4 },

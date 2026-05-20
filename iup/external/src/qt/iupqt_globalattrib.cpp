@@ -12,6 +12,8 @@
 #include <QGuiApplication>
 #include <QCursor>
 #include <QEvent>
+#include <QStyle>
+#include <QStyleFactory>
 #include <QWheelEvent>
 #include <QString>
 #include <QRect>
@@ -220,6 +222,17 @@ extern "C" IUP_SDK_API int iupdrvSetGlobal(const char *name, const char *value)
     return 1;
   }
 
+  if (iupStrEqual(name, "QTSTYLE"))
+  {
+    if (!value || !value[0])
+      return 0;
+    QStyle* style = QStyleFactory::create(QString::fromUtf8(value));
+    if (!style)
+      return 0;
+    QApplication::setStyle(style);
+    return 1;
+  }
+
   return 1;
 }
 
@@ -288,6 +301,14 @@ extern "C" IUP_SDK_API char *iupdrvGetGlobal(const char *name)
   if (iupStrEqual(name, "UTF8AUTOCONVERT"))
   {
     return iupStrReturnBoolean(!iupqtStrGetUTF8Mode());
+  }
+
+  if (iupStrEqual(name, "QTSTYLE"))
+  {
+    QStyle* style = QApplication::style();
+    if (style)
+      return iupStrReturnStr(style->objectName().toUtf8().constData());
+    return NULL;
   }
 
 #ifndef _WIN32
