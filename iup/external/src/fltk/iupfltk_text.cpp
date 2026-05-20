@@ -32,6 +32,65 @@ extern "C" {
 #include "iupfltk_drv.h"
 
 
+static int fltkFilterCheckText(Ihandle* ih, const char* text, char** out_buf)
+{
+  *out_buf = NULL;
+  const char* filter = iupAttribGet(ih, "FILTER");
+  if (!filter || !text || !text[0] || (unsigned char)text[0] < 32)
+    return 0;
+
+  size_t n = strlen(text);
+  if (iupStrEqualNoCase(filter, "NUMBER"))
+  {
+    for (size_t i = 0; i < n; i++)
+      if (text[i] < '0' || text[i] > '9')
+        return -1;
+    return 0;
+  }
+  if (iupStrEqualNoCase(filter, "UPPERCASE") || iupStrEqualNoCase(filter, "LOWERCASE"))
+  {
+    bool to_upper = iupStrEqualNoCase(filter, "UPPERCASE");
+    char* buf = (char*)malloc(n + 1);
+    if (!buf) return 0;
+    for (size_t i = 0; i < n; i++)
+      buf[i] = (char)(to_upper ? iup_toupper(text[i]) : iup_tolower(text[i]));
+    buf[n] = 0;
+    if (memcmp(buf, text, n) == 0)
+    {
+      free(buf);
+      return 0;
+    }
+    *out_buf = buf;
+    return 1;
+  }
+  return 0;
+}
+
+static int fltkApplyFilter(Ihandle* ih, Fl_Input_* input, const char* text)
+{
+  char* xform = NULL;
+  int r = fltkFilterCheckText(ih, text, &xform);
+  if (r < 0) return 1;
+  if (r == 0) return 0;
+  int sel_start = input->insert_position();
+  int sel_end = input->mark();
+  if (sel_start > sel_end) { int t = sel_start; sel_start = sel_end; sel_end = t; }
+  input->replace(sel_start, sel_end, xform);
+  free(xform);
+  return 1;
+}
+
+static int fltkApplyFilterEditor(Ihandle* ih, Fl_Text_Editor* editor, const char* text)
+{
+  char* xform = NULL;
+  int r = fltkFilterCheckText(ih, text, &xform);
+  if (r < 0) return 1;
+  if (r == 0) return 0;
+  editor->insert(xform);
+  free(xform);
+  return 1;
+}
+
 IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, const char* cb_name, void* mask, int nc)
 {
   if (event != FL_KEYBOARD)
@@ -149,6 +208,8 @@ public:
       case FL_KEYBOARD:
         if (iupfltkKeyPressEvent(this, iup_handle))
           return 1;
+        if (fltkApplyFilter(iup_handle, this, Fl::event_text()))
+          return 1;
         if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc))
           return 1;
         break;
@@ -190,6 +251,8 @@ public:
         break;
       case FL_KEYBOARD:
         if (iupfltkKeyPressEvent(this, iup_handle))
+          return 1;
+        if (fltkApplyFilter(iup_handle, this, Fl::event_text()))
           return 1;
         if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc))
           return 1;
@@ -260,6 +323,8 @@ public:
           return 1;
         if (is_readonly)
           return Fl_Text_Display::handle(event);
+        if (fltkApplyFilterEditor(iup_handle, this, Fl::event_text()))
+          return 1;
         {
           const char* text = Fl::event_text();
           if (text && text[0] && text[0] >= 32 && !iup_handle->data->disable_callbacks)
@@ -1605,6 +1670,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, fltkTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, fltkTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Spin */
   iupClassRegisterAttribute(ic, "SPINMIN", NULL, fltkTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);

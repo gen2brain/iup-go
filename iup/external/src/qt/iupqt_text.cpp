@@ -18,9 +18,9 @@
 #include <QColor>
 #include <QMimeData>
 #include <QUrl>
-#include <QCompleter>
 #include <QFrame>
 #include <QTextList>
+#include <QSignalBlocker>
 
 #include <cstdlib>
 #include <cstdio>
@@ -1455,28 +1455,63 @@ static char* qtTextGetCueBannerAttrib(Ihandle* ih)
   return nullptr;
 }
 
+static void qtTextApplyFilter(Ihandle* ih)
+{
+  const char* filter = iupAttribGet(ih, "FILTER");
+  if (!filter || !ih->handle)
+    return;
+
+  bool is_number = iupStrEqualNoCase(filter, "NUMBER");
+  bool is_upper = iupStrEqualNoCase(filter, "UPPERCASE");
+  bool is_lower = iupStrEqualNoCase(filter, "LOWERCASE");
+  if (!is_number && !is_upper && !is_lower)
+    return;
+
+  QString text;
+  if (ih->data->is_multiline)
+    text = ((IupQtTextEdit*)ih->handle)->toPlainText();
+  else
+    text = ((IupQtLineEdit*)ih->handle)->text();
+
+  QString filtered;
+  filtered.reserve(text.size());
+  if (is_number)
+  {
+    for (QChar c : text)
+      if (c.isDigit()) filtered.append(c);
+  }
+  else if (is_upper)
+    filtered = text.toUpper();
+  else
+    filtered = text.toLower();
+
+  if (filtered == text)
+    return;
+
+  if (ih->data->is_multiline)
+  {
+    IupQtTextEdit* te = (IupQtTextEdit*)ih->handle;
+    int pos = te->textCursor().position();
+    QSignalBlocker blocker(te);
+    te->setPlainText(filtered);
+    QTextCursor c = te->textCursor();
+    c.setPosition(qMin(pos, (int)filtered.length()));
+    te->setTextCursor(c);
+  }
+  else
+  {
+    IupQtLineEdit* le = (IupQtLineEdit*)ih->handle;
+    int pos = le->cursorPosition();
+    QSignalBlocker blocker(le);
+    le->setText(filtered);
+    le->setCursorPosition(qMin((int)filtered.length(), pos));
+  }
+}
+
 static int qtTextSetFilterAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->is_multiline && value)
-  {
-    IupQtLineEdit* edit = (IupQtLineEdit*)ih->handle;
-
-    /* Create completer with filter list */
-    QStringList filterList;
-    QString filterStr = QString::fromUtf8(value);
-    QStringList items = filterStr.split(';', Qt::SkipEmptyParts);
-
-    for (const QString& item : items)
-      filterList << item.trimmed();
-
-    QCompleter* old_completer = edit->completer();
-    QCompleter* completer = new QCompleter(filterList, edit);
-    completer->setCaseSensitivity(Qt::CaseInsensitive);
-    completer->setCompletionMode(QCompleter::PopupCompletion);
-    edit->setCompleter(completer);
-    delete old_completer;
-  }
-
+  (void)value;
+  qtTextApplyFilter(ih);
   return 1;
 }
 
@@ -1750,6 +1785,7 @@ static int qtTextMapMethod(Ihandle* ih)
 
     /* Connect signals */
     QObject::connect(text, &QTextEdit::textChanged, [ih]() {
+      qtTextApplyFilter(ih);
       qtTextValueChanged(ih);
     });
 
@@ -1806,6 +1842,7 @@ static int qtTextMapMethod(Ihandle* ih)
 
     /* Connect signals */
     QObject::connect(edit, &QLineEdit::textChanged, [ih]() {
+      qtTextApplyFilter(ih);
       qtTextValueChanged(ih);
     });
 

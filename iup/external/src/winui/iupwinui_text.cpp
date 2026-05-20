@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <algorithm>
+#include <cwctype>
 
 extern "C" {
 #include "iup.h"
@@ -146,6 +148,69 @@ static void winuiTextCallValueChanged(Ihandle* ih)
   }
 }
 
+static void winuiTextBoxApplyCaseFilter(Ihandle* ih)
+{
+  const char* filter = iupAttribGet(ih, "FILTER");
+  if (!filter)
+    return;
+  bool is_upper = iupStrEqualNoCase(filter, "UPPERCASE");
+  bool is_lower = iupStrEqualNoCase(filter, "LOWERCASE");
+  if (!is_upper && !is_lower)
+    return;
+
+  IupWinUITextAux* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || aux->isSpin || aux->isPassword)
+    return;
+
+  if (aux->isFormatted)
+  {
+    RichEditBox reb = winuiGetHandle<RichEditBox>(ih);
+    if (!reb) return;
+    auto sel = reb.Document().Selection();
+    int32_t start = sel.StartPosition();
+    int32_t end = sel.EndPosition();
+    auto range = reb.Document().GetRange(0, INT32_MAX);
+    hstring h;
+    range.GetText(Microsoft::UI::Text::TextGetOptions::None, h);
+    std::wstring src(h.c_str());
+    std::wstring dst = src;
+    if (is_upper)
+      std::transform(dst.begin(), dst.end(), dst.begin(), ::towupper);
+    else
+      std::transform(dst.begin(), dst.end(), dst.begin(), ::towlower);
+    if (dst != src)
+    {
+      ih->data->disable_callbacks = 1;
+      iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
+      range.SetText(Microsoft::UI::Text::TextSetOptions::None, hstring(dst));
+      sel.SetRange(start, end);
+      ih->data->disable_callbacks = 0;
+    }
+  }
+  else
+  {
+    TextBox tb = winuiGetHandle<TextBox>(ih);
+    if (!tb) return;
+    int start = tb.SelectionStart();
+    int len = tb.SelectionLength();
+    std::wstring src(tb.Text().c_str());
+    std::wstring dst = src;
+    if (is_upper)
+      std::transform(dst.begin(), dst.end(), dst.begin(), ::towupper);
+    else
+      std::transform(dst.begin(), dst.end(), dst.begin(), ::towlower);
+    if (dst != src)
+    {
+      ih->data->disable_callbacks = 1;
+      iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
+      tb.Text(hstring(dst));
+      tb.Select(start, len);
+      aux->savedText = dst;
+      ih->data->disable_callbacks = 0;
+    }
+  }
+}
+
 static void winuiTextBoxTextChanged(Ihandle* ih)
 {
   if (ih->data->disable_callbacks)
@@ -154,6 +219,7 @@ static void winuiTextBoxTextChanged(Ihandle* ih)
     return;
   }
 
+  winuiTextBoxApplyCaseFilter(ih);
   winuiTextCallValueChanged(ih);
 }
 
@@ -161,6 +227,21 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
 {
   if (ih->data->disable_callbacks)
     return;
+
+  const char* filter = iupAttribGet(ih, "FILTER");
+  if (filter && iupStrEqualNoCase(filter, "NUMBER"))
+  {
+    hstring newH = args.NewText();
+    const wchar_t* w = newH.c_str();
+    for (size_t i = 0; w[i]; i++)
+    {
+      if (w[i] < L'0' || w[i] > L'9')
+      {
+        args.Cancel(true);
+        return;
+      }
+    }
+  }
 
   IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
   if (!cb && !ih->data->mask && !ih->data->nc)
@@ -3475,6 +3556,6 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "APPENDNEWLINE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "OVERWRITE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
