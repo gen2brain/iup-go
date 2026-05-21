@@ -205,11 +205,11 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 
 **MAXIMIZED** (read-only): indicates if the dialog is maximized.
 Can be YES or NO.
-Not supported in Motif.
+Not supported in Motif, Android and iOS.
 
 **MINIMIZED** (read-only): indicates if the dialog is minimized.
 Can be YES or NO.
-Not supported in Motif.
+Not supported in Motif, Android and iOS.
 
 **OPACITY**: sets the dialog transparency alpha value.
 Valid values range from 0 (completely transparent) to 255 (opaque).
@@ -257,15 +257,16 @@ Format is "left:right" or in C "%d:%d". Default: "0:0".
 This will allow the dialog to be moved by the system when the user clicks and drags the caption area.
 If not defined but CUSTOMFRAMECAPTION is defined, then it will use the caption element horizontal position and size for the limits.
 
-**HELPBUTTON** [Windows Only] (creation-only): Inserts a help button in the same place of the maximize button.
+**HELPBUTTON** [Win32 Only] (creation-only): Inserts a help button in the same place of the maximize button.
 It can only be used for dialogs without the minimize and maximize buttons, and with the menu box.
 For the next interaction of the user with a control in the dialog, the callback  [HELP_CB](../call/iup_help_cb.md) will be called instead of the control defined ACTION callback.
 Possible values: YES, NO. Default: NO.
 
-**MAXIMIZEATPARENT** [Windows Only]: when using multiple monitors, maximize the dialog in the same monitor that the parent dialog is.
+**MAXIMIZEATPARENT** [Win32 Only]: when using multiple monitors, maximize the dialog in the same monitor that the parent dialog is.
 
-**TOOLBOX** [Windows Only] (creation-only): makes the dialog look like a toolbox with a smaller title bar.
-It is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined. Default: NO.
+**TOOLBOX** (creation-only): makes the dialog look like a toolbox with a smaller title bar. Default: NO.
+Supported in Win32, WinUI, Qt and Haiku.
+In Win32 and WinUI it is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined.
 
 #### Exclusive [GTK, Qt, macOS and iOS]
 
