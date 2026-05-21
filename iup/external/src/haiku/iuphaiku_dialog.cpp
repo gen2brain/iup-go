@@ -891,8 +891,6 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->LayoutUpdate = haikuDialogLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = haikuDialogGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
-
   iupClassRegisterAttribute(ic, "TITLE", haikuDialogGetTitleAttrib, haikuDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuDialogSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, haikuDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);

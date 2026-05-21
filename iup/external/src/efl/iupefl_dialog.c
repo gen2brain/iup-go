@@ -1293,8 +1293,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->SetChildrenPosition = eflDialogSetChildrenPositionMethod;
   ic->GetInnerNativeContainerHandle = eflDialogGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
-
   iupClassRegisterAttribute(ic, "TITLE", eflDialogGetTitleAttrib, eflDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflDialogSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);

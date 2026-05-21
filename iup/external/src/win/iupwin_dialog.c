@@ -1641,7 +1641,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   /* Callback Windows Only*/
   iupClassRegisterCallback(ic, "CUSTOMFRAMEDRAW_CB", "");
   iupClassRegisterCallback(ic, "CUSTOMFRAMEACTIVATE_CB", "i");
-  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
   /* Driver Dependent Attribute functions */
 
