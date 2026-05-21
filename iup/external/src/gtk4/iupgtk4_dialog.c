@@ -677,7 +677,6 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
 
-  /* Use gtk_window_set_default_size() to resize window */
   gtk_window_set_default_size((GtkWindow*)ih->handle, width, height);
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
@@ -691,6 +690,13 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
     if (client_height <= 0) client_height = 1;
 
     gtk_widget_set_size_request(ih->handle, client_width, client_height);
+  }
+  else
+  {
+    /* GTK4 follows default_width and a content change can collapse it; floor a natural-sized dimension at its natural size */
+    int min_w = (ih->userwidth <= 0 && ih->naturalwidth > 0) ? ih->naturalwidth - 2 * border : -1;
+    int min_h = (ih->userheight <= 0 && ih->naturalheight > 0) ? ih->naturalheight - caption : -1;
+    gtk_widget_set_size_request(ih->handle, min_w, min_h);
   }
 
   ih->data->ignore_resize = 0;
