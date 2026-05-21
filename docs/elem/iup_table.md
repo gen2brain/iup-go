@@ -90,6 +90,7 @@ n starts at 1.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color.
 Supports L:C notation for per-cell color, :C for per-column, L:* for per-row.
+When more than one applies to the same cell the precedence is per-cell, then per-column, then per-row.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Foreground text color.
 Same L:C notation as BGCOLOR.

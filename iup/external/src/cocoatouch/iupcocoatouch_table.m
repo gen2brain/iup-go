@@ -513,9 +513,9 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		UIColor* fg = nil;
 		if (_ihandle)
 		{
-			const char* bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", (int)lin + 1, (int)col + 1);
-			if (!bg_str) bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", (int)lin + 1, 0);
-			if (!bg_str) bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", 0, (int)col + 1);
+			const char* bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", (int)lin + 1, (int)col + 1);  /* L:C per-cell */
+			if (!bg_str) bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", 0, (int)col + 1);  /* :C per-column */
+			if (!bg_str) bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", (int)lin + 1, 0);  /* L:* per-row */
 			if (bg_str) bg = iupCocoaTouchToNativeColor(bg_str);
 			else if (iupAttribGetBoolean(_ihandle, "ALTERNATECOLOR"))
 			{
@@ -524,9 +524,9 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 				if (color_str) bg = iupCocoaTouchToNativeColor(color_str);
 			}
 
-			const char* fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", (int)lin + 1, (int)col + 1);
-			if (!fg_str) fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", (int)lin + 1, 0);
-			if (!fg_str) fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", 0, (int)col + 1);
+			const char* fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", (int)lin + 1, (int)col + 1);  /* L:C per-cell */
+			if (!fg_str) fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", 0, (int)col + 1);  /* :C per-column */
+			if (!fg_str) fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", (int)lin + 1, 0);  /* L:* per-row */
 			if (fg_str) fg = iupCocoaTouchToNativeColor(fg_str);
 		}
 		if (fg) cell.label.textColor = fg;
