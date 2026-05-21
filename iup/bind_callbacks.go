@@ -1409,6 +1409,26 @@ func setTextLinkFunc(ih Ihandle, f TextLinkFunc) {
 
 //--------------------
 
+// MaskFailFunc for MASKFAIL_CB callback.
+// Action generated when the new text fails at the mask check.
+type MaskFailFunc func(ih Ihandle, newValue string) int
+
+//export goIupMaskFailCB
+func goIupMaskFailCB(ih, newValue unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_MASKFAIL_CB").Value().(MaskFailFunc)
+
+	goNewValue := C.GoString((*C.char)(newValue))
+	return C.int(f((Ihandle)(ih), goNewValue))
+}
+
+func setMaskFailFunc(ih Ihandle, f MaskFailFunc) {
+	storeCallback(ih, "_IUPGO_MASKFAIL_CB", f)
+
+	C.goIupSetMaskFailFunc(ih.ptr())
+}
+
+//--------------------
+
 // WheelFunc for WHEEL_CB callback.
 // Action generated when the mouse wheel is rotated.
 type WheelFunc func(ih Ihandle, delta float64, x, y int, status string) int
