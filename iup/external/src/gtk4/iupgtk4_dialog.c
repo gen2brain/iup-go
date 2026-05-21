@@ -422,29 +422,27 @@ static void* gtk4DialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle*
   return (void*)gtk_window_get_child((GtkWindow*)ih->handle);
 }
 
-static void gtk4DialogWindowStateChanged(GObject* window, GParamSpec* pspec, Ihandle* ih)
+static void gtk4DialogSurfaceStateChanged(GObject* surface, GParamSpec* pspec, Ihandle* ih)
 {
-  int state = -1;
-  gboolean is_maximized;
+  GdkToplevelState surface_state = gdk_toplevel_get_state(GDK_TOPLEVEL(surface));
+  int state;
   (void)pspec;
-  (void)window;
-
-  is_maximized = gtk_window_is_maximized(GTK_WINDOW(ih->handle));
 
   iupAttribSet(ih, "MAXIMIZED", NULL);
   iupAttribSet(ih, "MINIMIZED", NULL);
 
-  if (is_maximized)
+  if (surface_state & GDK_TOPLEVEL_STATE_MINIMIZED)
+  {
+    state = IUP_MINIMIZE;
+    iupAttribSet(ih, "MINIMIZED", "Yes");
+  }
+  else if (surface_state & (GDK_TOPLEVEL_STATE_MAXIMIZED | GDK_TOPLEVEL_STATE_FULLSCREEN))
   {
     state = IUP_MAXIMIZE;
     iupAttribSet(ih, "MAXIMIZED", "Yes");
   }
   else
-  {
-    /* If not maximized, it's either minimized or restored. Since this signal only notifies on 'maximized',
-       a 'false' value means it's now restored. */
     state = IUP_RESTORE;
-  }
 
   if (ih->data->show_state != state)
   {
@@ -454,6 +452,17 @@ static void gtk4DialogWindowStateChanged(GObject* window, GParamSpec* pspec, Iha
     cb = (IFni)IupGetCallback(ih, "SHOW_CB");
     if (cb && cb(ih, state) == IUP_CLOSE)
       IupExitLoop();
+  }
+}
+
+/* The GdkSurface only exists after realize; connect the state signal there. */
+static void gtk4DialogRealize(GtkWidget* widget, Ihandle* ih)
+{
+  GdkSurface* surface = gtk_native_get_surface(GTK_NATIVE(widget));
+  if (surface && GDK_IS_TOPLEVEL(surface))
+  {
+    gulong handler_id = g_signal_connect(G_OBJECT(surface), "notify::state", G_CALLBACK(gtk4DialogSurfaceStateChanged), ih);
+    iupAttribSet(ih, "_IUPGTK4_STATE_HANDLER", (char*)(uintptr_t)handler_id);
   }
 }
 
@@ -558,9 +567,8 @@ static int gtk4DialogMapMethod(Ihandle* ih)
   handler_id = g_signal_connect(G_OBJECT(settings), "notify::gtk-application-prefer-dark-theme", G_CALLBACK(gtk4DialogThemeChanged), ih);
   iupAttribSet(ih, "_IUPGTK4_THEME_HANDLER2", (char*)(uintptr_t)handler_id);
 
-  /* Monitor window state changes (maximize/minimize/restore) */
-  handler_id = g_signal_connect(G_OBJECT(ih->handle), "notify::maximized", G_CALLBACK(gtk4DialogWindowStateChanged), ih);
-  iupAttribSet(ih, "_IUPGTK4_MAXIMIZE_HANDLER", (char*)(uintptr_t)handler_id);
+  handler_id = g_signal_connect(G_OBJECT(ih->handle), "realize", G_CALLBACK(gtk4DialogRealize), ih);
+  iupAttribSet(ih, "_IUPGTK4_REALIZE_HANDLER", (char*)(uintptr_t)handler_id);
 
   /* Add key controller for DEFAULTENTER/DEFAULTESC support */
   {
@@ -600,9 +608,13 @@ static void gtk4DialogUnMapMethod(Ihandle* ih)
   if (handler_id != 0)
     g_signal_handler_disconnect(G_OBJECT(settings), handler_id);
 
-  handler_id = (gulong)(uintptr_t)iupAttribGet(ih, "_IUPGTK4_MAXIMIZE_HANDLER");
+  handler_id = (gulong)(uintptr_t)iupAttribGet(ih, "_IUPGTK4_STATE_HANDLER");
   if (handler_id != 0)
-    g_signal_handler_disconnect(G_OBJECT(ih->handle), handler_id);
+  {
+    GdkSurface* surface = gtk_native_get_surface(GTK_NATIVE(ih->handle));
+    if (surface)
+      g_signal_handler_disconnect(G_OBJECT(surface), handler_id);
+  }
 
   g_signal_handlers_disconnect_by_data(G_OBJECT(ih->handle), ih);
 
