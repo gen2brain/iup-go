@@ -50,11 +50,11 @@ static Fl_Align fltkTableGetColumnAlignment(Ihandle* ih, int col)
 
 static void fltkTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char* r, unsigned char* g, unsigned char* b)
 {
-  char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
+  char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);  /* L:C per-cell */
   if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+    bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);  /* :C per-column */
   if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
+    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);  /* L:* per-row */
 
   if (!bgcolor)
   {
@@ -79,11 +79,11 @@ static void fltkTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char
 
 static void fltkTableGetCellFgColor(Ihandle* ih, int lin, int col, unsigned char* r, unsigned char* g, unsigned char* b)
 {
-  char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
+  char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);  /* L:C per-cell */
   if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);  /* :C per-column */
   if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
+    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);  /* L:* per-row */
 
   if (!fgcolor)
     fgcolor = iupAttribGet(ih, "FGCOLOR");

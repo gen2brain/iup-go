@@ -130,15 +130,15 @@ static void eflTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char*
   char* bgcolor = NULL;
   char* alternate_color;
 
-  /* Priority: per-cell > per-row > per-column > alternating > global */
+  /* Priority: per-cell > per-column > per-row > alternating > global */
   if (lin > 0 && col > 0)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
 
-  if (!bgcolor && lin > 0)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
-
   if (!bgcolor && col > 0)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
+
+  if (!bgcolor && lin > 0)
+    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
   if (!bgcolor && lin > 0)
   {
@@ -165,15 +165,15 @@ static char* eflTableGetCellFont(Ihandle* ih, int lin, int col)
 {
   char* font = NULL;
 
-  /* Priority: per-cell > per-row > per-column > global */
+  /* Priority: per-cell > per-column > per-row > global */
   if (lin > 0 && col > 0)
     font = iupAttribGetId2(ih, "FONT", lin, col);
 
-  if (!font && lin > 0)
-    font = iupAttribGetId2(ih, "FONT", lin, 0);
-
   if (!font && col > 0)
     font = iupAttribGetId2(ih, "FONT", 0, col);
+
+  if (!font && lin > 0)
+    font = iupAttribGetId2(ih, "FONT", lin, 0);
 
   if (!font)
     font = iupAttribGetStr(ih, "FONT");
@@ -185,15 +185,15 @@ static void eflTableGetCellFgColor(Ihandle* ih, int lin, int col, unsigned char*
 {
   char* fgcolor = NULL;
 
-  /* Priority: per-cell > per-row > per-column > global */
+  /* Priority: per-cell > per-column > per-row > global */
   if (lin > 0 && col > 0)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
 
-  if (!fgcolor && lin > 0)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
-
   if (!fgcolor && col > 0)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
+
+  if (!fgcolor && lin > 0)
+    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
 
   if (!fgcolor)
     fgcolor = iupAttribGetStr(ih, "FGCOLOR");
