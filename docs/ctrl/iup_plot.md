@@ -728,13 +728,13 @@ The segment is searched using IupPlotFindSegment.
 
 **ih**: identifier of the element that activated the event.\
 **ds_index**: index of the dataset\
-**sample_index1**: index of the sample in the dataset**\
-x1**: X coordinate value of the sample\
+**sample_index1**: index of the sample in the dataset\
+**x1**: X coordinate value of the sample\
 **y1**: Y coordinate value of the sample\
-****sample_index2**:** index of the sample in the dataset**\
-x2:** X coordinate value of the sample**\
-y2:** Y coordinate value of the sample**\
-button**: identifies the activated mouse button\
+**sample_index2**: index of the sample in the dataset\
+**x2**: X coordinate value of the sample\
+**y2**: Y coordinate value of the sample\
+**button**: identifies the activated mouse button\
     IUP_BUTTON1 - left mouse button (button 1)\
     IUP_BUTTON2 - middle mouse button (button 2)\
     IUP_BUTTON3 - right mouse button (button 3)

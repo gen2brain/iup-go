@@ -186,7 +186,8 @@ The first dialog that has a COPYDATA_CB callback will receive the command line o
 When consulted returns NULL if inside the second instance.
 So usually in the application initialization after **IupOpen**, set SINGLEINSTANCE and then consult its value, if NULL abort the second instance by calling **IupClose** and returning from *main*.
 
-In Windows uses a named mutex for detection and WM_COPYDATA for communication. In Linux/Unix uses D-Bus session bus name ownership. In macOS uses CFMessagePort.
+In Windows (Win32 and WinUI) uses a named mutex for detection and WM_COPYDATA for communication. In Linux/Unix (GTK, GTK4, Qt, Motif, FLTK, EFL) uses D-Bus session bus name ownership. In macOS uses CFMessagePort. In Haiku uses a named-port rendezvous.
+On Android single instance is enforced by the Activity launchMode in the manifest, so the SINGLEINSTANCE attribute and COPYDATA_CB are not implemented. Not supported in iOS.
 
 ## System Mouse and Keyboard
 
@@ -310,126 +311,6 @@ Returns "1" if the system is currently in dark mode, "0" otherwise.
 Returns the native windowing system in use.
 Can be: "DWM", "X11", "WAYLAND", "QUARTZ", "ANDROID" or "HAIKU".
 
-### GTKVERSION (read-only) [GTK Only]
-
-Returns the run time version of the GTK toolkit.
-This is the version being used at the time of the IupOpen function was called by the application.
-Available in GTK 3 and GTK 4.
-
-### GTKDEVVERSION (read-only) [GTK Only]
-
-Returns the development version of the GTK toolkit.
-This is the version at the time the IUP library was compiled.
-Available in GTK 3 and GTK 4.
-
-### MOTIFVERSION (read-only) [Motif Only]
-
-Returns the version of the run time Motif.
-
-### MOTIFNUMBER (read-only) [Motif Only]
-
-Returns the number of the Motif Version if full form, e.x: 2.2.3 = "2203".
-
-### QTVERSION (read-only) [Qt Only]
-
-Returns the run time version of the Qt toolkit.
-
-### QTDEVVERSION (read-only) [Qt Only]
-
-Returns the development version of the Qt toolkit.
-This is the version at the time the IUP library was compiled.
-
-### QTSTYLE [Qt Only]
-
-Sets the Qt widget style. Can be set before or after creating dialogs.
-Value is any key from `QStyleFactory::keys()`, e.g. `"Fusion"` or an
-installed style plugin. Unknown values are ignored.
-Can also be set via the environment variable `QT_STYLE_OVERRIDE`.
-
-When read, returns the name of the active style.
-
-### FLTKVERSION (read-only) [FLTK Only]
-
-Returns the run time version of the FLTK toolkit.
-
-### EFLVERSION (read-only) [EFL Only]
-
-Returns the run time version of the EFL toolkit.
-
-### FLTKTHEME [FLTK Only]
-
-Sets the FLTK visual theme. Can be set before or after creating dialogs.
-Can also be set via the environment variable `IUP_FLTKTHEME`.
-
-Accepted values:
-- `"none"` or `"base"` - default FLTK appearance
-- `"gtk+"` - GTK+ like appearance
-- `"plastic"` - shiny plastic appearance
-- `"gleam"` - modern gradient appearance
-- `"oxy"` - oxygen-inspired appearance
-
-When read, returns the current theme name (returns `"none"` if using the default).
-
-### EFLTHEME [EFL Only]
-
-Sets the EFL theme. Must be set before creating any dialogs.
-Can also be set via the environment variable `IUP_EFLTHEME`.
-The value is a theme name or path as accepted by `elm_theme_set`.
-
-### EFLTHEMEDATA [EFL Only]
-
-Sets embedded theme data from memory. Used together with EFLTHEMEDATALEN to load a theme from a binary buffer instead of a file. Set EFLTHEMEDATALEN first, then set EFLTHEMEDATA to the pointer to the `.edj` data. Can only be set once.
-
-### EFLTHEMEDATALEN [EFL Only]
-
-Sets the byte length of the embedded theme data buffer. Must be set before EFLTHEMEDATA. Can only be set once.
-
-### EFLACCEL [EFL Only]
-
-Sets the acceleration preference for new EFL windows. Must be set before creating any dialogs, or via the environment variable `IUP_EFLACCEL`.
-
-Accepted values:
-- `"gl"`, `"opengl"` - use OpenGL acceleration
-- `"3d"` - use 3D acceleration
-- `"hw"`, `"hardware"`, `"accel"` - use any hardware acceleration (best available)
-- `"none"` - use software rendering
-
-Additional depth, stencil, and MSAA options can be appended with colon separators. For example: `"gl:depth24:stencil8:msaa_mid"`. MSAA options are `"msaa"`, `"msaa_low"`, `"msaa_mid"` and `"msaa_high"`.
-
-When read, returns the current acceleration preference string.
-
-### EFLENGINE (read-only) [EFL Only]
-
-Returns the name of the actual EFL rendering engine in use (e.g. `"opengl_x11"`, `"software_x11"`, `"wayland_egl"`, `"wayland_shm"`).
-Only available after a dialog has been created, since the engine is selected at window creation time.
-
-### GNUSTEPTHEME [GNUstep Only]
-
-Sets the active GNUstep theme. Can be set before or after creating dialogs. Can also be set via the environment variable `IUP_GNUSTEPTHEME`. Only available when the Cocoa driver is built against GNUstep (Linux/BSD); on macOS the attribute is silently ignored.
-
-The value is a theme name (e.g. `"Silver"`, `"Neos"`), or an absolute path to a `.theme` bundle. Setting the value to `NULL` or empty reverts to the built-in GNUstep theme.
-
-Setting this attribute also refreshes the default color globals (`DLGBGCOLOR`, `DLGFGCOLOR`, etc.) from the newly activated theme, and writes the chosen name to the `GSTheme` key in the application's user defaults so the theme survives `NSUserDefaultsDidChangeNotification` (otherwise dragging a menu, resizing, or other operations that touch defaults would revert the theme to the built-in one).
-
-When read, returns the current theme name, or NULL if the default theme is active.
-
-### GSKRENDERER [GTK4 Only]
-
-Sets the GSK renderer used by GTK4 for drawing. Must be set **before** any dialog is created (before `IupShow`). Can also be set via the `GSK_RENDERER` environment variable, but this attribute takes priority.
-
-Possible values: `"gl"` (or `"opengl"`), `"vulkan"`, `"cairo"`.
-
-When read, returns the renderer name that was set, or NULL if using the automatic default.
-
-### WINUIVERSION (read-only) [WinUI Only]
-
-Returns the WinUI version.
-
-### WL_DISPLAY (read-only) [Wayland Only]
-
-Returns the Wayland display (wl_display*).
-Available in GTK, GTK 4, Qt, FLTK and EFL when running on Wayland.
-
 ### COMPUTERNAME (read-only)
 
 Returns the hostname.
@@ -485,6 +366,123 @@ Available in GTK, GTK 4, FLTK and Motif.
 
 X-Windows Server Vendor release number.
 Available in GTK, GTK 4, FLTK and Motif.
+
+## Toolkit Versions and Themes
+
+### GTKVERSION (read-only) [GTK Only]
+
+Returns the run time version of the GTK toolkit.
+This is the version being used at the time of the IupOpen function was called by the application.
+Available in GTK 3 and GTK 4.
+
+### GTKDEVVERSION (read-only) [GTK Only]
+
+Returns the development version of the GTK toolkit.
+This is the version at the time the IUP library was compiled.
+Available in GTK 3 and GTK 4.
+
+### GSKRENDERER [GTK4 Only]
+
+Sets the GSK renderer used by GTK4 for drawing. Must be set **before** any dialog is created (before `IupShow`). Can also be set via the `GSK_RENDERER` environment variable, but this attribute takes priority.
+
+Possible values: `"gl"` (or `"opengl"`), `"vulkan"`, `"cairo"`.
+
+When read, returns the renderer name that was set, or NULL if using the automatic default.
+
+### MOTIFVERSION (read-only) [Motif Only]
+
+Returns the version of the run time Motif.
+
+### MOTIFNUMBER (read-only) [Motif Only]
+
+Returns the number of the Motif Version if full form, e.x: 2.2.3 = "2203".
+
+### QTVERSION (read-only) [Qt Only]
+
+Returns the run time version of the Qt toolkit.
+
+### QTDEVVERSION (read-only) [Qt Only]
+
+Returns the development version of the Qt toolkit.
+This is the version at the time the IUP library was compiled.
+
+### QTSTYLE [Qt Only]
+
+Sets the Qt widget style. Can be set before or after creating dialogs.
+Value is any key from `QStyleFactory::keys()`, e.g. `"Fusion"` or an
+installed style plugin. Unknown values are ignored.
+Can also be set via the environment variable `QT_STYLE_OVERRIDE`.
+
+When read, returns the name of the active style.
+
+### FLTKVERSION (read-only) [FLTK Only]
+
+Returns the run time version of the FLTK toolkit.
+
+### FLTKTHEME [FLTK Only]
+
+Sets the FLTK visual theme. Can be set before or after creating dialogs.
+Can also be set via the environment variable `IUP_FLTKTHEME`.
+
+Accepted values:
+- `"none"` or `"base"` - default FLTK appearance
+- `"gtk+"` - GTK+ like appearance
+- `"plastic"` - shiny plastic appearance
+- `"gleam"` - modern gradient appearance
+- `"oxy"` - oxygen-inspired appearance
+
+When read, returns the current theme name (returns `"none"` if using the default).
+
+### EFLVERSION (read-only) [EFL Only]
+
+Returns the run time version of the EFL toolkit.
+
+### EFLTHEME [EFL Only]
+
+Sets the EFL theme. Must be set before creating any dialogs.
+Can also be set via the environment variable `IUP_EFLTHEME`.
+The value is a theme name or path as accepted by `elm_theme_set`.
+
+### EFLTHEMEDATA [EFL Only]
+
+Sets embedded theme data from memory. Used together with EFLTHEMEDATALEN to load a theme from a binary buffer instead of a file. Set EFLTHEMEDATALEN first, then set EFLTHEMEDATA to the pointer to the `.edj` data. Can only be set once.
+
+### EFLTHEMEDATALEN [EFL Only]
+
+Sets the byte length of the embedded theme data buffer. Must be set before EFLTHEMEDATA. Can only be set once.
+
+### EFLACCEL [EFL Only]
+
+Sets the acceleration preference for new EFL windows. Must be set before creating any dialogs, or via the environment variable `IUP_EFLACCEL`.
+
+Accepted values:
+- `"gl"`, `"opengl"` - use OpenGL acceleration
+- `"3d"` - use 3D acceleration
+- `"hw"`, `"hardware"`, `"accel"` - use any hardware acceleration (best available)
+- `"none"` - use software rendering
+
+Additional depth, stencil, and MSAA options can be appended with colon separators. For example: `"gl:depth24:stencil8:msaa_mid"`. MSAA options are `"msaa"`, `"msaa_low"`, `"msaa_mid"` and `"msaa_high"`.
+
+When read, returns the current acceleration preference string.
+
+### EFLENGINE (read-only) [EFL Only]
+
+Returns the name of the actual EFL rendering engine in use (e.g. `"opengl_x11"`, `"software_x11"`, `"wayland_egl"`, `"wayland_shm"`).
+Only available after a dialog has been created, since the engine is selected at window creation time.
+
+### GNUSTEPTHEME [GNUstep Only]
+
+Sets the active GNUstep theme. Can be set before or after creating dialogs. Can also be set via the environment variable `IUP_GNUSTEPTHEME`. Only available when the Cocoa driver is built against GNUstep (Linux/BSD); on macOS the attribute is silently ignored.
+
+The value is a theme name (e.g. `"Silver"`, `"Neos"`), or an absolute path to a `.theme` bundle. Setting the value to `NULL` or empty reverts to the built-in GNUstep theme.
+
+Setting this attribute also refreshes the default color globals (`DLGBGCOLOR`, `DLGFGCOLOR`, etc.) from the newly activated theme, and writes the chosen name to the `GSTheme` key in the application's user defaults so the theme survives `NSUserDefaultsDidChangeNotification` (otherwise dragging a menu, resizing, or other operations that touch defaults would revert the theme to the built-in one).
+
+When read, returns the current theme name, or NULL if the default theme is active.
+
+### WINUIVERSION (read-only) [WinUI Only]
+
+Returns the WinUI version.
 
 ## Screen Information
 
@@ -565,6 +563,11 @@ Available in GTK, GTK 4, Qt (Qt6 only), FLTK, EFL and Motif.
 
 Returns the X-Windows Screen.
 Available in GTK, GTK 4, FLTK, EFL and Motif.
+
+### WL_DISPLAY (read-only) [Wayland Only]
+
+Returns the Wayland display (wl_display*).
+Available in GTK, GTK 4, Qt, FLTK and EFL when running on Wayland.
 
 ## Default Attributes
 

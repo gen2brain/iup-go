@@ -25,7 +25,7 @@ Returned values will be the same value when changing the attribute, except for t
 
 #### Windows
 
-The DEFAULTFONT is retrieved from the System Settings (see below), if this failed then "Segoe UI, 9" is assumed.
+The DEFAULTFONT is retrieved from the System Settings, "Segoe UI, 9" assumed otherwise.
 
 The native handle can be obtained using the "**HFONT**" attribute.
 
@@ -52,19 +52,13 @@ Be aware that the resource files ".Xdefaults" and "Iup" in the user home folder 
 
 #### GTK
 
-The DEFAULTFONT is retrieved from the style defined by GNOME (see below), if failed "Sans, 10" is assumed.
+The DEFAULTFONT is retrieved from the GNOME style, "Sans, 10" assumed otherwise.
 
 The X-Windows Logical Font Description format (XLFD) is also supported.
-
 The native handle can be obtained using the "**PANGOFONTDESC**" attribute.
 
-Font face can be a list of font face names in GTK. For example, "Arial,Helvetica, 12".
-Not accepted in the other drivers.
-
-Style can also be a combination of: Small-Caps, [Ultra-Light\|Light\|Medium\|Semi-Bold\|Bold\|Ultra-Bold\|Heavy], [Ultra-Condensed\|Extra-Condensed\|Condensed\|Semi-Condensed\|Semi-Expanded\|Expanded\|Extra-Expanded\|Ultra-Expanded].
-Those values can be used only when the string is a full Pango compliant font, i.e., no underline, no strikeout and size>0.
-
-In GNOME, go to the "Appearance Preferences" tool, then in the Fonts tab change the Applications Font to affect the default font.
+Font face can be a list of font face names, for example "Arial,Helvetica, 12" (not accepted in the other drivers).
+GTK also accepts the full Pango weight, stretch and variant keywords (Light, Semi-Bold, Condensed, Small-Caps, etc.), but only for a full Pango-compliant string (no underline/strikeout, size>0).
 
 #### GTK 4
 
