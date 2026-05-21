@@ -198,7 +198,7 @@ func buildButtons() iup.Ihandle {
 func buildLabels() iup.Ihandle {
 	return iup.Frame(
 		iup.Vbox(
-			iup.Label("Plain label"),
+			iup.Label("Plain label").SetAttribute("SELECTABLE", "YES"),
 			iup.Label("Bold label").SetAttribute("FONTSTYLE", "Bold"),
 			iup.Label("Colored label").SetAttribute("FGCOLOR", "40 80 200"),
 			iup.Label("Monospace label").SetAttribute("FONTFACE", "Courier"),
