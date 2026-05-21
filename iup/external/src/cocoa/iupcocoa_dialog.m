@@ -241,9 +241,6 @@ static NSWindowStyleMask cocoaDialogGetStyleMask(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "MENUBOX"))
     style_mask |= NSWindowStyleMaskClosable;
 
-  if (iupAttribGetBoolean(ih, "TOOLBOX"))
-    style_mask |= NSWindowStyleMaskUtilityWindow;
-
   if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
     style_mask |= NSWindowStyleMaskFullSizeContentView;
 
@@ -1849,7 +1846,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHOWNOACTIVATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, cocoaDialogSetDialogHintAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, cocoaDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaDialogSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
