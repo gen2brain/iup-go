@@ -33,23 +33,29 @@ DROPMOTION_CB is the only optional drop callback.
 
 ### Attributes at Drag Source
 
-**DRAGC******URSOR (non-inheritable):** name of an image to be used as cursor during drag.
-Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
-See also [IupImage](../elem/iup_image.md). DRAGSOURCE** (non-inheritable): Set up a control as a source for drag operations.
+**DRAGSOURCE** (non-inheritable): Set up a control as a source for drag operations.
 Default: NO.
 
 **DRAGTYPES** (non-inheritable): A list of data types that are supported by the source.
 Accepts a string with one or more names separated by commas. See Notes below for a list of known names.
 Must be set.
 
-**DRAGSOURCEMOVE (non-inheritable)**: Enables the move action. Default: NO (only copy is enabled).
+**DRAGSOURCEMOVE** (non-inheritable): Enables the move action. Default: NO (only copy is enabled).
+
+**DRAGCURSOR** (non-inheritable): name of an image to be used as cursor during drag.
+Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
+See also [IupImage](../elem/iup_image.md).
+Supported in Win32, GTK, GTK 4, Motif, Cocoa, Qt, EFL, Android and Haiku.
+
+**DRAGCURSORCOPY** (non-inheritable): name of an image used as the drag cursor while the copy action is in effect (for example when Ctrl is held). Falls back to DRAGCURSOR.
+Supported in Win32, Motif, Cocoa, Qt and Haiku.
 
 ### Attributes at Drop Target
 
-**DROPTARGET** (non-inheritable)**: ** Set up a control as a destination for drop operations.
+**DROPTARGET** (non-inheritable): Set up a control as a destination for drop operations.
 Default: NO.
 
-**DROPTYPES (non-inheritable)**: A list of data types that are supported by the target.
+**DROPTYPES** (non-inheritable): A list of data types that are supported by the target.
 Accepts a string with one or more names separated by commas. See the Notes below for a list of known names.
 Must be set.
 
@@ -71,8 +77,9 @@ It is called when the data is dropped, before the **DRAGDATA_CB** callback.
     int function(Ihandle* ih, char* type)
 
 **ih**: identifier of the element that activated the event.\
-**type**: type of the data. It is one of the registered types in **DRAGTYPES****.
-Returns**: the size in bytes for the data.
+**type**: type of the data. It is one of the registered types in **DRAGTYPES**.
+
+**Returns**: the size in bytes for the data.
 It will be used to allocate the buffer size for the data in transfer.
 
 **DRAGDATA_CB**: request for drag data from source. It is called when the data is dropped.
@@ -80,10 +87,11 @@ It will be used to allocate the buffer size for the data in transfer.
     int function(Ihandle* ih, char* type, void* data, int size)
 
 **ih**: identifier of the element that activated the event.\
-**type**: type of the data. It is one of the registered types in **DRAGTYPES****.**\
-**data**: buffer to be filled by the application..\
-**size**: buffer size in bytes. The same value returned by **DRAGDATASIZE_CB.
-DRAGEND_CB**: notifies source that drag is done. The only drag callback that is **optional**.
+**type**: type of the data. It is one of the registered types in **DRAGTYPES**.\
+**data**: buffer to be filled by the application.\
+**size**: buffer size in bytes. The same value returned by **DRAGDATASIZE_CB**.
+
+**DRAGEND_CB**: notifies source that drag is done. The only drag callback that is **optional**.
 It is called after the data has been dropped.
 
     int function(Ihandle* ih, int action)
@@ -101,8 +109,8 @@ If both drag and drop were in the same application, it would be called after the
     int function(Ihandle* ih, char* type, void* data, int size, int x, int y)
 
 **ih**: identifier of the element that activated the event.\
-**type**: type of the data. It is one of the registered types in **DROPTYPES****.**\
-**data**: content data received in the drop operation..\
+**type**: type of the data. It is one of the registered types in **DROPTYPES**.\
+**data**: content data received in the drop operation.\
 **size**: data size in bytes.\
 **x, y**: cursor position relative to the top-left corner of the element.
 
@@ -133,4 +141,4 @@ Here are some common Drag&Drop types defined by existing applications:
 
 ### Examples
 
-[list2.c](../../examples/C/list2.c)
+[list_dnd](../../examples/list_dnd/list_dnd.go), [tree_dnd](../../examples/tree_dnd/tree_dnd.go)

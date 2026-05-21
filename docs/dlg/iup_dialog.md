@@ -170,33 +170,12 @@ Updated after SHOW_CB is called and only if the focus was not changed during the
 **SHOWNOFOCUS**: do not set focus after show.
 On Android and iOS defaults to YES; touch UIs don't autofocus controls on launch.
 
-#### Exclusive [System Dependent]
-
-**HWND** [Windows Only] (non-inheritable, read-only): Returns the Windows Window handle.
-Available in Win32, WinUI, or in the GTK, GTK 4, Qt and FLTK drivers on Windows.
-
-**SAVEUNDER** [Win32 and Motif Only] (creation-only): When this attribute is true (YES), the dialog requests the window system to store the original image of the desktop region it occupies, so closing or moving the dialog does not trigger a redraw of the windows beneath it.
-Its default value is YES if the dialog has a parent dialog.
-Largely a no-op on modern composited window systems (DWM on Windows, KWin/Mutter on Linux); other drivers do not expose an equivalent primitive.
-
-**XWINDOW** [UNIX Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
-Available in Motif, GTK, GTK 4, Qt, FLTK and EFL on X11.
-
-**WL_SURFACE** [UNIX Only] (non-inheritable, read-only): Returns the Wayland surface handle.
-Available in GTK, GTK 4, Qt, FLTK and EFL on Wayland.
-
-**NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the Cocoa NSView handle.
-Available in the Cocoa, GTK, GTK 4, Qt and FLTK drivers on macOS.
-
-**BWINDOW** [Haiku Only] (non-inheritable, read-only): Returns the Haiku BWindow handle.
-
-####
-
-#### Exclusive
-
 **ACTIVEWINDOW** (read-only): informs if the dialog is the active window (the window with focus).
 Can be Yes or No.
 Not supported in Motif.
+
+**BRINGFRONT** (write-only): makes the dialog the foreground window.
+Use "YES" to activate it. Useful for multithreaded applications.
 
 **CUSTOMFRAME** (non-inheritable): allows the application to customize the dialog frame elements (the title and its buttons) by using IUP controls for its elements like caption, minimize button, maximize button, and close buttons.
 The custom frame support uses the native system support for custom frames.
@@ -205,8 +184,14 @@ For the dialog to be able to be moved an **IupLabel** or an **IupCanvas** must b
 See the Custom Frame notes below.
 Not supported in Motif.
 
+**DIALOGHINT** (creation-only): if enabled, set the window type hint to a dialog hint.
+Supported in GTK, GTK 4, Qt, macOS, and EFL.
+
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
+
+**HIDETITLEBAR** (non-inheritable): hides the title bar with all its elements.
+In Motif the result depends on the window manager honoring `_MOTIF_WM_HINTS` (most modern WMs do).
 
 **MAXIMIZED** (read-only): indicates if the dialog is maximized.
 Can be YES or NO.
@@ -231,15 +216,36 @@ Only the fully transparent pixels will be transparent.
 The pixels colors will be ignored, only the alpha channel is used.
 Not supported in GTK4, Motif, iOS, Android, and Haiku.
 
+**TOOLBOX** (creation-only): makes the dialog look like a toolbox with a smaller title bar. Default: NO.
+Supported in Win32, WinUI, Qt and Haiku.
+In Win32 and WinUI it is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined.
+
 **TOPMOST**: puts the dialog always in front of all other dialogs in all applications.
 Default: NO.
 In Motif depends on the window manager honoring `_NET_WM_STATE_ABOVE`.
 Not supported in GTK4, iOS, and Android.
 
-#### Exclusive [Windows Only]
+#### Exclusive [System Dependent]
 
-**BRINGFRONT** (write-only): makes the dialog the foreground window.
-Use "YES" to activate it. Useful for multithreaded applications.
+**HWND** [Windows Only] (non-inheritable, read-only): Returns the Windows Window handle.
+Available in Win32, WinUI, or in the GTK, GTK 4, Qt and FLTK drivers on Windows.
+
+**SAVEUNDER** [Win32 and Motif Only] (creation-only): When this attribute is true (YES), the dialog requests the window system to store the original image of the desktop region it occupies, so closing or moving the dialog does not trigger a redraw of the windows beneath it.
+Its default value is YES if the dialog has a parent dialog.
+Largely a no-op on modern composited window systems (DWM on Windows, KWin/Mutter on Linux); other drivers do not expose an equivalent primitive.
+
+**XWINDOW** [UNIX Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
+Available in Motif, GTK, GTK 4, Qt, FLTK and EFL on X11.
+
+**WL_SURFACE** [UNIX Only] (non-inheritable, read-only): Returns the Wayland surface handle.
+Available in GTK, GTK 4, Qt, FLTK and EFL on Wayland.
+
+**NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the Cocoa NSView handle.
+Available in the Cocoa, GTK, GTK 4, Qt and FLTK drivers on macOS.
+
+**BWINDOW** [Haiku Only] (non-inheritable, read-only): Returns the Haiku BWindow handle.
+
+#### Exclusive [Windows Only]
 
 **COMPOSITED** [Win32 Only] (creation-only): controls if the window will have an automatic double buffer for all children.
 Default is "NO".
@@ -268,18 +274,6 @@ For the next interaction of the user with a control in the dialog, the callback 
 Possible values: YES, NO. Default: NO.
 
 **MAXIMIZEATPARENT** [Win32 Only]: when using multiple monitors, maximize the dialog in the same monitor that the parent dialog is.
-
-**TOOLBOX** (creation-only): makes the dialog look like a toolbox with a smaller title bar. Default: NO.
-Supported in Win32, WinUI, Qt and Haiku.
-In Win32 and WinUI it is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined.
-
-#### Exclusive [GTK, Qt, macOS and iOS]
-
-**DIALOGHINT** (creation-only): if enabled, set the window type hint to a dialog hint.
-Supported in GTK, GTK 4, Qt, macOS, and EFL.
-
-**HIDETITLEBAR** (non-inheritable): hides the title bar with all its elements.
-In Motif the result depends on the window manager honoring `_MOTIF_WM_HINTS` (most modern WMs do).
 
 #### Exclusive Taskbar
 
@@ -326,6 +320,7 @@ Not supported: MAXBOX, MINBOX, MENUBOX, RESIZE, BORDER, DIALOGFRAME, CUSTOMFRAME
 
 **COPYDATA_CB**: Called at the first instance, when a second instance is running.
 Must set the global attribute SINGLEINSTANCE to be called.
+Not supported in Android and iOS.
 
     int function(Ihandle *ih, char* cmdLine, int size);
 

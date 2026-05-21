@@ -43,7 +43,7 @@ See the documentation of the attribute for EXPAND inheritance.
 **GAPVERT, CGAPVERT**: Defines a vertical space in pixels between elements, **CGAPVERT** is in the same units of the **SIZE** attribute for the height.
 Default: "0".
 
-**GAPHORIZ, CGAPHORIZ**: Defines a horizontal space in pixels between elements, **CGAP**HORIZ**** is in the same units of the **SIZE** attribute for the height.
+**GAPHORIZ, CGAPHORIZ**: Defines a horizontal space in pixels between elements, **CGAPHORIZ** is in the same units of the **SIZE** attribute for the height.
 Default: "0".
 
 **NGAPVERT, NCGAPVERT, NGAPHORIZ, NCGAPHORIZ** (non-inheritable): Same as *GAP* but are non-inheritable.

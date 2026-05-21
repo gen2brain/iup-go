@@ -60,20 +60,20 @@ Default: Yes.
 
 (These attributes are only updated in the display when you set the REDRAW attribute.)
 
-***L*****:*C***: Text of the cell located in line L and column C, where L and C are integer numbers.\
-***L*:0**: Title of line L.\
-**0:*C***: Title of column C.\
-**0:0**: Title of the area between the line and column titles.
+`L:C`: Text of the cell located in line L and column C, where L and C are integer numbers.\
+`L:0`: Title of line L.\
+`0:C`: Title of column C.\
+`0:0`: Title of the area between the line and column titles.
 
 These are valid only in normal mode.
 
-**ALIGN*L*:*C***: Alignment of the cell value in line L and column C.
+**ALIGN**`L:C`: Alignment of the cell value in line L and column C.
 Values are in the format: "linalign:colalign", where linalign can be "ATOP", "ACENTER" or "ABOTTOM", and colalign can be "ALEFT", "ACENTER" or "ARIGHT".
 Default will use ALIGNMENT* and LINEALIGMENT*.
 
-**TYPE*L*:*C***: Type of the cell value in line L and column C.\
-**TYPE*:*C***: Type of column C.\
-**TYPE*L*:***: Type of line L.
+**TYPE**`L:C`: Type of the cell value in line L and column C.\
+**TYPE**`*:C`: Type of column C.\
+**TYPE**`L:*`: Type of line L.
 
 It can be TEXT, COLOR, FILL, or IMAGE. When type is COLOR, the cell value is interpreted as a color and a rectangle with the color is drawn inside the cell instead of the text (the FGCOLOR of the cell is ignored).
 When type is FILL, the cell value is interpreted as percentage and a rectangle showing the percentage in the FGCOLOR is drawn like in **IupGauge** and **IupProgressBar**.
@@ -81,53 +81,53 @@ When type is IMAGE, the cell value is interpreted as an image name, and if an im
 Only TEXT and IMAGE are affected by alignment attributes. Default: TEXT.
 
 **BGCOLOR**: Background color of the matrix. (inheritable)\
-**BGCOLOR*:*C***: Background color of column C.\
-**BGCOLOR*L*:***: Background color of line L.\
-**BGCOLOR*L*:*C***: Background color of the cell in line L and column C.
+**BGCOLOR**`*:C`: Background color of column C.\
+**BGCOLOR**`L:*`: Background color of line L.\
+**BGCOLOR**`L:C`: Background color of the cell in line L and column C.
 
-When more than one attribute are defined, the background color will be selected following this priority: BGCOLORL:C, BGCOLORL:*, BGCOLOR*:C, and last BGCOLOR. (L or C >= 0)\
+When more than one attribute are defined, the background color will be selected following this priority: `BGCOLORL:C`, `BGCOLORL:*`, `BGCOLOR*:C`, and last BGCOLOR. (L or C >= 0)\
 Default BGCOLOR is the global attribute TXTBGCOLOR for cells and the parent's BGCOLOR for titles.\
 Since the matrix control can be larger than the matrix itself, the empty area will always be filled with the parent's BGCOLOR.
 
 **FGCOLOR**: Text color. (inheritable)\
-**FGCOLOR*:*C***: Text color of column C.**\
-FGCOLOR*L*:***: Text color of line L.\
-**FGCOLOR*L*:*C***: Text color of the cell in line L and column C.
+**FGCOLOR**`*:C`: Text color of column C.\
+**FGCOLOR**`L:*`: Text color of line L.\
+**FGCOLOR**`L:C`: Text color of the cell in line L and column C.
 
-When more than one attribute are defined, the text color of a cell will be selected following this priority: FGCOLORL:C, FGCOLORL:*, FGCOLOR*:C, and last FGCOLOR. (L or C >= 0)\
+When more than one attribute are defined, the text color of a cell will be selected following this priority: `FGCOLORL:C`, `FGCOLORL:*`, `FGCOLOR*:C`, and last FGCOLOR. (L or C >= 0)\
 Default FGCOLOR is the global attribute TXTFGCOLOR for cells or the global attribute DLGFGCOLOR for titles.
 
 **[FONT](../attrib/iup_font.md)**: Character font of the text. (inheritable)\
-**FONT*L*:***: Text font of the cells in line L.\
-**FONT*:*C***: Text font of the cells in column C.\
-**FONT*L*:*C***: Text font of the cell in line L and column C.
+**FONT**`L:*`: Text font of the cells in line L.\
+**FONT**`*:C`: Text font of the cells in column C.\
+**FONT**`L:C`: Text font of the cell in line L and column C.
 
 This attribute must be set before the control is showed.
 It affects the calculation of the size of all the matrix cells.
 The cell size is always calculated from the base FONT attribute.
-FONTSTYLE*L***:***C* and FONTSIZE*L***:***C* can also be used to set FONT changing only the font style or size.
+`FONTSTYLEL:C` and `FONTSIZEL:C` can also be used to set FONT changing only the font style or size.
 
 **FRAMECOLOR**: Sets the color to be used in the frame lines. (inheritable)\
-**FRAMEVERTCOLOR*L:C***: Color of the vertical right frame line of the cell.
-When not defined the FRAMEVERTCOLOR**:C* is used.
-For a title column cell (col=0) defines right and left frames, except if FRAMETITLEVERTCOLOR*L***:***C*  is defined.
+**FRAMEVERTCOLOR**`L:C`: Color of the vertical right frame line of the cell.
+When not defined the `FRAMEVERTCOLOR*:C` is used.
+For a title column cell (col=0) defines right and left frames, except if `FRAMETITLEVERTCOLORL:C` is defined.
 If value is "BGCOLOR" the frame line is not drawn.\
-**FRAMEVERTCOLOR**:C***: same as FRAMEVERTCOLOR*L:C* but for all the cells of the column C.
-When not defined the FRAMECOLORL:C is used.**\
-FRAMEVERTCOLOR*L:****: same as FRAMEVERTCOLOR*L:C* but for all the cells of the line L.
-When not defined the FRAMECOLOR*:C is used.**\
-FRAMETITLEVERTCOLOR*L:******0***: color of the vertical left frame line of the cell.
-When not defined the FRAMEVERTCOLOR*L:0*  is used. "L" can also be "*"**\
-FRAMEHORIZCOLOR*L:C***: color of the horizontal bottom frame line of the cell.
-When not defined the FRAMEHORIZCOLOR*L:** is used.
-For a title line cell (lin=0) defines bottom and top frames, except if FRAMETITLEHORIZCOLOR*L***:***C*  is defined.
+**FRAMEVERTCOLOR**`*:C`: same as `FRAMEVERTCOLORL:C` but for all the cells of the column C.
+When not defined the `FRAMECOLORL:C` is used.\
+**FRAMEVERTCOLOR**`L:*`: same as `FRAMEVERTCOLORL:C` but for all the cells of the line L.
+When not defined the `FRAMECOLOR*:C` is used.\
+**FRAMETITLEVERTCOLOR**`L:0`: color of the vertical left frame line of the cell.
+When not defined the `FRAMEVERTCOLORL:0` is used. "L" can also be "*".\
+**FRAMEHORIZCOLOR**`L:C`: color of the horizontal bottom frame line of the cell.
+When not defined the `FRAMEHORIZCOLORL:*` is used.
+For a title line cell (lin=0) defines bottom and top frames, except if `FRAMETITLEHORIZCOLORL:C` is defined.
 If value is "BGCOLOR" the frame line is not drawn.\
-**FRAMEHORIZCOLOR*L:****: same as FRAMEHORIZCOLOR*L:C* but for all the cells of the line L.
-When not defined the FRAMECOLORL:C is used.\
-**FRAMEHORIZCOLOR**:C***: same as FRAMEHORIZCOLOR*L:C* but for all the cells of the column C.
-When not defined the FRAMECOLORL:* is used.\
-**FRAMETITLEHORIZCOLOR*0:C***: color of the horizontal top frame line of the cell.
-When not defined the FRAMEHORIZCOLOR*0:C* is used. "C" can also be "*".
+**FRAMEHORIZCOLOR**`L:*`: same as `FRAMEHORIZCOLORL:C` but for all the cells of the line L.
+When not defined the `FRAMECOLORL:C` is used.\
+**FRAMEHORIZCOLOR**`*:C`: same as `FRAMEHORIZCOLORL:C` but for all the cells of the column C.
+When not defined the `FRAMECOLORL:*` is used.\
+**FRAMETITLEHORIZCOLOR**`0:C`: color of the horizontal top frame line of the cell.
+When not defined the `FRAMEHORIZCOLOR0:C` is used. "C" can also be "*".
 
 **FRAMETITLEHIGHLIGHT**: by default, the title cells will have a bright line at left and top to configure a raise appearance.
 Can be Yes or No. Default: Yes.
@@ -139,7 +139,7 @@ Default: No.
 
 **RESIZEMATRIXCOLOR**: color used by the column resize feedback. Default: "102 102 102".
 
-**TOGGLEVALUE*L*:*C*** : value of the toggle inside the cell.
+**TOGGLEVALUE**`L:C`: value of the toggle inside the cell.
 The toggle is shown only if the DROPCHECK_CB returns IUP_CONTINUE for the cell.
 When the toggle is interactively change the TOGGLEVALUE_CB callback is called.
 
@@ -150,43 +150,43 @@ When retrieved inside the EDITION_CB callback when mode is 0, then the return va
 
 ------------------------------------------------------------------------
 
-**CELL*L*:*C*** (read-only): Returns the displayed cell value.
+**CELL**`L:C` (read-only): Returns the displayed cell value.
 Returns NULL if the cell does not exist, or it is not visible, or the element is not mapped.
 
-**CELLBGCOLOR*L*:*C*** (read-only): Returns the actual cell background color, including lin and col variations, callback returned values, mark and active state modifications.
+**CELLBGCOLOR**`L:C` (read-only): Returns the actual cell background color, including lin and col variations, callback returned values, mark and active state modifications.
 Returns NULL if the cell does not exist, or it is not visible, or the element is not mapped.
 
-**CELLFGCOLOR*L*:*C*** (read-only): Returns the actual cell foreground color, including lin and col variations, callback returned values, mark state modifications.
+**CELLFGCOLOR**`L:C` (read-only): Returns the actual cell foreground color, including lin and col variations, callback returned values, mark state modifications.
 Returns NULL if the cell does not exist, or it is not visible, or the element is not mapped.
 
-**CELLFONT*L*:*C*** (read-only): Returns the actual cell font, including lin and col variations, callback returned values.
+**CELLFONT**`L:C` (read-only): Returns the actual cell font, including lin and col variations, callback returned values.
 Returns NULL if the cell does not exist, or it is not visible, or the element is not mapped.
 
-**CELL*TYPEL*:*C*** (read-only): Returns the actual cell type, including lin and col variations, callback returned values.
+**CELLTYPE**`L:C` (read-only): Returns the actual cell type, including lin and col variations, callback returned values.
 Returns NULL if the cell does not exist, or it is not visible, or the element is not mapped.
 
-**CELLFRAMEHORIZCOLOR*L*:*C*** (read-only): Returns the actual cell frame horizontal color, including lin and col variations.
+**CELLFRAMEHORIZCOLOR**`L:C` (read-only): Returns the actual cell frame horizontal color, including lin and col variations.
 Returns NULL if the cell does not exist, or it is not visible, the element is not mapped, or the color is transparent.
 
-**CELLFRAMEVERTCOLOR*L*:*C*** (read-only): Returns the actual cell frame vertical color, including lin and col variations.
+**CELLFRAMEVERTCOLOR**`L:C` (read-only): Returns the actual cell frame vertical color, including lin and col variations.
 Returns NULL if the cell does not exist, or it is not visible, the element is not mapped, or the color is transparent.
 
-**CELLALIGNMENT*L*:*C*** (read-only): Returns the actual cell text aligment, including lin and col variations.
+**CELLALIGNMENT**`L:C` (read-only): Returns the actual cell text aligment, including lin and col variations.
 Returns NULL if the cell does not exist, or it is not visible, or the element is not mapped.
 
-**CELLOFFSET*L*:*C*** (read-only): Returns the cell computed offset in pixels from the top-left corner of the matrix, in the format "XxY" or "%dx%d" in C.
+**CELLOFFSET**`L:C` (read-only): Returns the cell computed offset in pixels from the top-left corner of the matrix, in the format "XxY" or "%dx%d" in C.
 Returns NULL if the cell does not exist, or it is not visible, or the element is not mapped.
 It will only return a valid result if the cell has already been displayed.
 They are similar to the parameters of the DRAW_CB callback, but they do NOT include the decorations.
 
-**CELLSIZE*L*:*C*** (read-only): Returns the cell computed size in pixels, in the format "WxH" or "%dx%d" in C.
+**CELLSIZE**`L:C` (read-only): Returns the cell computed size in pixels, in the format "WxH" or "%dx%d" in C.
 Returns NULL if the cell does not exist, or the element is not mapped.
 It will only return a valid result if the cell has already been displayed.
 They are similar to the parameters of the DRAW_CB callback, but they do NOT include the decorations.
 
 ### Column/Line Only Attributes (no redraw)
 
-**ALIGNMENT*****C*** : Horizontal alignment of the cells in column C (C >= 0) for lines that are greater than 0.
+**ALIGNMENT**`C`: Horizontal alignment of the cells in column C (C >= 0) for lines that are greater than 0.
 Can be: "ALEFT", "ACENTER" or "ARIGHT". Default: "ALEFT" for C=0 and "ACENTER" for C>0.
 Before checking the default value it will check the "**ALIGNMENT**" attribute value.
 If the text does not fit in the cell, then the alignment is changed to ALEFT.
@@ -194,10 +194,10 @@ If the text does not fit in the cell, then the alignment is changed to ALEFT.
 **ALIGNMENTLIN0:** Horizontal alignment of all the cells in line 0.
 Default is "ACENTER".
 
-**LINEALIGNMENT*L***: Vertical alignment of the cells in line L (L >= 0) for all columns.
+**LINEALIGNMENT**`L`: Vertical alignment of the cells in line L (L >= 0) for all columns.
 Can be: "ATOP", "ACENTER" or "ABOTTOM". Default is "ACENTER".
 
-**SORTSIGN*****C*** : Shows a sort sign (up or down arrow) in the column C (C >= 0) title.
+**SORTSIGN**`C`: Shows a sort sign (up or down arrow) in the column C (C >= 0) title.
 Possible values: "UP", "DOWN" and "NO". Default: NO.
 
 **SORTIMAGEDOWN/SORTIMAGEUP**: sort sign image name.
@@ -344,7 +344,7 @@ Default: "Yes".
 **MARKMODE**: Defines the entity that can be marked: none, lines, columns, (lines **or** columns), and cells.
 Possible values: "NO", "LIN", "COL", "LINCOL" or "CELL". Default: "NO" (no mark).
 
-**MARK*L:C*** (no redraw): marks a cell, a line or a column depending on MARKMODE, and returns cell, line or column mark state also according to MARKMODE.
+**MARK**`L:C` (no redraw): marks a cell, a line or a column depending on MARKMODE, and returns cell, line or column mark state also according to MARKMODE.
 Can be "1" or "0". If MARKMODE=LIN,COL,LINCOL use 0 to mark only the other element (ex: "0:3" set/get for column 3).
 Even when MARKMODE=LIN,COL,LINCOL you can specify a single cell address.
 
@@ -361,24 +361,26 @@ MULTIPLE and AREA are NOT considered when setting MARKED or MARKL:C.
 **MARKMULTIPLE**: Defines if more than one entity defined by MARKMODE can be **interactively** marked.
 Possible values: "YES" or "NO". Default: "NO".
 
-### Merge Attributes MERGE*L*:*C*: merge a range of cells starting from the given "lin:col" (in id), and ending at the given "lin:col" (in value). Title cells can also be merge but only among them, i.e. in the line of column titles (L=0) can only merge columns, and in the column of line titles (C=0) can only merge lines. The corner cell (0:0) can not be merged with any other cell. Only cells that are not already merged can be merged into a range. Returns if the given cell belongs to a merged range, can be "Yes" or "No".
+### Merge Attributes
+
+**MERGE**`L:C`: merge a range of cells starting from the given "lin:col" (in id), and ending at the given "lin:col" (in value). Title cells can also be merge but only among them, i.e. in the line of column titles (L=0) can only merge columns, and in the column of line titles (C=0) can only merge lines. The corner cell (0:0) can not be merged with any other cell. Only cells that are not already merged can be merged into a range. Returns if the given cell belongs to a merged range, can be "Yes" or "No".
 
 **MERGESPLIT** (write-only): split a merged range. value is a cell "lin:col" than belongs to the range, any cell of the range can be used.
 
-**MERGEDSTART*L*:*C***  (read-only): returns the start cell of the range given a cell that belongs to the range, any cell of the range can be used.
+**MERGEDSTART**`L:C`  (read-only): returns the start cell of the range given a cell that belongs to the range, any cell of the range can be used.
 
-**MERGEDEND*L*:*C***  (read-only): returns the end cell of the range given a cell that belongs to the range, any cell of the range can be used.
+**MERGEDEND**`L:C`  (read-only): returns the end cell of the range given a cell that belongs to the range, any cell of the range can be used.
 
 ### Action Attributes
 
 **CLEARATTRIB** (write-only): Clear all cell attributes if ALL, all attributes except titles if CONTENTS, and all selected cell attributes if MARKED.
 When ALL is specified, all lines and column attributes are also cleared.\
-**CLEARATTRIB*L*:*C*** (write-only): Clear all cell attributes in an interval starting at the specified cell.
+**CLEARATTRIB**`L:C` (write-only): Clear all cell attributes in an interval starting at the specified cell.
 Its value defines the end cell in the "L:C" format, the default is the last cell.\
-**CLEARATTRIB*L*:*** (write-only): the cell attributes in line L.
+**CLEARATTRIB**`L:*` (write-only): the cell attributes in line L.
 Its value defines a column inclusive interval in the "C1-C2" format. The default is 0 and the last column.
 When a full line is specified, all line attributes are also cleared.\
-**CLEARATTRIB*:*C*** *(write-only)*: the cell attributes in column C.
+**CLEARATTRIB**`*:C` *(write-only)*: the cell attributes in column C.
 Its value defines a line inclusive interval in the "L1-L2" format. The default is 0 and the last line.
 When a full column is specified, all column attributes are also cleared, including ALIGNMENT and SORTSIGN.
 
@@ -387,20 +389,20 @@ Only the attributes FONT*, BGCOLOR*, FGCOLOR*, FRAMEHORIZCOLOR*, FRAMEVERTCOLOR*
 In callback mode will not call the user callbacks.
 
 **CLEARVALUE** (write-only): Clear all values if ALL, all values except titles if CONTENTS, and all selected cell values if MARKED.\
-**CLEARVALUE*L*:*C*** (write-only): Clear all values in an interval starting at the specified cell.
+**CLEARVALUE**`L:C` (write-only): Clear all values in an interval starting at the specified cell.
 Its value defines the end cell in the "L:C" format, the default is the last cell.\
-**CLEARVALUE*L*:*** (write-only): the values in line L.
+**CLEARVALUE**`L:*` (write-only): the values in line L.
 Its value defines a column inclusive interval in the "C1-C2" format.
 The default is 0 and the last column.\
-**CLEARVALUE*:*C*** (write-only): the values in column C.
+**CLEARVALUE**`*:C` (write-only): the values in column C.
 Its value defines a line inclusive interval in the "L1-L2" format.
 The default is 0 and the last line.
 
 In all cases, values are set to NULL. Works also in callback mode.
 
-**COPYCOL*C*** (write-only): copy the values and attributes from column C to the given column (value is the number of a column).
+**COPYCOL**`C` (write-only): copy the values and attributes from column C to the given column (value is the number of a column).
 
-**COPYLIN*L*** (write-only): copy the values and attributes from line L to the given line (value is the number of a line).
+**COPYLIN**`L` (write-only): copy the values and attributes from line L to the given line (value is the number of a line).
 
 **FITTOSIZE** (write-only): Force lines and/or columns sizes so the matrix visible size fits in its current size.
 NUMCOL_VISIBLE and NUMLIN_VISIBLE are considered when fitting, and they are not changed, only the RASTERWIDTHn and RASTERHEIGHTn attributes are changed.
@@ -413,11 +415,11 @@ The number of the column or line must be preceded by a character identifying its
 For example "C5"=column 5 or "L3"=line 3.
 If FITMAXWIDTHn or FITMAXHEIGHTn are set for the column or line they are used as maximum limit for the size.
 
-**MOVECOL*C*** (write-only): move the values and attributes from column C to the given column (value is the number of a column).
+**MOVECOL**`C` (write-only): move the values and attributes from column C to the given column (value is the number of a column).
 Internally will use ADDCOL+COPYCOL+DELCOL to perform the move so it is limited to those attributes restrictions.
 It can be used in normal operation mode or in callback mode, but in callback mode will not update cell values, this must be done by the application.
 
-**MOVELIN*L*** (write-only): move the values and attributes from line L to the given line (value is the number of a line).
+**MOVELIN**`L` (write-only): move the values and attributes from line L to the given line (value is the number of a line).
 Internally will use ADDLIN+COPYLIN+DELLIN to perform the move so it is limited to those attributes restrictions.
 It can be used in normal operation mode or in callback mode, but in callback mode will not update cell values; this must be done by the application.
 
@@ -478,7 +480,7 @@ Useful for being consulted inside the translate and numeric callbacks.
 
 **INSERT**: inserts a text at the caret position of the text box in edition mode.
 
-**MASK*L:C***  or **MASK*L:**** or **MASK**:C***: Defines a mask that will filter text input.
+**MASK**`L:C` or **MASK**`L:*` or **MASK**`*:C`: Defines a mask that will filter text input.
 All [MASK](../attrib/iup_mask.md) auxiliary attributes are also available by adding the line and column at the end of the attribute name.
 
 **MULTILINE**: allows the edition of multiple lines. Use Shift+Enter to add lines.

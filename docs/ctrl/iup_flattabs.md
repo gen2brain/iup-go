@@ -225,7 +225,7 @@ If not defined EXTRAIMAGE*id* is used and its colors will be replaced by a modif
 
 **EXTRATOGGLE*id***: enabled the toggle behavior. Default: NO.
 
-****EXTRA**VALUE***id*****: Toggle's state. Values can be "ON" or "OFF".
+**EXTRAVALUE*****id***: Toggle's state. Values can be "ON" or "OFF".
 Default: "OFF".
 
 #### Expand Button Attributes (non-inheritable)
