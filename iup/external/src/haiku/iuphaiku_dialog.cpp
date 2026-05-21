@@ -438,7 +438,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* na
   if (!win || !native_parent) return;
 
   LooperLockGuard guard(win);
-  win->SetFeel(B_MODAL_SUBSET_WINDOW_FEEL);
+  win->SetFeel(B_FLOATING_SUBSET_WINDOW_FEEL);
   win->AddToSubset((BWindow*)native_parent);
 }
 
@@ -511,7 +511,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
           !iupAttribGet(ih, "_IUPHAIKU_SAVED_FEEL"))
       {
         iupAttribSetInt(ih, "_IUPHAIKU_SAVED_FEEL", (int)win->Feel());
-        window_feel modal_feel = (win->Feel() == B_MODAL_SUBSET_WINDOW_FEEL)
+        window_feel modal_feel = (win->Feel() == B_FLOATING_SUBSET_WINDOW_FEEL)
                                    ? B_MODAL_SUBSET_WINDOW_FEEL
                                    : B_MODAL_APP_WINDOW_FEEL;
         win->SetFeel(modal_feel);
