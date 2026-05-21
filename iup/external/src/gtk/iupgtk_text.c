@@ -154,10 +154,7 @@ static void iupgtkTextMeasureEntryBorders(void)
     if (iupgtk_entry_border_y < 0) iupgtk_entry_border_y = 10;
     if (iupgtk_entry_noframe_border_y < 0) iupgtk_entry_noframe_border_y = 0;
 
-    /* Measure the per-char width difference between "W" and GTK's average char.
-       GtkEntry uses approximate_char_width for width_chars sizing, but
-       IUP core uses "W" width for VISIBLECOLUMNS. We store the exact CSS decoration
-       and the per-char adjustment so iupdrvTextAddBorders can compensate. */
+    /* pango's approximate char metrics underestimate real glyphs, so measure the digit */
     {
       PangoFontMetrics* metrics = pango_context_get_metrics(context,
           pango_context_get_font_description(context),
@@ -165,9 +162,15 @@ static void iupgtkTextMeasureEntryBorders(void)
       int avg_w = pango_font_metrics_get_approximate_char_width(metrics);
       int digit_w = pango_font_metrics_get_approximate_digit_width(metrics);
       int gtk_char_pixels = (MAX(avg_w, digit_w) + PANGO_SCALE - 1) / PANGO_SCALE;
+      int digit_col;
+
+      pango_layout_set_text(layout, "0000000000", -1);
+      pango_layout_get_pixel_size(layout, &digit_col, NULL);
+      digit_col = (digit_col + 9) / 10;
+      if (digit_col < gtk_char_pixels + 1) digit_col = gtk_char_pixels + 1;
 
       iupgtk_entry_css_dec_x = entry_w - gtk_char_pixels;
-      iupgtk_entry_char_adjust_x = char_width - gtk_char_pixels;
+      iupgtk_entry_char_adjust_x = char_width - digit_col;
       if (iupgtk_entry_css_dec_x < 2) iupgtk_entry_css_dec_x = 2;
       if (iupgtk_entry_char_adjust_x < 0) iupgtk_entry_char_adjust_x = 0;
 
@@ -310,8 +313,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   else
   {
     int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    int border = iupgtk_entry_css_dec_x - visiblecolumns * iupgtk_entry_char_adjust_x;
-    (*x) += border;
+    (*x) += iupgtk_entry_css_dec_x - visiblecolumns * iupgtk_entry_char_adjust_x;
 
     if (iupAttribGetBoolean(ih, "SPIN"))
     {
