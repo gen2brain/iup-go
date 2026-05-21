@@ -265,6 +265,14 @@ public:
     if (cb) cb(fIhandle, (int)where.x, (int)where.y);
   }
 
+  void Zoom(BPoint origin, float width, float height) override
+  {
+    BWindow::Zoom(origin, width, height);
+    if (!fIhandle || !iupObjectCheck(fIhandle)) return;
+    /* Native zoom-tab toggles; flip the hash flag the MAXIMIZED getter reads. */
+    iupAttribSet(fIhandle, "MAXIMIZED", iupAttribGetBoolean(fIhandle, "MAXIMIZED") ? NULL : (char*)"Yes");
+  }
+
   void FrameResized(float w, float h) override
   {
     BWindow::FrameResized(w, h);
@@ -551,17 +559,12 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   ih->data->show_state = IUP_SHOW;
 
   char* placement = iupAttribGet(ih, "PLACEMENT");
-  if (!placement) return 0;
-
-  BScreen screen;
-  BRect screen_rect = screen.Frame();
 
   if (iupStrEqualNoCase(placement, "MAXIMIZED") ||
       iupStrEqualNoCase(placement, "FULL"))
   {
-    LooperLockGuard guard(win);
-    win->MoveTo(screen_rect.LeftTop());
-    win->ResizeTo(screen_rect.Width(), screen_rect.Height());
+    /* No looper lock: the helper re-enters via IupRefresh/SetPosition. */
+    iupDialogCustomFrameMaximize(ih);
     ih->data->show_state = IUP_MAXIMIZE;
   }
   else if (iupStrEqualNoCase(placement, "MINIMIZED"))
@@ -570,10 +573,14 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     win->Minimize(true);
     ih->data->show_state = IUP_MINIMIZE;
   }
-  else if (iupStrEqualNoCase(placement, "NORMAL"))
+  else  /* NULL / empty / NORMAL: restore from a simulated maximize */
   {
-    LooperLockGuard guard(win);
-    if (win->IsMinimized()) win->Minimize(false);
+    {
+      LooperLockGuard guard(win);
+      if (win->IsMinimized()) win->Minimize(false);
+    }
+    if (!iupDialogCustomFrameRestore(ih))
+      return 0;
     ih->data->show_state = IUP_RESTORE;
   }
 
@@ -765,17 +772,6 @@ static char* haikuDialogGetClientSizeAttrib(Ihandle* ih)
   return iupStrReturnIntInt((int)(b.Width() + 1), (int)(b.Height() + 1), 'x');
 }
 
-static char* haikuDialogGetMaximizedAttrib(Ihandle* ih)
-{
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
-  if (!win) return NULL;
-  BScreen sc(win);
-  BRect sf = sc.Frame();
-  BRect df = win->DecoratorFrame();
-  /* Maximized in the IUP sense = covers the whole screen. */
-  return iupStrReturnBoolean(df.Contains(sf) ? 1 : 0);
-}
-
 static char* haikuDialogGetMinimizedAttrib(Ihandle* ih)
 {
   IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
@@ -922,7 +918,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CLIENTSIZE", haikuDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", iupBaseGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MAXIMIZED", haikuDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINIMIZED", haikuDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", haikuDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
