@@ -153,8 +153,8 @@ Used only if PARENTDIALOG is not defined.
 Default: NORMAL. After **IupShow**/**IupPopup** the attribute is set back to "NORMAL".
 FULL is similar to FULLSCREEN, but only the dialog client area covers the screen area, menu and decorations will be there but out of the screen.
 In UNIX there is a chance that the placement won't work correctly, that depends on the Window Manager.
-In Windows, the SHOWNOACTIVATE attribute can be set to Yes to prevent the window from being activated.
-In Windows, the SHOWMINIMIZENEXT attribute can be set to Yes to activate the next top-level window in the Z order when minimizing.
+The SHOWNOACTIVATE attribute can be set to Yes to prevent the window from being activated [Win32, WinUI, Qt and Cocoa].
+The SHOWMINIMIZENEXT attribute can be set to Yes to activate the next top-level window in the Z order when minimizing [Win32 and WinUI].
 
 **RESIZE** (creation-only): Allows interactively changing the dialog’s size. Default: YES.
 If RESIZE=NO then MAXBOX will be set to NO.
@@ -173,17 +173,22 @@ On Android and iOS defaults to YES; touch UIs don't autofocus controls on launch
 #### Exclusive [System Dependent]
 
 **HWND** [Windows Only] (non-inheritable, read-only): Returns the Windows Window handle.
-Available in Windows, WinUI, or in the GTK/GTK 4/Qt drivers on Windows.
+Available in Win32, WinUI, or in the GTK, GTK 4, Qt and FLTK drivers on Windows.
 
 **SAVEUNDER** [Win32 and Motif Only] (creation-only): When this attribute is true (YES), the dialog requests the window system to store the original image of the desktop region it occupies, so closing or moving the dialog does not trigger a redraw of the windows beneath it.
 Its default value is YES if the dialog has a parent dialog.
 Largely a no-op on modern composited window systems (DWM on Windows, KWin/Mutter on Linux); other drivers do not expose an equivalent primitive.
 
 **XWINDOW** [UNIX Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
-Available in Motif, GTK, GTK 4, Qt and EFL on X11.
+Available in Motif, GTK, GTK 4, Qt, FLTK and EFL on X11.
 
 **WL_SURFACE** [UNIX Only] (non-inheritable, read-only): Returns the Wayland surface handle.
-Available in GTK, GTK 4, Qt and EFL on Wayland.
+Available in GTK, GTK 4, Qt, FLTK and EFL on Wayland.
+
+**NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the Cocoa NSView handle.
+Available in the Cocoa, GTK, GTK 4, Qt and FLTK drivers on macOS.
+
+**BWINDOW** [Haiku Only] (non-inheritable, read-only): Returns the Haiku BWindow handle.
 
 ####
 
@@ -358,6 +363,7 @@ It is called after the common callbacks GETFOCUS_CB and KILL_FOCUS_CB.
 
 **MOVE_CB**: Called after the dialog was moved on screen.
 The coordinates are the same as the [SCREENPOSITION](../attrib/iup_screenposition.md) attribute.
+Not supported in GTK 4 (no window position API), Android and iOS (dialogs are fullscreen).
 
     int function(Ihandle *ih, int x, int y);
 

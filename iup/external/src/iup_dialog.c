@@ -1377,6 +1377,7 @@ Iclass* iupDialogNewClass(void)
   /* Callbacks */
   iupClassRegisterCallback(ic, "SHOW_CB", "i");
   iupClassRegisterCallback(ic, "RESIZE_CB", "ii");
+  iupClassRegisterCallback(ic, "MOVE_CB", "ii");
   iupClassRegisterCallback(ic, "CLOSE_CB", "");
   iupClassRegisterCallback(ic, "FOCUS_CB", "i");
 

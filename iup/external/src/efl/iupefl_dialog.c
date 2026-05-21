@@ -144,6 +144,49 @@ static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
   }
 }
 
+static void eflDialogMoveCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  /* Use the event's position; a getter reads stale (fired before the move commits). */
+  Eina_Position2D* pos = (Eina_Position2D*)ev->info;
+  IFnii cb;
+
+  if (!iupObjectCheck(ih) || !pos)
+    return;
+
+  /* EFL fires this twice per move; dedup. */
+  if (pos->x == iupAttribGetInt(ih, "_IUPEFL_OLD_X") && pos->y == iupAttribGetInt(ih, "_IUPEFL_OLD_Y"))
+    return;
+
+  iupAttribSetInt(ih, "_IUPEFL_OLD_X", pos->x);
+  iupAttribSetInt(ih, "_IUPEFL_OLD_Y", pos->y);
+
+  cb = (IFnii)IupGetCallback(ih, "MOVE_CB");
+  if (cb)
+    cb(ih, pos->x, pos->y);
+}
+
+static void eflDialogMaximizedCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Eina_Bool* maximized = (Eina_Bool*)ev->info;
+  int state;
+  IFni cb;
+
+  if (!iupObjectCheck(ih) || !maximized)
+    return;
+
+  /* Guard against the programmatic PLACEMENT path, which already fired SHOW_CB. */
+  state = *maximized ? IUP_MAXIMIZE : IUP_RESTORE;
+  if (ih->data->show_state == state)
+    return;
+
+  ih->data->show_state = state;
+  cb = (IFni)IupGetCallback(ih, "SHOW_CB");
+  if (cb && cb(ih, state) == IUP_CLOSE)
+    IupExitLoop();
+}
+
 static void eflDialogThemeChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -620,6 +663,8 @@ static int eflDialogMapMethod(Ihandle* ih)
 
   efl_event_callback_add(win, EFL_UI_WIN_EVENT_DELETE_REQUEST, eflDialogCloseCallback, ih);
   efl_event_callback_add(win, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflDialogResizeCallback, ih);
+  efl_event_callback_add(win, EFL_GFX_ENTITY_EVENT_POSITION_CHANGED, eflDialogMoveCallback, ih);
+  efl_event_callback_add(win, EFL_UI_WIN_EVENT_MAXIMIZED_CHANGED, eflDialogMaximizedCallback, ih);
   efl_event_callback_add(win, EFL_UI_WIN_EVENT_THEME_CHANGED, eflDialogThemeChangedCallback, ih);
   efl_event_callback_add(win, EFL_EVENT_KEY_DOWN, eflDialogKeyDownCallback, ih);
 
@@ -681,6 +726,8 @@ static void eflDialogUnMapMethod(Ihandle* ih)
 
     efl_event_callback_del(win, EFL_UI_WIN_EVENT_DELETE_REQUEST, eflDialogCloseCallback, ih);
     efl_event_callback_del(win, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflDialogResizeCallback, ih);
+    efl_event_callback_del(win, EFL_GFX_ENTITY_EVENT_POSITION_CHANGED, eflDialogMoveCallback, ih);
+    efl_event_callback_del(win, EFL_UI_WIN_EVENT_MAXIMIZED_CHANGED, eflDialogMaximizedCallback, ih);
     efl_event_callback_del(win, EFL_UI_WIN_EVENT_THEME_CHANGED, eflDialogThemeChangedCallback, ih);
     efl_event_callback_del(win, EFL_EVENT_KEY_DOWN, eflDialogKeyDownCallback, ih);
 

@@ -131,6 +131,8 @@ public:
 
   void resize(int x, int y, int w, int h) override
   {
+    int old_x = x_root();
+    int old_y = y_root();
     int old_w = this->w();
     int old_h = this->h();
 
@@ -154,6 +156,13 @@ public:
 
     if (!visible())
       return;
+
+    if (x_root() != old_x || y_root() != old_y)
+    {
+      IFnii move_cb = (IFnii)IupGetCallback(iup_handle, "MOVE_CB");
+      if (move_cb)
+        move_cb(iup_handle, x_root(), y_root());
+    }
 
     if (w == old_w && h == old_h)
       return;
@@ -844,8 +853,6 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->LayoutUpdate = fltkDialogLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = fltkDialogGetInnerNativeContainerHandleMethod;
   ic->SetChildrenPosition = fltkDialogSetChildrenPositionMethod;
-
-  iupClassRegisterCallback(ic, "MOVE_CB", "ii");
 
   iupClassRegisterAttribute(ic, "CLIENTSIZE", fltkDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", fltkDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
