@@ -774,6 +774,27 @@ static int motDialogSetOpacityAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int motDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupStrBoolean(value) || !iupdrvDialogIsVisible(ih))
+    return 0;
+
+  Window win = XtWindow(ih->handle);
+  XRaiseWindow(iupmot_display, win);
+
+  /* EWMH _NET_ACTIVE_WINDOW so a compliant WM actually activates + focuses. */
+  Atom active = XInternAtom(iupmot_display, "_NET_ACTIVE_WINDOW", False);
+  XEvent evt = {0};
+  evt.type = ClientMessage;
+  evt.xclient.window = win;
+  evt.xclient.message_type = active;
+  evt.xclient.format = 32;
+  evt.xclient.data.l[0] = 1;  /* source: application */
+  evt.xclient.data.l[1] = CurrentTime;
+  XSendEvent(iupmot_display, RootWindow(iupmot_display, iupmot_screen), False, SubstructureRedirectMask | SubstructureNotifyMask, &evt);
+  return 0;
+}
+
 static int motDialogSetIconAttrib(Ihandle* ih, const char *value)
 {
   if (!value)
@@ -1216,7 +1237,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, motDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
