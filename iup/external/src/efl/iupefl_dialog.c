@@ -279,7 +279,7 @@ static int eflDialogGetMenuSize(Ihandle* ih)
 #define ECORE_X_MWM_HINT_DECOR_MINIMIZE (1 << 5)
 #define ECORE_X_MWM_HINT_DECOR_MAXIMIZE (1 << 6)
 
-static void eflDialogSetMwmHints(Ihandle* ih, Eo* win)
+static void eflDialogSetMwmHints(Ihandle* ih, Eo* win, int has_titlebar)
 {
   Ecore_X_Window xwin;
   unsigned int functions = 0;
@@ -294,7 +294,9 @@ static void eflDialogSetMwmHints(Ihandle* ih, Eo* win)
     return;
 
   functions = ECORE_X_MWM_HINT_FUNC_MOVE;
-  decorations = ECORE_X_MWM_HINT_DECOR_BORDER | ECORE_X_MWM_HINT_DECOR_TITLE;
+  decorations = ECORE_X_MWM_HINT_DECOR_BORDER;
+  if (has_titlebar)
+    decorations |= ECORE_X_MWM_HINT_DECOR_TITLE;
 
   if (iupAttribGetBoolean(ih, "RESIZE"))
   {
@@ -685,14 +687,15 @@ static int eflDialogMapMethod(Ihandle* ih)
     has_titlebar = 0;
   }
 
-  if (iupAttribGetBoolean(ih, "HIDETITLEBAR") || !has_titlebar)
+  if (iupAttribGetBoolean(ih, "HIDETITLEBAR") ||
+      (!has_titlebar && !iupAttribGetBoolean(ih, "BORDER")))
   {
     efl_ui_win_borderless_set(win, EINA_TRUE);
   }
   else
   {
 #ifdef HAVE_ECORE_X
-    eflDialogSetMwmHints(ih, win);
+    eflDialogSetMwmHints(ih, win, has_titlebar);
 #endif
   }
 
