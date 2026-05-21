@@ -1835,7 +1835,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->LayoutUpdate = cocoaDialogLayoutUpdateMethod;
   ic->SetChildrenPosition = cocoaDialogSetChildrenPositionMethod;
 
-  iupClassRegisterCallback(ic, "MOVE_CB", "ii");
   iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
   iupClassRegisterAttribute(ic, "CLIENTSIZE", cocoaDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);

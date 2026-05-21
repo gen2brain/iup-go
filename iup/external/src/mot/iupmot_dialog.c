@@ -887,6 +887,19 @@ static void motDialogConfigureNotify(Widget w, XEvent *evt, String* s, Cardinal 
     IupRefresh(ih);
     ih->data->ignore_resize = 0;
   }
+
+  {
+    int x, y;
+    iupdrvDialogGetPosition(ih, NULL, &x, &y);
+    if (x != iupAttribGetInt(ih, "_IUPMOT_OLD_X") || y != iupAttribGetInt(ih, "_IUPMOT_OLD_Y"))
+    {
+      IFnii move_cb = (IFnii)IupGetCallback(ih, "MOVE_CB");
+      iupAttribSetInt(ih, "_IUPMOT_OLD_X", x);
+      iupAttribSetInt(ih, "_IUPMOT_OLD_Y", y);
+      if (move_cb)
+        move_cb(ih, x, y);
+    }
+  }
 }
 
 static void motDialogCBStructureNotifyEvent(Widget w, XtPointer data, XEvent *evt, Boolean *cont)

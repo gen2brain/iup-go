@@ -16,6 +16,9 @@ This callback is called when those actions were performed by the user or program
 > IUP_MINIMIZE\
 > IUP_MAXIMIZE (not received in Motif when activated from the maximize button)
 
+In FLTK and EFL only IUP_SHOW, IUP_HIDE and programmatic placement changes are reported.
+EFL additionally reports a window-manager maximize/restore (IUP_MAXIMIZE/IUP_RESTORE), but not iconify (IUP_MINIMIZE).
+
 **Returns**: IUP_CLOSE will be processed.
 
 ### Affects

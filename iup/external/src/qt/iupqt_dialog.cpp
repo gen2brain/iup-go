@@ -1194,7 +1194,6 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->SetChildrenPosition = qtDialogSetChildrenPositionMethod;
 
   /* Callbacks */
-  iupClassRegisterCallback(ic, "MOVE_CB", "ii");
   iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
   /* Base Container */
