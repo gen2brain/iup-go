@@ -60,6 +60,21 @@ static int motDrawGetGeometry(Display *dpy, Drawable wnd, int *_w, int *_h, int 
   return 1;
 }
 
+/* XCreatePixmap memory is uninitialized, so fill the buffer with the canvas background */
+static void motDrawClearBackground(IdrawCanvas* dc)
+{
+  unsigned char r, g, b;
+  char* bgcolor = iupAttribGetStr(dc->ih, "BGCOLOR");
+  if (!iupStrToRGB(bgcolor, &r, &g, &b))
+  {
+    char* global = bgcolor ? IupGetGlobal(bgcolor) : NULL;  /* resolve names like DLGBGCOLOR */
+    if (!global || !iupStrToRGB(global, &r, &g, &b))
+      r = g = b = 255;
+  }
+  XSetForeground(iupmot_display, dc->pixmap_gc, iupmotColorGetPixel(r, g, b));
+  XFillRectangle(iupmot_display, dc->pixmap, dc->pixmap_gc, 0, 0, dc->w, dc->h);
+}
+
 IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc;
@@ -111,6 +126,8 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   }
 
   iupAttribSet(ih, "DRAWDRIVER", "X11");
+
+  motDrawClearBackground(dc);
 
   return dc;
 }
@@ -171,6 +188,8 @@ IUP_SDK_API void iupdrvDrawUpdateSize(IdrawCanvas* dc)
       dc->h = 0;
       return;
     }
+
+    motDrawClearBackground(dc);
   }
 }
 
