@@ -160,6 +160,8 @@ IUP_SDK_API int iupdrvOpen(int *argc, char ***argv)
   if (getenv("IUP_DEBUG"))
     XSynchronize(iupmot_display, 1);
 
+  iupmotLoopPostMessageInit();
+
   return IUP_NOERROR;
 }
 

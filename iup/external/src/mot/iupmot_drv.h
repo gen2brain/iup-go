@@ -20,6 +20,8 @@ extern XtAppContext   iupmot_appcontext;
 extern Visual*        iupmot_visual;
 extern Atom           iupmot_wm_deletewindow;
 
+IUP_DRV_API void iupmotLoopPostMessageInit(void);
+
 /* dialog */
 IUP_DRV_API void iupmotDialogSetVisual(Ihandle* ih, void* visual);
 IUP_DRV_API void iupmotDialogResetVisual(Ihandle* ih);
