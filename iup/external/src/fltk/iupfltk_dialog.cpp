@@ -622,6 +622,23 @@ static int fltkDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int fltkDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
+{
+  IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
+  if (!dialog) return 0;
+  if (!value)
+  {
+    dialog->shape(NULL);
+    dialog->redraw();
+    return 1;
+  }
+  Fl_Image* image = (Fl_Image*)iupImageGetImage(value, ih, 0, NULL);
+  if (!image) return 0;
+  dialog->shape(image);
+  dialog->redraw();
+  return 1;
+}
+
 static int fltkDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 {
   IupFltkDialog* dialog = (IupFltkDialog*)ih->handle;
@@ -860,4 +877,5 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, fltkDialogSetShapeImageAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
