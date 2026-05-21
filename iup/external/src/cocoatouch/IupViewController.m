@@ -7,6 +7,7 @@
 #import "IupViewController.h"
 
 #include "iup.h"
+#include "iupcbs.h"
 #include "iup_object.h"
 
 #include "iupcocoatouch_drv.h"
@@ -86,17 +87,21 @@
 	[_scrollView setFrame:safe];
 
 	/* width clamps to viewport; height grows past it so the scrollView pans */
-	int target_w = iupROUND(safe.size.width);
-	int target_h = iupROUND(safe.size.height);
+	int viewport_w = iupROUND(safe.size.width);
+	int viewport_h = iupROUND(safe.size.height);
 	if (_ihandle)
 	{
+		int target_h = viewport_h;
 		if (_ihandle->naturalheight > target_h) target_h = _ihandle->naturalheight;
 
-		if (target_w != _ihandle->currentwidth || target_h != _ihandle->currentheight)
+		if (viewport_w != _ihandle->currentwidth || target_h != _ihandle->currentheight)
 		{
-			_ihandle->currentwidth  = target_w;
+			_ihandle->currentwidth  = viewport_w;
 			_ihandle->currentheight = target_h;
-			IupRefresh(_ihandle);
+			/* RESIZE_CB reports the visible client area, not the scroll-content height. */
+			IFnii cb = (IFnii)IupGetCallback(_ihandle, "RESIZE_CB");
+			if (!cb || cb(_ihandle, viewport_w, viewport_h) != IUP_IGNORE)
+				IupRefresh(_ihandle);
 		}
 	}
 
