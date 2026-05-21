@@ -259,6 +259,7 @@ extern "C" IUP_API int IupMainLoop(void)
   {
     /* Nested: Run() is single-shot, so spin our own pump. */
     BLooper* self_looper = BLooper::LooperForThread(find_thread(NULL));
+    BWindow* self_window = dynamic_cast<BWindow*>(self_looper);
     sem_id sem = haikuWakeSem();
     while (!haiku_loop_exit_flag[current_level])
     {
@@ -272,6 +273,9 @@ extern "C" IUP_API int IupMainLoop(void)
       }
 
       if (iupDlgListVisibleCount() <= 0) break;
+
+      /* Blocked here, so the looper can't repaint itself; drain its pending updates. */
+      if (self_window) self_window->UpdateIfNeeded();
 
       int relock = 0;
       if (self_looper) while (self_looper->IsLocked()) { self_looper->Unlock(); relock++; }

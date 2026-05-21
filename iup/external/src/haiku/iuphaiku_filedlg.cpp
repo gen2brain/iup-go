@@ -97,7 +97,21 @@ public:
     release_sem(fSem);
   }
 
-  void WaitDone() { acquire_sem(fSem); }
+  void WaitDone()
+  {
+    /* Blocked here, so repaint the caller's window like BAlert::Go does. */
+    BWindow* window = dynamic_cast<BWindow*>(BLooper::LooperForThread(find_thread(NULL)));
+    for (;;)
+    {
+      status_t status = acquire_sem_etc(fSem, 1, B_RELATIVE_TIMEOUT, 50000);
+      if (status == B_TIMED_OUT || status == B_INTERRUPTED)
+      {
+        if (window) window->UpdateIfNeeded();
+        continue;
+      }
+      break;
+    }
+  }
   int Status() const { return fStatus; }
   const char* ResultPath() const { return fPath; }
   void SetMultiple(bool m) { fIsMultiple = m; }
