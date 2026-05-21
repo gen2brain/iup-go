@@ -81,9 +81,16 @@ static void gtk4TextMeasureEntryBorders(void)
       int avg_w = pango_font_metrics_get_approximate_char_width(metrics);
       int digit_w = pango_font_metrics_get_approximate_digit_width(metrics);
       int gtk_char_pixels = (MAX(avg_w, digit_w) + PANGO_SCALE - 1) / PANGO_SCALE;
+      int digit_col;
+
+      /* pango's approximate char metrics underestimate real glyphs, so measure the digit */
+      pango_layout_set_text(layout, "0000000000", -1);
+      pango_layout_get_pixel_size(layout, &digit_col, NULL);
+      digit_col = (digit_col + 9) / 10;
+      if (digit_col < gtk_char_pixels + 1) digit_col = gtk_char_pixels + 1;
 
       gtk4_entry_css_dec_x = entry_w - gtk_char_pixels;
-      gtk4_entry_char_adjust_x = char_width - gtk_char_pixels;
+      gtk4_entry_char_adjust_x = char_width - digit_col;
       if (gtk4_entry_css_dec_x < 2) gtk4_entry_css_dec_x = 2;
       if (gtk4_entry_char_adjust_x < 0) gtk4_entry_char_adjust_x = 0;
 
@@ -226,8 +233,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *x, int *y)
   else
   {
     int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    int border = gtk4_entry_css_dec_x - visiblecolumns * gtk4_entry_char_adjust_x;
-    (*x) += border;
+    (*x) += gtk4_entry_css_dec_x - visiblecolumns * gtk4_entry_char_adjust_x;
 
     if (iupAttribGetBoolean(ih, "SPIN"))
     {
