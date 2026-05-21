@@ -638,6 +638,12 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 
   if (efl_isa(widget, EFL_UI_WIDGET_CLASS))
     iupeflSetDisabled(widget, enable ? EINA_FALSE : EINA_TRUE);
+  else
+  {
+    /* no native disabled state; track it for iupdrvIsActive and ignore pointer input */
+    iupAttribSet(ih, "_IUPEFL_INACTIVE", enable ? NULL : "1");
+    evas_object_pass_events_set(widget, enable ? EINA_FALSE : EINA_TRUE);
+  }
 }
 
 IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
@@ -647,7 +653,7 @@ IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
     return 1;
 
   if (!efl_isa(widget, EFL_UI_WIDGET_CLASS))
-    return 1;
+    return iupAttribGet(ih, "_IUPEFL_INACTIVE") ? 0 : 1;
 
   return !iupeflGetDisabled(widget);
 }
