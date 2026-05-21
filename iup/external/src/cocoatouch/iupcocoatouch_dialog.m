@@ -616,8 +616,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "MAXSIZE", NULL, cocoaTouchDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "OPACITY", NULL, cocoaTouchDialogSetOpacityAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-	iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
-
 	iupClassRegisterAttribute(ic, "MAXBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MINBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MENUBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

@@ -1193,9 +1193,6 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->GetInnerNativeContainerHandle = qtDialogGetInnerNativeContainerHandleMethod;
   ic->SetChildrenPosition = qtDialogSetChildrenPositionMethod;
 
-  /* Callbacks */
-  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
-
   /* Base Container */
   iupClassRegisterAttribute(ic, "CLIENTSIZE", qtDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", qtDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);

@@ -942,8 +942,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->GetInnerNativeContainerHandle = gtk4DialogGetInnerNativeContainerHandleMethod;
   ic->SetChildrenPosition = gtk4DialogSetChildrenPositionMethod;
 
-  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
-
   iupClassRegisterAttribute(ic, iupgtk4GetNativeWindowHandleName(), iupgtk4GetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT | IUPAF_NO_STRING);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);

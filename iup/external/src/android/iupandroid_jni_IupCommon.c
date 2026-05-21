@@ -197,7 +197,7 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_HandleIupCallbac
   return ret_val;
 }
 
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_DoResize(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint x, jint y, jint width, jint height)
+JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_DoResize(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint x, jint y, jint width, jint height)
 {
   (void)jni_env;
   (void)cls;
@@ -205,18 +205,21 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_DoResize(JNIEnv*
   (void)y;
 
   Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
-  if (!ih || !iupObjectCheck(ih)) return;
+  if (!ih || !iupObjectCheck(ih)) return IUP_DEFAULT;
 
+  int ret = IUP_DEFAULT;
   IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
   if (cb)
   {
     /* RESIZE_CB sees logical px to match IupDraw's Canvas scale transform. */
     float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-    (void)cb(ih, (int)ceilf((float)width / d), (int)ceilf((float)height / d));
+    ret = cb(ih, (int)ceilf((float)width / d), (int)ceilf((float)height / d));
   }
   /* SHRINK=YES would otherwise squeeze content into the viewport; let it overflow so NestedScrollView pans. */
   if (ih->naturalheight > height) height = ih->naturalheight;
   ih->currentwidth = width;
   ih->currentheight = height;
-  IupRefresh(ih);
+  if (ret != IUP_IGNORE)
+    IupRefresh(ih);
+  return ret;
 }

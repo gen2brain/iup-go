@@ -468,9 +468,6 @@ void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterReplaceAttribDef(ic, "SHRINK", "YES", NULL);
   iupClassRegisterReplaceAttribDef(ic, "SHOWNOFOCUS", "YES", NULL);
 
-  /* Fired from IupActivity.onConfigurationChanged when UI_MODE_NIGHT_MASK flips. */
-  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
-
   /* Base Container */
   iupClassRegisterAttribute(ic, "CLIENTSIZE", androidDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", androidDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_DEFAULTVALUE|IUPAF_READONLY|IUPAF_NO_INHERIT);

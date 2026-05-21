@@ -1392,8 +1392,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->GetInnerNativeContainerHandle = gtkDialogGetInnerNativeContainerHandleMethod;
   ic->SetChildrenPosition = gtkDialogSetChildrenPositionMethod;
 
-  /* Callback for theme changes */
-  iupClassRegisterCallback(ic, "THEMECHANGED_CB", "i");
 
   /* Driver Dependent Attribute functions */
   iupClassRegisterAttribute(ic, iupgtkGetNativeWindowHandleName(), iupgtkGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_NO_STRING);
