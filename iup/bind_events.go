@@ -178,6 +178,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setReorderFunc(ih, fn.(ReorderFunc))
 	case "LINK_CB":
 		setTextLinkFunc(ih, fn.(TextLinkFunc))
+	case "MASKFAIL_CB":
+		setMaskFailFunc(ih, fn.(MaskFailFunc))
 	case "SPIN_CB":
 		setSpinFunc(ih, fn.(SpinFunc))
 	case "POSTMESSAGE_CB":
