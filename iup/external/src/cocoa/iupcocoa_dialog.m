@@ -1362,6 +1362,15 @@ static char* cocoaDialogGetMinimizedAttrib(Ihandle *ih)
   return iupStrReturnBoolean([the_window isMiniaturized]);
 }
 
+static char* cocoaDialogGetNSViewAttrib(Ihandle *ih)
+{
+  NSWindow* the_window = iupcocoaDialogGetWindow(ih);
+  if (!the_window)
+    return NULL;
+
+  return (char*)[the_window contentView];
+}
+
 /****************************************************************
  ********************** Class Methods ***************************
  ****************************************************************/
@@ -1859,6 +1868,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, cocoaDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", cocoaDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NSVIEW", cocoaDialogGetNSViewAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_NO_INHERIT|IUPAF_READONLY);
   iupClassRegisterAttribute(ic, "MAXIMIZED", cocoaDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINIMIZED", cocoaDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, cocoaDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
