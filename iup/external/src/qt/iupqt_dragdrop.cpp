@@ -6,6 +6,7 @@
 
 #include <QWidget>
 #include <QDrag>
+#include <QPixmap>
 #include <QMimeData>
 #include <QDragMoveEvent>
 #include <QUrl>
@@ -20,6 +21,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_key.h"
+#include "iup_image.h"
 }
 
 #include "iupqt_drv.h"
@@ -295,6 +297,24 @@ public:
                     free(data);
 
                     drag->setMimeData(mime_data);
+
+                    char* drag_cursor = iupAttribGet(ih, "DRAGCURSOR");
+                    if (drag_cursor)
+                    {
+                      QPixmap* pixmap = (QPixmap*)iupImageGetImage(drag_cursor, ih, 0, NULL);
+                      if (pixmap)
+                      {
+                        drag->setDragCursor(*pixmap, Qt::MoveAction);
+                        drag->setDragCursor(*pixmap, Qt::CopyAction);
+                      }
+                    }
+                    char* drag_cursor_copy = iupAttribGet(ih, "DRAGCURSORCOPY");
+                    if (drag_cursor_copy)
+                    {
+                      QPixmap* pixmap = (QPixmap*)iupImageGetImage(drag_cursor_copy, ih, 0, NULL);
+                      if (pixmap)
+                        drag->setDragCursor(*pixmap, Qt::CopyAction);
+                    }
 
                     Qt::DropActions actions = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE") ?
                                               Qt::CopyAction | Qt::MoveAction : Qt::CopyAction;
