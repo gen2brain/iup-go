@@ -387,6 +387,23 @@ static void motDialogChangeWMState(Ihandle* ih, Atom state1, Atom state2, int op
   }
 }
 
+static int motDialogSetTopMostAttrib(Ihandle* ih, const char* value)
+{
+  static int support_above = -1;
+  static Atom above = 0;
+  if (!above)
+    above = XInternAtom(iupmot_display, "_NET_WM_STATE_ABOVE", False);
+
+  if (support_above == -1)
+    support_above = motDialogQueryWMspecSupport(above);
+
+  if (!ih->handle || !support_above)
+    return 0;
+
+  motDialogChangeWMState(ih, above, 0, iupStrBoolean(value) ? 1 : 0);
+  return 1;
+}
+
 static int motDialogSetFullScreen(Ihandle* ih, int fullscreen)
 {
   static int support_fullscreen = -1;  /* WARNING: The WM can be changed dynamically */
@@ -1235,7 +1252,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   /* Not Supported */
   iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPMOST", NULL, motDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, motDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

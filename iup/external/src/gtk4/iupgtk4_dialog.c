@@ -267,7 +267,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     gtk_window_unmaximize((GtkWindow*)ih->handle);
     gtk_window_unminimize((GtkWindow*)ih->handle);
 
-    if (iupAttribGetBoolean(ih, "CUSTOMFRAME") && iupDialogCustomFrameRestore(ih))
+    if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupDialogCustomFrameRestore(ih))
     {
       ih->data->show_state = IUP_RESTORE;
       return 1;
@@ -276,7 +276,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     return 0;
   }
 
-  if (iupAttribGetBoolean(ih, "CUSTOMFRAME") && iupStrEqualNoCase(placement, "MAXIMIZED"))
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupStrEqualNoCase(placement, "MAXIMIZED"))
   {
     iupDialogCustomFrameMaximize(ih);
     iupAttribSet(ih, "PLACEMENT", NULL);

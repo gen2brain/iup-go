@@ -389,7 +389,8 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   {
     if (visible)
     {
-      if (iupAttribGetBoolean(ih, "SHOWNOACTIVATE"))
+      /* activateWindow/raise would un-minimize; keep a minimized window minimized. */
+      if (iupAttribGetBoolean(ih, "SHOWNOACTIVATE") || (widget->windowState() & Qt::WindowMinimized))
         widget->show();
       else
       {
@@ -578,7 +579,7 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     if (widget->isVisible())
       widget->setWindowState(widget->windowState() & ~(Qt::WindowMaximized | Qt::WindowMinimized | Qt::WindowFullScreen));
 
-    if ((iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE")) && iupDialogCustomFrameRestore(ih))
+    if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupDialogCustomFrameRestore(ih))
     {
       ih->data->show_state = IUP_RESTORE;
       return 1;
@@ -587,7 +588,7 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     return 0;
   }
 
-  if ((iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE")) && iupStrEqualNoCase(placement, "MAXIMIZED"))
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupStrEqualNoCase(placement, "MAXIMIZED"))
   {
     iupDialogCustomFrameMaximize(ih);
     iupAttribSet(ih, "PLACEMENT", NULL);

@@ -175,10 +175,9 @@ On Android and iOS defaults to YES; touch UIs don't autofocus controls on launch
 **HWND** [Windows Only] (non-inheritable, read-only): Returns the Windows Window handle.
 Available in Windows, WinUI, or in the GTK/GTK 4/Qt drivers on Windows.
 
-**SAVEUNDER** [Windows and Motif Only] (creation-only): When this attribute is true (YES), the dialog stores the original image of the desktop region it occupies (if the system has enough memory to store the image).
-In this case, when the dialog is closed or moved, a redrawing event is not generated for the windows that were shadowed by it.
+**SAVEUNDER** [Win32 and Motif Only] (creation-only): When this attribute is true (YES), the dialog requests the window system to store the original image of the desktop region it occupies, so closing or moving the dialog does not trigger a redraw of the windows beneath it.
 Its default value is YES if the dialog has a parent dialog.
-To save memory disable it for your main dialog.
+Largely a no-op on modern composited window systems (DWM on Windows, KWin/Mutter on Linux); other drivers do not expose an equivalent primitive.
 
 **XWINDOW** [UNIX Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
 Available in Motif, GTK, GTK 4, Qt and EFL on X11.
@@ -220,36 +219,39 @@ Not supported in EFL and FLTK.
 
 **OPACITYIMAGE**: sets an RGBA image as the dialog background so it is possible to create a non rectangle window with transparency, but it can not have children.
 Used usually for splash screens. It must be set before map so the native window would be properly initialized when mapped.
-Not supported in GTK 4, Motif, WinUI, and FLTK.
+Not supported in GTK4, Motif, WinUI, FLTK, iOS, Android, and Haiku.
 
 **SHAPEIMAGE**: sets an RGBA image as the dialog shape, so it is possible to create a non rectangle window with children.
 Only the fully transparent pixels will be transparent.
 The pixels colors will be ignored, only the alpha channel is used.
-Not supported in GTK 4 and Motif.
+Not supported in GTK4, Motif, iOS, Android, and Haiku.
 
 **TOPMOST**: puts the dialog always in front of all other dialogs in all applications.
 Default: NO.
-Not supported in GTK 4 and Motif.
+In Motif depends on the window manager honoring `_NET_WM_STATE_ABOVE`.
+Not supported in GTK4, iOS, and Android.
 
 #### Exclusive [Windows Only]
 
-**BRINGFRONT** [Windows Only] (write-only): makes the dialog the foreground window.
+**BRINGFRONT** (write-only): makes the dialog the foreground window.
 Use "YES" to activate it. Useful for multithreaded applications.
 
-**COMPOSITED** [Windows Only] (creation-only): controls if the window will have an automatic double buffer for all children.
+**COMPOSITED** [Win32 Only] (creation-only): controls if the window will have an automatic double buffer for all children.
 Default is "NO".
 It is NOT compatible with IupCanvas, and all derived IUP controls such as IupFlat*, IupGL*, IupPlot and IupMatrix, because IupCanvas uses CS_OWNDC in the window class.
+Largely obsolete since Windows Vista, as the DWM compositor already prevents window flicker.
 
-**CUSTOMFRAMEDRAW** [Windows Only] (non-inheritable): allows the application to customize the dialog frame elements (the title and its buttons) by drawing them with the CUSTOMFRAMEDRAW_CB callback.
+**CUSTOMFRAMEDRAW** [Win32 Only] (non-inheritable): allows the application to customize the dialog frame elements (the title and its buttons) by drawing them with the CUSTOMFRAMEDRAW_CB callback.
 Can be Yes or No. The Window client area is expanded to include the whole window.
 Notice that the dialog attributes like BORDER, RESIZE, MAXBOX, MINBOX and TITLE must still be defined.
 But maximize, minimize and close buttons must be manually implemented in the BUTTON_CB callback.
 One drawback is that menu bars will not work.
+Uses GDI drawing in the callback, which has no WinUI equivalent; for WinUI use CUSTOMFRAME instead.
 
-**CUSTOMFRAMECAPTIONHEIGHT** [Windows Only] (non-inheritable): height of the caption area.
+**CUSTOMFRAMECAPTIONHEIGHT** [Win32, WinUI Only] (non-inheritable): height of the caption area.
 If not defined it will use the system size.
 
-**CUSTOMFRAMECAPTIONLIMITS** [Windows Only] (non-inheritable): limits of the caption area at left and at right.
+**CUSTOMFRAMECAPTIONLIMITS** [Win32 Only] (non-inheritable): limits of the caption area at left and at right.
 The caption area is always expanded inside the limits when the dialog is resized.
 Format is "left:right" or in C "%d:%d". Default: "0:0".
 This will allow the dialog to be moved by the system when the user clicks and drags the caption area.
@@ -413,19 +415,16 @@ The underlying native widget per driver:
 
 #### Custom Frame
 
-The use of custom frame is very popular nowadays. But the system support is very poor, in Windows and in GTK.
-So use it carefully and consciously of its glitches.
+Two attributes provide a custom frame:
 
-In GTK is easier to understand because the frame is managed by the Window Manager.
-So depending on the system, it may be provided by the Windows Manager, or it is simulated by IUP removing the window decoration.
+- **CUSTOMFRAME** removes the native decoration but lets the window manager keep handling maximize, minimize, restore and the taskbar entry. The caption and its buttons are built from IUP controls.
+- **CUSTOMFRAMESIMULATE** reproduces everything in IUP: the move, the caption buttons, and maximize/restore (emulated by resizing the dialog to the full screen and back). It avoids the native side effects described below.
 
-In Windows, there is no function or attribute to activate this feature in the Win32 API (maybe in WPF there is, but we are stuck with the old API).
-It is a combination of message handling with returned values in the WindowProc.
-So sometimes the result is not what was expected.
-For instance, if the application is not responding, the old title bar interface is drawn over the top of the dialog just to show the "Not Responding" at the window caption, even if the window does not have a caption.
-We don't know how to avoid that. Also, the internal double buffer processing for the dialog is somehow affected, and a sequential or full redraw of the dialog has more flicker than usual.
+In both cases place an IupLabel, IupFlatLabel or IupCanvas at the top with NAME=CUSTOMFRAMECAPTION so the dialog can be moved (and maximized with a double click).
 
-The CUSTOMFRAMESIMULATE attribute is a workaround that tries to solve the double buffer problem and has more control over the custom frame behavior in general.
+Exact behavior depends on the window manager: a borderless window does not always get a taskbar button, and some managers ignore maximize or minimize requests on undecorated windows.
+
+[Windows note] CUSTOMFRAME has no dedicated Win32 API and is implemented through WindowProc message handling, so a few artifacts remain: the "Not Responding" title bar may be drawn over a captionless window, and dialog redraw can flicker more than usual. CUSTOMFRAMESIMULATE avoids the double-buffer side effect.
 
 ### Examples
 
