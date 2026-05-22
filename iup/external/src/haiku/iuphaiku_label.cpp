@@ -35,6 +35,7 @@ extern "C" {
 static void haikuLabelFireMouseCb(Ihandle* ih, BView* view, BPoint where, int pressed)
 {
   if (!ih) return;
+  if (!iupdrvIsActive(ih)) return;
   BMessage* msg = view->Looper() ? view->Looper()->CurrentMessage() : NULL;
   int32 buttons = 0, mods = 0, clicks = 1;
   if (msg)
@@ -55,6 +56,7 @@ static void haikuLabelFireMouseCb(Ihandle* ih, BView* view, BPoint where, int pr
 static void haikuLabelFireTransitCb(Ihandle* ih, uint32 transit)
 {
   if (!ih) return;
+  if (!iupdrvIsActive(ih)) return;
   if (transit == B_ENTERED_VIEW)
   {
     IFn cb = IupGetCallback(ih, "ENTERWINDOW_CB");
@@ -70,6 +72,7 @@ static void haikuLabelFireTransitCb(Ihandle* ih, uint32 transit)
 static void haikuLabelFireMotionCb(Ihandle* ih, BView* view, BPoint where)
 {
   if (!ih) return;
+  if (!iupdrvIsActive(ih)) return;
   IFniis cb = (IFniis)IupGetCallback(ih, "MOTION_CB");
   if (!cb) return;
   BMessage* msg = view->Looper() ? view->Looper()->CurrentMessage() : NULL;

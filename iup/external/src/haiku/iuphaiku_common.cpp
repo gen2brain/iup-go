@@ -7,6 +7,7 @@
 #include <Control.h>
 #include <ControlLook.h>
 #include <Cursor.h>
+#include <MenuField.h>
 #include <Message.h>
 #include <Messenger.h>
 #include <OS.h>
@@ -184,9 +185,12 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 
   BView* view = (BView*)ih->handle;
   BControl* ctrl = dynamic_cast<BControl*>(view);
-  if (!ctrl) return 1;
-  LooperLockGuard guard(view->Looper());
-  return ctrl->IsEnabled() ? 1 : 0;
+  if (ctrl)
+  {
+    LooperLockGuard guard(view->Looper());
+    return ctrl->IsEnabled() ? 1 : 0;
+  }
+  return iupAttribGet(ih, "_IUPHAIKU_INACTIVE") ? 0 : 1;
 }
 
 extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
@@ -213,10 +217,20 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
     return;
 
   BView* view = (BView*)ih->handle;
-  BControl* ctrl = dynamic_cast<BControl*>(view);
-  if (!ctrl) return;
   LooperLockGuard guard(view->Looper());
-  ctrl->SetEnabled(enable ? true : false);
+
+  BControl* ctrl = dynamic_cast<BControl*>(view);
+  if (ctrl)
+  {
+    ctrl->SetEnabled(enable ? true : false);
+    return;
+  }
+
+  BMenuField* field = dynamic_cast<BMenuField*>(view);
+  if (field)
+    field->SetEnabled(enable ? true : false);
+
+  iupAttribSet(ih, "_IUPHAIKU_INACTIVE", enable ? NULL : (char*)"1");
 }
 
 extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)
