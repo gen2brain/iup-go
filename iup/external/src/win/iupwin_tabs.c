@@ -6,6 +6,7 @@
 
 #include <windows.h>
 #include <commctrl.h>
+#include <wincodec.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -391,38 +392,53 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
   if (tab_height) *tab_height = height;
 }
 
+/* Fant scaler: high-quality downscale that keeps the premultiplied alpha */
 static HBITMAP winTabsCreateScaledBitmap(HBITMAP src, int src_w, int src_h, int dst_w, int dst_h)
 {
-  HDC screen = GetDC(NULL);
-  HDC src_dc = CreateCompatibleDC(screen);
-  HDC dst_dc = CreateCompatibleDC(screen);
+  IWICImagingFactory* factory = NULL;
+  IWICBitmap* wic_bmp = NULL;
+  IWICBitmapScaler* scaler = NULL;
   BITMAPINFO bmi;
-  void* bits = NULL;
-  HBITMAP dst;
-  HGDIOBJ old_src, old_dst;
+  void* dst_bits = NULL;
+  HBITMAP dst = NULL;
+  HDC screen;
+  HRESULT hr;
+  (void)src_w; (void)src_h;
 
+  hr = CoCreateInstance(&CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, &IID_IWICImagingFactory, (void**)&factory);
+  if (FAILED(hr)) goto cleanup;
+
+  hr = IWICImagingFactory_CreateBitmapFromHBITMAP(factory, src, NULL, WICBitmapUsePremultipliedAlpha, &wic_bmp);
+  if (FAILED(hr)) goto cleanup;
+
+  hr = IWICImagingFactory_CreateBitmapScaler(factory, &scaler);
+  if (FAILED(hr)) goto cleanup;
+
+  hr = IWICBitmapScaler_Initialize(scaler, (IWICBitmapSource*)wic_bmp, dst_w, dst_h, WICBitmapInterpolationModeFant);
+  if (FAILED(hr)) goto cleanup;
+
+  screen = GetDC(NULL);
   ZeroMemory(&bmi, sizeof(bmi));
   bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
   bmi.bmiHeader.biWidth = dst_w;
-  bmi.bmiHeader.biHeight = -dst_h;
+  bmi.bmiHeader.biHeight = -dst_h;  /* top-down to match WIC output */
   bmi.bmiHeader.biPlanes = 1;
   bmi.bmiHeader.biBitCount = 32;
   bmi.bmiHeader.biCompression = BI_RGB;
-  dst = CreateDIBSection(screen, &bmi, DIB_RGB_COLORS, &bits, NULL, 0);
-
-  old_src = SelectObject(src_dc, src);
-  old_dst = SelectObject(dst_dc, dst);
-
-  SetStretchBltMode(dst_dc, HALFTONE);
-  SetBrushOrgEx(dst_dc, 0, 0, NULL);
-  StretchBlt(dst_dc, 0, 0, dst_w, dst_h, src_dc, 0, 0, src_w, src_h, SRCCOPY);
-
-  SelectObject(src_dc, old_src);
-  SelectObject(dst_dc, old_dst);
-  DeleteDC(src_dc);
-  DeleteDC(dst_dc);
+  dst = CreateDIBSection(screen, &bmi, DIB_RGB_COLORS, &dst_bits, NULL, 0);
   ReleaseDC(NULL, screen);
 
+  if (dst)
+  {
+    UINT stride = (UINT)dst_w * 4;
+    hr = IWICBitmapScaler_CopyPixels(scaler, NULL, stride, stride * dst_h, (BYTE*)dst_bits);
+    if (FAILED(hr)) { DeleteObject(dst); dst = NULL; }
+  }
+
+cleanup:
+  if (scaler) IWICBitmapScaler_Release(scaler);
+  if (wic_bmp) IWICBitmap_Release(wic_bmp);
+  if (factory) IWICImagingFactory_Release(factory);
   return dst;
 }
 
