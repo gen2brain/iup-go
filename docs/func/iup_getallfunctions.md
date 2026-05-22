@@ -2,7 +2,7 @@
 
 Returns the well-known function-namespace names that IUP dispatches itself, plus any extra names the application has registered via [IupSetFunction](iup_setfunction.md) or [IupSetCallback](iup_setcallback.md) on the global namespace.
 
-The well-known set covers `ENTRY_POINT`, `IDLE_ACTION`, `GLOBALCTRLFUNC_CB`, and the global input family (`GLOBALKEYPRESS_CB`, `GLOBALBUTTON_CB`, `GLOBALMOTION_CB`, `GLOBALWHEEL_CB`). They are listed even when no callback has been bound; pair this with [IupGetFunction](iup_getfunction.md) to discover which ones are currently bound.
+The well-known set covers `ENTRY_POINT`, `IDLE_ACTION`, and the global input family (`GLOBALKEYPRESS_CB`, `GLOBALBUTTON_CB`, `GLOBALMOTION_CB`, `GLOBALWHEEL_CB`). They are listed even when no callback has been bound; pair this with [IupGetFunction](iup_getfunction.md) to discover which ones are currently bound.
 
 ### Parameters/Return
 

@@ -68,7 +68,6 @@ IUP_API Icallback IupSetFunction(const char *name, Icallback func)
 static const char* known_functions[] = {
   "ENTRY_POINT",
   "IDLE_ACTION",
-  "GLOBALCTRLFUNC_CB",
   "GLOBALKEYPRESS_CB",
   "GLOBALBUTTON_CB",
   "GLOBALMOTION_CB",

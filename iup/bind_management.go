@@ -260,7 +260,7 @@ func GetClassConstructor(className string) (info ClassConstructor, ok bool) {
 }
 
 // GetAllFunctions returns the well-known function-namespace names IUP
-// dispatches itself (ENTRY_POINT, IDLE_ACTION, GLOBALCTRLFUNC_CB,
+// dispatches itself (ENTRY_POINT, IDLE_ACTION,
 // GLOBAL{KEYPRESS,BUTTON,MOTION,WHEEL}_CB), plus any extras the application
 // has bound. Use [GetFunction] to test whether a given name is currently bound.
 //
