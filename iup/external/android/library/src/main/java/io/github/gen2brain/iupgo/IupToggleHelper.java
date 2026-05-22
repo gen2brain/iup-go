@@ -4,6 +4,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.CompoundButton;
@@ -325,9 +326,8 @@ public final class IupToggleHelper
             ((MaterialButton)widget).setTextColor(csl);
     }
 
-    /** IMAGE toggle: MaterialButton icon; TEXT toggle: leading compound drawable. */
     @Keep
-    public static void setImage(View widget, Bitmap bmp)
+    public static void setImage(View widget, Bitmap bmp, Bitmap impress)
     {
         if (widget instanceof MaterialButton btn)
         {
@@ -336,7 +336,13 @@ public final class IupToggleHelper
             btn.setIconSize(d.getBounds().width());
             int pad = (int)(8 * IupCommon.getDisplayDensity());
             btn.setPadding(pad, pad, pad, pad);
-            btn.setIcon(d);
+            if (impress == null) { btn.setIcon(d); return; }
+            BitmapDrawable imp = makeBitmapDrawable(widget, impress);
+            StateListDrawable sld = new StateListDrawable();
+            sld.addState(new int[]{ android.R.attr.state_pressed }, imp);
+            sld.addState(new int[]{ android.R.attr.state_checked }, imp);
+            sld.addState(new int[0], d);
+            btn.setIcon(sld);
             return;
         }
 
