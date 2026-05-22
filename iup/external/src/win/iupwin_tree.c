@@ -84,7 +84,10 @@ static void winTreeSetFocusNode(Ihandle* ih, HTREEITEM hItem);
 
 IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
-  return (InodeHandle*)SendMessage(ih->handle, TVM_GETNEXTITEM, TVGN_CARET, 0);
+  InodeHandle* node = (InodeHandle*)SendMessage(ih->handle, TVM_GETNEXTITEM, TVGN_CARET, 0);
+  if (!node && ih->data->node_count > 0)
+    node = ih->data->node_cache[0].node_handle;
+  return node;
 }
 
 static HTREEITEM winTreeFindNodeXY(Ihandle* ih, int x, int y)

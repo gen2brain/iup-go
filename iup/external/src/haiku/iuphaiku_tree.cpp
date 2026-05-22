@@ -271,6 +271,13 @@ public:
     BOutlineListView::SelectionChanged();
     if (!fIhandle) return;
     if (iupAttribGet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB")) return;
+    if (!iupdrvIsActive(fIhandle))
+    {
+      iupAttribSet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB", (char*)"1");
+      DeselectAll();
+      iupAttribSet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+      return;
+    }
 
     IFnii cb = (IFnii)IupGetCallback(fIhandle, "SELECTION_CB");
     if (!cb) return;
@@ -496,8 +503,7 @@ static IupHaikuTreeView* haikuTreeGetView(Ihandle* ih)
 
 static IupHaikuTreeItem* haikuTreeGetItem(Ihandle* ih, int id)
 {
-  if (id < 0 || id >= ih->data->node_count) return NULL;
-  return (IupHaikuTreeItem*)ih->data->node_cache[id].node_handle;
+  return (IupHaikuTreeItem*)iupTreeGetNode(ih, id);
 }
 
 static int haikuTreeGetIdFromItem(Ihandle* ih, BListItem* item)
@@ -589,6 +595,10 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
 
   IupHaikuTreeItem* prev = NULL;
   int kindPrev = -1;
+
+  if (id == IUP_INVALID_ID && ih->data->node_count != 0)
+    id = iupTreeFindNodeId(ih, iupdrvTreeGetFocusNode(ih));
+
   if (id >= 0 && id < ih->data->node_count)
   {
     prev = haikuTreeGetItem(ih, id);
@@ -650,7 +660,8 @@ extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
   if (!tv) return NULL;
   LooperLockGuard guard(tv->Looper());
   int32 idx = tv->CurrentSelection(0);
-  if (idx < 0) return NULL;
+  if (idx < 0)
+    return (ih->data->node_count > 0) ? ih->data->node_cache[0].node_handle : NULL;
   /* CurrentSelection returns visible index; we need the actual item. */
   return (InodeHandle*)tv->ItemAt(idx);
 }
