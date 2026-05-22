@@ -678,6 +678,19 @@ static int cocoaToggleSetFlatAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int cocoaToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type != IUP_TOGGLE_TEXT)
+    return 0;
+
+  id the_toggle = ih->handle;
+  if (!the_toggle || [the_toggle isKindOfClass:[NSSwitch class]])
+    return 0;
+
+  [(NSButton*)the_toggle setImagePosition:(iupStrBoolean(value) ? NSImageRight : NSImageLeft)];
+  return 1;
+}
+
 static int cocoaToggleMapMethod(Ihandle* ih)
 {
   Ihandle* radio = iupRadioFindToggleParent(ih);
@@ -865,5 +878,5 @@ IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FLAT", NULL, cocoaToggleSetFlatAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, cocoaToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

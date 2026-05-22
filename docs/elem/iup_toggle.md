@@ -66,7 +66,7 @@ Valid only after the element is mapped, before returns NULL.
 
 **RIGHTBUTTON** (creation-only): place the check button at the right of the text.
 Can be "YES" or "NO". Default: "NO".
-Supported in Win32, Qt, iOS and Android.
+Not supported in Motif, FLTK and EFL.
 
 **VALUE** (non-inheritable): Toggle's state. Values can be "ON", "OFF" or "TOGGLE".
 If 3STATE=YES then can also be "NOTDEF". Default: "OFF". The TOGGLE option will invert the current state.
@@ -87,8 +87,9 @@ The toggle can be activated from any control in the dialog using the "Alt+key" c
 Can be "YES" or "NO". Default: "NO".
 
 **3STATE** (creation-only): Enable a three state toggle.
-Valid for toggles with text only, and that do not belong to a radio. Can be "YES" or NO".
+Valid for toggles with text only, and that do not belong to a radio. Can be "YES" or "NO".
 Default: "NO".
+Not supported in FLTK and EFL.
 
 > 
 >
@@ -104,7 +105,7 @@ The callback also receives the toggle's state.
     int function(Ihandle* ih, int state);
 
 **ih**: identifier of the element that activated the event.\
-**state**: 1 if the toggle's state was shifted to on; 0 if it was shifted to off.
+**state**: 1 if the toggle's state was shifted to on; 0 if it was shifted to off. For a 3-state toggle, -1 when shifted to NOTDEF.
 
 **Returns**: IUP_CLOSE will be processed.
 

@@ -299,6 +299,16 @@ static int androidToggleMapMethod(Ihandle* ih)
   ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, widget));
   (*jni_env)->DeleteLocalRef(jni_env, widget);
 
+  if (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio && !iupAttribGetBoolean(ih, "SWITCH") &&
+      iupAttribGetBoolean(ih, "3STATE"))
+  {
+    jclass cls = IUPJNI_FindClass(IupToggleHelper, jni_env, "io/github/gen2brain/iupgo/IupToggleHelper");
+    jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "enableThreeState", "(Landroid/view/View;)V");
+    (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, ih->handle);
+    iupAndroid_CheckException(jni_env, "IupToggleHelper.enableThreeState");
+    (*jni_env)->DeleteLocalRef(jni_env, cls);
+  }
+
   iupAndroid_AddWidgetToParent(jni_env, ih);
   return IUP_NOERROR;
 }

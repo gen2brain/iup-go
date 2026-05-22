@@ -26,6 +26,8 @@ public final class IupToggleHelper
     private static final java.util.WeakHashMap<MaterialButton, Boolean> sThemableImageToggles = new java.util.WeakHashMap<>();
     /* CompoundButton (checkbox/switch/radio) tint state-lists also resolve at construction. */
     private static final java.util.WeakHashMap<CompoundButton, Boolean> sThemableTextToggles = new java.util.WeakHashMap<>();
+    /* no native 3-state click cycle; track tri-state (0/1/-1) per widget */
+    private static final java.util.WeakHashMap<MaterialCheckBox, Integer> sThreeStateValue = new java.util.WeakHashMap<>();
 
     static {
         IupTheme.register(IupToggleHelper::refreshAllImageToggles);
@@ -108,6 +110,22 @@ public final class IupToggleHelper
         /* Tri-state-aware listener: STATE_INDETERMINATE -> IUP -1 (NOTDEF). */
         cb.addOnCheckedStateChangedListener((cbox, state) -> {
             if (sSuppressDispatch) return;
+            if (sThreeStateValue.containsKey(cbox))
+            {
+                /* drive OFF -> ON -> NOTDEF -> OFF */
+                Integer prevObj = sThreeStateValue.get(cbox);
+                int prev = (prevObj == null) ? 0 : prevObj;
+                int next = (prev == 0) ? 1 : (prev == 1) ? -1 : 0;
+                sThreeStateValue.put(cbox, next);
+                int target = (next < 0) ? MaterialCheckBox.STATE_INDETERMINATE
+                           : (next > 0) ? MaterialCheckBox.STATE_CHECKED
+                           : MaterialCheckBox.STATE_UNCHECKED;
+                sSuppressDispatch = true;
+                try { if (cbox.getCheckedState() != target) cbox.setCheckedState(target); }
+                finally { sSuppressDispatch = false; }
+                cbox.post(() -> dispatchAction(ihandlePtr, next));
+                return;
+            }
             int iupState = (state == MaterialCheckBox.STATE_INDETERMINATE) ? -1
                          : (state == MaterialCheckBox.STATE_CHECKED) ? 1 : 0;
             cbox.post(() -> dispatchAction(ihandlePtr, iupState));
@@ -207,6 +225,13 @@ public final class IupToggleHelper
         return false;
     }
 
+    @Keep
+    public static void enableThreeState(View widget)
+    {
+        if (widget instanceof MaterialCheckBox mcb)
+            sThreeStateValue.put(mcb, 0);
+    }
+
     /* MaterialCheckBox tri-state 0/1/-1; other widgets use boolean checked */
     @Keep
     public static void setValueState(View widget, int state)
@@ -219,6 +244,8 @@ public final class IupToggleHelper
             sSuppressDispatch = true;
             try { if (mcb.getCheckedState() != target) mcb.setCheckedState(target); }
             finally { sSuppressDispatch = false; }
+            if (sThreeStateValue.containsKey(mcb))
+                sThreeStateValue.put(mcb, (state < 0) ? -1 : (state > 0) ? 1 : 0);
             return;
         }
         setValue(widget, state > 0);
