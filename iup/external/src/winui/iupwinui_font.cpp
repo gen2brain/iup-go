@@ -423,6 +423,8 @@ struct WinUIFontProps
   std::wstring typeface;
   bool isBold;
   bool isItalic;
+  bool isUnderline;
+  bool isStrikeout;
 };
 
 static bool winuiGetFontProps(Ihandle* ih, WinUIFontProps* props)
@@ -454,6 +456,8 @@ static bool winuiGetFontProps(Ihandle* ih, WinUIFontProps* props)
 
   props->isBold = is_bold != 0;
   props->isItalic = is_italic != 0;
+  props->isUnderline = is_underline != 0;
+  props->isStrikeout = is_strikeout != 0;
   return true;
 }
 
@@ -501,6 +505,13 @@ IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::
     textBlock.FontStyle(winrt::Windows::UI::Text::FontStyle::Italic);
   else
     textBlock.FontStyle(winrt::Windows::UI::Text::FontStyle::Normal);
+
+  auto decorations = winrt::Windows::UI::Text::TextDecorations::None;
+  if (props.isUnderline)
+    decorations = decorations | winrt::Windows::UI::Text::TextDecorations::Underline;
+  if (props.isStrikeout)
+    decorations = decorations | winrt::Windows::UI::Text::TextDecorations::Strikethrough;
+  textBlock.TextDecorations(decorations);
 }
 
 static int winuiFontFamilyCompare(const void* a, const void* b)

@@ -71,6 +71,11 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
   return (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
 }
 
+- (void)setEnabled:(BOOL)isEnabled
+{
+  [_tabBarView setEnabled:isEnabled];
+}
+
 - (BOOL)isFlipped
 {
   return YES;

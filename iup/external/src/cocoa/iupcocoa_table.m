@@ -2906,6 +2906,17 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
 /* Class Registration                                                        */
 /* ========================================================================= */
 
+static int cocoaTableSetActiveAttrib(Ihandle* ih, const char* value)
+{
+  iupBaseSetActiveAttrib(ih, value);
+
+  NSScrollView* scrollView = cocoaTableGetScrollView(ih);
+  if (scrollView)
+    [scrollView setAlphaValue:iupStrBoolean(value) ? 1.0 : 0.5];
+
+  return 1;
+}
+
 IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   /* Driver Dependent Class methods */
@@ -2921,4 +2932,5 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, cocoaTableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, cocoaTableSetReorderAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, cocoaTableSetUserResizeAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", NULL, cocoaTableSetActiveAttrib);
 }

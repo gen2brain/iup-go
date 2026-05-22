@@ -646,6 +646,7 @@ public:
   void SetMax(int32 v)  { fMax = v; }
   void SetStep(int32 v) { fStep = v > 0 ? v : 1; }
   void SetWrap(bool w)  { fWrap = w; }
+  void SetButtonsEnabled(bool e) { if (fUp) fUp->SetEnabled(e); if (fDown) fDown->SetEnabled(e); }
   int32 Value() const { return fValue; }
   void SetSpinValue(int32 v) { fValue = v; }
 
@@ -860,6 +861,8 @@ static int haikuTextSetActiveAttrib(Ihandle* ih, const char* value)
     {
       if (BTextControl* tc = haikuTextGetTextControl(ih))
         tc->SetEnabled(iupStrBoolean(value));
+      if (IupHaikuSpinWrap* sw = haikuTextGetSpinWrap(ih))
+        sw->SetButtonsEnabled(iupStrBoolean(value));
     }
   }
   return iupBaseSetActiveAttrib(ih, value);

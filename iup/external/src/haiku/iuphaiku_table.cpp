@@ -231,6 +231,7 @@ protected:
 
   void KeyDown(const char* bytes, int32 numBytes) override
   {
+    if (fIhandle && !iupdrvIsActive(fIhandle)) return;
     if (!fIhandle || numBytes < 1) { BColumnListView::KeyDown(bytes, numBytes); return; }
 
     BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL;
@@ -880,6 +881,9 @@ public:
       if (p == fTv) { inside = true; break; }
     if (!inside) return B_DISPATCH_MESSAGE;
 
+    if (!iupdrvIsActive(fTv->GetIhandle()))
+      return B_SKIP_MESSAGE;
+
     if (msg->what == B_MOUSE_MOVED)
     {
       fTv->RepositionTrail();
@@ -949,6 +953,13 @@ private:
   IupHaikuTableView* fTv;
 };
 
+
+static rgb_color haikuTableDimColor(rgb_color c)
+{
+  rgb_color bg = ui_color(B_PANEL_BACKGROUND_COLOR);
+  rgb_color d = { (uint8)((c.red + bg.red) / 2), (uint8)((c.green + bg.green) / 2), (uint8)((c.blue + bg.blue) / 2), 255 };
+  return d;
+}
 
 class IupHaikuTableColumn : public BTitledColumn
 {
@@ -1066,6 +1077,9 @@ public:
       }
     }
 
+    if (fIhandle && !iupdrvIsActive(fIhandle))
+      parent->SetHighColor(haikuTableDimColor(parent->HighColor()));
+
     DrawString(virt ? (virt_str ? virt_str : "") : f->String(), parent, cell);
 
     if (tv && fIhandle && iupAttribGetBoolean(fIhandle, "SHOWGRID"))
@@ -1089,6 +1103,13 @@ public:
         parent->StrokeRect(BRect(rect.left + 1, rect.top + 1, rect.right - 1, rect.bottom - 1));
       }
     }
+  }
+
+  void DrawTitle(BRect rect, BView* parent) override
+  {
+    if (fIhandle && !iupdrvIsActive(fIhandle))
+      parent->SetHighColor(haikuTableDimColor(parent->HighColor()));
+    BTitledColumn::DrawTitle(rect, parent);
   }
 
   int CompareFields(BField* a, BField* b) override
@@ -1713,11 +1734,27 @@ static int haikuTableSetAllowReorderAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int haikuTableSetActiveAttrib(Ihandle* ih, const char* value)
+{
+  iupBaseSetActiveAttrib(ih, value);
+
+  IupHaikuTableView* tv = haikuTableGetView(ih);
+  if (tv)
+  {
+    LooperLockGuard guard(tv->Looper());
+    if (BView* outline = tv->ScrollView()) outline->Invalidate();
+    tv->Invalidate();
+  }
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
   ic->Map = haikuTableMapMethod;
   ic->UnMap = haikuTableUnMapMethod;
   ic->LayoutUpdate = haikuTableLayoutUpdateMethod;
+
+  iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuTableSetActiveAttrib);
 
   iupClassRegisterAttributeId2(ic, "BGCOLOR", NULL, haikuTableSetCellRedrawAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId2(ic, "FGCOLOR", NULL, haikuTableSetCellRedrawAttrib, IUPAF_NO_INHERIT);

@@ -231,6 +231,8 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
     field->SetEnabled(enable ? true : false);
 
   iupAttribSet(ih, "_IUPHAIKU_INACTIVE", enable ? NULL : (char*)"1");
+
+  view->Invalidate();
 }
 
 extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)

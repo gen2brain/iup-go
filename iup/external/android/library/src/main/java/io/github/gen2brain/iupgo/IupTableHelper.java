@@ -52,6 +52,20 @@ public final class IupTableHelper
     {
         final long ihandlePtr;
 
+        @Override
+        public void setEnabled(boolean enabled)
+        {
+            super.setEnabled(enabled);
+            setAlpha(enabled ? 1.0f : 0.5f);
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent ev)
+        {
+            if (!isEnabled()) return true;
+            return super.dispatchTouchEvent(ev);
+        }
+
         int numCol;
         int numLin;
         int[] colWidths;

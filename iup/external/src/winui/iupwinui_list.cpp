@@ -540,7 +540,8 @@ static int winuiListSetValueAttrib(Ihandle* ih, const char* value)
     ComboBox comboBox = winuiGetHandle<ComboBox>(ih);
     if (comboBox)
     {
-      if (aux->hasEditbox && value && !iupStrToInt(value, NULL))
+      int dummy;
+      if (aux->hasEditbox && value && !iupStrToInt(value, &dummy))
       {
         comboBox.Text(iupwinuiStringToHString(value));
       }

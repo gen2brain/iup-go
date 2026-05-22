@@ -7,6 +7,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.DragEvent;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -78,6 +79,20 @@ public final class IupTabsHelper
         boolean reorderable;
         /* Global SHOWCLOSE state propagated to each tab's close button. */
         boolean showClose;
+
+        @Override
+        public void setEnabled(boolean enabled)
+        {
+            super.setEnabled(enabled);
+            setAlpha(enabled ? 1.0f : 0.5f);
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent ev)
+        {
+            if (!isEnabled()) return true;
+            return super.dispatchTouchEvent(ev);
+        }
 
         public IupAndroidTabs(Context ctx, long ih)
         {

@@ -342,8 +342,21 @@
     allowsTabListMenu = NO; /* Disabled by default */
     showsCloseButtonOnHover = NO; /* Default to persistent close buttons */
     allowsAddingTabsByDoubleClick = NO; /* Disabled by default */
+    enabled = YES;
   }
   return self;
+}
+
+- (BOOL)isEnabled
+{
+  return enabled;
+}
+
+- (void)setEnabled:(BOOL)isEnabled
+{
+  enabled = isEnabled;
+  [self setAlphaValue:isEnabled ? 1.0 : 0.5];
+  [self setNeedsDisplay:YES];
 }
 
 - (void)dealloc
@@ -410,6 +423,9 @@
 
 - (void)mouseUp:(NSEvent*)event
 {
+  if (!enabled)
+    return;
+
   if (self.allowsAddingTabsByDoubleClick && event.clickCount == 2) /* We capture user double-click on tabbar view */
   {
     NSPoint p =[event locationInWindow];
@@ -545,6 +561,9 @@
 
 - (void)mouseDown:(NSEvent *)theEvent
 {
+  if (!enabled)
+    return;
+
   NSPoint p = [theEvent locationInWindow];
   p = [self convertPoint:p fromView:nil];
 
@@ -589,6 +608,9 @@
 
 - (void)mouseMoved:(NSEvent *)theEvent
 {
+  if (!enabled)
+    return;
+
   NSPoint p = [theEvent locationInWindow];
   p = [self convertPoint:p fromView:nil];
 

@@ -317,6 +317,9 @@ extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int *x, int *y)
 
 IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget *widget, Ihandle* ih, int event)
 {
+  if (!widget->active())
+    return 0;
+
   if (event == FL_ENTER)
   {
     Icallback cb = IupGetCallback(ih, "ENTERWINDOW_CB");

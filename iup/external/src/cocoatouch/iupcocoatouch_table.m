@@ -1190,6 +1190,17 @@ static int cocoaTouchTableSetSortableAttrib(Ihandle* ih, const char* value)
 	return 0;
 }
 
+static int cocoaTouchTableSetActiveAttrib(Ihandle* ih, const char* value)
+{
+	iupBaseSetActiveAttrib(ih, value);
+
+	UIView* view = (UIView*)ih->handle;
+	if ([view isKindOfClass:[UIView class]])
+		view.alpha = iupStrBoolean(value) ? 1.0 : 0.5;
+
+	return 1;
+}
+
 IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
 	ic->Map   = cocoaTouchTableMapMethod;
@@ -1203,4 +1214,5 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "FOCUSRECT",      NULL, cocoaTouchTableSetReloadAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 	iupClassRegisterReplaceAttribFunc(ic, "SORTABLE",     NULL, cocoaTouchTableSetSortableAttrib);
 	iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, cocoaTouchTableSetAllowReorderAttrib);
+	iupClassRegisterReplaceAttribFunc(ic, "ACTIVE",       NULL, cocoaTouchTableSetActiveAttrib);
 }

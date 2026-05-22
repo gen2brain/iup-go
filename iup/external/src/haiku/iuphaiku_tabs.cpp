@@ -694,12 +694,27 @@ static int haikuTabsSetShowCloseAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int haikuTabsSetActiveAttrib(Ihandle* ih, const char* value)
+{
+  IupHaikuTabView* tabs = (IupHaikuTabView*)ih->handle;
+  if (tabs)
+  {
+    LooperLockGuard guard(tabs->Looper());
+    bool enable = iupStrBoolean(value);
+    for (int32 i = 0; i < tabs->CountTabs(); i++)
+      if (BTab* t = tabs->TabAt(i)) t->SetEnabled(enable);
+  }
+  return iupBaseSetActiveAttrib(ih, value);
+}
+
 extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 {
   ic->Map = haikuTabsMapMethod;
   ic->UnMap = haikuTabsUnMapMethod;
   ic->ChildAdded = haikuTabsChildAddedMethod;
   ic->ChildRemoved = haikuTabsChildRemovedMethod;
+
+  iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuTabsSetActiveAttrib);
 
   iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
   iupClassRegisterCallback(ic, "REORDER_CB", "ii");

@@ -348,7 +348,14 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int active)
 
   Control ctrl = winuiGetHandle<Control>(ih);
   if (ctrl)
+  {
     ctrl.IsEnabled(active ? true : false);
+    return;
+  }
+
+  UIElement elem = winuiGetHandle<UIElement>(ih);
+  if (elem)
+    elem.IsHitTestVisible(active ? true : false);
 }
 
 extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
@@ -367,6 +374,10 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
   Control ctrl = winuiGetHandle<Control>(ih);
   if (ctrl)
     return ctrl.IsEnabled() ? 1 : 0;
+
+  UIElement elem = winuiGetHandle<UIElement>(ih);
+  if (elem)
+    return elem.IsHitTestVisible() ? 1 : 0;
 
   return 1;
 }

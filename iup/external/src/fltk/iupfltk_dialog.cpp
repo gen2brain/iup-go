@@ -164,8 +164,14 @@ public:
         move_cb(iup_handle, x_root(), y_root());
     }
 
-    if (w == old_w && h == old_h)
-      return;
+    /* the first post-show relayout must run even if the size is unchanged; some layouts settle only on a second pass */
+    if (iupAttribGet(iup_handle, "_IUPFLTK_FIRSTLAYOUT"))
+    {
+      if (w == old_w && h == old_h)
+        return;
+    }
+    else
+      iupAttribSet(iup_handle, "_IUPFLTK_FIRSTLAYOUT", "1");
 
     int border = 0, caption = 0, menu = 0;
     iupdrvDialogGetDecoration(iup_handle, &border, &caption, &menu);

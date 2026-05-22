@@ -198,7 +198,14 @@ public final class IupTextHelper
         /* LinkMovementMethod dispatches ClickableSpan taps; NestedScrollView owns scroll. */
         tv.setMovementMethod(LinkMovementMethod.getInstance());
 
-        NestedScrollView sv = new NestedScrollView(tv.getContext());
+        NestedScrollView sv = new NestedScrollView(tv.getContext()) {
+            @Override
+            public void setEnabled(boolean enabled) {
+                super.setEnabled(enabled);
+                Object t = getTag();
+                if (t instanceof View) ((View)t).setEnabled(enabled);
+            }
+        };
         sv.setFillViewport(true);
         sv.setVerticalScrollBarEnabled(true);
         sv.setScrollbarFadingEnabled(autoHide);
@@ -249,7 +256,13 @@ public final class IupTextHelper
         til.setTag(tv);
         sThemableTils.put(til, Boolean.TRUE);
 
-        LinearLayout box = new LinearLayout(ctx);
+        LinearLayout box = new LinearLayout(ctx) {
+            @Override
+            public void setEnabled(boolean enabled) {
+                super.setEnabled(enabled);
+                for (int i = 0; i < getChildCount(); i++) getChildAt(i).setEnabled(enabled);
+            }
+        };
         box.setOrientation(LinearLayout.HORIZONTAL);
 
         LinearLayout.LayoutParams tilLp = new LinearLayout.LayoutParams(0,
