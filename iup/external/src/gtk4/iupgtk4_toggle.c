@@ -611,24 +611,50 @@ static int gtk4ToggleSetActiveAttrib(Ihandle* ih, const char* value)
 static void gtk4ToggleToggled(GtkCheckButton* widget, Ihandle* ih)
 {
   IFni cb;
-  int check = gtk4ToggleGetCheck(ih);
+  int check;
   (void)widget;
 
   if (iupAttribGet(ih, "_IUPGTK4_IGNORE_TOGGLE"))
     return;
 
-  if (ih->data->is_radio && check)
+  if (!ih->data->is_radio && ih->data->type == IUP_TOGGLE_TEXT &&
+      iupAttribGetBoolean(ih, "3STATE") && GTK_IS_CHECK_BUTTON(ih->handle))
   {
-    Ihandle* radio = iupRadioFindToggleParent(ih);
-    if (radio)
+    /* GtkCheckButton flips active only, so cycle OFF -> ON -> NOTDEF here */
+    GtkCheckButton* cbtn = GTK_CHECK_BUTTON(ih->handle);
+    if (gtk_check_button_get_inconsistent(cbtn))
     {
-      gtk4ToggleRadioDeactivatePrevious(radio, ih);
-      iupAttribSet(radio, "_IUPGTK4_RADIO_ACTIVE", (char*)ih);
+      iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", "1");
+      gtk_check_button_set_active(cbtn, FALSE);
+      gtk_check_button_set_inconsistent(cbtn, FALSE);
+      iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", NULL);
+      check = 0;
+    }
+    else if (gtk_check_button_get_active(cbtn))
+      check = 1;
+    else
+    {
+      gtk_check_button_set_inconsistent(cbtn, TRUE);
+      check = -1;
     }
   }
+  else
+  {
+    check = gtk4ToggleGetCheck(ih);
 
-  if (ih->data->type == IUP_TOGGLE_IMAGE)
-    gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), check);
+    if (ih->data->is_radio && check)
+    {
+      Ihandle* radio = iupRadioFindToggleParent(ih);
+      if (radio)
+      {
+        gtk4ToggleRadioDeactivatePrevious(radio, ih);
+        iupAttribSet(radio, "_IUPGTK4_RADIO_ACTIVE", (char*)ih);
+      }
+    }
+
+    if (ih->data->type == IUP_TOGGLE_IMAGE)
+      gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), check);
+  }
 
   iupBaseCallValueChangedCb(ih);
 
@@ -773,7 +799,7 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
     g_signal_connect(G_OBJECT(ih->handle), "toggled", G_CALLBACK(gtk4ToggleToggled), ih);
   }
 
-  if (ih->data->type == IUP_TOGGLE_IMAGE || iupAttribGetBoolean(ih, "3STATE"))
+  if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
     iupgtk4SetupButtonEvents(ih->handle, ih);
   }
@@ -783,6 +809,16 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
   iupgtk4UpdateMnemonic(ih);
 
   return IUP_NOERROR;
+}
+
+static int gtk4ToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type == IUP_TOGGLE_TEXT && ih->handle)
+  {
+    gtk_widget_set_direction(ih->handle, iupStrBoolean(value) ? GTK_TEXT_DIR_RTL : GTK_TEXT_DIR_LTR);
+    return 1;
+  }
+  return 0;
 }
 
 IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
@@ -807,5 +843,5 @@ IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, gtk4ToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, gtk4ToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

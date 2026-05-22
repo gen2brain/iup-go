@@ -90,6 +90,8 @@ static int winuiToggleGetChecked(Ihandle* ih)
         auto isChecked = cb.IsChecked();
         if (isChecked)
           return isChecked.Value() ? 1 : 0;
+        if (cb.IsThreeState())
+          return -1;
       }
     }
     break;
@@ -134,7 +136,12 @@ static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
     {
       CheckBox cb = winuiGetHandle<CheckBox>(ih);
       if (cb)
-        cb.IsChecked(checked);
+      {
+        if (iupStrEqualNoCase(value, "NOTDEF") && cb.IsThreeState())
+          cb.IsChecked(nullptr);
+        else
+          cb.IsChecked(checked);
+      }
     }
     break;
   }
@@ -144,7 +151,23 @@ static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* winuiToggleGetValueAttrib(Ihandle* ih)
 {
-  return winuiToggleGetChecked(ih) ? (char*)"ON" : (char*)"OFF";
+  int check = winuiToggleGetChecked(ih);
+  if (check < 0)
+    return (char*)"NOTDEF";
+  return check ? (char*)"ON" : (char*)"OFF";
+}
+
+static int winuiToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
+{
+  IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
+  if (!aux || aux->controlType != IUPWINUI_TOGGLE_CHECKBOX)
+    return 0;
+
+  CheckBox cb = winuiGetHandle<CheckBox>(ih);
+  if (cb)
+    cb.FlowDirection(iupStrBoolean(value) ? FlowDirection::RightToLeft : FlowDirection::LeftToRight);
+
+  return 1;
 }
 
 static void winuiToggleSetImageTextContent(Ihandle* ih, ToggleButton tb, Image image, const char* title)
@@ -665,6 +688,14 @@ static int winuiToggleMapMethod(Ihandle* ih)
       winuiToggleCallAction(ih, 0);
     });
 
+    if (iupAttribGetBoolean(ih, "3STATE"))
+    {
+      cb.IsThreeState(true);
+      aux->indeterminateToken = cb.Indeterminate([ih](IInspectable const&, RoutedEventArgs const&) {
+        winuiToggleCallAction(ih, -1);
+      });
+    }
+
     aux->keyDownToken = cb.PreviewKeyDown([ih](IInspectable const&, Input::KeyRoutedEventArgs const& args) {
       if (!iupwinuiKeyEvent(ih, (int)args.Key(), 1))
         args.Handled(true);
@@ -740,6 +771,8 @@ static void winuiToggleUnMapMethod(Ihandle* ih)
             cb.Checked(aux->checkedToken);
           if (aux->uncheckedToken)
             cb.Unchecked(aux->uncheckedToken);
+          if (aux->indeterminateToken)
+            cb.Indeterminate(aux->indeterminateToken);
           if (aux->keyDownToken)
             cb.PreviewKeyDown(aux->keyDownToken);
         }
@@ -808,6 +841,6 @@ extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, winuiToggleSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, winuiToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, winuiToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }

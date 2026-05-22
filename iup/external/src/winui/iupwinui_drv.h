@@ -311,12 +311,13 @@ struct IupWinUIToggleAux
 {
   winrt::event_token checkedToken;
   winrt::event_token uncheckedToken;
+  winrt::event_token indeterminateToken;
   winrt::event_token clickToken;
   winrt::event_token toggledToken;
   winrt::event_token keyDownToken;
   IupWinUIToggleType controlType;
 
-  IupWinUIToggleAux() : checkedToken{}, uncheckedToken{}, clickToken{}, toggledToken{},
+  IupWinUIToggleAux() : checkedToken{}, uncheckedToken{}, indeterminateToken{}, clickToken{}, toggledToken{},
                         keyDownToken{}, controlType(IUPWINUI_TOGGLE_CHECKBOX) {}
 };
 

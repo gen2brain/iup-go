@@ -91,6 +91,28 @@ static void haikuToggleDispatchClick(Ihandle* ih)
   BView* self = (BView*)ih->handle;
   if (!self) return;
 
+  if (!iupRadioFindToggleParent(ih) && ih->data->type == IUP_TOGGLE_TEXT &&
+      iupAttribGetBoolean(ih, "3STATE") && dynamic_cast<BCheckBox*>(self))
+  {
+    /* BCheckBox click is 2-state, so drive OFF -> ON -> NOTDEF -> OFF here */
+    int prev = iupAttribGetInt(ih, "_IUPHAIKU_TRISTATE");
+    int next = (prev == 0) ? 1 : (prev == 1) ? -1 : 0;
+    int32 nat = (next < 0) ? B_CONTROL_PARTIALLY_ON : (next > 0) ? B_CONTROL_ON : B_CONTROL_OFF;
+    {
+      LooperLockGuard g(self->Looper());
+      if (BControl* c = dynamic_cast<BControl*>(self)) c->SetValue(nat);
+    }
+    iupAttribSetInt(ih, "_IUPHAIKU_TRISTATE", next);
+
+    IFni cb = (IFni)IupGetCallback(ih, "ACTION");
+    int ret = IUP_DEFAULT;
+    if (cb) ret = cb(ih, next);
+    Icallback vc = IupGetCallback(ih, "VALUECHANGED_CB");
+    if (vc) { int r = vc(ih); if (r == IUP_CLOSE) ret = IUP_CLOSE; }
+    if (ret == IUP_CLOSE) IupExitLoop();
+    return;
+  }
+
   int now = (haikuToggleNativeValue(self) == B_CONTROL_ON) ? 1 : 0;
 
   /* Radio: re-click cannot deactivate. */
@@ -139,10 +161,14 @@ public:
     Base::MessageReceived(msg);
   }
 
-  /* DrawLabel ignores our HighColor (uses parent's); replicate Base::Draw with explicit textColor */
+  /* Custom draw needed for explicit textColor (DrawLabel ignores our HighColor) and for box-on-right */
   void Draw(BRect updateRect) override
   {
-    if (!fHasFgColor) { Base::Draw(updateRect); return; }
+    bool rightButton = false;
+    if constexpr (std::is_same_v<Base, BCheckBox>)
+      rightButton = fIhandle && iupAttribGetBoolean(fIhandle, "RIGHTBUTTON");
+
+    if (!fHasFgColor && !rightButton) { Base::Draw(updateRect); return; }
 
     rgb_color base = this->ViewColor();
     font_height fh;
@@ -150,17 +176,27 @@ public:
     uint32 flags = be_control_look->Flags(this);
 
     BRect indicator(0.0f, 2.0f, ceilf(3.0f + fh.ascent), ceilf(5.0f + fh.ascent));
+    BRect labelRect(this->Bounds());
+    if (rightButton)
+    {
+      float w = indicator.Width();
+      indicator.right = this->Bounds().right;
+      indicator.left = indicator.right - w;
+      labelRect.right = indicator.left - 1 - be_control_look->DefaultLabelSpacing();
+    }
+    else
+      labelRect.left = indicator.right + 1 + be_control_look->DefaultLabelSpacing();
+
     BRect rect(indicator);
     if constexpr (std::is_same_v<Base, BCheckBox>)
       be_control_look->DrawCheckBox(this, rect, updateRect, base, flags);
     else
       be_control_look->DrawRadioButton(this, rect, updateRect, base, flags);
 
-    BRect labelRect(this->Bounds());
-    labelRect.left = indicator.right + 1 + be_control_look->DefaultLabelSpacing();
     BAlignment alignment(B_ALIGN_LEFT, B_ALIGN_VERTICAL_CENTER);
     be_control_look->DrawLabel(this, this->Label(), (const BBitmap*)NULL,
-                               labelRect, updateRect, base, flags, alignment, &fForeColor);
+                               labelRect, updateRect, base, flags, alignment,
+                               fHasFgColor ? &fForeColor : (const rgb_color*)NULL);
   }
 
   void SetForeColor(rgb_color c) { fForeColor = c; fHasFgColor = true; this->Invalidate(); }
@@ -466,10 +502,23 @@ static int haikuToggleSetValueAttrib(Ihandle* ih, const char* value)
   BView* v = (BView*)ih->handle;
   if (!v) return 0;
 
+  int three = (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio &&
+               iupAttribGetBoolean(ih, "3STATE") && dynamic_cast<BCheckBox*>(v));
+
   int32 want = B_CONTROL_OFF;
   if (iupStrEqualNoCase(value, "ON"))           want = B_CONTROL_ON;
-  else if (iupStrEqualNoCase(value, "TOGGLE"))  want = (haikuToggleNativeValue(v) == B_CONTROL_ON) ? B_CONTROL_OFF : B_CONTROL_ON;
   else if (iupStrEqualNoCase(value, "NOTDEF"))  want = B_CONTROL_PARTIALLY_ON;
+  else if (iupStrEqualNoCase(value, "TOGGLE"))
+  {
+    if (three)
+    {
+      int prev = iupAttribGetInt(ih, "_IUPHAIKU_TRISTATE");
+      int next = (prev == 0) ? 1 : (prev == 1) ? -1 : 0;
+      want = (next < 0) ? B_CONTROL_PARTIALLY_ON : (next > 0) ? B_CONTROL_ON : B_CONTROL_OFF;
+    }
+    else
+      want = (haikuToggleNativeValue(v) == B_CONTROL_ON) ? B_CONTROL_OFF : B_CONTROL_ON;
+  }
 
   if (want == B_CONTROL_PARTIALLY_ON)
   {
@@ -479,6 +528,9 @@ static int haikuToggleSetValueAttrib(Ihandle* ih, const char* value)
   }
   else
     haikuToggleApplyCheck(ih, want == B_CONTROL_ON);
+
+  if (three)
+    iupAttribSetInt(ih, "_IUPHAIKU_TRISTATE", (want == B_CONTROL_PARTIALLY_ON) ? -1 : (want == B_CONTROL_ON) ? 1 : 0);
 
   return 0;
 }
@@ -704,6 +756,18 @@ extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int *x, int *y, c
   if (y && *y < min_h) *y = min_h;
 }
 
+static int haikuToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
+{
+  (void)value;
+  BView* v = (BView*)ih->handle;
+  if (v && v->Window())
+  {
+    LooperLockGuard g(v->Looper());
+    v->Invalidate();
+  }
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   ic->Map = haikuToggleMapMethod;
@@ -731,4 +795,5 @@ extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, "ACENTER:ACENTER", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, haikuToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }

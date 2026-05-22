@@ -1107,6 +1107,16 @@ static int gtkToggleMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int gtkToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type == IUP_TOGGLE_TEXT && ih->handle)
+  {
+    gtk_widget_set_direction(ih->handle, iupStrBoolean(value) ? GTK_TEXT_DIR_RTL : GTK_TEXT_DIR_LTR);
+    return 1;
+  }
+  return 0;
+}
+
 IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -1137,6 +1147,5 @@ IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, gtkToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 
-  /* NOT supported */
-  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, gtkToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
