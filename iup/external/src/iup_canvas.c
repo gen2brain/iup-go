@@ -75,11 +75,7 @@ static char* iCanvasGetScrollbarAttrib(Ihandle* ih)
 
 static int iCanvasCreateMethod(Ihandle* ih, void** params)
 {
-  if (params && params[0])
-  {
-    char* action = (char*)params[0];
-    iupAttribSetStr(ih, "ACTION", action);
-  }
+  (void)params;
 
   ih->data = iupALLOCCTRLDATA();
 
@@ -130,12 +126,9 @@ static char* iCanvasGetDrawImageAttrib(Ihandle* ih)
   return name;
 }
 
-IUP_API Ihandle* IupCanvas(const char* action)
+IUP_API Ihandle* IupCanvas(void)
 {
-  void *params[2];
-  params[0] = (void*)action;
-  params[1] = NULL;
-  return IupCreatev("canvas", params);
+  return IupCreate("canvas");
 }
 
 Iclass* iupCanvasNewClass(void)
@@ -143,7 +136,7 @@ Iclass* iupCanvasNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "canvas";
-  ic->format = "a"; /* one ACTION callback name */
+  ic->format = NULL; /* no parameters */
   ic->nativetype = IUP_TYPECANVAS;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;

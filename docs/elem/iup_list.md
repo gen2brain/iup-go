@@ -6,10 +6,7 @@ In native systems, the dropped-down case is called Combo Box.
 
 ### Creation
 
-    Ihandle* IupList(const char *action);
-
-**action**: String with the name of the action generated when the state of an item is changed.
-It can be NULL.
+    Ihandle* IupList(void);
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 

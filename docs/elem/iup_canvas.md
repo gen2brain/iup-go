@@ -4,9 +4,7 @@ Creates an interface element that is a canvas - a drawing area for your applicat
 
 ### Creation
 
-    Ihandle* IupCanvas(const char *action);
-
-**action**: Name of the action generated when the canvas needs to be redrawn. It can be NULL.
+    Ihandle* IupCanvas(void);
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 

@@ -509,10 +509,7 @@ char* iupTextGetPaddingAttrib(Ihandle* ih)
 
 static int iTextCreateMethod(Ihandle* ih, void** params)
 {
-  if (params)
-  {
-    if (params[0]) iupAttribSetStr(ih, "ACTION", (char*)(params[0]));
-  }
+  (void)params;
   ih->data = iupALLOCCTRLDATA();
   ih->data->append_newline = 1;
   ih->data->append_scroll = 1;
@@ -633,12 +630,9 @@ IUP_API void IupTextConvertPosToLinCol(Ihandle* ih, int pos, int *lin, int *col)
   }
 }
 
-IUP_API Ihandle* IupText(const char* action)
+IUP_API Ihandle* IupText(void)
 {
-  void *params[2];
-  params[0] = (void*)action;
-  params[1] = NULL;
-  return IupCreatev("text", params);
+  return IupCreate("text");
 }
 
 static int iTextSetMarkdownValueAttrib(Ihandle* ih, const char* value)
@@ -709,7 +703,7 @@ Iclass* iupTextNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "text";
-  ic->format = "a"; /* one ACTION callback name */
+  ic->format = NULL; /* no parameters */
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
@@ -777,12 +771,9 @@ Iclass* iupTextNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupMultiLine(const char* action)
+IUP_API Ihandle* IupMultiLine(void)
 {
-  void *params[2];
-  params[0] = (void*)action;
-  params[1] = NULL;
-  return IupCreatev("multiline", params);
+  return IupCreate("multiline");
 }
 
 Iclass* iupMultilineNewClass(void)
@@ -791,7 +782,7 @@ Iclass* iupMultilineNewClass(void)
 
   ic->name = "multiline";
   ic->cons = "MultiLine";
-  ic->format = "a"; /* one ACTION callback name */
+  ic->format = NULL; /* no parameters */
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;

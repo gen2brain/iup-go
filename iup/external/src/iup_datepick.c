@@ -435,7 +435,7 @@ static int iDatePickSetZeroprecedAttrib(Ihandle* ih, const char* value)
 
 static Ihandle* iDatePickCreateText(void)
 {
-  Ihandle* txt = IupText(NULL);
+  Ihandle* txt = IupText();
   IupSetAttribute(txt, "BORDER", "NO");
   IupSetAttribute(txt, "NOHIDESEL", "NO");
   IupSetAttribute(txt, "ALIGNMENT", "ACENTER");
@@ -449,7 +449,7 @@ static int iDatePickCreateMethod(Ihandle* ih, void** params)
   Ihandle *box, *tgl;
   (void)params;
 
-  tgl = IupToggle(NULL, NULL);
+  tgl = IupToggle(NULL);
   IupSetAttribute(tgl, "IMAGE", "IupArrowDown");
   IupSetAttribute(tgl, "EXPAND", "VERTICALFREE");
   IupSetAttribute(tgl, "FLAT", "YES");

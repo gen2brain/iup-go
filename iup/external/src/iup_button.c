@@ -84,7 +84,6 @@ static int iButtonCreateMethod(Ihandle* ih, void** params)
       else
         iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
     }
-    if (params[1]) iupAttribSetStr(ih, "ACTION", (char*)(params[1]));
   }
   ih->data = iupALLOCCTRLDATA();
 
@@ -169,12 +168,11 @@ static void iButtonComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupButton(const char* title, const char* action)
+IUP_API Ihandle* IupButton(const char* title)
 {
-  void *params[3];
+  void *params[2];
   params[0] = (void*)title;
-  params[1] = (void*)action;
-  params[2] = NULL;
+  params[1] = NULL;
   return IupCreatev("button", params);
 }
 
@@ -183,7 +181,7 @@ Iclass* iupButtonNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "button";
-  ic->format = "sa"; /* one string, and one ACTION callback name */
+  ic->format = "s"; /* one string */
   ic->format_attr = "TITLE";
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;

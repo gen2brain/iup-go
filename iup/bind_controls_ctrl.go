@@ -34,14 +34,9 @@ func Cells() Ihandle {
 // Matrix creates a matrix control for displaying and editing tabular data.
 // The matrix is a grid of cells that can contain text, dropdowns, toggles, colors, images, and fill indicators.
 //
-// The action parameter is optional and can be "" or a callback name.
-//
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_matrix.md
-func Matrix(action string) Ihandle {
-	cAction := cStrOrNull(action)
-	defer cStrFree(cAction)
-
-	h := mkih(C.IupMatrix(cAction))
+func Matrix() Ihandle {
+	h := mkih(C.IupMatrix())
 	return h
 }
 

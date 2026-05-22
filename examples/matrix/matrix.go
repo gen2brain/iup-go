@@ -86,7 +86,7 @@ func enterItemCb(ih iup.Ihandle, lin, col int) int {
 }
 
 func createMatrix() iup.Ihandle {
-	//mat := iup.Matrix("")
+	//mat := iup.Matrix()
 	mat := iup.MatrixEx()
 
 	mat.SetAttribute("NUMLIN", "4")

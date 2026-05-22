@@ -15,7 +15,7 @@ int main(int argc, char **argv)
   IupSetAttribute(label, "EXPAND", "YES");
   IupSetAttribute(label, "ALIGNMENT", "ACENTER");
 
-  Ihandle *button = IupButton("Quit", NULL);
+  Ihandle *button = IupButton("Quit");
   IupSetAttribute(button, "PADDING", "DEFAULTBUTTONPADDING");
   IupSetCallback(button, "ACTION", (Icallback)quit_cb);
   IupSetHandle("quitBtName", button);

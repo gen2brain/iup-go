@@ -75,14 +75,14 @@ IUP_API void IupVersionShow(void)
   Ihandle* dlg, *info, *ok;
   char* value;
 
-  info = IupText(NULL);
+  info = IupText();
   IupSetAttribute(info, "MULTILINE", "Yes");
   IupSetAttribute(info, "EXPAND", "Yes");
   IupSetAttribute(info, "READONLY", "Yes");
   IupSetAttribute(info, "VISIBLELINES", "10");
   IupSetAttribute(info, "VISIBLECOLUMNS", "30");
 
-  ok = IupButton("_@IUP_OK", NULL);
+  ok = IupButton("_@IUP_OK");
   IupSetStrAttribute(ok, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(ok, "ACTION", (Icallback)ok_action);
 

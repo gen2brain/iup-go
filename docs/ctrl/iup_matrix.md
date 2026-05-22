@@ -13,9 +13,7 @@ So the existence of this callback defines the mode the matrix will operate.
 
 ### Creation
 
-    Ihandle* IupMatrix(char *action_cb);
-
-**action_cb**: Name of the action generated when the user types something.
+    Ihandle* IupMatrix(void);
 
 Returns the identifier of the created matrix, or NULL if an error occurs.
 

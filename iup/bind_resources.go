@@ -186,7 +186,7 @@ func MenuItem(title string) Ihandle {
 	cTitle := C.CString(title)
 	defer C.free(unsafe.Pointer(cTitle))
 
-	h := mkih(C.IupMenuItem(cTitle, nil))
+	h := mkih(C.IupMenuItem(cTitle))
 	return h
 }
 

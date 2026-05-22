@@ -6,10 +6,9 @@ It can also be displayed as a switch control.
 
 ### Creation
 
-    Ihandle* IupToggle(const char *title, const char *action);
+    Ihandle* IupToggle(const char *title);
 
-**title**: Text to be shown on the toggle. It can be NULL. It will set the TITLE attribute.\
-**action**: name of the action generated when the toggle is selected. It can be NULL.
+**title**: Text to be shown on the toggle. It can be NULL. It will set the TITLE attribute.
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 

@@ -1177,7 +1177,7 @@ IUP_SDK_API int iupFlatScrollBarCreate(Ihandle* ih)
   if (ih->firstchild && iupAttribGet(ih->firstchild, "SB_VERT"))
     return 0;
 
-  sb_horiz = IupCanvas(NULL);
+  sb_horiz = IupCanvas();
   IupSetAttribute(sb_horiz, "BORDER", "NO");
   IupSetAttribute(sb_horiz, "ZORDER", "TOP");
   iupAttribSet(sb_horiz, "SB_HORIZ", "YES");
@@ -1195,7 +1195,7 @@ IUP_SDK_API int iupFlatScrollBarCreate(Ihandle* ih)
   sb_horiz->flags |= IUP_INTERNAL;
   iupAttribSet(ih, "XHIDDEN", "YES");
 
-  sb_vert = IupCanvas(NULL);
+  sb_vert = IupCanvas();
   IupSetAttribute(sb_vert, "BORDER", "NO");
   IupSetAttribute(sb_vert, "ZORDER", "TOP");
   iupAttribSet(sb_vert, "SB_VERT", "YES");

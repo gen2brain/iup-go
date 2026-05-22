@@ -485,7 +485,7 @@ static Ihandle* iGlobalsCreateDialog(void)
   Ihandle *list1, *list2, *list3, *list4, *close, *dlg, *dlg_box, *button_box, *colorbut1, *fontbut1, *colorbut2, *fontbut2,
     *tabs, *box1, *box11, *box12, *box13, *box14, *box2, *box3, *box4, *set1, *set2, *value1, *value2, *value3, *value4;
 
-  close = IupButton("_@IUP_CLOSE", NULL);
+  close = IupButton("_@IUP_CLOSE");
   IupSetStrAttribute(close, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(close, "ACTION", (Icallback)iGlobalsClose_CB);
 
@@ -495,79 +495,79 @@ static Ihandle* iGlobalsCreateDialog(void)
     NULL);
   IupSetAttribute(button_box, "MARGIN", "0x0");
 
-  list1 = IupList(NULL);
+  list1 = IupList();
   IupSetCallback(list1, "ACTION", (Icallback)iGlobalsList_CB);
   IupSetAttribute(list1, "VISIBLELINES", "15");
   IupSetAttribute(list1, "VISIBLECOLUMNS", "16");
   IupSetAttribute(list1, "EXPAND", "VERTICAL");
 
-  set1 = IupButton("Set", NULL);
+  set1 = IupButton("Set");
   IupSetCallback(set1, "ACTION", iGlobalsSet_CB);
   IupSetStrAttribute(set1, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
 
-  colorbut1 = IupButton(NULL, NULL);
+  colorbut1 = IupButton(NULL);
   IupSetAttribute(colorbut1, "SIZE", "20x10");
   IupStoreAttribute(colorbut1, "BGCOLOR", "0 0 0");
   IupSetCallback(colorbut1, "ACTION", (Icallback)iGlobalsSetColor_CB);
   IupSetAttribute(colorbut1, "VISIBLE", "NO");
 
-  fontbut1 = IupButton("F", NULL);
+  fontbut1 = IupButton("F");
   IupSetAttribute(fontbut1, "SIZE", "20x");
   IupStoreAttribute(fontbut1, "FONT", "Times, Bold Italic 12");
   IupSetCallback(fontbut1, "ACTION", (Icallback)iGlobalsSetFont_CB);
   IupSetAttribute(fontbut1, "VISIBLE", "NO");
 
-  value1 = IupText(NULL);
+  value1 = IupText();
   IupSetAttribute(value1, "MULTILINE", "Yes");
   IupSetAttribute(value1, "ALIGNMENT", "ALEFT:ATOP");
   IupSetAttribute(value1, "EXPAND", "YES");
 
-  list2 = IupList(NULL);
+  list2 = IupList();
   IupSetCallback(list2, "ACTION", (Icallback)iGlobalsList_CB);
   IupSetAttribute(list2, "VISIBLELINES", "15");
   IupSetAttribute(list2, "VISIBLECOLUMNS", "16");
   IupSetAttribute(list2, "EXPAND", "VERTICAL");
 
-  set2 = IupButton("Set", NULL);
+  set2 = IupButton("Set");
   IupSetCallback(set2, "ACTION", iGlobalsSet_CB);
   IupSetStrAttribute(set2, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
 
-  colorbut2 = IupButton(NULL, NULL);
+  colorbut2 = IupButton(NULL);
   IupSetAttribute(colorbut2, "SIZE", "20x10");
   IupStoreAttribute(colorbut2, "BGCOLOR", "0 0 0");
   IupSetCallback(colorbut2, "ACTION", (Icallback)iGlobalsSetColor_CB);
   IupSetAttribute(colorbut2, "VISIBLE", "NO");
 
-  fontbut2 = IupButton("F", NULL);
+  fontbut2 = IupButton("F");
   IupSetAttribute(fontbut2, "SIZE", "20x");
   IupStoreAttribute(fontbut2, "FONT", "Times, Bold Italic 12");
   IupSetCallback(fontbut2, "ACTION", (Icallback)iGlobalsSetFont_CB);
   IupSetAttribute(fontbut2, "VISIBLE", "NO");
 
-  value2 = IupText(NULL);
+  value2 = IupText();
   IupSetAttribute(value2, "MULTILINE", "Yes");
   IupSetAttribute(value2, "ALIGNMENT", "ALEFT:ATOP");
   IupSetAttribute(value2, "EXPAND", "YES");
 
-  list3 = IupList(NULL);
+  list3 = IupList();
   IupSetCallback(list3, "ACTION", (Icallback)iGlobalsFunctionsList_CB);
   IupSetAttribute(list3, "VISIBLELINES", "15");
   IupSetAttribute(list3, "VISIBLECOLUMNS", "16");
   IupSetAttribute(list3, "SORT", "Yes");
   IupSetAttribute(list3, "EXPAND", "VERTICAL");
 
-  value3 = IupText(NULL);
+  value3 = IupText();
   IupSetAttribute(value3, "EXPAND", "HORIZONTAL");
   IupSetAttribute(value3, "READONLY", "Yes");
 
-  list4 = IupList(NULL);
+  list4 = IupList();
   IupSetCallback(list4, "ACTION", (Icallback)iGlobalsNamesList_CB);
   IupSetAttribute(list4, "VISIBLELINES", "15");
   IupSetAttribute(list4, "VISIBLECOLUMNS", "16");
   IupSetAttribute(list4, "SORT", "Yes");
   IupSetAttribute(list4, "EXPAND", "VERTICAL");
 
-  value4 = IupText(NULL);
+  value4 = IupText();
   IupSetAttribute(value4, "EXPAND", "HORIZONTAL");
   IupSetAttribute(value4, "READONLY", "Yes");
 
@@ -588,7 +588,7 @@ static Ihandle* iGlobalsCreateDialog(void)
   box13 = IupVbox(
     IupLabel("Value:"),
     value3,
-    IupSetCallbacks(IupSetAttributes(IupButton("Reset Value", NULL), "PADDING=DEFAULTBUTTONPADDING"), "ACTION", iGlobalsFunctionReset_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupButton("Reset Value"), "PADDING=DEFAULTBUTTONPADDING"), "ACTION", iGlobalsFunctionReset_CB, NULL),
     NULL);
   IupSetAttribute(box13, "MARGIN", "0x0");
   IupSetAttribute(box13, "GAP", "0");
@@ -596,12 +596,12 @@ static Ihandle* iGlobalsCreateDialog(void)
   box14 = IupVbox(
     IupLabel("Value:"),
     value4,
-    IupSetCallbacks(IupSetAttributes(IupButton("Reset Value", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameReset_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupButton("Properties...", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameProperties_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupButton("Other Names...", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameFind_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupButton("Reset Value"), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameReset_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupButton("Properties..."), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameProperties_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupButton("Other Names..."), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameFind_CB, NULL),
     IupSetAttributes(IupSeparator(), "ORIENTATION=HORIZONTAL"),
-    IupSetCallbacks(IupSetAttributes(IupToggle("Show Auto Names", NULL), "NAME=SHOWAUTO, TIP=\"Show Automatic Generated Names (_IUP_NAME*)\", NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", (Icallback)iGlobalsNamesShowAuto_CB, NULL),
-    IupSetCallbacks(IupSetAttributes(IupButton("Check Handles...", NULL), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameCheckHandles_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupToggle("Show Auto Names"), "NAME=SHOWAUTO, TIP=\"Show Automatic Generated Names (_IUP_NAME*)\", NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", (Icallback)iGlobalsNamesShowAuto_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupButton("Check Handles..."), "PADDING=DEFAULTBUTTONPADDING, NORMALIZERGROUP=IupGlobalNamesNorm"), "ACTION", iGlobalsNameCheckHandles_CB, NULL),
     NULL);
   IupSetAttribute(box14, "MARGIN", "0x0");
   IupSetAttribute(box14, "GAP", "3");
@@ -622,9 +622,9 @@ static Ihandle* iGlobalsCreateDialog(void)
 
   box2 = IupSetAttributes(IupVbox(
     box2,
-    IupSetAttributes(IupFrame(IupSetAttributes(IupHbox(IupSetAttributes(IupVbox(IupLabel("Name:"), IupSetAttributes(IupText(NULL), "VISIBLECOLUMNS=9, NAME=NEW_ATTRIB_NAME"), NULL), "GAP=0, MARGIN=5x5"),
-    IupSetAttributes(IupVbox(IupLabel("Value:"), IupSetAttributes(IupText(NULL), "EXPAND=HORIZONTAL, NAME=NEW_ATTRIB_VALUE"), NULL), "GAP=0, MARGIN=5x5"),
-    IupSetAttributes(IupVbox(IupLabel(""), IupSetCallbacks(IupSetAttributes(IupButton("Set", NULL), "PADDING=3x0, TIP=\"Sets an attribute value. Actually can be any attribute, registered or custom.\""), "ACTION", iGlobalsSetNewAttrib_CB, NULL), NULL), "GAP=0, MARGIN=5x5"),
+    IupSetAttributes(IupFrame(IupSetAttributes(IupHbox(IupSetAttributes(IupVbox(IupLabel("Name:"), IupSetAttributes(IupText(), "VISIBLECOLUMNS=9, NAME=NEW_ATTRIB_NAME"), NULL), "GAP=0, MARGIN=5x5"),
+    IupSetAttributes(IupVbox(IupLabel("Value:"), IupSetAttributes(IupText(), "EXPAND=HORIZONTAL, NAME=NEW_ATTRIB_VALUE"), NULL), "GAP=0, MARGIN=5x5"),
+    IupSetAttributes(IupVbox(IupLabel(""), IupSetCallbacks(IupSetAttributes(IupButton("Set"), "PADDING=3x0, TIP=\"Sets an attribute value. Actually can be any attribute, registered or custom.\""), "ACTION", iGlobalsSetNewAttrib_CB, NULL), NULL), "GAP=0, MARGIN=5x5"),
     NULL), "ALIGNMENT=ACENTER")), "TITLE=\"Set Attribute\""),
     NULL), "MARGIN=0x0");
 

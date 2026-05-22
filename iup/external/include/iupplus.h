@@ -375,14 +375,14 @@ namespace Iup
   class MenuItem : public Control
   {
   public:
-    MenuItem(const char* title = 0) : Control(IupMenuItem(title, 0)) {}
+    MenuItem(const char* title = 0) : Control(IupMenuItem(title)) {}
     MenuItem(Ihandle* _ih) : Control(_ih) {}
     MenuItem(const Element& elem) : Control(elem.GetHandle()) {}
   };
   class Canvas : public Control
   {
   public:
-    Canvas() : Control(IupCanvas(0)) {}
+    Canvas() : Control(IupCanvas()) {}
     Canvas(Ihandle* _ih) : Control(_ih) {}
     Canvas(const Element& elem) : Control(elem.GetHandle()) {}
 
@@ -431,7 +431,7 @@ namespace Iup
   class Button : public Control
   {
   public:
-    Button(const char* title = 0) : Control(IupButton(title, 0)) {}
+    Button(const char* title = 0) : Control(IupButton(title)) {}
     Button(Ihandle* _ih) : Control(_ih) {}
     Button(const Element& elem) : Control(elem.GetHandle()) {}
   };
@@ -502,7 +502,7 @@ namespace Iup
   class Toggle : public Control
   {
   public:
-    Toggle(const char* title = 0) : Control(IupToggle(title, 0)) {}
+    Toggle(const char* title = 0) : Control(IupToggle(title)) {}
     Toggle(Ihandle* _ih) : Control(_ih) {}
     Toggle(const Element& elem) : Control(elem.GetHandle()) {}
   };
@@ -569,7 +569,7 @@ namespace Iup
   class List: public Control
   {
   public:
-    List() : Control(IupList(0)) {}
+    List() : Control(IupList()) {}
     List(Ihandle* _ih) : Control(_ih) {}
     List(const Element& elem) : Control(elem.GetHandle()) {}
   };
@@ -583,7 +583,7 @@ namespace Iup
   class Text : public Control
   {
   public:
-    Text() : Control(IupText(0)) {}
+    Text() : Control(IupText()) {}
     Text(Ihandle* _ih) : Control(_ih) {}
     Text(const Element& elem) : Control(elem.GetHandle()) {}
   };
@@ -854,7 +854,7 @@ namespace Iup
   class GLCanvas : public Control
   {
   public:
-    GLCanvas() : Control(IupGLCanvas(0)) {}
+    GLCanvas() : Control(IupGLCanvas()) {}
     GLCanvas(Ihandle* _ih) : Control(_ih) {}
     GLCanvas(const Element& elem) : Control(elem.GetHandle()) {}
 
@@ -920,7 +920,7 @@ namespace Iup
   class Matrix : public Control
   {
   public:
-    Matrix() : Control(IupMatrix(0)) {}
+    Matrix() : Control(IupMatrix()) {}
     Matrix(Ihandle* _ih) : Control(_ih) {}
     Matrix(const Element& elem) : Control(elem.GetHandle()) {}
   };

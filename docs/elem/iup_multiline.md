@@ -9,9 +9,7 @@ See [IupText](iup_text.md)
 
 ### Creation
 
-    Ihandle* IupMultiLine(const char *action);
-
-**action**: name of the action generated when the user types something. It can be NULL.
+    Ihandle* IupMultiLine(void);
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 

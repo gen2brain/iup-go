@@ -1812,11 +1812,7 @@ static int iMatrixRedraw_CB(Ihandle* ih)
 
 static int iMatrixCreateMethod(Ihandle* ih, void **params)
 {
-  if (params && params[0])
-  {
-    char* action_cb = (char*)params[0];
-    iupAttribSetStr(ih, "ACTION_CB", action_cb);
-  }
+  (void)params;
 
   /* free the data allocated by IupCanvas */
   free(ih->data);
@@ -2117,8 +2113,7 @@ Iclass* iupMatrixNewClass(void)
   Iclass* ic = iupClassNew(iupRegisterFindClass("canvas"));
 
   ic->name = "matrix";
-  ic->format = "a"; /* one ACTION_CB callback name */
-  ic->format_attr = "ACTION_CB";
+  ic->format = NULL; /* no parameters */
   ic->nativetype = IUP_TYPECANVAS;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
@@ -2333,10 +2328,7 @@ Iclass* iupMatrixNewClass(void)
 
 /*****************************************************************************************************/
 
-IUPCONTROLS_API Ihandle* IupMatrix(const char* action)
+IUPCONTROLS_API Ihandle* IupMatrix(void)
 {
-  void *params[2];
-  params[0] = (void*)action;
-  params[1] = NULL;
-  return IupCreatev("matrix", params);
+  return IupCreate("matrix");
 }

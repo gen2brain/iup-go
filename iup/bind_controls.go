@@ -31,7 +31,7 @@ func Button(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
 
-	h := mkih(C.IupButton(cTitle, nil))
+	h := mkih(C.IupButton(cTitle))
 	return h
 }
 
@@ -47,7 +47,7 @@ func Calendar() Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_canvas.md
 func Canvas() Ihandle {
-	h := mkih(C.IupCanvas(nil))
+	h := mkih(C.IupCanvas())
 	return h
 }
 
@@ -126,7 +126,7 @@ func Link(url, title string) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_list.md
 func List() Ihandle {
-	h := mkih(C.IupList(nil))
+	h := mkih(C.IupList())
 	return h
 }
 
@@ -161,7 +161,7 @@ func SpinBox(child Ihandle) Ihandle {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_text.md
 func Text() Ihandle {
-	h := mkih(C.IupText(nil))
+	h := mkih(C.IupText())
 	return h
 }
 
@@ -190,7 +190,7 @@ func TextConvertPosToLinCol(ih Ihandle, pos int) (lin, col int) {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_multiline.md
 func MultiLine() Ihandle {
-	h := mkih(C.IupMultiLine(nil))
+	h := mkih(C.IupMultiLine())
 	return h
 }
 
@@ -203,7 +203,7 @@ func Toggle(title string) Ihandle {
 	cTitle := cStrOrNull(title)
 	defer cStrFree(cTitle)
 
-	h := mkih(C.IupToggle(cTitle, nil))
+	h := mkih(C.IupToggle(cTitle))
 	return h
 }
 

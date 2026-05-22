@@ -30,7 +30,6 @@ char* iupGetCallbackName(Ihandle *ih, const char *name)
 
 IUP_API Icallback IupGetCallback(Ihandle *ih, const char *name)
 {
-  Icallback func = NULL;
   void* value;
 
   iupASSERT(iupObjectCheck(ih));
@@ -41,15 +40,7 @@ IUP_API Icallback IupGetCallback(Ihandle *ih, const char *name)
   if (!name)
     return NULL;
 
-  func = (Icallback)iupTableGetFunc(ih->attrib, name, &value);
-
-  if (!func && value)
-  {
-    /* if not a IUPTABLE_FUNCPOINTER then it is an old fashion name */
-    func = IupGetFunction((const char*)value);
-  }
-
-  return func;
+  return (Icallback)iupTableGetFunc(ih->attrib, name, &value);
 }
 
 IUP_API Icallback IupSetCallback(Ihandle *ih, const char *name, Icallback func)
@@ -70,9 +61,6 @@ IUP_API Icallback IupSetCallback(Ihandle *ih, const char *name, Icallback func)
   {
     void* value;
     old_func = (Icallback)iupTableGetFunc(ih->attrib, name, &value);
-    if (!old_func && value)
-      old_func = IupGetFunction((const char*)value);
-
     iupTableSetFunc(ih->attrib, name, (Ifunc)func);
   }
 

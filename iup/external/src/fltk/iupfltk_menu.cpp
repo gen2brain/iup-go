@@ -456,7 +456,7 @@ extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** fi
     snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
     iupAttribSetStr(menu, attr_name, filenames[i]);
 
-    Ihandle* item = IupMenuItem(filenames[i], NULL);
+    Ihandle* item = IupMenuItem(filenames[i]);
     iupAttribSet(item, "_IUP_RECENT_ITEM", "1");
     iupAttribSetInt(item, "_IUP_RECENT_INDEX", i);
     IupSetCallback(item, "ACTION", (Icallback)fltkRecentItemAction);

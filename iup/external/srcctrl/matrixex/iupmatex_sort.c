@@ -205,7 +205,7 @@ static Ihandle* iMatrixExSortCreateDialog(ImatExData* matex_data)
   Ihandle *ih_matrix, *matrix_box, *options_box, *reset, *sort, *invert,
           *dlg, *close, *dlg_box, *button_box, *parent;
 
-  ih_matrix = IupSetAttributes(IupMatrix(NULL),
+  ih_matrix = IupSetAttributes(IupMatrix(),
     "NUMLIN=4, "
     "NUMCOL=1, "
     "NUMLIN_VISIBLE=4, "
@@ -234,27 +234,27 @@ static Ihandle* iMatrixExSortCreateDialog(ImatExData* matex_data)
 
   options_box = IupVbox(
     IupSetAttributes(IupFrame(IupRadio(IupVbox(
-      IupSetAttributes(IupToggle("_@IUP_ASCENDING", NULL), "NAME=ASCENDING"),
-      IupSetAttributes(IupToggle("_@IUP_DESCENDING", NULL), "NAME=DESCENDING"),
+      IupSetAttributes(IupToggle("_@IUP_ASCENDING"), "NAME=ASCENDING"),
+      IupSetAttributes(IupToggle("_@IUP_DESCENDING"), "NAME=DESCENDING"),
       NULL))), "TITLE=_@IUP_ORDER, GAP=5, MARGIN=5x5"),
-    IupSetAttributes(IupToggle("_@IUP_CASESENSITIVE", NULL), "NAME=CASESENSITIVE"),
+    IupSetAttributes(IupToggle("_@IUP_CASESENSITIVE"), "NAME=CASESENSITIVE"),
     NULL);
   IupSetAttribute(options_box,"GAP","10");
 
-  sort = IupButton("_@IUP_SORT", NULL);
+  sort = IupButton("_@IUP_SORT");
   IupSetStrAttribute(sort, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(sort, "ACTION", (Icallback)iMatrixExSortDialogSort_CB);
 
-  invert = IupButton("_@IUP_INVERT", NULL);
+  invert = IupButton("_@IUP_INVERT");
   IupSetStrAttribute(invert, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(invert, "ACTION", (Icallback)iMatrixExSortDialogInvert_CB);
   IupSetStrAttribute(invert,"TIP" ,"_@IUP_INVERT_TIP");
 
-  reset = IupButton("_@IUP_RESET", NULL);
+  reset = IupButton("_@IUP_RESET");
   IupSetStrAttribute(reset, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(reset, "ACTION", (Icallback)iMatrixExSortDialogReset_CB);
 
-  close = IupButton("_@IUP_CLOSE", NULL);
+  close = IupButton("_@IUP_CLOSE");
   IupSetStrAttribute(close, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(close, "ACTION", (Icallback)iMatrixExSortDialogClose_CB);
 

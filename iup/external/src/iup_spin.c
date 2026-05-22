@@ -134,7 +134,7 @@ static int iSpinCreateMethod(Ihandle* ih, void** params)
   (void)params;
 
   /* Button UP */
-  bt_up = IupButton(NULL, NULL);
+  bt_up = IupButton(NULL);
 
   IupSetAttribute(bt_up, "EXPAND", "NO");
   IupSetAttribute(bt_up, "IMAGE",  "IupSpinUpImage");
@@ -147,7 +147,7 @@ static int iSpinCreateMethod(Ihandle* ih, void** params)
   IupSetCallback(bt_up, "K_cSP",     (Icallback) iSpinK_cSP);
 
   /* Button DOWN */
-  bt_down = IupButton(NULL, NULL);
+  bt_down = IupButton(NULL);
 
   IupSetAttribute(bt_down, "EXPAND", "NO");
   IupSetAttribute(bt_down, "IMAGE",  "IupSpinDownImage");
