@@ -2022,6 +2022,9 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
   TreeViewNode prevNode{nullptr};
   int kindPrev = ITREE_LEAF;
 
+  if (id == IUP_INVALID_ID && ih->data->node_count != 0)
+    id = iupTreeFindNodeId(ih, iupdrvTreeGetFocusNode(ih));
+
   if (id >= 0)
   {
     prevNode = winuiTreeGetNode(ih, id);
@@ -2097,6 +2100,9 @@ extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
     TreeViewNode node = selectedNodes.GetAt(0);
     return (InodeHandle*)winrt::get_abi(node);
   }
+
+  if (ih->data->node_count > 0)
+    return ih->data->node_cache[0].node_handle;
 
   return NULL;
 }

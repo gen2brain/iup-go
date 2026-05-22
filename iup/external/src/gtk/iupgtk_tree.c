@@ -671,6 +671,9 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* ti
 #endif
   int kindPrev = -1;
 
+  if (id == IUP_INVALID_ID && ih->data->node_count != 0)
+    id = iupTreeFindNodeId(ih, iupdrvTreeGetFocusNode(ih));
+
   /* the previous node is not necessary only
      if adding the root in an empty tree or before the root. */
   if (!gtkTreeFindNode(ih, id, &iterPrev) && id!=-1)

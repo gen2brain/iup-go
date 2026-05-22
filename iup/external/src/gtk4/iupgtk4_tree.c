@@ -1485,6 +1485,9 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle *ih, int id, int kind, const char *ti
   if (!root_store)
     return;
 
+  if (id == IUP_INVALID_ID && ih->data->node_count != 0)
+    id = iupTreeFindNodeId(ih, iupdrvTreeGetFocusNode(ih));
+
   /* Get reference node if not adding root */
   if (id >= 0)
   {

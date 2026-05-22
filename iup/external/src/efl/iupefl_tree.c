@@ -200,6 +200,12 @@ static void eflTreeSelectedCallback(void* data, Evas_Object* obj, void* event_in
   if (!item)
     return;
 
+  if (!iupdrvIsActive(ih))
+  {
+    elm_genlist_item_selected_set(item, EINA_FALSE);
+    return;
+  }
+
   iupAttribSet(ih, "_IUP_EFL_PENDING_RENAME_ITEM", NULL);
 
   id = iupTreeFindNodeId(ih, (InodeHandle*)item);
@@ -245,8 +251,10 @@ static void eflTreeExpandRequestCallback(void* data, Evas_Object* obj, void* eve
 {
   Elm_Object_Item* item = (Elm_Object_Item*)event_info;
 
-  (void)data;
   (void)obj;
+
+  if (!iupdrvIsActive((Ihandle*)data))
+    return;
 
   if (item && !elm_genlist_item_expanded_get(item))
     elm_genlist_item_expanded_set(item, EINA_TRUE);
@@ -256,8 +264,10 @@ static void eflTreeContractRequestCallback(void* data, Evas_Object* obj, void* e
 {
   Elm_Object_Item* item = (Elm_Object_Item*)event_info;
 
-  (void)data;
   (void)obj;
+
+  if (!iupdrvIsActive((Ihandle*)data))
+    return;
 
   if (item && elm_genlist_item_expanded_get(item))
     elm_genlist_item_expanded_set(item, EINA_FALSE);
@@ -844,11 +854,16 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* ti
 IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
   Eo* tree = iupeflGetWidget(ih);
+  Elm_Object_Item* item;
 
   if (!tree)
     return NULL;
 
-  return (InodeHandle*)elm_genlist_selected_item_get(tree);
+  item = elm_genlist_selected_item_get(tree);
+  if (!item)
+    item = elm_genlist_first_item_get(tree);
+
+  return (InodeHandle*)item;
 }
 
 IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)

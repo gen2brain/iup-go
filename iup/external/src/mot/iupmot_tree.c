@@ -565,7 +565,10 @@ IUP_SDK_API Widget iupdrvTreeGetFocusNode(Ihandle* ih)
   if (wItem && XtParent(wItem) == ih->handle) /* is a node */
     return wItem;
 
-  return (Widget)iupAttribGet(ih, "_IUPTREE_LAST_FOCUS");
+  wItem = (Widget)iupAttribGet(ih, "_IUPTREE_LAST_FOCUS");
+  if (!wItem && ih->data->node_count > 0)
+    wItem = (Widget)ih->data->node_cache[0].node_handle;
+  return wItem;
 }
 
 static void motTreeEnterLeaveWindowEvent(Widget w, Ihandle *ih, XEvent *evt, Boolean *cont)

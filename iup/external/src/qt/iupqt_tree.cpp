@@ -274,12 +274,7 @@ public:
 
 static QTreeWidgetItem* qtTreeFindNode(Ihandle* ih, int id)
 {
-  if (id < 0 || id >= ih->data->node_count)
-  {
-    return nullptr;
-  }
-
-  return (QTreeWidgetItem*)ih->data->node_cache[id].node_handle;
+  return (QTreeWidgetItem*)iupTreeGetNode(ih, id);
 }
 
 static int qtTreeFindNodeId(Ihandle* ih, QTreeWidgetItem* item)
@@ -468,6 +463,9 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
   QTreeWidgetItem* new_item = nullptr;
   QTreeWidgetItem* ref_item = nullptr;
   int kindPrev = -1;
+
+  if (id == IUP_INVALID_ID && ih->data->node_count != 0)
+    id = iupTreeFindNodeId(ih, iupdrvTreeGetFocusNode(ih));
 
   if (id >= 0 && id < ih->data->node_count)
   {
@@ -2042,25 +2040,8 @@ static int qtTreeMapMethod(Ihandle* ih)
     qtTreeItemChanged(ih, item, column);
   });
 
-  /* Create root node if ADDROOT=YES */
   if (iupAttribGetBoolean(ih, "ADDROOT"))
-  {
-    QTreeWidgetItem* root = new QTreeWidgetItem(tree);
-    root->setText(0, QString::fromUtf8("ROOT"));
-    qtTreeSetNodeKind(root, ITREE_BRANCH);
-
-    /* Enable editing if show_rename */
-    if (ih->data->show_rename)
-      root->setFlags(root->flags() | Qt::ItemIsEditable);
-
-    /* Initialize cache */
-    ih->data->node_count = 1;
-    ih->data->node_cache[0].node_handle = (InodeHandle*)root;
-    root->setData(0, Qt::UserRole, QVariant::fromValue((void*)(size_t)0));
-
-    /* Set as mark start */
-    tree->setMarkStartNode(root);
-  }
+    iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
 
   /* Load default images from system icons */
   {
@@ -2221,7 +2202,7 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", qtTreeGetValueAttrib, qtTreeSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupTree Attributes - ACTION */
-  iupClassRegisterAttribute(ic, "ADDROOT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDROOT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "DELNODE", nullptr, qtTreeSetDelNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "COPYNODE", nullptr, qtTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "MOVENODE", nullptr, qtTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);

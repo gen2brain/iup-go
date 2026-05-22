@@ -2805,9 +2805,14 @@ IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
 {
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
 
-  id selected_item = [outline_view itemAtRow:[outline_view selectedRow]];
+  NSInteger row = [outline_view selectedRow];
+  if (row >= 0)
+    return (InodeHandle*)[outline_view itemAtRow:row];
 
-  return (InodeHandle*)selected_item;
+  if (ih->data->node_count > 0)
+    return ih->data->node_cache[0].node_handle;
+
+  return NULL;
 }
 
 IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle *ih)

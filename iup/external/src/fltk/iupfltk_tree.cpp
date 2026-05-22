@@ -36,10 +36,7 @@ extern "C" {
 
 static Fl_Tree_Item* fltkTreeGetItemFromId(Ihandle* ih, int id)
 {
-  if (id < 0 || id >= ih->data->node_count)
-    return NULL;
-
-  return (Fl_Tree_Item*)ih->data->node_cache[id].node_handle;
+  return (Fl_Tree_Item*)iupTreeGetNode(ih, id);
 }
 
 static int fltkTreeGetIdFromItem(Ihandle* ih, Fl_Tree_Item* item)
@@ -496,6 +493,9 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
   Fl_Tree_Item* new_item = NULL;
   Fl_Tree_Item* ref_item = NULL;
   int kindPrev = -1;
+
+  if (id == IUP_INVALID_ID && ih->data->node_count != 0)
+    id = iupTreeFindNodeId(ih, iupdrvTreeGetFocusNode(ih));
 
   if (id >= 0 && id < ih->data->node_count)
   {
