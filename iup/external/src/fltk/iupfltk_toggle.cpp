@@ -359,10 +359,21 @@ static int fltkToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
   if (ih->data->type == IUP_TOGGLE_TEXT)
     return 0;
 
-  iupAttribSet(ih, "ALIGNMENT", (char*)value);
-
   if (ih->handle)
+  {
+    char value1[30], value2[30];
+    iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
+
+    Fl_Align align = FL_ALIGN_INSIDE | FL_ALIGN_CLIP;
+    if (iupStrEqualNoCase(value1, "ALEFT"))       align |= FL_ALIGN_LEFT;
+    else if (iupStrEqualNoCase(value1, "ARIGHT")) align |= FL_ALIGN_RIGHT;
+
+    if (iupStrEqualNoCase(value2, "ATOP"))         align |= FL_ALIGN_TOP;
+    else if (iupStrEqualNoCase(value2, "ABOTTOM")) align |= FL_ALIGN_BOTTOM;
+
+    ((Fl_Button*)ih->handle)->align(align);
     iupdrvPostRedraw(ih);
+  }
 
   return 1;
 }

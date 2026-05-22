@@ -157,6 +157,35 @@ static char* winuiToggleGetValueAttrib(Ihandle* ih)
   return check ? (char*)"ON" : (char*)"OFF";
 }
 
+static int winuiToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type != IUP_TOGGLE_IMAGE)
+    return 0;
+
+  char value1[30], value2[30];
+  iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
+
+  Control ctrl = winuiGetHandle<Control>(ih);
+  if (ctrl)
+  {
+    HorizontalAlignment halign = HorizontalAlignment::Center;
+    if (iupStrEqualNoCase(value1, "ALEFT"))
+      halign = HorizontalAlignment::Left;
+    else if (iupStrEqualNoCase(value1, "ARIGHT"))
+      halign = HorizontalAlignment::Right;
+    ctrl.HorizontalContentAlignment(halign);
+
+    VerticalAlignment valign = VerticalAlignment::Center;
+    if (iupStrEqualNoCase(value2, "ATOP"))
+      valign = VerticalAlignment::Top;
+    else if (iupStrEqualNoCase(value2, "ABOTTOM"))
+      valign = VerticalAlignment::Bottom;
+    ctrl.VerticalContentAlignment(valign);
+  }
+
+  return 1;
+}
+
 static int winuiToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
 {
   IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
@@ -532,6 +561,15 @@ static int winuiToggleMapMethod(Ihandle* ih)
     tb.MinHeight(0);
     tb.Padding(Thickness{0, 0, 0, 0});
 
+    /* flat: clear the normal-state brushes; hover/checked still show */
+    if (ih->data->flat)
+    {
+      Windows::UI::Color transp{};
+      SolidColorBrush transparent(transp);
+      tb.Resources().Insert(box_value(L"ToggleButtonBackground"), transparent);
+      tb.Resources().Insert(box_value(L"ToggleButtonBorderBrush"), transparent);
+    }
+
     if (image)
     {
       void* imghandle = iupImageGetImage(image, ih, 0, NULL);
@@ -842,5 +880,6 @@ extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, winuiToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, winuiToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, winuiToggleSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
 }

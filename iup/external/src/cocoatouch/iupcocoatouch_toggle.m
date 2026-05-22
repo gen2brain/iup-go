@@ -59,30 +59,11 @@ static const char* cocoaTouchToggleValueToStr(IupCocoaTouchToggleValue value)
 }
 
 
-/* contentInsets adds onto styling's defaults; probe a bare config to recover per-side default */
-static int cocoaTouchTogglePlainInsetPerSide(void)
-{
-	static int per_side = -1;
-	if (per_side < 0)
-	{
-		@autoreleasepool {
-			UIButtonConfiguration* cfg = [UIButtonConfiguration plainButtonConfiguration];
-			UIButton* probe = [UIButton buttonWithConfiguration:cfg primaryAction:nil];
-			CGSize size = [probe intrinsicContentSize];
-			per_side = (size.width > 0) ? (int)round(size.width / 2.0) : 0;
-			if (per_side < 0) per_side = 0;
-		}
-	}
-	return per_side;
-}
-
 static UIButtonConfiguration* cocoaTouchToggleMakeBaseConfig(void)
 {
-	int neg = cocoaTouchTogglePlainInsetPerSide();
 	UIButtonConfiguration* cfg = [UIButtonConfiguration plainButtonConfiguration];
 	cfg.imagePlacement = NSDirectionalRectEdgeLeading;
 	cfg.imagePadding = 8;
-	cfg.contentInsets = NSDirectionalEdgeInsetsMake(0, -neg, 0, -neg);
 	return cfg;
 }
 
@@ -97,14 +78,15 @@ static int cocoaTouchToggleCheckOverhead(void)
 			UIFont* font = (iup_font && iup_font.nativeFont) ? iup_font.nativeFont : [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
 			NSDictionary* attrs = @{ NSFontAttributeName: font };
 			NSString* sample = @"Mg";
-			int text_w = (int)ceil([sample sizeWithAttributes:attrs].width) + 4;
+			CGFloat text_w = [sample sizeWithAttributes:attrs].width;
 			NSAttributedString* title = [[[NSAttributedString alloc] initWithString:sample attributes:attrs] autorelease];
+			/* widest indicator (radio selected) + margin so a spaced title never wraps */
 			UIButtonConfiguration* cfg = cocoaTouchToggleMakeBaseConfig();
-			cfg.image = [UIImage systemImageNamed:@"square"];
+			cfg.image = [UIImage systemImageNamed:@"largecircle.fill.circle"];
 			cfg.attributedTitle = title;
 			UIButton* probe = [UIButton buttonWithConfiguration:cfg primaryAction:nil];
 			CGSize size = [probe intrinsicContentSize];
-			overhead = (size.width > text_w) ? (int)ceil(size.width) - text_w : 30;
+			overhead = (size.width > text_w) ? (int)ceil(size.width - text_w) + 3 : 30;
 			if (overhead < 24) overhead = 24;
 		}
 	}
@@ -308,6 +290,8 @@ static void cocoaTouchToggleApplyValue(Ihandle* ih, IupCocoaTouchToggleValue new
 	if (img_btn)
 	{
 		[img_btn setSelected:(new_value == IupCocoaTouchToggleOn)];
+		if (ih->data->flat)
+			img_btn.layer.borderWidth = (new_value == IupCocoaTouchToggleOn) ? 1.0 : 0.0;
 	}
 }
 
@@ -492,6 +476,9 @@ static int cocoaTouchToggleSetImageAttrib(Ihandle* ih, const char* value)
 
 static int cocoaTouchToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
 {
+	if (ih->data->type != IUP_TOGGLE_IMAGE)
+		return 0;
+
 	char h[30], v[30];
 	iupStrToStrStr(value, h, sizeof(h), v, sizeof(v), ':');
 
@@ -642,8 +629,9 @@ static int cocoaTouchToggleMapMethod(Ihandle* ih)
 		UIButton* button = [UIButton buttonWithConfiguration:cfg primaryAction:nil];
 		cocoaTouchToggleLoadImages(ih, button);
 		button.layer.cornerRadius = 6.0;
-		button.layer.borderWidth = 1.0;
 		button.layer.borderColor = [[UIColor systemBlueColor] CGColor];
+		/* flat: no border until checked (touch has no hover) */
+		button.layer.borderWidth = ih->data->flat ? 0.0 : 1.0;
 		[button addTarget:target action:@selector(onButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
 		view = button;
 	}
@@ -735,7 +723,6 @@ IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "3STATE", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "SWITCH", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "IGNORERADIO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, cocoaTouchToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, cocoaTouchToggleSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);

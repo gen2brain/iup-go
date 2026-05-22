@@ -100,7 +100,10 @@ static void iToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
     iupdrvFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
 
     if (iupAttribGetBoolean(ih, "SWITCH"))
+    {
+      natural_w = 0;  /* switch shows no title */
       iupdrvToggleAddSwitch(ih, &natural_w, &natural_h, str);
+    }
     else
       iupdrvToggleAddCheckBox(ih, &natural_w, &natural_h, str);
 

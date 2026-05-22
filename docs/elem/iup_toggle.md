@@ -18,8 +18,9 @@ It can also be displayed as a switch control.
 **ALIGNMENT** (non-inheritable): horizontal and vertical alignment when IMAGE is defined.
 Possible values: "ALEFT", "ACENTER" and "ARIGHT",  combined to "ATOP", "ACENTER" and "ABOTTOM".
 Default: "ACENTER:ACENTER". Partial values are also accepted, like "ARIGHT" or ":ATOP", the other value will be obtained from the default value.
-In Motif, vertical alignment is restricted to "ACENTER". In Windows works only when Visual Styles is active.
+In Motif and Android, vertical alignment is restricted to "ACENTER". In Windows works only when Visual Styles is active.
 Text is always left aligned.
+Not supported in Qt, Cocoa, EFL and Haiku.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of toggle mark when displaying a text.
 The text background is transparent, it will use the background color of the native parent.
@@ -38,6 +39,8 @@ In Windows, when using Visual Styles FGCOLOR is ignored. Default: the global att
 **FLAT** (creation-only): Hides the toggle borders until the mouse enter the toggle area when the toggle is not checked.
 If the toggle is checked, then the borders will be shown even if flat is enabled.
 Used only when IMAGE is defined. Can be YES or NO. Default: NO.
+On iOS and Android the border is hidden until the toggle is checked, since touch has no hover.
+Not supported in EFL and Haiku.
 
 **IMAGE** (non-inheritable): Image name. When the IMAGE attribute is defined, the TITLE is not shown.
 This makes the toggle looks just like a button with an image, but its behavior remains the same.
