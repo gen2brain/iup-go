@@ -100,31 +100,31 @@ static void iMatrixExFindCreateDialog(ImatExData* matex_data)
 
   text_box = IupSetAttributes(IupHbox(
     IupLabel("_@IUP_FIND_WHAT"),
-    IupSetAttributes(IupText(NULL), "EXPAND=HORIZONTAL, NAME=FINDTEXT"),
+    IupSetAttributes(IupText(), "EXPAND=HORIZONTAL, NAME=FINDTEXT"),
     NULL), "ALIGNMENT=ACENTER");
   IupSetAttribute(text_box,"MARGIN","0x0");
 
   options_box = IupHbox(
     IupVbox(
-      IupSetAttributes(IupToggle("_@IUP_MATCH_CASE", NULL), "NAME=MATCHCASE"),
-      IupSetAttributes(IupToggle("_@IUP_MATCH_WHOLE_CELL", NULL), "NAME=MATCHWHOLECELL"),
+      IupSetAttributes(IupToggle("_@IUP_MATCH_CASE"), "NAME=MATCHCASE"),
+      IupSetAttributes(IupToggle("_@IUP_MATCH_WHOLE_CELL"), "NAME=MATCHWHOLECELL"),
       NULL),
     IupSetAttributes(IupFrame(IupRadio(IupHbox(
-      IupSetAttributes(IupToggle("_@IUP_BY_ROW", NULL), "NAME=SEARCHBYROW"),
-      IupSetAttributes(IupToggle("_@IUP_BY_COL", NULL), "NAME=SEARCHBYCOL"),
+      IupSetAttributes(IupToggle("_@IUP_BY_ROW"), "NAME=SEARCHBYROW"),
+      IupSetAttributes(IupToggle("_@IUP_BY_COL"), "NAME=SEARCHBYCOL"),
       NULL))), "TITLE=_@IUP_SEARCH, MARGIN=5x5"),
     NULL);
   IupSetAttribute(options_box,"MARGIN","0x5");
 
-  find_prev = IupButton("_@IUP_FIND_PREVIOUS", NULL);
+  find_prev = IupButton("_@IUP_FIND_PREVIOUS");
   IupSetStrAttribute(find_prev, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(find_prev, "ACTION", (Icallback)iMatrixExFindDialogFindPrevious_CB);
 
-  find_next = IupButton("_@IUP_FIND_NEXT", NULL);
+  find_next = IupButton("_@IUP_FIND_NEXT");
   IupSetStrAttribute(find_next, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(find_next, "ACTION", (Icallback)iMatrixExFindDialogFindNext_CB);
 
-  close = IupButton("_@IUP_CLOSE", NULL);
+  close = IupButton("_@IUP_CLOSE");
   IupSetStrAttribute(close, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(close, "ACTION", (Icallback)iMatrixExFindDialogClose_CB);
 

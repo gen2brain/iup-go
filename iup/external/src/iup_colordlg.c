@@ -989,17 +989,17 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   /* ======================================================================= */
   /* BUTTONS   ============================================================= */
   /* ======================================================================= */
-  ok_bt = IupButton("_@IUP_OK", NULL);                      /* Ok Button */
+  ok_bt = IupButton("_@IUP_OK");                      /* Ok Button */
   IupSetStrAttribute(ok_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback (ok_bt, "ACTION", (Icallback)iColorDlgButtonOK_CB);
   IupSetAttributeHandle(ih, "DEFAULTENTER", ok_bt);
 
-  cancel_bt = IupButton("_@IUP_CANCEL", NULL);          /* Cancel Button */
+  cancel_bt = IupButton("_@IUP_CANCEL");          /* Cancel Button */
   IupSetStrAttribute(cancel_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback (cancel_bt, "ACTION", (Icallback)iColorDlgButtonCancel_CB);
   IupSetAttributeHandle(ih, "DEFAULTESC", cancel_bt);
 
-  colordlg_data->help_bt = IupButton("_@IUP_HELP", NULL);            /* Help Button */
+  colordlg_data->help_bt = IupButton("_@IUP_HELP");            /* Help Button */
   IupSetStrAttribute(colordlg_data->help_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback (colordlg_data->help_bt, "ACTION", (Icallback)iColorDlgButtonHelp_CB);
 
@@ -1011,14 +1011,14 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   IupSetCallback(colordlg_data->color_browser, "DRAG_CB",   (Icallback)iColorDlgColorSelDrag_CB);
   IupSetCallback(colordlg_data->color_browser, "CHANGE_CB", (Icallback)iColorDlgColorSelDrag_CB);
 
-  colordlg_data->color_cnv = IupCanvas(NULL);  /* Canvas of the color */
+  colordlg_data->color_cnv = IupCanvas();  /* Canvas of the color */
   IupSetAttribute(colordlg_data->color_cnv, "SIZE", "x12");
   IupSetAttribute(colordlg_data->color_cnv, "CANFOCUS", "NO");
   IupSetAttribute(colordlg_data->color_cnv, "EXPAND", "HORIZONTAL");
   IupSetCallback (colordlg_data->color_cnv, "ACTION", (Icallback)iColorDlgColorCnvAction_CB);
   IupSetCallback (colordlg_data->color_cnv, "BUTTON_CB", (Icallback)iColorDlgColorCnvButton_CB);
 
-  colordlg_data->colorhex_txt = IupText(NULL);      /* Hex of the color */
+  colordlg_data->colorhex_txt = IupText();      /* Hex of the color */
   IupSetAttribute(colordlg_data->colorhex_txt, "VISIBLECOLUMNS", "7");
   IupSetCallback (colordlg_data->colorhex_txt, "ACTION", (Icallback)iColorDlgHexAction_CB);
   IupSetAttribute(colordlg_data->colorhex_txt, "MASK", "#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]");
@@ -1036,7 +1036,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   IupSetCallback (colordlg_data->alpha_val, "BUTTON_PRESS_CB", (Icallback)iColorDlgAlphaVal_CB);
   IupSetCallback (colordlg_data->alpha_val, "BUTTON_RELEASE_CB", (Icallback)iColorDlgAlphaVal_CB);
 
-  colordlg_data->alpha_txt = IupText(NULL);                        /* Alpha value */
+  colordlg_data->alpha_txt = IupText();                        /* Alpha value */
   IupSetAttribute(colordlg_data->alpha_txt, "VISIBLECOLUMNS", "3");
   IupSetAttribute(colordlg_data->alpha_txt, "SPIN", "YES");
   IupSetAttribute(colordlg_data->alpha_txt, "SPINMIN", "0");
@@ -1061,7 +1061,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   /* ======================================================================= */
   /* RGB TEXT FIELDS   ===================================================== */
   /* ======================================================================= */
-  colordlg_data->red_txt = IupText(NULL);                            /* Red value */
+  colordlg_data->red_txt = IupText();                            /* Red value */
   IupSetAttribute(colordlg_data->red_txt, "VISIBLECOLUMNS", "3");
   IupSetAttribute(colordlg_data->red_txt, "SPIN", "YES");
   IupSetAttribute(colordlg_data->red_txt, "SPINMIN", "0");
@@ -1071,7 +1071,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   IupSetCallback (colordlg_data->red_txt, "SPIN_CB", (Icallback)iColorDlgRedSpin_CB);
   IupSetAttribute(colordlg_data->red_txt, "MASKINT", "0:255");
 
-  colordlg_data->green_txt = IupText(NULL);                        /* Green value */
+  colordlg_data->green_txt = IupText();                        /* Green value */
   IupSetAttribute(colordlg_data->green_txt, "VISIBLECOLUMNS", "3");
   IupSetAttribute(colordlg_data->green_txt, "SPIN", "YES");
   IupSetAttribute(colordlg_data->green_txt, "SPINMIN", "0");
@@ -1081,7 +1081,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   IupSetCallback (colordlg_data->green_txt, "SPIN_CB", (Icallback)iColorDlgGreenSpin_CB);
   IupSetAttribute(colordlg_data->green_txt, "MASKINT", "0:255");
 
-  colordlg_data->blue_txt = IupText(NULL);                          /* Blue value */
+  colordlg_data->blue_txt = IupText();                          /* Blue value */
   IupSetAttribute(colordlg_data->blue_txt, "VISIBLECOLUMNS", "3");
   IupSetAttribute(colordlg_data->blue_txt, "SPIN", "YES");
   IupSetAttribute(colordlg_data->blue_txt, "SPINMIN", "0");
@@ -1094,7 +1094,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   /* ======================================================================= */
   /* HSI TEXT FIELDS   ===================================================== */
   /* ======================================================================= */
-  colordlg_data->hue_txt = IupText(NULL);                            /* Hue value */
+  colordlg_data->hue_txt = IupText();                            /* Hue value */
   IupSetAttribute(colordlg_data->hue_txt, "VISIBLECOLUMNS", "3");
   IupSetAttribute(colordlg_data->hue_txt, "SPIN", "YES");
   IupSetAttribute(colordlg_data->hue_txt, "SPINMIN", "0");
@@ -1105,7 +1105,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   IupSetCallback(colordlg_data->hue_txt, "SPIN_CB", (Icallback)iColorDlgHueSpin_CB);
   IupSetAttribute(colordlg_data->hue_txt, "MASKINT", "0:359");
 
-  colordlg_data->saturation_txt = IupText(NULL);              /* Saturation value */
+  colordlg_data->saturation_txt = IupText();              /* Saturation value */
   IupSetAttribute(colordlg_data->saturation_txt, "VISIBLECOLUMNS", "3");
   IupSetAttribute(colordlg_data->saturation_txt, "SPIN", "YES");
   IupSetAttribute(colordlg_data->saturation_txt, "SPINMIN", "0");
@@ -1115,7 +1115,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   IupSetCallback(colordlg_data->saturation_txt, "SPIN_CB", (Icallback)iColorDlgSaturationSpin_CB);
   IupSetAttribute(colordlg_data->saturation_txt, "MASKINT", "0:100");
 
-  colordlg_data->intensity_txt = IupText(NULL);                /* Intensity value */
+  colordlg_data->intensity_txt = IupText();                /* Intensity value */
   IupSetAttribute(colordlg_data->intensity_txt, "VISIBLECOLUMNS", "3");
   IupSetAttribute(colordlg_data->intensity_txt, "SPIN", "YES");
   IupSetAttribute(colordlg_data->intensity_txt, "SPINMIN", "0");

@@ -663,23 +663,23 @@ static Ihandle* iMatrixExCreateMenuContext(Ihandle* ih, int lin, int col)
 
   /************************** General ****************************/
 
-  IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_SETTINGSDLG", NULL), "IMAGE=IUP_ToolsSettings"), "ACTION", iMatrixExItemSettings_CB, NULL));
+  IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_SETTINGSDLG"), "IMAGE=IUP_ToolsSettings"), "ACTION", iMatrixExItemSettings_CB, NULL));
   IupAppend(menu, IupMenuSeparator());
 
   /************************** File ****************************/
 
   IupAppend(menu, IupSetAttributes(IupSubmenu("_@IUP_EXPORT",
       IupMenu(
-        IupSetCallbacks(IupSetAttributes(IupMenuItem("Txt..." , NULL), "FILEFORMAT=TXT"),    "ACTION", iMatrixExItemExport_CB, NULL),
-        IupSetCallbacks(IupSetAttributes(IupMenuItem("LaTeX...", NULL), "FILEFORMAT=LaTeX"), "ACTION", iMatrixExItemExport_CB, NULL),
-        IupSetCallbacks(IupSetAttributes(IupMenuItem("Html..." , NULL), "FILEFORMAT=HTML"),  "ACTION", iMatrixExItemExport_CB, NULL),
+        IupSetCallbacks(IupSetAttributes(IupMenuItem("Txt..."), "FILEFORMAT=TXT"),    "ACTION", iMatrixExItemExport_CB, NULL),
+        IupSetCallbacks(IupSetAttributes(IupMenuItem("LaTeX..."), "FILEFORMAT=LaTeX"), "ACTION", iMatrixExItemExport_CB, NULL),
+        IupSetCallbacks(IupSetAttributes(IupMenuItem("Html..."), "FILEFORMAT=HTML"),  "ACTION", iMatrixExItemExport_CB, NULL),
         NULL)), "IMAGE=IUP_FileOpen"));
 
   if (!readonly)
   {
     IupAppend(menu, IupSetAttributes(IupSubmenu("_@IUP_IMPORT",
         IupMenu(
-          IupSetCallbacks(IupMenuItem("Txt...",  NULL), "ACTION", iMatrixExItemImport_CB, NULL),
+          IupSetCallbacks(IupMenuItem("Txt..."), "ACTION", iMatrixExItemImport_CB, NULL),
           NULL)), "IMAGE=IUP_FileSave"));
   }
 
@@ -690,9 +690,9 @@ static Ihandle* iMatrixExCreateMenuContext(Ihandle* ih, int lin, int col)
   if (!readonly)
   {
     Ihandle *undo, *redo, *undolist;
-    IupAppend(menu, undo = IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_UNDOAC", NULL), "IMAGE=IUP_EditUndo"), "ACTION", iMatrixExItemUndo_CB, NULL));
-    IupAppend(menu, redo = IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_REDOAC", NULL), "IMAGE=IUP_EditRedo"), "ACTION", iMatrixExItemRedo_CB, NULL));
-    IupAppend(menu, undolist = IupSetCallbacks(IupMenuItem("_@IUP_UNDOLISTDLG", NULL), "ACTION", iMatrixExItemUndoList_CB, NULL));
+    IupAppend(menu, undo = IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_UNDOAC"), "IMAGE=IUP_EditUndo"), "ACTION", iMatrixExItemUndo_CB, NULL));
+    IupAppend(menu, redo = IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_REDOAC"), "IMAGE=IUP_EditRedo"), "ACTION", iMatrixExItemRedo_CB, NULL));
+    IupAppend(menu, undolist = IupSetCallbacks(IupMenuItem("_@IUP_UNDOLISTDLG"), "ACTION", iMatrixExItemUndoList_CB, NULL));
 
     if (!IupGetInt(ih, "UNDO"))
       IupSetAttribute(undo, "ACTIVE", "No");
@@ -707,49 +707,49 @@ static Ihandle* iMatrixExCreateMenuContext(Ihandle* ih, int lin, int col)
   /************************** Edit - Clipboard ****************************/
 
   if (!readonly)
-    IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_CUTAC", NULL), "IMAGE=IUP_EditCut"),  "ACTION", iMatrixExItemCut_CB, NULL));
-  IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_COPYAC",  NULL), "IMAGE=IUP_EditCopy"), "ACTION", iMatrixExItemCopy_CB, NULL));
+    IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_CUTAC"), "IMAGE=IUP_EditCut"),  "ACTION", iMatrixExItemCut_CB, NULL));
+  IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_COPYAC"), "IMAGE=IUP_EditCopy"), "ACTION", iMatrixExItemCopy_CB, NULL));
   if (!readonly)
   {
-    IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_PASTEAC", NULL), "IMAGE=IUP_EditPaste"), "ACTION", iMatrixExItemPaste_CB, NULL));
-    IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_ERASEAC", NULL), "IMAGE=IUP_EditErase"), "ACTION", iMatrixExItemDel_CB, NULL));
+    IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_PASTEAC"), "IMAGE=IUP_EditPaste"), "ACTION", iMatrixExItemPaste_CB, NULL));
+    IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_ERASEAC"), "IMAGE=IUP_EditErase"), "ACTION", iMatrixExItemDel_CB, NULL));
   }
-  IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_SELECTALLAC", NULL), "ACTION", iMatrixExItemSelectAll_CB, NULL));
+  IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_SELECTALLAC"), "ACTION", iMatrixExItemSelectAll_CB, NULL));
   IupAppend(menu, IupMenuSeparator());
 
   /************************** Edit - Find ****************************/
 
-  IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_FINDDLG", NULL), "IMAGE=IUP_EditFind"), "ACTION", iMatrixExItemFind_CB, NULL));
-  IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_GOTODLG", NULL), "ACTION", iMatrixExItemGoTo_CB, NULL));
+  IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_FINDDLG"), "IMAGE=IUP_EditFind"), "ACTION", iMatrixExItemFind_CB, NULL));
+  IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_GOTODLG"), "ACTION", iMatrixExItemGoTo_CB, NULL));
   IupAppend(menu, IupMenuSeparator());
 
   /************************** View ****************************/
 
-  IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_SORTDLG", NULL), "IMAGE=IUP_ToolsSortAscend"), "ACTION", iMatrixExItemSort_CB, NULL));
+  IupAppend(menu, IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_SORTDLG"), "IMAGE=IUP_ToolsSortAscend"), "ACTION", iMatrixExItemSort_CB, NULL));
 
   {
     int flin, fcol, ret;
     ret = IupGetIntInt(ih, "FREEZE", &flin, &fcol);
     if (ret!=2 || lin!=flin || col!=fcol)
-      IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_FREEZE", NULL), "ACTION", iMatrixExItemFreeze_CB, NULL));
+      IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_FREEZE"), "ACTION", iMatrixExItemFreeze_CB, NULL));
     else
-      IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_UNFREEZE", NULL), "ACTION", iMatrixExItemFreeze_CB, NULL));
+      IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_UNFREEZE"), "ACTION", iMatrixExItemFreeze_CB, NULL));
   }
 
   IupAppend(menu, IupSubmenu("_@IUP_VISIBILITY",
     IupMenu(
-      IupSetCallbacks(IupMenuItem("_@IUP_HIDECOLUMN", NULL),        "ACTION", iMatrixExItemHideCol_CB, NULL),
-      IupSetCallbacks(IupMenuItem("_@IUP_SHOWHIDDENCOLUMNS", NULL), "ACTION", iMatrixExItemShowCol_CB, NULL),
-      IupSetCallbacks(IupMenuItem("_@IUP_HIDELINE", NULL),          "ACTION", iMatrixExItemHideLin_CB, NULL),
-      IupSetCallbacks(IupMenuItem("_@IUP_SHOWHIDDENLINES", NULL),   "ACTION", iMatrixExItemShowLin_CB, NULL),
+      IupSetCallbacks(IupMenuItem("_@IUP_HIDECOLUMN"),        "ACTION", iMatrixExItemHideCol_CB, NULL),
+      IupSetCallbacks(IupMenuItem("_@IUP_SHOWHIDDENCOLUMNS"), "ACTION", iMatrixExItemShowCol_CB, NULL),
+      IupSetCallbacks(IupMenuItem("_@IUP_HIDELINE"),          "ACTION", iMatrixExItemHideLin_CB, NULL),
+      IupSetCallbacks(IupMenuItem("_@IUP_SHOWHIDDENLINES"),   "ACTION", iMatrixExItemShowLin_CB, NULL),
     NULL)));
 
   if (IupGetAttributeId(ih, "NUMERICQUANTITY", col))
   {
     if (IupGetIntId(ih, "NUMERICQUANTITYINDEX", col))  /* not None */
-      IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_COLUMNUNITSDLG", NULL),   "ACTION", iMatrixExItemNumericUnits_CB, NULL));
+      IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_COLUMNUNITSDLG"),   "ACTION", iMatrixExItemNumericUnits_CB, NULL));
     else
-      IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_COLUMNDECIMALSDLG", NULL),   "ACTION", iMatrixExItemNumericDecimals_CB, NULL));
+      IupAppend(menu, IupSetCallbacks(IupMenuItem("_@IUP_COLUMNDECIMALSDLG"),   "ACTION", iMatrixExItemNumericDecimals_CB, NULL));
   }
 
   /************************** Data ****************************/
@@ -760,11 +760,11 @@ static Ihandle* iMatrixExCreateMenuContext(Ihandle* ih, int lin, int col)
 
     IupAppend(menu, IupSubmenu("_@IUP_COPYTOSAMECOLUMN",
         IupMenu(
-          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_ALLLINES"      , NULL),  "COPYCOLTO=ALL"),      "ACTION", iMatrixExItemCopyColTo_CB, NULL),
-          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_HERETOTOP"    , NULL),   "COPYCOLTO=TOP"),      "ACTION", iMatrixExItemCopyColTo_CB, NULL),
-          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_HERETOBOTTOM" , NULL),   "COPYCOLTO=BOTTOM"),   "ACTION", iMatrixExItemCopyColTo_CB, NULL),
-          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_INTERVALDLG"    , NULL), "COPYCOLTO=INTERVAL"), "ACTION", iMatrixExItemCopyColTo_CB, NULL),
-          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_SELECTEDLINES" , NULL),  "COPYCOLTO=MARKED"),   "ACTION", iMatrixExItemCopyColTo_CB, NULL),
+          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_ALLLINES"),  "COPYCOLTO=ALL"),      "ACTION", iMatrixExItemCopyColTo_CB, NULL),
+          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_HERETOTOP"),   "COPYCOLTO=TOP"),      "ACTION", iMatrixExItemCopyColTo_CB, NULL),
+          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_HERETOBOTTOM"),   "COPYCOLTO=BOTTOM"),   "ACTION", iMatrixExItemCopyColTo_CB, NULL),
+          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_INTERVALDLG"), "COPYCOLTO=INTERVAL"), "ACTION", iMatrixExItemCopyColTo_CB, NULL),
+          IupSetCallbacks(IupSetAttributes(IupMenuItem("_@IUP_SELECTEDLINES"),  "COPYCOLTO=MARKED"),   "ACTION", iMatrixExItemCopyColTo_CB, NULL),
           NULL)));
   }
 

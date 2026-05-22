@@ -151,11 +151,8 @@ int iupMenuPopup(Ihandle* ih, int x, int y)
 
 static int iItemCreateMethod(Ihandle* ih, void** params)
 {
-  if (params)
-  {
-    if (params[0]) iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
-    if (params[1]) iupAttribSetStr(ih, "ACTION", (char*)(params[1]));
-  }
+  if (params && params[0])
+    iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
   return IUP_NOERROR;
 }
 
@@ -221,7 +218,7 @@ Iclass* iupMenuItemNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "menuitem";
-  ic->format = "sa";  /* one string and one ACTION callback name */
+  ic->format = "s";  /* one string */
   ic->format_attr = "TITLE";
   ic->nativetype = IUP_TYPEMENU;
   ic->childtype = IUP_CHILDNONE;
@@ -321,11 +318,11 @@ Iclass* iupMenuNewClass(void)
 
 /************************************************************************/
 
-IUP_API Ihandle* IupMenuItem(const char* title, const char* action)
+IUP_API Ihandle* IupMenuItem(const char* title)
 {
   void *params[2];
   params[0] = (void*)title;
-  params[1] = (void*)action;
+  params[1] = NULL;
   return IupCreatev("menuitem", params);
 }
 

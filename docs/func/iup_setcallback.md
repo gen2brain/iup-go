@@ -12,17 +12,6 @@ name**: name of the callback.\
 
 **Returns:** the address of the previous function associated to the action.
 
-### Notes
-
-This function replaces the **deprecated **combination:
-
-    IupSetFunction(global_name, func);
-    IupSetAttribute(ih, name, global_name);
-
-So it eliminates the need for a global name.
-
-Callbacks set using **IupSetCallback** cannot be retrieved using **IupGetFunction**.
-
 ### See Also
 
-[IupGetCallback](iup_getcallback.md), [IupSetFunction](iup_setfunction.md)
+[IupGetCallback](iup_getcallback.md)

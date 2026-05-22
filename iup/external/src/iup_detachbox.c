@@ -480,7 +480,7 @@ static int iDetachBoxCreateMethod(Ihandle* ih, void** params)
   ih->data->barsize_hw = iupdrvScaleNaturalPx(10);
   ih->data->showgrip = 1;
 
-  bar = IupCanvas(NULL);
+  bar = IupCanvas();
   bar->flags |= IUP_INTERNAL;
   iupChildTreeAppend(ih, bar);  /* bar will always be the first child */
 

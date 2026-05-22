@@ -613,12 +613,12 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
     int value = iupAttribGetInt(param, "VALUE");
     if (value)
     {
-      ctrl = IupToggle(iupAttribGet(param, "TRUE"), NULL);
+      ctrl = IupToggle(iupAttribGet(param, "TRUE"));
       IupSetAttribute(ctrl, "VALUE", "ON");
     }
     else
     {
-      ctrl = IupToggle(iupAttribGet(param, "FALSE"), NULL);
+      ctrl = IupToggle(iupAttribGet(param, "FALSE"));
       IupSetAttribute(ctrl, "VALUE", "OFF");
     }
     IupSetCallback(ctrl, "ACTION", (Icallback)iParamToggleAction_CB);
@@ -637,7 +637,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
   else if (iupStrEqual(type, "LIST"))
   {
     int i = 0;
-    ctrl = IupList(NULL);
+    ctrl = IupList();
     IupSetCallback(ctrl, "ACTION", (Icallback)iParamListAction_CB);
     IupSetAttribute(ctrl, "DROPDOWN", "YES");
 
@@ -661,7 +661,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
 
     while (*iupAttribGetId(param, "", i) != 0)
     {
-      tgl = IupToggle(iupAttribGetId(param, "", i), NULL);
+      tgl = IupToggle(iupAttribGetId(param, "", i));
       IupSetInt(tgl, "OPT", i);
       IupSetCallback(tgl, "ACTION", (Icallback)iParamOptionsAction_CB);
 
@@ -682,7 +682,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
     {
       Ihandle* hbox;
 
-      ctrl = IupMultiLine(NULL);
+      ctrl = IupMultiLine();
       IupSetAttribute(ctrl, "VISIBLECOLUMNS", "8");
       IupSetAttribute(ctrl, "VISIBLELINES", "6");
       IupSetAttribute(ctrl, "EXPAND", "YES");
@@ -696,7 +696,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
     {
       char *visiblecolumns;
 
-      ctrl = IupText(NULL);
+      ctrl = IupText();
       IupSetAttribute(ctrl, "VISIBLECOLUMNS", "8");
       IupAppend(box, ctrl);
 
@@ -749,7 +749,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
   {
     Ihandle* aux;
 
-    ctrl = IupText(NULL);
+    ctrl = IupText();
     IupSetAttribute(ctrl, "VISIBLECOLUMNS", "15");
     IupSetAttribute(ctrl, "EXPAND", "HORIZONTAL");
     IupAppend(box, ctrl);
@@ -760,7 +760,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
     iupAttribSet(param, "TEXTEXPAND", "1");
     IupSetAttribute(box, "NORMALIZESIZE", "VERTICAL");
 
-    aux = IupButton("...", "");
+    aux = IupButton("...");
     IupStoreAttribute(aux, "FONT", "Times, Bold 10");
     IupSetAttribute(aux, "SIZE", "16x");
     IupSetCallback(aux, "ACTION", (Icallback)iParamFileButton_CB);
@@ -774,7 +774,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
   {
     Ihandle* aux;
 
-    ctrl = IupText(NULL);
+    ctrl = IupText();
     IupSetAttribute(ctrl, "VISIBLECOLUMNS", "15");
     IupSetAttribute(ctrl, "EXPAND", "HORIZONTAL");
     IupAppend(box, ctrl);
@@ -786,7 +786,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
     iupAttribSet(param, "TEXTEXPAND", "1");
     IupSetAttribute(box,"NORMALIZESIZE","VERTICAL");
 
-    aux = IupButton(NULL, NULL);
+    aux = IupButton(NULL);
     IupStoreAttribute(aux, "FONT", "Times, Bold Italic 11");
     IupSetAttribute(aux, "SIZE", "16x");
     IupStoreAttribute(aux, "BGCOLOR", iupAttribGet(param, "VALUE"));
@@ -801,7 +801,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
   {
     Ihandle* aux;
 
-    ctrl = IupText(NULL);
+    ctrl = IupText();
     IupSetAttribute(ctrl, "VISIBLECOLUMNS", "15");
     IupSetAttribute(ctrl, "EXPAND", "HORIZONTAL");
     IupAppend(box, ctrl);
@@ -812,7 +812,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
     iupAttribSet(param, "TEXTEXPAND", "1");
     IupSetAttribute(box,"NORMALIZESIZE","VERTICAL");
 
-    aux = IupButton("F", NULL);
+    aux = IupButton("F");
     IupStoreAttribute(aux, "FONT", "Times, Bold Italic 11");
     IupSetAttribute(aux, "SIZE", "16x");
 
@@ -825,7 +825,7 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char *type)
   }
   else /* INTEGER, REAL */
   {
-    ctrl = IupText(NULL);
+    ctrl = IupText();
     IupSetAttribute(ctrl, "VISIBLECOLUMNS", "8");
     IupSetCallback(ctrl, "ACTION", (Icallback)iParamTextAction_CB);
 
@@ -1127,11 +1127,11 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
   if (count == 0)
     return IUP_ERROR;
 
-  button_1 = IupButton("_@IUP_APPLY", NULL);
+  button_1 = IupButton("_@IUP_APPLY");
   IupSetStrAttribute(button_1, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(button_1, "ACTION", (Icallback)iParamButton1_CB);
 
-  button_2 = IupButton("_@IUP_RESET", NULL);
+  button_2 = IupButton("_@IUP_RESET");
   IupSetStrAttribute(button_2, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(button_2, "ACTION", (Icallback)iParamButton2_CB);
 
@@ -1150,7 +1150,7 @@ static int iParamBoxCreateMethod(Ihandle* param_box, void** vparams)
       value = iupAttribGet(params[i], "BUTTON3");
       if (value && *value)
       {
-        button_3 = IupButton(value, NULL);
+        button_3 = IupButton(value);
         IupSetStrAttribute(button_3, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
         IupSetCallback(button_3, "ACTION", (Icallback)iParamButton3_CB);
       }

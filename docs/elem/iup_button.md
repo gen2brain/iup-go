@@ -5,10 +5,9 @@ Its visual presentation can contain a text and/or an image.
 
 ### Creation
 
-    Ihandle* IupButton(const char *title, const char *action);
+    Ihandle* IupButton(const char *title);
 
-**title**: Text to be shown to the user. It can be NULL. It will set the TITLE attribute.\
-**action**: Name of the action generated when the button is selected. It can be NULL.
+**title**: Text to be shown to the user. It can be NULL. It will set the TITLE attribute.
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 

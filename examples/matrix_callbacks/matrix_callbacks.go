@@ -162,7 +162,7 @@ func createMat(mati int) iup.Ihandle {
 		mat = iup.MatrixEx()
 		mat.SetAttribute("UNDOREDO", "Yes")
 	} else {
-		mat = iup.Matrix("")
+		mat = iup.Matrix()
 	}
 
 	iup.SetHandle(name, mat)

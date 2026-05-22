@@ -4088,7 +4088,7 @@ static int iFlatTreeCreateMethod(Ihandle* ih, void** params)
   free(ih->data);
   ih->data = iupALLOCCTRLDATA();
 
-  text = IupText(NULL);
+  text = IupText();
   text->currentwidth = 20;  /* just to avoid initial size 0x0 */
   text->currentheight = 10;
   text->flags |= IUP_INTERNAL;

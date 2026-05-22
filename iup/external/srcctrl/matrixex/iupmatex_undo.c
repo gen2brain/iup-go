@@ -363,7 +363,7 @@ static Ihandle* iMatrixExUndoCreateDialog(ImatExData* matex_data)
 {
   Ihandle* dlg, *parent, *list;
 
-  list = IupList(NULL);
+  list = IupList();
   IupSetAttribute(list, "EXPAND","YES");
   IupSetAttribute(list, "DROPDOWN","NO");
   IupSetAttribute(list, "VISIBLECOLUMNS" ,"25");

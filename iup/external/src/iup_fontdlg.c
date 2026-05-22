@@ -231,22 +231,22 @@ static int iFontDlgCreateMethod(Ihandle* ih, void** params)
   Ihandle *ok_bt, *cancel_bt, *help_bt;
   Ihandle *lin1, *lin2, *list1, *list2, *list3;
 
-  ok_bt = IupButton("_@IUP_OK", NULL);
+  ok_bt = IupButton("_@IUP_OK");
   IupSetStrAttribute(ok_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(ok_bt, "ACTION", (Icallback)iFontDlgButtonOK_CB);
   IupSetAttributeHandle(ih, "DEFAULTENTER", ok_bt);
 
-  cancel_bt = IupButton("_@IUP_CANCEL", NULL);
+  cancel_bt = IupButton("_@IUP_CANCEL");
   IupSetStrAttribute(cancel_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(cancel_bt, "ACTION", (Icallback)iFontDlgButtonCancel_CB);
   IupSetAttributeHandle(ih, "DEFAULTESC", cancel_bt);
 
-  help_bt = IupButton("_@IUP_HELP", NULL);
+  help_bt = IupButton("_@IUP_HELP");
   IupSetStrAttribute(help_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetAttribute(help_bt, "NAME", "HELPBUT");
   IupSetCallback(help_bt, "ACTION", (Icallback)iFontDlgButtonHelp_CB);
 
-  list1 = IupList(NULL);
+  list1 = IupList();
   IupSetAttribute(list1, "EDITBOX", "YES");
   IupSetAttribute(list1, "READONLY", "YES");
   IupSetAttribute(list1, "EXPAND", "HORIZONTAL");
@@ -255,7 +255,7 @@ static int iFontDlgCreateMethod(Ihandle* ih, void** params)
   IupSetAttribute(list1, "NAME", "LIST1");
   IupSetAttribute(list1, "SORT", "YES");
 
-  list2 = IupList(NULL);
+  list2 = IupList();
   IupSetAttribute(list2, "EDITBOX", "YES");
   IupSetAttribute(list2, "READONLY", "YES");
   IupSetAttribute(list2, "EXPAND", "HORIZONTAL");
@@ -268,7 +268,7 @@ static int iFontDlgCreateMethod(Ihandle* ih, void** params)
   IupSetAttribute(list2, "4", "Bold Italic");
   IupSetAttribute(list2, "5", NULL);
 
-  list3 = IupList(NULL);
+  list3 = IupList();
   IupSetAttribute(list3, "EDITBOX", "YES");
   IupSetAttribute(list3, "EXPAND", "HORIZONTAL");
   IupSetCallback(list3, "ACTION", (Icallback)iFontDlgList3_CB);

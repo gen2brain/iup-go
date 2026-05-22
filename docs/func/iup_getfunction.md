@@ -1,13 +1,12 @@
 ## IupGetFunction
 
-Returns the function associated to an action only when they were set by [IupSetFunction](iup_setfunction.md).
-It will not work if [IupSetCallback](iup_setcallback.md) were used.
+Returns the global callback associated to a name by [IupSetFunction](iup_setfunction.md).
 
 ### Parameters/Return
 
     Icallback IupGetFunction(const char *name);
 
-**name**: name of the action.
+**name**: name of the global callback.
 
 **Returns**: the callback or NULL if not found.
 

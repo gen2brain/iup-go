@@ -376,7 +376,7 @@ static int motCalendarCreateMethod(Ihandle* ih, void** params)
 
   iupAttribSet(ih, "_IUP_CALDATA", (char*)data);
 
-  btn_prev = IupButton("<", NULL);
+  btn_prev = IupButton("<");
   IupSetAttribute(btn_prev, "SIZE", "15x");
   IupSetCallback(btn_prev, "ACTION", (Icallback)motCalendarPrevMonth_CB);
   iupAttribSet(btn_prev, "_IUP_CALENDAR", (char*)ih);
@@ -387,7 +387,7 @@ static int motCalendarCreateMethod(Ihandle* ih, void** params)
   IupSetAttribute(lbl_title, "FONTSTYLE", "Bold");
   data->lbl_title = lbl_title;
 
-  btn_next = IupButton(">", NULL);
+  btn_next = IupButton(">");
   IupSetAttribute(btn_next, "SIZE", "15x");
   IupSetCallback(btn_next, "ACTION", (Icallback)motCalendarNextMonth_CB);
   iupAttribSet(btn_next, "_IUP_CALENDAR", (char*)ih);
@@ -445,7 +445,7 @@ static int motCalendarCreateMethod(Ihandle* ih, void** params)
 
     for (c = 0; c < 7; c++)
     {
-      Ihandle* btn = IupButton("  ", NULL);
+      Ihandle* btn = IupButton("  ");
       IupSetAttribute(btn, "EXPAND", "YES");
       IupSetAttribute(btn, "FLAT", "YES");
       IupSetAttribute(btn, "CANFOCUS", "NO");

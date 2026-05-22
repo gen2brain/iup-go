@@ -32,7 +32,7 @@ IUPCONTROLS_API int IupControlsOpen(void);
  * \ingroup ctrl */
 /** @{ */
 IUPCONTROLS_API Ihandle* IupCells(void);
-IUPCONTROLS_API Ihandle* IupMatrix(const char* action);
+IUPCONTROLS_API Ihandle* IupMatrix(void);
 IUPCONTROLS_API Ihandle* IupMatrixList(void);
 IUPCONTROLS_API Ihandle* IupMatrixEx(void);
 /** @} */

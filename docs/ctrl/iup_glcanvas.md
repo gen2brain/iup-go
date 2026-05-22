@@ -25,9 +25,7 @@ On Haiku, add: -lGL.
 
 ### Creation
 
-    Ihandle* IupGLCanvas(const char* action);
-
-**action**: Name of the action generated when the canvas needs to be redrawn. It can be NULL.
+    Ihandle* IupGLCanvas(void);
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 

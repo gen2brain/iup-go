@@ -19,7 +19,7 @@ func GLCanvasOpen() {
 //
 // https://github.com/gen2brain/iup-go/blob/main/docs/ctrl/iup_glcanvas.md
 func GLCanvas() Ihandle {
-	h := mkih(C.IupGLCanvas(nil))
+	h := mkih(C.IupGLCanvas())
 	return h
 }
 

@@ -59,18 +59,18 @@ IUP_API int IupListDialog (int type, const char *title, int size, const char** l
   int i, bt;
   char *m=NULL;
 
-  lst = IupList(NULL);
+  lst = IupList();
 
   for (i=0;i<size;i++)
     IupSetAttributeId(lst,"",i+1,list_str[i]);
   IupSetAttributeId(lst,"",i+1,NULL);
   IupSetAttribute(lst,"EXPAND","YES");
 
-  ok = IupButton("_@IUP_OK", NULL);
+  ok = IupButton("_@IUP_OK");
   IupSetStrAttribute(ok, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(ok, "ACTION", (Icallback)CB_button_OK);
 
-  cancel = IupButton("_@IUP_CANCEL", NULL);
+  cancel = IupButton("_@IUP_CANCEL");
   IupSetStrAttribute(cancel, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(cancel, "ACTION", (Icallback)CB_button_CANCEL);
 
@@ -175,14 +175,14 @@ IUP_API int IupAlarm(const char *title, const char *msg, const char *b1, const c
   IupAppend(button_box, IupFill());
 
   count = 1;
-  buttons[0] = IupButton(b1, NULL);
+  buttons[0] = IupButton(b1);
   iupAttribSet(buttons[0], "_IUP_BUTTON_NUMBER", "1");
   IupSetStrAttribute(buttons[0], "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(buttons[0], "ACTION", (Icallback)iAlarmButtonAction_CB);
 
   if (b2 != NULL)
   {
-    buttons[count] = IupButton(b2, NULL);
+    buttons[count] = IupButton(b2);
     iupAttribSet(buttons[count], "_IUP_BUTTON_NUMBER", "2");
     IupSetStrAttribute(buttons[count], "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
     IupSetCallback(buttons[count], "ACTION", (Icallback)iAlarmButtonAction_CB);
@@ -190,7 +190,7 @@ IUP_API int IupAlarm(const char *title, const char *msg, const char *b1, const c
   }
   if (b3 != NULL)
   {
-    buttons[count] = IupButton(b3, NULL);
+    buttons[count] = IupButton(b3);
     iupAttribSet(buttons[count], "_IUP_BUTTON_NUMBER", "3");
     IupSetStrAttribute(buttons[count], "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
     IupSetCallback(buttons[count], "ACTION", (Icallback)iAlarmButtonAction_CB);
@@ -281,7 +281,7 @@ IUP_API int IupGetText(const char* title, char* text, int maxsize)
   if (maxsize == 0)
     maxsize = (int)strlen(text);
 
-  multi_text = IupMultiLine(NULL);
+  multi_text = IupMultiLine();
   IupSetAttribute(multi_text,"EXPAND", "YES");
   IupSetAttribute(multi_text,"VALUE", text);
   IupSetAttribute(multi_text,"FONT", "Courier, 12");
@@ -289,13 +289,13 @@ IUP_API int IupGetText(const char* title, char* text, int maxsize)
   IupSetAttribute(multi_text, "VISIBLECOLUMNS", "50");
   if (maxsize <= 0) IupSetAttribute(multi_text, "READONLY", "YES");
 
-  ok = IupButton("_@IUP_OK", NULL);
+  ok = IupButton("_@IUP_OK");
   IupSetStrAttribute(ok, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(ok, "ACTION", (Icallback)CB_button_OK);
 
   if (maxsize > 0)
   {
-    cancel = IupButton("_@IUP_CANCEL", NULL);
+    cancel = IupButton("_@IUP_CANCEL");
     IupSetStrAttribute(cancel, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
     IupSetCallback(cancel, "ACTION", (Icallback)CB_button_CANCEL);
   }

@@ -143,7 +143,7 @@ static void iMatrixEditInitMenu(Ihandle* ih_menu)
     value = IupGetAttributeId(ih_menu, "", i);
     if (value)
     {
-      Ihandle* item = IupMenuItem(value, NULL);
+      Ihandle* item = IupMenuItem(value);
 
       char* img = IupGetAttributeId(ih_menu, "IMAGE", i);
       if (img)
@@ -678,7 +678,7 @@ char* iupMatrixEditGetValue(Ihandle* ih)
 void iupMatrixEditCreate(Ihandle* ih)
 {
   /******** EDIT *************/
-  ih->data->texth = IupText(NULL);
+  ih->data->texth = IupText();
   ih->data->texth->currentwidth = 20;  /* just to avoid initial size 0x0 */
   ih->data->texth->currentheight = 10;
   ih->data->texth->flags |= IUP_INTERNAL;
@@ -694,7 +694,7 @@ void iupMatrixEditCreate(Ihandle* ih)
 
 
   /******** DROPDOWN *************/
-  ih->data->droph = IupList(NULL);
+  ih->data->droph = IupList();
   ih->data->droph->currentwidth = 20;  /* just to avoid initial size 0x0 */
   ih->data->droph->currentheight = 10;
   ih->data->droph->flags |= IUP_INTERNAL;

@@ -94,7 +94,7 @@ extern "C" {
 
 IUPGL_API void      IupGLCanvasOpen(void);
 
-IUPGL_API Ihandle*  IupGLCanvas(const char* action);
+IUPGL_API Ihandle*  IupGLCanvas(void);
 IUPGL_API Ihandle*  IupGLBackgroundBox(Ihandle* child);
 
 IUPGL_API void      IupGLMakeCurrent(Ihandle* ih);

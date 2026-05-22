@@ -46,7 +46,6 @@ static char* getClassParameters(const char* format, const char* format_attr)
       case 'i': fstr = (i == 0)? "int w": "int h"; break;     /* used in IupImage* only */
       case 'c': fstr = "const unsigned char* pixels"; break;  /* used in IupImage* only */
       case 's': fstr = "const char* "; break;  /* usually is for TITLE, but depends on format_attr */
-      case 'a': fstr = "const char* action"; break; /* name of the ACTION callback */
       case 'h': fstr = "Ihandle* ih"; break;
       case 'g': fstr = "Ihandle** ih_array"; break;  /* when used there are no other parameters */
       }
@@ -383,9 +382,9 @@ IUP_API Ihandle* IupClassInfoDialog(Ihandle* parent)
 {
   Ihandle *dialog, *box, *buttons, *listClasses, *listAttributes, *listCallbacks, *txtInfo, *ok_bt, *help_bt;
 
-  listClasses    = IupList(NULL);  /* list of registered classes */
-  listAttributes = IupList(NULL);  /* list of attributes of the selected class */
-  listCallbacks  = IupList(NULL);  /* list of  callbacks of the selected class */
+  listClasses    = IupList();  /* list of registered classes */
+  listAttributes = IupList();  /* list of attributes of the selected class */
+  listCallbacks  = IupList();  /* list of  callbacks of the selected class */
 
   IupSetAttributes(listClasses,    "NAME=listClasses, SIZE=70x85, EXPAND=VERTICAL");
   IupSetAttributes(listAttributes, "NAME=listAttributes, SIZE=120x85, EXPAND=VERTICAL");
@@ -395,18 +394,18 @@ IUP_API Ihandle* IupClassInfoDialog(Ihandle* parent)
   IupSetCallback(listAttributes, "ACTION", (Icallback) attributesList_ActionCB);
   IupSetCallback(listCallbacks,  "ACTION", (Icallback)  callbacksList_ActionCB);
 
-  txtInfo = IupText(NULL);
+  txtInfo = IupText();
   IupSetAttribute(txtInfo, "VISIBLELINES", "7");
   IupSetAttribute(txtInfo, "MULTILINE", "YES");
   IupSetAttribute(txtInfo, "SCROLLBAR", "NO");
   IupSetAttribute(txtInfo, "EXPAND", "HORIZONTAL");
   IupSetAttribute(txtInfo, "NAME", "txtInfo");
 
-  ok_bt = IupButton("_@IUP_CLOSE", NULL);
+  ok_bt = IupButton("_@IUP_CLOSE");
   IupSetStrAttribute(ok_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(ok_bt, "ACTION", (Icallback)button_ok_CB);
 
-  help_bt = IupButton("Class Help", NULL);
+  help_bt = IupButton("Class Help");
   IupSetStrAttribute(help_bt, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(help_bt, "ACTION", (Icallback)button_help_CB);
 

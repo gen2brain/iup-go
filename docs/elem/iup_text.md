@@ -4,9 +4,7 @@ Creates an editable text field.
 
 ### Creation
 
-    Ihandle* IupText(const char *action);
-
-**action**: name of the action generated when the user types something. It can be NULL.
+    Ihandle* IupText(void);
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 

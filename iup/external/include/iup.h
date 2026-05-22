@@ -280,7 +280,7 @@ IUP_API Ihandle*  IupImageRGBA(int width, int height, const unsigned char* pixel
 /** \defgroup menus Menus
  * \ingroup ctrl */
 /** @{ */
-IUP_API Ihandle*  IupMenuItem(const char* title, const char* action);
+IUP_API Ihandle*  IupMenuItem(const char* title);
 IUP_API Ihandle*  IupSubmenu(const char* title, Ihandle* child);
 IUP_API Ihandle*  IupMenuSeparator(void);
 IUP_API Ihandle*  IupMenu(Ihandle* child, ...);
@@ -290,16 +290,16 @@ IUP_API Ihandle*  IupMenuv(Ihandle* *children);
 /** \defgroup controls Standard Controls
  * \ingroup ctrl */
 /** @{ */
-IUP_API Ihandle*  IupButton(const char* title, const char* action);
+IUP_API Ihandle*  IupButton(const char* title);
 IUP_API Ihandle*  IupSeparator(void);
-IUP_API Ihandle*  IupCanvas(const char* action);
+IUP_API Ihandle*  IupCanvas(void);
 IUP_API Ihandle*  IupUser(void);
 IUP_API Ihandle*  IupThread(void);
 IUP_API Ihandle*  IupLabel(const char* title);
-IUP_API Ihandle*  IupList(const char* action);
-IUP_API Ihandle*  IupText(const char* action);
-IUP_API Ihandle*  IupMultiLine(const char* action);
-IUP_API Ihandle*  IupToggle(const char* title, const char* action);
+IUP_API Ihandle*  IupList(void);
+IUP_API Ihandle*  IupText(void);
+IUP_API Ihandle*  IupMultiLine(void);
+IUP_API Ihandle*  IupToggle(const char* title);
 IUP_API Ihandle*  IupTimer(void);
 IUP_API Ihandle*  IupTray(void);
 IUP_API Ihandle*  IupNotify(void);

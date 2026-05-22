@@ -59,7 +59,6 @@ static int iToggleCreateMethod(Ihandle* ih, void** params)
       else
         iupAttribSetStr(ih, "TITLE", (char*)(params[0]));
     }
-    if (params[1]) iupAttribSetStr(ih, "ACTION", (char*)(params[1]));
   }
   ih->data = iupALLOCCTRLDATA();
   return IUP_NOERROR;
@@ -116,12 +115,11 @@ static void iToggleComputeNaturalSizeMethod(Ihandle* ih, int *w, int *h, int *ch
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupToggle(const char* title, const char* action)
+IUP_API Ihandle* IupToggle(const char* title)
 {
-  void *params[3];
+  void *params[2];
   params[0] = (void*)title;
-  params[1] = (void*)action;
-  params[2] = NULL;
+  params[1] = NULL;
   return IupCreatev("toggle", params);
 }
 
@@ -130,7 +128,7 @@ Iclass* iupToggleNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "toggle";
-  ic->format = "sa"; /* one string and one ACTION callback name */
+  ic->format = "s"; /* one string */
   ic->format_attr = "TITLE";
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;

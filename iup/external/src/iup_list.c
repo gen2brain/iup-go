@@ -976,8 +976,7 @@ static int iListSetValueStringAttrib(Ihandle* ih, const char* value)
 
 static int iListCreateMethod(Ihandle* ih, void** params)
 {
-  if (params && params[0])
-    iupAttribSetStr(ih, "ACTION", (char*)(params[0]));
+  (void)params;
 
   ih->data = iupALLOCCTRLDATA();
   ih->data->sb = 1;
@@ -1200,12 +1199,9 @@ static void iListDestroyMethod(Ihandle* ih)
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupList(const char* action)
+IUP_API Ihandle* IupList(void)
 {
-  void *params[2];
-  params[0] = (void*)action;
-  params[1] = NULL;
-  return IupCreatev("list", params);
+  return IupCreate("list");
 }
 
 Iclass* iupListNewClass(void)
@@ -1213,7 +1209,7 @@ Iclass* iupListNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "list";
-  ic->format = "a"; /* one ACTION callback name */
+  ic->format = NULL; /* no parameters */
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;

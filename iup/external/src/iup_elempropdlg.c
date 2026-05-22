@@ -610,7 +610,7 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
     IupSetHandle("IMGEMPTY", image_empty);
   }
 
-  close = IupButton("_@IUP_CLOSE", NULL);
+  close = IupButton("_@IUP_CLOSE");
   IupSetStrAttribute(close, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetCallback(close, "ACTION", (Icallback)iLayoutPropertiesClose_CB);
 
@@ -620,33 +620,33 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
     NULL);
   IupSetAttribute(button_box, "MARGIN", "0x0");
 
-  list1 = IupList(NULL);
+  list1 = IupList();
   IupSetCallback(list1, "ACTION", (Icallback)iLayoutPropertiesList1_CB);
   IupSetAttribute(list1, "VISIBLELINES", "15");
   IupSetAttribute(list1, "VISIBLECOLUMNS", "11");
   IupSetAttribute(list1, "SORT", "Yes");
   IupSetAttribute(list1, "EXPAND", "VERTICAL");
 
-  list2 = IupList(NULL);
+  list2 = IupList();
   IupSetCallback(list2, "ACTION", (Icallback)iLayoutPropertiesList2_CB);
   IupSetAttribute(list2, "VISIBLELINES", "15");
   IupSetAttribute(list2, "VISIBLECOLUMNS", "11");
   IupSetAttribute(list2, "SORT", "Yes");
   IupSetAttribute(list2, "EXPAND", "VERTICAL");
 
-  list3 = IupList(NULL);
+  list3 = IupList();
   IupSetCallback(list3, "ACTION", (Icallback)iLayoutPropertiesList3_CB);
   IupSetAttribute(list3, "VISIBLELINES", "15");
   IupSetAttribute(list3, "VISIBLECOLUMNS", "14");
   IupSetAttribute(list3, "SORT", "Yes");
   IupSetAttribute(list3, "EXPAND", "VERTICAL");
 
-  set = IupButton("Set", NULL);
+  set = IupButton("Set");
   IupSetCallback(set, "ACTION", iLayoutPropertiesSet_CB);
   IupSetStrAttribute(set, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
   IupSetAttribute(set, "NAME", "SETBUT");
 
-  id_text = IupText(NULL);
+  id_text = IupText();
   IupSetCallback(id_text, "VALUECHANGED_CB", (Icallback)iLayoutPropertiesIdTextChanged_CB);
   IupSetAttribute(id_text, "VISIBLECOLUMNS", "5");
   IupSetAttribute(id_text, "NAME", "IDTEXT");
@@ -654,21 +654,21 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
   id_label = IupLabel("Id:");
   IupSetAttribute(id_label, "NAME", "IDLABEL");
 
-  colorbut = IupButton(NULL, NULL);
+  colorbut = IupButton(NULL);
   IupSetAttribute(colorbut, "SIZE", "20x10");
   IupStoreAttribute(colorbut, "BGCOLOR", "0 0 0");
   IupSetCallback(colorbut, "ACTION", (Icallback)iLayoutPropertiesSetColor_CB);
   IupSetAttribute(colorbut, "NAME", "SETCOLORBUT");
   IupSetAttribute(colorbut, "VISIBLE", "NO");
 
-  fontbut = IupButton("F", NULL);
+  fontbut = IupButton("F");
   IupSetAttribute(fontbut, "SIZE", "20x");
   IupStoreAttribute(fontbut, "FONT", "Times, Bold Italic 12");
   IupSetCallback(fontbut, "ACTION", (Icallback)iLayoutPropertiesSetFont_CB);
   IupSetAttribute(fontbut, "NAME", "SETFONTBUT");
   IupSetAttribute(fontbut, "VISIBLE", "NO");
 
-  handlebut = IupButton("Handle", NULL);
+  handlebut = IupButton("Handle");
   IupSetCallback(handlebut, "ACTION", (Icallback)iLayoutPropertiesShowHandle_CB);
   IupSetAttribute(handlebut, "NAME", "SHOWHANDLEBUT");
   IupSetAttribute(handlebut, "VISIBLE", "NO");
@@ -683,7 +683,7 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
 
   box11 = IupVbox(
     IupLabel("Value:"),
-    IupSetAttributes(IupHbox(IupSetAttributes(IupText(NULL), "MULTILINE=Yes, ALIGNMENT=ALEFT:ATOP, EXPAND=YES, NAME=VALUE1A"), IupSetAttributes(IupVbox(set, id_label, id_text, colorbut, fontbut, handlebut, imagelbl, NULL), "GAP=3"), NULL), "GAP=10"),
+    IupSetAttributes(IupHbox(IupSetAttributes(IupText(), "MULTILINE=Yes, ALIGNMENT=ALEFT:ATOP, EXPAND=YES, NAME=VALUE1A"), IupSetAttributes(IupVbox(set, id_label, id_text, colorbut, fontbut, handlebut, imagelbl, NULL), "GAP=3"), NULL), "GAP=10"),
     IupSetAttributes(IupFill(), "RASTERSIZE=10"),
     IupLabel("Default Value:"),
     IupFrame(IupSetAttributes(IupLabel(NULL), "ALIGNMENT=ALEFT:ATOP, EXPAND=HORIZONTAL, NAME=VALUE1B")),
@@ -696,9 +696,9 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
 
   box22 = IupVbox(
     IupLabel("Value:"),
-    IupSetAttributes(IupText(NULL), "MULTILINE=Yes, ALIGNMENT=ALEFT:ATOP, EXPAND=YES, NAME=VALUE2, READONLY=Yes"),
+    IupSetAttributes(IupText(), "MULTILINE=Yes, ALIGNMENT=ALEFT:ATOP, EXPAND=YES, NAME=VALUE2, READONLY=Yes"),
     IupSetAttributes(IupFill(), "RASTERSIZE=10"),
-    IupSetCallbacks(IupSetAttributes(IupButton("Get as String", NULL), "PADDING=3x3"), "ACTION", iLayoutPropertiesGetAsString_CB, NULL),
+    IupSetCallbacks(IupSetAttributes(IupButton("Get as String"), "PADDING=3x3"), "ACTION", iLayoutPropertiesGetAsString_CB, NULL),
     IupLabel("IMPORTANT: if the attribute is not a string\nthis can crash the application."),
     IupSetAttributes(IupFill(), "SIZE=60"),
     NULL);
@@ -707,7 +707,7 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
 
   box33 = IupVbox(
     IupLabel("Value:"),
-    IupSetAttributes(IupText(NULL), "EXPAND=HORIZONTAL, READONLY=Yes, NAME=VALUE3"),
+    IupSetAttributes(IupText(), "EXPAND=HORIZONTAL, READONLY=Yes, NAME=VALUE3"),
     NULL);
   IupSetAttribute(box33, "MARGIN", "0x0");
   IupSetAttribute(box33, "GAP", "0");
@@ -719,9 +719,9 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
   box2 = IupSetAttributes(IupVbox(
     box2,
     IupSetAttributes(IupFrame(IupSetAttributes(IupHbox(
-      IupSetAttributes(IupVbox(IupLabel("Name:"), IupSetAttributes(IupText(NULL), "VISIBLECOLUMNS=9, NAME=NAME22"), NULL), "GAP=0, MARGIN=5x5"),
-      IupSetAttributes(IupVbox(IupLabel("Value:"), IupSetAttributes(IupText(NULL), "EXPAND=HORIZONTAL, NAME=VALUE22"), NULL), "GAP=0, MARGIN=5x5"),
-      IupSetAttributes(IupVbox(IupLabel(""), IupSetCallbacks(IupSetAttributes(IupButton("Set", NULL), "PADDING=3x0, TIP=\"Sets an attribute value. Actually can be any attribute, registered or custom.\""), "ACTION", iLayoutPropertiesSetStr_CB, NULL), NULL), "GAP=0, MARGIN=5x5"),
+      IupSetAttributes(IupVbox(IupLabel("Name:"), IupSetAttributes(IupText(), "VISIBLECOLUMNS=9, NAME=NAME22"), NULL), "GAP=0, MARGIN=5x5"),
+      IupSetAttributes(IupVbox(IupLabel("Value:"), IupSetAttributes(IupText(), "EXPAND=HORIZONTAL, NAME=VALUE22"), NULL), "GAP=0, MARGIN=5x5"),
+      IupSetAttributes(IupVbox(IupLabel(""), IupSetCallbacks(IupSetAttributes(IupButton("Set"), "PADDING=3x0, TIP=\"Sets an attribute value. Actually can be any attribute, registered or custom.\""), "ACTION", iLayoutPropertiesSetStr_CB, NULL), NULL), "GAP=0, MARGIN=5x5"),
       NULL), "ALIGNMENT=ACENTER")), "TITLE=\"Set Attribute\""),
     NULL), "MARGIN=0x0");
 
@@ -735,7 +735,7 @@ static Ihandle* iLayoutPropertiesCreateDialog(Ihandle* parent)
 
   dlg_box = IupVbox(
     IupSetAttributes(IupHbox(
-      IupSetAttributes(IupText(NULL), "EXPAND=HORIZONTAL, READONLY=Yes, NAME=ELEMTITLE, BORDER=NO"),
+      IupSetAttributes(IupText(), "EXPAND=HORIZONTAL, READONLY=Yes, NAME=ELEMTITLE, BORDER=NO"),
       IupSetAttributes(IupLabel(NULL), "RASTERSIZE=32x32, IMAGE=IMGEMPTY, NAME=ELEMIMAGE, VISIBLE=NO"),
       NULL), "MARGIN=0x0, GAP=5"),
     tabs,

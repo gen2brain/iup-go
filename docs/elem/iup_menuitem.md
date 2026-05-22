@@ -4,10 +4,9 @@ Creates an item of the menu interface element. When selected, it generates an ac
 
 ### Creation
 
-    Ihandle* IupMenuItem(const char *title, const char *action);
+    Ihandle* IupMenuItem(const char *title);
 
-**title**: Text to be shown on the item. It can be NULL. It will set the TITLE attribute.\
-**action**: Name of the action generated when the item is selected. It can be NULL.
+**title**: Text to be shown on the item. It can be NULL. It will set the TITLE attribute.
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 

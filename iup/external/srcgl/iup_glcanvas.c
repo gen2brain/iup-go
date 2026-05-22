@@ -23,7 +23,7 @@ static Iclass* iGlCanvasNewClass(void)
 
   ic->name = "glcanvas";
   ic->cons = "GLCanvas";
-  ic->format = "a"; /* one ACTION callback name */
+  ic->format = NULL; /* no parameters */
   ic->nativetype = IUP_TYPECANVAS;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
@@ -67,12 +67,9 @@ IUPGL_API Ihandle* IupGLBackgroundBox(Ihandle* child)
   return IupCreatev("glbackgroundbox", children);
 }
 
-IUPGL_API Ihandle* IupGLCanvas(const char *action)
+IUPGL_API Ihandle* IupGLCanvas(void)
 {
-  void *params[2];
-  params[0] = (void*)action;
-  params[1] = NULL;
-  return IupCreatev("glcanvas", params);
+  return IupCreate("glcanvas");
 }
 
 IUPGL_API void IupGLCanvasOpen(void)
