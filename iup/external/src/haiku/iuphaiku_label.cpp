@@ -101,6 +101,20 @@ public:
   { BStringView::MouseMoved(where, transit, drag);
     haikuLabelFireTransitCb(fIhandle, transit);
     haikuLabelFireMotionCb(fIhandle, this, where); }
+  void Draw(BRect update) override
+  {
+    if (fIhandle && !iupdrvIsActive(fIhandle))
+    {
+      rgb_color hc = HighColor();
+      rgb_color bg = ui_color(B_PANEL_BACKGROUND_COLOR);
+      rgb_color dim = { (uint8)((hc.red + bg.red) / 2), (uint8)((hc.green + bg.green) / 2), (uint8)((hc.blue + bg.blue) / 2), 255 };
+      SetHighColor(dim);
+      BStringView::Draw(update);
+      SetHighColor(hc);
+      return;
+    }
+    BStringView::Draw(update);
+  }
 private:
   Ihandle* fIhandle;
 };

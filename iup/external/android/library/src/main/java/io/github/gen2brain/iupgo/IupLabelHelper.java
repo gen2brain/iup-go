@@ -1,5 +1,6 @@
 package io.github.gen2brain.iupgo;
 
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.view.GestureDetector;
@@ -158,7 +159,10 @@ public final class IupLabelHelper
     @Keep
     public static void setTextColor(TextView textView, int r, int g, int b)
     {
-        textView.setTextColor(Color.rgb(r, g, b));
+        ColorStateList csl = new ColorStateList(
+            new int[][] { new int[]{ -android.R.attr.state_enabled }, new int[0] },
+            new int[] { Color.argb(97, r, g, b), Color.rgb(r, g, b) });
+        textView.setTextColor(csl);
     }
 
     @Keep

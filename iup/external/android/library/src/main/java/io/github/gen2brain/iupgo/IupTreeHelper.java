@@ -69,6 +69,21 @@ public final class IupTreeHelper
     public static final class IupTreeView extends RecyclerView
     {
         final long ihandlePtr;
+
+        @Override
+        public void setEnabled(boolean enabled)
+        {
+            super.setEnabled(enabled);
+            setAlpha(enabled ? 1.0f : 0.5f);
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent ev)
+        {
+            if (!isEnabled()) return true;
+            return super.dispatchTouchEvent(ev);
+        }
+
         final ArrayList<TreeNode> roots = new ArrayList<>();
         final ArrayList<TreeNode> visible = new ArrayList<>();
         final HashSet<TreeNode> marked = new HashSet<>();

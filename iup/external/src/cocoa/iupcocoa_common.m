@@ -1281,6 +1281,9 @@ IUP_DRV_API bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEven
   IFniiiis callback_function;
   bool caller_should_propagate = true;
 
+  if (!iupdrvIsActive(ih))
+    return false;
+
   callback_function = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
   if(callback_function)
   {
@@ -1351,6 +1354,10 @@ IUP_DRV_API bool iupcocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEven
 {
   bool caller_should_propagate = true;
   IFniis callback_function;
+
+  if (!iupdrvIsActive(ih))
+    return false;
+
   callback_function = (IFniis)IupGetCallback(ih, "MOTION_CB");
   if(callback_function)
   {

@@ -418,11 +418,20 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
         fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);  /* Try L:* (per-row) */
     }
 
-    /* Set text color */
+    unsigned char tr, tg, tb;
     if (fgcolor && *fgcolor)
-      XSetForeground(display, mot_data->gc, iupmotColorGetPixelStr(fgcolor));
+      iupStrToRGB(fgcolor, &tr, &tg, &tb);
     else
-      XSetForeground(display, mot_data->gc, mot_data->fg_pixel);
+      iupmotColorGetRGB(mot_data->fg_pixel, &tr, &tg, &tb);
+
+    if (!XtIsSensitive(ih->handle))
+    {
+      unsigned char br, bgc, bb;
+      iupmotColorGetRGB(mot_data->bg_pixel, &br, &bgc, &bb);
+      tr = (tr + br) / 2; tg = (tg + bgc) / 2; tb = (tb + bb) / 2;
+    }
+
+    XSetForeground(display, mot_data->gc, iupmotColorGetPixel(tr, tg, tb));
 
     text_len = strlen(text);
 
@@ -478,21 +487,10 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     {
       XftColor xft_color;
       XRenderColor render_color;
-      unsigned long pixel;
-      XColor xcolor;
 
-      /* Get pixel value from fgcolor */
-      if (fgcolor && *fgcolor)
-        pixel = iupmotColorGetPixelStr(fgcolor);
-      else
-        pixel = mot_data->fg_pixel;
-
-      /* Convert pixel to XRenderColor */
-      xcolor.pixel = pixel;
-      XQueryColor(display, DefaultColormap(display, iupmot_screen), &xcolor);
-      render_color.red = xcolor.red;
-      render_color.green = xcolor.green;
-      render_color.blue = xcolor.blue;
+      render_color.red = tr * 257;
+      render_color.green = tg * 257;
+      render_color.blue = tb * 257;
       render_color.alpha = 0xffff;
 
       XftColorAllocValue(display, DefaultVisual(display, iupmot_screen), DefaultColormap(display, iupmot_screen), &render_color, &xft_color);
@@ -2127,6 +2125,13 @@ static int motTableSetSortableAttrib(Ihandle* ih, const char* value)
   return 0;  /* Do not store in hash table */
 }
 
+static int motTableSetActiveAttrib(Ihandle* ih, const char* value)
+{
+  iupBaseSetActiveAttrib(ih, value);
+  motTableRedraw(ih);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
@@ -2226,4 +2231,5 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 
   /* Replace core SET handlers to update native widget */
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, motTableSetSortableAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", iupBaseGetActiveAttrib, motTableSetActiveAttrib);
 }

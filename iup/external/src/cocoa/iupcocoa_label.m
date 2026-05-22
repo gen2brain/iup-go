@@ -223,6 +223,7 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return;
+  if (!iupdrvIsActive(ih)) return;
 
   IFn cb = (IFn)IupGetCallback(ih, "ENTERWINDOW_CB");
   if (cb)
@@ -238,6 +239,7 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
   if (!ih) return;
+  if (!iupdrvIsActive(ih)) return;
 
   IFn cb = (IFn)IupGetCallback(ih, "LEAVEWINDOW_CB");
   if (cb)

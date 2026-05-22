@@ -17,9 +17,11 @@
 #include <ListView.h>
 #include <Looper.h>
 #include <Menu.h>
+#include <MenuBar.h>
 #include <MenuField.h>
 #include <MenuItem.h>
 #include <Message.h>
+#include <MessageFilter.h>
 #include <Messenger.h>
 #include <PopUpMenu.h>
 #include <Rect.h>
@@ -549,6 +551,7 @@ public:
   void SetEdit(IupHaikuListEditCtrl* e) { fEdit = e; }
   void SetScrollList(BScrollView* sv, IupHaikuListView* lv) { fScroll = sv; fListView = lv; }
   void SetChevron(BButton* btn, BPopUpMenu* menu) { fChevron = btn; fPopUp = menu; }
+  void SetChevronEnabled(bool e) { if (fChevron) fChevron->SetEnabled(e); }
 
   void FrameResized(float w, float h) override
   {
@@ -587,6 +590,7 @@ public:
   {
     if (msg && msg->what == IUPHAIKU_LIST_OPENMENU && fPopUp && fEdit)
     {
+      if (!iupdrvIsActive(fIhandle)) return;
       BPoint where = fEdit->ConvertToScreen(BPoint(0, fEdit->Bounds().Height()));
       BMenuItem* picked = fPopUp->Go(where, true, false, false);
       if (picked && fIhandle)
@@ -1038,6 +1042,15 @@ static int haikuListSetActiveAttrib(Ihandle* ih, const char* value)
       menu->SetEnabled(active);
   }
 
+  if (ih->data->is_dropdown && ih->data->has_editbox && ih->handle)
+  {
+    if (IupHaikuListContainer* cont = dynamic_cast<IupHaikuListContainer*>((BView*)ih->handle))
+    {
+      LooperLockGuard guard(cont->Looper());
+      cont->SetChevronEnabled(active);
+    }
+  }
+
   return iupBaseSetActiveAttrib(ih, value);
 }
 
@@ -1083,6 +1096,20 @@ static int haikuListConvertXYToPos(Ihandle* ih, int x, int y)
   return idx + 1;
 }
 
+/* BMenuBar opens the popup ignoring SetEnabled, so drop the click when inactive */
+class IupHaikuListMenuFilter : public BMessageFilter
+{
+public:
+  explicit IupHaikuListMenuFilter(Ihandle* ih)
+    : BMessageFilter(B_MOUSE_DOWN), fIhandle(ih) {}
+  filter_result Filter(BMessage*, BHandler**) override
+  {
+    return iupdrvIsActive(fIhandle) ? B_DISPATCH_MESSAGE : B_SKIP_MESSAGE;
+  }
+private:
+  Ihandle* fIhandle;
+};
+
 static int haikuListMapMethod(Ihandle* ih)
 {
   if (ih->data->is_dropdown && be_app)
@@ -1103,6 +1130,8 @@ static int haikuListMapMethod(Ihandle* ih)
     BMenuField* field = new BMenuField(BRect(0, 0, 99, field_h - 1), "iup_list", NULL, menu, true, B_FOLLOW_NONE);
     ih->handle = (InativeHandle*)field;
     iuphaikuAddToParent(ih);
+    if (BMenuBar* mb = field->MenuBar())
+      mb->AddFilter(new IupHaikuListMenuFilter(ih));
     iuphaikuUpdateWidgetFont(ih, field);
     iupListSetInitialItems(ih);
     return IUP_NOERROR;

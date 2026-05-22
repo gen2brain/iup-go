@@ -102,7 +102,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
     @Override
     public boolean onTouchEvent(MotionEvent ev)
     {
-        if (ihandlePtr == 0) return false;
+        if (ihandlePtr == 0 || !isEnabled()) return false;
 
         rightClickDetector.onTouchEvent(ev);
 

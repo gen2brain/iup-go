@@ -662,6 +662,15 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     {
       [the_window makeKeyAndOrderFront:nil];
     }
+
+    /* no resize event fires on show, so run the settling relayout once here */
+    if (!iupAttribGet(ih, "_IUPCOCOA_FIRSTLAYOUT"))
+    {
+      iupAttribSet(ih, "_IUPCOCOA_FIRSTLAYOUT", "1");
+      ih->data->ignore_resize = 1;
+      IupRefresh(ih);
+      ih->data->ignore_resize = 0;
+    }
   }
   else
   {

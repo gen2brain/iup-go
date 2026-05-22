@@ -270,6 +270,7 @@ public:
 protected:
   void draw_cell(TableContext context, int R, int C, int X, int Y, int W, int H) override
   {
+    const bool inactive = !active_r();
     switch (context)
     {
       case CONTEXT_STARTPAGE:
@@ -285,7 +286,7 @@ protected:
 
         if (!has_dummy_col || C < iup_handle->data->num_col)
         {
-          fl_color(FL_BLACK);
+          fl_color(inactive ? fl_inactive(FL_BLACK) : FL_BLACK);
           int fl_font_face, fl_font_size;
           if (iupfltkGetFont(iup_handle, &fl_font_face, &fl_font_size))
             fl_font(fl_font_face, fl_font_size);
@@ -339,7 +340,7 @@ protected:
         fl_color(FL_BACKGROUND_COLOR);
         fl_rectf(X, Y, W, H);
 
-        fl_color(FL_BLACK);
+        fl_color(inactive ? fl_inactive(FL_BLACK) : FL_BLACK);
         int fl_font_face, fl_font_size;
         if (iupfltkGetFont(iup_handle, &fl_font_face, &fl_font_size))
           fl_font(fl_font_face, fl_font_size);
@@ -407,10 +408,10 @@ protected:
 
         fltkTableSetCellFont(iup_handle, iup_lin, iup_col);
 
-        if (row_selected(R))
-          fl_color(fl_contrast(fl_rgb_color(fg_r, fg_g, fg_b), FL_SELECTION_COLOR));
-        else
-          fl_color(fg_r, fg_g, fg_b);
+        Fl_Color cell_fg = row_selected(R)
+          ? fl_contrast(fl_rgb_color(fg_r, fg_g, fg_b), FL_SELECTION_COLOR)
+          : fl_rgb_color(fg_r, fg_g, fg_b);
+        fl_color(inactive ? fl_inactive(cell_fg) : cell_fg);
 
         {
           int img_w = 0;

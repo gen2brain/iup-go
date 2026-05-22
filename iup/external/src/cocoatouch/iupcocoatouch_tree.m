@@ -1447,6 +1447,17 @@ IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int *w, int *h)
 	*h += 4;
 }
 
+static int cocoaTouchTreeSetActiveAttrib(Ihandle* ih, const char* value)
+{
+	iupBaseSetActiveAttrib(ih, value);
+
+	UIView* view = (UIView*)ih->handle;
+	if ([view isKindOfClass:[UIView class]])
+		view.alpha = iupStrBoolean(value) ? 1.0 : 0.5;
+
+	return 1;
+}
+
 IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 {
 	ic->Map = cocoaTouchTreeMapMethod;
@@ -1502,4 +1513,5 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 	iupClassRegisterReplaceAttribFunc(ic, "DRAGTYPES",  NULL, cocoaTouchTreeSetDragTypesAttrib);
 	iupClassRegisterReplaceAttribFunc(ic, "DROPTARGET", NULL, cocoaTouchTreeSetDropTargetAttrib);
 	iupClassRegisterReplaceAttribFunc(ic, "DROPTYPES",  NULL, cocoaTouchTreeSetDropTypesAttrib);
+	iupClassRegisterReplaceAttribFunc(ic, "ACTIVE",     NULL, cocoaTouchTreeSetActiveAttrib);
 }

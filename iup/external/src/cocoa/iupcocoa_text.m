@@ -4384,6 +4384,8 @@ static int cocoaTextSetCueBannerAttrib(Ihandle *ih, const char *value)
 static int cocoaTextSetActiveAttrib(Ihandle* ih, const char* value)
 {
   BOOL is_active = (BOOL)iupStrBoolean(value);
+  /* setSelectable:NO also clears editable, so restore it on re-activation */
+  BOOL is_editable = is_active && !iupAttribGetBoolean(ih, "READONLY");
 
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
   switch(sub_type)
@@ -4392,6 +4394,8 @@ static int cocoaTextSetActiveAttrib(Ihandle* ih, const char* value)
       {
         NSTextView* text_view = cocoaTextGetTextView(ih);
         [text_view setSelectable:is_active];
+        if (is_active)
+          [text_view setEditable:is_editable];
         break;
       }
     case IUPCOCOATEXTSUBTYPE_FIELD:
@@ -4399,6 +4403,8 @@ static int cocoaTextSetActiveAttrib(Ihandle* ih, const char* value)
         NSTextField* text_field = cocoaTextGetTextField(ih);
         [text_field setSelectable:is_active];
         [text_field setEnabled:is_active];
+        if (is_active)
+          [text_field setEditable:is_editable];
         break;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
@@ -4406,6 +4412,8 @@ static int cocoaTextSetActiveAttrib(Ihandle* ih, const char* value)
         NSTextField* text_field = cocoaTextGetStepperTextField(ih);
         [text_field setSelectable:is_active];
         [text_field setEnabled:is_active];
+        if (is_active)
+          [text_field setEditable:is_editable];
 
         NSStepper* stepper_view = cocoaTextGetStepperView(ih);
         [stepper_view setEnabled:is_active];

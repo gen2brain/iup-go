@@ -1421,6 +1421,9 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
   int i;
   int is_double_click = 0;
 
+  if (!iupdrvIsActive(ih))
+    return;
+
   if (!table_data || !table_data->cell_labels)
     return;
 

@@ -297,6 +297,12 @@ static int winuiLabelSetActiveAttrib(Ihandle* ih, const char* value)
       }
     }
   }
+  else if (ih->data->type == IUP_LABEL_TEXT)
+  {
+    TextBlock textBlock = winuiLabelGetTextBlock(ih);
+    if (textBlock)
+      textBlock.Opacity(iupStrBoolean(value) ? 1.0 : 0.4);
+  }
 
   return iupBaseSetActiveAttrib(ih, value);
 }
@@ -445,6 +451,21 @@ static int winuiLabelMapMethod(Ihandle* ih)
 
   if (ih->data->type == IUP_LABEL_TEXT)
     winuiLabelUpdateFont(ih);
+
+  /* a plain TextBlock never gets the FGCOLOR default, so apply the link color explicitly */
+  if (ih->data->type == IUP_LABEL_TEXT && IupClassMatch(ih, "link"))
+  {
+    unsigned char r, g, b;
+    if (iupStrToRGB(IupGetGlobal("LINKFGCOLOR"), &r, &g, &b))
+    {
+      TextBlock textBlock = winuiLabelGetTextBlock(ih);
+      if (textBlock)
+      {
+        Color color; color.A = 255; color.R = r; color.G = g; color.B = b;
+        textBlock.Foreground(SolidColorBrush(color));
+      }
+    }
+  }
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");

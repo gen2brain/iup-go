@@ -28,6 +28,7 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 {
 	Ihandle* ih = (Ihandle*)objc_getAssociatedObject(view, IHANDLE_ASSOCIATED_OBJ_KEY);
 	if (!ih || !iupObjectCheck(ih)) return;
+	if (!iupdrvIsActive(ih)) return;
 	IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
 	if (!cb) return;
 	UITouch* touch = [touches anyObject];
@@ -637,6 +638,8 @@ static int cocoaTouchLabelSetActiveAttrib(Ihandle* ih, const char* value)
 	int active = iupStrBoolean(value) ? 1 : 0;
 	int type = cocoaTouchLabelType(ih);
 
+	int ret = iupBaseSetActiveAttrib(ih, value);
+
 	if (type == IUP_LABEL_TEXT)
 	{
 		cocoaTouchLabelApplyActiveColor(ih);
@@ -660,7 +663,7 @@ static int cocoaTouchLabelSetActiveAttrib(Ihandle* ih, const char* value)
 			}
 		}
 	}
-	return iupBaseSetActiveAttrib(ih, value);
+	return ret;
 }
 
 static UIColor* cocoaTouchSeparatorColor(void)
