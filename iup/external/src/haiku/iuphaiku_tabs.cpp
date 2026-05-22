@@ -23,6 +23,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_tabs.h"
+#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
 }
@@ -205,6 +206,7 @@ public:
   /* Close-box hit-test runs before BTabView's tab-switch lookup. */
   void MouseDown(BPoint where) override
   {
+    if (fIhandle && !iupdrvIsActive(fIhandle)) return;
     int btab_idx = HitCloseAt(where);
     if (btab_idx >= 0 && fIhandle && iupObjectCheck(fIhandle))
     {

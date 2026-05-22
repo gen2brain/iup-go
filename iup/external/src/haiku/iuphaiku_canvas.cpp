@@ -24,6 +24,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_key.h"
+#include "iup_drv.h"
 #include "iup_canvas.h"
 }
 
@@ -95,6 +96,7 @@ void iuphaikuCanvasOnMakeFocus(Ihandle* ih, BView* view, bool focused)
 void iuphaikuCanvasOnMouseDown(Ihandle* ih, BView* view, BPoint where)
 {
   if (!ih) return;
+  if (!iupdrvIsActive(ih)) return;
   if (iupAttribGetBoolean(ih, "CANFOCUS"))
     view->MakeFocus(true);
 
@@ -146,6 +148,7 @@ void iuphaikuCanvasOnMouseUp(Ihandle* ih, BView* view, BPoint where)
 void iuphaikuCanvasOnMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned int transit, const BMessage* drag)
 {
   if (!ih) return;
+  if (!iupdrvIsActive(ih)) return;
 
   if (transit == B_ENTERED_VIEW)
   {

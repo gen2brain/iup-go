@@ -40,6 +40,7 @@ extern "C" {
 #include "iup_image.h"
 #include "iup_key.h"
 #include "iup_mask.h"
+#include "iup_drv.h"
 #include "iup_list.h"
 #include "iup_drvfont.h"
 }
@@ -238,6 +239,7 @@ public:
   /* iupKeyCallKeyCb walks up to dialog K_ANY; IGNORE swallows the key */
   void KeyDown(const char* bytes, int32 numBytes) override
   {
+    if (fIhandle && !iupdrvIsActive(fIhandle)) return;
     if (fIhandle && numBytes >= 1)
     {
       int32 raw_char = 0, mods = 0;
@@ -262,6 +264,13 @@ public:
     BListView::SelectionChanged();
     if (!fIhandle) return;
     if (iupAttribGet(fIhandle, "_IUPHAIKU_LIST_IGNORESELECT")) return;
+    if (!iupdrvIsActive(fIhandle))
+    {
+      iupAttribSet(fIhandle, "_IUPHAIKU_LIST_IGNORESELECT", (char*)"1");
+      DeselectAll();
+      iupAttribSet(fIhandle, "_IUPHAIKU_LIST_IGNORESELECT", NULL);
+      return;
+    }
 
     if (fIhandle->data->is_multiple)
     {
@@ -308,6 +317,7 @@ public:
 
   void MouseDown(BPoint where) override
   {
+    if (fIhandle && !iupdrvIsActive(fIhandle)) return;
     BListView::MouseDown(where);
     if (!fIhandle) return;
     BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL;
@@ -1010,13 +1020,24 @@ static int haikuListSetTopItemAttrib(Ihandle* ih, const char* value)
 
 static int haikuListSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  /* BListView has no SetEnabled; ACTIVE only gates the optional editbox. */
+  bool active = iupStrBoolean(value) ? true : false;
+
   IupHaikuListEditCtrl* e = haikuListGetEdit(ih);
   if (e)
   {
     LooperLockGuard guard(e->Looper());
-    e->SetEnabled(iupStrBoolean(value) ? true : false);
+    e->SetEnabled(active);
   }
+
+  if (ih->data->is_dropdown && !ih->data->has_editbox && ih->handle)
+  {
+    BMenuField* field = (BMenuField*)ih->handle;
+    LooperLockGuard guard(field->Looper());
+    field->SetEnabled(active);
+    if (BMenu* menu = field->Menu())
+      menu->SetEnabled(active);
+  }
+
   return iupBaseSetActiveAttrib(ih, value);
 }
 
