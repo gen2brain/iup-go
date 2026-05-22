@@ -192,9 +192,29 @@ static char* androidToggleGetValueAttrib(Ihandle* ih)
   return iupStrReturnChecked(androidToggleGetState(ih));
 }
 
+static int androidToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle) return 1;
+  if (ih->data->type != IUP_TOGGLE_IMAGE) return 0;
+
+  char horiz[30] = "ACENTER", vert[30] = "ACENTER";
+  iupStrToStrStr(value, horiz, sizeof(horiz), vert, sizeof(vert), ':');
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupToggleHelper, jni_env, "io/github/gen2brain/iupgo/IupToggleHelper");
+  jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setImageAlignment", "(Landroid/view/View;Ljava/lang/String;Ljava/lang/String;)V");
+  jstring j_horiz = (*jni_env)->NewStringUTF(jni_env, horiz);
+  jstring j_vert = (*jni_env)->NewStringUTF(jni_env, vert);
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, ih->handle, j_horiz, j_vert);
+  iupAndroid_CheckException(jni_env, "IupToggleHelper.setImageAlignment");
+  (*jni_env)->DeleteLocalRef(jni_env, j_horiz);
+  (*jni_env)->DeleteLocalRef(jni_env, j_vert);
+  (*jni_env)->DeleteLocalRef(jni_env, cls);
+  return 1;
+}
+
 static int androidToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
 {
-  /* spec marks RIGHTBUTTON creation-only; iupAttribUpdate replays the setter post-map with handle valid */
   if (!ih->handle) return 1;
   if (ih->data->type != IUP_TOGGLE_TEXT) return 0;
   if (iupAttribGetBoolean(ih, "SWITCH")) return 0;
@@ -309,6 +329,15 @@ static int androidToggleMapMethod(Ihandle* ih)
     (*jni_env)->DeleteLocalRef(jni_env, cls);
   }
 
+  if (ih->data->type == IUP_TOGGLE_IMAGE && ih->data->flat)
+  {
+    jclass cls = IUPJNI_FindClass(IupToggleHelper, jni_env, "io/github/gen2brain/iupgo/IupToggleHelper");
+    jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setImageFlat", "(Landroid/view/View;Z)V");
+    (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, ih->handle, JNI_TRUE);
+    iupAndroid_CheckException(jni_env, "IupToggleHelper.setImageFlat");
+    (*jni_env)->DeleteLocalRef(jni_env, cls);
+  }
+
   iupAndroid_AddWidgetToParent(jni_env, ih);
   return IUP_NOERROR;
 }
@@ -322,15 +351,12 @@ void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MARKUP", NULL, androidToggleSetMarkupAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "VALUE", androidToggleGetValueAttrib, androidToggleSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, androidToggleSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, androidToggleSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ACENTER:ACENTER", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidToggleSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_DEFAULT);
 
-  /* 3STATE: creation-only flag read by VALUE setter; MaterialCheckBox renders the indeterminate state. */
   iupClassRegisterAttribute(ic, "3STATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  /* RIGHTBUTTON: spec marks Windows-only (creation-only); supported on Android via layout-direction flip. */
   iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, androidToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  /* Not yet implemented on Android: impress, flat styling. */
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

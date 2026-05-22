@@ -4,6 +4,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.CompoundButton;
 
@@ -22,7 +23,7 @@ public final class IupToggleHelper
 {
     private IupToggleHelper() {}
 
-    /* Image-toggle outlined stroke captures colorPrimary at construction; rebuild it on theme flip. */
+    /* Image-toggle outlined stroke captures colorPrimary at construction; rebuild it on theme flip. Value = FLAT. */
     private static final java.util.WeakHashMap<MaterialButton, Boolean> sThemableImageToggles = new java.util.WeakHashMap<>();
     /* CompoundButton (checkbox/switch/radio) tint state-lists also resolve at construction. */
     private static final java.util.WeakHashMap<CompoundButton, Boolean> sThemableTextToggles = new java.util.WeakHashMap<>();
@@ -81,18 +82,20 @@ public final class IupToggleHelper
         }
     }
 
-    /* Checked: primary stroke. Unchecked: colorOutline (subtle Material 3 border) so the toggle still reads as a button. */
+    /* checked: primary stroke; unchecked: colorOutline, or transparent when FLAT */
     private static void applyImageToggleStroke(MaterialButton btn)
     {
         android.content.Context ctx = IupCommon.getThemeContext();
         int primary = MaterialColors.getColor(ctx, com.google.android.material.R.attr.colorPrimary, Color.BLUE);
-        int outline = MaterialColors.getColor(ctx, com.google.android.material.R.attr.colorOutline, Color.GRAY);
+        Boolean flat = sThemableImageToggles.get(btn);
+        int unchecked = (flat != null && flat) ? Color.TRANSPARENT
+            : MaterialColors.getColor(ctx, com.google.android.material.R.attr.colorOutline, Color.GRAY);
         ColorStateList stroke = new ColorStateList(
             new int[][] {
                 new int[] { android.R.attr.state_checked },
                 new int[0]
             },
-            new int[] { primary, outline });
+            new int[] { primary, unchecked });
         btn.setStrokeColor(stroke);
         btn.setRippleColor(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
             ctx, com.google.android.material.R.color.m3_text_button_ripple_color_selector));
@@ -172,7 +175,7 @@ public final class IupToggleHelper
         btn.setCornerRadius((int)(6 * IupCommon.getDisplayDensity()));
         /* drive stroke visibility off checked state; outlined-style is always-on otherwise */
         applyImageToggleStroke(btn);
-        sThemableImageToggles.put(btn, Boolean.TRUE);
+        sThemableImageToggles.put(btn, Boolean.FALSE);
         btn.setInsetTop(0);
         btn.setInsetBottom(0);
         btn.setMinHeight(0);
@@ -230,6 +233,28 @@ public final class IupToggleHelper
     {
         if (widget instanceof MaterialCheckBox mcb)
             sThreeStateValue.put(mcb, 0);
+    }
+
+    @Keep
+    public static void setImageFlat(View widget, boolean flat)
+    {
+        if (!(widget instanceof MaterialButton b)) return;
+        sThemableImageToggles.put(b, flat);
+        applyImageToggleStroke(b);
+    }
+
+    @Keep
+    public static void setImageAlignment(View widget, String horiz, String vert)
+    {
+        if (!(widget instanceof MaterialButton b)) return;
+        int gravity;
+        if ("ARIGHT".equalsIgnoreCase(horiz)) gravity = Gravity.END;
+        else if ("ALEFT".equalsIgnoreCase(horiz)) gravity = Gravity.START;
+        else gravity = Gravity.CENTER_HORIZONTAL;
+        if ("ATOP".equalsIgnoreCase(vert)) gravity |= Gravity.TOP;
+        else if ("ABOTTOM".equalsIgnoreCase(vert)) gravity |= Gravity.BOTTOM;
+        else gravity |= Gravity.CENTER_VERTICAL;
+        b.setGravity(gravity);
     }
 
     /* MaterialCheckBox tri-state 0/1/-1; other widgets use boolean checked */

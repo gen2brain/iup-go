@@ -791,28 +791,6 @@ static int qtToggleSetTitleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int qtToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
-{
-  if (ih->data->type == IUP_TOGGLE_TEXT)
-    return 0;  /* Text toggles don't support alignment */
-
-  /* Store alignment for image toggles */
-  iupAttribSet(ih, "ALIGNMENT", (char*)value);
-  return 1;
-}
-
-static char* qtToggleGetAlignmentAttrib(Ihandle* ih)
-{
-  if (ih->data->type == IUP_TOGGLE_TEXT)
-    return NULL;
-
-  char* value = iupAttribGet(ih, "ALIGNMENT");
-  if (!value)
-    return (char*)"ACENTER:ACENTER";
-
-  return value;
-}
-
 static int qtToggleSetPaddingAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqual(value, "DEFAULTBUTTONPADDING"))
@@ -1195,7 +1173,7 @@ extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TITLE", NULL, qtToggleSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupToggle only */
-  iupClassRegisterAttribute(ic, "ALIGNMENT", qtToggleGetAlignmentAttrib, qtToggleSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, "ACENTER:ACENTER", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, qtToggleSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, qtToggleSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESS", NULL, qtToggleSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

@@ -779,6 +779,10 @@ static int gtk4ToggleMapMethod(Ihandle* ih)
 
     gtk_button_set_child(GTK_BUTTON(ih->handle), image);
     iupgtk4ButtonApplyImagePadding(ih->handle);
+
+    /* .flat drops the border until hover/checked */
+    if (ih->data->flat)
+      gtk_button_set_has_frame(GTK_BUTTON(ih->handle), FALSE);
   }
 
   iupgtk4AddToParent(ih);
