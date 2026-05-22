@@ -180,16 +180,19 @@ static void winSwitchCustomDraw(Ihandle* ih, HDC hDC, RECT* rect, UINT itemState
   WD_HBRUSH track_brush = wdCreateSolidBrush(canvas, track_color);
   WD_HBRUSH thumb_brush = wdCreateSolidBrush(canvas, thumb_color);
 
-  /* Draw track using native Direct2D rounded rectangle (optimized, no path allocation) */
+  /* center the track vertically; the control is taller than the track */
+  float track_y = ((float)(rect->bottom - rect->top) - SWITCH_TRACK_HEIGHT) / 2.0f;
+  if (track_y < 0.0f) track_y = 0.0f;
+
   float radius = SWITCH_TRACK_HEIGHT / 2.0f;
-  wdFillRoundedRect(canvas, track_brush, 0.0f, 0.0f, (float)SWITCH_TRACK_WIDTH, (float)SWITCH_TRACK_HEIGHT, radius);
+  wdFillRoundedRect(canvas, track_brush, 0.0f, track_y, (float)SWITCH_TRACK_WIDTH, track_y + (float)SWITCH_TRACK_HEIGHT, radius);
 
   /* WinUI 3: Thumb expands from 12x12 to 14x14 on hover */
   int thumb_size = switch_data->is_hovering ? 14 : SWITCH_THUMB_SIZE;
   float thumb_x_min = (float)SWITCH_THUMB_MARGIN;
   float thumb_x_max = (float)(SWITCH_TRACK_WIDTH - thumb_size - SWITCH_THUMB_MARGIN);
   float thumb_x = thumb_x_min + (thumb_x_max - thumb_x_min) * (float)switch_data->thumb_position;
-  float thumb_y = (SWITCH_TRACK_HEIGHT - thumb_size) / 2.0f;
+  float thumb_y = track_y + (SWITCH_TRACK_HEIGHT - thumb_size) / 2.0f;
   float thumb_radius = thumb_size / 2.0f;
 
   wdFillCircle(canvas, thumb_brush, thumb_x + thumb_radius, thumb_y + thumb_radius, thumb_radius);
