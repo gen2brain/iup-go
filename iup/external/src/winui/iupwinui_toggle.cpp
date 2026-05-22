@@ -529,6 +529,9 @@ static int winuiToggleMapMethod(Ihandle* ih)
     ts.OffContent(nullptr);
     ts.MinWidth(0);
     ts.MinHeight(0);
+    /* 5+pill(20)+5 centers the pill in the 30px height; these resources are x:Double */
+    ts.Resources().Insert(box_value(L"ToggleSwitchPreContentMargin"), box_value(5.0));
+    ts.Resources().Insert(box_value(L"ToggleSwitchPostContentMargin"), box_value(5.0));
 
     if (title)
       ts.Header(box_value(iupwinuiProcessMnemonic(title, NULL)));
