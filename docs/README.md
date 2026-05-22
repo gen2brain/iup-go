@@ -53,7 +53,7 @@ API reference for IUP (Portable User Interface).
 
 ### Common
 
-[IDLE_ACTION](call/iup_idle_action.md), [GLOBALCTRLFUNC_CB](call/iup_globalctrlfunc_cb.md), [ENTRY_POINT](call/iup_entry_point.md), [EXIT_CB](call/iup_exit_cb.md), [MAP_CB](call/iup_map_cb.md), [UNMAP_CB](call/iup_unmap_cb.md), [DESTROY_CB](call/iup_destroy_cb.md), [LDESTROY_CB](call/iup_ldestroy_cb.md), [GETFOCUS_CB](call/iup_getfocus_cb.md), [KILLFOCUS_CB](call/iup_killfocus_cb.md), [ENTERWINDOW_CB](call/iup_enterwindow_cb.md), [LEAVEWINDOW_CB](call/iup_leavewindow_cb.md), [K_ANY](call/iup_k_any.md), [HELP_CB](call/iup_help_cb.md), [ACTION](call/iup_action.md)
+[IDLE_ACTION](call/iup_idle_action.md), [ENTRY_POINT](call/iup_entry_point.md), [EXIT_CB](call/iup_exit_cb.md), [MAP_CB](call/iup_map_cb.md), [UNMAP_CB](call/iup_unmap_cb.md), [DESTROY_CB](call/iup_destroy_cb.md), [LDESTROY_CB](call/iup_ldestroy_cb.md), [GETFOCUS_CB](call/iup_getfocus_cb.md), [KILLFOCUS_CB](call/iup_killfocus_cb.md), [ENTERWINDOW_CB](call/iup_enterwindow_cb.md), [LEAVEWINDOW_CB](call/iup_leavewindow_cb.md), [K_ANY](call/iup_k_any.md), [HELP_CB](call/iup_help_cb.md), [ACTION](call/iup_action.md)
 
 ### Other
 
