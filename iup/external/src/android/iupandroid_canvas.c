@@ -68,7 +68,7 @@ static char* androidCanvasGetDrawSizeAttrib(Ihandle* ih)
   return iupStrReturnIntInt(w, h, 'x');
 }
 
-/* No native scrollbars; flat scrollbars draw themselves, just persist DX/DY/POSX/POSY. */
+/* No native scrollbars; track DX/DY/POSX/POSY and fire SCROLL_CB on a position change. */
 static int androidCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   double dx;
@@ -98,6 +98,9 @@ static int androidCanvasSetPosXAttrib(Ihandle* ih, const char* value)
     if (posx < xmin) posx = xmin;
     if (posx > (xmax - dx)) posx = xmax - dx;
     ih->data->posx = posx;
+
+    IFniff cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+    if (cb) cb(ih, IUP_SBPOSH, (float)posx, (float)ih->data->posy);
   }
   return 1;
 }
@@ -115,6 +118,9 @@ static int androidCanvasSetPosYAttrib(Ihandle* ih, const char* value)
     if (posy < ymin) posy = ymin;
     if (posy > (ymax - dy)) posy = ymax - dy;
     ih->data->posy = posy;
+
+    IFniff cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+    if (cb) cb(ih, IUP_SBPOSV, (float)ih->data->posx, (float)posy);
   }
   return 1;
 }
