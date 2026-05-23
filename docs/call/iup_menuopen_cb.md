@@ -1,6 +1,6 @@
-## MENUCLOSE_CB
+## MENUOPEN_CB
 
-Called just after the menu is closed.
+Called just before the menu is opened.
 
 ### Callback
 

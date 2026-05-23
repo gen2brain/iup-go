@@ -25,7 +25,7 @@ func main() {
 				iup.MenuItem("Print").SetAttribute("IMAGE", "imgPrint").SetCallback("ACTION", iup.ActionFunc(itemCb)),
 				iup.MenuSeparator(),
 				iup.MenuItem("Exit").SetCallback("ACTION", iup.ActionFunc(itemExitCb)),
-			).SetCallback("OPEN_CB", iup.MenuOpenFunc(menuOpenCb)).
+			).SetCallback("MENUOPEN_CB", iup.MenuOpenFunc(menuOpenCb)).
 				SetCallback("MENUCLOSE_CB", iup.MenuCloseFunc(menuCloseCb)),
 		),
 		iup.Submenu("Edit",
@@ -105,7 +105,7 @@ func itemBookmarkCb(ih iup.Ihandle) int {
 }
 
 func menuOpenCb(ih iup.Ihandle) int {
-	fmt.Println("Menu OPEN_CB")
+	fmt.Println("Menu MENUOPEN_CB")
 	return iup.DEFAULT
 }
 

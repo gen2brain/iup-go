@@ -92,9 +92,9 @@ static char* cocoaMenuItemGetActiveAttrib(Ihandle* ih);
 
   if (!_ih) return;
 
-  Icallback cb = IupGetCallback(_ih, "OPEN_CB");
+  Icallback cb = IupGetCallback(_ih, "MENUOPEN_CB");
   if (!cb && _ih->parent)
-    cb = (Icallback)IupGetCallback(_ih->parent, "OPEN_CB");
+    cb = (Icallback)IupGetCallback(_ih->parent, "MENUOPEN_CB");
 
   if (cb) cb(_ih);
 }

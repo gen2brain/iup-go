@@ -186,9 +186,9 @@ static void eflMenuShowCallback(void* data, Evas* e, Evas_Object* obj, void* eve
 
   eflMenuSetHoverLayer(obj);
 
-  cb = IupGetCallback(ih, "OPEN_CB");
+  cb = IupGetCallback(ih, "MENUOPEN_CB");
   if (!cb && ih->parent)
-    cb = IupGetCallback(ih->parent, "OPEN_CB");
+    cb = IupGetCallback(ih->parent, "MENUOPEN_CB");
   if (cb)
     cb(ih);
 }

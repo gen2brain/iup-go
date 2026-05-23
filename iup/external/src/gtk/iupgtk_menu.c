@@ -353,8 +353,8 @@ static void gtkMenuItemUpdateImage(Ihandle* ih, const char* value, const char* i
 
 static void gtkMenuMap(GtkWidget *widget, Ihandle* ih)
 {
-  Icallback cb = IupGetCallback(ih, "OPEN_CB");
-  if (!cb && ih->parent) cb = (Icallback)IupGetCallback(ih->parent, "OPEN_CB");  /* check also in the Submenu */
+  Icallback cb = IupGetCallback(ih, "MENUOPEN_CB");
+  if (!cb && ih->parent) cb = (Icallback)IupGetCallback(ih->parent, "MENUOPEN_CB");  /* check also in the Submenu */
   if (cb) cb(ih);
 
   (void)widget;

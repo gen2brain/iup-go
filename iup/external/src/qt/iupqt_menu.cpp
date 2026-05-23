@@ -119,9 +119,9 @@ extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 
 static void qtMenuAboutToShow(Ihandle* ih)
 {
-  Icallback cb = (Icallback)IupGetCallback(ih, "OPEN_CB");
+  Icallback cb = (Icallback)IupGetCallback(ih, "MENUOPEN_CB");
   if (!cb && ih->parent)
-    cb = (Icallback)IupGetCallback(ih->parent, "OPEN_CB");
+    cb = (Icallback)IupGetCallback(ih->parent, "MENUOPEN_CB");
   if (cb)
     cb(ih);
 }

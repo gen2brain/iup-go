@@ -139,7 +139,7 @@ func buildMenu() iup.Ihandle {
 		iup.Submenu("Recent &Files", recentMenu),
 		iup.MenuSeparator(),
 		itemExit,
-	).SetCallback("OPEN_CB", iup.MenuOpenFunc(fileMenuOpenCb))
+	).SetCallback("MENUOPEN_CB", iup.MenuOpenFunc(fileMenuOpenCb))
 
 	itemCut := iup.MenuItem("Cu&t\tCtrl+X").SetCallback("ACTION", iup.ActionFunc(cutActionCb))
 	itemCut.SetHandle("itemCut")
@@ -167,7 +167,7 @@ func buildMenu() iup.Ihandle {
 		itemGoTo,
 		iup.MenuSeparator(),
 		itemSelectAll,
-	).SetCallback("OPEN_CB", iup.MenuOpenFunc(editMenuOpenCb))
+	).SetCallback("MENUOPEN_CB", iup.MenuOpenFunc(editMenuOpenCb))
 
 	itemFont := iup.MenuItem("&Font...").SetCallback("ACTION", iup.ActionFunc(fontActionCb))
 	formatMenu := iup.Menu(itemFont)
