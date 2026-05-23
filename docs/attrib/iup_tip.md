@@ -11,12 +11,12 @@ Text.
 
 These attributes affect the TIP display.
 
-**TIPBALLOON** [Windows Only]: The tip window will have the appearance of a cartoon "balloon" with rounded corners and a stem pointing to the item.
+**TIPBALLOON** [Win32 Only]: The tip window will have the appearance of a cartoon "balloon" with rounded corners and a stem pointing to the item.
 Default: NO.
 
-**TIPBALLOONTITLE** [Windows Only]: When using the balloon format, the tip can also have a title in a separate area.
+**TIPBALLOONTITLE** [Win32 Only]: When using the balloon format, the tip can also have a title in a separate area.
 
-**TIPBALLOONTITLEICON** [Windows Only]: When using the balloon format, the tip can also have a pre-defined icon in the title area.
+**TIPBALLOONTITLEICON** [Win32 Only]: When using the balloon format, the tip can also have a pre-defined icon in the title area.
 Values can be:
 
 "0" - No icon (default)\
@@ -28,7 +28,7 @@ Values can be:
 Default: "255 255 225" (Light Yellow).
 Supported in Windows, WinUI, Motif, Qt and EFL.
 
-**TIPDELAY** [Windows and Motif Only]: Time the tip will remain visible. Default: "5000".
+**TIPDELAY** [Win32, Motif and FLTK Only]: Time the tip will remain visible. Default: "5000".
 In Windows the maximum value is 32767 milliseconds.
 
 **TIPFGCOLOR**: The tip text color. Default: "0 0 0" (Black).
