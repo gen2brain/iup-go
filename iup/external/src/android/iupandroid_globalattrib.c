@@ -119,5 +119,6 @@ char* iupdrvGetGlobal(const char* name)
   if (iupStrEqual(name, "TRUECOLORCANVAS")) return iupStrReturnBoolean(iupdrvGetScreenDepth() > 8);
   if (iupStrEqual(name, "UTF8MODE"))       return iupStrReturnBoolean(1);
   if (iupStrEqual(name, "DARKMODE"))       return iupStrReturnBoolean(androidGetBoolStatic("isDarkMode"));
+  if (iupStrEqual(name, "TOUCHREADY"))     return iupStrReturnBoolean(1);
   return NULL;
 }

@@ -238,6 +238,12 @@ IUP_API char* IupGetGlobal(const char *name)
     return iupdrvLocaleInfo();
   if (iupStrEqual(name, "SCROLLBARSIZE"))
     return iupStrReturnInt(iupdrvGetScrollbarSize());
+  if (iupStrEqual(name, "TOUCHREADY"))
+  {
+    /* driver answers if it detects touch; otherwise it is definitively No */
+    char* touch = iupdrvGetGlobal(name);
+    return touch ? touch : iupStrReturnBoolean(0);
+  }
 
   {
     int kind = -1;
