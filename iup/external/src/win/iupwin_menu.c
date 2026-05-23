@@ -117,8 +117,8 @@ IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih_dialog, UINT msg, WPARAM wp, L
       Ihandle *ih = iupwinMenuGetHandle(hMenu);
       if (ih)
       {
-        Icallback cb = (Icallback)IupGetCallback(ih, "OPEN_CB");
-        if (!cb && ih->parent) cb = (Icallback)IupGetCallback(ih->parent, "OPEN_CB");  /* check also in the Submenu */
+        Icallback cb = (Icallback)IupGetCallback(ih, "MENUOPEN_CB");
+        if (!cb && ih->parent) cb = (Icallback)IupGetCallback(ih->parent, "MENUOPEN_CB");  /* check also in the Submenu */
         if (cb) cb(ih);
       }
       break;

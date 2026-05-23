@@ -30,7 +30,7 @@ The menu acts like a **IupRadio** for its children. Submenus and their children 
 
 ### Callbacks
 
-[OPEN_CB](../call/iup_open_cb.md): Called just before the menu is opened.
+[MENUOPEN_CB](../call/iup_menuopen_cb.md): Called just before the menu is opened.
 
 [MENUCLOSE_CB](../call/iup_menuclose_cb.md): Called just after the menu is closed.
 

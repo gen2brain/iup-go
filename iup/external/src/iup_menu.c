@@ -302,7 +302,7 @@ Iclass* iupMenuNewClass(void)
   iupBaseRegisterBaseCallbacks(ic);
 
   /* Callbacks */
-  iupClassRegisterCallback(ic, "OPEN_CB", "");
+  iupClassRegisterCallback(ic, "MENUOPEN_CB", "");
   iupClassRegisterCallback(ic, "MENUCLOSE_CB", "");
 
   /* Common */

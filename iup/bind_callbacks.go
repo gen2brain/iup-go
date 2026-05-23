@@ -1846,22 +1846,22 @@ func setMultiUnselectionFunc(ih Ihandle, f MultiUnselectionFunc) {
 
 //--------------------
 
-// MenuOpenFunc for OPEN_CB callback.
+// MenuOpenFunc for MENUOPEN_CB callback.
 // Called just before the menu is opened.
 //
-// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_open_cb.md
+// https://github.com/gen2brain/iup-go/blob/main/docs/call/iup_menuopen_cb.md
 type MenuOpenFunc func(ih Ihandle) int
 
 //export goIupMenuOpenCB
 func goIupMenuOpenCB(ih unsafe.Pointer) C.int {
-	f := loadCallback((Ihandle)(ih), "_IUPGO_OPEN_CB").Value().(MenuOpenFunc)
+	f := loadCallback((Ihandle)(ih), "_IUPGO_MENUOPEN_CB").Value().(MenuOpenFunc)
 
 	return C.int(f((Ihandle)(ih)))
 }
 
-// setMenuOpenFunc for OPEN_CB.
+// setMenuOpenFunc for MENUOPEN_CB.
 func setMenuOpenFunc(ih Ihandle, f MenuOpenFunc) {
-	storeCallback(ih, "_IUPGO_OPEN_CB", f)
+	storeCallback(ih, "_IUPGO_MENUOPEN_CB", f)
 
 	C.goIupSetMenuOpenFunc(ih.ptr())
 }

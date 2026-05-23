@@ -117,7 +117,7 @@ static void cocoaTouchMenuFireActionAfterDismiss(Ihandle* item_ih)
 static void cocoaTouchMenuFireOpen(Ihandle* menu_ih)
 {
 	if (!menu_ih || !iupObjectCheck(menu_ih)) return;
-	Icallback cb = IupGetCallback(menu_ih, "OPEN_CB");
+	Icallback cb = IupGetCallback(menu_ih, "MENUOPEN_CB");
 	if (cb && cb(menu_ih) == IUP_CLOSE) IupExitLoop();
 }
 

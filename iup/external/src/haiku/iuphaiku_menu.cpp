@@ -150,7 +150,7 @@ public:
   void AttachedToWindow() override
   {
     BMenu::AttachedToWindow();
-    if (fIhandle) haikuMenuPostCallback(fIhandle, "OPEN_CB");
+    if (fIhandle) haikuMenuPostCallback(fIhandle, "MENUOPEN_CB");
   }
 
   void DetachedFromWindow() override
@@ -444,7 +444,7 @@ static int haikuMenuMapMethod(Ihandle* ih)
       ih->parent->iclass && iupStrEqual(ih->parent->iclass->name, "submenu"))
   {
     ih->handle = ih->parent->handle;
-    /* Bind the IupMenu Ihandle so OPEN_CB / MENUCLOSE_CB find their target. */
+    /* Bind the IupMenu Ihandle so MENUOPEN_CB / MENUCLOSE_CB find their target. */
     if (IupHaikuMenu* m = dynamic_cast<IupHaikuMenu*>((BMenu*)ih->handle))
       m->SetIhandle(ih);
     if (iupAttribGetBoolean(ih, "RADIO"))

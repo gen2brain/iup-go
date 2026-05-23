@@ -453,7 +453,7 @@ static void goIupSetMultiUnselectionFunc(Ihandle *ih) {
 
 CGO_EXPORT extern int goIupMenuOpenCB(void *);
 static void goIupSetMenuOpenFunc(Ihandle *ih) {
-	IupSetCallback(ih, "OPEN_CB", (Icallback) goIupMenuOpenCB);
+	IupSetCallback(ih, "MENUOPEN_CB", (Icallback) goIupMenuOpenCB);
 }
 
 CGO_EXPORT extern int goIupThemeChangedCB(void *, int darkMode);
