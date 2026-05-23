@@ -579,6 +579,8 @@ static int gtk4DialogMapMethod(Ihandle* ih)
 
   iupgtk4InstallGlobalInputController(GTK_WIDGET(ih->handle));
 
+  iupgtk4SetupEnterLeaveEvents(GTK_WIDGET(ih->handle), ih);
+
   /* Build and install menu bar if present */
   if (ih->data->menu)
   {

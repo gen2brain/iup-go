@@ -64,14 +64,39 @@ static Ihandle* haikuDialogFindDropTarget(Ihandle* dlg, int x, int y)
 class IupHaikuRootView : public BView
 {
 public:
-  explicit IupHaikuRootView(BRect frame)
+  IupHaikuRootView(BRect frame, Ihandle* ih)
     : BView(frame, "iup_root", B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
-      fBgImage(NULL), fZoom(false)
+      fBgImage(NULL), fZoom(false), fIhandle(ih), fMouseInside(false)
   {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   }
 
   void SetBackgroundImage(BBitmap* bm, bool zoom) { fBgImage = bm; fZoom = zoom; Invalidate(); }
+
+  void AttachedToWindow() override
+  {
+    BView::AttachedToWindow();
+    /* all moves, even over children, so we track the window edge not per-view transit */
+    SetEventMask(B_POINTER_EVENTS, B_NO_POINTER_HISTORY);
+  }
+
+  void MouseMoved(BPoint where, uint32 transit, const BMessage* drag) override
+  {
+    bool inside = Bounds().Contains(where);
+    if (inside && !fMouseInside)
+    {
+      fMouseInside = true;
+      IFn cb = IupGetCallback(fIhandle, "ENTERWINDOW_CB");
+      if (cb) cb(fIhandle);
+    }
+    else if (!inside && fMouseInside)
+    {
+      fMouseInside = false;
+      IFn cb = IupGetCallback(fIhandle, "LEAVEWINDOW_CB");
+      if (cb) cb(fIhandle);
+    }
+    BView::MouseMoved(where, transit, drag);
+  }
 
   void Draw(BRect update) override
   {
@@ -93,6 +118,8 @@ public:
 private:
   BBitmap* fBgImage;  /* borrowed; lives in IUP's image cache */
   bool fZoom;
+  Ihandle* fIhandle;
+  bool fMouseInside;
 };
 
 
@@ -105,7 +132,7 @@ public:
               flags | B_ASYNCHRONOUS_CONTROLS),
       fIhandle(ih), fRootView(NULL), fSavedLook(look), fIsFullScreen(false)
   {
-    fRootView = new IupHaikuRootView(Bounds());
+    fRootView = new IupHaikuRootView(Bounds(), ih);
     AddChild(fRootView);
   }
 
