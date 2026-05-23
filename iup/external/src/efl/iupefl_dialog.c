@@ -669,6 +669,8 @@ static int eflDialogMapMethod(Ihandle* ih)
   efl_event_callback_add(win, EFL_UI_WIN_EVENT_MAXIMIZED_CHANGED, eflDialogMaximizedCallback, ih);
   efl_event_callback_add(win, EFL_UI_WIN_EVENT_THEME_CHANGED, eflDialogThemeChangedCallback, ih);
   efl_event_callback_add(win, EFL_EVENT_KEY_DOWN, eflDialogKeyDownCallback, ih);
+  efl_event_callback_add(win, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
+  efl_event_callback_add(win, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
 
   if (iupAttribGet(ih, "TITLE"))
     has_titlebar = 1;

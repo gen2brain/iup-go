@@ -665,6 +665,18 @@ static int winuiDialogMapMethod(Ihandle* ih)
     }
   });
 
+  aux->rootPanel.PointerEntered([ih](IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const&) {
+    Icallback cb = IupGetCallback(ih, "ENTERWINDOW_CB");
+    if (cb)
+      cb(ih);
+  });
+
+  aux->rootPanel.PointerExited([ih](IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const&) {
+    Icallback cb = IupGetCallback(ih, "LEAVEWINDOW_CB");
+    if (cb)
+      cb(ih);
+  });
+
   if (iupwinuiIsSystemDarkMode())
     aux->rootPanel.RequestedTheme(ElementTheme::Dark);
 

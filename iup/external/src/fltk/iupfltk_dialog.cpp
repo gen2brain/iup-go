@@ -104,6 +104,11 @@ public:
         iupCallKillFocusCb(iup_handle);
         break;
 
+      case FL_ENTER:
+      case FL_LEAVE:
+        iupfltkEnterLeaveEvent(this, iup_handle, event);
+        break;
+
       case FL_SHORTCUT:
       case FL_KEYBOARD:
       {

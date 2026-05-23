@@ -166,6 +166,30 @@ static void cocoaDialogRefreshControlsOnThemeChange(Ihandle* child)
     [super flagsChanged:event];
 }
 
+- (void)mouseEntered:(NSEvent*)event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (iupObjectCheck(ih))
+  {
+    IFn cb = (IFn)IupGetCallback(ih, "ENTERWINDOW_CB");
+    if (cb && cb(ih) == IUP_CLOSE)
+      IupExitLoop();
+  }
+  [super mouseEntered:event];
+}
+
+- (void)mouseExited:(NSEvent*)event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (iupObjectCheck(ih))
+  {
+    IFn cb = (IFn)IupGetCallback(ih, "LEAVEWINDOW_CB");
+    if (cb && cb(ih) == IUP_CLOSE)
+      IupExitLoop();
+  }
+  [super mouseExited:event];
+}
+
 - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)the_sender
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -1464,6 +1488,15 @@ static int cocoaDialogMapMethod(Ihandle* ih)
 
   NSView* content_view = [the_window contentView];
   cocoaTargetDropCreateAssociatedData(ih, content_view, content_view);
+
+  {
+    NSTrackingArea* tracking_area = [[NSTrackingArea alloc] initWithRect:[content_view bounds]
+                                                                 options:NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect
+                                                                   owner:the_window
+                                                                userInfo:nil];
+    [content_view addTrackingArea:tracking_area];
+    [tracking_area release];
+  }
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");

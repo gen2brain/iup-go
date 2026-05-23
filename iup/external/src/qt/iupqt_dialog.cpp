@@ -136,6 +136,24 @@ protected:
       event->accept();
   }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  void enterEvent(QEnterEvent* event) override
+#else
+  void enterEvent(QEvent* event) override
+#endif
+  {
+    if (iup_handle)
+      iupqtEnterLeaveEvent(this, event, iup_handle);
+    QMainWindow::enterEvent(event);
+  }
+
+  void leaveEvent(QEvent* event) override
+  {
+    if (iup_handle)
+      iupqtEnterLeaveEvent(this, event, iup_handle);
+    QMainWindow::leaveEvent(event);
+  }
+
   void showEvent(QShowEvent* event) override
   {
     QMainWindow::showEvent(event);
