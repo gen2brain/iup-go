@@ -11,6 +11,7 @@
 #include <QWheelEvent>
 #include <QMimeData>
 #include <QUrl>
+#include <QVarLengthArray>
 
 extern "C" {
 #include "iup.h"
@@ -365,45 +366,60 @@ protected:
         event->type() == QEvent::TouchUpdate ||
         event->type() == QEvent::TouchEnd)
     {
-      IFniiiis cb = (IFniiiis)IupGetCallback(ih, "TOUCH_CB");
-      if (cb)
+      IFniiis single_cb = (IFniiis)IupGetCallback(ih, "TOUCH_CB");
+      IFniIIII multi_cb = (IFniIIII)IupGetCallback(ih, "MULTITOUCH_CB");
+      if (single_cb || multi_cb)
       {
         QTouchEvent* touchEvent = static_cast<QTouchEvent*>(event);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        const QList<QEventPoint>& touchPoints = touchEvent->points();
+        const QList<QEventPoint>& points = touchEvent->points();
 #else
-        QList<QTouchEvent::TouchPoint> touchPoints = touchEvent->touchPoints();
+        QList<QTouchEvent::TouchPoint> points = touchEvent->touchPoints();
 #endif
-
-        if (!touchPoints.isEmpty())
+        int count = points.size();
+        if (count > 0)
         {
+          /* fires TOUCH_CB per point + one MULTITOUCH_CB; first point is the primary */
+          QVarLengthArray<int> ids(count), xs(count), ys(count), states(count);
+
+          for (int i = 0; i < count; i++)
+          {
+            const auto& tp = points[i];
+            int id = tp.id();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-          const QEventPoint& tp = touchPoints.first();
+            int x = (int)tp.position().x();
+            int y = (int)tp.position().y();
+            bool down = (tp.state() == QEventPoint::Pressed);
+            bool up = (tp.state() == QEventPoint::Released);
 #else
-          const QTouchEvent::TouchPoint& tp = touchPoints.first();
+            int x = (int)tp.pos().x();
+            int y = (int)tp.pos().y();
+            bool down = (tp.state() == Qt::TouchPointPressed);
+            bool up = (tp.state() == Qt::TouchPointReleased);
 #endif
-          int id = tp.id();
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-          int x = tp.position().x();
-          int y = tp.position().y();
-#else
-          int x = tp.pos().x();
-          int y = tp.pos().y();
-#endif
+            ids[i] = id;
+            xs[i] = x;
+            ys[i] = y;
+            states[i] = down ? 'D' : (up ? 'U' : 'M');
 
-          char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-          iupqtButtonKeySetStatus(touchEvent->modifiers(), Qt::NoButton, 0, status, 0);
+            if (single_cb)
+            {
+              const char* str;
+              if (i == 0)
+                str = down ? "DOWN-PRIMARY" : (up ? "UP-PRIMARY" : "MOVE-PRIMARY");
+              else
+                str = down ? "DOWN" : (up ? "UP" : "MOVE");
+              if (single_cb(ih, id, x, y, (char*)str) == IUP_CLOSE)
+                IupExitLoop();
+            }
+          }
 
-          /* Convert touch state to IUP state */
-          int state = 0;
-          if (event->type() == QEvent::TouchBegin)
-            state = 0; /* pressed */
-          else if (event->type() == QEvent::TouchEnd)
-            state = 1; /* released */
-          else
-            state = 2; /* moved */
+          if (multi_cb)
+          {
+            if (multi_cb(ih, count, ids.data(), xs.data(), ys.data(), states.data()) == IUP_CLOSE)
+              IupExitLoop();
+          }
 
-          cb(ih, id, x, y, state, status);
           event->accept();
           return true;
         }
@@ -1098,6 +1114,10 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
   /* Scrollbar state */
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtCanvasGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+
+  /* Touch (always enabled via WA_AcceptTouchEvents) */
+  iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
+  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
 
   /* Native window handle (platform-specific: XWINDOW, WL_SURFACE, HWND, NSVIEW) */
   iupClassRegisterAttribute(ic, iupqtGetNativeWindowHandleName(), iupqtGetNativeWindowHandleAttrib, nullptr, nullptr, nullptr, IUPAF_NO_STRING|IUPAF_NO_INHERIT);

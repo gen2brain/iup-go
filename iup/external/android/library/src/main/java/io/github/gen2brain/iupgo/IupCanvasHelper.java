@@ -298,8 +298,10 @@ public final class IupCanvasHelper
 
     public static native void dispatchButton(long ihandlePtr, int button, int pressed, int x, int y, int metaState);
     public static native void dispatchMotion(long ihandlePtr, int x, int y, int metaState, int buttonState);
-    public static native void dispatchAction(long ihandlePtr);
+    public static native void dispatchAction(long ihandlePtr, int x1, int y1, int x2, int y2);
     public static native void dispatchLeaveWindow(long ihandlePtr);
+    public static native boolean isTouchEnabled(long ihandlePtr);
+    public static native void dispatchTouch(long ihandlePtr, int count, int[] ids, int[] xs, int[] ys, int[] states, int primaryId);
     public static native boolean isDragInteractive(long ihandlePtr);
 
 

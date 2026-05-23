@@ -136,4 +136,9 @@ void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, androidCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DX", NULL, androidCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DY", NULL, androidCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+
+  iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
+  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
+  iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GESTURE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }

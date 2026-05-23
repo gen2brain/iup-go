@@ -27,12 +27,12 @@ Default: YES.
 **PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
-**CAIRO_CR** [GTK Only] (non-inheritable): Contains the "cairo_t*" parameter of the internal GTK callback.
-Valid only during the ACTION callback and only when using GTK version 3.
+**CAIRO_CR** (non-inheritable): Contains the "cairo_t*" of the internal drawing callback. Valid only during the ACTION callback.
+Available in GTK 3, GTK 4 and FLTK (FLTK only when built with Cairo).
 
 **CLIPRECT** (only during ACTION): Specifies a rectangle that has its region invalidated for painting, it could be used for clipping.
 Format: "%d %d %d %d"="x1 y1 x2 y2".
-Supported in Windows, GTK, GTK 4, Qt and macOS.
+Not supported in Motif and EFL.
 
 [CURSOR](../attrib/iup_cursor.md) (non-inheritable): Defines a cursor for the canvas.
 The Windows SDK recommends that cursors and icons should be implemented as resources rather than created at run time.
@@ -53,14 +53,17 @@ Can be: D2D, GDI+ (Windows), CAIRO (GTK), COCOA (macOS), QT, EFL_VG (EFL), or X1
 Must be used between IupDrawBegin and IupDrawEnd.
 The image is cached and automatically destroyed on the next query.
 
+**DRAWABLE** (non-inheritable, read-only): Returns the native drawing surface handle.
+Available in GTK 3, Qt, Cocoa, iOS, EFL, FLTK and Motif.
+
 [EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
 The natural size is the size of 1 character.
 
-**HDC_WMPAINT** [Windows Only] (non-inheritable): Contains the HDC created with the BeginPaint inside the WM_PAINT message.
+**HDC_WMPAINT** [Win32 Only] (non-inheritable): Contains the HDC created with the BeginPaint inside the WM_PAINT message.
 Valid only during the ACTION callback.
 
 **HWND** [Windows Only] (non-inheritable, read-only): Returns the Windows Window handle.
-Available in Windows, or in the GTK/GTK 4/Qt drivers on Windows.
+Available in any driver when running on Windows (Win32, WinUI, GTK, GTK 4, Qt, FLTK and EFL).
 
 [SCROLLBAR](../attrib/iup_scrollbar.md) (creation-only): Associates a horizontal and/or vertical scrollbar to the canvas.
 Default: "NO". The secondary attributes are all non-inheritable.
@@ -85,12 +88,12 @@ Default: "YES".\
 Default: "YES".\
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
-Supported in Windows, Qt and macOS.
+Supported in Win32, WinUI, Qt and macOS.
 
-**TOUCH** [Windows Only]: enable the touch processing if touch support is available.
-In Qt, touch events are always enabled.
+**TOUCH** [Windows, iOS and Android Only]: enable the touch processing if touch support is available.
+In Qt, iOS and Android, touch events are always enabled.
 
-**GESTURE** [Windows Only]: disable the gesture support for touch interfaces.
+**GESTURE** [Win32 Only]: disable the OS gesture processing so raw touch events are delivered to TOUCH_CB/MULTITOUCH_CB.
 Accepts only the NO value.
 
 **WHEELDROPFOCUS** (non-inheritable): when the wheel is used the focus control receives a SHOWDROPDOWN=No.
@@ -101,9 +104,6 @@ Accepts only the NO value.
 
 **NATIVEFOCUSRING** [macOS Only] (non-inheritable): Controls whether the canvas uses the native macOS focus ring (blue glow) instead of a cross-platform dotted rectangle for focus indication.
 Can be "YES" or "NO". Default: "NO".
-
-**DRAWABLE** [Unix/macOS Only] (non-inheritable, read-only): Returns an offscreen drawing surface handle.
-Available in GTK, Cocoa, Qt and EFL.
 
 **XDISPLAY** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Display.
 Available in Motif and GTK on X11.
@@ -158,9 +158,9 @@ If your callback process the arrow keys, we recommend you to return IUP_IGNORE s
 
 [SCROLL_CB](../call/iup_scroll_cb.md): Called when the scrollbar is manipulated.
 
-**TOUCH_CB** [Windows and Qt Only]: Action generated when a touch event occurred.
+**TOUCH_CB** [Windows, Qt, iOS and Android Only]: Action generated when a touch event occurred.
 Multiple touch events will trigger several calls.
-In Windows must set TOUCH=Yes to receive this event. In Qt, touch events are always enabled.
+In Windows must set TOUCH=Yes to receive this event. In Qt, iOS and Android, touch events are always enabled.
 
     int function(Ihandle* ih, int id, int x, int y, char* state);
 
@@ -172,8 +172,8 @@ If the point is a "primary" point, then "-PRIMARY" is appended to the string.
 
 **Returns**: IUP_CLOSE will be processed.
 
-**MULTITOUCH_CB** [Windows Only]: Action generated when multiple touch events occurred.
-Must set TOUCH=Yes to receive this event.
+**MULTITOUCH_CB** [Windows, Qt, iOS and Android Only]: Action generated when multiple touch events occurred.
+In Windows must set TOUCH=Yes to receive this event; in Qt, iOS and Android touch events are always enabled.
 
     int function(Ihandle *ih, int count, int* pid, int* px, int* py, int* pstate)
 

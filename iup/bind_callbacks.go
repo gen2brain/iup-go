@@ -399,6 +399,59 @@ func setButtonFunc(ih Ihandle, f ButtonFunc) {
 
 //--------------------
 
+// TouchFunc for TOUCH_CB callback.
+// Action generated when a touch event occurred.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_canvas.md
+type TouchFunc func(ih Ihandle, id, x, y int, state string) int
+
+//export goIupTouchCB
+func goIupTouchCB(ih unsafe.Pointer, id, x, y C.int, state unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TOUCH_CB").Value().(TouchFunc)
+
+	return C.int(f((Ihandle)(ih), int(id), int(x), int(y), C.GoString((*C.char)(state))))
+}
+
+// setTouchFunc for TOUCH_CB.
+func setTouchFunc(ih Ihandle, f TouchFunc) {
+	storeCallback(ih, "_IUPGO_TOUCH_CB", f)
+
+	C.goIupSetTouchFunc(ih.ptr())
+}
+
+//--------------------
+
+// MultiTouchFunc for MULTITOUCH_CB callback.
+// Action generated when multiple touch events occurred.
+//
+// https://github.com/gen2brain/iup-go/blob/main/docs/elem/iup_canvas.md
+type MultiTouchFunc func(ih Ihandle, count int, pid, px, py, pstate []int) int
+
+//export goIupMultiTouchCB
+func goIupMultiTouchCB(ih unsafe.Pointer, count C.int, pid, px, py, pstate *C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_MULTITOUCH_CB").Value().(MultiTouchFunc)
+
+	n := int(count)
+	toGo := func(p *C.int) []int {
+		out := make([]int, n)
+		for i, v := range unsafe.Slice(p, n) {
+			out[i] = int(v)
+		}
+		return out
+	}
+
+	return C.int(f((Ihandle)(ih), n, toGo(pid), toGo(px), toGo(py), toGo(pstate)))
+}
+
+// setMultiTouchFunc for MULTITOUCH_CB.
+func setMultiTouchFunc(ih Ihandle, f MultiTouchFunc) {
+	storeCallback(ih, "_IUPGO_MULTITOUCH_CB", f)
+
+	C.goIupSetMultiTouchFunc(ih.ptr())
+}
+
+//--------------------
+
 // DropFilesFunc for DROPFILES_CB callback.
 // Action called when a file is "dropped" into control.
 //

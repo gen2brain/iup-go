@@ -3,6 +3,7 @@ package io.github.gen2brain.iupgo;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -79,7 +80,11 @@ public class IupAndroidCanvas extends IupAndroidFixed
     protected void onDraw(@NonNull Canvas canvas)
     {
         /* Let IUP repaint the back buffer via ACTION, then blit it. */
-        if (ihandlePtr != 0) IupCanvasHelper.dispatchAction(ihandlePtr);
+        if (ihandlePtr != 0)
+        {
+            Rect clip = canvas.getClipBounds();
+            IupCanvasHelper.dispatchAction(ihandlePtr, clip.left, clip.top, clip.right - 1, clip.bottom - 1);
+        }
         if (back != null) canvas.drawBitmap(back, 0, 0, null);
     }
 
@@ -94,7 +99,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
         if (ihandlePtr != 0 && w > 0 && h > 0)
         {
             IupCommon.doResize(ihandlePtr, 0, 0, w, h);
-            IupCanvasHelper.dispatchAction(ihandlePtr);
+            IupCanvasHelper.dispatchAction(ihandlePtr, 0, 0, w - 1, h - 1);
             invalidate();
         }
     }
@@ -110,6 +115,30 @@ public class IupAndroidCanvas extends IupAndroidFixed
         int y = (int)ev.getY();
         int mods = ev.getMetaState();
         int action = ev.getActionMasked();
+
+        /* multi-touch: fire TOUCH_CB per pointer + one MULTITOUCH_CB for the batch */
+        if (IupCanvasHelper.isTouchEnabled(ihandlePtr))
+        {
+            int n = ev.getPointerCount();
+            int ai = ev.getActionIndex();
+            int[] ids = new int[n];
+            int[] xs = new int[n];
+            int[] ys = new int[n];
+            int[] states = new int[n];
+            for (int i = 0; i < n; i++)
+            {
+                ids[i] = ev.getPointerId(i);
+                xs[i] = (int)ev.getX(i);
+                ys[i] = (int)ev.getY(i);
+                if ((action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) && i == ai)
+                    states[i] = 'D';
+                else if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP || action == MotionEvent.ACTION_CANCEL) && i == ai)
+                    states[i] = 'U';
+                else
+                    states[i] = 'M';
+            }
+            IupCanvasHelper.dispatchTouch(ihandlePtr, n, ids, xs, ys, states, ev.getPointerId(0));
+        }
 
         switch (action)
         {
