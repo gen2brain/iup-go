@@ -448,7 +448,7 @@ static char* cocoaTouchCanvasGetDrawSizeAttrib(Ihandle* ih)
 	return iupStrReturnIntInt((int)s.width, (int)s.height, 'x');
 }
 
-/* No native canvas scrollbar on iOS (UIScrollView wraps the dialog, not the canvas), but the setter must exist so iup_flatscrollbar's saved pointer (line 848 etc.) can chain into it. */
+/* No native canvas scrollbar on iOS; the setters track POSX/POSY and fire SCROLL_CB on a position change. */
 static int cocoaTouchCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
 	(void)ih; (void)value;
@@ -472,6 +472,9 @@ static int cocoaTouchCanvasSetPosXAttrib(Ihandle* ih, const char* value)
 	if (posx < xmin) posx = xmin;
 	if (posx > (xmax - dx)) posx = xmax - dx;
 	ih->data->posx = posx;
+
+	IFniff cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+	if (cb) cb(ih, IUP_SBPOSH, (float)posx, (float)ih->data->posy);
 	return 1;
 }
 
@@ -486,6 +489,9 @@ static int cocoaTouchCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 	if (posy < ymin) posy = ymin;
 	if (posy > (ymax - dy)) posy = ymax - dy;
 	ih->data->posy = posy;
+
+	IFniff cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+	if (cb) cb(ih, IUP_SBPOSV, (float)ih->data->posx, (float)posy);
 	return 1;
 }
 
