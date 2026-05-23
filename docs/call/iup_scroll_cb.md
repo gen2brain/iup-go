@@ -32,10 +32,9 @@ The canvas is automatically redrawn only if this callback is NOT defined.
 
 ### Notes
 
-IUP_SBDRAGH and IUP_SBDRAGV are not supported in GTK for canvas scrollbars.
-During drag IUP_SBPOSH and IUP_SBPOSV are used instead.
+Line and page operations are reported in Win32, Motif, GTK, Qt, WinUI and Cocoa; the drag operations IUP_SBDRAGH/IUP_SBDRAGV only in Win32 and Motif (the others use IUP_SBPOSH/IUP_SBPOSV during a drag). GTK 4, FLTK, EFL and Haiku report only IUP_SBPOSH/IUP_SBPOSV. For portability prefer reading POSX and POSY.
 
-In Windows, after a drag when the mouse is released IUP_SBPOSH or IUP_SBPOSV are called.
+Not called for the canvas in Android and iOS.
 
 ### Affects
 

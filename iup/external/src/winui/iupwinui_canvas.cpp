@@ -312,7 +312,20 @@ static void winuiCanvasCallScrollCallback(Ihandle* ih, int op)
     iupwinuiCanvasCallAction(ih);
 }
 
-static void winuiCanvasProcessHorScroll(Ihandle* ih, double newValue)
+/* ScrollEventType -> op; thumb/programmatic stay position */
+static int winuiScrollEventTypeToIup(ScrollEventType type, int is_vert)
+{
+  switch (type)
+  {
+    case ScrollEventType::SmallDecrement: return is_vert ? IUP_SBUP : IUP_SBLEFT;
+    case ScrollEventType::SmallIncrement: return is_vert ? IUP_SBDN : IUP_SBRIGHT;
+    case ScrollEventType::LargeDecrement: return is_vert ? IUP_SBPGUP : IUP_SBPGLEFT;
+    case ScrollEventType::LargeIncrement: return is_vert ? IUP_SBPGDN : IUP_SBPGRIGHT;
+    default:                              return is_vert ? IUP_SBPOSV : IUP_SBPOSH;
+  }
+}
+
+static void winuiCanvasProcessHorScroll(Ihandle* ih, double newValue, int op)
 {
   IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
   if (!aux || !aux->sbHoriz)
@@ -330,10 +343,10 @@ static void winuiCanvasProcessHorScroll(Ihandle* ih, double newValue)
   iupCanvasCalcScrollRealPos(xmin, xmax, &posx, IUP_SB_MIN, IUP_SB_MAX, ipagex, &iposx);
   ih->data->posx = posx;
 
-  winuiCanvasCallScrollCallback(ih, IUP_SBPOSH);
+  winuiCanvasCallScrollCallback(ih, op);
 }
 
-static void winuiCanvasProcessVerScroll(Ihandle* ih, double newValue)
+static void winuiCanvasProcessVerScroll(Ihandle* ih, double newValue, int op)
 {
   IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
   if (!aux || !aux->sbVert)
@@ -351,7 +364,7 @@ static void winuiCanvasProcessVerScroll(Ihandle* ih, double newValue)
   iupCanvasCalcScrollRealPos(ymin, ymax, &posy, IUP_SB_MIN, IUP_SB_MAX, ipagey, &iposy);
   ih->data->posy = posy;
 
-  winuiCanvasCallScrollCallback(ih, IUP_SBPOSV);
+  winuiCanvasCallScrollCallback(ih, op);
 }
 
 static int winuiCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -722,7 +735,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     aux->sbHoriz = sbHoriz;
 
     aux->sbHorizScrollToken = sbHoriz.Scroll([ih](IInspectable const&, ScrollEventArgs const& args) {
-      winuiCanvasProcessHorScroll(ih, args.NewValue());
+      winuiCanvasProcessHorScroll(ih, args.NewValue(), winuiScrollEventTypeToIup(args.ScrollEventType(), 0));
     });
   }
 
@@ -735,7 +748,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     aux->sbVert = sbVert;
 
     aux->sbVertScrollToken = sbVert.Scroll([ih](IInspectable const&, ScrollEventArgs const& args) {
-      winuiCanvasProcessVerScroll(ih, args.NewValue());
+      winuiCanvasProcessVerScroll(ih, args.NewValue(), winuiScrollEventTypeToIup(args.ScrollEventType(), 1));
     });
   }
 

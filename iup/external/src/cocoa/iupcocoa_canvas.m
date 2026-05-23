@@ -746,6 +746,14 @@ static void cocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
     }
   }
 
+  /* op from a scroller click; cleared so a later move can't reuse it */
+  int forced_op = -1;
+  if (iupAttribGet(_ih, "_IUPCOCOA_SBOP"))
+  {
+    forced_op = iupAttribGetInt(_ih, "_IUPCOCOA_SBOP");
+    iupAttribSet(_ih, "_IUPCOCOA_SBOP", NULL);
+  }
+
   double delta_x = new_posx - old_posx;
   double delta_y = new_posy - old_posy;
 
@@ -760,7 +768,7 @@ static void cocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
   IFniff scroll_cb = (IFniff)IupGetCallback(_ih, "SCROLL_CB");
   if (scroll_cb)
   {
-    int op = (fabs(delta_y) >= fabs(delta_x)) ? IUP_SBPOSV : IUP_SBPOSH;
+    int op = (forced_op >= 0) ? forced_op : ((fabs(delta_y) >= fabs(delta_x)) ? IUP_SBPOSV : IUP_SBPOSH);
     scroll_cb(_ih, op, (float)_ih->data->posx, (float)_ih->data->posy);
   }
   else
@@ -896,7 +904,23 @@ static void cocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
 
 - (void) scrollerAction:(id)sender
 {
-  /* Handle user dragging the scroller thumb */
+  /* map the clicked part to a line/page op; knob drag falls through to position */
+  NSScrollView* scroll_view = [self enclosingScrollView];
+  if ([scroll_view isKindOfClass:[NSScrollView class]] && [sender isKindOfClass:[NSScroller class]])
+  {
+    NSScroller* scroller = (NSScroller*)sender;
+    int is_vert = (scroller == [scroll_view verticalScroller]);
+    int op = -1;
+    /* track click = page op; macOS has no scroller arrows */
+    switch ([scroller hitPart])
+    {
+      case NSScrollerDecrementPage: op = is_vert ? IUP_SBPGUP : IUP_SBPGLEFT; break;
+      case NSScrollerIncrementPage: op = is_vert ? IUP_SBPGDN : IUP_SBPGRIGHT; break;
+      default: break;
+    }
+    if (op >= 0)
+      iupAttribSetInt(_ih, "_IUPCOCOA_SBOP", op);
+  }
   [self _updateIupScrollState];
 }
 
