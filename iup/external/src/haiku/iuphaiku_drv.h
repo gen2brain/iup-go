@@ -37,6 +37,7 @@ struct rgb_color;
 #define IUPHAIKU_TIMER_HOP_MSG     'IutH'  /* IupTimer ACTION_CB hop; "ih" ptr */
 #define IUPHAIKU_THEME_CHANGED_MSG 'IuTC'  /* B_COLORS_UPDATED fanout */
 #define IUPHAIKU_SI_MSG            'IuSI'  /* second-instance argv dispatch to COPYDATA_CB */
+#define IUPHAIKU_MOVE_SETTLED      'IuMS'  /* debounced MOVE_CB after a window drag settles */
 
 /* BApplication singleton (spawned in iupdrvOpen, reaped in iupdrvClose) */
 IUP_DRV_API BApplication* iuphaikuGetApplication();
