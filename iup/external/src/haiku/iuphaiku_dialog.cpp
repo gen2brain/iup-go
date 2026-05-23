@@ -13,6 +13,7 @@
 #include <File.h>
 #include <Message.h>
 #include <MessageFilter.h>
+#include <MessageRunner.h>
 #include <Messenger.h>
 #include <Path.h>
 #include <Rect.h>
@@ -130,7 +131,8 @@ public:
                  window_feel feel, uint32 flags, Ihandle* ih)
     : BWindow(frame, title ? title : "", look, feel,
               flags | B_ASYNCHRONOUS_CONTROLS),
-      fIhandle(ih), fRootView(NULL), fSavedLook(look), fIsFullScreen(false)
+      fIhandle(ih), fRootView(NULL), fSavedLook(look), fIsFullScreen(false),
+      fMoveRunner(NULL)
   {
     fRootView = new IupHaikuRootView(Bounds(), ih);
     AddChild(fRootView);
@@ -140,6 +142,7 @@ public:
      unlinking it, and ~BLooper would then double-free it. */
   ~IupHaikuWindow() override
   {
+    delete fMoveRunner;
     if (BList* list = CommonFilterList())
       for (int32 i = list->CountItems() - 1; i >= 0; --i)
         BLooper::RemoveCommonFilter((BMessageFilter*)list->ItemAt(i));
@@ -163,6 +166,17 @@ public:
 
   void MessageReceived(BMessage* msg) override
   {
+    if (msg && msg->what == IUPHAIKU_MOVE_SETTLED)
+    {
+      delete fMoveRunner;
+      fMoveRunner = NULL;
+      if (fIhandle && iupObjectCheck(fIhandle))
+      {
+        IFnii cb = (IFnii)IupGetCallback(fIhandle, "MOVE_CB");
+        if (cb) cb(fIhandle, (int)fLastMovePos.x, (int)fLastMovePos.y);
+      }
+      return;
+    }
     if (msg && msg->what == IUPHAIKU_THEME_CHANGED_MSG && fIhandle && iupObjectCheck(fIhandle))
     {
       IFni cb = (IFni)IupGetCallback(fIhandle, "THEMECHANGED_CB");
@@ -288,8 +302,11 @@ public:
   {
     BWindow::FrameMoved(where);
     if (!fIhandle) return;
-    IFnii cb = (IFnii)IupGetCallback(fIhandle, "MOVE_CB");
-    if (cb) cb(fIhandle, (int)where.x, (int)where.y);
+    /* opaque drags stream B_WINDOW_MOVED; debounce to one MOVE_CB once it settles */
+    fLastMovePos = where;
+    delete fMoveRunner;
+    BMessage settle(IUPHAIKU_MOVE_SETTLED);
+    fMoveRunner = new BMessageRunner(BMessenger(this), &settle, 150000, 1);
   }
 
   void Zoom(BPoint origin, float width, float height) override
@@ -337,6 +354,8 @@ private:
   window_look fSavedLook;
   BRect fSavedFrame;
   bool fIsFullScreen;
+  BMessageRunner* fMoveRunner;
+  BPoint fLastMovePos;
 };
 
 
