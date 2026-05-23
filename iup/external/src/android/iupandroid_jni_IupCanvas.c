@@ -12,6 +12,7 @@
 #include "iupcbs.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_key.h"
 #include "iup_drvinfo.h"
 
@@ -89,7 +90,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchMo
   cb(ih, (int)((float)x / d), (int)((float)y / d), status);
 }
 
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchAction(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchAction(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint x1, jint y1, jint x2, jint y2)
 {
   (void)jni_env;
   (void)cls;
@@ -98,7 +99,12 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchAc
   if (!ih) return;
 
   IFn cb = (IFn)IupGetCallback(ih, "ACTION");
-  if (cb) cb(ih);
+  if (cb)
+  {
+    iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", (int)x1, (int)y1, (int)x2, (int)y2);
+    cb(ih);
+    iupAttribSet(ih, "CLIPRECT", NULL);
+  }
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchLeaveWindow(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
@@ -117,4 +123,59 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_isDrag
   Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
   if (!ih) return JNI_FALSE;
   return (IupGetCallback(ih, "BUTTON_CB") && IupGetCallback(ih, "MOTION_CB")) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_isTouchEnabled(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
+{
+  (void)jni_env; (void)cls;
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  if (!ih) return JNI_FALSE;
+  return (IupGetCallback(ih, "TOUCH_CB") || IupGetCallback(ih, "MULTITOUCH_CB")) ? JNI_TRUE : JNI_FALSE;
+}
+
+/* fires TOUCH_CB per touch point + one MULTITOUCH_CB for the batch; states are 'D'/'M'/'U' */
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchTouch(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint count, jintArray jids, jintArray jxs, jintArray jys, jintArray jstates, jint primary_id)
+{
+  (void)cls;
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  if (!ih || count <= 0) return;
+
+  IFniiis single_cb = (IFniiis)IupGetCallback(ih, "TOUCH_CB");
+  IFniIIII multi_cb = (IFniIIII)IupGetCallback(ih, "MULTITOUCH_CB");
+  if (!single_cb && !multi_cb) return;
+
+  jint* ids = (*jni_env)->GetIntArrayElements(jni_env, jids, NULL);
+  jint* xs = (*jni_env)->GetIntArrayElements(jni_env, jxs, NULL);
+  jint* ys = (*jni_env)->GetIntArrayElements(jni_env, jys, NULL);
+  jint* states = (*jni_env)->GetIntArrayElements(jni_env, jstates, NULL);
+
+  if (single_cb)
+  {
+    int i;
+    for (i = 0; i < count; i++)
+    {
+      char st = (char)states[i];
+      const char* str;
+      if (st == 'D')      str = (ids[i] == primary_id) ? "DOWN-PRIMARY" : "DOWN";
+      else if (st == 'U') str = (ids[i] == primary_id) ? "UP-PRIMARY" : "UP";
+      else                str = (ids[i] == primary_id) ? "MOVE-PRIMARY" : "MOVE";
+
+      if (single_cb(ih, ids[i], xs[i], ys[i], (char*)str) == IUP_CLOSE)
+      {
+        IupExitLoop();
+        break;
+      }
+    }
+  }
+
+  if (multi_cb)
+  {
+    if (multi_cb(ih, count, (int*)ids, (int*)xs, (int*)ys, (int*)states) == IUP_CLOSE)
+      IupExitLoop();
+  }
+
+  (*jni_env)->ReleaseIntArrayElements(jni_env, jids, ids, JNI_ABORT);
+  (*jni_env)->ReleaseIntArrayElements(jni_env, jxs, xs, JNI_ABORT);
+  (*jni_env)->ReleaseIntArrayElements(jni_env, jys, ys, JNI_ABORT);
+  (*jni_env)->ReleaseIntArrayElements(jni_env, jstates, states, JNI_ABORT);
 }

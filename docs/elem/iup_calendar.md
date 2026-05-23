@@ -33,12 +33,6 @@ Not supported in WinUI, macOS, Android and iOS.
 
 [MAP_CB](../call/iup_map_cb.md), [UNMAP_CB](../call/iup_unmap_cb.md), [DESTROY_CB](../call/iup_destroy_cb.md), [GETFOCUS_CB](../call/iup_getfocus_cb.md), [KILLFOCUS_CB](../call/iup_killfocus_cb.md), [ENTERWINDOW_CB](../call/iup_enterwindow_cb.md), [LEAVEWINDOW_CB](../call/iup_leavewindow_cb.md), [K_ANY](../call/iup_k_any.md), [HELP_CB](../call/iup_help_cb.md): All common callbacks are supported.
 
-### Notes
-
-In Windows, the view is changed when the month of year is clicked, so the user can select the month of the year or a year among years.
-
-In GTK uses GtkCalendar, in Windows uses MONTHCAL_CLASS, in WinUI uses XAML CalendarView, in macOS uses NSDatePicker, in Qt uses QCalendarWidget, in EFL uses EFL_UI_CALENDAR, in Android uses android.widget.CalendarView, in iOS uses UIDatePicker, and in FLTK and Motif uses a custom calendar control.
-
 ### Examples
 
 **Windows Classic**
