@@ -1,6 +1,6 @@
 ## DX
 
-Size of the horizontal scrollbar's thumbnail in any unit.
+Size of the thumb in the horizontal scrollbar, in any unit.
 
 ### Value
 

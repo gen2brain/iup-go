@@ -315,9 +315,11 @@ Can be: "DWM", "X11", "WAYLAND", "QUARTZ", "ANDROID" or "HAIKU".
 
 Returns the hostname.
 
-### TOUCHREADY (read-only) [Windows Only]
+### TOUCHREADY (read-only)
 
-Informs if touch is supported by the current user interface.
+Informs if a touch input device is available. Always returns Yes or No.
+On Windows and WinUI it reflects the presence of a touch digitizer; on Android and iOS it is always Yes.
+The other drivers do not detect touch and report No.
 
 ### USERNAME (read-only)
 
@@ -360,12 +362,12 @@ Available only after the first call to [IupGLMakeCurrent](../ctrl/iup_glcanvas.m
 ### XSERVERVENDOR (read-only) [X11 Only]
 
 X-Windows Server Vendor string.
-Available in GTK, GTK 4, FLTK and Motif.
+Available in GTK, GTK 4, Qt, FLTK, EFL and Motif.
 
 ### XVENDORRELEASE (read-only) [X11 Only]
 
 X-Windows Server Vendor release number.
-Available in GTK, GTK 4, FLTK and Motif.
+Available in GTK, GTK 4, Qt, FLTK, EFL and Motif.
 
 ## Toolkit Versions and Themes
 
@@ -472,11 +474,9 @@ Only available after a dialog has been created, since the engine is selected at 
 
 ### GNUSTEPTHEME [GNUstep Only]
 
-Sets the active GNUstep theme. Can be set before or after creating dialogs. Can also be set via the environment variable `IUP_GNUSTEPTHEME`. Only available when the Cocoa driver is built against GNUstep (Linux/BSD); on macOS the attribute is silently ignored.
-
-The value is a theme name (e.g. `"Silver"`, `"Neos"`), or an absolute path to a `.theme` bundle. Setting the value to `NULL` or empty reverts to the built-in GNUstep theme.
-
-Setting this attribute also refreshes the default color globals (`DLGBGCOLOR`, `DLGFGCOLOR`, etc.) from the newly activated theme, and writes the chosen name to the `GSTheme` key in the application's user defaults so the theme survives `NSUserDefaultsDidChangeNotification` (otherwise dragging a menu, resizing, or other operations that touch defaults would revert the theme to the built-in one).
+Sets the active GNUstep theme. Can be set before or after creating dialogs.
+Can also be set via the environment variable `IUP_GNUSTEPTHEME`.
+The value is a theme name (e.g. `"Silver"`, `"Neos"`) or an absolute path to a `.theme` bundle. Setting NULL or empty reverts to the built-in theme.
 
 When read, returns the current theme name, or NULL if the default theme is active.
 
@@ -557,12 +557,12 @@ Also available in GTK and GTK 4.
 ### XDISPLAY (read-only) [X11 Only]
 
 Returns the X-Windows Display.
-Available in GTK, GTK 4, Qt (Qt6 only), FLTK, EFL and Motif.
+Available in GTK, GTK 4, Qt, FLTK, EFL and Motif.
 
 ### XSCREEN (read-only) [X11 Only]
 
 Returns the X-Windows Screen.
-Available in GTK, GTK 4, FLTK, EFL and Motif.
+Available in GTK, GTK 4, Qt, FLTK, EFL and Motif.
 
 ### WL_DISPLAY (read-only) [Wayland Only]
 

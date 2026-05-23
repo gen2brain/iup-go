@@ -1,6 +1,6 @@
 ## DY
 
-Size of the vertical scrollbar's thumbnail in any unit.
+Size of the thumb in the vertical scrollbar, in any unit.
 
 ### Value
 

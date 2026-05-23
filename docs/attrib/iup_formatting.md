@@ -1,8 +1,9 @@
 ## FORMATTING (non-inheritable)
 
-When enabled, allows the use of text formatting attributes.
-In GTK is always enabled, but only when MULTILINE=YES.
+When enabled, allows the use of text formatting attributes. Only works when MULTILINE=YES.
 Default: NO.
+
+On GTK it is always enabled when MULTILINE=YES, regardless of this attribute.
 
 Not supported in Motif.
 

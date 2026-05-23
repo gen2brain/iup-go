@@ -1,6 +1,6 @@
 ## POSX
 
-Thumbnail position in the horizontal scrollbar in any unit.
+Position of the thumb in the horizontal scrollbar, in any unit.
 
 ### Value
 

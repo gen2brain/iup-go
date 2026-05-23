@@ -1,6 +1,6 @@
 ## POSY
 
-Thumbnail position in the vertical scrollbar in any unit.
+Position of the thumb in the vertical scrollbar, in any unit.
 
 ### Value
 
