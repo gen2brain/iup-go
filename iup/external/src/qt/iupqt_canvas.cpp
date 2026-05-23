@@ -474,6 +474,19 @@ static void qtCanvasScrollCallback(Ihandle* ih, QScrollBar* scrollbar, int orien
   }
 }
 
+/* SliderAction -> op; drag/programmatic stay position */
+static int qtCanvasSliderActionToIup(int action, int is_vert)
+{
+  switch (action)
+  {
+    case QAbstractSlider::SliderSingleStepAdd: return is_vert ? IUP_SBDN : IUP_SBRIGHT;
+    case QAbstractSlider::SliderSingleStepSub: return is_vert ? IUP_SBUP : IUP_SBLEFT;
+    case QAbstractSlider::SliderPageStepAdd:   return is_vert ? IUP_SBPGDN : IUP_SBPGRIGHT;
+    case QAbstractSlider::SliderPageStepSub:   return is_vert ? IUP_SBPGUP : IUP_SBPGLEFT;
+    default:                                   return is_vert ? IUP_SBPOSV : IUP_SBPOSH;
+  }
+}
+
 static void qtCanvasProcessScroll(Ihandle* ih, QScrollBar* scrollbar, int orientation)
 {
   if (!ih || !scrollbar)
@@ -522,6 +535,15 @@ static void qtCanvasProcessScroll(Ihandle* ih, QScrollBar* scrollbar, int orient
   else
   {
     *pos_ptr = min_val;
+  }
+
+  {
+    const char* opname = is_vert ? "_IUPQT_SBOP_V" : "_IUPQT_SBOP_H";
+    if (iupAttribGet(ih, opname))
+    {
+      op = iupAttribGetInt(ih, opname);
+      iupAttribSet(ih, opname, NULL);
+    }
   }
 
   /* Call scroll callback */
@@ -697,6 +719,9 @@ static int qtCanvasMapMethod(Ihandle* ih)
       container_data->sb_vert = sb_vert;
       hbox->addWidget(sb_vert);
 
+      QObject::connect(sb_vert, &QScrollBar::actionTriggered, [ih](int action) {
+        iupAttribSetInt(ih, "_IUPQT_SBOP_V", qtCanvasSliderActionToIup(action, 1));
+      });
       QObject::connect(sb_vert, &QScrollBar::valueChanged, [ih, sb_vert]() {
         qtCanvasProcessScroll(ih, sb_vert, Qt::Vertical);
       });
@@ -715,6 +740,9 @@ static int qtCanvasMapMethod(Ihandle* ih)
       container_data->sb_horiz = sb_horiz;
       vbox->addWidget(sb_horiz);
 
+      QObject::connect(sb_horiz, &QScrollBar::actionTriggered, [ih](int action) {
+        iupAttribSetInt(ih, "_IUPQT_SBOP_H", qtCanvasSliderActionToIup(action, 0));
+      });
       QObject::connect(sb_horiz, &QScrollBar::valueChanged, [ih, sb_horiz]() {
         qtCanvasProcessScroll(ih, sb_horiz, Qt::Horizontal);
       });
