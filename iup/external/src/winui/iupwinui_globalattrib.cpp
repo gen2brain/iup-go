@@ -363,6 +363,10 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   {
     return iupStrReturnBoolean(iupwinuiIsSystemDarkMode());
   }
+  if (iupStrEqual(name, "TOUCHREADY"))
+  {
+    return iupStrReturnBoolean(GetSystemMetrics(SM_DIGITIZER) & NID_READY);
+  }
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
   {
     return iupStrReturnBoolean(1);

@@ -136,5 +136,7 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 		UITraitCollection* trait = window ? window.traitCollection : [UITraitCollection currentTraitCollection];
 		return iupStrReturnBoolean(trait.userInterfaceStyle == UIUserInterfaceStyleDark);
 	}
+	if (iupStrEqual(name, "TOUCHREADY"))
+		return iupStrReturnBoolean(1);
 	return NULL;
 }
