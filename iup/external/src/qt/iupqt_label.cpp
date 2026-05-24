@@ -11,6 +11,8 @@
 #include <QEnterEvent>
 #include <QWidget>
 #include <QPalette>
+#include <QPainter>
+#include <QFontMetrics>
 
 #include <cstdlib>
 
@@ -124,6 +126,42 @@ protected:
     if (child_widget)
       child_widget->resize(size());
   }
+};
+
+/* QLabel clips instead of eliding; draw an end ellipsis for plain text when ELLIPSIS=YES. */
+class IupQtLabel : public QLabel
+{
+public:
+  IupQtLabel() : QLabel(), m_ellipsis(false) {}
+
+  void setEllipsis(bool on)
+  {
+    if (m_ellipsis != on)
+    {
+      m_ellipsis = on;
+      update();
+    }
+  }
+
+protected:
+  void paintEvent(QPaintEvent* event) override
+  {
+    if (!m_ellipsis || textFormat() == Qt::RichText || text().isEmpty())
+    {
+      QLabel::paintEvent(event);
+      return;
+    }
+
+    QPainter painter(this);
+    QRect r = contentsRect();
+    int m = margin();
+    r.adjust(m, m, -m, -m);
+    QString elided = fontMetrics().elidedText(text(), Qt::ElideRight, r.width());
+    painter.drawText(r, (int)alignment() | Qt::TextShowMnemonic, elided);
+  }
+
+private:
+  bool m_ellipsis;
 };
 
 /****************************************************************************
@@ -387,22 +425,10 @@ static int qtLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
   {
-    QWidget* widget = qtLabelGetInnerWidget(ih);
-    QLabel* label = qobject_cast<QLabel*>(widget);
-
+    QLabel* label = qobject_cast<QLabel*>(qtLabelGetInnerWidget(ih));
     if (label)
     {
-      if (iupStrBoolean(value))
-      {
-        /* Qt will automatically elide text that doesn't fit.
-         * Don't set PlainText format so mnemonics still work. */
-        label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-      }
-      else
-      {
-        label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-      }
-
+      static_cast<IupQtLabel*>(label)->setEllipsis(iupStrBoolean(value) != 0);
       return 1;
     }
   }
@@ -703,7 +729,7 @@ static int qtLabelMapMethod(Ihandle* ih)
   }
   else /* TEXT or IMAGE */
   {
-    QLabel* label = new QLabel();
+    QLabel* label = new IupQtLabel();
     label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     if (ih->data->type == IUP_LABEL_TEXT)
