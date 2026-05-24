@@ -58,6 +58,9 @@ Images created with **IupImage** returns 1, with **IupImageRGB** returns 3 and w
 **DPI**: resolution expected for display. Used when AUTOSCALE=DPI.
 If not defined the global attribute [IMAGESDPI](../attrib/iup_globals.md#imagesdpi) will be used.
 
+**FLAT_ALPHA**: when set to YES, the alpha channel of an RGBA image is flattened against BGCOLOR when the native image is created, instead of relying on system composition. Default: NO.
+Honored in Win32, Qt, FLTK and macOS. The Win32 IupMenuItem, IupSubmenu, IupTabs, IupTree and IupToggle controls set it to YES by default on their images.
+
 **HEIGHT** (read-only): Image height in pixels.
 
 **HOTSPOT**: Hotspot is the position inside a cursor image indicating the mouse-click spot.
@@ -72,7 +75,7 @@ Image contents is ignored and it will contain trash after the reshape.
 
 **RESIZE** (write-only): given a new size if format "*width*x*height*", changes WIDTH and HEIGHT attributes, and resizes the image contents using bilinear interpolation for RGB and RGBA images and nearest neighborhood for 8 bits.
 
-**SCALED** (read-only): returns Yes if the image has been resized.
+**SCALED** (read-only): returns YES if the image has been resized.
 
 **ORIGINALSCALE** (read-only): returns the width and height before the image was scaled.
 
@@ -129,9 +132,9 @@ In all drivers, a path to a file name, or a system-specific stock / named image,
 
 #### Colors
 
-In Motif, the alpha channel in RGBA images is always composed with the control BGCOLOR by IUP prior to setting the image at the control.
-In Windows, GTK, GTK 4, macOS, Qt and EFL, the alpha channel is composed internally by the system.
-But in Windows for some controls, the alpha must be composed a priori also, it includes: **IupMenuItem** and **IupSubmenu** always; and **IupToggle** when NOT using Visual Styles.
+In Motif, the alpha channel in RGBA images is always composed with the control BGCOLOR by IUP prior to setting the image at the control, because the native image has no alpha channel.
+In all other drivers the alpha channel is composed internally by the system.
+But in Win32 a few controls compose the alpha a priori against BGCOLOR as well, controlled by the **FLAT_ALPHA** attribute (YES by default for them): **IupMenuItem**, **IupSubmenu**, **IupTabs**, **IupTree** and **IupToggle**.
 This implies that if the control background is not uniform, then probably there will be a visible difference where it should be transparent.
 
 For **IupImage**, if a color is not set, then it is used a default color for the 16 first colors.

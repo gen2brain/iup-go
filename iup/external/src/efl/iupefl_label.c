@@ -68,6 +68,13 @@ static int eflLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   else
     efl_text_horizontal_align_set(label, 0.0);
 
+  if (iupStrEqualNoCase(value2, "ABOTTOM"))
+    efl_text_vertical_align_set(label, 1.0);
+  else if (iupStrEqualNoCase(value2, "ATOP"))
+    efl_text_vertical_align_set(label, 0.0);
+  else
+    efl_text_vertical_align_set(label, 0.5);
+
   return 1;
 }
 
@@ -420,6 +427,7 @@ IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, eflLabelSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, eflLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, eflLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SELECTABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "IMAGE", NULL, eflLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, eflLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);

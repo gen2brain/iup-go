@@ -7,8 +7,10 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
 #include <FL/fl_draw.H>
+#include <FL/fl_utf8.h>
 
 #include <cstring>
+#include <string>
 
 extern "C" {
 #include "iup.h"
@@ -30,10 +32,48 @@ class IupFltkLabel : public Fl_Box
 {
 public:
   Ihandle* iup_handle;
+  bool ellipsis;
 
   IupFltkLabel(int x, int y, int w, int h, Ihandle* ih)
-    : Fl_Box(x, y, w, h), iup_handle(ih)
+    : Fl_Box(x, y, w, h), iup_handle(ih), ellipsis(false)
   {
+  }
+
+  /* FLTK has no built-in ellipsis; when ELLIPSIS=YES and the text overflows, draw a truncated copy. */
+  void draw() override
+  {
+    const char* full = label();
+    if (!ellipsis || image() || !full || !*full || (align() & FL_ALIGN_WRAP))
+    {
+      Fl_Box::draw();
+      return;
+    }
+
+    fl_font(labelfont(), labelsize());
+    if ((int)fl_width(full) <= w())
+    {
+      Fl_Box::draw();
+      return;
+    }
+
+    int ellw = (int)fl_width("...");
+    int len = (int)strlen(full), fit = 0, k = 0;
+    while (k < len)
+    {
+      int clen = fl_utf8len1(full[k]);
+      if (clen < 1) clen = 1;
+      if (k + clen > len || (int)fl_width(full, k + clen) + ellw > w())
+        break;
+      k += clen;
+      fit = k;
+    }
+
+    std::string elided(full, fit);
+    elided += "...";
+
+    draw_box();
+    fl_color(active_r() ? labelcolor() : fl_inactive(labelcolor()));
+    fl_draw(elided.c_str(), x(), y(), w(), h(), align());
   }
 
   int handle(int event) override
@@ -191,6 +231,21 @@ static int fltkLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
       else
         align &= ~FL_ALIGN_WRAP;
       label->align(align);
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static int fltkLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type == IUP_LABEL_TEXT)
+  {
+    IupFltkLabel* label = (IupFltkLabel*)ih->handle;
+    if (label)
+    {
+      label->ellipsis = iupStrBoolean(value) != 0;
+      label->redraw();
       return 1;
     }
   }
@@ -376,6 +431,7 @@ extern "C" IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, fltkLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, fltkLabelSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "WORDWRAP", NULL, fltkLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, fltkLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SELECTABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
 }

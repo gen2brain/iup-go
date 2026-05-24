@@ -16,8 +16,8 @@ Creates a label interface element, which displays a separator, a text or an imag
 Possible values: "YES, "NO". Default: "YES".
 
 **ALIGNMENT** (non-inheritable): horizontal and vertical alignment.
-Possible values: "ALEFT", "ACENTER" and "ARIGHT",  combined to "ATOP", "ACENTER" and "ABOTTOM".
-Default: "ALEFT:ACENTER". Partial values are also accepted, like "ARIGHT" or ":ATOP", the other value will be used obtained from the default value.
+Possible values: "ALEFT", "ACENTER" and "ARIGHT", combined to "ATOP", "ACENTER" and "ABOTTOM".
+Default: "ALEFT:ACENTER". Partial values are also accepted, like "ARIGHT" or ":ATOP", the other value will be obtained from the default value.
 In Motif, vertical alignment is restricted to "ACENTER".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): ignored, transparent in all systems.
@@ -28,7 +28,7 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 
 **ELLIPSIS**: add an ellipsis: "..." to the text if there is not enough space to render the entire string.
 Can be "YES" or "NO". Default: "NO".
-Not supported in FLTK and Motif.
+Not supported in Motif.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute DLGFGCOLOR.
 
@@ -64,6 +64,7 @@ The '\n' character is accepted for line change.
 The "&" character can be used to define a mnemonic, the next character will be used as key.
 Use "&&" to show the "&" character instead of defining a mnemonic.
 The next control from the label will be activated from any control in the dialog using the "Alt+key" combination.
+The "&" is always consumed (so "&&" shows "&" in all drivers), but the "Alt+key" activation of the next control is only available in Win32, GTK, GTK 4 and Motif.
 
 **WORDWRAP**: enables or disable the wrapping of lines that does not fit in the label.
 Can be "YES" or "NO". Default: "NO". Can only set WORDWRAP=YES if ALIGNMENT=ALEFT.
@@ -71,7 +72,7 @@ Not supported in Motif and Haiku.
 
 **SELECTABLE** (non-inheritable): Makes the label text selectable by the user for copy/paste.
 Can be "YES" or "NO". Default: "NO".
-Supported in GTK, GTK 4, Qt, macOS, iOS, WinUI and Android.
+Not supported in Win32, Motif, FLTK, EFL and Haiku.
 
 >
 >
@@ -100,13 +101,17 @@ But after map, the image can be changed for another image, and the text for anot
 
 ![](../images/iuplabel.png)
 
-Normal Text Label: FGCOLOR = "0 0 255" ALIGNMENT="ALEFT:ATOP",
-FONT = "Helvetica, 14" ALIGNMENT = "ACENTER:ACENTER",
-MARKUP = "YES" ALIGNMENT = "ARIGHT:ABOTTOM".
+Text labels:
 
-Normal Image Label: (8bpp Image),
-ALIGNMENT = "ACENTER" (24 bpp Image),
-ALIGNMENT = "ARIGHT" (32 bpp Image).
+- FGCOLOR = "0 0 255", ALIGNMENT = "ALEFT:ATOP"
+- FONT = "Helvetica, 14", ALIGNMENT = "ACENTER:ACENTER"
+- MARKUP = "YES", ALIGNMENT = "ARIGHT:ABOTTOM"
+
+Image labels:
+
+- 8 bpp image
+- 24 bpp image, ALIGNMENT = "ACENTER"
+- 32 bpp image, ALIGNMENT = "ARIGHT"
 
 [Browse for Example Files](../../examples/)
 

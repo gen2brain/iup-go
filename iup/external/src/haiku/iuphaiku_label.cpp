@@ -7,10 +7,13 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 
 #include <Bitmap.h>
 #include <InterfaceDefs.h>
 #include <Looper.h>
+#include <String.h>
+#include <StringList.h>
 #include <StringView.h>
 #include <View.h>
 
@@ -101,19 +104,70 @@ public:
   { BStringView::MouseMoved(where, transit, drag);
     haikuLabelFireTransitCb(fIhandle, transit);
     haikuLabelFireMotionCb(fIhandle, this, where); }
-  void Draw(BRect update) override
+  /* BStringView always bottom-anchors and ignores vertical alignment, so lay out the lines ourselves. */
+  void Draw(BRect /*update*/) override
   {
-    if (fIhandle && !iupdrvIsActive(fIhandle))
+    const char* full = Text();
+    if (!full || !*full)
+      return;
+
+    rgb_color hc = HighColor();
+    bool inactive = (fIhandle && !iupdrvIsActive(fIhandle));
+    if (inactive)
     {
-      rgb_color hc = HighColor();
       rgb_color bg = ui_color(B_PANEL_BACKGROUND_COLOR);
       rgb_color dim = { (uint8)((hc.red + bg.red) / 2), (uint8)((hc.green + bg.green) / 2), (uint8)((hc.blue + bg.blue) / 2), 255 };
       SetHighColor(dim);
-      BStringView::Draw(update);
-      SetHighColor(hc);
-      return;
     }
-    BStringView::Draw(update);
+    if (LowUIColor() == B_NO_COLOR)
+      SetLowColor(ViewColor());
+
+    font_height fh;
+    GetFontHeight(&fh);
+    float lineHeight = ceilf(fh.ascent + fh.descent + fh.leading);
+    BRect bounds = Bounds();
+
+    BStringList lines;
+    BString(full).Split("\n", false, lines);
+    int n = lines.CountStrings();
+    float blockHeight = (n - 1) * lineHeight + ceilf(fh.ascent + fh.descent);
+
+    int valign = fIhandle ? fIhandle->data->vert_alignment : IUP_ALIGN_ACENTER;
+    float blockTop;
+    if (valign == IUP_ALIGN_ATOP)
+      blockTop = bounds.top;
+    else if (valign == IUP_ALIGN_ABOTTOM)
+      blockTop = bounds.bottom - blockHeight;
+    else
+      blockTop = bounds.top + (bounds.Height() - blockHeight) / 2.0f;
+
+    alignment halign = Alignment();
+    uint32 trunc = Truncation();
+
+    for (int i = 0; i < n; i++)
+    {
+      BString line = lines.StringAt(i);
+      float width = StringWidth(line.String());
+      if (trunc != B_NO_TRUNCATION && width > bounds.Width())
+      {
+        TruncateString(&line, trunc, bounds.Width());
+        width = StringWidth(line.String());
+      }
+
+      float y = blockTop + ceilf(fh.ascent) + i * lineHeight;
+      float x;
+      if (halign == B_ALIGN_RIGHT)
+        x = bounds.Width() - width;
+      else if (halign == B_ALIGN_CENTER)
+        x = (bounds.Width() - width) / 2.0f;
+      else
+        x = 0.0f;
+
+      DrawString(line.String(), BPoint(x, y));
+    }
+
+    if (inactive)
+      SetHighColor(hc);
   }
 private:
   Ihandle* fIhandle;
@@ -250,13 +304,21 @@ static int haikuLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   BStringView* view = (BStringView*)ih->handle;
   if (!view) return 1;
 
-  /* IUP "HALIGN:VALIGN"; BStringView supports horizontal only */
+  /* IUP "HALIGN:VALIGN"; horizontal via SetAlignment, vertical handled in Draw */
   char halign[20] = {0};
   char valign[20] = {0};
   iupStrToStrStr(value, halign, sizeof(halign), valign, sizeof(valign), ':');
 
+  if (iupStrEqualNoCase(valign, "ATOP"))
+    ih->data->vert_alignment = IUP_ALIGN_ATOP;
+  else if (iupStrEqualNoCase(valign, "ABOTTOM"))
+    ih->data->vert_alignment = IUP_ALIGN_ABOTTOM;
+  else
+    ih->data->vert_alignment = IUP_ALIGN_ACENTER;
+
   LooperLockGuard guard(view->Looper());
   view->SetAlignment(haikuParseAlignment(halign));
+  view->Invalidate();
   return 1;
 }
 
