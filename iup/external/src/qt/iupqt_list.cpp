@@ -285,6 +285,19 @@ public:
   void showPopup() override
   {
     QComboBox::showPopup();
+
+    /* Qt expands the popup to the widest item; clamp to the combo width for NO. */
+    if (!iupAttribGetBoolean(ih, "DROPEXPAND"))
+    {
+      QWidget* popup = view() ? view()->parentWidget() : nullptr;
+      if (popup && popup->width() > width())
+      {
+        QRect g = popup->geometry();
+        g.setWidth(width());
+        popup->setGeometry(g);
+      }
+    }
+
     IFni cb = (IFni)IupGetCallback(ih, "DROPDOWN_CB");
     if (cb)
       cb(ih, 1);
@@ -2117,7 +2130,7 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, qtListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, qtListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, qtListSetVisibleItemsAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, qtListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, qtListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);

@@ -1753,6 +1753,9 @@ static int eflListMapMethod(Ihandle* ih)
       return IUP_ERROR;
     }
 
+    efl_ui_scrollbar_bar_mode_set(list, EFL_UI_SCROLLBAR_MODE_AUTO,
+      iupAttribGetBoolean(ih, "AUTOHIDE") ? EFL_UI_SCROLLBAR_MODE_AUTO : EFL_UI_SCROLLBAR_MODE_ON);
+
     efl_gfx_hint_weight_set(list, 1.0, 1.0);
     efl_gfx_hint_align_set(list, -1.0, -1.0);
     efl_pack_end(box, list);
@@ -1890,6 +1893,9 @@ static int eflListMapMethod(Ihandle* ih)
     list = efl_add(EFL_UI_LIST_CLASS, parent);
     if (!list)
       return IUP_ERROR;
+
+    efl_ui_scrollbar_bar_mode_set(list, EFL_UI_SCROLLBAR_MODE_AUTO,
+      iupAttribGetBoolean(ih, "AUTOHIDE") ? EFL_UI_SCROLLBAR_MODE_AUTO : EFL_UI_SCROLLBAR_MODE_ON);
 
     if (ih->data->is_multiple)
       efl_ui_multi_selectable_select_mode_set(list, EFL_UI_SELECT_MODE_MULTI);

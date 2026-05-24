@@ -1623,7 +1623,7 @@ static int fltkListMapMethod(Ihandle* ih)
     edit->when(FL_WHEN_CHANGED);
 
     IupFltkHoldBrowser* browser = new IupFltkHoldBrowser(0, edit_height, 10, 10, ih);
-    browser->has_scrollbar(Fl_Browser_::VERTICAL);
+    browser->has_scrollbar(iupAttribGetBoolean(ih, "AUTOHIDE") ? Fl_Browser_::VERTICAL : Fl_Browser_::VERTICAL_ALWAYS);
     group->add(browser);
 
     ih->handle = (InativeHandle*)group;
@@ -1659,7 +1659,7 @@ static int fltkListMapMethod(Ihandle* ih)
     Fl_Group* group = iupfltkNativeContainerNew();
 
     IupFltkMultiBrowser* browser = new IupFltkMultiBrowser(0, 0, 10, 10, ih);
-    browser->has_scrollbar(Fl_Browser_::VERTICAL);
+    browser->has_scrollbar(iupAttribGetBoolean(ih, "AUTOHIDE") ? Fl_Browser_::VERTICAL : Fl_Browser_::VERTICAL_ALWAYS);
     group->add(browser);
 
     ih->handle = (InativeHandle*)browser;
@@ -1685,7 +1685,7 @@ static int fltkListMapMethod(Ihandle* ih)
     Fl_Group* group = iupfltkNativeContainerNew();
 
     IupFltkHoldBrowser* browser = new IupFltkHoldBrowser(0, 0, 10, 10, ih);
-    browser->has_scrollbar(Fl_Browser_::VERTICAL);
+    browser->has_scrollbar(iupAttribGetBoolean(ih, "AUTOHIDE") ? Fl_Browser_::VERTICAL : Fl_Browser_::VERTICAL_ALWAYS);
     group->add(browser);
 
     ih->handle = (InativeHandle*)browser;
