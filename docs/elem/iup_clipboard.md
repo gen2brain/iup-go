@@ -15,7 +15,8 @@ Or you can simply create and destroy every time you need to copy or paste.
 **ADDFORMAT** (write-only): register a custom format for clipboard data given its name.
 The registration remains valid even after the element is destroyed.
 A new format must be added before used.
-Custom format attributes (ADDFORMAT, FORMAT, FORMATAVAILABLE, FORMATDATA, FORMATDATASTRING, FORMATDATASIZE) are not supported in FLTK and Android.
+Custom format attributes (ADDFORMAT, FORMAT, FORMATAVAILABLE, FORMATDATA, FORMATDATASTRING, FORMATDATASIZE) are not supported in FLTK.
+On Android only the string path is available (ADDFORMAT, FORMAT, FORMATAVAILABLE, FORMATDATASTRING, FORMATDATASIZE); the binary FORMATDATA is not.
 
 **EMFAVAILABLE** (read-only) [Windows Only]: informs if there is a Windows Enhanced Metafile available at the clipboard.
 
@@ -29,12 +30,19 @@ If FORMAT is not set returns NULL.
 If FORMAT is not set returns NULL. If set to NULL clears the clipboard data.
 When set the FORMATDATASIZE attribute must be set before with the data size.
 When retrieved FORMATDATASIZE will be set and available after data is retrieved.
+Not supported in FLTK and Android.
 
 **FORMATDATASTRING**: sets/gets FORMATDATA and FORMATDATASIZE considering data being a string in the system format.
-Not supported in Motif, FLTK and Android.
+Not supported in FLTK.
 
 **FORMATDATASIZE**: size of the data on the clipboard.
 Used by the FORMATDATA attribute processing.
+
+**HTML**: copy or paste HTML formatted text to or from the clipboard. If set to NULL clears the clipboard data.
+Only supported in Qt.
+
+**HTMLAVAILABLE** (read-only): informs if there is HTML formatted text available at the clipboard.
+Only supported in Qt.
 
 **IMAGE** (write-only): name of an image to copy to the clipboard.
 If set to NULL clears the clipboard data.
@@ -58,8 +66,20 @@ The returned handle in a paste must be released after used.
 After copy, do NOT release the given handle.
 Not supported in EFL and Android.
 
+**NATIVEVECTORIMAGE**: copy or paste vector image data, a PDF document, to or from the clipboard.
+When set the FORMATDATASIZE attribute must be set before with the data size.
+When retrieved FORMATDATASIZE will be set and available after data is retrieved.
+If set to NULL clears the clipboard data.
+Supported in macOS, iOS and Qt.
+
+**PDFAVAILABLE** (read-only): informs if there is PDF vector image data available at the clipboard.
+Supported in macOS, iOS and Qt.
+
 **SAVEEMF** (write-only) [Windows Only]: saves the EMF from the clipboard to the given filename.
 Available in Win32 and WinUI.
+
+**SAVENATIVEVECTORIMAGE** (write-only): saves the PDF vector image from the clipboard to the given filename.
+Supported in macOS, iOS and Qt.
 
 **SAVEWMF** (write-only) [Windows Only]: saves the WMF from the clipboard to the given filename.
 Available in Win32 and WinUI.
