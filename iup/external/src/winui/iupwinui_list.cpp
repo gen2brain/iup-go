@@ -1442,7 +1442,8 @@ static int winuiListMapMethod(Ihandle* ih)
     listBox.VerticalAlignment(VerticalAlignment::Stretch);
     listBox.SelectionMode(SelectionMode::Single);
     if (ih->data->sb)
-      ScrollViewer::SetVerticalScrollBarVisibility(listBox, ScrollBarVisibility::Visible);
+      ScrollViewer::SetVerticalScrollBarVisibility(listBox,
+        iupAttribGetBoolean(ih, "AUTOHIDE") ? ScrollBarVisibility::Auto : ScrollBarVisibility::Visible);
     Grid::SetRow(listBox, 1);
     grid.Children().Append(listBox);
 
@@ -1661,7 +1662,8 @@ static int winuiListMapMethod(Ihandle* ih)
     listBox.VerticalAlignment(VerticalAlignment::Top);
 
     if (ih->data->sb)
-      ScrollViewer::SetVerticalScrollBarVisibility(listBox, ScrollBarVisibility::Visible);
+      ScrollViewer::SetVerticalScrollBarVisibility(listBox,
+        iupAttribGetBoolean(ih, "AUTOHIDE") ? ScrollBarVisibility::Auto : ScrollBarVisibility::Visible);
 
     if (aux->isMultiple)
       listBox.SelectionMode(SelectionMode::Extended);
@@ -2625,7 +2627,8 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, winuiListSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  /* XAML ComboBox dropdown width is bound to the control; not controllable */
+  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

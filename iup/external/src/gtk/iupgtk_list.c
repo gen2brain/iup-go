@@ -1447,6 +1447,13 @@ static char* gtkListGetReadOnlyAttrib(Ihandle* ih)
   return iupStrReturnBoolean (!gtk_editable_get_editable(GTK_EDITABLE(entry)));
 }
 
+static int gtkListSetDropExpandAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->is_dropdown && ih->handle)
+    gtk_combo_box_set_popup_fixed_width(GTK_COMBO_BOX(ih->handle), !iupStrBoolean(value));
+  return 1;
+}
+
 static int gtkListSetImageAttrib(Ihandle* ih, int id, const char* value)
 {
   GtkTreeModel* model = gtkListGetModel(ih);
@@ -2504,7 +2511,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 
   /* Not Supported */
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_SUPPORTED);
-  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, gtkListSetDropExpandAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

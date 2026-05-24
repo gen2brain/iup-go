@@ -36,6 +36,7 @@ If returns IUP_DEFAULT or it is not defined, the **IupHelp** function will be ca
 ### Notes
 
 When the cursor is over the text, it is changed to the HAND cursor.
+Android and iOS have no mouse cursor.
 
 If the callback is not defined, the **IupHelp** function is called with the given URL.
 

@@ -32,6 +32,7 @@ After map, there are a few rules:
 Ignored if set before map.
 
 **AUTOHIDE**: scrollbars are shown only if they are necessary. Default: "YES".
+Not supported in Android and iOS.
 
 **AUTOREDRAW** [Windows] (non-inheritable): automatically redraws the list when something has change.
 Set to NO to add many items to the list without updating the display. Default: "YES".
@@ -59,7 +60,7 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 To select another option, the user must press this button, which displays all items in the list.
 Can be "YES" or "NO". Default "NO".
 
-**DROPEXPAND** [Windows and macOS Only]: When DROPDOWN=Yes, the size of the dropped list will expand to include the largest text.
+**DROPEXPAND** [Win32, macOS, GTK and Qt Only]: When DROPDOWN=Yes, the size of the dropped list will expand to include the largest text.
 Can be "YES" or "NO". Default: "YES".
 
 **EDITBOX** (creation-only): Adds an edit box to the list. Can be "YES" or "NO". Default "NO".
