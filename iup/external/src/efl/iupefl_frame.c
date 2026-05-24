@@ -183,14 +183,6 @@ static int eflFrameSetTitleAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int eflFrameSetSunkenAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
-
 static int eflFrameSetFontAttrib(Ihandle* ih, const char* value)
 {
   if (!iupdrvSetFontAttrib(ih, value))
@@ -292,7 +284,7 @@ IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, iupeflSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, iupeflSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SUNKEN", NULL, eflFrameSetSunkenAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SUNKEN", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", NULL, eflFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);

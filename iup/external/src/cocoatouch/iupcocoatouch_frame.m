@@ -141,6 +141,10 @@ static int cocoaTouchFrameMapMethod(Ihandle* ih)
 		iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");
 		cocoaTouchFrameApplyTitle(ih, frame, [NSString stringWithUTF8String:title]);
 	}
+	else if (iupAttribGet(ih, "BGCOLOR"))
+	{
+		iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
+	}
 
 	ih->handle = frame;
 	iupCocoaTouchAddToParent(ih);
@@ -211,19 +215,17 @@ static int cocoaTouchFrameSetBgColorAttrib(Ihandle* ih, const char* color_str)
 	IupCocoaTouchFrameView* frame = cocoaTouchFrameGet(ih);
 	if (!frame) return 0;
 
-	/* DLGBGCOLOR default: stay transparent so the dialog's dynamic bg shows */
-	if (color_str && iupStrEqual(color_str, IupGetGlobal("DLGBGCOLOR")))
+	/* only a titleless frame fills; otherwise stay transparent so the parent bg shows */
+	if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
 	{
 		frame.fillColor = nil;
-		iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", NULL);
 		[frame setNeedsDisplay];
-		return 1;
+		return 0;
 	}
 
 	UIColor* color = iupCocoaTouchToNativeColor(color_str);
 	if (!color) return 0;
 	frame.fillColor = color;
-	iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
 	[frame setNeedsDisplay];
 	return 1;
 }
@@ -285,7 +287,7 @@ IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 	ic->Map = cocoaTouchFrameMapMethod;
 	ic->UnMap = iupdrvBaseUnMapMethod;
 
-	iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, cocoaTouchFrameSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
+	iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, cocoaTouchFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "FGCOLOR", cocoaTouchFrameGetFgColorAttrib, cocoaTouchFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "FRAMECOLOR", NULL, cocoaTouchFrameSetFrameColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "FONT", NULL, cocoaTouchFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);

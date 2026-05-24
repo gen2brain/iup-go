@@ -140,6 +140,8 @@ static int androidFrameSetFgColorAttrib(Ihandle* ih, const char* value)
 static int androidFrameSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
+  if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
+    return 0;
   if (!iupStrToRGB(value, &r, &g, &b)) return 0;
   androidFrameCallColorSetter(ih, "setBgColor", r, g, b);
   return 1;
@@ -249,6 +251,11 @@ static int androidFrameMapMethod(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, inner);
   (*jni_env)->DeleteLocalRef(jni_env, frame);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
+
+  if (iupAttribGet(ih, "TITLE"))
+    iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");
+  else if (iupAttribGet(ih, "BGCOLOR"))
+    iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
 
   iupAndroid_AddWidgetToParent(jni_env, ih);
 
