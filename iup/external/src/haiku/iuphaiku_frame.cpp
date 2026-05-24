@@ -47,6 +47,8 @@ static int haikuFrameMapMethod(Ihandle* ih)
   char* title = iupAttribGet(ih, "TITLE");
   if (title)
     iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");
+  else if (iupAttribGet(ih, "BGCOLOR"))
+    iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
 
   BBox* box = new BBox(BRect(0, 0, 99, 99), "iup_frame", B_FOLLOW_NONE,
                        kFrameFlags, haikuFrameResolveBorder(ih));
@@ -152,6 +154,13 @@ extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int *w, int *h)
   return 1;
 }
 
+static int haikuFrameSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
+    return 0;
+  return iupdrvBaseSetBgColorAttrib(ih, value);
+}
+
 extern "C" IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 {
   ic->Map = haikuFrameMapMethod;
@@ -160,7 +169,7 @@ extern "C" IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "TITLE", NULL, haikuFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, haikuFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "BORDER", NULL, haikuFrameSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
