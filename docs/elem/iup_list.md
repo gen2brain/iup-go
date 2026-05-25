@@ -151,6 +151,7 @@ If not, does nothing. Works only when EDITBOX=YES.
 
 **VISIBLEITEMS**: Number of items that are visible when DROPDOWN=YES is used for the dropdown list.
 Default: 5.
+Not supported in GTK, GTK 4, FLTK, iOS and Haiku.
 
 **VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
 It uses a wider character size then the one used for the SIZE attribute, so strings will fit better without the need of extra columns.

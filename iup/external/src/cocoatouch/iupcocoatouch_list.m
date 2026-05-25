@@ -1290,8 +1290,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "AUTOHIDE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "SCROLLVISIBLE",NULL, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "VISIBLE_ITEMS",NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
 	iupClassRegisterReplaceAttribFunc(ic, "DRAGSOURCE", NULL, cocoaTouchListSetDragSourceAttrib);
 	iupClassRegisterReplaceAttribFunc(ic, "DRAGTYPES",  NULL, cocoaTouchListSetDragTypesAttrib);

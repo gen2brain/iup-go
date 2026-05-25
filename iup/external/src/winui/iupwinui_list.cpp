@@ -876,6 +876,30 @@ static void winuiListSetItemShowDragDrop(Ihandle* ih, ListBoxItem const& item)
   });
 }
 
+static int winuiListSetSpacingAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupStrToInt(value, &ih->data->spacing))
+    ih->data->spacing = 0;
+
+  if (ih->handle && !ih->data->is_dropdown)
+  {
+    ListBox listBox = winuiListGetListBox(ih);
+    if (listBox)
+    {
+      double sp = (double)ih->data->spacing;
+      auto items = listBox.Items();
+      uint32_t n = items.Size();
+      for (uint32_t i = 0; i < n; i++)
+      {
+        ListBoxItem item = items.GetAt(i).try_as<ListBoxItem>();
+        if (item)
+          item.Padding(ThicknessHelper::FromLengths(4 + sp, 2 + sp, 4 + sp, 2 + sp));
+      }
+    }
+  }
+  return 1;
+}
+
 static ListBoxItem winuiListCreateItem(Ihandle* ih, const char* value)
 {
   ListBoxItem item;
@@ -885,7 +909,8 @@ static ListBoxItem winuiListCreateItem(Ihandle* ih, const char* value)
   winuiListUpdateTextBlockFont(ih, tb);
   item.Content(tb);
 
-  item.Padding(ThicknessHelper::FromLengths(4, 2, 4, 2));
+  double sp = (double)ih->data->spacing;
+  item.Padding(ThicknessHelper::FromLengths(4 + sp, 2 + sp, 4 + sp, 2 + sp));
   item.MinHeight(0);
   item.MinWidth(0);
 
@@ -2604,7 +2629,7 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, winuiListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, winuiListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, winuiListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, winuiListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, winuiListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);

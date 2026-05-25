@@ -56,12 +56,13 @@ static int androidListEditBoxHeight(void)
 
 void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
-  (void)ih;
   /* Floor to measured row height; VISIBLELINES * row then fits exactly. */
   if (h)
   {
     int pref = androidListPreferredRowHeight();
     if (*h < pref) *h = pref;
+    if (!ih->data->is_dropdown && ih->data->spacing > 0)
+      *h += 2 * iupAndroid_DpToPx((float)ih->data->spacing);
   }
 }
 
@@ -274,6 +275,35 @@ static int androidListSetFgColorAttrib(Ihandle* ih, const char* value)
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setTextColor", "(Landroid/view/View;III)V");
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)r, (jint)g, (jint)b);
   iupAndroid_CheckException(jni_env, "IupListHelper.setTextColor");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  return 1;
+}
+
+static int androidListSetVisibleItemsAttrib(Ihandle* ih, const char* value)
+{
+  int count;
+  if (!ih->handle || !ih->data->is_dropdown) return 1;
+  if (!iupStrToInt(value, &count) || count <= 0) return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupListHelper, jni_env, "io/github/gen2brain/iupgo/IupListHelper");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setVisibleItems", "(Landroid/view/View;I)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)count);
+  iupAndroid_CheckException(jni_env, "IupListHelper.setVisibleItems");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  return 1;
+}
+
+static int androidListSetSpacingAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupStrToInt(value, &ih->data->spacing)) ih->data->spacing = 0;
+  if (!ih->handle || ih->data->is_dropdown) return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupListHelper, jni_env, "io/github/gen2brain/iupgo/IupListHelper");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setSpacing", "(Landroid/view/View;I)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)ih->data->spacing);
+  iupAndroid_CheckException(jni_env, "IupListHelper.setSpacing");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
   return 1;
 }
@@ -574,8 +604,8 @@ void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SELECTIONPOS", androidListGetSelectionPosAttrib, androidListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SHOWDRAGDROP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPACING", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, androidListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, androidListSetVisibleItemsAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
   /* ListView scrollbars are transient overlays; no always-visible mode */
   iupClassRegisterAttribute(ic, "AUTOHIDE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

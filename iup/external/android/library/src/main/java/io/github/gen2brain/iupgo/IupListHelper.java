@@ -169,6 +169,7 @@ public final class IupListHelper
         /* Source bitmaps mirror images for IMAGENATIVEHANDLE / DRAGDROPLIST. */
         final SparseArray<Bitmap> bitmaps = new SparseArray<>();
         int iconPaddingPx;
+        int spacingPx;
         /* VIRTUALMODE: getCount returns virtualCount, getItem fetches text via VALUE_CB. */
         long virtualIhandle;
         int virtualCount = -1;
@@ -205,13 +206,13 @@ public final class IupListHelper
             if (typeface != null) tv.setTypeface(typeface);
             if (sizeUnit != 0 && size > 0) tv.setTextSize(sizeUnit, size);
             /* Override framework 48dp minHeight; compact text + padding. */
-            int padV = (int)(ROW_VERT_PAD_DP * IupCommon.getDisplayDensity());
-            int padH = (int)(ROW_HORIZ_PAD_DP * IupCommon.getDisplayDensity());
+            int padV = (int)(ROW_VERT_PAD_DP * IupCommon.getDisplayDensity()) + spacingPx;
+            int padH = (int)(ROW_HORIZ_PAD_DP * IupCommon.getDisplayDensity()) + spacingPx;
             tv.setMinHeight(0);
             tv.setMinimumHeight(0);
             /* explicit padding so iupdrvListAddBorders matches; theme listPreferredItemPaddingStart varies */
             tv.setPadding(padH, padV, padH, padV);
-            int rowH = getPreferredRowHeightPx();
+            int rowH = getPreferredRowHeightPx() + 2 * spacingPx;
             tv.setLayoutParams(new android.widget.AbsListView.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, rowH));
             /* Activated bg from Material You can be pink; use IUP TXTHLCOLOR. */
@@ -439,6 +440,21 @@ public final class IupListHelper
         ta.sizeUnit = sizeUnit;
         ta.size = size;
         ta.notifyDataSetChanged();
+    }
+
+    public static void setSpacing(View widget, int spacing)
+    {
+        ArrayAdapter<String> a = adapterOf(widget);
+        if (!(a instanceof ThemedAdapter ta)) return;
+        ta.spacingPx = (int)(spacing * IupCommon.getDisplayDensity());
+        ta.notifyDataSetChanged();
+    }
+
+    public static void setVisibleItems(View widget, int count)
+    {
+        if (count <= 0) return;
+        if (widget instanceof TextInputLayout til && til.getTag() instanceof MaterialAutoCompleteTextView m)
+            m.setDropDownHeight(count * getPreferredRowHeightPx());
     }
 
 
