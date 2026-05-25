@@ -279,6 +279,19 @@ static int androidListSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int androidListSetShowDropdownAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle || !ih->data->is_dropdown) return 0;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupListHelper, jni_env, "io/github/gen2brain/iupgo/IupListHelper");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setShowDropdown", "(Landroid/view/View;Z)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jboolean)(iupStrBoolean(value) ? JNI_TRUE : JNI_FALSE));
+  iupAndroid_CheckException(jni_env, "IupListHelper.setShowDropdown");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  return 0;
+}
+
 static int androidListSetVisibleItemsAttrib(Ihandle* ih, const char* value)
 {
   int count;
@@ -606,6 +619,7 @@ void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHOWDRAGDROP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, androidListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, androidListSetVisibleItemsAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, androidListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   /* ListView scrollbars are transient overlays; no always-visible mode */
   iupClassRegisterAttribute(ic, "AUTOHIDE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

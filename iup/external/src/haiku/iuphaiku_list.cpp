@@ -1338,6 +1338,9 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   /* BPopUpMenu auto-sizes to its widest item; not controllable */
   iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
+  /* BMenuField has no programmatic open; a tracking BPopUpMenu has no clean dismiss */
+  iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+
   iupClassRegisterAttributeId(ic, "IDVALUE", haikuListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, haikuListSetImageAttribId, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", haikuListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
