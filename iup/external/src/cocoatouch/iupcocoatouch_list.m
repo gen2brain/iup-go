@@ -58,6 +58,55 @@ static const void* IUP_COCOATOUCH_LIST_DND_KEY      = "IUP_COCOATOUCH_LIST_DND_K
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, copy)   NSArray<NSString*>* dragTypes;
 @property(nonatomic, copy)   NSArray<NSString*>* dropTypes;
+@property(nonatomic, assign) BOOL reorder;
+@end
+
+#define IUP_COCOATOUCH_LIST_REORDER_MARKER @"_IUPLIST_REORDER"
+
+@interface IupCocoaTouchListTableView : UITableView
+@property(nonatomic, assign) Ihandle* ihandle;
+@end
+
+@implementation IupCocoaTouchListTableView
+- (void)touchesBegan:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
+{
+	[super touchesBegan:touches withEvent:event];
+	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
+	IFniiiis cb = (IFniiiis)IupGetCallback(_ihandle, "BUTTON_CB");
+	if (cb)
+	{
+		CGPoint p = [[touches anyObject] locationInView:self];
+		char status[IUPKEY_STATUS_SIZE];
+		iupCocoaTouchButtonKeySetStatus(event, event ? [event modifierFlags] : 0, 1, 0, status);
+		if (cb(_ihandle, IUP_BUTTON1, 1, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
+	}
+}
+- (void)touchesMoved:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
+{
+	[super touchesMoved:touches withEvent:event];
+	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
+	IFniis cb = (IFniis)IupGetCallback(_ihandle, "MOTION_CB");
+	if (cb)
+	{
+		CGPoint p = [[touches anyObject] locationInView:self];
+		char status[IUPKEY_STATUS_SIZE];
+		iupCocoaTouchButtonKeySetStatus(event, event ? [event modifierFlags] : 0, 1, 0, status);
+		if (cb(_ihandle, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
+	}
+}
+- (void)touchesEnded:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
+{
+	[super touchesEnded:touches withEvent:event];
+	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
+	IFniiiis cb = (IFniiiis)IupGetCallback(_ihandle, "BUTTON_CB");
+	if (cb)
+	{
+		CGPoint p = [[touches anyObject] locationInView:self];
+		char status[IUPKEY_STATUS_SIZE];
+		iupCocoaTouchButtonKeySetStatus(event, event ? [event modifierFlags] : 0, 0, 0, status);
+		if (cb(_ihandle, IUP_BUTTON1, 0, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
+	}
+}
 @end
 
 /* scale src so its longest side = target_pt, preserving aspect (FITIMAGE=YES) */
@@ -261,6 +310,27 @@ static void cocoaTouchListSetDropdownDisplay(UIButton* button, NSString* text, U
 	if (changed_cb && changed_cb(_ihandle) == IUP_CLOSE) IupExitLoop();
 }
 
+- (void)textFieldDidChangeSelection:(UITextField*)field
+{
+	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
+	IFniii cb = (IFniii)IupGetCallback(_ihandle, "CARET_CB");
+	if (!cb) return;
+	UITextRange* sel = field.selectedTextRange;
+	if (!sel) return;
+	int pos = (int)[field offsetFromPosition:field.beginningOfDocument toPosition:sel.start];
+	cb(_ihandle, 1, pos + 1, pos);
+}
+
+- (void)handleDoubleTap:(UITapGestureRecognizer*)gr
+{
+	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
+	UITableView* table = (UITableView*)gr.view;
+	NSIndexPath* ip = [table indexPathForRowAtPoint:[gr locationInView:table]];
+	if (!ip) return;
+	IFnis cb = (IFnis)IupGetCallback(_ihandle, "DBLCLICK_CB");
+	if (cb) iupListSingleCallDblClickCb(_ihandle, cb, (int)[ip row] + 1);
+}
+
 - (BOOL)textFieldShouldReturn:(UITextField*)textField
 {
 	[textField resignFirstResponder];
@@ -345,12 +415,43 @@ static int cocoaTouchListConvertXYToPos(Ihandle* ih, int x, int y)
 	return (int)ip.row + 1;
 }
 
+static void cocoaTouchListReorder(Ihandle* ih, int drag_id, int drop_id)
+{
+	int is_ctrl = 0;
+	if (iupListCallDragDropCb(ih, drag_id, drop_id, &is_ctrl) != IUP_CONTINUE) return;
+
+	int count = iupdrvListGetCount(ih);
+	char* text = iupStrDup(IupGetAttributeId(ih, "", drag_id + 1));
+	int insert_at = (drop_id < 0 || drop_id >= count) ? count : drop_id;
+	iupdrvListInsertItem(ih, insert_at, text ? text : "");
+
+	int adj_src = drag_id > insert_at ? drag_id + 1 : drag_id;
+	int new_pos = insert_at;
+	if (!is_ctrl)
+	{
+		iupdrvListRemoveItem(ih, adj_src);
+		if (adj_src < insert_at) new_pos = insert_at - 1;
+	}
+	iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", new_pos + 1);
+	IupSetInt(ih, "VALUE", new_pos + 1);
+	if (text) free(text);
+}
+
 @implementation IupCocoaTouchListDnDDelegate
 
 - (NSArray<UIDragItem*>*)tableView:(UITableView*)tableView itemsForBeginningDragSession:(id<UIDragSession>)session atIndexPath:(NSIndexPath*)indexPath
 {
 	(void)session;
-	if (!_ihandle || !iupObjectCheck(_ihandle) || [_dragTypes count] == 0) return @[];
+	if (!_ihandle || !iupObjectCheck(_ihandle)) return @[];
+
+	if (_reorder)
+	{
+		UIDragItem* item = [[[UIDragItem alloc] initWithItemProvider:[[[NSItemProvider alloc] init] autorelease]] autorelease];
+		item.localObject = @{ IUP_COCOATOUCH_LIST_REORDER_MARKER : @([indexPath row]) };
+		return @[item];
+	}
+
+	if ([_dragTypes count] == 0) return @[];
 
 	CGRect rect = [tableView rectForRowAtIndexPath:indexPath];
 	int x = (int)CGRectGetMidX(rect);
@@ -416,13 +517,18 @@ static int cocoaTouchListConvertXYToPos(Ihandle* ih, int x, int y)
 - (BOOL)tableView:(UITableView*)tableView canHandleDropSession:(id<UIDropSession>)session
 {
 	(void)tableView;
-	if (!_ihandle || !iupObjectCheck(_ihandle) || [_dropTypes count] == 0) return NO;
+	if (!_ihandle || !iupObjectCheck(_ihandle)) return NO;
+	if (_reorder && session.localDragSession) return YES;
+	if ([_dropTypes count] == 0) return NO;
 	return [self firstMatchingUTI:session] != nil;
 }
 
 - (UITableViewDropProposal*)tableView:(UITableView*)tableView dropSessionDidUpdate:(id<UIDropSession>)session withDestinationIndexPath:(NSIndexPath*)destinationIndexPath
 {
 	(void)tableView; (void)destinationIndexPath;
+	if (_reorder && session.localDragSession)
+		return [[[UITableViewDropProposal alloc] initWithDropOperation:UIDropOperationMove intent:UITableViewDropIntentInsertAtDestinationIndexPath] autorelease];
+
 	UIDropOperation op;
 	if ([self firstMatchingUTI:session] == nil)
 	{
@@ -455,6 +561,20 @@ static int cocoaTouchListConvertXYToPos(Ihandle* ih, int x, int y)
 - (void)tableView:(UITableView*)tableView performDropWithCoordinator:(id<UITableViewDropCoordinator>)coordinator
 {
 	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
+
+	if (_reorder && coordinator.session.localDragSession)
+	{
+		UIDragItem* item = coordinator.items.firstObject.dragItem;
+		NSDictionary* marker = [item.localObject isKindOfClass:[NSDictionary class]] ? (NSDictionary*)item.localObject : nil;
+		NSNumber* src = marker ? marker[IUP_COCOATOUCH_LIST_REORDER_MARKER] : nil;
+		if (!src) return;
+		NSIndexPath* dst = coordinator.destinationIndexPath;
+		int drag_id = [src intValue];
+		int drop_id = dst ? (int)[dst row] : -1;
+		cocoaTouchListReorder(_ihandle, drag_id, drop_id);
+		return;
+	}
+
 	IFnsViii drop_cb = (IFnsViii)IupGetCallback(_ihandle, "DROPDATA_CB");
 	if (!drop_cb) return;
 
@@ -512,8 +632,9 @@ static void cocoaTouchListUpdateDragDrop(Ihandle* ih)
 	UITableView* table = cocoaTouchListGetTable(ih);
 	if (!table) return;
 
-	BOOL want_drag = iupAttribGetBoolean(ih, "DRAGSOURCE");
-	BOOL want_drop = iupAttribGetBoolean(ih, "DROPTARGET");
+	BOOL want_reorder = ih->data->show_dragdrop ? YES : NO;
+	BOOL want_drag = iupAttribGetBoolean(ih, "DRAGSOURCE") || want_reorder;
+	BOOL want_drop = iupAttribGetBoolean(ih, "DROPTARGET") || want_reorder;
 
 	IupCocoaTouchListDnDDelegate* delegate = objc_getAssociatedObject(table, IUP_COCOATOUCH_LIST_DND_KEY);
 
@@ -539,6 +660,7 @@ static void cocoaTouchListUpdateDragDrop(Ihandle* ih)
 
 	delegate.dragTypes = iupCocoaTouchDragParseTypes(iupAttribGet(ih, "DRAGTYPES"));
 	delegate.dropTypes = iupCocoaTouchDragParseTypes(iupAttribGet(ih, "DROPTYPES"));
+	delegate.reorder = want_reorder;
 
 	if (want_drag)
 	{
@@ -1119,12 +1241,18 @@ static UITextField* cocoaTouchListBuildEditField(Ihandle* ih, IupCocoaTouchListC
 
 static UIView* cocoaTouchListCreateTable(Ihandle* ih, IupCocoaTouchListController* ctrl)
 {
-	UITableView* table = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
+	IupCocoaTouchListTableView* table = [[IupCocoaTouchListTableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
+	table.ihandle = ih;
 	[table setDataSource:ctrl];
 	[table setDelegate:ctrl];
 	[table setAllowsMultipleSelection:(ih->data->is_multiple ? YES : NO)];
 	UIFont* base = [UIFont systemFontOfSize:[UIFont labelFontSize]];
 	[table setRowHeight:ceil(base.lineHeight) + 12];
+
+	UITapGestureRecognizer* dtap = [[UITapGestureRecognizer alloc] initWithTarget:ctrl action:@selector(handleDoubleTap:)];
+	dtap.numberOfTapsRequired = 2;
+	[table addGestureRecognizer:dtap];
+	[dtap release];
 
 	if (!ih->data->has_editbox) return table;
 
