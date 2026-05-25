@@ -92,7 +92,7 @@ If value is NULL or "ALL" removes all the items. Ignored if set before map.
 Can be: "YES" or "NO" (none). Default: "YES".
 For all systems, when SCROLLBAR=YES the natural size will always include its size even if the native system hides the scrollbars.
 If **AUTOHIDE**=YES scrollbars are shown only if they are necessary, by default AUTOHIDE=YES.
-In Motif, SCROLLBAR=NO is not supported and if EDITBOX=YES the horizontal scrollbar is never shown.
+SCROLLBAR=NO is not supported in Motif and iOS. In Motif, if EDITBOX=YES the horizontal scrollbar is never shown.
 
 When DROPDOWN= YES, the scrollbars are system-dependent, and do NOT depend on the SCROLLBAR or AUTOHIDE attributes.
 Usually the scrollbars are shown if necessary. In GTK, scrollbars are never shown and all items are always visible.

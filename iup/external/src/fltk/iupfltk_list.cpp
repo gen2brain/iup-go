@@ -633,8 +633,33 @@ extern "C" IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
   return 0;
 }
 
+/* SORT: ascending insert position. */
+static int fltkListBrowserSortPos(Fl_Browser* b, const char* value)  /* 1-based */
+{
+  int n = b->size();
+  for (int i = 1; i <= n; i++)
+  {
+    const char* t = b->text(i);
+    if (iupStrCompare(t ? t : "", value, 0, 1) > 0) return i;
+  }
+  return n + 1;
+}
+
+static int fltkListMenuSortPos(Fl_Menu_* m, const char* value)  /* 0-based */
+{
+  int n = m->size() - 1;  /* size() counts the terminating empty item */
+  const Fl_Menu_Item* items = m->menu();
+  for (int i = 0; i < n; i++)
+  {
+    const char* t = items[i].text;
+    if (iupStrCompare(t ? t : "", value, 0, 1) > 0) return i;
+  }
+  return n;
+}
+
 extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
+  int sort = iupAttribGetBoolean(ih, "SORT");
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
 
   if (ih->data->is_dropdown)
@@ -642,19 +667,30 @@ extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
     if (ih->data->has_editbox)
     {
       Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
-      input_choice->add(value);
+      if (sort)
+        input_choice->menubutton()->insert(fltkListMenuSortPos(input_choice->menubutton(), value), value, 0, NULL);
+      else
+        input_choice->add(value);
     }
     else
     {
       Fl_Choice* choice = (Fl_Choice*)ih->handle;
-      choice->add(value);
+      if (sort)
+        choice->insert(fltkListMenuSortPos(choice, value), value, 0, NULL);
+      else
+        choice->add(value);
     }
   }
   else
   {
     Fl_Browser* browser = fltkListGetBrowser(ih);
     if (browser)
-      browser->add(value);
+    {
+      if (sort)
+        browser->insert(fltkListBrowserSortPos(browser, value), value);
+      else
+        browser->add(value);
+    }
   }
 
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
@@ -662,6 +698,7 @@ extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 
 extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
+  int sort = iupAttribGetBoolean(ih, "SORT");
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
 
   if (ih->data->is_dropdown)
@@ -669,19 +706,19 @@ extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const cha
     if (ih->data->has_editbox)
     {
       Fl_Input_Choice* input_choice = (Fl_Input_Choice*)ih->handle;
-      input_choice->menubutton()->insert(pos, value, 0, NULL);
+      input_choice->menubutton()->insert(sort ? fltkListMenuSortPos(input_choice->menubutton(), value) : pos, value, 0, NULL);
     }
     else
     {
       Fl_Choice* choice = (Fl_Choice*)ih->handle;
-      choice->insert(pos, value, 0, NULL);
+      choice->insert(sort ? fltkListMenuSortPos(choice, value) : pos, value, 0, NULL);
     }
   }
   else
   {
     Fl_Browser* browser = fltkListGetBrowser(ih);
     if (browser)
-      browser->insert(pos + 1, value);
+      browser->insert(sort ? fltkListBrowserSortPos(browser, value) : pos + 1, value);
   }
 
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
@@ -1548,6 +1585,15 @@ static int fltkListConvertXYToPos(Ihandle* ih, int x, int y)
   return line;
 }
 
+/* SCROLLBAR=NO -> none; otherwise vertical, always-on when AUTOHIDE=NO */
+static void fltkListSetScrollbarMode(Fl_Browser_* browser, Ihandle* ih)
+{
+  if (!ih->data->sb)
+    browser->has_scrollbar(0);
+  else
+    fltkListSetScrollbarMode(browser, ih);
+}
+
 /****************************************************************************
  * Map Method
  ****************************************************************************/
@@ -1623,7 +1669,7 @@ static int fltkListMapMethod(Ihandle* ih)
     edit->when(FL_WHEN_CHANGED);
 
     IupFltkHoldBrowser* browser = new IupFltkHoldBrowser(0, edit_height, 10, 10, ih);
-    browser->has_scrollbar(iupAttribGetBoolean(ih, "AUTOHIDE") ? Fl_Browser_::VERTICAL : Fl_Browser_::VERTICAL_ALWAYS);
+    fltkListSetScrollbarMode(browser, ih);
     group->add(browser);
 
     ih->handle = (InativeHandle*)group;
@@ -1659,7 +1705,7 @@ static int fltkListMapMethod(Ihandle* ih)
     Fl_Group* group = iupfltkNativeContainerNew();
 
     IupFltkMultiBrowser* browser = new IupFltkMultiBrowser(0, 0, 10, 10, ih);
-    browser->has_scrollbar(iupAttribGetBoolean(ih, "AUTOHIDE") ? Fl_Browser_::VERTICAL : Fl_Browser_::VERTICAL_ALWAYS);
+    fltkListSetScrollbarMode(browser, ih);
     group->add(browser);
 
     ih->handle = (InativeHandle*)browser;
@@ -1685,7 +1731,7 @@ static int fltkListMapMethod(Ihandle* ih)
     Fl_Group* group = iupfltkNativeContainerNew();
 
     IupFltkHoldBrowser* browser = new IupFltkHoldBrowser(0, 0, 10, 10, ih);
-    browser->has_scrollbar(iupAttribGetBoolean(ih, "AUTOHIDE") ? Fl_Browser_::VERTICAL : Fl_Browser_::VERTICAL_ALWAYS);
+    fltkListSetScrollbarMode(browser, ih);
     group->add(browser);
 
     ih->handle = (InativeHandle*)browser;

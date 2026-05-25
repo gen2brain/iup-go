@@ -429,13 +429,14 @@ void IupHaikuListWrap::RelayoutChildren()
   if (!fList || !fSb) return;
 
   IupHaikuListView* lv = dynamic_cast<IupHaikuListView*>(fList);
+  bool has_sb = !fIhandle || fIhandle->data->sb;
   bool autohide = fIhandle && iupAttribGetBoolean(fIhandle, "AUTOHIDE");
   float total_w = Bounds().Width();
   float total_h = Bounds().Height();
   float sb_w = fSb->PreferredSize().Width();
 
-  bool need_sb = !autohide;
-  if (autohide && lv)
+  bool need_sb = has_sb && !autohide;
+  if (has_sb && autohide && lv)
   {
     float content_h = 0;
     int n = (int)lv->CountItems();
@@ -645,8 +646,39 @@ static IupHaikuListDropHandler* haikuListGetDropHandler(Ihandle* ih)
   return (IupHaikuListDropHandler*)iupAttribGet(ih, "_IUPHAIKU_LIST_DROPHANDLER");
 }
 
+/* SORT: ascending insert position. */
+static int haikuListMenuSortPos(BMenu* m, const char* value)
+{
+  int n = m->CountItems();
+  for (int i = 0; i < n; i++)
+  {
+    BMenuItem* it = m->ItemAt(i);
+    const char* t = it ? it->Label() : "";
+    if (iupStrCompare(t ? t : "", value, 0, 1) > 0) return i;
+  }
+  return n;
+}
+
+static int haikuListViewSortPos(BListView* lv, const char* value)
+{
+  int n = lv->CountItems();
+  for (int i = 0; i < n; i++)
+  {
+    BStringItem* it = dynamic_cast<BStringItem*>(lv->ItemAt(i));
+    const char* t = it ? it->Text() : "";
+    if (iupStrCompare(t ? t : "", value, 0, 1) > 0) return i;
+  }
+  return n;
+}
+
 extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
+  if (iupAttribGetBoolean(ih, "SORT"))  /* delegate so the insert/renumber path is reused */
+  {
+    iupdrvListInsertItem(ih, 0, value);
+    return;
+  }
+
   BMenu* m = haikuListGetMenu(ih);
   IupHaikuListView* lv = haikuListGetListView(ih);
 
@@ -673,6 +705,9 @@ extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const cha
 {
   BMenu* m = haikuListGetMenu(ih);
   IupHaikuListView* lv = haikuListGetListView(ih);
+
+  if (iupAttribGetBoolean(ih, "SORT"))
+    pos = m ? haikuListMenuSortPos(m, value) : (lv ? haikuListViewSortPos(lv, value) : pos);
 
   if (m)
   {

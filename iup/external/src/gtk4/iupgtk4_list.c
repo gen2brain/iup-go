@@ -637,6 +637,21 @@ IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
   return (int)g_list_model_get_n_items(model);
 }
 
+/* SORT: ascending insert position. */
+static int gtk4ListSortPos(GListStore* store, const char* value)
+{
+  int n = (int)g_list_model_get_n_items(G_LIST_MODEL(store));
+  int i;
+  for (i = 0; i < n; i++)
+  {
+    IupListItem* it = (IupListItem*)g_list_model_get_item(G_LIST_MODEL(store), i);
+    int cmp = iupStrCompare(it ? iup_list_item_get_text(it) : "", value, 0, 1);
+    if (it) g_object_unref(it);
+    if (cmp > 0) return i;
+  }
+  return n;
+}
+
 IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   GListStore* store = gtk4ListGetGListStore(ih);
@@ -660,7 +675,10 @@ IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
     }
 
     iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
-    g_list_store_append(store, item);
+    if (iupAttribGetBoolean(ih, "SORT"))
+      g_list_store_insert(store, gtk4ListSortPos(store, value), item);
+    else
+      g_list_store_append(store, item);
     iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
     g_object_unref(item);
   }
@@ -688,7 +706,7 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
     }
 
     iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
-    g_list_store_insert(store, pos, item);
+    g_list_store_insert(store, iupAttribGetBoolean(ih, "SORT") ? gtk4ListSortPos(store, value) : pos, item);
     iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
     g_object_unref(item);
 
