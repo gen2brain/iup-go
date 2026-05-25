@@ -177,7 +177,11 @@ public:
           }
         }
         break;
+      case FL_MOVE:
+        iupfltkMouseMoveEvent(this, iup_handle);
+        break;
       case FL_DRAG:
+        iupfltkMouseMoveEvent(this, iup_handle);
         if (iupfltkDragDropHandleEvent(this, iup_handle, event))
           return 1;
         if (drag_item > 0 && iup_handle->data->show_dragdrop)
@@ -275,6 +279,10 @@ public:
       case FL_PUSH:
       case FL_RELEASE:
         fltkListBrowserHandleMouseEvent(this, iup_handle, event);
+        break;
+      case FL_MOVE:
+      case FL_DRAG:
+        iupfltkMouseMoveEvent(this, iup_handle);
         break;
     }
     return Fl_Multi_Browser::handle(event);

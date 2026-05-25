@@ -242,6 +242,7 @@ If Ctrl is pressed, then the item is copied instead of moved.
 
 **DROPDOWN_CB**: Action generated when the list of a dropdown is shown or hidden.
 Called only when DROPDOWN=YES.
+Not supported in Android and iOS. In Haiku only when EDITBOX=YES.
 
     int function (Ihandle *ih, int state);
 
@@ -284,6 +285,15 @@ If this callback is defined, the **ACTION** callback will not be called.
 
 The non changed items marked with 'x' are simulated internally by IUP in all systems.
 If you add or remove items to/from the list, and you count on the 'x' values, then after adding/removing items set the VALUE attribute to ensure proper 'x' values.
+
+**VALUE_CB**: Called to retrieve the text for each item when VIRTUALMODE=Yes.
+
+    char* function(Ihandle *ih, int pos);
+
+**ih**: identifier of the element that activated the event.\
+**pos**: item position starting at 1.
+
+**Returns**: the text to be used for the item.
 
 **IMAGE_CB**: Called to retrieve the image name for each item when SHOWIMAGE=Yes and VIRTUALMODE=Yes.
 
@@ -330,13 +340,7 @@ So the **User** height from RASTERSIZE or SIZE will always be ignored.
 
 In Windows, list items are limited to 255 pixels height.
 
-**Clicking and dragging an item**: if SHOWDRAGDROP=Yes starts a drag.
-When mouse is released, the DRAGDROP_CB callback is called.
-If the callback does not exist or if it returns IUP_CONTINUE then the item is moved to the new position.
-If Ctrl is pressed then the node is copied instead of moved.
-Drag is performed with the left mouse button.
-
-In GTK uses GtkComboBox/GtkTreeView, in GTK 4 uses GtkDropDown/GtkListView, in Windows uses COMBOBOX/LISTBOX, in WinUI uses XAML ComboBox/ListView, in macOS uses NSPopUpButton/NSComboBox/NSTableView, in Qt uses QComboBox/QListWidget, in FLTK uses Fl_Choice/Fl_Input_Choice/Fl_Hold_Browser/Fl_Multi_Browser, in EFL uses Elm_List, and in Motif uses xmComboBox/xmList.
+Clicking and dragging an item with the left mouse button starts an internal drag when SHOWDRAGDROP=YES; see the [DRAGDROP_CB](#callbacks) callback for the move/copy behavior.
 
 ### Utility Functions
 

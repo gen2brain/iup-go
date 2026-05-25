@@ -54,7 +54,7 @@ private:
 
 public:
   explicit IupQtListWidget(Ihandle* ih_param, QWidget* parent = nullptr)
-    : QListWidget(parent), ih(ih_param) {}
+    : QListWidget(parent), ih(ih_param) { setMouseTracking(true); }
 
   QSize sizeHint() const override
   {
@@ -104,6 +104,12 @@ protected:
   {
     QListWidget::mouseReleaseEvent(event);
     iupqtMouseButtonEvent(this, event, ih);
+  }
+
+  void mouseMoveEvent(QMouseEvent* event) override
+  {
+    QListWidget::mouseMoveEvent(event);
+    iupqtMouseMoveEvent(this, event, ih);
   }
 
   void keyPressEvent(QKeyEvent* event) override
@@ -472,7 +478,7 @@ private:
 
 public:
   explicit IupQtVirtualListView(Ihandle* ih_param, QWidget* parent = nullptr)
-    : QListView(parent), ih(ih_param) {}
+    : QListView(parent), ih(ih_param) { setMouseTracking(true); }
 
   QSize sizeHint() const override
   {
@@ -505,6 +511,12 @@ protected:
   {
     QListView::mouseReleaseEvent(event);
     iupqtMouseButtonEvent(this, event, ih);
+  }
+
+  void mouseMoveEvent(QMouseEvent* event) override
+  {
+    QListView::mouseMoveEvent(event);
+    iupqtMouseMoveEvent(this, event, ih);
   }
 
   void keyPressEvent(QKeyEvent* event) override
