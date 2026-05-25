@@ -677,13 +677,34 @@ IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 	return ctrl ? (int)[ctrl.items count] : 0;
 }
 
+/* SORT: ascending insert position. */
+static NSUInteger cocoaTouchListSortPos(NSArray* items, const char* value)
+{
+	NSUInteger n = [items count];
+	for (NSUInteger i = 0; i < n; i++)
+	{
+		const char* t = [(NSString*)items[i] UTF8String];
+		if (iupStrCompare(t ? t : "", value, 0, 1) > 0) return i;
+	}
+	return n;
+}
+
 IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
 	IupCocoaTouchListController* ctrl = cocoaTouchListGetController(ih);
 	if (!ctrl) return;
 	NSString* text = value ? [NSString stringWithUTF8String:value] : @"";
-	[ctrl.items addObject:text ?: @""];
-	[ctrl.itemImages addObject:[NSNull null]];
+	if (iupAttribGetBoolean(ih, "SORT"))
+	{
+		NSUInteger pos = cocoaTouchListSortPos(ctrl.items, value);
+		[ctrl.items insertObject:(text ?: @"") atIndex:pos];
+		[ctrl.itemImages insertObject:[NSNull null] atIndex:pos];
+	}
+	else
+	{
+		[ctrl.items addObject:text ?: @""];
+		[ctrl.itemImages addObject:[NSNull null]];
+	}
 	if (ih->data->is_dropdown) cocoaTouchListRebuildDropdownMenu(ih);
 	else                       cocoaTouchListReloadTable(ih);
 }
@@ -692,7 +713,7 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
 	IupCocoaTouchListController* ctrl = cocoaTouchListGetController(ih);
 	if (!ctrl) return;
-	NSUInteger insert_at = (NSUInteger)pos;
+	NSUInteger insert_at = iupAttribGetBoolean(ih, "SORT") ? cocoaTouchListSortPos(ctrl.items, value) : (NSUInteger)pos;
 	if (insert_at > [ctrl.items count]) insert_at = [ctrl.items count];
 	NSString* text = value ? [NSString stringWithUTF8String:value] : @"";
 	[ctrl.items insertObject:(text ?: @"") atIndex:insert_at];

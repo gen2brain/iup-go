@@ -702,26 +702,38 @@ extern "C" IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
   }
 }
 
+/* SORT: ascending insert position. */
+static int qtListSortPos(QComboBox* w, const char* value)
+{
+  int n = w->count();
+  for (int i = 0; i < n; i++)
+    if (iupStrCompare(w->itemText(i).toUtf8().constData(), value, 0, 1) > 0) return i;
+  return n;
+}
+
+static int qtListSortPos(QListWidget* w, const char* value)
+{
+  int n = w->count();
+  for (int i = 0; i < n; i++)
+    if (iupStrCompare(w->item(i)->text().toUtf8().constData(), value, 0, 1) > 0) return i;
+  return n;
+}
+
 extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
+  int sort = iupAttribGetBoolean(ih, "SORT");
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
 
   if (ih->data->is_dropdown)
   {
     QComboBox* combo = (QComboBox*)ih->handle;
-    combo->addItem(QString::fromUtf8(value));
-  }
-  else if (ih->data->has_editbox)
-  {
-    /* Composite widget: get list from stored attribute */
-    QListWidget* list = (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST");
-    if (list)
-      list->addItem(QString::fromUtf8(value));
+    combo->insertItem(sort ? qtListSortPos(combo, value) : combo->count(), QString::fromUtf8(value));
   }
   else
   {
-    QListWidget* list = (QListWidget*)ih->handle;
-    list->addItem(QString::fromUtf8(value));
+    QListWidget* list = ih->data->has_editbox ? (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST") : (QListWidget*)ih->handle;
+    if (list)
+      list->insertItem(sort ? qtListSortPos(list, value) : list->count(), QString::fromUtf8(value));
   }
 
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
@@ -729,24 +741,19 @@ extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 
 extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
+  int sort = iupAttribGetBoolean(ih, "SORT");
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
 
   if (ih->data->is_dropdown)
   {
     QComboBox* combo = (QComboBox*)ih->handle;
-    combo->insertItem(pos, QString::fromUtf8(value));
-  }
-  else if (ih->data->has_editbox)
-  {
-    /* Composite widget: get list from stored attribute */
-    QListWidget* list = (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST");
-    if (list)
-      list->insertItem(pos, QString::fromUtf8(value));
+    combo->insertItem(sort ? qtListSortPos(combo, value) : pos, QString::fromUtf8(value));
   }
   else
   {
-    QListWidget* list = (QListWidget*)ih->handle;
-    list->insertItem(pos, QString::fromUtf8(value));
+    QListWidget* list = ih->data->has_editbox ? (QListWidget*)iupAttribGet(ih, "_IUPQT_LIST") : (QListWidget*)ih->handle;
+    if (list)
+      list->insertItem(sort ? qtListSortPos(list, value) : pos, QString::fromUtf8(value));
   }
 
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);

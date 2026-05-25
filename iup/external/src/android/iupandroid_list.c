@@ -149,13 +149,44 @@ static void androidListCallStringAtPos(Ihandle* ih, const char* method, const ch
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
+static char* androidListGetIdValueAttrib(Ihandle* ih, int pos)
+{
+  if (!ih->handle || pos < 1) return NULL;
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupListHelper, jni_env, "io/github/gen2brain/iupgo/IupListHelper");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "getItem", "(Landroid/view/View;I)Ljava/lang/String;");
+  jstring j_text = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, ih->handle, (jint)(pos - 1));
+  iupAndroid_CheckException(jni_env, "IupListHelper.getItem");
+  char* result = iupAndroid_JStringToReturnStr(jni_env, j_text);
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  return result;
+}
+
+/* SORT: ascending 0-based insert position. */
+static int androidListSortPos(Ihandle* ih, const char* value)
+{
+  int n = iupdrvListGetCount(ih);
+  int i;
+  for (i = 0; i < n; i++)
+  {
+    char* t = androidListGetIdValueAttrib(ih, i + 1);  /* getter is 1-based */
+    if (iupStrCompare(t ? t : "", value, 0, 1) > 0) return i;
+  }
+  return n;
+}
+
 void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
-  androidListCallStringAtPos(ih, "appendItem", "(Landroid/view/View;Ljava/lang/String;)V", -1, value);
+  if (iupAttribGetBoolean(ih, "SORT"))
+    androidListCallStringAtPos(ih, "insertItem", "(Landroid/view/View;ILjava/lang/String;)V", androidListSortPos(ih, value), value);
+  else
+    androidListCallStringAtPos(ih, "appendItem", "(Landroid/view/View;Ljava/lang/String;)V", -1, value);
 }
 
 void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
+  if (iupAttribGetBoolean(ih, "SORT"))
+    pos = androidListSortPos(ih, value);
   androidListCallStringAtPos(ih, "insertItem", "(Landroid/view/View;ILjava/lang/String;)V", pos, value);
 }
 
@@ -260,19 +291,6 @@ static int androidListSetBgColorAttrib(Ihandle* ih, const char* value)
   iupAndroid_CheckException(jni_env, "IupListHelper.setBgColor");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
   return 1;
-}
-
-static char* androidListGetIdValueAttrib(Ihandle* ih, int pos)
-{
-  if (!ih->handle || pos < 1) return NULL;
-  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
-  jclass java_class = IUPJNI_FindClass(IupListHelper, jni_env, "io/github/gen2brain/iupgo/IupListHelper");
-  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "getItem", "(Landroid/view/View;I)Ljava/lang/String;");
-  jstring j_text = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, ih->handle, (jint)(pos - 1));
-  iupAndroid_CheckException(jni_env, "IupListHelper.getItem");
-  char* result = iupAndroid_JStringToReturnStr(jni_env, j_text);
-  (*jni_env)->DeleteLocalRef(jni_env, java_class);
-  return result;
 }
 
 static int androidListSetValueAttrib(Ihandle* ih, const char* value)

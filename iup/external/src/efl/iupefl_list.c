@@ -1753,8 +1753,11 @@ static int eflListMapMethod(Ihandle* ih)
       return IUP_ERROR;
     }
 
-    efl_ui_scrollbar_bar_mode_set(list, EFL_UI_SCROLLBAR_MODE_AUTO,
-      iupAttribGetBoolean(ih, "AUTOHIDE") ? EFL_UI_SCROLLBAR_MODE_AUTO : EFL_UI_SCROLLBAR_MODE_ON);
+    if (ih->data->sb)
+      efl_ui_scrollbar_bar_mode_set(list, EFL_UI_SCROLLBAR_MODE_AUTO,
+        iupAttribGetBoolean(ih, "AUTOHIDE") ? EFL_UI_SCROLLBAR_MODE_AUTO : EFL_UI_SCROLLBAR_MODE_ON);
+    else
+      efl_ui_scrollbar_bar_mode_set(list, EFL_UI_SCROLLBAR_MODE_OFF, EFL_UI_SCROLLBAR_MODE_OFF);
 
     efl_gfx_hint_weight_set(list, 1.0, 1.0);
     efl_gfx_hint_align_set(list, -1.0, -1.0);
@@ -1894,8 +1897,11 @@ static int eflListMapMethod(Ihandle* ih)
     if (!list)
       return IUP_ERROR;
 
-    efl_ui_scrollbar_bar_mode_set(list, EFL_UI_SCROLLBAR_MODE_AUTO,
-      iupAttribGetBoolean(ih, "AUTOHIDE") ? EFL_UI_SCROLLBAR_MODE_AUTO : EFL_UI_SCROLLBAR_MODE_ON);
+    if (ih->data->sb)
+      efl_ui_scrollbar_bar_mode_set(list, EFL_UI_SCROLLBAR_MODE_AUTO,
+        iupAttribGetBoolean(ih, "AUTOHIDE") ? EFL_UI_SCROLLBAR_MODE_AUTO : EFL_UI_SCROLLBAR_MODE_ON);
+    else
+      efl_ui_scrollbar_bar_mode_set(list, EFL_UI_SCROLLBAR_MODE_OFF, EFL_UI_SCROLLBAR_MODE_OFF);
 
     if (ih->data->is_multiple)
       efl_ui_multi_selectable_select_mode_set(list, EFL_UI_SELECT_MODE_MULTI);
@@ -2105,6 +2111,29 @@ IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
   return efl_content_count(list);
 }
 
+/* SORT: ascending insert position. */
+static int eflListSortPos(Eo* list, const char* value)
+{
+  int n = efl_content_count(list);
+  int i;
+  for (i = 0; i < n; i++)
+  {
+    Eo* it = efl_pack_content_get(list, i);
+    const char* t = it ? efl_text_get(it) : "";
+    if (iupStrCompare(t ? t : "", value, 0, 1) > 0) return i;
+  }
+  return n;
+}
+
+static void eflListPackAt(Eo* list, Eo* item, int pos)
+{
+  Eo* before = efl_pack_content_get(list, pos);
+  if (before)
+    efl_pack_before(list, item, before);
+  else
+    efl_pack_end(list, item);
+}
+
 IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   Eo* list;
@@ -2124,7 +2153,10 @@ IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
   {
     if (value)
       efl_text_set(item, value);
-    efl_pack_end(list, item);
+    if (iupAttribGetBoolean(ih, "SORT"))
+      eflListPackAt(list, item, eflListSortPos(list, value));
+    else
+      efl_pack_end(list, item);
   }
 }
 
@@ -2149,11 +2181,16 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
     if (value)
       efl_text_set(item, value);
 
-    before = efl_pack_content_get(list, pos);
-    if (before)
-      efl_pack_before(list, item, before);
+    if (iupAttribGetBoolean(ih, "SORT"))
+      eflListPackAt(list, item, eflListSortPos(list, value));
     else
-      efl_pack_end(list, item);
+    {
+      before = efl_pack_content_get(list, pos);
+      if (before)
+        efl_pack_before(list, item, before);
+      else
+        efl_pack_end(list, item);
+    }
   }
 }
 
