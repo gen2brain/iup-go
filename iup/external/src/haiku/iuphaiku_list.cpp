@@ -330,8 +330,17 @@ public:
     BListView::MouseDown(where);
     if (!fIhandle) return;
     BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL;
-    int32 clicks = 1;
-    if (msg) msg->FindInt32("clicks", &clicks);
+    int32 clicks = 1, buttons = 0, mods = 0;
+    if (msg) { msg->FindInt32("clicks", &clicks); msg->FindInt32("buttons", &buttons); msg->FindInt32("modifiers", &mods); }
+
+    int btn = IUP_BUTTON1;
+    if      (buttons & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
+    else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, clicks == 2 ? 1 : 0);
+    IFniiiis bcb = (IFniiiis)IupGetCallback(fIhandle, "BUTTON_CB");
+    if (bcb) bcb(fIhandle, btn, 1, (int)where.x, (int)where.y, status);
+
     if (clicks >= 2)
     {
       int idx = CurrentSelection();
@@ -341,6 +350,18 @@ public:
         if (cb) iupListSingleCallDblClickCb(fIhandle, cb, idx + 1);
       }
     }
+  }
+
+  void MouseUp(BPoint where) override
+  {
+    BListView::MouseUp(where);
+    if (!fIhandle) return;
+    int32 mods = 0;
+    if (BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL) msg->FindInt32("modifiers", &mods);
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    iuphaikuButtonKeySetStatus((unsigned)mods, 0, 0, status, 0);
+    IFniiiis bcb = (IFniiiis)IupGetCallback(fIhandle, "BUTTON_CB");
+    if (bcb) bcb(fIhandle, IUP_BUTTON1, 0, (int)where.x, (int)where.y, status);
   }
 
   bool InitiateDrag(BPoint where, int32 index, bool /*wasSelected*/) override
@@ -364,7 +385,17 @@ public:
   void MouseMoved(BPoint where, uint32 transit, const BMessage* drag) override
   {
     BListView::MouseMoved(where, transit, drag);
-    if (!fIhandle || !drag || !fIhandle->data->show_dragdrop) return;
+    if (!fIhandle) return;
+    if (transit == B_INSIDE_VIEW || transit == B_ENTERED_VIEW)
+    {
+      int32 buttons = 0, mods = 0;
+      if (BMessage* cur = Looper() ? Looper()->CurrentMessage() : NULL) { cur->FindInt32("buttons", &buttons); cur->FindInt32("modifiers", &mods); }
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, 0);
+      IFniis mcb = (IFniis)IupGetCallback(fIhandle, "MOTION_CB");
+      if (mcb) mcb(fIhandle, (int)where.x, (int)where.y, status);
+    }
+    if (!drag || !fIhandle->data->show_dragdrop) return;
     if (drag->what != IUPHAIKU_LIST_REORDER_MSG) return;
     int32 team = 0;
     drag->FindInt32("_iup_team", &team);
@@ -512,24 +543,84 @@ private:
 };
 
 
+class IupHaikuListEditKeyFilter : public BMessageFilter
+{
+public:
+  explicit IupHaikuListEditKeyFilter(Ihandle* ih)
+    : BMessageFilter(B_ANY_DELIVERY, B_ANY_SOURCE, B_KEY_DOWN), fIhandle(ih) {}
+
+  filter_result Filter(BMessage* msg, BHandler** target) override
+  {
+    if (!fIhandle || !fIhandle->handle) return B_DISPATCH_MESSAGE;
+    IFnis cb = (IFnis)IupGetCallback(fIhandle, "EDIT_CB");
+    if (!cb && !fIhandle->data->mask && fIhandle->data->nc <= 0) return B_DISPATCH_MESSAGE;
+
+    const char* bytes = NULL;
+    ssize_t byte_count = 0;
+    if (msg->FindData("bytes", B_STRING_TYPE, (const void**)&bytes, &byte_count) != B_OK || !bytes)
+      return B_DISPATCH_MESSAGE;
+    int char_len = (byte_count > 0 && bytes[byte_count - 1] == 0) ? (int)byte_count - 1 : (int)byte_count;
+    if (char_len == 1 && (unsigned char)bytes[0] < B_SPACE) return B_DISPATCH_MESSAGE;
+
+    BTextView* tv = (target && *target) ? dynamic_cast<BTextView*>(*target) : NULL;
+    if (!tv) return B_DISPATCH_MESSAGE;
+    int32 sel_s = 0, sel_e = 0;
+    tv->GetSelection(&sel_s, &sel_e);
+
+    char tmp[8] = {0};
+    int copy = char_len < 7 ? char_len : 7;
+    memcpy(tmp, bytes, copy);
+
+    int ret = iupEditCallActionCb(fIhandle, cb, tmp, sel_s, sel_e, fIhandle->data->mask, fIhandle->data->nc, 0, 1);
+    if (ret == 0) return B_SKIP_MESSAGE;
+    if (ret != -1 && char_len == 1)
+    {
+      char rep[2] = { (char)ret, 0 };
+      msg->ReplaceData("bytes", B_STRING_TYPE, rep, 2);
+      int8 raw = (int8)rep[0];
+      if (msg->HasInt8("byte")) msg->ReplaceInt8("byte", raw); else msg->AddInt8("byte", raw);
+    }
+    return B_DISPATCH_MESSAGE;
+  }
+
+private:
+  Ihandle* fIhandle;
+};
+
 class IupHaikuListEditCtrl : public BTextControl
 {
 public:
   explicit IupHaikuListEditCtrl(Ihandle* ih)
     : BTextControl(BRect(0, 0, 0, 0), "iup_list_edit", NULL, "", NULL, B_FOLLOW_NONE),
-      fIhandle(ih) { BTextControl::SetDivider(0); }
+      fIhandle(ih), fKeyFilter(NULL) { BTextControl::SetDivider(0); }
+
+  ~IupHaikuListEditCtrl() override
+  {
+    if (fKeyFilter && TextView()) TextView()->RemoveFilter(fKeyFilter);
+    delete fKeyFilter;
+  }
 
   void AttachedToWindow() override
   {
     BTextControl::AttachedToWindow();
     SetTarget(this);
     SetModificationMessage(new BMessage(IUPHAIKU_LIST_TEXT_MSG));
+    if (fIhandle && !fKeyFilter && TextView())
+    {
+      fKeyFilter = new IupHaikuListEditKeyFilter(fIhandle);
+      TextView()->AddFilter(fKeyFilter);
+    }
   }
 
   void MessageReceived(BMessage* msg) override
   {
     if (msg && msg->what == IUPHAIKU_LIST_TEXT_MSG && fIhandle)
     {
+      if (BTextView* tv = TextView())
+      {
+        IFniii ccb = (IFniii)IupGetCallback(fIhandle, "CARET_CB");
+        if (ccb) { int32 s = 0, e = 0; tv->GetSelection(&s, &e); ccb(fIhandle, 1, (int)s + 1, (int)s); }
+      }
       Icallback vc = IupGetCallback(fIhandle, "VALUECHANGED_CB");
       if (vc) { int r = vc(fIhandle); if (r == IUP_CLOSE) IupExitLoop(); }
       return;
@@ -541,6 +632,7 @@ public:
 
 private:
   Ihandle* fIhandle;
+  BMessageFilter* fKeyFilter;
 };
 
 
@@ -600,7 +692,10 @@ public:
     {
       if (!iupdrvIsActive(fIhandle)) return;
       BPoint where = fEdit->ConvertToScreen(BPoint(0, fEdit->Bounds().Height()));
-      BMenuItem* picked = fPopUp->Go(where, true, false, false);
+      IFni dd = (IFni)IupGetCallback(fIhandle, "DROPDOWN_CB");
+      if (dd) dd(fIhandle, 1);
+      BMenuItem* picked = fPopUp->Go(where, false, false, false);
+      if (dd) dd(fIhandle, 0);
       if (picked && fIhandle)
       {
         int pos = fPopUp->IndexOf(picked);

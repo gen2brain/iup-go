@@ -1132,6 +1132,21 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
   if (!list)
     return 0;
 
+  if (!is_dropdown && ih->data->is_multiple)
+  {
+    int count = efl_content_count(list);
+    int len = (int)strlen(value);
+    int i;
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
+    for (i = 0; i < count; i++)
+    {
+      Eo* item = efl_pack_content_get(list, i);
+      if (item)
+        efl_ui_selectable_selected_set(item, (i < len && value[i] == '+') ? EINA_TRUE : EINA_FALSE);
+    }
+    return 0;
+  }
+
   pos = 0; iupStrToInt(value, &pos);
   if (pos > 0)
   {
