@@ -148,6 +148,8 @@ public:
 
     /* Reserve uniform icon column (maximg_w from core) so all rows align. */
     int col_w = (fIhandle && fIhandle->data->show_image) ? fIhandle->data->maximg_w : 0;
+    int sp = (fIhandle && fIhandle->data->spacing > 0) ? fIhandle->data->spacing : 0;
+    frame.left += sp;
 
     if (fIcon)
     {
@@ -182,6 +184,11 @@ public:
     BStringItem::Update(owner, font);
     int col_w = (fIhandle && fIhandle->data->show_image) ? fIhandle->data->maximg_w : 0;
     if (col_w > 0) SetWidth(Width() + col_w + 6);
+    if (fIhandle && fIhandle->data->spacing > 0)
+    {
+      SetHeight(Height() + 2 * fIhandle->data->spacing);
+      SetWidth(Width() + 2 * fIhandle->data->spacing);
+    }
   }
 
 private:
@@ -1297,6 +1304,21 @@ static void haikuListUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
+static int haikuListSetSpacingAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupStrToInt(value, &ih->data->spacing)) ih->data->spacing = 0;
+  if (!ih->data->is_dropdown)
+  {
+    if (IupHaikuListView* lv = haikuListGetListView(ih))
+    {
+      LooperLockGuard guard(lv->Looper());
+      lv->InvalidateLayout(true);
+      lv->Invalidate();
+    }
+  }
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = haikuListMapMethod;
@@ -1310,7 +1332,8 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", haikuListGetValueAttrib, haikuListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, haikuListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, haikuListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   /* BPopUpMenu auto-sizes to its widest item; not controllable */
   iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

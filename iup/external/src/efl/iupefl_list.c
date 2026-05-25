@@ -2134,6 +2134,39 @@ static void eflListPackAt(Eo* list, Eo* item, int pos)
     efl_pack_end(list, item);
 }
 
+/* SPACING: pad each item to charheight + 2*spacing (DROPDOWN=NO only). */
+static void eflListApplyItemSpacing(Ihandle* ih, Eo* item)
+{
+  if (ih->data->spacing > 0)
+  {
+    int charheight = 0;
+    iupdrvFontGetCharSize(ih, NULL, &charheight);
+    efl_gfx_hint_size_min_set(item, EINA_SIZE2D(0, charheight + 2 * ih->data->spacing));
+  }
+}
+
+static int eflListSetSpacingAttrib(Ihandle* ih, const char* value)
+{
+  if (!iupStrToInt(value, &ih->data->spacing))
+    ih->data->spacing = 0;
+
+  if (ih->handle && !ih->data->is_dropdown)
+  {
+    Eo* list = iupeflGetWidget(ih);
+    if (list)
+    {
+      int n = efl_content_count(list);
+      int i;
+      for (i = 0; i < n; i++)
+      {
+        Eo* it = efl_pack_content_get(list, i);
+        if (it) eflListApplyItemSpacing(ih, it);
+      }
+    }
+  }
+  return 1;
+}
+
 IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   Eo* list;
@@ -2153,6 +2186,8 @@ IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
   {
     if (value)
       efl_text_set(item, value);
+    if (!is_dropdown)
+      eflListApplyItemSpacing(ih, item);
     if (iupAttribGetBoolean(ih, "SORT"))
       eflListPackAt(list, item, eflListSortPos(list, value));
     else
@@ -2180,6 +2215,8 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   {
     if (value)
       efl_text_set(item, value);
+    if (!is_dropdown)
+      eflListApplyItemSpacing(ih, item);
 
     if (iupAttribGetBoolean(ih, "SORT"))
       eflListPackAt(list, item, eflListSortPos(list, value));
@@ -2499,6 +2536,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   /* Dropdown */
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", eflListGetShowDropdownAttrib, eflListSetShowDropdownAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, eflListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   /* Editbox Attributes */
   iupClassRegisterAttribute(ic, "READONLY", eflListGetReadOnlyAttrib, eflListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);

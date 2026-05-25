@@ -3762,8 +3762,6 @@ static int cocoaListMapMethod(Ihandle* ih)
         [list_delegate release];
 
         int voptions = iupAttribGetInt(ih, "VISIBLEITEMS");
-        if (voptions == 0)
-          voptions = iupAttribGetInt(ih, "VISIBLE_ITEMS");
         if (voptions <= 0)
           voptions = 5;
         [combo_box setNumberOfVisibleItems:voptions];
@@ -4143,5 +4141,4 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", cocoaListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VISIBLE_ITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
 }
