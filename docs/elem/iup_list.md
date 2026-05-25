@@ -111,6 +111,7 @@ Default: "NO". Works only if DROPDOWN=NO and MULTIPLE=NO.
 
 **SHOWDROPDOWN** (write-only): opens or closes the dropdown list. Can be "YES" or "NO".
 Valid only when DROPDOWN=YES. Ignored if set before map.
+Not supported in Haiku.
 
 **SHOWIMAGE** (creation-only): enables the use of an image for each item.
 Can be "YES" or "NO". Ignored if set after map.

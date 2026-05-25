@@ -457,6 +457,15 @@ public final class IupListHelper
             m.setDropDownHeight(count * getPreferredRowHeightPx());
     }
 
+    public static void setShowDropdown(View widget, boolean show)
+    {
+        if (widget instanceof TextInputLayout til && til.getTag() instanceof MaterialAutoCompleteTextView m)
+        {
+            if (show) m.showDropDown();
+            else m.dismissDropDown();
+        }
+    }
+
 
     @SuppressWarnings("unchecked")
     private static ArrayAdapter<String> adapterOf(View widget)

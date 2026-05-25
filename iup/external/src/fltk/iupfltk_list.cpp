@@ -1502,7 +1502,7 @@ static int fltkListSetPaddingAttrib(Ihandle* ih, const char* value)
 static int fltkListSetImageAttrib(Ihandle* ih, int id, const char* value)
 {
   int pos = iupListGetPosAttrib(ih, id);
-  if (pos < 0)
+  if (!ih->data->show_image || pos < 0)
     return 0;
 
   if (ih->data->is_dropdown)
