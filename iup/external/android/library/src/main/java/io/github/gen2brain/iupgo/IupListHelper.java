@@ -97,6 +97,14 @@ public final class IupListHelper
                     }
                     break;
             }
+
+            Object state = ev.getLocalState();
+            if (lv.showDragDrop && state instanceof Integer)
+            {
+                if (action == android.view.DragEvent.ACTION_DROP && lv.ihandlePtr != 0L)
+                    dispatchListDragDrop(lv.ihandlePtr, (Integer) state, lv.pointToPosition((int)ev.getX(), (int)ev.getY()));
+                return true;
+            }
             return IupDragDropHelper.handleDragEvent(v, ev);
         });
     }
@@ -104,8 +112,23 @@ public final class IupListHelper
     public static final class IupListView extends android.widget.ListView
     {
         public int dropIndicatorIdx = -1;
+        public long ihandlePtr;
+        public boolean showDragDrop;
+        private final android.view.GestureDetector doubleTapDetector;
 
-        public IupListView(android.content.Context ctx) { super(ctx); }
+        public IupListView(android.content.Context ctx)
+        {
+            super(ctx);
+            doubleTapDetector = new android.view.GestureDetector(ctx,
+                new android.view.GestureDetector.SimpleOnGestureListener() {
+                    @Override public boolean onDoubleTap(android.view.MotionEvent e) {
+                        int pos = pointToPosition((int)e.getX(), (int)e.getY());
+                        if (ihandlePtr != 0L && pos != INVALID_POSITION)
+                            dispatchListDoubleClick(ihandlePtr, pos + 1);
+                        return false;
+                    }
+                });
+        }
 
         @Override
         @android.annotation.SuppressLint("ClickableViewAccessibility")
@@ -113,6 +136,17 @@ public final class IupListHelper
         {
             if (ev.getActionMasked() == android.view.MotionEvent.ACTION_DOWN && getParent() != null)
                 getParent().requestDisallowInterceptTouchEvent(true);
+            if (ihandlePtr != 0L)
+            {
+                int meta = ev.getMetaState(), x = (int)ev.getX(), y = (int)ev.getY();
+                switch (ev.getActionMasked())
+                {
+                    case android.view.MotionEvent.ACTION_DOWN: dispatchListTouch(ihandlePtr, 1, 1, x, y, meta); break;
+                    case android.view.MotionEvent.ACTION_UP:   dispatchListTouch(ihandlePtr, 1, 0, x, y, meta); break;
+                    case android.view.MotionEvent.ACTION_MOVE: dispatchListTouch(ihandlePtr, 0, 0, x, y, meta); break;
+                }
+                doubleTapDetector.onTouchEvent(ev);
+            }
             return super.onTouchEvent(ev);
         }
         @Override public boolean performClick() { return super.performClick(); }
@@ -195,6 +229,19 @@ public final class IupListHelper
             return s != null ? s : "";
         }
 
+        @Override
+        public android.widget.Filter getFilter()
+        {
+            return new android.widget.Filter() {
+                @Override protected FilterResults performFiltering(CharSequence c) {
+                    FilterResults r = new FilterResults();
+                    r.count = 1;
+                    return r;
+                }
+                @Override protected void publishResults(CharSequence c, FilterResults r) { }
+            };
+        }
+
         private void decorate(TextView tv, int pos, boolean applyTextColor)
         {
             if (applyTextColor)
@@ -253,7 +300,7 @@ public final class IupListHelper
 
 
     @Keep
-    public static View createListView(final long ihandlePtr, final boolean multiple, final boolean editbox, final boolean scrollbar)
+    public static View createListView(final long ihandlePtr, final boolean multiple, final boolean editbox, final boolean scrollbar, final boolean showDragDrop)
     {
         ContextThemeWrapper ctx = IupCommon.getContextThemeWrapper();
         /* Activated layout: plain text rows, background highlight for selection. */
@@ -261,6 +308,8 @@ public final class IupListHelper
 
         ThemedAdapter adapter = new ThemedAdapter(ctx, rowLayout, IupCommon.paletteTxtFg);
         final IupListView lv = new IupListView(ctx);
+        lv.ihandlePtr = ihandlePtr;
+        lv.showDragDrop = showDragDrop;
         installListDropTracker(lv);
         lv.setAdapter(adapter);
         lv.setChoiceMode(multiple ? ListView.CHOICE_MODE_MULTIPLE : ListView.CHOICE_MODE_SINGLE);
@@ -271,12 +320,20 @@ public final class IupListHelper
         lv.setBackgroundColor(IupCommon.paletteTxtBg);
         sThemableLists.put(lv, Boolean.TRUE);
 
+        if (showDragDrop)
+        {
+            lv.setOnItemLongClickListener((parent, view, position, id) -> {
+                android.content.ClipData data = android.content.ClipData.newPlainText("iuplistitem", String.valueOf(position));
+                view.startDragAndDrop(data, new View.DragShadowBuilder(view), Integer.valueOf(position), 0);
+                return true;
+            });
+        }
+
         if (!editbox)
         {
             lv.setOnItemClickListener((parent, view, position, id) -> {
                 String text = String.valueOf(parent.getItemAtPosition(position));
-                int state = multiple ? (lv.isItemChecked(position) ? 1 : 0) : 1;
-                dispatchAction(ihandlePtr, text, position + 1, state);
+                fireListSelection(lv, ihandlePtr, text, position, multiple);
             });
             return lv;
         }
@@ -298,12 +355,27 @@ public final class IupListHelper
             String text = String.valueOf(parent.getItemAtPosition(position));
             /* auto-fill is a selection, not editing; suppress VALUECHANGED_CB */
             IupTextHelper.setText(0L, edit, text);
-            int state = multiple ? (lv.isItemChecked(position) ? 1 : 0) : 1;
-            dispatchAction(ihandlePtr, text, position + 1, state);
+            fireListSelection(lv, ihandlePtr, text, position, multiple);
         });
 
         box.setTag(lv);
         return box;
+    }
+
+    private static void fireListSelection(ListView lv, long ihandlePtr, String text, int position, boolean multiple)
+    {
+        if (!multiple)
+        {
+            dispatchAction(ihandlePtr, text, position + 1, 1);
+            return;
+        }
+        android.util.SparseBooleanArray checked = lv.getCheckedItemPositions();
+        int n = 0;
+        for (int i = 0; i < checked.size(); i++) if (checked.valueAt(i)) n++;
+        int[] pos = new int[n];
+        int k = 0;
+        for (int i = 0; i < checked.size(); i++) if (checked.valueAt(i)) pos[k++] = checked.keyAt(i);
+        dispatchListMultiSelect(ihandlePtr, pos);
     }
 
     @Keep
@@ -712,6 +784,10 @@ public final class IupListHelper
 
 
     public static native void dispatchAction(long ihandlePtr, String text, int item, int state);
+    public static native void dispatchListDoubleClick(long ihandlePtr, int item);
+    public static native void dispatchListTouch(long ihandlePtr, int isButton, int pressed, int x, int y, int metaState);
+    public static native void dispatchListMultiSelect(long ihandlePtr, int[] positions);
+    public static native void dispatchListDragDrop(long ihandlePtr, int dragId, int dropId);
 
     /* VIRTUALMODE: adapter calls this for each visible row to fetch text via VALUE_CB. */
     public static native String dispatchListValueCb(long ihandlePtr, int pos);
