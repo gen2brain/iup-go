@@ -76,6 +76,9 @@ IUP_SDK_API void  iupAndroid_BeforeEntry(void);
 
 /* C side guards against the spurious no-change notification Spinner emits after setSelection */
 IUP_SDK_API void  iupAndroidListDispatchSelection(Ihandle* ih, int item);
+IUP_SDK_API void  iupAndroidListDispatchDoubleClick(Ihandle* ih, int item);
+IUP_SDK_API void  iupAndroidListDispatchMultiSelection(Ihandle* ih, int* pos, int count);
+IUP_SDK_API void  iupAndroidListDispatchDragDrop(Ihandle* ih, int drag_id, int drop_id);
 
 /* invoked by IupIdleHelper.queueIdle; returns 1 to keep, 0 to remove (CLOSE also calls IupExitLoop) */
 IUP_SDK_API int   iupAndroid_DispatchIdle(void);

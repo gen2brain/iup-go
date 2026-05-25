@@ -5,6 +5,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <jni.h>
 #include <android/log.h>
@@ -395,6 +396,46 @@ void iupAndroidListDispatchSelection(Ihandle* ih, int item)
   if (changed_cb && changed_cb(ih) == IUP_CLOSE) IupExitLoop();
 }
 
+void iupAndroidListDispatchDoubleClick(Ihandle* ih, int item)
+{
+  IFnis cb = (IFnis)IupGetCallback(ih, "DBLCLICK_CB");
+  if (cb) iupListSingleCallDblClickCb(ih, cb, item);
+}
+
+void iupAndroidListDispatchMultiSelection(Ihandle* ih, int* pos, int count)
+{
+  IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
+  IFns mcb = (IFns)IupGetCallback(ih, "MULTISELECT_CB");
+  iupListMultipleCallActionCb(ih, cb, mcb, pos, count);
+  IFn changed_cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  if (changed_cb && changed_cb(ih) == IUP_CLOSE) IupExitLoop();
+}
+
+void iupAndroidListDispatchDragDrop(Ihandle* ih, int drag_id, int drop_id)
+{
+  int is_ctrl = 0;
+  if (iupListCallDragDropCb(ih, drag_id, drop_id, &is_ctrl) != IUP_CONTINUE) return;
+
+  int count = iupdrvListGetCount(ih);
+  char* text = iupStrDup(IupGetAttributeId(ih, "", drag_id + 1));
+  void* img = iupdrvListGetImageHandle(ih, drag_id + 1);
+
+  int insert_at = (drop_id < 0 || drop_id >= count) ? count : drop_id;
+  iupdrvListInsertItem(ih, insert_at, text ? text : "");
+  if (img) iupdrvListSetImageHandle(ih, insert_at, img);
+
+  int adj_src = drag_id > insert_at ? drag_id + 1 : drag_id;
+  int new_pos = insert_at;
+  if (!is_ctrl)
+  {
+    iupdrvListRemoveItem(ih, adj_src);
+    if (adj_src < insert_at) new_pos = insert_at - 1;
+  }
+  iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", new_pos + 1);
+  IupSetInt(ih, "VALUE", new_pos + 1);
+  if (text) free(text);
+}
+
 static char* androidListGetValueAttrib(Ihandle* ih)
 {
   if (!ih->handle) return NULL;
@@ -564,11 +605,12 @@ static int androidListMapMethod(Ihandle* ih)
   }
   else
   {
-    jmethodID method_id = IUPJNI_GetStaticMethodID(IupListHelper_createListView, jni_env, java_class, "createListView", "(JZZZ)Landroid/view/View;");
+    jmethodID method_id = IUPJNI_GetStaticMethodID(IupListHelper_createListView, jni_env, java_class, "createListView", "(JZZZZ)Landroid/view/View;");
     widget = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih,
       (jboolean)(ih->data->is_multiple ? JNI_TRUE : JNI_FALSE),
       (jboolean)(ih->data->has_editbox ? JNI_TRUE : JNI_FALSE),
-      (jboolean)(ih->data->sb ? JNI_TRUE : JNI_FALSE));
+      (jboolean)(ih->data->sb ? JNI_TRUE : JNI_FALSE),
+      (jboolean)(ih->data->show_dragdrop ? JNI_TRUE : JNI_FALSE));
   }
   iupAndroid_CheckException(jni_env, "IupListHelper.createX");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
@@ -616,7 +658,6 @@ void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SELECTION", androidListGetSelectionAttrib, androidListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTIONPOS", androidListGetSelectionPosAttrib, androidListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SHOWDRAGDROP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, androidListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, androidListSetVisibleItemsAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, androidListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
