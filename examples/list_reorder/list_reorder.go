@@ -31,12 +31,12 @@ func main() {
 		"8":            "Hotel",
 		"SHOWDRAGDROP": "YES",
 		"EXPAND":       "YES",
-		"VISIBLE_ITEMS": "8",
+		"VISIBLEITEMS": "8",
 	})
 	iup.SetHandle("list", list)
 
 	status := iup.Label("Last action: (none yet)").SetAttribute("EXPAND", "HORIZONTAL")
-	order := iup.Label("Order: " + currentOrder(list)).SetAttribute("EXPAND", "HORIZONTAL")
+	order := iup.Label("Order: "+currentOrder(list)).SetAttribute("EXPAND", "HORIZONTAL")
 	iup.SetHandle("status", status)
 	iup.SetHandle("order", order)
 
