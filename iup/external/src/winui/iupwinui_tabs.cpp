@@ -34,6 +34,7 @@ using namespace Windows::Foundation;
 #define IUPWINUI_TABITEMNATIVE "_IUPWINUI_TABITEMNATIVE"
 #define IUPWINUI_TABIMAGE_NATIVE "_IUPWINUI_TABIMAGE_NATIVE"
 #define IUPWINUI_TABLABEL_NATIVE "_IUPWINUI_TABLABEL_NATIVE"
+#define IUPWINUI_TABRIGHTTOKEN "_IUPWINUI_TABRIGHTTOKEN"
 
 static void winuiTabsReleaseChildAttrib(Ihandle* child, const char* attr_name)
 {
@@ -167,6 +168,30 @@ static TabViewItem winuiTabsGetTabViewItem(Ihandle* child)
   return obj.try_as<TabViewItem>();
 }
 
+static int winuiTabsGetItemPos(TabView const& tabView, TabViewItem const& item)
+{
+  uint32_t count = tabView.TabItems().Size();
+  for (uint32_t i = 0; i < count; i++)
+  {
+    if (tabView.TabItems().GetAt(i).try_as<TabViewItem>() == item)
+      return (int)i;
+  }
+  return -1;
+}
+
+static void winuiTabsRevokeRightTapped(Ihandle* child)
+{
+  const char* tok = iupAttribGet(child, IUPWINUI_TABRIGHTTOKEN);
+  if (!tok)
+    return;
+
+  TabViewItem item = winuiTabsGetTabViewItem(child);
+  if (item)
+    item.RightTapped(event_token{ (int64_t)std::strtoll(tok, nullptr, 10) });
+
+  iupAttribSet(child, IUPWINUI_TABRIGHTTOKEN, nullptr);
+}
+
 static int winuiTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
 {
   Ihandle* child = IupGetChild(ih, pos);
@@ -270,6 +295,22 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   tabView.TabItems().Append(item);
 
+  event_token rightToken = item.RightTapped([ih](IInspectable const& sender, Input::RightTappedRoutedEventArgs const&) {
+    auto tappedItem = sender.try_as<TabViewItem>();
+    if (!tappedItem)
+      return;
+    TabView tv = winuiTabsGetTabView(ih);
+    if (!tv)
+      return;
+    int tappedPos = winuiTabsGetItemPos(tv, tappedItem);
+    if (tappedPos < 0)
+      return;
+    IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
+    if (cb)
+      cb(ih, tappedPos);
+  });
+  iupAttribSetStrf(child, IUPWINUI_TABRIGHTTOKEN, "%lld", (long long)rightToken.value);
+
   {
     int pos = IupGetChildPos(ih, child);
     const char* tabtip = iupAttribGetId(ih, "TABTIP", pos);
@@ -305,18 +346,7 @@ static void winuiTabsCloseRequested(Ihandle* ih, TabView const& sender, TabViewT
   if (!tabView)
     return;
 
-  int pos = -1;
-  uint32_t count = tabView.TabItems().Size();
-  for (uint32_t i = 0; i < count; i++)
-  {
-    auto tabItem = tabView.TabItems().GetAt(i).try_as<TabViewItem>();
-    if (tabItem == item)
-    {
-      pos = (int)i;
-      break;
-    }
-  }
-
+  int pos = winuiTabsGetItemPos(tabView, item);
   if (pos < 0)
     return;
 
@@ -430,6 +460,7 @@ static void winuiTabsUnMapMethod(Ihandle* ih)
   Ihandle* child;
   for (child = ih->firstchild; child; child = child->brother)
   {
+    winuiTabsRevokeRightTapped(child);
     winuiTabsReleaseChildAttrib(child, "_IUPTAB_CONTAINER");
     winuiTabsReleaseChildAttrib(child, IUPWINUI_TABITEMNATIVE);
     winuiTabsReleaseChildAttrib(child, IUPWINUI_TABIMAGE_NATIVE);
@@ -472,6 +503,8 @@ static void winuiTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
   IupWinUITabsAux* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
   if (aux) aux->ignoreChange = 1;
+
+  winuiTabsRevokeRightTapped(child);
 
   if (pos >= 0 && (uint32_t)pos < tabView.TabItems().Size())
     tabView.TabItems().RemoveAt(pos);

@@ -98,6 +98,20 @@ public:
         break;
     }
 
+    if (event == FL_PUSH && Fl::event_button() == FL_RIGHT_MOUSE)
+    {
+      IFni cb = (IFni)IupGetCallback(iup_handle, "RIGHTCLICK_CB");
+      if (cb)
+      {
+        int idx = findTabIndex(Fl::event_x(), Fl::event_y());
+        if (idx >= 0)
+        {
+          cb(iup_handle, idx);
+          return 1;
+        }
+      }
+    }
+
     if (event == FL_PUSH && iup_handle->data->show_close)
     {
       /* Let close button handling happen first */
