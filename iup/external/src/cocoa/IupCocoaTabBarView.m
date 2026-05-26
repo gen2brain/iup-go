@@ -11,6 +11,35 @@
 #include "iup.h"
 #include "iupcocoa_drv.h"
 
+@interface IupCocoaTabAccessibilityElement : NSAccessibilityElement
+@property(nonatomic, assign) IupCocoaTabCell* cell;
+@end
+
+@implementation IupCocoaTabAccessibilityElement
+@synthesize cell;
+
+- (NSString*)accessibilityLabel
+{
+  return [cell title];
+}
+
+- (id)accessibilityValue
+{
+  return @([cell isActived] ? 1 : 0);
+}
+
+- (NSRect)accessibilityFrameInParentSpace
+{
+  return [cell frame];
+}
+
+- (BOOL)accessibilityPerformPress
+{
+  [cell setAsActiveTab];
+  return YES;
+}
+@end
+
 static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 {
   NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
@@ -351,7 +380,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     smallControlColor = [[NSColor secondaryLabelColor] retain];
 
     /* Font */
-    tabFont = [[NSFont fontWithName:@"Lucida Grande" size:11] retain];
+    tabFont = [[NSFont systemFontOfSize:[NSFont systemFontSize]] retain];
 
     destinationIndex = -1;
     sourceIndex = -1;
@@ -366,6 +395,9 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     allowsAddingTabsByDoubleClick = NO; /* Disabled by default */
     enabled = YES;
     usesMaterialBackground = YES;
+
+    accessibilityElements = [[NSMutableArray alloc] init];
+    [self setAccessibilityRole:NSAccessibilityTabGroupRole];
   }
   return self;
 }
@@ -401,6 +433,9 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [draggingImage release];
 
   [selectedTab release];
+  [accessibilityElements release];
+
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
 
   [super dealloc];
 }
@@ -428,6 +463,64 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   [self resizeWithOldSuperviewSize:NSZeroSize];
 }
 
+- (void)viewDidMoveToWindow
+{
+  [super viewDidMoveToWindow];
+
+  NSNotificationCenter* nc = [NSNotificationCenter defaultCenter];
+  [nc removeObserver:self name:NSWindowDidBecomeKeyNotification object:nil];
+  [nc removeObserver:self name:NSWindowDidResignKeyNotification object:nil];
+  [nc removeObserver:self name:NSWindowDidBecomeMainNotification object:nil];
+  [nc removeObserver:self name:NSWindowDidResignMainNotification object:nil];
+
+  NSWindow* win = [self window];
+  if (win)
+  {
+    [nc addObserver:self selector:@selector(windowActiveStateChanged:) name:NSWindowDidBecomeKeyNotification object:win];
+    [nc addObserver:self selector:@selector(windowActiveStateChanged:) name:NSWindowDidResignKeyNotification object:win];
+    [nc addObserver:self selector:@selector(windowActiveStateChanged:) name:NSWindowDidBecomeMainNotification object:win];
+    [nc addObserver:self selector:@selector(windowActiveStateChanged:) name:NSWindowDidResignMainNotification object:win];
+  }
+}
+
+- (void)windowActiveStateChanged:(NSNotification*)note
+{
+  (void)note;
+  [self redraw];
+}
+
+- (void)syncAccessibilityElements
+{
+  BOOL rebuild = ([accessibilityElements count] != [tabs count]);
+  if (!rebuild)
+  {
+    NSUInteger i;
+    for (i = 0; i < [tabs count]; i++)
+    {
+      if ([(IupCocoaTabAccessibilityElement*)[accessibilityElements objectAtIndex:i] cell] != [tabs objectAtIndex:i])
+      {
+        rebuild = YES;
+        break;
+      }
+    }
+  }
+
+  if (!rebuild)
+    return;
+
+  [accessibilityElements removeAllObjects];
+  for (IupCocoaTabCell* tab in tabs)
+  {
+    IupCocoaTabAccessibilityElement* element = [[[IupCocoaTabAccessibilityElement alloc] init] autorelease];
+    [element setCell:tab];
+    [element setAccessibilityRole:NSAccessibilityRadioButtonRole];
+    [element setAccessibilityParent:self];
+    [accessibilityElements addObject:element];
+  }
+  [self setAccessibilityTabs:accessibilityElements];
+  [self setAccessibilityChildren:accessibilityElements];
+}
+
 - (void)removeTabCell:(IupCocoaTabCell*)tabCell
 {
   NSUInteger index = [[self tabs] indexOfObject:tabCell];
@@ -446,6 +539,11 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
 - (void)mouseUp:(NSEvent*)event
 {
+  NSUInteger i;
+  for (i = 0; i < [tabs count]; i++)
+    [[tabs objectAtIndex:i] setIsPressed:NO];
+  [self redraw];
+
   if (!enabled)
     return;
 
@@ -565,6 +663,8 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     [self addToolTipRect:[tab frame] owner:[tab title] userData:nil];
     [tab draw];
   }
+
+  [self syncAccessibilityElements];
 }
 
 - (id)addTabViewWithTitle:(NSString *)title
@@ -637,7 +737,9 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   for (index = 0; index < [tabs count]; ++ index)
   {
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
-    if (NSPointInRect(p, [tab frame])) /* Use frame, not path */
+    BOOL inside = NSPointInRect(p, [tab frame]); /* Use frame, not path */
+    [tab setIsPressed:inside];
+    if (inside)
     {
       [tab setAsActiveTab];
     }
@@ -715,6 +817,12 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     return;
   }
 
+  {
+    NSUInteger i;
+    for (i = 0; i < [tabs count]; i++)
+      [[tabs objectAtIndex:i] setIsPressed:NO];
+  }
+
 #ifdef GNUSTEP
   /* GNUstep lacks -beginDraggingSessionWithItems: and the draggedImage: callbacks that
      reorder the tabs. Without them the tab is removed from the array but never
@@ -768,7 +876,8 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSRect dragFrame = NSMakeRect(p.x, p.y, draggingTab.frame.size.width, draggingTab.frame.size.height);
   [dragItem setDraggingFrame:dragFrame contents:draggingImage];
 
-  [self beginDraggingSessionWithItems:@[dragItem] event:theEvent source:self];
+  NSDraggingSession* dragSession = [self beginDraggingSessionWithItems:@[dragItem] event:theEvent source:self];
+  [dragSession setAnimatesToStartingPositionsOnCancelOrFail:NO];
 #endif
 }
 
@@ -1048,78 +1157,119 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 /* tab cell draw itself in this method, called in TabBarView's drawRect method */
 - (void)draw
 {
+  if (isDraggingTab)
+    return;
+
   NSRect rect = [self frame];
   [path release];
-  path = [[NSBezierPath bezierPathWithRect:rect] retain]; /* Use simple rectangle */
-  [path setLineWidth:1.0]; /* Use 1px for separators */
+  path = [[NSBezierPath bezierPathWithRect:rect] retain];
+  [path setLineWidth:1.0];
 
-  if ([self isActived])
+  if ([[self tabBarView] usesMaterialBackground])
   {
-    [[[self tabBarView] tabActivedBGColor] set];
-    [path fill];
-  }
-  else if (![[self tabBarView] usesMaterialBackground])
-  {
-    [[[self tabBarView] tabBGColor] set];
-    [path fill];
-  }
+    NSRect capsule = NSInsetRect(rect, 2.0, 3.0);
+    NSBezierPath* pill = [NSBezierPath bezierPathWithRoundedRect:capsule xRadius:6.0 yRadius:6.0];
 
-  if (isHovered && ![self isActived])
-  {
-    [[NSColor quaternaryLabelColor] set];
-    [path fill];
-  }
-
-  /* Draw separators instead of full borders */
-  [[[self tabBarView] tabBorderColor] set];
-  NSUInteger myIndex = [[[self tabBarView] tabs] indexOfObject:self];
-  NSUInteger tabCount = [[[self tabBarView] tabs] count];
-
-  if ([[self tabBarView] orientation] == IupCocoaTabBarHorizontal)
-  {
-    /* Draw vertical separator on the right, if not the last tab */
-    if (myIndex < tabCount - 1)
+    if ([self isActived])
     {
-      [NSBezierPath strokeLineFromPoint:NSMakePoint(NSMaxX(rect), NSMinY(rect))
-                              toPoint:NSMakePoint(NSMaxX(rect), NSMaxY(rect))];
+      NSWindow* win = [[self tabBarView] window];
+      BOOL windowActive = (!win || [win isKeyWindow] || [win isMainWindow]);
+      if (windowActive)
+      {
+        NSColor* fillColor = iupcocoaIsSystemDarkMode() ? [[NSColor whiteColor] colorWithAlphaComponent:0.20] : [NSColor controlBackgroundColor];
+
+        NSGraphicsContext* gc = [NSGraphicsContext currentContext];
+        [gc saveGraphicsState];
+        NSShadow* shadow = [[[NSShadow alloc] init] autorelease];
+        [shadow setShadowColor:[[NSColor blackColor] colorWithAlphaComponent:0.18]];
+        [shadow setShadowOffset:NSMakeSize(0.0, -1.0)];
+        [shadow setShadowBlurRadius:2.5];
+        [shadow set];
+        [fillColor set];
+        [pill fill];
+        [gc restoreGraphicsState];
+      }
+      else
+      {
+        [[NSColor unemphasizedSelectedContentBackgroundColor] set];
+        [pill fill];
+      }
+    }
+    else if (isHovered)
+    {
+      [[NSColor quaternaryLabelColor] set];
+      [pill fill];
+    }
+
+    if (isPressed)
+    {
+      [[[NSColor labelColor] colorWithAlphaComponent:0.12] set];
+      [pill fill];
     }
   }
-  else /* Vertical */
+  else
   {
-    /* Draw horizontal separator at the bottom, if not the last tab */
-    /* (Last tab is index count-1, which is visually at the bottom) */
-    if (myIndex < tabCount - 1)
-    {
-      [NSBezierPath strokeLineFromPoint:NSMakePoint(NSMinX(rect), NSMinY(rect))
-                              toPoint:NSMakePoint(NSMaxX(rect), NSMinY(rect))];
-    }
-  }
+    if ([self isActived])
+      [[[self tabBarView] tabActivedBGColor] set];
+    else
+      [[[self tabBarView] tabBGColor] set];
+    [path fill];
 
-  if ([self isActived])
-  {
-    NSBezierPath* accent = [NSBezierPath bezierPath];
-    [accent setLineWidth:2.0];
-    [[NSColor controlAccentColor] set];
-    switch ([[self tabBarView] tabPosition])
+    if (isHovered && ![self isActived])
     {
-      case IupCocoaTabPositionTop:
-        [accent moveToPoint:NSMakePoint(NSMinX(rect), NSMinY(rect) + 1)];
-        [accent lineToPoint:NSMakePoint(NSMaxX(rect), NSMinY(rect) + 1)];
-        break;
-      case IupCocoaTabPositionBottom:
-        [accent moveToPoint:NSMakePoint(NSMinX(rect), NSMaxY(rect) - 1)];
-        [accent lineToPoint:NSMakePoint(NSMaxX(rect), NSMaxY(rect) - 1)];
-        break;
-      case IupCocoaTabPositionLeft:
-        [accent moveToPoint:NSMakePoint(NSMaxX(rect) - 1, NSMinY(rect))];
-        [accent lineToPoint:NSMakePoint(NSMaxX(rect) - 1, NSMaxY(rect))];
-        break;
-      case IupCocoaTabPositionRight:
-        [accent moveToPoint:NSMakePoint(NSMinX(rect) + 1, NSMinY(rect))];
-        [accent lineToPoint:NSMakePoint(NSMinX(rect) + 1, NSMaxY(rect))];
-        break;
+      [[NSColor quaternaryLabelColor] set];
+      [path fill];
     }
-    [accent stroke];
+
+    [[[self tabBarView] tabBorderColor] set];
+    NSUInteger myIndex = [[[self tabBarView] tabs] indexOfObject:self];
+    NSUInteger tabCount = [[[self tabBarView] tabs] count];
+
+    if ([[self tabBarView] orientation] == IupCocoaTabBarHorizontal)
+    {
+      if (myIndex < tabCount - 1)
+        [NSBezierPath strokeLineFromPoint:NSMakePoint(NSMaxX(rect), NSMinY(rect))
+                                  toPoint:NSMakePoint(NSMaxX(rect), NSMaxY(rect))];
+    }
+    else
+    {
+      if (myIndex < tabCount - 1)
+        [NSBezierPath strokeLineFromPoint:NSMakePoint(NSMinX(rect), NSMinY(rect))
+                                  toPoint:NSMakePoint(NSMaxX(rect), NSMinY(rect))];
+    }
+
+    if ([self isActived])
+    {
+      NSBezierPath* accent = [NSBezierPath bezierPath];
+      [accent setLineWidth:2.0];
+      [[NSColor controlAccentColor] set];
+      switch ([[self tabBarView] tabPosition])
+      {
+        case IupCocoaTabPositionTop:
+          [accent moveToPoint:NSMakePoint(NSMinX(rect), NSMinY(rect) + 1)];
+          [accent lineToPoint:NSMakePoint(NSMaxX(rect), NSMinY(rect) + 1)];
+          break;
+        case IupCocoaTabPositionBottom:
+          [accent moveToPoint:NSMakePoint(NSMinX(rect), NSMaxY(rect) - 1)];
+          [accent lineToPoint:NSMakePoint(NSMaxX(rect), NSMaxY(rect) - 1)];
+          break;
+        case IupCocoaTabPositionLeft:
+          [accent moveToPoint:NSMakePoint(NSMaxX(rect) - 1, NSMinY(rect))];
+          [accent lineToPoint:NSMakePoint(NSMaxX(rect) - 1, NSMaxY(rect))];
+          break;
+        case IupCocoaTabPositionRight:
+          [accent moveToPoint:NSMakePoint(NSMinX(rect) + 1, NSMinY(rect))];
+          [accent lineToPoint:NSMakePoint(NSMinX(rect) + 1, NSMaxY(rect))];
+          break;
+      }
+      [accent stroke];
+    }
+
+    if (isPressed)
+    {
+      [[[NSColor labelColor] colorWithAlphaComponent:0.12] set];
+      [path fill];
+    }
   }
 
 
@@ -1347,6 +1497,11 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 - (void)setIsHovered:(BOOL)flag
 {
   isHovered = flag;
+}
+
+- (void)setIsPressed:(BOOL)flag
+{
+  isPressed = flag;
 }
 
 - (void)setTitle:(NSString *)newTitle
