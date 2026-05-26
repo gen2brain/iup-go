@@ -503,12 +503,6 @@ static int cocoaTouchTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
 	return 0;
 }
 
-static int cocoaTouchTabsSetTabOrientationAttrib(Ihandle* ih, const char* value)
-{
-	if (ih->handle) return 0;
-	ih->data->orientation = iupStrEqualNoCase(value, "VERTICAL") ? ITABS_VERTICAL : ITABS_HORIZONTAL;
-	return 0;
-}
 
 /* re-apply title+image via composite path; segmented setTitle:/setImage: drops the other side */
 static void cocoaTouchTabsApplyTitleImage(Ihandle* ih, int pos)
@@ -979,7 +973,7 @@ IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 	iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
 
 	iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, cocoaTouchTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, cocoaTouchTabsSetTabOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, cocoaTouchTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
 	iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, cocoaTouchTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
