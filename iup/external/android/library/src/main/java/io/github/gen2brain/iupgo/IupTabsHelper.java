@@ -63,7 +63,10 @@ public final class IupTabsHelper
         {
             TabContent tc = contentOf(tabs.tabLayout.getTabAt(i));
             if (tc == null) continue;
-            tc.title.setTextColor(textCsl);
+            if (tabs.fgColor != null)
+                tc.title.setTextColor(tabs.fgColor);
+            else
+                tc.title.setTextColor(textCsl);
             tc.closeBtn.setTextColor(textCsl);
         }
     }
@@ -79,6 +82,8 @@ public final class IupTabsHelper
         boolean reorderable;
         /* Global SHOWCLOSE state propagated to each tab's close button. */
         boolean showClose;
+        /* FGCOLOR override for tab titles; null follows the theme. */
+        Integer fgColor;
 
         @Override
         public void setEnabled(boolean enabled)
@@ -313,6 +318,14 @@ public final class IupTabsHelper
     {
         if (!(tabs instanceof IupAndroidTabs)) return;
         ((IupAndroidTabs) tabs).reorderable = enable;
+    }
+
+    @Keep
+    public static void setFgColor(View tabs, int color)
+    {
+        if (!(tabs instanceof IupAndroidTabs t)) return;
+        t.fgColor = color;
+        applyTabsPalette(t);
     }
 
 

@@ -305,6 +305,22 @@ static int androidTabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int androidTabsSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  if (!ih->handle || !iupStrToRGB(value, &r, &g, &b)) return 1;
+
+  jint color = (jint)(0xFF000000 | (r << 16) | (g << 8) | b);
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = androidTabsFindHelper(jni_env);
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setFgColor", "(Landroid/view/View;I)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jobject)ih->handle, color);
+  iupAndroid_CheckException(jni_env, "IupTabsHelper.setFgColor");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  return 1;
+}
+
 void iupdrvTabsInitClass(Iclass* ic)
 {
   ic->Map = androidTabsMapMethod;
@@ -315,6 +331,7 @@ void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
 
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, androidTabsSetAllowReorderAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, androidTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttributeId(ic, "TABTITLE", NULL, androidTabsSetTabTitleAttribId, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, androidTabsSetTabImageAttribId, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);

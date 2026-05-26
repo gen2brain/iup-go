@@ -35,7 +35,7 @@ Same value returned by **IupGetChildCount**.
 [EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Tabs title color.
-Not supported in EFL, Android and Haiku.
+Not supported in EFL.
 In Win32 it is applied only when SHOWCLOSE=YES; in FLTK only the selected tab title is colored.
 Default: the global attribute DLGFGCOLOR.
 
