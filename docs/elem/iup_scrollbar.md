@@ -15,9 +15,11 @@ Unlike the [SCROLLBAR](../attrib/iup_scrollbar.md) attribute used by IupCanvas, 
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the scrollbar.
 Default: the global attribute DLGBGCOLOR.
+Not supported in Win32, WinUI and Android.
 
 **INVERTED** (creation-only) (non-inheritable): Invert the minimum and maximum positions on screen.
 Default: NO.
+Not supported in macOS and WinUI.
 
 **LINESTEP**: Controls the increment for keyboard arrows and single step clicks.
 It is not the size of the increment.
@@ -44,8 +46,6 @@ Default is "0.1".
 [RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): The initial size depends on the orientation.
 For horizontal, the default width is 100 pixels and the height is the system scrollbar size.
 For vertical, the default height is 100 pixels and the width is the system scrollbar size.
-
-**TYPE**: Same as ORIENTATION. An alias maintained for compatibility.
 
 **VALUE** (non-inheritable): Contains a number between MIN and MAX, indicating the scrollbar position.
 Default: "0".
@@ -91,6 +91,10 @@ If it is horizontal, the following values are valid:
     IUP_SBDRAGH - horizontal drag
 
 **posx**, **posy**: scrollbar position (only the one matching the orientation is meaningful).
+
+Not all drivers report every operation code.
+In EFL only the drag (IUP_SBDRAGH, IUP_SBDRAGV) and positioning (IUP_SBPOSH, IUP_SBPOSV) codes are reported.
+The line operation codes (IUP_SBUP, IUP_SBDN, IUP_SBLEFT, IUP_SBRIGHT) are not reported in macOS, iOS, Android and EFL.
 
 >
 >

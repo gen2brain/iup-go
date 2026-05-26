@@ -15,13 +15,14 @@ Also does not have support for text inside the bar.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): controls the background color.
 Default: the global attribute DLGBGCOLOR.
+In Android the platform theme background is used.
 
 **DASHED** (creation-only in Windows): Changes the style of the progress bar for a dashed pattern.
 Default is "NO". In Windows, it is not supported when using Visual Styles.
 Supported in Win32 (without Visual Styles), GTK 2, GTK 3, GTK 4, Qt and iOS.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Controls the bar color.
-Default: the global attribute DLGFGCOLOR.
+By default the native/system bar color is used.
 Not supported in macOS and EFL.
 
 **MARQUEE** (creation): displays an undefined state. Default: NO.
@@ -39,7 +40,7 @@ Horizontal goes from left to right, and vertical from bottom to top.
 
 **CIRCULAR** [Android, iOS] (creation-only): when "YES", renders the indicator as a circular spinner instead of a linear bar. On Android uses Material `CircularProgressIndicator` (supports both determinate and indeterminate via MARQUEE). On iOS uses `UIActivityIndicatorView` (always indeterminate; VALUE / MAX / MIN / DASHED / ORIENTATION are ignored). Default: "NO". Ignored on desktop drivers.
 
-[RASTERSIZE](../attrib/iup_rastersize.md): The initial size is defined as "200x30".
+[RASTERSIZE](../attrib/iup_rastersize.md): The initial size is 200 pixels along the bar (width for HORIZONTAL, height for VERTICAL); the other dimension uses the native minimum. When CIRCULAR=YES it is "48x48".
 Set to NULL to allow the use of smaller values in the layout computation.
 
 **VALUE** (non-inheritable): Contains a number between "MIN" and "MAX", controlling the current position.

@@ -40,7 +40,7 @@ The radio can be created with no elements and be dynamic filled using [IupAppend
 
 A toggle that is a child of an **IupRadio** automatically receives a name when it is mapped into the native system.
 
-Currently, **IupFlatButton** with TOGGLE=YES, **IupToggle**, and **IupGLToggle** are affected when inside a **IupRadio**.
+Currently, **IupFlatButton** with TOGGLE=YES and **IupToggle** are affected when inside a **IupRadio**.
 
 The **IGNORERADIO** can be used in any of these children types to disable this functionally.
 

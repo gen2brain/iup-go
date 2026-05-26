@@ -12,15 +12,29 @@
 
 #include "iup_object.h"
 #include "iup_class.h"
+#include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_scrollbar.h"
 
 #include "iupefl_drv.h"
 
 
+static void eflScrollbarDragStartCallback(void* data, const Efl_Event* ev)
+{
+  (void)ev;
+  iupAttribSet((Ihandle*)data, "_IUPEFL_SB_DRAGGING", "1");
+}
+
+static void eflScrollbarDragStopCallback(void* data, const Efl_Event* ev)
+{
+  (void)ev;
+  iupAttribSet((Ihandle*)data, "_IUPEFL_SB_DRAGGING", NULL);
+}
+
 static void eflScrollbarChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
+  int dragging = iupAttribGet(ih, "_IUPEFL_SB_DRAGGING") != NULL;
   double old_val = ih->data->val;
   double val;
 
@@ -39,12 +53,12 @@ static void eflScrollbarChangedCallback(void* data, const Efl_Event* ev)
       if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
       {
         posx = (float)ih->data->val;
-        op = IUP_SBPOSH;
+        op = dragging ? IUP_SBDRAGH : IUP_SBPOSH;
       }
       else
       {
         posy = (float)ih->data->val;
-        op = IUP_SBPOSV;
+        op = dragging ? IUP_SBDRAGV : IUP_SBPOSV;
       }
 
       scroll_cb(ih, op, posx, posy);
@@ -144,6 +158,8 @@ static int eflScrollbarMapMethod(Ihandle* ih)
     efl_ui_range_step_set(slider, ih->data->linestep);
 
   efl_event_callback_add(slider, EFL_UI_RANGE_EVENT_CHANGED, eflScrollbarChangedCallback, ih);
+  efl_event_callback_add(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_START, eflScrollbarDragStartCallback, ih);
+  efl_event_callback_add(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_STOP, eflScrollbarDragStopCallback, ih);
 
   iupeflBaseAddCallbacks(ih, slider);
 
@@ -157,7 +173,11 @@ static void eflScrollbarUnMapMethod(Ihandle* ih)
   Eo* slider = iupeflGetWidget(ih);
 
   if (slider)
+  {
     efl_event_callback_del(slider, EFL_UI_RANGE_EVENT_CHANGED, eflScrollbarChangedCallback, ih);
+    efl_event_callback_del(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_START, eflScrollbarDragStartCallback, ih);
+    efl_event_callback_del(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_STOP, eflScrollbarDragStopCallback, ih);
+  }
 
   iupdrvBaseUnMapMethod(ih);
 }
