@@ -40,6 +40,11 @@
 }
 @end
 
+static BOOL iupCocoaTabsLiquidGlass(void)
+{
+  return [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion >= 26;
+}
+
 static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 {
   NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
@@ -539,6 +544,15 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
 - (void)mouseUp:(NSEvent*)event
 {
+  if (enabled && !isDragging)
+  {
+    NSPoint p = [event locationInWindow];
+    p = [self convertPoint:p fromView:nil];
+    IupCocoaTabCell* released_tab = [self tabCellInPoint:p];
+    if (released_tab)
+      [released_tab setAsActiveTab];
+  }
+
   NSUInteger i;
   for (i = 0; i < [tabs count]; i++)
     [[tabs objectAtIndex:i] setIsPressed:NO];
@@ -732,17 +746,12 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   }
 
 
-  /* Switch active tab */
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; ++ index)
   {
     IupCocoaTabCell *tab = [tabs objectAtIndex:index];
     BOOL inside = NSPointInRect(p, [tab frame]); /* Use frame, not path */
     [tab setIsPressed:inside];
-    if (inside)
-    {
-      [tab setAsActiveTab];
-    }
 
     /* forward mouse down to tab cell */
     [tab mouseDown:theEvent];
@@ -1165,6 +1174,10 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   path = [[NSBezierPath bezierPathWithRect:rect] retain];
   [path setLineWidth:1.0];
 
+  NSWindow* hostWindow = [[self tabBarView] window];
+  BOOL windowActive = (!hostWindow || [hostWindow isKeyWindow] || [hostWindow isMainWindow]);
+  BOOL accentActive = [self isActived] && windowActive && iupCocoaTabsLiquidGlass() && [[self tabBarView] usesMaterialBackground];
+
   if ([[self tabBarView] usesMaterialBackground])
   {
     NSRect capsule = NSInsetRect(rect, 2.0, 3.0);
@@ -1172,9 +1185,17 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
     if ([self isActived])
     {
-      NSWindow* win = [[self tabBarView] window];
-      BOOL windowActive = (!win || [win isKeyWindow] || [win isMainWindow]);
-      if (windowActive)
+      if (!windowActive)
+      {
+        [[NSColor unemphasizedSelectedContentBackgroundColor] set];
+        [pill fill];
+      }
+      else if (accentActive)
+      {
+        [[NSColor controlAccentColor] set];
+        [pill fill];
+      }
+      else
       {
         NSColor* fillColor = iupcocoaIsSystemDarkMode() ? [[NSColor whiteColor] colorWithAlphaComponent:0.20] : [NSColor controlBackgroundColor];
 
@@ -1189,11 +1210,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
         [pill fill];
         [gc restoreGraphicsState];
       }
-      else
-      {
-        [[NSColor unemphasizedSelectedContentBackgroundColor] set];
-        [pill fill];
-      }
     }
     else if (isHovered)
     {
@@ -1201,7 +1217,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
       [pill fill];
     }
 
-    if (isPressed)
+    if (isPressed && ![self isActived])
     {
       [[[NSColor labelColor] colorWithAlphaComponent:0.12] set];
       [pill fill];
@@ -1265,7 +1281,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
       [accent stroke];
     }
 
-    if (isPressed)
+    if (isPressed && ![self isActived])
     {
       [[[NSColor labelColor] colorWithAlphaComponent:0.12] set];
       [path fill];
@@ -1274,7 +1290,13 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
 
   NSMutableDictionary *attrs = [NSMutableDictionary dictionary];
-  NSColor *fontColor = [self isActived] ? [[self tabBarView] tabActivedTitleColor] : [[self tabBarView] tabTitleColor];
+  NSColor *fontColor;
+  if (accentActive)
+    fontColor = [NSColor alternateSelectedControlTextColor];
+  else if ([self isActived])
+    fontColor = [[self tabBarView] tabActivedTitleColor];
+  else
+    fontColor = [[self tabBarView] tabTitleColor];
   NSMutableParagraphStyle* p = [[[NSMutableParagraphStyle alloc] init] autorelease];
 
   /* Both horizontal and vertical tabs use centered text */

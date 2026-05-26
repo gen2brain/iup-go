@@ -2641,6 +2641,7 @@ static int cocoaTableMapMethod(Ihandle* ih)
   NSScrollView* scrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)];
   [scrollView setHasVerticalScroller:YES];
   [scrollView setHasHorizontalScroller:NO];
+  [scrollView setAutohidesScrollers:YES];
   [scrollView setBorderType:NSBezelBorder];
 
   /* Create custom NSTableView with keyboard support */
