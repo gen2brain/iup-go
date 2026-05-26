@@ -31,10 +31,6 @@ Inside the callback the attribute ELAPSEDTIME returns the time elapsed since the
 >
 > **Returns**: IUP_CLOSE will be processed.
 
-### Notes
-
-In GTK uses g_timeout_add, in Windows uses SetTimer, in WinUI uses DispatcherQueueTimer, in macOS uses NSTimer, in Qt uses QTimer, in EFL uses Efl_Loop_Timer, and in Motif uses XtAppAddTimeOut.
-
 ### Examples
 
 [Browse for Example Files](../../examples/)

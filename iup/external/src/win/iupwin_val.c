@@ -140,36 +140,8 @@ static int winValCustomScroll(Ihandle* ih, int msg)
 
     cb(ih);
   }
-  else
-  {
-    IFnd cb_old = NULL;
-    switch (msg)
-    {
-      case TB_BOTTOM:
-      case TB_TOP:
-      case TB_LINEDOWN:
-      case TB_LINEUP:
-      case TB_PAGEDOWN:
-      case TB_PAGEUP:
-      {
-        cb_old = (IFnd) IupGetCallback(ih, "BUTTON_PRESS_CB");
-        break;
-      }
-      case TB_THUMBPOSITION:
-      {
-        cb_old = (IFnd) IupGetCallback(ih, "BUTTON_RELEASE_CB");
-        break;
-      }
-      case TB_THUMBTRACK:
-      {
-        cb_old = (IFnd) IupGetCallback(ih, "MOUSEMOVE_CB");
-        break;
-      }
-    }
-    if (cb_old)
-      cb_old(ih, ih->data->val);
-  }
 
+  (void)msg;
   return 0; /* not used */
 }
 

@@ -177,7 +177,7 @@ static int motValSetBackgroundAttrib(Ihandle* ih, const char* value)
 
 /*********************************************************************************************/
 
-static void motValCallAction(Ihandle* ih, int ival, int cb_state)
+static void motValCallAction(Ihandle* ih, int ival)
 {
   double old_val = ih->data->val;
   IFn cb;
@@ -192,19 +192,6 @@ static void motValCallAction(Ihandle* ih, int ival, int cb_state)
       return;
 
     cb(ih);
-  }
-  else
-  {
-    IFnd cb_old;
-    if (cb_state == 0)
-      cb_old = (IFnd) IupGetCallback(ih, "MOUSEMOVE_CB");
-    else if (cb_state == -1)
-      cb_old = (IFnd) IupGetCallback(ih, "BUTTON_RELEASE_CB");
-    else
-      cb_old = (IFnd) IupGetCallback(ih, "BUTTON_PRESS_CB");
-
-    if (cb_old)
-      cb_old(ih, ih->data->val);
   }
 }
 
@@ -222,7 +209,7 @@ static void motValIncPageValue(Ihandle *ih, int dir)
   if (ival > SHRT_MAX) ival = SHRT_MAX;
   XtVaSetValues(ih->handle, XmNvalue, ival, NULL);
 
-  motValCallAction(ih, ival, 1);
+  motValCallAction(ih, ival);
 }
 
 static void motValIncLineValue(Ihandle *ih, int dir)
@@ -239,7 +226,7 @@ static void motValIncLineValue(Ihandle *ih, int dir)
   if (ival > SHRT_MAX) ival = SHRT_MAX;
   XtVaSetValues(ih->handle, XmNvalue, ival, NULL);
 
-  motValCallAction(ih, ival, 1);
+  motValCallAction(ih, ival);
 }
 
 static void motValKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean *cont)
@@ -287,7 +274,7 @@ static void motValKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean *
     {
       int ival = SHRT_MAX;  /* set to maximum */
       XtVaSetValues(ih->handle, XmNvalue, ival, NULL);
-      motValCallAction(ih, ival, 1);
+      motValCallAction(ih, ival);
       *cont = False;
       return;
     }
@@ -295,7 +282,7 @@ static void motValKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean *
     {
       int ival = 0; /* set to minimum */
       XtVaSetValues(ih->handle, XmNvalue, ival, NULL);
-      motValCallAction(ih, ival, 1);
+      motValCallAction(ih, ival);
       *cont = False;
       return;
     }
@@ -306,7 +293,7 @@ static void motValKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean *
     {
       int ival = 0; /* set to minimum */
       XtVaSetValues(ih->handle, XmNvalue, ival, NULL);
-      motValCallAction(ih, ival, 1);
+      motValCallAction(ih, ival);
       *cont = False;
       return;
     }
@@ -314,7 +301,7 @@ static void motValKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean *
     {
       int ival = SHRT_MAX;  /* set to maximum */
       XtVaSetValues(ih->handle, XmNvalue, ival, NULL);
-      motValCallAction(ih, ival, 1);
+      motValCallAction(ih, ival);
       *cont = False;
       return;
     }
@@ -323,14 +310,7 @@ static void motValKeyPressEvent(Widget w, Ihandle *ih, XKeyEvent *evt, Boolean *
 
 static void motValValueChangedCallback(Widget w, Ihandle* ih, XmScaleCallbackStruct *cbs)
 {
-  int cb_state = 1;
-
-  if(cbs->reason == XmCR_DRAG)
-    cb_state = 0;
-  else if (cbs->event && (cbs->event->type==ButtonRelease || cbs->event->type==KeyRelease))
-   cb_state = -1;
-
-  motValCallAction(ih, cbs->value, cb_state);
+  motValCallAction(ih, cbs->value);
 
   (void)w;
 }

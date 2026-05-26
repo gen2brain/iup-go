@@ -35,10 +35,9 @@ class IupQtSlider : public QSlider
 {
 public:
   Ihandle* iup_handle;
-  bool button_pressed;
 
   IupQtSlider(Qt::Orientation orientation, Ihandle* ih)
-    : QSlider(orientation), iup_handle(ih), button_pressed(false)
+    : QSlider(orientation), iup_handle(ih)
   {
     setRange(0, IVAL_RANGE);
     setTracking(true);
@@ -126,14 +125,12 @@ protected:
   void mousePressEvent(QMouseEvent* event) override
   {
     QSlider::mousePressEvent(event);
-    button_pressed = true;
     iupqtMouseButtonEvent(this, event, iup_handle);
   }
 
   void mouseReleaseEvent(QMouseEvent* event) override
   {
     QSlider::mouseReleaseEvent(event);
-    button_pressed = false;
     iupqtMouseButtonEvent(this, event, iup_handle);
   }
 };
@@ -142,7 +139,7 @@ protected:
  * Helper Functions
  ****************************************************************************/
 
-static void qtValUpdateValue(IupQtSlider* slider, Ihandle* ih, bool button_release)
+static void qtValUpdateValue(IupQtSlider* slider, Ihandle* ih)
 {
   double old_val = ih->data->val;
   int ival = slider->value();
@@ -159,20 +156,6 @@ static void qtValUpdateValue(IupQtSlider* slider, Ihandle* ih, bool button_relea
       return;
 
     cb(ih);
-  }
-  else
-  {
-    IFnd cb_old = nullptr;
-
-    if (button_release)
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_RELEASE_CB");
-    else if (slider->button_pressed)
-      cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-    else
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
-
-    if (cb_old)
-      cb_old(ih, ih->data->val);
   }
 }
 
@@ -428,12 +411,7 @@ static int qtValSetTipAttrib(Ihandle* ih, const char* value)
 
 static void qtValValueChanged(IupQtSlider* slider, Ihandle* ih)
 {
-  qtValUpdateValue(slider, ih, false);
-}
-
-static void qtValSliderReleased(IupQtSlider* slider, Ihandle* ih)
-{
-  qtValUpdateValue(slider, ih, true);
+  qtValUpdateValue(slider, ih);
 }
 
 /****************************************************************************
@@ -497,10 +475,6 @@ static int qtValMapMethod(Ihandle* ih)
 
   QObject::connect(slider, &QSlider::valueChanged, [slider, ih]() {
     qtValValueChanged(slider, ih);
-  });
-
-  QObject::connect(slider, &QSlider::sliderReleased, [slider, ih]() {
-    qtValSliderReleased(slider, ih);
   });
 
   iupqtUpdateMnemonic(ih);

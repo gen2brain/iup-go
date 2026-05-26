@@ -311,21 +311,6 @@ static void goIupSetDropShowFunc(Ihandle *ih) {
 	IupSetCallback(ih, "DROPSHOW_CB", (Icallback) goIupDropShowCB);
 }
 
-CGO_EXPORT extern int goIupButtonPressCB(void *, double angle);
-static void goIupSetButtonPressFunc(Ihandle *ih) {
-	IupSetCallback(ih, "BUTTON_PRESS_CB", (Icallback) goIupButtonPressCB);
-}
-
-CGO_EXPORT extern int goIupButtonReleaseCB(void *, double angle);
-static void goIupSetButtonReleaseFunc(Ihandle *ih) {
-	IupSetCallback(ih, "BUTTON_RELEASE_CB", (Icallback) goIupButtonReleaseCB);
-}
-
-CGO_EXPORT extern int goIupMouseMoveCB(void *, double angle);
-static void goIupSetMouseMoveFunc(Ihandle *ih) {
-	IupSetCallback(ih, "MOUSEMOVE_CB", (Icallback) goIupMouseMoveCB);
-}
-
 CGO_EXPORT extern int goIupKeyPressCB(void *ih, int c, int press);
 static void goIupSetKeyPressFunc(Ihandle *ih) {
 	IupSetCallback(ih, "KEYPRESS_CB", (Icallback) goIupKeyPressCB);

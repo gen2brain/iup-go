@@ -469,11 +469,11 @@ static int iColorDlgColorSelDrag_CB(Ihandle* ih, unsigned char r, unsigned char 
   return IUP_DEFAULT;
 }
 
-static int iColorDlgAlphaVal_CB(Ihandle* ih, double val)
+static int iColorDlgAlphaVal_CB(Ihandle* ih)
 {
   IcolorDlgData* colordlg_data = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
 
-  colordlg_data->alpha = (unsigned char)val;
+  colordlg_data->alpha = (unsigned char)IupGetDouble(ih, "VALUE");
   IupSetInt(colordlg_data->alpha_txt, "VALUE", (int)colordlg_data->alpha);
 
   iColorDlgColor_Update(colordlg_data);
@@ -1032,9 +1032,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   IupSetAttribute(colordlg_data->alpha_val, "MAX", "255");
   IupSetAttribute(colordlg_data->alpha_val, "VALUE", "255");
   IupSetAttribute(colordlg_data->alpha_val, "SIZE", "80x12");
-  IupSetCallback (colordlg_data->alpha_val, "MOUSEMOVE_CB", (Icallback)iColorDlgAlphaVal_CB);
-  IupSetCallback (colordlg_data->alpha_val, "BUTTON_PRESS_CB", (Icallback)iColorDlgAlphaVal_CB);
-  IupSetCallback (colordlg_data->alpha_val, "BUTTON_RELEASE_CB", (Icallback)iColorDlgAlphaVal_CB);
+  IupSetCallback (colordlg_data->alpha_val, "VALUECHANGED_CB", (Icallback)iColorDlgAlphaVal_CB);
 
   colordlg_data->alpha_txt = IupText();                        /* Alpha value */
   IupSetAttribute(colordlg_data->alpha_txt, "VISIBLECOLUMNS", "3");

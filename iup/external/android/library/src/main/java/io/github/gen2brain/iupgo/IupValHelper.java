@@ -3,7 +3,6 @@ package io.github.gen2brain.iupgo;
 import android.view.View;
 
 import androidx.annotation.Keep;
-import androidx.annotation.NonNull;
 import androidx.appcompat.view.ContextThemeWrapper;
 
 import com.google.android.material.slider.Slider;
@@ -107,29 +106,13 @@ public final class IupValHelper
     }
 
 
-    /* Slider value-change and touch listeners fan out into the IUP callbacks. */
     private static void wireCallbacks(final Slider slider, final long ihandlePtr)
     {
         slider.addOnChangeListener((s, value, fromUser) -> {
             if (!fromUser) return;
-            dispatchValue(ihandlePtr, "MOUSEMOVE_CB", value);
-            dispatchVoid(ihandlePtr, "VALUECHANGED_CB");
-        });
-        slider.addOnSliderTouchListener(new Slider.OnSliderTouchListener()
-        {
-            @Override
-            public void onStartTrackingTouch(@NonNull Slider s)
-            {
-                dispatchValue(ihandlePtr, "BUTTON_PRESS_CB", s.getValue());
-            }
-            @Override
-            public void onStopTrackingTouch(@NonNull Slider s)
-            {
-                dispatchValue(ihandlePtr, "BUTTON_RELEASE_CB", s.getValue());
-            }
+            dispatchValueChanged(ihandlePtr, value);
         });
     }
 
-    public static native void dispatchValue(long ihandlePtr, String key, float value);
-    public static native void dispatchVoid(long ihandlePtr, String key);
+    public static native void dispatchValueChanged(long ihandlePtr, float value);
 }

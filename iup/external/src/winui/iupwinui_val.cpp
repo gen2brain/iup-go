@@ -31,19 +31,15 @@ using namespace Windows::Foundation;
 struct IupWinUIValAux
 {
   event_token valueChangedToken;
-  event_token pointerPressedToken;
-  event_token pointerReleasedToken;
   event_token keyDownToken;
-  bool button_pressed;
   bool ignore_changed;
 
-  IupWinUIValAux() : valueChangedToken{}, pointerPressedToken{}, pointerReleasedToken{},
-                     keyDownToken{}, button_pressed(false), ignore_changed(false) {}
+  IupWinUIValAux() : valueChangedToken{}, keyDownToken{}, ignore_changed(false) {}
 };
 
 #define IUPWINUI_VAL_AUX "_IUPWINUI_VAL_AUX"
 
-static void winuiValUpdateValue(Ihandle* ih, bool button_release)
+static void winuiValUpdateValue(Ihandle* ih)
 {
   IupWinUIValAux* aux = winuiGetAux<IupWinUIValAux>(ih, IUPWINUI_VAL_AUX);
   if (!aux || aux->ignore_changed)
@@ -68,20 +64,6 @@ static void winuiValUpdateValue(Ihandle* ih, bool button_release)
 
     if (cb(ih) == IUP_CLOSE)
       IupExitLoop();
-  }
-  else
-  {
-    IFnd cb_old = NULL;
-
-    if (button_release)
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_RELEASE_CB");
-    else if (aux->button_pressed)
-      cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-    else
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
-
-    if (cb_old)
-      cb_old(ih, ih->data->val);
   }
 }
 
@@ -224,21 +206,7 @@ static int winuiValMapMethod(Ihandle* ih)
   slider.LargeChange(largeChange);
 
   aux->valueChangedToken = slider.ValueChanged([ih](IInspectable const&, RangeBaseValueChangedEventArgs const&) {
-    winuiValUpdateValue(ih, false);
-  });
-
-  aux->pointerPressedToken = slider.PointerPressed([ih](IInspectable const&, PointerRoutedEventArgs const&) {
-    IupWinUIValAux* a = winuiGetAux<IupWinUIValAux>(ih, IUPWINUI_VAL_AUX);
-    if (a) a->button_pressed = true;
-  });
-
-  aux->pointerReleasedToken = slider.PointerReleased([ih](IInspectable const&, PointerRoutedEventArgs const&) {
-    IupWinUIValAux* a = winuiGetAux<IupWinUIValAux>(ih, IUPWINUI_VAL_AUX);
-    if (a && a->button_pressed)
-    {
-      a->button_pressed = false;
-      winuiValUpdateValue(ih, true);
-    }
+    winuiValUpdateValue(ih);
   });
 
   aux->keyDownToken = slider.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
@@ -266,10 +234,6 @@ static void winuiValUnMapMethod(Ihandle* ih)
     {
       if (aux->valueChangedToken)
         slider.ValueChanged(aux->valueChangedToken);
-      if (aux->pointerPressedToken)
-        slider.PointerPressed(aux->pointerPressedToken);
-      if (aux->pointerReleasedToken)
-        slider.PointerReleased(aux->pointerReleasedToken);
       if (aux->keyDownToken)
         slider.PreviewKeyDown(aux->keyDownToken);
     }

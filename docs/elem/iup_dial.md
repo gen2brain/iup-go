@@ -49,31 +49,7 @@ When orientation is circular the dial measure absolute angles, where the origin 
 
 ### Callbacks
 
-**BUTTON_PRESS_CB**: Called when the user presses the left mouse button over the dial.
-The angle here is always zero, except for the circular dial.
-
-int function(Ihandle *ih, double angle)
-
-**ih**: identifier of the element that activated the event.\
-**angle**: the dial value converted according to UNIT.
-
-**BUTTON_RELEASE_CB**: Called when the user releases the left mouse button after pressing it over the dial.
-
-int function(Ihandle *ih, double angle)
-
-**ih**: identifier of the element that activated the event.\
-**angle**: the dial value converted according to UNIT.
-
-**MOUSEMOVE_CB**: Called each time the user moves the dial with the mouse button pressed.
-The angle the dial rotated since it was initialized is passed as a parameter.
-
-int function(Ihandle *ih, double angle);
-
-**ih**: identifier of the element that activated the event.\
-**angle**: the dial value converted according to UNIT.
-
 **VALUECHANGED_CB**: Called after the value was interactively changed by the user.
-It is called whenever a **BUTTON_PRESS_CB**, a **BUTTON_RELEASE_CB** or a **MOUSEMOVE_CB** would also be called, but if defined those callbacks will not be called.
 
     int function(Ihandle *ih);
 

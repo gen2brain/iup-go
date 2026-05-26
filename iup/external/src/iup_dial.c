@@ -395,12 +395,6 @@ static int iDialButtonPress(Ihandle* ih, int button, int x, int y)
   cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
     cb(ih);
-  else
-  {
-    IFnd cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
-    if (cb_old)
-      cb_old(ih, ih->data->angle * ih->data->unit);
-  }
 
   return IUP_DEFAULT;
 }
@@ -417,12 +411,6 @@ static int iDialButtonRelease(Ihandle* ih, int button)
   cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
     cb(ih);
-  else
-  {
-    IFnd cb_old = (IFnd)IupGetCallback(ih, "BUTTON_RELEASE_CB");
-    if (cb_old)
-      cb_old(ih, ih->data->angle * ih->data->unit);
-  }
 
   return IUP_DEFAULT;
 }
@@ -445,12 +433,6 @@ static int iDialMotionVertical_CB(Ihandle* ih, int x, int y, char *status)
   cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
     cb(ih);
-  else
-  {
-    IFnd cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-    if (cb_old)
-      cb_old(ih, ih->data->angle * ih->data->unit);
-  }
 
   return IUP_DEFAULT;
 }
@@ -471,12 +453,6 @@ static int iDialMotionHorizontal_CB(Ihandle* ih, int x, int y, char *status)
   cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
     cb(ih);
-  else
-  {
-    IFnd cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-    if (cb_old)
-      cb_old(ih, ih->data->angle * ih->data->unit);
-  }
 
   return IUP_DEFAULT;
 }
@@ -519,12 +495,6 @@ static int iDialMotionCircular_CB(Ihandle* ih, int x, int y, char *status)
   cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
     cb(ih);
-  else
-  {
-    IFnd cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-    if (cb_old)
-      cb_old(ih, ih->data->angle * ih->data->unit);
-  }
 
   return IUP_DEFAULT;
 }
@@ -577,7 +547,6 @@ static int iDialFocus_CB(Ihandle* ih, int focus)
 static int iDialKeyPress_CB(Ihandle* ih, int c, int press)
 {
   IFn cb;
-  char* cb_name;
 
   if (c != K_LEFT   && c != K_UP   &&
       c != K_sLEFT  && c != K_sUP  &&
@@ -616,35 +585,21 @@ static int iDialKeyPress_CB(Ihandle* ih, int c, int press)
 
   if (press)
   {
-    if (ih->data->pressing)
-    {
-      cb_name = "MOUSEMOVE_CB";
-    }
-    else
+    if (!ih->data->pressing)
     {
       ih->data->pressing = 1;
       if (ih->data->orientation != IDIAL_CIRCULAR)
         ih->data->angle = 0;
-      cb_name = "BUTTON_PRESS_CB";
     }
   }
   else
-  {
     ih->data->pressing = 0;
-    cb_name = "RELEASE_CB";
-  }
 
   IupUpdate(ih);
 
   cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
     cb(ih);
-  else
-  {
-    IFnd cb_old = (IFnd)IupGetCallback(ih, cb_name);
-    if (cb_old)
-      cb_old(ih, ih->data->angle * ih->data->unit);
-  }
 
   return IUP_IGNORE;  /* to avoid arrow keys being processed by the system */
 }
@@ -663,12 +618,6 @@ static int iDialWheel_CB(Ihandle* ih, float delta)
   cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
     cb(ih);
-  else
-  {
-    IFnd cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-    if (cb_old)
-      cb_old(ih, ih->data->angle * ih->data->unit);
-  }
 
   return IUP_DEFAULT;
 }
@@ -861,9 +810,6 @@ Iclass* iupDialNewClass(void)
   /* Do not need to set base attributes because they are inherited from IupCanvas */
 
   /* IupDial Callbacks */
-  iupClassRegisterCallback(ic, "MOUSEMOVE_CB", "d");
-  iupClassRegisterCallback(ic, "BUTTON_PRESS_CB", "d");
-  iupClassRegisterCallback(ic, "BUTTON_RELEASE_CB", "d");
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "");
 
   /* replace IupCanvas behavior */

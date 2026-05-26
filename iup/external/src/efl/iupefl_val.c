@@ -22,60 +22,13 @@
 static void eflValChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  IFnd cb;
-  double val;
-  int is_dragging;
-
-  val = efl_ui_range_value_get(ev->object);
-
-  ih->data->val = val;
-
-  cb = (IFnd)IupGetCallback(ih, "VALUECHANGED_CB");
-  if (cb)
-  {
-    cb(ih, val);
-  }
-  else
-  {
-    IFnd cb_old;
-
-    is_dragging = iupAttribGetInt(ih, "_IUP_DRAGGING");
-    if (is_dragging)
-      cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-    else
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
-
-    if (cb_old)
-      cb_old(ih, ih->data->val);
-  }
-}
-
-static void eflValDragStartCallback(void* data, const Efl_Event* ev)
-{
-  Ihandle* ih = (Ihandle*)data;
-  IFnd cb;
-
-  iupAttribSet(ih, "_IUP_DRAGGING", "1");
+  IFn cb;
 
   ih->data->val = efl_ui_range_value_get(ev->object);
 
-  cb = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
+  cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
-    cb(ih, ih->data->val);
-}
-
-static void eflValDragStopCallback(void* data, const Efl_Event* ev)
-{
-  Ihandle* ih = (Ihandle*)data;
-  IFnd cb;
-
-  iupAttribSet(ih, "_IUP_DRAGGING", NULL);
-
-  ih->data->val = efl_ui_range_value_get(ev->object);
-
-  cb = (IFnd)IupGetCallback(ih, "BUTTON_RELEASE_CB");
-  if (cb)
-    cb(ih, ih->data->val);
+    cb(ih);
 }
 
 static int eflValSetValueAttrib(Ihandle* ih, const char* value)
@@ -223,8 +176,6 @@ static int eflValMapMethod(Ihandle* ih)
     efl_ui_range_step_set(slider, ih->data->step);
 
   efl_event_callback_add(slider, EFL_UI_RANGE_EVENT_CHANGED, eflValChangedCallback, ih);
-  efl_event_callback_add(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_START, eflValDragStartCallback, ih);
-  efl_event_callback_add(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_STOP, eflValDragStopCallback, ih);
 
   iupeflBaseAddCallbacks(ih, slider);
 
@@ -240,8 +191,6 @@ static void eflValUnMapMethod(Ihandle* ih)
   if (slider)
   {
     efl_event_callback_del(slider, EFL_UI_RANGE_EVENT_CHANGED, eflValChangedCallback, ih);
-    efl_event_callback_del(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_START, eflValDragStartCallback, ih);
-    efl_event_callback_del(slider, EFL_UI_SLIDER_EVENT_SLIDER_DRAG_STOP, eflValDragStopCallback, ih);
   }
 
   iupdrvBaseUnMapMethod(ih);

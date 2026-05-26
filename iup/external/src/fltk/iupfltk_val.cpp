@@ -26,12 +26,11 @@ class IupFltkSlider : public Fl_Slider
 {
 public:
   Ihandle* iup_handle;
-  int button_pressed;
   int show_ticks;     /* 0 = none, otherwise number of ticks (>=2) */
   int ticks_pos;      /* 0=NORMAL, 1=REVERSE, 2=BOTH */
 
   IupFltkSlider(int x, int y, int w, int h, Ihandle* ih, int horizontal)
-    : Fl_Slider(x, y, w, h), iup_handle(ih), button_pressed(0), show_ticks(0), ticks_pos(0)
+    : Fl_Slider(x, y, w, h), iup_handle(ih), show_ticks(0), ticks_pos(0)
   {
     if (horizontal)
       type(FL_HOR_NICE_SLIDER);
@@ -53,12 +52,6 @@ public:
       case FL_ENTER:
       case FL_LEAVE:
         iupfltkEnterLeaveEvent(this, iup_handle, event);
-        break;
-      case FL_PUSH:
-        button_pressed = 1;
-        break;
-      case FL_RELEASE:
-        button_pressed = 0;
         break;
       case FL_KEYBOARD:
         if (iupfltkKeyPressEvent(this, iup_handle))
@@ -107,7 +100,7 @@ public:
   }
 };
 
-static void fltkValUpdateValue(Ihandle* ih, int button_release)
+static void fltkValUpdateValue(Ihandle* ih)
 {
   IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
   if (!slider)
@@ -126,27 +119,12 @@ static void fltkValUpdateValue(Ihandle* ih, int button_release)
       return;
     cb(ih);
   }
-  else
-  {
-    IFnd cb_old = NULL;
-
-    if (button_release)
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_RELEASE_CB");
-    else if (slider->button_pressed)
-      cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-    else
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
-
-    if (cb_old)
-      cb_old(ih, ih->data->val);
-  }
 }
 
 static void fltkValCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
-  IupFltkSlider* slider = (IupFltkSlider*)w;
-  fltkValUpdateValue(ih, !slider->button_pressed);
+  (void)w;
+  fltkValUpdateValue((Ihandle*)data);
 }
 
 extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int *w, int *h)

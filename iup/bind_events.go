@@ -246,17 +246,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setDropDownFunc(ih, fn.(DropDownFunc))
 	case "DROPSHOW_CB":
 		setDropShowFunc(ih, fn.(DropShowFunc))
-	case "BUTTON_PRESS_CB":
-		setButtonPressFunc(ih, fn.(ButtonPressFunc))
-	case "BUTTON_RELEASE_CB":
-		setButtonReleaseFunc(ih, fn.(ButtonReleaseFunc))
 	case "MOUSEMOVE_CB":
-		switch v := fn.(type) {
-		case MouseMoveFunc:
-			setMouseMoveFunc(ih, v)
-		case MatrixMouseMoveFunc:
-			setMatrixMouseMoveFunc(ih, v)
-		}
+		setMatrixMouseMoveFunc(ih, fn.(MatrixMouseMoveFunc))
 	case "KEYPRESS_CB":
 		setKeyPressFunc(ih, fn.(KeyPressFunc))
 	case "CELL_CB":
