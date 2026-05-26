@@ -120,9 +120,26 @@ func main() {
 	tabs3 := iup.Tabs(vboxF, vboxG)
 	tabs3.SetAttributes("TABTYPE=LEFT, TABORIENTATION=VERTICAL")
 
+	// Create tabs 4 (bottom)
+	vboxH := iup.Vbox(
+		iup.Label("Inside Tab H"),
+		iup.Button("Button H"),
+	).SetAttributes("MARGIN=10x10, GAP=5")
+	vboxH.SetAttribute("TABTITLE", "Tab H")
+
+	vboxI := iup.Vbox(
+		iup.Label("Inside Tab I"),
+		iup.Button("Button I"),
+	).SetAttributes("MARGIN=10x10, GAP=5")
+	vboxI.SetAttribute("TABTITLE", "Tab I")
+
+	tabs4 := iup.Tabs(vboxH, vboxI)
+	tabs4.SetAttributes("TABTYPE=BOTTOM")
+
 	iup.SetHandle("tabs1", tabs1)
 	iup.SetHandle("tabs2", tabs2)
 	iup.SetHandle("tabs3", tabs3)
+	iup.SetHandle("tabs4", tabs4)
 
 	// TABCHANGE_CB - Called when the user changes the active tab
 	tabChangeCB := func(ih iup.Ihandle, newChild, oldChild iup.Ihandle) int {
@@ -140,6 +157,8 @@ func main() {
 			tabsName = "tabs2"
 		} else if ih == iup.GetHandle("tabs3") {
 			tabsName = "tabs3"
+		} else if ih == iup.GetHandle("tabs4") {
+			tabsName = "tabs4"
 		}
 
 		logMsg(fmt.Sprintf("TABCHANGE_CB (%s): '%s' -> '%s'", tabsName, oldTitle, newTitle))
@@ -237,10 +256,13 @@ func main() {
 	iup.SetCallback(tabs3, "TABCLOSE_CB", iup.TabCloseFunc(tabCloseCB))
 	iup.SetCallback(tabs3, "RIGHTCLICK_CB", iup.RightClickFunc(rightClickCB))
 
+	// Set callbacks for tabs4
+	iup.SetCallback(tabs4, "TABCHANGE_CB", iup.TabChangeFunc(tabChangeCB))
+
 	// Layout
 	vboxMain := iup.Vbox(
 		iup.Label("IUP Tabs").SetAttributes(`FONT="Sans, Bold 12"`),
-		iup.Hbox(tabs1, tabs2, tabs3).SetAttribute("GAP", "10"),
+		iup.Hbox(tabs1, tabs2, tabs3, tabs4).SetAttribute("GAP", "10"),
 		iup.Frame(txtLog).SetAttributes(`TITLE="Event Log", MARGIN=5x5`),
 	).SetAttributes("MARGIN=10x10, GAP=10")
 

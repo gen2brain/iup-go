@@ -20,7 +20,9 @@ func main() {
 	txtLog.SetAttribute("VALUE", "IupDialog Callbacks\n"+
 		"=========================================\n"+
 		"• Resize the dialog to trigger RESIZE_CB\n"+
+		"• Move the dialog to trigger MOVE_CB\n"+
 		"• Minimize/restore to trigger SHOW_CB\n"+
+		"• Move the mouse in/out of the dialog for ENTERWINDOW_CB/LEAVEWINDOW_CB\n"+
 		"• Drop files onto the dialog for DROPFILES_CB\n"+
 		"• Close the dialog for CLOSE_CB\n"+
 		"---\n")
@@ -37,7 +39,7 @@ func main() {
 	dlg := iup.Dialog(
 		iup.Vbox(
 			iup.Label("IupDialog Callbacks").SetAttributes(`FONT="Sans, Bold 12"`),
-			iup.Label("Resize, minimize/restore, drop files, or close the dialog to see callbacks."),
+			iup.Label("Resize, move, minimize/restore, drop files, or close the dialog to see callbacks."),
 			iup.Hbox(
 				btnClearLog,
 			).SetAttributes("GAP=5"),
@@ -68,6 +70,21 @@ func main() {
 
 	iup.SetCallback(dlg, "RESIZE_CB", iup.ResizeFunc(func(ih iup.Ihandle, width, height int) int {
 		appendLog(fmt.Sprintf("RESIZE_CB - width=%d height=%d", width, height))
+		return iup.DEFAULT
+	}))
+
+	iup.SetCallback(dlg, "MOVE_CB", iup.MoveFunc(func(ih iup.Ihandle, x, y int) int {
+		appendLog(fmt.Sprintf("MOVE_CB - x=%d y=%d", x, y))
+		return iup.DEFAULT
+	}))
+
+	iup.SetCallback(dlg, "ENTERWINDOW_CB", iup.EnterWindowFunc(func(ih iup.Ihandle) int {
+		appendLog("ENTERWINDOW_CB - cursor entered the dialog")
+		return iup.DEFAULT
+	}))
+
+	iup.SetCallback(dlg, "LEAVEWINDOW_CB", iup.LeaveWindowFunc(func(ih iup.Ihandle) int {
+		appendLog("LEAVEWINDOW_CB - cursor left the dialog")
 		return iup.DEFAULT
 	}))
 

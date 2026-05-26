@@ -64,14 +64,14 @@ func main() {
 	}))
 
 	list := iup.List().SetAttributes(map[string]string{
-		"1":             "Apple",
-		"2":             "Banana",
-		"3":             "Cherry",
-		"4":             "Date",
-		"5":             "Elderberry",
-		"DROPDOWN":      "YES",
-		"VISIBLE_ITEMS": "5",
-		"EXPAND":        "HORIZONTAL",
+		"1":            "Apple",
+		"2":            "Banana",
+		"3":            "Cherry",
+		"4":            "Date",
+		"5":            "Elderberry",
+		"DROPDOWN":     "YES",
+		"VISIBLEITEMS": "5",
+		"EXPAND":       "HORIZONTAL",
 	})
 	listInfo := iup.Label("List: (none)").SetAttribute("EXPAND", "HORIZONTAL")
 	list.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {

@@ -16,8 +16,8 @@ func main() {
 	dialV := iup.Dial("VERTICAL").SetAttributes("RASTERSIZE=100x100")
 	dialH := iup.Dial("HORIZONTAL").SetAttributes("DENSITY=0.3")
 
-	dialV.SetCallback("MOUSEMOVE_CB", iup.MouseMoveFunc(dialVCb))
-	dialH.SetCallback("MOUSEMOVE_CB", iup.MouseMoveFunc(dialHCb))
+	dialV.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(dialVCb))
+	dialH.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(dialHCb))
 
 	dlg := iup.Dialog(
 		iup.Vbox(
@@ -36,12 +36,12 @@ func main() {
 	iup.MainLoop()
 }
 
-func dialVCb(ih iup.Ihandle, angle float64) int {
-	iup.GetHandle("lblV").SetAttribute("TITLE", angle)
+func dialVCb(ih iup.Ihandle) int {
+	iup.GetHandle("lblV").SetAttribute("TITLE", ih.GetAttribute("VALUE"))
 	return iup.DEFAULT
 }
 
-func dialHCb(ih iup.Ihandle, angle float64) int {
-	iup.GetHandle("lblH").SetAttribute("TITLE", angle)
+func dialHCb(ih iup.Ihandle) int {
+	iup.GetHandle("lblH").SetAttribute("TITLE", ih.GetAttribute("VALUE"))
 	return iup.DEFAULT
 }
