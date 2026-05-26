@@ -1076,7 +1076,7 @@ static int cocoaTabsSetTabListAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int cocoaTabsSetCloseButtonOnHoverAttrib(Ihandle* ih, const char* value)
+static int cocoaTabsSetShowCloseOnHoverAttrib(Ihandle* ih, const char* value)
 {
   IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
   if (tab_bar_view)
@@ -1250,8 +1250,8 @@ static int cocoaTabsMapMethod(Ihandle* ih)
     cocoaTabsSetAllowReorderAttrib(ih, iupAttribGet(ih, "ALLOWREORDER"));
   if (iupAttribGet(ih, "TABLIST"))
     cocoaTabsSetTabListAttrib(ih, iupAttribGet(ih, "TABLIST"));
-  if (iupAttribGet(ih, "CLOSEBUTTONONHOVER"))
-    cocoaTabsSetCloseButtonOnHoverAttrib(ih, iupAttribGet(ih, "CLOSEBUTTONONHOVER"));
+  if (iupAttribGet(ih, "SHOWCLOSEONHOVER"))
+    cocoaTabsSetShowCloseOnHoverAttrib(ih, iupAttribGet(ih, "SHOWCLOSEONHOVER"));
 
   iupcocoaAddToParent(ih);
 
@@ -1379,7 +1379,7 @@ IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, cocoaTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABLIST", NULL, cocoaTabsSetTabListAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, cocoaTabsSetShowCloseAttrib, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLOSEBUTTONONHOVER", NULL, cocoaTabsSetCloseButtonOnHoverAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWCLOSEONHOVER", NULL, cocoaTabsSetShowCloseOnHoverAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "TABPADDING", NULL, NULL, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MULTILINE", cocoaTabsGetMultilineAttrib, cocoaTabsSetMultilineAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

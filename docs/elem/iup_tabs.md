@@ -18,8 +18,7 @@ It can be empty, but in C must have at least the NULL terminator.
 
 ### Attributes
 
-[BGCOLOR](../attrib/iup_bgcolor.md): In Windows and in GTK when in Windows, the tab buttons background it will always be defined by the system.
-In Windows the default background is different from the dialog background.
+[BGCOLOR](../attrib/iup_bgcolor.md): In Win32 the tab buttons background is always defined by the system and cannot be changed; its default also differs from the dialog background.
 Default: the global attribute DLGBGCOLOR.
 
 **CHILDOFFSET**: Allow specifying a position offset for the child. Available for native containers only.
@@ -28,20 +27,23 @@ Format "*dx*x*dy*", where *dx* and *dy* are integer values corresponding to the 
 Default: 0x0.
 
 **CHILDSIZEALL** (non-inheritable): compute the natural size using all children.
-If set to NO will compute using only the current tab. Default: Yes.
+If set to NO will compute using only the current tab. Default: YES.
 
 **COUNT** (read-only) (non-inheritable)**:** returns the number of tabs.
 Same value returned by **IupGetChildCount**.
 
 [EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
 
-[FGCOLOR](../attrib/iup_fgcolor.md): Tabs title color. Default: the global attribute DLGFGCOLOR.
+[FGCOLOR](../attrib/iup_fgcolor.md): Tabs title color.
+Not supported in EFL, Android and Haiku.
+In Win32 it is applied only when SHOWCLOSE=YES; in FLTK only the selected tab title is colored.
+Default: the global attribute DLGFGCOLOR.
 
 **ALLOWREORDER** (non-inheritable): enables the user to reorder tabs by dragging them.
 Can be "YES" or "NO". Default: "NO".
 Not supported in Motif.
 
-**MULTILINE** [Windows and Qt Only] (non-inheritable): Enable multiple lines of tab buttons.
+**MULTILINE** [Win32 and Qt Only] (non-inheritable): Enable multiple lines of tab buttons.
 This will hide the tab scroll and fits to make all tab buttons visible. Can be "YES" or "NO".
 Default "NO". It is always enabled when TABTYPE=LEFT or TABTYPE=RIGHT.
 
@@ -50,7 +52,7 @@ Default value: "NO". In Windows the close button implies the classic visual for 
 By default, when closed the tab is hidden.
 To change that behavior, use the TABCLOSE_CB callback.
 
-**CLOSEBUTTONONHOVER** [macOS Only] (non-inheritable): When SHOWCLOSE=YES, close buttons on tabs are only shown when hovering over the tab.
+**SHOWCLOSEONHOVER** [macOS Only] (non-inheritable): When SHOWCLOSE=YES, close buttons on tabs are only shown when hovering over the tab.
 Can be "YES" or "NO". Default: "NO".
 
 **TABLIST** [macOS Only] (non-inheritable): Shows a dropdown menu control in the tab bar that lists all tabs. Useful when there are too many tabs to display.
@@ -87,7 +89,7 @@ When set after map will update the TABIMAGE attribute on the respective child.
 Images larger than the box are downscaled with aspect preserved.
 
 **TABVISIBLEn** (non-inheritable): Allows to hide a tab. n starts at 0.
-When a tab is hidden the tabs indices are not changed. Can be Yes or No. Default: Yes.
+When a tab is hidden the tabs indices are not changed. Can be YES or NO. Default: YES.
 
 **TABTITLEn** (non-inheritable): Contains the text to be shown in the respective tab title. n starts at 0.
 If this value is NULL, it will remain empty.
@@ -148,7 +150,7 @@ int function(Ihandle* ih, int new_pos, int old_pos);
 **old_pos**: the previously selected tab position
 
 **TABCLOSE_CB**: Callback called when the user clicks on the close button.
-Called only when SHOWCLOSE=Yes.
+Called only when SHOWCLOSE=YES.
 
 int function(Ihandle* ih, int pos);
 
@@ -176,7 +178,7 @@ int function(Ihandle* ih, int pos);
 **pos**: the tab position
 
 **REORDER_CB**: Callback called when the user reorders a tab by dragging it to a new position.
-Called only when ALLOWREORDER=Yes. Not supported in Motif.
+Called only when ALLOWREORDER=YES. Not supported in Motif.
 
 int function(Ihandle* ih, int old_pos, int new_pos);
 

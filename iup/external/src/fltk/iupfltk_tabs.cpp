@@ -29,6 +29,43 @@ extern "C" {
 #include "iupfltk_drv.h"
 
 
+static int fltkTabsPosToIndex(Ihandle* ih, int pos)
+{
+  int index = 0, p = 0;
+  for (Ihandle* c = ih->firstchild; c; c = c->brother, p++)
+  {
+    if (iupAttribGet(c, "_IUPFLTK_TAB_HIDDEN"))
+    {
+      if (p == pos) return -1;
+      continue;
+    }
+    if (p == pos) return index;
+    index++;
+  }
+  return -1;
+}
+
+static int fltkTabsIndexToPos(Ihandle* ih, int index)
+{
+  int seen = 0, p = 0;
+  for (Ihandle* c = ih->firstchild; c; c = c->brother, p++)
+  {
+    if (iupAttribGet(c, "_IUPFLTK_TAB_HIDDEN")) continue;
+    if (seen == index) return p;
+    seen++;
+  }
+  return -1;
+}
+
+static Ihandle* fltkTabsChildFromPage(Ihandle* ih, void* page)
+{
+  for (Ihandle* c = ih->firstchild; c; c = c->brother)
+    if (iupAttribGet(c, "_IUPTAB_PAGE") == (char*)page)
+      return c;
+  return NULL;
+}
+
+
 class IupFltkTabs : public Fl_Tabs
 {
 public:
@@ -52,6 +89,8 @@ public:
       return find(w);
     return -1;
   }
+
+  void redrawTabsArea() { redraw_tabs(); }
 
 protected:
   void draw() override
@@ -104,9 +143,10 @@ public:
       if (cb)
       {
         int idx = findTabIndex(Fl::event_x(), Fl::event_y());
-        if (idx >= 0)
+        int pos = idx >= 0 ? fltkTabsIndexToPos(iup_handle, idx) : -1;
+        if (pos >= 0)
         {
-          cb(iup_handle, idx);
+          cb(iup_handle, pos);
           return 1;
         }
       }
@@ -185,34 +225,33 @@ public:
 
         if (dst != src)
         {
+          int iup_src = fltkTabsIndexToPos(iup_handle, src);
+          int iup_dst = fltkTabsIndexToPos(iup_handle, dst);
+
           IFnii reorder_cb = (IFnii)IupGetCallback(iup_handle, "REORDER_CB");
           int ret = IUP_DEFAULT;
           if (reorder_cb)
-            ret = reorder_cb(iup_handle, src, dst);
+            ret = reorder_cb(iup_handle, iup_src, iup_dst);
 
           if (ret != IUP_IGNORE)
           {
             iupAttribSet(iup_handle, "_IUPTABS_REORDERING", "1");
 
             Fl_Widget* fl_child = child(src);
+            Ihandle* src_child = fltkTabsChildFromPage(iup_handle, fl_child);
 
-            /* Reorder FLTK children using insert which handles same-group move */
             insert(*fl_child, tgt);
 
-            /* Reorder IUP children to match */
-            Ihandle* src_child = IupGetChild(iup_handle, src);
             if (src_child)
             {
-              /* Find the new ref child after FLTK reorder */
-              int new_pos = find(fl_child);
-              Ihandle* ref_child = NULL;
-              if (new_pos < IupGetChildCount(iup_handle))
-                ref_child = IupGetChild(iup_handle, new_pos);
+              int new_index = find(fl_child);
+              Fl_Widget* ref_widget = (new_index + 1 < children()) ? child(new_index + 1) : NULL;
+              Ihandle* ref_child = ref_widget ? fltkTabsChildFromPage(iup_handle, ref_widget) : NULL;
 
               IupReparent(src_child, iup_handle, ref_child);
 
               value(fl_child);
-              prev_index = new_pos;
+              prev_index = new_index;
             }
 
             iupAttribSet(iup_handle, "_IUPTABS_REORDERING", NULL);
@@ -237,8 +276,11 @@ public:
         int new_index = find(cur);
         if (new_index != prev_index && new_index >= 0 && new_index < children())
         {
-          Ihandle* child_ih = IupGetChild(iup_handle, new_index);
-          Ihandle* prev_child = prev_index >= 0 ? IupGetChild(iup_handle, prev_index) : NULL;
+          int new_pos = fltkTabsIndexToPos(iup_handle, new_index);
+          int prev_pos = prev_index >= 0 ? fltkTabsIndexToPos(iup_handle, prev_index) : -1;
+
+          Ihandle* child_ih = new_pos >= 0 ? IupGetChild(iup_handle, new_pos) : NULL;
+          Ihandle* prev_child = prev_pos >= 0 ? IupGetChild(iup_handle, prev_pos) : NULL;
 
           IFnnn cb = (IFnnn)IupGetCallback(iup_handle, "TABCHANGE_CB");
           if (cb)
@@ -246,8 +288,8 @@ public:
           else
           {
             IFnii cb2 = (IFnii)IupGetCallback(iup_handle, "TABCHANGEPOS_CB");
-            if (cb2 && prev_index >= 0)
-              cb2(iup_handle, new_index, prev_index);
+            if (cb2 && prev_pos >= 0)
+              cb2(iup_handle, new_pos, prev_pos);
           }
 
           prev_index = new_index;
@@ -354,10 +396,11 @@ extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
   IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
   if (!tabs) return;
 
-  if (pos >= 0 && pos < tabs->children())
+  int index = fltkTabsPosToIndex(ih, pos);
+  if (index >= 0 && index < tabs->children())
   {
-    tabs->value(tabs->child(pos));
-    tabs->prev_index = pos;
+    tabs->value(tabs->child(index));
+    tabs->prev_index = index;
     tabs->redraw();
   }
 }
@@ -369,16 +412,15 @@ extern "C" IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 
   Fl_Widget* cur = tabs->value();
   if (cur)
-    return tabs->find(cur);
+    return fltkTabsIndexToPos(ih, tabs->find(cur));
 
   return -1;
 }
 
 extern "C" IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
-  (void)child;
   (void)pos;
-  return 1;
+  return iupAttribGet(child, "_IUPFLTK_TAB_HIDDEN") ? 0 : 1;
 }
 
 /****************************************************************************
@@ -476,8 +518,42 @@ static int fltkTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
   return 1;
 }
 
+static void fltkTabsShowTab(Ihandle* ih, Ihandle* child, int show)
+{
+  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
+  if (!tabs) return;
+
+  Fl_Group* page = (Fl_Group*)iupAttribGet(child, "_IUPTAB_PAGE");
+  if (!page) return;
+
+  int hidden = iupAttribGet(child, "_IUPFLTK_TAB_HIDDEN") ? 1 : 0;
+  int pos = IupGetChildPos(ih, child);
+
+  if (!show && !hidden)
+  {
+    iupTabsCheckCurrentTab(ih, pos, 0);
+    iupAttribSet(child, "_IUPFLTK_TAB_HIDDEN", "1");
+    tabs->remove(page);
+  }
+  else if (show && hidden)
+  {
+    iupAttribSet(child, "_IUPFLTK_TAB_HIDDEN", NULL);
+    int index = fltkTabsPosToIndex(ih, pos);
+    if (index < 0) index = tabs->children();
+    tabs->insert(*page, index);
+  }
+  else
+    return;
+
+  Fl_Widget* cur = tabs->value();
+  tabs->prev_index = cur ? tabs->find(cur) : -1;
+  tabs->redraw();
+  tabs->redrawTabsArea();
+}
+
 static void fltkTabsCloseCallback(Fl_Widget* w, void* data)
 {
+  (void)w;
   Ihandle* child = (Ihandle*)data;
   if (!child) return;
 
@@ -501,10 +577,7 @@ static void fltkTabsCloseCallback(Fl_Widget* w, void* data)
       IupDestroy(child);
     }
     else if (ret == IUP_DEFAULT)
-    {
-      w->hide();
-      w->parent()->redraw();
-    }
+      fltkTabsShowTab(ih, child, 0);
   }
 }
 
@@ -560,18 +633,11 @@ static int fltkTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 
 static int fltkTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
 {
-  IupFltkTabs* tabs = (IupFltkTabs*)ih->handle;
-  if (!tabs) return 0;
+  if (!ih->handle) return 0;
 
-  if (pos >= 0 && pos < tabs->children())
-  {
-    Fl_Widget* page = tabs->child(pos);
-    if (iupStrBoolean(value))
-      page->show();
-    else
-      page->hide();
-    tabs->redraw();
-  }
+  Ihandle* child = IupGetChild(ih, pos);
+  if (child)
+    fltkTabsShowTab(ih, child, iupStrBoolean(value));
   return 0;
 }
 
@@ -866,6 +932,18 @@ static void fltkTabsUnMapMethod(Ihandle* ih)
       if (page) page->image(NULL);
       delete owned;
       iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", NULL);
+    }
+
+    if (iupAttribGet(child, "_IUPFLTK_TAB_HIDDEN"))
+    {
+      Fl_Group* page = (Fl_Group*)iupAttribGet(child, "_IUPTAB_PAGE");
+      if (page)
+      {
+        page->image(NULL);
+        delete page;
+      }
+      iupAttribSet(child, "_IUPTAB_PAGE", NULL);
+      iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
     }
   }
 

@@ -418,7 +418,7 @@ public:
     if (index >= CountTabs() || index < 0) return BRect();
     const float pad = ceilf(be_control_look->DefaultLabelSpacing() * 3.3f);
     const float height = TabHeight();
-    const float offset = BControlLook::ComposeSpacing(B_USE_WINDOW_SPACING);
+    const float offset = 4.0f + iupdrvTabsExtraMargin();
     const BRect bounds(Bounds());
     tab_side side = TabSide();
 
