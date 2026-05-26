@@ -11,6 +11,27 @@
 #include "iup.h"
 #include "iupcocoa_drv.h"
 
+static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
+{
+  NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
+  if (version.majorVersion < 11)
+    return nil;
+
+  NSImage* base = [NSImage imageWithSystemSymbolName:symbol_name accessibilityDescription:nil];
+  if (!base)
+    return nil;
+
+  NSImage* tinted = [[base copy] autorelease];
+  [tinted lockFocus];
+  [tint_color set];
+  NSRect bounds = NSZeroRect;
+  bounds.size = [tinted size];
+  NSRectFillUsingOperation(bounds, NSCompositingOperationSourceAtop);
+  [tinted unlockFocus];
+  [tinted setTemplate:NO];
+  return tinted;
+}
+
 @implementation IupCocoaTabBarView (Expose)
   - (NSRect)tabRectFromIndex:(NSUInteger)index
 {
@@ -310,6 +331,7 @@
 @synthesize allowsTabListMenu;
 @synthesize showsCloseButtonOnHover;
 @synthesize allowsAddingTabsByDoubleClick;
+@synthesize usesMaterialBackground;
 
 - (id)initWithFrame:(NSRect)frame
 {
@@ -343,6 +365,7 @@
     showsCloseButtonOnHover = NO; /* Default to persistent close buttons */
     allowsAddingTabsByDoubleClick = NO; /* Disabled by default */
     enabled = YES;
+    usesMaterialBackground = YES;
   }
   return self;
 }
@@ -444,37 +467,59 @@
   [super drawRect:dirtyRect];
 
   /* Drawing background color of Tab bar view. */
-  [bgColor set];
   NSRect rect = [self frame];
   rect.origin = NSZeroPoint;
-  NSRectFill(rect);
+  if (!usesMaterialBackground)
+  {
+    [bgColor set];
+    NSRectFill(rect);
+  }
 
 
   /* Draw tab list control */
   if (self.allowsTabListMenu)
   {
-    [tabListControlPath release];
-    tabListControlPath = [[NSBezierPath bezierPath] retain];
     NSRect tabListRect = [self rectForTabListControl];
     tabListRect = NSIntegralRect(tabListRect);
-    int maxY = NSMaxY(tabListRect);
-    int minY = NSMinY(tabListRect);
-    int minX = NSMinX(tabListRect);
-    int maxX = NSMaxX(tabListRect);
-    int midX = NSMidX(tabListRect);
 
-    NSPoint p1 = NSMakePoint(midX, minY);
-    NSPoint p2 = NSMakePoint(minX, maxY);
-    NSPoint p3 = NSMakePoint(maxX, maxY);
+    NSImage* chevron = iupCocoaTintedSymbol(@"chevron.down", tabTitleColor);
+    if (chevron)
+    {
+      NSSize sz = [chevron size];
+      CGFloat side = MIN(NSWidth(tabListRect), NSHeight(tabListRect));
+      if (sz.width > 0 && sz.height > 0)
+      {
+        CGFloat scale = side / MAX(sz.width, sz.height);
+        sz.width *= scale;
+        sz.height *= scale;
+      }
+      NSRect imageRect = NSMakeRect(NSMidX(tabListRect) - sz.width / 2.0,
+                                    NSMidY(tabListRect) - sz.height / 2.0,
+                                    sz.width, sz.height);
+      [chevron drawInRect:imageRect fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1.0];
+    }
+    else
+    {
+      [tabListControlPath release];
+      tabListControlPath = [[NSBezierPath bezierPath] retain];
+      int maxY = NSMaxY(tabListRect);
+      int minY = NSMinY(tabListRect);
+      int minX = NSMinX(tabListRect);
+      int maxX = NSMaxX(tabListRect);
+      int midX = NSMidX(tabListRect);
 
-    [tabListControlPath moveToPoint:p1];
-    [tabListControlPath lineToPoint:p2];
-    [tabListControlPath lineToPoint:p3];
-    [tabListControlPath lineToPoint:p1];
+      NSPoint p1 = NSMakePoint(midX, minY);
+      NSPoint p2 = NSMakePoint(minX, maxY);
+      NSPoint p3 = NSMakePoint(maxX, maxY);
 
-    /* Use tab active background color to set tab list triangle */
-    [[self tabActivedBGColor] set];
-    [tabListControlPath fill];
+      [tabListControlPath moveToPoint:p1];
+      [tabListControlPath lineToPoint:p2];
+      [tabListControlPath lineToPoint:p3];
+      [tabListControlPath lineToPoint:p1];
+
+      [[self tabActivedBGColor] set];
+      [tabListControlPath fill];
+    }
   }
 
   /* Drawing border line */
@@ -626,6 +671,15 @@
   [self redraw];
 }
 
+- (void)mouseExited:(NSEvent *)theEvent
+{
+  NSUInteger index = 0;
+  for (index = 0; index < [tabs count]; ++index)
+    [[tabs objectAtIndex:index] setIsHovered:NO];
+
+  [self redraw];
+}
+
 - (void)setFrame:(NSRect)frame
 {
   [super setFrame:frame];
@@ -727,6 +781,9 @@
 
 - (void)draggedImage:(NSImage *)image movedTo:(NSPoint)screenPoint
 {
+  if (!self.allowsDragging)
+    return;
+
   screenPoint.x += (draggingTab.frame.size.width / 2);
   screenPoint.y += (draggingTab.frame.size.height / 2);
   NSPoint windowLocation = [[self window] convertScreenToBase:screenPoint];
@@ -752,6 +809,9 @@
 
 - (void)draggedImage:(NSImage *)image endedAt:(NSPoint)screenPoint operation:(NSDragOperation)operation
 {
+  if (!self.allowsDragging)
+    return;
+
   screenPoint.x += (draggingTab.frame.size.width / 2);
   screenPoint.y += (draggingTab.frame.size.height / 2);
   NSPoint windowLocation = [[self window] convertScreenToBase:screenPoint];
@@ -996,12 +1056,19 @@
   if ([self isActived])
   {
     [[[self tabBarView] tabActivedBGColor] set];
+    [path fill];
   }
-  else
+  else if (![[self tabBarView] usesMaterialBackground])
   {
     [[[self tabBarView] tabBGColor] set];
+    [path fill];
   }
-  [path fill];
+
+  if (isHovered && ![self isActived])
+  {
+    [[NSColor quaternaryLabelColor] set];
+    [path fill];
+  }
 
   /* Draw separators instead of full borders */
   [[[self tabBarView] tabBorderColor] set];
@@ -1026,6 +1093,33 @@
       [NSBezierPath strokeLineFromPoint:NSMakePoint(NSMinX(rect), NSMinY(rect))
                               toPoint:NSMakePoint(NSMaxX(rect), NSMinY(rect))];
     }
+  }
+
+  if ([self isActived])
+  {
+    NSBezierPath* accent = [NSBezierPath bezierPath];
+    [accent setLineWidth:2.0];
+    [[NSColor controlAccentColor] set];
+    switch ([[self tabBarView] tabPosition])
+    {
+      case IupCocoaTabPositionTop:
+        [accent moveToPoint:NSMakePoint(NSMinX(rect), NSMinY(rect) + 1)];
+        [accent lineToPoint:NSMakePoint(NSMaxX(rect), NSMinY(rect) + 1)];
+        break;
+      case IupCocoaTabPositionBottom:
+        [accent moveToPoint:NSMakePoint(NSMinX(rect), NSMaxY(rect) - 1)];
+        [accent lineToPoint:NSMakePoint(NSMaxX(rect), NSMaxY(rect) - 1)];
+        break;
+      case IupCocoaTabPositionLeft:
+        [accent moveToPoint:NSMakePoint(NSMaxX(rect) - 1, NSMinY(rect))];
+        [accent lineToPoint:NSMakePoint(NSMaxX(rect) - 1, NSMaxY(rect))];
+        break;
+      case IupCocoaTabPositionRight:
+        [accent moveToPoint:NSMakePoint(NSMinX(rect) + 1, NSMinY(rect))];
+        [accent lineToPoint:NSMakePoint(NSMinX(rect) + 1, NSMaxY(rect))];
+        break;
+    }
+    [accent stroke];
   }
 
 
@@ -1236,26 +1330,23 @@
 
 - (void)mouseMoved:(NSEvent *)theEvent
 {
-  if (![self hasCloseButton] || ![[self tabBarView] showsCloseButtonOnHover])
-  {
-    if (canDrawCloseButton) /* Ensure it's turned off if mode changed */
-    {
-      canDrawCloseButton = NO;
-    }
-    return;
-  }
-
   NSPoint p = [theEvent locationInWindow];
   p = [[self tabBarView] convertPoint:p fromView:[[[self tabBarView] window] contentView]];
 
-  if (NSPointInRect(p ,[self closeButtonRect]))
-  {
-    canDrawCloseButton = YES;
-  }
-  else
+  isHovered = NSPointInRect(p, [self frame]);
+
+  if (![self hasCloseButton] || ![[self tabBarView] showsCloseButtonOnHover])
   {
     canDrawCloseButton = NO;
+    return;
   }
+
+  canDrawCloseButton = NSPointInRect(p, [self closeButtonRect]);
+}
+
+- (void)setIsHovered:(BOOL)flag
+{
+  isHovered = flag;
 }
 
 - (void)setTitle:(NSString *)newTitle

@@ -43,9 +43,11 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
 {
   IupCocoaTabBarView* _tabBarView;
   NSView* _contentAreaView;
+  NSVisualEffectView* _materialView;
 }
 @property(nonatomic, retain) IupCocoaTabBarView* tabBarView;
 @property(nonatomic, retain) NSView* contentAreaView;
+@property(nonatomic, retain) NSVisualEffectView* materialView;
 - (Ihandle*)ihandle;
 - (void)layout;
 @end
@@ -58,11 +60,13 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
   @implementation IupTabsRootView
   @synthesize tabBarView = _tabBarView;
   @synthesize contentAreaView = _contentAreaView;
+  @synthesize materialView = _materialView;
 
   - (void)dealloc
 {
   self.tabBarView = nil;
   self.contentAreaView = nil;
+  self.materialView = nil;
   [super dealloc];
 }
 
@@ -139,6 +143,7 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
 
   [self.tabBarView setFrame:tab_bar_frame];
   [self.contentAreaView setFrame:content_frame];
+  [self.materialView setFrame:tab_bar_frame];
 
   iupcocoaCommonBaseLayoutGetChildView(ih);
   iupdrvBaseLayoutUpdateMethod(ih);
@@ -1040,6 +1045,10 @@ static int cocoaTabsSetBgColorAttrib(Ihandle* ih, const char* value)
     CGFloat blue = b/255.0;
     NSColor* the_color = [NSColor colorWithSRGBRed:red green:green blue:blue alpha:1.0];
 
+    /* Explicit BGCOLOR is opaque, disable the material background */
+    [tab_bar_view setUsesMaterialBackground:NO];
+    [[cocoaGetRootView(ih) materialView] setHidden:YES];
+
     /* Set all three color properties for a consistent look */
     [tab_bar_view setBgColor:the_color];
     [tab_bar_view setTabBGColor:the_color];
@@ -1196,6 +1205,14 @@ static int cocoaTabsMapMethod(Ihandle* ih)
   IupTabsRootView* root_view = [[IupTabsRootView alloc] initWithFrame:NSZeroRect];
   ih->handle = root_view; /* DO NOT release root_view, ih->handle owns it */
   objc_setAssociatedObject(root_view, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
+
+  NSVisualEffectView* material_view = [[NSVisualEffectView alloc] initWithFrame:NSZeroRect];
+  [material_view setMaterial:NSVisualEffectMaterialHeaderView];
+  [material_view setBlendingMode:NSVisualEffectBlendingModeWithinWindow];
+  [material_view setState:NSVisualEffectStateFollowsWindowActiveState];
+  [root_view setMaterialView:material_view];
+  [root_view addSubview:material_view];
+  [material_view release];
 
   /* Create the Tab Bar */
   IupCocoaTabBarView* tab_bar_view = [[IupCocoaTabBarView alloc] initWithFrame:NSZeroRect];
