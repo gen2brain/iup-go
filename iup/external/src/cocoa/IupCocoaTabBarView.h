@@ -72,6 +72,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
   BOOL showsCloseButtonOnHover;
   BOOL allowsAddingTabsByDoubleClick;
   BOOL enabled;
+  BOOL usesMaterialBackground;
 }
 
 @property(nonatomic, retain) NSFont* tabFont;
@@ -93,6 +94,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
 @property(nonatomic, assign) BOOL showsCloseButtonOnHover;
 @property(nonatomic, assign) BOOL allowsAddingTabsByDoubleClick;
 @property(nonatomic, assign, getter=isEnabled) BOOL enabled;
+@property(nonatomic, assign) BOOL usesMaterialBackground;
 
 - (id)addTabViewWithTitle:(NSString*)title;
 - (id)addTabViewWithTitle:(NSString*)title image:(NSImage*)image;
@@ -151,6 +153,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
   BOOL isDraggingTab;
   NSImage* image;
   BOOL hasCloseButton;
+  BOOL isHovered;
 }
 
 @property(nonatomic, assign) BOOL canDrawCloseButton;
@@ -171,6 +174,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
 /* forward mouse event to tab */
 - (void)mouseDown:(NSEvent*)theEvent;
 - (void)mouseMoved:(NSEvent*)theEvent;
+- (void)setIsHovered:(BOOL)flag;
 @end
 
 @interface IupCocoaTabImage : NSImage
