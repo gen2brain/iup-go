@@ -207,6 +207,29 @@ public:
   void MouseDown(BPoint where) override
   {
     if (fIhandle && !iupdrvIsActive(fIhandle)) return;
+
+    BPoint mouse_pt;
+    uint32 buttons = 0;
+    GetMouse(&mouse_pt, &buttons, false);
+    if ((buttons & B_SECONDARY_MOUSE_BUTTON) && fIhandle && iupObjectCheck(fIhandle))
+    {
+      IFni cb = (IFni)IupGetCallback(fIhandle, "RIGHTCLICK_CB");
+      if (cb)
+      {
+        for (int32 i = 0; i < CountTabs(); i++)
+        {
+          if (TabFrame(i).Contains(where))
+          {
+            int iup_pos = IupPosFromBTab(i);
+            if (iup_pos >= 0)
+              cb(fIhandle, iup_pos);
+            break;
+          }
+        }
+      }
+      return;
+    }
+
     int btab_idx = HitCloseAt(where);
     if (btab_idx >= 0 && fIhandle && iupObjectCheck(fIhandle))
     {

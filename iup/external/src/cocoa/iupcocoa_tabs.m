@@ -26,11 +26,6 @@
 #include "IupCocoaTabBarView.h"
 
 
-/* Forward declarations */
-static int cocoaTabsPosFixFromNative(Ihandle* ih, int native_pos);
-static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos);
-static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_native);
-static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
 
 /*
    ===============================================================================
@@ -56,6 +51,146 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
 @interface IupTabsRootView ()
   - (void)_handleRightMouseDownOnTabCell:(IupCocoaTabCell *)tab_cell cb:(IFni)cb ih:(Ihandle *)ih event:(NSEvent *)event;
   @end
+
+/*
+   ===============================================================================
+ * Helper Functions
+ ===============================================================================
+ */
+
+static IupTabsRootView* cocoaGetRootView(Ihandle* ih)
+{
+  if (ih && ih->handle)
+  {
+    IupTabsRootView* root_view = (IupTabsRootView*)ih->handle;
+    NSCAssert([root_view isKindOfClass:[IupTabsRootView class]], @"Expected IupTabsRootView");
+    return root_view;
+  }
+  return nil;
+}
+
+static IupCocoaTabBarView* cocoaGetTabBarView(Ihandle* ih)
+{
+  IupTabsRootView* root_view = cocoaGetRootView(ih);
+  if (root_view)
+  {
+    return [root_view tabBarView];
+  }
+  return nil;
+}
+
+static NSView* cocoaGetContentAreaView(Ihandle* ih)
+{
+  IupTabsRootView* root_view = cocoaGetRootView(ih);
+  if (root_view)
+  {
+    return [root_view contentAreaView];
+  }
+  return nil;
+}
+
+/* Manages an array tracking the visibility of each IUP child tab.
+   This is necessary because Cocoa's API removes invisible tabs, not just hides them. */
+static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih)
+{
+  Iarray* visible_array = (Iarray*)iupAttribGet(ih, "_IUPCOCOA_VISIBLEARRAY");
+  if (!visible_array)
+  {
+    int i, count = IupGetChildCount(ih);
+    visible_array = iupArrayCreate(count > 0 ? count : 1, sizeof(int));
+    iupAttribSet(ih, "_IUPCOCOA_VISIBLEARRAY", (char*)visible_array);
+    if (count > 0)
+    {
+      int* visible_data = (int*)iupArrayGetData(visible_array);
+      for (i = 0; i < count; i++)
+      {
+        visible_data[i] = 1; /* All visible by default */
+      }
+    }
+  }
+  return visible_array;
+}
+
+static int cocoaTabsPosFixToNative(Ihandle* ih, int iup_pos)
+{
+  Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
+  int* visible_data = (int*)iupArrayGetData(visible_array);
+  if (iup_pos < 0 || iup_pos >= iupArrayCount(visible_array) || !visible_data[iup_pos])
+  {
+    return -1;
+  }
+
+  int native_pos = 0;
+  for (int i = 0; i < iup_pos; i++)
+  {
+    if (visible_data[i])
+    {
+      native_pos++;
+    }
+  }
+
+  return native_pos;
+}
+
+static int cocoaTabsPosFixFromNative(Ihandle* ih, int native_pos)
+{
+  if (native_pos < 0)
+  {
+    return -1;
+  }
+
+  Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
+  int* visible_data = (int*)iupArrayGetData(visible_array);
+  int count = iupArrayCount(visible_array);
+  int current_native_pos = -1;
+
+  for (int iup_pos = 0; iup_pos < count; iup_pos++)
+  {
+    if (visible_data[iup_pos])
+    {
+      current_native_pos++;
+    }
+    if (current_native_pos == native_pos)
+    {
+      return iup_pos;
+    }
+  }
+  return -1;
+}
+
+/* Hides the old page and shows the new one */
+static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_native)
+{
+  int iup_old_pos = old_pos;
+  int iup_new_pos = new_pos;
+
+  if (is_native)
+  {
+    iup_old_pos = cocoaTabsPosFixFromNative(ih, old_pos);
+    iup_new_pos = cocoaTabsPosFixFromNative(ih, new_pos);
+  }
+
+  if (iup_old_pos >= 0)
+  {
+    Ihandle* old_child = IupGetChild(ih, iup_old_pos);
+    if(old_child)
+    {
+      NSView* old_container = (NSView*)iupAttribGet(old_child, "_IUPTAB_CONTAINER");
+      if (old_container) [old_container setHidden:YES];
+    }
+  }
+
+  if (iup_new_pos >= 0)
+  {
+    Ihandle* new_child = IupGetChild(ih, iup_new_pos);
+    if(new_child)
+    {
+      NSView* new_container = (NSView*)iupAttribGet(new_child, "_IUPTAB_CONTAINER");
+      if (new_container) [new_container setHidden:NO];
+    }
+  }
+}
+
 
   @implementation IupTabsRootView
   @synthesize tabBarView = _tabBarView;
@@ -448,145 +583,6 @@ static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih);
 
 /*
    ===============================================================================
- * Helper Functions
- ===============================================================================
- */
-
-static IupTabsRootView* cocoaGetRootView(Ihandle* ih)
-{
-  if (ih && ih->handle)
-  {
-    IupTabsRootView* root_view = (IupTabsRootView*)ih->handle;
-    NSCAssert([root_view isKindOfClass:[IupTabsRootView class]], @"Expected IupTabsRootView");
-    return root_view;
-  }
-  return nil;
-}
-
-static IupCocoaTabBarView* cocoaGetTabBarView(Ihandle* ih)
-{
-  IupTabsRootView* root_view = cocoaGetRootView(ih);
-  if (root_view)
-  {
-    return [root_view tabBarView];
-  }
-  return nil;
-}
-
-static NSView* cocoaGetContentAreaView(Ihandle* ih)
-{
-  IupTabsRootView* root_view = cocoaGetRootView(ih);
-  if (root_view)
-  {
-    return [root_view contentAreaView];
-  }
-  return nil;
-}
-
-/* Manages an array tracking the visibility of each IUP child tab.
-   This is necessary because Cocoa's API removes invisible tabs, not just hides them. */
-static Iarray* cocoaTabsGetVisibleArray(Ihandle* ih)
-{
-  Iarray* visible_array = (Iarray*)iupAttribGet(ih, "_IUPCOCOA_VISIBLEARRAY");
-  if (!visible_array)
-  {
-    int i, count = IupGetChildCount(ih);
-    visible_array = iupArrayCreate(count > 0 ? count : 1, sizeof(int));
-    iupAttribSet(ih, "_IUPCOCOA_VISIBLEARRAY", (char*)visible_array);
-    if (count > 0)
-    {
-      int* visible_data = (int*)iupArrayGetData(visible_array);
-      for (i = 0; i < count; i++)
-      {
-        visible_data[i] = 1; /* All visible by default */
-      }
-    }
-  }
-  return visible_array;
-}
-
-static int cocoaTabsPosFixToNative(Ihandle* ih, int iup_pos)
-{
-  Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
-  int* visible_data = (int*)iupArrayGetData(visible_array);
-  if (iup_pos < 0 || iup_pos >= iupArrayCount(visible_array) || !visible_data[iup_pos])
-  {
-    return -1;
-  }
-
-  int native_pos = 0;
-  for (int i = 0; i < iup_pos; i++)
-  {
-    if (visible_data[i])
-    {
-      native_pos++;
-    }
-  }
-
-  return native_pos;
-}
-
-static int cocoaTabsPosFixFromNative(Ihandle* ih, int native_pos)
-{
-  if (native_pos < 0)
-  {
-    return -1;
-  }
-
-  Iarray* visible_array = cocoaTabsGetVisibleArray(ih);
-  int* visible_data = (int*)iupArrayGetData(visible_array);
-  int count = iupArrayCount(visible_array);
-  int current_native_pos = -1;
-
-  for (int iup_pos = 0; iup_pos < count; iup_pos++)
-  {
-    if (visible_data[iup_pos])
-    {
-      current_native_pos++;
-    }
-    if (current_native_pos == native_pos)
-    {
-      return iup_pos;
-    }
-  }
-  return -1;
-}
-
-/* Hides the old page and shows the new one */
-static void cocoaTabsHideShowPage(Ihandle* ih, int old_pos, int new_pos, int is_native)
-{
-  int iup_old_pos = old_pos;
-  int iup_new_pos = new_pos;
-
-  if (is_native)
-  {
-    iup_old_pos = cocoaTabsPosFixFromNative(ih, old_pos);
-    iup_new_pos = cocoaTabsPosFixFromNative(ih, new_pos);
-  }
-
-  if (iup_old_pos >= 0)
-  {
-    Ihandle* old_child = IupGetChild(ih, iup_old_pos);
-    if(old_child)
-    {
-      NSView* old_container = (NSView*)iupAttribGet(old_child, "_IUPTAB_CONTAINER");
-      if (old_container) [old_container setHidden:YES];
-    }
-  }
-
-  if (iup_new_pos >= 0)
-  {
-    Ihandle* new_child = IupGetChild(ih, iup_new_pos);
-    if(new_child)
-    {
-      NSView* new_container = (NSView*)iupAttribGet(new_child, "_IUPTAB_CONTAINER");
-      if (new_container) [new_container setHidden:NO];
-    }
-  }
-}
-
-/*
-   ===============================================================================
  * IUP Driver Functions
  ===============================================================================
  */
@@ -761,6 +757,66 @@ IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
  * IUP Attribute Setters
  ===============================================================================
  */
+
+static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos)
+{
+  IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
+  int native_pos = cocoaTabsPosFixToNative(ih, iup_pos);
+  if (native_pos < 0) return -1;
+
+  char* title = iupAttribGet(child, "TABTITLE");
+  if (!title) title = iupAttribGetId(ih, "TABTITLE", iup_pos);
+
+  char* image_name = iupAttribGet(child, "TABIMAGE");
+  if (!image_name) image_name = iupAttribGetId(ih, "TABIMAGE", iup_pos);
+
+  char* child_show_close = iupAttribGet(child, "SHOWCLOSE");
+  int do_show_close = child_show_close ? iupStrBoolean(child_show_close) : ih->data->show_close;
+
+  NSString* ns_title = @"";
+  if (title)
+  {
+    char* stripped_str = iupStrProcessMnemonic(title, NULL, 0);
+    ns_title = [NSString stringWithUTF8String:stripped_str];
+    if (stripped_str && stripped_str != title) free(stripped_str);
+  }
+
+  NSImage* ns_image = cocoaTabsScaledTabImage(ih, image_name);
+
+  IupCocoaTabCell *tab_cell = [IupCocoaTabCell tabCellWithTabBarView:tab_bar_view title:ns_title image:ns_image];
+
+  [tab_cell setHasCloseButton:do_show_close];
+
+  id<IupCocoaTabBarViewDelegate> delegate = [tab_bar_view delegate];
+
+  if ([delegate respondsToSelector:@selector(tabWillBeCreated:)])
+  {
+    [delegate tabWillBeCreated:tab_cell];
+  }
+
+  iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
+  [[tab_bar_view tabs] insertObject:tab_cell atIndex:native_pos];
+
+  if ([[tab_bar_view tabs] count] == 1)
+  {
+    [tab_cell setAsActiveTab];
+    if ([delegate isKindOfClass:[IupTabsDelegate class]])
+    {
+      [(IupTabsDelegate*)delegate setPreviousIupPos:iup_pos];
+    }
+  }
+  iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
+
+  if ([delegate respondsToSelector:@selector(tabDidBeCreated:)])
+  {
+    [delegate tabDidBeCreated:tab_cell];
+  }
+
+  [tab_bar_view redraw];
+
+  return 0;
+}
+
 
 static int cocoaTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
 {
@@ -1063,65 +1119,6 @@ static int cocoaTabsSetBgColorAttrib(Ihandle* ih, const char* value)
  * IUP Methods
  ===============================================================================
  */
-
-static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos)
-{
-  IupCocoaTabBarView* tab_bar_view = cocoaGetTabBarView(ih);
-  int native_pos = cocoaTabsPosFixToNative(ih, iup_pos);
-  if (native_pos < 0) return -1;
-
-  char* title = iupAttribGet(child, "TABTITLE");
-  if (!title) title = iupAttribGetId(ih, "TABTITLE", iup_pos);
-
-  char* image_name = iupAttribGet(child, "TABIMAGE");
-  if (!image_name) image_name = iupAttribGetId(ih, "TABIMAGE", iup_pos);
-
-  char* child_show_close = iupAttribGet(child, "SHOWCLOSE");
-  int do_show_close = child_show_close ? iupStrBoolean(child_show_close) : ih->data->show_close;
-
-  NSString* ns_title = @"";
-  if (title)
-  {
-    char* stripped_str = iupStrProcessMnemonic(title, NULL, 0);
-    ns_title = [NSString stringWithUTF8String:stripped_str];
-    if (stripped_str && stripped_str != title) free(stripped_str);
-  }
-
-  NSImage* ns_image = cocoaTabsScaledTabImage(ih, image_name);
-
-  IupCocoaTabCell *tab_cell = [IupCocoaTabCell tabCellWithTabBarView:tab_bar_view title:ns_title image:ns_image];
-
-  [tab_cell setHasCloseButton:do_show_close];
-
-  id<IupCocoaTabBarViewDelegate> delegate = [tab_bar_view delegate];
-
-  if ([delegate respondsToSelector:@selector(tabWillBeCreated:)])
-  {
-    [delegate tabWillBeCreated:tab_cell];
-  }
-
-  iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", "1");
-  [[tab_bar_view tabs] insertObject:tab_cell atIndex:native_pos];
-
-  if ([[tab_bar_view tabs] count] == 1)
-  {
-    [tab_cell setAsActiveTab];
-    if ([delegate isKindOfClass:[IupTabsDelegate class]])
-    {
-      [(IupTabsDelegate*)delegate setPreviousIupPos:iup_pos];
-    }
-  }
-  iupAttribSet(ih, "_IUPCOCOA_IGNORE_CHANGE", NULL);
-
-  if ([delegate respondsToSelector:@selector(tabDidBeCreated:)])
-  {
-    [delegate tabDidBeCreated:tab_cell];
-  }
-
-  [tab_bar_view redraw];
-
-  return 0;
-}
 
 static void cocoaTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {

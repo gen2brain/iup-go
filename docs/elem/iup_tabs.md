@@ -168,6 +168,7 @@ It is called only if PROPAGATEFOCUS is defined in the child.
 **focus**: is non-zero if the canvas is getting the focus, is zero if it is losing the focus.
 
 **RIGHTCLICK_CB**: Callback called when the user clicks on some tab using the right mouse button.
+Not supported in Android and iOS.
 
 int function(Ihandle* ih, int pos);
 
@@ -209,9 +210,6 @@ Unfortunately, this does not work in GTK and in Motif, because in both systems t
 
 Notice that there is no attribute to disable a single tab.
 This is a design decision of all native toolkits, not an IUP decision.
-
-In Windows, when an **IupVal** is inside an **IupTabs**, the tabs disappear when the mouse moves over it after being used in the valuator.
-A workaround is to put the valuator inside an **IupFrame** and then inside the **IupTabs**, so the problem does not occur.
 
 ### Utility Functions
 

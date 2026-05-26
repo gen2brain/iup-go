@@ -201,12 +201,27 @@ static void eflTabsDragPointerDown(void *data, const Efl_Event *ev)
   Efl_Input_Pointer *pointer = ev->info;
   Eo* clicked_item;
   int pos;
+  int button;
   Eina_Position2D pointer_pos;
+
+  button = efl_input_pointer_button_get(pointer);
+
+  if (button == 3)
+  {
+    IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
+    if (cb)
+    {
+      pos = eflTabsGetItemPosition(ih, ev->object);
+      if (pos >= 0)
+        cb(ih, pos);
+    }
+    return;
+  }
 
   if (!iupAttribGetBoolean(ih, "ALLOWREORDER"))
     return;
 
-  if (efl_input_pointer_button_get(pointer) != 1)
+  if (button != 1)
     return;
 
   clicked_item = ev->object;
