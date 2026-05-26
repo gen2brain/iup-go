@@ -126,28 +126,7 @@ static const void* IUP_COCOATOUCH_VAL_TARGET_OBJ_KEY = "IUP_COCOATOUCH_VAL_TARGE
 	iupValCropValue(ih);
 
 	IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
-	if (cb) { if (cb(ih) == IUP_CLOSE) IupExitLoop(); return; }
-
-	IFnd cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-	if (cb_old && cb_old(ih, ih->data->val) == IUP_CLOSE) IupExitLoop();
-}
-
-- (void)onTouchDown:(id)sender
-{
-	if (![sender isKindOfClass:[IupCocoaTouchValSlider class]]) return;
-	Ihandle* ih = ((IupCocoaTouchValSlider*)sender).ihandle;
-	if (!ih || !iupObjectCheck(ih)) return;
-	IFnd cb = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
-	if (cb && cb(ih, ih->data->val) == IUP_CLOSE) IupExitLoop();
-}
-
-- (void)onTouchUp:(id)sender
-{
-	if (![sender isKindOfClass:[IupCocoaTouchValSlider class]]) return;
-	Ihandle* ih = ((IupCocoaTouchValSlider*)sender).ihandle;
-	if (!ih || !iupObjectCheck(ih)) return;
-	IFnd cb = (IFnd)IupGetCallback(ih, "BUTTON_RELEASE_CB");
-	if (cb && cb(ih, ih->data->val) == IUP_CLOSE) IupExitLoop();
+	if (cb && cb(ih) == IUP_CLOSE) IupExitLoop();
 }
 
 @end
@@ -318,10 +297,6 @@ static int cocoaTouchValMapMethod(Ihandle* ih)
 
 	IupCocoaTouchValTarget* target = [[IupCocoaTouchValTarget alloc] init];
 	[slider addTarget:target action:@selector(onValueChanged:) forControlEvents:UIControlEventValueChanged];
-	[slider addTarget:target action:@selector(onTouchDown:)    forControlEvents:UIControlEventTouchDown];
-	[slider addTarget:target action:@selector(onTouchUp:)      forControlEvents:UIControlEventTouchUpInside];
-	[slider addTarget:target action:@selector(onTouchUp:)      forControlEvents:UIControlEventTouchUpOutside];
-	[slider addTarget:target action:@selector(onTouchUp:)      forControlEvents:UIControlEventTouchCancel];
 
 	objc_setAssociatedObject(slider, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 	objc_setAssociatedObject(slider, IUP_COCOATOUCH_VAL_TARGET_OBJ_KEY, target, OBJC_ASSOCIATION_RETAIN);
@@ -355,8 +330,6 @@ IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
 	ic->UnMap = cocoaTouchValUnMapMethod;
 
 	iupClassRegisterCallback(ic, "VALUECHANGED_CB", "");
-	iupClassRegisterCallback(ic, "BUTTON_PRESS_CB", "");
-	iupClassRegisterCallback(ic, "BUTTON_RELEASE_CB", "");
 
 	iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTouchValSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);

@@ -84,15 +84,6 @@ static int gtk4ValSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void gtk4ValButtonReleased(GtkGestureClick *gesture, int n_press, double x, double y, Ihandle *ih)
-{
-  iupAttribSet(ih, "_IUP_BUTTON_RELEASE", "1");
-  (void)gesture;
-  (void)n_press;
-  (void)x;
-  (void)y;
-}
-
 static gboolean gtk4ValChangeValue(GtkRange *range, GtkScrollType scroll, double fval, Ihandle *ih)
 {
   double old_val = ih->data->val;
@@ -114,32 +105,12 @@ static gboolean gtk4ValChangeValue(GtkRange *range, GtkScrollType scroll, double
 
     cb(ih);
   }
-  else
-  {
-    IFnd cb_old;
-    if (scroll == GTK_SCROLL_JUMP)
-    {
-      if (iupAttribGet(ih, "_IUP_BUTTON_RELEASE"))
-      {
-        cb_old = (IFnd)IupGetCallback(ih, "BUTTON_RELEASE_CB");
-        iupAttribSet(ih, "_IUP_BUTTON_RELEASE", NULL);
-      }
-      else
-        cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-    }
-    else if((scroll >= GTK_SCROLL_STEP_BACKWARD) && (scroll <= GTK_SCROLL_END))
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
-    else
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_RELEASE_CB");
-
-    if (cb_old)
-      cb_old(ih, ih->data->val);
-  }
 
   if (fval < 0.0 || fval > 1.0)
     return TRUE;
 
   (void)range;
+  (void)scroll;
   return FALSE;
 }
 
@@ -197,10 +168,6 @@ static int gtk4ValMapMethod(Ihandle* ih)
   iupgtk4SetupKeyEvents(ih->handle, ih);
 
   g_signal_connect(G_OBJECT(ih->handle), "change-value",  G_CALLBACK(gtk4ValChangeValue),  ih);
-
-  GtkGesture* click_gesture = gtk_gesture_click_new();
-  gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(click_gesture));
-  g_signal_connect(click_gesture, "released", G_CALLBACK(gtk4ValButtonReleased), ih);
 
   gtk_scale_set_draw_value(GTK_SCALE(ih->handle), FALSE);
   gtk_range_set_range(GTK_RANGE(ih->handle), 0.0, 1.0);

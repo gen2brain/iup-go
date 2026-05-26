@@ -16,17 +16,15 @@ Also known as Scale or Trackbar in native systems.
 [BGCOLOR](../attrib/iup_bgcolor.md): transparent in all systems except in Motif.
 It will use the background color of the native parent.
 
-**CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-In Windows the control will still get the focus when clicked. Default: YES.
+**CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control. Default: YES.
 
 **PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
 **INVERTED**: Invert the minimum and maximum positions on screen.
 When INVERTED=YES maximum is at top and left (minimum is bottom and right), when INVERTED=NO maximum is at bottom and right (minimum is top and left).
-On EFL, the thumb position respects INVERTED but the trough fill direction is theme-driven; some themes render the fill from a fixed origin regardless of the inverted flag.
-The initial value depends on ORIENTATION passed as parameter on creation, if ORIENTATION=VERTICAL default is YES, if ORIENTATION=HORIZONTAL default is NO.
-On Cocoa, INVERTED is read-only for vertical orientation due to NSSlider limitations.
+The default depends on the ORIENTATION passed on creation: YES for VERTICAL, NO for HORIZONTAL.
+In Cocoa it is read-only, fixed to the default for the orientation.
 
 **MAX**: Contains the maximum valuator value. Default is "1".
 When changed the display will not be updated until VALUE is set.
@@ -82,12 +80,6 @@ Default: "0.0".
 [MAP_CB](../call/iup_map_cb.md), [UNMAP_CB](../call/iup_unmap_cb.md), [DESTROY_CB](../call/iup_destroy_cb.md), [GETFOCUS_CB](../call/iup_getfocus_cb.md), [KILLFOCUS_CB](../call/iup_killfocus_cb.md), [ENTERWINDOW_CB](../call/iup_enterwindow_cb.md), [LEAVEWINDOW_CB](../call/iup_leavewindow_cb.md), [K_ANY](../call/iup_k_any.md), [HELP_CB](../call/iup_help_cb.md): All common callbacks are supported.
 
 ### Notes
-
-This control replaces the old IupVal implemented in the additional controls.
-The old callbacks are still supported but called only if the VALUECHANGED_CB callback is not defined.
-The MOUSEMOVE_CB callback is only called when the user moves the handler using the mouse.
-The BUTTON_PRESS_CB callback is called only when the user press a key that changes the position of the handler.
-The BUTTON_RELEASE_CB callback is called only when the user release the mouse button after moving the handler.
 
 In Motif, after the user clicks the handler a KILLFOCUS will be ignored when the control loses its focus.
 

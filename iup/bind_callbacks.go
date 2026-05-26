@@ -1262,65 +1262,6 @@ func setDropShowFunc(ih Ihandle, f DropShowFunc) {
 
 //--------------------
 
-// ButtonPressFunc for BUTTON_PRESS_CB callback.
-// Called when the user presses the left mouse button over the dial.
-type ButtonPressFunc func(ih Ihandle, angle float64) int
-
-//export goIupButtonPressCB
-func goIupButtonPressCB(ih unsafe.Pointer, angle C.double) C.int {
-	f := loadCallback((Ihandle)(ih), "_IUPGO_BUTTON_PRESS_CB").Value().(ButtonPressFunc)
-
-	return C.int(f((Ihandle)(ih), float64(angle)))
-}
-
-// setButtonPressFunc for BUTTON_PRESS_CB.
-func setButtonPressFunc(ih Ihandle, f ButtonPressFunc) {
-	storeCallback(ih, "_IUPGO_BUTTON_PRESS_CB", f)
-
-	C.goIupSetButtonPressFunc(ih.ptr())
-}
-
-//--------------------
-
-// ButtonReleaseFunc for BUTTON_RELEASE_CB callback.
-// Called when the user releases the left mouse button after pressing it over the dial.
-type ButtonReleaseFunc func(ih Ihandle, angle float64) int
-
-//export goIupButtonReleaseCB
-func goIupButtonReleaseCB(ih unsafe.Pointer, angle C.double) C.int {
-	f := loadCallback((Ihandle)(ih), "_IUPGO_BUTTON_RELEASE_CB").Value().(ButtonReleaseFunc)
-
-	return C.int(f((Ihandle)(ih), float64(angle)))
-}
-
-// setButtonReleaseFunc for BUTTON_RELEASE_CB.
-func setButtonReleaseFunc(ih Ihandle, f ButtonReleaseFunc) {
-	storeCallback(ih, "_IUPGO_BUTTON_RELEASE_CB", f)
-
-	C.goIupSetButtonReleaseFunc(ih.ptr())
-}
-
-//--------------------
-
-// MouseMoveFunc for MOUSEMOVE_CB callback.
-type MouseMoveFunc func(ih Ihandle, angle float64) int
-
-//export goIupMouseMoveCB
-func goIupMouseMoveCB(ih unsafe.Pointer, angle C.double) C.int {
-	f := loadCallback((Ihandle)(ih), "_IUPGO_MOUSEMOVE_CB").Value().(MouseMoveFunc)
-
-	return C.int(f((Ihandle)(ih), float64(angle)))
-}
-
-// setMouseMoveFunc for MOUSEMOVE_CB.
-func setMouseMoveFunc(ih Ihandle, f MouseMoveFunc) {
-	storeCallback(ih, "_IUPGO_MOUSEMOVE_CB", f)
-
-	C.goIupSetMouseMoveFunc(ih.ptr())
-}
-
-//--------------------
-
 // KeyPressFunc for KEYPRESS_CB callback.
 // Action generated when a key is pressed or released.
 type KeyPressFunc func(ih Ihandle, c, press int) int

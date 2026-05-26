@@ -5,7 +5,6 @@
  */
 
 #include <jni.h>
-#include <string.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -14,31 +13,16 @@
 #include "iup_val.h"
 
 
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupValHelper_dispatchValue(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jstring j_key, jfloat value)
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupValHelper_dispatchValueChanged(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jfloat value)
 {
   (void)cls;
+  (void)jni_env;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
-  if (!ih || !j_key) return;
+  if (!ih) return;
 
-  const char* key = (*jni_env)->GetStringUTFChars(jni_env, j_key, NULL);
-  /* sync ih->data->val first so GetAttribute("VALUE") inside VALUECHANGED_CB returns the new value */
-  if (ih->data && (strcmp(key, "MOUSEMOVE_CB") == 0 || strcmp(key, "BUTTON_RELEASE_CB") == 0))
+  if (ih->data)
     ih->data->val = (double)value;
-  IFnd cb = (IFnd)IupGetCallback(ih, key);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_key, key);
 
-  if (cb) cb(ih, (double)value);
-}
-
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupValHelper_dispatchVoid(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jstring j_key)
-{
-  (void)cls;
-  Ihandle* ih = (Ihandle*)ihandle_ptr;
-  if (!ih || !j_key) return;
-
-  const char* key = (*jni_env)->GetStringUTFChars(jni_env, j_key, NULL);
-  Icallback cb = IupGetCallback(ih, key);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_key, key);
-
+  IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb) cb(ih);
 }

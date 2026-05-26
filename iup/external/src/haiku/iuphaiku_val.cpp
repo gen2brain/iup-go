@@ -39,7 +39,7 @@ public:
               NULL, 0, kValPrecision,
               o == B_VERTICAL ? B_VERTICAL : B_HORIZONTAL,
               B_BLOCK_THUMB),
-      fIhandle(ih), fSuppress(false), fButtonPressed(false) {}
+      fIhandle(ih), fSuppress(false) {}
 
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
   void SetSuppress(bool s) { fSuppress = s; }
@@ -52,36 +52,22 @@ public:
     SetMessage(new BMessage(IUPHAIKU_VAL_INV_MSG));
   }
 
-  /* Set fButtonPressed AFTER the base call; BSlider::MouseDown may fire mod sync. */
-  void MouseDown(BPoint where) override
-  {
-    BSlider::MouseDown(where);
-    fButtonPressed = true;
-  }
-
-  void MouseUp(BPoint where) override
-  {
-    BSlider::MouseUp(where);
-    fButtonPressed = false;
-  }
-
   void MessageReceived(BMessage* msg) override
   {
     if (!fSuppress && fIhandle && msg
         && (msg->what == IUPHAIKU_VAL_MOD_MSG || msg->what == IUPHAIKU_VAL_INV_MSG))
     {
-      Dispatch(msg->what == IUPHAIKU_VAL_INV_MSG);
+      Dispatch();
       return;
     }
     BSlider::MessageReceived(msg);
   }
 
 private:
-  void Dispatch(bool release);
+  void Dispatch();
 
   Ihandle* fIhandle;
   bool fSuppress;
-  bool fButtonPressed;
 };
 
 /* helpers */
@@ -115,7 +101,7 @@ static double haikuValDecode(Ihandle* ih, int32 raw)
   return vmin + t * (vmax - vmin);
 }
 
-void IupHaikuSlider::Dispatch(bool release)
+void IupHaikuSlider::Dispatch()
 {
   double old = fIhandle->data->val;
   fIhandle->data->val = haikuValDecode(fIhandle, Value());
@@ -127,14 +113,7 @@ void IupHaikuSlider::Dispatch(bool release)
     if (fIhandle->data->val == old) return;
     int ret = cb(fIhandle);
     if (ret == IUP_CLOSE) IupExitLoop();
-    return;
   }
-
-  IFnd cb_old = NULL;
-  if (release)             cb_old = (IFnd)IupGetCallback(fIhandle, "BUTTON_RELEASE_CB");
-  else if (fButtonPressed) cb_old = (IFnd)IupGetCallback(fIhandle, "MOUSEMOVE_CB");
-  else                     cb_old = (IFnd)IupGetCallback(fIhandle, "BUTTON_PRESS_CB");
-  if (cb_old) cb_old(fIhandle, fIhandle->data->val);
 }
 
 /* Attribute setters */

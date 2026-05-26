@@ -70,28 +70,6 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
   return YES;
 }
 
-- (void)mouseDown:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih)
-  {
-    iupAttribSet(ih, "_IUPCOCOA_VAL_DRAGGING", "1");
-    iupAttribSet(ih, "_IUPCOCOA_VAL_BUTTONRELEASE", NULL);
-  }
-  [super mouseDown:event];
-}
-
-- (void)mouseUp:(NSEvent *)event
-{
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih)
-  {
-    iupAttribSet(ih, "_IUPCOCOA_VAL_BUTTONRELEASE", "1");
-    iupAttribSet(ih, "_IUPCOCOA_VAL_DRAGGING", NULL);
-  }
-  [super mouseUp:event];
-}
-
 - (void)keyDown:(NSEvent *)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -115,11 +93,7 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
 
     IupCocoaSliderReceiver* receiver = (IupCocoaSliderReceiver*)objc_getAssociatedObject(self, IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY);
     if (receiver)
-    {
-      iupAttribSet(ih, "_IUPCOCOA_VAL_KEYPRESS", "1");
       [receiver sliderAction:self];
-      iupAttribSet(ih, "_IUPCOCOA_VAL_KEYPRESS", NULL);
-    }
     handled = YES;
   }
 
@@ -160,39 +134,6 @@ static const void* IUP_COCOA_SLIDER_RECEIVER_OBJ_KEY = "IUP_COCOA_SLIDER_RECEIVE
       return;
     }
     valuechanged_cb(ih);
-  }
-  else
-  {
-    IFnd cb_old = NULL;
-
-    if (iupAttribGet(ih, "_IUPCOCOA_VAL_BUTTONRELEASE"))
-    {
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_RELEASE_CB");
-      iupAttribSet(ih, "_IUPCOCOA_VAL_BUTTONRELEASE", NULL);
-    }
-    else if (iupAttribGet(ih, "_IUPCOCOA_VAL_DRAGGING"))
-    {
-      cb_old = (IFnd)IupGetCallback(ih, "MOUSEMOVE_CB");
-    }
-    else if (iupAttribGet(ih, "_IUPCOCOA_VAL_KEYPRESS"))
-    {
-      cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
-    }
-    else
-    {
-      NSEvent* event = [NSApp currentEvent];
-      NSEventType event_type = [event type];
-
-      if (event_type == NSEventTypeKeyDown)
-      {
-        cb_old = (IFnd)IupGetCallback(ih, "BUTTON_PRESS_CB");
-      }
-    }
-
-    if (cb_old)
-    {
-      cb_old(ih, ih->data->val);
-    }
   }
 }
 

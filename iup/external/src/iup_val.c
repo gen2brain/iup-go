@@ -152,9 +152,6 @@ Iclass* iupValNewClass(void)
 
   /* Callbacks */
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "");
-  iupClassRegisterCallback(ic, "MOUSEMOVE_CB", "d");
-  iupClassRegisterCallback(ic, "BUTTON_PRESS_CB", "d");
-  iupClassRegisterCallback(ic, "BUTTON_RELEASE_CB", "d");
 
   /* Common Callbacks */
   iupBaseRegisterCommonCallbacks(ic);
