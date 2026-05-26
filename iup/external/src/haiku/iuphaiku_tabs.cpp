@@ -636,18 +636,10 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
 static int haikuTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle) return 0;  /* pre-Map only */
-  if      (iupStrEqualNoCase(value, "BOTTOM")) ih->data->type = ITABS_BOTTOM;
-  else if (iupStrEqualNoCase(value, "LEFT"))   ih->data->type = ITABS_LEFT;
-  else if (iupStrEqualNoCase(value, "RIGHT"))  ih->data->type = ITABS_RIGHT;
-  else                                          ih->data->type = ITABS_TOP;
-  return 0;
-}
-
-static int haikuTabsSetTabOrientationAttrib(Ihandle* ih, const char* value)
-{
-  if (ih->handle) return 0;
-  if (iupStrEqualNoCase(value, "VERTICAL")) ih->data->orientation = ITABS_VERTICAL;
-  else                                      ih->data->orientation = ITABS_HORIZONTAL;
+  if      (iupStrEqualNoCase(value, "BOTTOM")) { ih->data->type = ITABS_BOTTOM; ih->data->orientation = ITABS_HORIZONTAL; }
+  else if (iupStrEqualNoCase(value, "LEFT"))   { ih->data->type = ITABS_LEFT;   ih->data->orientation = ITABS_VERTICAL; }
+  else if (iupStrEqualNoCase(value, "RIGHT"))  { ih->data->type = ITABS_RIGHT;  ih->data->orientation = ITABS_VERTICAL; }
+  else                                          { ih->data->type = ITABS_TOP;    ih->data->orientation = ITABS_HORIZONTAL; }
   return 0;
 }
 
@@ -729,7 +721,7 @@ extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, haikuTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* LEFT/RIGHT is always rotated (BeOS); TOP/BOTTOM is always horizontal. */
-  iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, haikuTabsSetTabOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MULTILINE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWCLOSE", haikuTabsGetShowCloseAttrib, haikuTabsSetShowCloseAttrib, NULL, NULL, IUPAF_NO_INHERIT);

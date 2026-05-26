@@ -486,6 +486,11 @@ static void fltkTabsCloseCallback(Fl_Widget* w, void* data)
       IupDetach(child);
       IupDestroy(child);
     }
+    else if (ret == IUP_DEFAULT)
+    {
+      w->hide();
+      w->parent()->redraw();
+    }
   }
 }
 
@@ -558,9 +563,15 @@ static int fltkTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
 
 static int fltkTabsSetTabTypeAttrib(Ihandle* ih, const char* value)
 {
-  (void)ih;
-  (void)value;
-  return 1;
+  if (ih->handle) /* set only before mapping */
+    return 0;
+
+  if (iupStrEqualNoCase(value, "BOTTOM"))
+    ih->data->type = ITABS_BOTTOM;
+  else /* Fl_Tabs has no side tabs, LEFT and RIGHT fall back to TOP */
+    ih->data->type = ITABS_TOP;
+
+  return 0;
 }
 
 static int fltkTabsSetTabPaddingAttrib(Ihandle* ih, const char* value)
@@ -624,6 +635,8 @@ static char* fltkTabsGetClientSizeAttrib(Ihandle* ih)
 static char* fltkTabsGetClientOffsetAttrib(Ihandle* ih)
 {
   int tab_h = fltkTabsGetTabHeight(ih);
+  if (ih->data->type == ITABS_BOTTOM)
+    return iupStrReturnIntInt(2, 2, 'x');
   return iupStrReturnIntInt(2, 2 + tab_h, 'x');
 }
 
@@ -663,7 +676,8 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     tabs->begin();
 
-    Fl_Group* page = new Fl_Group(tabs->x() + 2, tabs->y() + tab_h + 2,
+    int page_y = (ih->data->type == ITABS_BOTTOM) ? (tabs->y() + 2) : (tabs->y() + tab_h + 2);
+    Fl_Group* page = new Fl_Group(tabs->x() + 2, page_y,
                                   tabs->w() - 4, tabs->h() - tab_h - 4);
     page->end();
     page->box(FL_NO_BOX);
@@ -776,7 +790,7 @@ static void fltkTabsLayoutUpdateMethod(Ihandle* ih)
 
   int tab_h = fltkTabsGetTabHeight(ih);
   int page_x = tabs->x() + 2;
-  int page_y = tabs->y() + tab_h + 2;
+  int page_y = (ih->data->type == ITABS_BOTTOM) ? (tabs->y() + 2) : (tabs->y() + tab_h + 2);
   int page_w = tabs->w() - 4;
   int page_h = tabs->h() - tab_h - 4;
   if (page_w < 1) page_w = 1;
@@ -881,7 +895,7 @@ extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MULTILINE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
   iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABORIENTATION", iupTabsGetTabOrientationAttrib, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, fltkTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* only TOP and BOTTOM, LEFT/RIGHT not supported */
+  iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, fltkTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CLIENTSIZE", fltkTabsGetClientSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", fltkTabsGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);

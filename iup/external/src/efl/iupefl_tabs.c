@@ -471,6 +471,58 @@ static void eflTabsItemSelectedCallback(void* data, const Efl_Event* ev)
   }
 }
 
+static void eflTabsSetPageHidden(Ihandle* ih, Ihandle* child, int hide)
+{
+  Eo* pager = iupeflGetWidget(ih);
+  Eo* page = (Eo*)iupAttribGet(child, "_IUPTAB_PAGE");
+  int hidden = iupAttribGetInt(child, "_IUPEFL_TAB_HIDDEN");
+
+  if (!pager || !page)
+    return;
+
+  if (hide && !hidden)
+  {
+    Eo* item = efl_ui_tab_page_tab_bar_item_get(page);
+    int count = efl_content_count(pager);
+    int my_pos = efl_pack_index_get(pager, page);
+
+    iupAttribSetInt(child, "_IUPEFL_TAB_HIDE_POS", my_pos);
+
+    if (item && efl_ui_selectable_selected_get(item))
+    {
+      Eo* other = NULL;
+      int i;
+      for (i = my_pos + 1; i < count && !other; i++)
+        other = efl_pack_content_get(pager, i);
+      for (i = my_pos - 1; i >= 0 && !other; i--)
+        other = efl_pack_content_get(pager, i);
+      if (other)
+      {
+        Eo* other_item = efl_ui_tab_page_tab_bar_item_get(other);
+        if (other_item)
+          efl_ui_selectable_selected_set(other_item, EINA_TRUE);
+      }
+    }
+
+    efl_pack_unpack(pager, page);
+    if (item)
+      efl_gfx_entity_visible_set(item, EINA_FALSE);
+    iupAttribSetInt(child, "_IUPEFL_TAB_HIDDEN", 1);
+  }
+  else if (!hide && hidden)
+  {
+    int pos = iupAttribGetInt(child, "_IUPEFL_TAB_HIDE_POS");
+    int count = efl_content_count(pager);
+    Eo* item;
+    if (pos < 0 || pos > count) pos = count;
+    efl_pack_at(pager, page, pos);
+    item = efl_ui_tab_page_tab_bar_item_get(page);
+    if (item)
+      efl_gfx_entity_visible_set(item, EINA_TRUE);
+    iupAttribSetInt(child, "_IUPEFL_TAB_HIDDEN", 0);
+  }
+}
+
 static void eflTabsCloseButtonClicked(void* data, const Efl_Event* ev)
 {
   Ihandle* child = (Ihandle*)data;
@@ -508,7 +560,7 @@ static void eflTabsCloseButtonClicked(void* data, const Efl_Event* ev)
   }
   else if (ret == IUP_DEFAULT)
   {
-    efl_gfx_entity_visible_set(page, EINA_FALSE);
+    eflTabsSetPageHidden(ih, child, 1);
   }
 }
 
@@ -605,17 +657,7 @@ static int eflTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
 {
   Ihandle* child = IupGetChild(ih, pos);
   if (child)
-  {
-    Eo* page = (Eo*)iupAttribGet(child, "_IUPTAB_PAGE");
-    int hide = iupStrBoolean(value) ? 0 : 1;
-    iupAttribSetInt(child, "_IUPEFL_TAB_HIDDEN", hide);
-    if (page)
-    {
-      Eo* tab_item = efl_ui_tab_page_tab_bar_item_get(page);
-      if (tab_item)
-        efl_gfx_entity_visible_set(tab_item, hide ? EINA_FALSE : EINA_TRUE);
-    }
-  }
+    eflTabsSetPageHidden(ih, child, iupStrBoolean(value) ? 0 : 1);
 
   return 0;
 }
@@ -825,7 +867,8 @@ static void eflTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
     if (page && pager)
     {
-      efl_pack_unpack(pager, page);
+      if (!iupAttribGetInt(child, "_IUPEFL_TAB_HIDDEN"))
+        efl_pack_unpack(pager, page);
       iupeflDelete(page);
     }
 
