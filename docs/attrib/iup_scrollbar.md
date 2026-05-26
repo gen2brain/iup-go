@@ -8,6 +8,8 @@ Associates a horizontal and/or vertical scrollbar to the element.
 
 Default: "NO"
 
+In Android and iOS the canvas has no scrollbars: POSX/POSY/DX/DY are still tracked and SCROLL_CB is still called, but no scrollbar is drawn, so the contents are scrolled by dragging or by the wheel.
+
 ### Configuration Attributes (non-inheritable)
 
 [DX](../attrib/iup_dx.md): Size of the thumb in the horizontal scrollbar. Also the horizontal page size.

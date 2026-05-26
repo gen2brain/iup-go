@@ -60,17 +60,19 @@ Can be "YES" or "NO". Default: "NO".
 All child elements are considered even invisible ones.
 
 **TABORIENTATION** (non-inheritable): Indicates the orientation of tab text, which can be "HORIZONTAL" or "VERTICAL".
-Default is "HORIZONTAL". VERTICAL is supported only in GTK and in Windows.
-In Windows, it cannot be set, it is dependent on the TABTYPE attribute, if TABTYPE=LEFT or TABTYPE=RIGHT then TABORIENTATION=VERTICAL, if TABTYPE=TOP or TABTYPE=BOTTOM then TABORIENTATION=HORIZONTAL.
-Not supported in WinUI.
+Default is "HORIZONTAL". VERTICAL can be set in GTK, GTK 4, Qt and macOS.
+In Win32 and Haiku VERTICAL is also available but is not set directly: it follows the TABTYPE attribute, with TABTYPE=LEFT or TABTYPE=RIGHT giving VERTICAL and TABTYPE=TOP or TABTYPE=BOTTOM giving HORIZONTAL.
 
 **TABPADDING** (non-inheritable): internal margin of the tab title.
 Works just like the MARGIN attribute of the IupHbox and IupVbox containers, but uses a different name to avoid inheritance problems.
 Default value: "0x0".
 
-**TABTYPE** (non-inheritable) (creation-only in Windows): Indicates the type of tab, which can be "TOP", "BOTTOM", "LEFT" or "RIGHT".
-Default is "TOP". In Windows, if LEFT or RIGHT then MULTILINE=YES and TABORIENTATION**=**VERTICAL are set, if TOP or BOTTOM then TABORIENTATION**=**HORIZONTAL is set.
-In Windows, when not TOP, then visual style is removed from tabs.
+**TABTYPE** (non-inheritable): Indicates the type of tab, which can be "TOP", "BOTTOM", "LEFT" or "RIGHT".
+Default is "TOP".
+LEFT and RIGHT are supported in Win32, GTK, GTK 4, Motif, Qt, macOS and Haiku. In iOS and FLTK only TOP and BOTTOM are supported. In EFL, WinUI and Android only TOP is supported.
+It can be changed after map only in macOS and iOS; in the other drivers it is set only before mapping.
+In Win32, TABTYPE=LEFT or TABTYPE=RIGHT also sets MULTILINE=YES and TABORIENTATION=VERTICAL, and TABTYPE=TOP or TABTYPE=BOTTOM sets TABORIENTATION=HORIZONTAL.
+In Win32, when not TOP the visual style is removed from the tabs.
 
 #### Tab Attributes
 
@@ -207,12 +209,9 @@ Unfortunately, this does not work in GTK and in Motif, because in both systems t
 
 Notice that there is no attribute to disable a single tab.
 This is a design decision of all native toolkits, not an IUP decision.
-It is so because a disabled tab is a confusing interface situation.
 
 In Windows, when an **IupVal** is inside an **IupTabs**, the tabs disappear when the mouse moves over it after being used in the valuator.
 A workaround is to put the valuator inside an **IupFrame** and then inside the **IupTabs**, so the problem does not occur.
-
-In GTK uses GtkNotebook, in Windows uses WC_TABCONTROL, in WinUI uses XAML TabView, in macOS uses a custom NSView, in Qt uses QTabWidget, in FLTK uses Fl_Tabs, in EFL uses Efl_Ui_Tab_Pager, and in Motif uses xmNotebook.
 
 ### Utility Functions
 

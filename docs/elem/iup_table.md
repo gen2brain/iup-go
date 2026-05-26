@@ -76,7 +76,8 @@ Can be "YES" or "NO". Default: "YES".
 **SHOW** (write-only): Scrolls the table to make the specified cell visible.
 Value is in "L:C" format.
 
-**REDRAW** (write-only): Forces a full table redraw.
+**REDRAW** (write-only): Forces the table to refresh its display.
+In VIRTUALMODE it re-queries VALUE_CB (and IMAGE_CB) for the visible cells.
 
 #### Editing
 
@@ -274,8 +275,6 @@ The application is responsible for maintaining the actual data.
 When SORTABLE=YES, clicking a column header fires SORT_CB.
 The application must perform the actual sorting and update the table.
 Sort direction arrows are shown in the column header.
-
-In GTK uses GtkTreeView with GtkListStore, in GTK 4 uses GtkColumnView, in Windows uses ListView in Report mode, in WinUI uses a custom XAML Grid layout with ListView for data rows, in macOS uses NSTableView, in Qt uses QTableWidget, in FLTK uses Fl_Table_Row, in EFL uses a custom table drawn on Elm_Scroller, and in Motif uses a custom table drawn on XmDrawingArea.
 
 ### See Also
 

@@ -51,8 +51,6 @@ Use "&&" to show the "&" character instead on defining a mnemonic.
 
 In Motif and GTK, the text font will be affected by the dialog font when the menu is mapped.
 
-In GTK uses GtkMenuItem, in GTK 4 uses GMenu submenu, in Windows uses InsertMenuItem, in WinUI uses XAML MenuFlyoutSubItem, in macOS uses NSMenuItem with submenu, in Qt uses QMenu (as action), in EFL uses Elm_Menu_Item with submenu, and in Motif uses xmCascadeButton.
-
 ### Examples
 
 [Browse for Example Files](../../examples/)
