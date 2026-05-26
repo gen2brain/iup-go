@@ -5,7 +5,9 @@
  */
 
 #include <cstddef>
+#include <cmath>
 
+#include <AffineTransform.h>
 #include <Bitmap.h>
 #include <CardLayout.h>
 #include <ControlLook.h>
@@ -39,7 +41,7 @@ public:
   static constexpr int kClosePad  = 4;  /* gap between label and close box */
   static constexpr int kCloseSize = 12; /* close box side */
 
-  IupHaikuTab() : fIcon(NULL), fIconW(0), fIconH(0), fShowClose(false), fCloseHot(false) {}
+  IupHaikuTab() : fIcon(NULL), fIconW(0), fIconH(0), fShowClose(false), fCloseHot(false), fHasFgColor(false) {}
 
   /* bm is a weak ref into the IUP image cache; draw_w/draw_h are the size to render at */
   void SetIcon(BBitmap* bm, int draw_w, int draw_h)
@@ -56,6 +58,7 @@ public:
   void SetShowClose(bool v) { fShowClose = v; }
   bool ShowClose() const { return fShowClose; }
   void SetCloseHot(bool v) { fCloseHot = v; }
+  void SetFgColor(bool has, rgb_color c) { fHasFgColor = has; fFgColor = c; }
   float IconWidth() const { return fIcon ? (float)fIconW : 0.0f; }
   float IconHeight() const { return fIcon ? (float)fIconH : 0.0f; }
   float ExtraWidth() const
@@ -86,15 +89,38 @@ public:
     return BRect(cx, cy, cx + kCloseSize - 1, cy + kCloseSize - 1);
   }
 
-  /* Painting; only TOP/BOTTOM strips composite icon+close. LEFT/RIGHT falls back to BTab. */
   void DrawLabel(BView* owner, BRect frame) override
   {
     BTabView* tv = dynamic_cast<BTabView*>(owner);
     BTabView::tab_side side = tv ? tv->TabSide() : BTabView::kTopSide;
     bool horizontal = (side == BTabView::kTopSide || side == BTabView::kBottomSide);
-    if (!horizontal || (!fIcon && !fShowClose))
+
+    if (!fHasFgColor && (!horizontal || (!fIcon && !fShowClose)))
     {
       BTab::DrawLabel(owner, frame);
+      return;
+    }
+
+    rgb_color base = ui_color(B_PANEL_BACKGROUND_COLOR);
+    rgb_color textcolor = fHasFgColor ? fFgColor : ui_color(B_PANEL_TEXT_COLOR);
+    uint32 flags = IsEnabled() ? 0 : BControlLook::B_DISABLED;
+    BAlignment center(B_ALIGN_HORIZONTAL_CENTER, B_ALIGN_VERTICAL_CENTER);
+
+    if (!horizontal)
+    {
+      float rotation = (side == BTabView::kLeftSide) ? 270.0f : 90.0f;
+      BPoint pivot(frame.left + frame.Width() / 2, frame.top + frame.Height() / 2);
+      BRect orig(frame);
+      frame.top = pivot.y - orig.Width() / 2;
+      frame.bottom = pivot.y + orig.Width() / 2;
+      frame.left = pivot.x - orig.Height() / 2;
+      frame.right = pivot.x + orig.Height() / 2;
+
+      BAffineTransform transform;
+      transform.RotateBy(pivot, rotation * M_PI / 180.0f);
+      owner->SetTransform(transform);
+      be_control_look->DrawLabel(owner, Label(), frame, frame, base, flags, center, &textcolor);
+      owner->SetTransform(BAffineTransform());
       return;
     }
 
@@ -105,10 +131,6 @@ public:
     if (fIcon)    label.left  = icon.right + kIconPad;
     if (fShowClose) label.right = close.left - kClosePad;
 
-    rgb_color base = ui_color(B_PANEL_BACKGROUND_COLOR);
-    rgb_color textcolor = ui_color(B_PANEL_TEXT_COLOR);
-    uint32 flags = IsEnabled() ? 0 : BControlLook::B_DISABLED;
-
     if (fIcon)
     {
       owner->SetDrawingMode(B_OP_ALPHA);
@@ -117,9 +139,7 @@ public:
     }
 
     if (be_control_look)
-      be_control_look->DrawLabel(owner, Label(), label, label, base, flags,
-                                 BAlignment(B_ALIGN_HORIZONTAL_CENTER, B_ALIGN_VERTICAL_CENTER),
-                                 &textcolor);
+      be_control_look->DrawLabel(owner, Label(), label, label, base, flags, center, &textcolor);
 
     if (fShowClose)
     {
@@ -145,6 +165,8 @@ private:
   int fIconH;
   bool fShowClose;
   bool fCloseHot;
+  bool fHasFgColor;
+  rgb_color fFgColor;
 };
 
 
@@ -523,6 +545,14 @@ static void haikuTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   if (ih->data->show_close) tab->SetShowClose(true);
 
+  unsigned char fr, fg, fb;
+  char* fgcolor = iupAttribGet(ih, "FGCOLOR");
+  if (fgcolor && iupStrToRGB(fgcolor, &fr, &fg, &fb))
+  {
+    rgb_color c = { fr, fg, fb, 255 };
+    tab->SetFgColor(true, c);
+  }
+
   LooperLockGuard guard(tabs->Looper());
   tabs->AddTab(page, tab);
   haikuTabsUpdateStripHeight(tabs);
@@ -709,6 +739,22 @@ static int haikuTabsSetShowCloseAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int haikuTabsSetFgColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r, g, b;
+  bool has = value && iupStrToRGB(value, &r, &g, &b);
+  rgb_color color = { has ? r : (uint8)0, has ? g : (uint8)0, has ? b : (uint8)0, 255 };
+
+  IupHaikuTabView* tabs = (IupHaikuTabView*)ih->handle;
+  if (!tabs) return 1;
+  LooperLockGuard guard(tabs->Looper());
+  for (int32 i = 0; i < tabs->CountTabs(); i++)
+    if (IupHaikuTab* t = dynamic_cast<IupHaikuTab*>(tabs->TabAt(i)))
+      t->SetFgColor(has, color);
+  tabs->Invalidate();
+  return 1;
+}
+
 static int haikuTabsSetActiveAttrib(Ihandle* ih, const char* value)
 {
   IupHaikuTabView* tabs = (IupHaikuTabView*)ih->handle;
@@ -736,7 +782,7 @@ extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, haikuTabsSetTabTitleAttribId, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, haikuTabsSetTabImageAttribId, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
