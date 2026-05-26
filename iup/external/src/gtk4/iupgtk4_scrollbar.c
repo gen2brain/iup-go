@@ -112,6 +112,8 @@ static int gtk4ScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 
     iupScrollbarCropValue(ih);
 
+    iupAttribSet(ih, "_IUPGTK4_SB_OP", NULL);
+
     fval = (ih->data->val - ih->data->vmin) / range;
     adjustment = gtk_scrollbar_get_adjustment(GTK_SCROLLBAR(ih->handle));
     gtk_adjustment_set_value(adjustment, fval);
@@ -122,6 +124,28 @@ static int gtk4ScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 
 /*********************************************************************************************/
 
+
+static gboolean gtk4ScrollbarChangeValue(GtkRange *range, GtkScrollType scroll, double value, Ihandle *ih)
+{
+  int horiz = (ih->data->orientation == ISCROLLBAR_HORIZONTAL);
+  int op;
+
+  (void)range;
+  (void)value;
+
+  switch (scroll)
+  {
+  case GTK_SCROLL_STEP_BACKWARD: op = horiz ? IUP_SBLEFT : IUP_SBUP; break;
+  case GTK_SCROLL_STEP_FORWARD:  op = horiz ? IUP_SBRIGHT : IUP_SBDN; break;
+  case GTK_SCROLL_PAGE_BACKWARD: op = horiz ? IUP_SBPGLEFT : IUP_SBPGUP; break;
+  case GTK_SCROLL_PAGE_FORWARD:  op = horiz ? IUP_SBPGRIGHT : IUP_SBPGDN; break;
+  case GTK_SCROLL_JUMP:          op = horiz ? IUP_SBDRAGH : IUP_SBDRAGV; break;
+  default:                       op = horiz ? IUP_SBPOSH : IUP_SBPOSV; break;
+  }
+
+  iupAttribSetInt(ih, "_IUPGTK4_SB_OP", op);
+  return FALSE;
+}
 
 static void gtk4ScrollbarValueChanged(GtkAdjustment *adjustment, Ihandle *ih)
 {
@@ -141,25 +165,23 @@ static void gtk4ScrollbarValueChanged(GtkAdjustment *adjustment, Ihandle *ih)
       valuechanged_cb(ih);
   }
 
-  /* GTK4 scrollbar doesn't provide scroll type info through adjustment value-changed,
-     so SCROLL_CB gets a generic position operation */
   {
     IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
     if (scroll_cb && ih->data->val != old_val)
     {
       float posx = 0, posy = 0;
+      char* opstr = iupAttribGet(ih, "_IUPGTK4_SB_OP");
       int op;
 
-      if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
-      {
-        posx = (float)ih->data->val;
-        op = IUP_SBPOSH;
-      }
+      if (opstr)
+        op = atoi(opstr);
       else
-      {
+        op = (ih->data->orientation == ISCROLLBAR_HORIZONTAL) ? IUP_SBPOSH : IUP_SBPOSV;
+
+      if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
+        posx = (float)ih->data->val;
+      else
         posy = (float)ih->data->val;
-        op = IUP_SBPOSV;
-      }
 
       scroll_cb(ih, op, posx, posy);
     }
@@ -242,6 +264,7 @@ static int gtk4ScrollbarMapMethod(Ihandle* ih)
 
   iupgtk4SetupKeyEvents(ih->handle, ih);
 
+  g_signal_connect(G_OBJECT(ih->handle), "change-value", G_CALLBACK(gtk4ScrollbarChangeValue), ih);
   g_signal_connect(G_OBJECT(adjustment), "value-changed", G_CALLBACK(gtk4ScrollbarValueChanged), ih);
 
   if (ih->data->inverted)

@@ -872,7 +872,6 @@ Iclass* iupDialNewClass(void)
 
   /* IupDial only */
   iupClassRegisterAttribute(ic, "VALUE", iDialGetValueAttrib, iDialSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TYPE", iDialGetOrientationAttrib, iDialSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIENTATION", iDialGetOrientationAttrib, iDialSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "DENSITY", iDialGetDensityAttrib, iDialSetDensityAttrib, NULL, NULL, IUPAF_NOT_MAPPED);

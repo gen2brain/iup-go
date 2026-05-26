@@ -168,7 +168,6 @@ Iclass* iupScrollbarNewClass(void)
 
   iupClassRegisterAttribute(ic, "MAX", iScrollbarGetMaxAttrib, iScrollbarSetMaxAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "MIN", iScrollbarGetMinAttrib, iScrollbarSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "TYPE", iScrollbarGetOrientationAttrib, iScrollbarSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIENTATION", iScrollbarGetOrientationAttrib, iScrollbarSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INVERTED", iScrollbarGetInvertedAttrib, iScrollbarSetInvertedAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
