@@ -46,6 +46,10 @@ In Windows the control will still get the focus when clicked. Default: YES.
 **PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
+**CONTEXTMENU** [macOS Only] (non-inheritable): Sets a custom context (right-click) menu for the control. The value is an IUP menu handle.
+Set to a menu handle to replace the default system context menu, or set to NULL to disable the context menu entirely.
+If never set, the default system context menu is shown.
+
 **COUNT** (read-only) (non-inheritable): returns the number of items.
 Before mapping, it counts the number of non-NULL items before the first NULL item.
 
@@ -179,10 +183,6 @@ Must be set after VIRTUALMODE is enabled.
 > ------------------------------------------------------------------------
 
 [ACTIVE](../attrib/iup_active.md), [FONT](../attrib/iup_font.md), [EXPAND](../attrib/iup_expand.md), [SCREENPOSITION](../attrib/iup_screenposition.md), [POSITION](../attrib/iup_position.md), [MINSIZE](../attrib/iup_minsize.md), [MAXSIZE](../attrib/iup_maxsize.md), [WID](../attrib/iup_wid.md), [TIP](../attrib/iup_tip.md), [RASTERSIZE](../attrib/iup_rastersize.md), [ZORDER](../attrib/iup_zorder.md), [VISIBLE](../attrib/iup_visible.md), [THEME](../attrib/iup_theme.md): also accepted.
-
-**CONTEXTMENU** [macOS Only] (non-inheritable): Sets a custom context (right-click) menu for the control. The value is an IUP menu handle.
-Set to a menu handle to replace the default system context menu, or set to NULL to disable the context menu entirely.
-If never set, the default system context menu is shown.
 
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks are supported.
 
