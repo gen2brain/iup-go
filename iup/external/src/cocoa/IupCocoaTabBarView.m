@@ -1293,7 +1293,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSColor *fontColor;
   if (accentActive)
     fontColor = [NSColor alternateSelectedControlTextColor];
-  else if ([self isActived])
+  else if ([self isActived] || [[self tabBarView] usesMaterialBackground])
     fontColor = [[self tabBarView] tabActivedTitleColor];
   else
     fontColor = [[self tabBarView] tabTitleColor];
