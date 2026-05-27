@@ -76,9 +76,10 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int *w, int *h)
 
 IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int *w, int *h)
 {
+  int highlight = 2*2;
+  (*w) += highlight;
+  (*h) += highlight;
   (void)ih;
-  (void)w;
-  (void)h;
 }
 
 static void motTextGetLinColFromPosition(const char *str, int pos, int *lin, int *col )
